@@ -1,0 +1,16 @@
+{
+  "window": {
+    "defaultTitle": "App",
+    "titleBarColor": 3289657
+  },
+  "pages": [
+    "pages/index/index"
+  ],
+  "launchParams": {
+    "pages/index/index": {
+      "defaultTitle": "首页",
+      "titleBarColor": 3289657
+    }
+  },
+  "prerenderPage": "index.html"
+}

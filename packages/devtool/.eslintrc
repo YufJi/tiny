@@ -1,0 +1,8 @@
+{
+  "extends": "@music/eslint-config-hulk",
+  "rules": {
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "react/state-in-constructor": "off",
+    "react/jsx-filename-extension": "off"
+  }
+}

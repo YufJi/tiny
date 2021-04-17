@@ -1,0 +1,17 @@
+{
+  "name": "tiny-v1",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "lerna": "^3.22.1"
+  },
+  "dependencies": {
+    "normalize.css": "^8.0.1"
+  }
+}

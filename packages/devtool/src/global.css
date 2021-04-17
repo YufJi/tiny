@@ -1,0 +1,48 @@
+
+* {
+  box-sizing: border-box;
+}
+
+
+@font-face {
+  font-family: 'iconfont';  /* project id 2494042 */
+  src: url('//at.alicdn.com/t/font_2494042_659jos7clau.eot');
+  src: url('//at.alicdn.com/t/font_2494042_659jos7clau.eot?#iefix') format('embedded-opentype'),
+  url('//at.alicdn.com/t/font_2494042_659jos7clau.woff2') format('woff2'),
+  url('//at.alicdn.com/t/font_2494042_659jos7clau.woff') format('woff'),
+  url('//at.alicdn.com/t/font_2494042_659jos7clau.ttf') format('truetype'),
+  url('//at.alicdn.com/t/font_2494042_659jos7clau.svg#iconfont') format('svg');
+}
+
+.ic {
+  font-family: 'iconfont' !important;
+  font-style: normal;
+  -webkit-text-stroke-width: 0.2px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+.flex-c {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.flex-r {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.f-page {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
