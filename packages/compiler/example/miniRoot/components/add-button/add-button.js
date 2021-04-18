@@ -6,8 +6,8 @@ Component({
 
   methods: {
     onClickMe() {
-      // this.props.onClickMe();
-      this.triggerEvent('clickme')
+      this.props.onClickMe();
+      // this.triggerEvent('clickme')
     },
   },
 });

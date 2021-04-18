@@ -11,7 +11,7 @@ const { getStyleTransformer } = require('../StyleStore');
 module.exports = function cssLoader(source) {
   // css can handle empty
   const { cwd, transformConfig } = loaderUtils.getOptions(this);
-  const { pluginId, css2 } = transformConfig;
+  const { pluginId } = transformConfig;
   const { resourcePath: fullPath } = this;
   if (!isValidFilePath(fullPath)) {
     this.callback(new Error(`illegal file path ${fullPath}`));
@@ -22,35 +22,35 @@ module.exports = function cssLoader(source) {
   try {
     let componentStyles;
     let appStyleTransformer;
-    if (!css2) {
-      const isPageCss = getPage(projectPath, extname, { pluginId });
-      const pageName = projectPath.slice(0, -extname.length);
-      if (isPageCss) {
-        const dependentComponents = getPageComponents(pageName, { pluginId });
-        if (dependentComponents.length) {
-          componentStyles = [];
-          dependentComponents.forEach((d) => {
-            const fullComponentPath = path.join(cwd, d + extname);
-            if (fs.existsSync(fullComponentPath)) {
-              componentStyles.push(
-                getStyleTransformer(
-                  fullComponentPath,
-                  assign({}, transformConfig, {
-                    src: cwd,
-                    source: d,
-                    appStyleTransformer: false,
-                    injectStyle: false,
-                  }),
-                ),
-              );
-            }
-          });
-        }
+
+    const isPageCss = getPage(projectPath, extname, { pluginId });
+    const pageName = projectPath.slice(0, -extname.length);
+    if (isPageCss) {
+      const dependentComponents = getPageComponents(pageName, { pluginId });
+      if (dependentComponents.length) {
+        componentStyles = [];
+        dependentComponents.forEach((d) => {
+          const fullComponentPath = path.join(cwd, d + extname);
+          if (fs.existsSync(fullComponentPath)) {
+            componentStyles.push(
+              getStyleTransformer(
+                fullComponentPath,
+                assign({}, transformConfig, {
+                  src: cwd,
+                  source: d,
+                  appStyleTransformer: false,
+                  injectStyle: false,
+                }),
+              ),
+            );
+          }
+        });
       }
-      appStyleTransformer = isPageCss
-        ? getAppStyleTransformer(cwd, transformConfig)
-        : null;
     }
+    appStyleTransformer = isPageCss
+      ? getAppStyleTransformer(cwd, transformConfig)
+      : null;
+  
     const styleTransformer = new StyleTransformer(
       source,
       assign(

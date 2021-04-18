@@ -19,7 +19,7 @@ function createIframe(options) {
     onload(el)
   };
   el.id = id;
-  document.getElementById('workerIframe').appendChild(el);
+  document.getElementById('workerFrame').appendChild(el);
   return el
 }
 
@@ -42,7 +42,7 @@ export function createWorkerIframe(id, src, onload) {
     onload(el)
   };
   el.id = id;
-  document.getElementById('workerIframe').appendChild(el);
+  document.getElementById('workerFrame').appendChild(el);
   return el
 }
 

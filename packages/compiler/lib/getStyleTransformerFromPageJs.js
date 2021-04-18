@@ -10,10 +10,7 @@ module.exports = function getStyleTransformerFromPageJs({
   src,
 }) {
   const stylePath = fullPath.replace(/\.(js|ts)$/, config.styleExtname);
-  const { css2 } = config;
-  if (css2) {
-    appStyle = undefined;
-  }
+
   let styleTransformer = appStyle;
   if (fs.existsSync(stylePath)) {
     styleTransformer = StyleStore.getStyleTransformer(

@@ -237,14 +237,14 @@ function isValidFilePath(file) {
 }
 
 function genResourceHash(p, option = {}) {
-  const { src, css2, compileType, type } = option;
+  const { src, compileType, type } = option;
   if (src && compileType && type) {
     const store = (compileType === 'mini' ? miniStore : pluginStore) || {};
     const map = (type === 'page' ? store.pageMap : store.componentMap) || {};
     const directDependencies = map[p] || {};
     let indirectDependencies = {};
     // 非css2模式下，组件样式跟随page.acss, 页面A依赖组件B, 组件B新增依赖组件C时，页面A.acss缓存产物有问题，需要使缓存失效
-    if (type === 'page' && !css2) {
+    if (type === 'page') {
       // eslint-disable-next-line global-require
       indirectDependencies = require('./pageMap').getPagesComponents([p], {
         pluginId: compileType === 'plugin',

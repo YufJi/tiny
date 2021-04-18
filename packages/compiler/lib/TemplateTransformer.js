@@ -65,7 +65,7 @@ class TemplateTransformer extends Transformer {
       supportSjsHandler,
     } = config;
 
-    const depUIPkg = (dep) => `'${UILibrary}/${dep}'`;
+    const depUIPkg = (dep) => `${UILibrary}['${dep}']`;
 
     let { placeholderFactory } = config;
     if (!placeholderFactory) {
@@ -189,7 +189,7 @@ class TemplateTransformer extends Transformer {
                 isWorker,
               }),
             )})`
-            : `import ${depName} from ${depUIPkg(dep)};`,
+            : `const ${depName} = ${depUIPkg(dep)};`,
 
           `const ${componentName} = ${tmpComponentName} || ${`${placeholderFactory}(${JSON.stringify(
             dep,

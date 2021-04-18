@@ -1,0 +1,110 @@
+@import '../style/mixins';
+
+@buttonPrefixCls: a-button;
+@loadingPrefixCls: a-loading;
+
+.@{buttonPrefixCls} {
+  display: block;
+  outline: 0 none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  padding: 0;
+  text-align: center;
+  font-size: 18px;
+  height: 47px;
+  line-height: 47px;
+  border-radius: 2px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  white-space: nowrap;
+
+  // default
+  color: @color-text-base;
+  background-color: @fill-base;
+  border: 1px solid #eee;
+  // &:active, // uc browser not work normal
+  &&-active {
+    background-color: @fill-tap-button;
+    color: rgba(0, 0, 0, 0.3);
+  }
+  &&-disabled {
+    color: rgba(0, 0, 0, 0.6);
+    background-color: rgba(255, 255, 255, 0.6);
+  }
+
+  &-primary {
+    color: @color-text-base-inverse;
+    background-color: @brand-primary-normal;
+    border-color: @brand-primary-normal;
+    // &:active, // uc browser not work normal
+    &.@{buttonPrefixCls}-active {
+      background-color: @brand-primary-dark;
+      color: rgba(255, 255, 255, 0.3);
+    }
+    &.@{buttonPrefixCls}-disabled {
+      color: rgba(255, 255, 255, 0.6);
+      background-color: tint(@brand-primary-normal, @brand-primary-light);
+      border: 0;
+    }
+  }
+
+  &-warn {
+    color: @color-text-base-inverse;
+    background-color: #E94F4F;
+    border-color: #E94F4F;
+    &.@{buttonPrefixCls}-active {
+      background-color: #EA3C3C;
+      color: rgba(255, 255, 255, 0.3);
+      border-color: #E94F4F;
+    }
+    &.@{buttonPrefixCls}-disabled {
+      color: rgba(255, 255, 255, 0.6);
+      background-color: rgba(233, 79, 79, 0.4);
+      border-width: 0;
+    }
+  }
+
+  &-ghost {
+    color: @brand-primary-normal;
+    background-color: transparent;
+    border-color: @brand-primary-normal;
+    // &:active, // uc browser not work normal
+    &.@{buttonPrefixCls}-active {
+      color: @color-text-base-inverse;
+      background-color: @brand-primary-dark;
+    }
+    &.@{buttonPrefixCls}-disabled {
+      color: @color-text-disabled;
+      background-color: @fill-disabled;
+      border: 0;
+    }
+  }
+
+  .@{loadingPrefixCls}-indicator {
+    margin-right: 10px;
+  }
+
+  &-small {
+    display: inline-block;
+    font-size: 14px;
+    min-width: 48px;
+    height: 26px;
+    line-height: 24px;
+    padding: 0 4px;
+    .@{loadingPrefixCls}-indicator {
+      margin-right: 4px;
+      .@{loadingPrefixCls}-item {
+        height: 6px;
+        width: 6px;
+        &::before {
+          width: 8px;
+          height: 10px;
+          margin-left: -3.38px;
+          margin-top: -5.56px;
+        }
+      }
+    }
+  }
+}

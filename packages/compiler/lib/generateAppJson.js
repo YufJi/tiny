@@ -13,12 +13,12 @@ module.exports = function g({
   src,
   out,
   transformColor,
-  css2,
+  
   mergeSubPackages,
   variables,
 }) {
   /* 存储相关配置usingComponents，tabBar */
-  update({ src, mergeSubPackages, css2, variables });
+  update({ src, mergeSubPackages,  variables });
 
   const appJson = {};
   const { app, ext } = getExtApp({

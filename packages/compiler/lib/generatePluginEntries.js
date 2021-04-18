@@ -2,7 +2,6 @@ const fs = require('fs-extra');
 const path = require('path');
 const { getImports, getImport } = require('./utils');
 const { getPluginComponents } = require('./pageMap');
-const { name: packageName } = require('../package.json')
 
 function getComponentImports(
   pages = [],
@@ -26,7 +25,7 @@ function getMainRequire(mainJs, baseDir) {
 
 module.exports = function generatePluginEntries({
   src, // pluginRoot 插件根目录
-  css2 = true,
+  
   appJson,
   out,
   web,
@@ -35,7 +34,7 @@ module.exports = function generatePluginEntries({
 }) {
   const pageImports = getImports(appJson.pages, baseDir, {
     src,
-    css2,
+    
     compileType: 'plugin',
     type: 'page',
   });
@@ -45,7 +44,7 @@ module.exports = function generatePluginEntries({
     baseDir,
     {
       src,
-      css2,
+      
       compileType: 'plugin',
       type: 'component',
     },

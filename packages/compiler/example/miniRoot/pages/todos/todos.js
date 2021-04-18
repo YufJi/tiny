@@ -37,6 +37,5 @@ Page({
   addTodo() {
     // 进行页面跳转
     mp.navigateTo({ url: '../add-todo/add-todo' });
-    console.log(this.id)
   },
 });

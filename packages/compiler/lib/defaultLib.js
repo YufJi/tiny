@@ -1,6 +1,6 @@
 
 exports.tinyBaseModule = 'self.MP';
 
-exports.tinyUIModule = '@hulk/mp-components'
+exports.tinyUIModule = 'self.MPUI'
 
 exports.templateRuntimeModule = 'self.RMLRuntime';

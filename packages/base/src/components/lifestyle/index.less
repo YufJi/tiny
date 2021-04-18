@@ -1,0 +1,55 @@
+@import '../style/mixins';
+
+.a-lifestyle {
+  display: flex;
+  height: 56px;
+  font-size: 16px;
+  align-items: center;
+  background-color: @fill-base;
+}
+
+.a-lifestyle-error.a-lifestyle {
+  background-color: transparent;
+}
+
+.a-lifestyle-loading {
+  justify-content: center;
+}
+
+.a-lifestyle-name-wrap {
+  flex: 1;
+  padding-left: 15px;
+  display: flex;
+  overflow: hidden;
+}
+
+.a-lifestyle-btn.a-button {
+  font-size: 12px;
+  width: 39px;
+  height: 24px;
+  margin-top: 0;
+  margin-bottom: 0;
+  line-height: 24px;
+}
+
+.a-lifestyle-name {
+  line-height: 34px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space:nowrap;
+  padding-right: 20px;
+}
+
+.a-lifestyle-icon {
+  width: 34px;
+  height: 34px;
+  margin-right: 12px;
+}
+
+.a-lifestyle-btn-wrap {
+  padding-right: 15px;
+}
+
+.a-lifestyle-btn.a-button-loading {
+  width: 44px;
+}

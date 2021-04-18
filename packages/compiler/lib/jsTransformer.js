@@ -154,7 +154,6 @@ function transformComponentJsForWebRender({ is, usingComponents }, config) {
     resourceQuery = '',
     styleExtname,
     templateExtname,
-    css2,
     pluginId,
     fullPath,
   } = config;
@@ -168,13 +167,7 @@ function transformComponentJsForWebRender({ is, usingComponents }, config) {
   }
   is = pluginId ? getPluginPath(pluginId, is.slice(1)) : is;
   let cssExists = false;
-  if (css2) {
-    const cssPath = path.join(
-      path.dirname(fullPath),
-      `./${filename}${styleExtname}`,
-    );
-    cssExists = !!existsSync(cssPath);
-  }
+
   const info = `
 {
   is: ${JSON.stringify(is)},

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>render</title>
+  <link rel="stylesheet" href="/base/mp.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    .root {
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="root" class="root">
+    <div style="transform: scale(0.5)">
+      <style>
+        .load-container {
+          margin: 50px auto;
+          width: 150px;
+          text-align: center;
+        }
+        .load-container .load {
+            width: 20px;
+            height: 20px;
+            background-color: #333;
+
+            border-radius: 100%;
+            display: inline-block;
+            animation: bouncedelay 1.4s infinite ease-in-out;
+            animation-fill-mode: both;
+        }
+        .load-container .load1 {
+            animation-delay: -0.32s;
+        }
+        .load-container .load2 {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes bouncedelay {
+          0%, 80%, 100% {
+            transform: scale(0.0);
+          } 40% {
+            transform: scale(1.0);
+          }
+        }
+      </style>
+      <div class="load-container">
+        <div class="load load1"></div>
+        <div class="load load2"></div>
+        <div class="load"></div>
+      </div>
+    </div>
+  </div>
+  <script src="/JSBridge/index.js"></script>
+  <script src="/base/mp.js"></script>
+  <script src="/index.web.js"></script>
+  <script>
+    window.document.addEventListener('JSBridgeReady', function(e) {
+      bootstrapApp({
+        onReady: function(callback) {
+          callback({
+            bridge: {
+              startupParams: {
+                
+              },
+              call: window.JSBridge.call,
+            }
+          })
+        },
+      })
+    })
+  </script>
+</body>
+</html>

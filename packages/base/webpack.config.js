@@ -1,4 +1,5 @@
 const path = require('path');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 const getConfig = (type, env) => {
   const isWorker = type === 'worker';
@@ -12,11 +13,12 @@ const getConfig = (type, env) => {
       mp: path.join(__dirname, 'src/index.js'),
     },
     output: {
-      path: path.join(__dirname, '../devtool/public/base'),
+      path: path.join(__dirname, '../devtool/assets/base'),
     },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src/'),
+        'components': path.resolve(__dirname, '../components/src'),
       },
       extensions: isWorker ? ['.worker.js', '.js', '.json'] : ['.web.js', '.js', '.json'],
     },
@@ -27,6 +29,26 @@ const getConfig = (type, env) => {
           use: {
             loader: 'babel-loader',
           }
+        },
+        {
+          test: /\.less$/,
+          use: [
+            MiniCssExtractPlugin.loader,
+            'css-loader',
+            {
+                loader: 'postcss-loader',
+                options: {
+                  plugins: () => [
+                    require('autoprefixer')(),
+                  ]
+                }
+            }, {
+                loader: 'less-loader',
+                options: {
+                  javascriptEnabled: true,
+                }
+            }
+          ]
         }
       ]
     },
@@ -36,6 +58,12 @@ const getConfig = (type, env) => {
     optimization: {
       minimize: !isDev,
     },  
+
+    plugins: [
+      new MiniCssExtractPlugin({
+        filename: 'mp.css'
+      }),
+    ]
   }
 }
 

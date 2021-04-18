@@ -97,7 +97,7 @@ export default class App extends Component {
         </div>
         <div className="tabs"></div>
 
-        <div id="workerIframe" className={style.workerIframe}></div>
+        <div id="workerFrame" className={style.workerFrame}></div>
       </div>
     )
   }

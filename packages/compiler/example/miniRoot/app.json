@@ -4,7 +4,7 @@
     "pages/add-todo/add-todo"
   ],
   "window": {
-    "defaultTitle": "Todo App",
+    "defaultTitle": "哈哈哈",
     "titleBarColor": "#323239"
   },
   "usingComponents": {

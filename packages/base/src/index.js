@@ -3,6 +3,22 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import createReactClass from 'create-react-class';
 import bridge from '@/apis/';
+import {
+  Button,
+  Canvas,
+  CheckBox,
+  CheckBoxGroup,
+  Icon,
+  Image,
+  Input,
+  Label,
+  Picker,
+  Radio,
+  RadioGroup,
+  ScrollView,
+  Text,
+  View,
+} from '@/components/';
 
 import {
   EventHub,
@@ -34,6 +50,22 @@ g.ReactDOM = ReactDOM;
 g.createReactClass = createReactClass;
 g.React.createClass = g.React.createClass || createReactClass;
 g.RMLRuntime = RMLRuntime;
+g.MPUI = {
+  button: Button,
+  canvas: Canvas,
+  checkbox: CheckBox,
+  'checkbox-group': CheckBoxGroup,
+  icon: Icon,
+  image: Image,
+  input: Input,
+  label: Label,
+  picker: Picker,
+  radio: Radio,
+  'radio-group': RadioGroup,
+  'scroll-view': ScrollView,
+  text: Text,
+  view: View,
+};
 
 const mp = {
   bridge,

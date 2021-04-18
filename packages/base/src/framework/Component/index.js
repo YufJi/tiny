@@ -2,7 +2,7 @@ import ComponentRegistry from '../ComponentRegistry';
 import $global from '../common/global';
 import CustomComponent from '../legacy/CustomComponent';
 
-export default function WorkerComponent(setupConfig) {
+export default function Component(setupConfig) {
   const { is } = setupConfig;
 
   $global.componentsConfig[is] = {

@@ -3,6 +3,9 @@
   box-sizing: border-box;
 }
 
+body {
+  overflow: hidden;
+}
 
 @font-face {
   font-family: 'iconfont';  /* project id 2494042 */

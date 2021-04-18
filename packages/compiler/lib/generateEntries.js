@@ -15,7 +15,7 @@ self.getApp = MP.getApp;
 self.Page = MP.Page;
 self.App = MP.App;
 self.mp = MP.bridge;
-self.Component = MP.WorkerComponent || function(){};
+self.Component = MP.Component;
 self.$global = MP.$global;
 self.requirePlugin = MP.requirePlugin;
 `;
@@ -24,7 +24,7 @@ module.exports = function generateEntries({
   src, /* miniprogramRoot 小程序根目录 */
   appJson,
   importScripts,
-  css2,
+  
   out,
   web,
   native,
@@ -38,7 +38,7 @@ module.exports = function generateEntries({
   /* 获取页面入口 */
   const pageImports = getImports(app.pages, baseDir, {
     src,
-    css2,
+    
     compileType: 'mini',
     type: 'page',
   });
@@ -102,7 +102,7 @@ g.mpAppJson = ${JSON.stringify(mpJson, null, 2)};
   const appImport = `require('${baseDir}/app');`;
   const allComponentsRequires = getComponentImports(app.pages, baseDir, {
     src,
-    css2,
+    
     compileType: 'mini',
     type: 'component',
   });
@@ -130,7 +130,6 @@ g.mpAppJson = ${JSON.stringify(mpJson, null, 2)};
   const webIndex = [
     `require(\'${packageName}/lib/sjsEnvInit\');`,
     configImport,
-    css2 ? appImport : '',
     ...allComponentsRequires,
     ...pageImports,
     '',
@@ -153,7 +152,7 @@ g.mpAppJson = ${JSON.stringify(mpJson, null, 2)};
       );
       const packagePagesImports = getImports(packagePages, packageBaseDir, {
         src,
-        css2,
+        
         compileType: 'mini',
         type: 'page',
       });
@@ -162,7 +161,7 @@ g.mpAppJson = ${JSON.stringify(mpJson, null, 2)};
         packageBaseDir,
         {
           src,
-          css2,
+          
           compileType: 'mini',
           type: 'component',
         },

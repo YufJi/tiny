@@ -1,0 +1,21 @@
+{
+  "window": {
+    "defaultTitle": "哈哈哈",
+    "titleBarColor": 3289657
+  },
+  "pages": [
+    "pages/todos/todos",
+    "pages/add-todo/add-todo"
+  ],
+  "launchParams": {
+    "pages/todos/todos": {
+      "defaultTitle": "Index",
+      "titleBarColor": 3289657
+    },
+    "pages/add-todo/add-todo": {
+      "defaultTitle": "哈哈哈",
+      "titleBarColor": 3289657
+    }
+  },
+  "prerenderPage": "index.html"
+}

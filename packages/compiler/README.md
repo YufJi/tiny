@@ -22,10 +22,6 @@ react app output dir
 
 mp library path, such as '@alipay/af-mp/lib'
 
-### config.moduleName
-
-mp module name, such as '@alipay/af-mp', set this option will use module externally(webpack)
-
 ### config.templateExtname
 
 template file extname, such as '.axml'

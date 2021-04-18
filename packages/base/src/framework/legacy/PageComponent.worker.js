@@ -2,6 +2,7 @@
 import setData, { spliceData, getOpStr } from '@/utils/setData';
 import objectKeys from '@/utils/objectKeys';
 import getComponentClass from '../ComponentRegistry/getComponentClass';
+import { componentRegistry } from '../ComponentRegistry';
 import mergeArray from '@/utils/mergeArray';
 import EventHub from '../EventHub';
 import log, { debug } from '@/utils/log';
@@ -76,14 +77,7 @@ function getAllUsingComponents(pagePath) {
     return allUsingComponentsCache[pagePath];
   }
   const allUsingComponents = [];
-  // $global.currentPageConfig =
-  // {
-  //   pagePath: 'pages/bus/index/index',
-  //   usingComponents: {
-  //     "advertise": "/pages/bus/common/template/advertise",
-  //     "nav-bar": "/pages/bus/cwx/component/navbar/navbar"
-  //   },
-  // };
+
   const { usingComponents } = $global.pagesConfig[pagePath].system;
   if (usingComponents) {
     objectKeys(usingComponents).forEach((c) => {
@@ -192,6 +186,7 @@ PageComponent.prototype = {
       }
     });
     const componentsConfig = {};
+
     getAllUsingComponents(this.pagePath).forEach((component) => {
       const ComponentClass = getComponentClass(component);
       componentsConfig[component] = {

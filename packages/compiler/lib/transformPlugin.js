@@ -7,7 +7,7 @@ const transform = require('./transform');
 
 module.exports = function run(config) {
   const {
-    css2,
+    
     pluginId,
     pluginRoot,
     native = 0
@@ -26,10 +26,10 @@ module.exports = function run(config) {
 
   fs.ensureDirSync(out);
 
-  const appJson = generateAppJson({ src, pluginId, css2 });
+  const appJson = generateAppJson({ src, pluginId });
 
   generateEntries({
-    css2,
+    
     appJson,
     web: 1,
     native,

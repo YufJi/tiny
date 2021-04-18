@@ -1,0 +1,63 @@
+@import '../style/mixins';
+
+.a-loading-indicator {
+  display: inline-block;
+  &.white {
+    .a-loading-item {
+      &:before {
+        background-color: @fill-base;
+      }
+    }
+  }
+}
+
+.a-loading-item {
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+  position: relative;
+  transform: scale(0);
+  opacity: 0;
+  animation: AULoadingScaleColorBoth .766s cubic-bezier(.42,0,.58,1) infinite alternate;
+  &:before {
+    content: ' ';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-left: -6.38px;
+    margin-top: -9.56px;
+    width: 12.75px;
+    height: 19.13px;
+    transform: skew(-.46rad) scale(.5);
+    transform-origin: center center;
+    border-radius: 1px 2px 2px 3px;
+    background-color: @brand-primary-normal;
+  }
+
+  &:nth-child(1) {
+    animation-delay: -2.2s
+  }
+  &:nth-child(2) {
+    animation-delay: -1.966s
+  }
+  &:nth-child(3) {
+    animation-delay: -1.666s
+  }
+}
+
+@keyframes AULoadingScaleColorBoth {
+  0% {
+    transform: scale(0);
+    opacity: 0
+  }
+
+  35% {
+    transform: scale(.12);
+    opacity: .001
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1
+  }
+}
