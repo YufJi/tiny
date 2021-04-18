@@ -1,0 +1,17 @@
+{
+  "app": {
+    "pages": [
+      "pages/todos/todos",
+      "pages/add-todo/add-todo"
+    ],
+    "window": {
+      "defaultTitle": "Todo App",
+      "titleBarColor": 3289657
+    },
+    "usingComponents": {
+      "add-button": "/components/add-button/add-button"
+    }
+  },
+  "pages/todos/todos": {},
+  "pages/add-todo/add-todo": {}
+}

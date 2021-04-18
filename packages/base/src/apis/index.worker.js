@@ -1,4 +1,4 @@
-import { $global, getCurrentPageImpl } from '@/core/framework/';
+import { $global, getCurrentPageImpl } from '@/framework/';
 import { compareSystemVersion, SDKVersion, logSystemInfo } from '@/utils/system';
 import upperFirstChar from '@/utils/upperFirstChar';
 import objectKeys from '@/utils/objectKeys';

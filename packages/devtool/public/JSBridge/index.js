@@ -33,3 +33,8 @@ window.JSBridgeCallback = function(res) {
     callback(data)
   }
 }
+
+window.document.addEventListener('JSBridgeReady', function(e) {
+  const { guid } = e.detail;
+  window.APVIEWID = guid;
+})

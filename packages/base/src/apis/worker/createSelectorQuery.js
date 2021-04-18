@@ -1,5 +1,5 @@
 
-import { getCurrentPageImpl } from '@/core/framework/';
+import { getCurrentPageImpl } from '@/framework/';
 
 export class SelectorQuery {
   constructor(page) {

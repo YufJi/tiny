@@ -1,0 +1,21 @@
+{
+  "window": {
+    "defaultTitle": "Todo App",
+    "titleBarColor": 3289657
+  },
+  "pages": [
+    "pages/todos/todos",
+    "pages/add-todo/add-todo"
+  ],
+  "launchParams": {
+    "pages/todos/todos": {
+      "defaultTitle": "Todo App",
+      "titleBarColor": 3289657
+    },
+    "pages/add-todo/add-todo": {
+      "defaultTitle": "Todo App",
+      "titleBarColor": 3289657
+    }
+  },
+  "prerenderPage": "index.html"
+}

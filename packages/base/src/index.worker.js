@@ -13,7 +13,7 @@ import {
   Component,
   Page,
   $global,
-} from './core/framework/';
+} from './framework/';
 
 const __mpStartTime = Date.now();
 

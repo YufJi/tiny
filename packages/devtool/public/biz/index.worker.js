@@ -208,7 +208,7 @@ if (!self.__mpInited) {
     // ...
 
   }
-
+  
   self.bootstrapApp ? self.bootstrapApp({ success }) : success();
 }
 

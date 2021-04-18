@@ -1,5 +1,5 @@
 
-import { getCurrentPageImpl, getStartupParams, $global } from '@/core/framework/';
+import { getCurrentPageImpl, getStartupParams, $global } from '@/framework/';
 import getHomePage from '@/utils/getHomePage';
 import { APP_BIZ } from '../utils/LogBizType';
 import objectKeys from '../utils/objectKeys';

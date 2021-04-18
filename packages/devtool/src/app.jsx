@@ -11,14 +11,15 @@ import { createGuid } from './utils';
 export default class App extends Component {
   constructor(props) {
     super(props);
+
+    this.loadConfigJson()
+
     this.state = {
-      navConfig: {}
+      navConfig: this.initNav()
     }
   }
 
   componentDidMount() {
-    this.loadConfigJson()
-    this.initNav()
     this.initWorker()
     this.initPage()
   }
@@ -26,24 +27,26 @@ export default class App extends Component {
   loadConfigJson() {
     const config = requireFile('/biz/appConfig.json')
     global.APPCONFIG = config;
-    console.log('APPCONFIG', APPCONFIG);
+    console.log('APPCONFIG', global.APPCONFIG);
   }
 
   initNav() {
     const { window } = global.APPCONFIG
 
-    this.setState({
-      navConfig: {
-        title: window.defaultTitle
-      }
-    })
+    return {
+      title: window.defaultTitle
+    }
   }
 
-  initPage() {
-    const { pages, launchParams } = global.APPCONFIG
-    const homePage = pages[0]
+  setNav(config) {
+    const { navConfig } = this.state
 
-    this.pushPage(homePage, launchParams[homePage])
+    this.setState({
+      navConfig: {
+        ...navConfig,
+        ...config,
+      }
+    })
   }
 
   initWorker() {
@@ -54,27 +57,24 @@ export default class App extends Component {
     })
   }
 
+  initPage() {
+    const { pages, launchParams } = global.APPCONFIG
+    const homePage = pages[0]
+
+    this.pushPage(homePage, launchParams[homePage])
+  }
+
   pushPage(pagePath, pageConfig) {
     const src = `http://localhost:8000/render.html#${pagePath}`
     const guid = createGuid('render')
-    const pageIframe = createRenderIframe(guid, src, iframe => {
-      iframe.contentWindow.document.dispatchEvent(new CustomEvent('JSBridgeReady', {
-        detail: {
-          guid
-        }
-      }))
-    })
-
+    const pageIframe = createRenderIframe(guid, src, (iframe) => {})
     global.renders[guid] = pageIframe
     global.pagesStack.push(guid);
 
-    this.setState({
-      navConfig: {
-        title: pageConfig.defaultTitle
-      }
+    this.setNav({
+      title: pageConfig.defaultTitle
     })
   }
-
 
   render() {
     const { navConfig } = this.state;

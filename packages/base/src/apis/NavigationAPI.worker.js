@@ -1,4 +1,4 @@
-import { getAppImpl } from '@/core/framework/App';
+import { getAppImpl } from '@/framework/App';
 import getCurrentViewId from '@/utils/getCurrentViewId';
 
 import invalidNavigateTo from './invalidNavigateTo';

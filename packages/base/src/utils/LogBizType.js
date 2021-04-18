@@ -1,5 +1,5 @@
 
-import { getStartupParams } from '@/core/framework/startupParams';
+import { getStartupParams } from '@/framework/startupParams';
 
 export const TAC = 'TAC';
 

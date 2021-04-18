@@ -1,5 +1,5 @@
 
-import { getCurrentPageImpl, $global, EventHub } from '@/core/framework/';
+import { getCurrentPageImpl, $global, EventHub } from '@/framework/';
 import callBridge from '@/utils/callBridge';
 import callInternalAPI from '@/utils/callInternalAPI';
 import reportError from '@/utils/reportError';

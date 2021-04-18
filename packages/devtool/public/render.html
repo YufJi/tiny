@@ -61,9 +61,6 @@
   <script src="/biz/index.web.js"></script>
   <script>
     window.document.addEventListener('JSBridgeReady', function(e) {
-      const { guid } = e.detail;
-      window.APVIEWID = guid;
-
       bootstrapApp({
         onReady: function(callback) {
           callback({

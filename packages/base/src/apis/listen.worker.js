@@ -1,11 +1,11 @@
 
 import qs from 'query-string';
-import { $global } from '@/core/framework/';
-import { getAppImpl } from '@/core/framework/App';
-import EventHub from '@/core/framework/EventHub';
+import { $global } from '@/framework/';
+import { getAppImpl } from '@/framework/App';
+import EventHub from '@/framework/EventHub';
 import getScene from '@/utils/getScene';
 import isMiniAppPage from '@/utils/isMiniAppPage';
-import { getStartupParams } from '@/core/framework/startupParams';
+import { getStartupParams } from '@/framework/startupParams';
 import gerror from '@/utils/gerror';
 
 const g = self;

@@ -1,6 +1,6 @@
 
 import callRender from '@/apis/callRender.worker';
-import { getStartupParams, getCurrentPageImpl } from '@/core/framework/';
+import { getStartupParams, getCurrentPageImpl } from '@/framework/';
 import ap from '@/apis/ap';
 import { isNativeComponent } from '@/utils/system';
 import objectKeys from '@/utils/objectKeys';

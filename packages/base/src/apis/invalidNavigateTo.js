@@ -1,5 +1,5 @@
 
-import { getCurrentPagesImpl } from '@/core/framework/App';
+import { getCurrentPagesImpl } from '@/framework/App';
 
 export default function invalidNavigateTo(params = {}) {
   const { mpRuntimeConfig } = self;

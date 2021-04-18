@@ -21,7 +21,9 @@ import {
   createComponent,
   Page,
   $global,
-} from './core/framework/';
+} from './framework/';
+
+import RMLRuntime from './rml-runtime';
 
 const __mpStartTime = Date.now();
 
@@ -31,6 +33,7 @@ g.React = React;
 g.ReactDOM = ReactDOM;
 g.createReactClass = createReactClass;
 g.React.createClass = g.React.createClass || createReactClass;
+g.RMLRuntime = RMLRuntime;
 
 const mp = {
   bridge,

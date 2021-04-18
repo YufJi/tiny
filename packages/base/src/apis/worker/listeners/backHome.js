@@ -1,5 +1,5 @@
 
-import { EventHub, $global } from '@/core/framework/';
+import { EventHub, $global } from '@/framework/';
 import getHomePage from '@/utils/getHomePage';
 import ap from '../../ap';
 import { needBackHome } from '../../util';

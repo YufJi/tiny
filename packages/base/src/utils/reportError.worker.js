@@ -1,5 +1,5 @@
 
-import { getCurrentPageImpl } from '@/core/framework/App';
+import { getCurrentPageImpl } from '@/framework/App';
 
 export default function reportError(code, e, count = 0) {
   if (count === 10) {

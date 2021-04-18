@@ -1,8 +1,6 @@
 
 console.log('我是 index.web.js');
 
-const str= 'userid=961432586&euid=5f2ca07c688ecac225&full_screen=true&nm_style=sbt&status_bar_type=light&yyy_bid=74002&yyy_sid=38679456&yyy_t=44005&yyy_i=5f2ca07c688ecac225&linktype=team'
-
 const g = typeof global !== 'undefined' ? global : self;
 g.mpAppJson = {
   app: {

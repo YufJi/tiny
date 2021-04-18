@@ -1,5 +1,5 @@
 
-import { getStartupParams } from '@/core/framework/';
+import { getStartupParams } from '@/framework/';
 
 let id = 0;
 let isTest ;

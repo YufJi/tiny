@@ -1,5 +1,5 @@
 
-import { getCurrentPageImpl, getCurrentPagesImpl } from '@/core/framework/App';
+import { getCurrentPageImpl, getCurrentPagesImpl } from '@/framework/App';
 
 export default function callRender(method, params = {}) {
   const { homepage = false, args: innerArgs = [], caller = 'bridge' } = params;
