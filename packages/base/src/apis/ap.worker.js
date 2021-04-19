@@ -65,26 +65,20 @@ const JSBridge = g.JSBridge;
 
 g.callRender = callRender;
 
+g.__trigger__ = doEventCallback;
+
 /* native事件触发 */
-g.addEventListener('push', (evt) => {
+g.document.addEventListener('push', (evt) => {
+  /**
+   * param
+   * viewId
+   * eventName
+   */
   const { data } = evt;
-  const options = {
-    param: data.param,
-    viewId: data.viewId,
-  };
-  options.eventName = data.func;
-  doEventCallback(options);
+  doEventCallback(data);
 })
 
 let API = {};
-const notCallbackAPI = {
-  popTo: true,
-  switchTab: true,
-  onAppPerfEvent: true,
-  pushWindow: true,
-  remoteLog: true,
-  reportData: true,
-};
 
 const ap = {
   injectAPI(_API) {
@@ -121,14 +115,11 @@ const ap = {
     return globalEmitter.emit.call(globalEmitter, ...args);
   },
   callBridge(method, params, callback) {
-    log('callBridge', method, params);
     // 这里调用bridge的方法
     JSBridge.call(method, params, callback);
   },
   callBridgeSync(method, params) {
-    log('callBridgeSync', method, params);
     const res = JSBridge.callSync(method, params);
-    log('callBridgeSync return', method, params, res);
     if (res && res.error) {
       log('callBridgeSync error:', method, params, res);
     }
@@ -136,7 +127,7 @@ const ap = {
   },
 };
 
-const ddOrAp = true || false;
+const ddOrAp = true;
 /* param must be a object... */
 ap.callInternalAPI = function (method, param = {}, callback) {
   if (ddOrAp && !getStartupParams().isInternalApp) {

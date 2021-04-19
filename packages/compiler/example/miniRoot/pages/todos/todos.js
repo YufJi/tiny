@@ -36,6 +36,6 @@ Page({
 
   addTodo() {
     // 进行页面跳转
-    mp.navigateTo({ url: '../add-todo/add-todo' });
+    wx.navigateTo({ url: '../add-todo/add-todo' });
   },
 });

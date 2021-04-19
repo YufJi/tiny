@@ -1,13 +1,11 @@
 Component({
   properties: {
-    text: '我是text',
+    text: String
   },
 
   methods: {
     onClickMe() {
-      console.log('button click');
-      // this.props.onClickMe();
-      // this.triggerEvent('clickme')
+      this.triggerEvent('clickme')
     },
   },
 });

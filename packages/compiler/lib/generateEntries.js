@@ -32,14 +32,15 @@ module.exports = function generateEntries({
   injectScriptForNative = defaultInjectScriptAfterWorkerImportScripts,
   injectScriptAfterWorkerImportScripts = defaultInjectScriptAfterWorkerImportScripts,
   pluginInjection = '',
+  transformConfig,
 }) {
   const { app } = appJson;
   /* 获取页面入口 */
   const pageImports = getImports(app.pages, baseDir, {
     src,
-    
     compileType: 'mini',
     type: 'page',
+    transformConfig,
   });
 
   const defaultWindow = (app && app.window) || {};
@@ -101,9 +102,9 @@ g.mpAppJson = ${JSON.stringify(mpJson, null, 2)};
   const appImport = `require('${baseDir}/app');`;
   const allComponentsRequires = getComponentImports(app.pages, baseDir, {
     src,
-    
     compileType: 'mini',
     type: 'component',
+    transformConfig,
   });
   const index = [
     `require(\'${packageName}/lib/sjsEnvInit\');`,
@@ -151,18 +152,18 @@ g.mpAppJson = ${JSON.stringify(mpJson, null, 2)};
       );
       const packagePagesImports = getImports(packagePages, packageBaseDir, {
         src,
-        
         compileType: 'mini',
         type: 'page',
+        transformConfig,
       });
       const packageComponentsRequires = getComponentImports(
         packagePages,
         packageBaseDir,
         {
           src,
-          
           compileType: 'mini',
           type: 'component',
+          transformConfig,
         },
       );
       const packageIndexJs = [

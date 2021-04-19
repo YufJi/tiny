@@ -892,26 +892,19 @@ function doEventCallback(options) {
 
 var JSBridge = g.JSBridge;
 g.callRender = _callRender__WEBPACK_IMPORTED_MODULE_1__["default"];
+g.__trigger__ = doEventCallback;
 /* native事件触发 */
 
-g.addEventListener('push', function (evt) {
+g.document.addEventListener('push', function (evt) {
+  /**
+   * param
+   * viewId
+   * eventName
+   */
   var data = evt.data;
-  var options = {
-    param: data.param,
-    viewId: data.viewId
-  };
-  options.eventName = data.func;
-  doEventCallback(options);
+  doEventCallback(data);
 });
 var API = {};
-var notCallbackAPI = {
-  popTo: true,
-  switchTab: true,
-  onAppPerfEvent: true,
-  pushWindow: true,
-  remoteLog: true,
-  reportData: true
-};
 var ap = {
   injectAPI: function injectAPI(_API) {
     API = _API;
@@ -973,14 +966,11 @@ var ap = {
     return (_globalEmitter$emit = globalEmitter.emit).call.apply(_globalEmitter$emit, [globalEmitter].concat(args));
   },
   callBridge: function callBridge(method, params, callback) {
-    log('callBridge', method, params); // 这里调用bridge的方法
-
+    // 这里调用bridge的方法
     JSBridge.call(method, params, callback);
   },
   callBridgeSync: function callBridgeSync(method, params) {
-    log('callBridgeSync', method, params);
     var res = JSBridge.callSync(method, params);
-    log('callBridgeSync return', method, params, res);
 
     if (res && res.error) {
       log('callBridgeSync error:', method, params, res);
@@ -989,7 +979,7 @@ var ap = {
     return res;
   }
 };
-var ddOrAp =  true || false;
+var ddOrAp = true;
 /* param must be a object... */
 
 ap.callInternalAPI = function (method) {
@@ -1601,8 +1591,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "handleResultCallback", function() { return handleResultCallback; });
 /* harmony import */ var _framework___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/framework/ */ "./src/framework/index.worker.js");
 /* harmony import */ var _utils_getHomePage__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/getHomePage */ "./src/utils/getHomePage.js");
-/* harmony import */ var _utils_LogBizType__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../utils/LogBizType */ "./src/utils/LogBizType.js");
-/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../utils/objectKeys */ "./src/utils/objectKeys.js");
+/* harmony import */ var _utils_LogBizType__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/LogBizType */ "./src/utils/LogBizType.js");
+/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }

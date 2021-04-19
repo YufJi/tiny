@@ -5,7 +5,7 @@ const generateMultiLanguageAppConfigJson = require('./generateMultiLanguageAppCo
 
 // for pwa
 const manifestJson = {
-  gcm_sender_id: 'my_gcm_sender_id',
+  gcm_sender_id: 'gcm_sender_id',
   gcm_user_visible_only: true,
 };
 

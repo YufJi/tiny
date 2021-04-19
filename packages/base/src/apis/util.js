@@ -1,8 +1,8 @@
 
 import { getCurrentPageImpl, getStartupParams, $global } from '@/framework/';
 import getHomePage from '@/utils/getHomePage';
-import { APP_BIZ } from '../utils/LogBizType';
-import objectKeys from '../utils/objectKeys';
+import { APP_BIZ } from '@/utils/LogBizType';
+import objectKeys from '@/utils/objectKeys';
 
 function escapeDot(str) {
   return str.replace(/\./g, '_DOT_');

@@ -138,9 +138,9 @@ if(MP.registerApp) {
 
 function success() {
 __webpack_require__(/*! ./example/miniRoot/app */ "./example/miniRoot/app.js");
-__webpack_require__(/*! ./example/miniRoot/components/add-button/add-button */ "./example/miniRoot/components/add-button/add-button.js");
-__webpack_require__(/*! ./example/miniRoot/pages/todos/todos */ "./example/miniRoot/pages/todos/todos.js");
-__webpack_require__(/*! ./example/miniRoot/pages/add-todo/add-todo */ "./example/miniRoot/pages/add-todo/add-todo.js");
+__webpack_require__(/*! ./example/miniRoot/components/add-button/add-button?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./example/miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc");
+__webpack_require__(/*! ./example/miniRoot/pages/todos/todos?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
+__webpack_require__(/*! ./example/miniRoot/pages/add-todo/add-todo?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
 }
 self.bootstrapApp ? self.bootstrapApp({ success }) : success();
 }
@@ -203,10 +203,10 @@ App({
 
 /***/ }),
 
-/***/ "./example/miniRoot/components/add-button/add-button.js":
-/*!**************************************************************!*\
-  !*** ./example/miniRoot/components/add-button/add-button.js ***!
-  \**************************************************************/
+/***/ "./example/miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc":
+/*!************************************************************************************************************!*\
+  !*** ./example/miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc ***!
+  \************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports) {
 
@@ -228,14 +228,12 @@ $global.currentComponentConfig =
 
 Component({
   properties: {
-    text: '我是text',
+    text: String
   },
 
   methods: {
     onClickMe() {
-      console.log('button click');
-      // this.props.onClickMe();
-      // this.triggerEvent('clickme')
+      this.triggerEvent('clickme')
     },
   },
 });
@@ -244,10 +242,10 @@ Component({
 
 /***/ }),
 
-/***/ "./example/miniRoot/pages/add-todo/add-todo.js":
-/*!*****************************************************!*\
-  !*** ./example/miniRoot/pages/add-todo/add-todo.js ***!
-  \*****************************************************/
+/***/ "./example/miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!***************************************************************************************************!*\
+  !*** ./example/miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \***************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports) {
 
@@ -297,10 +295,10 @@ Page({
 
 /***/ }),
 
-/***/ "./example/miniRoot/pages/todos/todos.js":
-/*!***********************************************!*\
-  !*** ./example/miniRoot/pages/todos/todos.js ***!
-  \***********************************************/
+/***/ "./example/miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!*********************************************************************************************!*\
+  !*** ./example/miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \*********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports) {
 
@@ -318,7 +316,7 @@ $global.currentPageConfig =
 {
   pagePath: 'pages/todos/todos',
   usingComponents: {"add-button":"/components/add-button/add-button"},
-  tabIndex: 10,
+  
 };
 
 // 获取全局 app 实例
@@ -359,7 +357,7 @@ Page({
 
   addTodo() {
     // 进行页面跳转
-    mp.navigateTo({ url: '../add-todo/add-todo' });
+    wx.navigateTo({ url: '../add-todo/add-todo' });
   },
 });
 

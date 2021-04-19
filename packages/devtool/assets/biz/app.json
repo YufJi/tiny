@@ -9,21 +9,21 @@
       "titleBarColor": 3289657
     },
     "tabBar": {
-      "textColor": 14540253,
+      "color": "#dddddd",
       "selectedColor": 4827630,
       "backgroundColor": 16777215,
-      "items": [
+      "list": [
         {
-          "id": 10,
           "pagePath": "pages/todos/todos",
-          "name": "首页",
-          "icon": "./assets/logo.png"
+          "text": "首页",
+          "iconPath": "./assets/logo.png",
+          "selectedIconPath": "./assets/logo.png"
         },
         {
-          "id": 11,
-          "pagePath": "pages/logs/logs",
-          "name": "日志",
-          "icon": "./assets/logo.png"
+          "pagePath": "pages/add-todo/add-todo",
+          "text": "日志",
+          "selectedIconPath": "./assets/logo.png",
+          "iconPath": "./assets/logo.png"
         }
       ]
     },

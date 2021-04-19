@@ -144,7 +144,7 @@ assign(StyleTransformer.prototype, {
     return this.codeStr;
   },
   transformInject() {
-    const { src, source, stylePath } = this.config;
+    const { src, source, stylePath, styleExtname } = this.config;
     const { code } = this;
     const ast = css.parse(this.ss, {
       source,
@@ -165,7 +165,7 @@ assign(StyleTransformer.prototype, {
         const ts = selectors.map((selector) => selectorTransformer(selector, this.config));
         obj.push(`  ${ts.join(', ')} ${processDeclarations(r, this.config)}`);
       } else if (r.type === 'import') {
-        deps.push(checkImport(r.import.slice(1, -1), '.acss', stylePath, src));
+        deps.push(checkImport(r.import.slice(1, -1), styleExtname, stylePath, src));
       } else if (r.type === 'keyframes') {
         // console.log(JSON.stringify(r, null, 2));
         obj.push(`  @keyframes ${r.name} {`);
@@ -250,7 +250,7 @@ assign(StyleTransformer.prototype, {
           }
         });
       } else if (r.type === 'import') {
-        deps.push(checkImport(r.import.slice(1, -1), '.acss', stylePath, src));
+        deps.push(checkImport(r.import.slice(1, -1), '.wxss', stylePath, src));
       }
     });
 

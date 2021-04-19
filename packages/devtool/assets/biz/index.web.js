@@ -114,9 +114,9 @@ g.mpAppJson = {
 
 __webpack_require__(/*! compiler/lib/sjsEnvInit */ "./lib/sjsEnvInit.js");
 __webpack_require__(/*! ./config$ */ "../devtool/assets/biz/config$.js");
-__webpack_require__(/*! ./example/miniRoot/components/add-button/add-button */ "./example/miniRoot/components/add-button/add-button.js");
-__webpack_require__(/*! ./example/miniRoot/pages/todos/todos */ "./example/miniRoot/pages/todos/todos.js");
-__webpack_require__(/*! ./example/miniRoot/pages/add-todo/add-todo */ "./example/miniRoot/pages/add-todo/add-todo.js");
+__webpack_require__(/*! ./example/miniRoot/components/add-button/add-button?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./example/miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc");
+__webpack_require__(/*! ./example/miniRoot/pages/todos/todos?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
+__webpack_require__(/*! ./example/miniRoot/pages/add-todo/add-todo?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
 
 
 /***/ }),
@@ -145,10 +145,10 @@ const stylesheet = new StyleSheet({ stylePath: 'app.wxss' });
 
 /***/ }),
 
-/***/ "./example/miniRoot/components/add-button/add-button.js":
-/*!**************************************************************!*\
-  !*** ./example/miniRoot/components/add-button/add-button.js ***!
-  \**************************************************************/
+/***/ "./example/miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc":
+/*!************************************************************************************************************!*\
+  !*** ./example/miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc ***!
+  \************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -160,17 +160,17 @@ Component(
 {
   is: "/components/add-button/add-button",
   usingComponents: {"add-button":"/components/add-button/add-button"},
-  render: function() { return __webpack_require__(/*! ./add-button.wxml */ "./example/miniRoot/components/add-button/add-button.wxml"); },
+  render: function() { return __webpack_require__(/*! ./add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./example/miniRoot/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc"); },
   
 });
 
 
 /***/ }),
 
-/***/ "./example/miniRoot/components/add-button/add-button.wxml":
-/*!****************************************************************!*\
-  !*** ./example/miniRoot/components/add-button/add-button.wxml ***!
-  \****************************************************************/
+/***/ "./example/miniRoot/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc":
+/*!**************************************************************************************************************!*\
+  !*** ./example/miniRoot/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc ***!
+  \**************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -346,10 +346,10 @@ function render(data) {
 
 /***/ }),
 
-/***/ "./example/miniRoot/pages/add-todo/add-todo.js":
-/*!*****************************************************!*\
-  !*** ./example/miniRoot/pages/add-todo/add-todo.js ***!
-  \*****************************************************/
+/***/ "./example/miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!***************************************************************************************************!*\
+  !*** ./example/miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \***************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -362,17 +362,17 @@ Page(
   pagePath: 'pages/add-todo/add-todo',
   usingComponents: {"add-button":"/components/add-button/add-button"},
   
-  render: function() { return __webpack_require__(/*! ./add-todo.wxml */ "./example/miniRoot/pages/add-todo/add-todo.wxml"); },
-  stylesheet: function() { return __webpack_require__(/*! ./add-todo.wxss */ "./example/miniRoot/pages/add-todo/add-todo.wxss"); },
+  render: function() { return __webpack_require__(/*! ./add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); },
+  stylesheet: function() { return __webpack_require__(/*! ./add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); },
 });
 
 
 /***/ }),
 
-/***/ "./example/miniRoot/pages/add-todo/add-todo.wxml":
-/*!*******************************************************!*\
-  !*** ./example/miniRoot/pages/add-todo/add-todo.wxml ***!
-  \*******************************************************/
+/***/ "./example/miniRoot/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!*****************************************************************************************************!*\
+  !*** ./example/miniRoot/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \*****************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -469,7 +469,7 @@ function render(data) {
         className: "todo-footer"
       },
       _react2.default.createElement(AddButton, {
-        text: "Add Todo", ontap: $getComponentEventHandler(this, "xx"), onclickme: $getComponentEventHandler(this, "add"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button'
+        text: "Add Todo", onclickme: $getComponentEventHandler(this, "add"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button'
       })
     ), _react2.default.createElement(
       View,
@@ -485,10 +485,10 @@ function render(data) {
 
 /***/ }),
 
-/***/ "./example/miniRoot/pages/add-todo/add-todo.wxss":
-/*!*******************************************************!*\
-  !*** ./example/miniRoot/pages/add-todo/add-todo.wxss ***!
-  \*******************************************************/
+/***/ "./example/miniRoot/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!*****************************************************************************************************!*\
+  !*** ./example/miniRoot/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \*****************************************************************************************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -609,10 +609,10 @@ function render(data) {
 
 /***/ }),
 
-/***/ "./example/miniRoot/pages/todos/todos.js":
-/*!***********************************************!*\
-  !*** ./example/miniRoot/pages/todos/todos.js ***!
-  \***********************************************/
+/***/ "./example/miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!*********************************************************************************************!*\
+  !*** ./example/miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \*********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -624,18 +624,18 @@ Page(
 {
   pagePath: 'pages/todos/todos',
   usingComponents: {"add-button":"/components/add-button/add-button"},
-  tabIndex: 10,
-  render: function() { return __webpack_require__(/*! ./todos.wxml */ "./example/miniRoot/pages/todos/todos.wxml"); },
-  stylesheet: function() { return __webpack_require__(/*! ./todos.wxss */ "./example/miniRoot/pages/todos/todos.wxss"); },
+  
+  render: function() { return __webpack_require__(/*! ./todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/todos/todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); },
+  stylesheet: function() { return __webpack_require__(/*! ./todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/todos/todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); },
 });
 
 
 /***/ }),
 
-/***/ "./example/miniRoot/pages/todos/todos.wxml":
-/*!*************************************************!*\
-  !*** ./example/miniRoot/pages/todos/todos.wxml ***!
-  \*************************************************/
+/***/ "./example/miniRoot/pages/todos/todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!***********************************************************************************************!*\
+  !*** ./example/miniRoot/pages/todos/todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \***********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -768,10 +768,10 @@ function render(data) {
 
 /***/ }),
 
-/***/ "./example/miniRoot/pages/todos/todos.wxss":
-/*!*************************************************!*\
-  !*** ./example/miniRoot/pages/todos/todos.wxss ***!
-  \*************************************************/
+/***/ "./example/miniRoot/pages/todos/todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!***********************************************************************************************!*\
+  !*** ./example/miniRoot/pages/todos/todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \***********************************************************************************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 

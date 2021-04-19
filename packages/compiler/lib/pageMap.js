@@ -122,7 +122,7 @@ exports.updatePlugin = function updatePlugin({ cwd, appJson, pluginId }) {
   updatePublicComponents({ cwd, appJson, pluginId });
 };
 
-exports.update = function update({ src, mergeSubPackages, variables }) {
+exports.update = function update({ src, mergeSubPackages, variables, transformConfig }) {
   const extApp = getExtApp({ src, mergeSubPackages, variables });
 
   const { tabBar, usingComponents } = extApp.app;
@@ -143,9 +143,9 @@ exports.update = function update({ src, mergeSubPackages, variables }) {
       /* 读取页面配置 */
       const pageInfo = safeJsonParse(pageJsonPath);
       if (pageInfo.usingComponents) {
-        const acssPath = pageJsonPath.replace(/json$/, 'acss');
-        if (!fs.existsSync(acssPath)) {
-          fs.writeFileSync(acssPath, '/* required by usingComponents */');
+        const cssPath = pageJsonPath.replace(/\.json$/, transformConfig.styleExtname);
+        if (!fs.existsSync(cssPath)) {
+          fs.writeFileSync(cssPath, '/* required by usingComponents */');
         }
       }
       pMap[page] = assign({}, globalUsingComponents || {}, pageInfo.usingComponents || {});

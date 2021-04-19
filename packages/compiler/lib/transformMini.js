@@ -48,10 +48,12 @@ module.exports = function run(config) {
     src,
     out,
     mergeSubPackages,
+    transformConfig,
   });
 
   /* 生成入口文件 index.web 和 index.worker */
   generateEntries({
+    src,
     appJson,
     web: true,
     native,
@@ -62,6 +64,7 @@ module.exports = function run(config) {
     injectScriptAfterWorkerImportScripts,
     pluginInjection,
     baseDir,
+    transformConfig,
   });
 
   /* 生成appConfigJson */
