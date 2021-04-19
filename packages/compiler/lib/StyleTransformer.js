@@ -88,7 +88,7 @@ function StyleTransformer(ss, config_) {
     source,
   } = config;
   code.push(
-    `const { StyleSheet } = ${library}`,
+    `const { StyleSheet } = ${library};`,
   );
   code.push(
     `const stylesheet = new StyleSheet({ stylePath: '${escapeQuote(

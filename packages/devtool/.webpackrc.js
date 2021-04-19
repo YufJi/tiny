@@ -18,10 +18,12 @@ module.exports = (env) => {
     alias: {
       '@': path.resolve(__dirname, 'src'),
     },
+    urlLoaderIncludes: [
+      /\.svg$/
+    ],
     chainConfig(config) {
 
     },
-
     devServer: {
       port: 8000,
       contentBase: [

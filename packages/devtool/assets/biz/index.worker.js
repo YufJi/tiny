@@ -168,7 +168,7 @@ App({
   todos: [
     { text: 'Learning Javascript', completed: true },
     { text: 'Learning ES2016', completed: true },
-    { text: 'Learning 支付宝小程序', completed: false },
+    { text: 'Learning 小程序', completed: false },
   ],
 
   userInfo: null,
@@ -227,15 +227,15 @@ $global.currentComponentConfig =
 };
 
 Component({
-  props: {
-    text: 'Button',
-    onClickMe: () => {},
+  properties: {
+    text: '我是 text',
   },
 
   methods: {
     onClickMe() {
-      this.props.onClickMe();
-      // this.triggerEvent('clickme')
+      console.log('button click', this.props);
+      // this.props.onClickMe();
+      this.triggerEvent('clickme')
     },
   },
 });

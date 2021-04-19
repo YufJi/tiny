@@ -1,6 +1,6 @@
 
-let no = 0;
+let uid = 0;
 
 export function createGuid(type) {
-  return type + '_' + no++;
+  return `${type}_${uid++}`;
 }

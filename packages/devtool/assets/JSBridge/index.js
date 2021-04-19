@@ -1,4 +1,7 @@
-
+/**
+ * 用来mock render、worker进程的jsbridge
+ * 真实环境由宿主环境提供
+ */
 
 let index = 0;
 const callbackMap = {};

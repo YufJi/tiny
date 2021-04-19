@@ -4277,7 +4277,7 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 
 
 
-var eventReg = /^on[A-Z]/;
+var eventReg = /^on[a-zA-Z]/;
 function Component(setupConfig, currentComponentConfig) {
   var is = currentComponentConfig.is,
       usingComponents = currentComponentConfig.usingComponents;
@@ -4312,17 +4312,18 @@ function Component(setupConfig, currentComponentConfig) {
     publicInstance.data = getProps('data', false);
     this.computedDeps = _objectSpread({}, ComponentClass.computedDeps);
     this.prevData = publicInstance.data;
-    publicInstance.props = getProps('props');
+    publicInstance.props = getProps('properties') || getProps('props');
     this.setComponentConfig(componentConfig, true);
   }
 
   ;
   ComponentClass.data = getProps('data');
-  ComponentClass.props = getProps('props');
+  ComponentClass.props = getProps('properties') || getProps('props');
 
   ComponentClass.getAllComponents = function () {
     var allComponents = [is];
     Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__["default"])(usingComponents).forEach(function (c) {
+      /* 忽略当前自定义组件本身，防止死循环 */
       if (usingComponents[c] !== is) {
         var subUsingComponents = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_0__["default"])(usingComponents[c]).getAllComponents();
         Object(_utils_mergeArray__WEBPACK_IMPORTED_MODULE_1__["default"])(allComponents, subUsingComponents);
@@ -4404,7 +4405,7 @@ function Component(setupConfig, currentComponentConfig) {
       return newProps;
     },
     getTriggerEventHandler: function getTriggerEventHandler(type, method) {
-      var _this = this;
+      var _this2 = this;
 
       if (!method) {
         return method;
@@ -4419,7 +4420,7 @@ function Component(setupConfig, currentComponentConfig) {
             args[_key] = arguments[_key];
           }
 
-          return _this.triggerEvent.apply(_this, [handleFn.method].concat(args));
+          return _this2.triggerEvent.apply(_this2, [handleFn.method].concat(args));
         };
       } // method may change for onXX type
 
@@ -6040,7 +6041,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var __mpStartTime = Date.now();
 
-var mp = {
+self.MP = {
   bridge: _apis___WEBPACK_IMPORTED_MODULE_0__["default"],
   EventHub: _framework___WEBPACK_IMPORTED_MODULE_1__["EventHub"],
   getStartupParams: _framework___WEBPACK_IMPORTED_MODULE_1__["getStartupParams"],
@@ -6055,7 +6056,6 @@ var mp = {
   Page: _framework___WEBPACK_IMPORTED_MODULE_1__["Page"],
   $global: _framework___WEBPACK_IMPORTED_MODULE_1__["$global"]
 };
-self.MP = mp;
 
 var __mpCosts = Date.now() - __mpStartTime;
 

@@ -42,10 +42,10 @@ const AButton = createComponent({
     const { onFollowLifestyle } = _props;
     const { $mp } = _props;
 
-  callInternalAPI('addFollow', {
+    callInternalAPI('addFollow', {
       publicId,
       sourceId: 'tinyApp',
-  }, (res) => {
+    }, (res) => {
       const followed = res.success === 'true';
       if (onFollowLifestyle) {
         onFollowLifestyle($mp.getNormalizedEvent('follow', {
@@ -57,15 +57,10 @@ const AButton = createComponent({
       callBridge('toast', { content: followed ? '关注成功' : '关注失败' });
     });
   },
-  onButtonTap: function onButtonTap(e) {
+  onButtonTap(e) {
     const _this = this;
-
     this.onTap(e);
-    const _props2 = this.props;
-    const { formType } = _props2;
-    const { openType } = _props2;
-    const { appParameter } = _props2;
-    const { $mp } = _props2;
+    const { formType, openType, appParameter, $mp } = this.props;
     const { form } = this.context;
 
     if (form) {
@@ -140,28 +135,8 @@ const AButton = createComponent({
         _page.callRemote('self', 'shareToAlipayContact', $mp.getNormalizedEvent('share'));
       }
     }
-    if (openType === 'lifestyle') {
-      const { onFollowLifestyle } = this.props;
-
-      Object(_utils_callBridge__WEBPACK_IMPORTED_MODULE_9__.default)('confirm', {
-        title: '提示',
-        message: '确认关注此生活号?',
-        okButton: '关注生活号',
-        cancelButton: '暂不关注',
-      }, (res) => {
-        if (res.ok === true) {
-          _this.addFollow();
-        } else {
-          onFollowLifestyle($mp.getNormalizedEvent('follow', {
-            detail: {
-              followStatus: FollowStatus.userCancel,
-            },
-          }));
-        }
-      });
-    }
-    trackTap(this);
-    this.logTestId();
+    // trackTap(this);
+    // this.logTestId();
   },
   render: function render() {
     const { props } = this;
@@ -170,9 +145,13 @@ const AButton = createComponent({
     if (props.plain) {
       type = 'ghost';
     }
+
+    const nodeEvents = this.getNodeEvents();
+
     return React.createElement(
       Button,
       {
+        ...nodeEvents,
         id: props.id,
         size: props.size,
         activeStopPropagation: props.hoverStopPropagation,

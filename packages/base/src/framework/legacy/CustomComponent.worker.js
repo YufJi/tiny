@@ -18,7 +18,7 @@ import {
 import getComponentProp from '../utils/getComponentProp';
 import fireComponentLifecycle from '../utils/fireComponentLifecycle';
 
-const eventReg = /^on[A-Z]/;
+const eventReg = /^on[a-zA-Z]/;
 
 export default function Component(setupConfig, currentComponentConfig) {
   const { is, usingComponents } = currentComponentConfig;
@@ -54,17 +54,18 @@ export default function Component(setupConfig, currentComponentConfig) {
     publicInstance.data = getProps('data', false);
     this.computedDeps = { ...ComponentClass.computedDeps };
     this.prevData = publicInstance.data;
-    publicInstance.props = getProps('props');
+    publicInstance.props = getProps('properties') || getProps('props');
     this.setComponentConfig(componentConfig, true);
   };
 
   ComponentClass.data = getProps('data');
-  ComponentClass.props = getProps('props');
+  ComponentClass.props = getProps('properties') || getProps('props');
 
   ComponentClass.getAllComponents = function () {
     const allComponents = [is];
 
     objectKeys(usingComponents).forEach((c) => {
+      /* 忽略当前自定义组件本身，防止死循环 */
       if (usingComponents[c] !== is) {
         const subUsingComponents = getComponentClass(usingComponents[c]).getAllComponents();
         mergeArray(allComponents, subUsingComponents);
@@ -126,19 +127,15 @@ export default function Component(setupConfig, currentComponentConfig) {
       }
     },
     normalizeProps(oldProps) {
-      const _this = this;
-
       const newProps = { ...oldProps };
       objectKeys(oldProps).forEach((p) => {
         if (p.match(eventReg)) {
-          newProps[p] = _this.getTriggerEventHandler(p, oldProps[p]);
+          newProps[p] = this.getTriggerEventHandler(p, oldProps[p]);
         }
       });
       return newProps;
     },
     getTriggerEventHandler(type, method) {
-      const _this = this;
-
       if (!method) {
         return method;
       }
@@ -146,8 +143,8 @@ export default function Component(setupConfig, currentComponentConfig) {
 
       let handleFn = triggerEventHandlers[type];
       if (!handleFn) {
-        handleFn = triggerEventHandlers[type] = function (...args) {
-          return _this.triggerEvent.apply( _this, [handleFn.method].concat(args));
+        handleFn = triggerEventHandlers[type] = (...args) => {
+          return this.triggerEvent.apply(this, [handleFn.method].concat(args));
         };
       }
       // method may change for onXX type

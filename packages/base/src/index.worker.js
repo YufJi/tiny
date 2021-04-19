@@ -17,7 +17,7 @@ import {
 
 const __mpStartTime = Date.now();
 
-const mp = {
+self.MP = {
   bridge,
   EventHub,
   getStartupParams,
@@ -32,8 +32,6 @@ const mp = {
   Page,
   $global,
 };
-
-self.MP = mp;
 
 const __mpCosts = Date.now() - __mpStartTime;
 console.log(`framework: worker bundle costs ${__mpCosts} ms`);

@@ -1,3 +1,7 @@
+/**
+ * web调试时宿主环境对jsbridge的处理
+ */
+
 import * as API from './API'
 
 const bridge = {

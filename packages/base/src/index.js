@@ -67,7 +67,7 @@ g.MPUI = {
   view: View,
 };
 
-const mp = {
+self.MP = {
   bridge,
   EventHub,
   App,
@@ -85,9 +85,7 @@ const mp = {
   createComponent,
   Page,
   $global,
-}
-
-self.MP = mp;
+};
 
 const __mpCosts = Date.now() - __mpStartTime;
 console.log(`framework: web bundle costs ${__mpCosts} ms`);

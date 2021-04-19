@@ -1,12 +1,12 @@
 Component({
-  props: {
-    text: 'Button',
-    onClickMe: () => {},
+  properties: {
+    text: '我是text',
   },
 
   methods: {
     onClickMe() {
-      this.props.onClickMe();
+      console.log('button click');
+      // this.props.onClickMe();
       // this.triggerEvent('clickme')
     },
   },

@@ -80,10 +80,13 @@ function getRender(is) {
 export default (is) => createReactClass({
   displayName: is,
   statics: {
-    isCustomComponent: 1,
+    isCustomComponent: true,
     is: is,
   },
-  mixins: [PureRenderMixin],
+  mixins: [
+    PureRenderMixin,
+
+  ],
   getDefaultProps() {
     return getComponentConfig(is).props || {};
   },

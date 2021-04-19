@@ -82,7 +82,10 @@ function attachScroll(instance) {
     });
   }
 }
-export default function BasicEventMixin({ createTouchList = defaultCreateTouchList, createTap = defaultCreateTap } = {}) {
+export default function BasicEventMixin({ 
+  createTouchList = defaultCreateTouchList, 
+  createTap = defaultCreateTap 
+} = {}) {
   return {
     componentDidMount() {
       this.__basicEventRoot = ReactDOM.findDOMNode(this);
@@ -116,6 +119,7 @@ export default function BasicEventMixin({ createTouchList = defaultCreateTouchLi
         return;
       }
       const eventName = `tap${capture ? 'capture' : ''}`;
+
       if (this.hasBubbleEvent(eventName)) {
         callBubbleEvent(this, eventName, srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap));
       }
@@ -209,6 +213,29 @@ export default function BasicEventMixin({ createTouchList = defaultCreateTouchLi
       this.__longTapTriggered = 1;
       if (this.hasBubbleEvent('LongTap')) {
         callBubbleEvent(this, 'longTap', srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap));
+      }
+    },
+    registryEvent(eventName, capture = false) {
+      return (srcEvent) => {
+        this[eventName](srcEvent, capture);
+      }
+    },
+    getNodeEvents() {
+      return {
+        onClick: this.registryEvent('onTap'),
+        onClickCapture: this.registryEvent('onTap', true),
+        onTouchStart: this.registryEvent('onTouchStart'),
+        onTouchStartCapture: this.registryEvent('onTouchStart', true),
+        onTouchMove: this.registryEvent('onTouchMove'),
+        onTouchMoveCapture: this.registryEvent('onTouchMove', true),
+        onTouchEnd: this.registryEvent('onTouchEnd'),
+        onTouchEndCapture: this.registryEvent('onTouchEnd', true),
+        onTouchCancel: this.registryEvent('onTouchCancel'),
+        onTouchCancelCapture: this.registryEvent('onTouchCancel', true),
+        onAnimationStart: this.registryEvent('onAnimationStart'),
+        onAnimationIteration: this.registryEvent('onAnimationIteration'),
+        onAnimationEnd: this.registryEvent('onAnimationEnd'),
+        onTransitionEnd: this.registryEvent('onTransitionEnd'),
       }
     },
   };

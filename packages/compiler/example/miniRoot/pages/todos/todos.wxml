@@ -10,7 +10,7 @@
   <view class="todo-items">
 
     <checkbox-group class="todo-items-group" onChange="onTodoChanged">
-      <label a:for="{{todos}}" a:for-item="item" class="todo-item {{item.completed ? 'checked' : ''}}" a:key="*this">
+      <label wx:for="{{todos}}" wx:for-item="item" class="todo-item {{item.completed ? 'checked' : ''}}" wx:key="*this">
         <checkbox class="todo-item-checkbox" value="{{item.text}}" checked="{{item.completed}}" />
         <text class="todo-item-text">{{item.text}}</text>
       </label>
@@ -19,7 +19,8 @@
   </view>
 
   <view class="todo-footer">
-    <add-button text="Add Todo" onClickMe="addTodo" ></add-button>
+    <add-button text="Add Todo" bind:clickme="addTodo"></add-button>
+    <!-- <add-button bind:clickme="addTodo"></add-button> -->
   </view>
 
 </view>

@@ -1,3 +1,7 @@
+/**
+ * 一些全局信息
+ */
+
 
 const gloabl = {
   pagesStack: [],

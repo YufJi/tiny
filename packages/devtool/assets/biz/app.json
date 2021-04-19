@@ -10,7 +10,8 @@
     },
     "usingComponents": {
       "add-button": "/components/add-button/add-button"
-    }
+    },
+    "sitemapLocation": "sitemap.json"
   },
   "pages/todos/todos": {
     "defaultTitle": "Index"

@@ -1,7 +1,7 @@
-<import src="./a.axml" />
+<import src="./a.wxml" />
 
 <view class="page-add-todo">
-  <include src="./b.axml" />
+  <include src="./b.wxml" />
   <view class="add-todo">
     <input
       class="add-todo-input"

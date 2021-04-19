@@ -270,21 +270,20 @@ export default createReactClass({
     let { style } = props;
     const touchableProps = {};
     const nodeEvents = {
-      // always bind for event bubble target info
-      onClick: e => this.onTap(e),
-      onClickCapture: e => this.onTap(e, true),
-      onTransitionEnd: this.onTransitionEnd,
-      onTouchStart: e => this.onTouchStart(e),
-      onTouchStartCapture: e => this.onTouchStart(e, true),
-      onTouchMove: e => this.onTouchMove(e),
-      onTouchMoveCapture: e => this.onTouchMove(e, true),
-      onTouchEnd: e => this.onTouchEnd(e),
-      onTouchEndCapture: e => this.onTouchEnd(e, true),
-      onTouchCancel: e => this.onTouchCancel(e),
-      onTouchCancelCapture: e => this.onTouchCancel(e, true),
-      onAnimationStart: this.onAnimationStart,
-      onAnimationIteration: this.onAnimationIteration,
-      onAnimationEnd: this.onAnimationEnd,
+      onClick: this.registryEvent('onTap'),
+      onClickCapture: this.registryEvent('onTap', true),
+      onTouchStart: this.registryEvent('onTouchStart'),
+      onTouchStartCapture: this.registryEvent('onTouchStart', true),
+      onTouchMove: this.registryEvent('onTouchMove'),
+      onTouchMoveCapture: this.registryEvent('onTouchMove', true),
+      onTouchEnd: this.registryEvent('onTouchEnd'),
+      onTouchEndCapture: this.registryEvent('onTouchEnd', true),
+      onTouchCancel: this.registryEvent('onTouchCancel'),
+      onTouchCancelCapture: this.registryEvent('onTouchCancel', true),
+      onAnimationStart: this.registryEvent('onAnimationStart'),
+      onAnimationIteration: this.registryEvent('onAnimationIteration'),
+      onAnimationEnd: this.registryEvent('onAnimationEnd'),
+      onTransitionEnd: this.registryEvent('onTransitionEnd'),
     };
     if (props.hoverClass) {
       touchableProps.activeClassName = props.hoverClass;

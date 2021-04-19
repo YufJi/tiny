@@ -1,4 +1,6 @@
-
+/**
+ * 加载、读取静态资源文件
+ */
 
 export default function requireFile(url) {
   const xhr = new XMLHttpRequest();

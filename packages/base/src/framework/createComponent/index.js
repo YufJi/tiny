@@ -199,7 +199,10 @@ export default function createComponent(config = {}) {
         if (WrappedComponent.prototype.render) {
           props.ref = this.saveRef;
         }
-        return React.createElement(WrappedComponent, props);
+
+        return React.createElement(WrappedComponent, {
+          ...props,
+        });
       },
     });
 

@@ -121,17 +121,17 @@ __webpack_require__(/*! ./example/miniRoot/pages/add-todo/add-todo */ "./example
 
 /***/ }),
 
-/***/ "./example/miniRoot/app.acss":
+/***/ "./example/miniRoot/app.wxss":
 /*!***********************************!*\
-  !*** ./example/miniRoot/app.acss ***!
+  !*** ./example/miniRoot/app.wxss ***!
   \***********************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-const { StyleSheet } = self.MP
-const stylesheet = new StyleSheet({ stylePath: 'app.acss' });
+const { StyleSheet } = self.MP;
+const stylesheet = new StyleSheet({ stylePath: 'app.wxss' });
 /* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.a-page {
     -webkit-box-flex: 1;
     -webkit-flex: 1;
@@ -145,38 +145,31 @@ const stylesheet = new StyleSheet({ stylePath: 'app.acss' });
 
 /***/ }),
 
-/***/ "./example/miniRoot/components/add-button/add-button.acss":
-/*!****************************************************************!*\
-  !*** ./example/miniRoot/components/add-button/add-button.acss ***!
-  \****************************************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
+/***/ "./example/miniRoot/components/add-button/add-button.js":
+/*!**************************************************************!*\
+  !*** ./example/miniRoot/components/add-button/add-button.js ***!
+  \**************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-const { StyleSheet } = self.MP
-const stylesheet = new StyleSheet({ stylePath: 'components/add-button/add-button.acss' });
-/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.add-button {
-    display: inline-block;
-    background: none;
-    color: #FFF;
-    border: none;
-    width: 3rem;
-  }
-  .add-icon {
-    font-size: 0.52rem;
-    color: #00FFD6;
-    margin-right: 0.1rem;
-  }
-  .user {
-    font-size: 150px;
-  }`));
+
+const { Component: $Component } = self.MP;
+var Component = $Component || function(){};
+
+Component(
+{
+  is: "/components/add-button/add-button",
+  usingComponents: {"add-button":"/components/add-button/add-button"},
+  render: function() { return __webpack_require__(/*! ./add-button.wxml */ "./example/miniRoot/components/add-button/add-button.wxml"); },
+  
+});
+
 
 /***/ }),
 
-/***/ "./example/miniRoot/components/add-button/add-button.axml":
+/***/ "./example/miniRoot/components/add-button/add-button.wxml":
 /*!****************************************************************!*\
-  !*** ./example/miniRoot/components/add-button/add-button.axml ***!
+  !*** ./example/miniRoot/components/add-button/add-button.wxml ***!
   \****************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
@@ -236,7 +229,7 @@ function render(data) {
   return $createRoot(_react2.default.createElement(
     Button,
     {
-      className: "add-button", hoverClass: "none", ontap: $getEventHandler(this, "onClickMe"), onTap: "onClickMe"
+      className: "add-button", hoverClass: "none", ontapcapture: $getEventHandler(this, "onClickMe")
     },
     [_react2.default.createElement(
       Text,
@@ -254,32 +247,38 @@ function render(data) {
 
 /***/ }),
 
-/***/ "./example/miniRoot/components/add-button/add-button.js":
-/*!**************************************************************!*\
-  !*** ./example/miniRoot/components/add-button/add-button.js ***!
-  \**************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ "./example/miniRoot/components/add-button/add-button.wxss":
+/*!****************************************************************!*\
+  !*** ./example/miniRoot/components/add-button/add-button.wxss ***!
+  \****************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-
-const { Component: $Component } = self.MP;
-
-var Component = $Component || function(){};
-
-Component(
-{
-  is: "/components/add-button/add-button",
-  usingComponents: {"add-button":"/components/add-button/add-button"},
-  render: function() { return __webpack_require__(/*! ./add-button.axml */ "./example/miniRoot/components/add-button/add-button.axml"); },
-  
-});
-
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+const { StyleSheet } = self.MP;
+const stylesheet = new StyleSheet({ stylePath: 'components/add-button/add-button.wxss' });
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.add-button {
+    display: inline-block;
+    background: none;
+    color: #FFF;
+    border: none;
+    width: 3rem;
+  }
+  .add-icon {
+    font-size: 0.52rem;
+    color: #00FFD6;
+    margin-right: 0.1rem;
+  }
+  .user {
+    font-size: 150px;
+  }`));
 
 /***/ }),
 
-/***/ "./example/miniRoot/pages/add-todo/a.axml":
+/***/ "./example/miniRoot/pages/add-todo/a.wxml":
 /*!************************************************!*\
-  !*** ./example/miniRoot/pages/add-todo/a.axml ***!
+  !*** ./example/miniRoot/pages/add-todo/a.wxml ***!
   \************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
@@ -347,73 +346,32 @@ function render(data) {
 
 /***/ }),
 
-/***/ "./example/miniRoot/pages/add-todo/add-todo.acss":
-/*!*******************************************************!*\
-  !*** ./example/miniRoot/pages/add-todo/add-todo.acss ***!
-  \*******************************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
+/***/ "./example/miniRoot/pages/add-todo/add-todo.js":
+/*!*****************************************************!*\
+  !*** ./example/miniRoot/pages/add-todo/add-todo.js ***!
+  \*****************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _app_acss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../app.acss */ "./example/miniRoot/app.acss");
-/* harmony import */ var _components_add_button_add_button_acss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../components/add-button/add-button.acss */ "./example/miniRoot/components/add-button/add-button.acss");
-const { StyleSheet } = self.MP
-const stylesheet = new StyleSheet({ stylePath: 'pages/add-todo/add-todo.acss' });
 
-stylesheet.imports(_app_acss__WEBPACK_IMPORTED_MODULE_0__["default"]);
+const { Page } = self.MP;
 
-stylesheet.imports(_components_add_button_add_button_acss__WEBPACK_IMPORTED_MODULE_1__["default"]);
-/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.page-add-todo {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-box-flex: 1;
-    -webkit-flex: 1;
-            flex: 1;
-    -webkit-box-orient: vertical;
-    -webkit-box-direction: normal;
-    -webkit-flex-direction: column;
-            flex-direction: column;
-  }
-  .add-todo {
-    padding: 40px;
-    -webkit-box-flex: 1;
-    -webkit-flex-grow: 1;
-            flex-grow: 1;
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-box-pack: center;
-    -webkit-justify-content: center;
-            justify-content: center;
-    -webkit-box-align: center;
-    -webkit-align-items: center;
-            align-items: center;
-  }
-  .add-todo-input {
-    display: block;
-    font-size: 0.5rem;
-    font-weight: 100;
-    padding: 5px 5px;
-    background: none;
-    border: none;
-    border-bottom: 1px solid #DFDFDF;
-    color: #0EFFD6;
-    width: 100%;
-  }
-  .todo-footer {
-    padding: 0.5rem 0 1rem;
-    font-size: 0.48rem;
-    font-weight: 200;
-    text-align: center;
-  }`));
+
+Page(
+{
+  pagePath: 'pages/add-todo/add-todo',
+  usingComponents: {"add-button":"/components/add-button/add-button"},
+  
+  render: function() { return __webpack_require__(/*! ./add-todo.wxml */ "./example/miniRoot/pages/add-todo/add-todo.wxml"); },
+  stylesheet: function() { return __webpack_require__(/*! ./add-todo.wxss */ "./example/miniRoot/pages/add-todo/add-todo.wxss"); },
+});
+
 
 /***/ }),
 
-/***/ "./example/miniRoot/pages/add-todo/add-todo.axml":
+/***/ "./example/miniRoot/pages/add-todo/add-todo.wxml":
 /*!*******************************************************!*\
-  !*** ./example/miniRoot/pages/add-todo/add-todo.axml ***!
+  !*** ./example/miniRoot/pages/add-todo/add-todo.wxml ***!
   \*******************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
@@ -430,9 +388,9 @@ var _react = __webpack_require__(/*! react */ "react");
 
 var _react2 = _interopRequireDefault(_react);
 
-var _a = __webpack_require__(/*! ./a.axml */ "./example/miniRoot/pages/add-todo/a.axml");
+var _a = __webpack_require__(/*! ./a.wxml */ "./example/miniRoot/pages/add-todo/a.wxml");
 
-var _b = __webpack_require__(/*! ./b.axml */ "./example/miniRoot/pages/add-todo/b.axml");
+var _b = __webpack_require__(/*! ./b.wxml */ "./example/miniRoot/pages/add-todo/b.wxml");
 
 var _b2 = _interopRequireDefault(_b);
 
@@ -527,32 +485,73 @@ function render(data) {
 
 /***/ }),
 
-/***/ "./example/miniRoot/pages/add-todo/add-todo.js":
-/*!*****************************************************!*\
-  !*** ./example/miniRoot/pages/add-todo/add-todo.js ***!
-  \*****************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ "./example/miniRoot/pages/add-todo/add-todo.wxss":
+/*!*******************************************************!*\
+  !*** ./example/miniRoot/pages/add-todo/add-todo.wxss ***!
+  \*******************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _app_wxss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../app.wxss */ "./example/miniRoot/app.wxss");
+/* harmony import */ var _components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../components/add-button/add-button.wxss */ "./example/miniRoot/components/add-button/add-button.wxss");
+const { StyleSheet } = self.MP;
+const stylesheet = new StyleSheet({ stylePath: 'pages/add-todo/add-todo.wxss' });
 
-const { Page } = self.MP;
+stylesheet.imports(_app_wxss__WEBPACK_IMPORTED_MODULE_0__["default"]);
 
-
-Page(
-{
-  pagePath: 'pages/add-todo/add-todo',
-  usingComponents: {"add-button":"/components/add-button/add-button"},
-  
-  render: function() { return __webpack_require__(/*! ./add-todo.axml */ "./example/miniRoot/pages/add-todo/add-todo.axml"); },
-  stylesheet: function() { return __webpack_require__(/*! ./add-todo.acss */ "./example/miniRoot/pages/add-todo/add-todo.acss"); },
-});
-
+stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__["default"]);
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.page-add-todo {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+            flex: 1;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+            flex-direction: column;
+  }
+  .add-todo {
+    padding: 40px;
+    -webkit-box-flex: 1;
+    -webkit-flex-grow: 1;
+            flex-grow: 1;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+            justify-content: center;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+            align-items: center;
+  }
+  .add-todo-input {
+    display: block;
+    font-size: 0.5rem;
+    font-weight: 100;
+    padding: 5px 5px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid #DFDFDF;
+    color: #0EFFD6;
+    width: 100%;
+  }
+  .todo-footer {
+    padding: 0.5rem 0 1rem;
+    font-size: 0.48rem;
+    font-weight: 200;
+    text-align: center;
+  }`));
 
 /***/ }),
 
-/***/ "./example/miniRoot/pages/add-todo/b.axml":
+/***/ "./example/miniRoot/pages/add-todo/b.wxml":
 /*!************************************************!*\
-  !*** ./example/miniRoot/pages/add-todo/b.axml ***!
+  !*** ./example/miniRoot/pages/add-todo/b.wxml ***!
   \************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
@@ -610,23 +609,184 @@ function render(data) {
 
 /***/ }),
 
-/***/ "./example/miniRoot/pages/todos/todos.acss":
+/***/ "./example/miniRoot/pages/todos/todos.js":
+/*!***********************************************!*\
+  !*** ./example/miniRoot/pages/todos/todos.js ***!
+  \***********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+const { Page } = self.MP;
+
+
+Page(
+{
+  pagePath: 'pages/todos/todos',
+  usingComponents: {"add-button":"/components/add-button/add-button"},
+  
+  render: function() { return __webpack_require__(/*! ./todos.wxml */ "./example/miniRoot/pages/todos/todos.wxml"); },
+  stylesheet: function() { return __webpack_require__(/*! ./todos.wxss */ "./example/miniRoot/pages/todos/todos.wxss"); },
+});
+
+
+/***/ }),
+
+/***/ "./example/miniRoot/pages/todos/todos.wxml":
 /*!*************************************************!*\
-  !*** ./example/miniRoot/pages/todos/todos.acss ***!
+  !*** ./example/miniRoot/pages/todos/todos.wxml ***!
+  \*************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = render;
+
+var _react = __webpack_require__(/*! react */ "react");
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var $createReactElement = _react2.default && _react2.default.createElement;
+var $getComponentEventHandler = function $getComponentEventHandler(instance, name) {
+  return instance.$getComponentEventHandler && instance.$getComponentEventHandler(name);
+};
+var $getEventHandler = function $getEventHandler(instance, name) {
+  return instance.$getEventHandler(name);
+};
+var $getRefHandler = function $getRefHandler(instance, name) {
+  return instance.$getRefHandler(name);
+};
+var $getComRefHandler = function $getComRefHandler(instance, name) {
+  return instance.$getComRefHandler && instance.$getComRefHandler(name);
+};
+
+var $EmptyComponentFactory = self.RMLRuntime.EmptyComponentFactory;
+var getComponentClass = self.MP.getComponentClass;
+
+var $getComponentClass = function $getComponentClass(name) {
+  return getComponentClass && getComponentClass(name);
+};
+
+var View_ = self.MPUI['view'];
+var View = View_ || $EmptyComponentFactory("view");
+var Image_ = self.MPUI['image'];
+var Image = Image_ || $EmptyComponentFactory("image");
+var CheckboxGroup_ = self.MPUI['checkbox-group'];
+var CheckboxGroup = CheckboxGroup_ || $EmptyComponentFactory("checkbox-group");
+var Label_ = self.MPUI['label'];
+var Label = Label_ || $EmptyComponentFactory("label");
+var Checkbox_ = self.MPUI['checkbox'];
+var Checkbox = Checkbox_ || $EmptyComponentFactory("checkbox");
+var Text_ = self.MPUI['text'];
+var Text = Text_ || $EmptyComponentFactory("text");
+var AddButton_ = $getComponentClass("/components/add-button/add-button");
+var AddButton = AddButton_ || $EmptyComponentFactory("add-button");
+var $iterate = self.RMLRuntime.iterate;
+var $createRoot = self.RMLRuntime.createRoot;
+var $createBlock = self.RMLRuntime.createBlock;
+var $useTemplate = self.RMLRuntime.useTemplate;
+var $createTemplate = self.RMLRuntime.createTemplate;
+var $renderSlot = self.RMLRuntime.renderSlot;
+var $resolveScopedSlots = self.RMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.RMLRuntime.getSJSMember;
+var $toString = self.RMLRuntime.toString;
+var $getLooseDataMember = self.RMLRuntime.getLooseDataMember;
+
+var $templates = {};
+function render(data) {
+  return $createRoot(_react2.default.createElement(
+    View,
+    {
+      className: "page-todos"
+    },
+    [_react2.default.createElement(
+      View,
+      {
+        className: "user"
+      },
+      [_react2.default.createElement(Image, {
+        className: "avatar", src: $getLooseDataMember([data['user'], "avatar"]) || '../../assets/logo.png', backgroundSize: "cover"
+      }), _react2.default.createElement(
+        View,
+        {
+          className: "nickname"
+        },
+        [$toString($getLooseDataMember([data['user'], "nickName"]) && $getLooseDataMember([data['user'], "nickName"]) + '\'s' || 'mp'), $toString(" Todo List")]
+      ), _react2.default.createElement(
+        View,
+        {
+          className: "test"
+        },
+        $toString("Todo List")
+      )]
+    ), _react2.default.createElement(
+      View,
+      {
+        className: "todo-items"
+      },
+      _react2.default.createElement(
+        CheckboxGroup,
+        {
+          className: "todo-items-group", onChange: "onTodoChanged"
+        },
+        $iterate(data['todos'], function (item, index) {
+          return _react2.default.createElement(
+            Label,
+            {
+              key: item, className: "todo-item " + ($getLooseDataMember([item, "completed"]) ? 'checked' : '')
+            },
+            [_react2.default.createElement(Checkbox, {
+              className: "todo-item-checkbox", value: $getLooseDataMember([item, "text"]), checked: $getLooseDataMember([item, "completed"])
+            }), _react2.default.createElement(
+              Text,
+              {
+                className: "todo-item-text"
+              },
+              $toString($getLooseDataMember([item, "text"]))
+            )]
+          );
+        })
+      )
+    ), _react2.default.createElement(
+      View,
+      {
+        className: "todo-footer"
+      },
+      [_react2.default.createElement(AddButton, {
+        text: "Add Todo", onclickme: $getComponentEventHandler(this, "addTodo"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button'
+      }), _react2.default.createElement(AddButton, {
+        onclickme: $getComponentEventHandler(this, "addTodo"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button'
+      })]
+    )]
+  ));
+};
+
+/***/ }),
+
+/***/ "./example/miniRoot/pages/todos/todos.wxss":
+/*!*************************************************!*\
+  !*** ./example/miniRoot/pages/todos/todos.wxss ***!
   \*************************************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _app_acss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../app.acss */ "./example/miniRoot/app.acss");
-/* harmony import */ var _components_add_button_add_button_acss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../components/add-button/add-button.acss */ "./example/miniRoot/components/add-button/add-button.acss");
-const { StyleSheet } = self.MP
-const stylesheet = new StyleSheet({ stylePath: 'pages/todos/todos.acss' });
+/* harmony import */ var _app_wxss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../app.wxss */ "./example/miniRoot/app.wxss");
+/* harmony import */ var _components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../components/add-button/add-button.wxss */ "./example/miniRoot/components/add-button/add-button.wxss");
+const { StyleSheet } = self.MP;
+const stylesheet = new StyleSheet({ stylePath: 'pages/todos/todos.wxss' });
 
-stylesheet.imports(_app_acss__WEBPACK_IMPORTED_MODULE_0__["default"]);
+stylesheet.imports(_app_wxss__WEBPACK_IMPORTED_MODULE_0__["default"]);
 
-stylesheet.imports(_components_add_button_add_button_acss__WEBPACK_IMPORTED_MODULE_1__["default"]);
+stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__["default"]);
 /* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.page-todos {
     display: -webkit-box;
     display: -webkit-flex;
@@ -760,165 +920,6 @@ stylesheet.imports(_components_add_button_add_button_acss__WEBPACK_IMPORTED_MODU
     font-weight: 200;
     text-align: center;
   }`));
-
-/***/ }),
-
-/***/ "./example/miniRoot/pages/todos/todos.axml":
-/*!*************************************************!*\
-  !*** ./example/miniRoot/pages/todos/todos.axml ***!
-  \*************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = render;
-
-var _react = __webpack_require__(/*! react */ "react");
-
-var _react2 = _interopRequireDefault(_react);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var $createReactElement = _react2.default && _react2.default.createElement;
-var $getComponentEventHandler = function $getComponentEventHandler(instance, name) {
-  return instance.$getComponentEventHandler && instance.$getComponentEventHandler(name);
-};
-var $getEventHandler = function $getEventHandler(instance, name) {
-  return instance.$getEventHandler(name);
-};
-var $getRefHandler = function $getRefHandler(instance, name) {
-  return instance.$getRefHandler(name);
-};
-var $getComRefHandler = function $getComRefHandler(instance, name) {
-  return instance.$getComRefHandler && instance.$getComRefHandler(name);
-};
-
-var $EmptyComponentFactory = self.RMLRuntime.EmptyComponentFactory;
-var getComponentClass = self.MP.getComponentClass;
-
-var $getComponentClass = function $getComponentClass(name) {
-  return getComponentClass && getComponentClass(name);
-};
-
-var View_ = self.MPUI['view'];
-var View = View_ || $EmptyComponentFactory("view");
-var Image_ = self.MPUI['image'];
-var Image = Image_ || $EmptyComponentFactory("image");
-var CheckboxGroup_ = self.MPUI['checkbox-group'];
-var CheckboxGroup = CheckboxGroup_ || $EmptyComponentFactory("checkbox-group");
-var Label_ = self.MPUI['label'];
-var Label = Label_ || $EmptyComponentFactory("label");
-var Checkbox_ = self.MPUI['checkbox'];
-var Checkbox = Checkbox_ || $EmptyComponentFactory("checkbox");
-var Text_ = self.MPUI['text'];
-var Text = Text_ || $EmptyComponentFactory("text");
-var AddButton_ = $getComponentClass("/components/add-button/add-button");
-var AddButton = AddButton_ || $EmptyComponentFactory("add-button");
-var $iterate = self.RMLRuntime.iterate;
-var $createRoot = self.RMLRuntime.createRoot;
-var $createBlock = self.RMLRuntime.createBlock;
-var $useTemplate = self.RMLRuntime.useTemplate;
-var $createTemplate = self.RMLRuntime.createTemplate;
-var $renderSlot = self.RMLRuntime.renderSlot;
-var $resolveScopedSlots = self.RMLRuntime.resolveScopedSlots;
-var $getSJSMember = self.RMLRuntime.getSJSMember;
-var $toString = self.RMLRuntime.toString;
-var $getLooseDataMember = self.RMLRuntime.getLooseDataMember;
-
-var $templates = {};
-function render(data) {
-  return $createRoot(_react2.default.createElement(
-    View,
-    {
-      className: "page-todos"
-    },
-    [_react2.default.createElement(
-      View,
-      {
-        className: "user"
-      },
-      [_react2.default.createElement(Image, {
-        className: "avatar", src: $getLooseDataMember([data['user'], "avatar"]) || '../../assets/logo.png', backgroundSize: "cover"
-      }), _react2.default.createElement(
-        View,
-        {
-          className: "nickname"
-        },
-        [$toString($getLooseDataMember([data['user'], "nickName"]) && $getLooseDataMember([data['user'], "nickName"]) + '\'s' || 'mp'), $toString(" Todo List")]
-      ), _react2.default.createElement(
-        View,
-        {
-          className: "test"
-        },
-        $toString("Todo List")
-      )]
-    ), _react2.default.createElement(
-      View,
-      {
-        className: "todo-items"
-      },
-      _react2.default.createElement(
-        CheckboxGroup,
-        {
-          className: "todo-items-group", onChange: "onTodoChanged"
-        },
-        $iterate(data['todos'], function (item, index) {
-          return _react2.default.createElement(
-            Label,
-            {
-              key: item, className: "todo-item " + ($getLooseDataMember([item, "completed"]) ? 'checked' : '')
-            },
-            [_react2.default.createElement(Checkbox, {
-              className: "todo-item-checkbox", value: $getLooseDataMember([item, "text"]), checked: $getLooseDataMember([item, "completed"])
-            }), _react2.default.createElement(
-              Text,
-              {
-                className: "todo-item-text"
-              },
-              $toString($getLooseDataMember([item, "text"]))
-            )]
-          );
-        })
-      )
-    ), _react2.default.createElement(
-      View,
-      {
-        className: "todo-footer"
-      },
-      _react2.default.createElement(AddButton, {
-        text: "Add Todo", onClickMe: "addTodo", $isCustomComponent: this.$isCustomComponent, __tag: 'add-button'
-      })
-    )]
-  ));
-};
-
-/***/ }),
-
-/***/ "./example/miniRoot/pages/todos/todos.js":
-/*!***********************************************!*\
-  !*** ./example/miniRoot/pages/todos/todos.js ***!
-  \***********************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-
-const { Page } = self.MP;
-
-
-Page(
-{
-  pagePath: 'pages/todos/todos',
-  usingComponents: {"add-button":"/components/add-button/add-button"},
-  
-  render: function() { return __webpack_require__(/*! ./todos.axml */ "./example/miniRoot/pages/todos/todos.axml"); },
-  stylesheet: function() { return __webpack_require__(/*! ./todos.acss */ "./example/miniRoot/pages/todos/todos.acss"); },
-});
-
 
 /***/ }),
 

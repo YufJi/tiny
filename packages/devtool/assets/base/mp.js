@@ -11950,11 +11950,11 @@ var AButton = Object(_framework___WEBPACK_IMPORTED_MODULE_5__["createComponent"]
     var _this = this;
 
     this.onTap(e);
-    var _props2 = this.props;
-    var formType = _props2.formType;
-    var openType = _props2.openType;
-    var appParameter = _props2.appParameter;
-    var $mp = _props2.$mp;
+    var _this$props = this.props,
+        formType = _this$props.formType,
+        openType = _this$props.openType,
+        appParameter = _this$props.appParameter,
+        $mp = _this$props.$mp;
     var form = this.context.form;
 
     if (form) {
@@ -12034,30 +12034,9 @@ var AButton = Object(_framework___WEBPACK_IMPORTED_MODULE_5__["createComponent"]
       if (_page && _page.publicInstance.onShareAppMessage) {
         _page.callRemote('self', 'shareToAlipayContact', $mp.getNormalizedEvent('share'));
       }
-    }
+    } // trackTap(this);
+    // this.logTestId();
 
-    if (openType === 'lifestyle') {
-      var onFollowLifestyle = this.props.onFollowLifestyle;
-      Object(_utils_callBridge__WEBPACK_IMPORTED_MODULE_9__["default"])('confirm', {
-        title: '提示',
-        message: '确认关注此生活号?',
-        okButton: '关注生活号',
-        cancelButton: '暂不关注'
-      }, function (res) {
-        if (res.ok === true) {
-          _this.addFollow();
-        } else {
-          onFollowLifestyle($mp.getNormalizedEvent('follow', {
-            detail: {
-              followStatus: FollowStatus.userCancel
-            }
-          }));
-        }
-      });
-    }
-
-    Object(_utils_trackTap__WEBPACK_IMPORTED_MODULE_9__["default"])(this);
-    this.logTestId();
   },
   render: function render() {
     var props = this.props;
@@ -12067,7 +12046,8 @@ var AButton = Object(_framework___WEBPACK_IMPORTED_MODULE_5__["createComponent"]
       type = 'ghost';
     }
 
-    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_shared_Button__WEBPACK_IMPORTED_MODULE_4__["default"], _objectSpread(_objectSpread({
+    var nodeEvents = this.getNodeEvents();
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_shared_Button__WEBPACK_IMPORTED_MODULE_4__["default"], _objectSpread(_objectSpread(_objectSpread({}, nodeEvents), {}, {
       id: props.id,
       size: props.size,
       activeStopPropagation: props.hoverStopPropagation,
@@ -16120,7 +16100,7 @@ function createComponent() {
           props.ref = this.saveRef;
         }
 
-        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3___default.a.createElement(WrappedComponent, props);
+        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3___default.a.createElement(WrappedComponent, _objectSpread({}, props));
       }
     });
     var RetComponent = hoist_non_react_statics__WEBPACK_IMPORTED_MODULE_1___default()(Container, WrappedComponent);
@@ -16490,7 +16470,7 @@ function getRender(is) {
   return create_react_class__WEBPACK_IMPORTED_MODULE_0___default()({
     displayName: is,
     statics: {
-      isCustomComponent: 1,
+      isCustomComponent: true,
       is: is
     },
     mixins: [_mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_4__["default"]],
@@ -17346,6 +17326,32 @@ function BasicEventMixin() {
       if (this.hasBubbleEvent('LongTap')) {
         callBubbleEvent(this, 'longTap', srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap));
       }
+    },
+    registryEvent: function registryEvent(eventName) {
+      var _this = this;
+
+      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      return function (srcEvent) {
+        _this[eventName](srcEvent, capture);
+      };
+    },
+    getNodeEvents: function getNodeEvents() {
+      return {
+        onClick: this.registryEvent('onTap'),
+        onClickCapture: this.registryEvent('onTap', true),
+        onTouchStart: this.registryEvent('onTouchStart'),
+        onTouchStartCapture: this.registryEvent('onTouchStart', true),
+        onTouchMove: this.registryEvent('onTouchMove'),
+        onTouchMoveCapture: this.registryEvent('onTouchMove', true),
+        onTouchEnd: this.registryEvent('onTouchEnd'),
+        onTouchEndCapture: this.registryEvent('onTouchEnd', true),
+        onTouchCancel: this.registryEvent('onTouchCancel'),
+        onTouchCancelCapture: this.registryEvent('onTouchCancel', true),
+        onAnimationStart: this.registryEvent('onAnimationStart'),
+        onAnimationIteration: this.registryEvent('onAnimationIteration'),
+        onAnimationEnd: this.registryEvent('onAnimationEnd'),
+        onTransitionEnd: this.registryEvent('onTransitionEnd')
+      };
     }
   };
 }
@@ -18219,7 +18225,7 @@ g.MPUI = {
   text: _components___WEBPACK_IMPORTED_MODULE_4__["Text"],
   view: _components___WEBPACK_IMPORTED_MODULE_4__["View"]
 };
-var mp = {
+self.MP = {
   bridge: _apis___WEBPACK_IMPORTED_MODULE_3__["default"],
   EventHub: _framework___WEBPACK_IMPORTED_MODULE_5__["EventHub"],
   App: _framework___WEBPACK_IMPORTED_MODULE_5__["App"],
@@ -18238,7 +18244,6 @@ var mp = {
   Page: _framework___WEBPACK_IMPORTED_MODULE_5__["Page"],
   $global: _framework___WEBPACK_IMPORTED_MODULE_5__["$global"]
 };
-self.MP = mp;
 
 var __mpCosts = Date.now() - __mpStartTime;
 
@@ -18255,7 +18260,7 @@ console.log("framework: web bundle costs ".concat(__mpCosts, " ms"));
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _framework_mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../framework/mixins/BasicEventMixin */ "./src/framework/mixins/BasicEventMixin.js");
+/* harmony import */ var _framework_mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/framework/mixins/BasicEventMixin */ "./src/framework/mixins/BasicEventMixin.js");
 
 /* harmony default export */ __webpack_exports__["default"] = (_framework_mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_0__["default"]);
 
@@ -21082,8 +21087,6 @@ function getStyleFromAnimation(component, _animation, node) {
     this.root = root;
   },
   render: function render() {
-    var _this2 = this;
-
     var props = this.props;
     var children = props.children,
         hidden = props.hidden,
@@ -21095,41 +21098,20 @@ function getStyleFromAnimation(component, _animation, node) {
     var style = props.style;
     var touchableProps = {};
     var nodeEvents = {
-      // always bind for event bubble target info
-      onClick: function onClick(e) {
-        return _this2.onTap(e);
-      },
-      onClickCapture: function onClickCapture(e) {
-        return _this2.onTap(e, true);
-      },
-      onTransitionEnd: this.onTransitionEnd,
-      onTouchStart: function onTouchStart(e) {
-        return _this2.onTouchStart(e);
-      },
-      onTouchStartCapture: function onTouchStartCapture(e) {
-        return _this2.onTouchStart(e, true);
-      },
-      onTouchMove: function onTouchMove(e) {
-        return _this2.onTouchMove(e);
-      },
-      onTouchMoveCapture: function onTouchMoveCapture(e) {
-        return _this2.onTouchMove(e, true);
-      },
-      onTouchEnd: function onTouchEnd(e) {
-        return _this2.onTouchEnd(e);
-      },
-      onTouchEndCapture: function onTouchEndCapture(e) {
-        return _this2.onTouchEnd(e, true);
-      },
-      onTouchCancel: function onTouchCancel(e) {
-        return _this2.onTouchCancel(e);
-      },
-      onTouchCancelCapture: function onTouchCancelCapture(e) {
-        return _this2.onTouchCancel(e, true);
-      },
-      onAnimationStart: this.onAnimationStart,
-      onAnimationIteration: this.onAnimationIteration,
-      onAnimationEnd: this.onAnimationEnd
+      onClick: this.registryEvent('onTap'),
+      onClickCapture: this.registryEvent('onTap', true),
+      onTouchStart: this.registryEvent('onTouchStart'),
+      onTouchStartCapture: this.registryEvent('onTouchStart', true),
+      onTouchMove: this.registryEvent('onTouchMove'),
+      onTouchMoveCapture: this.registryEvent('onTouchMove', true),
+      onTouchEnd: this.registryEvent('onTouchEnd'),
+      onTouchEndCapture: this.registryEvent('onTouchEnd', true),
+      onTouchCancel: this.registryEvent('onTouchCancel'),
+      onTouchCancelCapture: this.registryEvent('onTouchCancel', true),
+      onAnimationStart: this.registryEvent('onAnimationStart'),
+      onAnimationIteration: this.registryEvent('onAnimationIteration'),
+      onAnimationEnd: this.registryEvent('onAnimationEnd'),
+      onTransitionEnd: this.registryEvent('onTransitionEnd')
     };
 
     if (props.hoverClass) {

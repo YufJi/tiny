@@ -10,8 +10,7 @@ compiler({
   out: outPath,
   baseDir,
 
-  templateExtname: '.axml',
-  styleExtname: '.acss',
-  templateNamespace: 'a',
-  templateRuntimeModule: '',
+  templateExtname: '.wxml',
+  styleExtname: '.wxss',
+  templateNamespace: 'wx',
 })

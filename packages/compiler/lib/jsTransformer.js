@@ -23,7 +23,6 @@ function getComponentRenderHeader(config) {
   const { library = defaultLib.tinyBaseModule } = config;
   return [
     `const { Component: $Component } = ${library};`,
-    '',
     'var Component = $Component || function(){};',
   ].join('\n');
 }

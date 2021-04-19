@@ -1,0 +1,15 @@
+<svg viewBox="0 0 563 271" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<!-- <svg width="563px" height="271px" viewBox="0 0 563 271" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"> -->
+    <!-- Generator: Sketch 51.2 (57519) - http://www.bohemiancoding.com/sketch -->
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="电池">
+            <g>
+                <rect id="Rectangle-3" stroke-opacity="0.4" stroke="#000000" stroke-width="24" x="12" y="12" width="488" height="247" rx="55"></rect>
+                <rect id="Rectangle-5" stroke="#979797" fill="#000000" x="48.5" y="48.5" width="234" height="174" rx="27"></rect>
+                <path d="M523.764236,91.9222717 C531.274663,90.6467654 537.487458,91.4344377 542.40262,94.2852884 C549.775364,98.5615644 551.3614,101.196395 556.552073,109.334584 C561.742746,117.472773 562.324843,128.047093 562.441741,134.744163 C562.558638,141.441233 560.797426,148.960769 557.380551,156.798057 C553.963676,164.635345 550.394987,168.143379 543.790018,173.769274 C539.386706,177.519871 533.439486,179.344774 525.94836,179.243982" id="Triangle" fill="#000000" opacity="0.404743304" transform="translate(543.105720, 135.289400) rotate(1.000000) translate(-543.105720, -135.289400) "></path>
+            </g>
+        </g>
+    </g>
+</svg>

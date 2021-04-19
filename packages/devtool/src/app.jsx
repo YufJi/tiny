@@ -1,5 +1,6 @@
 
 import React, { Component } from 'react';
+import StatusBar from '@/components/statusBar'
 
 import { createWorkerIframe, createRenderIframe } from '@/utils/createIframe';
 import global from '@/utils/global'
@@ -50,7 +51,7 @@ export default class App extends Component {
   }
 
   initWorker() {
-    const src = 'http://localhost:8000/worker.html'
+    const src = '/worker.html'
     const guid = createGuid('worker')
     global.worker = createWorkerIframe(guid, src, (iframe) => {
       EventHub.emit(WORKERLOADED)
@@ -65,7 +66,7 @@ export default class App extends Component {
   }
 
   pushPage(pagePath, pageConfig) {
-    const src = `http://localhost:8000/render.html#${pagePath}`
+    const src = `/render.html#${pagePath}`
     const guid = createGuid('render')
     const pageIframe = createRenderIframe(guid, src, (iframe) => {})
     global.renders[guid] = pageIframe
@@ -83,6 +84,7 @@ export default class App extends Component {
 
     return (
       <div className={`${style.app} f-page flex-c`}>
+        <StatusBar></StatusBar>
         <div className={`${style.nav} flex-r`}>
           <div className={`${style.left} flex-r`}>
             {isShowBackIcon && <div className={`${style.back} ic`}>&#xe641;</div>}
