@@ -231,9 +231,16 @@ Component({
     text: String
   },
 
+  data: {
+    text: 'jyf',
+    name: 'xxxxx',
+  },
+
   methods: {
     onClickMe() {
-      this.triggerEvent('clickme')
+      console.log(this.properties, this.data)
+      // this.triggerEvent('clickme')
+      this.properties.onclickme();
     },
   },
 });
@@ -356,8 +363,9 @@ Page({
   },
 
   addTodo() {
+    console.log(11111);
     // 进行页面跳转
-    wx.navigateTo({ url: '../add-todo/add-todo' });
+    // wx.navigateTo({ url: '../add-todo/add-todo' });
   },
 });
 

@@ -1,19 +1,23 @@
 {
-  "color": "#dddddd",
+  "color": 14540253,
   "selectedColor": 4827630,
   "backgroundColor": 16777215,
   "list": [
     {
-      "pagePath": "pages/todos/todos",
       "text": "首页",
-      "iconPath": "./assets/logo.png",
-      "selectedIconPath": "./assets/logo.png"
+      "iconPath": "/assets/logo.png",
+      "selectedIconPath": "/assets/logo.png",
+      "tag": "pages/todos/todos",
+      "url": "render.html#pages/todos/todos",
+      "launchParamsTag": "pages/todos/todos"
     },
     {
-      "pagePath": "pages/add-todo/add-todo",
       "text": "日志",
-      "selectedIconPath": "./assets/logo.png",
-      "iconPath": "./assets/logo.png"
+      "selectedIconPath": "/assets/logo.png",
+      "iconPath": "/assets/logo.png",
+      "tag": "pages/add-todo/add-todo",
+      "url": "render.html#pages/add-todo/add-todo",
+      "launchParamsTag": "pages/add-todo/add-todo"
     }
   ]
 }

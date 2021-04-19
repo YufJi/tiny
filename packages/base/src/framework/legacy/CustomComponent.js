@@ -78,17 +78,16 @@ function getRender(is) {
 }
 
 export default (is) => createReactClass({
+  $isCustomComponent: true,
   displayName: is,
   statics: {
-    isCustomComponent: true,
     is: is,
   },
   mixins: [
     PureRenderMixin,
-
   ],
   getDefaultProps() {
-    return getComponentConfig(is).props || {};
+    return getComponentConfig(is).properties || {};
   },
   getInitialState() {
     this.is = is;
@@ -102,7 +101,7 @@ export default (is) => createReactClass({
     };
   },
   componentDidMount() {
-    this.recordMounted(this.diffProps(getComponentConfig(this.is).props || {}), true);
+    this.recordMounted(this.diffProps(getComponentConfig(this.is).properties || {}), true);
   },
   componentDidUpdate(prevProps) {
     const diffProps = this.diffProps(prevProps);
@@ -185,7 +184,7 @@ export default (is) => createReactClass({
     }
     return { ownerId, newProps };
   },
-  $getEventHandler: function $getEventHandler(name) {
+  $getEventHandler(name) {
     const _this = this;
 
     if (!name || typeof name !== 'string') {
@@ -205,12 +204,12 @@ export default (is) => createReactClass({
     }
     return eventHandlers[name];
   },
-  $getRefHandler: function $getRefHandler(...args) {
+  $getRefHandler(...args) {
     let _getCurrentPageImpl2;
 
     return (_getCurrentPageImpl2 = getCurrentPageImpl()).$getRefHandler.apply(_getCurrentPageImpl2, args);
   },
-  $getComponentEventHandler: function $getComponentEventHandler(name) {
+  $getComponentEventHandler(name) {
     if (!name || typeof name !== 'string') {
       // need json transfer to worker
       return name;
@@ -226,7 +225,7 @@ export default (is) => createReactClass({
 
     return componentEventHandlers[name];
   },
-  setData: function setData(toBeData, callback) {
+  setData(toBeData, callback) {
     const { data } = this.state;
 
     let ret = data;
@@ -242,7 +241,7 @@ export default (is) => createReactClass({
       data: ret,
     }, callback);
   },
-  render: function render() {
+  render() {
     const props = normalizeComponentProps(this.props);
     props.$slots = transformChildrenToSlots(this.props.children);
     props.$scopedSlots = this.props.$scopedSlots;

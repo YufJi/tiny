@@ -159,9 +159,9 @@ exports.update = function update({ src, mergeSubPackages, variables, transformCo
   miniStore.pageMap = pMap;
 
   /* 存储tabBar 此处需修改兼容微信 */
-  if (tabBar && tabBar.items) {
+  if (tabBar && tabBar.list) {
     const tMap = {};
-    tabBar.items.forEach((item, index) => {
+    tabBar.list.forEach((item, index) => {
       tMap[item.pagePath] = index;
     });
     miniStore.tabPages = tMap;

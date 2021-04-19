@@ -16468,14 +16468,14 @@ function getRender(is) {
 
 /* harmony default export */ __webpack_exports__["default"] = (function (is) {
   return create_react_class__WEBPACK_IMPORTED_MODULE_0___default()({
+    $isCustomComponent: true,
     displayName: is,
     statics: {
-      isCustomComponent: true,
       is: is
     },
     mixins: [_mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_4__["default"]],
     getDefaultProps: function getDefaultProps() {
-      return getComponentConfig(is).props || {};
+      return getComponentConfig(is).properties || {};
     },
     getInitialState: function getInitialState() {
       this.is = is; // async render twice
@@ -16489,7 +16489,7 @@ function getRender(is) {
       };
     },
     componentDidMount: function componentDidMount() {
-      this.recordMounted(this.diffProps(getComponentConfig(this.is).props || {}), true);
+      this.recordMounted(this.diffProps(getComponentConfig(this.is).properties || {}), true);
     },
     componentDidUpdate: function componentDidUpdate(prevProps) {
       var diffProps = this.diffProps(prevProps);
@@ -16760,6 +16760,7 @@ var headNode = document.getElementsByTagName('head')[0]; // special for 1rpx or 
 var remReg = Object(_utils_unit__WEBPACK_IMPORTED_MODULE_15__["rpx2px"])(2) < 1 ? /\b0\.0[12]rem/g : Object(_utils_unit__WEBPACK_IMPORTED_MODULE_15__["rpx2px"])(1) < 1 ? /\b0\.01rem/g : null;
 var replacer = _Platform__WEBPACK_IMPORTED_MODULE_16__["default"].browser === 'ios' ? '0.5px' : '1px';
 /* harmony default export */ __webpack_exports__["default"] = (create_react_class__WEBPACK_IMPORTED_MODULE_2___default()({
+  $isCustomComponent: false,
   displayName: 'PageComponent',
   mixins: [_mixins_MessageHandleMixin__WEBPACK_IMPORTED_MODULE_3__["default"], _mixins_RefMixin__WEBPACK_IMPORTED_MODULE_4__["default"]],
   getInitialState: function getInitialState() {

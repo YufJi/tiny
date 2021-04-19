@@ -93,7 +93,8 @@ export default class App extends Component {
     global.pagesStack.push(guid);
 
     this.setNav({
-      title: pageConfig.defaultTitle
+      title: pageConfig.navigationBarTitleText,
+      backgroundColor: pageConfig.navigationBarBackgroundColor ? `#${pageConfig.navigationBarBackgroundColor.toString(16)}` : '#fff',
     })
   }
 
@@ -120,11 +121,18 @@ export default class App extends Component {
       <div className={`${style.app} f-page flex-c`}>
         <StatusBar></StatusBar>
         <div className={`${style.MPContainer} ${mpVisible ? '' : style.hide} flex-1 flex-c`}>
-          <div className={`${style.nav} flex-r`}>
+          <div 
+            className={`${style.nav} flex-r`}
+            style={{
+              backgroundColor: navConfig.backgroundColor,
+            }}
+          >
             <div className={`${style.left} flex-r`}>
               {isShowBackIcon && <div className={`${style.back} ic`}>&#xe641;</div>}
             </div>
-            <div className={`${style.title} flex-1`}>{navConfig.title}</div>
+            <div className={`${style.title} flex-1`}>
+              {navConfig.title}
+            </div>
             <div className={`${style.right} flex-r`}>
               <div className={`${style.more} ic`}>&#xe648;</div>
               <div className={`${style.close} ic`} onClick={this.hideMP}>&#xe649;</div>

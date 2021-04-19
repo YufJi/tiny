@@ -23,11 +23,11 @@ module.exports = function generateLanguageJson(app, tabBar, locale) {
       }
     });
 
-    if (Array.isArray(localeTabBar.items) && Array.isArray(tabBar.items)) {
-      localeTabBar.items.forEach((item, index) => {
-        if (tabBar.items[index] && item.name) {
+    if (Array.isArray(localeTabBar.list) && Array.isArray(tabBar.list)) {
+      localeTabBar.list.forEach((item, index) => {
+        if (tabBar.list[index] && item.name) {
           tempTabBar = tempTabBar || JSON.parse(JSON.stringify(tabBar));
-          tempTabBar.items[index].name = item.name;
+          tempTabBar.list[index].name = item.name;
         }
       });
     }

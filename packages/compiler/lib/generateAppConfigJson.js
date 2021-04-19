@@ -21,17 +21,17 @@ module.exports = function g({ appJson, out, src, indexPage, contextPath }) {
   }
   if (app.tabBar) {
     app.tabBar = transformColorConfig(app.tabBar);
-    (app.tabBar.items || []).forEach((t) => {
+    (app.tabBar.list || []).forEach((t) => {
       delete t.id;
       t.tag = t.pagePath;
       t.url = `${indexPage}#${t.tag}`;
       delete t.pagePath;
 
-      if (t.icon) {
-        t.icon = contextPath ? `${contextPath}/${t.icon}` : path.join(src, t.icon).replace(src, '');
+      if (t.iconPath) {
+        t.iconPath = contextPath ? `${contextPath}/${t.iconPath}` : path.join(src, t.iconPath).replace(src, '');
       }
-      if (t.activeIcon) {
-        t.activeIcon = contextPath ? `${contextPath}/${t.activeIcon}` : path.join(src, t.activeIcon).replace(src, '');
+      if (t.selectedIconPath) {
+        t.selectedIconPath = contextPath ? `${contextPath}/${t.selectedIconPath}` : path.join(src, t.selectedIconPath).replace(src, '');
       }
 
       t.launchParamsTag = t.tag;

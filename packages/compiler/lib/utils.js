@@ -128,6 +128,7 @@ function normalizeColor(v) {
       const c3 = color.charAt(2);
       color = `${c1}${c1}${c2}${c2}${c3}${c3}`;
     }
+    // 16进制转10进制
     return parseInt(color, 16);
   }
   return v;
@@ -139,7 +140,7 @@ function transformColorConfig(c) {
     Object.keys(c).forEach((k) => {
       if (k in c) {
         const v = c[k];
-        if (k.endsWith('Color')) {
+        if (k.endsWith('Color') || k === 'color') {
           newC[k] = normalizeColor(v);
         } else {
           newC[k] = v;

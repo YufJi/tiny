@@ -4249,15 +4249,17 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _utils_mergeArray__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/mergeArray */ "./src/utils/mergeArray.js");
 /* harmony import */ var _utils_setData__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/setData */ "./src/utils/setData.js");
 /* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
-/* harmony import */ var _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/invokeWithGuardAndReThrow */ "./src/utils/invokeWithGuardAndReThrow.js");
-/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
-/* harmony import */ var _utils_getComponentProp__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../utils/getComponentProp */ "./src/framework/utils/getComponentProp.js");
-/* harmony import */ var _utils_fireComponentLifecycle__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../utils/fireComponentLifecycle */ "./src/framework/utils/fireComponentLifecycle.js");
+/* harmony import */ var _utils_mapValues__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/mapValues */ "./src/utils/mapValues.js");
+/* harmony import */ var _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/utils/invokeWithGuardAndReThrow */ "./src/utils/invokeWithGuardAndReThrow.js");
+/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
+/* harmony import */ var _utils_getComponentProp__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../utils/getComponentProp */ "./src/framework/utils/getComponentProp.js");
+/* harmony import */ var _utils_fireComponentLifecycle__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../utils/fireComponentLifecycle */ "./src/framework/utils/fireComponentLifecycle.js");
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 
 
 
@@ -4275,8 +4277,10 @@ function Component(setupConfig, currentComponentConfig) {
 
   function getProps(prop) {
     var useCache = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-    return Object(_utils_getComponentProp__WEBPACK_IMPORTED_MODULE_6__["default"])(setupConfig, prop, useCache ? propsCache : useCache);
+    return Object(_utils_getComponentProp__WEBPACK_IMPORTED_MODULE_7__["default"])(setupConfig, prop, useCache ? propsCache : useCache);
   }
+
+  var initProperties = Object(_utils_mapValues__WEBPACK_IMPORTED_MODULE_4__["default"])(getProps('properties'), 'value');
 
   function ComponentClass(page, id, componentConfig) {
     this.is = is;
@@ -4299,16 +4303,16 @@ function Component(setupConfig, currentComponentConfig) {
     publicInstance.is = is;
     publicInstance.$id = id;
     publicInstance.$page = page.publicInstance;
-    publicInstance.data = getProps('data', false);
+    publicInstance.properties = initProperties;
+    publicInstance.data = _objectSpread(_objectSpread({}, getProps('data', false)), initProperties);
     this.computedDeps = _objectSpread({}, ComponentClass.computedDeps);
     this.prevData = publicInstance.data;
-    publicInstance.props = getProps('properties') || getProps('props');
     this.setComponentConfig(componentConfig, true);
   }
 
   ;
-  ComponentClass.data = getProps('data');
-  ComponentClass.props = getProps('properties') || getProps('props');
+  ComponentClass.data = _objectSpread(_objectSpread({}, getProps('data', false)), initProperties);
+  ComponentClass.properties = initProperties;
 
   ComponentClass.getAllComponents = function () {
     var allComponents = [is];
@@ -4336,7 +4340,7 @@ function Component(setupConfig, currentComponentConfig) {
 
       this.prevData = publicInstance.data;
       publicInstance.data = op(publicInstance.data, diffData);
-      var data = (_data = {}, _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingKeyType"], _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingValueComponent"]), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingKeyId"], id), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingKeyOp"], Object(_utils_setData__WEBPACK_IMPORTED_MODULE_2__["getOpStr"])(op)), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingKeyData"], diffData), _data);
+      var data = (_data = {}, _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_6__["PendingKeyType"], _utils_consts__WEBPACK_IMPORTED_MODULE_6__["PendingValueComponent"]), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_6__["PendingKeyId"], id), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_6__["PendingKeyOp"], Object(_utils_setData__WEBPACK_IMPORTED_MODULE_2__["getOpStr"])(op)), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_6__["PendingKeyData"], diffData), _data);
       var options = options_ || {};
 
       if (typeof options_ === 'function') {
@@ -4348,36 +4352,39 @@ function Component(setupConfig, currentComponentConfig) {
       this.page.setRemoteData(data, options);
     },
     setComponentConfig: function setComponentConfig(c, init) {
-      var ownerId = c[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["ComponentKeyOwnerId"]];
-      var diffProps = c[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["ComponentKeyDiffProps"]];
+      var ownerId = c[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["ComponentKeyOwnerId"]];
+      var diffProps = c[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["ComponentKeyDiffProps"]];
 
       if (ownerId) {
         this.ownerId = ownerId;
       }
 
       var publicInstance = this.publicInstance;
-      var prevProps = publicInstance.props;
+      var prevProps = publicInstance.properties;
 
       if (diffProps) {
-        var deleted = diffProps[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["DiffKeyDeleted"]];
-        var updated = diffProps[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["DiffKeyUpdated"]];
+        var deleted = diffProps[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["DiffKeyDeleted"]];
+        var updated = diffProps[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["DiffKeyUpdated"]];
+        console.log('updated', updated);
 
         if (deleted && deleted.length || updated && Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__["default"])(updated).length) {
-          publicInstance.props = _objectSpread({}, publicInstance.props);
+          publicInstance.properties = _objectSpread({}, publicInstance.properties);
         }
 
         if (deleted) {
           deleted.forEach(function (d) {
-            delete publicInstance.props[d];
+            delete publicInstance.properties[d];
           });
         }
 
         if (updated) {
-          Object.assign(publicInstance.props, this.normalizeProps(updated));
+          Object.assign(publicInstance.properties, this.normalizeProps(updated));
         }
+
+        Object.assign(publicInstance.data, publicInstance.properties);
       }
 
-      if (!init && (prevProps !== publicInstance.props || this.prevData !== publicInstance.data)) {
+      if (!init && (prevProps !== publicInstance.properties || this.prevData !== publicInstance.data)) {
         this.update(prevProps, this.prevData);
         this.prevData = publicInstance.data;
       }
@@ -4394,8 +4401,17 @@ function Component(setupConfig, currentComponentConfig) {
       });
       return newProps;
     },
+
+    /**
+     * 
+     * @param {*} type e.g. onclickme
+     * @param {*} method  {n: "addTodo", o: 1}
+     * @returns 
+     */
     getTriggerEventHandler: function getTriggerEventHandler(type, method) {
       var _this2 = this;
+
+      console.log(type, method);
 
       if (!method) {
         return method;
@@ -4434,22 +4450,22 @@ function Component(setupConfig, currentComponentConfig) {
           args[_key2 - 1] = arguments[_key2];
         }
 
-        return _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_4__["default"].apply(void 0, [publicInstance[method], publicInstance].concat(args));
+        return _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_5__["default"].apply(void 0, [publicInstance[method], publicInstance].concat(args));
       }
     },
     ready: function ready() {
-      Object(_utils_fireComponentLifecycle__WEBPACK_IMPORTED_MODULE_7__["default"])(setupConfig, this.publicInstance, 'didMount');
+      Object(_utils_fireComponentLifecycle__WEBPACK_IMPORTED_MODULE_8__["default"])(setupConfig, this.publicInstance, 'didMount');
     },
     update: function update() {
       for (var _len3 = arguments.length, args = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
         args[_key3] = arguments[_key3];
       }
 
-      Object(_utils_fireComponentLifecycle__WEBPACK_IMPORTED_MODULE_7__["default"])(setupConfig, this.publicInstance, 'didUpdate', args);
+      Object(_utils_fireComponentLifecycle__WEBPACK_IMPORTED_MODULE_8__["default"])(setupConfig, this.publicInstance, 'didUpdate', args);
     },
     unload: function unload() {
       this.unloaded = true;
-      Object(_utils_fireComponentLifecycle__WEBPACK_IMPORTED_MODULE_7__["default"])(setupConfig, this.publicInstance, 'didUnmount');
+      Object(_utils_fireComponentLifecycle__WEBPACK_IMPORTED_MODULE_8__["default"])(setupConfig, this.publicInstance, 'didUnmount');
     }
   };
   return ComponentClass;
@@ -4470,15 +4486,14 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _utils_setData__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/utils/setData */ "./src/utils/setData.js");
 /* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
 /* harmony import */ var _ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../ComponentRegistry/getComponentClass */ "./src/framework/ComponentRegistry/getComponentClass.js");
-/* harmony import */ var _ComponentRegistry__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../ComponentRegistry */ "./src/framework/ComponentRegistry/index.js");
-/* harmony import */ var _utils_mergeArray__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/mergeArray */ "./src/utils/mergeArray.js");
-/* harmony import */ var _EventHub__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../EventHub */ "./src/framework/EventHub.js");
-/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
-/* harmony import */ var _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @/utils/invokeWithGuardAndReThrow */ "./src/utils/invokeWithGuardAndReThrow.js");
-/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../App */ "./src/framework/App/index.worker.js");
-/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
-/* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../common/global */ "./src/framework/common/global.js");
-/* harmony import */ var _mixins_MessageHandleMixin__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ../mixins/MessageHandleMixin */ "./src/framework/mixins/MessageHandleMixin.js");
+/* harmony import */ var _utils_mergeArray__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/mergeArray */ "./src/utils/mergeArray.js");
+/* harmony import */ var _EventHub__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../EventHub */ "./src/framework/EventHub.js");
+/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
+/* harmony import */ var _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/invokeWithGuardAndReThrow */ "./src/utils/invokeWithGuardAndReThrow.js");
+/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../App */ "./src/framework/App/index.worker.js");
+/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
+/* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../common/global */ "./src/framework/common/global.js");
+/* harmony import */ var _mixins_MessageHandleMixin__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../mixins/MessageHandleMixin */ "./src/framework/mixins/MessageHandleMixin.js");
 function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
 
 function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
@@ -4496,7 +4511,6 @@ function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (O
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
 
 
 
@@ -4532,7 +4546,7 @@ function PageComponent(_ref) {
   Object.assign(this, {
     pagePath: pagePath,
     id: id,
-    bridge: _common_global__WEBPACK_IMPORTED_MODULE_10__["default"].bridge,
+    bridge: _common_global__WEBPACK_IMPORTED_MODULE_9__["default"].bridge,
     pendingData: [],
     pendingCallbacks: [],
     initialCallbacks: [],
@@ -4545,7 +4559,7 @@ function PageComponent(_ref) {
 
   var publicInstance = this.publicInstance = Object.create(_objectSpread({
     route: pagePath
-  }, _common_global__WEBPACK_IMPORTED_MODULE_10__["default"].pagesConfig[pagePath].user), {
+  }, _common_global__WEBPACK_IMPORTED_MODULE_9__["default"].pagesConfig[pagePath].user), {
     setData: {
       value: function value(a, b) {
         return self.setData(_utils_setData__WEBPACK_IMPORTED_MODULE_0__["default"], a, b);
@@ -4573,12 +4587,12 @@ function getAllUsingComponents(pagePath) {
   }
 
   var allUsingComponents = [];
-  var usingComponents = _common_global__WEBPACK_IMPORTED_MODULE_10__["default"].pagesConfig[pagePath].system.usingComponents;
+  var usingComponents = _common_global__WEBPACK_IMPORTED_MODULE_9__["default"].pagesConfig[pagePath].system.usingComponents;
 
   if (usingComponents) {
     Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_1__["default"])(usingComponents).forEach(function (c) {
       var cs = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_2__["default"])(usingComponents[c]).getAllComponents();
-      Object(_utils_mergeArray__WEBPACK_IMPORTED_MODULE_4__["default"])(allUsingComponents, cs);
+      Object(_utils_mergeArray__WEBPACK_IMPORTED_MODULE_3__["default"])(allUsingComponents, cs);
     });
     allUsingComponentsCache[pagePath] = allUsingComponents;
   }
@@ -4586,20 +4600,20 @@ function getAllUsingComponents(pagePath) {
   return allUsingComponents;
 }
 
-PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleMixin__WEBPACK_IMPORTED_MODULE_11__["default"]), {}, {
+PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleMixin__WEBPACK_IMPORTED_MODULE_10__["default"]), {}, {
   load: function load() {
     // in case pageResume following appResume, tab page??
     if (!this.$loadTime) {
       this.$loadTime = Date.now(); // setData will be merged with startRender
 
       this._disableRemoteData = true;
-      Object(_utils_log__WEBPACK_IMPORTED_MODULE_6__["default"])('framework: page onLoad', this.pagePath);
-      _EventHub__WEBPACK_IMPORTED_MODULE_5__["default"].emit('pageLoad', {
+      Object(_utils_log__WEBPACK_IMPORTED_MODULE_5__["default"])('framework: page onLoad', this.pagePath);
+      _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('pageLoad', {
         page: this
       });
-      Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_7__["default"])(this.publicInstance.onLoad, this.publicInstance, this.query); // depend app status!! maybe unstable
+      Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_6__["default"])(this.publicInstance.onLoad, this.publicInstance, this.query); // depend app status!! maybe unstable
 
-      if (Object(_App__WEBPACK_IMPORTED_MODULE_8__["getAppImpl"])().shown) {
+      if (Object(_App__WEBPACK_IMPORTED_MODULE_7__["getAppImpl"])().shown) {
         this.show();
       }
 
@@ -4632,14 +4646,14 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     }
 
     this.shown = true;
-    _EventHub__WEBPACK_IMPORTED_MODULE_5__["default"].emit('enterPage', {
+    _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('enterPage', {
       page: this
     });
     this.executeUserMethod('onShow');
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_6__["default"])('framework: page onShow', this.pagePath);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_5__["default"])('framework: page onShow', this.pagePath);
   },
   pullDownRefresh: function pullDownRefresh(e) {
-    _EventHub__WEBPACK_IMPORTED_MODULE_5__["default"].emit('pullDownRefresh', {
+    _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('pullDownRefresh', {
       page: this
     });
     this.executeUserMethod('onPullDownRefresh', [e]);
@@ -4658,21 +4672,21 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     }
 
     this.shown = false;
-    _EventHub__WEBPACK_IMPORTED_MODULE_5__["default"].emit('leavePage', {
+    _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('leavePage', {
       page: this
     });
-    _EventHub__WEBPACK_IMPORTED_MODULE_5__["default"].emit('pageHide', {
+    _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('pageHide', {
       page: this
     });
     this.executeUserMethod('onHide');
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_6__["default"])('framework: page onHide', this.pagePath);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_5__["default"])('framework: page onHide', this.pagePath);
   },
   unload: function unload() {
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_6__["default"])('framework: page onUnload', this.pagePath);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_5__["default"])('framework: page onUnload', this.pagePath);
 
     if (this.unloaded || !this.$loadTime) {
       // remove from page stack
-      _EventHub__WEBPACK_IMPORTED_MODULE_5__["default"].emit('pageUnload', {
+      _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('pageUnload', {
         page: this
       });
       return;
@@ -4680,11 +4694,11 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
 
     this.unloaded = true;
     this.unmountAllComponents();
-    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_7__["default"])(this.publicInstance.onUnload, this.publicInstance);
-    _EventHub__WEBPACK_IMPORTED_MODULE_5__["default"].emit('leavePage', {
+    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_6__["default"])(this.publicInstance.onUnload, this.publicInstance);
+    _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('leavePage', {
       page: this
     });
-    _EventHub__WEBPACK_IMPORTED_MODULE_5__["default"].emit('pageUnload', {
+    _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('pageUnload', {
       page: this
     });
   },
@@ -4713,7 +4727,7 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     getAllUsingComponents(this.pagePath).forEach(function (component) {
       var ComponentClass = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_2__["default"])(component);
       componentsConfig[component] = {
-        props: ComponentClass.props,
+        properties: ComponentClass.properties,
         data: _objectSpread({}, ComponentClass.data)
       };
     }); // 此时发消息给bridge触发render的渲染，并且带了firstData过去
@@ -4767,7 +4781,7 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
 
     if (componentInstance) {
       this.batchedUpdates(function () {
-        Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_7__["default"])(componentInstance.publicInstance[eventName], componentInstance.publicInstance, eventObject);
+        Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_6__["default"])(componentInstance.publicInstance[eventName], componentInstance.publicInstance, eventObject);
       });
     }
   },
@@ -4784,25 +4798,25 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     });
   },
   updateComponents: function updateComponents(payload) {
-    var _this = this;
+    var _this2 = this;
 
     if (!payload) {
       return;
     }
 
     var componentInstances = this.componentInstances;
-    var mountedComponents = payload[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["PayloadKeyMountedComponents"]] || [];
-    var unmountedComponents = payload[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["PayloadKeyUnmountedComponents"]] || []; // from bottom to top
+    var mountedComponents = payload[_utils_consts__WEBPACK_IMPORTED_MODULE_8__["PayloadKeyMountedComponents"]] || [];
+    var unmountedComponents = payload[_utils_consts__WEBPACK_IMPORTED_MODULE_8__["PayloadKeyUnmountedComponents"]] || []; // from bottom to top
 
     mountedComponents.forEach(function (componentConfig) {
-      var id = componentConfig[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["ComponentKeyId"]];
+      var id = componentConfig[_utils_consts__WEBPACK_IMPORTED_MODULE_8__["ComponentKeyId"]];
 
       if (componentInstances[id]) {
         componentInstances[id].setComponentConfig(componentConfig);
-      } else if (componentConfig[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["ComponentKeyIs"]]) {
+      } else if (componentConfig[_utils_consts__WEBPACK_IMPORTED_MODULE_8__["ComponentKeyIs"]]) {
         // incase update after unmount
-        var ComponentClass = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_2__["default"])(componentConfig[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["ComponentKeyIs"]]);
-        componentInstances[id] = new ComponentClass(_this, id, componentConfig);
+        var ComponentClass = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_2__["default"])(componentConfig[_utils_consts__WEBPACK_IMPORTED_MODULE_8__["ComponentKeyIs"]]);
+        componentInstances[id] = new ComponentClass(_this2, id, componentConfig);
         componentInstances[id].ready();
       }
     });
@@ -4810,7 +4824,7 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     this.unmountComponents(unmountedKeys);
   },
   ready: function ready(payload) {
-    var _this2 = this;
+    var _this3 = this;
 
     if (this.unloaded) {
       return;
@@ -4821,28 +4835,28 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     }
 
     this.batchedUpdates(function () {
-      _this2.readied = true;
+      _this3.readied = true;
 
-      _this2.update(payload);
+      _this3.update(payload);
 
-      _EventHub__WEBPACK_IMPORTED_MODULE_5__["default"].emit('pageReady', {
-        page: _this2
+      _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('pageReady', {
+        page: _this3
       });
 
-      _this2.initialCallbacks.forEach(function (fn) {
+      _this3.initialCallbacks.forEach(function (fn) {
         return fn();
       });
 
-      _this2.executeUserMethod('onReady');
+      _this3.executeUserMethod('onReady');
 
-      Object(_utils_log__WEBPACK_IMPORTED_MODULE_6__["default"])('framework: page onReady', _this2.pagePath);
+      Object(_utils_log__WEBPACK_IMPORTED_MODULE_5__["default"])('framework: page onReady', _this3.pagePath);
     });
   },
   update: function update(payload) {
-    var _this3 = this;
+    var _this4 = this;
 
     this.batchedUpdates(function () {
-      _this3.updateComponents(payload);
+      _this4.updateComponents(payload);
     });
   },
   postMessage: function postMessage(data) {
@@ -4850,7 +4864,7 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
       return;
     }
 
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_6__["debug"])('framework', "[WORKER] Page ".concat(this.pagePath, " postMessage"), data);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_5__["debug"])('framework', "[WORKER] Page ".concat(this.pagePath, " postMessage"), data);
     this.bridge.call('postMessage', _objectSpread(_objectSpread({}, data), {}, {
       pageType: this.pageType,
       msgType: 'endpoint',
@@ -4900,7 +4914,7 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     } else {
       var _data;
 
-      var data = (_data = {}, _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_9__["PendingKeyType"], _utils_consts__WEBPACK_IMPORTED_MODULE_9__["PendingValuePage"]), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_9__["PendingKeyData"], diffData), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_9__["PendingKeyOp"], Object(_utils_setData__WEBPACK_IMPORTED_MODULE_0__["getOpStr"])(op)), _data);
+      var data = (_data = {}, _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_8__["PendingKeyType"], _utils_consts__WEBPACK_IMPORTED_MODULE_8__["PendingValuePage"]), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_8__["PendingKeyData"], diffData), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_8__["PendingKeyOp"], Object(_utils_setData__WEBPACK_IMPORTED_MODULE_0__["getOpStr"])(op)), _data);
       this.setRemoteData(data, options);
     }
   },
@@ -4910,7 +4924,7 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     var _this = this;
 
     this.batchedUpdates(function () {
-      _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_7__["default"].apply(void 0, [_this.publicInstance[method], _this.publicInstance].concat(_toConsumableArray(args)));
+      _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_6__["default"].apply(void 0, [_this.publicInstance[method], _this.publicInstance].concat(_toConsumableArray(args)));
     });
   },
   onPageScroll: function onPageScroll() {
@@ -5646,17 +5660,17 @@ function safeAssign(to, from, prop) {
 }
 
 function getComponentProp(componentConfig, prop) {
+  var _this = this;
+
   var caches = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
   var args = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : [];
-
-  var _this = this;
 
   if (caches && caches[prop]) {
     return caches[prop];
   }
 
-  var _componentConfig$mixi = componentConfig.mixins;
-  var mixins = _componentConfig$mixi === undefined ? [] : _componentConfig$mixi;
+  var _componentConfig$mixi = componentConfig.mixins,
+      mixins = _componentConfig$mixi === void 0 ? [] : _componentConfig$mixi;
   var ret = {};
   mixins.forEach(function (m) {
     var v = m[prop];
@@ -6853,6 +6867,35 @@ function debug(type) {
 
     internalLog(["[".concat(type, "]")].concat(rest));
   }
+}
+
+/***/ }),
+
+/***/ "./src/utils/mapValues.js":
+/*!********************************!*\
+  !*** ./src/utils/mapValues.js ***!
+  \********************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return mapValues; });
+function mapValues(obj, key) {
+  obj = obj || {};
+  var ret = {};
+
+  for (var k in obj) {
+    if (Object.hasOwnProperty.call(obj, k)) {
+      var item = obj[k] || {};
+
+      if (typeof item[key] !== 'undefined') {
+        ret[k] = item[key];
+      }
+    }
+  }
+
+  return ret;
 }
 
 /***/ }),

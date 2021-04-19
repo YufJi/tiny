@@ -2,7 +2,6 @@
 import setData, { spliceData, getOpStr } from '@/utils/setData';
 import objectKeys from '@/utils/objectKeys';
 import getComponentClass from '../ComponentRegistry/getComponentClass';
-import { componentRegistry } from '../ComponentRegistry';
 import mergeArray from '@/utils/mergeArray';
 import EventHub from '../EventHub';
 import log, { debug } from '@/utils/log';
@@ -190,7 +189,7 @@ PageComponent.prototype = {
     getAllUsingComponents(this.pagePath).forEach((component) => {
       const ComponentClass = getComponentClass(component);
       componentsConfig[component] = {
-        props: ComponentClass.props,
+        properties: ComponentClass.properties,
         data: { ...ComponentClass.data },
       };
     });
@@ -259,8 +258,6 @@ PageComponent.prototype = {
   },
 
   updateComponents(payload) {
-    const _this = this;
-
     if (!payload) {
       return;
     }
@@ -276,7 +273,7 @@ PageComponent.prototype = {
       } else if (componentConfig[ComponentKeyIs]) {
         // incase update after unmount
         const ComponentClass = getComponentClass(componentConfig[ComponentKeyIs]);
-        componentInstances[id] = new ComponentClass(_this, id, componentConfig);
+        componentInstances[id] = new ComponentClass(this, id, componentConfig);
         componentInstances[id].ready();
       }
     });

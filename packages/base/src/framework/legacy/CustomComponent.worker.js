@@ -3,6 +3,7 @@ import getComponentClass from '../ComponentRegistry/getComponentClass';
 import mergeArray from '@/utils/mergeArray';
 import setData, { spliceData, getOpStr } from '@/utils/setData';
 import objectKeys from '@/utils/objectKeys';
+import mapValues from '@/utils/mapValues';
 import invokeWithGuardAndReThrow from '@/utils/invokeWithGuardAndReThrow';
 import {
   PendingKeyType,
@@ -29,6 +30,7 @@ export default function Component(setupConfig, currentComponentConfig) {
     return getComponentProp(setupConfig, prop, useCache ? propsCache : useCache);
   }
 
+  const initProperties = mapValues(getProps('properties'), 'value');
   function ComponentClass(page, id, componentConfig) {
     this.is = is;
     this.id = id;
@@ -51,15 +53,18 @@ export default function Component(setupConfig, currentComponentConfig) {
     publicInstance.is = is;
     publicInstance.$id = id;
     publicInstance.$page = page.publicInstance;
-    publicInstance.data = getProps('data', false);
+
+    publicInstance.properties = initProperties;
+    publicInstance.data = { ...getProps('data', false), ...initProperties };
+
     this.computedDeps = { ...ComponentClass.computedDeps };
     this.prevData = publicInstance.data;
-    publicInstance.props = getProps('properties') || getProps('props');
     this.setComponentConfig(componentConfig, true);
   };
 
-  ComponentClass.data = getProps('data');
-  ComponentClass.props = getProps('properties') || getProps('props');
+  
+  ComponentClass.data = { ...getProps('data', false), ...initProperties };
+  ComponentClass.properties = initProperties;
 
   ComponentClass.getAllComponents = function () {
     const allComponents = [is];
@@ -105,23 +110,25 @@ export default function Component(setupConfig, currentComponentConfig) {
       }
       const { publicInstance } = this;
 
-      const prevProps = publicInstance.props;
+      const prevProps = publicInstance.properties;
       if (diffProps) {
         const deleted = diffProps[DiffKeyDeleted];
         const updated = diffProps[DiffKeyUpdated];
+        console.log('updated', updated);
         if (deleted && deleted.length || updated && objectKeys(updated).length) {
-          publicInstance.props = { ...publicInstance.props };
+          publicInstance.properties = { ...publicInstance.properties };
         }
         if (deleted) {
           deleted.forEach((d) => {
-            delete publicInstance.props[d];
+            delete publicInstance.properties[d];
           });
         }
         if (updated) {
-          Object.assign(publicInstance.props, this.normalizeProps(updated));
+          Object.assign(publicInstance.properties, this.normalizeProps(updated));
         }
+        Object.assign(publicInstance.data, publicInstance.properties);
       }
-      if (!init && (prevProps !== publicInstance.props || this.prevData !== publicInstance.data)) {
+      if (!init && (prevProps !== publicInstance.properties || this.prevData !== publicInstance.data)) {
         this.update(prevProps, this.prevData);
         this.prevData = publicInstance.data;
       }
@@ -135,7 +142,14 @@ export default function Component(setupConfig, currentComponentConfig) {
       });
       return newProps;
     },
+    /**
+     * 
+     * @param {*} type e.g. onclickme
+     * @param {*} method  {n: "addTodo", o: 1}
+     * @returns 
+     */
     getTriggerEventHandler(type, method) {
+      console.log(type, method);
       if (!method) {
         return method;
       }

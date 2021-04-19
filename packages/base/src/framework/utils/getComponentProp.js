@@ -12,19 +12,18 @@ function safeAssign(to, from, prop) {
   }
 }
 export default function getComponentProp(componentConfig, prop, caches = false, args = []) {
-  const _this = this;
-
+ 
   if (caches && caches[prop]) {
     return caches[prop];
   }
-  const _componentConfig$mixi = componentConfig.mixins;
-  const mixins = _componentConfig$mixi === undefined ? [] : _componentConfig$mixi;
+
+  const { mixins = [] } = componentConfig;
 
   const ret = {};
   mixins.forEach((m) => {
     let v = m[prop];
     if (typeof v === 'function') {
-      v = v.apply(_this, args);
+      v = v.apply(this, args);
     }
     safeAssign(ret, v, prop);
   });

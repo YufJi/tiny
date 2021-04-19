@@ -5,27 +5,7 @@
       "pages/add-todo/add-todo"
     ],
     "window": {
-      "defaultTitle": "哈哈哈",
-      "titleBarColor": 3289657
-    },
-    "tabBar": {
-      "color": "#dddddd",
-      "selectedColor": 4827630,
-      "backgroundColor": 16777215,
-      "list": [
-        {
-          "pagePath": "pages/todos/todos",
-          "text": "首页",
-          "iconPath": "./assets/logo.png",
-          "selectedIconPath": "./assets/logo.png"
-        },
-        {
-          "pagePath": "pages/add-todo/add-todo",
-          "text": "日志",
-          "selectedIconPath": "./assets/logo.png",
-          "iconPath": "./assets/logo.png"
-        }
-      ]
+      "navigationBarTitleText": "哈哈哈"
     },
     "usingComponents": {
       "add-button": "/components/add-button/add-button"
@@ -33,7 +13,7 @@
     "sitemapLocation": "sitemap.json"
   },
   "pages/todos/todos": {
-    "defaultTitle": "Index"
+    "navigationBarTitleText": "Index"
   },
   "pages/add-todo/add-todo": {}
 }

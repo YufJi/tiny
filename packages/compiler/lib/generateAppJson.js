@@ -38,10 +38,10 @@ module.exports = function g({
   }
 
   if (app.tabBar) {
-    const { items } = app.tabBar;
-    if (Array.isArray(items)) {
+    const { list } = app.tabBar;
+    if (Array.isArray(list)) {
       /* 增加id属性， tabBar的id从 10 开始 */
-      app.tabBar.items = items.map((t) => assign(
+      app.tabBar.list = list.map((t) => assign(
         {
           id: findTabIndex(t.pagePath),
         },

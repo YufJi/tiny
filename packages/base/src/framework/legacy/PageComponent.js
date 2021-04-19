@@ -67,8 +67,8 @@ const remReg = rpx2px(2) < 1 ? /\b0\.0[12]rem/g : rpx2px(1) < 1 ? /\b0\.01rem/g 
 const replacer = Platform.browser === 'ios' ? '0.5px' : '1px';
 
 export default createReactClass({
+  $isCustomComponent: false,
   displayName: 'PageComponent',
-
   mixins: [MessageHandleMixin, RefMixin],
   getInitialState() {
     this.pagePath = this.props.pagePath;

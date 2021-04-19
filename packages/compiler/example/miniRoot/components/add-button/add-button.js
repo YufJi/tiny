@@ -3,9 +3,16 @@ Component({
     text: String
   },
 
+  data: {
+    text: 'jyf',
+    name: 'xxxxx',
+  },
+
   methods: {
     onClickMe() {
-      this.triggerEvent('clickme')
+      console.log(this.properties, this.data)
+      // this.triggerEvent('clickme')
+      this.properties.onclickme();
     },
   },
 });
