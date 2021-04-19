@@ -1,13 +1,15 @@
 /**
- * 一些全局信息
+ * 一些全局变量
  */
 
-
 const gloabl = {
+  currentRender: null, // 当前pageFrame
   pagesStack: [],
   renders: {},
+  tabRenders: {},
   worker: null,
-  APPCONFIG: {},
+  appConfig: {},
+  tabBarConfig: null,
 }
 
 export default gloabl;

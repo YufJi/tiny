@@ -1,0 +1,21 @@
+{
+  "textColor": 14540253,
+  "selectedColor": 4827630,
+  "backgroundColor": 16777215,
+  "items": [
+    {
+      "name": "首页",
+      "icon": "/assets/logo.png",
+      "tag": "pages/todos/todos",
+      "url": "render.html#pages/todos/todos",
+      "launchParamsTag": "pages/todos/todos"
+    },
+    {
+      "name": "日志",
+      "icon": "/assets/logo.png",
+      "tag": "pages/logs/logs",
+      "url": "render.html#pages/logs/logs",
+      "launchParamsTag": "pages/logs/logs"
+    }
+  ]
+}

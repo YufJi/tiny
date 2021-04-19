@@ -8,6 +8,25 @@
       "defaultTitle": "哈哈哈",
       "titleBarColor": 3289657
     },
+    "tabBar": {
+      "textColor": 14540253,
+      "selectedColor": 4827630,
+      "backgroundColor": 16777215,
+      "items": [
+        {
+          "id": 10,
+          "pagePath": "pages/todos/todos",
+          "name": "首页",
+          "icon": "./assets/logo.png"
+        },
+        {
+          "id": 11,
+          "pagePath": "pages/logs/logs",
+          "name": "日志",
+          "icon": "./assets/logo.png"
+        }
+      ]
+    },
     "usingComponents": {
       "add-button": "/components/add-button/add-button"
     },

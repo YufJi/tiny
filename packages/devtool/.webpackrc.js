@@ -9,7 +9,7 @@ module.exports = (env) => {
     html: {
       index: {
         filename: 'index.html',
-        title: 'devtool',
+        title: '小程序浏览器调试',
         template: path.join(__dirname, 'template/host.html'),
       },
     },

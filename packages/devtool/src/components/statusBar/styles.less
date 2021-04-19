@@ -1,9 +1,30 @@
 .statusBar {
+    color: #333;
     height: 20px;
     width: 100%;
     display: flex;
-    padding: 0 20px 0 20px;
+    padding: 0 15px;
     justify-content: space-between;
     align-items: center;
-    color: #9b9b9b;
+
+    .status-info {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      .item {
+        display: block;
+        margin: 0 2px;
+
+        &:first-child {
+          font-size: 12px;
+        }
+        &:nth-child(2) {
+          font-size: 16px;
+        }
+        &:nth-child(3) {
+          font-size: 22px;
+          margin-right: 0;
+        }
+      }
+    }
 }

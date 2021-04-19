@@ -24,7 +24,6 @@ module.exports = function generateEntries({
   src, /* miniprogramRoot 小程序根目录 */
   appJson,
   importScripts,
-  
   out,
   web,
   native,

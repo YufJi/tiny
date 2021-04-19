@@ -27,9 +27,9 @@ function createIframe(options) {
   return el
 }
 
-export function createWorkerIframe(id, src, onload) {
+export function createWorkerIframe({guid, src, onload}) {
   return createIframe({
-    id, 
+    id: guid, 
     src, 
     style: `width:0; height:0; border:0; display:none;`, 
     onload, 
@@ -37,9 +37,9 @@ export function createWorkerIframe(id, src, onload) {
   })
 }
 
-export function createRenderIframe(id, src, onload) {
+export function createRenderIframe({guid, src, onload}) {
   return createIframe({
-    id, 
+    id: guid, 
     src, 
     style: `
       position: absolute;

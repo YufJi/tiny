@@ -20,18 +20,19 @@ module.exports = function run(config) {
     injectScript,   /* 需要注入的脚本 */
     mergeSubPackages,
     injectScriptForNative,
-    indexPage = 'index.html',
+    indexPage = 'render.html',
     src,  /* 小程序目录 */
     out,  /* 转译输出目录 */
     injectScriptAfterWorkerImportScripts,
-    runtimeConfig = {},
     pluginInjection,
-    
     baseDir,
     native = false, /* 是否需要生成RN */
+    runtimeConfig = {}
   } = config;
 
   const transformConfig = config;
+  const { contextPath } = runtimeConfig;
+
 
   if (typeof transformConfig.showFileNameInError === 'undefined') {
     transformConfig.showFileNameInError = true;
@@ -42,8 +43,6 @@ module.exports = function run(config) {
     fs.mkdirsSync(out);
   }
 
-  const { contextPath } = runtimeConfig;
-
   /* 生成app.json */
   const appJson = generateAppJson({
     src,
@@ -53,8 +52,6 @@ module.exports = function run(config) {
 
   /* 生成入口文件 index.web 和 index.worker */
   generateEntries({
-    
-    runtimeConfig,
     appJson,
     web: true,
     native,
@@ -72,15 +69,15 @@ module.exports = function run(config) {
     appJson,
     out,
     indexPage,
-    contextPath,
-    
     src,
+    contextPath,
   });
 
   // todo 这里开始走webpack构建入口文件为index.web 和 index.worker
   // transform(assign({}, transformConfig, { cwd: src }));
   // return;
 
+  const assetTypes = ['*.eot', '*.woff', '*.ttf', '*.text', '*.png', '*.jpg', '*.jpeg', '*.gif', '*.bmp', '*.svg', '*.webp'];
   const isDev = true
   const getConfig = (type) => {
     const isWorker = type === 'worker';
@@ -162,14 +159,14 @@ module.exports = function run(config) {
       },
       plugins: [
         new webpack.ProgressPlugin(),
-        new CopyPlugin([
-          { 
-            from: path.join(src, '**/*.png'),
+        new CopyPlugin(assetTypes.map(type => {
+          return {
+            from: path.join(src, `**/${type}`),
             transformPath(targetPath, absolutePath) {
               return absolutePath.replace(src, '')
             },
-          },
-        ]),
+          }
+        })),
       ],
       externals: {
         react: 'self.React',

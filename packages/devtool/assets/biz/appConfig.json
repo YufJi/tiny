@@ -17,5 +17,5 @@
       "titleBarColor": 3289657
     }
   },
-  "prerenderPage": "index.html"
+  "prerenderPage": "render.html"
 }

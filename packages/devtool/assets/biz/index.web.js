@@ -229,7 +229,7 @@ function render(data) {
   return $createRoot(_react2.default.createElement(
     Button,
     {
-      className: "add-button", hoverClass: "none", ontapcapture: $getEventHandler(this, "onClickMe")
+      className: "add-button", hoverClass: "none", ontap: $getEventHandler(this, "onClickMe")
     },
     [_react2.default.createElement(
       Text,
@@ -624,7 +624,7 @@ Page(
 {
   pagePath: 'pages/todos/todos',
   usingComponents: {"add-button":"/components/add-button/add-button"},
-  
+  tabIndex: 10,
   render: function() { return __webpack_require__(/*! ./todos.wxml */ "./example/miniRoot/pages/todos/todos.wxml"); },
   stylesheet: function() { return __webpack_require__(/*! ./todos.wxss */ "./example/miniRoot/pages/todos/todos.wxss"); },
 });
@@ -759,11 +759,9 @@ function render(data) {
       {
         className: "todo-footer"
       },
-      [_react2.default.createElement(AddButton, {
+      _react2.default.createElement(AddButton, {
         text: "Add Todo", onclickme: $getComponentEventHandler(this, "addTodo"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button'
-      }), _react2.default.createElement(AddButton, {
-        onclickme: $getComponentEventHandler(this, "addTodo"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button'
-      })]
+      })
     )]
   ));
 };

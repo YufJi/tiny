@@ -228,14 +228,14 @@ $global.currentComponentConfig =
 
 Component({
   properties: {
-    text: '我是 text',
+    text: '我是text',
   },
 
   methods: {
     onClickMe() {
-      console.log('button click', this.props);
+      console.log('button click');
       // this.props.onClickMe();
-      this.triggerEvent('clickme')
+      // this.triggerEvent('clickme')
     },
   },
 });
@@ -318,7 +318,7 @@ $global.currentPageConfig =
 {
   pagePath: 'pages/todos/todos',
   usingComponents: {"add-button":"/components/add-button/add-button"},
-  
+  tabIndex: 10,
 };
 
 // 获取全局 app 实例

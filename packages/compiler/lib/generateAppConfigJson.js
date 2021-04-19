@@ -3,8 +3,7 @@ const path = require('path');
 const { transformColorConfig, cleanPageJson } = require('./utils');
 const generateMultiLanguageAppConfigJson = require('./generateMultiLanguageAppConfigJson');
 
-const { assign } = Object;
-// for android service worker
+// for pwa
 const manifestJson = {
   gcm_sender_id: 'my_gcm_sender_id',
   gcm_user_visible_only: true,
@@ -27,24 +26,17 @@ module.exports = function g({ appJson, out, src, indexPage, contextPath }) {
       t.tag = t.pagePath;
       t.url = `${indexPage}#${t.tag}`;
       delete t.pagePath;
-      if (contextPath !== undefined) {
-        if (t.icon) {
-          if (t.icon.startsWith('/')) {
-            t.icon = t.icon.slice(1);
-          }
-          t.icon = `${contextPath}/${t.icon}`;
-        }
-        if (t.activeIcon) {
-          if (t.activeIcon.startsWith('/')) {
-            t.activeIcon = t.activeIcon.slice(1);
-          }
-          t.activeIcon = `${contextPath}/${t.activeIcon}`;
-        }
+
+      if (t.icon) {
+        t.icon = contextPath ? `${contextPath}/${t.icon}` : path.join(src, t.icon).replace(src, '');
       }
+      if (t.activeIcon) {
+        t.activeIcon = contextPath ? `${contextPath}/${t.activeIcon}` : path.join(src, t.activeIcon).replace(src, '');
+      }
+
       t.launchParamsTag = t.tag;
     });
     // webConfig.tabBar = app.tabBar;
-    app.tabBar.disableOnInit = true;
     if (out) {
       fs.writeFileSync(
         path.join(out, 'tabBar.json'),
@@ -88,7 +80,6 @@ module.exports = function g({ appJson, out, src, indexPage, contextPath }) {
     webConfig.prerenderPage = indexPage;
   }
   if (out) {
-    // fs.writeFileSync(path.join(out, 'app_.json'), JSON.stringify(getExtApp(src).app, null, 2));
     fs.writeFileSync(
       path.join(out, 'appConfig.json'),
       JSON.stringify(webConfig, null, 2),
@@ -97,13 +88,15 @@ module.exports = function g({ appJson, out, src, indexPage, contextPath }) {
       path.join(out, 'manifest.json'),
       JSON.stringify(manifestJson, null, 2),
     );
-    generateMultiLanguageAppConfigJson(
-      { app: webConfig, tabBar: app.tabBar, src },
-      out,
-    );
+    generateMultiLanguageAppConfigJson({ 
+      app: webConfig, 
+      tabBar: app.tabBar, 
+      src 
+    }, out);
   }
   return {
     webConfig,
+    tabBarConfig: app.tabBar,
     manifestJson,
   };
 };
