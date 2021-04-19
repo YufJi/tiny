@@ -6,7 +6,6 @@ const getConfig = (type, env) => {
   const isDev = process.env.NODE_ENV !== 'production';
   
   return {
-    watch: isDev,
     mode: isDev ? 'development' : 'production',
     entry: isWorker ? {
       'mp.worker': path.join(__dirname, 'src/index.worker.js'),
@@ -64,7 +63,9 @@ const getConfig = (type, env) => {
       new MiniCssExtractPlugin({
         filename: 'mp.css'
       }),
-    ]
+    ],
+
+    stats: 'normal',
   }
 }
 

@@ -14,8 +14,9 @@
     "lib"
   ],
   "scripts": {
-    "dev": "cross-env NODE_ENV=development webpack --config webpack.config.js",
-    "build": "cross-env NODE_ENV=production webpack --config webpack.config.js"
+    "watch": "cross-env NODE_ENV=development webpack --config webpack.config.js --watch --progress",
+    "dev": "cross-env NODE_ENV=development webpack --config webpack.config.js --progress",
+    "build": "cross-env NODE_ENV=production webpack --config webpack.config.js --progress"
   },
   "dependencies": {
     "classnames": "^2.3.1",
