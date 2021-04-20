@@ -22,6 +22,10 @@ Page({
   onShow() {
     // 设置全局数据到当前页面数据
     this.setData({ todos: app.todos });
+    console.log('page show');
+  },
+  onHide() {
+    console.log('page hide');
   },
   // 事件处理函数
   onTodoChanged(e) {
@@ -35,8 +39,10 @@ Page({
   },
 
   addTodo() {
-    console.log(11111);
+    console.log('准备进行页面跳转');
     // 进行页面跳转
-    // wx.navigateTo({ url: '../add-todo/add-todo' });
+    wx.navigateTo({ 
+      url: '../add-todo/add-todo',
+    });
   },
 });

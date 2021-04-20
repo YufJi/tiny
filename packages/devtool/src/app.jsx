@@ -1,28 +1,34 @@
 
 import React, { Component } from 'react';
+import { connect } from 'react-redux'
 import StatusBar from '@/components/statusBar'
 
+import jsbridge from '@/utils/jsbridge'
 import { createWorkerIframe, createRenderIframe } from '@/utils/createIframe';
 import global from '@/utils/global'
 import requireFile from '@/utils/requireFile';
 import EventHub, { WORKERLOADED } from '@/utils/EventHub';
 import style from './app.module.less';
-import { createGuid } from './utils';
+import { createGuid } from '@/utils/';
+import { doPushWindow } from '@/utils/jsbridge/API/navigation';
 
-export default class App extends Component {
+class App extends Component {
   constructor(props) {
     super(props);
 
     this.loadAppConfig()
     this.loadTabBarConfig()
 
+    this.jsbridge = jsbridge;
+    window.JSBridgeInstance = this.jsbridge;
+
     this.state = {
-      navConfig: this.initNav(),
       mpVisible: true,
     }
   }
 
   componentDidMount() {
+    this.initNav()
     this.initWorker()
     this.initPage()
   }
@@ -42,19 +48,8 @@ export default class App extends Component {
   initNav() {
     const { window } = global.appConfig
 
-    return {
+    this.props.setNavConfig({
       title: window.defaultTitle
-    }
-  }
-
-  setNav(config) {
-    const { navConfig } = this.state
-
-    this.setState({
-      navConfig: {
-        ...navConfig,
-        ...config,
-      }
     })
   }
 
@@ -74,25 +69,13 @@ export default class App extends Component {
     const { pages, launchParams } = global.appConfig
     const homePage = pages[0]
 
-    this.pushPage(homePage, launchParams[homePage])
-  }
+    const url = `#${homePage}`
+    const tag = homePage
+    const pageConfig = launchParams[homePage]
 
-  pushPage(pagePath, pageConfig) {
-    const src = `render.html#${pagePath}`
-    const guid = createGuid('render')
-    const pageIframe = createRenderIframe({
-      guid, 
-      src, 
-      onload: (iframe) => {
-        iframe.setAttribute('path', pagePath)
-        iframe.path = pagePath;
-      },
-    })
-    global.currentRender = pageIframe
-    global.renders[guid] = pageIframe
-    global.pagesStack.push(guid);
+    doPushWindow(url, tag)
 
-    this.setNav({
+    this.props.setNavConfig({
       title: pageConfig.navigationBarTitleText,
       backgroundColor: pageConfig.navigationBarBackgroundColor ? `#${pageConfig.navigationBarBackgroundColor.toString(16)}` : '#fff',
     })
@@ -113,7 +96,8 @@ export default class App extends Component {
   }
 
   render() {
-    const { navConfig, mpVisible } = this.state;
+    const { navConfig } = this.props;
+    const { mpVisible } = this.state;
 
     const isShowBackIcon = global.pagesStack.length > 1
 
@@ -131,7 +115,7 @@ export default class App extends Component {
               {isShowBackIcon && <div className={`${style.back} ic`}>&#xe641;</div>}
             </div>
             <div className={`${style.title} flex-1`}>
-              {navConfig.title}
+              {navConfig.navigationBarTitleText}
             </div>
             <div className={`${style.right} flex-r`}>
               <div className={`${style.more} ic`}>&#xe648;</div>
@@ -161,3 +145,19 @@ export default class App extends Component {
     )
   }
 }
+
+const mapState = (state) => {
+  const { nav } = state;
+  return {
+      navConfig: nav,
+  };
+};
+
+const mapDispatch = dispatch => ({
+  setNavConfig: config => dispatch.nav.setNavConfig(config),
+});
+
+export default connect(
+  mapState,
+  mapDispatch
+)(App);

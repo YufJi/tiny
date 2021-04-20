@@ -16,10 +16,12 @@ import {
   DiffKeyUpdated,
   DiffKeyDeleted,
 } from '@/utils/consts';
+import {
+  eventReg
+} from '@/utils/reg';
+
 import getComponentProp from '../utils/getComponentProp';
 import fireComponentLifecycle from '../utils/fireComponentLifecycle';
-
-const eventReg = /^on[a-zA-Z]/;
 
 export default function Component(setupConfig, currentComponentConfig) {
   const { is, usingComponents } = currentComponentConfig;
@@ -48,6 +50,11 @@ export default function Component(setupConfig, currentComponentConfig) {
           return self.setData(spliceData, a, b);
         },
       },
+      triggerEvent: {
+        value: function value(eventName, ...args) {
+          return self.triggerEventHandlers[`on${eventName}`](...args);
+        },
+      },
     });
 
     publicInstance.is = is;
@@ -59,6 +66,7 @@ export default function Component(setupConfig, currentComponentConfig) {
 
     this.computedDeps = { ...ComponentClass.computedDeps };
     this.prevData = publicInstance.data;
+
     this.setComponentConfig(componentConfig, true);
   };
 
@@ -114,7 +122,7 @@ export default function Component(setupConfig, currentComponentConfig) {
       if (diffProps) {
         const deleted = diffProps[DiffKeyDeleted];
         const updated = diffProps[DiffKeyUpdated];
-        console.log('updated', updated);
+
         if (deleted && deleted.length || updated && objectKeys(updated).length) {
           publicInstance.properties = { ...publicInstance.properties };
         }
@@ -133,11 +141,12 @@ export default function Component(setupConfig, currentComponentConfig) {
         this.prevData = publicInstance.data;
       }
     },
+    /* 注册event在props上 */
     normalizeProps(oldProps) {
       const newProps = { ...oldProps };
       objectKeys(oldProps).forEach((p) => {
         if (p.match(eventReg)) {
-          newProps[p] = this.getTriggerEventHandler(p, oldProps[p]);
+          this.getTriggerEventHandler(p, oldProps[p]);
         }
       });
       return newProps;
@@ -149,7 +158,7 @@ export default function Component(setupConfig, currentComponentConfig) {
      * @returns 
      */
     getTriggerEventHandler(type, method) {
-      console.log(type, method);
+      
       if (!method) {
         return method;
       }
@@ -158,14 +167,14 @@ export default function Component(setupConfig, currentComponentConfig) {
       let handleFn = triggerEventHandlers[type];
       if (!handleFn) {
         handleFn = triggerEventHandlers[type] = (...args) => {
-          return this.triggerEvent.apply(this, [handleFn.method].concat(args));
+          return this.$triggerEvent.apply(this, [handleFn.method].concat(args));
         };
       }
       // method may change for onXX type
       handleFn.method = method;
       return handleFn;
     },
-    triggerEvent(method, ...args) {
+    $triggerEvent(method, ...args) {
       /* todo 发送triggerComponentEvent type, detail, options */
       // tricky, page is also a component
       const ownerComponent = this.page.getComponentInstance(this.ownerId);

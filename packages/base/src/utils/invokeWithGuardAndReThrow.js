@@ -1,6 +1,7 @@
 import gerror from './gerror';
 
 const g = self;
+
 export default function invokeWithGuardAndReThrow(fn, context = null, ...args) {
   if (!fn) {
     return;

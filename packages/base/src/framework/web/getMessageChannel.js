@@ -20,9 +20,9 @@ export default function getMessageChannel(pageInfo, bridge) {
   const payload = {
     pagePath,
     id,
-    viewId: g.APVIEWID,
     pageType: 'RENDER',
     msgType: 'DOMContentLoaded',
+    viewId: g.WEBVIEWID,
   };
   if (queryString) {
     payload.queryString = queryString;
@@ -33,7 +33,7 @@ export default function getMessageChannel(pageInfo, bridge) {
   return {
     id,
     postMessage: function postMessage(data) {
-      bridge.call('postMessage', data);
+      bridge.call('postMessage', { viewId: g.WEBVIEWID, ...data });
     },
     onMessage: function onMessage(fn) {
       callback = fn;

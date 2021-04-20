@@ -12591,7 +12591,7 @@ var Canvas = Object(_framework___WEBPACK_IMPORTED_MODULE_3__["createComponent"])
 
     if (this.getEnableNativeProp()) {
       Object(_framework___WEBPACK_IMPORTED_MODULE_3__["getCurrentPageImpl"])().callRemote('bridge', '__emit', "nbcomponent.canvas.".concat(onType), {
-        viewId: g.APVIEWID,
+        viewId: g.WEBVIEWID,
         data: _objectSpread({
           element: this.getId(),
           eventType: eventType
@@ -12606,7 +12606,7 @@ var Canvas = Object(_framework___WEBPACK_IMPORTED_MODULE_3__["createComponent"])
 
     if (this.getEnableNativeProp()) {
       Object(_framework___WEBPACK_IMPORTED_MODULE_3__["getCurrentPageImpl"])().callRemote('bridge', '__emit', "nbcomponent.canvas.".concat(onType), {
-        viewId: g.APVIEWID,
+        viewId: g.WEBVIEWID,
         data: {
           element: this.getId(),
           eventType: eventType,
@@ -12768,8 +12768,8 @@ var CheckboxGroup = Object(_framework___WEBPACK_IMPORTED_MODULE_5__["createCompo
         value = _e$detail.value;
     this.updateValue(value2, value);
 
-    if (this.props.onChange) {
-      this.props.onChange(this.props.$mp.getNormalizedEvent('change', {
+    if (this.props.onchange) {
+      this.props.onchange(this.props.$mp.getNormalizedEvent('change', {
         detail: {
           value: this.state.value
         }
@@ -16399,11 +16399,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../utils/normalizeComponentProps */ "./src/framework/utils/normalizeComponentProps.js");
 /* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
 /* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
+/* harmony import */ var _utils_reg__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @/utils/reg */ "./src/utils/reg.js");
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 
 
 
@@ -16428,10 +16430,9 @@ function reset() {
 _EventHub__WEBPACK_IMPORTED_MODULE_2__["default"].addListener(['pageReady', 'pageUpdate'], function (e) {
   var _objectSpread2;
 
-  e.payload = _objectSpread(_objectSpread({}, e.payload), (_objectSpread2 = {}, _defineProperty(_objectSpread2, _utils_consts__WEBPACK_IMPORTED_MODULE_9__["PayloadKeyMountedComponents"], mountedComponents), _defineProperty(_objectSpread2, _utils_consts__WEBPACK_IMPORTED_MODULE_9__["PayloadKeyUnmountedComponents"], unmountedComponents), _objectSpread2));
+  e.payload = _objectSpread(_objectSpread({}, e.payload || {}), (_objectSpread2 = {}, _defineProperty(_objectSpread2, _utils_consts__WEBPACK_IMPORTED_MODULE_9__["PayloadKeyMountedComponents"], mountedComponents), _defineProperty(_objectSpread2, _utils_consts__WEBPACK_IMPORTED_MODULE_9__["PayloadKeyUnmountedComponents"], unmountedComponents), _objectSpread2));
   reset();
 });
-var eventReg = /^on[A-Z]/;
 function setComponentsConfig(componentsConfig) {
   if (!componentsConfig) {
     return;
@@ -16573,7 +16574,7 @@ function getRender(is) {
         var updated = newProps[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["DiffKeyUpdated"]] = _objectSpread({}, props[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["DiffKeyUpdated"]]);
 
         Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_8__["default"])(updated).forEach(function (p) {
-          if (p.match(eventReg) && updated[p]) {
+          if (p.match(_utils_reg__WEBPACK_IMPORTED_MODULE_10__["eventReg"]) && updated[p]) {
             ownerId = updated[p][_utils_consts__WEBPACK_IMPORTED_MODULE_9__["ComponentKeyOwnerId"]];
             updated[p] = updated[p][_utils_consts__WEBPACK_IMPORTED_MODULE_9__["ComponentKeyName"]];
           }
@@ -16910,11 +16911,6 @@ var replacer = _Platform__WEBPACK_IMPORTED_MODULE_16__["default"].browser === 'i
     }
 
     return componentEventHandlers[name];
-  },
-  $resolveComponent: function $resolveComponent(name) {
-    // 根据usingComponents获取Com
-    var path = usingComponents[name];
-    var Com = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_8__["default"])(path);
   },
   receiveData: function receiveData(toBeData, callback) {
     var _this = this;
@@ -18125,6 +18121,12 @@ function render(config, bridge) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return getMessageChannel; });
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 var g = self;
 function getMessageChannel(pageInfo, bridge) {
   var unhandledMessages = [];
@@ -18145,9 +18147,9 @@ function getMessageChannel(pageInfo, bridge) {
   var payload = {
     pagePath: pagePath,
     id: id,
-    viewId: g.APVIEWID,
     pageType: 'RENDER',
-    msgType: 'DOMContentLoaded'
+    msgType: 'DOMContentLoaded',
+    viewId: g.WEBVIEWID
   };
 
   if (queryString) {
@@ -18158,7 +18160,9 @@ function getMessageChannel(pageInfo, bridge) {
   return {
     id: id,
     postMessage: function postMessage(data) {
-      bridge.call('postMessage', data);
+      bridge.call('postMessage', _objectSpread({
+        viewId: g.WEBVIEWID
+      }, data));
     },
     onMessage: function onMessage(fn) {
       callback = fn;
@@ -19426,23 +19430,23 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DiffKeyUpdated", function() { return DiffKeyUpdated; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DiffKeyDeleted", function() { return DiffKeyDeleted; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ComponentKeyName", function() { return ComponentKeyName; });
-var PendingKeyType = 't';
-var PendingKeyId = 'i';
-var PendingKeyData = 'd';
-var PendingKeyOp = 'o';
+var PendingKeyType = 'PendingKeyType';
+var PendingKeyId = 'PendingKeyId';
+var PendingKeyData = 'PendingKeyData';
+var PendingKeyOp = 'PendingKeyOp';
 var PendingValuePage = 1;
 var PendingValueComponent = 2;
 var OpSet = 1;
 var OpSplice = 2;
-var PayloadKeyMountedComponents = 'm';
-var PayloadKeyUnmountedComponents = 'u';
-var ComponentKeyId = 'i';
-var ComponentKeyIs = 's';
-var ComponentKeyDiffProps = 'd';
-var ComponentKeyOwnerId = 'o';
-var DiffKeyUpdated = 'u';
-var DiffKeyDeleted = 'e';
-var ComponentKeyName = 'n';
+var PayloadKeyMountedComponents = 'PayloadKeyMountedComponents';
+var PayloadKeyUnmountedComponents = 'PayloadKeyUnmountedComponents';
+var ComponentKeyId = 'ComponentKeyId';
+var ComponentKeyIs = 'ComponentKeyIs';
+var ComponentKeyDiffProps = 'ComponentKeyDiffProps';
+var ComponentKeyOwnerId = 'ComponentKeyOwnerId';
+var DiffKeyUpdated = 'DiffKeyUpdated';
+var DiffKeyDeleted = 'DiffKeyDeleted';
+var ComponentKeyName = 'ComponentKeyName';
 
 /***/ }),
 
@@ -19964,6 +19968,20 @@ function objectKeys(obj) {
 
   return [];
 }
+
+/***/ }),
+
+/***/ "./src/utils/reg.js":
+/*!**************************!*\
+  !*** ./src/utils/reg.js ***!
+  \**************************/
+/*! exports provided: eventReg */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "eventReg", function() { return eventReg; });
+var eventReg = /^on[a-zA-Z]/;
 
 /***/ }),
 

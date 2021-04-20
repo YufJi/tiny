@@ -11,6 +11,7 @@ compiler({
   out: outPath,
   baseDir,
 
+  bridgeName: 'wx',
   templateExtname: '.wxml',
   styleExtname: '.wxss',
   templateNamespace: 'wx',

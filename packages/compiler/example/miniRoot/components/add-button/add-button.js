@@ -11,8 +11,8 @@ Component({
   methods: {
     onClickMe() {
       console.log(this.properties, this.data)
-      // this.triggerEvent('clickme')
-      this.properties.onclickme();
+      this.triggerEvent('clickme')
+      // this.properties.onclickme();
     },
   },
 });

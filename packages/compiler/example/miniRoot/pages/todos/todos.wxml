@@ -9,7 +9,7 @@
 
   <view class="todo-items">
 
-    <checkbox-group class="todo-items-group" onChange="onTodoChanged">
+    <checkbox-group class="todo-items-group" bindchange="onTodoChanged">
       <label wx:for="{{todos}}" wx:for-item="item" class="todo-item {{item.completed ? 'checked' : ''}}" wx:key="*this">
         <checkbox class="todo-item-checkbox" value="{{item.text}}" checked="{{item.completed}}" />
         <text class="todo-item-text">{{item.text}}</text>

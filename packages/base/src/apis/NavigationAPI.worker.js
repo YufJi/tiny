@@ -48,7 +48,7 @@ export function getNavigationAPI(ap) {
       }
       getAppImpl().navigateTo({
         url: params.url,
-        viewId: params.viewId || getCurrentViewId(),
+        viewId: params.viewId,
       }, { pushWindow: doPush });
 
       handleResultCallback(params);

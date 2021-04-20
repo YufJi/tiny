@@ -734,7 +734,7 @@ function render(data) {
       _react2.default.createElement(
         CheckboxGroup,
         {
-          className: "todo-items-group", onChange: "onTodoChanged"
+          className: "todo-items-group", onchange: $getEventHandler(this, "onTodoChanged")
         },
         $iterate(data['todos'], function (item, index) {
           return _react2.default.createElement(

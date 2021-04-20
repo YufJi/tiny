@@ -26,8 +26,9 @@ const CheckboxGroup = createComponent({
     const { value2, value } = e.detail;
 
     this.updateValue(value2, value);
-    if (this.props.onChange) {
-      this.props.onChange(this.props.$mp.getNormalizedEvent('change', {
+    
+    if (this.props.onchange) {
+      this.props.onchange(this.props.$mp.getNormalizedEvent('change', {
         detail: {
           value: this.state.value,
         },
@@ -46,7 +47,7 @@ const CheckboxGroup = createComponent({
     }
     this.state.value = allValue;
   },
-  render: function render() {
+  render() {
     return React.createElement(View, { ...this.props, role: 'group' });
   },
 }));

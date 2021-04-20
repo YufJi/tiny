@@ -41,15 +41,8 @@ export function createRenderIframe({guid, src, onload}) {
   return createIframe({
     id: guid, 
     src, 
-    style: `
-      position: absolute;
-      top: 0px;
-      bottom: 0px;
-      width: 100%;
-      height: 100%;
-    `, 
+    style: `position: absolute; top: 0px; bottom: 0px; width: 100%; height: 100%;`,
     onload, 
     container: document.getElementById('pageFrames'),
   })
 }
-

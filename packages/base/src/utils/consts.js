@@ -1,11 +1,11 @@
 
-export const PendingKeyType = 't';
+export const PendingKeyType = 'PendingKeyType';
 
-export const PendingKeyId = 'i';
+export const PendingKeyId = 'PendingKeyId';
 
-export const PendingKeyData = 'd';
+export const PendingKeyData = 'PendingKeyData';
 
-export const PendingKeyOp = 'o';
+export const PendingKeyOp = 'PendingKeyOp';
 
 export const PendingValuePage = 1;
 
@@ -15,20 +15,20 @@ export const OpSet = 1;
 
 export const OpSplice = 2;
 
-export const PayloadKeyMountedComponents = 'm';
+export const PayloadKeyMountedComponents = 'PayloadKeyMountedComponents';
 
-export const PayloadKeyUnmountedComponents = 'u';
+export const PayloadKeyUnmountedComponents = 'PayloadKeyUnmountedComponents';
 
-export const ComponentKeyId = 'i';
+export const ComponentKeyId = 'ComponentKeyId';
 
-export const ComponentKeyIs = 's';
+export const ComponentKeyIs = 'ComponentKeyIs';
 
-export const ComponentKeyDiffProps = 'd';
+export const ComponentKeyDiffProps = 'ComponentKeyDiffProps';
 
-export const ComponentKeyOwnerId = 'o';
+export const ComponentKeyOwnerId = 'ComponentKeyOwnerId';
 
-export const DiffKeyUpdated = 'u';
+export const DiffKeyUpdated = 'DiffKeyUpdated';
 
-export const DiffKeyDeleted = 'e';
+export const DiffKeyDeleted = 'DiffKeyDeleted';
 
-export const ComponentKeyName = 'n';
+export const ComponentKeyName = 'ComponentKeyName';

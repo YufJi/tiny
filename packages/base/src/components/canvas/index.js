@@ -425,7 +425,7 @@ const Canvas = createComponent({
     const onType = getOnEvent(eventType);
     if (this.getEnableNativeProp()) {
       getCurrentPageImpl().callRemote('bridge', '__emit', `nbcomponent.canvas.${onType}`, {
-        viewId: g.APVIEWID,
+        viewId: g.WEBVIEWID,
         data: { element: this.getId(), eventType, ...createTap.call(this, srcEvent, defaultCreateTap) },
       });
     }
@@ -435,7 +435,7 @@ const Canvas = createComponent({
     const onType = getOnEvent(eventType);
     if (this.getEnableNativeProp()) {
       getCurrentPageImpl().callRemote('bridge', '__emit', `nbcomponent.canvas.${onType}`, {
-        viewId: g.APVIEWID,
+        viewId: g.WEBVIEWID,
         data: {
           element: this.getId(),
           eventType,

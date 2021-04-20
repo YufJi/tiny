@@ -164,7 +164,7 @@ AppImpl.prototype = {
     }
     invokeWithGuardAndReThrow(this.publicInstance.onHide, this.publicInstance);
   },
-  show: function show(o, showPage = true) {
+  show(o, showPage = true) {
     this.shown = true;
     const options = o || {};
     log('framework: App onShow');
@@ -179,10 +179,10 @@ AppImpl.prototype = {
       }
     }
   },
-  error: function error(e) {
+  error(e) {
     invokeWithGuardAndReThrow(this.publicInstance.onError, this.publicInstance, e);
   },
-  navigateBack: function navigateBack(params = {}, fn) {
+  navigateBack(params = {}, fn) {
     let { delta = 1 } = params;
 
     if (typeof delta !== 'number') {

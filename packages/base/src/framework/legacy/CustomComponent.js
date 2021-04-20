@@ -19,6 +19,9 @@ import {
   DiffKeyDeleted,
   ComponentKeyName,
 } from '@/utils/consts';
+import {
+  eventReg
+} from '@/utils/reg';
 
 let componentId = 1;
 let mountedComponents;
@@ -33,7 +36,7 @@ function reset() {
 
 EventHub.addListener(['pageReady', 'pageUpdate'], (e) => {
   e.payload = {
-    ...e.payload,
+    ...(e.payload || {}),
     ...{
       [PayloadKeyMountedComponents]: mountedComponents,
       [PayloadKeyUnmountedComponents]: unmountedComponents,
@@ -41,8 +44,6 @@ EventHub.addListener(['pageReady', 'pageUpdate'], (e) => {
   };
   reset();
 });
-
-const eventReg = /^on[A-Z]/;
 
 export function setComponentsConfig(componentsConfig) {
   if (!componentsConfig) {

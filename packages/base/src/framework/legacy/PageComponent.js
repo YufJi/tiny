@@ -196,13 +196,6 @@ export default createReactClass({
 
     return componentEventHandlers[name];
   },
-  $resolveComponent(name) {
-    // 根据usingComponents获取Com
-    const path = usingComponents[name]
-    const Com = getComponentClass(path)
-
-
-  },
   receiveData(toBeData, callback) {
     const _this = this;
 

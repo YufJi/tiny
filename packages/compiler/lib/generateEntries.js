@@ -8,13 +8,13 @@ function getComponentImports(pages = [], baseDir, option) {
   return getImports(getPagesComponents(pages), baseDir, option);
 }
 
-const defaultInjectScriptAfterWorkerImportScripts = `
+const defaultInjectScriptAfterWorkerImportScripts = (bridgeName = 'mp') => `
 var MP = self.MP;
 self.getCurrentPages = MP.getCurrentPages;
 self.getApp = MP.getApp;
 self.Page = MP.Page;
 self.App = MP.App;
-self.mp = MP.bridge;
+self.${bridgeName} = MP.bridge;
 self.Component = MP.Component;
 self.$global = MP.$global;
 self.requirePlugin = MP.requirePlugin;
@@ -29,11 +29,13 @@ module.exports = function generateEntries({
   native,
   baseDir = '.',
   injectScript = '',
-  injectScriptForNative = defaultInjectScriptAfterWorkerImportScripts,
-  injectScriptAfterWorkerImportScripts = defaultInjectScriptAfterWorkerImportScripts,
+  injectScriptForNative,
+  injectScriptAfterWorkerImportScripts,
   pluginInjection = '',
   transformConfig,
 }) {
+  injectScriptForNative = injectScriptForNative || defaultInjectScriptAfterWorkerImportScripts(transformConfig.bridgeName)
+  injectScriptAfterWorkerImportScripts = injectScriptAfterWorkerImportScripts || defaultInjectScriptAfterWorkerImportScripts(transformConfig.bridgeName)
   const { app } = appJson;
   /* 获取页面入口 */
   const pageImports = getImports(app.pages, baseDir, {

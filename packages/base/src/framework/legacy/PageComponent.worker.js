@@ -71,6 +71,7 @@ export default function PageComponent({ id, query, pagePath }) {
 }
 
 const allUsingComponentsCache = {};
+
 function getAllUsingComponents(pagePath) {
   if (pagePath in allUsingComponentsCache) {
     return allUsingComponentsCache[pagePath];
@@ -88,6 +89,7 @@ function getAllUsingComponents(pagePath) {
 
   return allUsingComponents;
 }
+
 PageComponent.prototype = {
   ...MessageHandleMixin,
   load() {
@@ -190,7 +192,7 @@ PageComponent.prototype = {
       const ComponentClass = getComponentClass(component);
       componentsConfig[component] = {
         properties: ComponentClass.properties,
-        data: { ...ComponentClass.data },
+        data: ComponentClass.data,
       };
     });
     // 此时发消息给bridge触发render的渲染，并且带了firstData过去
@@ -268,6 +270,7 @@ PageComponent.prototype = {
     // from bottom to top
     mountedComponents.forEach((componentConfig) => {
       const id = componentConfig[ComponentKeyId];
+
       if (componentInstances[id]) {
         componentInstances[id].setComponentConfig(componentConfig);
       } else if (componentConfig[ComponentKeyIs]) {
@@ -316,7 +319,7 @@ PageComponent.prototype = {
       ...data,
       pageType: this.pageType,
       msgType: 'endpoint',
-      $viewId: this.getViewId(),
+      viewId: this.getViewId(), // 渲染层frameId
     });
   },
 

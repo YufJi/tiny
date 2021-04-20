@@ -137,16 +137,15 @@ const App = {
   },
 
   navigateTo({ url, viewId }, { pushWindow }) {
-    const _this = this;
-
     const currentPage = this.getCurrentPageImpl();
     const pageUrl = resolvePageUrl(url, currentPage);
     loadPage(pageUrl, () => {
       if (checkInvalidPage(pageUrl)) {
         return;
       }
+      /* 这里稍微有些不妥，万一pushWindow失败呢 */
       currentPage.hide();
-      const nextPage = doPushWindow.call(_this, pushWindow, { pageUrl, viewId });
+      const nextPage = doPushWindow.call(this, pushWindow, { pageUrl, viewId });
       nextPage.fromPage = currentPage;
     });
   },

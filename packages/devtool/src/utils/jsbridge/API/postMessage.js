@@ -23,8 +23,8 @@ export function messageToWorker(params) {
 }
 
 export function messageToRender(params) {
-  const { $viewId } = params;
-  const render = gloabl.renders[$viewId];
+  const { viewId } = params;
+  const render = gloabl.renders[viewId];
   if (render) {
     try {
       render.contentWindow.send({

@@ -17,7 +17,7 @@ window.JSBridge = {
 
     const options = {
       index: idx,
-      viewId: window.APVIEWID,
+      webviewId: window.WEBVIEWID,
       ...(params || {}),
     }
 
@@ -39,5 +39,5 @@ window.JSBridgeCallback = function(res) {
 
 window.document.addEventListener('JSBridgeReady', function(e) {
   const { guid } = e.detail;
-  window.APVIEWID = guid;
+  window.WEBVIEWID = guid;
 })

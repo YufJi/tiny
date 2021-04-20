@@ -24,19 +24,19 @@ mp library path, such as '@alipay/af-mp/lib'
 
 ### config.templateExtname
 
-template file extname, such as '.axml'
+template file extname, such as '.wxml'
 
 ### config.styleExtname
 
-stylesheet file extname, such as '.acss'
+stylesheet file extname, such as '.wxss'
 
 ### config.templateNamespace
 
-template namespace(a:if, a:for), such as 'a'
+template namespace(wx:if, wx:for), such as 'wx'
 
 ### config.bridgeName
 
-bridge name, such as 'abridge'
+bridge name, such as 'wx'
 
 ### config.omitEndTag
 

@@ -123,7 +123,7 @@ self.getCurrentPages = MP.getCurrentPages;
 self.getApp = MP.getApp;
 self.Page = MP.Page;
 self.App = MP.App;
-self.mp = MP.bridge;
+self.wx = MP.bridge;
 self.Component = MP.Component;
 self.$global = MP.$global;
 self.requirePlugin = MP.requirePlugin;
@@ -239,8 +239,8 @@ Component({
   methods: {
     onClickMe() {
       console.log(this.properties, this.data)
-      // this.triggerEvent('clickme')
-      this.properties.onclickme();
+      this.triggerEvent('clickme')
+      // this.properties.onclickme();
     },
   },
 });
@@ -350,6 +350,10 @@ Page({
   onShow() {
     // 设置全局数据到当前页面数据
     this.setData({ todos: app.todos });
+    console.log('page show');
+  },
+  onHide() {
+    console.log('page hide');
   },
   // 事件处理函数
   onTodoChanged(e) {
@@ -363,9 +367,11 @@ Page({
   },
 
   addTodo() {
-    console.log(11111);
+    console.log('准备进行页面跳转');
     // 进行页面跳转
-    // wx.navigateTo({ url: '../add-todo/add-todo' });
+    wx.navigateTo({ 
+      url: '../add-todo/add-todo',
+    });
   },
 });
 
