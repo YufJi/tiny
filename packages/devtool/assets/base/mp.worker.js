@@ -1255,13 +1255,6 @@ var bridge = _objectSpread(_objectSpread({
   createSelectorQuery: _worker_createSelectorQuery__WEBPACK_IMPORTED_MODULE_14__["default"],
   loadFontFace: function loadFontFace(params) {
     var page = params.page;
-    var config;
-
-    if (page) {
-      config = {
-        viewId: page.$viewId
-      };
-    }
 
     var success = params.success,
         fail = params.fail,
@@ -3521,18 +3514,25 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getCurrentPageImpl", function() { return getCurrentPageImpl; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getCurrentPages", function() { return getCurrentPages; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getAppImpl", function() { return getAppImpl; });
-/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
-/* harmony import */ var _EventHub__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../EventHub */ "./src/framework/EventHub.js");
-/* harmony import */ var _mixins_AppMixin__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../mixins/AppMixin */ "./src/framework/mixins/AppMixin.js");
-/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
-/* harmony import */ var _utils_appImpl__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../utils/appImpl */ "./src/framework/utils/appImpl.js");
-/* harmony import */ var _utils_pageUtils__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../utils/pageUtils */ "./src/framework/utils/pageUtils.js");
-/* harmony import */ var _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/invokeWithGuardAndReThrow */ "./src/utils/invokeWithGuardAndReThrow.js");
+/* harmony import */ var query_string__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! query-string */ "./node_modules/query-string/index.js");
+/* harmony import */ var query_string__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(query_string__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _startupParams__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../startupParams */ "./src/framework/startupParams/index.js");
+/* harmony import */ var _utils_getScene__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/getScene */ "./src/utils/getScene.js");
+/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
+/* harmony import */ var _EventHub__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../EventHub */ "./src/framework/EventHub.js");
+/* harmony import */ var _mixins_AppMixin__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../mixins/AppMixin */ "./src/framework/mixins/AppMixin.js");
+/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
+/* harmony import */ var _utils_appImpl__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../utils/appImpl */ "./src/framework/utils/appImpl.js");
+/* harmony import */ var _utils_pageUtils__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../utils/pageUtils */ "./src/framework/utils/pageUtils.js");
+/* harmony import */ var _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @/utils/invokeWithGuardAndReThrow */ "./src/utils/invokeWithGuardAndReThrow.js");
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+
+
 
 
 
@@ -3557,7 +3557,7 @@ function pushPage(page) {
 
 function popPage(page) {
   var tabCaches = appImpl._tabCaches;
-  Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__["default"])(tabCaches).forEach(function (k) {
+  Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_6__["default"])(tabCaches).forEach(function (k) {
     var tabPages = tabCaches[k];
 
     if (tabPages) {
@@ -3581,10 +3581,30 @@ function App() {
     throw new Error('App() can only be called once');
   }
 
+  var _getStartupParams = Object(_startupParams__WEBPACK_IMPORTED_MODULE_1__["getStartupParams"])(),
+      query = _getStartupParams.query,
+      referrerInfo = _getStartupParams.referrerInfo,
+      pagePath = _getStartupParams.pagePath;
+
+  var launchOptions = {
+    path: pagePath
+  };
+
+  if (query) {
+    launchOptions.query = query_string__WEBPACK_IMPORTED_MODULE_0___default.a.parse(query);
+  }
+
+  launchOptions.scene = Object(_utils_getScene__WEBPACK_IMPORTED_MODULE_2__["default"])(Object(_startupParams__WEBPACK_IMPORTED_MODULE_1__["getStartupParams"])());
+
+  if (referrerInfo) {
+    launchOptions.referrerInfo = JSON.parse(referrerInfo);
+  }
+
   app = publicInstance;
   appImpl = new AppImpl(publicInstance);
-  Object(_utils_appImpl__WEBPACK_IMPORTED_MODULE_4__["setAppImpl"])(appImpl);
-  _EventHub__WEBPACK_IMPORTED_MODULE_1__["default"].emit('appCreated', appImpl);
+  Object(_utils_appImpl__WEBPACK_IMPORTED_MODULE_7__["setAppImpl"])(appImpl);
+  _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('appCreated', appImpl);
+  appImpl.launch(launchOptions);
   return app;
 }
 
@@ -3596,13 +3616,13 @@ function AppImpl(publicInstance) {
   this.shown = true;
 }
 
-AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IMPORTED_MODULE_2__["default"]), {}, {
+AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IMPORTED_MODULE_5__["default"]), {}, {
   pushPage: pushPage,
   popPage: popPage,
   getAllPages: function getAllPages() {
     var pages = [];
     var tabCaches = this._tabCaches;
-    Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__["default"])(tabCaches).forEach(function (k) {
+    Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_6__["default"])(tabCaches).forEach(function (k) {
       var tabPages = tabCaches[k];
 
       if (tabPages) {
@@ -3614,7 +3634,7 @@ AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IM
   isTabShow: function isTabShow() {
     var tabCaches = appImpl._tabCaches; // filter destroyed/empty tabs
 
-    var tabKeys = Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__["default"])(tabCaches).filter(function (k) {
+    var tabKeys = Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_6__["default"])(tabCaches).filter(function (k) {
       return !!tabCaches[k].length;
     });
 
@@ -3624,14 +3644,14 @@ AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IM
 
 
     return tabKeys.every(function (k) {
-      return Object(_utils_pageUtils__WEBPACK_IMPORTED_MODULE_5__["isTabPage"])(tabCaches[k][0]);
+      return Object(_utils_pageUtils__WEBPACK_IMPORTED_MODULE_8__["isTabPage"])(tabCaches[k][0]);
     });
   },
   clearAllPages: function clearAllPages() {
     var nowTabCaches = this._tabCaches;
     this._tabCaches = {}; // clear tab caches and page stack
 
-    Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__["default"])(nowTabCaches).forEach(function (k) {
+    Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_6__["default"])(nowTabCaches).forEach(function (k) {
       var tabPages = nowTabCaches[k];
 
       if (tabPages) {
@@ -3692,20 +3712,20 @@ AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IM
     var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
     this.$launchTime = Date.now();
     this.launchOptions = options;
-    _EventHub__WEBPACK_IMPORTED_MODULE_1__["default"].emit('launch', options);
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_0__["default"])('framework: App onLaunch');
+    _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('launch', options);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_3__["default"])('framework: App onLaunch');
     var publicInstance = this.publicInstance;
     var onLaunch = publicInstance.onLaunch;
     var onShow = publicInstance.onShow;
-    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_6__["default"])(onLaunch, publicInstance, options);
-    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_6__["default"])(onShow, publicInstance, options);
+    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_9__["default"])(onLaunch, publicInstance, options);
+    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_9__["default"])(onShow, publicInstance, options);
     this.shown = true;
   },
   hide: function hide() {
     var hidePage = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
     this.shown = false;
-    _EventHub__WEBPACK_IMPORTED_MODULE_1__["default"].emit('background');
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_0__["default"])('framework: App onHide');
+    _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('background');
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_3__["default"])('framework: App onHide');
 
     if (hidePage) {
       var page = getCurrentPageImpl();
@@ -3715,16 +3735,16 @@ AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IM
       }
     }
 
-    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_6__["default"])(this.publicInstance.onHide, this.publicInstance);
+    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_9__["default"])(this.publicInstance.onHide, this.publicInstance);
   },
   show: function show(o) {
     var showPage = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
     this.shown = true;
     var options = o || {};
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_0__["default"])('framework: App onShow');
-    _EventHub__WEBPACK_IMPORTED_MODULE_1__["default"].emit('foreground', options);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_3__["default"])('framework: App onShow');
+    _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('foreground', options);
     var prePage = getCurrentPageImpl();
-    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_6__["default"])(this.publicInstance.onShow, this.publicInstance, options); // if relaunch, do not invoke previous page show
+    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_9__["default"])(this.publicInstance.onShow, this.publicInstance, options); // if relaunch, do not invoke previous page show
 
     if (showPage && !options.path) {
       var page = getCurrentPageImpl();
@@ -3735,7 +3755,7 @@ AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IM
     }
   },
   error: function error(e) {
-    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_6__["default"])(this.publicInstance.onError, this.publicInstance, e);
+    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_9__["default"])(this.publicInstance.onError, this.publicInstance, e);
   },
   navigateBack: function navigateBack() {
     var params = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -3776,7 +3796,7 @@ AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IM
   getCurrentPageImpl: getCurrentPageImpl
 }); // remove from page stack
 
-_EventHub__WEBPACK_IMPORTED_MODULE_1__["default"].addListener('pageUnload', function (_ref) {
+_EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].addListener('pageUnload', function (_ref) {
   var page = _ref.page;
   popPage(page);
 });
@@ -4281,8 +4301,6 @@ function Component(setupConfig, currentComponentConfig) {
     return Object(_utils_getComponentProp__WEBPACK_IMPORTED_MODULE_8__["default"])(setupConfig, prop, useCache ? propsCache : useCache);
   }
 
-  var initProperties = Object(_utils_mapValues__WEBPACK_IMPORTED_MODULE_4__["default"])(getProps('properties'), 'value');
-
   function ComponentClass(page, id, componentConfig) {
     this.is = is;
     this.id = id;
@@ -4302,29 +4320,31 @@ function Component(setupConfig, currentComponentConfig) {
       },
       triggerEvent: {
         value: function value(eventName) {
-          var _self$triggerEventHan;
+          if (typeof self.triggerEventHandlers["on".concat(eventName)] === 'function') {
+            var _self$triggerEventHan;
 
-          for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-            args[_key - 1] = arguments[_key];
+            for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+              args[_key - 1] = arguments[_key];
+            }
+
+            return (_self$triggerEventHan = self.triggerEventHandlers)["on".concat(eventName)].apply(_self$triggerEventHan, args);
           }
-
-          return (_self$triggerEventHan = self.triggerEventHandlers)["on".concat(eventName)].apply(_self$triggerEventHan, args);
         }
       }
     });
     publicInstance.is = is;
     publicInstance.$id = id;
     publicInstance.$page = page.publicInstance;
-    publicInstance.properties = initProperties;
-    publicInstance.data = _objectSpread(_objectSpread({}, getProps('data', false)), initProperties);
+    publicInstance.properties = Object(_utils_mapValues__WEBPACK_IMPORTED_MODULE_4__["default"])(getProps('properties'), 'value');
+    publicInstance.data = _objectSpread(_objectSpread({}, getProps('data', false)), Object(_utils_mapValues__WEBPACK_IMPORTED_MODULE_4__["default"])(getProps('properties'), 'value'));
     this.computedDeps = _objectSpread({}, ComponentClass.computedDeps);
     this.prevData = publicInstance.data;
     this.setComponentConfig(componentConfig, true);
   }
 
   ;
-  ComponentClass.data = _objectSpread(_objectSpread({}, getProps('data', false)), initProperties);
-  ComponentClass.properties = initProperties;
+  ComponentClass.data = _objectSpread(_objectSpread({}, getProps('data', false)), Object(_utils_mapValues__WEBPACK_IMPORTED_MODULE_4__["default"])(getProps('properties'), 'value'));
+  ComponentClass.properties = Object(_utils_mapValues__WEBPACK_IMPORTED_MODULE_4__["default"])(getProps('properties'), 'value');
 
   ComponentClass.getAllComponents = function () {
     var allComponents = [is];
@@ -4409,7 +4429,7 @@ function Component(setupConfig, currentComponentConfig) {
 
       Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__["default"])(oldProps).forEach(function (p) {
         if (p.match(_utils_reg__WEBPACK_IMPORTED_MODULE_7__["eventReg"])) {
-          _this.getTriggerEventHandler(p, oldProps[p]);
+          newProps[p] = _this.getTriggerEventHandler(p, oldProps[p]);
         }
       });
       return newProps;
@@ -4726,6 +4746,7 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
   startRender: function startRender(isRefresh) {
     var publicInstance = this.publicInstance,
         id = this.id;
+    console.log('publicInstance', publicInstance);
     var config = {};
     publicInstanceMethods.forEach(function (k) {
       var hookFn = publicInstance[k];
@@ -5891,33 +5912,25 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return bootstrap; });
 /* harmony import */ var _polyfill__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./polyfill */ "./src/framework/worker/polyfill.js");
 /* harmony import */ var _polyfill__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_polyfill__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var query_string__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! query-string */ "./node_modules/query-string/index.js");
-/* harmony import */ var query_string__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(query_string__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
-/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../App */ "./src/framework/App/index.worker.js");
-/* harmony import */ var _startupParams__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../startupParams */ "./src/framework/startupParams/index.js");
-/* harmony import */ var _SubPackage__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../SubPackage */ "./src/framework/SubPackage/index.js");
-/* harmony import */ var _utils_getScene__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/getScene */ "./src/utils/getScene.js");
+/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
+/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../App */ "./src/framework/App/index.worker.js");
+/* harmony import */ var _SubPackage__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../SubPackage */ "./src/framework/SubPackage/index.js");
 
 
 
 
-
-
-
-var appLaunched;
 var g = self;
 var started = true;
 var queue = [];
 
 function processLoadPage(event) {
-  var pagePath = event.data.pagePath;
-  Object(_SubPackage__WEBPACK_IMPORTED_MODULE_5__["loadPage"])(pagePath, function () {
-    var appImpl = Object(_App__WEBPACK_IMPORTED_MODULE_3__["getAppImpl"])();
-    var _event$data = event.data,
-        queryString = _event$data.queryString,
-        pageId = _event$data.id,
-        viewId = _event$data.viewId;
+  var _event$data = event.data,
+      pagePath = _event$data.pagePath,
+      queryString = _event$data.queryString,
+      pageId = _event$data.id,
+      viewId = _event$data.viewId;
+  Object(_SubPackage__WEBPACK_IMPORTED_MODULE_3__["loadPage"])(pagePath, function () {
+    var appImpl = Object(_App__WEBPACK_IMPORTED_MODULE_2__["getAppImpl"])();
     var page = appImpl.newPage({
       pagePath: pagePath,
       queryString: queryString,
@@ -5930,30 +5943,7 @@ function processLoadPage(event) {
       return;
     }
 
-    if (!appLaunched) {
-      var launchOptions = {
-        path: pagePath
-      };
-
-      var _getStartupParams = Object(_startupParams__WEBPACK_IMPORTED_MODULE_4__["getStartupParams"])(),
-          query = _getStartupParams.query,
-          referrerInfo = _getStartupParams.referrerInfo;
-
-      if (query) {
-        launchOptions.query = query_string__WEBPACK_IMPORTED_MODULE_1___default.a.parse(query);
-      }
-
-      launchOptions.scene = Object(_utils_getScene__WEBPACK_IMPORTED_MODULE_6__["default"])(Object(_startupParams__WEBPACK_IMPORTED_MODULE_4__["getStartupParams"])());
-
-      if (referrerInfo) {
-        launchOptions.referrerInfo = JSON.parse(referrerInfo);
-      }
-
-      appLaunched = true;
-      appImpl.launch(launchOptions);
-    }
-
-    var pages = Object(_App__WEBPACK_IMPORTED_MODULE_3__["getCurrentPagesImpl"])(); // tab a -> tab b quickly change to -> tab a
+    var pages = Object(_App__WEBPACK_IMPORTED_MODULE_2__["getCurrentPagesImpl"])(); // tab a -> tab b quickly change to -> tab a
     // or redirect/reLaunch/navigateTo on App.onLaunch
 
     if (pages && pages[pages.length - 1] === page) {
@@ -5964,7 +5954,7 @@ function processLoadPage(event) {
 
 function processEndpoint(event) {
   var pageId = event.data.id;
-  var appImpl = Object(_App__WEBPACK_IMPORTED_MODULE_3__["getAppImpl"])();
+  var appImpl = Object(_App__WEBPACK_IMPORTED_MODULE_2__["getAppImpl"])();
   var page = appImpl.getPageById(pageId);
   page.onMessage(event);
 }
@@ -5982,7 +5972,7 @@ function processMessage(event) {
 }
 
 g.send = function (event) {
-  Object(_utils_log__WEBPACK_IMPORTED_MODULE_2__["debug"])('framework', '[WORKER] App Received Message:', event.data);
+  Object(_utils_log__WEBPACK_IMPORTED_MODULE_1__["debug"])('framework', '[WORKER] App Received Message:', event.data);
 
   if (started) {
     processMessage(event);
@@ -6966,7 +6956,7 @@ function objectKeys(obj) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "eventReg", function() { return eventReg; });
-var eventReg = /^on[a-zA-Z]/;
+var eventReg = /^(on|catch)([A-Za-z_]+)(capture)?$/;
 
 /***/ }),
 
@@ -7319,10 +7309,7 @@ function getStartupParams() {
 
   if (startupParams) {
     return startupParams;
-  } // if (Platform.browser === 'android' && !Platform.ide) {
-  //   console.error('framework: can not call getStartupParams() at the top of code!');
-  // }
-
+  }
 
   var _location = location,
       href = _location.href;

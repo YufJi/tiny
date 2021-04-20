@@ -15,8 +15,9 @@ function defaultCreateTouchList(touchList = []) {
   });
 }
 
-function callBubbleEvent(instance, eventType, srcEvent, more) {
-  const catchHandler = instance.props[`catch${eventType}`];
+function callEvent(instance, eventType, srcEvent, more, capture) {
+  const c = capture ? 'capture' : ''
+  const catchHandler = instance.props[`catch${eventType}${c}`];
 
   const e = instance.props.$mp.getNormalizedEvent({
     eventType,
@@ -31,7 +32,7 @@ function callBubbleEvent(instance, eventType, srcEvent, more) {
     return;
   }
 
-  const onHandler = instance.props[`on${eventType}`];
+  const onHandler = instance.props[`on${eventType}${c}`];
   if (onHandler) {
     onHandler(e);
   }
@@ -109,8 +110,9 @@ export default function BasicEventMixin({
 
       return { ...props.$mp.getTargetForEvent(), offsetLeft: __basicEventRoot.offsetLeft, offsetTop: __basicEventRoot.offsetTop };
     },
-    hasBubbleEvent(event) {
-      return this.props[`on${event}`] || this.props[`catch${event}`];
+    hasEvent(event, capture) {
+      const c = capture ? 'capture' : ''
+      return this.props[`on${event}${c}`] || this.props[`catch${event}${c}`];
     },
     onTap(srcEvent, capture = false) {
       this.recordTarget(srcEvent);
@@ -118,38 +120,37 @@ export default function BasicEventMixin({
       if (this.__longTapTriggered) {
         return;
       }
-      const eventName = `tap${capture ? 'capture' : ''}`;
-
-      if (this.hasBubbleEvent(eventName)) {
-        callBubbleEvent(this, eventName, srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap));
+      const eventName = `tap`;
+      if (this.hasEvent(eventName, capture)) {
+        callEvent(this, eventName, srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap), capture);
       }
     },
     onTouchStart(srcEvent, capture = false) {
       this.recordTarget(srcEvent);
       this.__longTapTriggered = 0;
 
-      const eventName = `touchstart${capture ? 'capture' : ''}`;
-      if (this.hasBubbleEvent(eventName)) {
-        callBubbleEvent(this, eventName, srcEvent, {
+      const eventName = `touchstart`;
+      if (this.hasEvent(eventName, capture)) {
+        callEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
           changedTouches: createTouchList.call(this, srcEvent.changedTouches),
-        });
+        }, capture);
       }
     },
     onTouchMove(srcEvent, capture = false) {
       this.recordTarget(srcEvent);
-      const eventName = `touchmove${capture ? 'capture' : ''}`;
-      if (this.hasBubbleEvent(eventName)) {
-        callBubbleEvent(this, eventName, srcEvent, {
+      const eventName = `touchmove`;
+      if (this.hasEvent(eventName, capture)) {
+        callEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
           changedTouches: createTouchList.call(this, srcEvent.changedTouches),
-        });
+        }, capture);
       }
     },
     onTransitionEnd(srcEvent) {
       this.recordTarget(srcEvent);
-      if (this.hasBubbleEvent('TransitionEnd')) {
-        callBubbleEvent(this, 'transitionEnd', srcEvent, {
+      if (this.hasEvent('transitionend')) {
+        callEvent(this, 'transitionend', srcEvent, {
           detail: {
             elapsedTime: srcEvent.elapsedTime,
             propertyName: srcEvent.propertyName,
@@ -159,8 +160,8 @@ export default function BasicEventMixin({
     },
     onAnimationStart(srcEvent) {
       this.recordTarget(srcEvent);
-      if (this.hasBubbleEvent('AnimationStart')) {
-        callBubbleEvent(this, 'animationStart', srcEvent, {
+      if (this.hasEvent('animationstart')) {
+        callEvent(this, 'animationstart', srcEvent, {
           detail: {
             elapsedTime: srcEvent.elapsedTime,
             animationName: srcEvent.animationName,
@@ -170,8 +171,8 @@ export default function BasicEventMixin({
     },
     onAnimationIteration(srcEvent) {
       this.recordTarget(srcEvent);
-      if (this.hasBubbleEvent('AnimationIteration')) {
-        callBubbleEvent(this, 'animationIteration', srcEvent, {
+      if (this.hasEvent('animationiteration')) {
+        callEvent(this, 'animationiteration', srcEvent, {
           detail: {
             elapsedTime: srcEvent.elapsedTime,
             animationName: srcEvent.animationName,
@@ -181,8 +182,8 @@ export default function BasicEventMixin({
     },
     onAnimationEnd(srcEvent) {
       this.recordTarget(srcEvent);
-      if (this.hasBubbleEvent('AnimationEnd')) {
-        callBubbleEvent(this, 'animationEnd', srcEvent, {
+      if (this.hasEvent('animationend')) {
+        callEvent(this, 'animationend', srcEvent, {
           detail: {
             elapsedTime: srcEvent.elapsedTime,
             animationName: srcEvent.animationName,
@@ -192,27 +193,28 @@ export default function BasicEventMixin({
     },
     onTouchEnd(srcEvent, capture = false) {
       this.recordTarget(srcEvent);
-      const eventName = `touchend${capture ? 'capture' : ''}`;
-      if (this.hasBubbleEvent(eventName)) {
-        callBubbleEvent(this, eventName, srcEvent, {
+      const eventName = `touchend`;
+      if (this.hasEvent(eventName, capture)) {
+        callEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
           changedTouches: createTouchList.call(this, srcEvent.changedTouches),
-        });
+        }, capture);
       }
     },
-    onTouchCancel(srcEvent) {
+    onTouchCancel(srcEvent, capture = false) {
       this.recordTarget(srcEvent);
-      if (this.hasBubbleEvent('TouchCancel')) {
-        callBubbleEvent(this, 'touchCancel', srcEvent, {
+      const eventName = `touchcancel`;
+      if (this.hasEvent(eventName, capture)) {
+        callEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
           changedTouches: createTouchList.call(this, srcEvent.changedTouches),
-        });
+        }, capture);
       }
     },
     onLongTap(srcEvent) {
       this.__longTapTriggered = 1;
-      if (this.hasBubbleEvent('LongTap')) {
-        callBubbleEvent(this, 'longTap', srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap));
+      if (this.hasEvent('LongTap')) {
+        callEvent(this, 'longTap', srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap));
       }
     },
     registryEvent(eventName, capture = false) {

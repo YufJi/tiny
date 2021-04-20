@@ -1,26 +1,7 @@
 {
   "app": {
     "pages": [
-      "pages/index/index",
-      "pages/taxNumber/index",
-      "pages/approve/index",
-      "pages/costaccount/index",
-      "pages/costaccount/accountDetail",
-      "pages/search/searchCompany",
-      "pages/search/searchBudgetList",
-      "pages/search/searchBusinessType",
-      "pages/travelPay/index",
-      "pages/travelPay/travelDetail",
-      "pages/warrant/index",
-      "pages/warrant/warrant",
-      "pages/submitted/index",
-      "pages/detail/index",
-      "pages/detail/addFlow",
-      "pages/detail/search",
-      "pages/holdOAdetail/index",
-      "pages/holdOAdetail/addFlow",
-      "pages/holdOAdetail/search",
-      "pages/warrant/search"
+      "pages/index/index"
     ],
     "window": {
       "backgroundTextStyle": "light",
@@ -34,48 +15,5 @@
   },
   "pages/index/index": {
     "navigationBarTitleText": "OA"
-  },
-  "pages/taxNumber/index": {
-    "navigationBarTitleText": ""
-  },
-  "pages/approve/index": {
-    "navigationBarTitleText": ""
-  },
-  "pages/costaccount/index": {
-    "navigationBarTitleText": ""
-  },
-  "pages/costaccount/accountDetail": {
-    "navigationBarTitleText": ""
-  },
-  "pages/search/searchCompany": {
-    "navigationBarTitleText": ""
-  },
-  "pages/search/searchBudgetList": {},
-  "pages/search/searchBusinessType": {},
-  "pages/travelPay/index": {
-    "navigationBarTitleText": ""
-  },
-  "pages/travelPay/travelDetail": {
-    "navigationBarTitleText": ""
-  },
-  "pages/warrant/index": {
-    "navigationBarTitleText": ""
-  },
-  "pages/warrant/warrant": {
-    "navigationBarTitleText": ""
-  },
-  "pages/submitted/index": {
-    "navigationBarTitleText": ""
-  },
-  "pages/detail/index": {
-    "navigationBarTitleText": ""
-  },
-  "pages/detail/addFlow": {},
-  "pages/detail/search": {},
-  "pages/holdOAdetail/index": {
-    "navigationBarTitleText": ""
-  },
-  "pages/holdOAdetail/addFlow": {},
-  "pages/holdOAdetail/search": {},
-  "pages/warrant/search": {}
+  }
 }

@@ -4,6 +4,7 @@
 const api = require('../../../utils/js/api.js');
 const app = getApp();
 
+console.log(222);
 Component({
     options: {
         addGlobalClass: true

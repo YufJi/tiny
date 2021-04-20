@@ -2,6 +2,7 @@
 const api = require('../../utils/js/api.js');
 const { isNullObj, isArr,alertFunc} = require('../../utils/js/util.js');
 const app = getApp();
+console.log(4444);
 Page({
   // 数据
   data: {

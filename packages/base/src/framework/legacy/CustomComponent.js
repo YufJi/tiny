@@ -3,7 +3,9 @@ import createReactClass from 'create-react-class';
 import $global from '../common/global';
 import EventHub from '../EventHub';
 import { getOpFn } from '@/utils/setData';
+import createComponent from '../createComponent'
 import PureRenderMixin from '../mixins/PureRenderMixin';
+import BasicEventMixin from '../mixins/BasicEventMixin';
 import { getCurrentPageImpl } from '../App';
 import transformChildrenToSlots from '../utils/transformChildrenToSlots';
 import normalizeComponentProps from '../utils/normalizeComponentProps';
@@ -62,6 +64,7 @@ const renderCache = {}
 
 function getComponentConfig(is) {
   const userConfig = $global.componentsConfig[is].user || {};
+
   return userConfig;
 }
 
@@ -136,7 +139,7 @@ export default (is) => createReactClass({
     }
   },
   diffProps(prevProps) {
-    const { props } = this;
+    const { props } = this; // 当前props
 
     const deleted = [];
     const updated = {};
@@ -226,6 +229,9 @@ export default (is) => createReactClass({
 
     return componentEventHandlers[name];
   },
+  $triggerEvent() {
+
+  },
   setData(toBeData, callback) {
     const { data } = this.state;
 
@@ -247,8 +253,34 @@ export default (is) => createReactClass({
     props.$slots = transformChildrenToSlots(this.props.children);
     props.$scopedSlots = this.props.$scopedSlots;
 
+    const { 
+      id,
+      className,
+      // onClick,
+      // onClickCapture,
+      // onTouchStart,
+      // onTouchStartCapture,
+      // onTouchMove,
+      // onTouchMoveCapture,
+      // onTouchEnd,
+      // onTouchEndCapture,
+      // onTouchCancel,
+      // onTouchCancelCapture,
+      // onAnimationStart,
+      // onAnimationIteration,
+      // onAnimationEnd,
+      // onTransitionEnd, 
+      ...rest
+    } = props;
+
     return (
-        getRender(is).call(this, { $id: this.id, ...props, ...this.state.data })
+      <span
+        id={id} 
+        className={className}
+        ref={ref => this._root = ref}
+      >
+        {getRender(is).call(this, { $id: this.id, ...this.state.data, ...rest })}
+      </span>
     )
   },
 });

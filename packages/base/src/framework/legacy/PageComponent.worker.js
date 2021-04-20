@@ -45,6 +45,7 @@ export default function PageComponent({ id, query, pagePath }) {
   });
 
   const self = this;
+
   /* 设置publicInstance */
   const publicInstance = this.publicInstance = Object.create({
     route: pagePath,
@@ -93,7 +94,7 @@ function getAllUsingComponents(pagePath) {
 PageComponent.prototype = {
   ...MessageHandleMixin,
   load() {
-  // in case pageResume following appResume, tab page??
+    // in case pageResume following appResume, tab page??
     if (!this.$loadTime) {
       this.$loadTime = Date.now();
       // setData will be merged with startRender
@@ -178,6 +179,8 @@ PageComponent.prototype = {
   },
   startRender(isRefresh) {
     const { publicInstance, id } = this;
+
+    console.log('publicInstance', publicInstance);
 
     const config = {};
     publicInstanceMethods.forEach((k) => {

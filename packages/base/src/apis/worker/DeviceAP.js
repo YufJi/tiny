@@ -42,6 +42,7 @@ const g10138 = Object(_utils_system__WEBPACK_IMPORTED_MODULE_3__.compareSystemVe
     offHCEMessage: {},
     sendHCEMessage: {},
   } : {};
+
   const api38 = g10138 ? {
     getBatteryInfo: {},
     getBatteryInfoSync: {
@@ -60,6 +61,7 @@ const g10138 = Object(_utils_system__WEBPACK_IMPORTED_MODULE_3__.compareSystemVe
       },
     },
   } : {};
+
     // interval unit: seconds
   const defaultInterval = 0.5;
   const brightnessData = {
@@ -100,7 +102,8 @@ const g10138 = Object(_utils_system__WEBPACK_IMPORTED_MODULE_3__.compareSystemVe
   const addEventCalAPI = _utils_system__WEBPACK_IMPORTED_MODULE_3__.isIOS ? {
     addEventCal: {},
   } : {};
-  return { addPhoneContact: {},
+  return { 
+    addPhoneContact: {},
     getSystemInfoSync: {
       d: function d(opt) {
         return ap.callSync('getSystemInfo', opt);

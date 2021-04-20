@@ -486,7 +486,7 @@ const Canvas = createComponent({
       onTouchEnd: this.onCanvasTouchEnd,
       onTouchCancel: this.onCanvasTouchCancel,
     };
-    if (this.hasBubbleEvent('LongTap')) {
+    if (this.hasEvent('LongTap')) {
       events.onLongPress = this.onCanvasLongTap;
     }
     const otherProps = {};

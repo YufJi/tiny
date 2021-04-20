@@ -3,6 +3,8 @@ const {isArr} = require('../../../utils/js/util.js');
 const app = getApp();
 const UID = wx.getStorageSync("userEmpcode");
 
+console.log(111);
+
 Component({
   
   properties: {

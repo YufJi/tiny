@@ -32,7 +32,6 @@ export default function Component(setupConfig, currentComponentConfig) {
     return getComponentProp(setupConfig, prop, useCache ? propsCache : useCache);
   }
 
-  const initProperties = mapValues(getProps('properties'), 'value');
   function ComponentClass(page, id, componentConfig) {
     this.is = is;
     this.id = id;
@@ -52,7 +51,9 @@ export default function Component(setupConfig, currentComponentConfig) {
       },
       triggerEvent: {
         value: function value(eventName, ...args) {
-          return self.triggerEventHandlers[`on${eventName}`](...args);
+          if(typeof self.triggerEventHandlers[`on${eventName}`] === 'function') {
+            return self.triggerEventHandlers[`on${eventName}`](...args);
+          }
         },
       },
     });
@@ -61,8 +62,8 @@ export default function Component(setupConfig, currentComponentConfig) {
     publicInstance.$id = id;
     publicInstance.$page = page.publicInstance;
 
-    publicInstance.properties = initProperties;
-    publicInstance.data = { ...getProps('data', false), ...initProperties };
+    publicInstance.properties = mapValues(getProps('properties'), 'value');
+    publicInstance.data = { ...getProps('data', false), ...mapValues(getProps('properties'), 'value') };
 
     this.computedDeps = { ...ComponentClass.computedDeps };
     this.prevData = publicInstance.data;
@@ -71,8 +72,8 @@ export default function Component(setupConfig, currentComponentConfig) {
   };
 
   
-  ComponentClass.data = { ...getProps('data', false), ...initProperties };
-  ComponentClass.properties = initProperties;
+  ComponentClass.data = { ...getProps('data', false), ...mapValues(getProps('properties'), 'value') };
+  ComponentClass.properties = mapValues(getProps('properties'), 'value');
 
   ComponentClass.getAllComponents = function () {
     const allComponents = [is];
@@ -146,7 +147,7 @@ export default function Component(setupConfig, currentComponentConfig) {
       const newProps = { ...oldProps };
       objectKeys(oldProps).forEach((p) => {
         if (p.match(eventReg)) {
-          this.getTriggerEventHandler(p, oldProps[p]);
+          newProps[p] = this.getTriggerEventHandler(p, oldProps[p]);
         }
       });
       return newProps;
@@ -158,7 +159,6 @@ export default function Component(setupConfig, currentComponentConfig) {
      * @returns 
      */
     getTriggerEventHandler(type, method) {
-      
       if (!method) {
         return method;
       }

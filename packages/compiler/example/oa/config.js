@@ -6,7 +6,7 @@
 var config = {
   platform: wx.getSystemInfoSync().platform,
   get env () {
-    return wx.getStorageSync('env') || 'uat';
+    return 'uat';
   },
   get apiHost () {
     let env = wx.getStorageSync('env');

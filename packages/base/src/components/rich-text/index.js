@@ -198,7 +198,7 @@ const RichText = createComponent({
       onTouchCancel: this.onTouchCancel,
     };
     const events = {};
-    if (this.hasBubbleEvent('LongTap')) {
+    if (this.hasEvent('LongTap')) {
       events.onLongPress = this.onLongTap;
     }
     const content = React.createElement(

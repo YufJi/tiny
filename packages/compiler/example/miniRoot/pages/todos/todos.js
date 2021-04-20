@@ -45,4 +45,16 @@ Page({
       url: '../add-todo/add-todo',
     });
   },
+  clickParent() {
+    console.log('clickParent');
+  },
+  clickChild() {
+    console.log('clickChild');
+  },
+  captureClickChild() {
+    console.log('captureClickChild');
+  },
+  clickCom() {
+    console.log('clickCom');
+  }
 });

@@ -1,18 +1,20 @@
 Component({
   properties: {
-    text: String
+    text: {
+      type: String,
+      value: 'sdas'
+    }
+
   },
 
   data: {
-    text: 'jyf',
+    // text: 'jyf',
     name: 'xxxxx',
   },
 
   methods: {
     onClickMe() {
-      console.log(this.properties, this.data)
       this.triggerEvent('clickme')
-      // this.properties.onclickme();
     },
   },
 });

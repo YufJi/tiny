@@ -1,4 +1,6 @@
-
+import qs from 'query-string';
+import { getStartupParams } from '../startupParams';
+import getScene from '@/utils/getScene';
 import log from '@/utils/log';
 import EventHub from '../EventHub';
 import AppMixin from '../mixins/AppMixin';
@@ -42,10 +44,25 @@ export function App(publicInstance = {}) {
   if (appImpl) {
     throw new Error('App() can only be called once');
   }
+
+  const { query, referrerInfo, pagePath } = getStartupParams();
+  const launchOptions = {
+    path: pagePath,
+  };
+
+  if (query) {
+    launchOptions.query = qs.parse(query);
+  }
+  launchOptions.scene = getScene(getStartupParams());
+  if (referrerInfo) {
+    launchOptions.referrerInfo = JSON.parse(referrerInfo);
+  }
+
   app = publicInstance;
   appImpl = new AppImpl(publicInstance);
   setAppImpl(appImpl);
   EventHub.emit('appCreated', appImpl);
+  appImpl.launch(launchOptions);
   return app;
 }
 

@@ -85,13 +85,6 @@ const bridge = {
   loadFontFace(params) {
     const { page } = params;
 
-    let config;
-    if (page) {
-      config = {
-        viewId: page.$viewId,
-      };
-    }
-
     const { success, fail, complete, ...data } = params;
 
     (page || getCurrentPageImpl()).callRemote('bridge', 'loadFontFace', data, (res) => {

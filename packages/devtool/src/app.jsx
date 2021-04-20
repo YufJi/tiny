@@ -55,7 +55,10 @@ class App extends Component {
   }
 
   initWorker() {
-    const src = 'worker.html'
+    const { pages } = global.appConfig
+    const homePage = pages[0]
+
+    const src = `worker.html?pagePath=${homePage}`
     const guid = createGuid('worker')
     global.worker = createWorkerIframe({
       guid, 

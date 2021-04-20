@@ -269,22 +269,8 @@ export default createReactClass({
 
     let { style } = props;
     const touchableProps = {};
-    const nodeEvents = {
-      onClick: this.registryEvent('onTap'),
-      onClickCapture: this.registryEvent('onTap', true),
-      onTouchStart: this.registryEvent('onTouchStart'),
-      onTouchStartCapture: this.registryEvent('onTouchStart', true),
-      onTouchMove: this.registryEvent('onTouchMove'),
-      onTouchMoveCapture: this.registryEvent('onTouchMove', true),
-      onTouchEnd: this.registryEvent('onTouchEnd'),
-      onTouchEndCapture: this.registryEvent('onTouchEnd', true),
-      onTouchCancel: this.registryEvent('onTouchCancel'),
-      onTouchCancelCapture: this.registryEvent('onTouchCancel', true),
-      onAnimationStart: this.registryEvent('onAnimationStart'),
-      onAnimationIteration: this.registryEvent('onAnimationIteration'),
-      onAnimationEnd: this.registryEvent('onAnimationEnd'),
-      onTransitionEnd: this.registryEvent('onTransitionEnd'),
-    };
+    const nodeEvents = this.getNodeEvents();
+    
     if (props.hoverClass) {
       touchableProps.activeClassName = props.hoverClass;
     }
@@ -294,7 +280,7 @@ export default createReactClass({
     if (props.hoverStayTime) {
       touchableProps.delayPressOut = props.hoverStayTime;
     }
-    if (this.hasBubbleEvent('LongTap')) {
+    if (this.hasEvent('LongTap')) {
       touchableProps.onLongPress = this.onLongTap;
     }
     if (hidden) {

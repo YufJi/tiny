@@ -1,12 +1,13 @@
 //index.js
 //获取应用实例
-const config = require('../../config.js');
+// const config = require('../../config.js');
 const app = getApp()
 
 let envSwitchKeys = '';
+console.log('app', app.globalData);
 Page({
   data: {
-    env: config.env,
+    env: 'uat',
     firstEntry: [{
         id: 'approve',
         name: app.globalData.lang['OA_formlist_btn_my_approval'],
@@ -53,6 +54,10 @@ Page({
     ]
 
   },
+
+  onLoad() {
+    console.log('page load')
+  },
   // 路由跳转
   navRouterTo(event) {
     this.callbackInfo(event);
@@ -66,36 +71,9 @@ Page({
           icon: 'none'
         })
     } else {
-      let userEmpcode = wx.getStorageSync('userEmpcode');
-      let identityauth2 = wx.getStorageSync('identityauth2');
-      let langStr = wx.getStorageSync('langStr');
-      if (userEmpcode && identityauth2 && langStr) {
-        // 信息存在
-        var url = event.currentTarget.dataset.url;
-        if (url) {
-          wx.navigateTo({
-            url: event.currentTarget.dataset.url
-          });
-        } else {
-          var key = event.currentTarget.dataset.key;
-          envSwitchKeys += key;
-          if (envSwitchKeys.length > 12) {
-            envSwitchKeys = envSwitchKeys.slice(-12);
-          }
-          if (envSwitchKeys == '@@##@#@##@#@') {
-            envSwitchKeys = '';
-            config.update('uat');
-            this.setData({
-              env: config.env
-            });
-          }
-        }
-      } else {
-        wx.showToast({
-          title: 'Invalid User Info',
-          icon: 'none'
-        })
-      }
+      wx.navigateTo({
+        url: event.currentTarget.dataset.url
+      });
     }
   },
 

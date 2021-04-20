@@ -1,3 +1,3 @@
 
 
-export const eventReg = /^on[a-zA-Z]/;
+export const eventReg = /^(on|catch)([A-Za-z_]+)(capture)?$/;

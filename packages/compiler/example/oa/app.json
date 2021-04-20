@@ -1,25 +1,7 @@
 {
   "pages": [
     "pages/index/index",
-    "pages/taxNumber/index",
-    "pages/approve/index",
-    "pages/costaccount/index",
-    "pages/costaccount/accountDetail",
-    "pages/search/searchCompany",
-    "pages/search/searchBudgetList",
-    "pages/search/searchBusinessType",
-    "pages/travelPay/index",
-    "pages/travelPay/travelDetail",
-    "pages/warrant/index",
-    "pages/warrant/warrant",
-    "pages/submitted/index",
-    "pages/detail/index",
-    "pages/detail/addFlow",
-    "pages/detail/search",
-    "pages/holdOAdetail/index",
-    "pages/holdOAdetail/addFlow",
-    "pages/holdOAdetail/search",
-    "pages/warrant/search"
+    "pages/taxNumber/index"
   ],
   "window": {
     "backgroundTextStyle": "light",

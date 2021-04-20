@@ -17,9 +17,6 @@ export function getStartupParams() {
   if (startupParams) {
     return startupParams;
   }
-  // if (Platform.browser === 'android' && !Platform.ide) {
-  //   console.error('framework: can not call getStartupParams() at the top of code!');
-  // }
 
   const { href } = location;
 

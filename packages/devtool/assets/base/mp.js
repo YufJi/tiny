@@ -12668,7 +12668,7 @@ var Canvas = Object(_framework___WEBPACK_IMPORTED_MODULE_3__["createComponent"])
       onTouchCancel: this.onCanvasTouchCancel
     };
 
-    if (this.hasBubbleEvent('LongTap')) {
+    if (this.hasEvent('LongTap')) {
       events.onLongPress = this.onCanvasLongTap;
     }
 
@@ -16393,18 +16393,26 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../common/global */ "./src/framework/common/global.js");
 /* harmony import */ var _EventHub__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../EventHub */ "./src/framework/EventHub.js");
 /* harmony import */ var _utils_setData__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/setData */ "./src/utils/setData.js");
-/* harmony import */ var _mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../mixins/PureRenderMixin */ "./src/framework/mixins/PureRenderMixin.js");
-/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../App */ "./src/framework/App/index.js");
-/* harmony import */ var _utils_transformChildrenToSlots__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../utils/transformChildrenToSlots */ "./src/framework/utils/transformChildrenToSlots.js");
-/* harmony import */ var _utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../utils/normalizeComponentProps */ "./src/framework/utils/normalizeComponentProps.js");
-/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
-/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
-/* harmony import */ var _utils_reg__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @/utils/reg */ "./src/utils/reg.js");
+/* harmony import */ var _createComponent__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../createComponent */ "./src/framework/createComponent/index.js");
+/* harmony import */ var _mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../mixins/PureRenderMixin */ "./src/framework/mixins/PureRenderMixin.js");
+/* harmony import */ var _mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../mixins/BasicEventMixin */ "./src/framework/mixins/BasicEventMixin.js");
+/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../App */ "./src/framework/App/index.js");
+/* harmony import */ var _utils_transformChildrenToSlots__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../utils/transformChildrenToSlots */ "./src/framework/utils/transformChildrenToSlots.js");
+/* harmony import */ var _utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../utils/normalizeComponentProps */ "./src/framework/utils/normalizeComponentProps.js");
+/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
+/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
+/* harmony import */ var _utils_reg__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! @/utils/reg */ "./src/utils/reg.js");
+function _objectWithoutProperties(source, excluded) { if (source == null) return {}; var target = _objectWithoutPropertiesLoose(source, excluded); var key, i; if (Object.getOwnPropertySymbols) { var sourceSymbolKeys = Object.getOwnPropertySymbols(source); for (i = 0; i < sourceSymbolKeys.length; i++) { key = sourceSymbolKeys[i]; if (excluded.indexOf(key) >= 0) continue; if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue; target[key] = source[key]; } } return target; }
+
+function _objectWithoutPropertiesLoose(source, excluded) { if (source == null) return {}; var target = {}; var sourceKeys = Object.keys(source); var key, i; for (i = 0; i < sourceKeys.length; i++) { key = sourceKeys[i]; if (excluded.indexOf(key) >= 0) continue; target[key] = source[key]; } return target; }
+
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+
 
 
 
@@ -16430,7 +16438,7 @@ function reset() {
 _EventHub__WEBPACK_IMPORTED_MODULE_2__["default"].addListener(['pageReady', 'pageUpdate'], function (e) {
   var _objectSpread2;
 
-  e.payload = _objectSpread(_objectSpread({}, e.payload || {}), (_objectSpread2 = {}, _defineProperty(_objectSpread2, _utils_consts__WEBPACK_IMPORTED_MODULE_9__["PayloadKeyMountedComponents"], mountedComponents), _defineProperty(_objectSpread2, _utils_consts__WEBPACK_IMPORTED_MODULE_9__["PayloadKeyUnmountedComponents"], unmountedComponents), _objectSpread2));
+  e.payload = _objectSpread(_objectSpread({}, e.payload || {}), (_objectSpread2 = {}, _defineProperty(_objectSpread2, _utils_consts__WEBPACK_IMPORTED_MODULE_11__["PayloadKeyMountedComponents"], mountedComponents), _defineProperty(_objectSpread2, _utils_consts__WEBPACK_IMPORTED_MODULE_11__["PayloadKeyUnmountedComponents"], unmountedComponents), _objectSpread2));
   reset();
 });
 function setComponentsConfig(componentsConfig) {
@@ -16474,7 +16482,7 @@ function getRender(is) {
     statics: {
       is: is
     },
-    mixins: [_mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_4__["default"]],
+    mixins: [_mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_5__["default"]],
     getDefaultProps: function getDefaultProps() {
       return getComponentConfig(is).properties || {};
     },
@@ -16482,7 +16490,7 @@ function getRender(is) {
       this.is = is; // async render twice
 
       this.id = this.id || ++componentId;
-      Object(_App__WEBPACK_IMPORTED_MODULE_5__["getCurrentPageImpl"])().componentInstances[this.id] = this;
+      Object(_App__WEBPACK_IMPORTED_MODULE_7__["getCurrentPageImpl"])().componentInstances[this.id] = this;
       this.eventHandlers = {};
       this.componentEventHandlers = {};
       return {
@@ -16498,18 +16506,18 @@ function getRender(is) {
       if (diffProps) {
         this.recordMounted(diffProps);
       } else {
-        mountedComponents.push(_defineProperty({}, _utils_consts__WEBPACK_IMPORTED_MODULE_9__["ComponentKeyId"], this.id));
+        mountedComponents.push(_defineProperty({}, _utils_consts__WEBPACK_IMPORTED_MODULE_11__["ComponentKeyId"], this.id));
       }
     },
     componentWillUnmount: function componentWillUnmount() {
-      delete Object(_App__WEBPACK_IMPORTED_MODULE_5__["getCurrentPageImpl"])().componentInstances[this.id];
+      delete Object(_App__WEBPACK_IMPORTED_MODULE_7__["getCurrentPageImpl"])().componentInstances[this.id];
       unmountedComponents.push(this.id);
     },
     recordMounted: function recordMounted(diffProps, init) {
-      var info = _defineProperty({}, _utils_consts__WEBPACK_IMPORTED_MODULE_9__["ComponentKeyId"], this.id);
+      var info = _defineProperty({}, _utils_consts__WEBPACK_IMPORTED_MODULE_11__["ComponentKeyId"], this.id);
 
       if (init) {
-        info[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["ComponentKeyIs"]] = this.is;
+        info[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["ComponentKeyIs"]] = this.is;
       }
 
       mountedComponents.push(info);
@@ -16519,20 +16527,21 @@ function getRender(is) {
             newProps = _this$normalizeProps.newProps,
             ownerId = _this$normalizeProps.ownerId;
 
-        info[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["ComponentKeyDiffProps"]] = newProps;
+        info[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["ComponentKeyDiffProps"]] = newProps;
 
         if (ownerId) {
-          info[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["ComponentKeyOwnerId"]] = ownerId;
+          info[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["ComponentKeyOwnerId"]] = ownerId;
         }
       }
     },
     diffProps: function diffProps(prevProps) {
-      var props = this.props;
+      var props = this.props; // 当前props
+
       var deleted = [];
       var updated = {};
       var isUpdated;
       var isDeleted;
-      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_8__["default"])(Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_7__["default"])(prevProps)).forEach(function (prevKey) {
+      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_10__["default"])(Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_9__["default"])(prevProps)).forEach(function (prevKey) {
         if (!(prevKey in props)) {
           deleted.push(prevKey);
           isDeleted = true;
@@ -16541,7 +16550,7 @@ function getRender(is) {
           isUpdated = true;
         }
       });
-      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_8__["default"])(Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_7__["default"])(props)).forEach(function (key) {
+      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_10__["default"])(Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_9__["default"])(props)).forEach(function (key) {
         if (!(key in prevProps)) {
           updated[key] = props[key];
           isUpdated = true;
@@ -16551,12 +16560,12 @@ function getRender(is) {
 
       if (isUpdated) {
         ret = ret || {};
-        ret[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["DiffKeyUpdated"]] = updated;
+        ret[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["DiffKeyUpdated"]] = updated;
       }
 
       if (isDeleted) {
         ret = ret || {};
-        ret[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["DiffKeyDeleted"]] = deleted;
+        ret[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["DiffKeyDeleted"]] = deleted;
       }
 
       return ret;
@@ -16564,19 +16573,19 @@ function getRender(is) {
     normalizeProps: function normalizeProps(props) {
       var newProps = {};
 
-      if (props[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["DiffKeyDeleted"]]) {
-        newProps[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["DiffKeyDeleted"]] = props[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["DiffKeyDeleted"]];
+      if (props[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["DiffKeyDeleted"]]) {
+        newProps[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["DiffKeyDeleted"]] = props[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["DiffKeyDeleted"]];
       }
 
       var ownerId;
 
-      if (props[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["DiffKeyUpdated"]]) {
-        var updated = newProps[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["DiffKeyUpdated"]] = _objectSpread({}, props[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["DiffKeyUpdated"]]);
+      if (props[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["DiffKeyUpdated"]]) {
+        var updated = newProps[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["DiffKeyUpdated"]] = _objectSpread({}, props[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["DiffKeyUpdated"]]);
 
-        Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_8__["default"])(updated).forEach(function (p) {
-          if (p.match(_utils_reg__WEBPACK_IMPORTED_MODULE_10__["eventReg"]) && updated[p]) {
-            ownerId = updated[p][_utils_consts__WEBPACK_IMPORTED_MODULE_9__["ComponentKeyOwnerId"]];
-            updated[p] = updated[p][_utils_consts__WEBPACK_IMPORTED_MODULE_9__["ComponentKeyName"]];
+        Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_10__["default"])(updated).forEach(function (p) {
+          if (p.match(_utils_reg__WEBPACK_IMPORTED_MODULE_12__["eventReg"]) && updated[p]) {
+            ownerId = updated[p][_utils_consts__WEBPACK_IMPORTED_MODULE_11__["ComponentKeyOwnerId"]];
+            updated[p] = updated[p][_utils_consts__WEBPACK_IMPORTED_MODULE_11__["ComponentKeyName"]];
           }
         });
       }
@@ -16603,7 +16612,7 @@ function getRender(is) {
             args[_key] = arguments[_key];
           }
 
-          (_getCurrentPageImpl = Object(_App__WEBPACK_IMPORTED_MODULE_5__["getCurrentPageImpl"])()).callRemote.apply(_getCurrentPageImpl, ['self', 'triggerComponentEvent', _this.id, name].concat(args));
+          (_getCurrentPageImpl = Object(_App__WEBPACK_IMPORTED_MODULE_7__["getCurrentPageImpl"])()).callRemote.apply(_getCurrentPageImpl, ['self', 'triggerComponentEvent', _this.id, name].concat(args));
         };
 
         handle.handleName = name;
@@ -16620,7 +16629,7 @@ function getRender(is) {
         args[_key2] = arguments[_key2];
       }
 
-      return (_getCurrentPageImpl2 = Object(_App__WEBPACK_IMPORTED_MODULE_5__["getCurrentPageImpl"])()).$getRefHandler.apply(_getCurrentPageImpl2, args);
+      return (_getCurrentPageImpl2 = Object(_App__WEBPACK_IMPORTED_MODULE_7__["getCurrentPageImpl"])()).$getRefHandler.apply(_getCurrentPageImpl2, args);
     },
     $getComponentEventHandler: function $getComponentEventHandler(name) {
       if (!name || typeof name !== 'string') {
@@ -16633,11 +16642,12 @@ function getRender(is) {
       if (!componentEventHandlers[name]) {
         var _componentEventHandle;
 
-        componentEventHandlers[name] = (_componentEventHandle = {}, _defineProperty(_componentEventHandle, _utils_consts__WEBPACK_IMPORTED_MODULE_9__["ComponentKeyName"], name), _defineProperty(_componentEventHandle, _utils_consts__WEBPACK_IMPORTED_MODULE_9__["ComponentKeyOwnerId"], this.id), _componentEventHandle);
+        componentEventHandlers[name] = (_componentEventHandle = {}, _defineProperty(_componentEventHandle, _utils_consts__WEBPACK_IMPORTED_MODULE_11__["ComponentKeyName"], name), _defineProperty(_componentEventHandle, _utils_consts__WEBPACK_IMPORTED_MODULE_11__["ComponentKeyOwnerId"], this.id), _componentEventHandle);
       }
 
       return componentEventHandlers[name];
     },
+    $triggerEvent: function $triggerEvent() {},
     setData: function setData(toBeData, callback) {
       var data = this.state.data;
       var ret = data;
@@ -16656,12 +16666,25 @@ function getRender(is) {
       }, callback);
     },
     render: function render() {
-      var props = Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_7__["default"])(this.props);
-      props.$slots = Object(_utils_transformChildrenToSlots__WEBPACK_IMPORTED_MODULE_6__["default"])(this.props.children);
+      var _this2 = this;
+
+      var props = Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_9__["default"])(this.props);
+      props.$slots = Object(_utils_transformChildrenToSlots__WEBPACK_IMPORTED_MODULE_8__["default"])(this.props.children);
       props.$scopedSlots = this.props.$scopedSlots;
-      return getRender(is).call(this, _objectSpread(_objectSpread({
+
+      var id = props.id,
+          className = props.className,
+          rest = _objectWithoutProperties(props, ["id", "className"]);
+
+      return /*#__PURE__*/React.createElement("span", {
+        id: id,
+        className: className,
+        ref: function ref(_ref) {
+          return _this2._root = _ref;
+        }
+      }, getRender(is).call(this, _objectSpread(_objectSpread({
         $id: this.id
-      }, props), this.state.data));
+      }, this.state.data), rest)));
     }
   });
 });
@@ -17097,8 +17120,9 @@ function defaultCreateTouchList() {
   });
 }
 
-function callBubbleEvent(instance, eventType, srcEvent, more) {
-  var catchHandler = instance.props["catch".concat(eventType)];
+function callEvent(instance, eventType, srcEvent, more, capture) {
+  var c = capture ? 'capture' : '';
+  var catchHandler = instance.props["catch".concat(eventType).concat(c)];
   var e = instance.props.$mp.getNormalizedEvent({
     eventType: eventType,
     srcEvent: srcEvent
@@ -17111,7 +17135,7 @@ function callBubbleEvent(instance, eventType, srcEvent, more) {
     return;
   }
 
-  var onHandler = instance.props["on".concat(eventType)];
+  var onHandler = instance.props["on".concat(eventType).concat(c)];
 
   if (onHandler) {
     onHandler(e);
@@ -17205,8 +17229,9 @@ function BasicEventMixin() {
         offsetTop: __basicEventRoot.offsetTop
       });
     },
-    hasBubbleEvent: function hasBubbleEvent(event) {
-      return this.props["on".concat(event)] || this.props["catch".concat(event)];
+    hasEvent: function hasEvent(event, capture) {
+      var c = capture ? 'capture' : '';
+      return this.props["on".concat(event).concat(c)] || this.props["catch".concat(event).concat(c)];
     },
     onTap: function onTap(srcEvent) {
       var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
@@ -17216,42 +17241,42 @@ function BasicEventMixin() {
         return;
       }
 
-      var eventName = "tap".concat(capture ? 'capture' : '');
+      var eventName = "tap";
 
-      if (this.hasBubbleEvent(eventName)) {
-        callBubbleEvent(this, eventName, srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap));
+      if (this.hasEvent(eventName, capture)) {
+        callEvent(this, eventName, srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap), capture);
       }
     },
     onTouchStart: function onTouchStart(srcEvent) {
       var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
       this.recordTarget(srcEvent);
       this.__longTapTriggered = 0;
-      var eventName = "touchstart".concat(capture ? 'capture' : '');
+      var eventName = "touchstart";
 
-      if (this.hasBubbleEvent(eventName)) {
-        callBubbleEvent(this, eventName, srcEvent, {
+      if (this.hasEvent(eventName, capture)) {
+        callEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
           changedTouches: createTouchList.call(this, srcEvent.changedTouches)
-        });
+        }, capture);
       }
     },
     onTouchMove: function onTouchMove(srcEvent) {
       var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
       this.recordTarget(srcEvent);
-      var eventName = "touchmove".concat(capture ? 'capture' : '');
+      var eventName = "touchmove";
 
-      if (this.hasBubbleEvent(eventName)) {
-        callBubbleEvent(this, eventName, srcEvent, {
+      if (this.hasEvent(eventName, capture)) {
+        callEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
           changedTouches: createTouchList.call(this, srcEvent.changedTouches)
-        });
+        }, capture);
       }
     },
     onTransitionEnd: function onTransitionEnd(srcEvent) {
       this.recordTarget(srcEvent);
 
-      if (this.hasBubbleEvent('TransitionEnd')) {
-        callBubbleEvent(this, 'transitionEnd', srcEvent, {
+      if (this.hasEvent('transitionend')) {
+        callEvent(this, 'transitionend', srcEvent, {
           detail: {
             elapsedTime: srcEvent.elapsedTime,
             propertyName: srcEvent.propertyName
@@ -17262,8 +17287,8 @@ function BasicEventMixin() {
     onAnimationStart: function onAnimationStart(srcEvent) {
       this.recordTarget(srcEvent);
 
-      if (this.hasBubbleEvent('AnimationStart')) {
-        callBubbleEvent(this, 'animationStart', srcEvent, {
+      if (this.hasEvent('animationstart')) {
+        callEvent(this, 'animationstart', srcEvent, {
           detail: {
             elapsedTime: srcEvent.elapsedTime,
             animationName: srcEvent.animationName
@@ -17274,8 +17299,8 @@ function BasicEventMixin() {
     onAnimationIteration: function onAnimationIteration(srcEvent) {
       this.recordTarget(srcEvent);
 
-      if (this.hasBubbleEvent('AnimationIteration')) {
-        callBubbleEvent(this, 'animationIteration', srcEvent, {
+      if (this.hasEvent('animationiteration')) {
+        callEvent(this, 'animationiteration', srcEvent, {
           detail: {
             elapsedTime: srcEvent.elapsedTime,
             animationName: srcEvent.animationName
@@ -17286,8 +17311,8 @@ function BasicEventMixin() {
     onAnimationEnd: function onAnimationEnd(srcEvent) {
       this.recordTarget(srcEvent);
 
-      if (this.hasBubbleEvent('AnimationEnd')) {
-        callBubbleEvent(this, 'animationEnd', srcEvent, {
+      if (this.hasEvent('animationend')) {
+        callEvent(this, 'animationend', srcEvent, {
           detail: {
             elapsedTime: srcEvent.elapsedTime,
             animationName: srcEvent.animationName
@@ -17298,30 +17323,32 @@ function BasicEventMixin() {
     onTouchEnd: function onTouchEnd(srcEvent) {
       var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
       this.recordTarget(srcEvent);
-      var eventName = "touchend".concat(capture ? 'capture' : '');
+      var eventName = "touchend";
 
-      if (this.hasBubbleEvent(eventName)) {
-        callBubbleEvent(this, eventName, srcEvent, {
+      if (this.hasEvent(eventName, capture)) {
+        callEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
           changedTouches: createTouchList.call(this, srcEvent.changedTouches)
-        });
+        }, capture);
       }
     },
     onTouchCancel: function onTouchCancel(srcEvent) {
+      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
       this.recordTarget(srcEvent);
+      var eventName = "touchcancel";
 
-      if (this.hasBubbleEvent('TouchCancel')) {
-        callBubbleEvent(this, 'touchCancel', srcEvent, {
+      if (this.hasEvent(eventName, capture)) {
+        callEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
           changedTouches: createTouchList.call(this, srcEvent.changedTouches)
-        });
+        }, capture);
       }
     },
     onLongTap: function onLongTap(srcEvent) {
       this.__longTapTriggered = 1;
 
-      if (this.hasBubbleEvent('LongTap')) {
-        callBubbleEvent(this, 'longTap', srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap));
+      if (this.hasEvent('LongTap')) {
+        callEvent(this, 'longTap', srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap));
       }
     },
     registryEvent: function registryEvent(eventName) {
@@ -19981,7 +20008,7 @@ function objectKeys(obj) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "eventReg", function() { return eventReg; });
-var eventReg = /^on[a-zA-Z]/;
+var eventReg = /^(on|catch)([A-Za-z_]+)(capture)?$/;
 
 /***/ }),
 
@@ -21116,22 +21143,7 @@ function getStyleFromAnimation(component, _animation, node) {
         TagName = _props$tagName === void 0 ? 'div' : _props$tagName;
     var style = props.style;
     var touchableProps = {};
-    var nodeEvents = {
-      onClick: this.registryEvent('onTap'),
-      onClickCapture: this.registryEvent('onTap', true),
-      onTouchStart: this.registryEvent('onTouchStart'),
-      onTouchStartCapture: this.registryEvent('onTouchStart', true),
-      onTouchMove: this.registryEvent('onTouchMove'),
-      onTouchMoveCapture: this.registryEvent('onTouchMove', true),
-      onTouchEnd: this.registryEvent('onTouchEnd'),
-      onTouchEndCapture: this.registryEvent('onTouchEnd', true),
-      onTouchCancel: this.registryEvent('onTouchCancel'),
-      onTouchCancelCapture: this.registryEvent('onTouchCancel', true),
-      onAnimationStart: this.registryEvent('onAnimationStart'),
-      onAnimationIteration: this.registryEvent('onAnimationIteration'),
-      onAnimationEnd: this.registryEvent('onAnimationEnd'),
-      onTransitionEnd: this.registryEvent('onTransitionEnd')
-    };
+    var nodeEvents = this.getNodeEvents();
 
     if (props.hoverClass) {
       touchableProps.activeClassName = props.hoverClass;
@@ -21145,7 +21157,7 @@ function getStyleFromAnimation(component, _animation, node) {
       touchableProps.delayPressOut = props.hoverStayTime;
     }
 
-    if (this.hasBubbleEvent('LongTap')) {
+    if (this.hasEvent('LongTap')) {
       touchableProps.onLongPress = this.onLongTap;
     }
 

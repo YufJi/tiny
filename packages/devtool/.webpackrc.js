@@ -25,7 +25,7 @@ module.exports = (env) => {
 
     },
     devServer: {
-      port: 8000,
+      port: 8080,
       contentBase: [
         path.join(__dirname, 'assets'),
         path.join(__dirname, 'assets/biz'),
