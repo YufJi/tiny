@@ -1,0 +1,99 @@
+.warrant-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #F0F2F5;
+  overflow: hidden;
+}
+
+.warrant-group {
+  flex: auto;
+  overflow-y: auto;
+}
+
+.warrant-box {
+  width: 100%;
+  background-color: #FFF;
+  box-sizing: border-box;
+  padding: 34rpx 0 0 32rpx;
+  margin-bottom: 16rpx;
+}
+
+.warrant-box-list {
+  /* border-bottom: 1rpx solid #DEDFE0; */
+  padding-bottom: 13rpx;
+}
+
+.warrant-list {
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 22rpx;
+}
+
+.warrant-list-title {
+  flex: none;
+  width: 150rpx;
+  font-size: 30rpx;
+  line-height: 38rpx;
+  color: #999;
+}
+
+.warrant-list-txt {
+  flex: auto;
+  font-size: 30rpx;
+  line-height: 38rpx;
+  color: #333;
+  margin-left: 24rpx;
+}
+
+.warrant-box-operate {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  height: 92rpx;
+}
+
+.warrant-box-status {
+  flex: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.warrant-box-status-txt {
+  font-size: 28rpx;
+  line-height: 36rpx;
+  color: #333;
+  margin-left: 17rpx;
+}
+
+.warrant-btn {
+  display: flex;
+  flex-direction: row;
+}
+
+.btn {
+  flex: none;
+  width: 100%;
+  padding: 32rpx;
+  box-sizing: border-box;
+}
+
+.warrant-box-operate .btn-default {
+  margin-right: 32rpx;
+}
+
+.icon-clock_shape:before {
+  color: #00B87A;
+}
+
+.icon-more_solid:before {
+  color: #FFB400;
+}
+
+.icon-subtract_shapeed:before {
+  color: #999;
+}
+
+

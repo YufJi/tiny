@@ -2,6 +2,7 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux'
 import StatusBar from '@/components/statusBar'
+import Nav from '@/components/nav'
 
 import jsbridge from '@/utils/jsbridge'
 import { createWorkerIframe, createRenderIframe } from '@/utils/createIframe';
@@ -66,19 +67,13 @@ class App extends Component {
   }
 
   initPage() {
-    const { pages, launchParams } = global.appConfig
+    const { pages } = global.appConfig
     const homePage = pages[0]
 
     const url = `#${homePage}`
     const tag = homePage
-    const pageConfig = launchParams[homePage]
 
     doPushWindow(url, tag)
-
-    this.props.setNavConfig({
-      title: pageConfig.navigationBarTitleText,
-      backgroundColor: pageConfig.navigationBarBackgroundColor ? `#${pageConfig.navigationBarBackgroundColor.toString(16)}` : '#fff',
-    })
   }
 
   hideMP = () => {
@@ -99,29 +94,12 @@ class App extends Component {
     const { navConfig } = this.props;
     const { mpVisible } = this.state;
 
-    const isShowBackIcon = global.pagesStack.length > 1
-
     return (
       <div className={`${style.app} f-page flex-c`}>
         <StatusBar></StatusBar>
         <div className={`${style.MPContainer} ${mpVisible ? '' : style.hide} flex-1 flex-c`}>
-          <div 
-            className={`${style.nav} flex-r`}
-            style={{
-              backgroundColor: navConfig.backgroundColor,
-            }}
-          >
-            <div className={`${style.left} flex-r`}>
-              {isShowBackIcon && <div className={`${style.back} ic`}>&#xe641;</div>}
-            </div>
-            <div className={`${style.title} flex-1`}>
-              {navConfig.navigationBarTitleText}
-            </div>
-            <div className={`${style.right} flex-r`}>
-              <div className={`${style.more} ic`}>&#xe648;</div>
-              <div className={`${style.close} ic`} onClick={this.hideMP}>&#xe649;</div>
-            </div>
-          </div>
+
+          <Nav hideMP={this.hideMP}></Nav>
           <div id="pageFrames" className={`${style.pageFrames} flex-1 flex-c`}>
             <div id="tabFrames" className={`${style.tabFrames} flex-1`}></div>
             <div className="tabs" className={`${style.tabs} flex-r`}>

@@ -1,0 +1,135 @@
+<com-toptips msg="{{error}}" type="error" wx:if="{{showMsg == true}}">
+
+
+
+</com-toptips>
+
+<view class="account-wrapper">
+
+	<!-- 显示当前项目的数组 -->
+	<view wx:if="{{showAdd === false}}">
+		<view class="accout-totalNumber">
+			{{textItemdetailtotalamount}} (¥)
+			<text class="accout-total-num">{{sum}}</text>
+		</view>
+		<view class="accout-card {{langStr == 'en_US' ? 'en' :''}}" wx:for="{{detailItemList}}">
+			<view class="border-bottom-1px">
+				<view class="accout-card-hd">
+					{{textItemdetail}} {{index+1}}
+					<i class="accout-card-hd-icon iconfont icon-del" bindtap="delDetail" data-index="{{index}}"></i>
+					<i class="accout-card-hd-icon-edit iconfont icon-edit" bindtap="editDetail" data-index="{{index}}"></i>
+				</view>
+			</view>
+			<view class="accout-card-bd">
+				<view class="account-group-box">
+					<view class="border-bottom-1px">
+						<view class="account-box-list">
+							<view class="account-box-title accou account-box-imp">{{textItemname}}</view>
+							<view class="account-box-content">
+								<view class="account-box-content-txt">{{item.itemName}}</view>
+							</view>
+						</view>
+					</view>
+					<view class="border-bottom-1px">
+						<view class="account-box-list">
+							<view class="account-box-title account-box-imp">{{textDateofoccurance}}</view>
+							<view class="account-box-content">
+								<view class="account-box-content-txt">
+									{{item.useDate}}
+								</view>
+								<!-- <icon class="iconfont icon-right-arrow"></icon> -->
+							</view>
+						</view>
+					</view>
+					<view class="border-bottom-1px">
+						<view class="account-box-list">
+							<view class="account-box-title account-box-imp">{{textUnitprice}}</view>
+							<view class="account-box-content">
+								<view class="account-box-content-txt">{{item.amount}}</view>
+							</view>
+						</view>
+					</view>
+					<view class="account-box-list-remark">
+						<view class="account-group-title">{{textExplanation}}</view>
+						<view class="account-group-box">
+							<view class="account-box-content-txt-desc">
+								{{item.explanation}}
+							</view>
+						</view>
+					</view>
+				</view>
+			</view>
+		</view>
+		<view class="btn-area">
+			<button class="btn-default btn-block " bindtap="addDetialItem">
+				<icon class="iconfont icon-add"></icon>{{btnAdd}}{{textItemdetail}}
+			</button>
+		</view>
+	</view>
+	<!-- 显示添加的model -->
+	<view wx:if="{{showAdd}}">
+		<view class="accout-card {{langStr == 'en_US' ? 'en' :''}}">
+			<view class="border-bottom-1px">
+				<view class="accout-card-hd">
+					{{textItemdetail}} {{(curIndex + 1) || detailItemList.length + 1}}
+					<!-- <i class="accout-card-hd-icon iconfont icon-del" bindtap="cancelAdd"></i> -->
+				</view>
+			</view>
+			<view class="accout-card-bd">
+				<view class="account-group-box">
+					<view class="border-bottom-1px">
+						<view class="account-box-list">
+							<view class="account-box-title accou account-box-imp">{{textItemname}}</view>
+							<view class="account-box-content">
+								<input class="account-box-content-txt" value="{{currentItem.itemName}}" bindinput="bindProjectName" />
+							</view>
+						</view>
+					</view>
+					<view class="border-bottom-1px">
+						<view class="account-box-list">
+							<view class="account-box-title account-box-imp">{{textDateofoccurance}}</view>
+							<view class="account-box-content">
+								<view class="account-box-content-txt">
+									<picker mode="date" value="{{currentItem.useDate}}" bindchange="bindDateChange">
+										<view class="picker">
+											{{currentItem.useDate}}
+										</view>
+									</picker>
+								</view>
+								<icon class="iconfont icon-right-arrow"></icon>
+							</view>
+						</view>
+					</view>
+					<view class="border-bottom-1px">
+						<view class="account-box-list">
+							<view class="account-box-title account-box-imp">{{textUnitprice}}</view>
+							<view class="account-box-content">
+								<input class="account-box-content-txt" value="{{currentItem.amount}}" bindinput="bindAmount" />
+							</view>
+						</view>
+					</view>
+					<view class="account-box-list-remark">
+						<view class="account-group-title">{{textExplanation}}</view>
+						<view class="account-group-box">
+							<textarea class="account-group-box-textarea" maxlength="800" value="{{currentItem.explanation}}" placeholder="{{textLimited}}" bindinput="bindExplanation" />
+							</view>
+          </view>
+        </view>
+
+      </view>
+    </view>
+    <view class="btn-area btn-middle">
+      <!-- <button class="btn-block btn-submit-add" bindtap="submitItemDetail">{{btnAdd}}</button> -->
+      <button class="btn-default middle" bindtap="cancelAdd">{{textBtnCancel}}</button>
+      <button class="btn-primary middle" bindtap="submitItemDetail">{{textBtnSure}}</button>
+    </view>
+  </view>
+
+</view>
+
+<view class="fixed-bottom" wx:if="{{showAdd === false}}">
+  <view class="btn-area inline">
+    <button class="btn-default middle" bindtap="beforeStep">{{btnBack}}</button>
+    <button class="btn-primary middle" bindtap="submitFunc">{{btnSubmit}}</button>
+  </view>
+</view>

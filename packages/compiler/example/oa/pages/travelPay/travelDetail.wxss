@@ -1,0 +1,181 @@
+@import './index.wxss';
+
+.accout-totalNumber{
+  background:#fff;
+  font-size: 32rpx;
+  color: #666;
+  letter-spacing: 0;
+  line-height: 40rpx;
+  padding:26rpx 32rpx;
+} 
+.account-wrapper{
+  padding-bottom: 80px;
+}
+.accout-total-num{
+  padding-left: 40rpx;
+  color:#000;
+}
+.accout-card{
+  margin:16rpx 0 0;
+  background: #fff;
+}
+.accout-card-hd{
+  position: relative;
+  font-size: 32rpx;
+  color: #000;
+  letter-spacing: 0;
+  padding:26rpx 32rpx;
+  /* border-bottom: 1rpx solid #DEDFE0; */
+}
+
+.accout-card-hd-icon,
+.accout-card-hd-icon-edit{
+  position: absolute; 
+  top: 50%;
+  transform: translateY(-50%);
+}
+.accout-card-hd-icon{
+  right:32rpx;
+}
+.accout-card-hd-icon-edit{
+  right:108rpx;
+}
+
+
+/* btn */
+.btn-area{
+  width:100%;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 52rpx;
+}
+.btn-area button{
+  position: relative;
+  background: #FFFFFF;
+  border-radius: 8rpx;
+  font-size: 34rpx;
+  width:330rpx;
+  height:88rpx;
+  line-height:88rpx;
+  box-sizing: border-box;
+  padding:0;
+  text-align: center;
+  color: #1466DE; 
+  font-weight: normal;
+}
+.btn-area button.btn-block{
+  width:686rpx!important;
+  border-radius: 8rpx;
+  margin-top: 32rpx;
+}
+
+/* 行内btn */
+.btn-area.inline{
+  margin-top: 0;
+  padding: 16rpx 32rpx;
+  padding-bottom: calc(16rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
+}
+.btn-area.inline button{
+  display: inline-block;
+}
+.btn-area.inline button+button{
+  margin-left: 26rpx;
+}
+.btn-area button.btn-primary{
+  background: #1466DE;
+  color:#fff;
+}
+
+/* fixed bottom */
+.fixed-bottom{
+  position: fixed;
+  z-index: 99;
+  bottom:0;
+  left:0;
+  width:100%;
+  background: #FFF;
+  padding: 30rpx 0rpx;
+  box-shadow: 0 -2rpx 10rpx 0 rgba(0,0,0,0.05);
+}
+
+.icon-add{
+  color:#1466DE;
+  margin-right: 16rpx;
+}
+
+.account-group-box-textarea{
+  width: 100%;
+  height: 360rpx;
+  font-size: 32rpx;
+  color: #333;
+  line-height: 40rpx;
+  padding: 32rpx;
+  box-sizing: border-box;
+
+}
+.account-box-list-remark{
+  display: flex;
+  justify-content: center;
+}
+
+.account-box-list-remark .account-group-title{
+  line-height: 40rpx;
+  margin: 32rpx 0 32rpx 26rpx;
+  color:#666;
+  width: 192rpx;
+}
+
+.account-box-list-remark .account-group-box{
+  flex: 1;
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  margin: 32rpx 24rpx 32rpx 32rpx;
+
+}
+.account-box-list-remark .account-box-content-txt-desc{
+  word-wrap:break-word; 
+  flex: auto;
+  font-size: 32rpx;
+  color: #333;
+  line-height: 40rpx;
+
+}
+.account-box-list-remark .account-group-box-textarea{
+  padding: 0rpx;
+}
+
+.btn-block.btn-submit-add{
+  color:#fff;
+  background: #1466DE;
+  border: none;
+}
+
+.pickerName{
+  width: 100%
+}
+.placeholder{
+  color:#666;
+}
+
+.btn-middle {
+  margin-top: 40rpx;
+}
+
+
+/* 英文版样式 */
+.en .account-group-title{
+  width: 230rpx;
+  font-size: 26rpx;
+}
+.en .account-box-content-txt,
+.en .account-group-box-textarea {
+  font-size: 26rpx;
+}
+
+.btn-middle {
+  margin-top: 40rpx;
+}

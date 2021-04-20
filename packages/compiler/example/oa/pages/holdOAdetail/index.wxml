@@ -1,0 +1,254 @@
+<view class="detail-card-space {{langStr == 'en_US' ? 'en' :''}}">
+
+  <!--  公共的数据 -->
+  <view class="detail-card">
+    <!-- 表单名称 -->
+    <view class="border-all-1px-noleft">
+      <view class="detail-card-hd detail-form-title">{{title}}</view>
+    </view>
+    <view class="detail-card-bd">
+      <view class="border-bottom-1px">
+        <view class="detail-submitor">
+          <view class="detail-card-text detail-card-text-memberinfo" bindtap="goUserInfo" data-empcode="{{commonHeaderData.account}}">
+            {{commonHeaderData.fullname}} [{{commonHeaderData.account}}]
+            <text wx:if="{{commonHeaderData.prioritycode != 'normal' }}" class="detail-item-txt-red m-10">{{commonHeaderData.priority}}</text>
+            <icon class="iconfont icon-memberinfo"></icon>
+          </view>
+          <view class="detail-card-info">
+            <view class="detail-card-status">{{commonHeaderData.status}}</view>
+
+            <view class="detail-card-handle" bindtap="showPreListFunc" wx:if="{{showpreUserList}}">{{textExpectedapprovers}} ></view>
+          </view>
+        </view>
+      </view>
+      <view class="border-bottom-1px">
+        <view class="detail-list detail-list-relative">
+          <view class="detail-item">
+            <view class="detail-item-title">申请单号</view>
+            <view class="detail-item-txt">{{commonHeaderData.code}}</view>
+          </view>
+          <view class="detail-item">
+            <view class="detail-item-title">申请时间</view>
+            <view class="detail-item-txt">{{commonHeaderData.created}}</view>
+          </view>
+        </view>
+      </view>
+      <!-- 完成的状态 -->
+      <view class="finiStatus" wx:if="{{commonHeaderData.status == '已生效'}}">
+        <image class="finiStatus-img" src="../../image/detail_success.png"></image>
+      </view>
+      <view class="finiStatus" wx:if="{{commonHeaderData.status == '已拒绝'}}">
+        <image class="finiStatus-img" src="../../image/detail_failed.png"></image>
+      </view>
+    </view>
+  </view>
+
+
+
+  <!-- 表单详情 -->
+  <view class="detail-card">
+    <view class="border-all-1px-noleft">
+      <view class="detail-card-hd detail-form-title">表单详情</view>
+    </view>
+    <view class="detail-card-bd">
+      <!-- 单独的数据 -->
+      <view class="border-bottom-1px">
+        <view class="detail-list detail-list-relative">
+          <view class="detail-item" wx:for="{{formDetail}}" wx:key="detail_list_item_{{index}}">
+            <view class="detail-item-title" name>{{item.key}}</view>
+            <!-- 是数组的时候 -->
+            <view class="detail-item-txt" wx:if="{{ item.showArr == true }}">
+              <block wx:if="{{item.value ? item.value.length >0 : false}}">
+                <!-- 预算比例比较特殊 -->
+                <block wx:if="{{item.keyCode == 'BudgetRatio'}}">
+                  <view wx:for="{{item.value}}" wx:key="detail_list_budget_percent_{{index}}">
+                    <text wx:if="{{ commonHeaderData.isMutilpCostCenter == true && (item.costCenter  && item.costCenter.length >0)}}">{{item.costCenter}} | </text>
+                    <text wx:if="{{ commonHeaderData.isMutilpCostCenter == false && (item.budgetType && item.budgetType.length>0) }}">{{item.budgetType}} | </text>
+                    <text>{{item.year}}年{{item.quarter}}季度 | </text>
+                    <text wx:if="{{(item.ratio>=0)}}">{{item.ratio}} % </text>
+                    <text wx:if="{{item.ratio < 0}}" class="detail-item-txt-red">{{item.ratio}} % </text>
+                  </view>
+                </block>
+
+                <block wx:else>
+                  <view wx:for="{{item.value}}" wx:key="detail_item_cost_center_{{index}}">
+                    {{ item.value || item}}
+                  </view>
+                </block>
+              </block>
+              <block  wx:else>
+                <view class="detail-item-txt">
+                  <text>--</text>
+                </view>
+              </block>
+            </view>
+            <!-- 剩下的其他的 -->
+            <view class="detail-item-txt" wx:else>
+              <text class="{{item.isRed == true ? 'detail-item-txt-red' : ''}}">{{item.value ? item.value : '--'}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+
+  <!-- 费用、差旅、礼品、固定资产报废、信件、办公用品、派车、固定资产调拨明细 -->
+  <view class="detail-card" wx:if="{{showDetail == 'chargeDetails' && detailValueList.length > 0}}">
+    <view class="border-bottom-1px">
+      <view class="detail-card-hd">
+        <view class="detail-card-text">
+          <text class="title">{{detailTitle}}</text>
+          <text class="price" wx:if="{{formId != '63'}}">{{totalAmt}}</text>
+        </view>
+        <view class="toggle showUp" bindtap="showCostDetailFunc">
+          <text>{{ showCostDetail == false ? textOpen : textClose }}</text>
+          <icon class="iconfont icon-drop-up" wx:if="{{showCostDetail == true}}"></icon>
+          <icon class="iconfont icon-drop-down" wx:if="{{showCostDetail == false}}"></icon>
+        </view>
+      </view>
+    </view>
+    <view class="detail-card-bd" wx:if="{{showCostDetail == true}}">
+      <view class="border-bottom-1px">
+        <view class="detail-list" wx:for="{{detailValueList}}">
+          <view class="detail-list-title">{{textTravelitem}} {{index +1}}</view>
+          <view class="detail-item" wx:for="{{item}}" wx:key="detailValueList_item_{{index}}">
+            <view class="detail-item-title">{{item.key}}</view>
+            <view class="detail-item-txt">{{item.value}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 暂时不支持附件的下载 -->
+  <view class="detail-card" wx:if="{{totalattachmentCount > 0}}">
+    <view class="border-bottom-1px">
+      <view class="detail-card-hd">
+        <view class="detail-card-text">
+          <text class="title">{{textAttachment}}({{totalattachmentCount || 0}})</text>
+        </view>
+        <view class="toggle showUp" bindtap="showAttachmentDetailFunc" wx:if="{{totalattachmentCount > 0}}">
+          <text>{{ showAttachmentDetail == false ? textOpen : textClose }}</text>
+          <icon class="iconfont icon-drop-up" wx:if="{{showAttachmentDetail == true}}"></icon>
+          <icon class="iconfont icon-drop-down" wx:if="{{showAttachmentDetail == false}}"></icon>
+        </view>
+      </view>
+    </view>
+    <view class="detail-card-bd" wx:if="{{showAttachmentDetail == true && totalattachmentCount > 0}}">
+      <view class="border-bottom-1px">
+        <view class="detail-list  detail-list-file">
+          <view class="detail-item" wx:for="{{oaattachmentList}}" wx:key="oaattachmentList_{{index}}">
+            <view class="detail-item-image" bindtap="downLoadFile" data-idx='{{index}}'>{{item.fileName}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+
+  <view class="detail-card">
+    <view class="border-bottom-1px">
+      <view class="detail-card-hd detail-form-title">
+        {{textWorkflowlog}}
+      </view>
+    </view>
+    <view class="step-list" wx:if="{{workflowLogs.length > 0}}">
+      <block wx:for="{{workflowLogs}}" wx:key="workflow_{{index}}">
+        <view wx:if="{{ index == workflowLogs.length -1}}" class="step-item active">
+          <i class="icon-right"></i>
+          <view class="step-item-title">{{item.fromstatusName}}</view>
+          <view class="step-item-info">
+            <block wx:for="{{item.users}}" class="item-userinfo">
+              <view>{{item.fullName}}</view>
+              <view>{{item.remark}}</view>
+            </block>
+          </view>
+        </view>
+        <view wx:else class="step-item">
+          <i class="icon-right"></i>
+          <view class="step-item-title">{{item.fromstatusName}}</view>
+          <view class="step-item-info">
+            <block wx:for="{{item.users}}" class="item-userinfo">
+              <view>{{item.fullName}}</view>
+              <view>{{item.remark}}</view>
+            </block>
+          </view>
+        </view>
+      </block>
+
+    </view>
+  </view>
+</view>
+
+<view class="fixed-bottom">
+  <!-- 展示审批 -->
+  <view class="btn-area inline" wx:if="{{buttonData.eform_onlycommit}}">
+    <button class="btn-default small disabled">{{textBtnCountersign}}</button>
+    <button class="btn-primary small" bindtap="agreeConfirm">{{buttonData.textvalue}}</button>
+    <button class="btn-default btn-refuse small disabled">{{textBtnRefuse}}</button>
+  </view>
+  <!-- 展示会签 -->
+  <view class="btn-area inline" wx:if="{{buttonData.eform_onlyjoin}}">
+    <button class="btn-default small " bindtap="addFlowAgent">{{textBtnCountersign}}</button>
+    <button class="btn-primary small disabled">{{buttonData.textvalue}}</button>
+    <button class="btn-default btn-refuse small disabled">{{textBtnRefuse}}</button>
+  </view>
+  <!-- 展示会签和审批 -->
+  <view class="btn-area inline" wx:if="{{buttonData.eform_join}}">
+    <button class="btn-default small " bindtap="addFlowAgent">{{textBtnCountersign}}</button>
+    <button class="btn-primary small " bindtap="agreeConfirm">{{buttonData.textvalue}}</button>
+    <button class="btn-default btn-refuse small disabled">{{textBtnRefuse}}</button>
+  </view>
+  <!-- 展示会签，审批，拒绝 -->
+  <view class="btn-area inline" wx:if="{{buttonData.eform_app}}">
+    <!-- <view class="btn-area inline"> -->
+    <button class="btn-default small " bindtap="addFlowAgent">{{textBtnCountersign}}</button>
+    <button class="btn-primary small " bindtap="agreeConfirm">{{buttonData.textvalue}}</button>
+    <button class="btn-default btn-refuse small " bindtap="refuseConfirm">{{textBtnRefuse}}</button>
+  </view>
+  <!-- 展示下一步 -->
+  <view class="btn-area inline" wx:if="{{buttonData.has_approved}}">
+    <button class="btn-primary large " bindtap="goNext">{{textBtnNext}}</button>
+  </view>
+</view>
+
+
+
+
+<!-- 审批意见 -->
+<view class="mask" wx:if="{{showAgreeCommit}}">
+  <view class="toast-box">
+    <view class="toast-box-hd">{{operateTitle}}</view>
+    <view class="toast-box-bd">
+      <textarea placeholder="最多可写200字" class="textarea" placeholder-class="textarea-placeholder" fixed="true" value="{{submitRemark}}" bindinput="changeRemark"></textarea>
+    </view>
+    <view class="toast-box-ft">
+      <button class="btn-default small" bindtap="cancelConfirm">{{textBtnCancel}}</button>
+      <button class="btn-primary small" bindtap="sureConfirm">{{textBtnSure}}</button>
+    </view>
+  </view>
+</view>
+
+
+<!-- 审批流程 -->
+<view class="mask" wx:if="{{showPreList}}">
+  <view class="toast-box bottom-modal">
+    <view class="toast-box-hd">{{textViewexpectedapprovers}}
+      <icon class="iconfont icon-close" bindtap="hidePreListFunc"></icon>
+    </view>
+    <view class="toast-box-bd">
+      <view class="step-list">
+        <block wx:for="{{preUserList}}" wx:key="preUserList_{{index}}">
+          <view class="step-item done">
+            <i class="icon-right"></i>
+            <view class="step-item-title">{{item.fromstatusName}}</view>
+            <view class="step-item-info">
+              <text wx:for="{{item.usernames}}">{{item.username}}[{{item.account}}]</text>
+            </view>
+          </view>
+        </block>
+      </view>
+    </view>
+  </view>
+</view>

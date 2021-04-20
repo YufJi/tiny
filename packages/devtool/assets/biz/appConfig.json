@@ -1,17 +1,173 @@
 {
   "window": {
-    "navigationBarTitleText": "哈哈哈"
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": 16777215,
+    "navigationBarTitleText": "OA",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": 16316664
   },
   "pages": [
-    "pages/todos/todos",
-    "pages/add-todo/add-todo"
+    "pages/index/index",
+    "pages/taxNumber/index",
+    "pages/approve/index",
+    "pages/costaccount/index",
+    "pages/costaccount/accountDetail",
+    "pages/search/searchCompany",
+    "pages/search/searchBudgetList",
+    "pages/search/searchBusinessType",
+    "pages/travelPay/index",
+    "pages/travelPay/travelDetail",
+    "pages/warrant/index",
+    "pages/warrant/warrant",
+    "pages/submitted/index",
+    "pages/detail/index",
+    "pages/detail/addFlow",
+    "pages/detail/search",
+    "pages/holdOAdetail/index",
+    "pages/holdOAdetail/addFlow",
+    "pages/holdOAdetail/search",
+    "pages/warrant/search"
   ],
   "launchParams": {
-    "pages/todos/todos": {
-      "navigationBarTitleText": "Index"
+    "pages/index/index": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "OA",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
     },
-    "pages/add-todo/add-todo": {
-      "navigationBarTitleText": "哈哈哈"
+    "pages/taxNumber/index": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
+    },
+    "pages/approve/index": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
+    },
+    "pages/costaccount/index": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
+    },
+    "pages/costaccount/accountDetail": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
+    },
+    "pages/search/searchCompany": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
+    },
+    "pages/search/searchBudgetList": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "OA",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
+    },
+    "pages/search/searchBusinessType": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "OA",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
+    },
+    "pages/travelPay/index": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
+    },
+    "pages/travelPay/travelDetail": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
+    },
+    "pages/warrant/index": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
+    },
+    "pages/warrant/warrant": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
+    },
+    "pages/submitted/index": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
+    },
+    "pages/detail/index": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
+    },
+    "pages/detail/addFlow": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "OA",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
+    },
+    "pages/detail/search": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "OA",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
+    },
+    "pages/holdOAdetail/index": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
+    },
+    "pages/holdOAdetail/addFlow": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "OA",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
+    },
+    "pages/holdOAdetail/search": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "OA",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
+    },
+    "pages/warrant/search": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "OA",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
     }
   },
   "prerenderPage": "render.html"

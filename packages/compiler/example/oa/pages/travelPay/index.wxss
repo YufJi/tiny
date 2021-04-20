@@ -1,0 +1,141 @@
+.account-page {
+  background-color: #F0F2F5;
+  /* padding-bottom: 32rpx; */
+}
+
+.account-tip {
+  display: flex;
+  flex-direction: row;
+  background-color: #DCE9FC;
+  padding: 20rpx 32rpx;
+  align-items: center;
+}
+
+.account-tip-txt {
+  flex: auto;
+  font-size: 24rpx;
+  color: #666;
+  line-height:30rpx;
+}
+
+.account-group {
+
+}
+
+.account-group-title {
+  font-size: 32rpx;
+  color: #333;
+  line-height: 40rpx;
+  margin: 52rpx 0 28rpx 32rpx;
+  font-weight: bold;
+}
+
+.account-group-box {
+  background-color: #FFF;
+}
+
+.account-box-list {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 26rpx 0;
+  margin-left: 32rpx;
+  /* border-bottom: 1rpx solid #DEDFE0; */
+  box-sizing: border-box;
+}
+
+.account-box-list:nth-last-of-type(1) {
+  border-bottom: none;
+}
+
+.account-box-title {
+  flex: none;
+  position: relative;
+  width: 192rpx;
+  font-size: 32rpx;
+  color: #666;
+  line-height: 40rpx;
+}
+
+.account-box-imp:before {
+  content: "*";
+  position: absolute;
+  top: 8rpx;
+  left: -16rpx;
+  color: #F34500;
+}
+
+.account-box-content {
+  flex:auto;
+  display: flex;
+
+  justify-content: space-between;
+  align-items: center;
+  flex-direction: row;
+  margin-left: 32rpx;
+  margin-right: 24rpx;
+  overflow: hidden;
+  align-items: center;
+}
+
+.account-box-content-txt {
+  flex: auto;
+  font-size: 32rpx;
+  color: #333;
+  line-height: 40rpx;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-box-content-txt.unchange {
+  color: #999;
+}
+
+.account-group-box-textarea {
+  width: 100%;
+  height: 360rpx;
+  font-size: 32rpx;
+  color: #333;
+  line-height: 40rpx;
+  padding: 32rpx;
+  box-sizing: border-box;
+}
+.group-reson{
+  padding:0 0 10rpx 0;
+}
+
+.account-box-list-txtarea{
+  align-items: start;
+}
+
+.btn {
+  width: 100%;
+  padding: 40rpx 32rpx 32rpx;
+  box-sizing: border-box;
+  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+}
+
+.btn .btn-blue {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 88rpx;
+  font-size: 34rpx;
+  color: #FFF;
+  background-color: #1466DE;
+  border-radius: 12rpx;
+  margin: 0;
+  padding: 0;
+}
+
+/* 英文版样式 */
+.en .account-box-title{
+  width: 230rpx;
+  font-size: 26rpx;
+}
+.en .account-box-content-txt,
+.en .account-group-box-textarea {
+  font-size: 26rpx;
+}

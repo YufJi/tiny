@@ -1,0 +1,5 @@
+<view class="oa-page search-page">
+    <view class="page__bd">
+        <com-searchbar bindselectresult="selectResult" search="{{search}}"  value="{{inputVal}}" searchState="{{searchState}}" throttle="200" cancelFunc="{{cancelFunc}}" cancel="{{cancel}}" searchState="{{true}}" focusFunc="{{focusFunc}}" focus="{{true}}"></com-searchbar>
+    </view>
+</view>

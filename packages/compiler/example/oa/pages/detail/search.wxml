@@ -1,0 +1,1 @@
+<com-search historyHeadTxt="{{textAddHistory}}" title="{{textAddJoiner}}" historyKey="flower" inputStatus></com-search>

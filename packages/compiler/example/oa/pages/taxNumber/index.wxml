@@ -1,0 +1,102 @@
+<!--logs.wxml-->
+<view class="oa-page tax-number-page">
+  <view class="tax-number-content">
+    <!-- 输入框区域 -->
+    <view class="tax-number-search">
+      <!-- 搜索框 -->
+      <view class="page__bd">
+        <com-searchbar bindselectresult="selectResult" search="{{search}}" value="{{inputVal}}" searchState="{{searchState}}" throttle="200" focus="{{false}}" cancelFunc="{{cancelFunc}}"></com-searchbar>
+      </view>
+
+
+    </view>
+
+    <view wx:if="{{taxMyInfoStatus == true }}">
+      <!-- 我的税号信息区域 -->
+      <view class="tax-info my-info" wx:if='{{ showMyTax == true && taxMyInfo != null }}'>
+        <view class="tax-title">
+          <span class="line"></span>
+          <span>{{ titeMyTaxnumber }}</span>
+          <span class="line"></span>
+        </view>
+        <view class="my-content">
+          <view class='my-tax-item'>
+            <label class="item-label">{{ textCompany }}</label>
+            <view class="item-text" data-name="{{ taxMyInfo.company }}"  bindtap="clipTextNumber">
+              <text >{{ taxMyInfo.company }}</text>
+              <icon class="iconfont icon-cchat-copy"></icon>
+            </view>
+            
+          </view>
+          <view class='my-tax-item'>
+            <label class="item-label">{{ textTaxnumber }}</label>
+            <view class="item-text" data-name="{{ taxMyInfo.taxNumber }}"  bindtap="clipTextNumber">
+                <text>{{ taxMyInfo.taxNumber }}</text>
+                <icon class="iconfont icon-cchat-copy"></icon>
+            </view>
+          </view>
+          <view class='my-tax-item'>
+            <label class="item-label">{{ textBankaccount }}</label>
+            <text class="item-text">{{ taxMyInfo.bankAccount }}</text>
+          </view>
+          <view class='my-tax-item'>
+            <label class="item-label">{{ textBankname }}</label>
+            <text class="item-text" >{{ taxMyInfo.bankName }}</text>
+          </view>
+          <view class='my-tax-item'>
+            <label class="item-label">{{ textTelephone }}</label>
+            <text class="item-text">{{ taxMyInfo.tel }}</text>
+          </view>
+          <view class='my-tax-item'>
+            <label class="item-label">{{ textAddress }}</label>
+            <text class="item-text">{{ taxMyInfo.address }}</text>
+          </view>
+        </view>
+        
+      </view>
+
+      <!--查询到的税号的 -->
+      <view class="tax-info my-info" wx:if='{{showMyTax == false && taxInfo != null }}'>
+        <view class="my-content" bindtap="clipTextNumber">
+          <view class='my-tax-item my-tax-item-top'>
+            <label class="item-label">{{ textCompany }}</label>
+            <view class="item-text" data-name="{{ taxInfo.company }}"  bindtap="clipTextNumber">
+              <text >{{ taxInfo.company }}</text>
+              <icon class="iconfont icon-cchat-copy"></icon>
+            </view>
+          </view>
+          <view class='my-tax-item'>
+            <label class="item-label">{{ textTaxnumber }}</label>
+            <view class="item-text" data-name="{{ taxInfo.taxNumber }}"  bindtap="clipTextNumber">
+              <text >{{ taxInfo.taxNumber }}</text>
+              <icon class="iconfont icon-cchat-copy"></icon>
+            </view>
+            
+          </view>
+          <view class='my-tax-item'>
+            <label class="item-label">{{ textBankaccount }}</label>
+            <text class="item-text">{{ taxInfo.bankAccount }}</text>
+          </view>
+          <view class='my-tax-item'>
+            <label class="item-label">{{ textBankname }}</label>
+            <text class="item-text">{{ taxInfo.bankName }}</text>
+          </view>
+          <view class='my-tax-item'>
+            <label class="item-label">{{ textTelephone }}</label>
+            <text class="item-text" >{{ taxInfo.tel }}</text>
+          </view>
+          <view class='my-tax-item'>
+            <label class="item-label">{{ textAddress }}</label>
+            <text class="item-text">{{ taxInfo.address }}</text>
+          </view>
+        </view>
+      </view>
+
+      <!--空态页面 -->
+      <view class="empty-box" wx:if="{{ showMyTax == true ?  (!taxMyInfo) : (!taxInfo)}}">
+        <image class="image" src="/image/empty.png"></image>
+        <text class="text">{{ noData }}</text>
+      </view>
+    </view>
+</view>
+</view>

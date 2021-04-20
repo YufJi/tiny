@@ -1,0 +1,357 @@
+/* reset */
+/* 引入weui的样式 */
+/* @import './utils/css/weui.wxss';  */
+
+
+
+page,body {
+  background-color: #F0F2F5;
+  height: 100%;
+  font-size: 28rpx;
+  line-height: 1.6;
+  /* border-top:1rpx solid #ddd; */
+}
+
+checkbox, radio{
+  margin-right: 10rpx;
+}
+
+form{
+  width: 100%;
+}
+input {
+  cursor: auto;
+  display: block;
+  height: 1.4rem;
+  text-overflow: clip;
+  overflow: hidden;
+  white-space: nowrap;
+  font-family: UICTFontTextStyleBody;
+  min-height: 1.4rem;
+  width: 100%;
+  margin: 0;
+}
+
+textarea {
+  cursor: auto;
+  display: block;
+  position: relative;
+  margin: 0;
+  resize: none;
+  outline: 0; 
+  border:  0 none;
+  outline-style: none;
+}
+
+image,img{
+  border:0 none;
+}
+
+button{
+  border: none;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  font-size: 12px;
+}
+
+/**app.wxss**/
+.container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24rpx;
+  box-sizing: border-box;
+  font-family: -apple-system-font,Helvetica Neue,Helvetica,sans-serif;
+} 
+
+
+/* iconfont */
+@font-face {
+  font-family: "oa-office";
+  src: url('http://pic.c-ctrip.com/platform/h5/miniapp/oaoffice/oa-office.ttf?20200116') format('truetype'); /* iOS 4.1- */
+}
+.iconfont {
+  font-family: "oa-office" !important;
+  font-size: 16px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-stroke-width: 0.2px;
+  -moz-osx-font-smoothing: grayscale;
+  color:#999;
+  width: 32rpx;
+  height: 32rpx;
+  display: flex;
+  align-items: center;
+}
+.iconfont:before {
+  font-size: 36rpx;
+}
+/* 删除 */
+.icon-del:before{
+  content: "\e92d";
+}
+/* 下一页箭头 */
+.icon-right-arrow{
+  transform: rotate(180deg);
+}
+.icon-right-arrow:before{
+  content: "\e943";
+}
+/* 添加 */
+.icon-add:before{
+  content: "\e93e";
+}
+/* 下箭头 */
+.icon-drop-down:before{
+  content: "\e945";
+}
+/* 上箭头 */
+.icon-drop-up:before{
+  content: "\e946";
+}
+/* 实心上箭头 */
+.icon-drop-up_solid:before{
+  content: "\e948";
+}
+/* 实心下箭头 */
+.icon-drop-down_solid:before{
+  content: "\e949";
+}
+/* 返回 */
+.icon-back:before{
+  content: "\e943";
+}
+
+.icon-subtract_shapeed:before{
+  content: "\ed1b";
+}
+.icon-closed_shapeed:before{
+  content: "\ed1f";
+}
+
+.icon-close:before{
+  content: "\e940";
+}
+
+.icon-ranke:before{
+  font-size: 34rpx;
+  content: "\e941";
+}
+
+.icon-search:before{
+  content: "\e92a";
+}
+
+.icon-clock_shape:before{
+  content: "\ee32";
+}
+
+.icon-left-arrow_solid:before{
+  content: "\ef8b";
+}
+
+.icon-right-arrow_solid:before{
+  content: "\ef8c";
+}
+
+.icon-check:before{
+  content: "\f1c8";
+}
+.icon-information{
+  margin-inline-end: 6rpx;
+}
+.icon-information:before{
+  content: "\ef89";
+  font-size: 32rpx;
+}
+
+.icon-add_line:before{
+  content:"\f36e";
+}
+.icon-subtract_line:before{
+  content:"\f37c";
+}
+.icon-memberinfo:before{
+  content:"\f37f";
+}
+.icon-more_solid:before{
+  content:"\f433";
+}
+.icon-cchat-copy:before{
+  content: "\f439";
+}
+.icon-edit:before{
+  content: "\e93c";
+}
+
+
+
+/* 按钮样式 */
+.btn-default,.btn-primary{
+  /* border: 1rpx solid #1466DE; */
+  background: #FFFFFF;
+  border-radius: 8rpx;
+  width:152rpx!important;
+  height:60rpx;
+  min-height: 60rpx!important;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  color: #1466DE;
+  font-weight: normal;
+  position:relative;padding:1px;border:none;
+  overflow: hidden;
+}
+.btn-default::after,.btn-primary::after{
+		content:"";
+    position:absolute;top:0;left:0;width:200%;height:200%;
+		border:1px solid #1466DE!important;
+    -webkit-transform: scale(.5);
+		transform:scale(0.5);
+    -webkit-transform-origin: 0 0;
+		transform-origin:0 0;
+		box-sizing:border-box;
+		border-radius: 8px;
+    overflow: hidden;
+    display: block;
+	}
+
+.btn-primary{
+  background: #1466DE;
+  color:#fff;
+}
+.btn-refuse{
+  color:#333;
+}
+.btn-refuse::after{
+  border-color:#999!important;
+}
+.btn-default.middle,
+.btn-primary.middle{
+  width: 330rpx!important;
+  font-size: 30rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+}
+.btn-default.large,
+.btn-primary.large{
+  width:100%!important;
+  border-radius: 12rpx;
+  height: 88rpx;
+  line-height:88rpx;
+  font-size: 34rpx;
+  display: flex!important;
+}
+.btn-default.large::after,
+.btn-primary.large::after{
+  border-radius: 24rpx;
+}
+.btn-default.small,
+.btn-primary.small{
+  width:216rpx!important;
+  font-size: 30rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+}
+.btn-default .iconfont,
+.btn-primary .iconfont{
+  margin-right: 15rpx;
+}
+.btn-default .iconfont{
+  color: #1466DE;
+}
+.btn-primary .iconfont{
+  color:#fff;
+}
+
+.btn-default.disabled,
+.btn-primary.disabled{
+  background: #eee!important;
+  color:#999!important;
+  
+}
+.btn-default.disabled::after,
+.btn-primary.disabled::after{
+  border-color:#eee!important;
+}
+
+
+/* 空态 */
+.empty-box{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-top:240rpx;
+}
+.empty-box .image{
+  width: 300rpx;
+  height: 300rpx;
+}
+.empty-box .text{
+  margin-top: 56rpx;
+  display: block;
+  font-size: 28rpx;
+  color: #333;
+  text-align: center;
+}
+
+
+.border-bottom-1px{
+  padding-bottom: 1px;
+  background-position: center bottom;
+  background-image: linear-gradient(to bottom, transparent 50%, #DEDFE0 50%);
+  background-repeat: no-repeat;
+  background-size:  100% 1px;
+}
+/* .border-top-1px{
+  padding-top: 1px;
+  background-position: center top;
+  background-image: linear-gradient(to top, transparent 50%, #DEDFE0 50%);
+  background-repeat: no-repeat;
+  background-size:  100% 1px;
+} */
+
+.border-all-1px{position:relative;padding:1px;border:none;}
+.border-all-1px:before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:0;
+  width:200%;
+  height:200%;
+  border-radius: 8px;
+  border:1px solid #DEDFE0;
+  transform:scale(0.5);
+  transform-origin:0 0;
+  box-sizing:border-box;
+  border-radius: 4px;
+}
+
+.border-all-1px-noleft{position:relative;padding:1px 0px;border:none;}
+.border-all-1px-noleft:before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:0;
+  width:200%;
+  height:200%;
+  border-top:1px solid #DEDFE0;
+  border-bottom: 1px solid #DEDFE0;
+  transform:scale(0.5);
+  transform-origin:0 0;
+  box-sizing:border-box;
+}
+
+
+
+.view-fixed{
+  overflow: hidden;
+  height: 100%;
+}

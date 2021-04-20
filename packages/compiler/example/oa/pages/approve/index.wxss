@@ -1,0 +1,291 @@
+.form-card{
+  position:relative;
+  padding:40rpx 32rpx;
+  background: #fff;
+  font-size: 28rpx;
+  color: #666;
+  letter-spacing: 0;
+  line-height: 36rpx;
+}
+.form-card-title{
+  margin-bottom:20rpx;
+  font-size: 32rpx;
+  color: #333333;
+}
+.form-card-text{
+  font-size: 28rpx;
+  color: #666666;
+  letter-spacing: 0;
+  line-height: 36rpx;
+  margin-bottom:16rpx;
+}
+.form-card-text:last-of-type{
+  margin-bottom:0;
+}
+.form-card-status{
+  text-align: right;
+}
+
+/* 取消 */
+.form-card.cancel .form-card-title{
+  color: rgba(51,51,51,0.50);
+}
+.form-card.cancel .form-card-text{
+  color: rgba(102,102,102,0.50);
+}
+
+
+/*  状态 */
+.wait{
+  color:#FF6F00;
+}
+.cancel{
+  color:#ccc;
+}
+.accept{
+  color:#00B87A;
+}
+.refuse{
+  color:#000;
+}
+
+
+
+
+/* tab切换 */
+.swiper-tab{
+  position: fixed;
+  top:0;
+  left: 0;
+  right:0;
+  display: flex;
+  flex-flow: row;
+  justify-content: space-between;
+  height: 102rpx;
+  line-height: 102rpx;
+  margin-bottom:16rpx;
+}
+.swiper-tab-item{
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  font-size: 30rpx;
+  color: #666;
+  line-height: 2.5;
+}
+.swiper-tab-item .swiper-tab-txt {
+  position:relative;
+}
+.swiper-tab-item .swiper-tab-txt:after{
+  position: absolute;
+  bottom:-4rpx;
+  left:0;
+  right:0;
+  content:'';
+  height:4rpx;
+  background: transparent;
+}
+.swiper-tab-item.active .swiper-tab-txt{
+  color:#333;
+  font-weight: bold;
+}
+.swiper-tab-item.active .swiper-tab-txt:after{
+  background:#1466DE;
+}
+
+.swiper-panel{
+  position: fixed;
+  top:214rpx;
+  left:0;
+  right: 0;
+  bottom:0;
+  height: calc(100vh - 214rpx);
+  overflow-y:scroll;
+}
+.swiper-panel-item{
+  overflow:scroll; 
+}
+
+/* 搜索区域 */
+.search-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  position: fixed;
+  top:118rpx;
+  left:0;
+  right: 0;
+  height: 96rpx;
+  z-index: 2;
+}
+
+.search-box {
+  flex: auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.search-box.nomargin{
+  margin-top:0;
+}
+
+.search-item {
+  flex: auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  background-color: #fff;
+  border-radius: 12rpx;
+  padding: 0 6rpx;
+  margin:0 0 0 24rpx;
+}
+
+.search-bar {
+    height: 68rpx;
+}
+
+.search-item.focus .search-bar {
+  flex: auto;
+  width: 100%;
+  margin: 0 6rpx;
+}
+
+.placeholder-txt {
+  font-size: 30rpx;
+  color: #CCC;
+  line-height: 38rpx;
+}
+
+.search-btn {
+  flex: none;
+  font-size: 30rpx;
+  line-height: 38rpx;
+  color:#666;
+  margin: 0 10rpx;
+  padding: 13rpx 16rpx;
+}
+
+.icon-closed_shapeed {
+  padding: 0 10rpx 0 16rpx;
+}
+
+.icon-search:before, .icon-closed_shapeed:before {
+  color: #ccc;
+}
+
+.sort-box {
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 26rpx 0 14rpx;
+  margin-left: 8rpx;
+}
+
+.search-box .icon-search{
+  margin-right:8px;
+}
+
+.sort-box.new:after {
+  content: "";
+  position: absolute;
+  top: 8rpx;
+  right: 16rpx;
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 100%;
+  background-color: #F34500;
+}
+
+.icon-ranke:before{
+  color: #666;
+}
+
+.sort-box-title {
+  font-size: 30rpx;
+  line-height: 38rpx;
+  color:#666;
+  margin-left: 8rpx;
+}
+
+.sort-box.active .icon-ranke:before{
+  color: #1466DE;
+}
+
+.sort-box.active .sort-box-title{
+  color: #1466DE;
+}
+
+.sort-group {
+  position: absolute;
+  top: 96rpx;
+  left: 0;
+  right: 0;
+  background-color: #fff;
+  z-index: 100;
+}
+
+.sort-item {
+  position: relative;
+  text-align: center;
+  border-bottom: 1rpx solid #DEDFE0;
+}
+
+.sort-item-txt {
+  font-size: 32rpx;
+  color: #333;
+  line-height: 42rpx;
+  padding: 32rpx 0;
+}
+
+.icon-check {
+  position: absolute;
+  right: 40rpx;
+  top: 22rpx;
+  display: none;
+}
+
+.icon-check:before {
+  color: #1466DE;
+}
+
+.sort-item.active .sort-item-txt {
+  color: #1466DE;
+}
+
+.sort-item.active .icon-check {
+  display: block;
+}
+
+.mask {
+  position: fixed;
+  top: 216rpx;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,.7);
+}
+
+.search-item {
+  position: relative;
+}
+
+.search-view {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 64rpx;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  border-radius: 12rpx;
+  background-color: #fff;
+  pointer-events: none;
+}

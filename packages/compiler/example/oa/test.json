@@ -1,0 +1,59 @@
+
+
+
+
+
+
+
+{
+  "activity_businessgroup": null,
+  "payment_payee": "戴水平",
+  "sum": 1,
+  "type": "12",
+  "budget_isautosign": "N",
+  "payment_isicbc": "N",
+  "payment_bankcity": "上海",
+  "expense_start_date": "2019-12-19",
+  "budget_share_month": "201912",
+  "payment_conditions_effect_date": "",
+  "expense_invoice_number": 1,
+  "payment_payee_account": "6214830216972868",
+  "payment_company": "P0089",
+  "budget_application_type": "BAT003",
+  "expense_items": [
+    {
+      "itemName": "Others",
+      "amount": 1,
+      "useDate": "",
+      "model": "other",
+      "currency": "CNY",
+      "explanation": "我"
+    }
+  ],
+  "budget_budgettype": [
+    {
+      "budgettype": "Travelling",
+      "amount": 0
+    }
+  ],
+  "mice_reason": "111",
+  "linkto_activity_id": "",
+  "activity_remark": "",
+  "priority": "normal",
+  "budget_costcenter": [
+    {
+      "amount": 0,
+      "costcenter": "0960"
+    }
+  ],
+  "budget_share_enddate": "",
+  "payment_bankname": "招商银行股份有限公司上海高安支行",
+  "expense_end_date": "2019-12-19",
+  "expense_place": "111",
+  "budget_isinbudget": "Y",
+  "budget_isacrossmonth": "N",
+  "budget_share_startdate": ""
+}
+
+
+

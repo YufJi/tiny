@@ -1,0 +1,136 @@
+<view class="account-page  {{langStr == 'en_US' ? 'en' :''}}">
+  <com-toptips msg="{{error}}" type="error" wx:if="{{showMsg == true}}"></com-toptips>
+  <view class="account-tip">
+    <icon class="iconfont icon-information"></icon>
+    <view class="account-tip-txt">{{textPrompt}}</view>
+  </view>
+  <view class="account-group">
+    <!-- 基础信息的数据 -->
+    <view class="account-group-title">{{textBasicInfo}} </view>
+    <view class="account-group-box">
+      <view class="border-bottom-1px">
+        <view class="account-box-list">
+          <view class="account-box-title">{{textBudgettype}}</view>
+          <view class="account-box-content">
+            <view class="account-box-content-txt unchange">
+              {{budgetType}}
+            </view>
+            <icon class="iconfont icon-arrow-right"></icon>
+          </view>
+        </view>
+      </view>
+      <view class="border-bottom-1px">
+        <view class="account-box-list">
+          <view class="account-box-title">{{textCostcenter}}</view>
+          <view class="account-box-content">
+            <view class="account-box-content-txt unchange ">
+              {{costCenter}}
+            </view>
+            <icon class="iconfont icon-arrow-right"></icon>
+          </view>
+        </view>
+      </view>
+      <view class="border-bottom-1px">
+        <view class="account-box-list">
+          <view class="account-box-title account-box-imp">{{textPaymentcompany}}</view>
+          <view class="account-box-content" bindtap="goSearchCompany" data-company="{{payCompany}}">
+            <view class="account-box-content-txt">
+              {{payCompany}}
+            </view>
+            <icon class="iconfont  icon-right-arrow"></icon>
+          </view>
+        </view>
+      </view>
+      <view class="border-bottom-1px">
+        <view class="account-box-list">
+          <view class="account-box-title account-box-imp">{{textApportionmentmonth}}</view>
+          <view class="account-box-content">
+            <view class="account-box-content-txt">
+              <picker mode="date" value="{{shareDate}}" fields="{{fields}}" bindchange="bindDateChange">
+                <view class="picker">
+                  {{dateFormat}}
+                </view>
+              </picker>
+            </view>
+            <icon class="iconfont  icon-right-arrow"></icon>
+          </view>
+        </view>
+      </view>
+      <view class="border-bottom-1px">
+        <view class="account-box-list">
+          <view class="account-box-title account-box-imp">{{textBudgetclassification}}</view>
+          <view class="account-box-content" bindtap="goSearchBudgeClass">
+            <view class="account-box-content-txt">
+              <!-- {{budgetClass}} -->
+              <input class="account-box-content-txt" placeholder="{{textSelectBudgettype}}" value="{{budgetClass}}" readonly="readonly" />
+            </view>
+            <icon class="iconfont icon-right-arrow"></icon>
+          </view>
+        </view>
+      </view>
+      <view class="border-bottom-1px">
+        <view class="account-box-list">
+          <view class="account-box-title account-box-imp">{{textNumberofinvoice}}</view>
+          <view class="account-box-content">
+            <input class="account-box-content-txt" placeholder="{{textNumberInvoices}}" value="{{invoiceNumber}}" bindinput="bindInvoice" />
+          </view>
+        </view>
+      </view>
+
+      <!-- 业务分组 -->
+      <view class="border-bottom-1px">
+        <view class="account-box-list">
+          <view class="account-box-title {{isNeedBusinessTypeRequired ? 'account-box-imp' :''}}">{{textBusinessType}}</view>
+           <view class="account-box-content" bindtap="goSearchBusinessType">
+            <view class="account-box-content-txt">
+              <input class="account-box-content-txt" placeholder="{{textSelectBusinesstype}}" value="{{businessType}}" readonly="readonly" />
+            </view>
+            <icon class="iconfont icon-right-arrow"></icon>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="account-group-title">{{textAccountInfo}}</view>
+    <view class="account-group-box">
+      <view class="border-bottom-1px">
+        <view class="account-box-list">
+          <view class="account-box-title account-box-imp">{{textPayee}}</view>
+          <view class="account-box-content">
+            <input class="account-box-content-txt" placeholder="{{textPayeeName}}" value="{{payeeName}}" bindinput="bindPayeeName" />
+          </view>
+        </view>
+      </view>
+      <view class="border-bottom-1px">
+        <view class="account-box-list">
+          <view class="account-box-title account-box-imp">{{textReceiptaccount}}</view>
+          <view class="account-box-content">
+            <input class="account-box-content-txt" placeholder="{{textReceiptaccountTip}}" value="{{payeeAccount}}" bindinput="bindBankAccountName" />
+          </view>
+        </view>
+      </view>
+      <view class="border-bottom-1px">
+        <view class="account-box-list">
+          <view class="account-box-title account-box-imp">{{textBankname}}</view>
+          <view class="account-box-content">
+            <input class="account-box-content-txt" placeholder="{{textBanknameTip}}" value="{{payeeBank}}" bindinput="bindBankName" />
+          </view>
+        </view>
+      </view>
+      <view class="border-bottom-1px">
+        <view class="account-box-list">
+          <view class="account-box-title account-box-imp">{{textCityofbank}}</view>
+          <view class="account-box-content">
+            <input class="account-box-content-txt" placeholder="{{textCityofbankTip}}" value="{{bankCity}}" bindinput="bindBankCity" />
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="account-group-title">{{textRemarks}}</view>
+    <view class="account-group-box">
+      <textarea class="account-group-box-textarea" maxlength="800" value="{{remarkAll}}" placeholder="{{textLimited}}" bindinput="changeRemark" />
+    </view>
+  </view>
+  <view class="btn">
+    <button class="btn-blue" bindtap="nextStep">{{textNext}} ( {{textItemdetail}} )</button>
+  </view>
+</view>

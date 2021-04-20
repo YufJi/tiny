@@ -1,0 +1,40 @@
+<view class="warrant-page">
+  <view class="warrent-group-box">
+    <view class="border-bottom-1px">
+      <view class="warrent-box-list">
+        <view class="warrent-box-title">{{textAddAgent}}</view>
+        <view class="warrent-box-content" bindtap="bindSearchAgent">
+          <view class="warrent-box-content-txt">{{ fullname }}</view>
+          <icon class="iconfont icon-right-arrow"></icon>
+        </view>
+      </view>
+    </view>
+    <view class="border-bottom-1px">
+
+      <view class="warrent-box-list">
+        <view class="warrent-box-title">{{textStartDate}}</view>
+        <picker class="warrent-date-box" mode="date" value="{{rule.beginDate}}" bindchange="bindBeginDateChange">
+          <view class="warrent-box-content">
+            <view class="warrent-box-content-txt">{{ rule.beginDate }}</view>
+            <icon class="iconfont icon-right-arrow"></icon>
+          </view>
+        </picker>
+      </view>
+    </view>
+    <view class="border-bottom-1px">
+
+      <view class="warrent-box-list">
+        <view class="warrent-box-title">{{textEndDate}}</view>
+        <picker class="warrent-date-box" mode="date" value="{{rule.endDate}}" bindchange="bindEndDateChange">
+          <view class="warrent-box-content">
+            <view class="warrent-box-content-txt">{{ rule.endDate }}</view>
+            <icon class="iconfont icon-right-arrow"></icon>
+          </view>
+        </picker>
+      </view>
+    </view>
+  </view>
+  <view class="btn">
+    <button class="btn-primary large" bindtap="navRouterBack">{{textauThorize}}</button>
+  </view>
+</view>

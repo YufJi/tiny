@@ -1,0 +1,33 @@
+.cweui-toptips{
+    position: fixed;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    top: 0px;
+    left: 0px;
+    right: 0px;
+    padding: 10px;
+    border-radius: 0px;
+    font-size: 14px;
+    text-align: center;
+    color: #FFF;
+    z-index: 5000;
+    word-wrap: break-word;
+    word-break: break-all;
+}
+
+.cweui-toptips_warn {
+  background-color: #fa5151;
+}
+
+.cweui-toptips_success {
+  background-color: #09bb07;
+}
+
+.cweui-toptips_error {
+  background-color: #F34500;
+}
+
+.cweui-toptips_info {
+  background-color: #10aeff;
+}
+

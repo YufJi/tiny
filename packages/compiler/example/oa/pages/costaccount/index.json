@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "",
+  "usingComponents": {
+    "com-toptips": "/pages/component/toptips/toptips"
+  }
+}

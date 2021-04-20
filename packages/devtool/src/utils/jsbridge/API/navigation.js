@@ -26,7 +26,7 @@ export function doPushWindow(url, tag) {
   global.renders[guid] = pageIframe
   global.pagesStack.push(guid);
 
-  // todo setNavConfig
+  // setNavConfig
   const { launchParams } = global.appConfig
   dispatch.nav.setNavConfig(launchParams[tag] || {})
 }
