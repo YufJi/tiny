@@ -1,16 +1,15 @@
+import React from 'react';
+import { connect } from 'react-redux';
+import global from '@/utils/global';
 
-import React from 'react'
-import { connect } from 'react-redux'
-import global from '@/utils/global'
-
-import style from './index.module.less'
+import style from './index.module.less';
 
 function Nav(props) {
   const { navConfig } = props;
-  const isShowBackIcon = global.pagesStack.length > 1
+  const isShowBackIcon = global.pagesStack.length > 1;
 
   return (
-    <div 
+    <div
       className={`${style.nav} flex-r`}
       style={{
         backgroundColor: navConfig.backgroundColor,
@@ -27,22 +26,21 @@ function Nav(props) {
         <div className={`${style.close} ic`} onClick={props.hideMP}>&#xe649;</div>
       </div>
     </div>
-  )
+  );
 }
-
 
 const mapState = (state) => {
   const { nav } = state;
   return {
-      navConfig: nav,
+    navConfig: nav,
   };
 };
 
-const mapDispatch = dispatch => ({
-  setNavConfig: config => dispatch.nav.setNavConfig(config),
+const mapDispatch = (dispatch) => ({
+  setNavConfig: (config) => dispatch.nav.setNavConfig(config),
 });
 
 export default connect(
   mapState,
-  mapDispatch
+  mapDispatch,
 )(Nav);

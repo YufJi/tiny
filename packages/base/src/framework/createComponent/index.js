@@ -1,13 +1,12 @@
-
 import createReactClass from 'create-react-class';
 import hoistNonReactStatics from 'hoist-non-react-statics';
 import PropTypes from 'prop-types';
 import React from 'react';
+import objectKeys from '@/utils/objectKeys';
 import { getCurrentPageImpl } from '../App';
 import resolvePageUrl from '../utils/resolvePageUrl';
 import $global from '../common/global';
 import camelCase from '../utils/camelCase';
-import objectKeys from '@/utils/objectKeys';
 import Platform from '../Platform';
 import normalizeStyle from './normalizeStyle';
 import normalizeClassNameProps from './normalizeClassNameProps';

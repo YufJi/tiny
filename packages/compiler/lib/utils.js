@@ -229,7 +229,7 @@ function prefixPath(p) {
   if (p.charAt(0) === '.' || p.charAt(0) === '/') {
     return p;
   }
-  return `./${p}`;;
+  return `./${p}`;
 }
 
 function isValidFilePath(file) {
@@ -256,7 +256,7 @@ function genResourceHash(p, option = {}) {
     if (extname) {
       filePath = filePath.slice(0, -extname.length);
     }
-   
+
     const cssFilePath = `${filePath}${transformConfig.styleExtname}`;
     return crypto
       .createHash('sha1')
@@ -292,7 +292,7 @@ function getImports(imports = [], baseDir, option) {
 function isCommonEvent(eventName) {
   const jsxCommonEventReg = /^\$(on|catch)(tap|touchstart|touchmove|touchend|touchcancel|transitionend|animationstart|animationiteration|animationend)(capture)?$/;
 
-  return jsxCommonEventReg.test(eventName)
+  return jsxCommonEventReg.test(eventName);
 }
 
 module.exports = {

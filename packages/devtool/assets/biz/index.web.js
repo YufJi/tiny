@@ -202,7 +202,7 @@ var $getComRefHandler = function $getComRefHandler(instance, name) {
   return instance.$getComRefHandler && instance.$getComRefHandler(name);
 };
 
-var $EmptyComponentFactory = self.RMLRuntime.EmptyComponentFactory;
+var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
 var getComponentClass = self.MP.getComponentClass;
 
 var $getComponentClass = function $getComponentClass(name) {
@@ -213,16 +213,16 @@ var Button_ = self.MPUI['button'];
 var Button = Button_ || $EmptyComponentFactory("button");
 var Text_ = self.MPUI['text'];
 var Text = Text_ || $EmptyComponentFactory("text");
-var $iterate = self.RMLRuntime.iterate;
-var $createRoot = self.RMLRuntime.createRoot;
-var $createBlock = self.RMLRuntime.createBlock;
-var $useTemplate = self.RMLRuntime.useTemplate;
-var $createTemplate = self.RMLRuntime.createTemplate;
-var $renderSlot = self.RMLRuntime.renderSlot;
-var $resolveScopedSlots = self.RMLRuntime.resolveScopedSlots;
-var $getSJSMember = self.RMLRuntime.getSJSMember;
-var $toString = self.RMLRuntime.toString;
-var $getLooseDataMember = self.RMLRuntime.getLooseDataMember;
+var $iterate = self.XMLRuntime.iterate;
+var $createRoot = self.XMLRuntime.createRoot;
+var $createBlock = self.XMLRuntime.createBlock;
+var $useTemplate = self.XMLRuntime.useTemplate;
+var $createTemplate = self.XMLRuntime.createTemplate;
+var $renderSlot = self.XMLRuntime.renderSlot;
+var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.XMLRuntime.getSJSMember;
+var $toString = self.XMLRuntime.toString;
+var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
 
 var $templates = {};
 function render(data) {
@@ -312,19 +312,19 @@ var $getComRefHandler = function $getComRefHandler(instance, name) {
   return instance.$getComRefHandler && instance.$getComRefHandler(name);
 };
 
-var $EmptyComponentFactory = self.RMLRuntime.EmptyComponentFactory;
+var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
 var View_ = self.MPUI['view'];
 var View = View_ || $EmptyComponentFactory("view");
-var $iterate = self.RMLRuntime.iterate;
-var $createRoot = self.RMLRuntime.createRoot;
-var $createBlock = self.RMLRuntime.createBlock;
-var $useTemplate = self.RMLRuntime.useTemplate;
-var $createTemplate = self.RMLRuntime.createTemplate;
-var $renderSlot = self.RMLRuntime.renderSlot;
-var $resolveScopedSlots = self.RMLRuntime.resolveScopedSlots;
-var $getSJSMember = self.RMLRuntime.getSJSMember;
-var $toString = self.RMLRuntime.toString;
-var $getLooseDataMember = self.RMLRuntime.getLooseDataMember;
+var $iterate = self.XMLRuntime.iterate;
+var $createRoot = self.XMLRuntime.createRoot;
+var $createBlock = self.XMLRuntime.createBlock;
+var $useTemplate = self.XMLRuntime.useTemplate;
+var $createTemplate = self.XMLRuntime.createTemplate;
+var $renderSlot = self.XMLRuntime.renderSlot;
+var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.XMLRuntime.getSJSMember;
+var $toString = self.XMLRuntime.toString;
+var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
 
 var $template = void 0;
 var $ownTemplates = exports.$ownTemplates = {};
@@ -410,7 +410,7 @@ var $getComRefHandler = function $getComRefHandler(instance, name) {
   return instance.$getComRefHandler && instance.$getComRefHandler(name);
 };
 
-var $EmptyComponentFactory = self.RMLRuntime.EmptyComponentFactory;
+var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
 var getComponentClass = self.MP.getComponentClass;
 
 var $getComponentClass = function $getComponentClass(name) {
@@ -423,16 +423,16 @@ var Input_ = self.MPUI['input'];
 var Input = Input_ || $EmptyComponentFactory("input");
 var AddButton_ = $getComponentClass("/components/add-button/add-button");
 var AddButton = AddButton_ || $EmptyComponentFactory("add-button");
-var $iterate = self.RMLRuntime.iterate;
-var $createRoot = self.RMLRuntime.createRoot;
-var $createBlock = self.RMLRuntime.createBlock;
-var $useTemplate = self.RMLRuntime.useTemplate;
-var $createTemplate = self.RMLRuntime.createTemplate;
-var $renderSlot = self.RMLRuntime.renderSlot;
-var $resolveScopedSlots = self.RMLRuntime.resolveScopedSlots;
-var $getSJSMember = self.RMLRuntime.getSJSMember;
-var $toString = self.RMLRuntime.toString;
-var $getLooseDataMember = self.RMLRuntime.getLooseDataMember;
+var $iterate = self.XMLRuntime.iterate;
+var $createRoot = self.XMLRuntime.createRoot;
+var $createBlock = self.XMLRuntime.createBlock;
+var $useTemplate = self.XMLRuntime.useTemplate;
+var $createTemplate = self.XMLRuntime.createTemplate;
+var $renderSlot = self.XMLRuntime.renderSlot;
+var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.XMLRuntime.getSJSMember;
+var $toString = self.XMLRuntime.toString;
+var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
 
 
 var $templates = {};
@@ -584,19 +584,19 @@ var $getComRefHandler = function $getComRefHandler(instance, name) {
   return instance.$getComRefHandler && instance.$getComRefHandler(name);
 };
 
-var $EmptyComponentFactory = self.RMLRuntime.EmptyComponentFactory;
+var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
 var View_ = self.MPUI['view'];
 var View = View_ || $EmptyComponentFactory("view");
-var $iterate = self.RMLRuntime.iterate;
-var $createRoot = self.RMLRuntime.createRoot;
-var $createBlock = self.RMLRuntime.createBlock;
-var $useTemplate = self.RMLRuntime.useTemplate;
-var $createTemplate = self.RMLRuntime.createTemplate;
-var $renderSlot = self.RMLRuntime.renderSlot;
-var $resolveScopedSlots = self.RMLRuntime.resolveScopedSlots;
-var $getSJSMember = self.RMLRuntime.getSJSMember;
-var $toString = self.RMLRuntime.toString;
-var $getLooseDataMember = self.RMLRuntime.getLooseDataMember;
+var $iterate = self.XMLRuntime.iterate;
+var $createRoot = self.XMLRuntime.createRoot;
+var $createBlock = self.XMLRuntime.createBlock;
+var $useTemplate = self.XMLRuntime.useTemplate;
+var $createTemplate = self.XMLRuntime.createTemplate;
+var $renderSlot = self.XMLRuntime.renderSlot;
+var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.XMLRuntime.getSJSMember;
+var $toString = self.XMLRuntime.toString;
+var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
 
 var $templates = {};
 function render(data) {
@@ -667,7 +667,7 @@ var $getComRefHandler = function $getComRefHandler(instance, name) {
   return instance.$getComRefHandler && instance.$getComRefHandler(name);
 };
 
-var $EmptyComponentFactory = self.RMLRuntime.EmptyComponentFactory;
+var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
 var getComponentClass = self.MP.getComponentClass;
 
 var $getComponentClass = function $getComponentClass(name) {
@@ -688,16 +688,16 @@ var Text_ = self.MPUI['text'];
 var Text = Text_ || $EmptyComponentFactory("text");
 var AddButton_ = $getComponentClass("/components/add-button/add-button");
 var AddButton = AddButton_ || $EmptyComponentFactory("add-button");
-var $iterate = self.RMLRuntime.iterate;
-var $createRoot = self.RMLRuntime.createRoot;
-var $createBlock = self.RMLRuntime.createBlock;
-var $useTemplate = self.RMLRuntime.useTemplate;
-var $createTemplate = self.RMLRuntime.createTemplate;
-var $renderSlot = self.RMLRuntime.renderSlot;
-var $resolveScopedSlots = self.RMLRuntime.resolveScopedSlots;
-var $getSJSMember = self.RMLRuntime.getSJSMember;
-var $toString = self.RMLRuntime.toString;
-var $getLooseDataMember = self.RMLRuntime.getLooseDataMember;
+var $iterate = self.XMLRuntime.iterate;
+var $createRoot = self.XMLRuntime.createRoot;
+var $createBlock = self.XMLRuntime.createBlock;
+var $useTemplate = self.XMLRuntime.useTemplate;
+var $createTemplate = self.XMLRuntime.createTemplate;
+var $renderSlot = self.XMLRuntime.renderSlot;
+var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.XMLRuntime.getSJSMember;
+var $toString = self.XMLRuntime.toString;
+var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
 
 var $templates = {};
 function render(data) {

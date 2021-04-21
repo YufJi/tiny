@@ -1,4 +1,3 @@
-
 let babylon = require('babylon');
 let traverse = require('babel-traverse');
 

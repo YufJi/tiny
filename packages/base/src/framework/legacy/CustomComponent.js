@@ -1,13 +1,5 @@
-
 import createReactClass from 'create-react-class';
-import $global from '../common/global';
-import EventHub from '../EventHub';
 import { getOpFn } from '@/utils/setData';
-import PureRenderMixin from '../mixins/PureRenderMixin';
-import CustomComponentEventMixin from '../mixins/CustomComponentEventMixin';
-import { getCurrentPageImpl } from '../App';
-import transformChildrenToSlots from '../utils/transformChildrenToSlots';
-import normalizeComponentProps from '../utils/normalizeComponentProps';
 import objectKeys from '@/utils/objectKeys';
 import {
   PayloadKeyMountedComponents,
@@ -24,17 +16,24 @@ import {
   eventReg,
   commonEventReg,
 } from '@/utils/reg';
+import $global from '../common/global';
+import EventHub from '../EventHub';
+import PureRenderMixin from '../mixins/PureRenderMixin';
+import CustomComponentEventMixin from '../mixins/CustomComponentEventMixin';
+import { getCurrentPageImpl } from '../App';
+import transformChildrenToSlots from '../utils/transformChildrenToSlots';
+import normalizeComponentProps from '../utils/normalizeComponentProps';
 
 let componentId = 1;
 let mountedComponents;
 let unmountedComponents;
 
-reset();
-
 function reset() {
   mountedComponents = [];
   unmountedComponents = [];
 }
+
+reset();
 
 EventHub.addListener(['pageReady', 'pageUpdate'], (e) => {
   e.payload = {
@@ -54,13 +53,13 @@ export function setComponentsConfig(componentsConfig) {
 
   for (const is in componentsConfig) {
     if (Object.hasOwnProperty.call(componentsConfig, is)) {
-      $global.componentsConfig[is] = $global.componentsConfig[is] || {}
-      $global.componentsConfig[is].user = componentsConfig[is]
+      $global.componentsConfig[is] = $global.componentsConfig[is] || {};
+      $global.componentsConfig[is].user = componentsConfig[is];
     }
   }
 }
 
-const renderCache = {}
+const renderCache = {};
 
 function getComponentConfig(is) {
   const userConfig = $global.componentsConfig[is].user || {};
@@ -85,7 +84,7 @@ export default (is) => createReactClass({
   $isCustomComponent: true,
   displayName: is,
   statics: {
-    is: is,
+    is,
   },
   mixins: [
     CustomComponentEventMixin(),
@@ -102,7 +101,7 @@ export default (is) => createReactClass({
     this.eventHandlers = {};
     this.componentEventHandlers = {};
     return {
-      ...getComponentConfig(this.is).data, 
+      ...getComponentConfig(this.is).data,
       ...this.props,
     };
   },
@@ -187,7 +186,6 @@ export default (is) => createReactClass({
     }
     let ownerId;
     if (props[DiffKeyUpdated]) {
-
       /* 过滤属性 */
       const { $parent, ...rest } = props[DiffKeyUpdated];
       const updated = newProps[DiffKeyUpdated] = { ...rest };
@@ -267,7 +265,7 @@ export default (is) => createReactClass({
     props.$slots = transformChildrenToSlots(this.props.children);
     props.$scopedSlots = this.props.$scopedSlots;
 
-    const { 
+    const {
       id,
       className,
     } = props;
@@ -276,13 +274,13 @@ export default (is) => createReactClass({
 
     return (
       <span
-        id={id} 
+        id={id}
         className={className}
-        ref={ref => this._root = ref}
+        ref={(ref) => this._root = ref}
         {...nodeEvents}
       >
         {getRender(is).call(this, { $id: this.id, ...this.state })}
       </span>
-    )
+    );
   },
 });

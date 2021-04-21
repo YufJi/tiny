@@ -1,6 +1,5 @@
-
-import postMessage, { messageToRender, messageToWorker } from './postMessage'
-import { pushWindow } from './navigation'
+import postMessage, { messageToRender, messageToWorker } from './postMessage';
+import { pushWindow } from './navigation';
 
 export {
   postMessage,
@@ -8,4 +7,4 @@ export {
   messageToWorker,
 
   pushWindow,
-}
+};

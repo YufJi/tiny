@@ -1,4 +1,3 @@
-
 const global = {
   state: {
     navigationBarTitleText: '小程序',
@@ -6,14 +5,14 @@ const global = {
   },
   reducers: {
     setTitle(state, payload) {
-      return { ...state, title: payload }
+      return { ...state, title: payload };
     },
     setBackgroundColor(state, payload) {
-      return { ...state, backgroundColor: payload }
+      return { ...state, backgroundColor: payload };
     },
     setNavConfig(state, payload) {
-      return { ...state, ...payload }
-    }
+      return { ...state, ...payload };
+    },
   },
   effects: () => ({
 

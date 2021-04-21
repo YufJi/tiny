@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom';
 import createReactClass from 'create-react-class';
@@ -37,9 +36,9 @@ import {
   createComponent,
   Page,
   $global,
-} from './framework/';
+} from './framework';
 
-import RMLRuntime from './rml-runtime';
+import XMLRuntime from './xml-runtime';
 
 const __mpStartTime = Date.now();
 
@@ -49,7 +48,7 @@ g.React = React;
 g.ReactDOM = ReactDOM;
 g.createReactClass = createReactClass;
 g.React.createClass = g.React.createClass || createReactClass;
-g.RMLRuntime = RMLRuntime;
+g.XMLRuntime = XMLRuntime;
 g.MPUI = {
   button: Button,
   canvas: Canvas,

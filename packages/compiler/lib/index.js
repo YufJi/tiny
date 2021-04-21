@@ -4,7 +4,6 @@ const transformPlugin = require('./transformPlugin');
 function noop() {}
 
 module.exports = function run(config, callback = noop) {
-
   const miniConfig = { ...config };
   delete miniConfig.pluginId;
   /* 浅拷贝一份，删除pluginId，用作小程序的转换配置 */

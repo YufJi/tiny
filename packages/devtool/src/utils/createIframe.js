@@ -1,48 +1,47 @@
 /**
- * 创建rednerFrame、workerFrame 
+ * 创建rednerFrame、workerFrame
  */
 
-
 function createIframe(options) {
-  const {id, src, style, onload, container } = options || {}
+  const { id, src, style, onload, container } = options || {};
   const el = document.createElement('iframe');
   el.setAttribute('src', src);
   el.setAttribute('id', id);
   el.setAttribute('name', id);
-  el.setAttribute('seamless', 'seamless')
+  el.setAttribute('seamless', 'seamless');
   el.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-modals');
   el.setAttribute('frameborder', '0');
-  el.setAttribute('style', style)
+  el.setAttribute('style', style);
   el.onload = function () {
     el.contentWindow.document.dispatchEvent(new CustomEvent('JSBridgeReady', {
       detail: {
         guid: id,
-      }
-    }))
+      },
+    }));
 
-    onload(el)
+    onload(el);
   };
   el.id = id;
   container.appendChild(el);
-  return el
+  return el;
 }
 
-export function createWorkerIframe({guid, src, onload}) {
+export function createWorkerIframe({ guid, src, onload }) {
   return createIframe({
-    id: guid, 
-    src, 
-    style: `width:0; height:0; border:0; display:none;`, 
-    onload, 
+    id: guid,
+    src,
+    style: 'width:0; height:0; border:0; display:none;',
+    onload,
     container: document.getElementById('workerFrame'),
-  })
+  });
 }
 
-export function createRenderIframe({guid, src, onload}) {
+export function createRenderIframe({ guid, src, onload }) {
   return createIframe({
-    id: guid, 
-    src, 
-    style: `position: absolute; top: 0px; bottom: 0px; width: 100%; height: 100%;`,
-    onload, 
+    id: guid,
+    src,
+    style: 'position: absolute; top: 0px; bottom: 0px; width: 100%; height: 100%;',
+    onload,
     container: document.getElementById('pageFrames'),
-  })
+  });
 }

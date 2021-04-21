@@ -1,4 +1,3 @@
-
 const path = require('path');
 const { existsSync } = require('fs');
 const defaultLib = require('./defaultLib');
@@ -11,12 +10,12 @@ const { relative, normalizePathForWin, getSecurityHeader } = require('./utils');
 
 function getPageRenderHeader(config) {
   const { library = defaultLib.tinyBaseModule } = config;
-  return `const { Page } = ${library};\n`
+  return `const { Page } = ${library};\n`;
 }
 
 function getAppRenderHeader(config) {
   const { library = defaultLib.tinyBaseModule } = config;
-  return `const { App } = ${library};\n`
+  return `const { App } = ${library};\n`;
 }
 
 function getComponentRenderHeader(config) {
@@ -73,7 +72,7 @@ function transformPageJsForWorker(str, pagePath, config) {
   usingComponents
     ? `usingComponents: ${JSON.stringify(usingComponents)},`
     : ''
-  }
+}
   ${tabIndex !== -1 ? `tabIndex: ${tabIndex},` : ''}
 }`;
 
@@ -105,7 +104,7 @@ function transformComponentJsForWorker(str, { is, usingComponents }, config) {
   usingComponents
     ? `usingComponents: ${JSON.stringify(usingComponents)},`
     : ''
-  }
+}
 }`;
   return `
 ${getSecurityHeader(config.forbiddenGlobals)}
@@ -165,7 +164,7 @@ function transformComponentJsForWebRender({ is, usingComponents }, config) {
     throw new Error(`can not find ${xmlPath}`);
   }
   is = pluginId ? getPluginPath(pluginId, is.slice(1)) : is;
-  let cssExists = false;
+  const cssExists = false;
 
   const info = `
 {

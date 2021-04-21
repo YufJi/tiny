@@ -1,8 +1,8 @@
 const assign = require('object-assign');
-const { Transformer } = require('./rml');
 const path = require('path');
 const resolve = require('resolve');
 const fs = require('fs');
+const { Transformer } = require('./rml');
 const defaultLib = require('./defaultLib');
 const { toComponentName, isCommonEvent } = require('./utils');
 const {
@@ -150,7 +150,7 @@ class TemplateTransformer extends Transformer {
           // for devtools inspect
           transformedAttrs[tagAttrName] = `"${tag}"`;
           // 添加$parent属性
-          transformedAttrs['$parent'] = '{this}';
+          transformedAttrs.$parent = '{this}';
         } else if (this.config.pluginId || supportSjsHandler) {
           // for plugin auth
           transformedAttrs[ownerAttrName] = '{this}';

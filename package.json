@@ -9,9 +9,8 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@music/eslint-config-hulk": "^0.1.0",
     "lerna": "^3.22.1"
   },
-  "dependencies": {
-   
-  }
+  "dependencies": {}
 }

@@ -22,13 +22,13 @@
   "dependencies": {
     "@rematch/core": "^2.0.1",
     "eventemitter3": "^4.0.7",
+    "normalize.css": "^8.0.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-redux": "^7.2.3"
   },
   "devDependencies": {
     "@music/babel-preset-hulk": "0.0.4",
-    "@music/eslint-config-hulk": "^0.1.0",
     "@music/hulk-webpack": "^0.1.7"
   }
 }

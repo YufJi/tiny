@@ -10,6 +10,6 @@ const gloabl = {
   worker: null,
   appConfig: {},
   tabBarConfig: null,
-}
+};
 
 export default gloabl;
