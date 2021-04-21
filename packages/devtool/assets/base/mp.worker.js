@@ -784,7 +784,7 @@ function getNavigationAPI(ap) {
       }, function (_ref3) {
         var delta = _ref3.delta;
         callBridge('popTo', {
-          index: -delta
+          delta: delta
         });
       });
 
@@ -3516,15 +3516,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getAppImpl", function() { return getAppImpl; });
 /* harmony import */ var query_string__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! query-string */ "./node_modules/query-string/index.js");
 /* harmony import */ var query_string__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(query_string__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _startupParams__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../startupParams */ "./src/framework/startupParams/index.js");
-/* harmony import */ var _utils_getScene__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/getScene */ "./src/utils/getScene.js");
-/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
-/* harmony import */ var _EventHub__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../EventHub */ "./src/framework/EventHub.js");
-/* harmony import */ var _mixins_AppMixin__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../mixins/AppMixin */ "./src/framework/mixins/AppMixin.js");
-/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
-/* harmony import */ var _utils_appImpl__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../utils/appImpl */ "./src/framework/utils/appImpl.js");
-/* harmony import */ var _utils_pageUtils__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../utils/pageUtils */ "./src/framework/utils/pageUtils.js");
-/* harmony import */ var _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @/utils/invokeWithGuardAndReThrow */ "./src/utils/invokeWithGuardAndReThrow.js");
+/* harmony import */ var _utils_getScene__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/getScene */ "./src/utils/getScene.js");
+/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
+/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
+/* harmony import */ var _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/invokeWithGuardAndReThrow */ "./src/utils/invokeWithGuardAndReThrow.js");
+/* harmony import */ var _startupParams__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../startupParams */ "./src/framework/startupParams/index.js");
+/* harmony import */ var _EventHub__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../EventHub */ "./src/framework/EventHub.js");
+/* harmony import */ var _mixins_AppMixin__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../mixins/AppMixin */ "./src/framework/mixins/AppMixin.js");
+/* harmony import */ var _utils_appImpl__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../utils/appImpl */ "./src/framework/utils/appImpl.js");
+/* harmony import */ var _utils_pageUtils__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../utils/pageUtils */ "./src/framework/utils/pageUtils.js");
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
@@ -3557,7 +3557,7 @@ function pushPage(page) {
 
 function popPage(page) {
   var tabCaches = appImpl._tabCaches;
-  Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_6__["default"])(tabCaches).forEach(function (k) {
+  Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__["default"])(tabCaches).forEach(function (k) {
     var tabPages = tabCaches[k];
 
     if (tabPages) {
@@ -3581,7 +3581,7 @@ function App() {
     throw new Error('App() can only be called once');
   }
 
-  var _getStartupParams = Object(_startupParams__WEBPACK_IMPORTED_MODULE_1__["getStartupParams"])(),
+  var _getStartupParams = Object(_startupParams__WEBPACK_IMPORTED_MODULE_5__["getStartupParams"])(),
       query = _getStartupParams.query,
       referrerInfo = _getStartupParams.referrerInfo,
       pagePath = _getStartupParams.pagePath;
@@ -3594,7 +3594,7 @@ function App() {
     launchOptions.query = query_string__WEBPACK_IMPORTED_MODULE_0___default.a.parse(query);
   }
 
-  launchOptions.scene = Object(_utils_getScene__WEBPACK_IMPORTED_MODULE_2__["default"])(Object(_startupParams__WEBPACK_IMPORTED_MODULE_1__["getStartupParams"])());
+  launchOptions.scene = Object(_utils_getScene__WEBPACK_IMPORTED_MODULE_1__["default"])(Object(_startupParams__WEBPACK_IMPORTED_MODULE_5__["getStartupParams"])());
 
   if (referrerInfo) {
     launchOptions.referrerInfo = JSON.parse(referrerInfo);
@@ -3602,8 +3602,8 @@ function App() {
 
   app = publicInstance;
   appImpl = new AppImpl(publicInstance);
-  Object(_utils_appImpl__WEBPACK_IMPORTED_MODULE_7__["setAppImpl"])(appImpl);
-  _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('appCreated', appImpl);
+  Object(_utils_appImpl__WEBPACK_IMPORTED_MODULE_8__["setAppImpl"])(appImpl);
+  _EventHub__WEBPACK_IMPORTED_MODULE_6__["default"].emit('appCreated', appImpl);
   appImpl.launch(launchOptions);
   return app;
 }
@@ -3616,13 +3616,13 @@ function AppImpl(publicInstance) {
   this.shown = true;
 }
 
-AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IMPORTED_MODULE_5__["default"]), {}, {
+AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IMPORTED_MODULE_7__["default"]), {}, {
   pushPage: pushPage,
   popPage: popPage,
   getAllPages: function getAllPages() {
     var pages = [];
     var tabCaches = this._tabCaches;
-    Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_6__["default"])(tabCaches).forEach(function (k) {
+    Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__["default"])(tabCaches).forEach(function (k) {
       var tabPages = tabCaches[k];
 
       if (tabPages) {
@@ -3634,7 +3634,7 @@ AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IM
   isTabShow: function isTabShow() {
     var tabCaches = appImpl._tabCaches; // filter destroyed/empty tabs
 
-    var tabKeys = Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_6__["default"])(tabCaches).filter(function (k) {
+    var tabKeys = Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__["default"])(tabCaches).filter(function (k) {
       return !!tabCaches[k].length;
     });
 
@@ -3644,14 +3644,14 @@ AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IM
 
 
     return tabKeys.every(function (k) {
-      return Object(_utils_pageUtils__WEBPACK_IMPORTED_MODULE_8__["isTabPage"])(tabCaches[k][0]);
+      return Object(_utils_pageUtils__WEBPACK_IMPORTED_MODULE_9__["isTabPage"])(tabCaches[k][0]);
     });
   },
   clearAllPages: function clearAllPages() {
     var nowTabCaches = this._tabCaches;
     this._tabCaches = {}; // clear tab caches and page stack
 
-    Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_6__["default"])(nowTabCaches).forEach(function (k) {
+    Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__["default"])(nowTabCaches).forEach(function (k) {
       var tabPages = nowTabCaches[k];
 
       if (tabPages) {
@@ -3712,20 +3712,20 @@ AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IM
     var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
     this.$launchTime = Date.now();
     this.launchOptions = options;
-    _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('launch', options);
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_3__["default"])('framework: App onLaunch');
+    _EventHub__WEBPACK_IMPORTED_MODULE_6__["default"].emit('launch', options);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_2__["default"])('framework: App onLaunch');
     var publicInstance = this.publicInstance;
     var onLaunch = publicInstance.onLaunch;
     var onShow = publicInstance.onShow;
-    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_9__["default"])(onLaunch, publicInstance, options);
-    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_9__["default"])(onShow, publicInstance, options);
+    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_4__["default"])(onLaunch, publicInstance, options);
+    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_4__["default"])(onShow, publicInstance, options);
     this.shown = true;
   },
   hide: function hide() {
     var hidePage = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
     this.shown = false;
-    _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('background');
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_3__["default"])('framework: App onHide');
+    _EventHub__WEBPACK_IMPORTED_MODULE_6__["default"].emit('background');
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_2__["default"])('framework: App onHide');
 
     if (hidePage) {
       var page = getCurrentPageImpl();
@@ -3735,16 +3735,16 @@ AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IM
       }
     }
 
-    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_9__["default"])(this.publicInstance.onHide, this.publicInstance);
+    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_4__["default"])(this.publicInstance.onHide, this.publicInstance);
   },
   show: function show(o) {
     var showPage = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
     this.shown = true;
     var options = o || {};
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_3__["default"])('framework: App onShow');
-    _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('foreground', options);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_2__["default"])('framework: App onShow');
+    _EventHub__WEBPACK_IMPORTED_MODULE_6__["default"].emit('foreground', options);
     var prePage = getCurrentPageImpl();
-    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_9__["default"])(this.publicInstance.onShow, this.publicInstance, options); // if relaunch, do not invoke previous page show
+    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_4__["default"])(this.publicInstance.onShow, this.publicInstance, options); // if relaunch, do not invoke previous page show
 
     if (showPage && !options.path) {
       var page = getCurrentPageImpl();
@@ -3755,7 +3755,7 @@ AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IM
     }
   },
   error: function error(e) {
-    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_9__["default"])(this.publicInstance.onError, this.publicInstance, e);
+    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_4__["default"])(this.publicInstance.onError, this.publicInstance, e);
   },
   navigateBack: function navigateBack() {
     var params = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -3796,7 +3796,7 @@ AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IM
   getCurrentPageImpl: getCurrentPageImpl
 }); // remove from page stack
 
-_EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].addListener('pageUnload', function (_ref) {
+_EventHub__WEBPACK_IMPORTED_MODULE_6__["default"].addListener('pageUnload', function (_ref) {
   var page = _ref.page;
   popPage(page);
 });
@@ -4265,14 +4265,14 @@ g.bootstrapApp = function (_ref) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return Component; });
-/* harmony import */ var _ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../ComponentRegistry/getComponentClass */ "./src/framework/ComponentRegistry/getComponentClass.js");
-/* harmony import */ var _utils_mergeArray__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/mergeArray */ "./src/utils/mergeArray.js");
-/* harmony import */ var _utils_setData__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/setData */ "./src/utils/setData.js");
-/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
-/* harmony import */ var _utils_mapValues__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/mapValues */ "./src/utils/mapValues.js");
-/* harmony import */ var _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/utils/invokeWithGuardAndReThrow */ "./src/utils/invokeWithGuardAndReThrow.js");
-/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
-/* harmony import */ var _utils_reg__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @/utils/reg */ "./src/utils/reg.js");
+/* harmony import */ var _utils_mergeArray__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/utils/mergeArray */ "./src/utils/mergeArray.js");
+/* harmony import */ var _utils_setData__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/setData */ "./src/utils/setData.js");
+/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
+/* harmony import */ var _utils_mapValues__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/mapValues */ "./src/utils/mapValues.js");
+/* harmony import */ var _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/invokeWithGuardAndReThrow */ "./src/utils/invokeWithGuardAndReThrow.js");
+/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
+/* harmony import */ var _utils_reg__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/reg */ "./src/utils/reg.js");
+/* harmony import */ var _ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../ComponentRegistry/getComponentClass */ "./src/framework/ComponentRegistry/getComponentClass.js");
 /* harmony import */ var _utils_getComponentProp__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../utils/getComponentProp */ "./src/framework/utils/getComponentProp.js");
 /* harmony import */ var _utils_fireComponentLifecycle__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../utils/fireComponentLifecycle */ "./src/framework/utils/fireComponentLifecycle.js");
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
@@ -4301,6 +4301,8 @@ function Component(setupConfig, currentComponentConfig) {
     return Object(_utils_getComponentProp__WEBPACK_IMPORTED_MODULE_8__["default"])(setupConfig, prop, useCache ? propsCache : useCache);
   }
 
+  var defaultProperties = Object(_utils_mapValues__WEBPACK_IMPORTED_MODULE_3__["default"])(getProps('properties'), 'value');
+
   function ComponentClass(page, id, componentConfig) {
     this.is = is;
     this.id = id;
@@ -4310,49 +4312,44 @@ function Component(setupConfig, currentComponentConfig) {
     var publicInstance = this.publicInstance = Object.create(getProps('methods'), {
       setData: {
         value: function value(a, b) {
-          return self.setData(_utils_setData__WEBPACK_IMPORTED_MODULE_2__["default"], a, b);
+          return self.setData(_utils_setData__WEBPACK_IMPORTED_MODULE_1__["default"], a, b);
         }
       },
       $spliceData: {
         value: function value(a, b) {
-          return self.setData(_utils_setData__WEBPACK_IMPORTED_MODULE_2__["spliceData"], a, b);
+          return self.setData(_utils_setData__WEBPACK_IMPORTED_MODULE_1__["spliceData"], a, b);
         }
       },
       triggerEvent: {
         value: function value(eventName) {
-          if (typeof self.triggerEventHandlers["$on".concat(eventName)] === 'function') {
-            var _self$triggerEventHan;
-
-            for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-              args[_key - 1] = arguments[_key];
-            }
-
-            return (_self$triggerEventHan = self.triggerEventHandlers)["$on".concat(eventName)].apply(_self$triggerEventHan, args);
+          for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+            args[_key - 1] = arguments[_key];
           }
+
+          self.page.callRemote.apply(self.page, ['self', 'triggerComponentEvent', self.id, eventName].concat(args));
         }
       }
     });
     publicInstance.is = is;
     publicInstance.$id = id;
     publicInstance.$page = page.publicInstance;
-    publicInstance.properties = Object(_utils_mapValues__WEBPACK_IMPORTED_MODULE_4__["default"])(getProps('properties'), 'value');
-    publicInstance.data = _objectSpread(_objectSpread({}, getProps('data', false)), Object(_utils_mapValues__WEBPACK_IMPORTED_MODULE_4__["default"])(getProps('properties'), 'value'));
+    publicInstance.properties = _objectSpread(_objectSpread({}, getProps('data', false)), defaultProperties);
+    publicInstance.data = _objectSpread(_objectSpread({}, getProps('data', false)), defaultProperties);
     this.computedDeps = _objectSpread({}, ComponentClass.computedDeps);
     this.prevData = publicInstance.data;
     this.setComponentConfig(componentConfig, true);
   }
 
-  ;
-  ComponentClass.data = _objectSpread(_objectSpread({}, getProps('data', false)), Object(_utils_mapValues__WEBPACK_IMPORTED_MODULE_4__["default"])(getProps('properties'), 'value'));
-  ComponentClass.properties = Object(_utils_mapValues__WEBPACK_IMPORTED_MODULE_4__["default"])(getProps('properties'), 'value');
+  ComponentClass.data = _objectSpread({}, getProps('data', false));
+  ComponentClass.properties = _objectSpread({}, defaultProperties);
 
   ComponentClass.getAllComponents = function () {
     var allComponents = [is];
-    Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__["default"])(usingComponents).forEach(function (c) {
+    Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(usingComponents).forEach(function (c) {
       /* 忽略当前自定义组件本身，防止死循环 */
       if (usingComponents[c] !== is) {
-        var subUsingComponents = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_0__["default"])(usingComponents[c]).getAllComponents();
-        Object(_utils_mergeArray__WEBPACK_IMPORTED_MODULE_1__["default"])(allComponents, subUsingComponents);
+        var subUsingComponents = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_7__["default"])(usingComponents[c]).getAllComponents();
+        Object(_utils_mergeArray__WEBPACK_IMPORTED_MODULE_0__["default"])(allComponents, subUsingComponents);
       }
     });
     return allComponents;
@@ -4371,8 +4368,8 @@ function Component(setupConfig, currentComponentConfig) {
       }
 
       this.prevData = publicInstance.data;
-      publicInstance.data = op(publicInstance.data, diffData);
-      var data = (_data = {}, _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_6__["PendingKeyType"], _utils_consts__WEBPACK_IMPORTED_MODULE_6__["PendingValueComponent"]), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_6__["PendingKeyId"], id), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_6__["PendingKeyOp"], Object(_utils_setData__WEBPACK_IMPORTED_MODULE_2__["getOpStr"])(op)), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_6__["PendingKeyData"], diffData), _data);
+      publicInstance.properties = publicInstance.data = op(publicInstance.data, diffData);
+      var data = (_data = {}, _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingKeyType"], _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingValueComponent"]), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingKeyId"], id), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingKeyOp"], Object(_utils_setData__WEBPACK_IMPORTED_MODULE_1__["getOpStr"])(op)), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingKeyData"], diffData), _data);
       var options = options_ || {};
 
       if (typeof options_ === 'function') {
@@ -4384,8 +4381,8 @@ function Component(setupConfig, currentComponentConfig) {
       this.page.setRemoteData(data, options);
     },
     setComponentConfig: function setComponentConfig(c, init) {
-      var ownerId = c[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["ComponentKeyOwnerId"]];
-      var diffProps = c[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["ComponentKeyDiffProps"]];
+      var ownerId = c[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["ComponentKeyOwnerId"]];
+      var diffProps = c[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["ComponentKeyDiffProps"]];
 
       if (ownerId) {
         this.ownerId = ownerId;
@@ -4395,10 +4392,10 @@ function Component(setupConfig, currentComponentConfig) {
       var prevProps = publicInstance.properties;
 
       if (diffProps) {
-        var deleted = diffProps[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["DiffKeyDeleted"]];
-        var updated = diffProps[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["DiffKeyUpdated"]];
+        var deleted = diffProps[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["DiffKeyDeleted"]];
+        var updated = diffProps[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["DiffKeyUpdated"]];
 
-        if (deleted && deleted.length || updated && Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__["default"])(updated).length) {
+        if (deleted && deleted.length || updated && Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(updated).length) {
           publicInstance.properties = _objectSpread({}, publicInstance.properties);
         }
 
@@ -4427,9 +4424,9 @@ function Component(setupConfig, currentComponentConfig) {
 
       var newProps = _objectSpread({}, oldProps);
 
-      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__["default"])(oldProps).forEach(function (p) {
+      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(oldProps).forEach(function (p) {
         /* 自定义事件 */
-        if (_utils_reg__WEBPACK_IMPORTED_MODULE_7__["eventReg"].test(p) && !_utils_reg__WEBPACK_IMPORTED_MODULE_7__["commonEventReg"].test(p)) {
+        if (_utils_reg__WEBPACK_IMPORTED_MODULE_6__["eventReg"].test(p) && !_utils_reg__WEBPACK_IMPORTED_MODULE_6__["commonEventReg"].test(p)) {
           newProps[p] = _this.getTriggerEventHandler(p, oldProps[p]);
         }
       });
@@ -4437,10 +4434,10 @@ function Component(setupConfig, currentComponentConfig) {
     },
 
     /**
-     * 
+     *
      * @param {*} type e.g. onclickme
      * @param {*} method  {n: "addTodo", o: 1}
-     * @returns 
+     * @returns
      */
     getTriggerEventHandler: function getTriggerEventHandler(type, method) {
       var _this2 = this;
@@ -4482,7 +4479,7 @@ function Component(setupConfig, currentComponentConfig) {
           args[_key3 - 1] = arguments[_key3];
         }
 
-        return _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_5__["default"].apply(void 0, [publicInstance[method], publicInstance].concat(args));
+        return _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_4__["default"].apply(void 0, [publicInstance[method], publicInstance].concat(args));
       }
     },
     ready: function ready() {
@@ -4517,13 +4514,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return PageComponent; });
 /* harmony import */ var _utils_setData__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/utils/setData */ "./src/utils/setData.js");
 /* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
-/* harmony import */ var _ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../ComponentRegistry/getComponentClass */ "./src/framework/ComponentRegistry/getComponentClass.js");
-/* harmony import */ var _utils_mergeArray__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/mergeArray */ "./src/utils/mergeArray.js");
-/* harmony import */ var _EventHub__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../EventHub */ "./src/framework/EventHub.js");
-/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
-/* harmony import */ var _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/invokeWithGuardAndReThrow */ "./src/utils/invokeWithGuardAndReThrow.js");
-/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../App */ "./src/framework/App/index.worker.js");
-/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
+/* harmony import */ var _utils_mergeArray__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/mergeArray */ "./src/utils/mergeArray.js");
+/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
+/* harmony import */ var _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/invokeWithGuardAndReThrow */ "./src/utils/invokeWithGuardAndReThrow.js");
+/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
+/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../App */ "./src/framework/App/index.worker.js");
+/* harmony import */ var _EventHub__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../EventHub */ "./src/framework/EventHub.js");
+/* harmony import */ var _ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../ComponentRegistry/getComponentClass */ "./src/framework/ComponentRegistry/getComponentClass.js");
 /* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../common/global */ "./src/framework/common/global.js");
 /* harmony import */ var _mixins_MessageHandleMixin__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../mixins/MessageHandleMixin */ "./src/framework/mixins/MessageHandleMixin.js");
 function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
@@ -4623,8 +4620,8 @@ function getAllUsingComponents(pagePath) {
 
   if (usingComponents) {
     Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_1__["default"])(usingComponents).forEach(function (c) {
-      var cs = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_2__["default"])(usingComponents[c]).getAllComponents();
-      Object(_utils_mergeArray__WEBPACK_IMPORTED_MODULE_3__["default"])(allUsingComponents, cs);
+      var cs = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_8__["default"])(usingComponents[c]).getAllComponents();
+      Object(_utils_mergeArray__WEBPACK_IMPORTED_MODULE_2__["default"])(allUsingComponents, cs);
     });
     allUsingComponentsCache[pagePath] = allUsingComponents;
   }
@@ -4639,13 +4636,13 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
       this.$loadTime = Date.now(); // setData will be merged with startRender
 
       this._disableRemoteData = true;
-      Object(_utils_log__WEBPACK_IMPORTED_MODULE_5__["default"])('framework: page onLoad', this.pagePath);
-      _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('pageLoad', {
+      Object(_utils_log__WEBPACK_IMPORTED_MODULE_3__["default"])('framework: page onLoad', this.pagePath);
+      _EventHub__WEBPACK_IMPORTED_MODULE_7__["default"].emit('pageLoad', {
         page: this
       });
-      Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_6__["default"])(this.publicInstance.onLoad, this.publicInstance, this.query); // depend app status!! maybe unstable
+      Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_4__["default"])(this.publicInstance.onLoad, this.publicInstance, this.query); // depend app status!! maybe unstable
 
-      if (Object(_App__WEBPACK_IMPORTED_MODULE_7__["getAppImpl"])().shown) {
+      if (Object(_App__WEBPACK_IMPORTED_MODULE_6__["getAppImpl"])().shown) {
         this.show();
       }
 
@@ -4678,14 +4675,14 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     }
 
     this.shown = true;
-    _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('enterPage', {
+    _EventHub__WEBPACK_IMPORTED_MODULE_7__["default"].emit('enterPage', {
       page: this
     });
     this.executeUserMethod('onShow');
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_5__["default"])('framework: page onShow', this.pagePath);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_3__["default"])('framework: page onShow', this.pagePath);
   },
   pullDownRefresh: function pullDownRefresh(e) {
-    _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('pullDownRefresh', {
+    _EventHub__WEBPACK_IMPORTED_MODULE_7__["default"].emit('pullDownRefresh', {
       page: this
     });
     this.executeUserMethod('onPullDownRefresh', [e]);
@@ -4704,21 +4701,21 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     }
 
     this.shown = false;
-    _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('leavePage', {
+    _EventHub__WEBPACK_IMPORTED_MODULE_7__["default"].emit('leavePage', {
       page: this
     });
-    _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('pageHide', {
+    _EventHub__WEBPACK_IMPORTED_MODULE_7__["default"].emit('pageHide', {
       page: this
     });
     this.executeUserMethod('onHide');
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_5__["default"])('framework: page onHide', this.pagePath);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_3__["default"])('framework: page onHide', this.pagePath);
   },
   unload: function unload() {
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_5__["default"])('framework: page onUnload', this.pagePath);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_3__["default"])('framework: page onUnload', this.pagePath);
 
     if (this.unloaded || !this.$loadTime) {
       // remove from page stack
-      _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('pageUnload', {
+      _EventHub__WEBPACK_IMPORTED_MODULE_7__["default"].emit('pageUnload', {
         page: this
       });
       return;
@@ -4726,11 +4723,11 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
 
     this.unloaded = true;
     this.unmountAllComponents();
-    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_6__["default"])(this.publicInstance.onUnload, this.publicInstance);
-    _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('leavePage', {
+    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_4__["default"])(this.publicInstance.onUnload, this.publicInstance);
+    _EventHub__WEBPACK_IMPORTED_MODULE_7__["default"].emit('leavePage', {
       page: this
     });
-    _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('pageUnload', {
+    _EventHub__WEBPACK_IMPORTED_MODULE_7__["default"].emit('pageUnload', {
       page: this
     });
   },
@@ -4757,7 +4754,7 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     });
     var componentsConfig = {};
     getAllUsingComponents(this.pagePath).forEach(function (component) {
-      var ComponentClass = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_2__["default"])(component);
+      var ComponentClass = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_8__["default"])(component);
       componentsConfig[component] = {
         properties: ComponentClass.properties,
         data: ComponentClass.data
@@ -4808,12 +4805,14 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
 
     return instances;
   },
+
+  /* 组件内部绑定事件，触发通过worker page来执行 */
   triggerComponentEvent: function triggerComponentEvent(componentId, eventName, eventObject) {
     var componentInstance = this.getComponentInstance(componentId);
 
     if (componentInstance) {
       this.batchedUpdates(function () {
-        Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_6__["default"])(componentInstance.publicInstance[eventName], componentInstance.publicInstance, eventObject);
+        Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_4__["default"])(componentInstance.publicInstance[eventName], componentInstance.publicInstance, eventObject);
       });
     }
   },
@@ -4837,17 +4836,17 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     }
 
     var componentInstances = this.componentInstances;
-    var mountedComponents = payload[_utils_consts__WEBPACK_IMPORTED_MODULE_8__["PayloadKeyMountedComponents"]] || [];
-    var unmountedComponents = payload[_utils_consts__WEBPACK_IMPORTED_MODULE_8__["PayloadKeyUnmountedComponents"]] || []; // from bottom to top
+    var mountedComponents = payload[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["PayloadKeyMountedComponents"]] || [];
+    var unmountedComponents = payload[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["PayloadKeyUnmountedComponents"]] || []; // from bottom to top
 
     mountedComponents.forEach(function (componentConfig) {
-      var id = componentConfig[_utils_consts__WEBPACK_IMPORTED_MODULE_8__["ComponentKeyId"]];
+      var id = componentConfig[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["ComponentKeyId"]];
 
       if (componentInstances[id]) {
         componentInstances[id].setComponentConfig(componentConfig);
-      } else if (componentConfig[_utils_consts__WEBPACK_IMPORTED_MODULE_8__["ComponentKeyIs"]]) {
+      } else if (componentConfig[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["ComponentKeyIs"]]) {
         // incase update after unmount
-        var ComponentClass = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_2__["default"])(componentConfig[_utils_consts__WEBPACK_IMPORTED_MODULE_8__["ComponentKeyIs"]]);
+        var ComponentClass = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_8__["default"])(componentConfig[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["ComponentKeyIs"]]);
         componentInstances[id] = new ComponentClass(_this2, id, componentConfig);
         componentInstances[id].ready();
       }
@@ -4871,7 +4870,7 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
 
       _this3.update(payload);
 
-      _EventHub__WEBPACK_IMPORTED_MODULE_4__["default"].emit('pageReady', {
+      _EventHub__WEBPACK_IMPORTED_MODULE_7__["default"].emit('pageReady', {
         page: _this3
       });
 
@@ -4881,7 +4880,7 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
 
       _this3.executeUserMethod('onReady');
 
-      Object(_utils_log__WEBPACK_IMPORTED_MODULE_5__["default"])('framework: page onReady', _this3.pagePath);
+      Object(_utils_log__WEBPACK_IMPORTED_MODULE_3__["default"])('framework: page onReady', _this3.pagePath);
     });
   },
   update: function update(payload) {
@@ -4896,7 +4895,7 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
       return;
     }
 
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_5__["debug"])('framework', "[WORKER] Page ".concat(this.pagePath, " postMessage"), data);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_3__["debug"])('framework', "[WORKER] Page ".concat(this.pagePath, " postMessage"), data);
     this.bridge.call('postMessage', _objectSpread(_objectSpread({}, data), {}, {
       pageType: this.pageType,
       msgType: 'endpoint',
@@ -4947,7 +4946,7 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     } else {
       var _data;
 
-      var data = (_data = {}, _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_8__["PendingKeyType"], _utils_consts__WEBPACK_IMPORTED_MODULE_8__["PendingValuePage"]), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_8__["PendingKeyData"], diffData), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_8__["PendingKeyOp"], Object(_utils_setData__WEBPACK_IMPORTED_MODULE_0__["getOpStr"])(op)), _data);
+      var data = (_data = {}, _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingKeyType"], _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingValuePage"]), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingKeyData"], diffData), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingKeyOp"], Object(_utils_setData__WEBPACK_IMPORTED_MODULE_0__["getOpStr"])(op)), _data);
       this.setRemoteData(data, options);
     }
   },
@@ -4957,7 +4956,7 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     var _this = this;
 
     this.batchedUpdates(function () {
-      _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_6__["default"].apply(void 0, [_this.publicInstance[method], _this.publicInstance].concat(_toConsumableArray(args)));
+      _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_4__["default"].apply(void 0, [_this.publicInstance[method], _this.publicInstance].concat(_toConsumableArray(args)));
     });
   },
   onPageScroll: function onPageScroll() {

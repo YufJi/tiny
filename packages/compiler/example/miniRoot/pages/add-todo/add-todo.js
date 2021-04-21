@@ -19,6 +19,9 @@ Page({
       },
     ]);
 
-    mp.navigateBack();
+    wx.navigateBack();
+  },
+  xxxx() {
+    console.log('xxxx');
   },
 });

@@ -1,13 +1,13 @@
 import qs from 'query-string';
-import { getStartupParams } from '../startupParams';
 import getScene from '@/utils/getScene';
 import log from '@/utils/log';
+import objectKeys from '@/utils/objectKeys';
+import invokeWithGuardAndReThrow from '@/utils/invokeWithGuardAndReThrow';
+import { getStartupParams } from '../startupParams';
 import EventHub from '../EventHub';
 import AppMixin from '../mixins/AppMixin';
-import objectKeys from '@/utils/objectKeys';
 import { setAppImpl } from '../utils/appImpl';
 import { isTabPage } from '../utils/pageUtils';
-import invokeWithGuardAndReThrow from '@/utils/invokeWithGuardAndReThrow';
 
 let appImpl;
 let app;
@@ -73,6 +73,7 @@ function AppImpl(publicInstance) {
   // app status is unstable
   this.shown = true;
 }
+
 AppImpl.prototype = {
   ...AppMixin,
   pushPage,

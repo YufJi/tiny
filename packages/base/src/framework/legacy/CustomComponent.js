@@ -16,11 +16,12 @@ import {
   eventReg,
   commonEventReg,
 } from '@/utils/reg';
+import shallowEqual from '@/utils/shallowEqual';
+import mapValues from '@/utils/mapValues';
 import $global from '../common/global';
 import EventHub from '../EventHub';
 import PureRenderMixin from '../mixins/PureRenderMixin';
 import CustomComponentEventMixin from '../mixins/CustomComponentEventMixin';
-import { getCurrentPageImpl } from '../App';
 import transformChildrenToSlots from '../utils/transformChildrenToSlots';
 import normalizeComponentProps from '../utils/normalizeComponentProps';
 
@@ -90,33 +91,70 @@ export default (is) => createReactClass({
     CustomComponentEventMixin(),
     PureRenderMixin,
   ],
-  getDefaultProps() {
-    return getComponentConfig(is).properties || {};
-  },
+  // getDefaultProps() {
+  //   return getComponentConfig(is).properties || {};
+  // },
   getInitialState() {
+    const { __page } = this.props;
     this.is = is;
     // async render twice
     this.id = this.id || ++componentId;
-    getCurrentPageImpl().componentInstances[this.id] = this;
+    __page.componentInstances[this.id] = this;
     this.eventHandlers = {};
     this.componentEventHandlers = {};
+    this.allCustomEvents = {};
+
+    const { properties } = getComponentConfig(this.is);
+    const initialProps = {};
+
+    for (const key in properties) {
+      if (Object.hasOwnProperty.call(properties, key)) {
+        initialProps[key] = this.props[key];
+      }
+    }
+
     return {
       ...getComponentConfig(this.is).data,
-      ...this.props,
+      ...properties,
+      ...initialProps,
     };
   },
   componentDidMount() {
+    this.registryEventListener();
     this.recordMounted(this.diffProps(getComponentConfig(this.is).properties || {}), true);
   },
-  componentDidUpdate(prevProps) {
-    // 更新当前视图
-    const data = this.state;
-    this.setState({
-      ...data,
-      ...this.props,
-    });
+  UNSAFE_componentWillReceiveProps(nextProps) {
+    const { properties } = getComponentConfig(this.is);
+    const changedProps = {};
 
+    for (const key in nextProps) {
+      if (nextProps.hasOwnProperty(key)) {
+        const prop = this.props[key];
+        const nextProp = nextProps[key];
+
+        if (properties.hasOwnProperty(key)) {
+          if (!shallowEqual(prop, nextProp)) {
+            changedProps[key] = nextProp;
+          }
+        }
+
+        /* 存在自定义事件 */
+        if (this.allCustomEvents[key]) {
+          if (!shallowEqual(prop, nextProp)) {
+            this.allCustomEvents[key].remove();
+            this.allCustomEvents[key] = this.addCustomEvent(key, nextProp);
+          }
+        }
+      }
+    }
+
+    this.setState({
+      ...changedProps,
+    });
+  },
+  componentDidUpdate(prevProps) {
     const diffProps = this.diffProps(prevProps);
+
     if (diffProps) {
       this.recordMounted(diffProps);
     } else {
@@ -126,7 +164,8 @@ export default (is) => createReactClass({
     }
   },
   componentWillUnmount() {
-    delete getCurrentPageImpl().componentInstances[this.id];
+    const { __page } = this.props;
+    delete __page.componentInstances[this.id];
     unmountedComponents.push(this.id);
   },
   recordMounted(diffProps, init) {
@@ -137,6 +176,7 @@ export default (is) => createReactClass({
       info[ComponentKeyIs] = this.is;
     }
     mountedComponents.push(info);
+
     if (diffProps) {
       const { newProps, ownerId } = this.normalizeProps(diffProps);
 
@@ -147,27 +187,35 @@ export default (is) => createReactClass({
     }
   },
   diffProps(prevProps) {
+    const { properties } = getComponentConfig(this.is);
     const { props } = this; // 当前props
 
     const deleted = [];
     const updated = {};
     let isUpdated;
     let isDeleted;
+
     objectKeys(normalizeComponentProps(prevProps)).forEach((prevKey) => {
-      if (!(prevKey in props)) {
-        deleted.push(prevKey);
-        isDeleted = true;
-      } else if (prevProps[prevKey] !== props[prevKey]) {
-        updated[prevKey] = props[prevKey];
-        isUpdated = true;
+      if (properties.hasOwnProperty(prevKey)) {
+        if (!(prevKey in props)) {
+          deleted.push(prevKey);
+          isDeleted = true;
+        } else if (prevProps[prevKey] !== props[prevKey]) {
+          updated[prevKey] = props[prevKey];
+          isUpdated = true;
+        }
       }
     });
+
     objectKeys(normalizeComponentProps(props)).forEach((key) => {
-      if (!(key in prevProps)) {
-        updated[key] = props[key];
-        isUpdated = true;
+      if (properties.hasOwnProperty(key)) {
+        if (!(key in prevProps)) {
+          updated[key] = props[key];
+          isUpdated = true;
+        }
       }
     });
+
     let ret;
     if (isUpdated) {
       ret = ret || {};
@@ -186,9 +234,7 @@ export default (is) => createReactClass({
     }
     let ownerId;
     if (props[DiffKeyUpdated]) {
-      /* 过滤属性 */
-      const { $parent, ...rest } = props[DiffKeyUpdated];
-      const updated = newProps[DiffKeyUpdated] = { ...rest };
+      const updated = newProps[DiffKeyUpdated] = { ...props[DiffKeyUpdated] };
       objectKeys(updated).forEach((p) => {
         /* 自定义事件 */
         if ((eventReg.test(p) && !commonEventReg.test(p)) && updated[p]) {
@@ -207,12 +253,11 @@ export default (is) => createReactClass({
       return name;
     }
     const { eventHandlers } = this;
+    const { __page } = this.props;
 
     if (!eventHandlers[name]) {
       const handle = eventHandlers[name] = function (...args) {
-        let _getCurrentPageImpl;
-
-        (_getCurrentPageImpl = getCurrentPageImpl()).callRemote.apply(_getCurrentPageImpl, ['self', 'triggerComponentEvent', _this.id, name].concat(args));
+        __page.callRemote.apply(__page, ['self', 'triggerComponentEvent', _this.id, name].concat(args));
       };
       handle.handleName = name;
       handle.type = 'component';
@@ -221,9 +266,9 @@ export default (is) => createReactClass({
     return eventHandlers[name];
   },
   $getRefHandler(...args) {
-    let _getCurrentPageImpl2;
+    const { __page } = this.props;
 
-    return (_getCurrentPageImpl2 = getCurrentPageImpl()).$getRefHandler.apply(_getCurrentPageImpl2, args);
+    return __page.$getRefHandler.call(__page, ...args);
   },
   $getComponentEventHandler(name) {
     if (!name || typeof name !== 'string') {
@@ -241,8 +286,12 @@ export default (is) => createReactClass({
 
     return componentEventHandlers[name];
   },
-  $triggerEvent() {
-
+  triggerEvent(eventName, detail, options) {
+    const event = new CustomEvent(eventName, {
+      detail,
+      ...options,
+    });
+    this._root.dispatchEvent(event);
   },
   setData(toBeData, callback) {
     const data = this.state;
@@ -256,10 +305,48 @@ export default (is) => createReactClass({
     } else {
       ret = getOpFn(toBeData.op)(ret, toBeData.data);
     }
+
     this.setState({
       ...ret,
     }, callback);
   },
+  addCustomEvent(key, fn) {
+    if (eventReg.test(key) && !commonEventReg.test(key)) {
+      const result = key.match(eventReg);
+      if (result) {
+        const onHandler = fn;
+        if (this._root) {
+          const handler = (e) => {
+            const isCatchHandler = result[1] === 'catch';
+
+            if (isCatchHandler && e.stopPropagation) {
+              e.stopPropagation();
+              onHandler(e);
+              return;
+            }
+            onHandler(e);
+          };
+
+          this._root.addEventListener(result[2], handler, result[3] === 'capture');
+
+          return {
+            remove: () => {
+              this._root.removeEventListener(result[2], handler);
+            },
+          };
+        }
+      }
+    }
+  },
+  registryEventListener() {
+    const { props } = this;
+    for (const key in props) {
+      if (Object.hasOwnProperty.call(props, key)) {
+        this.allCustomEvents[key] = this.addCustomEvent(key, props[key]);
+      }
+    }
+  },
+
   render() {
     const props = normalizeComponentProps(this.props);
     props.$slots = transformChildrenToSlots(this.props.children);

@@ -13,6 +13,7 @@ const {
 
 const tagAttrName = '__tag';
 const ownerAttrName = '__owner';
+const pageAttrName = '__page';
 const ATTR_NAME_REG = /^[\w-:]+$/;
 
 function getComponentInfo({ pluginId, componentInfo, isWorker }) {
@@ -89,7 +90,7 @@ class TemplateTransformer extends Transformer {
 
         /* 处理事件绑定模版 */
         const xmlEventReg = /^(bind:?|catch:?|capture-bind:|capture-catch:)([A-Za-z_]+)/;
-        const isEvent = attrName.match(xmlEventReg);
+        const isEvent = xmlEventReg.test(attrName);
 
         if (isEvent) {
           attrName = attrName.replace(xmlEventReg, ($0, $1, $2) => {
@@ -114,16 +115,18 @@ class TemplateTransformer extends Transformer {
           let handleFn;
 
           /* 是自定义组件 */
-          if ((usingComponents && usingComponents[node.name]) || node.name === 'component') {
-            /* 普通事件 */
-            if (isCommonEvent(attrName)) {
-              handleFn = '$getEventHandler';
-            } else {
-              handleFn = '$getComponentEventHandler';
-            }
-          } else {
-            handleFn = '$getEventHandler';
-          }
+          // if ((usingComponents && usingComponents[node.name]) || node.name === 'component') {
+          //   /* 普通事件 */
+          //   if (isCommonEvent(attrName)) {
+          //     handleFn = '$getEventHandler';
+          //   } else {
+          //     handleFn = '$getComponentEventHandler';
+          //   }
+          // } else {
+          //   handleFn = '$getEventHandler';
+          // }
+
+          handleFn = '$getEventHandler';
 
           transformedAttrs[attrName] = `{${handleFn}(this, ${handlerFn})}`;
           return false;
@@ -144,13 +147,14 @@ class TemplateTransformer extends Transformer {
         }
         // custom component does not need to be
         const componentInfo = usingComponents && usingComponents[tag];
+        /* 自定义组件 */
         if (componentInfo || tag === 'component') {
           // prevent 'babel-plugin-transform-react-constant-elements'
           transformedAttrs.$isCustomComponent = '{this.$isCustomComponent}';
           // for devtools inspect
           transformedAttrs[tagAttrName] = `"${tag}"`;
-          // 添加$parent属性
-          transformedAttrs.$parent = '{this}';
+          transformedAttrs[ownerAttrName] = '{this}';
+          transformedAttrs[pageAttrName] = `{this.$isCustomComponent ? this.props['${pageAttrName}'] : this}`;
         } else if (this.config.pluginId || supportSjsHandler) {
           // for plugin auth
           transformedAttrs[ownerAttrName] = '{this}';

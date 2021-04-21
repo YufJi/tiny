@@ -1,5 +1,3 @@
-
-import getComponentClass from '../ComponentRegistry/getComponentClass';
 import mergeArray from '@/utils/mergeArray';
 import setData, { spliceData, getOpStr } from '@/utils/setData';
 import objectKeys from '@/utils/objectKeys';
@@ -20,6 +18,7 @@ import {
   eventReg,
   commonEventReg,
 } from '@/utils/reg';
+import getComponentClass from '../ComponentRegistry/getComponentClass';
 
 import getComponentProp from '../utils/getComponentProp';
 import fireComponentLifecycle from '../utils/fireComponentLifecycle';
@@ -32,6 +31,8 @@ export default function Component(setupConfig, currentComponentConfig) {
   function getProps(prop, useCache = true) {
     return getComponentProp(setupConfig, prop, useCache ? propsCache : useCache);
   }
+
+  const defaultProperties = mapValues(getProps('properties'), 'value');
 
   function ComponentClass(page, id, componentConfig) {
     this.is = is;
@@ -52,9 +53,7 @@ export default function Component(setupConfig, currentComponentConfig) {
       },
       triggerEvent: {
         value: function value(eventName, ...args) {
-          if(typeof self.triggerEventHandlers[`$on${eventName}`] === 'function') {
-            return self.triggerEventHandlers[`$on${eventName}`](...args);
-          }
+          self.page.callRemote.apply(self.page, ['self', 'triggerComponentEvent', self.id, eventName].concat(args));
         },
       },
     });
@@ -63,18 +62,17 @@ export default function Component(setupConfig, currentComponentConfig) {
     publicInstance.$id = id;
     publicInstance.$page = page.publicInstance;
 
-    publicInstance.properties = mapValues(getProps('properties'), 'value');
-    publicInstance.data = { ...getProps('data', false), ...mapValues(getProps('properties'), 'value') };
+    publicInstance.properties = { ...getProps('data', false), ...defaultProperties };
+    publicInstance.data = { ...getProps('data', false), ...defaultProperties };
 
     this.computedDeps = { ...ComponentClass.computedDeps };
     this.prevData = publicInstance.data;
 
     this.setComponentConfig(componentConfig, true);
-  };
+  }
 
-  
-  ComponentClass.data = { ...getProps('data', false), ...mapValues(getProps('properties'), 'value') };
-  ComponentClass.properties = mapValues(getProps('properties'), 'value');
+  ComponentClass.data = { ...getProps('data', false) };
+  ComponentClass.properties = { ...defaultProperties };
 
   ComponentClass.getAllComponents = function () {
     const allComponents = [is];
@@ -99,7 +97,7 @@ export default function Component(setupConfig, currentComponentConfig) {
         return;
       }
       this.prevData = publicInstance.data;
-      publicInstance.data = op(publicInstance.data, diffData);
+      publicInstance.properties = publicInstance.data = op(publicInstance.data, diffData);
       const data = {
         [PendingKeyType]: PendingValueComponent,
         [PendingKeyId]: id,
@@ -138,6 +136,7 @@ export default function Component(setupConfig, currentComponentConfig) {
         }
         Object.assign(publicInstance.data, publicInstance.properties);
       }
+
       if (!init && (prevProps !== publicInstance.properties || this.prevData !== publicInstance.data)) {
         this.update(prevProps, this.prevData);
         this.prevData = publicInstance.data;
@@ -155,10 +154,10 @@ export default function Component(setupConfig, currentComponentConfig) {
       return newProps;
     },
     /**
-     * 
+     *
      * @param {*} type e.g. onclickme
      * @param {*} method  {n: "addTodo", o: 1}
-     * @returns 
+     * @returns
      */
     getTriggerEventHandler(type, method) {
       if (!method) {

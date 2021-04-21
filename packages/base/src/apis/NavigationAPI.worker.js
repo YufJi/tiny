@@ -71,7 +71,7 @@ export function getNavigationAPI(ap) {
           });
         },
       });
-      
+
       handleResultCallback(params);
     },
     navigateBack(params = {}) {
@@ -79,7 +79,7 @@ export function getNavigationAPI(ap) {
         delta: params.delta,
       }, ({ delta }) => {
         callBridge('popTo', {
-          index: -delta,
+          delta,
         });
       });
 

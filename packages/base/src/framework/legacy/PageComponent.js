@@ -1,13 +1,7 @@
-
 import ReactDOM from 'react-dom';
 import React from 'react';
 import createReactClass from 'create-react-class';
 
-import MessageHandleMixin from '../mixins/MessageHandleMixin';
-import RefMixin from '../mixins/RefMixin';
-import { setCurrentPageImpl } from '../App';
-import EventHub from '../EventHub';
-import { setComponentsConfig } from './CustomComponent';
 import addEvents from '@/utils/addEvents';
 import {
   PendingKeyType,
@@ -23,6 +17,11 @@ import {
 import objectKeys from '@/utils/objectKeys';
 import { getOpFn } from '@/utils/setData';
 import { debug } from '@/utils/log';
+import MessageHandleMixin from '../mixins/MessageHandleMixin';
+import RefMixin from '../mixins/RefMixin';
+import { setCurrentPageImpl } from '../App';
+import EventHub from '../EventHub';
+import { setComponentsConfig } from './CustomComponent';
 import $global from '../common/global';
 import { rpx2px } from '../utils/unit';
 import Platform from '../Platform';
@@ -99,11 +98,6 @@ export default createReactClass({
     this.initMessageChannel();
     EventHub.emit('pageLoad', { page: this });
   },
-
-  componentWillUnmount() {
-    // never unmount
-  },
-
   componentWillUpdate() {
     this.renderSeq+=1;
   },
@@ -125,6 +119,7 @@ export default createReactClass({
       _this.logRenderTime(now);
       const e = { page: _this };
       EventHub.emit('pageReady', e);
+
       if (isRefresh) {
         if (e.payload) {
           _this.callRemote('self', 'update', e.payload);
@@ -193,6 +188,12 @@ export default createReactClass({
     }
 
     return componentEventHandlers[name];
+  },
+  triggerComponentEvent(componentId, eventName, detail, options) {
+    const component = this.componentInstances[componentId];
+    if (component) {
+      component.triggerEvent(eventName, detail, options);
+    }
   },
   receiveData(toBeData, callback) {
     const _this = this;

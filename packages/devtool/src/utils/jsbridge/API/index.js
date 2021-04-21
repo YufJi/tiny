@@ -1,5 +1,5 @@
 import postMessage, { messageToRender, messageToWorker } from './postMessage';
-import { pushWindow } from './navigation';
+import { pushWindow, popTo } from './navigation';
 
 export {
   postMessage,
@@ -7,4 +7,5 @@ export {
   messageToWorker,
 
   pushWindow,
+  popTo,
 };

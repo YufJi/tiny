@@ -1,12 +1,8 @@
-
 import setData, { spliceData, getOpStr } from '@/utils/setData';
 import objectKeys from '@/utils/objectKeys';
-import getComponentClass from '../ComponentRegistry/getComponentClass';
 import mergeArray from '@/utils/mergeArray';
-import EventHub from '../EventHub';
 import log, { debug } from '@/utils/log';
 import invokeWithGuardAndReThrow from '@/utils/invokeWithGuardAndReThrow';
-import { getAppImpl } from '../App';
 import {
   PendingKeyType,
   PendingKeyData,
@@ -17,9 +13,11 @@ import {
   ComponentKeyId,
   ComponentKeyIs,
 } from '@/utils/consts';
+import { getAppImpl } from '../App';
+import EventHub from '../EventHub';
+import getComponentClass from '../ComponentRegistry/getComponentClass';
 import $global from '../common/global';
 import MessageHandleMixin from '../mixins/MessageHandleMixin';
-
 
 const publicInstanceMethods = ['onShareAppMessage', 'onReachBottom', 'onPageScroll'];
 function noop() {}
@@ -236,6 +234,7 @@ PageComponent.prototype = {
     return instances;
   },
 
+  /* 组件内部绑定事件，触发通过worker page来执行 */
   triggerComponentEvent(componentId, eventName, eventObject) {
     const componentInstance = this.getComponentInstance(componentId);
     if (componentInstance) {
@@ -431,4 +430,3 @@ PageComponent.prototype = {
     });
   },
 };
-

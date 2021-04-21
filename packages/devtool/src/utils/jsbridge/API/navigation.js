@@ -11,6 +11,16 @@ export function pushWindow(params) {
   doPushWindow(url, launchParamsTag);
 }
 
+export function popTo(params) {
+  console.log('params', params);
+  const { delta } = params;
+
+  // todo popWebview
+  console.log(global.renders, global.pagesStack);
+  
+
+}
+
 export function doPushWindow(url, tag) {
   const src = `render.html${url}`;
   const guid = createGuid('render');

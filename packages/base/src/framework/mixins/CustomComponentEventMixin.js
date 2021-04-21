@@ -1,4 +1,3 @@
-
 import ReactDOM from 'react-dom';
 import addEvents from '@/utils/addEvents';
 import objectKeys from '@/utils/objectKeys';
@@ -18,7 +17,7 @@ function defaultCreateTouchList(touchList = []) {
 }
 
 function callEvent(instance, eventType, srcEvent, more, capture) {
-  const c = capture ? 'capture' : ''
+  const c = capture ? 'capture' : '';
   const catchHandler = instance.props[`$catch${eventType}${c}`];
 
   const e = instance.getNormalizedEvent({
@@ -88,9 +87,9 @@ function attachScroll(instance) {
   }
 }
 
-export default function CustomComponentEventMixin({ 
-  createTouchList = defaultCreateTouchList, 
-  createTap = defaultCreateTap 
+export default function CustomComponentEventMixin({
+  createTouchList = defaultCreateTouchList,
+  createTap = defaultCreateTap,
 } = {}) {
   return {
     componentDidMount() {
@@ -110,7 +109,7 @@ export default function CustomComponentEventMixin({
       }
     },
     hasEvent(event, capture) {
-      const c = capture ? 'capture' : ''
+      const c = capture ? 'capture' : '';
       return this.props[`$on${event}${c}`] || this.props[`$catch${event}${c}`];
     },
     getDataset() {
@@ -132,7 +131,7 @@ export default function CustomComponentEventMixin({
       return {
         id: props.id,
         dataset: this.getDataset(),
-        offsetLeft: __basicEventRoot.offsetLeft, 
+        offsetLeft: __basicEventRoot.offsetLeft,
         offsetTop: __basicEventRoot.offsetTop,
       };
     },
@@ -171,7 +170,7 @@ export default function CustomComponentEventMixin({
       if (this.__longTapTriggered) {
         return;
       }
-      const eventName = `tap`;
+      const eventName = 'tap';
       if (this.hasEvent(eventName, capture)) {
         callEvent(this, eventName, srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap), capture);
       }
@@ -180,7 +179,7 @@ export default function CustomComponentEventMixin({
       this.recordTarget(srcEvent);
       this.__longTapTriggered = 0;
 
-      const eventName = `touchstart`;
+      const eventName = 'touchstart';
       if (this.hasEvent(eventName, capture)) {
         callEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
@@ -190,7 +189,7 @@ export default function CustomComponentEventMixin({
     },
     onTouchMove(srcEvent, capture = false) {
       this.recordTarget(srcEvent);
-      const eventName = `touchmove`;
+      const eventName = 'touchmove';
       if (this.hasEvent(eventName, capture)) {
         callEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
@@ -244,7 +243,7 @@ export default function CustomComponentEventMixin({
     },
     onTouchEnd(srcEvent, capture = false) {
       this.recordTarget(srcEvent);
-      const eventName = `touchend`;
+      const eventName = 'touchend';
       if (this.hasEvent(eventName, capture)) {
         callEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
@@ -254,7 +253,7 @@ export default function CustomComponentEventMixin({
     },
     onTouchCancel(srcEvent, capture = false) {
       this.recordTarget(srcEvent);
-      const eventName = `touchcancel`;
+      const eventName = 'touchcancel';
       if (this.hasEvent(eventName, capture)) {
         callEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
@@ -271,7 +270,7 @@ export default function CustomComponentEventMixin({
     registryEvent(eventName, capture = false) {
       return (srcEvent) => {
         this[eventName](srcEvent, capture);
-      }
+      };
     },
     getNodeEvents() {
       return {
@@ -289,7 +288,7 @@ export default function CustomComponentEventMixin({
         onAnimationIteration: this.registryEvent('onAnimationIteration'),
         onAnimationEnd: this.registryEvent('onAnimationEnd'),
         onTransitionEnd: this.registryEvent('onTransitionEnd'),
-      }
+      };
     },
   };
 }

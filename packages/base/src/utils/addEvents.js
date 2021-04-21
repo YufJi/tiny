@@ -1,4 +1,3 @@
-
 import objectKeys from './objectKeys';
 
 export default function addEvents(target, fns) {

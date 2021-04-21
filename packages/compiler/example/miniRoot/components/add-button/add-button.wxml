@@ -2,3 +2,4 @@
     <text class="add-icon">+</text>
     <text>{{text}}</text>
 </button>
+<text bindtap="xx">{{name}}</text>

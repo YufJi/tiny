@@ -1,10 +1,9 @@
-
 import React from 'react';
 import createReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
 
-import Checkbox from '../shared/Checkbox';
 import { createComponent } from '@/framework/';
+import Checkbox from '../shared/Checkbox';
 
 export default createComponent({
   pure: false,
@@ -62,7 +61,7 @@ export default createComponent({
       }
     }
   },
-  componentWillUnmount: function componentWillUnmount() {
+  componentWillUnmount() {
     const { checkboxGroup } = this.context;
 
     if (checkboxGroup) {
@@ -79,12 +78,12 @@ export default createComponent({
       }
     }
   },
-  onClick: function onClick() {
+  onClick() {
     if (!this.props.disabled) {
       this.onChange({ target: { checked: !this.state.checked } });
     }
   },
-  onChange: function onChange(e) {
+  onChange(e) {
     if (e.stopPropagation) {
       e.stopPropagation();
     }
@@ -105,8 +104,8 @@ export default createComponent({
         },
       });
     }
-    if (this.props.onChange) {
-      this.props.onChange(this.props.$mp.getNormalizedEvent('change', {
+    if (typeof this.props.$onchange === 'function') {
+      this.props.$onchange(this.props.$mp.getNormalizedEvent('change', {
         detail: {
           value: checked,
         },
@@ -114,10 +113,20 @@ export default createComponent({
     }
   },
 
-  render: function render() {
+  render() {
     const { disabled, className, style, id, controlled, color } = this.props;
 
     const checked = controlled ? this.props.checked : this.state.checked;
-    return React.createElement(Checkbox, { prefixCls: 'a-checkbox', className, id, style, checked, disabled, onChange: this.onChange, color });
+
+    return React.createElement(Checkbox, {
+      prefixCls: 'a-checkbox',
+      className,
+      id,
+      style,
+      checked,
+      disabled,
+      onChange: this.onChange,
+      color,
+    });
   },
 }));

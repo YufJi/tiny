@@ -226,7 +226,7 @@ var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
 
 var $templates = {};
 function render(data) {
-  return $createRoot(_react2.default.createElement(
+  return $createRoot([_react2.default.createElement(
     Button,
     {
       className: "add-button", hoverClass: "none", $ontap: $getEventHandler(this, "onClickMe")
@@ -242,7 +242,13 @@ function render(data) {
       null,
       $toString(data['text'])
     )]
-  ));
+  ), _react2.default.createElement(
+    Text,
+    {
+      $ontap: $getEventHandler(this, "xx")
+    },
+    $toString(data['name'])
+  )]);
 };
 
 /***/ }),
@@ -469,7 +475,7 @@ function render(data) {
         className: "todo-footer"
       },
       _react2.default.createElement(AddButton, {
-        text: "Add Todo", $onclickme: $getComponentEventHandler(this, "add"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', $parent: this
+        text: "Add Todo", $onclickme: $getEventHandler(this, "add"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', __owner: this, __page: this.$isCustomComponent ? this.props['__page'] : this
       })
     ), _react2.default.createElement(
       View,
@@ -760,9 +766,9 @@ function render(data) {
         className: "todo-footer"
       },
       [_react2.default.createElement(AddButton, {
-        text: data['text'], $ontap: $getEventHandler(this, "clickCom"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', $parent: this
+        text: data['text'], $catchtapcapture: $getEventHandler(this, "clickCom"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', __owner: this, __page: this.$isCustomComponent ? this.props['__page'] : this
       }), _react2.default.createElement(AddButton, {
-        $onclickme: $getComponentEventHandler(this, "addTodo"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', $parent: this
+        xx: "xxx", text: data['text'], $onclickme: $getEventHandler(this, data['fn']), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', __owner: this, __page: this.$isCustomComponent ? this.props['__page'] : this
       })]
     ), _react2.default.createElement(
       View,

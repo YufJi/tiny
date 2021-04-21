@@ -230,23 +230,44 @@ Component({
   properties: {
     text: {
       type: String,
-      value: 'sdas'
-    }
-
+      value: 'sdas',
+    },
   },
 
   data: {
-    text: 'jyf',
+    // text: 'jyf',
     name: 'xxxxx',
   },
 
+  lifetimes: {
+    created() {
+      console.log(1,this.properties, this.data)
+    },
+    attached() {
+      console.log(2,this.properties, this.data)
+    },
+    ready() {
+      console.log(3,this.properties, this.data)
+    },
+    moved() {
+      console.log(4,this.properties)
+    },
+    detached() {
+      console.log(5,this.properties)
+    },
+  },
+
   methods: {
+    xx() {
+      console.log('properties', this.properties, this.data);
+    },
     onClickMe() {
       this.setData({
-        text: 'xhq'
-      })
-      console.log('properties',this.properties);
-      this.triggerEvent('clickme')
+        // text: 'xhq',
+        name: 'ooo',
+      });
+      console.log('properties', this.properties, this.data);
+      this.triggerEvent('clickme', { xx: 'xxxx' }, { bubbles: true });
     },
   },
 });
@@ -300,7 +321,10 @@ Page({
       },
     ]);
 
-    mp.navigateBack();
+    wx.navigateBack();
+  },
+  xxxx() {
+    console.log('xxxx');
   },
 });
 
@@ -338,20 +362,21 @@ const app = getApp();
 Page({
   // 声明页面数据
   data: {
-    text: 'abc'
+    text: 'abc',
+    fn: 'addTodo',
   },
   // 监听生命周期回调 onLoad
   onLoad() {
     // 获取用户信息并存储数据
     app.getUserInfo().then(
-      user => {
+      (user) => {
         this.setData({
           user,
         });
       },
       () => {
         // 获取用户信息失败
-      }
+      },
     );
   },
   // 监听生命周期回调 onShow
@@ -367,17 +392,22 @@ Page({
   onTodoChanged(e) {
     // 修改全局数据
     const checkedTodos = e.detail.value;
-    app.todos = app.todos.map(todo => ({
+    app.todos = app.todos.map((todo) => ({
       ...todo,
       completed: checkedTodos.indexOf(todo.text) > -1,
     }));
     this.setData({ todos: app.todos });
   },
 
-  addTodo() {
+  addTodo(e) {
+    console.log(e, 'eeexxxxxx')
+    this.setData({
+      text: 'chi',
+      fn: 'captureClickChild'
+    })
     console.log('准备进行页面跳转');
     // 进行页面跳转
-    wx.navigateTo({ 
+    wx.navigateTo({
       url: '../add-todo/add-todo',
     });
   },
@@ -393,9 +423,9 @@ Page({
   clickCom() {
     this.setData({
       text: 'def',
-    })
+    });
     console.log('clickCom');
-  }
+  },
 });
 
 
