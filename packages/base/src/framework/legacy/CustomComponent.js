@@ -3,9 +3,8 @@ import createReactClass from 'create-react-class';
 import $global from '../common/global';
 import EventHub from '../EventHub';
 import { getOpFn } from '@/utils/setData';
-import createComponent from '../createComponent'
 import PureRenderMixin from '../mixins/PureRenderMixin';
-import BasicEventMixin from '../mixins/BasicEventMixin';
+import CustomComponentEventMixin from '../mixins/CustomComponentEventMixin';
 import { getCurrentPageImpl } from '../App';
 import transformChildrenToSlots from '../utils/transformChildrenToSlots';
 import normalizeComponentProps from '../utils/normalizeComponentProps';
@@ -22,7 +21,8 @@ import {
   ComponentKeyName,
 } from '@/utils/consts';
 import {
-  eventReg
+  eventReg,
+  commonEventReg,
 } from '@/utils/reg';
 
 let componentId = 1;
@@ -88,6 +88,7 @@ export default (is) => createReactClass({
     is: is,
   },
   mixins: [
+    CustomComponentEventMixin(),
     PureRenderMixin,
   ],
   getDefaultProps() {
@@ -101,13 +102,21 @@ export default (is) => createReactClass({
     this.eventHandlers = {};
     this.componentEventHandlers = {};
     return {
-      data: { ...getComponentConfig(this.is).data },
+      ...getComponentConfig(this.is).data, 
+      ...this.props,
     };
   },
   componentDidMount() {
     this.recordMounted(this.diffProps(getComponentConfig(this.is).properties || {}), true);
   },
   componentDidUpdate(prevProps) {
+    // 更新当前视图
+    const data = this.state;
+    this.setState({
+      ...data,
+      ...this.props,
+    });
+
     const diffProps = this.diffProps(prevProps);
     if (diffProps) {
       this.recordMounted(diffProps);
@@ -178,14 +187,19 @@ export default (is) => createReactClass({
     }
     let ownerId;
     if (props[DiffKeyUpdated]) {
-      const updated = newProps[DiffKeyUpdated] = { ...props[DiffKeyUpdated] };
+
+      /* 过滤属性 */
+      const { $parent, ...rest } = props[DiffKeyUpdated];
+      const updated = newProps[DiffKeyUpdated] = { ...rest };
       objectKeys(updated).forEach((p) => {
-        if (p.match(eventReg) && updated[p]) {
+        /* 自定义事件 */
+        if ((eventReg.test(p) && !commonEventReg.test(p)) && updated[p]) {
           ownerId = updated[p][ComponentKeyOwnerId];
           updated[p] = updated[p][ComponentKeyName];
         }
       });
     }
+
     return { ownerId, newProps };
   },
   $getEventHandler(name) {
@@ -233,7 +247,7 @@ export default (is) => createReactClass({
 
   },
   setData(toBeData, callback) {
-    const { data } = this.state;
+    const data = this.state;
 
     let ret = data;
     if (Array.isArray(toBeData)) {
@@ -245,7 +259,7 @@ export default (is) => createReactClass({
       ret = getOpFn(toBeData.op)(ret, toBeData.data);
     }
     this.setState({
-      data: ret,
+      ...ret,
     }, callback);
   },
   render() {
@@ -256,30 +270,18 @@ export default (is) => createReactClass({
     const { 
       id,
       className,
-      // onClick,
-      // onClickCapture,
-      // onTouchStart,
-      // onTouchStartCapture,
-      // onTouchMove,
-      // onTouchMoveCapture,
-      // onTouchEnd,
-      // onTouchEndCapture,
-      // onTouchCancel,
-      // onTouchCancelCapture,
-      // onAnimationStart,
-      // onAnimationIteration,
-      // onAnimationEnd,
-      // onTransitionEnd, 
-      ...rest
     } = props;
+
+    const nodeEvents = this.getNodeEvents();
 
     return (
       <span
         id={id} 
         className={className}
         ref={ref => this._root = ref}
+        {...nodeEvents}
       >
-        {getRender(is).call(this, { $id: this.id, ...this.state.data, ...rest })}
+        {getRender(is).call(this, { $id: this.id, ...this.state })}
       </span>
     )
   },

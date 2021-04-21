@@ -16030,6 +16030,8 @@ function createComponent() {
           dataset: this.getDataset()
         };
       },
+
+      /* 格式化event对象 */
       getNormalizedEvent: function getNormalizedEvent(eventParam, other) {
         var eventType = eventParam;
         var srcEvent;
@@ -16393,15 +16395,16 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../common/global */ "./src/framework/common/global.js");
 /* harmony import */ var _EventHub__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../EventHub */ "./src/framework/EventHub.js");
 /* harmony import */ var _utils_setData__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/setData */ "./src/utils/setData.js");
-/* harmony import */ var _createComponent__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../createComponent */ "./src/framework/createComponent/index.js");
-/* harmony import */ var _mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../mixins/PureRenderMixin */ "./src/framework/mixins/PureRenderMixin.js");
-/* harmony import */ var _mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../mixins/BasicEventMixin */ "./src/framework/mixins/BasicEventMixin.js");
-/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../App */ "./src/framework/App/index.js");
-/* harmony import */ var _utils_transformChildrenToSlots__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../utils/transformChildrenToSlots */ "./src/framework/utils/transformChildrenToSlots.js");
-/* harmony import */ var _utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../utils/normalizeComponentProps */ "./src/framework/utils/normalizeComponentProps.js");
-/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
-/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
-/* harmony import */ var _utils_reg__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! @/utils/reg */ "./src/utils/reg.js");
+/* harmony import */ var _mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../mixins/PureRenderMixin */ "./src/framework/mixins/PureRenderMixin.js");
+/* harmony import */ var _mixins_CustomComponentEventMixin__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../mixins/CustomComponentEventMixin */ "./src/framework/mixins/CustomComponentEventMixin.js");
+/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../App */ "./src/framework/App/index.js");
+/* harmony import */ var _utils_transformChildrenToSlots__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../utils/transformChildrenToSlots */ "./src/framework/utils/transformChildrenToSlots.js");
+/* harmony import */ var _utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../utils/normalizeComponentProps */ "./src/framework/utils/normalizeComponentProps.js");
+/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
+/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
+/* harmony import */ var _utils_reg__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! @/utils/reg */ "./src/utils/reg.js");
+function _extends() { _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
+
 function _objectWithoutProperties(source, excluded) { if (source == null) return {}; var target = _objectWithoutPropertiesLoose(source, excluded); var key, i; if (Object.getOwnPropertySymbols) { var sourceSymbolKeys = Object.getOwnPropertySymbols(source); for (i = 0; i < sourceSymbolKeys.length; i++) { key = sourceSymbolKeys[i]; if (excluded.indexOf(key) >= 0) continue; if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue; target[key] = source[key]; } } return target; }
 
 function _objectWithoutPropertiesLoose(source, excluded) { if (source == null) return {}; var target = {}; var sourceKeys = Object.keys(source); var key, i; for (i = 0; i < sourceKeys.length; i++) { key = sourceKeys[i]; if (excluded.indexOf(key) >= 0) continue; target[key] = source[key]; } return target; }
@@ -16411,7 +16414,6 @@ function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (O
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
 
 
 
@@ -16438,7 +16440,7 @@ function reset() {
 _EventHub__WEBPACK_IMPORTED_MODULE_2__["default"].addListener(['pageReady', 'pageUpdate'], function (e) {
   var _objectSpread2;
 
-  e.payload = _objectSpread(_objectSpread({}, e.payload || {}), (_objectSpread2 = {}, _defineProperty(_objectSpread2, _utils_consts__WEBPACK_IMPORTED_MODULE_11__["PayloadKeyMountedComponents"], mountedComponents), _defineProperty(_objectSpread2, _utils_consts__WEBPACK_IMPORTED_MODULE_11__["PayloadKeyUnmountedComponents"], unmountedComponents), _objectSpread2));
+  e.payload = _objectSpread(_objectSpread({}, e.payload || {}), (_objectSpread2 = {}, _defineProperty(_objectSpread2, _utils_consts__WEBPACK_IMPORTED_MODULE_10__["PayloadKeyMountedComponents"], mountedComponents), _defineProperty(_objectSpread2, _utils_consts__WEBPACK_IMPORTED_MODULE_10__["PayloadKeyUnmountedComponents"], unmountedComponents), _objectSpread2));
   reset();
 });
 function setComponentsConfig(componentsConfig) {
@@ -16482,7 +16484,7 @@ function getRender(is) {
     statics: {
       is: is
     },
-    mixins: [_mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_5__["default"]],
+    mixins: [Object(_mixins_CustomComponentEventMixin__WEBPACK_IMPORTED_MODULE_5__["default"])(), _mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_4__["default"]],
     getDefaultProps: function getDefaultProps() {
       return getComponentConfig(is).properties || {};
     },
@@ -16490,34 +16492,35 @@ function getRender(is) {
       this.is = is; // async render twice
 
       this.id = this.id || ++componentId;
-      Object(_App__WEBPACK_IMPORTED_MODULE_7__["getCurrentPageImpl"])().componentInstances[this.id] = this;
+      Object(_App__WEBPACK_IMPORTED_MODULE_6__["getCurrentPageImpl"])().componentInstances[this.id] = this;
       this.eventHandlers = {};
       this.componentEventHandlers = {};
-      return {
-        data: _objectSpread({}, getComponentConfig(this.is).data)
-      };
+      return _objectSpread(_objectSpread({}, getComponentConfig(this.is).data), this.props);
     },
     componentDidMount: function componentDidMount() {
       this.recordMounted(this.diffProps(getComponentConfig(this.is).properties || {}), true);
     },
     componentDidUpdate: function componentDidUpdate(prevProps) {
+      // 更新当前视图
+      var data = this.state;
+      this.setState(_objectSpread(_objectSpread({}, data), this.props));
       var diffProps = this.diffProps(prevProps);
 
       if (diffProps) {
         this.recordMounted(diffProps);
       } else {
-        mountedComponents.push(_defineProperty({}, _utils_consts__WEBPACK_IMPORTED_MODULE_11__["ComponentKeyId"], this.id));
+        mountedComponents.push(_defineProperty({}, _utils_consts__WEBPACK_IMPORTED_MODULE_10__["ComponentKeyId"], this.id));
       }
     },
     componentWillUnmount: function componentWillUnmount() {
-      delete Object(_App__WEBPACK_IMPORTED_MODULE_7__["getCurrentPageImpl"])().componentInstances[this.id];
+      delete Object(_App__WEBPACK_IMPORTED_MODULE_6__["getCurrentPageImpl"])().componentInstances[this.id];
       unmountedComponents.push(this.id);
     },
     recordMounted: function recordMounted(diffProps, init) {
-      var info = _defineProperty({}, _utils_consts__WEBPACK_IMPORTED_MODULE_11__["ComponentKeyId"], this.id);
+      var info = _defineProperty({}, _utils_consts__WEBPACK_IMPORTED_MODULE_10__["ComponentKeyId"], this.id);
 
       if (init) {
-        info[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["ComponentKeyIs"]] = this.is;
+        info[_utils_consts__WEBPACK_IMPORTED_MODULE_10__["ComponentKeyIs"]] = this.is;
       }
 
       mountedComponents.push(info);
@@ -16527,10 +16530,10 @@ function getRender(is) {
             newProps = _this$normalizeProps.newProps,
             ownerId = _this$normalizeProps.ownerId;
 
-        info[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["ComponentKeyDiffProps"]] = newProps;
+        info[_utils_consts__WEBPACK_IMPORTED_MODULE_10__["ComponentKeyDiffProps"]] = newProps;
 
         if (ownerId) {
-          info[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["ComponentKeyOwnerId"]] = ownerId;
+          info[_utils_consts__WEBPACK_IMPORTED_MODULE_10__["ComponentKeyOwnerId"]] = ownerId;
         }
       }
     },
@@ -16541,7 +16544,7 @@ function getRender(is) {
       var updated = {};
       var isUpdated;
       var isDeleted;
-      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_10__["default"])(Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_9__["default"])(prevProps)).forEach(function (prevKey) {
+      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_9__["default"])(Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_8__["default"])(prevProps)).forEach(function (prevKey) {
         if (!(prevKey in props)) {
           deleted.push(prevKey);
           isDeleted = true;
@@ -16550,7 +16553,7 @@ function getRender(is) {
           isUpdated = true;
         }
       });
-      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_10__["default"])(Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_9__["default"])(props)).forEach(function (key) {
+      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_9__["default"])(Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_8__["default"])(props)).forEach(function (key) {
         if (!(key in prevProps)) {
           updated[key] = props[key];
           isUpdated = true;
@@ -16560,12 +16563,12 @@ function getRender(is) {
 
       if (isUpdated) {
         ret = ret || {};
-        ret[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["DiffKeyUpdated"]] = updated;
+        ret[_utils_consts__WEBPACK_IMPORTED_MODULE_10__["DiffKeyUpdated"]] = updated;
       }
 
       if (isDeleted) {
         ret = ret || {};
-        ret[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["DiffKeyDeleted"]] = deleted;
+        ret[_utils_consts__WEBPACK_IMPORTED_MODULE_10__["DiffKeyDeleted"]] = deleted;
       }
 
       return ret;
@@ -16573,19 +16576,25 @@ function getRender(is) {
     normalizeProps: function normalizeProps(props) {
       var newProps = {};
 
-      if (props[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["DiffKeyDeleted"]]) {
-        newProps[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["DiffKeyDeleted"]] = props[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["DiffKeyDeleted"]];
+      if (props[_utils_consts__WEBPACK_IMPORTED_MODULE_10__["DiffKeyDeleted"]]) {
+        newProps[_utils_consts__WEBPACK_IMPORTED_MODULE_10__["DiffKeyDeleted"]] = props[_utils_consts__WEBPACK_IMPORTED_MODULE_10__["DiffKeyDeleted"]];
       }
 
       var ownerId;
 
-      if (props[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["DiffKeyUpdated"]]) {
-        var updated = newProps[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["DiffKeyUpdated"]] = _objectSpread({}, props[_utils_consts__WEBPACK_IMPORTED_MODULE_11__["DiffKeyUpdated"]]);
+      if (props[_utils_consts__WEBPACK_IMPORTED_MODULE_10__["DiffKeyUpdated"]]) {
+        /* 过滤属性 */
+        var _props$DiffKeyUpdated = props[_utils_consts__WEBPACK_IMPORTED_MODULE_10__["DiffKeyUpdated"]],
+            $parent = _props$DiffKeyUpdated.$parent,
+            rest = _objectWithoutProperties(_props$DiffKeyUpdated, ["$parent"]);
 
-        Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_10__["default"])(updated).forEach(function (p) {
-          if (p.match(_utils_reg__WEBPACK_IMPORTED_MODULE_12__["eventReg"]) && updated[p]) {
-            ownerId = updated[p][_utils_consts__WEBPACK_IMPORTED_MODULE_11__["ComponentKeyOwnerId"]];
-            updated[p] = updated[p][_utils_consts__WEBPACK_IMPORTED_MODULE_11__["ComponentKeyName"]];
+        var updated = newProps[_utils_consts__WEBPACK_IMPORTED_MODULE_10__["DiffKeyUpdated"]] = _objectSpread({}, rest);
+
+        Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_9__["default"])(updated).forEach(function (p) {
+          /* 自定义事件 */
+          if (_utils_reg__WEBPACK_IMPORTED_MODULE_11__["eventReg"].test(p) && !_utils_reg__WEBPACK_IMPORTED_MODULE_11__["commonEventReg"].test(p) && updated[p]) {
+            ownerId = updated[p][_utils_consts__WEBPACK_IMPORTED_MODULE_10__["ComponentKeyOwnerId"]];
+            updated[p] = updated[p][_utils_consts__WEBPACK_IMPORTED_MODULE_10__["ComponentKeyName"]];
           }
         });
       }
@@ -16612,7 +16621,7 @@ function getRender(is) {
             args[_key] = arguments[_key];
           }
 
-          (_getCurrentPageImpl = Object(_App__WEBPACK_IMPORTED_MODULE_7__["getCurrentPageImpl"])()).callRemote.apply(_getCurrentPageImpl, ['self', 'triggerComponentEvent', _this.id, name].concat(args));
+          (_getCurrentPageImpl = Object(_App__WEBPACK_IMPORTED_MODULE_6__["getCurrentPageImpl"])()).callRemote.apply(_getCurrentPageImpl, ['self', 'triggerComponentEvent', _this.id, name].concat(args));
         };
 
         handle.handleName = name;
@@ -16629,7 +16638,7 @@ function getRender(is) {
         args[_key2] = arguments[_key2];
       }
 
-      return (_getCurrentPageImpl2 = Object(_App__WEBPACK_IMPORTED_MODULE_7__["getCurrentPageImpl"])()).$getRefHandler.apply(_getCurrentPageImpl2, args);
+      return (_getCurrentPageImpl2 = Object(_App__WEBPACK_IMPORTED_MODULE_6__["getCurrentPageImpl"])()).$getRefHandler.apply(_getCurrentPageImpl2, args);
     },
     $getComponentEventHandler: function $getComponentEventHandler(name) {
       if (!name || typeof name !== 'string') {
@@ -16642,14 +16651,14 @@ function getRender(is) {
       if (!componentEventHandlers[name]) {
         var _componentEventHandle;
 
-        componentEventHandlers[name] = (_componentEventHandle = {}, _defineProperty(_componentEventHandle, _utils_consts__WEBPACK_IMPORTED_MODULE_11__["ComponentKeyName"], name), _defineProperty(_componentEventHandle, _utils_consts__WEBPACK_IMPORTED_MODULE_11__["ComponentKeyOwnerId"], this.id), _componentEventHandle);
+        componentEventHandlers[name] = (_componentEventHandle = {}, _defineProperty(_componentEventHandle, _utils_consts__WEBPACK_IMPORTED_MODULE_10__["ComponentKeyName"], name), _defineProperty(_componentEventHandle, _utils_consts__WEBPACK_IMPORTED_MODULE_10__["ComponentKeyOwnerId"], this.id), _componentEventHandle);
       }
 
       return componentEventHandlers[name];
     },
     $triggerEvent: function $triggerEvent() {},
     setData: function setData(toBeData, callback) {
-      var data = this.state.data;
+      var data = this.state;
       var ret = data;
 
       if (Array.isArray(toBeData)) {
@@ -16661,30 +16670,26 @@ function getRender(is) {
         ret = Object(_utils_setData__WEBPACK_IMPORTED_MODULE_3__["getOpFn"])(toBeData.op)(ret, toBeData.data);
       }
 
-      this.setState({
-        data: ret
-      }, callback);
+      this.setState(_objectSpread({}, ret), callback);
     },
     render: function render() {
       var _this2 = this;
 
-      var props = Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_9__["default"])(this.props);
-      props.$slots = Object(_utils_transformChildrenToSlots__WEBPACK_IMPORTED_MODULE_8__["default"])(this.props.children);
+      var props = Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_8__["default"])(this.props);
+      props.$slots = Object(_utils_transformChildrenToSlots__WEBPACK_IMPORTED_MODULE_7__["default"])(this.props.children);
       props.$scopedSlots = this.props.$scopedSlots;
-
       var id = props.id,
-          className = props.className,
-          rest = _objectWithoutProperties(props, ["id", "className"]);
-
-      return /*#__PURE__*/React.createElement("span", {
+          className = props.className;
+      var nodeEvents = this.getNodeEvents();
+      return /*#__PURE__*/React.createElement("span", _extends({
         id: id,
         className: className,
         ref: function ref(_ref) {
           return _this2._root = _ref;
         }
-      }, getRender(is).call(this, _objectSpread(_objectSpread({
+      }, nodeEvents), getRender(is).call(this, _objectSpread({
         $id: this.id
-      }, this.state.data), rest)));
+      }, this.state)));
     }
   });
 });
@@ -16711,21 +16716,19 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../App */ "./src/framework/App/index.js");
 /* harmony import */ var _EventHub__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../EventHub */ "./src/framework/EventHub.js");
 /* harmony import */ var _CustomComponent__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./CustomComponent */ "./src/framework/legacy/CustomComponent.js");
-/* harmony import */ var _ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../ComponentRegistry/getComponentClass */ "./src/framework/ComponentRegistry/getComponentClass.js");
-/* harmony import */ var _utils_addEvents__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @/utils/addEvents */ "./src/utils/addEvents.js");
-/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
-/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
-/* harmony import */ var _utils_setData__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! @/utils/setData */ "./src/utils/setData.js");
-/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
-/* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ../common/global */ "./src/framework/common/global.js");
-/* harmony import */ var _utils_unit__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ../utils/unit */ "./src/framework/utils/unit.js");
-/* harmony import */ var _Platform__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! ../Platform */ "./src/framework/Platform/index.js");
+/* harmony import */ var _utils_addEvents__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @/utils/addEvents */ "./src/utils/addEvents.js");
+/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
+/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
+/* harmony import */ var _utils_setData__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! @/utils/setData */ "./src/utils/setData.js");
+/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
+/* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ../common/global */ "./src/framework/common/global.js");
+/* harmony import */ var _utils_unit__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ../utils/unit */ "./src/framework/utils/unit.js");
+/* harmony import */ var _Platform__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ../Platform */ "./src/framework/Platform/index.js");
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
 
 
 
@@ -16751,7 +16754,7 @@ function getStyleSheet(pagePath) {
     return styleSheetCaches[pagePath];
   }
 
-  var setupConfig = _common_global__WEBPACK_IMPORTED_MODULE_14__["default"].pagesConfig[pagePath].system;
+  var setupConfig = _common_global__WEBPACK_IMPORTED_MODULE_13__["default"].pagesConfig[pagePath].system;
   var _stylesheet = setupConfig.stylesheet;
 
   if (_stylesheet) {
@@ -16768,7 +16771,7 @@ function getRender(pagePath) {
     return renderCache[pagePath];
   }
 
-  var setupConfig = _common_global__WEBPACK_IMPORTED_MODULE_14__["default"].pagesConfig[pagePath].system;
+  var setupConfig = _common_global__WEBPACK_IMPORTED_MODULE_13__["default"].pagesConfig[pagePath].system;
   var _render = setupConfig.render; // lazy require xml and css
 
   var render = _render();
@@ -16781,8 +16784,8 @@ function getRender(pagePath) {
 var onReachBottomDistance = 50;
 var headNode = document.getElementsByTagName('head')[0]; // special for 1rpx or 2rpx
 
-var remReg = Object(_utils_unit__WEBPACK_IMPORTED_MODULE_15__["rpx2px"])(2) < 1 ? /\b0\.0[12]rem/g : Object(_utils_unit__WEBPACK_IMPORTED_MODULE_15__["rpx2px"])(1) < 1 ? /\b0\.01rem/g : null;
-var replacer = _Platform__WEBPACK_IMPORTED_MODULE_16__["default"].browser === 'ios' ? '0.5px' : '1px';
+var remReg = Object(_utils_unit__WEBPACK_IMPORTED_MODULE_14__["rpx2px"])(2) < 1 ? /\b0\.0[12]rem/g : Object(_utils_unit__WEBPACK_IMPORTED_MODULE_14__["rpx2px"])(1) < 1 ? /\b0\.01rem/g : null;
+var replacer = _Platform__WEBPACK_IMPORTED_MODULE_15__["default"].browser === 'ios' ? '0.5px' : '1px';
 /* harmony default export */ __webpack_exports__["default"] = (create_react_class__WEBPACK_IMPORTED_MODULE_2___default()({
   $isCustomComponent: false,
   displayName: 'PageComponent',
@@ -16808,7 +16811,7 @@ var replacer = _Platform__WEBPACK_IMPORTED_MODULE_16__["default"].browser === 'i
     }
 
     Object.assign(this, {
-      bridge: _common_global__WEBPACK_IMPORTED_MODULE_14__["default"].bridge,
+      bridge: _common_global__WEBPACK_IMPORTED_MODULE_13__["default"].bridge,
       renderSeq: 1,
       eventHandlers: {},
       componentEventHandlers: {},
@@ -16864,7 +16867,7 @@ var replacer = _Platform__WEBPACK_IMPORTED_MODULE_16__["default"].browser === 'i
       }
 
       if (publicInstance.onReachBottom || publicInstance.onPageScroll) {
-        Object(_utils_addEvents__WEBPACK_IMPORTED_MODULE_9__["default"])(window, {
+        Object(_utils_addEvents__WEBPACK_IMPORTED_MODULE_8__["default"])(window, {
           scroll: _this.checkScroll
         });
       }
@@ -16930,7 +16933,7 @@ var replacer = _Platform__WEBPACK_IMPORTED_MODULE_16__["default"].browser === 'i
     if (!componentEventHandlers[name]) {
       var _componentEventHandle;
 
-      componentEventHandlers[name] = (_componentEventHandle = {}, _defineProperty(_componentEventHandle, _utils_consts__WEBPACK_IMPORTED_MODULE_10__["ComponentKeyName"], name), _defineProperty(_componentEventHandle, _utils_consts__WEBPACK_IMPORTED_MODULE_10__["ComponentKeyOwnerId"], 1), _componentEventHandle);
+      componentEventHandlers[name] = (_componentEventHandle = {}, _defineProperty(_componentEventHandle, _utils_consts__WEBPACK_IMPORTED_MODULE_9__["ComponentKeyName"], name), _defineProperty(_componentEventHandle, _utils_consts__WEBPACK_IMPORTED_MODULE_9__["ComponentKeyOwnerId"], 1), _componentEventHandle);
     }
 
     return componentEventHandlers[name];
@@ -16946,17 +16949,17 @@ var replacer = _Platform__WEBPACK_IMPORTED_MODULE_16__["default"].browser === 'i
     var componentInstances = this.componentInstances;
     var componentsData = {};
     toBeData.forEach(function (toData) {
-      var type = toData[_utils_consts__WEBPACK_IMPORTED_MODULE_10__["PendingKeyType"]];
-      var data = toData[_utils_consts__WEBPACK_IMPORTED_MODULE_10__["PendingKeyData"]];
-      var id = toData[_utils_consts__WEBPACK_IMPORTED_MODULE_10__["PendingKeyId"]];
-      var op = toData[_utils_consts__WEBPACK_IMPORTED_MODULE_10__["PendingKeyOp"]] || _utils_consts__WEBPACK_IMPORTED_MODULE_10__["OpSet"];
+      var type = toData[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["PendingKeyType"]];
+      var data = toData[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["PendingKeyData"]];
+      var id = toData[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["PendingKeyId"]];
+      var op = toData[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["PendingKeyOp"]] || _utils_consts__WEBPACK_IMPORTED_MODULE_9__["OpSet"];
 
-      if (type === _utils_consts__WEBPACK_IMPORTED_MODULE_10__["PendingValuePage"]) {
+      if (type === _utils_consts__WEBPACK_IMPORTED_MODULE_9__["PendingValuePage"]) {
         pageData.push({
           data: data,
           op: op
         });
-      } else if (type === _utils_consts__WEBPACK_IMPORTED_MODULE_10__["PendingValueComponent"] && componentInstances[id]) {
+      } else if (type === _utils_consts__WEBPACK_IMPORTED_MODULE_9__["PendingValueComponent"] && componentInstances[id]) {
         componentsData[id] = componentsData[id] || [];
         componentsData[id].push({
           data: data,
@@ -16966,10 +16969,10 @@ var replacer = _Platform__WEBPACK_IMPORTED_MODULE_16__["default"].browser === 'i
     });
 
     var doIt = function doIt() {
-      var count = Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_11__["default"])(componentsData).length + (pageData.length ? 1 : 0);
+      var count = Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_10__["default"])(componentsData).length + (pageData.length ? 1 : 0);
       var c = 0;
       var now = Date.now();
-      var unmountedChecked = Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_11__["default"])(componentsData);
+      var unmountedChecked = Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_10__["default"])(componentsData);
       var allKeys = unmountedChecked.concat();
       var pageComponent = _this;
 
@@ -17036,7 +17039,7 @@ var replacer = _Platform__WEBPACK_IMPORTED_MODULE_16__["default"].browser === 'i
     var ret = data;
     toBeData.forEach(function (d) {
       // immutable for shouldComponentUpdate
-      ret = Object(_utils_setData__WEBPACK_IMPORTED_MODULE_12__["getOpFn"])(d.op)(ret, d.data);
+      ret = Object(_utils_setData__WEBPACK_IMPORTED_MODULE_11__["getOpFn"])(d.op)(ret, d.data);
     });
     this.setState({
       data: ret
@@ -17047,7 +17050,7 @@ var replacer = _Platform__WEBPACK_IMPORTED_MODULE_16__["default"].browser === 'i
     messageChannel.onMessage(this.onMessage);
   },
   postMessage: function postMessage(data) {
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_13__["debug"])('framework', "[RENDER] Page ".concat(this.pagePath, " postMessage"), data);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_12__["debug"])('framework', "[RENDER] Page ".concat(this.pagePath, " postMessage"), data);
     var messageChannel = this.props.messageChannel;
     messageChannel.postMessage(_objectSpread(_objectSpread({}, data), {}, {
       pageType: this.pageType,
@@ -17103,6 +17106,9 @@ function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { va
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
+/**
+ * 仅用于UI components的事件处理
+ */
 
 
 
@@ -17122,7 +17128,7 @@ function defaultCreateTouchList() {
 
 function callEvent(instance, eventType, srcEvent, more, capture) {
   var c = capture ? 'capture' : '';
-  var catchHandler = instance.props["catch".concat(eventType).concat(c)];
+  var catchHandler = instance.props["$catch".concat(eventType).concat(c)];
   var e = instance.props.$mp.getNormalizedEvent({
     eventType: eventType,
     srcEvent: srcEvent
@@ -17135,7 +17141,7 @@ function callEvent(instance, eventType, srcEvent, more, capture) {
     return;
   }
 
-  var onHandler = instance.props["on".concat(eventType).concat(c)];
+  var onHandler = instance.props["$on".concat(eventType).concat(c)];
 
   if (onHandler) {
     onHandler(e);
@@ -17231,7 +17237,354 @@ function BasicEventMixin() {
     },
     hasEvent: function hasEvent(event, capture) {
       var c = capture ? 'capture' : '';
-      return this.props["on".concat(event).concat(c)] || this.props["catch".concat(event).concat(c)];
+      return this.props["$on".concat(event).concat(c)] || this.props["$catch".concat(event).concat(c)];
+    },
+    onTap: function onTap(srcEvent) {
+      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      this.recordTarget(srcEvent); // ios also trigger onTap after onLongTap
+
+      if (this.__longTapTriggered) {
+        return;
+      }
+
+      var eventName = "tap";
+
+      if (this.hasEvent(eventName, capture)) {
+        callEvent(this, eventName, srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap), capture);
+      }
+    },
+    onTouchStart: function onTouchStart(srcEvent) {
+      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      this.recordTarget(srcEvent);
+      this.__longTapTriggered = 0;
+      var eventName = "touchstart";
+
+      if (this.hasEvent(eventName, capture)) {
+        callEvent(this, eventName, srcEvent, {
+          touches: createTouchList.call(this, srcEvent.touches),
+          changedTouches: createTouchList.call(this, srcEvent.changedTouches)
+        }, capture);
+      }
+    },
+    onTouchMove: function onTouchMove(srcEvent) {
+      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      this.recordTarget(srcEvent);
+      var eventName = "touchmove";
+
+      if (this.hasEvent(eventName, capture)) {
+        callEvent(this, eventName, srcEvent, {
+          touches: createTouchList.call(this, srcEvent.touches),
+          changedTouches: createTouchList.call(this, srcEvent.changedTouches)
+        }, capture);
+      }
+    },
+    onTouchEnd: function onTouchEnd(srcEvent) {
+      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      this.recordTarget(srcEvent);
+      var eventName = "touchend";
+
+      if (this.hasEvent(eventName, capture)) {
+        callEvent(this, eventName, srcEvent, {
+          touches: createTouchList.call(this, srcEvent.touches),
+          changedTouches: createTouchList.call(this, srcEvent.changedTouches)
+        }, capture);
+      }
+    },
+    onTouchCancel: function onTouchCancel(srcEvent) {
+      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      this.recordTarget(srcEvent);
+      var eventName = "touchcancel";
+
+      if (this.hasEvent(eventName, capture)) {
+        callEvent(this, eventName, srcEvent, {
+          touches: createTouchList.call(this, srcEvent.touches),
+          changedTouches: createTouchList.call(this, srcEvent.changedTouches)
+        }, capture);
+      }
+    },
+    onTransitionEnd: function onTransitionEnd(srcEvent) {
+      this.recordTarget(srcEvent);
+
+      if (this.hasEvent('transitionend')) {
+        callEvent(this, 'transitionend', srcEvent, {
+          detail: {
+            elapsedTime: srcEvent.elapsedTime,
+            propertyName: srcEvent.propertyName
+          }
+        });
+      }
+    },
+    onAnimationStart: function onAnimationStart(srcEvent) {
+      this.recordTarget(srcEvent);
+
+      if (this.hasEvent('animationstart')) {
+        callEvent(this, 'animationstart', srcEvent, {
+          detail: {
+            elapsedTime: srcEvent.elapsedTime,
+            animationName: srcEvent.animationName
+          }
+        });
+      }
+    },
+    onAnimationIteration: function onAnimationIteration(srcEvent) {
+      this.recordTarget(srcEvent);
+
+      if (this.hasEvent('animationiteration')) {
+        callEvent(this, 'animationiteration', srcEvent, {
+          detail: {
+            elapsedTime: srcEvent.elapsedTime,
+            animationName: srcEvent.animationName
+          }
+        });
+      }
+    },
+    onAnimationEnd: function onAnimationEnd(srcEvent) {
+      this.recordTarget(srcEvent);
+
+      if (this.hasEvent('animationend')) {
+        callEvent(this, 'animationend', srcEvent, {
+          detail: {
+            elapsedTime: srcEvent.elapsedTime,
+            animationName: srcEvent.animationName
+          }
+        });
+      }
+    },
+    onLongTap: function onLongTap(srcEvent) {
+      this.__longTapTriggered = 1;
+
+      if (this.hasEvent('LongTap')) {
+        callEvent(this, 'longTap', srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap));
+      }
+    },
+    registryEvent: function registryEvent(eventName) {
+      var _this = this;
+
+      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      return function (srcEvent) {
+        _this[eventName](srcEvent, capture);
+      };
+    },
+    getNodeEvents: function getNodeEvents() {
+      return {
+        onClick: this.registryEvent('onTap'),
+        onClickCapture: this.registryEvent('onTap', true),
+        onTouchStart: this.registryEvent('onTouchStart'),
+        onTouchStartCapture: this.registryEvent('onTouchStart', true),
+        onTouchMove: this.registryEvent('onTouchMove'),
+        onTouchMoveCapture: this.registryEvent('onTouchMove', true),
+        onTouchEnd: this.registryEvent('onTouchEnd'),
+        onTouchEndCapture: this.registryEvent('onTouchEnd', true),
+        onTouchCancel: this.registryEvent('onTouchCancel'),
+        onTouchCancelCapture: this.registryEvent('onTouchCancel', true),
+        onAnimationStart: this.registryEvent('onAnimationStart'),
+        onAnimationIteration: this.registryEvent('onAnimationIteration'),
+        onAnimationEnd: this.registryEvent('onAnimationEnd'),
+        onTransitionEnd: this.registryEvent('onTransitionEnd')
+      };
+    }
+  };
+}
+
+/***/ }),
+
+/***/ "./src/framework/mixins/CustomComponentEventMixin.js":
+/*!***********************************************************!*\
+  !*** ./src/framework/mixins/CustomComponentEventMixin.js ***!
+  \***********************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return CustomComponentEventMixin; });
+/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
+/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react_dom__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _utils_addEvents__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/addEvents */ "./src/utils/addEvents.js");
+/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
+/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+
+
+
+
+
+function defaultCreateTouchList() {
+  var touchList = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+  var list = [].slice.call(touchList, 0);
+  return list.map(function (item) {
+    return {
+      clientX: item.clientX,
+      clientY: item.clientY,
+      identifier: item.identifier,
+      pageX: item.pageX,
+      pageY: item.pageY
+    };
+  });
+}
+
+function callEvent(instance, eventType, srcEvent, more, capture) {
+  var c = capture ? 'capture' : '';
+  var catchHandler = instance.props["$catch".concat(eventType).concat(c)];
+  var e = instance.getNormalizedEvent({
+    eventType: eventType,
+    srcEvent: srcEvent
+  }, more);
+  e.currentTarget = _objectSpread(_objectSpread({}, e.currentTarget), instance.getTargetForEvent());
+
+  if (catchHandler && srcEvent.stopPropagation) {
+    srcEvent.stopPropagation();
+    catchHandler(e);
+    return;
+  }
+
+  var onHandler = instance.props["$on".concat(eventType).concat(c)];
+
+  if (onHandler) {
+    onHandler(e);
+  }
+}
+
+function defaultCreateTap(nativeEvent) {
+  var detail = {};
+
+  if (nativeEvent) {
+    nativeEvent = nativeEvent.nativeEvent || nativeEvent;
+
+    if ('pageX' in nativeEvent) {
+      detail.pageX = nativeEvent.pageX;
+      detail.pageY = nativeEvent.pageY;
+    }
+
+    if ('clientX' in nativeEvent) {
+      detail.clientX = nativeEvent.clientX;
+      detail.clientY = nativeEvent.clientY;
+    } else if ('pageX' in detail) {
+      detail.clientX = detail.pageX - window.pageXOffset;
+      detail.clientY = detail.pageY - window.pageYOffset;
+    }
+  }
+
+  return {
+    detail: detail
+  };
+}
+
+function detachScroll(instance) {
+  if (instance.detachScrollEvent) {
+    instance.detachScrollEvent.remove();
+    instance.detachScrollEvent = null;
+  }
+}
+
+function attachScroll(instance) {
+  var disableScroll = instance.props.disableScroll;
+  var detachScrollEvent = instance.detachScrollEvent;
+  var __basicEventRoot = instance.__basicEventRoot;
+
+  if (!__basicEventRoot) {
+    return;
+  }
+
+  if (!disableScroll && detachScrollEvent) {
+    return detachScroll(instance);
+  }
+
+  if (disableScroll && !detachScrollEvent) {
+    instance.detachScrollEvent = Object(_utils_addEvents__WEBPACK_IMPORTED_MODULE_1__["default"])(instance.__basicEventRoot, {
+      touchmove: function touchmove(e) {
+        e.preventDefault();
+      }
+    });
+  }
+}
+
+function CustomComponentEventMixin() {
+  var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+      _ref$createTouchList = _ref.createTouchList,
+      createTouchList = _ref$createTouchList === void 0 ? defaultCreateTouchList : _ref$createTouchList,
+      _ref$createTap = _ref.createTap,
+      createTap = _ref$createTap === void 0 ? defaultCreateTap : _ref$createTap;
+
+  return {
+    componentDidMount: function componentDidMount() {
+      this.__basicEventRoot = react_dom__WEBPACK_IMPORTED_MODULE_0___default.a.findDOMNode(this);
+      attachScroll(this);
+    },
+    componentDidUpdate: function componentDidUpdate() {
+      attachScroll(this);
+    },
+    componentWillUnmount: function componentWillUnmount() {
+      detachScroll(this);
+    },
+    recordTarget: function recordTarget(srcEvent) {
+      var nativeEvent = srcEvent && srcEvent.nativeEvent;
+
+      if (nativeEvent && !nativeEvent.$target) {
+        nativeEvent.$target = this.getTargetForEvent();
+      }
+    },
+    hasEvent: function hasEvent(event, capture) {
+      var c = capture ? 'capture' : '';
+      return this.props["$on".concat(event).concat(c)] || this.props["$catch".concat(event).concat(c)];
+    },
+    getDataset: function getDataset() {
+      var props = this.props;
+      var dataset = {};
+      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(props).forEach(function (n) {
+        if (n.slice(0, 5) === 'data-') {
+          var key = camelCase(n.slice(5));
+          dataset[key] = props[n];
+        }
+      });
+      return dataset;
+    },
+    getTargetForEvent: function getTargetForEvent() {
+      var props = this.props;
+      var __basicEventRoot = this.__basicEventRoot;
+      return {
+        id: props.id,
+        dataset: this.getDataset(),
+        offsetLeft: __basicEventRoot.offsetLeft,
+        offsetTop: __basicEventRoot.offsetTop
+      };
+    },
+
+    /* 格式化event对象 */
+    getNormalizedEvent: function getNormalizedEvent(eventParam, other) {
+      var eventType = eventParam;
+      var srcEvent;
+
+      if (eventType.eventType) {
+        srcEvent = eventType.srcEvent;
+        eventType = eventType.eventType;
+      }
+
+      var nativeEvent = srcEvent && srcEvent.nativeEvent || srcEvent;
+      var currentTarget = this.getTargetForEvent();
+      var target = nativeEvent && nativeEvent.$target || currentTarget;
+
+      if (nativeEvent && !nativeEvent.$target) {
+        nativeEvent.$target = target;
+      } // bug compatibility
+
+
+      target = _objectSpread(_objectSpread({
+        targetDataset: target.dataset
+      }, target), {}, {
+        dataset: currentTarget.dataset
+      });
+      return _objectSpread({
+        type: eventType,
+        timeStamp: Date.now(),
+        target: target,
+        currentTarget: currentTarget
+      }, other);
     },
     onTap: function onTap(srcEvent) {
       var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
@@ -20002,13 +20355,15 @@ function objectKeys(obj) {
 /*!**************************!*\
   !*** ./src/utils/reg.js ***!
   \**************************/
-/*! exports provided: eventReg */
+/*! exports provided: eventReg, commonEventReg */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "eventReg", function() { return eventReg; });
-var eventReg = /^(on|catch)([A-Za-z_]+)(capture)?$/;
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "commonEventReg", function() { return commonEventReg; });
+var eventReg = /^\$(on|catch)([A-Za-z_]+)(capture)?$/;
+var commonEventReg = /^\$(on|catch)(tap|touchstart|touchmove|touchend|touchcancel|transitionend|animationstart|animationiteration|animationend)(capture)?$/;
 
 /***/ }),
 

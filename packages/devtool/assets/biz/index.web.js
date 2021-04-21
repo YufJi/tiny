@@ -97,7 +97,7 @@
 const g = typeof global !== 'undefined' ? global : self;
 g.mpAppJson = {
   "app": {
-    "$homepage": "pages/index/index"
+    "$homepage": "pages/todos/todos"
   }
 };
 
@@ -114,15 +114,17 @@ g.mpAppJson = {
 
 __webpack_require__(/*! compiler/lib/sjsEnvInit */ "./lib/sjsEnvInit.js");
 __webpack_require__(/*! ./config$ */ "../devtool/assets/biz/config$.js");
-__webpack_require__(/*! ./example/oa/pages/index/index?hash=f8f53b2631c7389810262145c2357935db847400 */ "./example/oa/pages/index/index.js?hash=f8f53b2631c7389810262145c2357935db847400");
+__webpack_require__(/*! ./example/miniRoot/components/add-button/add-button?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./example/miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc");
+__webpack_require__(/*! ./example/miniRoot/pages/todos/todos?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
+__webpack_require__(/*! ./example/miniRoot/pages/add-todo/add-todo?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
 
 
 /***/ }),
 
-/***/ "./example/oa/app.wxss":
-/*!*****************************!*\
-  !*** ./example/oa/app.wxss ***!
-  \*****************************/
+/***/ "./example/miniRoot/app.wxss":
+/*!***********************************!*\
+  !*** ./example/miniRoot/app.wxss ***!
+  \***********************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -130,353 +132,224 @@ __webpack_require__(/*! ./example/oa/pages/index/index?hash=f8f53b2631c738981026
 __webpack_require__.r(__webpack_exports__);
 const { StyleSheet } = self.MP;
 const stylesheet = new StyleSheet({ stylePath: 'app.wxss' });
-/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.a-page, .a-body {
-    background-color: #F0F2F5;
-    height: 100%;
-    font-size: 0.28rem;
-    line-height: 1.6;
-  }
-  .a-checkbox, .a-radio {
-    margin-right: 0.1rem;
-  }
-  .a-form {
-    width: 100%;
-  }
-  .a-input {
-    cursor: auto;
-    display: block;
-    height: 1.4rem;
-    text-overflow: clip;
-    overflow: hidden;
-    white-space: nowrap;
-    font-family: UICTFontTextStyleBody;
-    min-height: 1.4rem;
-    width: 100%;
-    margin: 0;
-  }
-  .a-textarea {
-    cursor: auto;
-    display: block;
-    position: relative;
-    margin: 0;
-    resize: none;
-    outline: 0;
-    border: 0 none;
-    outline-style: none;
-  }
-  .a-image, .a-img {
-    border: 0 none;
-  }
-  .a-button {
-    border: none;
-    margin: 0;
-    padding: 0;
-    -webkit-tap-highlight-color: transparent;
-    box-sizing: border-box;
-    font-size: 12px;
-  }
-  .container {
-    height: 100%;
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.a-page {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+            flex: 1;
     display: -webkit-box;
     display: -webkit-flex;
     display: flex;
-    -webkit-box-orient: vertical;
-    -webkit-box-direction: normal;
-    -webkit-flex-direction: column;
-            flex-direction: column;
-    -webkit-box-align: center;
-    -webkit-align-items: center;
-            align-items: center;
-    padding: 0.24rem;
-    box-sizing: border-box;
-    font-family: -apple-system-font,Helvetica Neue,Helvetica,sans-serif;
-  }
-@font-face {
-  font-family: "oa-office";
-  src: url('http://pic.c-ctrip.com/platform/h5/miniapp/oaoffice/oa-office.ttf?20200116') format('truetype');
-  /* iOS 4.1- */
-}
-  .iconfont {
-    font-family: "oa-office" !important;
-    font-size: 16px;
-    font-style: normal;
-    -webkit-font-smoothing: antialiased;
-    -webkit-text-stroke-width: 0.2px;
-    -moz-osx-font-smoothing: grayscale;
-    color: #999;
-    width: 0.32rem;
-    height: 0.32rem;
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-box-align: center;
-    -webkit-align-items: center;
-            align-items: center;
-  }
-  .iconfont:before {
-    font-size: 0.36rem;
-  }
-  .icon-del:before {
-    content: "\\e92d";
-  }
-  .icon-right-arrow {
-    -webkit-transform: rotate(180deg);
-            transform: rotate(180deg);
-  }
-  .icon-right-arrow:before {
-    content: "\\e943";
-  }
-  .icon-add:before {
-    content: "\\e93e";
-  }
-  .icon-drop-down:before {
-    content: "\\e945";
-  }
-  .icon-drop-up:before {
-    content: "\\e946";
-  }
-  .icon-drop-up_solid:before {
-    content: "\\e948";
-  }
-  .icon-drop-down_solid:before {
-    content: "\\e949";
-  }
-  .icon-back:before {
-    content: "\\e943";
-  }
-  .icon-subtract_shapeed:before {
-    content: "\\ed1b";
-  }
-  .icon-closed_shapeed:before {
-    content: "\\ed1f";
-  }
-  .icon-close:before {
-    content: "\\e940";
-  }
-  .icon-ranke:before {
-    font-size: 0.34rem;
-    content: "\\e941";
-  }
-  .icon-search:before {
-    content: "\\e92a";
-  }
-  .icon-clock_shape:before {
-    content: "\\ee32";
-  }
-  .icon-left-arrow_solid:before {
-    content: "\\ef8b";
-  }
-  .icon-right-arrow_solid:before {
-    content: "\\ef8c";
-  }
-  .icon-check:before {
-    content: "\\f1c8";
-  }
-  .icon-information {
-    -webkit-margin-end: 0.06rem;
-            margin-inline-end: 0.06rem;
-  }
-  .icon-information:before {
-    content: "\\ef89";
-    font-size: 0.32rem;
-  }
-  .icon-add_line:before {
-    content: "\\f36e";
-  }
-  .icon-subtract_line:before {
-    content: "\\f37c";
-  }
-  .icon-memberinfo:before {
-    content: "\\f37f";
-  }
-  .icon-more_solid:before {
-    content: "\\f433";
-  }
-  .icon-cchat-copy:before {
-    content: "\\f439";
-  }
-  .icon-edit:before {
-    content: "\\e93c";
-  }
-  .btn-default, .btn-primary {
-    background: #FFFFFF;
-    border-radius: 0.08rem;
-    width: 1.52rem!important;
-    height: 0.6rem;
-    min-height: 0.6rem!important;
-    box-sizing: border-box;
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-box-align: center;
-    -webkit-align-items: center;
-            align-items: center;
-    -webkit-box-pack: center;
-    -webkit-justify-content: center;
-            justify-content: center;
-    font-size: 0.26rem;
-    color: #1466DE;
-    font-weight: normal;
-    position: relative;
-    padding: 1px;
-    border: none;
-    overflow: hidden;
-  }
-  .btn-default::after, .btn-primary::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 200%;
-    height: 200%;
-    border: 1px solid #1466DE!important;
-    -webkit-transform: scale(.5);
-    transform: scale(0.5);
-    -webkit-transform-origin: 0 0;
-    transform-origin: 0 0;
-    box-sizing: border-box;
-    border-radius: 8px;
-    overflow: hidden;
-    display: block;
-  }
-  .btn-primary {
-    background: #1466DE;
-    color: #fff;
-  }
-  .btn-refuse {
-    color: #333;
-  }
-  .btn-refuse::after {
-    border-color: #999!important;
-  }
-  .btn-default.middle, .btn-primary.middle {
-    width: 3.3rem!important;
-    font-size: 0.3rem;
-    height: 0.72rem;
-    line-height: 0.72rem;
-  }
-  .btn-default.large, .btn-primary.large {
-    width: 100%!important;
-    border-radius: 0.12rem;
-    height: 0.88rem;
-    line-height: 0.88rem;
-    font-size: 0.34rem;
-    display: -webkit-box!important;
-    display: -webkit-flex!important;
-    display: flex!important;
-  }
-  .btn-default.large::after, .btn-primary.large::after {
-    border-radius: 0.24rem;
-  }
-  .btn-default.small, .btn-primary.small {
-    width: 2.16rem!important;
-    font-size: 0.3rem;
-    height: 0.72rem;
-    line-height: 0.72rem;
-  }
-  .btn-default .iconfont, .btn-primary .iconfont {
-    margin-right: 0.15rem;
-  }
-  .btn-default .iconfont {
-    color: #1466DE;
-  }
-  .btn-primary .iconfont {
-    color: #fff;
-  }
-  .btn-default.disabled, .btn-primary.disabled {
-    background: #eee!important;
-    color: #999!important;
-  }
-  .btn-default.disabled::after, .btn-primary.disabled::after {
-    border-color: #eee!important;
-  }
-  .empty-box {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-box-orient: vertical;
-    -webkit-box-direction: normal;
-    -webkit-flex-direction: column;
-            flex-direction: column;
-    -webkit-box-pack: center;
-    -webkit-justify-content: center;
-            justify-content: center;
-    -webkit-box-align: center;
-    -webkit-align-items: center;
-            align-items: center;
-    margin-top: 2.4rem;
-  }
-  .empty-box .image {
-    width: 3rem;
-    height: 3rem;
-  }
-  .empty-box .text {
-    margin-top: 0.56rem;
-    display: block;
-    font-size: 0.28rem;
-    color: #333;
-    text-align: center;
-  }
-  .border-bottom-1px {
-    padding-bottom: 1px;
-    background-position: center bottom;
-    background-image: -webkit-linear-gradient(top, transparent 50%, #DEDFE0 50%);
-    background-image: linear-gradient(to bottom, transparent 50%, #DEDFE0 50%);
-    background-repeat: no-repeat;
-    background-size: 100% 1px;
-  }
-  .border-all-1px {
-    position: relative;
-    padding: 1px;
-    border: none;
-  }
-  .border-all-1px:before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 200%;
-    height: 200%;
-    border-radius: 8px;
-    border: 1px solid #DEDFE0;
-    -webkit-transform: scale(0.5);
-            transform: scale(0.5);
-    -webkit-transform-origin: 0 0;
-            transform-origin: 0 0;
-    box-sizing: border-box;
-    border-radius: 4px;
-  }
-  .border-all-1px-noleft {
-    position: relative;
-    padding: 1px 0px;
-    border: none;
-  }
-  .border-all-1px-noleft:before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 200%;
-    height: 200%;
-    border-top: 1px solid #DEDFE0;
-    border-bottom: 1px solid #DEDFE0;
-    -webkit-transform: scale(0.5);
-            transform: scale(0.5);
-    -webkit-transform-origin: 0 0;
-            transform-origin: 0 0;
-    box-sizing: border-box;
-  }
-  .view-fixed {
-    overflow: hidden;
-    height: 100%;
+    background: #323239;
+    font-family: "pingFang SC" "pingFang";
   }`));
 
 /***/ }),
 
-/***/ "./example/oa/pages/index/index.js?hash=f8f53b2631c7389810262145c2357935db847400":
-/*!******************************************************************************!*\
-  !*** ./example/oa/pages/index?hash=f8f53b2631c7389810262145c2357935db847400 ***!
-  \******************************************************************************/
+/***/ "./example/miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc":
+/*!************************************************************************************************************!*\
+  !*** ./example/miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc ***!
+  \************************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+const { Component: $Component } = self.MP;
+var Component = $Component || function(){};
+
+Component(
+{
+  is: "/components/add-button/add-button",
+  usingComponents: {"add-button":"/components/add-button/add-button"},
+  render: function() { return __webpack_require__(/*! ./add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./example/miniRoot/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc"); },
+  
+});
+
+
+/***/ }),
+
+/***/ "./example/miniRoot/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc":
+/*!**************************************************************************************************************!*\
+  !*** ./example/miniRoot/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc ***!
+  \**************************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = render;
+
+var _react = __webpack_require__(/*! react */ "react");
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var $createReactElement = _react2.default && _react2.default.createElement;
+var $getComponentEventHandler = function $getComponentEventHandler(instance, name) {
+  return instance.$getComponentEventHandler && instance.$getComponentEventHandler(name);
+};
+var $getEventHandler = function $getEventHandler(instance, name) {
+  return instance.$getEventHandler(name);
+};
+var $getRefHandler = function $getRefHandler(instance, name) {
+  return instance.$getRefHandler(name);
+};
+var $getComRefHandler = function $getComRefHandler(instance, name) {
+  return instance.$getComRefHandler && instance.$getComRefHandler(name);
+};
+
+var $EmptyComponentFactory = self.RMLRuntime.EmptyComponentFactory;
+var getComponentClass = self.MP.getComponentClass;
+
+var $getComponentClass = function $getComponentClass(name) {
+  return getComponentClass && getComponentClass(name);
+};
+
+var Button_ = self.MPUI['button'];
+var Button = Button_ || $EmptyComponentFactory("button");
+var Text_ = self.MPUI['text'];
+var Text = Text_ || $EmptyComponentFactory("text");
+var $iterate = self.RMLRuntime.iterate;
+var $createRoot = self.RMLRuntime.createRoot;
+var $createBlock = self.RMLRuntime.createBlock;
+var $useTemplate = self.RMLRuntime.useTemplate;
+var $createTemplate = self.RMLRuntime.createTemplate;
+var $renderSlot = self.RMLRuntime.renderSlot;
+var $resolveScopedSlots = self.RMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.RMLRuntime.getSJSMember;
+var $toString = self.RMLRuntime.toString;
+var $getLooseDataMember = self.RMLRuntime.getLooseDataMember;
+
+var $templates = {};
+function render(data) {
+  return $createRoot(_react2.default.createElement(
+    Button,
+    {
+      className: "add-button", hoverClass: "none", $ontap: $getEventHandler(this, "onClickMe")
+    },
+    [_react2.default.createElement(
+      Text,
+      {
+        className: "add-icon"
+      },
+      $toString("+")
+    ), _react2.default.createElement(
+      Text,
+      null,
+      $toString(data['text'])
+    )]
+  ));
+};
+
+/***/ }),
+
+/***/ "./example/miniRoot/components/add-button/add-button.wxss":
+/*!****************************************************************!*\
+  !*** ./example/miniRoot/components/add-button/add-button.wxss ***!
+  \****************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+const { StyleSheet } = self.MP;
+const stylesheet = new StyleSheet({ stylePath: 'components/add-button/add-button.wxss' });
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.add-button {
+    display: inline-block;
+    background: none;
+    color: #FFF;
+    border: none;
+    width: 3rem;
+  }
+  .add-icon {
+    font-size: 0.52rem;
+    color: #00FFD6;
+    margin-right: 0.1rem;
+  }
+  .user {
+    font-size: 150px;
+  }`));
+
+/***/ }),
+
+/***/ "./example/miniRoot/pages/add-todo/a.wxml":
+/*!************************************************!*\
+  !*** ./example/miniRoot/pages/add-todo/a.wxml ***!
+  \************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.$ownTemplates = undefined;
+exports.default = render;
+
+var _react = __webpack_require__(/*! react */ "react");
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var $createReactElement = _react2.default && _react2.default.createElement;
+var $getComponentEventHandler = function $getComponentEventHandler(instance, name) {
+  return instance.$getComponentEventHandler && instance.$getComponentEventHandler(name);
+};
+var $getEventHandler = function $getEventHandler(instance, name) {
+  return instance.$getEventHandler(name);
+};
+var $getRefHandler = function $getRefHandler(instance, name) {
+  return instance.$getRefHandler(name);
+};
+var $getComRefHandler = function $getComRefHandler(instance, name) {
+  return instance.$getComRefHandler && instance.$getComRefHandler(name);
+};
+
+var $EmptyComponentFactory = self.RMLRuntime.EmptyComponentFactory;
+var View_ = self.MPUI['view'];
+var View = View_ || $EmptyComponentFactory("view");
+var $iterate = self.RMLRuntime.iterate;
+var $createRoot = self.RMLRuntime.createRoot;
+var $createBlock = self.RMLRuntime.createBlock;
+var $useTemplate = self.RMLRuntime.useTemplate;
+var $createTemplate = self.RMLRuntime.createTemplate;
+var $renderSlot = self.RMLRuntime.renderSlot;
+var $resolveScopedSlots = self.RMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.RMLRuntime.getSJSMember;
+var $toString = self.RMLRuntime.toString;
+var $getLooseDataMember = self.RMLRuntime.getLooseDataMember;
+
+var $template = void 0;
+var $ownTemplates = exports.$ownTemplates = {};
+$template = $ownTemplates["abc"] = function (data) {
+  return _react2.default.createElement(
+    View,
+    null,
+    $toString("21212")
+  );
+};
+
+$template.Component = $createTemplate("abc", $template);
+
+var $templates = {};
+$templates = $ownTemplates;
+function render(data) {
+  return $createRoot(null);
+};
+
+/***/ }),
+
+/***/ "./example/miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!***************************************************************************************************!*\
+  !*** ./example/miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \***************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -486,20 +359,200 @@ const { Page } = self.MP;
 
 Page(
 {
-  pagePath: 'pages/index/index',
-  usingComponents: {},
+  pagePath: 'pages/add-todo/add-todo',
+  usingComponents: {"add-button":"/components/add-button/add-button"},
   
-  render: function() { return __webpack_require__(/*! ./index.wxml?hash=f8f53b2631c7389810262145c2357935db847400 */ "./example/oa/pages/index/index.wxml?hash=f8f53b2631c7389810262145c2357935db847400"); },
-  stylesheet: function() { return __webpack_require__(/*! ./index.wxss?hash=f8f53b2631c7389810262145c2357935db847400 */ "./example/oa/pages/index/index.wxss?hash=f8f53b2631c7389810262145c2357935db847400"); },
+  render: function() { return __webpack_require__(/*! ./add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); },
+  stylesheet: function() { return __webpack_require__(/*! ./add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); },
 });
 
 
 /***/ }),
 
-/***/ "./example/oa/pages/index/index.wxml?hash=f8f53b2631c7389810262145c2357935db847400":
-/*!*****************************************************************************************!*\
-  !*** ./example/oa/pages/index/index.wxml?hash=f8f53b2631c7389810262145c2357935db847400 ***!
-  \*****************************************************************************************/
+/***/ "./example/miniRoot/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!*****************************************************************************************************!*\
+  !*** ./example/miniRoot/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \*****************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = render;
+
+var _react = __webpack_require__(/*! react */ "react");
+
+var _react2 = _interopRequireDefault(_react);
+
+var _a = __webpack_require__(/*! ./a.wxml */ "./example/miniRoot/pages/add-todo/a.wxml");
+
+var _b = __webpack_require__(/*! ./b.wxml */ "./example/miniRoot/pages/add-todo/b.wxml");
+
+var _b2 = _interopRequireDefault(_b);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var $createReactElement = _react2.default && _react2.default.createElement;
+var $getComponentEventHandler = function $getComponentEventHandler(instance, name) {
+  return instance.$getComponentEventHandler && instance.$getComponentEventHandler(name);
+};
+var $getEventHandler = function $getEventHandler(instance, name) {
+  return instance.$getEventHandler(name);
+};
+var $getRefHandler = function $getRefHandler(instance, name) {
+  return instance.$getRefHandler(name);
+};
+var $getComRefHandler = function $getComRefHandler(instance, name) {
+  return instance.$getComRefHandler && instance.$getComRefHandler(name);
+};
+
+var $EmptyComponentFactory = self.RMLRuntime.EmptyComponentFactory;
+var getComponentClass = self.MP.getComponentClass;
+
+var $getComponentClass = function $getComponentClass(name) {
+  return getComponentClass && getComponentClass(name);
+};
+
+var View_ = self.MPUI['view'];
+var View = View_ || $EmptyComponentFactory("view");
+var Input_ = self.MPUI['input'];
+var Input = Input_ || $EmptyComponentFactory("input");
+var AddButton_ = $getComponentClass("/components/add-button/add-button");
+var AddButton = AddButton_ || $EmptyComponentFactory("add-button");
+var $iterate = self.RMLRuntime.iterate;
+var $createRoot = self.RMLRuntime.createRoot;
+var $createBlock = self.RMLRuntime.createBlock;
+var $useTemplate = self.RMLRuntime.useTemplate;
+var $createTemplate = self.RMLRuntime.createTemplate;
+var $renderSlot = self.RMLRuntime.renderSlot;
+var $resolveScopedSlots = self.RMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.RMLRuntime.getSJSMember;
+var $toString = self.RMLRuntime.toString;
+var $getLooseDataMember = self.RMLRuntime.getLooseDataMember;
+
+
+var $templates = {};
+$templates = Object.assign({}, _a.$ownTemplates);
+function render(data) {
+  return $createRoot(_react2.default.createElement(
+    View,
+    {
+      className: "page-add-todo"
+    },
+    [_b2.default.apply(this, arguments), _react2.default.createElement(
+      View,
+      {
+        className: "add-todo"
+      },
+      _react2.default.createElement(Input, {
+        className: "add-todo-input", placeholder: "What needs to be done?", onBlur: "onBlur", value: data['inputValue']
+      })
+    ), _react2.default.createElement(
+      View,
+      {
+        $ontap: $getEventHandler(this, "add")
+      },
+      $toString("12121")
+    ), _react2.default.createElement(
+      View,
+      {
+        $catchtap: $getEventHandler(this, "add")
+      },
+      $toString("12121")
+    ), _react2.default.createElement(
+      View,
+      {
+        className: "todo-footer"
+      },
+      _react2.default.createElement(AddButton, {
+        text: "Add Todo", $onclickme: $getComponentEventHandler(this, "add"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', $parent: this
+      })
+    ), _react2.default.createElement(
+      View,
+      {
+        style: "color: red", $catchtapcapture: $getEventHandler(this, "xxxx")
+      },
+      $toString("capture-catch:tap")
+    ), $useTemplate($templates["abc"], {
+      inputValue: data['inputValue']
+    }, undefined, this)]
+  ));
+};
+
+/***/ }),
+
+/***/ "./example/miniRoot/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!*****************************************************************************************************!*\
+  !*** ./example/miniRoot/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \*****************************************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _app_wxss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../app.wxss */ "./example/miniRoot/app.wxss");
+/* harmony import */ var _components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../components/add-button/add-button.wxss */ "./example/miniRoot/components/add-button/add-button.wxss");
+const { StyleSheet } = self.MP;
+const stylesheet = new StyleSheet({ stylePath: 'pages/add-todo/add-todo.wxss' });
+
+stylesheet.imports(_app_wxss__WEBPACK_IMPORTED_MODULE_0__["default"]);
+
+stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__["default"]);
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.page-add-todo {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+            flex: 1;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+            flex-direction: column;
+  }
+  .add-todo {
+    padding: 40px;
+    -webkit-box-flex: 1;
+    -webkit-flex-grow: 1;
+            flex-grow: 1;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+            justify-content: center;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+            align-items: center;
+  }
+  .add-todo-input {
+    display: block;
+    font-size: 0.5rem;
+    font-weight: 100;
+    padding: 5px 5px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid #DFDFDF;
+    color: #0EFFD6;
+    width: 100%;
+  }
+  .todo-footer {
+    padding: 0.5rem 0 1rem;
+    font-size: 0.48rem;
+    font-weight: 200;
+    text-align: center;
+  }`));
+
+/***/ }),
+
+/***/ "./example/miniRoot/pages/add-todo/b.wxml":
+/*!************************************************!*\
+  !*** ./example/miniRoot/pages/add-todo/b.wxml ***!
+  \************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -534,10 +587,6 @@ var $getComRefHandler = function $getComRefHandler(instance, name) {
 var $EmptyComponentFactory = self.RMLRuntime.EmptyComponentFactory;
 var View_ = self.MPUI['view'];
 var View = View_ || $EmptyComponentFactory("view");
-var Image_ = self.MPUI['image'];
-var Image = Image_ || $EmptyComponentFactory("image");
-var Text_ = self.MPUI['text'];
-var Text = Text_ || $EmptyComponentFactory("text");
 var $iterate = self.RMLRuntime.iterate;
 var $createRoot = self.RMLRuntime.createRoot;
 var $createBlock = self.RMLRuntime.createBlock;
@@ -551,146 +600,212 @@ var $getLooseDataMember = self.RMLRuntime.getLooseDataMember;
 
 var $templates = {};
 function render(data) {
-  var _this = this;
-
-  return $createRoot([data['env'] != 'prod' ? _react2.default.createElement(
+  return $createRoot(_react2.default.createElement(
     View,
-    {
-      className: "envWarn", ontap: $getEventHandler(this, "switchToProd")
-    },
-    [$toString("当前环境： "), $toString(data['env'])]
-  ) : null, _react2.default.createElement(
-    View,
-    {
-      className: "container"
-    },
-    [_react2.default.createElement(
-      View,
-      {
-        className: "box box-first"
-      },
-      $iterate(data['firstEntry'], function (item, index) {
-        return _react2.default.createElement(
-          View,
-          {
-            className: "box-item", ontap: $getEventHandler(_this, "navRouterTo"), 'data-url': $getLooseDataMember([item, "url"])
-          },
-          [_react2.default.createElement(Image, {
-            src: "../../image/icon-" + $getLooseDataMember([item, "id"]) + ".png", className: "box-item-icon"
-          }), _react2.default.createElement(
-            Text,
-            null,
-            $toString($getLooseDataMember([item, "name"]))
-          )]
-        );
-      })
-    ), _react2.default.createElement(
-      View,
-      {
-        className: "box box-second"
-      },
-      $iterate(data['secondEntry'], function (item, index) {
-        return _react2.default.createElement(
-          View,
-          {
-            className: "box-item", ontap: $getEventHandler(_this, "navRouterTo"), 'data-url': $getLooseDataMember([item, "url"]), 'data-key': $getLooseDataMember([item, "key"])
-          },
-          [$getLooseDataMember([item, "id"]) ? _react2.default.createElement(Image, {
-            src: "../../image/icon-" + $getLooseDataMember([item, "id"]) + ".png", className: "box-item-icon"
-          }) : _react2.default.createElement(Image, {
-            src: "", className: "box-item-icon"
-          }), _react2.default.createElement(
-            Text,
-            null,
-            $toString($getLooseDataMember([item, "name"]))
-          )]
-        );
-      })
-    )]
-  )]);
+    null,
+    $toString("include")
+  ));
 };
 
 /***/ }),
 
-/***/ "./example/oa/pages/index/index.wxss?hash=f8f53b2631c7389810262145c2357935db847400":
-/*!*****************************************************************************************!*\
-  !*** ./example/oa/pages/index/index.wxss?hash=f8f53b2631c7389810262145c2357935db847400 ***!
-  \*****************************************************************************************/
+/***/ "./example/miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!*********************************************************************************************!*\
+  !*** ./example/miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \*********************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+const { Page } = self.MP;
+
+
+Page(
+{
+  pagePath: 'pages/todos/todos',
+  usingComponents: {"add-button":"/components/add-button/add-button"},
+  
+  render: function() { return __webpack_require__(/*! ./todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/todos/todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); },
+  stylesheet: function() { return __webpack_require__(/*! ./todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/todos/todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); },
+});
+
+
+/***/ }),
+
+/***/ "./example/miniRoot/pages/todos/todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!***********************************************************************************************!*\
+  !*** ./example/miniRoot/pages/todos/todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \***********************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = render;
+
+var _react = __webpack_require__(/*! react */ "react");
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var $createReactElement = _react2.default && _react2.default.createElement;
+var $getComponentEventHandler = function $getComponentEventHandler(instance, name) {
+  return instance.$getComponentEventHandler && instance.$getComponentEventHandler(name);
+};
+var $getEventHandler = function $getEventHandler(instance, name) {
+  return instance.$getEventHandler(name);
+};
+var $getRefHandler = function $getRefHandler(instance, name) {
+  return instance.$getRefHandler(name);
+};
+var $getComRefHandler = function $getComRefHandler(instance, name) {
+  return instance.$getComRefHandler && instance.$getComRefHandler(name);
+};
+
+var $EmptyComponentFactory = self.RMLRuntime.EmptyComponentFactory;
+var getComponentClass = self.MP.getComponentClass;
+
+var $getComponentClass = function $getComponentClass(name) {
+  return getComponentClass && getComponentClass(name);
+};
+
+var View_ = self.MPUI['view'];
+var View = View_ || $EmptyComponentFactory("view");
+var Image_ = self.MPUI['image'];
+var Image = Image_ || $EmptyComponentFactory("image");
+var CheckboxGroup_ = self.MPUI['checkbox-group'];
+var CheckboxGroup = CheckboxGroup_ || $EmptyComponentFactory("checkbox-group");
+var Label_ = self.MPUI['label'];
+var Label = Label_ || $EmptyComponentFactory("label");
+var Checkbox_ = self.MPUI['checkbox'];
+var Checkbox = Checkbox_ || $EmptyComponentFactory("checkbox");
+var Text_ = self.MPUI['text'];
+var Text = Text_ || $EmptyComponentFactory("text");
+var AddButton_ = $getComponentClass("/components/add-button/add-button");
+var AddButton = AddButton_ || $EmptyComponentFactory("add-button");
+var $iterate = self.RMLRuntime.iterate;
+var $createRoot = self.RMLRuntime.createRoot;
+var $createBlock = self.RMLRuntime.createBlock;
+var $useTemplate = self.RMLRuntime.useTemplate;
+var $createTemplate = self.RMLRuntime.createTemplate;
+var $renderSlot = self.RMLRuntime.renderSlot;
+var $resolveScopedSlots = self.RMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.RMLRuntime.getSJSMember;
+var $toString = self.RMLRuntime.toString;
+var $getLooseDataMember = self.RMLRuntime.getLooseDataMember;
+
+var $templates = {};
+function render(data) {
+  return $createRoot(_react2.default.createElement(
+    View,
+    {
+      className: "page-todos"
+    },
+    [_react2.default.createElement(
+      View,
+      {
+        className: "user"
+      },
+      [_react2.default.createElement(Image, {
+        className: "avatar", src: $getLooseDataMember([data['user'], "avatar"]) || '../../assets/logo.png', backgroundSize: "cover"
+      }), _react2.default.createElement(
+        View,
+        {
+          className: "nickname"
+        },
+        [$toString($getLooseDataMember([data['user'], "nickName"]) && $getLooseDataMember([data['user'], "nickName"]) + '\'s' || 'mp'), $toString(" Todo List")]
+      ), _react2.default.createElement(
+        View,
+        {
+          className: "test"
+        },
+        $toString("Todo List")
+      )]
+    ), _react2.default.createElement(
+      View,
+      {
+        className: "todo-items"
+      },
+      _react2.default.createElement(
+        CheckboxGroup,
+        {
+          className: "todo-items-group", $onchange: $getEventHandler(this, "onTodoChanged")
+        },
+        $iterate(data['todos'], function (item, index) {
+          return _react2.default.createElement(
+            Label,
+            {
+              key: item, className: "todo-item " + ($getLooseDataMember([item, "completed"]) ? 'checked' : '')
+            },
+            [_react2.default.createElement(Checkbox, {
+              className: "todo-item-checkbox", value: $getLooseDataMember([item, "text"]), checked: $getLooseDataMember([item, "completed"])
+            }), _react2.default.createElement(
+              Text,
+              {
+                className: "todo-item-text"
+              },
+              $toString($getLooseDataMember([item, "text"]))
+            )]
+          );
+        })
+      )
+    ), _react2.default.createElement(
+      View,
+      {
+        className: "todo-footer"
+      },
+      [_react2.default.createElement(AddButton, {
+        text: data['text'], $ontap: $getEventHandler(this, "clickCom"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', $parent: this
+      }), _react2.default.createElement(AddButton, {
+        $onclickme: $getComponentEventHandler(this, "addTodo"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', $parent: this
+      })]
+    ), _react2.default.createElement(
+      View,
+      {
+        $ontap: $getEventHandler(this, "clickParent")
+      },
+      [_react2.default.createElement(
+        View,
+        {
+          className: "jyf", $catchtapcapture: $getEventHandler(this, "captureClickChild")
+        },
+        $toString("capture child")
+      ), _react2.default.createElement(
+        View,
+        {
+          $ontap: $getEventHandler(this, "clickChild")
+        },
+        $toString("child")
+      )]
+    )]
+  ));
+};
+
+/***/ }),
+
+/***/ "./example/miniRoot/pages/todos/todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!***********************************************************************************************!*\
+  !*** ./example/miniRoot/pages/todos/todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \***********************************************************************************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _app_wxss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../app.wxss */ "./example/oa/app.wxss");
+/* harmony import */ var _app_wxss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../app.wxss */ "./example/miniRoot/app.wxss");
+/* harmony import */ var _components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../components/add-button/add-button.wxss */ "./example/miniRoot/components/add-button/add-button.wxss");
 const { StyleSheet } = self.MP;
-const stylesheet = new StyleSheet({ stylePath: 'pages/index/index.wxss' });
+const stylesheet = new StyleSheet({ stylePath: 'pages/todos/todos.wxss' });
 
 stylesheet.imports(_app_wxss__WEBPACK_IMPORTED_MODULE_0__["default"]);
-/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.envWarn {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    margin: 0.2rem 0.2rem 0 0.2rem;
-    padding: 0.24rem;
-    color: #fff;
-    background: steelblue;
-    -webkit-box-pack: center;
-    -webkit-justify-content: center;
-            justify-content: center;
-    border-radius: 0.16rem;
-  }
-  .box {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    background: #fff;
-    width: 100%;
-    border-radius: 0.16rem;
-    overflow: hidden;
-  }
-  .box+.box {
-    margin-top: 0.16rem;
-  }
-  .box-item {
-    -webkit-box-flex: 1;
-    -webkit-flex: 1;
-            flex: 1;
-    -webkit-box-align: center;
-    -webkit-align-items: center;
-            align-items: center;
-    color: #333333;
-    text-align: center;
-  }
-  .box-first {
-    padding: 0.28rem 0;
-  }
-  .box-first .box-item {
-    font-size: 0.32rem;
-    line-height: 0.4rem;
-    letter-spacing: -0.0077rem;
-  }
-  .box-first .box-item:first-of-type {
-    background-image: -webkit-linear-gradient(left, transparent 50%, #EBECED 50%);
-    background-image: linear-gradient(to right, transparent 50%, #EBECED 50%);
-    background-size: 1px 100%;
-    background-position: right center;
-    background-repeat: no-repeat;
-    padding-right: 1px;
-  }
-  .box-first .box-item-icon {
-    width: 0.88rem;
-    height: 0.88rem;
-    vertical-align: middle;
-    margin-right: 0.24rem;
-  }
-  .box-second {
-    height: 4.68rem;
-    -webkit-box-orient: horizontal;
-    -webkit-box-direction: normal;
-    -webkit-flex-flow: row wrap;
-            flex-flow: row wrap;
-  }
-  .box-second .box-item {
+
+stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__["default"]);
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.page-todos {
     display: -webkit-box;
     display: -webkit-flex;
     display: flex;
@@ -698,51 +813,130 @@ stylesheet.imports(_app_wxss__WEBPACK_IMPORTED_MODULE_0__["default"]);
     -webkit-box-direction: normal;
     -webkit-flex-direction: column;
             flex-direction: column;
-    -webkit-box-pack: center;
-    -webkit-justify-content: center;
-            justify-content: center;
+    width: 100%;
+    max-height: 100vh;
+  }
+  .user {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-shrink: 0;
+            flex-shrink: 0;
+    padding: 30px;
+    color: #FFF;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+            flex-direction: column;
     -webkit-box-align: center;
     -webkit-align-items: center;
             align-items: center;
-    width: 2.34rem;
-    height: 2.34rem;
-    font-size: 0.28rem;
-    letter-spacing: 0;
-    line-height: 0.36rem;
-    -webkit-box-flex: 0;
-    -webkit-flex: 0 0 33%;
-            flex: 0 0 33%;
-    box-sizing: border-box;
+  }
+  .avatar {
+    width: 1.3rem;
+    height: 1.3rem;
+    border-radius: 50%;
+    background-color: #FFF;
+    -webkit-align-self: center;
+            align-self: center;
+  }
+  .nickname {
+    padding-top: 0.4rem;
+    text-align: center;
+    font-size: 0.4rem;
+    font-weight: 100;
+  }
+  .test {
+    font-size: 20px;
+  }
+  .todo-items {
+    -webkit-box-flex: 1;
+    -webkit-flex-grow: 1;
+            flex-grow: 1;
+    font-size: 0.34rem;
+    padding: 0.5rem 1.2rem;
+    color: #0EFFD6;
+    overflow: auto;
+  }
+  .todo-items-group {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+            flex-direction: column;
+  }
+  .todo-item {
     position: relative;
-    padding: 1px;
-    border: none;
-  }
-  .box-second .box-item:before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 200%;
-    height: 200%;
-    border: 1px solid #EBECED;
-    border-width: 0 1px 1px 0;
-    -webkit-transform: scale(0.5);
-            transform: scale(0.5);
-    -webkit-transform-origin: 0 0;
-            transform-origin: 0 0;
+    margin-bottom: 0.5rem;
+    padding-left: 0.8rem;
+    line-height: 0.7rem;
+    height: 0.8rem;
     box-sizing: border-box;
-    border-radius: 4px;
+    border: 2px solid rgb(14, 255, 214);
+    border-radius: 1rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-transition: border 0.2s;
+    transition: border 0.2s;
   }
-  .box-second .box-item:nth-child(3n):before {
-    border-right: none;
+  .todo-item:last-child {
+    margin-bottom: 0;
   }
-  .box-second .box-item:nth-child(n+4):before {
-    border-bottom: none;
+  .todo-item::before {
+    content: '';
+    position: absolute;
+    left: 0.12rem;
+    margin-right: 0.2rem;
+    width: 0.45rem;
+    height: 0.45rem;
+    background-color: rgba(14, 222, 255, 0.3);
+    border-radius: 50%;
+    top: 50%;
+    -webkit-transform: translateY(-50%);
+            transform: translateY(-50%);
+    -webkit-transition: background-color 0.2s;
+    transition: background-color 0.2s;
   }
-  .box-second .box-item-icon {
-    width: 0.76rem;
-    height: 0.76rem;
-    margin-bottom: 0.28rem;
+  .todo-item::after {
+    content: '';
+    position: absolute;
+    left: 0.29rem;
+    width: 0.08rem;
+    height: 0.18rem;
+    top: 50%;
+    -webkit-transform: translateY(-60%) rotate(38deg);
+            transform: translateY(-60%) rotate(38deg);
+    border: 0.04rem solid #FFF;
+    border-width: 0 0.04rem 0.04rem 0;
+    opacity: 0;
+    -webkit-transition: opacity 0.2s;
+    transition: opacity 0.2s;
+  }
+  .todo-item-checkbox {
+    display: none;
+  }
+  .checked .todo-item-text {
+    text-decoration: line-through;
+    color: #1AA0B8;
+  }
+  .checked.todo-item {
+    border: 2px solid rgba(14, 222, 255, 0.2);
+  }
+  .checked.todo-item::before {
+    background-color: rgba(14, 222, 255, 0.2);
+  }
+  .checked.todo-item::after {
+    opacity: 1;
+  }
+  .todo-footer {
+    -webkit-flex-shrink: 0;
+            flex-shrink: 0;
+    padding: 0.5rem 0 1rem;
+    font-size: 0.48rem;
+    font-weight: 200;
+    text-align: center;
   }`));
 
 /***/ }),

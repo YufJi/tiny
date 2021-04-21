@@ -1,19 +1,19 @@
 {
   "app": {
     "pages": [
-      "pages/index/index"
+      "pages/todos/todos",
+      "pages/add-todo/add-todo"
     ],
     "window": {
-      "backgroundTextStyle": "light",
-      "navigationBarBackgroundColor": 16777215,
-      "navigationBarTitleText": "OA",
-      "navigationBarTextStyle": "black",
-      "backgroundColor": 16316664
+      "navigationBarTitleText": "哈哈哈"
     },
-    "style": "v2",
+    "usingComponents": {
+      "add-button": "/components/add-button/add-button"
+    },
     "sitemapLocation": "sitemap.json"
   },
-  "pages/index/index": {
-    "navigationBarTitleText": "OA"
-  }
+  "pages/todos/todos": {
+    "navigationBarTitleText": "Index"
+  },
+  "pages/add-todo/add-todo": {}
 }

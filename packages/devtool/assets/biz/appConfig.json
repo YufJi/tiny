@@ -1,21 +1,17 @@
 {
   "window": {
-    "backgroundTextStyle": "light",
-    "navigationBarBackgroundColor": 16777215,
-    "navigationBarTitleText": "OA",
-    "navigationBarTextStyle": "black",
-    "backgroundColor": 16316664
+    "navigationBarTitleText": "哈哈哈"
   },
   "pages": [
-    "pages/index/index"
+    "pages/todos/todos",
+    "pages/add-todo/add-todo"
   ],
   "launchParams": {
-    "pages/index/index": {
-      "backgroundTextStyle": "light",
-      "navigationBarBackgroundColor": 16777215,
-      "navigationBarTitleText": "OA",
-      "navigationBarTextStyle": "black",
-      "backgroundColor": 16316664
+    "pages/todos/todos": {
+      "navigationBarTitleText": "Index"
+    },
+    "pages/add-todo/add-todo": {
+      "navigationBarTitleText": "哈哈哈"
     }
   },
   "prerenderPage": "render.html"

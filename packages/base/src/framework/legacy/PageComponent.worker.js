@@ -180,8 +180,6 @@ PageComponent.prototype = {
   startRender(isRefresh) {
     const { publicInstance, id } = this;
 
-    console.log('publicInstance', publicInstance);
-
     const config = {};
     publicInstanceMethods.forEach((k) => {
       const hookFn = publicInstance[k];

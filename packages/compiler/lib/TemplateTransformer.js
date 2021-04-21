@@ -4,7 +4,7 @@ const path = require('path');
 const resolve = require('resolve');
 const fs = require('fs');
 const defaultLib = require('./defaultLib');
-const { toComponentName } = require('./utils');
+const { toComponentName, isCommonEvent } = require('./utils');
 const {
   getPluginPath,
   PLUGIN_PRIVATE_PREFIX,
@@ -88,19 +88,19 @@ class TemplateTransformer extends Transformer {
         }
 
         /* 处理事件绑定模版 */
-        const eventReg = /^(bind:?|catch:?|capture-bind:|capture-catch:)([A-Za-z_]+)/;
-        const isEvent = attrName.match(eventReg);
+        const xmlEventReg = /^(bind:?|catch:?|capture-bind:|capture-catch:)([A-Za-z_]+)/;
+        const isEvent = attrName.match(xmlEventReg);
 
         if (isEvent) {
-          attrName = attrName.replace(eventReg, ($0, $1, $2) => {
+          attrName = attrName.replace(xmlEventReg, ($0, $1, $2) => {
             if (/^bind:?$/.test($1)) {
-              return `on${$2}`;
+              return `$on${$2}`;
             } else if (/^catch:?$/.test($1)) {
-              return `catch${$2}`;
+              return `$catch${$2}`;
             } else if (/^capture-bind:$/.test($1)) {
-              return `on${$2}capture`;
+              return `$on${$2}capture`;
             } else if (/^capture-catch:$/.test($1)) {
-              return `catch${$2}capture`;
+              return `$catch${$2}capture`;
             } else {
               return $0;
             }
@@ -111,10 +111,19 @@ class TemplateTransformer extends Transformer {
             attrName,
           });
 
-          const handleFn = (usingComponents && usingComponents[node.name])
-            || node.name === 'component'
-            ? '$getComponentEventHandler'
-            : '$getEventHandler';
+          let handleFn;
+
+          /* 是自定义组件 */
+          if ((usingComponents && usingComponents[node.name]) || node.name === 'component') {
+            /* 普通事件 */
+            if (isCommonEvent(attrName)) {
+              handleFn = '$getEventHandler';
+            } else {
+              handleFn = '$getComponentEventHandler';
+            }
+          } else {
+            handleFn = '$getEventHandler';
+          }
 
           transformedAttrs[attrName] = `{${handleFn}(this, ${handlerFn})}`;
           return false;
@@ -140,6 +149,8 @@ class TemplateTransformer extends Transformer {
           transformedAttrs.$isCustomComponent = '{this.$isCustomComponent}';
           // for devtools inspect
           transformedAttrs[tagAttrName] = `"${tag}"`;
+          // 添加$parent属性
+          transformedAttrs['$parent'] = '{this}';
         } else if (this.config.pluginId || supportSjsHandler) {
           // for plugin auth
           transformedAttrs[ownerAttrName] = '{this}';

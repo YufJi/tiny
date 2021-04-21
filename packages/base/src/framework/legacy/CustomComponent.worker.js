@@ -17,7 +17,8 @@ import {
   DiffKeyDeleted,
 } from '@/utils/consts';
 import {
-  eventReg
+  eventReg,
+  commonEventReg,
 } from '@/utils/reg';
 
 import getComponentProp from '../utils/getComponentProp';
@@ -51,8 +52,8 @@ export default function Component(setupConfig, currentComponentConfig) {
       },
       triggerEvent: {
         value: function value(eventName, ...args) {
-          if(typeof self.triggerEventHandlers[`on${eventName}`] === 'function') {
-            return self.triggerEventHandlers[`on${eventName}`](...args);
+          if(typeof self.triggerEventHandlers[`$on${eventName}`] === 'function') {
+            return self.triggerEventHandlers[`$on${eventName}`](...args);
           }
         },
       },
@@ -146,7 +147,8 @@ export default function Component(setupConfig, currentComponentConfig) {
     normalizeProps(oldProps) {
       const newProps = { ...oldProps };
       objectKeys(oldProps).forEach((p) => {
-        if (p.match(eventReg)) {
+        /* 自定义事件 */
+        if (eventReg.test(p) && !commonEventReg.test(p)) {
           newProps[p] = this.getTriggerEventHandler(p, oldProps[p]);
         }
       });

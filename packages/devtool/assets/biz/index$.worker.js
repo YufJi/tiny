@@ -23,8 +23,10 @@ if(MP.registerApp) {
 
 
 function success() {
-require('/Users/jiyufeng/Documents/demo/tiny-v1/packages/compiler/example/oa/app');
-require('/Users/jiyufeng/Documents/demo/tiny-v1/packages/compiler/example/oa/pages/index/index?hash=f8f53b2631c7389810262145c2357935db847400');
+require('/Users/jiyufeng/Documents/demo/tiny-v1/packages/compiler/example/miniRoot/app');
+require('/Users/jiyufeng/Documents/demo/tiny-v1/packages/compiler/example/miniRoot/components/add-button/add-button?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc');
+require('/Users/jiyufeng/Documents/demo/tiny-v1/packages/compiler/example/miniRoot/pages/todos/todos?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219');
+require('/Users/jiyufeng/Documents/demo/tiny-v1/packages/compiler/example/miniRoot/pages/add-todo/add-todo?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219');
 }
 self.bootstrapApp ? self.bootstrapApp({ success }) : success();
 }

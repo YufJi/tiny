@@ -8,12 +8,16 @@ Component({
   },
 
   data: {
-    // text: 'jyf',
+    text: 'jyf',
     name: 'xxxxx',
   },
 
   methods: {
     onClickMe() {
+      this.setData({
+        text: 'xhq'
+      })
+      console.log('properties',this.properties);
       this.triggerEvent('clickme')
     },
   },

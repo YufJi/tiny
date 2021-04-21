@@ -3,7 +3,9 @@ const app = getApp();
 
 Page({
   // 声明页面数据
-  data: {},
+  data: {
+    text: 'abc'
+  },
   // 监听生命周期回调 onLoad
   onLoad() {
     // 获取用户信息并存储数据
@@ -55,6 +57,9 @@ Page({
     console.log('captureClickChild');
   },
   clickCom() {
+    this.setData({
+      text: 'def',
+    })
     console.log('clickCom');
   }
 });

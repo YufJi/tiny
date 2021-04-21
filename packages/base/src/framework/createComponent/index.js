@@ -139,6 +139,7 @@ export default function createComponent(config = {}) {
           dataset: this.getDataset(),
         };
       },
+      /* 格式化event对象 */
       getNormalizedEvent(eventParam, other) {
         let eventType = eventParam;
         let srcEvent;

@@ -8,7 +8,6 @@ import RefMixin from '../mixins/RefMixin';
 import { setCurrentPageImpl } from '../App';
 import EventHub from '../EventHub';
 import { setComponentsConfig } from './CustomComponent';
-import getComponentClass from '../ComponentRegistry/getComponentClass';
 import addEvents from '@/utils/addEvents';
 import {
   PendingKeyType,
@@ -53,7 +52,6 @@ function getRender(pagePath) {
   const setupConfig = $global.pagesConfig[pagePath].system;
   const _render = setupConfig.render;
   // lazy require xml and css
-
   let render = _render();
   render = render.default || render;
   renderCache[pagePath] = render;

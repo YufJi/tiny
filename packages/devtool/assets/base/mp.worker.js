@@ -4320,14 +4320,14 @@ function Component(setupConfig, currentComponentConfig) {
       },
       triggerEvent: {
         value: function value(eventName) {
-          if (typeof self.triggerEventHandlers["on".concat(eventName)] === 'function') {
+          if (typeof self.triggerEventHandlers["$on".concat(eventName)] === 'function') {
             var _self$triggerEventHan;
 
             for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
               args[_key - 1] = arguments[_key];
             }
 
-            return (_self$triggerEventHan = self.triggerEventHandlers)["on".concat(eventName)].apply(_self$triggerEventHan, args);
+            return (_self$triggerEventHan = self.triggerEventHandlers)["$on".concat(eventName)].apply(_self$triggerEventHan, args);
           }
         }
       }
@@ -4428,7 +4428,8 @@ function Component(setupConfig, currentComponentConfig) {
       var newProps = _objectSpread({}, oldProps);
 
       Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__["default"])(oldProps).forEach(function (p) {
-        if (p.match(_utils_reg__WEBPACK_IMPORTED_MODULE_7__["eventReg"])) {
+        /* 自定义事件 */
+        if (_utils_reg__WEBPACK_IMPORTED_MODULE_7__["eventReg"].test(p) && !_utils_reg__WEBPACK_IMPORTED_MODULE_7__["commonEventReg"].test(p)) {
           newProps[p] = _this.getTriggerEventHandler(p, oldProps[p]);
         }
       });
@@ -4746,7 +4747,6 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
   startRender: function startRender(isRefresh) {
     var publicInstance = this.publicInstance,
         id = this.id;
-    console.log('publicInstance', publicInstance);
     var config = {};
     publicInstanceMethods.forEach(function (k) {
       var hookFn = publicInstance[k];
@@ -6950,13 +6950,15 @@ function objectKeys(obj) {
 /*!**************************!*\
   !*** ./src/utils/reg.js ***!
   \**************************/
-/*! exports provided: eventReg */
+/*! exports provided: eventReg, commonEventReg */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "eventReg", function() { return eventReg; });
-var eventReg = /^(on|catch)([A-Za-z_]+)(capture)?$/;
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "commonEventReg", function() { return commonEventReg; });
+var eventReg = /^\$(on|catch)([A-Za-z_]+)(capture)?$/;
+var commonEventReg = /^\$(on|catch)(tap|touchstart|touchmove|touchend|touchcancel|transitionend|animationstart|animationiteration|animationend)(capture)?$/;
 
 /***/ }),
 
