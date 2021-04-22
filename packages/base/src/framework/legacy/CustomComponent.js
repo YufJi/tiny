@@ -7,10 +7,8 @@ import {
   ComponentKeyId,
   ComponentKeyIs,
   ComponentKeyDiffProps,
-  ComponentKeyOwnerId,
   DiffKeyUpdated,
   DiffKeyDeleted,
-  ComponentKeyName,
 } from '@/utils/consts';
 import {
   eventReg,
@@ -90,9 +88,6 @@ export default (is) => createReactClass({
     BasicEventMixin(),
     PureRenderMixin,
   ],
-  // getDefaultProps() {
-  //   return getComponentConfig(is).properties || {};
-  // },
   getInitialState() {
     const { __page } = this.props;
     this.is = is;
@@ -118,7 +113,7 @@ export default (is) => createReactClass({
     };
   },
   componentDidMount() {
-    this.registryEventListener();
+    this.registryEventListeners();
     this.recordMounted(this.diffProps(getComponentConfig(this.is).properties || {}), true);
   },
   UNSAFE_componentWillReceiveProps(nextProps) {
@@ -165,6 +160,7 @@ export default (is) => createReactClass({
     const { __page } = this.props;
     delete __page.componentInstances[this.id];
     unmountedComponents.push(this.id);
+    this.removeAllEventListeners();
   },
   recordMounted(diffProps, init) {
     const info = {
@@ -244,12 +240,14 @@ export default (is) => createReactClass({
     const { __page } = this.props;
 
     if (!eventHandlers[name]) {
-      const handle = eventHandlers[name] = function (...args) {
+      const handle = function (...args) {
         __page.callRemote.apply(__page, ['self', 'triggerComponentEvent', _this.id, name].concat(args));
       };
       handle.handleName = name;
       handle.type = 'component';
       handle.id = this.id;
+
+      eventHandlers[name] = handle;
     }
     return eventHandlers[name];
   },
@@ -306,13 +304,23 @@ export default (is) => createReactClass({
       }
     }
   },
-  registryEventListener() {
+  registryEventListeners() {
     const { props } = this;
     for (const key in props) {
       if (Object.hasOwnProperty.call(props, key)) {
         /* 自定义事件 */
         if (eventReg.test(key) && !commonBubblesEventsReg.test(key)) {
           this.allCustomEvents[key] = this.addCustomEvent(key, props[key]);
+        }
+      }
+    }
+  },
+  removeAllEventListeners() {
+    const events = this.allCustomEvents;
+    for (const key in events) {
+      if (Object.hasOwnProperty.call(events, key)) {
+        if (events[key].remove) {
+          events[key].remove();
         }
       }
     }

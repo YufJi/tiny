@@ -751,7 +751,7 @@ function render(data) {
         className: "todo-footer"
       },
       [_react2.default.createElement(AddButton, {
-        text: data['text'], bind$change: $getEventHandler(this, "clickCom"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', __owner: this, __page: this.$isCustomComponent ? this.props['__page'] : this
+        text: data['text'], bind$click_me: $getEventHandler(this, "clickCom"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', __owner: this, __page: this.$isCustomComponent ? this.props['__page'] : this
       }), _react2.default.createElement(AddButton, {
         xx: "xxx", text: data['text'], bind$clickme: $getEventHandler(this, data['fn']), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', __owner: this, __page: this.$isCustomComponent ? this.props['__page'] : this
       })]

@@ -1,6 +1,5 @@
-
 export default ({
-  isValidAnimation: function isValidAnimation(anim) {
+  isValidAnimation(anim) {
     const animation = anim || this.props.animation;
     return animation && animation.length;
   },
@@ -10,7 +9,7 @@ export default ({
       this.doAnimation();
     }
   },
-  componentDidUpdate: function componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps) {
     if (this.props.animation !== prevProps.animation) {
       if (this.isValidAnimation(prevProps.animation)) {
         this.stopAnimation();
@@ -20,10 +19,10 @@ export default ({
       }
     }
   },
-  componentWillUnmount: function componentWillUnmount() {
+  componentWillUnmount() {
     this.deleteAllAnimTimers();
   },
-  createAnimTimeout: function createAnimTimeout(fn, ms) {
+  createAnimTimeout(fn, ms) {
     const _this = this;
 
     var timer = setTimeout(() => {
@@ -38,7 +37,7 @@ export default ({
     });
     this._animTimer = [];
   },
-  deleteAnimTimer: function deleteAnimTimer(t) {
+  deleteAnimTimer(t) {
     const index = this._animTimer.indexOf(t);
     if (index !== -1) {
       clearTimeout(this._animTimer[index]);

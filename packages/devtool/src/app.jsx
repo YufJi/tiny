@@ -93,7 +93,6 @@ class App extends Component {
   }
 
   render() {
-    const { navConfig } = this.props;
     const { mpVisible } = this.state;
 
     return (
@@ -104,7 +103,7 @@ class App extends Component {
           <Nav hideMP={this.hideMP} />
           <div id="pageFrames" className={`${style.pageFrames} flex-1 flex-c`}>
             <div id="tabFrames" className={`${style.tabFrames} flex-1`} />
-            <div className="tabs" className={`${style.tabs} flex-r`}>
+            <div className={`${style.tabs} flex-r`}>
               {/* <div>
                 <div>icon</div>
                 <div>text</div>

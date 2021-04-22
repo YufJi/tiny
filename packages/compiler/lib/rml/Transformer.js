@@ -1,4 +1,3 @@
-
 const assign = require('object-assign');
 const DomHandler = require('domhandler');
 const HtmlParser = require('./htmlparser2/Parser');
@@ -11,7 +10,7 @@ const {
   getRawJson,
   validAKeyName,
   validVariableName,
-  reportError
+  reportError,
 } = require('./utils');
 const { processSJSImport, processComponentImport } = require('./processImport');
 const trimForComponent = require('./prune');
@@ -20,7 +19,6 @@ const IMPORT = 'import';
 const cwd = process.cwd();
 const TOP_LEVEL = 4;
 const HEADER = 'export default function render(data) {';
-const RUNTIME_PACKAGE = 'rml-runtime/es';
 
 function defaultImportComponent() {
   return false;
@@ -89,9 +87,9 @@ function MLTransformer(template, _config) {
   config.projectRoot = config.projectRoot || cwd;
   config.usingComponents = config.usingComponents || {};
 
-  const templateNamespace = config.templateNamespace;
+  const { templateNamespace } = config;
 
-  this.templateRuntimeModule = config.templateRuntimeModule || RUNTIME_PACKAGE;
+  this.templateRuntimeModule = config.templateRuntimeModule;
 
   this.IF_ATTR_NAME = `${templateNamespace}:if`;
   this.ELIF_ATTR_NAME = `${templateNamespace}:elif`;
@@ -525,7 +523,7 @@ assign(MLTransformer.prototype, {
       this.pushState();
 
       this.scope.push(this._makeScope({
-        [slotScope]: 1
+        [slotScope]: 1,
       }));
       this.generateCodeForTag(node, TOP_LEVEL);
 
@@ -627,7 +625,7 @@ assign(MLTransformer.prototype, {
 
       this.scope.push(this._makeScope({
         [indexName]: 1,
-        [itemName]: 1
+        [itemName]: 1,
       }));
       this.pushCode(`$iterate(${forExp}, (${itemName}, ${indexName}) => {`);
       level += 2;
@@ -761,7 +759,7 @@ assign(MLTransformer.prototype, {
     }
   },
   transform(done) {
-    const { code, importTplDeps, componentDeps, subTemplatesCode, includeTplDeps, templateRuntimeModule  } = this;
+    const { code, importTplDeps, componentDeps, subTemplatesCode, includeTplDeps, templateRuntimeModule } = this;
     let { header } = this;
     const { importComponent = defaultImportComponent, strictDataMember, pureTemplateFactory } = this.config;
 
@@ -824,7 +822,7 @@ assign(MLTransformer.prototype, {
 
       if (strictDataMember === false) {
         header.push(
-          `const $getLooseDataMember = ${templateRuntimeModule}.getLooseDataMember;`
+          `const $getLooseDataMember = ${templateRuntimeModule}.getLooseDataMember;`,
         );
       }
 
@@ -849,7 +847,6 @@ assign(MLTransformer.prototype, {
         const _subTemplatesCode$nam = subTemplatesCode[name];
         const templateCode = _subTemplatesCode$nam.code;
         const { node } = _subTemplatesCode$nam;
-
 
         header.push(`$template = $ownTemplates[${toLiteralString(name)}] = function (data) {`);
         this.pushHeaderCode('return (');

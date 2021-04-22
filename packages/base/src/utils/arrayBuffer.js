@@ -1,10 +1,9 @@
-
 function encode(str) {
   let encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
   const string = String(str);
   let result = '';
   let currentIndex = 0;
-  let sum ;
+  let sum;
   while (string.charAt(0 | currentIndex) || (encodings = '=', currentIndex % 1)) {
     currentIndex += 0.75; // 每次移动3/4个位置
     const currentCode = string.charCodeAt(currentIndex); // 获取code point
@@ -45,7 +44,7 @@ export function arrayBufferToBase64(buffer) {
   let result = '';
   const uintArray = new Uint8Array(buffer);
   const { byteLength } = uintArray;
-  for (let i = 0; i < byteLength; i++) {
+  for (let i = 0; i < byteLength; i+=1) {
     result += String.fromCharCode(uintArray[i]);
   }
   return encode(result);
@@ -54,7 +53,7 @@ export function base64ToArrayBuffer(base64) {
   const string = decode(base64);
   const { length } = string;
   const uintArray = new Uint8Array(length);
-  for (let i = 0; i < length; i++) {
+  for (let i = 0; i < length; i+=1) {
     uintArray[i] = string.charCodeAt(i);
   }
   return uintArray.buffer;

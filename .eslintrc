@@ -10,6 +10,7 @@
     "react/jsx-props-no-spreading": "off",
     "react/react-in-jsx-scope": "off",
 
-    "class-methods-use-this": "off"
+    "class-methods-use-this": "off",
+    "no-plusplus": "warn"
   }
 }

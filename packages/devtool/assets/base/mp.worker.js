@@ -4305,7 +4305,7 @@ function Component(setupConfig, currentComponentConfig) {
     this.page = page;
     this.triggerEventHandlers = {};
     var self = this;
-    var publicInstance = this.publicInstance = Object.create(getProps('methods'), {
+    this.publicInstance = Object.create(getProps('methods'), {
       setData: {
         value: function value(a, b) {
           return self.setData(_utils_setData__WEBPACK_IMPORTED_MODULE_1__["default"], a, b);
@@ -4326,6 +4326,7 @@ function Component(setupConfig, currentComponentConfig) {
         }
       }
     });
+    var publicInstance = this.publicInstance;
     publicInstance.is = is;
     publicInstance.$id = id;
     publicInstance.$page = page.publicInstance;

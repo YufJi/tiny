@@ -1,52 +1,39 @@
-
 import EventEmitter from '@/core/utils/EventEmitter';
 import securityPatch from '@/core/utils/securityPatch';
-import { isIOS } from '@/core/utils/system';
-import ap from '../bridge/ap.worker';
+import ap from '@/api/ap.worker';
 
 const eventEmitter = new EventEmitter();
+
 securityPatch();
+
 const g = self;
+
 g.fetch = null;
-let { JSBridge } = g;
-if (!isIOS) {
-  JSBridge = {};
-}
+
+const { JSBridge } = g;
+
 const promise = new Promise(((resolve) => {
-  if (JSBridge) {
-    resolve();
-  } else {
-    document.addEventListener('JSBridgeReady', resolve);
-  }
+  document.addEventListener('JSBridgeReady', resolve);
 }));
+
 const worker = {
-  postMessage: function postMessage(message) {
+  postMessage(message) {
     promise.then(() => {
-      if (isIOS) {
-        JSBridge.call('multiWorkerPostMessage', {
-          message,
-          fromCustomWorker: true,
-        });
-      } else {
-        console.log(`create_worker:${JSON.stringify(message)}`);
-      }
+      JSBridge.call('multiWorkerPostMessage', {
+        message,
+        fromCustomWorker: true,
+      });
     });
   },
-  onMessage: function onMessage(listener) {
+  onMessage(listener) {
     eventEmitter.on('message', listener);
   },
 };
 
 promise.then(() => {
-  if (isIOS) {
-    ap.onUserEvent('mainWorkerMessage', (e) => {
-      eventEmitter.emit('message', e.data);
-    });
-  } else {
-    g.addEventListener('message', (e) => {
-      eventEmitter.emit('message', e.data);
-    });
-  }
+  ap.onUserEvent('mainWorkerMessage', (e) => {
+    eventEmitter.emit('message', e.data);
+  });
 });
 
 export default worker;

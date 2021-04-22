@@ -16488,9 +16488,6 @@ function getRender(is) {
       is: is
     },
     mixins: [Object(_mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_9__["default"])(), _mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_8__["default"]],
-    // getDefaultProps() {
-    //   return getComponentConfig(is).properties || {};
-    // },
     getInitialState: function getInitialState() {
       var __page = this.props.__page;
       this.is = is; // async render twice
@@ -16514,7 +16511,7 @@ function getRender(is) {
       return _objectSpread(_objectSpread(_objectSpread({}, getComponentConfig(this.is).data), properties), initialProps);
     },
     componentDidMount: function componentDidMount() {
-      this.registryEventListener();
+      this.registryEventListeners();
       this.recordMounted(this.diffProps(getComponentConfig(this.is).properties || {}), true);
     },
     UNSAFE_componentWillReceiveProps: function UNSAFE_componentWillReceiveProps(nextProps) {
@@ -16560,6 +16557,7 @@ function getRender(is) {
       var __page = this.props.__page;
       delete __page.componentInstances[this.id];
       unmountedComponents.push(this.id);
+      this.removeAllEventListeners();
     },
     recordMounted: function recordMounted(diffProps, init) {
       var info = _defineProperty({}, _utils_consts__WEBPACK_IMPORTED_MODULE_3__["ComponentKeyId"], this.id);
@@ -16646,7 +16644,7 @@ function getRender(is) {
       var __page = this.props.__page;
 
       if (!eventHandlers[name]) {
-        var handle = eventHandlers[name] = function () {
+        var handle = function handle() {
           for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
             args[_key] = arguments[_key];
           }
@@ -16657,6 +16655,7 @@ function getRender(is) {
         handle.handleName = name;
         handle.type = 'component';
         handle.id = this.id;
+        eventHandlers[name] = handle;
       }
 
       return eventHandlers[name];
@@ -16725,7 +16724,7 @@ function getRender(is) {
         }
       }
     },
-    registryEventListener: function registryEventListener() {
+    registryEventListeners: function registryEventListeners() {
       var props = this.props;
 
       for (var key in props) {
@@ -16733,6 +16732,17 @@ function getRender(is) {
           /* 自定义事件 */
           if (_utils_eventReg__WEBPACK_IMPORTED_MODULE_4__["eventReg"].test(key) && !_utils_eventReg__WEBPACK_IMPORTED_MODULE_4__["commonBubblesEventsReg"].test(key)) {
             this.allCustomEvents[key] = this.addCustomEvent(key, props[key]);
+          }
+        }
+      }
+    },
+    removeAllEventListeners: function removeAllEventListeners() {
+      var events = this.allCustomEvents;
+
+      for (var key in events) {
+        if (Object.hasOwnProperty.call(events, key)) {
+          if (events[key].remove) {
+            events[key].remove();
           }
         }
       }

@@ -11,8 +11,6 @@ import {
   PendingValuePage,
   PendingValueComponent,
   OpSet,
-  ComponentKeyOwnerId,
-  ComponentKeyName,
 } from '@/utils/consts';
 import objectKeys from '@/utils/objectKeys';
 import { getOpFn } from '@/utils/setData';

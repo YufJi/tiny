@@ -9,7 +9,6 @@ import {
   PendingKeyOp,
   PendingValueComponent,
   ComponentKeyDiffProps,
-  ComponentKeyOwnerId,
   DiffKeyUpdated,
   DiffKeyDeleted,
 } from '@/utils/consts';
@@ -36,7 +35,7 @@ export default function Component(setupConfig, currentComponentConfig) {
     this.page = page;
     this.triggerEventHandlers = {};
     const self = this;
-    const publicInstance = this.publicInstance = Object.create(getProps('methods'), {
+    this.publicInstance = Object.create(getProps('methods'), {
       setData: {
         value: function value(a, b) {
           return self.setData(setData, a, b);
@@ -53,6 +52,7 @@ export default function Component(setupConfig, currentComponentConfig) {
         },
       },
     });
+    const { publicInstance } = this;
 
     publicInstance.is = is;
     publicInstance.$id = id;

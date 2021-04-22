@@ -39,7 +39,7 @@ Component({
         name: 'ooo',
       });
       console.log('properties', this.properties, this.data);
-      this.triggerEvent('change', { xx: 'xxxx' }, { bubbles: true });
+      this.triggerEvent('click_me', { xx: 'xxxx' }, { bubbles: true });
     },
   },
 });
