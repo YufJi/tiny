@@ -62,7 +62,8 @@ Page({
   captureClickChild() {
     console.log('captureClickChild');
   },
-  clickCom() {
+  clickCom(e) {
+    console.log(e, 'eeex')
     this.setData({
       text: 'def',
     });

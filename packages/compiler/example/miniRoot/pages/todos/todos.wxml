@@ -19,7 +19,7 @@
   </view>
 
   <view class="todo-footer">
-    <add-button text="{{text}}" capture-bind:tap="clickCom"></add-button>
+    <add-button text="{{text}}" bind:change="clickCom"></add-button>
     <add-button xx="xxx" text="{{text}}" bind:clickme="{{fn}}"></add-button>
   </view>
 

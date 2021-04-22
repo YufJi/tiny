@@ -16498,7 +16498,6 @@ function getRender(is) {
       this.id = this.id || ++componentId;
       __page.componentInstances[this.id] = this;
       this.eventHandlers = {};
-      this.componentEventHandlers = {};
       this.allCustomEvents = {};
 
       var _getComponentConfig = getComponentConfig(this.is),
@@ -16672,22 +16671,6 @@ function getRender(is) {
       }
 
       return (_page$$getRefHandler = __page.$getRefHandler).call.apply(_page$$getRefHandler, [__page].concat(args));
-    },
-    $getComponentEventHandler: function $getComponentEventHandler(name) {
-      if (!name || typeof name !== 'string') {
-        // need json transfer to worker
-        return name;
-      }
-
-      var componentEventHandlers = this.componentEventHandlers;
-
-      if (!componentEventHandlers[name]) {
-        var _componentEventHandle;
-
-        componentEventHandlers[name] = (_componentEventHandle = {}, _defineProperty(_componentEventHandle, _utils_consts__WEBPACK_IMPORTED_MODULE_3__["ComponentKeyName"], name), _defineProperty(_componentEventHandle, _utils_consts__WEBPACK_IMPORTED_MODULE_3__["ComponentKeyOwnerId"], this.id), _componentEventHandle);
-      }
-
-      return componentEventHandlers[name];
     },
     triggerEvent: function triggerEvent(eventName, detail, options) {
       var event = new CustomEvent(eventName, _objectSpread({
@@ -16891,7 +16874,6 @@ var replacer = _Platform__WEBPACK_IMPORTED_MODULE_15__["default"].browser === 'i
       bridge: _common_global__WEBPACK_IMPORTED_MODULE_13__["default"].bridge,
       renderSeq: 1,
       eventHandlers: {},
-      componentEventHandlers: {},
       componentInstances: {},
       self: this,
       publicInstance: {}
@@ -16996,22 +16978,6 @@ var replacer = _Platform__WEBPACK_IMPORTED_MODULE_15__["default"].browser === 'i
     }
 
     return this.eventHandlers[name];
-  },
-  $getComponentEventHandler: function $getComponentEventHandler(name) {
-    if (!name || typeof name !== 'string') {
-      // need json transfer to worker
-      return name;
-    }
-
-    var componentEventHandlers = this.componentEventHandlers;
-
-    if (!componentEventHandlers[name]) {
-      var _componentEventHandle;
-
-      componentEventHandlers[name] = (_componentEventHandle = {}, _defineProperty(_componentEventHandle, _utils_consts__WEBPACK_IMPORTED_MODULE_4__["ComponentKeyName"], name), _defineProperty(_componentEventHandle, _utils_consts__WEBPACK_IMPORTED_MODULE_4__["ComponentKeyOwnerId"], 1), _componentEventHandle);
-    }
-
-    return componentEventHandlers[name];
   },
   triggerComponentEvent: function triggerComponentEvent(componentId, eventName, detail, options) {
     var component = this.componentInstances[componentId];

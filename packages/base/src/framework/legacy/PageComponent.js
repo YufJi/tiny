@@ -87,7 +87,6 @@ export default createReactClass({
       bridge: $global.bridge,
       renderSeq: 1,
       eventHandlers: {},
-      componentEventHandlers: {},
       componentInstances: {},
       self: this,
       publicInstance: {},
@@ -171,23 +170,6 @@ export default createReactClass({
       handle.id = this.id;
     }
     return this.eventHandlers[name];
-  },
-  $getComponentEventHandler(name) {
-    if (!name || typeof name !== 'string') {
-      // need json transfer to worker
-      return name;
-    }
-
-    const { componentEventHandlers } = this;
-
-    if (!componentEventHandlers[name]) {
-      componentEventHandlers[name] = {
-        [ComponentKeyName]: name,
-        [ComponentKeyOwnerId]: 1,
-      };
-    }
-
-    return componentEventHandlers[name];
   },
   triggerComponentEvent(componentId, eventName, detail, options) {
     const component = this.componentInstances[componentId];

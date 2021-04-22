@@ -267,7 +267,7 @@ Component({
         name: 'ooo',
       });
       console.log('properties', this.properties, this.data);
-      this.triggerEvent('clickme', { xx: 'xxxx' }, { bubbles: true });
+      this.triggerEvent('change', { xx: 'xxxx' }, { bubbles: true });
     },
   },
 });
@@ -420,7 +420,8 @@ Page({
   captureClickChild() {
     console.log('captureClickChild');
   },
-  clickCom() {
+  clickCom(e) {
+    console.log(e, 'eeex')
     this.setData({
       text: 'def',
     });

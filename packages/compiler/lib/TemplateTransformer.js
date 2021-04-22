@@ -45,9 +45,6 @@ class TemplateTransformer extends Transformer {
     header.push('');
     header.push('const $createReactElement = React && React.createElement;');
     header.push(
-      'const $getComponentEventHandler = (instance, name) => instance.$getComponentEventHandler && instance.$getComponentEventHandler(name);',
-    );
-    header.push(
       'const $getEventHandler = (instance, name) => instance.$getEventHandler(name);',
     );
     header.push(
@@ -112,21 +109,7 @@ class TemplateTransformer extends Transformer {
             attrName,
           });
 
-          let handleFn;
-
-          /* 是自定义组件 */
-          // if ((usingComponents && usingComponents[node.name]) || node.name === 'component') {
-          //   /* 普通事件 */
-          //   if (isCommonEvent(attrName)) {
-          //     handleFn = '$getEventHandler';
-          //   } else {
-          //     handleFn = '$getComponentEventHandler';
-          //   }
-          // } else {
-          //   handleFn = '$getEventHandler';
-          // }
-
-          handleFn = '$getEventHandler';
+          const handleFn = '$getEventHandler';
 
           transformedAttrs[attrName] = `{${handleFn}(this, ${handlerFn})}`;
           return false;

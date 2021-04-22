@@ -100,7 +100,6 @@ export default (is) => createReactClass({
     this.id = this.id || ++componentId;
     __page.componentInstances[this.id] = this;
     this.eventHandlers = {};
-    this.componentEventHandlers = {};
     this.allCustomEvents = {};
 
     const { properties } = getComponentConfig(this.is);
@@ -258,22 +257,6 @@ export default (is) => createReactClass({
     const { __page } = this.props;
 
     return __page.$getRefHandler.call(__page, ...args);
-  },
-  $getComponentEventHandler(name) {
-    if (!name || typeof name !== 'string') {
-      // need json transfer to worker
-      return name;
-    }
-    const { componentEventHandlers } = this;
-
-    if (!componentEventHandlers[name]) {
-      componentEventHandlers[name] = {
-        [ComponentKeyName]: name,
-        [ComponentKeyOwnerId]: this.id,
-      };
-    }
-
-    return componentEventHandlers[name];
   },
   triggerEvent(eventName, detail, options) {
     const event = new CustomEvent(eventName, {

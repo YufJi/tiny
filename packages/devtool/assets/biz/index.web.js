@@ -189,9 +189,6 @@ var _react2 = _interopRequireDefault(_react);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var $createReactElement = _react2.default && _react2.default.createElement;
-var $getComponentEventHandler = function $getComponentEventHandler(instance, name) {
-  return instance.$getComponentEventHandler && instance.$getComponentEventHandler(name);
-};
 var $getEventHandler = function $getEventHandler(instance, name) {
   return instance.$getEventHandler(name);
 };
@@ -305,9 +302,6 @@ var _react2 = _interopRequireDefault(_react);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var $createReactElement = _react2.default && _react2.default.createElement;
-var $getComponentEventHandler = function $getComponentEventHandler(instance, name) {
-  return instance.$getComponentEventHandler && instance.$getComponentEventHandler(name);
-};
 var $getEventHandler = function $getEventHandler(instance, name) {
   return instance.$getEventHandler(name);
 };
@@ -403,9 +397,6 @@ var _b2 = _interopRequireDefault(_b);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var $createReactElement = _react2.default && _react2.default.createElement;
-var $getComponentEventHandler = function $getComponentEventHandler(instance, name) {
-  return instance.$getComponentEventHandler && instance.$getComponentEventHandler(name);
-};
 var $getEventHandler = function $getEventHandler(instance, name) {
   return instance.$getEventHandler(name);
 };
@@ -577,9 +568,6 @@ var _react2 = _interopRequireDefault(_react);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var $createReactElement = _react2.default && _react2.default.createElement;
-var $getComponentEventHandler = function $getComponentEventHandler(instance, name) {
-  return instance.$getComponentEventHandler && instance.$getComponentEventHandler(name);
-};
 var $getEventHandler = function $getEventHandler(instance, name) {
   return instance.$getEventHandler(name);
 };
@@ -660,9 +648,6 @@ var _react2 = _interopRequireDefault(_react);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var $createReactElement = _react2.default && _react2.default.createElement;
-var $getComponentEventHandler = function $getComponentEventHandler(instance, name) {
-  return instance.$getComponentEventHandler && instance.$getComponentEventHandler(name);
-};
 var $getEventHandler = function $getEventHandler(instance, name) {
   return instance.$getEventHandler(name);
 };
@@ -766,7 +751,7 @@ function render(data) {
         className: "todo-footer"
       },
       [_react2.default.createElement(AddButton, {
-        text: data['text'], bind$tap$capture: $getEventHandler(this, "clickCom"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', __owner: this, __page: this.$isCustomComponent ? this.props['__page'] : this
+        text: data['text'], bind$change: $getEventHandler(this, "clickCom"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', __owner: this, __page: this.$isCustomComponent ? this.props['__page'] : this
       }), _react2.default.createElement(AddButton, {
         xx: "xxx", text: data['text'], bind$clickme: $getEventHandler(this, data['fn']), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', __owner: this, __page: this.$isCustomComponent ? this.props['__page'] : this
       })]
