@@ -4269,19 +4269,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _utils_setData__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/setData */ "./src/utils/setData.js");
 /* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
 /* harmony import */ var _utils_mapValues__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/mapValues */ "./src/utils/mapValues.js");
-/* harmony import */ var _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/invokeWithGuardAndReThrow */ "./src/utils/invokeWithGuardAndReThrow.js");
-/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
-/* harmony import */ var _utils_reg__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/reg */ "./src/utils/reg.js");
-/* harmony import */ var _ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../ComponentRegistry/getComponentClass */ "./src/framework/ComponentRegistry/getComponentClass.js");
-/* harmony import */ var _utils_getComponentProp__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../utils/getComponentProp */ "./src/framework/utils/getComponentProp.js");
-/* harmony import */ var _utils_fireComponentLifecycle__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../utils/fireComponentLifecycle */ "./src/framework/utils/fireComponentLifecycle.js");
+/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
+/* harmony import */ var _ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../ComponentRegistry/getComponentClass */ "./src/framework/ComponentRegistry/getComponentClass.js");
+/* harmony import */ var _utils_getComponentProp__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../utils/getComponentProp */ "./src/framework/utils/getComponentProp.js");
+/* harmony import */ var _utils_fireComponentLifecycle__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../utils/fireComponentLifecycle */ "./src/framework/utils/fireComponentLifecycle.js");
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-
 
 
 
@@ -4298,7 +4294,7 @@ function Component(setupConfig, currentComponentConfig) {
 
   function getProps(prop) {
     var useCache = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-    return Object(_utils_getComponentProp__WEBPACK_IMPORTED_MODULE_8__["default"])(setupConfig, prop, useCache ? propsCache : useCache);
+    return Object(_utils_getComponentProp__WEBPACK_IMPORTED_MODULE_6__["default"])(setupConfig, prop, useCache ? propsCache : useCache);
   }
 
   var defaultProperties = Object(_utils_mapValues__WEBPACK_IMPORTED_MODULE_3__["default"])(getProps('properties'), 'value');
@@ -4348,7 +4344,7 @@ function Component(setupConfig, currentComponentConfig) {
     Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(usingComponents).forEach(function (c) {
       /* 忽略当前自定义组件本身，防止死循环 */
       if (usingComponents[c] !== is) {
-        var subUsingComponents = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_7__["default"])(usingComponents[c]).getAllComponents();
+        var subUsingComponents = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_5__["default"])(usingComponents[c]).getAllComponents();
         Object(_utils_mergeArray__WEBPACK_IMPORTED_MODULE_0__["default"])(allComponents, subUsingComponents);
       }
     });
@@ -4369,7 +4365,7 @@ function Component(setupConfig, currentComponentConfig) {
 
       this.prevData = publicInstance.data;
       publicInstance.properties = publicInstance.data = op(publicInstance.data, diffData);
-      var data = (_data = {}, _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingKeyType"], _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingValueComponent"]), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingKeyId"], id), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingKeyOp"], Object(_utils_setData__WEBPACK_IMPORTED_MODULE_1__["getOpStr"])(op)), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingKeyData"], diffData), _data);
+      var data = (_data = {}, _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_4__["PendingKeyType"], _utils_consts__WEBPACK_IMPORTED_MODULE_4__["PendingValueComponent"]), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_4__["PendingKeyId"], id), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_4__["PendingKeyOp"], Object(_utils_setData__WEBPACK_IMPORTED_MODULE_1__["getOpStr"])(op)), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_4__["PendingKeyData"], diffData), _data);
       var options = options_ || {};
 
       if (typeof options_ === 'function') {
@@ -4381,19 +4377,13 @@ function Component(setupConfig, currentComponentConfig) {
       this.page.setRemoteData(data, options);
     },
     setComponentConfig: function setComponentConfig(c, init) {
-      var ownerId = c[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["ComponentKeyOwnerId"]];
-      var diffProps = c[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["ComponentKeyDiffProps"]];
-
-      if (ownerId) {
-        this.ownerId = ownerId;
-      }
-
+      var diffProps = c[_utils_consts__WEBPACK_IMPORTED_MODULE_4__["ComponentKeyDiffProps"]];
       var publicInstance = this.publicInstance;
       var prevProps = publicInstance.properties;
 
       if (diffProps) {
-        var deleted = diffProps[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["DiffKeyDeleted"]];
-        var updated = diffProps[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["DiffKeyUpdated"]];
+        var deleted = diffProps[_utils_consts__WEBPACK_IMPORTED_MODULE_4__["DiffKeyDeleted"]];
+        var updated = diffProps[_utils_consts__WEBPACK_IMPORTED_MODULE_4__["DiffKeyUpdated"]];
 
         if (deleted && deleted.length || updated && Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(updated).length) {
           publicInstance.properties = _objectSpread({}, publicInstance.properties);
@@ -4406,7 +4396,7 @@ function Component(setupConfig, currentComponentConfig) {
         }
 
         if (updated) {
-          Object.assign(publicInstance.properties, this.normalizeProps(updated));
+          Object.assign(publicInstance.properties, updated);
         }
 
         Object.assign(publicInstance.data, publicInstance.properties);
@@ -4417,84 +4407,19 @@ function Component(setupConfig, currentComponentConfig) {
         this.prevData = publicInstance.data;
       }
     },
-
-    /* 注册event在props上 */
-    normalizeProps: function normalizeProps(oldProps) {
-      var _this = this;
-
-      var newProps = _objectSpread({}, oldProps);
-
-      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(oldProps).forEach(function (p) {
-        /* 自定义事件 */
-        if (_utils_reg__WEBPACK_IMPORTED_MODULE_6__["eventReg"].test(p) && !_utils_reg__WEBPACK_IMPORTED_MODULE_6__["commonEventReg"].test(p)) {
-          newProps[p] = _this.getTriggerEventHandler(p, oldProps[p]);
-        }
-      });
-      return newProps;
-    },
-
-    /**
-     *
-     * @param {*} type e.g. onclickme
-     * @param {*} method  {n: "addTodo", o: 1}
-     * @returns
-     */
-    getTriggerEventHandler: function getTriggerEventHandler(type, method) {
-      var _this2 = this;
-
-      if (!method) {
-        return method;
-      }
-
-      var triggerEventHandlers = this.triggerEventHandlers;
-      var handleFn = triggerEventHandlers[type];
-
-      if (!handleFn) {
-        handleFn = triggerEventHandlers[type] = function () {
-          for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-            args[_key2] = arguments[_key2];
-          }
-
-          return _this2.$triggerEvent.apply(_this2, [handleFn.method].concat(args));
-        };
-      } // method may change for onXX type
-
-
-      handleFn.method = method;
-      return handleFn;
-    },
-    $triggerEvent: function $triggerEvent(method) {
-      /* todo 发送triggerComponentEvent type, detail, options */
-      // tricky, page is also a component
-      var ownerComponent = this.page.getComponentInstance(this.ownerId);
-
-      if (ownerComponent) {
-        var publicInstance = ownerComponent.publicInstance;
-
-        if (!publicInstance[method]) {
-          console.warn("".concat(ownerComponent.is, ": can not find event handle method: ").concat(method));
-        }
-
-        for (var _len3 = arguments.length, args = new Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
-          args[_key3 - 1] = arguments[_key3];
-        }
-
-        return _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_4__["default"].apply(void 0, [publicInstance[method], publicInstance].concat(args));
-      }
-    },
     ready: function ready() {
-      Object(_utils_fireComponentLifecycle__WEBPACK_IMPORTED_MODULE_9__["default"])(setupConfig, this.publicInstance, 'didMount');
+      Object(_utils_fireComponentLifecycle__WEBPACK_IMPORTED_MODULE_7__["default"])(setupConfig, this.publicInstance, 'didMount');
     },
     update: function update() {
-      for (var _len4 = arguments.length, args = new Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
-        args[_key4] = arguments[_key4];
+      for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+        args[_key2] = arguments[_key2];
       }
 
-      Object(_utils_fireComponentLifecycle__WEBPACK_IMPORTED_MODULE_9__["default"])(setupConfig, this.publicInstance, 'didUpdate', args);
+      Object(_utils_fireComponentLifecycle__WEBPACK_IMPORTED_MODULE_7__["default"])(setupConfig, this.publicInstance, 'didUpdate', args);
     },
     unload: function unload() {
       this.unloaded = true;
-      Object(_utils_fireComponentLifecycle__WEBPACK_IMPORTED_MODULE_9__["default"])(setupConfig, this.publicInstance, 'didUnmount');
+      Object(_utils_fireComponentLifecycle__WEBPACK_IMPORTED_MODULE_7__["default"])(setupConfig, this.publicInstance, 'didUnmount');
     }
   };
   return ComponentClass;
@@ -6942,22 +6867,6 @@ function objectKeys(obj) {
 
   return [];
 }
-
-/***/ }),
-
-/***/ "./src/utils/reg.js":
-/*!**************************!*\
-  !*** ./src/utils/reg.js ***!
-  \**************************/
-/*! exports provided: eventReg, commonEventReg */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "eventReg", function() { return eventReg; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "commonEventReg", function() { return commonEventReg; });
-var eventReg = /^\$(on|catch)([A-Za-z_]+)(capture)?$/;
-var commonEventReg = /^\$(on|catch)(tap|touchstart|touchmove|touchend|touchcancel|transitionend|animationstart|animationiteration|animationend)(capture)?$/;
 
 /***/ }),
 

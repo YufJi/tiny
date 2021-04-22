@@ -2,7 +2,6 @@ import mergeArray from '@/utils/mergeArray';
 import setData, { spliceData, getOpStr } from '@/utils/setData';
 import objectKeys from '@/utils/objectKeys';
 import mapValues from '@/utils/mapValues';
-import invokeWithGuardAndReThrow from '@/utils/invokeWithGuardAndReThrow';
 import {
   PendingKeyType,
   PendingKeyId,
@@ -14,10 +13,7 @@ import {
   DiffKeyUpdated,
   DiffKeyDeleted,
 } from '@/utils/consts';
-import {
-  eventReg,
-  commonEventReg,
-} from '@/utils/reg';
+
 import getComponentClass from '../ComponentRegistry/getComponentClass';
 
 import getComponentProp from '../utils/getComponentProp';
@@ -111,11 +107,8 @@ export default function Component(setupConfig, currentComponentConfig) {
       this.page.setRemoteData(data, options);
     },
     setComponentConfig(c, init) {
-      const ownerId = c[ComponentKeyOwnerId];
       const diffProps = c[ComponentKeyDiffProps];
-      if (ownerId) {
-        this.ownerId = ownerId;
-      }
+
       const { publicInstance } = this;
 
       const prevProps = publicInstance.properties;
@@ -132,7 +125,7 @@ export default function Component(setupConfig, currentComponentConfig) {
           });
         }
         if (updated) {
-          Object.assign(publicInstance.properties, this.normalizeProps(updated));
+          Object.assign(publicInstance.properties, updated);
         }
         Object.assign(publicInstance.data, publicInstance.properties);
       }
@@ -140,53 +133,6 @@ export default function Component(setupConfig, currentComponentConfig) {
       if (!init && (prevProps !== publicInstance.properties || this.prevData !== publicInstance.data)) {
         this.update(prevProps, this.prevData);
         this.prevData = publicInstance.data;
-      }
-    },
-    /* 注册event在props上 */
-    normalizeProps(oldProps) {
-      const newProps = { ...oldProps };
-      objectKeys(oldProps).forEach((p) => {
-        /* 自定义事件 */
-        if (eventReg.test(p) && !commonEventReg.test(p)) {
-          newProps[p] = this.getTriggerEventHandler(p, oldProps[p]);
-        }
-      });
-      return newProps;
-    },
-    /**
-     *
-     * @param {*} type e.g. onclickme
-     * @param {*} method  {n: "addTodo", o: 1}
-     * @returns
-     */
-    getTriggerEventHandler(type, method) {
-      if (!method) {
-        return method;
-      }
-      const { triggerEventHandlers } = this;
-
-      let handleFn = triggerEventHandlers[type];
-      if (!handleFn) {
-        handleFn = triggerEventHandlers[type] = (...args) => {
-          return this.$triggerEvent.apply(this, [handleFn.method].concat(args));
-        };
-      }
-      // method may change for onXX type
-      handleFn.method = method;
-      return handleFn;
-    },
-    $triggerEvent(method, ...args) {
-      /* todo 发送triggerComponentEvent type, detail, options */
-      // tricky, page is also a component
-      const ownerComponent = this.page.getComponentInstance(this.ownerId);
-      if (ownerComponent) {
-        const { publicInstance } = ownerComponent;
-
-        if (!publicInstance[method]) {
-          console.warn(`${ownerComponent.is}: can not find event handle method: ${method}`);
-        }
-
-        return invokeWithGuardAndReThrow(publicInstance[method], publicInstance, ...args);
       }
     },
     ready() {

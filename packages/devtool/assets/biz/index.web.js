@@ -229,7 +229,7 @@ function render(data) {
   return $createRoot([_react2.default.createElement(
     Button,
     {
-      className: "add-button", hoverClass: "none", $ontap: $getEventHandler(this, "onClickMe")
+      className: "add-button", hoverClass: "none", bind$tap: $getEventHandler(this, "onClickMe")
     },
     [_react2.default.createElement(
       Text,
@@ -245,7 +245,7 @@ function render(data) {
   ), _react2.default.createElement(
     Text,
     {
-      $ontap: $getEventHandler(this, "xx")
+      bind$tap: $getEventHandler(this, "xx")
     },
     $toString(data['name'])
   )]);
@@ -460,13 +460,13 @@ function render(data) {
     ), _react2.default.createElement(
       View,
       {
-        $ontap: $getEventHandler(this, "add")
+        bind$tap: $getEventHandler(this, "add")
       },
       $toString("12121")
     ), _react2.default.createElement(
       View,
       {
-        $catchtap: $getEventHandler(this, "add")
+        catch$tap: $getEventHandler(this, "add")
       },
       $toString("12121")
     ), _react2.default.createElement(
@@ -475,12 +475,12 @@ function render(data) {
         className: "todo-footer"
       },
       _react2.default.createElement(AddButton, {
-        text: "Add Todo", $onclickme: $getEventHandler(this, "add"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', __owner: this, __page: this.$isCustomComponent ? this.props['__page'] : this
+        text: "Add Todo", bind$clickme: $getEventHandler(this, "add"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', __owner: this, __page: this.$isCustomComponent ? this.props['__page'] : this
       })
     ), _react2.default.createElement(
       View,
       {
-        style: "color: red", $catchtapcapture: $getEventHandler(this, "xxxx")
+        style: "color: red", catch$tap$capture: $getEventHandler(this, "xxxx")
       },
       $toString("capture-catch:tap")
     ), $useTemplate($templates["abc"], {
@@ -740,7 +740,7 @@ function render(data) {
       _react2.default.createElement(
         CheckboxGroup,
         {
-          className: "todo-items-group", $onchange: $getEventHandler(this, "onTodoChanged")
+          className: "todo-items-group", bind$change: $getEventHandler(this, "onTodoChanged")
         },
         $iterate(data['todos'], function (item, index) {
           return _react2.default.createElement(
@@ -766,25 +766,25 @@ function render(data) {
         className: "todo-footer"
       },
       [_react2.default.createElement(AddButton, {
-        text: data['text'], $catchtapcapture: $getEventHandler(this, "clickCom"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', __owner: this, __page: this.$isCustomComponent ? this.props['__page'] : this
+        text: data['text'], bind$tap$capture: $getEventHandler(this, "clickCom"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', __owner: this, __page: this.$isCustomComponent ? this.props['__page'] : this
       }), _react2.default.createElement(AddButton, {
-        xx: "xxx", text: data['text'], $onclickme: $getEventHandler(this, data['fn']), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', __owner: this, __page: this.$isCustomComponent ? this.props['__page'] : this
+        xx: "xxx", text: data['text'], bind$clickme: $getEventHandler(this, data['fn']), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', __owner: this, __page: this.$isCustomComponent ? this.props['__page'] : this
       })]
     ), _react2.default.createElement(
       View,
       {
-        $ontap: $getEventHandler(this, "clickParent")
+        bind$tap: $getEventHandler(this, "clickParent")
       },
       [_react2.default.createElement(
         View,
         {
-          className: "jyf", $catchtapcapture: $getEventHandler(this, "captureClickChild")
+          className: "jyf", catch$tap$capture: $getEventHandler(this, "captureClickChild")
         },
         $toString("capture child")
       ), _react2.default.createElement(
         View,
         {
-          $ontap: $getEventHandler(this, "clickChild")
+          bind$tap: $getEventHandler(this, "clickChild")
         },
         $toString("child")
       )]

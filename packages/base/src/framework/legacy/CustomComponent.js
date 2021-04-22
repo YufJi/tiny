@@ -14,14 +14,13 @@ import {
 } from '@/utils/consts';
 import {
   eventReg,
-  commonEventReg,
-} from '@/utils/reg';
+  commonBubblesEventsReg,
+} from '@/utils/eventReg';
 import shallowEqual from '@/utils/shallowEqual';
-import mapValues from '@/utils/mapValues';
 import $global from '../common/global';
 import EventHub from '../EventHub';
 import PureRenderMixin from '../mixins/PureRenderMixin';
-import CustomComponentEventMixin from '../mixins/CustomComponentEventMixin';
+import BasicEventMixin from '../mixins/BasicEventMixin';
 import transformChildrenToSlots from '../utils/transformChildrenToSlots';
 import normalizeComponentProps from '../utils/normalizeComponentProps';
 
@@ -88,7 +87,7 @@ export default (is) => createReactClass({
     is,
   },
   mixins: [
-    CustomComponentEventMixin(),
+    BasicEventMixin(),
     PureRenderMixin,
   ],
   // getDefaultProps() {
@@ -178,12 +177,9 @@ export default (is) => createReactClass({
     mountedComponents.push(info);
 
     if (diffProps) {
-      const { newProps, ownerId } = this.normalizeProps(diffProps);
+      const { newProps } = this.normalizeProps(diffProps);
 
       info[ComponentKeyDiffProps] = newProps;
-      if (ownerId) {
-        info[ComponentKeyOwnerId] = ownerId;
-      }
     }
   },
   diffProps(prevProps) {
@@ -232,19 +228,12 @@ export default (is) => createReactClass({
     if (props[DiffKeyDeleted]) {
       newProps[DiffKeyDeleted] = props[DiffKeyDeleted];
     }
-    let ownerId;
+
     if (props[DiffKeyUpdated]) {
-      const updated = newProps[DiffKeyUpdated] = { ...props[DiffKeyUpdated] };
-      objectKeys(updated).forEach((p) => {
-        /* 自定义事件 */
-        if ((eventReg.test(p) && !commonEventReg.test(p)) && updated[p]) {
-          ownerId = updated[p][ComponentKeyOwnerId];
-          updated[p] = updated[p][ComponentKeyName];
-        }
-      });
+      newProps[DiffKeyUpdated] = { ...props[DiffKeyUpdated] };
     }
 
-    return { ownerId, newProps };
+    return { newProps };
   },
   $getEventHandler(name) {
     const _this = this;
@@ -291,7 +280,7 @@ export default (is) => createReactClass({
       detail,
       ...options,
     });
-    this._root.dispatchEvent(event);
+    this.__basicEventRoot.dispatchEvent(event);
   },
   setData(toBeData, callback) {
     const data = this.state;
@@ -311,30 +300,26 @@ export default (is) => createReactClass({
     }, callback);
   },
   addCustomEvent(key, fn) {
-    if (eventReg.test(key) && !commonEventReg.test(key)) {
-      const result = key.match(eventReg);
-      if (result) {
-        const onHandler = fn;
-        if (this._root) {
-          const handler = (e) => {
-            const isCatchHandler = result[1] === 'catch';
+    const result = key.match(eventReg);
+    if (result) {
+      const onHandler = fn;
+      if (this.__basicEventRoot) {
+        const handler = (e) => {
+          const isCatchHandler = result[1] === 'catch';
 
-            if (isCatchHandler && e.stopPropagation) {
-              e.stopPropagation();
-              onHandler(e);
-              return;
-            }
-            onHandler(e);
-          };
-
-          this._root.addEventListener(result[2], handler, result[3] === 'capture');
-
-          return {
-            remove: () => {
-              this._root.removeEventListener(result[2], handler);
-            },
-          };
-        }
+          if (isCatchHandler && e.stopPropagation) {
+            e.stopPropagation();
+            typeof onHandler === 'function' && onHandler(e);
+            return;
+          }
+          typeof onHandler === 'function' && onHandler(e);
+        };
+        this.__basicEventRoot.addEventListener(result[2], handler, result[3] === '$capture');
+        return {
+          remove: () => {
+            this.__basicEventRoot.removeEventListener(result[2], handler);
+          },
+        };
       }
     }
   },
@@ -342,11 +327,13 @@ export default (is) => createReactClass({
     const { props } = this;
     for (const key in props) {
       if (Object.hasOwnProperty.call(props, key)) {
-        this.allCustomEvents[key] = this.addCustomEvent(key, props[key]);
+        /* 自定义事件 */
+        if (eventReg.test(key) && !commonBubblesEventsReg.test(key)) {
+          this.allCustomEvents[key] = this.addCustomEvent(key, props[key]);
+        }
       }
     }
   },
-
   render() {
     const props = normalizeComponentProps(this.props);
     props.$slots = transformChildrenToSlots(this.props.children);
@@ -363,7 +350,6 @@ export default (is) => createReactClass({
       <span
         id={id}
         className={className}
-        ref={(ref) => this._root = ref}
         {...nodeEvents}
       >
         {getRender(is).call(this, { $id: this.id, ...this.state })}

@@ -1,9 +1,10 @@
-
 import React from 'react';
 import createReactClass from 'create-react-class';
 import Touchable from 'rc-touchable';
-import BasicEventMixin from '../mixins/BasicEventMixin';
-import AnimationViewMixin from './AnimationViewMixin';
+import addEvents from '@/utils/addEvents';
+import isNodeVisible from '@/utils/isNodeVisible';
+import throttle from '@/utils/throttle';
+import objectKeys from '@/utils/objectKeys';
 import {
   lengthCssPropNames,
   colorCssPropNames,
@@ -12,10 +13,8 @@ import {
   skewProperties,
   expandAnimation,
 } from './utils';
-import addEvents from '@/utils/addEvents';
-import isNodeVisible from '@/utils/isNodeVisible';
-import throttle from '@/utils/throttle';
-import objectKeys from '@/utils/objectKeys';
+import AnimationViewMixin from './AnimationViewMixin';
+import BasicEventMixin from '../mixins/BasicEventMixin';
 
 function transformUnit(v) {
   if (typeof v === 'number') {
@@ -270,7 +269,7 @@ export default createReactClass({
     let { style } = props;
     const touchableProps = {};
     const nodeEvents = this.getNodeEvents();
-    
+
     if (props.hoverClass) {
       touchableProps.activeClassName = props.hoverClass;
     }
@@ -280,7 +279,7 @@ export default createReactClass({
     if (props.hoverStayTime) {
       touchableProps.delayPressOut = props.hoverStayTime;
     }
-    if (this.hasEvent('LongTap')) {
+    if (this.hasEvent('longtap')) {
       touchableProps.onLongPress = this.onLongTap;
     }
     if (hidden) {

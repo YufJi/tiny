@@ -1,9 +1,7 @@
-/**
- * 仅用于UI components的事件处理
- */
-
 import ReactDOM from 'react-dom';
 import addEvents from '@/utils/addEvents';
+import objectKeys from '@/utils/objectKeys';
+import { getPropsEventName } from '@/utils/eventReg';
 
 function defaultCreateTouchList(touchList = []) {
   const list = [].slice.call(touchList, 0);
@@ -18,11 +16,10 @@ function defaultCreateTouchList(touchList = []) {
   });
 }
 
-function callEvent(instance, eventType, srcEvent, more, capture) {
-  const c = capture ? 'capture' : ''
-  const catchHandler = instance.props[`$catch${eventType}${c}`];
+function callBubblesEvent(instance, eventType, srcEvent, more, capture) {
+  const catchHandler = instance.props[getPropsEventName(eventType, true, capture)];
 
-  const e = instance.props.$mp.getNormalizedEvent({
+  const e = instance.getNormalizedEvent({
     eventType,
     srcEvent,
   }, more);
@@ -31,12 +28,12 @@ function callEvent(instance, eventType, srcEvent, more, capture) {
 
   if (catchHandler && srcEvent.stopPropagation) {
     srcEvent.stopPropagation();
-    catchHandler(e);
+    typeof catchHandler === 'function' && catchHandler(e);
     return;
   }
 
-  const onHandler = instance.props[`$on${eventType}${c}`];
-  if (onHandler) {
+  const onHandler = instance.props[getPropsEventName(eventType, false, capture)];
+  if (typeof onHandler === 'function') {
     onHandler(e);
   }
 }
@@ -61,12 +58,14 @@ function defaultCreateTap(nativeEvent) {
     detail,
   };
 }
+
 function detachScroll(instance) {
   if (instance.detachScrollEvent) {
     instance.detachScrollEvent.remove();
     instance.detachScrollEvent = null;
   }
 }
+
 function attachScroll(instance) {
   const { disableScroll } = instance.props;
   const { detachScrollEvent } = instance;
@@ -86,9 +85,10 @@ function attachScroll(instance) {
     });
   }
 }
-export default function BasicEventMixin({ 
-  createTouchList = defaultCreateTouchList, 
-  createTap = defaultCreateTap 
+
+export default function BasicEventMixin({
+  createTouchList = defaultCreateTouchList,
+  createTap = defaultCreateTap,
 } = {}) {
   return {
     componentDidMount() {
@@ -107,15 +107,60 @@ export default function BasicEventMixin({
         nativeEvent.$target = this.getTargetForEvent();
       }
     },
+    hasEvent(event, capture) {
+      return getPropsEventName(event, false, capture) || getPropsEventName(event, true, capture);
+    },
+    getDataset() {
+      const { props } = this;
+
+      const dataset = {};
+      objectKeys(props).forEach((n) => {
+        if (n.slice(0, 5) === 'data-') {
+          const key = camelCase(n.slice(5));
+          dataset[key] = props[n];
+        }
+      });
+      return dataset;
+    },
     getTargetForEvent() {
       const { props } = this;
       const { __basicEventRoot } = this;
 
-      return { ...props.$mp.getTargetForEvent(), offsetLeft: __basicEventRoot.offsetLeft, offsetTop: __basicEventRoot.offsetTop };
+      return {
+        id: props.id,
+        dataset: this.getDataset(),
+        offsetLeft: __basicEventRoot.offsetLeft,
+        offsetTop: __basicEventRoot.offsetTop,
+      };
     },
-    hasEvent(event, capture) {
-      const c = capture ? 'capture' : ''
-      return this.props[`$on${event}${c}`] || this.props[`$catch${event}${c}`];
+    /* 格式化event对象 */
+    getNormalizedEvent(eventParam, other) {
+      let eventType = eventParam;
+      let srcEvent;
+      if (eventType.eventType) {
+        srcEvent = eventType.srcEvent;
+        eventType = eventType.eventType;
+      }
+      const nativeEvent = srcEvent && srcEvent.nativeEvent || srcEvent;
+      const currentTarget = this.getTargetForEvent();
+      let target = nativeEvent && nativeEvent.$target || currentTarget;
+      if (nativeEvent && !nativeEvent.$target) {
+        nativeEvent.$target = target;
+      }
+      // bug compatibility
+      target = {
+        targetDataset: target.dataset,
+        ...target,
+        dataset: currentTarget.dataset,
+      };
+
+      return {
+        type: eventType,
+        timeStamp: Date.now(),
+        target,
+        currentTarget,
+        ...other,
+      };
     },
     onTap(srcEvent, capture = false) {
       this.recordTarget(srcEvent);
@@ -123,18 +168,18 @@ export default function BasicEventMixin({
       if (this.__longTapTriggered) {
         return;
       }
-      const eventName = `tap`;
+      const eventName = 'tap';
       if (this.hasEvent(eventName, capture)) {
-        callEvent(this, eventName, srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap), capture);
+        callBubblesEvent(this, eventName, srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap), capture);
       }
     },
     onTouchStart(srcEvent, capture = false) {
       this.recordTarget(srcEvent);
       this.__longTapTriggered = 0;
 
-      const eventName = `touchstart`;
+      const eventName = 'touchstart';
       if (this.hasEvent(eventName, capture)) {
-        callEvent(this, eventName, srcEvent, {
+        callBubblesEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
           changedTouches: createTouchList.call(this, srcEvent.changedTouches),
         }, capture);
@@ -142,19 +187,63 @@ export default function BasicEventMixin({
     },
     onTouchMove(srcEvent, capture = false) {
       this.recordTarget(srcEvent);
-      const eventName = `touchmove`;
+      const eventName = 'touchmove';
       if (this.hasEvent(eventName, capture)) {
-        callEvent(this, eventName, srcEvent, {
+        callBubblesEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
           changedTouches: createTouchList.call(this, srcEvent.changedTouches),
         }, capture);
       }
     },
+    onTransitionEnd(srcEvent, capture = false) {
+      this.recordTarget(srcEvent);
+      if (this.hasEvent('transitionend', capture)) {
+        callBubblesEvent(this, 'transitionend', srcEvent, {
+          detail: {
+            elapsedTime: srcEvent.elapsedTime,
+            propertyName: srcEvent.propertyName,
+          },
+        }, capture);
+      }
+    },
+    onAnimationStart(srcEvent, capture = false) {
+      this.recordTarget(srcEvent);
+      if (this.hasEvent('animationstart', capture)) {
+        callBubblesEvent(this, 'animationstart', srcEvent, {
+          detail: {
+            elapsedTime: srcEvent.elapsedTime,
+            animationName: srcEvent.animationName,
+          },
+        }, capture);
+      }
+    },
+    onAnimationIteration(srcEvent, capture = false) {
+      this.recordTarget(srcEvent);
+      if (this.hasEvent('animationiteration', capture)) {
+        callBubblesEvent(this, 'animationiteration', srcEvent, {
+          detail: {
+            elapsedTime: srcEvent.elapsedTime,
+            animationName: srcEvent.animationName,
+          },
+        }, capture);
+      }
+    },
+    onAnimationEnd(srcEvent, capture = false) {
+      this.recordTarget(srcEvent);
+      if (this.hasEvent('animationend', capture)) {
+        callBubblesEvent(this, 'animationend', srcEvent, {
+          detail: {
+            elapsedTime: srcEvent.elapsedTime,
+            animationName: srcEvent.animationName,
+          },
+        }, capture);
+      }
+    },
     onTouchEnd(srcEvent, capture = false) {
       this.recordTarget(srcEvent);
-      const eventName = `touchend`;
+      const eventName = 'touchend';
       if (this.hasEvent(eventName, capture)) {
-        callEvent(this, eventName, srcEvent, {
+        callBubblesEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
           changedTouches: createTouchList.call(this, srcEvent.changedTouches),
         }, capture);
@@ -162,86 +251,54 @@ export default function BasicEventMixin({
     },
     onTouchCancel(srcEvent, capture = false) {
       this.recordTarget(srcEvent);
-      const eventName = `touchcancel`;
+      const eventName = 'touchcancel';
       if (this.hasEvent(eventName, capture)) {
-        callEvent(this, eventName, srcEvent, {
+        callBubblesEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
           changedTouches: createTouchList.call(this, srcEvent.changedTouches),
         }, capture);
       }
     },
-    onTransitionEnd(srcEvent) {
-      this.recordTarget(srcEvent);
-      if (this.hasEvent('transitionend')) {
-        callEvent(this, 'transitionend', srcEvent, {
-          detail: {
-            elapsedTime: srcEvent.elapsedTime,
-            propertyName: srcEvent.propertyName,
-          },
-        });
-      }
-    },
-    onAnimationStart(srcEvent) {
-      this.recordTarget(srcEvent);
-      if (this.hasEvent('animationstart')) {
-        callEvent(this, 'animationstart', srcEvent, {
-          detail: {
-            elapsedTime: srcEvent.elapsedTime,
-            animationName: srcEvent.animationName,
-          },
-        });
-      }
-    },
-    onAnimationIteration(srcEvent) {
-      this.recordTarget(srcEvent);
-      if (this.hasEvent('animationiteration')) {
-        callEvent(this, 'animationiteration', srcEvent, {
-          detail: {
-            elapsedTime: srcEvent.elapsedTime,
-            animationName: srcEvent.animationName,
-          },
-        });
-      }
-    },
-    onAnimationEnd(srcEvent) {
-      this.recordTarget(srcEvent);
-      if (this.hasEvent('animationend')) {
-        callEvent(this, 'animationend', srcEvent, {
-          detail: {
-            elapsedTime: srcEvent.elapsedTime,
-            animationName: srcEvent.animationName,
-          },
-        });
-      }
-    },
     onLongTap(srcEvent) {
       this.__longTapTriggered = 1;
       if (this.hasEvent('LongTap')) {
-        callEvent(this, 'longTap', srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap));
+        callBubblesEvent(this, 'longTap', srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap));
       }
     },
     registryEvent(eventName, capture = false) {
       return (srcEvent) => {
         this[eventName](srcEvent, capture);
-      }
+      };
     },
     getNodeEvents() {
       return {
         onClick: this.registryEvent('onTap'),
         onClickCapture: this.registryEvent('onTap', true),
+
         onTouchStart: this.registryEvent('onTouchStart'),
         onTouchStartCapture: this.registryEvent('onTouchStart', true),
+
         onTouchMove: this.registryEvent('onTouchMove'),
         onTouchMoveCapture: this.registryEvent('onTouchMove', true),
+
         onTouchEnd: this.registryEvent('onTouchEnd'),
         onTouchEndCapture: this.registryEvent('onTouchEnd', true),
+
         onTouchCancel: this.registryEvent('onTouchCancel'),
         onTouchCancelCapture: this.registryEvent('onTouchCancel', true),
+
         onAnimationStart: this.registryEvent('onAnimationStart'),
+        onAnimationStartCapture: this.registryEvent('onAnimationStart', true),
+
         onAnimationIteration: this.registryEvent('onAnimationIteration'),
+        onAnimationIterationCapture: this.registryEvent('onAnimationIteration', true),
+
         onAnimationEnd: this.registryEvent('onAnimationEnd'),
+        onAnimationEndCapture: this.registryEvent('onAnimationEnd', true),
+
         onTransitionEnd: this.registryEvent('onTransitionEnd'),
-      }
+        onTransitionEndCapture: this.registryEvent('onTransitionEnd', true),
+      };
     },
   };
 }

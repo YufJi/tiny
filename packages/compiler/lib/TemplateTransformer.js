@@ -4,7 +4,7 @@ const resolve = require('resolve');
 const fs = require('fs');
 const { Transformer } = require('./rml');
 const defaultLib = require('./defaultLib');
-const { toComponentName, isCommonEvent } = require('./utils');
+const { toComponentName } = require('./utils');
 const {
   getPluginPath,
   PLUGIN_PRIVATE_PREFIX,
@@ -95,13 +95,13 @@ class TemplateTransformer extends Transformer {
         if (isEvent) {
           attrName = attrName.replace(xmlEventReg, ($0, $1, $2) => {
             if (/^bind:?$/.test($1)) {
-              return `$on${$2}`;
+              return `bind$${$2}`;
             } else if (/^catch:?$/.test($1)) {
-              return `$catch${$2}`;
+              return `catch$${$2}`;
             } else if (/^capture-bind:$/.test($1)) {
-              return `$on${$2}capture`;
+              return `bind$${$2}$capture`;
             } else if (/^capture-catch:$/.test($1)) {
-              return `$catch${$2}capture`;
+              return `catch$${$2}$capture`;
             } else {
               return $0;
             }

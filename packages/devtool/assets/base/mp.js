@@ -11880,12 +11880,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! prop-types */ "./node_modules/prop-types/index.js");
 /* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(prop_types__WEBPACK_IMPORTED_MODULE_2__);
 /* harmony import */ var _mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/mixins/BasicEventMixin */ "./src/mixins/BasicEventMixin.js");
-/* harmony import */ var _shared_Button__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../shared/Button */ "./src/components/shared/Button.js");
-/* harmony import */ var _framework___WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/framework/ */ "./src/framework/index.js");
-/* harmony import */ var _utils_callInternalAPI__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/callInternalAPI */ "./src/utils/callInternalAPI.js");
-/* harmony import */ var _utils_callBridge__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @/utils/callBridge */ "./src/utils/callBridge.js");
-/* harmony import */ var _utils_TestMixin__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @/utils/TestMixin */ "./src/utils/TestMixin.js");
-/* harmony import */ var _utils_trackTap__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @/utils/trackTap */ "./src/utils/trackTap.js");
+/* harmony import */ var _framework___WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/framework/ */ "./src/framework/index.js");
+/* harmony import */ var _utils_callInternalAPI__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/utils/callInternalAPI */ "./src/utils/callInternalAPI.js");
+/* harmony import */ var _utils_callBridge__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/callBridge */ "./src/utils/callBridge.js");
+/* harmony import */ var _utils_TestMixin__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @/utils/TestMixin */ "./src/utils/TestMixin.js");
+/* harmony import */ var _utils_trackTap__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @/utils/trackTap */ "./src/utils/trackTap.js");
+/* harmony import */ var _shared_Button__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../shared/Button */ "./src/components/shared/Button.js");
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
@@ -11907,11 +11907,11 @@ var FollowStatus = {
   userCancel: 2,
   unknownError: 3
 };
-var AButton = Object(_framework___WEBPACK_IMPORTED_MODULE_5__["createComponent"])({
+var AButton = Object(_framework___WEBPACK_IMPORTED_MODULE_4__["createComponent"])({
   name: 'button'
 })(create_react_class__WEBPACK_IMPORTED_MODULE_1___default()({
   displayName: 'Button',
-  mixins: [Object(_mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_3__["default"])(), _utils_TestMixin__WEBPACK_IMPORTED_MODULE_8__["default"]],
+  mixins: [Object(_mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_3__["default"])(), _utils_TestMixin__WEBPACK_IMPORTED_MODULE_7__["default"]],
   getDefaultProps: function getDefaultProps() {
     return {
       hoverStartTime: 20,
@@ -11927,7 +11927,7 @@ var AButton = Object(_framework___WEBPACK_IMPORTED_MODULE_5__["createComponent"]
     var publicId = _props.publicId;
     var onFollowLifestyle = _props.onFollowLifestyle;
     var $mp = _props.$mp;
-    Object(_utils_callInternalAPI__WEBPACK_IMPORTED_MODULE_6__["default"])('addFollow', {
+    Object(_utils_callInternalAPI__WEBPACK_IMPORTED_MODULE_5__["default"])('addFollow', {
       publicId: publicId,
       sourceId: 'tinyApp'
     }, function (res) {
@@ -11941,7 +11941,7 @@ var AButton = Object(_framework___WEBPACK_IMPORTED_MODULE_5__["createComponent"]
         }));
       }
 
-      Object(_utils_callBridge__WEBPACK_IMPORTED_MODULE_7__["default"])('toast', {
+      Object(_utils_callBridge__WEBPACK_IMPORTED_MODULE_6__["default"])('toast', {
         content: followed ? '关注成功' : '关注失败'
       });
     });
@@ -11966,7 +11966,7 @@ var AButton = Object(_framework___WEBPACK_IMPORTED_MODULE_5__["createComponent"]
     }
 
     if (openType === 'share') {
-      var page = Object(_framework___WEBPACK_IMPORTED_MODULE_5__["getCurrentPageImpl"])();
+      var page = Object(_framework___WEBPACK_IMPORTED_MODULE_4__["getCurrentPageImpl"])();
 
       if (page && page.publicInstance.onShareAppMessage) {
         page.callRemote('self', 'startShare', $mp.getNormalizedEvent('share'));
@@ -11990,7 +11990,7 @@ var AButton = Object(_framework___WEBPACK_IMPORTED_MODULE_5__["createComponent"]
         }
       } else {
         var scopes = scope.replace(/ /g, '').split(',');
-        Object(_utils_callInternalAPI__WEBPACK_IMPORTED_MODULE_6__["default"])('getComponentAuth', {
+        Object(_utils_callInternalAPI__WEBPACK_IMPORTED_MODULE_5__["default"])('getComponentAuth', {
           scopeNicks: scopes
         }, function (res) {
           if (res.error) {
@@ -12010,7 +12010,7 @@ var AButton = Object(_framework___WEBPACK_IMPORTED_MODULE_5__["createComponent"]
     }
 
     if (openType === 'launchApp') {
-      Object(_utils_callInternalAPI__WEBPACK_IMPORTED_MODULE_6__["default"])('launchApp', {
+      Object(_utils_callInternalAPI__WEBPACK_IMPORTED_MODULE_5__["default"])('launchApp', {
         resultData: appParameter
       }, function (res) {
         var onError = _this.props.onError;
@@ -12029,7 +12029,7 @@ var AButton = Object(_framework___WEBPACK_IMPORTED_MODULE_5__["createComponent"]
     }
 
     if (openType === 'contactShare') {
-      var _page = Object(_framework___WEBPACK_IMPORTED_MODULE_5__["getCurrentPageImpl"])();
+      var _page = Object(_framework___WEBPACK_IMPORTED_MODULE_4__["getCurrentPageImpl"])();
 
       if (_page && _page.publicInstance.onShareAppMessage) {
         _page.callRemote('self', 'shareToAlipayContact', $mp.getNormalizedEvent('share'));
@@ -12047,7 +12047,7 @@ var AButton = Object(_framework___WEBPACK_IMPORTED_MODULE_5__["createComponent"]
     }
 
     var nodeEvents = this.getNodeEvents();
-    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_shared_Button__WEBPACK_IMPORTED_MODULE_4__["default"], _objectSpread(_objectSpread(_objectSpread({}, nodeEvents), {}, {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_shared_Button__WEBPACK_IMPORTED_MODULE_9__["default"], _objectSpread(_objectSpread(_objectSpread({}, nodeEvents), {}, {
       id: props.id,
       size: props.size,
       activeStopPropagation: props.hoverStopPropagation,
@@ -12734,13 +12734,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! prop-types */ "./node_modules/prop-types/index.js");
 /* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(prop_types__WEBPACK_IMPORTED_MODULE_2__);
 /* harmony import */ var _framework___WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/framework/ */ "./src/framework/index.js");
-/* harmony import */ var _view_View__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../view/View */ "./src/components/view/View.js");
-/* harmony import */ var _form_mixin__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../form/mixin */ "./src/components/form/mixin.js");
+/* harmony import */ var _utils_eventReg__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @/utils/eventReg */ "./src/utils/eventReg.js");
+/* harmony import */ var _view_View__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../view/View */ "./src/components/view/View.js");
+/* harmony import */ var _form_mixin__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../form/mixin */ "./src/components/form/mixin.js");
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 
 
 
@@ -12756,7 +12758,7 @@ var CheckboxGroup = Object(_framework___WEBPACK_IMPORTED_MODULE_3__["createCompo
   childContextTypes: {
     checkboxGroup: prop_types__WEBPACK_IMPORTED_MODULE_2___default.a.any
   },
-  mixins: [_form_mixin__WEBPACK_IMPORTED_MODULE_5__["default"]],
+  mixins: [_form_mixin__WEBPACK_IMPORTED_MODULE_6__["default"]],
   getChildContext: function getChildContext() {
     return {
       checkboxGroup: this
@@ -12767,9 +12769,10 @@ var CheckboxGroup = Object(_framework___WEBPACK_IMPORTED_MODULE_3__["createCompo
         value2 = _e$detail.value2,
         value = _e$detail.value;
     this.updateValue(value2, value);
+    var onHandler = this.props[Object(_utils_eventReg__WEBPACK_IMPORTED_MODULE_7__["getPropsEventName"])('change', false, false)];
 
-    if (typeof this.props.$onchange === 'function') {
-      this.props.$onchange(this.props.$mp.getNormalizedEvent('change', {
+    if (typeof onHandler === 'function') {
+      onHandler(this.props.$mp.getNormalizedEvent('change', {
         detail: {
           value: this.state.value
         }
@@ -12792,7 +12795,7 @@ var CheckboxGroup = Object(_framework___WEBPACK_IMPORTED_MODULE_3__["createCompo
     this.state.value = allValue;
   },
   render: function render() {
-    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_view_View__WEBPACK_IMPORTED_MODULE_4__["default"], _objectSpread(_objectSpread({}, this.props), {}, {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_view_View__WEBPACK_IMPORTED_MODULE_5__["default"], _objectSpread(_objectSpread({}, this.props), {}, {
       role: 'group'
     }));
   }
@@ -12817,7 +12820,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! prop-types */ "./node_modules/prop-types/index.js");
 /* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(prop_types__WEBPACK_IMPORTED_MODULE_2__);
 /* harmony import */ var _framework___WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/framework/ */ "./src/framework/index.js");
-/* harmony import */ var _shared_Checkbox__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../shared/Checkbox */ "./src/components/shared/Checkbox.js");
+/* harmony import */ var _utils_eventReg__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/eventReg */ "./src/utils/eventReg.js");
+/* harmony import */ var _shared_Checkbox__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../shared/Checkbox */ "./src/components/shared/Checkbox.js");
+
 
 
 
@@ -12935,8 +12940,10 @@ __webpack_require__.r(__webpack_exports__);
       });
     }
 
-    if (typeof this.props.$onchange === 'function') {
-      this.props.$onchange(this.props.$mp.getNormalizedEvent('change', {
+    var onHandler = this.props[Object(_utils_eventReg__WEBPACK_IMPORTED_MODULE_6__["getPropsEventName"])('change', false, false)];
+
+    if (typeof onHandler === 'function') {
+      onHandler(this.props.$mp.getNormalizedEvent('change', {
         detail: {
           value: checked
         }
@@ -12952,7 +12959,7 @@ __webpack_require__.r(__webpack_exports__);
         controlled = _this$props.controlled,
         color = _this$props.color;
     var checked = controlled ? this.props.checked : this.state.checked;
-    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_shared_Checkbox__WEBPACK_IMPORTED_MODULE_4__["default"], {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_shared_Checkbox__WEBPACK_IMPORTED_MODULE_5__["default"], {
       prefixCls: 'a-checkbox',
       className: className,
       id: id,
@@ -15335,7 +15342,7 @@ function getValueFromProps(props) {
       this.context.form.setFieldValue(this.name, value);
     }
   },
-  componentWillReceiveProps: function componentWillReceiveProps(nextProps) {
+  UNSAFE_componentWillReceiveProps: function UNSAFE_componentWillReceiveProps(nextProps) {
     if (this.props.controlled) {
       return;
     }
@@ -15966,7 +15973,7 @@ function createComponent() {
           $style: Object(_normalizeStyle__WEBPACK_IMPORTED_MODULE_10__["default"])(this)
         };
       },
-      componentWillReceiveProps: function componentWillReceiveProps(nextProps) {
+      UNSAFE_componentWillReceiveProps: function UNSAFE_componentWillReceiveProps(nextProps) {
         if (this.props.style !== nextProps.style // native need recomputed
         || !_Platform__WEBPACK_IMPORTED_MODULE_9__["default"].browser && this.props.className !== nextProps.className) {
           this.setState({
@@ -16395,15 +16402,14 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _utils_setData__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/setData */ "./src/utils/setData.js");
 /* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
 /* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
-/* harmony import */ var _utils_reg__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/reg */ "./src/utils/reg.js");
+/* harmony import */ var _utils_eventReg__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/eventReg */ "./src/utils/eventReg.js");
 /* harmony import */ var _utils_shallowEqual__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/utils/shallowEqual */ "./src/utils/shallowEqual.js");
-/* harmony import */ var _utils_mapValues__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/mapValues */ "./src/utils/mapValues.js");
-/* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../common/global */ "./src/framework/common/global.js");
-/* harmony import */ var _EventHub__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../EventHub */ "./src/framework/EventHub.js");
-/* harmony import */ var _mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../mixins/PureRenderMixin */ "./src/framework/mixins/PureRenderMixin.js");
-/* harmony import */ var _mixins_CustomComponentEventMixin__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../mixins/CustomComponentEventMixin */ "./src/framework/mixins/CustomComponentEventMixin.js");
-/* harmony import */ var _utils_transformChildrenToSlots__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ../utils/transformChildrenToSlots */ "./src/framework/utils/transformChildrenToSlots.js");
-/* harmony import */ var _utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ../utils/normalizeComponentProps */ "./src/framework/utils/normalizeComponentProps.js");
+/* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../common/global */ "./src/framework/common/global.js");
+/* harmony import */ var _EventHub__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../EventHub */ "./src/framework/EventHub.js");
+/* harmony import */ var _mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../mixins/PureRenderMixin */ "./src/framework/mixins/PureRenderMixin.js");
+/* harmony import */ var _mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../mixins/BasicEventMixin */ "./src/framework/mixins/BasicEventMixin.js");
+/* harmony import */ var _utils_transformChildrenToSlots__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../utils/transformChildrenToSlots */ "./src/framework/utils/transformChildrenToSlots.js");
+/* harmony import */ var _utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ../utils/normalizeComponentProps */ "./src/framework/utils/normalizeComponentProps.js");
 function _extends() { _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
 
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
@@ -16411,7 +16417,6 @@ function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (O
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
 
 
 
@@ -16435,7 +16440,7 @@ function reset() {
 }
 
 reset();
-_EventHub__WEBPACK_IMPORTED_MODULE_8__["default"].addListener(['pageReady', 'pageUpdate'], function (e) {
+_EventHub__WEBPACK_IMPORTED_MODULE_7__["default"].addListener(['pageReady', 'pageUpdate'], function (e) {
   var _objectSpread2;
 
   e.payload = _objectSpread(_objectSpread({}, e.payload || {}), (_objectSpread2 = {}, _defineProperty(_objectSpread2, _utils_consts__WEBPACK_IMPORTED_MODULE_3__["PayloadKeyMountedComponents"], mountedComponents), _defineProperty(_objectSpread2, _utils_consts__WEBPACK_IMPORTED_MODULE_3__["PayloadKeyUnmountedComponents"], unmountedComponents), _objectSpread2));
@@ -16448,15 +16453,15 @@ function setComponentsConfig(componentsConfig) {
 
   for (var is in componentsConfig) {
     if (Object.hasOwnProperty.call(componentsConfig, is)) {
-      _common_global__WEBPACK_IMPORTED_MODULE_7__["default"].componentsConfig[is] = _common_global__WEBPACK_IMPORTED_MODULE_7__["default"].componentsConfig[is] || {};
-      _common_global__WEBPACK_IMPORTED_MODULE_7__["default"].componentsConfig[is].user = componentsConfig[is];
+      _common_global__WEBPACK_IMPORTED_MODULE_6__["default"].componentsConfig[is] = _common_global__WEBPACK_IMPORTED_MODULE_6__["default"].componentsConfig[is] || {};
+      _common_global__WEBPACK_IMPORTED_MODULE_6__["default"].componentsConfig[is].user = componentsConfig[is];
     }
   }
 }
 var renderCache = {};
 
 function getComponentConfig(is) {
-  var userConfig = _common_global__WEBPACK_IMPORTED_MODULE_7__["default"].componentsConfig[is].user || {};
+  var userConfig = _common_global__WEBPACK_IMPORTED_MODULE_6__["default"].componentsConfig[is].user || {};
   return userConfig;
 }
 
@@ -16465,7 +16470,7 @@ function getRender(is) {
     return renderCache[is];
   }
 
-  var setupConfig = _common_global__WEBPACK_IMPORTED_MODULE_7__["default"].componentsConfig[is].system;
+  var setupConfig = _common_global__WEBPACK_IMPORTED_MODULE_6__["default"].componentsConfig[is].system;
   var _render = setupConfig.render;
 
   var render = _render();
@@ -16482,7 +16487,7 @@ function getRender(is) {
     statics: {
       is: is
     },
-    mixins: [Object(_mixins_CustomComponentEventMixin__WEBPACK_IMPORTED_MODULE_10__["default"])(), _mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_9__["default"]],
+    mixins: [Object(_mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_9__["default"])(), _mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_8__["default"]],
     // getDefaultProps() {
     //   return getComponentConfig(is).properties || {};
     // },
@@ -16568,14 +16573,9 @@ function getRender(is) {
 
       if (diffProps) {
         var _this$normalizeProps = this.normalizeProps(diffProps),
-            newProps = _this$normalizeProps.newProps,
-            ownerId = _this$normalizeProps.ownerId;
+            newProps = _this$normalizeProps.newProps;
 
         info[_utils_consts__WEBPACK_IMPORTED_MODULE_3__["ComponentKeyDiffProps"]] = newProps;
-
-        if (ownerId) {
-          info[_utils_consts__WEBPACK_IMPORTED_MODULE_3__["ComponentKeyOwnerId"]] = ownerId;
-        }
       }
     },
     diffProps: function diffProps(prevProps) {
@@ -16588,7 +16588,7 @@ function getRender(is) {
       var updated = {};
       var isUpdated;
       var isDeleted;
-      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_12__["default"])(prevProps)).forEach(function (prevKey) {
+      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_11__["default"])(prevProps)).forEach(function (prevKey) {
         if (properties.hasOwnProperty(prevKey)) {
           if (!(prevKey in props)) {
             deleted.push(prevKey);
@@ -16599,7 +16599,7 @@ function getRender(is) {
           }
         }
       });
-      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_12__["default"])(props)).forEach(function (key) {
+      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_11__["default"])(props)).forEach(function (key) {
         if (properties.hasOwnProperty(key)) {
           if (!(key in prevProps)) {
             updated[key] = props[key];
@@ -16628,22 +16628,11 @@ function getRender(is) {
         newProps[_utils_consts__WEBPACK_IMPORTED_MODULE_3__["DiffKeyDeleted"]] = props[_utils_consts__WEBPACK_IMPORTED_MODULE_3__["DiffKeyDeleted"]];
       }
 
-      var ownerId;
-
       if (props[_utils_consts__WEBPACK_IMPORTED_MODULE_3__["DiffKeyUpdated"]]) {
-        var updated = newProps[_utils_consts__WEBPACK_IMPORTED_MODULE_3__["DiffKeyUpdated"]] = _objectSpread({}, props[_utils_consts__WEBPACK_IMPORTED_MODULE_3__["DiffKeyUpdated"]]);
-
-        Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(updated).forEach(function (p) {
-          /* 自定义事件 */
-          if (_utils_reg__WEBPACK_IMPORTED_MODULE_4__["eventReg"].test(p) && !_utils_reg__WEBPACK_IMPORTED_MODULE_4__["commonEventReg"].test(p) && updated[p]) {
-            ownerId = updated[p][_utils_consts__WEBPACK_IMPORTED_MODULE_3__["ComponentKeyOwnerId"]];
-            updated[p] = updated[p][_utils_consts__WEBPACK_IMPORTED_MODULE_3__["ComponentKeyName"]];
-          }
-        });
+        newProps[_utils_consts__WEBPACK_IMPORTED_MODULE_3__["DiffKeyUpdated"]] = _objectSpread({}, props[_utils_consts__WEBPACK_IMPORTED_MODULE_3__["DiffKeyUpdated"]]);
       }
 
       return {
-        ownerId: ownerId,
         newProps: newProps
       };
     },
@@ -16705,7 +16694,7 @@ function getRender(is) {
         detail: detail
       }, options));
 
-      this._root.dispatchEvent(event);
+      this.__basicEventRoot.dispatchEvent(event);
     },
     setData: function setData(toBeData, callback) {
       var data = this.state;
@@ -16725,33 +16714,31 @@ function getRender(is) {
     addCustomEvent: function addCustomEvent(key, fn) {
       var _this2 = this;
 
-      if (_utils_reg__WEBPACK_IMPORTED_MODULE_4__["eventReg"].test(key) && !_utils_reg__WEBPACK_IMPORTED_MODULE_4__["commonEventReg"].test(key)) {
-        var result = key.match(_utils_reg__WEBPACK_IMPORTED_MODULE_4__["eventReg"]);
+      var result = key.match(_utils_eventReg__WEBPACK_IMPORTED_MODULE_4__["eventReg"]);
 
-        if (result) {
-          var onHandler = fn;
+      if (result) {
+        var onHandler = fn;
 
-          if (this._root) {
-            var handler = function handler(e) {
-              var isCatchHandler = result[1] === 'catch';
+        if (this.__basicEventRoot) {
+          var handler = function handler(e) {
+            var isCatchHandler = result[1] === 'catch';
 
-              if (isCatchHandler && e.stopPropagation) {
-                e.stopPropagation();
-                onHandler(e);
-                return;
-              }
+            if (isCatchHandler && e.stopPropagation) {
+              e.stopPropagation();
+              typeof onHandler === 'function' && onHandler(e);
+              return;
+            }
 
-              onHandler(e);
-            };
+            typeof onHandler === 'function' && onHandler(e);
+          };
 
-            this._root.addEventListener(result[2], handler, result[3] === 'capture');
+          this.__basicEventRoot.addEventListener(result[2], handler, result[3] === '$capture');
 
-            return {
-              remove: function remove() {
-                _this2._root.removeEventListener(result[2], handler);
-              }
-            };
-          }
+          return {
+            remove: function remove() {
+              _this2.__basicEventRoot.removeEventListener(result[2], handler);
+            }
+          };
         }
       }
     },
@@ -16760,25 +16747,23 @@ function getRender(is) {
 
       for (var key in props) {
         if (Object.hasOwnProperty.call(props, key)) {
-          this.allCustomEvents[key] = this.addCustomEvent(key, props[key]);
+          /* 自定义事件 */
+          if (_utils_eventReg__WEBPACK_IMPORTED_MODULE_4__["eventReg"].test(key) && !_utils_eventReg__WEBPACK_IMPORTED_MODULE_4__["commonBubblesEventsReg"].test(key)) {
+            this.allCustomEvents[key] = this.addCustomEvent(key, props[key]);
+          }
         }
       }
     },
     render: function render() {
-      var _this3 = this;
-
-      var props = Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_12__["default"])(this.props);
-      props.$slots = Object(_utils_transformChildrenToSlots__WEBPACK_IMPORTED_MODULE_11__["default"])(this.props.children);
+      var props = Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_11__["default"])(this.props);
+      props.$slots = Object(_utils_transformChildrenToSlots__WEBPACK_IMPORTED_MODULE_10__["default"])(this.props.children);
       props.$scopedSlots = this.props.$scopedSlots;
       var id = props.id,
           className = props.className;
       var nodeEvents = this.getNodeEvents();
       return /*#__PURE__*/React.createElement("span", _extends({
         id: id,
-        className: className,
-        ref: function ref(_ref) {
-          return _this3._root = _ref;
-        }
+        className: className
       }, nodeEvents), getRender(is).call(this, _objectSpread({
         $id: this.id
       }, this.state)));
@@ -17197,15 +17182,16 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
 /* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react_dom__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _utils_addEvents__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/addEvents */ "./src/utils/addEvents.js");
+/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
+/* harmony import */ var _utils_eventReg__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/eventReg */ "./src/utils/eventReg.js");
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-/**
- * 仅用于UI components的事件处理
- */
+
+
 
 
 
@@ -17223,10 +17209,9 @@ function defaultCreateTouchList() {
   });
 }
 
-function callEvent(instance, eventType, srcEvent, more, capture) {
-  var c = capture ? 'capture' : '';
-  var catchHandler = instance.props["$catch".concat(eventType).concat(c)];
-  var e = instance.props.$mp.getNormalizedEvent({
+function callBubblesEvent(instance, eventType, srcEvent, more, capture) {
+  var catchHandler = instance.props[Object(_utils_eventReg__WEBPACK_IMPORTED_MODULE_4__["getPropsEventName"])(eventType, true, capture)];
+  var e = instance.getNormalizedEvent({
     eventType: eventType,
     srcEvent: srcEvent
   }, more);
@@ -17234,13 +17219,13 @@ function callEvent(instance, eventType, srcEvent, more, capture) {
 
   if (catchHandler && srcEvent.stopPropagation) {
     srcEvent.stopPropagation();
-    catchHandler(e);
+    typeof catchHandler === 'function' && catchHandler(e);
     return;
   }
 
-  var onHandler = instance.props["$on".concat(eventType).concat(c)];
+  var onHandler = instance.props[Object(_utils_eventReg__WEBPACK_IMPORTED_MODULE_4__["getPropsEventName"])(eventType, false, capture)];
 
-  if (onHandler) {
+  if (typeof onHandler === 'function') {
     onHandler(e);
   }
 }
@@ -17324,311 +17309,8 @@ function BasicEventMixin() {
         nativeEvent.$target = this.getTargetForEvent();
       }
     },
-    getTargetForEvent: function getTargetForEvent() {
-      var props = this.props;
-      var __basicEventRoot = this.__basicEventRoot;
-      return _objectSpread(_objectSpread({}, props.$mp.getTargetForEvent()), {}, {
-        offsetLeft: __basicEventRoot.offsetLeft,
-        offsetTop: __basicEventRoot.offsetTop
-      });
-    },
     hasEvent: function hasEvent(event, capture) {
-      var c = capture ? 'capture' : '';
-      return this.props["$on".concat(event).concat(c)] || this.props["$catch".concat(event).concat(c)];
-    },
-    onTap: function onTap(srcEvent) {
-      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-      this.recordTarget(srcEvent); // ios also trigger onTap after onLongTap
-
-      if (this.__longTapTriggered) {
-        return;
-      }
-
-      var eventName = "tap";
-
-      if (this.hasEvent(eventName, capture)) {
-        callEvent(this, eventName, srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap), capture);
-      }
-    },
-    onTouchStart: function onTouchStart(srcEvent) {
-      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-      this.recordTarget(srcEvent);
-      this.__longTapTriggered = 0;
-      var eventName = "touchstart";
-
-      if (this.hasEvent(eventName, capture)) {
-        callEvent(this, eventName, srcEvent, {
-          touches: createTouchList.call(this, srcEvent.touches),
-          changedTouches: createTouchList.call(this, srcEvent.changedTouches)
-        }, capture);
-      }
-    },
-    onTouchMove: function onTouchMove(srcEvent) {
-      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-      this.recordTarget(srcEvent);
-      var eventName = "touchmove";
-
-      if (this.hasEvent(eventName, capture)) {
-        callEvent(this, eventName, srcEvent, {
-          touches: createTouchList.call(this, srcEvent.touches),
-          changedTouches: createTouchList.call(this, srcEvent.changedTouches)
-        }, capture);
-      }
-    },
-    onTouchEnd: function onTouchEnd(srcEvent) {
-      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-      this.recordTarget(srcEvent);
-      var eventName = "touchend";
-
-      if (this.hasEvent(eventName, capture)) {
-        callEvent(this, eventName, srcEvent, {
-          touches: createTouchList.call(this, srcEvent.touches),
-          changedTouches: createTouchList.call(this, srcEvent.changedTouches)
-        }, capture);
-      }
-    },
-    onTouchCancel: function onTouchCancel(srcEvent) {
-      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-      this.recordTarget(srcEvent);
-      var eventName = "touchcancel";
-
-      if (this.hasEvent(eventName, capture)) {
-        callEvent(this, eventName, srcEvent, {
-          touches: createTouchList.call(this, srcEvent.touches),
-          changedTouches: createTouchList.call(this, srcEvent.changedTouches)
-        }, capture);
-      }
-    },
-    onTransitionEnd: function onTransitionEnd(srcEvent) {
-      this.recordTarget(srcEvent);
-
-      if (this.hasEvent('transitionend')) {
-        callEvent(this, 'transitionend', srcEvent, {
-          detail: {
-            elapsedTime: srcEvent.elapsedTime,
-            propertyName: srcEvent.propertyName
-          }
-        });
-      }
-    },
-    onAnimationStart: function onAnimationStart(srcEvent) {
-      this.recordTarget(srcEvent);
-
-      if (this.hasEvent('animationstart')) {
-        callEvent(this, 'animationstart', srcEvent, {
-          detail: {
-            elapsedTime: srcEvent.elapsedTime,
-            animationName: srcEvent.animationName
-          }
-        });
-      }
-    },
-    onAnimationIteration: function onAnimationIteration(srcEvent) {
-      this.recordTarget(srcEvent);
-
-      if (this.hasEvent('animationiteration')) {
-        callEvent(this, 'animationiteration', srcEvent, {
-          detail: {
-            elapsedTime: srcEvent.elapsedTime,
-            animationName: srcEvent.animationName
-          }
-        });
-      }
-    },
-    onAnimationEnd: function onAnimationEnd(srcEvent) {
-      this.recordTarget(srcEvent);
-
-      if (this.hasEvent('animationend')) {
-        callEvent(this, 'animationend', srcEvent, {
-          detail: {
-            elapsedTime: srcEvent.elapsedTime,
-            animationName: srcEvent.animationName
-          }
-        });
-      }
-    },
-    onLongTap: function onLongTap(srcEvent) {
-      this.__longTapTriggered = 1;
-
-      if (this.hasEvent('LongTap')) {
-        callEvent(this, 'longTap', srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap));
-      }
-    },
-    registryEvent: function registryEvent(eventName) {
-      var _this = this;
-
-      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-      return function (srcEvent) {
-        _this[eventName](srcEvent, capture);
-      };
-    },
-    getNodeEvents: function getNodeEvents() {
-      return {
-        onClick: this.registryEvent('onTap'),
-        onClickCapture: this.registryEvent('onTap', true),
-        onTouchStart: this.registryEvent('onTouchStart'),
-        onTouchStartCapture: this.registryEvent('onTouchStart', true),
-        onTouchMove: this.registryEvent('onTouchMove'),
-        onTouchMoveCapture: this.registryEvent('onTouchMove', true),
-        onTouchEnd: this.registryEvent('onTouchEnd'),
-        onTouchEndCapture: this.registryEvent('onTouchEnd', true),
-        onTouchCancel: this.registryEvent('onTouchCancel'),
-        onTouchCancelCapture: this.registryEvent('onTouchCancel', true),
-        onAnimationStart: this.registryEvent('onAnimationStart'),
-        onAnimationIteration: this.registryEvent('onAnimationIteration'),
-        onAnimationEnd: this.registryEvent('onAnimationEnd'),
-        onTransitionEnd: this.registryEvent('onTransitionEnd')
-      };
-    }
-  };
-}
-
-/***/ }),
-
-/***/ "./src/framework/mixins/CustomComponentEventMixin.js":
-/*!***********************************************************!*\
-  !*** ./src/framework/mixins/CustomComponentEventMixin.js ***!
-  \***********************************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return CustomComponentEventMixin; });
-/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
-/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react_dom__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _utils_addEvents__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/addEvents */ "./src/utils/addEvents.js");
-/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
-/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
-
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-
-
-
-
-
-function defaultCreateTouchList() {
-  var touchList = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-  var list = [].slice.call(touchList, 0);
-  return list.map(function (item) {
-    return {
-      clientX: item.clientX,
-      clientY: item.clientY,
-      identifier: item.identifier,
-      pageX: item.pageX,
-      pageY: item.pageY
-    };
-  });
-}
-
-function callEvent(instance, eventType, srcEvent, more, capture) {
-  var c = capture ? 'capture' : '';
-  var catchHandler = instance.props["$catch".concat(eventType).concat(c)];
-  var e = instance.getNormalizedEvent({
-    eventType: eventType,
-    srcEvent: srcEvent
-  }, more);
-  e.currentTarget = _objectSpread(_objectSpread({}, e.currentTarget), instance.getTargetForEvent());
-
-  if (catchHandler && srcEvent.stopPropagation) {
-    srcEvent.stopPropagation();
-    catchHandler(e);
-    return;
-  }
-
-  var onHandler = instance.props["$on".concat(eventType).concat(c)];
-
-  if (onHandler) {
-    onHandler(e);
-  }
-}
-
-function defaultCreateTap(nativeEvent) {
-  var detail = {};
-
-  if (nativeEvent) {
-    nativeEvent = nativeEvent.nativeEvent || nativeEvent;
-
-    if ('pageX' in nativeEvent) {
-      detail.pageX = nativeEvent.pageX;
-      detail.pageY = nativeEvent.pageY;
-    }
-
-    if ('clientX' in nativeEvent) {
-      detail.clientX = nativeEvent.clientX;
-      detail.clientY = nativeEvent.clientY;
-    } else if ('pageX' in detail) {
-      detail.clientX = detail.pageX - window.pageXOffset;
-      detail.clientY = detail.pageY - window.pageYOffset;
-    }
-  }
-
-  return {
-    detail: detail
-  };
-}
-
-function detachScroll(instance) {
-  if (instance.detachScrollEvent) {
-    instance.detachScrollEvent.remove();
-    instance.detachScrollEvent = null;
-  }
-}
-
-function attachScroll(instance) {
-  var disableScroll = instance.props.disableScroll;
-  var detachScrollEvent = instance.detachScrollEvent;
-  var __basicEventRoot = instance.__basicEventRoot;
-
-  if (!__basicEventRoot) {
-    return;
-  }
-
-  if (!disableScroll && detachScrollEvent) {
-    return detachScroll(instance);
-  }
-
-  if (disableScroll && !detachScrollEvent) {
-    instance.detachScrollEvent = Object(_utils_addEvents__WEBPACK_IMPORTED_MODULE_1__["default"])(instance.__basicEventRoot, {
-      touchmove: function touchmove(e) {
-        e.preventDefault();
-      }
-    });
-  }
-}
-
-function CustomComponentEventMixin() {
-  var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-      _ref$createTouchList = _ref.createTouchList,
-      createTouchList = _ref$createTouchList === void 0 ? defaultCreateTouchList : _ref$createTouchList,
-      _ref$createTap = _ref.createTap,
-      createTap = _ref$createTap === void 0 ? defaultCreateTap : _ref$createTap;
-
-  return {
-    componentDidMount: function componentDidMount() {
-      this.__basicEventRoot = react_dom__WEBPACK_IMPORTED_MODULE_0___default.a.findDOMNode(this);
-      attachScroll(this);
-    },
-    componentDidUpdate: function componentDidUpdate() {
-      attachScroll(this);
-    },
-    componentWillUnmount: function componentWillUnmount() {
-      detachScroll(this);
-    },
-    recordTarget: function recordTarget(srcEvent) {
-      var nativeEvent = srcEvent && srcEvent.nativeEvent;
-
-      if (nativeEvent && !nativeEvent.$target) {
-        nativeEvent.$target = this.getTargetForEvent();
-      }
-    },
-    hasEvent: function hasEvent(event, capture) {
-      var c = capture ? 'capture' : '';
-      return this.props["$on".concat(event).concat(c)] || this.props["$catch".concat(event).concat(c)];
+      return Object(_utils_eventReg__WEBPACK_IMPORTED_MODULE_4__["getPropsEventName"])(event, false, capture) || Object(_utils_eventReg__WEBPACK_IMPORTED_MODULE_4__["getPropsEventName"])(event, true, capture);
     },
     getDataset: function getDataset() {
       var props = this.props;
@@ -17694,7 +17376,7 @@ function CustomComponentEventMixin() {
       var eventName = 'tap';
 
       if (this.hasEvent(eventName, capture)) {
-        callEvent(this, eventName, srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap), capture);
+        callBubblesEvent(this, eventName, srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap), capture);
       }
     },
     onTouchStart: function onTouchStart(srcEvent) {
@@ -17704,7 +17386,7 @@ function CustomComponentEventMixin() {
       var eventName = 'touchstart';
 
       if (this.hasEvent(eventName, capture)) {
-        callEvent(this, eventName, srcEvent, {
+        callBubblesEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
           changedTouches: createTouchList.call(this, srcEvent.changedTouches)
         }, capture);
@@ -17716,58 +17398,62 @@ function CustomComponentEventMixin() {
       var eventName = 'touchmove';
 
       if (this.hasEvent(eventName, capture)) {
-        callEvent(this, eventName, srcEvent, {
+        callBubblesEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
           changedTouches: createTouchList.call(this, srcEvent.changedTouches)
         }, capture);
       }
     },
     onTransitionEnd: function onTransitionEnd(srcEvent) {
+      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
       this.recordTarget(srcEvent);
 
-      if (this.hasEvent('transitionend')) {
-        callEvent(this, 'transitionend', srcEvent, {
+      if (this.hasEvent('transitionend', capture)) {
+        callBubblesEvent(this, 'transitionend', srcEvent, {
           detail: {
             elapsedTime: srcEvent.elapsedTime,
             propertyName: srcEvent.propertyName
           }
-        });
+        }, capture);
       }
     },
     onAnimationStart: function onAnimationStart(srcEvent) {
+      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
       this.recordTarget(srcEvent);
 
-      if (this.hasEvent('animationstart')) {
-        callEvent(this, 'animationstart', srcEvent, {
+      if (this.hasEvent('animationstart', capture)) {
+        callBubblesEvent(this, 'animationstart', srcEvent, {
           detail: {
             elapsedTime: srcEvent.elapsedTime,
             animationName: srcEvent.animationName
           }
-        });
+        }, capture);
       }
     },
     onAnimationIteration: function onAnimationIteration(srcEvent) {
+      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
       this.recordTarget(srcEvent);
 
-      if (this.hasEvent('animationiteration')) {
-        callEvent(this, 'animationiteration', srcEvent, {
+      if (this.hasEvent('animationiteration', capture)) {
+        callBubblesEvent(this, 'animationiteration', srcEvent, {
           detail: {
             elapsedTime: srcEvent.elapsedTime,
             animationName: srcEvent.animationName
           }
-        });
+        }, capture);
       }
     },
     onAnimationEnd: function onAnimationEnd(srcEvent) {
+      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
       this.recordTarget(srcEvent);
 
-      if (this.hasEvent('animationend')) {
-        callEvent(this, 'animationend', srcEvent, {
+      if (this.hasEvent('animationend', capture)) {
+        callBubblesEvent(this, 'animationend', srcEvent, {
           detail: {
             elapsedTime: srcEvent.elapsedTime,
             animationName: srcEvent.animationName
           }
-        });
+        }, capture);
       }
     },
     onTouchEnd: function onTouchEnd(srcEvent) {
@@ -17776,7 +17462,7 @@ function CustomComponentEventMixin() {
       var eventName = 'touchend';
 
       if (this.hasEvent(eventName, capture)) {
-        callEvent(this, eventName, srcEvent, {
+        callBubblesEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
           changedTouches: createTouchList.call(this, srcEvent.changedTouches)
         }, capture);
@@ -17788,7 +17474,7 @@ function CustomComponentEventMixin() {
       var eventName = 'touchcancel';
 
       if (this.hasEvent(eventName, capture)) {
-        callEvent(this, eventName, srcEvent, {
+        callBubblesEvent(this, eventName, srcEvent, {
           touches: createTouchList.call(this, srcEvent.touches),
           changedTouches: createTouchList.call(this, srcEvent.changedTouches)
         }, capture);
@@ -17798,7 +17484,7 @@ function CustomComponentEventMixin() {
       this.__longTapTriggered = 1;
 
       if (this.hasEvent('LongTap')) {
-        callEvent(this, 'longTap', srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap));
+        callBubblesEvent(this, 'longTap', srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap));
       }
     },
     registryEvent: function registryEvent(eventName) {
@@ -17822,9 +17508,13 @@ function CustomComponentEventMixin() {
         onTouchCancel: this.registryEvent('onTouchCancel'),
         onTouchCancelCapture: this.registryEvent('onTouchCancel', true),
         onAnimationStart: this.registryEvent('onAnimationStart'),
+        onAnimationStartCapture: this.registryEvent('onAnimationStart', true),
         onAnimationIteration: this.registryEvent('onAnimationIteration'),
+        onAnimationIterationCapture: this.registryEvent('onAnimationIteration', true),
         onAnimationEnd: this.registryEvent('onAnimationEnd'),
-        onTransitionEnd: this.registryEvent('onTransitionEnd')
+        onAnimationEndCapture: this.registryEvent('onAnimationEnd', true),
+        onTransitionEnd: this.registryEvent('onTransitionEnd'),
+        onTransitionEndCapture: this.registryEvent('onTransitionEnd', true)
       };
     }
   };
@@ -19472,6 +19162,41 @@ function escapeLogParams(params) {
 
 /***/ }),
 
+/***/ "./src/utils/eventReg.js":
+/*!*******************************!*\
+  !*** ./src/utils/eventReg.js ***!
+  \*******************************/
+/*! exports provided: eventReg, commonBubblesEvents, commonBubblesEventsReg, getPropsEventName */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "eventReg", function() { return eventReg; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "commonBubblesEvents", function() { return commonBubblesEvents; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "commonBubblesEventsReg", function() { return commonBubblesEventsReg; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getPropsEventName", function() { return getPropsEventName; });
+var eventReg = /^(bind|catch)\$([A-Za-z_]+)(\$capture)?$/;
+var commonBubblesEvents = ['tap', 'touchstart', 'touchmove', 'touchend', 'touchcancel', 'transitionend', 'animationstart', 'animationiteration', 'animationend'];
+var commonBubblesEventsReg = new RegExp("(bind|catch)$(".concat(commonBubblesEvents.join('|'), ")($capture)?$"));
+function getPropsEventName(name) {
+  var isCatch = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+  var capture = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+  var arr = [];
+  arr.push(isCatch ? 'catch' : 'bind');
+
+  if (name) {
+    arr.push(name);
+  }
+
+  if (capture) {
+    arr.push('capture');
+  }
+
+  return arr.join('$');
+}
+
+/***/ }),
+
 /***/ "./src/utils/focusInput.js":
 /*!*********************************!*\
   !*** ./src/utils/focusInput.js ***!
@@ -19759,35 +19484,6 @@ function debug(type) {
 
 /***/ }),
 
-/***/ "./src/utils/mapValues.js":
-/*!********************************!*\
-  !*** ./src/utils/mapValues.js ***!
-  \********************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return mapValues; });
-function mapValues(obj, key) {
-  obj = obj || {};
-  var ret = {};
-
-  for (var k in obj) {
-    if (Object.hasOwnProperty.call(obj, k)) {
-      var item = obj[k] || {};
-
-      if (typeof item[key] !== 'undefined') {
-        ret[k] = item[key];
-      }
-    }
-  }
-
-  return ret;
-}
-
-/***/ }),
-
 /***/ "./src/utils/mergeArray.js":
 /*!*********************************!*\
   !*** ./src/utils/mergeArray.js ***!
@@ -19828,22 +19524,6 @@ function objectKeys(obj) {
 
   return [];
 }
-
-/***/ }),
-
-/***/ "./src/utils/reg.js":
-/*!**************************!*\
-  !*** ./src/utils/reg.js ***!
-  \**************************/
-/*! exports provided: eventReg, commonEventReg */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "eventReg", function() { return eventReg; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "commonEventReg", function() { return commonEventReg; });
-var eventReg = /^\$(on|catch)([A-Za-z_]+)(capture)?$/;
-var commonEventReg = /^\$(on|catch)(tap|touchstart|touchmove|touchend|touchcancel|transitionend|animationstart|animationiteration|animationend)(capture)?$/;
 
 /***/ }),
 
@@ -20664,13 +20344,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var create_react_class__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! create-react-class */ "./node_modules/create-react-class/index.js");
 /* harmony import */ var create_react_class__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(create_react_class__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var rc_touchable__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rc-touchable */ "./node_modules/rc-touchable/es/index.js");
-/* harmony import */ var _mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../mixins/BasicEventMixin */ "./src/mixins/BasicEventMixin.js");
-/* harmony import */ var _AnimationViewMixin__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./AnimationViewMixin */ "./src/view/AnimationViewMixin.js");
-/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./utils */ "./src/view/utils.js");
-/* harmony import */ var _utils_addEvents__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/addEvents */ "./src/utils/addEvents.js");
-/* harmony import */ var _utils_isNodeVisible__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @/utils/isNodeVisible */ "./src/utils/isNodeVisible.js");
-/* harmony import */ var _utils_throttle__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @/utils/throttle */ "./src/utils/throttle.js");
-/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
+/* harmony import */ var _utils_addEvents__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/addEvents */ "./src/utils/addEvents.js");
+/* harmony import */ var _utils_isNodeVisible__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/isNodeVisible */ "./src/utils/isNodeVisible.js");
+/* harmony import */ var _utils_throttle__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/utils/throttle */ "./src/utils/throttle.js");
+/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./utils */ "./src/view/utils.js");
+/* harmony import */ var _AnimationViewMixin__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./AnimationViewMixin */ "./src/view/AnimationViewMixin.js");
+/* harmony import */ var _mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../mixins/BasicEventMixin */ "./src/mixins/BasicEventMixin.js");
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
@@ -20723,15 +20403,15 @@ function removeTransform(transform, property) {
 
 function getStyleFromAnimation(component, _animation, node) {
   var style = {};
-  var animation = Object(_utils__WEBPACK_IMPORTED_MODULE_5__["expandAnimation"])(_animation || []);
+  var animation = Object(_utils__WEBPACK_IMPORTED_MODULE_7__["expandAnimation"])(_animation || []);
   var transform = node.style.transform || '';
   animation.forEach(function (a) {
     var p = a[0];
     var value = a[1];
 
-    if (_utils__WEBPACK_IMPORTED_MODULE_5__["lengthCssPropNames"][p]) {
+    if (_utils__WEBPACK_IMPORTED_MODULE_7__["lengthCssPropNames"][p]) {
       style[p] = transformUnit(value[0]);
-    } else if (_utils__WEBPACK_IMPORTED_MODULE_5__["colorCssPropNames"][p]) {
+    } else if (_utils__WEBPACK_IMPORTED_MODULE_7__["colorCssPropNames"][p]) {
       style[p] = value[0];
     } else {
       transform = removeTransform(transform, p);
@@ -20744,9 +20424,9 @@ function getStyleFromAnimation(component, _animation, node) {
         }
 
         transform += " ".concat(p, "(").concat(newValue.join(','), ")");
-      } else if (_utils__WEBPACK_IMPORTED_MODULE_5__["rotateProperties"][p] || _utils__WEBPACK_IMPORTED_MODULE_5__["skewProperties"][p]) {
+      } else if (_utils__WEBPACK_IMPORTED_MODULE_7__["rotateProperties"][p] || _utils__WEBPACK_IMPORTED_MODULE_7__["skewProperties"][p]) {
         transform += " ".concat(getDegreeTransform(p, value));
-      } else if (_utils__WEBPACK_IMPORTED_MODULE_5__["translateProperties"][p]) {
+      } else if (_utils__WEBPACK_IMPORTED_MODULE_7__["translateProperties"][p]) {
         transform += " ".concat(getTranslateTransform(p, value));
       } else {
         transform += " ".concat(getNormalTransform(p, value));
@@ -20765,10 +20445,10 @@ function getStyleFromAnimation(component, _animation, node) {
 
 /* harmony default export */ __webpack_exports__["default"] = (create_react_class__WEBPACK_IMPORTED_MODULE_1___default()({
   displayName: 'View',
-  mixins: [Object(_mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_3__["default"])(), _AnimationViewMixin__WEBPACK_IMPORTED_MODULE_4__["default"]],
+  mixins: [Object(_mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_9__["default"])(), _AnimationViewMixin__WEBPACK_IMPORTED_MODULE_8__["default"]],
   componentDidMount: function componentDidMount() {
     this.firstAppeared = false;
-    this.checkVisible = Object(_utils_throttle__WEBPACK_IMPORTED_MODULE_8__["default"])(this.checkVisible, 300, {
+    this.checkVisible = Object(_utils_throttle__WEBPACK_IMPORTED_MODULE_5__["default"])(this.checkVisible, 300, {
       leading: false
     });
     this.handleAppear();
@@ -20839,7 +20519,7 @@ function getStyleFromAnimation(component, _animation, node) {
       this.checkVisible();
 
       if (!this.scrollEvent) {
-        this.scrollEvent = Object(_utils_addEvents__WEBPACK_IMPORTED_MODULE_6__["default"])(window, {
+        this.scrollEvent = Object(_utils_addEvents__WEBPACK_IMPORTED_MODULE_3__["default"])(window, {
           scroll: this.checkVisible
         });
       }
@@ -20848,7 +20528,7 @@ function getStyleFromAnimation(component, _animation, node) {
         var scrollParent = this.getScrollParent();
 
         if (scrollParent) {
-          this.scrollParentEvent = Object(_utils_addEvents__WEBPACK_IMPORTED_MODULE_6__["default"])(scrollParent, {
+          this.scrollParentEvent = Object(_utils_addEvents__WEBPACK_IMPORTED_MODULE_3__["default"])(scrollParent, {
             scroll: this.checkVisible
           });
         }
@@ -20884,7 +20564,7 @@ function getStyleFromAnimation(component, _animation, node) {
         _this$props3$appearOf = _this$props3.appearOffset,
         appearOffset = _this$props3$appearOf === void 0 ? 0 : _this$props3$appearOf,
         $mp = _this$props3.$mp;
-    var viewVisible = Object(_utils_isNodeVisible__WEBPACK_IMPORTED_MODULE_7__["default"])(this.root, this.scrollParent, appearOffset); // 是否可见
+    var viewVisible = Object(_utils_isNodeVisible__WEBPACK_IMPORTED_MODULE_4__["default"])(this.root, this.scrollParent, appearOffset); // 是否可见
 
     if (viewVisible) {
       // 之前不可见
@@ -20992,7 +20672,7 @@ function getStyleFromAnimation(component, _animation, node) {
       touchableProps.delayPressOut = props.hoverStayTime;
     }
 
-    if (this.hasEvent('LongTap')) {
+    if (this.hasEvent('longtap')) {
       touchableProps.onLongPress = this.onLongTap;
     }
 
@@ -21018,7 +20698,7 @@ function getStyleFromAnimation(component, _animation, node) {
       ref: this.saveRoot
     }), children);
 
-    if (Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_9__["default"])(touchableProps).length) {
+    if (Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_6__["default"])(touchableProps).length) {
       return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(rc_touchable__WEBPACK_IMPORTED_MODULE_2__["default"], _objectSpread(_objectSpread({}, touchableProps), {}, {
         activeStopPropagation: props.hoverStopPropagation
       }), content);

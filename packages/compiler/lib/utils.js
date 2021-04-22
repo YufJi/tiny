@@ -289,14 +289,7 @@ function getImports(imports = [], baseDir, option) {
   return imports.map((p) => getImport(p, baseDir, option));
 }
 
-function isCommonEvent(eventName) {
-  const jsxCommonEventReg = /^\$(on|catch)(tap|touchstart|touchmove|touchend|touchcancel|transitionend|animationstart|animationiteration|animationend)(capture)?$/;
-
-  return jsxCommonEventReg.test(eventName);
-}
-
 module.exports = {
-  isCommonEvent,
   getSecurityHeader,
   cleanPageJson(json) {
     const ret = { ...json };

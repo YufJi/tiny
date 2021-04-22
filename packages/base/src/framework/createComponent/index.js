@@ -72,7 +72,7 @@ export default function createComponent(config = {}) {
           $style: normalizeStyle(this),
         };
       },
-      componentWillReceiveProps(nextProps) {
+      UNSAFE_componentWillReceiveProps(nextProps) {
         if (this.props.style !== nextProps.style
                 // native need recomputed
                 || !Platform.browser && this.props.className !== nextProps.className) {

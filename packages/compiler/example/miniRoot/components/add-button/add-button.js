@@ -13,19 +13,19 @@ Component({
 
   lifetimes: {
     created() {
-      console.log(1,this.properties, this.data)
+      console.log(1, this.properties, this.data);
     },
     attached() {
-      console.log(2,this.properties, this.data)
+      console.log(2, this.properties, this.data);
     },
     ready() {
-      console.log(3,this.properties, this.data)
+      console.log(3, this.properties, this.data);
     },
     moved() {
-      console.log(4,this.properties)
+      console.log(4, this.properties);
     },
     detached() {
-      console.log(5,this.properties)
+      console.log(5, this.properties);
     },
   },
 

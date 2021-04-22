@@ -2,6 +2,7 @@ import React from 'react';
 import createReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
 import { createComponent } from '@/framework/';
+import { getPropsEventName } from '@/utils/eventReg';
 import View from '../view/View';
 import formMixin from '../form/mixin';
 
@@ -25,8 +26,9 @@ const CheckboxGroup = createComponent({
 
     this.updateValue(value2, value);
 
-    if (typeof this.props.$onchange === 'function') {
-      this.props.$onchange(this.props.$mp.getNormalizedEvent('change', {
+    const onHandler = this.props[getPropsEventName('change', false, false)];
+    if (typeof onHandler === 'function') {
+      onHandler(this.props.$mp.getNormalizedEvent('change', {
         detail: {
           value: this.state.value,
         },

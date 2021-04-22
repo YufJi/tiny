@@ -1,15 +1,13 @@
-
 import React from 'react';
 import createReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
 import BasicEventMixin from '@/mixins/BasicEventMixin';
-import Button from '../shared/Button';
 import { createComponent, getCurrentPageImpl } from '@/framework/';
 import callInternalAPI from '@/utils/callInternalAPI';
 import callBridge from '@/utils/callBridge';
 import TestMixin from '@/utils/TestMixin';
 import trackTap from '@/utils/trackTap';
-
+import Button from '../shared/Button';
 
 const FollowStatus = {
   followed: 1,
@@ -23,7 +21,7 @@ const AButton = createComponent({
   displayName: 'Button',
   mixins: [
     BasicEventMixin(),
-    TestMixin
+    TestMixin,
   ],
   getDefaultProps: function getDefaultProps() {
     return {
@@ -165,7 +163,7 @@ const AButton = createComponent({
         disabled: props.disabled,
         loading: props.loading,
         ...this.getTestProps(),
-        ...props.$mp.getAriaProps()
+        ...props.$mp.getAriaProps(),
       },
       props.children,
     );
