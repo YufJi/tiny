@@ -1,7 +1,6 @@
-import createReactClass from 'create-react-class';
+import Nerv, { createNervClass } from '@/nerv';
 import hoistNonReactStatics from 'hoist-non-react-statics';
-import PropTypes from 'prop-types';
-import React from 'react';
+
 import objectKeys from '@/utils/objectKeys';
 import { getCurrentPageImpl } from '../App';
 import resolvePageUrl from '../utils/resolvePageUrl';
@@ -48,11 +47,8 @@ export default function createComponent(config = {}) {
       mixins.push(TrackPageUpdateMixin);
     }
 
-    const Container = createReactClass({
+    const Container = createNervClass({
       displayName: `MP(${tagName})`,
-      contextTypes: {
-        $page: PropTypes.any,
-      },
       mixins,
       getInitialState() {
         this.$mp = {
@@ -200,9 +196,9 @@ export default function createComponent(config = {}) {
           props.ref = this.saveRef;
         }
 
-        return React.createElement(WrappedComponent, {
-          ...props,
-        });
+        return (
+          <WrappedComponent {...props} />
+        );
       },
     });
 

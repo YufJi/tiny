@@ -1,4 +1,3 @@
-
 import createBlock from './createBlock';
 import createRoot from './createRoot';
 import createTemplate from './createTemplate';
@@ -25,4 +24,4 @@ export default {
   resolveScopedSlots,
   toString,
   useTemplate,
-}
+};

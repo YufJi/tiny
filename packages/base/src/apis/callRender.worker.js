@@ -1,4 +1,3 @@
-
 import { getCurrentPageImpl, getCurrentPagesImpl } from '@/framework/App';
 
 export default function callRender(method, params = {}) {
@@ -10,7 +9,7 @@ export default function callRender(method, params = {}) {
     console.warn('Can not getCurrentPage for callBridge.worker!', method, params);
     return;
   }
-  
+
   const args = [caller, method].concat(innerArgs);
   let lastArg = args[args.length - 1];
   if (lastArg) {

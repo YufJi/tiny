@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import  './styles.less';
+import './styles.less';
 
 function format(date) {
   return `${date.getHours().toString().padStart(2, 0)}:${date.getMinutes().toString().padStart(2, 0)}`;
@@ -9,7 +9,7 @@ class Clock extends Component {
     super(props);
     const date = new Date();
     this.state = {
-      time: format(date)
+      time: format(date),
     };
     this.updateTime();
   }
@@ -18,7 +18,7 @@ class Clock extends Component {
       setTimeout(() => {
         const date = new Date();
         this.setState({
-          time: format(date)
+          time: format(date),
         });
         this.updateTime();
       }, 5000);

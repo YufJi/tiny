@@ -1,4 +1,3 @@
-
 import trackerStore from './trackerStore';
 import startsWith from './startsWith';
 import getData from './getData';

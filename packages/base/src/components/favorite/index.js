@@ -1,4 +1,3 @@
-
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! babel-runtime/helpers/extends */ './node_modules/babel-runtime-loose/helpers/extends.js');
 /* harmony import */ const babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0___default = /* #__PURE__ */__webpack_require__.n(babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0__);
@@ -19,9 +18,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const react_dom__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! react-dom */ './node_modules/react-dom/index.js');
 /* harmony import */ const react_dom__WEBPACK_IMPORTED_MODULE_11___default = /* #__PURE__ */__webpack_require__.n(react_dom__WEBPACK_IMPORTED_MODULE_11__);
 
-
 const g10135 = Object(_utils_system__WEBPACK_IMPORTED_MODULE_9__.compareSystemVersion)('10.1.35') >= 0;
-
 
 const prefixCls = 'a-favorite';
 const iconHasNoBg = 'https://gw.alipayobjects.com/zos/rmsportal/rHIPJaJAipeAaSnPoZrG.png';

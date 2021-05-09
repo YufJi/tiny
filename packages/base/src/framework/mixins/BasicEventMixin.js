@@ -1,4 +1,5 @@
-import ReactDOM from 'react-dom';
+import { findDOMNode } from '@/nerv';
+
 import addEvents from '@/utils/addEvents';
 import objectKeys from '@/utils/objectKeys';
 import { getPropsEventName } from '@/utils/eventReg';
@@ -92,7 +93,7 @@ export default function BasicEventMixin({
 } = {}) {
   return {
     componentDidMount() {
-      this.__basicEventRoot = ReactDOM.findDOMNode(this);
+      this.__basicEventRoot = findDOMNode(this);
       attachScroll(this);
     },
     componentDidUpdate() {
@@ -270,7 +271,7 @@ export default function BasicEventMixin({
         this[eventName](srcEvent, capture);
       };
     },
-    getNodeEvents() {
+    getBubbleEvents() {
       return {
         onClick: this.registryEvent('onTap'),
         onClickCapture: this.registryEvent('onTap', true),

@@ -1,4 +1,3 @@
-
 const g = self;
 const applicationId = 1000000;
 

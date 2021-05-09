@@ -1,8 +1,8 @@
 import './utils/env';
-import bootstrap, { pauseApp } from './worker/bootstrap';
-import { $global, App, Page, getApp, getCurrentPages, Component } from './common/commonLogic';
 import securityPatch from '@/utils/securityPatch';
 import getApplicationId from '@/utils/getApplicationId';
+import bootstrap, { pauseApp } from './worker/bootstrap';
+import { $global, App, Page, getApp, getCurrentPages, Component } from './common/commonLogic';
 import EventHub from './EventHub';
 import { getStartupParams, setStartupParams } from './startupParams';
 import {
@@ -10,6 +10,7 @@ import {
   getCurrentPagesImpl,
   getAppImpl,
 } from './App';
+import registerBehavior from './Behavior';
 
 const g = self;
 
@@ -46,7 +47,7 @@ g.bootstrapApp = function ({ success }) {
 
 export {
   EventHub,
-  getStartupParams, 
+  getStartupParams,
   setStartupParams,
   getCurrentPageImpl,
   getCurrentPagesImpl,
@@ -56,5 +57,6 @@ export {
   getApp,
   getAppImpl,
   getCurrentPages,
+  registerBehavior,
   $global,
 };

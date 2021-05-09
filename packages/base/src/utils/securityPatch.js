@@ -1,4 +1,3 @@
-
 export default function securityPatch() {
   const g = self;
   if (typeof Function !== 'undefined') {

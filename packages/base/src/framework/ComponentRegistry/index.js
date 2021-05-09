@@ -1,4 +1,3 @@
-
 export const componentRegistry = {};
 const ComponentRegistry = {
   registerComponent: function registerComponent(name, factory) {

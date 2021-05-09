@@ -1,11 +1,9 @@
-
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ './node_modules/react/index.js');
 /* harmony import */ const react__WEBPACK_IMPORTED_MODULE_0___default = /* #__PURE__ */__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ const create_react_class__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! create-react-class */ './node_modules/create-react-class/index.js');
 /* harmony import */ const create_react_class__WEBPACK_IMPORTED_MODULE_1___default = /* #__PURE__ */__webpack_require__.n(create_react_class__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ const _utils_loadScript__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/loadScript */ './src/utils/loadScript.tsx');
-
 
 /**
  * 将 anchorX anchorY 设置转成 offset

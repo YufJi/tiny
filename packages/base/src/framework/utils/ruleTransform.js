@@ -1,4 +1,3 @@
-
 import { supportedProperty, supportedValue } from 'css-vendor';
 
 export function ruleName(v) {

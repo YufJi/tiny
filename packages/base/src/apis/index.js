@@ -1,4 +1,3 @@
-
 import { getCurrentPageImpl, $global, EventHub } from '@/framework/';
 import callBridge from '@/utils/callBridge';
 import callInternalAPI from '@/utils/callInternalAPI';

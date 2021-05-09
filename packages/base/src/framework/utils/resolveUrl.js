@@ -1,4 +1,3 @@
-
 import startsWith from '@/utils/startsWith';
 
 export default function resolveUrl(path, refered) {

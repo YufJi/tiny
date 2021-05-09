@@ -1,4 +1,3 @@
-
 import ComponentRegistry from './index';
 
 function getComponentClass(is) {

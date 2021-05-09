@@ -1,4 +1,3 @@
-
 // 判断两个矩阵是否相交
 const isRectIntersect = function isRectIntersect(rect1, rect2, appearOffset) {
   const newLeft = Math.max(rect1.left - appearOffset, rect2.left);

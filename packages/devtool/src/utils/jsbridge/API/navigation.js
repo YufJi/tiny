@@ -17,8 +17,6 @@ export function popTo(params) {
 
   // todo popWebview
   console.log(global.renders, global.pagesStack);
-  
-
 }
 
 export function doPushWindow(url, tag) {

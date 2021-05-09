@@ -1,4 +1,3 @@
-
 class Animation {
   constructor(config) {
     this.config = { ...config };
@@ -25,32 +24,32 @@ class Animation {
   }
 }
 const methods = [
-  'opacity', 
-  'backgroundColor', 
-  'width', 
-  'height', 
-  'top', 
-  'left', 
-  'bottom', 
-  'right', 
-  'rotate', 
-  'rotateX', 
-  'rotateY', 
-  'rotateZ', 
-  'rotate3d', 
-  'skew', 
-  'skewX', 
-  'skewY', 
-  'scale', 
-  'scaleX', 
-  'scaleY', 
-  'scaleZ', 
-  'scale3d', 
-  'translate', 
-  'translateX', 
-  'translateY', 
-  'translateZ', 
-  'translate3d'
+  'opacity',
+  'backgroundColor',
+  'width',
+  'height',
+  'top',
+  'left',
+  'bottom',
+  'right',
+  'rotate',
+  'rotateX',
+  'rotateY',
+  'rotateZ',
+  'rotate3d',
+  'skew',
+  'skewX',
+  'skewY',
+  'scale',
+  'scaleX',
+  'scaleY',
+  'scaleZ',
+  'scale3d',
+  'translate',
+  'translateX',
+  'translateY',
+  'translateZ',
+  'translate3d',
 ];
 const proto = Animation.prototype;
 methods.forEach((m) => {

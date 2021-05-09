@@ -1,4 +1,3 @@
-
 window.requestAnimationFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame;
 
 export default (window.requestAnimationFrame || (window.requestAnimationFrame = function (callback) {

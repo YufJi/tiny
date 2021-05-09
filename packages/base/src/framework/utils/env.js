@@ -1,4 +1,3 @@
-
 if (!global.Symbol) {
   let id = 0;
   const _Symbol = function Symbol(key) {

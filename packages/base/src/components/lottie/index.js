@@ -164,7 +164,7 @@ const Lottie = createComponent({
         style,
         id,
         type: 'application/view',
-        role: 'application'
+        role: 'application',
       },
       React.createElement('param', { name: 'type', value: 'lottieview' }),
       React.createElement('param', { name: 'id', value: this.getId() }),

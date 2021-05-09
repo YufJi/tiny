@@ -1,4 +1,3 @@
-
 const g = global;
 
 export default function getHomePage() {

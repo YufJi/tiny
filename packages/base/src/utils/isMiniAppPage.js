@@ -1,4 +1,3 @@
-
 import { getStartupParams } from './startupParams';
 
 function getPagePath(url) {

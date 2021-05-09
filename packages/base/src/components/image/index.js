@@ -1,5 +1,4 @@
-import React from 'react';
-import createReactClass from 'create-react-class';
+import Nerv, { createNervClass } from '@/nerv';
 import { createComponent } from '@/framework/';
 import View from '../view/View';
 import modeStyle from './modeStyle';
@@ -12,7 +11,7 @@ const widthFixStyle = {
 
 export default createComponent({
   name: 'image',
-})(createReactClass({
+})(createNervClass({
   displayName: 'Image',
   getInitialState() {
     return {
@@ -115,7 +114,7 @@ export default createComponent({
   },
   render() {
     const { className, id, mode, alt, $mp, onTap, onLongTap, onTouchStart, onTouchMove, onTouchCancel, onTouchEnd, lazyLoad } = this.props;
-    let { src, defaultSource, style  } = this.props;
+    let { src, defaultSource, style } = this.props;
     const { lazyLoaded } = this.state;
 
     src = $mp.getNormalizedSrc(src);
@@ -131,30 +130,30 @@ export default createComponent({
     // must has data props, or image onTap lose data
     let img = null;
     if (mode === 'widthFix' && lazyLoaded) {
-      img = React.createElement(ImageTag, {
-          src,
-          style: widthFixStyle,
-          onLoad: this.shouldOnLoad() ? this.onLoad : undefined,
-          onError: this.shouldOnError() ? this.onError : undefined
+      img = Nerv.createElement(ImageTag, {
+        src,
+        style: widthFixStyle,
+        onLoad: this.shouldOnLoad() ? this.onLoad : undefined,
+        onError: this.shouldOnError() ? this.onError : undefined,
       });
     }
-    return React.createElement(
+    return Nerv.createElement(
       View,
       {
-          className,
-          id,
-          'aria-label': alt,
-          $mp,
-          style,
-          onTap,
-          onLongTap,
-          onTouchStart,
-          onTouchMove,
-          onTouchCancel,
-          onTouchEnd,
-          ...$mp.getAriaProps(),
-          ...$mp.getDataProps(),
-          ...onAppearProp
+        className,
+        id,
+        'aria-label': alt,
+        $mp,
+        style,
+        onTap,
+        onLongTap,
+        onTouchStart,
+        onTouchMove,
+        onTouchCancel,
+        onTouchEnd,
+        ...$mp.getAriaProps(),
+        ...$mp.getDataProps(),
+        ...onAppearProp,
       },
       img,
     );

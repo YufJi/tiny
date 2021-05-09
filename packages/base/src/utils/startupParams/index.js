@@ -1,4 +1,3 @@
-
 import { getValue, setValue } from './startupParamsHolder';
 
 const g = self;

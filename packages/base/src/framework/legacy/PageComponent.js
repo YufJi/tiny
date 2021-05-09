@@ -1,6 +1,4 @@
-import ReactDOM from 'react-dom';
-import React from 'react';
-import createReactClass from 'create-react-class';
+import Nerv, { createNervClass, unstable_batchedUpdates } from '@/nerv';
 
 import addEvents from '@/utils/addEvents';
 import {
@@ -15,6 +13,7 @@ import {
 import objectKeys from '@/utils/objectKeys';
 import { getOpFn } from '@/utils/setData';
 import { debug } from '@/utils/log';
+import isEmpty from '@/utils/isEmpty';
 import MessageHandleMixin from '../mixins/MessageHandleMixin';
 import RefMixin from '../mixins/RefMixin';
 import { setCurrentPageImpl } from '../App';
@@ -61,14 +60,27 @@ const headNode = document.getElementsByTagName('head')[0];
 const remReg = rpx2px(2) < 1 ? /\b0\.0[12]rem/g : rpx2px(1) < 1 ? /\b0\.01rem/g : null;
 const replacer = Platform.browser === 'ios' ? '0.5px' : '1px';
 
-export default createReactClass({
+export default createNervClass({
   $isCustomComponent: false,
   displayName: 'PageComponent',
   mixins: [MessageHandleMixin, RefMixin],
   getInitialState() {
-    this.pagePath = this.props.pagePath;
+    const { pagePath } = this.props;
+
+    this.pagePath = pagePath;
     this.pageType = 'RENDER';
-    return {};
+    this.eventHandlers = {};
+    this.componentInstances = {};
+    this.self = this;
+    this.publicInstance = {};
+    return {
+
+    };
+  },
+  UNSAFE_componentWillMount() {
+    // this.recordMounted(false, true);
+    // this.callRemote('self', 'load');
+    // this.callRemote('self', 'startRender');
   },
   componentDidMount() {
     const stylesheet = getStyleSheet(this.pagePath);
@@ -81,26 +93,49 @@ export default createReactClass({
       styleNode.innerHTML = styleString;
       headNode.appendChild(styleNode);
     }
+
     Object.assign(this, {
       bridge: $global.bridge,
       renderSeq: 1,
-      eventHandlers: {},
-      componentInstances: {},
-      self: this,
-      publicInstance: {},
     });
+
     setCurrentPageImpl(this);
-    // for IDE and debug
-    self.$page = this;
+
     this.initMessageChannel();
-    EventHub.emit('pageLoad', { page: this });
+    const e = { page: this };
+    EventHub.emit('pageLoad', e);
+
+    this.callRemote('self', 'load');
+    console.log('page componentDidMount');
   },
-  componentWillUpdate() {
+  UNSAFE_componentWillUpdate() {
     this.renderSeq+=1;
   },
-  logRenderTime(now) {
-    this.callRemote('self', 'console', 'log', `framework: render ${this.pagePath} costs ${Date.now() - now}ms.`);
+  onInitDataReady(data) {
+
   },
+  initData(params) {
+    const { id, data, publicInstance } = params;
+    this.publicInstance = publicInstance;
+    this.setId(id);
+    this.setState({
+      ...data,
+    });
+  },
+  initComponentData(params) {
+    const { id: componentId, is, data, properties } = params;
+    if (this.componentInstances[componentId]) {
+      setComponentsConfig({
+        is: { data, properties },
+      });
+
+      this.componentInstances[componentId].initData({
+        data,
+        properties,
+      });
+    }
+  },
+  /* 由worker触发 */
   startRender(remoteConfig) {
     const _this = this;
 
@@ -111,16 +146,14 @@ export default createReactClass({
     this.setId(id);
     const now = Date.now();
     this.setState({
-      data,
+      ...data,
     }, () => {
       _this.logRenderTime(now);
       const e = { page: _this };
       EventHub.emit('pageReady', e);
 
       if (isRefresh) {
-        if (e.payload) {
-          _this.callRemote('self', 'update', e.payload);
-        }
+        e.payload && _this.callRemote('self', 'update', e.payload);
       } else {
         _this.callRemote('self', 'ready', e.payload);
       }
@@ -169,11 +202,16 @@ export default createReactClass({
     }
     return this.eventHandlers[name];
   },
-  triggerComponentEvent(componentId, eventName, detail, options) {
+  /* 接受worker消息触发 */
+  triggerComponentCustomEvent(componentId, eventName, detail, options) {
     const component = this.componentInstances[componentId];
     if (component) {
       component.triggerEvent(eventName, detail, options);
     }
+  },
+  /* 触发worker */
+  fireComponentLifecycle(info, type) {
+    this.callRemote('self', 'fireComponentLifecycle', info, type);
   },
   receiveData(toBeData, callback) {
     const _this = this;
@@ -233,8 +271,9 @@ export default createReactClass({
         _this.setData(pageData, done);
       }
     };
-    if (ReactDOM.unstable_batchedUpdates) {
-      ReactDOM.unstable_batchedUpdates(doIt);
+
+    if (unstable_batchedUpdates) {
+      unstable_batchedUpdates(doIt);
     } else {
       doIt();
     }
@@ -251,18 +290,18 @@ export default createReactClass({
     }
   },
   setData(toBeData, callback) {
-    const { data } = this.state;
-
-    let ret = data;
+    let ret = this.state;
     toBeData.forEach((d) => {
       // immutable for shouldComponentUpdate
       ret = getOpFn(d.op)(ret, d.data);
     });
-    this.setState({ data: ret }, callback);
+
+    this.setState({
+      ...ret,
+    }, callback);
   },
   initMessageChannel: function initMessageChannel() {
     const { messageChannel } = this.props;
-
     messageChannel.onMessage(this.onMessage);
   },
   postMessage(data) {
@@ -274,31 +313,16 @@ export default createReactClass({
       msgType: 'endpoint',
     });
   },
-  getRootNode() {
-    return this.root;
-  },
-  saveRoot(root) {
-    this.root = root;
+  logRenderTime(now) {
+    this.callRemote('self', 'console', 'log', `framework: render ${this.pagePath} costs ${Date.now() - now}ms.`);
   },
   render() {
-    const { state } = this;
+    const data = this.state;
 
-    if (!state || !state.data) {
-      return (
-        <div dangerouslySetInnerHTML={{ __html: this.props.container.innerHTML }} />
-      );
-    }
-
-    // does not need scroll-view like react-native
-    // container is scroll-view
-    // when prerender, window.innerHeight is accurate when render actually.
-    // can not set overflow: hidden, mate7 can not scroll.
     return (
-      <React.StrictMode>
-        <div className="a-page tiny-page" ref={this.saveRoot}>
-          {getRender(this.pagePath).call(this, state.data)}
-        </div>
-      </React.StrictMode>
+      <div className="a-page tiny-page" ref={(ref) => this.root = ref}>
+        {getRender(this.pagePath).call(this, data)}
+      </div>
     );
   },
 });

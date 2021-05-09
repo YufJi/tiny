@@ -1,6 +1,7 @@
-import createReactClass from 'create-react-class';
+import Nerv, { createNervClass } from '@/nerv';
 import { getOpFn } from '@/utils/setData';
 import objectKeys from '@/utils/objectKeys';
+import mapValues from '@/utils/mapValues';
 import {
   PayloadKeyMountedComponents,
   PayloadKeyUnmountedComponents,
@@ -10,15 +11,12 @@ import {
   DiffKeyUpdated,
   DiffKeyDeleted,
 } from '@/utils/consts';
-import {
-  eventReg,
-  commonBubblesEventsReg,
-} from '@/utils/eventReg';
+
 import shallowEqual from '@/utils/shallowEqual';
+
 import $global from '../common/global';
 import EventHub from '../EventHub';
 import PureRenderMixin from '../mixins/PureRenderMixin';
-import BasicEventMixin from '../mixins/BasicEventMixin';
 import transformChildrenToSlots from '../utils/transformChildrenToSlots';
 import normalizeComponentProps from '../utils/normalizeComponentProps';
 
@@ -33,7 +31,7 @@ function reset() {
 
 reset();
 
-EventHub.addListener(['pageReady', 'pageUpdate'], (e) => {
+EventHub.addListener(['pageLoad', 'pageReady', 'pageUpdate'], (e) => {
   e.payload = {
     ...(e.payload || {}),
     ...{
@@ -78,45 +76,37 @@ function getRender(is) {
   return render;
 }
 
-export default (is) => createReactClass({
+export default (is) => createNervClass({
   $isCustomComponent: true,
   displayName: is,
+  mixins: [
+    PureRenderMixin,
+  ],
   statics: {
     is,
   },
-  mixins: [
-    BasicEventMixin(),
-    PureRenderMixin,
-  ],
   getInitialState() {
     const { __page } = this.props;
     this.is = is;
-    // async render twice
     this.id = this.id || ++componentId;
     __page.componentInstances[this.id] = this;
     this.eventHandlers = {};
-    this.allCustomEvents = {};
 
-    const { properties } = getComponentConfig(this.is);
-    const initialProps = {};
+    __page.fireComponentLifecycle(this.recordMounted(false), 'created');
 
-    for (const key in properties) {
-      if (Object.hasOwnProperty.call(properties, key)) {
-        initialProps[key] = this.props[key];
-      }
-    }
-
-    return {
-      ...getComponentConfig(this.is).data,
-      ...properties,
-      ...initialProps,
-    };
+    return {};
   },
+
   componentDidMount() {
-    this.registryEventListeners();
-    this.recordMounted(this.diffProps(getComponentConfig(this.is).properties || {}), true);
+    console.log('component componentDidMount');
+    console.log('component props', this.props);
+    const { __page } = this.props;
+    const info = this.recordMounted(this.diffProps(this.state || {}));
+    // __page.fireComponentLifecycle(info, 'attached');
+    // __page.fireComponentLifecycle(info, 'ready');
   },
   UNSAFE_componentWillReceiveProps(nextProps) {
+    console.log('UNSAFE_componentWillReceiveProps');
     const { properties } = getComponentConfig(this.is);
     const changedProps = {};
 
@@ -128,14 +118,6 @@ export default (is) => createReactClass({
         if (properties.hasOwnProperty(key)) {
           if (!shallowEqual(prop, nextProp)) {
             changedProps[key] = nextProp;
-          }
-        }
-
-        /* 存在自定义事件 */
-        if (this.allCustomEvents[key]) {
-          if (!shallowEqual(prop, nextProp)) {
-            this.allCustomEvents[key].remove();
-            this.allCustomEvents[key] = this.addCustomEvent(key, nextProp);
           }
         }
       }
@@ -160,15 +142,47 @@ export default (is) => createReactClass({
     const { __page } = this.props;
     delete __page.componentInstances[this.id];
     unmountedComponents.push(this.id);
-    this.removeAllEventListeners();
+    // __page.fireComponentLifecycle(this.recordMounted(false, false), 'unload');
   },
-  recordMounted(diffProps, init) {
+  initData(params) {
+    console.log('initData');
+    const { data, properties } = params;
+
+    const initialProps = {};
+    for (const key in properties) {
+      if (Object.hasOwnProperty.call(properties, key) && this.props[key]) {
+        initialProps[key] = this.props[key];
+      }
+    }
+
+    this.setState({
+      ...data,
+      ...mapValues(properties, 'value'),
+    });
+  },
+  setData(toBeData, callback) {
+    const data = this.state;
+
+    let ret = data;
+    if (Array.isArray(toBeData)) {
+      toBeData.forEach((d) => {
+        // immutable for shouldComponentUpdate
+        ret = getOpFn(d.op)(ret, d.data);
+      });
+    } else {
+      ret = getOpFn(toBeData.op)(ret, toBeData.data);
+    }
+
+    this.setState({
+      ...ret,
+    }, callback);
+  },
+  recordMounted(diffProps) {
     const info = {
       [ComponentKeyId]: this.id,
+      [ComponentKeyIs]: this.is,
     };
-    if (init) {
-      info[ComponentKeyIs] = this.is;
-    }
+
     mountedComponents.push(info);
 
     if (diffProps) {
@@ -176,10 +190,13 @@ export default (is) => createReactClass({
 
       info[ComponentKeyDiffProps] = newProps;
     }
+    return info;
   },
   diffProps(prevProps) {
-    const { properties } = getComponentConfig(this.is);
+    const { properties = {} } = getComponentConfig(this.is);
     const { props } = this; // 当前props
+
+    console.log('当前props', props);
 
     const deleted = [];
     const updated = {};
@@ -256,94 +273,34 @@ export default (is) => createReactClass({
 
     return __page.$getRefHandler.call(__page, ...args);
   },
+
   triggerEvent(eventName, detail, options) {
     const event = new CustomEvent(eventName, {
       detail,
       ...options,
     });
-    this.__basicEventRoot.dispatchEvent(event);
+    this.root.dispatchEvent(event);
   },
-  setData(toBeData, callback) {
-    const data = this.state;
 
-    let ret = data;
-    if (Array.isArray(toBeData)) {
-      toBeData.forEach((d) => {
-        // immutable for shouldComponentUpdate
-        ret = getOpFn(d.op)(ret, d.data);
-      });
-    } else {
-      ret = getOpFn(toBeData.op)(ret, toBeData.data);
-    }
-
-    this.setState({
-      ...ret,
-    }, callback);
-  },
-  addCustomEvent(key, fn) {
-    const result = key.match(eventReg);
-    if (result) {
-      const onHandler = fn;
-      if (this.__basicEventRoot) {
-        const handler = (e) => {
-          const isCatchHandler = result[1] === 'catch';
-
-          if (isCatchHandler && e.stopPropagation) {
-            e.stopPropagation();
-            typeof onHandler === 'function' && onHandler(e);
-            return;
-          }
-          typeof onHandler === 'function' && onHandler(e);
-        };
-        this.__basicEventRoot.addEventListener(result[2], handler, result[3] === '$capture');
-        return {
-          remove: () => {
-            this.__basicEventRoot.removeEventListener(result[2], handler);
-          },
-        };
-      }
-    }
-  },
-  registryEventListeners() {
-    const { props } = this;
-    for (const key in props) {
-      if (Object.hasOwnProperty.call(props, key)) {
-        /* 自定义事件 */
-        if (eventReg.test(key) && !commonBubblesEventsReg.test(key)) {
-          this.allCustomEvents[key] = this.addCustomEvent(key, props[key]);
-        }
-      }
-    }
-  },
-  removeAllEventListeners() {
-    const events = this.allCustomEvents;
-    for (const key in events) {
-      if (Object.hasOwnProperty.call(events, key)) {
-        if (events[key].remove) {
-          events[key].remove();
-        }
-      }
-    }
-  },
   render() {
+    const { children, $scopedSlots } = this.props;
     const props = normalizeComponentProps(this.props);
-    props.$slots = transformChildrenToSlots(this.props.children);
-    props.$scopedSlots = this.props.$scopedSlots;
+    const $slots = transformChildrenToSlots(children);
 
     const {
       id,
       className,
+      ...rest
     } = props;
-
-    const nodeEvents = this.getNodeEvents();
 
     return (
       <span
+        ref={(ref) => this.root = ref}
         id={id}
         className={className}
-        {...nodeEvents}
+        {...rest}
       >
-        {getRender(is).call(this, { $id: this.id, ...this.state })}
+        {getRender(is).call(this, { $id: this.id, $scopedSlots, $slots, ...rest, ...this.state })}
       </span>
     );
   },

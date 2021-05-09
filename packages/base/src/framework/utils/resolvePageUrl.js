@@ -1,4 +1,3 @@
-
 import resolveUrl from './resolveUrl';
 
 export default function resolvePageUrl(pagePath, currentPage) {

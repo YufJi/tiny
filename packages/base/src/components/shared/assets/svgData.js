@@ -1,4 +1,3 @@
-
 const svgData = {
   success: {
     size: '0 0 130 130',

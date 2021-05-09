@@ -1,4 +1,3 @@
-
 /** Used to compose unicode character classes. */
 const rsAstralRange = '\\ud800-\\udfff';
 const rsComboMarksRange = '\\u0300-\\u036f';

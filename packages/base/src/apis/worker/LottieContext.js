@@ -1,4 +1,3 @@
-
 import ap from '../ap';
 
 function LottieContext(params) {

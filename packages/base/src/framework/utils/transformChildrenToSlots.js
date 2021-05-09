@@ -1,9 +1,8 @@
-
-import React from 'react';
+import Nerv from '@/nerv';
 
 export default function transformChildrenToSlots(children) {
   const slots = {};
-  React.Children.forEach(children, (c) => {
+  Nerv.Children.forEach(children, (c) => {
     const slot = c && c.props && c.props.slot || '$default';
     const holder = slots[slot] || [];
     holder.push(c);

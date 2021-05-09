@@ -1,8 +1,7 @@
-
 import { EventHub, $global } from '@/framework/';
 import getHomePage from '@/utils/getHomePage';
-import ap from '../../ap';
-import { needBackHome } from '../../util';
+import ap from '@/apis/ap';
+import { needBackHome } from '@/apis/util';
 
 const { callInternalAPI } = ap;
 

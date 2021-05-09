@@ -1,6 +1,5 @@
-
-import callBridge from './callBridge';
 import { getStartupParams } from '@/framework/startupParams';
+import callBridge from './callBridge';
 
 const ddOrAp = true || false;
 

@@ -1,19 +1,15 @@
-import React from 'react';
-import createReactClass from 'create-react-class';
-import PropTypes from 'prop-types';
+import Nerv, { createNervClass } from '@/nerv';
+
 import { createComponent } from '@/framework/';
-import { getPropsEventName } from '@/utils/eventReg';
+import { getPropsEvent } from '@/utils/eventReg';
 import View from '../view/View';
 import formMixin from '../form/mixin';
 
 const CheckboxGroup = createComponent({
   pure: false,
   name: 'checkbox-group',
-})(createReactClass({
+})(createNervClass({
   displayName: 'CheckboxGroup',
-  childContextTypes: {
-    checkboxGroup: PropTypes.any,
-  },
   mixins: [formMixin],
   getChildContext: function getChildContext() {
     return {
@@ -26,14 +22,11 @@ const CheckboxGroup = createComponent({
 
     this.updateValue(value2, value);
 
-    const onHandler = this.props[getPropsEventName('change', false, false)];
-    if (typeof onHandler === 'function') {
-      onHandler(this.props.$mp.getNormalizedEvent('change', {
-        detail: {
-          value: this.state.value,
-        },
-      }));
-    }
+    getPropsEvent.call(this, 'change')(this.props.$mp.getNormalizedEvent('change', {
+      detail: {
+        value: this.state.value,
+      },
+    }));
   },
   updateValue(value, checked) {
     const allValue = this.state.value && this.state.value || [];
@@ -48,7 +41,8 @@ const CheckboxGroup = createComponent({
     this.state.value = allValue;
   },
   render() {
-    return React.createElement(View, { ...this.props, role: 'group' });
+    const { ...rest } = this.props;
+    return Nerv.createElement(View, { ...rest, role: 'group' });
   },
 }));
 

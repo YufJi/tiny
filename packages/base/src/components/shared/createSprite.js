@@ -1,4 +1,3 @@
-
 import svgData from './assets/svgData';
 
 let sprite;

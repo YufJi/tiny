@@ -1,4 +1,3 @@
-
 export const getNetworkType = {
   a: function a(res) {
     if (res.networkInfo) {

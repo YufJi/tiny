@@ -1,4 +1,3 @@
-
 import ap from '../ap.worker';
 import { compareSystemVersion } from '../../utils/system';
 import { arrayBufferToBase64, base64ToArrayBuffer } from '../../utils/arrayBuffer';

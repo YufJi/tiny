@@ -1,4 +1,3 @@
-
 import EventHub from '../EventHub';
 import { getCurrentPageImpl } from '../App';
 

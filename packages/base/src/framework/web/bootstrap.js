@@ -1,15 +1,14 @@
-import ReactDOM from 'react-dom';
-import React from 'react';
+import Nerv, { render, unmountComponentAtNode } from '@/nerv';
 import { debug } from '@/utils/log';
+import { noop } from '@/utils/types';
 import AppRegistry from '../AppRegistry';
 import { getPageInfoFromUrl } from '../utils/pageInfoAndUrl';
 import getMessageChannel from './getMessageChannel';
 import { loadPage } from '../SubPackage';
 
 const g = self;
-function noop() {}
 
-export function render(config, bridge) {
+export default function (config, bridge) {
   const { container = document.getElementById('root'), onRender = noop, onFail = noop, type } = config;
   const pageInfo = getPageInfoFromUrl(location.href);
   debug('framework', 'pageInfo', pageInfo);
@@ -25,7 +24,12 @@ export function render(config, bridge) {
           onRender(type);
         }
         const messageChannel = getMessageChannel(pageInfo, bridge);
-        ReactDOM.render(React.createElement(PageComponent, { pagePath, container, messageChannel }), container);
+
+        render(<PageComponent
+          pagePath={pagePath}
+          container={container}
+          messageChannel={messageChannel}
+        />, container);
       } else {
         const error = new Error(`page '${pagePath}' not found!`);
         error.type = 'PAGE_NOT_FOUND';
@@ -35,6 +39,6 @@ export function render(config, bridge) {
       }
     });
   } else {
-    ReactDOM.unmountComponentAtNode(container);
+    unmountComponentAtNode(container);
   }
 }

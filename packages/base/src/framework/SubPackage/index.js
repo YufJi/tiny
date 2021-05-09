@@ -1,6 +1,6 @@
-import $global from '../common/global';
 import startsWith from '@/utils/startsWith';
 import { getStartupParams } from '@/utils/startupParams';
+import $global from '../common/global';
 
 const g = self;
 

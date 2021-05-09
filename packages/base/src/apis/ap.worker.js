@@ -1,9 +1,8 @@
-
 import { debug } from '@/utils/log';
-import callRender from './callRender';
 import { getStartupParams } from '@/utils/startupParams';
 import EventEmitter from '@/utils/EventEmitter';
 import { isDebugFramework } from '@/utils/isDebug';
+import callRender from './callRender';
 
 const g = self;
 const globalEmitter = new EventEmitter();
@@ -39,8 +38,8 @@ function doEventCallback(options) {
   const hasUserEvent = globalEmitter.listenerCount(userEventName);
   const hasUserEventData = globalEmitter.listenerCount(userEventDataName);
   if (hasUserEvent || hasSysEvent || hasUserEventData) {
-    const evt = { 
-      name, 
+    const evt = {
+      name,
       type: name,
       data: options.param,
       viewId: options.viewId,
@@ -61,7 +60,7 @@ function doEventCallback(options) {
   }
 }
 
-const JSBridge = g.JSBridge;
+const { JSBridge } = g;
 
 g.callRender = callRender;
 
@@ -76,7 +75,7 @@ g.document.addEventListener('push', (evt) => {
    */
   const { data } = evt;
   doEventCallback(data);
-})
+});
 
 let API = {};
 

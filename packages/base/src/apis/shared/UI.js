@@ -1,4 +1,3 @@
-
 import { mapping } from '@/utils/bridge';
 
 export const alert = {

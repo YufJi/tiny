@@ -1,4 +1,3 @@
-
 import { getStartupParams } from './startupParams';
 
 const debugMatchCache = {};

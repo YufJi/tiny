@@ -1,4 +1,3 @@
-
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! babel-runtime/helpers/extends */ './node_modules/babel-runtime-loose/helpers/extends.js');
 /* harmony import */ const babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0___default = /* #__PURE__ */__webpack_require__.n(babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0__);
@@ -19,11 +18,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const _index_less__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./index.less */ './src/textarea/index.less');
 /* harmony import */ const _index_less__WEBPACK_IMPORTED_MODULE_12___default = /* #__PURE__ */__webpack_require__.n(_index_less__WEBPACK_IMPORTED_MODULE_12__);
 
-
 import React from 'react';
 import createReactClass from 'create-react-class';
 import classnames from 'classnames';
-
 
 const prefixCls = 'a-textarea';
 const g = self;

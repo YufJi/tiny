@@ -1,10 +1,10 @@
 import './utils/env';
-import { render } from './web/bootstrap';
+import { debug } from '@/utils/log';
+import bootstrap from './web/bootstrap';
 import { StyleSheet, createComponent, getComponentClass } from './common/commonUI';
 import { Page, App, getApp, getCurrentPages, Component } from './common/commonLogic';
 import $global from './common/global';
 import { setStartupParams, getStartupParams } from './startupParams';
-import { debug } from '@/utils/log';
 import EventHub from './EventHub';
 import {
   setCurrentPageImpl,
@@ -56,12 +56,12 @@ g.bootstrapApp = function (config = {}) {
     setStartupParams(startupParams);
 
     if (location.hash.length > 1) {
-      debug('framework', '[RENDER] render page');
-      render({ container, onRender, onFail, type: 'initial hash' }, bridge);
+      debug('framework', '[RENDER] bootstrap page');
+      bootstrap({ container, onRender, onFail, type: 'initial hash' }, bridge);
     } else {
       window.addEventListener('hashchange', () => {
-        debug('framework', '[RENDER] render page when hashchange');
-        render({ container, onRender, onFail, type: 'hashchange' }, bridge);
+        debug('framework', '[RENDER] bootstrap page when hashchange');
+        bootstrap({ container, onRender, onFail, type: 'hashchange' }, bridge);
       }, false);
     }
   });

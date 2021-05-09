@@ -1,4 +1,3 @@
-
 const g = self;
 
 export default function gerror(e) {

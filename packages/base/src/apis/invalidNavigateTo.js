@@ -1,4 +1,3 @@
-
 import { getCurrentPagesImpl } from '@/framework/App';
 
 export default function invalidNavigateTo(params = {}) {

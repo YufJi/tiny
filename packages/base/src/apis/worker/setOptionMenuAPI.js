@@ -1,4 +1,3 @@
-
 import ap from '../ap';
 import { isAndroid } from '../../utils/system';
 

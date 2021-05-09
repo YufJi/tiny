@@ -1,7 +1,5 @@
-
 import { debug } from '@/utils/log';
-
-function noop() {}
+import { noop } from '@/utils/types';
 
 const MessageHandle = {
   getCallbackId() {

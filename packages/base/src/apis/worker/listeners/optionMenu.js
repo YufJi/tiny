@@ -1,6 +1,5 @@
-
-import ap from '../../ap';
-import { getCurrentPageImpl, EventHub } from '../../../framework/dev';
+import { getCurrentPageImpl, EventHub } from '@/framework/';
+import ap from '@/apis/ap';
 import setOptionMenuAPI from '../setOptionMenuAPI';
 
 function getPageOptionMenuConfig(page) {

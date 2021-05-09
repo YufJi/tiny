@@ -12,7 +12,7 @@ function createIframe(options) {
   el.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-modals');
   el.setAttribute('frameborder', '0');
   el.setAttribute('style', style);
-  el.setAttribute('class', 'frame')
+  el.setAttribute('class', 'frame');
   el.onload = function () {
     el.contentWindow.document.dispatchEvent(new CustomEvent('JSBridgeReady', {
       detail: {

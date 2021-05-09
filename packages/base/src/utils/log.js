@@ -1,4 +1,3 @@
-
 import { isDebug, isDebugSupported } from './isDebug';
 
 function internalLog(args) {

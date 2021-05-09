@@ -1,4 +1,3 @@
-
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ './node_modules/react/index.js');
 /* harmony import */ const react__WEBPACK_IMPORTED_MODULE_0___default = /* #__PURE__ */__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
@@ -7,7 +6,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const _framework_dev__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/framework/ */ './src/framework/dev.tsx');
 /* harmony import */ const _index_less__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./index.less */ './src/progress/index.less');
 /* harmony import */ const _index_less__WEBPACK_IMPORTED_MODULE_3___default = /* #__PURE__ */__webpack_require__.n(_index_less__WEBPACK_IMPORTED_MODULE_3__);
-
 
 const prefixCls = 'a-progress';
 /* harmony default export */ __webpack_exports__.default = (Object(_framework_dev__WEBPACK_IMPORTED_MODULE_2__.createComponent)({

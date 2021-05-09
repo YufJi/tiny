@@ -112,7 +112,7 @@ g.mpAppJson = {
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-__webpack_require__(/*! compiler/lib/sjsEnvInit */ "./lib/sjsEnvInit.js");
+__webpack_require__(/*! compiler/sjsEnvInit */ "./src/sjsEnvInit.js");
 __webpack_require__(/*! ./config$ */ "../devtool/assets/biz/config$.js");
 __webpack_require__(/*! ./example/miniRoot/components/add-button/add-button?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./example/miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc");
 __webpack_require__(/*! ./example/miniRoot/pages/todos/todos?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
@@ -171,30 +171,25 @@ Component(
 /*!**************************************************************************************************************!*\
   !*** ./example/miniRoot/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc ***!
   \**************************************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
 
+var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = render;
-
-var _react = __webpack_require__(/*! react */ "react");
-
-var _react2 = _interopRequireDefault(_react);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var $createReactElement = _react2.default && _react2.default.createElement;
 var $getEventHandler = function $getEventHandler(instance, name) {
   return instance.$getEventHandler(name);
 };
+
 var $getRefHandler = function $getRefHandler(instance, name) {
   return instance.$getRefHandler(name);
 };
+
 var $getComRefHandler = function $getComRefHandler(instance, name) {
   return instance.$getComRefHandler && instance.$getComRefHandler(name);
 };
@@ -220,33 +215,19 @@ var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
 var $getSJSMember = self.XMLRuntime.getSJSMember;
 var $toString = self.XMLRuntime.toString;
 var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
-
 var $templates = {};
 function render(data) {
-  return $createRoot([_react2.default.createElement(
-    Button,
-    {
-      className: "add-button", hoverClass: "none", bind$tap: $getEventHandler(this, "onClickMe")
-    },
-    [_react2.default.createElement(
-      Text,
-      {
-        className: "add-icon"
-      },
-      $toString("+")
-    ), _react2.default.createElement(
-      Text,
-      null,
-      $toString(data['text'])
-    )]
-  ), _react2.default.createElement(
-    Text,
-    {
-      bind$tap: $getEventHandler(this, "xx")
-    },
-    $toString(data['name'])
-  )]);
-};
+  return $createRoot([nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(Button, {
+    className: "add-button",
+    hoverClass: "none",
+    bindtap: $getEventHandler(this, "onClickMe")
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(Text, {
+    className: "add-icon"
+  }, $toString("+")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(Text, null, $toString(data['text']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(Text, {
+    bindtap: $getEventHandler(this, "xx")
+  }, $toString(data['name']))]);
+}
+;
 
 /***/ }),
 
@@ -283,31 +264,26 @@ const stylesheet = new StyleSheet({ stylePath: 'components/add-button/add-button
 /*!************************************************!*\
   !*** ./example/miniRoot/pages/add-todo/a.wxml ***!
   \************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/*! exports provided: $ownTemplates, default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "$ownTemplates", function() { return $ownTemplates; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
 
+var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.$ownTemplates = undefined;
-exports.default = render;
-
-var _react = __webpack_require__(/*! react */ "react");
-
-var _react2 = _interopRequireDefault(_react);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var $createReactElement = _react2.default && _react2.default.createElement;
 var $getEventHandler = function $getEventHandler(instance, name) {
   return instance.$getEventHandler(name);
 };
+
 var $getRefHandler = function $getRefHandler(instance, name) {
   return instance.$getRefHandler(name);
 };
+
 var $getComRefHandler = function $getComRefHandler(instance, name) {
   return instance.$getComRefHandler && instance.$getComRefHandler(name);
 };
@@ -325,24 +301,20 @@ var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
 var $getSJSMember = self.XMLRuntime.getSJSMember;
 var $toString = self.XMLRuntime.toString;
 var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
+var $template;
+var $ownTemplates = {};
 
-var $template = void 0;
-var $ownTemplates = exports.$ownTemplates = {};
 $template = $ownTemplates["abc"] = function (data) {
-  return _react2.default.createElement(
-    View,
-    null,
-    $toString("21212")
-  );
+  return nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, null, $toString("21212"));
 };
 
 $template.Component = $createTemplate("abc", $template);
-
 var $templates = {};
 $templates = $ownTemplates;
 function render(data) {
   return $createRoot(null);
-};
+}
+;
 
 /***/ }),
 
@@ -373,36 +345,33 @@ Page(
 /*!*****************************************************************************************************!*\
   !*** ./example/miniRoot/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
   \*****************************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _a_wxml__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./a.wxml */ "./example/miniRoot/pages/add-todo/a.wxml");
+/* harmony import */ var _b_wxml__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./b.wxml */ "./example/miniRoot/pages/add-todo/b.wxml");
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = render;
+var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
 
-var _react = __webpack_require__(/*! react */ "react");
-
-var _react2 = _interopRequireDefault(_react);
-
-var _a = __webpack_require__(/*! ./a.wxml */ "./example/miniRoot/pages/add-todo/a.wxml");
-
-var _b = __webpack_require__(/*! ./b.wxml */ "./example/miniRoot/pages/add-todo/b.wxml");
-
-var _b2 = _interopRequireDefault(_b);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var $createReactElement = _react2.default && _react2.default.createElement;
 var $getEventHandler = function $getEventHandler(instance, name) {
   return instance.$getEventHandler(name);
 };
+
 var $getRefHandler = function $getRefHandler(instance, name) {
   return instance.$getRefHandler(name);
 };
+
 var $getComRefHandler = function $getComRefHandler(instance, name) {
   return instance.$getComRefHandler && instance.$getComRefHandler(name);
 };
@@ -433,52 +402,38 @@ var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
 
 
 var $templates = {};
-$templates = Object.assign({}, _a.$ownTemplates);
+$templates = _objectSpread({}, _a_wxml__WEBPACK_IMPORTED_MODULE_1__["$ownTemplates"]);
 function render(data) {
-  return $createRoot(_react2.default.createElement(
-    View,
-    {
-      className: "page-add-todo"
-    },
-    [_b2.default.apply(this, arguments), _react2.default.createElement(
-      View,
-      {
-        className: "add-todo"
-      },
-      _react2.default.createElement(Input, {
-        className: "add-todo-input", placeholder: "What needs to be done?", onBlur: "onBlur", value: data['inputValue']
-      })
-    ), _react2.default.createElement(
-      View,
-      {
-        bind$tap: $getEventHandler(this, "add")
-      },
-      $toString("12121")
-    ), _react2.default.createElement(
-      View,
-      {
-        catch$tap: $getEventHandler(this, "add")
-      },
-      $toString("12121")
-    ), _react2.default.createElement(
-      View,
-      {
-        className: "todo-footer"
-      },
-      _react2.default.createElement(AddButton, {
-        text: "Add Todo", bind$clickme: $getEventHandler(this, "add"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', __owner: this, __page: this.$isCustomComponent ? this.props['__page'] : this
-      })
-    ), _react2.default.createElement(
-      View,
-      {
-        style: "color: red", catch$tap$capture: $getEventHandler(this, "xxxx")
-      },
-      $toString("capture-catch:tap")
-    ), $useTemplate($templates["abc"], {
-      inputValue: data['inputValue']
-    }, undefined, this)]
-  ));
-};
+  return $createRoot(nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
+    className: "page-add-todo"
+  }, [_b_wxml__WEBPACK_IMPORTED_MODULE_2__["default"].apply(this, arguments), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
+    className: "add-todo"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(Input, {
+    className: "add-todo-input",
+    placeholder: "What needs to be done?",
+    onBlur: "onBlur",
+    value: data['inputValue']
+  })), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
+    bindtap: $getEventHandler(this, "add")
+  }, $toString("12121")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
+    catchtap: $getEventHandler(this, "add")
+  }, $toString("12121")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
+    className: "todo-footer"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(AddButton, {
+    text: "Add Todo",
+    bindclickme: $getEventHandler(this, "add"),
+    $isCustomComponent: this.$isCustomComponent,
+    __tag: "add-button",
+    __owner: this,
+    __page: this.$isCustomComponent ? this.props['__page'] : this
+  })), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
+    style: "color: red",
+    "capture-catchtap": $getEventHandler(this, "xxxx")
+  }, $toString("capture-catch:tap")), $useTemplate($templates["abc"], {
+    inputValue: data['inputValue']
+  }, undefined, this)]));
+}
+;
 
 /***/ }),
 
@@ -550,30 +505,25 @@ stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODU
 /*!************************************************!*\
   !*** ./example/miniRoot/pages/add-todo/b.wxml ***!
   \************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
 
+var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = render;
-
-var _react = __webpack_require__(/*! react */ "react");
-
-var _react2 = _interopRequireDefault(_react);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var $createReactElement = _react2.default && _react2.default.createElement;
 var $getEventHandler = function $getEventHandler(instance, name) {
   return instance.$getEventHandler(name);
 };
+
 var $getRefHandler = function $getRefHandler(instance, name) {
   return instance.$getRefHandler(name);
 };
+
 var $getComRefHandler = function $getComRefHandler(instance, name) {
   return instance.$getComRefHandler && instance.$getComRefHandler(name);
 };
@@ -591,15 +541,11 @@ var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
 var $getSJSMember = self.XMLRuntime.getSJSMember;
 var $toString = self.XMLRuntime.toString;
 var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
-
 var $templates = {};
 function render(data) {
-  return $createRoot(_react2.default.createElement(
-    View,
-    null,
-    $toString("include")
-  ));
-};
+  return $createRoot(nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, null, $toString("include")));
+}
+;
 
 /***/ }),
 
@@ -630,30 +576,25 @@ Page(
 /*!***********************************************************************************************!*\
   !*** ./example/miniRoot/pages/todos/todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
   \***********************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
 
+var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = render;
-
-var _react = __webpack_require__(/*! react */ "react");
-
-var _react2 = _interopRequireDefault(_react);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var $createReactElement = _react2.default && _react2.default.createElement;
 var $getEventHandler = function $getEventHandler(instance, name) {
   return instance.$getEventHandler(name);
 };
+
 var $getRefHandler = function $getRefHandler(instance, name) {
   return instance.$getRefHandler(name);
 };
+
 var $getComRefHandler = function $getComRefHandler(instance, name) {
   return instance.$getComRefHandler && instance.$getComRefHandler(name);
 };
@@ -689,93 +630,65 @@ var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
 var $getSJSMember = self.XMLRuntime.getSJSMember;
 var $toString = self.XMLRuntime.toString;
 var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
-
 var $templates = {};
 function render(data) {
-  return $createRoot(_react2.default.createElement(
-    View,
-    {
-      className: "page-todos"
-    },
-    [_react2.default.createElement(
-      View,
-      {
-        className: "user"
-      },
-      [_react2.default.createElement(Image, {
-        className: "avatar", src: $getLooseDataMember([data['user'], "avatar"]) || '../../assets/logo.png', backgroundSize: "cover"
-      }), _react2.default.createElement(
-        View,
-        {
-          className: "nickname"
-        },
-        [$toString($getLooseDataMember([data['user'], "nickName"]) && $getLooseDataMember([data['user'], "nickName"]) + '\'s' || 'mp'), $toString(" Todo List")]
-      ), _react2.default.createElement(
-        View,
-        {
-          className: "test"
-        },
-        $toString("Todo List")
-      )]
-    ), _react2.default.createElement(
-      View,
-      {
-        className: "todo-items"
-      },
-      _react2.default.createElement(
-        CheckboxGroup,
-        {
-          className: "todo-items-group", bind$change: $getEventHandler(this, "onTodoChanged")
-        },
-        $iterate(data['todos'], function (item, index) {
-          return _react2.default.createElement(
-            Label,
-            {
-              key: item, className: "todo-item " + ($getLooseDataMember([item, "completed"]) ? 'checked' : '')
-            },
-            [_react2.default.createElement(Checkbox, {
-              className: "todo-item-checkbox", value: $getLooseDataMember([item, "text"]), checked: $getLooseDataMember([item, "completed"])
-            }), _react2.default.createElement(
-              Text,
-              {
-                className: "todo-item-text"
-              },
-              $toString($getLooseDataMember([item, "text"]))
-            )]
-          );
-        })
-      )
-    ), _react2.default.createElement(
-      View,
-      {
-        className: "todo-footer"
-      },
-      [_react2.default.createElement(AddButton, {
-        text: data['text'], bind$click_me: $getEventHandler(this, "clickCom"), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', __owner: this, __page: this.$isCustomComponent ? this.props['__page'] : this
-      }), _react2.default.createElement(AddButton, {
-        xx: "xxx", text: data['text'], bind$clickme: $getEventHandler(this, data['fn']), $isCustomComponent: this.$isCustomComponent, __tag: 'add-button', __owner: this, __page: this.$isCustomComponent ? this.props['__page'] : this
-      })]
-    ), _react2.default.createElement(
-      View,
-      {
-        bind$tap: $getEventHandler(this, "clickParent")
-      },
-      [_react2.default.createElement(
-        View,
-        {
-          className: "jyf", catch$tap$capture: $getEventHandler(this, "captureClickChild")
-        },
-        $toString("capture child")
-      ), _react2.default.createElement(
-        View,
-        {
-          bind$tap: $getEventHandler(this, "clickChild")
-        },
-        $toString("child")
-      )]
-    )]
-  ));
-};
+  return $createRoot(nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
+    className: "page-todos"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
+    className: "user"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(Image, {
+    className: "avatar",
+    src: $getLooseDataMember([data['user'], "avatar"]) || '../../assets/logo.png',
+    backgroundSize: "cover"
+  }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
+    className: "nickname"
+  }, [$toString($getLooseDataMember([data['user'], "nickName"]) && $getLooseDataMember([data['user'], "nickName"]) + '\'s' || 'mp'), $toString(" Todo List")]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
+    className: "test"
+  }, $toString("Todo List"))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
+    className: "todo-items"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(CheckboxGroup, {
+    className: "todo-items-group",
+    bindchange: $getEventHandler(this, "onTodoChanged")
+  }, $iterate(data['todos'], function (item, index) {
+    return nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(Label, {
+      key: item,
+      className: "todo-item " + ($getLooseDataMember([item, "completed"]) ? 'checked' : '')
+    }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(Checkbox, {
+      className: "todo-item-checkbox",
+      value: $getLooseDataMember([item, "text"]),
+      checked: $getLooseDataMember([item, "completed"])
+    }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(Text, {
+      className: "todo-item-text"
+    }, $toString($getLooseDataMember([item, "text"])))]);
+  }))), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, null, $toString(data['text'])), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
+    className: "todo-footer"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(AddButton, {
+    text: data['text'],
+    bindclick_me: $getEventHandler(this, "clickCom"),
+    $isCustomComponent: this.$isCustomComponent,
+    __tag: "add-button",
+    __owner: this,
+    __page: this.$isCustomComponent ? this.props['__page'] : this
+  }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(AddButton, {
+    xx: "xxx",
+    text: data['text'],
+    bindclick_me: $getEventHandler(this, data['fn']),
+    $isCustomComponent: this.$isCustomComponent,
+    __tag: "add-button",
+    __owner: this,
+    __page: this.$isCustomComponent ? this.props['__page'] : this
+  })]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
+    bindtap: $getEventHandler(this, "clickParent")
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
+    className: "jyf",
+    "capture-bindtap": $getEventHandler(this, "captureClickChild"),
+    style: "background: yellow;"
+  }, $toString("capture child")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
+    bindtap: $getEventHandler(this, "clickChild"),
+    style: "margin-top: 120rpx; background: red;"
+  }, $toString("child"))])]));
+}
+;
 
 /***/ }),
 
@@ -932,9 +845,40 @@ stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODU
 
 /***/ }),
 
-/***/ "./lib/sjsEnvInit.js":
+/***/ "./node_modules/webpack/buildin/global.js":
+/*!***********************************!*\
+  !*** (webpack)/buildin/global.js ***!
+  \***********************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || new Function("return this")();
+} catch (e) {
+	// This works if the window reference is available
+	if (typeof window === "object") g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
+
+
+/***/ }),
+
+/***/ "./src/sjsEnvInit.js":
 /*!***************************!*\
-  !*** ./lib/sjsEnvInit.js ***!
+  !*** ./src/sjsEnvInit.js ***!
   \***************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
@@ -1740,45 +1684,14 @@ stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODU
 
 /***/ }),
 
-/***/ "./node_modules/webpack/buildin/global.js":
-/*!***********************************!*\
-  !*** (webpack)/buildin/global.js ***!
-  \***********************************/
+/***/ "nerv":
+/*!****************************!*\
+  !*** external "self.Nerv" ***!
+  \****************************/
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || new Function("return this")();
-} catch (e) {
-	// This works if the window reference is available
-	if (typeof window === "object") g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
-
-/***/ "react":
-/*!*****************************!*\
-  !*** external "self.React" ***!
-  \*****************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-module.exports = self.React;
+module.exports = self.Nerv;
 
 /***/ })
 

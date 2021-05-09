@@ -1,4 +1,3 @@
-
 import asciiToArray from './asciiToArray';
 import hasUnicode from './hasUnicode';
 import unicodeToArray from './unicodeToArray';

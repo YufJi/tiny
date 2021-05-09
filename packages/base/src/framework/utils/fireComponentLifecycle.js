@@ -1,4 +1,3 @@
-
 import invokeWithGuardAndReThrow from '@/utils/invokeWithGuardAndReThrow';
 
 export default function fireComponentLifecycle(componentConfig, context, method, args = []) {

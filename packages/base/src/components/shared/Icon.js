@@ -1,5 +1,4 @@
-
-import React from 'react';
+import Nerv from '@/nerv';
 import createSprite from './createSprite';
 
 function Icon(props) {

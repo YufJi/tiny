@@ -1,4 +1,3 @@
-
 import { getCurrentPageImpl } from '@/framework/';
 import requestAnimationFrame from '@/utils/requestAnimationFrame';
 
@@ -167,7 +166,7 @@ export function addIntersectionObserver(_ref) {
     const { selector } = info;
     const { margins } = info;
 
-    let node ;
+    let node;
     if (selector == null) {
       node = null;
     } else {

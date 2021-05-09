@@ -1,4 +1,3 @@
-
 import qs from 'query-string';
 import { $global } from '@/framework/';
 import { getAppImpl } from '@/framework/App';
@@ -27,7 +26,7 @@ export default function listen(ap, bridge) {
       });
     }
   }
-  
+
   ap.on('appResume', (e) => {
     let { query, page, referrerInfo, shouldNotReLaunch, NBPageUrl } = e.data;
 
@@ -114,7 +113,7 @@ export default function listen(ap, bridge) {
     }
     getAppImpl().resumePageByUrl(NBPageUrl);
   });
-  
+
   ap.on('tabClick', (e) => {
     const { tag, from = 'user', text, index } = e.data;
 

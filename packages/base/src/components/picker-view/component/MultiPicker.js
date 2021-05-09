@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 export default class MultiPicker extends React.Component {

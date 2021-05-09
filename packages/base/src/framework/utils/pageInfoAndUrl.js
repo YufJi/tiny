@@ -1,4 +1,3 @@
-
 import $global from '../common/global';
 
 const pageMatchReg = /#([^?]+)(\?.+)?/;

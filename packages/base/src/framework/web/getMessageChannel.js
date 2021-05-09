@@ -11,9 +11,9 @@ export default function getMessageChannel(pageInfo, bridge) {
     } else {
       unhandledMessages.push(event);
     }
-  }
+  };
 
-  g.addEventListener('message', g.send)
+  g.addEventListener('message', g.send);
 
   const { queryString, id, pagePath } = pageInfo;
 
@@ -33,7 +33,11 @@ export default function getMessageChannel(pageInfo, bridge) {
   return {
     id,
     postMessage: function postMessage(data) {
-      bridge.call('postMessage', { viewId: g.WEBVIEWID, ...data });
+      bridge.call('postMessage', {
+        viewId: g.WEBVIEWID,
+        ...data,
+        id: data.id || id,
+      });
     },
     onMessage: function onMessage(fn) {
       callback = fn;

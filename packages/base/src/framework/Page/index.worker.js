@@ -1,4 +1,3 @@
-
 import AppRegistry from '../AppRegistry';
 import $global from '../common/global';
 import PageComponent from '../legacy/PageComponent';

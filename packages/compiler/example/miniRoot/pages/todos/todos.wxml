@@ -18,13 +18,15 @@
 
   </view>
 
+   <view>{{text}}</view>
+
   <view class="todo-footer">
     <add-button text="{{text}}" bind:click_me="clickCom"></add-button>
-    <add-button xx="xxx" text="{{text}}" bind:clickme="{{fn}}"></add-button>
+    <add-button xx="xxx" text="{{text}}" bind:click_me="{{fn}}"></add-button>
   </view>
 
   <view bind:tap="clickParent">
-    <view class="jyf" capture-catch:tap="captureClickChild">capture child</view>
-    <view bindtap="clickChild">child</view>
+    <view class="jyf" capture-bind:tap="captureClickChild" style="background: yellow;" >capture child</view>
+    <view bindtap="clickChild" style="margin-top: 120rpx; background: red;">child</view>
   </view>
 </view>

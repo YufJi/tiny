@@ -1,4 +1,3 @@
-
 export default function normalizeClassNameProps(props) {
   const { className = '' } = props;
   const { tagName } = props.$mp;

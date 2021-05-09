@@ -1,13 +1,12 @@
-import React from 'react'
-import './index.less'
+import React from 'react';
+import './index.less';
 
 export default function Loading() {
-
   return (
-    <div class="load-container">
-      <div class="load load1"></div>
-      <div class="load load2"></div>
-      <div class="load"></div>
+    <div className="load-container">
+      <div className="load load1" />
+      <div className="load load2" />
+      <div className="load" />
     </div>
-  )
+  );
 }

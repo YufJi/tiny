@@ -1,10 +1,9 @@
-
-import ap from '../../ap';
-import { EventHub, getAppImpl, getCurrentPageImpl, getStartupParams } from '../../../framework/dev';
-import trackerStore from '../../../utils/trackerStore';
-import { getAutoTrackerConfig } from '../../util';
-import { isAndroid, SDKVersion } from '../../../utils/system';
-import escapeLogParams from '../../../utils/escapeLogParams';
+import ap from '@/apis/ap';
+import { EventHub, getAppImpl, getCurrentPageImpl, getStartupParams } from '@/framework/';
+import trackerStore from '@/utils/trackerStore';
+import { isAndroid, SDKVersion } from '@/utils/system';
+import escapeLogParams from '@/utils/escapeLogParams';
+import { getAutoTrackerConfig } from '@/apis/util';
 
 const { callBridge, callInternalAPI } = ap;
 

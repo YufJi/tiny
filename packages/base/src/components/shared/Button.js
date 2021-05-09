@@ -1,14 +1,12 @@
-
-import React from 'react';
+import Nerv from '@/nerv';
 import classnames from 'classnames';
-import Touchable from 'rc-touchable';
 import Loading from './Loading';
 
 const prefixCls = 'a-button';
 
-class Button extends React.PureComponent {
+class Button extends Nerv.PureComponent {
   render() {
-    const { children, className, type, size, disabled, loading, activeClassName, activeStopPropagation, onClick, delayPressIn, delayPressOut, ...restProps } = this.props;
+    const { children, className, type, size, disabled, loading, activeClassName, activeStopPropagation, onClick, delayPressIn, delayPressOut, $mp, ...restProps } = this.props;
     const wrapCls = classnames({
       [className]: true,
       [`${prefixCls}-primary`]: type === 'primary',
@@ -28,15 +26,16 @@ class Button extends React.PureComponent {
       delayProps.delayPressOut = delayPressOut;
     }
     // use div, button native is buggy @yiminghe
-    return React.createElement(
-      Touchable,
-      { activeClassName, activeStopPropagation, disabled, ...delayProps },
-      React.createElement(
-        'a',
-        { role: 'button', className: wrapCls, ...restProps, ...clickable, onClick: disabled ? undefined : onClick, 'aria-disabled': disabled },
-        loading ? React.createElement(Loading, { mode: type === 'primary' ? 'white' : '' }) : null,
-        children,
-      ),
+    return Nerv.createElement(
+      'a',
+      { role: 'button',
+        className: wrapCls,
+        ...restProps,
+        ...clickable,
+        onClick: disabled ? undefined : onClick,
+        'aria-disabled': disabled },
+      loading ? Nerv.createElement(Loading, { mode: type === 'primary' ? 'white' : '' }) : null,
+      children,
     );
   }
 }

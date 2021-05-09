@@ -1,4 +1,3 @@
-
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, 'API', () => { return API; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, 'workerAPI', () => { return workerAPI; });
@@ -10,7 +9,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const _bridge_shared_Location__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../bridge/shared/Location */ './src/bridge/shared/Location.tsx');
 /* harmony import */ const _bridge_shared_BizCustomAP__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../bridge/shared/BizCustomAP */ './src/bridge/shared/BizCustomAP.tsx');
 /* harmony import */ const _bridge_shared_Storage__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../bridge/shared/Storage */ './src/bridge/shared/Storage.tsx');
-
 
 const g = self;
 var API = { alert: _bridge_shared_UI__WEBPACK_IMPORTED_MODULE_1__.alert,

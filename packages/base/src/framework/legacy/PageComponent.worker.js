@@ -13,14 +13,18 @@ import {
   ComponentKeyId,
   ComponentKeyIs,
 } from '@/utils/consts';
+import { noop } from '@/utils/types';
 import { getAppImpl } from '../App';
 import EventHub from '../EventHub';
 import getComponentClass from '../ComponentRegistry/getComponentClass';
 import $global from '../common/global';
 import MessageHandleMixin from '../mixins/MessageHandleMixin';
 
-const publicInstanceMethods = ['onShareAppMessage', 'onReachBottom', 'onPageScroll'];
-function noop() {}
+const publicInstanceMethods = [
+  'onShareAppMessage',
+  'onReachBottom',
+  'onPageScroll',
+];
 
 export default function PageComponent({ id, query, pagePath }) {
   if (!(this instanceof PageComponent)) {
@@ -45,7 +49,7 @@ export default function PageComponent({ id, query, pagePath }) {
   const self = this;
 
   /* 设置publicInstance */
-  const publicInstance = this.publicInstance = Object.create({
+  this.publicInstance = Object.create({
     route: pagePath,
     ...$global.pagesConfig[pagePath].user,
   }, {
@@ -63,6 +67,8 @@ export default function PageComponent({ id, query, pagePath }) {
       value: this.getComponentBy.bind(this),
     },
   });
+
+  const { publicInstance } = this;
 
   if (typeof publicInstance.data === 'function') {
     publicInstance.data = publicInstance.data() || {};
@@ -91,6 +97,24 @@ function getAllUsingComponents(pagePath) {
 
 PageComponent.prototype = {
   ...MessageHandleMixin,
+  initData() {
+    const { publicInstance, id } = this;
+
+    const config = {};
+    publicInstanceMethods.forEach((k) => {
+      const hookFn = publicInstance[k];
+      if (typeof hookFn === 'function' && hookFn !== noop) {
+        config[k] = true;
+      }
+    });
+
+    this.callRemote('self', 'initData', {
+      id,
+      isRefresh: false,
+      publicInstance: config,
+      data: { ...publicInstance.data },
+    });
+  },
   load() {
     // in case pageResume following appResume, tab page??
     if (!this.$loadTime) {
@@ -100,6 +124,7 @@ PageComponent.prototype = {
       log('framework: page onLoad', this.pagePath);
       EventHub.emit('pageLoad', { page: this });
       invokeWithGuardAndReThrow(this.publicInstance.onLoad, this.publicInstance, this.query);
+      this._disableRemoteData = false;
       // depend app status!! maybe unstable
       if (getAppImpl().shown) {
         this.show();
@@ -107,9 +132,8 @@ PageComponent.prototype = {
       if (this._fromTabItemTap) {
         this.onTabItemTap(this.tabProps);
       }
-      this._disableRemoteData = false;
     }
-    this.startRender();
+    // this.startRender();
   },
   refresh() {
     this.unmountAllComponents();
@@ -132,6 +156,25 @@ PageComponent.prototype = {
     this.executeUserMethod('onShow');
     log('framework: page onShow', this.pagePath);
   },
+  ready(payload) {
+    if (this.unloaded) {
+      return;
+    }
+    if (this.readied) {
+      return;
+    }
+    this.batchedUpdates(() => {
+      this.readied = true;
+      this.update(payload);
+      EventHub.emit('pageReady', { page: this });
+      this.initialCallbacks.forEach((fn) => {
+        return fn();
+      });
+      this.executeUserMethod('onReady');
+      log('framework: page onReady', this.pagePath);
+    });
+  },
+
   pullDownRefresh(e) {
     EventHub.emit('pullDownRefresh', { page: this });
     this.executeUserMethod('onPullDownRefresh', [e]);
@@ -194,6 +237,7 @@ PageComponent.prototype = {
         data: ComponentClass.data,
       };
     });
+
     // 此时发消息给bridge触发render的渲染，并且带了firstData过去
     this.callRemote('self', 'startRender', {
       id,
@@ -237,6 +281,7 @@ PageComponent.prototype = {
   /* 组件内部绑定事件，触发通过worker page来执行 */
   triggerComponentEvent(componentId, eventName, eventObject) {
     const componentInstance = this.getComponentInstance(componentId);
+
     if (componentInstance) {
       this.batchedUpdates(() => {
         invokeWithGuardAndReThrow(componentInstance.publicInstance[eventName], componentInstance.publicInstance, eventObject);
@@ -244,6 +289,31 @@ PageComponent.prototype = {
     }
   },
 
+  fireComponentLifecycle(info, type) {
+    const is = info[ComponentKeyIs];
+    const id = info[ComponentKeyId];
+    const componentInstance = this.getComponentInstance(id);
+
+    if (!componentInstance) {
+      const { componentInstances } = this;
+      const ComponentClass = getComponentClass(is);
+      const component = new ComponentClass(this, id, info);
+
+      componentInstances[id] = component;
+
+      if (typeof component[type] === 'function') {
+        component[type]();
+        this.callRemote('self', 'initComponentData', {
+          id,
+          is,
+          properties: ComponentClass.properties,
+          data: ComponentClass.data,
+        });
+      }
+    } else {
+      componentInstance[type](info);
+    }
+  },
   onTabItemTap(tabProps) {
     this.executeUserMethod('onTabItemTap', [tabProps]);
   },
@@ -282,25 +352,6 @@ PageComponent.prototype = {
     });
     const unmountedKeys = unmountedComponents.concat().reverse();
     this.unmountComponents(unmountedKeys);
-  },
-
-  ready(payload) {
-    if (this.unloaded) {
-      return;
-    }
-    if (this.readied) {
-      return;
-    }
-    this.batchedUpdates(() => {
-      this.readied = true;
-      this.update(payload);
-      EventHub.emit('pageReady', { page: this });
-      this.initialCallbacks.forEach((fn) => {
-        return fn();
-      });
-      this.executeUserMethod('onReady');
-      log('framework: page onReady', this.pagePath);
-    });
   },
 
   update(payload) {
@@ -354,6 +405,7 @@ PageComponent.prototype = {
       callback = options_;
       options = { complete: callback };
     }
+
     if (this._disableRemoteData) {
       if (callback) {
         this.initialCallbacks.push(callback);

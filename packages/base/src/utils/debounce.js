@@ -1,4 +1,3 @@
-
 export default function debounce(func, wait, options) {
   let lastArgs;
   let lastThis;

@@ -1,23 +1,19 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import createReactClass from 'create-react-class';
 import bridge from '@/apis/';
 import {
   Button,
-  Canvas,
   CheckBox,
   CheckBoxGroup,
   Icon,
   Image,
   Input,
   Label,
-  Picker,
   Radio,
   RadioGroup,
   ScrollView,
   Text,
   View,
 } from '@/components/';
+import Nerv from '@/nerv';
 
 import {
   EventHub,
@@ -36,29 +32,23 @@ import {
   createComponent,
   Page,
   $global,
-} from './framework';
+} from './framework/index';
 
 import XMLRuntime from './xml-runtime';
 
 const __mpStartTime = Date.now();
 
-const g = self;
+self.Nerv = Nerv;
 
-g.React = React;
-g.ReactDOM = ReactDOM;
-g.createReactClass = createReactClass;
-g.React.createClass = g.React.createClass || createReactClass;
-g.XMLRuntime = XMLRuntime;
-g.MPUI = {
+self.XMLRuntime = XMLRuntime;
+self.MPUI = {
   button: Button,
-  canvas: Canvas,
   checkbox: CheckBox,
   'checkbox-group': CheckBoxGroup,
   icon: Icon,
   image: Image,
   input: Input,
   label: Label,
-  picker: Picker,
   radio: Radio,
   'radio-group': RadioGroup,
   'scroll-view': ScrollView,

@@ -1,5 +1,3 @@
-import PropTypes from 'prop-types';
-
 let index = 0;
 function getImmutableValue(value2) {
   let value = value2;
@@ -13,9 +11,7 @@ function getValueFromProps(props) {
 }
 
 export default ({
-  contextTypes: {
-    form: PropTypes.any,
-  },
+
   statics: {
     isFormControl: true,
   },

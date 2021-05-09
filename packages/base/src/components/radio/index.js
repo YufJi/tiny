@@ -1,14 +1,11 @@
-
-import React from 'react';
-import createReactClass from 'create-react-class';
-import PropTypes from 'prop-types';
+import Nerv, { createNervClass } from '@/nerv';
 import { createComponent } from '@/framework/';
 import Checkbox from '../shared/Checkbox';
 
 const Radio = createComponent({
   name: 'radio',
   pure: false,
-})(createReactClass({
+})(createNervClass({
   displayName: 'Radio',
   // no formMixin, manage value by checkbox-group
   statics: {
@@ -20,10 +17,6 @@ const Radio = createComponent({
       disabled: false,
       value: '',
     };
-  },
-
-  contextTypes: {
-    radioGroup: PropTypes.any,
   },
 
   getInitialState() {
@@ -134,6 +127,5 @@ const Radio = createComponent({
     );
   },
 }));
-
 
 export default Radio;

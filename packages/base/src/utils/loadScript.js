@@ -1,4 +1,3 @@
-
 const loadedScripts = {};
 export default function loadScript(src, callback) {
   let info = loadedScripts[src];

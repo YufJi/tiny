@@ -1,4 +1,3 @@
-
 const reLeadingDot = /^\./;
 // a..b
 // a[][]b

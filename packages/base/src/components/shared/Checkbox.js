@@ -1,8 +1,8 @@
-import React from 'react';
+import Nerv from '@/nerv';
 import classnames from 'classnames';
 import Icon from './Icon';
 
-export default class Checkbox extends React.PureComponent {
+export default class Checkbox extends Nerv.PureComponent {
   render() {
     const { id, prefixCls, className = '', style, type = 'checkbox', disabled, checked, onChange, color } = this.props;
 

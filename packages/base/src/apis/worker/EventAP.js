@@ -1,4 +1,3 @@
-
 import { isAndroid } from '../../utils/system';
 
 export default (function (ap) {

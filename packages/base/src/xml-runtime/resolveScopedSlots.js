@@ -1,4 +1,3 @@
-
 export default function resolveScopedSlots(arrScopedSlots) {
   const objScopedSlots = {};
   arrScopedSlots.forEach((arr) => {

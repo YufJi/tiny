@@ -1,6 +1,4 @@
-import React from 'react';
-import createReactClass from 'create-react-class';
-import Touchable from 'rc-touchable';
+import Nerv, { createNervClass } from '@/nerv';
 import addEvents from '@/utils/addEvents';
 import isNodeVisible from '@/utils/isNodeVisible';
 import throttle from '@/utils/throttle';
@@ -76,7 +74,7 @@ function getStyleFromAnimation(component, _animation, node) {
   return component.props.$mp.getNormalizedStyle({ style });
 }
 
-export default createReactClass({
+export default createNervClass({
   displayName: 'View',
 
   mixins: [
@@ -264,11 +262,10 @@ export default createReactClass({
   },
   render: function render() {
     const { props } = this;
-    const { children, hidden, userProps, testProps = {}, tagName: TagName = 'div' } = props;
+    const { children, hidden, userProps, testProps = {}, tagName: TagName = 'div', $mp, ...rest } = props;
 
     let { style } = props;
     const touchableProps = {};
-    const nodeEvents = this.getNodeEvents();
 
     if (props.hoverClass) {
       touchableProps.activeClassName = props.hoverClass;
@@ -285,29 +282,19 @@ export default createReactClass({
     if (hidden) {
       style = { ...style, display: 'none' };
     }
-    let clickable = {};
-    if (userProps && (userProps.onTap || userProps.catchTap)) {
-      clickable = {
-        'data-clickable': true,
-      };
-    }
-    const content = React.createElement(TagName, {
+    const clickable = {
+      'data-clickable': true,
+    };
+
+    const content = Nerv.createElement(TagName, {
       className: props.className,
       style,
       id: props.id,
-      ...nodeEvents,
       ...clickable,
-      ...testProps,
       ...this.props.$mp.getAriaProps(),
       ref: this.saveRoot,
+      ...rest,
     }, children);
-
-    if (objectKeys(touchableProps).length) {
-      return React.createElement(Touchable, {
-        ...touchableProps,
-        activeStopPropagation: props.hoverStopPropagation,
-      }, content);
-    }
 
     return content;
   },

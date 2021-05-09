@@ -1,4 +1,3 @@
-
 export default {
   scaleToFill: {
     backgroundSize: '100% 100%',

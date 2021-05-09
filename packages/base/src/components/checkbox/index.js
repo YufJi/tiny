@@ -1,15 +1,13 @@
-import React from 'react';
-import createReactClass from 'create-react-class';
-import PropTypes from 'prop-types';
+import Nerv, { createNervClass } from '@/nerv';
 
 import { createComponent } from '@/framework/';
-import { getPropsEventName } from '@/utils/eventReg';
+import { getPropsEvent } from '@/utils/eventReg';
 import Checkbox from '../shared/Checkbox';
 
 export default createComponent({
   pure: false,
   name: 'checkbox',
-})(createReactClass({
+})(createNervClass({
   displayName: 'Checkbox',
   // no formMixin, manage value by radio-group
   statics: {
@@ -22,10 +20,6 @@ export default createComponent({
       value: '',
       controlled: false,
     };
-  },
-
-  contextTypes: {
-    checkboxGroup: PropTypes.any,
   },
 
   getInitialState: function getInitialState() {
@@ -105,14 +99,12 @@ export default createComponent({
         },
       });
     }
-    const onHandler = this.props[getPropsEventName('change', false, false)];
-    if (typeof onHandler === 'function') {
-      onHandler(this.props.$mp.getNormalizedEvent('change', {
-        detail: {
-          value: checked,
-        },
-      }));
-    }
+
+    getPropsEvent.call(this, 'change')(this.props.$mp.getNormalizedEvent('change', {
+      detail: {
+        value: checked,
+      },
+    }));
   },
 
   render() {
@@ -120,7 +112,7 @@ export default createComponent({
 
     const checked = controlled ? this.props.checked : this.state.checked;
 
-    return React.createElement(Checkbox, {
+    return Nerv.createElement(Checkbox, {
       prefixCls: 'a-checkbox',
       className,
       id,

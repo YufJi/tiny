@@ -1,12 +1,10 @@
-import React from 'react';
-import createReactClass from 'create-react-class';
-import PropTypes from 'prop-types';
-import BasicEventMixin from '@/mixins/BasicEventMixin';
+import Nerv, { createNervClass } from '@/nerv';
 import { createComponent, getCurrentPageImpl } from '@/framework/';
 import callInternalAPI from '@/utils/callInternalAPI';
 import callBridge from '@/utils/callBridge';
 import TestMixin from '@/utils/TestMixin';
 import trackTap from '@/utils/trackTap';
+import { getPropsEvent } from '@/utils/eventReg';
 import Button from '../shared/Button';
 
 const FollowStatus = {
@@ -17,10 +15,9 @@ const FollowStatus = {
 
 const AButton = createComponent({
   name: 'button',
-})(createReactClass({
+})(createNervClass({
   displayName: 'Button',
   mixins: [
-    BasicEventMixin(),
     TestMixin,
   ],
   getDefaultProps: function getDefaultProps() {
@@ -29,10 +26,6 @@ const AButton = createComponent({
       hoverStayTime: 70,
       hoverClass: 'a-button-active',
     };
-  },
-
-  contextTypes: {
-    form: PropTypes.any,
   },
   addFollow: function addFollow() {
     const _props = this.props;
@@ -57,7 +50,9 @@ const AButton = createComponent({
   },
   onButtonTap(e) {
     const _this = this;
-    this.onTap(e);
+
+    getPropsEvent.call(this, 'tap')(e);
+
     const { formType, openType, appParameter, $mp } = this.props;
     const { form } = this.context;
 
@@ -144,12 +139,9 @@ const AButton = createComponent({
       type = 'ghost';
     }
 
-    const nodeEvents = this.getNodeEvents();
-
-    return React.createElement(
+    return Nerv.createElement(
       Button,
       {
-        ...nodeEvents,
         id: props.id,
         size: props.size,
         activeStopPropagation: props.hoverStopPropagation,
@@ -162,7 +154,6 @@ const AButton = createComponent({
         type,
         disabled: props.disabled,
         loading: props.loading,
-        ...this.getTestProps(),
         ...props.$mp.getAriaProps(),
       },
       props.children,

@@ -1,11 +1,10 @@
-import React from 'react';
-import createReactClass from 'create-react-class';
+import Nerv, { createNervClass } from '@/nerv';
 import { createComponent } from '@/framework/';
 
 export default createComponent({
   pure: false,
   name: 'label',
-})(createReactClass({
+})(createNervClass({
   onClick() {
     const forProp = this.props.for;
     if (forProp) {
@@ -17,6 +16,7 @@ export default createComponent({
     }
   },
   render() {
-    return React.createElement('label', { ...this.props, onClick: this.onClick });
+    const { $mp, ...rest } = this.props;
+    return Nerv.createElement('label', { ...rest, onClick: this.onClick });
   },
 }));

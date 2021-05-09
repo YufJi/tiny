@@ -1,4 +1,3 @@
-
 import { parse } from 'query-string';
 import { getValue, setValue } from './startupParamsHolder';
 

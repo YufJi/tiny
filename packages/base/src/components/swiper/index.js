@@ -1,4 +1,3 @@
-
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! babel-runtime/helpers/extends */ './node_modules/babel-runtime-loose/helpers/extends.js');
 /* harmony import */ const babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0___default = /* #__PURE__ */__webpack_require__.n(babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0__);
@@ -288,7 +287,7 @@ export default createComponent({
     const { current } = this.state;
 
     const slideCount = this.filterChildrenAndReturnCount();
-    let targetOffset ;
+    let targetOffset;
     if (inCircular && index === 0) {
       targetOffset = this.getTargetOffset(null, slideCount);
     } else if (inCircular && index === slideCount - 1) {
@@ -398,7 +397,7 @@ export default createComponent({
             difference = touchObject.length * 0.6;
           }
         }
-        let transform ;
+        let transform;
         if (vertical) {
           transform = `translate3d(0, ${targetOffset + difference}px, 0)`;
         } else {
@@ -499,7 +498,7 @@ export default createComponent({
     const { top } = _state2;
     const { left } = _state2;
 
-    let slideStyles ;
+    let slideStyles;
     if (vertical) {
       slideStyles = {
         transform: `translate3d(0, ${top}px, 0)`,

@@ -12,8 +12,9 @@ import {
   getAppImpl,
   Component,
   Page,
+  registerBehavior,
   $global,
-} from './framework/';
+} from './framework/index.worker';
 
 const __mpStartTime = Date.now();
 
@@ -30,6 +31,7 @@ self.MP = {
   getAppImpl,
   Component,
   Page,
+  Behavior: registerBehavior,
   $global,
 };
 

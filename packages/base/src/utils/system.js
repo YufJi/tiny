@@ -1,4 +1,3 @@
-
 const ua = navigator.userAgent || navigator.swuserAgent;
 const _systemVersion = ua.match(/AlipayClient\/(\d+\.\d+\.\d+)/);
 const _UCVersion = ua.match(/UCBS\/(\d+\.\d+)/);
@@ -65,7 +64,6 @@ function compareSystemVersion(targetVersion) {
 function compareUCVersion(targetVersion) {
   return compareVersion(UCVersion, targetVersion);
 }
-
 
 export {
   systemVersion,

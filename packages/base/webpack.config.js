@@ -4,7 +4,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const getConfig = (type, env) => {
   const isWorker = type === 'worker';
   const isDev = process.env.NODE_ENV !== 'production';
-  
+
   return {
     mode: isDev ? 'development' : 'production',
     entry: isWorker ? {
@@ -18,9 +18,8 @@ const getConfig = (type, env) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src/'),
-        'components': path.resolve(__dirname, '../components/src'),
       },
-      extensions: isWorker ? ['.worker.js', '.js', '.json'] : ['.web.js', '.js', '.json'],
+      extensions: isWorker ? ['.worker.js', '.js', '.ts', '.json'] : ['.web.js', '.js', '.ts', '.json'],
     },
     module: {
       rules: [
@@ -28,7 +27,13 @@ const getConfig = (type, env) => {
           test: /\.js$/,
           use: {
             loader: 'babel-loader',
-          }
+          },
+        },
+        {
+          test: /\.ts$/,
+          use: {
+            loader: 'ts-loader',
+          },
         },
         {
           test: /\.less$/,
@@ -36,40 +41,40 @@ const getConfig = (type, env) => {
             MiniCssExtractPlugin.loader,
             'css-loader',
             {
-                loader: 'postcss-loader',
-                options: {
-                  plugins: () => [
-                    require('autoprefixer')(),
-                  ]
-                }
+              loader: 'postcss-loader',
+              options: {
+                plugins: () => [
+                  require('autoprefixer')(),
+                ],
+              },
             }, {
-                loader: 'less-loader',
-                options: {
-                  javascriptEnabled: true,
-                }
-            }
-          ]
-        }
-      ]
+              loader: 'less-loader',
+              options: {
+                javascriptEnabled: true,
+              },
+            },
+          ],
+        },
+      ],
     },
 
     devtool: 'cheap-module-source-map',
 
     optimization: {
       minimize: !isDev,
-    },  
+    },
 
     plugins: [
       new MiniCssExtractPlugin({
-        filename: 'mp.css'
+        filename: 'mp.css',
       }),
     ],
 
-    stats: 'normal',
-  }
-}
+    stats: 'minimal',
+  };
+};
 
 module.exports = [
-  getConfig('index'), 
-  getConfig('worker')
-]
+  getConfig('index'),
+  getConfig('worker'),
+];

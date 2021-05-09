@@ -1,4 +1,3 @@
-
 // Test via a getter in the options object to see if the passive property is accessed
 let supportsPassive = false;
 try {
@@ -11,6 +10,5 @@ try {
   window.addEventListener('testPassive', n, opts);
   window.removeEventListener('testPassive', n, opts);
 } catch (e) {}
-
 
 export default supportsPassive;

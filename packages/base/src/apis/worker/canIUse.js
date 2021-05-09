@@ -1,4 +1,3 @@
-
 import {
   isNativeComponent,
   compareSystemVersion,

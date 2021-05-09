@@ -1,4 +1,3 @@
-
 const numberReSnippet = '(?:NaN|-?(?:(?:\\d+|\\d*\\.\\d+)(?:[E|e][+|-]?\\d+)?|Infinity))';
 const matchOnlyNumberRe = new RegExp(`^(${numberReSnippet})$`);
 

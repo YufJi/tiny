@@ -1,10 +1,9 @@
-
-import React from 'react';
+import Nerv from '@/nerv';
 import classnames from 'classnames';
 
 const prefix = 'a-loading';
 
-class Loading extends React.PureComponent {
+class Loading extends Nerv.PureComponent {
   render() {
     const wrapCls = classnames({
       [`${prefix}-indicator`]: true,

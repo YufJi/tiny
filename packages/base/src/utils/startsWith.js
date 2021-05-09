@@ -1,4 +1,3 @@
-
 export default function startsWith(str, prefix) {
   if (!str || !prefix) {
     return false;

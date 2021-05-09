@@ -1,4 +1,3 @@
-
 const doc = document;
 const win = window;
 function getNodeQuery(node, type) {

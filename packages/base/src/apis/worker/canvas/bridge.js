@@ -1,4 +1,3 @@
-
 import ap from '@/apis/ap';
 
 const { callBridge, callBridgeSync } = ap;

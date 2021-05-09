@@ -1,6 +1,5 @@
-
-import endsWith from './endsWith';
 import ap from '@/apis/ap';
+import endsWith from './endsWith';
 
 export default function (extraAppId) {
   let Loaded = false;

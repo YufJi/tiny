@@ -1,6 +1,4 @@
-
-import React from 'react';
-import createReactClass from 'create-react-class';
+import Nerv, { createNervClass } from '@/nerv';
 import { createComponent } from '../framework/dev';
 import callInternalAPI from './callInternalAPI';
 import objectKeys from './objectKeys';
@@ -74,7 +72,7 @@ export default function createExtraComponent(componentName, appId) {
 
   return createComponent({
     name: componentName,
-  })(createReactClass({
+  })(createNervClass({
     displayName,
     getInitialState: function getInitialState() {
       this.extraComponentLoaded = false;

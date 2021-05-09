@@ -1,4 +1,3 @@
-
 import { getCurrentPageImpl } from '@/framework/App';
 
 export default function reportError(code, e, count = 0) {

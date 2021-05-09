@@ -1,4 +1,3 @@
-
 import ap from '@/apis/ap';
 import { callBridgeAPI } from './bridge';
 

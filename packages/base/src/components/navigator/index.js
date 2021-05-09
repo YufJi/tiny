@@ -1,4 +1,3 @@
-
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! babel-runtime/helpers/extends */ './node_modules/babel-runtime-loose/helpers/extends.js');
 /* harmony import */ const babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0___default = /* #__PURE__ */__webpack_require__.n(babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0__);
@@ -9,7 +8,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const create_react_class__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! create-react-class */ './node_modules/create-react-class/index.js');
 /* harmony import */ const create_react_class__WEBPACK_IMPORTED_MODULE_4___default = /* #__PURE__ */__webpack_require__.n(create_react_class__WEBPACK_IMPORTED_MODULE_4__);
 /* harmony import */ const _bridge_shared_getNavigateToMiniProgramOptions__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../bridge/shared/getNavigateToMiniProgramOptions */ './src/bridge/shared/getNavigateToMiniProgramOptions.tsx');
-
 
 const Navigator = Object(_framework_dev__WEBPACK_IMPORTED_MODULE_3__.createComponent)({
   pure: false,

@@ -1,4 +1,3 @@
-
 import { getStartupParams } from '@/framework/startupParams';
 
 export const TAC = 'TAC';

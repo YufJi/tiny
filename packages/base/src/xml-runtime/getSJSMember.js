@@ -1,4 +1,4 @@
-function noop() {}
+import { noop } from '@/utils/types';
 
 const PREFIX = '$sjs_';
 const messageReg = new RegExp(PREFIX, 'g');

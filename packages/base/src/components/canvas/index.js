@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Touchable from 'rc-touchable';
 import createReactClass from 'create-react-class';
@@ -388,7 +387,6 @@ const Canvas = createComponent({
   onLayout() {
     const { root } = this;
     const { width, height } = this.props;
-
 
     if (!width) {
       const { offsetWidth } = root;

@@ -18,16 +18,15 @@ import getComponentClass from '../ComponentRegistry/getComponentClass';
 import getComponentProp from '../utils/getComponentProp';
 import fireComponentLifecycle from '../utils/fireComponentLifecycle';
 
-export default function Component(setupConfig, currentComponentConfig) {
+export default function Component(config, currentComponentConfig) {
+  const { init, ancestors } = config;
   const { is, usingComponents } = currentComponentConfig;
 
   const propsCache = {};
 
   function getProps(prop, useCache = true) {
-    return getComponentProp(setupConfig, prop, useCache ? propsCache : useCache);
+    return getComponentProp(init, prop, useCache ? propsCache : useCache);
   }
-
-  const defaultProperties = mapValues(getProps('properties'), 'value');
 
   function ComponentClass(page, id, componentConfig) {
     this.is = is;
@@ -35,7 +34,11 @@ export default function Component(setupConfig, currentComponentConfig) {
     this.page = page;
     this.triggerEventHandlers = {};
     const self = this;
-    this.publicInstance = Object.create(getProps('methods'), {
+
+    this.publicInstance = Object.create({
+      ...init,
+      ...getProps('methods'),
+    }, {
       setData: {
         value: function value(a, b) {
           return self.setData(setData, a, b);
@@ -48,27 +51,31 @@ export default function Component(setupConfig, currentComponentConfig) {
       },
       triggerEvent: {
         value: function value(eventName, ...args) {
-          self.page.callRemote.apply(self.page, ['self', 'triggerComponentEvent', self.id, eventName].concat(args));
+          self.page.callRemote.apply(self.page, ['self', 'triggerComponentCustomEvent', self.id, eventName].concat(args));
+        },
+      },
+      getPageId: {
+        value: function value() {
+          return self.page.id;
         },
       },
     });
+
     const { publicInstance } = this;
 
     publicInstance.is = is;
     publicInstance.$id = id;
     publicInstance.$page = page.publicInstance;
+    publicInstance.properties = { ...publicInstance.data, ...mapValues(publicInstance.properties, 'value') };
+    publicInstance.data = { ...publicInstance.data, ...mapValues(publicInstance.properties, 'value') };
 
-    publicInstance.properties = { ...getProps('data', false), ...defaultProperties };
-    publicInstance.data = { ...getProps('data', false), ...defaultProperties };
-
-    this.computedDeps = { ...ComponentClass.computedDeps };
     this.prevData = publicInstance.data;
 
     this.setComponentConfig(componentConfig, true);
   }
 
   ComponentClass.data = { ...getProps('data', false) };
-  ComponentClass.properties = { ...defaultProperties };
+  ComponentClass.properties = { ...getProps('properties', false) };
 
   ComponentClass.getAllComponents = function () {
     const allComponents = [is];
@@ -131,19 +138,24 @@ export default function Component(setupConfig, currentComponentConfig) {
       }
 
       if (!init && (prevProps !== publicInstance.properties || this.prevData !== publicInstance.data)) {
-        this.update(prevProps, this.prevData);
         this.prevData = publicInstance.data;
       }
     },
-    ready() {
-      fireComponentLifecycle(setupConfig, this.publicInstance, 'didMount');
+    // const COMPONENT_LIFETIMES = ['created', 'attached', 'ready', 'moved', 'detached', 'error'];
+    created() {
+      this.publicInstance.lifetimes.created.call(this.publicInstance);
     },
-    update(...args) {
-      fireComponentLifecycle(setupConfig, this.publicInstance, 'didUpdate', args);
+    attached(info) {
+      this.setComponentConfig(info);
+      this.publicInstance.lifetimes.attached.call(this.publicInstance);
+    },
+    ready(info) {
+      this.setComponentConfig(info);
+      this.publicInstance.lifetimes.ready.call(this.publicInstance);
     },
     unload() {
       this.unloaded = true;
-      fireComponentLifecycle(setupConfig, this.publicInstance, 'didUnmount');
+      this.publicInstance.lifetimes.detached.call(this.publicInstance);
     },
   };
 

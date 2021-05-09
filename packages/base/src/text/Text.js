@@ -1,8 +1,5 @@
-
-import React from 'react';
-import createReactClass from 'create-react-class';
+import Nerv, { createNervClass } from '@/nerv';
 import BasicEventMixin from '../mixins/BasicEventMixin';
-
 
 let test;
 const cache = {};
@@ -35,7 +32,7 @@ function decodeStr(str) {
   });
 }
 
-export default createReactClass({
+export default createNervClass({
   displayName: 'Text',
   mixins: [BasicEventMixin()],
   render: function render() {
@@ -61,7 +58,7 @@ export default createReactClass({
     }
     let nodes;
     nodes = [];
-    React.Children.forEach(children, (c) => {
+    Nerv.Children.forEach(children, (c) => {
       if (typeof c === 'string') {
         if (decode) {
           c = decodeStr(c);
@@ -80,6 +77,6 @@ export default createReactClass({
         'data-clickable': true,
       };
     }
-    return React.createElement('span', { className, onClick: this.onTap, style: retStyle, id, ...clickable, ...this.props.$mp.getAriaProps() }, nodes);
+    return Nerv.createElement('span', { className, onClick: this.onTap, style: retStyle, id, ...clickable, ...this.props.$mp.getAriaProps() }, nodes);
   },
 });

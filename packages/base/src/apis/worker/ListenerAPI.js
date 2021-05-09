@@ -1,11 +1,9 @@
-
 import { getCurrentPageImpl } from '../../framework/dev';
 import ap from '../ap';
 import './listeners/backHome';
 import './listeners/optionMenu';
 import './listeners/share';
 import './listeners/tracker';
-
 
 ap.on('titleClick', () => {
   const page = getCurrentPageImpl();

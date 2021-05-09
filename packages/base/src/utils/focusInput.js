@@ -1,4 +1,3 @@
-
 import { isAndroid, compareUCVersion } from './system';
 import callInternalAPI from './callInternalAPI';
 

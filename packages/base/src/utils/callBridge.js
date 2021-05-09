@@ -1,4 +1,3 @@
-
 export default function callBridge(method, param, callback) {
   const g = self;
   const { JSBridge } = g;

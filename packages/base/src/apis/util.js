@@ -1,8 +1,8 @@
-
 import { getCurrentPageImpl, getStartupParams, $global } from '@/framework/';
 import getHomePage from '@/utils/getHomePage';
 import { APP_BIZ } from '@/utils/LogBizType';
 import objectKeys from '@/utils/objectKeys';
+import { noop } from '@/utils/types';
 
 function escapeDot(str) {
   return str.replace(/\./g, '_DOT_');
@@ -22,8 +22,6 @@ export function getAutoTrackerConfig(_pagePath) {
     bizType: APP_BIZ(),
   };
 }
-
-const noop = function noop() {};
 
 export function handleCallbackParams(params, resolve, reject) {
   const { success = noop, fail = noop, complete = noop, ...rest } = params;
@@ -68,4 +66,3 @@ export function handleResultCallback(params = {}, res) {
     complete(res);
   }
 }
-

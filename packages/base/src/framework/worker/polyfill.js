@@ -1,4 +1,3 @@
-
 const g = self;
 
 /* 实现worker中的importScripts */
@@ -15,7 +14,7 @@ const importScriptsPolyfill = (...urls) => {
       if (/(java|ecma)script/.test(contentType)) {
         eval(xhr.responseText);
       }
-    } catch(err) {
+    } catch (err) {
       console.error(err);
     }
   });

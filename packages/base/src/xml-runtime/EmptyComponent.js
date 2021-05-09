@@ -1,4 +1,4 @@
-import React from 'react';
+import Nerv from '@/nerv';
 
 export default function EmptyComponent(props) {
   const { children = null } = props || {};

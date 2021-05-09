@@ -1,16 +1,14 @@
-
-
 import './index.less';
 
 import Button from './button';
-import Canvas from './canvas';
+// import Canvas from './canvas';
 import CheckBox from './checkbox';
 import CheckBoxGroup from './checkbox-group';
 import Icon from './icon';
 import Image from './image';
 import Input from './input';
 import Label from './label';
-import Picker from './picker';
+// import Picker from './picker';
 import Radio from './radio';
 import RadioGroup from './radio-group';
 import ScrollView from './scroll-view';
@@ -19,17 +17,17 @@ import View from './view';
 
 export {
   Button,
-  Canvas,
+  // Canvas,
   CheckBox,
   CheckBoxGroup,
   Icon,
   Image,
   Input,
   Label,
-  Picker,
+  // Picker,
   Radio,
   RadioGroup,
   ScrollView,
   Text,
   View,
-}
+};

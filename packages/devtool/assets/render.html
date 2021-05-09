@@ -13,10 +13,17 @@
     .root {
       width: 100%;
     }
+    .__loading__ {
+      width: 100%;
+      position: absolute;
+      top: 0;
+      z-index: -1;
+    }
   </style>
 </head>
 <body>
-  <div id="root" class="root">
+  <div id="root" class="root"></div>
+  <div class="__loading__">
     <style>
       .load-container {
         margin: 50px auto;

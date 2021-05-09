@@ -1,4 +1,3 @@
-
 let appImpl;
 const g = self;
 

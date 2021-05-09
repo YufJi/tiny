@@ -1,7 +1,4 @@
-
-import React from 'react';
-import createReactClass from 'create-react-class';
-import PropTypes from 'prop-types';
+import Nerv, { createNervClass } from '@/nerv';
 import { createComponent } from '@/framework/';
 import formMixin from '../form/mixin';
 import View from '../view/View';
@@ -9,12 +6,9 @@ import View from '../view/View';
 const RadioGroup = createComponent({
   pure: false,
   name: 'radio-group',
-})(createReactClass({
+})(createNervClass({
   displayName: 'RadioGroup',
   mixins: [formMixin],
-  childContextTypes: {
-    radioGroup: PropTypes.any,
-  },
   getChildContext: function getChildContext() {
     return {
       radioGroup: this,
@@ -41,7 +35,7 @@ const RadioGroup = createComponent({
     }
   },
   render: function render() {
-    return React.createElement(View, { ...this.props, role: 'radiogroup' });
+    return Nerv.createElement(View, { ...this.props, role: 'radiogroup' });
   },
 }));
 

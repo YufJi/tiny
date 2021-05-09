@@ -1,7 +1,4 @@
-
-import React from 'react';
-import ReactDOM from 'react-dom';
-import createReactClass from 'create-react-class';
+import Nerv, { createNervClass, findDOMNode } from '@/nerv';
 import { createComponent, getCurrentPageImpl } from '@/framework/';
 import throttle from '@/utils/throttle';
 import addEvents from '@/utils/addEvents';
@@ -39,7 +36,7 @@ const styles = {
 const ScrollView = createComponent({
   pure: false,
   name: 'scroll-view',
-})(createReactClass({
+})(createNervClass({
   displayName: 'ScrollView',
   getDefaultProps: function getDefaultProps() {
     return {
@@ -65,7 +62,7 @@ const ScrollView = createComponent({
     this.componentDidUpdate({});
     if (enableBackToTop && scrollY) {
       const event = isIOS ? 'statusBarClick' : 'titleClick';
-      this.documentEvents = addEvents(document, { [event]: this.scrollToTop })
+      this.documentEvents = addEvents(document, { [event]: this.scrollToTop });
     }
   },
   componentDidUpdate: function componentDidUpdate(prevProps) {
@@ -79,7 +76,7 @@ const ScrollView = createComponent({
     // scrollIntoView has High priority vs scrollLeft / scrollTop
     if (scrollIntoView && prevProps.scrollIntoView !== scrollIntoView) {
       const page = getCurrentPageImpl();
-      const scrollIntoViewComponent = ReactDOM.findDOMNode(page.refComponents[scrollIntoView]);
+      const scrollIntoViewComponent = findDOMNode(page.refComponents[scrollIntoView]);
       if (scrollIntoViewComponent) {
         const boundingRect = scrollIntoViewComponent.getBoundingClientRect();
         const containerRect = sv.getBoundingClientRect();
@@ -282,7 +279,7 @@ const ScrollView = createComponent({
     const { scrollX, scrollY, children, style, className, id } = this.props;
 
     const scrollViewStyle = { ...defaultStyle, ...scrollX && styles.scrollX, ...scrollY && styles.scrollY, ...style };
-    return React.createElement(
+    return Nerv.createElement(
       'div',
       { id, className, ref: this.saveScrollView, style: scrollViewStyle },
       children,

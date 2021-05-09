@@ -1,4 +1,3 @@
-
 import debounce from './debounce';
 
 export default function throttle(func, wait, options) {

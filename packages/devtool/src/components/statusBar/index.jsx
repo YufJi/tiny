@@ -4,13 +4,13 @@ import Timer from './timer';
 import './styles.less';
 
 const StatusBar = () => (
-    <div className="statusBar">
-        <Timer />
-        <div className="status-info">
-          <i className="ic item">&#xe956;</i>
-          <i className="ic item">&#xe9fc;</i>
-          <i className="ic item">&#xe614;</i>
-        </div>
+  <div className="statusBar">
+    <Timer />
+    <div className="status-info">
+      <i className="ic item">&#xe956;</i>
+      <i className="ic item">&#xe9fc;</i>
+      <i className="ic item">&#xe614;</i>
     </div>
+  </div>
 );
 export default StatusBar;

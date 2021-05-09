@@ -1,8 +1,7 @@
-
 import { getStartupParams } from '@/framework/';
 
 let id = 0;
-let isTest ;
+let isTest;
 const empty = {};
 function isTesting() {
   if (isTest !== undefined) {

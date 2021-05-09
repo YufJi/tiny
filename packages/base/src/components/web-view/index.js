@@ -1,4 +1,3 @@
-
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ './node_modules/react/index.js');
 /* harmony import */ const react__WEBPACK_IMPORTED_MODULE_0___default = /* #__PURE__ */__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
@@ -10,7 +9,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const _utils_callBridge__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/callBridge */ './src/utils/callBridge.tsx');
 /* harmony import */ const _utils_addEvents__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/utils/addEvents */ './src/utils/addEvents.tsx');
 /* harmony import */ const _utils_system__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/system */ './src/utils/system.tsx');
-
 
 let id = 0;
 const cacheWebViewId = {};

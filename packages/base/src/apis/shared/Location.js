@@ -1,4 +1,3 @@
-
 import { mapping } from '@/utils/bridge';
 import { isAndroid } from '@/utils/system';
 

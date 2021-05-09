@@ -1,31 +1,36 @@
-export const eventReg = /^(bind|catch)\$([A-Za-z_]+)(\$capture)?$/;
-
-export const commonBubblesEvents = [
-  'tap',
-
-  'touchstart',
-  'touchmove',
-  'touchend',
-  'touchcancel',
-
-  'transitionend',
-
-  'animationstart',
-  'animationiteration',
-  'animationend',
-];
-
-export const commonBubblesEventsReg = new RegExp(`(bind|catch)\$(${commonBubblesEvents.join('|')})(\$capture)?$`);
+import { noop } from './types';
 
 export function getPropsEventName(name, isCatch = false, capture = false) {
-  const arr = [];
-  arr.push(isCatch ? 'catch' : 'bind');
+  let str = '';
+
+  str += isCatch ? 'catch' : 'bind';
+
   if (name) {
-    arr.push(name);
+    str += name;
   }
   if (capture) {
-    arr.push('capture');
+    str = `capture-${str}`;
   }
 
-  return arr.join('$');
+  return str;
+}
+
+export function getPropsEvent(name, isCatch = false, capture = false) {
+  let str = '';
+
+  str += isCatch ? 'catch' : 'bind';
+
+  if (name) {
+    str += name;
+  }
+  if (capture) {
+    str = `capture-${str}`;
+  }
+
+  const handler = this.props[str];
+
+  if (typeof handler === 'function') {
+    return handler;
+  }
+  return noop;
 }

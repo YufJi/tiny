@@ -2,6 +2,7 @@ const $global = {
   tabsConfig: {},
   pagesConfig: {},
   componentsConfig: {},
+
   currentPageConfig: null,
   currentComponentConfig: null,
 };

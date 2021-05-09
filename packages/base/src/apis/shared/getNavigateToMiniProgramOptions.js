@@ -1,4 +1,3 @@
-
 export default function getNavigateToMiniProgramOptions(appId, config) {
   const referrerInfo = {
     appId,

@@ -1,4 +1,3 @@
-
 import Platform from '../Platform';
 import transformStyle from '../utils/transformStyle';
 import normalizeClassNameStyle from './normalizeClassNameStyle';

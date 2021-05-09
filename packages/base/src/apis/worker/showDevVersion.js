@@ -1,9 +1,7 @@
-
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const _ap__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../ap */ './src/bridge/ap.worker.tsx');
 /* harmony import */ const _framework_dev__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../framework/dev */ './src/framework/dev.tsx');
 /* harmony import */ const _utils_system__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../utils/system */ './src/utils/system.tsx');
-
 
 let count = 0;
 let lastTime = 0;

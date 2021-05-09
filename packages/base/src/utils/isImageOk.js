@@ -1,4 +1,3 @@
-
 export default function isImageOk(img) {
   // During the onload event, IE correctly identifies any images that
   // weren’t downloaded as not complete. Others should too. Gecko-based

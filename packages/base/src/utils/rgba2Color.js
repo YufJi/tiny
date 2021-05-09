@@ -1,4 +1,3 @@
-
 export default function rgba2Color(rgba) {
   // 如果是rgba颜色表示
   if (/^(rgb|RGB)/.test(rgba)) {

@@ -9,17 +9,8 @@ Page({
   },
   // 监听生命周期回调 onLoad
   onLoad() {
+    console.log('page load');
     // 获取用户信息并存储数据
-    app.getUserInfo().then(
-      (user) => {
-        this.setData({
-          user,
-        });
-      },
-      () => {
-        // 获取用户信息失败
-      },
-    );
   },
   // 监听生命周期回调 onShow
   onShow() {
@@ -27,6 +18,10 @@ Page({
     this.setData({ todos: app.todos });
     console.log('page show');
   },
+  onReady() {
+    console.log('page ready');
+  },
+
   onHide() {
     console.log('page hide');
   },
@@ -42,11 +37,11 @@ Page({
   },
 
   addTodo(e) {
-    console.log(e, 'eeexxxxxx')
+    console.log(e, 'eeexxxxxx');
     this.setData({
       text: 'chi',
-      fn: 'captureClickChild'
-    })
+      fn: 'captureClickChild',
+    });
     console.log('准备进行页面跳转');
     // 进行页面跳转
     wx.navigateTo({
@@ -63,7 +58,7 @@ Page({
     console.log('captureClickChild');
   },
   clickCom(e) {
-    console.log(e, 'eeex')
+    console.log(e, 'eeex');
     this.setData({
       text: 'def',
     });

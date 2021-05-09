@@ -1,4 +1,3 @@
-
 import Storage from '../shared/Storage';
 
 function StorageAP(ap) {

@@ -1,9 +1,7 @@
-
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const _utils_types__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../utils/types */ './src/utils/types.tsx');
 /* harmony import */ const _utils_bridge__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../utils/bridge */ './src/utils/bridge.tsx');
 /* harmony import */ const _wrapNamespace__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../wrapNamespace */ './src/bridge/wrapNamespace.tsx');
-
 
 /* harmony default export */ __webpack_exports__.default = (function (ap) {
   const { callBridge } = ap;

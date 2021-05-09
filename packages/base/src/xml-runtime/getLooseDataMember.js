@@ -1,4 +1,4 @@
-function noop() {}
+import { noop } from '@/utils/types';
 
 const F = Function;
 const E = eval;

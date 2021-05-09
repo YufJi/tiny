@@ -1,9 +1,7 @@
-
 import callInternalAPI from './callInternalAPI';
 import callBridge from './callBridge';
 import { SDKVersion, systemVersion } from './system';
 import escapeLogParams from './escapeLogParams';
-
 
 let did = '';
 let version = '';

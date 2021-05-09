@@ -1,4 +1,3 @@
-
 export const PendingKeyType = 'PendingKeyType';
 
 export const PendingKeyId = 'PendingKeyId';

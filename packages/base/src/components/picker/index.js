@@ -1,10 +1,9 @@
-
 import React from 'react';
 import createReactClass from 'create-react-class';
 import throttle from '@/utils/throttle';
-import formMixin from '../form/mixin';
 import callBridge from '@/utils/callBridge';
 import { createComponent } from '@/framework/';
+import formMixin from '../form/mixin';
 
 function addComa(s) {
   const m = s && s.match(/:/g);
@@ -45,7 +44,7 @@ const Picker = createComponent({
   },
   onPickerTap: function onPickerTap() {
     const _this = this;
-    const { title, range = [], rangeKey, onChange} = this.props;
+    const { title, range = [], rangeKey, onChange } = this.props;
 
     let showList = range;
     if (rangeKey && typeof range[0] === 'object') {
@@ -74,8 +73,7 @@ const Picker = createComponent({
   },
   onDateTap: function onDateTap() {
     const _this = this;
-    const { start, end, onChange, mode, fields } =  this.props;
-
+    const { start, end, onChange, mode, fields } = this.props;
 
     let pMode = 1;
     if (mode === 'time') {

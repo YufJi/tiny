@@ -1,4 +1,3 @@
-
 import startsWith from './startsWith';
 
 export default function resolvePath(path, refered) {

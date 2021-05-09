@@ -1,4 +1,3 @@
-
 import objectKeys from '@/utils/objectKeys';
 
 function safeAssign(to, from, prop) {
@@ -12,7 +11,6 @@ function safeAssign(to, from, prop) {
   }
 }
 export default function getComponentProp(componentConfig, prop, caches = false, args = []) {
- 
   if (caches && caches[prop]) {
     return caches[prop];
   }

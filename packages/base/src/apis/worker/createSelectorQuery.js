@@ -1,4 +1,3 @@
-
 import { getCurrentPageImpl } from '@/framework/';
 
 export class SelectorQuery {
@@ -58,7 +57,6 @@ export class SelectorQuery {
     }
   }
 }
-
 
 export default function createSelectorQuery({ page } = {}) {
   return new SelectorQuery(page);

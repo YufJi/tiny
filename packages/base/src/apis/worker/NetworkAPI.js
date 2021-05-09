@@ -1,4 +1,3 @@
-
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! babel-runtime/helpers/extends */ './node_modules/babel-runtime-loose/helpers/extends.js');
 /* harmony import */ const babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0___default = /* #__PURE__ */__webpack_require__.n(babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0__);
@@ -10,7 +9,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const query_string__WEBPACK_IMPORTED_MODULE_5___default = /* #__PURE__ */__webpack_require__.n(query_string__WEBPACK_IMPORTED_MODULE_5__);
 /* harmony import */ const _ap__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../ap */ './src/bridge/ap.worker.tsx');
 /* harmony import */ const _util__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../util */ './src/bridge/util.tsx');
-
 
 const g10135 = Object(_utils_system__WEBPACK_IMPORTED_MODULE_3__.compareSystemVersion)('10.1.35') >= 0;
 const { callBridge } = _ap__WEBPACK_IMPORTED_MODULE_6__.default;

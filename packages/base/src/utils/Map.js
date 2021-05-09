@@ -1,4 +1,3 @@
-
 function getFastKey(key) {
   if (key == null) {
     return `^${String(key)}`;
@@ -47,10 +46,10 @@ Map.prototype = {
     return entries.concat(this._entries);
   },
   forEach: function forEach(callback, thisArg) {
-    const  _this = this;
+    const _this = this;
 
     this.entries().forEach((item) => {
-      callback.call(thisArg, item[1], item[0],  _this);
+      callback.call(thisArg, item[1], item[0], _this);
     });
   },
   set: function set(key, value) {

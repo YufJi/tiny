@@ -1,4 +1,3 @@
-
 import AppRegistry from '../AppRegistry';
 
 export default function checkInvalidPage(pageUrl) {

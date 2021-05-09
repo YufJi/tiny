@@ -1,13 +1,12 @@
-
+import getHomePage from '@hulk/mp-core/es/utils/getHomePage';
 import { isArray } from '../../utils/types';
 import getCurrentViewId from '../../utils/getCurrentViewId';
 import { mapping } from '../../utils/bridge';
 import { $global, getStartupParams, getCurrentPageImpl } from '../../framework/dev';
 import objectKeys from '../../utils/objectKeys';
 import { alert, hideLoading, showLoading } from '../shared/UI';
-import { compareSystemVersion} from '../../utils/system';
+import { compareSystemVersion } from '../../utils/system';
 import endsWith from '../../utils/endsWith';
-import getHomePage from '@hulk/mp-core/es/utils/getHomePage';
 
 const g10_1_35 = compareSystemVersion('10.1.35') >= 0;
 const g10_1_50 = compareSystemVersion('10.1.50') >= 0;
@@ -19,7 +18,7 @@ const tabBarActions = [
   'setTabBarStyle',
   'setTabBarItem',
   'showTabBar',
-  'hideTabBar'
+  'hideTabBar',
 ];
 
 const api10_1_35 = g10_1_35 ? tabBarActions.reduce((a, c) => {
@@ -99,7 +98,7 @@ export default function (ap) {
      * 接口可直接传入一个字符串（opt.content）
      * 统一 alert 和 confirm 的内容字段为 content
      */
-    alert: alert,
+    alert,
     /**
      * 接口可直接传入一个字符串（opt.content）
      * 统一 alert 和 confirm 的内容字段为 content
@@ -140,8 +139,8 @@ export default function (ap) {
      * 接口可直接传入一个字符串（opt.content）
      * 接口改造 opt.content => opt.text
      */
-    showLoading: showLoading,
-    hideLoading: hideLoading,
+    showLoading,
+    hideLoading,
     showNavigationBarLoading: {
       m: 'showTitleLoading',
       callback: false,

@@ -1,4 +1,3 @@
-
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! babel-runtime/helpers/extends */ './node_modules/babel-runtime-loose/helpers/extends.js');
 /* harmony import */ const babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0___default = /* #__PURE__ */__webpack_require__.n(babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0__);
@@ -15,7 +14,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const _utils_addEvents__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @/utils/addEvents */ './src/utils/addEvents.tsx');
 /* harmony import */ const _index_less__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./index.less */ './src/slider/index.less');
 /* harmony import */ const _index_less__WEBPACK_IMPORTED_MODULE_8___default = /* #__PURE__ */__webpack_require__.n(_index_less__WEBPACK_IMPORTED_MODULE_8__);
-
 
 const prefixCls = 'a-slider';
 function noop() {}

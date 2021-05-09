@@ -1,11 +1,9 @@
-
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! babel-runtime/helpers/extends */ './node_modules/babel-runtime-loose/helpers/extends.js');
 /* harmony import */ const babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0___default = /* #__PURE__ */__webpack_require__.n(babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ const _api__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./api */ './src/web-view/embed/api.tsx');
 /* harmony import */ const _utils_bridge__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/bridge */ './src/utils/bridge.tsx');
 /* harmony import */ const _utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/objectKeys */ './src/utils/objectKeys.tsx');
-
 
 const promise = new Promise(((resolve) => {
   if (window.JSBridge) {

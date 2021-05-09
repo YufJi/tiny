@@ -1,4 +1,3 @@
-
 export default ({
   loadFontFace: function loadFontFace(data = {}, success, fail) {
     const { family = '', source = '', desc = {} } = data;

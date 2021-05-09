@@ -1,4 +1,3 @@
-
 import objectKeys from './objectKeys';
 import stringToPath from './stringToPath';
 
@@ -25,7 +24,7 @@ function getData(object, path) {
   return object;
 }
 
-export default function(data, dataConfig) {
+export default function (data, dataConfig) {
   if (!data) {
     return undefined;
   }

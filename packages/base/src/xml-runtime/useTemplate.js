@@ -1,7 +1,6 @@
-
-import React from 'react';
+import Nerv from '@/nerv';
 
 export default function useTemplate(template, data, key, context) {
   const Component = template && template.Component;
-  return Component ? React.createElement(Component, { ...data, $context: context, key }) : null;
+  return Component ? Nerv.createElement(Component, { ...data, $context: context, key }) : null;
 }

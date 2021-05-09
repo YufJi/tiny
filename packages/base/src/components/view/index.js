@@ -1,4 +1,3 @@
-
 import { createComponent } from '@/framework/';
 import View from './View';
 

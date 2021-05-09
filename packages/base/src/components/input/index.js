@@ -1,5 +1,5 @@
-import React from 'react';
-import createReactClass from 'create-react-class';
+import Nerv, { createNervClass } from '@/nerv';
+
 import classnames from 'classnames';
 import focusInput from '@/utils/focusInput';
 import callBridge from '@/utils/callBridge';
@@ -7,8 +7,8 @@ import { compareSystemVersion, isAndroid, isIDE, isIOS, isNativeComponent } from
 import rgba2Color from '@/utils/rgba2Color';
 import addEvents from '@/utils/addEvents';
 import callInternalAPI from '@/utils/callInternalAPI';
-import formMixin from '../form/mixin';
 import { createComponent } from '@/framework/';
+import formMixin from '../form/mixin';
 
 const g = self;
 let id = 0;
@@ -19,7 +19,7 @@ const g10138 = compareSystemVersion('10.1.38') >= 0;
 const Input = createComponent({
   name: 'input',
   pure: false,
-})(createReactClass({
+})(createNervClass({
   displayName: 'Input',
   mixins: [formMixin],
   getDefaultProps: function getDefaultProps() {
@@ -425,34 +425,34 @@ const Input = createComponent({
       }
     }
     const placeholderCls = classnames((_classNames = {}, _classNames[`${prefixCls}-placeholder`] = true, _classNames[placeholderClass] = !!placeholderClass, _classNames));
-    return React.createElement(
+    return Nerv.createElement(
       'div',
       { className, id, style, ref: this.saveContainer },
-      React.createElement(
+      Nerv.createElement(
         'div',
         { className: `${prefixCls}-wrap` },
-        (typeof value === 'string' && value.length === 0 || !value && value !== 0) && compositionValue === '' && placeholder && React.createElement(
+        (typeof value === 'string' && value.length === 0 || !value && value !== 0) && compositionValue === '' && placeholder && Nerv.createElement(
           'div',
           { className: placeholderCls, style: placeholderStyle ? $mp.getNormalizedStyle(placeholderStyle) : {} },
-          React.createElement(
+          Nerv.createElement(
             'span',
             null,
             placeholder,
           ),
         ),
-        this.useNewInput ? React.createElement('input', { ref: this.saveInput,
+        this.useNewInput ? Nerv.createElement('input', { ref: this.saveInput,
           style: {
             position: 'absolute',
             visibility: 'hidden',
             zIndex: 0,
           },
           className: `${prefixCls}-content` }) : null,
-        this.useNewInput ? React.createElement(
+        this.useNewInput ? Nerv.createElement(
           'object',
           { className: `${prefixCls}-content`, id: this.getId(), type: 'application/view' },
-          React.createElement('param', { name: 'type', value: 'input' }),
-          React.createElement('param', { name: 'id', value: this.getId() }),
-        ) : React.createElement('input', { ref: this.saveInput, className: `${prefixCls}-content`, value, disabled, onFocus: this.onFocus, onBlur: this.onBlur, maxLength: maxlength, ...kbParams }),
+          Nerv.createElement('param', { name: 'type', value: 'input' }),
+          Nerv.createElement('param', { name: 'id', value: this.getId() }),
+        ) : Nerv.createElement('input', { ref: this.saveInput, className: `${prefixCls}-content`, value, disabled, onFocus: this.onFocus, onBlur: this.onBlur, maxLength: maxlength, ...kbParams }),
       ),
     );
   },

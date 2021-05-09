@@ -20,10 +20,10 @@ import createSelectorQuery from './worker/createSelectorQuery';
 import CanvasAPI from './worker/canvas/CanvasAPI';
 import Animation from './worker/Animation';
 
-const { 
-  callBridge, 
-  callBridgeSync, 
-  callInternalAPI, 
+const {
+  callBridge,
+  callBridgeSync,
+  callInternalAPI,
   callInternalAPISync,
 } = ap;
 

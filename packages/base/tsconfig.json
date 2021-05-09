@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "es6",        
+    "removeComments": false,
+    "preserveConstEnums": true,
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "noImplicitAny": false,
+    "allowSyntheticDefaultImports": true,
+    "noUnusedLocals": true,
+    "strictNullChecks": true,
+    "sourceMap": true,
+    "declaration": false,
+    "baseUrl": ".",
+    "rootDir": ".",
+    "paths": {
+      "@": ["./src"],
+    },
+  },
+  "include": ["src"],
+  "compileOnSave": false
+}

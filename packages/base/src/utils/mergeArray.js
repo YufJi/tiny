@@ -1,4 +1,3 @@
-
 export default function mergeArray(target, from) {
   from.forEach((f) => {
     if (target.indexOf(f) === -1) {

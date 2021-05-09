@@ -1,4 +1,3 @@
-
 import { EventHub, getStartupParams } from '../../../framework/dev';
 import ap from '../../ap';
 import trackerStore from '../../../utils/trackerStore';

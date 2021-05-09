@@ -1,4 +1,3 @@
-
 const ua = navigator.swuserAgent || navigator.userAgent;
 const ios = /iPhone|iPad/i;
 // android can change ua?!

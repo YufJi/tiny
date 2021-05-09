@@ -1,4 +1,3 @@
-
 function doOpenTaobao(callBridge, url, login, result) {
   if ('installed' in result) {
     if (result.installed) {

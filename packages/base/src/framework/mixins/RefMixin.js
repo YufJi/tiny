@@ -1,4 +1,3 @@
-
 const Ref = {
   getInitialState() {
     this.refHandlers = {};
