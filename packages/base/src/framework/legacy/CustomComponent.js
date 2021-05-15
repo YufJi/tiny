@@ -93,7 +93,6 @@ export default (is) => createNervClass({
     this.eventHandlers = {};
 
     __page.fireComponentLifecycle(this.recordMounted(false), 'created');
-
     return {};
   },
 

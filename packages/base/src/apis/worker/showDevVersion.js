@@ -12,7 +12,7 @@ _ap__WEBPACK_IMPORTED_MODULE_0__.default.on('titleClick', () => {
     if (count === 5) {
       count = 0;
       _ap__WEBPACK_IMPORTED_MODULE_0__.default.callBridge('alert', {
-        title: `${_utils_system__WEBPACK_IMPORTED_MODULE_2__.SDKVersion} ${_utils_system__WEBPACK_IMPORTED_MODULE_2__.buildTime}`,
+        title: `${_utils_system__WEBPACK_IMPORTED_MODULE_2__.SDKVersion}`,
         message: `${Object(_framework_dev__WEBPACK_IMPORTED_MODULE_1__.getStartupParams)().version || Object(_framework_dev__WEBPACK_IMPORTED_MODULE_1__.getStartupParams)().appVersion || '-'}`,
       });
     }

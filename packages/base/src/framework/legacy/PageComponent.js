@@ -73,6 +73,7 @@ export default createNervClass({
     this.componentInstances = {};
     this.self = this;
     this.publicInstance = {};
+
     return {
 
     };

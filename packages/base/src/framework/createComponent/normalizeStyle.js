@@ -20,6 +20,7 @@ function parseStyle(style) {
   }
   return styles;
 }
+
 export default function normalizeStyle(component, cProps) {
   let totalStyle = [];
   const { tagName } = component.$mp;

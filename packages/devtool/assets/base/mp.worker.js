@@ -10681,7 +10681,7 @@ function stringToPath(stringPath) {
 /*!*****************************!*\
   !*** ./src/utils/system.js ***!
   \*****************************/
-/*! exports provided: systemVersion, UCVersion, isAndroid, isIOS, isIDE, SDKVersion, buildTime, isUC, isNativeComponent, compareVersion, logSystemInfo, compareSystemVersion, compareUCVersion */
+/*! exports provided: systemVersion, UCVersion, isAndroid, isIOS, isIDE, SDKVersion, isUC, isNativeComponent, compareVersion, logSystemInfo, compareSystemVersion, compareUCVersion */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -10692,7 +10692,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isIOS", function() { return isIOS; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isIDE", function() { return isIDE; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "SDKVersion", function() { return SDKVersion; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "buildTime", function() { return buildTime; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isUC", function() { return isUC; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isNativeComponent", function() { return isNativeComponent; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "compareVersion", function() { return compareVersion; });
@@ -10712,7 +10711,6 @@ var isAndroid = ua.indexOf('Android') > -1;
 var isIOS = !!ua.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/);
 var isIDE = ua.indexOf('AlipayIDE') > -1;
 var SDKVersion = '0.0.1';
-var buildTime = '11-26 22:47:44';
 var caches = {};
 var cacheIntArray = {};
 var isUC = !!(_UCVersion && _UCVersion[1]);
@@ -10768,7 +10766,7 @@ function compareVersion(version, targetVersion) {
 }
 
 function logSystemInfo() {
-  console.log('ap/SDKVersion: '.concat(SDKVersion));
+  console.log('SDKVersion: '.concat(SDKVersion));
 }
 
 function compareSystemVersion(targetVersion) {

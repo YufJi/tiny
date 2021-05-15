@@ -19,34 +19,17 @@ function ready(callback) {
   callback();
 }
 
-g.onerror = function (msg = '', url, line, col, error) {
+g.onerror = function onerror(msg = '', url, line, col, error) {
   let stack = [];
   try {
     stack = JSON.stringify(error.stack).split('\\n').splice(0, 3);
   } catch (e) {}
 
-  const e = {
-    msg,
-    url,
-    line,
-    col,
-    error: {
-      column: error.column,
-      line: error.line,
-      message: error.message,
-      sourceURL: error.sourceURL,
-      stack,
-    },
-  };
   const args = [msg, url, line, col, error];
-  if (msg.indexOf('nebula work error') === 0) {
-    console.error('[RENDER] registerWorker error', args);
-  } else {
-    console.error('[RENDER] onerror', args);
-  }
+  console.error('[RENDER] onerror', args);
 };
 
-g.bootstrapApp = function (config = {}) {
+g.bootstrapApp = function bootstrapApp(config = {}) {
   const { container, onReady = ready, onRender, onFail } = config;
 
   onReady((runInfo) => {

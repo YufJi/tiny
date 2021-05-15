@@ -8,7 +8,6 @@ const isAndroid = ua.indexOf('Android') > -1;
 const isIOS = !!ua.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/);
 const isIDE = ua.indexOf('AlipayIDE') > -1;
 const SDKVersion = '0.0.1';
-const buildTime = '11-26 22:47:44';
 const caches = {};
 const cacheIntArray = {};
 const isUC = !!(_UCVersion && _UCVersion[1]);
@@ -54,7 +53,7 @@ function compareVersion(version, targetVersion) {
 }
 
 function logSystemInfo() {
-  console.log(`${'ap/SDKVersion: '}${SDKVersion}`);
+  console.log(`${'SDKVersion: '}${SDKVersion}`);
 }
 
 function compareSystemVersion(targetVersion) {
@@ -72,7 +71,6 @@ export {
   isIOS,
   isIDE,
   SDKVersion,
-  buildTime,
   isUC,
   isNativeComponent,
   compareVersion,

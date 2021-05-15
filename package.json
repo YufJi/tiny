@@ -4,6 +4,7 @@
   "description": "小程序引擎",
   "main": "index.js",
   "scripts": {
+    "postinstall": "lerna bootstrap",
     "lint": "eslint \"packages/**/src/**/*.{js,jsx,ts,tsx}\" --fix"
   },
   "author": "",
