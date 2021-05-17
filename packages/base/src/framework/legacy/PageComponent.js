@@ -74,14 +74,7 @@ export default createNervClass({
     this.self = this;
     this.publicInstance = {};
 
-    return {
-
-    };
-  },
-  UNSAFE_componentWillMount() {
-    // this.recordMounted(false, true);
-    // this.callRemote('self', 'load');
-    // this.callRemote('self', 'startRender');
+    return {};
   },
   componentDidMount() {
     const stylesheet = getStyleSheet(this.pagePath);
@@ -106,21 +99,21 @@ export default createNervClass({
     const e = { page: this };
     EventHub.emit('pageLoad', e);
 
-    this.callRemote('self', 'load');
+    // this.callRemote('self', 'load');
     console.log('page componentDidMount');
   },
   UNSAFE_componentWillUpdate() {
     this.renderSeq+=1;
   },
   onInitDataReady(data) {
-
-  },
-  initData(params) {
-    const { id, data, publicInstance } = params;
+    console.log('onInitDataReady', data);
+    const { id, publicInstance, customComponents } = data;
     this.publicInstance = publicInstance;
     this.setId(id);
+    this.customComponents = customComponents;
+    this.initDataReady = true;
     this.setState({
-      ...data,
+      ...(publicInstance.data || {}),
     });
   },
   initComponentData(params) {
@@ -319,6 +312,12 @@ export default createNervClass({
   },
   render() {
     const data = this.state;
+
+    console.log('data', data, this.customComponents, isEmpty(data));
+
+    if (!this.initDataReady) {
+      return null;
+    }
 
     return (
       <div className="a-page tiny-page" ref={(ref) => this.root = ref}>

@@ -72,7 +72,7 @@ text = {"Add Todo"} bindclickme = {$getEventHandler(this, "add")} $isCustomCompo
 </View>
 ,
 <View 
-style = {"color: red"} captureCatchtap = {$getEventHandler(this, "xxxx")}
+style = {"color: red"} capture-catchtap = {$getEventHandler(this, "xxxx")}
 >
 {$toString("capture-catch:tap")}
 </View>

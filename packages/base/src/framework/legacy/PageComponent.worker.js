@@ -1,3 +1,4 @@
+import mapValues from 'lodash.mapvalues';
 import setData, { spliceData, getOpStr } from '@/utils/setData';
 import objectKeys from '@/utils/objectKeys';
 import mergeArray from '@/utils/mergeArray';
@@ -84,10 +85,25 @@ function getAllUsingComponents(pagePath) {
   const allUsingComponents = [];
 
   const { usingComponents } = $global.pagesConfig[pagePath].system;
+
+  const getComponents = (is) => {
+    const components = [is];
+    const { usingComponents } = $global.componentsConfig[is];
+
+    if (usingComponents) {
+      objectKeys(usingComponents).forEach((name) => {
+        if (usingComponents[name] !== is) {
+          mergeArray(components, getComponents(usingComponents[name]));
+        }
+      });
+    }
+
+    return components;
+  };
+
   if (usingComponents) {
     objectKeys(usingComponents).forEach((c) => {
-      const cs = getComponentClass(usingComponents[c]).getAllComponents();
-      mergeArray(allUsingComponents, cs);
+      mergeArray(allUsingComponents, getComponents(usingComponents[c]));
     });
     allUsingComponentsCache[pagePath] = allUsingComponents;
   }
@@ -99,7 +115,7 @@ PageComponent.prototype = {
   ...MessageHandleMixin,
   initData() {
     const { publicInstance, id } = this;
-
+    console.log('initData publicInstance', publicInstance);
     const config = {};
     publicInstanceMethods.forEach((k) => {
       const hookFn = publicInstance[k];
@@ -108,11 +124,14 @@ PageComponent.prototype = {
       }
     });
 
-    this.callRemote('self', 'initData', {
+    this.callRemote('self', 'onInitDataReady', {
       id,
       isRefresh: false,
-      publicInstance: config,
-      data: { ...publicInstance.data },
+      publicInstance: {
+        data: publicInstance.data,
+        ...config,
+      },
+      customComponents: this.getAllComponents(),
     });
   },
   load() {
@@ -215,6 +234,21 @@ PageComponent.prototype = {
       oldComponentInstances[k].unload();
     });
   },
+  getAllComponents() {
+    const customComponents = {};
+    getAllUsingComponents(this.pagePath).forEach((is) => {
+      const { publicInstance } = $global.componentsConfig[is];
+
+      customComponents[is] = {
+        properties: mapValues(publicInstance.properties, (item) => {
+          return { type: item.type, value: item.value };
+        }),
+        data: publicInstance.data,
+      };
+    });
+
+    return customComponents;
+  },
   isLoaded() {
     return !!this.$loadTime && !this.unloaded;
   },
@@ -303,12 +337,6 @@ PageComponent.prototype = {
 
       if (typeof component[type] === 'function') {
         component[type]();
-        this.callRemote('self', 'initComponentData', {
-          id,
-          is,
-          properties: ComponentClass.properties,
-          data: ComponentClass.data,
-        });
       }
     } else {
       componentInstance[type](info);

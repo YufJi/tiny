@@ -1,5 +1,5 @@
 import qs from 'query-string';
-import AppRegistry from '../AppRegistry';
+import PageRegistry from '../PageRegistry';
 import EventHub from '../EventHub';
 import { getPageInfoFromUrl, getUrlFromPageInfo } from '../utils/pageInfoAndUrl';
 import { isTabPage, getPageId } from '../utils/pageUtils';
@@ -13,7 +13,7 @@ function newPage({ pagePath, pageId, queryString }) {
   if (page) {
     return page;
   }
-  const Page = AppRegistry.getComponent(pagePath);
+  const Page = PageRegistry.getComponent(pagePath);
   if (!Page) {
     throw new Error(`[WORKER] page '${pagePath}' not found!`);
   }

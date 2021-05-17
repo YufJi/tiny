@@ -1,7 +1,7 @@
 import Nerv, { createNervClass } from '@/nerv';
 import { getOpFn } from '@/utils/setData';
 import objectKeys from '@/utils/objectKeys';
-import mapValues from '@/utils/mapValues';
+import mapValues from 'lodash.mapvalues';
 import {
   PayloadKeyMountedComponents,
   PayloadKeyUnmountedComponents,
@@ -84,57 +84,52 @@ export default (is) => createNervClass({
   ],
   statics: {
     is,
-  },
-  getInitialState() {
-    const { __page } = this.props;
-    this.is = is;
-    this.id = this.id || ++componentId;
-    __page.componentInstances[this.id] = this;
-    this.eventHandlers = {};
+    getDerivedStateFromProps(nextProps, state) {
+      const { __page } = nextProps;
+      const { properties } = __page.customComponents[is];
+      const changedProps = {};
 
-    __page.fireComponentLifecycle(this.recordMounted(false), 'created');
-    return {};
-  },
-
-  componentDidMount() {
-    console.log('component componentDidMount');
-    console.log('component props', this.props);
-    const { __page } = this.props;
-    const info = this.recordMounted(this.diffProps(this.state || {}));
-    // __page.fireComponentLifecycle(info, 'attached');
-    // __page.fireComponentLifecycle(info, 'ready');
-  },
-  UNSAFE_componentWillReceiveProps(nextProps) {
-    console.log('UNSAFE_componentWillReceiveProps');
-    const { properties } = getComponentConfig(this.is);
-    const changedProps = {};
-
-    for (const key in nextProps) {
-      if (nextProps.hasOwnProperty(key)) {
-        const prop = this.props[key];
-        const nextProp = nextProps[key];
-
-        if (properties.hasOwnProperty(key)) {
-          if (!shallowEqual(prop, nextProp)) {
+      for (const key in nextProps) {
+        if (nextProps.hasOwnProperty(key)) {
+          const nextProp = nextProps[key];
+          if (properties.hasOwnProperty(key)) {
             changedProps[key] = nextProp;
           }
         }
       }
-    }
 
-    this.setState({
-      ...changedProps,
-    });
+      return { ...state, ...changedProps };
+    },
+  },
+
+  getInitialState() {
+    const { __page } = this.props;
+    this.is = is;
+    this.id = this.id || ++componentId;
+    const { properties, data } = __page.customComponents[is];
+    this.properties = properties;
+    this.eventHandlers = {};
+
+    __page.componentInstances[this.id] = this;
+    __page.fireComponentLifecycle(this.recordMounted(false), 'created');
+    return { ...data };
+  },
+
+  componentDidMount() {
+    console.log('com componentDidMount');
+    const { __page } = this.props;
+
+    const info = this.recordMounted(this.diffProps({}));
+    __page.fireComponentLifecycle(info, 'attached');
+
+    // __page.fireComponentLifecycle(info, 'ready');
   },
   componentDidUpdate(prevProps) {
+    console.log('com componentDidUpdate');
     const diffProps = this.diffProps(prevProps);
 
     if (diffProps) {
       this.recordMounted(diffProps);
-    } else {
-      mountedComponents.push({
-        [ComponentKeyId]: this.id,
-      });
     }
   },
   componentWillUnmount() {
@@ -142,22 +137,6 @@ export default (is) => createNervClass({
     delete __page.componentInstances[this.id];
     unmountedComponents.push(this.id);
     // __page.fireComponentLifecycle(this.recordMounted(false, false), 'unload');
-  },
-  initData(params) {
-    console.log('initData');
-    const { data, properties } = params;
-
-    const initialProps = {};
-    for (const key in properties) {
-      if (Object.hasOwnProperty.call(properties, key) && this.props[key]) {
-        initialProps[key] = this.props[key];
-      }
-    }
-
-    this.setState({
-      ...data,
-      ...mapValues(properties, 'value'),
-    });
   },
   setData(toBeData, callback) {
     const data = this.state;
@@ -192,7 +171,7 @@ export default (is) => createNervClass({
     return info;
   },
   diffProps(prevProps) {
-    const { properties = {} } = getComponentConfig(this.is);
+    const { properties = {} } = this;
     const { props } = this; // 当前props
 
     console.log('当前props', props);

@@ -1,4 +1,4 @@
-import AppRegistry from '../AppRegistry';
+import PageRegistry from '../PageRegistry';
 
 export default function checkInvalidPage(pageUrl) {
   let page = pageUrl;
@@ -9,7 +9,7 @@ export default function checkInvalidPage(pageUrl) {
   if (index !== -1) {
     page = page.slice(0, index);
   }
-  if (!AppRegistry.getRunnable(page)) {
+  if (!PageRegistry.getRunnable(page)) {
     console.error(`framework error: can not find page: ${pageUrl}`);
     return true;
   }

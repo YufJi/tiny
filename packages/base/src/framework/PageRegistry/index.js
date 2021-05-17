@@ -1,19 +1,19 @@
 // app注册page
 
-const appRegistry = {};
+const pageRegistry = {};
 
-const AppRegistry = {
+const PageRegistry = {
   registerComponent: function registerComponent(name, factory) {
     // name即pagePath
     // factory即() => RC
-    appRegistry[name] = factory;
+    pageRegistry[name] = factory;
   },
   getComponent: function getComponent(name) {
-    return appRegistry[name] && appRegistry[name]();
+    return pageRegistry[name] && pageRegistry[name]();
   },
   getRunnable: function getRunnable(name) {
-    return AppRegistry.getComponent(name);
+    return PageRegistry.getComponent(name);
   },
 };
 
-export default AppRegistry;
+export default PageRegistry;

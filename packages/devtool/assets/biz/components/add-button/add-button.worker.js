@@ -11,7 +11,9 @@ var XMLHttpRequest = undefined;
 $global.currentComponentConfig = 
 {
   is: "/components/add-button/add-button",
-  usingComponents: {"add-button":"/components/add-button/add-button"},
+  usingComponents: {
+    "add-button": "/components/add-button/add-button"
+  },
 };
 
 Component({

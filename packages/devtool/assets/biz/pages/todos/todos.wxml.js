@@ -131,7 +131,7 @@ bindtap = {$getEventHandler(this, "clickParent")}
 {
 [
 <View 
-className = {"jyf"} captureBindtap = {$getEventHandler(this, "captureClickChild")} style = {"background: yellow;"}
+className = {"jyf"} capture-bindtap = {$getEventHandler(this, "captureClickChild")} style = {"background: yellow;"}
 >
 {$toString("capture child")}
 </View>

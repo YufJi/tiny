@@ -15,7 +15,7 @@ function processLoadPage(event) {
     const appImpl = getAppImpl();
     const page = appImpl.newPage({ pagePath, queryString, pageId });
     page.setViewId(viewId);
-    // page.initData();
+    page.initData();
     // refresh page
     if (page.$loadTime) {
       page.refresh();

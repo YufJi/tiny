@@ -1,4 +1,4 @@
-import AppRegistry from '../AppRegistry';
+import PageRegistry from '../PageRegistry';
 import $global from '../common/global';
 import PageComponent from '../legacy/PageComponent';
 
@@ -23,7 +23,7 @@ export default function Page(userConfig = {}) {
   };
   // do not use registerPage, all worker modules run at once
   // if use registerPage, need to do full ast parse(error prone)
-  AppRegistry.registerComponent(pagePath, () => {
+  PageRegistry.registerComponent(pagePath, () => {
     return PageComponent;
   });
 }

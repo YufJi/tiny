@@ -1,7 +1,7 @@
 import mergeArray from '@/utils/mergeArray';
 import setData, { spliceData, getOpStr } from '@/utils/setData';
 import objectKeys from '@/utils/objectKeys';
-import mapValues from '@/utils/mapValues';
+import mapValues from 'lodash.mapvalues';
 import {
   PendingKeyType,
   PendingKeyId,
@@ -18,9 +18,8 @@ import getComponentClass from '../ComponentRegistry/getComponentClass';
 import getComponentProp from '../utils/getComponentProp';
 import fireComponentLifecycle from '../utils/fireComponentLifecycle';
 
-export default function Component(config, currentComponentConfig) {
-  const { init, ancestors } = config;
-  const { is, usingComponents } = currentComponentConfig;
+export default function Component(config) {
+  const { init, ancestors, is, usingComponents } = config;
 
   const propsCache = {};
 

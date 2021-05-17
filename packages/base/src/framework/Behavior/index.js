@@ -2,12 +2,12 @@ import defaults from 'lodash.defaults';
 import defaultsDeep from 'lodash.defaultsdeep';
 import forEachRight from '@/utils/forEachRight';
 import PolyfillMap from '@/utils/Map';
-import mapValues from '@/utils/mapValues';
+import mapValues from 'lodash.mapvalues';
 import { getType, isObject, noop } from '@/utils/types';
 
 export let BehaviorId = 1;
 
-const behaviorBookmarks = new PolyfillMap();
+export const behaviorBookmarks = new PolyfillMap();
 
 const COMPONENT_LIFETIMES = ['created', 'attached', 'ready', 'moved', 'detached', 'error'];
 const PAGE_LIFETIMES = ['show', 'hide', 'resize'];

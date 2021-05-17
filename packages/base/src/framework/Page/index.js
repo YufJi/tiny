@@ -1,4 +1,4 @@
-import AppRegistry from '../AppRegistry';
+import PageRegistry from '../PageRegistry';
 import $global from '../common/global';
 import PageComponent from '../legacy/PageComponent';
 
@@ -11,7 +11,7 @@ export default function Page(setupConfig) {
   $global.pagesConfig[pagePath] = {
     system: setupConfig,
   };
-  AppRegistry.registerComponent(pagePath, () => {
+  PageRegistry.registerComponent(pagePath, () => {
     return PageComponent;
   });
 }

@@ -1,7 +1,7 @@
 import Nerv, { render, unmountComponentAtNode } from '@/nerv';
 import { debug } from '@/utils/log';
 import { noop } from '@/utils/types';
-import AppRegistry from '../AppRegistry';
+import PageRegistry from '../PageRegistry';
 import { getPageInfoFromUrl } from '../utils/pageInfoAndUrl';
 import getMessageChannel from './getMessageChannel';
 import { loadPage } from '../SubPackage';
@@ -17,7 +17,7 @@ export default function (config, bridge) {
     document.documentElement.style.fontSize = `${100 * document.documentElement.clientWidth / 750}px`;
 
     loadPage(pagePath, () => {
-      const PageComponent = AppRegistry.getComponent(pagePath);
+      const PageComponent = PageRegistry.getComponent(pagePath);
       if (PageComponent) {
         console.log('framework: Render page', pagePath);
         if (onRender) {

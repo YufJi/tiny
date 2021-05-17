@@ -13,7 +13,7 @@ export default function Component(setupConfig) {
   const { currentComponentConfig } = $global;
   $global.currentComponentConfig = null;
 
-  const { is } = currentComponentConfig;
+  const { is, usingComponents } = currentComponentConfig;
 
   if (ComponentRegistry.getComponent(is)) {
     throw new Error(`at ${is}, Component can only register once`);
@@ -21,7 +21,12 @@ export default function Component(setupConfig) {
 
   const { init, ancestors } = createBehavior(`component-behavior-${uid++}`, setupConfig);
 
+  $global.componentsConfig[is] = {
+    publicInstance: init,
+    usingComponents,
+  };
+
   ComponentRegistry.registerComponent(is, () => {
-    return CustomComponent({ init, ancestors }, currentComponentConfig);
+    return CustomComponent({ init, ancestors, ...currentComponentConfig });
   });
 }

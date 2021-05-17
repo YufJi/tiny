@@ -24,6 +24,7 @@
     "hoist-non-react-statics": "^3.3.2",
     "lodash.defaults": "^4.2.0",
     "lodash.defaultsdeep": "^4.6.1",
+    "lodash.mapvalues": "^4.6.0",
     "query-string": "^6.12.1"
   },
   "devDependencies": {
