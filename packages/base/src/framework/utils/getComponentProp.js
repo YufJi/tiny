@@ -10,28 +10,20 @@ function safeAssign(to, from, prop) {
     });
   }
 }
+
 export default function getComponentProp(componentConfig, prop, caches = false, args = []) {
   if (caches && caches[prop]) {
     return caches[prop];
   }
 
-  const { mixins = [] } = componentConfig;
-
   const ret = {};
-  mixins.forEach((m) => {
-    let v = m[prop];
-    if (typeof v === 'function') {
-      v = v.apply(this, args);
-    }
-    safeAssign(ret, v, prop);
-  });
-  {
-    let v = componentConfig[prop];
-    if (typeof v === 'function') {
-      v = v.apply(this, args);
-    }
-    safeAssign(ret, v, prop);
+
+  let v = componentConfig[prop];
+  if (typeof v === 'function') {
+    v = v.apply(this, args);
   }
+  safeAssign(ret, v, prop);
+
   if (caches) {
     caches[prop] = ret;
   }

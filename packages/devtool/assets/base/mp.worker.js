@@ -11261,8 +11261,6 @@ function safeAssign(to, from, prop) {
 }
 
 function getComponentProp(componentConfig, prop) {
-  var _this = this;
-
   var caches = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
   var args = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : [];
 
@@ -11270,27 +11268,14 @@ function getComponentProp(componentConfig, prop) {
     return caches[prop];
   }
 
-  var _componentConfig$mixi = componentConfig.mixins,
-      mixins = _componentConfig$mixi === void 0 ? [] : _componentConfig$mixi;
   var ret = {};
-  mixins.forEach(function (m) {
-    var v = m[prop];
+  var v = componentConfig[prop];
 
-    if (typeof v === 'function') {
-      v = v.apply(_this, args);
-    }
-
-    safeAssign(ret, v, prop);
-  });
-  {
-    var v = componentConfig[prop];
-
-    if (typeof v === 'function') {
-      v = v.apply(this, args);
-    }
-
-    safeAssign(ret, v, prop);
+  if (typeof v === 'function') {
+    v = v.apply(this, args);
   }
+
+  safeAssign(ret, v, prop);
 
   if (caches) {
     caches[prop] = ret;
