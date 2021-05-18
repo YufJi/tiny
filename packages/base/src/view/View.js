@@ -12,7 +12,6 @@ import {
   expandAnimation,
 } from './utils';
 import AnimationViewMixin from './AnimationViewMixin';
-import BasicEventMixin from '../mixins/BasicEventMixin';
 
 function transformUnit(v) {
   if (typeof v === 'number') {
@@ -78,7 +77,6 @@ export default createNervClass({
   displayName: 'View',
 
   mixins: [
-    BasicEventMixin(),
     AnimationViewMixin,
   ],
 
@@ -276,9 +274,9 @@ export default createNervClass({
     if (props.hoverStayTime) {
       touchableProps.delayPressOut = props.hoverStayTime;
     }
-    if (this.hasEvent('longtap')) {
-      touchableProps.onLongPress = this.onLongTap;
-    }
+    // if (this.hasEvent('longtap')) {
+    //   touchableProps.onLongPress = this.onLongTap;
+    // }
     if (hidden) {
       style = { ...style, display: 'none' };
     }

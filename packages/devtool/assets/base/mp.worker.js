@@ -10021,6 +10021,7 @@ function Component(config) {
     attached: function attached(info) {
       this.setComponentConfig(info);
       this.publicInstance.lifetimes.attached.call(this.publicInstance);
+      this.page.callRemote.apply(this.page, ['self', 'onComponentAttachedReady', this.id]);
     },
     ready: function ready(info) {
       info && this.setComponentConfig(info);
@@ -10274,23 +10275,9 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
         return fn();
       });
 
-      _this2.callComponentLifetime('ready');
-
       _this2.executeUserMethod('onReady');
 
       Object(_utils_log__WEBPACK_IMPORTED_MODULE_4__["debug"])('framework', 'page onReady', _this2.pagePath);
-    });
-  },
-  callComponentLifetime: function callComponentLifetime(lifecycle) {
-    var _this3 = this;
-
-    var componentInstances = this.componentInstances;
-    Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(componentInstances).forEach(function (id) {
-      var instance = _this3.getComponentInstance(id);
-
-      if (instance) {
-        instance.ready();
-      }
     });
   },
   pullDownRefresh: function pullDownRefresh(e) {
@@ -10416,6 +10403,8 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
       });
     }
   },
+
+  /* 触发自定义组件生命周期 */
   fireComponentLifecycle: function fireComponentLifecycle(info, type) {
     var is = info[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["ComponentKeyIs"]];
     var id = info[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["ComponentKeyId"]];
@@ -10447,36 +10436,28 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     });
   },
   updateComponents: function updateComponents(payload) {
-    var _this4 = this;
-
     if (!payload) {
       return;
     }
 
     var componentInstances = this.componentInstances;
-    var mountedComponents = payload[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["PayloadKeyMountedComponents"]] || [];
-    var unmountedComponents = payload[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["PayloadKeyUnmountedComponents"]] || []; // from bottom to top
+    var mountedComponents = payload[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["PayloadKeyMountedComponents"]] || []; // const unmountedComponents = payload[PayloadKeyUnmountedComponents] || [];
+    // from bottom to top
 
     mountedComponents.forEach(function (componentConfig) {
       var id = componentConfig[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["ComponentKeyId"]];
 
       if (componentInstances[id]) {
         componentInstances[id].setComponentConfig(componentConfig);
-      } else if (componentConfig[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["ComponentKeyIs"]]) {
-        // incase update after unmount
-        var ComponentClass = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_10__["default"])(componentConfig[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["ComponentKeyIs"]]);
-        componentInstances[id] = new ComponentClass(_this4, id, componentConfig);
-        componentInstances[id].ready();
       }
-    });
-    var unmountedKeys = unmountedComponents.concat().reverse();
-    this.unmountComponents(unmountedKeys);
+    }); // const unmountedKeys = unmountedComponents.concat().reverse();
+    // this.unmountComponents(unmountedKeys);
   },
   update: function update(payload) {
-    var _this5 = this;
+    var _this3 = this;
 
     this.batchedUpdates(function () {
-      _this5.updateComponents(payload);
+      _this3.updateComponents(payload);
     });
   },
   postMessage: function postMessage(data) {
@@ -10612,7 +10593,6 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     }
 
     var pendingData = this.pendingData,
-        componentInstances = this.componentInstances,
         pendingCallbacks = this.pendingCallbacks;
     this.pendingData = [];
     this.pendingCallbacks = []; // prevent invalid json pass through

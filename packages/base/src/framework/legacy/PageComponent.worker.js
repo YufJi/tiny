@@ -55,12 +55,12 @@ export default function PageComponent({ id, query, pagePath }) {
     ...$global.pagesConfig[pagePath].user,
   }, {
     setData: {
-      value: function value(a, b) {
+      value(a, b) {
         return self.setData(setData, a, b);
       },
     },
     $spliceData: {
-      value: function value(a, b) {
+      value(a, b) {
         return self.setData(spliceData, a, b);
       },
     },
@@ -189,21 +189,12 @@ PageComponent.prototype = {
         return fn();
       });
 
-      this.callComponentLifetime('ready');
       this.executeUserMethod('onReady');
 
       debug('framework', 'page onReady', this.pagePath);
     });
   },
-  callComponentLifetime(lifecycle) {
-    const { componentInstances } = this;
-    objectKeys(componentInstances).forEach((id) => {
-      const instance = this.getComponentInstance(id);
-      if (instance) {
-        instance.ready();
-      }
-    });
-  },
+
   pullDownRefresh(e) {
     EventHub.emit('pullDownRefresh', { page: this });
     this.executeUserMethod('onPullDownRefresh', [e]);
@@ -303,7 +294,7 @@ PageComponent.prototype = {
       });
     }
   },
-
+  /* 触发自定义组件生命周期 */
   fireComponentLifecycle(info, type) {
     const is = info[ComponentKeyIs];
     const id = info[ComponentKeyId];
@@ -345,22 +336,18 @@ PageComponent.prototype = {
     const { componentInstances } = this;
 
     const mountedComponents = payload[PayloadKeyMountedComponents] || [];
-    const unmountedComponents = payload[PayloadKeyUnmountedComponents] || [];
+    // const unmountedComponents = payload[PayloadKeyUnmountedComponents] || [];
+
     // from bottom to top
     mountedComponents.forEach((componentConfig) => {
       const id = componentConfig[ComponentKeyId];
 
       if (componentInstances[id]) {
         componentInstances[id].setComponentConfig(componentConfig);
-      } else if (componentConfig[ComponentKeyIs]) {
-        // incase update after unmount
-        const ComponentClass = getComponentClass(componentConfig[ComponentKeyIs]);
-        componentInstances[id] = new ComponentClass(this, id, componentConfig);
-        componentInstances[id].ready();
       }
     });
-    const unmountedKeys = unmountedComponents.concat().reverse();
-    this.unmountComponents(unmountedKeys);
+    // const unmountedKeys = unmountedComponents.concat().reverse();
+    // this.unmountComponents(unmountedKeys);
   },
 
   update(payload) {
@@ -479,7 +466,7 @@ PageComponent.prototype = {
     if (this.unloaded || !this.pendingData.length) {
       return;
     }
-    const { pendingData, componentInstances, pendingCallbacks } = this;
+    const { pendingData, pendingCallbacks } = this;
 
     this.pendingData = [];
     this.pendingCallbacks = [];

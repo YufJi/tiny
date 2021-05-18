@@ -147,6 +147,7 @@ export default function Component(config) {
     attached(info) {
       this.setComponentConfig(info);
       this.publicInstance.lifetimes.attached.call(this.publicInstance);
+      this.page.callRemote.apply(this.page, ['self', 'onComponentAttachedReady', this.id]);
     },
     ready(info) {
       info && this.setComponentConfig(info);

@@ -1,4 +1,4 @@
-import Nerv, { createNervClass, unstable_batchedUpdates, nextTick } from '@/nerv';
+import Nerv, { createNervClass } from '@/nerv';
 
 import addEvents from '@/utils/addEvents';
 import {
@@ -62,6 +62,7 @@ export default createNervClass({
     this.pagePath = pagePath;
     this.pageType = 'RENDER';
     this.eventHandlers = {};
+    this.onShowReadyCallbacks = [];
     this.componentInstances = {};
     this.self = this;
     this.publicInstance = {};
@@ -126,10 +127,30 @@ export default createNervClass({
   onShowReady() {
     setTimeout(() => {
       debug('framework', `[RENDER] Page ${this.pagePath} onShowReady`);
+      while (this.onShowReadyCallbacks.length) {
+        const fn = this.onShowReadyCallbacks.shift();
+        fn();
+      }
+
       const e = { page: this };
       EventHub.emit('pageReady', e);
       this.callRemote('self', 'ready', e.payload);
+      this.didShow = true;
     });
+  },
+  onComponentAttachedReady(componentId) {
+    const fn = () => {
+      const component = this.componentInstances[componentId];
+      if (component) {
+        component.onAttachedReady();
+      }
+    };
+
+    if (this.didShow) {
+      fn();
+    } else {
+      this.onShowReadyCallbacks.push(fn);
+    }
   },
   checkScroll() {
     const onReachBottomDistance = 50;
@@ -203,7 +224,7 @@ export default createNervClass({
         componentsData[id].push({ data, op });
       }
     });
-    const doIt = function doIt() {
+    const doIt = () => {
       const count = objectKeys(componentsData).length + (pageData.length ? 1 : 0);
       let c = 0;
       const now = Date.now();
@@ -240,11 +261,7 @@ export default createNervClass({
       }
     };
 
-    if (unstable_batchedUpdates) {
-      unstable_batchedUpdates(doIt);
-    } else {
-      doIt();
-    }
+    doIt();
   },
   onPageUpdate(now, callback) {
     this.logRenderTime(now);
@@ -282,7 +299,7 @@ export default createNervClass({
     });
   },
   logRenderTime(now) {
-    this.callRemote('self', 'console', 'log', `framework: render ${this.pagePath} costs ${Date.now() - now}ms.`);
+    debug('framework', `render ${this.pagePath} costs ${Date.now() - now}ms.`);
   },
   saveRoot(ref) {
     this.root = ref;

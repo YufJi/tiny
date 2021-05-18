@@ -6,7 +6,7 @@ import * as API from './API';
 
 const bridge = {
   call(method, params) {
-    console.log('%cjsbridge call:', 'color: green;', method, params);
+    // console.log('%cjsbridge call:', 'color: green;', method, params);
     if (typeof API[method] === 'function') {
       API[method](params);
     } else {
@@ -14,7 +14,7 @@ const bridge = {
     }
   },
   callSync(method, params) {
-    console.log('jsbridge callSync:', 'method', method, 'params', params);
+    // console.log('jsbridge callSync:', 'method', method, 'params', params);
   },
 };
 

@@ -1,5 +1,4 @@
 import Nerv, { createNervClass } from '@/nerv';
-import BasicEventMixin from '../mixins/BasicEventMixin';
 
 let test;
 const cache = {};
@@ -34,9 +33,11 @@ function decodeStr(str) {
 
 export default createNervClass({
   displayName: 'Text',
-  mixins: [BasicEventMixin()],
+  mixins: [
+
+  ],
   render: function render() {
-    const { children, style, selectable, id, space, decode } = this.props;
+    const { children, style, selectable, id, space, decode, $mp, ...rest } = this.props;
     let { className = '', numberOfLines } = this.props;
 
     let retStyle = { WebkitUserSelect: selectable ? 'text' : 'none', ...style };
@@ -63,20 +64,17 @@ export default createNervClass({
       nodes.push(c);
     });
 
-    let clickable = {};
-    if (this.props.onTap || this.props.catchTap) {
-      clickable = {
-        'data-clickable': true,
-      };
-    }
-    return (
-      <span
-        className={className}
-        
-      >
-        {nodes}
-      </span>
-    )
-    return Nerv.createElement('span', { className, onClick: this.onTap, style: retStyle, id, ...clickable, ...this.props.$mp.getAriaProps() }, nodes);
+    const clickable = {
+      'data-clickable': true,
+    };
+
+    return Nerv.createElement('span', {
+      className,
+      style: retStyle,
+      id,
+      ...clickable,
+      ...$mp.getAriaProps(),
+      ...rest,
+    }, nodes);
   },
 });

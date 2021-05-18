@@ -5524,6 +5524,14 @@ function getRender(is) {
       var info = this.recordMounted(this.diffProps(this.prevProps));
 
       __page.fireComponentLifecycle(info, 'attached');
+
+      this.prevProps = this.props;
+    },
+    onAttachedReady: function onAttachedReady() {
+      var __page = this.props.__page;
+      var info = this.recordMounted(this.diffProps(this.prevProps));
+
+      __page.fireComponentLifecycle(info, 'ready');
     },
     componentDidUpdate: function componentDidUpdate(prevProps) {
       var diffProps = this.diffProps(prevProps);
@@ -5579,20 +5587,24 @@ function getRender(is) {
       var isUpdated;
       var isDeleted;
       Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_9__["default"])(prevProps)).forEach(function (prevKey) {
-        if (properties.hasOwnProperty(prevKey)) {
+        var prevProp = prevProps[prevKey];
+
+        if (properties.hasOwnProperty(prevKey) && Object(_utils_types__WEBPACK_IMPORTED_MODULE_10__["getType"])(prevProp) === properties[prevKey].type) {
           if (!(prevKey in props)) {
             deleted.push(prevKey);
             isDeleted = true;
-          } else if (prevProps[prevKey] !== props[prevKey]) {
+          } else if (prevProp !== props[prevKey]) {
             updated[prevKey] = props[prevKey];
             isUpdated = true;
           }
         }
       });
       Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_9__["default"])(props)).forEach(function (key) {
-        if (properties.hasOwnProperty(key)) {
+        var prop = props[key];
+
+        if (properties.hasOwnProperty(key) && Object(_utils_types__WEBPACK_IMPORTED_MODULE_10__["getType"])(prop) === properties[key].type) {
           if (!(key in prevProps)) {
-            updated[key] = props[key];
+            updated[key] = prop;
             isUpdated = true;
           }
         }
@@ -5609,7 +5621,6 @@ function getRender(is) {
         ret[_utils_consts__WEBPACK_IMPORTED_MODULE_3__["DiffKeyDeleted"]] = deleted;
       }
 
-      this.prevProps = props;
       return ret;
     },
     normalizeProps: function normalizeProps(props) {
@@ -5793,6 +5804,7 @@ function getRender(pagePath) {
     this.pagePath = pagePath;
     this.pageType = 'RENDER';
     this.eventHandlers = {};
+    this.onShowReadyCallbacks = [];
     this.componentInstances = {};
     this.self = this;
     this.publicInstance = {};
@@ -5861,13 +5873,39 @@ function getRender(pagePath) {
 
     setTimeout(function () {
       Object(_utils_log__WEBPACK_IMPORTED_MODULE_5__["debug"])('framework', "[RENDER] Page ".concat(_this2.pagePath, " onShowReady"));
+
+      while (_this2.onShowReadyCallbacks.length) {
+        var fn = _this2.onShowReadyCallbacks.shift();
+
+        fn();
+      }
+
       var e = {
         page: _this2
       };
       _EventHub__WEBPACK_IMPORTED_MODULE_9__["default"].emit('pageReady', e);
 
       _this2.callRemote('self', 'ready', e.payload);
+
+      _this2.didShow = true;
     });
+  },
+  onComponentAttachedReady: function onComponentAttachedReady(componentId) {
+    var _this3 = this;
+
+    var fn = function fn() {
+      var component = _this3.componentInstances[componentId];
+
+      if (component) {
+        component.onAttachedReady();
+      }
+    };
+
+    if (this.didShow) {
+      fn();
+    } else {
+      this.onShowReadyCallbacks.push(fn);
+    }
   },
   checkScroll: function checkScroll() {
     var onReachBottomDistance = 50;
@@ -6008,11 +6046,7 @@ function getRender(pagePath) {
       }
     };
 
-    if (_nerv__WEBPACK_IMPORTED_MODULE_0__["unstable_batchedUpdates"]) {
-      Object(_nerv__WEBPACK_IMPORTED_MODULE_0__["unstable_batchedUpdates"])(doIt);
-    } else {
-      doIt();
-    }
+    doIt();
   },
   onPageUpdate: function onPageUpdate(now, callback) {
     this.logRenderTime(now);
@@ -6050,7 +6084,7 @@ function getRender(pagePath) {
     }));
   },
   logRenderTime: function logRenderTime(now) {
-    this.callRemote('self', 'console', 'log', "framework: render ".concat(this.pagePath, " costs ").concat(Date.now() - now, "ms."));
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_5__["debug"])('framework', "render ".concat(this.pagePath, " costs ").concat(Date.now() - now, "ms."));
   },
   saveRoot: function saveRoot(ref) {
     this.root = ref;
@@ -6154,328 +6188,6 @@ var Scene = /*#__PURE__*/function (_Nerv$Component) {
 }(_nerv__WEBPACK_IMPORTED_MODULE_0__["default"].Component);
 
 
-
-/***/ }),
-
-/***/ "./src/framework/mixins/BasicEventMixin.js":
-/*!*************************************************!*\
-  !*** ./src/framework/mixins/BasicEventMixin.js ***!
-  \*************************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return BasicEventMixin; });
-/* harmony import */ var _nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/nerv */ "./src/nerv/index.ts");
-/* harmony import */ var _utils_addEvents__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/addEvents */ "./src/utils/addEvents.js");
-/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
-/* harmony import */ var _utils_eventReg__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/eventReg */ "./src/utils/eventReg.js");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
-
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-
-
-
-
-
-function defaultCreateTouchList() {
-  var touchList = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-  var list = [].slice.call(touchList, 0);
-  return list.map(function (item) {
-    return {
-      clientX: item.clientX,
-      clientY: item.clientY,
-      identifier: item.identifier,
-      pageX: item.pageX,
-      pageY: item.pageY
-    };
-  });
-}
-
-function callBubblesEvent(instance, eventType, srcEvent, more, capture) {
-  var catchHandler = instance.props[Object(_utils_eventReg__WEBPACK_IMPORTED_MODULE_3__["getPropsEventName"])(eventType, true, capture)];
-  var e = instance.getNormalizedEvent({
-    eventType: eventType,
-    srcEvent: srcEvent
-  }, more);
-  e.currentTarget = _objectSpread(_objectSpread({}, e.currentTarget), instance.getTargetForEvent());
-
-  if (catchHandler && srcEvent.stopPropagation) {
-    srcEvent.stopPropagation();
-    typeof catchHandler === 'function' && catchHandler(e);
-    return;
-  }
-
-  var onHandler = instance.props[Object(_utils_eventReg__WEBPACK_IMPORTED_MODULE_3__["getPropsEventName"])(eventType, false, capture)];
-
-  if (typeof onHandler === 'function') {
-    onHandler(e);
-  }
-}
-
-function defaultCreateTap(nativeEvent) {
-  var detail = {};
-
-  if (nativeEvent) {
-    nativeEvent = nativeEvent.nativeEvent || nativeEvent;
-
-    if ('pageX' in nativeEvent) {
-      detail.pageX = nativeEvent.pageX;
-      detail.pageY = nativeEvent.pageY;
-    }
-
-    if ('clientX' in nativeEvent) {
-      detail.clientX = nativeEvent.clientX;
-      detail.clientY = nativeEvent.clientY;
-    } else if ('pageX' in detail) {
-      detail.clientX = detail.pageX - window.pageXOffset;
-      detail.clientY = detail.pageY - window.pageYOffset;
-    }
-  }
-
-  return {
-    detail: detail
-  };
-}
-
-function detachScroll(instance) {
-  if (instance.detachScrollEvent) {
-    instance.detachScrollEvent.remove();
-    instance.detachScrollEvent = null;
-  }
-}
-
-function attachScroll(instance) {
-  var disableScroll = instance.props.disableScroll;
-  var detachScrollEvent = instance.detachScrollEvent;
-  var __basicEventRoot = instance.__basicEventRoot;
-
-  if (!__basicEventRoot) {
-    return;
-  }
-
-  if (!disableScroll && detachScrollEvent) {
-    return detachScroll(instance);
-  }
-
-  if (disableScroll && !detachScrollEvent) {
-    instance.detachScrollEvent = Object(_utils_addEvents__WEBPACK_IMPORTED_MODULE_1__["default"])(instance.__basicEventRoot, {
-      touchmove: function touchmove(e) {
-        e.preventDefault();
-      }
-    });
-  }
-}
-
-function BasicEventMixin() {
-  var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-      _ref$createTouchList = _ref.createTouchList,
-      createTouchList = _ref$createTouchList === void 0 ? defaultCreateTouchList : _ref$createTouchList,
-      _ref$createTap = _ref.createTap,
-      createTap = _ref$createTap === void 0 ? defaultCreateTap : _ref$createTap;
-
-  return {
-    componentDidMount: function componentDidMount() {
-      this.__basicEventRoot = Object(_nerv__WEBPACK_IMPORTED_MODULE_0__["findDOMNode"])(this);
-      attachScroll(this);
-    },
-    componentDidUpdate: function componentDidUpdate() {
-      attachScroll(this);
-    },
-    componentWillUnmount: function componentWillUnmount() {
-      detachScroll(this);
-    },
-    recordTarget: function recordTarget(srcEvent) {
-      var nativeEvent = srcEvent && srcEvent.nativeEvent;
-
-      if (nativeEvent && !nativeEvent.$target) {
-        nativeEvent.$target = this.getTargetForEvent();
-      }
-    },
-    hasEvent: function hasEvent(event, capture) {
-      return Object(_utils_eventReg__WEBPACK_IMPORTED_MODULE_3__["getPropsEventName"])(event, false, capture) || Object(_utils_eventReg__WEBPACK_IMPORTED_MODULE_3__["getPropsEventName"])(event, true, capture);
-    },
-    getDataset: function getDataset() {
-      var props = this.props;
-      var dataset = {};
-      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(props).forEach(function (n) {
-        if (n.slice(0, 5) === 'data-') {
-          var key = camelCase(n.slice(5));
-          dataset[key] = props[n];
-        }
-      });
-      return dataset;
-    },
-    getTargetForEvent: function getTargetForEvent() {
-      var props = this.props;
-      var __basicEventRoot = this.__basicEventRoot;
-      return {
-        id: props.id,
-        dataset: this.getDataset(),
-        offsetLeft: __basicEventRoot.offsetLeft,
-        offsetTop: __basicEventRoot.offsetTop
-      };
-    },
-
-    /* 格式化event对象 */
-    getNormalizedEvent: function getNormalizedEvent(eventParam, other) {
-      var eventType = eventParam;
-      var srcEvent;
-
-      if (eventType.eventType) {
-        srcEvent = eventType.srcEvent;
-        eventType = eventType.eventType;
-      }
-
-      var nativeEvent = srcEvent && srcEvent.nativeEvent || srcEvent;
-      var currentTarget = this.getTargetForEvent();
-      var target = nativeEvent && nativeEvent.$target || currentTarget;
-
-      if (nativeEvent && !nativeEvent.$target) {
-        nativeEvent.$target = target;
-      } // bug compatibility
-
-
-      target = _objectSpread(_objectSpread({
-        targetDataset: target.dataset
-      }, target), {}, {
-        dataset: currentTarget.dataset
-      });
-      return _objectSpread({
-        type: eventType,
-        timeStamp: Date.now(),
-        target: target,
-        currentTarget: currentTarget
-      }, other);
-    },
-    onTap: function onTap(srcEvent) {
-      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-      this.recordTarget(srcEvent); // ios also trigger onTap after onLongTap
-
-      if (this.__longTapTriggered) {
-        return;
-      }
-
-      var eventName = 'tap';
-
-      if (this.hasEvent(eventName, capture)) {
-        callBubblesEvent(this, eventName, srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap), capture);
-      }
-    },
-    onTouchStart: function onTouchStart(srcEvent) {
-      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-      this.recordTarget(srcEvent);
-      this.__longTapTriggered = 0;
-      var eventName = 'touchstart';
-
-      if (this.hasEvent(eventName, capture)) {
-        callBubblesEvent(this, eventName, srcEvent, {
-          touches: createTouchList.call(this, srcEvent.touches),
-          changedTouches: createTouchList.call(this, srcEvent.changedTouches)
-        }, capture);
-      }
-    },
-    onTouchMove: function onTouchMove(srcEvent) {
-      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-      this.recordTarget(srcEvent);
-      var eventName = 'touchmove';
-
-      if (this.hasEvent(eventName, capture)) {
-        callBubblesEvent(this, eventName, srcEvent, {
-          touches: createTouchList.call(this, srcEvent.touches),
-          changedTouches: createTouchList.call(this, srcEvent.changedTouches)
-        }, capture);
-      }
-    },
-    onTransitionEnd: function onTransitionEnd(srcEvent) {
-      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-      this.recordTarget(srcEvent);
-
-      if (this.hasEvent('transitionend', capture)) {
-        callBubblesEvent(this, 'transitionend', srcEvent, {
-          detail: {
-            elapsedTime: srcEvent.elapsedTime,
-            propertyName: srcEvent.propertyName
-          }
-        }, capture);
-      }
-    },
-    onAnimationStart: function onAnimationStart(srcEvent) {
-      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-      this.recordTarget(srcEvent);
-
-      if (this.hasEvent('animationstart', capture)) {
-        callBubblesEvent(this, 'animationstart', srcEvent, {
-          detail: {
-            elapsedTime: srcEvent.elapsedTime,
-            animationName: srcEvent.animationName
-          }
-        }, capture);
-      }
-    },
-    onAnimationIteration: function onAnimationIteration(srcEvent) {
-      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-      this.recordTarget(srcEvent);
-
-      if (this.hasEvent('animationiteration', capture)) {
-        callBubblesEvent(this, 'animationiteration', srcEvent, {
-          detail: {
-            elapsedTime: srcEvent.elapsedTime,
-            animationName: srcEvent.animationName
-          }
-        }, capture);
-      }
-    },
-    onAnimationEnd: function onAnimationEnd(srcEvent) {
-      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-      this.recordTarget(srcEvent);
-
-      if (this.hasEvent('animationend', capture)) {
-        callBubblesEvent(this, 'animationend', srcEvent, {
-          detail: {
-            elapsedTime: srcEvent.elapsedTime,
-            animationName: srcEvent.animationName
-          }
-        }, capture);
-      }
-    },
-    onTouchEnd: function onTouchEnd(srcEvent) {
-      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-      this.recordTarget(srcEvent);
-      var eventName = 'touchend';
-
-      if (this.hasEvent(eventName, capture)) {
-        callBubblesEvent(this, eventName, srcEvent, {
-          touches: createTouchList.call(this, srcEvent.touches),
-          changedTouches: createTouchList.call(this, srcEvent.changedTouches)
-        }, capture);
-      }
-    },
-    onTouchCancel: function onTouchCancel(srcEvent) {
-      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-      this.recordTarget(srcEvent);
-      var eventName = 'touchcancel';
-
-      if (this.hasEvent(eventName, capture)) {
-        callBubblesEvent(this, eventName, srcEvent, {
-          touches: createTouchList.call(this, srcEvent.touches),
-          changedTouches: createTouchList.call(this, srcEvent.changedTouches)
-        }, capture);
-      }
-    },
-    onLongTap: function onLongTap(srcEvent) {
-      this.__longTapTriggered = 1;
-
-      if (this.hasEvent('LongTap')) {
-        callBubblesEvent(this, 'longTap', srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap));
-      }
-    }
-  };
-}
 
 /***/ }),
 
@@ -7360,21 +7072,6 @@ self.MP = {
 var __mpCosts = Date.now() - __mpStartTime;
 
 Object(_utils_log__WEBPACK_IMPORTED_MODULE_3__["debug"])('framework', "web bundle costs ".concat(__mpCosts, " ms"));
-
-/***/ }),
-
-/***/ "./src/mixins/BasicEventMixin.js":
-/*!***************************************!*\
-  !*** ./src/mixins/BasicEventMixin.js ***!
-  \***************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _framework_mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/framework/mixins/BasicEventMixin */ "./src/framework/mixins/BasicEventMixin.js");
-
-/* harmony default export */ __webpack_exports__["default"] = (_framework_mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_0__["default"]);
 
 /***/ }),
 
@@ -11378,13 +11075,15 @@ var version = '15.4.2';
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/nerv */ "./src/nerv/index.ts");
-/* harmony import */ var _mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../mixins/BasicEventMixin */ "./src/mixins/BasicEventMixin.js");
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
+function _objectWithoutProperties(source, excluded) { if (source == null) return {}; var target = _objectWithoutPropertiesLoose(source, excluded); var key, i; if (Object.getOwnPropertySymbols) { var sourceSymbolKeys = Object.getOwnPropertySymbols(source); for (i = 0; i < sourceSymbolKeys.length; i++) { key = sourceSymbolKeys[i]; if (excluded.indexOf(key) >= 0) continue; if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue; target[key] = source[key]; } } return target; }
+
+function _objectWithoutPropertiesLoose(source, excluded) { if (source == null) return {}; var target = {}; var sourceKeys = Object.keys(source); var key, i; for (i = 0; i < sourceKeys.length; i++) { key = sourceKeys[i]; if (excluded.indexOf(key) >= 0) continue; target[key] = source[key]; } return target; }
 
 
 var test;
@@ -11428,7 +11127,7 @@ function decodeStr(str) {
 
 /* harmony default export */ __webpack_exports__["default"] = (Object(_nerv__WEBPACK_IMPORTED_MODULE_0__["createNervClass"])({
   displayName: 'Text',
-  mixins: [Object(_mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_1__["default"])()],
+  mixins: [],
   render: function render() {
     var _this$props = this.props,
         children = _this$props.children,
@@ -11436,7 +11135,10 @@ function decodeStr(str) {
         selectable = _this$props.selectable,
         id = _this$props.id,
         space = _this$props.space,
-        decode = _this$props.decode;
+        decode = _this$props.decode,
+        $mp = _this$props.$mp,
+        rest = _objectWithoutProperties(_this$props, ["children", "style", "selectable", "id", "space", "decode", "$mp"]);
+
     var _this$props2 = this.props,
         _this$props2$classNam = _this$props2.className,
         className = _this$props2$classNam === void 0 ? '' : _this$props2$classNam,
@@ -11479,23 +11181,14 @@ function decodeStr(str) {
 
       nodes.push(c);
     });
-    var clickable = {};
-
-    if (this.props.onTap || this.props.catchTap) {
-      clickable = {
-        'data-clickable': true
-      };
-    }
-
-    return _nerv__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("span", {
-      className: className
-    }, nodes);
-    return _nerv__WEBPACK_IMPORTED_MODULE_0__["default"].createElement('span', _objectSpread(_objectSpread({
+    var clickable = {
+      'data-clickable': true
+    };
+    return _nerv__WEBPACK_IMPORTED_MODULE_0__["default"].createElement('span', _objectSpread(_objectSpread(_objectSpread({
       className: className,
-      onClick: this.onTap,
       style: retStyle,
       id: id
-    }, clickable), this.props.$mp.getAriaProps()), nodes);
+    }, clickable), $mp.getAriaProps()), rest), nodes);
   }
 }));
 
@@ -13280,7 +12973,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
 /* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./utils */ "./src/view/utils.js");
 /* harmony import */ var _AnimationViewMixin__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./AnimationViewMixin */ "./src/view/AnimationViewMixin.js");
-/* harmony import */ var _mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../mixins/BasicEventMixin */ "./src/mixins/BasicEventMixin.js");
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
@@ -13290,7 +12982,6 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 function _objectWithoutProperties(source, excluded) { if (source == null) return {}; var target = _objectWithoutPropertiesLoose(source, excluded); var key, i; if (Object.getOwnPropertySymbols) { var sourceSymbolKeys = Object.getOwnPropertySymbols(source); for (i = 0; i < sourceSymbolKeys.length; i++) { key = sourceSymbolKeys[i]; if (excluded.indexOf(key) >= 0) continue; if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue; target[key] = source[key]; } } return target; }
 
 function _objectWithoutPropertiesLoose(source, excluded) { if (source == null) return {}; var target = {}; var sourceKeys = Object.keys(source); var key, i; for (i = 0; i < sourceKeys.length; i++) { key = sourceKeys[i]; if (excluded.indexOf(key) >= 0) continue; target[key] = source[key]; } return target; }
-
 
 
 
@@ -13377,7 +13068,7 @@ function getStyleFromAnimation(component, _animation, node) {
 
 /* harmony default export */ __webpack_exports__["default"] = (Object(_nerv__WEBPACK_IMPORTED_MODULE_0__["createNervClass"])({
   displayName: 'View',
-  mixins: [Object(_mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_7__["default"])(), _AnimationViewMixin__WEBPACK_IMPORTED_MODULE_6__["default"]],
+  mixins: [_AnimationViewMixin__WEBPACK_IMPORTED_MODULE_6__["default"]],
   componentDidMount: function componentDidMount() {
     this.firstAppeared = false;
     this.checkVisible = Object(_utils_throttle__WEBPACK_IMPORTED_MODULE_3__["default"])(this.checkVisible, 300, {
@@ -13605,11 +13296,10 @@ function getStyleFromAnimation(component, _animation, node) {
 
     if (props.hoverStayTime) {
       touchableProps.delayPressOut = props.hoverStayTime;
-    }
+    } // if (this.hasEvent('longtap')) {
+    //   touchableProps.onLongPress = this.onLongTap;
+    // }
 
-    if (this.hasEvent('longtap')) {
-      touchableProps.onLongPress = this.onLongTap;
-    }
 
     if (hidden) {
       style = _objectSpread(_objectSpread({}, style), {}, {

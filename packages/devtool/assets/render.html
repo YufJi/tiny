@@ -12,6 +12,7 @@
     }
     .root {
       width: 100%;
+      overflow: hidden;
     }
     .__loading__ {
       width: 100%;
@@ -72,7 +73,7 @@
           callback({
             bridge: {
               startupParams: {
-                debug: 'framework'
+                // debug: 'framework'
               },
               call: window.JSBridge.call,
             }

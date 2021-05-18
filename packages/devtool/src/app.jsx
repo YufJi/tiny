@@ -58,7 +58,7 @@ class App extends Component {
     const { pages } = global.appConfig;
     const homePage = pages[0];
 
-    const src = `worker.html?pagePath=${homePage}&debug=framework`;
+    const src = `worker.html?pagePath=${homePage}`;
     const guid = createGuid('worker');
     global.worker = createWorkerIframe({
       guid,

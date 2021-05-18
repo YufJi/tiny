@@ -77,7 +77,6 @@ export default (is) => createNervClass({
           }
         }
       }
-
       return { ...state, ...changedProps };
     },
   },
@@ -93,6 +92,7 @@ export default (is) => createNervClass({
     this.prevProps = {};
     __page.componentInstances[this.id] = this;
     __page.fireComponentLifecycle(this.recordMounted(false), 'created');
+
     return { ...data };
   },
   componentDidMount() {
@@ -100,6 +100,14 @@ export default (is) => createNervClass({
 
     const info = this.recordMounted(this.diffProps(this.prevProps));
     __page.fireComponentLifecycle(info, 'attached');
+
+    this.prevProps = this.props;
+  },
+  onAttachedReady() {
+    const { __page } = this.props;
+
+    const info = this.recordMounted(this.diffProps(this.prevProps));
+    __page.fireComponentLifecycle(info, 'ready');
   },
   componentDidUpdate(prevProps) {
     const diffProps = this.diffProps(prevProps);
@@ -156,11 +164,12 @@ export default (is) => createNervClass({
     let isDeleted;
 
     objectKeys(normalizeComponentProps(prevProps)).forEach((prevKey) => {
-      if (properties.hasOwnProperty(prevKey)) {
+      const prevProp = prevProps[prevKey];
+      if (properties.hasOwnProperty(prevKey) && getType(prevProp) === properties[prevKey].type) {
         if (!(prevKey in props)) {
           deleted.push(prevKey);
           isDeleted = true;
-        } else if (prevProps[prevKey] !== props[prevKey]) {
+        } else if (prevProp !== props[prevKey]) {
           updated[prevKey] = props[prevKey];
           isUpdated = true;
         }
@@ -168,9 +177,10 @@ export default (is) => createNervClass({
     });
 
     objectKeys(normalizeComponentProps(props)).forEach((key) => {
-      if (properties.hasOwnProperty(key)) {
+      const prop = props[key];
+      if (properties.hasOwnProperty(key) && getType(prop) === properties[key].type) {
         if (!(key in prevProps)) {
-          updated[key] = props[key];
+          updated[key] = prop;
           isUpdated = true;
         }
       }
@@ -185,7 +195,6 @@ export default (is) => createNervClass({
       ret = ret || {};
       ret[DiffKeyDeleted] = deleted;
     }
-    this.prevProps = props;
     return ret;
   },
   normalizeProps(props) {

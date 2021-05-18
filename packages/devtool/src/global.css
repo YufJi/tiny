@@ -51,30 +51,30 @@ body {
 }
 
 .frame {
-  transform: translateX(100%);
-  animation: frameEnter .2s ease-in both;
+  transform: translateX(100%) translateZ(0);
+  animation: frameEnter .3s ease-in both;
 }
 
 .frame.leave {
-  transform: translateX(0%);
-  animation: frameLeave .2s ease-in both;
+  transform: translateX(0%) translateZ(0);
+  animation: frameLeave .3s ease-in both;
 }
 
 @keyframes frameEnter {
   0% {
-    transform: translateX(100%);
+    transform: translateX(100%) translateZ(0);
   }
   100% {
-    transform: translateX(0%);
+    transform: translateX(0%) translateZ(0);
   }
 }
 
 @keyframes frameLeave {
   0% {
-    transform: translateX(0%);
+    transform: translateX(0%) translateZ(0);
   }
   100% {
-    transform: translateX(100%);
+    transform: translateX(100%) translateZ(0);
   }
 }
 
