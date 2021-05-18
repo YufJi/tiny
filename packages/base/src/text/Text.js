@@ -36,17 +36,8 @@ export default createNervClass({
   displayName: 'Text',
   mixins: [BasicEventMixin()],
   render: function render() {
-    const _props = this.props;
-    const { children } = _props;
-    const { style } = _props;
-    const { selectable } = _props;
-    const { id } = _props;
-    const { space } = _props;
-    const { decode } = _props;
-    const _props2 = this.props;
-    const _props2$className = _props2.className;
-    let className = _props2$className === undefined ? '' : _props2$className;
-    let { numberOfLines } = _props2;
+    const { children, style, selectable, id, space, decode } = this.props;
+    let { className = '', numberOfLines } = this.props;
 
     let retStyle = { WebkitUserSelect: selectable ? 'text' : 'none', ...style };
     className += ` a-text-${space ? '' : 'no'}-space`;
@@ -56,8 +47,8 @@ export default createNervClass({
     if (numberOfLines > 0) {
       retStyle = { overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: numberOfLines, WebkitBoxOrient: 'vertical', ...retStyle };
     }
-    let nodes;
-    nodes = [];
+    const nodes = [];
+
     Nerv.Children.forEach(children, (c) => {
       if (typeof c === 'string') {
         if (decode) {
@@ -71,12 +62,21 @@ export default createNervClass({
       }
       nodes.push(c);
     });
+
     let clickable = {};
     if (this.props.onTap || this.props.catchTap) {
       clickable = {
         'data-clickable': true,
       };
     }
+    return (
+      <span
+        className={className}
+        
+      >
+        {nodes}
+      </span>
+    )
     return Nerv.createElement('span', { className, onClick: this.onTap, style: retStyle, id, ...clickable, ...this.props.$mp.getAriaProps() }, nodes);
   },
 });

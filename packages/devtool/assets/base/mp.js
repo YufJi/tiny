@@ -6473,36 +6473,6 @@ function BasicEventMixin() {
       if (this.hasEvent('LongTap')) {
         callBubblesEvent(this, 'longTap', srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap));
       }
-    },
-    registryEvent: function registryEvent(eventName) {
-      var _this = this;
-
-      var capture = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-      return function (srcEvent) {
-        _this[eventName](srcEvent, capture);
-      };
-    },
-    getBubbleEvents: function getBubbleEvents() {
-      return {
-        onClick: this.registryEvent('onTap'),
-        onClickCapture: this.registryEvent('onTap', true),
-        onTouchStart: this.registryEvent('onTouchStart'),
-        onTouchStartCapture: this.registryEvent('onTouchStart', true),
-        onTouchMove: this.registryEvent('onTouchMove'),
-        onTouchMoveCapture: this.registryEvent('onTouchMove', true),
-        onTouchEnd: this.registryEvent('onTouchEnd'),
-        onTouchEndCapture: this.registryEvent('onTouchEnd', true),
-        onTouchCancel: this.registryEvent('onTouchCancel'),
-        onTouchCancelCapture: this.registryEvent('onTouchCancel', true),
-        onAnimationStart: this.registryEvent('onAnimationStart'),
-        onAnimationStartCapture: this.registryEvent('onAnimationStart', true),
-        onAnimationIteration: this.registryEvent('onAnimationIteration'),
-        onAnimationIterationCapture: this.registryEvent('onAnimationIteration', true),
-        onAnimationEnd: this.registryEvent('onAnimationEnd'),
-        onAnimationEndCapture: this.registryEvent('onAnimationEnd', true),
-        onTransitionEnd: this.registryEvent('onTransitionEnd'),
-        onTransitionEndCapture: this.registryEvent('onTransitionEnd', true)
-      };
     }
   };
 }
@@ -11460,17 +11430,17 @@ function decodeStr(str) {
   displayName: 'Text',
   mixins: [Object(_mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_1__["default"])()],
   render: function render() {
-    var _props = this.props;
-    var children = _props.children;
-    var style = _props.style;
-    var selectable = _props.selectable;
-    var id = _props.id;
-    var space = _props.space;
-    var decode = _props.decode;
-    var _props2 = this.props;
-    var _props2$className = _props2.className;
-    var className = _props2$className === undefined ? '' : _props2$className;
-    var numberOfLines = _props2.numberOfLines;
+    var _this$props = this.props,
+        children = _this$props.children,
+        style = _this$props.style,
+        selectable = _this$props.selectable,
+        id = _this$props.id,
+        space = _this$props.space,
+        decode = _this$props.decode;
+    var _this$props2 = this.props,
+        _this$props2$classNam = _this$props2.className,
+        className = _this$props2$classNam === void 0 ? '' : _this$props2$classNam,
+        numberOfLines = _this$props2.numberOfLines;
 
     var retStyle = _objectSpread({
       WebkitUserSelect: selectable ? 'text' : 'none'
@@ -11492,8 +11462,7 @@ function decodeStr(str) {
       }, retStyle);
     }
 
-    var nodes;
-    nodes = [];
+    var nodes = [];
     _nerv__WEBPACK_IMPORTED_MODULE_0__["default"].Children.forEach(children, function (c) {
       if (typeof c === 'string') {
         if (decode) {
@@ -11518,6 +11487,9 @@ function decodeStr(str) {
       };
     }
 
+    return _nerv__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("span", {
+      className: className
+    }, nodes);
     return _nerv__WEBPACK_IMPORTED_MODULE_0__["default"].createElement('span', _objectSpread(_objectSpread({
       className: className,
       onClick: this.onTap,

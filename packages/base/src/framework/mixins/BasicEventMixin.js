@@ -266,40 +266,5 @@ export default function BasicEventMixin({
         callBubblesEvent(this, 'longTap', srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap));
       }
     },
-    registryEvent(eventName, capture = false) {
-      return (srcEvent) => {
-        this[eventName](srcEvent, capture);
-      };
-    },
-    getBubbleEvents() {
-      return {
-        onClick: this.registryEvent('onTap'),
-        onClickCapture: this.registryEvent('onTap', true),
-
-        onTouchStart: this.registryEvent('onTouchStart'),
-        onTouchStartCapture: this.registryEvent('onTouchStart', true),
-
-        onTouchMove: this.registryEvent('onTouchMove'),
-        onTouchMoveCapture: this.registryEvent('onTouchMove', true),
-
-        onTouchEnd: this.registryEvent('onTouchEnd'),
-        onTouchEndCapture: this.registryEvent('onTouchEnd', true),
-
-        onTouchCancel: this.registryEvent('onTouchCancel'),
-        onTouchCancelCapture: this.registryEvent('onTouchCancel', true),
-
-        onAnimationStart: this.registryEvent('onAnimationStart'),
-        onAnimationStartCapture: this.registryEvent('onAnimationStart', true),
-
-        onAnimationIteration: this.registryEvent('onAnimationIteration'),
-        onAnimationIterationCapture: this.registryEvent('onAnimationIteration', true),
-
-        onAnimationEnd: this.registryEvent('onAnimationEnd'),
-        onAnimationEndCapture: this.registryEvent('onAnimationEnd', true),
-
-        onTransitionEnd: this.registryEvent('onTransitionEnd'),
-        onTransitionEndCapture: this.registryEvent('onTransitionEnd', true),
-      };
-    },
   };
 }

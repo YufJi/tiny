@@ -82,7 +82,7 @@ export default createNervClass({
     AnimationViewMixin,
   ],
 
-  componentDidMount: function componentDidMount() {
+  componentDidMount() {
     this.firstAppeared = false;
     this.checkVisible = throttle(this.checkVisible, 300, {
       leading: false,
