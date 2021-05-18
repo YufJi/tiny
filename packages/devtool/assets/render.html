@@ -71,7 +71,9 @@
         onReady: function(callback) {
           callback({
             bridge: {
-              startupParams: {},
+              startupParams: {
+                debug: 'framework'
+              },
               call: window.JSBridge.call,
             }
           })

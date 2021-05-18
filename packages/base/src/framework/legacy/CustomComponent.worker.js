@@ -2,6 +2,7 @@ import mergeArray from '@/utils/mergeArray';
 import setData, { spliceData, getOpStr } from '@/utils/setData';
 import objectKeys from '@/utils/objectKeys';
 import mapValues from 'lodash.mapvalues';
+import defaultsDeep from 'lodash.defaultsdeep';
 import {
   PendingKeyType,
   PendingKeyId,
@@ -65,16 +66,15 @@ export default function Component(config) {
     publicInstance.is = is;
     publicInstance.$id = id;
     publicInstance.$page = page.publicInstance;
-    publicInstance.properties = { ...publicInstance.data, ...mapValues(publicInstance.properties, 'value') };
-    publicInstance.data = { ...publicInstance.data, ...mapValues(publicInstance.properties, 'value') };
+
+    const initialData = defaultsDeep(mapValues(publicInstance.properties, 'value'), publicInstance.data);
+    publicInstance.properties = initialData;
+    publicInstance.data = initialData;
 
     this.prevData = publicInstance.data;
 
     this.setComponentConfig(componentConfig, true);
   }
-
-  ComponentClass.data = { ...getProps('data', false) };
-  ComponentClass.properties = { ...getProps('properties', false) };
 
   ComponentClass.getAllComponents = function () {
     const allComponents = [is];
@@ -149,7 +149,7 @@ export default function Component(config) {
       this.publicInstance.lifetimes.attached.call(this.publicInstance);
     },
     ready(info) {
-      this.setComponentConfig(info);
+      info && this.setComponentConfig(info);
       this.publicInstance.lifetimes.ready.call(this.publicInstance);
     },
     unload() {

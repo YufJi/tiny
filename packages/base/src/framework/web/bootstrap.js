@@ -19,7 +19,7 @@ export default function (config, bridge) {
     loadPage(pagePath, () => {
       const PageComponent = PageRegistry.getComponent(pagePath);
       if (PageComponent) {
-        console.log('framework: Render page', pagePath);
+        debug('framework', `Render page: ${pagePath}`);
         if (onRender) {
           onRender(type);
         }

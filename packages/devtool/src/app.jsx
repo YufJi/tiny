@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import StatusBar from '@/components/statusBar';
@@ -57,7 +58,7 @@ class App extends Component {
     const { pages } = global.appConfig;
     const homePage = pages[0];
 
-    const src = `worker.html?pagePath=${homePage}`;
+    const src = `worker.html?pagePath=${homePage}&debug=framework`;
     const guid = createGuid('worker');
     global.worker = createWorkerIframe({
       guid,
@@ -72,7 +73,7 @@ class App extends Component {
     const { pages } = global.appConfig;
     const homePage = pages[0];
 
-    const url = `#${homePage}`;
+    const url = `#${homePage}?debug=framework`;
     const tag = homePage;
 
     doPushWindow(url, tag);

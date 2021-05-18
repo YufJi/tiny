@@ -422,7 +422,6 @@ function render(data) {
   }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(AddButton, {
     text: "Add Todo",
     bindclickme: $getEventHandler(this, "add"),
-    $isCustomComponent: this.$isCustomComponent,
     __tag: "add-button",
     __owner: this,
     __page: this.$isCustomComponent ? this.props['__page'] : this
@@ -665,7 +664,6 @@ function render(data) {
   }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(AddButton, {
     text: data['text'],
     bindclick_me: $getEventHandler(this, "clickCom"),
-    $isCustomComponent: this.$isCustomComponent,
     __tag: "add-button",
     __owner: this,
     __page: this.$isCustomComponent ? this.props['__page'] : this
@@ -673,7 +671,6 @@ function render(data) {
     xx: "xxx",
     text: data['text'],
     bindclick_me: $getEventHandler(this, data['fn']),
-    $isCustomComponent: this.$isCustomComponent,
     __tag: "add-button",
     __owner: this,
     __page: this.$isCustomComponent ? this.props['__page'] : this

@@ -27,7 +27,7 @@
 - observers
 
 ### 方法支持
-- hasBehavior
+- ~~hasBehavior~~
 - createSelectorQuery (这个的实现比较简单，基于api.createSelectorQuery就可以实现)
 - selectComponent
 - selectAllComponents
@@ -46,7 +46,7 @@
 基于web component包装一层， 即可精准触发生命周期
 
 
-### 生命周期
+### 生命周期✅
 
 - 新开一个页面时，render端注册一个‘init-data-ready‘事件， 
 - worker端的page准备初始数据，同时根据usingComponents初始化自定义组件并收集起来， 组装出一份初始化数据，大致如下：

@@ -242,19 +242,19 @@ Component({
 
   lifetimes: {
     created() {
-      console.log(1, this.properties, this.data);
+      console.log('created', this.properties, this.data);
     },
     attached() {
-      console.log(2, this.properties, this.data);
+      console.log('attached', this.properties, this.data);
     },
     ready() {
-      console.log(3, this.properties, this.data);
+      console.log('ready', this.properties, this.data);
     },
     moved() {
-      console.log(4, this.properties);
+      console.log('moved', this.properties);
     },
     detached() {
-      console.log(5, this.properties);
+      console.log('detached', this.properties);
     },
   },
 
@@ -374,10 +374,18 @@ Page({
   // 监听生命周期回调 onShow
   onShow() {
     // 设置全局数据到当前页面数据
-    this.setData({ todos: app.todos });
+    this.setData({ 
+      todos: app.todos,
+    });
+    this.setData({
+      text: 'onshow'
+    })
     console.log('page show');
   },
   onReady() {
+    this.setData({
+      text: 'ready'
+    })
     console.log('page ready');
   },
 

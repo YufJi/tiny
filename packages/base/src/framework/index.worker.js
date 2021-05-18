@@ -24,7 +24,9 @@ g.onerror = function (msg, url, line, col, error) {
     let stack = [];
     try {
       stack = JSON.stringify(error.stack).split('\\n').splice(0, 3);
-    } catch (e) {}
+    } catch (e) {
+
+    }
   } catch (ee) {
     console.error('[WORKER] report catch error', ee);
   }

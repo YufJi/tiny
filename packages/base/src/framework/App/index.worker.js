@@ -1,6 +1,6 @@
 import qs from 'query-string';
 import getScene from '@/utils/getScene';
-import log from '@/utils/log';
+import log, { debug } from '@/utils/log';
 import objectKeys from '@/utils/objectKeys';
 import invokeWithGuardAndReThrow from '@/utils/invokeWithGuardAndReThrow';
 import { getStartupParams } from '../startupParams';
@@ -161,7 +161,7 @@ AppImpl.prototype = {
     this.$launchTime = Date.now();
     this.launchOptions = options;
     EventHub.emit('launch', options);
-    log('framework: App onLaunch');
+    debug('framework', 'App onLaunch');
     const { publicInstance } = this;
     const { onLaunch } = publicInstance;
     const { onShow } = publicInstance;
@@ -173,7 +173,7 @@ AppImpl.prototype = {
   hide(hidePage = true) {
     this.shown = false;
     EventHub.emit('background');
-    log('framework: App onHide');
+    debug('framework', 'App onHide');
     if (hidePage) {
       const page = getCurrentPageImpl();
       if (page) {
@@ -185,7 +185,7 @@ AppImpl.prototype = {
   show(o, showPage = true) {
     this.shown = true;
     const options = o || {};
-    log('framework: App onShow');
+    debug('framework', 'App onShow');
     EventHub.emit('foreground', options);
     const prePage = getCurrentPageImpl();
     invokeWithGuardAndReThrow(this.publicInstance.onShow, this.publicInstance, options);

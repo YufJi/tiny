@@ -8955,7 +8955,7 @@ AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IM
     this.$launchTime = Date.now();
     this.launchOptions = options;
     _EventHub__WEBPACK_IMPORTED_MODULE_6__["default"].emit('launch', options);
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_2__["default"])('framework: App onLaunch');
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_2__["debug"])('framework', 'App onLaunch');
     var publicInstance = this.publicInstance;
     var onLaunch = publicInstance.onLaunch;
     var onShow = publicInstance.onShow;
@@ -8967,7 +8967,7 @@ AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IM
     var hidePage = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
     this.shown = false;
     _EventHub__WEBPACK_IMPORTED_MODULE_6__["default"].emit('background');
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_2__["default"])('framework: App onHide');
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_2__["debug"])('framework', 'App onHide');
 
     if (hidePage) {
       var page = getCurrentPageImpl();
@@ -8983,7 +8983,7 @@ AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IM
     var showPage = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
     this.shown = true;
     var options = o || {};
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_2__["default"])('framework: App onShow');
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_2__["debug"])('framework', 'App onShow');
     _EventHub__WEBPACK_IMPORTED_MODULE_6__["default"].emit('foreground', options);
     var prePage = getCurrentPageImpl();
     Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_4__["default"])(this.publicInstance.onShow, this.publicInstance, options); // if relaunch, do not invoke previous page show
@@ -9447,7 +9447,7 @@ function Component(setupConfig) {
       ancestors = _createBehavior.ancestors;
 
   _common_global__WEBPACK_IMPORTED_MODULE_1__["default"].componentsConfig[is] = {
-    publicInstance: init,
+    init: init,
     usingComponents: usingComponents
   };
   _ComponentRegistry__WEBPACK_IMPORTED_MODULE_0__["default"].registerComponent(is, function () {
@@ -9492,15 +9492,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "componentRegistry", function() { return componentRegistry; });
 var componentRegistry = {};
 var ComponentRegistry = {
-  registerComponent: function registerComponent(name, factory) {
-    if (componentRegistry[name]) {
+  registerComponent: function registerComponent(is, factory) {
+    if (componentRegistry[is]) {
       return;
     }
 
-    componentRegistry[name] = factory;
+    componentRegistry[is] = factory;
   },
-  getComponent: function getComponent(name) {
-    return componentRegistry[name] && componentRegistry[name]();
+  getComponent: function getComponent(is) {
+    return componentRegistry[is] && componentRegistry[is]();
   }
 };
 /* harmony default export */ __webpack_exports__["default"] = (ComponentRegistry);
@@ -9871,15 +9871,18 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
 /* harmony import */ var lodash_mapvalues__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! lodash.mapvalues */ "./node_modules/lodash.mapvalues/index.js");
 /* harmony import */ var lodash_mapvalues__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(lodash_mapvalues__WEBPACK_IMPORTED_MODULE_3__);
-/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
-/* harmony import */ var _ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../ComponentRegistry/getComponentClass */ "./src/framework/ComponentRegistry/getComponentClass.js");
-/* harmony import */ var _utils_getComponentProp__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../utils/getComponentProp */ "./src/framework/utils/getComponentProp.js");
-/* harmony import */ var _utils_fireComponentLifecycle__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../utils/fireComponentLifecycle */ "./src/framework/utils/fireComponentLifecycle.js");
+/* harmony import */ var lodash_defaultsdeep__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! lodash.defaultsdeep */ "./node_modules/lodash.defaultsdeep/index.js");
+/* harmony import */ var lodash_defaultsdeep__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(lodash_defaultsdeep__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
+/* harmony import */ var _ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../ComponentRegistry/getComponentClass */ "./src/framework/ComponentRegistry/getComponentClass.js");
+/* harmony import */ var _utils_getComponentProp__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../utils/getComponentProp */ "./src/framework/utils/getComponentProp.js");
+/* harmony import */ var _utils_fireComponentLifecycle__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../utils/fireComponentLifecycle */ "./src/framework/utils/fireComponentLifecycle.js");
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 
 
 
@@ -9898,7 +9901,7 @@ function Component(config) {
 
   function getProps(prop) {
     var useCache = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-    return Object(_utils_getComponentProp__WEBPACK_IMPORTED_MODULE_6__["default"])(init, prop, useCache ? propsCache : useCache);
+    return Object(_utils_getComponentProp__WEBPACK_IMPORTED_MODULE_7__["default"])(init, prop, useCache ? propsCache : useCache);
   }
 
   function ComponentClass(page, id, componentConfig) {
@@ -9937,21 +9940,19 @@ function Component(config) {
     publicInstance.is = is;
     publicInstance.$id = id;
     publicInstance.$page = page.publicInstance;
-    publicInstance.properties = _objectSpread(_objectSpread({}, publicInstance.data), lodash_mapvalues__WEBPACK_IMPORTED_MODULE_3___default()(publicInstance.properties, 'value'));
-    publicInstance.data = _objectSpread(_objectSpread({}, publicInstance.data), lodash_mapvalues__WEBPACK_IMPORTED_MODULE_3___default()(publicInstance.properties, 'value'));
+    var initialData = lodash_defaultsdeep__WEBPACK_IMPORTED_MODULE_4___default()(lodash_mapvalues__WEBPACK_IMPORTED_MODULE_3___default()(publicInstance.properties, 'value'), publicInstance.data);
+    publicInstance.properties = initialData;
+    publicInstance.data = initialData;
     this.prevData = publicInstance.data;
     this.setComponentConfig(componentConfig, true);
   }
-
-  ComponentClass.data = _objectSpread({}, getProps('data', false));
-  ComponentClass.properties = _objectSpread({}, getProps('properties', false));
 
   ComponentClass.getAllComponents = function () {
     var allComponents = [is];
     Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(usingComponents).forEach(function (c) {
       /* 忽略当前自定义组件本身，防止死循环 */
       if (usingComponents[c] !== is) {
-        var subUsingComponents = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_5__["default"])(usingComponents[c]).getAllComponents();
+        var subUsingComponents = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_6__["default"])(usingComponents[c]).getAllComponents();
         Object(_utils_mergeArray__WEBPACK_IMPORTED_MODULE_0__["default"])(allComponents, subUsingComponents);
       }
     });
@@ -9972,7 +9973,7 @@ function Component(config) {
 
       this.prevData = publicInstance.data;
       publicInstance.properties = publicInstance.data = op(publicInstance.data, diffData);
-      var data = (_data = {}, _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_4__["PendingKeyType"], _utils_consts__WEBPACK_IMPORTED_MODULE_4__["PendingValueComponent"]), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_4__["PendingKeyId"], id), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_4__["PendingKeyOp"], Object(_utils_setData__WEBPACK_IMPORTED_MODULE_1__["getOpStr"])(op)), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_4__["PendingKeyData"], diffData), _data);
+      var data = (_data = {}, _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingKeyType"], _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingValueComponent"]), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingKeyId"], id), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingKeyOp"], Object(_utils_setData__WEBPACK_IMPORTED_MODULE_1__["getOpStr"])(op)), _defineProperty(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_5__["PendingKeyData"], diffData), _data);
       var options = options_ || {};
 
       if (typeof options_ === 'function') {
@@ -9984,13 +9985,13 @@ function Component(config) {
       this.page.setRemoteData(data, options);
     },
     setComponentConfig: function setComponentConfig(c, init) {
-      var diffProps = c[_utils_consts__WEBPACK_IMPORTED_MODULE_4__["ComponentKeyDiffProps"]];
+      var diffProps = c[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["ComponentKeyDiffProps"]];
       var publicInstance = this.publicInstance;
       var prevProps = publicInstance.properties;
 
       if (diffProps) {
-        var deleted = diffProps[_utils_consts__WEBPACK_IMPORTED_MODULE_4__["DiffKeyDeleted"]];
-        var updated = diffProps[_utils_consts__WEBPACK_IMPORTED_MODULE_4__["DiffKeyUpdated"]];
+        var deleted = diffProps[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["DiffKeyDeleted"]];
+        var updated = diffProps[_utils_consts__WEBPACK_IMPORTED_MODULE_5__["DiffKeyUpdated"]];
 
         if (deleted && deleted.length || updated && Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(updated).length) {
           publicInstance.properties = _objectSpread({}, publicInstance.properties);
@@ -10022,7 +10023,7 @@ function Component(config) {
       this.publicInstance.lifetimes.attached.call(this.publicInstance);
     },
     ready: function ready(info) {
-      this.setComponentConfig(info);
+      info && this.setComponentConfig(info);
       this.publicInstance.lifetimes.ready.call(this.publicInstance);
     },
     unload: function unload() {
@@ -10181,9 +10182,9 @@ function getAllUsingComponents(pagePath) {
 
 PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleMixin__WEBPACK_IMPORTED_MODULE_12__["default"]), {}, {
   initData: function initData() {
+    var isRefresh = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
     var publicInstance = this.publicInstance,
         id = this.id;
-    console.log('initData publicInstance', publicInstance);
     var config = {};
     publicInstanceMethods.forEach(function (k) {
       var hookFn = publicInstance[k];
@@ -10194,20 +10195,19 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     });
     this.callRemote('self', 'onInitDataReady', {
       id: id,
-      isRefresh: false,
+      isRefresh: isRefresh,
       publicInstance: _objectSpread({
         data: publicInstance.data
       }, config),
-      customComponents: this.getAllComponents()
+      customComponents: this.getCustomComponents()
     });
   },
   load: function load() {
     // in case pageResume following appResume, tab page??
     if (!this.$loadTime) {
-      this.$loadTime = Date.now(); // setData will be merged with startRender
-
+      this.$loadTime = Date.now();
       this._disableRemoteData = true;
-      Object(_utils_log__WEBPACK_IMPORTED_MODULE_4__["default"])('framework: page onLoad', this.pagePath);
+      Object(_utils_log__WEBPACK_IMPORTED_MODULE_4__["debug"])('framework', ' page onLoad', this.pagePath);
       _EventHub__WEBPACK_IMPORTED_MODULE_9__["default"].emit('pageLoad', {
         page: this
       });
@@ -10221,12 +10221,11 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
       if (this._fromTabItemTap) {
         this.onTabItemTap(this.tabProps);
       }
-    } // this.startRender();
-
+    }
   },
   refresh: function refresh() {
     this.unmountAllComponents();
-    this.startRender(true);
+    this.initData(true);
   },
   show: function show() {
     if (this.unloaded) {
@@ -10248,7 +10247,8 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
       page: this
     });
     this.executeUserMethod('onShow');
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_4__["default"])('framework: page onShow', this.pagePath);
+    this.callRemote('self', 'onShowReady');
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_4__["debug"])('framework', 'page onShow', this.pagePath);
   },
   ready: function ready(payload) {
     var _this2 = this;
@@ -10274,9 +10274,23 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
         return fn();
       });
 
+      _this2.callComponentLifetime('ready');
+
       _this2.executeUserMethod('onReady');
 
-      Object(_utils_log__WEBPACK_IMPORTED_MODULE_4__["default"])('framework: page onReady', _this2.pagePath);
+      Object(_utils_log__WEBPACK_IMPORTED_MODULE_4__["debug"])('framework', 'page onReady', _this2.pagePath);
+    });
+  },
+  callComponentLifetime: function callComponentLifetime(lifecycle) {
+    var _this3 = this;
+
+    var componentInstances = this.componentInstances;
+    Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(componentInstances).forEach(function (id) {
+      var instance = _this3.getComponentInstance(id);
+
+      if (instance) {
+        instance.ready();
+      }
     });
   },
   pullDownRefresh: function pullDownRefresh(e) {
@@ -10306,10 +10320,10 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
       page: this
     });
     this.executeUserMethod('onHide');
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_4__["default"])('framework: page onHide', this.pagePath);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_4__["debug"])('framework', ' page onHide', this.pagePath);
   },
   unload: function unload() {
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_4__["default"])('framework: page onUnload', this.pagePath);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_4__["debug"])('framework', ' page onUnload', this.pagePath);
 
     if (this.unloaded || !this.$loadTime) {
       // remove from page stack
@@ -10336,52 +10350,24 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
       oldComponentInstances[k].unload();
     });
   },
-  getAllComponents: function getAllComponents() {
+  getCustomComponents: function getCustomComponents() {
     var customComponents = {};
     getAllUsingComponents(this.pagePath).forEach(function (is) {
-      var publicInstance = _common_global__WEBPACK_IMPORTED_MODULE_11__["default"].componentsConfig[is].publicInstance;
+      var init = _common_global__WEBPACK_IMPORTED_MODULE_11__["default"].componentsConfig[is].init;
       customComponents[is] = {
-        properties: lodash_mapvalues__WEBPACK_IMPORTED_MODULE_0___default()(publicInstance.properties, function (item) {
+        properties: lodash_mapvalues__WEBPACK_IMPORTED_MODULE_0___default()(init.properties, function (item) {
           return {
-            type: item.type,
+            type: item.type.name,
             value: item.value
           };
         }),
-        data: publicInstance.data
+        data: init.data
       };
     });
     return customComponents;
   },
   isLoaded: function isLoaded() {
     return !!this.$loadTime && !this.unloaded;
-  },
-  startRender: function startRender(isRefresh) {
-    var publicInstance = this.publicInstance,
-        id = this.id;
-    var config = {};
-    publicInstanceMethods.forEach(function (k) {
-      var hookFn = publicInstance[k];
-
-      if (typeof hookFn === 'function' && hookFn !== _utils_types__WEBPACK_IMPORTED_MODULE_7__["noop"]) {
-        config[k] = true;
-      }
-    });
-    var componentsConfig = {};
-    getAllUsingComponents(this.pagePath).forEach(function (component) {
-      var ComponentClass = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_10__["default"])(component);
-      componentsConfig[component] = {
-        properties: ComponentClass.properties,
-        data: ComponentClass.data
-      };
-    }); // 此时发消息给bridge触发render的渲染，并且带了firstData过去
-
-    this.callRemote('self', 'startRender', {
-      id: id,
-      isRefresh: isRefresh,
-      publicInstance: config,
-      componentsConfig: componentsConfig,
-      data: _objectSpread({}, publicInstance.data)
-    });
   },
   getViewId: function getViewId() {
     return this.publicInstance.$viewId;
@@ -10461,7 +10447,7 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     });
   },
   updateComponents: function updateComponents(payload) {
-    var _this3 = this;
+    var _this4 = this;
 
     if (!payload) {
       return;
@@ -10479,7 +10465,7 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
       } else if (componentConfig[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["ComponentKeyIs"]]) {
         // incase update after unmount
         var ComponentClass = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_10__["default"])(componentConfig[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["ComponentKeyIs"]]);
-        componentInstances[id] = new ComponentClass(_this3, id, componentConfig);
+        componentInstances[id] = new ComponentClass(_this4, id, componentConfig);
         componentInstances[id].ready();
       }
     });
@@ -10487,10 +10473,10 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     this.unmountComponents(unmountedKeys);
   },
   update: function update(payload) {
-    var _this4 = this;
+    var _this5 = this;
 
     this.batchedUpdates(function () {
-      _this4.updateComponents(payload);
+      _this5.updateComponents(payload);
     });
   },
   postMessage: function postMessage(data) {
@@ -11637,7 +11623,9 @@ g.importScripts = g.importScripts || importScriptsPolyfill;
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _apis___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/apis/ */ "./src/apis/index.worker.js");
-/* harmony import */ var _framework_index_worker__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./framework/index.worker */ "./src/framework/index.worker.js");
+/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
+/* harmony import */ var _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./framework/index.worker */ "./src/framework/index.worker.js");
+
 
 
 
@@ -11645,24 +11633,24 @@ var __mpStartTime = Date.now();
 
 self.MP = {
   bridge: _apis___WEBPACK_IMPORTED_MODULE_0__["default"],
-  EventHub: _framework_index_worker__WEBPACK_IMPORTED_MODULE_1__["EventHub"],
-  getStartupParams: _framework_index_worker__WEBPACK_IMPORTED_MODULE_1__["getStartupParams"],
-  setStartupParams: _framework_index_worker__WEBPACK_IMPORTED_MODULE_1__["setStartupParams"],
-  getApp: _framework_index_worker__WEBPACK_IMPORTED_MODULE_1__["getApp"],
-  App: _framework_index_worker__WEBPACK_IMPORTED_MODULE_1__["App"],
-  getCurrentPagesImpl: _framework_index_worker__WEBPACK_IMPORTED_MODULE_1__["getCurrentPagesImpl"],
-  getCurrentPageImpl: _framework_index_worker__WEBPACK_IMPORTED_MODULE_1__["getCurrentPageImpl"],
-  getCurrentPages: _framework_index_worker__WEBPACK_IMPORTED_MODULE_1__["getCurrentPages"],
-  getAppImpl: _framework_index_worker__WEBPACK_IMPORTED_MODULE_1__["getAppImpl"],
-  Component: _framework_index_worker__WEBPACK_IMPORTED_MODULE_1__["Component"],
-  Page: _framework_index_worker__WEBPACK_IMPORTED_MODULE_1__["Page"],
-  Behavior: _framework_index_worker__WEBPACK_IMPORTED_MODULE_1__["registerBehavior"],
-  $global: _framework_index_worker__WEBPACK_IMPORTED_MODULE_1__["$global"]
+  EventHub: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["EventHub"],
+  getStartupParams: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["getStartupParams"],
+  setStartupParams: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["setStartupParams"],
+  getApp: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["getApp"],
+  App: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["App"],
+  getCurrentPagesImpl: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["getCurrentPagesImpl"],
+  getCurrentPageImpl: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["getCurrentPageImpl"],
+  getCurrentPages: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["getCurrentPages"],
+  getAppImpl: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["getAppImpl"],
+  Component: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["Component"],
+  Page: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["Page"],
+  Behavior: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["registerBehavior"],
+  $global: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["$global"]
 };
 
 var __mpCosts = Date.now() - __mpStartTime;
 
-console.log("framework: worker bundle costs ".concat(__mpCosts, " ms"));
+Object(_utils_log__WEBPACK_IMPORTED_MODULE_1__["debug"])('framework', "worker bundle costs ".concat(__mpCosts, " ms"));
 
 /***/ }),
 
@@ -12477,13 +12465,14 @@ function isDebugFramework() {
 function isDebugSupported(type) {
   var isMatch = debugMatchCache[type];
 
-  if (isMatch === undefined) {
+  if (typeof isMatch === 'undefined') {
     var _getStartupParams = Object(_startupParams__WEBPACK_IMPORTED_MODULE_0__["getStartupParams"])();
 
     var debug = _getStartupParams.debug;
 
     if (debug) {
-      debugMatchCache[type] = isMatch = !!debug.match(new RegExp("\\b".concat(type, "\\b")));
+      isMatch = !!debug.match(new RegExp("\\b".concat(type, "\\b")));
+      debugMatchCache[type] = isMatch;
     }
   }
 
@@ -13106,6 +13095,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "logSystemInfo", function() { return logSystemInfo; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "compareSystemVersion", function() { return compareSystemVersion; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "compareUCVersion", function() { return compareUCVersion; });
+/* harmony import */ var _log__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./log */ "./src/utils/log.js");
+
 var ua = navigator.userAgent || navigator.swuserAgent;
 
 var _systemVersion = ua.match(/AlipayClient\/(\d+\.\d+\.\d+)/);
@@ -13174,7 +13165,7 @@ function compareVersion(version, targetVersion) {
 }
 
 function logSystemInfo() {
-  console.log('SDKVersion: '.concat(SDKVersion));
+  Object(_log__WEBPACK_IMPORTED_MODULE_0__["default"])('version: '.concat(SDKVersion));
 }
 
 function compareSystemVersion(targetVersion) {
@@ -13217,7 +13208,7 @@ function noop() {
  */
 
 function getType(x) {
-  return Object.prototype.toString.call(x).slice(8, -1).toLowerCase();
+  return Object.prototype.toString.call(x).slice(8, -1);
 }
 
 /***/ }),

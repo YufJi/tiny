@@ -22,7 +22,7 @@ export default function Component(setupConfig) {
   const { init, ancestors } = createBehavior(`component-behavior-${uid++}`, setupConfig);
 
   $global.componentsConfig[is] = {
-    publicInstance: init,
+    init,
     usingComponents,
   };
 

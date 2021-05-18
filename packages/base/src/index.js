@@ -15,6 +15,7 @@ import {
 } from '@/components/';
 import Nerv from '@/nerv';
 
+import { debug } from '@/utils/log';
 import {
   EventHub,
   App,
@@ -77,4 +78,4 @@ self.MP = {
 };
 
 const __mpCosts = Date.now() - __mpStartTime;
-console.log(`framework: web bundle costs ${__mpCosts} ms`);
+debug('framework', `web bundle costs ${__mpCosts} ms`);

@@ -113,10 +113,10 @@ function getAllUsingComponents(pagePath) {
 
 PageComponent.prototype = {
   ...MessageHandleMixin,
-  initData() {
+  initData(isRefresh = false) {
     const { publicInstance, id } = this;
-    console.log('initData publicInstance', publicInstance);
     const config = {};
+
     publicInstanceMethods.forEach((k) => {
       const hookFn = publicInstance[k];
       if (typeof hookFn === 'function' && hookFn !== noop) {
@@ -126,21 +126,20 @@ PageComponent.prototype = {
 
     this.callRemote('self', 'onInitDataReady', {
       id,
-      isRefresh: false,
+      isRefresh,
       publicInstance: {
         data: publicInstance.data,
         ...config,
       },
-      customComponents: this.getAllComponents(),
+      customComponents: this.getCustomComponents(),
     });
   },
   load() {
     // in case pageResume following appResume, tab page??
     if (!this.$loadTime) {
       this.$loadTime = Date.now();
-      // setData will be merged with startRender
       this._disableRemoteData = true;
-      log('framework: page onLoad', this.pagePath);
+      debug('framework', ' page onLoad', this.pagePath);
       EventHub.emit('pageLoad', { page: this });
       invokeWithGuardAndReThrow(this.publicInstance.onLoad, this.publicInstance, this.query);
       this._disableRemoteData = false;
@@ -152,11 +151,10 @@ PageComponent.prototype = {
         this.onTabItemTap(this.tabProps);
       }
     }
-    // this.startRender();
   },
   refresh() {
     this.unmountAllComponents();
-    this.startRender(true);
+    this.initData(true);
   },
   show() {
     if (this.unloaded) {
@@ -173,7 +171,8 @@ PageComponent.prototype = {
     this.shown = true;
     EventHub.emit('enterPage', { page: this });
     this.executeUserMethod('onShow');
-    log('framework: page onShow', this.pagePath);
+    this.callRemote('self', 'onShowReady');
+    debug('framework', 'page onShow', this.pagePath);
   },
   ready(payload) {
     if (this.unloaded) {
@@ -189,11 +188,22 @@ PageComponent.prototype = {
       this.initialCallbacks.forEach((fn) => {
         return fn();
       });
+
+      this.callComponentLifetime('ready');
       this.executeUserMethod('onReady');
-      log('framework: page onReady', this.pagePath);
+
+      debug('framework', 'page onReady', this.pagePath);
     });
   },
-
+  callComponentLifetime(lifecycle) {
+    const { componentInstances } = this;
+    objectKeys(componentInstances).forEach((id) => {
+      const instance = this.getComponentInstance(id);
+      if (instance) {
+        instance.ready();
+      }
+    });
+  },
   pullDownRefresh(e) {
     EventHub.emit('pullDownRefresh', { page: this });
     this.executeUserMethod('onPullDownRefresh', [e]);
@@ -212,10 +222,10 @@ PageComponent.prototype = {
     EventHub.emit('leavePage', { page: this });
     EventHub.emit('pageHide', { page: this });
     this.executeUserMethod('onHide');
-    log('framework: page onHide', this.pagePath);
+    debug('framework', ' page onHide', this.pagePath);
   },
   unload() {
-    log('framework: page onUnload', this.pagePath);
+    debug('framework', ' page onUnload', this.pagePath);
     if (this.unloaded || !this.$loadTime) {
     // remove from page stack
       EventHub.emit('pageUnload', { page: this });
@@ -234,16 +244,16 @@ PageComponent.prototype = {
       oldComponentInstances[k].unload();
     });
   },
-  getAllComponents() {
+  getCustomComponents() {
     const customComponents = {};
     getAllUsingComponents(this.pagePath).forEach((is) => {
-      const { publicInstance } = $global.componentsConfig[is];
+      const { init } = $global.componentsConfig[is];
 
       customComponents[is] = {
-        properties: mapValues(publicInstance.properties, (item) => {
-          return { type: item.type, value: item.value };
+        properties: mapValues(init.properties, (item) => {
+          return { type: item.type.name, value: item.value };
         }),
-        data: publicInstance.data,
+        data: init.data,
       };
     });
 
@@ -251,35 +261,6 @@ PageComponent.prototype = {
   },
   isLoaded() {
     return !!this.$loadTime && !this.unloaded;
-  },
-  startRender(isRefresh) {
-    const { publicInstance, id } = this;
-
-    const config = {};
-    publicInstanceMethods.forEach((k) => {
-      const hookFn = publicInstance[k];
-      if (typeof hookFn === 'function' && hookFn !== noop) {
-        config[k] = true;
-      }
-    });
-    const componentsConfig = {};
-
-    getAllUsingComponents(this.pagePath).forEach((component) => {
-      const ComponentClass = getComponentClass(component);
-      componentsConfig[component] = {
-        properties: ComponentClass.properties,
-        data: ComponentClass.data,
-      };
-    });
-
-    // 此时发消息给bridge触发render的渲染，并且带了firstData过去
-    this.callRemote('self', 'startRender', {
-      id,
-      isRefresh,
-      publicInstance: config,
-      componentsConfig,
-      data: { ...publicInstance.data },
-    });
   },
   getViewId() {
     return this.publicInstance.$viewId;
@@ -452,7 +433,7 @@ PageComponent.prototype = {
     const _this = this;
 
     this.batchedUpdates(() => {
-      invokeWithGuardAndReThrow( _this.publicInstance[method], _this.publicInstance, ...args);
+      invokeWithGuardAndReThrow(_this.publicInstance[method], _this.publicInstance, ...args);
     });
   },
   onPageScroll(...args) {

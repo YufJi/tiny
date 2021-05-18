@@ -1,3 +1,5 @@
+import log from './log';
+
 const ua = navigator.userAgent || navigator.swuserAgent;
 const _systemVersion = ua.match(/AlipayClient\/(\d+\.\d+\.\d+)/);
 const _UCVersion = ua.match(/UCBS\/(\d+\.\d+)/);
@@ -53,7 +55,7 @@ function compareVersion(version, targetVersion) {
 }
 
 function logSystemInfo() {
-  console.log(`${'SDKVersion: '}${SDKVersion}`);
+  log(`${'version: '}${SDKVersion}`);
 }
 
 function compareSystemVersion(targetVersion) {

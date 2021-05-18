@@ -121,7 +121,6 @@ class TemplateTransformer extends Transformer {
         return undefined;
       },
       tagProcessor: ({ node, tag, attrs, transformedAttrs }) => {
-        // IDE的构建统计，容器需要
         if (
           typeof global !== 'undefined'
           && typeof global.miniComponentSet !== 'undefined'
@@ -132,8 +131,6 @@ class TemplateTransformer extends Transformer {
         const componentInfo = usingComponents && usingComponents[tag];
         /* 自定义组件 */
         if (componentInfo || tag === 'component') {
-          // prevent 'babel-plugin-transform-react-constant-elements'
-          transformedAttrs.$isCustomComponent = '{this.$isCustomComponent}';
           // for devtools inspect
           transformedAttrs[tagAttrName] = `"${tag}"`;
           transformedAttrs[ownerAttrName] = '{this}';

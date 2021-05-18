@@ -15,10 +15,18 @@ Page({
   // 监听生命周期回调 onShow
   onShow() {
     // 设置全局数据到当前页面数据
-    this.setData({ todos: app.todos });
+    this.setData({ 
+      todos: app.todos,
+    });
+    this.setData({
+      text: 'onshow'
+    })
     console.log('page show');
   },
   onReady() {
+    this.setData({
+      text: 'ready'
+    })
     console.log('page ready');
   },
 

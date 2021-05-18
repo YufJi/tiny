@@ -1,4 +1,4 @@
-import Nerv, { createNervClass, unstable_batchedUpdates } from '@/nerv';
+import Nerv, { createNervClass, unstable_batchedUpdates, nextTick } from '@/nerv';
 
 import addEvents from '@/utils/addEvents';
 import {
@@ -13,19 +13,16 @@ import {
 import objectKeys from '@/utils/objectKeys';
 import { getOpFn } from '@/utils/setData';
 import { debug } from '@/utils/log';
-import isEmpty from '@/utils/isEmpty';
 import MessageHandleMixin from '../mixins/MessageHandleMixin';
 import RefMixin from '../mixins/RefMixin';
 import { setCurrentPageImpl } from '../App';
 import EventHub from '../EventHub';
-import { setComponentsConfig } from './CustomComponent';
 import $global from '../common/global';
 import { rpx2px } from '../utils/unit';
 import Platform from '../Platform';
+import Scene from './Scene';
 
-const renderCache = {};
 const styleSheetCaches = {};
-
 function getStyleSheet(pagePath) {
   if (pagePath in styleSheetCaches) {
     return styleSheetCaches[pagePath];
@@ -41,6 +38,7 @@ function getStyleSheet(pagePath) {
   return stylesheet;
 }
 
+const renderCache = {};
 function getRender(pagePath) {
   if (pagePath in renderCache) {
     return renderCache[pagePath];
@@ -53,12 +51,6 @@ function getRender(pagePath) {
   renderCache[pagePath] = render;
   return render;
 }
-
-const onReachBottomDistance = 50;
-const headNode = document.getElementsByTagName('head')[0];
-// special for 1rpx or 2rpx
-const remReg = rpx2px(2) < 1 ? /\b0\.0[12]rem/g : rpx2px(1) < 1 ? /\b0\.01rem/g : null;
-const replacer = Platform.browser === 'ios' ? '0.5px' : '1px';
 
 export default createNervClass({
   $isCustomComponent: false,
@@ -74,9 +66,31 @@ export default createNervClass({
     this.self = this;
     this.publicInstance = {};
 
-    return {};
+    return {
+      __InitDataReady__: false,
+    };
   },
   componentDidMount() {
+    this.insertStyle();
+
+    Object.assign(this, {
+      bridge: $global.bridge,
+      renderSeq: 1,
+    });
+
+    setCurrentPageImpl(this);
+
+    this.initMessageChannel();
+  },
+  UNSAFE_componentWillUpdate() {
+    this.renderSeq+=1;
+  },
+  insertStyle() {
+    const headNode = document.getElementsByTagName('head')[0];
+    // special for 1rpx or 2rpx
+    const remReg = rpx2px(2) < 1 ? /\b0\.0[12]rem/g : rpx2px(1) < 1 ? /\b0\.01rem/g : null;
+    const replacer = Platform.browser === 'ios' ? '0.5px' : '1px';
+
     const stylesheet = getStyleSheet(this.pagePath);
     if (stylesheet) {
       const styleNode = document.createElement('style');
@@ -87,70 +101,21 @@ export default createNervClass({
       styleNode.innerHTML = styleString;
       headNode.appendChild(styleNode);
     }
-
-    Object.assign(this, {
-      bridge: $global.bridge,
-      renderSeq: 1,
-    });
-
-    setCurrentPageImpl(this);
-
-    this.initMessageChannel();
-    const e = { page: this };
-    EventHub.emit('pageLoad', e);
-
-    // this.callRemote('self', 'load');
-    console.log('page componentDidMount');
-  },
-  UNSAFE_componentWillUpdate() {
-    this.renderSeq+=1;
   },
   onInitDataReady(data) {
-    console.log('onInitDataReady', data);
-    const { id, publicInstance, customComponents } = data;
+    debug('framework', `[RENDER] Page ${this.pagePath} onInitDataReady: `, data);
+    const _this = this;
+    const { id, publicInstance, customComponents, isRefresh } = data;
     this.publicInstance = publicInstance;
     this.setId(id);
     this.customComponents = customComponents;
-    this.initDataReady = true;
-    this.setState({
-      ...(publicInstance.data || {}),
-    });
-  },
-  initComponentData(params) {
-    const { id: componentId, is, data, properties } = params;
-    if (this.componentInstances[componentId]) {
-      setComponentsConfig({
-        is: { data, properties },
-      });
-
-      this.componentInstances[componentId].initData({
-        data,
-        properties,
-      });
-    }
-  },
-  /* 由worker触发 */
-  startRender(remoteConfig) {
-    const _this = this;
-
-    const { data, publicInstance = {}, id, isRefresh, componentsConfig } = remoteConfig;
-
-    this.publicInstance = publicInstance;
-    setComponentsConfig(componentsConfig);
-    this.setId(id);
     const now = Date.now();
     this.setState({
-      ...data,
+      ...(publicInstance.data || {}),
+      __InitDataReady__: true,
     }, () => {
       _this.logRenderTime(now);
-      const e = { page: _this };
-      EventHub.emit('pageReady', e);
 
-      if (isRefresh) {
-        e.payload && _this.callRemote('self', 'update', e.payload);
-      } else {
-        _this.callRemote('self', 'ready', e.payload);
-      }
       if (publicInstance.onReachBottom || publicInstance.onPageScroll) {
         addEvents(window, {
           scroll: _this.checkScroll,
@@ -158,7 +123,16 @@ export default createNervClass({
       }
     });
   },
+  onShowReady() {
+    setTimeout(() => {
+      debug('framework', `[RENDER] Page ${this.pagePath} onShowReady`);
+      const e = { page: this };
+      EventHub.emit('pageReady', e);
+      this.callRemote('self', 'ready', e.payload);
+    });
+  },
   checkScroll() {
+    const onReachBottomDistance = 50;
     const { innerHeight, pageYOffset } = window;
     const { scrollHeight } = document.body;
 
@@ -310,19 +284,24 @@ export default createNervClass({
   logRenderTime(now) {
     this.callRemote('self', 'console', 'log', `framework: render ${this.pagePath} costs ${Date.now() - now}ms.`);
   },
+  saveRoot(ref) {
+    this.root = ref;
+  },
   render() {
-    const data = this.state;
+    const { __InitDataReady__, ...data } = this.state;
 
-    console.log('data', data, this.customComponents, isEmpty(data));
-
-    if (!this.initDataReady) {
+    if (!__InitDataReady__) {
       return null;
     }
 
     return (
-      <div className="a-page tiny-page" ref={(ref) => this.root = ref}>
-        {getRender(this.pagePath).call(this, data)}
-      </div>
+      <Scene
+        pagePath={this.pagePath}
+        saveRoot={this.saveRoot}
+        __page={this}
+        __render={getRender(this.pagePath)}
+        data={data}
+      />
     );
   },
 });

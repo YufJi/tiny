@@ -1,13 +1,13 @@
 export const componentRegistry = {};
 const ComponentRegistry = {
-  registerComponent: function registerComponent(name, factory) {
-    if (componentRegistry[name]) {
+  registerComponent(is, factory) {
+    if (componentRegistry[is]) {
       return;
     }
-    componentRegistry[name] = factory;
+    componentRegistry[is] = factory;
   },
-  getComponent: function getComponent(name) {
-    return componentRegistry[name] && componentRegistry[name]();
+  getComponent(is) {
+    return componentRegistry[is] && componentRegistry[is]();
   },
 };
 

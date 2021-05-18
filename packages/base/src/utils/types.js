@@ -13,5 +13,5 @@ export function noop() { /* no opration */ }
  * @param x
  */
 export function getType(x) {
-  return Object.prototype.toString.call(x).slice(8, -1).toLowerCase();
+  return Object.prototype.toString.call(x).slice(8, -1);
 }

@@ -1,5 +1,6 @@
 import bridge from '@/apis/';
 
+import { debug } from '@/utils/log';
 import {
   EventHub,
   getStartupParams,
@@ -36,4 +37,4 @@ self.MP = {
 };
 
 const __mpCosts = Date.now() - __mpStartTime;
-console.log(`framework: worker bundle costs ${__mpCosts} ms`);
+debug('framework', `worker bundle costs ${__mpCosts} ms`);

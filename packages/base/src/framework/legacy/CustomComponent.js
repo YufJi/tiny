@@ -1,7 +1,6 @@
 import Nerv, { createNervClass } from '@/nerv';
 import { getOpFn } from '@/utils/setData';
 import objectKeys from '@/utils/objectKeys';
-import mapValues from 'lodash.mapvalues';
 import {
   PayloadKeyMountedComponents,
   PayloadKeyUnmountedComponents,
@@ -11,14 +10,14 @@ import {
   DiffKeyUpdated,
   DiffKeyDeleted,
 } from '@/utils/consts';
-
-import shallowEqual from '@/utils/shallowEqual';
+import { debug } from '@/utils/log';
 
 import $global from '../common/global';
 import EventHub from '../EventHub';
 import PureRenderMixin from '../mixins/PureRenderMixin';
 import transformChildrenToSlots from '../utils/transformChildrenToSlots';
 import normalizeComponentProps from '../utils/normalizeComponentProps';
+import { getType } from '../../utils/types';
 
 let componentId = 1;
 let mountedComponents;
@@ -42,26 +41,7 @@ EventHub.addListener(['pageLoad', 'pageReady', 'pageUpdate'], (e) => {
   reset();
 });
 
-export function setComponentsConfig(componentsConfig) {
-  if (!componentsConfig) {
-    return;
-  }
-
-  for (const is in componentsConfig) {
-    if (Object.hasOwnProperty.call(componentsConfig, is)) {
-      $global.componentsConfig[is] = $global.componentsConfig[is] || {};
-      $global.componentsConfig[is].user = componentsConfig[is];
-    }
-  }
-}
-
 const renderCache = {};
-
-function getComponentConfig(is) {
-  const userConfig = $global.componentsConfig[is].user || {};
-
-  return userConfig;
-}
 
 function getRender(is) {
   if (is in renderCache) {
@@ -92,7 +72,7 @@ export default (is) => createNervClass({
       for (const key in nextProps) {
         if (nextProps.hasOwnProperty(key)) {
           const nextProp = nextProps[key];
-          if (properties.hasOwnProperty(key)) {
+          if (properties.hasOwnProperty(key) && getType(nextProp) === properties[key].type) {
             changedProps[key] = nextProp;
           }
         }
@@ -110,22 +90,18 @@ export default (is) => createNervClass({
     this.properties = properties;
     this.eventHandlers = {};
 
+    this.prevProps = {};
     __page.componentInstances[this.id] = this;
     __page.fireComponentLifecycle(this.recordMounted(false), 'created');
     return { ...data };
   },
-
   componentDidMount() {
-    console.log('com componentDidMount');
     const { __page } = this.props;
 
-    const info = this.recordMounted(this.diffProps({}));
+    const info = this.recordMounted(this.diffProps(this.prevProps));
     __page.fireComponentLifecycle(info, 'attached');
-
-    // __page.fireComponentLifecycle(info, 'ready');
   },
   componentDidUpdate(prevProps) {
-    console.log('com componentDidUpdate');
     const diffProps = this.diffProps(prevProps);
 
     if (diffProps) {
@@ -136,7 +112,7 @@ export default (is) => createNervClass({
     const { __page } = this.props;
     delete __page.componentInstances[this.id];
     unmountedComponents.push(this.id);
-    // __page.fireComponentLifecycle(this.recordMounted(false, false), 'unload');
+    __page.fireComponentLifecycle(this.recordMounted(false), 'unload');
   },
   setData(toBeData, callback) {
     const data = this.state;
@@ -174,8 +150,6 @@ export default (is) => createNervClass({
     const { properties = {} } = this;
     const { props } = this; // 当前props
 
-    console.log('当前props', props);
-
     const deleted = [];
     const updated = {};
     let isUpdated;
@@ -211,6 +185,7 @@ export default (is) => createNervClass({
       ret = ret || {};
       ret[DiffKeyDeleted] = deleted;
     }
+    this.prevProps = props;
     return ret;
   },
   normalizeProps(props) {
@@ -278,7 +253,13 @@ export default (is) => createNervClass({
         className={className}
         {...rest}
       >
-        {getRender(is).call(this, { $id: this.id, $scopedSlots, $slots, ...rest, ...this.state })}
+        {getRender(is).call(this, {
+          $id: this.id,
+          $scopedSlots,
+          $slots,
+          ...rest,
+          ...this.state,
+        })}
       </span>
     );
   },
