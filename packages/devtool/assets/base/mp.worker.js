@@ -10021,7 +10021,7 @@ function Component(config) {
     attached: function attached(info) {
       this.setComponentConfig(info);
       this.publicInstance.lifetimes.attached.call(this.publicInstance);
-      this.page.callRemote.apply(this.page, ['self', 'onComponentAttachedReady', this.id]);
+      this.page.callRemote.apply(this.page, ['self', 'onComponentAttached', this.id]);
     },
     ready: function ready(info) {
       info && this.setComponentConfig(info);
@@ -10222,6 +10222,8 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
       if (this._fromTabItemTap) {
         this.onTabItemTap(this.tabProps);
       }
+
+      this.callRemote('self', 'onLoaded');
     }
   },
   refresh: function refresh() {
@@ -10248,7 +10250,6 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
       page: this
     });
     this.executeUserMethod('onShow');
-    this.callRemote('self', 'onShowReady');
     Object(_utils_log__WEBPACK_IMPORTED_MODULE_4__["debug"])('framework', 'page onShow', this.pagePath);
   },
   ready: function ready(payload) {
@@ -10393,7 +10394,7 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     return instances;
   },
 
-  /* 组件内部绑定事件，触发通过worker page来执行 */
+  /* 自定义组件绑定事件触发通 */
   triggerComponentEvent: function triggerComponentEvent(componentId, eventName, eventObject) {
     var componentInstance = this.getComponentInstance(componentId);
 
@@ -10404,7 +10405,7 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     }
   },
 
-  /* 触发自定义组件生命周期 */
+  /* 自定义组件生命周期触发 */
   fireComponentLifecycle: function fireComponentLifecycle(info, type) {
     var is = info[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["ComponentKeyIs"]];
     var id = info[_utils_consts__WEBPACK_IMPORTED_MODULE_6__["ComponentKeyId"]];

@@ -91,7 +91,7 @@ export default (is) => createNervClass({
 
     this.prevProps = {};
     __page.componentInstances[this.id] = this;
-    __page.fireComponentLifecycle(this.recordMounted(false), 'created');
+    __page.callRemote('self', 'fireComponentLifecycle', this.recordMounted(false), 'created');
 
     return { ...data };
   },
@@ -99,7 +99,7 @@ export default (is) => createNervClass({
     const { __page } = this.props;
 
     const info = this.recordMounted(this.diffProps(this.prevProps));
-    __page.fireComponentLifecycle(info, 'attached');
+    __page.callRemote('self', 'fireComponentLifecycle', info, 'attached');
 
     this.prevProps = this.props;
   },
@@ -107,7 +107,7 @@ export default (is) => createNervClass({
     const { __page } = this.props;
 
     const info = this.recordMounted(this.diffProps(this.prevProps));
-    __page.fireComponentLifecycle(info, 'ready');
+    __page.callRemote('self', 'fireComponentLifecycle', info, 'ready');
   },
   componentDidUpdate(prevProps) {
     const diffProps = this.diffProps(prevProps);
@@ -120,7 +120,7 @@ export default (is) => createNervClass({
     const { __page } = this.props;
     delete __page.componentInstances[this.id];
     unmountedComponents.push(this.id);
-    __page.fireComponentLifecycle(this.recordMounted(false), 'unload');
+    __page.callRemote('self', 'fireComponentLifecycle', this.recordMounted(false), 'unload');
   },
   setData(toBeData, callback) {
     const data = this.state;

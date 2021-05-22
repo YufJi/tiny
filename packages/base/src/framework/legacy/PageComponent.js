@@ -68,7 +68,7 @@ export default createNervClass({
     this.publicInstance = {};
 
     return {
-      __InitDataReady__: false,
+      __InitialDataReady__: false,
     };
   },
   componentDidMount() {
@@ -113,7 +113,7 @@ export default createNervClass({
     const now = Date.now();
     this.setState({
       ...(publicInstance.data || {}),
-      __InitDataReady__: true,
+      __InitialDataReady__: true,
     }, () => {
       _this.logRenderTime(now);
 
@@ -124,9 +124,10 @@ export default createNervClass({
       }
     });
   },
-  onShowReady() {
+  /* load完成 准备ready */
+  onLoaded() {
     setTimeout(() => {
-      debug('framework', `[RENDER] Page ${this.pagePath} onShowReady`);
+      debug('framework', `[RENDER] Page ${this.pagePath} onLoaded`);
       while (this.onShowReadyCallbacks.length) {
         const fn = this.onShowReadyCallbacks.shift();
         fn();
@@ -135,10 +136,10 @@ export default createNervClass({
       const e = { page: this };
       EventHub.emit('pageReady', e);
       this.callRemote('self', 'ready', e.payload);
-      this.didShow = true;
+      this.loaded = true;
     });
   },
-  onComponentAttachedReady(componentId) {
+  onComponentAttached(componentId) {
     const fn = () => {
       const component = this.componentInstances[componentId];
       if (component) {
@@ -146,7 +147,7 @@ export default createNervClass({
       }
     };
 
-    if (this.didShow) {
+    if (this.loaded) {
       fn();
     } else {
       this.onShowReadyCallbacks.push(fn);
@@ -197,10 +198,6 @@ export default createNervClass({
     if (component) {
       component.triggerEvent(eventName, detail, options);
     }
-  },
-  /* 触发worker */
-  fireComponentLifecycle(info, type) {
-    this.callRemote('self', 'fireComponentLifecycle', info, type);
   },
   receiveData(toBeData, callback) {
     const _this = this;
@@ -305,9 +302,9 @@ export default createNervClass({
     this.root = ref;
   },
   render() {
-    const { __InitDataReady__, ...data } = this.state;
+    const { __InitialDataReady__, ...data } = this.state;
 
-    if (!__InitDataReady__) {
+    if (!__InitialDataReady__) {
       return null;
     }
 

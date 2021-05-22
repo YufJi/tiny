@@ -150,6 +150,8 @@ PageComponent.prototype = {
       if (this._fromTabItemTap) {
         this.onTabItemTap(this.tabProps);
       }
+
+      this.callRemote('self', 'onLoaded');
     }
   },
   refresh() {
@@ -171,7 +173,6 @@ PageComponent.prototype = {
     this.shown = true;
     EventHub.emit('enterPage', { page: this });
     this.executeUserMethod('onShow');
-    this.callRemote('self', 'onShowReady');
     debug('framework', 'page onShow', this.pagePath);
   },
   ready(payload) {
@@ -284,7 +285,7 @@ PageComponent.prototype = {
     return instances;
   },
 
-  /* 组件内部绑定事件，触发通过worker page来执行 */
+  /* 自定义组件绑定事件触发通 */
   triggerComponentEvent(componentId, eventName, eventObject) {
     const componentInstance = this.getComponentInstance(componentId);
 
@@ -294,7 +295,8 @@ PageComponent.prototype = {
       });
     }
   },
-  /* 触发自定义组件生命周期 */
+
+  /* 自定义组件生命周期触发 */
   fireComponentLifecycle(info, type) {
     const is = info[ComponentKeyIs];
     const id = info[ComponentKeyId];

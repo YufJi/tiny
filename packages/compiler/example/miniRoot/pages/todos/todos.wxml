@@ -22,7 +22,7 @@
 
   <view class="todo-footer">
     <add-button  text="{{text}}" bind:click_me="clickCom"></add-button>
-    <add-button xx="xxx" text="{{text}}" bind:click_me="{{fn}}"></add-button>
+    <add-button wx:if="{{text === 'def'}}" xx="xxx" text="{{text}}" bind:click_me="{{fn}}"></add-button>
   </view>
 
   <view bind:tap="clickParent">

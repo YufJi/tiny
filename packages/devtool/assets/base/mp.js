@@ -5515,7 +5515,7 @@ function getRender(is) {
       this.prevProps = {};
       __page.componentInstances[this.id] = this;
 
-      __page.fireComponentLifecycle(this.recordMounted(false), 'created');
+      __page.callRemote('self', 'fireComponentLifecycle', this.recordMounted(false), 'created');
 
       return _objectSpread({}, data);
     },
@@ -5523,7 +5523,7 @@ function getRender(is) {
       var __page = this.props.__page;
       var info = this.recordMounted(this.diffProps(this.prevProps));
 
-      __page.fireComponentLifecycle(info, 'attached');
+      __page.callRemote('self', 'fireComponentLifecycle', info, 'attached');
 
       this.prevProps = this.props;
     },
@@ -5531,7 +5531,7 @@ function getRender(is) {
       var __page = this.props.__page;
       var info = this.recordMounted(this.diffProps(this.prevProps));
 
-      __page.fireComponentLifecycle(info, 'ready');
+      __page.callRemote('self', 'fireComponentLifecycle', info, 'ready');
     },
     componentDidUpdate: function componentDidUpdate(prevProps) {
       var diffProps = this.diffProps(prevProps);
@@ -5545,7 +5545,7 @@ function getRender(is) {
       delete __page.componentInstances[this.id];
       unmountedComponents.push(this.id);
 
-      __page.fireComponentLifecycle(this.recordMounted(false), 'unload');
+      __page.callRemote('self', 'fireComponentLifecycle', this.recordMounted(false), 'unload');
     },
     setData: function setData(toBeData, callback) {
       var data = this.state;
@@ -5809,7 +5809,7 @@ function getRender(pagePath) {
     this.self = this;
     this.publicInstance = {};
     return {
-      __InitDataReady__: false
+      __InitialDataReady__: false
     };
   },
   componentDidMount: function componentDidMount() {
@@ -5857,7 +5857,7 @@ function getRender(pagePath) {
     this.customComponents = customComponents;
     var now = Date.now();
     this.setState(_objectSpread(_objectSpread({}, publicInstance.data || {}), {}, {
-      __InitDataReady__: true
+      __InitialDataReady__: true
     }), function () {
       _this.logRenderTime(now);
 
@@ -5868,11 +5868,13 @@ function getRender(pagePath) {
       }
     });
   },
-  onShowReady: function onShowReady() {
+
+  /* load完成 准备ready */
+  onLoaded: function onLoaded() {
     var _this2 = this;
 
     setTimeout(function () {
-      Object(_utils_log__WEBPACK_IMPORTED_MODULE_5__["debug"])('framework', "[RENDER] Page ".concat(_this2.pagePath, " onShowReady"));
+      Object(_utils_log__WEBPACK_IMPORTED_MODULE_5__["debug"])('framework', "[RENDER] Page ".concat(_this2.pagePath, " onLoaded"));
 
       while (_this2.onShowReadyCallbacks.length) {
         var fn = _this2.onShowReadyCallbacks.shift();
@@ -5887,10 +5889,10 @@ function getRender(pagePath) {
 
       _this2.callRemote('self', 'ready', e.payload);
 
-      _this2.didShow = true;
+      _this2.loaded = true;
     });
   },
-  onComponentAttachedReady: function onComponentAttachedReady(componentId) {
+  onComponentAttached: function onComponentAttached(componentId) {
     var _this3 = this;
 
     var fn = function fn() {
@@ -5901,7 +5903,7 @@ function getRender(pagePath) {
       }
     };
 
-    if (this.didShow) {
+    if (this.loaded) {
       fn();
     } else {
       this.onShowReadyCallbacks.push(fn);
@@ -5965,11 +5967,6 @@ function getRender(pagePath) {
     if (component) {
       component.triggerEvent(eventName, detail, options);
     }
-  },
-
-  /* 触发worker */
-  fireComponentLifecycle: function fireComponentLifecycle(info, type) {
-    this.callRemote('self', 'fireComponentLifecycle', info, type);
   },
   receiveData: function receiveData(toBeData, callback) {
     var _this = this;
@@ -6091,10 +6088,10 @@ function getRender(pagePath) {
   },
   render: function render() {
     var _this$state = this.state,
-        __InitDataReady__ = _this$state.__InitDataReady__,
-        data = _objectWithoutProperties(_this$state, ["__InitDataReady__"]);
+        __InitialDataReady__ = _this$state.__InitialDataReady__,
+        data = _objectWithoutProperties(_this$state, ["__InitialDataReady__"]);
 
-    if (!__InitDataReady__) {
+    if (!__InitialDataReady__) {
       return null;
     }
 

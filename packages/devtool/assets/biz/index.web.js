@@ -667,14 +667,14 @@ function render(data) {
     __tag: "add-button",
     __owner: this,
     __page: this.$isCustomComponent ? this.props['__page'] : this
-  }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(AddButton, {
+  }), data['text'] === 'def' ? nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(AddButton, {
     xx: "xxx",
     text: data['text'],
     bindclick_me: $getEventHandler(this, data['fn']),
     __tag: "add-button",
     __owner: this,
     __page: this.$isCustomComponent ? this.props['__page'] : this
-  })]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
+  }) : null]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
     bindtap: $getEventHandler(this, "clickParent")
   }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
     className: "jyf",
