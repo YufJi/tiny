@@ -13,6 +13,7 @@ import {
 import objectKeys from '@/utils/objectKeys';
 import { getOpFn } from '@/utils/setData';
 import { debug } from '@/utils/log';
+import BasicEventMixin from '../mixins/BasicEventMixin';
 import MessageHandleMixin from '../mixins/MessageHandleMixin';
 import RefMixin from '../mixins/RefMixin';
 import { setCurrentPageImpl } from '../App';
@@ -55,7 +56,11 @@ function getRender(pagePath) {
 export default createNervClass({
   $isCustomComponent: false,
   displayName: 'PageComponent',
-  mixins: [MessageHandleMixin, RefMixin],
+  mixins: [
+    BasicEventMixin,
+    MessageHandleMixin,
+    RefMixin,
+  ],
   getInitialState() {
     const { pagePath } = this.props;
 
@@ -183,9 +188,11 @@ export default createNervClass({
       return name;
     }
     if (!this.eventHandlers[name]) {
-      const handle = this.eventHandlers[name] = function (...args) {
-        _this.callRemote.apply( _this, ['self', 'onRenderEvent', name].concat(args));
+      this.eventHandlers[name] = function (e, more) {
+        const event = _this.getNormalizedEvent(e, more);
+        _this.callRemote.apply( _this, ['self', 'onRenderEvent', name].concat(event));
       };
+      const handle = this.eventHandlers[name];
       handle.handleName = name;
       handle.type = 'page';
       handle.id = this.id;

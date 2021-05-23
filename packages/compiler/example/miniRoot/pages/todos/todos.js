@@ -35,6 +35,7 @@ Page({
   },
   // 事件处理函数
   onTodoChanged(e) {
+    console.log('e',e)
     // 修改全局数据
     const checkedTodos = e.detail.value;
     app.todos = app.todos.map((todo) => ({
@@ -56,11 +57,11 @@ Page({
       url: '../add-todo/add-todo',
     });
   },
-  clickParent() {
-    console.log('clickParent');
+  clickParent(e) {
+    console.log('clickParent', e);
   },
-  clickChild() {
-    console.log('clickChild');
+  clickChild(e) {
+    console.log('clickChild', e);
   },
   captureClickChild() {
     console.log('captureClickChild');

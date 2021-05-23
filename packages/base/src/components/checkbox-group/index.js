@@ -22,11 +22,17 @@ const CheckboxGroup = createComponent({
 
     this.updateValue(value2, value);
 
-    getPropsEvent.call(this, 'change')(this.props.$mp.getNormalizedEvent('change', {
+    // const event = this.props.$mp.getNormalizedEvent(e, {
+    //   detail: {
+    //     value: this.state.value,
+    //   },
+    // });
+
+    getPropsEvent.call(this, 'change')(e, {
       detail: {
         value: this.state.value,
       },
-    }));
+    });
   },
   updateValue(value, checked) {
     const allValue = this.state.value && this.state.value || [];

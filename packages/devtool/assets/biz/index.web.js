@@ -662,12 +662,14 @@ function render(data) {
   }))), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, null, $toString(data['text'])), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
     className: "todo-footer"
   }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(AddButton, {
+    id: "asd",
     text: data['text'],
     bindclick_me: $getEventHandler(this, "clickCom"),
     __tag: "add-button",
     __owner: this,
     __page: this.$isCustomComponent ? this.props['__page'] : this
   }), data['text'] === 'def' ? nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(AddButton, {
+    id: "asd",
     xx: "xxx",
     text: data['text'],
     bindclick_me: $getEventHandler(this, data['fn']),
@@ -681,6 +683,7 @@ function render(data) {
     "capture-bindtap": $getEventHandler(this, "captureClickChild"),
     style: "background: yellow;"
   }, $toString("capture child")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(View, {
+    "data-xhq": "jyf",
     bindtap: $getEventHandler(this, "clickChild"),
     style: "margin-top: 120rpx; background: red;"
   }, $toString("child"))])]));

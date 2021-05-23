@@ -7,6 +7,7 @@ export default createComponent({
 })(createNervClass({
   onClick() {
     const forProp = this.props.for;
+
     if (forProp) {
       const input = document.querySelector(`#${forProp} input,#${forProp} textarea`);
       if (input) {

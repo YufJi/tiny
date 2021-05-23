@@ -41,7 +41,7 @@ export default ({
       this.context.form.setFieldValue(this.name, value);
     }
   },
-  UNSAFE_componentWillReceiveProps(nextProps) {
+  componentWillReceiveProps(nextProps) {
     if (this.props.controlled) {
       return;
     }

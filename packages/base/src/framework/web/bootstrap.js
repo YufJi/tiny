@@ -9,7 +9,7 @@ import { loadPage } from '../SubPackage';
 const g = self;
 
 export default function (config, bridge) {
-  const { container = document.getElementById('root'), onRender = noop, onFail = noop, type } = config;
+  const { container = document.getElementById('__frame__'), onRender = noop, onFail = noop, type } = config;
   const pageInfo = getPageInfoFromUrl(location.href);
   debug('framework', 'pageInfo', pageInfo);
   const { pagePath } = pageInfo;

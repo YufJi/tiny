@@ -64,15 +64,10 @@ export default createNervClass({
       nodes.push(c);
     });
 
-    const clickable = {
-      'data-clickable': true,
-    };
-
     return Nerv.createElement('span', {
       className,
       style: retStyle,
       id,
-      ...clickable,
       ...$mp.getAriaProps(),
       ...rest,
     }, nodes);

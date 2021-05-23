@@ -11,6 +11,7 @@ import normalizeStyle from './normalizeStyle';
 import normalizeClassNameProps from './normalizeClassNameProps';
 import PureRenderMixin from '../mixins/PureRenderMixin';
 import TrackPageUpdateMixin from '../mixins/TrackPageUpdateMixin';
+import BasicEventMixin from '../mixins/BasicEventMixin';
 
 function getNormalizedSrc(source, page) {
   let src;
@@ -47,6 +48,8 @@ export default function createComponent(config = {}) {
       mixins.push(TrackPageUpdateMixin);
     }
 
+    mixins.push(BasicEventMixin);
+
     const Container = createNervClass({
       displayName: `MP(${tagName})`,
       mixins,
@@ -54,12 +57,14 @@ export default function createComponent(config = {}) {
         this.$mp = {
           ...this.$mp,
           bridge: $global.bridge,
-          getTargetForEvent: this.getTargetForEvent,
+
+          // getTargetForEvent: this.getTargetForEvent,
+          getDataset: this.getDataset,
+          getNormalizedEvent: this.getNormalizedEvent,
+
           getNormalizedStyle: this.getNormalizedStyle,
           getAriaProps: this.getAriaProps,
           getDataProps: this.getDataProps,
-          getDataset: this.getDataset,
-          getNormalizedEvent: this.getNormalizedEvent,
           getNormalizedSrc,
           tagName,
           page: this.context.$page,
@@ -68,7 +73,7 @@ export default function createComponent(config = {}) {
           $style: normalizeStyle(this),
         };
       },
-      UNSAFE_componentWillReceiveProps(nextProps) {
+      componentWillReceiveProps(nextProps) {
         if (this.props.style !== nextProps.style
                 // native need recomputed
                 || !Platform.browser && this.props.className !== nextProps.className) {
@@ -125,44 +130,44 @@ export default function createComponent(config = {}) {
         });
         return dataset;
       },
-      getTargetForEvent() {
-        const { props } = this;
+      // getTargetForEvent() {
+      //   const { props } = this;
 
-        return {
-          id: props.id,
-          tagName,
-          dataset: this.getDataset(),
-        };
-      },
-      /* 格式化event对象 */
-      getNormalizedEvent(eventParam, other) {
-        let eventType = eventParam;
-        let srcEvent;
-        if (eventType.eventType) {
-          srcEvent = eventType.srcEvent;
-          eventType = eventType.eventType;
-        }
-        const nativeEvent = srcEvent && srcEvent.nativeEvent || srcEvent;
-        const currentTarget = this.getTargetForEvent();
-        let target = nativeEvent && nativeEvent.$target || currentTarget;
-        if (nativeEvent && !nativeEvent.$target) {
-          nativeEvent.$target = target;
-        }
-        // bug compatibility
-        target = {
-          targetDataset: target.dataset,
-          ...target,
-          dataset: currentTarget.dataset,
-        };
+      //   return {
+      //     id: props.id,
+      //     tagName,
+      //     dataset: this.getDataset(),
+      //   };
+      // },
+      // /* 格式化event对象 */
+      // getNormalizedEvent(eventParam, other) {
+      //   let eventType = eventParam;
+      //   let srcEvent;
+      //   if (eventType.eventType) {
+      //     srcEvent = eventType.srcEvent;
+      //     eventType = eventType.eventType;
+      //   }
+      //   const nativeEvent = srcEvent && srcEvent.nativeEvent || srcEvent;
+      //   const currentTarget = this.getTargetForEvent();
+      //   let target = nativeEvent && nativeEvent.$target || currentTarget;
+      //   if (nativeEvent && !nativeEvent.$target) {
+      //     nativeEvent.$target = target;
+      //   }
+      //   // bug compatibility
+      //   target = {
+      //     targetDataset: target.dataset,
+      //     ...target,
+      //     dataset: currentTarget.dataset,
+      //   };
 
-        return {
-          type: eventType,
-          timeStamp: Date.now(),
-          target,
-          currentTarget,
-          ...other,
-        };
-      },
+      //   return {
+      //     type: eventType,
+      //     timeStamp: Date.now(),
+      //     target,
+      //     currentTarget,
+      //     ...other,
+      //   };
+      // },
       saveRef(c) {
         this.wrappedComponent = c;
       },

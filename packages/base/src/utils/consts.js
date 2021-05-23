@@ -31,3 +31,5 @@ export const DiffKeyUpdated = 'DiffKeyUpdated';
 export const DiffKeyDeleted = 'DiffKeyDeleted';
 
 export const ComponentKeyName = 'ComponentKeyName';
+
+export const ComponentPropsId = 'ComponentPropsId';

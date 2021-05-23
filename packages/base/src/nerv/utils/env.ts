@@ -1,5 +1,5 @@
 // tslint:disable-next-line
-export var global = (function () {
+export const global = (function () {
   let local;
 
   if (typeof global !== 'undefined') {

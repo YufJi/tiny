@@ -300,19 +300,17 @@ PageComponent.prototype = {
   fireComponentLifecycle(info, type) {
     const is = info[ComponentKeyIs];
     const id = info[ComponentKeyId];
-    const componentInstance = this.getComponentInstance(id);
+    let componentInstance = this.getComponentInstance(id);
 
     if (!componentInstance) {
       const { componentInstances } = this;
       const ComponentClass = getComponentClass(is);
-      const component = new ComponentClass(this, id, info);
+      componentInstance = new ComponentClass(this, id);
 
-      componentInstances[id] = component;
+      componentInstances[id] = componentInstance;
+    }
 
-      if (typeof component[type] === 'function') {
-        component[type]();
-      }
-    } else {
+    if (typeof componentInstance[type] === 'function') {
       componentInstance[type](info);
     }
   },

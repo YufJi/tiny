@@ -506,6 +506,9 @@ const skipProps = {
   key: 1,
   ref: 1,
   owner: 1,
+  /* 编译小程序，生成的prop */
+  __owner: 1,
+  __page: 1,
 };
 
 const IS_NON_DIMENSIONAL = /acit|ex(?:s|g|n|p|$)|rph|ows|mnc|ntw|ine[ch]|zoo|^ord/i;

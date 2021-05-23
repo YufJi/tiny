@@ -12,6 +12,7 @@ import {
   ComponentKeyDiffProps,
   DiffKeyUpdated,
   DiffKeyDeleted,
+  ComponentPropsId,
 } from '@/utils/consts';
 
 import getComponentClass from '../ComponentRegistry/getComponentClass';
@@ -28,7 +29,7 @@ export default function Component(config) {
     return getComponentProp(init, prop, useCache ? propsCache : useCache);
   }
 
-  function ComponentClass(page, id, componentConfig) {
+  function ComponentClass(page, id) {
     this.is = is;
     this.id = id;
     this.page = page;
@@ -72,8 +73,6 @@ export default function Component(config) {
     publicInstance.data = initialData;
 
     this.prevData = publicInstance.data;
-
-    this.setComponentConfig(componentConfig, true);
   }
 
   ComponentClass.getAllComponents = function () {
@@ -114,6 +113,7 @@ export default function Component(config) {
     },
     setComponentConfig(c, init) {
       const diffProps = c[ComponentKeyDiffProps];
+      const id = c[ComponentPropsId];
 
       const { publicInstance } = this;
 
@@ -136,12 +136,15 @@ export default function Component(config) {
         Object.assign(publicInstance.data, publicInstance.properties);
       }
 
+      publicInstance.id = id;
+
       if (!init && (prevProps !== publicInstance.properties || this.prevData !== publicInstance.data)) {
         this.prevData = publicInstance.data;
       }
     },
     // const COMPONENT_LIFETIMES = ['created', 'attached', 'ready', 'moved', 'detached', 'error'];
-    created() {
+    created(info) {
+      this.setComponentConfig(info, true);
       this.publicInstance.lifetimes.created.call(this.publicInstance);
     },
     attached(info) {
@@ -150,7 +153,7 @@ export default function Component(config) {
       this.page.callRemote.apply(this.page, ['self', 'onComponentAttached', this.id]);
     },
     ready(info) {
-      info && this.setComponentConfig(info);
+      this.setComponentConfig(info);
       this.publicInstance.lifetimes.ready.call(this.publicInstance);
     },
     unload() {

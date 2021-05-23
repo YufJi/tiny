@@ -9,12 +9,14 @@ import {
   ComponentKeyDiffProps,
   DiffKeyUpdated,
   DiffKeyDeleted,
+  ComponentPropsId,
 } from '@/utils/consts';
 import { debug } from '@/utils/log';
 
 import $global from '../common/global';
 import EventHub from '../EventHub';
 import PureRenderMixin from '../mixins/PureRenderMixin';
+import BasicEventMixin from '../mixins/BasicEventMixin';
 import transformChildrenToSlots from '../utils/transformChildrenToSlots';
 import normalizeComponentProps from '../utils/normalizeComponentProps';
 import { getType } from '../../utils/types';
@@ -60,6 +62,7 @@ export default (is) => createNervClass({
   $isCustomComponent: true,
   displayName: is,
   mixins: [
+    BasicEventMixin,
     PureRenderMixin,
   ],
   statics: {
@@ -82,7 +85,7 @@ export default (is) => createNervClass({
   },
 
   getInitialState() {
-    const { __page } = this.props;
+    const { __page, id } = this.props;
     this.is = is;
     this.id = this.id || ++componentId;
     const { properties, data } = __page.customComponents[is];
@@ -140,9 +143,11 @@ export default (is) => createNervClass({
     }, callback);
   },
   recordMounted(diffProps) {
+    const { id } = this.props;
     const info = {
       [ComponentKeyId]: this.id,
       [ComponentKeyIs]: this.is,
+      [ComponentPropsId]: id,
     };
 
     mountedComponents.push(info);
@@ -219,8 +224,9 @@ export default (is) => createNervClass({
     const { __page } = this.props;
 
     if (!eventHandlers[name]) {
-      const handle = function (...args) {
-        __page.callRemote.apply(__page, ['self', 'triggerComponentEvent', _this.id, name].concat(args));
+      const handle = function (e, more) {
+        const event = _this.getNormalizedEvent(e, more);
+        __page.callRemote.apply(__page, ['self', 'triggerComponentEvent', _this.id, name].concat(event));
       };
       handle.handleName = name;
       handle.type = 'component';

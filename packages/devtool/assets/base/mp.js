@@ -137,7 +137,7 @@ function _arrayWithoutHoles(arr) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return _iterableToArray; });
 function _iterableToArray(iter) {
-  if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter);
+  if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter);
 }
 
 /***/ }),
@@ -1230,7 +1230,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _web_loadFontFace__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./web/loadFontFace */ "./src/apis/web/loadFontFace.js");
 /* harmony import */ var _web_createSelectorQuery__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./web/createSelectorQuery */ "./src/apis/web/createSelectorQuery.js");
 /* harmony import */ var _web_IntersectionObserver__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./web/IntersectionObserver */ "./src/apis/web/IntersectionObserver.js");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -1831,7 +1831,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _utils_trackTap__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/utils/trackTap */ "./src/utils/trackTap.js");
 /* harmony import */ var _utils_eventReg__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/eventReg */ "./src/utils/eventReg.js");
 /* harmony import */ var _shared_Button__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../shared/Button */ "./src/components/shared/Button.js");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -2020,7 +2020,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _utils_eventReg__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/eventReg */ "./src/utils/eventReg.js");
 /* harmony import */ var _view_View__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../view/View */ "./src/components/view/View.js");
 /* harmony import */ var _form_mixin__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../form/mixin */ "./src/components/form/mixin.js");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -2048,12 +2048,17 @@ var CheckboxGroup = Object(_framework___WEBPACK_IMPORTED_MODULE_1__["createCompo
     var _e$detail = e.detail,
         value2 = _e$detail.value2,
         value = _e$detail.value;
-    this.updateValue(value2, value);
-    _utils_eventReg__WEBPACK_IMPORTED_MODULE_2__["getPropsEvent"].call(this, 'change')(this.props.$mp.getNormalizedEvent('change', {
+    this.updateValue(value2, value); // const event = this.props.$mp.getNormalizedEvent(e, {
+    //   detail: {
+    //     value: this.state.value,
+    //   },
+    // });
+
+    _utils_eventReg__WEBPACK_IMPORTED_MODULE_2__["getPropsEvent"].call(this, 'change')(e, {
       detail: {
         value: this.state.value
       }
-    }));
+    });
   },
   updateValue: function updateValue(value, checked) {
     var allValue = this.state.value && this.state.value || [];
@@ -2200,19 +2205,23 @@ __webpack_require__.r(__webpack_exports__);
     var context = this.context;
 
     if (context.checkboxGroup) {
-      context.checkboxGroup.onChange({
-        detail: {
-          value: checked,
-          value2: this.props.value
-        }
-      });
-    }
+      e.detail = {
+        value: checked,
+        value2: this.props.value
+      };
+      context.checkboxGroup.onChange(e);
+    } // const event = this.props.$mp.getNormalizedEvent(e, {
+    //   detail: {
+    //     value: checked,
+    //   },
+    // });
 
-    _utils_eventReg__WEBPACK_IMPORTED_MODULE_2__["getPropsEvent"].call(this, 'change')(this.props.$mp.getNormalizedEvent('change', {
+
+    _utils_eventReg__WEBPACK_IMPORTED_MODULE_2__["getPropsEvent"].call(this, 'change')(e, {
       detail: {
         value: checked
       }
-    }));
+    });
   },
   render: function render() {
     var _this$props = this.props,
@@ -2266,7 +2275,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _framework___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/framework/ */ "./src/framework/index.js");
 /* harmony import */ var _shared_Loading__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../shared/Loading */ "./src/components/shared/Loading.js");
 /* harmony import */ var _shared_Icon__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../shared/Icon */ "./src/components/shared/Icon.js");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -2318,7 +2327,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _framework___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/framework/ */ "./src/framework/index.js");
 /* harmony import */ var _view_View__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../view/View */ "./src/components/view/View.js");
 /* harmony import */ var _modeStyle__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./modeStyle */ "./src/components/image/modeStyle.js");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -2663,7 +2672,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _utils_callInternalAPI__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @/utils/callInternalAPI */ "./src/utils/callInternalAPI.js");
 /* harmony import */ var _framework___WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @/framework/ */ "./src/framework/index.js");
 /* harmony import */ var _form_mixin__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../form/mixin */ "./src/components/form/mixin.js");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -3207,7 +3216,7 @@ var Input = Object(_framework___WEBPACK_IMPORTED_MODULE_8__["createComponent"])(
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/nerv */ "./src/nerv/index.ts");
 /* harmony import */ var _framework___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/framework/ */ "./src/framework/index.js");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -3261,7 +3270,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _framework___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/framework/ */ "./src/framework/index.js");
 /* harmony import */ var _form_mixin__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../form/mixin */ "./src/components/form/mixin.js");
 /* harmony import */ var _view_View__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../view/View */ "./src/components/view/View.js");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -3480,7 +3489,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _utils_addEvents__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/addEvents */ "./src/utils/addEvents.js");
 /* harmony import */ var _utils_system__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/system */ "./src/utils/system.js");
 /* harmony import */ var _utils_supportsPassive__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/utils/supportsPassive */ "./src/utils/supportsPassive.js");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -3848,7 +3857,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _Loading__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./Loading */ "./src/components/shared/Loading.js");
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -3915,9 +3924,6 @@ var Button = /*#__PURE__*/function (_Nerv$PureComponent) {
           restProps = _objectWithoutProperties(_this$props, ["children", "className", "type", "size", "disabled", "loading", "activeClassName", "activeStopPropagation", "onClick", "delayPressIn", "delayPressOut", "$mp"]);
 
       var wrapCls = classnames__WEBPACK_IMPORTED_MODULE_1___default()((_classnames = {}, _defineProperty(_classnames, className, true), _defineProperty(_classnames, "".concat(prefixCls, "-primary"), type === 'primary'), _defineProperty(_classnames, "".concat(prefixCls, "-ghost"), type === 'ghost'), _defineProperty(_classnames, "".concat(prefixCls, "-warn"), type === 'warn'), _defineProperty(_classnames, "".concat(prefixCls, "-small"), size === 'mini'), _defineProperty(_classnames, "".concat(prefixCls, "-disabled"), disabled), _classnames));
-      var clickable = {
-        'data-clickable': true
-      };
       var delayProps = {};
 
       if (delayPressIn) {
@@ -3929,10 +3935,10 @@ var Button = /*#__PURE__*/function (_Nerv$PureComponent) {
       } // use div, button native is buggy @yiminghe
 
 
-      return _nerv__WEBPACK_IMPORTED_MODULE_0__["default"].createElement('a', _objectSpread(_objectSpread(_objectSpread({
+      return _nerv__WEBPACK_IMPORTED_MODULE_0__["default"].createElement('a', _objectSpread(_objectSpread({
         role: 'button',
         className: wrapCls
-      }, restProps), clickable), {}, {
+      }, restProps), {}, {
         onClick: disabled ? undefined : onClick,
         'aria-disabled': disabled
       }), loading ? _nerv__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(_Loading__WEBPACK_IMPORTED_MODULE_2__["default"], {
@@ -4286,7 +4292,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/nerv */ "./src/nerv/index.ts");
 /* harmony import */ var _view_View__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/view/View */ "./src/view/View.js");
 /* harmony import */ var _utils_TestMixin__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/TestMixin */ "./src/utils/TestMixin.js");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -4385,7 +4391,7 @@ function getValueFromProps(props) {
       this.context.form.setFieldValue(this.name, value);
     }
   },
-  UNSAFE_componentWillReceiveProps: function UNSAFE_componentWillReceiveProps(nextProps) {
+  componentWillReceiveProps: function componentWillReceiveProps(nextProps) {
     if (this.props.controlled) {
       return;
     }
@@ -4923,15 +4929,17 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _normalizeClassNameProps__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./normalizeClassNameProps */ "./src/framework/createComponent/normalizeClassNameProps.js");
 /* harmony import */ var _mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../mixins/PureRenderMixin */ "./src/framework/mixins/PureRenderMixin.js");
 /* harmony import */ var _mixins_TrackPageUpdateMixin__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ../mixins/TrackPageUpdateMixin */ "./src/framework/mixins/TrackPageUpdateMixin.js");
+/* harmony import */ var _mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ../mixins/BasicEventMixin */ "./src/framework/mixins/BasicEventMixin.js");
 function _objectWithoutProperties(source, excluded) { if (source == null) return {}; var target = _objectWithoutPropertiesLoose(source, excluded); var key, i; if (Object.getOwnPropertySymbols) { var sourceSymbolKeys = Object.getOwnPropertySymbols(source); for (i = 0; i < sourceSymbolKeys.length; i++) { key = sourceSymbolKeys[i]; if (excluded.indexOf(key) >= 0) continue; if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue; target[key] = source[key]; } } return target; }
 
 function _objectWithoutPropertiesLoose(source, excluded) { if (source == null) return {}; var target = {}; var sourceKeys = Object.keys(source); var key, i; for (i = 0; i < sourceKeys.length; i++) { key = sourceKeys[i]; if (excluded.indexOf(key) >= 0) continue; target[key] = source[key]; } return target; }
 
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 
 
 
@@ -4986,18 +4994,19 @@ function createComponent() {
       mixins.push(_mixins_TrackPageUpdateMixin__WEBPACK_IMPORTED_MODULE_11__["default"]);
     }
 
+    mixins.push(_mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_12__["default"]);
     var Container = Object(_nerv__WEBPACK_IMPORTED_MODULE_0__["createNervClass"])({
       displayName: "MP(".concat(tagName, ")"),
       mixins: mixins,
       getInitialState: function getInitialState() {
         this.$mp = _objectSpread(_objectSpread({}, this.$mp), {}, {
           bridge: _common_global__WEBPACK_IMPORTED_MODULE_5__["default"].bridge,
-          getTargetForEvent: this.getTargetForEvent,
+          // getTargetForEvent: this.getTargetForEvent,
+          getDataset: this.getDataset,
+          getNormalizedEvent: this.getNormalizedEvent,
           getNormalizedStyle: this.getNormalizedStyle,
           getAriaProps: this.getAriaProps,
           getDataProps: this.getDataProps,
-          getDataset: this.getDataset,
-          getNormalizedEvent: this.getNormalizedEvent,
           getNormalizedSrc: getNormalizedSrc,
           tagName: tagName,
           page: this.context.$page
@@ -5006,7 +5015,7 @@ function createComponent() {
           $style: Object(_normalizeStyle__WEBPACK_IMPORTED_MODULE_8__["default"])(this)
         };
       },
-      UNSAFE_componentWillReceiveProps: function UNSAFE_componentWillReceiveProps(nextProps) {
+      componentWillReceiveProps: function componentWillReceiveProps(nextProps) {
         if (this.props.style !== nextProps.style // native need recomputed
         || !_Platform__WEBPACK_IMPORTED_MODULE_7__["default"].browser && this.props.className !== nextProps.className) {
           this.setState({
@@ -5062,46 +5071,42 @@ function createComponent() {
         });
         return dataset;
       },
-      getTargetForEvent: function getTargetForEvent() {
-        var props = this.props;
-        return {
-          id: props.id,
-          tagName: tagName,
-          dataset: this.getDataset()
-        };
-      },
-
-      /* 格式化event对象 */
-      getNormalizedEvent: function getNormalizedEvent(eventParam, other) {
-        var eventType = eventParam;
-        var srcEvent;
-
-        if (eventType.eventType) {
-          srcEvent = eventType.srcEvent;
-          eventType = eventType.eventType;
-        }
-
-        var nativeEvent = srcEvent && srcEvent.nativeEvent || srcEvent;
-        var currentTarget = this.getTargetForEvent();
-        var target = nativeEvent && nativeEvent.$target || currentTarget;
-
-        if (nativeEvent && !nativeEvent.$target) {
-          nativeEvent.$target = target;
-        } // bug compatibility
-
-
-        target = _objectSpread(_objectSpread({
-          targetDataset: target.dataset
-        }, target), {}, {
-          dataset: currentTarget.dataset
-        });
-        return _objectSpread({
-          type: eventType,
-          timeStamp: Date.now(),
-          target: target,
-          currentTarget: currentTarget
-        }, other);
-      },
+      // getTargetForEvent() {
+      //   const { props } = this;
+      //   return {
+      //     id: props.id,
+      //     tagName,
+      //     dataset: this.getDataset(),
+      //   };
+      // },
+      // /* 格式化event对象 */
+      // getNormalizedEvent(eventParam, other) {
+      //   let eventType = eventParam;
+      //   let srcEvent;
+      //   if (eventType.eventType) {
+      //     srcEvent = eventType.srcEvent;
+      //     eventType = eventType.eventType;
+      //   }
+      //   const nativeEvent = srcEvent && srcEvent.nativeEvent || srcEvent;
+      //   const currentTarget = this.getTargetForEvent();
+      //   let target = nativeEvent && nativeEvent.$target || currentTarget;
+      //   if (nativeEvent && !nativeEvent.$target) {
+      //     nativeEvent.$target = target;
+      //   }
+      //   // bug compatibility
+      //   target = {
+      //     targetDataset: target.dataset,
+      //     ...target,
+      //     dataset: currentTarget.dataset,
+      //   };
+      //   return {
+      //     type: eventType,
+      //     timeStamp: Date.now(),
+      //     target,
+      //     currentTarget,
+      //     ...other,
+      //   };
+      // },
       saveRef: function saveRef(c) {
         this.wrappedComponent = c;
       },
@@ -5419,20 +5424,22 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../common/global */ "./src/framework/common/global.js");
 /* harmony import */ var _EventHub__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../EventHub */ "./src/framework/EventHub.js");
 /* harmony import */ var _mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../mixins/PureRenderMixin */ "./src/framework/mixins/PureRenderMixin.js");
-/* harmony import */ var _utils_transformChildrenToSlots__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../utils/transformChildrenToSlots */ "./src/framework/utils/transformChildrenToSlots.js");
-/* harmony import */ var _utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../utils/normalizeComponentProps */ "./src/framework/utils/normalizeComponentProps.js");
-/* harmony import */ var _utils_types__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../../utils/types */ "./src/utils/types.js");
+/* harmony import */ var _mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../mixins/BasicEventMixin */ "./src/framework/mixins/BasicEventMixin.js");
+/* harmony import */ var _utils_transformChildrenToSlots__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../utils/transformChildrenToSlots */ "./src/framework/utils/transformChildrenToSlots.js");
+/* harmony import */ var _utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../utils/normalizeComponentProps */ "./src/framework/utils/normalizeComponentProps.js");
+/* harmony import */ var _utils_types__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ../../utils/types */ "./src/utils/types.js");
 function _extends() { _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
 
 function _objectWithoutProperties(source, excluded) { if (source == null) return {}; var target = _objectWithoutPropertiesLoose(source, excluded); var key, i; if (Object.getOwnPropertySymbols) { var sourceSymbolKeys = Object.getOwnPropertySymbols(source); for (i = 0; i < sourceSymbolKeys.length; i++) { key = sourceSymbolKeys[i]; if (excluded.indexOf(key) >= 0) continue; if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue; target[key] = source[key]; } } return target; }
 
 function _objectWithoutPropertiesLoose(source, excluded) { if (source == null) return {}; var target = {}; var sourceKeys = Object.keys(source); var key, i; for (i = 0; i < sourceKeys.length; i++) { key = sourceKeys[i]; if (excluded.indexOf(key) >= 0) continue; target[key] = source[key]; } return target; }
 
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 
 
 
@@ -5482,7 +5489,7 @@ function getRender(is) {
   return Object(_nerv__WEBPACK_IMPORTED_MODULE_0__["createNervClass"])({
     $isCustomComponent: true,
     displayName: is,
-    mixins: [_mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_7__["default"]],
+    mixins: [_mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_8__["default"], _mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_7__["default"]],
     statics: {
       is: is,
       getDerivedStateFromProps: function getDerivedStateFromProps(nextProps, state) {
@@ -5494,7 +5501,7 @@ function getRender(is) {
           if (nextProps.hasOwnProperty(key)) {
             var nextProp = nextProps[key];
 
-            if (properties.hasOwnProperty(key) && Object(_utils_types__WEBPACK_IMPORTED_MODULE_10__["getType"])(nextProp) === properties[key].type) {
+            if (properties.hasOwnProperty(key) && Object(_utils_types__WEBPACK_IMPORTED_MODULE_11__["getType"])(nextProp) === properties[key].type) {
               changedProps[key] = nextProp;
             }
           }
@@ -5504,7 +5511,9 @@ function getRender(is) {
       }
     },
     getInitialState: function getInitialState() {
-      var __page = this.props.__page;
+      var _this$props = this.props,
+          __page = _this$props.__page,
+          id = _this$props.id;
       this.is = is;
       this.id = this.id || ++componentId;
       var _page$customComponen = __page.customComponents[is],
@@ -5565,7 +5574,8 @@ function getRender(is) {
     recordMounted: function recordMounted(diffProps) {
       var _info;
 
-      var info = (_info = {}, _defineProperty(_info, _utils_consts__WEBPACK_IMPORTED_MODULE_3__["ComponentKeyId"], this.id), _defineProperty(_info, _utils_consts__WEBPACK_IMPORTED_MODULE_3__["ComponentKeyIs"], this.is), _info);
+      var id = this.props.id;
+      var info = (_info = {}, _defineProperty(_info, _utils_consts__WEBPACK_IMPORTED_MODULE_3__["ComponentKeyId"], this.id), _defineProperty(_info, _utils_consts__WEBPACK_IMPORTED_MODULE_3__["ComponentKeyIs"], this.is), _defineProperty(_info, _utils_consts__WEBPACK_IMPORTED_MODULE_3__["ComponentPropsId"], id), _info);
       mountedComponents.push(info);
 
       if (diffProps) {
@@ -5586,10 +5596,10 @@ function getRender(is) {
       var updated = {};
       var isUpdated;
       var isDeleted;
-      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_9__["default"])(prevProps)).forEach(function (prevKey) {
+      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_10__["default"])(prevProps)).forEach(function (prevKey) {
         var prevProp = prevProps[prevKey];
 
-        if (properties.hasOwnProperty(prevKey) && Object(_utils_types__WEBPACK_IMPORTED_MODULE_10__["getType"])(prevProp) === properties[prevKey].type) {
+        if (properties.hasOwnProperty(prevKey) && Object(_utils_types__WEBPACK_IMPORTED_MODULE_11__["getType"])(prevProp) === properties[prevKey].type) {
           if (!(prevKey in props)) {
             deleted.push(prevKey);
             isDeleted = true;
@@ -5599,10 +5609,10 @@ function getRender(is) {
           }
         }
       });
-      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_9__["default"])(props)).forEach(function (key) {
+      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__["default"])(Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_10__["default"])(props)).forEach(function (key) {
         var prop = props[key];
 
-        if (properties.hasOwnProperty(key) && Object(_utils_types__WEBPACK_IMPORTED_MODULE_10__["getType"])(prop) === properties[key].type) {
+        if (properties.hasOwnProperty(key) && Object(_utils_types__WEBPACK_IMPORTED_MODULE_11__["getType"])(prop) === properties[key].type) {
           if (!(key in prevProps)) {
             updated[key] = prop;
             isUpdated = true;
@@ -5649,12 +5659,10 @@ function getRender(is) {
       var __page = this.props.__page;
 
       if (!eventHandlers[name]) {
-        var handle = function handle() {
-          for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-            args[_key] = arguments[_key];
-          }
+        var handle = function handle(e, more) {
+          var event = _this.getNormalizedEvent(e, more);
 
-          __page.callRemote.apply(__page, ['self', 'triggerComponentEvent', _this.id, name].concat(args));
+          __page.callRemote.apply(__page, ['self', 'triggerComponentEvent', _this.id, name].concat(event));
         };
 
         handle.handleName = name;
@@ -5670,8 +5678,8 @@ function getRender(is) {
 
       var __page = this.props.__page;
 
-      for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-        args[_key2] = arguments[_key2];
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
       }
 
       return (_page$$getRefHandler = __page.$getRefHandler).call.apply(_page$$getRefHandler, [__page].concat(args));
@@ -5685,11 +5693,11 @@ function getRender(is) {
     render: function render() {
       var _this2 = this;
 
-      var _this$props = this.props,
-          children = _this$props.children,
-          $scopedSlots = _this$props.$scopedSlots;
-      var props = Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_9__["default"])(this.props);
-      var $slots = Object(_utils_transformChildrenToSlots__WEBPACK_IMPORTED_MODULE_8__["default"])(children);
+      var _this$props2 = this.props,
+          children = _this$props2.children,
+          $scopedSlots = _this$props2.$scopedSlots;
+      var props = Object(_utils_normalizeComponentProps__WEBPACK_IMPORTED_MODULE_10__["default"])(this.props);
+      var $slots = Object(_utils_transformChildrenToSlots__WEBPACK_IMPORTED_MODULE_9__["default"])(children);
 
       var id = props.id,
           className = props.className,
@@ -5727,23 +5735,25 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
 /* harmony import */ var _utils_setData__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/setData */ "./src/utils/setData.js");
 /* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
-/* harmony import */ var _mixins_MessageHandleMixin__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../mixins/MessageHandleMixin */ "./src/framework/mixins/MessageHandleMixin.js");
-/* harmony import */ var _mixins_RefMixin__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../mixins/RefMixin */ "./src/framework/mixins/RefMixin.js");
-/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../App */ "./src/framework/App/index.js");
-/* harmony import */ var _EventHub__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../EventHub */ "./src/framework/EventHub.js");
-/* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../common/global */ "./src/framework/common/global.js");
-/* harmony import */ var _utils_unit__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ../utils/unit */ "./src/framework/utils/unit.js");
-/* harmony import */ var _Platform__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ../Platform */ "./src/framework/Platform/index.js");
-/* harmony import */ var _Scene__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ./Scene */ "./src/framework/legacy/Scene.js");
+/* harmony import */ var _mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../mixins/BasicEventMixin */ "./src/framework/mixins/BasicEventMixin.js");
+/* harmony import */ var _mixins_MessageHandleMixin__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../mixins/MessageHandleMixin */ "./src/framework/mixins/MessageHandleMixin.js");
+/* harmony import */ var _mixins_RefMixin__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../mixins/RefMixin */ "./src/framework/mixins/RefMixin.js");
+/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../App */ "./src/framework/App/index.js");
+/* harmony import */ var _EventHub__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../EventHub */ "./src/framework/EventHub.js");
+/* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ../common/global */ "./src/framework/common/global.js");
+/* harmony import */ var _utils_unit__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ../utils/unit */ "./src/framework/utils/unit.js");
+/* harmony import */ var _Platform__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ../Platform */ "./src/framework/Platform/index.js");
+/* harmony import */ var _Scene__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ./Scene */ "./src/framework/legacy/Scene.js");
 function _objectWithoutProperties(source, excluded) { if (source == null) return {}; var target = _objectWithoutPropertiesLoose(source, excluded); var key, i; if (Object.getOwnPropertySymbols) { var sourceSymbolKeys = Object.getOwnPropertySymbols(source); for (i = 0; i < sourceSymbolKeys.length; i++) { key = sourceSymbolKeys[i]; if (excluded.indexOf(key) >= 0) continue; if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue; target[key] = source[key]; } } return target; }
 
 function _objectWithoutPropertiesLoose(source, excluded) { if (source == null) return {}; var target = {}; var sourceKeys = Object.keys(source); var key, i; for (i = 0; i < sourceKeys.length; i++) { key = sourceKeys[i]; if (excluded.indexOf(key) >= 0) continue; target[key] = source[key]; } return target; }
 
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 
 
 
@@ -5766,7 +5776,7 @@ function getStyleSheet(pagePath) {
     return styleSheetCaches[pagePath];
   }
 
-  var setupConfig = _common_global__WEBPACK_IMPORTED_MODULE_10__["default"].pagesConfig[pagePath].system;
+  var setupConfig = _common_global__WEBPACK_IMPORTED_MODULE_11__["default"].pagesConfig[pagePath].system;
   var _stylesheet = setupConfig.stylesheet;
 
   if (_stylesheet) {
@@ -5785,7 +5795,7 @@ function getRender(pagePath) {
     return renderCache[pagePath];
   }
 
-  var setupConfig = _common_global__WEBPACK_IMPORTED_MODULE_10__["default"].pagesConfig[pagePath].system;
+  var setupConfig = _common_global__WEBPACK_IMPORTED_MODULE_11__["default"].pagesConfig[pagePath].system;
   var _render = setupConfig.render; // lazy require xml and css
 
   var render = _render();
@@ -5798,7 +5808,7 @@ function getRender(pagePath) {
 /* harmony default export */ __webpack_exports__["default"] = (Object(_nerv__WEBPACK_IMPORTED_MODULE_0__["createNervClass"])({
   $isCustomComponent: false,
   displayName: 'PageComponent',
-  mixins: [_mixins_MessageHandleMixin__WEBPACK_IMPORTED_MODULE_6__["default"], _mixins_RefMixin__WEBPACK_IMPORTED_MODULE_7__["default"]],
+  mixins: [_mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_6__["default"], _mixins_MessageHandleMixin__WEBPACK_IMPORTED_MODULE_7__["default"], _mixins_RefMixin__WEBPACK_IMPORTED_MODULE_8__["default"]],
   getInitialState: function getInitialState() {
     var pagePath = this.props.pagePath;
     this.pagePath = pagePath;
@@ -5815,10 +5825,10 @@ function getRender(pagePath) {
   componentDidMount: function componentDidMount() {
     this.insertStyle();
     Object.assign(this, {
-      bridge: _common_global__WEBPACK_IMPORTED_MODULE_10__["default"].bridge,
+      bridge: _common_global__WEBPACK_IMPORTED_MODULE_11__["default"].bridge,
       renderSeq: 1
     });
-    Object(_App__WEBPACK_IMPORTED_MODULE_8__["setCurrentPageImpl"])(this);
+    Object(_App__WEBPACK_IMPORTED_MODULE_9__["setCurrentPageImpl"])(this);
     this.initMessageChannel();
   },
   UNSAFE_componentWillUpdate: function UNSAFE_componentWillUpdate() {
@@ -5827,8 +5837,8 @@ function getRender(pagePath) {
   insertStyle: function insertStyle() {
     var headNode = document.getElementsByTagName('head')[0]; // special for 1rpx or 2rpx
 
-    var remReg = Object(_utils_unit__WEBPACK_IMPORTED_MODULE_11__["rpx2px"])(2) < 1 ? /\b0\.0[12]rem/g : Object(_utils_unit__WEBPACK_IMPORTED_MODULE_11__["rpx2px"])(1) < 1 ? /\b0\.01rem/g : null;
-    var replacer = _Platform__WEBPACK_IMPORTED_MODULE_12__["default"].browser === 'ios' ? '0.5px' : '1px';
+    var remReg = Object(_utils_unit__WEBPACK_IMPORTED_MODULE_12__["rpx2px"])(2) < 1 ? /\b0\.0[12]rem/g : Object(_utils_unit__WEBPACK_IMPORTED_MODULE_12__["rpx2px"])(1) < 1 ? /\b0\.01rem/g : null;
+    var replacer = _Platform__WEBPACK_IMPORTED_MODULE_13__["default"].browser === 'ios' ? '0.5px' : '1px';
     var stylesheet = getStyleSheet(this.pagePath);
 
     if (stylesheet) {
@@ -5885,7 +5895,7 @@ function getRender(pagePath) {
       var e = {
         page: _this2
       };
-      _EventHub__WEBPACK_IMPORTED_MODULE_9__["default"].emit('pageReady', e);
+      _EventHub__WEBPACK_IMPORTED_MODULE_10__["default"].emit('pageReady', e);
 
       _this2.callRemote('self', 'ready', e.payload);
 
@@ -5944,14 +5954,13 @@ function getRender(pagePath) {
     }
 
     if (!this.eventHandlers[name]) {
-      var handle = this.eventHandlers[name] = function () {
-        for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-          args[_key] = arguments[_key];
-        }
+      this.eventHandlers[name] = function (e, more) {
+        var event = _this.getNormalizedEvent(e, more);
 
-        _this.callRemote.apply(_this, ['self', 'onRenderEvent', name].concat(args));
+        _this.callRemote.apply(_this, ['self', 'onRenderEvent', name].concat(event));
       };
 
+      var handle = this.eventHandlers[name];
       handle.handleName = name;
       handle.type = 'page';
       handle.id = this.id;
@@ -6050,7 +6059,7 @@ function getRender(pagePath) {
     var e = {
       page: this
     };
-    _EventHub__WEBPACK_IMPORTED_MODULE_9__["default"].emit('pageUpdate', e);
+    _EventHub__WEBPACK_IMPORTED_MODULE_10__["default"].emit('pageUpdate', e);
 
     if (e.payload) {
       this.callRemote('self', 'update', e.payload);
@@ -6095,7 +6104,7 @@ function getRender(pagePath) {
       return null;
     }
 
-    return _nerv__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(_Scene__WEBPACK_IMPORTED_MODULE_13__["default"], {
+    return _nerv__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(_Scene__WEBPACK_IMPORTED_MODULE_14__["default"], {
       pagePath: this.pagePath,
       saveRoot: this.saveRoot,
       __page: this,
@@ -6185,6 +6194,324 @@ var Scene = /*#__PURE__*/function (_Nerv$Component) {
 }(_nerv__WEBPACK_IMPORTED_MODULE_0__["default"].Component);
 
 
+
+/***/ }),
+
+/***/ "./src/framework/mixins/BasicEventMixin.js":
+/*!*************************************************!*\
+  !*** ./src/framework/mixins/BasicEventMixin.js ***!
+  \*************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/nerv */ "./src/nerv/index.ts");
+/* harmony import */ var _utils_addEvents__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/addEvents */ "./src/utils/addEvents.js");
+/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
+/* harmony import */ var _utils_eventReg__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/eventReg */ "./src/utils/eventReg.js");
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+
+
+
+
+
+function defaultCreateTouchList() {
+  var touchList = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+  var list = [].slice.call(touchList, 0);
+  return list.map(function (item) {
+    return {
+      clientX: item.clientX,
+      clientY: item.clientY,
+      identifier: item.identifier,
+      pageX: item.pageX,
+      pageY: item.pageY
+    };
+  });
+}
+
+function callBubblesEvent(instance, eventType, srcEvent, more, capture) {
+  var catchHandler = instance.props[Object(_utils_eventReg__WEBPACK_IMPORTED_MODULE_3__["getPropsEventName"])(eventType, true, capture)];
+  var e = instance.getNormalizedEvent({
+    eventType: eventType,
+    srcEvent: srcEvent
+  }, more);
+  e.currentTarget = _objectSpread(_objectSpread({}, e.currentTarget), instance.getTargetForEvent());
+
+  if (catchHandler && srcEvent.stopPropagation) {
+    srcEvent.stopPropagation();
+    typeof catchHandler === 'function' && catchHandler(e);
+    return;
+  }
+
+  var onHandler = instance.props[Object(_utils_eventReg__WEBPACK_IMPORTED_MODULE_3__["getPropsEventName"])(eventType, false, capture)];
+
+  if (typeof onHandler === 'function') {
+    onHandler(e);
+  }
+}
+
+function defaultCreateTap(nativeEvent) {
+  var detail = {};
+
+  if (nativeEvent) {
+    nativeEvent = nativeEvent.nativeEvent || nativeEvent;
+
+    if ('pageX' in nativeEvent) {
+      detail.pageX = nativeEvent.pageX;
+      detail.pageY = nativeEvent.pageY;
+    }
+
+    if ('clientX' in nativeEvent) {
+      detail.clientX = nativeEvent.clientX;
+      detail.clientY = nativeEvent.clientY;
+    } else if ('pageX' in detail) {
+      detail.clientX = detail.pageX - window.pageXOffset;
+      detail.clientY = detail.pageY - window.pageYOffset;
+    }
+  }
+
+  return {
+    detail: detail
+  };
+}
+
+function detachScroll(instance) {
+  if (instance.detachScrollEvent) {
+    instance.detachScrollEvent.remove();
+    instance.detachScrollEvent = null;
+  }
+}
+
+function attachScroll(instance) {
+  var disableScroll = instance.props.disableScroll;
+  var detachScrollEvent = instance.detachScrollEvent;
+  var __basicEventRoot = instance.__basicEventRoot;
+
+  if (!__basicEventRoot) {
+    return;
+  }
+
+  if (!disableScroll && detachScrollEvent) {
+    return detachScroll(instance);
+  }
+
+  if (disableScroll && !detachScrollEvent) {
+    instance.detachScrollEvent = Object(_utils_addEvents__WEBPACK_IMPORTED_MODULE_1__["default"])(instance.__basicEventRoot, {
+      touchmove: function touchmove(e) {
+        e.preventDefault();
+      }
+    });
+  }
+}
+
+/* harmony default export */ __webpack_exports__["default"] = ({
+  // componentDidMount() {
+  //   this.__basicEventRoot = findDOMNode(this);
+  //   attachScroll(this);
+  // },
+  // componentDidUpdate() {
+  //   attachScroll(this);
+  // },
+  // componentWillUnmount() {
+  //   detachScroll(this);
+  // },
+  // recordTarget(srcEvent) {
+  //   const nativeEvent = srcEvent && srcEvent.nativeEvent;
+  //   if (nativeEvent && !nativeEvent.$target) {
+  //     nativeEvent.$target = this.getTargetForEvent();
+  //   }
+  // },
+  // hasEvent(event, capture) {
+  //   return getPropsEventName(event, false, capture) || getPropsEventName(event, true, capture);
+  // },
+  getDatasetForTarget: function getDatasetForTarget(target) {
+    var dataset = {};
+
+    for (var key in target.dataset) {
+      if (Object.hasOwnProperty.call(target.dataset, key)) {
+        var value = target.dataset[key];
+        dataset[key] = value;
+      }
+    }
+
+    return dataset;
+  },
+  getTargetForEvent: function getTargetForEvent(nativeEvent) {
+    var key = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'target';
+    var props = this.props;
+    var _nativeEvent$key = nativeEvent[key],
+        offsetLeft = _nativeEvent$key.offsetLeft,
+        offsetTop = _nativeEvent$key.offsetTop;
+    return {
+      id: props.id || '',
+      dataset: this.getDatasetForTarget(nativeEvent[key]),
+      offsetLeft: offsetLeft,
+      offsetTop: offsetTop
+    };
+  },
+  getDetailForEvent: function getDetailForEvent(nativeEvent) {
+    var eventType = nativeEvent.type;
+    var detail = {};
+
+    if (eventType === 'click') {
+      detail.x = nativeEvent.pageX;
+      detail.y = nativeEvent.pageY;
+    } else if (eventType === 'transitionend') {
+      detail.elapsedTime = nativeEvent.elapsedTime;
+      detail.propertyName = nativeEvent.propertyName;
+    } else if (eventType === 'animationstart' || eventType === 'animationiteration' || eventType === 'animationend') {
+      detail.elapsedTime = nativeEvent.elapsedTime;
+      detail.animationName = nativeEvent.animationName;
+    }
+
+    return detail;
+  },
+  getTouchesForEvent: function getTouchesForEvent(nativeEvent) {
+    var key = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'touches';
+
+    if (nativeEvent[key]) {
+      var list = [].slice.call(nativeEvent[key], 0);
+      return list.map(function (item) {
+        return {
+          clientX: item.clientX,
+          clientY: item.clientY,
+          identifier: item.identifier,
+          force: item.force,
+          pageX: item.pageX,
+          pageY: item.pageY
+        };
+      });
+    }
+  },
+
+  /* 格式化event对象 */
+  getNormalizedEvent: function getNormalizedEvent(nativeEvent) {
+    var more = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    var eventType = nativeEvent.type === 'click' ? 'tap' : nativeEvent.type;
+    var target = this.getTargetForEvent(nativeEvent);
+    var currentTarget = this.getTargetForEvent(nativeEvent, 'currentTarget');
+    var detail = this.getDetailForEvent(nativeEvent);
+    var touches = this.getTouchesForEvent(nativeEvent);
+    var changedTouches = this.getTouchesForEvent(nativeEvent, 'changedTouches');
+    return _objectSpread({
+      type: eventType,
+      timeStamp: Date.now(),
+      target: target,
+      currentTarget: currentTarget,
+      detail: detail,
+      touches: touches,
+      changedTouches: changedTouches
+    }, more);
+  } // onTap(srcEvent, capture = false) {
+  //   this.recordTarget(srcEvent);
+  //   // ios also trigger onTap after onLongTap
+  //   if (this.__longTapTriggered) {
+  //     return;
+  //   }
+  //   const eventName = 'tap';
+  //   if (this.hasEvent(eventName, capture)) {
+  //     callBubblesEvent(this, eventName, srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap), capture);
+  //   }
+  // },
+  // onTouchStart(srcEvent, capture = false) {
+  //   this.recordTarget(srcEvent);
+  //   this.__longTapTriggered = 0;
+  //   const eventName = 'touchstart';
+  //   if (this.hasEvent(eventName, capture)) {
+  //     callBubblesEvent(this, eventName, srcEvent, {
+  //       touches: createTouchList.call(this, srcEvent.touches),
+  //       changedTouches: createTouchList.call(this, srcEvent.changedTouches),
+  //     }, capture);
+  //   }
+  // },
+  // onTouchMove(srcEvent, capture = false) {
+  //   this.recordTarget(srcEvent);
+  //   const eventName = 'touchmove';
+  //   if (this.hasEvent(eventName, capture)) {
+  //     callBubblesEvent(this, eventName, srcEvent, {
+  //       touches: createTouchList.call(this, srcEvent.touches),
+  //       changedTouches: createTouchList.call(this, srcEvent.changedTouches),
+  //     }, capture);
+  //   }
+  // },
+  // onTouchEnd(srcEvent, capture = false) {
+  //   this.recordTarget(srcEvent);
+  //   const eventName = 'touchend';
+  //   if (this.hasEvent(eventName, capture)) {
+  //     callBubblesEvent(this, eventName, srcEvent, {
+  //       touches: createTouchList.call(this, srcEvent.touches),
+  //       changedTouches: createTouchList.call(this, srcEvent.changedTouches),
+  //     }, capture);
+  //   }
+  // },
+  // onTouchCancel(srcEvent, capture = false) {
+  //   this.recordTarget(srcEvent);
+  //   const eventName = 'touchcancel';
+  //   if (this.hasEvent(eventName, capture)) {
+  //     callBubblesEvent(this, eventName, srcEvent, {
+  //       touches: createTouchList.call(this, srcEvent.touches),
+  //       changedTouches: createTouchList.call(this, srcEvent.changedTouches),
+  //     }, capture);
+  //   }
+  // },
+  // onLongTap(srcEvent) {
+  //   this.__longTapTriggered = 1;
+  //   if (this.hasEvent('LongTap')) {
+  //     callBubblesEvent(this, 'longTap', srcEvent, createTap && createTap.call(this, srcEvent, defaultCreateTap));
+  //   }
+  // },
+  // onTransitionEnd(srcEvent, capture = false) {
+  //   this.recordTarget(srcEvent);
+  //   if (this.hasEvent('transitionend', capture)) {
+  //     callBubblesEvent(this, 'transitionend', srcEvent, {
+  //       detail: {
+  //         elapsedTime: srcEvent.elapsedTime,
+  //         propertyName: srcEvent.propertyName,
+  //       },
+  //     }, capture);
+  //   }
+  // },
+  // onAnimationStart(srcEvent, capture = false) {
+  //   this.recordTarget(srcEvent);
+  //   if (this.hasEvent('animationstart', capture)) {
+  //     callBubblesEvent(this, 'animationstart', srcEvent, {
+  //       detail: {
+  //         elapsedTime: srcEvent.elapsedTime,
+  //         animationName: srcEvent.animationName,
+  //       },
+  //     }, capture);
+  //   }
+  // },
+  // onAnimationIteration(srcEvent, capture = false) {
+  //   this.recordTarget(srcEvent);
+  //   if (this.hasEvent('animationiteration', capture)) {
+  //     callBubblesEvent(this, 'animationiteration', srcEvent, {
+  //       detail: {
+  //         elapsedTime: srcEvent.elapsedTime,
+  //         animationName: srcEvent.animationName,
+  //       },
+  //     }, capture);
+  //   }
+  // },
+  // onAnimationEnd(srcEvent, capture = false) {
+  //   this.recordTarget(srcEvent);
+  //   if (this.hasEvent('animationend', capture)) {
+  //     callBubblesEvent(this, 'animationend', srcEvent, {
+  //       detail: {
+  //         elapsedTime: srcEvent.elapsedTime,
+  //         animationName: srcEvent.animationName,
+  //       },
+  //     }, capture);
+  //   }
+  // },
+
+});
 
 /***/ }),
 
@@ -6892,7 +7219,7 @@ __webpack_require__.r(__webpack_exports__);
 var g = self;
 /* harmony default export */ __webpack_exports__["default"] = (function (config, bridge) {
   var _config$container = config.container,
-      container = _config$container === void 0 ? document.getElementById('root') : _config$container,
+      container = _config$container === void 0 ? document.getElementById('__frame__') : _config$container,
       _config$onRender = config.onRender,
       onRender = _config$onRender === void 0 ? _utils_types__WEBPACK_IMPORTED_MODULE_2__["noop"] : _config$onRender,
       _config$onFail = config.onFail,
@@ -6946,7 +7273,7 @@ var g = self;
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return getMessageChannel; });
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -10392,6 +10719,9 @@ var skipProps = {
     key: 1,
     ref: 1,
     owner: 1,
+    /* 编译小程序，生成的prop */
+    __owner: 1,
+    __page: 1,
 };
 var IS_NON_DIMENSIONAL = /acit|ex(?:s|g|n|p|$)|rph|ows|mnc|ntw|ine[ch]|zoo|^ord/i;
 function setStyle(domStyle, style, value) {
@@ -11072,7 +11402,7 @@ var version = '15.4.2';
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/nerv */ "./src/nerv/index.ts");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -11178,14 +11508,11 @@ function decodeStr(str) {
 
       nodes.push(c);
     });
-    var clickable = {
-      'data-clickable': true
-    };
-    return _nerv__WEBPACK_IMPORTED_MODULE_0__["default"].createElement('span', _objectSpread(_objectSpread(_objectSpread({
+    return _nerv__WEBPACK_IMPORTED_MODULE_0__["default"].createElement('span', _objectSpread(_objectSpread({
       className: className,
       style: retStyle,
       id: id
-    }, clickable), $mp.getAriaProps()), rest), nodes);
+    }, $mp.getAriaProps()), rest), nodes);
   }
 }));
 
@@ -11221,7 +11548,7 @@ __webpack_require__.r(__webpack_exports__);
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return EventEmitter; });
 /* harmony import */ var _gerror__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./gerror */ "./src/utils/gerror.js");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -11547,7 +11874,7 @@ function callInternalAPI(method) {
 /*!*****************************!*\
   !*** ./src/utils/consts.js ***!
   \*****************************/
-/*! exports provided: PendingKeyType, PendingKeyId, PendingKeyData, PendingKeyOp, PendingValuePage, PendingValueComponent, OpSet, OpSplice, PayloadKeyMountedComponents, PayloadKeyUnmountedComponents, ComponentKeyId, ComponentKeyIs, ComponentKeyDiffProps, ComponentKeyOwnerId, DiffKeyUpdated, DiffKeyDeleted, ComponentKeyName */
+/*! exports provided: PendingKeyType, PendingKeyId, PendingKeyData, PendingKeyOp, PendingValuePage, PendingValueComponent, OpSet, OpSplice, PayloadKeyMountedComponents, PayloadKeyUnmountedComponents, ComponentKeyId, ComponentKeyIs, ComponentKeyDiffProps, ComponentKeyOwnerId, DiffKeyUpdated, DiffKeyDeleted, ComponentKeyName, ComponentPropsId */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -11569,6 +11896,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DiffKeyUpdated", function() { return DiffKeyUpdated; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DiffKeyDeleted", function() { return DiffKeyDeleted; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ComponentKeyName", function() { return ComponentKeyName; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ComponentPropsId", function() { return ComponentPropsId; });
 var PendingKeyType = 'PendingKeyType';
 var PendingKeyId = 'PendingKeyId';
 var PendingKeyData = 'PendingKeyData';
@@ -11586,6 +11914,7 @@ var ComponentKeyOwnerId = 'ComponentKeyOwnerId';
 var DiffKeyUpdated = 'DiffKeyUpdated';
 var DiffKeyDeleted = 'DiffKeyDeleted';
 var ComponentKeyName = 'ComponentKeyName';
+var ComponentPropsId = 'ComponentPropsId';
 
 /***/ }),
 
@@ -12339,7 +12668,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _stringToPath__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./stringToPath */ "./src/utils/stringToPath.js");
 /* harmony import */ var _shallowEqual__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./shallowEqual */ "./src/utils/shallowEqual.js");
 /* harmony import */ var _consts__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./consts */ "./src/utils/consts.js");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -12970,7 +13299,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
 /* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./utils */ "./src/view/utils.js");
 /* harmony import */ var _AnimationViewMixin__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./AnimationViewMixin */ "./src/view/AnimationViewMixin.js");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -13304,14 +13633,11 @@ function getStyleFromAnimation(component, _animation, node) {
       });
     }
 
-    var clickable = {
-      'data-clickable': true
-    };
-    var content = _nerv__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(TagName, _objectSpread(_objectSpread(_objectSpread({
+    var content = _nerv__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(TagName, _objectSpread(_objectSpread({
       className: props.className,
       style: style,
       id: props.id
-    }, clickable), this.props.$mp.getAriaProps()), {}, {
+    }, this.props.$mp.getAriaProps()), {}, {
       ref: this.saveRoot
     }, rest), children);
     return content;
@@ -13992,7 +14318,7 @@ function toString(str) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return useTemplate; });
 /* harmony import */ var _nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/nerv */ "./src/nerv/index.ts");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 

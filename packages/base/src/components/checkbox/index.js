@@ -92,19 +92,23 @@ export default createComponent({
     }
     const { context } = this;
     if (context.checkboxGroup) {
-      context.checkboxGroup.onChange({
-        detail: {
-          value: checked,
-          value2: this.props.value,
-        },
-      });
+      e.detail = {
+        value: checked,
+        value2: this.props.value,
+      };
+      context.checkboxGroup.onChange(e);
     }
 
-    getPropsEvent.call(this, 'change')(this.props.$mp.getNormalizedEvent('change', {
+    // const event = this.props.$mp.getNormalizedEvent(e, {
+    //   detail: {
+    //     value: checked,
+    //   },
+    // });
+    getPropsEvent.call(this, 'change')(e, {
       detail: {
         value: checked,
       },
-    }));
+    });
   },
 
   render() {

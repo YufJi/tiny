@@ -15,9 +15,7 @@ class Button extends Nerv.PureComponent {
       [`${prefixCls}-small`]: size === 'mini',
       [`${prefixCls}-disabled`]: disabled,
     });
-    const clickable = {
-      'data-clickable': true,
-    };
+
     const delayProps = {};
     if (delayPressIn) {
       delayProps.delayPressIn = delayPressIn;
@@ -31,7 +29,6 @@ class Button extends Nerv.PureComponent {
       { role: 'button',
         className: wrapCls,
         ...restProps,
-        ...clickable,
         onClick: disabled ? undefined : onClick,
         'aria-disabled': disabled },
       loading ? Nerv.createElement(Loading, { mode: type === 'primary' ? 'white' : '' }) : null,

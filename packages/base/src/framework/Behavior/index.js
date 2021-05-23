@@ -75,20 +75,18 @@ function normalizeProperties(properties) {
 
   const entries = Object.entries(properties);
 
-  for (let i = 0; i < entries.length; i++) {
+  for (let i = 0; i < entries.length; i+=1) {
     const [key, prop] = entries[i];
 
     if (isPropertyType(prop)) {
       result[key] = {
         type: prop,
         value: getConstructorDefaultValue(prop),
-        observer: noop,
       };
     } else if (isStandardProperty(prop)) {
       result[key] = {
         type: prop.type,
         value: prop.value || getConstructorDefaultValue(prop.type),
-        observer: prop.observer|| noop,
       };
     }
   }

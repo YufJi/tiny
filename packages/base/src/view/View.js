@@ -280,15 +280,11 @@ export default createNervClass({
     if (hidden) {
       style = { ...style, display: 'none' };
     }
-    const clickable = {
-      'data-clickable': true,
-    };
 
     const content = Nerv.createElement(TagName, {
       className: props.className,
       style,
       id: props.id,
-      ...clickable,
       ...this.props.$mp.getAriaProps(),
       ref: this.saveRoot,
       ...rest,

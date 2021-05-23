@@ -20,6 +20,8 @@ Component({
     },
     ready() {
       console.log('ready', this.properties, this.data);
+      console.log('id', this.id)
+      console.log('is', this.is)
     },
     moved() {
       console.log('moved', this.properties);
