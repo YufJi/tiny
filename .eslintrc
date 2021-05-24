@@ -17,6 +17,7 @@
     "class-methods-use-this": "off",
     "no-plusplus": "warn",
     "no-restricted-globals": "off",
-    "max-len": "off"
+    "max-len": "off",
+    "jsx-a11y/label-has-associated-control": "off"
   }
 }

@@ -73,4 +73,7 @@ Page({
     });
     console.log('clickCom');
   },
+  clicklabel() {
+    console.log('clicklabel')
+  }
 });

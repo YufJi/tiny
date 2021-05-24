@@ -1,11 +1,12 @@
 import Nerv, { createNervClass } from '@/nerv';
 import { createComponent } from '@/framework/';
+import { getPropsEvent } from '@/utils/eventReg';
 
 export default createComponent({
   pure: false,
   name: 'label',
 })(createNervClass({
-  onClick() {
+  onClick(e) {
     const forProp = this.props.for;
 
     if (forProp) {
@@ -15,9 +16,18 @@ export default createComponent({
         input.focus();
       }
     }
+
+    getPropsEvent.call(this, 'tap')(e);
   },
   render() {
-    const { $mp, ...rest } = this.props;
-    return Nerv.createElement('label', { ...rest, onClick: this.onClick });
+    const { $mp, children, ...rest } = this.props;
+    return (
+      <label
+        {...rest}
+        onClick={this.onClick}
+      >
+        {children}
+      </label>
+    );
   },
 }));
