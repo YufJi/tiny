@@ -1,4 +1,4 @@
-import qs from 'query-string';
+import qs from 'qs';
 import PageRegistry from '../PageRegistry';
 import EventHub from '../EventHub';
 import { getPageInfoFromUrl, getUrlFromPageInfo } from '../utils/pageInfoAndUrl';

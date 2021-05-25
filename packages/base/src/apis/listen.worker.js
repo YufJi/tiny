@@ -1,4 +1,4 @@
-import qs from 'query-string';
+import qs from 'qs';
 import { $global } from '@/framework/';
 import { getAppImpl } from '@/framework/App';
 import EventHub from '@/framework/EventHub';

@@ -1,3 +1,5 @@
+import addEvents, { addEvent } from '@/utils/addEvents';
+
 export default function Base(SuperClass) {
   class BaseMixin extends SuperClass {
     static get properties() {
@@ -71,22 +73,20 @@ export default function Base(SuperClass) {
       super.ready();
 
       if (this.listeners) {
-        const eventKeys = Object.keys(this.listeners);
+        const _this = this;
+        for (const key in this.listeners) {
+          if (Object.hasOwnProperty.call(this.listeners, key)) {
+            const eventHandler = this.listeners[key];
+            const m = key.split('.');
+            const eventTarget = m.length > 1 ? m[0] : null;
+            const eventKey = eventTarget ? m[1] : m[0];
 
-        function loop(i, l) {
-          const item = eventKeys[i];
-          const eventHandler = this.listeners[item];
-          const m = item.split('.');
-          const eventTarget = m.length > 1 ? m[0] : null;
-          const eventKey = eventTarget ? m[1] : m[0];
+            const fn = function (e) {
+              return _this[eventHandler].call(_this, e);
+            };
 
-          addListenerToElement(eventTarget ? this.$[eventTarget] : this, eventKey, function (e) {
-            return this[eventHandler].call(this, e);
-          });
-        }
-
-        for (let i = 0, l = eventKeys.length; i < l; i+=1) {
-          loop.call(this, i, l);
+            addEvent(eventTarget ? this.$[eventTarget] : this, eventKey, fn);
+          }
         }
       }
     }

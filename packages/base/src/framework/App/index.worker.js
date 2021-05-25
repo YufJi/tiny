@@ -1,4 +1,4 @@
-import qs from 'query-string';
+import qs from 'qs';
 import getScene from '@/utils/getScene';
 import log, { debug } from '@/utils/log';
 import objectKeys from '@/utils/objectKeys';

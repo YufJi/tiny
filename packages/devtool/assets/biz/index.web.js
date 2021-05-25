@@ -603,7 +603,7 @@
         className: 'todo-items-group',
         bindchange: $getEventHandler(this, 'onTodoChanged'),
       }, $iterate(data.todos, (item, index) => {
-        return nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(Label, {
+        return nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement('mp-label', {
           key: item,
           bindtap: $getEventHandler(_this, 'clicklabel'),
           className: `todo-item ${$getLooseDataMember([item, 'completed']) ? 'checked' : ''}`,

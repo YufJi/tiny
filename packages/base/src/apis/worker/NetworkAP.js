@@ -1,7 +1,7 @@
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! babel-runtime/helpers/extends */ './node_modules/babel-runtime-loose/helpers/extends.js');
 /* harmony import */ const babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0___default = /* #__PURE__ */__webpack_require__.n(babel_runtime_helpers_extends__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ const query_string__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! query-string */ './node_modules/query-string/index.js');
+/* harmony import */ const query_string__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! qs */ './node_modules/qs/index.js');
 /* harmony import */ const query_string__WEBPACK_IMPORTED_MODULE_1___default = /* #__PURE__ */__webpack_require__.n(query_string__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ const _utils_system__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../utils/system */ './src/utils/system.tsx');
 /* harmony import */ const _utils_objectKeys__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../utils/objectKeys */ './src/utils/objectKeys.tsx');

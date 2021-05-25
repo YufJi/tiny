@@ -1,4 +1,4 @@
-import { parse } from 'query-string';
+import { parse } from 'qs';
 import { getValue, setValue } from './startupParamsHolder';
 
 const g = self;

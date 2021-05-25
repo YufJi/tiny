@@ -21649,12 +21649,13 @@ function isTesting() {
 /*!********************************!*\
   !*** ./src/utils/addEvents.js ***!
   \********************************/
-/*! exports provided: default */
+/*! exports provided: default, addEvent */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return addEvents; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "addEvent", function() { return addEvent; });
 /* harmony import */ var _objectKeys__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./objectKeys */ "./src/utils/objectKeys.js");
 
 function addEvents(target, fns) {
@@ -21667,6 +21668,14 @@ function addEvents(target, fns) {
       names.forEach(function (name) {
         target.removeEventListener(name, fns[name]);
       });
+    }
+  };
+}
+function addEvent(target, name, fn) {
+  target.addEventListener(name, fn);
+  return {
+    remove: function remove() {
+      target.removeEventListener(name, fn);
     }
   };
 }
@@ -23636,6 +23645,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6__);
 /* harmony import */ var _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @babel/runtime/regenerator */ "./node_modules/@babel/runtime/regenerator/index.js");
 /* harmony import */ var _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_7__);
+/* harmony import */ var _utils_addEvents__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @/utils/addEvents */ "./src/utils/addEvents.js");
 
 
 
@@ -23649,6 +23659,7 @@ function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflec
 
 function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
 
+
 function Base(SuperClass) {
   var BaseMixin = /*#__PURE__*/function (_SuperClass) {
     _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_4___default()(BaseMixin, _SuperClass);
@@ -23656,7 +23667,7 @@ function Base(SuperClass) {
     var _super = _createSuper(BaseMixin);
 
     function BaseMixin() {
-      var _this;
+      var _this2;
 
       _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1___default()(this, BaseMixin);
 
@@ -23664,13 +23675,13 @@ function Base(SuperClass) {
         args[_key] = arguments[_key];
       }
 
-      _this = _super.call.apply(_super, [this].concat(args));
+      _this2 = _super.call.apply(_super, [this].concat(args));
 
-      _this.triggerReRender = function () {
-        _this.emitter.emit('RE_RENDER', 'base');
+      _this2.triggerReRender = function () {
+        _this2.emitter.emit('RE_RENDER', 'base');
       };
 
-      return _this;
+      return _this2;
     }
 
     _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default()(BaseMixin, [{
@@ -23736,25 +23747,31 @@ function Base(SuperClass) {
     }, {
       key: "ready",
       value: function ready() {
+        var _this3 = this;
+
         _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_3___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6___default()(BaseMixin.prototype), "ready", this).call(this);
 
         if (this.listeners) {
-          var loop = function loop(i, l) {
-            var item = eventKeys[i];
-            var eventHandler = this.listeners[item];
-            var m = item.split('.');
-            var eventTarget = m.length > 1 ? m[0] : null;
-            var eventKey = eventTarget ? m[1] : m[0];
-            addListenerToElement(eventTarget ? this.$[eventTarget] : this, eventKey, function (e) {
-              return this[eventHandler].call(this, e);
-            });
-          };
+          (function () {
+            var _this = _this3;
 
-          var eventKeys = Object.keys(this.listeners);
+            for (var key in _this3.listeners) {
+              if (Object.hasOwnProperty.call(_this3.listeners, key)) {
+                (function () {
+                  var eventHandler = _this3.listeners[key];
+                  var m = key.split('.');
+                  var eventTarget = m.length > 1 ? m[0] : null;
+                  var eventKey = eventTarget ? m[1] : m[0];
 
-          for (var i = 0, l = eventKeys.length; i < l; i += 1) {
-            loop.call(this, i, l);
-          }
+                  var fn = function fn(e) {
+                    return _this[eventHandler].call(_this, e);
+                  };
+
+                  Object(_utils_addEvents__WEBPACK_IMPORTED_MODULE_8__["addEvent"])(eventTarget ? _this3.$[eventTarget] : _this3, eventKey, fn);
+                })();
+              }
+            }
+          })();
         }
       }
     }, {
@@ -24374,7 +24391,7 @@ var View = /*#__PURE__*/function (_Hover) {
   }, {
     key: "template",
     get: function get() {
-      return Object(_polymer_polymer__WEBPACK_IMPORTED_MODULE_7__["html"])(_templateObject || (_templateObject = _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default()(["\n      <style>      \n        :host {        \n          display: block;        \n          white-space: normal;      \n        }      \n        :host([ hidden ]) {        \n          display: none!important;\n        }      \n        #main {        \n          /* ios12 special */        \n          text-decoration: inherit;      \n        }    \n      </style>\n      <slot id=\"main\"></slot>\n    "])));
+      return Object(_polymer_polymer__WEBPACK_IMPORTED_MODULE_7__["html"])(_templateObject || (_templateObject = _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default()(["\n      <style>      \n        :host {        \n          display: block;        \n          white-space: normal;      \n        }      \n        :host[hidden] {        \n          display: none !important;\n        }      \n        #main {        \n          /* ios12 special */        \n          text-decoration: inherit;      \n        }    \n      </style>\n      <slot id=\"main\"></slot>\n    "])));
     }
   }]);
 

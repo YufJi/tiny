@@ -5,7 +5,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ const _utils_bridge__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../utils/bridge */ './src/utils/bridge.tsx');
 /* harmony import */ const _utils_system__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../utils/system */ './src/utils/system.tsx');
 /* harmony import */ const _utils_objectKeys__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../utils/objectKeys */ './src/utils/objectKeys.tsx');
-/* harmony import */ const query_string__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! query-string */ './node_modules/query-string/index.js');
+/* harmony import */ const query_string__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! qs */ './node_modules/qs/index.js');
 /* harmony import */ const query_string__WEBPACK_IMPORTED_MODULE_5___default = /* #__PURE__ */__webpack_require__.n(query_string__WEBPACK_IMPORTED_MODULE_5__);
 /* harmony import */ const _ap__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../ap */ './src/bridge/ap.worker.tsx');
 /* harmony import */ const _util__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../util */ './src/bridge/util.tsx');

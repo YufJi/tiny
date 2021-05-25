@@ -16,8 +16,8 @@ class View extends Hover(Base(PolymerElement)) {
           display: block;        
           white-space: normal;      
         }      
-        :host([ hidden ]) {        
-          display: none!important;
+        :host[hidden] {        
+          display: none !important;
         }      
         #main {        
           /* ios12 special */        

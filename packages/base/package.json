@@ -27,7 +27,7 @@
     "lodash.defaults": "^4.2.0",
     "lodash.defaultsdeep": "^4.6.1",
     "lodash.mapvalues": "^4.6.0",
-    "query-string": "^6.12.1"
+    "qs": "^6.10.1"
   },
   "devDependencies": {
     "@babel/core": "^7.14.3",
