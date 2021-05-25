@@ -188,9 +188,8 @@ export default createNervClass({
       return name;
     }
     if (!this.eventHandlers[name]) {
-      this.eventHandlers[name] = function (e, more) {
-        const event = _this.getNormalizedEvent(e, more);
-        _this.callRemote.apply( _this, ['self', 'onRenderEvent', name].concat(event));
+      this.eventHandlers[name] = function (e, ...args) {
+        _this.callRemote.apply( _this, ['self', 'onRenderEvent', name].concat(e, ...args));
       };
       const handle = this.eventHandlers[name];
       handle.handleName = name;

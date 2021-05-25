@@ -106,54 +106,6 @@ module.exports["default"] = module.exports, module.exports.__esModule = true;
 
 /***/ }),
 
-/***/ "./node_modules/@babel/runtime/helpers/asyncToGenerator.js":
-/*!*****************************************************************!*\
-  !*** ./node_modules/@babel/runtime/helpers/asyncToGenerator.js ***!
-  \*****************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
-  try {
-    var info = gen[key](arg);
-    var value = info.value;
-  } catch (error) {
-    reject(error);
-    return;
-  }
-
-  if (info.done) {
-    resolve(value);
-  } else {
-    Promise.resolve(value).then(_next, _throw);
-  }
-}
-
-function _asyncToGenerator(fn) {
-  return function () {
-    var self = this,
-        args = arguments;
-    return new Promise(function (resolve, reject) {
-      var gen = fn.apply(self, args);
-
-      function _next(value) {
-        asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
-      }
-
-      function _throw(err) {
-        asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err);
-      }
-
-      _next(undefined);
-    });
-  };
-}
-
-module.exports = _asyncToGenerator;
-module.exports["default"] = module.exports, module.exports.__esModule = true;
-
-/***/ }),
-
 /***/ "./node_modules/@babel/runtime/helpers/classCallCheck.js":
 /*!***************************************************************!*\
   !*** ./node_modules/@babel/runtime/helpers/classCallCheck.js ***!
@@ -648,14 +600,766 @@ module.exports["default"] = module.exports, module.exports.__esModule = true;
 
 /***/ }),
 
-/***/ "./node_modules/@babel/runtime/regenerator/index.js":
-/*!**********************************************************!*\
-  !*** ./node_modules/@babel/runtime/regenerator/index.js ***!
-  \**********************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ "./node_modules/@polymer/polymer/lib/elements/dom-if.js":
+/*!**************************************************************!*\
+  !*** ./node_modules/@polymer/polymer/lib/elements/dom-if.js ***!
+  \**************************************************************/
+/*! exports provided: DomIf */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-module.exports = __webpack_require__(/*! regenerator-runtime */ "./node_modules/regenerator-runtime/runtime.js");
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DomIf", function() { return DomIf; });
+/* harmony import */ var _polymer_element_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../polymer-element.js */ "./node_modules/@polymer/polymer/polymer-element.js");
+/* harmony import */ var _utils_debounce_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../utils/debounce.js */ "./node_modules/@polymer/polymer/lib/utils/debounce.js");
+/* harmony import */ var _utils_flush_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../utils/flush.js */ "./node_modules/@polymer/polymer/lib/utils/flush.js");
+/* harmony import */ var _utils_async_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../utils/async.js */ "./node_modules/@polymer/polymer/lib/utils/async.js");
+/* harmony import */ var _utils_path_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../utils/path.js */ "./node_modules/@polymer/polymer/lib/utils/path.js");
+/* harmony import */ var _utils_wrap_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../utils/wrap.js */ "./node_modules/@polymer/polymer/lib/utils/wrap.js");
+/* harmony import */ var _utils_hide_template_controls_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../utils/hide-template-controls.js */ "./node_modules/@polymer/polymer/lib/utils/hide-template-controls.js");
+/* harmony import */ var _utils_settings_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../utils/settings.js */ "./node_modules/@polymer/polymer/lib/utils/settings.js");
+/* harmony import */ var _utils_templatize_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../utils/templatize.js */ "./node_modules/@polymer/polymer/lib/utils/templatize.js");
+/**
+@license
+Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+*/
+
+
+
+
+
+
+
+
+
+/**
+ * @customElement
+ * @polymer
+ * @extends PolymerElement
+ * @summary Base class for dom-if element; subclassed into concrete
+ *   implementation.
+ */
+
+class DomIfBase extends _polymer_element_js__WEBPACK_IMPORTED_MODULE_0__["PolymerElement"] {
+  // Not needed to find template; can be removed once the analyzer
+  // can find the tag name from customElements.define call
+  static get is() {
+    return 'dom-if';
+  }
+
+  static get template() {
+    return null;
+  }
+
+  static get properties() {
+    return {
+      /**
+       * Fired whenever DOM is added or removed/hidden by this template (by
+       * default, rendering occurs lazily).  To force immediate rendering, call
+       * `render`.
+       *
+       * @event dom-change
+       */
+
+      /**
+       * A boolean indicating whether this template should stamp.
+       */
+      if: {
+        type: Boolean,
+        observer: '__debounceRender'
+      },
+
+      /**
+       * When true, elements will be removed from DOM and discarded when `if`
+       * becomes false and re-created and added back to the DOM when `if`
+       * becomes true.  By default, stamped elements will be hidden but left
+       * in the DOM when `if` becomes false, which is generally results
+       * in better performance.
+       */
+      restamp: {
+        type: Boolean,
+        observer: '__debounceRender'
+      },
+
+      /**
+       * When the global `suppressTemplateNotifications` setting is used, setting
+       * `notifyDomChange: true` will enable firing `dom-change` events on this
+       * element.
+       */
+      notifyDomChange: {
+        type: Boolean
+      }
+    };
+  }
+
+  constructor() {
+    super();
+    this.__renderDebouncer = null;
+    this._lastIf = false;
+    this.__hideTemplateChildren__ = false;
+    /** @type {!HTMLTemplateElement|undefined} */
+
+    this.__template;
+    /** @type {!TemplateInfo|undefined} */
+
+    this._templateInfo;
+  }
+
+  __debounceRender() {
+    // Render is async for 2 reasons:
+    // 1. To eliminate dom creation trashing if user code thrashes `if` in the
+    //    same turn. This was more common in 1.x where a compound computed
+    //    property could result in the result changing multiple times, but is
+    //    mitigated to a large extent by batched property processing in 2.x.
+    // 2. To avoid double object propagation when a bag including values bound
+    //    to the `if` property as well as one or more hostProps could enqueue
+    //    the <dom-if> to flush before the <template>'s host property
+    //    forwarding. In that scenario creating an instance would result in
+    //    the host props being set once, and then the enqueued changes on the
+    //    template would set properties a second time, potentially causing an
+    //    object to be set to an instance more than once.  Creating the
+    //    instance async from flushing data ensures this doesn't happen. If
+    //    we wanted a sync option in the future, simply having <dom-if> flush
+    //    (or clear) its template's pending host properties before creating
+    //    the instance would also avoid the problem.
+    this.__renderDebouncer = _utils_debounce_js__WEBPACK_IMPORTED_MODULE_1__["Debouncer"].debounce(this.__renderDebouncer, _utils_async_js__WEBPACK_IMPORTED_MODULE_3__["microTask"], () => this.__render());
+    Object(_utils_flush_js__WEBPACK_IMPORTED_MODULE_2__["enqueueDebouncer"])(this.__renderDebouncer);
+  }
+  /**
+   * @override
+   * @return {void}
+   */
+
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    const parent = Object(_utils_wrap_js__WEBPACK_IMPORTED_MODULE_5__["wrap"])(this).parentNode;
+
+    if (!parent || parent.nodeType == Node.DOCUMENT_FRAGMENT_NODE && !Object(_utils_wrap_js__WEBPACK_IMPORTED_MODULE_5__["wrap"])(parent).host) {
+      this.__teardownInstance();
+    }
+  }
+  /**
+   * @override
+   * @return {void}
+   */
+
+
+  connectedCallback() {
+    super.connectedCallback();
+
+    if (!Object(_utils_hide_template_controls_js__WEBPACK_IMPORTED_MODULE_6__["hideElementsGlobally"])()) {
+      this.style.display = 'none';
+    }
+
+    if (this.if) {
+      this.__debounceRender();
+    }
+  }
+  /**
+   * Ensures a template has been assigned to `this.__template`.  If it has not
+   * yet been, it querySelectors for it in its children and if it does not yet
+   * exist (e.g. in parser-generated case), opens a mutation observer and
+   * waits for it to appear (returns false if it has not yet been found,
+   * otherwise true).  In the `removeNestedTemplates` case, the "template" will
+   * be the `dom-if` element itself.
+   *
+   * @return {boolean} True when a template has been found, false otherwise
+   */
+
+
+  __ensureTemplate() {
+    if (!this.__template) {
+      // When `removeNestedTemplates` is true, the "template" is the element
+      // itself, which has been given a `_templateInfo` property
+      const thisAsTemplate =
+      /** @type {!HTMLTemplateElement} */
+
+      /** @type {!HTMLElement} */
+      this;
+      let template = thisAsTemplate._templateInfo ? thisAsTemplate :
+      /** @type {!HTMLTemplateElement} */
+      Object(_utils_wrap_js__WEBPACK_IMPORTED_MODULE_5__["wrap"])(thisAsTemplate).querySelector('template');
+
+      if (!template) {
+        // Wait until childList changes and template should be there by then
+        let observer = new MutationObserver(() => {
+          if (Object(_utils_wrap_js__WEBPACK_IMPORTED_MODULE_5__["wrap"])(this).querySelector('template')) {
+            observer.disconnect();
+
+            this.__render();
+          } else {
+            throw new Error('dom-if requires a <template> child');
+          }
+        });
+        observer.observe(this, {
+          childList: true
+        });
+        return false;
+      }
+
+      this.__template = template;
+    }
+
+    return true;
+  }
+  /**
+   * Ensures a an instance of the template has been created and inserted. This
+   * method may return false if the template has not yet been found or if
+   * there is no `parentNode` to insert the template into (in either case,
+   * connection or the template-finding mutation observer firing will queue
+   * another render, causing this method to be called again at a more
+   * appropriate time).
+   *
+   * Subclasses should implement the following methods called here:
+   * - `__hasInstance`
+   * - `__createAndInsertInstance`
+   * - `__getInstanceNodes`
+   *
+   * @return {boolean} True if the instance was created, false otherwise.
+   */
+
+
+  __ensureInstance() {
+    let parentNode = Object(_utils_wrap_js__WEBPACK_IMPORTED_MODULE_5__["wrap"])(this).parentNode;
+
+    if (!this.__hasInstance()) {
+      // Guard against element being detached while render was queued
+      if (!parentNode) {
+        return false;
+      } // Find the template (when false, there was no template yet)
+
+
+      if (!this.__ensureTemplate()) {
+        return false;
+      }
+
+      this.__createAndInsertInstance(parentNode);
+    } else {
+      // Move instance children if necessary
+      let children = this.__getInstanceNodes();
+
+      if (children && children.length) {
+        // Detect case where dom-if was re-attached in new position
+        let lastChild = Object(_utils_wrap_js__WEBPACK_IMPORTED_MODULE_5__["wrap"])(this).previousSibling;
+
+        if (lastChild !== children[children.length - 1]) {
+          for (let i = 0, n; i < children.length && (n = children[i]); i++) {
+            Object(_utils_wrap_js__WEBPACK_IMPORTED_MODULE_5__["wrap"])(parentNode).insertBefore(n, this);
+          }
+        }
+      }
+    }
+
+    return true;
+  }
+  /**
+   * Forces the element to render its content. Normally rendering is
+   * asynchronous to a provoking change. This is done for efficiency so
+   * that multiple changes trigger only a single render. The render method
+   * should be called if, for example, template rendering is required to
+   * validate application state.
+   *
+   * @return {void}
+   */
+
+
+  render() {
+    Object(_utils_flush_js__WEBPACK_IMPORTED_MODULE_2__["flush"])();
+  }
+  /**
+   * Performs the key rendering steps:
+   * 1. Ensure a template instance has been stamped (when true)
+   * 2. Remove the template instance (when false and restamp:true)
+   * 3. Sync the hidden state of the instance nodes with the if/restamp state
+   * 4. Fires the `dom-change` event when necessary
+   *
+   * @return {void}
+   */
+
+
+  __render() {
+    if (this.if) {
+      if (!this.__ensureInstance()) {
+        // No template found yet
+        return;
+      }
+    } else if (this.restamp) {
+      this.__teardownInstance();
+    }
+
+    this._showHideChildren();
+
+    if ((!_utils_settings_js__WEBPACK_IMPORTED_MODULE_7__["suppressTemplateNotifications"] || this.notifyDomChange) && this.if != this._lastIf) {
+      this.dispatchEvent(new CustomEvent('dom-change', {
+        bubbles: true,
+        composed: true
+      }));
+      this._lastIf = this.if;
+    }
+  } // Ideally these would be annotated as abstract methods in an abstract class,
+  // but closure compiler is finnicky
+
+  /* eslint-disable valid-jsdoc */
+
+  /**
+   * Abstract API to be implemented by subclass: Returns true if a template
+   * instance has been created and inserted.
+   *
+   * @protected
+   * @return {boolean} True when an instance has been created.
+   */
+
+
+  __hasInstance() {}
+  /**
+   * Abstract API to be implemented by subclass: Returns the child nodes stamped
+   * from a template instance.
+   *
+   * @protected
+   * @return {Array<Node>} Array of child nodes stamped from the template
+   * instance.
+   */
+
+
+  __getInstanceNodes() {}
+  /**
+   * Abstract API to be implemented by subclass: Creates an instance of the
+   * template and inserts it into the given parent node.
+   *
+   * @protected
+   * @param {Node} parentNode The parent node to insert the instance into
+   * @return {void}
+   */
+
+
+  __createAndInsertInstance(parentNode) {} // eslint-disable-line no-unused-vars
+
+  /**
+   * Abstract API to be implemented by subclass: Removes nodes created by an
+   * instance of a template and any associated cleanup.
+   *
+   * @protected
+   * @return {void}
+   */
+
+
+  __teardownInstance() {}
+  /**
+   * Abstract API to be implemented by subclass: Shows or hides any template
+   * instance childNodes based on the `if` state of the element and its
+   * `__hideTemplateChildren__` property.
+   *
+   * @protected
+   * @return {void}
+   */
+
+
+  _showHideChildren() {}
+  /* eslint-enable valid-jsdoc */
+
+
+}
+/**
+ * The version of DomIf used when `fastDomIf` setting is in use, which is
+ * optimized for first-render (but adds a tax to all subsequent property updates
+ * on the host, whether they were used in a given `dom-if` or not).
+ *
+ * This implementation avoids use of `Templatizer`, which introduces a new scope
+ * (a non-element PropertyEffects instance), which is not strictly necessary
+ * since `dom-if` never introduces new properties to its scope (unlike
+ * `dom-repeat`). Taking advantage of this fact, the `dom-if` reaches up to its
+ * `__dataHost` and stamps the template directly from the host using the host's
+ * runtime `_stampTemplate` API, which binds the property effects of the
+ * template directly to the host. This both avoids the intermediary
+ * `Templatizer` instance, but also avoids the need to bind host properties to
+ * the `<template>` element and forward those into the template instance.
+ *
+ * In this version of `dom-if`, the `this.__instance` method is the
+ * `DocumentFragment` returned from `_stampTemplate`, which also serves as the
+ * handle for later removing it using the `_removeBoundDom` method.
+ */
+
+
+class DomIfFast extends DomIfBase {
+  constructor() {
+    super();
+    this.__instance = null;
+    this.__syncInfo = null;
+  }
+  /**
+   * Implementation of abstract API needed by DomIfBase.
+   *
+   * @override
+   * @return {boolean} True when an instance has been created.
+   */
+
+
+  __hasInstance() {
+    return Boolean(this.__instance);
+  }
+  /**
+   * Implementation of abstract API needed by DomIfBase.
+   *
+   * @override
+   * @return {Array<Node>} Array of child nodes stamped from the template
+   * instance.
+   */
+
+
+  __getInstanceNodes() {
+    return this.__instance.templateInfo.childNodes;
+  }
+  /**
+   * Implementation of abstract API needed by DomIfBase.
+   *
+   * Stamps the template by calling `_stampTemplate` on the `__dataHost` of this
+   * element and then inserts the resulting nodes into the given `parentNode`.
+   *
+   * @override
+   * @param {Node} parentNode The parent node to insert the instance into
+   * @return {void}
+   */
+
+
+  __createAndInsertInstance(parentNode) {
+    const host = this.__dataHost || this;
+
+    if (_utils_settings_js__WEBPACK_IMPORTED_MODULE_7__["strictTemplatePolicy"]) {
+      if (!this.__dataHost) {
+        throw new Error('strictTemplatePolicy: template owner not trusted');
+      }
+    } // Pre-bind and link the template into the effects system
+
+
+    const templateInfo = host._bindTemplate(
+    /** @type {!HTMLTemplateElement} */
+    this.__template, true); // Install runEffects hook that prevents running property effects
+    // (and any nested template effects) when the `if` is false
+
+
+    templateInfo.runEffects = (runEffects, changedProps, hasPaths) => {
+      let syncInfo = this.__syncInfo;
+
+      if (this.if) {
+        // Mix any props that changed while the `if` was false into `changedProps`
+        if (syncInfo) {
+          // If there were properties received while the `if` was false, it is
+          // important to sync the hidden state with the element _first_, so that
+          // new bindings to e.g. `textContent` do not get stomped on by
+          // pre-hidden values if `_showHideChildren` were to be called later at
+          // the next render. Clearing `__invalidProps` here ensures
+          // `_showHideChildren`'s call to `__syncHostProperties` no-ops, so
+          // that we don't call `runEffects` more often than necessary.
+          this.__syncInfo = null;
+
+          this._showHideChildren();
+
+          changedProps = Object.assign(syncInfo.changedProps, changedProps);
+        }
+
+        runEffects(changedProps, hasPaths);
+      } else {
+        // Accumulate any values changed while `if` was false, along with the
+        // runEffects method to sync them, so that we can replay them once `if`
+        // becomes true
+        if (this.__instance) {
+          if (!syncInfo) {
+            syncInfo = this.__syncInfo = {
+              runEffects,
+              changedProps: {}
+            };
+          }
+
+          if (hasPaths) {
+            // Store root object of any paths; this will ensure direct bindings
+            // like [[obj.foo]] bindings run after a `set('obj.foo', v)`, but
+            // note that path notifications like `set('obj.foo.bar', v)` will
+            // not propagate. Since batched path notifications are not
+            // supported, we cannot simply accumulate path notifications. This
+            // is equivalent to the non-fastDomIf case, which stores root(p) in
+            // __invalidProps.
+            for (const p in changedProps) {
+              const rootProp = Object(_utils_path_js__WEBPACK_IMPORTED_MODULE_4__["root"])(p);
+              syncInfo.changedProps[rootProp] = this.__dataHost[rootProp];
+            }
+          } else {
+            Object.assign(syncInfo.changedProps, changedProps);
+          }
+        }
+      }
+    }; // Stamp the template, and set its DocumentFragment to the "instance"
+
+
+    this.__instance = host._stampTemplate(
+    /** @type {!HTMLTemplateElement} */
+    this.__template, templateInfo);
+    Object(_utils_wrap_js__WEBPACK_IMPORTED_MODULE_5__["wrap"])(parentNode).insertBefore(this.__instance, this);
+  }
+  /**
+   * Run effects for any properties that changed while the `if` was false.
+   *
+   * @return {void}
+   */
+
+
+  __syncHostProperties() {
+    const syncInfo = this.__syncInfo;
+
+    if (syncInfo) {
+      this.__syncInfo = null;
+      syncInfo.runEffects(syncInfo.changedProps, false);
+    }
+  }
+  /**
+   * Implementation of abstract API needed by DomIfBase.
+   *
+   * Remove the instance and any nodes it created.  Uses the `__dataHost`'s
+   * runtime `_removeBoundDom` method.
+   *
+   * @override
+   * @return {void}
+   */
+
+
+  __teardownInstance() {
+    const host = this.__dataHost || this;
+
+    if (this.__instance) {
+      host._removeBoundDom(this.__instance);
+
+      this.__instance = null;
+      this.__syncInfo = null;
+    }
+  }
+  /**
+   * Implementation of abstract API needed by DomIfBase.
+   *
+   * Shows or hides the template instance top level child nodes. For
+   * text nodes, `textContent` is removed while "hidden" and replaced when
+   * "shown."
+   *
+   * @override
+   * @return {void}
+   * @protected
+   * @suppress {visibility}
+   */
+
+
+  _showHideChildren() {
+    const hidden = this.__hideTemplateChildren__ || !this.if;
+
+    if (this.__instance && Boolean(this.__instance.__hidden) !== hidden) {
+      this.__instance.__hidden = hidden;
+      Object(_utils_templatize_js__WEBPACK_IMPORTED_MODULE_8__["showHideChildren"])(hidden, this.__instance.templateInfo.childNodes);
+    }
+
+    if (!hidden) {
+      this.__syncHostProperties();
+    }
+  }
+
+}
+/**
+ * The "legacy" implementation of `dom-if`, implemented using `Templatizer`.
+ *
+ * In this version, `this.__instance` is the `TemplateInstance` returned
+ * from the templatized constructor.
+ */
+
+
+class DomIfLegacy extends DomIfBase {
+  constructor() {
+    super();
+    this.__ctor = null;
+    this.__instance = null;
+    this.__invalidProps = null;
+  }
+  /**
+   * Implementation of abstract API needed by DomIfBase.
+   *
+   * @override
+   * @return {boolean} True when an instance has been created.
+   */
+
+
+  __hasInstance() {
+    return Boolean(this.__instance);
+  }
+  /**
+   * Implementation of abstract API needed by DomIfBase.
+   *
+   * @override
+   * @return {Array<Node>} Array of child nodes stamped from the template
+   * instance.
+   */
+
+
+  __getInstanceNodes() {
+    return this.__instance.children;
+  }
+  /**
+   * Implementation of abstract API needed by DomIfBase.
+   *
+   * Stamps the template by creating a new instance of the templatized
+   * constructor (which is created lazily if it does not yet exist), and then
+   * inserts its resulting `root` doc fragment into the given `parentNode`.
+   *
+   * @override
+   * @param {Node} parentNode The parent node to insert the instance into
+   * @return {void}
+   */
+
+
+  __createAndInsertInstance(parentNode) {
+    // Ensure we have an instance constructor
+    if (!this.__ctor) {
+      this.__ctor = Object(_utils_templatize_js__WEBPACK_IMPORTED_MODULE_8__["templatize"])(
+      /** @type {!HTMLTemplateElement} */
+      this.__template, this, {
+        // dom-if templatizer instances require `mutable: true`, as
+        // `__syncHostProperties` relies on that behavior to sync objects
+        mutableData: true,
+
+        /**
+         * @param {string} prop Property to forward
+         * @param {*} value Value of property
+         * @this {DomIfLegacy}
+         */
+        forwardHostProp: function (prop, value) {
+          if (this.__instance) {
+            if (this.if) {
+              this.__instance.forwardHostProp(prop, value);
+            } else {
+              // If we have an instance but are squelching host property
+              // forwarding due to if being false, note the invalidated
+              // properties so `__syncHostProperties` can sync them the next
+              // time `if` becomes true
+              this.__invalidProps = this.__invalidProps || Object.create(null);
+              this.__invalidProps[Object(_utils_path_js__WEBPACK_IMPORTED_MODULE_4__["root"])(prop)] = true;
+            }
+          }
+        }
+      });
+    } // Create and insert the instance
+
+
+    this.__instance = new this.__ctor();
+    Object(_utils_wrap_js__WEBPACK_IMPORTED_MODULE_5__["wrap"])(parentNode).insertBefore(this.__instance.root, this);
+  }
+  /**
+   * Implementation of abstract API needed by DomIfBase.
+   *
+   * Removes the instance and any nodes it created.
+   *
+   * @override
+   * @return {void}
+   */
+
+
+  __teardownInstance() {
+    if (this.__instance) {
+      let c$ = this.__instance.children;
+
+      if (c$ && c$.length) {
+        // use first child parent, for case when dom-if may have been detached
+        let parent = Object(_utils_wrap_js__WEBPACK_IMPORTED_MODULE_5__["wrap"])(c$[0]).parentNode; // Instance children may be disconnected from parents when dom-if
+        // detaches if a tree was innerHTML'ed
+
+        if (parent) {
+          parent = Object(_utils_wrap_js__WEBPACK_IMPORTED_MODULE_5__["wrap"])(parent);
+
+          for (let i = 0, n; i < c$.length && (n = c$[i]); i++) {
+            parent.removeChild(n);
+          }
+        }
+      }
+
+      this.__invalidProps = null;
+      this.__instance = null;
+    }
+  }
+  /**
+   * Forwards any properties that changed while the `if` was false into the
+   * template instance and flushes it.
+   *
+   * @return {void}
+   */
+
+
+  __syncHostProperties() {
+    let props = this.__invalidProps;
+
+    if (props) {
+      this.__invalidProps = null;
+
+      for (let prop in props) {
+        this.__instance._setPendingProperty(prop, this.__dataHost[prop]);
+      }
+
+      this.__instance._flushProperties();
+    }
+  }
+  /**
+   * Implementation of abstract API needed by DomIfBase.
+   *
+   * Shows or hides the template instance top level child elements. For
+   * text nodes, `textContent` is removed while "hidden" and replaced when
+   * "shown."
+   *
+   * @override
+   * @protected
+   * @return {void}
+   * @suppress {visibility}
+   */
+
+
+  _showHideChildren() {
+    const hidden = this.__hideTemplateChildren__ || !this.if;
+
+    if (this.__instance && Boolean(this.__instance.__hidden) !== hidden) {
+      this.__instance.__hidden = hidden;
+
+      this.__instance._showHideChildren(hidden);
+    }
+
+    if (!hidden) {
+      this.__syncHostProperties();
+    }
+  }
+
+}
+/**
+ * The `<dom-if>` element will stamp a light-dom `<template>` child when
+ * the `if` property becomes truthy, and the template can use Polymer
+ * data-binding and declarative event features when used in the context of
+ * a Polymer element's template.
+ *
+ * When `if` becomes falsy, the stamped content is hidden but not
+ * removed from dom. When `if` subsequently becomes truthy again, the content
+ * is simply re-shown. This approach is used due to its favorable performance
+ * characteristics: the expense of creating template content is paid only
+ * once and lazily.
+ *
+ * Set the `restamp` property to true to force the stamped content to be
+ * created / destroyed when the `if` condition changes.
+ *
+ * @customElement
+ * @polymer
+ * @extends DomIfBase
+ * @constructor
+ * @summary Custom element that conditionally stamps and hides or removes
+ *   template content based on a boolean flag.
+ */
+
+
+const DomIf = _utils_settings_js__WEBPACK_IMPORTED_MODULE_7__["fastDomIf"] ? DomIfFast : DomIfLegacy;
+customElements.define(DomIf.is, DomIf);
 
 /***/ }),
 
@@ -848,6 +1552,888 @@ class DomModule extends HTMLElement {
 }
 DomModule.prototype['modules'] = modules;
 customElements.define('dom-module', DomModule);
+
+/***/ }),
+
+/***/ "./node_modules/@polymer/polymer/lib/elements/dom-repeat.js":
+/*!******************************************************************!*\
+  !*** ./node_modules/@polymer/polymer/lib/elements/dom-repeat.js ***!
+  \******************************************************************/
+/*! exports provided: DomRepeat */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DomRepeat", function() { return DomRepeat; });
+/* harmony import */ var _polymer_element_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../polymer-element.js */ "./node_modules/@polymer/polymer/polymer-element.js");
+/* harmony import */ var _utils_templatize_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../utils/templatize.js */ "./node_modules/@polymer/polymer/lib/utils/templatize.js");
+/* harmony import */ var _utils_debounce_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../utils/debounce.js */ "./node_modules/@polymer/polymer/lib/utils/debounce.js");
+/* harmony import */ var _utils_flush_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../utils/flush.js */ "./node_modules/@polymer/polymer/lib/utils/flush.js");
+/* harmony import */ var _mixins_mutable_data_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../mixins/mutable-data.js */ "./node_modules/@polymer/polymer/lib/mixins/mutable-data.js");
+/* harmony import */ var _utils_path_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../utils/path.js */ "./node_modules/@polymer/polymer/lib/utils/path.js");
+/* harmony import */ var _utils_async_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../utils/async.js */ "./node_modules/@polymer/polymer/lib/utils/async.js");
+/* harmony import */ var _utils_wrap_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../utils/wrap.js */ "./node_modules/@polymer/polymer/lib/utils/wrap.js");
+/* harmony import */ var _utils_hide_template_controls_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../utils/hide-template-controls.js */ "./node_modules/@polymer/polymer/lib/utils/hide-template-controls.js");
+/* harmony import */ var _utils_settings_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../utils/settings.js */ "./node_modules/@polymer/polymer/lib/utils/settings.js");
+/**
+@license
+Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+*/
+
+ // eslint-disable-line no-unused-vars
+
+
+
+
+
+
+
+
+
+/**
+ * @constructor
+ * @implements {Polymer_OptionalMutableData}
+ * @extends {PolymerElement}
+ * @private
+ */
+
+const domRepeatBase = Object(_mixins_mutable_data_js__WEBPACK_IMPORTED_MODULE_4__["OptionalMutableData"])(_polymer_element_js__WEBPACK_IMPORTED_MODULE_0__["PolymerElement"]);
+/**
+ * The `<dom-repeat>` element will automatically stamp and binds one instance
+ * of template content to each object in a user-provided array.
+ * `dom-repeat` accepts an `items` property, and one instance of the template
+ * is stamped for each item into the DOM at the location of the `dom-repeat`
+ * element.  The `item` property will be set on each instance's binding
+ * scope, thus templates should bind to sub-properties of `item`.
+ *
+ * Example:
+ *
+ * ```html
+ * <dom-module id="employee-list">
+ *
+ *   <template>
+ *
+ *     <div> Employee list: </div>
+ *     <dom-repeat items="{{employees}}">
+ *       <template>
+ *         <div>First name: <span>{{item.first}}</span></div>
+ *         <div>Last name: <span>{{item.last}}</span></div>
+ *       </template>
+ *     </dom-repeat>
+ *
+ *   </template>
+ *
+ * </dom-module>
+ * ```
+ *
+ * With the following custom element definition:
+ *
+ * ```js
+ * class EmployeeList extends PolymerElement {
+ *   static get is() { return 'employee-list'; }
+ *   static get properties() {
+ *     return {
+ *       employees: {
+ *         value() {
+ *           return [
+ *             {first: 'Bob', last: 'Smith'},
+ *             {first: 'Sally', last: 'Johnson'},
+ *             ...
+ *           ];
+ *         }
+ *       }
+ *     };
+ *   }
+ * }
+ * ```
+ *
+ * Notifications for changes to items sub-properties will be forwarded to template
+ * instances, which will update via the normal structured data notification system.
+ *
+ * Mutations to the `items` array itself should be made using the Array
+ * mutation API's on the PropertyEffects mixin (`push`, `pop`, `splice`,
+ * `shift`, `unshift`), and template instances will be kept in sync with the
+ * data in the array.
+ *
+ * Events caught by event handlers within the `dom-repeat` template will be
+ * decorated with a `model` property, which represents the binding scope for
+ * each template instance.  The model should be used to manipulate data on the
+ * instance, for example `event.model.set('item.checked', true);`.
+ *
+ * Alternatively, the model for a template instance for an element stamped by
+ * a `dom-repeat` can be obtained using the `modelForElement` API on the
+ * `dom-repeat` that stamped it, for example
+ * `this.$.domRepeat.modelForElement(event.target).set('item.checked', true);`.
+ * This may be useful for manipulating instance data of event targets obtained
+ * by event handlers on parents of the `dom-repeat` (event delegation).
+ *
+ * A view-specific filter/sort may be applied to each `dom-repeat` by supplying a
+ * `filter` and/or `sort` property.  This may be a string that names a function on
+ * the host, or a function may be assigned to the property directly.  The functions
+ * should implemented following the standard `Array` filter/sort API.
+ *
+ * In order to re-run the filter or sort functions based on changes to sub-fields
+ * of `items`, the `observe` property may be set as a space-separated list of
+ * `item` sub-fields that should cause a re-filter/sort when modified.  If
+ * the filter or sort function depends on properties not contained in `items`,
+ * the user should observe changes to those properties and call `render` to update
+ * the view based on the dependency change.
+ *
+ * For example, for an `dom-repeat` with a filter of the following:
+ *
+ * ```js
+ * isEngineer(item) {
+ *   return item.type == 'engineer' || item.manager.type == 'engineer';
+ * }
+ * ```
+ *
+ * Then the `observe` property should be configured as follows:
+ *
+ * ```html
+ * <dom-repeat items="{{employees}}" filter="isEngineer" observe="type manager.type">
+ * ```
+ *
+ * @customElement
+ * @polymer
+ * @extends {domRepeatBase}
+ * @appliesMixin OptionalMutableData
+ * @summary Custom element for stamping instance of a template bound to
+ *   items in an array.
+ */
+
+class DomRepeat extends domRepeatBase {
+  // Not needed to find template; can be removed once the analyzer
+  // can find the tag name from customElements.define call
+  static get is() {
+    return 'dom-repeat';
+  }
+
+  static get template() {
+    return null;
+  }
+
+  static get properties() {
+    /**
+     * Fired whenever DOM is added or removed by this template (by
+     * default, rendering occurs lazily).  To force immediate rendering, call
+     * `render`.
+     *
+     * @event dom-change
+     */
+    return {
+      /**
+       * An array containing items determining how many instances of the template
+       * to stamp and that that each template instance should bind to.
+       */
+      items: {
+        type: Array
+      },
+
+      /**
+       * The name of the variable to add to the binding scope for the array
+       * element associated with a given template instance.
+       */
+      as: {
+        type: String,
+        value: 'item'
+      },
+
+      /**
+       * The name of the variable to add to the binding scope with the index
+       * of the instance in the sorted and filtered list of rendered items.
+       * Note, for the index in the `this.items` array, use the value of the
+       * `itemsIndexAs` property.
+       */
+      indexAs: {
+        type: String,
+        value: 'index'
+      },
+
+      /**
+       * The name of the variable to add to the binding scope with the index
+       * of the instance in the `this.items` array. Note, for the index of
+       * this instance in the sorted and filtered list of rendered items,
+       * use the value of the `indexAs` property.
+       */
+      itemsIndexAs: {
+        type: String,
+        value: 'itemsIndex'
+      },
+
+      /**
+       * A function that should determine the sort order of the items.  This
+       * property should either be provided as a string, indicating a method
+       * name on the element's host, or else be an actual function.  The
+       * function should match the sort function passed to `Array.sort`.
+       * Using a sort function has no effect on the underlying `items` array.
+       */
+      sort: {
+        type: Function,
+        observer: '__sortChanged'
+      },
+
+      /**
+       * A function that can be used to filter items out of the view.  This
+       * property should either be provided as a string, indicating a method
+       * name on the element's host, or else be an actual function.  The
+       * function should match the sort function passed to `Array.filter`.
+       * Using a filter function has no effect on the underlying `items` array.
+       */
+      filter: {
+        type: Function,
+        observer: '__filterChanged'
+      },
+
+      /**
+       * When using a `filter` or `sort` function, the `observe` property
+       * should be set to a space-separated list of the names of item
+       * sub-fields that should trigger a re-sort or re-filter when changed.
+       * These should generally be fields of `item` that the sort or filter
+       * function depends on.
+       */
+      observe: {
+        type: String,
+        observer: '__observeChanged'
+      },
+
+      /**
+       * When using a `filter` or `sort` function, the `delay` property
+       * determines a debounce time in ms after a change to observed item
+       * properties that must pass before the filter or sort is re-run.
+       * This is useful in rate-limiting shuffling of the view when
+       * item changes may be frequent.
+       */
+      delay: Number,
+
+      /**
+       * Count of currently rendered items after `filter` (if any) has been applied.
+       * If "chunking mode" is enabled, `renderedItemCount` is updated each time a
+       * set of template instances is rendered.
+       *
+       */
+      renderedItemCount: {
+        type: Number,
+        notify: !_utils_settings_js__WEBPACK_IMPORTED_MODULE_9__["suppressTemplateNotifications"],
+        readOnly: true
+      },
+
+      /**
+       * When greater than zero, defines an initial count of template instances
+       * to render after setting the `items` array, before the next paint, and
+       * puts the `dom-repeat` into "chunking mode".  The remaining items (and
+       * any future items as a result of pushing onto the array) will be created
+       * and rendered incrementally at each animation frame thereof until all
+       * instances have been rendered.
+       */
+      initialCount: {
+        type: Number
+      },
+
+      /**
+       * When `initialCount` is used, this property defines a frame rate (in
+       * fps) to target by throttling the number of instances rendered each
+       * frame to not exceed the budget for the target frame rate.  The
+       * framerate is effectively the number of `requestAnimationFrame`s that
+       * it tries to allow to actually fire in a given second. It does this
+       * by measuring the time between `rAF`s and continuously adjusting the
+       * number of items created each `rAF` to maintain the target framerate.
+       * Setting this to a higher number allows lower latency and higher
+       * throughput for event handlers and other tasks, but results in a
+       * longer time for the remaining items to complete rendering.
+       */
+      targetFramerate: {
+        type: Number,
+        value: 20
+      },
+      _targetFrameTime: {
+        type: Number,
+        computed: '__computeFrameTime(targetFramerate)'
+      },
+
+      /**
+       * When the global `suppressTemplateNotifications` setting is used, setting
+       * `notifyDomChange: true` will enable firing `dom-change` events on this
+       * element.
+       */
+      notifyDomChange: {
+        type: Boolean
+      },
+
+      /**
+       * When chunking is enabled via `initialCount` and the `items` array is
+       * set to a new array, this flag controls whether the previously rendered
+       * instances are reused or not.
+       *
+       * When `true`, any previously rendered template instances are updated in
+       * place to their new item values synchronously in one shot, and then any
+       * further items (if any) are chunked out.  When `false`, the list is
+       * returned back to its `initialCount` (any instances over the initial
+       * count are discarded) and the remainder of the list is chunked back in.
+       * Set this to `true` to avoid re-creating the list and losing scroll
+       * position, although note that when changing the list to completely
+       * different data the render thread will be blocked until all existing
+       * instances are updated to their new data.
+       */
+      reuseChunkedInstances: {
+        type: Boolean
+      }
+    };
+  }
+
+  static get observers() {
+    return ['__itemsChanged(items.*)'];
+  }
+
+  constructor() {
+    super();
+    this.__instances = [];
+    this.__renderDebouncer = null;
+    this.__itemsIdxToInstIdx = {};
+    this.__chunkCount = null;
+    this.__renderStartTime = null;
+    this.__itemsArrayChanged = false;
+    this.__shouldMeasureChunk = false;
+    this.__shouldContinueChunking = false;
+    this.__chunkingId = 0;
+    this.__sortFn = null;
+    this.__filterFn = null;
+    this.__observePaths = null;
+    /** @type {?function(new:TemplateInstanceBase, Object=)} */
+
+    this.__ctor = null;
+    this.__isDetached = true;
+    this.template = null;
+    /** @type {TemplateInfo} */
+
+    this._templateInfo;
+  }
+  /**
+   * @override
+   * @return {void}
+   */
+
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.__isDetached = true;
+
+    for (let i = 0; i < this.__instances.length; i++) {
+      this.__detachInstance(i);
+    }
+  }
+  /**
+   * @override
+   * @return {void}
+   */
+
+
+  connectedCallback() {
+    super.connectedCallback();
+
+    if (!Object(_utils_hide_template_controls_js__WEBPACK_IMPORTED_MODULE_8__["hideElementsGlobally"])()) {
+      this.style.display = 'none';
+    } // only perform attachment if the element was previously detached.
+
+
+    if (this.__isDetached) {
+      this.__isDetached = false;
+      let wrappedParent = Object(_utils_wrap_js__WEBPACK_IMPORTED_MODULE_7__["wrap"])(Object(_utils_wrap_js__WEBPACK_IMPORTED_MODULE_7__["wrap"])(this).parentNode);
+
+      for (let i = 0; i < this.__instances.length; i++) {
+        this.__attachInstance(i, wrappedParent);
+      }
+    }
+  }
+
+  __ensureTemplatized() {
+    // Templatizing (generating the instance constructor) needs to wait
+    // until ready, since won't have its template content handed back to
+    // it until then
+    if (!this.__ctor) {
+      // When `removeNestedTemplates` is true, the "template" is the element
+      // itself, which has been given a `_templateInfo` property
+      const thisAsTemplate =
+      /** @type {!HTMLTemplateElement} */
+
+      /** @type {!HTMLElement} */
+      this;
+      let template = this.template = thisAsTemplate._templateInfo ? thisAsTemplate :
+      /** @type {!HTMLTemplateElement} */
+      this.querySelector('template');
+
+      if (!template) {
+        // Wait until childList changes and template should be there by then
+        let observer = new MutationObserver(() => {
+          if (this.querySelector('template')) {
+            observer.disconnect();
+
+            this.__render();
+          } else {
+            throw new Error('dom-repeat requires a <template> child');
+          }
+        });
+        observer.observe(this, {
+          childList: true
+        });
+        return false;
+      } // Template instance props that should be excluded from forwarding
+
+
+      let instanceProps = {};
+      instanceProps[this.as] = true;
+      instanceProps[this.indexAs] = true;
+      instanceProps[this.itemsIndexAs] = true;
+      this.__ctor = Object(_utils_templatize_js__WEBPACK_IMPORTED_MODULE_1__["templatize"])(template, this, {
+        mutableData: this.mutableData,
+        parentModel: true,
+        instanceProps: instanceProps,
+
+        /**
+         * @this {DomRepeat}
+         * @param {string} prop Property to set
+         * @param {*} value Value to set property to
+         */
+        forwardHostProp: function (prop, value) {
+          let i$ = this.__instances;
+
+          for (let i = 0, inst; i < i$.length && (inst = i$[i]); i++) {
+            inst.forwardHostProp(prop, value);
+          }
+        },
+
+        /**
+         * @this {DomRepeat}
+         * @param {Object} inst Instance to notify
+         * @param {string} prop Property to notify
+         * @param {*} value Value to notify
+         */
+        notifyInstanceProp: function (inst, prop, value) {
+          if (Object(_utils_path_js__WEBPACK_IMPORTED_MODULE_5__["matches"])(this.as, prop)) {
+            let idx = inst[this.itemsIndexAs];
+
+            if (prop == this.as) {
+              this.items[idx] = value;
+            }
+
+            let path = Object(_utils_path_js__WEBPACK_IMPORTED_MODULE_5__["translate"])(this.as, `${JSCompiler_renameProperty('items', this)}.${idx}`, prop);
+            this.notifyPath(path, value);
+          }
+        }
+      });
+    }
+
+    return true;
+  }
+
+  __getMethodHost() {
+    // Technically this should be the owner of the outermost template.
+    // In shadow dom, this is always getRootNode().host, but we can
+    // approximate this via cooperation with our dataHost always setting
+    // `_methodHost` as long as there were bindings (or id's) on this
+    // instance causing it to get a dataHost.
+    return this.__dataHost._methodHost || this.__dataHost;
+  }
+
+  __functionFromPropertyValue(functionOrMethodName) {
+    if (typeof functionOrMethodName === 'string') {
+      let methodName = functionOrMethodName;
+
+      let obj = this.__getMethodHost();
+
+      return function () {
+        return obj[methodName].apply(obj, arguments);
+      };
+    }
+
+    return functionOrMethodName;
+  }
+
+  __sortChanged(sort) {
+    this.__sortFn = this.__functionFromPropertyValue(sort);
+
+    if (this.items) {
+      this.__debounceRender(this.__render);
+    }
+  }
+
+  __filterChanged(filter) {
+    this.__filterFn = this.__functionFromPropertyValue(filter);
+
+    if (this.items) {
+      this.__debounceRender(this.__render);
+    }
+  }
+
+  __computeFrameTime(rate) {
+    return Math.ceil(1000 / rate);
+  }
+
+  __observeChanged() {
+    this.__observePaths = this.observe && this.observe.replace('.*', '.').split(' ');
+  }
+
+  __handleObservedPaths(path) {
+    // Handle cases where path changes should cause a re-sort/filter
+    if (this.__sortFn || this.__filterFn) {
+      if (!path) {
+        // Always re-render if the item itself changed
+        this.__debounceRender(this.__render, this.delay);
+      } else if (this.__observePaths) {
+        // Otherwise, re-render if the path changed matches an observed path
+        let paths = this.__observePaths;
+
+        for (let i = 0; i < paths.length; i++) {
+          if (path.indexOf(paths[i]) === 0) {
+            this.__debounceRender(this.__render, this.delay);
+          }
+        }
+      }
+    }
+  }
+
+  __itemsChanged(change) {
+    if (this.items && !Array.isArray(this.items)) {
+      console.warn('dom-repeat expected array for `items`, found', this.items);
+    } // If path was to an item (e.g. 'items.3' or 'items.3.foo'), forward the
+    // path to that instance synchronously (returns false for non-item paths)
+
+
+    if (!this.__handleItemPath(change.path, change.value)) {
+      // Otherwise, the array was reset ('items') or spliced ('items.splices'),
+      // so queue a render.  Restart chunking when the items changed (for
+      // backward compatibility), unless `reuseChunkedInstances` option is set
+      if (change.path === 'items') {
+        this.__itemsArrayChanged = true;
+      }
+
+      this.__debounceRender(this.__render);
+    }
+  }
+  /**
+   * @param {function(this:DomRepeat)} fn Function to debounce.
+   * @param {number=} delay Delay in ms to debounce by.
+   */
+
+
+  __debounceRender(fn, delay = 0) {
+    this.__renderDebouncer = _utils_debounce_js__WEBPACK_IMPORTED_MODULE_2__["Debouncer"].debounce(this.__renderDebouncer, delay > 0 ? _utils_async_js__WEBPACK_IMPORTED_MODULE_6__["timeOut"].after(delay) : _utils_async_js__WEBPACK_IMPORTED_MODULE_6__["microTask"], fn.bind(this));
+    Object(_utils_flush_js__WEBPACK_IMPORTED_MODULE_3__["enqueueDebouncer"])(this.__renderDebouncer);
+  }
+  /**
+   * Forces the element to render its content. Normally rendering is
+   * asynchronous to a provoking change. This is done for efficiency so
+   * that multiple changes trigger only a single render. The render method
+   * should be called if, for example, template rendering is required to
+   * validate application state.
+   * @return {void}
+   */
+
+
+  render() {
+    // Queue this repeater, then flush all in order
+    this.__debounceRender(this.__render);
+
+    Object(_utils_flush_js__WEBPACK_IMPORTED_MODULE_3__["flush"])();
+  }
+
+  __render() {
+    if (!this.__ensureTemplatized()) {
+      // No template found yet
+      return;
+    }
+
+    let items = this.items || []; // Sort and filter the items into a mapping array from instance->item
+
+    const isntIdxToItemsIdx = this.__sortAndFilterItems(items); // If we're chunking, increase the limit if there are new instances to
+    // create and schedule the next chunk
+
+
+    const limit = this.__calculateLimit(isntIdxToItemsIdx.length); // Create, update, and/or remove instances
+
+
+    this.__updateInstances(items, limit, isntIdxToItemsIdx); // If we're chunking, schedule a rAF task to measure/continue chunking.     
+    // Do this before any notifying events (renderedItemCount & dom-change)
+    // since those could modify items and enqueue a new full render which will
+    // pre-empt this measurement.
+
+
+    if (this.initialCount && (this.__shouldMeasureChunk || this.__shouldContinueChunking)) {
+      cancelAnimationFrame(this.__chunkingId);
+      this.__chunkingId = requestAnimationFrame(() => this.__continueChunking());
+    } // Set rendered item count
+
+
+    this._setRenderedItemCount(this.__instances.length); // Notify users
+
+
+    if (!_utils_settings_js__WEBPACK_IMPORTED_MODULE_9__["suppressTemplateNotifications"] || this.notifyDomChange) {
+      this.dispatchEvent(new CustomEvent('dom-change', {
+        bubbles: true,
+        composed: true
+      }));
+    }
+  }
+
+  __sortAndFilterItems(items) {
+    // Generate array maping the instance index to the items array index
+    let isntIdxToItemsIdx = new Array(items.length);
+
+    for (let i = 0; i < items.length; i++) {
+      isntIdxToItemsIdx[i] = i;
+    } // Apply user filter
+
+
+    if (this.__filterFn) {
+      isntIdxToItemsIdx = isntIdxToItemsIdx.filter((i, idx, array) => this.__filterFn(items[i], idx, array));
+    } // Apply user sort
+
+
+    if (this.__sortFn) {
+      isntIdxToItemsIdx.sort((a, b) => this.__sortFn(items[a], items[b]));
+    }
+
+    return isntIdxToItemsIdx;
+  }
+
+  __calculateLimit(filteredItemCount) {
+    let limit = filteredItemCount;
+    const currentCount = this.__instances.length; // When chunking, we increase the limit from the currently rendered count
+    // by the chunk count that is re-calculated after each rAF (with special
+    // cases for reseting the limit to initialCount after changing items)
+
+    if (this.initialCount) {
+      let newCount;
+
+      if (!this.__chunkCount || this.__itemsArrayChanged && !this.reuseChunkedInstances) {
+        // Limit next render to the initial count
+        limit = Math.min(filteredItemCount, this.initialCount); // Subtract off any existing instances to determine the number of
+        // instances that will be created
+
+        newCount = Math.max(limit - currentCount, 0); // Initialize the chunk size with how many items we're creating
+
+        this.__chunkCount = newCount || 1;
+      } else {
+        // The number of new instances that will be created is based on the
+        // existing instances, the new list size, and the chunk size
+        newCount = Math.min(Math.max(filteredItemCount - currentCount, 0), this.__chunkCount); // Update the limit based on how many new items we're making, limited
+        // buy the total size of the list
+
+        limit = Math.min(currentCount + newCount, filteredItemCount);
+      } // Record some state about chunking for use in `__continueChunking`
+
+
+      this.__shouldMeasureChunk = newCount === this.__chunkCount;
+      this.__shouldContinueChunking = limit < filteredItemCount;
+      this.__renderStartTime = performance.now();
+    }
+
+    this.__itemsArrayChanged = false;
+    return limit;
+  }
+
+  __continueChunking() {
+    // Simple auto chunkSize throttling algorithm based on feedback loop:
+    // measure actual time between frames and scale chunk count by ratio of
+    // target/actual frame time.  Only modify chunk size if our measurement
+    // reflects the cost of a creating a full chunk's worth of instances; this
+    // avoids scaling up the chunk size if we e.g. quickly re-rendered instances
+    // in place
+    if (this.__shouldMeasureChunk) {
+      const renderTime = performance.now() - this.__renderStartTime;
+
+      const ratio = this._targetFrameTime / renderTime;
+      this.__chunkCount = Math.round(this.__chunkCount * ratio) || 1;
+    } // Enqueue a new render if we haven't reached the full size of the list
+
+
+    if (this.__shouldContinueChunking) {
+      this.__debounceRender(this.__render);
+    }
+  }
+
+  __updateInstances(items, limit, isntIdxToItemsIdx) {
+    // items->inst map kept for item path forwarding
+    const itemsIdxToInstIdx = this.__itemsIdxToInstIdx = {};
+    let instIdx; // Generate instances and assign items
+
+    for (instIdx = 0; instIdx < limit; instIdx++) {
+      let inst = this.__instances[instIdx];
+      let itemIdx = isntIdxToItemsIdx[instIdx];
+      let item = items[itemIdx];
+      itemsIdxToInstIdx[itemIdx] = instIdx;
+
+      if (inst) {
+        inst._setPendingProperty(this.as, item);
+
+        inst._setPendingProperty(this.indexAs, instIdx);
+
+        inst._setPendingProperty(this.itemsIndexAs, itemIdx);
+
+        inst._flushProperties();
+      } else {
+        this.__insertInstance(item, instIdx, itemIdx);
+      }
+    } // Remove any extra instances from previous state
+
+
+    for (let i = this.__instances.length - 1; i >= instIdx; i--) {
+      this.__detachAndRemoveInstance(i);
+    }
+  }
+
+  __detachInstance(idx) {
+    let inst = this.__instances[idx];
+    const wrappedRoot = Object(_utils_wrap_js__WEBPACK_IMPORTED_MODULE_7__["wrap"])(inst.root);
+
+    for (let i = 0; i < inst.children.length; i++) {
+      let el = inst.children[i];
+      wrappedRoot.appendChild(el);
+    }
+
+    return inst;
+  }
+
+  __attachInstance(idx, parent) {
+    let inst = this.__instances[idx]; // Note, this is pre-wrapped as an optimization
+
+    parent.insertBefore(inst.root, this);
+  }
+
+  __detachAndRemoveInstance(idx) {
+    this.__detachInstance(idx);
+
+    this.__instances.splice(idx, 1);
+  }
+
+  __stampInstance(item, instIdx, itemIdx) {
+    let model = {};
+    model[this.as] = item;
+    model[this.indexAs] = instIdx;
+    model[this.itemsIndexAs] = itemIdx;
+    return new this.__ctor(model);
+  }
+
+  __insertInstance(item, instIdx, itemIdx) {
+    const inst = this.__stampInstance(item, instIdx, itemIdx);
+
+    let beforeRow = this.__instances[instIdx + 1];
+    let beforeNode = beforeRow ? beforeRow.children[0] : this;
+    Object(_utils_wrap_js__WEBPACK_IMPORTED_MODULE_7__["wrap"])(Object(_utils_wrap_js__WEBPACK_IMPORTED_MODULE_7__["wrap"])(this).parentNode).insertBefore(inst.root, beforeNode);
+    this.__instances[instIdx] = inst;
+    return inst;
+  } // Implements extension point from Templatize mixin
+
+  /**
+   * Shows or hides the template instance top level child elements. For
+   * text nodes, `textContent` is removed while "hidden" and replaced when
+   * "shown."
+   * @param {boolean} hidden Set to true to hide the children;
+   * set to false to show them.
+   * @return {void}
+   * @protected
+   */
+
+
+  _showHideChildren(hidden) {
+    for (let i = 0; i < this.__instances.length; i++) {
+      this.__instances[i]._showHideChildren(hidden);
+    }
+  } // Called as a side effect of a host items.<key>.<path> path change,
+  // responsible for notifying item.<path> changes to inst for key
+
+
+  __handleItemPath(path, value) {
+    let itemsPath = path.slice(6); // 'items.'.length == 6
+
+    let dot = itemsPath.indexOf('.');
+    let itemsIdx = dot < 0 ? itemsPath : itemsPath.substring(0, dot); // If path was index into array...
+
+    if (itemsIdx == parseInt(itemsIdx, 10)) {
+      let itemSubPath = dot < 0 ? '' : itemsPath.substring(dot + 1); // If the path is observed, it will trigger a full refresh
+
+      this.__handleObservedPaths(itemSubPath); // Note, even if a rull refresh is triggered, always do the path
+      // notification because unless mutableData is used for dom-repeat
+      // and all elements in the instance subtree, a full refresh may
+      // not trigger the proper update.
+
+
+      let instIdx = this.__itemsIdxToInstIdx[itemsIdx];
+      let inst = this.__instances[instIdx];
+
+      if (inst) {
+        let itemPath = this.as + (itemSubPath ? '.' + itemSubPath : ''); // This is effectively `notifyPath`, but avoids some of the overhead
+        // of the public API
+
+        inst._setPendingPropertyOrPath(itemPath, value, false, true);
+
+        inst._flushProperties();
+      }
+
+      return true;
+    }
+  }
+  /**
+   * Returns the item associated with a given element stamped by
+   * this `dom-repeat`.
+   *
+   * Note, to modify sub-properties of the item,
+   * `modelForElement(el).set('item.<sub-prop>', value)`
+   * should be used.
+   *
+   * @param {!HTMLElement} el Element for which to return the item.
+   * @return {*} Item associated with the element.
+   */
+
+
+  itemForElement(el) {
+    let instance = this.modelForElement(el);
+    return instance && instance[this.as];
+  }
+  /**
+   * Returns the inst index for a given element stamped by this `dom-repeat`.
+   * If `sort` is provided, the index will reflect the sorted order (rather
+   * than the original array order).
+   *
+   * @param {!HTMLElement} el Element for which to return the index.
+   * @return {?number} Row index associated with the element (note this may
+   *   not correspond to the array index if a user `sort` is applied).
+   */
+
+
+  indexForElement(el) {
+    let instance = this.modelForElement(el);
+    return instance && instance[this.indexAs];
+  }
+  /**
+   * Returns the template "model" associated with a given element, which
+   * serves as the binding scope for the template instance the element is
+   * contained in. A template model
+   * should be used to manipulate data associated with this template instance.
+   *
+   * Example:
+   *
+   *   let model = modelForElement(el);
+   *   if (model.index < 10) {
+   *     model.set('item.checked', true);
+   *   }
+   *
+   * @param {!HTMLElement} el Element for which to return a template model.
+   * @return {TemplateInstanceBase} Model representing the binding scope for
+   *   the element.
+   */
+
+
+  modelForElement(el) {
+    return Object(_utils_templatize_js__WEBPACK_IMPORTED_MODULE_1__["modelForElement"])(this.template, el);
+  }
+
+}
+customElements.define(DomRepeat.is, DomRepeat);
 
 /***/ }),
 
@@ -1839,6 +3425,218 @@ const updateStyles = function (props) {
     window.ShadyCSS.styleDocument(props);
   }
 };
+
+/***/ }),
+
+/***/ "./node_modules/@polymer/polymer/lib/mixins/mutable-data.js":
+/*!******************************************************************!*\
+  !*** ./node_modules/@polymer/polymer/lib/mixins/mutable-data.js ***!
+  \******************************************************************/
+/*! exports provided: MutableData, OptionalMutableData */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "MutableData", function() { return MutableData; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "OptionalMutableData", function() { return OptionalMutableData; });
+/* harmony import */ var _utils_mixin_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../utils/mixin.js */ "./node_modules/@polymer/polymer/lib/utils/mixin.js");
+/**
+@license
+Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+*/
+ // Common implementation for mixin & behavior
+
+function mutablePropertyChange(inst, property, value, old, mutableData) {
+  let isObject;
+
+  if (mutableData) {
+    isObject = typeof value === 'object' && value !== null; // Pull `old` for Objects from temp cache, but treat `null` as a primitive
+
+    if (isObject) {
+      old = inst.__dataTemp[property];
+    }
+  } // Strict equality check, but return false for NaN===NaN
+
+
+  let shouldChange = old !== value && (old === old || value === value); // Objects are stored in temporary cache (cleared at end of
+  // turn), which is used for dirty-checking
+
+  if (isObject && shouldChange) {
+    inst.__dataTemp[property] = value;
+  }
+
+  return shouldChange;
+}
+/**
+ * Element class mixin to skip strict dirty-checking for objects and arrays
+ * (always consider them to be "dirty"), for use on elements utilizing
+ * `PropertyEffects`
+ *
+ * By default, `PropertyEffects` performs strict dirty checking on
+ * objects, which means that any deep modifications to an object or array will
+ * not be propagated unless "immutable" data patterns are used (i.e. all object
+ * references from the root to the mutation were changed).
+ *
+ * Polymer also provides a proprietary data mutation and path notification API
+ * (e.g. `notifyPath`, `set`, and array mutation API's) that allow efficient
+ * mutation and notification of deep changes in an object graph to all elements
+ * bound to the same object graph.
+ *
+ * In cases where neither immutable patterns nor the data mutation API can be
+ * used, applying this mixin will cause Polymer to skip dirty checking for
+ * objects and arrays (always consider them to be "dirty").  This allows a
+ * user to make a deep modification to a bound object graph, and then either
+ * simply re-set the object (e.g. `this.items = this.items`) or call `notifyPath`
+ * (e.g. `this.notifyPath('items')`) to update the tree.  Note that all
+ * elements that wish to be updated based on deep mutations must apply this
+ * mixin or otherwise skip strict dirty checking for objects/arrays.
+ * Specifically, any elements in the binding tree between the source of a
+ * mutation and the consumption of it must apply this mixin or enable the
+ * `OptionalMutableData` mixin.
+ *
+ * In order to make the dirty check strategy configurable, see
+ * `OptionalMutableData`.
+ *
+ * Note, the performance characteristics of propagating large object graphs
+ * will be worse as opposed to using strict dirty checking with immutable
+ * patterns or Polymer's path notification API.
+ *
+ * @mixinFunction
+ * @polymer
+ * @summary Element class mixin to skip strict dirty-checking for objects
+ *   and arrays
+ * @template T
+ * @param {function(new:T)} superClass Class to apply mixin to.
+ * @return {function(new:T)} superClass with mixin applied.
+ */
+
+
+const MutableData = Object(_utils_mixin_js__WEBPACK_IMPORTED_MODULE_0__["dedupingMixin"])(superClass => {
+  /**
+   * @polymer
+   * @mixinClass
+   * @implements {Polymer_MutableData}
+   */
+  class MutableData extends superClass {
+    /**
+     * Overrides `PropertyEffects` to provide option for skipping
+     * strict equality checking for Objects and Arrays.
+     *
+     * This method pulls the value to dirty check against from the `__dataTemp`
+     * cache (rather than the normal `__data` cache) for Objects.  Since the temp
+     * cache is cleared at the end of a turn, this implementation allows
+     * side-effects of deep object changes to be processed by re-setting the
+     * same object (using the temp cache as an in-turn backstop to prevent
+     * cycles due to 2-way notification).
+     *
+     * @param {string} property Property name
+     * @param {*} value New property value
+     * @param {*} old Previous property value
+     * @return {boolean} Whether the property should be considered a change
+     * @protected
+     */
+    _shouldPropertyChange(property, value, old) {
+      return mutablePropertyChange(this, property, value, old, true);
+    }
+
+  }
+
+  return MutableData;
+});
+/**
+ * Element class mixin to add the optional ability to skip strict
+ * dirty-checking for objects and arrays (always consider them to be
+ * "dirty") by setting a `mutable-data` attribute on an element instance.
+ *
+ * By default, `PropertyEffects` performs strict dirty checking on
+ * objects, which means that any deep modifications to an object or array will
+ * not be propagated unless "immutable" data patterns are used (i.e. all object
+ * references from the root to the mutation were changed).
+ *
+ * Polymer also provides a proprietary data mutation and path notification API
+ * (e.g. `notifyPath`, `set`, and array mutation API's) that allow efficient
+ * mutation and notification of deep changes in an object graph to all elements
+ * bound to the same object graph.
+ *
+ * In cases where neither immutable patterns nor the data mutation API can be
+ * used, applying this mixin will allow Polymer to skip dirty checking for
+ * objects and arrays (always consider them to be "dirty").  This allows a
+ * user to make a deep modification to a bound object graph, and then either
+ * simply re-set the object (e.g. `this.items = this.items`) or call `notifyPath`
+ * (e.g. `this.notifyPath('items')`) to update the tree.  Note that all
+ * elements that wish to be updated based on deep mutations must apply this
+ * mixin or otherwise skip strict dirty checking for objects/arrays.
+ * Specifically, any elements in the binding tree between the source of a
+ * mutation and the consumption of it must enable this mixin or apply the
+ * `MutableData` mixin.
+ *
+ * While this mixin adds the ability to forgo Object/Array dirty checking,
+ * the `mutableData` flag defaults to false and must be set on the instance.
+ *
+ * Note, the performance characteristics of propagating large object graphs
+ * will be worse by relying on `mutableData: true` as opposed to using
+ * strict dirty checking with immutable patterns or Polymer's path notification
+ * API.
+ *
+ * @mixinFunction
+ * @polymer
+ * @summary Element class mixin to optionally skip strict dirty-checking
+ *   for objects and arrays
+ */
+
+const OptionalMutableData = Object(_utils_mixin_js__WEBPACK_IMPORTED_MODULE_0__["dedupingMixin"])(superClass => {
+  /**
+   * @mixinClass
+   * @polymer
+   * @implements {Polymer_OptionalMutableData}
+   */
+  class OptionalMutableData extends superClass {
+    /** @nocollapse */
+    static get properties() {
+      return {
+        /**
+         * Instance-level flag for configuring the dirty-checking strategy
+         * for this element.  When true, Objects and Arrays will skip dirty
+         * checking, otherwise strict equality checking will be used.
+         */
+        mutableData: Boolean
+      };
+    }
+    /**
+     * Overrides `PropertyEffects` to provide option for skipping
+     * strict equality checking for Objects and Arrays.
+     *
+     * When `this.mutableData` is true on this instance, this method
+     * pulls the value to dirty check against from the `__dataTemp` cache
+     * (rather than the normal `__data` cache) for Objects.  Since the temp
+     * cache is cleared at the end of a turn, this implementation allows
+     * side-effects of deep object changes to be processed by re-setting the
+     * same object (using the temp cache as an in-turn backstop to prevent
+     * cycles due to 2-way notification).
+     *
+     * @param {string} property Property name
+     * @param {*} value New property value
+     * @param {*} old Previous property value
+     * @return {boolean} Whether the property should be considered a change
+     * @protected
+     */
+
+
+    _shouldPropertyChange(property, value, old) {
+      return mutablePropertyChange(this, property, value, old, this.mutableData);
+    }
+
+  }
+
+  return OptionalMutableData;
+}); // Export for use by legacy behavior
+
+MutableData._mutablePropertyChange = mutablePropertyChange;
 
 /***/ }),
 
@@ -7790,6 +9588,307 @@ function camelToDashCase(camel) {
 
 /***/ }),
 
+/***/ "./node_modules/@polymer/polymer/lib/utils/debounce.js":
+/*!*************************************************************!*\
+  !*** ./node_modules/@polymer/polymer/lib/utils/debounce.js ***!
+  \*************************************************************/
+/*! exports provided: Debouncer, enqueueDebouncer, flushDebouncers */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Debouncer", function() { return Debouncer; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "enqueueDebouncer", function() { return enqueueDebouncer; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "flushDebouncers", function() { return flushDebouncers; });
+/* harmony import */ var _boot_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./boot.js */ "./node_modules/@polymer/polymer/lib/utils/boot.js");
+/* harmony import */ var _mixin_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./mixin.js */ "./node_modules/@polymer/polymer/lib/utils/mixin.js");
+/* harmony import */ var _async_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./async.js */ "./node_modules/@polymer/polymer/lib/utils/async.js");
+/**
+@license
+Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+*/
+
+
+
+/**
+ * @summary Collapse multiple callbacks into one invocation after a timer.
+ */
+
+class Debouncer {
+  constructor() {
+    this._asyncModule = null;
+    this._callback = null;
+    this._timer = null;
+  }
+  /**
+   * Sets the scheduler; that is, a module with the Async interface,
+   * a callback and optional arguments to be passed to the run function
+   * from the async module.
+   *
+   * @param {!AsyncInterface} asyncModule Object with Async interface.
+   * @param {function()} callback Callback to run.
+   * @return {void}
+   */
+
+
+  setConfig(asyncModule, callback) {
+    this._asyncModule = asyncModule;
+    this._callback = callback;
+    this._timer = this._asyncModule.run(() => {
+      this._timer = null;
+      debouncerQueue.delete(this);
+
+      this._callback();
+    });
+  }
+  /**
+   * Cancels an active debouncer and returns a reference to itself.
+   *
+   * @return {void}
+   */
+
+
+  cancel() {
+    if (this.isActive()) {
+      this._cancelAsync(); // Canceling a debouncer removes its spot from the flush queue,
+      // so if a debouncer is manually canceled and re-debounced, it
+      // will reset its flush order (this is a very minor difference from 1.x)
+      // Re-debouncing via the `debounce` API retains the 1.x FIFO flush order
+
+
+      debouncerQueue.delete(this);
+    }
+  }
+  /**
+   * Cancels a debouncer's async callback.
+   *
+   * @return {void}
+   */
+
+
+  _cancelAsync() {
+    if (this.isActive()) {
+      this._asyncModule.cancel(
+      /** @type {number} */
+      this._timer);
+
+      this._timer = null;
+    }
+  }
+  /**
+   * Flushes an active debouncer and returns a reference to itself.
+   *
+   * @return {void}
+   */
+
+
+  flush() {
+    if (this.isActive()) {
+      this.cancel();
+
+      this._callback();
+    }
+  }
+  /**
+   * Returns true if the debouncer is active.
+   *
+   * @return {boolean} True if active.
+   */
+
+
+  isActive() {
+    return this._timer != null;
+  }
+  /**
+   * Creates a debouncer if no debouncer is passed as a parameter
+   * or it cancels an active debouncer otherwise. The following
+   * example shows how a debouncer can be called multiple times within a
+   * microtask and "debounced" such that the provided callback function is
+   * called once. Add this method to a custom element:
+   *
+   * ```js
+   * import {microTask} from '@polymer/polymer/lib/utils/async.js';
+   * import {Debouncer} from '@polymer/polymer/lib/utils/debounce.js';
+   * // ...
+   *
+   * _debounceWork() {
+   *   this._debounceJob = Debouncer.debounce(this._debounceJob,
+   *       microTask, () => this._doWork());
+   * }
+   * ```
+   *
+   * If the `_debounceWork` method is called multiple times within the same
+   * microtask, the `_doWork` function will be called only once at the next
+   * microtask checkpoint.
+   *
+   * Note: In testing it is often convenient to avoid asynchrony. To accomplish
+   * this with a debouncer, you can use `enqueueDebouncer` and
+   * `flush`. For example, extend the above example by adding
+   * `enqueueDebouncer(this._debounceJob)` at the end of the
+   * `_debounceWork` method. Then in a test, call `flush` to ensure
+   * the debouncer has completed.
+   *
+   * @param {Debouncer?} debouncer Debouncer object.
+   * @param {!AsyncInterface} asyncModule Object with Async interface
+   * @param {function()} callback Callback to run.
+   * @return {!Debouncer} Returns a debouncer object.
+   */
+
+
+  static debounce(debouncer, asyncModule, callback) {
+    if (debouncer instanceof Debouncer) {
+      // Cancel the async callback, but leave in debouncerQueue if it was
+      // enqueued, to maintain 1.x flush order
+      debouncer._cancelAsync();
+    } else {
+      debouncer = new Debouncer();
+    }
+
+    debouncer.setConfig(asyncModule, callback);
+    return debouncer;
+  }
+
+}
+let debouncerQueue = new Set();
+/**
+ * Adds a `Debouncer` to a list of globally flushable tasks.
+ *
+ * @param {!Debouncer} debouncer Debouncer to enqueue
+ * @return {void}
+ */
+
+const enqueueDebouncer = function (debouncer) {
+  debouncerQueue.add(debouncer);
+};
+/**
+ * Flushes any enqueued debouncers
+ *
+ * @return {boolean} Returns whether any debouncers were flushed
+ */
+
+const flushDebouncers = function () {
+  const didFlush = Boolean(debouncerQueue.size); // If new debouncers are added while flushing, Set.forEach will ensure
+  // newly added ones are also flushed
+
+  debouncerQueue.forEach(debouncer => {
+    try {
+      debouncer.flush();
+    } catch (e) {
+      setTimeout(() => {
+        throw e;
+      });
+    }
+  });
+  return didFlush;
+};
+
+/***/ }),
+
+/***/ "./node_modules/@polymer/polymer/lib/utils/flush.js":
+/*!**********************************************************!*\
+  !*** ./node_modules/@polymer/polymer/lib/utils/flush.js ***!
+  \**********************************************************/
+/*! exports provided: enqueueDebouncer, flush */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "flush", function() { return flush; });
+/* harmony import */ var _boot_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./boot.js */ "./node_modules/@polymer/polymer/lib/utils/boot.js");
+/* harmony import */ var _utils_debounce_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../utils/debounce.js */ "./node_modules/@polymer/polymer/lib/utils/debounce.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "enqueueDebouncer", function() { return _utils_debounce_js__WEBPACK_IMPORTED_MODULE_1__["enqueueDebouncer"]; });
+
+/**
+@license
+Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+*/
+
+
+
+/**
+ * Forces several classes of asynchronously queued tasks to flush:
+ * - Debouncers added via `enqueueDebouncer`
+ * - ShadyDOM distribution
+ *
+ * @return {void}
+ */
+
+const flush = function () {
+  let shadyDOM, debouncers;
+
+  do {
+    shadyDOM = window.ShadyDOM && ShadyDOM.flush();
+
+    if (window.ShadyCSS && window.ShadyCSS.ScopingShim) {
+      window.ShadyCSS.ScopingShim.flush();
+    }
+
+    debouncers = Object(_utils_debounce_js__WEBPACK_IMPORTED_MODULE_1__["flushDebouncers"])();
+  } while (shadyDOM || debouncers);
+};
+
+/***/ }),
+
+/***/ "./node_modules/@polymer/polymer/lib/utils/hide-template-controls.js":
+/*!***************************************************************************!*\
+  !*** ./node_modules/@polymer/polymer/lib/utils/hide-template-controls.js ***!
+  \***************************************************************************/
+/*! exports provided: hideElementsGlobally */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "hideElementsGlobally", function() { return hideElementsGlobally; });
+/* harmony import */ var _settings_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./settings.js */ "./node_modules/@polymer/polymer/lib/utils/settings.js");
+/**
+@license
+Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+*/
+
+/**
+ * @fileoverview
+ *
+ * Module to hide `<dom-bind>`, `<dom-if>`, and `<dom-repeat>` elements
+ * optimally in ShadyDOM
+ */
+
+let elementsHidden = false;
+/**
+ * @return {boolean} True if elements will be hidden globally
+ */
+
+function hideElementsGlobally() {
+  if (_settings_js__WEBPACK_IMPORTED_MODULE_0__["legacyOptimizations"] && !_settings_js__WEBPACK_IMPORTED_MODULE_0__["useShadow"]) {
+    if (!elementsHidden) {
+      elementsHidden = true;
+      const style = document.createElement('style');
+      style.textContent = 'dom-bind,dom-if,dom-repeat{display:none;}';
+      document.head.appendChild(style);
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
+/***/ }),
+
 /***/ "./node_modules/@polymer/polymer/lib/utils/html-tag.js":
 /*!*************************************************************!*\
   !*** ./node_modules/@polymer/polymer/lib/utils/html-tag.js ***!
@@ -9245,6 +11344,814 @@ function dumpRegistrations() {
 
 /***/ }),
 
+/***/ "./node_modules/@polymer/polymer/lib/utils/templatize.js":
+/*!***************************************************************!*\
+  !*** ./node_modules/@polymer/polymer/lib/utils/templatize.js ***!
+  \***************************************************************/
+/*! exports provided: showHideChildren, templatize, modelForElement, TemplateInstanceBase */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "showHideChildren", function() { return showHideChildren; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "templatize", function() { return templatize; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "modelForElement", function() { return modelForElement; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "TemplateInstanceBase", function() { return TemplateInstanceBase; });
+/* harmony import */ var _boot_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./boot.js */ "./node_modules/@polymer/polymer/lib/utils/boot.js");
+/* harmony import */ var _mixins_property_effects_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../mixins/property-effects.js */ "./node_modules/@polymer/polymer/lib/mixins/property-effects.js");
+/* harmony import */ var _mixins_mutable_data_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../mixins/mutable-data.js */ "./node_modules/@polymer/polymer/lib/mixins/mutable-data.js");
+/* harmony import */ var _settings_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./settings.js */ "./node_modules/@polymer/polymer/lib/utils/settings.js");
+/* harmony import */ var _wrap_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./wrap.js */ "./node_modules/@polymer/polymer/lib/utils/wrap.js");
+/**
+@license
+Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+*/
+
+/**
+ * Module for preparing and stamping instances of templates that utilize
+ * Polymer's data-binding and declarative event listener features.
+ *
+ * Example:
+ *
+ *     // Get a template from somewhere, e.g. light DOM
+ *     let template = this.querySelector('template');
+ *     // Prepare the template
+ *     let TemplateClass = Templatize.templatize(template);
+ *     // Instance the template with an initial data model
+ *     let instance = new TemplateClass({myProp: 'initial'});
+ *     // Insert the instance's DOM somewhere, e.g. element's shadow DOM
+ *     this.shadowRoot.appendChild(instance.root);
+ *     // Changing a property on the instance will propagate to bindings
+ *     // in the template
+ *     instance.myProp = 'new value';
+ *
+ * The `options` dictionary passed to `templatize` allows for customizing
+ * features of the generated template class, including how outer-scope host
+ * properties should be forwarded into template instances, how any instance
+ * properties added into the template's scope should be notified out to
+ * the host, and whether the instance should be decorated as a "parent model"
+ * of any event handlers.
+ *
+ *     // Customize property forwarding and event model decoration
+ *     let TemplateClass = Templatize.templatize(template, this, {
+ *       parentModel: true,
+ *       forwardHostProp(property, value) {...},
+ *       instanceProps: {...},
+ *       notifyInstanceProp(instance, property, value) {...},
+ *     });
+ *
+ * @summary Module for preparing and stamping instances of templates
+ *   utilizing Polymer templating features.
+ */
+
+
+
+
+ // Base class for HTMLTemplateElement extension that has property effects
+// machinery for propagating host properties to children. This is an ES5
+// class only because Babel (incorrectly) requires super() in the class
+// constructor even though no `this` is used and it returns an instance.
+
+let newInstance = null;
+/**
+ * @constructor
+ * @extends {HTMLTemplateElement}
+ * @private
+ */
+
+function HTMLTemplateElementExtension() {
+  return newInstance;
+}
+
+HTMLTemplateElementExtension.prototype = Object.create(HTMLTemplateElement.prototype, {
+  constructor: {
+    value: HTMLTemplateElementExtension,
+    writable: true
+  }
+});
+/**
+ * @constructor
+ * @implements {Polymer_PropertyEffects}
+ * @extends {HTMLTemplateElementExtension}
+ * @private
+ */
+
+const DataTemplate = Object(_mixins_property_effects_js__WEBPACK_IMPORTED_MODULE_1__["PropertyEffects"])(HTMLTemplateElementExtension);
+/**
+ * @constructor
+ * @implements {Polymer_MutableData}
+ * @extends {DataTemplate}
+ * @private
+ */
+
+const MutableDataTemplate = Object(_mixins_mutable_data_js__WEBPACK_IMPORTED_MODULE_2__["MutableData"])(DataTemplate); // Applies a DataTemplate subclass to a <template> instance
+
+function upgradeTemplate(template, constructor) {
+  newInstance = template;
+  Object.setPrototypeOf(template, constructor.prototype);
+  new constructor();
+  newInstance = null;
+}
+/**
+ * Base class for TemplateInstance.
+ * @constructor
+ * @extends {HTMLElement}
+ * @implements {Polymer_PropertyEffects}
+ * @private
+ */
+
+
+const templateInstanceBase = Object(_mixins_property_effects_js__WEBPACK_IMPORTED_MODULE_1__["PropertyEffects"])(class {});
+function showHideChildren(hide, children) {
+  for (let i = 0; i < children.length; i++) {
+    let n = children[i]; // Ignore non-changes
+
+    if (Boolean(hide) != Boolean(n.__hideTemplateChildren__)) {
+      // clear and restore text
+      if (n.nodeType === Node.TEXT_NODE) {
+        if (hide) {
+          n.__polymerTextContent__ = n.textContent;
+          n.textContent = '';
+        } else {
+          n.textContent = n.__polymerTextContent__;
+        } // remove and replace slot
+
+      } else if (n.localName === 'slot') {
+        if (hide) {
+          n.__polymerReplaced__ = document.createComment('hidden-slot');
+          Object(_wrap_js__WEBPACK_IMPORTED_MODULE_4__["wrap"])(Object(_wrap_js__WEBPACK_IMPORTED_MODULE_4__["wrap"])(n).parentNode).replaceChild(n.__polymerReplaced__, n);
+        } else {
+          const replace = n.__polymerReplaced__;
+
+          if (replace) {
+            Object(_wrap_js__WEBPACK_IMPORTED_MODULE_4__["wrap"])(Object(_wrap_js__WEBPACK_IMPORTED_MODULE_4__["wrap"])(replace).parentNode).replaceChild(n, replace);
+          }
+        }
+      } // hide and show nodes
+      else if (n.style) {
+          if (hide) {
+            n.__polymerDisplay__ = n.style.display;
+            n.style.display = 'none';
+          } else {
+            n.style.display = n.__polymerDisplay__;
+          }
+        }
+    }
+
+    n.__hideTemplateChildren__ = hide;
+
+    if (n._showHideChildren) {
+      n._showHideChildren(hide);
+    }
+  }
+}
+/**
+ * @polymer
+ * @customElement
+ * @appliesMixin PropertyEffects
+ * @unrestricted
+ */
+
+class TemplateInstanceBase extends templateInstanceBase {
+  constructor(props) {
+    super();
+
+    this._configureProperties(props);
+    /** @type {!StampedTemplate} */
+
+
+    this.root = this._stampTemplate(this.__dataHost); // Save list of stamped children
+
+    let children = [];
+    /** @suppress {invalidCasts} */
+
+    this.children =
+    /** @type {!NodeList} */
+    children; // Polymer 1.x did not use `Polymer.dom` here so not bothering.
+
+    for (let n = this.root.firstChild; n; n = n.nextSibling) {
+      children.push(n);
+      n.__templatizeInstance = this;
+    }
+
+    if (this.__templatizeOwner && this.__templatizeOwner.__hideTemplateChildren__) {
+      this._showHideChildren(true);
+    } // Flush props only when props are passed if instance props exist
+    // or when there isn't instance props.
+
+
+    let options = this.__templatizeOptions;
+
+    if (props && options.instanceProps || !options.instanceProps) {
+      this._enableProperties();
+    }
+  }
+  /**
+   * Configure the given `props` by calling `_setPendingProperty`. Also
+   * sets any properties stored in `__hostProps`.
+   * @private
+   * @param {Object} props Object of property name-value pairs to set.
+   * @return {void}
+   */
+
+
+  _configureProperties(props) {
+    let options = this.__templatizeOptions;
+
+    if (options.forwardHostProp) {
+      for (let hprop in this.__hostProps) {
+        this._setPendingProperty(hprop, this.__dataHost['_host_' + hprop]);
+      }
+    } // Any instance props passed in the constructor will overwrite host props;
+    // normally this would be a user error but we don't specifically filter them
+
+
+    for (let iprop in props) {
+      this._setPendingProperty(iprop, props[iprop]);
+    }
+  }
+  /**
+   * Forwards a host property to this instance.  This method should be
+   * called on instances from the `options.forwardHostProp` callback
+   * to propagate changes of host properties to each instance.
+   *
+   * Note this method enqueues the change, which are flushed as a batch.
+   *
+   * @param {string} prop Property or path name
+   * @param {*} value Value of the property to forward
+   * @return {void}
+   */
+
+
+  forwardHostProp(prop, value) {
+    if (this._setPendingPropertyOrPath(prop, value, false, true)) {
+      this.__dataHost._enqueueClient(this);
+    }
+  }
+  /**
+   * Override point for adding custom or simulated event handling.
+   *
+   * @override
+   * @param {!Node} node Node to add event listener to
+   * @param {string} eventName Name of event
+   * @param {function(!Event):void} handler Listener function to add
+   * @return {void}
+   */
+
+
+  _addEventListenerToNode(node, eventName, handler) {
+    if (this._methodHost && this.__templatizeOptions.parentModel) {
+      // If this instance should be considered a parent model, decorate
+      // events this template instance as `model`
+      this._methodHost._addEventListenerToNode(node, eventName, e => {
+        e.model = this;
+        handler(e);
+      });
+    } else {
+      // Otherwise delegate to the template's host (which could be)
+      // another template instance
+      let templateHost = this.__dataHost.__dataHost;
+
+      if (templateHost) {
+        templateHost._addEventListenerToNode(node, eventName, handler);
+      }
+    }
+  }
+  /**
+   * Shows or hides the template instance top level child elements. For
+   * text nodes, `textContent` is removed while "hidden" and replaced when
+   * "shown."
+   * @param {boolean} hide Set to true to hide the children;
+   * set to false to show them.
+   * @return {void}
+   * @protected
+   */
+
+
+  _showHideChildren(hide) {
+    showHideChildren(hide, this.children);
+  }
+  /**
+   * Overrides default property-effects implementation to intercept
+   * textContent bindings while children are "hidden" and cache in
+   * private storage for later retrieval.
+   *
+   * @override
+   * @param {!Node} node The node to set a property on
+   * @param {string} prop The property to set
+   * @param {*} value The value to set
+   * @return {void}
+   * @protected
+   */
+
+
+  _setUnmanagedPropertyToNode(node, prop, value) {
+    if (node.__hideTemplateChildren__ && node.nodeType == Node.TEXT_NODE && prop == 'textContent') {
+      node.__polymerTextContent__ = value;
+    } else {
+      super._setUnmanagedPropertyToNode(node, prop, value);
+    }
+  }
+  /**
+   * Find the parent model of this template instance.  The parent model
+   * is either another templatize instance that had option `parentModel: true`,
+   * or else the host element.
+   *
+   * @return {!Polymer_PropertyEffects} The parent model of this instance
+   */
+
+
+  get parentModel() {
+    let model = this.__parentModel;
+
+    if (!model) {
+      let options;
+      model = this;
+
+      do {
+        // A template instance's `__dataHost` is a <template>
+        // `model.__dataHost.__dataHost` is the template's host
+        model = model.__dataHost.__dataHost;
+      } while ((options = model.__templatizeOptions) && !options.parentModel);
+
+      this.__parentModel = model;
+    }
+
+    return model;
+  }
+  /**
+   * Stub of HTMLElement's `dispatchEvent`, so that effects that may
+   * dispatch events safely no-op.
+   *
+   * @param {Event} event Event to dispatch
+   * @return {boolean} Always true.
+   * @override
+   */
+
+
+  dispatchEvent(event) {
+    // eslint-disable-line no-unused-vars
+    return true;
+  }
+
+}
+/** @type {!DataTemplate} */
+
+
+TemplateInstanceBase.prototype.__dataHost;
+/** @type {!TemplatizeOptions} */
+
+TemplateInstanceBase.prototype.__templatizeOptions;
+/** @type {!Polymer_PropertyEffects} */
+
+TemplateInstanceBase.prototype._methodHost;
+/** @type {!Object} */
+
+TemplateInstanceBase.prototype.__templatizeOwner;
+/** @type {!Object} */
+
+TemplateInstanceBase.prototype.__hostProps;
+/**
+ * @constructor
+ * @extends {TemplateInstanceBase}
+ * @implements {Polymer_MutableData}
+ * @private
+ */
+
+const MutableTemplateInstanceBase = Object(_mixins_mutable_data_js__WEBPACK_IMPORTED_MODULE_2__["MutableData"])( // This cast shouldn't be neccessary, but Closure doesn't understand that
+// TemplateInstanceBase is a constructor function.
+
+/** @type {function(new:TemplateInstanceBase)} */
+TemplateInstanceBase);
+
+function findMethodHost(template) {
+  // Technically this should be the owner of the outermost template.
+  // In shadow dom, this is always getRootNode().host, but we can
+  // approximate this via cooperation with our dataHost always setting
+  // `_methodHost` as long as there were bindings (or id's) on this
+  // instance causing it to get a dataHost.
+  let templateHost = template.__dataHost;
+  return templateHost && templateHost._methodHost || templateHost;
+}
+/* eslint-disable valid-jsdoc */
+
+/**
+ * @suppress {missingProperties} class.prototype is not defined for some reason
+ */
+
+
+function createTemplatizerClass(template, templateInfo, options) {
+  /**
+   * @constructor
+   * @extends {TemplateInstanceBase}
+   */
+  let templatizerBase = options.mutableData ? MutableTemplateInstanceBase : TemplateInstanceBase; // Affordance for global mixins onto TemplatizeInstance
+
+  if (templatize.mixin) {
+    templatizerBase = templatize.mixin(templatizerBase);
+  }
+  /**
+   * Anonymous class created by the templatize
+   * @constructor
+   * @private
+   */
+
+
+  let klass = class extends templatizerBase {};
+  /** @override */
+
+  klass.prototype.__templatizeOptions = options;
+
+  klass.prototype._bindTemplate(template);
+
+  addNotifyEffects(klass, template, templateInfo, options);
+  return klass;
+}
+/**
+ * Adds propagate effects from the template to the template instance for
+ * properties that the host binds to the template using the `_host_` prefix.
+ *
+ * @suppress {missingProperties} class.prototype is not defined for some reason
+ */
+
+
+function addPropagateEffects(target, templateInfo, options, methodHost) {
+  let userForwardHostProp = options.forwardHostProp;
+
+  if (userForwardHostProp && templateInfo.hasHostProps) {
+    // Under the `removeNestedTemplates` optimization, a custom element like
+    // `dom-if` or `dom-repeat` can itself be treated as the "template"; this
+    // flag is used to switch between upgrading a `<template>` to be a property
+    // effects client vs. adding the effects directly to the custom element
+    const isTemplate = target.localName == 'template'; // Provide data API and property effects on memoized template class
+
+    let klass = templateInfo.templatizeTemplateClass;
+
+    if (!klass) {
+      if (isTemplate) {
+        /**
+         * @constructor
+         * @extends {DataTemplate}
+         */
+        let templatizedBase = options.mutableData ? MutableDataTemplate : DataTemplate; // NOTE: due to https://github.com/google/closure-compiler/issues/2928,
+        // combining the next two lines into one assignment causes a spurious
+        // type error.
+
+        /** @private */
+
+        class TemplatizedTemplate extends templatizedBase {}
+
+        klass = templateInfo.templatizeTemplateClass = TemplatizedTemplate;
+      } else {
+        /**
+         * @constructor
+         * @extends {PolymerElement}
+         */
+        const templatizedBase = target.constructor; // Create a cached subclass of the base custom element class onto which
+        // to put the template-specific propagate effects
+        // NOTE: due to https://github.com/google/closure-compiler/issues/2928,
+        // combining the next two lines into one assignment causes a spurious
+        // type error.
+
+        /** @private */
+
+        class TemplatizedTemplateExtension extends templatizedBase {}
+
+        klass = templateInfo.templatizeTemplateClass = TemplatizedTemplateExtension;
+      } // Add template - >instances effects
+      // and host <- template effects
+
+
+      let hostProps = templateInfo.hostProps;
+
+      for (let prop in hostProps) {
+        klass.prototype._addPropertyEffect('_host_' + prop, klass.prototype.PROPERTY_EFFECT_TYPES.PROPAGATE, {
+          fn: createForwardHostPropEffect(prop, userForwardHostProp)
+        });
+
+        klass.prototype._createNotifyingProperty('_host_' + prop);
+      }
+
+      if (_settings_js__WEBPACK_IMPORTED_MODULE_3__["legacyWarnings"] && methodHost) {
+        warnOnUndeclaredProperties(templateInfo, options, methodHost);
+      }
+    } // Mix any pre-bound data into __data; no need to flush this to
+    // instances since they pull from the template at instance-time
+
+
+    if (target.__dataProto) {
+      // Note, generally `__dataProto` could be chained, but it's guaranteed
+      // to not be since this is a vanilla template we just added effects to
+      Object.assign(target.__data, target.__dataProto);
+    }
+
+    if (isTemplate) {
+      upgradeTemplate(target, klass); // Clear any pending data for performance
+
+      target.__dataTemp = {};
+      target.__dataPending = null;
+      target.__dataOld = null;
+
+      target._enableProperties();
+    } else {
+      // Swizzle the cached subclass prototype onto the custom element
+      Object.setPrototypeOf(target, klass.prototype); // Check for any pre-bound instance host properties, and do the
+      // instance property delete/assign dance for those (directly into data;
+      // not need to go through accessor since they are pulled at instance time)
+
+      const hostProps = templateInfo.hostProps;
+
+      for (let prop in hostProps) {
+        prop = '_host_' + prop;
+
+        if (prop in target) {
+          const val = target[prop];
+          delete target[prop];
+          target.__data[prop] = val;
+        }
+      }
+    }
+  }
+}
+/* eslint-enable valid-jsdoc */
+
+
+function createForwardHostPropEffect(hostProp, userForwardHostProp) {
+  return function forwardHostProp(template, prop, props) {
+    userForwardHostProp.call(template.__templatizeOwner, prop.substring('_host_'.length), props[prop]);
+  };
+}
+
+function addNotifyEffects(klass, template, templateInfo, options) {
+  let hostProps = templateInfo.hostProps || {};
+
+  for (let iprop in options.instanceProps) {
+    delete hostProps[iprop];
+    let userNotifyInstanceProp = options.notifyInstanceProp;
+
+    if (userNotifyInstanceProp) {
+      klass.prototype._addPropertyEffect(iprop, klass.prototype.PROPERTY_EFFECT_TYPES.NOTIFY, {
+        fn: createNotifyInstancePropEffect(iprop, userNotifyInstanceProp)
+      });
+    }
+  }
+
+  if (options.forwardHostProp && template.__dataHost) {
+    for (let hprop in hostProps) {
+      // As we're iterating hostProps in this function, note whether
+      // there were any, for an optimization in addPropagateEffects
+      if (!templateInfo.hasHostProps) {
+        templateInfo.hasHostProps = true;
+      }
+
+      klass.prototype._addPropertyEffect(hprop, klass.prototype.PROPERTY_EFFECT_TYPES.NOTIFY, {
+        fn: createNotifyHostPropEffect()
+      });
+    }
+  }
+}
+
+function createNotifyInstancePropEffect(instProp, userNotifyInstanceProp) {
+  return function notifyInstanceProp(inst, prop, props) {
+    userNotifyInstanceProp.call(inst.__templatizeOwner, inst, prop, props[prop]);
+  };
+}
+
+function createNotifyHostPropEffect() {
+  return function notifyHostProp(inst, prop, props) {
+    inst.__dataHost._setPendingPropertyOrPath('_host_' + prop, props[prop], true, true);
+  };
+}
+/**
+ * Returns an anonymous `PropertyEffects` class bound to the
+ * `<template>` provided.  Instancing the class will result in the
+ * template being stamped into a document fragment stored as the instance's
+ * `root` property, after which it can be appended to the DOM.
+ *
+ * Templates may utilize all Polymer data-binding features as well as
+ * declarative event listeners.  Event listeners and inline computing
+ * functions in the template will be called on the host of the template.
+ *
+ * The constructor returned takes a single argument dictionary of initial
+ * property values to propagate into template bindings.  Additionally
+ * host properties can be forwarded in, and instance properties can be
+ * notified out by providing optional callbacks in the `options` dictionary.
+ *
+ * Valid configuration in `options` are as follows:
+ *
+ * - `forwardHostProp(property, value)`: Called when a property referenced
+ *   in the template changed on the template's host. As this library does
+ *   not retain references to templates instanced by the user, it is the
+ *   templatize owner's responsibility to forward host property changes into
+ *   user-stamped instances.  The `instance.forwardHostProp(property, value)`
+ *    method on the generated class should be called to forward host
+ *   properties into the template to prevent unnecessary property-changed
+ *   notifications. Any properties referenced in the template that are not
+ *   defined in `instanceProps` will be notified up to the template's host
+ *   automatically.
+ * - `instanceProps`: Dictionary of property names that will be added
+ *   to the instance by the templatize owner.  These properties shadow any
+ *   host properties, and changes within the template to these properties
+ *   will result in `notifyInstanceProp` being called.
+ * - `mutableData`: When `true`, the generated class will skip strict
+ *   dirty-checking for objects and arrays (always consider them to be
+ *   "dirty").
+ * - `notifyInstanceProp(instance, property, value)`: Called when
+ *   an instance property changes.  Users may choose to call `notifyPath`
+ *   on e.g. the owner to notify the change.
+ * - `parentModel`: When `true`, events handled by declarative event listeners
+ *   (`on-event="handler"`) will be decorated with a `model` property pointing
+ *   to the template instance that stamped it.  It will also be returned
+ *   from `instance.parentModel` in cases where template instance nesting
+ *   causes an inner model to shadow an outer model.
+ *
+ * All callbacks are called bound to the `owner`. Any context
+ * needed for the callbacks (such as references to `instances` stamped)
+ * should be stored on the `owner` such that they can be retrieved via
+ * `this`.
+ *
+ * When `options.forwardHostProp` is declared as an option, any properties
+ * referenced in the template will be automatically forwarded from the host of
+ * the `<template>` to instances, with the exception of any properties listed in
+ * the `options.instanceProps` object.  `instanceProps` are assumed to be
+ * managed by the owner of the instances, either passed into the constructor
+ * or set after the fact.  Note, any properties passed into the constructor will
+ * always be set to the instance (regardless of whether they would normally
+ * be forwarded from the host).
+ *
+ * Note that `templatize()` can be run only once for a given `<template>`.
+ * Further calls will result in an error. Also, there is a special
+ * behavior if the template was duplicated through a mechanism such as
+ * `<dom-repeat>` or `<test-fixture>`. In this case, all calls to
+ * `templatize()` return the same class for all duplicates of a template.
+ * The class returned from `templatize()` is generated only once using
+ * the `options` from the first call. This means that any `options`
+ * provided to subsequent calls will be ignored. Therefore, it is very
+ * important not to close over any variables inside the callbacks. Also,
+ * arrow functions must be avoided because they bind the outer `this`.
+ * Inside the callbacks, any contextual information can be accessed
+ * through `this`, which points to the `owner`.
+ *
+ * @param {!HTMLTemplateElement} template Template to templatize
+ * @param {Polymer_PropertyEffects=} owner Owner of the template instances;
+ *   any optional callbacks will be bound to this owner.
+ * @param {Object=} options Options dictionary (see summary for details)
+ * @return {function(new:TemplateInstanceBase, Object=)} Generated class bound
+ *   to the template provided
+ * @suppress {invalidCasts}
+ */
+
+
+function templatize(template, owner, options) {
+  // Under strictTemplatePolicy, the templatized element must be owned
+  // by a (trusted) Polymer element, indicated by existence of _methodHost;
+  // e.g. for dom-if & dom-repeat in main document, _methodHost is null
+  if (_settings_js__WEBPACK_IMPORTED_MODULE_3__["strictTemplatePolicy"] && !findMethodHost(template)) {
+    throw new Error('strictTemplatePolicy: template owner not trusted');
+  }
+
+  options =
+  /** @type {!TemplatizeOptions} */
+  options || {};
+
+  if (template.__templatizeOwner) {
+    throw new Error('A <template> can only be templatized once');
+  }
+
+  template.__templatizeOwner = owner;
+  const ctor = owner ? owner.constructor : TemplateInstanceBase;
+
+  let templateInfo = ctor._parseTemplate(template); // Get memoized base class for the prototypical template, which
+  // includes property effects for binding template & forwarding
+
+  /**
+   * @constructor
+   * @extends {TemplateInstanceBase}
+   */
+
+
+  let baseClass = templateInfo.templatizeInstanceClass;
+
+  if (!baseClass) {
+    baseClass = createTemplatizerClass(template, templateInfo, options);
+    templateInfo.templatizeInstanceClass = baseClass;
+  }
+
+  const methodHost = findMethodHost(template); // Host property forwarding must be installed onto template instance
+
+  addPropagateEffects(template, templateInfo, options, methodHost); // Subclass base class and add reference for this specific template
+
+  /** @private */
+
+  let klass = class TemplateInstance extends baseClass {};
+  /** @override */
+
+  klass.prototype._methodHost = methodHost;
+  /** @override */
+
+  klass.prototype.__dataHost =
+  /** @type {!DataTemplate} */
+  template;
+  /** @override */
+
+  klass.prototype.__templatizeOwner =
+  /** @type {!Object} */
+  owner;
+  /** @override */
+
+  klass.prototype.__hostProps = templateInfo.hostProps;
+  klass =
+  /** @type {function(new:TemplateInstanceBase)} */
+  klass; //eslint-disable-line no-self-assign
+
+  return klass;
+}
+
+function warnOnUndeclaredProperties(templateInfo, options, methodHost) {
+  const declaredProps = methodHost.constructor._properties;
+  const {
+    propertyEffects
+  } = templateInfo;
+  const {
+    instanceProps
+  } = options;
+
+  for (let prop in propertyEffects) {
+    // Ensure properties with template effects are declared on the outermost
+    // host (`methodHost`), unless they are instance props or static functions
+    if (!declaredProps[prop] && !(instanceProps && instanceProps[prop])) {
+      const effects = propertyEffects[prop];
+
+      for (let i = 0; i < effects.length; i++) {
+        const {
+          part
+        } = effects[i].info;
+
+        if (!(part.signature && part.signature.static)) {
+          console.warn(`Property '${prop}' used in template but not ` + `declared in 'properties'; attribute will not be observed.`);
+          break;
+        }
+      }
+    }
+  }
+}
+/**
+ * Returns the template "model" associated with a given element, which
+ * serves as the binding scope for the template instance the element is
+ * contained in. A template model is an instance of
+ * `TemplateInstanceBase`, and should be used to manipulate data
+ * associated with this template instance.
+ *
+ * Example:
+ *
+ *   let model = modelForElement(el);
+ *   if (model.index < 10) {
+ *     model.set('item.checked', true);
+ *   }
+ *
+ * @param {HTMLElement} template The model will be returned for
+ *   elements stamped from this template (accepts either an HTMLTemplateElement)
+ *   or a `<dom-if>`/`<dom-repeat>` element when using `removeNestedTemplates`
+ *   optimization.
+ * @param {Node=} node Node for which to return a template model.
+ * @return {TemplateInstanceBase} Template instance representing the
+ *   binding scope for the element
+ */
+
+
+function modelForElement(template, node) {
+  let model;
+
+  while (node) {
+    // An element with a __templatizeInstance marks the top boundary
+    // of a scope; walk up until we find one, and then ensure that
+    // its __dataHost matches `this`, meaning this dom-repeat stamped it
+    if (model = node.__dataHost ? node : node.__templatizeInstance) {
+      // Found an element stamped by another template; keep walking up
+      // from its __dataHost
+      if (model.__dataHost != template) {
+        node = model.__dataHost;
+      } else {
+        return model;
+      }
+    } else {
+      // Still in a template scope, keep going up until
+      // a __templatizeInstance is found
+      node = Object(_wrap_js__WEBPACK_IMPORTED_MODULE_4__["wrap"])(node).parentNode;
+    }
+  }
+
+  return null;
+}
+
+
+/***/ }),
+
 /***/ "./node_modules/@polymer/polymer/lib/utils/wrap.js":
 /*!*********************************************************!*\
   !*** ./node_modules/@polymer/polymer/lib/utils/wrap.js ***!
@@ -10302,738 +13209,6 @@ if (true) {
 
 if (false) {} else {
   module.exports = __webpack_require__(/*! ./cjs/react-is.development.js */ "./node_modules/react-is/cjs/react-is.development.js");
-}
-
-/***/ }),
-
-/***/ "./node_modules/regenerator-runtime/runtime.js":
-/*!*****************************************************!*\
-  !*** ./node_modules/regenerator-runtime/runtime.js ***!
-  \*****************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-/**
- * Copyright (c) 2014-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-var runtime = function (exports) {
-  "use strict";
-
-  var Op = Object.prototype;
-  var hasOwn = Op.hasOwnProperty;
-  var undefined; // More compressible than void 0.
-
-  var $Symbol = typeof Symbol === "function" ? Symbol : {};
-  var iteratorSymbol = $Symbol.iterator || "@@iterator";
-  var asyncIteratorSymbol = $Symbol.asyncIterator || "@@asyncIterator";
-  var toStringTagSymbol = $Symbol.toStringTag || "@@toStringTag";
-
-  function define(obj, key, value) {
-    Object.defineProperty(obj, key, {
-      value: value,
-      enumerable: true,
-      configurable: true,
-      writable: true
-    });
-    return obj[key];
-  }
-
-  try {
-    // IE 8 has a broken Object.defineProperty that only works on DOM objects.
-    define({}, "");
-  } catch (err) {
-    define = function (obj, key, value) {
-      return obj[key] = value;
-    };
-  }
-
-  function wrap(innerFn, outerFn, self, tryLocsList) {
-    // If outerFn provided and outerFn.prototype is a Generator, then outerFn.prototype instanceof Generator.
-    var protoGenerator = outerFn && outerFn.prototype instanceof Generator ? outerFn : Generator;
-    var generator = Object.create(protoGenerator.prototype);
-    var context = new Context(tryLocsList || []); // The ._invoke method unifies the implementations of the .next,
-    // .throw, and .return methods.
-
-    generator._invoke = makeInvokeMethod(innerFn, self, context);
-    return generator;
-  }
-
-  exports.wrap = wrap; // Try/catch helper to minimize deoptimizations. Returns a completion
-  // record like context.tryEntries[i].completion. This interface could
-  // have been (and was previously) designed to take a closure to be
-  // invoked without arguments, but in all the cases we care about we
-  // already have an existing method we want to call, so there's no need
-  // to create a new function object. We can even get away with assuming
-  // the method takes exactly one argument, since that happens to be true
-  // in every case, so we don't have to touch the arguments object. The
-  // only additional allocation required is the completion record, which
-  // has a stable shape and so hopefully should be cheap to allocate.
-
-  function tryCatch(fn, obj, arg) {
-    try {
-      return {
-        type: "normal",
-        arg: fn.call(obj, arg)
-      };
-    } catch (err) {
-      return {
-        type: "throw",
-        arg: err
-      };
-    }
-  }
-
-  var GenStateSuspendedStart = "suspendedStart";
-  var GenStateSuspendedYield = "suspendedYield";
-  var GenStateExecuting = "executing";
-  var GenStateCompleted = "completed"; // Returning this object from the innerFn has the same effect as
-  // breaking out of the dispatch switch statement.
-
-  var ContinueSentinel = {}; // Dummy constructor functions that we use as the .constructor and
-  // .constructor.prototype properties for functions that return Generator
-  // objects. For full spec compliance, you may wish to configure your
-  // minifier not to mangle the names of these two functions.
-
-  function Generator() {}
-
-  function GeneratorFunction() {}
-
-  function GeneratorFunctionPrototype() {} // This is a polyfill for %IteratorPrototype% for environments that
-  // don't natively support it.
-
-
-  var IteratorPrototype = {};
-
-  IteratorPrototype[iteratorSymbol] = function () {
-    return this;
-  };
-
-  var getProto = Object.getPrototypeOf;
-  var NativeIteratorPrototype = getProto && getProto(getProto(values([])));
-
-  if (NativeIteratorPrototype && NativeIteratorPrototype !== Op && hasOwn.call(NativeIteratorPrototype, iteratorSymbol)) {
-    // This environment has a native %IteratorPrototype%; use it instead
-    // of the polyfill.
-    IteratorPrototype = NativeIteratorPrototype;
-  }
-
-  var Gp = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(IteratorPrototype);
-  GeneratorFunction.prototype = Gp.constructor = GeneratorFunctionPrototype;
-  GeneratorFunctionPrototype.constructor = GeneratorFunction;
-  GeneratorFunction.displayName = define(GeneratorFunctionPrototype, toStringTagSymbol, "GeneratorFunction"); // Helper for defining the .next, .throw, and .return methods of the
-  // Iterator interface in terms of a single ._invoke method.
-
-  function defineIteratorMethods(prototype) {
-    ["next", "throw", "return"].forEach(function (method) {
-      define(prototype, method, function (arg) {
-        return this._invoke(method, arg);
-      });
-    });
-  }
-
-  exports.isGeneratorFunction = function (genFun) {
-    var ctor = typeof genFun === "function" && genFun.constructor;
-    return ctor ? ctor === GeneratorFunction || // For the native GeneratorFunction constructor, the best we can
-    // do is to check its .name property.
-    (ctor.displayName || ctor.name) === "GeneratorFunction" : false;
-  };
-
-  exports.mark = function (genFun) {
-    if (Object.setPrototypeOf) {
-      Object.setPrototypeOf(genFun, GeneratorFunctionPrototype);
-    } else {
-      genFun.__proto__ = GeneratorFunctionPrototype;
-      define(genFun, toStringTagSymbol, "GeneratorFunction");
-    }
-
-    genFun.prototype = Object.create(Gp);
-    return genFun;
-  }; // Within the body of any async function, `await x` is transformed to
-  // `yield regeneratorRuntime.awrap(x)`, so that the runtime can test
-  // `hasOwn.call(value, "__await")` to determine if the yielded value is
-  // meant to be awaited.
-
-
-  exports.awrap = function (arg) {
-    return {
-      __await: arg
-    };
-  };
-
-  function AsyncIterator(generator, PromiseImpl) {
-    function invoke(method, arg, resolve, reject) {
-      var record = tryCatch(generator[method], generator, arg);
-
-      if (record.type === "throw") {
-        reject(record.arg);
-      } else {
-        var result = record.arg;
-        var value = result.value;
-
-        if (value && typeof value === "object" && hasOwn.call(value, "__await")) {
-          return PromiseImpl.resolve(value.__await).then(function (value) {
-            invoke("next", value, resolve, reject);
-          }, function (err) {
-            invoke("throw", err, resolve, reject);
-          });
-        }
-
-        return PromiseImpl.resolve(value).then(function (unwrapped) {
-          // When a yielded Promise is resolved, its final value becomes
-          // the .value of the Promise<{value,done}> result for the
-          // current iteration.
-          result.value = unwrapped;
-          resolve(result);
-        }, function (error) {
-          // If a rejected Promise was yielded, throw the rejection back
-          // into the async generator function so it can be handled there.
-          return invoke("throw", error, resolve, reject);
-        });
-      }
-    }
-
-    var previousPromise;
-
-    function enqueue(method, arg) {
-      function callInvokeWithMethodAndArg() {
-        return new PromiseImpl(function (resolve, reject) {
-          invoke(method, arg, resolve, reject);
-        });
-      }
-
-      return previousPromise = // If enqueue has been called before, then we want to wait until
-      // all previous Promises have been resolved before calling invoke,
-      // so that results are always delivered in the correct order. If
-      // enqueue has not been called before, then it is important to
-      // call invoke immediately, without waiting on a callback to fire,
-      // so that the async generator function has the opportunity to do
-      // any necessary setup in a predictable way. This predictability
-      // is why the Promise constructor synchronously invokes its
-      // executor callback, and why async functions synchronously
-      // execute code before the first await. Since we implement simple
-      // async functions in terms of async generators, it is especially
-      // important to get this right, even though it requires care.
-      previousPromise ? previousPromise.then(callInvokeWithMethodAndArg, // Avoid propagating failures to Promises returned by later
-      // invocations of the iterator.
-      callInvokeWithMethodAndArg) : callInvokeWithMethodAndArg();
-    } // Define the unified helper method that is used to implement .next,
-    // .throw, and .return (see defineIteratorMethods).
-
-
-    this._invoke = enqueue;
-  }
-
-  defineIteratorMethods(AsyncIterator.prototype);
-
-  AsyncIterator.prototype[asyncIteratorSymbol] = function () {
-    return this;
-  };
-
-  exports.AsyncIterator = AsyncIterator; // Note that simple async functions are implemented on top of
-  // AsyncIterator objects; they just return a Promise for the value of
-  // the final result produced by the iterator.
-
-  exports.async = function (innerFn, outerFn, self, tryLocsList, PromiseImpl) {
-    if (PromiseImpl === void 0) PromiseImpl = Promise;
-    var iter = new AsyncIterator(wrap(innerFn, outerFn, self, tryLocsList), PromiseImpl);
-    return exports.isGeneratorFunction(outerFn) ? iter // If outerFn is a generator, return the full iterator.
-    : iter.next().then(function (result) {
-      return result.done ? result.value : iter.next();
-    });
-  };
-
-  function makeInvokeMethod(innerFn, self, context) {
-    var state = GenStateSuspendedStart;
-    return function invoke(method, arg) {
-      if (state === GenStateExecuting) {
-        throw new Error("Generator is already running");
-      }
-
-      if (state === GenStateCompleted) {
-        if (method === "throw") {
-          throw arg;
-        } // Be forgiving, per 25.3.3.3.3 of the spec:
-        // https://people.mozilla.org/~jorendorff/es6-draft.html#sec-generatorresume
-
-
-        return doneResult();
-      }
-
-      context.method = method;
-      context.arg = arg;
-
-      while (true) {
-        var delegate = context.delegate;
-
-        if (delegate) {
-          var delegateResult = maybeInvokeDelegate(delegate, context);
-
-          if (delegateResult) {
-            if (delegateResult === ContinueSentinel) continue;
-            return delegateResult;
-          }
-        }
-
-        if (context.method === "next") {
-          // Setting context._sent for legacy support of Babel's
-          // function.sent implementation.
-          context.sent = context._sent = context.arg;
-        } else if (context.method === "throw") {
-          if (state === GenStateSuspendedStart) {
-            state = GenStateCompleted;
-            throw context.arg;
-          }
-
-          context.dispatchException(context.arg);
-        } else if (context.method === "return") {
-          context.abrupt("return", context.arg);
-        }
-
-        state = GenStateExecuting;
-        var record = tryCatch(innerFn, self, context);
-
-        if (record.type === "normal") {
-          // If an exception is thrown from innerFn, we leave state ===
-          // GenStateExecuting and loop back for another invocation.
-          state = context.done ? GenStateCompleted : GenStateSuspendedYield;
-
-          if (record.arg === ContinueSentinel) {
-            continue;
-          }
-
-          return {
-            value: record.arg,
-            done: context.done
-          };
-        } else if (record.type === "throw") {
-          state = GenStateCompleted; // Dispatch the exception by looping back around to the
-          // context.dispatchException(context.arg) call above.
-
-          context.method = "throw";
-          context.arg = record.arg;
-        }
-      }
-    };
-  } // Call delegate.iterator[context.method](context.arg) and handle the
-  // result, either by returning a { value, done } result from the
-  // delegate iterator, or by modifying context.method and context.arg,
-  // setting context.delegate to null, and returning the ContinueSentinel.
-
-
-  function maybeInvokeDelegate(delegate, context) {
-    var method = delegate.iterator[context.method];
-
-    if (method === undefined) {
-      // A .throw or .return when the delegate iterator has no .throw
-      // method always terminates the yield* loop.
-      context.delegate = null;
-
-      if (context.method === "throw") {
-        // Note: ["return"] must be used for ES3 parsing compatibility.
-        if (delegate.iterator["return"]) {
-          // If the delegate iterator has a return method, give it a
-          // chance to clean up.
-          context.method = "return";
-          context.arg = undefined;
-          maybeInvokeDelegate(delegate, context);
-
-          if (context.method === "throw") {
-            // If maybeInvokeDelegate(context) changed context.method from
-            // "return" to "throw", let that override the TypeError below.
-            return ContinueSentinel;
-          }
-        }
-
-        context.method = "throw";
-        context.arg = new TypeError("The iterator does not provide a 'throw' method");
-      }
-
-      return ContinueSentinel;
-    }
-
-    var record = tryCatch(method, delegate.iterator, context.arg);
-
-    if (record.type === "throw") {
-      context.method = "throw";
-      context.arg = record.arg;
-      context.delegate = null;
-      return ContinueSentinel;
-    }
-
-    var info = record.arg;
-
-    if (!info) {
-      context.method = "throw";
-      context.arg = new TypeError("iterator result is not an object");
-      context.delegate = null;
-      return ContinueSentinel;
-    }
-
-    if (info.done) {
-      // Assign the result of the finished delegate to the temporary
-      // variable specified by delegate.resultName (see delegateYield).
-      context[delegate.resultName] = info.value; // Resume execution at the desired location (see delegateYield).
-
-      context.next = delegate.nextLoc; // If context.method was "throw" but the delegate handled the
-      // exception, let the outer generator proceed normally. If
-      // context.method was "next", forget context.arg since it has been
-      // "consumed" by the delegate iterator. If context.method was
-      // "return", allow the original .return call to continue in the
-      // outer generator.
-
-      if (context.method !== "return") {
-        context.method = "next";
-        context.arg = undefined;
-      }
-    } else {
-      // Re-yield the result returned by the delegate method.
-      return info;
-    } // The delegate iterator is finished, so forget it and continue with
-    // the outer generator.
-
-
-    context.delegate = null;
-    return ContinueSentinel;
-  } // Define Generator.prototype.{next,throw,return} in terms of the
-  // unified ._invoke helper method.
-
-
-  defineIteratorMethods(Gp);
-  define(Gp, toStringTagSymbol, "Generator"); // A Generator should always return itself as the iterator object when the
-  // @@iterator function is called on it. Some browsers' implementations of the
-  // iterator prototype chain incorrectly implement this, causing the Generator
-  // object to not be returned from this call. This ensures that doesn't happen.
-  // See https://github.com/facebook/regenerator/issues/274 for more details.
-
-  Gp[iteratorSymbol] = function () {
-    return this;
-  };
-
-  Gp.toString = function () {
-    return "[object Generator]";
-  };
-
-  function pushTryEntry(locs) {
-    var entry = {
-      tryLoc: locs[0]
-    };
-
-    if (1 in locs) {
-      entry.catchLoc = locs[1];
-    }
-
-    if (2 in locs) {
-      entry.finallyLoc = locs[2];
-      entry.afterLoc = locs[3];
-    }
-
-    this.tryEntries.push(entry);
-  }
-
-  function resetTryEntry(entry) {
-    var record = entry.completion || {};
-    record.type = "normal";
-    delete record.arg;
-    entry.completion = record;
-  }
-
-  function Context(tryLocsList) {
-    // The root entry object (effectively a try statement without a catch
-    // or a finally block) gives us a place to store values thrown from
-    // locations where there is no enclosing try statement.
-    this.tryEntries = [{
-      tryLoc: "root"
-    }];
-    tryLocsList.forEach(pushTryEntry, this);
-    this.reset(true);
-  }
-
-  exports.keys = function (object) {
-    var keys = [];
-
-    for (var key in object) {
-      keys.push(key);
-    }
-
-    keys.reverse(); // Rather than returning an object with a next method, we keep
-    // things simple and return the next function itself.
-
-    return function next() {
-      while (keys.length) {
-        var key = keys.pop();
-
-        if (key in object) {
-          next.value = key;
-          next.done = false;
-          return next;
-        }
-      } // To avoid creating an additional object, we just hang the .value
-      // and .done properties off the next function object itself. This
-      // also ensures that the minifier will not anonymize the function.
-
-
-      next.done = true;
-      return next;
-    };
-  };
-
-  function values(iterable) {
-    if (iterable) {
-      var iteratorMethod = iterable[iteratorSymbol];
-
-      if (iteratorMethod) {
-        return iteratorMethod.call(iterable);
-      }
-
-      if (typeof iterable.next === "function") {
-        return iterable;
-      }
-
-      if (!isNaN(iterable.length)) {
-        var i = -1,
-            next = function next() {
-          while (++i < iterable.length) {
-            if (hasOwn.call(iterable, i)) {
-              next.value = iterable[i];
-              next.done = false;
-              return next;
-            }
-          }
-
-          next.value = undefined;
-          next.done = true;
-          return next;
-        };
-
-        return next.next = next;
-      }
-    } // Return an iterator with no values.
-
-
-    return {
-      next: doneResult
-    };
-  }
-
-  exports.values = values;
-
-  function doneResult() {
-    return {
-      value: undefined,
-      done: true
-    };
-  }
-
-  Context.prototype = {
-    constructor: Context,
-    reset: function (skipTempReset) {
-      this.prev = 0;
-      this.next = 0; // Resetting context._sent for legacy support of Babel's
-      // function.sent implementation.
-
-      this.sent = this._sent = undefined;
-      this.done = false;
-      this.delegate = null;
-      this.method = "next";
-      this.arg = undefined;
-      this.tryEntries.forEach(resetTryEntry);
-
-      if (!skipTempReset) {
-        for (var name in this) {
-          // Not sure about the optimal order of these conditions:
-          if (name.charAt(0) === "t" && hasOwn.call(this, name) && !isNaN(+name.slice(1))) {
-            this[name] = undefined;
-          }
-        }
-      }
-    },
-    stop: function () {
-      this.done = true;
-      var rootEntry = this.tryEntries[0];
-      var rootRecord = rootEntry.completion;
-
-      if (rootRecord.type === "throw") {
-        throw rootRecord.arg;
-      }
-
-      return this.rval;
-    },
-    dispatchException: function (exception) {
-      if (this.done) {
-        throw exception;
-      }
-
-      var context = this;
-
-      function handle(loc, caught) {
-        record.type = "throw";
-        record.arg = exception;
-        context.next = loc;
-
-        if (caught) {
-          // If the dispatched exception was caught by a catch block,
-          // then let that catch block handle the exception normally.
-          context.method = "next";
-          context.arg = undefined;
-        }
-
-        return !!caught;
-      }
-
-      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-        var entry = this.tryEntries[i];
-        var record = entry.completion;
-
-        if (entry.tryLoc === "root") {
-          // Exception thrown outside of any try block that could handle
-          // it, so set the completion value of the entire function to
-          // throw the exception.
-          return handle("end");
-        }
-
-        if (entry.tryLoc <= this.prev) {
-          var hasCatch = hasOwn.call(entry, "catchLoc");
-          var hasFinally = hasOwn.call(entry, "finallyLoc");
-
-          if (hasCatch && hasFinally) {
-            if (this.prev < entry.catchLoc) {
-              return handle(entry.catchLoc, true);
-            } else if (this.prev < entry.finallyLoc) {
-              return handle(entry.finallyLoc);
-            }
-          } else if (hasCatch) {
-            if (this.prev < entry.catchLoc) {
-              return handle(entry.catchLoc, true);
-            }
-          } else if (hasFinally) {
-            if (this.prev < entry.finallyLoc) {
-              return handle(entry.finallyLoc);
-            }
-          } else {
-            throw new Error("try statement without catch or finally");
-          }
-        }
-      }
-    },
-    abrupt: function (type, arg) {
-      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-        var entry = this.tryEntries[i];
-
-        if (entry.tryLoc <= this.prev && hasOwn.call(entry, "finallyLoc") && this.prev < entry.finallyLoc) {
-          var finallyEntry = entry;
-          break;
-        }
-      }
-
-      if (finallyEntry && (type === "break" || type === "continue") && finallyEntry.tryLoc <= arg && arg <= finallyEntry.finallyLoc) {
-        // Ignore the finally entry if control is not jumping to a
-        // location outside the try/catch block.
-        finallyEntry = null;
-      }
-
-      var record = finallyEntry ? finallyEntry.completion : {};
-      record.type = type;
-      record.arg = arg;
-
-      if (finallyEntry) {
-        this.method = "next";
-        this.next = finallyEntry.finallyLoc;
-        return ContinueSentinel;
-      }
-
-      return this.complete(record);
-    },
-    complete: function (record, afterLoc) {
-      if (record.type === "throw") {
-        throw record.arg;
-      }
-
-      if (record.type === "break" || record.type === "continue") {
-        this.next = record.arg;
-      } else if (record.type === "return") {
-        this.rval = this.arg = record.arg;
-        this.method = "return";
-        this.next = "end";
-      } else if (record.type === "normal" && afterLoc) {
-        this.next = afterLoc;
-      }
-
-      return ContinueSentinel;
-    },
-    finish: function (finallyLoc) {
-      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-        var entry = this.tryEntries[i];
-
-        if (entry.finallyLoc === finallyLoc) {
-          this.complete(entry.completion, entry.afterLoc);
-          resetTryEntry(entry);
-          return ContinueSentinel;
-        }
-      }
-    },
-    "catch": function (tryLoc) {
-      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-        var entry = this.tryEntries[i];
-
-        if (entry.tryLoc === tryLoc) {
-          var record = entry.completion;
-
-          if (record.type === "throw") {
-            var thrown = record.arg;
-            resetTryEntry(entry);
-          }
-
-          return thrown;
-        }
-      } // The context.catch method must only be called with a location
-      // argument that corresponds to a known catch block.
-
-
-      throw new Error("illegal catch attempt");
-    },
-    delegateYield: function (iterable, resultName, nextLoc) {
-      this.delegate = {
-        iterator: values(iterable),
-        resultName: resultName,
-        nextLoc: nextLoc
-      };
-
-      if (this.method === "next") {
-        // Deliberately forget the last sent value so that we don't
-        // accidentally pass it on to the delegate.
-        this.arg = undefined;
-      }
-
-      return ContinueSentinel;
-    }
-  }; // Regardless of whether this script is executing as a CommonJS module
-  // or not, return the runtime object so that we can declare the variable
-  // regeneratorRuntime in the outer scope, which allows this module to be
-  // injected easily by `bin/regenerator --include-runtime script.js`.
-
-  return exports;
-}( // If this script is executing as a CommonJS module, use module.exports
-// as the regeneratorRuntime namespace. Otherwise create a new empty
-// object. Either way, the resulting object will be used to initialize
-// the regeneratorRuntime variable at the top of this file.
- true ? module.exports : undefined);
-
-try {
-  regeneratorRuntime = runtime;
-} catch (accidentalStrictMode) {
-  // This module should not be running in strict mode, so the above
-  // assignment should always work unless something is misconfigured. Just
-  // in case runtime.js accidentally runs in strict mode, we can escape
-  // strict mode using a global Function call. This could conceivably fail
-  // if a Content Security Policy forbids using Function, but in that case
-  // the proper solution is to fix the accidental strict mode problem. If
-  // you've misconfigured your bundler to force strict mode and applied a
-  // CSP to forbid Function, and you're not willing to fix either of those
-  // problems, please detail your unique predicament in a GitHub issue.
-  Function("r", "regeneratorRuntime = r")(runtime);
 }
 
 /***/ }),
@@ -15829,10 +18004,14 @@ function getRender(pagePath) {
     }
 
     if (!this.eventHandlers[name]) {
-      this.eventHandlers[name] = function (e, more) {
-        var event = _this.getNormalizedEvent(e, more);
+      this.eventHandlers[name] = function (e) {
+        var _ref;
 
-        _this.callRemote.apply(_this, ['self', 'onRenderEvent', name].concat(event));
+        for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+          args[_key - 1] = arguments[_key];
+        }
+
+        _this.callRemote.apply(_this, (_ref = ['self', 'onRenderEvent', name]).concat.apply(_ref, [e].concat(args)));
       };
 
       var handle = this.eventHandlers[name];
@@ -21682,6 +23861,228 @@ function addEvent(target, name, fn) {
 
 /***/ }),
 
+/***/ "./src/utils/addListenerToElement.js":
+/*!*******************************************!*\
+  !*** ./src/utils/addListenerToElement.js ***!
+  \*******************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return addListenerToElement; });
+/* harmony import */ var _supportsPassive__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./supportsPassive */ "./src/utils/supportsPassive.js");
+/* harmony import */ var _config__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./config */ "./src/utils/config.js");
+/* eslint-disable default-case */
+
+
+var EVENT_BLACK_LIST = ['click'];
+var PRESS_DELAY = 350;
+var TAP_DISTANCE = 5;
+var TAP_BLACK_LIST = ["".concat(_config__WEBPACK_IMPORTED_MODULE_1__["UpperCasePerfix"], "-BUTTON"), "".concat(_config__WEBPACK_IMPORTED_MODULE_1__["UpperCasePerfix"], "-CHECKBOX"), "".concat(_config__WEBPACK_IMPORTED_MODULE_1__["UpperCasePerfix"], "-RADIO"), "".concat(_config__WEBPACK_IMPORTED_MODULE_1__["UpperCasePerfix"], "-MAP")];
+var HAS_NATIVE_TA = false; // 兼容非 browser 环境
+
+if (typeof window !== 'undefined') {
+  HAS_NATIVE_TA = typeof document.head.style.touchAction === 'string';
+}
+
+function addListenerToElement(node, eventType, callback) {
+  switch (eventType) {
+    case 'tap':
+      // listen down and up
+      if (!node.__hasTapEvent) {
+        node.__hasTapEvent = true;
+        addTapEvent(node);
+      }
+
+      node.addEventListener("".concat(_config__WEBPACK_IMPORTED_MODULE_1__["prefix"], "-tap"), function (e) {
+        return callback.call(node, {
+          touches: e.detail.sourceEndEvent.changedTouches,
+          // touchend没有touches，可以用changedTouches
+          changedTouches: e.detail.sourceEndEvent.changedTouches,
+          detail: {
+            x: e.detail.x,
+            y: e.detail.y
+          },
+          target: e.detail.sourceEndEvent.target,
+          timeStamp: e.timeStamp,
+          preventDefault: function preventDefault() {
+            return e.detail.sourceEndEvent.preventDefault();
+          },
+          stopPropagation: function stopPropagation() {
+            e.stopPropagation(); // 标记一下touchend，表示这个被阻止过
+
+            e.detail.sourceEndEvent.__catchedTap = true;
+          }
+        });
+      });
+      return;
+
+    case 'touchstart':
+    case 'touchend':
+    case 'touchmove':
+    case 'touchcancel':
+      node.addEventListener(eventType, function (e) {
+        if (e.__frozenBySwipeBack) return; // ios 触发了滑动返回
+
+        var detail = {
+          x: e.pageX,
+          y: e.pageY
+        }; // detail is a read-only property, so re-define it ....
+
+        Object.defineProperty(e, 'detail', {
+          get: function get() {
+            return detail;
+          },
+          configurable: true
+        });
+        return callback.call(node, e);
+      }); // 组件可能会取消touchmove事件，并用tt-touchmove替换
+
+      if (eventType === 'touchmove') {
+        node.addEventListener("".concat(_config__WEBPACK_IMPORTED_MODULE_1__["prefix"], "-touchmove"), function (e) {
+          var srcMoveEvent = e.detail.srcMoveEvent;
+          return callback.call(node, {
+            touches: srcMoveEvent.touches,
+            changedTouches: srcMoveEvent.changedTouches,
+            detail: {
+              x: srcMoveEvent.pageX,
+              y: srcMoveEvent.pageY
+            },
+            target: e.target,
+            timeStamp: e.timeStamp,
+            preventDefault: function preventDefault() {
+              return srcMoveEvent.preventDefault();
+            },
+            stopPropagation: function stopPropagation() {
+              return e.stopPropagation();
+            }
+          });
+        });
+      }
+
+      return;
+
+    case 'longtap':
+    case 'longpress':
+      // listen down and up
+      if (!node.__hasTapEvent) {
+        node.__hasTapEvent = true;
+        addTapEvent(node);
+      }
+
+      node.addEventListener("".concat(_config__WEBPACK_IMPORTED_MODULE_1__["prefix"], "-longpress"), function (e) {
+        e.longpressFired();
+        callback(e);
+      });
+      return;
+  }
+
+  if (EVENT_BLACK_LIST.indexOf(eventType) === -1) {
+    node.addEventListener(eventType, callback);
+  }
+}
+
+function addTapEvent(node) {
+  // 模拟合成tap事件和longpress事件，事件名为tt-tap和tt-longpress，以区别于polymer的事件
+  var pressTimer;
+  var pressStart;
+  var ended;
+
+  var touchstartHandler = function touchstartHandler(e) {
+    if (e.__handledTap) {
+      return;
+    }
+
+    ended = false;
+    pressStart = {
+      x: e.touches[0].pageX,
+      y: e.touches[0].pageY
+    };
+    clearTimeout(pressTimer);
+    pressTimer = setTimeout(function () {
+      // dispatch longpress event
+      var pressEvent = new Event("".concat(_config__WEBPACK_IMPORTED_MODULE_1__["prefix"], "-longpress"), {
+        bubbles: true,
+        composed: true
+      });
+      pressEvent.detail = pressStart;
+
+      pressEvent.longpressFired = function () {
+        ended = true;
+      };
+
+      node.dispatchEvent(pressEvent);
+    }, PRESS_DELAY);
+    e.__handledTap = true;
+  };
+
+  var touchmoveHandler = function touchmoveHandler(e) {
+    if (ended || !pressStart) {
+      return;
+    }
+
+    var dx = Math.abs(e.changedTouches[0].pageX - pressStart.x);
+    var dy = Math.abs(e.changedTouches[0].pageY - pressStart.y);
+
+    if (dx > TAP_DISTANCE || dy > TAP_DISTANCE) {
+      ended = true;
+      clearTimeout(pressTimer);
+    }
+  };
+
+  if (HAS_NATIVE_TA && _supportsPassive__WEBPACK_IMPORTED_MODULE_0__["default"]) {
+    node.addEventListener('touchstart', touchstartHandler, {
+      passive: true
+    });
+    node.addEventListener('touchmove', touchmoveHandler, {
+      passive: true
+    });
+  } else {
+    node.addEventListener('touchstart', touchstartHandler);
+    node.addEventListener('touchmove', touchmoveHandler);
+  }
+
+  node.addEventListener('touchend', function (e) {
+    if (ended || !pressStart) {
+      return;
+    }
+
+    ended = true;
+    clearTimeout(pressTimer); // 如果没有触发touchmove的判断，这里还要再来一下
+
+    var dx = Math.abs(e.changedTouches[0].pageX - pressStart.x);
+    var dy = Math.abs(e.changedTouches[0].pageY - pressStart.y);
+
+    if (dx > TAP_DISTANCE || dy > TAP_DISTANCE) {
+      return;
+    } // dispatch tap event
+
+
+    if (TAP_BLACK_LIST.indexOf(node.tagName) !== -1 && node.disabled) {
+      // if element is disabled, 那就不发了
+      return;
+    }
+
+    var tapEvent = new Event("".concat(_config__WEBPACK_IMPORTED_MODULE_1__["prefix"], "-tap"), {
+      bubbles: true,
+      composed: true
+    });
+    tapEvent.detail = {
+      x: e.changedTouches[0].pageX,
+      y: e.changedTouches[0].pageY,
+      sourceEndEvent: e
+    };
+    node.dispatchEvent(tapEvent);
+  });
+  node.addEventListener('touchcancel', function (e) {
+    ended = true;
+    clearTimeout(pressTimer);
+  });
+}
+
+/***/ }),
+
 /***/ "./src/utils/callBridge.js":
 /*!*********************************!*\
   !*** ./src/utils/callBridge.js ***!
@@ -21757,6 +24158,22 @@ function callInternalAPI(method) {
     Object(_callBridge__WEBPACK_IMPORTED_MODULE_1__["default"])(method, param, callback);
   }
 }
+
+/***/ }),
+
+/***/ "./src/utils/config.js":
+/*!*****************************!*\
+  !*** ./src/utils/config.js ***!
+  \*****************************/
+/*! exports provided: prefix, UpperCasePerfix */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "prefix", function() { return prefix; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "UpperCasePerfix", function() { return UpperCasePerfix; });
+var prefix = 'mp';
+var UpperCasePerfix = prefix.toUpperCase();
 
 /***/ }),
 
@@ -22859,7 +25276,7 @@ try {
 /*!*****************************!*\
   !*** ./src/utils/system.js ***!
   \*****************************/
-/*! exports provided: systemVersion, UCVersion, isAndroid, isIOS, isIDE, SDKVersion, isUC, isNativeComponent, compareVersion, logSystemInfo, compareSystemVersion, compareUCVersion */
+/*! exports provided: systemVersion, UCVersion, isAndroid, isIOS, isIDE, SDKVersion, isUC, isNativeComponent, compareVersion, logSystemInfo, compareSystemVersion, compareUCVersion, iOSVersion */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -22876,6 +25293,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "logSystemInfo", function() { return logSystemInfo; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "compareSystemVersion", function() { return compareSystemVersion; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "compareUCVersion", function() { return compareUCVersion; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "iOSVersion", function() { return iOSVersion; });
 /* harmony import */ var _log__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./log */ "./src/utils/log.js");
 
 var ua = navigator.userAgent || navigator.swuserAgent;
@@ -22895,6 +25313,7 @@ var caches = {};
 var cacheIntArray = {};
 var isUC = !!(_UCVersion && _UCVersion[1]);
 var isNativeComponent = isUC || isIOS;
+var iOSVersion = /iPhone OS (\d{2})/.exec(ua);
 
 function toIntArray(v) {
   if (cacheIntArray[v]) {
@@ -23619,18 +26038,17 @@ function expandAnimation(animation) {
 
 /***/ }),
 
-/***/ "./src/web-components/common/base.js":
-/*!*******************************************!*\
-  !*** ./src/web-components/common/base.js ***!
-  \*******************************************/
-/*! exports provided: default */
+/***/ "./src/web-components/button.js":
+/*!**************************************!*\
+  !*** ./src/web-components/button.js ***!
+  \**************************************/
+/*! no exports provided */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return Base; });
-/* harmony import */ var _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ "./node_modules/@babel/runtime/helpers/asyncToGenerator.js");
-/* harmony import */ var _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/taggedTemplateLiteral */ "./node_modules/@babel/runtime/helpers/taggedTemplateLiteral.js");
+/* harmony import */ var _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ "./node_modules/@babel/runtime/helpers/classCallCheck.js");
 /* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @babel/runtime/helpers/createClass */ "./node_modules/@babel/runtime/helpers/createClass.js");
@@ -23643,9 +26061,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_5__);
 /* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @babel/runtime/helpers/getPrototypeOf */ "./node_modules/@babel/runtime/helpers/getPrototypeOf.js");
 /* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6__);
-/* harmony import */ var _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @babel/runtime/regenerator */ "./node_modules/@babel/runtime/regenerator/index.js");
-/* harmony import */ var _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_7__);
-/* harmony import */ var _utils_addEvents__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @/utils/addEvents */ "./src/utils/addEvents.js");
+/* harmony import */ var _polymer_polymer__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @polymer/polymer */ "./node_modules/@polymer/polymer/polymer-element.js");
+/* harmony import */ var _utils_config__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @/utils/config */ "./src/utils/config.js");
+/* harmony import */ var _mixins__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./mixins */ "./src/web-components/mixins/index.js");
 
 
 
@@ -23654,124 +26072,626 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+var _templateObject;
 
 function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6___default()(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6___default()(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_5___default()(this, result); }; }
 
 function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
 
 
-function Base(SuperClass) {
-  var BaseMixin = /*#__PURE__*/function (_SuperClass) {
-    _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_4___default()(BaseMixin, _SuperClass);
 
-    var _super = _createSuper(BaseMixin);
 
-    function BaseMixin() {
-      var _this2;
+var documentContainer = document.createElement('div');
+documentContainer.setAttribute('style', 'display: none;');
+documentContainer.innerHTML = "<dom-module id=\"button-style\">\n  <template>\n    <style>\n      ::slotted(*) {\n        -webkit-user-select: none;\n        user-select: none;\n      }\n\n      :host {\n        position: relative;\n        display: block;\n        margin-left: auto;\n        margin-right: auto;\n        padding-left: 14px;\n        padding-right: 14px;\n        box-sizing: border-box;\n        font-size: 18px;\n        text-align: center;\n        text-decoration: none;\n        line-height: 2.55555556;\n        border-radius: 5px;\n        color: rgba(0,0,0,1);\n        background-color: rgba(244,245,246,1);\n        border-color: rgba(216,216,216,1);\n        -webkit-tap-highlight-color: transparent;\n        -webkit-user-select: none;\n        user-select: none;\n      }\n\n      :host:after {\n        content: \" \";\n        width: 200%;\n        height: 200%;\n        position: absolute;\n        top: 0;\n        left: 0;\n        border: 1px solid rgba(0, 0, 0, 0.2);\n        -webkit-transform: scale(0.5) translateZ(0);\n        transform: scale(0.5) translateZ(0);\n        -webkit-transform-origin: 0 0;\n        transform-origin: 0 0;\n        box-sizing: border-box;\n        border-radius: 10px;\n      }\n\n      :host([type=primary]) {\n        color: rgba(255,255,255,1);\n        border-color: rgba(248,89,89,1);\n        background-color: rgba(248,89,89,1);\n      }\n  \n      :host([type=warn]) {\n        color: #FFFFFF;\n        background-color: #E64340;\n      }\n\n      host[disabled][type=default] */\n      :host([disabled]:not([type])) {\n        opacity: 0.6;\n        background-color: rgba(244,245,246,1);\n        color: rgba(0, 0, 0, 0.3);\n      }\n\n      :host([disabled][type=primary]) {\n        background-color: rgba(252,192,193,1);\n        color: rgba(255,255,255,0.4)\n      }\n\n      :host([disabled][type=warn]) {\n        background-color: #EC8B89;\n      }\n      \n      :host([type=primary][plain]) {\n        color: rgba(248,89,89,1);\n        border: 1px solid rgba(248,89,89,1);\n        background-color: transparent;\n      }\n\n      :host([type=primary][plain][disabled]) {\n        color: rgba(0, 0, 0, 0.2);\n        border-color: rgba(0, 0, 0, 0.2);\n      }\n\n      :host([type=primary][plain]):after {\n        border-width: 0;\n      }\n\n      :host([type=default][plain]) {\n        color: rgba(0,0,0,1);\n        border: 1px solid rgba(0, 0, 0, 0.2);\n        background-color: transparent;\n      }\n\n      :host([type=default][plain][disabled]) {\n        color: rgba(0, 0, 0, 0.2);\n        border-color: rgba(0, 0, 0, 0.2);\n      }\n\n\n      :host([type=default][plain]):after {\n        border-width: 0;\n      }\n\n      :host([plain]) {\n        color: #353535;\n        border: 1px solid #353535;\n        background-color: transparent;\n      }\n\n      :host([plain][disabled]) {\n        color: rgba(0, 0, 0, 0.2);\n        border-color: rgba(0, 0, 0, 0.2);\n      }\n\n      :host([plain]):after {\n        border-width: 0;\n      }\n    \n      :host([type=warn][plain]) {\n        color: #e64340;\n        border: 1px solid #e64340;\n        background-color: transparent;\n      }\n\n      :host([type=warn][plain][disabled]) {\n        color: rgba(0, 0, 0, 0.2);\n        border-color: rgba(0, 0, 0, 0.2);\n      }\n\n      :host([type=warn][plain]):after {\n        border-width: 0;\n      }\n    \n      :host([size=mini]) {\n        display: inline-block;\n        line-height: 2.3;\n        font-size: 14px;\n        padding: 0 1.34em;\n      }\n\n      :host([loading][type=primary]) {\n        color: rgba(255, 255, 255, 0.6);\n        background-color: rgba(222,79,79,1);\n      }\n      :host([loading][type=primary][plain]) {\n        color: rgba(248,89,89,1);\n        background-color: transparent;\n      }\n\n      :host([loading][type=default]) {\n        color: rgba(34,34,34,0.6);\n        background-color: rgba(219,220,220,1);\n        border-color: rgba(216,216,216,1);\n      }\n      \n      :host([loading][type=default][plain]) {\n        color: #353535;\n        background-color: transparent;\n      }\n      \n      :host([loading][type=warn]) {\n        color: rgba(255, 255, 255, 0.6);\n        background-color: #CE3C39;\n      }\n\n      :host([loading][type=warn][plain]) {\n        color: #e64340;\n        background-color: transparent;\n      }\n    \n      @-webkit-keyframes tt-button-loading-animate {\n        0% {\n          -webkit-transform: rotate3d(0, 0, 1, 0deg);\n          transform: rotate3d(0, 0, 1, 0deg);\n        }\n\n        100% {\n          -webkit-transform: rotate3d(0, 0, 1, 360deg);\n          transform: rotate3d(0, 0, 1, 360deg);\n        }\n      }\n\n      @keyframes tt-button-loading-animate {\n        0% {\n          -webkit-transform: rotate3d(0, 0, 1, 0deg);\n          transform: rotate3d(0, 0, 1, 0deg);\n        }\n\n        100% {\n          -webkit-transform: rotate3d(0, 0, 1, 360deg);\n          transform: rotate3d(0, 0, 1, 360deg);\n        }\n      }\n\n      :host(.button-hover) {\n        color: rgba(34,34,34,0.6);\n        background-color: rgba(219,220,220,1);\n        border-color: rgba(216,216,216,1);\n      }\n      \n      :host(.button-hover[plain]) {\n        color: rgba(53, 53, 53, 0.6);\n        border-color: rgba(53, 53, 53, 0.6);\n        background-color: transparent;\n      }\n      \n\n      :host(.button-hover[type=primary]) {\n        color: rgba(255, 255, 255, 0.6);\n        background-color: rgba(222,79,79,1);\n      }\n\n      :host(.button-hover[type=primary][plain]) {\n        color: rgba(248,89,89,0.6);\n        border-color: rgba(248,89,89,0.6);\n        background-color: transparent;\n      }\n\n      :host(.button-hover[loading][type=primary][plain]) {\n        color: rgba(248,89,89,1);\n      }\n\n      :host(.button-hover[type=default][plain]) {\n        color: rgba(34,34,34,0.6);\n        border: 1px solid rgba(0, 0, 0, 0.1);\n        background-color: transparent;\n      }\n\n      :host(.button-hover[loading][type=default][plain]) {\n        color: rgba(34,34,34,1);\n      }\n    \n      :host(.button-hover[type=warn]) {\n        color: rgba(255, 255, 255, 0.6);\n        background-color: #CE3C39;\n      }\n\n      :host(.button-hover[type=warn][plain]) {\n        color: rgba(230, 67, 64, 0.6);\n        border-color: rgba(230, 67, 64, 0.6);\n        background-color: transparent;\n      }\n    \n\n      #icon {\n        display: none;\n      }\n      :host([loading]) #icon {\n        display: inline-block;\n        width: 18px;\n        height: 18px;\n        vertical-align: middle;\n        -webkit-animation: tt-button-loading-animate 1s steps(12, end) infinite;\n        animation: tt-button-loading-animate 1s steps(12, end) infinite;\n        background: transparent url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACwAAAAsCAYAAAAehFoBAAAAAXNSR0IArs4c6QAABQ9JREFUWAntmF2IVVUUx+9k5ViJn1MWJpMoioMyZRYYFEVCWVFPvQmCpeiLr74HvYojKUSPPkovvYiiGNijVA8SxkRphR/5nVpO5fT7Xc46s+/cc+7HjPdeH1zwn33O3vus9TvrrLP3uVOpPLDOZqBvuu7Hx8efxsdLaDlagAbQQvQQuoKuocvoR3Sir6/vd9op25SAgZxDxLfRy2gQ6UdA24cbnDvnDPoaHQTeG2rLDNCyAdrP5HfRe8jjRoAzJo3HebRjjB9QgN+mbclaBgZ2HR43o3nI65plVDDnBGBZ5i2ZT4E+StvUmgID6pz30QfI4wAIYLoqp9BJ9Cu6iqxZzZq2ngfRq+hF9CjSzyNZ67H6HO0DfJy21JxYasDq/CNkdjXnmyntJvoS+SK19Ejx9zjz30L6XIQCNvwepm8X/v6mLbRS4CyzH3NVwMYj/Y++r9ChRo4Lo2Wd+J7F4Sak/3gX4skJvbMs042AfblUPHod/on24myUdtoG+Bqc7EWxDMpjHGOM0NZZITCOhpm5FcW47Xk0gqO2lyKuKzViWRrW70oUwM7fQaxDHqRm9moMBzPp+BBZ/HezwRu0e+41rL7xaSJMTryoQsv1CSzWfI3VATP6OnoMWatqDO3HsW9/RyyD3oHzSJBx3EG3eZBaDTB3NJtBgTUvNsu+XD/b0Ukjxrf4/wyZ4dB2mKzv3GqA6X0FuRqYWWEthWOoW/YFgdxIZJDNBG5BuU0GHmJE0JDZvZPP7vABsVzPd6OU6500bD5A6t2VBtC/mQQ9ibptbkY+YXdCMz0E23O0VcuBOVuFIrMOjnLHpTuOEzphxHSt/wZFHdtujFgpsOuh2fVl8w5PoV7ZEQLL5iainkdVM+VhFnia4Ysx0IP2NDEjmWb4mWBIgV2kza7SXCF6ZW4mwSbw4gCJTs8jwzHWS+BzQAiqlWb4n2wwnVi9ogd/ZEiTGeVR0+nbOR9Zx9oTqGtrcDXixB93t7MTp5Vf4ji9C0tgbjYgtMCXs/NuN9bwm0nQfHlNgc1wZNe5biRnPOiBCVgYO68NJljorsPWshpEvTJ3uZBJzTnzAzpHM7pYixezJc7M+rrWENMXTskWx7HUTpCzJfqVdAEJHBNWcNxtM6NmV2B3OdAmfkmnGWas8hMSNrK8jjv24q5Yll1/oBZmV4jJwN/TZ8Fby0pYfyh2y1JYY5ttv2tyqwEm9X6P+uUfGbZ9gTt/Kr+iQwfZk/TzIOrXSHdgivKsRq4BrvZUKt/R3kIB7R2+gUOddcTwba36LzB5zKoSvG7jqgPmjlzSTqC0ll0tNnQCGp/C+cMhWGyFvZ2+bJxXzYFCw5HfoMMoMu0N/IWO4+gS7bSNGP04CdioVd+dm8TwX2F11gjYsdfQIBJah7Y+AT/uT+NU520boGbRElD60G88UcvxWlF26a+m3rbQsse1nsElKBw71wBm4Af0G869iaaGP2t1DjKrJkQ/4VdgYS+VwTLWGNgJBNHxahS/+XSsCWlAM/8Hcmv3JlwW/eeLY/730+XJ5cqPqfiRENelrR9a1xvBMt4c2Eka4M/SrEXxcsQjNEMex3l6I/alpZQCxjyvvwBoYc0yVmNmr2UD2mwtQ8uR4AJE4KkA+/JeAdZrW7K2gMMj4C5zS5Ebio9b8MnAnqvIcNSqm5PfLdaqfW3ZlIDTCMBbl08ifxNas75YtsK68AtoTfvIrwJZtxnQ/8Dumwz8D1o3mfMxYRE2AAAAAElFTkSuQmCC) no-repeat;  background-size: 100%;\n      }\n\n      :host([loading][plain]) #icon {\n        background: transparent url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACwAAAAsCAYAAAAehFoBAAAAAXNSR0IArs4c6QAACChJREFUWAntmVtsVVUax/fal9Me2tMDnnMqmmIYkmGSNl4GbaVIx2g0UQejT8YXk0lUiIWmJRCYN0hMjAED2NKakHmYB5/IxBdfiEaDBNNwadQHIEwwM15I6c1TSm+nZ1/m96127zmHnpZy6eHFle6z9l6X7/uvb323tWoYv5fllYC6W/IdHR0P5X2/Sfn+H6GV8g0jYwRBWpmmaSj1W+C6o7SPGKb57wrHOX348OGrd8PzjgDv3bs3OT4+/jKMn/aDYK2SYhgm3yowDJtHmUr+lPJc19bdLCAIApPGnxj7jeM4/wL8b7cL/rYA79+/v3JwcHALbF+Fe6UAcYPAVkEgAhVACqnaSFi6LPnxfF8DZoylF0S79DNuhhV+mk6nP4Xu5FKBLxlwa3t7o+F5f4PwKgEGMy1BVwCJREsABpTp+74GDmBbL4hxc4BtWQBzR1GXD7o7O79aCuhbAhYmra2tr5mW9bpsNcyswi1HJYTPBQD1IdBfeLK2bY9Io+u6Kc+y0qbrruXzL+j3UzCM8S6q4+idEJo89B3rOXq0h/maIG0ly6KA2aoYKvAOMxuVxY4CngWIZESk41D+zM3lTh87dmxJW7p79+6q6enpl1CYdwLfXw04oSdS1roP/S9qa2v/Dt/pkmiF70IdQqitre1d6kYZA7hZYzJND6l+PpVOn/jnIoQXoivtO3fujOfz+beg+S4qo20B5dC6zRq+ONrV1b6QpBcEvH379i3Q3uJh2SIJfizA30AKXT09PVcWA7TUvvb29sfyrtsF8DT0Z43WMCxAdXV3d3eWoiOWO6+0dnQ8wZa9KSYhK8XAxOyvxmKxA11dXXflRwuZnTlzZqCxsfEEYDfDoJY+E7CCaWNzc/Nl+ucJRnxnUUENKpTrviFA6fANH3MwjDGvuvrjO/GbRcRLfLBb19i5rXRpQxVV5DFRu/dF52+eMg+w53nPId0VzPL0Y1kzKh7/5JMPP8zePPlefQtofF8rQvLFuDFow/e8h6amprbdzKMI8J49exK4yedkkEymkuWeOPrRR/+5eeK9/kbVvoNpN/x0iBQA8Hhv165d6UJeRYAJt89gZDb65FEHIB5j3teFE5bzPZNK/QO2o3gOwWDyJHCDbxfyLAJMRwPLIm5qIwvYphOsPFc4YTnf50L0YYwHpZj1uYD+ayHPCDBuLEVnBrCuPAzKEef7CgeX472qquozdlU22OGRsN+wY8eOP4S8I8BsQz36g6UpUQUpVxaLOLND7v3vgQMHbqC/3yJlcVMCSZ5XQk4RYCsWW21Zlkt08Gn0UIcL4aCy177/pQQSpAsMnfX9OcSg8wL5IAFPsBJd5JvEZVDq+1HwVJdJS7UwUVOR9MMhjggwSKtQBd+wba0RnuOMhYPKXYPxGjxnkyzfR9BGXYjh/4BxIeQJwVxkMx5OJO4bYHa3n+ChHTERT/xyJOFIh1lBnocDRCAW6o2MjMjK7kuprq4WQ7MBa2OAFlse4YwkzDbcAN0DsyqDbvh+Nd9l88GFkpmcnEyD4+eoTan/hu8RYBCOkUOsFAUW0CxJAOuEJBxcrpoD6jXyiBdCfhhhlNBHgEXCAjTUA/QjxYSfwknlrA8dOjQNlpK8o3y4qampBr15BAX3AO07BMezZ89eKifQkBdgY5lMxmpoaLA2b95srlu3zrh48SLerVCZbfsKeiuOQhfe6yQ3DomUq4a5EoMfGhoyScZUNptVx48f1662CPCRI0dGOe0OkI9y7WD6HhJ2TfNP5QIa8uFAa5OTO+vXrzfXrFljtbS0IHB9mNBDInchX6zuR3EPImIdxD2vcevWrU5IbLlrYXvq1Kn49evXTYxOyVNRURFJV/gXAeYk+4Ov1DThUPyxi9I4lZWVjy030JD+tm3b4uiuWVdXx0ZbTjwet/v7+72wX+rI6OSjr68v39TcLEmHRBYdxjmqrN60adNVDoQTMma5iuwkAqtZuXJlMDY2pgBtJBKJHBmjBLSoFElYWh+vr/+exgluHZGxK6DJQ/znSx0IIyp3+YJRWTU1Nat4zIGBAXt4eNjmpKH27ds3L3DNA8y2cFXgnhbDE2XnJ8h7XsXExMSLywEaCdonT57MEN00FlTBTKVSCn6ThcYWyqRIJcLG8+fPZ5/cuDEg5NWSdgZijUSfGAtZ+0RLy2Bfb++SrqZCegvVgJXb0AcB5sxYlspzbxfjEpTvCS5SpkrNQ11LF7HY99ransVrrBWPwSgOI0RCpfJGLHYhk0xehqEcpW67MM/Ez8ot6CouZ1x0N5jk4IB0A8d1Jzj2jwqvUoQXBCyDIWwPZbObMLxHuEdyhQi37TrXgNq4o9SlmZmZX/GdRYZRipG0ia729vYm0c8Mvpb7GjfA97sClOKzixOdnZ3DC4EVGosClgEQkuvWR9HpeiGEjwn9Yl4cNsmIuJ0hGPczZjyZTEqiMlNfXx8ALuYmk46ZzcYx3Gr6q3K5nJYkUuVy3g1wm7pesWLFCDdL1xcDK3huCVgGSQH0GvA9CUFtHCIRAEhUFJ8tiwAT+k5eLe1IUF9tIDXxMlE7ILkylitmA1v2tISpB1CDcdpuWUoaXalZ586dG9uwYcOPgBGg+hYeRpyobAEmZ0DRb5kq3kXnJLwHc9sdtQt45utvAsMIfrf/4MGD89yXDChVlizhwsmSFAF2HcwfBLBsd4D1aTeIXudlW1mAaIzopZYwY0hNzABVmGTOKBfXw3ditHcEuBD83K16LQtIoJwx/pFhASwGMAGcwwtM0jfDnHGknS3nTVIhzt/flyqB/wF0ZB0uacxUuQAAAABJRU5ErkJggg==) no-repeat;  background-size: 100%;\n      }\n\n      :host #mask {\n        position: absolute;\n        top: 0;\n        bottom: 0;\n        left: 0;\n        right: 0;\n        background: rgba(255,255,255,.775);\n      }\n      \n    </style>\n  </template>\n</dom-module>";
+document.head.appendChild(documentContainer);
 
-      _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1___default()(this, BaseMixin);
+var Button = /*#__PURE__*/function (_Hover) {
+  _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_4___default()(Button, _Hover);
 
-      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-        args[_key] = arguments[_key];
+  var _super = _createSuper(Button);
+
+  function Button() {
+    _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1___default()(this, Button);
+
+    return _super.apply(this, arguments);
+  }
+
+  _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default()(Button, [{
+    key: "listeners",
+    get: function get() {
+      return {
+        tap: '_onButtonTap'
+      };
+    }
+  }, {
+    key: "connectedCallback",
+    value: function connectedCallback() {
+      _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_3___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6___default()(Button.prototype), "connectedCallback", this).call(this);
+
+      this._defaultHoverClass = 'button-hover';
+    }
+  }, {
+    key: "_onButtonTap",
+    value: function _onButtonTap() {
+      var _this2 = this;
+
+      if (this.disabled) {
+        return;
       }
 
-      _this2 = _super.call.apply(_super, [this].concat(args));
+      if (this.formType) {
+        if (this.formType === 'submit') {
+          this.dispatchEvent(new CustomEvent('formSubmit', {
+            bubbles: true,
+            composed: true
+          }));
+        }
 
-      _this2.triggerReRender = function () {
-        _this2.emitter.emit('RE_RENDER', 'base');
+        if (this.formType === 'reset') {
+          this.dispatchEvent(new CustomEvent('formReset', {
+            bubbles: true,
+            composed: true
+          }));
+        }
+      }
+
+      if (!this._lock && this.openType) {
+        this._lock = true;
+        setTimeout(function () {
+          _this2._lock = false;
+        }, 1000);
+
+        if (this.openType === 'share') {} else if (this.openType === 'getPhoneNumber') {} else if (this.openType === 'launchApp') {} else if (this.openType === 'contact') {}
+      }
+    }
+  }, {
+    key: "showMask",
+    value: function showMask(disabled, type) {
+      return disabled && type === 'default';
+    }
+  }], [{
+    key: "is",
+    get: function get() {
+      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_8__["prefix"], "-button");
+    }
+  }, {
+    key: "properties",
+    get: function get() {
+      return {
+        type: {
+          type: String,
+          value: 'default',
+          reflectToAttribute: true
+        },
+        size: {
+          type: String,
+          value: 'default',
+          reflectToAttribute: true
+        },
+        disabled: {
+          type: Boolean,
+          reflectToAttribute: true
+        },
+        plain: {
+          type: Boolean,
+          reflectToAttribute: true
+        },
+        loading: {
+          type: Boolean,
+          reflectToAttribute: true
+        },
+        formType: {
+          type: String
+        },
+        openType: {
+          type: String,
+          value: ''
+        },
+        hoverStartTime: {
+          type: Number,
+          value: 20
+        },
+        hoverStayTime: {
+          type: Number,
+          value: 70
+        },
+        hoverClass: {
+          type: String,
+          value: 'button-hover',
+          observer: '_hoverClassChange'
+        }
       };
+    }
+  }, {
+    key: "template",
+    get: function get() {
+      return Object(_polymer_polymer__WEBPACK_IMPORTED_MODULE_7__["html"])(_templateObject || (_templateObject = _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default()(["\n      <style include=\"button-style\">\n      </style>\n      <i id=\"icon\" if=\"[[loading]]\"></i>\n      <slot></slot>\n      <template is=\"dom-if\" if=\"[[showMask(disabled, type)]]\">\n        <div id=\"mask\"></div>\n      </template>\n    "])));
+    }
+  }]);
 
-      return _this2;
+  return Button;
+}(Object(_mixins__WEBPACK_IMPORTED_MODULE_9__["Hover"])(Object(_mixins__WEBPACK_IMPORTED_MODULE_9__["Base"])(_polymer_polymer__WEBPACK_IMPORTED_MODULE_7__["PolymerElement"])));
+
+window.customElements.define(Button.is, Button);
+
+/***/ }),
+
+/***/ "./src/web-components/checkbox-group.js":
+/*!**********************************************!*\
+  !*** ./src/web-components/checkbox-group.js ***!
+  \**********************************************/
+/*! no exports provided */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/taggedTemplateLiteral */ "./node_modules/@babel/runtime/helpers/taggedTemplateLiteral.js");
+/* harmony import */ var _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ "./node_modules/@babel/runtime/helpers/classCallCheck.js");
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @babel/runtime/helpers/createClass */ "./node_modules/@babel/runtime/helpers/createClass.js");
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @babel/runtime/helpers/inherits */ "./node_modules/@babel/runtime/helpers/inherits.js");
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @babel/runtime/helpers/possibleConstructorReturn */ "./node_modules/@babel/runtime/helpers/possibleConstructorReturn.js");
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @babel/runtime/helpers/getPrototypeOf */ "./node_modules/@babel/runtime/helpers/getPrototypeOf.js");
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5__);
+/* harmony import */ var _polymer_polymer__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @polymer/polymer */ "./node_modules/@polymer/polymer/polymer-element.js");
+/* harmony import */ var _utils_config__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @/utils/config */ "./src/utils/config.js");
+/* harmony import */ var _mixins__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./mixins */ "./src/web-components/mixins/index.js");
+
+
+
+
+
+
+
+var _templateObject;
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4___default()(this, result); }; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+
+
+
+
+var CheckboxGroup = /*#__PURE__*/function (_Group) {
+  _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3___default()(CheckboxGroup, _Group);
+
+  var _super = _createSuper(CheckboxGroup);
+
+  function CheckboxGroup() {
+    var _this;
+
+    _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1___default()(this, CheckboxGroup);
+
+    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
     }
 
-    _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default()(BaseMixin, [{
-      key: "bridge",
-      get: function get() {
-        return this.__fields.bridge;
+    _this = _super.call.apply(_super, [this].concat(args));
+    _this.value = [];
+    return _this;
+  }
+
+  _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default()(CheckboxGroup, [{
+    key: "childItemType",
+    get: function get() {
+      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["prefix"], "-checkbox");
+    }
+  }, {
+    key: "addItem",
+    value: function addItem(e) {
+      if (e.checked) {
+        this.value.push(e.value);
       }
-    }, {
-      key: "emitter",
-      get: function get() {
-        return this.__fields.emitter;
+    }
+  }, {
+    key: "removeItem",
+    value: function removeItem(e) {
+      if (e.checked) {
+        var t = this.value.indexOf(e.value);
+        t >= 0 && this.value.splice(t, 1);
       }
-    }, {
-      key: "pageStatus",
-      get: function get() {
-        return this.__fields.status;
+    }
+  }, {
+    key: "renameItem",
+    value: function renameItem(e, t, n) {
+      if (e.checked) {
+        var i = this.value.indexOf(n);
+        i >= 0 && (this.value[i] = t);
       }
-    }, {
-      key: "trackFn",
-      get: function get() {
-        return this.__fields.trackFn;
+    }
+  }, {
+    key: "changed",
+    value: function changed(e) {
+      if (e.checked) {
+        this.value.push(e.value);
+      } else {
+        var t = this.value.indexOf(e.value);
+
+        if (t >= 0) {
+          this.value.splice(t, 1);
+        }
       }
-    }, {
-      key: "publish",
-      get: function get() {
-        return this.bridge.publish;
+    }
+  }], [{
+    key: "is",
+    get: function get() {
+      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["prefix"], "-checkbox-group");
+    }
+  }, {
+    key: "template",
+    get: function get() {
+      return Object(_polymer_polymer__WEBPACK_IMPORTED_MODULE_6__["html"])(_templateObject || (_templateObject = _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default()(["\n      <style>\n        :host {\n          display: block;\n        }\n      </style>\n      <slot></slot>\n    "])));
+    }
+  }]);
+
+  return CheckboxGroup;
+}(Object(_mixins__WEBPACK_IMPORTED_MODULE_8__["Group"])(Object(_mixins__WEBPACK_IMPORTED_MODULE_8__["Data"])(Object(_mixins__WEBPACK_IMPORTED_MODULE_8__["Base"])(_polymer_polymer__WEBPACK_IMPORTED_MODULE_6__["PolymerElement"]))));
+
+window.customElements.define(CheckboxGroup.is, CheckboxGroup);
+
+/***/ }),
+
+/***/ "./src/web-components/checkbox.js":
+/*!****************************************!*\
+  !*** ./src/web-components/checkbox.js ***!
+  \****************************************/
+/*! no exports provided */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/taggedTemplateLiteral */ "./node_modules/@babel/runtime/helpers/taggedTemplateLiteral.js");
+/* harmony import */ var _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ "./node_modules/@babel/runtime/helpers/classCallCheck.js");
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @babel/runtime/helpers/createClass */ "./node_modules/@babel/runtime/helpers/createClass.js");
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @babel/runtime/helpers/inherits */ "./node_modules/@babel/runtime/helpers/inherits.js");
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @babel/runtime/helpers/possibleConstructorReturn */ "./node_modules/@babel/runtime/helpers/possibleConstructorReturn.js");
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @babel/runtime/helpers/getPrototypeOf */ "./node_modules/@babel/runtime/helpers/getPrototypeOf.js");
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5__);
+/* harmony import */ var _polymer_polymer__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @polymer/polymer */ "./node_modules/@polymer/polymer/polymer-element.js");
+/* harmony import */ var _utils_config__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @/utils/config */ "./src/utils/config.js");
+/* harmony import */ var _mixins__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./mixins */ "./src/web-components/mixins/index.js");
+
+
+
+
+
+
+
+var _templateObject;
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4___default()(this, result); }; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+
+
+
+var documentContainer = document.createElement('div');
+documentContainer.setAttribute('style', 'display: none;');
+documentContainer.innerHTML = "<dom-module id=\"checkbox-style\">\n  <template>\n    <style>\n        :host {\n          -webkit-tap-highlight-color: transparent;\n          display: inline-block;\n        }\n        :host .checkbox-wrapper {\n          display: -webkit-inline-flex;\n          display: inline-flex;\n          -webkit-align-items: center;\n          align-items: center;\n          vertical-align: middle;\n        }\n\n        :host .checkbox-input {\n          margin-right: 5px;\n          -webkit-appearance: none;\n          appearance: none;\n          outline: 0;\n          background-color: #FFF;\n          border: 1px solid #E8E8E8;\n          border-radius: 100%;\n          width: 22px;\n          height: 22px;\n          position: relative;\n        }\n\n        :host .checkbox-input.checkbox-input-checked:before {\n          font: normal normal normal 14px/1 \"ttui\";\n          content: \"\\e601\";\n          font-size: 28px;\n          color: #FFFFFF;\n          position: absolute;\n          top: 50%;\n          left: 50%;\n          transform: translate(-50%, -48%) scale(0.73);\n          -webkit-transform: translate(-50%, -48%) scale(0.73);\n        }\n    </style>\n  </template>\n</dom-module>";
+document.head.appendChild(documentContainer);
+
+var Checkbox = /*#__PURE__*/function (_Disabled) {
+  _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3___default()(Checkbox, _Disabled);
+
+  var _super = _createSuper(Checkbox);
+
+  function Checkbox() {
+    _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1___default()(this, Checkbox);
+
+    return _super.apply(this, arguments);
+  }
+
+  _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default()(Checkbox, [{
+    key: "listeners",
+    get: function get() {
+      return {
+        tap: 'handleBoxTap'
+      };
+    }
+  }, {
+    key: "handleBoxTap",
+    value: function handleBoxTap() {
+      if (this.disabled) {
+        return;
       }
-    }, {
-      key: "subscribe",
-      get: function get() {
-        return this.bridge.subscribe;
+
+      this.checked = !this.checked;
+      this.changedByTap();
+    }
+  }, {
+    key: "handleLabelTap",
+    value: function handleLabelTap() {
+      this.handleBoxTap();
+    }
+  }, {
+    key: "hasCheckedClass",
+    value: function hasCheckedClass(checked) {
+      return checked ? "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["prefix"], "-checkbox-input-checked") : '';
+    }
+  }, {
+    key: "hasDisabledClass",
+    value: function hasDisabledClass(disabled) {
+      return disabled ? "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["prefix"], "-checkbox-input-disabled") : '';
+    }
+  }, {
+    key: "_getColor",
+    value: function _getColor(checked, color) {
+      return checked ? color : '';
+    }
+  }, {
+    key: "judgeDisableColor",
+    value: function judgeDisableColor(color) {
+      return this.disabled ? '#E8E8E8E' : color;
+    }
+  }], [{
+    key: "is",
+    get: function get() {
+      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["prefix"], "-checkbox");
+    }
+  }, {
+    key: "properties",
+    get: function get() {
+      return {
+        color: {
+          type: String,
+          value: '#F85959'
+        },
+        checkedColor: {
+          type: String,
+          computed: '_getColor(checked, color)'
+        }
+      };
+    }
+  }, {
+    key: "template",
+    get: function get() {
+      return Object(_polymer_polymer__WEBPACK_IMPORTED_MODULE_6__["html"])(_templateObject || (_templateObject = _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default()(["\n      <style include=\"checkbox-style\"></style>\n      <div class=\"checkbox-wrapper\">\n        <div\n          id=\"input\" \n          class$=\"checkbox-input [[hasCheckedClass(checked)]] [[hasDisabledClass(disabled)]]\" \n          style$=\"border-color: [[judgeDisableColor(color)]];background-color: [[judgeDisableColor(checkedColor)]];\"\n        >\n        </div>\n        <slot></slot>\n      </div>\n    "])));
+    }
+  }]);
+
+  return Checkbox;
+}(Object(_mixins__WEBPACK_IMPORTED_MODULE_8__["Disabled"])(Object(_mixins__WEBPACK_IMPORTED_MODULE_8__["Item"])(Object(_mixins__WEBPACK_IMPORTED_MODULE_8__["LabelTarget"])(Object(_mixins__WEBPACK_IMPORTED_MODULE_8__["Base"])(_polymer_polymer__WEBPACK_IMPORTED_MODULE_6__["PolymerElement"])))));
+
+window.customElements.define(Checkbox.is, Checkbox);
+
+/***/ }),
+
+/***/ "./src/web-components/index.js":
+/*!*************************************!*\
+  !*** ./src/web-components/index.js ***!
+  \*************************************/
+/*! no exports provided */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _polymer_polymer_lib_elements_dom_repeat__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @polymer/polymer/lib/elements/dom-repeat */ "./node_modules/@polymer/polymer/lib/elements/dom-repeat.js");
+/* harmony import */ var _polymer_polymer_lib_elements_dom_if__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @polymer/polymer/lib/elements/dom-if */ "./node_modules/@polymer/polymer/lib/elements/dom-if.js");
+/* harmony import */ var _polymer_polymer_lib_elements_dom_module__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @polymer/polymer/lib/elements/dom-module */ "./node_modules/@polymer/polymer/lib/elements/dom-module.js");
+/* harmony import */ var _view__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./view */ "./src/web-components/view.js");
+/* harmony import */ var _button__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./button */ "./src/web-components/button.js");
+/* harmony import */ var _text__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./text */ "./src/web-components/text.js");
+/* harmony import */ var _label__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./label */ "./src/web-components/label.js");
+/* harmony import */ var _checkbox__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./checkbox */ "./src/web-components/checkbox.js");
+/* harmony import */ var _checkbox_group__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./checkbox-group */ "./src/web-components/checkbox-group.js");
+
+
+
+
+
+
+
+
+
+
+/***/ }),
+
+/***/ "./src/web-components/label.js":
+/*!*************************************!*\
+  !*** ./src/web-components/label.js ***!
+  \*************************************/
+/*! no exports provided */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/taggedTemplateLiteral */ "./node_modules/@babel/runtime/helpers/taggedTemplateLiteral.js");
+/* harmony import */ var _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ "./node_modules/@babel/runtime/helpers/classCallCheck.js");
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @babel/runtime/helpers/createClass */ "./node_modules/@babel/runtime/helpers/createClass.js");
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @babel/runtime/helpers/inherits */ "./node_modules/@babel/runtime/helpers/inherits.js");
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @babel/runtime/helpers/possibleConstructorReturn */ "./node_modules/@babel/runtime/helpers/possibleConstructorReturn.js");
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @babel/runtime/helpers/getPrototypeOf */ "./node_modules/@babel/runtime/helpers/getPrototypeOf.js");
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5__);
+/* harmony import */ var _polymer_polymer__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @polymer/polymer */ "./node_modules/@polymer/polymer/polymer-element.js");
+/* harmony import */ var _utils_config__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @/utils/config */ "./src/utils/config.js");
+/* harmony import */ var _mixins__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./mixins */ "./src/web-components/mixins/index.js");
+
+
+
+
+
+
+
+var _templateObject;
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4___default()(this, result); }; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+
+
+
+
+var Label = /*#__PURE__*/function (_Base) {
+  _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3___default()(Label, _Base);
+
+  var _super = _createSuper(Label);
+
+  function Label() {
+    _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1___default()(this, Label);
+
+    return _super.apply(this, arguments);
+  }
+
+  _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default()(Label, [{
+    key: "listeners",
+    get: function get() {
+      return {
+        tap: 'onTap'
+      };
+    }
+  }, {
+    key: "onTap",
+    value: function onTap(e) {
+      var labelTarget;
+      var labelFor = this.htmlFor; // tma-html-compiler会把for输出到htmlFor
+
+      if (labelFor) {
+        labelTarget = this.querySelector("#".concat(labelFor)) || document.getElementById(labelFor);
+      } else {
+        labelTarget = this._dfs(this);
       }
-    }, {
-      key: "unsubscribe",
-      get: function get() {
-        return this.bridge.unsubscribe;
+
+      if (labelTarget && labelTarget.handleLabelTap && e.target !== labelTarget) {
+        labelTarget.handleLabelTap(e);
       }
-    }, {
-      key: "onNative",
-      get: function get() {
-        return this.bridge.onNative;
+    }
+  }, {
+    key: "_dfs",
+    value: function _dfs(parent) {
+      // 查找子节点中isLabelTarget为true的结点
+      if (parent.isLabelTarget) {
+        return parent;
       }
-    }, {
-      key: "offNative",
-      get: function get() {
-        return this.bridge.offNative;
+
+      var children = Array.from(parent.children);
+
+      for (var i = 0; i < children.length; i += 1) {
+        var target = this._dfs(children[i]);
+
+        if (target) {
+          return target;
+        }
       }
-    }, {
-      key: "invokeNative",
-      get: function get() {
-        return this.bridge.invokeNative;
-      }
-    }, {
-      key: "invokeService",
-      get: function get() {
-        return this.bridge.invokeService;
-      }
-    }, {
+    }
+  }], [{
+    key: "is",
+    get: function get() {
+      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["prefix"], "-label");
+    }
+  }, {
+    key: "properties",
+    get: function get() {
+      return {};
+    }
+  }, {
+    key: "template",
+    get: function get() {
+      return Object(_polymer_polymer__WEBPACK_IMPORTED_MODULE_6__["html"])(_templateObject || (_templateObject = _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default()(["\n      <style>\n        :host {\n          -webkit-tap-highlight-color: rgba(0,0,0,0);\n        }     \n      </style>     \n      <slot></slot>\n    "])));
+    }
+  }]);
+
+  return Label;
+}(Object(_mixins__WEBPACK_IMPORTED_MODULE_8__["Base"])(_polymer_polymer__WEBPACK_IMPORTED_MODULE_6__["PolymerElement"]));
+
+window.customElements.define(Label.is, Label);
+
+/***/ }),
+
+/***/ "./src/web-components/mixins/base.js":
+/*!*******************************************!*\
+  !*** ./src/web-components/mixins/base.js ***!
+  \*******************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return Base; });
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ "./node_modules/@babel/runtime/helpers/classCallCheck.js");
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/createClass */ "./node_modules/@babel/runtime/helpers/createClass.js");
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @babel/runtime/helpers/get */ "./node_modules/@babel/runtime/helpers/get.js");
+/* harmony import */ var _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @babel/runtime/helpers/inherits */ "./node_modules/@babel/runtime/helpers/inherits.js");
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @babel/runtime/helpers/possibleConstructorReturn */ "./node_modules/@babel/runtime/helpers/possibleConstructorReturn.js");
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @babel/runtime/helpers/getPrototypeOf */ "./node_modules/@babel/runtime/helpers/getPrototypeOf.js");
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5__);
+/* harmony import */ var _utils_addListenerToElement__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/addListenerToElement */ "./src/utils/addListenerToElement.js");
+
+
+
+
+
+
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4___default()(this, result); }; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+/* eslint-disable no-inner-declarations */
+
+/* eslint-disable func-names */
+
+function Base(SuperClass) {
+  return /*#__PURE__*/function (_SuperClass) {
+    _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3___default()(_class, _SuperClass);
+
+    var _super = _createSuper(_class);
+
+    function _class() {
+      _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default()(this, _class);
+
+      return _super.apply(this, arguments);
+    }
+
+    _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default()(_class, [{
       key: "connectedCallback",
       value: function connectedCallback() {
-        _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_3___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6___default()(BaseMixin.prototype), "connectedCallback", this).call(this);
+        _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(_class.prototype), "connectedCallback", this).call(this);
       }
     }, {
       key: "ready",
       value: function ready() {
-        var _this3 = this;
-
-        _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_3___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6___default()(BaseMixin.prototype), "ready", this).call(this);
+        _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(_class.prototype), "ready", this).call(this);
 
         if (this.listeners) {
-          (function () {
-            var _this = _this3;
+          var loop = function loop(i, l) {
+            var item = eventKeys[i];
+            var eventHandler = this.listeners[item];
+            var m = item.split('.');
+            var eventTarget = m.length > 1 ? m[0] : null;
+            var eventKey = eventTarget ? m[1] : m[0];
+            Object(_utils_addListenerToElement__WEBPACK_IMPORTED_MODULE_6__["default"])(eventTarget ? this.$[eventTarget] : this, eventKey, function (e) {
+              return this[eventHandler].call(this, e);
+            });
+          };
 
-            for (var key in _this3.listeners) {
-              if (Object.hasOwnProperty.call(_this3.listeners, key)) {
-                (function () {
-                  var eventHandler = _this3.listeners[key];
-                  var m = key.split('.');
-                  var eventTarget = m.length > 1 ? m[0] : null;
-                  var eventKey = eventTarget ? m[1] : m[0];
+          var eventKeys = Object.keys(this.listeners);
 
-                  var fn = function fn(e) {
-                    return _this[eventHandler].call(_this, e);
-                  };
-
-                  Object(_utils_addEvents__WEBPACK_IMPORTED_MODULE_8__["addEvent"])(eventTarget ? _this3.$[eventTarget] : _this3, eventKey, fn);
-                })();
-              }
-            }
-          })();
+          for (var i = 0, l = eventKeys.length; i < l; i += 1) {
+            loop.call(this, i, l);
+          }
         }
       }
     }, {
@@ -23784,78 +26704,6 @@ function Base(SuperClass) {
 
         return false;
       }
-    }, {
-      key: "invoke",
-      value: function invoke(methodName, params, option) {
-        this.invokeMethod(methodName, params, option);
-      }
-    }, {
-      key: "invokeMethod",
-      value: function () {
-        var _invokeMethod = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_0___default()( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_7___default.a.mark(function _callee(method) {
-          var params,
-              option,
-              pureParams,
-              call,
-              res,
-              status,
-              _args = arguments;
-          return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_7___default.a.wrap(function _callee$(_context) {
-            while (1) {
-              switch (_context.prev = _context.next) {
-                case 0:
-                  params = _args.length > 1 && _args[1] !== undefined ? _args[1] : {};
-                  option = _args.length > 2 && _args[2] !== undefined ? _args[2] : {};
-                  pureParams = omitBy(params, isFunction);
-
-                  call = function call(obj, key) {
-                    var fn = get$3(obj, key);
-
-                    if (typeof fn === 'function') {
-                      fn(res);
-                    }
-                  };
-
-                  _context.next = 6;
-                  return this.invokeNative(method, pureParams);
-
-                case 6:
-                  res = _context.sent;
-                  res.errMsg = res.errMsg || "".concat(method, ":ok");
-                  status = res.errMsg.startsWith("".concat(method, ":ok")) ? 'ok' : res.errMsg.startsWith("".concat(method, ":cancel")) ? 'cancel' : 'fail';
-
-                  if (status === 'ok') {
-                    call(option, 'beforeSuccess');
-                    call(params, 'success');
-                    call(option, 'afterSuccess');
-                  } else if (status === 'cancel') {
-                    // FIXME: 这里在 cancel 中调用 fail 是为了兼容老逻辑
-                    // 未来重构会去掉在基础库内部使用 invokeMethod 的逻辑`
-                    call(params, 'fail');
-                    call(option, 'cancel');
-                  } else if (status === 'fail') {
-                    call(option, 'beforeFail');
-                    call(params, 'fail');
-                    call(option, 'beforeFail');
-                  }
-
-                  call(params, 'complete');
-                  call(option, 'afterAll');
-
-                case 12:
-                case "end":
-                  return _context.stop();
-              }
-            }
-          }, _callee, this);
-        }));
-
-        function invokeMethod(_x) {
-          return _invokeMethod.apply(this, arguments);
-        }
-
-        return invokeMethod;
-      }()
     }, {
       key: "triggerEvent",
       value: function triggerEvent(eventName) {
@@ -23901,7 +26749,7 @@ function Base(SuperClass) {
           return value.toString();
         }
 
-        return _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_3___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6___default()(BaseMixin.prototype), "_deserializeValue", this).call(this, value, type);
+        return _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(_class.prototype), "_deserializeValue", this).call(this, value, type);
       }
     }], [{
       key: "properties",
@@ -23910,25 +26758,300 @@ function Base(SuperClass) {
           hidden: {
             type: Boolean,
             reflectToAttribute: true
-          },
-          __fields: {
-            type: Object
           }
         };
       }
     }]);
 
-    return BaseMixin;
+    return _class;
   }(SuperClass);
-
-  return BaseMixin;
 }
 
 /***/ }),
 
-/***/ "./src/web-components/common/hover.js":
+/***/ "./src/web-components/mixins/data.js":
+/*!*******************************************!*\
+  !*** ./src/web-components/mixins/data.js ***!
+  \*******************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return Data; });
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ "./node_modules/@babel/runtime/helpers/classCallCheck.js");
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/createClass */ "./node_modules/@babel/runtime/helpers/createClass.js");
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @babel/runtime/helpers/inherits */ "./node_modules/@babel/runtime/helpers/inherits.js");
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @babel/runtime/helpers/possibleConstructorReturn */ "./node_modules/@babel/runtime/helpers/possibleConstructorReturn.js");
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @babel/runtime/helpers/getPrototypeOf */ "./node_modules/@babel/runtime/helpers/getPrototypeOf.js");
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _utils_config__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/utils/config */ "./src/utils/config.js");
+
+
+
+
+
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_4___default()(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_4___default()(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_3___default()(this, result); }; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+
+function Data(superClass) {
+  return /*#__PURE__*/function (_superClass2) {
+    _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_2___default()(_class, _superClass2);
+
+    var _super = _createSuper(_class);
+
+    function _class() {
+      _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default()(this, _class);
+
+      return _super.apply(this, arguments);
+    }
+
+    _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default()(_class, [{
+      key: "getFormData",
+      value: function getFormData(fn) {
+        fn(this.value || '');
+      }
+    }, {
+      key: "resetFormData",
+      value: function resetFormData() {// will be overwritten by subClass
+      }
+    }, {
+      key: "hasBehavior",
+      value: function hasBehavior(type) {
+        if (type === "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_5__["prefix"], "-data")) {
+          return true;
+        }
+
+        return _superClass.prototype.hasBehavior.call(this, type);
+      }
+    }], [{
+      key: "properties",
+      get: function get() {
+        return {
+          name: {
+            type: String
+          }
+        };
+      }
+    }]);
+
+    return _class;
+  }(superClass);
+}
+
+/***/ }),
+
+/***/ "./src/web-components/mixins/disabled.js":
+/*!***********************************************!*\
+  !*** ./src/web-components/mixins/disabled.js ***!
+  \***********************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return Disabled; });
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ "./node_modules/@babel/runtime/helpers/classCallCheck.js");
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/createClass */ "./node_modules/@babel/runtime/helpers/createClass.js");
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @babel/runtime/helpers/inherits */ "./node_modules/@babel/runtime/helpers/inherits.js");
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @babel/runtime/helpers/possibleConstructorReturn */ "./node_modules/@babel/runtime/helpers/possibleConstructorReturn.js");
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @babel/runtime/helpers/getPrototypeOf */ "./node_modules/@babel/runtime/helpers/getPrototypeOf.js");
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_4__);
+
+
+
+
+
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_4___default()(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_4___default()(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_3___default()(this, result); }; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function Disabled(superClass) {
+  return /*#__PURE__*/function (_superClass) {
+    _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_2___default()(_class, _superClass);
+
+    var _super = _createSuper(_class);
+
+    function _class() {
+      _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default()(this, _class);
+
+      return _super.apply(this, arguments);
+    }
+
+    _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default()(_class, null, [{
+      key: "properties",
+      get: function get() {
+        return {
+          disabled: {
+            type: Boolean,
+            value: false
+          }
+        };
+      }
+    }]);
+
+    return _class;
+  }(superClass);
+}
+
+/***/ }),
+
+/***/ "./src/web-components/mixins/group.js":
 /*!********************************************!*\
-  !*** ./src/web-components/common/hover.js ***!
+  !*** ./src/web-components/mixins/group.js ***!
+  \********************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return Group; });
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ "./node_modules/@babel/runtime/helpers/classCallCheck.js");
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/createClass */ "./node_modules/@babel/runtime/helpers/createClass.js");
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @babel/runtime/helpers/get */ "./node_modules/@babel/runtime/helpers/get.js");
+/* harmony import */ var _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @babel/runtime/helpers/inherits */ "./node_modules/@babel/runtime/helpers/inherits.js");
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @babel/runtime/helpers/possibleConstructorReturn */ "./node_modules/@babel/runtime/helpers/possibleConstructorReturn.js");
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @babel/runtime/helpers/getPrototypeOf */ "./node_modules/@babel/runtime/helpers/getPrototypeOf.js");
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5__);
+/* harmony import */ var _utils_config__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/config */ "./src/utils/config.js");
+
+
+
+
+
+
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4___default()(this, result); }; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+
+function Group(superClass) {
+  return /*#__PURE__*/function (_superClass) {
+    _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3___default()(_class, _superClass);
+
+    var _super = _createSuper(_class);
+
+    function _class() {
+      _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default()(this, _class);
+
+      return _super.apply(this, arguments);
+    }
+
+    _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default()(_class, [{
+      key: "ready",
+      value: function ready() {
+        _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(_class.prototype), "ready", this).call(this);
+
+        this.addEventListener('itemValueChanged', this._handleItemValueChanged);
+        this.addEventListener('itemAdded', this._handleItemAdded);
+        this.addEventListener('itemCheckedChanged', this._handleItemCheckedChanged);
+        this.addEventListener('itemRemoved', this._handleItemRemoved);
+        this.addEventListener('itemChangedByTap', this._handleChangedByTap);
+      }
+    }, {
+      key: "_handleItemValueChanged",
+      value: function _handleItemValueChanged(e) {
+        this.renameItem(e.detail.item, e.detail.newVal, e.detail.oldVal);
+      }
+    }, {
+      key: "_handleItemCheckedChanged",
+      value: function _handleItemCheckedChanged(e) {
+        this.changed(e.detail.item);
+      }
+    }, {
+      key: "_handleItemAdded",
+      value: function _handleItemAdded(e) {
+        if (!e.detail.item._relatedGroup) {
+          e.detail.item._relatedGroup = this;
+          this.addItem(e.detail.item);
+        }
+
+        return false;
+      }
+    }, {
+      key: "_handleItemRemoved",
+      value: function _handleItemRemoved(e) {
+        this.removeItem(e.detail.item);
+        return false;
+      }
+    }, {
+      key: "_handleChangedByTap",
+      value: function _handleChangedByTap() {
+        this.triggerEvent('change', {
+          value: this.value
+        });
+      }
+    }, {
+      key: "resetFormData",
+      value: function resetFormData() {
+        if (this.hasBehavior("".concat(_utils_config__WEBPACK_IMPORTED_MODULE_6__["prefix"], "-data"))) {
+          !function dfs(t) {
+            t.childNodes && Array.from(t.childNodes).forEach(function (t) {
+              if (t.hasBehavior) {
+                if (t.hasBehavior("".concat(_utils_config__WEBPACK_IMPORTED_MODULE_6__["prefix"], "-group"))) {
+                  return;
+                }
+
+                if (t.hasBehavior("".concat(_utils_config__WEBPACK_IMPORTED_MODULE_6__["prefix"], "-item"))) {
+                  return t.resetFormData();
+                }
+              }
+
+              dfs(t);
+            });
+          }(this);
+        }
+      }
+    }, {
+      key: "addItem",
+      value: function addItem() {}
+    }, {
+      key: "removeItem",
+      value: function removeItem() {}
+    }, {
+      key: "renameItem",
+      value: function renameItem() {}
+    }, {
+      key: "changed",
+      value: function changed() {}
+    }, {
+      key: "hasBehavior",
+      value: function hasBehavior(type) {
+        if (type === "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_6__["prefix"], "-group")) {
+          return true;
+        }
+
+        return _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(_class.prototype), "hasBehavior", this).call(this, type);
+      }
+    }]);
+
+    return _class;
+  }(superClass);
+}
+
+/***/ }),
+
+/***/ "./src/web-components/mixins/hover.js":
+/*!********************************************!*\
+  !*** ./src/web-components/mixins/hover.js ***!
   \********************************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
@@ -23960,22 +27083,22 @@ function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflec
 function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
 
 function Hover(SuperClass) {
-  var HoverMixin = /*#__PURE__*/function (_SuperClass) {
-    _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3___default()(HoverMixin, _SuperClass);
+  return /*#__PURE__*/function (_SuperClass) {
+    _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3___default()(_class, _SuperClass);
 
-    var _super = _createSuper(HoverMixin);
+    var _super = _createSuper(_class);
 
-    function HoverMixin() {
+    function _class() {
       var _this;
 
-      _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default()(this, HoverMixin);
+      _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default()(this, _class);
 
       _this = _super.call(this);
       _this._hoverClass = [];
       return _this;
     }
 
-    _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default()(HoverMixin, [{
+    _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default()(_class, [{
       key: "hasBehavior",
       value: function hasBehavior(type) {
         // simple mock of hasBehavior method
@@ -23983,8 +27106,8 @@ function Hover(SuperClass) {
           return true;
         }
 
-        if (_babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(HoverMixin.prototype), "hasBehavior", this)) {
-          return _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(HoverMixin.prototype), "hasBehavior", this).call(this, type);
+        if (_babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(_class.prototype), "hasBehavior", this)) {
+          return _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(_class.prototype), "hasBehavior", this).call(this, type);
         }
       }
     }, {
@@ -24091,7 +27214,7 @@ function Hover(SuperClass) {
           return this.unbindHover();
         }
 
-        for (var n = 0; n < classes.length; n++) {
+        for (var n = 0; n < classes.length; n += 1) {
           classes[n] && this._hoverClass.push(classes[n]);
         }
 
@@ -24145,178 +27268,273 @@ function Hover(SuperClass) {
       }
     }]);
 
-    return HoverMixin;
+    return _class;
   }(SuperClass);
-
-  return HoverMixin;
 }
 
 /***/ }),
 
-/***/ "./src/web-components/index.js":
-/*!*************************************!*\
-  !*** ./src/web-components/index.js ***!
-  \*************************************/
-/*! no exports provided */
+/***/ "./src/web-components/mixins/index.js":
+/*!********************************************!*\
+  !*** ./src/web-components/mixins/index.js ***!
+  \********************************************/
+/*! exports provided: Base, Hover, LabelTarget, Item, Disabled, Group, Data */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _view__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./view */ "./src/web-components/view.js");
-/* harmony import */ var _label__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./label */ "./src/web-components/label.js");
+/* harmony import */ var _base__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./base */ "./src/web-components/mixins/base.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "Base", function() { return _base__WEBPACK_IMPORTED_MODULE_0__["default"]; });
+
+/* harmony import */ var _hover__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./hover */ "./src/web-components/mixins/hover.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "Hover", function() { return _hover__WEBPACK_IMPORTED_MODULE_1__["default"]; });
+
+/* harmony import */ var _label_target__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./label-target */ "./src/web-components/mixins/label-target.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "LabelTarget", function() { return _label_target__WEBPACK_IMPORTED_MODULE_2__["default"]; });
+
+/* harmony import */ var _item__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./item */ "./src/web-components/mixins/item.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "Item", function() { return _item__WEBPACK_IMPORTED_MODULE_3__["default"]; });
+
+/* harmony import */ var _disabled__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./disabled */ "./src/web-components/mixins/disabled.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "Disabled", function() { return _disabled__WEBPACK_IMPORTED_MODULE_4__["default"]; });
+
+/* harmony import */ var _group__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./group */ "./src/web-components/mixins/group.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "Group", function() { return _group__WEBPACK_IMPORTED_MODULE_5__["default"]; });
+
+/* harmony import */ var _data__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./data */ "./src/web-components/mixins/data.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "Data", function() { return _data__WEBPACK_IMPORTED_MODULE_6__["default"]; });
+
+
+
+
+
+
+
 
 
 
 /***/ }),
 
-/***/ "./src/web-components/label.js":
-/*!*************************************!*\
-  !*** ./src/web-components/label.js ***!
-  \*************************************/
-/*! no exports provided */
+/***/ "./src/web-components/mixins/item.js":
+/*!*******************************************!*\
+  !*** ./src/web-components/mixins/item.js ***!
+  \*******************************************/
+/*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/taggedTemplateLiteral */ "./node_modules/@babel/runtime/helpers/taggedTemplateLiteral.js");
-/* harmony import */ var _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ "./node_modules/@babel/runtime/helpers/classCallCheck.js");
-/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @babel/runtime/helpers/createClass */ "./node_modules/@babel/runtime/helpers/createClass.js");
-/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return Item; });
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ "./node_modules/@babel/runtime/helpers/classCallCheck.js");
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/createClass */ "./node_modules/@babel/runtime/helpers/createClass.js");
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @babel/runtime/helpers/get */ "./node_modules/@babel/runtime/helpers/get.js");
+/* harmony import */ var _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2__);
 /* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @babel/runtime/helpers/inherits */ "./node_modules/@babel/runtime/helpers/inherits.js");
 /* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3__);
 /* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @babel/runtime/helpers/possibleConstructorReturn */ "./node_modules/@babel/runtime/helpers/possibleConstructorReturn.js");
 /* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4__);
 /* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @babel/runtime/helpers/getPrototypeOf */ "./node_modules/@babel/runtime/helpers/getPrototypeOf.js");
 /* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5__);
-/* harmony import */ var _polymer_polymer__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @polymer/polymer */ "./node_modules/@polymer/polymer/polymer-element.js");
-/* harmony import */ var _common_base__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./common/base */ "./src/web-components/common/base.js");
-/* harmony import */ var _utils_config__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./utils/config */ "./src/web-components/utils/config.js");
+/* harmony import */ var _utils_config__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/config */ "./src/utils/config.js");
 
 
 
 
 
 
-
-var _templateObject;
 
 function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4___default()(this, result); }; }
 
 function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
 
 
+function Item(superClass) {
+  return /*#__PURE__*/function (_superClass) {
+    _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3___default()(_class, _superClass);
 
+    var _super = _createSuper(_class);
 
+    function _class() {
+      _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default()(this, _class);
 
-var Label = /*#__PURE__*/function (_Base) {
-  _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3___default()(Label, _Base);
-
-  var _super = _createSuper(Label);
-
-  function Label() {
-    _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1___default()(this, Label);
-
-    return _super.apply(this, arguments);
-  }
-
-  _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default()(Label, [{
-    key: "listeners",
-    get: function get() {
-      return {
-        tap: 'onTap'
-      };
+      return _super.apply(this, arguments);
     }
-  }, {
-    key: "_dfs",
-    value: function _dfs(parent) {
-      // 查找子节点中isLabelTarget为true的结点
-      if (parent.isLabelTarget) {
-        return parent;
+
+    _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default()(_class, [{
+      key: "hasBehavior",
+      value: function hasBehavior(type) {
+        if (type === "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_6__["prefix"], "-item")) {
+          return true;
+        }
+
+        return _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(_class.prototype), "hasBehavior", this).call(this, type);
       }
+    }, {
+      key: "connectedCallback",
+      value: function connectedCallback() {
+        _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(_class.prototype), "connectedCallback", this).call(this);
 
-      var children = Array.from(parent.children);
+        this.dispatchEvent(new CustomEvent('itemAdded', {
+          detail: {
+            item: this
+          },
+          bubbles: true
+        }));
+      }
+    }, {
+      key: "disconnectedCallback",
+      value: function disconnectedCallback() {
+        _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_2___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(_class.prototype), "disconnectedCallback", this).call(this);
 
-      for (var i = 0; i < children.length; i += 1) {
-        var target = this._dfs(children[i]);
+        if (this._relatedGroup) {
+          this._relatedGroup.dispatchEvent(new CustomEvent('itemRemoved', {
+            detail: {
+              item: this
+            }
+          }));
 
-        if (target) {
-          return target;
+          this._relatedGroup = null;
         }
       }
-    }
-  }, {
-    key: "onTap",
-    value: function onTap(e) {
-      var labelTarget;
-      var labelFor = this.htmlFor; // tma-html-compiler会把for输出到htmlFor
+    }, {
+      key: "moved",
+      value: function moved() {
+        if (this._relatedGroup) {
+          this._relatedGroup.dispatchEvent(new CustomEvent('itemRemoved'));
 
-      if (labelFor) {
-        labelTarget = this.querySelector("#".concat(labelFor)) || document.getElementById(labelFor);
-      } else {
-        labelTarget = this._dfs(this);
+          this._relatedGroup = null;
+        }
+
+        this.dispatchEvent(new CustomEvent('itemAdded', {
+          detail: {
+            item: this
+          },
+          bubbles: true
+        }));
       }
-
-      if (labelTarget && labelTarget.handleLabelTap && e.target !== labelTarget) {
-        labelTarget.handleLabelTap(e);
+    }, {
+      key: "valueChange",
+      value: function valueChange(newVal, oldVal) {
+        if (this._relatedGroup) {
+          this._relatedGroup.dispatchEvent(new CustomEvent('itemValueChanged', {
+            detail: {
+              item: this,
+              newVal: newVal,
+              oldVal: oldVal
+            }
+          }));
+        }
       }
-    }
-  }], [{
-    key: "is",
-    get: function get() {
-      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_8__["perfix"], "-label");
-    }
-  }, {
-    key: "properties",
-    get: function get() {
-      return {};
-    }
-  }, {
-    key: "template",
-    get: function get() {
-      return Object(_polymer_polymer__WEBPACK_IMPORTED_MODULE_6__["html"])(_templateObject || (_templateObject = _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default()(["\n      <style>\n        :host {\n          -webkit-tap-highlight-color: rgba(0,0,0,0);\n        }     \n      </style>     \n      <slot></slot>\n    "])));
-    }
-  }]);
+    }, {
+      key: "checkedChange",
+      value: function checkedChange(newValue, oldValue) {
+        if (typeof oldValue !== 'undefined' && newValue !== oldValue && this._relatedGroup) {
+          this._relatedGroup.dispatchEvent(new CustomEvent('itemCheckedChanged', {
+            detail: {
+              item: this
+            }
+          }));
+        }
+      }
+    }, {
+      key: "changedByTap",
+      value: function changedByTap() {
+        if (this._relatedGroup) {
+          this._relatedGroup.dispatchEvent(new CustomEvent('itemChangedByTap'));
+        }
+      }
+    }, {
+      key: "resetFormData",
+      value: function resetFormData() {
+        this.checked = false;
+      }
+    }], [{
+      key: "properties",
+      get: function get() {
+        return {
+          value: {
+            type: String,
+            observer: 'valueChange'
+          },
+          checked: {
+            type: Boolean,
+            value: false,
+            observer: 'checkedChange'
+          }
+        };
+      }
+    }]);
 
-  return Label;
-}(Object(_common_base__WEBPACK_IMPORTED_MODULE_7__["default"])(_polymer_polymer__WEBPACK_IMPORTED_MODULE_6__["PolymerElement"]));
-
-window.customElements.define(Label.is, Label);
+    return _class;
+  }(superClass);
+}
 
 /***/ }),
 
-/***/ "./src/web-components/utils/config.js":
-/*!********************************************!*\
-  !*** ./src/web-components/utils/config.js ***!
-  \********************************************/
-/*! exports provided: perfix */
+/***/ "./src/web-components/mixins/label-target.js":
+/*!***************************************************!*\
+  !*** ./src/web-components/mixins/label-target.js ***!
+  \***************************************************/
+/*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "perfix", function() { return perfix; });
-var perfix = 'mp';
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return LabelTarget; });
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ "./node_modules/@babel/runtime/helpers/classCallCheck.js");
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/createClass */ "./node_modules/@babel/runtime/helpers/createClass.js");
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @babel/runtime/helpers/inherits */ "./node_modules/@babel/runtime/helpers/inherits.js");
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @babel/runtime/helpers/possibleConstructorReturn */ "./node_modules/@babel/runtime/helpers/possibleConstructorReturn.js");
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @babel/runtime/helpers/getPrototypeOf */ "./node_modules/@babel/runtime/helpers/getPrototypeOf.js");
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_4__);
+
+
+
+
+
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_4___default()(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_4___default()(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_3___default()(this, result); }; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function LabelTarget(superClass) {
+  return /*#__PURE__*/function (_superClass) {
+    _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_2___default()(_class, _superClass);
+
+    var _super = _createSuper(_class);
+
+    function _class() {
+      _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default()(this, _class);
+
+      return _super.apply(this, arguments);
+    }
+
+    _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default()(_class, [{
+      key: "isLabelTarget",
+      get: function get() {
+        return true;
+      }
+    }, {
+      key: "handleLabelTap",
+      value: function handleLabelTap(e) {// do nothing
+      }
+    }]);
+
+    return _class;
+  }(superClass);
+}
 
 /***/ }),
 
-/***/ "./src/web-components/utils/tools.js":
-/*!*******************************************!*\
-  !*** ./src/web-components/utils/tools.js ***!
-  \*******************************************/
-/*! exports provided: IS_IOS_11 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "IS_IOS_11", function() { return IS_IOS_11; });
-var IS_IOS_11 = window.navigator.userAgent.match(/iPhone OS 11_[34]/);
-
-/***/ }),
-
-/***/ "./src/web-components/view.js":
+/***/ "./src/web-components/text.js":
 /*!************************************!*\
-  !*** ./src/web-components/view.js ***!
+  !*** ./src/web-components/text.js ***!
   \************************************/
 /*! no exports provided */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
@@ -24338,10 +27556,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @babel/runtime/helpers/getPrototypeOf */ "./node_modules/@babel/runtime/helpers/getPrototypeOf.js");
 /* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6__);
 /* harmony import */ var _polymer_polymer__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @polymer/polymer */ "./node_modules/@polymer/polymer/polymer-element.js");
-/* harmony import */ var _common_base__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./common/base */ "./src/web-components/common/base.js");
-/* harmony import */ var _common_hover__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./common/hover */ "./src/web-components/common/hover.js");
-/* harmony import */ var _utils_config__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./utils/config */ "./src/web-components/utils/config.js");
-/* harmony import */ var _utils_tools__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./utils/tools */ "./src/web-components/utils/tools.js");
+/* harmony import */ var _utils_config__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @/utils/config */ "./src/utils/config.js");
+/* harmony import */ var _mixins__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./mixins */ "./src/web-components/mixins/index.js");
 
 
 
@@ -24360,10 +27576,180 @@ function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Re
 
 
 
+var Text = /*#__PURE__*/function (_Base) {
+  _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_4___default()(Text, _Base);
+
+  var _super = _createSuper(Text);
+
+  function Text() {
+    _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1___default()(this, Text);
+
+    return _super.apply(this, arguments);
+  }
+
+  _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default()(Text, [{
+    key: "connectedCallback",
+    value: function connectedCallback() {
+      _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_3___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6___default()(Text.prototype), "connectedCallback", this).call(this);
+
+      this._update();
+
+      this._observer = new MutationObserver(this._update.bind(this));
+
+      this._observer.observe(this, {
+        childList: true,
+        subtree: true,
+        characterData: true // 必须
+
+      });
+    }
+  }, {
+    key: "disconnectedCallback",
+    value: function disconnectedCallback() {
+      _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_3___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6___default()(Text.prototype), "disconnectedCallback", this).call(this);
+
+      this._observer && this._observer.disconnect();
+    }
+  }, {
+    key: "_styleChanged",
+    value: function _styleChanged(styles) {
+      this.setAttribute('style', styles);
+    }
+  }, {
+    key: "_classChanged",
+    value: function _classChanged(cls) {
+      this.setAttribute('class', cls);
+    }
+  }, {
+    key: "_decode",
+    value: function _decode(txt) {
+      this.space && (this.space === 'nbsp' ? txt = txt.replace(/ /g, ' ') : this.space === 'ensp' ? txt = txt.replace(/ /g, ' ') : this.space === 'emsp' && (txt = txt.replace(/ /g, ' ')));
+      return this.decode ? txt.replace(/&nbsp;/g, ' ').replace(/&ensp;/g, ' ').replace(/&emsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&') : txt;
+    }
+  }, {
+    key: "_update",
+    value: function _update() {
+      var _this = this;
+
+      var textNode = document.createDocumentFragment();
+      Array.from(this.childNodes).forEach(function (shadowNode) {
+        if (shadowNode.nodeType === shadowNode.TEXT_NODE) {
+          var lines = _this._decode(shadowNode.textContent).split('\n');
+
+          for (var i = 0; i < lines.length; i += 1) {
+            i && textNode.appendChild(document.createElement('br'));
+            textNode.appendChild(document.createTextNode(lines[i]));
+          }
+        } else if (shadowNode.nodeType === 1 && shadowNode.tagName === "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_8__["UpperCasePerfix"], "-TEXT")) {
+          var cloneNode = Node.prototype.cloneNode || Element.prototype.cloneNode;
+
+          var _clone = function _clone(root) {
+            var outer = cloneNode.call(root);
+            outer.$$data = root.$$data;
+            Array.from(root.childNodes).forEach(function (child) {
+              if (child.nodeType === 1 && child.tagName === "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_8__["UpperCasePerfix"], "-TEXT")) {
+                outer.appendChild(_clone(child));
+              } else {
+                outer.appendChild(child.cloneNode());
+              }
+            });
+            return outer;
+          };
+
+          textNode.appendChild(_clone(shadowNode));
+        }
+      });
+      this.$.main.innerHTML = '';
+      this.$.main.appendChild(textNode);
+    }
+  }], [{
+    key: "is",
+    get: function get() {
+      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_8__["prefix"], "-text");
+    }
+  }, {
+    key: "properties",
+    get: function get() {
+      return {
+        style: {
+          type: String,
+          observer: '_styleChanged'
+        },
+        "class": {
+          type: String,
+          observer: '_classChanged'
+        },
+        selectable: {
+          type: Boolean,
+          value: false
+        },
+        decode: {
+          type: Boolean,
+          value: false
+        },
+        space: {
+          type: String,
+          value: ''
+        }
+      };
+    }
+  }, {
+    key: "template",
+    get: function get() {
+      return Object(_polymer_polymer__WEBPACK_IMPORTED_MODULE_7__["html"])(_templateObject || (_templateObject = _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default()(["\n      <slot id=\"slot\" style=\"display: none;\"></slot>\n      <span id=\"main\"></span>\n    "])));
+    }
+  }]);
+
+  return Text;
+}(Object(_mixins__WEBPACK_IMPORTED_MODULE_9__["Base"])(_polymer_polymer__WEBPACK_IMPORTED_MODULE_7__["PolymerElement"]));
+
+window.customElements.define(Text.is, Text);
+
+/***/ }),
+
+/***/ "./src/web-components/view.js":
+/*!************************************!*\
+  !*** ./src/web-components/view.js ***!
+  \************************************/
+/*! no exports provided */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/taggedTemplateLiteral */ "./node_modules/@babel/runtime/helpers/taggedTemplateLiteral.js");
+/* harmony import */ var _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ "./node_modules/@babel/runtime/helpers/classCallCheck.js");
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @babel/runtime/helpers/createClass */ "./node_modules/@babel/runtime/helpers/createClass.js");
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @babel/runtime/helpers/inherits */ "./node_modules/@babel/runtime/helpers/inherits.js");
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @babel/runtime/helpers/possibleConstructorReturn */ "./node_modules/@babel/runtime/helpers/possibleConstructorReturn.js");
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @babel/runtime/helpers/getPrototypeOf */ "./node_modules/@babel/runtime/helpers/getPrototypeOf.js");
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5__);
+/* harmony import */ var _polymer_polymer__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @polymer/polymer */ "./node_modules/@polymer/polymer/polymer-element.js");
+/* harmony import */ var _utils_config__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @/utils/config */ "./src/utils/config.js");
+/* harmony import */ var _mixins__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./mixins */ "./src/web-components/mixins/index.js");
+
+
+
+
+
+
+
+var _templateObject;
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4___default()(this, result); }; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+
+
 
 
 var View = /*#__PURE__*/function (_Hover) {
-  _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_4___default()(View, _Hover);
+  _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_3___default()(View, _Hover);
 
   var _super = _createSuper(View);
 
@@ -24373,30 +27759,20 @@ var View = /*#__PURE__*/function (_Hover) {
     return _super.apply(this, arguments);
   }
 
-  _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default()(View, [{
-    key: "ready",
-    value: function ready() {
-      _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_3___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6___default()(View.prototype), "ready", this).call(this);
-
-      if (_utils_tools__WEBPACK_IMPORTED_MODULE_11__["IS_IOS_11"]) {
-        // ios 11.4或者11.3的兼容问题, 文本节点的text-decoration没了
-        this.$.main.style.textDecoration = 'inherit';
-      }
-    }
-  }], [{
+  _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default()(View, null, [{
     key: "is",
     get: function get() {
-      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_10__["perfix"], "-view");
+      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["prefix"], "-view");
     }
   }, {
     key: "template",
     get: function get() {
-      return Object(_polymer_polymer__WEBPACK_IMPORTED_MODULE_7__["html"])(_templateObject || (_templateObject = _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default()(["\n      <style>      \n        :host {        \n          display: block;        \n          white-space: normal;      \n        }      \n        :host[hidden] {        \n          display: none !important;\n        }      \n        #main {        \n          /* ios12 special */        \n          text-decoration: inherit;      \n        }    \n      </style>\n      <slot id=\"main\"></slot>\n    "])));
+      return Object(_polymer_polymer__WEBPACK_IMPORTED_MODULE_6__["html"])(_templateObject || (_templateObject = _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default()(["\n      <style>      \n        :host {\n          display: block;\n          white-space: normal;\n        }\n        #main {\n          /* ios12 special */\n          text-decoration: inherit;      \n        }\n      </style>\n      <slot id=\"main\"></slot>\n    "])));
     }
   }]);
 
   return View;
-}(Object(_common_hover__WEBPACK_IMPORTED_MODULE_9__["default"])(Object(_common_base__WEBPACK_IMPORTED_MODULE_8__["default"])(_polymer_polymer__WEBPACK_IMPORTED_MODULE_7__["PolymerElement"])));
+}(Object(_mixins__WEBPACK_IMPORTED_MODULE_8__["Hover"])(Object(_mixins__WEBPACK_IMPORTED_MODULE_8__["Base"])(_polymer_polymer__WEBPACK_IMPORTED_MODULE_6__["PolymerElement"])));
 
 window.customElements.define(View.is, View);
 

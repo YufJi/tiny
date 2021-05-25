@@ -4,7 +4,7 @@ const resolve = require('resolve');
 const fs = require('fs');
 const { Transformer } = require('./xml');
 const defaultLib = require('./defaultLib');
-const { toComponentName } = require('./utils');
+const { toComponentName, supportedWebcomponents } = require('./utils');
 const {
   getPluginPath,
   PLUGIN_PRIVATE_PREFIX,
@@ -170,6 +170,10 @@ class TemplateTransformer extends Transformer {
         };
       },
       importComponent(dep) {
+        if (supportedWebcomponents.indexOf(dep) !== -1) {
+          return;
+        }
+
         const componentInfo = usingComponents && usingComponents[dep];
         const componentName = toComponentName(dep);
 

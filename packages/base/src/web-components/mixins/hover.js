@@ -1,5 +1,5 @@
 export default function Hover(SuperClass) {
-  class HoverMixin extends SuperClass {
+  return class extends SuperClass {
     static get properties() {
       return {
         hoverStartTime: {
@@ -131,7 +131,7 @@ export default function Hover(SuperClass) {
         return this.unbindHover();
       }
 
-      for (let n = 0; n < classes.length; n++) {
+      for (let n = 0; n < classes.length; n+=1) {
         classes[n] && this._hoverClass.push(classes[n]);
       }
 
@@ -159,7 +159,5 @@ export default function Hover(SuperClass) {
         }
       }
     }
-  }
-
-  return HoverMixin;
+  };
 }

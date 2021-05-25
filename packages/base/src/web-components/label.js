@@ -1,10 +1,10 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import Base from './common/base';
-import { perfix } from './utils/config';
+import { prefix } from '@/utils/config';
+import { Base } from './mixins';
 
 class Label extends Base(PolymerElement) {
   static get is() {
-    return `${perfix}-label`;
+    return `${prefix}-label`;
   }
 
   static get properties() {
@@ -28,6 +28,21 @@ class Label extends Base(PolymerElement) {
     };
   }
 
+  onTap(e) {
+    let labelTarget;
+    const labelFor = this.htmlFor; // tma-html-compiler会把for输出到htmlFor
+
+    if (labelFor) {
+      labelTarget = this.querySelector(`#${labelFor}`) || document.getElementById(labelFor);
+    } else {
+      labelTarget = this._dfs(this);
+    }
+
+    if (labelTarget && labelTarget.handleLabelTap && e.target !== labelTarget) {
+      labelTarget.handleLabelTap(e);
+    }
+  }
+
   _dfs(parent) {
     // 查找子节点中isLabelTarget为true的结点
     if (parent.isLabelTarget) {
@@ -42,21 +57,6 @@ class Label extends Base(PolymerElement) {
       if (target) {
         return target;
       }
-    }
-  }
-
-  onTap(e) {
-    let labelTarget;
-    const labelFor = this.htmlFor; // tma-html-compiler会把for输出到htmlFor
-
-    if (labelFor) {
-      labelTarget = this.querySelector(`#${labelFor}`) || document.getElementById(labelFor);
-    } else {
-      labelTarget = this._dfs(this);
-    }
-
-    if (labelTarget && labelTarget.handleLabelTap && e.target !== labelTarget) {
-      labelTarget.handleLabelTap(e);
     }
   }
 }

@@ -14,6 +14,7 @@ const caches = {};
 const cacheIntArray = {};
 const isUC = !!(_UCVersion && _UCVersion[1]);
 const isNativeComponent = isUC || isIOS;
+const iOSVersion = /iPhone OS (\d{2})/.exec(ua);
 
 function toIntArray(v) {
   if (cacheIntArray[v]) {
@@ -79,4 +80,5 @@ export {
   logSystemInfo,
   compareSystemVersion,
   compareUCVersion,
+  iOSVersion,
 };

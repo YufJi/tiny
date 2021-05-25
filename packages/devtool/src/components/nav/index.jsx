@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { connect } from 'react-redux';
 import global from '@/utils/global';
 
@@ -8,8 +8,15 @@ function Nav(props) {
   const { navConfig } = props;
   const isShowBackIcon = global.pagesStack.length > 1;
 
+  const root = useRef(null);
+
+  useEffect(() => {
+
+  }, []);
+
   return (
     <div
+      ref={root}
       className={`${style.nav} flex-r`}
       style={{
         backgroundColor: navConfig.backgroundColor,

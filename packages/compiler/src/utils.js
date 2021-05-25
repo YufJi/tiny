@@ -10,6 +10,9 @@ const { miniStore, pluginStore } = require('./configStore');
 const numberReSnippet = '(?:NaN|-?(?:(?:\\d+|\\d*\\.\\d+)(?:[E|e][+|-]?\\d+)?|Infinity))';
 const matchOnlyNumberRe = new RegExp(`^(${numberReSnippet})$`);
 
+const elementPrefix = 'mp';
+const supportedWebcomponents = ['view', 'button', 'text', 'label', 'checkbox', 'checkbox-group'];
+
 function isNumber(str) {
   return !!str.trim().match(matchOnlyNumberRe);
 }
@@ -44,6 +47,10 @@ function camelCase(name) {
 }
 
 function toComponentName(str) {
+  if (supportedWebcomponents.indexOf(str) !== -1) {
+    return `${elementPrefix}-${str}`;
+  }
+
   const ret = camelCase(str);
   return ret.charAt(0).toUpperCase() + ret.slice(1);
 }
@@ -340,4 +347,5 @@ module.exports = {
   getImports,
   getImport,
   isValidFilePath,
+  supportedWebcomponents,
 };
