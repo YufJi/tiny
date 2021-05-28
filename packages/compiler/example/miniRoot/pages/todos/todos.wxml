@@ -27,6 +27,6 @@
 
   <view bind:tap="clickParent">
     <view class="jyf" capture-bind:tap="captureClickChild" style="background: yellow;" >capture child</view>
-    <view data-xhq="jyf" catch:tap="clickChild" style="margin-top: 120rpx; background: red;">child</view>
+    <view data-xhq="jyf" bind:longpress="clickChild" style="margin-top: 120rpx; background: red;">{{haha}}</view>
   </view>
 </view>

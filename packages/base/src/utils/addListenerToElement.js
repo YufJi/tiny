@@ -210,11 +210,13 @@ function addTapEvent(node, options) {
       bubbles: !stop,
       composed: true,
     });
+
     tapEvent.detail = {
       x: e.changedTouches[0].pageX,
       y: e.changedTouches[0].pageY,
       sourceEndEvent: e,
     };
+
     node.dispatchEvent(tapEvent);
   }, {
     capture,
@@ -226,4 +228,16 @@ function addTapEvent(node, options) {
   }, {
     capture,
   });
+}
+
+export function removeListenerToElement(node, type, handler) {
+  const matches = type.match(eventReg);
+  if (!matches) {
+    return;
+  }
+
+  const capture = matches[1];
+  const eventType = matches[3];
+
+  node.removeEventListener(eventType, handler, capture);
 }

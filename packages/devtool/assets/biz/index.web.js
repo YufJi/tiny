@@ -665,9 +665,9 @@ function render(data) {
     style: "background: yellow;"
   }, $toString("capture child")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
     "data-xhq": "jyf",
-    catchtap: $getEventHandler(this, "clickChild"),
+    bindlongpress: $getEventHandler(this, "clickChild"),
     style: "margin-top: 120rpx; background: red;"
-  }, $toString("child"))])]));
+  }, $toString(data['haha']))])]));
 }
 ;
 

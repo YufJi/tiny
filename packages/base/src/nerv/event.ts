@@ -2,8 +2,7 @@ import {
   isFunction,
 } from '@/nerv/utils';
 import { noop } from '@/nerv/shared';
-import addListenerToElement from '@/utils/addListenerToElement';
-import eventReg from '@/utils/eventReg';
+import addListenerToElement, { removeListenerToElement } from '@/utils/addListenerToElement';
 
 const ONINPUT = 'oninput';
 const ONPROPERTYCHANGE = 'onpropertychange';
@@ -38,22 +37,14 @@ export function attachEvent(
 export function detachEvent(
   domNode: Element,
   eventName: string,
-  handler: any,
+  handler: Function,
 ) {
   eventName = fixEvent(domNode, eventName);
   if (eventName === ONPROPERTYCHANGE) {
     return;
   }
 
-  const matches = eventName.match(eventReg);
-  if (!matches) {
-    return;
-  }
-
-  const capture = matches[1];
-  const eventType = matches[3];
-
-  domNode.removeEventListener(eventType, handler, capture);
+  removeListenerToElement(domNode, eventName, handler);
 }
 
 let propertyChangeActiveElement;

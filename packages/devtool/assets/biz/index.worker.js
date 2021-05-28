@@ -368,6 +368,8 @@ Page({
   data: {
     text: 'abc',
     fn: 'addTodo',
+
+    haha: 'xxxx',
   },
   // 监听生命周期回调 onLoad
   onLoad() {
@@ -397,7 +399,7 @@ Page({
   },
   // 事件处理函数
   onTodoChanged(e) {
-    console.log('e',e)
+    console.log('e', e);
     // 修改全局数据
     const checkedTodos = e.detail.value;
     app.todos = app.todos.map((todo) => ({
@@ -424,6 +426,9 @@ Page({
   },
   clickChild(e) {
     console.log('clickChild', e);
+    this.setData({
+      haha: 'ooooo',
+    });
   },
   captureClickChild() {
     console.log('captureClickChild');
@@ -436,8 +441,8 @@ Page({
     console.log('clickCom');
   },
   clicklabel() {
-    console.log('clicklabel')
-  }
+    console.log('clicklabel');
+  },
 });
 
 

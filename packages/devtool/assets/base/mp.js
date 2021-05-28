@@ -22423,8 +22423,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _nerv_utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/nerv/utils */ "./src/nerv/utils/index.ts");
 /* harmony import */ var _nerv_shared__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/nerv/shared */ "./src/nerv/shared/index.ts");
 /* harmony import */ var _utils_addListenerToElement__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/addListenerToElement */ "./src/utils/addListenerToElement.js");
-/* harmony import */ var _utils_eventReg__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/eventReg */ "./src/utils/eventReg.js");
-
 
 
 
@@ -22449,13 +22447,7 @@ function detachEvent(domNode, eventName, handler) {
     if (eventName === ONPROPERTYCHANGE) {
         return;
     }
-    var matches = eventName.match(_utils_eventReg__WEBPACK_IMPORTED_MODULE_3__["default"]);
-    if (!matches) {
-        return;
-    }
-    var capture = matches[1];
-    var eventType = matches[3];
-    domNode.removeEventListener(eventType, handler, capture);
+    Object(_utils_addListenerToElement__WEBPACK_IMPORTED_MODULE_2__["removeListenerToElement"])(domNode, eventName, handler);
 }
 var propertyChangeActiveElement;
 var propertyChangeActiveElementValue;
@@ -25876,12 +25868,13 @@ function addEvent(target, name, fn) {
 /*!*******************************************!*\
   !*** ./src/utils/addListenerToElement.js ***!
   \*******************************************/
-/*! exports provided: default */
+/*! exports provided: default, removeListenerToElement */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return addListenerToElement; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "removeListenerToElement", function() { return removeListenerToElement; });
 /* harmony import */ var _utils_types__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/utils/types */ "./src/utils/types.js");
 /* harmony import */ var _utils_eventReg__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/eventReg */ "./src/utils/eventReg.js");
 /* harmony import */ var _supportsPassive__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./supportsPassive */ "./src/utils/supportsPassive.js");
@@ -26109,6 +26102,18 @@ function addTapEvent(node, options) {
   }, {
     capture: capture
   });
+}
+
+function removeListenerToElement(node, type, handler) {
+  var matches = type.match(_utils_eventReg__WEBPACK_IMPORTED_MODULE_1__["default"]);
+
+  if (!matches) {
+    return;
+  }
+
+  var capture = matches[1];
+  var eventType = matches[3];
+  node.removeEventListener(eventType, handler, capture);
 }
 
 /***/ }),
