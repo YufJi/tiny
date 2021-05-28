@@ -34,3 +34,7 @@ export function getPropsEvent(name, isCatch = false, capture = false) {
   }
   return noop;
 }
+
+const eventReg = /^(capture-)?(bind|catch)?([A-Za-z_]+)/;
+
+export default eventReg;

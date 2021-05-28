@@ -11,7 +11,16 @@ const numberReSnippet = '(?:NaN|-?(?:(?:\\d+|\\d*\\.\\d+)(?:[E|e][+|-]?\\d+)?|In
 const matchOnlyNumberRe = new RegExp(`^(${numberReSnippet})$`);
 
 const elementPrefix = 'mp';
-const supportedWebcomponents = ['view', 'button', 'text', 'label', 'checkbox', 'checkbox-group'];
+const supportedWebcomponents = [
+  'view',
+  'button',
+  'text',
+  'label',
+  'form',
+  'input',
+  'checkbox',
+  'checkbox-group',
+];
 
 function isNumber(str) {
   return !!str.trim().match(matchOnlyNumberRe);

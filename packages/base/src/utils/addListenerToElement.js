@@ -1,28 +1,36 @@
 /* eslint-disable default-case */
+import { getType } from '@/utils/types';
+import eventReg from '@/utils/eventReg';
 import supportsPassive from './supportsPassive';
-import { prefix, UpperCasePerfix } from './config';
+import { elementPrefix, UpperCasePerfix } from './config';
 
 const EVENT_BLACK_LIST= ['click'];
 const PRESS_DELAY = 350;
 const TAP_DISTANCE = 5;
 const TAP_BLACK_LIST = [`${UpperCasePerfix}-BUTTON`, `${UpperCasePerfix}-CHECKBOX`, `${UpperCasePerfix}-RADIO`, `${UpperCasePerfix}-MAP`];
-let HAS_NATIVE_TA = false;
 
-// 兼容非 browser 环境
-if (typeof window !== 'undefined') {
-  HAS_NATIVE_TA = typeof document.head.style.touchAction === 'string';
-}
+export default function addListenerToElement(node, type, callback) {
+  const matches = type.match(eventReg);
+  if (!matches) {
+    return;
+  }
 
-export default function addListenerToElement(node, eventType, callback) {
+  const capture = matches[1];
+  const stop = matches[2] === 'catch';
+  const eventType = matches[3];
+
   switch (eventType) {
     case 'tap':
       // listen down and up
       if (!node.__hasTapEvent) {
         node.__hasTapEvent = true;
-        addTapEvent(node);
+        addTapEvent(node, {
+          stop,
+          capture,
+        });
       }
 
-      node.addEventListener(`${prefix}-tap`, (e) => {
+      node.addEventListener(`${elementPrefix}-tap`, (e) => {
         return callback.call(node, {
           touches: e.detail.sourceEndEvent.changedTouches,
           // touchend没有touches，可以用changedTouches
@@ -50,6 +58,8 @@ export default function addListenerToElement(node, eventType, callback) {
     case 'touchmove':
     case 'touchcancel':
       node.addEventListener(eventType, (e) => {
+        stop && e.stopPropagation();
+
         if (e.__frozenBySwipeBack) return; // ios 触发了滑动返回
 
         const detail = {
@@ -64,10 +74,12 @@ export default function addListenerToElement(node, eventType, callback) {
           configurable: true,
         });
         return callback.call(node, e);
+      }, {
+        capture,
       });
-      // 组件可能会取消touchmove事件，并用tt-touchmove替换
+      // 组件可能会取消touchmove事件，并用tt-touchmove替换, 主要是swiper会用到
       if (eventType === 'touchmove') {
-        node.addEventListener(`${prefix}-touchmove`, (e) => {
+        node.addEventListener(`${elementPrefix}-touchmove`, (e) => {
           const { srcMoveEvent } = e.detail;
           return callback.call(node, {
             touches: srcMoveEvent.touches,
@@ -95,10 +107,13 @@ export default function addListenerToElement(node, eventType, callback) {
       // listen down and up
       if (!node.__hasTapEvent) {
         node.__hasTapEvent = true;
-        addTapEvent(node);
+        addTapEvent(node, {
+          stop,
+          capture,
+        });
       }
 
-      node.addEventListener(`${prefix}-longpress`, (e) => {
+      node.addEventListener(`${elementPrefix}-longpress`, (e) => {
         e.longpressFired();
         callback(e);
       });
@@ -110,11 +125,13 @@ export default function addListenerToElement(node, eventType, callback) {
   }
 }
 
-function addTapEvent(node) {
-  // 模拟合成tap事件和longpress事件，事件名为tt-tap和tt-longpress，以区别于polymer的事件
+function addTapEvent(node, options) {
+  // 模拟合成tap事件和longpress事件，事件名为mp-tap和mp-longpress，以区别于polymer的事件
   let pressTimer;
   let pressStart;
   let ended;
+
+  const { stop, capture } = options;
 
   const touchstartHandler = (e) => {
     if (e.__handledTap) {
@@ -129,8 +146,8 @@ function addTapEvent(node) {
     clearTimeout(pressTimer);
     pressTimer = setTimeout(() => {
       // dispatch longpress event
-      const pressEvent = new Event(`${prefix}-longpress`, {
-        bubbles: true,
+      const pressEvent = new Event(`${elementPrefix}-longpress`, {
+        bubbles: !stop,
         composed: true,
       });
       pressEvent.detail = pressStart;
@@ -141,6 +158,7 @@ function addTapEvent(node) {
 
       node.dispatchEvent(pressEvent);
     }, PRESS_DELAY);
+
     e.__handledTap = true;
   };
 
@@ -158,17 +176,14 @@ function addTapEvent(node) {
     }
   };
 
-  if (HAS_NATIVE_TA && supportsPassive) {
-    node.addEventListener('touchstart', touchstartHandler, {
-      passive: true,
-    });
-    node.addEventListener('touchmove', touchmoveHandler, {
-      passive: true,
-    });
-  } else {
-    node.addEventListener('touchstart', touchstartHandler);
-    node.addEventListener('touchmove', touchmoveHandler);
-  }
+  node.addEventListener('touchstart', touchstartHandler, supportsPassive ? {
+    passive: supportsPassive,
+    capture,
+  } : capture);
+  node.addEventListener('touchmove', touchmoveHandler, supportsPassive ? {
+    passive: supportsPassive,
+    capture,
+  } : capture);
 
   node.addEventListener('touchend', (e) => {
     if (ended || !pressStart) {
@@ -183,15 +198,16 @@ function addTapEvent(node) {
 
     if (dx > TAP_DISTANCE || dy > TAP_DISTANCE) {
       return;
-    } // dispatch tap event
+    }
 
+    // dispatch tap event
     if (TAP_BLACK_LIST.indexOf(node.tagName) !== -1 && node.disabled) {
       // if element is disabled, 那就不发了
       return;
     }
 
-    const tapEvent = new Event(`${prefix}-tap`, {
-      bubbles: true,
+    const tapEvent = new Event(`${elementPrefix}-tap`, {
+      bubbles: !stop,
       composed: true,
     });
     tapEvent.detail = {
@@ -200,10 +216,14 @@ function addTapEvent(node) {
       sourceEndEvent: e,
     };
     node.dispatchEvent(tapEvent);
+  }, {
+    capture,
   });
 
   node.addEventListener('touchcancel', (e) => {
     ended = true;
     clearTimeout(pressTimer);
+  }, {
+    capture,
   });
 }

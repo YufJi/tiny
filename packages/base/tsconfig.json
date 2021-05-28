@@ -8,6 +8,7 @@
     "experimentalDecorators": true,
     "noImplicitAny": false,
     "allowSyntheticDefaultImports": true,
+    "allowJs": true,
     "noUnusedLocals": true,
     "strictNullChecks": true,
     "sourceMap": true,

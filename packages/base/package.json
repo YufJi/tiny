@@ -23,6 +23,7 @@
     "@polymer/polymer": "^3.4.1",
     "classnames": "^2.3.1",
     "css-vendor": "^2.0.8",
+    "eventemitter3": "^4.0.7",
     "hoist-non-react-statics": "^3.3.2",
     "lodash.defaults": "^4.2.0",
     "lodash.defaultsdeep": "^4.6.1",

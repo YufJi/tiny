@@ -1,10 +1,10 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { prefix } from '@/utils/config';
+import { elementPrefix } from '@/utils/config';
 import { Base, Hover } from './mixins';
 
 class View extends Hover(Base(PolymerElement)) {
   static get is() {
-    return `${prefix}-view`;
+    return `${elementPrefix}-view`;
   }
 
   static get template() {

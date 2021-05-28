@@ -1,4 +1,4 @@
-import { prefix } from '@/utils/config';
+import { elementPrefix } from '@/utils/config';
 
 export default function Group(superClass) {
   return class extends superClass {
@@ -41,15 +41,15 @@ export default function Group(superClass) {
     }
 
     resetFormData() {
-      if (this.hasBehavior(`${prefix}-data`)) {
+      if (this.hasBehavior(`${elementPrefix}-data`)) {
         !(function dfs(t) {
           t.childNodes && Array.from(t.childNodes).forEach((t) => {
             if (t.hasBehavior) {
-              if (t.hasBehavior(`${prefix}-group`)) {
+              if (t.hasBehavior(`${elementPrefix}-group`)) {
                 return;
               }
 
-              if (t.hasBehavior(`${prefix}-item`)) {
+              if (t.hasBehavior(`${elementPrefix}-item`)) {
                 return t.resetFormData();
               }
             }
@@ -69,7 +69,7 @@ export default function Group(superClass) {
     changed() {}
 
     hasBehavior(type) {
-      if (type === `${prefix}-group`) {
+      if (type === `${elementPrefix}-group`) {
         return true;
       }
 

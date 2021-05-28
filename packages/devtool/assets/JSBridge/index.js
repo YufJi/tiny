@@ -23,8 +23,22 @@ window.JSBridge = {
 
     host.JSBridgeInstance.call(method, options);
   },
-  callSync(method, params) {
-    return host.JSBridgeInstance.callSync(method, params);
+};
+
+window.JSCore = {
+  call(opts) {
+    const {
+      event,
+      paramsString,
+      callbackId,
+      webviewIds,
+    } = opts;
+
+    return host.JSBridgeInstance.call(event, {
+      paramsString,
+      callbackId,
+      webviewIds,
+    });
   },
 };
 

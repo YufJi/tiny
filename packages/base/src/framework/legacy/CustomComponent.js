@@ -62,7 +62,6 @@ export default (is) => createNervClass({
   $isCustomComponent: true,
   displayName: is,
   mixins: [
-    BasicEventMixin,
     PureRenderMixin,
   ],
   statics: {
@@ -224,9 +223,8 @@ export default (is) => createNervClass({
     const { __page } = this.props;
 
     if (!eventHandlers[name]) {
-      const handle = function (e, more) {
-        const event = _this.getNormalizedEvent(e, more);
-        __page.callRemote.apply(__page, ['self', 'triggerComponentEvent', _this.id, name].concat(event));
+      const handle = function (...args) {
+        __page.callRemote.apply(__page, ['self', 'triggerComponentEvent', _this.id, name].concat(args));
       };
       handle.handleName = name;
       handle.type = 'component';

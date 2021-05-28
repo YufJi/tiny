@@ -377,8 +377,6 @@ var $getComponentClass = function $getComponentClass(name) {
   return getComponentClass && getComponentClass(name);
 };
 
-var Input_ = self.MPUI['input'];
-var Input = Input_ || $EmptyComponentFactory("input");
 var AddButton_ = $getComponentClass("/components/add-button/add-button");
 var AddButton = AddButton_ || $EmptyComponentFactory("add-button");
 var $iterate = self.XMLRuntime.iterate;
@@ -400,10 +398,10 @@ function render(data) {
     className: "page-add-todo"
   }, [_b_wxml__WEBPACK_IMPORTED_MODULE_2__["default"].apply(this, arguments), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
     className: "add-todo"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(Input, {
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-input", {
     className: "add-todo-input",
     placeholder: "What needs to be done?",
-    onBlur: "onBlur",
+    bindblur: $getEventHandler(this, "onBlur"),
     value: data['inputValue']
   })), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
     bindtap: $getEventHandler(this, "add")
@@ -667,7 +665,7 @@ function render(data) {
     style: "background: yellow;"
   }, $toString("capture child")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
     "data-xhq": "jyf",
-    bindtap: $getEventHandler(this, "clickChild"),
+    catchtap: $getEventHandler(this, "clickChild"),
     style: "margin-top: 120rpx; background: red;"
   }, $toString("child"))])]));
 }

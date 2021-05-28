@@ -87,6 +87,7 @@ class TemplateTransformer extends Transformer {
 
         /* 处理事件绑定模版 */
         const xmlEventReg = /^(bind:?|catch:?|capture-bind:|capture-catch:)([A-Za-z_]+)/;
+
         const isEvent = xmlEventReg.test(attrName);
 
         if (isEvent) {

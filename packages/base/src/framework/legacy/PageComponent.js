@@ -57,7 +57,6 @@ export default createNervClass({
   $isCustomComponent: false,
   displayName: 'PageComponent',
   mixins: [
-    BasicEventMixin,
     MessageHandleMixin,
     RefMixin,
   ],

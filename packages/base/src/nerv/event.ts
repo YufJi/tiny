@@ -1,11 +1,12 @@
-import { isFunction, MapClass } from '@/nerv/utils';
+import {
+  isFunction,
+} from '@/nerv/utils';
 import { noop } from '@/nerv/shared';
-import { supportedPassiveEventMap } from './passive-event';
+import addListenerToElement from '@/utils/addListenerToElement';
+import eventReg from '@/utils/eventReg';
 
 const ONINPUT = 'oninput';
 const ONPROPERTYCHANGE = 'onpropertychange';
-
-const delegatedEvents = new MapClass();
 
 const bindFocus = false;
 declare global {
@@ -22,7 +23,7 @@ if (typeof Event !== 'undefined' && !Event.prototype.persist) {
 export function attachEvent(
   domNode: Element,
   eventName: string,
-  handler: Function,
+  handler: any,
 ) {
   eventName = fixEvent(domNode, eventName);
   /* istanbul ignore next */
@@ -30,46 +31,29 @@ export function attachEvent(
     processOnPropertyChangeEvent(domNode, handler);
     return;
   }
-  const parsedEvent = parseEventName(eventName);
-  let delegatedRoots = delegatedEvents.get(normalizeEventName(eventName));
-  if (!delegatedRoots) {
-    delegatedRoots = new MapClass();
-  }
-  const event = attachEventToNode(domNode, parsedEvent, delegatedRoots);
-  delegatedEvents.set(normalizeEventName(eventName), delegatedRoots);
-  if (isFunction(handler)) {
-    delegatedRoots.set(domNode, {
-      eventHandler: (e) => {
-        if (parsedEvent.stop) {
-          e.stopPropagation();
-        }
-        handler(e);
-      },
-      event,
-    });
-  }
+
+  addListenerToElement(domNode, eventName, handler);
 }
 
 export function detachEvent(
   domNode: Element,
   eventName: string,
-  handler: Function,
+  handler: any,
 ) {
   eventName = fixEvent(domNode, eventName);
   if (eventName === ONPROPERTYCHANGE) {
     return;
   }
-  const parsedEvent = parseEventName(eventName);
-  const delegatedRoots = delegatedEvents.get(normalizeEventName(eventName));
-  const event = delegatedRoots.get(domNode);
-  if (event) {
-    domNode.removeEventListener(parsedEvent.name, event.event, false);
-    /* istanbul ignore next */
-    const delegatedRootsSize = delegatedRoots.size;
-    if (delegatedRoots.delete(domNode) && delegatedRootsSize === 0) {
-      delegatedEvents.delete(normalizeEventName(eventName));
-    }
+
+  const matches = eventName.match(eventReg);
+  if (!matches) {
+    return;
   }
+
+  const capture = matches[1];
+  const eventType = matches[3];
+
+  domNode.removeEventListener(eventType, handler, capture);
 }
 
 let propertyChangeActiveElement;
@@ -161,14 +145,7 @@ function detectCanUseOnInputNode(node) {
   );
 }
 
-function normalizeEventName(eventName: string) {
-  const reg = /^(on|bind|catch|capture-bind|capture-catch)/;
-
-  return eventName.replace(reg, '');
-}
-
 function fixEvent(node: Element, eventName: string) {
-  const tapEventReg = /([Tt]ap)$/;
   if (eventName === 'onDoubleClick') {
     eventName = 'ondblclick';
   } else if (eventName === 'onTouchTap') {
@@ -176,75 +153,8 @@ function fixEvent(node: Element, eventName: string) {
     // tslint:disable-next-line:prefer-conditional-expression
   } else if (eventName === 'onChange' && detectCanUseOnInputNode(node)) {
     eventName = ONINPUT in window ? ONINPUT : ONPROPERTYCHANGE;
-  } else if (tapEventReg.test(eventName)) {
-    eventName = eventName.replace(tapEventReg, 'click');
   } else {
     eventName = eventName.toLowerCase();
   }
   return eventName;
-}
-
-function parseEventName(name) {
-  let event: any = null;
-
-  if (name.startsWith('on')) {
-    event = {
-      raw: name,
-      name: name.slice(2),
-      stop: false,
-    };
-  } else if (name.startsWith('bind')) {
-    event = {
-      raw: name,
-      name: name.slice(4),
-      stop: false,
-    };
-  } else if (name.startsWith('catch')) {
-    event = {
-      raw: name,
-      name: name.slice(5),
-      stop: true,
-    };
-  } else if (name.startsWith('capture-bind')) {
-    event = {
-      raw: name,
-      name: name.slice(12),
-      stop: false,
-      capture: true,
-    };
-  } else if (name.startsWith('capture-catch')) {
-    event = {
-      raw: name,
-      name: name.slice(13),
-      stop: true,
-      capture: true,
-    };
-  }
-
-  return event;
-}
-
-function attachEventToNode(node, parsedEvent, delegatedRoots) {
-  const eventHandler = (event) => {
-    const eventToTrigger = delegatedRoots.get(node);
-    if (eventToTrigger && eventToTrigger.eventHandler) {
-      const eventData = {
-        currentTarget: node,
-      };
-      /* istanbul ignore next */
-      Object.defineProperties(event, {
-        currentTarget: {
-          configurable: true,
-          get() {
-            return eventData.currentTarget;
-          },
-        },
-      });
-      eventToTrigger.eventHandler(event);
-    }
-  };
-
-  node.addEventListener(parsedEvent.name, eventHandler, parsedEvent.capture || supportedPassiveEventMap[parsedEvent.name] || false);
-
-  return eventHandler;
 }

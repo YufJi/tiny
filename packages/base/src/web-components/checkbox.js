@@ -1,5 +1,5 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { prefix } from '@/utils/config';
+import { elementPrefix } from '@/utils/config';
 import { Base, LabelTarget, Item, Disabled } from './mixins';
 
 const documentContainer = document.createElement('div');
@@ -50,7 +50,7 @@ document.head.appendChild(documentContainer);
 
 class Checkbox extends Disabled(Item(LabelTarget(Base(PolymerElement)))) {
   static get is() {
-    return `${prefix}-checkbox`;
+    return `${elementPrefix}-checkbox`;
   }
 
   static get properties() {
@@ -101,11 +101,11 @@ class Checkbox extends Disabled(Item(LabelTarget(Base(PolymerElement)))) {
   }
 
   hasCheckedClass(checked) {
-    return checked ? `${prefix}-checkbox-input-checked` : '';
+    return checked ? `${elementPrefix}-checkbox-input-checked` : '';
   }
 
   hasDisabledClass(disabled) {
-    return disabled ? `${prefix}-checkbox-input-disabled` : '';
+    return disabled ? `${elementPrefix}-checkbox-input-disabled` : '';
   }
 
   _getColor(checked, color) {

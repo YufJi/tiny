@@ -311,6 +311,7 @@ Page({
   },
 
   onBlur(e) {
+    console.log('onBlur');
     this.setData({
       inputValue: e.detail.value,
     });

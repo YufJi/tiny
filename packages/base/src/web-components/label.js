@@ -1,10 +1,10 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { prefix } from '@/utils/config';
+import { elementPrefix } from '@/utils/config';
 import { Base } from './mixins';
 
 class Label extends Base(PolymerElement) {
   static get is() {
-    return `${prefix}-label`;
+    return `${elementPrefix}-label`;
   }
 
   static get properties() {

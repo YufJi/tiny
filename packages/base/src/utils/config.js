@@ -1,3 +1,3 @@
-export const prefix = 'mp';
+export const elementPrefix = 'mp';
 
-export const UpperCasePerfix = prefix.toUpperCase();
+export const UpperCasePerfix = elementPrefix.toUpperCase();

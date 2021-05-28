@@ -1,34 +1,34 @@
 const defaultOptions = {
   passive: false,
-  capture: false
-}
+  capture: false,
+};
 
 const eventListenerOptionsSupported = () => {
-  let supported = false
+  let supported = false;
 
   try {
     const opts = Object.defineProperty({}, 'passive', {
-      get () {
-        supported = true
-      }
-    })
-    window.addEventListener('test', null as any, opts)
-    window.removeEventListener('test', null as any, opts)
+      get() {
+        supported = true;
+      },
+    });
+    window.addEventListener('test', null as any, opts);
+    window.removeEventListener('test', null as any, opts);
   } catch (e) {
-    supported = false
+    supported = false;
   }
 
-  return supported
-}
+  return supported;
+};
 
-function getDefaultPassiveOption () {
-  const passiveOption = !eventListenerOptionsSupported() ? false : defaultOptions
+function getDefaultPassiveOption() {
+  const passiveOption = !eventListenerOptionsSupported() ? false : defaultOptions;
   return () => {
-    return passiveOption
-  }
+    return passiveOption;
+  };
 }
 
-const getPassiveOption = getDefaultPassiveOption()
+const getPassiveOption = getDefaultPassiveOption();
 
 export const supportedPassiveEventMap = {
   scroll: getPassiveOption(),
@@ -45,5 +45,5 @@ export const supportedPassiveEventMap = {
   mousemove: getPassiveOption(),
   mouseenter: getPassiveOption(),
   mousewheel: getPassiveOption(),
-  mouseover: getPassiveOption()
-}
+  mouseover: getPassiveOption(),
+};

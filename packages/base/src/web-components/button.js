@@ -1,5 +1,5 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { prefix } from '@/utils/config';
+import { elementPrefix } from '@/utils/config';
 import { Base, Hover } from './mixins';
 
 const documentContainer = document.createElement('div');
@@ -281,7 +281,7 @@ document.head.appendChild(documentContainer);
 
 class Button extends Hover(Base(PolymerElement)) {
   static get is() {
-    return `${prefix}-button`;
+    return `${elementPrefix}-button`;
   }
 
   static get properties() {

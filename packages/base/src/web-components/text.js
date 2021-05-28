@@ -1,10 +1,10 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { prefix, UpperCasePerfix } from '@/utils/config';
+import { elementPrefix, UpperCasePerfix } from '@/utils/config';
 import { Base } from './mixins';
 
 class Text extends Base(PolymerElement) {
   static get is() {
-    return `${prefix}-text`;
+    return `${elementPrefix}-text`;
   }
 
   static get properties() {

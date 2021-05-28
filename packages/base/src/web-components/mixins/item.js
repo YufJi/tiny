@@ -1,4 +1,4 @@
-import { prefix } from '@/utils/config';
+import { elementPrefix } from '@/utils/config';
 
 export default function Item(superClass) {
   return class extends superClass {
@@ -17,7 +17,7 @@ export default function Item(superClass) {
     }
 
     hasBehavior(type) {
-      if (type === `${prefix}-item`) {
+      if (type === `${elementPrefix}-item`) {
         return true;
       }
 

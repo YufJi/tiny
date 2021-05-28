@@ -6,7 +6,7 @@
     <input
       class="add-todo-input"
       placeholder="What needs to be done?"
-      onBlur="onBlur"
+      bindblur="onBlur"
       value="{{inputValue}}"
     />
   </view>

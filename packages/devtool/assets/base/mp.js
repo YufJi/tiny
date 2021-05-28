@@ -106,6 +106,54 @@ module.exports["default"] = module.exports, module.exports.__esModule = true;
 
 /***/ }),
 
+/***/ "./node_modules/@babel/runtime/helpers/asyncToGenerator.js":
+/*!*****************************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/asyncToGenerator.js ***!
+  \*****************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
+  try {
+    var info = gen[key](arg);
+    var value = info.value;
+  } catch (error) {
+    reject(error);
+    return;
+  }
+
+  if (info.done) {
+    resolve(value);
+  } else {
+    Promise.resolve(value).then(_next, _throw);
+  }
+}
+
+function _asyncToGenerator(fn) {
+  return function () {
+    var self = this,
+        args = arguments;
+    return new Promise(function (resolve, reject) {
+      var gen = fn.apply(self, args);
+
+      function _next(value) {
+        asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
+      }
+
+      function _throw(err) {
+        asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err);
+      }
+
+      _next(undefined);
+    });
+  };
+}
+
+module.exports = _asyncToGenerator;
+module.exports["default"] = module.exports, module.exports.__esModule = true;
+
+/***/ }),
+
 /***/ "./node_modules/@babel/runtime/helpers/classCallCheck.js":
 /*!***************************************************************!*\
   !*** ./node_modules/@babel/runtime/helpers/classCallCheck.js ***!
@@ -597,6 +645,17 @@ function _typeof(obj) {
 
 module.exports = _typeof;
 module.exports["default"] = module.exports, module.exports.__esModule = true;
+
+/***/ }),
+
+/***/ "./node_modules/@babel/runtime/regenerator/index.js":
+/*!**********************************************************!*\
+  !*** ./node_modules/@babel/runtime/regenerator/index.js ***!
+  \**********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = __webpack_require__(/*! regenerator-runtime */ "./node_modules/regenerator-runtime/runtime.js");
 
 /***/ }),
 
@@ -3425,6 +3484,94 @@ const updateStyles = function (props) {
     window.ShadyCSS.styleDocument(props);
   }
 };
+
+/***/ }),
+
+/***/ "./node_modules/@polymer/polymer/lib/mixins/gesture-event-listeners.js":
+/*!*****************************************************************************!*\
+  !*** ./node_modules/@polymer/polymer/lib/mixins/gesture-event-listeners.js ***!
+  \*****************************************************************************/
+/*! exports provided: GestureEventListeners */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "GestureEventListeners", function() { return GestureEventListeners; });
+/* harmony import */ var _utils_boot_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../utils/boot.js */ "./node_modules/@polymer/polymer/lib/utils/boot.js");
+/* harmony import */ var _utils_mixin_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../utils/mixin.js */ "./node_modules/@polymer/polymer/lib/utils/mixin.js");
+/* harmony import */ var _utils_gestures_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../utils/gestures.js */ "./node_modules/@polymer/polymer/lib/utils/gestures.js");
+/**
+@license
+Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+*/
+
+
+
+/**
+ * Element class mixin that provides API for adding Polymer's cross-platform
+ * gesture events to nodes.
+ *
+ * The API is designed to be compatible with override points implemented
+ * in `TemplateStamp` such that declarative event listeners in
+ * templates will support gesture events when this mixin is applied along with
+ * `TemplateStamp`.
+ *
+ * @mixinFunction
+ * @polymer
+ * @summary Element class mixin that provides API for adding Polymer's
+ *   cross-platform gesture events to nodes
+ * @template T
+ * @param {function(new:T)} superClass Class to apply mixin to.
+ * @return {function(new:T)} superClass with mixin applied.
+ */
+
+const GestureEventListeners = Object(_utils_mixin_js__WEBPACK_IMPORTED_MODULE_1__["dedupingMixin"])(superClass => {
+  /**
+   * @polymer
+   * @mixinClass
+   * @implements {Polymer_GestureEventListeners}
+   */
+  class GestureEventListeners extends superClass {
+    /**
+     * Add the event listener to the node if it is a gestures event.
+     *
+     * @param {!EventTarget} node Node to add event listener to
+     * @param {string} eventName Name of event
+     * @param {function(!Event):void} handler Listener function to add
+     * @return {void}
+     * @override
+     */
+    _addEventListenerToNode(node, eventName, handler) {
+      if (!Object(_utils_gestures_js__WEBPACK_IMPORTED_MODULE_2__["addListener"])(node, eventName, handler)) {
+        super._addEventListenerToNode(node, eventName, handler);
+      }
+    }
+    /**
+     * Remove the event listener to the node if it is a gestures event.
+     *
+     * @param {!EventTarget} node Node to remove event listener from
+     * @param {string} eventName Name of event
+     * @param {function(!Event):void} handler Listener function to remove
+     * @return {void}
+     * @override
+     */
+
+
+    _removeEventListenerFromNode(node, eventName, handler) {
+      if (!Object(_utils_gestures_js__WEBPACK_IMPORTED_MODULE_2__["removeListener"])(node, eventName, handler)) {
+        super._removeEventListenerFromNode(node, eventName, handler);
+      }
+    }
+
+  }
+
+  return GestureEventListeners;
+});
 
 /***/ }),
 
@@ -9839,6 +9986,1285 @@ const flush = function () {
 
 /***/ }),
 
+/***/ "./node_modules/@polymer/polymer/lib/utils/gestures.js":
+/*!*************************************************************!*\
+  !*** ./node_modules/@polymer/polymer/lib/utils/gestures.js ***!
+  \*************************************************************/
+/*! exports provided: gestures, recognizers, deepTargetFind, addListener, removeListener, register, setTouchAction, prevent, resetMouseCanceller, findOriginalTarget, add, remove */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "gestures", function() { return gestures; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "recognizers", function() { return recognizers; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "deepTargetFind", function() { return deepTargetFind; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "addListener", function() { return addListener; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "removeListener", function() { return removeListener; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "register", function() { return register; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "setTouchAction", function() { return setTouchAction; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "prevent", function() { return prevent; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "resetMouseCanceller", function() { return resetMouseCanceller; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "findOriginalTarget", function() { return findOriginalTarget; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "add", function() { return add; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "remove", function() { return remove; });
+/* harmony import */ var _boot_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./boot.js */ "./node_modules/@polymer/polymer/lib/utils/boot.js");
+/* harmony import */ var _async_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./async.js */ "./node_modules/@polymer/polymer/lib/utils/async.js");
+/* harmony import */ var _debounce_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./debounce.js */ "./node_modules/@polymer/polymer/lib/utils/debounce.js");
+/* harmony import */ var _settings_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./settings.js */ "./node_modules/@polymer/polymer/lib/utils/settings.js");
+/* harmony import */ var _wrap_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./wrap.js */ "./node_modules/@polymer/polymer/lib/utils/wrap.js");
+/**
+@license
+Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+*/
+
+/**
+ * @fileoverview
+ *
+ * Module for adding listeners to a node for the following normalized
+ * cross-platform "gesture" events:
+ * - `down` - mouse or touch went down
+ * - `up` - mouse or touch went up
+ * - `tap` - mouse click or finger tap
+ * - `track` - mouse drag or touch move
+ *
+ * @summary Module for adding cross-platform gesture event listeners.
+ */
+
+
+
+
+ // detect native touch action support
+
+let HAS_NATIVE_TA = typeof document.head.style.touchAction === 'string';
+let GESTURE_KEY = '__polymerGestures';
+let HANDLED_OBJ = '__polymerGesturesHandled';
+let TOUCH_ACTION = '__polymerGesturesTouchAction'; // radius for tap and track
+
+let TAP_DISTANCE = 25;
+let TRACK_DISTANCE = 5; // number of last N track positions to keep
+
+let TRACK_LENGTH = 2; // Disabling "mouse" handlers for 2500ms is enough
+
+let MOUSE_TIMEOUT = 2500;
+let MOUSE_EVENTS = ['mousedown', 'mousemove', 'mouseup', 'click']; // an array of bitmask values for mapping MouseEvent.which to MouseEvent.buttons
+
+let MOUSE_WHICH_TO_BUTTONS = [0, 1, 4, 2];
+
+let MOUSE_HAS_BUTTONS = function () {
+  try {
+    return new MouseEvent('test', {
+      buttons: 1
+    }).buttons === 1;
+  } catch (e) {
+    return false;
+  }
+}();
+/**
+ * @param {string} name Possible mouse event name
+ * @return {boolean} true if mouse event, false if not
+ */
+
+
+function isMouseEvent(name) {
+  return MOUSE_EVENTS.indexOf(name) > -1;
+}
+/* eslint no-empty: ["error", { "allowEmptyCatch": true }] */
+// check for passive event listeners
+
+
+let supportsPassive = false;
+
+(function () {
+  try {
+    let opts = Object.defineProperty({}, 'passive', {
+      get() {
+        supportsPassive = true;
+      }
+
+    });
+    window.addEventListener('test', null, opts);
+    window.removeEventListener('test', null, opts);
+  } catch (e) {}
+})();
+/**
+ * Generate settings for event listeners, dependant on `passiveTouchGestures`
+ *
+ * @param {string} eventName Event name to determine if `{passive}` option is
+ *   needed
+ * @return {{passive: boolean} | undefined} Options to use for addEventListener
+ *   and removeEventListener
+ */
+
+
+function PASSIVE_TOUCH(eventName) {
+  if (isMouseEvent(eventName) || eventName === 'touchend') {
+    return;
+  }
+
+  if (HAS_NATIVE_TA && supportsPassive && _settings_js__WEBPACK_IMPORTED_MODULE_3__["passiveTouchGestures"]) {
+    return {
+      passive: true
+    };
+  } else {
+    return;
+  }
+} // Check for touch-only devices
+
+
+let IS_TOUCH_ONLY = navigator.userAgent.match(/iP(?:[oa]d|hone)|Android/); // keep track of any labels hit by the mouseCanceller
+
+/** @type {!Array<!HTMLLabelElement>} */
+
+const clickedLabels = [];
+/** @type {!Object<boolean>} */
+
+const labellable = {
+  'button': true,
+  'input': true,
+  'keygen': true,
+  'meter': true,
+  'output': true,
+  'textarea': true,
+  'progress': true,
+  'select': true
+}; // Defined at https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#enabling-and-disabling-form-controls:-the-disabled-attribute
+
+/** @type {!Object<boolean>} */
+
+const canBeDisabled = {
+  'button': true,
+  'command': true,
+  'fieldset': true,
+  'input': true,
+  'keygen': true,
+  'optgroup': true,
+  'option': true,
+  'select': true,
+  'textarea': true
+};
+/**
+ * @param {HTMLElement} el Element to check labelling status
+ * @return {boolean} element can have labels
+ */
+
+function canBeLabelled(el) {
+  return labellable[el.localName] || false;
+}
+/**
+ * @param {HTMLElement} el Element that may be labelled.
+ * @return {!Array<!HTMLLabelElement>} Relevant label for `el`
+ */
+
+
+function matchingLabels(el) {
+  let labels = Array.prototype.slice.call(
+  /** @type {HTMLInputElement} */
+  el.labels || []); // IE doesn't have `labels` and Safari doesn't populate `labels`
+  // if element is in a shadowroot.
+  // In this instance, finding the non-ancestor labels is enough,
+  // as the mouseCancellor code will handle ancstor labels
+
+  if (!labels.length) {
+    labels = [];
+    let root = el.getRootNode(); // if there is an id on `el`, check for all labels with a matching `for` attribute
+
+    if (el.id) {
+      let matching = root.querySelectorAll(`label[for = ${el.id}]`);
+
+      for (let i = 0; i < matching.length; i++) {
+        labels.push(
+        /** @type {!HTMLLabelElement} */
+        matching[i]);
+      }
+    }
+  }
+
+  return labels;
+} // touch will make synthetic mouse events
+// `preventDefault` on touchend will cancel them,
+// but this breaks `<input>` focus and link clicks
+// disable mouse handlers for MOUSE_TIMEOUT ms after
+// a touchend to ignore synthetic mouse events
+
+
+let mouseCanceller = function (mouseEvent) {
+  // Check for sourceCapabilities, used to distinguish synthetic events
+  // if mouseEvent did not come from a device that fires touch events,
+  // it was made by a real mouse and should be counted
+  // http://wicg.github.io/InputDeviceCapabilities/#dom-inputdevicecapabilities-firestouchevents
+  let sc = mouseEvent.sourceCapabilities;
+
+  if (sc && !sc.firesTouchEvents) {
+    return;
+  } // skip synthetic mouse events
+
+
+  mouseEvent[HANDLED_OBJ] = {
+    skip: true
+  }; // disable "ghost clicks"
+
+  if (mouseEvent.type === 'click') {
+    let clickFromLabel = false;
+    let path = getComposedPath(mouseEvent);
+
+    for (let i = 0; i < path.length; i++) {
+      if (path[i].nodeType === Node.ELEMENT_NODE) {
+        if (path[i].localName === 'label') {
+          clickedLabels.push(
+          /** @type {!HTMLLabelElement} */
+          path[i]);
+        } else if (canBeLabelled(
+        /** @type {!HTMLElement} */
+        path[i])) {
+          let ownerLabels = matchingLabels(
+          /** @type {!HTMLElement} */
+          path[i]); // check if one of the clicked labels is labelling this element
+
+          for (let j = 0; j < ownerLabels.length; j++) {
+            clickFromLabel = clickFromLabel || clickedLabels.indexOf(ownerLabels[j]) > -1;
+          }
+        }
+      }
+
+      if (path[i] === POINTERSTATE.mouse.target) {
+        return;
+      }
+    } // if one of the clicked labels was labelling the target element,
+    // this is not a ghost click
+
+
+    if (clickFromLabel) {
+      return;
+    }
+
+    mouseEvent.preventDefault();
+    mouseEvent.stopPropagation();
+  }
+};
+/**
+ * @param {boolean=} setup True to add, false to remove.
+ * @return {void}
+ */
+
+
+function setupTeardownMouseCanceller(setup) {
+  let events = IS_TOUCH_ONLY ? ['click'] : MOUSE_EVENTS;
+
+  for (let i = 0, en; i < events.length; i++) {
+    en = events[i];
+
+    if (setup) {
+      // reset clickLabels array
+      clickedLabels.length = 0;
+      document.addEventListener(en, mouseCanceller, true);
+    } else {
+      document.removeEventListener(en, mouseCanceller, true);
+    }
+  }
+}
+
+function ignoreMouse(e) {
+  if (!_settings_js__WEBPACK_IMPORTED_MODULE_3__["cancelSyntheticClickEvents"]) {
+    return;
+  }
+
+  if (!POINTERSTATE.mouse.mouseIgnoreJob) {
+    setupTeardownMouseCanceller(true);
+  }
+
+  let unset = function () {
+    setupTeardownMouseCanceller();
+    POINTERSTATE.mouse.target = null;
+    POINTERSTATE.mouse.mouseIgnoreJob = null;
+  };
+
+  POINTERSTATE.mouse.target = getComposedPath(e)[0];
+  POINTERSTATE.mouse.mouseIgnoreJob = _debounce_js__WEBPACK_IMPORTED_MODULE_2__["Debouncer"].debounce(POINTERSTATE.mouse.mouseIgnoreJob, _async_js__WEBPACK_IMPORTED_MODULE_1__["timeOut"].after(MOUSE_TIMEOUT), unset);
+}
+/**
+ * @param {MouseEvent} ev event to test for left mouse button down
+ * @return {boolean} has left mouse button down
+ */
+
+
+function hasLeftMouseButton(ev) {
+  let type = ev.type; // exit early if the event is not a mouse event
+
+  if (!isMouseEvent(type)) {
+    return false;
+  } // ev.button is not reliable for mousemove (0 is overloaded as both left button and no buttons)
+  // instead we use ev.buttons (bitmask of buttons) or fall back to ev.which (deprecated, 0 for no buttons, 1 for left button)
+
+
+  if (type === 'mousemove') {
+    // allow undefined for testing events
+    let buttons = ev.buttons === undefined ? 1 : ev.buttons;
+
+    if (ev instanceof window.MouseEvent && !MOUSE_HAS_BUTTONS) {
+      buttons = MOUSE_WHICH_TO_BUTTONS[ev.which] || 0;
+    } // buttons is a bitmask, check that the left button bit is set (1)
+
+
+    return Boolean(buttons & 1);
+  } else {
+    // allow undefined for testing events
+    let button = ev.button === undefined ? 0 : ev.button; // ev.button is 0 in mousedown/mouseup/click for left button activation
+
+    return button === 0;
+  }
+}
+
+function isSyntheticClick(ev) {
+  if (ev.type === 'click') {
+    // ev.detail is 0 for HTMLElement.click in most browsers
+    if (ev.detail === 0) {
+      return true;
+    } // in the worst case, check that the x/y position of the click is within
+    // the bounding box of the target of the event
+    // Thanks IE 10 >:(
+
+
+    let t = _findOriginalTarget(ev); // make sure the target of the event is an element so we can use getBoundingClientRect,
+    // if not, just assume it is a synthetic click
+
+
+    if (!t.nodeType ||
+    /** @type {Element} */
+    t.nodeType !== Node.ELEMENT_NODE) {
+      return true;
+    }
+
+    let bcr =
+    /** @type {Element} */
+    t.getBoundingClientRect(); // use page x/y to account for scrolling
+
+    let x = ev.pageX,
+        y = ev.pageY; // ev is a synthetic click if the position is outside the bounding box of the target
+
+    return !(x >= bcr.left && x <= bcr.right && y >= bcr.top && y <= bcr.bottom);
+  }
+
+  return false;
+}
+
+let POINTERSTATE = {
+  mouse: {
+    target: null,
+    mouseIgnoreJob: null
+  },
+  touch: {
+    x: 0,
+    y: 0,
+    id: -1,
+    scrollDecided: false
+  }
+};
+
+function firstTouchAction(ev) {
+  let ta = 'auto';
+  let path = getComposedPath(ev);
+
+  for (let i = 0, n; i < path.length; i++) {
+    n = path[i];
+
+    if (n[TOUCH_ACTION]) {
+      ta = n[TOUCH_ACTION];
+      break;
+    }
+  }
+
+  return ta;
+}
+
+function trackDocument(stateObj, movefn, upfn) {
+  stateObj.movefn = movefn;
+  stateObj.upfn = upfn;
+  document.addEventListener('mousemove', movefn);
+  document.addEventListener('mouseup', upfn);
+}
+
+function untrackDocument(stateObj) {
+  document.removeEventListener('mousemove', stateObj.movefn);
+  document.removeEventListener('mouseup', stateObj.upfn);
+  stateObj.movefn = null;
+  stateObj.upfn = null;
+}
+
+if (_settings_js__WEBPACK_IMPORTED_MODULE_3__["cancelSyntheticClickEvents"]) {
+  // use a document-wide touchend listener to start the ghost-click prevention mechanism
+  // Use passive event listeners, if supported, to not affect scrolling performance
+  document.addEventListener('touchend', ignoreMouse, supportsPassive ? {
+    passive: true
+  } : false);
+}
+/**
+ * Returns the composedPath for the given event.
+ * @param {Event} event to process
+ * @return {!Array<!EventTarget>} Path of the event
+ */
+
+
+const getComposedPath = window.ShadyDOM && window.ShadyDOM.noPatch ? window.ShadyDOM.composedPath : event => event.composedPath && event.composedPath() || [];
+/** @type {!Object<string, !GestureRecognizer>} */
+
+const gestures = {};
+/** @type {!Array<!GestureRecognizer>} */
+
+const recognizers = [];
+/**
+ * Finds the element rendered on the screen at the provided coordinates.
+ *
+ * Similar to `document.elementFromPoint`, but pierces through
+ * shadow roots.
+ *
+ * @param {number} x Horizontal pixel coordinate
+ * @param {number} y Vertical pixel coordinate
+ * @return {Element} Returns the deepest shadowRoot inclusive element
+ * found at the screen position given.
+ */
+
+function deepTargetFind(x, y) {
+  let node = document.elementFromPoint(x, y);
+  let next = node; // this code path is only taken when native ShadowDOM is used
+  // if there is a shadowroot, it may have a node at x/y
+  // if there is not a shadowroot, exit the loop
+
+  while (next && next.shadowRoot && !window.ShadyDOM) {
+    // if there is a node at x/y in the shadowroot, look deeper
+    let oldNext = next;
+    next = next.shadowRoot.elementFromPoint(x, y); // on Safari, elementFromPoint may return the shadowRoot host
+
+    if (oldNext === next) {
+      break;
+    }
+
+    if (next) {
+      node = next;
+    }
+  }
+
+  return node;
+}
+/**
+ * a cheaper check than ev.composedPath()[0];
+ *
+ * @private
+ * @param {Event|Touch} ev Event.
+ * @return {EventTarget} Returns the event target.
+ */
+
+function _findOriginalTarget(ev) {
+  const path = getComposedPath(
+  /** @type {?Event} */
+  ev); // It shouldn't be, but sometimes path is empty (window on Safari).
+
+  return path.length > 0 ? path[0] : ev.target;
+}
+/**
+ * @private
+ * @param {Event} ev Event.
+ * @return {void}
+ */
+
+
+function _handleNative(ev) {
+  let handled;
+  let type = ev.type;
+  let node = ev.currentTarget;
+  let gobj = node[GESTURE_KEY];
+
+  if (!gobj) {
+    return;
+  }
+
+  let gs = gobj[type];
+
+  if (!gs) {
+    return;
+  }
+
+  if (!ev[HANDLED_OBJ]) {
+    ev[HANDLED_OBJ] = {};
+
+    if (type.slice(0, 5) === 'touch') {
+      ev =
+      /** @type {TouchEvent} */
+      ev; // eslint-disable-line no-self-assign
+
+      let t = ev.changedTouches[0];
+
+      if (type === 'touchstart') {
+        // only handle the first finger
+        if (ev.touches.length === 1) {
+          POINTERSTATE.touch.id = t.identifier;
+        }
+      }
+
+      if (POINTERSTATE.touch.id !== t.identifier) {
+        return;
+      }
+
+      if (!HAS_NATIVE_TA) {
+        if (type === 'touchstart' || type === 'touchmove') {
+          _handleTouchAction(ev);
+        }
+      }
+    }
+  }
+
+  handled = ev[HANDLED_OBJ]; // used to ignore synthetic mouse events
+
+  if (handled.skip) {
+    return;
+  } // reset recognizer state
+
+
+  for (let i = 0, r; i < recognizers.length; i++) {
+    r = recognizers[i];
+
+    if (gs[r.name] && !handled[r.name]) {
+      if (r.flow && r.flow.start.indexOf(ev.type) > -1 && r.reset) {
+        r.reset();
+      }
+    }
+  } // enforce gesture recognizer order
+
+
+  for (let i = 0, r; i < recognizers.length; i++) {
+    r = recognizers[i];
+
+    if (gs[r.name] && !handled[r.name]) {
+      handled[r.name] = true;
+      r[type](ev);
+    }
+  }
+}
+/**
+ * @private
+ * @param {TouchEvent} ev Event.
+ * @return {void}
+ */
+
+
+function _handleTouchAction(ev) {
+  let t = ev.changedTouches[0];
+  let type = ev.type;
+
+  if (type === 'touchstart') {
+    POINTERSTATE.touch.x = t.clientX;
+    POINTERSTATE.touch.y = t.clientY;
+    POINTERSTATE.touch.scrollDecided = false;
+  } else if (type === 'touchmove') {
+    if (POINTERSTATE.touch.scrollDecided) {
+      return;
+    }
+
+    POINTERSTATE.touch.scrollDecided = true;
+    let ta = firstTouchAction(ev);
+    let shouldPrevent = false;
+    let dx = Math.abs(POINTERSTATE.touch.x - t.clientX);
+    let dy = Math.abs(POINTERSTATE.touch.y - t.clientY);
+
+    if (!ev.cancelable) {// scrolling is happening
+    } else if (ta === 'none') {
+      shouldPrevent = true;
+    } else if (ta === 'pan-x') {
+      shouldPrevent = dy > dx;
+    } else if (ta === 'pan-y') {
+      shouldPrevent = dx > dy;
+    }
+
+    if (shouldPrevent) {
+      ev.preventDefault();
+    } else {
+      prevent('track');
+    }
+  }
+}
+/**
+ * Adds an event listener to a node for the given gesture type.
+ *
+ * @param {!EventTarget} node Node to add listener on
+ * @param {string} evType Gesture type: `down`, `up`, `track`, or `tap`
+ * @param {!function(!Event):void} handler Event listener function to call
+ * @return {boolean} Returns true if a gesture event listener was added.
+ */
+
+
+function addListener(node, evType, handler) {
+  if (gestures[evType]) {
+    _add(node, evType, handler);
+
+    return true;
+  }
+
+  return false;
+}
+/**
+ * Removes an event listener from a node for the given gesture type.
+ *
+ * @param {!EventTarget} node Node to remove listener from
+ * @param {string} evType Gesture type: `down`, `up`, `track`, or `tap`
+ * @param {!function(!Event):void} handler Event listener function previously passed to
+ *  `addListener`.
+ * @return {boolean} Returns true if a gesture event listener was removed.
+ */
+
+function removeListener(node, evType, handler) {
+  if (gestures[evType]) {
+    _remove(node, evType, handler);
+
+    return true;
+  }
+
+  return false;
+}
+/**
+ * automate the event listeners for the native events
+ *
+ * @private
+ * @param {!EventTarget} node Node on which to add the event.
+ * @param {string} evType Event type to add.
+ * @param {function(!Event)} handler Event handler function.
+ * @return {void}
+ */
+
+function _add(node, evType, handler) {
+  let recognizer = gestures[evType];
+  let deps = recognizer.deps;
+  let name = recognizer.name;
+  let gobj = node[GESTURE_KEY];
+
+  if (!gobj) {
+    node[GESTURE_KEY] = gobj = {};
+  }
+
+  for (let i = 0, dep, gd; i < deps.length; i++) {
+    dep = deps[i]; // don't add mouse handlers on iOS because they cause gray selection overlays
+
+    if (IS_TOUCH_ONLY && isMouseEvent(dep) && dep !== 'click') {
+      continue;
+    }
+
+    gd = gobj[dep];
+
+    if (!gd) {
+      gobj[dep] = gd = {
+        _count: 0
+      };
+    }
+
+    if (gd._count === 0) {
+      node.addEventListener(dep, _handleNative, PASSIVE_TOUCH(dep));
+    }
+
+    gd[name] = (gd[name] || 0) + 1;
+    gd._count = (gd._count || 0) + 1;
+  }
+
+  node.addEventListener(evType, handler);
+
+  if (recognizer.touchAction) {
+    setTouchAction(node, recognizer.touchAction);
+  }
+}
+/**
+ * automate event listener removal for native events
+ *
+ * @private
+ * @param {!EventTarget} node Node on which to remove the event.
+ * @param {string} evType Event type to remove.
+ * @param {function(!Event): void} handler Event handler function.
+ * @return {void}
+ */
+
+
+function _remove(node, evType, handler) {
+  let recognizer = gestures[evType];
+  let deps = recognizer.deps;
+  let name = recognizer.name;
+  let gobj = node[GESTURE_KEY];
+
+  if (gobj) {
+    for (let i = 0, dep, gd; i < deps.length; i++) {
+      dep = deps[i];
+      gd = gobj[dep];
+
+      if (gd && gd[name]) {
+        gd[name] = (gd[name] || 1) - 1;
+        gd._count = (gd._count || 1) - 1;
+
+        if (gd._count === 0) {
+          node.removeEventListener(dep, _handleNative, PASSIVE_TOUCH(dep));
+        }
+      }
+    }
+  }
+
+  node.removeEventListener(evType, handler);
+}
+/**
+ * Registers a new gesture event recognizer for adding new custom
+ * gesture event types.
+ *
+ * @param {!GestureRecognizer} recog Gesture recognizer descriptor
+ * @return {void}
+ */
+
+
+function register(recog) {
+  recognizers.push(recog);
+
+  for (let i = 0; i < recog.emits.length; i++) {
+    gestures[recog.emits[i]] = recog;
+  }
+}
+/**
+ * @private
+ * @param {string} evName Event name.
+ * @return {Object} Returns the gesture for the given event name.
+ */
+
+function _findRecognizerByEvent(evName) {
+  for (let i = 0, r; i < recognizers.length; i++) {
+    r = recognizers[i];
+
+    for (let j = 0, n; j < r.emits.length; j++) {
+      n = r.emits[j];
+
+      if (n === evName) {
+        return r;
+      }
+    }
+  }
+
+  return null;
+}
+/**
+ * Sets scrolling direction on node.
+ *
+ * This value is checked on first move, thus it should be called prior to
+ * adding event listeners.
+ *
+ * @param {!EventTarget} node Node to set touch action setting on
+ * @param {string} value Touch action value
+ * @return {void}
+ */
+
+
+function setTouchAction(node, value) {
+  if (HAS_NATIVE_TA && node instanceof HTMLElement) {
+    // NOTE: add touchAction async so that events can be added in
+    // custom element constructors. Otherwise we run afoul of custom
+    // elements restriction against settings attributes (style) in the
+    // constructor.
+    _async_js__WEBPACK_IMPORTED_MODULE_1__["microTask"].run(() => {
+      node.style.touchAction = value;
+    });
+  }
+
+  node[TOUCH_ACTION] = value;
+}
+/**
+ * Dispatches an event on the `target` element of `type` with the given
+ * `detail`.
+ * @private
+ * @param {!EventTarget} target The element on which to fire an event.
+ * @param {string} type The type of event to fire.
+ * @param {!Object=} detail The detail object to populate on the event.
+ * @return {void}
+ */
+
+function _fire(target, type, detail) {
+  let ev = new Event(type, {
+    bubbles: true,
+    cancelable: true,
+    composed: true
+  });
+  ev.detail = detail;
+  Object(_wrap_js__WEBPACK_IMPORTED_MODULE_4__["wrap"])(
+  /** @type {!Node} */
+  target).dispatchEvent(ev); // forward `preventDefault` in a clean way
+
+  if (ev.defaultPrevented) {
+    let preventer = detail.preventer || detail.sourceEvent;
+
+    if (preventer && preventer.preventDefault) {
+      preventer.preventDefault();
+    }
+  }
+}
+/**
+ * Prevents the dispatch and default action of the given event name.
+ *
+ * @param {string} evName Event name.
+ * @return {void}
+ */
+
+
+function prevent(evName) {
+  let recognizer = _findRecognizerByEvent(evName);
+
+  if (recognizer.info) {
+    recognizer.info.prevent = true;
+  }
+}
+/**
+ * Reset the 2500ms timeout on processing mouse input after detecting touch input.
+ *
+ * Touch inputs create synthesized mouse inputs anywhere from 0 to 2000ms after the touch.
+ * This method should only be called during testing with simulated touch inputs.
+ * Calling this method in production may cause duplicate taps or other Gestures.
+ *
+ * @return {void}
+ */
+
+function resetMouseCanceller() {
+  if (POINTERSTATE.mouse.mouseIgnoreJob) {
+    POINTERSTATE.mouse.mouseIgnoreJob.flush();
+  }
+}
+/* eslint-disable valid-jsdoc */
+
+register({
+  name: 'downup',
+  deps: ['mousedown', 'touchstart', 'touchend'],
+  flow: {
+    start: ['mousedown', 'touchstart'],
+    end: ['mouseup', 'touchend']
+  },
+  emits: ['down', 'up'],
+  info: {
+    movefn: null,
+    upfn: null
+  },
+
+  /**
+   * @this {GestureRecognizer}
+   * @return {void}
+   */
+  reset: function () {
+    untrackDocument(this.info);
+  },
+
+  /**
+   * @this {GestureRecognizer}
+   * @param {MouseEvent} e
+   * @return {void}
+   */
+  mousedown: function (e) {
+    if (!hasLeftMouseButton(e)) {
+      return;
+    }
+
+    let t = _findOriginalTarget(e);
+
+    let self = this;
+
+    let movefn = function movefn(e) {
+      if (!hasLeftMouseButton(e)) {
+        downupFire('up', t, e);
+        untrackDocument(self.info);
+      }
+    };
+
+    let upfn = function upfn(e) {
+      if (hasLeftMouseButton(e)) {
+        downupFire('up', t, e);
+      }
+
+      untrackDocument(self.info);
+    };
+
+    trackDocument(this.info, movefn, upfn);
+    downupFire('down', t, e);
+  },
+
+  /**
+   * @this {GestureRecognizer}
+   * @param {TouchEvent} e
+   * @return {void}
+   */
+  touchstart: function (e) {
+    downupFire('down', _findOriginalTarget(e), e.changedTouches[0], e);
+  },
+
+  /**
+   * @this {GestureRecognizer}
+   * @param {TouchEvent} e
+   * @return {void}
+   */
+  touchend: function (e) {
+    downupFire('up', _findOriginalTarget(e), e.changedTouches[0], e);
+  }
+});
+/**
+ * @param {string} type
+ * @param {EventTarget} target
+ * @param {Event|Touch} event
+ * @param {Event=} preventer
+ * @return {void}
+ */
+
+function downupFire(type, target, event, preventer) {
+  if (!target) {
+    return;
+  }
+
+  _fire(target, type, {
+    x: event.clientX,
+    y: event.clientY,
+    sourceEvent: event,
+    preventer: preventer,
+    prevent: function (e) {
+      return prevent(e);
+    }
+  });
+}
+
+register({
+  name: 'track',
+  touchAction: 'none',
+  deps: ['mousedown', 'touchstart', 'touchmove', 'touchend'],
+  flow: {
+    start: ['mousedown', 'touchstart'],
+    end: ['mouseup', 'touchend']
+  },
+  emits: ['track'],
+  info: {
+    x: 0,
+    y: 0,
+    state: 'start',
+    started: false,
+    moves: [],
+
+    /** @this {GestureInfo} */
+    addMove: function (move) {
+      if (this.moves.length > TRACK_LENGTH) {
+        this.moves.shift();
+      }
+
+      this.moves.push(move);
+    },
+    movefn: null,
+    upfn: null,
+    prevent: false
+  },
+
+  /**
+   * @this {GestureRecognizer}
+   * @return {void}
+   */
+  reset: function () {
+    this.info.state = 'start';
+    this.info.started = false;
+    this.info.moves = [];
+    this.info.x = 0;
+    this.info.y = 0;
+    this.info.prevent = false;
+    untrackDocument(this.info);
+  },
+
+  /**
+   * @this {GestureRecognizer}
+   * @param {MouseEvent} e
+   * @return {void}
+   */
+  mousedown: function (e) {
+    if (!hasLeftMouseButton(e)) {
+      return;
+    }
+
+    let t = _findOriginalTarget(e);
+
+    let self = this;
+
+    let movefn = function movefn(e) {
+      let x = e.clientX,
+          y = e.clientY;
+
+      if (trackHasMovedEnough(self.info, x, y)) {
+        // first move is 'start', subsequent moves are 'move', mouseup is 'end'
+        self.info.state = self.info.started ? e.type === 'mouseup' ? 'end' : 'track' : 'start';
+
+        if (self.info.state === 'start') {
+          // if and only if tracking, always prevent tap
+          prevent('tap');
+        }
+
+        self.info.addMove({
+          x: x,
+          y: y
+        });
+
+        if (!hasLeftMouseButton(e)) {
+          // always fire "end"
+          self.info.state = 'end';
+          untrackDocument(self.info);
+        }
+
+        if (t) {
+          trackFire(self.info, t, e);
+        }
+
+        self.info.started = true;
+      }
+    };
+
+    let upfn = function upfn(e) {
+      if (self.info.started) {
+        movefn(e);
+      } // remove the temporary listeners
+
+
+      untrackDocument(self.info);
+    }; // add temporary document listeners as mouse retargets
+
+
+    trackDocument(this.info, movefn, upfn);
+    this.info.x = e.clientX;
+    this.info.y = e.clientY;
+  },
+
+  /**
+   * @this {GestureRecognizer}
+   * @param {TouchEvent} e
+   * @return {void}
+   */
+  touchstart: function (e) {
+    let ct = e.changedTouches[0];
+    this.info.x = ct.clientX;
+    this.info.y = ct.clientY;
+  },
+
+  /**
+   * @this {GestureRecognizer}
+   * @param {TouchEvent} e
+   * @return {void}
+   */
+  touchmove: function (e) {
+    let t = _findOriginalTarget(e);
+
+    let ct = e.changedTouches[0];
+    let x = ct.clientX,
+        y = ct.clientY;
+
+    if (trackHasMovedEnough(this.info, x, y)) {
+      if (this.info.state === 'start') {
+        // if and only if tracking, always prevent tap
+        prevent('tap');
+      }
+
+      this.info.addMove({
+        x: x,
+        y: y
+      });
+      trackFire(this.info, t, ct);
+      this.info.state = 'track';
+      this.info.started = true;
+    }
+  },
+
+  /**
+   * @this {GestureRecognizer}
+   * @param {TouchEvent} e
+   * @return {void}
+   */
+  touchend: function (e) {
+    let t = _findOriginalTarget(e);
+
+    let ct = e.changedTouches[0]; // only trackend if track was started and not aborted
+
+    if (this.info.started) {
+      // reset started state on up
+      this.info.state = 'end';
+      this.info.addMove({
+        x: ct.clientX,
+        y: ct.clientY
+      });
+      trackFire(this.info, t, ct);
+    }
+  }
+});
+/**
+ * @param {!GestureInfo} info
+ * @param {number} x
+ * @param {number} y
+ * @return {boolean}
+ */
+
+function trackHasMovedEnough(info, x, y) {
+  if (info.prevent) {
+    return false;
+  }
+
+  if (info.started) {
+    return true;
+  }
+
+  let dx = Math.abs(info.x - x);
+  let dy = Math.abs(info.y - y);
+  return dx >= TRACK_DISTANCE || dy >= TRACK_DISTANCE;
+}
+/**
+ * @param {!GestureInfo} info
+ * @param {?EventTarget} target
+ * @param {Touch} touch
+ * @return {void}
+ */
+
+
+function trackFire(info, target, touch) {
+  if (!target) {
+    return;
+  }
+
+  let secondlast = info.moves[info.moves.length - 2];
+  let lastmove = info.moves[info.moves.length - 1];
+  let dx = lastmove.x - info.x;
+  let dy = lastmove.y - info.y;
+  let ddx,
+      ddy = 0;
+
+  if (secondlast) {
+    ddx = lastmove.x - secondlast.x;
+    ddy = lastmove.y - secondlast.y;
+  }
+
+  _fire(target, 'track', {
+    state: info.state,
+    x: touch.clientX,
+    y: touch.clientY,
+    dx: dx,
+    dy: dy,
+    ddx: ddx,
+    ddy: ddy,
+    sourceEvent: touch,
+    hover: function () {
+      return deepTargetFind(touch.clientX, touch.clientY);
+    }
+  });
+}
+
+register({
+  name: 'tap',
+  deps: ['mousedown', 'click', 'touchstart', 'touchend'],
+  flow: {
+    start: ['mousedown', 'touchstart'],
+    end: ['click', 'touchend']
+  },
+  emits: ['tap'],
+  info: {
+    x: NaN,
+    y: NaN,
+    prevent: false
+  },
+
+  /**
+   * @this {GestureRecognizer}
+   * @return {void}
+   */
+  reset: function () {
+    this.info.x = NaN;
+    this.info.y = NaN;
+    this.info.prevent = false;
+  },
+
+  /**
+   * @this {GestureRecognizer}
+   * @param {MouseEvent} e
+   * @return {void}
+   */
+  mousedown: function (e) {
+    if (hasLeftMouseButton(e)) {
+      this.info.x = e.clientX;
+      this.info.y = e.clientY;
+    }
+  },
+
+  /**
+   * @this {GestureRecognizer}
+   * @param {MouseEvent} e
+   * @return {void}
+   */
+  click: function (e) {
+    if (hasLeftMouseButton(e)) {
+      trackForward(this.info, e);
+    }
+  },
+
+  /**
+   * @this {GestureRecognizer}
+   * @param {TouchEvent} e
+   * @return {void}
+   */
+  touchstart: function (e) {
+    const touch = e.changedTouches[0];
+    this.info.x = touch.clientX;
+    this.info.y = touch.clientY;
+  },
+
+  /**
+   * @this {GestureRecognizer}
+   * @param {TouchEvent} e
+   * @return {void}
+   */
+  touchend: function (e) {
+    trackForward(this.info, e.changedTouches[0], e);
+  }
+});
+/**
+ * @param {!GestureInfo} info
+ * @param {Event | Touch} e
+ * @param {Event=} preventer
+ * @return {void}
+ */
+
+function trackForward(info, e, preventer) {
+  let dx = Math.abs(e.clientX - info.x);
+  let dy = Math.abs(e.clientY - info.y); // find original target from `preventer` for TouchEvents, or `e` for MouseEvents
+
+  let t = _findOriginalTarget(preventer || e);
+
+  if (!t || canBeDisabled[
+  /** @type {!HTMLElement} */
+  t.localName] && t.hasAttribute('disabled')) {
+    return;
+  } // dx,dy can be NaN if `click` has been simulated and there was no `down` for `start`
+
+
+  if (isNaN(dx) || isNaN(dy) || dx <= TAP_DISTANCE && dy <= TAP_DISTANCE || isSyntheticClick(e)) {
+    // prevent taps from being generated if an event has canceled them
+    if (!info.prevent) {
+      _fire(t, 'tap', {
+        x: e.clientX,
+        y: e.clientY,
+        sourceEvent: e,
+        preventer: preventer
+      });
+    }
+  }
+}
+/* eslint-enable valid-jsdoc */
+
+/** @deprecated */
+
+
+const findOriginalTarget = _findOriginalTarget;
+/** @deprecated */
+
+const add = addListener;
+/** @deprecated */
+
+const remove = removeListener;
+
+/***/ }),
+
 /***/ "./node_modules/@polymer/polymer/lib/utils/hide-template-controls.js":
 /*!***************************************************************************!*\
   !*** ./node_modules/@polymer/polymer/lib/utils/hide-template-controls.js ***!
@@ -13209,6 +14635,738 @@ if (true) {
 
 if (false) {} else {
   module.exports = __webpack_require__(/*! ./cjs/react-is.development.js */ "./node_modules/react-is/cjs/react-is.development.js");
+}
+
+/***/ }),
+
+/***/ "./node_modules/regenerator-runtime/runtime.js":
+/*!*****************************************************!*\
+  !*** ./node_modules/regenerator-runtime/runtime.js ***!
+  \*****************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+var runtime = function (exports) {
+  "use strict";
+
+  var Op = Object.prototype;
+  var hasOwn = Op.hasOwnProperty;
+  var undefined; // More compressible than void 0.
+
+  var $Symbol = typeof Symbol === "function" ? Symbol : {};
+  var iteratorSymbol = $Symbol.iterator || "@@iterator";
+  var asyncIteratorSymbol = $Symbol.asyncIterator || "@@asyncIterator";
+  var toStringTagSymbol = $Symbol.toStringTag || "@@toStringTag";
+
+  function define(obj, key, value) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+    return obj[key];
+  }
+
+  try {
+    // IE 8 has a broken Object.defineProperty that only works on DOM objects.
+    define({}, "");
+  } catch (err) {
+    define = function (obj, key, value) {
+      return obj[key] = value;
+    };
+  }
+
+  function wrap(innerFn, outerFn, self, tryLocsList) {
+    // If outerFn provided and outerFn.prototype is a Generator, then outerFn.prototype instanceof Generator.
+    var protoGenerator = outerFn && outerFn.prototype instanceof Generator ? outerFn : Generator;
+    var generator = Object.create(protoGenerator.prototype);
+    var context = new Context(tryLocsList || []); // The ._invoke method unifies the implementations of the .next,
+    // .throw, and .return methods.
+
+    generator._invoke = makeInvokeMethod(innerFn, self, context);
+    return generator;
+  }
+
+  exports.wrap = wrap; // Try/catch helper to minimize deoptimizations. Returns a completion
+  // record like context.tryEntries[i].completion. This interface could
+  // have been (and was previously) designed to take a closure to be
+  // invoked without arguments, but in all the cases we care about we
+  // already have an existing method we want to call, so there's no need
+  // to create a new function object. We can even get away with assuming
+  // the method takes exactly one argument, since that happens to be true
+  // in every case, so we don't have to touch the arguments object. The
+  // only additional allocation required is the completion record, which
+  // has a stable shape and so hopefully should be cheap to allocate.
+
+  function tryCatch(fn, obj, arg) {
+    try {
+      return {
+        type: "normal",
+        arg: fn.call(obj, arg)
+      };
+    } catch (err) {
+      return {
+        type: "throw",
+        arg: err
+      };
+    }
+  }
+
+  var GenStateSuspendedStart = "suspendedStart";
+  var GenStateSuspendedYield = "suspendedYield";
+  var GenStateExecuting = "executing";
+  var GenStateCompleted = "completed"; // Returning this object from the innerFn has the same effect as
+  // breaking out of the dispatch switch statement.
+
+  var ContinueSentinel = {}; // Dummy constructor functions that we use as the .constructor and
+  // .constructor.prototype properties for functions that return Generator
+  // objects. For full spec compliance, you may wish to configure your
+  // minifier not to mangle the names of these two functions.
+
+  function Generator() {}
+
+  function GeneratorFunction() {}
+
+  function GeneratorFunctionPrototype() {} // This is a polyfill for %IteratorPrototype% for environments that
+  // don't natively support it.
+
+
+  var IteratorPrototype = {};
+
+  IteratorPrototype[iteratorSymbol] = function () {
+    return this;
+  };
+
+  var getProto = Object.getPrototypeOf;
+  var NativeIteratorPrototype = getProto && getProto(getProto(values([])));
+
+  if (NativeIteratorPrototype && NativeIteratorPrototype !== Op && hasOwn.call(NativeIteratorPrototype, iteratorSymbol)) {
+    // This environment has a native %IteratorPrototype%; use it instead
+    // of the polyfill.
+    IteratorPrototype = NativeIteratorPrototype;
+  }
+
+  var Gp = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(IteratorPrototype);
+  GeneratorFunction.prototype = Gp.constructor = GeneratorFunctionPrototype;
+  GeneratorFunctionPrototype.constructor = GeneratorFunction;
+  GeneratorFunction.displayName = define(GeneratorFunctionPrototype, toStringTagSymbol, "GeneratorFunction"); // Helper for defining the .next, .throw, and .return methods of the
+  // Iterator interface in terms of a single ._invoke method.
+
+  function defineIteratorMethods(prototype) {
+    ["next", "throw", "return"].forEach(function (method) {
+      define(prototype, method, function (arg) {
+        return this._invoke(method, arg);
+      });
+    });
+  }
+
+  exports.isGeneratorFunction = function (genFun) {
+    var ctor = typeof genFun === "function" && genFun.constructor;
+    return ctor ? ctor === GeneratorFunction || // For the native GeneratorFunction constructor, the best we can
+    // do is to check its .name property.
+    (ctor.displayName || ctor.name) === "GeneratorFunction" : false;
+  };
+
+  exports.mark = function (genFun) {
+    if (Object.setPrototypeOf) {
+      Object.setPrototypeOf(genFun, GeneratorFunctionPrototype);
+    } else {
+      genFun.__proto__ = GeneratorFunctionPrototype;
+      define(genFun, toStringTagSymbol, "GeneratorFunction");
+    }
+
+    genFun.prototype = Object.create(Gp);
+    return genFun;
+  }; // Within the body of any async function, `await x` is transformed to
+  // `yield regeneratorRuntime.awrap(x)`, so that the runtime can test
+  // `hasOwn.call(value, "__await")` to determine if the yielded value is
+  // meant to be awaited.
+
+
+  exports.awrap = function (arg) {
+    return {
+      __await: arg
+    };
+  };
+
+  function AsyncIterator(generator, PromiseImpl) {
+    function invoke(method, arg, resolve, reject) {
+      var record = tryCatch(generator[method], generator, arg);
+
+      if (record.type === "throw") {
+        reject(record.arg);
+      } else {
+        var result = record.arg;
+        var value = result.value;
+
+        if (value && typeof value === "object" && hasOwn.call(value, "__await")) {
+          return PromiseImpl.resolve(value.__await).then(function (value) {
+            invoke("next", value, resolve, reject);
+          }, function (err) {
+            invoke("throw", err, resolve, reject);
+          });
+        }
+
+        return PromiseImpl.resolve(value).then(function (unwrapped) {
+          // When a yielded Promise is resolved, its final value becomes
+          // the .value of the Promise<{value,done}> result for the
+          // current iteration.
+          result.value = unwrapped;
+          resolve(result);
+        }, function (error) {
+          // If a rejected Promise was yielded, throw the rejection back
+          // into the async generator function so it can be handled there.
+          return invoke("throw", error, resolve, reject);
+        });
+      }
+    }
+
+    var previousPromise;
+
+    function enqueue(method, arg) {
+      function callInvokeWithMethodAndArg() {
+        return new PromiseImpl(function (resolve, reject) {
+          invoke(method, arg, resolve, reject);
+        });
+      }
+
+      return previousPromise = // If enqueue has been called before, then we want to wait until
+      // all previous Promises have been resolved before calling invoke,
+      // so that results are always delivered in the correct order. If
+      // enqueue has not been called before, then it is important to
+      // call invoke immediately, without waiting on a callback to fire,
+      // so that the async generator function has the opportunity to do
+      // any necessary setup in a predictable way. This predictability
+      // is why the Promise constructor synchronously invokes its
+      // executor callback, and why async functions synchronously
+      // execute code before the first await. Since we implement simple
+      // async functions in terms of async generators, it is especially
+      // important to get this right, even though it requires care.
+      previousPromise ? previousPromise.then(callInvokeWithMethodAndArg, // Avoid propagating failures to Promises returned by later
+      // invocations of the iterator.
+      callInvokeWithMethodAndArg) : callInvokeWithMethodAndArg();
+    } // Define the unified helper method that is used to implement .next,
+    // .throw, and .return (see defineIteratorMethods).
+
+
+    this._invoke = enqueue;
+  }
+
+  defineIteratorMethods(AsyncIterator.prototype);
+
+  AsyncIterator.prototype[asyncIteratorSymbol] = function () {
+    return this;
+  };
+
+  exports.AsyncIterator = AsyncIterator; // Note that simple async functions are implemented on top of
+  // AsyncIterator objects; they just return a Promise for the value of
+  // the final result produced by the iterator.
+
+  exports.async = function (innerFn, outerFn, self, tryLocsList, PromiseImpl) {
+    if (PromiseImpl === void 0) PromiseImpl = Promise;
+    var iter = new AsyncIterator(wrap(innerFn, outerFn, self, tryLocsList), PromiseImpl);
+    return exports.isGeneratorFunction(outerFn) ? iter // If outerFn is a generator, return the full iterator.
+    : iter.next().then(function (result) {
+      return result.done ? result.value : iter.next();
+    });
+  };
+
+  function makeInvokeMethod(innerFn, self, context) {
+    var state = GenStateSuspendedStart;
+    return function invoke(method, arg) {
+      if (state === GenStateExecuting) {
+        throw new Error("Generator is already running");
+      }
+
+      if (state === GenStateCompleted) {
+        if (method === "throw") {
+          throw arg;
+        } // Be forgiving, per 25.3.3.3.3 of the spec:
+        // https://people.mozilla.org/~jorendorff/es6-draft.html#sec-generatorresume
+
+
+        return doneResult();
+      }
+
+      context.method = method;
+      context.arg = arg;
+
+      while (true) {
+        var delegate = context.delegate;
+
+        if (delegate) {
+          var delegateResult = maybeInvokeDelegate(delegate, context);
+
+          if (delegateResult) {
+            if (delegateResult === ContinueSentinel) continue;
+            return delegateResult;
+          }
+        }
+
+        if (context.method === "next") {
+          // Setting context._sent for legacy support of Babel's
+          // function.sent implementation.
+          context.sent = context._sent = context.arg;
+        } else if (context.method === "throw") {
+          if (state === GenStateSuspendedStart) {
+            state = GenStateCompleted;
+            throw context.arg;
+          }
+
+          context.dispatchException(context.arg);
+        } else if (context.method === "return") {
+          context.abrupt("return", context.arg);
+        }
+
+        state = GenStateExecuting;
+        var record = tryCatch(innerFn, self, context);
+
+        if (record.type === "normal") {
+          // If an exception is thrown from innerFn, we leave state ===
+          // GenStateExecuting and loop back for another invocation.
+          state = context.done ? GenStateCompleted : GenStateSuspendedYield;
+
+          if (record.arg === ContinueSentinel) {
+            continue;
+          }
+
+          return {
+            value: record.arg,
+            done: context.done
+          };
+        } else if (record.type === "throw") {
+          state = GenStateCompleted; // Dispatch the exception by looping back around to the
+          // context.dispatchException(context.arg) call above.
+
+          context.method = "throw";
+          context.arg = record.arg;
+        }
+      }
+    };
+  } // Call delegate.iterator[context.method](context.arg) and handle the
+  // result, either by returning a { value, done } result from the
+  // delegate iterator, or by modifying context.method and context.arg,
+  // setting context.delegate to null, and returning the ContinueSentinel.
+
+
+  function maybeInvokeDelegate(delegate, context) {
+    var method = delegate.iterator[context.method];
+
+    if (method === undefined) {
+      // A .throw or .return when the delegate iterator has no .throw
+      // method always terminates the yield* loop.
+      context.delegate = null;
+
+      if (context.method === "throw") {
+        // Note: ["return"] must be used for ES3 parsing compatibility.
+        if (delegate.iterator["return"]) {
+          // If the delegate iterator has a return method, give it a
+          // chance to clean up.
+          context.method = "return";
+          context.arg = undefined;
+          maybeInvokeDelegate(delegate, context);
+
+          if (context.method === "throw") {
+            // If maybeInvokeDelegate(context) changed context.method from
+            // "return" to "throw", let that override the TypeError below.
+            return ContinueSentinel;
+          }
+        }
+
+        context.method = "throw";
+        context.arg = new TypeError("The iterator does not provide a 'throw' method");
+      }
+
+      return ContinueSentinel;
+    }
+
+    var record = tryCatch(method, delegate.iterator, context.arg);
+
+    if (record.type === "throw") {
+      context.method = "throw";
+      context.arg = record.arg;
+      context.delegate = null;
+      return ContinueSentinel;
+    }
+
+    var info = record.arg;
+
+    if (!info) {
+      context.method = "throw";
+      context.arg = new TypeError("iterator result is not an object");
+      context.delegate = null;
+      return ContinueSentinel;
+    }
+
+    if (info.done) {
+      // Assign the result of the finished delegate to the temporary
+      // variable specified by delegate.resultName (see delegateYield).
+      context[delegate.resultName] = info.value; // Resume execution at the desired location (see delegateYield).
+
+      context.next = delegate.nextLoc; // If context.method was "throw" but the delegate handled the
+      // exception, let the outer generator proceed normally. If
+      // context.method was "next", forget context.arg since it has been
+      // "consumed" by the delegate iterator. If context.method was
+      // "return", allow the original .return call to continue in the
+      // outer generator.
+
+      if (context.method !== "return") {
+        context.method = "next";
+        context.arg = undefined;
+      }
+    } else {
+      // Re-yield the result returned by the delegate method.
+      return info;
+    } // The delegate iterator is finished, so forget it and continue with
+    // the outer generator.
+
+
+    context.delegate = null;
+    return ContinueSentinel;
+  } // Define Generator.prototype.{next,throw,return} in terms of the
+  // unified ._invoke helper method.
+
+
+  defineIteratorMethods(Gp);
+  define(Gp, toStringTagSymbol, "Generator"); // A Generator should always return itself as the iterator object when the
+  // @@iterator function is called on it. Some browsers' implementations of the
+  // iterator prototype chain incorrectly implement this, causing the Generator
+  // object to not be returned from this call. This ensures that doesn't happen.
+  // See https://github.com/facebook/regenerator/issues/274 for more details.
+
+  Gp[iteratorSymbol] = function () {
+    return this;
+  };
+
+  Gp.toString = function () {
+    return "[object Generator]";
+  };
+
+  function pushTryEntry(locs) {
+    var entry = {
+      tryLoc: locs[0]
+    };
+
+    if (1 in locs) {
+      entry.catchLoc = locs[1];
+    }
+
+    if (2 in locs) {
+      entry.finallyLoc = locs[2];
+      entry.afterLoc = locs[3];
+    }
+
+    this.tryEntries.push(entry);
+  }
+
+  function resetTryEntry(entry) {
+    var record = entry.completion || {};
+    record.type = "normal";
+    delete record.arg;
+    entry.completion = record;
+  }
+
+  function Context(tryLocsList) {
+    // The root entry object (effectively a try statement without a catch
+    // or a finally block) gives us a place to store values thrown from
+    // locations where there is no enclosing try statement.
+    this.tryEntries = [{
+      tryLoc: "root"
+    }];
+    tryLocsList.forEach(pushTryEntry, this);
+    this.reset(true);
+  }
+
+  exports.keys = function (object) {
+    var keys = [];
+
+    for (var key in object) {
+      keys.push(key);
+    }
+
+    keys.reverse(); // Rather than returning an object with a next method, we keep
+    // things simple and return the next function itself.
+
+    return function next() {
+      while (keys.length) {
+        var key = keys.pop();
+
+        if (key in object) {
+          next.value = key;
+          next.done = false;
+          return next;
+        }
+      } // To avoid creating an additional object, we just hang the .value
+      // and .done properties off the next function object itself. This
+      // also ensures that the minifier will not anonymize the function.
+
+
+      next.done = true;
+      return next;
+    };
+  };
+
+  function values(iterable) {
+    if (iterable) {
+      var iteratorMethod = iterable[iteratorSymbol];
+
+      if (iteratorMethod) {
+        return iteratorMethod.call(iterable);
+      }
+
+      if (typeof iterable.next === "function") {
+        return iterable;
+      }
+
+      if (!isNaN(iterable.length)) {
+        var i = -1,
+            next = function next() {
+          while (++i < iterable.length) {
+            if (hasOwn.call(iterable, i)) {
+              next.value = iterable[i];
+              next.done = false;
+              return next;
+            }
+          }
+
+          next.value = undefined;
+          next.done = true;
+          return next;
+        };
+
+        return next.next = next;
+      }
+    } // Return an iterator with no values.
+
+
+    return {
+      next: doneResult
+    };
+  }
+
+  exports.values = values;
+
+  function doneResult() {
+    return {
+      value: undefined,
+      done: true
+    };
+  }
+
+  Context.prototype = {
+    constructor: Context,
+    reset: function (skipTempReset) {
+      this.prev = 0;
+      this.next = 0; // Resetting context._sent for legacy support of Babel's
+      // function.sent implementation.
+
+      this.sent = this._sent = undefined;
+      this.done = false;
+      this.delegate = null;
+      this.method = "next";
+      this.arg = undefined;
+      this.tryEntries.forEach(resetTryEntry);
+
+      if (!skipTempReset) {
+        for (var name in this) {
+          // Not sure about the optimal order of these conditions:
+          if (name.charAt(0) === "t" && hasOwn.call(this, name) && !isNaN(+name.slice(1))) {
+            this[name] = undefined;
+          }
+        }
+      }
+    },
+    stop: function () {
+      this.done = true;
+      var rootEntry = this.tryEntries[0];
+      var rootRecord = rootEntry.completion;
+
+      if (rootRecord.type === "throw") {
+        throw rootRecord.arg;
+      }
+
+      return this.rval;
+    },
+    dispatchException: function (exception) {
+      if (this.done) {
+        throw exception;
+      }
+
+      var context = this;
+
+      function handle(loc, caught) {
+        record.type = "throw";
+        record.arg = exception;
+        context.next = loc;
+
+        if (caught) {
+          // If the dispatched exception was caught by a catch block,
+          // then let that catch block handle the exception normally.
+          context.method = "next";
+          context.arg = undefined;
+        }
+
+        return !!caught;
+      }
+
+      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
+        var entry = this.tryEntries[i];
+        var record = entry.completion;
+
+        if (entry.tryLoc === "root") {
+          // Exception thrown outside of any try block that could handle
+          // it, so set the completion value of the entire function to
+          // throw the exception.
+          return handle("end");
+        }
+
+        if (entry.tryLoc <= this.prev) {
+          var hasCatch = hasOwn.call(entry, "catchLoc");
+          var hasFinally = hasOwn.call(entry, "finallyLoc");
+
+          if (hasCatch && hasFinally) {
+            if (this.prev < entry.catchLoc) {
+              return handle(entry.catchLoc, true);
+            } else if (this.prev < entry.finallyLoc) {
+              return handle(entry.finallyLoc);
+            }
+          } else if (hasCatch) {
+            if (this.prev < entry.catchLoc) {
+              return handle(entry.catchLoc, true);
+            }
+          } else if (hasFinally) {
+            if (this.prev < entry.finallyLoc) {
+              return handle(entry.finallyLoc);
+            }
+          } else {
+            throw new Error("try statement without catch or finally");
+          }
+        }
+      }
+    },
+    abrupt: function (type, arg) {
+      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
+        var entry = this.tryEntries[i];
+
+        if (entry.tryLoc <= this.prev && hasOwn.call(entry, "finallyLoc") && this.prev < entry.finallyLoc) {
+          var finallyEntry = entry;
+          break;
+        }
+      }
+
+      if (finallyEntry && (type === "break" || type === "continue") && finallyEntry.tryLoc <= arg && arg <= finallyEntry.finallyLoc) {
+        // Ignore the finally entry if control is not jumping to a
+        // location outside the try/catch block.
+        finallyEntry = null;
+      }
+
+      var record = finallyEntry ? finallyEntry.completion : {};
+      record.type = type;
+      record.arg = arg;
+
+      if (finallyEntry) {
+        this.method = "next";
+        this.next = finallyEntry.finallyLoc;
+        return ContinueSentinel;
+      }
+
+      return this.complete(record);
+    },
+    complete: function (record, afterLoc) {
+      if (record.type === "throw") {
+        throw record.arg;
+      }
+
+      if (record.type === "break" || record.type === "continue") {
+        this.next = record.arg;
+      } else if (record.type === "return") {
+        this.rval = this.arg = record.arg;
+        this.method = "return";
+        this.next = "end";
+      } else if (record.type === "normal" && afterLoc) {
+        this.next = afterLoc;
+      }
+
+      return ContinueSentinel;
+    },
+    finish: function (finallyLoc) {
+      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
+        var entry = this.tryEntries[i];
+
+        if (entry.finallyLoc === finallyLoc) {
+          this.complete(entry.completion, entry.afterLoc);
+          resetTryEntry(entry);
+          return ContinueSentinel;
+        }
+      }
+    },
+    "catch": function (tryLoc) {
+      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
+        var entry = this.tryEntries[i];
+
+        if (entry.tryLoc === tryLoc) {
+          var record = entry.completion;
+
+          if (record.type === "throw") {
+            var thrown = record.arg;
+            resetTryEntry(entry);
+          }
+
+          return thrown;
+        }
+      } // The context.catch method must only be called with a location
+      // argument that corresponds to a known catch block.
+
+
+      throw new Error("illegal catch attempt");
+    },
+    delegateYield: function (iterable, resultName, nextLoc) {
+      this.delegate = {
+        iterator: values(iterable),
+        resultName: resultName,
+        nextLoc: nextLoc
+      };
+
+      if (this.method === "next") {
+        // Deliberately forget the last sent value so that we don't
+        // accidentally pass it on to the delegate.
+        this.arg = undefined;
+      }
+
+      return ContinueSentinel;
+    }
+  }; // Regardless of whether this script is executing as a CommonJS module
+  // or not, return the runtime object so that we can declare the variable
+  // regeneratorRuntime in the outer scope, which allows this module to be
+  // injected easily by `bin/regenerator --include-runtime script.js`.
+
+  return exports;
+}( // If this script is executing as a CommonJS module, use module.exports
+// as the regeneratorRuntime namespace. Otherwise create a new empty
+// object. Either way, the resulting object will be used to initialize
+// the regeneratorRuntime variable at the top of this file.
+ true ? module.exports : undefined);
+
+try {
+  regeneratorRuntime = runtime;
+} catch (accidentalStrictMode) {
+  // This module should not be running in strict mode, so the above
+  // assignment should always work unless something is misconfigured. Just
+  // in case runtime.js accidentally runs in strict mode, we can escape
+  // strict mode using a global Function call. This could conceivably fail
+  // if a Content Security Policy forbids using Function, but in that case
+  // the proper solution is to fix the accidental strict mode problem. If
+  // you've misconfigured your bundler to force strict mode and applied a
+  // CSP to forbid Function, and you're not willing to fix either of those
+  // problems, please detail your unique predicament in a GitHub issue.
+  Function("r", "regeneratorRuntime = r")(runtime);
 }
 
 /***/ }),
@@ -17538,7 +19696,7 @@ function getRender(is) {
   return Object(_nerv__WEBPACK_IMPORTED_MODULE_3__["createNervClass"])({
     $isCustomComponent: true,
     displayName: is,
-    mixins: [_mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_11__["default"], _mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_10__["default"]],
+    mixins: [_mixins_PureRenderMixin__WEBPACK_IMPORTED_MODULE_10__["default"]],
     statics: {
       is: is,
       getDerivedStateFromProps: function getDerivedStateFromProps(nextProps, state) {
@@ -17708,10 +19866,12 @@ function getRender(is) {
       var __page = this.props.__page;
 
       if (!eventHandlers[name]) {
-        var handle = function handle(e, more) {
-          var event = _this.getNormalizedEvent(e, more);
+        var handle = function handle() {
+          for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+          }
 
-          __page.callRemote.apply(__page, ['self', 'triggerComponentEvent', _this.id, name].concat(event));
+          __page.callRemote.apply(__page, ['self', 'triggerComponentEvent', _this.id, name].concat(args));
         };
 
         handle.handleName = name;
@@ -17727,8 +19887,8 @@ function getRender(is) {
 
       var __page = this.props.__page;
 
-      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-        args[_key] = arguments[_key];
+      for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+        args[_key2] = arguments[_key2];
       }
 
       return (_page$$getRefHandler = __page.$getRefHandler).call.apply(_page$$getRefHandler, [__page].concat(args));
@@ -17858,7 +20018,7 @@ function getRender(pagePath) {
 /* harmony default export */ __webpack_exports__["default"] = (Object(_nerv__WEBPACK_IMPORTED_MODULE_2__["createNervClass"])({
   $isCustomComponent: false,
   displayName: 'PageComponent',
-  mixins: [_mixins_BasicEventMixin__WEBPACK_IMPORTED_MODULE_8__["default"], _mixins_MessageHandleMixin__WEBPACK_IMPORTED_MODULE_9__["default"], _mixins_RefMixin__WEBPACK_IMPORTED_MODULE_10__["default"]],
+  mixins: [_mixins_MessageHandleMixin__WEBPACK_IMPORTED_MODULE_9__["default"], _mixins_RefMixin__WEBPACK_IMPORTED_MODULE_10__["default"]],
   getInitialState: function getInitialState() {
     var pagePath = this.props.pagePath;
     this.pagePath = pagePath;
@@ -20262,13 +22422,14 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "detachEvent", function() { return detachEvent; });
 /* harmony import */ var _nerv_utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/nerv/utils */ "./src/nerv/utils/index.ts");
 /* harmony import */ var _nerv_shared__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/nerv/shared */ "./src/nerv/shared/index.ts");
-/* harmony import */ var _passive_event__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./passive-event */ "./src/nerv/passive-event.ts");
+/* harmony import */ var _utils_addListenerToElement__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/addListenerToElement */ "./src/utils/addListenerToElement.js");
+/* harmony import */ var _utils_eventReg__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/eventReg */ "./src/utils/eventReg.js");
+
 
 
 
 var ONINPUT = 'oninput';
 var ONPROPERTYCHANGE = 'onpropertychange';
-var delegatedEvents = new _nerv_utils__WEBPACK_IMPORTED_MODULE_0__["MapClass"]();
 var bindFocus = false;
 if (typeof Event !== 'undefined' && !Event.prototype.persist) {
     // tslint:disable-next-line:no-empty
@@ -20281,41 +22442,20 @@ function attachEvent(domNode, eventName, handler) {
         processOnPropertyChangeEvent(domNode, handler);
         return;
     }
-    var parsedEvent = parseEventName(eventName);
-    var delegatedRoots = delegatedEvents.get(normalizeEventName(eventName));
-    if (!delegatedRoots) {
-        delegatedRoots = new _nerv_utils__WEBPACK_IMPORTED_MODULE_0__["MapClass"]();
-    }
-    var event = attachEventToNode(domNode, parsedEvent, delegatedRoots);
-    delegatedEvents.set(normalizeEventName(eventName), delegatedRoots);
-    if (Object(_nerv_utils__WEBPACK_IMPORTED_MODULE_0__["isFunction"])(handler)) {
-        delegatedRoots.set(domNode, {
-            eventHandler: function (e) {
-                if (parsedEvent.stop) {
-                    e.stopPropagation();
-                }
-                handler(e);
-            },
-            event: event,
-        });
-    }
+    Object(_utils_addListenerToElement__WEBPACK_IMPORTED_MODULE_2__["default"])(domNode, eventName, handler);
 }
 function detachEvent(domNode, eventName, handler) {
     eventName = fixEvent(domNode, eventName);
     if (eventName === ONPROPERTYCHANGE) {
         return;
     }
-    var parsedEvent = parseEventName(eventName);
-    var delegatedRoots = delegatedEvents.get(normalizeEventName(eventName));
-    var event = delegatedRoots.get(domNode);
-    if (event) {
-        domNode.removeEventListener(parsedEvent.name, event.event, false);
-        /* istanbul ignore next */
-        var delegatedRootsSize = delegatedRoots.size;
-        if (delegatedRoots.delete(domNode) && delegatedRootsSize === 0) {
-            delegatedEvents.delete(normalizeEventName(eventName));
-        }
+    var matches = eventName.match(_utils_eventReg__WEBPACK_IMPORTED_MODULE_3__["default"]);
+    if (!matches) {
+        return;
     }
+    var capture = matches[1];
+    var eventType = matches[3];
+    domNode.removeEventListener(eventType, handler, capture);
 }
 var propertyChangeActiveElement;
 var propertyChangeActiveElementValue;
@@ -20382,12 +22522,7 @@ function detectCanUseOnInputNode(node) {
     return ((nodeName === 'input' && /text|password/.test(type))
         || nodeName === 'textarea');
 }
-function normalizeEventName(eventName) {
-    var reg = /^(on|bind|catch|capture-bind|capture-catch)/;
-    return eventName.replace(reg, '');
-}
 function fixEvent(node, eventName) {
-    var tapEventReg = /([Tt]ap)$/;
     if (eventName === 'onDoubleClick') {
         eventName = 'ondblclick';
     }
@@ -20398,76 +22533,10 @@ function fixEvent(node, eventName) {
     else if (eventName === 'onChange' && detectCanUseOnInputNode(node)) {
         eventName = ONINPUT in window ? ONINPUT : ONPROPERTYCHANGE;
     }
-    else if (tapEventReg.test(eventName)) {
-        eventName = eventName.replace(tapEventReg, 'click');
-    }
     else {
         eventName = eventName.toLowerCase();
     }
     return eventName;
-}
-function parseEventName(name) {
-    var event = null;
-    if (name.startsWith('on')) {
-        event = {
-            raw: name,
-            name: name.slice(2),
-            stop: false,
-        };
-    }
-    else if (name.startsWith('bind')) {
-        event = {
-            raw: name,
-            name: name.slice(4),
-            stop: false,
-        };
-    }
-    else if (name.startsWith('catch')) {
-        event = {
-            raw: name,
-            name: name.slice(5),
-            stop: true,
-        };
-    }
-    else if (name.startsWith('capture-bind')) {
-        event = {
-            raw: name,
-            name: name.slice(12),
-            stop: false,
-            capture: true,
-        };
-    }
-    else if (name.startsWith('capture-catch')) {
-        event = {
-            raw: name,
-            name: name.slice(13),
-            stop: true,
-            capture: true,
-        };
-    }
-    return event;
-}
-function attachEventToNode(node, parsedEvent, delegatedRoots) {
-    var eventHandler = function (event) {
-        var eventToTrigger = delegatedRoots.get(node);
-        if (eventToTrigger && eventToTrigger.eventHandler) {
-            var eventData_1 = {
-                currentTarget: node,
-            };
-            /* istanbul ignore next */
-            Object.defineProperties(event, {
-                currentTarget: {
-                    configurable: true,
-                    get: function () {
-                        return eventData_1.currentTarget;
-                    },
-                },
-            });
-            eventToTrigger.eventHandler(event);
-        }
-    };
-    node.addEventListener(parsedEvent.name, eventHandler, parsedEvent.capture || _passive_event__WEBPACK_IMPORTED_MODULE_2__["supportedPassiveEventMap"][parsedEvent.name] || false);
-    return eventHandler;
 }
 
 
@@ -21363,64 +23432,6 @@ var options = {
     debug: false,
 };
 /* harmony default export */ __webpack_exports__["default"] = (options);
-
-
-/***/ }),
-
-/***/ "./src/nerv/passive-event.ts":
-/*!***********************************!*\
-  !*** ./src/nerv/passive-event.ts ***!
-  \***********************************/
-/*! exports provided: supportedPassiveEventMap */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "supportedPassiveEventMap", function() { return supportedPassiveEventMap; });
-var defaultOptions = {
-    passive: false,
-    capture: false
-};
-var eventListenerOptionsSupported = function () {
-    var supported = false;
-    try {
-        var opts = Object.defineProperty({}, 'passive', {
-            get: function () {
-                supported = true;
-            }
-        });
-        window.addEventListener('test', null, opts);
-        window.removeEventListener('test', null, opts);
-    }
-    catch (e) {
-        supported = false;
-    }
-    return supported;
-};
-function getDefaultPassiveOption() {
-    var passiveOption = !eventListenerOptionsSupported() ? false : defaultOptions;
-    return function () {
-        return passiveOption;
-    };
-}
-var getPassiveOption = getDefaultPassiveOption();
-var supportedPassiveEventMap = {
-    scroll: getPassiveOption(),
-    wheel: getPassiveOption(),
-    touchstart: getPassiveOption(),
-    touchmove: getPassiveOption(),
-    touchenter: getPassiveOption(),
-    touchend: getPassiveOption(),
-    touchleave: getPassiveOption(),
-    mouseout: getPassiveOption(),
-    mouseleave: getPassiveOption(),
-    mouseup: getPassiveOption(),
-    mousedown: getPassiveOption(),
-    mousemove: getPassiveOption(),
-    mouseenter: getPassiveOption(),
-    mousewheel: getPassiveOption(),
-    mouseover: getPassiveOption()
-};
 
 
 /***/ }),
@@ -23871,31 +25882,42 @@ function addEvent(target, name, fn) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return addListenerToElement; });
-/* harmony import */ var _supportsPassive__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./supportsPassive */ "./src/utils/supportsPassive.js");
-/* harmony import */ var _config__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./config */ "./src/utils/config.js");
+/* harmony import */ var _utils_types__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/utils/types */ "./src/utils/types.js");
+/* harmony import */ var _utils_eventReg__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/eventReg */ "./src/utils/eventReg.js");
+/* harmony import */ var _supportsPassive__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./supportsPassive */ "./src/utils/supportsPassive.js");
+/* harmony import */ var _config__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./config */ "./src/utils/config.js");
 /* eslint-disable default-case */
+
+
 
 
 var EVENT_BLACK_LIST = ['click'];
 var PRESS_DELAY = 350;
 var TAP_DISTANCE = 5;
-var TAP_BLACK_LIST = ["".concat(_config__WEBPACK_IMPORTED_MODULE_1__["UpperCasePerfix"], "-BUTTON"), "".concat(_config__WEBPACK_IMPORTED_MODULE_1__["UpperCasePerfix"], "-CHECKBOX"), "".concat(_config__WEBPACK_IMPORTED_MODULE_1__["UpperCasePerfix"], "-RADIO"), "".concat(_config__WEBPACK_IMPORTED_MODULE_1__["UpperCasePerfix"], "-MAP")];
-var HAS_NATIVE_TA = false; // 兼容非 browser 环境
+var TAP_BLACK_LIST = ["".concat(_config__WEBPACK_IMPORTED_MODULE_3__["UpperCasePerfix"], "-BUTTON"), "".concat(_config__WEBPACK_IMPORTED_MODULE_3__["UpperCasePerfix"], "-CHECKBOX"), "".concat(_config__WEBPACK_IMPORTED_MODULE_3__["UpperCasePerfix"], "-RADIO"), "".concat(_config__WEBPACK_IMPORTED_MODULE_3__["UpperCasePerfix"], "-MAP")];
+function addListenerToElement(node, type, callback) {
+  var matches = type.match(_utils_eventReg__WEBPACK_IMPORTED_MODULE_1__["default"]);
 
-if (typeof window !== 'undefined') {
-  HAS_NATIVE_TA = typeof document.head.style.touchAction === 'string';
-}
+  if (!matches) {
+    return;
+  }
 
-function addListenerToElement(node, eventType, callback) {
+  var capture = matches[1];
+  var stop = matches[2] === 'catch';
+  var eventType = matches[3];
+
   switch (eventType) {
     case 'tap':
       // listen down and up
       if (!node.__hasTapEvent) {
         node.__hasTapEvent = true;
-        addTapEvent(node);
+        addTapEvent(node, {
+          stop: stop,
+          capture: capture
+        });
       }
 
-      node.addEventListener("".concat(_config__WEBPACK_IMPORTED_MODULE_1__["prefix"], "-tap"), function (e) {
+      node.addEventListener("".concat(_config__WEBPACK_IMPORTED_MODULE_3__["elementPrefix"], "-tap"), function (e) {
         return callback.call(node, {
           touches: e.detail.sourceEndEvent.changedTouches,
           // touchend没有touches，可以用changedTouches
@@ -23923,6 +25945,7 @@ function addListenerToElement(node, eventType, callback) {
     case 'touchmove':
     case 'touchcancel':
       node.addEventListener(eventType, function (e) {
+        stop && e.stopPropagation();
         if (e.__frozenBySwipeBack) return; // ios 触发了滑动返回
 
         var detail = {
@@ -23937,10 +25960,12 @@ function addListenerToElement(node, eventType, callback) {
           configurable: true
         });
         return callback.call(node, e);
-      }); // 组件可能会取消touchmove事件，并用tt-touchmove替换
+      }, {
+        capture: capture
+      }); // 组件可能会取消touchmove事件，并用tt-touchmove替换, 主要是swiper会用到
 
       if (eventType === 'touchmove') {
-        node.addEventListener("".concat(_config__WEBPACK_IMPORTED_MODULE_1__["prefix"], "-touchmove"), function (e) {
+        node.addEventListener("".concat(_config__WEBPACK_IMPORTED_MODULE_3__["elementPrefix"], "-touchmove"), function (e) {
           var srcMoveEvent = e.detail.srcMoveEvent;
           return callback.call(node, {
             touches: srcMoveEvent.touches,
@@ -23968,10 +25993,13 @@ function addListenerToElement(node, eventType, callback) {
       // listen down and up
       if (!node.__hasTapEvent) {
         node.__hasTapEvent = true;
-        addTapEvent(node);
+        addTapEvent(node, {
+          stop: stop,
+          capture: capture
+        });
       }
 
-      node.addEventListener("".concat(_config__WEBPACK_IMPORTED_MODULE_1__["prefix"], "-longpress"), function (e) {
+      node.addEventListener("".concat(_config__WEBPACK_IMPORTED_MODULE_3__["elementPrefix"], "-longpress"), function (e) {
         e.longpressFired();
         callback(e);
       });
@@ -23983,11 +26011,13 @@ function addListenerToElement(node, eventType, callback) {
   }
 }
 
-function addTapEvent(node) {
-  // 模拟合成tap事件和longpress事件，事件名为tt-tap和tt-longpress，以区别于polymer的事件
+function addTapEvent(node, options) {
+  // 模拟合成tap事件和longpress事件，事件名为mp-tap和mp-longpress，以区别于polymer的事件
   var pressTimer;
   var pressStart;
   var ended;
+  var stop = options.stop,
+      capture = options.capture;
 
   var touchstartHandler = function touchstartHandler(e) {
     if (e.__handledTap) {
@@ -24002,8 +26032,8 @@ function addTapEvent(node) {
     clearTimeout(pressTimer);
     pressTimer = setTimeout(function () {
       // dispatch longpress event
-      var pressEvent = new Event("".concat(_config__WEBPACK_IMPORTED_MODULE_1__["prefix"], "-longpress"), {
-        bubbles: true,
+      var pressEvent = new Event("".concat(_config__WEBPACK_IMPORTED_MODULE_3__["elementPrefix"], "-longpress"), {
+        bubbles: !stop,
         composed: true
       });
       pressEvent.detail = pressStart;
@@ -24031,18 +26061,14 @@ function addTapEvent(node) {
     }
   };
 
-  if (HAS_NATIVE_TA && _supportsPassive__WEBPACK_IMPORTED_MODULE_0__["default"]) {
-    node.addEventListener('touchstart', touchstartHandler, {
-      passive: true
-    });
-    node.addEventListener('touchmove', touchmoveHandler, {
-      passive: true
-    });
-  } else {
-    node.addEventListener('touchstart', touchstartHandler);
-    node.addEventListener('touchmove', touchmoveHandler);
-  }
-
+  node.addEventListener('touchstart', touchstartHandler, _supportsPassive__WEBPACK_IMPORTED_MODULE_2__["default"] ? {
+    passive: _supportsPassive__WEBPACK_IMPORTED_MODULE_2__["default"],
+    capture: capture
+  } : capture);
+  node.addEventListener('touchmove', touchmoveHandler, _supportsPassive__WEBPACK_IMPORTED_MODULE_2__["default"] ? {
+    passive: _supportsPassive__WEBPACK_IMPORTED_MODULE_2__["default"],
+    capture: capture
+  } : capture);
   node.addEventListener('touchend', function (e) {
     if (ended || !pressStart) {
       return;
@@ -24064,8 +26090,8 @@ function addTapEvent(node) {
       return;
     }
 
-    var tapEvent = new Event("".concat(_config__WEBPACK_IMPORTED_MODULE_1__["prefix"], "-tap"), {
-      bubbles: true,
+    var tapEvent = new Event("".concat(_config__WEBPACK_IMPORTED_MODULE_3__["elementPrefix"], "-tap"), {
+      bubbles: !stop,
       composed: true
     });
     tapEvent.detail = {
@@ -24074,10 +26100,14 @@ function addTapEvent(node) {
       sourceEndEvent: e
     };
     node.dispatchEvent(tapEvent);
+  }, {
+    capture: capture
   });
   node.addEventListener('touchcancel', function (e) {
     ended = true;
     clearTimeout(pressTimer);
+  }, {
+    capture: capture
   });
 }
 
@@ -24165,15 +26195,15 @@ function callInternalAPI(method) {
 /*!*****************************!*\
   !*** ./src/utils/config.js ***!
   \*****************************/
-/*! exports provided: prefix, UpperCasePerfix */
+/*! exports provided: elementPrefix, UpperCasePerfix */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "prefix", function() { return prefix; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "elementPrefix", function() { return elementPrefix; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "UpperCasePerfix", function() { return UpperCasePerfix; });
-var prefix = 'mp';
-var UpperCasePerfix = prefix.toUpperCase();
+var elementPrefix = 'mp';
+var UpperCasePerfix = elementPrefix.toUpperCase();
 
 /***/ }),
 
@@ -24420,7 +26450,7 @@ function escapeLogParams(params) {
 /*!*******************************!*\
   !*** ./src/utils/eventReg.js ***!
   \*******************************/
-/*! exports provided: getPropsEventName, getPropsEvent */
+/*! exports provided: getPropsEventName, getPropsEvent, default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -24467,6 +26497,8 @@ function getPropsEvent(name) {
 
   return _types__WEBPACK_IMPORTED_MODULE_0__["noop"];
 }
+var eventReg = /^(capture-)?(bind|catch)?([A-Za-z_]+)/;
+/* harmony default export */ __webpack_exports__["default"] = (eventReg);
 
 /***/ }),
 
@@ -26153,7 +28185,7 @@ var Button = /*#__PURE__*/function (_Hover) {
   }], [{
     key: "is",
     get: function get() {
-      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_8__["prefix"], "-button");
+      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_8__["elementPrefix"], "-button");
     }
   }, {
     key: "properties",
@@ -26280,7 +28312,7 @@ var CheckboxGroup = /*#__PURE__*/function (_Group) {
   _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default()(CheckboxGroup, [{
     key: "childItemType",
     get: function get() {
-      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["prefix"], "-checkbox");
+      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["elementPrefix"], "-checkbox");
     }
   }, {
     key: "addItem",
@@ -26321,7 +28353,7 @@ var CheckboxGroup = /*#__PURE__*/function (_Group) {
   }], [{
     key: "is",
     get: function get() {
-      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["prefix"], "-checkbox-group");
+      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["elementPrefix"], "-checkbox-group");
     }
   }, {
     key: "template",
@@ -26418,12 +28450,12 @@ var Checkbox = /*#__PURE__*/function (_Disabled) {
   }, {
     key: "hasCheckedClass",
     value: function hasCheckedClass(checked) {
-      return checked ? "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["prefix"], "-checkbox-input-checked") : '';
+      return checked ? "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["elementPrefix"], "-checkbox-input-checked") : '';
     }
   }, {
     key: "hasDisabledClass",
     value: function hasDisabledClass(disabled) {
-      return disabled ? "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["prefix"], "-checkbox-input-disabled") : '';
+      return disabled ? "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["elementPrefix"], "-checkbox-input-disabled") : '';
     }
   }, {
     key: "_getColor",
@@ -26438,7 +28470,7 @@ var Checkbox = /*#__PURE__*/function (_Disabled) {
   }], [{
     key: "is",
     get: function get() {
-      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["prefix"], "-checkbox");
+      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["elementPrefix"], "-checkbox");
     }
   }, {
     key: "properties",
@@ -26468,6 +28500,326 @@ window.customElements.define(Checkbox.is, Checkbox);
 
 /***/ }),
 
+/***/ "./src/web-components/form.js":
+/*!************************************!*\
+  !*** ./src/web-components/form.js ***!
+  \************************************/
+/*! no exports provided */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/taggedTemplateLiteral */ "./node_modules/@babel/runtime/helpers/taggedTemplateLiteral.js");
+/* harmony import */ var _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "./node_modules/@babel/runtime/helpers/defineProperty.js");
+/* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ "./node_modules/@babel/runtime/helpers/asyncToGenerator.js");
+/* harmony import */ var _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ "./node_modules/@babel/runtime/helpers/classCallCheck.js");
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @babel/runtime/helpers/createClass */ "./node_modules/@babel/runtime/helpers/createClass.js");
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @babel/runtime/helpers/get */ "./node_modules/@babel/runtime/helpers/get.js");
+/* harmony import */ var _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_5__);
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @babel/runtime/helpers/inherits */ "./node_modules/@babel/runtime/helpers/inherits.js");
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_6__);
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @babel/runtime/helpers/possibleConstructorReturn */ "./node_modules/@babel/runtime/helpers/possibleConstructorReturn.js");
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_7__);
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @babel/runtime/helpers/getPrototypeOf */ "./node_modules/@babel/runtime/helpers/getPrototypeOf.js");
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_8__);
+/* harmony import */ var _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @babel/runtime/regenerator */ "./node_modules/@babel/runtime/regenerator/index.js");
+/* harmony import */ var _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_9__);
+/* harmony import */ var _polymer_polymer__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @polymer/polymer */ "./node_modules/@polymer/polymer/polymer-element.js");
+/* harmony import */ var _utils_config__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! @/utils/config */ "./src/utils/config.js");
+/* harmony import */ var _mixins__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./mixins */ "./src/web-components/mixins/index.js");
+/* harmony import */ var _utils_uuid__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ./utils/uuid */ "./src/web-components/utils/uuid.js");
+
+
+
+
+
+
+
+
+
+
+var _templateObject;
+
+
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_1___default()(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_8___default()(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_8___default()(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_7___default()(this, result); }; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+
+
+
+
+
+var Form = /*#__PURE__*/function (_Base) {
+  _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_6___default()(Form, _Base);
+
+  var _super = _createSuper(Form);
+
+  function Form() {
+    _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_3___default()(this, Form);
+
+    return _super.apply(this, arguments);
+  }
+
+  _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_4___default()(Form, [{
+    key: "listeners",
+    get: function get() {
+      return {
+        formSubmit: '__submitHandler',
+        formReset: '__resetHandler'
+      };
+    }
+  }, {
+    key: "ready",
+    value: function ready() {
+      _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_5___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_8___default()(Form.prototype), "ready", this).call(this);
+
+      this.__submitHandler = this.submitHandler.bind(this);
+      this.__resetHandler = this.resetHandler.bind(this);
+    } // every components under should ipl
+    // resetFormData and getFormData func;
+
+  }, {
+    key: "submitHandler",
+    value: function () {
+      var _submitHandler = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_2___default()( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_9___default.a.mark(function _callee(e) {
+        var target, value, formId;
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_9___default.a.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                target = {
+                  id: '',
+                  dataset: _objectSpread({}, e.target.dataset),
+                  offsetLeft: e.target.offsetLeft,
+                  offsetTop: e.target.offsetTop
+                };
+                _context.next = 3;
+                return this.collectInput();
+
+              case 3:
+                value = _context.sent;
+                _context.next = 6;
+                return this.getFormId();
+
+              case 6:
+                formId = _context.sent;
+                this.triggerEvent('submit', {
+                  target: target,
+                  value: value,
+                  formId: formId
+                });
+
+              case 8:
+              case "end":
+                return _context.stop();
+            }
+          }
+        }, _callee, this);
+      }));
+
+      function submitHandler(_x) {
+        return _submitHandler.apply(this, arguments);
+      }
+
+      return submitHandler;
+    }()
+  }, {
+    key: "resetHandler",
+    value: function resetHandler(e) {
+      var inputEls = this._dfs(this);
+
+      inputEls.forEach(function (input) {
+        input.resetFormData();
+      });
+      this.triggerEvent('reset', {
+        target: {
+          id: '',
+          dataset: _objectSpread({}, e.target.dataset),
+          offsetLeft: e.target.offsetLeft,
+          offsetTop: e.target.offsetTop
+        }
+      });
+    }
+  }, {
+    key: "_dfs",
+    value: function _dfs(el) {
+      var _this = this;
+
+      var result = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+
+      if (!el) {
+        return result;
+      } // has data behaviour
+
+
+      if (typeof el.getFormData === 'function') {
+        result.push(el);
+      }
+
+      if (!el.children || !el.children.length) {
+        return result;
+      }
+
+      Array.from(el.children).forEach(function (child) {
+        _this._dfs(child, result);
+      });
+      return result;
+    }
+  }, {
+    key: "collectInput",
+    value: function () {
+      var _collectInput = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_2___default()( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_9___default.a.mark(function _callee2() {
+        var inputEls, formData, _loop, i, l;
+
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_9___default.a.wrap(function _callee2$(_context3) {
+          while (1) {
+            switch (_context3.prev = _context3.next) {
+              case 0:
+                inputEls = this._dfs(this);
+                formData = {};
+                _loop = /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_9___default.a.mark(function _loop(i, l) {
+                  var input, name, val;
+                  return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_9___default.a.wrap(function _loop$(_context2) {
+                    while (1) {
+                      switch (_context2.prev = _context2.next) {
+                        case 0:
+                          input = inputElsn[i];
+                          name = input.name;
+
+                          if (!name) {
+                            _context2.next = 7;
+                            break;
+                          }
+
+                          _context2.next = 5;
+                          return new Promise(function (resolve) {
+                            input.getFormData(resolve);
+                          });
+
+                        case 5:
+                          val = _context2.sent;
+
+                          if (!formData[name]) {
+                            formData[name] = val;
+                          } else {
+                            formData[name] = [].concat(formData[name], val);
+                          }
+
+                        case 7:
+                        case "end":
+                          return _context2.stop();
+                      }
+                    }
+                  }, _loop);
+                });
+                i = 0, l = inputEls.length;
+
+              case 4:
+                if (!(i < l)) {
+                  _context3.next = 9;
+                  break;
+                }
+
+                return _context3.delegateYield(_loop(i, l), "t0", 6);
+
+              case 6:
+                i++;
+                _context3.next = 4;
+                break;
+
+              case 9:
+                return _context3.abrupt("return", formData);
+
+              case 10:
+              case "end":
+                return _context3.stop();
+            }
+          }
+        }, _callee2, this);
+      }));
+
+      function collectInput() {
+        return _collectInput.apply(this, arguments);
+      }
+
+      return collectInput;
+    }()
+  }, {
+    key: "getFormId",
+    value: function () {
+      var _getFormId = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_2___default()( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_9___default.a.mark(function _callee3() {
+        var formId;
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_9___default.a.wrap(function _callee3$(_context4) {
+          while (1) {
+            switch (_context4.prev = _context4.next) {
+              case 0:
+                if (!this.reportSubmit) {
+                  _context4.next = 3;
+                  break;
+                }
+
+                formId = Object(_utils_uuid__WEBPACK_IMPORTED_MODULE_13__["default"])();
+                return _context4.abrupt("return", new Promise(function (resolve) {
+                  resolve(formId);
+                }));
+
+              case 3:
+                return _context4.abrupt("return", '');
+
+              case 4:
+              case "end":
+                return _context4.stop();
+            }
+          }
+        }, _callee3, this);
+      }));
+
+      function getFormId() {
+        return _getFormId.apply(this, arguments);
+      }
+
+      return getFormId;
+    }()
+  }], [{
+    key: "is",
+    get: function get() {
+      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_11__["elementPrefix"], "-form");
+    }
+  }, {
+    key: "properties",
+    get: function get() {
+      return {
+        reportSubmit: {
+          type: Boolean,
+          value: false
+        }
+      };
+    }
+  }, {
+    key: "template",
+    get: function get() {
+      return Object(_polymer_polymer__WEBPACK_IMPORTED_MODULE_10__["html"])(_templateObject || (_templateObject = _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default()(["\n      <style>\n        :host {\n          display: block;\n        }\n      </style>\n      <slot></slot>\n    "])));
+    }
+  }]);
+
+  return Form;
+}(Object(_mixins__WEBPACK_IMPORTED_MODULE_12__["Base"])(_polymer_polymer__WEBPACK_IMPORTED_MODULE_10__["PolymerElement"]));
+
+window.customElements.define(Form.is, Form);
+
+/***/ }),
+
 /***/ "./src/web-components/index.js":
 /*!*************************************!*\
   !*** ./src/web-components/index.js ***!
@@ -26484,8 +28836,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _button__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./button */ "./src/web-components/button.js");
 /* harmony import */ var _text__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./text */ "./src/web-components/text.js");
 /* harmony import */ var _label__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./label */ "./src/web-components/label.js");
-/* harmony import */ var _checkbox__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./checkbox */ "./src/web-components/checkbox.js");
-/* harmony import */ var _checkbox_group__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./checkbox-group */ "./src/web-components/checkbox-group.js");
+/* harmony import */ var _form__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./form */ "./src/web-components/form.js");
+/* harmony import */ var _input__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./input */ "./src/web-components/input.js");
+/* harmony import */ var _checkbox__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./checkbox */ "./src/web-components/checkbox.js");
+/* harmony import */ var _checkbox_group__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./checkbox-group */ "./src/web-components/checkbox-group.js");
 
 
 
@@ -26495,6 +28849,513 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+
+
+
+/***/ }),
+
+/***/ "./src/web-components/input.js":
+/*!*************************************!*\
+  !*** ./src/web-components/input.js ***!
+  \*************************************/
+/*! no exports provided */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/taggedTemplateLiteral */ "./node_modules/@babel/runtime/helpers/taggedTemplateLiteral.js");
+/* harmony import */ var _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ "./node_modules/@babel/runtime/helpers/classCallCheck.js");
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @babel/runtime/helpers/createClass */ "./node_modules/@babel/runtime/helpers/createClass.js");
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @babel/runtime/helpers/get */ "./node_modules/@babel/runtime/helpers/get.js");
+/* harmony import */ var _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @babel/runtime/helpers/inherits */ "./node_modules/@babel/runtime/helpers/inherits.js");
+/* harmony import */ var _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @babel/runtime/helpers/possibleConstructorReturn */ "./node_modules/@babel/runtime/helpers/possibleConstructorReturn.js");
+/* harmony import */ var _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_5__);
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @babel/runtime/helpers/getPrototypeOf */ "./node_modules/@babel/runtime/helpers/getPrototypeOf.js");
+/* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6__);
+/* harmony import */ var _polymer_polymer__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @polymer/polymer */ "./node_modules/@polymer/polymer/polymer-element.js");
+/* harmony import */ var _polymer_polymer_lib_mixins_gesture_event_listeners__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @polymer/polymer/lib/mixins/gesture-event-listeners */ "./node_modules/@polymer/polymer/lib/mixins/gesture-event-listeners.js");
+/* harmony import */ var _utils_config__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @/utils/config */ "./src/utils/config.js");
+/* harmony import */ var _mixins__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./mixins */ "./src/web-components/mixins/index.js");
+
+
+
+
+
+
+
+
+var _templateObject;
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6___default()(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6___default()(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_5___default()(this, result); }; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+
+
+
+
+var documentContainer = document.createElement('div');
+documentContainer.setAttribute('style', 'display: none;');
+documentContainer.innerHTML = "<dom-module id=\"input-style\">\n  <template>\n    <style>\n      :host {\n        display: block;\n        height: 1.4rem;\n        text-overflow: clip;\n        overflow: hidden;\n        white-space: nowrap;\n        font-family: PingFang SC, -apple-system, helvetica, sans-serif;;\n        min-height: 1.4rem;\n        -webkit-tap-highlight-color: transparent;\n      }\n\n      :host input {\n        position: relative;\n        min-height: 1.4rem;\n        border: none;\n        height: inherit;\n        width: 100%;\n        font-size: inherit;\n        font-weight: inherit;\n        color: inherit;\n        background: transparent;\n        display: inherit;\n        padding: 0;\n        margin: 0;\n        outline: none;\n        vertical-align: middle;\n        text-align: inherit;\n        overflow: inherit;\n        white-space: inherit;\n        text-overflow: inherit;\n        -webkit-tap-highlight-color: transparent;\n        z-index: 2;\n      }\n\n      :host([ hidden ]) {\n        display: none;\n      }\n\n      :host div {\n        position: relative;\n        min-height: 1.4rem;\n        text-overflow: inherit;\n        border: none;\n        height: 100%;\n        font-size: inherit;\n        font-weight: inherit;\n        font-family: PingFang SC, -apple-system, helvetica, sans-serif;;\n        color: inherit;\n        /*background: inherit;*/\n        padding: 0;\n        margin: 0;\n        outline: none;\n        text-align: inherit;\n        -webkit-tap-highlight-color: transparent;\n        white-space: nowrap;\n        overflow: hidden;\n      }\n\n      :host div.input-placeholder {\n        color: #CACACA;\n      }\n\n      :host div[type=password] div {\n        color: black;\n      }\n\n      :host div div {\n        position: absolute;\n        left: 0;\n        top: 0;\n        width: 100%;\n        height: 100%;\n        line-height: 100%;\n        height: inherit;\n        min-height: 1.4rem;\n        white-space: pre;\n        text-align: inherit;\n        overflow: hidden;\n        vertical-align: middle;\n        z-index: 1;\n      }\n    </style>\n  </template>\n</dom-module>";
+document.head.appendChild(documentContainer);
+var webInputId = 0;
+
+function castNumber(e) {
+  e = Number(e);
+  return isNaN(e) ? -1 : e;
+}
+
+var WebInput = /*#__PURE__*/function (_Data) {
+  _babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_4___default()(WebInput, _Data);
+
+  var _super = _createSuper(WebInput);
+
+  function WebInput() {
+    var _this;
+
+    _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1___default()(this, WebInput);
+
+    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    _this = _super.call.apply(_super, [this].concat(args));
+    _this.webInputId = webInputId++;
+    return _this;
+  }
+
+  _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default()(WebInput, [{
+    key: "focus",
+    get: function get() {
+      return this.$$focus;
+    },
+    set: function set(newValue) {
+      this.$$focus = this._deserializeValue(newValue, Boolean);
+
+      this._couldFocus(this.$$focus);
+    }
+  }, {
+    key: "ready",
+    value: function ready() {
+      _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_3___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6___default()(WebInput.prototype), "ready", this).call(this);
+
+      if (typeof this.$$focus === 'undefined') {
+        this.$$focus = false;
+      }
+    }
+  }, {
+    key: "getFormData",
+    value: function getFormData(fn) {
+      typeof fn === 'function' && fn(this.filteredValue);
+    }
+  }, {
+    key: "resetFormData",
+    value: function resetFormData() {
+      this.value = '';
+    }
+  }, {
+    key: "_event",
+    value: function _event(type) {
+      var target = {
+        id: this.id || '',
+        offsetLeft: this.offsetLeft,
+        offsetTop: this.offsetTop,
+        dataset: this.dataset
+      };
+      return {
+        type: type,
+        currentTarget: target,
+        target: target,
+        timsStamp: 0
+      };
+    }
+  }, {
+    key: "connectedCallback",
+    value: function connectedCallback() {
+      _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_3___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6___default()(WebInput.prototype), "connectedCallback", this).call(this);
+
+      this._attached = true;
+      this.setProperty();
+
+      this._checkAutoFocus();
+
+      this.styles = this.getComputedStyleString(); // this.$.inputElement.addEventListener('input', this._onInput.bind(this));
+      // this.__setKeyboardValueId = this.onSetKeyboardValue.bind(this);
+      // document.addEventListener('setKeyboardValue', this.__setKeyboardValueId);
+      // this.__pageReRenderCallback = this.pageReRenderCallback.bind(this);
+      // document.addEventListener('pageReRender', this.__pageReRenderCallback);
+    }
+  }, {
+    key: "onSetKeyboardValue",
+    value: function onSetKeyboardValue(e) {
+      // 处理bindinput 返回值的情况
+      if (e.detail.inputId === this.webInputId) {
+        var keyBoardValue = e.detail.value; // 如果没有返回值不需要重写value
+
+        if (typeof keyBoardValue === 'undefined') {
+          return;
+        }
+
+        var inputEle = this.$.inputElement;
+        inputEle && (inputEle.value = keyBoardValue);
+      }
+    }
+  }, {
+    key: "setProperty",
+    value: function setProperty() {
+      var isUsePassword = this.password;
+
+      if (isUsePassword) {
+        this.type = 'password';
+      }
+
+      this.$.inputElement.setAttribute('type', this.type);
+      this.$.inputElement.setAttribute('maxlength', this.maxlength);
+
+      if (this.type === 'number') {
+        this.$.inputElement.setAttribute('type', 'text');
+        this.$.inputElement.setAttribute('pattern', '\d*');
+      }
+    }
+  }, {
+    key: "getComputedStyleString",
+    value: function getComputedStyleString() {
+      var style = window.getComputedStyle(this);
+      return Object.keys(style).filter(function (name) {
+        return ['fontFamily', 'fontSize', 'color', 'backgroundColor'].indexOf(name) > -1;
+      }).reduce(function (current, next) {
+        if (next && style[next]) {
+          return "".concat(current).concat(next, ": ").concat(style[next], ";");
+        } else {
+          return current;
+        }
+      }, this.style);
+    }
+  }, {
+    key: "_passwordChange",
+    value: function _passwordChange(password) {
+      if (password) {
+        this.type = 'password';
+      } else {
+        this.type = this.type === 'password' ? 'text' : this.type;
+      }
+    }
+  }, {
+    key: "maxlengthChanged",
+    value: function maxlengthChanged(newValue) {
+      // 由于 maxLength 这个 property 设置了 type: number，所以只会为 number/NaN
+      if (isNaN(newValue)) {
+        this.maxlength = 140;
+      } else if (newValue < 0) {
+        this.maxlength = +Infinity;
+      } else {
+        this.maxlength = newValue;
+      }
+
+      this.$.inputElement.setAttribute('maxlength', this.maxlength);
+    }
+  }, {
+    key: "defaultTypeChange",
+    value: function defaultTypeChange(newValue, oldValue) {
+      this.$.inputElement.setAttribute('pattern', '');
+    }
+  }, {
+    key: "filterValue",
+    value: function filterValue(val, maxlength) {
+      if (!val) {
+        return '';
+      }
+
+      if (maxlength > 0) {
+        return val.slice(0, maxlength);
+      }
+
+      return val;
+    }
+  }, {
+    key: "_onInput",
+    value: function _onInput(e) {
+      e.stopPropagation();
+      this.value = this.$.inputElement.value;
+      var value = this.value;
+
+      if (value.length > this.maxlength) {
+        this.value = value.slice(0, this.maxlength);
+      }
+
+      this.triggerEvent('input', {
+        value: this.value,
+        cursor: this.value.length,
+        keyCode: keyCode
+      }); // const data = this.getEventTargetData();
+      // tt.publish('onKeyboardValueChange', {
+      //   value,
+      //   inputId: this.webInputId,
+      //   data,
+      //   cursor: value.length,
+      // });
+    }
+  }, {
+    key: "pageReRenderCallback",
+    value: function pageReRenderCallback() {
+      this.styles = this.getComputedStyleString();
+    }
+  }, {
+    key: "getEventTargetData",
+    value: function getEventTargetData() {
+      if (!this.bindinput) {
+        return '';
+      }
+
+      var pid = this.parentCustomComponent(); // method from base
+
+      var e = {
+        bindinput: this.bindinput,
+        target: {
+          id: this.id || '',
+          dataset: this.dataset,
+          offsetTop: this.$.wrapper.offsetTop,
+          offsetLeft: this.$.wrapper.offsetLeft
+        },
+        isCustomComponent: pid !== null,
+        nodeId: pid
+      };
+      e.currentTarget = e.target;
+      return JSON.stringify(e);
+    }
+  }, {
+    key: "_onKeyDown",
+    value: function _onKeyDown() {
+      this.value = this.$.inputElement.value;
+
+      if (this.value.length > this.maxlength) {
+        return false;
+      }
+    }
+  }, {
+    key: "_onKeyUp",
+    value: function _onKeyUp(e) {
+      if (e.keyCode === 13) {
+        this.value = this.$.inputElement.value;
+        this.triggerEvent('confirm', {
+          value: this.value
+        });
+        this.$.inputElement.blur();
+      }
+    }
+  }, {
+    key: "_onFocus",
+    value: function _onFocus(e) {
+      e.stopPropagation();
+      this.value = this.$.inputElement.value;
+      this.triggerEvent('focus', {
+        value: this.value
+      });
+    }
+  }, {
+    key: "_onBlur",
+    value: function _onBlur(e) {
+      e.stopPropagation();
+      this.value = this.$.inputElement.value;
+      this.triggerEvent('blur', {
+        value: this.value
+      });
+    }
+  }, {
+    key: "_checkPlaceholderStyle",
+    value: function _checkPlaceholderStyle() {
+      var $input = this.$.inputElement;
+      $input.classList.remove('input-placeholder');
+    }
+  }, {
+    key: "_checkAutoFocus",
+    value: function _checkAutoFocus() {
+      if (this.autoFocus || this.focus) {
+        this._couldFocus(true);
+      }
+    }
+  }, {
+    key: "_couldFocus",
+    value: function _couldFocus(focus) {
+      var that = this;
+
+      if (this._attached) {
+        if (focus) {
+          window.requestAnimationFrame(function () {
+            that.selectionStart = castNumber(that.selectionStart);
+            that.selectionEnd = castNumber(that.selectionEnd);
+            that.cursor = castNumber(that.cursor);
+
+            that._inputFocus(that.cursor, that.selectionStart, that.selectionEnd);
+          });
+        } else {
+          this.$.inputElement.blur();
+        }
+      }
+    }
+  }, {
+    key: "_inputFocus",
+    value: function _inputFocus(cursor, selectionStart, selectionEnd) {
+      if (!this.disabled) {
+        this._focusInputWithSelection(cursor, selectionStart, selectionEnd);
+      }
+    }
+  }, {
+    key: "_focusInputWithSelection",
+    value: function _focusInputWithSelection(cursor, selectionStart, selectionEnd) {
+      this.triggerEvent('focus', {
+        value: this.value,
+        height: 0
+      });
+      this.$.inputElement.focus();
+
+      if (typeof selectionStart === 'number' && typeof selectionEnd === 'number' && selectionStart !== -1) {
+        this.$.inputElement.setSelectionRange(selectionStart, selectionEnd);
+      } else if (typeof cursor === 'number') {
+        this.$.inputElement.setSelectionRange(cursor, cursor);
+      }
+
+      this.selectionStart = -1;
+      this.selectionEnd = -1;
+      this.cursor = -1;
+    }
+  }, {
+    key: "_placeholderStyleChange",
+    value: function _placeholderStyleChange(newValue, oldValue) {
+      if (newValue && newValue !== oldValue) {
+        var styleArray = this.shadowRoot.querySelectorAll('style');
+        var lastStyleElm = styleArray[styleArray.length - 1];
+
+        if (!lastStyleElm.innerHTML) {
+          lastStyleElm.innerHTML = '';
+        }
+
+        lastStyleElm.innerHTML += "\n        input::placeholder: {".concat(newValue, "}\n        input::-webkit-input-placeholder{").concat(newValue, "}\n      ");
+      }
+    }
+  }, {
+    key: "defaultValueChange",
+    value: function defaultValueChange(newValue, oldValue) {
+      newValue = newValue || '';
+      newValue = newValue.slice(0, this.maxlength);
+      this.setAttribute('value', newValue);
+
+      this._checkPlaceholderStyle();
+    }
+  }, {
+    key: "destoryEvents",
+    value: function destoryEvents() {
+      this.$.inputElement.removeEventListener('input', this._onInput.bind(this));
+    }
+  }, {
+    key: "disconnectedCallback",
+    value: function disconnectedCallback() {
+      _babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_3___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_6___default()(WebInput.prototype), "disconnectedCallback", this).call(this);
+
+      this.destoryEvents();
+    }
+  }], [{
+    key: "is",
+    get: function get() {
+      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_9__["elementPrefix"], "-input");
+    }
+  }, {
+    key: "properties",
+    get: function get() {
+      return {
+        autoFocus: {
+          type: Boolean,
+          value: false
+        },
+        placeholder: {
+          type: String,
+          value: ''
+        },
+        placeholderStyle: {
+          type: String,
+          value: '',
+          observer: '_placeholderStyleChange'
+        },
+        placeholderClass: {
+          type: String,
+          value: ''
+        },
+        dropdownStyle: {
+          type: Object,
+          value: {}
+        },
+        value: {
+          type: String,
+          "default": '',
+          observer: 'defaultValueChange',
+          reflectToAttribute: true
+        },
+        filteredValue: {
+          type: String,
+          computed: 'filterValue(value, maxlength)'
+        },
+        showValue: {
+          type: String,
+          value: ''
+        },
+        maxlength: {
+          type: Number,
+          value: 140,
+          reflectToAttribute: true,
+          observer: 'maxlengthChanged'
+        },
+        type: {
+          type: String,
+          value: 'text',
+          observer: 'defaultTypeChange'
+        },
+        password: {
+          type: Boolean,
+          value: false,
+          observer: '_passwordChange'
+        },
+        disabled: {
+          type: Boolean,
+          value: false
+        },
+        cursorSpacing: {
+          type: Number,
+          value: 0
+        },
+        cursor: {
+          type: null,
+          value: -1
+        },
+        selectionStart: {
+          type: Number,
+          value: -1
+        },
+        selectionEnd: {
+          type: Number,
+          value: -1
+        },
+        style: {
+          type: String,
+          defaultValue: ''
+        }
+      };
+    }
+  }, {
+    key: "template",
+    get: function get() {
+      return Object(_polymer_polymer__WEBPACK_IMPORTED_MODULE_7__["html"])(_templateObject || (_templateObject = _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default()(["\n      <style include=\"input-style\">\n      </style>\n      <div id=\"wrapper\">\n        <input id=\"inputElement\"\n          disabled$=\"[[ disabled ]]\"\n          class$=\"input-placeholder [[ _prefixedPlaceholderClass ]]\"\n          on-input=\"__onChange\"\n          on-focus=\"_onFocus\"\n          on-blur=\"_onBlur\"\n          on-keyDown=\"_onKeyDown\"\n          on-keyUp=\"_onKeyUp\"\n          placeholder$=\"[[placeholder]]\"\n          maxlength=\"[[maxlength]]\"\n          type$=\"[[type]]\"\n          value=\"[[value]]\"\n          style=\"[[styles]]\"\n        >\n      </div>\n    "])));
+    }
+  }]);
+
+  return WebInput;
+}(Object(_mixins__WEBPACK_IMPORTED_MODULE_10__["Data"])(Object(_polymer_polymer_lib_mixins_gesture_event_listeners__WEBPACK_IMPORTED_MODULE_8__["GestureEventListeners"])(Object(_mixins__WEBPACK_IMPORTED_MODULE_10__["Base"])(_polymer_polymer__WEBPACK_IMPORTED_MODULE_7__["PolymerElement"]))));
+
+window.customElements.define(WebInput.is, WebInput);
 
 /***/ }),
 
@@ -26594,7 +29455,7 @@ var Label = /*#__PURE__*/function (_Base) {
   }], [{
     key: "is",
     get: function get() {
-      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["prefix"], "-label");
+      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["elementPrefix"], "-label");
     }
   }, {
     key: "properties",
@@ -26825,7 +29686,7 @@ function Data(superClass) {
     }, {
       key: "hasBehavior",
       value: function hasBehavior(type) {
-        if (type === "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_5__["prefix"], "-data")) {
+        if (type === "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_5__["elementPrefix"], "-data")) {
           return true;
         }
 
@@ -27002,15 +29863,15 @@ function Group(superClass) {
     }, {
       key: "resetFormData",
       value: function resetFormData() {
-        if (this.hasBehavior("".concat(_utils_config__WEBPACK_IMPORTED_MODULE_6__["prefix"], "-data"))) {
+        if (this.hasBehavior("".concat(_utils_config__WEBPACK_IMPORTED_MODULE_6__["elementPrefix"], "-data"))) {
           !function dfs(t) {
             t.childNodes && Array.from(t.childNodes).forEach(function (t) {
               if (t.hasBehavior) {
-                if (t.hasBehavior("".concat(_utils_config__WEBPACK_IMPORTED_MODULE_6__["prefix"], "-group"))) {
+                if (t.hasBehavior("".concat(_utils_config__WEBPACK_IMPORTED_MODULE_6__["elementPrefix"], "-group"))) {
                   return;
                 }
 
-                if (t.hasBehavior("".concat(_utils_config__WEBPACK_IMPORTED_MODULE_6__["prefix"], "-item"))) {
+                if (t.hasBehavior("".concat(_utils_config__WEBPACK_IMPORTED_MODULE_6__["elementPrefix"], "-item"))) {
                   return t.resetFormData();
                 }
               }
@@ -27035,7 +29896,7 @@ function Group(superClass) {
     }, {
       key: "hasBehavior",
       value: function hasBehavior(type) {
-        if (type === "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_6__["prefix"], "-group")) {
+        if (type === "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_6__["elementPrefix"], "-group")) {
           return true;
         }
 
@@ -27365,7 +30226,7 @@ function Item(superClass) {
     _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default()(_class, [{
       key: "hasBehavior",
       value: function hasBehavior(type) {
-        if (type === "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_6__["prefix"], "-item")) {
+        if (type === "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_6__["elementPrefix"], "-item")) {
           return true;
         }
 
@@ -27665,7 +30526,7 @@ var Text = /*#__PURE__*/function (_Base) {
   }], [{
     key: "is",
     get: function get() {
-      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_8__["prefix"], "-text");
+      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_8__["elementPrefix"], "-text");
     }
   }, {
     key: "properties",
@@ -27704,6 +30565,30 @@ var Text = /*#__PURE__*/function (_Base) {
 }(Object(_mixins__WEBPACK_IMPORTED_MODULE_9__["Base"])(_polymer_polymer__WEBPACK_IMPORTED_MODULE_7__["PolymerElement"]));
 
 window.customElements.define(Text.is, Text);
+
+/***/ }),
+
+/***/ "./src/web-components/utils/uuid.js":
+/*!******************************************!*\
+  !*** ./src/web-components/utils/uuid.js ***!
+  \******************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return uuid; });
+function uuid() {
+  var s = [];
+  var ts = Date.now().toString(16);
+  var hexDigits = '0123456789abcdef';
+
+  for (var i = 0, l = 32 - ts.length; i < l; i += 1) {
+    s[i] = hexDigits.substr(Math.floor(Math.random() * 16), 1);
+  }
+
+  return ts + s.join('');
+}
 
 /***/ }),
 
@@ -27762,7 +30647,7 @@ var View = /*#__PURE__*/function (_Hover) {
   _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default()(View, null, [{
     key: "is",
     get: function get() {
-      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["prefix"], "-view");
+      return "".concat(_utils_config__WEBPACK_IMPORTED_MODULE_7__["elementPrefix"], "-view");
     }
   }, {
     key: "template",
