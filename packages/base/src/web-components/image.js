@@ -1,89 +1,119 @@
-const _Image = /* #__PURE__ */(function (_Base) {
-  _inheritsLoose(_Image, _Base);
+/* eslint-disable default-case */
+import { PolymerElement, html } from '@polymer/polymer';
+import { elementPrefix } from '@/utils/config';
+import resolvePageUrl from '@/framework/utils/resolvePageUrl';
+import { getCurrentPageImpl } from '@/framework/App';
 
-  _createClass(_Image, null, [{
-    key: 'template',
-    get: function get() {
-      return html$1(_templateObject$7());
-    },
-  }, {
-    key: 'is',
-    get: function get() {
-      return 'tt-image';
-    },
-  }, {
-    key: 'properties',
-    get: function get() {
-      return {
-        src: {
-          type: String,
-          observer: 'srcChanged',
-          reflectToAttribute: true,
-        },
-        mode: {
-          type: String,
-          observer: 'modeChanged',
-        },
-        backgroundSize: {
-          type: String,
-          observer: 'backgroundSizeChanged',
-        },
-        backgroundPosition: {
-          type: String,
-          observer: 'backgroundPositionChanged',
-        },
-        backgroundRepeat: {
-          type: String,
-          observer: 'backgroundRepeatChanged',
-        },
-        _disableSizePositionRepeat: {
-          type: Boolean,
-        },
-        width: {
-          type: String,
-          observer: '__widthChanged',
-        },
-        height: {
-          type: String,
-          observer: '__heightChanged',
-        },
-        lazyLoad: {
-          type: Boolean,
-          observer: 'lazyLoadChanged',
-        },
-      };
-    },
-  }]);
+import { Base } from './mixins';
+import scrollUtil from './utils/scrollUtil';
 
-  function _Image() {
-    let _this;
+const documentContainer = document.createElement('div');
+documentContainer.setAttribute('style', 'display: none;');
+documentContainer.innerHTML = `
+  <dom-module id="image-style">
+    <template>
+      <style>
+        #imageWrapper {
+          height: 100%;
+          width: 100%;
+        }
+      </style>
+    </template>
+  </dom-module>
+`;
+document.head.appendChild(documentContainer);
 
-    _this = _Base.call(this) || this;
-    _this._attached = false;
-    _this._changeId = 0;
-    _this.__pageReRenderCallback = _this._pageReRenderCallback.bind(_assertThisInitialized(_this));
-    return _this;
+class Image extends Base(PolymerElement) {
+  static get is() {
+    return `${elementPrefix}-image`;
   }
 
-  const _proto = _Image.prototype;
+  static get properties() {
+    return {
+      src: {
+        type: String,
+        observer: 'srcChanged',
+        reflectToAttribute: true,
+      },
+      mode: {
+        type: String,
+        observer: 'modeChanged',
+      },
+      backgroundSize: {
+        type: String,
+        observer: 'backgroundSizeChanged',
+      },
+      backgroundPosition: {
+        type: String,
+        observer: 'backgroundPositionChanged',
+      },
+      backgroundRepeat: {
+        type: String,
+        observer: 'backgroundRepeatChanged',
+      },
+      _disableSizePositionRepeat: {
+        type: Boolean,
+      },
+      width: {
+        type: String,
+        observer: '__widthChanged',
+      },
+      height: {
+        type: String,
+        observer: '__heightChanged',
+      },
+      lazyLoad: {
+        type: Boolean,
+        observer: 'lazyLoadChanged',
+      },
+    };
+  }
 
-  _proto.connectedCallback = function connectedCallback(e) {
-    const _this2 = this;
+  static get template() {
+    return html`
+      <style include="image-style">
+        :host {
+          width: 300px;
+          height: 225px;
+          display: inline-block;
+          overflow: hidden;
+        }
 
-    _Base.prototype.connectedCallback.call(this);
+        :host([ hidden ]) {
+          display: none;
+        }
+
+      </style>
+      <div 
+        style="background-size:100% 100%; border-radius:inherit; background-repeat:no-repeat;" 
+        id="imageWrapper"
+      ></div>
+    `;
+  }
+
+  constructor() {
+    super();
+
+    this._attached = false;
+    this._changeId = 0;
+    this.__pageReRenderCallback = this._pageReRenderCallback.bind(this);
+  }
+
+  connectedCallback(e) {
+    super.connectedCallback();
 
     this._attached = true;
     this._originalHeight = this.style.height || '';
 
     if (this.src) {
       setTimeout(() => {
-        return _this2._initialize(_this2.lazyLoad);
+        return this._initialize(this.lazyLoad);
       });
     }
-  };
+  }
 
-  _proto.disconnectedCallback = function disconnectedCallback() {
-    _Base.prototype.disconnectedCallback.call(this);
+  disconnectedCallback() {
+    super.disconnectedCallback();
 
     this._attached = false;
 
@@ -92,22 +122,20 @@ const _Image = /* #__PURE__ */(function (_Base) {
     }
 
     document.removeEventListener('pageReRender', this.__pageReRenderCallback);
-  };
+  }
 
-  _proto.srcChanged = function srcChanged(old, newOne) {
-    const _this3 = this;
-
+  srcChanged(old, newOne) {
     if (this._attached && old !== newOne) {
       setTimeout(() => {
-        _this3._changeId++;
-        document.removeEventListener('pageReRender', _this3.__pageReRenderCallback);
+        this._changeId++;
+        document.removeEventListener('pageReRender', this.__pageReRenderCallback);
 
-        _this3._showImage(_this3._changeId);
+        this._showImage(this._changeId);
       });
     }
-  };
+  }
 
-  _proto.modeChanged = function modeChanged(type, oldMode) {
+  modeChanged(type, oldMode) {
     // not giving mode
     if (!this._checkMode(type)) {
       this._disableSizePositionRepeat = false;
@@ -177,68 +205,63 @@ const _Image = /* #__PURE__ */(function (_Base) {
       case 'bottom right':
         this.$.imageWrapper.style.backgroundPosition = 'bottom right';
     }
-  };
+  }
 
-  _proto.getWidth = function getWidth() {
+  getWidth() {
     const e = this.$.imageWrapper.offsetWidth;
     const t = window.getComputedStyle(this.$.imageWrapper);
     return e - ((parseFloat(t.borderLeftWidth) || 0) + (parseFloat(t.borderRightWidth) || 0)) - ((parseFloat(t.paddingLeft) || 0) + (parseFloat(t.paddingRight) || 0));
-  };
+  }
 
-  _proto.backgroundSizeChanged = function backgroundSizeChanged(e, t) {
+  backgroundSizeChanged(e, t) {
     if (!this._disableSizePositionRepeat) {
       this.$.imageWrapper.style.backgroundSize = e;
     }
-  };
+  }
 
-  _proto.backgroundPositionChanged = function backgroundPositionChanged(e, t) {
+  backgroundPositionChanged(e, t) {
     if (!this._disableSizePositionRepeat) {
       this.$.imageWrapper.style.backgroundPosition = e;
     }
-  };
+  }
 
-  _proto.backgroundRepeatChanged = function backgroundRepeatChanged(e, t) {
+  backgroundRepeatChanged(e, t) {
     if (!this._disableSizePositionRepeat) {
       this.$.imageWrapper.style.backgroundRepeat = e;
     }
-  };
+  }
 
-  _proto.lazyLoadChanged = function lazyLoadChanged(e, t) {
+  lazyLoadChanged(e, t) {
     e !== t && t && this._initialize(e);
-  };
+  }
 
-  _proto._checkMode = function _checkMode(mode) {
+  _checkMode(mode) {
     const modes = ['scaleToFill', 'aspectFit', 'aspectFill', 'top', 'bottom', 'center', 'left', 'right', 'top left', 'top right', 'bottom left', 'bottom right'];
     return !!modes.filter((m) => {
       return m === mode;
     }).length;
-  };
+  }
 
-  _proto._initialize = function _initialize(lazyLoad) {
+  _initialize(lazyLoad) {
     if (!lazyLoad || scrollUtil.isNodeVisible(this)) {
       this._showImage(this._changeId);
     } else {
       scrollUtil.registerInstance(this);
     }
-  };
+  }
 
-  _proto._showImage = function _showImage(id) {
-    const _this4 = this;
-
+  _showImage(id) {
     this._getImagePath(this.src, (src) => {
-      // 为ios支持webp，ios端上劫持该图片请求
-      if (is().mobile) ;
-
-      _this4.$.imageWrapper.style.backgroundImage = `url('${src}')`;
+      this.$.imageWrapper.style.backgroundImage = `url('${src}')`;
       let img = new Image();
 
       img.onerror = function (e) {
         e.stopPropagation();
 
-        if (id === _this4._changeId) {
+        if (id === this._changeId) {
           img = null;
 
-          _this4.triggerEvent('error', {
+          this.triggerEvent('error', {
             errMsg: `GET ${src} 404 (Not Found)`,
           });
         }
@@ -247,79 +270,66 @@ const _Image = /* #__PURE__ */(function (_Base) {
       img.onload = function (e) {
         e.stopPropagation();
 
-        if (id === _this4._changeId) {
-          const radio = _this4.ratio = img.naturalWidth / img.naturalHeight;
+        if (id === this._changeId) {
+          this.ratio = img.naturalWidth / img.naturalHeight;
+          const radio = this.ratio;
 
-          if (_this4.mode === 'widthFix') {
-            _this4.style.height = `${_this4.getWidth() / radio}px`;
+          if (this.mode === 'widthFix') {
+            this.style.height = `${this.getWidth() / radio}px`;
 
-            _this4.triggerReRender();
-          } // img = null
+            this.triggerReRender();
+          }
 
-          document.addEventListener('pageReRender', _this4.__pageReRenderCallback);
+          document.addEventListener('pageReRender', this.__pageReRenderCallback);
 
-          // 忘了为啥了
-          window.requestAnimationFrame(() => {
-            _this4.$.imageWrapper.style.transform = 'translateZ(0)';
-            window.requestAnimationFrame(() => {
-              _this4.$.imageWrapper.style.transform = '';
-            });
-          });
-
-          _this4.triggerEvent('load', {
+          this.triggerEvent('load', {
             width: img.naturalWidth,
             height: img.naturalHeight,
           });
         }
       };
 
-      scrollUtil.deregisterInstance(_this4);
+      scrollUtil.deregisterInstance(this);
       img.src = src;
     });
-  };
+  }
 
-  _proto._pageReRenderCallback = function _pageReRenderCallback() {
+  _pageReRenderCallback() {
     if (this.mode === 'widthFix' && this.ratio !== null) {
       this.style.height = `${this.getWidth() / this.ratio}px`;
     }
 
     scrollUtil.checkUnloadedImages();
-  };
+  }
 
-  _proto._getImagePath = function _getImagePath(e, callback) {
-    const _is = is();
-
-    const cc = isInCustomComponent(this);
-    const dirname_abs = cc ? cc.is : '';
-
-    if ((e === null ? 'undefined' : _typeof(e)) !== null && typeof callback === 'function') {
-      e = e ? e.toString().trim() : '';
-
-      if (e.slice(0, 2) === '//') {
-        e = `http:${e}`;
-      } // 绝对地址
-
-      if (is(e).file || is(e).http || is(e).dataImage || is(e).blob) {
-        callback(e);
-      } else if (is(e).ttfile) {
-        // h5 小程序不能显示file 协议图片
-        if (window.isH5) {
-          tt.getProtocolPathAddFileInfo(e, callback);
-        } else {
-          tt.getProtocolXPath(e, callback);
-        }
+  _getImagePath(source, callback) {
+    let src;
+    if (typeof source === 'string' && source.trim()) {
+      if (source.indexOf('http://') === 0
+          || source.indexOf('https://') === 0
+          || source.indexOf('file://') === 0
+          || source.indexOf('data:image') === 0 // base64
+          || source.indexOf('myfile://') === 0 // support custom protocol of IDE
+          || source.indexOf('local://') === 0 // support custom protocol of IDE
+          || source.indexOf('temp://') === 0 // support custom protocol of IDE
+      ) {
+        src = source;
       } else {
-        {
-          const { dirName } = window;
-          const httpPath = `http://127.0.0.1:${staticPort}/static/dist/public/${dirName}/tmp`;
-          e = tt.getRealRoute(httpPath, tt.getRealRoute(dirname_abs || window.__route__, e));
-          callback(e);
+        src = resolvePageUrl(source, getCurrentPageImpl());
+        const { mpRuntimeConfig } = self;
+
+        if (mpRuntimeConfig && mpRuntimeConfig.contextPath) {
+          src = `${mpRuntimeConfig.contextPath}/${src}`;
+        } else {
+          src = `/${src}`;
         }
       }
     }
-  };
 
-  _proto.__widthChanged = function __widthChanged(val) {
+    callback(src);
+  }
+
+  __widthChanged(val) {
     if (val) {
       const numberVal = Number(val);
 
@@ -329,9 +339,9 @@ const _Image = /* #__PURE__ */(function (_Base) {
 
       this.style.width = val;
     }
-  };
+  }
 
-  _proto.__heightChanged = function __heightChanged(val) {
+  __heightChanged(val) {
     if (val) {
       const numberVal = Number(val);
 
@@ -341,7 +351,7 @@ const _Image = /* #__PURE__ */(function (_Base) {
 
       this.style.height = val;
     }
-  };
+  }
+}
 
-  return _Image;
-})(Base(PolymerElement));
+window.customElements.define(Image.is, Image);

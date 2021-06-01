@@ -30,7 +30,7 @@ export default function Base(SuperClass) {
           const eventTarget = m.length > 1 ? m[0] : null;
           const eventKey = eventTarget ? m[1] : m[0];
 
-          addListenerToElement(eventTarget ? this.$[eventTarget] : this, eventKey, function (e) {
+          addListenerToElement(eventTarget ? this.$[eventTarget] : this, eventKey, (e) => {
             return this[eventHandler].call(this, e);
           });
         }
@@ -73,6 +73,7 @@ export default function Base(SuperClass) {
     }
 
     _deserializeValue(value, type) {
+      console.log(4444, value, type);
       if (type === Boolean) {
         return !!value;
       }

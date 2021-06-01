@@ -39,7 +39,14 @@ export default function addListenerToElement(node, type, callback) {
             x: e.detail.x,
             y: e.detail.y,
           },
-          target: e.detail.sourceEndEvent.target,
+          currentTarget: {
+            id: e.detail.sourceEndEvent.currentTarget.id,
+            dataset: e.detail.sourceEndEvent.currentTarget.dataset,
+          },
+          target: {
+            id: e.detail.sourceEndEvent.target.id,
+            dataset: e.detail.sourceEndEvent.target.dataset,
+          },
           timeStamp: e.timeStamp,
           preventDefault() {
             return e.detail.sourceEndEvent.preventDefault();
@@ -88,7 +95,14 @@ export default function addListenerToElement(node, type, callback) {
               x: srcMoveEvent.pageX,
               y: srcMoveEvent.pageY,
             },
-            target: e.target,
+            currentTarget: {
+              id: e.currentTarget.id,
+              dataset: e.currentTarget.dataset,
+            },
+            target: {
+              id: e.target.id,
+              dataset: e.target.dataset,
+            },
             timeStamp: e.timeStamp,
             preventDefault() {
               return srcMoveEvent.preventDefault();

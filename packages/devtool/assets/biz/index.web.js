@@ -217,9 +217,10 @@ function render(data) {
     className: "add-button",
     hoverClass: "none",
     bindtap: $getEventHandler(this, "onClickMe")
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-text", {
-    className: "add-icon"
-  }, $toString("+")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-text", null, $toString(data['text']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-text", {
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-icon", {
+    type: "success",
+    size: "23"
+  }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-text", null, $toString(data['text']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-text", {
     bindtap: $getEventHandler(this, "xx")
   }, $toString(data['name']))]);
 }
@@ -593,8 +594,6 @@ var $getComponentClass = function $getComponentClass(name) {
   return getComponentClass && getComponentClass(name);
 };
 
-var Image_ = self.MPUI['image'];
-var Image = Image_ || $EmptyComponentFactory("image");
 var AddButton_ = $getComponentClass("/components/add-button/add-button");
 var AddButton = AddButton_ || $EmptyComponentFactory("add-button");
 var $iterate = self.XMLRuntime.iterate;
@@ -611,11 +610,12 @@ var $templates = {};
 function render(data) {
   var _this = this;
 
-  return $createRoot(nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "page-todos"
+  return $createRoot(nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-scroll-view", {
+    className: "page-todos",
+    scrollY: "true"
   }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
     className: "user"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(Image, {
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-image", {
     className: "avatar",
     src: $getLooseDataMember([data['user'], "avatar"]) || '../../assets/logo.png',
     backgroundSize: "cover"
@@ -640,7 +640,26 @@ function render(data) {
     }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-text", {
       className: "todo-item-text"
     }, $toString($getLooseDataMember([item, "text"])))]);
-  }))), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", null, $toString(data['text'])), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+  }))), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-slider", {
+    bindchange: $getEventHandler(this, "sliderChange"),
+    step: "5"
+  }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+    className: "progress-box"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-progress", {
+    percent: "20",
+    showInfo: true,
+    active: true,
+    strokeWidth: "3"
+  })), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+    className: "section section_gap"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+    className: "section__title"
+  }, $toString("type=\"switch\"")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+    className: "body-view"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-switch", {
+    checked: data['switchChecked'],
+    bindchange: $getEventHandler(this, "switchChange")
+  }))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
     className: "todo-footer"
   }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(AddButton, {
     id: "asd",
@@ -667,7 +686,66 @@ function render(data) {
     "data-xhq": "jyf",
     bindlongpress: $getEventHandler(this, "clickChild"),
     style: "margin-top: 120rpx; background: red;"
-  }, $toString(data['haha']))])]));
+  }, $toString(data['haha']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+    className: "container"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+    className: "page-body"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+    className: "page-section page-section-spacing swiper"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-swiper", {
+    indicatorDots: data['indicatorDots'],
+    autoplay: data['autoplay'],
+    interval: data['interval'],
+    duration: data['duration'],
+    circular: true
+  }, $iterate(data['background'], function (item, index) {
+    return nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-swiper-item", null, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+      className: "swiper-item " + item
+    }));
+  }))), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+    className: "page-section",
+    style: "margin-top: 20px;margin-bottom: 0;"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+    className: "weui-cells weui-cells_after-title"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+    className: "weui-cell weui-cell_switch"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+    className: "weui-cell__bd"
+  }, $toString("指示点")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+    className: "weui-cell__ft"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-switch", {
+    checked: data['indicatorDots'],
+    bindchange: $getEventHandler(this, "changeIndicatorDots")
+  }))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+    className: "weui-cell weui-cell_switch"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+    className: "weui-cell__bd"
+  }, $toString("自动播放")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+    className: "weui-cell__ft"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-switch", {
+    checked: data['autoplay'],
+    bindchange: $getEventHandler(this, "changeAutoplay")
+  }))])])), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+    className: "page-section page-section-spacing"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+    className: "page-section-title"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-text", null, $toString("幻灯片切换时长(ms)")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-text", {
+    className: "info"
+  }, $toString(data['duration']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-slider", {
+    bindchange: $getEventHandler(this, "durationChange"),
+    value: data['duration'],
+    min: 500,
+    max: 2000
+  }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
+    className: "page-section-title"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-text", null, $toString("自动播放间隔时长(ms)")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-text", {
+    className: "info"
+  }, $toString(data['interval']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-slider", {
+    bindchange: $getEventHandler(this, "intervalChange"),
+    value: data['interval'],
+    min: 3000,
+    max: 10000
+  })])]))]));
 }
 ;
 
@@ -822,6 +900,85 @@ stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODU
     font-size: 0.48rem;
     font-weight: 200;
     text-align: center;
+  }
+  .page-section-title {
+    padding: 0;
+  }
+  .swiper-item {
+    display: block;
+    height: 150px;
+  }
+  .page-section-title {
+    margin-top: 30px;
+    position: relative;
+  }
+  .info {
+    position: absolute;
+    right: 0;
+    font-size: 15px;
+  }
+  .page-foot {
+    margin-top: 25px;
+  }
+  .demo-text-1 {
+    position: relative;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+            align-items: center;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+            justify-content: center;
+    background-color: #1AAD19;
+    color: #FFFFFF;
+    font-size: 18px;
+  }
+  .demo-text-1:before {
+    content: 'A';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+  }
+  .demo-text-2 {
+    position: relative;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+            align-items: center;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+            justify-content: center;
+    background-color: #2782D7;
+    color: #FFFFFF;
+    font-size: 18px;
+  }
+  .demo-text-2:before {
+    content: 'B';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+  }
+  .demo-text-3 {
+    position: relative;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+            align-items: center;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+            justify-content: center;
+    background-color: #F1F1F1;
+    color: #353535;
+    font-size: 18px;
+  }
+  .demo-text-3:before {
+    content: 'C';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
   }`));
 
 /***/ }),

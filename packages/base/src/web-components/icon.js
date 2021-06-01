@@ -1,54 +1,80 @@
-const $_documentContainer$1 = document.createElement('div');
-$_documentContainer$1.setAttribute('style', 'display: none;');
-$_documentContainer$1.innerHTML = '<dom-module id="tt-icon-style">\n  <template>\n    <style>\n      :host {\n        display: inline-block;\n        font-size: 0;\n      }\n\n      :host([hidden]) {\n        display: none;\n      }\n\n      #icon {\n        font: normal normal normal 14px/1 "ttui";\n      }\n\n      #icon[class^="tt-icon-"]:before,\n      #icon[class*=" tt-icon-"]:before {\n        margin: 0;\n        box-sizing: border-box;\n      }\n\n      .tt-icon-success { color: #F95959; }\n      .tt-icon-success:before { content: "\\e613"; }\n      .tt-icon-success_no_circle { color: #F95959;}\n      .tt-icon-success_no_circle:before { content: "\\e610";}\n      .tt-icon-info { color: #CACACA; }\n      .tt-icon-info:before { content: "\\e60d"; }\n      .tt-icon-warn { color: #F5A623;}\n      .tt-icon-warn:before { content: "\\e614";}\n      .tt-icon-waiting { color: #50ABF9;}\n      .tt-icon-waiting:before { content: "\\e612";}\n      .tt-icon-clear { color: #F95959;}\n      .tt-icon-clear:before { content: "\\e615";}\n      .tt-icon-cancel { color: #222222;}\n      .tt-icon-cancel:before { content: "\\e611";}\n      .tt-icon-download { color: #222222;}\n      .tt-icon-download:before { content: "\\e60f";}\n      .tt-icon-search { color: #222222;}\n      .tt-icon-search:before { content: "\\e60e";}\n    </style>\n  </template>\n</dom-module>';
-document.head.appendChild($_documentContainer$1);
+import { PolymerElement, html } from '@polymer/polymer';
+import { elementPrefix } from '@/utils/config';
+import { Base } from './mixins';
 
-function _templateObject$3() {
-  const data = _taggedTemplateLiteralLoose(['<style include="tt-icon-style"></style><i id="icon" class$="tt-icon-[[ type ]]" style$="color: [[ color ]]; font-size: [[ size ]]px"></i>'], ['<style include="tt-icon-style"></style><i id="icon" class\\$="tt-icon-[[ type ]]" style\\$="color: [[ color ]]; font-size: [[ size ]]px"></i>']);
+const documentContainer = document.createElement('div');
+documentContainer.setAttribute('style', 'display: none;');
+documentContainer.innerHTML = `<dom-module id="icon-style">
+  <template>
+    <style>
+      :host {
+        display: inline-block;
+        font-size: 0;
+      }
 
-  _templateObject$3 = function _templateObject() {
-    return data;
-  };
+      :host([hidden]) {
+        display: none;
+      }
 
-  return data;
-}
+      #icon {
+        font: normal normal normal 14px/1 "mpui";
+      }
 
-const Icon = /* #__PURE__ */(function (_Base) {
-  _inheritsLoose(Icon, _Base);
+      #icon[class^="icon-"]:before,
+      #icon[class*=" icon-"]:before {
+        margin: 0;
+        box-sizing: border-box;
+      }
 
-  function Icon() {
-    return _Base.apply(this, arguments) || this;
+      .icon-success { color: #F95959; }
+      .icon-success:before { content: "\\e613"; }
+      .icon-success_no_circle { color: #F95959;}
+      .icon-success_no_circle:before { content: "\\e610";}
+      .icon-info { color: #CACACA; }
+      .icon-info:before { content: "\\e60d"; }
+      .icon-warn { color: #F5A623;}
+      .icon-warn:before { content: "\\e614";}
+      .icon-waiting { color: #50ABF9;}
+      .icon-waiting:before { content: "\\e612";}
+      .icon-clear { color: #F95959;}
+      .icon-clear:before { content: "\\e615";}
+      .icon-cancel { color: #222222;}
+      .icon-cancel:before { content: "\\e611";}
+      .icon-download { color: #222222;}
+      .icon-download:before { content: "\\e60f";}
+      .icon-search { color: #222222;}
+      .icon-search:before { content: "\\e60e";}
+    </style>
+  </template>
+</dom-module>`;
+document.head.appendChild(documentContainer);
+
+class Icon extends Base(PolymerElement) {
+  static get is() {
+    return `${elementPrefix}-icon`;
   }
 
-  _createClass(Icon, null, [{
-    key: 'template',
-    get: function get() {
-      return html$1(_templateObject$3());
-    },
-  }, {
-    key: 'is',
-    get: function get() {
-      return 'tt-icon';
-    },
-  }, {
-    key: 'properties',
-    get: function get() {
-      return {
-        type: {
-          type: String,
-        },
-        color: {
-          type: String,
-        },
-        size: {
-          type: Number,
-          value: 24,
-        },
-      };
-    },
-  }]);
+  static get properties() {
+    return {
+      type: {
+        type: String,
+      },
+      color: {
+        type: String,
+      },
+      size: {
+        type: Number,
+        value: 24,
+      },
+    };
+  }
 
-  return Icon;
-})(Base(PolymerElement));
+  static get template() {
+    return html`
+      <style include="icon-style"></style>
+      <i id="icon" class$="icon-[[ type ]]" style$="color: [[ color ]]; font-size: [[ size ]]px"></i>
+    `;
+  }
+}
 
 window.customElements.define(Icon.is, Icon);

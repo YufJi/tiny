@@ -370,6 +370,14 @@ Page({
     fn: 'addTodo',
 
     haha: 'xxxx',
+    switchChecked: false,
+
+    background: ['demo-text-1', 'demo-text-2', 'demo-text-3'],
+    indicatorDots: true,
+    vertical: false,
+    autoplay: false,
+    interval: 4000,
+    duration: 500,
   },
   // 监听生命周期回调 onLoad
   onLoad() {
@@ -442,6 +450,41 @@ Page({
   },
   clicklabel() {
     console.log('clicklabel');
+  },
+  sliderChange(e) {
+    console.log('slider发生change事件，携带值为', e.detail.value);
+  },
+  switchChange(e) {
+    console.log('switch发生change事件，携带值为', e.detail.value);
+    this.setData({
+      switchChecked: e.detail.value,
+    });
+  },
+
+  changeIndicatorDots() {
+    this.setData({
+      indicatorDots: !this.data.indicatorDots,
+    });
+  },
+
+  changeAutoplay() {
+    this.setData({
+      autoplay: !this.data.autoplay,
+    });
+  },
+
+  intervalChange(e) {
+    console.log('intervalChange', e.detail.value);
+    this.setData({
+      interval: e.detail.value,
+    });
+  },
+
+  durationChange(e) {
+    console.log('durationChange', e.detail.value);
+    this.setData({
+      duration: e.detail.value,
+    });
   },
 });
 

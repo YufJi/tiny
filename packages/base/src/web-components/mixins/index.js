@@ -5,6 +5,7 @@ import Item from './item';
 import Disabled from './disabled';
 import Group from './group';
 import Data from './data';
+import TouchTrack from './touch-track';
 
 export {
   Base,
@@ -14,4 +15,5 @@ export {
   Disabled,
   Group,
   Data,
+  TouchTrack
 };

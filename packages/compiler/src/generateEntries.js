@@ -21,13 +21,12 @@ self.requirePlugin = MP.requirePlugin;
 `;
 
 module.exports = function generateEntries({
-  src, /* miniprogramRoot 小程序根目录 */
+  src, /* miniprogramRoot 小程序source目录 */
   appJson,
   importScripts,
   out,
   web,
   native,
-  baseDir = '.',
   injectScript = '',
   injectScriptForNative,
   injectScriptAfterWorkerImportScripts,
@@ -38,7 +37,7 @@ module.exports = function generateEntries({
   injectScriptAfterWorkerImportScripts = injectScriptAfterWorkerImportScripts || defaultInjectScriptAfterWorkerImportScripts(transformConfig.bridgeName);
   const { app } = appJson;
   /* 获取页面入口 */
-  const pageImports = getImports(app.pages, baseDir, {
+  const pageImports = getImports(app.pages, src, {
     src,
     compileType: 'mini',
     type: 'page',
@@ -101,8 +100,8 @@ g.mpAppJson = ${JSON.stringify(mpJson, null, 2)};
   }
 
   const configImport = 'require(\'./config$\');';
-  const appImport = `require('${baseDir}/app');`;
-  const allComponentsRequires = getComponentImports(app.pages, baseDir, {
+  const appImport = `require('${src}/app');`;
+  const allComponentsRequires = getComponentImports(app.pages, src, {
     src,
     compileType: 'mini',
     type: 'component',
@@ -150,7 +149,7 @@ g.mpAppJson = ${JSON.stringify(mpJson, null, 2)};
       const slashCount = (slashMatch && slashMatch.length) || 0;
       const packageBaseDir = path.join(
         new Array(slashCount + 2).join('../'),
-        baseDir,
+        src,
       );
       const packagePagesImports = getImports(packagePages, packageBaseDir, {
         src,

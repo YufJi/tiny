@@ -20,6 +20,16 @@ const supportedWebcomponents = [
   'input',
   'checkbox',
   'checkbox-group',
+  'radio',
+  'radio-group',
+  'icon',
+  'image',
+  'scroll-view',
+  'slider',
+  'progress',
+  'switch',
+  'swiper',
+  'swiper-item',
 ];
 
 function isNumber(str) {

@@ -6,7 +6,7 @@ const CopyPlugin = require('copy-webpack-plugin');
 const generateEntries = require('./generateEntries');
 const generateAppJson = require('./generateAppJson');
 const generateAppConfigJson = require('./generateAppConfigJson');
-
+const { safeJsonParse } = require('./utils');
 /* 完全转译出文件 */
 const transform = require('./transform');
 
@@ -42,9 +42,18 @@ module.exports = function run(config) {
     fs.mkdirsSync(out);
   }
 
+  const projectConfigPath = path.join(src, 'project.config.json');
+  let projectConfigJson = {};
+
+  if (fs.existsSync(projectConfigPath)) {
+    projectConfigJson = safeJsonParse(projectConfigPath);
+  }
+
+  const sourceDir = projectConfigJson.miniprogramRoot ? path.join(src, projectConfigJson.miniprogramRoot) : src;
+
   /* 生成app.json */
   const appJson = generateAppJson({
-    src,
+    src: sourceDir,
     out,
     mergeSubPackages,
     transformConfig,
@@ -52,7 +61,7 @@ module.exports = function run(config) {
 
   /* 生成入口文件 index.web 和 index.worker */
   generateEntries({
-    src,
+    src: sourceDir,
     appJson,
     web: true,
     native,
@@ -68,22 +77,22 @@ module.exports = function run(config) {
 
   /* 生成appConfigJson */
   generateAppConfigJson({
-    appJson,
+    src: sourceDir,
     out,
+    appJson,
     indexPage,
-    src,
     contextPath,
   });
 
   // // todo 这里开始走webpack构建入口文件为index.web 和 index.worker
-  // transform(assign({}, transformConfig, { cwd: src }));
+  // transform(assign({}, transformConfig, { cwd: sourceDir }));
   // return;
 
-  const assetTypes = ['*.eot', '*.woff', '*.ttf', '*.text', '*.png', '*.jpg', '*.jpeg', '*.gif', '*.bmp', '*.svg', '*.webp'];
+  const assetExts = ['*.eot', '*.woff', '*.ttf', '*.text', '*.png', '*.jpg', '*.jpeg', '*.gif', '*.bmp', '*.svg', '*.webp'];
   const isDev = true;
   const getConfig = (type) => {
     const isWorker = type === 'worker';
-    const config = assign({}, transformConfig, { cwd: src });
+    const config = assign({}, transformConfig, { cwd: sourceDir });
 
     return {
       entry: isWorker ? {
@@ -109,7 +118,7 @@ module.exports = function run(config) {
             loader: path.resolve(__dirname, 'loaders/js-loader'),
             options: {
               isWorker,
-              cwd: src,
+              cwd: sourceDir,
               transformConfig: config,
             },
           }],
@@ -118,7 +127,7 @@ module.exports = function run(config) {
           use: [{
             loader: path.resolve(__dirname, 'loaders/css-loader'),
             options: {
-              cwd: src,
+              cwd: sourceDir,
               transformConfig: assign(
                 {
                   injectStyle: true,
@@ -147,7 +156,7 @@ module.exports = function run(config) {
           }, {
             loader: path.resolve(__dirname, 'loaders/template-loader'),
             options: {
-              cwd: src,
+              cwd: sourceDir,
               transformConfig: config,
             },
           }],
@@ -156,18 +165,18 @@ module.exports = function run(config) {
           use: [{
             loader: path.resolve(__dirname, 'loaders/sjs-loader'),
             options: {
-              cwd: src,
+              cwd: sourceDir,
             },
           }],
         }],
       },
       plugins: [
         new webpack.ProgressPlugin(),
-        new CopyPlugin(assetTypes.map((type) => {
+        new CopyPlugin(assetExts.map((type) => {
           return {
-            from: path.join(src, `**/${type}`),
+            from: path.join(sourceDir, `**/${type}`),
             transformPath(targetPath, absolutePath) {
-              return absolutePath.replace(src, '');
+              return absolutePath.replace(sourceDir, '');
             },
           };
         })),

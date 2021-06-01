@@ -36,7 +36,7 @@ const getConfig = (type, env) => {
           },
         },
         {
-          test: /\.less$/,
+          test: /\.(less|css)$/,
           use: [
             MiniCssExtractPlugin.loader,
             'css-loader',
