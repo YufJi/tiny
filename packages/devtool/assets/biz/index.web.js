@@ -132,7 +132,7 @@ __webpack_require__(/*! ./example/miniRoot/pages/add-todo/add-todo?hash=05b57513
 __webpack_require__.r(__webpack_exports__);
 const { StyleSheet } = self.MP;
 const stylesheet = new StyleSheet({ stylePath: 'app.wxss' });
-/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.a-page {
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`mp-page {
     -webkit-box-flex: 1;
     -webkit-flex: 1;
             flex: 1;

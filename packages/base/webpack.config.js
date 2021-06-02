@@ -70,7 +70,7 @@ const getConfig = (type, env) => {
       }),
     ],
 
-    stats: 'minimal',
+    stats: 'normal',
   };
 };
 

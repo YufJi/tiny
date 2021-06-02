@@ -4,6 +4,7 @@ import '@polymer/polymer/lib/elements/dom-module';
 
 import './styles/index.less';
 
+import './page';
 import './view';
 import './button';
 import './text';

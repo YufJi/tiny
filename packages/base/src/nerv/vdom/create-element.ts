@@ -103,7 +103,7 @@ export function mountElement(
   refChild?: Node | null,
 ) {
   if (isArray(element)) {
-    for (let i = 0; i < element.length; i++) {
+    for (let i = 0; i < element.length; i+=1) {
       const el = element[i];
       mountElement(el, parentNode);
     }

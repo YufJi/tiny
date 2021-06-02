@@ -1,4 +1,5 @@
 import Nerv from '@/nerv';
+import { elementPrefix } from '@/utils/config';
 import EventHub from '../EventHub';
 
 export default class Scene extends Nerv.Component {
@@ -12,10 +13,9 @@ export default class Scene extends Nerv.Component {
 
   render() {
     const { data, saveRoot, __page, __render } = this.props;
-    return (
-      <div className="a-page tiny-page" ref={saveRoot}>
-        {__render.call(__page, data)}
-      </div>
-    );
+
+    return Nerv.createElement(`${elementPrefix}-page`, {
+      ref: saveRoot,
+    }, __render.call(__page, data));
   }
 }

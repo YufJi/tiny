@@ -184,7 +184,7 @@ module.exports = function run(config) {
       externals: {
         nerv: 'self.Nerv',
       },
-      stats: 'minimal',
+      stats: 'normal',
     };
   };
 

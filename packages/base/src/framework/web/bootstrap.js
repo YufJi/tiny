@@ -1,4 +1,4 @@
-import Nerv, { render, unmountComponentAtNode } from '@/nerv';
+import Nerv, { hydrate, unmountComponentAtNode } from '@/nerv';
 import { debug } from '@/utils/log';
 import { noop } from '@/utils/types';
 import PageRegistry from '../PageRegistry';
@@ -25,7 +25,7 @@ export default function (config, bridge) {
         }
         const messageChannel = getMessageChannel(pageInfo, bridge);
 
-        render(<PageComponent
+        hydrate(<PageComponent
           pagePath={pagePath}
           container={container}
           messageChannel={messageChannel}

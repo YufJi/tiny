@@ -51,13 +51,14 @@ body {
 }
 
 .frame {
+  background-color: #fff;
   transform: translateX(100%) translateZ(0);
-  animation: frameEnter .3s ease-in both;
+  animation: frameEnter .25s ease-out both;
 }
 
 .frame.leave {
   transform: translateX(0%) translateZ(0);
-  animation: frameLeave .3s ease-in both;
+  animation: frameLeave .25s ease-out both;
 }
 
 @keyframes frameEnter {

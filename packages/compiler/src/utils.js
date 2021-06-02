@@ -109,8 +109,8 @@ function selectorTransformer(selectorString, { pluginId }) {
               }
               if (n.type === 'tag') {
                 const tag = n.value;
-                return cssSelectParser.className({
-                  value: `a-${tag}`,
+                return cssSelectParser.tag({
+                  value: `${elementPrefix}-${tag}`,
                 });
               }
               return n;

@@ -61,17 +61,6 @@ export default function Base(SuperClass) {
       this.dispatchEvent(e);
     }
 
-    parentCustomComponent() {
-      // find parent custom component
-      const cc = isInCustomComponent(this);
-
-      if (!cc) {
-        return null;
-      }
-
-      return cc._id;
-    }
-
     _deserializeValue(value, type) {
       if (type === Boolean) {
         return !!value;
