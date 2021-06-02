@@ -2,7 +2,7 @@ import '@polymer/polymer/lib/elements/dom-repeat';
 import '@polymer/polymer/lib/elements/dom-if';
 import '@polymer/polymer/lib/elements/dom-module';
 
-import './styles/index.css';
+import './styles/index.less';
 
 import './view';
 import './button';

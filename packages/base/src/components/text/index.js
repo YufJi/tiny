@@ -1,3 +1,6 @@
-import text from '@/text';
+import { createComponent } from '@/framework';
+import Text from './Text';
 
-export default text;
+export default createComponent({
+  name: 'text',
+})(Text);

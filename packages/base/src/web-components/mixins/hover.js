@@ -1,3 +1,7 @@
+import supportsPassive from '@/utils/supportsPassive';
+
+const PASSIVE_TOUCH = supportsPassive ? { passive: true } : undefined;
+
 export default function Hover(SuperClass) {
   return class extends SuperClass {
     static get properties() {

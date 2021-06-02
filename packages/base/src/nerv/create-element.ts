@@ -9,7 +9,7 @@ import h from './vdom/h';
 import FullComponent from './full-component';
 // import StatelessComponent from './stateless-component'
 import CurrentOwner from './current-owner';
-import SVGPropertyConfig from './vdom/svg-property-config';
+// import SVGPropertyConfig from './vdom/svg-property-config';
 import Component from './component';
 
 function transformPropsForRealTag(type: string, props: Props) {
@@ -20,11 +20,11 @@ function transformPropsForRealTag(type: string, props: Props) {
       newProps.value = props.value || props.defaultValue;
       continue;
     }
-    const svgPropName = SVGPropertyConfig.DOMAttributeNames[propName];
-    if (svgPropName && svgPropName !== propName) {
-      newProps[svgPropName] = propValue;
-      continue;
-    }
+    // const svgPropName = SVGPropertyConfig.DOMAttributeNames[propName];
+    // if (svgPropName && svgPropName !== propName) {
+    //   newProps[svgPropName] = propValue;
+    //   continue;
+    // }
     newProps[propName] = propValue;
   }
   return newProps;

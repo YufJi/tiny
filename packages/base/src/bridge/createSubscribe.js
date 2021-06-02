@@ -1,7 +1,6 @@
 import EventEmitter from 'eventemitter3';
 
-/** webview/service 相互监听事件前缀 */
-const CUSTOM_EVENT = 'custom_event_';
+import { CUSTOM_EVENT } from './const';
 
 export default function createSubscribe() {
   const customEmitter = new EventEmitter();

@@ -59,10 +59,11 @@ function checkImport(moduleName, suffix, config) {
 }
 
 function isUnHandleAttr(str) {
-  if (startsWith(str, 'data-') || startsWith(str, 'aria-') || startsWith(str, 'capture-')) {
-    return true;
-  }
-  return false;
+  return true;
+  // if (startsWith(str, 'data-') || startsWith(str, 'aria-') || startsWith(str, 'capture-')) {
+  //   return true;
+  // }
+  // return false;
 }
 
 function getRawJson(obj) {

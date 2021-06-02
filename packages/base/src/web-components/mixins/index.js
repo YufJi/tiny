@@ -15,5 +15,5 @@ export {
   Disabled,
   Group,
   Data,
-  TouchTrack
+  TouchTrack,
 };

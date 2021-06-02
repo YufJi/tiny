@@ -18,7 +18,7 @@
 
   </view>
 
-  <slider bindchange="sliderChange" step="5"/>
+  <slider bindchange="sliderChange" show-value="{{true}}" />
 
   <view class="progress-box">
     <progress percent="20" show-info active stroke-width="3"/>
@@ -74,12 +74,12 @@
           <text>幻灯片切换时长(ms)</text>
           <text class="info">{{duration}}</text>
         </view>
-        <slider bindchange="durationChange" value="{{duration}}" min="{{500}}" max="{{2000}}"/>
+        <slider bindchange="durationChange" value="{{duration}}" min="500" max="2000"/>
         <view class="page-section-title">
           <text>自动播放间隔时长(ms)</text>
           <text class="info">{{interval}}</text>
         </view>
-        <slider bindchange="intervalChange" value="{{interval}}" min="{{3000}}" max="{{10000}}"/>
+        <slider bindchange="intervalChange" value="{{interval}}" min="3000" max="10000"/>
       </view>
     </view>
   </view>

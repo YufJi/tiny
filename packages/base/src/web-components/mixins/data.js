@@ -23,7 +23,7 @@ export default function Data(superClass) {
         return true;
       }
 
-      return _superClass.prototype.hasBehavior.call(this, type);
+      return super.hasBehavior(type);
     }
   };
 }

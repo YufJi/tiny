@@ -73,7 +73,6 @@ export default function Base(SuperClass) {
     }
 
     _deserializeValue(value, type) {
-      console.log(4444, value, type);
       if (type === Boolean) {
         return !!value;
       }

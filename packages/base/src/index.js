@@ -1,19 +1,5 @@
 import './web-components';
 import bridge from '@/apis/';
-import {
-  Button,
-  CheckBox,
-  CheckBoxGroup,
-  Icon,
-  Image,
-  Input,
-  Label,
-  Radio,
-  RadioGroup,
-  ScrollView,
-  Text,
-  View,
-} from '@/components/';
 import Nerv from '@/nerv';
 
 import { debug } from '@/utils/log';
@@ -43,20 +29,6 @@ const __mpStartTime = Date.now();
 self.Nerv = Nerv;
 
 self.XMLRuntime = XMLRuntime;
-self.MPUI = {
-  button: Button,
-  checkbox: CheckBox,
-  'checkbox-group': CheckBoxGroup,
-  icon: Icon,
-  image: Image,
-  input: Input,
-  label: Label,
-  radio: Radio,
-  'radio-group': RadioGroup,
-  'scroll-view': ScrollView,
-  text: Text,
-  view: View,
-};
 
 self.MP = {
   bridge,

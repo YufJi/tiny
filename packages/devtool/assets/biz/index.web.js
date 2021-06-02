@@ -215,7 +215,7 @@ var $templates = {};
 function render(data) {
   return $createRoot([nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-button", {
     className: "add-button",
-    hoverClass: "none",
+    "hover-class": "none",
     bindtap: $getEventHandler(this, "onClickMe")
   }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-icon", {
     type: "success",
@@ -612,13 +612,13 @@ function render(data) {
 
   return $createRoot(nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-scroll-view", {
     className: "page-todos",
-    scrollY: "true"
+    "scroll-y": "true"
   }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
     className: "user"
   }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-image", {
     className: "avatar",
     src: $getLooseDataMember([data['user'], "avatar"]) || '../../assets/logo.png',
-    backgroundSize: "cover"
+    "background-size": "cover"
   }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
     className: "nickname"
   }, [$toString($getLooseDataMember([data['user'], "nickName"]) && $getLooseDataMember([data['user'], "nickName"]) + '\'s' || 'mp'), $toString(" Todo List")]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
@@ -642,14 +642,14 @@ function render(data) {
     }, $toString($getLooseDataMember([item, "text"])))]);
   }))), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-slider", {
     bindchange: $getEventHandler(this, "sliderChange"),
-    step: "5"
+    "show-value": true
   }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
     className: "progress-box"
   }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-progress", {
     percent: "20",
-    showInfo: true,
+    "show-info": true,
     active: true,
-    strokeWidth: "3"
+    "stroke-width": "3"
   })), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
     className: "section section_gap"
   }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
@@ -693,7 +693,7 @@ function render(data) {
   }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
     className: "page-section page-section-spacing swiper"
   }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-swiper", {
-    indicatorDots: data['indicatorDots'],
+    "indicator-dots": data['indicatorDots'],
     autoplay: data['autoplay'],
     interval: data['interval'],
     duration: data['duration'],
@@ -734,8 +734,8 @@ function render(data) {
   }, $toString(data['duration']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-slider", {
     bindchange: $getEventHandler(this, "durationChange"),
     value: data['duration'],
-    min: 500,
-    max: 2000
+    min: "500",
+    max: "2000"
   }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
     className: "page-section-title"
   }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-text", null, $toString("自动播放间隔时长(ms)")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-text", {
@@ -743,8 +743,8 @@ function render(data) {
   }, $toString(data['interval']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-slider", {
     bindchange: $getEventHandler(this, "intervalChange"),
     value: data['interval'],
-    min: 3000,
-    max: 10000
+    min: "3000",
+    max: "10000"
   })])]))]));
 }
 ;

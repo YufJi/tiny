@@ -1,8 +1,8 @@
 const NS = {
   ev: 'http://www.w3.org/2001/xml-events',
   xlink: 'http://www.w3.org/1999/xlink',
-  xml: 'http://www.w3.org/XML/1998/namespace'
-}
+  xml: 'http://www.w3.org/XML/1998/namespace',
+};
 
 const ATTRS = {
   accentHeight: 'accent-height',
@@ -245,8 +245,8 @@ const ATTRS = {
   y2: 0,
   yChannelSelector: 'yChannelSelector',
   z: 0,
-  zoomAndPan: 'zoomAndPan'
-}
+  zoomAndPan: 'zoomAndPan',
+};
 
 const SVGPropertyConfig = {
   Properties: {},
@@ -262,16 +262,16 @@ const SVGPropertyConfig = {
     'xml:base': NS.xml,
     'xml:id': NS.xml,
     'xml:lang': NS.xml,
-    'xml:space': NS.xml
+    'xml:space': NS.xml,
   },
-  DOMAttributeNames: {}
-}
+  DOMAttributeNames: {},
+};
 
 Object.keys(ATTRS).forEach((key) => {
-  SVGPropertyConfig.Properties[key] = 0
+  SVGPropertyConfig.Properties[key] = 0;
   if (ATTRS[key]) {
-    SVGPropertyConfig.DOMAttributeNames[key] = ATTRS[key]
+    SVGPropertyConfig.DOMAttributeNames[key] = ATTRS[key];
   }
-})
+});
 
-export default SVGPropertyConfig
+export default SVGPropertyConfig;

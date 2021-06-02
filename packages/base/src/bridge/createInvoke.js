@@ -34,17 +34,15 @@ export default function createInvoke(jsCore) {
     resolve(response);
   };
 
-  const invokeNative = (method, args) => {
+  const invokeNative = (method, params) => {
     resolveId += 1;
 
     const deferred = new Deferred();
     resolveMap.set(resolveId, deferred.resolve);
 
-    const params = JSON.stringify(args);
-
     let response = jsCore.call({
       event: method,
-      paramsString: params,
+      paramsString: JSON.stringify(params),
       callbackId: resolveId,
     });
 

@@ -118,7 +118,7 @@ export function insertElement(
   lastDom: Element,
 ) {
   if (isArray(element)) {
-    for (let i = 0; i < element.length; i++) {
+    for (let i = 0; i < element.length; i+=1) {
       const el = element[i];
       insertElement(el, parentNode, lastDom);
     }

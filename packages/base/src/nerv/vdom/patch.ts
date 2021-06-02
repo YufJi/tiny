@@ -686,16 +686,6 @@ export function patchProp(
       patchEvent(prop, lastValue, nextValue, domNode);
     } else if (prop === 'style') {
       patchStyle(lastValue, nextValue, domNode as HTMLElement);
-    } else if (
-      prop !== 'list'
-      && prop !== 'type'
-      && !isSvg
-      && prop in domNode
-    ) {
-      setProperty(domNode, prop, nextValue == null ? '' : nextValue);
-      if (nextValue == null || nextValue === false) {
-        domNode.removeAttribute(prop);
-      }
     } else if (isNullOrUndef(nextValue) || nextValue === false) {
       domNode.removeAttribute(prop);
     } else {
@@ -717,12 +707,6 @@ export function patchProp(
       }
     }
   }
-}
-
-export function setProperty(node, name, value) {
-  try {
-    node[name] = value;
-  } catch (e) {}
 }
 
 function patchProps(
