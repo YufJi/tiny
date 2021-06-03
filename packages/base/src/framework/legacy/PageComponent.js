@@ -66,7 +66,6 @@ export default createNervClass({
     this.pagePath = pagePath;
     this.pageType = 'RENDER';
     this.eventHandlers = {};
-    this.onShowReadyCallbacks = [];
     this.componentInstances = {};
     this.self = this;
     this.publicInstance = {};
@@ -132,10 +131,7 @@ export default createNervClass({
   onLoaded() {
     setTimeout(() => {
       debug('framework', `[RENDER] Page ${this.pagePath} onLoaded`);
-      while (this.onShowReadyCallbacks.length) {
-        const fn = this.onShowReadyCallbacks.shift();
-        fn();
-      }
+      EventHub.emit('pageLoaded');
 
       const e = { page: this };
       EventHub.emit('pageReady', e);
@@ -154,7 +150,7 @@ export default createNervClass({
     if (this.loaded) {
       fn();
     } else {
-      this.onShowReadyCallbacks.push(fn);
+      EventHub.on('pageLoaded', fn);
     }
   },
   checkScroll() {
