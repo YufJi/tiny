@@ -2,10 +2,10 @@ import Nerv, { createNervClass } from '@/nerv';
 import hoistNonReactStatics from 'hoist-non-react-statics';
 
 import objectKeys from '@/utils/objectKeys';
+import camelCase from '@/utils/camelCase';
 import { getCurrentPageImpl } from '../App';
 import resolvePageUrl from '../utils/resolvePageUrl';
 import $global from '../common/global';
-import camelCase from '../utils/camelCase';
 import Platform from '../Platform';
 import normalizeStyle from './normalizeStyle';
 import normalizeClassNameProps from './normalizeClassNameProps';

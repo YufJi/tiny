@@ -1,4 +1,4 @@
-import EventEmitter from 'eventemitter3';
+import EventEmitter from '@/utils/EventEmitter';
 
 import { CUSTOM_EVENT } from './const';
 
@@ -28,7 +28,7 @@ export default function createSubscribe() {
         }
       }
 
-      if (typeof data !== 'object') {
+      if (typeof params !== 'object') {
         params = {};
       }
 

@@ -1,10 +1,8 @@
 import { noop } from '@/utils/types';
 
-const F = Function;
-const E = eval;
-
 function danger(ret) {
-  if (ret === F || ret === E) {
+  // eslint-disable-next-line no-eval
+  if (ret === Function || ret === eval) {
     return true;
   }
   return false;

@@ -1,5 +1,5 @@
 import Nerv, { createNervClass } from '@/nerv';
-
+import { publish } from '@/bridge';
 import addEvents from '@/utils/addEvents';
 import {
   PendingKeyType,
@@ -13,6 +13,8 @@ import {
 import objectKeys from '@/utils/objectKeys';
 import { getOpFn } from '@/utils/setData';
 import { debug } from '@/utils/log';
+import { elementPrefix } from '@/utils/config';
+import { getNormalizedEvent } from '@/utils/addListenerToElement';
 import BasicEventMixin from '../mixins/BasicEventMixin';
 import MessageHandleMixin from '../mixins/MessageHandleMixin';
 import RefMixin from '../mixins/RefMixin';
@@ -21,7 +23,6 @@ import EventHub from '../EventHub';
 import $global from '../common/global';
 import { rpx2px } from '../utils/unit';
 import Platform from '../Platform';
-import Scene from './Scene';
 
 const styleSheetCaches = {};
 function getStyleSheet(pagePath) {
@@ -61,30 +62,42 @@ export default createNervClass({
     RefMixin,
   ],
   getInitialState() {
-    const { pagePath } = this.props;
+    const { id, publicInstance, customComponents, isRefresh, pagePath } = this.props;
 
+    this.setId(id);
+    this.publicInstance = publicInstance;
+    this.customComponents = customComponents;
     this.pagePath = pagePath;
     this.pageType = 'RENDER';
     this.eventHandlers = {};
     this.componentInstances = {};
     this.self = this;
-    this.publicInstance = {};
+
+    setCurrentPageImpl(this);
+
+    if (publicInstance.onReachBottom || publicInstance.onPageScroll) {
+      addEvents(window, {
+        scroll: this.checkScroll,
+      });
+    }
 
     return {
-      __InitialDataReady__: false,
+      ...(publicInstance.data || {}),
     };
   },
   componentDidMount() {
     this.insertStyle();
+    this.initMessageChannel();
 
     Object.assign(this, {
       bridge: $global.bridge,
       renderSeq: 1,
     });
 
-    setCurrentPageImpl(this);
+    const e = { page: this };
 
-    this.initMessageChannel();
+    EventHub.emit('pageLoad', e);
+    this.callRemote('self', 'load');
   },
   UNSAFE_componentWillUpdate() {
     this.renderSeq+=1;
@@ -106,29 +119,8 @@ export default createNervClass({
       headNode.appendChild(styleNode);
     }
   },
-  onInitDataReady(data) {
-    debug('framework', `[RENDER] Page ${this.pagePath} onInitDataReady: `, data);
-    const _this = this;
-    const { id, publicInstance, customComponents, isRefresh } = data;
-    this.publicInstance = publicInstance;
-    this.setId(id);
-    this.customComponents = customComponents;
-    const now = Date.now();
-    this.setState({
-      ...(publicInstance.data || {}),
-      __InitialDataReady__: true,
-    }, () => {
-      _this.logRenderTime(now);
-
-      if (publicInstance.onReachBottom || publicInstance.onPageScroll) {
-        addEvents(window, {
-          scroll: _this.checkScroll,
-        });
-      }
-    });
-  },
   /* load完成 准备ready */
-  onLoaded() {
+  onRenderPageLoad() {
     setTimeout(() => {
       debug('framework', `[RENDER] Page ${this.pagePath} onLoaded`);
       EventHub.emit('pageLoaded');
@@ -184,7 +176,17 @@ export default createNervClass({
     }
     if (!this.eventHandlers[name]) {
       this.eventHandlers[name] = function (e, ...args) {
-        _this.callRemote.apply( _this, ['self', 'onRenderEvent', name].concat(e, ...args));
+        let event = {};
+        if (e instanceof CustomEvent) {
+          event = getNormalizedEvent(e);
+        } else {
+          event = e;
+        }
+
+        publish('onRenderPageEvent', {
+          method: name,
+          args: [event, ...args],
+        });
       };
       const handle = this.eventHandlers[name];
       handle.handleName = name;
@@ -303,20 +305,10 @@ export default createNervClass({
     this.root = ref;
   },
   render() {
-    const { __InitialDataReady__, ...data } = this.state;
+    const { ...data } = this.state;
 
-    if (!__InitialDataReady__) {
-      return null;
-    }
-
-    return (
-      <Scene
-        pagePath={this.pagePath}
-        saveRoot={this.saveRoot}
-        __page={this}
-        __render={getRender(this.pagePath)}
-        data={data}
-      />
-    );
+    return Nerv.createElement(`${elementPrefix}-page`, {
+      ref: this.saveRoot,
+    }, getRender(this.pagePath).call(this, data));
   },
 });

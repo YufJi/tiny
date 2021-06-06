@@ -36,7 +36,7 @@ documentContainer.innerHTML = `
 document.head.appendChild(documentContainer);
 
 const DEFAULT_BACKGROUND_COLOR = '#EBEBEB';
-const DEFAULT_ACTIVE_COLOR = '#F85959';
+const DEFAULT_ACTIVE_COLOR = '#04BE02';
 const BACKWARDS = 'backwards';
 const FORWARDS = 'forwards';
 

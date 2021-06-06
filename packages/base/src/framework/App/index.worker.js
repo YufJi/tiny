@@ -125,6 +125,11 @@ AppImpl.prototype = {
       return page.getId() === id;
     });
   },
+  getPageByViewId(id) {
+    return this.getPageBy((page) => {
+      return page.getViewId() === id;
+    });
+  },
   getPageObject(url) {
     const queryIndex = url.indexOf('?');
     let queryString = '';

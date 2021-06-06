@@ -26,9 +26,9 @@ documentContainer.innerHTML = `<dom-module id="icon-style">
         box-sizing: border-box;
       }
 
-      .icon-success { color: #F95959; }
+      .icon-success { color: #09BB07; }
       .icon-success:before { content: "\\e613"; }
-      .icon-success_no_circle { color: #F95959;}
+      .icon-success_no_circle { color: #09BB07;}
       .icon-success_no_circle:before { content: "\\e610";}
       .icon-info { color: #CACACA; }
       .icon-info:before { content: "\\e60d"; }
@@ -36,7 +36,7 @@ documentContainer.innerHTML = `<dom-module id="icon-style">
       .icon-warn:before { content: "\\e614";}
       .icon-waiting { color: #50ABF9;}
       .icon-waiting:before { content: "\\e612";}
-      .icon-clear { color: #F95959;}
+      .icon-clear { color: #09BB07;}
       .icon-clear:before { content: "\\e615";}
       .icon-cancel { color: #222222;}
       .icon-cancel:before { content: "\\e611";}

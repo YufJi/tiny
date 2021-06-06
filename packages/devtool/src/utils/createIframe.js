@@ -19,7 +19,6 @@ function createIframe(options) {
         guid: id,
       },
     }));
-
     onload(el);
   };
   el.id = id;

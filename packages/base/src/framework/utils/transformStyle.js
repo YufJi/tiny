@@ -1,5 +1,5 @@
 import objectKeys from '@/utils/objectKeys';
-import camelCase from './camelCase';
+import camelCase from '@/utils/camelCase';
 import filterCssValue from './filterCssValue';
 import { ruleName, needNormalizeCssValue, ruleValue } from './ruleTransform';
 

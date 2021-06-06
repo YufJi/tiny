@@ -1,5 +1,4 @@
 /* eslint-disable default-case */
-import { getType } from '@/utils/types';
 import eventReg from '@/utils/eventReg';
 import supportsPassive from './supportsPassive';
 import { elementPrefix, UpperCasePerfix } from './config';
@@ -7,7 +6,12 @@ import { elementPrefix, UpperCasePerfix } from './config';
 const EVENT_BLACK_LIST= ['click'];
 const PRESS_DELAY = 350;
 const TAP_DISTANCE = 5;
-const TAP_BLACK_LIST = [`${UpperCasePerfix}-BUTTON`, `${UpperCasePerfix}-CHECKBOX`, `${UpperCasePerfix}-RADIO`, `${UpperCasePerfix}-MAP`];
+const TAP_BLACK_LIST = [
+  `${UpperCasePerfix}-BUTTON`,
+  `${UpperCasePerfix}-CHECKBOX`,
+  `${UpperCasePerfix}-RADIO`,
+  `${UpperCasePerfix}-MAP`,
+];
 
 export default function addListenerToElement(node, type, callback) {
   const matches = type.match(eventReg);
@@ -32,9 +36,9 @@ export default function addListenerToElement(node, type, callback) {
 
       node.addEventListener(`${elementPrefix}-tap`, (e) => {
         return callback.call(node, {
-          touches: e.detail.sourceEndEvent.changedTouches,
+          touches: createTouchList(e.detail.sourceEndEvent.changedTouches),
           // touchend没有touches，可以用changedTouches
-          changedTouches: e.detail.sourceEndEvent.changedTouches,
+          changedTouches: createTouchList(e.detail.sourceEndEvent.changedTouches),
           detail: {
             x: e.detail.x,
             y: e.detail.y,
@@ -80,7 +84,7 @@ export default function addListenerToElement(node, type, callback) {
           },
           configurable: true,
         });
-        return callback.call(node, e);
+        return callback.call(node, getNormalizedEvent(e));
       }, {
         capture,
       });
@@ -89,8 +93,8 @@ export default function addListenerToElement(node, type, callback) {
         node.addEventListener(`${elementPrefix}-touchmove`, (e) => {
           const { srcMoveEvent } = e.detail;
           return callback.call(node, {
-            touches: srcMoveEvent.touches,
-            changedTouches: srcMoveEvent.changedTouches,
+            touches: createTouchList(srcMoveEvent.touches),
+            changedTouches: createTouchList(srcMoveEvent.changedTouches),
             detail: {
               x: srcMoveEvent.pageX,
               y: srcMoveEvent.pageY,
@@ -129,7 +133,7 @@ export default function addListenerToElement(node, type, callback) {
 
       node.addEventListener(`${elementPrefix}-longpress`, (e) => {
         e.longpressFired();
-        callback(e);
+        callback.call(node, getNormalizedEvent(e));
       });
       return;
   }
@@ -254,4 +258,37 @@ export function removeListenerToElement(node, type, handler) {
   const eventType = matches[3];
 
   node.removeEventListener(eventType, handler, capture);
+}
+
+function createTouchList(touchList = []) {
+  const list = [].slice.call(touchList, 0);
+  return list.map((item) => {
+    return {
+      clientX: item.clientX,
+      clientY: item.clientY,
+      identifier: item.identifier,
+      pageX: item.pageX,
+      pageY: item.pageY,
+    };
+  });
+}
+
+/* 格式化event对象 */
+export function getNormalizedEvent(nativeEvent) {
+  const { timeStamp } = nativeEvent;
+
+  return {
+    timeStamp,
+    currentTarget: {
+      id: nativeEvent.currentTarget.id,
+      dataset: nativeEvent.currentTarget.dataset,
+    },
+    target: {
+      id: nativeEvent.target.id,
+      dataset: nativeEvent.target.dataset,
+    },
+    detail: nativeEvent.detail,
+    touches: createTouchList(nativeEvent.touches),
+    changedTouches: createTouchList(nativeEvent.changedTouches),
+  };
 }

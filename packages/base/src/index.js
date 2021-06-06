@@ -1,3 +1,5 @@
+import { invokeHandler, subscribeHandler } from '@/bridge';
+
 import './web-components';
 import bridge from '@/apis/';
 import Nerv from '@/nerv';
@@ -25,6 +27,14 @@ import {
 import XMLRuntime from './xml-runtime';
 
 const __mpStartTime = Date.now();
+
+// 全局注册对象, 提供给宿主调用
+self.JSBridgeHandler = {
+  /* 调用的回调 */
+  invokeHandler,
+  /* 监听的回调 */
+  subscribeHandler,
+};
 
 self.Nerv = Nerv;
 

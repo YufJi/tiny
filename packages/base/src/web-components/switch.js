@@ -66,8 +66,8 @@ documentContainer.innerHTML = `
           transition: transform .3s, -webkit-transform .3s;
         }
         :host .switch-input.switch-input-checked {
-          border-color: #F85959;
-          background-color: #F85959;
+          border-color: #04BE02;
+          background-color: #04BE02;
         }
         :host .switch-input.switch-input-checked .before {
           -webkit-transform: scale(0);
@@ -130,7 +130,7 @@ class Switch extends Data(Disabled(LabelTarget(Base(PolymerElement)))) {
       },
       color: {
         type: String,
-        value: '#F85959',
+        value: '#04BE02',
       },
       checkedColor: {
         type: String,

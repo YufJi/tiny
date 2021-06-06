@@ -142,6 +142,54 @@ module.exports["default"] = module.exports, module.exports.__esModule = true;
 
 /***/ }),
 
+/***/ "./node_modules/@babel/runtime/helpers/asyncToGenerator.js":
+/*!*****************************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/asyncToGenerator.js ***!
+  \*****************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
+  try {
+    var info = gen[key](arg);
+    var value = info.value;
+  } catch (error) {
+    reject(error);
+    return;
+  }
+
+  if (info.done) {
+    resolve(value);
+  } else {
+    Promise.resolve(value).then(_next, _throw);
+  }
+}
+
+function _asyncToGenerator(fn) {
+  return function () {
+    var self = this,
+        args = arguments;
+    return new Promise(function (resolve, reject) {
+      var gen = fn.apply(self, args);
+
+      function _next(value) {
+        asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
+      }
+
+      function _throw(err) {
+        asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err);
+      }
+
+      _next(undefined);
+    });
+  };
+}
+
+module.exports = _asyncToGenerator;
+module.exports["default"] = module.exports, module.exports.__esModule = true;
+
+/***/ }),
+
 /***/ "./node_modules/@babel/runtime/helpers/classCallCheck.js":
 /*!***************************************************************!*\
   !*** ./node_modules/@babel/runtime/helpers/classCallCheck.js ***!
@@ -468,6 +516,17 @@ module.exports["default"] = module.exports, module.exports.__esModule = true;
 
 /***/ }),
 
+/***/ "./node_modules/@babel/runtime/regenerator/index.js":
+/*!**********************************************************!*\
+  !*** ./node_modules/@babel/runtime/regenerator/index.js ***!
+  \**********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = __webpack_require__(/*! regenerator-runtime */ "./node_modules/regenerator-runtime/runtime.js");
+
+/***/ }),
+
 /***/ "./node_modules/call-bind/callBound.js":
 /*!*********************************************!*\
   !*** ./node_modules/call-bind/callBound.js ***!
@@ -555,6 +614,364 @@ if ($defineProperty) {
   });
 } else {
   module.exports.apply = applyBind;
+}
+
+/***/ }),
+
+/***/ "./node_modules/eventemitter3/index.js":
+/*!*********************************************!*\
+  !*** ./node_modules/eventemitter3/index.js ***!
+  \*********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var has = Object.prototype.hasOwnProperty,
+    prefix = '~';
+/**
+ * Constructor to create a storage for our `EE` objects.
+ * An `Events` instance is a plain object whose properties are event names.
+ *
+ * @constructor
+ * @private
+ */
+
+function Events() {} //
+// We try to not inherit from `Object.prototype`. In some engines creating an
+// instance in this way is faster than calling `Object.create(null)` directly.
+// If `Object.create(null)` is not supported we prefix the event names with a
+// character to make sure that the built-in object properties are not
+// overridden or used as an attack vector.
+//
+
+
+if (Object.create) {
+  Events.prototype = Object.create(null); //
+  // This hack is needed because the `__proto__` property is still inherited in
+  // some old browsers like Android 4, iPhone 5.1, Opera 11 and Safari 5.
+  //
+
+  if (!new Events().__proto__) prefix = false;
+}
+/**
+ * Representation of a single event listener.
+ *
+ * @param {Function} fn The listener function.
+ * @param {*} context The context to invoke the listener with.
+ * @param {Boolean} [once=false] Specify if the listener is a one-time listener.
+ * @constructor
+ * @private
+ */
+
+
+function EE(fn, context, once) {
+  this.fn = fn;
+  this.context = context;
+  this.once = once || false;
+}
+/**
+ * Add a listener for a given event.
+ *
+ * @param {EventEmitter} emitter Reference to the `EventEmitter` instance.
+ * @param {(String|Symbol)} event The event name.
+ * @param {Function} fn The listener function.
+ * @param {*} context The context to invoke the listener with.
+ * @param {Boolean} once Specify if the listener is a one-time listener.
+ * @returns {EventEmitter}
+ * @private
+ */
+
+
+function addListener(emitter, event, fn, context, once) {
+  if (typeof fn !== 'function') {
+    throw new TypeError('The listener must be a function');
+  }
+
+  var listener = new EE(fn, context || emitter, once),
+      evt = prefix ? prefix + event : event;
+  if (!emitter._events[evt]) emitter._events[evt] = listener, emitter._eventsCount++;else if (!emitter._events[evt].fn) emitter._events[evt].push(listener);else emitter._events[evt] = [emitter._events[evt], listener];
+  return emitter;
+}
+/**
+ * Clear event by name.
+ *
+ * @param {EventEmitter} emitter Reference to the `EventEmitter` instance.
+ * @param {(String|Symbol)} evt The Event name.
+ * @private
+ */
+
+
+function clearEvent(emitter, evt) {
+  if (--emitter._eventsCount === 0) emitter._events = new Events();else delete emitter._events[evt];
+}
+/**
+ * Minimal `EventEmitter` interface that is molded against the Node.js
+ * `EventEmitter` interface.
+ *
+ * @constructor
+ * @public
+ */
+
+
+function EventEmitter() {
+  this._events = new Events();
+  this._eventsCount = 0;
+}
+/**
+ * Return an array listing the events for which the emitter has registered
+ * listeners.
+ *
+ * @returns {Array}
+ * @public
+ */
+
+
+EventEmitter.prototype.eventNames = function eventNames() {
+  var names = [],
+      events,
+      name;
+  if (this._eventsCount === 0) return names;
+
+  for (name in events = this._events) {
+    if (has.call(events, name)) names.push(prefix ? name.slice(1) : name);
+  }
+
+  if (Object.getOwnPropertySymbols) {
+    return names.concat(Object.getOwnPropertySymbols(events));
+  }
+
+  return names;
+};
+/**
+ * Return the listeners registered for a given event.
+ *
+ * @param {(String|Symbol)} event The event name.
+ * @returns {Array} The registered listeners.
+ * @public
+ */
+
+
+EventEmitter.prototype.listeners = function listeners(event) {
+  var evt = prefix ? prefix + event : event,
+      handlers = this._events[evt];
+  if (!handlers) return [];
+  if (handlers.fn) return [handlers.fn];
+
+  for (var i = 0, l = handlers.length, ee = new Array(l); i < l; i++) {
+    ee[i] = handlers[i].fn;
+  }
+
+  return ee;
+};
+/**
+ * Return the number of listeners listening to a given event.
+ *
+ * @param {(String|Symbol)} event The event name.
+ * @returns {Number} The number of listeners.
+ * @public
+ */
+
+
+EventEmitter.prototype.listenerCount = function listenerCount(event) {
+  var evt = prefix ? prefix + event : event,
+      listeners = this._events[evt];
+  if (!listeners) return 0;
+  if (listeners.fn) return 1;
+  return listeners.length;
+};
+/**
+ * Calls each of the listeners registered for a given event.
+ *
+ * @param {(String|Symbol)} event The event name.
+ * @returns {Boolean} `true` if the event had listeners, else `false`.
+ * @public
+ */
+
+
+EventEmitter.prototype.emit = function emit(event, a1, a2, a3, a4, a5) {
+  var evt = prefix ? prefix + event : event;
+  if (!this._events[evt]) return false;
+  var listeners = this._events[evt],
+      len = arguments.length,
+      args,
+      i;
+
+  if (listeners.fn) {
+    if (listeners.once) this.removeListener(event, listeners.fn, undefined, true);
+
+    switch (len) {
+      case 1:
+        return listeners.fn.call(listeners.context), true;
+
+      case 2:
+        return listeners.fn.call(listeners.context, a1), true;
+
+      case 3:
+        return listeners.fn.call(listeners.context, a1, a2), true;
+
+      case 4:
+        return listeners.fn.call(listeners.context, a1, a2, a3), true;
+
+      case 5:
+        return listeners.fn.call(listeners.context, a1, a2, a3, a4), true;
+
+      case 6:
+        return listeners.fn.call(listeners.context, a1, a2, a3, a4, a5), true;
+    }
+
+    for (i = 1, args = new Array(len - 1); i < len; i++) {
+      args[i - 1] = arguments[i];
+    }
+
+    listeners.fn.apply(listeners.context, args);
+  } else {
+    var length = listeners.length,
+        j;
+
+    for (i = 0; i < length; i++) {
+      if (listeners[i].once) this.removeListener(event, listeners[i].fn, undefined, true);
+
+      switch (len) {
+        case 1:
+          listeners[i].fn.call(listeners[i].context);
+          break;
+
+        case 2:
+          listeners[i].fn.call(listeners[i].context, a1);
+          break;
+
+        case 3:
+          listeners[i].fn.call(listeners[i].context, a1, a2);
+          break;
+
+        case 4:
+          listeners[i].fn.call(listeners[i].context, a1, a2, a3);
+          break;
+
+        default:
+          if (!args) for (j = 1, args = new Array(len - 1); j < len; j++) {
+            args[j - 1] = arguments[j];
+          }
+          listeners[i].fn.apply(listeners[i].context, args);
+      }
+    }
+  }
+
+  return true;
+};
+/**
+ * Add a listener for a given event.
+ *
+ * @param {(String|Symbol)} event The event name.
+ * @param {Function} fn The listener function.
+ * @param {*} [context=this] The context to invoke the listener with.
+ * @returns {EventEmitter} `this`.
+ * @public
+ */
+
+
+EventEmitter.prototype.on = function on(event, fn, context) {
+  return addListener(this, event, fn, context, false);
+};
+/**
+ * Add a one-time listener for a given event.
+ *
+ * @param {(String|Symbol)} event The event name.
+ * @param {Function} fn The listener function.
+ * @param {*} [context=this] The context to invoke the listener with.
+ * @returns {EventEmitter} `this`.
+ * @public
+ */
+
+
+EventEmitter.prototype.once = function once(event, fn, context) {
+  return addListener(this, event, fn, context, true);
+};
+/**
+ * Remove the listeners of a given event.
+ *
+ * @param {(String|Symbol)} event The event name.
+ * @param {Function} fn Only remove the listeners that match this function.
+ * @param {*} context Only remove the listeners that have this context.
+ * @param {Boolean} once Only remove one-time listeners.
+ * @returns {EventEmitter} `this`.
+ * @public
+ */
+
+
+EventEmitter.prototype.removeListener = function removeListener(event, fn, context, once) {
+  var evt = prefix ? prefix + event : event;
+  if (!this._events[evt]) return this;
+
+  if (!fn) {
+    clearEvent(this, evt);
+    return this;
+  }
+
+  var listeners = this._events[evt];
+
+  if (listeners.fn) {
+    if (listeners.fn === fn && (!once || listeners.once) && (!context || listeners.context === context)) {
+      clearEvent(this, evt);
+    }
+  } else {
+    for (var i = 0, events = [], length = listeners.length; i < length; i++) {
+      if (listeners[i].fn !== fn || once && !listeners[i].once || context && listeners[i].context !== context) {
+        events.push(listeners[i]);
+      }
+    } //
+    // Reset the array, or remove it completely if we have no more listeners.
+    //
+
+
+    if (events.length) this._events[evt] = events.length === 1 ? events[0] : events;else clearEvent(this, evt);
+  }
+
+  return this;
+};
+/**
+ * Remove all listeners, or those of the specified event.
+ *
+ * @param {(String|Symbol)} [event] The event name.
+ * @returns {EventEmitter} `this`.
+ * @public
+ */
+
+
+EventEmitter.prototype.removeAllListeners = function removeAllListeners(event) {
+  var evt;
+
+  if (event) {
+    evt = prefix ? prefix + event : event;
+    if (this._events[evt]) clearEvent(this, evt);
+  } else {
+    this._events = new Events();
+    this._eventsCount = 0;
+  }
+
+  return this;
+}; //
+// Alias methods names because people roll like that.
+//
+
+
+EventEmitter.prototype.off = EventEmitter.prototype.removeListener;
+EventEmitter.prototype.addListener = EventEmitter.prototype.on; //
+// Expose the prefix.
+//
+
+EventEmitter.prefixed = prefix; //
+// Allow `EventEmitter` to be imported as module namespace.
+//
+
+EventEmitter.EventEmitter = EventEmitter; //
+// Expose the module.
+//
+
+if (true) {
+  module.exports = EventEmitter;
 }
 
 /***/ }),
@@ -7795,6 +8212,738 @@ module.exports = {
 
 /***/ }),
 
+/***/ "./node_modules/regenerator-runtime/runtime.js":
+/*!*****************************************************!*\
+  !*** ./node_modules/regenerator-runtime/runtime.js ***!
+  \*****************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+var runtime = function (exports) {
+  "use strict";
+
+  var Op = Object.prototype;
+  var hasOwn = Op.hasOwnProperty;
+  var undefined; // More compressible than void 0.
+
+  var $Symbol = typeof Symbol === "function" ? Symbol : {};
+  var iteratorSymbol = $Symbol.iterator || "@@iterator";
+  var asyncIteratorSymbol = $Symbol.asyncIterator || "@@asyncIterator";
+  var toStringTagSymbol = $Symbol.toStringTag || "@@toStringTag";
+
+  function define(obj, key, value) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+    return obj[key];
+  }
+
+  try {
+    // IE 8 has a broken Object.defineProperty that only works on DOM objects.
+    define({}, "");
+  } catch (err) {
+    define = function (obj, key, value) {
+      return obj[key] = value;
+    };
+  }
+
+  function wrap(innerFn, outerFn, self, tryLocsList) {
+    // If outerFn provided and outerFn.prototype is a Generator, then outerFn.prototype instanceof Generator.
+    var protoGenerator = outerFn && outerFn.prototype instanceof Generator ? outerFn : Generator;
+    var generator = Object.create(protoGenerator.prototype);
+    var context = new Context(tryLocsList || []); // The ._invoke method unifies the implementations of the .next,
+    // .throw, and .return methods.
+
+    generator._invoke = makeInvokeMethod(innerFn, self, context);
+    return generator;
+  }
+
+  exports.wrap = wrap; // Try/catch helper to minimize deoptimizations. Returns a completion
+  // record like context.tryEntries[i].completion. This interface could
+  // have been (and was previously) designed to take a closure to be
+  // invoked without arguments, but in all the cases we care about we
+  // already have an existing method we want to call, so there's no need
+  // to create a new function object. We can even get away with assuming
+  // the method takes exactly one argument, since that happens to be true
+  // in every case, so we don't have to touch the arguments object. The
+  // only additional allocation required is the completion record, which
+  // has a stable shape and so hopefully should be cheap to allocate.
+
+  function tryCatch(fn, obj, arg) {
+    try {
+      return {
+        type: "normal",
+        arg: fn.call(obj, arg)
+      };
+    } catch (err) {
+      return {
+        type: "throw",
+        arg: err
+      };
+    }
+  }
+
+  var GenStateSuspendedStart = "suspendedStart";
+  var GenStateSuspendedYield = "suspendedYield";
+  var GenStateExecuting = "executing";
+  var GenStateCompleted = "completed"; // Returning this object from the innerFn has the same effect as
+  // breaking out of the dispatch switch statement.
+
+  var ContinueSentinel = {}; // Dummy constructor functions that we use as the .constructor and
+  // .constructor.prototype properties for functions that return Generator
+  // objects. For full spec compliance, you may wish to configure your
+  // minifier not to mangle the names of these two functions.
+
+  function Generator() {}
+
+  function GeneratorFunction() {}
+
+  function GeneratorFunctionPrototype() {} // This is a polyfill for %IteratorPrototype% for environments that
+  // don't natively support it.
+
+
+  var IteratorPrototype = {};
+
+  IteratorPrototype[iteratorSymbol] = function () {
+    return this;
+  };
+
+  var getProto = Object.getPrototypeOf;
+  var NativeIteratorPrototype = getProto && getProto(getProto(values([])));
+
+  if (NativeIteratorPrototype && NativeIteratorPrototype !== Op && hasOwn.call(NativeIteratorPrototype, iteratorSymbol)) {
+    // This environment has a native %IteratorPrototype%; use it instead
+    // of the polyfill.
+    IteratorPrototype = NativeIteratorPrototype;
+  }
+
+  var Gp = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(IteratorPrototype);
+  GeneratorFunction.prototype = Gp.constructor = GeneratorFunctionPrototype;
+  GeneratorFunctionPrototype.constructor = GeneratorFunction;
+  GeneratorFunction.displayName = define(GeneratorFunctionPrototype, toStringTagSymbol, "GeneratorFunction"); // Helper for defining the .next, .throw, and .return methods of the
+  // Iterator interface in terms of a single ._invoke method.
+
+  function defineIteratorMethods(prototype) {
+    ["next", "throw", "return"].forEach(function (method) {
+      define(prototype, method, function (arg) {
+        return this._invoke(method, arg);
+      });
+    });
+  }
+
+  exports.isGeneratorFunction = function (genFun) {
+    var ctor = typeof genFun === "function" && genFun.constructor;
+    return ctor ? ctor === GeneratorFunction || // For the native GeneratorFunction constructor, the best we can
+    // do is to check its .name property.
+    (ctor.displayName || ctor.name) === "GeneratorFunction" : false;
+  };
+
+  exports.mark = function (genFun) {
+    if (Object.setPrototypeOf) {
+      Object.setPrototypeOf(genFun, GeneratorFunctionPrototype);
+    } else {
+      genFun.__proto__ = GeneratorFunctionPrototype;
+      define(genFun, toStringTagSymbol, "GeneratorFunction");
+    }
+
+    genFun.prototype = Object.create(Gp);
+    return genFun;
+  }; // Within the body of any async function, `await x` is transformed to
+  // `yield regeneratorRuntime.awrap(x)`, so that the runtime can test
+  // `hasOwn.call(value, "__await")` to determine if the yielded value is
+  // meant to be awaited.
+
+
+  exports.awrap = function (arg) {
+    return {
+      __await: arg
+    };
+  };
+
+  function AsyncIterator(generator, PromiseImpl) {
+    function invoke(method, arg, resolve, reject) {
+      var record = tryCatch(generator[method], generator, arg);
+
+      if (record.type === "throw") {
+        reject(record.arg);
+      } else {
+        var result = record.arg;
+        var value = result.value;
+
+        if (value && typeof value === "object" && hasOwn.call(value, "__await")) {
+          return PromiseImpl.resolve(value.__await).then(function (value) {
+            invoke("next", value, resolve, reject);
+          }, function (err) {
+            invoke("throw", err, resolve, reject);
+          });
+        }
+
+        return PromiseImpl.resolve(value).then(function (unwrapped) {
+          // When a yielded Promise is resolved, its final value becomes
+          // the .value of the Promise<{value,done}> result for the
+          // current iteration.
+          result.value = unwrapped;
+          resolve(result);
+        }, function (error) {
+          // If a rejected Promise was yielded, throw the rejection back
+          // into the async generator function so it can be handled there.
+          return invoke("throw", error, resolve, reject);
+        });
+      }
+    }
+
+    var previousPromise;
+
+    function enqueue(method, arg) {
+      function callInvokeWithMethodAndArg() {
+        return new PromiseImpl(function (resolve, reject) {
+          invoke(method, arg, resolve, reject);
+        });
+      }
+
+      return previousPromise = // If enqueue has been called before, then we want to wait until
+      // all previous Promises have been resolved before calling invoke,
+      // so that results are always delivered in the correct order. If
+      // enqueue has not been called before, then it is important to
+      // call invoke immediately, without waiting on a callback to fire,
+      // so that the async generator function has the opportunity to do
+      // any necessary setup in a predictable way. This predictability
+      // is why the Promise constructor synchronously invokes its
+      // executor callback, and why async functions synchronously
+      // execute code before the first await. Since we implement simple
+      // async functions in terms of async generators, it is especially
+      // important to get this right, even though it requires care.
+      previousPromise ? previousPromise.then(callInvokeWithMethodAndArg, // Avoid propagating failures to Promises returned by later
+      // invocations of the iterator.
+      callInvokeWithMethodAndArg) : callInvokeWithMethodAndArg();
+    } // Define the unified helper method that is used to implement .next,
+    // .throw, and .return (see defineIteratorMethods).
+
+
+    this._invoke = enqueue;
+  }
+
+  defineIteratorMethods(AsyncIterator.prototype);
+
+  AsyncIterator.prototype[asyncIteratorSymbol] = function () {
+    return this;
+  };
+
+  exports.AsyncIterator = AsyncIterator; // Note that simple async functions are implemented on top of
+  // AsyncIterator objects; they just return a Promise for the value of
+  // the final result produced by the iterator.
+
+  exports.async = function (innerFn, outerFn, self, tryLocsList, PromiseImpl) {
+    if (PromiseImpl === void 0) PromiseImpl = Promise;
+    var iter = new AsyncIterator(wrap(innerFn, outerFn, self, tryLocsList), PromiseImpl);
+    return exports.isGeneratorFunction(outerFn) ? iter // If outerFn is a generator, return the full iterator.
+    : iter.next().then(function (result) {
+      return result.done ? result.value : iter.next();
+    });
+  };
+
+  function makeInvokeMethod(innerFn, self, context) {
+    var state = GenStateSuspendedStart;
+    return function invoke(method, arg) {
+      if (state === GenStateExecuting) {
+        throw new Error("Generator is already running");
+      }
+
+      if (state === GenStateCompleted) {
+        if (method === "throw") {
+          throw arg;
+        } // Be forgiving, per 25.3.3.3.3 of the spec:
+        // https://people.mozilla.org/~jorendorff/es6-draft.html#sec-generatorresume
+
+
+        return doneResult();
+      }
+
+      context.method = method;
+      context.arg = arg;
+
+      while (true) {
+        var delegate = context.delegate;
+
+        if (delegate) {
+          var delegateResult = maybeInvokeDelegate(delegate, context);
+
+          if (delegateResult) {
+            if (delegateResult === ContinueSentinel) continue;
+            return delegateResult;
+          }
+        }
+
+        if (context.method === "next") {
+          // Setting context._sent for legacy support of Babel's
+          // function.sent implementation.
+          context.sent = context._sent = context.arg;
+        } else if (context.method === "throw") {
+          if (state === GenStateSuspendedStart) {
+            state = GenStateCompleted;
+            throw context.arg;
+          }
+
+          context.dispatchException(context.arg);
+        } else if (context.method === "return") {
+          context.abrupt("return", context.arg);
+        }
+
+        state = GenStateExecuting;
+        var record = tryCatch(innerFn, self, context);
+
+        if (record.type === "normal") {
+          // If an exception is thrown from innerFn, we leave state ===
+          // GenStateExecuting and loop back for another invocation.
+          state = context.done ? GenStateCompleted : GenStateSuspendedYield;
+
+          if (record.arg === ContinueSentinel) {
+            continue;
+          }
+
+          return {
+            value: record.arg,
+            done: context.done
+          };
+        } else if (record.type === "throw") {
+          state = GenStateCompleted; // Dispatch the exception by looping back around to the
+          // context.dispatchException(context.arg) call above.
+
+          context.method = "throw";
+          context.arg = record.arg;
+        }
+      }
+    };
+  } // Call delegate.iterator[context.method](context.arg) and handle the
+  // result, either by returning a { value, done } result from the
+  // delegate iterator, or by modifying context.method and context.arg,
+  // setting context.delegate to null, and returning the ContinueSentinel.
+
+
+  function maybeInvokeDelegate(delegate, context) {
+    var method = delegate.iterator[context.method];
+
+    if (method === undefined) {
+      // A .throw or .return when the delegate iterator has no .throw
+      // method always terminates the yield* loop.
+      context.delegate = null;
+
+      if (context.method === "throw") {
+        // Note: ["return"] must be used for ES3 parsing compatibility.
+        if (delegate.iterator["return"]) {
+          // If the delegate iterator has a return method, give it a
+          // chance to clean up.
+          context.method = "return";
+          context.arg = undefined;
+          maybeInvokeDelegate(delegate, context);
+
+          if (context.method === "throw") {
+            // If maybeInvokeDelegate(context) changed context.method from
+            // "return" to "throw", let that override the TypeError below.
+            return ContinueSentinel;
+          }
+        }
+
+        context.method = "throw";
+        context.arg = new TypeError("The iterator does not provide a 'throw' method");
+      }
+
+      return ContinueSentinel;
+    }
+
+    var record = tryCatch(method, delegate.iterator, context.arg);
+
+    if (record.type === "throw") {
+      context.method = "throw";
+      context.arg = record.arg;
+      context.delegate = null;
+      return ContinueSentinel;
+    }
+
+    var info = record.arg;
+
+    if (!info) {
+      context.method = "throw";
+      context.arg = new TypeError("iterator result is not an object");
+      context.delegate = null;
+      return ContinueSentinel;
+    }
+
+    if (info.done) {
+      // Assign the result of the finished delegate to the temporary
+      // variable specified by delegate.resultName (see delegateYield).
+      context[delegate.resultName] = info.value; // Resume execution at the desired location (see delegateYield).
+
+      context.next = delegate.nextLoc; // If context.method was "throw" but the delegate handled the
+      // exception, let the outer generator proceed normally. If
+      // context.method was "next", forget context.arg since it has been
+      // "consumed" by the delegate iterator. If context.method was
+      // "return", allow the original .return call to continue in the
+      // outer generator.
+
+      if (context.method !== "return") {
+        context.method = "next";
+        context.arg = undefined;
+      }
+    } else {
+      // Re-yield the result returned by the delegate method.
+      return info;
+    } // The delegate iterator is finished, so forget it and continue with
+    // the outer generator.
+
+
+    context.delegate = null;
+    return ContinueSentinel;
+  } // Define Generator.prototype.{next,throw,return} in terms of the
+  // unified ._invoke helper method.
+
+
+  defineIteratorMethods(Gp);
+  define(Gp, toStringTagSymbol, "Generator"); // A Generator should always return itself as the iterator object when the
+  // @@iterator function is called on it. Some browsers' implementations of the
+  // iterator prototype chain incorrectly implement this, causing the Generator
+  // object to not be returned from this call. This ensures that doesn't happen.
+  // See https://github.com/facebook/regenerator/issues/274 for more details.
+
+  Gp[iteratorSymbol] = function () {
+    return this;
+  };
+
+  Gp.toString = function () {
+    return "[object Generator]";
+  };
+
+  function pushTryEntry(locs) {
+    var entry = {
+      tryLoc: locs[0]
+    };
+
+    if (1 in locs) {
+      entry.catchLoc = locs[1];
+    }
+
+    if (2 in locs) {
+      entry.finallyLoc = locs[2];
+      entry.afterLoc = locs[3];
+    }
+
+    this.tryEntries.push(entry);
+  }
+
+  function resetTryEntry(entry) {
+    var record = entry.completion || {};
+    record.type = "normal";
+    delete record.arg;
+    entry.completion = record;
+  }
+
+  function Context(tryLocsList) {
+    // The root entry object (effectively a try statement without a catch
+    // or a finally block) gives us a place to store values thrown from
+    // locations where there is no enclosing try statement.
+    this.tryEntries = [{
+      tryLoc: "root"
+    }];
+    tryLocsList.forEach(pushTryEntry, this);
+    this.reset(true);
+  }
+
+  exports.keys = function (object) {
+    var keys = [];
+
+    for (var key in object) {
+      keys.push(key);
+    }
+
+    keys.reverse(); // Rather than returning an object with a next method, we keep
+    // things simple and return the next function itself.
+
+    return function next() {
+      while (keys.length) {
+        var key = keys.pop();
+
+        if (key in object) {
+          next.value = key;
+          next.done = false;
+          return next;
+        }
+      } // To avoid creating an additional object, we just hang the .value
+      // and .done properties off the next function object itself. This
+      // also ensures that the minifier will not anonymize the function.
+
+
+      next.done = true;
+      return next;
+    };
+  };
+
+  function values(iterable) {
+    if (iterable) {
+      var iteratorMethod = iterable[iteratorSymbol];
+
+      if (iteratorMethod) {
+        return iteratorMethod.call(iterable);
+      }
+
+      if (typeof iterable.next === "function") {
+        return iterable;
+      }
+
+      if (!isNaN(iterable.length)) {
+        var i = -1,
+            next = function next() {
+          while (++i < iterable.length) {
+            if (hasOwn.call(iterable, i)) {
+              next.value = iterable[i];
+              next.done = false;
+              return next;
+            }
+          }
+
+          next.value = undefined;
+          next.done = true;
+          return next;
+        };
+
+        return next.next = next;
+      }
+    } // Return an iterator with no values.
+
+
+    return {
+      next: doneResult
+    };
+  }
+
+  exports.values = values;
+
+  function doneResult() {
+    return {
+      value: undefined,
+      done: true
+    };
+  }
+
+  Context.prototype = {
+    constructor: Context,
+    reset: function (skipTempReset) {
+      this.prev = 0;
+      this.next = 0; // Resetting context._sent for legacy support of Babel's
+      // function.sent implementation.
+
+      this.sent = this._sent = undefined;
+      this.done = false;
+      this.delegate = null;
+      this.method = "next";
+      this.arg = undefined;
+      this.tryEntries.forEach(resetTryEntry);
+
+      if (!skipTempReset) {
+        for (var name in this) {
+          // Not sure about the optimal order of these conditions:
+          if (name.charAt(0) === "t" && hasOwn.call(this, name) && !isNaN(+name.slice(1))) {
+            this[name] = undefined;
+          }
+        }
+      }
+    },
+    stop: function () {
+      this.done = true;
+      var rootEntry = this.tryEntries[0];
+      var rootRecord = rootEntry.completion;
+
+      if (rootRecord.type === "throw") {
+        throw rootRecord.arg;
+      }
+
+      return this.rval;
+    },
+    dispatchException: function (exception) {
+      if (this.done) {
+        throw exception;
+      }
+
+      var context = this;
+
+      function handle(loc, caught) {
+        record.type = "throw";
+        record.arg = exception;
+        context.next = loc;
+
+        if (caught) {
+          // If the dispatched exception was caught by a catch block,
+          // then let that catch block handle the exception normally.
+          context.method = "next";
+          context.arg = undefined;
+        }
+
+        return !!caught;
+      }
+
+      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
+        var entry = this.tryEntries[i];
+        var record = entry.completion;
+
+        if (entry.tryLoc === "root") {
+          // Exception thrown outside of any try block that could handle
+          // it, so set the completion value of the entire function to
+          // throw the exception.
+          return handle("end");
+        }
+
+        if (entry.tryLoc <= this.prev) {
+          var hasCatch = hasOwn.call(entry, "catchLoc");
+          var hasFinally = hasOwn.call(entry, "finallyLoc");
+
+          if (hasCatch && hasFinally) {
+            if (this.prev < entry.catchLoc) {
+              return handle(entry.catchLoc, true);
+            } else if (this.prev < entry.finallyLoc) {
+              return handle(entry.finallyLoc);
+            }
+          } else if (hasCatch) {
+            if (this.prev < entry.catchLoc) {
+              return handle(entry.catchLoc, true);
+            }
+          } else if (hasFinally) {
+            if (this.prev < entry.finallyLoc) {
+              return handle(entry.finallyLoc);
+            }
+          } else {
+            throw new Error("try statement without catch or finally");
+          }
+        }
+      }
+    },
+    abrupt: function (type, arg) {
+      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
+        var entry = this.tryEntries[i];
+
+        if (entry.tryLoc <= this.prev && hasOwn.call(entry, "finallyLoc") && this.prev < entry.finallyLoc) {
+          var finallyEntry = entry;
+          break;
+        }
+      }
+
+      if (finallyEntry && (type === "break" || type === "continue") && finallyEntry.tryLoc <= arg && arg <= finallyEntry.finallyLoc) {
+        // Ignore the finally entry if control is not jumping to a
+        // location outside the try/catch block.
+        finallyEntry = null;
+      }
+
+      var record = finallyEntry ? finallyEntry.completion : {};
+      record.type = type;
+      record.arg = arg;
+
+      if (finallyEntry) {
+        this.method = "next";
+        this.next = finallyEntry.finallyLoc;
+        return ContinueSentinel;
+      }
+
+      return this.complete(record);
+    },
+    complete: function (record, afterLoc) {
+      if (record.type === "throw") {
+        throw record.arg;
+      }
+
+      if (record.type === "break" || record.type === "continue") {
+        this.next = record.arg;
+      } else if (record.type === "return") {
+        this.rval = this.arg = record.arg;
+        this.method = "return";
+        this.next = "end";
+      } else if (record.type === "normal" && afterLoc) {
+        this.next = afterLoc;
+      }
+
+      return ContinueSentinel;
+    },
+    finish: function (finallyLoc) {
+      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
+        var entry = this.tryEntries[i];
+
+        if (entry.finallyLoc === finallyLoc) {
+          this.complete(entry.completion, entry.afterLoc);
+          resetTryEntry(entry);
+          return ContinueSentinel;
+        }
+      }
+    },
+    "catch": function (tryLoc) {
+      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
+        var entry = this.tryEntries[i];
+
+        if (entry.tryLoc === tryLoc) {
+          var record = entry.completion;
+
+          if (record.type === "throw") {
+            var thrown = record.arg;
+            resetTryEntry(entry);
+          }
+
+          return thrown;
+        }
+      } // The context.catch method must only be called with a location
+      // argument that corresponds to a known catch block.
+
+
+      throw new Error("illegal catch attempt");
+    },
+    delegateYield: function (iterable, resultName, nextLoc) {
+      this.delegate = {
+        iterator: values(iterable),
+        resultName: resultName,
+        nextLoc: nextLoc
+      };
+
+      if (this.method === "next") {
+        // Deliberately forget the last sent value so that we don't
+        // accidentally pass it on to the delegate.
+        this.arg = undefined;
+      }
+
+      return ContinueSentinel;
+    }
+  }; // Regardless of whether this script is executing as a CommonJS module
+  // or not, return the runtime object so that we can declare the variable
+  // regeneratorRuntime in the outer scope, which allows this module to be
+  // injected easily by `bin/regenerator --include-runtime script.js`.
+
+  return exports;
+}( // If this script is executing as a CommonJS module, use module.exports
+// as the regeneratorRuntime namespace. Otherwise create a new empty
+// object. Either way, the resulting object will be used to initialize
+// the regeneratorRuntime variable at the top of this file.
+ true ? module.exports : undefined);
+
+try {
+  regeneratorRuntime = runtime;
+} catch (accidentalStrictMode) {
+  // This module should not be running in strict mode, so the above
+  // assignment should always work unless something is misconfigured. Just
+  // in case runtime.js accidentally runs in strict mode, we can escape
+  // strict mode using a global Function call. This could conceivably fail
+  // if a Content Security Policy forbids using Function, but in that case
+  // the proper solution is to fix the accidental strict mode problem. If
+  // you've misconfigured your bundler to force strict mode and applied a
+  // CSP to forbid Function, and you're not willing to fix either of those
+  // problems, please detail your unique predicament in a GitHub issue.
+  Function("r", "regeneratorRuntime = r")(runtime);
+}
+
+/***/ }),
+
 /***/ "./node_modules/side-channel/index.js":
 /*!********************************************!*\
   !*** ./node_modules/side-channel/index.js ***!
@@ -10828,6 +11977,279 @@ function createSelectorQuery() {
 
 /***/ }),
 
+/***/ "./src/bridge/const.js":
+/*!*****************************!*\
+  !*** ./src/bridge/const.js ***!
+  \*****************************/
+/*! exports provided: CUSTOM_EVENT */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "CUSTOM_EVENT", function() { return CUSTOM_EVENT; });
+/** render/worker 相互监听事件前缀 */
+var CUSTOM_EVENT = 'custom_event_';
+
+/***/ }),
+
+/***/ "./src/bridge/createBridge.js":
+/*!************************************!*\
+  !*** ./src/bridge/createBridge.js ***!
+  \************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return createBridge; });
+/* harmony import */ var _createSubscribe__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./createSubscribe */ "./src/bridge/createSubscribe.js");
+/* harmony import */ var _createPublish__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./createPublish */ "./src/bridge/createPublish.js");
+/* harmony import */ var _createInvoke__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./createInvoke */ "./src/bridge/createInvoke.js");
+
+
+
+function createBridge(jsCore) {
+  var _createSubscribe = Object(_createSubscribe__WEBPACK_IMPORTED_MODULE_0__["default"])(),
+      subscribeHandler = _createSubscribe.subscribeHandler,
+      onNative = _createSubscribe.onNative,
+      offNative = _createSubscribe.offNative,
+      subscribe = _createSubscribe.subscribe,
+      unsubscribe = _createSubscribe.unsubscribe;
+
+  var _createInvoke = Object(_createInvoke__WEBPACK_IMPORTED_MODULE_2__["default"])(jsCore, onNative),
+      invokeNative = _createInvoke.invokeNative,
+      invokeHandler = _createInvoke.invokeHandler;
+
+  var _createPublish = Object(_createPublish__WEBPACK_IMPORTED_MODULE_1__["default"])(jsCore),
+      publish = _createPublish.publish;
+
+  return {
+    // 宿主调用
+    invokeHandler: invokeHandler,
+    subscribeHandler: subscribeHandler,
+    // 内部方法
+    publish: publish,
+    invokeNative: invokeNative,
+    onNative: onNative,
+    offNative: offNative,
+    subscribe: subscribe,
+    unsubscribe: unsubscribe
+  };
+}
+
+/***/ }),
+
+/***/ "./src/bridge/createInvoke.js":
+/*!************************************!*\
+  !*** ./src/bridge/createInvoke.js ***!
+  \************************************/
+/*! exports provided: Deferred, default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Deferred", function() { return Deferred; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return createInvoke; });
+/* harmony import */ var _babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/typeof */ "./node_modules/@babel/runtime/helpers/typeof.js");
+/* harmony import */ var _babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_0__);
+
+function Deferred() {
+  var _this = this;
+
+  this.promise = undefined;
+  this.resolve = undefined;
+  this.reject = undefined;
+  this.promise = new Promise(function (resolve, reject) {
+    _this.resolve = resolve;
+    _this.reject = reject;
+  });
+}
+function createInvoke(jsCore) {
+  var resolveId = 0;
+  var resolveMap = new Map();
+
+  var invokeHandler = function invokeHandler(resolveId, data) {
+    var resolve = resolveMap.get(Number(resolveId));
+    if (!resolve) return;
+    var response;
+
+    if (typeof data === 'string') {
+      try {
+        response = JSON.parse(data);
+      } catch (e) {
+        response = {};
+      }
+    }
+
+    if (_babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_0___default()(data) !== 'object') {
+      response = {};
+    }
+
+    resolve(response);
+  };
+
+  var invokeNative = function invokeNative(method, params) {
+    var webviewId = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : self.WEBVIEWID;
+    resolveId += 1;
+    var deferred = new Deferred();
+    resolveMap.set(resolveId, deferred.resolve);
+    params.from = self.__IS_WORKER__ ? 'WORKER' : 'RENDER';
+    var webviewIds = Array.isArray(webviewId) ? webviewId : [webviewId];
+    var response = jsCore.call({
+      event: method,
+      paramsString: JSON.stringify(params),
+      webviewIds: JSON.stringify(webviewIds),
+      callbackId: resolveId
+    }); // 同步事件
+
+    if (response) {
+      try {
+        response = JSON.parse(response);
+      } catch (e) {
+        console.error(e);
+      }
+
+      resolveMap["delete"](resolveId);
+      return response;
+    } else {
+      return deferred.promise;
+    }
+  };
+
+  return {
+    invokeNative: invokeNative,
+    invokeHandler: invokeHandler
+  };
+}
+
+/***/ }),
+
+/***/ "./src/bridge/createPublish.js":
+/*!*************************************!*\
+  !*** ./src/bridge/createPublish.js ***!
+  \*************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return createPublish; });
+/* harmony import */ var _const__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./const */ "./src/bridge/const.js");
+
+function createPublish(jsCore) {
+  var publish = function publish(event, data) {
+    var webviewId = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : self.WEBVIEWID;
+    data.from = self.__IS_WORKER__ ? 'WORKER' : 'RENDER';
+    var paramsString = JSON.stringify(data);
+    var webviewIds = Array.isArray(webviewId) ? webviewId : [webviewId];
+    var webviewIdsString = JSON.stringify(webviewIds);
+    var params = {
+      event: _const__WEBPACK_IMPORTED_MODULE_0__["CUSTOM_EVENT"] + event,
+      paramsString: paramsString,
+      webviewIds: webviewIdsString
+    };
+    jsCore.call(params);
+  };
+
+  return {
+    publish: publish
+  };
+}
+
+/***/ }),
+
+/***/ "./src/bridge/createSubscribe.js":
+/*!***************************************!*\
+  !*** ./src/bridge/createSubscribe.js ***!
+  \***************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return createSubscribe; });
+/* harmony import */ var _babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/typeof */ "./node_modules/@babel/runtime/helpers/typeof.js");
+/* harmony import */ var _babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _utils_EventEmitter__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/EventEmitter */ "./src/utils/EventEmitter.js");
+/* harmony import */ var _const__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./const */ "./src/bridge/const.js");
+
+
+
+function createSubscribe() {
+  var customEmitter = new _utils_EventEmitter__WEBPACK_IMPORTED_MODULE_1__["default"]();
+  var nativeEmitter = new _utils_EventEmitter__WEBPACK_IMPORTED_MODULE_1__["default"]();
+  return {
+    onNative: nativeEmitter.on,
+    offNative: nativeEmitter.off,
+    subscribe: function subscribe(event, listener) {
+      customEmitter.on(_const__WEBPACK_IMPORTED_MODULE_2__["CUSTOM_EVENT"] + event, listener);
+    },
+    unsubscribe: function unsubscribe(event, listener) {
+      customEmitter.off(_const__WEBPACK_IMPORTED_MODULE_2__["CUSTOM_EVENT"] + event, listener);
+    },
+    // 监听消息
+    subscribeHandler: function subscribeHandler(event, data, webviewId) {
+      var params;
+
+      if (typeof data === 'string') {
+        try {
+          params = JSON.parse(data);
+        } catch (e) {
+          params = {};
+        }
+      }
+
+      if (_babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_0___default()(params) !== 'object') {
+        params = {};
+      }
+
+      if (event.startsWith(_const__WEBPACK_IMPORTED_MODULE_2__["CUSTOM_EVENT"])) {
+        customEmitter.emit(event, params, webviewId);
+      } else {
+        nativeEmitter.emit(event, params, webviewId);
+      }
+    }
+  };
+}
+
+/***/ }),
+
+/***/ "./src/bridge/index.js":
+/*!*****************************!*\
+  !*** ./src/bridge/index.js ***!
+  \*****************************/
+/*! exports provided: invokeHandler, subscribeHandler, publish, subscribe, unsubscribe, invokeNative, onNative, offNative */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "invokeHandler", function() { return invokeHandler; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "subscribeHandler", function() { return subscribeHandler; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "publish", function() { return publish; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "subscribe", function() { return subscribe; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "unsubscribe", function() { return unsubscribe; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "invokeNative", function() { return invokeNative; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "onNative", function() { return onNative; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "offNative", function() { return offNative; });
+/* harmony import */ var _createBridge__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./createBridge */ "./src/bridge/createBridge.js");
+ // 宿主提供的bridge
+
+var jsCore = self.JSCore;
+
+var _createBridge = Object(_createBridge__WEBPACK_IMPORTED_MODULE_0__["default"])(jsCore),
+    invokeHandler = _createBridge.invokeHandler,
+    subscribeHandler = _createBridge.subscribeHandler,
+    publish = _createBridge.publish,
+    invokeNative = _createBridge.invokeNative,
+    onNative = _createBridge.onNative,
+    offNative = _createBridge.offNative,
+    subscribe = _createBridge.subscribe,
+    unsubscribe = _createBridge.unsubscribe;
+
+
+
+/***/ }),
+
 /***/ "./src/framework/App/index.worker.js":
 /*!*******************************************!*\
   !*** ./src/framework/App/index.worker.js ***!
@@ -10999,6 +12421,11 @@ AppImpl.prototype = _objectSpread(_objectSpread({}, _mixins_AppMixin__WEBPACK_IM
   getPageById: function getPageById(id) {
     return this.getPageBy(function (page) {
       return page.getId() === id;
+    });
+  },
+  getPageByViewId: function getPageByViewId(id) {
+    return this.getPageBy(function (page) {
+      return page.getViewId() === id;
     });
   },
   getPageObject: function getPageObject(url) {
@@ -12140,24 +13567,26 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var lodash_mapvalues__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! lodash.mapvalues */ "./node_modules/lodash.mapvalues/index.js");
 /* harmony import */ var lodash_mapvalues__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(lodash_mapvalues__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var _utils_setData__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/utils/setData */ "./src/utils/setData.js");
-/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
-/* harmony import */ var _utils_mergeArray__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/utils/mergeArray */ "./src/utils/mergeArray.js");
-/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
-/* harmony import */ var _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @/utils/invokeWithGuardAndReThrow */ "./src/utils/invokeWithGuardAndReThrow.js");
-/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
-/* harmony import */ var _utils_types__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @/utils/types */ "./src/utils/types.js");
-/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../App */ "./src/framework/App/index.worker.js");
-/* harmony import */ var _EventHub__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ../EventHub */ "./src/framework/EventHub.js");
-/* harmony import */ var _ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ../ComponentRegistry/getComponentClass */ "./src/framework/ComponentRegistry/getComponentClass.js");
-/* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ../common/global */ "./src/framework/common/global.js");
-/* harmony import */ var _mixins_MessageHandleMixin__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ../mixins/MessageHandleMixin */ "./src/framework/mixins/MessageHandleMixin.js");
+/* harmony import */ var _bridge__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/bridge */ "./src/bridge/index.js");
+/* harmony import */ var _utils_setData__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/setData */ "./src/utils/setData.js");
+/* harmony import */ var _utils_objectKeys__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/utils/objectKeys */ "./src/utils/objectKeys.js");
+/* harmony import */ var _utils_mergeArray__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @/utils/mergeArray */ "./src/utils/mergeArray.js");
+/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
+/* harmony import */ var _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @/utils/invokeWithGuardAndReThrow */ "./src/utils/invokeWithGuardAndReThrow.js");
+/* harmony import */ var _utils_consts__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @/utils/consts */ "./src/utils/consts.js");
+/* harmony import */ var _utils_types__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @/utils/types */ "./src/utils/types.js");
+/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ../App */ "./src/framework/App/index.worker.js");
+/* harmony import */ var _EventHub__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ../EventHub */ "./src/framework/EventHub.js");
+/* harmony import */ var _ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ../ComponentRegistry/getComponentClass */ "./src/framework/ComponentRegistry/getComponentClass.js");
+/* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ../common/global */ "./src/framework/common/global.js");
+/* harmony import */ var _mixins_MessageHandleMixin__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ../mixins/MessageHandleMixin */ "./src/framework/mixins/MessageHandleMixin.js");
 
 
 
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_1___default()(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
 
 
 
@@ -12192,7 +13621,7 @@ function PageComponent(_ref) {
   Object.assign(this, {
     pagePath: pagePath,
     id: id,
-    bridge: _common_global__WEBPACK_IMPORTED_MODULE_13__["default"].bridge,
+    bridge: _common_global__WEBPACK_IMPORTED_MODULE_14__["default"].bridge,
     pendingData: [],
     pendingCallbacks: [],
     initialCallbacks: [],
@@ -12205,15 +13634,15 @@ function PageComponent(_ref) {
 
   this.publicInstance = Object.create(_objectSpread({
     route: pagePath
-  }, _common_global__WEBPACK_IMPORTED_MODULE_13__["default"].pagesConfig[pagePath].user), {
+  }, _common_global__WEBPACK_IMPORTED_MODULE_14__["default"].pagesConfig[pagePath].user), {
     setData: {
       value: function value(a, b) {
-        return self.setData(_utils_setData__WEBPACK_IMPORTED_MODULE_3__["default"], a, b);
+        return self.setData(_utils_setData__WEBPACK_IMPORTED_MODULE_4__["default"], a, b);
       }
     },
     $spliceData: {
       value: function value(a, b) {
-        return self.setData(_utils_setData__WEBPACK_IMPORTED_MODULE_3__["spliceData"], a, b);
+        return self.setData(_utils_setData__WEBPACK_IMPORTED_MODULE_4__["spliceData"], a, b);
       }
     },
     $getComponentBy: {
@@ -12234,16 +13663,16 @@ function getAllUsingComponents(pagePath) {
   }
 
   var allUsingComponents = [];
-  var usingComponents = _common_global__WEBPACK_IMPORTED_MODULE_13__["default"].pagesConfig[pagePath].system.usingComponents;
+  var usingComponents = _common_global__WEBPACK_IMPORTED_MODULE_14__["default"].pagesConfig[pagePath].system.usingComponents;
 
   var getComponents = function getComponents(is) {
     var components = [is];
-    var usingComponents = _common_global__WEBPACK_IMPORTED_MODULE_13__["default"].componentsConfig[is].usingComponents;
+    var usingComponents = _common_global__WEBPACK_IMPORTED_MODULE_14__["default"].componentsConfig[is].usingComponents;
 
     if (usingComponents) {
-      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_4__["default"])(usingComponents).forEach(function (name) {
+      Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_5__["default"])(usingComponents).forEach(function (name) {
         if (usingComponents[name] !== is) {
-          Object(_utils_mergeArray__WEBPACK_IMPORTED_MODULE_5__["default"])(components, getComponents(usingComponents[name]));
+          Object(_utils_mergeArray__WEBPACK_IMPORTED_MODULE_6__["default"])(components, getComponents(usingComponents[name]));
         }
       });
     }
@@ -12252,8 +13681,8 @@ function getAllUsingComponents(pagePath) {
   };
 
   if (usingComponents) {
-    Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_4__["default"])(usingComponents).forEach(function (c) {
-      Object(_utils_mergeArray__WEBPACK_IMPORTED_MODULE_5__["default"])(allUsingComponents, getComponents(usingComponents[c]));
+    Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_5__["default"])(usingComponents).forEach(function (c) {
+      Object(_utils_mergeArray__WEBPACK_IMPORTED_MODULE_6__["default"])(allUsingComponents, getComponents(usingComponents[c]));
     });
     allUsingComponentsCache[pagePath] = allUsingComponents;
   }
@@ -12261,8 +13690,8 @@ function getAllUsingComponents(pagePath) {
   return allUsingComponents;
 }
 
-PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleMixin__WEBPACK_IMPORTED_MODULE_14__["default"]), {}, {
-  initData: function initData() {
+PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleMixin__WEBPACK_IMPORTED_MODULE_15__["default"]), {}, {
+  init: function init() {
     var isRefresh = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
     var publicInstance = this.publicInstance,
         id = this.id;
@@ -12270,32 +13699,32 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     publicInstanceMethods.forEach(function (k) {
       var hookFn = publicInstance[k];
 
-      if (typeof hookFn === 'function' && hookFn !== _utils_types__WEBPACK_IMPORTED_MODULE_9__["noop"]) {
+      if (typeof hookFn === 'function' && hookFn !== _utils_types__WEBPACK_IMPORTED_MODULE_10__["noop"]) {
         config[k] = true;
       }
     });
-    this.callRemote('self', 'onInitDataReady', {
+    Object(_bridge__WEBPACK_IMPORTED_MODULE_3__["publish"])('onInitDataReady', {
       id: id,
       isRefresh: isRefresh,
       publicInstance: _objectSpread({
         data: publicInstance.data
       }, config),
       customComponents: this.getCustomComponents()
-    });
+    }, this.getViewId());
   },
   load: function load() {
     // in case pageResume following appResume, tab page??
     if (!this.$loadTime) {
       this.$loadTime = Date.now();
       this._disableRemoteData = true;
-      Object(_utils_log__WEBPACK_IMPORTED_MODULE_6__["debug"])('framework', ' page onLoad', this.pagePath);
-      _EventHub__WEBPACK_IMPORTED_MODULE_11__["default"].emit('pageLoad', {
+      Object(_utils_log__WEBPACK_IMPORTED_MODULE_7__["debug"])('framework', ' page onLoad', this.pagePath);
+      _EventHub__WEBPACK_IMPORTED_MODULE_12__["default"].emit('pageLoad', {
         page: this
       });
-      Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_7__["default"])(this.publicInstance.onLoad, this.publicInstance, this.query);
+      Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_8__["default"])(this.publicInstance.onLoad, this.publicInstance, this.query);
       this._disableRemoteData = false; // depend app status!! maybe unstable
 
-      if (Object(_App__WEBPACK_IMPORTED_MODULE_10__["getAppImpl"])().shown) {
+      if (Object(_App__WEBPACK_IMPORTED_MODULE_11__["getAppImpl"])().shown) {
         this.show();
       }
 
@@ -12303,12 +13732,12 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
         this.onTabItemTap(this.tabProps);
       }
 
-      this.callRemote('self', 'onLoaded');
+      Object(_bridge__WEBPACK_IMPORTED_MODULE_3__["publish"])('onRenderPageLoad', {}, this.getViewId());
     }
   },
   refresh: function refresh() {
     this.unmountAllComponents();
-    this.initData(true);
+    this.init(true);
   },
   show: function show() {
     if (this.unloaded) {
@@ -12326,14 +13755,14 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     }
 
     this.shown = true;
-    _EventHub__WEBPACK_IMPORTED_MODULE_11__["default"].emit('enterPage', {
+    _EventHub__WEBPACK_IMPORTED_MODULE_12__["default"].emit('enterPage', {
       page: this
     });
     this.executeUserMethod('onShow');
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_6__["debug"])('framework', 'page onShow', this.pagePath);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_7__["debug"])('framework', 'page onShow', this.pagePath);
   },
   ready: function ready(payload) {
-    var _this2 = this;
+    var _this = this;
 
     if (this.unloaded) {
       return;
@@ -12344,25 +13773,25 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     }
 
     this.batchedUpdates(function () {
-      _this2.readied = true;
+      _this.readied = true;
 
-      _this2.update(payload);
+      _this.update(payload);
 
-      _EventHub__WEBPACK_IMPORTED_MODULE_11__["default"].emit('pageReady', {
-        page: _this2
+      _EventHub__WEBPACK_IMPORTED_MODULE_12__["default"].emit('pageReady', {
+        page: _this
       });
 
-      _this2.initialCallbacks.forEach(function (fn) {
+      _this.initialCallbacks.forEach(function (fn) {
         return fn();
       });
 
-      _this2.executeUserMethod('onReady');
+      _this.executeUserMethod('onReady');
 
-      Object(_utils_log__WEBPACK_IMPORTED_MODULE_6__["debug"])('framework', 'page onReady', _this2.pagePath);
+      Object(_utils_log__WEBPACK_IMPORTED_MODULE_7__["debug"])('framework', 'page onReady', _this.pagePath);
     });
   },
   pullDownRefresh: function pullDownRefresh(e) {
-    _EventHub__WEBPACK_IMPORTED_MODULE_11__["default"].emit('pullDownRefresh', {
+    _EventHub__WEBPACK_IMPORTED_MODULE_12__["default"].emit('pullDownRefresh', {
       page: this
     });
     this.executeUserMethod('onPullDownRefresh', [e]);
@@ -12381,21 +13810,21 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     }
 
     this.shown = false;
-    _EventHub__WEBPACK_IMPORTED_MODULE_11__["default"].emit('leavePage', {
+    _EventHub__WEBPACK_IMPORTED_MODULE_12__["default"].emit('leavePage', {
       page: this
     });
-    _EventHub__WEBPACK_IMPORTED_MODULE_11__["default"].emit('pageHide', {
+    _EventHub__WEBPACK_IMPORTED_MODULE_12__["default"].emit('pageHide', {
       page: this
     });
     this.executeUserMethod('onHide');
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_6__["debug"])('framework', ' page onHide', this.pagePath);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_7__["debug"])('framework', ' page onHide', this.pagePath);
   },
   unload: function unload() {
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_6__["debug"])('framework', ' page onUnload', this.pagePath);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_7__["debug"])('framework', ' page onUnload', this.pagePath);
 
     if (this.unloaded || !this.$loadTime) {
       // remove from page stack
-      _EventHub__WEBPACK_IMPORTED_MODULE_11__["default"].emit('pageUnload', {
+      _EventHub__WEBPACK_IMPORTED_MODULE_12__["default"].emit('pageUnload', {
         page: this
       });
       return;
@@ -12403,25 +13832,25 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
 
     this.unloaded = true;
     this.unmountAllComponents();
-    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_7__["default"])(this.publicInstance.onUnload, this.publicInstance);
-    _EventHub__WEBPACK_IMPORTED_MODULE_11__["default"].emit('leavePage', {
+    Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_8__["default"])(this.publicInstance.onUnload, this.publicInstance);
+    _EventHub__WEBPACK_IMPORTED_MODULE_12__["default"].emit('leavePage', {
       page: this
     });
-    _EventHub__WEBPACK_IMPORTED_MODULE_11__["default"].emit('pageUnload', {
+    _EventHub__WEBPACK_IMPORTED_MODULE_12__["default"].emit('pageUnload', {
       page: this
     });
   },
   unmountAllComponents: function unmountAllComponents() {
     var oldComponentInstances = this.componentInstances;
     this.componentInstances = {};
-    Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_4__["default"])(oldComponentInstances).forEach(function (k) {
+    Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_5__["default"])(oldComponentInstances).forEach(function (k) {
       oldComponentInstances[k].unload();
     });
   },
   getCustomComponents: function getCustomComponents() {
     var customComponents = {};
     getAllUsingComponents(this.pagePath).forEach(function (is) {
-      var init = _common_global__WEBPACK_IMPORTED_MODULE_13__["default"].componentsConfig[is].init;
+      var init = _common_global__WEBPACK_IMPORTED_MODULE_14__["default"].componentsConfig[is].init;
       customComponents[is] = {
         properties: lodash_mapvalues__WEBPACK_IMPORTED_MODULE_2___default()(init.properties, function (item) {
           return {
@@ -12456,7 +13885,7 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     var componentInstances = this.componentInstances;
 
     if (componentInstances) {
-      var keys = Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_4__["default"])(componentInstances);
+      var keys = Object(_utils_objectKeys__WEBPACK_IMPORTED_MODULE_5__["default"])(componentInstances);
 
       for (var i = 0; i < keys.length; i += 1) {
         var publicInstance = componentInstances[keys[i]].publicInstance;
@@ -12480,20 +13909,20 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
 
     if (componentInstance) {
       this.batchedUpdates(function () {
-        Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_7__["default"])(componentInstance.publicInstance[eventName], componentInstance.publicInstance, eventObject);
+        Object(_utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_8__["default"])(componentInstance.publicInstance[eventName], componentInstance.publicInstance, eventObject);
       });
     }
   },
 
   /* 自定义组件生命周期触发 */
   fireComponentLifecycle: function fireComponentLifecycle(info, type) {
-    var is = info[_utils_consts__WEBPACK_IMPORTED_MODULE_8__["ComponentKeyIs"]];
-    var id = info[_utils_consts__WEBPACK_IMPORTED_MODULE_8__["ComponentKeyId"]];
+    var is = info[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["ComponentKeyIs"]];
+    var id = info[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["ComponentKeyId"]];
     var componentInstance = this.getComponentInstance(id);
 
     if (!componentInstance) {
       var componentInstances = this.componentInstances;
-      var ComponentClass = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_12__["default"])(is);
+      var ComponentClass = Object(_ComponentRegistry_getComponentClass__WEBPACK_IMPORTED_MODULE_13__["default"])(is);
       componentInstance = new ComponentClass(this, id);
       componentInstances[id] = componentInstance;
     }
@@ -12520,11 +13949,11 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     }
 
     var componentInstances = this.componentInstances;
-    var mountedComponents = payload[_utils_consts__WEBPACK_IMPORTED_MODULE_8__["PayloadKeyMountedComponents"]] || []; // const unmountedComponents = payload[PayloadKeyUnmountedComponents] || [];
+    var mountedComponents = payload[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["PayloadKeyMountedComponents"]] || []; // const unmountedComponents = payload[PayloadKeyUnmountedComponents] || [];
     // from bottom to top
 
     mountedComponents.forEach(function (componentConfig) {
-      var id = componentConfig[_utils_consts__WEBPACK_IMPORTED_MODULE_8__["ComponentKeyId"]];
+      var id = componentConfig[_utils_consts__WEBPACK_IMPORTED_MODULE_9__["ComponentKeyId"]];
 
       if (componentInstances[id]) {
         componentInstances[id].setComponentConfig(componentConfig);
@@ -12533,10 +13962,10 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     // this.unmountComponents(unmountedKeys);
   },
   update: function update(payload) {
-    var _this3 = this;
+    var _this2 = this;
 
     this.batchedUpdates(function () {
-      _this3.updateComponents(payload);
+      _this2.updateComponents(payload);
     });
   },
   postMessage: function postMessage(data) {
@@ -12544,7 +13973,7 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
       return;
     }
 
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_6__["debug"])('framework', "[WORKER] Page ".concat(this.pagePath, " postMessage"), data);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_7__["debug"])('framework', "[WORKER] Page ".concat(this.pagePath, " postMessage"), data);
     this.bridge.call('postMessage', _objectSpread(_objectSpread({}, data), {}, {
       pageType: this.pageType,
       msgType: 'endpoint',
@@ -12595,17 +14024,16 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
     } else {
       var _data;
 
-      var data = (_data = {}, _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_1___default()(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_8__["PendingKeyType"], _utils_consts__WEBPACK_IMPORTED_MODULE_8__["PendingValuePage"]), _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_1___default()(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_8__["PendingKeyData"], diffData), _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_1___default()(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_8__["PendingKeyOp"], Object(_utils_setData__WEBPACK_IMPORTED_MODULE_3__["getOpStr"])(op)), _data);
+      var data = (_data = {}, _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_1___default()(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_9__["PendingKeyType"], _utils_consts__WEBPACK_IMPORTED_MODULE_9__["PendingValuePage"]), _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_1___default()(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_9__["PendingKeyData"], diffData), _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_1___default()(_data, _utils_consts__WEBPACK_IMPORTED_MODULE_9__["PendingKeyOp"], Object(_utils_setData__WEBPACK_IMPORTED_MODULE_4__["getOpStr"])(op)), _data);
       this.setRemoteData(data, options);
     }
   },
   executeUserMethod: function executeUserMethod(method) {
+    var _this3 = this;
+
     var args = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
-
-    var _this = this;
-
     this.batchedUpdates(function () {
-      _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_7__["default"].apply(void 0, [_this.publicInstance[method], _this.publicInstance].concat(_babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_0___default()(args)));
+      _utils_invokeWithGuardAndReThrow__WEBPACK_IMPORTED_MODULE_8__["default"].apply(void 0, [_this3.publicInstance[method], _this3.publicInstance].concat(_babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_0___default()(args)));
     });
   },
   onPageScroll: function onPageScroll() {
@@ -12637,20 +14065,6 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
 
     this.flushData();
   },
-  onRenderEvent: function onRenderEvent(name) {
-    var publicInstance = this.publicInstance;
-
-    if (!publicInstance[name]) {
-      console.warn("".concat(this.getPagePath(), ": can not find event handle method: ").concat(name));
-      return;
-    }
-
-    for (var _len3 = arguments.length, args = new Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
-      args[_key3 - 1] = arguments[_key3];
-    }
-
-    this.executeUserMethod(name, args);
-  },
   setRemoteData: function setRemoteData(data) {
     var _ref2 = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {},
         complete = _ref2.complete;
@@ -12675,8 +14089,15 @@ PageComponent.prototype = _objectSpread(_objectSpread({}, _mixins_MessageHandleM
         pendingCallbacks = this.pendingCallbacks;
     this.pendingData = [];
     this.pendingCallbacks = []; // prevent invalid json pass through
+    // this.callRemote('self', 'receiveData', pendingData, () => {
+    //   pendingCallbacks.forEach((fn) => {
+    //     return fn();
+    //   });
+    // });
 
-    this.callRemote('self', 'receiveData', pendingData, function () {
+    Object(_bridge__WEBPACK_IMPORTED_MODULE_3__["publish"])('onReceiveData', {
+      data: pendingData
+    }, this.getViewId(), function () {
       pendingCallbacks.forEach(function (fn) {
         return fn();
       });
@@ -13540,11 +14961,19 @@ function resolveUrl(path, refered) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "pauseApp", function() { return pauseApp; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return bootstrap; });
-/* harmony import */ var _polyfill__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./polyfill */ "./src/framework/worker/polyfill.js");
-/* harmony import */ var _polyfill__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_polyfill__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
-/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../App */ "./src/framework/App/index.worker.js");
-/* harmony import */ var _SubPackage__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../SubPackage */ "./src/framework/SubPackage/index.js");
+/* harmony import */ var _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ "./node_modules/@babel/runtime/helpers/asyncToGenerator.js");
+/* harmony import */ var _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/regenerator */ "./node_modules/@babel/runtime/regenerator/index.js");
+/* harmony import */ var _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _polyfill__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./polyfill */ "./src/framework/worker/polyfill.js");
+/* harmony import */ var _polyfill__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_polyfill__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _bridge__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/bridge */ "./src/bridge/index.js");
+/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
+/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../App */ "./src/framework/App/index.worker.js");
+/* harmony import */ var _SubPackage__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../SubPackage */ "./src/framework/SubPackage/index.js");
+
+
+
 
 
 
@@ -13553,31 +14982,9 @@ var g = self;
 var started = true;
 var queue = [];
 
-function processLoadPage(event) {
-  var _event$data = event.data,
-      pagePath = _event$data.pagePath,
-      queryString = _event$data.queryString,
-      pageId = _event$data.id,
-      viewId = _event$data.viewId;
-  Object(_SubPackage__WEBPACK_IMPORTED_MODULE_3__["loadPage"])(pagePath, function () {
-    var appImpl = Object(_App__WEBPACK_IMPORTED_MODULE_2__["getAppImpl"])();
-    var page = appImpl.newPage({
-      pagePath: pagePath,
-      queryString: queryString,
-      pageId: pageId
-    });
-    page.setViewId(viewId);
-    page.initData(); // refresh page
-
-    if (page.$loadTime) {
-      page.refresh();
-    }
-  });
-}
-
 function processEndpoint(event) {
   var pageId = event.data.id;
-  var appImpl = Object(_App__WEBPACK_IMPORTED_MODULE_2__["getAppImpl"])();
+  var appImpl = Object(_App__WEBPACK_IMPORTED_MODULE_5__["getAppImpl"])();
   var page = appImpl.getPageById(pageId);
   page && page.onMessage(event);
 }
@@ -13585,17 +14992,13 @@ function processEndpoint(event) {
 function processMessage(event) {
   var msgType = event.data.msgType;
 
-  if (msgType === 'DOMContentLoaded') {
-    processLoadPage(event);
-  }
-
   if (msgType === 'endpoint') {
     processEndpoint(event);
   }
 }
 
 g.send = function (event) {
-  Object(_utils_log__WEBPACK_IMPORTED_MODULE_1__["debug"])('framework', '[WORKER] App Received Message:', event.data);
+  Object(_utils_log__WEBPACK_IMPORTED_MODULE_4__["debug"])('framework', '[WORKER] App Received Message:', event.data);
 
   if (started) {
     queue.forEach(processMessage);
@@ -13606,6 +15009,124 @@ g.send = function (event) {
 };
 
 g.addEventListener('message', g.send);
+
+function processContentLoad(params, webviewId) {
+  var pagePath = params.pagePath,
+      queryString = params.queryString,
+      pageId = params.id;
+  Object(_SubPackage__WEBPACK_IMPORTED_MODULE_6__["loadPage"])(pagePath, function () {
+    var appImpl = Object(_App__WEBPACK_IMPORTED_MODULE_5__["getAppImpl"])();
+    var page = appImpl.newPage({
+      pagePath: pagePath,
+      queryString: queryString,
+      pageId: pageId
+    });
+    page.setViewId(webviewId); // refresh page
+
+    if (page.$loadTime) {
+      page.refresh();
+    } else {
+      page.init();
+    }
+  });
+}
+
+var callbackId = 0;
+var callbackMap = new Map(); // eslint-disable-next-line @typescript-eslint/promise-function-async
+
+function invokeWebview(method, params, webviewId) {
+  return new Promise(function (resolve, reject) {
+    callbackId += 1;
+    callbackMap.set(callbackId, {
+      resolve: resolve,
+      reject: reject
+    });
+    publish('invokeWebviewMethod', {
+      method: method,
+      params: params,
+      extra: {
+        callbackId: callbackId,
+        timestamp: Date.now()
+      }
+    }, webviewId);
+  });
+}
+
+Object(_bridge__WEBPACK_IMPORTED_MODULE_3__["subscribe"])('callbackWebviewMethod', function (response) {
+  var error = response.error,
+      result = response.result,
+      extra = response.extra;
+  var currentId = extra.callbackId;
+  var executor = callbackMap.get(currentId);
+
+  if (!executor) {
+    var info = JSON.stringify(response);
+    throw new InvokeError("Executor(".concat(currentId, ") in service not found.\nresponse: ").concat(info));
+  }
+
+  if (error) {
+    error.env = 'WEBVIEW';
+    executor.reject(error);
+  } else {
+    executor.resolve(result);
+  }
+
+  callbackMap["delete"](currentId);
+});
+Object(_bridge__WEBPACK_IMPORTED_MODULE_3__["subscribe"])('invokeServiceMethod', /*#__PURE__*/function () {
+  var _ref = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_0___default()( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_1___default.a.mark(function _callee(data, webviewId) {
+    var webviewIds, scene, method, extra, params, result;
+    return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_1___default.a.wrap(function _callee$(_context) {
+      while (1) {
+        switch (_context.prev = _context.next) {
+          case 0:
+            webviewIds = [webviewId];
+            scene = data.scene;
+            method = data.method;
+            extra = data.extra;
+            params = data.params; // api 调用
+
+            result = {};
+            publish('callbackServiceMethod', {
+              method: method,
+              result: result,
+              extra: extra
+            }, webviewIds);
+
+          case 7:
+          case "end":
+            return _context.stop();
+        }
+      }
+    }, _callee);
+  }));
+
+  return function (_x, _x2) {
+    return _ref.apply(this, arguments);
+  };
+}());
+Object(_bridge__WEBPACK_IMPORTED_MODULE_3__["subscribe"])('DOMContentLoaded', function (params, webviewId) {
+  if (started) {
+    queue.forEach(function (_ref2) {
+      var params = _ref2.params,
+          webviewId = _ref2.webviewId;
+      return processContentLoad(params, webviewId);
+    });
+    processContentLoad(params, webviewId);
+  } else {
+    queue.push({
+      params: params,
+      webviewId: webviewId
+    });
+  }
+});
+Object(_bridge__WEBPACK_IMPORTED_MODULE_3__["subscribe"])('onRenderPageEvent', function (params, webviewId) {
+  var method = params.method,
+      args = params.args;
+  var appImpl = Object(_App__WEBPACK_IMPORTED_MODULE_5__["getAppImpl"])();
+  var page = appImpl.getPageByViewId(webviewId);
+  page && page.executeUserMethod(method, args);
+});
 function pauseApp() {
   started = false;
 }
@@ -13665,35 +15186,46 @@ g.importScripts = g.importScripts || importScriptsPolyfill;
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _apis___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/apis/ */ "./src/apis/index.worker.js");
-/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
-/* harmony import */ var _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./framework/index.worker */ "./src/framework/index.worker.js");
+/* harmony import */ var _bridge__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/bridge */ "./src/bridge/index.js");
+/* harmony import */ var _apis___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/apis/ */ "./src/apis/index.worker.js");
+/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/utils/log */ "./src/utils/log.js");
+/* harmony import */ var _framework_index_worker__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./framework/index.worker */ "./src/framework/index.worker.js");
+
 
 
 
 
 var __mpStartTime = Date.now();
 
+self.__IS_WORKER__ = true; // 全局注册对象, 提供给宿主调用
+
+self.JSBridgeHandler = {
+  /* 调用的回调 */
+  invokeHandler: _bridge__WEBPACK_IMPORTED_MODULE_0__["invokeHandler"],
+
+  /* 监听的回调 */
+  subscribeHandler: _bridge__WEBPACK_IMPORTED_MODULE_0__["subscribeHandler"]
+};
 self.MP = {
-  bridge: _apis___WEBPACK_IMPORTED_MODULE_0__["default"],
-  EventHub: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["EventHub"],
-  getStartupParams: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["getStartupParams"],
-  setStartupParams: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["setStartupParams"],
-  getApp: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["getApp"],
-  App: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["App"],
-  getCurrentPagesImpl: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["getCurrentPagesImpl"],
-  getCurrentPageImpl: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["getCurrentPageImpl"],
-  getCurrentPages: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["getCurrentPages"],
-  getAppImpl: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["getAppImpl"],
-  Component: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["Component"],
-  Page: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["Page"],
-  Behavior: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["registerBehavior"],
-  $global: _framework_index_worker__WEBPACK_IMPORTED_MODULE_2__["$global"]
+  bridge: _apis___WEBPACK_IMPORTED_MODULE_1__["default"],
+  EventHub: _framework_index_worker__WEBPACK_IMPORTED_MODULE_3__["EventHub"],
+  getStartupParams: _framework_index_worker__WEBPACK_IMPORTED_MODULE_3__["getStartupParams"],
+  setStartupParams: _framework_index_worker__WEBPACK_IMPORTED_MODULE_3__["setStartupParams"],
+  getApp: _framework_index_worker__WEBPACK_IMPORTED_MODULE_3__["getApp"],
+  App: _framework_index_worker__WEBPACK_IMPORTED_MODULE_3__["App"],
+  getCurrentPagesImpl: _framework_index_worker__WEBPACK_IMPORTED_MODULE_3__["getCurrentPagesImpl"],
+  getCurrentPageImpl: _framework_index_worker__WEBPACK_IMPORTED_MODULE_3__["getCurrentPageImpl"],
+  getCurrentPages: _framework_index_worker__WEBPACK_IMPORTED_MODULE_3__["getCurrentPages"],
+  getAppImpl: _framework_index_worker__WEBPACK_IMPORTED_MODULE_3__["getAppImpl"],
+  Component: _framework_index_worker__WEBPACK_IMPORTED_MODULE_3__["Component"],
+  Page: _framework_index_worker__WEBPACK_IMPORTED_MODULE_3__["Page"],
+  Behavior: _framework_index_worker__WEBPACK_IMPORTED_MODULE_3__["registerBehavior"],
+  $global: _framework_index_worker__WEBPACK_IMPORTED_MODULE_3__["$global"]
 };
 
 var __mpCosts = Date.now() - __mpStartTime;
 
-Object(_utils_log__WEBPACK_IMPORTED_MODULE_1__["debug"])('framework', "worker bundle costs ".concat(__mpCosts, " ms"));
+Object(_utils_log__WEBPACK_IMPORTED_MODULE_2__["debug"])('framework', "worker bundle costs ".concat(__mpCosts, " ms"));
 
 /***/ }),
 
@@ -13706,170 +15238,10 @@ Object(_utils_log__WEBPACK_IMPORTED_MODULE_1__["debug"])('framework', "worker bu
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return EventEmitter; });
-/* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "./node_modules/@babel/runtime/helpers/defineProperty.js");
-/* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ "./node_modules/@babel/runtime/helpers/classCallCheck.js");
-/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @babel/runtime/helpers/createClass */ "./node_modules/@babel/runtime/helpers/createClass.js");
-/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var _gerror__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./gerror */ "./src/utils/gerror.js");
+/* harmony import */ var eventemitter3__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! eventemitter3 */ "./node_modules/eventemitter3/index.js");
+/* harmony import */ var eventemitter3__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(eventemitter3__WEBPACK_IMPORTED_MODULE_0__);
 
-
-
-
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
-
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0___default()(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
-
-
-
-var EventEmitter = /*#__PURE__*/function () {
-  function EventEmitter() {
-    _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_1___default()(this, EventEmitter);
-
-    this.allListeners = {};
-  }
-
-  _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_2___default()(EventEmitter, [{
-    key: "_addListener",
-    value: function _addListener(_types, listener) {
-      var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-
-      var _this = this;
-
-      var types = _types;
-
-      if (!Array.isArray(types)) {
-        types = [types];
-      }
-
-      var allListeners = this.allListeners;
-      types.forEach(function (type) {
-        var fns = allListeners[type] = allListeners[type] || [];
-
-        if (fns.indexOf(listener) !== -1) {
-          return;
-        }
-
-        if (options.prepend) {
-          fns.unshift(listener);
-        } else {
-          fns.push(listener);
-        }
-      });
-      return {
-        remove: function remove() {
-          _this.removeListener(types, listener);
-        }
-      };
-    }
-  }, {
-    key: "addListener",
-    value: function addListener(types, listener) {
-      return this._addListener(types, listener);
-    }
-  }, {
-    key: "prependListener",
-    value: function prependListener(types, listener) {
-      return this._addListener(types, listener, {
-        prepend: true
-      });
-    }
-  }, {
-    key: "listeners",
-    value: function listeners(type) {
-      return type ? this.allListeners[type] || [] : this.allListeners;
-    }
-  }, {
-    key: "listenerCount",
-    value: function listenerCount(type) {
-      if (type) {
-        return this.listeners(type).length;
-      } else {
-        var allListeners = this.allListeners;
-        var keys = Object.keys(allListeners);
-        var count = 0;
-
-        for (var i = 0, l = keys.length; i < l; i++) {
-          var key = keys[i];
-          count += allListeners[key] && allListeners[key].length || 0;
-        }
-
-        return count;
-      }
-    }
-  }, {
-    key: "emit",
-    value: function emit(_types) {
-      for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-        args[_key - 1] = arguments[_key];
-      }
-
-      var types = _types;
-
-      if (!Array.isArray(types)) {
-        types = [types];
-      }
-
-      var loopListeners = _objectSpread({}, this.allListeners);
-
-      types.forEach(function (type) {
-        var fns = loopListeners[type];
-
-        if (fns) {
-          fns.concat().forEach(function (f) {
-            try {
-              f.apply(undefined, args);
-            } catch (e) {
-              Object(_gerror__WEBPACK_IMPORTED_MODULE_3__["default"])(e);
-            }
-          });
-        }
-      });
-    }
-  }, {
-    key: "removeListener",
-    value: function removeListener(_types, listener) {
-      var types = _types;
-
-      if (!Array.isArray(types)) {
-        types = [types];
-      }
-
-      var allListeners = this.allListeners;
-      types.forEach(function (type) {
-        var fns = allListeners[type];
-
-        if (fns) {
-          if (listener) {
-            var index = fns.indexOf(listener);
-
-            if (index !== -1) {
-              fns.splice(index, 1);
-            }
-          } else {
-            delete allListeners[type];
-          }
-        }
-      });
-    }
-  }, {
-    key: "on",
-    value: function on() {
-      this.addListener.apply(this, arguments);
-    }
-  }, {
-    key: "off",
-    value: function off() {
-      this.removeListener.apply(this, arguments);
-    }
-  }]);
-
-  return EventEmitter;
-}();
-
-
+/* harmony default export */ __webpack_exports__["default"] = (eventemitter3__WEBPACK_IMPORTED_MODULE_0___default.a);
 
 /***/ }),
 

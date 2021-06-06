@@ -59,7 +59,7 @@ class Radio extends Disabled(Item(LabelTarget(Base(PolymerElement)))) {
     return {
       color: {
         type: String,
-        value: '#F85959',
+        value: '#04BE02',
       },
       checkedColor: {
         type: String,

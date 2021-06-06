@@ -131,7 +131,7 @@ class Slider extends TouchTrack(Disabled(Data(Base(PolymerElement)))) {
       },
       activeColor: {
         type: String,
-        value: '#F85959',
+        value: '#04BE02',
       },
       backgroundColor: {
         type: String,
@@ -147,7 +147,7 @@ class Slider extends TouchTrack(Disabled(Data(Base(PolymerElement)))) {
       },
       selectedColor: {
         type: String,
-        value: '#F85959',
+        value: '#04BE02',
       },
       color: {
         type: String,
@@ -236,7 +236,7 @@ class Slider extends TouchTrack(Disabled(Data(Base(PolymerElement)))) {
   }
 
   _getActiveColor(e, t) {
-    return t !== '#F85959' ? t : e !== '#F85959' ? e : '#F85959';
+    return t !== '#04BE02' ? t : e !== '#04BE02' ? e : '#04BE02';
   }
 
   _getThumbStyles(filteredValue) {

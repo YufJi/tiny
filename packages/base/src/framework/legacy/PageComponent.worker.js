@@ -1,4 +1,5 @@
 import mapValues from 'lodash.mapvalues';
+import { publish, subscribe } from '@/bridge';
 import setData, { spliceData, getOpStr } from '@/utils/setData';
 import objectKeys from '@/utils/objectKeys';
 import mergeArray from '@/utils/mergeArray';
@@ -113,7 +114,7 @@ function getAllUsingComponents(pagePath) {
 
 PageComponent.prototype = {
   ...MessageHandleMixin,
-  initData(isRefresh = false) {
+  init(isRefresh = false) {
     const { publicInstance, id } = this;
     const config = {};
 
@@ -124,7 +125,7 @@ PageComponent.prototype = {
       }
     });
 
-    this.callRemote('self', 'onInitDataReady', {
+    publish('onInitDataReady', {
       id,
       isRefresh,
       publicInstance: {
@@ -132,7 +133,7 @@ PageComponent.prototype = {
         ...config,
       },
       customComponents: this.getCustomComponents(),
-    });
+    }, this.getViewId());
   },
   load() {
     // in case pageResume following appResume, tab page??
@@ -151,12 +152,12 @@ PageComponent.prototype = {
         this.onTabItemTap(this.tabProps);
       }
 
-      this.callRemote('self', 'onLoaded');
+      publish('onRenderPageLoad', {}, this.getViewId());
     }
   },
   refresh() {
     this.unmountAllComponents();
-    this.initData(true);
+    this.init(true);
   },
   show() {
     if (this.unloaded) {
@@ -417,10 +418,8 @@ PageComponent.prototype = {
     }
   },
   executeUserMethod(method, args = []) {
-    const _this = this;
-
     this.batchedUpdates(() => {
-      invokeWithGuardAndReThrow(_this.publicInstance[method], _this.publicInstance, ...args);
+      invokeWithGuardAndReThrow(this.publicInstance[method], this.publicInstance, ...args);
     });
   },
   onPageScroll(...args) {
@@ -440,16 +439,6 @@ PageComponent.prototype = {
       this.isBatching = false;
     }
     this.flushData();
-  },
-  onRenderEvent(name, ...args) {
-    const { publicInstance } = this;
-
-    if (!publicInstance[name]) {
-      console.warn(`${this.getPagePath()}: can not find event handle method: ${name}`);
-      return;
-    }
-
-    this.executeUserMethod(name, args);
   },
   setRemoteData(data, { complete } = {}) {
     this.pendingData.push(data);
@@ -471,10 +460,19 @@ PageComponent.prototype = {
     this.pendingData = [];
     this.pendingCallbacks = [];
     // prevent invalid json pass through
-    this.callRemote('self', 'receiveData', pendingData, () => {
+    // this.callRemote('self', 'receiveData', pendingData, () => {
+    //   pendingCallbacks.forEach((fn) => {
+    //     return fn();
+    //   });
+    // });
+
+    publish('onReceiveData', {
+      data: pendingData,
+    }, this.getViewId(), () => {
       pendingCallbacks.forEach((fn) => {
         return fn();
       });
     });
   },
+
 };

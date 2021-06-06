@@ -16,12 +16,13 @@ export default function createBridge(jsCore) {
     invokeHandler,
   } = createInvoke(jsCore, onNative);
 
-  const publish = createPublish(jsCore);
+  const { publish } = createPublish(jsCore);
 
   return {
     // 宿主调用
     invokeHandler,
     subscribeHandler,
+
     // 内部方法
     publish,
     invokeNative,

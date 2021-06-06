@@ -15,15 +15,12 @@ const {
   unsubscribe,
 } = createBridge(jsCore);
 
-// 全局注册对象, 提供给宿主调用
-self.JSBridgeHandler = {
+export {
   /* 调用的回调 */
   invokeHandler,
   /* 监听的回调 */
   subscribeHandler,
-};
 
-export {
   publish,
   subscribe,
   unsubscribe,

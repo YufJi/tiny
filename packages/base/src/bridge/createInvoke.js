@@ -1,4 +1,4 @@
-function Deferred() {
+export function Deferred() {
   this.promise = undefined;
   this.resolve = undefined;
   this.reject = undefined;
@@ -34,15 +34,20 @@ export default function createInvoke(jsCore) {
     resolve(response);
   };
 
-  const invokeNative = (method, params) => {
+  const invokeNative = (method, params, webviewId = self.WEBVIEWID) => {
     resolveId += 1;
 
     const deferred = new Deferred();
     resolveMap.set(resolveId, deferred.resolve);
 
+    params.from = self.__IS_WORKER__ ? 'WORKER' : 'RENDER';
+
+    const webviewIds = Array.isArray(webviewId) ? webviewId : [webviewId];
+
     let response = jsCore.call({
       event: method,
       paramsString: JSON.stringify(params),
+      webviewIds: JSON.stringify(webviewIds),
       callbackId: resolveId,
     });
 

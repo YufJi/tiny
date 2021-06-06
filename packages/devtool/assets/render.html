@@ -64,7 +64,7 @@
   <script src="/base/mp.js"></script>
   <script src="/index.web.js"></script>
   <script>
-    window.document.addEventListener('JSBridgeReady', function(e) {
+    document.addEventListener('JSBridgeReady', function() {
       bootstrapApp({
         onReady: function(callback) {
           callback({
@@ -78,6 +78,7 @@
         },
       })
     })
+    
   </script>
 </body>
 </html>

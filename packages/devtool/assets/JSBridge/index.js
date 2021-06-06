@@ -51,7 +51,7 @@ window.JSBridgeCallback = function (res) {
   }
 };
 
-window.document.addEventListener('JSBridgeReady', (e) => {
+document.addEventListener('JSBridgeReady', (e) => {
   const { guid } = e.detail;
   window.WEBVIEWID = guid;
 });

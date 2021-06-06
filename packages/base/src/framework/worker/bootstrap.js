@@ -1,5 +1,5 @@
 import './polyfill';
-
+import { subscribe } from '@/bridge';
 import { debug } from '@/utils/log';
 import { getAppImpl, getCurrentPagesImpl } from '../App';
 import { loadPage } from '../SubPackage';
@@ -8,20 +8,6 @@ const g = self;
 
 let started = true;
 let queue = [];
-
-function processLoadPage(event) {
-  const { pagePath, queryString, id: pageId, viewId } = event.data;
-  loadPage(pagePath, () => {
-    const appImpl = getAppImpl();
-    const page = appImpl.newPage({ pagePath, queryString, pageId });
-    page.setViewId(viewId);
-    page.initData();
-    // refresh page
-    if (page.$loadTime) {
-      page.refresh();
-    }
-  });
-}
 
 function processEndpoint(event) {
   const { id: pageId } = event.data;
@@ -33,9 +19,6 @@ function processEndpoint(event) {
 
 function processMessage(event) {
   const { msgType } = event.data;
-  if (msgType === 'DOMContentLoaded') {
-    processLoadPage(event);
-  }
   if (msgType === 'endpoint') {
     processEndpoint(event);
   }
@@ -53,6 +36,102 @@ g.send = (event) => {
 };
 
 g.addEventListener('message', g.send);
+
+function processContentLoad(params, webviewId) {
+  const { pagePath, queryString, id: pageId } = params;
+
+  loadPage(pagePath, () => {
+    const appImpl = getAppImpl();
+    const page = appImpl.newPage({ pagePath, queryString, pageId });
+    page.setViewId(webviewId);
+    // refresh page
+    if (page.$loadTime) {
+      page.refresh();
+    } else {
+      page.init();
+    }
+  });
+}
+
+let callbackId = 0;
+const callbackMap = new Map();
+
+// eslint-disable-next-line @typescript-eslint/promise-function-async
+function invokeWebview(method, params, webviewId) {
+  return new Promise(((resolve, reject) => {
+    callbackId += 1;
+    callbackMap.set(callbackId, {
+      resolve,
+      reject,
+    });
+
+    publish('invokeWebviewMethod', {
+      method,
+      params,
+      extra: {
+        callbackId,
+        timestamp: Date.now(),
+      },
+    }, webviewId);
+  }));
+}
+
+subscribe('callbackWebviewMethod', (response) => {
+  const { error, result, extra } = response;
+  const currentId = extra.callbackId;
+  const executor = callbackMap.get(currentId);
+
+  if (!executor) {
+    const info = JSON.stringify(response);
+    throw new InvokeError(`Executor(${currentId}) in service not found.\nresponse: ${info}`);
+  }
+
+  if (error) {
+    error.env = 'WEBVIEW';
+    executor.reject(error);
+  } else {
+    executor.resolve(result);
+  }
+
+  callbackMap.delete(currentId);
+});
+
+subscribe('invokeServiceMethod', async (data, webviewId) => {
+  const webviewIds = [webviewId];
+  const { scene } = data;
+  const { method } = data;
+  const { extra } = data;
+  const { params } = data;
+
+  // api 调用
+  const result = {};
+
+  publish('callbackServiceMethod', {
+    method,
+    result,
+    extra,
+  }, webviewIds);
+});
+
+subscribe('DOMContentLoaded', (params, webviewId) => {
+  if (started) {
+    queue.forEach(({ params, webviewId }) => processContentLoad(params, webviewId));
+    processContentLoad(params, webviewId);
+  } else {
+    queue.push({
+      params,
+      webviewId,
+    });
+  }
+});
+
+subscribe('onRenderPageEvent', (params, webviewId) => {
+  const { method, args } = params;
+  const appImpl = getAppImpl();
+  const page = appImpl.getPageByViewId(webviewId);
+
+  page && page.executeUserMethod(method, args);
+});
 
 export function pauseApp() {
   started = false;

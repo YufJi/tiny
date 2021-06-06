@@ -72,8 +72,8 @@ export function prefix(target, p = true, r) {
 export default function (fullArgs, isFunction) {
   const args = fullArgs.slice(1);
   let ret = fullArgs[0];
-  let lastArg = void 0;
-  for (let i = 0; i < args.length; i++) {
+  let lastArg;
+  for (let i = 0; i < args.length; i+=1) {
     /* eslint eqeqeq:0 */
     if (ret == null) {
       break;
@@ -103,7 +103,7 @@ export default function (fullArgs, isFunction) {
       }
     };
   }
-  /** TIPS: SJS handler 不支持axml中调用函数返回函数的场景
+  /** TIPS: SJS handler 不支持xml中调用函数返回函数的场景
    * 若用户调用了在 sjs 内的一个函数，然后这个函数返回了一个函数。
    * 这个时候这个返回值（函数）不能作为 SJS 事件handler。
    * 虽然类型也是函数，但是会在上面直接判掉
