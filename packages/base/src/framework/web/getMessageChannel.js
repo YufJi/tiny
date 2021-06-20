@@ -1,3 +1,4 @@
+import { omitBy, isFunction } from 'lodash';
 import { publish, subscribe, invokeNative } from '@/bridge';
 import addEvents from '@/utils/addEvents';
 import { debug } from '@/utils/log';

@@ -25,6 +25,7 @@
     "css-vendor": "^2.0.8",
     "eventemitter3": "^4.0.7",
     "hoist-non-react-statics": "^3.3.2",
+    "lodash": "^4.17.21",
     "lodash.defaults": "^4.2.0",
     "lodash.defaultsdeep": "^4.6.1",
     "lodash.mapvalues": "^4.6.0",

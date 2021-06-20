@@ -1,8 +1,8 @@
+import mapValues from 'lodash/mapValues';
+import defaultsDeep from 'lodash/defaultsDeep';
 import mergeArray from '@/utils/mergeArray';
 import setData, { spliceData, getOpStr } from '@/utils/setData';
 import objectKeys from '@/utils/objectKeys';
-import mapValues from 'lodash.mapvalues';
-import defaultsDeep from 'lodash.defaultsdeep';
 import {
   PendingKeyType,
   PendingKeyId,

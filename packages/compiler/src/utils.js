@@ -10,7 +10,7 @@ const { miniStore, pluginStore } = require('./configStore');
 const numberReSnippet = '(?:NaN|-?(?:(?:\\d+|\\d*\\.\\d+)(?:[E|e][+|-]?\\d+)?|Infinity))';
 const matchOnlyNumberRe = new RegExp(`^(${numberReSnippet})$`);
 
-const elementPrefix = 'mp';
+const elementPrefix = 'tiny';
 const supportedWebcomponents = [
   'view',
   'button',

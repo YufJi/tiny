@@ -27,10 +27,10 @@ function getNormalizedSrc(source, page) {
       src = source;
     } else {
       src = resolvePageUrl(source, page || getCurrentPageImpl());
-      const { mpRuntimeConfig } = self;
+      const { tinyRuntimeConfig } = self;
 
-      if (mpRuntimeConfig && mpRuntimeConfig.contextPath) {
-        src = `${mpRuntimeConfig.contextPath}/${src}`;
+      if (tinyRuntimeConfig && tinyRuntimeConfig.contextPath) {
+        src = `${tinyRuntimeConfig.contextPath}/${src}`;
       } else {
         src = `/${src}`;
       }

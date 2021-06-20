@@ -1,8 +1,8 @@
-import defaults from 'lodash.defaults';
-import defaultsDeep from 'lodash.defaultsdeep';
+import defaults from 'lodash/defaults';
+import defaultsDeep from 'lodash/defaultsDeep';
+import mapValues from 'lodash/mapValues';
 import forEachRight from '@/utils/forEachRight';
 import PolyfillMap from '@/utils/Map';
-import mapValues from 'lodash.mapvalues';
 import { getType, isObject, noop } from '@/utils/types';
 
 export let BehaviorId = 1;

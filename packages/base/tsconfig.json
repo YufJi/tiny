@@ -19,6 +19,9 @@
       "@": ["./src"],
     },
   },
-  "include": ["src"],
+  "include": [
+    "src", 
+    "typings"
+  ],
   "compileOnSave": false
 }

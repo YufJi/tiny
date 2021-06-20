@@ -1,4 +1,4 @@
-import mapValues from 'lodash.mapvalues';
+import mapValues from 'lodash/mapValues';
 import { publish, subscribe } from '@/bridge';
 import setData, { spliceData, getOpStr } from '@/utils/setData';
 import objectKeys from '@/utils/objectKeys';

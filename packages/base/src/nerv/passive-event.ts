@@ -3,26 +3,22 @@ const defaultOptions = {
   capture: false,
 };
 
-const eventListenerOptionsSupported = () => {
-  let supported = false;
+export let supportPassive = false;
 
-  try {
-    const opts = Object.defineProperty({}, 'passive', {
-      get() {
-        supported = true;
-      },
-    });
-    window.addEventListener('test', null as any, opts);
-    window.removeEventListener('test', null as any, opts);
-  } catch (e) {
-    supported = false;
-  }
-
-  return supported;
-};
+try {
+  const opts = Object.defineProperty({}, 'passive', {
+    get() {
+      supportPassive = true;
+    },
+  });
+  window.addEventListener('testPassive', null as any, opts);
+  window.removeEventListener('testPassive', null as any, opts);
+} catch (e) {
+  supportPassive = false;
+}
 
 function getDefaultPassiveOption() {
-  const passiveOption = !eventListenerOptionsSupported() ? false : defaultOptions;
+  const passiveOption = supportPassive ? defaultOptions : false;
   return () => {
     return passiveOption;
   };

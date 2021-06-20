@@ -316,10 +316,10 @@ class Image extends Base(PolymerElement) {
         src = source;
       } else {
         src = resolvePageUrl(source, getCurrentPageImpl());
-        const { mpRuntimeConfig } = self;
+        const { tinyRuntimeConfig } = self;
 
-        if (mpRuntimeConfig && mpRuntimeConfig.contextPath) {
-          src = `${mpRuntimeConfig.contextPath}/${src}`;
+        if (tinyRuntimeConfig && tinyRuntimeConfig.contextPath) {
+          src = `${tinyRuntimeConfig.contextPath}/${src}`;
         } else {
           src = `/${src}`;
         }

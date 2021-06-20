@@ -1,9 +1,9 @@
 import { getCurrentPagesImpl } from '@/framework/App';
 
 export default function invalidNavigateTo(params = {}) {
-  const { mpRuntimeConfig } = self;
+  const { tinyRuntimeConfig } = self;
 
-  const limit = mpRuntimeConfig && mpRuntimeConfig.navigationStackLimits || 10;
+  const limit = tinyRuntimeConfig && tinyRuntimeConfig.navigationStackLimits || 10;
   if (getCurrentPagesImpl().length >= limit) {
     const { fail } = params;
     const { complete } = params;
