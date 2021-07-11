@@ -18,7 +18,7 @@ const trimForComponent = require('./prune');
 const IMPORT = 'import';
 const cwd = process.cwd();
 const TOP_LEVEL = 4;
-const HEADER = 'export default function render(data) {';
+const HEADER = 'export default function render(data, _ctx) {';
 
 function defaultImportComponent() {
   return false;
@@ -711,7 +711,7 @@ assign(MLTransformer.prototype, {
         }
         componentDeps[originalTag] = 1;
         const nextLevel = level + 2;
-        let _modifyFn = void 0;
+        let _modifyFn;
         if (Object.keys(_transformedAttrs2).length) {
           this.pushCode(`<${tag} `);
           this.pushCode(getRawJSXAttributeFromJson(_transformedAttrs2));
@@ -792,20 +792,6 @@ assign(MLTransformer.prototype, {
         code.push('null');
       }
 
-      try {
-        Object.keys(componentDeps).forEach((dep) => {
-          const importStatement = importComponent(dep);
-          if (importStatement !== false) {
-            header.push(importStatement);
-          }
-        });
-      } catch (e) {
-        if (this.config.consoleError) {
-          console.error(e);
-        }
-        return done(e);
-      }
-
       header.push(
         `const $iterate = ${templateRuntimeModule}.iterate;`,
         `const $createRoot = ${templateRuntimeModule}.createRoot;`,
@@ -871,6 +857,21 @@ assign(MLTransformer.prototype, {
         header.push('$templates = $ownTemplates;');
       }
       header.push(HEADER);
+
+      try {
+        Object.keys(componentDeps).forEach((dep) => {
+          const importStatement = importComponent(dep);
+          if (importStatement !== false) {
+            header.push(importStatement);
+          }
+        });
+      } catch (e) {
+        if (this.config.consoleError) {
+          console.error(e);
+        }
+        return done(e);
+      }
+
       this.pushHeaderCode('return $createRoot(');
       this.pushCode(');');
       code.push('};');

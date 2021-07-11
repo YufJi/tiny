@@ -1,3 +1,10 @@
+/*
+ * @Author: YufJ
+ * @Date: 2021-04-30 13:11:37
+ * @LastEditTime: 2021-07-10 03:55:03
+ * @Description:
+ * @FilePath: /tiny-v1/packages/base/src/nerv/shared/index.ts
+ */
 export interface Widget {
   vtype: VType;
   name: string;

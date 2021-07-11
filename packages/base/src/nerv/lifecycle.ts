@@ -124,6 +124,7 @@ export function mountComponent(
   }
   component._dirty = false;
   const rendered = renderComponent(component);
+  invokeEffects(component, 'reversedLayoutEffects');
   rendered.parentVNode = vnode;
   component._rendered = rendered;
   if (!isNullOrUndef(ref)) {
@@ -134,7 +135,8 @@ export function mountComponent(
     getChildContext(component, parentContext),
     component,
   ) as Element);
-  invokeEffects(component);
+
+  invokeEffects(component, 'layoutEffects');
   if (isFunction(component.componentDidMount)) {
     readyComponents.push(component);
   }
@@ -152,7 +154,7 @@ export function getChildContext(component, context = EMPTY_OBJ) {
 export function renderComponent(component: Component<any, any>) {
   CurrentOwner.current = component;
   CurrentOwner.index = 0;
-  invokeEffects(component, true);
+  invokeEffects(component, 'effects');
   let rendered;
   errorCatcher(() => {
     rendered = component.render();
@@ -269,6 +271,7 @@ export function updateComponent(component, isForce = false) {
   if (!skip) {
     const lastRendered = component._rendered;
     const rendered = renderComponent(component);
+    invokeEffects(component, 'reversedLayoutEffects');
     rendered.parentVNode = vnode;
     const childContext = getChildContext(component, context);
     const snapshot = callGetSnapshotBeforeUpdate(prevProps, prevState, component);
@@ -297,7 +300,7 @@ export function updateComponent(component, isForce = false) {
   component.prevContext = component.context;
   component.clearCallBacks();
   flushMount();
-  invokeEffects(component);
+  invokeEffects(component, 'layoutEffects');
   return dom;
 }
 

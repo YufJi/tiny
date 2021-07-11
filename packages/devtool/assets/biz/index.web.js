@@ -81,15 +81,15 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "../devtool/assets/biz/index$.web.js");
+/******/ 	return __webpack_require__(__webpack_require__.s = "../../devtool/assets/biz/index$.web.js");
 /******/ })
 /************************************************************************/
 /******/ ({
 
-/***/ "../devtool/assets/biz/config$.js":
-/*!****************************************!*\
-  !*** ../devtool/assets/biz/config$.js ***!
-  \****************************************/
+/***/ "../../devtool/assets/biz/config$.js":
+/*!*************************************************************************************!*\
+  !*** /Users/jiyufeng/Documents/demo/tiny-v1/packages/devtool/assets/biz/config$.js ***!
+  \*************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -101,892 +101,30 @@ g.mpAppJson = {
   }
 };
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../compiler/node_modules/webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../compiler/node_modules/webpack/buildin/global.js */ "../node_modules/webpack/buildin/global.js")))
 
 /***/ }),
 
-/***/ "../devtool/assets/biz/index$.web.js":
-/*!*******************************************!*\
-  !*** ../devtool/assets/biz/index$.web.js ***!
-  \*******************************************/
+/***/ "../../devtool/assets/biz/index$.web.js":
+/*!****************************************************************************************!*\
+  !*** /Users/jiyufeng/Documents/demo/tiny-v1/packages/devtool/assets/biz/index$.web.js ***!
+  \****************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-__webpack_require__(/*! compiler/sjsEnvInit */ "./src/sjsEnvInit.js");
-__webpack_require__(/*! ./config$ */ "../devtool/assets/biz/config$.js");
-__webpack_require__(/*! ./example/miniRoot/components/add-button/add-button?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./example/miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc");
-__webpack_require__(/*! ./example/miniRoot/pages/todos/todos?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
-__webpack_require__(/*! ./example/miniRoot/pages/add-todo/add-todo?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
+__webpack_require__(/*! compiler/sjsEnvInit */ "../src/sjsEnvInit.js");
+__webpack_require__(/*! ./config$ */ "../../devtool/assets/biz/config$.js");
+__webpack_require__(/*! ./miniRoot/components/add-button/add-button?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc");
+__webpack_require__(/*! ./miniRoot/pages/todos/todos?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
+__webpack_require__(/*! ./miniRoot/pages/add-todo/add-todo?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
 
 
 /***/ }),
 
-/***/ "./example/miniRoot/app.wxss":
-/*!***********************************!*\
-  !*** ./example/miniRoot/app.wxss ***!
-  \***********************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-const { StyleSheet } = self.MP;
-const stylesheet = new StyleSheet({ stylePath: 'app.wxss' });
-/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`mp-page {
-    -webkit-box-flex: 1;
-    -webkit-flex: 1;
-            flex: 1;
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    background: #323239;
-    font-family: "pingFang SC" "pingFang";
-  }`));
-
-/***/ }),
-
-/***/ "./example/miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc":
-/*!************************************************************************************************************!*\
-  !*** ./example/miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc ***!
-  \************************************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-
-const { Component: $Component } = self.MP;
-var Component = $Component || function(){};
-
-Component(
-{
-  is: "/components/add-button/add-button",
-  usingComponents: {"add-button":"/components/add-button/add-button"},
-  render: function() { return __webpack_require__(/*! ./add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./example/miniRoot/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc"); },
-  
-});
-
-
-/***/ }),
-
-/***/ "./example/miniRoot/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc":
-/*!**************************************************************************************************************!*\
-  !*** ./example/miniRoot/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc ***!
-  \**************************************************************************************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
-
-var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
-
-var $getEventHandler = function $getEventHandler(instance, name) {
-  return instance.$getEventHandler(name);
-};
-
-var $getRefHandler = function $getRefHandler(instance, name) {
-  return instance.$getRefHandler(name);
-};
-
-var $getComRefHandler = function $getComRefHandler(instance, name) {
-  return instance.$getComRefHandler && instance.$getComRefHandler(name);
-};
-
-var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
-var getComponentClass = self.MP.getComponentClass;
-
-var $getComponentClass = function $getComponentClass(name) {
-  return getComponentClass && getComponentClass(name);
-};
-
-var $iterate = self.XMLRuntime.iterate;
-var $createRoot = self.XMLRuntime.createRoot;
-var $createBlock = self.XMLRuntime.createBlock;
-var $useTemplate = self.XMLRuntime.useTemplate;
-var $createTemplate = self.XMLRuntime.createTemplate;
-var $renderSlot = self.XMLRuntime.renderSlot;
-var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
-var $getSJSMember = self.XMLRuntime.getSJSMember;
-var $toString = self.XMLRuntime.toString;
-var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
-var $templates = {};
-function render(data) {
-  return $createRoot([nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-button", {
-    className: "add-button",
-    "hover-class": "none",
-    bindtap: $getEventHandler(this, "onClickMe")
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-icon", {
-    type: "success",
-    size: "23"
-  }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-text", null, $toString(data['text']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-text", {
-    bindtap: $getEventHandler(this, "xx")
-  }, $toString(data['name']))]);
-}
-;
-
-/***/ }),
-
-/***/ "./example/miniRoot/components/add-button/add-button.wxss":
-/*!****************************************************************!*\
-  !*** ./example/miniRoot/components/add-button/add-button.wxss ***!
-  \****************************************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-const { StyleSheet } = self.MP;
-const stylesheet = new StyleSheet({ stylePath: 'components/add-button/add-button.wxss' });
-/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.add-button {
-    display: inline-block;
-    background: none;
-    color: #FFF;
-    border: none;
-    width: 3rem;
-  }
-  .add-icon {
-    font-size: 0.52rem;
-    color: #00FFD6;
-    margin-right: 0.1rem;
-  }
-  .user {
-    font-size: 150px;
-  }`));
-
-/***/ }),
-
-/***/ "./example/miniRoot/pages/add-todo/a.wxml":
-/*!************************************************!*\
-  !*** ./example/miniRoot/pages/add-todo/a.wxml ***!
-  \************************************************/
-/*! exports provided: $ownTemplates, default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "$ownTemplates", function() { return $ownTemplates; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
-
-var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
-
-var $getEventHandler = function $getEventHandler(instance, name) {
-  return instance.$getEventHandler(name);
-};
-
-var $getRefHandler = function $getRefHandler(instance, name) {
-  return instance.$getRefHandler(name);
-};
-
-var $getComRefHandler = function $getComRefHandler(instance, name) {
-  return instance.$getComRefHandler && instance.$getComRefHandler(name);
-};
-
-var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
-var $iterate = self.XMLRuntime.iterate;
-var $createRoot = self.XMLRuntime.createRoot;
-var $createBlock = self.XMLRuntime.createBlock;
-var $useTemplate = self.XMLRuntime.useTemplate;
-var $createTemplate = self.XMLRuntime.createTemplate;
-var $renderSlot = self.XMLRuntime.renderSlot;
-var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
-var $getSJSMember = self.XMLRuntime.getSJSMember;
-var $toString = self.XMLRuntime.toString;
-var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
-var $template;
-var $ownTemplates = {};
-
-$template = $ownTemplates["abc"] = function (data) {
-  return nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", null, $toString("21212"));
-};
-
-$template.Component = $createTemplate("abc", $template);
-var $templates = {};
-$templates = $ownTemplates;
-function render(data) {
-  return $createRoot(null);
-}
-;
-
-/***/ }),
-
-/***/ "./example/miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
-/*!***************************************************************************************************!*\
-  !*** ./example/miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
-  \***************************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-
-const { Page } = self.MP;
-
-
-Page(
-{
-  pagePath: 'pages/add-todo/add-todo',
-  usingComponents: {"add-button":"/components/add-button/add-button"},
-  
-  render: function() { return __webpack_require__(/*! ./add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); },
-  stylesheet: function() { return __webpack_require__(/*! ./add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); },
-});
-
-
-/***/ }),
-
-/***/ "./example/miniRoot/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
-/*!*****************************************************************************************************!*\
-  !*** ./example/miniRoot/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
-  \*****************************************************************************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _a_wxml__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./a.wxml */ "./example/miniRoot/pages/add-todo/a.wxml");
-/* harmony import */ var _b_wxml__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./b.wxml */ "./example/miniRoot/pages/add-todo/b.wxml");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
-
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-
-var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
-
-var $getEventHandler = function $getEventHandler(instance, name) {
-  return instance.$getEventHandler(name);
-};
-
-var $getRefHandler = function $getRefHandler(instance, name) {
-  return instance.$getRefHandler(name);
-};
-
-var $getComRefHandler = function $getComRefHandler(instance, name) {
-  return instance.$getComRefHandler && instance.$getComRefHandler(name);
-};
-
-var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
-var getComponentClass = self.MP.getComponentClass;
-
-var $getComponentClass = function $getComponentClass(name) {
-  return getComponentClass && getComponentClass(name);
-};
-
-var AddButton_ = $getComponentClass("/components/add-button/add-button");
-var AddButton = AddButton_ || $EmptyComponentFactory("add-button");
-var $iterate = self.XMLRuntime.iterate;
-var $createRoot = self.XMLRuntime.createRoot;
-var $createBlock = self.XMLRuntime.createBlock;
-var $useTemplate = self.XMLRuntime.useTemplate;
-var $createTemplate = self.XMLRuntime.createTemplate;
-var $renderSlot = self.XMLRuntime.renderSlot;
-var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
-var $getSJSMember = self.XMLRuntime.getSJSMember;
-var $toString = self.XMLRuntime.toString;
-var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
-
-
-var $templates = {};
-$templates = _objectSpread({}, _a_wxml__WEBPACK_IMPORTED_MODULE_1__["$ownTemplates"]);
-function render(data) {
-  return $createRoot(nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "page-add-todo"
-  }, [_b_wxml__WEBPACK_IMPORTED_MODULE_2__["default"].apply(this, arguments), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "add-todo"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-input", {
-    className: "add-todo-input",
-    placeholder: "What needs to be done?",
-    bindblur: $getEventHandler(this, "onBlur"),
-    value: data['inputValue']
-  })), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    bindtap: $getEventHandler(this, "add")
-  }, $toString("12121")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    catchtap: $getEventHandler(this, "add")
-  }, $toString("12121")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "todo-footer"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(AddButton, {
-    text: "Add Todo",
-    bindclickme: $getEventHandler(this, "add"),
-    __tag: "add-button",
-    __owner: this,
-    __page: this.$isCustomComponent ? this.props['__page'] : this
-  })), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    style: "color: red",
-    "capture-catchtap": $getEventHandler(this, "xxxx")
-  }, $toString("capture-catch:tap")), $useTemplate($templates["abc"], {
-    inputValue: data['inputValue']
-  }, undefined, this)]));
-}
-;
-
-/***/ }),
-
-/***/ "./example/miniRoot/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
-/*!*****************************************************************************************************!*\
-  !*** ./example/miniRoot/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
-  \*****************************************************************************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _app_wxss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../app.wxss */ "./example/miniRoot/app.wxss");
-/* harmony import */ var _components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../components/add-button/add-button.wxss */ "./example/miniRoot/components/add-button/add-button.wxss");
-const { StyleSheet } = self.MP;
-const stylesheet = new StyleSheet({ stylePath: 'pages/add-todo/add-todo.wxss' });
-
-stylesheet.imports(_app_wxss__WEBPACK_IMPORTED_MODULE_0__["default"]);
-
-stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__["default"]);
-/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.page-add-todo {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-box-flex: 1;
-    -webkit-flex: 1;
-            flex: 1;
-    -webkit-box-orient: vertical;
-    -webkit-box-direction: normal;
-    -webkit-flex-direction: column;
-            flex-direction: column;
-  }
-  .add-todo {
-    padding: 40px;
-    -webkit-box-flex: 1;
-    -webkit-flex-grow: 1;
-            flex-grow: 1;
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-box-pack: center;
-    -webkit-justify-content: center;
-            justify-content: center;
-    -webkit-box-align: center;
-    -webkit-align-items: center;
-            align-items: center;
-  }
-  .add-todo-input {
-    display: block;
-    font-size: 0.5rem;
-    font-weight: 100;
-    padding: 5px 5px;
-    background: none;
-    border: none;
-    border-bottom: 1px solid #DFDFDF;
-    color: #0EFFD6;
-    width: 100%;
-  }
-  .todo-footer {
-    padding: 0.5rem 0 1rem;
-    font-size: 0.48rem;
-    font-weight: 200;
-    text-align: center;
-  }`));
-
-/***/ }),
-
-/***/ "./example/miniRoot/pages/add-todo/b.wxml":
-/*!************************************************!*\
-  !*** ./example/miniRoot/pages/add-todo/b.wxml ***!
-  \************************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
-
-var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
-
-var $getEventHandler = function $getEventHandler(instance, name) {
-  return instance.$getEventHandler(name);
-};
-
-var $getRefHandler = function $getRefHandler(instance, name) {
-  return instance.$getRefHandler(name);
-};
-
-var $getComRefHandler = function $getComRefHandler(instance, name) {
-  return instance.$getComRefHandler && instance.$getComRefHandler(name);
-};
-
-var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
-var $iterate = self.XMLRuntime.iterate;
-var $createRoot = self.XMLRuntime.createRoot;
-var $createBlock = self.XMLRuntime.createBlock;
-var $useTemplate = self.XMLRuntime.useTemplate;
-var $createTemplate = self.XMLRuntime.createTemplate;
-var $renderSlot = self.XMLRuntime.renderSlot;
-var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
-var $getSJSMember = self.XMLRuntime.getSJSMember;
-var $toString = self.XMLRuntime.toString;
-var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
-var $templates = {};
-function render(data) {
-  return $createRoot(nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", null, $toString("include")));
-}
-;
-
-/***/ }),
-
-/***/ "./example/miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
-/*!*********************************************************************************************!*\
-  !*** ./example/miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
-  \*********************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-
-const { Page } = self.MP;
-
-
-Page(
-{
-  pagePath: 'pages/todos/todos',
-  usingComponents: {"add-button":"/components/add-button/add-button"},
-  
-  render: function() { return __webpack_require__(/*! ./todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/todos/todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); },
-  stylesheet: function() { return __webpack_require__(/*! ./todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/todos/todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); },
-});
-
-
-/***/ }),
-
-/***/ "./example/miniRoot/pages/todos/todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
-/*!***********************************************************************************************!*\
-  !*** ./example/miniRoot/pages/todos/todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
-  \***********************************************************************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
-
-var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
-
-var $getEventHandler = function $getEventHandler(instance, name) {
-  return instance.$getEventHandler(name);
-};
-
-var $getRefHandler = function $getRefHandler(instance, name) {
-  return instance.$getRefHandler(name);
-};
-
-var $getComRefHandler = function $getComRefHandler(instance, name) {
-  return instance.$getComRefHandler && instance.$getComRefHandler(name);
-};
-
-var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
-var getComponentClass = self.MP.getComponentClass;
-
-var $getComponentClass = function $getComponentClass(name) {
-  return getComponentClass && getComponentClass(name);
-};
-
-var AddButton_ = $getComponentClass("/components/add-button/add-button");
-var AddButton = AddButton_ || $EmptyComponentFactory("add-button");
-var $iterate = self.XMLRuntime.iterate;
-var $createRoot = self.XMLRuntime.createRoot;
-var $createBlock = self.XMLRuntime.createBlock;
-var $useTemplate = self.XMLRuntime.useTemplate;
-var $createTemplate = self.XMLRuntime.createTemplate;
-var $renderSlot = self.XMLRuntime.renderSlot;
-var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
-var $getSJSMember = self.XMLRuntime.getSJSMember;
-var $toString = self.XMLRuntime.toString;
-var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
-var $templates = {};
-function render(data) {
-  var _this = this;
-
-  return $createRoot(nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-scroll-view", {
-    className: "page-todos",
-    "scroll-y": "true"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "user"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-image", {
-    className: "avatar",
-    src: $getLooseDataMember([data['user'], "avatar"]) || '../../assets/logo.png',
-    "background-size": "cover"
-  }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "nickname"
-  }, [$toString($getLooseDataMember([data['user'], "nickName"]) && $getLooseDataMember([data['user'], "nickName"]) + '\'s' || 'mp'), $toString(" Todo List")]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "test"
-  }, $toString("Todo List"))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "todo-items"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-checkbox-group", {
-    className: "todo-items-group",
-    bindchange: $getEventHandler(this, "onTodoChanged")
-  }, $iterate(data['todos'], function (item, index) {
-    return nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-label", {
-      key: item,
-      bindtap: $getEventHandler(_this, "clicklabel"),
-      className: "todo-item " + ($getLooseDataMember([item, "completed"]) ? 'checked' : '')
-    }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-checkbox", {
-      className: "todo-item-checkbox",
-      value: $getLooseDataMember([item, "text"]),
-      checked: $getLooseDataMember([item, "completed"])
-    }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-text", {
-      className: "todo-item-text"
-    }, $toString($getLooseDataMember([item, "text"])))]);
-  }))), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-slider", {
-    bindchange: $getEventHandler(this, "sliderChange"),
-    "show-value": true
-  }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "progress-box"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-progress", {
-    percent: "20",
-    "show-info": true,
-    active: true,
-    "stroke-width": "3"
-  })), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "section section_gap"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "section__title"
-  }, $toString("type=\"switch\"")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "body-view"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-switch", {
-    checked: data['switchChecked'],
-    bindchange: $getEventHandler(this, "switchChange")
-  }))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "todo-footer"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(AddButton, {
-    id: "asd",
-    text: data['text'],
-    bindclick_me: $getEventHandler(this, "clickCom"),
-    __tag: "add-button",
-    __owner: this,
-    __page: this.$isCustomComponent ? this.props['__page'] : this
-  }), data['text'] === 'def' ? nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(AddButton, {
-    id: "asd",
-    xx: "xxx",
-    text: data['text'],
-    bindclick_me: $getEventHandler(this, data['fn']),
-    __tag: "add-button",
-    __owner: this,
-    __page: this.$isCustomComponent ? this.props['__page'] : this
-  }) : null]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    bindtap: $getEventHandler(this, "clickParent")
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "jyf",
-    "capture-bindtap": $getEventHandler(this, "captureClickChild"),
-    style: "background: yellow;"
-  }, $toString("capture child")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    "data-xhq": "jyf",
-    bindlongpress: $getEventHandler(this, "clickChild"),
-    style: "margin-top: 120rpx; background: red;"
-  }, $toString(data['haha']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "container"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "page-body"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "page-section page-section-spacing swiper"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-swiper", {
-    "indicator-dots": data['indicatorDots'],
-    autoplay: data['autoplay'],
-    interval: data['interval'],
-    duration: data['duration'],
-    circular: true
-  }, $iterate(data['background'], function (item, index) {
-    return nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-swiper-item", null, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-      className: "swiper-item " + item
-    }));
-  }))), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "page-section",
-    style: "margin-top: 20px;margin-bottom: 0;"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "weui-cells weui-cells_after-title"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "weui-cell weui-cell_switch"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "weui-cell__bd"
-  }, $toString("指示点")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "weui-cell__ft"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-switch", {
-    checked: data['indicatorDots'],
-    bindchange: $getEventHandler(this, "changeIndicatorDots")
-  }))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "weui-cell weui-cell_switch"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "weui-cell__bd"
-  }, $toString("自动播放")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "weui-cell__ft"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-switch", {
-    checked: data['autoplay'],
-    bindchange: $getEventHandler(this, "changeAutoplay")
-  }))])])), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "page-section page-section-spacing"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "page-section-title"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-text", null, $toString("幻灯片切换时长(ms)")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-text", {
-    className: "info"
-  }, $toString(data['duration']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-slider", {
-    bindchange: $getEventHandler(this, "durationChange"),
-    value: data['duration'],
-    min: "500",
-    max: "2000"
-  }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-view", {
-    className: "page-section-title"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-text", null, $toString("自动播放间隔时长(ms)")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-text", {
-    className: "info"
-  }, $toString(data['interval']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("mp-slider", {
-    bindchange: $getEventHandler(this, "intervalChange"),
-    value: data['interval'],
-    min: "3000",
-    max: "10000"
-  })])]))]));
-}
-;
-
-/***/ }),
-
-/***/ "./example/miniRoot/pages/todos/todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
-/*!***********************************************************************************************!*\
-  !*** ./example/miniRoot/pages/todos/todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
-  \***********************************************************************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _app_wxss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../app.wxss */ "./example/miniRoot/app.wxss");
-/* harmony import */ var _components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../components/add-button/add-button.wxss */ "./example/miniRoot/components/add-button/add-button.wxss");
-const { StyleSheet } = self.MP;
-const stylesheet = new StyleSheet({ stylePath: 'pages/todos/todos.wxss' });
-
-stylesheet.imports(_app_wxss__WEBPACK_IMPORTED_MODULE_0__["default"]);
-
-stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__["default"]);
-/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.page-todos {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-box-orient: vertical;
-    -webkit-box-direction: normal;
-    -webkit-flex-direction: column;
-            flex-direction: column;
-    width: 100%;
-    max-height: 100vh;
-  }
-  .user {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-flex-shrink: 0;
-            flex-shrink: 0;
-    padding: 30px;
-    color: #FFF;
-    -webkit-box-orient: vertical;
-    -webkit-box-direction: normal;
-    -webkit-flex-direction: column;
-            flex-direction: column;
-    -webkit-box-align: center;
-    -webkit-align-items: center;
-            align-items: center;
-  }
-  .avatar {
-    width: 1.3rem;
-    height: 1.3rem;
-    border-radius: 50%;
-    background-color: #FFF;
-    -webkit-align-self: center;
-            align-self: center;
-  }
-  .nickname {
-    padding-top: 0.4rem;
-    text-align: center;
-    font-size: 0.4rem;
-    font-weight: 100;
-  }
-  .test {
-    font-size: 20px;
-  }
-  .todo-items {
-    -webkit-box-flex: 1;
-    -webkit-flex-grow: 1;
-            flex-grow: 1;
-    font-size: 0.34rem;
-    padding: 0.5rem 1.2rem;
-    color: #0EFFD6;
-    overflow: auto;
-  }
-  .todo-items-group {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-box-orient: vertical;
-    -webkit-box-direction: normal;
-    -webkit-flex-direction: column;
-            flex-direction: column;
-  }
-  .todo-item {
-    position: relative;
-    margin-bottom: 0.5rem;
-    padding-left: 0.8rem;
-    line-height: 0.7rem;
-    height: 0.8rem;
-    box-sizing: border-box;
-    border: 2px solid rgb(14, 255, 214);
-    border-radius: 1rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    -webkit-transition: border 0.2s;
-    transition: border 0.2s;
-  }
-  .todo-item:last-child {
-    margin-bottom: 0;
-  }
-  .todo-item::before {
-    content: '';
-    position: absolute;
-    left: 0.12rem;
-    margin-right: 0.2rem;
-    width: 0.45rem;
-    height: 0.45rem;
-    background-color: rgba(14, 222, 255, 0.3);
-    border-radius: 50%;
-    top: 50%;
-    -webkit-transform: translateY(-50%);
-            transform: translateY(-50%);
-    -webkit-transition: background-color 0.2s;
-    transition: background-color 0.2s;
-  }
-  .todo-item::after {
-    content: '';
-    position: absolute;
-    left: 0.29rem;
-    width: 0.08rem;
-    height: 0.18rem;
-    top: 50%;
-    -webkit-transform: translateY(-60%) rotate(38deg);
-            transform: translateY(-60%) rotate(38deg);
-    border: 0.04rem solid #FFF;
-    border-width: 0 0.04rem 0.04rem 0;
-    opacity: 0;
-    -webkit-transition: opacity 0.2s;
-    transition: opacity 0.2s;
-  }
-  .todo-item-checkbox {
-    display: none;
-  }
-  .checked .todo-item-text {
-    text-decoration: line-through;
-    color: #1AA0B8;
-  }
-  .checked.todo-item {
-    border: 2px solid rgba(14, 222, 255, 0.2);
-  }
-  .checked.todo-item::before {
-    background-color: rgba(14, 222, 255, 0.2);
-  }
-  .checked.todo-item::after {
-    opacity: 1;
-  }
-  .todo-footer {
-    -webkit-flex-shrink: 0;
-            flex-shrink: 0;
-    padding: 0.5rem 0 1rem;
-    font-size: 0.48rem;
-    font-weight: 200;
-    text-align: center;
-  }
-  .page-section-title {
-    padding: 0;
-  }
-  .swiper-item {
-    display: block;
-    height: 150px;
-  }
-  .page-section-title {
-    margin-top: 30px;
-    position: relative;
-  }
-  .info {
-    position: absolute;
-    right: 0;
-    font-size: 15px;
-  }
-  .page-foot {
-    margin-top: 25px;
-  }
-  .demo-text-1 {
-    position: relative;
-    -webkit-box-align: center;
-    -webkit-align-items: center;
-            align-items: center;
-    -webkit-box-pack: center;
-    -webkit-justify-content: center;
-            justify-content: center;
-    background-color: #1AAD19;
-    color: #FFFFFF;
-    font-size: 18px;
-  }
-  .demo-text-1:before {
-    content: 'A';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    -webkit-transform: translate(-50%, -50%);
-            transform: translate(-50%, -50%);
-  }
-  .demo-text-2 {
-    position: relative;
-    -webkit-box-align: center;
-    -webkit-align-items: center;
-            align-items: center;
-    -webkit-box-pack: center;
-    -webkit-justify-content: center;
-            justify-content: center;
-    background-color: #2782D7;
-    color: #FFFFFF;
-    font-size: 18px;
-  }
-  .demo-text-2:before {
-    content: 'B';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    -webkit-transform: translate(-50%, -50%);
-            transform: translate(-50%, -50%);
-  }
-  .demo-text-3 {
-    position: relative;
-    -webkit-box-align: center;
-    -webkit-align-items: center;
-            align-items: center;
-    -webkit-box-pack: center;
-    -webkit-justify-content: center;
-            justify-content: center;
-    background-color: #F1F1F1;
-    color: #353535;
-    font-size: 18px;
-  }
-  .demo-text-3:before {
-    content: 'C';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    -webkit-transform: translate(-50%, -50%);
-            transform: translate(-50%, -50%);
-  }`));
-
-/***/ }),
-
-/***/ "./node_modules/webpack/buildin/global.js":
-/*!***********************************!*\
-  !*** (webpack)/buildin/global.js ***!
-  \***********************************/
+/***/ "../node_modules/webpack/buildin/global.js":
+/*!*************************************************!*\
+  !*** ../node_modules/webpack/buildin/global.js ***!
+  \*************************************************/
 /*! no static exports found */
 /***/ (function(module, exports) {
 
@@ -1014,10 +152,10 @@ module.exports = g;
 
 /***/ }),
 
-/***/ "./src/sjsEnvInit.js":
-/*!***************************!*\
-  !*** ./src/sjsEnvInit.js ***!
-  \***************************/
+/***/ "../src/sjsEnvInit.js":
+/*!****************************!*\
+  !*** ../src/sjsEnvInit.js ***!
+  \****************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -1818,7 +956,847 @@ module.exports = g;
   }
 })(typeof global !== 'undefined' ? global : self);
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../node_modules/webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../node_modules/webpack/buildin/global.js */ "../node_modules/webpack/buildin/global.js")))
+
+/***/ }),
+
+/***/ "./miniRoot/app.wxss":
+/*!***************************!*\
+  !*** ./miniRoot/app.wxss ***!
+  \***************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+const { StyleSheet } = self.MP;
+const stylesheet = new StyleSheet({ stylePath: 'app.wxss' });
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`tiny-page {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+            flex: 1;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    background: #323239;
+    font-family: "pingFang SC" "pingFang";
+  }`));
+
+/***/ }),
+
+/***/ "./miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc":
+/*!****************************************************************************************************!*\
+  !*** ./miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc ***!
+  \****************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+const { Component: $Component } = self.MP;
+var Component = $Component || function(){};
+
+Component(
+{
+  is: "/components/add-button/add-button",
+  usingComponents: {"add-button":"/components/add-button/add-button"},
+  render: function() { return __webpack_require__(/*! ./add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./miniRoot/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc"); },
+  
+});
+
+
+/***/ }),
+
+/***/ "./miniRoot/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc":
+/*!******************************************************************************************************!*\
+  !*** ./miniRoot/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc ***!
+  \******************************************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
+
+var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
+
+var $getEventHandler = function $getEventHandler(instance, name) {
+  return instance.$getEventHandler(name);
+};
+
+var $getRefHandler = function $getRefHandler(instance, name) {
+  return instance.$getRefHandler(name);
+};
+
+var $getComRefHandler = function $getComRefHandler(instance, name) {
+  return instance.$getComRefHandler && instance.$getComRefHandler(name);
+};
+
+var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
+var $iterate = self.XMLRuntime.iterate;
+var $createRoot = self.XMLRuntime.createRoot;
+var $createBlock = self.XMLRuntime.createBlock;
+var $useTemplate = self.XMLRuntime.useTemplate;
+var $createTemplate = self.XMLRuntime.createTemplate;
+var $renderSlot = self.XMLRuntime.renderSlot;
+var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.XMLRuntime.getSJSMember;
+var $toString = self.XMLRuntime.toString;
+var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
+var $templates = {};
+function render(data, _ctx) {
+  return $createRoot([nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-button", {
+    className: "add-button",
+    "hover-class": "none",
+    bindtap: _ctx.$$eventBinder("onClickMe")
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-icon", {
+    type: "success",
+    size: "23"
+  }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-text", null, $toString(data['text']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-text", {
+    bindtap: _ctx.$$eventBinder("xx")
+  }, $toString(data['name']))]);
+}
+;
+
+/***/ }),
+
+/***/ "./miniRoot/components/add-button/add-button.wxss":
+/*!********************************************************!*\
+  !*** ./miniRoot/components/add-button/add-button.wxss ***!
+  \********************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+const { StyleSheet } = self.MP;
+const stylesheet = new StyleSheet({ stylePath: 'components/add-button/add-button.wxss' });
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.add-button {
+    display: inline-block;
+    background: none;
+    color: #FFF;
+    border: none;
+    width: 3rem;
+  }
+  .add-icon {
+    font-size: 0.52rem;
+    color: #00FFD6;
+    margin-right: 0.1rem;
+  }
+  .user {
+    font-size: 150px;
+  }`));
+
+/***/ }),
+
+/***/ "./miniRoot/pages/add-todo/a.wxml":
+/*!****************************************!*\
+  !*** ./miniRoot/pages/add-todo/a.wxml ***!
+  \****************************************/
+/*! exports provided: $ownTemplates, default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "$ownTemplates", function() { return $ownTemplates; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
+
+var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
+
+var $getEventHandler = function $getEventHandler(instance, name) {
+  return instance.$getEventHandler(name);
+};
+
+var $getRefHandler = function $getRefHandler(instance, name) {
+  return instance.$getRefHandler(name);
+};
+
+var $getComRefHandler = function $getComRefHandler(instance, name) {
+  return instance.$getComRefHandler && instance.$getComRefHandler(name);
+};
+
+var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
+var $iterate = self.XMLRuntime.iterate;
+var $createRoot = self.XMLRuntime.createRoot;
+var $createBlock = self.XMLRuntime.createBlock;
+var $useTemplate = self.XMLRuntime.useTemplate;
+var $createTemplate = self.XMLRuntime.createTemplate;
+var $renderSlot = self.XMLRuntime.renderSlot;
+var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.XMLRuntime.getSJSMember;
+var $toString = self.XMLRuntime.toString;
+var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
+var $template;
+var $ownTemplates = {};
+
+$template = $ownTemplates["abc"] = function (data) {
+  return nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", null, $toString("21212"));
+};
+
+$template.Component = $createTemplate("abc", $template);
+var $templates = {};
+$templates = $ownTemplates;
+function render(data, _ctx) {
+  return $createRoot(null);
+}
+;
+
+/***/ }),
+
+/***/ "./miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!*******************************************************************************************!*\
+  !*** ./miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \*******************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+    window.app['pages/add-todo/add-todo'] = {
+      usingComponents: {"add-button":"/components/add-button/add-button"},
+      
+      get render() {
+        return __webpack_require__(/*! ./add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
+      },
+      // render: function() { return require('./add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219'); },
+      // stylesheet: function() { return require('./add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219'); },
+      get stylesheet() { return __webpack_require__(/*! ./add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); },
+    };
+  
+
+/***/ }),
+
+/***/ "./miniRoot/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!*********************************************************************************************!*\
+  !*** ./miniRoot/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \*********************************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _a_wxml__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./a.wxml */ "./miniRoot/pages/add-todo/a.wxml");
+/* harmony import */ var _b_wxml__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./b.wxml */ "./miniRoot/pages/add-todo/b.wxml");
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+
+var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
+
+var $getEventHandler = function $getEventHandler(instance, name) {
+  return instance.$getEventHandler(name);
+};
+
+var $getRefHandler = function $getRefHandler(instance, name) {
+  return instance.$getRefHandler(name);
+};
+
+var $getComRefHandler = function $getComRefHandler(instance, name) {
+  return instance.$getComRefHandler && instance.$getComRefHandler(name);
+};
+
+var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
+var $iterate = self.XMLRuntime.iterate;
+var $createRoot = self.XMLRuntime.createRoot;
+var $createBlock = self.XMLRuntime.createBlock;
+var $useTemplate = self.XMLRuntime.useTemplate;
+var $createTemplate = self.XMLRuntime.createTemplate;
+var $renderSlot = self.XMLRuntime.renderSlot;
+var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.XMLRuntime.getSJSMember;
+var $toString = self.XMLRuntime.toString;
+var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
+
+
+var $templates = {};
+$templates = _objectSpread({}, _a_wxml__WEBPACK_IMPORTED_MODULE_1__["$ownTemplates"]);
+function render(data, _ctx) {
+  var AddButton = _ctx.$$resolveComponent("add-button");
+
+  return $createRoot(nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "page-add-todo"
+  }, [_b_wxml__WEBPACK_IMPORTED_MODULE_2__["default"].apply(this, arguments), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "add-todo"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-input", {
+    className: "add-todo-input",
+    placeholder: "What needs to be done?",
+    bindblur: _ctx.$$eventBinder("onBlur"),
+    value: data['inputValue']
+  })), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    bindtap: _ctx.$$eventBinder("add")
+  }, $toString("12121")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    catchtap: _ctx.$$eventBinder("add")
+  }, $toString("12121")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "todo-footer"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(AddButton, {
+    text: "Add Todo",
+    bindclickme: _ctx.$$eventBinder("add"),
+    __tag: "add-button",
+    __owner: this,
+    __page: this.$isCustomComponent ? this.props['__page'] : this
+  })), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    style: "color: red",
+    "capture-catchtap": _ctx.$$eventBinder("xxxx")
+  }, $toString("capture-catch:tap")), $useTemplate($templates["abc"], {
+    inputValue: data['inputValue']
+  }, undefined, this)]));
+}
+;
+
+/***/ }),
+
+/***/ "./miniRoot/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!*********************************************************************************************!*\
+  !*** ./miniRoot/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \*********************************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _app_wxss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../app.wxss */ "./miniRoot/app.wxss");
+/* harmony import */ var _components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../components/add-button/add-button.wxss */ "./miniRoot/components/add-button/add-button.wxss");
+const { StyleSheet } = self.MP;
+const stylesheet = new StyleSheet({ stylePath: 'pages/add-todo/add-todo.wxss' });
+
+stylesheet.imports(_app_wxss__WEBPACK_IMPORTED_MODULE_0__["default"]);
+
+stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__["default"]);
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.page-add-todo {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+            flex: 1;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+            flex-direction: column;
+  }
+  .add-todo {
+    padding: 40px;
+    -webkit-box-flex: 1;
+    -webkit-flex-grow: 1;
+            flex-grow: 1;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+            justify-content: center;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+            align-items: center;
+  }
+  .add-todo-input {
+    display: block;
+    font-size: 0.5rem;
+    font-weight: 100;
+    padding: 5px 5px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid #DFDFDF;
+    color: #0EFFD6;
+    width: 100%;
+  }
+  .todo-footer {
+    padding: 0.5rem 0 1rem;
+    font-size: 0.48rem;
+    font-weight: 200;
+    text-align: center;
+  }`));
+
+/***/ }),
+
+/***/ "./miniRoot/pages/add-todo/b.wxml":
+/*!****************************************!*\
+  !*** ./miniRoot/pages/add-todo/b.wxml ***!
+  \****************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
+
+var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
+
+var $getEventHandler = function $getEventHandler(instance, name) {
+  return instance.$getEventHandler(name);
+};
+
+var $getRefHandler = function $getRefHandler(instance, name) {
+  return instance.$getRefHandler(name);
+};
+
+var $getComRefHandler = function $getComRefHandler(instance, name) {
+  return instance.$getComRefHandler && instance.$getComRefHandler(name);
+};
+
+var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
+var $iterate = self.XMLRuntime.iterate;
+var $createRoot = self.XMLRuntime.createRoot;
+var $createBlock = self.XMLRuntime.createBlock;
+var $useTemplate = self.XMLRuntime.useTemplate;
+var $createTemplate = self.XMLRuntime.createTemplate;
+var $renderSlot = self.XMLRuntime.renderSlot;
+var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.XMLRuntime.getSJSMember;
+var $toString = self.XMLRuntime.toString;
+var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
+var $templates = {};
+function render(data, _ctx) {
+  return $createRoot(nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", null, $toString("include")));
+}
+;
+
+/***/ }),
+
+/***/ "./miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!*************************************************************************************!*\
+  !*** ./miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \*************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+    window.app['pages/todos/todos'] = {
+      usingComponents: {"add-button":"/components/add-button/add-button"},
+      
+      get render() {
+        return __webpack_require__(/*! ./todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/todos/todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
+      },
+      // render: function() { return require('./todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219'); },
+      // stylesheet: function() { return require('./todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219'); },
+      get stylesheet() { return __webpack_require__(/*! ./todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/todos/todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); },
+    };
+  
+
+/***/ }),
+
+/***/ "./miniRoot/pages/todos/todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!***************************************************************************************!*\
+  !*** ./miniRoot/pages/todos/todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \***************************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
+/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
+
+var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
+
+var $getEventHandler = function $getEventHandler(instance, name) {
+  return instance.$getEventHandler(name);
+};
+
+var $getRefHandler = function $getRefHandler(instance, name) {
+  return instance.$getRefHandler(name);
+};
+
+var $getComRefHandler = function $getComRefHandler(instance, name) {
+  return instance.$getComRefHandler && instance.$getComRefHandler(name);
+};
+
+var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
+var $iterate = self.XMLRuntime.iterate;
+var $createRoot = self.XMLRuntime.createRoot;
+var $createBlock = self.XMLRuntime.createBlock;
+var $useTemplate = self.XMLRuntime.useTemplate;
+var $createTemplate = self.XMLRuntime.createTemplate;
+var $renderSlot = self.XMLRuntime.renderSlot;
+var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.XMLRuntime.getSJSMember;
+var $toString = self.XMLRuntime.toString;
+var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
+var $templates = {};
+function render(data, _ctx) {
+  var AddButton = _ctx.$$resolveComponent("add-button");
+
+  return $createRoot(nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-scroll-view", {
+    className: "page-todos",
+    "scroll-y": "true"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "user"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-image", {
+    className: "avatar",
+    src: $getLooseDataMember([data['user'], "avatar"]) || '../../assets/logo.png',
+    "background-size": "cover"
+  }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "nickname"
+  }, [$toString($getLooseDataMember([data['user'], "nickName"]) && $getLooseDataMember([data['user'], "nickName"]) + '\'s' || 'mp'), $toString(" Todo List")]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "test"
+  }, $toString("Todo List"))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "todo-items"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-checkbox-group", {
+    className: "todo-items-group",
+    bindchange: _ctx.$$eventBinder("onTodoChanged")
+  }, $iterate(data['todos'], function (item, index) {
+    return nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-label", {
+      key: item,
+      bindtap: _ctx.$$eventBinder("clicklabel"),
+      className: "todo-item " + ($getLooseDataMember([item, "completed"]) ? 'checked' : '')
+    }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-checkbox", {
+      className: "todo-item-checkbox",
+      value: $getLooseDataMember([item, "text"]),
+      checked: $getLooseDataMember([item, "completed"])
+    }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-text", {
+      className: "todo-item-text"
+    }, $toString($getLooseDataMember([item, "text"])))]);
+  }))), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-slider", {
+    bindchange: _ctx.$$eventBinder("sliderChange"),
+    "show-value": true
+  }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "progress-box"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-progress", {
+    percent: "20",
+    "show-info": true,
+    active: true,
+    "stroke-width": "3"
+  })), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "section section_gap"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "section__title"
+  }, $toString("type=\"switch\"")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "body-view"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-switch", {
+    checked: data['switchChecked'],
+    bindchange: _ctx.$$eventBinder("switchChange")
+  }))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "todo-footer"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(AddButton, {
+    id: "asd",
+    text: data['text'],
+    bindclick_me: _ctx.$$eventBinder("clickCom"),
+    __tag: "add-button",
+    __owner: this,
+    __page: this.$isCustomComponent ? this.props['__page'] : this
+  }), data['text'] === 'def' ? nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(AddButton, {
+    id: "asd",
+    xx: "xxx",
+    text: data['text'],
+    bindclick_me: _ctx.$$eventBinder(data['fn']),
+    __tag: "add-button",
+    __owner: this,
+    __page: this.$isCustomComponent ? this.props['__page'] : this
+  }) : null]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    bindtap: _ctx.$$eventBinder("clickParent")
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "jyf",
+    "capture-bindtap": _ctx.$$eventBinder("captureClickChild"),
+    style: "background: yellow;"
+  }, $toString("capture child")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    "data-xhq": "jyf",
+    bindlongpress: _ctx.$$eventBinder("clickChild"),
+    style: "margin-top: 120rpx; background: red;"
+  }, $toString(data['haha']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "container"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "page-body"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "page-section page-section-spacing swiper"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-swiper", {
+    "indicator-dots": data['indicatorDots'],
+    autoplay: data['autoplay'],
+    interval: data['interval'],
+    duration: data['duration'],
+    circular: true
+  }, $iterate(data['background'], function (item, index) {
+    return nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-swiper-item", null, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+      className: "swiper-item " + item
+    }));
+  }))), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "page-section",
+    style: "margin-top: 20px;margin-bottom: 0;"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "weui-cells weui-cells_after-title"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "weui-cell weui-cell_switch"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "weui-cell__bd"
+  }, $toString("指示点")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "weui-cell__ft"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-switch", {
+    checked: data['indicatorDots'],
+    bindchange: _ctx.$$eventBinder("changeIndicatorDots")
+  }))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "weui-cell weui-cell_switch"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "weui-cell__bd"
+  }, $toString("自动播放")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "weui-cell__ft"
+  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-switch", {
+    checked: data['autoplay'],
+    bindchange: _ctx.$$eventBinder("changeAutoplay")
+  }))])])), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "page-section page-section-spacing"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "page-section-title"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-text", null, $toString("幻灯片切换时长(ms)")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-text", {
+    className: "info"
+  }, $toString(data['duration']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-slider", {
+    bindchange: _ctx.$$eventBinder("durationChange"),
+    value: data['duration'],
+    min: "500",
+    max: "2000"
+  }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    className: "page-section-title"
+  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-text", null, $toString("自动播放间隔时长(ms)")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-text", {
+    className: "info"
+  }, $toString(data['interval']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-slider", {
+    bindchange: _ctx.$$eventBinder("intervalChange"),
+    value: data['interval'],
+    min: "3000",
+    max: "10000"
+  })])]))]));
+}
+;
+
+/***/ }),
+
+/***/ "./miniRoot/pages/todos/todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!***************************************************************************************!*\
+  !*** ./miniRoot/pages/todos/todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \***************************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _app_wxss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../app.wxss */ "./miniRoot/app.wxss");
+/* harmony import */ var _components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../components/add-button/add-button.wxss */ "./miniRoot/components/add-button/add-button.wxss");
+const { StyleSheet } = self.MP;
+const stylesheet = new StyleSheet({ stylePath: 'pages/todos/todos.wxss' });
+
+stylesheet.imports(_app_wxss__WEBPACK_IMPORTED_MODULE_0__["default"]);
+
+stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__["default"]);
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.page-todos {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+            flex-direction: column;
+    width: 100%;
+    max-height: 100vh;
+  }
+  .user {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-shrink: 0;
+            flex-shrink: 0;
+    padding: 30px;
+    color: #FFF;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+            flex-direction: column;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+            align-items: center;
+  }
+  .avatar {
+    width: 1.3rem;
+    height: 1.3rem;
+    border-radius: 50%;
+    background-color: #FFF;
+    -webkit-align-self: center;
+            align-self: center;
+  }
+  .nickname {
+    padding-top: 0.4rem;
+    text-align: center;
+    font-size: 0.4rem;
+    font-weight: 100;
+  }
+  .test {
+    font-size: 20px;
+  }
+  .todo-items {
+    -webkit-box-flex: 1;
+    -webkit-flex-grow: 1;
+            flex-grow: 1;
+    font-size: 0.34rem;
+    padding: 0.5rem 1.2rem;
+    color: #0EFFD6;
+    overflow: auto;
+  }
+  .todo-items-group {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+            flex-direction: column;
+  }
+  .todo-item {
+    position: relative;
+    margin-bottom: 0.5rem;
+    padding-left: 0.8rem;
+    line-height: 0.7rem;
+    height: 0.8rem;
+    box-sizing: border-box;
+    border: 2px solid rgb(14, 255, 214);
+    border-radius: 1rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-transition: border 0.2s;
+    transition: border 0.2s;
+  }
+  .todo-item:last-child {
+    margin-bottom: 0;
+  }
+  .todo-item::before {
+    content: '';
+    position: absolute;
+    left: 0.12rem;
+    margin-right: 0.2rem;
+    width: 0.45rem;
+    height: 0.45rem;
+    background-color: rgba(14, 222, 255, 0.3);
+    border-radius: 50%;
+    top: 50%;
+    -webkit-transform: translateY(-50%);
+            transform: translateY(-50%);
+    -webkit-transition: background-color 0.2s;
+    transition: background-color 0.2s;
+  }
+  .todo-item::after {
+    content: '';
+    position: absolute;
+    left: 0.29rem;
+    width: 0.08rem;
+    height: 0.18rem;
+    top: 50%;
+    -webkit-transform: translateY(-60%) rotate(38deg);
+            transform: translateY(-60%) rotate(38deg);
+    border: 0.04rem solid #FFF;
+    border-width: 0 0.04rem 0.04rem 0;
+    opacity: 0;
+    -webkit-transition: opacity 0.2s;
+    transition: opacity 0.2s;
+  }
+  .todo-item-checkbox {
+    display: none;
+  }
+  .checked .todo-item-text {
+    text-decoration: line-through;
+    color: #1AA0B8;
+  }
+  .checked.todo-item {
+    border: 2px solid rgba(14, 222, 255, 0.2);
+  }
+  .checked.todo-item::before {
+    background-color: rgba(14, 222, 255, 0.2);
+  }
+  .checked.todo-item::after {
+    opacity: 1;
+  }
+  .todo-footer {
+    -webkit-flex-shrink: 0;
+            flex-shrink: 0;
+    padding: 0.5rem 0 1rem;
+    font-size: 0.48rem;
+    font-weight: 200;
+    text-align: center;
+  }
+  .page-section-title {
+    padding: 0;
+  }
+  .swiper-item {
+    display: block;
+    height: 150px;
+  }
+  .page-section-title {
+    margin-top: 30px;
+    position: relative;
+  }
+  .info {
+    position: absolute;
+    right: 0;
+    font-size: 15px;
+  }
+  .page-foot {
+    margin-top: 25px;
+  }
+  .demo-text-1 {
+    position: relative;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+            align-items: center;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+            justify-content: center;
+    background-color: #1AAD19;
+    color: #FFFFFF;
+    font-size: 18px;
+  }
+  .demo-text-1:before {
+    content: 'A';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+  }
+  .demo-text-2 {
+    position: relative;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+            align-items: center;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+            justify-content: center;
+    background-color: #2782D7;
+    color: #FFFFFF;
+    font-size: 18px;
+  }
+  .demo-text-2:before {
+    content: 'B';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+  }
+  .demo-text-3 {
+    position: relative;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+            align-items: center;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+            justify-content: center;
+    background-color: #F1F1F1;
+    color: #353535;
+    font-size: 18px;
+  }
+  .demo-text-3:before {
+    content: 'C';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+  }`));
 
 /***/ }),
 

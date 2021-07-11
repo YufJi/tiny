@@ -17,6 +17,8 @@ export function getHooks(index: number): Hook {
   return hooks[index];
 }
 
+type HookTypes = 'effects' | 'layoutEffects' | 'reversedLayoutEffects'
+
 type SetStateAction<S> = S | ((prevState: S) => S)
 
 type Dispatch<A> = (value: A) => void
@@ -113,8 +115,8 @@ function areDepsChanged(prevDeps?: DependencyList, deps?: DependencyList) {
   return deps.some((d, i) => !objectIs(d, prevDeps[i]));
 }
 
-export function invokeEffects(component: Component<any, any>, delay = false) {
-  const effects = delay ? component.effects : component.layoutEffects;
+export function invokeEffects(component: Component<any, any>, key: HookTypes) {
+  const effects = component[key];
   (effects || []).forEach((hook) => {
     if (isFunction(hook.cleanup)) {
       hook.cleanup();
@@ -125,11 +127,7 @@ export function invokeEffects(component: Component<any, any>, delay = false) {
     }
   });
 
-  if (delay) {
-    component.effects = [];
-  } else {
-    component.layoutEffects = [];
-  }
+  component[key] = [];
 }
 
 let scheduleEffectComponents: Array<Component<any, any>> = [];
@@ -143,7 +141,7 @@ function invokeScheduleEffects(component: Component) {
         setTimeout(() => {
           scheduleEffectComponents.forEach((c) => {
             c._afterScheduleEffect = false;
-            invokeEffects(c, true);
+            invokeEffects(c, 'effects');
           });
           scheduleEffectComponents = [];
         }, 0);
@@ -152,27 +150,29 @@ function invokeScheduleEffects(component: Component) {
   }
 }
 
-function useEffectImpl(effect: EffectCallback, deps?: DependencyList, delay = false) {
+function useEffectImpl(effect: EffectCallback, key: HookTypes, deps?: DependencyList) {
   const hook = getHooks(Current.index++);
   if (areDepsChanged(hook.deps, deps)) {
     hook.effect = effect;
     hook.deps = deps;
 
-    if (delay) {
-      Current.current!.effects = Current.current!.effects.concat(hook);
+    Current.current![key] = Current.current![key].concat(hook);
+    if (key === 'effects') {
       invokeScheduleEffects(Current.current!);
-    } else {
-      Current.current!.layoutEffects = Current.current!.layoutEffects.concat(hook);
     }
   }
 }
 
 export function useEffect(effect: EffectCallback, deps?: DependencyList): void {
-  useEffectImpl(effect, deps, true);
+  useEffectImpl(effect, 'effects', deps);
 }
 
 export function useLayoutEffect(effect: EffectCallback, deps?: DependencyList): void {
-  useEffectImpl(effect, deps);
+  useEffectImpl(effect, 'layoutEffects', deps);
+}
+
+export function useDangerousReverseOrderLayoutEffect(effect: EffectCallback, deps?: DependencyList): void {
+  useEffectImpl(effect, 'reversedLayoutEffects', deps);
 }
 
 export function useRef<T>(initialValue?: T): RefObject<T> {

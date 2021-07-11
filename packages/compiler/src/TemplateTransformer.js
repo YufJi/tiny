@@ -55,15 +55,11 @@ class TemplateTransformer extends Transformer {
     );
     header.push('');
     const {
-      library = defaultLib.tinyBaseModule,
-      UILibrary = defaultLib.tinyUIModule,
       usingComponents,
       pluginId,
       isWorker,
       supportSjsHandler,
     } = config;
-
-    const depUIPkg = (dep) => `${UILibrary}['${dep}']`;
 
     let { placeholderFactory } = config;
     if (!placeholderFactory) {
@@ -71,12 +67,6 @@ class TemplateTransformer extends Transformer {
       header.push(
         `const $EmptyComponentFactory = ${_config.templateRuntimeModule}.EmptyComponentFactory;`,
       );
-    }
-
-    if (usingComponents && Object.keys(usingComponents).length) {
-      header.push(`const { getComponentClass } = ${library};`);
-      header.push('const $getComponentClass = (name) => getComponentClass && getComponentClass(name);');
-      header.push('');
     }
 
     assign(config, {
@@ -110,9 +100,9 @@ class TemplateTransformer extends Transformer {
             attrName,
           });
 
-          const handleFn = '$getEventHandler';
+          const handleFn = '_ctx.$$eventBinder';
 
-          transformedAttrs[attrName] = `{${handleFn}(this, ${handlerFn})}`;
+          transformedAttrs[attrName] = `{${handleFn}(${handlerFn})}`;
           return false;
         } else if (attrName === 'children') {
           throw new Error(
@@ -176,26 +166,13 @@ class TemplateTransformer extends Transformer {
         }
 
         const componentInfo = usingComponents && usingComponents[dep];
+
+        if (!componentInfo) return;
+
         const componentName = toComponentName(dep);
 
-        const tmpComponentName = `${componentName}_`;
-        const depName = tmpComponentName;
-
         return [
-          componentInfo
-            ? `const ${tmpComponentName} = $getComponentClass(${JSON.stringify(
-              getComponentInfo({
-                pluginId,
-                componentInfo,
-                isWorker,
-              }),
-            )})`
-            : `const ${depName} = ${depUIPkg(dep)};`,
-
-          `const ${componentName} = ${tmpComponentName} || ${`${placeholderFactory}(${JSON.stringify(
-            dep,
-          )})`};`,
-
+          `const ${componentName} = _ctx.$$resolveComponent(${JSON.stringify(dep)})`,
         ].join('\n');
       },
     });

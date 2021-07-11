@@ -1,0 +1,114 @@
+import { last, isEqual } from 'lodash';
+
+import { onNative } from '../bridge';
+import { triggerShowCbs, triggerHideCbs } from '../apis/AppEvents';
+import context from '../context';
+import configApp from './configApp';
+
+export default function loadApp() {
+  configApp(handleApp);
+}
+
+const APP_STATE = {
+  // willRoute 意味着onAppEnterForeground后面会有路由事件，此时不派发页面级别的 onShow
+  willRoute: false,
+  firstColdLaunch: true,
+  launchParam: {
+    path: '',
+    query: {},
+  },
+};
+
+function handleApp(app) {
+  app.onLaunch(context.launchOptions);
+  app.onShow(context.launchOptions);
+
+  triggerShowCbs(context.launchOptions);
+
+  // onAppLaunch 一定比 onAppEnterForeground 先发
+  onNative('onAppLaunch', handleAppLaunch);
+
+  // 页面切回前台时，先‘显示’ App，再‘显示’最上层页面
+  onNative('onAppEnterForeground', (param) => {
+    handleAppEnterForeground(app, param);
+  });
+
+  // 页面切到后台时，将最上层页面‘隐藏’，然后让App‘隐藏’
+  onNative('onAppEnterBackground', () => {
+    handlePageEnterBackground();
+    triggerHideCbs();
+    handleAppEnterBackground(app);
+  });
+
+  // 监听全局错误
+  // app.onError(e);
+}
+
+function handleAppLaunch(param) {
+  const pages = getPageStack();
+  const currentPage = last(pages);
+  const query = isString(param.query) ? querystring.parse(param.query) : param.query || {};
+
+  if (!currentPage || currentPage.route !== param.path || !isEqual(currentPage.query, query)) {
+    APP_STATE.willRoute = true;
+    APP_STATE.launchParam.path = param.path;
+    APP_STATE.launchParam.query = query;
+  }
+}
+
+function handleAppEnterForeground(app, param) {
+  if (APP_STATE.firstColdLaunch) {
+    // 忽略首次调用以保证冷启同步, TODO 这是怎么回事
+    APP_STATE.willRoute = false;
+    APP_STATE.firstColdLaunch = false;
+    return;
+  }
+
+  const pages = getPageStack();
+  const currentPage = last(pages);
+  let path; let
+    query;
+
+  if (APP_STATE.willRoute) {
+    // 后面将有一次onAppRoute，会改变currentPage
+    path = APP_STATE.launchParam.path;
+    query = APP_STATE.launchParam.query;
+  } else if (currentPage) {
+    // 小程序已经启动，一定有currentPage
+    path = currentPage.route;
+    query = currentPage.query;
+  } else {
+    console.error('currentPage not found');
+  }
+
+  const showOptions = {
+    ...param,
+    query,
+    path,
+  };
+  triggerShowCbs(showOptions);
+  app.onShow(showOptions);
+
+  // 页面onShow生命周期将有route管理
+  if (!APP_STATE.willRoute) {
+    if (currentPage) {
+      currentPage.implement.onShow();
+
+      // notify webview
+      publish('onAppEnterForeground', {}, currentPage.webviewId);
+    }
+  }
+
+  APP_STATE.willRoute = false;
+}
+
+function handlePageEnterBackground() {
+  const pages = getPageStack();
+
+  if (pages.length) {
+    const currentPage = pages[pages.length - 1];
+    currentPage.implement.onHide();
+    // notify webview
+    publish('onAppEnterBackground', {}, currentPage.webviewId);
+  }
+}

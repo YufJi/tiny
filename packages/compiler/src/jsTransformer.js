@@ -205,34 +205,23 @@ function transformPageJsForWebRender(name, config) {
   }
   const pagePath = pluginId ? getPluginPath(pluginId, name) : name;
   // es5 for node_modules
-  const info = `
-{
-  pagePath: '${pagePath}',
-  ${
-  usingComponents
-    ? `usingComponents: ${JSON.stringify(
-      transformUsingComponents({
-        usingComponents,
-        pluginId,
-      }),
-    )},`
-    : ''
-}
-  ${config.tabIndex !== -1 ? `tabIndex: ${config.tabIndex},` : ''}
-  render: function() { return require('./${filename}${templateExtname}${resourceQuery}'); },
-  ${
-  styleTransformer && fullPath
-    ? `stylesheet: function() { return require('${normalizePathForWin(
-      relative(fullPath, styleTransformer.config.stylePath),
-    )}${resourceQuery}'); },`
-    : ''
-}
-}`;
-  return `
-${getPageRenderHeader(config)}
+  const info = `{
+      ${usingComponents? `usingComponents: ${JSON.stringify(transformUsingComponents({
+    usingComponents,
+    pluginId,
+  }))},` : ''}
+      ${config.tabIndex !== -1 ? `tabIndex: ${config.tabIndex},` : ''}
+      get render() {
+        return require('./${filename}${templateExtname}${resourceQuery}');
+      },
+      // render: function() { return require('./${filename}${templateExtname}${resourceQuery}'); },
+      // ${styleTransformer && fullPath ? `stylesheet: function() { return require('${normalizePathForWin(relative(fullPath, styleTransformer.config.stylePath))}${resourceQuery}'); },` : ''}
+      ${styleTransformer && fullPath ? `get stylesheet() { return require('${normalizePathForWin(relative(fullPath, styleTransformer.config.stylePath))}${resourceQuery}'); },` : ''}
+    }`;
 
-Page(${info});
-`;
+  return `
+    window.app['${pagePath}'] = ${info};
+  `;
 }
 
 function transformJsForWorker(str, config) {
