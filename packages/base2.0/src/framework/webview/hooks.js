@@ -9,7 +9,7 @@
 import { forOwn, hasIn, kebabCase } from 'lodash';
 import { Deferred, mergeData } from '@utils';
 import { getPageInfoFromUrl } from '@utils/pageInfoAndUrl';
-import { useState, useRef, useContext, useLayoutEffect, useEffect, useMemo } from './preact';
+import { useState, useRef, useContext, useLayoutEffect, useEffect, useMemo } from './nerv';
 import { FieldsContext, ConfigContext, ComponentHubContext } from './context';
 import {
   onComponentDataChange,

@@ -1,3 +1,10 @@
+/*
+ * @Author: YufJ
+ * @Date: 2021-04-14 11:07:18
+ * @LastEditTime: 2021-07-14 19:45:19
+ * @Description:
+ * @FilePath: /tiny-v1/packages/base/src/framework/utils/resolveUrl.js
+ */
 import startsWith from '@/utils/startsWith';
 
 export default function resolveUrl(path, refered) {
@@ -8,6 +15,7 @@ export default function resolveUrl(path, refered) {
     path = `./${path}`;
   }
   const referedParts = refered.split('/');
+
   if (referedParts[referedParts.length - 1]) {
     referedParts.pop();
   }

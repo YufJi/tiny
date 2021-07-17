@@ -1,3 +1,10 @@
+/*
+ * @Author: YufJ
+ * @Date: 2021-06-02 23:52:03
+ * @LastEditTime: 2021-07-14 13:35:09
+ * @Description:
+ * @FilePath: /tiny-v1/packages/base/src/web-components/utils/scrollUtil.js
+ */
 import debounce from '@/utils/debounce';
 import { elementPrefix, UpperCasePerfix } from '@/utils/config';
 
@@ -60,12 +67,12 @@ const scrollUtil = {
 
       const id = item._imageInstanceId;
 
-      e[id] = item;
+      registeredImages[id] = item;
     }
   },
   deregisterInstance(item) {
     if (item._imageInstanceId) {
-      delete e[item._imageInstanceId];
+      delete registeredImages[item._imageInstanceId];
       item._imageInstanceId = undefined;
     }
   },

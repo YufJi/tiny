@@ -4,6 +4,7 @@ import querystring from 'querystring';
 
 import { onNative, subscribe, invokeNative } from '../bridge';
 import context from '../context';
+import { ComponentPageModel, PageModel } from '../Model';
 import checkIsComponent from './checkIsComponent';
 
 // 使用过的webview
@@ -231,10 +232,6 @@ function actionNavigateBack(route, webviewId) {
     return;
   }
 
-  emitBindmessage('navigateBack', {
-    route,
-  });
-
   // 推栈
   let page;
 
@@ -329,8 +326,9 @@ function actionCreatePage(route, webviewId, query) {
     route,
     query,
     _params: cloneDeep(onAppRouteParams),
-  }; // 发布事件，并且这里执行事件回调是同步的
+  };
 
+  // 发布事件，并且这里执行事件回调是同步的
   emitter.emit('afterCreatePage', currentPage);
   // 缓存page
   webviewUsed.set(webviewId, currentPage);

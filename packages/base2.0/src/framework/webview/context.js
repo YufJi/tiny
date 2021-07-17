@@ -6,7 +6,7 @@
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/context.js
  */
 import EventEmitter from 'eventemitter3';
-import { createContext } from './preact';
+import { createContext } from './nerv';
 
 import * as bridge from './bridge';
 

@@ -60,10 +60,8 @@ export default function loadComponent() {
    */
 
   subscribe('COMPONENT_DATA_CHANGE', (params, webviewId) => {
-    const { nodeId } = params;
-    const { datatype } = params;
-    const { data } = params;
-    const componentModel = get$3(componentModels, [webviewId, nodeId]);
+    const { nodeId, datatype, data } = params;
+    const componentModel = get(componentModels, [webviewId, nodeId]);
 
     if (!componentModel) {
       console.warn(`[COMPONENT_DATA_CHANGE] Component(${webviewId}.${nodeId}) not found`);
@@ -94,22 +92,19 @@ export default function loadComponent() {
 
       const { properties } = bookmark.init;
 
-      for (let _i2 = 0, _Object$entries = Object.entries(data); _i2 < _Object$entries.length; _i2++) {
-        const _Object$entries$_i = _Object$entries[_i2];
-        const key = _Object$entries$_i[0];
-        const newValue = _Object$entries$_i[1];
+      for (let i = 0; i < Object.entries(data).length; i++) {
+        const [key, newValue] = Object.entries(data)[i];
         const property = properties[key];
         const oldValue = cloneDeep(componentModel.data[key]); // 如果相等则不需要 trigger observer
 
-        if (isEqual(newValue, oldValue)) {
-          continue;
-        }
         // if (newValue === oldValue) continue;
-        set(componentModel.data, key, newValue);
-        const observer = isString(property.observer) ? componentModel[property.observer] : property.observer;
+        if (!isEqual(newValue, oldValue)) {
+          set(componentModel.data, key, newValue);
+          const observer = isString(property.observer) ? componentModel[property.observer] : property.observer;
 
-        if (isFunction(observer)) {
-          wrapUserFunction(`at the observer of '${key}' in ${componentModel.is}`, observer).call(componentModel, newValue, oldValue);
+          if (isFunction(observer)) {
+            wrapUserFunction(`at the observer of '${key}' in ${componentModel.is}`, observer).call(componentModel, newValue, oldValue);
+          }
         }
       }
     }

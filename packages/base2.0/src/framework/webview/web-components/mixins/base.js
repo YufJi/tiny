@@ -1,6 +1,14 @@
+/*
+ * @Author: YufJ
+ * @Date: 2021-07-03 20:23:17
+ * @LastEditTime: 2021-07-14 20:05:38
+ * @Description:
+ * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/web-components/mixins/base.js
+ */
 /* eslint-disable no-inner-declarations */
 /* eslint-disable func-names */
-import addListenerToElement from '@utils/addListenerToElement';
+
+import { addListenerToElement } from '../../nerv/event';
 
 export default function Base(SuperClass) {
   return class extends SuperClass {

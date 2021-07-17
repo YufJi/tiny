@@ -1,13 +1,14 @@
 /*
  * @Author: YufJ
  * @Date: 2021-07-09 15:11:41
- * @LastEditTime: 2021-07-12 01:57:48
+ * @LastEditTime: 2021-07-14 20:11:22
  * @Description:
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/util.js
  */
 
 import { isFunction, wrap, noop, kebabCase, hasIn, isPlainObject, isObject, camelCase } from 'lodash';
 import { getType } from '@utils';
+import startsWith from '@utils/startsWith';
 
 export function tryCatch(method, callback, context) {
   return isFunction(callback)
@@ -19,6 +20,37 @@ export function tryCatch(method, callback, context) {
       }
     })
     : noop;
+}
+
+export function getRealRoute(relative = '', path = '') {
+  if (path.indexOf('/') === 0) {
+    return path.substr(1);
+  }
+
+  if (path.indexOf('./') === 0) {
+    return getRealRoute(relative, path.substr(2));
+  }
+
+  let count = 0;
+  const pathParts = path.split('/');
+
+  for (let i = 0; i < pathParts.length; i++) {
+    const element = pathParts[i];
+
+    if (pathParts[i] === '..') {
+      count++;
+    } else {
+      break;
+    }
+  }
+
+  pathParts.splice(0, count);
+
+  const relativeParts = relative.length > 0 ? relative.split('/') : [];
+
+  relativeParts.splice(relativeParts.length - count - 1, count + 1);
+
+  return relativeParts.concat(pathParts).join('/');
 }
 
 const blackPropList = ['$scopedSlots'];
@@ -86,10 +118,7 @@ export function filterDataset(props) {
 }
 
 export function isShadowRoot(e) {
-  let t;
-  return e == null || (t = e._type_) == null
-    ? void 0
-    : t.startsWith('SHADOW_ROOT');
+  return !e || e._type_ && e._type_.startsWith('SHADOW_ROOT');
 }
 
 export function isSlot(e) {
@@ -107,6 +136,7 @@ export function getComponentConfig(e) {
 export function getParent(e) {
   let t = e.parentElement;
   if (!t || isShadowRoot(t)) return null;
+
   if (isSlot(t)) {
     for (; t && !isShadowRoot(t); ) {
       var n;

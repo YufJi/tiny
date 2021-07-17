@@ -1,7 +1,7 @@
 /*
  * @Author: YufJ
  * @Date: 2021-07-03 20:23:17
- * @LastEditTime: 2021-07-12 02:03:27
+ * @LastEditTime: 2021-07-14 20:04:54
  * @Description:
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/web-components/index.js
  */
@@ -23,7 +23,7 @@ import './checkbox-group';
 import './radio';
 import './radio-group';
 import './icon';
-// import './image';
+import './image';
 import './scroll-view';
 import './slider';
 import './progress';

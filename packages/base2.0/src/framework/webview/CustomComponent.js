@@ -2,14 +2,14 @@
 /*
  * @Author: YufJ
  * @Date: 2021-07-09 17:30:43
- * @LastEditTime: 2021-07-12 01:49:37
+ * @LastEditTime: 2021-07-14 20:52:56
  * @Description:
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/CustomComponent.js
  */
 import { memoize } from 'lodash';
 import path from '../Path';
-import { useComponentHubContext, useJSBridge, useRefinedDataset, useRefinedProps, useSyncChangedDataset, useSyncChangedProps } from './hooks';
-import { h, useDangerousReverseLayoutEffect, useLayoutEffect, Children } from './preact';
+import { useComponentHubContext, useDataChange, useJSBridge, useLifeCycleHooks, useRefinedDataset, useRefinedProps, useSyncChangedDataset, useSyncChangedProps } from './hooks';
+import { h, useDangerousReverseLayoutEffect, useLayoutEffect, Children } from './nerv';
 
 export function registerCustomComponents(__allConfig__, customComponents) {
   const customComponentMap = new Map();
@@ -66,10 +66,10 @@ export function defineCustomComponent(is, options, customComponentMap) {
     const { render, stylesheet } = compiled;
     const { publish } = useJSBridge;
     const nodeId = useNodeId();
-    const _ctx = useComponentRenderContext(props, nodeId, is, config, resolveComponent);
+    const ctx = useComponentRenderContext(props, nodeId, is, config, resolveComponent);
     const [refinedProps, initialProps] = useRefinedProps(props, properties);
     const [refinedDataset, initialDataset] = useRefinedDataset(props);
-    const _data = useDataChange(nodeId, data, refinedProps);
+    const changedData = useDataChange(nodeId, data, refinedProps);
     const [created, attached, ready, detached] = useLifeCycleHooks(nodeId, is);
 
     useDangerousReverseLayoutEffect(() => {
@@ -97,7 +97,7 @@ export function defineCustomComponent(is, options, customComponentMap) {
         $name={displayName || 'custom-component'}
         attribute={props}
       >
-        {render({ $scopedSlots, $slots, ..._data }, _ctx)}
+        {render({ $scopedSlots, $slots, ...changedData }, ctx)}
       </ShadowRoot>
     );
   };

@@ -58,6 +58,8 @@ class Component<P, S> implements ComponentInst<P, S> {
 
   layoutEffects: HookEffect[] = EMPTY_CHILDREN
 
+  reversedLayoutEffects: HookEffect[] = EMPTY_CHILDREN
+
   constructor(props?: P, context?: any) {
     if (!this.state) {
       this.state = {} as S;

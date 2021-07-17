@@ -1,3 +1,10 @@
+/*
+ * @Author: YufJ
+ * @Date: 2021-04-14 11:07:18
+ * @LastEditTime: 2021-07-14 20:15:40
+ * @Description:
+ * @FilePath: /tiny-v1/packages/base/src/framework/utils/pageInfoAndUrl.js
+ */
 import $global from '../common/global';
 
 const pageMatchReg = /#([^?]+)(\?.+)?/;
@@ -25,6 +32,7 @@ export function getPageInfoFromUrl(url) {
     queryString = queryString.slice(1);
   }
   id = id || $global.tabsConfig[pagePath] || 0;
+
   return {
     id,
     pagePath,

@@ -171,7 +171,7 @@ export function useLayoutEffect(effect: EffectCallback, deps?: DependencyList): 
   useEffectImpl(effect, 'layoutEffects', deps);
 }
 
-export function useDangerousReverseOrderLayoutEffect(effect: EffectCallback, deps?: DependencyList): void {
+export function useDangerousReverseLayoutEffect(effect: EffectCallback, deps?: DependencyList): void {
   useEffectImpl(effect, 'reversedLayoutEffects', deps);
 }
 

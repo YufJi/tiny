@@ -1,8 +1,8 @@
 /* eslint-disable default-case */
 import { PolymerElement, html } from '@polymer/polymer';
-import { elementPrefix } from '@/utils/config';
 import resolvePageUrl from '@/framework/utils/resolvePageUrl';
 import { getCurrentPageImpl } from '@/framework/App';
+import { elementPrefix } from './utils/config';
 
 import { Base } from './mixins';
 import scrollUtil from './utils/scrollUtil';

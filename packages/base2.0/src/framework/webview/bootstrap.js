@@ -6,7 +6,7 @@
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/bootstrap.js
  */
 import EventEmitter from 'eventemitter3';
-import { h, render } from './preact';
+import { h, render } from './nerv';
 import MicroApp from './MicroApp';
 
 const globalJSCore = self.JSCore;

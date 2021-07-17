@@ -5,7 +5,7 @@
  * @Description:
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/Page.js
  */
-import { h, useEffect, useLayoutEffect } from './preact';
+import { h, useEffect, useLayoutEffect } from './nerv';
 import { ComponentHubContext } from './context';
 import {
   useCompileResult,

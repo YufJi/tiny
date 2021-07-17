@@ -1,11 +1,9 @@
 /* eslint-disable default-case */
 import { PolymerElement, html } from '@polymer/polymer';
 import { elementPrefix } from '@utils/config';
-import resolvePageUrl from '@/framework/utils/resolvePageUrl';
-import { getCurrentPageImpl } from '@/framework/App';
-
 import { Base } from './mixins';
 import scrollUtil from './utils/scrollUtil';
+import { getRealRoute } from '../util';
 
 const documentContainer = document.createElement('div');
 documentContainer.setAttribute('style', 'display: none;');
@@ -309,20 +307,13 @@ class Image extends Base(PolymerElement) {
           || source.indexOf('https://') === 0
           || source.indexOf('file://') === 0
           || source.indexOf('data:image') === 0 // base64
-          || source.indexOf('myfile://') === 0 // support custom protocol of IDE
           || source.indexOf('local://') === 0 // support custom protocol of IDE
           || source.indexOf('temp://') === 0 // support custom protocol of IDE
       ) {
         src = source;
       } else {
-        src = resolvePageUrl(source, getCurrentPageImpl());
-        const { tinyRuntimeConfig } = self;
-
-        if (tinyRuntimeConfig && tinyRuntimeConfig.contextPath) {
-          src = `${tinyRuntimeConfig.contextPath}/${src}`;
-        } else {
-          src = `/${src}`;
-        }
+        // window.route
+        callback(getRealRoute(window.dirName, source));
       }
     }
 
