@@ -7,7 +7,7 @@ import {
   isComposite,
 } from './shared';
 import { extend, clone, isFunction, isNumber, isString, isUndefined, isArray } from './utils';
-import CurrentOwner from './current-owner';
+import Current from './current-owner';
 import createElement from './vdom/create-element';
 import createVText from './vdom/create-vtext';
 import { createVoid } from './vdom/create-void';
@@ -141,8 +141,8 @@ export function getChildContext(component, context = EMPTY_OBJ) {
 }
 
 export function renderComponent(component) {
-  CurrentOwner.current = component;
-  CurrentOwner.index = 0;
+  Current.current = component;
+  Current.index = 0;
   invokeEffects(component, 'effects');
 
   let rendered;
@@ -152,7 +152,7 @@ export function renderComponent(component) {
   }, component);
 
   rendered = ensureVirtualNode(rendered);
-  CurrentOwner.current = null;
+  Current.current = null;
 
   return rendered;
 }

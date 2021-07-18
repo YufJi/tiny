@@ -1,13 +1,13 @@
 /*
  * @Author: YufJ
  * @Date: 2021-07-12 11:36:57
- * @LastEditTime: 2021-07-13 15:41:52
+ * @LastEditTime: 2021-07-18 19:09:01
  * @Description:
- * @FilePath: /yeact/src/create-element.js
+ * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/nerv/create-element.js
  */
-import { EMPTY_CHILDREN } from './shared';
+
 import { isFunction, isString, isUndefined } from './utils';
-import CurrentOwner from './current-owner';
+import Current from './current-owner';
 import FullComponent from './full-component';
 import h from './vdom/h';
 
@@ -22,16 +22,13 @@ export default function createElement(type, properties, ..._children) {
 
   if (isString(type)) {
     props = transformPropsForRealTag(properties);
-    props.owner = CurrentOwner.current;
+    props.owner = Current.current;
 
     return h(type, props, children);
   } else if (isFunction(type)) {
     props = transformPropsForComponent(properties, type.defaultProps);
-    // props.children = children;
-    if (!props.children || props.children === EMPTY_CHILDREN) {
-      props.children = children || children === 0 ? children : EMPTY_CHILDREN;
-    }
-    props.owner = CurrentOwner.current;
+    props.children = children;
+    props.owner = Current.current;
 
     return new FullComponent(type, props);
   }
@@ -43,12 +40,12 @@ function transformPropsForRealTag(props) {
   const newProps = {};
   for (const propName in props) {
     const propValue = props[propName];
+
     if (propName === 'defaultValue') {
       newProps.value = props.value || props.defaultValue;
-      continue;
+    } else {
+      newProps[propName] = propValue;
     }
-
-    newProps[propName] = propValue;
   }
   return newProps;
 }

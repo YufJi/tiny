@@ -409,6 +409,7 @@ function lis(a) {
     }
 
     const j = result[result.length - 1];
+
     if (a[j] < a[i]) {
       p[i] = j;
       result.push(i);

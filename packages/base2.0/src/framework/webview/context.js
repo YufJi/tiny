@@ -1,7 +1,7 @@
 /*
  * @Author: YufJ
  * @Date: 2021-07-07 11:53:06
- * @LastEditTime: 2021-07-12 01:57:41
+ * @LastEditTime: 2021-07-18 21:51:19
  * @Description:
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/context.js
  */
@@ -10,7 +10,7 @@ import { createContext } from './nerv';
 
 import * as bridge from './bridge';
 
-const defaultFields = {
+export const defaultFields = {
   root: document.body,
   bridge,
   status: {
