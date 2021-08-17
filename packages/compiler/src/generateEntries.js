@@ -17,7 +17,6 @@ self.${bridgeName} = MP.bridge;
 self.Component = MP.Component;
 self.Behavior = MP.Behavior;
 self.$global = MP.$global;
-self.requirePlugin = MP.requirePlugin;
 `;
 
 module.exports = function generateEntries({
@@ -100,6 +99,9 @@ g.mpAppJson = ${JSON.stringify(mpJson, null, 2)};
   }
 
   const configImport = 'require(\'./config$\');';
+
+  const appConfigImport = 'var appConfig = require(\'./appConfig.json\');\n self.TinyConfig = appConfig;';
+
   const appImport = `require('${src}/app');`;
   const allComponentsRequires = getComponentImports(app.pages, src, {
     src,
@@ -189,7 +191,7 @@ g.mpAppJson = ${JSON.stringify(mpJson, null, 2)};
 
   const hasImportScripts = importScripts && importScripts.length;
   let importJs = `if(!self.Map || !self.Set || !self.Symbol) {
-    importScripts('https://gw.alipayobjects.com/as/g/mp_release/deps/1.0.3/es6-set-map-symbol.js');
+    importScripts('es6-set-map-symbol.js');
      }
      `;
   if (hasImportScripts) {
@@ -198,13 +200,6 @@ g.mpAppJson = ${JSON.stringify(mpJson, null, 2)};
       return acc;
     }, '');
   }
-  const registerAppJson = `
-if(MP.registerApp) {
-  MP.registerApp({
-    appJSON: mpAppJson,
-  });
-}
-`;
 
   if (web && out) {
     fs.writeFileSync(path.join(out, 'importScripts$.js'), importJs);
@@ -215,16 +210,16 @@ if(MP.registerApp) {
     'self.__mpInited = 1;',
     injectScript,
     configImport,
+    appConfigImport,
     hasImportScripts ? 'require(\'./importScripts$\');' : '',
     injectScriptAfterWorkerImportScripts,
-    registerAppJson,
     pluginInjection,
     'function success() {',
     appImport,
     ...allComponentsRequires,
     ...pageImports,
     '}',
-    'self.bootstrapApp ? self.bootstrapApp({ success }) : success();',
+    'success();',
     '}',
   ];
   const indexWorkerJs = workerIndex.join('\n');

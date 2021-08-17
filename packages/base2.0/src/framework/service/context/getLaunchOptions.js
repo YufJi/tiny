@@ -8,11 +8,12 @@
 import { memoize, isString, isObject } from 'lodash';
 
 import { invokeNative } from '../bridge';
-import { error } from '../utils/log';
+import { error, debug } from '../utils/log';
 
 const getLaunchOptions = memoize(() => {
   try {
     const res = invokeNative('getLaunchOptionsSync');
+    debug('launchOptions', res);
     let query;
 
     if (isString(res.query)) {

@@ -11,9 +11,6 @@ const {
   PLUGIN_PREFIX,
 } = require('./pluginUtils');
 
-const tagAttrName = '__tag';
-const ownerAttrName = '__owner';
-const pageAttrName = '__page';
 const ATTR_NAME_REG = /^[\w-:]+$/;
 
 function getComponentInfo({ pluginId, componentInfo, isWorker }) {
@@ -36,23 +33,13 @@ class TemplateTransformer extends Transformer {
       fs,
     };
     _config.useFragment = false;
-    _config.templateExtname = _config.templateExtname;
+    // _config.templateExtname = _config.templateExtname;
     _config.templateRuntimeModule = defaultLib.templateRuntimeModule;
 
     super(template, _config);
 
     const { config, header } = this;
-    header.push('');
-    header.push('const $createReactElement = Nerv && Nerv.createElement;');
-    header.push(
-      'const $getEventHandler = (instance, name) => instance.$getEventHandler(name);',
-    );
-    header.push(
-      'const $getRefHandler = (instance, name) => instance.$getRefHandler(name);',
-    );
-    header.push(
-      'const $getComRefHandler = (instance, name) => instance.$getComRefHandler && instance.$getComRefHandler(name);',
-    );
+
     header.push('');
     const {
       usingComponents,
@@ -118,38 +105,7 @@ class TemplateTransformer extends Transformer {
         ) {
           global.miniComponentSet.add(tag);
         }
-        // custom component does not need to be
-        const componentInfo = usingComponents && usingComponents[tag];
-        /* 自定义组件 */
-        if (componentInfo || tag === 'component') {
-          // for devtools inspect
-          transformedAttrs[tagAttrName] = `"${tag}"`;
-          transformedAttrs[ownerAttrName] = '{this}';
-          transformedAttrs[pageAttrName] = `{this.$isCustomComponent ? this.props['${pageAttrName}'] : this}`;
-        } else if (this.config.pluginId || supportSjsHandler) {
-          // for plugin auth
-          transformedAttrs[ownerAttrName] = '{this}';
-        }
-        Object.keys(attrs).forEach((attrName) => {
-          if (attrName === 'ref') {
-            if (componentInfo || tag === 'component') {
-              const handlerFn = this.processExpression(attrs[attrName], {
-                node,
-                attrName,
-              });
 
-              transformedAttrs.ref = `{$getComRefHandler(this, ${handlerFn})}`;
-            } else if (!attrs.id) {
-              delete transformedAttrs.ref;
-            }
-          } else if (!componentInfo && attrName === 'id') {
-            const handlerFn = this.processExpression(attrs[attrName], {
-              node,
-              attrName,
-            });
-            transformedAttrs.ref = `{$getRefHandler(this, ${handlerFn})}`;
-          }
-        });
         if (tag.toLowerCase() !== tag) {
           throw new Error(
             `parse <${tag}> error: Custom Component'name should be form of my-component, not myComponent or MyComponent`,

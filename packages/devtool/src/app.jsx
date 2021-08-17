@@ -30,8 +30,7 @@ class App extends Component {
 
   componentDidMount() {
     this.initNav();
-    this.initWorker();
-    this.initPage();
+    this.launchTiny();
   }
 
   loadAppConfig() {
@@ -54,29 +53,39 @@ class App extends Component {
     });
   }
 
-  initWorker() {
-    const { pages } = global.appConfig;
-    const homePage = pages[0];
-
-    const src = `worker.html?pagePath=${homePage}`;
+  launchTiny() {
     const guid = createGuid('worker');
-    global.worker = createWorkerIframe({
-      guid,
-      src,
-      onload: (iframe) => {
-        EventHub.emit(WORKERLOADED);
-      },
-    });
-  }
-
-  initPage() {
+    const src = 'worker.html';
     const { pages } = global.appConfig;
     const homePage = pages[0];
 
-    const url = `#${homePage}?debug=framework`;
-    const tag = homePage;
+    // global.worker = await createWorkerIframe({
+    //   guid,
+    //   src,
+    // });
 
-    doPushWindow(url, tag);
+    // doPushWindow(homePage, (iframe) => {
+    //   global.worker.contentWindow.JSBridge.subscribeHandler('onAppRoute', JSON.stringify({
+    //     path: homePage,
+    //     openType: 'appLaunch',
+    //   }), iframe.id);
+    // })
+
+    Promise.all([
+      createWorkerIframe({
+        guid,
+        src,
+      }),
+      doPushWindow(homePage),
+    ]).then((iframes) => {
+      const [worker, renderIframe] = iframes;
+      global.worker = worker;
+
+      global.worker.contentWindow.JSBridge.subscribeHandler('onAppRoute', JSON.stringify({
+        path: homePage,
+        openType: 'appLaunch',
+      }), renderIframe.id);
+    });
   }
 
   hideMP = () => {

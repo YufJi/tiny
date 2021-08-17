@@ -6,10 +6,14 @@
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/bridge/index.js
  */
 import createBridge from '@/js-bridge';
-import emitter from '../emitter';
 
+const g = self;
 // 宿主提供的bridge
-const jsCore = self.JSCore;
+const jsCore = g.JSCore;
+
+const bridge = createBridge(jsCore);
+
+g.JSBridge = bridge;
 
 const {
   invokeHandler,
@@ -21,7 +25,7 @@ const {
   offNative,
   subscribe,
   unsubscribe,
-} = createBridge(jsCore);
+} = bridge;
 
 let callbackId = 0;
 const callbackMap = new Map();
@@ -67,9 +71,11 @@ function invokeService(options) {
 
 function createReply(publish, subscribe) {
   const callbackMap = new Map();
+
   subscribe('invokeWebviewMethod', async (ev) => {
     const { method, params, extra } = ev;
     const fn = callbackMap.get(method);
+
     if (fn) {
       return fn(params).then((result) => {
         publish('callbackWebviewMethod', {

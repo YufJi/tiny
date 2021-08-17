@@ -7,29 +7,17 @@ App({
 
   userInfo: null,
 
-  getUserInfo() {
-    return new Promise((resolve, reject) => {
-      if (this.userInfo) resolve(this.userInfo);
-
-      mp.getAuthCode({
-        scopes: ['auth_user'],
-        success: authcode => {
-          console.info(authcode);
-
-          mp.getAuthUserInfo({
-            success: res => {
-              this.userInfo = res;
-              resolve(this.userInfo);
-            },
-            fail: () => {
-              reject({});
-            },
-          });
-        },
-        fail: () => {
-          reject({});
-        },
-      });
-    });
+  onLaunch(options) {
+    // Do something initial when launch.
+    console.log('app onLaunch');
   },
+  onShow(options) {
+    // Do something when show.
+    console.log('app onShow');
+  },
+  onHide() {
+    // Do something when hide.
+    console.log('app onHide');
+  },
+
 });

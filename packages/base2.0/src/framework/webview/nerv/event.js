@@ -1,35 +1,26 @@
 /*
  * @Author: YufJ
  * @Date: 2021-07-13 11:00:56
- * @LastEditTime: 2021-07-14 11:30:55
+ * @LastEditTime: 2021-08-13 15:10:14
  * @Description:
- * @FilePath: /yeact/src/event.js
+ * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/nerv/event.js
  */
-import { getEventListenerOption } from './passive-event';
 
-const elementPrefix = 'tiny';
-const UpperCasePerfix = elementPrefix.toUpperCase();
-const EVENT_BLACK_LIST= ['click'];
+import { elementPrefix, upperCasePerfix } from '@utils/config';
+
+const EVENT_BLACK_LIST = ['click'];
 const PRESS_DELAY = 350;
 const TAP_DISTANCE = 5;
 const TAP_BLACK_LIST = [
-  `${UpperCasePerfix}-BUTTON`,
-  `${UpperCasePerfix}-CHECKBOX`,
-  `${UpperCasePerfix}-RADIO`,
-  `${UpperCasePerfix}-MAP`,
+  `${upperCasePerfix}-BUTTON`,
+  `${upperCasePerfix}-CHECKBOX`,
+  `${upperCasePerfix}-RADIO`,
+  `${upperCasePerfix}-MAP`,
 ];
 
-const eventReg = /^(capture-)?(bind|catch)?([A-Za-z_]+)/;
-
-export function addListenerToElement(node, type, callback) {
-  const matches = type.match(eventReg);
-  if (!matches) {
-    return;
-  }
-
-  const capture = matches[1] === 'capture-';
-  const stop = matches[2] === 'catch';
-  const eventType = matches[3];
+export function addListener(node, type, callback, options = {}) {
+  const { capture = false } = options;
+  const eventType = type;
 
   // eslint-disable-next-line default-case
   switch (eventType) {
@@ -37,40 +28,26 @@ export function addListenerToElement(node, type, callback) {
       // listen down and up
       if (!node.__hasTapEvent) {
         node.__hasTapEvent = true;
-        addTapEvent(node, {
-          stop,
-          capture,
-        });
+        addTapEvent(node);
       }
 
       node.addEventListener(`${elementPrefix}-tap`, (e) => {
         return callback.call(node, {
-          touches: createTouchList(e.detail.sourceEndEvent.changedTouches),
-          // touchend没有touches，可以用changedTouches
-          changedTouches: createTouchList(e.detail.sourceEndEvent.changedTouches),
-          detail: {
-            x: e.detail.x,
-            y: e.detail.y,
-          },
-          currentTarget: {
-            id: e.detail.sourceEndEvent.currentTarget.id,
-            dataset: e.detail.sourceEndEvent.currentTarget.dataset,
-          },
-          target: {
-            id: e.detail.sourceEndEvent.target.id,
-            dataset: e.detail.sourceEndEvent.target.dataset,
-          },
+          type: 'tap',
+          touches: e.detail.sourceEndEvent.changedTouches,
+          changedTouches: e.detail.sourceEndEvent.changedTouches,
+          detail: { x: e.detail.x, y: e.detail.y },
+          target: e.detail.sourceEndEvent.target,
           timeStamp: e.timeStamp,
           preventDefault() {
             return e.detail.sourceEndEvent.preventDefault();
           },
           stopPropagation() {
             e.stopPropagation();
-            // 标记一下touchend，表示这个被阻止过
             e.detail.sourceEndEvent.__catchedTap = true;
           },
         });
-      });
+      }, capture);
       return;
 
     case 'touchstart':
@@ -78,8 +55,6 @@ export function addListenerToElement(node, type, callback) {
     case 'touchmove':
     case 'touchcancel':
       node.addEventListener(eventType, (e) => {
-        stop && e.stopPropagation();
-
         if (e.__frozenBySwipeBack) return; // ios 触发了滑动返回
 
         const detail = {
@@ -93,7 +68,7 @@ export function addListenerToElement(node, type, callback) {
           },
           configurable: true,
         });
-        return callback.call(node, getNormalizedEvent(e));
+        return callback.call(node, e);
       }, capture);
 
       // 组件可能会取消touchmove事件，并用tt-touchmove替换, 主要是swiper会用到
@@ -101,20 +76,11 @@ export function addListenerToElement(node, type, callback) {
         node.addEventListener(`${elementPrefix}-touchmove`, (e) => {
           const { srcMoveEvent } = e.detail;
           return callback.call(node, {
-            touches: createTouchList(srcMoveEvent.touches),
-            changedTouches: createTouchList(srcMoveEvent.changedTouches),
-            detail: {
-              x: srcMoveEvent.pageX,
-              y: srcMoveEvent.pageY,
-            },
-            currentTarget: {
-              id: e.currentTarget.id,
-              dataset: e.currentTarget.dataset,
-            },
-            target: {
-              id: e.target.id,
-              dataset: e.target.dataset,
-            },
+            type: eventType,
+            touches: srcMoveEvent.touches,
+            changedTouches: srcMoveEvent.changedTouches,
+            detail: { x: srcMoveEvent.pageX, y: srcMoveEvent.pageY },
+            target: e.target,
             timeStamp: e.timeStamp,
             preventDefault() {
               return srcMoveEvent.preventDefault();
@@ -125,7 +91,6 @@ export function addListenerToElement(node, type, callback) {
           });
         });
       }
-
       return;
 
     case 'longtap':
@@ -133,15 +98,12 @@ export function addListenerToElement(node, type, callback) {
       // listen down and up
       if (!node.__hasTapEvent) {
         node.__hasTapEvent = true;
-        addTapEvent(node, {
-          stop,
-          capture,
-        });
+        addTapEvent(node);
       }
 
       node.addEventListener(`${elementPrefix}-longpress`, (e) => {
         e.longpressFired();
-        callback.call(node, getNormalizedEvent(e));
+        callback.call(node, e);
       });
       return;
   }
@@ -151,16 +113,14 @@ export function addListenerToElement(node, type, callback) {
   }
 }
 
-function addTapEvent(node, options) {
+function addTapEvent(node) {
   // 模拟合成tap事件和longpress事件，事件名为mp-tap和mp-longpress，以区别于polymer的事件
   let pressTimer;
   let pressStart;
   let ended;
 
-  const { stop, capture } = options;
-
   const touchstartHandler = (e) => {
-    stop && e.stopPropagation();
+    if (e.__handledTap) return;
 
     ended = false;
     pressStart = {
@@ -171,7 +131,7 @@ function addTapEvent(node, options) {
     pressTimer = setTimeout(() => {
       // dispatch longpress event
       const pressEvent = new Event(`${elementPrefix}-longpress`, {
-        bubbles: false,
+        bubbles: true,
         composed: true,
       });
       pressEvent.detail = pressStart;
@@ -182,11 +142,11 @@ function addTapEvent(node, options) {
 
       node.dispatchEvent(pressEvent);
     }, PRESS_DELAY);
+
+    e.__handledTap = true;
   };
 
   const touchmoveHandler = (e) => {
-    stop && e.stopPropagation();
-
     if (ended || !pressStart) {
       return;
     }
@@ -200,12 +160,7 @@ function addTapEvent(node, options) {
     }
   };
 
-  node.addEventListener('touchstart', touchstartHandler, capture);
-  node.addEventListener('touchmove', touchmoveHandler, capture);
-
-  node.addEventListener('touchend', (e) => {
-    stop && e.stopPropagation();
-
+  const touchendHandler = (e) => {
     if (ended || !pressStart) {
       return;
     }
@@ -221,13 +176,13 @@ function addTapEvent(node, options) {
     }
 
     // dispatch tap event
-    if (TAP_BLACK_LIST.indexOf(node.tagName) !== -1 && node.disabled) {
+    if (node.disabled && TAP_BLACK_LIST.indexOf(node.tagName) !== -1) {
       // if element is disabled, 那就不发了
       return;
     }
 
     const tapEvent = new Event(`${elementPrefix}-tap`, {
-      bubbles: false,
+      bubbles: true,
       composed: true,
     });
 
@@ -238,62 +193,139 @@ function addTapEvent(node, options) {
     };
 
     node.dispatchEvent(tapEvent);
-  }, capture);
+  };
 
-  node.addEventListener('touchcancel', (e) => {
-    stop && e.stopPropagation();
-
+  const touchcancelHandler = (e) => {
     ended = true;
     clearTimeout(pressTimer);
-  }, capture);
+  };
+
+  node.addEventListener('touchstart', touchstartHandler);
+  node.addEventListener('touchmove', touchmoveHandler);
+  node.addEventListener('touchend', touchendHandler);
+  node.addEventListener('touchcancel', touchcancelHandler);
 }
 
-function createTouchList(touchList = []) {
-  const list = [].slice.call(touchList, 0);
-  return list.map((item) => {
-    return {
-      clientX: item.clientX,
-      clientY: item.clientY,
-      identifier: item.identifier,
-      pageX: item.pageX,
-      pageY: item.pageY,
-    };
+export function eventProxy(name, capture, nativeEvent) {
+  if (EVENT_BLACK_LIST.includes(name)) return false;
+
+  let canBubble = true;
+
+  const listener = this._listeners[`${name}`][`${capture ? 'capture' : 'bubble'}`];
+
+  if (!listener) return;
+
+  const event = wrapEvent(this, nativeEvent, name);
+
+  if (listener.options.stop) {
+    nativeEvent.preventDefault();
+    nativeEvent.stopPropagation();
+
+    canBubble = false;
+  }
+
+  listener.handler(event);
+
+  return canBubble;
+}
+
+function wrapEvent(node, nativeEvent, type) {
+  const targetElement = nativeEvent.target.__eventTargetRef || nativeEvent.target;
+
+  const target = {
+    id: targetElement.id || '',
+    dataset: targetElement._dataset || {},
+  };
+  const currentTarget = {
+    id: node.id || '',
+    dataset: node._dataset || {},
+  };
+
+  Object.assign(target, {
+    offsetLeft: targetElement.offsetLeft || 0,
+    offsetTop: targetElement.offsetTop || 0,
   });
-}
 
-/* 格式化event对象 */
-export function getNormalizedEvent(nativeEvent) {
-  const { timeStamp } = nativeEvent;
+  Object.assign(currentTarget, {
+    offsetLeft: node.offsetLeft || 0,
+    offsetTop: node.offsetTop || 0,
+  });
+
+  const isCanvasTouches = node.tagName.toUpperCase() === `${elementPrefix}-CANVAS`
+    && ['touchstart', 'touchend', 'touchmove', 'touchcancel'].includes(type);
 
   return {
-    timeStamp,
-    currentTarget: {
-      id: nativeEvent.currentTarget.id,
-      dataset: nativeEvent.currentTarget.dataset,
-    },
-    target: {
-      id: nativeEvent.target.id,
-      dataset: nativeEvent.target.dataset,
-    },
+    type,
+    timeStamp: nativeEvent.timeStamp || window.performance.now(),
+    target,
+    currentTarget,
     detail: nativeEvent.detail,
-    touches: createTouchList(nativeEvent.touches),
-    changedTouches: createTouchList(nativeEvent.changedTouches),
+    touches: isCanvasTouches ? getCanvasTouches(node, nativeEvent.touches) : getTouches(nativeEvent.touches),
+    changedTouches: isCanvasTouches
+      ? getCanvasTouches(node, nativeEvent.changedTouches)
+      : getTouches(nativeEvent.changedTouches),
   };
 }
 
-export function removeListenerToElement(node, type, handler) {
-  const matches = type.match(eventReg);
-  if (!matches) {
-    return;
+function getTouches(touches) {
+  if (touches) {
+    const touchInfo = [];
+
+    for (let idx = 0; idx < touches.length; idx++) {
+      const touch = touches[idx];
+      touchInfo.push({
+        identifier: touch.identifier,
+        pageX: touch.pageX,
+        pageY: touch.pageY,
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+        force: touch.force || 0,
+      });
+    }
+
+    return touchInfo;
   }
 
-  const capture = matches[1];
-  const eventType = matches[3];
-
-  node.removeEventListener(eventType, handler, capture);
+  return [];
 }
 
-export {
-  addListenerToElement as attachEvent,
-  removeListenerToElement as detachEvent,
-};
+function getCanvasTouches(node, touches) {
+  if (touches) {
+    const touchInfo = [];
+    const rect = node._getBox();
+
+    for (let idx = 0; idx < touches.length; idx++) {
+      const touch = touches[idx];
+      touchInfo.push({
+        identifier: touch.identifier,
+        x: touch.pageX - rect.left,
+        y: touch.pageY - rect.top,
+        pageX: touch.pageX,
+        pageY: touch.pageY,
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+        force: touch.force || 0,
+      });
+    }
+
+    return touchInfo;
+  }
+}
+
+const eventReg = /^(capture-)?(bind|catch)?([A-Za-z_]+)/;
+
+export function toEventName(eventName) {
+  const matches = eventName.match(eventReg);
+
+  const capture = matches[1] === 'capture-';
+  const stop = matches[2] === 'catch';
+  const name = matches[3];
+
+  const options = { capture, stop };
+
+  return {
+    raw: eventName,
+    name,
+    options,
+  };
+}

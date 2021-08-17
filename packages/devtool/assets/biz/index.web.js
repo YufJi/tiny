@@ -992,17 +992,17 @@ const stylesheet = new StyleSheet({ stylePath: 'app.wxss' });
 /***/ (function(module, exports, __webpack_require__) {
 
 
-const { Component: $Component } = self.MP;
-var Component = $Component || function(){};
-
-Component(
-{
-  is: "/components/add-button/add-button",
-  usingComponents: {"add-button":"/components/add-button/add-button"},
-  render: function() { return __webpack_require__(/*! ./add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./miniRoot/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc"); },
+  window.app = window.app || {};
+  window.app['/components/add-button/add-button'] = {
+    // is: "/components/add-button/add-button",
+    usingComponents: {"add-button":"/components/add-button/add-button"},
+    get render() { 
+      const fn = __webpack_require__(/*! ./add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./miniRoot/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc"); 
+      return fn.default || fn;
+    },
+    
+  };
   
-});
-
 
 /***/ }),
 
@@ -1016,23 +1016,8 @@ Component(
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
-
-var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
-
-var $getEventHandler = function $getEventHandler(instance, name) {
-  return instance.$getEventHandler(name);
-};
-
-var $getRefHandler = function $getRefHandler(instance, name) {
-  return instance.$getRefHandler(name);
-};
-
-var $getComRefHandler = function $getComRefHandler(instance, name) {
-  return instance.$getComRefHandler && instance.$getComRefHandler(name);
-};
-
+// import Nerv from 'nerv';
+var Nerv = self.Nerv;
 var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
 var $iterate = self.XMLRuntime.iterate;
 var $createRoot = self.XMLRuntime.createRoot;
@@ -1046,14 +1031,14 @@ var $toString = self.XMLRuntime.toString;
 var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
 var $templates = {};
 function render(data, _ctx) {
-  return $createRoot([nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-button", {
+  return $createRoot([Nerv.createElement("tiny-button", {
     className: "add-button",
     "hover-class": "none",
     bindtap: _ctx.$$eventBinder("onClickMe")
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-icon", {
+  }, [Nerv.createElement("tiny-icon", {
     type: "success",
     size: "23"
-  }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-text", null, $toString(data['text']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-text", {
+  }), Nerv.createElement("tiny-text", null, $toString(data['text']))]), Nerv.createElement("tiny-text", {
     bindtap: _ctx.$$eventBinder("xx")
   }, $toString(data['name']))]);
 }
@@ -1077,12 +1062,12 @@ const stylesheet = new StyleSheet({ stylePath: 'components/add-button/add-button
     background: none;
     color: #FFF;
     border: none;
-    width: 3rem;
+    width: 300rpx;
   }
   .add-icon {
-    font-size: 0.52rem;
+    font-size: 52rpx;
     color: #00FFD6;
-    margin-right: 0.1rem;
+    margin-right: 10rpx;
   }
   .user {
     font-size: 150px;
@@ -1101,23 +1086,8 @@ const stylesheet = new StyleSheet({ stylePath: 'components/add-button/add-button
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "$ownTemplates", function() { return $ownTemplates; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
-
-var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
-
-var $getEventHandler = function $getEventHandler(instance, name) {
-  return instance.$getEventHandler(name);
-};
-
-var $getRefHandler = function $getRefHandler(instance, name) {
-  return instance.$getRefHandler(name);
-};
-
-var $getComRefHandler = function $getComRefHandler(instance, name) {
-  return instance.$getComRefHandler && instance.$getComRefHandler(name);
-};
-
+// import Nerv from 'nerv';
+var Nerv = self.Nerv;
 var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
 var $iterate = self.XMLRuntime.iterate;
 var $createRoot = self.XMLRuntime.createRoot;
@@ -1133,7 +1103,7 @@ var $template;
 var $ownTemplates = {};
 
 $template = $ownTemplates["abc"] = function (data) {
-  return nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", null, $toString("21212"));
+  return Nerv.createElement("tiny-view", null, $toString("21212"));
 };
 
 $template.Component = $createTemplate("abc", $template);
@@ -1154,15 +1124,29 @@ function render(data, _ctx) {
 /***/ (function(module, exports, __webpack_require__) {
 
 
+    window.app = window.app || {};
     window.app['pages/add-todo/add-todo'] = {
       usingComponents: {"add-button":"/components/add-button/add-button"},
       
       get render() {
-        return __webpack_require__(/*! ./add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
+        const fn = __webpack_require__(/*! ./add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219")
+        return fn.default || fn;
       },
-      // render: function() { return require('./add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219'); },
-      // stylesheet: function() { return require('./add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219'); },
-      get stylesheet() { return __webpack_require__(/*! ./add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); },
+      get stylesheet() { 
+        const fn = __webpack_require__(/*! ./add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); 
+        return fn.default || fn; 
+      },
+    };
+
+    window['generateFunc'] = window['generateFunc'] || {};
+    window['generateFunc']['pages/add-todo/add-todo'] = function() {
+      const generateFunc = window.app['pages/add-todo/add-todo'];
+
+      document.dispatchEvent(new CustomEvent("generateFuncReady", {
+        detail: {
+          generateFunc
+        }
+      }))
     };
   
 
@@ -1178,31 +1162,16 @@ function render(data, _ctx) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _a_wxml__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./a.wxml */ "./miniRoot/pages/add-todo/a.wxml");
-/* harmony import */ var _b_wxml__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./b.wxml */ "./miniRoot/pages/add-todo/b.wxml");
+/* harmony import */ var _a_wxml__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./a.wxml */ "./miniRoot/pages/add-todo/a.wxml");
+/* harmony import */ var _b_wxml__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./b.wxml */ "./miniRoot/pages/add-todo/b.wxml");
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-
-var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
-
-var $getEventHandler = function $getEventHandler(instance, name) {
-  return instance.$getEventHandler(name);
-};
-
-var $getRefHandler = function $getRefHandler(instance, name) {
-  return instance.$getRefHandler(name);
-};
-
-var $getComRefHandler = function $getComRefHandler(instance, name) {
-  return instance.$getComRefHandler && instance.$getComRefHandler(name);
-};
-
+// import Nerv from 'nerv';
+var Nerv = self.Nerv;
 var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
 var $iterate = self.XMLRuntime.iterate;
 var $createRoot = self.XMLRuntime.createRoot;
@@ -1217,32 +1186,29 @@ var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
 
 
 var $templates = {};
-$templates = _objectSpread({}, _a_wxml__WEBPACK_IMPORTED_MODULE_1__["$ownTemplates"]);
+$templates = _objectSpread({}, _a_wxml__WEBPACK_IMPORTED_MODULE_0__["$ownTemplates"]);
 function render(data, _ctx) {
   var AddButton = _ctx.$$resolveComponent("add-button");
 
-  return $createRoot(nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  return $createRoot(Nerv.createElement("tiny-view", {
     className: "page-add-todo"
-  }, [_b_wxml__WEBPACK_IMPORTED_MODULE_2__["default"].apply(this, arguments), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, [_b_wxml__WEBPACK_IMPORTED_MODULE_1__["default"].apply(this, arguments), Nerv.createElement("tiny-view", {
     className: "add-todo"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-input", {
+  }, Nerv.createElement("tiny-input", {
     className: "add-todo-input",
     placeholder: "What needs to be done?",
     bindblur: _ctx.$$eventBinder("onBlur"),
     value: data['inputValue']
-  })), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  })), Nerv.createElement("tiny-view", {
     bindtap: _ctx.$$eventBinder("add")
-  }, $toString("12121")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, $toString("12121")), Nerv.createElement("tiny-view", {
     catchtap: _ctx.$$eventBinder("add")
-  }, $toString("12121")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, $toString("12121")), Nerv.createElement("tiny-view", {
     className: "todo-footer"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(AddButton, {
+  }, Nerv.createElement(AddButton, {
     text: "Add Todo",
-    bindclickme: _ctx.$$eventBinder("add"),
-    __tag: "add-button",
-    __owner: this,
-    __page: this.$isCustomComponent ? this.props['__page'] : this
-  })), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    bindclickme: _ctx.$$eventBinder("add")
+  })), Nerv.createElement("tiny-view", {
     style: "color: red",
     "capture-catchtap": _ctx.$$eventBinder("xxxx")
   }, $toString("capture-catch:tap")), $useTemplate($templates["abc"], {
@@ -1299,7 +1265,7 @@ stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODU
   }
   .add-todo-input {
     display: block;
-    font-size: 0.5rem;
+    font-size: 50rpx;
     font-weight: 100;
     padding: 5px 5px;
     background: none;
@@ -1309,8 +1275,8 @@ stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODU
     width: 100%;
   }
   .todo-footer {
-    padding: 0.5rem 0 1rem;
-    font-size: 0.48rem;
+    padding: 50rpx 0 100rpx;
+    font-size: 48rpx;
     font-weight: 200;
     text-align: center;
   }`));
@@ -1327,23 +1293,8 @@ stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODU
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
-
-var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
-
-var $getEventHandler = function $getEventHandler(instance, name) {
-  return instance.$getEventHandler(name);
-};
-
-var $getRefHandler = function $getRefHandler(instance, name) {
-  return instance.$getRefHandler(name);
-};
-
-var $getComRefHandler = function $getComRefHandler(instance, name) {
-  return instance.$getComRefHandler && instance.$getComRefHandler(name);
-};
-
+// import Nerv from 'nerv';
+var Nerv = self.Nerv;
 var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
 var $iterate = self.XMLRuntime.iterate;
 var $createRoot = self.XMLRuntime.createRoot;
@@ -1357,7 +1308,7 @@ var $toString = self.XMLRuntime.toString;
 var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
 var $templates = {};
 function render(data, _ctx) {
-  return $createRoot(nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", null, $toString("include")));
+  return $createRoot(Nerv.createElement("tiny-view", null, $toString("include")));
 }
 ;
 
@@ -1371,15 +1322,29 @@ function render(data, _ctx) {
 /***/ (function(module, exports, __webpack_require__) {
 
 
+    window.app = window.app || {};
     window.app['pages/todos/todos'] = {
       usingComponents: {"add-button":"/components/add-button/add-button"},
       
       get render() {
-        return __webpack_require__(/*! ./todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/todos/todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
+        const fn = __webpack_require__(/*! ./todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/todos/todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219")
+        return fn.default || fn;
       },
-      // render: function() { return require('./todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219'); },
-      // stylesheet: function() { return require('./todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219'); },
-      get stylesheet() { return __webpack_require__(/*! ./todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/todos/todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); },
+      get stylesheet() { 
+        const fn = __webpack_require__(/*! ./todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/todos/todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); 
+        return fn.default || fn; 
+      },
+    };
+
+    window['generateFunc'] = window['generateFunc'] || {};
+    window['generateFunc']['pages/todos/todos'] = function() {
+      const generateFunc = window.app['pages/todos/todos'];
+
+      document.dispatchEvent(new CustomEvent("generateFuncReady", {
+        detail: {
+          generateFunc
+        }
+      }))
     };
   
 
@@ -1395,23 +1360,8 @@ function render(data, _ctx) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! nerv */ "nerv");
-/* harmony import */ var nerv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(nerv__WEBPACK_IMPORTED_MODULE_0__);
-
-var $createReactElement = nerv__WEBPACK_IMPORTED_MODULE_0___default.a && nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement;
-
-var $getEventHandler = function $getEventHandler(instance, name) {
-  return instance.$getEventHandler(name);
-};
-
-var $getRefHandler = function $getRefHandler(instance, name) {
-  return instance.$getRefHandler(name);
-};
-
-var $getComRefHandler = function $getComRefHandler(instance, name) {
-  return instance.$getComRefHandler && instance.$getComRefHandler(name);
-};
-
+// import Nerv from 'nerv';
+var Nerv = self.Nerv;
 var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
 var $iterate = self.XMLRuntime.iterate;
 var $createRoot = self.XMLRuntime.createRoot;
@@ -1427,142 +1377,157 @@ var $templates = {};
 function render(data, _ctx) {
   var AddButton = _ctx.$$resolveComponent("add-button");
 
-  return $createRoot(nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-scroll-view", {
+  return $createRoot(Nerv.createElement("tiny-scroll-view", {
     className: "page-todos",
     "scroll-y": "true"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, [Nerv.createElement("tiny-view", {
+    id: "parent",
+    style: "background: green;",
+    "capture-bindtap": _ctx.$$eventBinder("pct"),
+    bindtap: _ctx.$$eventBinder("pt"),
+    bindtouchstart: _ctx.$$eventBinder("pts"),
+    bindtouchmove: _ctx.$$eventBinder("ptm")
+  }, Nerv.createElement("tiny-view", {
+    "capture-bindtap": _ctx.$$eventBinder("cct"),
+    catchtap: _ctx.$$eventBinder("ct"),
+    bindtouchstart: _ctx.$$eventBinder("cts"),
+    catchtouchmove: _ctx.$$eventBinder("ctm")
+  }, $toString("longpress/tap component"))), Nerv.createElement("tiny-view", {
     className: "user"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-image", {
+  }, [Nerv.createElement("tiny-image", {
     className: "avatar",
     src: $getLooseDataMember([data['user'], "avatar"]) || '../../assets/logo.png',
     "background-size": "cover"
-  }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }), Nerv.createElement("tiny-view", {
     className: "nickname"
-  }, [$toString($getLooseDataMember([data['user'], "nickName"]) && $getLooseDataMember([data['user'], "nickName"]) + '\'s' || 'mp'), $toString(" Todo List")]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, [$toString($getLooseDataMember([data['user'], "nickName"]) && $getLooseDataMember([data['user'], "nickName"]) + '\'s' || 'mp'), $toString(" Todo List")]), Nerv.createElement("tiny-view", {
     className: "test"
-  }, $toString("Todo List"))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, $toString("Todo List"))]), Nerv.createElement("tiny-view", {
     className: "todo-items"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-checkbox-group", {
+  }, Nerv.createElement("tiny-checkbox-group", {
     className: "todo-items-group",
     bindchange: _ctx.$$eventBinder("onTodoChanged")
   }, $iterate(data['todos'], function (item, index) {
-    return nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-label", {
+    return Nerv.createElement("tiny-label", {
       key: item,
       bindtap: _ctx.$$eventBinder("clicklabel"),
       className: "todo-item " + ($getLooseDataMember([item, "completed"]) ? 'checked' : '')
-    }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-checkbox", {
+    }, [Nerv.createElement("tiny-checkbox", {
       className: "todo-item-checkbox",
       value: $getLooseDataMember([item, "text"]),
       checked: $getLooseDataMember([item, "completed"])
-    }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-text", {
+    }), Nerv.createElement("tiny-text", {
       className: "todo-item-text"
     }, $toString($getLooseDataMember([item, "text"])))]);
-  }))), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-slider", {
+  }))), Nerv.createElement("tiny-slider", {
     bindchange: _ctx.$$eventBinder("sliderChange"),
     "show-value": true
-  }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }), Nerv.createElement("tiny-view", {
     className: "progress-box"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-progress", {
+  }, Nerv.createElement("tiny-progress", {
     percent: "20",
     "show-info": true,
     active: true,
     "stroke-width": "3"
-  })), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  })), Nerv.createElement("tiny-view", {
     className: "section section_gap"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, [Nerv.createElement("tiny-view", {
     className: "section__title"
-  }, $toString("type=\"switch\"")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, $toString("type=\"switch\"")), Nerv.createElement("tiny-view", {
     className: "body-view"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-switch", {
+  }, Nerv.createElement("tiny-switch", {
     checked: data['switchChecked'],
     bindchange: _ctx.$$eventBinder("switchChange")
-  }))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }))]), Nerv.createElement("tiny-view", {
     className: "todo-footer"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(AddButton, {
+  }, [Nerv.createElement(AddButton, {
     id: "asd",
     text: data['text'],
-    bindclick_me: _ctx.$$eventBinder("clickCom"),
-    __tag: "add-button",
-    __owner: this,
-    __page: this.$isCustomComponent ? this.props['__page'] : this
-  }), data['text'] === 'def' ? nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(AddButton, {
-    id: "asd",
+    bindclick_me: _ctx.$$eventBinder("clickCom")
+  }), data['text'] === 'def' ? Nerv.createElement(AddButton, {
+    id: "asxx",
     xx: "xxx",
     text: data['text'],
-    bindclick_me: _ctx.$$eventBinder(data['fn']),
-    __tag: "add-button",
-    __owner: this,
-    __page: this.$isCustomComponent ? this.props['__page'] : this
-  }) : null]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    bindclick_me: _ctx.$$eventBinder(data['fn'])
+  }) : null]), Nerv.createElement("tiny-view", {
     bindtap: _ctx.$$eventBinder("clickParent")
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, [Nerv.createElement("tiny-view", {
     className: "jyf",
     "capture-bindtap": _ctx.$$eventBinder("captureClickChild"),
     style: "background: yellow;"
-  }, $toString("capture child")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, $toString("capture child")), Nerv.createElement("tiny-view", {
     "data-xhq": "jyf",
     bindlongpress: _ctx.$$eventBinder("clickChild"),
     style: "margin-top: 120rpx; background: red;"
-  }, $toString(data['haha']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, $toString(data['haha']))]), Nerv.createElement("tiny-view", {
     className: "container"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, Nerv.createElement("tiny-view", {
     className: "page-body"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, [Nerv.createElement("tiny-view", {
     className: "page-section page-section-spacing swiper"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-swiper", {
+  }, Nerv.createElement("tiny-swiper", {
     "indicator-dots": data['indicatorDots'],
     autoplay: data['autoplay'],
     interval: data['interval'],
     duration: data['duration'],
     circular: true
   }, $iterate(data['background'], function (item, index) {
-    return nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-swiper-item", null, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+    return Nerv.createElement("tiny-swiper-item", null, Nerv.createElement("tiny-view", {
       className: "swiper-item " + item
     }));
-  }))), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }))), Nerv.createElement("tiny-view", {
     className: "page-section",
     style: "margin-top: 20px;margin-bottom: 0;"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, Nerv.createElement("tiny-view", {
     className: "weui-cells weui-cells_after-title"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, [Nerv.createElement("tiny-view", {
     className: "weui-cell weui-cell_switch"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, [Nerv.createElement("tiny-view", {
     className: "weui-cell__bd"
-  }, $toString("指示点")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, $toString("指示点")), Nerv.createElement("tiny-view", {
     className: "weui-cell__ft"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-switch", {
+  }, Nerv.createElement("tiny-switch", {
     checked: data['indicatorDots'],
     bindchange: _ctx.$$eventBinder("changeIndicatorDots")
-  }))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }))]), Nerv.createElement("tiny-view", {
     className: "weui-cell weui-cell_switch"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, [Nerv.createElement("tiny-view", {
     className: "weui-cell__bd"
-  }, $toString("自动播放")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, $toString("自动播放")), Nerv.createElement("tiny-view", {
     className: "weui-cell__ft"
-  }, nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-switch", {
+  }, Nerv.createElement("tiny-switch", {
     checked: data['autoplay'],
     bindchange: _ctx.$$eventBinder("changeAutoplay")
-  }))])])), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }))])])), Nerv.createElement("tiny-view", {
     className: "page-section page-section-spacing"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }, [Nerv.createElement("tiny-view", {
     className: "page-section-title"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-text", null, $toString("幻灯片切换时长(ms)")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-text", {
+  }, [Nerv.createElement("tiny-text", null, $toString("幻灯片切换时长(ms)")), Nerv.createElement("tiny-text", {
     className: "info"
-  }, $toString(data['duration']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-slider", {
+  }, $toString(data['duration']))]), Nerv.createElement("tiny-slider", {
     bindchange: _ctx.$$eventBinder("durationChange"),
     value: data['duration'],
     min: "500",
     max: "2000"
-  }), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-view", {
+  }), Nerv.createElement("tiny-view", {
     className: "page-section-title"
-  }, [nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-text", null, $toString("自动播放间隔时长(ms)")), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-text", {
+  }, [Nerv.createElement("tiny-text", null, $toString("自动播放间隔时长(ms)")), Nerv.createElement("tiny-text", {
     className: "info"
-  }, $toString(data['interval']))]), nerv__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tiny-slider", {
+  }, $toString(data['interval']))]), Nerv.createElement("tiny-slider", {
     bindchange: _ctx.$$eventBinder("intervalChange"),
     value: data['interval'],
     min: "3000",
     max: "10000"
-  })])]))]));
+  })])])), Nerv.createElement(AddButton, {
+    id: "asxxd",
+    text: data['text'],
+    bindclick_me: _ctx.$$eventBinder("clickCom")
+  }), data['text'] === 'def' ? Nerv.createElement(AddButton, {
+    id: "asdxxx",
+    xx: "xxx",
+    text: data['text'],
+    bindclick_me: _ctx.$$eventBinder(data['fn'])
+  }) : null]));
 }
 ;
 
@@ -1613,17 +1578,17 @@ stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODU
             align-items: center;
   }
   .avatar {
-    width: 1.3rem;
-    height: 1.3rem;
+    width: 130rpx;
+    height: 130rpx;
     border-radius: 50%;
     background-color: #FFF;
     -webkit-align-self: center;
             align-self: center;
   }
   .nickname {
-    padding-top: 0.4rem;
+    padding-top: 40rpx;
     text-align: center;
-    font-size: 0.4rem;
+    font-size: 40rpx;
     font-weight: 100;
   }
   .test {
@@ -1633,8 +1598,8 @@ stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODU
     -webkit-box-flex: 1;
     -webkit-flex-grow: 1;
             flex-grow: 1;
-    font-size: 0.34rem;
-    padding: 0.5rem 1.2rem;
+    font-size: 34rpx;
+    padding: 50rpx 120rpx;
     color: #0EFFD6;
     overflow: auto;
   }
@@ -1649,13 +1614,13 @@ stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODU
   }
   .todo-item {
     position: relative;
-    margin-bottom: 0.5rem;
-    padding-left: 0.8rem;
-    line-height: 0.7rem;
-    height: 0.8rem;
+    margin-bottom: 50rpx;
+    padding-left: 80rpx;
+    line-height: 70rpx;
+    height: 80rpx;
     box-sizing: border-box;
     border: 2px solid rgb(14, 255, 214);
-    border-radius: 1rem;
+    border-radius: 100rpx;
     overflow: hidden;
     text-overflow: ellipsis;
     -webkit-transition: border 0.2s;
@@ -1667,10 +1632,10 @@ stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODU
   .todo-item::before {
     content: '';
     position: absolute;
-    left: 0.12rem;
-    margin-right: 0.2rem;
-    width: 0.45rem;
-    height: 0.45rem;
+    left: 12rpx;
+    margin-right: 20rpx;
+    width: 45rpx;
+    height: 45rpx;
     background-color: rgba(14, 222, 255, 0.3);
     border-radius: 50%;
     top: 50%;
@@ -1682,14 +1647,14 @@ stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODU
   .todo-item::after {
     content: '';
     position: absolute;
-    left: 0.29rem;
-    width: 0.08rem;
-    height: 0.18rem;
+    left: 29rpx;
+    width: 8rpx;
+    height: 18rpx;
     top: 50%;
     -webkit-transform: translateY(-60%) rotate(38deg);
             transform: translateY(-60%) rotate(38deg);
-    border: 0.04rem solid #FFF;
-    border-width: 0 0.04rem 0.04rem 0;
+    border: 4rpx solid #FFF;
+    border-width: 0 4rpx 4rpx 0;
     opacity: 0;
     -webkit-transition: opacity 0.2s;
     transition: opacity 0.2s;
@@ -1713,8 +1678,8 @@ stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODU
   .todo-footer {
     -webkit-flex-shrink: 0;
             flex-shrink: 0;
-    padding: 0.5rem 0 1rem;
-    font-size: 0.48rem;
+    padding: 50rpx 0 100rpx;
+    font-size: 48rpx;
     font-weight: 200;
     text-align: center;
   }
@@ -1797,17 +1762,6 @@ stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODU
     -webkit-transform: translate(-50%, -50%);
             transform: translate(-50%, -50%);
   }`));
-
-/***/ }),
-
-/***/ "nerv":
-/*!****************************!*\
-  !*** external "self.Nerv" ***!
-  \****************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-module.exports = self.Nerv;
 
 /***/ })
 

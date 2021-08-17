@@ -39,7 +39,7 @@ function checkImport(moduleName, suffix, config) {
     const { resolve } = _config$nodeModules;
 
     if (fs) {
-      let fullPath = void 0;
+      let fullPath ;
       if (from.startsWith('/')) {
         fullPath = path.join(projectRoot, from);
       } else if (from.startsWith('./') || from.startsWith('../')) {
@@ -83,7 +83,7 @@ function getRawJSXAttributeFromJson(transformedAttrs) {
 }
 
 function getDepCode(node, scopeType, processImport) {
-  let deps = void 0;
+  let deps ;
   const { attribs } = node;
 
   try {

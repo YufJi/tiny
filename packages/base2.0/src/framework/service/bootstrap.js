@@ -1,3 +1,10 @@
+/*
+ * @Author: YufJ
+ * @Date: 2021-07-04 00:11:24
+ * @LastEditTime: 2021-08-17 14:34:24
+ * @Description:
+ * @FilePath: /tiny-v1/packages/base2.0/src/framework/service/bootstrap.js
+ */
 import context from './context';
 import { loadApp } from './App';
 import { invokeNative, replyWebview, onNative } from './bridge';
@@ -6,22 +13,8 @@ import firstRender from './Route/firstRender';
 import loadPageEvent from './Page/loadPageEvent';
 import loadComponent from './Component/loadComponent';
 
-/**
- * 路由创建页面的事件回调
- * @param currentPage 当前路由页面
- */
-onRouteEvent('afterCreatePage', (currentPage) => {
-  // 页面创建后控制分享菜单是否显示隐藏
-  if (!currentPage.implement.onShareAppMessage) {
-    invokeNative('hideShareMenu');
-  }
-
-  // 渲染数据
-  firstRender(currentPage);
-});
-
 export default function bootstrap() {
-  context.checkTinyConfig();
+  // context.checkTinyConfig();
   loadApp();
   replyWebview();
   loadRoute();

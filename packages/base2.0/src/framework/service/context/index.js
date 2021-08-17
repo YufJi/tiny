@@ -2,12 +2,15 @@ import { noop } from 'lodash';
 
 import getLaunchOptions from './getLaunchOptions';
 import getAppInfo from './getAppInfo';
+import $global from '../common/global';
+import { debug } from '../utils/log';
 
 const g = self;
 
 const readyQueue = [];
 
 const context = {
+  // todo 构建时注入
   checkTinyConfig() {
     if (g.TinyConfig && g.TinyConfig.ready) return;
 
@@ -47,7 +50,8 @@ const context = {
   },
 
   get __allConfig__() {
-    return g.__allConfig__;
+    debug('__allConfig__', $global.__allConfig__);
+    return $global.__allConfig__;
   },
 };
 

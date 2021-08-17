@@ -1,3 +1,5 @@
+import { pageInitMap, componentBookmarks } from '../Model/common';
+
 export default function checkIsComponent(route) {
   if (pageInitMap.has(route)) {
     return false;

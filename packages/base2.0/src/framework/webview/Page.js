@@ -1,11 +1,12 @@
 /*
  * @Author: YufJ
  * @Date: 2021-07-05 20:35:03
- * @LastEditTime: 2021-07-11 14:33:11
+ * @LastEditTime: 2021-08-13 17:05:02
  * @Description:
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/Page.js
  */
-import { h, useEffect, useLayoutEffect } from './nerv';
+import { elementPrefix } from '@/utils/config';
+import { h, useEffect, useLayoutEffect, useRef } from './nerv';
 import { ComponentHubContext } from './context';
 import {
   useCompileResult,
@@ -16,7 +17,9 @@ import {
   useRenderMode,
   usePageFields,
   useFirstRendered,
+  useComponentHub,
 } from './hooks';
+import { transformRpx } from './nerv/vdom/patch';
 
 const Fallback = null;
 
@@ -67,9 +70,19 @@ function NormalScene(props) {
     current.result = render(data, context);
   }
 
-  useEffect(()=> {
+  useEffect(() => {
     // 插入style
-  }, [])
+    if (stylesheet) {
+      const headNode = document.getElementsByTagName('head')[0];
+      const styleNode = document.createElement('style');
+      let styleString = stylesheet.toString();
+
+      styleString = transformRpx(styleString);
+
+      styleNode.innerHTML = styleString;
+      headNode.appendChild(styleNode);
+    }
+  }, []);
 
   useFirstRendered(render);
 
@@ -78,10 +91,11 @@ function NormalScene(props) {
       if (current.initialized) {
         emitter.emit('RE_RENDER', 'patch');
       } else {
+        current.initialized = true;
         emitter.emit('RE_RENDER', 'initial');
       }
     }
   });
 
-  return current.result;
+  return h(`${elementPrefix}-page`, {}, current.result);
 }

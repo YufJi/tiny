@@ -1,9 +1,10 @@
-import { isPlainObject } from 'lodash';
+import { isPlainObject, mapValues, groupBy } from 'lodash';
 
 import path from '../../Path';
-import { invokeWebview } from '../bridge';
+import { invokeWebview, publish } from '../bridge';
 import context from '../context';
 import { componentBookmarks } from '../Model/common';
+import { debug } from '../utils/log';
 
 const DEFAULT_ON_REACH_BOTTOM_DISTANCE = 50;
 // 缓存页面使用的自定义组件配置
@@ -26,7 +27,7 @@ export default function firstRender(currentPage, isPageReload = false) {
     },
   };
 
-  invokeWebview('INIT_DATA_READY', data, currentPage.webviewId).catch(reportError);
+  publish('INIT_DATA_READY', data, currentPage.webviewId);
 }
 
 function getPageExt(currentPage) {
@@ -92,7 +93,9 @@ function initComponentSettings(route, componentInfoMap, componentAliasSet) {
   for (let i = 0; i < Object.entries(usingComponents).length; i++) {
     const [key, customPath] = Object.entries(usingComponents)[i];
     const name = key.toLowerCase();
-    const realPath = customPath.startsWith('/') ? customPath.substr(1) : path.join(path.dirname(route), customPath);
+    // const realPath = customPath.startsWith('/') ? customPath.substr(1) : path.join(path.dirname(route), customPath);
+    const realPath = customPath;
+
     componentAliasSet.add(name);
 
     if (!componentInfoMap[realPath]) {

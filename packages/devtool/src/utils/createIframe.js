@@ -1,29 +1,40 @@
 /**
  * 创建rednerFrame、workerFrame
  */
+import qs from 'qs';
 
 function createIframe(options) {
-  const { id, src, style, onload, container } = options || {};
-  const el = document.createElement('iframe');
-  el.setAttribute('src', src);
-  el.setAttribute('id', id);
-  el.setAttribute('name', id);
-  el.setAttribute('seamless', 'seamless');
-  el.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-modals');
-  el.setAttribute('frameborder', '0');
-  el.setAttribute('style', style);
-  el.setAttribute('class', 'frame');
-  el.onload = function () {
-    el.contentWindow.document.dispatchEvent(new CustomEvent('JSBridgeReady', {
-      detail: {
-        guid: id,
-      },
-    }));
-    onload(el);
-  };
-  el.id = id;
-  container.appendChild(el);
-  return el;
+  return new Promise((resolve, reject) => {
+    const { id, src, style, onload, container, preload = false } = options || {};
+    const el = document.createElement('iframe');
+
+    const [url, query] = src.split('?');
+    const queryObj = qs.parse(query);
+    queryObj.webviewId = id;
+
+    el.setAttribute('src', `${url}?${qs.stringify(queryObj)}`);
+    el.setAttribute('id', id);
+    el.setAttribute('name', id);
+    el.setAttribute('seamless', 'seamless');
+    el.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-modals');
+    el.setAttribute('frameborder', '0');
+    el.setAttribute('style', style);
+    el.setAttribute('class', 'frame');
+    el.id = id;
+
+    el.onload = function () {
+      onload && onload(el);
+      resolve(el);
+    };
+
+    el.onerror = function (e) {
+      reject(e);
+    };
+
+    if (!preload) {
+      container.appendChild(el);
+    }
+  });
 }
 
 export function createWorkerIframe({ guid, src, onload }) {
@@ -43,5 +54,15 @@ export function createRenderIframe({ guid, src, onload }) {
     style: 'position: absolute; top: 0px; bottom: 0px; width: 100%; height: 100%;',
     onload,
     container: document.getElementById('pageFrames'),
+  });
+}
+
+export function precreateRenderIframe({ guid, src }) {
+  return createIframe({
+    id: guid,
+    src,
+    style: 'position: absolute; top: 0px; bottom: 0px; width: 100%; height: 100%;',
+    container: document.getElementById('pageFrames'),
+    preload: true,
   });
 }

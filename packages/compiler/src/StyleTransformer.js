@@ -49,11 +49,11 @@ function processDeclarations(r, { source, pluginId } = {}) {
     }
     if (d.type === 'declaration') {
       let value = String(d.value)
-        .replace(/\\/g, '\\\\')
-        .replace(
-          /\b((?:\d*\.\d+)|(?:\d+))rpx\b/g,
-          (m, num) => `${parseFloat(num) / 100}rem`,
-        );
+        .replace(/\\/g, '\\\\');
+        // .replace(
+        //   /\b((?:\d*\.\d+)|(?:\d+))rpx\b/g,
+        //   (m, num) => `${parseFloat(num) / 100}rem`,
+        // );
       if (pluginId && transformedAssetsProperties.indexOf(d.property) !== -1) {
         const pluginPrefix = `/__plugins__/${pluginId}`;
         value = value.replace(

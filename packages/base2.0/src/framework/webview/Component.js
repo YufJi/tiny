@@ -2,14 +2,26 @@
 /*
  * @Author: YufJ
  * @Date: 2021-07-09 17:30:43
- * @LastEditTime: 2021-07-14 20:52:56
+ * @LastEditTime: 2021-08-13 11:03:13
  * @Description:
- * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/CustomComponent.js
+ * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/Component.js
  */
 import { memoize } from 'lodash';
+import { h, useDangerousReverseLayoutEffect, useLayoutEffect, Children, useRef } from './nerv';
+
 import path from '../Path';
-import { useComponentHubContext, useDataChange, useJSBridge, useLifeCycleHooks, useRefinedDataset, useRefinedProps, useSyncChangedDataset, useSyncChangedProps } from './hooks';
-import { h, useDangerousReverseLayoutEffect, useLayoutEffect, Children } from './nerv';
+import {
+  useComponentHubContext,
+  useDataChange,
+  useJSBridge,
+  useLifeCycleHooks,
+  useRefinedDataset,
+  useRefinedProps,
+  useSyncChangedDataset,
+  useSyncChangedProps,
+  useNodeId,
+  useComponentRenderContext,
+} from './hooks';
 
 export function registerCustomComponents(__allConfig__, customComponents) {
   const customComponentMap = new Map();
@@ -56,15 +68,15 @@ export function defineCustomComponent(is, options, customComponentMap) {
 
     const component = customComponentMap.get(getRealRoute(is, path)) || null;
     component.displayName = name;
-
     return component;
   });
 
-  return function (props) {
-    const { $scopedSlots } = props;
-    const compiled = window.app[is];
-    const { render, stylesheet } = compiled;
-    const { publish } = useJSBridge;
+  return function Component(props) {
+    const { $scopedSlots, children } = props;
+
+    const { render } = window.app[is];
+
+    const { publish } = useJSBridge();
     const nodeId = useNodeId();
     const ctx = useComponentRenderContext(props, nodeId, is, config, resolveComponent);
     const [refinedProps, initialProps] = useRefinedProps(props, properties);
@@ -97,10 +109,44 @@ export function defineCustomComponent(is, options, customComponentMap) {
         $name={displayName || 'custom-component'}
         attribute={props}
       >
-        {render({ $scopedSlots, $slots, ...changedData }, ctx)}
+        {render({
+          $scopedSlots,
+          $slots,
+          ...changedData,
+        }, ctx)}
       </ShadowRoot>
     );
   };
+}
+
+function ShadowRoot(props) {
+  const { $nodeId, $config, $name, attribute, children } = props;
+
+  const { publish } = useJSBridge();
+  const { instances } = useComponentHubContext();
+  const ref = useRef(null);
+
+  useLayoutEffect(() => {
+    const node = ref.current;
+
+    node._type_ = 'SHADOW_ROOT:custom-comp';
+    node._nodeId_ = $nodeId;
+    node._config_ = $config;
+    node.setAttribute('__cc-name__', $name);
+    instances.set($nodeId, node);
+    // triggerRelationsEvent(node, true, publish);
+
+    return () => {
+      instances.remove($nodeId);
+      // triggerRelationsEvent(node, false, publish);
+    };
+  }, []);
+
+  return (
+    <span ref={ref} {...attribute}>
+      {children}
+    </span>
+  );
 }
 
 function syncInitialInfo(props, nodeId, publish) {
@@ -141,34 +187,4 @@ function transformChildrenToSlots(children) {
     slots[slot] = holder;
   });
   return slots;
-}
-
-function ShadowRoot(props) {
-  const { $nodeId, $config, $name, attribute, children } = props;
-
-  const { publish } = useJSBridge();
-  const { instances } = useComponentHubContext();
-  const ref = useRef(null);
-
-  useLayoutEffect(() => {
-    const node = ref.current;
-
-    node._type_ = 'SHADOW_ROOT:custom-comp';
-    node._nodeId_ = $nodeId;
-    node._config_ = $config;
-    node.setAttribute('__cc-name__', $name);
-    instances.set($nodeId, node);
-    // triggerRelationsEvent(node, true, publish);
-
-    return () => {
-      instances.remove($nodeId);
-      // triggerRelationsEvent(node, false, publish);
-    };
-  }, []);
-
-  return (
-    <span ref={ref} {...attribute}>
-      {children}
-    </span>
-  );
 }

@@ -2,14 +2,13 @@
 /*
  * @Author: YufJ
  * @Date: 2021-07-07 11:51:58
- * @LastEditTime: 2021-07-10 03:20:42
+ * @LastEditTime: 2021-08-13 16:39:53
  * @Description:
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/hooks.js
  */
-import { forOwn, hasIn, kebabCase } from 'lodash';
+import { divide, forOwn, hasIn, isNil, kebabCase, memoize, isEqual } from 'lodash';
 import { Deferred, mergeData } from '@utils';
-import { getPageInfoFromUrl } from '@utils/pageInfoAndUrl';
-import { useState, useRef, useContext, useLayoutEffect, useEffect, useMemo } from './nerv';
+import { useState, useRef, useContext, useLayoutEffect, useEffect, useMemo, useReducer } from './nerv';
 import { FieldsContext, ConfigContext, ComponentHubContext } from './context';
 import {
   onComponentDataChange,
@@ -19,8 +18,9 @@ import {
   onSelectComponent,
   onSelectComponentInPage,
   onTriggerComponentEvent,
+  enableScroll,
 } from './api';
-import { registerCustomComponents, createComponentResolve } from './CustomComponent';
+import { registerCustomComponents, createComponentResolve } from './Component';
 import { filterDataset, normalizeProps } from './util';
 
 export function usePageFields() {
@@ -51,9 +51,9 @@ export function useInitPageConfig(bridge) {
   const [config, setConfig] = useState();
 
   useCreation(() => {
-    bridge.subscribe('INIT_DATA_READY', (data) => {
-      if (data.config) {
-        setConfig(data.config);
+    bridge.subscribe('INIT_DATA_READY', (e) => {
+      if (e.ext) {
+        setConfig(e.ext);
       }
     });
   });
@@ -86,12 +86,13 @@ export function useCreation(callback) {
 }
 
 export function useCompileResult() {
-  const { route } = getPageInfoFromUrl(location.href);
   const [result, setResult] = useState({});
 
   useCreation(() => {
-    const compiled = window.app[route];
-    setResult((prev) => (prev.render ? prev : compiled));
+    document.addEventListener('generateFuncReady', (e) => {
+      const { generateFunc } = e.detail;
+      setResult((prev) => (prev.render ? prev : generateFunc));
+    });
   });
 
   return result;
@@ -168,13 +169,13 @@ export function useResolveComponent(config) {
 
     return function (name) {
       const is = __allConfig__[route].usingComponents && __allConfig__[route].usingComponents[name];
-
       if (!is) return null;
 
       const cpath = createComponentResolve(route, findHandler)(is);
       const CC = getCustomComponents(cpath); // 真正调用vdom render
 
       CC.displayName = name;
+
       return CC;
     };
   }, [config]);
@@ -240,16 +241,30 @@ export function useJSCoreEvent(componentHub) {
   return useCreation(() => {
     onComponentDataChange(bridge, componentHub);
     onTriggerComponentEvent(bridge, componentHub);
-    onRequestComponentObserver(bridge, componentHub, emitter, root);
+    // onRequestComponentObserver(bridge, componentHub, emitter, root);
     onSelectComponentInPage(bridge, root);
     onSelectComponent(bridge, componentHub);
-    onRequestComponentInfo(bridge, componentHub, root);
-    onGetRelationNode(bridge, componentHub);
-    onAnimationStatusChange(emitter);
-    onAppLoadStatusChange(bridge);
+    // onRequestComponentInfo(bridge, componentHub, root);
+    // onGetRelationNode(bridge, componentHub);
+    // onAnimationStatusChange(emitter);
+    // onAppLoadStatusChange(bridge);
     onDisableScroll(bridge);
     onPageScrollTo(bridge);
   });
+}
+
+function initBodyScrollGetter() {
+  if (isNil(document.body.scrollTop)) {
+    Object.defineProperty(document.body, 'scrollTop', {
+      get() {
+        return document.documentElement.scrollTop;
+      },
+      set(scrollTop) {
+        document.documentElement.scrollTop = scrollTop;
+      },
+      configurable: true,
+    });
+  }
 }
 
 export function useInitAction() {
@@ -263,8 +278,6 @@ export function useInitAction() {
   useEffect(() => {
     if (config) {
       enableScroll(config, fields);
-      initSwipeBackPatch(config);
-      initSupportRTL(config);
     }
   }, [config, fields]);
 }
@@ -293,12 +306,23 @@ export function useRenderMode() {
 }
 
 export function useNormalState() {
-  const ref = useRef(false);
+  const dataRef = useRef(false);
+  const genRef = useRef(false);
   const [bool, setBool] = useState(false);
+
+  useCreation(() => {
+    document.addEventListener('generateFuncReady', () => {
+      genRef.current = true;
+      if (dataRef.current) {
+        setBool(true);
+      }
+    });
+  });
 
   useJSBridgeFn((bridge) => {
     bridge.subscribe('INIT_DATA_READY', () => {
-      if (ref.current) {
+      dataRef.current = true;
+      if (genRef.current) {
         setBool(true);
       }
     });
@@ -374,9 +398,7 @@ export function useComponentRenderContext(props, nodeId, is, config, resolveComp
 export function useRefinedProps(props, properties) {
   const _props = normalizeProps(props, properties);
   const prevProps = usePrevious(_props);
-
   if (prevProps === undefined) return [_props, true];
-
   const obj = {};
   forOwn(_props, (val, key) => {
     if (!isEqual(prevProps[key], val)) {
@@ -406,7 +428,7 @@ export function useDataChange(nodeId, _data, _props) {
   const { emitter } = usePageFields();
   const { events } = useComponentHubContext();
   const [data, setData] = useState(() => {
-    return cloneJSON(_data);
+    return JSON.parse(JSON.stringify(_data));
   });
 
   Object.keys(_props).length > 0 && setData((prevData) => {

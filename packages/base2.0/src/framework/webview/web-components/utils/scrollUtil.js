@@ -6,7 +6,7 @@
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/web-components/utils/scrollUtil.js
  */
 import { debounce } from 'lodash';
-import { elementPrefix, UpperCasePerfix } from '@utils/config';
+import { elementPrefix, upperCasePerfix } from '@utils/config';
 
 const registeredImages = {};
 
@@ -37,7 +37,7 @@ const hasScrollViewParent = (t) => {
     return false;
   }
 
-  if (n.tagName === `${UpperCasePerfix}-SCROLL-VIEW`) {
+  if (n.tagName === `${upperCasePerfix}-SCROLL-VIEW`) {
     return true;
   }
 

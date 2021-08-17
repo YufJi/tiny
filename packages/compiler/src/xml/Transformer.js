@@ -83,7 +83,7 @@ function MLTransformer(template, _config) {
   }
 
   config.omitEndTag = !!config.omitEndTag;
-  config.templateExtname = config.templateExtname;
+  // config.templateExtname = config.templateExtname;
   config.projectRoot = config.projectRoot || cwd;
   config.usingComponents = config.usingComponents || {};
 
@@ -107,7 +107,10 @@ function MLTransformer(template, _config) {
   this.importTplDeps = {};
   this.includeTplDeps = {};
   this.template = template;
-  this.header = ['import Nerv from \'nerv\';'];
+  this.header = [
+    '// import Nerv from \'nerv\';',
+    'const Nerv = self.Nerv;',
+  ];
   this.subTemplatesCode = {};
   this.code = [];
   this.state = [];
@@ -240,7 +243,7 @@ assign(MLTransformer.prototype, {
     let { endIndex } = node;
     const { startIndex } = node;
     const code = this.template.substring(startIndex, endIndex + 1);
-    let error = void 0;
+    let error;
 
     if (!text) {
       // 如果是属性错误，则将整个标签的开始标签提取出来，进行标记
@@ -292,7 +295,7 @@ assign(MLTransformer.prototype, {
       if (attrName === this.IF_ATTR_NAME && this.isStartOfCodeSection(level)) {
         this.pushCode('{');
       }
-      let ifExp = void 0;
+      let ifExp;
       if (ifValue && ifValue !== true) {
         ifExp = this.processExpression(ifValue, {
           node: c,
@@ -315,7 +318,7 @@ assign(MLTransformer.prototype, {
       });
       this.pushCode(')');
       const nextChild = children && children[indexHolder.i + 1];
-      let transformed = void 0;
+      let transformed;
       if (ifExp) {
         this.pushCode(':');
       }
@@ -395,7 +398,7 @@ assign(MLTransformer.prototype, {
       node,
       attrName: 'data',
     }) || 'null' : 'null';
-    let key = void 0;
+    let key;
     if (attrs.key) {
       key = this.processExpression(attrs.key, {
         node,
@@ -571,7 +574,7 @@ assign(MLTransformer.prototype, {
         }
         const depCode = getDepCode.call(this, node, 1, processComponentImport);
         if (depCode) {
-          this.header.push(`import ${depCode} ` + 'from' + ` ${toLiteralString(from)};`);
+          this.header.push(`import ${depCode} from ${toLiteralString(from)};`);
         }
       }
       return;
@@ -590,15 +593,15 @@ assign(MLTransformer.prototype, {
 
       const _depCode = getDepCode.call(this, node, 'sjs', processSJSImport);
       if (_depCode) {
-        this.header.push(`import ${_depCode} ` + 'from' + ` ${toLiteralString(`${checkImport(attrs.from, '.sjs', this.config)}`)};`);
+        this.header.push(`import ${_depCode} from ${toLiteralString(`${checkImport(attrs.from, '.sjs', this.config)}`)};`);
       }
       return;
     }
 
     let inFor = false;
     let inForIf = false;
-    let forKey = void 0;
-    let forStartCodeLength = void 0;
+    let forKey;
+    let forStartCodeLength;
     if (this.FOR_ATTR_NAME in attrs) {
       inFor = true;
       if (this.isStartOfCodeSection(level, true)) {

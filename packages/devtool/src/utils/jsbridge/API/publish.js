@@ -1,39 +1,30 @@
-import EventHub, { WORKERLOADED } from '@/utils/EventHub';
 import gloabl from '@/utils/global';
 
-let workerLoaded = false;
-let workerMsgQueue = [];
-
-EventHub.on(WORKERLOADED, () => {
-  workerLoaded = true;
-  workerMsgQueue.forEach(({ event, params }) => messageToWorker(event, params));
-  workerMsgQueue = [];
-});
-
-export function messageToWorker(event, options) {
+export function messageToWorker(method, options) {
   const { paramsString, webviewIds } = options;
 
   const viewIds = JSON.parse(webviewIds);
 
   if (gloabl.worker) {
     try {
-      gloabl.worker.contentWindow.JSBridgeHandler.subscribeHandler(event, paramsString, viewIds[0]);
+      gloabl.worker.contentWindow.JSBridge.subscribeHandler(method, paramsString, viewIds[0]);
     } catch (error) {
       console.error(error);
     }
   }
 }
 
-export function messageToRender(event, options) {
+export function messageToRender(method, options) {
   const { paramsString, webviewIds, callbackId } = options;
 
   const viewIds = JSON.parse(webviewIds);
 
   viewIds.forEach((viewId) => {
     const render = gloabl.renders[viewId];
+
     if (render) {
       try {
-        render.contentWindow.JSBridgeHandler.subscribeHandler(event, paramsString);
+        render.contentWindow.JSBridge.subscribeHandler(method, paramsString);
       } catch (error) {
         console.error(error);
       }
@@ -41,26 +32,13 @@ export function messageToRender(event, options) {
   });
 }
 
-export function publish(event, options) {
+export function publish(method, options) {
   const { paramsString } = options;
-  const params = JSON.parse(paramsString);
-
-  const { from } = params;
+  const { from, ...params } = JSON.parse(paramsString);
 
   if (from === 'RENDER') {
-    if (workerLoaded) {
-      return messageToWorker(event, options);
-    } else {
-      workerMsgQueue.push({
-        event,
-        params: options,
-      });
-    }
+    return messageToWorker(method, options);
   } else if (from === 'WORKER') {
-    return messageToRender(event, options);
+    return messageToRender(method, options);
   }
-}
-
-export function publishCallback() {
-  
 }

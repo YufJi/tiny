@@ -302,6 +302,7 @@ class Image extends Base(PolymerElement) {
 
   _getImagePath(source, callback) {
     let src;
+
     if (typeof source === 'string' && source.trim()) {
       if (source.indexOf('http://') === 0
           || source.indexOf('https://') === 0
@@ -312,8 +313,7 @@ class Image extends Base(PolymerElement) {
       ) {
         src = source;
       } else {
-        // window.route
-        callback(getRealRoute(window.dirName, source));
+        src = getRealRoute(window.dirName || '', source);
       }
     }
 

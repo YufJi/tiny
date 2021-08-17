@@ -1,5 +1,22 @@
 
 <scroll-view class="page-todos" scroll-y="true">
+  <view 
+    id="parent" 
+    style="background: green;"
+    capture-bind:tap="pct"
+    bindtap="pt"
+    bindtouchstart="pts"
+    bindtouchmove="ptm"
+  >
+    <view
+      capture-bind:tap="cct"
+      catchtap="ct"
+      bindtouchstart="cts"
+      catchtouchmove="ctm"
+    >
+      longpress/tap component
+    </view>
+  </view>
 
   <view class="user">
     <image class="avatar" src="{{user.avatar || '../../assets/logo.png'}}" background-size="cover"></image>
@@ -32,7 +49,7 @@
   </view>
   <view class="todo-footer">
     <add-button id="asd"  text="{{text}}" bind:click_me="clickCom"></add-button>
-    <add-button id="asd" wx:if="{{text === 'def'}}" xx="xxx" text="{{text}}" bind:click_me="{{fn}}"></add-button>
+    <add-button id="asxx" wx:if="{{text === 'def'}}" xx="xxx" text="{{text}}" bind:click_me="{{fn}}"></add-button>
   </view>
 
   <view bind:tap="clickParent">
@@ -83,4 +100,8 @@
       </view>
     </view>
   </view>
+
+  <add-button id="asxxd"  text="{{text}}" bind:click_me="clickCom"></add-button>
+  <add-button id="asdxxx" wx:if="{{text === 'def'}}" xx="xxx" text="{{text}}" bind:click_me="{{fn}}"></add-button>
+
 </scroll-view>

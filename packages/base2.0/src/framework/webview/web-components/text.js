@@ -1,5 +1,5 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { elementPrefix, UpperCasePerfix } from '@utils/config';
+import { elementPrefix, upperCasePerfix } from '@utils/config';
 import { Base } from './mixins';
 
 class Text extends Base(PolymerElement) {
@@ -100,7 +100,7 @@ class Text extends Base(PolymerElement) {
 
           textNode.appendChild(document.createTextNode(lines[i]));
         }
-      } else if (shadowNode.nodeType === 1 && shadowNode.tagName === `${UpperCasePerfix}-TEXT`) {
+      } else if (shadowNode.nodeType === 1 && shadowNode.tagName === `${upperCasePerfix}-TEXT`) {
         const cloneNode = Node.prototype.cloneNode || Element.prototype.cloneNode;
 
         const _clone = (root) => {
@@ -108,7 +108,7 @@ class Text extends Base(PolymerElement) {
           outer.$$data = root.$$data;
 
           Array.from(root.childNodes).forEach((child) => {
-            if (child.nodeType === 1 && child.tagName === `${UpperCasePerfix}-TEXT`) {
+            if (child.nodeType === 1 && child.tagName === `${upperCasePerfix}-TEXT`) {
               outer.appendChild(_clone(child));
             } else {
               outer.appendChild(child.cloneNode());

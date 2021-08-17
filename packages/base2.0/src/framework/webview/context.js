@@ -1,11 +1,12 @@
 /*
  * @Author: YufJ
  * @Date: 2021-07-07 11:53:06
- * @LastEditTime: 2021-07-18 21:51:19
+ * @LastEditTime: 2021-08-13 15:31:54
  * @Description:
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/context.js
  */
 import EventEmitter from 'eventemitter3';
+import { noop } from 'lodash';
 import { createContext } from './nerv';
 
 import * as bridge from './bridge';

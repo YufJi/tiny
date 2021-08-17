@@ -1,13 +1,15 @@
-import { defaults, mapValues, isFunction } from 'lodash';
+import { defaults, mapValues, isFunction, noop } from 'lodash';
 
 import { wrapUserFunctions, wrapUserFunction } from '../utils/wrapfn';
 import { debug, warn } from '../utils/log';
 import { pageInitMap } from '../Model/common';
+import $global from '../common/global';
 
 const g = self;
 
 export default function registerPage(options = {}) {
-  const is = g.globPageRegistPath;
+  const { pagePath: is } = $global.currentPageConfig;
+  $global.__allConfig__[is] = $global.currentPageConfig;
 
   debug('全局配置：', JSON.stringify(g.TinyConfig.pages));
 

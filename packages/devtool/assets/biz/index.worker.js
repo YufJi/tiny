@@ -86,6 +86,17 @@
 /************************************************************************/
 /******/ ({
 
+/***/ "../../devtool/assets/biz/appConfig.json":
+/*!*****************************************************************************************!*\
+  !*** /Users/jiyufeng/Documents/demo/tiny-v1/packages/devtool/assets/biz/appConfig.json ***!
+  \*****************************************************************************************/
+/*! exports provided: window, pages, launchParams, prerenderPage, default */
+/***/ (function(module) {
+
+module.exports = JSON.parse("{\"window\":{\"navigationBarTitleText\":\"哈哈哈\"},\"pages\":[\"pages/todos/todos\",\"pages/add-todo/add-todo\"],\"launchParams\":{\"pages/todos/todos\":{\"navigationBarTitleText\":\"Index\"},\"pages/add-todo/add-todo\":{\"navigationBarTitleText\":\"哈哈哈\"}},\"prerenderPage\":\"render.html\"}");
+
+/***/ }),
+
 /***/ "../../devtool/assets/biz/config$.js":
 /*!*************************************************************************************!*\
   !*** /Users/jiyufeng/Documents/demo/tiny-v1/packages/devtool/assets/biz/config$.js ***!
@@ -116,6 +127,8 @@ if(!self.__mpInited) {
 self.__mpInited = 1;
 
 __webpack_require__(/*! ./config$ */ "../../devtool/assets/biz/config$.js");
+var appConfig = __webpack_require__(/*! ./appConfig.json */ "../../devtool/assets/biz/appConfig.json");
+ self.TinyConfig = appConfig;
 
 
 var MP = self.MP;
@@ -127,14 +140,6 @@ self.wx = MP.bridge;
 self.Component = MP.Component;
 self.Behavior = MP.Behavior;
 self.$global = MP.$global;
-self.requirePlugin = MP.requirePlugin;
-
-
-if(MP.registerApp) {
-  MP.registerApp({
-    appJSON: mpAppJson,
-  });
-}
 
 
 function success() {
@@ -143,7 +148,7 @@ __webpack_require__(/*! ./miniRoot/components/add-button/add-button?hash=ea9fd38
 __webpack_require__(/*! ./miniRoot/pages/todos/todos?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
 __webpack_require__(/*! ./miniRoot/pages/add-todo/add-todo?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
 }
-self.bootstrapApp ? self.bootstrapApp({ success }) : success();
+success();
 }
 
 /***/ }),
@@ -205,31 +210,19 @@ App({
 
   userInfo: null,
 
-  getUserInfo() {
-    return new Promise((resolve, reject) => {
-      if (this.userInfo) resolve(this.userInfo);
-
-      mp.getAuthCode({
-        scopes: ['auth_user'],
-        success: authcode => {
-          console.info(authcode);
-
-          mp.getAuthUserInfo({
-            success: res => {
-              this.userInfo = res;
-              resolve(this.userInfo);
-            },
-            fail: () => {
-              reject({});
-            },
-          });
-        },
-        fail: () => {
-          reject({});
-        },
-      });
-    });
+  onLaunch(options) {
+    // Do something initial when launch.
+    console.log('app onLaunch');
   },
+  onShow(options) {
+    // Do something when show.
+    console.log('app onShow');
+  },
+  onHide() {
+    // Do something when hide.
+    console.log('app onHide');
+  },
+
 });
 
 
@@ -516,6 +509,31 @@ Page({
     this.setData({
       duration: e.detail.value,
     });
+  },
+
+  pct() {
+    console.log('parent capture tap', Date.now());
+  },
+  pt() {
+    console.log('parent tap', Date.now());
+  },
+  pts() {
+    console.log('parent touchstart');
+  },
+  ptm() {
+    console.log('parent touchmove');
+  },
+  cct() {
+    console.log('child capture tap');
+  },
+  ct() {
+    console.log('child catch tap');
+  },
+  cts() {
+    console.log('child touchstart');
+  },
+  ctm() {
+    console.log('child touchmove');
   },
 });
 

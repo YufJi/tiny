@@ -1,4 +1,4 @@
-import { set, get } from 'lodash';
+import { set, get, cloneDeep, mapValues, isFunction } from 'lodash';
 
 import { wrapUserFunction, wrapPageLifetime } from '../utils/wrapfn';
 import { warn } from '../utils/log';

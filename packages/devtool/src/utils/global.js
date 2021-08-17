@@ -3,7 +3,10 @@
  */
 
 const gloabl = {
-  currentRender: null, // 当前pageFrame
+  // 预热webview
+  preloadRenders: [],
+  // 当前webview
+  currentRender: null,
   pagesStack: [],
   renders: {},
   tabRenders: {},

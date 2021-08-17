@@ -1,3 +1,10 @@
+/*
+ * @Author: YufJ
+ * @Date: 2021-04-18 14:59:25
+ * @LastEditTime: 2021-08-13 17:43:10
+ * @Description:
+ * @FilePath: /tiny-v1/packages/devtool/src/utils/jsbridge/API/postMessage.js
+ */
 import EventHub, { WORKERLOADED } from '@/utils/EventHub';
 import gloabl from '@/utils/global';
 

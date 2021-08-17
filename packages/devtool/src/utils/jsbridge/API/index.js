@@ -1,14 +1,16 @@
 import postMessage, { messageToRender, messageToWorker } from './postMessage';
 import { pushWindow, popTo } from './navigation';
-import { publish, publishCallback } from './publish';
+import { publish } from './publish';
+import getLaunchOptionsSync from './launchOptions';
 
 export {
   postMessage,
   publish,
-  publishCallback,
   messageToRender,
   messageToWorker,
 
   pushWindow,
   popTo,
+
+  getLaunchOptionsSync,
 };

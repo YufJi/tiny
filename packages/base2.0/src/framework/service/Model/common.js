@@ -38,10 +38,7 @@ export function addSetDataTask(model, data, userCallback) {
         } else {
           updateTask = invokeWebview('appDataChange', {
             data: current.data,
-            options: {
-              dataId: traceId$1,
-              trace: timelineConfig.trace,
-            },
+            options: {},
           }, model.__webviewId__);
         }
 

@@ -1,5 +1,5 @@
 import { html, PolymerElement } from '@polymer/polymer';
-import { elementPrefix, UpperCasePerfix } from '@utils/config';
+import { elementPrefix, upperCasePerfix } from '@utils/config';
 import { Base } from './mixins';
 
 class SwiperItem extends Base(PolymerElement) {
@@ -69,7 +69,7 @@ class SwiperItem extends Base(PolymerElement) {
   }
 
   _findSwiper(el) {
-    if (el.tagName === `${UpperCasePerfix}-SWIPER`) {
+    if (el.tagName === `${upperCasePerfix}-SWIPER`) {
       return el;
     }
 

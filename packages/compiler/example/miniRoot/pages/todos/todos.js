@@ -124,4 +124,29 @@ Page({
       duration: e.detail.value,
     });
   },
+
+  pct() {
+    console.log('parent capture tap', Date.now());
+  },
+  pt() {
+    console.log('parent tap', Date.now());
+  },
+  pts() {
+    console.log('parent touchstart');
+  },
+  ptm() {
+    console.log('parent touchmove');
+  },
+  cct() {
+    console.log('child capture tap');
+  },
+  ct() {
+    console.log('child catch tap');
+  },
+  cts() {
+    console.log('child touchstart');
+  },
+  ctm() {
+    console.log('child touchmove');
+  },
 });

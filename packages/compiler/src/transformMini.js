@@ -147,6 +147,7 @@ module.exports = function run(config) {
                 }],
                 [require.resolve('@babel/preset-react'), {
                   pragma: 'Nerv.createElement', // default pragma is React.createElement (only in classic runtime)
+                  throwIfNamespace: false,
                 }],
               ],
               plugins: [

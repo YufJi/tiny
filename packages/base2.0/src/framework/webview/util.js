@@ -8,7 +8,6 @@
 
 import { isFunction, wrap, noop, kebabCase, hasIn, isPlainObject, isObject, camelCase } from 'lodash';
 import { getType } from '@utils';
-import startsWith from '@utils/startsWith';
 
 export function tryCatch(method, callback, context) {
   return isFunction(callback)
@@ -35,8 +34,6 @@ export function getRealRoute(relative = '', path = '') {
   const pathParts = path.split('/');
 
   for (let i = 0; i < pathParts.length; i++) {
-    const element = pathParts[i];
-
     if (pathParts[i] === '..') {
       count++;
     } else {

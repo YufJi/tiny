@@ -1,7 +1,10 @@
 import createBridge from '@/js-bridge';
 
+const g = self;
 // 宿主提供的bridge
-const jsCore = self.JSCore;
+const bridge = createBridge(g.JSCore);
+
+g.JSBridge = bridge;
 
 const {
   invokeHandler,
@@ -13,10 +16,11 @@ const {
   offNative,
   subscribe,
   unsubscribe,
-} = createBridge(jsCore);
+} = bridge;
 
 let callbackId = 0;
 const callbackMap = new Map();
+// 监听webview调用
 subscribe('callbackWebviewMethod', (response) => {
   const { error, result, extra } = response;
   const currentId = extra.callbackId;
@@ -37,6 +41,7 @@ subscribe('callbackWebviewMethod', (response) => {
   callbackMap.delete(currentId);
 });
 
+// 调用webview
 function invokeWebview(method, params, webviewId) {
   return new Promise(((resolve, reject) => {
     callbackId += 1;
@@ -56,6 +61,7 @@ function invokeWebview(method, params, webviewId) {
   }));
 }
 
+// 监听且回应webview
 function replyWebview() {
   subscribe('invokeServiceMethod', async (data, webviewId) => {
     const webviewIds = [webviewId];

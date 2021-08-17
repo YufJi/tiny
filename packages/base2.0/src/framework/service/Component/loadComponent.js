@@ -1,6 +1,7 @@
-import { unset, get, set, isEqual, isString, isFunction } from 'lodash';
+import { unset, get, set, isEqual, isString, isFunction, isPlainObject, cloneDeep } from 'lodash';
 
-import { componentModels, pageModels } from '../Model/common';
+import { subscribe } from '../bridge';
+import { componentModels, pageModels, componentBookmarks } from '../Model/common';
 import { onRouteEvent } from '../Route';
 import { ComponentModel } from '../Model';
 import { wrapUserFunction } from '../utils/wrapfn';

@@ -1,6 +1,6 @@
 const global = {
   state: {
-    navigationBarTitleText: '小程序',
+    navigationBarTitleText: '',
     // backgroundColor: '#ffffff',
   },
   reducers: {

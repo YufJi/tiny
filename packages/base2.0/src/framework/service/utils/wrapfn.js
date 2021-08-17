@@ -1,5 +1,5 @@
-import { wrap } from 'lodash';
-import { error } from './log';
+import { wrap, mapValues, noop } from 'lodash';
+import { error, debug } from './log';
 
 export function wrapAppLifetime(method, fn) {
   return wrap(fn, (life, ...args) => {
@@ -11,7 +11,7 @@ export function wrapAppLifetime(method, fn) {
 
 export function wrapPageLifetime(method, fn) {
   return wrap(fn, (life, ...args) => {
-    const result = wrapUserFunction(`at ${_this.is}.js Page.${method}`, life).apply(this, args);
+    const result = wrapUserFunction(`at ${this.is}.js Page.${method}`, life).apply(this, args);
 
     return result;
   });
@@ -26,6 +26,7 @@ export function wrapComponnetLifetime(method, fn) {
 }
 
 export function wrapUserFunction(description, callback) {
+  // debug('包装用户函数:', description);
   if (!callback) return noop;
   return callback;
 }

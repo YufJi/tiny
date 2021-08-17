@@ -1,13 +1,13 @@
 /*
  * @Author: YufJ
  * @Date: 2021-07-13 11:34:21
- * @LastEditTime: 2021-07-13 14:36:46
+ * @LastEditTime: 2021-08-16 11:31:26
  * @Description:
- * @FilePath: /yeact/src/vdom/unmount.js
+ * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/nerv/vdom/unmount.js
  */
 import { isNil, isInvalid, VType } from '../shared';
 import { isAttrAnEvent, isArray } from '../utils';
-import { detachEvent } from '../event';
+import { toEventName } from '../event';
 import Ref from './ref';
 
 export function unmountChildren(
@@ -39,7 +39,12 @@ export function unmount(vnode, parentDom) {
     unmountChildren(children);
     for (const propName in props) {
       if (isAttrAnEvent(propName)) {
-        detachEvent(dom, propName, props[propName]);
+        const { raw, name, options } = toEventName(propName);
+        const { capture } = options;
+
+        const callback = dom._callback || (dom._callback = {});
+
+        dom.removeEventListener(name, callback[raw], capture);
       }
     }
     if (ref !== null) {

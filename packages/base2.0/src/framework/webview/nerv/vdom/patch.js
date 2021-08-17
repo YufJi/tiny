@@ -1,4 +1,5 @@
 /* tslint:disable: no-empty */
+import { camelCase } from 'lodash';
 import {
   isString,
   isAttrAnEvent,
@@ -16,7 +17,7 @@ import {
 import createElement, { mountChild, mountElement, insertElement } from './create-element';
 import { unmount, unmountChildren } from './unmount';
 import Ref from './ref';
-import { attachEvent, detachEvent } from '../event';
+import { addListener, eventProxy, toEventName } from '../event';
 
 export function patch(
   lastVnode,
@@ -484,9 +485,6 @@ const skipProps = {
   key: 1,
   ref: 1,
   owner: 1,
-  /* 编译小程序，生成的prop */
-  __owner: 1,
-  __page: 1,
 };
 
 const IS_NON_DIMENSIONAL = /acit|ex(?:s|g|n|p|$)|rph|ows|mnc|ntw|ine[ch]|zoo|^ord/i;
@@ -510,11 +508,32 @@ function patchEvent(
   nextEvent,
   domNode,
 ) {
-  if (lastEvent !== nextEvent) {
-    if (isFunction(lastEvent)) {
-      detachEvent(domNode, eventName, lastEvent);
+  const { raw, name, options } = toEventName(eventName);
+  const { capture, stop } = options;
+
+  const listener = domNode._listeners || (domNode._listeners = {});
+  const callback = domNode._callback || (domNode._callback = {});
+
+  if (nextEvent) {
+    listener[`${name}`] = listener[`${name}`] || {};
+
+    if (!lastEvent) {
+      const fn = eventProxy.bind(domNode, name, capture);
+      callback[raw] = fn;
+      addListener(domNode, name, fn, options);
     }
-    attachEvent(domNode, eventName, nextEvent);
+
+    const displayName = nextEvent.name;
+
+    listener[`${name}`][`${capture ? 'capture' : 'bubble'}`] = {
+      options,
+      handler: nextEvent,
+      name: displayName,
+    };
+    domNode.setAttribute(raw, displayName);
+  } else {
+    listener[`${name}`][`${capture ? 'capture' : 'bubble'}`] = null;
+    domNode.removeAttribute(raw);
   }
 }
 
@@ -530,6 +549,7 @@ function rpx2px(number) {
   }
   number = number / BASE_DEVICE_WIDTH * deviceWidth;
   number = Math.floor(number + eps);
+
   if (number === 0) {
     if (deviceDPR === 1 || !isIOS) {
       return 1;
@@ -537,10 +557,11 @@ function rpx2px(number) {
       return 0.5;
     }
   }
+
   return number;
 }
 
-function transformRpx(str) {
+export function transformRpx(str) {
   if (typeof str !== 'string') {
     return str;
   }
@@ -644,6 +665,10 @@ export function patchProp(
 
     if (prop === 'class') {
       domNode.className = nextValue;
+    } else if (isAttrAnEvent(prop)) {
+      patchEvent(prop, lastValue, nextValue, domNode);
+    } else if (prop === 'style') {
+      patchStyle(lastValue, nextValue, domNode);
     } else if (prop === 'dangerouslySetInnerHTML') {
       const lastHtml = lastValue && lastValue.__html;
       const nextHtml = nextValue && nextValue.__html;
@@ -660,10 +685,13 @@ export function patchProp(
           domNode.innerHTML = nextHtml;
         }
       }
-    } else if (isAttrAnEvent(prop)) {
-      patchEvent(prop, lastValue, nextValue, domNode);
-    } else if (prop === 'style') {
-      patchStyle(lastValue, nextValue, domNode);
+    } else if (/^data-/.test(prop)) {
+      const key = prop.replace(/^data-/, '');
+      if (!domNode._dataset) {
+        domNode._dataset = {};
+      }
+
+      domNode._dataset[camelCase(key)] = nextValue;
     } else if (isNil(nextValue) || nextValue === false) {
       domNode.removeAttribute(prop);
     } else if (!isFunction(nextValue)) {
@@ -681,9 +709,7 @@ function patchProps(
   for (const propName in previousProps) {
     const value = previousProps[propName];
     if (isNil(nextProps[propName]) && !isNil(value)) {
-      if (isAttrAnEvent(propName)) {
-        detachEvent(domNode, propName, value);
-      } else if (propName === 'dangerouslySetInnerHTML') {
+      if (propName === 'dangerouslySetInnerHTML') {
         domNode.textContent = '';
       } else if (propName === 'className') {
         domNode.removeAttribute('class');

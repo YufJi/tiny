@@ -6,6 +6,7 @@ import { onNative, subscribe, invokeNative } from '../bridge';
 import context from '../context';
 import { ComponentPageModel, PageModel } from '../Model';
 import checkIsComponent from './checkIsComponent';
+import firstRender from './firstRender';
 
 // 使用过的webview
 const webviewUsed = new Map();
@@ -59,6 +60,20 @@ export function onRouteEvent(event, handler) {
   }
 }
 
+/**
+ * 路由创建页面的事件回调
+ * @param currentPage 当前路由页面
+ */
+onRouteEvent('afterCreatePage', (currentPage) => {
+  // 页面创建后控制分享菜单是否显示隐藏
+  if (!currentPage.implement.onShareAppMessage) {
+    invokeNative('hideShareMenu');
+  }
+
+  // 渲染数据
+  firstRender(currentPage);
+});
+
 export default function loadRoute() {
   onNative('onAppRoute', handleAppRoute);
 
@@ -85,7 +100,7 @@ export default function loadRoute() {
   });
 
   // 注册分享逻辑
-  shareAppExt(handleShareParams);
+  // shareAppExt(handleShareParams);
 }
 
 function handleAppRoute(_params, _webviewId) {
@@ -99,7 +114,7 @@ function handleAppRoute(_params, _webviewId) {
 }
 
 function handleAppRouteParams(params, _webviewId) {
-  const webviewId = Number(params.webviewId || _webviewId);
+  const webviewId = params.webviewId || _webviewId;
   const rawQuery = params.query;
   const type = params.openType;
   const route = params.path;

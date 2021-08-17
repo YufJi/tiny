@@ -2,9 +2,13 @@ import { defaults } from 'lodash';
 import { createBehavior } from '../Behavior';
 import { componentBookmarks } from '../Model/common';
 import normalizeRelations from './normalizeRelations';
+import $global from '../common/global';
+
+const g = self;
 
 export default function registerComponent(options = {}) {
-  const is = globalThis.globPageRegistPath;
+  const { is } = $global.currentComponentConfig;
+  $global.__allConfig__[is] = $global.currentComponentConfig;
 
   if (componentBookmarks.has(is)) {
     throw new Error(`at ${is}, Component can only register once`);

@@ -1,7 +1,7 @@
 /*
  * @Author: YufJ
  * @Date: 2021-07-03 20:23:59
- * @LastEditTime: 2021-07-09 14:31:08
+ * @LastEditTime: 2021-08-13 17:08:29
  * @Description:
  * @FilePath: /tiny-v1/packages/base2.0/src/js-bridge/createInvoke.js
  */
@@ -32,7 +32,7 @@ export default function createInvoke(jsCore) {
     resolve(response);
   };
 
-  const invokeNative = (method, params, webviewId = self.WEBVIEWID) => {
+  const invokeNative = (method, params = {}, webviewId = self.WEBVIEWID) => {
     resolveId += 1;
 
     const deferred = new Deferred();

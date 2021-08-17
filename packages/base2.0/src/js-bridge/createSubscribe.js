@@ -1,19 +1,19 @@
-import EventEmitter from '@utils/EventEmitter';
+import EventEmitter from 'eventemitter3';
 
 import { CUSTOM_EVENT } from './const';
 
 export default function createSubscribe() {
-  const customEmitter = new EventEmitter();
   const nativeEmitter = new EventEmitter();
+  const customEmitter = new EventEmitter();
 
   return {
-    onNative: nativeEmitter.on,
-    offNative: nativeEmitter.off,
+    onNative: nativeEmitter.on.bind(nativeEmitter),
+    offNative: nativeEmitter.off.bind(nativeEmitter),
     subscribe(event, listener) {
-      customEmitter.on(CUSTOM_EVENT + event, listener);
+      customEmitter.on.call(customEmitter, CUSTOM_EVENT + event, listener);
     },
     unsubscribe(event, listener) {
-      customEmitter.off(CUSTOM_EVENT + event, listener);
+      customEmitter.off.call(customEmitter, CUSTOM_EVENT + event, listener);
     },
 
     // 监听消息
@@ -33,9 +33,9 @@ export default function createSubscribe() {
       }
 
       if (event.startsWith(CUSTOM_EVENT)) {
-        customEmitter.emit(event, params, webviewId);
+        customEmitter.emit.call(customEmitter, event, params, webviewId);
       } else {
-        nativeEmitter.emit(event, params, webviewId);
+        nativeEmitter.emit.call(nativeEmitter, event, params, webviewId);
       }
     },
   };

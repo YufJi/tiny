@@ -1,3 +1,4 @@
+import { isFunction, noop } from 'lodash';
 import { wrapUserFunction } from '../utils/wrapfn';
 import { warn, error } from '../utils/log';
 

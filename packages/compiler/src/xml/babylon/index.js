@@ -811,7 +811,7 @@ const Tokenizer = (function () {
 
     this.state.pos = end + 2;
     lineBreakG.lastIndex = start;
-    let match = void 0;
+    let match ;
     while ((match = lineBreakG.exec(this.input)) && match.index < this.state.pos) {
       ++this.state.curLine;
       this.state.lineStart = match.index + match[0].length;
@@ -1182,8 +1182,8 @@ const Tokenizer = (function () {
 
   Tokenizer.prototype.readRegexp = function readRegexp() {
     const start = this.state.pos;
-    let escaped = void 0;
-    let inClass = void 0;
+    let escaped ;
+    let inClass ;
     for (;;) {
       if (this.state.pos >= this.input.length) this.raise(start, 'Unterminated regular expression');
       const ch = this.input.charAt(this.state.pos);
@@ -1229,7 +1229,7 @@ const Tokenizer = (function () {
 
     for (let i = 0, e = len == null ? Infinity : len; i < e; ++i) {
       const code = this.input.charCodeAt(this.state.pos);
-      let val = void 0;
+      let val ;
       if (code >= 97) {
         val = code - 97 + 10; // a
       } else if (code >= 65) {
@@ -1286,7 +1286,7 @@ const Tokenizer = (function () {
     if (isIdentifierStart(this.fullCharCodeAtPos())) this.raise(this.state.pos, 'Identifier directly after number');
 
     const str = this.input.slice(start, this.state.pos);
-    let val = void 0;
+    let val ;
     if (isFloat) {
       val = parseFloat(str);
     } else if (!octal || str.length === 1) {
@@ -1305,7 +1305,7 @@ const Tokenizer = (function () {
 
   Tokenizer.prototype.readCodePoint = function readCodePoint(throwOnInvalid) {
     const ch = this.input.charCodeAt(this.state.pos);
-    let code = void 0;
+    let code ;
 
     if (ch === 123) {
       // '{'
@@ -1567,7 +1567,7 @@ const Tokenizer = (function () {
 
   Tokenizer.prototype.updateContext = function updateContext(prevType) {
     const { type } = this.state;
-    let update = void 0;
+    let update ;
 
     if (type.keyword && prevType === types.dot) {
       this.state.exprAllowed = false;
@@ -1987,7 +1987,7 @@ pp$1.parseBreakContinueStatement = function (node, keyword) {
 
   // Verify that there is an actual destination to break or
   // continue to.
-  let i = void 0;
+  let i ;
   for (i = 0; i < this.state.labels.length; ++i) {
     const lab = this.state.labels[i];
     if (node.label == null || lab.name === node.label.name) {
@@ -2121,7 +2121,7 @@ pp$1.parseSwitchStatement = function (node) {
   // nodes. `cur` is used to keep the node that we are currently
   // adding statements to.
 
-  let cur = void 0;
+  let cur ;
   for (var sawDefault; !this.match(types.braceR);) {
     if (this.match(types._case) || this.match(types._default)) {
       const isCase = this.match(types._case);
@@ -2287,8 +2287,8 @@ pp$1.parseBlockBody = function (node, allowDirectives, topLevel, end) {
   node.directives = [];
 
   let parsedNonDirective = false;
-  let oldStrict = void 0;
-  let octalPosition = void 0;
+  let oldStrict ;
+  let octalPosition ;
 
   while (!this.eat(end)) {
     if (!parsedNonDirective && this.state.containsOctal && !octalPosition) {
@@ -2342,7 +2342,7 @@ pp$1.parseFor = function (node, init) {
 // same from parser's perspective.
 
 pp$1.parseForIn = function (node, init, forAwait) {
-  let type = void 0;
+  let type ;
   if (forAwait) {
     this.eatContextual('of');
     type = 'ForAwaitStatement';
@@ -2850,7 +2850,7 @@ pp$1.raiseDuplicateExportError = function (node, name) {
 pp$1.parseExportSpecifiers = function () {
   const nodes = [];
   let first = true;
-  let needsFrom = void 0;
+  let needsFrom ;
 
   // export { x, y as z } [from '...']
   this.expect(types.braceL);
@@ -3355,7 +3355,7 @@ pp$3.parseMaybeAssign = function (noIn, refShorthandDefaultPos, afterLeftParse, 
     return _left;
   }
 
-  let failOnShorthandAssign = void 0;
+  let failOnShorthandAssign ;
   if (refShorthandDefaultPos) {
     failOnShorthandAssign = false;
   } else {
@@ -3378,7 +3378,7 @@ pp$3.parseMaybeAssign = function (noIn, refShorthandDefaultPos, afterLeftParse, 
     this.checkLVal(left, undefined, undefined, 'assignment expression');
 
     if (left.extra && left.extra.parenthesized) {
-      let errorMsg = void 0;
+      let errorMsg ;
       if (left.type === 'ObjectPattern') {
         errorMsg = '`({a}) = 0` use `({a} = 0)`';
       } else if (left.type === 'ArrayPattern') {
@@ -3580,7 +3580,7 @@ pp$3.parseSubscripts = function (base, startPos, startLoc, noCalls) {
 
 pp$3.parseCallExpressionArguments = function (close, possibleAsyncArrow) {
   const elts = [];
-  let innerParenStart = void 0;
+  let innerParenStart ;
   let first = true;
 
   while (!this.eat(close)) {
@@ -3631,7 +3631,7 @@ pp$3.parseNoCallExpr = function () {
 
 pp$3.parseExprAtom = function (refShorthandDefaultPos) {
   const canBeArrow = this.state.potentialArrowAt === this.state.start;
-  let node = void 0;
+  let node ;
 
   switch (this.state.type) {
     case types._super:
@@ -3822,7 +3822,7 @@ pp$3.parseParenAndDistinguishExpression = function (startPos, startLoc, canBeArr
   startPos = startPos || this.state.start;
   startLoc = startLoc || this.state.startLoc;
 
-  let val = void 0;
+  let val ;
   this.expect(types.parenL);
 
   const innerStartPos = this.state.start;
@@ -3831,8 +3831,8 @@ pp$3.parseParenAndDistinguishExpression = function (startPos, startLoc, canBeArr
   const refShorthandDefaultPos = { start: 0 };
   const refNeedsArrowPos = { start: 0 };
   let first = true;
-  let spreadStart = void 0;
-  let optionalCommaStart = void 0;
+  let spreadStart ;
+  let optionalCommaStart ;
 
   while (!this.match(types.parenR)) {
     if (first) {
@@ -4013,8 +4013,8 @@ pp$3.parseObj = function (isPattern, refShorthandDefaultPos) {
     let prop = this.startNode();
     let isGenerator = false;
     let isAsync = false;
-    let startPos = void 0;
-    let startLoc = void 0;
+    let startPos ;
+    let startLoc ;
     if (decorators.length) {
       prop.decorators = decorators;
       decorators = [];
@@ -4334,7 +4334,7 @@ pp$3.parseExprList = function (close, allowEmpty, refShorthandDefaultPos) {
 };
 
 pp$3.parseExprListItem = function (allowEmpty, refShorthandDefaultPos, refNeedsArrowPos) {
-  let elt = void 0;
+  let elt ;
   if (allowEmpty && this.match(types.comma)) {
     elt = null;
   } else if (this.match(types.ellipsis)) {
@@ -4531,11 +4531,11 @@ pp$6.processComment = function (node) {
 
   const stack = this.state.commentStack;
 
-  let firstChild = void 0;
-  let lastChild = void 0;
-  let trailingComments = void 0;
-  let i = void 0;
-  let j = void 0;
+  let firstChild ;
+  let lastChild ;
+  let trailingComments ;
+  let i ;
+  let j ;
 
   if (this.state.trailingComments.length > 0) {
     // If the first comment in trailingComments comes after the
@@ -5453,16 +5453,16 @@ pp$8.flowParseObjectType = function (allowStatic, allowExact, allowSpread) {
   this.state.inType = true;
 
   const nodeStart = this.startNode();
-  let node = void 0;
-  let propertyKey = void 0;
+  let node ;
+  let propertyKey ;
   let isStatic = false;
 
   nodeStart.callProperties = [];
   nodeStart.properties = [];
   nodeStart.indexers = [];
 
-  let endDelim = void 0;
-  let exact = void 0;
+  let endDelim ;
+  let exact ;
   if (allowExact && this.match(types.braceBarL)) {
     this.expect(types.braceBarL);
     endDelim = types.braceBarR;
@@ -5676,8 +5676,8 @@ pp$8.flowParsePrimaryType = function () {
   const startPos = this.state.start;
   const { startLoc } = this.state;
   const node = this.startNode();
-  let tmp = void 0;
-  let type = void 0;
+  let tmp ;
+  let type ;
   let isGroupedType = false;
   const oldNoAnonFunctionType = this.state.noAnonFunctionType;
 
@@ -6272,7 +6272,7 @@ const flowPlugin = function flowPlugin(instance) {
       delete prop.variance;
       delete prop.variancePos;
 
-      let typeParameters = void 0;
+      let typeParameters ;
 
       // method shorthand
       if (this.isRelational('<')) {
@@ -6479,8 +6479,8 @@ const flowPlugin = function flowPlugin(instance) {
       }
 
       if (jsxError != null || this.isRelational('<')) {
-        let arrowExpression = void 0;
-        let typeParameters = void 0;
+        let arrowExpression ;
+        let typeParameters ;
         try {
           typeParameters = this.flowParseTypeParameterDeclaration();
 
@@ -6570,8 +6570,8 @@ if (!fromCodePoint) {
   fromCodePoint = function fromCodePoint() {
     const MAX_SIZE = 0x4000;
     const codeUnits = [];
-    let highSurrogate = void 0;
-    let lowSurrogate = void 0;
+    let highSurrogate ;
+    let lowSurrogate ;
     let index = -1;
     const { length } = arguments;
     if (!length) {
@@ -6942,7 +6942,7 @@ pp$9.jsxReadToken = function () {
 
 pp$9.jsxReadNewLine = function (normalizeCRLF) {
   const ch = this.input.charCodeAt(this.state.pos);
-  let out = void 0;
+  let out ;
   ++this.state.pos;
   if (ch === 13 && this.input.charCodeAt(this.state.pos) === 10) {
     ++this.state.pos;
@@ -6986,7 +6986,7 @@ pp$9.jsxReadString = function (quote) {
 pp$9.jsxReadEntity = function () {
   let str = '';
   let count = 0;
-  let entity = void 0;
+  let entity ;
   let ch = this.input[this.state.pos];
 
   const startPos = ++this.state.pos;
@@ -7023,7 +7023,7 @@ pp$9.jsxReadEntity = function () {
 // by isIdentifierStart in readToken.
 
 pp$9.jsxReadWord = function () {
-  let ch = void 0;
+  let ch ;
   const start = this.state.pos;
   do {
     ch = this.input.charCodeAt(++this.state.pos);
@@ -7095,7 +7095,7 @@ pp$9.jsxParseElementName = function () {
 // Parses any type of JSX attribute value.
 
 pp$9.jsxParseAttributeValue = function () {
-  let node = void 0;
+  let node ;
   switch (this.state.type) {
     case types.braceL:
       node = this.jsxParseExpressionContainer();

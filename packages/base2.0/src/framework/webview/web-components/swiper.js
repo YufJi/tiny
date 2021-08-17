@@ -1,5 +1,5 @@
 import { html, PolymerElement } from '@polymer/polymer';
-import { elementPrefix, UpperCasePerfix } from '@utils/config';
+import { elementPrefix, upperCasePerfix } from '@utils/config';
 import { Base, TouchTrack } from './mixins';
 
 const documentContainer = document.createElement('div');
@@ -413,7 +413,7 @@ class Swiper extends TouchTrack(Base(PolymerElement)) {
 
   _isThatMyItem(target) {
     const isMe = (node) => {
-      if (node.tagName.toUpperCase() === `${UpperCasePerfix}-SWIPER`) {
+      if (node.tagName.toUpperCase() === `${upperCasePerfix}-SWIPER`) {
         if (node === this) {
           return true;
         } else {

@@ -1,4 +1,4 @@
-import { isFunction } from 'lodash';
+import { isFunction, get } from 'lodash';
 
 import { warn } from '../utils/log';
 import { wrapUserFunction } from '../utils/wrapfn';

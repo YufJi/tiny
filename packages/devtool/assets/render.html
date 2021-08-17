@@ -1,3 +1,10 @@
+<!--
+ * @Author: YufJ
+ * @Date: 2021-06-02 23:52:03
+ * @LastEditTime: 2021-08-17 14:41:46
+ * @Description: 
+ * @FilePath: /tiny-v1/packages/devtool/assets/render.html
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -60,25 +67,8 @@
     </div>
   </div>
 
-  <script src="/JSBridge/index.js"></script>
-  <script src="/base/mp.js"></script>
-  <script src="/index.web.js"></script>
-  <script>
-    document.addEventListener('JSBridgeReady', function() {
-      bootstrapApp({
-        onReady: function(callback) {
-          callback({
-            bridge: {
-              startupParams: {
-                // debug: 'framework'
-              },
-              call: window.JSBridge.call,
-            }
-          })
-        },
-      })
-    })
-    
-  </script>
+  <script src="/JSBridge/index.js" defer></script>
+  <script src="/base/mp.js" defer></script>
+  <script src="/index.web.js" defer></script>
 </body>
 </html>
