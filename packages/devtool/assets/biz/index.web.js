@@ -1197,7 +1197,7 @@ function render(data, _ctx) {
   }, Nerv.createElement("tiny-input", {
     className: "add-todo-input",
     placeholder: "What needs to be done?",
-    bindblur: _ctx.$$eventBinder("onBlur"),
+    bindinput: _ctx.$$eventBinder("onInput"),
     value: data['inputValue']
   })), Nerv.createElement("tiny-view", {
     bindtap: _ctx.$$eventBinder("add")
@@ -1518,7 +1518,9 @@ function render(data, _ctx) {
     value: data['interval'],
     min: "3000",
     max: "10000"
-  })])]))]));
+  })])])), Nerv.createElement("tiny-view", {
+    bindtap: _ctx.$$eventBinder("showToast")
+  }, $toString("showToast"))]));
 }
 ;
 

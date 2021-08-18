@@ -4,7 +4,6 @@
 const app = getApp();
 
 const envSwitchKeys = '';
-console.log('app', app.globalData);
 Page({
   data: {
     env: 'uat',

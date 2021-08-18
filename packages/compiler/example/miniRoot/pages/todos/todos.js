@@ -38,6 +38,10 @@ Page({
       text: 'ready',
     });
     console.log('page ready');
+
+    const id = setTimeout(() => {
+      console.log('setTimeout');
+    }, 3000);
   },
 
   onHide() {
@@ -59,7 +63,7 @@ Page({
     console.log(e, 'eeexxxxxx');
     this.setData({
       text: 'chi',
-      fn: 'captureClickChild',
+      // fn: 'captureClickChild',
     });
     console.log('准备进行页面跳转');
     // 进行页面跳转
@@ -148,5 +152,13 @@ Page({
   },
   ctm() {
     console.log('child touchmove');
+  },
+
+  showToast() {
+    wx.showToast({
+      title: '成功',
+      icon: 'success',
+      duration: 2000,
+    });
   },
 });

@@ -12,6 +12,14 @@ Page({
     });
   },
 
+  onInput(e) {
+    console.log(e, 'onInput');
+
+    this.setData({
+      inputValue: e.detail.value,
+    });
+  },
+
   add() {
     app.todos = app.todos.concat([
       {

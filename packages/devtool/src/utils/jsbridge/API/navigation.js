@@ -70,7 +70,7 @@ export async function pushWindow(url, callback) {
   }
 
   global.currentRender = iframe;
-  global.renders[iframe.id] = iframe;
+  global.webviews.set(iframe.id, iframe);
   global.pageStack.push(iframe.id);
 
   // setNavConfig
@@ -91,13 +91,13 @@ export function popWindow(delta = 1) {
   const deletePages = global.pageStack.slice(global.pageStack.length - delta);
   // 删除iframe
   deletePages.forEach((id) => {
-    if (global.renders[id]) {
+    if (global.webviews.get(id)) {
       removeRenderIframeById(id);
     }
   });
 
   global.pageStack = global.pageStack.slice(0, -1 * delta);
-  global.currentRender = global.renders[global.pageStack[global.pageStack.length - 1]];
+  global.currentRender = global.webviews.get(global.pageStack[global.pageStack.length - 1]);
 
   return global.currentRender;
 }

@@ -20,7 +20,7 @@ export function messageToRender(method, options) {
   const viewIds = JSON.parse(webviewIds);
 
   viewIds.forEach((viewId) => {
-    const render = gloabl.renders[viewId];
+    const render = gloabl.webviews.get(viewId);
 
     if (render) {
       try {
@@ -33,12 +33,11 @@ export function messageToRender(method, options) {
 }
 
 export function publish(method, options) {
-  const { paramsString } = options;
-  const { from, ...params } = JSON.parse(paramsString);
+  const { __IS_WORKER__ } = options;
 
-  if (from === 'RENDER') {
-    return messageToWorker(method, options);
-  } else if (from === 'WORKER') {
+  if (__IS_WORKER__) {
     return messageToRender(method, options);
+  } else {
+    return messageToWorker(method, options);
   }
 }

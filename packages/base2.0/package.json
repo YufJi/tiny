@@ -26,13 +26,14 @@
     "@polymer/polymer": "^3.4.1",
     "eventemitter3": "^4.0.7",
     "lodash": "^4.17.21",
+    "path": "^0.12.7",
     "querystring": "^0.2.1"
   },
   "devDependencies": {
     "@babel/core": "^7.14.3",
+    "@babel/plugin-transform-runtime": "^7.14.3",
     "@babel/preset-env": "^7.13.15",
     "@babel/preset-react": "^7.13.13",
-    "@babel/plugin-transform-runtime": "^7.14.3",
     "autoprefixer": "^9.8.6",
     "babel-loader": "^8.2.2",
     "cross-env": "^7.0.3",

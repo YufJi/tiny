@@ -72,9 +72,9 @@ export function precreateRenderIframe({ guid, src }) {
 
 export function removeRenderIframeById(guid) {
   // 通过guid删除节点信息，并且删除
-  const iframe = gloabl.renders[guid];
+  const iframe = gloabl.webviews.get(guid);
   if (iframe) {
-    delete gloabl.renders[guid];
+    gloabl.webviews.delete(guid);
 
     if (iframe) {
       iframe.className += ' leave';

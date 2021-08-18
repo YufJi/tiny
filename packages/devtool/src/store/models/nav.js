@@ -1,4 +1,4 @@
-const global = {
+export default {
   state: {
     navigationBarTitleText: '',
     // backgroundColor: '#ffffff',
@@ -18,5 +18,3 @@ const global = {
 
   }),
 };
-
-export default global;

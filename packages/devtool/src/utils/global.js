@@ -2,17 +2,16 @@
  * 一些全局变量
  */
 
-const gloabl = {
+const global = {
   // 预热webview
   preloadRenders: [],
   // 当前webview
   currentRender: null,
   pageStack: [],
-  renders: {},
-  tabRenders: {},
+  webviews: new Map(),
   worker: null,
   appConfig: {},
   tabBarConfig: null,
 };
 
-export default gloabl;
+export default global;

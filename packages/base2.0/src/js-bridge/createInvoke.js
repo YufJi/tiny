@@ -5,7 +5,9 @@
  * @Description:
  * @FilePath: /tiny-v1/packages/base2.0/src/js-bridge/createInvoke.js
  */
-import { Deferred } from '@utils';
+import { Deferred } from 'utils';
+
+const g = self;
 
 export default function createInvoke(jsCore) {
   let resolveId = 0;
@@ -45,6 +47,7 @@ export default function createInvoke(jsCore) {
       paramsString: JSON.stringify(params),
       webviewIds: JSON.stringify(webviewIds),
       callbackId: resolveId,
+      __IS_WORKER__: g.__IS_WORKER__,
     });
 
     // 同步事件

@@ -272,8 +272,6 @@ Component({
     },
     ready() {
       console.log('ready', this.properties, this.data);
-      console.log('id', this.id)
-      console.log('is', this.is)
     },
     moved() {
       console.log('moved', this.properties);
@@ -335,6 +333,14 @@ Page({
 
   onBlur(e) {
     console.log('onBlur');
+    this.setData({
+      inputValue: e.detail.value,
+    });
+  },
+
+  onInput(e) {
+    console.log(e, 'onInput');
+
     this.setData({
       inputValue: e.detail.value,
     });
@@ -423,6 +429,10 @@ Page({
       text: 'ready',
     });
     console.log('page ready');
+
+    const id = setTimeout(() => {
+      console.log('setTimeout');
+    }, 3000);
   },
 
   onHide() {
@@ -444,7 +454,7 @@ Page({
     console.log(e, 'eeexxxxxx');
     this.setData({
       text: 'chi',
-      fn: 'captureClickChild',
+      // fn: 'captureClickChild',
     });
     console.log('准备进行页面跳转');
     // 进行页面跳转
@@ -533,6 +543,14 @@ Page({
   },
   ctm() {
     console.log('child touchmove');
+  },
+
+  showToast() {
+    wx.showToast({
+      title: '成功',
+      icon: 'success',
+      duration: 2000,
+    });
   },
 });
 

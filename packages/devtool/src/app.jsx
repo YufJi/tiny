@@ -12,6 +12,7 @@ import global from '@/utils/global';
 import requireFile from '@/utils/requireFile';
 import { createGuid } from '@/utils/';
 import { pushWindow, popWindow } from '@/utils/jsbridge/API/navigation';
+
 import style from './app.module.less';
 
 class App extends Component {
@@ -69,6 +70,7 @@ class App extends Component {
     ]).then((iframes) => {
       const [worker, renderIframe] = iframes;
       global.worker = worker;
+      global.webviews.set(worker.id, worker);
 
       renderIframe.contentWindow.JSBridge.subscribeHandler('onLoadApp', JSON.stringify({}));
 

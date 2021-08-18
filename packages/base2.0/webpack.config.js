@@ -15,9 +15,9 @@ const getConfig = (type, env) => {
   return {
     mode: isDev ? 'development' : 'production',
     entry: isWorker ? {
-      'mp.worker': path.join(__dirname, 'src/framework/service/index.js'),
+      service: path.join(__dirname, 'src/service/index.js'),
     } : {
-      mp: path.join(__dirname, 'src/framework/webview/index.js'),
+      webview: path.join(__dirname, 'src/webview/index.js'),
     },
     output: {
       path: path.join(__dirname, '../devtool/assets/base'),
@@ -25,7 +25,8 @@ const getConfig = (type, env) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src/'),
-        '@utils': path.resolve(__dirname, 'src/utils'),
+        utils: path.resolve(__dirname, 'src/utils'),
+        'js-bridge': path.resolve(__dirname, 'src/js-bridge'),
       },
       extensions: isWorker ? ['.worker.js', '.js', '.ts', '.json'] : ['.web.js', '.js', '.ts', '.json'],
     },
@@ -74,11 +75,11 @@ const getConfig = (type, env) => {
 
     plugins: [
       new MiniCssExtractPlugin({
-        filename: 'mp.css',
+        filename: 'webview.css',
       }),
     ],
 
-    stats: 'normal',
+    stats: 'minimal',
   };
 };
 

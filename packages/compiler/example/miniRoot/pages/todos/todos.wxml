@@ -100,4 +100,6 @@
       </view>
     </view>
   </view>
+
+  <view bind:tap="showToast">showToast</view>
 </scroll-view>
