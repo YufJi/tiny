@@ -1,3 +1,5 @@
+/* eslint-disable react/destructuring-assignment */
+/* eslint-disable react/sort-comp */
 /* eslint-disable class-methods-use-this */
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -8,9 +10,8 @@ import jsbridge from '@/utils/jsbridge';
 import { createWorkerIframe } from '@/utils/createIframe';
 import global from '@/utils/global';
 import requireFile from '@/utils/requireFile';
-import EventHub, { WORKERLOADED } from '@/utils/EventHub';
 import { createGuid } from '@/utils/';
-import { doPushWindow } from '@/utils/jsbridge/API/navigation';
+import { pushWindow, popWindow } from '@/utils/jsbridge/API/navigation';
 import style from './app.module.less';
 
 class App extends Component {
@@ -30,7 +31,7 @@ class App extends Component {
 
   componentDidMount() {
     this.initNav();
-    this.launchTiny();
+    this.launchTinyApp();
   }
 
   loadAppConfig() {
@@ -53,33 +54,23 @@ class App extends Component {
     });
   }
 
-  launchTiny() {
+  async launchTinyApp() {
     const guid = createGuid('worker');
     const src = 'worker.html';
     const { pages } = global.appConfig;
     const homePage = pages[0];
-
-    // global.worker = await createWorkerIframe({
-    //   guid,
-    //   src,
-    // });
-
-    // doPushWindow(homePage, (iframe) => {
-    //   global.worker.contentWindow.JSBridge.subscribeHandler('onAppRoute', JSON.stringify({
-    //     path: homePage,
-    //     openType: 'appLaunch',
-    //   }), iframe.id);
-    // })
 
     Promise.all([
       createWorkerIframe({
         guid,
         src,
       }),
-      doPushWindow(homePage),
+      pushWindow(homePage),
     ]).then((iframes) => {
       const [worker, renderIframe] = iframes;
       global.worker = worker;
+
+      renderIframe.contentWindow.JSBridge.subscribeHandler('onLoadApp', JSON.stringify({}));
 
       global.worker.contentWindow.JSBridge.subscribeHandler('onAppRoute', JSON.stringify({
         path: homePage,
@@ -102,6 +93,10 @@ class App extends Component {
     // 触发一些事件
   }
 
+  handleNavBack = () => {
+    popWindow();
+  }
+
   render() {
     const { mpVisible } = this.state;
 
@@ -110,7 +105,10 @@ class App extends Component {
         <StatusBar />
         <div className={`${style.MPContainer} ${mpVisible ? '' : style.hide} flex-1 flex-c`}>
 
-          <Nav hideMP={this.hideMP} />
+          <Nav
+            navBack={this.handleNavBack}
+            hideMP={this.hideMP}
+          />
           <div id="pageFrames" className={`${style.pageFrames} flex-1 flex-c`}>
             <div id="tabFrames" className={`${style.tabFrames} flex-1`} />
             <div className={`${style.tabs} flex-r`}>

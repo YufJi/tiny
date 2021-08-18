@@ -10,7 +10,7 @@ import { tryCatch } from '../util';
 
 export function onComponentDataChange(bridge, componentHub) {
   bridge.replyService('componentDataChange')(
-    tryCatch('COMPONENT_DATA_CHANGE', (e) => {
+    tryCatch('COMPONENT_DATA_CHANGE', async (e) => {
       componentHub.events.dispatch('componentDataChange', e);
     }),
   );
@@ -18,7 +18,7 @@ export function onComponentDataChange(bridge, componentHub) {
 
 export function onTriggerComponentEvent(bridge, componentHub) {
   bridge.replyService('triggerComponentEvent')(
-    tryCatch('TRIGGER_COMPONENT_EVENT', (e) => {
+    tryCatch('TRIGGER_COMPONENT_EVENT', async (e) => {
       const { eventDetail, eventName, eventOption, nodeId } = e;
       const component = componentHub.instances.get(nodeId);
 
@@ -27,67 +27,17 @@ export function onTriggerComponentEvent(bridge, componentHub) {
   );
 }
 
-function triggerCustomEvent(e, t, n, r) {
-  const i = r.bubbles;
-  const o = r.composed;
-  let a = dispatchEvent$1(t, n, computeComposedTarget(e, [], o), e);
-  if (a && i) {
-    for (let s = [e], l = e; a && (l = bubblesGetNextNode(l, o)); ) {
-      a = dispatchEvent$1(t, n, computeComposedTarget(l, s, o), l);
-    }
-  }
-}
+function triggerCustomEvent(component, eventName, detail, option) {
+  const { bubbles, composed } = option;
 
-function dispatchEvent$1(e, t, n, r) {
-  let i;
-  let o;
-  let a;
-  let s;
-  let l;
-  const c = e.charAt(0).toLowerCase() + e.slice(1);
-  const u = (i = r._listeners) == null ? void 0 : i[c];
-  if (!u) return !0;
-  let d = !0;
-  u.options.stop && (d = !1);
-  const p = {
-    type: e,
-    timeStamp: Date.now(),
-    target: {
-      id: (o = n.id) != null ? o : '',
-      dataset: (a = n._dataset) != null ? a : {},
-    },
-    currentTarget: {
-      id: (s = r.id) != null ? s : '',
-      dataset: (l = r._dataset) != null ? l : {},
-    },
-    detail: t,
-  };
-  return u.handler(p), d;
-}
+  const event = new Event(eventName, {
+    bubbles,
+    composed,
+  });
 
-function bubblesGetNextNode(e, t) {
-  const n = e.parentElement;
-  if (!n) return null;
-  if (!t) {
-    if (isSlot(n)) {
-      for (var r = n; r && !isShadowRoot(r); ) r = r.parentElement;
-      return r;
-    }
-    if (isShadowRoot(n)) return null;
-  }
-  return n;
-}
-function computeComposedTarget(e, t, n) {
-  return (
-    t.length === 0 && t.push(e),
-    n
-      && (isSlot(e)
-        ? t.push(e)
-        : isShadowRoot(e)
-          && t.length > 0
-          && (t.pop(), t.length === 0 && t.push(e))),
-    t[t.length - 1]
-  );
+  event.detail = detail;
+
+  component.dispatchEvent(event);
 }
 
 export function onRequestComponentObserver(bridge, componentHub, emitter, root) {
@@ -123,7 +73,7 @@ export function onRequestComponentObserver(bridge, componentHub, emitter, root) 
 
 export function onSelectComponentInPage(bridge, root) {
   bridge.replyService('selectComponentInPage')(
-    tryCatch('SELECT_ALL_COMPONENT', (e) => {
+    tryCatch('SELECT_ALL_COMPONENT', async (e) => {
       const { selector, single } = e;
 
       return selectComponent(root, { single, selector });
@@ -133,7 +83,7 @@ export function onSelectComponentInPage(bridge, root) {
 
 export function onSelectComponent(bridge, componentHub) {
   bridge.replyService('selectComponent')(
-    tryCatch('SELECT_COMPONENT', (e) => {
+    tryCatch('SELECT_COMPONENT', async (e) => {
       const { selector, single, nodeId } = e.selector;
       const component = componentHub.instances.get(nodeId);
 
@@ -154,9 +104,10 @@ export function onDisableScroll(bridge) {
   disableScroll(bridge.subscribe, bridge.invokeNative);
 }
 
+// 这个事件没啥用
 export function onAppLoadStatusChange(bridge) {
   bridge.onNative('onLoadApp', (e) => {
-    console.log(e.result);
+    // console.info('[framework] onLoadApp', e);
   });
 }
 

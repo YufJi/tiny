@@ -72,7 +72,7 @@ function invokeService(options) {
 function createReply(publish, subscribe) {
   const callbackMap = new Map();
 
-  subscribe('invokeWebviewMethod', async (ev) => {
+  subscribe('invokeWebviewMethod', (ev) => {
     const { method, params, extra } = ev;
     const fn = callbackMap.get(method);
 
@@ -104,6 +104,7 @@ function createReply(publish, subscribe) {
   return function (method) {
     return (callback) => {
       if (callbackMap.has(method)) { throw new Error(`${method} already register`); }
+
       callbackMap.set(method, callback);
     };
   };

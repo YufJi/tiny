@@ -7,49 +7,59 @@
  * @FilePath: /tiny-v1/packages/devtool/src/utils/jsbridge/API/navigation.js
  */
 import global from '@/utils/global';
-import { createRenderIframe, precreateRenderIframe } from '@/utils/createIframe';
+import { createRenderIframe, precreateRenderIframe, removeRenderIframeById } from '@/utils/createIframe';
 import { createGuid } from '@/utils/';
 import store from '@/store';
 
 const { dispatch } = store;
 
-export function pushWindow(params) {
-  const { launchParamsTag, param, url } = params;
+export function navigateTo(params) {
+  const { paramsString } = params;
+  const { url } = JSON.parse(paramsString);
 
-  doPushWindow(url, launchParamsTag);
+  pushWindow(url).then((iframe) => {
+    global.worker.contentWindow.JSBridge.subscribeHandler('onAppRoute', JSON.stringify({
+      path: iframe.path,
+      openType: 'navigateTo',
+    }), iframe.id);
+  });
 }
 
-export function popTo(params) {
-  console.log('params', params);
-  const { delta } = params;
+export function navigateBack(params) {
+  const { paramsString } = params;
+  const { delta } = JSON.parse(paramsString);
 
-  // todo popWebview
-  console.log(global.renders, global.pagesStack);
+  const lastIframe = popWindow(delta);
+
+  global.worker.contentWindow.JSBridge.subscribeHandler('onAppRoute', JSON.stringify({
+    path: lastIframe.path,
+    openType: 'navigateBack',
+  }), lastIframe.id);
 }
 
-export async function doPushWindow(tag, callback) {
+export async function pushWindow(url, callback) {
   let iframe;
 
   if (global.preloadRenders.length) {
     iframe = global.preloadRenders.shift();
 
-    iframe.setAttribute('path', tag);
-    iframe.path = tag;
+    iframe.setAttribute('path', url);
+    iframe.path = url;
+
+    const generateFunc = iframe.contentWindow.generateFunc[url];
+    generateFunc(guid);
 
     const container = document.getElementById('pageFrames');
     container.appendChild(iframe);
-
-    const generateFunc = iframe.contentWindow.generateFunc[tag];
-    generateFunc(guid);
   } else {
     iframe = await createRenderIframe({
       guid: createGuid('render'),
       src: 'render.html?debug=framework',
       onload: (frame) => {
-        frame.setAttribute('path', tag);
-        frame.path = tag;
+        frame.setAttribute('path', url);
+        frame.path = url;
 
-        const generateFunc = frame.contentWindow.generateFunc[tag];
+        const generateFunc = frame.contentWindow.generateFunc[url];
         generateFunc(frame.id);
 
         if (typeof callback === 'function') {
@@ -65,16 +75,37 @@ export async function doPushWindow(tag, callback) {
 
   // setNavConfig
   const { launchParams } = global.appConfig;
-  dispatch.nav.setNavConfig(launchParams[tag] || {});
+  dispatch.nav.setNavConfig(launchParams[url] || {});
 
   preloadWindow();
 
   return iframe;
 }
 
-function preloadWindow() {
+export function popWindow(delta = 1) {
+  if (!delta) return;
+
+  if (delta >= global.pagesStack.length) {
+    delta = global.pagesStack.length - 1;
+  }
+  const deletePages = global.pagesStack.slice(global.pagesStack.length - delta);
+  // 删除iframe
+  deletePages.forEach((id) => {
+    if (global.renders[id]) {
+      removeRenderIframeById(id);
+    }
+  });
+
+  global.pagesStack = global.pagesStack.slice(0, -1 * delta);
+  global.currentRender = global.renders[global.pagesStack[global.pagesStack.length - 1]];
+
+  return global.currentRender;
+}
+
+// 预初始化iframe
+async function preloadWindow() {
   const guid = createGuid('render');
-  const iframe = precreateRenderIframe({
+  const iframe = await precreateRenderIframe({
     guid,
     src: 'render.html?debug=framework',
   });

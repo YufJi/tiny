@@ -194,7 +194,6 @@ class WebInput extends Data(GestureEventListeners(Base(PolymerElement))) {
         <input id="inputElement"
           disabled$="[[ disabled ]]"
           class$="input-placeholder [[ _prefixedPlaceholderClass ]]"
-          on-input="__onChange"
           on-focus="_onFocus"
           on-blur="_onBlur"
           on-keyDown="_onKeyDown"

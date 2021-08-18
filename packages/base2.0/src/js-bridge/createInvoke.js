@@ -38,8 +38,6 @@ export default function createInvoke(jsCore) {
     const deferred = new Deferred();
     resolveMap.set(resolveId, deferred.resolve);
 
-    params.from = self.__IS_WORKER__ ? 'WORKER' : 'RENDER';
-
     const webviewIds = Array.isArray(webviewId) ? webviewId : [webviewId];
 
     let response = jsCore.call({

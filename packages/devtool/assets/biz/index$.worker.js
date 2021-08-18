@@ -11,7 +11,6 @@ self.getCurrentPages = MP.getCurrentPages;
 self.getApp = MP.getApp;
 self.Page = MP.Page;
 self.App = MP.App;
-self.wx = MP.bridge;
 self.Component = MP.Component;
 self.Behavior = MP.Behavior;
 self.$global = MP.$global;

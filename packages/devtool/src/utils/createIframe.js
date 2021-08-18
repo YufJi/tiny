@@ -2,6 +2,7 @@
  * 创建rednerFrame、workerFrame
  */
 import qs from 'qs';
+import gloabl from './global';
 
 function createIframe(options) {
   return new Promise((resolve, reject) => {
@@ -12,6 +13,9 @@ function createIframe(options) {
     const queryObj = qs.parse(query);
     queryObj.webviewId = id;
 
+    el.id = id;
+    el.path = url;
+
     el.setAttribute('src', `${url}?${qs.stringify(queryObj)}`);
     el.setAttribute('id', id);
     el.setAttribute('name', id);
@@ -20,7 +24,6 @@ function createIframe(options) {
     el.setAttribute('frameborder', '0');
     el.setAttribute('style', style);
     el.setAttribute('class', 'frame');
-    el.id = id;
 
     el.onload = function () {
       onload && onload(el);
@@ -65,4 +68,19 @@ export function precreateRenderIframe({ guid, src }) {
     container: document.getElementById('pageFrames'),
     preload: true,
   });
+}
+
+export function removeRenderIframeById(guid) {
+  // 通过guid删除节点信息，并且删除
+  const iframe = gloabl.renders[guid];
+  if (iframe) {
+    delete gloabl.renders[guid];
+
+    if (iframe) {
+      iframe.className += ' leave';
+      setTimeout(() => {
+        iframe.parentNode.removeChild(iframe);
+      }, 300);
+    }
+  }
 }

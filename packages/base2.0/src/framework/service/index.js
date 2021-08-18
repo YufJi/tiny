@@ -20,6 +20,9 @@ const g = self;
 
 g.__IS_WORKER__ = true;
 
+g.tiny = apis;
+g.wx = apis;
+
 g.MP = {
   getCurrentPages,
   getApp,
@@ -27,8 +30,6 @@ g.MP = {
   Page: registerPage,
   Component: registerComponent,
   Behavior: registerBehavior,
-  tiny: apis,
-  wx: apis,
   $global: global,
 };
 

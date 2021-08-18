@@ -18,6 +18,7 @@ import {
   onSelectComponent,
   onSelectComponentInPage,
   onTriggerComponentEvent,
+  onAppLoadStatusChange,
   enableScroll,
 } from './api';
 import { registerCustomComponents, createComponentResolve } from './Component';
@@ -247,7 +248,7 @@ export function useJSCoreEvent(componentHub) {
     // onRequestComponentInfo(bridge, componentHub, root);
     // onGetRelationNode(bridge, componentHub);
     // onAnimationStatusChange(emitter);
-    // onAppLoadStatusChange(bridge);
+    onAppLoadStatusChange(bridge);
     onDisableScroll(bridge);
     onPageScrollTo(bridge);
   });

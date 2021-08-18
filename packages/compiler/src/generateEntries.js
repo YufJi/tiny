@@ -7,13 +7,12 @@ function getComponentImports(pages = [], baseDir, option) {
   return getImports(getPagesComponents(pages), baseDir, option);
 }
 
-const defaultInjectScriptAfterWorkerImportScripts = (bridgeName = 'mp') => `
+const defaultInjectScriptAfterWorkerImportScripts = () => `
 var MP = self.MP;
 self.getCurrentPages = MP.getCurrentPages;
 self.getApp = MP.getApp;
 self.Page = MP.Page;
 self.App = MP.App;
-self.${bridgeName} = MP.bridge;
 self.Component = MP.Component;
 self.Behavior = MP.Behavior;
 self.$global = MP.$global;

@@ -1207,7 +1207,7 @@ function render(data, _ctx) {
     className: "todo-footer"
   }, Nerv.createElement(AddButton, {
     text: "Add Todo",
-    bindclickme: _ctx.$$eventBinder("add")
+    bindclick_me: _ctx.$$eventBinder("add")
   })), Nerv.createElement("tiny-view", {
     style: "color: red",
     "capture-catchtap": _ctx.$$eventBinder("xxxx")
@@ -1518,16 +1518,7 @@ function render(data, _ctx) {
     value: data['interval'],
     min: "3000",
     max: "10000"
-  })])])), Nerv.createElement(AddButton, {
-    id: "asxxd",
-    text: data['text'],
-    bindclick_me: _ctx.$$eventBinder("clickCom")
-  }), data['text'] === 'def' ? Nerv.createElement(AddButton, {
-    id: "asdxxx",
-    xx: "xxx",
-    text: data['text'],
-    bindclick_me: _ctx.$$eventBinder(data['fn'])
-  }) : null]));
+  })])]))]));
 }
 ;
 

@@ -29,6 +29,11 @@ function isTabPage(path) {
   }));
 }
 
+function pageShow(page) {
+  page.implement.onShow();
+  emitter.emit('show', page);
+}
+
 function popPageStack() {
   const pop = pageStack.pop();
 

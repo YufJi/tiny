@@ -13924,6 +13924,11 @@ function isTabPage(path) {
   }));
 }
 
+function pageShow(page) {
+  page.implement.onShow();
+  emitter.emit('show', page);
+}
+
 function popPageStack() {
   var pop = pageStack.pop();
 
@@ -14745,13 +14750,12 @@ function removeHtmlSuffixFromUrl(url) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return bootstrap; });
-/* harmony import */ var _context__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./context */ "./src/framework/service/context/index.js");
-/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./App */ "./src/framework/service/App/index.js");
-/* harmony import */ var _bridge__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./bridge */ "./src/framework/service/bridge/index.js");
-/* harmony import */ var _Route__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./Route */ "./src/framework/service/Route/index.js");
-/* harmony import */ var _Route_firstRender__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./Route/firstRender */ "./src/framework/service/Route/firstRender.js");
-/* harmony import */ var _Page_loadPageEvent__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./Page/loadPageEvent */ "./src/framework/service/Page/loadPageEvent.js");
-/* harmony import */ var _Component_loadComponent__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./Component/loadComponent */ "./src/framework/service/Component/loadComponent.js");
+/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./App */ "./src/framework/service/App/index.js");
+/* harmony import */ var _bridge__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./bridge */ "./src/framework/service/bridge/index.js");
+/* harmony import */ var _Route__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./Route */ "./src/framework/service/Route/index.js");
+/* harmony import */ var _Route_firstRender__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./Route/firstRender */ "./src/framework/service/Route/firstRender.js");
+/* harmony import */ var _Page_loadPageEvent__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./Page/loadPageEvent */ "./src/framework/service/Page/loadPageEvent.js");
+/* harmony import */ var _Component_loadComponent__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./Component/loadComponent */ "./src/framework/service/Component/loadComponent.js");
 /*
  * @Author: YufJ
  * @Date: 2021-07-04 00:11:24
@@ -14765,23 +14769,22 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-
 function bootstrap() {
   // context.checkTinyConfig();
-  Object(_App__WEBPACK_IMPORTED_MODULE_1__["loadApp"])();
-  Object(_bridge__WEBPACK_IMPORTED_MODULE_2__["replyWebview"])();
-  Object(_Route__WEBPACK_IMPORTED_MODULE_3__["loadRoute"])();
-  Object(_Component_loadComponent__WEBPACK_IMPORTED_MODULE_6__["default"])();
-  Object(_Page_loadPageEvent__WEBPACK_IMPORTED_MODULE_5__["default"])(); // 页面对应对webview挂了，需要重新加载
+  Object(_App__WEBPACK_IMPORTED_MODULE_0__["loadApp"])();
+  Object(_bridge__WEBPACK_IMPORTED_MODULE_1__["replyWebview"])();
+  Object(_Route__WEBPACK_IMPORTED_MODULE_2__["loadRoute"])();
+  Object(_Component_loadComponent__WEBPACK_IMPORTED_MODULE_5__["default"])();
+  Object(_Page_loadPageEvent__WEBPACK_IMPORTED_MODULE_4__["default"])(); // 页面对应对webview挂了，需要重新加载
 
-  Object(_bridge__WEBPACK_IMPORTED_MODULE_2__["onNative"])('onPageReload', function (_ref) {
+  Object(_bridge__WEBPACK_IMPORTED_MODULE_1__["onNative"])('onPageReload', function (_ref) {
     var webviewId = _ref.webviewId;
-    var targetPage = Object(_Route__WEBPACK_IMPORTED_MODULE_3__["getPageStack"])().find(function (page) {
+    var targetPage = Object(_Route__WEBPACK_IMPORTED_MODULE_2__["getPageStack"])().find(function (page) {
       return page.webviewId === webviewId;
     });
 
     if (targetPage) {
-      Object(_Route_firstRender__WEBPACK_IMPORTED_MODULE_4__["default"])(targetPage, true);
+      Object(_Route_firstRender__WEBPACK_IMPORTED_MODULE_3__["default"])(targetPage, true);
     }
   });
 }
@@ -15213,6 +15216,8 @@ __webpack_require__.r(__webpack_exports__);
 
 var g = self;
 g.__IS_WORKER__ = true;
+g.tiny = _apis__WEBPACK_IMPORTED_MODULE_8__;
+g.wx = _apis__WEBPACK_IMPORTED_MODULE_8__;
 g.MP = {
   getCurrentPages: _Route__WEBPACK_IMPORTED_MODULE_6__["getCurrentPages"],
   getApp: _App__WEBPACK_IMPORTED_MODULE_2__["getApp"],
@@ -15220,8 +15225,6 @@ g.MP = {
   Page: _Page__WEBPACK_IMPORTED_MODULE_3__["default"],
   Component: _Component__WEBPACK_IMPORTED_MODULE_4__["default"],
   Behavior: _Behavior__WEBPACK_IMPORTED_MODULE_5__["default"],
-  tiny: _apis__WEBPACK_IMPORTED_MODULE_8__,
-  wx: _apis__WEBPACK_IMPORTED_MODULE_8__,
   $global: _common_global__WEBPACK_IMPORTED_MODULE_7__["default"]
 };
 Object(_bootstrap__WEBPACK_IMPORTED_MODULE_1__["default"])();
@@ -15522,7 +15525,6 @@ function createInvoke(jsCore) {
     resolveId += 1;
     var deferred = new _utils__WEBPACK_IMPORTED_MODULE_1__["Deferred"]();
     resolveMap.set(resolveId, deferred.resolve);
-    params.from = self.__IS_WORKER__ ? 'WORKER' : 'RENDER';
     var webviewIds = Array.isArray(webviewId) ? webviewId : [webviewId];
     var response = jsCore.call({
       event: method,

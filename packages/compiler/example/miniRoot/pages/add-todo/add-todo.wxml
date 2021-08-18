@@ -15,7 +15,7 @@
   <view catchtap="add">12121</view>
 
   <view class="todo-footer">
-    <add-button text="Add Todo" bind:clickme="add" ></add-button>
+    <add-button text="Add Todo" bind:click_me="add"></add-button>
   </view>
 
   <view style="color: red" capture-catch:tap="xxxx">capture-catch:tap</view>

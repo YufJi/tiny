@@ -25015,10 +25015,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "onDisableScroll", function() { return onDisableScroll; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "onAppLoadStatusChange", function() { return onAppLoadStatusChange; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "enableScroll", function() { return enableScroll; });
-/* harmony import */ var _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ "./node_modules/@babel/runtime/helpers/asyncToGenerator.js");
-/* harmony import */ var _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _babel_runtime_helpers_objectWithoutProperties__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/objectWithoutProperties */ "./node_modules/@babel/runtime/helpers/objectWithoutProperties.js");
-/* harmony import */ var _babel_runtime_helpers_objectWithoutProperties__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_objectWithoutProperties__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _babel_runtime_helpers_objectWithoutProperties__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/objectWithoutProperties */ "./node_modules/@babel/runtime/helpers/objectWithoutProperties.js");
+/* harmony import */ var _babel_runtime_helpers_objectWithoutProperties__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_objectWithoutProperties__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ "./node_modules/@babel/runtime/helpers/asyncToGenerator.js");
+/* harmony import */ var _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @babel/runtime/regenerator */ "./node_modules/@babel/runtime/regenerator/index.js");
 /* harmony import */ var _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2__);
 /* harmony import */ var lodash__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! lodash */ "./node_modules/lodash/lodash.js");
@@ -25039,81 +25039,62 @@ var _excluded = ["nodeId"];
 
 
 function onComponentDataChange(bridge, componentHub) {
-  bridge.replyService('componentDataChange')(Object(_util__WEBPACK_IMPORTED_MODULE_4__["tryCatch"])('COMPONENT_DATA_CHANGE', function (e) {
-    componentHub.events.dispatch('componentDataChange', e);
-  }));
+  bridge.replyService('componentDataChange')(Object(_util__WEBPACK_IMPORTED_MODULE_4__["tryCatch"])('COMPONENT_DATA_CHANGE', /*#__PURE__*/function () {
+    var _ref = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1___default()( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.mark(function _callee(e) {
+      return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.wrap(function _callee$(_context) {
+        while (1) {
+          switch (_context.prev = _context.next) {
+            case 0:
+              componentHub.events.dispatch('componentDataChange', e);
+
+            case 1:
+            case "end":
+              return _context.stop();
+          }
+        }
+      }, _callee);
+    }));
+
+    return function (_x) {
+      return _ref.apply(this, arguments);
+    };
+  }()));
 }
 function onTriggerComponentEvent(bridge, componentHub) {
-  bridge.replyService('triggerComponentEvent')(Object(_util__WEBPACK_IMPORTED_MODULE_4__["tryCatch"])('TRIGGER_COMPONENT_EVENT', function (e) {
-    var eventDetail = e.eventDetail,
-        eventName = e.eventName,
-        eventOption = e.eventOption,
-        nodeId = e.nodeId;
-    var component = componentHub.instances.get(nodeId);
-    component && triggerCustomEvent(component, eventName, eventDetail, eventOption);
-  }));
+  bridge.replyService('triggerComponentEvent')(Object(_util__WEBPACK_IMPORTED_MODULE_4__["tryCatch"])('TRIGGER_COMPONENT_EVENT', /*#__PURE__*/function () {
+    var _ref2 = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1___default()( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.mark(function _callee2(e) {
+      var eventDetail, eventName, eventOption, nodeId, component;
+      return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.wrap(function _callee2$(_context2) {
+        while (1) {
+          switch (_context2.prev = _context2.next) {
+            case 0:
+              eventDetail = e.eventDetail, eventName = e.eventName, eventOption = e.eventOption, nodeId = e.nodeId;
+              component = componentHub.instances.get(nodeId);
+              component && triggerCustomEvent(component, eventName, eventDetail, eventOption);
+
+            case 3:
+            case "end":
+              return _context2.stop();
+          }
+        }
+      }, _callee2);
+    }));
+
+    return function (_x2) {
+      return _ref2.apply(this, arguments);
+    };
+  }()));
 }
 
-function triggerCustomEvent(e, t, n, r) {
-  var i = r.bubbles;
-  var o = r.composed;
-  var a = dispatchEvent$1(t, n, computeComposedTarget(e, [], o), e);
-
-  if (a && i) {
-    for (var s = [e], l = e; a && (l = bubblesGetNextNode(l, o));) {
-      a = dispatchEvent$1(t, n, computeComposedTarget(l, s, o), l);
-    }
-  }
-}
-
-function dispatchEvent$1(e, t, n, r) {
-  var i;
-  var o;
-  var a;
-  var s;
-  var l;
-  var c = e.charAt(0).toLowerCase() + e.slice(1);
-  var u = (i = r._listeners) == null ? void 0 : i[c];
-  if (!u) return !0;
-  var d = !0;
-  u.options.stop && (d = !1);
-  var p = {
-    type: e,
-    timeStamp: Date.now(),
-    target: {
-      id: (o = n.id) != null ? o : '',
-      dataset: (a = n._dataset) != null ? a : {}
-    },
-    currentTarget: {
-      id: (s = r.id) != null ? s : '',
-      dataset: (l = r._dataset) != null ? l : {}
-    },
-    detail: t
-  };
-  return u.handler(p), d;
-}
-
-function bubblesGetNextNode(e, t) {
-  var n = e.parentElement;
-  if (!n) return null;
-
-  if (!t) {
-    if (isSlot(n)) {
-      for (var r = n; r && !isShadowRoot(r);) {
-        r = r.parentElement;
-      }
-
-      return r;
-    }
-
-    if (isShadowRoot(n)) return null;
-  }
-
-  return n;
-}
-
-function computeComposedTarget(e, t, n) {
-  return t.length === 0 && t.push(e), n && (isSlot(e) ? t.push(e) : isShadowRoot(e) && t.length > 0 && (t.pop(), t.length === 0 && t.push(e))), t[t.length - 1];
+function triggerCustomEvent(component, eventName, detail, option) {
+  var bubbles = option.bubbles,
+      composed = option.composed;
+  var event = new Event(eventName, {
+    bubbles: bubbles,
+    composed: composed
+  });
+  event.detail = detail;
+  component.dispatchEvent(event);
 }
 
 function onRequestComponentObserver(bridge, componentHub, emitter, root) {
@@ -25127,7 +25108,7 @@ function onRequestComponentObserver(bridge, componentHub, emitter, root) {
 
     if (type === 'addIntersectionObserver') {
       var nodeId = req.nodeId,
-          rest = _babel_runtime_helpers_objectWithoutProperties__WEBPACK_IMPORTED_MODULE_1___default()(req, _excluded);
+          rest = _babel_runtime_helpers_objectWithoutProperties__WEBPACK_IMPORTED_MODULE_0___default()(req, _excluded);
 
       var observerId = requestObserver(nodeId ? componentHub.get(nodeId) : root, rest, function (info) {
         publish('responseComponentObserver', {
@@ -25154,64 +25135,97 @@ function onRequestComponentObserver(bridge, componentHub, emitter, root) {
   }));
 }
 function onSelectComponentInPage(bridge, root) {
-  bridge.replyService('selectComponentInPage')(Object(_util__WEBPACK_IMPORTED_MODULE_4__["tryCatch"])('SELECT_ALL_COMPONENT', function (e) {
-    var selector = e.selector,
-        single = e.single;
-    return selectComponent(root, {
-      single: single,
-      selector: selector
-    });
-  }));
+  bridge.replyService('selectComponentInPage')(Object(_util__WEBPACK_IMPORTED_MODULE_4__["tryCatch"])('SELECT_ALL_COMPONENT', /*#__PURE__*/function () {
+    var _ref3 = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1___default()( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.mark(function _callee3(e) {
+      var selector, single;
+      return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.wrap(function _callee3$(_context3) {
+        while (1) {
+          switch (_context3.prev = _context3.next) {
+            case 0:
+              selector = e.selector, single = e.single;
+              return _context3.abrupt("return", selectComponent(root, {
+                single: single,
+                selector: selector
+              }));
+
+            case 2:
+            case "end":
+              return _context3.stop();
+          }
+        }
+      }, _callee3);
+    }));
+
+    return function (_x3) {
+      return _ref3.apply(this, arguments);
+    };
+  }()));
 }
 function onSelectComponent(bridge, componentHub) {
-  bridge.replyService('selectComponent')(Object(_util__WEBPACK_IMPORTED_MODULE_4__["tryCatch"])('SELECT_COMPONENT', function (e) {
-    var _e$selector = e.selector,
-        selector = _e$selector.selector,
-        single = _e$selector.single,
-        nodeId = _e$selector.nodeId;
-    var component = componentHub.instances.get(nodeId);
-    return Object(lodash__WEBPACK_IMPORTED_MODULE_3__["isNil"])(component) ? [] : selectComponent(component, {
-      single: single,
-      selector: selector
-    });
-  }));
+  bridge.replyService('selectComponent')(Object(_util__WEBPACK_IMPORTED_MODULE_4__["tryCatch"])('SELECT_COMPONENT', /*#__PURE__*/function () {
+    var _ref4 = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1___default()( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.mark(function _callee4(e) {
+      var _e$selector, selector, single, nodeId, component;
+
+      return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.wrap(function _callee4$(_context4) {
+        while (1) {
+          switch (_context4.prev = _context4.next) {
+            case 0:
+              _e$selector = e.selector, selector = _e$selector.selector, single = _e$selector.single, nodeId = _e$selector.nodeId;
+              component = componentHub.instances.get(nodeId);
+              return _context4.abrupt("return", Object(lodash__WEBPACK_IMPORTED_MODULE_3__["isNil"])(component) ? [] : selectComponent(component, {
+                single: single,
+                selector: selector
+              }));
+
+            case 3:
+            case "end":
+              return _context4.stop();
+          }
+        }
+      }, _callee4);
+    }));
+
+    return function (_x4) {
+      return _ref4.apply(this, arguments);
+    };
+  }()));
 }
 function onPageScrollTo(bridge) {
   bridge.replyService('pageScrollTo')( /*#__PURE__*/function () {
-    var _ref = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_0___default()( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.mark(function _callee(e) {
+    var _ref5 = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1___default()( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.mark(function _callee5(e) {
       var duration, scrollTop;
-      return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.wrap(function _callee$(_context) {
+      return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.wrap(function _callee5$(_context5) {
         while (1) {
-          switch (_context.prev = _context.next) {
+          switch (_context5.prev = _context5.next) {
             case 0:
               duration = e.duration, scrollTop = e.scrollTop;
-              _context.next = 3;
+              _context5.next = 3;
               return pageScrollTo(duration, scrollTop);
 
             case 3:
-              return _context.abrupt("return", {
+              return _context5.abrupt("return", {
                 errMsg: 'pageScrollTo:ok'
               });
 
             case 4:
             case "end":
-              return _context.stop();
+              return _context5.stop();
           }
         }
-      }, _callee);
+      }, _callee5);
     }));
 
-    return function (_x) {
-      return _ref.apply(this, arguments);
+    return function (_x5) {
+      return _ref5.apply(this, arguments);
     };
   }());
 }
 function onDisableScroll(bridge) {
   disableScroll(bridge.subscribe, bridge.invokeNative);
-}
+} // 这个事件没啥用
+
 function onAppLoadStatusChange(bridge) {
-  bridge.onNative('onLoadApp', function (e) {
-    console.log(e.result);
+  bridge.onNative('onLoadApp', function (e) {// console.info('[framework] onLoadApp', e);
   });
 }
 
@@ -25325,14 +25339,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "invokeNative", function() { return invokeNative; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "onNative", function() { return onNative; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "offNative", function() { return offNative; });
-/* harmony import */ var _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ "./node_modules/@babel/runtime/helpers/asyncToGenerator.js");
-/* harmony import */ var _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/regenerator */ "./node_modules/@babel/runtime/regenerator/index.js");
-/* harmony import */ var _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _js_bridge__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/js-bridge */ "./src/js-bridge/index.js");
-
-
-
+/* harmony import */ var _js_bridge__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/js-bridge */ "./src/js-bridge/index.js");
 /*
  * @Author: YufJ
  * @Date: 2021-07-05 20:35:40
@@ -25344,7 +25351,7 @@ __webpack_require__.r(__webpack_exports__);
 var g = self; // 宿主提供的bridge
 
 var jsCore = g.JSCore;
-var bridge = Object(_js_bridge__WEBPACK_IMPORTED_MODULE_2__["default"])(jsCore);
+var bridge = Object(_js_bridge__WEBPACK_IMPORTED_MODULE_0__["default"])(jsCore);
 g.JSBridge = bridge;
 var invokeHandler = bridge.invokeHandler,
     subscribeHandler = bridge.subscribeHandler,
@@ -25398,54 +25405,34 @@ function invokeService(options) {
 
 function createReply(publish, subscribe) {
   var callbackMap = new Map();
-  subscribe('invokeWebviewMethod', /*#__PURE__*/function () {
-    var _ref = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_0___default()( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_1___default.a.mark(function _callee(ev) {
-      var method, params, extra, fn;
-      return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_1___default.a.wrap(function _callee$(_context) {
-        while (1) {
-          switch (_context.prev = _context.next) {
-            case 0:
-              method = ev.method, params = ev.params, extra = ev.extra;
-              fn = callbackMap.get(method);
+  subscribe('invokeWebviewMethod', function (ev) {
+    var method = ev.method,
+        params = ev.params,
+        extra = ev.extra;
+    var fn = callbackMap.get(method);
 
-              if (!fn) {
-                _context.next = 4;
-                break;
-              }
+    if (fn) {
+      return fn(params).then(function (result) {
+        publish('callbackWebviewMethod', {
+          method: method,
+          result: result,
+          extra: extra
+        });
+      })["catch"](function (error) {
+        publish('callbackWebviewMethod', {
+          method: method,
+          error: error,
+          extra: extra
+        });
+      });
+    }
 
-              return _context.abrupt("return", fn(params).then(function (result) {
-                publish('callbackWebviewMethod', {
-                  method: method,
-                  result: result,
-                  extra: extra
-                });
-              })["catch"](function (error) {
-                publish('callbackWebviewMethod', {
-                  method: method,
-                  error: error,
-                  extra: extra
-                });
-              }));
-
-            case 4:
-              publish('callbackWebviewMethod', {
-                method: method,
-                error: new Error("Cannot find ".concat(method, "'s callback in reply-service.")),
-                extra: extra
-              });
-
-            case 5:
-            case "end":
-              return _context.stop();
-          }
-        }
-      }, _callee);
-    }));
-
-    return function (_x) {
-      return _ref.apply(this, arguments);
-    };
-  }());
+    publish('callbackWebviewMethod', {
+      method: method,
+      error: new Error("Cannot find ".concat(method, "'s callback in reply-service.")),
+      extra: extra
+    });
+  });
   return function (method) {
     return function (callback) {
       if (callbackMap.has(method)) {
@@ -25832,8 +25819,8 @@ function useJSCoreEvent(componentHub) {
     Object(_api__WEBPACK_IMPORTED_MODULE_7__["onSelectComponent"])(bridge, componentHub); // onRequestComponentInfo(bridge, componentHub, root);
     // onGetRelationNode(bridge, componentHub);
     // onAnimationStatusChange(emitter);
-    // onAppLoadStatusChange(bridge);
 
+    Object(_api__WEBPACK_IMPORTED_MODULE_7__["onAppLoadStatusChange"])(bridge);
     Object(_api__WEBPACK_IMPORTED_MODULE_7__["onDisableScroll"])(bridge);
     Object(_api__WEBPACK_IMPORTED_MODULE_7__["onPageScrollTo"])(bridge);
   });
@@ -32717,7 +32704,7 @@ var WebInput = /*#__PURE__*/function (_Data) {
   }, {
     key: "template",
     get: function get() {
-      return Object(_polymer_polymer__WEBPACK_IMPORTED_MODULE_7__["html"])(_templateObject || (_templateObject = _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default()(["\n      <style include=\"input-style\">\n      </style>\n      <div id=\"wrapper\">\n        <input id=\"inputElement\"\n          disabled$=\"[[ disabled ]]\"\n          class$=\"input-placeholder [[ _prefixedPlaceholderClass ]]\"\n          on-input=\"__onChange\"\n          on-focus=\"_onFocus\"\n          on-blur=\"_onBlur\"\n          on-keyDown=\"_onKeyDown\"\n          on-keyUp=\"_onKeyUp\"\n          placeholder$=\"[[placeholder]]\"\n          maxlength=\"[[maxlength]]\"\n          type$=\"[[type]]\"\n          value=\"[[value]]\"\n          style=\"[[styles]]\"\n        >\n      </div>\n    "])));
+      return Object(_polymer_polymer__WEBPACK_IMPORTED_MODULE_7__["html"])(_templateObject || (_templateObject = _babel_runtime_helpers_taggedTemplateLiteral__WEBPACK_IMPORTED_MODULE_0___default()(["\n      <style include=\"input-style\">\n      </style>\n      <div id=\"wrapper\">\n        <input id=\"inputElement\"\n          disabled$=\"[[ disabled ]]\"\n          class$=\"input-placeholder [[ _prefixedPlaceholderClass ]]\"\n          on-focus=\"_onFocus\"\n          on-blur=\"_onBlur\"\n          on-keyDown=\"_onKeyDown\"\n          on-keyUp=\"_onKeyUp\"\n          placeholder$=\"[[placeholder]]\"\n          maxlength=\"[[maxlength]]\"\n          type$=\"[[type]]\"\n          value=\"[[value]]\"\n          style=\"[[styles]]\"\n        >\n      </div>\n    "])));
     }
   }]);
 
@@ -37316,7 +37303,6 @@ function createInvoke(jsCore) {
     resolveId += 1;
     var deferred = new _utils__WEBPACK_IMPORTED_MODULE_1__["Deferred"]();
     resolveMap.set(resolveId, deferred.resolve);
-    params.from = self.__IS_WORKER__ ? 'WORKER' : 'RENDER';
     var webviewIds = Array.isArray(webviewId) ? webviewId : [webviewId];
     var response = jsCore.call({
       event: method,

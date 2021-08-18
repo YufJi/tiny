@@ -100,8 +100,4 @@
       </view>
     </view>
   </view>
-
-  <add-button id="asxxd"  text="{{text}}" bind:click_me="clickCom"></add-button>
-  <add-button id="asdxxx" wx:if="{{text === 'def'}}" xx="xxx" text="{{text}}" bind:click_me="{{fn}}"></add-button>
-
 </scroll-view>

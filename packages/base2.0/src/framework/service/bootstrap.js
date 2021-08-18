@@ -5,7 +5,6 @@
  * @Description:
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/service/bootstrap.js
  */
-import context from './context';
 import { loadApp } from './App';
 import { invokeNative, replyWebview, onNative } from './bridge';
 import { onRouteEvent, loadRoute, getPageStack } from './Route';

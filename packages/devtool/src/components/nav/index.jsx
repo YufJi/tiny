@@ -10,10 +10,6 @@ function Nav(props) {
 
   const root = useRef(null);
 
-  useEffect(() => {
-
-  }, []);
-
   return (
     <div
       ref={root}
@@ -22,7 +18,7 @@ function Nav(props) {
         backgroundColor: navConfig.backgroundColor,
       }}
     >
-      <div className={`${style.left} flex-r`}>
+      <div className={`${style.left} flex-r`} onClick={props.navBack}>
         {isShowBackIcon && <div className={`${style.back} ic`}>&#xe641;</div>}
       </div>
       <div className={`${style.title} flex-1`}>
