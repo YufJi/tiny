@@ -14661,20 +14661,19 @@ function invokeMethod(method) {
   if (typeof res.then === 'function') {
     res.then(function (r) {
       res = r;
-
-      _invoke();
+      invoke();
     });
   } else {
     // sync bridge
-    _invoke();
+    invoke();
   }
 
-  function _invoke() {
+  function invoke() {
     res.errMsg = res.errMsg || "".concat(method, ":ok");
     var status = getStatus(method, res.errMsg);
 
-    var _call = function _call(obj, key) {
-      var fn = get(obj, key);
+    var call = function call(obj, key) {
+      var fn = Object(lodash__WEBPACK_IMPORTED_MODULE_1__["get"])(obj, key);
 
       if (typeof fn === 'function') {
         if (obj === options) {
@@ -14685,35 +14684,26 @@ function invokeMethod(method) {
       }
     };
 
-    _call(options, 'beforeAll');
+    call(options, 'beforeAll');
 
     if (status === 'success') {
-      _call(options, 'beforeSuccess');
-
-      _call(params, 'success');
-
-      _call(options, 'afterSuccess');
+      call(options, 'beforeSuccess');
+      call(params, 'success');
+      call(options, 'afterSuccess');
     } else if (status === 'cancel') {
       res.errMsg = res.errMsg.replace("".concat(method, ":cancel"), "".concat(method, ":fail cancel"));
-
-      _call(params, 'fail');
-
-      _call(options, 'beforeCancel');
-
-      _call(params, 'cancel');
-
-      _call(options, 'afterCancel');
+      call(params, 'fail');
+      call(options, 'beforeCancel');
+      call(params, 'cancel');
+      call(options, 'afterCancel');
     } else if (status === 'fail') {
-      _call(options, 'beforeFail');
-
-      _call(params, 'fail');
-
-      _call(options, 'afterFail');
+      call(options, 'beforeFail');
+      call(params, 'fail');
+      call(options, 'afterFail');
     }
 
-    _call(params, 'complete');
-
-    _call(options, 'afterAll');
+    call(params, 'complete');
+    call(options, 'afterAll');
   }
 }
 function onMethod(event, callback) {

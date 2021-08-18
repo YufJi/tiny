@@ -1,6 +1,7 @@
 /**
- * 用来mock render、worker进程的jsbridge
+ * 用来mock render、worker线程的jsc
  * 真实环境下由宿主提供
+ * 作用类似preload
  */
 const host = window.parent.window;
 
@@ -26,6 +27,7 @@ window.JSCore = {
       webviewIds,
     } = opts;
 
+    // 为了能模拟同步api
     return host.JSBridgeInstance.call(event, {
       paramsString,
       callbackId,

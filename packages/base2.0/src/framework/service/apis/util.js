@@ -1,4 +1,4 @@
-import { omitBy, isFunction } from 'lodash';
+import { omitBy, isFunction, get } from 'lodash';
 
 import path from '../../Path';
 import { onNative, invokeNative } from '../bridge';
@@ -135,18 +135,18 @@ export function invokeMethod(method, params = {}, options = {}) {
     res.then((r) => {
       res = r;
 
-      _invoke();
+      invoke();
     });
   } else {
     // sync bridge
-    _invoke();
+    invoke();
   }
 
-  function _invoke() {
+  function invoke() {
     res.errMsg = res.errMsg || `${method}:ok`;
     const status = getStatus(method, res.errMsg);
 
-    const _call = (obj, key) => {
+    const call = (obj, key) => {
       const fn = get(obj, key);
 
       if (typeof fn === 'function') {
@@ -158,35 +158,35 @@ export function invokeMethod(method, params = {}, options = {}) {
       }
     };
 
-    _call(options, 'beforeAll');
+    call(options, 'beforeAll');
 
     if (status === 'success') {
-      _call(options, 'beforeSuccess');
+      call(options, 'beforeSuccess');
 
-      _call(params, 'success');
+      call(params, 'success');
 
-      _call(options, 'afterSuccess');
+      call(options, 'afterSuccess');
     } else if (status === 'cancel') {
       res.errMsg = res.errMsg.replace(`${method}:cancel`, `${method}:fail cancel`);
 
-      _call(params, 'fail');
+      call(params, 'fail');
 
-      _call(options, 'beforeCancel');
+      call(options, 'beforeCancel');
 
-      _call(params, 'cancel');
+      call(params, 'cancel');
 
-      _call(options, 'afterCancel');
+      call(options, 'afterCancel');
     } else if (status === 'fail') {
-      _call(options, 'beforeFail');
+      call(options, 'beforeFail');
 
-      _call(params, 'fail');
+      call(params, 'fail');
 
-      _call(options, 'afterFail');
+      call(options, 'afterFail');
     }
 
-    _call(params, 'complete');
+    call(params, 'complete');
 
-    _call(options, 'afterAll');
+    call(options, 'afterAll');
   }
 }
 

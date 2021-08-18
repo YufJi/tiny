@@ -71,7 +71,7 @@ export async function pushWindow(url, callback) {
 
   global.currentRender = iframe;
   global.renders[iframe.id] = iframe;
-  global.pagesStack.push(iframe.id);
+  global.pageStack.push(iframe.id);
 
   // setNavConfig
   const { launchParams } = global.appConfig;
@@ -85,10 +85,10 @@ export async function pushWindow(url, callback) {
 export function popWindow(delta = 1) {
   if (!delta) return;
 
-  if (delta >= global.pagesStack.length) {
-    delta = global.pagesStack.length - 1;
+  if (delta >= global.pageStack.length) {
+    delta = global.pageStack.length - 1;
   }
-  const deletePages = global.pagesStack.slice(global.pagesStack.length - delta);
+  const deletePages = global.pageStack.slice(global.pageStack.length - delta);
   // 删除iframe
   deletePages.forEach((id) => {
     if (global.renders[id]) {
@@ -96,8 +96,8 @@ export function popWindow(delta = 1) {
     }
   });
 
-  global.pagesStack = global.pagesStack.slice(0, -1 * delta);
-  global.currentRender = global.renders[global.pagesStack[global.pagesStack.length - 1]];
+  global.pageStack = global.pageStack.slice(0, -1 * delta);
+  global.currentRender = global.renders[global.pageStack[global.pageStack.length - 1]];
 
   return global.currentRender;
 }

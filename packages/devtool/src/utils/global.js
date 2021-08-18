@@ -7,7 +7,7 @@ const gloabl = {
   preloadRenders: [],
   // 当前webview
   currentRender: null,
-  pagesStack: [],
+  pageStack: [],
   renders: {},
   tabRenders: {},
   worker: null,

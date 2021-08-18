@@ -6,7 +6,7 @@ import style from './index.module.less';
 
 function Nav(props) {
   const { navConfig } = props;
-  const isShowBackIcon = global.pagesStack.length > 1;
+  const isShowBackIcon = global.pageStack.length > 1;
 
   const root = useRef(null);
 
