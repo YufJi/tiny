@@ -212,6 +212,8 @@ App({
   onLaunch(options) {
     // Do something initial when launch.
     console.log('app onLaunch');
+
+    wx.setStorageSync('tinyName', '测试小程序');
   },
   onShow(options) {
     // Do something when show.
@@ -412,6 +414,10 @@ Page({
   onLoad() {
     console.log('page load');
     // 获取用户信息并存储数据
+
+    const value = wx.getStorageSync('tinyName');
+
+    console.log('getStorageSync', value);
   },
   // 监听生命周期回调 onShow
   onShow() {

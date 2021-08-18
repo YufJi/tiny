@@ -21,6 +21,10 @@ Page({
   onLoad() {
     console.log('page load');
     // 获取用户信息并存储数据
+
+    const value = wx.getStorageSync('tinyName');
+
+    console.log('getStorageSync', value);
   },
   // 监听生命周期回调 onShow
   onShow() {

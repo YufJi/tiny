@@ -127,6 +127,22 @@ export function checkUrlInConfig(api, url, param) {
   return false;
 }
 
+function getStatus(method, errMsg) {
+  if (errMsg.startsWith(`${method}:ok`)) {
+    return 'success';
+  }
+
+  if (errMsg.startsWith(`${method}:fail`)) {
+    return 'fail';
+  }
+
+  if (errMsg.startsWith(`${method}:cancel`)) {
+    return 'cancel';
+  }
+
+  throw new Error(`${method} response's errMsg(${errMsg}) incorrect`);
+}
+
 export function invokeMethod(method, params = {}, options = {}) {
   const pureParams = omitBy(params, isFunction);
   let res = invokeNative(method, pureParams);

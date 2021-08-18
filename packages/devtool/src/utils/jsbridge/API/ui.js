@@ -1,3 +1,4 @@
 export function showToast(params) {
-  console.log(params);
+  const { paramsString } = params;
+  const { title } = JSON.parse(paramsString);
 }

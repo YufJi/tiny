@@ -1,3 +1,5 @@
+import { wrapInnerFunction, wrapUserFunction } from './wrapfn';
+
 export function truthy(value) {
   return Boolean(value);
 }
@@ -74,3 +76,63 @@ export function encodeEachValue(url) {
 
   return prefix;
 }
+
+export function surroundByTryCatch(func, msg) {
+  return wrapInnerFunction(msg, func);
+}
+
+export function surroundByTryCatchFactory(func, msg) {
+  return wrapUserFunction(msg, func);
+}
+
+export const anyTypeToString = surroundByTryCatch((any) => {
+  const protoType = Object.prototype.toString.call(any).split(' ')[1].split(']')[0];
+
+  if (protoType === 'Array' || protoType === 'Object') {
+    any = JSON.stringify(any);
+  } else if (protoType === 'String' || protoType === 'Number' || protoType === 'Boolean') {
+    any = any.toString();
+  } else if (protoType === 'Date') {
+    any = any.getTime().toString();
+  } else if (protoType === 'Undefined') {
+    any = 'undefined';
+  } else if (protoType === 'Null') {
+    any = 'null';
+  } else {
+    any = '';
+  }
+
+  return {
+    data: any,
+    dataType: protoType,
+  };
+}, 'anyTypeToString');
+
+export const stringToAnyType = surroundByTryCatch((str, protoType) => {
+  switch (protoType) {
+    case 'String':
+      return str;
+
+    case 'Array':
+    case 'Object':
+      return JSON.parse(str);
+
+    case 'Number':
+      return parseFloat(str);
+
+    case 'Boolean':
+      return str === 'true';
+
+    case 'Date':
+      return new Date(parseInt(str, 10));
+
+    case 'Undefined':
+      return undefined;
+
+    case 'Null':
+      return null;
+
+    default:
+      return '';
+  }
+}, 'stringToAnyType');

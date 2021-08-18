@@ -15072,6 +15072,153 @@ var switchTab = Object(_util__WEBPACK_IMPORTED_MODULE_3__["checkBeforeNavigation
 
 /***/ }),
 
+/***/ "./src/service/apis/Storage.js":
+/*!*************************************!*\
+  !*** ./src/service/apis/Storage.js ***!
+  \*************************************/
+/*! exports provided: getStorage, getStorageSync, setStorage, setStorageSync, removeStorage, removeStorageSync, clearStorage, clearStorageSync, getStorageInfo, getStorageInfoSync */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getStorage", function() { return getStorage; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getStorageSync", function() { return getStorageSync; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "setStorage", function() { return setStorage; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "setStorageSync", function() { return setStorageSync; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "removeStorage", function() { return removeStorage; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "removeStorageSync", function() { return removeStorageSync; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "clearStorage", function() { return clearStorage; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "clearStorageSync", function() { return clearStorageSync; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getStorageInfo", function() { return getStorageInfo; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getStorageInfoSync", function() { return getStorageInfoSync; });
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../utils */ "./src/service/utils/index.js");
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./util */ "./src/service/apis/util.js");
+
+
+function getStorage(param) {
+  if (Object(_util__WEBPACK_IMPORTED_MODULE_1__["beforeInvoke"])('getStorage', param, {
+    key: ''
+  })) {
+    Object(_util__WEBPACK_IMPORTED_MODULE_1__["invokeMethod"])('getStorage', param, {
+      beforeSuccess: function beforeSuccess(res) {
+        res.data = Object(_utils__WEBPACK_IMPORTED_MODULE_0__["stringToAnyType"])(res.data, res.dataType);
+        delete res.dataType;
+      },
+      afterFail: function afterFail() {
+        var res = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+        if (res.errMsg && res.errMsg.indexOf('data not found') > 0) {
+          return false;
+        }
+      }
+    });
+  }
+}
+function getStorageSync(key) {
+  if (Object(_util__WEBPACK_IMPORTED_MODULE_1__["beforeInvoke"])('getStorageSync', key, '')) {
+    var result;
+    Object(_util__WEBPACK_IMPORTED_MODULE_1__["invokeMethod"])('getStorageSync', {
+      key: key
+    }, {
+      beforeAll: function beforeAll() {
+        var res = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+        result = Object(_utils__WEBPACK_IMPORTED_MODULE_0__["stringToAnyType"])(res.data, res.dataType);
+      },
+      afterFail: function afterFail() {
+        var res = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+        if (res.errMsg && res.errMsg.indexOf('data not found') > 0) {
+          return false;
+        }
+      }
+    });
+    return result;
+  }
+}
+function setStorage(param) {
+  if (Object(_util__WEBPACK_IMPORTED_MODULE_1__["beforeInvoke"])('setStorage', param, {
+    key: ''
+  })) {
+    try {
+      var _anyTypeToString = Object(_utils__WEBPACK_IMPORTED_MODULE_0__["anyTypeToString"])(param.data),
+          data = _anyTypeToString.data,
+          dataType = _anyTypeToString.dataType;
+
+      Object(_util__WEBPACK_IMPORTED_MODULE_1__["invokeMethod"])('setStorage', Object.assign(param, {
+        data: data,
+        dataType: dataType
+      }));
+    } catch (ex) {
+      typeof param.fail === 'function' && param.fail({
+        errMsg: "setStorage:fail ".concat(ex.message)
+      });
+      typeof param.complete === 'function' && param.complete({
+        errMsg: "setStorage:fail ".concat(ex.message)
+      });
+    }
+  }
+}
+function setStorageSync(key) {
+  var data = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+
+  if (Object(_util__WEBPACK_IMPORTED_MODULE_1__["beforeInvoke"])('setStorageSync', key, '')) {
+    var tmp = Object(_utils__WEBPACK_IMPORTED_MODULE_0__["anyTypeToString"])(data);
+    var dataString = tmp.data;
+    var dataType = tmp.dataType;
+    var callFailed = false;
+    var errMsg = '';
+    Object(_util__WEBPACK_IMPORTED_MODULE_1__["invokeMethod"])('setStorageSync', {
+      key: key,
+      data: dataString,
+      dataType: dataType,
+      fail: function fail() {
+        var res = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+        errMsg = res.errMsg;
+        callFailed = true;
+      }
+    });
+
+    if (callFailed) {
+      throw new Error(errMsg);
+    }
+  }
+}
+function removeStorage(param) {
+  if (Object(_util__WEBPACK_IMPORTED_MODULE_1__["beforeInvoke"])('removeStorage', param, {
+    key: ''
+  })) {
+    Object(_util__WEBPACK_IMPORTED_MODULE_1__["invokeMethod"])('removeStorage', param);
+  }
+}
+function removeStorageSync(key) {
+  if (Object(_util__WEBPACK_IMPORTED_MODULE_1__["beforeInvoke"])('removeStorageSync', key, '')) {
+    Object(_util__WEBPACK_IMPORTED_MODULE_1__["invokeMethod"])('removeStorageSync', {
+      key: key
+    });
+  }
+}
+function clearStorage(param) {
+  Object(_util__WEBPACK_IMPORTED_MODULE_1__["invokeMethod"])('clearStorage', param);
+}
+function clearStorageSync() {
+  Object(_util__WEBPACK_IMPORTED_MODULE_1__["invokeMethod"])('clearStorageSync');
+}
+function getStorageInfo(param) {
+  Object(_util__WEBPACK_IMPORTED_MODULE_1__["invokeMethod"])('getStorageInfo', param);
+}
+function getStorageInfoSync() {
+  var result;
+  Object(_util__WEBPACK_IMPORTED_MODULE_1__["invokeMethod"])('getStorageInfoSync', {}, {
+    beforeAll: function beforeAll(res) {
+      result = res;
+      delete res.errMsg;
+    }
+  });
+  return result;
+}
+
+/***/ }),
+
 /***/ "./src/service/apis/UI.js":
 /*!********************************!*\
   !*** ./src/service/apis/UI.js ***!
@@ -15157,7 +15304,7 @@ function hideLoading(param) {
 /*!***********************************!*\
   !*** ./src/service/apis/index.js ***!
   \***********************************/
-/*! exports provided: onAppShow, onAppHide, offAppShow, offAppHide, navigateTo, navigateBack, reLaunch, redirectTo, switchTab, showToast, hideToast, showLoading, hideLoading */
+/*! exports provided: onAppShow, onAppHide, offAppShow, offAppHide, navigateTo, navigateBack, reLaunch, redirectTo, switchTab, showToast, hideToast, showLoading, hideLoading, getStorage, setStorage, getStorageSync, setStorageSync, getStorageInfo, getStorageInfoSync, clearStorage, clearStorageSync, removeStorage, removeStorageSync */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -15190,6 +15337,28 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "showLoading", function() { return _UI__WEBPACK_IMPORTED_MODULE_2__["showLoading"]; });
 
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "hideLoading", function() { return _UI__WEBPACK_IMPORTED_MODULE_2__["hideLoading"]; });
+
+/* harmony import */ var _Storage__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./Storage */ "./src/service/apis/Storage.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "getStorage", function() { return _Storage__WEBPACK_IMPORTED_MODULE_3__["getStorage"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "setStorage", function() { return _Storage__WEBPACK_IMPORTED_MODULE_3__["setStorage"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "getStorageSync", function() { return _Storage__WEBPACK_IMPORTED_MODULE_3__["getStorageSync"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "setStorageSync", function() { return _Storage__WEBPACK_IMPORTED_MODULE_3__["setStorageSync"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "getStorageInfo", function() { return _Storage__WEBPACK_IMPORTED_MODULE_3__["getStorageInfo"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "getStorageInfoSync", function() { return _Storage__WEBPACK_IMPORTED_MODULE_3__["getStorageInfoSync"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "clearStorage", function() { return _Storage__WEBPACK_IMPORTED_MODULE_3__["clearStorage"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "clearStorageSync", function() { return _Storage__WEBPACK_IMPORTED_MODULE_3__["clearStorageSync"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "removeStorage", function() { return _Storage__WEBPACK_IMPORTED_MODULE_3__["removeStorage"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "removeStorageSync", function() { return _Storage__WEBPACK_IMPORTED_MODULE_3__["removeStorageSync"]; });
+
 
 
 
@@ -15360,6 +15529,23 @@ function checkUrlInConfig(api, url, param) {
   beforeInvokeFail(api, param, "url \"".concat(removeHtmlSuffixFromUrl(url), "\" is not in app.json"));
   return false;
 }
+
+function getStatus(method, errMsg) {
+  if (errMsg.startsWith("".concat(method, ":ok"))) {
+    return 'success';
+  }
+
+  if (errMsg.startsWith("".concat(method, ":fail"))) {
+    return 'fail';
+  }
+
+  if (errMsg.startsWith("".concat(method, ":cancel"))) {
+    return 'cancel';
+  }
+
+  throw new Error("".concat(method, " response's errMsg(").concat(errMsg, ") incorrect"));
+}
+
 function invokeMethod(method) {
   var params = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
   var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
@@ -15937,7 +16123,7 @@ Object(_bootstrap__WEBPACK_IMPORTED_MODULE_2__["default"])();
 /*!************************************!*\
   !*** ./src/service/utils/index.js ***!
   \************************************/
-/*! exports provided: truthy, guid, compareVersion, encodeEachValue */
+/*! exports provided: truthy, guid, compareVersion, encodeEachValue, surroundByTryCatch, surroundByTryCatchFactory, anyTypeToString, stringToAnyType */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -15946,8 +16132,14 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "guid", function() { return guid; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "compareVersion", function() { return compareVersion; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "encodeEachValue", function() { return encodeEachValue; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "surroundByTryCatch", function() { return surroundByTryCatch; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "surroundByTryCatchFactory", function() { return surroundByTryCatchFactory; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "anyTypeToString", function() { return anyTypeToString; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "stringToAnyType", function() { return stringToAnyType; });
 /* harmony import */ var _babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/slicedToArray */ "./node_modules/@babel/runtime/helpers/slicedToArray.js");
 /* harmony import */ var _babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wrapfn__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./wrapfn */ "./src/service/utils/wrapfn.js");
+
 
 function truthy(value) {
   return Boolean(value);
@@ -16031,6 +16223,62 @@ function encodeEachValue(url) {
 
   return prefix;
 }
+function surroundByTryCatch(func, msg) {
+  return Object(_wrapfn__WEBPACK_IMPORTED_MODULE_1__["wrapInnerFunction"])(msg, func);
+}
+function surroundByTryCatchFactory(func, msg) {
+  return Object(_wrapfn__WEBPACK_IMPORTED_MODULE_1__["wrapUserFunction"])(msg, func);
+}
+var anyTypeToString = surroundByTryCatch(function (any) {
+  var protoType = Object.prototype.toString.call(any).split(' ')[1].split(']')[0];
+
+  if (protoType === 'Array' || protoType === 'Object') {
+    any = JSON.stringify(any);
+  } else if (protoType === 'String' || protoType === 'Number' || protoType === 'Boolean') {
+    any = any.toString();
+  } else if (protoType === 'Date') {
+    any = any.getTime().toString();
+  } else if (protoType === 'Undefined') {
+    any = 'undefined';
+  } else if (protoType === 'Null') {
+    any = 'null';
+  } else {
+    any = '';
+  }
+
+  return {
+    data: any,
+    dataType: protoType
+  };
+}, 'anyTypeToString');
+var stringToAnyType = surroundByTryCatch(function (str, protoType) {
+  switch (protoType) {
+    case 'String':
+      return str;
+
+    case 'Array':
+    case 'Object':
+      return JSON.parse(str);
+
+    case 'Number':
+      return parseFloat(str);
+
+    case 'Boolean':
+      return str === 'true';
+
+    case 'Date':
+      return new Date(parseInt(str, 10));
+
+    case 'Undefined':
+      return undefined;
+
+    case 'Null':
+      return null;
+
+    default:
+      return '';
+  }
+}, 'stringToAnyType');
 
 /***/ }),
 
@@ -16136,7 +16384,7 @@ function wrapUserFunction(description, callback) {
   return callback;
 }
 function wrapInnerFunction(desc, callback, context) {
-  if (!isFunction(callback)) return lodash__WEBPACK_IMPORTED_MODULE_0__["noop"];
+  if (!Object(lodash__WEBPACK_IMPORTED_MODULE_0__["isFunction"])(callback)) return lodash__WEBPACK_IMPORTED_MODULE_0__["noop"];
   return Object(lodash__WEBPACK_IMPORTED_MODULE_0__["wrap"])(callback, function (fn) {
     try {
       for (var _len4 = arguments.length, args = new Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {

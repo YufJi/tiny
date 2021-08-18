@@ -10,6 +10,8 @@ App({
   onLaunch(options) {
     // Do something initial when launch.
     console.log('app onLaunch');
+
+    wx.setStorageSync('tinyName', '测试小程序');
   },
   onShow(options) {
     // Do something when show.
