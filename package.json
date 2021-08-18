@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "postinstall": "lerna bootstrap",
+    "clean": "lerna clean",
     "lint": "eslint \"packages/**/src/**/*.{js,jsx,ts,tsx}\" --fix"
   },
   "author": "",
