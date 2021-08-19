@@ -48,7 +48,9 @@
     </view>
   </view>
   <view class="todo-footer">
-    <add-button id="asd"  text="{{text}}" bind:click_me="clickCom"></add-button>
+    <add-button id="asd"  text="{{text}}" bind:click_me="clickCom">
+      i am slot
+    </add-button>
     <add-button id="asxx" wx:if="{{text === 'def'}}" xx="xxx" text="{{text}}" bind:click_me="{{fn}}"></add-button>
   </view>
 

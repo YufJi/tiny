@@ -136,6 +136,7 @@ export function useRenderContext() {
   const resolveComponent = useResolveComponent(config);
 
   return {
+    $$slots: {},
     $$eventBinder: useCreation(() => {
       return memoize((type) => {
         const handler = function (data) {
@@ -388,7 +389,12 @@ export function useComponentRenderContext(props, nodeId, is, config, resolveComp
     });
   });
 
+  const $$slots = useMemo(() => {
+    return wrapSlot(props.$$slots || {});
+  }, [props.$$slots]);
+
   return {
+    $$slots,
     $$eventBinder: eventBinder,
     $$resolveComponent: resolveComponent,
     __fields: fields,

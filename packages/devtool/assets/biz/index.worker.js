@@ -81,15 +81,15 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "../../devtool/assets/biz/index$.worker.js");
+/******/ 	return __webpack_require__(__webpack_require__.s = "../devtool/assets/biz/index$.worker.js");
 /******/ })
 /************************************************************************/
 /******/ ({
 
-/***/ "../../devtool/assets/biz/appConfig.json":
-/*!*****************************************************************************************!*\
-  !*** /Users/jiyufeng/Documents/demo/tiny-v1/packages/devtool/assets/biz/appConfig.json ***!
-  \*****************************************************************************************/
+/***/ "../devtool/assets/biz/appConfig.json":
+/*!********************************************!*\
+  !*** ../devtool/assets/biz/appConfig.json ***!
+  \********************************************/
 /*! exports provided: window, pages, launchParams, prerenderPage, default */
 /***/ (function(module) {
 
@@ -97,10 +97,10 @@ module.exports = JSON.parse("{\"window\":{\"navigationBarTitleText\":\"哈哈哈
 
 /***/ }),
 
-/***/ "../../devtool/assets/biz/config$.js":
-/*!*************************************************************************************!*\
-  !*** /Users/jiyufeng/Documents/demo/tiny-v1/packages/devtool/assets/biz/config$.js ***!
-  \*************************************************************************************/
+/***/ "../devtool/assets/biz/config$.js":
+/*!****************************************!*\
+  !*** ../devtool/assets/biz/config$.js ***!
+  \****************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -112,22 +112,22 @@ g.mpAppJson = {
   }
 };
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../compiler/node_modules/webpack/buildin/global.js */ "../node_modules/webpack/buildin/global.js")))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../compiler/node_modules/webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
 
 /***/ }),
 
-/***/ "../../devtool/assets/biz/index$.worker.js":
-/*!*******************************************************************************************!*\
-  !*** /Users/jiyufeng/Documents/demo/tiny-v1/packages/devtool/assets/biz/index$.worker.js ***!
-  \*******************************************************************************************/
+/***/ "../devtool/assets/biz/index$.worker.js":
+/*!**********************************************!*\
+  !*** ../devtool/assets/biz/index$.worker.js ***!
+  \**********************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 if(!self.__mpInited) {
 self.__mpInited = 1;
 
-__webpack_require__(/*! ./config$ */ "../../devtool/assets/biz/config$.js");
-var appConfig = __webpack_require__(/*! ./appConfig.json */ "../../devtool/assets/biz/appConfig.json");
+__webpack_require__(/*! ./config$ */ "../devtool/assets/biz/config$.js");
+var appConfig = __webpack_require__(/*! ./appConfig.json */ "../devtool/assets/biz/appConfig.json");
  self.TinyConfig = appConfig;
 
 
@@ -142,51 +142,20 @@ self.$global = MP.$global;
 
 
 function success() {
-__webpack_require__(/*! ./miniRoot/app */ "./miniRoot/app.js");
-__webpack_require__(/*! ./miniRoot/components/add-button/add-button?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc");
-__webpack_require__(/*! ./miniRoot/pages/todos/todos?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
-__webpack_require__(/*! ./miniRoot/pages/add-todo/add-todo?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
+__webpack_require__(/*! ./example/miniRoot/app */ "./example/miniRoot/app.js");
+__webpack_require__(/*! ./example/miniRoot/components/add-button/add-button?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./example/miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc");
+__webpack_require__(/*! ./example/miniRoot/pages/todos/todos?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
+__webpack_require__(/*! ./example/miniRoot/pages/add-todo/add-todo?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
 }
 success();
 }
 
 /***/ }),
 
-/***/ "../node_modules/webpack/buildin/global.js":
-/*!*************************************************!*\
-  !*** ../node_modules/webpack/buildin/global.js ***!
-  \*************************************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || new Function("return this")();
-} catch (e) {
-	// This works if the window reference is available
-	if (typeof window === "object") g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
-
-/***/ "./miniRoot/app.js":
-/*!*************************!*\
-  !*** ./miniRoot/app.js ***!
-  \*************************/
+/***/ "./example/miniRoot/app.js":
+/*!*********************************!*\
+  !*** ./example/miniRoot/app.js ***!
+  \*********************************/
 /*! no static exports found */
 /***/ (function(module, exports) {
 
@@ -229,10 +198,10 @@ App({
 
 /***/ }),
 
-/***/ "./miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc":
-/*!****************************************************************************************************!*\
-  !*** ./miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc ***!
-  \****************************************************************************************************/
+/***/ "./example/miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc":
+/*!************************************************************************************************************!*\
+  !*** ./example/miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc ***!
+  \************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports) {
 
@@ -302,10 +271,10 @@ Component({
 
 /***/ }),
 
-/***/ "./miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
-/*!*******************************************************************************************!*\
-  !*** ./miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
-  \*******************************************************************************************/
+/***/ "./example/miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!***************************************************************************************************!*\
+  !*** ./example/miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \***************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports) {
 
@@ -367,10 +336,10 @@ Page({
 
 /***/ }),
 
-/***/ "./miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
-/*!*************************************************************************************!*\
-  !*** ./miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
-  \*************************************************************************************/
+/***/ "./example/miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!*********************************************************************************************!*\
+  !*** ./example/miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \*********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports) {
 
@@ -560,6 +529,37 @@ Page({
   },
 });
 
+
+
+/***/ }),
+
+/***/ "./node_modules/webpack/buildin/global.js":
+/*!***********************************!*\
+  !*** (webpack)/buildin/global.js ***!
+  \***********************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || new Function("return this")();
+} catch (e) {
+	// This works if the window reference is available
+	if (typeof window === "object") g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
 
 
 /***/ })
