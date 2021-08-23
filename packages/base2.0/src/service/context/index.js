@@ -7,23 +7,7 @@ import { debug } from '../utils/log';
 
 const g = self;
 
-const readyQueue = [];
-
 const context = {
-  // todo 构建时注入
-  checkTinyConfig() {
-    if (g.TinyConfig && g.TinyConfig.ready) return;
-
-    g.TinyConfig = g.TinyConfig || {};
-
-    g.TinyConfig.ready = function () {
-      while (readyQueue.length) {
-        const fn = readyQueue.shift();
-        fn && fn();
-      }
-    };
-  },
-
   get debug() {
     return g.TinyConfig && g.TinyConfig.debug;
   },

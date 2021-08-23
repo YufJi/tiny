@@ -12869,8 +12869,8 @@ function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { va
 var g = self;
 function registerComponent() {
   var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  var is = _common_global__WEBPACK_IMPORTED_MODULE_5__["default"].currentComponentConfig.is;
-  _common_global__WEBPACK_IMPORTED_MODULE_5__["default"].__allConfig__[is] = _common_global__WEBPACK_IMPORTED_MODULE_5__["default"].currentComponentConfig;
+  var is = _common_global__WEBPACK_IMPORTED_MODULE_5__["default"].currentPageConfig.is;
+  _common_global__WEBPACK_IMPORTED_MODULE_5__["default"].__allConfig__[is] = _common_global__WEBPACK_IMPORTED_MODULE_5__["default"].currentPageConfig;
 
   if (_Model_common__WEBPACK_IMPORTED_MODULE_3__["componentBookmarks"].has(is)) {
     throw new Error("at ".concat(is, ", Component can only register once"));
@@ -13569,7 +13569,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5__);
 /* harmony import */ var lodash__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! lodash */ "./node_modules/lodash/lodash.js");
 /* harmony import */ var lodash__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(lodash__WEBPACK_IMPORTED_MODULE_6__);
-/* harmony import */ var _Component__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./Component */ "./src/service/Model/Component.js");
+/* harmony import */ var _common__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./common */ "./src/service/Model/common.js");
+/* harmony import */ var _Component__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./Component */ "./src/service/Model/Component.js");
 
 
 
@@ -13580,6 +13581,7 @@ __webpack_require__.r(__webpack_exports__);
 function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4___default()(this, result); }; }
 
 function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
 
 
 
@@ -13601,7 +13603,7 @@ var ComponentPageModel = /*#__PURE__*/function (_ComponentModel) {
     _this.onResize = _this.methods.onResize || lodash__WEBPACK_IMPORTED_MODULE_6__["noop"];
     _this.onTabItemTap = _this.methods.onTabItemTap || lodash__WEBPACK_IMPORTED_MODULE_6__["noop"];
 
-    Object(lodash__WEBPACK_IMPORTED_MODULE_6__["set"])(pageModels, webviewId, _babel_runtime_helpers_assertThisInitialized__WEBPACK_IMPORTED_MODULE_2___default()(_this));
+    Object(lodash__WEBPACK_IMPORTED_MODULE_6__["set"])(_common__WEBPACK_IMPORTED_MODULE_7__["pageModels"], webviewId, _babel_runtime_helpers_assertThisInitialized__WEBPACK_IMPORTED_MODULE_2___default()(_this));
 
     return _this;
   }
@@ -13658,7 +13660,7 @@ var ComponentPageModel = /*#__PURE__*/function (_ComponentModel) {
   }]);
 
   return ComponentPageModel;
-}(_Component__WEBPACK_IMPORTED_MODULE_7__["default"]);
+}(_Component__WEBPACK_IMPORTED_MODULE_8__["default"]);
 
 
 
@@ -14040,7 +14042,7 @@ function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { va
 var g = self;
 function registerPage() {
   var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  var is = _common_global__WEBPACK_IMPORTED_MODULE_5__["default"].currentPageConfig.pagePath;
+  var is = _common_global__WEBPACK_IMPORTED_MODULE_5__["default"].currentPageConfig.is;
   _common_global__WEBPACK_IMPORTED_MODULE_5__["default"].__allConfig__[is] = _common_global__WEBPACK_IMPORTED_MODULE_5__["default"].currentPageConfig;
   Object(_utils_log__WEBPACK_IMPORTED_MODULE_3__["debug"])('全局配置：', JSON.stringify(g.TinyConfig.pages));
 
@@ -15880,12 +15882,8 @@ function replyWebview() {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 var $global = {
-  tabsConfig: {},
-  pagesConfig: {},
-  componentsConfig: {},
   __allConfig__: {},
-  currentPageConfig: null,
-  currentComponentConfig: null
+  currentPageConfig: null
 };
 /* harmony default export */ __webpack_exports__["default"] = ($global);
 
@@ -16009,21 +16007,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 var g = self;
-var readyQueue = [];
 var context = {
-  // todo 构建时注入
-  checkTinyConfig: function checkTinyConfig() {
-    if (g.TinyConfig && g.TinyConfig.ready) return;
-    g.TinyConfig = g.TinyConfig || {};
-
-    g.TinyConfig.ready = function () {
-      while (readyQueue.length) {
-        var fn = readyQueue.shift();
-        fn && fn();
-      }
-    };
-  },
-
   get debug() {
     return g.TinyConfig && g.TinyConfig.debug;
   },

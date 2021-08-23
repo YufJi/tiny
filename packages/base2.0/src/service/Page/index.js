@@ -8,7 +8,7 @@ import $global from '../common/global';
 const g = self;
 
 export default function registerPage(options = {}) {
-  const { pagePath: is } = $global.currentPageConfig;
+  const { is } = $global.currentPageConfig;
   $global.__allConfig__[is] = $global.currentPageConfig;
 
   debug('全局配置：', JSON.stringify(g.TinyConfig.pages));

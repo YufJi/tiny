@@ -215,7 +215,7 @@ var document = undefined;
 var location = undefined;
 var XMLHttpRequest = undefined;
 
-$global.currentComponentConfig = 
+$global.currentPageConfig = 
 {
   is: "/components/add-button/add-button",
   usingComponents: {"add-button":"/components/add-button/add-button"},
@@ -290,46 +290,49 @@ var XMLHttpRequest = undefined;
 
 $global.currentPageConfig = 
 {
-  pagePath: 'pages/add-todo/add-todo',
+  is: 'pages/add-todo/add-todo',
   usingComponents: {"add-button":"/components/add-button/add-button"},
   
 };
 
 const app = getApp();
 
-Page({
+Component({
   data: {
     inputValue: '',
   },
 
-  onBlur(e) {
-    console.log('onBlur');
-    this.setData({
-      inputValue: e.detail.value,
-    });
+  methods: {
+    onBlur(e) {
+      console.log('onBlur');
+      this.setData({
+        inputValue: e.detail.value,
+      });
+    },
+
+    onInput(e) {
+      console.log(e, 'onInput');
+
+      this.setData({
+        inputValue: e.detail.value,
+      });
+    },
+
+    add() {
+      app.todos = app.todos.concat([
+        {
+          text: this.data.inputValue,
+          compeleted: false,
+        },
+      ]);
+
+      wx.navigateBack();
+    },
+    xxxx() {
+      console.log('xxxx');
+    },
   },
 
-  onInput(e) {
-    console.log(e, 'onInput');
-
-    this.setData({
-      inputValue: e.detail.value,
-    });
-  },
-
-  add() {
-    app.todos = app.todos.concat([
-      {
-        text: this.data.inputValue,
-        compeleted: false,
-      },
-    ]);
-
-    wx.navigateBack();
-  },
-  xxxx() {
-    console.log('xxxx');
-  },
 });
 
 
@@ -355,7 +358,7 @@ var XMLHttpRequest = undefined;
 
 $global.currentPageConfig = 
 {
-  pagePath: 'pages/todos/todos',
+  is: 'pages/todos/todos',
   usingComponents: {"add-button":"/components/add-button/add-button"},
   
 };
@@ -501,6 +504,9 @@ Page({
   pt() {
     console.log('parent tap', Date.now());
   },
+  plp() {
+    console.log('parent longpress', Date.now());
+  },
   pts() {
     console.log('parent touchstart');
   },
@@ -526,6 +532,10 @@ Page({
       icon: 'success',
       duration: 2000,
     });
+  },
+
+  tapSlot(e) {
+    console.log('tapSlot', e);
   },
 });
 

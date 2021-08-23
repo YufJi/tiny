@@ -25,14 +25,6 @@ g.onerror = function onerror(msg = '', url, line, col, error) {
   console.error('[RENDER] onerror', args);
 };
 
-g.JSBridge = bridge;
-g.Nerv = Nerv;
-g.XMLRuntime = XMLRuntime;
-
-g.MP = {
-  StyleSheet,
-};
-
 /* 初始化font-size */
 document.addEventListener('DOMContentLoaded', () => {
   const width = window.innerWidth;
@@ -47,5 +39,13 @@ document.addEventListener('DOMContentLoaded', () => {
     doc.style.fontSize = `${(ratio * width) / 20}px`;
   }
 });
+
+g.JSBridge = bridge;
+g.Nerv = Nerv;
+g.XMLRuntime = XMLRuntime;
+
+g.MP = {
+  StyleSheet,
+};
 
 bootstrap();

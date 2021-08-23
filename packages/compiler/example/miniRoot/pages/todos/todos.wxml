@@ -5,12 +5,13 @@
     style="background: green;"
     capture-bind:tap="pct"
     bindtap="pt"
+    bind:longpress="plp"
     bindtouchstart="pts"
     bindtouchmove="ptm"
   >
     <view
       capture-bind:tap="cct"
-      catchtap="ct"
+      catch:tap="ct"
       bindtouchstart="cts"
       catchtouchmove="ctm"
     >
@@ -49,7 +50,7 @@
   </view>
   <view class="todo-footer">
     <add-button id="asd"  text="{{text}}" bind:click_me="clickCom">
-      i am slot
+      <text bind:tap="tapSlot">i am slot</text>
     </add-button>
     <add-button id="asxx" wx:if="{{text === 'def'}}" xx="xxx" text="{{text}}" bind:click_me="{{fn}}"></add-button>
   </view>

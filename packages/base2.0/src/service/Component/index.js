@@ -7,8 +7,8 @@ import $global from '../common/global';
 const g = self;
 
 export default function registerComponent(options = {}) {
-  const { is } = $global.currentComponentConfig;
-  $global.__allConfig__[is] = $global.currentComponentConfig;
+  const { is } = $global.currentPageConfig;
+  $global.__allConfig__[is] = $global.currentPageConfig;
 
   if (componentBookmarks.has(is)) {
     throw new Error(`at ${is}, Component can only register once`);

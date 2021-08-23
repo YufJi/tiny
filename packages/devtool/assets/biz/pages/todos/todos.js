@@ -1,3 +1,13 @@
+
+var globalThis = undefined;
+var global = undefined;
+var fetch = undefined;
+var self = undefined;
+var window = undefined;
+var document = undefined;
+var location = undefined;
+var XMLHttpRequest = undefined;
+
 // 获取全局 app 实例
 const app = getApp();
 

@@ -1,7 +1,7 @@
 const empty = {};
 
-export default function renderSlot(data, slot, fallback, props) {
-  const { $scopedSlots = empty, $slots = empty } = data;
+export default function renderSlot(ctx, slot, fallback, props) {
+  const { $scopedSlots = empty, $$slots = empty } = ctx;
 
   const scopedSlotFn = $scopedSlots[slot];
   let nodes;
@@ -19,7 +19,7 @@ export default function renderSlot(data, slot, fallback, props) {
       nodes = fallback;
     }
   } else {
-    const slotNodes = $slots[slot];
+    const slotNodes = $$slots[slot];
     nodes = slotNodes || fallback;
   }
   return nodes;

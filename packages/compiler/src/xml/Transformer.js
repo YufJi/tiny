@@ -542,10 +542,10 @@ assign(MLTransformer.prototype, {
       const transformedAttrs = this.getTransformedAttrs({}, node, null, false);
       const _slot = transformedAttrs.name || '"$default"';
       delete transformedAttrs.name;
-      this.pushCode(`$renderSlot(data, ${_slot}`);
+      this.pushCode(`$renderSlot(_ctx, ${_slot}`);
       if (hasChildren) {
         // do not push code section, still inside
-        // {data.$slots.x || <view/>}
+        // {_ctx.$slots.x || <view/>}
         this.pushCode(', (');
         this.protectGenerateCode(level, () => {
           this.generateCodeForTags(node.children, level + 2);
@@ -816,13 +816,14 @@ assign(MLTransformer.prototype, {
       const subTemplatesName = [];
       Object.keys(importTplDeps).forEach((dep) => {
         const index = importTplDeps[dep];
-        header.push(`${IMPORT} { $ownTemplates as $ownTemplates${index} } ` + `from ${toLiteralString(dep)};`);
+        header.push(`${IMPORT} { $ownTemplates as $ownTemplates${index} } from ${toLiteralString(dep)};`);
         subTemplatesName.push(`$ownTemplates${index}`);
       });
       Object.keys(includeTplDeps).forEach((dep) => {
         const index = includeTplDeps[dep];
         header.push(`${IMPORT} $render$${index} from ${toLiteralString(dep)};`);
       });
+
       header.push(''); // empty line
 
       const hasOwnTemplates = Object.keys(subTemplatesCode).length;

@@ -201,8 +201,9 @@ function render(data, _ctx) {
     size: "23"
   }), Nerv.createElement("tiny-text", null, $toString(data['text']))]), Nerv.createElement("tiny-text", {
     bindtap: _ctx.$$eventBinder("xx")
-  }, $toString(data['name'])), $renderSlot(data, "$default", null)]);
-};
+  }, $toString(data['name'])), $renderSlot(_ctx, "$default", null)]);
+}
+;
 
 /***/ }),
 
@@ -545,6 +546,7 @@ function render(data, _ctx) {
     style: "background: green;",
     "capture-bindtap": _ctx.$$eventBinder("pct"),
     bindtap: _ctx.$$eventBinder("pt"),
+    bindlongpress: _ctx.$$eventBinder("plp"),
     bindtouchstart: _ctx.$$eventBinder("pts"),
     bindtouchmove: _ctx.$$eventBinder("ptm")
   }, Nerv.createElement("tiny-view", {
@@ -604,7 +606,9 @@ function render(data, _ctx) {
     id: "asd",
     text: data['text'],
     bindclick_me: _ctx.$$eventBinder("clickCom")
-  }, $toString("i am slot")), data['text'] === 'def' ? Nerv.createElement(AddButton, {
+  }, Nerv.createElement("tiny-text", {
+    bindtap: _ctx.$$eventBinder("tapSlot")
+  }, $toString("i am slot"))), data['text'] === 'def' ? Nerv.createElement(AddButton, {
     id: "asxx",
     xx: "xxx",
     text: data['text'],

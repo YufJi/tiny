@@ -1,5 +1,5 @@
 import { set, noop } from 'lodash';
-
+import { pageModels } from './common';
 import ComponentModel from './Component';
 
 export default class ComponentPageModel extends ComponentModel {

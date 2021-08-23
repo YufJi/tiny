@@ -35,7 +35,7 @@ function transformPageJs(str, name, config) {
   }
   const info = `
 {
-  pagePath: '${name}',
+  is: '${name}',
   ${config.tabIndex !== -1 ? `tabIndex: ${config.tabIndex},` : ''}
   render: function() { 
     const fn = require('./${filename}${templateExtname}')
@@ -60,7 +60,7 @@ function transformPageJsForWorker(str, pagePath, config) {
   const { tabIndex, usingComponents, templateExtname } = config;
   const info = `
 {
-  pagePath: '${pagePath}',
+  is: '${pagePath}',
   ${
   usingComponents
     ? `usingComponents: ${JSON.stringify(usingComponents)},`
@@ -102,7 +102,7 @@ function transformComponentJsForWorker(str, { is, usingComponents }, config) {
   return `
 ${getSecurityHeader(config.forbiddenGlobals)}
 
-$global.currentComponentConfig = ${info};
+$global.currentPageConfig = ${info};
 
 ${str}
   `;
@@ -134,7 +134,7 @@ function transformComponentJs(
   return `
 ${getSecurityHeader(config.forbiddenGlobals)}
 
-$global.currentComponentConfig = ${cConfig};
+$global.currentPageConfig = ${cConfig};
 
 ${str}
   `;

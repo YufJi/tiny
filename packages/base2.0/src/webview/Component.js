@@ -9,7 +9,7 @@
 import { memoize } from 'lodash';
 import path from 'path';
 
-import { h, useDangerousReverseLayoutEffect, useLayoutEffect, Children, useRef } from './nerv';
+import { h, useDangerousReverseLayoutEffect, useLayoutEffect, useRef } from './nerv';
 import {
   useComponentHubContext,
   useDataChange,
@@ -100,8 +100,6 @@ export function defineCustomComponent(is, options, customComponentMap) {
     useSyncChangedProps(refinedProps, nodeId, initialProps);
     useSyncChangedDataset(refinedDataset, nodeId, initialDataset);
 
-    const $slots = transformChildrenToSlots(children);
-
     return (
       <ShadowRoot
         $nodeId={nodeId}
@@ -109,11 +107,10 @@ export function defineCustomComponent(is, options, customComponentMap) {
         $name={displayName || 'custom-component'}
         attribute={props}
       >
-        {render({
+        {render(changedData, {
+          ...ctx,
           $scopedSlots,
-          $slots,
-          ...changedData,
-        }, ctx)}
+        })}
       </ShadowRoot>
     );
   };
@@ -176,15 +173,4 @@ function syncInitialDataset(data, nodeId, publish) {
     data,
     nodeId,
   });
-}
-
-function transformChildrenToSlots(children) {
-  const slots = {};
-  Children.forEach(children, (c) => {
-    const slot = c && c.props && c.props.slot || '$default';
-    const holder = slots[slot] || [];
-    holder.push(c);
-    slots[slot] = holder;
-  });
-  return slots;
 }

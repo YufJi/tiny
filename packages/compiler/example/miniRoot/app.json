@@ -7,7 +7,7 @@
     "navigationBarTitleText": "哈哈哈"
   },
   "usingComponents": {
-    "add-button": "/components/add-button/add-button"
+    "add-button": "./components/add-button/add-button"
   },
   "sitemapLocation": "sitemap.json"
 }

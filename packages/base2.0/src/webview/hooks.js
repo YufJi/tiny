@@ -8,7 +8,7 @@
  */
 import { divide, forOwn, hasIn, isNil, kebabCase, memoize, isEqual } from 'lodash';
 import { Deferred, mergeData } from 'utils';
-import { useState, useRef, useContext, useLayoutEffect, useEffect, useMemo, useReducer } from './nerv';
+import { useState, useRef, useContext, useLayoutEffect, useEffect, useMemo, useReducer, Children } from './nerv';
 import { FieldsContext, ConfigContext, ComponentHubContext } from './context';
 import {
   onComponentDataChange,
@@ -389,9 +389,11 @@ export function useComponentRenderContext(props, nodeId, is, config, resolveComp
     });
   });
 
-  const $$slots = useMemo(() => {
-    return wrapSlot(props.$$slots || {});
-  }, [props.$$slots]);
+  // const $$slots = useMemo(() => {
+  //   return wrapSlot(props.$$slots || {});
+  // }, [props.$$slots]);
+
+  const $$slots = transformChildrenToSlots(props.children);
 
   return {
     $$slots,
@@ -400,6 +402,17 @@ export function useComponentRenderContext(props, nodeId, is, config, resolveComp
     __fields: fields,
     __dirname: is,
   };
+}
+
+function transformChildrenToSlots(children) {
+  const slots = {};
+  Children.forEach(children, (c) => {
+    const slot = c && c.props && c.props.slot || '$default';
+    const holder = slots[slot] || [];
+    holder.push(c);
+    slots[slot] = holder;
+  });
+  return slots;
 }
 
 export function useRefinedProps(props, properties) {

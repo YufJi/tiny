@@ -25200,16 +25200,14 @@ function defineCustomComponent(is, options, customComponentMap) {
     }, []);
     Object(_hooks__WEBPACK_IMPORTED_MODULE_6__["useSyncChangedProps"])(refinedProps, nodeId, initialProps);
     Object(_hooks__WEBPACK_IMPORTED_MODULE_6__["useSyncChangedDataset"])(refinedDataset, nodeId, initialDataset);
-    var $slots = transformChildrenToSlots(children);
     return Object(_nerv__WEBPACK_IMPORTED_MODULE_5__["h"])(ShadowRoot, {
       $nodeId: nodeId,
       $config: config,
       $name: displayName || 'custom-component',
       attribute: props
-    }, render(_objectSpread({
-      $scopedSlots: $scopedSlots,
-      $slots: $slots
-    }, changedData), ctx));
+    }, render(changedData, _objectSpread(_objectSpread({}, ctx), {}, {
+      $scopedSlots: $scopedSlots
+    })));
   };
 }
 
@@ -25271,17 +25269,6 @@ function syncInitialDataset(data, nodeId, publish) {
     data: data,
     nodeId: nodeId
   });
-}
-
-function transformChildrenToSlots(children) {
-  var slots = {};
-  _nerv__WEBPACK_IMPORTED_MODULE_5__["Children"].forEach(children, function (c) {
-    var slot = c && c.props && c.props.slot || '$default';
-    var holder = slots[slot] || [];
-    holder.push(c);
-    slots[slot] = holder;
-  });
-  return slots;
 }
 
 /***/ }),
@@ -26203,6 +26190,7 @@ function useRenderContext() {
   var fields = usePageFields();
   var resolveComponent = useResolveComponent(config);
   return {
+    $$slots: {},
     $$eventBinder: useCreation(function () {
       return Object(lodash__WEBPACK_IMPORTED_MODULE_3__["memoize"])(function (type) {
         var handler = function handler(data) {
@@ -26458,14 +26446,31 @@ function useComponentRenderContext(props, nodeId, is, config, resolveComponent) 
       handler.displayName = type;
       return handler;
     });
-  });
+  }); // const $$slots = useMemo(() => {
+  //   return wrapSlot(props.$$slots || {});
+  // }, [props.$$slots]);
+
+  var $$slots = transformChildrenToSlots(props.children);
   return {
+    $$slots: $$slots,
     $$eventBinder: eventBinder,
     $$resolveComponent: resolveComponent,
     __fields: fields,
     __dirname: is
   };
 }
+
+function transformChildrenToSlots(children) {
+  var slots = {};
+  _nerv__WEBPACK_IMPORTED_MODULE_5__["Children"].forEach(children, function (c) {
+    var slot = c && c.props && c.props.slot || '$default';
+    var holder = slots[slot] || [];
+    holder.push(c);
+    slots[slot] = holder;
+  });
+  return slots;
+}
+
 function useRefinedProps(props, properties) {
   var _props = Object(_util__WEBPACK_IMPORTED_MODULE_9__["normalizeProps"])(props, properties);
 
@@ -26616,14 +26621,8 @@ g.onerror = function onerror() {
   var args = [msg, url, line, col, error];
   console.error('[RENDER] onerror', args);
 };
-
-g.JSBridge = _bridge__WEBPACK_IMPORTED_MODULE_0__;
-g.Nerv = _nerv__WEBPACK_IMPORTED_MODULE_3__["default"];
-g.XMLRuntime = _render_helpers__WEBPACK_IMPORTED_MODULE_4__["default"];
-g.MP = {
-  StyleSheet: _StyleSheet__WEBPACK_IMPORTED_MODULE_5__["default"]
-};
 /* 初始化font-size */
+
 
 document.addEventListener('DOMContentLoaded', function () {
   var width = window.innerWidth;
@@ -26636,6 +26635,12 @@ document.addEventListener('DOMContentLoaded', function () {
     doc.style.fontSize = "".concat(ratio * width / 20, "px");
   }
 });
+g.JSBridge = _bridge__WEBPACK_IMPORTED_MODULE_0__;
+g.Nerv = _nerv__WEBPACK_IMPORTED_MODULE_3__["default"];
+g.XMLRuntime = _render_helpers__WEBPACK_IMPORTED_MODULE_4__["default"];
+g.MP = {
+  StyleSheet: _StyleSheet__WEBPACK_IMPORTED_MODULE_5__["default"]
+};
 Object(_bootstrap__WEBPACK_IMPORTED_MODULE_2__["default"])();
 
 /***/ }),
@@ -27605,10 +27610,13 @@ function addListener(node, type, callback) {
         callback.call(node, e);
       });
       return;
-  }
+  } // 不在黑名单中
+
 
   if (EVENT_BLACK_LIST.indexOf(eventType) === -1) {
-    node.addEventListener(eventType, callback);
+    node.addEventListener(eventType, function (e) {
+      callback.call(node, e);
+    }, capture);
   }
 }
 
@@ -31172,11 +31180,11 @@ function iterate(items, fn) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return renderSlot; });
 var empty = {};
-function renderSlot(data, slot, fallback, props) {
-  var _data$$scopedSlots = data.$scopedSlots,
-      $scopedSlots = _data$$scopedSlots === void 0 ? empty : _data$$scopedSlots,
-      _data$$slots = data.$slots,
-      $slots = _data$$slots === void 0 ? empty : _data$$slots;
+function renderSlot(ctx, slot, fallback, props) {
+  var _ctx$$scopedSlots = ctx.$scopedSlots,
+      $scopedSlots = _ctx$$scopedSlots === void 0 ? empty : _ctx$$scopedSlots,
+      _ctx$$$slots = ctx.$$slots,
+      $$slots = _ctx$$$slots === void 0 ? empty : _ctx$$$slots;
   var scopedSlotFn = $scopedSlots[slot];
   var nodes;
 
@@ -31197,7 +31205,7 @@ function renderSlot(data, slot, fallback, props) {
       nodes = fallback;
     }
   } else {
-    var slotNodes = $slots[slot];
+    var slotNodes = $$slots[slot];
     nodes = slotNodes || fallback;
   }
 

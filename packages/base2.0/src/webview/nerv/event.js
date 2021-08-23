@@ -108,8 +108,11 @@ export function addListener(node, type, callback, options = {}) {
       return;
   }
 
+  // 不在黑名单中
   if (EVENT_BLACK_LIST.indexOf(eventType) === -1) {
-    node.addEventListener(eventType, callback);
+    node.addEventListener(eventType, (e) => {
+      callback.call(node, e);
+    }, capture);
   }
 }
 
