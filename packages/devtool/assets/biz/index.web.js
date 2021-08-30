@@ -81,15 +81,26 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "../devtool/assets/biz/index$.web.js");
+/******/ 	return __webpack_require__(__webpack_require__.s = "./example/miniRoot/.cache/index$.web.js");
 /******/ })
 /************************************************************************/
 /******/ ({
 
-/***/ "../devtool/assets/biz/config$.js":
-/*!****************************************!*\
-  !*** ../devtool/assets/biz/config$.js ***!
-  \****************************************/
+/***/ "./example/miniRoot/.cache/appConfig.json":
+/*!************************************************!*\
+  !*** ./example/miniRoot/.cache/appConfig.json ***!
+  \************************************************/
+/*! exports provided: window, pages, launchParams, prerenderPage, default */
+/***/ (function(module) {
+
+module.exports = JSON.parse("{\"window\":{\"navigationBarTitleText\":\"哈哈哈\"},\"pages\":[\"pages/todos/todos\",\"pages/add-todo/add-todo\"],\"launchParams\":{\"pages/todos/todos\":{\"navigationBarTitleText\":\"Index\"},\"pages/add-todo/add-todo\":{\"navigationBarTitleText\":\"哈哈哈\"}},\"prerenderPage\":\"render.html\"}");
+
+/***/ }),
+
+/***/ "./example/miniRoot/.cache/config$.js":
+/*!********************************************!*\
+  !*** ./example/miniRoot/.cache/config$.js ***!
+  \********************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -101,19 +112,22 @@ g.mpAppJson = {
   }
 };
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../compiler/node_modules/webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
+const appConfig = __webpack_require__(/*! ./appConfig.json */ "./example/miniRoot/.cache/appConfig.json");
+g.TinyConfig = appConfig;
+
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../node_modules/webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
 
 /***/ }),
 
-/***/ "../devtool/assets/biz/index$.web.js":
-/*!*******************************************!*\
-  !*** ../devtool/assets/biz/index$.web.js ***!
-  \*******************************************/
+/***/ "./example/miniRoot/.cache/index$.web.js":
+/*!***********************************************!*\
+  !*** ./example/miniRoot/.cache/index$.web.js ***!
+  \***********************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 __webpack_require__(/*! compiler/sjsEnvInit */ "./src/sjsEnvInit.js");
-__webpack_require__(/*! ./config$ */ "../devtool/assets/biz/config$.js");
+__webpack_require__(/*! ./config$ */ "./example/miniRoot/.cache/config$.js");
 __webpack_require__(/*! ./example/miniRoot/components/add-button/add-button?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./example/miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc");
 __webpack_require__(/*! ./example/miniRoot/pages/todos/todos?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
 __webpack_require__(/*! ./example/miniRoot/pages/add-todo/add-todo?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
@@ -588,8 +602,8 @@ function render(data, _ctx) {
     className: "progress-box"
   }, Nerv.createElement("tiny-progress", {
     percent: "20",
-    "show-info": true,
-    active: true,
+    "show-info": "",
+    active: "",
     "stroke-width": "3"
   })), Nerv.createElement("tiny-view", {
     className: "section section_gap"
@@ -960,7 +974,8 @@ module.exports = g;
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(global) {(function (g) {
+/* WEBPACK VAR INJECTION */(function(global) {/* eslint-disable no-extend-native */
+(function (g) {
   // es5
   const PREFIX = '$sjs_';
   const PREFIX_LENGTH = PREFIX.length;

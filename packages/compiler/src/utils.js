@@ -315,7 +315,10 @@ function getImports(imports = [], baseDir, option) {
   return imports.map((p) => getImport(p, baseDir, option));
 }
 
+function noop() {}
+
 module.exports = {
+  noop,
   getSecurityHeader,
   cleanPageJson(json) {
     const ret = { ...json };

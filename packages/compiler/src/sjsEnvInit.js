@@ -1,3 +1,4 @@
+/* eslint-disable no-extend-native */
 (function (g) {
   // es5
   const PREFIX = '$sjs_';

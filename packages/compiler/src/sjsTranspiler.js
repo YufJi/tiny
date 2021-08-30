@@ -3,7 +3,8 @@ let generate = require('@babel/generator');
 const t = require('@babel/types');
 const codeFrameColumns = require('@babel/code-frame');
 let template = require('@babel/template');
-let babylon = require('./xml/babylon');
+// let babylon = require('./xml/babylon');
+let babylon = require('babylon');
 const { checkImport } = require('./utils');
 
 babylon = babylon.default || babylon;
@@ -305,10 +306,12 @@ function transpiler(code, config = {}) {
       return new Error(msg);
     },
   });
+
   const ast = babylon.parse(code, {
     sourceType: 'module',
     plugins: ['objectRestSpread'],
   });
+
   const path = NodePath.get({
     hub,
     parentPath: null,
@@ -316,7 +319,9 @@ function transpiler(code, config = {}) {
     container: ast,
     key: 'program',
   }).setContext();
+
   const { scope } = path;
+
   traverse(
     ast,
     {

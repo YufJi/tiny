@@ -81,15 +81,15 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "../devtool/assets/biz/index$.worker.js");
+/******/ 	return __webpack_require__(__webpack_require__.s = "./example/miniRoot/.cache/index$.worker.js");
 /******/ })
 /************************************************************************/
 /******/ ({
 
-/***/ "../devtool/assets/biz/appConfig.json":
-/*!********************************************!*\
-  !*** ../devtool/assets/biz/appConfig.json ***!
-  \********************************************/
+/***/ "./example/miniRoot/.cache/appConfig.json":
+/*!************************************************!*\
+  !*** ./example/miniRoot/.cache/appConfig.json ***!
+  \************************************************/
 /*! exports provided: window, pages, launchParams, prerenderPage, default */
 /***/ (function(module) {
 
@@ -97,14 +97,24 @@ module.exports = JSON.parse("{\"window\":{\"navigationBarTitleText\":\"哈哈哈
 
 /***/ }),
 
-/***/ "../devtool/assets/biz/config$.js":
-/*!****************************************!*\
-  !*** ../devtool/assets/biz/config$.js ***!
-  \****************************************/
+/***/ "./example/miniRoot/.cache/config$.js":
+/*!********************************************!*\
+  !*** ./example/miniRoot/.cache/config$.js ***!
+  \********************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(global) {
+
+var globalThis = undefined;
+var global = undefined;
+var fetch = undefined;
+var self = undefined;
+var window = undefined;
+var document = undefined;
+var location = undefined;
+var XMLHttpRequest = undefined;
+
+
 const g = typeof global !== 'undefined' ? global : self;
 g.mpAppJson = {
   "app": {
@@ -112,34 +122,32 @@ g.mpAppJson = {
   }
 };
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../compiler/node_modules/webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
+const appConfig = __webpack_require__(/*! ./appConfig.json */ "./example/miniRoot/.cache/appConfig.json");
+g.TinyConfig = appConfig;
+
 
 /***/ }),
 
-/***/ "../devtool/assets/biz/index$.worker.js":
-/*!**********************************************!*\
-  !*** ../devtool/assets/biz/index$.worker.js ***!
-  \**********************************************/
+/***/ "./example/miniRoot/.cache/index$.worker.js":
+/*!**************************************************!*\
+  !*** ./example/miniRoot/.cache/index$.worker.js ***!
+  \**************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-if(!self.__mpInited) {
-self.__mpInited = 1;
 
-__webpack_require__(/*! ./config$ */ "../devtool/assets/biz/config$.js");
-var appConfig = __webpack_require__(/*! ./appConfig.json */ "../devtool/assets/biz/appConfig.json");
- self.TinyConfig = appConfig;
+var globalThis = undefined;
+var global = undefined;
+var fetch = undefined;
+var self = undefined;
+var window = undefined;
+var document = undefined;
+var location = undefined;
+var XMLHttpRequest = undefined;
 
-
-var MP = self.MP;
-self.getCurrentPages = MP.getCurrentPages;
-self.getApp = MP.getApp;
-self.Page = MP.Page;
-self.App = MP.App;
-self.Component = MP.Component;
-self.Behavior = MP.Behavior;
-self.$global = MP.$global;
-
+if(!self.__TinyInited__) {
+self.__TinyInited__ = true;
+__webpack_require__(/*! ./config$ */ "./example/miniRoot/.cache/config$.js");
 
 function success() {
 __webpack_require__(/*! ./example/miniRoot/app */ "./example/miniRoot/app.js");
@@ -539,37 +547,6 @@ Page({
   },
 });
 
-
-
-/***/ }),
-
-/***/ "./node_modules/webpack/buildin/global.js":
-/*!***********************************!*\
-  !*** (webpack)/buildin/global.js ***!
-  \***********************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || new Function("return this")();
-} catch (e) {
-	// This works if the window reference is available
-	if (typeof window === "object") g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
 
 
 /***/ })

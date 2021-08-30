@@ -30,15 +30,13 @@ function hasProp(node) {
 
 function prune(node) {
   if (node.parent) {
-    let _node$parent$children;
-
-    (_node$parent$children = node.parent.children).splice.apply(_node$parent$children, [node.parent.children.indexOf(node), 1].concat(node.children || []));
+    // eslint-disable-next-line prefer-spread
+    node.parent.children.splice.apply(node.parent.children, [node.parent.children.indexOf(node), 1].concat(node.children || []));
   }
 }
 
 function hasReservedDescendant(node, usingComponents, options) {
-  const _node$children = node.children;
-  const children = _node$children === undefined ? [] : _node$children;
+  const { children = [] } = node.children;
 
   if (isReservedTag(node, options)) {
     return true;
@@ -86,8 +84,7 @@ function hasSibling(node, options) {
 }
 
 function hasChild(node) {
-  const _node$children2 = node.children;
-  const children = _node$children2 === undefined ? [] : _node$children2;
+  const { children = [] } = node.children;
 
   return children.length > 0;
 }

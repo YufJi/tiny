@@ -27,7 +27,7 @@ export const global = (function () {
 export const isBrowser = typeof window !== 'undefined';
 
 // tslint:disable-next-line:no-empty
-export function noop() {}
+export function noop() { /* no operation */ }
 
 const fakeDoc = {
   createElement: noop,

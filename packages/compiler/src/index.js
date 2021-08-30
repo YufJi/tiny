@@ -1,7 +1,6 @@
 const transformMini = require('./transformMini');
 const transformPlugin = require('./transformPlugin');
-
-function noop() {}
+const { noop } = require('./utils');
 
 module.exports = function run(config, callback = noop) {
   const miniConfig = { ...config };

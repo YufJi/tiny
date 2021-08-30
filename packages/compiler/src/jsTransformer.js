@@ -1,17 +1,11 @@
 const path = require('path');
 const { existsSync } = require('fs');
-const defaultLib = require('./defaultLib');
 const {
   PLUGIN_PREFIX,
   PLUGIN_PRIVATE_PREFIX,
   getPluginPath,
 } = require('./pluginUtils');
 const { relative, normalizePathForWin, getSecurityHeader } = require('./utils');
-
-function getAppRenderHeader(config) {
-  const { library = defaultLib.tinyBaseModule } = config;
-  return `const { App } = ${library};\n`;
-}
 
 function wrapRegisterPage(pageMetaConfig, code, config) {
   return `
@@ -21,38 +15,6 @@ $global.currentPageConfig = ${pageMetaConfig};
 
 ${code}
 `;
-}
-
-function transformPageJs(str, name, config) {
-  const { templateExtname, styleTransformer, fullPath } = config;
-  const filename = path.basename(name);
-  const xmlPath = path.join(
-    path.dirname(fullPath),
-    `./${filename}${templateExtname}`,
-  );
-  if (!existsSync(xmlPath)) {
-    throw new Error(`can not find ${xmlPath}`);
-  }
-  const info = `
-{
-  is: '${name}',
-  ${config.tabIndex !== -1 ? `tabIndex: ${config.tabIndex},` : ''}
-  render: function() { 
-    const fn = require('./${filename}${templateExtname}')
-    return fn; 
-  },
-  ${
-  styleTransformer && fullPath
-    ? `stylesheet: function() {
-      const fn = require('${normalizePathForWin(
-    relative(fullPath, styleTransformer.config.stylePath),
-  )}');
-      return fn;
-     },`
-    : ''
-}
-}`;
-  return wrapRegisterPage(info, str, config);
 }
 
 function transformPageJsForWorker(str, pagePath, config) {
@@ -70,114 +32,6 @@ function transformPageJsForWorker(str, pagePath, config) {
 }`;
 
   return wrapRegisterPage(info, str, config);
-}
-
-function transformUsingComponents({ usingComponents = {}, pluginId }) {
-  return Object.keys(usingComponents).reduce(
-    (a, c) => ({
-      ...a,
-      [c]:
-        pluginId
-        && !usingComponents[c].startsWith(PLUGIN_PREFIX)
-        && !usingComponents[c].startsWith(PLUGIN_PRIVATE_PREFIX)
-          ? getPluginPath(pluginId, usingComponents[c].slice(1))
-          : usingComponents[c],
-    }),
-    {},
-  );
-}
-
-function transformComponentJsForWorker(str, { is, usingComponents }, config) {
-  const { templateExtname } = config;
-  const filename = path.basename(is);
-  const info = `
-{
-  is: ${JSON.stringify(is)},
-  ${
-  usingComponents
-    ? `usingComponents: ${JSON.stringify(usingComponents)},`
-    : ''
-}
-}`;
-  return `
-${getSecurityHeader(config.forbiddenGlobals)}
-
-$global.currentPageConfig = ${info};
-
-${str}
-  `;
-}
-
-function transformComponentJs(
-  str,
-  { is, usingComponents, registerApp },
-  config,
-) {
-  const filename = path.basename(is);
-  const xmlPath = path.join(
-    path.dirname(config.fullPath),
-    `./${filename}${config.templateExtname}`,
-  );
-  if (!existsSync(xmlPath)) {
-    throw new Error(`can not find ${xmlPath}`);
-  }
-  const cConfig = `
-{
-  is: ${JSON.stringify(is)},
-  ${registerApp ? 'registerApp: 1,' : ''}
-  usingComponents: ${JSON.stringify(usingComponents)},
-  render: function() { return require('./${filename}${
-  config.templateExtname
-}'); },
-}
-`;
-  return `
-${getSecurityHeader(config.forbiddenGlobals)}
-
-$global.currentPageConfig = ${cConfig};
-
-${str}
-  `;
-}
-
-function transformComponentJsForWebRender({ is, usingComponents }, config) {
-  const {
-    resourceQuery = '',
-    styleExtname,
-    templateExtname,
-    pluginId,
-    fullPath,
-  } = config;
-  const filename = path.basename(is);
-  const xmlPath = path.join(
-    path.dirname(fullPath),
-    `./${filename}${templateExtname}`,
-  );
-  if (!existsSync(xmlPath)) {
-    throw new Error(`can not find ${xmlPath}`);
-  }
-  is = pluginId ? getPluginPath(pluginId, is.slice(1)) : is;
-  const cssExists = false;
-
-  const info = `{
-    // is: ${JSON.stringify(is)},
-    usingComponents: ${JSON.stringify(
-    transformUsingComponents({ usingComponents, pluginId }),
-  )},
-    get render() { 
-      const fn = require('./${filename}${templateExtname}${resourceQuery}'); 
-      return fn.default || fn;
-    },
-    ${cssExists ? `get stylesheet() { 
-      const fn = require('./${filename}${styleExtname}'); 
-      return fn.default || fn;
-    },` : ''}
-  }`;
-
-  return `
-  window.app = window.app || {};
-  window.app['${is}'] = ${info};
-  `;
 }
 
 function transformPageJsForWebRender(name, config) {
@@ -232,6 +86,83 @@ function transformPageJsForWebRender(name, config) {
   `;
 }
 
+function transformUsingComponents({ usingComponents = {}, pluginId }) {
+  return Object.keys(usingComponents).reduce(
+    (a, c) => ({
+      ...a,
+      [c]:
+        pluginId
+        && !usingComponents[c].startsWith(PLUGIN_PREFIX)
+        && !usingComponents[c].startsWith(PLUGIN_PRIVATE_PREFIX)
+          ? getPluginPath(pluginId, usingComponents[c].slice(1))
+          : usingComponents[c],
+    }),
+    {},
+  );
+}
+
+function transformComponentJsForWorker(str, { is, usingComponents }, config) {
+  const { templateExtname } = config;
+  const filename = path.basename(is);
+  const info = `
+{
+  is: ${JSON.stringify(is)},
+  ${
+  usingComponents
+    ? `usingComponents: ${JSON.stringify(usingComponents)},`
+    : ''
+}
+}`;
+  return `
+${getSecurityHeader(config.forbiddenGlobals)}
+
+$global.currentPageConfig = ${info};
+
+${str}
+  `;
+}
+
+function transformComponentJsForWebRender({ is, usingComponents }, config) {
+  const {
+    resourceQuery = '',
+    styleExtname,
+    templateExtname,
+    pluginId,
+    fullPath,
+  } = config;
+  const filename = path.basename(is);
+  const xmlPath = path.join(
+    path.dirname(fullPath),
+    `./${filename}${templateExtname}`,
+  );
+  if (!existsSync(xmlPath)) {
+    throw new Error(`can not find ${xmlPath}`);
+  }
+  is = pluginId ? getPluginPath(pluginId, is.slice(1)) : is;
+  const cssExists = false;
+
+  const info = `{
+    // is: ${JSON.stringify(is)},
+    usingComponents: ${JSON.stringify(
+    transformUsingComponents({ usingComponents, pluginId }),
+  )},
+    get render() { 
+      const fn = require('./${filename}${templateExtname}${resourceQuery}'); 
+      return fn.default || fn;
+    },
+    ${cssExists ? `get stylesheet() { 
+      const fn = require('./${filename}${styleExtname}'); 
+      return fn.default || fn;
+    },` : ''}
+  }`;
+
+  return `
+  window.app = window.app || {};
+  window.app['${is}'] = ${info};
+  `;
+}
+
+/* 处理普通js文件 */
 function transformJsForWorker(str, config) {
   return `
 ${getSecurityHeader(config.forbiddenGlobals)}
@@ -239,6 +170,7 @@ ${getSecurityHeader(config.forbiddenGlobals)}
 ${str}`;
 }
 
+/* 处理worker app.js */
 function transformAppJs(str, config) {
   return `
 ${getSecurityHeader(config.forbiddenGlobals)}
@@ -246,34 +178,11 @@ ${getSecurityHeader(config.forbiddenGlobals)}
 ${str}`;
 }
 
-function transformAppJsForNative() {
-  return `import './app.worker';`;
-}
-
-function transformAppJsForWebRender(_, config, { fullPath }) {
-  const cssPath = fullPath.replace(/\.(js|ts)$/, config.styleExtname);
-  if (!existsSync(cssPath)) {
-    return '';
-  }
-  return `
-${getAppRenderHeader(config)}
-if(App) {
-  App({
-    stylesheet(){return require('./app${config.styleExtname}')},
-  });
-}
-`;
-}
-
 module.exports = {
-  transformComponentJs,
   transformComponentJsForWebRender,
   transformComponentJsForWorker,
   transformPageJsForWebRender,
-  transformAppJs,
-  transformAppJsForNative,
-  transformAppJsForWebRender,
-  transformPageJs,
-  transformJsForWorker,
   transformPageJsForWorker,
+  transformAppJs,
+  transformJsForWorker,
 };

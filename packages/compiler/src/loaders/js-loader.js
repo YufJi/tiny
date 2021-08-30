@@ -16,19 +16,23 @@ function isAppJS(path) {
   return path === 'app.js' || path === 'app.ts';
 }
 
-module.exports = function g(source) {
-  const { isWorker, cwd, isNative, transformConfig } = loaderUtils.getOptions(
+module.exports = function JsLoader(source) {
+  const { isWorker, cwd, transformConfig } = loaderUtils.getOptions(
     this,
   );
   const { pluginId } = transformConfig;
-  // console.log('xxxxxx', isWorker, cwd, isNative, transformConfig);
+  // console.log('xxxxxx', isWorker, cwd, transformConfig);
   const { resourcePath } = this;
-  if (!isWorker && !isValidFilePath(resourcePath)) {
+
+  const isRender = !isWorker;
+
+  /* 校验文件路径 */
+  if (isRender && !isValidFilePath(resourcePath)) {
     this.callback(new Error(`illegal file path ${resourcePath}`));
     return undefined;
   }
-  // native or webview
-  const isRender = !isWorker;
+
+  // webview
   const fullPath = normalizePathForWin(resourcePath);
   let type = 'normal';
   if (!source) {
@@ -63,13 +67,7 @@ module.exports = function g(source) {
       transformConfig,
     );
 
-    if (isNative) {
-      code = jsTransformer.transformComponentJs(
-        source,
-        componentInfo,
-        extConfig,
-      );
-    } else if (isWorker) {
+    if (isWorker) {
       code = jsTransformer.transformComponentJsForWorker(
         source,
         componentInfo,
@@ -83,19 +81,10 @@ module.exports = function g(source) {
     }
     type = 'component';
   } else if (isAppJS(projectPath)) {
-    if (isWorker) {
-      code = jsTransformer.transformAppJs(source, transformConfig, {
-        fullPath,
-      });
-    } else if (isNative) {
-      code = jsTransformer.transformAppJsForNative(source, transformConfig, {
-        fullPath,
-      });
-    } else {
-      code = jsTransformer.transformAppJsForWebRender(source, transformConfig, {
-        fullPath,
-      });
-    }
+    code = jsTransformer.transformAppJs(source, transformConfig, {
+      fullPath,
+    });
+
     type = 'app';
   } else if (pageUsingComponents) {
     let renderConfig;
@@ -119,13 +108,7 @@ module.exports = function g(source) {
         transformConfig,
       );
     }
-    if (isNative) {
-      code = jsTransformer.transformPageJs(
-        source,
-        projectPath.slice(0, -extname.length),
-        renderConfig,
-      );
-    } else if (isWorker) {
+    if (isWorker) {
       code = jsTransformer.transformPageJsForWorker(
         source || 'Page({})',
         projectPath.slice(0, -extname.length),
@@ -144,7 +127,7 @@ module.exports = function g(source) {
       );
     }
     type = 'page';
-  } else if (isWorker || isNative) {
+  } else if (isWorker) {
     code = jsTransformer.transformJsForWorker(source, transformConfig);
   } else {
     this.callback(null, source);

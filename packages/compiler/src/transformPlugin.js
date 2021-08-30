@@ -19,9 +19,6 @@ module.exports = function run(config) {
 
   const transformConfig = assign({}, config);
 
-  if (transformConfig.showFileNameInError === undefined) {
-    transformConfig.showFileNameInError = true;
-  }
   transformConfig.pluginId = pluginId;
 
   fs.ensureDirSync(out);

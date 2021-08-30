@@ -9,7 +9,14 @@ const manifestJson = {
   gcm_user_visible_only: true,
 };
 
-module.exports = function g({ appJson, out, src, indexPage, contextPath }) {
+module.exports = function generateAppConfigJson({
+  appJson,
+  src,
+  indexPage,
+  contextPath,
+  transformConfig,
+}) {
+  const { temp } = transformConfig;
   const { app } = appJson;
   const appWindowConfig = app.window;
   const webConfig = {};
@@ -37,12 +44,11 @@ module.exports = function g({ appJson, out, src, indexPage, contextPath }) {
       t.launchParamsTag = t.tag;
     });
     // webConfig.tabBar = app.tabBar;
-    if (out) {
-      fs.writeFileSync(
-        path.join(out, 'tabBar.json'),
-        JSON.stringify(app.tabBar, null, 2),
-      );
-    }
+
+    fs.writeFileSync(
+      path.join(temp, 'tabBar.json'),
+      JSON.stringify(app.tabBar, null, 2),
+    );
   }
   const launchParams = {};
   Object.keys(appJson).forEach((page) => {
@@ -79,21 +85,21 @@ module.exports = function g({ appJson, out, src, indexPage, contextPath }) {
   if (indexPage) {
     webConfig.prerenderPage = indexPage;
   }
-  if (out) {
-    fs.writeFileSync(
-      path.join(out, 'appConfig.json'),
-      JSON.stringify(webConfig, null, 2),
-    );
-    fs.writeFileSync(
-      path.join(out, 'manifest.json'),
-      JSON.stringify(manifestJson, null, 2),
-    );
-    generateMultiLanguageAppConfigJson({
-      app: webConfig,
-      tabBar: app.tabBar,
-      src,
-    }, out);
-  }
+
+  fs.writeFileSync(
+    path.join(temp, 'appConfig.json'),
+    JSON.stringify(webConfig, null, 2),
+  );
+  fs.writeFileSync(
+    path.join(temp, 'manifest.json'),
+    JSON.stringify(manifestJson, null, 2),
+  );
+  generateMultiLanguageAppConfigJson({
+    app: webConfig,
+    tabBar: app.tabBar,
+    src,
+  }, temp);
+
   return {
     webConfig,
     tabBarConfig: app.tabBar,

@@ -96,9 +96,8 @@ export default function loadComponent() {
       for (let i = 0; i < Object.entries(data).length; i++) {
         const [key, newValue] = Object.entries(data)[i];
         const property = properties[key];
-        const oldValue = cloneDeep(componentModel.data[key]); // 如果相等则不需要 trigger observer
-
-        // if (newValue === oldValue) continue;
+        const oldValue = cloneDeep(componentModel.data[key]);
+        // 如果相等则不需要 trigger observer
         if (!isEqual(newValue, oldValue)) {
           set(componentModel.data, key, newValue);
           const observer = isString(property.observer) ? componentModel[property.observer] : property.observer;

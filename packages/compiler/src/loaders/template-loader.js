@@ -8,7 +8,7 @@ const { getCachedExtApp } = require('../getExtApp');
 
 module.exports = function t(source) {
   const { isWorker, cwd, transformConfig } = loaderUtils.getOptions(this);
-  const { pluginId, showFileNameInError } = transformConfig;
+  const { pluginId, showFileNameInError = true } = transformConfig;
 
   const { resourcePath: fullPath } = this;
 

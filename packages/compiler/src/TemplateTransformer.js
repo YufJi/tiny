@@ -5,24 +5,8 @@ const fs = require('fs');
 const { Transformer } = require('./xml');
 const defaultLib = require('./defaultLib');
 const { toComponentName, supportedWebcomponents } = require('./utils');
-const {
-  getPluginPath,
-  PLUGIN_PRIVATE_PREFIX,
-  PLUGIN_PREFIX,
-} = require('./pluginUtils');
 
 const ATTR_NAME_REG = /^[\w-:]+$/;
-
-function getComponentInfo({ pluginId, componentInfo, isWorker }) {
-  if (isWorker) {
-    return componentInfo;
-  }
-  const startWithPlugin = componentInfo.startsWith(PLUGIN_PREFIX)
-    || componentInfo.startsWith(PLUGIN_PRIVATE_PREFIX);
-  return pluginId && !startWithPlugin
-    ? getPluginPath(pluginId, componentInfo.slice(1))
-    : componentInfo;
-}
 
 class TemplateTransformer extends Transformer {
   constructor(template, _config) {
@@ -33,7 +17,6 @@ class TemplateTransformer extends Transformer {
       fs,
     };
     _config.useFragment = false;
-    // _config.templateExtname = _config.templateExtname;
     _config.templateRuntimeModule = defaultLib.templateRuntimeModule;
 
     super(template, _config);

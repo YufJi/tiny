@@ -11,12 +11,12 @@ const { findTabIndex, update } = require('./pageMap');
 
 module.exports = function g({
   src,
-  out,
   transformColor,
   mergeSubPackages,
   variables,
   transformConfig,
 }) {
+  const { temp } = transformConfig;
   /* 存储相关配置usingComponents，tabBar */
   update({ src, mergeSubPackages, variables, transformConfig });
 
@@ -66,16 +66,14 @@ module.exports = function g({
     );
   });
 
-  if (out) {
-    const writeData = JSON.parse(JSON.stringify(appJson));
+  const writeData = JSON.parse(JSON.stringify(appJson));
 
-    delete writeData.app.allPages;
+  delete writeData.app.allPages;
 
-    fs.writeFileSync(
-      path.join(out, 'app.json'),
-      JSON.stringify(writeData, null, 2),
-    );
-  }
+  fs.writeFileSync(
+    path.join(temp, 'app.json'),
+    JSON.stringify(writeData, null, 2),
+  );
 
   return appJson;
 };

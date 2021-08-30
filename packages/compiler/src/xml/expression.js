@@ -9,6 +9,7 @@ const JSTokenizer = require('./htmlparser2/JSTokenizer');
 // not allow {{x:{y:1}}}
 // or use complex parser
 const expressionTagTokenizer = new JSTokenizer();
+
 const spreadReg = /^\.\.\.[\w$_]/;
 const objReg = /^[\w$_](?:[\w$_\d\s]+)?:/;
 const es2015ObjReg = /^[\w$_](?:[\w$_\d\s]+)?,/;

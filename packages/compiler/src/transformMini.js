@@ -17,27 +17,26 @@ const transform = require('./transform');
 module.exports = function run(config) {
   const {
     importScripts, /* 需要注入的外链 */
-    injectScript, /* 需要注入的脚本 */
     mergeSubPackages,
-    injectScriptForNative,
     indexPage = 'render.html',
     src, /* 小程序目录 */
     out, /* 转译输出目录 */
-    injectScriptAfterWorkerImportScripts,
     pluginInjection,
     baseDir,
-    native = false, /* 是否需要生成RN */
     runtimeConfig = {},
   } = config;
 
   const transformConfig = config;
   const { contextPath } = runtimeConfig;
 
-  if (typeof transformConfig.showFileNameInError === 'undefined') {
-    transformConfig.showFileNameInError = true;
+  /* 临时目录存放编译中间产物 */
+  if (typeof transformConfig.temp === 'undefined') {
+    transformConfig.temp = path.join(src, '.cache');
   }
 
+  const { temp } = transformConfig;
   /* 同步创建输出目录 */
+  fs.mkdirsSync(temp);
   if (out) {
     fs.mkdirsSync(out);
   }
@@ -54,7 +53,6 @@ module.exports = function run(config) {
   /* 生成app.json */
   const appJson = generateAppJson({
     src: sourceDir,
-    out,
     mergeSubPackages,
     transformConfig,
   });
@@ -63,13 +61,7 @@ module.exports = function run(config) {
   generateEntries({
     src: sourceDir,
     appJson,
-    web: true,
-    native,
-    out,
-    injectScript,
     importScripts,
-    injectScriptForNative,
-    injectScriptAfterWorkerImportScripts,
     pluginInjection,
     baseDir,
     transformConfig,
@@ -78,10 +70,10 @@ module.exports = function run(config) {
   /* 生成appConfigJson */
   generateAppConfigJson({
     src: sourceDir,
-    out,
     appJson,
     indexPage,
     contextPath,
+    transformConfig,
   });
 
   // // todo 这里开始走webpack构建入口文件为index.web 和 index.worker
@@ -89,6 +81,7 @@ module.exports = function run(config) {
   // return;
 
   const assetExts = ['*.eot', '*.woff', '*.ttf', '*.text', '*.png', '*.jpg', '*.jpeg', '*.gif', '*.bmp', '*.svg', '*.webp'];
+
   const isDev = true;
   const getConfig = (type) => {
     const isWorker = type === 'worker';
@@ -96,9 +89,9 @@ module.exports = function run(config) {
 
     return {
       entry: isWorker ? {
-        'index.worker': path.join(out, 'index$.worker.js'),
+        'index.worker': path.join(temp, 'index$.worker.js'),
       } : {
-        'index.web': path.join(out, 'index$.web.js'),
+        'index.web': path.join(temp, 'index$.web.js'),
       },
       resolve: {
         alias: {
@@ -173,14 +166,18 @@ module.exports = function run(config) {
       },
       plugins: [
         new webpack.ProgressPlugin(),
-        new CopyPlugin(assetExts.map((type) => {
-          return {
-            from: path.join(sourceDir, `**/${type}`),
-            transformPath(targetPath, absolutePath) {
-              return absolutePath.replace(sourceDir, '');
-            },
-          };
-        })),
+        new CopyPlugin([
+          ...assetExts.map((type) => {
+            return {
+              from: path.join(sourceDir, `**/${type}`),
+              transformPath(targetPath, absolutePath) {
+                return absolutePath.replace(sourceDir, '');
+              },
+            };
+          }),
+          `${path.join(temp, 'appConfig.json')}`,
+          `${path.join(temp, 'tabBar.json')}`,
+        ]),
       ],
       externals: {
         nerv: 'self.Nerv',
