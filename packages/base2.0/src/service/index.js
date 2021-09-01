@@ -22,15 +22,14 @@ g.JSBridge = bridge;
 g.tiny = apis;
 g.wx = apis;
 
-g.MP = {
-  getCurrentPages,
-  getApp,
-  App: registerApp,
-  Page: registerPage,
-  Component: registerComponent,
-  Behavior: registerBehavior,
-  $global: global,
-};
+g.getCurrentPages = getCurrentPages;
+g.getApp = getApp;
+g.App = registerApp;
+g.Page =registerPage;
+g.Component = registerComponent;
+g.Behavior = registerBehavior;
+
+g.$global = global;
 
 timerPolyfill();
 bootstrap();
