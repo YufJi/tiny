@@ -31,14 +31,14 @@ module.exports = function run(config) {
 
   /* 临时目录存放编译中间产物 */
   if (typeof transformConfig.temp === 'undefined') {
-    transformConfig.temp = path.join(src, '.cache');
+    transformConfig.temp = path.join(out, '.cache');
   }
 
   const { temp } = transformConfig;
   /* 同步创建输出目录 */
-  fs.mkdirsSync(temp);
   if (out) {
     fs.mkdirsSync(out);
+    fs.mkdirsSync(temp);
   }
 
   const projectConfigPath = path.join(src, 'project.config.json');

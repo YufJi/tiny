@@ -29189,7 +29189,9 @@ var global = function () {
 }();
 var isBrowser = typeof window !== 'undefined'; // tslint:disable-next-line:no-empty
 
-function noop() {}
+function noop() {
+  /* no operation */
+}
 var fakeDoc = {
   createElement: noop,
   createElementNS: noop,

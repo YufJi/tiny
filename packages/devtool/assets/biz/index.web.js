@@ -81,15 +81,15 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./example/miniRoot/.cache/index$.web.js");
+/******/ 	return __webpack_require__(__webpack_require__.s = "../devtool/assets/biz/.cache/index$.web.js");
 /******/ })
 /************************************************************************/
 /******/ ({
 
-/***/ "./example/miniRoot/.cache/appConfig.json":
-/*!************************************************!*\
-  !*** ./example/miniRoot/.cache/appConfig.json ***!
-  \************************************************/
+/***/ "../devtool/assets/biz/.cache/appConfig.json":
+/*!***************************************************!*\
+  !*** ../devtool/assets/biz/.cache/appConfig.json ***!
+  \***************************************************/
 /*! exports provided: window, pages, launchParams, prerenderPage, default */
 /***/ (function(module) {
 
@@ -97,10 +97,10 @@ module.exports = JSON.parse("{\"window\":{\"navigationBarTitleText\":\"哈哈哈
 
 /***/ }),
 
-/***/ "./example/miniRoot/.cache/config$.js":
-/*!********************************************!*\
-  !*** ./example/miniRoot/.cache/config$.js ***!
-  \********************************************/
+/***/ "../devtool/assets/biz/.cache/config$.js":
+/*!***********************************************!*\
+  !*** ../devtool/assets/biz/.cache/config$.js ***!
+  \***********************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -112,22 +112,22 @@ g.mpAppJson = {
   }
 };
 
-const appConfig = __webpack_require__(/*! ./appConfig.json */ "./example/miniRoot/.cache/appConfig.json");
+const appConfig = __webpack_require__(/*! ./appConfig.json */ "../devtool/assets/biz/.cache/appConfig.json");
 g.TinyConfig = appConfig;
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../node_modules/webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../../compiler/node_modules/webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
 
 /***/ }),
 
-/***/ "./example/miniRoot/.cache/index$.web.js":
-/*!***********************************************!*\
-  !*** ./example/miniRoot/.cache/index$.web.js ***!
-  \***********************************************/
+/***/ "../devtool/assets/biz/.cache/index$.web.js":
+/*!**************************************************!*\
+  !*** ../devtool/assets/biz/.cache/index$.web.js ***!
+  \**************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 __webpack_require__(/*! compiler/sjsEnvInit */ "./src/sjsEnvInit.js");
-__webpack_require__(/*! ./config$ */ "./example/miniRoot/.cache/config$.js");
+__webpack_require__(/*! ./config$ */ "../devtool/assets/biz/.cache/config$.js");
 __webpack_require__(/*! ./example/miniRoot/components/add-button/add-button?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./example/miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc");
 __webpack_require__(/*! ./example/miniRoot/pages/todos/todos?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
 __webpack_require__(/*! ./example/miniRoot/pages/add-todo/add-todo?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./example/miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");

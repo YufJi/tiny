@@ -3,7 +3,6 @@
 // const util = require('util');
 
 const babylon = require('babylon');
-const assign = require('object-assign');
 const traverse = require('@babel/traverse').default;
 const generate = require('@babel/generator').default;
 const t = require('@babel/types');

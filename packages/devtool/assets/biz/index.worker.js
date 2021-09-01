@@ -81,15 +81,15 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./example/miniRoot/.cache/index$.worker.js");
+/******/ 	return __webpack_require__(__webpack_require__.s = "../devtool/assets/biz/.cache/index$.worker.js");
 /******/ })
 /************************************************************************/
 /******/ ({
 
-/***/ "./example/miniRoot/.cache/appConfig.json":
-/*!************************************************!*\
-  !*** ./example/miniRoot/.cache/appConfig.json ***!
-  \************************************************/
+/***/ "../devtool/assets/biz/.cache/appConfig.json":
+/*!***************************************************!*\
+  !*** ../devtool/assets/biz/.cache/appConfig.json ***!
+  \***************************************************/
 /*! exports provided: window, pages, launchParams, prerenderPage, default */
 /***/ (function(module) {
 
@@ -97,24 +97,14 @@ module.exports = JSON.parse("{\"window\":{\"navigationBarTitleText\":\"哈哈哈
 
 /***/ }),
 
-/***/ "./example/miniRoot/.cache/config$.js":
-/*!********************************************!*\
-  !*** ./example/miniRoot/.cache/config$.js ***!
-  \********************************************/
+/***/ "../devtool/assets/biz/.cache/config$.js":
+/*!***********************************************!*\
+  !*** ../devtool/assets/biz/.cache/config$.js ***!
+  \***********************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-
-var globalThis = undefined;
-var global = undefined;
-var fetch = undefined;
-var self = undefined;
-var window = undefined;
-var document = undefined;
-var location = undefined;
-var XMLHttpRequest = undefined;
-
-
+/* WEBPACK VAR INJECTION */(function(global) {
 const g = typeof global !== 'undefined' ? global : self;
 g.mpAppJson = {
   "app": {
@@ -122,32 +112,23 @@ g.mpAppJson = {
   }
 };
 
-const appConfig = __webpack_require__(/*! ./appConfig.json */ "./example/miniRoot/.cache/appConfig.json");
+const appConfig = __webpack_require__(/*! ./appConfig.json */ "../devtool/assets/biz/.cache/appConfig.json");
 g.TinyConfig = appConfig;
 
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../../compiler/node_modules/webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
 
 /***/ }),
 
-/***/ "./example/miniRoot/.cache/index$.worker.js":
-/*!**************************************************!*\
-  !*** ./example/miniRoot/.cache/index$.worker.js ***!
-  \**************************************************/
+/***/ "../devtool/assets/biz/.cache/index$.worker.js":
+/*!*****************************************************!*\
+  !*** ../devtool/assets/biz/.cache/index$.worker.js ***!
+  \*****************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-
-var globalThis = undefined;
-var global = undefined;
-var fetch = undefined;
-var self = undefined;
-var window = undefined;
-var document = undefined;
-var location = undefined;
-var XMLHttpRequest = undefined;
-
 if(!self.__TinyInited__) {
 self.__TinyInited__ = true;
-__webpack_require__(/*! ./config$ */ "./example/miniRoot/.cache/config$.js");
+__webpack_require__(/*! ./config$ */ "../devtool/assets/biz/.cache/config$.js");
 
 function success() {
 __webpack_require__(/*! ./example/miniRoot/app */ "./example/miniRoot/app.js");
@@ -547,6 +528,37 @@ Page({
   },
 });
 
+
+
+/***/ }),
+
+/***/ "./node_modules/webpack/buildin/global.js":
+/*!***********************************!*\
+  !*** (webpack)/buildin/global.js ***!
+  \***********************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || new Function("return this")();
+} catch (e) {
+	// This works if the window reference is available
+	if (typeof window === "object") g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
 
 
 /***/ })

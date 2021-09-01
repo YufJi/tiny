@@ -13024,7 +13024,6 @@ function loadComponent() {
 
         var property = properties[key];
         var oldValue = Object(lodash__WEBPACK_IMPORTED_MODULE_1__["cloneDeep"])(componentModel.data[key]); // 如果相等则不需要 trigger observer
-        // if (newValue === oldValue) continue;
 
         if (!Object(lodash__WEBPACK_IMPORTED_MODULE_1__["isEqual"])(newValue, oldValue)) {
           Object(lodash__WEBPACK_IMPORTED_MODULE_1__["set"])(componentModel.data, key, newValue);
@@ -16089,15 +16088,13 @@ var g = self;
 g.JSBridge = _bridge__WEBPACK_IMPORTED_MODULE_0__;
 g.tiny = _apis__WEBPACK_IMPORTED_MODULE_9__;
 g.wx = _apis__WEBPACK_IMPORTED_MODULE_9__;
-g.MP = {
-  getCurrentPages: _Route__WEBPACK_IMPORTED_MODULE_7__["getCurrentPages"],
-  getApp: _App__WEBPACK_IMPORTED_MODULE_3__["getApp"],
-  App: _App__WEBPACK_IMPORTED_MODULE_3__["registerApp"],
-  Page: _Page__WEBPACK_IMPORTED_MODULE_4__["default"],
-  Component: _Component__WEBPACK_IMPORTED_MODULE_5__["default"],
-  Behavior: _Behavior__WEBPACK_IMPORTED_MODULE_6__["default"],
-  $global: _common_global__WEBPACK_IMPORTED_MODULE_8__["default"]
-};
+g.getCurrentPages = _Route__WEBPACK_IMPORTED_MODULE_7__["getCurrentPages"];
+g.getApp = _App__WEBPACK_IMPORTED_MODULE_3__["getApp"];
+g.App = _App__WEBPACK_IMPORTED_MODULE_3__["registerApp"];
+g.Page = _Page__WEBPACK_IMPORTED_MODULE_4__["default"];
+g.Component = _Component__WEBPACK_IMPORTED_MODULE_5__["default"];
+g.Behavior = _Behavior__WEBPACK_IMPORTED_MODULE_6__["default"];
+g.$global = _common_global__WEBPACK_IMPORTED_MODULE_8__["default"];
 Object(_Timer__WEBPACK_IMPORTED_MODULE_1__["default"])();
 Object(_bootstrap__WEBPACK_IMPORTED_MODULE_2__["default"])();
 
