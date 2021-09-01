@@ -1,22 +1,26 @@
-const assign = require('object-assign');
 const path = require('path');
-const resolve = require('resolve');
 const fs = require('fs');
+const resolve = require('resolve');
+const assign = require('object-assign');
+
 const { Transformer } = require('./xml');
 const defaultLib = require('./defaultLib');
 const { toComponentName, supportedWebcomponents } = require('./utils');
 
+/* 属性名正则 */
 const ATTR_NAME_REG = /^[\w-:]+$/;
 
 class TemplateTransformer extends Transformer {
   constructor(template, _config) {
     _config = assign({}, _config);
+    /* 缓存node模块 */
     _config.nodeModules = {
       path,
       resolve,
       fs,
     };
     _config.useFragment = false;
+    /* 模版运行时helpers */
     _config.templateRuntimeModule = defaultLib.templateRuntimeModule;
 
     super(template, _config);
@@ -24,20 +28,16 @@ class TemplateTransformer extends Transformer {
     const { config, header } = this;
 
     header.push('');
+    header.push(
+      `const $EmptyComponentFactory = ${_config.templateRuntimeModule}.EmptyComponentFactory;`,
+    );
+
     const {
       usingComponents,
       pluginId,
       isWorker,
       supportSjsHandler,
     } = config;
-
-    let { placeholderFactory } = config;
-    if (!placeholderFactory) {
-      placeholderFactory = '$EmptyComponentFactory';
-      header.push(
-        `const $EmptyComponentFactory = ${_config.templateRuntimeModule}.EmptyComponentFactory;`,
-      );
-    }
 
     assign(config, {
       attributeProcessor: ({ attrValue, attrName, transformedAttrs, node }) => {

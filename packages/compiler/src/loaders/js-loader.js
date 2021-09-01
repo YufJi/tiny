@@ -16,7 +16,7 @@ function isAppJS(path) {
   return path === 'app.js' || path === 'app.ts';
 }
 
-module.exports = function JsLoader(source) {
+module.exports = function (source) {
   const { isWorker, cwd, transformConfig } = loaderUtils.getOptions(
     this,
   );
@@ -41,6 +41,7 @@ module.exports = function JsLoader(source) {
   }
 
   const normalizeCwd = normalizePathForWin(`${cwd}/`);
+
   if (fullPath.indexOf(normalizeCwd) === -1) {
     this.callback(null, source);
     return type;

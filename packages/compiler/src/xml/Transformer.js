@@ -1,6 +1,5 @@
 const assign = require('object-assign');
-const DomHandler = require('domhandler');
-const HtmlParser = require('./htmlparser2/Parser');
+const { DomHandler, Parser: HtmlParser } = require('htmlparser2');
 const { transformExpression, hasExpression } = require('./expression');
 const {
   toLiteralString,
@@ -8,12 +7,11 @@ const {
   getDepCode,
   getRawJSXAttributeFromJson,
   getRawJson,
-  validAKeyName,
+  validKeyName,
   validVariableName,
   reportError,
 } = require('./utils');
 const { processSJSImport, processComponentImport } = require('./processImport');
-const trimForComponent = require('./prune');
 
 const IMPORT = 'import';
 const cwd = process.cwd();
@@ -108,7 +106,6 @@ function MLTransformer(template, _config) {
   this.includeTplDeps = {};
   this.template = template;
   this.header = [
-    '// import Nerv from \'nerv\';',
     'const Nerv = self.Nerv;',
   ];
   this.subTemplatesCode = {};
@@ -235,10 +232,7 @@ assign(MLTransformer.prototype, {
     this.header.push(str);
   },
   throwParseError(config, originalError) {
-    const { node } = config;
-    const { text } = config;
-    const { attrName } = config;
-    const { reason } = config;
+    const { node, text, attrName, reason } = config;
 
     let { endIndex } = node;
     const { startIndex } = node;
@@ -251,7 +245,7 @@ assign(MLTransformer.prototype, {
         endIndex = node.children[0].startIndex - 1;
       } else {
         // 如果没有children，如果存在结束标签，因为结束标签不存在插值，较好匹配。正则取出其并计算结束位置
-        const endTag = /<\/((?:[a-zA-Z_][\-\.0-9_a-zA-Z]*\:)?[a-zA-Z_][\-\.0-9_a-zA-Z]*)[^>]*>$/;
+        const endTag = /<\/((?:[a-zA-Z_][\-\.0-9a-zA-Z_]*\:)?[a-zA-Z_][\-\.0-9a-zA-Z_]*)[^>]*>$/;
         const match = code.match(endTag);
         if (match) {
           endIndex = startIndex + match.index - 1;
@@ -281,9 +275,6 @@ assign(MLTransformer.prototype, {
         strictDataMember: this.config.strictDataMember,
       }, config));
     } catch (e) {
-      if (this.config.consoleError) {
-        console.error(e);
-      }
       this.throwParseError(config, e);
     }
   },
@@ -384,6 +375,7 @@ assign(MLTransformer.prototype, {
           }
         }
       }
+
       if (arrayForm) {
         this.pushCode(']');
         if (this.isEndOfCodeSection(level, true)) {
@@ -416,12 +408,9 @@ assign(MLTransformer.prototype, {
     return code.join('\n');
   },
   getTransformedAttrs(transformedAttrs, node, attributeProcessor, jsx = true) {
-    const _this5 = this;
-
     const attrs = node.attribs || {};
-    Object.keys(attrs).forEach((attrName_) => {
-      let attrName = attrName_;
-      if (_this5.SPECIAL_ATTRS.indexOf(attrName) !== -1) {
+    Object.keys(attrs).forEach((attrName) => {
+      if (this.SPECIAL_ATTRS.indexOf(attrName) !== -1) {
         return;
       }
       let attrValue = attrs[attrName];
@@ -436,7 +425,7 @@ assign(MLTransformer.prototype, {
         node,
         attrs,
         transformedAttrs,
-        transformer: _this5,
+        transformer: this,
       };
       if (attributeProcessor && attributeProcessor(info) === false) {
         return;
@@ -448,7 +437,8 @@ assign(MLTransformer.prototype, {
         } else {
           transformedAttrValue = '';
         }
-        transformedAttrValue += _this5.processExpression(attrValue, {
+
+        transformedAttrValue += this.processExpression(attrValue, {
           node,
           attrName,
         });
@@ -614,9 +604,11 @@ assign(MLTransformer.prototype, {
       const indexName = attrs[this.FOR_INDEX_ATTR_NAME] || 'index';
       const itemName = attrs[this.FOR_ITEM_ATTR_NAME] || 'item';
       const keyName = attrs[this.FOR_KEY_ATTR_NAME];
-      if (keyName && !hasExpression(keyName) && validAKeyName(keyName)) {
+
+      if (keyName && !hasExpression(keyName) && validKeyName(keyName)) {
         forKey = keyName === '*this' ? itemName : `${itemName}.${keyName}`;
       }
+
       if (!validVariableName(indexName) || !validVariableName(itemName)) {
         this.throwParseError({
           node,
@@ -674,7 +666,7 @@ assign(MLTransformer.prototype, {
             node,
             attrName: 'is',
           });
-          const modifyFn = this.pushCode(`${this.isStartOfCodeSection(level) ? '{ ' : ''}$useTemplate($templates[${is}],${data.data},${data.key},this)${this.isEndOfCodeSection(level) ? ' }' : ''}`);
+          this.pushCode(`${this.isStartOfCodeSection(level) ? '{ ' : ''}$useTemplate($templates[${is}],${data.data},${data.key},this)${this.isEndOfCodeSection(level) ? ' }' : ''}`);
         } else {
           // define
           this.pushState();
@@ -691,16 +683,16 @@ assign(MLTransformer.prototype, {
         includeTplDeps[includePath] = includeTplDeps[includePath] || this.importIncludeIndex++;
         this.pushCode(`${this.isStartOfCodeSection(level) ? '{ ' : ''}$render$${includeTplDeps[includePath]}.apply(this, arguments)${this.isEndOfCodeSection(level) ? ' }' : ''}`);
       } else {
-        let _transformedAttrs2 = {};
+        let _transformedAttrs = {};
         if (forKey) {
-          _transformedAttrs2.key = `{${forKey}}`;
+          _transformedAttrs.key = `{${forKey}}`;
         }
-        this.getTransformedAttrs(_transformedAttrs2, node, attributeProcessor);
+        this.getTransformedAttrs(_transformedAttrs, node, attributeProcessor);
         const originalTag = tag;
         if (tagProcessor) {
           const tagProcessRet = tagProcessor({
             attrs,
-            transformedAttrs: _transformedAttrs2,
+            transformedAttrs: _transformedAttrs,
             node,
             tag,
           });
@@ -709,20 +701,19 @@ assign(MLTransformer.prototype, {
           }
           if (tagProcessRet) {
             tag = tagProcessRet.tag || tag;
-            _transformedAttrs2 = tagProcessRet.transformedAttrs || _transformedAttrs2;
+            _transformedAttrs = tagProcessRet.transformedAttrs || _transformedAttrs;
           }
         }
         componentDeps[originalTag] = 1;
         const nextLevel = level + 2;
         let _modifyFn;
-        if (Object.keys(_transformedAttrs2).length) {
+        if (Object.keys(_transformedAttrs).length) {
           this.pushCode(`<${tag} `);
-          this.pushCode(getRawJSXAttributeFromJson(_transformedAttrs2));
+          this.pushCode(getRawJSXAttributeFromJson(_transformedAttrs));
           _modifyFn = this.pushCode('>');
         } else {
           _modifyFn = this.pushCode(`<${tag}>`);
         }
-
         // built-in components
         if (hasChildren) {
           // new code section start
@@ -764,30 +755,14 @@ assign(MLTransformer.prototype, {
     let { header } = this;
     const { importComponent = defaultImportComponent, strictDataMember, pureTemplateFactory } = this.config;
 
-    const handler = new DomHandler((error, children) => {
+    const handlerCallback = (error, children) => {
       if (error) {
-        if (this.config.consoleError) {
-          console.error(error);
-        }
         return done(error);
-      }
-
-      /* 处理模版在worker运行的产物  */
-      if (this.config.prune) {
-        let { usingComponents } = this.config;
-
-        if (!Object.keys(usingComponents).length) {
-          usingComponents = undefined;
-        }
-        children = trimForComponent(children, usingComponents, this.config);
       }
 
       try {
         this.generateCodeForTags(children, TOP_LEVEL);
       } catch (e) {
-        if (this.config.consoleError) {
-          console.error(e);
-        }
         return done(e);
       }
 
@@ -870,9 +845,6 @@ assign(MLTransformer.prototype, {
           }
         });
       } catch (e) {
-        if (this.config.consoleError) {
-          console.error(e);
-        }
         return done(e);
       }
 
@@ -885,7 +857,9 @@ assign(MLTransformer.prototype, {
         retCode = this.config.formatCode(retCode);
       }
       done(null, retCode);
-    }, {
+    };
+
+    const handler = new DomHandler(handlerCallback, {
       normalizeWhitespace: false,
       withStartIndices: true,
       withEndIndices: true,

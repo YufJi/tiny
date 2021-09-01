@@ -3,7 +3,6 @@ let generate = require('@babel/generator');
 const t = require('@babel/types');
 const codeFrameColumns = require('@babel/code-frame');
 let template = require('@babel/template');
-// let babylon = require('./xml/babylon');
 let babylon = require('babylon');
 const { checkImport } = require('./utils');
 

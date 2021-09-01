@@ -1,6 +1,7 @@
 const traverse = require('@babel/traverse').default;
+const { parse } = require('babylon');
+
 const { startsWith } = require('./utils');
-const { parse } = require('./babylon');
 
 const PREFIX = '$sjs_';
 

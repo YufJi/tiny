@@ -1,12 +1,14 @@
-// not allow {{x:{y:1}}}
-// or use complex parser
-// const util = require('util');
-
-const babylon = require('babylon');
-const assign = require('object-assign');
 const traverse = require('@babel/traverse').default;
 const generate = require('@babel/generator').default;
 const t = require('@babel/types');
+
+const { parseExpression } = require('babylon');
+const { toLiteralString, startsWith, endsWith } = require('./utils');
+const JSTokenizer = require('./JSTokenizer');
+
+// not allow {{x:{y:1}}}
+// or use complex parser
+const expressionTagTokenizer = new JSTokenizer();
 
 const expressionTagReg = /\{\{([^}]+)\}\}/g;
 const fullExpressionTagReg = /^\{\{([^}]+)\}\}$/;
@@ -25,26 +27,25 @@ const babylonConfig = {
 
 function findScope(scope, name) {
   if (scope) {
-    return scope.some((s) => {
-      return s[name];
-    });
+    for (let i = 0; i < scope.length; i++) {
+      const s = scope[i];
+      if (s[name]) {
+        return s[name];
+      }
+    }
   }
   return false;
-}
-
-function escapeString(str) {
-  return str.replace(/[\\']/g, '\\$&');
 }
 
 const visitor = {
   noScope: true,
   ReferencedIdentifier(path) {
-    const { parent, node } = path;
+    const { node } = path;
+    const { parent } = path;
 
     if (node.__xmlSkipped) {
       return;
     }
-
     const nameScope = findScope(this.xmlScope, node.name);
     if (nameScope === 'sjs') {
       const parentType = parent && parent.type;
@@ -54,7 +55,7 @@ const visitor = {
           args.push(t.numericLiteral(1));
         }
         const newNode = t.callExpression(t.identifier('$getSJSMember'), args);
-        newNode.callee.__xmlSkipped = true;
+        newNode.callee.__xmlSkipped = 1;
         path.replaceWith(newNode);
         path.skip();
       }
@@ -65,13 +66,13 @@ const visitor = {
     }
   },
   MemberExpression(path) {
-    const { parent, node } = path;
+    const { parent } = path;
+    const { node } = path;
 
     const parentType = parent && parent.type;
     // do not transform function call
     // skip call callee x[y.q]
-    /* root member node */
-    if (parentType !== 'MemberExpression') {
+    if (/* root member node */ parentType !== 'MemberExpression') {
       // allow {{x.y.z}} even x is undefined
       const members = [node];
       let root = node.object;
@@ -93,7 +94,7 @@ const visitor = {
       const args = [root];
 
       if (isSJS) {
-        root.__xmlSkipped = true;
+        root.__xmlSkipped = 1;
       }
 
       if (root.type === 'ThisExpression') {
@@ -121,7 +122,7 @@ const visitor = {
       }
 
       const newNode = t.callExpression(t.identifier(memberFn), callArgs);
-      newNode.callee.__xmlSkipped = true;
+      newNode.callee.__xmlSkipped = 1;
       // will process a.v of x.y[a.v]
       path.replaceWith(newNode);
       // path.skip();
@@ -136,7 +137,25 @@ function transformCode(code_, xmlScope, config) {
     codeStr = `{${codeStr}}`;
   }
 
-  const ast = babylon.parse(`(${codeStr})`, babylonConfig);
+  const expression = parseExpression(codeStr, babylonConfig);
+  const { start, end } = expression;
+
+  const ast = {
+    type: 'File',
+    start,
+    end,
+    program: {
+      start,
+      end,
+      type: 'Program',
+      body: [{
+        start,
+        end,
+        type: 'ExpressionStatement',
+        expression,
+      }],
+    },
+  };
 
   traverse(ast, visitor, undefined, {
     xmlScope,
@@ -155,46 +174,53 @@ function transformExpressionByPart(str_, scope, config) {
   if (typeof str_ !== 'string') {
     return [str_];
   }
+
   const str = str_.trim();
-  if (!str.match(expressionTagReg)) {
-    return [`'${escapeString(str_)}'`];
+  expressionTagTokenizer.clear();
+  expressionTagTokenizer.append(str);
+
+  if (!expressionTagTokenizer.hasJSRaw()) {
+    return [toLiteralString(str_)];
   }
 
-  let match = str.match(fullExpressionTagReg);
-  if (match) {
-    return [transformCode(match[1], scope, config)];
-  }
+  const ast = expressionTagTokenizer.getAst();
 
-  const totalLength = str.length;
-  let lastIndex = 0;
-  const gen = [];
-  /* eslint no-cond-assign:0 */
-  while (match = expressionTagReg.exec(str)) {
-    const code = match[1];
-    if (match.index !== lastIndex) {
-      gen.push(`'${escapeString(str.slice(lastIndex, match.index))}'`);
+  return ast.map((subAst) => {
+    const { text } = subAst;
+    if (subAst.type === JSTokenizer.AST_TYPE_TEXT) {
+      return toLiteralString(text);
+    } else if (startsWith(text, '{{') && endsWith(text, '}}')) {
+      const exp = text.slice(2, -2);
+
+      if (exp.length > 0) {
+        return transformCode(exp, scope, config);
+      } else {
+        return toLiteralString(exp);
+      }
+    } else {
+      return toLiteralString(text);
     }
-    gen.push(transformCode(code, scope, config));
-    lastIndex = expressionTagReg.lastIndex;
-  }
-
-  if (lastIndex < totalLength) {
-    gen.push(`'${escapeString(str.slice(lastIndex))}'`);
-  }
-
-  return gen;
+  });
 }
 
-function transformExpression(str_, scope, config = {}) {
-  const ret = transformExpressionByPart(str_, scope, config);
+function transformExpression(_str, scope, config = {}) {
+  let ret = transformExpressionByPart(_str, scope, config);
+
   if ('text' in config) {
+    ret = ret.map((r) => {
+      return `$toString(${r})`;
+    });
+
     return ret.length > 1 ? `[${ret.join(', ')}]` : ret[0];
   }
+
   return ret.join(' + ');
 }
 
 function hasExpression(str) {
-  return str.match(expressionTagReg);
+  expressionTagTokenizer.clear();
+  expressionTagTokenizer.append(str);
+  return expressionTagTokenizer.hasJSRaw();
 }
 
 exports.transformExpression = transformExpression;

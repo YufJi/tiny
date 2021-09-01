@@ -52,7 +52,7 @@
     <add-button id="asd"  text="{{text}}" bind:click_me="clickCom">
       <text bind:tap="tapSlot">i am slot</text>
     </add-button>
-    <add-button id="asxx" wx:if="{{text === 'def'}}" xx="xxx" text="{{text}}" bind:click_me="{{fn}}"></add-button>
+    <add-button id="asxx" wx:if="{{text === 'def'}}" xx="xxx" text="xixi {{text}}" bind:click_me="{{fn}}"></add-button>
   </view>
 
   <view bind:tap="clickParent">

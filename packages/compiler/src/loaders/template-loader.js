@@ -6,7 +6,7 @@ const { getProjectPath, isValidFilePath } = require('../utils');
 const { getComponent, getPage } = require('../pageMap');
 const { getCachedExtApp } = require('../getExtApp');
 
-module.exports = function t(source) {
+module.exports = function (source) {
   const { isWorker, cwd, transformConfig } = loaderUtils.getOptions(this);
   const { pluginId, showFileNameInError = true } = transformConfig;
 
@@ -29,8 +29,6 @@ module.exports = function t(source) {
     assign(
       {
         strictDataMember: false,
-        pure: true,
-        prettier: false,
         projectRoot: cwd,
         usingComponents,
         renderPath: fullPath,
@@ -40,17 +38,17 @@ module.exports = function t(source) {
       },
       transformConfig,
     ),
-  ).transform((e, code) => {
-    if (e) {
+  ).transform((error, code) => {
+    if (error) {
       if (showFileNameInError) {
         let fileProjectPath = relative(cwd, fullPath);
         fileProjectPath = fileProjectPath.substr(0, 2) === '..' ? fullPath : fileProjectPath;
-        e = new Error(
-          `${fileProjectPath}\nModule build failed:\n${e.message || ''}`,
+        error = new Error(
+          `${fileProjectPath}\nModule build failed:\n${error.message || ''}`,
         );
       }
       /* eslint-enable */
-      this.callback(e);
+      this.callback(error);
       return;
     }
     this.callback(null, code);

@@ -2,7 +2,7 @@ const loaderUtils = require('loader-utils');
 const sjsTranspiler = require('../sjsTranspiler');
 const { isValidFilePath } = require('../utils');
 
-module.exports = function t(source) {
+module.exports = function (source) {
   if (!source) {
     return this.callback(null, source);
   }

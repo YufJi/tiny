@@ -1,6 +1,6 @@
 let traverse = require('@babel/traverse');
 const codeFrameColumns = require('@babel/code-frame');
-let babylon = require('./xml/babylon');
+let babylon = require('babylon');
 
 babylon = babylon.default || babylon;
 traverse = traverse.default || traverse;

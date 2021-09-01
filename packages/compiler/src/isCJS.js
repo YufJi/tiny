@@ -1,5 +1,5 @@
 let traverse = require('@babel/traverse');
-let babylon = require('./xml/babylon');
+let babylon = require('babylon');
 
 babylon = babylon.default || babylon;
 traverse = traverse.default || traverse;

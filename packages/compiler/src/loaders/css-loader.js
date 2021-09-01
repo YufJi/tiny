@@ -15,7 +15,7 @@ const { getPage, getPageComponents } = require('../pageMap');
 const { getProjectPath, isValidFilePath } = require('../utils');
 const { getStyleTransformer } = require('../StyleStore');
 
-module.exports = function cssLoader(source) {
+module.exports = function (source) {
   // css can handle empty
   const { cwd, transformConfig } = loaderUtils.getOptions(this);
   const { pluginId } = transformConfig;

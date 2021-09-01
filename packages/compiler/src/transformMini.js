@@ -165,7 +165,6 @@ module.exports = function run(config) {
         }],
       },
       plugins: [
-        new webpack.ProgressPlugin(),
         new CopyPlugin([
           ...assetExts.map((type) => {
             return {
@@ -182,7 +181,7 @@ module.exports = function run(config) {
       externals: {
         nerv: 'self.Nerv',
       },
-      stats: 'normal',
+      stats: 'minimal',
     };
   };
 
