@@ -13,42 +13,17 @@ export default function createInvoke(jsCore) {
   let resolveId = 0;
   const resolveMap = new Map();
 
-  const invokeHandler = (resolveId, data) => {
-    const resolve = resolveMap.get(Number(resolveId));
-    if (!resolve) return;
-
-    let response;
-
-    if (typeof data === 'string') {
-      try {
-        response = JSON.parse(data);
-      } catch (e) {
-        response = {};
-      }
-    }
-
-    if (typeof data !== 'object') {
-      response = {};
-    }
-
-    resolve(response);
-  };
-
   const invokeNative = (method, params = {}, webviewId = self.WEBVIEWID) => {
     resolveId += 1;
 
     const deferred = new Deferred();
     resolveMap.set(resolveId, deferred.resolve);
 
+    const paramsString = JSON.stringify(params);
     const webviewIds = Array.isArray(webviewId) ? webviewId : [webviewId];
+    const webviewIdsString = JSON.stringify(webviewIds);
 
-    let response = jsCore.call({
-      event: method,
-      paramsString: JSON.stringify(params),
-      webviewIds: JSON.stringify(webviewIds),
-      callbackId: resolveId,
-      __IS_WORKER__: g.__IS_WORKER__,
-    });
+    let response = jsCore.call(method, paramsString, webviewIdsString, resolveId);
 
     // 同步事件
     if (response) {
@@ -64,6 +39,25 @@ export default function createInvoke(jsCore) {
     } else {
       return deferred.promise;
     }
+  };
+
+  const invokeHandler = (resolveId, data) => {
+    const resolve = resolveMap.get(Number(resolveId));
+    if (!resolve) return;
+
+    let response;
+
+    if (typeof data === 'string') {
+      try {
+        response = JSON.parse(data);
+      } catch (e) {
+        response = {};
+      }
+    } else if (typeof data !== 'object') {
+      response = {};
+    }
+
+    resolve(response);
   };
 
   return {

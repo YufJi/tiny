@@ -18,6 +18,8 @@ import * as apis from './apis';
 
 const g = self;
 
+g.__IS_WORKER__ = true;
+
 g.JSBridge = bridge;
 g.tiny = apis;
 g.wx = apis;

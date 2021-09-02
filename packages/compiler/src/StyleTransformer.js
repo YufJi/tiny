@@ -80,18 +80,20 @@ function StyleTransformer(ss, config_) {
   this.ss = ss;
   const config = config_ || {};
   this.config = config;
-  const code = (this.code = []);
+  this.code = [];
+
+  const { code } = this;
   const {
-    library = defaultLib.tinyBaseModule,
     appStyleTransformer,
     componentStyles,
     source,
   } = config;
+
   code.push(
-    `const { StyleSheet } = ${library};`,
+    'const { TinyStyleSheet } = self;',
   );
   code.push(
-    `const stylesheet = new StyleSheet({ stylePath: '${escapeQuote(
+    `const stylesheet = new TinyStyleSheet({ stylePath: '${escapeQuote(
       source,
       true,
       true,

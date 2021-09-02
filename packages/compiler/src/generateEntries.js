@@ -8,8 +8,7 @@ function getComponentImports(pages = [], baseDir, option) {
 }
 
 module.exports = function generateEntries({
-  /* miniprogramRoot 小程序source目录 */
-  src,
+  src, /* miniprogramRoot 小程序source目录 */
   appJson,
   pluginInjection = '',
   transformConfig,
@@ -72,8 +71,6 @@ module.exports = function generateEntries({
 
   const configJs = `
 const g = typeof global !== 'undefined' ? global : self;
-g.mpAppJson = ${JSON.stringify(mpJson, null, 2)};
-
 const appConfig = require('./appConfig.json');
 g.TinyConfig = appConfig;
 `;
@@ -81,7 +78,9 @@ g.TinyConfig = appConfig;
   fs.writeFileSync(path.join(temp, 'config$.js'), configJs);
 
   const configImport = 'require(\'./config$\');';
-  const appImport = `require('${src}/app');`;
+
+  const appImport = `require('${path.relative(temp, path.join(src, 'app'))}');`;
+
   const allComponentsRequires = getComponentImports(app.pages, src, {
     src,
     compileType: 'mini',

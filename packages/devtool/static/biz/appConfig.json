@@ -1,0 +1,22 @@
+{
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": 16777215,
+    "navigationBarTitleText": "OA",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": 16316664
+  },
+  "pages": [
+    "pages/index/index"
+  ],
+  "launchParams": {
+    "pages/index/index": {
+      "backgroundTextStyle": "light",
+      "navigationBarBackgroundColor": 16777215,
+      "navigationBarTitleText": "OA",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": 16316664
+    }
+  },
+  "prerenderPage": "render.html"
+}

@@ -1,6 +1,5 @@
 export function getStorageSync(params) {
-  const { paramsString } = params;
-  const { key } = JSON.parse(paramsString);
+  const { key } = params;
 
   const data = window.localStorage.getItem(key);
   const protoType = Object.prototype.toString.call(data).split(' ')[1].split(']')[0];
@@ -12,8 +11,7 @@ export function getStorageSync(params) {
 }
 
 export function setStorageSync(params) {
-  const { paramsString } = params;
-  const { key, data, dataType } = JSON.parse(paramsString);
+  const { key, data, dataType } = params;
 
   return window.localStorage.setItem(key, dataType === 'string' ? data : JSON.stringify(data));
 }

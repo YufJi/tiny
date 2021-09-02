@@ -305,8 +305,13 @@ function getImport(p, baseDir, option) {
     throw new Error(`illegal file path ${p}`);
   }
 
+  const { transformConfig } = option;
+  const { temp } = transformConfig;
+
   const hash = genResourceHash(p, option);
-  return `require('${prefixPath(normalizePathForWin(path.join(baseDir, p)))}${
+  const relative = path.relative(temp, path.join(baseDir, p));
+
+  return `require('${prefixPath(normalizePathForWin(relative))}${
     hash ? `?hash=${hash}` : ''
   }');`;
 }

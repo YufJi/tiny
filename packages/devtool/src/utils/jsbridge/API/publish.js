@@ -1,30 +1,10 @@
 import gloabl from '@/utils/global';
 
-export function messageToWorker(method, options) {
-  const { paramsString, webviewIds } = options;
-
-  const viewIds = JSON.parse(webviewIds);
-
-  if (gloabl.worker) {
-    try {
-      gloabl.worker.contentWindow.JSBridge.subscribeHandler(method, paramsString, viewIds[0]);
-    } catch (error) {
-      console.error(error);
-    }
-  }
-}
-
-export function messageToRender(method, options) {
-  const { paramsString, webviewIds, callbackId } = options;
-
-  const viewIds = JSON.parse(webviewIds);
-
-  viewIds.forEach((viewId) => {
-    const render = gloabl.webviews.get(viewId);
-
-    if (render) {
+export function messageToWorker(method, params, webviewIds) {
+  webviewIds.forEach((viewId) => {
+    if (gloabl.worker) {
       try {
-        render.contentWindow.JSBridge.subscribeHandler(method, paramsString);
+        gloabl.worker.contentWindow.JSBridge.subscribeHandler(method, JSON.stringify(params), viewId);
       } catch (error) {
         console.error(error);
       }
@@ -32,12 +12,24 @@ export function messageToRender(method, options) {
   });
 }
 
-export function publish(method, options) {
-  const { __IS_WORKER__ } = options;
+export function messageToRender(method, params, webviewIds) {
+  webviewIds.forEach((viewId) => {
+    const render = gloabl.webviews.get(viewId);
 
+    if (render) {
+      try {
+        render.contentWindow.JSBridge.subscribeHandler(method, JSON.stringify(params));
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  });
+}
+
+export function publish(method, params, webviewIds = [], __IS_WORKER__) {
   if (__IS_WORKER__) {
-    return messageToRender(method, options);
+    return messageToRender(method, params, webviewIds);
   } else {
-    return messageToWorker(method, options);
+    return messageToWorker(method, params, webviewIds);
   }
 }

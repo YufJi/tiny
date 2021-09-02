@@ -26,9 +26,7 @@ export default function createSubscribe() {
         } catch (e) {
           params = {};
         }
-      }
-
-      if (typeof params !== 'object') {
+      } else if (typeof params !== 'object') {
         params = {};
       }
 

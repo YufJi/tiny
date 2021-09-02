@@ -2,16 +2,14 @@ import createBridge from 'js-bridge';
 
 const g = self;
 
-g.__IS_WORKER__ = true;
-
 const {
   invokeHandler,
   subscribeHandler,
 
-  publish,
   invokeNative,
   onNative,
   offNative,
+  publish,
   subscribe,
   unsubscribe,
 } = createBridge(g.JSCore);

@@ -20,7 +20,7 @@ module.exports = function (source) {
   const { isWorker, cwd, transformConfig } = loaderUtils.getOptions(
     this,
   );
-  const { pluginId } = transformConfig;
+  const { pluginId, temp } = transformConfig;
   // console.log('xxxxxx', isWorker, cwd, transformConfig);
   const { resourcePath } = this;
 
@@ -41,8 +41,10 @@ module.exports = function (source) {
   }
 
   const normalizeCwd = normalizePathForWin(`${cwd}/`);
+  const normalizeTemp = normalizePathForWin(`${temp}/`);
 
-  if (fullPath.indexOf(normalizeCwd) === -1) {
+  /* 不在小程序项目根目录 或者 在临时文件夹，不作处理 */
+  if (fullPath.indexOf(normalizeCwd) === -1 || fullPath.indexOf(normalizeTemp) !== -1) {
     this.callback(null, source);
     return type;
   }

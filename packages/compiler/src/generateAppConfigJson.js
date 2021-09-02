@@ -3,12 +3,6 @@ const path = require('path');
 const { transformColorConfig, cleanPageJson } = require('./utils');
 const generateMultiLanguageAppConfigJson = require('./generateMultiLanguageAppConfigJson');
 
-// for pwa
-const manifestJson = {
-  gcm_sender_id: 'gcm_sender_id',
-  gcm_user_visible_only: true,
-};
-
 module.exports = function generateAppConfigJson({
   appJson,
   src,
@@ -90,10 +84,7 @@ module.exports = function generateAppConfigJson({
     path.join(temp, 'appConfig.json'),
     JSON.stringify(webConfig, null, 2),
   );
-  fs.writeFileSync(
-    path.join(temp, 'manifest.json'),
-    JSON.stringify(manifestJson, null, 2),
-  );
+
   generateMultiLanguageAppConfigJson({
     app: webConfig,
     tabBar: app.tabBar,
@@ -103,6 +94,5 @@ module.exports = function generateAppConfigJson({
   return {
     webConfig,
     tabBarConfig: app.tabBar,
-    manifestJson,
   };
 };

@@ -10,7 +10,7 @@ module.exports = (env) => {
       index: {
         filename: 'index.html',
         title: '小程序浏览器调试',
-        template: path.join(__dirname, 'template/host.html'),
+        template: path.join(__dirname, 'host.html'),
       },
     },
     outputPath: path.join(__dirname, 'dist'),
@@ -27,8 +27,7 @@ module.exports = (env) => {
     devServer: {
       port: 8080,
       contentBase: [
-        path.join(__dirname, 'assets'),
-        path.join(__dirname, 'assets/biz'),
+        path.join(__dirname, 'static'),
       ]
     },
     analyzer: false,

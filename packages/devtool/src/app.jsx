@@ -57,7 +57,7 @@ class App extends Component {
 
   async launchTinyApp() {
     const guid = createGuid('worker');
-    const src = 'worker.html';
+    const src = 'biz/worker.html';
     const { pages } = global.appConfig;
     const homePage = pages[0];
 

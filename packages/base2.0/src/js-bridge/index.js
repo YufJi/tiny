@@ -7,13 +7,13 @@ export default function createBridge(jsCore) {
     subscribeHandler,
     onNative,
     offNative,
-    subscribe,
+    subscribe, // 监听线程
     unsubscribe,
   } = createSubscribe();
 
   const {
-    invokeNative,
-    invokeHandler,
+    invokeNative, // 调用native
+    invokeHandler, // native触发回调
   } = createInvoke(jsCore, onNative);
 
   const { publish } = createPublish(jsCore);
@@ -24,10 +24,11 @@ export default function createBridge(jsCore) {
     subscribeHandler,
 
     // 内部方法
-    publish,
     invokeNative,
     onNative,
     offNative,
+
+    publish,
     subscribe,
     unsubscribe,
   };

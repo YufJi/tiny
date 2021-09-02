@@ -14,8 +14,7 @@ import store from '@/store';
 const { dispatch } = store;
 
 export function navigateTo(params) {
-  const { paramsString } = params;
-  const { url } = JSON.parse(paramsString);
+  const { url } = params;
 
   pushWindow(url).then((iframe) => {
     global.worker.contentWindow.JSBridge.subscribeHandler('onAppRoute', JSON.stringify({
@@ -26,8 +25,7 @@ export function navigateTo(params) {
 }
 
 export function navigateBack(params) {
-  const { paramsString } = params;
-  const { delta } = JSON.parse(paramsString);
+  const { delta } = params;
 
   const lastIframe = popWindow(delta);
 
@@ -54,7 +52,7 @@ export async function pushWindow(url, callback) {
   } else {
     iframe = await createRenderIframe({
       guid: createGuid('render'),
-      src: 'render.html?debug=framework',
+      src: 'biz/render.html?debug=framework',
       onload: (frame) => {
         frame.setAttribute('path', url);
         frame.path = url;

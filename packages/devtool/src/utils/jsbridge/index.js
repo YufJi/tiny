@@ -7,12 +7,12 @@ import * as API from './API';
 export const CUSTOM_EVENT = 'custom_event_';
 
 const bridge = {
-  call(method, params) {
-    // console.log('%ccall:', 'color: green;', method, params);
-    if (method.startsWith(CUSTOM_EVENT)) {
-      return API.publish(method, params);
-    } else if (typeof API[method] === 'function') {
-      const result = API[method](params);
+  publish(event, params, webviewIds, __IS_WORKER__) {
+    return API.publish(event, params, webviewIds, __IS_WORKER__);
+  },
+  call(method, params, webviewIds, callbackId) {
+    if (typeof API[method] === 'function') {
+      const result = API[method](params, webviewIds, callbackId);
       return JSON.stringify(result);
     } else {
       console.warn(`method: ${method} 还未实现`);

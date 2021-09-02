@@ -1,6 +1,0 @@
-<button class="add-button" hover-class="none" bind:tap="onClickMe">
-    <icon type="success" size="23"></icon>
-    <text>{{text}}</text>
-</button>
-<text bindtap="xx">{{name}}</text>
-<slot></slot>

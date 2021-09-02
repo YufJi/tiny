@@ -20,7 +20,7 @@ const getConfig = (type, env) => {
       webview: path.join(__dirname, 'src/webview/index.js'),
     },
     output: {
-      path: path.join(__dirname, '../devtool/assets/base'),
+      path: path.join(__dirname, '../devtool/static/base'),
     },
     resolve: {
       alias: {

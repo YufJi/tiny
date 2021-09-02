@@ -3,6 +3,8 @@ const fs = require('fs-extra');
 const path = require('path');
 const webpack = require('webpack');
 const CopyPlugin = require('copy-webpack-plugin');
+const signale = require('signale');
+
 const generateEntries = require('./generateEntries');
 const generateAppJson = require('./generateAppJson');
 const generateAppConfigJson = require('./generateAppConfigJson');
@@ -22,7 +24,6 @@ module.exports = function run(config) {
     src, /* 小程序目录 */
     out, /* 转译输出目录 */
     pluginInjection,
-    baseDir,
     runtimeConfig = {},
   } = config;
 
@@ -31,21 +32,28 @@ module.exports = function run(config) {
 
   /* 临时目录存放编译中间产物 */
   if (typeof transformConfig.temp === 'undefined') {
-    transformConfig.temp = path.join(out, '.cache');
+    transformConfig.temp = path.join(src, '.cache');
   }
 
   const { temp } = transformConfig;
-  /* 同步创建输出目录 */
-  if (out) {
-    fs.mkdirsSync(out);
-    fs.mkdirsSync(temp);
+
+  /* 清楚临时目录和输出目录 */
+  if (fs.existsSync(temp) || fs.existsSync(out)) {
+    fs.removeSync(out);
+    fs.removeSync(temp);
+    signale.success('清空就绪');
   }
+
+  /* 同步创建缓存目录 */
+  fs.mkdirsSync(temp);
+  signale.success('创建临时目录');
 
   const projectConfigPath = path.join(src, 'project.config.json');
   let projectConfigJson = {};
 
   if (fs.existsSync(projectConfigPath)) {
     projectConfigJson = safeJsonParse(projectConfigPath);
+    signale.success('读取project.config.json');
   }
 
   const sourceDir = projectConfigJson.miniprogramRoot ? path.join(src, projectConfigJson.miniprogramRoot) : src;
@@ -63,9 +71,9 @@ module.exports = function run(config) {
     appJson,
     importScripts,
     pluginInjection,
-    baseDir,
     transformConfig,
   });
+  signale.success('生成入口文件');
 
   /* 生成appConfigJson */
   generateAppConfigJson({
@@ -86,6 +94,8 @@ module.exports = function run(config) {
   const getConfig = (type) => {
     const isWorker = type === 'worker';
     const config = assign({}, transformConfig, { cwd: sourceDir });
+
+    const templateDir = path.join(__dirname, './templates/web');
 
     return {
       entry: isWorker ? {
@@ -165,7 +175,8 @@ module.exports = function run(config) {
         }],
       },
       plugins: [
-        new CopyPlugin([
+        new webpack.ProgressPlugin(),
+        !isWorker && new CopyPlugin([
           ...assetExts.map((type) => {
             return {
               from: path.join(sourceDir, `**/${type}`),
@@ -176,8 +187,11 @@ module.exports = function run(config) {
           }),
           `${path.join(temp, 'appConfig.json')}`,
           `${path.join(temp, 'tabBar.json')}`,
+
+          // 模板文件
+          templateDir,
         ]),
-      ],
+      ].filter(Boolean),
       externals: {
         nerv: 'self.Nerv',
       },
@@ -186,7 +200,7 @@ module.exports = function run(config) {
   };
 
   function getErrorInfo(err, stats) {
-    if (!stats.stats) {
+    if (stats && !stats.stats) {
       return {
         err: err || (stats.compilation && stats.compilation.errors && stats.compilation.errors[0]),
         stats,
@@ -218,11 +232,14 @@ module.exports = function run(config) {
     getConfig('worker'),
   ]);
 
+  signale.start('开始构建');
   compiler.run((err, stats) => {
     if (err || stats.hasErrors()) {
       log(getErrorInfo(err, stats));
+      return;
     }
 
     log(getErrorInfo(err, stats));
+    signale.complete('构建成功');
   });
 };

@@ -43,9 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
 g.JSBridge = bridge;
 g.Nerv = Nerv;
 g.XMLRuntime = XMLRuntime;
-
-g.MP = {
-  StyleSheet,
-};
+g.TinyStyleSheet = StyleSheet;
 
 bootstrap();
