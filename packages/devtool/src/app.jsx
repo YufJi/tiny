@@ -19,11 +19,10 @@ class App extends Component {
   constructor(props) {
     super(props);
 
+    window.JSBridgeInstance = jsbridge;
+
     this.loadAppConfig();
     this.loadTabBarConfig();
-
-    this.jsbridge = jsbridge;
-    window.JSBridgeInstance = this.jsbridge;
 
     this.state = {
       mpVisible: true,
@@ -68,16 +67,17 @@ class App extends Component {
       }),
       pushWindow(homePage),
     ]).then((iframes) => {
-      const [worker, renderIframe] = iframes;
-      global.worker = worker;
-      global.webviews.set(worker.id, worker);
+      const [workerIframe, renderIframe] = iframes;
+      global.worker = workerIframe;
 
-      renderIframe.contentWindow.JSBridge.subscribeHandler('onLoadApp', JSON.stringify({}));
+      global.webviews.set(workerIframe.id, workerIframe);
 
-      global.worker.contentWindow.JSBridge.subscribeHandler('onAppRoute', JSON.stringify({
+      renderIframe.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('onLoadApp', '${JSON.stringify({})}')`);
+
+      workerIframe.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('onAppRoute', '${JSON.stringify({
         path: homePage,
         openType: 'appLaunch',
-      }), renderIframe.id);
+      })}', '${renderIframe.id}')`);
     });
   }
 

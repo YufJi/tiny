@@ -1,8 +1,8 @@
 const traverse = require('@babel/traverse').default;
 const generate = require('@babel/generator').default;
 const t = require('@babel/types');
+const { parseExpression } = require('@babel/parser');
 
-const { parseExpression } = require('babylon');
 const { toLiteralString, startsWith, endsWith } = require('./utils');
 const JSTokenizer = require('./JSTokenizer');
 
@@ -10,8 +10,6 @@ const JSTokenizer = require('./JSTokenizer');
 // or use complex parser
 const expressionTagTokenizer = new JSTokenizer();
 
-const expressionTagReg = /\{\{([^}]+)\}\}/g;
-const fullExpressionTagReg = /^\{\{([^}]+)\}\}$/;
 const spreadReg = /^\.\.\.[\w$_]/;
 const objReg = /^[\w$_](?:[\w$_\d\s]+)?:/;
 const es2015ObjReg = /^[\w$_](?:[\w$_\d\s]+)?,/;

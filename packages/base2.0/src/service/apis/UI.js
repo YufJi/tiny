@@ -57,3 +57,7 @@ export function hideLoading(param) {
     },
   });
 }
+
+export function setNavigationBarTitle() {
+
+}

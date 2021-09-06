@@ -24793,7 +24793,9 @@ function createInvoke(jsCore) {
       } catch (e) {
         response = {};
       }
-    } else if (_babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_0___default()(data) !== 'object') {
+    }
+
+    if (_babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_0___default()(response) !== 'object') {
       response = {};
     }
 
@@ -24874,10 +24876,15 @@ function createSubscribe() {
       if (typeof data === 'string') {
         try {
           params = JSON.parse(data);
-        } catch (e) {
+        } catch (error) {
+          console.error(error);
           params = {};
         }
-      } else if (_babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_0___default()(params) !== 'object') {
+      }
+      /* 再检查一次 */
+
+
+      if (_babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_0___default()(params) !== 'object') {
         params = {};
       }
 
@@ -25495,7 +25502,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2__);
 /* harmony import */ var lodash__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! lodash */ "./node_modules/lodash/lodash.js");
 /* harmony import */ var lodash__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(lodash__WEBPACK_IMPORTED_MODULE_3__);
-/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../util */ "./src/webview/util.js");
+/* harmony import */ var _nerv_passive_event__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../nerv/passive-event */ "./src/webview/nerv/passive-event.js");
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../util */ "./src/webview/util.js");
 
 
 var _excluded = ["nodeId"];
@@ -25510,8 +25518,9 @@ var _excluded = ["nodeId"];
  */
 
 
+
 function onComponentDataChange(bridge, componentHub) {
-  bridge.replyService('componentDataChange')(Object(_util__WEBPACK_IMPORTED_MODULE_4__["tryCatch"])('COMPONENT_DATA_CHANGE', /*#__PURE__*/function () {
+  bridge.replyService('componentDataChange')(Object(_util__WEBPACK_IMPORTED_MODULE_5__["tryCatch"])('COMPONENT_DATA_CHANGE', /*#__PURE__*/function () {
     var _ref = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1___default()( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.mark(function _callee(e) {
       return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.wrap(function _callee$(_context) {
         while (1) {
@@ -25533,7 +25542,7 @@ function onComponentDataChange(bridge, componentHub) {
   }()));
 }
 function onTriggerComponentEvent(bridge, componentHub) {
-  bridge.replyService('triggerComponentEvent')(Object(_util__WEBPACK_IMPORTED_MODULE_4__["tryCatch"])('TRIGGER_COMPONENT_EVENT', /*#__PURE__*/function () {
+  bridge.replyService('triggerComponentEvent')(Object(_util__WEBPACK_IMPORTED_MODULE_5__["tryCatch"])('TRIGGER_COMPONENT_EVENT', /*#__PURE__*/function () {
     var _ref2 = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1___default()( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.mark(function _callee2(e) {
       var eventDetail, eventName, eventOption, nodeId, component;
       return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.wrap(function _callee2$(_context2) {
@@ -25573,7 +25582,7 @@ function onRequestComponentObserver(bridge, componentHub, emitter, root) {
   var subscribe = bridge.subscribe,
       publish = bridge.publish;
   initTriggerListener(emitter);
-  subscribe('requestComponentObserver', Object(_util__WEBPACK_IMPORTED_MODULE_4__["tryCatch"])('COMPONENT_OBSERVER', function (e) {
+  subscribe('requestComponentObserver', Object(_util__WEBPACK_IMPORTED_MODULE_5__["tryCatch"])('COMPONENT_OBSERVER', function (e) {
     var req = e.req,
         reqId = e.reqId;
     var type = req.type;
@@ -25607,7 +25616,7 @@ function onRequestComponentObserver(bridge, componentHub, emitter, root) {
   }));
 }
 function onSelectComponentInPage(bridge, root) {
-  bridge.replyService('selectComponentInPage')(Object(_util__WEBPACK_IMPORTED_MODULE_4__["tryCatch"])('SELECT_ALL_COMPONENT', /*#__PURE__*/function () {
+  bridge.replyService('selectComponentInPage')(Object(_util__WEBPACK_IMPORTED_MODULE_5__["tryCatch"])('SELECT_ALL_COMPONENT', /*#__PURE__*/function () {
     var _ref3 = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1___default()( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.mark(function _callee3(e) {
       var selector, single;
       return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.wrap(function _callee3$(_context3) {
@@ -25634,7 +25643,7 @@ function onSelectComponentInPage(bridge, root) {
   }()));
 }
 function onSelectComponent(bridge, componentHub) {
-  bridge.replyService('selectComponent')(Object(_util__WEBPACK_IMPORTED_MODULE_4__["tryCatch"])('SELECT_COMPONENT', /*#__PURE__*/function () {
+  bridge.replyService('selectComponent')(Object(_util__WEBPACK_IMPORTED_MODULE_5__["tryCatch"])('SELECT_COMPONENT', /*#__PURE__*/function () {
     var _ref4 = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1___default()( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.mark(function _callee4(e) {
       var _e$selector, selector, single, nodeId, component;
 
@@ -25737,6 +25746,21 @@ function enableScroll(config, fields) {
   }
 
   enablePullUpRefresh && trackDOMTouches(onReachBottomDistance, bridge);
+}
+
+function trackDOMTouches(onReachBottomDistance, bridge) {
+  var publish = bridge.publish;
+  var pageY = 0;
+  document.addEventListener('touchstart', function (e) {
+    var touches = e.touches;
+    pageY = touches[0].pageY;
+    return pageY;
+  }, _nerv_passive_event__WEBPACK_IMPORTED_MODULE_4__["PASSIVE"]);
+  document.addEventListener('touchmove', function (e) {
+    if (e.touches[0].pageY < pageY) {
+      checkScroll(onReachBottomDistance) && triggerPullUpRefresh(publish);
+    }
+  }, _nerv_passive_event__WEBPACK_IMPORTED_MODULE_4__["PASSIVE"]);
 }
 
 /***/ }),
@@ -28829,13 +28853,13 @@ var options = {
 /*!*******************************************!*\
   !*** ./src/webview/nerv/passive-event.js ***!
   \*******************************************/
-/*! exports provided: supportPassive, getEventListenerOption */
+/*! exports provided: supportPassive, PASSIVE */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "supportPassive", function() { return supportPassive; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getEventListenerOption", function() { return getEventListenerOption; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "PASSIVE", function() { return PASSIVE; });
 /*
  * @Author: YufJ
  * @Date: 2021-07-12 20:45:27
@@ -28844,11 +28868,15 @@ __webpack_require__.r(__webpack_exports__);
  * @FilePath: /yeact/src/passive-event.js
  */
 var supportPassive = false;
+var PASSIVE;
 
 try {
   var opts = Object.defineProperty({}, 'passive', {
     get: function get() {
       supportPassive = true;
+      PASSIVE = {
+        passive: true
+      };
       return supportPassive;
     }
   });
@@ -28857,17 +28885,6 @@ try {
 } catch (e) {
   supportPassive = false;
 }
-
-var getEventListenerOption = function getEventListenerOption(capture) {
-  if (supportPassive) {
-    return {
-      passive: true,
-      capture: capture
-    };
-  } else {
-    return capture;
-  }
-};
 
 /***/ }),
 

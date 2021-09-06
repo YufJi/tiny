@@ -154,7 +154,7 @@ export function invokeMethod(method, params = {}, options = {}) {
       invoke();
     });
   } else {
-    // sync bridge
+    // 同步调用
     invoke();
   }
 

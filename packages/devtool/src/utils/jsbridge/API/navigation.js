@@ -17,10 +17,10 @@ export function navigateTo(params) {
   const { url } = params;
 
   pushWindow(url).then((iframe) => {
-    global.worker.contentWindow.JSBridge.subscribeHandler('onAppRoute', JSON.stringify({
+    global.worker.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('onAppRoute', '${JSON.stringify({
       path: iframe.path,
       openType: 'navigateTo',
-    }), iframe.id);
+    })}', '${iframe.id}')`);
   });
 }
 
@@ -29,10 +29,10 @@ export function navigateBack(params) {
 
   const lastIframe = popWindow(delta);
 
-  global.worker.contentWindow.JSBridge.subscribeHandler('onAppRoute', JSON.stringify({
+  global.worker.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('onAppRoute', '${JSON.stringify({
     path: lastIframe.path,
     openType: 'navigateBack',
-  }), lastIframe.id);
+  })}', '${lastIframe.id}')`);
 }
 
 export async function pushWindow(url, callback) {
@@ -44,8 +44,7 @@ export async function pushWindow(url, callback) {
     iframe.setAttribute('path', url);
     iframe.path = url;
 
-    const generateFunc = iframe.contentWindow.generateFunc[url];
-    generateFunc(guid);
+    iframe.contentWindow.executeJavaScript(`window.generateFunc['${url}']('${guid}')`);
 
     const container = document.getElementById('pageFrames');
     container.appendChild(iframe);
@@ -57,8 +56,7 @@ export async function pushWindow(url, callback) {
         frame.setAttribute('path', url);
         frame.path = url;
 
-        const generateFunc = frame.contentWindow.generateFunc[url];
-        generateFunc(frame.id);
+        frame.contentWindow.executeJavaScript(`window.generateFunc['${url}']('${frame.id}')`);
 
         if (typeof callback === 'function') {
           callback(frame);

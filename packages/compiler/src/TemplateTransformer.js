@@ -89,11 +89,12 @@ class TemplateTransformer extends Transformer {
           global.miniComponentSet.add(tag);
         }
 
-        if (tag.toLowerCase() !== tag) {
-          throw new Error(
-            `parse <${tag}> error: Custom Component'name should be form of my-component, not myComponent or MyComponent`,
-          );
-        }
+        /* 注释，允许大写 */
+        // if (tag.toLowerCase() !== tag) {
+        //   throw new Error(
+        //     `parse <${tag}> error: Custom Component'name should be form of my-component, not myComponent or MyComponent`,
+        //   );
+        // }
 
         return {
           tag: toComponentName(tag),

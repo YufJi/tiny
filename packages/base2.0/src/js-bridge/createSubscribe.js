@@ -23,10 +23,14 @@ export default function createSubscribe() {
       if (typeof data === 'string') {
         try {
           params = JSON.parse(data);
-        } catch (e) {
+        } catch (error) {
+          console.error(error);
           params = {};
         }
-      } else if (typeof params !== 'object') {
+      }
+
+      /* 再检查一次 */
+      if (typeof params !== 'object') {
         params = {};
       }
 

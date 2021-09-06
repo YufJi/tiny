@@ -53,7 +53,9 @@ export default function createInvoke(jsCore) {
       } catch (e) {
         response = {};
       }
-    } else if (typeof data !== 'object') {
+    }
+
+    if (typeof response !== 'object') {
       response = {};
     }
 

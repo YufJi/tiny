@@ -6,6 +6,7 @@
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/api/index.js
  */
 import { isNil } from 'lodash';
+import { PASSIVE } from '../nerv/passive-event';
 import { tryCatch } from '../util';
 
 export function onComponentDataChange(bridge, componentHub) {
@@ -145,4 +146,29 @@ export function enableScroll(config, fields) {
   }
 
   enablePullUpRefresh && trackDOMTouches(onReachBottomDistance, bridge);
+}
+
+function trackDOMTouches(onReachBottomDistance, bridge) {
+  const { publish } = bridge;
+  let pageY = 0;
+
+  document.addEventListener(
+    'touchstart',
+    (e) => {
+      const { touches } = e;
+      pageY = touches[0].pageY;
+      return pageY;
+    },
+    PASSIVE,
+  );
+
+  document.addEventListener(
+    'touchmove',
+    (e) => {
+      if (e.touches[0].pageY < pageY) {
+        checkScroll(onReachBottomDistance) && triggerPullUpRefresh(publish);
+      }
+    },
+    PASSIVE,
+  );
 }

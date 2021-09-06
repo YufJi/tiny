@@ -3,10 +3,10 @@ let generate = require('@babel/generator');
 const t = require('@babel/types');
 const codeFrameColumns = require('@babel/code-frame');
 let template = require('@babel/template');
-let babylon = require('babylon');
+let parser = require('@babel/parser');
 const { checkImport } = require('./utils');
 
-babylon = babylon.default || babylon;
+parser = parser.default || parser;
 traverse = traverse.default || traverse;
 generate = generate.default || generate;
 template = template.default || template;
@@ -306,7 +306,7 @@ function transpiler(code, config = {}) {
     },
   });
 
-  const ast = babylon.parse(code, {
+  const ast = parser.parse(code, {
     sourceType: 'module',
     plugins: ['objectRestSpread'],
   });

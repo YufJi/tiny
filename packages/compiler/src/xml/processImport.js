@@ -1,5 +1,5 @@
 const traverse = require('@babel/traverse').default;
-const { parse } = require('babylon');
+const { parse } = require('@babel/parser');
 
 const { startsWith } = require('./utils');
 

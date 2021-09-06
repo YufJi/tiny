@@ -26,7 +26,6 @@ export default function firstRender(currentPage, isPageReload = false) {
       path: currentPage.route,
     },
   };
-
   publish('INIT_DATA_READY', data, currentPage.webviewId);
 }
 

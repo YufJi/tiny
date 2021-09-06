@@ -1,7 +1,7 @@
 let traverse = require('@babel/traverse');
-let babylon = require('babylon');
+let parser = require('@babel/parser');
 
-babylon = babylon.default || babylon;
+parser = parser.default || parser;
 traverse = traverse.default || traverse;
 
 const refVisitor = {
@@ -29,7 +29,7 @@ module.exports = function isCJS(code) {
       sourceType: 'module',
       plugins: ['objectRestSpread', 'asyncGenerators'],
     };
-    const ast = babylon.parse(code, babylonConfig);
+    const ast = parser.parse(code, babylonConfig);
     const ret = {};
     traverse(ast, refVisitor, undefined, { ret });
     return !!ret.cjs;

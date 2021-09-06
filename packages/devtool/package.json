@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@rematch/core": "^2.0.1",
+    "axios": "^0.21.1",
     "eventemitter3": "^4.0.7",
     "normalize.css": "^8.0.1",
     "qs": "^6.10.1",

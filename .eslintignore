@@ -6,3 +6,5 @@ template/
 test/
 vendor/
 assets/
+static/
+example/

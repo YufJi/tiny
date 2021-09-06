@@ -7,6 +7,7 @@ const global = {
   preloadRenders: [],
   // 当前webview
   currentRender: null,
+  // ['render-1', 'render-2']
   pageStack: [],
   webviews: new Map(),
   worker: null,

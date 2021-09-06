@@ -7,11 +7,14 @@
  */
 
 export let supportPassive = false;
+export let PASSIVE;
 
 try {
   const opts = Object.defineProperty({}, 'passive', {
     get() {
       supportPassive = true;
+      PASSIVE = { passive: true };
+
       return supportPassive;
     },
   });
@@ -20,14 +23,3 @@ try {
 } catch (e) {
   supportPassive = false;
 }
-
-export const getEventListenerOption = (capture) => {
-  if (supportPassive) {
-    return {
-      passive: true,
-      capture,
-    };
-  } else {
-    return capture;
-  }
-};

@@ -2,25 +2,21 @@
 // or use complex parser
 // const util = require('util');
 
-const babylon = require('babylon');
+const parser = require('@babel/parser');
 const traverse = require('@babel/traverse').default;
 const generate = require('@babel/generator').default;
 const t = require('@babel/types');
 
 const expressionTagReg = /\{\{([^}]+)\}\}/g;
 const fullExpressionTagReg = /^\{\{([^}]+)\}\}$/;
-const spreadReg = /^\.\.\.[\w$_]/;
-const objReg = /^[\w$_](?:[\w$_\d\s]+)?:/;
-const es2015ObjReg = /^[\w$_](?:[\w$_\d\s]+)?,/;
+const spreadReg = /^\.\.\.[\w$_]/; // {{...abc}}
+const objReg = /^[\w$_](?:[\w$_\d\s]+)?:/; // {{name: abc}}
+const es2015ObjReg = /^[\w$_](?:[\w$_\d\s]+)?,/; // {{abc,edf}}
 
 function isObject(str_) {
   const str = str_.trim();
   return str.match(spreadReg) || str.match(objReg) || str.match(es2015ObjReg);
 }
-
-const babylonConfig = {
-  plugins: ['objectRestSpread'],
-};
 
 function findScope(scope, name) {
   if (scope) {
@@ -128,6 +124,10 @@ const visitor = {
   },
 };
 
+const babylonConfig = {
+  plugins: ['objectRestSpread'],
+};
+
 function transformCode(code_, xmlScope, config) {
   let codeStr = code_;
 
@@ -135,18 +135,45 @@ function transformCode(code_, xmlScope, config) {
     codeStr = `{${codeStr}}`;
   }
 
-  const ast = babylon.parse(`(${codeStr})`, babylonConfig);
+  const expression = parser.parseExpression(codeStr, babylonConfig);
+  const { start, end } = expression;
+
+  const ast = {
+    type: 'File',
+    start,
+    end,
+    program: {
+      start,
+      end,
+      type: 'Program',
+      body: [{
+        start,
+        end,
+        type: 'ExpressionStatement',
+        expression,
+      }],
+    },
+  };
 
   traverse(ast, visitor, undefined, {
     xmlScope,
     strictDataMember: !!config.strictDataMember,
   });
 
-  let { code } = generate(ast);
+  let code;
+
+  try {
+    code = generate(ast).code;
+  } catch (error) {
+    console.log('生成code出错：', error);
+  }
+
+  // let { code } = generate(ast);
 
   if (code.charAt(code.length - 1) === ';') {
     code = code.slice(0, -1);
   }
+
   return `(${code})`;
 }
 

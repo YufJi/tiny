@@ -1,3 +1,5 @@
+import querystring from 'querystring';
+import { isPlainObject } from 'lodash';
 import { wrapInnerFunction, wrapUserFunction } from './wrapfn';
 
 export function truthy(value) {
@@ -111,8 +113,6 @@ export const anyTypeToString = surroundByTryCatch((any) => {
 export const stringToAnyType = surroundByTryCatch((str, protoType) => {
   switch (protoType) {
     case 'String':
-      return str;
-
     case 'Array':
     case 'Object':
       return JSON.parse(str);
@@ -136,3 +136,39 @@ export const stringToAnyType = surroundByTryCatch((str, protoType) => {
       return '';
   }
 }, 'stringToAnyType');
+
+export function convertObjectValueToString(obj) {
+  const result = {};
+
+  for (let i = 0; i < Object.entries(obj).length; i++) {
+    const [k, v] = Object.entries(obj)[i];
+
+    if (typeof v === 'string' || typeof v === 'number') {
+      result[k] = String(v);
+    } else {
+      result[k] = Object.prototype.toString.call(v);
+    }
+  }
+
+  return result;
+}
+
+export function validateUrl(url, protocol = 'http') {
+  if (protocol === 'http') {
+    return /^(http|https):\/\/.*/i.test(url);
+  } else if (protocol === 'websocket') {
+    return /^(ws|wss):\/\/.*/i.test(url);
+  }
+}
+
+export function addQueryStringToUrl(url, data) {
+  if (typeof url === 'string' && isPlainObject(data)) {
+    const [prefix, search] = url.split('?');
+
+    const query = { ...querystring.parse(search), ...data };
+    const newSearch = querystring.stringify(query);
+    return `${prefix}?${newSearch}`;
+  }
+
+  return url;
+}

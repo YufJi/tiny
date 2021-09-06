@@ -81,7 +81,7 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./oa/.cache/index$.web.js");
+/******/ 	return __webpack_require__(__webpack_require__.s = "./miniRoot/.cache/index$.web.js");
 /******/ })
 /************************************************************************/
 /******/ ({
@@ -922,51 +922,54 @@ if (!g.__sjsEnvInited) {
 
 /***/ }),
 
-/***/ "./oa/.cache/appConfig.json":
-/*!**********************************!*\
-  !*** ./oa/.cache/appConfig.json ***!
-  \**********************************/
+/***/ "./miniRoot/.cache/appConfig.json":
+/*!****************************************!*\
+  !*** ./miniRoot/.cache/appConfig.json ***!
+  \****************************************/
 /*! exports provided: window, pages, launchParams, prerenderPage, default */
 /***/ (function(module) {
 
-module.exports = JSON.parse("{\"window\":{\"backgroundTextStyle\":\"light\",\"navigationBarBackgroundColor\":16777215,\"navigationBarTitleText\":\"OA\",\"navigationBarTextStyle\":\"black\",\"backgroundColor\":16316664},\"pages\":[\"pages/index/index\"],\"launchParams\":{\"pages/index/index\":{\"backgroundTextStyle\":\"light\",\"navigationBarBackgroundColor\":16777215,\"navigationBarTitleText\":\"OA\",\"navigationBarTextStyle\":\"black\",\"backgroundColor\":16316664}},\"prerenderPage\":\"render.html\"}");
+module.exports = JSON.parse("{\"window\":{\"navigationBarTitleText\":\"哈哈哈\"},\"pages\":[\"pages/todos/todos\",\"pages/add-todo/add-todo\"],\"launchParams\":{\"pages/todos/todos\":{\"navigationBarTitleText\":\"Index\"},\"pages/add-todo/add-todo\":{\"navigationBarTitleText\":\"哈哈哈\"}},\"prerenderPage\":\"render.html\"}");
 
 /***/ }),
 
-/***/ "./oa/.cache/config$.js":
-/*!******************************!*\
-  !*** ./oa/.cache/config$.js ***!
-  \******************************/
+/***/ "./miniRoot/.cache/config$.js":
+/*!************************************!*\
+  !*** ./miniRoot/.cache/config$.js ***!
+  \************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global) {
 const g = typeof global !== 'undefined' ? global : self;
-const appConfig = __webpack_require__(/*! ./appConfig.json */ "./oa/.cache/appConfig.json");
+const appConfig = __webpack_require__(/*! ./appConfig.json */ "./miniRoot/.cache/appConfig.json");
 g.TinyConfig = appConfig;
 
 /* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../packages/compiler/node_modules/webpack/buildin/global.js */ "../packages/compiler/node_modules/webpack/buildin/global.js")))
 
 /***/ }),
 
-/***/ "./oa/.cache/index$.web.js":
-/*!*********************************!*\
-  !*** ./oa/.cache/index$.web.js ***!
-  \*********************************/
+/***/ "./miniRoot/.cache/index$.web.js":
+/*!***************************************!*\
+  !*** ./miniRoot/.cache/index$.web.js ***!
+  \***************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 __webpack_require__(/*! compiler/sjsEnvInit */ "../packages/compiler/src/sjsEnvInit.js");
-__webpack_require__(/*! ./config$ */ "./oa/.cache/config$.js");
-__webpack_require__(/*! ../pages/index/index?hash=f8f53b2631c7389810262145c2357935db847400 */ "./oa/pages/index/index.js?hash=f8f53b2631c7389810262145c2357935db847400");
+__webpack_require__(/*! ./config$ */ "./miniRoot/.cache/config$.js");
+__webpack_require__(/*! ../components/add-button/add-button?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc");
+__webpack_require__(/*! ../components/custom-text/index?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./miniRoot/components/custom-text/index.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc");
+__webpack_require__(/*! ../pages/todos/todos?hash=1b0d44029e49959c6c4d7ed7de77e016c719f94b */ "./miniRoot/pages/todos/todos.js?hash=1b0d44029e49959c6c4d7ed7de77e016c719f94b");
+__webpack_require__(/*! ../pages/add-todo/add-todo?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
 
 
 /***/ }),
 
-/***/ "./oa/app.wxss":
-/*!*********************!*\
-  !*** ./oa/app.wxss ***!
-  \*********************/
+/***/ "./miniRoot/app.wxss":
+/*!***************************!*\
+  !*** ./miniRoot/app.wxss ***!
+  \***************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -974,389 +977,45 @@ __webpack_require__(/*! ../pages/index/index?hash=f8f53b2631c7389810262145c23579
 __webpack_require__.r(__webpack_exports__);
 const { TinyStyleSheet } = self;
 const stylesheet = new TinyStyleSheet({ stylePath: 'app.wxss' });
-/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`tiny-page, tiny-body {
-    background-color: #F0F2F5;
-    height: 100%;
-    font-size: 28rpx;
-    line-height: 1.6;
-  }
-  tiny-checkbox, tiny-radio {
-    margin-right: 10rpx;
-  }
-  tiny-form {
-    width: 100%;
-  }
-  tiny-input {
-    cursor: auto;
-    display: block;
-    height: 1.4rem;
-    text-overflow: clip;
-    overflow: hidden;
-    white-space: nowrap;
-    font-family: UICTFontTextStyleBody;
-    min-height: 1.4rem;
-    width: 100%;
-    margin: 0;
-  }
-  tiny-textarea {
-    cursor: auto;
-    display: block;
-    position: relative;
-    margin: 0;
-    resize: none;
-    outline: 0;
-    border: 0 none;
-    outline-style: none;
-  }
-  tiny-image, tiny-img {
-    border: 0 none;
-  }
-  tiny-button {
-    border: none;
-    margin: 0;
-    padding: 0;
-    -webkit-tap-highlight-color: transparent;
-    box-sizing: border-box;
-    font-size: 12px;
-  }
-  .container {
-    height: 100%;
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`tiny-page {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+            flex: 1;
     display: -webkit-box;
     display: -webkit-flex;
     display: flex;
-    -webkit-box-orient: vertical;
-    -webkit-box-direction: normal;
-    -webkit-flex-direction: column;
-            flex-direction: column;
-    -webkit-box-align: center;
-    -webkit-align-items: center;
-            align-items: center;
-    padding: 24rpx;
-    box-sizing: border-box;
-    font-family: -apple-system-font,Helvetica Neue,Helvetica,sans-serif;
-  }
-@font-face {
-  font-family: "oa-office";
-  src: url('http://pic.c-ctrip.com/platform/h5/miniapp/oaoffice/oa-office.ttf?20200116') format('truetype');
-  /* iOS 4.1- */
-}
-  .iconfont {
-    font-family: "oa-office" !important;
-    font-size: 16px;
-    font-style: normal;
-    -webkit-font-smoothing: antialiased;
-    -webkit-text-stroke-width: 0.2px;
-    -moz-osx-font-smoothing: grayscale;
-    color: #999;
-    width: 32rpx;
-    height: 32rpx;
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-box-align: center;
-    -webkit-align-items: center;
-            align-items: center;
-  }
-  .iconfont:before {
-    font-size: 36rpx;
-  }
-  .icon-del:before {
-    content: "\\e92d";
-  }
-  .icon-right-arrow {
-    -webkit-transform: rotate(180deg);
-            transform: rotate(180deg);
-  }
-  .icon-right-arrow:before {
-    content: "\\e943";
-  }
-  .icon-add:before {
-    content: "\\e93e";
-  }
-  .icon-drop-down:before {
-    content: "\\e945";
-  }
-  .icon-drop-up:before {
-    content: "\\e946";
-  }
-  .icon-drop-up_solid:before {
-    content: "\\e948";
-  }
-  .icon-drop-down_solid:before {
-    content: "\\e949";
-  }
-  .icon-back:before {
-    content: "\\e943";
-  }
-  .icon-subtract_shapeed:before {
-    content: "\\ed1b";
-  }
-  .icon-closed_shapeed:before {
-    content: "\\ed1f";
-  }
-  .icon-close:before {
-    content: "\\e940";
-  }
-  .icon-ranke:before {
-    font-size: 34rpx;
-    content: "\\e941";
-  }
-  .icon-search:before {
-    content: "\\e92a";
-  }
-  .icon-clock_shape:before {
-    content: "\\ee32";
-  }
-  .icon-left-arrow_solid:before {
-    content: "\\ef8b";
-  }
-  .icon-right-arrow_solid:before {
-    content: "\\ef8c";
-  }
-  .icon-check:before {
-    content: "\\f1c8";
-  }
-  .icon-information {
-    -webkit-margin-end: 6rpx;
-            margin-inline-end: 6rpx;
-  }
-  .icon-information:before {
-    content: "\\ef89";
-    font-size: 32rpx;
-  }
-  .icon-add_line:before {
-    content: "\\f36e";
-  }
-  .icon-subtract_line:before {
-    content: "\\f37c";
-  }
-  .icon-memberinfo:before {
-    content: "\\f37f";
-  }
-  .icon-more_solid:before {
-    content: "\\f433";
-  }
-  .icon-cchat-copy:before {
-    content: "\\f439";
-  }
-  .icon-edit:before {
-    content: "\\e93c";
-  }
-  .btn-default, .btn-primary {
-    background: #FFFFFF;
-    border-radius: 8rpx;
-    width: 152rpx!important;
-    height: 60rpx;
-    min-height: 60rpx!important;
-    box-sizing: border-box;
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-box-align: center;
-    -webkit-align-items: center;
-            align-items: center;
-    -webkit-box-pack: center;
-    -webkit-justify-content: center;
-            justify-content: center;
-    font-size: 26rpx;
-    color: #1466DE;
-    font-weight: normal;
-    position: relative;
-    padding: 1px;
-    border: none;
-    overflow: hidden;
-  }
-  .btn-default::after, .btn-primary::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 200%;
-    height: 200%;
-    border: 1px solid #1466DE!important;
-    -webkit-transform: scale(.5);
-    transform: scale(0.5);
-    -webkit-transform-origin: 0 0;
-    transform-origin: 0 0;
-    box-sizing: border-box;
-    border-radius: 8px;
-    overflow: hidden;
-    display: block;
-  }
-  .btn-primary {
-    background: #1466DE;
-    color: #fff;
-  }
-  .btn-refuse {
-    color: #333;
-  }
-  .btn-refuse::after {
-    border-color: #999!important;
-  }
-  .btn-default.middle, .btn-primary.middle {
-    width: 330rpx!important;
-    font-size: 30rpx;
-    height: 72rpx;
-    line-height: 72rpx;
-  }
-  .btn-default.large, .btn-primary.large {
-    width: 100%!important;
-    border-radius: 12rpx;
-    height: 88rpx;
-    line-height: 88rpx;
-    font-size: 34rpx;
-    display: -webkit-box!important;
-    display: -webkit-flex!important;
-    display: flex!important;
-  }
-  .btn-default.large::after, .btn-primary.large::after {
-    border-radius: 24rpx;
-  }
-  .btn-default.small, .btn-primary.small {
-    width: 216rpx!important;
-    font-size: 30rpx;
-    height: 72rpx;
-    line-height: 72rpx;
-  }
-  .btn-default .iconfont, .btn-primary .iconfont {
-    margin-right: 15rpx;
-  }
-  .btn-default .iconfont {
-    color: #1466DE;
-  }
-  .btn-primary .iconfont {
-    color: #fff;
-  }
-  .btn-default.disabled, .btn-primary.disabled {
-    background: #eee!important;
-    color: #999!important;
-  }
-  .btn-default.disabled::after, .btn-primary.disabled::after {
-    border-color: #eee!important;
-  }
-  .empty-box {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-box-orient: vertical;
-    -webkit-box-direction: normal;
-    -webkit-flex-direction: column;
-            flex-direction: column;
-    -webkit-box-pack: center;
-    -webkit-justify-content: center;
-            justify-content: center;
-    -webkit-box-align: center;
-    -webkit-align-items: center;
-            align-items: center;
-    margin-top: 240rpx;
-  }
-  .empty-box .image {
-    width: 300rpx;
-    height: 300rpx;
-  }
-  .empty-box .text {
-    margin-top: 56rpx;
-    display: block;
-    font-size: 28rpx;
-    color: #333;
-    text-align: center;
-  }
-  .border-bottom-1px {
-    padding-bottom: 1px;
-    background-position: center bottom;
-    background-image: -webkit-linear-gradient(top, transparent 50%, #DEDFE0 50%);
-    background-image: linear-gradient(to bottom, transparent 50%, #DEDFE0 50%);
-    background-repeat: no-repeat;
-    background-size: 100% 1px;
-  }
-  .border-all-1px {
-    position: relative;
-    padding: 1px;
-    border: none;
-  }
-  .border-all-1px:before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 200%;
-    height: 200%;
-    border-radius: 8px;
-    border: 1px solid #DEDFE0;
-    -webkit-transform: scale(0.5);
-            transform: scale(0.5);
-    -webkit-transform-origin: 0 0;
-            transform-origin: 0 0;
-    box-sizing: border-box;
-    border-radius: 4px;
-  }
-  .border-all-1px-noleft {
-    position: relative;
-    padding: 1px 0px;
-    border: none;
-  }
-  .border-all-1px-noleft:before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 200%;
-    height: 200%;
-    border-top: 1px solid #DEDFE0;
-    border-bottom: 1px solid #DEDFE0;
-    -webkit-transform: scale(0.5);
-            transform: scale(0.5);
-    -webkit-transform-origin: 0 0;
-            transform-origin: 0 0;
-    box-sizing: border-box;
-  }
-  .view-fixed {
-    overflow: hidden;
-    height: 100%;
+    background: #323239;
+    font-family: "pingFang SC" "pingFang";
   }`));
 
 /***/ }),
 
-/***/ "./oa/pages/index/index.js?hash=f8f53b2631c7389810262145c2357935db847400":
-/*!**********************************************************************!*\
-  !*** ./oa/pages/index?hash=f8f53b2631c7389810262145c2357935db847400 ***!
-  \**********************************************************************/
+/***/ "./miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc":
+/*!****************************************************************************************************!*\
+  !*** ./miniRoot/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc ***!
+  \****************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-    window.app = window.app || {};
-    window.app['pages/index/index'] = {
-      usingComponents: {},
-      
-      get render() {
-        const fn = __webpack_require__(/*! ./index.wxml?hash=f8f53b2631c7389810262145c2357935db847400 */ "./oa/pages/index/index.wxml?hash=f8f53b2631c7389810262145c2357935db847400")
-        return fn.default || fn;
-      },
-      get stylesheet() { 
-        const fn = __webpack_require__(/*! ./index.wxss?hash=f8f53b2631c7389810262145c2357935db847400 */ "./oa/pages/index/index.wxss?hash=f8f53b2631c7389810262145c2357935db847400"); 
-        return fn.default || fn; 
-      },
-    };
-
-    window['generateFunc'] = window['generateFunc'] || {};
-    window['generateFunc']['pages/index/index'] = function() {
-      const generateFunc = window.app['pages/index/index'];
-
-      document.dispatchEvent(new CustomEvent("generateFuncReady", {
-        detail: {
-          generateFunc
-        }
-      }))
-    };
+  window.app = window.app || {};
+  window.app['/components/add-button/add-button'] = {
+    // is: "/components/add-button/add-button",
+    usingComponents: {"add-button":"/components/add-button/add-button"},
+    get render() { 
+      const fn = __webpack_require__(/*! ./add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./miniRoot/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc"); 
+      return fn.default || fn;
+    },
+    
+  };
   
 
 /***/ }),
 
-/***/ "./oa/pages/index/index.wxml?hash=f8f53b2631c7389810262145c2357935db847400":
-/*!*********************************************************************************!*\
-  !*** ./oa/pages/index/index.wxml?hash=f8f53b2631c7389810262145c2357935db847400 ***!
-  \*********************************************************************************/
+/***/ "./miniRoot/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc":
+/*!******************************************************************************************************!*\
+  !*** ./miniRoot/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc ***!
+  \******************************************************************************************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -1377,122 +1036,594 @@ var $toString = self.XMLRuntime.toString;
 var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
 var $templates = {};
 function render(data, _ctx) {
-  return $createRoot([data['env'] != 'prod' ? Nerv.createElement("tiny-view", {
-    className: 'envWarn',
-    bindtap: _ctx.$$eventBinder('switchToProd')
-  }, ['当前环境： ', data['env']]) : null, Nerv.createElement("tiny-view", {
-    className: 'container'
-  }, [Nerv.createElement("tiny-view", {
-    className: 'box box-first'
-  }, $iterate(data['firstEntry'], function (item, index) {
-    return Nerv.createElement("tiny-view", {
-      className: 'box-item',
-      bindtap: _ctx.$$eventBinder('navRouterTo'),
-      "data-url": $getLooseDataMember([item, "url"])
-    }, [Nerv.createElement("tiny-image", {
-      src: '../../image/icon-' + $getLooseDataMember([item, "id"]) + '.png',
-      className: 'box-item-icon'
-    }), Nerv.createElement("tiny-text", null, $getLooseDataMember([item, "name"]))]);
-  })), Nerv.createElement("tiny-view", {
-    className: 'box box-second'
-  }, $iterate(data['secondEntry'], function (item, index) {
-    return Nerv.createElement("tiny-view", {
-      className: 'box-item',
-      bindtap: _ctx.$$eventBinder('navRouterTo'),
-      "data-url": $getLooseDataMember([item, "url"]),
-      "data-key": $getLooseDataMember([item, "key"])
-    }, [$getLooseDataMember([item, "id"]) ? Nerv.createElement("tiny-image", {
-      src: '../../image/icon-' + $getLooseDataMember([item, "id"]) + '.png',
-      className: 'box-item-icon'
-    }) : Nerv.createElement("tiny-image", {
-      src: '',
-      className: 'box-item-icon'
-    }), Nerv.createElement("tiny-text", null, $getLooseDataMember([item, "name"]))]);
-  }))])]);
+  return $createRoot([Nerv.createElement("tiny-button", {
+    className: 'add-button',
+    "hover-class": 'none',
+    bindtap: _ctx.$$eventBinder('onClickMe')
+  }, [Nerv.createElement("tiny-icon", {
+    type: 'success',
+    size: '23'
+  }), Nerv.createElement("tiny-text", null, data['text'])]), Nerv.createElement("tiny-text", {
+    bindtap: _ctx.$$eventBinder('xx')
+  }, data['name']), $renderSlot(_ctx, "$default", null)]);
 }
 ;
 
 /***/ }),
 
-/***/ "./oa/pages/index/index.wxss?hash=f8f53b2631c7389810262145c2357935db847400":
-/*!*********************************************************************************!*\
-  !*** ./oa/pages/index/index.wxss?hash=f8f53b2631c7389810262145c2357935db847400 ***!
-  \*********************************************************************************/
+/***/ "./miniRoot/components/add-button/add-button.wxss":
+/*!********************************************************!*\
+  !*** ./miniRoot/components/add-button/add-button.wxss ***!
+  \********************************************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _app_wxss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../app.wxss */ "./oa/app.wxss");
 const { TinyStyleSheet } = self;
-const stylesheet = new TinyStyleSheet({ stylePath: 'pages/index/index.wxss' });
+const stylesheet = new TinyStyleSheet({ stylePath: 'components/add-button/add-button.wxss' });
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.add-button {
+    display: inline-block;
+    background: none;
+    color: #FFF;
+    border: none;
+    width: 300rpx;
+  }
+  .add-icon {
+    font-size: 52rpx;
+    color: #00FFD6;
+    margin-right: 10rpx;
+  }
+  .user {
+    font-size: 150px;
+  }`));
+
+/***/ }),
+
+/***/ "./miniRoot/components/custom-text/index.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc":
+/*!***************************************************************************************!*\
+  !*** ./miniRoot/components/custom-text?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc ***!
+  \***************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+  window.app = window.app || {};
+  window.app['/components/custom-text/index'] = {
+    // is: "/components/custom-text/index",
+    usingComponents: {"add-button":"/components/add-button/add-button"},
+    get render() { 
+      const fn = __webpack_require__(/*! ./index.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./miniRoot/components/custom-text/index.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc"); 
+      return fn.default || fn;
+    },
+    
+  };
+  
+
+/***/ }),
+
+/***/ "./miniRoot/components/custom-text/index.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc":
+/*!**************************************************************************************************!*\
+  !*** ./miniRoot/components/custom-text/index.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc ***!
+  \**************************************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
+var Nerv = self.Nerv;
+var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
+var $iterate = self.XMLRuntime.iterate;
+var $createRoot = self.XMLRuntime.createRoot;
+var $createBlock = self.XMLRuntime.createBlock;
+var $useTemplate = self.XMLRuntime.useTemplate;
+var $createTemplate = self.XMLRuntime.createTemplate;
+var $renderSlot = self.XMLRuntime.renderSlot;
+var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.XMLRuntime.getSJSMember;
+var $toString = self.XMLRuntime.toString;
+var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
+var $templates = {};
+function render(data, _ctx) {
+  return $createRoot(Nerv.createElement("tiny-view", {
+    className: 'custom-text-wrap'
+  }, $renderSlot(_ctx, "$default", null)));
+}
+;
+
+/***/ }),
+
+/***/ "./miniRoot/components/custom-text/index.wxss":
+/*!****************************************************!*\
+  !*** ./miniRoot/components/custom-text/index.wxss ***!
+  \****************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+const { TinyStyleSheet } = self;
+const stylesheet = new TinyStyleSheet({ stylePath: 'components/custom-text/index.wxss' });
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.custom-text-wrap {
+    color: red;
+  }`));
+
+/***/ }),
+
+/***/ "./miniRoot/pages/add-todo/a.wxml":
+/*!****************************************!*\
+  !*** ./miniRoot/pages/add-todo/a.wxml ***!
+  \****************************************/
+/*! exports provided: $ownTemplates, default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "$ownTemplates", function() { return $ownTemplates; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
+var Nerv = self.Nerv;
+var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
+var $iterate = self.XMLRuntime.iterate;
+var $createRoot = self.XMLRuntime.createRoot;
+var $createBlock = self.XMLRuntime.createBlock;
+var $useTemplate = self.XMLRuntime.useTemplate;
+var $createTemplate = self.XMLRuntime.createTemplate;
+var $renderSlot = self.XMLRuntime.renderSlot;
+var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.XMLRuntime.getSJSMember;
+var $toString = self.XMLRuntime.toString;
+var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
+var $template;
+var $ownTemplates = {};
+
+$template = $ownTemplates["abc"] = function (data) {
+  return Nerv.createElement("tiny-view", null, '21212');
+};
+
+$template.Component = $createTemplate("abc", $template);
+var $templates = {};
+$templates = $ownTemplates;
+function render(data, _ctx) {
+  return $createRoot(null);
+}
+;
+
+/***/ }),
+
+/***/ "./miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!*******************************************************************************************!*\
+  !*** ./miniRoot/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \*******************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+    window.app = window.app || {};
+    window.app['pages/add-todo/add-todo'] = {
+      usingComponents: {"add-button":"/components/add-button/add-button"},
+      
+      get render() {
+        const fn = __webpack_require__(/*! ./add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219")
+        return fn.default || fn;
+      },
+      get stylesheet() { 
+        const fn = __webpack_require__(/*! ./add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./miniRoot/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); 
+        return fn.default || fn; 
+      },
+    };
+
+    window['generateFunc'] = window['generateFunc'] || {};
+    window['generateFunc']['pages/add-todo/add-todo'] = function() {
+      const generateFunc = window.app['pages/add-todo/add-todo'];
+
+      document.dispatchEvent(new CustomEvent("generateFuncReady", {
+        detail: {
+          generateFunc
+        }
+      }))
+    };
+  
+
+/***/ }),
+
+/***/ "./miniRoot/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!*********************************************************************************************!*\
+  !*** ./miniRoot/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \*********************************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
+/* harmony import */ var _a_wxml__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./a.wxml */ "./miniRoot/pages/add-todo/a.wxml");
+/* harmony import */ var _b_wxml__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./b.wxml */ "./miniRoot/pages/add-todo/b.wxml");
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var Nerv = self.Nerv;
+var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
+var $iterate = self.XMLRuntime.iterate;
+var $createRoot = self.XMLRuntime.createRoot;
+var $createBlock = self.XMLRuntime.createBlock;
+var $useTemplate = self.XMLRuntime.useTemplate;
+var $createTemplate = self.XMLRuntime.createTemplate;
+var $renderSlot = self.XMLRuntime.renderSlot;
+var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.XMLRuntime.getSJSMember;
+var $toString = self.XMLRuntime.toString;
+var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
+
+
+var $templates = {};
+$templates = _objectSpread({}, _a_wxml__WEBPACK_IMPORTED_MODULE_0__["$ownTemplates"]);
+function render(data, _ctx) {
+  var AddButton = _ctx.$$resolveComponent("add-button");
+
+  return $createRoot(Nerv.createElement("tiny-view", {
+    className: 'page-add-todo'
+  }, [_b_wxml__WEBPACK_IMPORTED_MODULE_1__["default"].apply(this, arguments), Nerv.createElement("tiny-view", {
+    className: 'add-todo'
+  }, Nerv.createElement("tiny-input", {
+    className: 'add-todo-input',
+    placeholder: 'What needs to be done?',
+    bindinput: _ctx.$$eventBinder('onInput'),
+    value: data['inputValue']
+  })), Nerv.createElement("tiny-view", {
+    bindtap: _ctx.$$eventBinder('add')
+  }, '12121'), Nerv.createElement("tiny-view", {
+    catchtap: _ctx.$$eventBinder('add')
+  }, '12121'), Nerv.createElement("tiny-view", {
+    className: 'todo-footer'
+  }, Nerv.createElement(AddButton, {
+    text: 'Add Todo',
+    bindclick_me: _ctx.$$eventBinder('add')
+  })), Nerv.createElement("tiny-view", {
+    style: 'color: red',
+    "capture-catchtap": _ctx.$$eventBinder('xxxx')
+  }, 'capture-catch:tap'), $useTemplate($templates['abc'], {
+    inputValue: data['inputValue']
+  }, undefined, this)]));
+}
+;
+
+/***/ }),
+
+/***/ "./miniRoot/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!*********************************************************************************************!*\
+  !*** ./miniRoot/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \*********************************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _app_wxss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../app.wxss */ "./miniRoot/app.wxss");
+/* harmony import */ var _components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../components/add-button/add-button.wxss */ "./miniRoot/components/add-button/add-button.wxss");
+const { TinyStyleSheet } = self;
+const stylesheet = new TinyStyleSheet({ stylePath: 'pages/add-todo/add-todo.wxss' });
 
 stylesheet.imports(_app_wxss__WEBPACK_IMPORTED_MODULE_0__["default"]);
-/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.envWarn {
+
+stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__["default"]);
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.page-add-todo {
     display: -webkit-box;
     display: -webkit-flex;
     display: flex;
-    margin: 20rpx 20rpx 0 20rpx;
-    padding: 24rpx;
-    color: #fff;
-    background: steelblue;
-    -webkit-box-pack: center;
-    -webkit-justify-content: center;
-            justify-content: center;
-    border-radius: 16rpx;
-  }
-  .box {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    background: #fff;
-    width: 100%;
-    border-radius: 16rpx;
-    overflow: hidden;
-  }
-  .box+.box {
-    margin-top: 16rpx;
-  }
-  .box-item {
     -webkit-box-flex: 1;
     -webkit-flex: 1;
             flex: 1;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+            flex-direction: column;
+  }
+  .add-todo {
+    padding: 40px;
+    -webkit-box-flex: 1;
+    -webkit-flex-grow: 1;
+            flex-grow: 1;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+            justify-content: center;
     -webkit-box-align: center;
     -webkit-align-items: center;
             align-items: center;
-    color: #333333;
+  }
+  .add-todo-input {
+    display: block;
+    font-size: 50rpx;
+    font-weight: 100;
+    padding: 5px 5px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid #DFDFDF;
+    color: #0EFFD6;
+    width: 100%;
+  }
+  .todo-footer {
+    padding: 50rpx 0 100rpx;
+    font-size: 48rpx;
+    font-weight: 200;
     text-align: center;
-  }
-  .box-first {
-    padding: 28rpx 0;
-  }
-  .box-first .box-item {
-    font-size: 32rpx;
-    line-height: 40rpx;
-    letter-spacing: -0.77rpx;
-  }
-  .box-first .box-item:first-of-type {
-    background-image: -webkit-linear-gradient(left, transparent 50%, #EBECED 50%);
-    background-image: linear-gradient(to right, transparent 50%, #EBECED 50%);
-    background-size: 1px 100%;
-    background-position: right center;
-    background-repeat: no-repeat;
-    padding-right: 1px;
-  }
-  .box-first .box-item-icon {
-    width: 88rpx;
-    height: 88rpx;
-    vertical-align: middle;
-    margin-right: 24rpx;
-  }
-  .box-second {
-    height: 468rpx;
-    -webkit-box-orient: horizontal;
-    -webkit-box-direction: normal;
-    -webkit-flex-flow: row wrap;
-            flex-flow: row wrap;
-  }
-  .box-second .box-item {
+  }`));
+
+/***/ }),
+
+/***/ "./miniRoot/pages/add-todo/b.wxml":
+/*!****************************************!*\
+  !*** ./miniRoot/pages/add-todo/b.wxml ***!
+  \****************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
+var Nerv = self.Nerv;
+var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
+var $iterate = self.XMLRuntime.iterate;
+var $createRoot = self.XMLRuntime.createRoot;
+var $createBlock = self.XMLRuntime.createBlock;
+var $useTemplate = self.XMLRuntime.useTemplate;
+var $createTemplate = self.XMLRuntime.createTemplate;
+var $renderSlot = self.XMLRuntime.renderSlot;
+var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.XMLRuntime.getSJSMember;
+var $toString = self.XMLRuntime.toString;
+var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
+var $templates = {};
+function render(data, _ctx) {
+  return $createRoot(Nerv.createElement("tiny-view", null, 'include'));
+}
+;
+
+/***/ }),
+
+/***/ "./miniRoot/pages/todos/todos.js?hash=1b0d44029e49959c6c4d7ed7de77e016c719f94b":
+/*!*************************************************************************************!*\
+  !*** ./miniRoot/pages/todos/todos.js?hash=1b0d44029e49959c6c4d7ed7de77e016c719f94b ***!
+  \*************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+    window.app = window.app || {};
+    window.app['pages/todos/todos'] = {
+      usingComponents: {"add-button":"/components/add-button/add-button","c-text":"/components/custom-text/index"},
+      
+      get render() {
+        const fn = __webpack_require__(/*! ./todos.wxml?hash=1b0d44029e49959c6c4d7ed7de77e016c719f94b */ "./miniRoot/pages/todos/todos.wxml?hash=1b0d44029e49959c6c4d7ed7de77e016c719f94b")
+        return fn.default || fn;
+      },
+      get stylesheet() { 
+        const fn = __webpack_require__(/*! ./todos.wxss?hash=1b0d44029e49959c6c4d7ed7de77e016c719f94b */ "./miniRoot/pages/todos/todos.wxss?hash=1b0d44029e49959c6c4d7ed7de77e016c719f94b"); 
+        return fn.default || fn; 
+      },
+    };
+
+    window['generateFunc'] = window['generateFunc'] || {};
+    window['generateFunc']['pages/todos/todos'] = function() {
+      const generateFunc = window.app['pages/todos/todos'];
+
+      document.dispatchEvent(new CustomEvent("generateFuncReady", {
+        detail: {
+          generateFunc
+        }
+      }))
+    };
+  
+
+/***/ }),
+
+/***/ "./miniRoot/pages/todos/todos.wxml?hash=1b0d44029e49959c6c4d7ed7de77e016c719f94b":
+/*!***************************************************************************************!*\
+  !*** ./miniRoot/pages/todos/todos.wxml?hash=1b0d44029e49959c6c4d7ed7de77e016c719f94b ***!
+  \***************************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
+var Nerv = self.Nerv;
+var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
+var $iterate = self.XMLRuntime.iterate;
+var $createRoot = self.XMLRuntime.createRoot;
+var $createBlock = self.XMLRuntime.createBlock;
+var $useTemplate = self.XMLRuntime.useTemplate;
+var $createTemplate = self.XMLRuntime.createTemplate;
+var $renderSlot = self.XMLRuntime.renderSlot;
+var $resolveScopedSlots = self.XMLRuntime.resolveScopedSlots;
+var $getSJSMember = self.XMLRuntime.getSJSMember;
+var $toString = self.XMLRuntime.toString;
+var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
+var $templates = {};
+function render(data, _ctx) {
+  var AddButton = _ctx.$$resolveComponent("add-button");
+
+  var CText = _ctx.$$resolveComponent("c-text");
+
+  return $createRoot(Nerv.createElement("tiny-scroll-view", {
+    className: 'page-todos',
+    "scroll-y": 'true'
+  }, [Nerv.createElement("tiny-view", {
+    id: 'parent',
+    style: 'background: green;',
+    "capture-bindtap": _ctx.$$eventBinder('pct'),
+    bindtap: _ctx.$$eventBinder('pt'),
+    bindlongpress: _ctx.$$eventBinder('plp'),
+    bindtouchstart: _ctx.$$eventBinder('pts'),
+    bindtouchmove: _ctx.$$eventBinder('ptm')
+  }, Nerv.createElement("tiny-view", {
+    "capture-bindtap": _ctx.$$eventBinder('cct'),
+    catchtap: _ctx.$$eventBinder('ct'),
+    bindtouchstart: _ctx.$$eventBinder('cts'),
+    catchtouchmove: _ctx.$$eventBinder('ctm')
+  }, 'longpress/tap component')), Nerv.createElement("tiny-view", {
+    className: 'user'
+  }, [Nerv.createElement("tiny-image", {
+    className: 'avatar',
+    src: $getLooseDataMember([data['user'], "avatar"]) || '../../assets/logo.png',
+    "background-size": 'cover'
+  }), Nerv.createElement("tiny-view", {
+    className: 'nickname'
+  }, [$getLooseDataMember([data['user'], "nickName"]) && $getLooseDataMember([data['user'], "nickName"]) + '\'s' || 'mp', ' Todo List']), Nerv.createElement("tiny-view", {
+    className: 'test'
+  }, 'Todo List')]), Nerv.createElement("tiny-view", {
+    className: 'todo-items'
+  }, Nerv.createElement("tiny-checkbox-group", {
+    className: 'todo-items-group',
+    bindchange: _ctx.$$eventBinder('onTodoChanged')
+  }, $iterate(data['todos'], function (item, index) {
+    return Nerv.createElement("tiny-label", {
+      key: item,
+      bindtap: _ctx.$$eventBinder('clicklabel'),
+      className: 'todo-item ' + ($getLooseDataMember([item, "completed"]) ? 'checked' : '')
+    }, [Nerv.createElement("tiny-checkbox", {
+      className: 'todo-item-checkbox',
+      value: $getLooseDataMember([item, "text"]),
+      checked: $getLooseDataMember([item, "completed"])
+    }), Nerv.createElement("tiny-text", {
+      className: 'todo-item-text'
+    }, $getLooseDataMember([item, "text"]))]);
+  }))), Nerv.createElement("tiny-slider", {
+    bindchange: _ctx.$$eventBinder('sliderChange'),
+    "show-value": true
+  }), Nerv.createElement("tiny-view", {
+    className: 'progress-box'
+  }, Nerv.createElement("tiny-progress", {
+    percent: '20',
+    "show-info": '',
+    active: '',
+    "stroke-width": '3'
+  })), Nerv.createElement("tiny-view", {
+    className: 'section section_gap'
+  }, [Nerv.createElement("tiny-view", {
+    className: 'section__title'
+  }, 'type="switch"'), Nerv.createElement("tiny-view", {
+    className: 'body-view'
+  }, Nerv.createElement("tiny-switch", {
+    checked: data['switchChecked'],
+    bindchange: _ctx.$$eventBinder('switchChange')
+  }))]), Nerv.createElement("tiny-view", {
+    className: 'todo-footer'
+  }, [Nerv.createElement(AddButton, {
+    id: 'asd',
+    text: data['text'],
+    bindclick_me: _ctx.$$eventBinder('clickCom')
+  }, Nerv.createElement("tiny-text", {
+    bindtap: _ctx.$$eventBinder('tapSlot')
+  }, 'i am slot')), data['text'] === 'def' ? Nerv.createElement(AddButton, {
+    id: 'asxx',
+    xx: 'xxx',
+    text: 'xixi ' + data['text'],
+    bindclick_me: _ctx.$$eventBinder(data['fn'])
+  }) : null]), Nerv.createElement("tiny-view", {
+    bindtap: _ctx.$$eventBinder('clickParent')
+  }, [Nerv.createElement("tiny-view", {
+    className: 'jyf',
+    "capture-bindtap": _ctx.$$eventBinder('captureClickChild'),
+    style: 'background: yellow;'
+  }, 'capture child'), Nerv.createElement("tiny-view", {
+    "data-xhq": 'jyf',
+    bindlongpress: _ctx.$$eventBinder('clickChild'),
+    style: 'margin-top: 120rpx; background: red;'
+  }, data['haha'])]), Nerv.createElement("tiny-view", {
+    className: 'container'
+  }, Nerv.createElement("tiny-view", {
+    className: 'page-body'
+  }, [Nerv.createElement("tiny-view", {
+    className: 'page-section page-section-spacing swiper'
+  }, Nerv.createElement("tiny-swiper", {
+    "indicator-dots": data['indicatorDots'],
+    autoplay: data['autoplay'],
+    interval: data['interval'],
+    duration: data['duration'],
+    circular: true
+  }, $iterate(data['background'], function (item, index) {
+    return Nerv.createElement("tiny-swiper-item", null, Nerv.createElement("tiny-view", {
+      className: 'swiper-item ' + item
+    }));
+  }))), Nerv.createElement("tiny-view", {
+    className: 'page-section',
+    style: 'margin-top: 20px;margin-bottom: 0;'
+  }, Nerv.createElement("tiny-view", {
+    className: 'weui-cells weui-cells_after-title'
+  }, [Nerv.createElement("tiny-view", {
+    className: 'weui-cell weui-cell_switch'
+  }, [Nerv.createElement("tiny-view", {
+    className: 'weui-cell__bd'
+  }, '指示点'), Nerv.createElement("tiny-view", {
+    className: 'weui-cell__ft'
+  }, Nerv.createElement("tiny-switch", {
+    checked: data['indicatorDots'],
+    bindchange: _ctx.$$eventBinder('changeIndicatorDots')
+  }))]), Nerv.createElement("tiny-view", {
+    className: 'weui-cell weui-cell_switch'
+  }, [Nerv.createElement("tiny-view", {
+    className: 'weui-cell__bd'
+  }, '自动播放'), Nerv.createElement("tiny-view", {
+    className: 'weui-cell__ft'
+  }, Nerv.createElement("tiny-switch", {
+    checked: data['autoplay'],
+    bindchange: _ctx.$$eventBinder('changeAutoplay')
+  }))])])), Nerv.createElement("tiny-view", {
+    className: 'page-section page-section-spacing'
+  }, [Nerv.createElement("tiny-view", {
+    className: 'page-section-title'
+  }, [Nerv.createElement("tiny-text", null, '幻灯片切换时长(ms)'), Nerv.createElement("tiny-text", {
+    className: 'info'
+  }, data['duration'])]), Nerv.createElement("tiny-slider", {
+    bindchange: _ctx.$$eventBinder('durationChange'),
+    value: data['duration'],
+    min: '500',
+    max: '2000'
+  }), Nerv.createElement("tiny-view", {
+    className: 'page-section-title'
+  }, [Nerv.createElement("tiny-text", null, '自动播放间隔时长(ms)'), Nerv.createElement("tiny-text", {
+    className: 'info'
+  }, data['interval'])]), Nerv.createElement("tiny-slider", {
+    bindchange: _ctx.$$eventBinder('intervalChange'),
+    value: data['interval'],
+    min: '3000',
+    max: '10000'
+  })])])), Nerv.createElement(CText, null, Nerv.createElement("tiny-view", {
+    bindtap: _ctx.$$eventBinder('showToast')
+  }, 'showToast')), Nerv.createElement("tiny-text", null, ['接口总和：', data['total']])]));
+}
+;
+
+/***/ }),
+
+/***/ "./miniRoot/pages/todos/todos.wxss?hash=1b0d44029e49959c6c4d7ed7de77e016c719f94b":
+/*!***************************************************************************************!*\
+  !*** ./miniRoot/pages/todos/todos.wxss?hash=1b0d44029e49959c6c4d7ed7de77e016c719f94b ***!
+  \***************************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _app_wxss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../app.wxss */ "./miniRoot/app.wxss");
+/* harmony import */ var _components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../components/add-button/add-button.wxss */ "./miniRoot/components/add-button/add-button.wxss");
+/* harmony import */ var _components_custom_text_index_wxss__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../components/custom-text/index.wxss */ "./miniRoot/components/custom-text/index.wxss");
+const { TinyStyleSheet } = self;
+const stylesheet = new TinyStyleSheet({ stylePath: 'pages/todos/todos.wxss' });
+
+stylesheet.imports(_app_wxss__WEBPACK_IMPORTED_MODULE_0__["default"]);
+
+stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__["default"]);
+
+stylesheet.imports(_components_custom_text_index_wxss__WEBPACK_IMPORTED_MODULE_2__["default"]);
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.page-todos {
     display: -webkit-box;
     display: -webkit-flex;
     display: flex;
@@ -1500,51 +1631,209 @@ stylesheet.imports(_app_wxss__WEBPACK_IMPORTED_MODULE_0__["default"]);
     -webkit-box-direction: normal;
     -webkit-flex-direction: column;
             flex-direction: column;
-    -webkit-box-pack: center;
-    -webkit-justify-content: center;
-            justify-content: center;
+    width: 100%;
+    max-height: 100vh;
+  }
+  .user {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-shrink: 0;
+            flex-shrink: 0;
+    padding: 30px;
+    color: #FFF;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+            flex-direction: column;
     -webkit-box-align: center;
     -webkit-align-items: center;
             align-items: center;
-    width: 234rpx;
-    height: 234rpx;
-    font-size: 28rpx;
-    letter-spacing: 0;
-    line-height: 36rpx;
-    -webkit-box-flex: 0;
-    -webkit-flex: 0 0 33%;
-            flex: 0 0 33%;
-    box-sizing: border-box;
+  }
+  .avatar {
+    width: 130rpx;
+    height: 130rpx;
+    border-radius: 50%;
+    background-color: #FFF;
+    -webkit-align-self: center;
+            align-self: center;
+  }
+  .nickname {
+    padding-top: 40rpx;
+    text-align: center;
+    font-size: 40rpx;
+    font-weight: 100;
+  }
+  .test {
+    font-size: 20px;
+  }
+  .todo-items {
+    -webkit-box-flex: 1;
+    -webkit-flex-grow: 1;
+            flex-grow: 1;
+    font-size: 34rpx;
+    padding: 50rpx 120rpx;
+    color: #0EFFD6;
+    overflow: auto;
+  }
+  .todo-items-group {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+            flex-direction: column;
+  }
+  .todo-item {
     position: relative;
-    padding: 1px;
-    border: none;
-  }
-  .box-second .box-item:before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 200%;
-    height: 200%;
-    border: 1px solid #EBECED;
-    border-width: 0 1px 1px 0;
-    -webkit-transform: scale(0.5);
-            transform: scale(0.5);
-    -webkit-transform-origin: 0 0;
-            transform-origin: 0 0;
+    margin-bottom: 50rpx;
+    padding-left: 80rpx;
+    line-height: 70rpx;
+    height: 80rpx;
     box-sizing: border-box;
-    border-radius: 4px;
+    border: 2px solid rgb(14, 255, 214);
+    border-radius: 100rpx;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-transition: border 0.2s;
+    transition: border 0.2s;
   }
-  .box-second .box-item:nth-child(3n):before {
-    border-right: none;
+  .todo-item:last-child {
+    margin-bottom: 0;
   }
-  .box-second .box-item:nth-child(n+4):before {
-    border-bottom: none;
+  .todo-item::before {
+    content: '';
+    position: absolute;
+    left: 12rpx;
+    margin-right: 20rpx;
+    width: 45rpx;
+    height: 45rpx;
+    background-color: rgba(14, 222, 255, 0.3);
+    border-radius: 50%;
+    top: 50%;
+    -webkit-transform: translateY(-50%);
+            transform: translateY(-50%);
+    -webkit-transition: background-color 0.2s;
+    transition: background-color 0.2s;
   }
-  .box-second .box-item-icon {
-    width: 76rpx;
-    height: 76rpx;
-    margin-bottom: 28rpx;
+  .todo-item::after {
+    content: '';
+    position: absolute;
+    left: 29rpx;
+    width: 8rpx;
+    height: 18rpx;
+    top: 50%;
+    -webkit-transform: translateY(-60%) rotate(38deg);
+            transform: translateY(-60%) rotate(38deg);
+    border: 4rpx solid #FFF;
+    border-width: 0 4rpx 4rpx 0;
+    opacity: 0;
+    -webkit-transition: opacity 0.2s;
+    transition: opacity 0.2s;
+  }
+  .todo-item-checkbox {
+    display: none;
+  }
+  .checked .todo-item-text {
+    text-decoration: line-through;
+    color: #1AA0B8;
+  }
+  .checked.todo-item {
+    border: 2px solid rgba(14, 222, 255, 0.2);
+  }
+  .checked.todo-item::before {
+    background-color: rgba(14, 222, 255, 0.2);
+  }
+  .checked.todo-item::after {
+    opacity: 1;
+  }
+  .todo-footer {
+    -webkit-flex-shrink: 0;
+            flex-shrink: 0;
+    padding: 50rpx 0 100rpx;
+    font-size: 48rpx;
+    font-weight: 200;
+    text-align: center;
+  }
+  .page-section-title {
+    padding: 0;
+  }
+  .swiper-item {
+    display: block;
+    height: 150px;
+  }
+  .page-section-title {
+    margin-top: 30px;
+    position: relative;
+  }
+  .info {
+    position: absolute;
+    right: 0;
+    font-size: 15px;
+  }
+  .page-foot {
+    margin-top: 25px;
+  }
+  .demo-text-1 {
+    position: relative;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+            align-items: center;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+            justify-content: center;
+    background-color: #1AAD19;
+    color: #FFFFFF;
+    font-size: 18px;
+  }
+  .demo-text-1:before {
+    content: 'A';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+  }
+  .demo-text-2 {
+    position: relative;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+            align-items: center;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+            justify-content: center;
+    background-color: #2782D7;
+    color: #FFFFFF;
+    font-size: 18px;
+  }
+  .demo-text-2:before {
+    content: 'B';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+  }
+  .demo-text-3 {
+    position: relative;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+            align-items: center;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+            justify-content: center;
+    background-color: #F1F1F1;
+    color: #353535;
+    font-size: 18px;
+  }
+  .demo-text-3:before {
+    content: 'C';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
   }`));
 
 /***/ })

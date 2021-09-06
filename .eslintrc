@@ -14,6 +14,7 @@
     "react/react-in-jsx-scope":"off",
     "jsx-a11y/label-has-associated-control":"off",
     "no-continue":"warn",
+    "no-empty":"off",
     "new-cap":"off",
     "class-methods-use-this":"off",
     "no-plusplus":"warn",
