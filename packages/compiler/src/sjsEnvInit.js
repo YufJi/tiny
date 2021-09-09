@@ -660,7 +660,6 @@ function is(target, type) {
   return Object.prototype.toString.call(target) === `[object ${type}]`;
 }
 
-// 所有`$sjs_`开头的变量需要作为自定义脚本的全局变量
 function sjsInitGlobals() {
   const sjsConsole = {};
   sjsConsole[`${PREFIX}log`] = function () {

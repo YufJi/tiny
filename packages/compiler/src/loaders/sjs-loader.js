@@ -6,7 +6,7 @@ module.exports = function (source) {
   if (!source) {
     return this.callback(null, source);
   }
-  const { cwd } = loaderUtils.getOptions(this);
+  const { cwd, transformConfig } = loaderUtils.getOptions(this);
   const { resourcePath: renderPath } = this;
   if (!isValidFilePath(renderPath)) {
     this.callback(new Error(`illegal file path ${renderPath}`));
@@ -16,6 +16,7 @@ module.exports = function (source) {
     const code = sjsTranspiler(source, {
       renderPath,
       projectRoot: cwd,
+      transformConfig,
     });
     this.callback(null, code);
   } catch (e) {

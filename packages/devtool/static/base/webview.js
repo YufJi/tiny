@@ -24915,7 +24915,40 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-function createBridge(jsCore) {
+var g = self;
+function createBridge() {
+  var jsCore;
+
+  if (g.JSCore) {
+    jsCore = g.JSCore;
+  } else if (g.webkit) {
+    var messageHandlers = g.webkit.messageHandlers;
+    jsCore = {
+      call: function call() {
+        var _messageHandlers$Tiny;
+
+        return (_messageHandlers$Tiny = messageHandlers.TinyCall).postMessage.apply(_messageHandlers$Tiny, arguments);
+      },
+      publish: function publish() {
+        var _messageHandlers$Tiny2;
+
+        (_messageHandlers$Tiny2 = messageHandlers.TinyPublish).postMessage.apply(_messageHandlers$Tiny2, arguments);
+      },
+      setTimer: function setTimer() {
+        var _messageHandlers$Tiny3;
+
+        (_messageHandlers$Tiny3 = messageHandlers.TinySetTimer).postMessage.apply(_messageHandlers$Tiny3, arguments);
+      },
+      clearTimer: function clearTimer() {
+        var _messageHandlers$Tiny4;
+
+        (_messageHandlers$Tiny4 = messageHandlers.TinyClearTimer).postMessage.apply(_messageHandlers$Tiny4, arguments);
+      }
+    };
+  } else {
+    throw new Error('No JScore nor webkit is found, native bridge is missing.');
+  }
+
   var _createSubscribe = Object(_createSubscribe__WEBPACK_IMPORTED_MODULE_0__["default"])(),
       subscribeHandler = _createSubscribe.subscribeHandler,
       onNative = _createSubscribe.onNative,
@@ -25847,7 +25880,7 @@ __webpack_require__.r(__webpack_exports__);
 var g = self;
 g.__IS_WORKER__ = false;
 
-var _createBridge = Object(js_bridge__WEBPACK_IMPORTED_MODULE_0__["default"])(g.JSCore),
+var _createBridge = Object(js_bridge__WEBPACK_IMPORTED_MODULE_0__["default"])(),
     invokeHandler = _createBridge.invokeHandler,
     subscribeHandler = _createBridge.subscribeHandler,
     publish = _createBridge.publish,
@@ -30389,7 +30422,12 @@ function patchStyle(lastAttrValue, nextAttrValue, dom) {
   var value;
 
   if (Object(_utils__WEBPACK_IMPORTED_MODULE_1__["isString"])(nextAttrValue)) {
-    domStyle.cssText = Object(_utils_transformRpx__WEBPACK_IMPORTED_MODULE_7__["default"])(nextAttrValue);
+    try {
+      domStyle.cssText = Object(_utils_transformRpx__WEBPACK_IMPORTED_MODULE_7__["default"])(nextAttrValue);
+    } catch (error) {
+      dom.setAttribute('style', Object(_utils_transformRpx__WEBPACK_IMPORTED_MODULE_7__["default"])(nextAttrValue));
+    }
+
     return;
   }
 
@@ -31291,7 +31329,7 @@ function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { va
 function useTemplate(template, data, key, context) {
   var Component = template && template.Component;
   return Component ? Nerv.createElement(Component, _objectSpread(_objectSpread({}, data), {}, {
-    $context: context,
+    _ctx: context,
     key: key
   })) : null;
 }

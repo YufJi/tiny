@@ -8,7 +8,7 @@ const signale = require('signale');
 const generateEntries = require('./generateEntries');
 const generateAppJson = require('./generateAppJson');
 const generateAppConfigJson = require('./generateAppConfigJson');
-const { safeJsonParse } = require('./utils');
+const { safeJsonParse, normalizePathForWin } = require('./utils');
 /* 完全转译出文件 */
 const transform = require('./transform');
 
@@ -56,7 +56,8 @@ module.exports = function run(config) {
     signale.success('读取project.config.json');
   }
 
-  const sourceDir = projectConfigJson.miniprogramRoot ? path.join(src, projectConfigJson.miniprogramRoot) : src;
+  let sourceDir = projectConfigJson.miniprogramRoot ? path.join(src, projectConfigJson.miniprogramRoot) : src;
+  sourceDir = normalizePathForWin(sourceDir).replace(/\/$/, '');
 
   /* 生成app.json */
   const appJson = generateAppJson({
@@ -91,6 +92,7 @@ module.exports = function run(config) {
   const assetExts = ['*.eot', '*.woff', '*.ttf', '*.text', '*.png', '*.jpg', '*.jpeg', '*.gif', '*.bmp', '*.svg', '*.webp'];
 
   const isDev = true;
+
   const getConfig = (type) => {
     const isWorker = type === 'worker';
     const config = assign({}, transformConfig, { cwd: sourceDir });
@@ -126,7 +128,7 @@ module.exports = function run(config) {
             },
           }],
         }, {
-          test: new RegExp(`\.${transformConfig.styleExtname}$`),
+          test: new RegExp(`${transformConfig.styleExtname}$`),
           use: [{
             loader: path.resolve(__dirname, 'loaders/css-loader'),
             options: {
@@ -140,7 +142,7 @@ module.exports = function run(config) {
             },
           }],
         }, {
-          test: new RegExp(`\.${transformConfig.templateExtname}$`),
+          test: new RegExp(`${transformConfig.templateExtname}$`),
           use: [{
             loader: require.resolve('babel-loader'),
             options: {
@@ -165,17 +167,18 @@ module.exports = function run(config) {
             },
           }],
         }, {
-          test: /\.sjs$/,
+          test: new RegExp(`${transformConfig.sjsExtname}$`),
           use: [{
             loader: path.resolve(__dirname, 'loaders/sjs-loader'),
             options: {
               cwd: sourceDir,
+              transformConfig: config,
             },
           }],
         }],
       },
       plugins: [
-        new webpack.ProgressPlugin(),
+        // new webpack.ProgressPlugin(),
         !isWorker && new CopyPlugin([
           ...assetExts.map((type) => {
             return {

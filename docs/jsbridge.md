@@ -17,11 +17,11 @@ if (self.JSCore) {
 else {
   const messageHandlers = self.webkit.messageHandlers;
   jsCore = {
-    call: function(method) {
-      messageHandlers.JSBridge.postMessage()
+    call: function(method, paramsString, webviewIdsString, callbackId) {
+      messageHandlers.BridgeCall.postMessage(method, paramsString, webviewIdsString, callbackId)
     },
-    publish: function() {
-
+    publish: function(event, paramsString, webviewIdsString) {
+      messageHandlers.BridgePublish.postMessage(method, paramsString, webviewIdsString)
     }
   }
 }

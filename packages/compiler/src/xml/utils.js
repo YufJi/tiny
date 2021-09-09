@@ -84,14 +84,14 @@ function getDepCode(node, scopeType, processImport) {
   const { attribs } = node;
 
   try {
-    deps = attribs.name && processImport(attribs.name);
+    deps = attribs.module && processImport(attribs.module);
   } catch (e) {
     if (this.config.consoleError) {
       console.error(e);
     }
     this.throwParseError({
       node,
-      attrName: 'name',
+      attrName: 'module',
     }, e);
   }
 

@@ -2,7 +2,34 @@ import createSubscribe from './createSubscribe';
 import createPublish from './createPublish';
 import createInvoke from './createInvoke';
 
-export default function createBridge(jsCore) {
+const g = self;
+
+export default function createBridge() {
+  let jsCore;
+
+  if (g.JSCore) {
+    jsCore = g.JSCore;
+  } else if (g.webkit) {
+    const { messageHandlers } = g.webkit;
+
+    jsCore = {
+      call(...args) {
+        return messageHandlers.TinyCall.postMessage(...args);
+      },
+      publish(...args) {
+        messageHandlers.TinyPublish.postMessage(...args);
+      },
+      setTimer(...args) {
+        messageHandlers.TinySetTimer.postMessage(...args);
+      },
+      clearTimer(...args) {
+        messageHandlers.TinyClearTimer.postMessage(...args);
+      },
+    };
+  } else {
+    throw new Error('No JScore nor webkit is found, native bridge is missing.');
+  }
+
   const {
     subscribeHandler,
     onNative,

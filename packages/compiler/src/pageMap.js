@@ -11,7 +11,6 @@ const {
 const { miniStore, pluginStore } = require('./configStore');
 const { PLUGIN_PREFIX, PLUGIN_PRIVATE_PREFIX } = require('./pluginUtils');
 
-let updateComponentMap;
 let globalUsingComponents;
 
 const updateUsingComponents = function (
@@ -23,10 +22,11 @@ const updateUsingComponents = function (
   /* 处理usingComponents路径 */
   Object.keys(usingComponents).forEach((c) => {
     let dPath = usingComponents[c];
+
     if (dPath.startsWith('./') || dPath.startsWith('../')) {
       dPath = path.join(dirname, dPath).slice(cwd.length);
     } else if (dPath.startsWith(PLUGIN_PREFIX)) {
-      // console.log(dPath);
+      // console.log('dPath:', dPath);
     } else if (dPath.startsWith(PLUGIN_PRIVATE_PREFIX)) {
       const domain = dPath.slice(PLUGIN_PRIVATE_PREFIX.length).split('/')[0];
       if (pluginId && domain === pluginId) {
@@ -61,7 +61,7 @@ const updateUsingComponents = function (
   });
 };
 
-updateComponentMap = function updateComponentMap2(
+function updateComponentMap(
   cwd,
   cPath,
   { pluginId = false } = {},
@@ -92,7 +92,7 @@ updateComponentMap = function updateComponentMap2(
       });
     }
   }
-};
+}
 
 function updatePluginPageMap({ cwd, appJson, pluginId }) {
   const pages = appJson.pages || [];
@@ -146,6 +146,7 @@ exports.update = function update({ src, mergeSubPackages, variables, transformCo
     if (/^[\.\/]/.test(page)) {
       throw new Error('app.json中pages不应该以 \'/\' 或 \'.\' 开头');
     }
+
     /* 页面配置文件路径 */
     const pageJsonPath = path.join(src, `${page}.json`);
     if (fs.existsSync(pageJsonPath)) {
@@ -179,12 +180,9 @@ exports.update = function update({ src, mergeSubPackages, variables, transformCo
   }
 };
 
-exports.getPage = function getPage(
-  pagePath,
-  extname,
-  { pluginId = false } = {},
-) {
+exports.getPage = function getPage(pagePath, extname, { pluginId = false } = {}) {
   const pMap = pluginId ? pluginStore.pageMap : miniStore.pageMap;
+
   if (extname) {
     return pMap[pagePath.slice(0, -extname.length)];
   }
@@ -210,10 +208,9 @@ exports.getComponent = function getComponent(
   cwd,
   { pluginId = false } = {},
 ) {
-  const componentMap = pluginId
-    ? pluginStore.componentMap
-    : miniStore.componentMap;
+  const componentMap = pluginId ? pluginStore.componentMap : miniStore.componentMap;
   updateComponentMap(cwd, f, { pluginId });
+
   return componentMap[f];
 };
 

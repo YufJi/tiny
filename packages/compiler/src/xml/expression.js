@@ -20,10 +20,18 @@ function isObject(str_) {
 
 function findScope(scope, name) {
   if (scope) {
-    return scope.some((s) => {
-      return s[name];
-    });
+    let result = false;
+    for (let i = 0; i < scope.length; i++) {
+      const item = scope[i];
+      if (item[name]) {
+        result = item[name];
+        break;
+      }
+    }
+
+    return result;
   }
+
   return false;
 }
 
@@ -41,7 +49,8 @@ const visitor = {
     }
 
     const nameScope = findScope(this.xmlScope, node.name);
-    if (nameScope === 'sjs') {
+
+    if (nameScope === 'wxs') {
       const parentType = parent && parent.type;
       if (node.type === 'Identifier' && !(parentType === 'MemberExpression' && parent.object === node)) {
         const args = [t.arrayExpression([node])];
@@ -76,7 +85,7 @@ const visitor = {
         root = root.object;
       }
 
-      const isSJS = findScope(this.xmlScope, root.name) === 'sjs';
+      const isSJS = findScope(this.xmlScope, root.name) === 'wxs';
 
       if (!isSJS && this.strictDataMember) {
         return;

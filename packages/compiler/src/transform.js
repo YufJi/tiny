@@ -25,6 +25,7 @@ module.exports = function transform(config) {
   const {
     templateExtname,
     styleExtname,
+    sjsExtname,
     src,
     out,
     cwd,
@@ -39,7 +40,7 @@ module.exports = function transform(config) {
     styleExtname,
     templateExtname,
     '.json',
-    '.sjs',
+    sjsExtname,
   ];
 
   const allFiles = getAllFiles(src);
@@ -197,7 +198,7 @@ module.exports = function transform(config) {
       return;
     }
 
-    if (extname === '.sjs') {
+    if (extname === sjsExtname) {
       sjsLoader.call(
         {
           query: {

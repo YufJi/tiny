@@ -21,7 +21,7 @@ const {
   offNative,
   subscribe,
   unsubscribe,
-} = createBridge(g.JSCore);
+} = createBridge();
 
 let callbackId = 0;
 const callbackMap = new Map();

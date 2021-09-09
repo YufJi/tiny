@@ -40,26 +40,30 @@ module.exports = function (source) {
     return type;
   }
 
-  const normalizeCwd = normalizePathForWin(`${cwd}/`);
-  const normalizeTemp = normalizePathForWin(`${temp}/`);
+  const normalizeCwd = normalizePathForWin(`${cwd}`);
+  const normalizeTemp = normalizePathForWin(`${temp}`);
 
   /* 不在小程序项目根目录 或者 在临时文件夹，不作处理 */
   if (fullPath.indexOf(normalizeCwd) === -1 || fullPath.indexOf(normalizeTemp) !== -1) {
     this.callback(null, source);
+
     return type;
   }
+
   const projectPath = getProjectPath(fullPath, cwd);
   const extname = getExtname(projectPath);
   let code;
   const pageUsingComponents = getPage(projectPath, extname, {
     pluginId,
   });
+
   const is = `/${projectPath}`.slice(0, -extname.length);
   let componentInfo;
   const componentConfig = getComponent(is, cwd, { pluginId });
   if (!pageUsingComponents && componentConfig) {
     componentInfo = assign({ is }, componentConfig);
   }
+
   if (componentInfo) {
     // console.log('componentInfo', componentInfo, resourcePath, isWorker);
     const extConfig = assign(

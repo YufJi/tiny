@@ -12225,7 +12225,40 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-function createBridge(jsCore) {
+var g = self;
+function createBridge() {
+  var jsCore;
+
+  if (g.JSCore) {
+    jsCore = g.JSCore;
+  } else if (g.webkit) {
+    var messageHandlers = g.webkit.messageHandlers;
+    jsCore = {
+      call: function call() {
+        var _messageHandlers$Tiny;
+
+        return (_messageHandlers$Tiny = messageHandlers.TinyCall).postMessage.apply(_messageHandlers$Tiny, arguments);
+      },
+      publish: function publish() {
+        var _messageHandlers$Tiny2;
+
+        (_messageHandlers$Tiny2 = messageHandlers.TinyPublish).postMessage.apply(_messageHandlers$Tiny2, arguments);
+      },
+      setTimer: function setTimer() {
+        var _messageHandlers$Tiny3;
+
+        (_messageHandlers$Tiny3 = messageHandlers.TinySetTimer).postMessage.apply(_messageHandlers$Tiny3, arguments);
+      },
+      clearTimer: function clearTimer() {
+        var _messageHandlers$Tiny4;
+
+        (_messageHandlers$Tiny4 = messageHandlers.TinyClearTimer).postMessage.apply(_messageHandlers$Tiny4, arguments);
+      }
+    };
+  } else {
+    throw new Error('No JScore nor webkit is found, native bridge is missing.');
+  }
+
   var _createSubscribe = Object(_createSubscribe__WEBPACK_IMPORTED_MODULE_0__["default"])(),
       subscribeHandler = _createSubscribe.subscribeHandler,
       onNative = _createSubscribe.onNative,
@@ -16026,7 +16059,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var g = self;
 
-var _createBridge = Object(js_bridge__WEBPACK_IMPORTED_MODULE_2__["default"])(g.JSCore),
+var _createBridge = Object(js_bridge__WEBPACK_IMPORTED_MODULE_2__["default"])(),
     invokeHandler = _createBridge.invokeHandler,
     subscribeHandler = _createBridge.subscribeHandler,
     invokeNative = _createBridge.invokeNative,

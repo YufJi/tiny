@@ -544,7 +544,12 @@ function patchStyle(lastAttrValue, nextAttrValue, dom) {
   let value;
 
   if (isString(nextAttrValue)) {
-    domStyle.cssText = transformRpx(nextAttrValue);
+    try {
+      domStyle.cssText = transformRpx(nextAttrValue);
+    } catch (error) {
+      dom.setAttribute('style', transformRpx(nextAttrValue));
+    }
+
     return;
   }
   if (!isNil(lastAttrValue) && !isString(lastAttrValue)) {

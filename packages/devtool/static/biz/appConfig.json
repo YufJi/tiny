@@ -1,17 +1,53 @@
 {
   "window": {
-    "navigationBarTitleText": "哈哈哈"
+    "navigationStyle": "custom"
   },
   "pages": [
-    "pages/todos/todos",
-    "pages/add-todo/add-todo"
+    "pages/index/index",
+    "pages/search/index",
+    "pages/song/song",
+    "pages/playlist/playlist",
+    "pages/description/index",
+    "friendsActivity/pages/result/index",
+    "friendsActivity/pages/waiting/index",
+    "friendsActivity/pages/loading/index",
+    "friendsActivity/pages/indexweapp/index",
+    "friendsActivity/pages/newUserNotice/index"
   ],
   "launchParams": {
-    "pages/todos/todos": {
-      "navigationBarTitleText": "Index"
+    "pages/index/index": {
+      "navigationStyle": "custom",
+      "navigationBarTextStyle": "black"
     },
-    "pages/add-todo/add-todo": {
-      "navigationBarTitleText": "哈哈哈"
+    "pages/search/index": {
+      "navigationStyle": "custom",
+      "navigationBarTextStyle": "black"
+    },
+    "pages/song/song": {
+      "navigationStyle": "custom"
+    },
+    "pages/playlist/playlist": {
+      "navigationStyle": "custom",
+      "navigationBarTextStyle": "white",
+      "navigationBarTitleText": "white"
+    },
+    "pages/description/index": {
+      "navigationStyle": "custom"
+    },
+    "friendsActivity/pages/result/index": {
+      "navigationStyle": "custom"
+    },
+    "friendsActivity/pages/waiting/index": {
+      "navigationStyle": "custom"
+    },
+    "friendsActivity/pages/loading/index": {
+      "navigationStyle": "custom"
+    },
+    "friendsActivity/pages/indexweapp/index": {
+      "navigationStyle": "custom"
+    },
+    "friendsActivity/pages/newUserNotice/index": {
+      "navigationStyle": "custom"
     }
   },
   "prerenderPage": "render.html"

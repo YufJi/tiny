@@ -1,7 +1,7 @@
 /**
  * 用来mock render、worker线程的jsc
  * 真实环境下由宿主注入
- * 作用类似preload
+ * 作用类似electron中preload
  */
 const host = window.parent.window;
 const timerMap = new Map();

@@ -570,20 +570,19 @@ assign(MLTransformer.prototype, {
       return;
     }
 
-    if (tag === 'import-sjs') {
-      // 参考#10，校验必填字段，为了不引起bracking change，只校验有name，无from的情况
-      if (attrs.name) {
-        if (attrs.from == null) {
+    if (tag === 'wxs') {
+      if (attrs.module) {
+        if (attrs.src == null) {
           this.throwParseError({
             node,
-            reason: '"from" expected in import-sjs tag',
+            reason: '"src" expected in wxs tag',
           });
         }
       }
 
-      const _depCode = getDepCode.call(this, node, 'sjs', processSJSImport);
+      const _depCode = getDepCode.call(this, node, 'wxs', processSJSImport);
       if (_depCode) {
-        this.header.push(`import ${_depCode} from ${toLiteralString(`${checkImport(attrs.from, '.sjs', this.config)}`)};`);
+        this.header.push(`import ${_depCode} from ${toLiteralString(`${checkImport(attrs.src, this.config.sjsExtname, this.config)}`)};`);
       }
       return;
     }
@@ -666,7 +665,7 @@ assign(MLTransformer.prototype, {
             node,
             attrName: 'is',
           });
-          this.pushCode(`${this.isStartOfCodeSection(level) ? '{ ' : ''}$useTemplate($templates[${is}],${data.data},${data.key},this)${this.isEndOfCodeSection(level) ? ' }' : ''}`);
+          this.pushCode(`${this.isStartOfCodeSection(level) ? '{ ' : ''}$useTemplate($templates[${is}],${data.data},${data.key},_ctx)${this.isEndOfCodeSection(level) ? ' }' : ''}`);
         } else {
           // define
           this.pushState();
@@ -812,6 +811,7 @@ assign(MLTransformer.prototype, {
         const { node } = _subTemplatesCode$nam;
 
         header.push(`$template = $ownTemplates[${toLiteralString(name)}] = function (data) {`);
+        header.push('const _ctx = data._ctx;');
         this.pushHeaderCode('return (');
         header = this.header = header.concat(templateCode.length ? templateCode : ['null']);
         this.pushHeaderCode(');');
