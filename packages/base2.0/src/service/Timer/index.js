@@ -1,4 +1,4 @@
-const g = self;
+import { g } from 'utils';
 
 /**
  * worker环境下polyfill

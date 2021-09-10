@@ -5,15 +5,13 @@
  * @Description:
  * @FilePath: /tiny-v1/packages/base2.0/src/js-bridge/createInvoke.js
  */
-import { Deferred } from 'utils';
-
-const g = self;
+import { Deferred, g } from 'utils';
 
 export default function createInvoke(jsCore) {
   let resolveId = 0;
   const resolveMap = new Map();
 
-  const invokeNative = (method, params = {}, webviewId = self.WEBVIEWID) => {
+  const invokeNative = (method, params = {}, webviewId = g.WEBVIEWID) => {
     resolveId += 1;
 
     const deferred = new Deferred();

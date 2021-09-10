@@ -22,7 +22,6 @@ class App extends Component {
     window.JSBridgeInstance = jsbridge;
 
     this.loadAppConfig();
-    this.loadTabBarConfig();
 
     this.state = {
       mpVisible: true,
@@ -38,11 +37,7 @@ class App extends Component {
     const config = requireFile('/biz/appConfig.json');
     global.appConfig = config;
     console.log('appConfig', global.appConfig);
-  }
-
-  loadTabBarConfig() {
-    const config = requireFile('/biz/tabBar.json');
-    global.tabBarConfig = config;
+    global.tabBarConfig = config.tabBar;
     console.log('tabBarConfig', global.tabBarConfig);
   }
 
@@ -55,8 +50,8 @@ class App extends Component {
   }
 
   async launchTinyApp() {
-    const guid = createGuid('worker');
-    const src = 'biz/worker.html';
+    const guid = createGuid('service');
+    const src = 'biz/service.html';
     const { pages } = global.appConfig;
     const homePage = pages[0];
 

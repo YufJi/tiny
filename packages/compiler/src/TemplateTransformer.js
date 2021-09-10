@@ -5,7 +5,7 @@ const assign = require('object-assign');
 
 const { Transformer } = require('./xml');
 const defaultLib = require('./defaultLib');
-const { toComponentName, supportedWebcomponents } = require('./utils');
+const { toComponentName, supportedWebComponents, supportedH5Tags } = require('./utils');
 
 /* 属性名正则 */
 const ATTR_NAME_REG = /^[\w-:]+$/;
@@ -34,9 +34,6 @@ class TemplateTransformer extends Transformer {
 
     const {
       usingComponents,
-      pluginId,
-      isWorker,
-      supportSjsHandler,
     } = config;
 
     assign(config, {
@@ -81,27 +78,13 @@ class TemplateTransformer extends Transformer {
         }
         return undefined;
       },
-      tagProcessor: ({ node, tag, attrs, transformedAttrs }) => {
-        if (
-          typeof global !== 'undefined'
-          && typeof global.miniComponentSet !== 'undefined'
-        ) {
-          global.miniComponentSet.add(tag);
-        }
-
-        /* 注释，允许大写 */
-        // if (tag.toLowerCase() !== tag) {
-        //   throw new Error(
-        //     `parse <${tag}> error: Custom Component'name should be form of my-component, not myComponent or MyComponent`,
-        //   );
-        // }
-
+      tagProcessor: ({ tag }) => {
         return {
           tag: toComponentName(tag),
         };
       },
       importComponent(dep) {
-        if (supportedWebcomponents.indexOf(dep) !== -1) {
+        if (supportedWebComponents.indexOf(dep) !== -1 || supportedH5Tags.indexOf(dep) !== -1) {
           return;
         }
 

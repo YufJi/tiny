@@ -1,26 +1,12 @@
+import { h, Fragment } from '../nerv';
+
 const empty = {};
 
-export default function renderSlot(ctx, slot, fallback, props) {
-  const { $scopedSlots = empty, $$slots = empty } = ctx;
+export default function renderSlot(ctx, slot, fallback) {
+  const { $$slots = empty } = ctx;
 
-  const scopedSlotFn = $scopedSlots[slot];
-  let nodes;
-  if (scopedSlotFn) {
-    nodes = [];
-    let isEmptyChildren = true;
-    scopedSlotFn.forEach((f) => {
-      const ret = f(props);
-      if (ret) {
-        isEmptyChildren = false;
-      }
-      nodes.push(ret);
-    });
-    if (isEmptyChildren) {
-      nodes = fallback;
-    }
-  } else {
-    const slotNodes = $$slots[slot];
-    nodes = slotNodes || fallback;
-  }
-  return nodes;
+  const nodes = $$slots[slot];
+
+  // return h(Fragment, {}, nodes);
+  return nodes || [fallback];
 }

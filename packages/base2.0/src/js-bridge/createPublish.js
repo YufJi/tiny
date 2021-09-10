@@ -1,6 +1,5 @@
+import { g } from 'utils';
 import { CUSTOM_EVENT } from './const';
-
-const g = self;
 
 export default function createPublish(jsCore) {
   const publish = (method, params, webviewId = g.WEBVIEWID) => {

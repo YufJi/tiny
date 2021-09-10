@@ -50,8 +50,8 @@ export async function pushWindow(url, callback) {
     container.appendChild(iframe);
   } else {
     iframe = await createRenderIframe({
-      guid: createGuid('render'),
-      src: 'biz/render.html?debug=framework',
+      guid: createGuid('webview'),
+      src: 'biz/webview.html?debug=framework',
       onload: (frame) => {
         frame.setAttribute('path', url);
         frame.path = url;

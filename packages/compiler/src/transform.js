@@ -17,10 +17,6 @@ function getSuffixWorkerJs(fullPath) {
   return getSuffixJs(fullPath, 'worker');
 }
 
-function getSuffixNativeJs(fullPath) {
-  return getSuffixJs(fullPath, 'native');
-}
-
 module.exports = function transform(config) {
   const {
     templateExtname,
@@ -29,7 +25,6 @@ module.exports = function transform(config) {
     src,
     out,
     cwd,
-    native,
   } = config;
 
   const transformConfig = config;
@@ -101,26 +96,6 @@ module.exports = function transform(config) {
           },
           source,
         );
-
-        if (native) {
-          jsLoader.call(
-            {
-              query: {
-                isNative: true,
-                cwd,
-                transformConfig,
-              },
-              resourcePath: fullPath,
-              callback(error, code) {
-                if (error) {
-                  throw error;
-                }
-                fs.writeFileSync(getSuffixNativeJs(fullOutPath), code);
-              },
-            },
-            source,
-          );
-        }
       } else {
         fs.renameSync(getSuffixWorkerJs(fullOutPath), fullOutPath);
       }
@@ -149,31 +124,6 @@ module.exports = function transform(config) {
         },
         source,
       );
-
-      if (native) {
-        cssLoader.call(
-          {
-            query: {
-              cwd,
-              transformConfig: assign(
-                {
-                  injectStyle: false,
-                },
-                config,
-              ),
-            },
-            resourcePath: fullPath,
-            callback(error, code) {
-              if (error) {
-                throw error;
-              }
-              fs.writeFileSync(getSuffixNativeJs(`${fullOutPath}.js`), code);
-            },
-          },
-          source,
-        );
-      }
-
       return;
     }
 

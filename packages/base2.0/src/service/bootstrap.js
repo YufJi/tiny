@@ -6,14 +6,13 @@
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/service/bootstrap.js
  */
 import { loadApp } from './App';
-import { invokeNative, replyWebview, onNative } from './bridge';
-import { onRouteEvent, loadRoute, getPageStack } from './Route';
+import { replyWebview, onNative } from './bridge';
+import { loadRoute, getPageStack } from './Route';
 import firstRender from './Route/firstRender';
 import loadPageEvent from './Page/loadPageEvent';
 import loadComponent from './Component/loadComponent';
 
 export default function bootstrap() {
-  // context.checkTinyConfig();
   loadApp();
   replyWebview();
   loadRoute();

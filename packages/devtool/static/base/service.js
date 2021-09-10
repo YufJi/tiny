@@ -12062,14 +12062,13 @@ __webpack_require__.r(__webpack_exports__);
  * @FilePath: /tiny-v1/packages/base2.0/src/js-bridge/createInvoke.js
  */
 
-var g = self;
 function createInvoke(jsCore) {
   var resolveId = 0;
   var resolveMap = new Map();
 
   var invokeNative = function invokeNative(method) {
     var params = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-    var webviewId = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : self.WEBVIEWID;
+    var webviewId = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : utils__WEBPACK_IMPORTED_MODULE_1__["g"].WEBVIEWID;
     resolveId += 1;
     var deferred = new utils__WEBPACK_IMPORTED_MODULE_1__["Deferred"]();
     resolveMap.set(resolveId, deferred.resolve);
@@ -12130,16 +12129,17 @@ function createInvoke(jsCore) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return createPublish; });
-/* harmony import */ var _const__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./const */ "./src/js-bridge/const.js");
+/* harmony import */ var utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! utils */ "./src/utils/index.js");
+/* harmony import */ var _const__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./const */ "./src/js-bridge/const.js");
 
-var g = self;
+
 function createPublish(jsCore) {
   var publish = function publish(method, params) {
-    var webviewId = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : g.WEBVIEWID;
+    var webviewId = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : utils__WEBPACK_IMPORTED_MODULE_0__["g"].WEBVIEWID;
     var paramsString = JSON.stringify(params);
     var webviewIds = Array.isArray(webviewId) ? webviewId : [webviewId];
     var webviewIdsString = JSON.stringify(webviewIds);
-    jsCore.publish("".concat(_const__WEBPACK_IMPORTED_MODULE_0__["CUSTOM_EVENT"]).concat(method), paramsString, webviewIdsString, g.__IS_WORKER__);
+    jsCore.publish("".concat(_const__WEBPACK_IMPORTED_MODULE_1__["CUSTOM_EVENT"]).concat(method), paramsString, webviewIdsString, utils__WEBPACK_IMPORTED_MODULE_0__["g"].__IS_WORKER__);
   };
 
   return {
@@ -12219,20 +12219,21 @@ function createSubscribe() {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return createBridge; });
-/* harmony import */ var _createSubscribe__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./createSubscribe */ "./src/js-bridge/createSubscribe.js");
-/* harmony import */ var _createPublish__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./createPublish */ "./src/js-bridge/createPublish.js");
-/* harmony import */ var _createInvoke__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./createInvoke */ "./src/js-bridge/createInvoke.js");
+/* harmony import */ var utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! utils */ "./src/utils/index.js");
+/* harmony import */ var _createSubscribe__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./createSubscribe */ "./src/js-bridge/createSubscribe.js");
+/* harmony import */ var _createPublish__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./createPublish */ "./src/js-bridge/createPublish.js");
+/* harmony import */ var _createInvoke__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./createInvoke */ "./src/js-bridge/createInvoke.js");
 
 
 
-var g = self;
+
 function createBridge() {
   var jsCore;
 
-  if (g.JSCore) {
-    jsCore = g.JSCore;
-  } else if (g.webkit) {
-    var messageHandlers = g.webkit.messageHandlers;
+  if (utils__WEBPACK_IMPORTED_MODULE_0__["g"].JSCore) {
+    jsCore = utils__WEBPACK_IMPORTED_MODULE_0__["g"].JSCore;
+  } else if (utils__WEBPACK_IMPORTED_MODULE_0__["g"].webkit) {
+    var messageHandlers = utils__WEBPACK_IMPORTED_MODULE_0__["g"].webkit.messageHandlers;
     jsCore = {
       call: function call() {
         var _messageHandlers$Tiny;
@@ -12259,18 +12260,18 @@ function createBridge() {
     throw new Error('No JScore nor webkit is found, native bridge is missing.');
   }
 
-  var _createSubscribe = Object(_createSubscribe__WEBPACK_IMPORTED_MODULE_0__["default"])(),
+  var _createSubscribe = Object(_createSubscribe__WEBPACK_IMPORTED_MODULE_1__["default"])(),
       subscribeHandler = _createSubscribe.subscribeHandler,
       onNative = _createSubscribe.onNative,
       offNative = _createSubscribe.offNative,
       subscribe = _createSubscribe.subscribe,
       unsubscribe = _createSubscribe.unsubscribe;
 
-  var _createInvoke = Object(_createInvoke__WEBPACK_IMPORTED_MODULE_2__["default"])(jsCore, onNative),
+  var _createInvoke = Object(_createInvoke__WEBPACK_IMPORTED_MODULE_3__["default"])(jsCore, onNative),
       invokeNative = _createInvoke.invokeNative,
       invokeHandler = _createInvoke.invokeHandler;
 
-  var _createPublish = Object(_createPublish__WEBPACK_IMPORTED_MODULE_1__["default"])(jsCore),
+  var _createPublish = Object(_createPublish__WEBPACK_IMPORTED_MODULE_2__["default"])(jsCore),
       publish = _createPublish.publish;
 
   return {
@@ -12881,6 +12882,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _Model_common__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../Model/common */ "./src/service/Model/common.js");
 /* harmony import */ var _normalizeRelations__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./normalizeRelations */ "./src/service/Component/normalizeRelations.js");
 /* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../common/global */ "./src/service/common/global.js");
+/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../utils/log */ "./src/service/utils/log.js");
 
 
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
@@ -12892,11 +12894,12 @@ function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { va
 
 
 
-var g = self;
+
 function registerComponent() {
   var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
   var is = _common_global__WEBPACK_IMPORTED_MODULE_5__["default"].currentPageConfig.is;
   _common_global__WEBPACK_IMPORTED_MODULE_5__["default"].__allConfig__[is] = _common_global__WEBPACK_IMPORTED_MODULE_5__["default"].currentPageConfig;
+  Object(_utils_log__WEBPACK_IMPORTED_MODULE_6__["debug"])('注册Component：', _common_global__WEBPACK_IMPORTED_MODULE_5__["default"].currentPageConfig);
 
   if (_Model_common__WEBPACK_IMPORTED_MODULE_3__["componentBookmarks"].has(is)) {
     throw new Error("at ".concat(is, ", Component can only register once"));
@@ -14049,10 +14052,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var lodash__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! lodash */ "./node_modules/lodash/lodash.js");
 /* harmony import */ var lodash__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(lodash__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _utils_wrapfn__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../utils/wrapfn */ "./src/service/utils/wrapfn.js");
-/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../utils/log */ "./src/service/utils/log.js");
-/* harmony import */ var _Model_common__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../Model/common */ "./src/service/Model/common.js");
-/* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../common/global */ "./src/service/common/global.js");
+/* harmony import */ var utils__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! utils */ "./src/utils/index.js");
+/* harmony import */ var _utils_wrapfn__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../utils/wrapfn */ "./src/service/utils/wrapfn.js");
+/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../utils/log */ "./src/service/utils/log.js");
+/* harmony import */ var _Model_common__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../Model/common */ "./src/service/Model/common.js");
+/* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../common/global */ "./src/service/common/global.js");
 
 
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
@@ -14064,14 +14068,14 @@ function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { va
 
 
 
-var g = self;
+
 function registerPage() {
   var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  var is = _common_global__WEBPACK_IMPORTED_MODULE_5__["default"].currentPageConfig.is;
-  _common_global__WEBPACK_IMPORTED_MODULE_5__["default"].__allConfig__[is] = _common_global__WEBPACK_IMPORTED_MODULE_5__["default"].currentPageConfig;
-  Object(_utils_log__WEBPACK_IMPORTED_MODULE_3__["debug"])('全局配置：', JSON.stringify(g.TinyConfig.pages));
+  var is = _common_global__WEBPACK_IMPORTED_MODULE_6__["default"].currentPageConfig.is;
+  _common_global__WEBPACK_IMPORTED_MODULE_6__["default"].__allConfig__[is] = _common_global__WEBPACK_IMPORTED_MODULE_6__["default"].currentPageConfig;
+  Object(_utils_log__WEBPACK_IMPORTED_MODULE_4__["debug"])('注册Page：', _common_global__WEBPACK_IMPORTED_MODULE_6__["default"].currentPageConfig);
 
-  if (!Array.isArray(g.TinyConfig.pages) || !g.TinyConfig.pages.includes(is)) {
+  if (!Array.isArray(utils__WEBPACK_IMPORTED_MODULE_2__["g"].TinyConfig.pages) || !utils__WEBPACK_IMPORTED_MODULE_2__["g"].TinyConfig.pages.includes(is)) {
     throw new Error("Invalid path: ".concat(is, " doesn't declared in app.json"));
   }
 
@@ -14086,7 +14090,7 @@ function registerPage() {
     // 开发者有可能传入 mobx 对象, cloneDeep 会导致报错
     data = JSON.parse(JSON.stringify(data));
   } catch (error) {
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_3__["warn"])('Behavior: ', error);
+    Object(_utils_log__WEBPACK_IMPORTED_MODULE_4__["warn"])('Behavior: ', error);
     data = {};
   }
 
@@ -14104,7 +14108,7 @@ function registerPage() {
     onResize: lodash__WEBPACK_IMPORTED_MODULE_1__["noop"],
     onTabItemTap: lodash__WEBPACK_IMPORTED_MODULE_1__["noop"]
   });
-  var lifetimes = Object(_utils_wrapfn__WEBPACK_IMPORTED_MODULE_2__["wrapUserFunctions"])("at ".concat(is, ", Page"), {
+  var lifetimes = Object(_utils_wrapfn__WEBPACK_IMPORTED_MODULE_3__["wrapUserFunctions"])("at ".concat(is, ", Page"), {
     onLoad: init.onLoad,
     onShow: init.onShow,
     onReady: init.onReady,
@@ -14120,13 +14124,13 @@ function registerPage() {
     onShareAppMessage: onShareAppMessage
   }, function (fn, key) {
     if (Object(lodash__WEBPACK_IMPORTED_MODULE_1__["isFunction"])(fn)) {
-      return Object(_utils_wrapfn__WEBPACK_IMPORTED_MODULE_2__["wrapUserFunction"])("at ".concat(is, ", Page.").concat(key), fn);
+      return Object(_utils_wrapfn__WEBPACK_IMPORTED_MODULE_3__["wrapUserFunction"])("at ".concat(is, ", Page.").concat(key), fn);
     }
 
     return undefined;
   });
   Object.assign(init, lifetimes, extraLifetimes);
-  _Model_common__WEBPACK_IMPORTED_MODULE_4__["pageInitMap"].set(is, init);
+  _Model_common__WEBPACK_IMPORTED_MODULE_5__["pageInitMap"].set(is, init);
 }
 
 /***/ }),
@@ -14831,20 +14835,21 @@ function actionCreatePage(route, webviewId, query) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return timerPolyfill; });
-var g = self;
+/* harmony import */ var utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! utils */ "./src/utils/index.js");
+
 /**
  * worker环境下polyfill
  */
 
 function timerPolyfill() {
   var timerMap = new Map();
-  var _g$JSCore = g.JSCore,
+  var _g$JSCore = utils__WEBPACK_IMPORTED_MODULE_0__["g"].JSCore,
       setTimer = _g$JSCore.setTimer,
       clearTimer = _g$JSCore.clearTimer;
 
-  g.JSCore.setTimer = function () {};
+  utils__WEBPACK_IMPORTED_MODULE_0__["g"].JSCore.setTimer = function () {};
 
-  g.JSCore.clearTimer = function () {};
+  utils__WEBPACK_IMPORTED_MODULE_0__["g"].JSCore.clearTimer = function () {};
 
   var timerCounter = 1;
 
@@ -14874,7 +14879,7 @@ function timerPolyfill() {
      */
 
 
-  g.nativeInvokeTimer = function (type, id) {
+  utils__WEBPACK_IMPORTED_MODULE_0__["g"].nativeInvokeTimer = function (type, id) {
     var callback = timerMap.get(id);
 
     if (typeof callback === 'function') {
@@ -14886,10 +14891,10 @@ function timerPolyfill() {
     }
   };
 
-  g.setTimeout = createSet('Timeout');
-  g.clearTimeout = createClear('Timeout');
-  g.setInterval = createSet('Interval');
-  g.clearInterval = createClear('Interval');
+  utils__WEBPACK_IMPORTED_MODULE_0__["g"].setTimeout = createSet('Timeout');
+  utils__WEBPACK_IMPORTED_MODULE_0__["g"].clearTimeout = createClear('Timeout');
+  utils__WEBPACK_IMPORTED_MODULE_0__["g"].setInterval = createSet('Interval');
+  utils__WEBPACK_IMPORTED_MODULE_0__["g"].clearInterval = createClear('Interval');
 }
 
 /***/ }),
@@ -16009,7 +16014,6 @@ __webpack_require__.r(__webpack_exports__);
 
 
 function bootstrap() {
-  // context.checkTinyConfig();
   Object(_App__WEBPACK_IMPORTED_MODULE_0__["loadApp"])();
   Object(_bridge__WEBPACK_IMPORTED_MODULE_1__["replyWebview"])();
   Object(_Route__WEBPACK_IMPORTED_MODULE_2__["loadRoute"])();
@@ -16054,10 +16058,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/regenerator */ "./node_modules/@babel/runtime/regenerator/index.js");
 /* harmony import */ var _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var js_bridge__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! js-bridge */ "./src/js-bridge/index.js");
+/* harmony import */ var utils__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! utils */ "./src/utils/index.js");
 
 
 
-var g = self;
+
 
 var _createBridge = Object(js_bridge__WEBPACK_IMPORTED_MODULE_2__["default"])(),
     invokeHandler = _createBridge.invokeHandler,
@@ -16349,45 +16354,45 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "resetUserInteraction", function() { return resetUserInteraction; });
 /* harmony import */ var lodash__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! lodash */ "./node_modules/lodash/lodash.js");
 /* harmony import */ var lodash__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(lodash__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _getLaunchOptions__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./getLaunchOptions */ "./src/service/context/getLaunchOptions.js");
-/* harmony import */ var _getAppInfo__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./getAppInfo */ "./src/service/context/getAppInfo.js");
-/* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../common/global */ "./src/service/common/global.js");
-/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../utils/log */ "./src/service/utils/log.js");
+/* harmony import */ var utils__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! utils */ "./src/utils/index.js");
+/* harmony import */ var _getLaunchOptions__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./getLaunchOptions */ "./src/service/context/getLaunchOptions.js");
+/* harmony import */ var _getAppInfo__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./getAppInfo */ "./src/service/context/getAppInfo.js");
+/* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../common/global */ "./src/service/common/global.js");
+/* harmony import */ var _utils_log__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../utils/log */ "./src/service/utils/log.js");
 
 
 
 
 
-var g = self;
+
 var context = {
   get debug() {
-    return g.TinyConfig && g.TinyConfig.debug;
+    return utils__WEBPACK_IMPORTED_MODULE_1__["g"].TinyConfig && utils__WEBPACK_IMPORTED_MODULE_1__["g"].TinyConfig.debug;
   },
 
   get loadScript() {
-    return g.loadScript || lodash__WEBPACK_IMPORTED_MODULE_0__["noop"];
+    return utils__WEBPACK_IMPORTED_MODULE_1__["g"].loadScript || lodash__WEBPACK_IMPORTED_MODULE_0__["noop"];
   },
 
   get appId() {
-    return g.TinyConfig && g.TinyConfig.appId || '';
+    return utils__WEBPACK_IMPORTED_MODULE_1__["g"].TinyConfig && utils__WEBPACK_IMPORTED_MODULE_1__["g"].TinyConfig.appId || '';
   },
 
   /** 编译阶段生成的用户配置 */
   get tabBarConfig() {
-    return g.TMAConfig && g.TMAConfig.tabBar;
+    return utils__WEBPACK_IMPORTED_MODULE_1__["g"].TMAConfig && utils__WEBPACK_IMPORTED_MODULE_1__["g"].TMAConfig.tabBar;
   },
 
   get appInfo() {
-    return Object(_getAppInfo__WEBPACK_IMPORTED_MODULE_2__["default"])();
+    return Object(_getAppInfo__WEBPACK_IMPORTED_MODULE_3__["default"])();
   },
 
   get launchOptions() {
-    return Object(_getLaunchOptions__WEBPACK_IMPORTED_MODULE_1__["default"])();
+    return Object(_getLaunchOptions__WEBPACK_IMPORTED_MODULE_2__["default"])();
   },
 
   get __allConfig__() {
-    Object(_utils_log__WEBPACK_IMPORTED_MODULE_4__["debug"])('__allConfig__', _common_global__WEBPACK_IMPORTED_MODULE_3__["default"].__allConfig__);
-    return _common_global__WEBPACK_IMPORTED_MODULE_3__["default"].__allConfig__;
+    return _common_global__WEBPACK_IMPORTED_MODULE_4__["default"].__allConfig__;
   }
 
 };
@@ -16410,16 +16415,17 @@ function resetUserInteraction() {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _bridge__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./bridge */ "./src/service/bridge/index.js");
-/* harmony import */ var _Timer__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Timer */ "./src/service/Timer/index.js");
-/* harmony import */ var _bootstrap__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./bootstrap */ "./src/service/bootstrap.js");
-/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./App */ "./src/service/App/index.js");
-/* harmony import */ var _Page__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./Page */ "./src/service/Page/index.js");
-/* harmony import */ var _Component__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./Component */ "./src/service/Component/index.js");
-/* harmony import */ var _Behavior__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./Behavior */ "./src/service/Behavior/index.js");
-/* harmony import */ var _Route__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./Route */ "./src/service/Route/index.js");
-/* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./common/global */ "./src/service/common/global.js");
-/* harmony import */ var _apis__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./apis */ "./src/service/apis/index.js");
+/* harmony import */ var utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! utils */ "./src/utils/index.js");
+/* harmony import */ var _bridge__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./bridge */ "./src/service/bridge/index.js");
+/* harmony import */ var _Timer__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./Timer */ "./src/service/Timer/index.js");
+/* harmony import */ var _bootstrap__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./bootstrap */ "./src/service/bootstrap.js");
+/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./App */ "./src/service/App/index.js");
+/* harmony import */ var _Page__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./Page */ "./src/service/Page/index.js");
+/* harmony import */ var _Component__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./Component */ "./src/service/Component/index.js");
+/* harmony import */ var _Behavior__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./Behavior */ "./src/service/Behavior/index.js");
+/* harmony import */ var _Route__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./Route */ "./src/service/Route/index.js");
+/* harmony import */ var _common_global__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./common/global */ "./src/service/common/global.js");
+/* harmony import */ var _apis__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./apis */ "./src/service/apis/index.js");
 /*
  * @Author: YufJ
  * @Date: 2021-07-04 01:11:10
@@ -16437,20 +16443,28 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-var g = self;
-g.__IS_WORKER__ = true;
-g.JSBridge = _bridge__WEBPACK_IMPORTED_MODULE_0__;
-g.tiny = _apis__WEBPACK_IMPORTED_MODULE_9__;
-g.wx = _apis__WEBPACK_IMPORTED_MODULE_9__;
-g.getCurrentPages = _Route__WEBPACK_IMPORTED_MODULE_7__["getCurrentPages"];
-g.getApp = _App__WEBPACK_IMPORTED_MODULE_3__["getApp"];
-g.App = _App__WEBPACK_IMPORTED_MODULE_3__["registerApp"];
-g.Page = _Page__WEBPACK_IMPORTED_MODULE_4__["default"];
-g.Component = _Component__WEBPACK_IMPORTED_MODULE_5__["default"];
-g.Behavior = _Behavior__WEBPACK_IMPORTED_MODULE_6__["default"];
-g.$global = _common_global__WEBPACK_IMPORTED_MODULE_8__["default"];
-Object(_Timer__WEBPACK_IMPORTED_MODULE_1__["default"])();
-Object(_bootstrap__WEBPACK_IMPORTED_MODULE_2__["default"])();
+
+utils__WEBPACK_IMPORTED_MODULE_0__["g"].__IS_WORKER__ = true;
+utils__WEBPACK_IMPORTED_MODULE_0__["g"].JSBridge = _bridge__WEBPACK_IMPORTED_MODULE_1__;
+utils__WEBPACK_IMPORTED_MODULE_0__["g"].wx = new Proxy(_apis__WEBPACK_IMPORTED_MODULE_10__, {
+  get: function get(obj, prop) {
+    if (prop in obj) {
+      return obj[prop];
+    } else {
+      console.warn("api: ".concat(prop, "\u6682\u4E0D\u652F\u6301\uFF0C\u656C\u8BF7\u671F\u5F85"));
+      return function () {};
+    }
+  }
+});
+utils__WEBPACK_IMPORTED_MODULE_0__["g"].getCurrentPages = _Route__WEBPACK_IMPORTED_MODULE_8__["getCurrentPages"];
+utils__WEBPACK_IMPORTED_MODULE_0__["g"].getApp = _App__WEBPACK_IMPORTED_MODULE_4__["getApp"];
+utils__WEBPACK_IMPORTED_MODULE_0__["g"].App = _App__WEBPACK_IMPORTED_MODULE_4__["registerApp"];
+utils__WEBPACK_IMPORTED_MODULE_0__["g"].Page = _Page__WEBPACK_IMPORTED_MODULE_5__["default"];
+utils__WEBPACK_IMPORTED_MODULE_0__["g"].Component = _Component__WEBPACK_IMPORTED_MODULE_6__["default"];
+utils__WEBPACK_IMPORTED_MODULE_0__["g"].Behavior = _Behavior__WEBPACK_IMPORTED_MODULE_7__["default"];
+utils__WEBPACK_IMPORTED_MODULE_0__["g"].$global = _common_global__WEBPACK_IMPORTED_MODULE_9__["default"];
+Object(_Timer__WEBPACK_IMPORTED_MODULE_2__["default"])();
+Object(_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"])();
 
 /***/ }),
 
@@ -16802,11 +16816,12 @@ function wrapUserFunctions(description, callbacks) {
 /*!****************************!*\
   !*** ./src/utils/index.js ***!
   \****************************/
-/*! exports provided: Deferred, getType, mergeData, setValue, castPath, isIndex */
+/*! exports provided: g, Deferred, getType, mergeData, setValue, castPath, isIndex */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
+/* WEBPACK VAR INJECTION */(function(global) {/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "g", function() { return g; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Deferred", function() { return Deferred; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getType", function() { return getType; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "mergeData", function() { return mergeData; });
@@ -16823,6 +16838,25 @@ __webpack_require__.r(__webpack_exports__);
  * @FilePath: /tiny-v1/packages/base2.0/src/utils/index.js
  */
 
+var g = function () {
+  var local;
+
+  if (typeof global !== 'undefined') {
+    local = global;
+  } else if (typeof self !== 'undefined') {
+    local = self;
+  } else if (typeof window !== 'undefined') {
+    local = window;
+  } else {
+    try {
+      local = Function('return this')();
+    } catch (e) {
+      throw new Error('global object is unavailable in this environment');
+    }
+  }
+
+  return local;
+}();
 function Deferred() {
   var _this = this;
 
@@ -16864,6 +16898,7 @@ function isIndex(e) {
   var t = Number(e);
   return typeof t === 'number' && Number.isSafeInteger(t) && t > -1;
 }
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../node_modules/webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
 
 /***/ })
 

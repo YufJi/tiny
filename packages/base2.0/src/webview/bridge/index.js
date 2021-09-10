@@ -6,8 +6,7 @@
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/bridge/index.js
  */
 import createBridge from 'js-bridge';
-
-const g = self;
+import { g } from 'utils';
 
 g.__IS_WORKER__ = false;
 

@@ -3,6 +3,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const webpack = require('webpack');
 const CopyPlugin = require('copy-webpack-plugin');
+const ProgressBarPlugin = require('progress-bar-webpack-plugin');
 const signale = require('signale');
 
 const generateEntries = require('./generateEntries');
@@ -12,19 +13,22 @@ const { safeJsonParse, normalizePathForWin } = require('./utils');
 /* 完全转译出文件 */
 const transform = require('./transform');
 
+const isDev = process.env.NODE_ENV === 'development';
+
 /**
  * 小程序应用转译入口
  * @param {*} config
  */
 module.exports = function run(config) {
+  signale.time('build');
   const {
     importScripts, /* 需要注入的外链 */
     mergeSubPackages,
-    indexPage = 'render.html',
     src, /* 小程序目录 */
     out, /* 转译输出目录 */
     pluginInjection,
     runtimeConfig = {},
+    watch,
   } = config;
 
   const transformConfig = config;
@@ -80,7 +84,6 @@ module.exports = function run(config) {
   generateAppConfigJson({
     src: sourceDir,
     appJson,
-    indexPage,
     contextPath,
     transformConfig,
   });
@@ -89,9 +92,7 @@ module.exports = function run(config) {
   // transform(assign({}, transformConfig, { cwd: sourceDir }));
   // return;
 
-  const assetExts = ['*.eot', '*.woff', '*.ttf', '*.text', '*.png', '*.jpg', '*.jpeg', '*.gif', '*.bmp', '*.svg', '*.webp'];
-
-  const isDev = true;
+  const assetExtnames = ['*.eot', '*.woff', '*.ttf', '*.text', '*.png', '*.jpg', '*.jpeg', '*.gif', '*.bmp', '*.svg', '*.webp'];
 
   const getConfig = (type) => {
     const isWorker = type === 'worker';
@@ -101,15 +102,19 @@ module.exports = function run(config) {
 
     return {
       entry: isWorker ? {
-        'index.worker': path.join(temp, 'index$.worker.js'),
+        service: path.join(temp, 'index.service.js'),
       } : {
-        'index.web': path.join(temp, 'index$.web.js'),
+        webview: path.join(temp, 'index.webview.js'),
       },
       resolve: {
         alias: {
-          compiler: path.join(__dirname),
+          'tiny-compiler': path.join(__dirname),
         },
-        extensions: isWorker ? ['.worker.js', '.js', '.json'] : ['.web.js', '.js', '.json'],
+      },
+      resolveLoader: {
+        modules: [
+          path.resolve(__dirname, 'loaders'),
+        ],
       },
       output: {
         path: path.join(out),
@@ -120,7 +125,7 @@ module.exports = function run(config) {
         rules: [{
           test: /\.(j|t)s$/,
           use: [{
-            loader: path.resolve(__dirname, 'loaders/js-loader'),
+            loader: 'js-loader',
             options: {
               isWorker,
               cwd: sourceDir,
@@ -130,7 +135,7 @@ module.exports = function run(config) {
         }, {
           test: new RegExp(`${transformConfig.styleExtname}$`),
           use: [{
-            loader: path.resolve(__dirname, 'loaders/css-loader'),
+            loader: 'css-loader',
             options: {
               cwd: sourceDir,
               transformConfig: assign(
@@ -151,7 +156,7 @@ module.exports = function run(config) {
 
                 }],
                 [require.resolve('@babel/preset-react'), {
-                  pragma: 'Nerv.createElement', // default pragma is React.createElement (only in classic runtime)
+                  pragma: 'Nerv.createElement', // 配合编译头部添加的‘const Nerv = self.Nerv’
                   throwIfNamespace: false,
                 }],
               ],
@@ -160,7 +165,7 @@ module.exports = function run(config) {
               ],
             },
           }, {
-            loader: path.resolve(__dirname, 'loaders/template-loader'),
+            loader: 'template-loader',
             options: {
               cwd: sourceDir,
               transformConfig: config,
@@ -169,7 +174,7 @@ module.exports = function run(config) {
         }, {
           test: new RegExp(`${transformConfig.sjsExtname}$`),
           use: [{
-            loader: path.resolve(__dirname, 'loaders/sjs-loader'),
+            loader: 'sjs-loader',
             options: {
               cwd: sourceDir,
               transformConfig: config,
@@ -178,9 +183,9 @@ module.exports = function run(config) {
         }],
       },
       plugins: [
-        // new webpack.ProgressPlugin(),
+        new ProgressBarPlugin(),
         !isWorker && new CopyPlugin([
-          ...assetExts.map((type) => {
+          ...assetExtnames.map((type) => {
             return {
               from: path.join(sourceDir, `**/${type}`),
               transformPath(targetPath, absolutePath) {
@@ -189,14 +194,13 @@ module.exports = function run(config) {
             };
           }),
           `${path.join(temp, 'appConfig.json')}`,
-          `${path.join(temp, 'tabBar.json')}`,
 
           // 模板文件
           templateDir,
         ]),
       ].filter(Boolean),
       externals: {
-        nerv: 'self.Nerv',
+
       },
       stats: 'minimal',
     };
@@ -236,13 +240,28 @@ module.exports = function run(config) {
   ]);
 
   signale.start('开始构建');
-  compiler.run((err, stats) => {
-    if (err || stats.hasErrors()) {
-      log(getErrorInfo(err, stats));
-      return;
-    }
 
-    log(getErrorInfo(err, stats));
-    signale.complete('构建成功');
-  });
+  if (watch) {
+    compiler.watch({}, (err, stats) => {
+      if (err || stats.hasErrors()) {
+        log(getErrorInfo(err, stats));
+        return;
+      }
+
+      log(getErrorInfo(err, stats));
+      signale.timeEnd('build');
+      signale.complete('构建成功');
+    });
+  } else {
+    compiler.run((err, stats) => {
+      if (err || stats.hasErrors()) {
+        log(getErrorInfo(err, stats));
+        return;
+      }
+
+      log(getErrorInfo(err, stats));
+      signale.timeEnd('build');
+      signale.complete('构建成功');
+    });
+  }
 };

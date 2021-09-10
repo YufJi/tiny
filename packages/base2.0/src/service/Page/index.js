@@ -1,17 +1,16 @@
 import { defaults, mapValues, isFunction, noop } from 'lodash';
+import { g } from 'utils';
 
 import { wrapUserFunctions, wrapUserFunction } from '../utils/wrapfn';
 import { debug, warn } from '../utils/log';
 import { pageInitMap } from '../Model/common';
 import $global from '../common/global';
 
-const g = self;
-
 export default function registerPage(options = {}) {
   const { is } = $global.currentPageConfig;
   $global.__allConfig__[is] = $global.currentPageConfig;
 
-  debug('全局配置：', JSON.stringify(g.TinyConfig.pages));
+  debug('注册Page：', $global.currentPageConfig);
 
   if (!Array.isArray(g.TinyConfig.pages) || !g.TinyConfig.pages.includes(is)) {
     throw new Error(`Invalid path: ${is} doesn't declared in app.json`);

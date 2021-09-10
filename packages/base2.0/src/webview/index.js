@@ -5,6 +5,7 @@
  * @Description:
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/index.js
  */
+import { g } from 'utils';
 import * as bridge from './bridge';
 import './web-components';
 
@@ -12,8 +13,6 @@ import bootstrap from './bootstrap';
 import Nerv from './nerv';
 import XMLRuntime from './render-helpers';
 import StyleSheet from './StyleSheet';
-
-const g = self;
 
 g.onerror = function onerror(msg = '', url, line, col, error) {
   let stack = [];

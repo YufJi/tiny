@@ -1,6 +1,5 @@
 import createBridge from 'js-bridge';
-
-const g = self;
+import { g } from 'utils';
 
 const {
   invokeHandler,

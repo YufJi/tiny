@@ -6,11 +6,12 @@
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/bootstrap.js
  */
 import EventEmitter from 'eventemitter3';
+import { g } from 'utils';
 import { h, hydrate as render } from './nerv';
 import * as bridge from './bridge';
 import MicroApp from './MicroApp';
 
-const globalJSCore = self.JSCore;
+const globalJSCore = g.JSCore;
 
 function createFields(root) {
   return {

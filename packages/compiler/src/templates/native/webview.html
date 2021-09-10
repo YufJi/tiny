@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>render</title>
-  <link rel="stylesheet" href="/base/webview.css">
+  <link rel="stylesheet" href="tiny://base/webview.css">
   <style>
     * {
       -webkit-touch-callout:none; /*系统默认菜单被禁用*/
@@ -69,9 +69,8 @@
       </div>
     </div>
   </div>
-  <!-- 模拟preload -->
-  <script src="/preload/index.js" defer></script>
-  <script src="/base/webview.js" defer></script>
-  <script src="./index.web.js" defer></script>
+
+  <script src="tiny://base/webview.js" defer></script>
+  <script src="./webview.js" defer></script>
 </body>
 </html>

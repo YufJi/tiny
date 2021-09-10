@@ -6,7 +6,6 @@ const generateMultiLanguageAppConfigJson = require('./generateMultiLanguageAppCo
 module.exports = function generateAppConfigJson({
   appJson,
   src,
-  indexPage,
   contextPath,
   transformConfig,
 }) {
@@ -25,7 +24,6 @@ module.exports = function generateAppConfigJson({
     (app.tabBar.list || []).forEach((t) => {
       delete t.id;
       t.tag = t.pagePath;
-      t.url = `${indexPage}#${t.tag}`;
       delete t.pagePath;
 
       if (t.iconPath) {
@@ -37,12 +35,8 @@ module.exports = function generateAppConfigJson({
 
       t.launchParamsTag = t.tag;
     });
-    // webConfig.tabBar = app.tabBar;
 
-    fs.writeFileSync(
-      path.join(temp, 'tabBar.json'),
-      JSON.stringify(app.tabBar, null, 2),
-    );
+    webConfig.tabBar = app.tabBar;
   }
   const launchParams = {};
   Object.keys(appJson).forEach((page) => {
@@ -76,9 +70,6 @@ module.exports = function generateAppConfigJson({
     webConfig.useDynamicPlugins = app.useDynamicPlugins;
   }
   webConfig.launchParams = launchParams;
-  if (indexPage) {
-    webConfig.prerenderPage = indexPage;
-  }
 
   fs.writeFileSync(
     path.join(temp, 'appConfig.json'),

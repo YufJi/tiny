@@ -9,27 +9,24 @@ const { relative, normalizePathForWin, getSecurityHeader } = require('./utils');
 
 function wrapRegisterPage(pageMetaConfig, code, config) {
   return `
-${getSecurityHeader(config.forbiddenGlobals)}
+    ${getSecurityHeader(config.forbiddenGlobals)}
 
-$global.currentPageConfig = ${pageMetaConfig};
+    $global.currentPageConfig = ${pageMetaConfig};
 
-${code}
-`;
+    ${code}
+  `;
 }
 
 function transformPageJsForWorker(str, pagePath, config) {
   const filename = path.basename(pagePath);
   const { tabIndex, usingComponents, templateExtname } = config;
   const info = `
-{
-  is: '${pagePath}',
-  ${
-  usingComponents
-    ? `usingComponents: ${JSON.stringify(usingComponents)},`
-    : ''
-}
-  ${tabIndex !== -1 ? `tabIndex: ${tabIndex},` : ''}
-}`;
+    {
+      is: '${pagePath}',
+      ${usingComponents ? `usingComponents: ${JSON.stringify(usingComponents)},` : ''}
+      ${tabIndex !== -1 ? `tabIndex: ${tabIndex},` : ''}
+    }
+  `;
 
   return wrapRegisterPage(info, str, config);
 }
@@ -52,12 +49,14 @@ function transformPageJsForWebRender(name, config) {
     throw new Error(`can not find ${xmlPath}`);
   }
   const pagePath = pluginId ? getPluginPath(pluginId, name) : name;
-  // es5 for node_modules
+
   const info = `{
-      ${usingComponents? `usingComponents: ${JSON.stringify(transformUsingComponents({
-    usingComponents,
-    pluginId,
-  }))},` : ''}
+      ${usingComponents
+    ? `usingComponents: ${JSON.stringify(transformUsingComponents({
+      usingComponents,
+      pluginId,
+    }))},`
+    : ''}
       ${config.tabIndex !== -1 ? `tabIndex: ${config.tabIndex},` : ''}
       get render() {
         const fn = require('./${filename}${templateExtname}${resourceQuery}')
@@ -73,7 +72,9 @@ function transformPageJsForWebRender(name, config) {
     window.app = window.app || {};
     window.app['${pagePath}'] = ${info};
 
-    window['generateFunc'] = window['generateFunc'] || {};
+    if (!window['generateFunc']) {
+      window['generateFunc'] = {}
+    }
     window['generateFunc']['${pagePath}'] = function() {
       const generateFunc = window.app['${pagePath}'];
 

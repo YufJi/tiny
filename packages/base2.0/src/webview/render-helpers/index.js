@@ -7,7 +7,6 @@ import getLooseDataMember from './getLooseDataMember';
 import getSJSMember from './getSJSMember';
 import iterate from './iterate';
 import renderSlot from './renderSlot';
-import resolveScopedSlots from './resolveScopedSlots';
 import toString from './toString';
 import useTemplate from './useTemplate';
 
@@ -21,7 +20,6 @@ export default {
   getSJSMember,
   iterate,
   renderSlot,
-  resolveScopedSlots,
   toString,
   useTemplate,
 };

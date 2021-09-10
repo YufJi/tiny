@@ -11,7 +11,7 @@ const {
   validVariableName,
   reportError,
 } = require('./utils');
-const { processSJSImport, processComponentImport } = require('./processImport');
+const { processSJSImport } = require('./processImport');
 
 const IMPORT = 'import';
 const cwd = process.cwd();
@@ -26,7 +26,7 @@ function isJsx(c) {
   if (c.type === 'script') return false;
 
   const tag = c.type === 'tag' && c.name;
-  return tag !== 'import-module' && tag !== 'import';
+  return tag !== 'import';
 }
 
 function isTopLevel(level) {
@@ -55,7 +55,7 @@ function isRenderChildrenArray(children = [], considerFor) {
       if (attrs[this.ELIF_ATTR_NAME] || this.ELSE_ATTR_NAME in attrs) {
         return count;
       }
-      if (tag === 'import-module' || tag === 'template' && !attrs.is || tag === 'import') {
+      if (tag === 'template' && !attrs.is || tag === 'import') {
         return count;
       }
     }
@@ -111,12 +111,10 @@ function MLTransformer(template, _config) {
   this.subTemplatesCode = {};
   this.code = [];
   this.state = [];
-  // caused by import-module
   this.rootScope = this._makeScope();
   this.scope = [this.rootScope];
   this.importIncludeIndex = 1;
   this.codeDepth = [0];
-  this.scopedSlotSections = [];
   this.cKey = 0;
 }
 
@@ -153,47 +151,11 @@ assign(MLTransformer.prototype, {
     }
     return !isTopLevel(level) && --this.codeDepth[this.codeDepth.length - 1] === 0;
   },
-  /*  */
-  pushScopedSlots() {
-    const slots = [];
-    this.scopedSlotSections.push(slots);
-    this.scopedSlots = slots;
-    return slots;
-  },
-  popScopedSlots() {
-    const slots = this.scopedSlotSections.pop();
-    this.scopedSlots = this.scopedSlotSections[this.scopedSlotSections.length - 1];
-    return slots;
-  },
-  addScopedSlot(slot, slotScope, code) {
-    this.scopedSlots.push({
-      slot,
-      fn: `(${slotScope}) => (${code.join('\n')})`,
-    });
-  },
-  getScopedSlots() {
-    if (!this.scopedSlots.length) {
-      return null;
-    }
-    const ret = ['['];
-    this.scopedSlots.forEach((s) => {
-      ret.push('{');
-      if (s.slot) {
-        ret.push(`slot: ${s.slot},`);
-      }
-      ret.push(`fn: ${s.fn}`);
-      ret.push('},');
-    });
-    ret.push(']');
-    return ret.join(' ');
-  },
   pushCodeSection() {
     this.codeDepth.push(0);
-    this.pushScopedSlots();
   },
   popCodeSection() {
     this.codeDepth.pop();
-    this.popScopedSlots();
   },
   pushState() {
     this.state.push({
@@ -462,7 +424,7 @@ assign(MLTransformer.prototype, {
   },
   generateCodeForTag(node, level) {
     const { importTplDeps, subTemplatesCode, componentDeps, includeTplDeps } = this;
-    const { attributeProcessor, tagProcessor, allowScript, allowImportModule, useFragment } = this.config;
+    const { attributeProcessor, tagProcessor, allowScript, useFragment } = this.config;
     level = level || 0;
 
     if (node.type === 'text') {
@@ -503,27 +465,6 @@ assign(MLTransformer.prototype, {
 
     const hasChildren = node.children && node.children.length;
 
-    if (attrs['slot-scope']) {
-      const slotScope = attrs['slot-scope'];
-      delete attrs['slot-scope'];
-      const slot = this.processExpression(attrs.slot, {
-        node,
-        attrName: 'slot',
-      });
-      delete attrs.slot;
-      this.pushState();
-
-      this.scope.push(this._makeScope({
-        [slotScope]: 1,
-      }));
-      this.generateCodeForTag(node, TOP_LEVEL);
-
-      const { code } = this.popState();
-
-      this.addScopedSlot(slot, slotScope, code);
-      return;
-    }
-
     // define slot and default content
     if (tag === 'slot') {
       if (this.isStartOfCodeSection(level)) {
@@ -554,35 +495,20 @@ assign(MLTransformer.prototype, {
       return;
     }
 
-    /* 后门 */
-    if (tag === 'import-module') {
-      if (allowImportModule) {
-        const { from } = attrs;
-
-        if (typeof allowImportModule === 'function' && !allowImportModule(from)) {
-          return;
-        }
-        const depCode = getDepCode.call(this, node, 1, processComponentImport);
-        if (depCode) {
-          this.header.push(`import ${depCode} from ${toLiteralString(from)};`);
-        }
-      }
-      return;
-    }
-
-    if (tag === 'wxs') {
-      if (attrs.module) {
-        if (attrs.src == null) {
+    const { tag: sjsTag, module: sjsModule, src: sjsSrc } = this.config.sjsTemplate;
+    if (tag === sjsTag) {
+      if (attrs[sjsModule]) {
+        if (attrs[sjsSrc] == null) {
           this.throwParseError({
             node,
-            reason: '"src" expected in wxs tag',
+            reason: `"${sjsSrc}" expected in ${sjsTag} tag`,
           });
         }
       }
 
-      const _depCode = getDepCode.call(this, node, 'wxs', processSJSImport);
-      if (_depCode) {
-        this.header.push(`import ${_depCode} from ${toLiteralString(`${checkImport(attrs.src, this.config.sjsExtname, this.config)}`)};`);
+      const depCode = getDepCode.call(this, node, sjsTag, processSJSImport);
+      if (depCode) {
+        this.header.push(`import ${depCode} from ${toLiteralString(`${checkImport(attrs[sjsSrc], this.config.sjsExtname, this.config)}`)};`);
       }
       return;
     }
@@ -719,12 +645,6 @@ assign(MLTransformer.prototype, {
           // <view>{}</view>
           this.pushCodeSection();
           this.generateCodeForTags(node.children, nextLevel, false);
-          const $scopedSlots = this.getScopedSlots();
-          if ($scopedSlots) {
-            _modifyFn((content) => {
-              return `${content.slice(0, -1)} $scopedSlots={$resolveScopedSlots(${$scopedSlots})}>`;
-            });
-          }
           this.popCodeSection();
         }
 
@@ -776,7 +696,6 @@ assign(MLTransformer.prototype, {
         `const $useTemplate = ${templateRuntimeModule}.useTemplate;`,
         `const $createTemplate = ${templateRuntimeModule}.createTemplate;`,
         `const $renderSlot = ${templateRuntimeModule}.renderSlot;`,
-        `const $resolveScopedSlots = ${templateRuntimeModule}.resolveScopedSlots;`,
         `const $getSJSMember = ${templateRuntimeModule}.getSJSMember;`,
         `const $toString = ${templateRuntimeModule}.toString;`,
       );

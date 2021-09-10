@@ -11,7 +11,7 @@ const numberReSnippet = '(?:NaN|-?(?:(?:\\d+|\\d*\\.\\d+)(?:[E|e][+|-]?\\d+)?|In
 const matchOnlyNumberRe = new RegExp(`^(${numberReSnippet})$`);
 
 const elementPrefix = 'tiny';
-const supportedWebcomponents = [
+const supportedWebComponents = [
   'view',
   'button',
   'text',
@@ -31,6 +31,8 @@ const supportedWebcomponents = [
   'swiper',
   'swiper-item',
 ];
+
+const supportedH5Tags = ['i'];
 
 function isNumber(str) {
   return !!str.trim().match(matchOnlyNumberRe);
@@ -66,10 +68,15 @@ function camelCase(name) {
 }
 
 function toComponentName(str) {
-  if (supportedWebcomponents.indexOf(str) !== -1) {
+  if (supportedWebComponents.indexOf(str) !== -1) {
     return `${elementPrefix}-${str}`;
   }
 
+  if (supportedH5Tags.indexOf(str) !== -1) {
+    return str;
+  }
+
+  // 自定义组件
   const ret = camelCase(str);
   return ret.charAt(0).toUpperCase() + ret.slice(1);
 }
@@ -374,5 +381,6 @@ module.exports = {
   getImports,
   getImport,
   isValidFilePath,
-  supportedWebcomponents,
+  supportedWebComponents,
+  supportedH5Tags,
 };

@@ -7,7 +7,7 @@
  */
 import { h, PureComponent, Children } from '../nerv';
 
-function transformChildrenToSlots(children) {
+export function transformChildrenToSlots(children) {
   const slots = {};
   Children.forEach(children, (c) => {
     const slot = c && c.props && c.props.slot || '$default';

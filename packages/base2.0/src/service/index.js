@@ -5,6 +5,7 @@
  * @Description:
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/service/index.js
  */
+import { g } from 'utils';
 import * as bridge from './bridge';
 import timerPolyfill from './Timer';
 import bootstrap from './bootstrap';
@@ -13,16 +14,22 @@ import registerPage from './Page';
 import registerComponent from './Component';
 import registerBehavior from './Behavior';
 import { getCurrentPages } from './Route';
-import global from './common/global';
+import $global from './common/global';
 import * as apis from './apis';
-
-const g = self;
 
 g.__IS_WORKER__ = true;
 
 g.JSBridge = bridge;
-g.tiny = apis;
-g.wx = apis;
+g.wx = new Proxy(apis, {
+  get(obj, prop) {
+    if (prop in obj) {
+      return obj[prop];
+    } else {
+      console.warn(`api: ${prop}暂不支持，敬请期待`);
+      return () => {};
+    }
+  },
+});
 
 g.getCurrentPages = getCurrentPages;
 g.getApp = getApp;
@@ -31,7 +38,7 @@ g.Page =registerPage;
 g.Component = registerComponent;
 g.Behavior = registerBehavior;
 
-g.$global = global;
+g.$global = $global;
 
 timerPolyfill();
 bootstrap();

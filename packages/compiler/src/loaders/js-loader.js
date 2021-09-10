@@ -17,12 +17,11 @@ function isAppJS(path) {
 }
 
 module.exports = function (source) {
+  const { resourcePath } = this;
   const { isWorker, cwd, transformConfig } = loaderUtils.getOptions(
     this,
   );
   const { pluginId, temp } = transformConfig;
-  // console.log('xxxxxx', isWorker, cwd, transformConfig);
-  const { resourcePath } = this;
 
   const isRender = !isWorker;
 

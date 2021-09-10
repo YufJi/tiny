@@ -15,7 +15,7 @@ const bridge = {
       const result = API[method](params, webviewIds, callbackId);
       return JSON.stringify(result);
     } else {
-      console.warn(`method: ${method} 还未实现`);
+      console.warn(`bridge: ${method}暂不支持，敬请期待`);
     }
   },
 };

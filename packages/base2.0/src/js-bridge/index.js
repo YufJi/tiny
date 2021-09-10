@@ -1,8 +1,8 @@
+import { g } from 'utils';
+
 import createSubscribe from './createSubscribe';
 import createPublish from './createPublish';
 import createInvoke from './createInvoke';
-
-const g = self;
 
 export default function createBridge() {
   let jsCore;

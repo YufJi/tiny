@@ -1,11 +1,11 @@
 import { noop } from 'lodash';
+import { g } from 'utils';
 
 import getLaunchOptions from './getLaunchOptions';
 import getAppInfo from './getAppInfo';
 import $global from '../common/global';
 import { debug } from '../utils/log';
 
-const g = self;
 
 const context = {
   get debug() {
@@ -34,7 +34,6 @@ const context = {
   },
 
   get __allConfig__() {
-    debug('__allConfig__', $global.__allConfig__);
     return $global.__allConfig__;
   },
 };

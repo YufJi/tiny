@@ -75,9 +75,9 @@ const appConfig = require('./appConfig.json');
 g.TinyConfig = appConfig;
 `;
 
-  fs.writeFileSync(path.join(temp, 'config$.js'), configJs);
+  fs.writeFileSync(path.join(temp, 'config.js'), configJs);
 
-  const configImport = 'require(\'./config$\');';
+  const configImport = 'require(\'./config\');';
 
   const appImport = `require('${path.relative(temp, path.join(src, 'app'))}');`;
 
@@ -89,7 +89,7 @@ g.TinyConfig = appConfig;
   });
 
   const webIndex = [
-    'require(\'compiler/sjsEnvInit\');',
+    'require(\'tiny-compiler/sjsEnvInit\');',
     configImport,
     ...allComponentsRequires,
     ...pageImports,
@@ -97,7 +97,24 @@ g.TinyConfig = appConfig;
   ];
   const indexWebJs = webIndex.join('\n');
 
-  fs.writeFileSync(path.join(temp, 'index$.web.js'), indexWebJs);
+  fs.writeFileSync(path.join(temp, 'index.webview.js'), indexWebJs);
+
+  const workerIndex = [
+    'if(!self.__TinyInited__) {',
+    'self.__TinyInited__ = true;',
+    configImport,
+    pluginInjection,
+    'function success() {',
+    appImport,
+    ...allComponentsRequires,
+    ...pageImports,
+    '}',
+    'success();',
+    '}',
+  ];
+  const indexWorkerJs = workerIndex.join('\n');
+
+  fs.writeFileSync(path.join(temp, 'index.service.js'), indexWorkerJs);
 
   const packagesJs = {};
   if (app.subPackages) {
@@ -137,30 +154,13 @@ g.TinyConfig = appConfig;
 
       const rootDir = path.join(temp, root);
       fs.mkdirsSync(rootDir);
-      fs.writeFileSync(path.join(rootDir, 'index$.web.js'), packageIndexJs);
+      fs.writeFileSync(path.join(rootDir, 'index.webview.js'), packageIndexJs);
       fs.writeFileSync(
-        path.join(rootDir, 'index$.worker.js'),
+        path.join(rootDir, 'index.service.js'),
         packageIndexJs,
       );
     });
   }
-
-  const workerIndex = [
-    'if(!self.__TinyInited__) {',
-    'self.__TinyInited__ = true;',
-    configImport,
-    pluginInjection,
-    'function success() {',
-    appImport,
-    ...allComponentsRequires,
-    ...pageImports,
-    '}',
-    'success();',
-    '}',
-  ];
-  const indexWorkerJs = workerIndex.join('\n');
-
-  fs.writeFileSync(path.join(temp, 'index$.worker.js'), indexWorkerJs);
 
   return {
     packagesJs,

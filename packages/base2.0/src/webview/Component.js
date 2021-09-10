@@ -9,7 +9,7 @@
 import { memoize } from 'lodash';
 import path from 'path';
 
-import { h, useDangerousReverseLayoutEffect, useLayoutEffect, useRef } from './nerv';
+import { h, useDangerousReverseLayoutEffect, useEffect, useLayoutEffect, useRef } from './nerv';
 import {
   useComponentHubContext,
   useDataChange,
@@ -33,47 +33,25 @@ export function registerCustomComponents(__allConfig__, customComponents) {
     customComponentMap.set(is, defineCustomComponent(is, { using, config }, customComponentMap));
   });
 
-  return function (is) {
-    return customComponentMap.get(is) || null;
-  };
-}
-
-export function createComponentResolve(route, findHandler) {
-  return function (is) {
-    if (is.startsWith('/')) {
-      const p = is.slice(1);
-
-      return [p, `${p}/index`].find(findHandler) || is;
-    }
-
-    const p = path.join(path.dirname(route), is);
-    const pp = [p, `${p}/index`];
-
-    if (!is.startsWith('./')) {
-      const list = [path.join('miniprogram_npm/', is), `${path.join('miniprogram_npm/', is)}/index`];
-      pp.push(list);
-    }
-
-    return pp.find(findHandler) || pp[0];
+  return function (is, name) {
+    return customComponentMap.get(is)(name) || null;
   };
 }
 
 export function defineCustomComponent(is, options, customComponentMap) {
-  const { config, using, displayName } = options;
+  const { config, using } = options;
   const { properties, data } = config;
 
   const resolveComponent = memoize((name) => {
     const path = using && using[name];
     if (!path) return null;
 
-    const component = customComponentMap.get(getRealRoute(is, path)) || null;
-    component.displayName = name;
+    const component = customComponentMap.get(getRealRoute(is, path))(name) || null;
+
     return component;
   });
 
-  return function Component(props) {
-    const { $scopedSlots, children } = props;
-
+  return (displayName) => function Component(props) {
     const { render } = window.app[is];
 
     const { publish } = useJSBridge();
@@ -109,7 +87,6 @@ export function defineCustomComponent(is, options, customComponentMap) {
       >
         {render(changedData, {
           ...ctx,
-          $scopedSlots,
         })}
       </ShadowRoot>
     );
@@ -139,11 +116,10 @@ function ShadowRoot(props) {
     };
   }, []);
 
-  return (
-    <span ref={ref} {...attribute}>
-      {children}
-    </span>
-  );
+  return h($name, {
+    ref,
+    ...attribute,
+  }, children);
 }
 
 function syncInitialInfo(props, nodeId, publish) {
@@ -173,4 +149,24 @@ function syncInitialDataset(data, nodeId, publish) {
     data,
     nodeId,
   });
+}
+
+export function createComponentResolve(route, findHandler) {
+  return function (is) {
+    if (is.startsWith('/')) {
+      const p = is.slice(1);
+
+      return [p, `${p}/index`].find(findHandler) || is;
+    }
+
+    const p = path.join(path.dirname(route), is);
+    const pp = [p, `${p}/index`];
+
+    if (!is.startsWith('./')) {
+      const list = [path.join('miniprogram_npm/', is), `${path.join('miniprogram_npm/', is)}/index`];
+      pp.push(list);
+    }
+
+    return pp.find(findHandler) || pp[0];
+  };
 }

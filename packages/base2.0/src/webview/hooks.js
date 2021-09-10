@@ -9,6 +9,7 @@
 import { divide, forOwn, hasIn, isNil, kebabCase, memoize, isEqual } from 'lodash';
 import { Deferred, mergeData } from 'utils';
 import { useState, useRef, useContext, useLayoutEffect, useEffect, useMemo, useReducer, Children } from './nerv';
+import { transformChildrenToSlots } from './render-helpers/createTemplate';
 import { FieldsContext, ConfigContext, ComponentHubContext } from './context';
 import {
   onComponentDataChange,
@@ -133,20 +134,22 @@ export function useRenderContext() {
   const { publish } = useJSBridge();
   const config = useConfigContext();
   const fields = usePageFields();
+  /* 先注册自定义组件 */
   const resolveComponent = useResolveComponent(config);
+  const eventBinder = useCreation(() => {
+    return memoize((type) => {
+      const handler = function (data) {
+        return publish('PAGE_EVENT', { type, data, nodeId: 0 });
+      };
+      handler.displayName = type;
+
+      return handler;
+    });
+  });
 
   return {
     $$slots: {},
-    $$eventBinder: useCreation(() => {
-      return memoize((type) => {
-        const handler = function (data) {
-          return publish('PAGE_EVENT', { type, data, nodeId: 0 });
-        };
-        handler.displayName = type;
-
-        return handler;
-      });
-    }),
+    $$eventBinder: eventBinder,
     $$resolveComponent: resolveComponent,
     __fields: fields,
     __dirname: (config && config.route) || '',
@@ -174,9 +177,7 @@ export function useResolveComponent(config) {
       if (!is) return null;
 
       const cpath = createComponentResolve(route, findHandler)(is);
-      const CC = getCustomComponents(cpath); // 真正调用vdom render
-
-      CC.displayName = name;
+      const CC = getCustomComponents(cpath, name); // 真正调用vdom render
 
       return CC;
     };
@@ -389,30 +390,13 @@ export function useComponentRenderContext(props, nodeId, is, config, resolveComp
     });
   });
 
-  // const $$slots = useMemo(() => {
-  //   return wrapSlot(props.$$slots || {});
-  // }, [props.$$slots]);
-
-  const $$slots = transformChildrenToSlots(props.children);
-
   return {
-    $$slots,
+    $$slots: transformChildrenToSlots(props.children),
     $$eventBinder: eventBinder,
     $$resolveComponent: resolveComponent,
     __fields: fields,
     __dirname: is,
   };
-}
-
-function transformChildrenToSlots(children) {
-  const slots = {};
-  Children.forEach(children, (c) => {
-    const slot = c && c.props && c.props.slot || '$default';
-    const holder = slots[slot] || [];
-    holder.push(c);
-    slots[slot] = holder;
-  });
-  return slots;
 }
 
 export function useRefinedProps(props, properties) {

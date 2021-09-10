@@ -50,7 +50,7 @@ export function getRealRoute(relative = '', path = '') {
   return relativeParts.concat(pathParts).join('/');
 }
 
-const blackPropList = ['$scopedSlots'];
+const blackPropList = [];
 
 export function normalizeProps(props, properties) {
   const obj = {};
