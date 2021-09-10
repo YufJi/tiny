@@ -27,14 +27,16 @@ export function registerCustomComponents(__allConfig__, customComponents) {
   const customComponentMap = new Map();
 
   Object.keys(customComponents).forEach((is) => {
-    const using = __allConfig__[is].usingComponents;
+    /* 自定义组件初始config */
     const config = customComponents[is];
+    /* 自定义组件下的组件引用 */
+    const using = __allConfig__[is].usingComponents;
 
-    customComponentMap.set(is, defineCustomComponent(is, { using, config }, customComponentMap));
+    customComponentMap.set(is, defineCustomComponent(is, { config, using }, customComponentMap));
   });
 
-  return function (is, name) {
-    return customComponentMap.get(is)(name) || null;
+  return function (is) {
+    return customComponentMap.get(is) || null;
   };
 }
 
@@ -46,12 +48,12 @@ export function defineCustomComponent(is, options, customComponentMap) {
     const path = using && using[name];
     if (!path) return null;
 
-    const component = customComponentMap.get(getRealRoute(is, path))(name) || null;
-
+    const component = customComponentMap.get(getRealRoute(is, path)) || null;
+    component.ComponentName = name;
     return component;
   });
 
-  return (displayName) => function Component(props) {
+  return function Component(props) {
     const { render } = window.app[is];
 
     const { publish } = useJSBridge();
@@ -82,7 +84,7 @@ export function defineCustomComponent(is, options, customComponentMap) {
       <ShadowRoot
         $nodeId={nodeId}
         $config={config}
-        $name={displayName || 'custom-component'}
+        $name={Component.ComponentName || 'custom-component'}
         attribute={props}
       >
         {render(changedData, {

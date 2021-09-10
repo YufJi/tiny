@@ -14,7 +14,6 @@ documentContainer.innerHTML = `<dom-module id="input-style">
         text-overflow: clip;
         overflow: hidden;
         white-space: nowrap;
-        font-family: PingFang SC, -apple-system, helvetica, sans-serif;;
         min-height: 1.4rem;
         -webkit-tap-highlight-color: transparent;
       }
@@ -27,6 +26,7 @@ documentContainer.innerHTML = `<dom-module id="input-style">
         width: 100%;
         font-size: inherit;
         font-weight: inherit;
+        font-style: inherit;
         color: inherit;
         background: transparent;
         display: inherit;
@@ -54,7 +54,6 @@ documentContainer.innerHTML = `<dom-module id="input-style">
         height: 100%;
         font-size: inherit;
         font-weight: inherit;
-        font-family: PingFang SC, -apple-system, helvetica, sans-serif;;
         color: inherit;
         /*background: inherit;*/
         padding: 0;
@@ -368,7 +367,7 @@ class WebInput extends Data(GestureEventListeners(Base(PolymerElement))) {
     });
 
     // const data = this.getEventTargetData();
-    // tt.publish('onKeyboardValueChange', {
+    // publish('onKeyboardValueChange', {
     //   value,
     //   inputId: this.webInputId,
     //   data,

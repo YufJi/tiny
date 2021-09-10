@@ -16450,10 +16450,9 @@ utils__WEBPACK_IMPORTED_MODULE_0__["g"].wx = new Proxy(_apis__WEBPACK_IMPORTED_M
   get: function get(obj, prop) {
     if (prop in obj) {
       return obj[prop];
-    } else {
-      console.warn("api: ".concat(prop, "\u6682\u4E0D\u652F\u6301\uFF0C\u656C\u8BF7\u671F\u5F85"));
-      return function () {};
     }
+
+    console.warn("api: ".concat(prop, "\u6682\u4E0D\u652F\u6301\uFF0C\u656C\u8BF7\u671F\u5F85"));
   }
 });
 utils__WEBPACK_IMPORTED_MODULE_0__["g"].getCurrentPages = _Route__WEBPACK_IMPORTED_MODULE_8__["getCurrentPages"];

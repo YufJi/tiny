@@ -1,7 +1,6 @@
 const css = require('css');
 const assign = require('object-assign');
 const autoprefixer = require('autoprefixer');
-const defaultLib = require('./defaultLib');
 const {
   relative,
   isNumber,

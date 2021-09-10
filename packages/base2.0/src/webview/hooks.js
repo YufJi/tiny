@@ -177,8 +177,8 @@ export function useResolveComponent(config) {
       if (!is) return null;
 
       const cpath = createComponentResolve(route, findHandler)(is);
-      const CC = getCustomComponents(cpath, name); // 真正调用vdom render
-
+      const CC = getCustomComponents(cpath); // 真正调用vdom render
+      CC.ComponentName = name;
       return CC;
     };
   }, [config]);

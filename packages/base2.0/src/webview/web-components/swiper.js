@@ -1,5 +1,6 @@
 import { html, PolymerElement } from '@polymer/polymer';
 import { elementPrefix, upperCasePerfix } from 'utils/config';
+import transformRpx from '../nerv/utils/transformRpx';
 import { Base, TouchTrack } from './mixins';
 
 const documentContainer = document.createElement('div');
@@ -539,7 +540,7 @@ class Swiper extends TouchTrack(Base(PolymerElement)) {
     if (/^\s*[+-]?\d+(\.\d+)?(px)?\s*$/i.test(e)) {
       return e.slice(-2) !== 'px' ? `${e}px` : e;
     } else if (/^\s*[+-]?\d+(\.\d+)?rpx\s*$/i.test(e)) {
-      return tt.transformRpx(e);
+      return transformRpx(e);
     } else {
       return '';
     }

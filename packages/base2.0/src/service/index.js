@@ -24,10 +24,9 @@ g.wx = new Proxy(apis, {
   get(obj, prop) {
     if (prop in obj) {
       return obj[prop];
-    } else {
-      console.warn(`api: ${prop}暂不支持，敬请期待`);
-      return () => {};
     }
+
+    console.warn(`api: ${prop}暂不支持，敬请期待`);
   },
 });
 

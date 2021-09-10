@@ -25128,15 +25128,18 @@ function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { va
 function registerCustomComponents(__allConfig__, customComponents) {
   var customComponentMap = new Map();
   Object.keys(customComponents).forEach(function (is) {
-    var using = __allConfig__[is].usingComponents;
+    /* 自定义组件初始config */
     var config = customComponents[is];
+    /* 自定义组件下的组件引用 */
+
+    var using = __allConfig__[is].usingComponents;
     customComponentMap.set(is, defineCustomComponent(is, {
-      using: using,
-      config: config
+      config: config,
+      using: using
     }, customComponentMap));
   });
-  return function (is, name) {
-    return customComponentMap.get(is)(name) || null;
+  return function (is) {
+    return customComponentMap.get(is) || null;
   };
 }
 function defineCustomComponent(is, options, customComponentMap) {
@@ -25147,58 +25150,57 @@ function defineCustomComponent(is, options, customComponentMap) {
   var resolveComponent = Object(lodash__WEBPACK_IMPORTED_MODULE_2__["memoize"])(function (name) {
     var path = using && using[name];
     if (!path) return null;
-    var component = customComponentMap.get(getRealRoute(is, path))(name) || null;
+    var component = customComponentMap.get(getRealRoute(is, path)) || null;
+    component.ComponentName = name;
     return component;
   });
-  return function (displayName) {
-    return function Component(props) {
-      var render = window.app[is].render;
+  return function Component(props) {
+    var render = window.app[is].render;
 
-      var _useJSBridge = Object(_hooks__WEBPACK_IMPORTED_MODULE_5__["useJSBridge"])(),
-          publish = _useJSBridge.publish;
+    var _useJSBridge = Object(_hooks__WEBPACK_IMPORTED_MODULE_5__["useJSBridge"])(),
+        publish = _useJSBridge.publish;
 
-      var nodeId = Object(_hooks__WEBPACK_IMPORTED_MODULE_5__["useNodeId"])();
-      var ctx = Object(_hooks__WEBPACK_IMPORTED_MODULE_5__["useComponentRenderContext"])(props, nodeId, is, config, resolveComponent);
+    var nodeId = Object(_hooks__WEBPACK_IMPORTED_MODULE_5__["useNodeId"])();
+    var ctx = Object(_hooks__WEBPACK_IMPORTED_MODULE_5__["useComponentRenderContext"])(props, nodeId, is, config, resolveComponent);
 
-      var _useRefinedProps = Object(_hooks__WEBPACK_IMPORTED_MODULE_5__["useRefinedProps"])(props, properties),
-          _useRefinedProps2 = _babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1___default()(_useRefinedProps, 2),
-          refinedProps = _useRefinedProps2[0],
-          initialProps = _useRefinedProps2[1];
+    var _useRefinedProps = Object(_hooks__WEBPACK_IMPORTED_MODULE_5__["useRefinedProps"])(props, properties),
+        _useRefinedProps2 = _babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1___default()(_useRefinedProps, 2),
+        refinedProps = _useRefinedProps2[0],
+        initialProps = _useRefinedProps2[1];
 
-      var _useRefinedDataset = Object(_hooks__WEBPACK_IMPORTED_MODULE_5__["useRefinedDataset"])(props),
-          _useRefinedDataset2 = _babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1___default()(_useRefinedDataset, 2),
-          refinedDataset = _useRefinedDataset2[0],
-          initialDataset = _useRefinedDataset2[1];
+    var _useRefinedDataset = Object(_hooks__WEBPACK_IMPORTED_MODULE_5__["useRefinedDataset"])(props),
+        _useRefinedDataset2 = _babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1___default()(_useRefinedDataset, 2),
+        refinedDataset = _useRefinedDataset2[0],
+        initialDataset = _useRefinedDataset2[1];
 
-      var changedData = Object(_hooks__WEBPACK_IMPORTED_MODULE_5__["useDataChange"])(nodeId, data, refinedProps);
+    var changedData = Object(_hooks__WEBPACK_IMPORTED_MODULE_5__["useDataChange"])(nodeId, data, refinedProps);
 
-      var _useLifeCycleHooks = Object(_hooks__WEBPACK_IMPORTED_MODULE_5__["useLifeCycleHooks"])(nodeId, is),
-          _useLifeCycleHooks2 = _babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1___default()(_useLifeCycleHooks, 4),
-          created = _useLifeCycleHooks2[0],
-          attached = _useLifeCycleHooks2[1],
-          ready = _useLifeCycleHooks2[2],
-          detached = _useLifeCycleHooks2[3];
+    var _useLifeCycleHooks = Object(_hooks__WEBPACK_IMPORTED_MODULE_5__["useLifeCycleHooks"])(nodeId, is),
+        _useLifeCycleHooks2 = _babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1___default()(_useLifeCycleHooks, 4),
+        created = _useLifeCycleHooks2[0],
+        attached = _useLifeCycleHooks2[1],
+        ready = _useLifeCycleHooks2[2],
+        detached = _useLifeCycleHooks2[3];
 
-      Object(_nerv__WEBPACK_IMPORTED_MODULE_4__["useDangerousReverseLayoutEffect"])(function () {
-        created();
-        syncInitialInfo(props, nodeId, publish);
-        syncInitialProps(refinedProps, nodeId, publish);
-        syncInitialDataset(refinedDataset, nodeId, publish);
-        attached();
-        ready();
-        return function () {
-          return detached();
-        };
-      }, []);
-      Object(_hooks__WEBPACK_IMPORTED_MODULE_5__["useSyncChangedProps"])(refinedProps, nodeId, initialProps);
-      Object(_hooks__WEBPACK_IMPORTED_MODULE_5__["useSyncChangedDataset"])(refinedDataset, nodeId, initialDataset);
-      return Object(_nerv__WEBPACK_IMPORTED_MODULE_4__["h"])(ShadowRoot, {
-        $nodeId: nodeId,
-        $config: config,
-        $name: displayName || 'custom-component',
-        attribute: props
-      }, render(changedData, _objectSpread({}, ctx)));
-    };
+    Object(_nerv__WEBPACK_IMPORTED_MODULE_4__["useDangerousReverseLayoutEffect"])(function () {
+      created();
+      syncInitialInfo(props, nodeId, publish);
+      syncInitialProps(refinedProps, nodeId, publish);
+      syncInitialDataset(refinedDataset, nodeId, publish);
+      attached();
+      ready();
+      return function () {
+        return detached();
+      };
+    }, []);
+    Object(_hooks__WEBPACK_IMPORTED_MODULE_5__["useSyncChangedProps"])(refinedProps, nodeId, initialProps);
+    Object(_hooks__WEBPACK_IMPORTED_MODULE_5__["useSyncChangedDataset"])(refinedDataset, nodeId, initialDataset);
+    return Object(_nerv__WEBPACK_IMPORTED_MODULE_4__["h"])(ShadowRoot, {
+      $nodeId: nodeId,
+      $config: config,
+      $name: Component.ComponentName || 'custom-component',
+      attribute: props
+    }, render(changedData, _objectSpread({}, ctx)));
   };
 }
 
@@ -26269,8 +26271,9 @@ function useResolveComponent(config) {
       var is = __allConfig__[route].usingComponents && __allConfig__[route].usingComponents[name];
       if (!is) return null;
       var cpath = Object(_Component__WEBPACK_IMPORTED_MODULE_9__["createComponentResolve"])(route, findHandler)(is);
-      var CC = getCustomComponents(cpath, name); // 真正调用vdom render
+      var CC = getCustomComponents(cpath); // 真正调用vdom render
 
+      CC.ComponentName = name;
       return CC;
     };
   }, [config]);
@@ -30383,13 +30386,13 @@ function patchEvent(eventName, lastEvent, nextEvent, domNode) {
       Object(_event__WEBPACK_IMPORTED_MODULE_6__["addListener"])(domNode, name, fn, options);
     }
 
-    var displayName = nextEvent.name;
+    var _eventName = nextEvent.name;
     listener["".concat(name)]["".concat(capture ? 'capture' : 'bubble')] = {
       options: options,
       handler: nextEvent,
-      name: displayName
+      name: _eventName
     };
-    domNode.setAttribute(raw, displayName);
+    domNode.setAttribute(raw, _eventName);
   } else {
     listener["".concat(name)]["".concat(capture ? 'capture' : 'bubble')] = null;
     domNode.removeAttribute(raw);
@@ -32794,7 +32797,7 @@ function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Re
 
 var documentContainer = document.createElement('div');
 documentContainer.setAttribute('style', 'display: none;');
-documentContainer.innerHTML = "<dom-module id=\"input-style\">\n  <template>\n    <style>\n      :host {\n        display: block;\n        height: 1.4rem;\n        text-overflow: clip;\n        overflow: hidden;\n        white-space: nowrap;\n        font-family: PingFang SC, -apple-system, helvetica, sans-serif;;\n        min-height: 1.4rem;\n        -webkit-tap-highlight-color: transparent;\n      }\n\n      :host input {\n        position: relative;\n        min-height: 1.4rem;\n        border: none;\n        height: inherit;\n        width: 100%;\n        font-size: inherit;\n        font-weight: inherit;\n        color: inherit;\n        background: transparent;\n        display: inherit;\n        padding: 0;\n        margin: 0;\n        outline: none;\n        vertical-align: middle;\n        text-align: inherit;\n        overflow: inherit;\n        white-space: inherit;\n        text-overflow: inherit;\n        -webkit-tap-highlight-color: transparent;\n        z-index: 2;\n      }\n\n      :host([ hidden ]) {\n        display: none;\n      }\n\n      :host div {\n        position: relative;\n        min-height: 1.4rem;\n        text-overflow: inherit;\n        border: none;\n        height: 100%;\n        font-size: inherit;\n        font-weight: inherit;\n        font-family: PingFang SC, -apple-system, helvetica, sans-serif;;\n        color: inherit;\n        /*background: inherit;*/\n        padding: 0;\n        margin: 0;\n        outline: none;\n        text-align: inherit;\n        -webkit-tap-highlight-color: transparent;\n        white-space: nowrap;\n        overflow: hidden;\n      }\n\n      :host div.input-placeholder {\n        color: #CACACA;\n      }\n\n      :host div[type=password] div {\n        color: black;\n      }\n\n      :host div div {\n        position: absolute;\n        left: 0;\n        top: 0;\n        width: 100%;\n        height: 100%;\n        line-height: 100%;\n        height: inherit;\n        min-height: 1.4rem;\n        white-space: pre;\n        text-align: inherit;\n        overflow: hidden;\n        vertical-align: middle;\n        z-index: 1;\n      }\n    </style>\n  </template>\n</dom-module>";
+documentContainer.innerHTML = "<dom-module id=\"input-style\">\n  <template>\n    <style>\n      :host {\n        display: block;\n        height: 1.4rem;\n        text-overflow: clip;\n        overflow: hidden;\n        white-space: nowrap;\n        min-height: 1.4rem;\n        -webkit-tap-highlight-color: transparent;\n      }\n\n      :host input {\n        position: relative;\n        min-height: 1.4rem;\n        border: none;\n        height: inherit;\n        width: 100%;\n        font-size: inherit;\n        font-weight: inherit;\n        font-style: inherit;\n        color: inherit;\n        background: transparent;\n        display: inherit;\n        padding: 0;\n        margin: 0;\n        outline: none;\n        vertical-align: middle;\n        text-align: inherit;\n        overflow: inherit;\n        white-space: inherit;\n        text-overflow: inherit;\n        -webkit-tap-highlight-color: transparent;\n        z-index: 2;\n      }\n\n      :host([ hidden ]) {\n        display: none;\n      }\n\n      :host div {\n        position: relative;\n        min-height: 1.4rem;\n        text-overflow: inherit;\n        border: none;\n        height: 100%;\n        font-size: inherit;\n        font-weight: inherit;\n        color: inherit;\n        /*background: inherit;*/\n        padding: 0;\n        margin: 0;\n        outline: none;\n        text-align: inherit;\n        -webkit-tap-highlight-color: transparent;\n        white-space: nowrap;\n        overflow: hidden;\n      }\n\n      :host div.input-placeholder {\n        color: #CACACA;\n      }\n\n      :host div[type=password] div {\n        color: black;\n      }\n\n      :host div div {\n        position: absolute;\n        left: 0;\n        top: 0;\n        width: 100%;\n        height: 100%;\n        line-height: 100%;\n        height: inherit;\n        min-height: 1.4rem;\n        white-space: pre;\n        text-align: inherit;\n        overflow: hidden;\n        vertical-align: middle;\n        z-index: 1;\n      }\n    </style>\n  </template>\n</dom-module>";
 document.head.appendChild(documentContainer);
 var webInputId = 0;
 
@@ -32986,7 +32989,7 @@ var WebInput = /*#__PURE__*/function (_Data) {
         cursor: this.value.length,
         keyCode: e.keyCode
       }); // const data = this.getEventTargetData();
-      // tt.publish('onKeyboardValueChange', {
+      // publish('onKeyboardValueChange', {
       //   value,
       //   inputId: this.webInputId,
       //   data,
@@ -36043,7 +36046,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_7__);
 /* harmony import */ var _polymer_polymer__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @polymer/polymer */ "./node_modules/@polymer/polymer/polymer-element.js");
 /* harmony import */ var utils_config__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! utils/config */ "./src/utils/config.js");
-/* harmony import */ var _mixins__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./mixins */ "./src/webview/web-components/mixins/index.js");
+/* harmony import */ var _nerv_utils_transformRpx__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../nerv/utils/transformRpx */ "./src/webview/nerv/utils/transformRpx.js");
+/* harmony import */ var _mixins__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./mixins */ "./src/webview/web-components/mixins/index.js");
 
 
 
@@ -36058,6 +36062,7 @@ var _templateObject;
 function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_7___default()(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_7___default()(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_6___default()(this, result); }; }
 
 function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
 
 
 
@@ -36447,7 +36452,7 @@ var Swiper = /*#__PURE__*/function (_TouchTrack) {
       if (/^\s*[+-]?\d+(\.\d+)?(px)?\s*$/i.test(e)) {
         return e.slice(-2) !== 'px' ? "".concat(e, "px") : e;
       } else if (/^\s*[+-]?\d+(\.\d+)?rpx\s*$/i.test(e)) {
-        return tt.transformRpx(e);
+        return Object(_nerv_utils_transformRpx__WEBPACK_IMPORTED_MODULE_10__["default"])(e);
       } else {
         return '';
       }
@@ -37101,7 +37106,7 @@ var Swiper = /*#__PURE__*/function (_TouchTrack) {
   }]);
 
   return Swiper;
-}(Object(_mixins__WEBPACK_IMPORTED_MODULE_10__["TouchTrack"])(Object(_mixins__WEBPACK_IMPORTED_MODULE_10__["Base"])(_polymer_polymer__WEBPACK_IMPORTED_MODULE_8__["PolymerElement"])));
+}(Object(_mixins__WEBPACK_IMPORTED_MODULE_11__["TouchTrack"])(Object(_mixins__WEBPACK_IMPORTED_MODULE_11__["Base"])(_polymer_polymer__WEBPACK_IMPORTED_MODULE_8__["PolymerElement"])));
 
 window.customElements.define(Swiper.is, Swiper);
 

@@ -527,14 +527,14 @@ function patchEvent(
       addListener(domNode, name, fn, options);
     }
 
-    const displayName = nextEvent.name;
+    const eventName = nextEvent.name;
 
     listener[`${name}`][`${capture ? 'capture' : 'bubble'}`] = {
       options,
       handler: nextEvent,
-      name: displayName,
+      name: eventName,
     };
-    domNode.setAttribute(raw, displayName);
+    domNode.setAttribute(raw, eventName);
   } else {
     listener[`${name}`][`${capture ? 'capture' : 'bubble'}`] = null;
     domNode.removeAttribute(raw);
