@@ -39,12 +39,6 @@ const getConfig = (type, env) => {
           },
         },
         {
-          test: /\.ts$/,
-          use: {
-            loader: 'ts-loader',
-          },
-        },
-        {
           test: /\.(less|css)$/,
           use: [
             MiniCssExtractPlugin.loader,

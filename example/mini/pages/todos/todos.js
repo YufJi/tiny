@@ -172,4 +172,9 @@ Page({
   tapSlot(e) {
     console.log('tapSlot', e);
   },
+  nav() {
+    wx.navigateTo({
+      url: '../todos/todos',
+    });
+  }
 });

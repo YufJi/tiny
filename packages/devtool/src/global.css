@@ -53,11 +53,13 @@ body {
 .frame {
   background-color: #fff;
   transform: translateX(100%) translateZ(0);
+}
+
+.frame.in {
   animation: frameEnter .25s ease-out both;
 }
 
 .frame.leave {
-  transform: translateX(0%) translateZ(0);
   animation: frameLeave .25s ease-out both;
 }
 

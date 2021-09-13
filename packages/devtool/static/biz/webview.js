@@ -81,7 +81,7 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./todo/.cache/index.webview.js");
+/******/ 	return __webpack_require__(__webpack_require__.s = "./mini/.cache/index.webview.js");
 /******/ })
 /************************************************************************/
 /******/ ({
@@ -921,52 +921,52 @@ if (!g.__sjsEnvInited) {
 
 /***/ }),
 
-/***/ "./todo/.cache/appConfig.json":
+/***/ "./mini/.cache/appConfig.json":
 /*!************************************!*\
-  !*** ./todo/.cache/appConfig.json ***!
+  !*** ./mini/.cache/appConfig.json ***!
   \************************************/
 /*! exports provided: window, pages, launchParams, default */
 /***/ (function(module) {
 
-module.exports = JSON.parse("{\"window\":{\"backgroundTextStyle\":\"light\",\"navigationBarBackgroundColor\":16777215,\"navigationBarTitleText\":\"WeChat\",\"navigationBarTextStyle\":\"black\"},\"pages\":[\"pages/index/index\"],\"launchParams\":{\"pages/index/index\":{\"backgroundTextStyle\":\"light\",\"navigationBarBackgroundColor\":16777215,\"navigationBarTitleText\":\"TODO List\",\"navigationBarTextStyle\":\"black\"}}}");
+module.exports = JSON.parse("{\"window\":{\"navigationBarTitleText\":\"哈哈哈\"},\"pages\":[\"pages/todos/todos\",\"pages/add-todo/add-todo\"],\"launchParams\":{\"pages/todos/todos\":{\"navigationBarTitleText\":\"Index\"},\"pages/add-todo/add-todo\":{\"navigationBarTitleText\":\"哈哈哈\"}}}");
 
 /***/ }),
 
-/***/ "./todo/.cache/config.js":
+/***/ "./mini/.cache/config.js":
 /*!*******************************!*\
-  !*** ./todo/.cache/config.js ***!
+  !*** ./mini/.cache/config.js ***!
   \*******************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global) {
 const g = typeof global !== 'undefined' ? global : self;
-const appConfig = __webpack_require__(/*! ./appConfig.json */ "./todo/.cache/appConfig.json");
+const appConfig = __webpack_require__(/*! ./appConfig.json */ "./mini/.cache/appConfig.json");
 g.TinyConfig = appConfig;
 
 /* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../packages/compiler/node_modules/webpack/buildin/global.js */ "../packages/compiler/node_modules/webpack/buildin/global.js")))
 
 /***/ }),
 
-/***/ "./todo/.cache/index.webview.js":
+/***/ "./mini/.cache/index.webview.js":
 /*!**************************************!*\
-  !*** ./todo/.cache/index.webview.js ***!
+  !*** ./mini/.cache/index.webview.js ***!
   \**************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 __webpack_require__(/*! tiny-compiler/sjsEnvInit */ "../packages/compiler/src/sjsEnvInit.js");
-__webpack_require__(/*! ./config */ "./todo/.cache/config.js");
-__webpack_require__(/*! ../comp?hash=20e859dc304e591d1ed540e3b5edbe5ebe750fd6 */ "./todo/comp.js?hash=20e859dc304e591d1ed540e3b5edbe5ebe750fd6");
-__webpack_require__(/*! ../custom-wrapper?hash=20e859dc304e591d1ed540e3b5edbe5ebe750fd6 */ "./todo/custom-wrapper.js?hash=20e859dc304e591d1ed540e3b5edbe5ebe750fd6");
-__webpack_require__(/*! ../pages/index/index?hash=d9740d61a4468ab1489217bf8b30ac7e199f3c24 */ "./todo/pages/index/index.js?hash=d9740d61a4468ab1489217bf8b30ac7e199f3c24");
+__webpack_require__(/*! ./config */ "./mini/.cache/config.js");
+__webpack_require__(/*! ../components/add-button/add-button?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./mini/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc");
+__webpack_require__(/*! ../pages/todos/todos?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./mini/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
+__webpack_require__(/*! ../pages/add-todo/add-todo?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./mini/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219");
 
 
 /***/ }),
 
-/***/ "./todo/app.wxss":
+/***/ "./mini/app.wxss":
 /*!***********************!*\
-  !*** ./todo/app.wxss ***!
+  !*** ./mini/app.wxss ***!
   \***********************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
@@ -975,73 +975,112 @@ __webpack_require__(/*! ../pages/index/index?hash=d9740d61a4468ab1489217bf8b30ac
 __webpack_require__.r(__webpack_exports__);
 const { TinyStyleSheet } = self;
 const stylesheet = new TinyStyleSheet({ stylePath: 'app.wxss' });
-/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`tiny-html, tiny-body {
-    margin: 0;
-    padding: 0;
-  }
-  tiny-button {
-    margin: 0;
-    padding: 0;
-    border: 0;
-    vertical-align: baseline;
-    font-family: inherit;
-    font-weight: inherit;
-    color: inherit;
-  }
-  tiny-body, tiny-page {
-    font: 28rpx 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    background: #f5f5f5;
-    color: #4d4d4d;
-    margin: 0 auto;
-    font-weight: 300;
-  }
-  :focus {
-    outline: 0;
-  }
-  .hidden {
-    display: none;
-  }
-  .todoapp {
-    background: #fff;
-    margin: 210rpx 0 40rpx 0;
-    position: relative;
-  }
-  tiny-input::-webkit-input-placeholder {
-    font-style: italic;
-    font-weight: 300;
-    color: #e6e6e6;
-  }
-  tiny-input::-moz-placeholder {
-    font-style: italic;
-    font-weight: 300;
-    color: #e6e6e6;
-  }
-  .info {
-    margin: 130rpx auto 0;
-    color: #bfbfbf;
-    text-shadow: 0 2rpx 0 rgba(255, 255, 255, 0.5);
-  }
-  .info tiny-p {
-    line-height: 1;
-  }
-  .info tiny-a {
-    color: inherit;
-    text-decoration: none;
-    font-weight: 400;
-  }
-  .info tiny-a:hover {
-    text-decoration: underline;
-  }
-  .weui-cells_checkbox {
-    margin-right: 10rpx;
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`tiny-page {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+            flex: 1;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    background: #323239;
+    font-family: "pingFang SC" "pingFang";
   }`));
 
 /***/ }),
 
-/***/ "./todo/base.wxml":
-/*!************************!*\
-  !*** ./todo/base.wxml ***!
-  \************************/
+/***/ "./mini/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc":
+/*!************************************************************************************************!*\
+  !*** ./mini/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc ***!
+  \************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+  window.app = window.app || {};
+  window.app['/components/add-button/add-button'] = {
+    // is: "/components/add-button/add-button",
+    usingComponents: {"add-button":"/components/add-button/add-button"},
+    get render() { 
+      const fn = __webpack_require__(/*! ./add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./mini/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc"); 
+      return fn.default || fn;
+    },
+    
+  };
+  
+
+/***/ }),
+
+/***/ "./mini/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc":
+/*!**************************************************************************************************!*\
+  !*** ./mini/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc ***!
+  \**************************************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
+var Nerv = self.Nerv;
+var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
+var $iterate = self.XMLRuntime.iterate;
+var $createRoot = self.XMLRuntime.createRoot;
+var $createBlock = self.XMLRuntime.createBlock;
+var $useTemplate = self.XMLRuntime.useTemplate;
+var $createTemplate = self.XMLRuntime.createTemplate;
+var $renderSlot = self.XMLRuntime.renderSlot;
+var $getSJSMember = self.XMLRuntime.getSJSMember;
+var $toString = self.XMLRuntime.toString;
+var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
+var $templates = {};
+function render(data, _ctx) {
+  return $createRoot([Nerv.createElement("tiny-button", {
+    className: 'add-button',
+    "hover-class": 'none',
+    bindtap: _ctx.$$eventBinder('onClickMe')
+  }, [Nerv.createElement("tiny-icon", {
+    type: 'success',
+    size: '23'
+  }), Nerv.createElement("tiny-text", null, data['text'])]), Nerv.createElement("tiny-text", {
+    bindtap: _ctx.$$eventBinder('xx')
+  }, data['name']), $renderSlot(_ctx, "$default", null)]);
+}
+;
+
+/***/ }),
+
+/***/ "./mini/components/add-button/add-button.wxss":
+/*!****************************************************!*\
+  !*** ./mini/components/add-button/add-button.wxss ***!
+  \****************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+const { TinyStyleSheet } = self;
+const stylesheet = new TinyStyleSheet({ stylePath: 'components/add-button/add-button.wxss' });
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.add-button {
+    display: inline-block;
+    background: none;
+    color: #FFF;
+    border: none;
+    width: 300rpx;
+  }
+  .add-icon {
+    font-size: 52rpx;
+    color: #00FFD6;
+    margin-right: 10rpx;
+  }
+  .user {
+    font-size: 150px;
+  }`));
+
+/***/ }),
+
+/***/ "./mini/pages/add-todo/a.wxml":
+/*!************************************!*\
+  !*** ./mini/pages/add-todo/a.wxml ***!
+  \************************************/
 /*! exports provided: $ownTemplates, default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -1049,11 +1088,8 @@ const stylesheet = new TinyStyleSheet({ stylePath: 'app.wxss' });
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "$ownTemplates", function() { return $ownTemplates; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
-/* harmony import */ var _utils_wxs__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./utils.wxs */ "./todo/utils.wxs");
-/* harmony import */ var _utils_wxs__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_utils_wxs__WEBPACK_IMPORTED_MODULE_0__);
 var Nerv = self.Nerv;
 var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
-
 var $iterate = self.XMLRuntime.iterate;
 var $createRoot = self.XMLRuntime.createRoot;
 var $createBlock = self.XMLRuntime.createBlock;
@@ -1066,2636 +1102,12 @@ var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
 var $template;
 var $ownTemplates = {};
 
-$template = $ownTemplates["taro_tmpl"] = function (data) {
+$template = $ownTemplates["abc"] = function (data) {
   var _ctx = data._ctx;
-  return $iterate($getLooseDataMember([data['root'], "cn"]), function (item, index) {
-    return $useTemplate($templates['tmpl_0_container'], {
-      i: item,
-      l: ''
-    }, undefined, _ctx);
-  });
+  return Nerv.createElement("tiny-view", null, '21212');
 };
 
-$template.Component = $createTemplate("taro_tmpl", $template);
-
-$template = $ownTemplates["tmpl_0_catch-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    catchtouchmove: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_0_catch-view", $template);
-
-$template = $ownTemplates["tmpl_0_static-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_0_static-view", $template);
-
-$template = $ownTemplates["tmpl_0_pure-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_0_pure-view", $template);
-
-$template = $ownTemplates["tmpl_0_view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_0_view", $template);
-
-$template = $ownTemplates["tmpl_0_static-text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_0_static-text", $template);
-
-$template = $ownTemplates["tmpl_0_text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_0_text", $template);
-
-$template = $ownTemplates["tmpl_0_checkbox"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-checkbox", {
-    value: $getLooseDataMember([data['i'], "value"]),
-    disabled: $getLooseDataMember([data['i'], "disabled"]),
-    checked: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "checked"]), false),
-    color: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "color"]), '#09BB07'),
-    name: $getLooseDataMember([data['i'], "name"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_0_checkbox", $template);
-
-$template = $ownTemplates["tmpl_0_checkbox-group"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-checkbox-group", {
-    bindchange: _ctx.$$eventBinder('eh'),
-    name: $getLooseDataMember([data['i'], "name"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_0_checkbox-group", $template);
-
-$template = $ownTemplates["tmpl_0_input"] = function (data) {
-  var _ctx = data._ctx;
-  return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "c"], 1)(data['i'], 'tmpl_0_')], {
-    i: data['i']
-  }, undefined, _ctx);
-};
-
-$template.Component = $createTemplate("tmpl_0_input", $template);
-
-$template = $ownTemplates["tmpl_0_input_focus"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-input", {
-    value: $getLooseDataMember([data['i'], "value"]),
-    type: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "type"]), ''),
-    password: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "password"]), false),
-    placeholder: $getLooseDataMember([data['i'], "placeholder"]),
-    "placeholder-style": $getLooseDataMember([data['i'], "placeholderStyle"]),
-    "placeholder-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "placeholderClass"]), 'input-placeholder'),
-    disabled: $getLooseDataMember([data['i'], "disabled"]),
-    maxlength: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "maxlength"]), 140),
-    "cursor-spacing": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "cursorSpacing"]), 0),
-    focus: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "focus"]), false),
-    "confirm-type": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "confirmType"]), 'done'),
-    "confirm-hold": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "confirmHold"]), false),
-    cursor: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "cursor"]), $getLooseDataMember([data['i'], "value", "length"])),
-    "selection-start": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectionStart"]), -1),
-    "selection-end": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectionEnd"]), -1),
-    bindinput: _ctx.$$eventBinder('eh'),
-    bindfocus: _ctx.$$eventBinder('eh'),
-    bindblur: _ctx.$$eventBinder('eh'),
-    bindconfirm: _ctx.$$eventBinder('eh'),
-    name: $getLooseDataMember([data['i'], "name"]),
-    "auto-focus": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "autoFocus"]), false),
-    "always-embed": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "alwaysEmbed"]), false),
-    "adjust-position": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "adjustPosition"]), true),
-    "hold-keyboard": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "holdKeyboard"]), false),
-    bindkeyboardheightchange: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  });
-};
-
-$template.Component = $createTemplate("tmpl_0_input_focus", $template);
-
-$template = $ownTemplates["tmpl_0_input_blur"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-input", {
-    value: $getLooseDataMember([data['i'], "value"]),
-    type: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "type"]), ''),
-    password: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "password"]), false),
-    placeholder: $getLooseDataMember([data['i'], "placeholder"]),
-    "placeholder-style": $getLooseDataMember([data['i'], "placeholderStyle"]),
-    "placeholder-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "placeholderClass"]), 'input-placeholder'),
-    disabled: $getLooseDataMember([data['i'], "disabled"]),
-    maxlength: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "maxlength"]), 140),
-    "cursor-spacing": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "cursorSpacing"]), 0),
-    "confirm-type": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "confirmType"]), 'done'),
-    "confirm-hold": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "confirmHold"]), false),
-    cursor: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "cursor"]), $getLooseDataMember([data['i'], "value", "length"])),
-    "selection-start": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectionStart"]), -1),
-    "selection-end": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectionEnd"]), -1),
-    bindinput: _ctx.$$eventBinder('eh'),
-    bindfocus: _ctx.$$eventBinder('eh'),
-    bindblur: _ctx.$$eventBinder('eh'),
-    bindconfirm: _ctx.$$eventBinder('eh'),
-    name: $getLooseDataMember([data['i'], "name"]),
-    "auto-focus": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "autoFocus"]), false),
-    "always-embed": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "alwaysEmbed"]), false),
-    "adjust-position": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "adjustPosition"]), true),
-    "hold-keyboard": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "holdKeyboard"]), false),
-    bindkeyboardheightchange: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  });
-};
-
-$template.Component = $createTemplate("tmpl_0_input_blur", $template);
-
-$template = $ownTemplates["tmpl_0_label"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-label", {
-    "for": $getLooseDataMember([data['i'], "for"]),
-    name: $getLooseDataMember([data['i'], "name"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_0_label", $template);
-
-$template = $ownTemplates["tmpl_0_scroll-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-scroll-view", {
-    "scroll-x": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "scrollX"]), false),
-    "scroll-y": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "scrollY"]), false),
-    "upper-threshold": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "upperThreshold"]), 50),
-    "lower-threshold": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "lowerThreshold"]), 50),
-    "scroll-top": $getLooseDataMember([data['i'], "scrollTop"]),
-    "scroll-left": $getLooseDataMember([data['i'], "scrollLeft"]),
-    "scroll-into-view": $getLooseDataMember([data['i'], "scrollIntoView"]),
-    "scroll-with-animation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "scrollWithAnimation"]), false),
-    "enable-back-to-top": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "enableBackToTop"]), false),
-    bindscrolltoupper: _ctx.$$eventBinder('eh'),
-    bindscrolltolower: _ctx.$$eventBinder('eh'),
-    bindscroll: _ctx.$$eventBinder('eh'),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    "enable-flex": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "enableFlex"]), false),
-    "scroll-anchoring": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "scrollAnchoring"]), false),
-    "refresher-enabled": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherEnabled"]), false),
-    "refresher-threshold": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherThreshold"]), 45),
-    "refresher-default-style": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherDefaultStyle"]), 'black'),
-    "refresher-background": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherBackground"]), '#FFF'),
-    "refresher-triggered": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherTriggered"]), false),
-    enhanced: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "enhanced"]), false),
-    bounces: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "bounces"]), true),
-    "show-scrollbar": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "showScrollbar"]), true),
-    "paging-enabled": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "pagingEnabled"]), false),
-    "fast-deceleration": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "fastDeceleration"]), false),
-    binddragstart: _ctx.$$eventBinder('eh'),
-    binddragging: _ctx.$$eventBinder('eh'),
-    binddragend: _ctx.$$eventBinder('eh'),
-    bindrefresherpulling: _ctx.$$eventBinder('eh'),
-    bindrefresherrefresh: _ctx.$$eventBinder('eh'),
-    bindrefresherrestore: _ctx.$$eventBinder('eh'),
-    bindrefresherabort: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_0_scroll-view", $template);
-
-$template = $ownTemplates["tmpl_0_static-image"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-image", {
-    src: $getLooseDataMember([data['i'], "src"]),
-    mode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "mode"]), 'scaleToFill'),
-    "lazy-load": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "lazyLoad"]), false),
-    webp: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "webp"]), false),
-    "show-menu-by-longpress": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "showMenuByLongpress"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_0_static-image", $template);
-
-$template = $ownTemplates["tmpl_0_image"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-image", {
-    src: $getLooseDataMember([data['i'], "src"]),
-    mode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "mode"]), 'scaleToFill'),
-    "lazy-load": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "lazyLoad"]), false),
-    binderror: _ctx.$$eventBinder('eh'),
-    bindload: _ctx.$$eventBinder('eh'),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    webp: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "webp"]), false),
-    "show-menu-by-longpress": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "showMenuByLongpress"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_0_image", $template);
-
-$template = $ownTemplates["tmpl_0_#text"] = function (data) {
-  var _ctx = data._ctx;
-  return $getLooseDataMember([data['i'], "v"]);
-};
-
-$template.Component = $createTemplate("tmpl_0_#text", $template);
-
-$template = $ownTemplates["tmpl_0_container"] = function (data) {
-  var _ctx = data._ctx;
-  return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "a"], 1)(0, $getLooseDataMember([data['i'], "nn"]), data['l'])], {
-    i: data['i'],
-    cid: 0,
-    l: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "f"], 1)(data['l'], $getLooseDataMember([data['i'], "nn"]))
-  }, undefined, _ctx);
-};
-
-$template.Component = $createTemplate("tmpl_0_container", $template);
-
-$template = $ownTemplates["tmpl_1_catch-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    catchtouchmove: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_1_catch-view", $template);
-
-$template = $ownTemplates["tmpl_1_static-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_1_static-view", $template);
-
-$template = $ownTemplates["tmpl_1_pure-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_1_pure-view", $template);
-
-$template = $ownTemplates["tmpl_1_view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_1_view", $template);
-
-$template = $ownTemplates["tmpl_1_static-text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_1_static-text", $template);
-
-$template = $ownTemplates["tmpl_1_text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_1_text", $template);
-
-$template = $ownTemplates["tmpl_1_label"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-label", {
-    "for": $getLooseDataMember([data['i'], "for"]),
-    name: $getLooseDataMember([data['i'], "name"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_1_label", $template);
-
-$template = $ownTemplates["tmpl_1_scroll-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-scroll-view", {
-    "scroll-x": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "scrollX"]), false),
-    "scroll-y": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "scrollY"]), false),
-    "upper-threshold": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "upperThreshold"]), 50),
-    "lower-threshold": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "lowerThreshold"]), 50),
-    "scroll-top": $getLooseDataMember([data['i'], "scrollTop"]),
-    "scroll-left": $getLooseDataMember([data['i'], "scrollLeft"]),
-    "scroll-into-view": $getLooseDataMember([data['i'], "scrollIntoView"]),
-    "scroll-with-animation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "scrollWithAnimation"]), false),
-    "enable-back-to-top": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "enableBackToTop"]), false),
-    bindscrolltoupper: _ctx.$$eventBinder('eh'),
-    bindscrolltolower: _ctx.$$eventBinder('eh'),
-    bindscroll: _ctx.$$eventBinder('eh'),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    "enable-flex": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "enableFlex"]), false),
-    "scroll-anchoring": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "scrollAnchoring"]), false),
-    "refresher-enabled": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherEnabled"]), false),
-    "refresher-threshold": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherThreshold"]), 45),
-    "refresher-default-style": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherDefaultStyle"]), 'black'),
-    "refresher-background": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherBackground"]), '#FFF'),
-    "refresher-triggered": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherTriggered"]), false),
-    enhanced: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "enhanced"]), false),
-    bounces: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "bounces"]), true),
-    "show-scrollbar": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "showScrollbar"]), true),
-    "paging-enabled": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "pagingEnabled"]), false),
-    "fast-deceleration": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "fastDeceleration"]), false),
-    binddragstart: _ctx.$$eventBinder('eh'),
-    binddragging: _ctx.$$eventBinder('eh'),
-    binddragend: _ctx.$$eventBinder('eh'),
-    bindrefresherpulling: _ctx.$$eventBinder('eh'),
-    bindrefresherrefresh: _ctx.$$eventBinder('eh'),
-    bindrefresherrestore: _ctx.$$eventBinder('eh'),
-    bindrefresherabort: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_1_scroll-view", $template);
-
-$template = $ownTemplates["tmpl_1_container"] = function (data) {
-  var _ctx = data._ctx;
-  return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "a"], 1)(1, $getLooseDataMember([data['i'], "nn"]), data['l'])], {
-    i: data['i'],
-    cid: 1,
-    l: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "f"], 1)(data['l'], $getLooseDataMember([data['i'], "nn"]))
-  }, undefined, _ctx);
-};
-
-$template.Component = $createTemplate("tmpl_1_container", $template);
-
-$template = $ownTemplates["tmpl_2_catch-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    catchtouchmove: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_2_catch-view", $template);
-
-$template = $ownTemplates["tmpl_2_static-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_2_static-view", $template);
-
-$template = $ownTemplates["tmpl_2_pure-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_2_pure-view", $template);
-
-$template = $ownTemplates["tmpl_2_view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_2_view", $template);
-
-$template = $ownTemplates["tmpl_2_static-text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_2_static-text", $template);
-
-$template = $ownTemplates["tmpl_2_text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_2_text", $template);
-
-$template = $ownTemplates["tmpl_2_label"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-label", {
-    "for": $getLooseDataMember([data['i'], "for"]),
-    name: $getLooseDataMember([data['i'], "name"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_2_label", $template);
-
-$template = $ownTemplates["tmpl_2_scroll-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-scroll-view", {
-    "scroll-x": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "scrollX"]), false),
-    "scroll-y": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "scrollY"]), false),
-    "upper-threshold": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "upperThreshold"]), 50),
-    "lower-threshold": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "lowerThreshold"]), 50),
-    "scroll-top": $getLooseDataMember([data['i'], "scrollTop"]),
-    "scroll-left": $getLooseDataMember([data['i'], "scrollLeft"]),
-    "scroll-into-view": $getLooseDataMember([data['i'], "scrollIntoView"]),
-    "scroll-with-animation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "scrollWithAnimation"]), false),
-    "enable-back-to-top": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "enableBackToTop"]), false),
-    bindscrolltoupper: _ctx.$$eventBinder('eh'),
-    bindscrolltolower: _ctx.$$eventBinder('eh'),
-    bindscroll: _ctx.$$eventBinder('eh'),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    "enable-flex": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "enableFlex"]), false),
-    "scroll-anchoring": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "scrollAnchoring"]), false),
-    "refresher-enabled": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherEnabled"]), false),
-    "refresher-threshold": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherThreshold"]), 45),
-    "refresher-default-style": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherDefaultStyle"]), 'black'),
-    "refresher-background": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherBackground"]), '#FFF'),
-    "refresher-triggered": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherTriggered"]), false),
-    enhanced: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "enhanced"]), false),
-    bounces: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "bounces"]), true),
-    "show-scrollbar": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "showScrollbar"]), true),
-    "paging-enabled": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "pagingEnabled"]), false),
-    "fast-deceleration": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "fastDeceleration"]), false),
-    binddragstart: _ctx.$$eventBinder('eh'),
-    binddragging: _ctx.$$eventBinder('eh'),
-    binddragend: _ctx.$$eventBinder('eh'),
-    bindrefresherpulling: _ctx.$$eventBinder('eh'),
-    bindrefresherrefresh: _ctx.$$eventBinder('eh'),
-    bindrefresherrestore: _ctx.$$eventBinder('eh'),
-    bindrefresherabort: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_2_scroll-view", $template);
-
-$template = $ownTemplates["tmpl_2_container"] = function (data) {
-  var _ctx = data._ctx;
-  return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "a"], 1)(2, $getLooseDataMember([data['i'], "nn"]), data['l'])], {
-    i: data['i'],
-    cid: 2,
-    l: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "f"], 1)(data['l'], $getLooseDataMember([data['i'], "nn"]))
-  }, undefined, _ctx);
-};
-
-$template.Component = $createTemplate("tmpl_2_container", $template);
-
-$template = $ownTemplates["tmpl_3_catch-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    catchtouchmove: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_3_catch-view", $template);
-
-$template = $ownTemplates["tmpl_3_static-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_3_static-view", $template);
-
-$template = $ownTemplates["tmpl_3_pure-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_3_pure-view", $template);
-
-$template = $ownTemplates["tmpl_3_view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_3_view", $template);
-
-$template = $ownTemplates["tmpl_3_static-text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_3_static-text", $template);
-
-$template = $ownTemplates["tmpl_3_text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_3_text", $template);
-
-$template = $ownTemplates["tmpl_3_label"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-label", {
-    "for": $getLooseDataMember([data['i'], "for"]),
-    name: $getLooseDataMember([data['i'], "name"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_3_label", $template);
-
-$template = $ownTemplates["tmpl_3_scroll-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-scroll-view", {
-    "scroll-x": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "scrollX"]), false),
-    "scroll-y": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "scrollY"]), false),
-    "upper-threshold": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "upperThreshold"]), 50),
-    "lower-threshold": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "lowerThreshold"]), 50),
-    "scroll-top": $getLooseDataMember([data['i'], "scrollTop"]),
-    "scroll-left": $getLooseDataMember([data['i'], "scrollLeft"]),
-    "scroll-into-view": $getLooseDataMember([data['i'], "scrollIntoView"]),
-    "scroll-with-animation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "scrollWithAnimation"]), false),
-    "enable-back-to-top": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "enableBackToTop"]), false),
-    bindscrolltoupper: _ctx.$$eventBinder('eh'),
-    bindscrolltolower: _ctx.$$eventBinder('eh'),
-    bindscroll: _ctx.$$eventBinder('eh'),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    "enable-flex": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "enableFlex"]), false),
-    "scroll-anchoring": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "scrollAnchoring"]), false),
-    "refresher-enabled": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherEnabled"]), false),
-    "refresher-threshold": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherThreshold"]), 45),
-    "refresher-default-style": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherDefaultStyle"]), 'black'),
-    "refresher-background": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherBackground"]), '#FFF'),
-    "refresher-triggered": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "refresherTriggered"]), false),
-    enhanced: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "enhanced"]), false),
-    bounces: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "bounces"]), true),
-    "show-scrollbar": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "showScrollbar"]), true),
-    "paging-enabled": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "pagingEnabled"]), false),
-    "fast-deceleration": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "fastDeceleration"]), false),
-    binddragstart: _ctx.$$eventBinder('eh'),
-    binddragging: _ctx.$$eventBinder('eh'),
-    binddragend: _ctx.$$eventBinder('eh'),
-    bindrefresherpulling: _ctx.$$eventBinder('eh'),
-    bindrefresherrefresh: _ctx.$$eventBinder('eh'),
-    bindrefresherrestore: _ctx.$$eventBinder('eh'),
-    bindrefresherabort: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_3_scroll-view", $template);
-
-$template = $ownTemplates["tmpl_3_container"] = function (data) {
-  var _ctx = data._ctx;
-  return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "a"], 1)(3, $getLooseDataMember([data['i'], "nn"]), data['l'])], {
-    i: data['i'],
-    cid: 3,
-    l: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "f"], 1)(data['l'], $getLooseDataMember([data['i'], "nn"]))
-  }, undefined, _ctx);
-};
-
-$template.Component = $createTemplate("tmpl_3_container", $template);
-
-$template = $ownTemplates["tmpl_4_catch-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    catchtouchmove: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_4_catch-view", $template);
-
-$template = $ownTemplates["tmpl_4_static-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_4_static-view", $template);
-
-$template = $ownTemplates["tmpl_4_pure-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_4_pure-view", $template);
-
-$template = $ownTemplates["tmpl_4_view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_4_view", $template);
-
-$template = $ownTemplates["tmpl_4_static-text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_4_static-text", $template);
-
-$template = $ownTemplates["tmpl_4_text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_4_text", $template);
-
-$template = $ownTemplates["tmpl_4_label"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-label", {
-    "for": $getLooseDataMember([data['i'], "for"]),
-    name: $getLooseDataMember([data['i'], "name"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_4_label", $template);
-
-$template = $ownTemplates["tmpl_4_container"] = function (data) {
-  var _ctx = data._ctx;
-  return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "a"], 1)(4, $getLooseDataMember([data['i'], "nn"]), data['l'])], {
-    i: data['i'],
-    cid: 4,
-    l: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "f"], 1)(data['l'], $getLooseDataMember([data['i'], "nn"]))
-  }, undefined, _ctx);
-};
-
-$template.Component = $createTemplate("tmpl_4_container", $template);
-
-$template = $ownTemplates["tmpl_5_catch-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    catchtouchmove: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_5_catch-view", $template);
-
-$template = $ownTemplates["tmpl_5_static-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_5_static-view", $template);
-
-$template = $ownTemplates["tmpl_5_pure-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_5_pure-view", $template);
-
-$template = $ownTemplates["tmpl_5_view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_5_view", $template);
-
-$template = $ownTemplates["tmpl_5_static-text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_5_static-text", $template);
-
-$template = $ownTemplates["tmpl_5_text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_5_text", $template);
-
-$template = $ownTemplates["tmpl_5_label"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-label", {
-    "for": $getLooseDataMember([data['i'], "for"]),
-    name: $getLooseDataMember([data['i'], "name"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_5_label", $template);
-
-$template = $ownTemplates["tmpl_5_container"] = function (data) {
-  var _ctx = data._ctx;
-  return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "a"], 1)(5, $getLooseDataMember([data['i'], "nn"]), data['l'])], {
-    i: data['i'],
-    cid: 5,
-    l: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "f"], 1)(data['l'], $getLooseDataMember([data['i'], "nn"]))
-  }, undefined, _ctx);
-};
-
-$template.Component = $createTemplate("tmpl_5_container", $template);
-
-$template = $ownTemplates["tmpl_6_catch-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    catchtouchmove: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_6_catch-view", $template);
-
-$template = $ownTemplates["tmpl_6_static-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_6_static-view", $template);
-
-$template = $ownTemplates["tmpl_6_pure-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_6_pure-view", $template);
-
-$template = $ownTemplates["tmpl_6_view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_6_view", $template);
-
-$template = $ownTemplates["tmpl_6_text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_6_text", $template);
-
-$template = $ownTemplates["tmpl_6_container"] = function (data) {
-  var _ctx = data._ctx;
-  return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "a"], 1)(6, $getLooseDataMember([data['i'], "nn"]), data['l'])], {
-    i: data['i'],
-    cid: 6,
-    l: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "f"], 1)(data['l'], $getLooseDataMember([data['i'], "nn"]))
-  }, undefined, _ctx);
-};
-
-$template.Component = $createTemplate("tmpl_6_container", $template);
-
-$template = $ownTemplates["tmpl_7_catch-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    catchtouchmove: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_7_catch-view", $template);
-
-$template = $ownTemplates["tmpl_7_static-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_7_static-view", $template);
-
-$template = $ownTemplates["tmpl_7_pure-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_7_pure-view", $template);
-
-$template = $ownTemplates["tmpl_7_view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_7_view", $template);
-
-$template = $ownTemplates["tmpl_7_text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_7_text", $template);
-
-$template = $ownTemplates["tmpl_7_container"] = function (data) {
-  var _ctx = data._ctx;
-  return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "a"], 1)(7, $getLooseDataMember([data['i'], "nn"]), data['l'])], {
-    i: data['i'],
-    cid: 7,
-    l: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "f"], 1)(data['l'], $getLooseDataMember([data['i'], "nn"]))
-  }, undefined, _ctx);
-};
-
-$template.Component = $createTemplate("tmpl_7_container", $template);
-
-$template = $ownTemplates["tmpl_8_catch-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    catchtouchmove: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_8_catch-view", $template);
-
-$template = $ownTemplates["tmpl_8_static-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_8_static-view", $template);
-
-$template = $ownTemplates["tmpl_8_pure-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_8_pure-view", $template);
-
-$template = $ownTemplates["tmpl_8_view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_8_view", $template);
-
-$template = $ownTemplates["tmpl_8_text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_8_text", $template);
-
-$template = $ownTemplates["tmpl_8_container"] = function (data) {
-  var _ctx = data._ctx;
-  return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "a"], 1)(8, $getLooseDataMember([data['i'], "nn"]), data['l'])], {
-    i: data['i'],
-    cid: 8,
-    l: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "f"], 1)(data['l'], $getLooseDataMember([data['i'], "nn"]))
-  }, undefined, _ctx);
-};
-
-$template.Component = $createTemplate("tmpl_8_container", $template);
-
-$template = $ownTemplates["tmpl_9_catch-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    catchtouchmove: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_9_catch-view", $template);
-
-$template = $ownTemplates["tmpl_9_static-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_9_static-view", $template);
-
-$template = $ownTemplates["tmpl_9_pure-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_9_pure-view", $template);
-
-$template = $ownTemplates["tmpl_9_view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_9_view", $template);
-
-$template = $ownTemplates["tmpl_9_text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_9_text", $template);
-
-$template = $ownTemplates["tmpl_9_container"] = function (data) {
-  var _ctx = data._ctx;
-  return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "a"], 1)(9, $getLooseDataMember([data['i'], "nn"]), data['l'])], {
-    i: data['i'],
-    cid: 9,
-    l: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "f"], 1)(data['l'], $getLooseDataMember([data['i'], "nn"]))
-  }, undefined, _ctx);
-};
-
-$template.Component = $createTemplate("tmpl_9_container", $template);
-
-$template = $ownTemplates["tmpl_10_catch-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    catchtouchmove: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_10_catch-view", $template);
-
-$template = $ownTemplates["tmpl_10_static-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_10_static-view", $template);
-
-$template = $ownTemplates["tmpl_10_pure-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_10_pure-view", $template);
-
-$template = $ownTemplates["tmpl_10_view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_10_view", $template);
-
-$template = $ownTemplates["tmpl_10_text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_10_text", $template);
-
-$template = $ownTemplates["tmpl_10_container"] = function (data) {
-  var _ctx = data._ctx;
-  return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "a"], 1)(10, $getLooseDataMember([data['i'], "nn"]), data['l'])], {
-    i: data['i'],
-    cid: 10,
-    l: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "f"], 1)(data['l'], $getLooseDataMember([data['i'], "nn"]))
-  }, undefined, _ctx);
-};
-
-$template.Component = $createTemplate("tmpl_10_container", $template);
-
-$template = $ownTemplates["tmpl_11_catch-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    catchtouchmove: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_11_catch-view", $template);
-
-$template = $ownTemplates["tmpl_11_static-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_11_static-view", $template);
-
-$template = $ownTemplates["tmpl_11_pure-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_11_pure-view", $template);
-
-$template = $ownTemplates["tmpl_11_view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_11_view", $template);
-
-$template = $ownTemplates["tmpl_11_text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_11_text", $template);
-
-$template = $ownTemplates["tmpl_11_container"] = function (data) {
-  var _ctx = data._ctx;
-  return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "a"], 1)(11, $getLooseDataMember([data['i'], "nn"]), data['l'])], {
-    i: data['i'],
-    cid: 11,
-    l: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "f"], 1)(data['l'], $getLooseDataMember([data['i'], "nn"]))
-  }, undefined, _ctx);
-};
-
-$template.Component = $createTemplate("tmpl_11_container", $template);
-
-$template = $ownTemplates["tmpl_12_catch-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    catchtouchmove: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_12_catch-view", $template);
-
-$template = $ownTemplates["tmpl_12_static-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_12_static-view", $template);
-
-$template = $ownTemplates["tmpl_12_pure-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_12_pure-view", $template);
-
-$template = $ownTemplates["tmpl_12_view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_12_view", $template);
-
-$template = $ownTemplates["tmpl_12_text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_12_text", $template);
-
-$template = $ownTemplates["tmpl_12_container"] = function (data) {
-  var _ctx = data._ctx;
-  return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "a"], 1)(12, $getLooseDataMember([data['i'], "nn"]), data['l'])], {
-    i: data['i'],
-    cid: 12,
-    l: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "f"], 1)(data['l'], $getLooseDataMember([data['i'], "nn"]))
-  }, undefined, _ctx);
-};
-
-$template.Component = $createTemplate("tmpl_12_container", $template);
-
-$template = $ownTemplates["tmpl_13_catch-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    catchtouchmove: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_13_catch-view", $template);
-
-$template = $ownTemplates["tmpl_13_static-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_13_static-view", $template);
-
-$template = $ownTemplates["tmpl_13_pure-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_13_pure-view", $template);
-
-$template = $ownTemplates["tmpl_13_view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_13_view", $template);
-
-$template = $ownTemplates["tmpl_13_text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_13_text", $template);
-
-$template = $ownTemplates["tmpl_13_container"] = function (data) {
-  var _ctx = data._ctx;
-  return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "a"], 1)(13, $getLooseDataMember([data['i'], "nn"]), data['l'])], {
-    i: data['i'],
-    cid: 13,
-    l: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "f"], 1)(data['l'], $getLooseDataMember([data['i'], "nn"]))
-  }, undefined, _ctx);
-};
-
-$template.Component = $createTemplate("tmpl_13_container", $template);
-
-$template = $ownTemplates["tmpl_14_catch-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    catchtouchmove: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_14_catch-view", $template);
-
-$template = $ownTemplates["tmpl_14_static-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_14_static-view", $template);
-
-$template = $ownTemplates["tmpl_14_pure-view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_14_pure-view", $template);
-
-$template = $ownTemplates["tmpl_14_view"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", {
-    "hover-class": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverClass"]), 'none'),
-    "hover-stop-propagation": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStopPropagation"]), false),
-    "hover-start-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStartTime"]), 50),
-    "hover-stay-time": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "hoverStayTime"]), 400),
-    animation: $getLooseDataMember([data['i'], "animation"]),
-    bindtouchstart: _ctx.$$eventBinder('eh'),
-    bindtouchmove: _ctx.$$eventBinder('eh'),
-    bindtouchend: _ctx.$$eventBinder('eh'),
-    bindtouchcancel: _ctx.$$eventBinder('eh'),
-    bindlongpress: _ctx.$$eventBinder('eh'),
-    bindanimationstart: _ctx.$$eventBinder('eh'),
-    bindanimationiteration: _ctx.$$eventBinder('eh'),
-    bindanimationend: _ctx.$$eventBinder('eh'),
-    bindtransitionend: _ctx.$$eventBinder('eh'),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_14_view", $template);
-
-$template = $ownTemplates["tmpl_14_text"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-text", {
-    selectable: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "selectable"]), false),
-    space: $getLooseDataMember([data['i'], "space"]),
-    decode: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "decode"]), false),
-    "user-select": $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "b"], 1)($getLooseDataMember([data['i'], "userSelect"]), false),
-    style: $getLooseDataMember([data['i'], "st"]),
-    className: $getLooseDataMember([data['i'], "cl"]),
-    bindtap: _ctx.$$eventBinder('eh'),
-    id: $getLooseDataMember([data['i'], "uid"])
-  }, $iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "e"], 1)(data['cid'] + 1)], {
-      i: item,
-      l: data['l']
-    }, undefined, _ctx);
-  }));
-};
-
-$template.Component = $createTemplate("tmpl_14_text", $template);
-
-$template = $ownTemplates["tmpl_14_container"] = function (data) {
-  var _ctx = data._ctx;
-  return $useTemplate($templates[$getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "a"], 1)(14, $getLooseDataMember([data['i'], "nn"]), data['l'])], {
-    i: data['i'],
-    cid: 14,
-    l: $getSJSMember([_utils_wxs__WEBPACK_IMPORTED_MODULE_0___default.a, "f"], 1)(data['l'], $getLooseDataMember([data['i'], "nn"]))
-  }, undefined, _ctx);
-};
-
-$template.Component = $createTemplate("tmpl_14_container", $template);
-
-$template = $ownTemplates["tmpl_15_container"] = function (data) {
-  var _ctx = data._ctx;
-  return $getLooseDataMember([data['i'], "nn"]) === '#text' ? $useTemplate($templates['tmpl_0_#text'], {
-    i: data['i']
-  }, undefined, _ctx) : Nerv.createElement(Comp, {
-    i: data['i'],
-    l: data['l']
-  });
-};
-
-$template.Component = $createTemplate("tmpl_15_container", $template);
+$template.Component = $createTemplate("abc", $template);
 var $templates = {};
 $templates = $ownTemplates;
 function render(data, _ctx) {
@@ -3705,152 +1117,24 @@ function render(data, _ctx) {
 
 /***/ }),
 
-/***/ "./todo/comp.js?hash=20e859dc304e591d1ed540e3b5edbe5ebe750fd6":
-/*!********************************************************************!*\
-  !*** ./todo/comp.js?hash=20e859dc304e591d1ed540e3b5edbe5ebe750fd6 ***!
-  \********************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-
-  window.app = window.app || {};
-  window.app['/comp'] = {
-    // is: "/comp",
-    usingComponents: {"comp":"/comp","custom-wrapper":"/custom-wrapper"},
-    get render() { 
-      const fn = __webpack_require__(/*! ./comp.wxml?hash=20e859dc304e591d1ed540e3b5edbe5ebe750fd6 */ "./todo/comp.wxml?hash=20e859dc304e591d1ed540e3b5edbe5ebe750fd6"); 
-      return fn.default || fn;
-    },
-    
-  };
-  
-
-/***/ }),
-
-/***/ "./todo/comp.wxml?hash=20e859dc304e591d1ed540e3b5edbe5ebe750fd6":
-/*!**********************************************************************!*\
-  !*** ./todo/comp.wxml?hash=20e859dc304e591d1ed540e3b5edbe5ebe750fd6 ***!
-  \**********************************************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
-/* harmony import */ var _base_wxml__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./base.wxml */ "./todo/base.wxml");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
-
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-var Nerv = self.Nerv;
-var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
-var $iterate = self.XMLRuntime.iterate;
-var $createRoot = self.XMLRuntime.createRoot;
-var $createBlock = self.XMLRuntime.createBlock;
-var $useTemplate = self.XMLRuntime.useTemplate;
-var $createTemplate = self.XMLRuntime.createTemplate;
-var $renderSlot = self.XMLRuntime.renderSlot;
-var $getSJSMember = self.XMLRuntime.getSJSMember;
-var $toString = self.XMLRuntime.toString;
-var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
-
-var $templates = {};
-$templates = _objectSpread({}, _base_wxml__WEBPACK_IMPORTED_MODULE_0__["$ownTemplates"]);
-function render(data, _ctx) {
-  return $createRoot($useTemplate($templates['tmpl_0_container'], {
-    i: data['i'],
-    l: data['l']
-  }, undefined, _ctx));
-}
-;
-
-/***/ }),
-
-/***/ "./todo/custom-wrapper.js?hash=20e859dc304e591d1ed540e3b5edbe5ebe750fd6":
-/*!******************************************************************************!*\
-  !*** ./todo/custom-wrapper.js?hash=20e859dc304e591d1ed540e3b5edbe5ebe750fd6 ***!
-  \******************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-
-  window.app = window.app || {};
-  window.app['/custom-wrapper'] = {
-    // is: "/custom-wrapper",
-    usingComponents: {"comp":"/comp","custom-wrapper":"/custom-wrapper"},
-    get render() { 
-      const fn = __webpack_require__(/*! ./custom-wrapper.wxml?hash=20e859dc304e591d1ed540e3b5edbe5ebe750fd6 */ "./todo/custom-wrapper.wxml?hash=20e859dc304e591d1ed540e3b5edbe5ebe750fd6"); 
-      return fn.default || fn;
-    },
-    
-  };
-  
-
-/***/ }),
-
-/***/ "./todo/custom-wrapper.wxml?hash=20e859dc304e591d1ed540e3b5edbe5ebe750fd6":
-/*!********************************************************************************!*\
-  !*** ./todo/custom-wrapper.wxml?hash=20e859dc304e591d1ed540e3b5edbe5ebe750fd6 ***!
-  \********************************************************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
-/* harmony import */ var _base_wxml__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./base.wxml */ "./todo/base.wxml");
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
-
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-var Nerv = self.Nerv;
-var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
-var $iterate = self.XMLRuntime.iterate;
-var $createRoot = self.XMLRuntime.createRoot;
-var $createBlock = self.XMLRuntime.createBlock;
-var $useTemplate = self.XMLRuntime.useTemplate;
-var $createTemplate = self.XMLRuntime.createTemplate;
-var $renderSlot = self.XMLRuntime.renderSlot;
-var $getSJSMember = self.XMLRuntime.getSJSMember;
-var $toString = self.XMLRuntime.toString;
-var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
-
-var $templates = {};
-$templates = _objectSpread({}, _base_wxml__WEBPACK_IMPORTED_MODULE_0__["$ownTemplates"]);
-function render(data, _ctx) {
-  return $createRoot($iterate($getLooseDataMember([data['i'], "cn"]), function (item, index) {
-    return $useTemplate($templates['tmpl_0_container'], {
-      i: item,
-      l: ''
-    }, undefined, _ctx);
-  }));
-}
-;
-
-/***/ }),
-
-/***/ "./todo/pages/index/index.js?hash=d9740d61a4468ab1489217bf8b30ac7e199f3c24":
-/*!************************************************************************!*\
-  !*** ./todo/pages/index?hash=d9740d61a4468ab1489217bf8b30ac7e199f3c24 ***!
-  \************************************************************************/
+/***/ "./mini/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!***************************************************************************************!*\
+  !*** ./mini/pages/add-todo/add-todo.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \***************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 
     window.app = window.app || {};
-    window.app['pages/index/index'] = {
-      usingComponents: {"custom-wrapper":"/custom-wrapper","comp":"/comp"},
+    window.app['pages/add-todo/add-todo'] = {
+      usingComponents: {"add-button":"/components/add-button/add-button"},
       
       get render() {
-        const fn = __webpack_require__(/*! ./index.wxml?hash=d9740d61a4468ab1489217bf8b30ac7e199f3c24 */ "./todo/pages/index/index.wxml?hash=d9740d61a4468ab1489217bf8b30ac7e199f3c24")
+        const fn = __webpack_require__(/*! ./add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./mini/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219")
         return fn.default || fn;
       },
       get stylesheet() { 
-        const fn = __webpack_require__(/*! ./index.wxss?hash=d9740d61a4468ab1489217bf8b30ac7e199f3c24 */ "./todo/pages/index/index.wxss?hash=d9740d61a4468ab1489217bf8b30ac7e199f3c24"); 
+        const fn = __webpack_require__(/*! ./add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./mini/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); 
         return fn.default || fn; 
       },
     };
@@ -3858,8 +1142,8 @@ function render(data, _ctx) {
     if (!window['generateFunc']) {
       window['generateFunc'] = {}
     }
-    window['generateFunc']['pages/index/index'] = function() {
-      const generateFunc = window.app['pages/index/index'];
+    window['generateFunc']['pages/add-todo/add-todo'] = function() {
+      const generateFunc = window.app['pages/add-todo/add-todo'];
 
       document.dispatchEvent(new CustomEvent("generateFuncReady", {
         detail: {
@@ -3871,17 +1155,18 @@ function render(data, _ctx) {
 
 /***/ }),
 
-/***/ "./todo/pages/index/index.wxml?hash=d9740d61a4468ab1489217bf8b30ac7e199f3c24":
-/*!***********************************************************************************!*\
-  !*** ./todo/pages/index/index.wxml?hash=d9740d61a4468ab1489217bf8b30ac7e199f3c24 ***!
-  \***********************************************************************************/
+/***/ "./mini/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!*****************************************************************************************!*\
+  !*** ./mini/pages/add-todo/add-todo.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \*****************************************************************************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
-/* harmony import */ var _base_wxml__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../base.wxml */ "./todo/base.wxml");
+/* harmony import */ var _a_wxml__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./a.wxml */ "./mini/pages/add-todo/a.wxml");
+/* harmony import */ var _b_wxml__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./b.wxml */ "./mini/pages/add-todo/b.wxml");
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
@@ -3900,260 +1185,580 @@ var $getSJSMember = self.XMLRuntime.getSJSMember;
 var $toString = self.XMLRuntime.toString;
 var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
 
+
 var $templates = {};
-$templates = _objectSpread({}, _base_wxml__WEBPACK_IMPORTED_MODULE_0__["$ownTemplates"]);
+$templates = _objectSpread({}, _a_wxml__WEBPACK_IMPORTED_MODULE_0__["$ownTemplates"]);
 function render(data, _ctx) {
-  return $createRoot($useTemplate($templates['taro_tmpl'], {
-    root: data['root']
-  }, undefined, _ctx));
+  var AddButton = _ctx.$$resolveComponent("add-button");
+
+  return $createRoot(Nerv.createElement("tiny-view", {
+    className: 'page-add-todo'
+  }, [_b_wxml__WEBPACK_IMPORTED_MODULE_1__["default"].apply(this, arguments), Nerv.createElement("tiny-view", {
+    className: 'add-todo'
+  }, Nerv.createElement("tiny-input", {
+    className: 'add-todo-input',
+    placeholder: 'What needs to be done?',
+    bindinput: _ctx.$$eventBinder('onInput'),
+    value: data['inputValue']
+  })), Nerv.createElement("tiny-view", {
+    bindtap: _ctx.$$eventBinder('add')
+  }, '12121'), Nerv.createElement("tiny-view", {
+    catchtap: _ctx.$$eventBinder('add')
+  }, '12121'), Nerv.createElement("tiny-view", {
+    className: 'todo-footer'
+  }, Nerv.createElement(AddButton, {
+    text: 'Add Todo',
+    bindclick_me: _ctx.$$eventBinder('add')
+  })), Nerv.createElement("tiny-view", {
+    style: 'color: red',
+    "capture-catchtap": _ctx.$$eventBinder('xxxx')
+  }, 'capture-catch:tap'), $useTemplate($templates['abc'], {
+    inputValue: data['inputValue']
+  }, undefined, _ctx)]));
 }
 ;
 
 /***/ }),
 
-/***/ "./todo/pages/index/index.wxss?hash=d9740d61a4468ab1489217bf8b30ac7e199f3c24":
+/***/ "./mini/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!*****************************************************************************************!*\
+  !*** ./mini/pages/add-todo/add-todo.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \*****************************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _app_wxss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../app.wxss */ "./mini/app.wxss");
+/* harmony import */ var _components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../components/add-button/add-button.wxss */ "./mini/components/add-button/add-button.wxss");
+const { TinyStyleSheet } = self;
+const stylesheet = new TinyStyleSheet({ stylePath: 'pages/add-todo/add-todo.wxss' });
+
+stylesheet.imports(_app_wxss__WEBPACK_IMPORTED_MODULE_0__["default"]);
+
+stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__["default"]);
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.page-add-todo {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+            flex: 1;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+            flex-direction: column;
+  }
+  .add-todo {
+    padding: 40px;
+    -webkit-box-flex: 1;
+    -webkit-flex-grow: 1;
+            flex-grow: 1;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+            justify-content: center;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+            align-items: center;
+  }
+  .add-todo-input {
+    display: block;
+    font-size: 50rpx;
+    font-weight: 100;
+    padding: 5px 5px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid #DFDFDF;
+    color: #0EFFD6;
+    width: 100%;
+  }
+  .todo-footer {
+    padding: 50rpx 0 100rpx;
+    font-size: 48rpx;
+    font-weight: 200;
+    text-align: center;
+  }`));
+
+/***/ }),
+
+/***/ "./mini/pages/add-todo/b.wxml":
+/*!************************************!*\
+  !*** ./mini/pages/add-todo/b.wxml ***!
+  \************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
+var Nerv = self.Nerv;
+var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
+var $iterate = self.XMLRuntime.iterate;
+var $createRoot = self.XMLRuntime.createRoot;
+var $createBlock = self.XMLRuntime.createBlock;
+var $useTemplate = self.XMLRuntime.useTemplate;
+var $createTemplate = self.XMLRuntime.createTemplate;
+var $renderSlot = self.XMLRuntime.renderSlot;
+var $getSJSMember = self.XMLRuntime.getSJSMember;
+var $toString = self.XMLRuntime.toString;
+var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
+var $templates = {};
+function render(data, _ctx) {
+  return $createRoot(Nerv.createElement("tiny-view", null, 'include'));
+}
+;
+
+/***/ }),
+
+/***/ "./mini/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!*********************************************************************************!*\
+  !*** ./mini/pages/todos/todos.js?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \*********************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+    window.app = window.app || {};
+    window.app['pages/todos/todos'] = {
+      usingComponents: {"add-button":"/components/add-button/add-button"},
+      
+      get render() {
+        const fn = __webpack_require__(/*! ./todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./mini/pages/todos/todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219")
+        return fn.default || fn;
+      },
+      get stylesheet() { 
+        const fn = __webpack_require__(/*! ./todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 */ "./mini/pages/todos/todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219"); 
+        return fn.default || fn; 
+      },
+    };
+
+    if (!window['generateFunc']) {
+      window['generateFunc'] = {}
+    }
+    window['generateFunc']['pages/todos/todos'] = function() {
+      const generateFunc = window.app['pages/todos/todos'];
+
+      document.dispatchEvent(new CustomEvent("generateFuncReady", {
+        detail: {
+          generateFunc
+        }
+      }))
+    };
+  
+
+/***/ }),
+
+/***/ "./mini/pages/todos/todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
 /*!***********************************************************************************!*\
-  !*** ./todo/pages/index/index.wxss?hash=d9740d61a4468ab1489217bf8b30ac7e199f3c24 ***!
+  !*** ./mini/pages/todos/todos.wxml?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
   \***********************************************************************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _app_wxss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../app.wxss */ "./todo/app.wxss");
-const { TinyStyleSheet } = self;
-const stylesheet = new TinyStyleSheet({ stylePath: 'pages/index/index.wxss' });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
+var Nerv = self.Nerv;
+var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
+var $iterate = self.XMLRuntime.iterate;
+var $createRoot = self.XMLRuntime.createRoot;
+var $createBlock = self.XMLRuntime.createBlock;
+var $useTemplate = self.XMLRuntime.useTemplate;
+var $createTemplate = self.XMLRuntime.createTemplate;
+var $renderSlot = self.XMLRuntime.renderSlot;
+var $getSJSMember = self.XMLRuntime.getSJSMember;
+var $toString = self.XMLRuntime.toString;
+var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
+var $templates = {};
+function render(data, _ctx) {
+  var AddButton = _ctx.$$resolveComponent("add-button");
 
-stylesheet.imports(_app_wxss__WEBPACK_IMPORTED_MODULE_0__["default"]);
-/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.new-todo {
-    padding: 32rpx;
-    font-size: 48rpx;
-    font-style: italic;
-    font-weight: 300;
-    color: black;
-    box-shadow: none;
-    background: rgba(0, 0, 0, 0.003);
-  }
-  .filters-link {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    padding: 6rpx 14rpx;
-    border-width: 2rpx;
-    border-style: solid;
-    border-color: transparent;
-    border-radius: 6rpx;
-  }
-  .filters-link:hover {
-    border-color: #efd5d5;
-  }
-  .selected {
-    border-color: #efd5d5;
-    border-width: 2rpx;
-  }
-  .title {
-    width: 100%;
-    font-size: 100rpx;
-    font-weight: 100;
-    text-align: center;
-    color: rgba(175, 47, 47, 0.55);
-  }
-  .header-title-wrap {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    background-color: #F5F5F5;
-  }
-  .textinput-wrap {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-box-orient: horizontal;
-    -webkit-box-direction: normal;
-    -webkit-flex-direction: row;
-            flex-direction: row;
-    -webkit-box-align: center;
-    -webkit-align-items: center;
-            align-items: center;
-    border: 1rpx solid #e6e6e6;
-  }
-  .textinput-wrap-icon {
-    font-size: 44rpx;
-    color: #e6e6e6;
-    padding: 20rpx 54rpx 20rpx 54rpx;
-    -webkit-transform: rotate(90deg);
-            transform: rotate(90deg);
-  }
-  .todo-text-input {
-    -webkit-box-flex: 1;
-    -webkit-flex: 1;
-            flex: 1;
-  }
-  .textinput-wrap-input {
-    -webkit-box-flex: 1;
-    -webkit-flex: 1;
-            flex: 1;
-  }
-  .filters {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    font-weight: 400;
-    margin: 0;
-    padding: 0;
-    -webkit-box-orient: horizontal;
-    -webkit-box-direction: normal;
-    -webkit-flex-direction: row;
-            flex-direction: row;
-    background-color: #F5F5F5;
-  }
-  .filters-item {
-    margin: 6rpx;
-  }
-  .footer:before {
-    content: '';
-    position: absolute;
-    z-index: -1;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    height: 100rpx;
-    overflow: hidden;
-    box-shadow: 0 1rpx 1rpx rgba(0, 0, 0, 0.2), 0 8rpx 0 -3rpx #f6f6f6, 0 9rpx 1rpx -3rpx rgba(0, 0, 0, 0.2), 0 16rpx 0 -6rpx #f6f6f6, 0 17rpx 2rpx -6rpx rgba(0, 0, 0, 0.2);
-  }
-  .footer {
-    padding: 20rpx 30rpx;
-    border-top-width: 2rpx;
-    border-top-color: #e6e6e6;
-    border-style: solid;
-    border-bottom-width: 0;
-    border-left-width: 0;
-    border-right-width: 0;
-  }
-  .footer-content {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-box-orient: horizontal;
-    -webkit-box-direction: normal;
-    -webkit-flex-direction: row;
-            flex-direction: row;
-  }
-  .todo-count {
-    -webkit-box-flex: 1;
-    -webkit-flex: 1;
-            flex: 1;
-    color: #777;
-  }
-  .todo-count tiny-strong {
-    font-weight: 300;
-  }
-  .clear-completed-text {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    color: #777;
-    -webkit-box-pack: end;
-    -webkit-justify-content: flex-end;
-            justify-content: flex-end;
-  }
-@media (max-width: 430px) {
-  .footer {
-    height: 50rpx;
-  }
+  return $createRoot(Nerv.createElement("tiny-scroll-view", {
+    className: 'page-todos',
+    "scroll-y": 'true'
+  }, [Nerv.createElement("tiny-view", {
+    id: 'parent',
+    style: 'background: green;',
+    "capture-bindtap": _ctx.$$eventBinder('pct'),
+    bindtap: _ctx.$$eventBinder('pt'),
+    bindlongpress: _ctx.$$eventBinder('plp'),
+    bindtouchstart: _ctx.$$eventBinder('pts'),
+    bindtouchmove: _ctx.$$eventBinder('ptm')
+  }, Nerv.createElement("tiny-view", {
+    "capture-bindtap": _ctx.$$eventBinder('cct'),
+    catchtap: _ctx.$$eventBinder('ct'),
+    bindtouchstart: _ctx.$$eventBinder('cts'),
+    catchtouchmove: _ctx.$$eventBinder('ctm')
+  }, 'longpress/tap component')), Nerv.createElement("tiny-view", {
+    className: 'user'
+  }, [Nerv.createElement("tiny-image", {
+    className: 'avatar',
+    src: $getLooseDataMember([data['user'], "avatar"]) || '../../assets/logo.png',
+    "background-size": 'cover'
+  }), Nerv.createElement("tiny-view", {
+    className: 'nickname'
+  }, [$getLooseDataMember([data['user'], "nickName"]) && $getLooseDataMember([data['user'], "nickName"]) + '\'s' || 'mp', ' Todo List']), Nerv.createElement("tiny-view", {
+    className: 'test'
+  }, 'Todo List')]), Nerv.createElement("tiny-view", {
+    className: 'todo-items'
+  }, Nerv.createElement("tiny-checkbox-group", {
+    className: 'todo-items-group',
+    bindchange: _ctx.$$eventBinder('onTodoChanged')
+  }, $iterate(data['todos'], function (item, index) {
+    return Nerv.createElement("tiny-label", {
+      key: item,
+      bindtap: _ctx.$$eventBinder('clicklabel'),
+      className: 'todo-item ' + ($getLooseDataMember([item, "completed"]) ? 'checked' : '')
+    }, [Nerv.createElement("tiny-checkbox", {
+      className: 'todo-item-checkbox',
+      value: $getLooseDataMember([item, "text"]),
+      checked: $getLooseDataMember([item, "completed"])
+    }), Nerv.createElement("tiny-text", {
+      className: 'todo-item-text'
+    }, $getLooseDataMember([item, "text"]))]);
+  }))), Nerv.createElement("tiny-slider", {
+    bindchange: _ctx.$$eventBinder('sliderChange'),
+    "show-value": true
+  }), Nerv.createElement("tiny-view", {
+    className: 'progress-box'
+  }, Nerv.createElement("tiny-progress", {
+    percent: '20',
+    "show-info": '',
+    active: '',
+    "stroke-width": '3'
+  })), Nerv.createElement("tiny-view", {
+    className: 'section section_gap'
+  }, [Nerv.createElement("tiny-view", {
+    className: 'section__title'
+  }, 'type="switch"'), Nerv.createElement("tiny-view", {
+    className: 'body-view'
+  }, Nerv.createElement("tiny-switch", {
+    checked: data['switchChecked'],
+    bindchange: _ctx.$$eventBinder('switchChange')
+  }))]), Nerv.createElement("tiny-view", {
+    className: 'todo-footer'
+  }, [Nerv.createElement(AddButton, {
+    id: 'asd',
+    text: data['text'],
+    bindclick_me: _ctx.$$eventBinder('clickCom')
+  }, Nerv.createElement("tiny-text", {
+    bindtap: _ctx.$$eventBinder('tapSlot')
+  }, 'i am slot')), Nerv.createElement(AddButton, {
+    id: 'asxx',
+    xx: 'xxx',
+    text: 'xixi ' + data['text'],
+    bindclick_me: _ctx.$$eventBinder(data['fn'])
+  })]), Nerv.createElement("tiny-view", {
+    bindtap: _ctx.$$eventBinder('clickParent')
+  }, [Nerv.createElement("tiny-view", {
+    className: 'jyf',
+    "capture-bindtap": _ctx.$$eventBinder('captureClickChild'),
+    style: 'background: yellow;'
+  }, 'capture child'), Nerv.createElement("tiny-view", {
+    "data-xhq": 'jyf',
+    bindlongpress: _ctx.$$eventBinder('clickChild'),
+    style: 'margin-top: 120rpx; background: red;'
+  }, data['haha'])]), Nerv.createElement("tiny-view", {
+    className: 'container'
+  }, Nerv.createElement("tiny-view", {
+    className: 'page-body'
+  }, [Nerv.createElement("tiny-view", {
+    className: 'page-section page-section-spacing swiper'
+  }, Nerv.createElement("tiny-swiper", {
+    "indicator-dots": data['indicatorDots'],
+    autoplay: data['autoplay'],
+    interval: data['interval'],
+    duration: data['duration'],
+    circular: true
+  }, $iterate(data['background'], function (item, index) {
+    return Nerv.createElement("tiny-swiper-item", null, Nerv.createElement("tiny-view", {
+      className: 'swiper-item ' + item
+    }));
+  }))), Nerv.createElement("tiny-view", {
+    className: 'page-section',
+    style: 'margin-top: 20px;margin-bottom: 0;'
+  }, Nerv.createElement("tiny-view", {
+    className: 'weui-cells weui-cells_after-title'
+  }, [Nerv.createElement("tiny-view", {
+    className: 'weui-cell weui-cell_switch'
+  }, [Nerv.createElement("tiny-view", {
+    className: 'weui-cell__bd'
+  }, '指示点'), Nerv.createElement("tiny-view", {
+    className: 'weui-cell__ft'
+  }, Nerv.createElement("tiny-switch", {
+    checked: data['indicatorDots'],
+    bindchange: _ctx.$$eventBinder('changeIndicatorDots')
+  }))]), Nerv.createElement("tiny-view", {
+    className: 'weui-cell weui-cell_switch'
+  }, [Nerv.createElement("tiny-view", {
+    className: 'weui-cell__bd'
+  }, '自动播放'), Nerv.createElement("tiny-view", {
+    className: 'weui-cell__ft'
+  }, Nerv.createElement("tiny-switch", {
+    checked: data['autoplay'],
+    bindchange: _ctx.$$eventBinder('changeAutoplay')
+  }))])])), Nerv.createElement("tiny-view", {
+    className: 'page-section page-section-spacing'
+  }, [Nerv.createElement("tiny-view", {
+    className: 'page-section-title'
+  }, [Nerv.createElement("tiny-text", null, '幻灯片切换时长(ms)'), Nerv.createElement("tiny-text", {
+    className: 'info'
+  }, data['duration'])]), Nerv.createElement("tiny-slider", {
+    bindchange: _ctx.$$eventBinder('durationChange'),
+    value: data['duration'],
+    min: '500',
+    max: '2000'
+  }), Nerv.createElement("tiny-view", {
+    className: 'page-section-title'
+  }, [Nerv.createElement("tiny-text", null, '自动播放间隔时长(ms)'), Nerv.createElement("tiny-text", {
+    className: 'info'
+  }, data['interval'])]), Nerv.createElement("tiny-slider", {
+    bindchange: _ctx.$$eventBinder('intervalChange'),
+    value: data['interval'],
+    min: '3000',
+    max: '10000'
+  })])])), Nerv.createElement("tiny-view", {
+    bindtap: _ctx.$$eventBinder('showToast')
+  }, 'showToast'), Nerv.createElement("tiny-button", {
+    bindtap: _ctx.$$eventBinder('nav')
+  }, 'nav')]));
 }
-  .checkbox-label {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    margin: 10rpx;
-    -webkit-box-orient: horizontal;
-    -webkit-box-direction: normal;
-    -webkit-flex-direction: row;
-            flex-direction: row;
-    -webkit-box-align: center;
-    -webkit-align-items: center;
-            align-items: center;
-  }
-  .checkbox {
-    margin-right: 10rpx;
-  }
-  .todo-list {
-    margin: 0;
-    padding: 0;
-  }
-  .main {
-    position: relative;
-    z-index: 2;
-    border-top-width: 1rpx;
-    border-style: solid;
-    border-top-color: #e6e6e6;
-    border-bottom-width: 0;
-    border-left-width: 0;
-    border-right-width: 0;
-  }
-  .checkbox-group {
-    margin-bottom: 10rpx;
-  }
-  .todaoapp {
-    background-color: white;
-  }`));
+;
 
 /***/ }),
 
-/***/ "./todo/utils.wxs":
-/*!************************!*\
-  !*** ./todo/utils.wxs ***!
-  \************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
+/***/ "./mini/pages/todos/todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219":
+/*!***********************************************************************************!*\
+  !*** ./mini/pages/todos/todos.wxss?hash=05b57513280a5d6b34d9a8da01f5b7553f53e219 ***!
+  \***********************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-module.exports = {
-  $sjs_a: function ($sjs_l, $sjs_n, $sjs_s) {
-    var $sjs_a = ["view", "catch-view", "cover-view", "static-view", "pure-view", "block", "text", "static-text", "slot", "slot-view", "label", "form", "scroll-view", "swiper", "swiper-item"];
-    var $sjs_b = ["static-text", "slot", "slot-view", "label", "form", "scroll-view", "swiper", "swiper-item"];
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _app_wxss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../app.wxss */ "./mini/app.wxss");
+/* harmony import */ var _components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../components/add-button/add-button.wxss */ "./mini/components/add-button/add-button.wxss");
+const { TinyStyleSheet } = self;
+const stylesheet = new TinyStyleSheet({ stylePath: 'pages/todos/todos.wxss' });
 
-    if ($sjs_a.$sjs_indexOf($sjs_n) === -1) {
-      $sjs_l = 0;
-    }
+stylesheet.imports(_app_wxss__WEBPACK_IMPORTED_MODULE_0__["default"]);
 
-    if ($sjs_b.$sjs_indexOf($sjs_n) > -1) {
-      var $sjs_u = $sjs_s.$sjs_split(',');
-      var $sjs_depth = 0;
-
-      for (var $sjs_i = 0; $sjs_i < $sjs_u.$sjs_length; $sjs_i++) {
-        if ($sjs_u[_$sjs_p($sjs_i)] === $sjs_n) $sjs_depth++;
-      }
-
-      $sjs_l = $sjs_depth;
-    }
-
-    return 'tmpl_' + $sjs_l + '_' + $sjs_n;
-  },
-  $sjs_b: function ($sjs_a, $sjs_b) {
-    return $sjs_a === undefined ? $sjs_b : $sjs_a;
-  },
-  $sjs_c: function ($sjs_i, $sjs_prefix) {
-    var $sjs_s = $sjs_i.$sjs_focus !== undefined ? 'focus' : 'blur';
-    return $sjs_prefix + $sjs_i.$sjs_nn + '_' + $sjs_s;
-  },
-  $sjs_d: function ($sjs_i, $sjs_v) {
-    return $sjs_i === undefined ? $sjs_v : $sjs_i;
-  },
-  $sjs_e: function ($sjs_n) {
-    return 'tmpl_' + $sjs_n + '_container';
-  },
-  $sjs_f: function ($sjs_l, $sjs_n) {
-    var $sjs_b = ["static-text", "slot", "slot-view", "label", "form", "scroll-view", "swiper", "swiper-item"];
-
-    if ($sjs_b.$sjs_indexOf($sjs_n) > -1) {
-      if ($sjs_l) $sjs_l += ',';
-      $sjs_l += $sjs_n;
-    }
-
-    return $sjs_l;
+stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODULE_1__["default"]);
+/* harmony default export */ __webpack_exports__["default"] = (stylesheet.exports(`.page-todos {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+            flex-direction: column;
+    width: 100%;
+    max-height: 100vh;
   }
-};
+  .user {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-shrink: 0;
+            flex-shrink: 0;
+    padding: 30px;
+    color: #FFF;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+            flex-direction: column;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+            align-items: center;
+  }
+  .avatar {
+    width: 130rpx;
+    height: 130rpx;
+    border-radius: 50%;
+    background-color: #FFF;
+    -webkit-align-self: center;
+            align-self: center;
+  }
+  .nickname {
+    padding-top: 40rpx;
+    text-align: center;
+    font-size: 40rpx;
+    font-weight: 100;
+  }
+  .test {
+    font-size: 20px;
+  }
+  .todo-items {
+    -webkit-box-flex: 1;
+    -webkit-flex-grow: 1;
+            flex-grow: 1;
+    font-size: 34rpx;
+    padding: 50rpx 120rpx;
+    color: #0EFFD6;
+    overflow: auto;
+  }
+  .todo-items-group {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+            flex-direction: column;
+  }
+  .todo-item {
+    position: relative;
+    margin-bottom: 50rpx;
+    padding-left: 80rpx;
+    line-height: 70rpx;
+    height: 80rpx;
+    box-sizing: border-box;
+    border: 2px solid rgb(14, 255, 214);
+    border-radius: 100rpx;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-transition: border 0.2s;
+    transition: border 0.2s;
+  }
+  .todo-item:last-child {
+    margin-bottom: 0;
+  }
+  .todo-item::before {
+    content: '';
+    position: absolute;
+    left: 12rpx;
+    margin-right: 20rpx;
+    width: 45rpx;
+    height: 45rpx;
+    background-color: rgba(14, 222, 255, 0.3);
+    border-radius: 50%;
+    top: 50%;
+    -webkit-transform: translateY(-50%);
+            transform: translateY(-50%);
+    -webkit-transition: background-color 0.2s;
+    transition: background-color 0.2s;
+  }
+  .todo-item::after {
+    content: '';
+    position: absolute;
+    left: 29rpx;
+    width: 8rpx;
+    height: 18rpx;
+    top: 50%;
+    -webkit-transform: translateY(-60%) rotate(38deg);
+            transform: translateY(-60%) rotate(38deg);
+    border: 4rpx solid #FFF;
+    border-width: 0 4rpx 4rpx 0;
+    opacity: 0;
+    -webkit-transition: opacity 0.2s;
+    transition: opacity 0.2s;
+  }
+  .todo-item-checkbox {
+    display: none;
+  }
+  .checked .todo-item-text {
+    text-decoration: line-through;
+    color: #1AA0B8;
+  }
+  .checked.todo-item {
+    border: 2px solid rgba(14, 222, 255, 0.2);
+  }
+  .checked.todo-item::before {
+    background-color: rgba(14, 222, 255, 0.2);
+  }
+  .checked.todo-item::after {
+    opacity: 1;
+  }
+  .todo-footer {
+    -webkit-flex-shrink: 0;
+            flex-shrink: 0;
+    padding: 50rpx 0 100rpx;
+    font-size: 48rpx;
+    font-weight: 200;
+    text-align: center;
+  }
+  .page-section-title {
+    padding: 0;
+  }
+  .swiper-item {
+    display: block;
+    height: 150px;
+  }
+  .page-section-title {
+    margin-top: 30px;
+    position: relative;
+  }
+  .info {
+    position: absolute;
+    right: 0;
+    font-size: 15px;
+  }
+  .page-foot {
+    margin-top: 25px;
+  }
+  .demo-text-1 {
+    position: relative;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+            align-items: center;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+            justify-content: center;
+    background-color: #1AAD19;
+    color: #FFFFFF;
+    font-size: 18px;
+  }
+  .demo-text-1:before {
+    content: 'A';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+  }
+  .demo-text-2 {
+    position: relative;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+            align-items: center;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+            justify-content: center;
+    background-color: #2782D7;
+    color: #FFFFFF;
+    font-size: 18px;
+  }
+  .demo-text-2:before {
+    content: 'B';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+  }
+  .demo-text-3 {
+    position: relative;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+            align-items: center;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+            justify-content: center;
+    background-color: #F1F1F1;
+    color: #353535;
+    font-size: 18px;
+  }
+  .demo-text-3:before {
+    content: 'C';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+  }`));
 
 /***/ })
 

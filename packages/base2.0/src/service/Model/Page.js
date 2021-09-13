@@ -1,8 +1,6 @@
 import { set, get, cloneDeep, mapValues, isFunction } from 'lodash';
 
-import { wrapUserFunction, wrapPageLifetime } from '../utils/wrapfn';
-import { warn } from '../utils/log';
-
+import { wrapPageLifetime } from '../utils/wrapfn';
 import { invokeWebview } from '../bridge';
 import { componentModels, pageModels, pageInitMap, afterSetData } from './common';
 import BaseModel from './Base';

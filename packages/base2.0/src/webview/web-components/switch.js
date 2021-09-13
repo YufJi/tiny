@@ -12,11 +12,6 @@ documentContainer.innerHTML = `
           -webkit-tap-highlight-color: transparent;
           display: inline-block;
         }
-
-        :host([ hidden ]) {
-          display: none;
-        }
-
         :host .switch-wrapper {
           display: -webkit-inline-flex;
           display: inline-flex;

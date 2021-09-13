@@ -1,19 +1,17 @@
 {
   "window": {
-    "backgroundTextStyle": "light",
-    "navigationBarBackgroundColor": 16777215,
-    "navigationBarTitleText": "WeChat",
-    "navigationBarTextStyle": "black"
+    "navigationBarTitleText": "哈哈哈"
   },
   "pages": [
-    "pages/index/index"
+    "pages/todos/todos",
+    "pages/add-todo/add-todo"
   ],
   "launchParams": {
-    "pages/index/index": {
-      "backgroundTextStyle": "light",
-      "navigationBarBackgroundColor": 16777215,
-      "navigationBarTitleText": "TODO List",
-      "navigationBarTextStyle": "black"
+    "pages/todos/todos": {
+      "navigationBarTitleText": "Index"
+    },
+    "pages/add-todo/add-todo": {
+      "navigationBarTitleText": "哈哈哈"
     }
   }
 }

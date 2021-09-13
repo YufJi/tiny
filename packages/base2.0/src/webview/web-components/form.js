@@ -23,6 +23,8 @@ class Form extends Base(PolymerElement) {
         :host {
           display: block;
         }
+
+
       </style>
       <slot></slot>
     `;

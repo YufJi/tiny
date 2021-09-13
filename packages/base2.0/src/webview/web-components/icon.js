@@ -12,9 +12,7 @@ documentContainer.innerHTML = `<dom-module id="icon-style">
         font-size: 0;
       }
 
-      :host([hidden]) {
-        display: none;
-      }
+      
 
       #icon {
         font: normal normal normal 14px/1 "mpui";

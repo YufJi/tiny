@@ -42,9 +42,7 @@ documentContainer.innerHTML = `<dom-module id="input-style">
         z-index: 2;
       }
 
-      :host([ hidden ]) {
-        display: none;
-      }
+      
 
       :host div {
         position: relative;

@@ -78,7 +78,7 @@ function createInvoke(jsCore) {
       response = jsCore.call(method, paramsString, webviewIdsString, resolveId);
     })
 
-    /* 有结果为同步api */
+    /* 同步api */
     if (response) {
       resolveMap.delete(resolveId);
       return JSON.parse(response);

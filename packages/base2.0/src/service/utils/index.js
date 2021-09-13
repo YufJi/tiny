@@ -1,4 +1,4 @@
-import querystring from 'querystring';
+import qs from 'qs';
 import { isPlainObject } from 'lodash';
 import { wrapInnerFunction, wrapUserFunction } from './wrapfn';
 
@@ -165,8 +165,8 @@ export function addQueryStringToUrl(url, data) {
   if (typeof url === 'string' && isPlainObject(data)) {
     const [prefix, search] = url.split('?');
 
-    const query = { ...querystring.parse(search), ...data };
-    const newSearch = querystring.stringify(query);
+    const query = { ...qs.parse(search), ...data };
+    const newSearch = qs.stringify(query);
     return `${prefix}?${newSearch}`;
   }
 

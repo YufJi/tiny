@@ -10,8 +10,6 @@ const generateEntries = require('./generateEntries');
 const generateAppJson = require('./generateAppJson');
 const generateAppConfigJson = require('./generateAppConfigJson');
 const { safeJsonParse, normalizePathForWin } = require('./utils');
-/* 完全转译出文件 */
-const transform = require('./transform');
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -26,7 +24,6 @@ module.exports = function run(config) {
     mergeSubPackages,
     src, /* 小程序目录 */
     out, /* 转译输出目录 */
-    pluginInjection,
     runtimeConfig = {},
     watch,
   } = config;
@@ -75,7 +72,6 @@ module.exports = function run(config) {
     src: sourceDir,
     appJson,
     importScripts,
-    pluginInjection,
     transformConfig,
   });
   signale.success('生成入口文件');
@@ -87,10 +83,6 @@ module.exports = function run(config) {
     contextPath,
     transformConfig,
   });
-
-  // // todo 这里开始走webpack构建入口文件为index.web 和 index.worker
-  // transform(assign({}, transformConfig, { cwd: sourceDir }));
-  // return;
 
   const assetExtnames = ['*.eot', '*.woff', '*.ttf', '*.text', '*.png', '*.jpg', '*.jpeg', '*.gif', '*.bmp', '*.svg', '*.webp'];
 

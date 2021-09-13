@@ -21,9 +21,6 @@ class RadioGroup extends Group(Data(Base(PolymerElement))) {
         :host {
           display: block;
         }
-        :host([ hidden ]) {
-          display: none;
-        }
       </style>
       <slot></slot>
     `;

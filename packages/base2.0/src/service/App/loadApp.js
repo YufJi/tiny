@@ -47,7 +47,7 @@ function handleApp(app) {
 function handleAppLaunch(param) {
   const pages = getPageStack();
   const currentPage = last(pages);
-  const query = isString(param.query) ? querystring.parse(param.query) : param.query || {};
+  const query = isString(param.query) ? qs.parse(param.query) : param.query || {};
 
   if (!currentPage || currentPage.route !== param.path || !isEqual(currentPage.query, query)) {
     APP_STATE.willRoute = true;

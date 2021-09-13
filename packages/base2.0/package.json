@@ -27,7 +27,7 @@
     "eventemitter3": "^4.0.7",
     "lodash": "^4.17.21",
     "path": "^0.12.7",
-    "querystring": "^0.2.1"
+    "qs": "^6.10.1"
   },
   "devDependencies": {
     "@babel/core": "^7.14.3",
@@ -42,8 +42,6 @@
     "less-loader": "^5.0.0",
     "mini-css-extract-plugin": "^0.7.0",
     "postcss-loader": "^3.0.0",
-    "ts-loader": "^4.5.0",
-    "typescript": "^3.9.9",
     "webpack": "^4.46.0",
     "webpack-cli": "^4.6.0"
   }

@@ -16,7 +16,9 @@ class Label extends Base(PolymerElement) {
       <style>
         :host {
           -webkit-tap-highlight-color: rgba(0,0,0,0);
-        }     
+        }    
+
+
       </style>     
       <slot></slot>
     `;

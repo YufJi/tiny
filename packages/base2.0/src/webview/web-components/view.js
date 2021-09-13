@@ -14,6 +14,7 @@ class View extends Hover(Base(PolymerElement)) {
           display: block;
           white-space: normal;
         }
+
         #main {
           /* ios12 special */
           text-decoration: inherit;      

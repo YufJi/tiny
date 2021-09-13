@@ -6,6 +6,7 @@
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/service/context/getLaunchOptions.js
  */
 import { memoize, isString, isObject } from 'lodash';
+import qs from 'qs';
 
 import { invokeNative } from '../bridge';
 import { error, debug } from '../utils/log';
@@ -13,12 +14,12 @@ import { error, debug } from '../utils/log';
 const getLaunchOptions = memoize(() => {
   try {
     const res = invokeNative('getLaunchOptionsSync');
-    debug('launchOptions', res);
+
     let query;
 
     if (isString(res.query)) {
       // NOTE: 客户端传递的query是字符串格式，需要手动解析成object
-      query = querystring.parse(res.query);
+      query = qs.parse(res.query);
     } else if (isObject(res.query)) {
       query = res.query;
       Object.entries(query).forEach(([key, value = '']) => {
@@ -28,12 +29,16 @@ const getLaunchOptions = memoize(() => {
       query = {};
     }
 
-    return {
+    const launchOptions = {
       query,
       path: res.path,
       scene: res.scene,
       refererInfo: res.refererInfo,
     };
+
+    debug('launchOptions', launchOptions);
+
+    return launchOptions;
   } catch (e) {
     error(e);
     return {};

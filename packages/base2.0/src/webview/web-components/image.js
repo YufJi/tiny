@@ -77,10 +77,6 @@ class Image extends Base(PolymerElement) {
           overflow: hidden;
         }
 
-        :host([ hidden ]) {
-          display: none;
-        }
-
       </style>
       <div 
         style="background-size:100% 100%; border-radius:inherit; background-repeat:no-repeat;" 

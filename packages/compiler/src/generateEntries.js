@@ -10,7 +10,6 @@ function getComponentImports(pages = [], baseDir, option) {
 module.exports = function generateEntries({
   src, /* miniprogramRoot 小程序source目录 */
   appJson,
-  pluginInjection = '',
   transformConfig,
 }) {
   const { app } = appJson;
@@ -32,10 +31,6 @@ module.exports = function generateEntries({
   };
 
   const mpApp = mpJson.app;
-
-  if (app.supportSjsHandler) {
-    mpApp.supportSjsHandler = app.supportSjsHandler;
-  }
 
   if (app.useDynamicPlugins) {
     mpApp.useDynamicPlugins = app.useDynamicPlugins;
@@ -103,7 +98,6 @@ g.TinyConfig = appConfig;
     'if(!self.__TinyInited__) {',
     'self.__TinyInited__ = true;',
     configImport,
-    pluginInjection,
     'function success() {',
     appImport,
     ...allComponentsRequires,

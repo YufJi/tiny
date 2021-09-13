@@ -10,8 +10,8 @@ import jsbridge from '@/utils/jsbridge';
 import { createWorkerIframe } from '@/utils/createIframe';
 import global from '@/utils/global';
 import requireFile from '@/utils/requireFile';
-import { createGuid } from '@/utils/';
-import { pushWindow, popWindow } from '@/utils/jsbridge/API/navigation';
+import { createGuid, query } from '@/utils';
+import { pushWindow, navigateBack } from '@/utils/jsbridge/API/navigation';
 
 import style from './app.module.less';
 
@@ -53,7 +53,7 @@ class App extends Component {
     const guid = createGuid('service');
     const src = 'biz/service.html';
     const { pages } = global.appConfig;
-    const homePage = pages[0];
+    const homePage = query('path') || pages[0];
 
     Promise.all([
       createWorkerIframe({
@@ -91,7 +91,7 @@ class App extends Component {
   }
 
   handleNavBack = () => {
-    popWindow();
+    navigateBack();
   }
 
   render() {

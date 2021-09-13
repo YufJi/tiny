@@ -6,7 +6,7 @@ import gloabl from './global';
 
 function createIframe(options) {
   return new Promise((resolve, reject) => {
-    const { id, src, style, onload, container, preload = false } = options || {};
+    const { id, src, style, onload, container } = options || {};
     const el = document.createElement('iframe');
 
     const [url, query] = src.split('?');
@@ -34,9 +34,7 @@ function createIframe(options) {
       reject(e);
     };
 
-    if (!preload) {
-      container.appendChild(el);
-    }
+    container.appendChild(el);
   });
 }
 
@@ -77,7 +75,7 @@ export function removeRenderIframeById(guid) {
     gloabl.webviews.delete(guid);
 
     if (iframe) {
-      iframe.className += ' leave';
+      iframe.className = 'frame leave';
       setTimeout(() => {
         iframe.parentNode.removeChild(iframe);
       }, 300);

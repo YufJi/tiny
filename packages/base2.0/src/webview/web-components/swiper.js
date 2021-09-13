@@ -19,9 +19,7 @@ documentContainer.innerHTML = `
           -webkit-user-select: none;
           user-select: none;
         }
-        :host([hidden]) {
-          display: none;
-        }
+
         :host .swiper-wrapper {
           overflow: hidden;
           position: relative;

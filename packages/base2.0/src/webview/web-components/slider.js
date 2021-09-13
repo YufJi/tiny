@@ -13,9 +13,7 @@ documentContainer.innerHTML = `<dom-module id="slider-style">
         display: block;
       }
 
-      :host([hidden]) {
-        display: none;
-      }
+      
 
       :host * {
         -webkit-tap-highlight-color: rgba(0,0,0,0);

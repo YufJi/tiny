@@ -143,10 +143,7 @@ function transformComponentJsForWebRender({ is, usingComponents }, config) {
   const cssExists = false;
 
   const info = `{
-    // is: ${JSON.stringify(is)},
-    usingComponents: ${JSON.stringify(
-    transformUsingComponents({ usingComponents, pluginId }),
-  )},
+    usingComponents: ${JSON.stringify(transformUsingComponents({ usingComponents, pluginId }))},
     get render() { 
       const fn = require('./${filename}${templateExtname}${resourceQuery}'); 
       return fn.default || fn;
@@ -158,25 +155,25 @@ function transformComponentJsForWebRender({ is, usingComponents }, config) {
   }`;
 
   return `
-  window.app = window.app || {};
-  window.app['${is}'] = ${info};
+    window.app = window.app || {};
+    window.app['${is}'] = ${info};
   `;
 }
 
 /* 处理普通js文件 */
 function transformJsForWorker(str, config) {
   return `
-${getSecurityHeader(config.forbiddenGlobals)}
-
-${str}`;
+    ${getSecurityHeader(config.forbiddenGlobals)}
+    ${str}    
+  `;
 }
 
 /* 处理worker app.js */
 function transformAppJs(str, config) {
   return `
-${getSecurityHeader(config.forbiddenGlobals)}
-
-${str}`;
+    ${getSecurityHeader(config.forbiddenGlobals)}
+    ${str}
+  `;
 }
 
 module.exports = {

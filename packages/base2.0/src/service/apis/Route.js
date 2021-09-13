@@ -2,9 +2,9 @@ import { last } from 'lodash';
 
 import { publish } from '../bridge';
 import { getCurrentPages } from '../Route';
-import { beforeInvoke, getRealRoute, checkUrlInConfig, invokeMethod, GlobalState, encodeUrlQuery, checkBeforeNavigation } from './util';
+import { beforeInvoke, getRealRoute, checkUrlInConfig, invokeMethod, GlobalState, encodeUrlQuery } from './util';
 
-export const navigateTo = checkBeforeNavigation('navigateTo', (param) => {
+export const navigateTo = (param) => {
   const pages = getCurrentPages();
 
   if (beforeInvoke('navigateTo', param, {
@@ -26,7 +26,7 @@ export const navigateTo = checkBeforeNavigation('navigateTo', (param) => {
       });
     }
   }
-});
+};
 
 export function navigateBack(param = {}) {
   if (typeof param.delta !== 'number') {
@@ -60,7 +60,7 @@ export function reLaunch(param) {
   }
 }
 
-export const redirectTo = checkBeforeNavigation('redirectTo', (param) => {
+export const redirectTo = (param) => {
   if (beforeInvoke('redirectTo', param, {
     url: '',
   })) {
@@ -77,9 +77,9 @@ export const redirectTo = checkBeforeNavigation('redirectTo', (param) => {
       });
     }
   }
-});
+};
 
-export const switchTab = checkBeforeNavigation('switchTab', (param = {}) => {
+export const switchTab = (param = {}) => {
   if (beforeInvoke('switchTab', param, {
     url: '',
   })) {
@@ -96,4 +96,4 @@ export const switchTab = checkBeforeNavigation('switchTab', (param = {}) => {
       });
     }
   }
-});
+};

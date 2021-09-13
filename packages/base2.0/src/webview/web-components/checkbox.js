@@ -11,6 +11,9 @@ documentContainer.innerHTML = `<dom-module id="checkbox-style">
           -webkit-tap-highlight-color: transparent;
           display: inline-block;
         }
+
+
+
         :host .checkbox-wrapper {
           display: -webkit-inline-flex;
           display: inline-flex;

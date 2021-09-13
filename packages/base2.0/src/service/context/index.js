@@ -6,7 +6,6 @@ import getAppInfo from './getAppInfo';
 import $global from '../common/global';
 import { debug } from '../utils/log';
 
-
 const context = {
   get debug() {
     return g.TinyConfig && g.TinyConfig.debug;

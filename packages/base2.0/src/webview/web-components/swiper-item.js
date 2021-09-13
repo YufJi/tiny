@@ -25,10 +25,6 @@ class SwiperItem extends Base(PolymerElement) {
           overflow: hidden;
           will-change: 'transform';
         }
-
-        :host([ hidden ]) {
-          display: none;
-        }
       </style>
       <slot></slot>
     `;

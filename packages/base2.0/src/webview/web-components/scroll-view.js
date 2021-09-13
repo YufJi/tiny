@@ -47,11 +47,6 @@ class ScrollView extends TouchTrack(Base(PolymerElement)) {
           display: block;
           width: 100%;
         }
-
-        :host([ hidden ]) {
-          display: none;
-        }
-
         .scroll {
           position: relative;
           -webkit-overflow-scrolling: touch;

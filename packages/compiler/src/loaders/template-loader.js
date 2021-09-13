@@ -4,7 +4,6 @@ const { extname: getExtname, relative } = require('path');
 const TemplateTransformer = require('../TemplateTransformer');
 const { getProjectPath, isValidFilePath } = require('../utils');
 const { getComponent, getPage } = require('../pageMap');
-const { getCachedExtApp } = require('../getExtApp');
 
 module.exports = function (source) {
   const { isWorker, cwd, transformConfig } = loaderUtils.getOptions(this);
@@ -17,7 +16,6 @@ module.exports = function (source) {
     return;
   }
 
-  const { supportSjsHandler } = getCachedExtApp();
   const projectPath = getProjectPath(fullPath, cwd);
   const extname = getExtname(projectPath);
   const fileName = projectPath.slice(0, -extname.length);
@@ -34,7 +32,6 @@ module.exports = function (source) {
         renderPath: fullPath,
         isComponent: !!componentConfig,
         isWorker,
-        supportSjsHandler,
       },
       transformConfig,
     ),

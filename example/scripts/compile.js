@@ -8,6 +8,7 @@ const root = path.join(__dirname, `../${argv.name}`);
 compiler({
   src: root,
   out: outPath,
+  watch: argv.watch,
 
   templateNamespace: 'wx',
   sjsTemplate: {

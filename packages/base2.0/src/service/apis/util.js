@@ -1,5 +1,6 @@
 import { omitBy, isFunction, get } from 'lodash';
 import path from 'path';
+import { g } from 'utils';
 
 import { onNative, invokeNative } from '../bridge';
 import { wrapInnerFunction, wrapUserFunction } from '../utils/wrapfn';
@@ -23,26 +24,6 @@ const SS = new Proxy(S, {
 });
 
 export const GlobalState = SS;
-
-function check(callback) {
-  callback(true);
-}
-
-export function checkBeforeNavigation(name, navigationFunc) {
-  return function (...args) {
-    check((ok) => {
-      if (ok) {
-        navigationFunc.call(null, ...args);
-      } else {
-        const res = {
-          errMsg: `${name}:fail illegal content found`,
-        };
-        typeof args.fail === 'function' && args.fail(res);
-        typeof args.complete === 'function' && args.complete(res);
-      }
-    });
-  };
-}
 
 export function getDataType(val) {
   return Object.prototype.toString.call(val).slice(8, -1);
@@ -119,7 +100,7 @@ export function checkUrlInConfig(api, url, param) {
   let path = url.replace(/\.html\?.*|\.html$/, '');
   path = path.replace(/\?.*$/, '');
 
-  if (globalThis.TinyConfig.pages.includes(path)) {
+  if (g.TinyConfig.pages.includes(path)) {
     return true;
   }
 

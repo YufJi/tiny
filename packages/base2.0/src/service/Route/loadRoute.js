@@ -1,6 +1,6 @@
 import EventEmitter from 'eventemitter3';
 import { isObject, isString, isFunction, last, cloneDeep } from 'lodash';
-import querystring from 'querystring';
+import qs from 'qs';
 
 import { onNative, subscribe, invokeNative } from '../bridge';
 import context from '../context';
@@ -153,7 +153,7 @@ function handleAppRouteParams(params, _webviewId) {
       query[key] = decodeURIComponent(value);
     }
   } else if (isString(rawQuery) && rawQuery !== '') {
-    query = querystring.parse(rawQuery);
+    query = qs.parse(rawQuery);
   } else {
     query = {};
   }
@@ -335,7 +335,7 @@ function actionCreatePage(route, webviewId, query) {
 
   const isComponent = checkIsComponent(route);
   const implement = isComponent ? new ComponentPageModel(route, webviewId) : new PageModel(route, webviewId);
-
+  console.log('implement', implement, webviewId);
   // query副作用
   Object.assign(implement.options, cloneDeep(query));
 

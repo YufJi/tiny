@@ -1,6 +1,6 @@
 
 <scroll-view class="page-todos" scroll-y="true">
-  <view 
+  <view
     id="parent" 
     style="background: green;"
     capture-bind:tap="pct"
@@ -52,7 +52,7 @@
     <add-button id="asd"  text="{{text}}" bind:click_me="clickCom">
       <text bind:tap="tapSlot">i am slot</text>
     </add-button>
-    <add-button id="asxx" wx:if="{{text === 'def'}}" xx="xxx" text="xixi {{text}}" bind:click_me="{{fn}}"></add-button>
+    <add-button id="asxx" xx="xxx" text="xixi {{text}}" bind:click_me="{{fn}}"></add-button>
   </view>
 
   <view bind:tap="clickParent">
@@ -105,4 +105,5 @@
   </view>
 
   <view bind:tap="showToast">showToast</view>
+  <button bind:tap="nav">nav</button>
 </scroll-view>

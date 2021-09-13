@@ -11,9 +11,7 @@ documentContainer.innerHTML = `<dom-module id="radio-style">
         -webkit-tap-highlight-color: transparent;
         display: inline-block;
       }
-      :host([ hidden ]) {
-        display: none;
-      }
+      
       :host .radio-wrapper {
         display: -webkit-inline-flex;
         display: inline-flex;
