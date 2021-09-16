@@ -5,10 +5,24 @@
  * @Description:
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/runtime-helpers/useTemplate.js
  */
-import { h } from '../nerv';
+import { h, Fragment } from '../nerv';
 
 export default function useTemplate(template, data, key, context) {
-  const Component = template && template.Component;
+  function Template(props) {
+    return (
+      <Fragment key={key}>
+        {template ? template(data, context) : null}
+      </Fragment>
+    );
+  }
 
-  return Component ? Nerv.createElement(Component, { ...data, _ctx: context, key }) : null;
+  // return <Template key={key} />;
+
+  // return h(Template, { key });
+
+  return (
+    <Fragment key={key}>
+      {template ? template(data, context) : null}
+    </Fragment>
+  );
 }

@@ -6,9 +6,9 @@
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/bridge/index.js
  */
 import createBridge from 'js-bridge';
-import { g } from 'utils';
+import { g } from 'shared';
 
-g.__IS_WORKER__ = false;
+g.__IS_SERVICE__ = false;
 
 const {
   invokeHandler,

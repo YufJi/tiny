@@ -5,13 +5,13 @@
  * @Description:
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/index.js
  */
-import { g } from 'utils';
+import { g } from 'shared';
 import * as bridge from './bridge';
 import './web-components';
 
 import bootstrap from './bootstrap';
 import Nerv from './nerv';
-import XMLRuntime from './render-helpers';
+import RenderHelpers from './render-helpers';
 import StyleSheet from './StyleSheet';
 
 g.onerror = function onerror(msg = '', url, line, col, error) {
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 g.JSBridge = bridge;
 g.Nerv = Nerv;
-g.XMLRuntime = XMLRuntime;
+g.RenderHelpers = RenderHelpers;
 g.TinyStyleSheet = StyleSheet;
 
 bootstrap();

@@ -6,7 +6,7 @@
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/web-components/utils/scrollUtil.js
  */
 import { debounce } from 'lodash';
-import { elementPrefix, upperCasePerfix } from 'utils/config';
+import { elementPrefix, upperCasePerfix } from 'shared/config';
 
 const registeredImages = {};
 

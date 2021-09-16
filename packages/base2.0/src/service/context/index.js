@@ -1,5 +1,5 @@
 import { noop } from 'lodash';
-import { g } from 'utils';
+import { g } from 'shared';
 
 import getLaunchOptions from './getLaunchOptions';
 import getAppInfo from './getAppInfo';

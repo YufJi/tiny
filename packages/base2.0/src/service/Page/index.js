@@ -1,5 +1,5 @@
 import { defaults, mapValues, isFunction, noop } from 'lodash';
-import { g } from 'utils';
+import { g } from 'shared';
 
 import { wrapUserFunctions, wrapUserFunction } from '../utils/wrapfn';
 import { debug, warn } from '../utils/log';

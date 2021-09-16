@@ -1,2 +1,1 @@
-
-exports.templateRuntimeModule = 'self.XMLRuntime';
+exports.templateRenderHelpers = 'self.RenderHelpers';

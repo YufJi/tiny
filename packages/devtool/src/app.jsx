@@ -1,7 +1,7 @@
 /* eslint-disable react/destructuring-assignment */
 /* eslint-disable react/sort-comp */
 /* eslint-disable class-methods-use-this */
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
 import StatusBar from '@/components/statusBar';
 import Nav from '@/components/nav';
@@ -15,7 +15,7 @@ import { pushWindow, navigateBack } from '@/utils/jsbridge/API/navigation';
 
 import style from './app.module.less';
 
-class App extends Component {
+class App extends PureComponent {
   constructor(props) {
     super(props);
 
@@ -50,7 +50,7 @@ class App extends Component {
   }
 
   async launchTinyApp() {
-    const guid = createGuid('service');
+    const guid = createGuid();
     const src = 'biz/service.html';
     const { pages } = global.appConfig;
     const homePage = query('path') || pages[0];
@@ -62,14 +62,14 @@ class App extends Component {
       }),
       pushWindow(homePage),
     ]).then((iframes) => {
-      const [workerIframe, renderIframe] = iframes;
-      global.worker = workerIframe;
+      const [serviceIframe, renderIframe] = iframes;
+      global.service = serviceIframe;
 
-      global.webviews.set(workerIframe.id, workerIframe);
+      global.webviews.set(serviceIframe.id, serviceIframe);
 
       renderIframe.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('onLoadApp', '${JSON.stringify({})}')`);
 
-      workerIframe.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('onAppRoute', '${JSON.stringify({
+      serviceIframe.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('onAppRoute', '${JSON.stringify({
         path: homePage,
         openType: 'appLaunch',
       })}', '${renderIframe.id}')`);
@@ -98,29 +98,18 @@ class App extends Component {
     const { mpVisible } = this.state;
 
     return (
-      <div className={`${style.app} f-page flex-c`}>
+      <div className={`${style.app} f-page`}>
         <StatusBar />
-        <div className={`${style.MPContainer} ${mpVisible ? '' : style.hide} flex-1 flex-c`}>
-
+        <div id="serviceFrame" className={style.serviceFrame} />
+        <div className={`${style.MPContainer} ${mpVisible ? '' : style.hide} f-page flex-c`}>
           <Nav
             navBack={this.handleNavBack}
             hideMP={this.hideMP}
           />
           <div id="pageFrames" className={`${style.pageFrames} flex-1 flex-c`}>
             <div id="tabFrames" className={`${style.tabFrames} flex-1`} />
-            <div className={`${style.tabs} flex-r`}>
-              {/* <div>
-                <div>icon</div>
-                <div>text</div>
-              </div>
-              <div>
-                <div>icon</div>
-                <div>text</div>
-              </div> */}
-            </div>
+            <div className={`${style.tabs} flex-r`} />
           </div>
-
-          <div id="workerFrame" className={style.workerFrame} />
         </div>
         {!mpVisible && (
           <div className={`${style.openMP} flex-r`} onClick={this.showMP} />

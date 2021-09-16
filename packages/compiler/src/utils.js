@@ -99,6 +99,16 @@ function pluginTransformSelector(n, { pluginId }) {
   return n;
 }
 
+function normalizeTag(tag) {
+  const supportTags = [...supportedWebComponents, 'page'];
+
+  if (supportTags.includes(tag)) {
+    return `${elementPrefix}-${tag}`;
+  } else {
+    return `${elementPrefix}-unknown`;
+  }
+}
+
 /**
  * 如果用户输入的选择器中,含有 [wx-]view 的tag, 替换成 .$-view
  * @param selectorString 选择器
@@ -117,7 +127,7 @@ function selectorTransformer(selectorString, { pluginId }) {
               if (n.type === 'tag') {
                 const tag = n.value;
                 return cssSelectParser.tag({
-                  value: `${elementPrefix}-${tag}`,
+                  value: normalizeTag(tag),
                 });
               }
               return n;

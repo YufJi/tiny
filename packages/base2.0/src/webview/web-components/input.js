@@ -1,6 +1,6 @@
 import { PolymerElement, html } from '@polymer/polymer';
 import { GestureEventListeners } from '@polymer/polymer/lib/mixins/gesture-event-listeners';
-import { elementPrefix } from 'utils/config';
+import { elementPrefix } from 'shared/config';
 import { Data, Base } from './mixins';
 
 const documentContainer = document.createElement('div');

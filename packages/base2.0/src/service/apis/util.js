@@ -1,6 +1,6 @@
 import { omitBy, isFunction, get } from 'lodash';
 import path from 'path';
-import { g } from 'utils';
+import { g } from 'shared';
 
 import { onNative, invokeNative } from '../bridge';
 import { wrapInnerFunction, wrapUserFunction } from '../utils/wrapfn';

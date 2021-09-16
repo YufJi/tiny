@@ -1,5 +1,3 @@
-import mergeArray from 'utils/mergeArray';
-
 function StyleSheet() {
   this.deps = [];
   this.style = '';
@@ -39,5 +37,14 @@ StyleSheet.prototype = {
     return this.valueString;
   },
 };
+
+function mergeArray(target, from) {
+  from.forEach((f) => {
+    if (target.indexOf(f) === -1) {
+      target.push(f);
+    }
+  });
+  return target;
+}
 
 export default StyleSheet;

@@ -7,9 +7,8 @@
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/hooks.js
  */
 import { divide, forOwn, hasIn, isNil, kebabCase, memoize, isEqual } from 'lodash';
-import { Deferred, mergeData } from 'utils';
+import { Deferred, mergeData } from 'shared';
 import { useState, useRef, useContext, useLayoutEffect, useEffect, useMemo, useReducer, Children } from './nerv';
-import { transformChildrenToSlots } from './render-helpers/createTemplate';
 import { FieldsContext, ConfigContext, ComponentHubContext } from './context';
 import {
   onComponentDataChange,
@@ -374,6 +373,17 @@ export function useNodeId() {
   return useCreation(() => {
     return seed += 1;
   });
+}
+
+function transformChildrenToSlots(children) {
+  const slots = {};
+  Children.forEach(children, (c) => {
+    const slot = c && c.props && c.props.slot || '$default';
+    const holder = slots[slot] || [];
+    holder.push(c);
+    slots[slot] = holder;
+  });
+  return slots;
 }
 
 export function useComponentRenderContext(props, nodeId, is, config, resolveComponent) {

@@ -1,5 +1,5 @@
 import createBridge from 'js-bridge';
-import { g } from 'utils';
+import { g } from 'shared';
 
 const {
   invokeHandler,

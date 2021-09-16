@@ -5,7 +5,7 @@
  * @Description:
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/service/index.js
  */
-import { g } from 'utils';
+import { g } from 'shared';
 import * as bridge from './bridge';
 import timerPolyfill from './Timer';
 import bootstrap from './bootstrap';
@@ -17,7 +17,7 @@ import { getCurrentPages } from './Route';
 import $global from './common/global';
 import * as apis from './apis';
 
-g.__IS_WORKER__ = true;
+g.__IS_SERVICE__ = true;
 
 g.JSBridge = bridge;
 g.wx = new Proxy(apis, {
@@ -26,7 +26,7 @@ g.wx = new Proxy(apis, {
       return obj[prop];
     }
 
-    console.warn(`api: ${prop}暂不支持，敬请期待`);
+    console.warn(`api: ${prop}暂不支持`);
   },
 });
 

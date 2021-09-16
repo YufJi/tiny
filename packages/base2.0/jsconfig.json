@@ -3,7 +3,7 @@
       "baseUrl": ".",
       "paths": {
           "@": ["./src"],
-          "utils": ["./src/utils"],
+          "shared": ["./src/shared"],
           "js-bridge": ["./src/js-bridge"]
       },
       "experimentalDecorators": true

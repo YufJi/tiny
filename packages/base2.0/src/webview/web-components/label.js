@@ -1,5 +1,5 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { elementPrefix } from 'utils/config';
+import { elementPrefix } from 'shared/config';
 import { Base } from './mixins';
 
 class Label extends Base(PolymerElement) {

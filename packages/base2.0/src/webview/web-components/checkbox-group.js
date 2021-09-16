@@ -1,5 +1,5 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { elementPrefix } from 'utils/config';
+import { elementPrefix } from 'shared/config';
 import { Base, Data, Group } from './mixins';
 
 class CheckboxGroup extends Group(Data(Base(PolymerElement))) {

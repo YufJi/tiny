@@ -996,9 +996,8 @@ const stylesheet = new TinyStyleSheet({ stylePath: 'app.wxss' });
 /***/ (function(module, exports, __webpack_require__) {
 
 
-  window.app = window.app || {};
-  window.app['/components/add-button/add-button'] = {
-    // is: "/components/add-button/add-button",
+    window.app = window.app || {};
+    window.app['/components/add-button/add-button'] = {
     usingComponents: {"add-button":"/components/add-button/add-button"},
     get render() { 
       const fn = __webpack_require__(/*! ./add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./mini/components/add-button/add-button.wxml?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc"); 
@@ -1021,16 +1020,16 @@ const stylesheet = new TinyStyleSheet({ stylePath: 'app.wxss' });
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
 var Nerv = self.Nerv;
-var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
-var $iterate = self.XMLRuntime.iterate;
-var $createRoot = self.XMLRuntime.createRoot;
-var $createBlock = self.XMLRuntime.createBlock;
-var $useTemplate = self.XMLRuntime.useTemplate;
-var $createTemplate = self.XMLRuntime.createTemplate;
-var $renderSlot = self.XMLRuntime.renderSlot;
-var $getSJSMember = self.XMLRuntime.getSJSMember;
-var $toString = self.XMLRuntime.toString;
-var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
+var $EmptyComponentFactory = self.RenderHelpers.EmptyComponentFactory;
+var $iterate = self.RenderHelpers.iterate;
+var $createRoot = self.RenderHelpers.createRoot;
+var $createBlock = self.RenderHelpers.createBlock;
+var $useTemplate = self.RenderHelpers.useTemplate;
+var $createTemplate = self.RenderHelpers.createTemplate;
+var $renderSlot = self.RenderHelpers.renderSlot;
+var $getSJSMember = self.RenderHelpers.getSJSMember;
+var $toString = self.RenderHelpers.toString;
+var $getLooseDataMember = self.RenderHelpers.getLooseDataMember;
 var $templates = {};
 function render(data, _ctx) {
   return $createRoot([Nerv.createElement("tiny-button", {
@@ -1089,25 +1088,27 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "$ownTemplates", function() { return $ownTemplates; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
 var Nerv = self.Nerv;
-var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
-var $iterate = self.XMLRuntime.iterate;
-var $createRoot = self.XMLRuntime.createRoot;
-var $createBlock = self.XMLRuntime.createBlock;
-var $useTemplate = self.XMLRuntime.useTemplate;
-var $createTemplate = self.XMLRuntime.createTemplate;
-var $renderSlot = self.XMLRuntime.renderSlot;
-var $getSJSMember = self.XMLRuntime.getSJSMember;
-var $toString = self.XMLRuntime.toString;
-var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
+var $EmptyComponentFactory = self.RenderHelpers.EmptyComponentFactory;
+var $iterate = self.RenderHelpers.iterate;
+var $createRoot = self.RenderHelpers.createRoot;
+var $createBlock = self.RenderHelpers.createBlock;
+var $useTemplate = self.RenderHelpers.useTemplate;
+var $createTemplate = self.RenderHelpers.createTemplate;
+var $renderSlot = self.RenderHelpers.renderSlot;
+var $getSJSMember = self.RenderHelpers.getSJSMember;
+var $toString = self.RenderHelpers.toString;
+var $getLooseDataMember = self.RenderHelpers.getLooseDataMember;
 var $template;
 var $ownTemplates = {};
 
-$template = $ownTemplates["abc"] = function (data) {
-  var _ctx = data._ctx;
-  return Nerv.createElement("tiny-view", null, '21212');
+$template = $ownTemplates["templatea"] = function (data, _ctx) {
+  return Nerv.createElement("tiny-view", null, 'template a');
 };
 
-$template.Component = $createTemplate("abc", $template);
+$template = $ownTemplates["templateb"] = function (data, _ctx) {
+  return Nerv.createElement("tiny-view", null, 'template b');
+};
+
 var $templates = {};
 $templates = $ownTemplates;
 function render(data, _ctx) {
@@ -1174,16 +1175,16 @@ function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { va
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 var Nerv = self.Nerv;
-var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
-var $iterate = self.XMLRuntime.iterate;
-var $createRoot = self.XMLRuntime.createRoot;
-var $createBlock = self.XMLRuntime.createBlock;
-var $useTemplate = self.XMLRuntime.useTemplate;
-var $createTemplate = self.XMLRuntime.createTemplate;
-var $renderSlot = self.XMLRuntime.renderSlot;
-var $getSJSMember = self.XMLRuntime.getSJSMember;
-var $toString = self.XMLRuntime.toString;
-var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
+var $EmptyComponentFactory = self.RenderHelpers.EmptyComponentFactory;
+var $iterate = self.RenderHelpers.iterate;
+var $createRoot = self.RenderHelpers.createRoot;
+var $createBlock = self.RenderHelpers.createBlock;
+var $useTemplate = self.RenderHelpers.useTemplate;
+var $createTemplate = self.RenderHelpers.createTemplate;
+var $renderSlot = self.RenderHelpers.renderSlot;
+var $getSJSMember = self.RenderHelpers.getSJSMember;
+var $toString = self.RenderHelpers.toString;
+var $getLooseDataMember = self.RenderHelpers.getLooseDataMember;
 
 
 var $templates = {};
@@ -1212,9 +1213,7 @@ function render(data, _ctx) {
   })), Nerv.createElement("tiny-view", {
     style: 'color: red',
     "capture-catchtap": _ctx.$$eventBinder('xxxx')
-  }, 'capture-catch:tap'), $useTemplate($templates['abc'], {
-    inputValue: data['inputValue']
-  }, undefined, _ctx)]));
+  }, 'capture-catch:tap'), $useTemplate($templates['templatea'], null, undefined, _ctx)]));
 }
 ;
 
@@ -1295,16 +1294,16 @@ stylesheet.imports(_components_add_button_add_button_wxss__WEBPACK_IMPORTED_MODU
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
 var Nerv = self.Nerv;
-var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
-var $iterate = self.XMLRuntime.iterate;
-var $createRoot = self.XMLRuntime.createRoot;
-var $createBlock = self.XMLRuntime.createBlock;
-var $useTemplate = self.XMLRuntime.useTemplate;
-var $createTemplate = self.XMLRuntime.createTemplate;
-var $renderSlot = self.XMLRuntime.renderSlot;
-var $getSJSMember = self.XMLRuntime.getSJSMember;
-var $toString = self.XMLRuntime.toString;
-var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
+var $EmptyComponentFactory = self.RenderHelpers.EmptyComponentFactory;
+var $iterate = self.RenderHelpers.iterate;
+var $createRoot = self.RenderHelpers.createRoot;
+var $createBlock = self.RenderHelpers.createBlock;
+var $useTemplate = self.RenderHelpers.useTemplate;
+var $createTemplate = self.RenderHelpers.createTemplate;
+var $renderSlot = self.RenderHelpers.renderSlot;
+var $getSJSMember = self.RenderHelpers.getSJSMember;
+var $toString = self.RenderHelpers.toString;
+var $getLooseDataMember = self.RenderHelpers.getLooseDataMember;
 var $templates = {};
 function render(data, _ctx) {
   return $createRoot(Nerv.createElement("tiny-view", null, 'include'));
@@ -1362,16 +1361,16 @@ function render(data, _ctx) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return render; });
 var Nerv = self.Nerv;
-var $EmptyComponentFactory = self.XMLRuntime.EmptyComponentFactory;
-var $iterate = self.XMLRuntime.iterate;
-var $createRoot = self.XMLRuntime.createRoot;
-var $createBlock = self.XMLRuntime.createBlock;
-var $useTemplate = self.XMLRuntime.useTemplate;
-var $createTemplate = self.XMLRuntime.createTemplate;
-var $renderSlot = self.XMLRuntime.renderSlot;
-var $getSJSMember = self.XMLRuntime.getSJSMember;
-var $toString = self.XMLRuntime.toString;
-var $getLooseDataMember = self.XMLRuntime.getLooseDataMember;
+var $EmptyComponentFactory = self.RenderHelpers.EmptyComponentFactory;
+var $iterate = self.RenderHelpers.iterate;
+var $createRoot = self.RenderHelpers.createRoot;
+var $createBlock = self.RenderHelpers.createBlock;
+var $useTemplate = self.RenderHelpers.useTemplate;
+var $createTemplate = self.RenderHelpers.createTemplate;
+var $renderSlot = self.RenderHelpers.renderSlot;
+var $getSJSMember = self.RenderHelpers.getSJSMember;
+var $toString = self.RenderHelpers.toString;
+var $getLooseDataMember = self.RenderHelpers.getLooseDataMember;
 var $templates = {};
 function render(data, _ctx) {
   var AddButton = _ctx.$$resolveComponent("add-button");

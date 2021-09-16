@@ -1,4 +1,4 @@
-import { g } from 'utils';
+import { g } from 'shared';
 
 /**
  * worker环境下polyfill

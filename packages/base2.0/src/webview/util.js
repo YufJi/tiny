@@ -7,7 +7,7 @@
  */
 
 import { isFunction, wrap, noop, kebabCase, hasIn, isPlainObject, isObject, camelCase } from 'lodash';
-import { getType } from 'utils';
+import { getType } from 'shared';
 
 export function tryCatch(method, callback, context) {
   return isFunction(callback)

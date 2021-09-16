@@ -1,5 +1,5 @@
 /**
- * 创建rednerFrame、workerFrame
+ * 创建rednerFrame、serviceFrame
  */
 import qs from 'qs';
 import gloabl from './global';
@@ -22,7 +22,7 @@ function createIframe(options) {
     el.setAttribute('seamless', 'seamless');
     el.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-modals');
     el.setAttribute('frameborder', '0');
-    el.setAttribute('style', style);
+    el.setAttribute('style', style || '');
     el.setAttribute('class', 'frame');
 
     el.onload = function () {
@@ -40,31 +40,21 @@ function createIframe(options) {
 
 export function createWorkerIframe({ guid, src, onload }) {
   return createIframe({
-    id: guid,
+    id: `service-${guid}`,
     src,
     style: 'width:0; height:0; border:0; display:none;',
     onload,
-    container: document.getElementById('workerFrame'),
+    container: document.getElementById('serviceFrame'),
   });
 }
 
 export function createRenderIframe({ guid, src, onload }) {
   return createIframe({
-    id: guid,
+    id: `webview-${guid}`,
     src,
-    style: 'position: absolute; top: 0px; bottom: 0px; width: 100%; height: 100%;',
+    style: `position: absolute; top: 0; bottom: 0; width: 100%; height: 100%; z-index: ${guid};`,
     onload,
     container: document.getElementById('pageFrames'),
-  });
-}
-
-export function precreateRenderIframe({ guid, src }) {
-  return createIframe({
-    id: guid,
-    src,
-    style: 'position: absolute; top: 0px; bottom: 0px; width: 100%; height: 100%;',
-    container: document.getElementById('pageFrames'),
-    preload: true,
   });
 }
 
@@ -75,7 +65,7 @@ export function removeRenderIframeById(guid) {
     gloabl.webviews.delete(guid);
 
     if (iframe) {
-      iframe.className = 'frame leave';
+      iframe.className = 'frame';
       setTimeout(() => {
         iframe.parentNode.removeChild(iframe);
       }, 300);

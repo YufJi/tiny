@@ -1,5 +1,5 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { elementPrefix, upperCasePerfix } from 'utils/config';
+import { elementPrefix, upperCasePerfix } from 'shared/config';
 import { Base } from './mixins';
 
 class Text extends Base(PolymerElement) {

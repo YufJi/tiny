@@ -87,7 +87,7 @@ function MLTransformer(template, _config) {
 
   const { templateNamespace } = config;
 
-  this.templateRuntimeModule = config.templateRuntimeModule;
+  this.templateRenderHelpers = config.templateRenderHelpers;
 
   this.IF_ATTR_NAME = `${templateNamespace}:if`;
   this.ELIF_ATTR_NAME = `${templateNamespace}:elif`;
@@ -670,9 +670,9 @@ assign(MLTransformer.prototype, {
     }
   },
   transform(done) {
-    const { code, importTplDeps, componentDeps, subTemplatesCode, includeTplDeps, templateRuntimeModule } = this;
+    const { code, importTplDeps, componentDeps, subTemplatesCode, includeTplDeps, templateRenderHelpers } = this;
     let { header } = this;
-    const { importComponent = defaultImportComponent, strictDataMember, pureTemplateFactory } = this.config;
+    const { importComponent = defaultImportComponent, strictDataMember } = this.config;
 
     const handlerCallback = (error, children) => {
       if (error) {
@@ -690,19 +690,19 @@ assign(MLTransformer.prototype, {
       }
 
       header.push(
-        `const $iterate = ${templateRuntimeModule}.iterate;`,
-        `const $createRoot = ${templateRuntimeModule}.createRoot;`,
-        `const $createBlock = ${templateRuntimeModule}.createBlock;`,
-        `const $useTemplate = ${templateRuntimeModule}.useTemplate;`,
-        `const $createTemplate = ${templateRuntimeModule}.createTemplate;`,
-        `const $renderSlot = ${templateRuntimeModule}.renderSlot;`,
-        `const $getSJSMember = ${templateRuntimeModule}.getSJSMember;`,
-        `const $toString = ${templateRuntimeModule}.toString;`,
+        `const $iterate = ${templateRenderHelpers}.iterate;`,
+        `const $createRoot = ${templateRenderHelpers}.createRoot;`,
+        `const $createBlock = ${templateRenderHelpers}.createBlock;`,
+        `const $useTemplate = ${templateRenderHelpers}.useTemplate;`,
+        `const $createTemplate = ${templateRenderHelpers}.createTemplate;`,
+        `const $renderSlot = ${templateRenderHelpers}.renderSlot;`,
+        `const $getSJSMember = ${templateRenderHelpers}.getSJSMember;`,
+        `const $toString = ${templateRenderHelpers}.toString;`,
       );
 
       if (strictDataMember === false) {
         header.push(
-          `const $getLooseDataMember = ${templateRuntimeModule}.getLooseDataMember;`,
+          `const $getLooseDataMember = ${templateRenderHelpers}.getLooseDataMember;`,
         );
       }
 
@@ -729,17 +729,12 @@ assign(MLTransformer.prototype, {
         const templateCode = _subTemplatesCode$nam.code;
         const { node } = _subTemplatesCode$nam;
 
-        header.push(`$template = $ownTemplates[${toLiteralString(name)}] = function (data) {`);
-        header.push('const _ctx = data._ctx;');
+        header.push(`$template = $ownTemplates[${toLiteralString(name)}] = function (data, _ctx) {`);
         this.pushHeaderCode('return (');
         header = this.header = header.concat(templateCode.length ? templateCode : ['null']);
         this.pushHeaderCode(');');
         header.push('};');
-        if (pureTemplateFactory) {
-          header.push(pureTemplateFactory({ node }));
-        } else {
-          header.push(`\n$template.Component = $createTemplate(${toLiteralString(name)}, $template);\n`);
-        }
+        // header.push(`\n$template.Component = $createTemplate(${toLiteralString(name)}, $template);\n`);
       });
       header.push('let $templates = {};');
       if (subTemplatesName.length) {

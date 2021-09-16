@@ -2,8 +2,8 @@ import qs from 'qs';
 
 let uid = 0;
 
-export function createGuid(type) {
-  return `${type}-${uid+=1}`;
+export function createGuid() {
+  return `${uid+=1}`;
 }
 
 export function query(key) {

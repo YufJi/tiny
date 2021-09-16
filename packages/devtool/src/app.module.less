@@ -1,11 +1,11 @@
 
 .app {
   width: 100%;
-  overflow: hidden;
 
   .MPContainer {
     width: 100%;
     transition: opacity .2s ease-out;
+
     &.hide {
       opacity: 0;
       pointer-events: none;
@@ -14,7 +14,8 @@
     .pageFrames {
       position: relative;
       width: 100%;
-
+      overflow: hidden;
+      
       .tabFrames {
         position: relative;
         width: 100%;
@@ -29,7 +30,7 @@
       }
     }
   
-    .workerFrame {
+    .serviceFrame {
       position: absolute;
       z-index: -1;
       opacity: 0;

@@ -154,7 +154,6 @@ g.TinyConfig = appConfig;
 if(!self.__TinyInited__) {
 self.__TinyInited__ = true;
 __webpack_require__(/*! ./config */ "./mini/.cache/config.js");
-
 function success() {
 __webpack_require__(/*! ../app */ "./mini/app.js");
 __webpack_require__(/*! ../components/add-button/add-button?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc */ "./mini/components/add-button/add-button.js?hash=ea9fd3845ae66c309dbd89c5d58c2c7c2940f3bc");
@@ -174,7 +173,7 @@ success();
 /***/ (function(module, exports) {
 
 
-var globalThis = undefined;
+    var globalThis = undefined;
 var global = undefined;
 var fetch = undefined;
 var self = undefined;
@@ -182,8 +181,7 @@ var window = undefined;
 var document = undefined;
 var location = undefined;
 var XMLHttpRequest = undefined;
-
-App({
+    App({
   todos: [
     { text: 'Learning Javascript', completed: true },
     { text: 'Learning ES2016', completed: true },
@@ -209,6 +207,7 @@ App({
 
 });
 
+  
 
 /***/ }),
 

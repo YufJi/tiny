@@ -21,7 +21,7 @@ class TemplateTransformer extends Transformer {
     };
     _config.useFragment = false;
     /* 模版运行时helpers */
-    _config.templateRuntimeModule = defaultLib.templateRuntimeModule;
+    _config.templateRenderHelpers = defaultLib.templateRenderHelpers;
 
     super(template, _config);
 
@@ -29,7 +29,7 @@ class TemplateTransformer extends Transformer {
 
     header.push('');
     header.push(
-      `const $EmptyComponentFactory = ${_config.templateRuntimeModule}.EmptyComponentFactory;`,
+      `const $EmptyComponentFactory = ${_config.templateRenderHelpers}.EmptyComponentFactory;`,
     );
 
     const {

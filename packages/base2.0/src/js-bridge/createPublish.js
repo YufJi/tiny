@@ -1,4 +1,4 @@
-import { g } from 'utils';
+import { g } from 'shared';
 import { CUSTOM_EVENT } from './const';
 
 export default function createPublish(jsCore) {
@@ -7,7 +7,7 @@ export default function createPublish(jsCore) {
     const webviewIds = Array.isArray(webviewId) ? webviewId : [webviewId];
     const webviewIdsString = JSON.stringify(webviewIds);
 
-    jsCore.publish(`${CUSTOM_EVENT}${method}`, paramsString, webviewIdsString, g.__IS_WORKER__);
+    jsCore.publish(`${CUSTOM_EVENT}${method}`, paramsString, webviewIdsString, g.__IS_SERVICE__);
   };
 
   return {

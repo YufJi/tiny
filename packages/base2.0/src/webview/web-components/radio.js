@@ -1,5 +1,5 @@
 import { html, PolymerElement } from '@polymer/polymer';
-import { elementPrefix } from 'utils/config';
+import { elementPrefix } from 'shared/config';
 import { Base, LabelTarget, Item, Disabled } from './mixins';
 
 const documentContainer = document.createElement('div');

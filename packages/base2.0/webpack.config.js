@@ -25,7 +25,7 @@ const getConfig = (type, env) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src/'),
-        utils: path.resolve(__dirname, 'src/utils'),
+        shared: path.resolve(__dirname, 'src/shared'),
         'js-bridge': path.resolve(__dirname, 'src/js-bridge'),
       },
       extensions: isWorker ? ['.worker.js', '.js', '.ts', '.json'] : ['.web.js', '.js', '.ts', '.json'],

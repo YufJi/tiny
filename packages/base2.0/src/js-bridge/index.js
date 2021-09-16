@@ -1,4 +1,4 @@
-import { g } from 'utils';
+import { g } from 'shared';
 
 import createSubscribe from './createSubscribe';
 import createPublish from './createPublish';

@@ -6,7 +6,7 @@
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/nerv/event.js
  */
 
-import { elementPrefix, upperCasePerfix } from 'utils/config';
+import { elementPrefix, upperCasePerfix } from 'shared/config';
 
 const EVENT_BLACK_LIST = ['click'];
 const PRESS_DELAY = 350;

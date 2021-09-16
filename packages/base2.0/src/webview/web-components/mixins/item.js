@@ -1,4 +1,4 @@
-import { elementPrefix } from 'utils/config';
+import { elementPrefix } from 'shared/config';
 
 export default function Item(superClass) {
   return class extends superClass {
