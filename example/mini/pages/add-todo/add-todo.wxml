@@ -20,5 +20,8 @@
 
   <view style="color: red" capture-catch:tap="xxxx">capture-catch:tap</view>
 
-  <template is="abc" data="{{inputValue}}"></template>
+  <template is="templatea">
+     <template is="templateb"></template>
+    <!-- <text slot="sad">slot a</text> -->
+  </template>
 </view>

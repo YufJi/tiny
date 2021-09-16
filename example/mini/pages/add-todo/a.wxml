@@ -1,3 +1,11 @@
-<template name="abc">
-  <view>21212</view>
+<template name="templatea">
+  <view>template a</view>
+
+  <!-- <slot name="sad"></slot> -->
+</template>
+
+<template name="templateb">
+  <view>template b</view>
+
+  <!-- <slot name="sad"></slot> -->
 </template>

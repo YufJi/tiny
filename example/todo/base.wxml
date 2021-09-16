@@ -118,7 +118,7 @@
 </template>
 
 <template name="tmpl_0_container">
-  <template is="{{xs.a(0, i.nn, l)}}" data="{{i:i,cid:0,l:xs.f(l,i.nn)}}" />
+  <template is="{{xs.a(0, i.nn, l)}}" data="{{i:i, cid:0, l:xs.f(l,i.nn)}}" />
 </template>
 
 <template name="tmpl_1_catch-view">
