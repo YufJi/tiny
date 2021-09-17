@@ -65,7 +65,7 @@ export function removeRenderIframeById(guid) {
     gloabl.webviews.delete(guid);
 
     if (iframe) {
-      iframe.className = 'frame';
+      iframe.className = 'frame out';
       setTimeout(() => {
         iframe.parentNode.removeChild(iframe);
       }, 300);

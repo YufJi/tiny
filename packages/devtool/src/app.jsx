@@ -10,7 +10,7 @@ import jsbridge from '@/utils/jsbridge';
 import { createWorkerIframe } from '@/utils/createIframe';
 import global from '@/utils/global';
 import requireFile from '@/utils/requireFile';
-import { createGuid, query } from '@/utils';
+import { createGuid, query, delay } from '@/utils';
 import { pushWindow, navigateBack } from '@/utils/jsbridge/API/navigation';
 
 import style from './app.module.less';
@@ -98,7 +98,7 @@ class App extends PureComponent {
     const { mpVisible } = this.state;
 
     return (
-      <div className={`${style.app} f-page`}>
+      <div id="app" className={`${style.app} f-page`}>
         <StatusBar />
         <div id="serviceFrame" className={style.serviceFrame} />
         <div className={`${style.MPContainer} ${mpVisible ? '' : style.hide} f-page flex-c`}>

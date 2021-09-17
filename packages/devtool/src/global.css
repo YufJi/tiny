@@ -4,7 +4,7 @@
 }
 
 body {
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 @font-face {
@@ -54,11 +54,31 @@ body {
 
 .frame {
   background-color: #fff;
-  transform: translateX(100%);
-
-  transition: all .25s ease-out;
+  transform: translateX(100%) translateZ(0);
 }
 
 .frame.in {
-  transform: translateX(0%);
+  animation: frameIn .25s ease-out both;
+}
+
+.frame.out {
+  animation: frameOut .25s ease-out both;
+}
+
+@keyframes frameIn {
+  0% {
+    transform: translateX(100%) translateZ(0);
+  }
+  100% {
+    transform: translateX(0%) translateZ(0);
+  }
+}
+
+@keyframes frameOut {
+  0% {
+    transform: translateX(0%) translateZ(0);
+  }
+  100% {
+    transform: translateX(100%) translateZ(0);
+  }
 }

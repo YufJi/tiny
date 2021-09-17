@@ -56,6 +56,9 @@ async function preloadWindow() {
 export async function pushWindow(url, callback) {
   let iframe;
 
+  const { launchParams } = global.appConfig;
+  dispatch.nav.setNavConfig(launchParams[url] || {});
+
   if (global.preloadRenders.length > 0) {
     iframe = global.preloadRenders.shift();
   } else {
@@ -65,10 +68,10 @@ export async function pushWindow(url, callback) {
     });
   }
 
+  iframe.contentWindow.executeJavaScript(`window.generateFunc['${url}']('${iframe.id}')`);
   iframe.setAttribute('path', url);
   iframe.path = url;
   iframe.className = 'frame in';
-  iframe.contentWindow.executeJavaScript(`window.generateFunc['${url}']('${iframe.id}')`);
 
   global.currentRender = iframe;
   global.webviews.set(iframe.id, iframe);
@@ -77,10 +80,6 @@ export async function pushWindow(url, callback) {
   if (typeof callback === 'function') {
     callback(iframe);
   }
-
-  // setNavConfig
-  const { launchParams } = global.appConfig;
-  dispatch.nav.setNavConfig(launchParams[url] || {});
 
   preloadWindow();
 
