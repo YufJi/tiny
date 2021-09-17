@@ -7,6 +7,7 @@
  */
 
 import { elementPrefix, upperCasePerfix } from 'shared/config';
+import { xmlEventReg } from './utils/is';
 
 const EVENT_BLACK_LIST = ['click'];
 const PRESS_DELAY = 350;
@@ -315,14 +316,12 @@ function getCanvasTouches(node, touches) {
   }
 }
 
-const eventReg = /^(capture-)?(bind|catch)?([A-Za-z_]+)/;
-
 export function toEventName(eventName) {
-  const matches = eventName.match(eventReg);
+  const matches = eventName.match(xmlEventReg);
 
-  const capture = matches[1] === 'capture-';
-  const stop = matches[2] === 'catch';
-  const name = matches[3];
+  const capture = matches[1].indexOf('capture-') === 0;
+  const stop = matches[1].indexOf('catch') !== -1;
+  const name = matches[2];
 
   const options = { capture, stop };
 

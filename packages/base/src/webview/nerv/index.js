@@ -44,6 +44,7 @@ import { createContext } from './create-context';
 import { renderComponent } from './lifecycle';
 import Current from './current-owner';
 import Fragment from './fragment';
+import transformRpx from './utils/transformRpx';
 
 export {
   Children,
@@ -81,6 +82,7 @@ export {
   useMemo,
   useImperativeHandle,
   useContext,
+  transformRpx,
 };
 
 export default {
@@ -119,4 +121,5 @@ export default {
   useMemo,
   useImperativeHandle,
   useContext,
+  transformRpx,
 };

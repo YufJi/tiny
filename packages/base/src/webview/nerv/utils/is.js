@@ -40,12 +40,14 @@ export function objectIs(x, y) {
   return x !== x && y !== y;
 }
 
+export const xmlEventReg = /^(bind:?|catch:?|capture-bind:|capture-catch:)([A-Za-z_]+)/;
+
 export function isAttrAnEvent(attr) {
   if (attr[0] === 'o' && attr[1] === 'n') {
     return true;
   }
 
-  if (/^(bind|catch|capture-bind|capture-catch)([A-Za-z_]+)/.test(attr)) {
+  if (xmlEventReg.test(attr)) {
     return true;
   }
 

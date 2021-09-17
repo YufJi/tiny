@@ -14,14 +14,11 @@ function createIframe(options) {
     queryObj.webviewId = id;
 
     el.id = id;
-    el.path = url;
-
     el.setAttribute('src', `${url}?${qs.stringify(queryObj)}`);
     el.setAttribute('style', style || '');
     el.setAttribute('class', 'frame');
     el.setAttribute('id', id);
     el.setAttribute('name', id);
-    el.setAttribute('path', url);
     el.setAttribute('seamless', 'seamless');
     el.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-modals');
     el.setAttribute('frameborder', '0');

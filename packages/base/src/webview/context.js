@@ -14,10 +14,6 @@ import * as bridge from './bridge';
 export const defaultFields = {
   root: document.body,
   bridge,
-  status: {
-    singleCamera: false,
-    singleWebView: false,
-  },
   emitter: new EventEmitter(),
 };
 

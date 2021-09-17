@@ -4,8 +4,8 @@ import { connect } from 'react-redux';
 import style from './index.module.less';
 
 function Nav(props) {
-  const { navConfig, route } = props;
-  const isShowBackIcon = route.pageStack.length > 1;
+  const { navConfig, global } = props;
+  const isShowBackIcon = global.pageStack.length > 1;
 
   const root = useRef(null);
 
@@ -32,10 +32,10 @@ function Nav(props) {
 }
 
 const mapState = (state) => {
-  const { nav, route } = state;
+  const { nav, global } = state;
   return {
     navConfig: nav,
-    route,
+    global,
   };
 };
 

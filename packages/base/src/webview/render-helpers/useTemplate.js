@@ -8,18 +8,6 @@
 import { h, Fragment } from '../nerv';
 
 export default function useTemplate(template, data, key, context) {
-  function Template(props) {
-    return (
-      <Fragment key={key}>
-        {template ? template(data, context) : null}
-      </Fragment>
-    );
-  }
-
-  // return <Template key={key} />;
-
-  // return h(Template, { key });
-
   return (
     <Fragment key={key}>
       {template ? template(data, context) : null}

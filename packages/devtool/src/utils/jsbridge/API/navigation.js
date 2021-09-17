@@ -24,7 +24,7 @@ export function navigateTo(params) {
 }
 
 export function navigateBack(params = {}) {
-  const { pageStack } = store.getState().route;
+  const { pageStack } = store.getState().global;
   if (pageStack.length > 1) {
     const { delta } = params;
 
@@ -67,17 +67,19 @@ export async function pushWindow(url, callback) {
     });
   }
 
-  iframe.contentWindow.executeJavaScript(`window.generateFunc['${url}']('${iframe.id}')`);
+  iframe.path = url;
   iframe.setAttribute('class', 'frame in');
+  iframe.setAttribute('path', url);
+  iframe.contentWindow.executeJavaScript(`window.generateFunc['${url}']('${iframe.id}')`);
 
   global.currentRender = iframe;
 
   /* 调试器同步更新 */
-  const { pageStack, appConfig } = store.getState().route;
+  const { pageStack, appConfig } = store.getState().global;
   const { launchParams } = appConfig;
   pageStack.push(iframe.id);
   dispatch.nav.setNavConfig(launchParams[url] || {});
-  dispatch.route.setPageStack(pageStack);
+  dispatch.global.setPageStack(pageStack);
 
   if (typeof callback === 'function') {
     callback(iframe);
@@ -91,7 +93,7 @@ export async function pushWindow(url, callback) {
 export function popWindow(delta = 1) {
   if (!delta) return;
 
-  let { pageStack } = store.getState().route;
+  let { pageStack } = store.getState().global;
   if (delta >= pageStack.length) {
     delta = pageStack.length - 1;
   }
@@ -113,11 +115,11 @@ export function popWindow(delta = 1) {
   })}', '${global.currentRender.id}')`);
 
   /* 调试器同步更新 */
-  const { appConfig } = store.getState().route;
+  const { appConfig } = store.getState().global;
   const { launchParams } = appConfig;
 
   dispatch.nav.setNavConfig(launchParams[global.currentRender.path] || {});
-  dispatch.route.setPageStack(pageStack);
+  dispatch.global.setPageStack(pageStack);
 
   return global.currentRender;
 }

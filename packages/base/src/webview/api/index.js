@@ -8,6 +8,7 @@
 import { isNil } from 'lodash';
 import { PASSIVE } from '../nerv/passive-event';
 import { tryCatch } from '../util';
+import { isShadowRoot, getShadowRootId } from './util';
 
 export function onComponentDataChange(bridge, componentHub) {
   bridge.replyService('componentDataChange')(
@@ -91,6 +92,16 @@ export function onSelectComponent(bridge, componentHub) {
       return isNil(component) ? [] : selectComponent(component, { single, selector });
     }),
   );
+}
+
+function selectComponent(component, options) {
+  const { selector, single } = options;
+
+  const nodeList = single ? [component.querySelector(selector)] : Array.from(component.querySelectorAll(selector));
+
+  return nodeList.filter(isShadowRoot).map((node) => {
+    return getShadowRootId(node);
+  });
 }
 
 export function onPageScrollTo(bridge) {

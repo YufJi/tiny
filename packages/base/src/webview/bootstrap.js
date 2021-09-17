@@ -11,23 +11,13 @@ import { h, hydrate as render } from './nerv';
 import * as bridge from './bridge';
 import MicroApp from './MicroApp';
 
-const globalJSCore = g.JSCore;
-
-function createFields(root) {
-  return {
+export default function bootstrap() {
+  const root = document.getElementById('__root__');
+  const fields = {
     root,
     bridge,
-    status: {
-      singleCamera: false,
-      singleWebView: false,
-    },
     emitter: new EventEmitter(),
   };
-}
 
-export default function bootstrap() {
-  const root = document.getElementById('__frame__');
-  const fields = createFields(root);
-
-  render(<MicroApp fields={fields} jsCore={globalJSCore} />, root);
+  render(<MicroApp fields={fields} jsCore={g.JSCore} />, root);
 }

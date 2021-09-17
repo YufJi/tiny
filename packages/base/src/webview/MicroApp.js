@@ -5,10 +5,26 @@
  * @Description:
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/MicroApp.js
  */
-import { h, useLayoutEffect } from './nerv';
+import { INIT_DATA_READY } from 'shared/events/custom';
+import { DOCUMENT_READY } from 'shared/events/native';
+import { h, useState, useLayoutEffect } from './nerv';
 import { FieldsContext, ConfigContext } from './context';
+import { useCreation } from './common/hooks';
 import Page from './Page';
-import { useInitPageConfig } from './hooks';
+
+function useInitPageConfig(bridge) {
+  const [config, setConfig] = useState();
+
+  useCreation(() => {
+    bridge.subscribe(INIT_DATA_READY, (e) => {
+      if (e.ext) {
+        setConfig(e.ext);
+      }
+    });
+  });
+
+  return config;
+}
 
 export default function MicroApp(props) {
   const { fields } = props;
@@ -17,7 +33,7 @@ export default function MicroApp(props) {
   const config = useInitPageConfig(bridge);
 
   useLayoutEffect(() => {
-    bridge.invokeNative('DocumentReady');
+    bridge.invokeNative(DOCUMENT_READY);
   }, []);
 
   return (

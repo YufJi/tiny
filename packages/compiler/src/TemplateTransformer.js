@@ -28,9 +28,6 @@ class TemplateTransformer extends Transformer {
     const { config, header } = this;
 
     header.push('');
-    header.push(
-      `const $EmptyComponentFactory = ${_config.templateRenderHelpers}.EmptyComponentFactory;`,
-    );
 
     const {
       usingComponents,
@@ -48,19 +45,20 @@ class TemplateTransformer extends Transformer {
         const isEvent = xmlEventReg.test(attrName);
 
         if (isEvent) {
-          attrName = attrName.replace(xmlEventReg, (match, $1, $2) => {
-            if (/^bind:?$/.test($1)) {
-              return `bind${$2}`;
-            } else if (/^catch:?$/.test($1)) {
-              return `catch${$2}`;
-            } else if (/^capture-bind:$/.test($1)) {
-              return `capture-bind${$2}`;
-            } else if (/^capture-catch:$/.test($1)) {
-              return `capture-catch${$2}`;
-            } else {
-              return match;
-            }
-          });
+          /* 处理一下方便jsx中正则匹配 */
+          // attrName = attrName.replace(xmlEventReg, (match, $1, $2) => {
+          //   if (/^bind:?$/.test($1)) {
+          //     return `bind${$2}`;
+          //   } else if (/^catch:?$/.test($1)) {
+          //     return `catch${$2}`;
+          //   } else if (/^capture-bind:$/.test($1)) {
+          //     return `capture-bind${$2}`;
+          //   } else if (/^capture-catch:$/.test($1)) {
+          //     return `capture-catch${$2}`;
+          //   } else {
+          //     return match;
+          //   }
+          // });
 
           const handlerFn = this.processExpression(attrValue, {
             node,

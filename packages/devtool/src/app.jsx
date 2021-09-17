@@ -115,16 +115,16 @@ class App extends PureComponent {
 }
 
 const mapState = (state) => {
-  const { nav, route } = state;
+  const { nav, global } = state;
   return {
     navConfig: nav,
-    ...route,
+    ...global,
   };
 };
 
 const mapDispatch = (dispatch) => ({
-  setAppConfig: (config) => dispatch.route.setAppConfig(config),
-  setTabBarConfig: (config) => dispatch.route.setTabBarConfig(config),
+  setAppConfig: (config) => dispatch.global.setAppConfig(config),
+  setTabBarConfig: (config) => dispatch.global.setTabBarConfig(config),
   setNavConfig: (config) => dispatch.nav.setNavConfig(config),
 });
 

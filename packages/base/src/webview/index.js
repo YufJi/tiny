@@ -21,10 +21,10 @@ g.onerror = function onerror(msg = '', url, line, col, error) {
   } catch (e) {}
 
   const args = [msg, url, line, col, error];
-  console.error('[RENDER] onerror', args);
+  console.error('[webview] onerror', args);
 };
 
-/* 初始化font-size */
+/* 初始化root font-size */
 document.addEventListener('DOMContentLoaded', () => {
   const width = window.innerWidth;
   const doc = document.documentElement;

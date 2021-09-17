@@ -9,11 +9,12 @@
 import { memoize } from 'lodash';
 import path from 'path';
 
-import { h, useDangerousReverseLayoutEffect, useEffect, useLayoutEffect, useRef } from './nerv';
+import { h, useDangerousReverseLayoutEffect, useLayoutEffect, useRef } from '../nerv';
+import { useJSBridge } from '../common/hooks';
+import { getRealRoute } from '../util';
 import {
   useComponentHubContext,
   useDataChange,
-  useJSBridge,
   useLifeCycleHooks,
   useRefinedDataset,
   useRefinedProps,
@@ -108,11 +109,9 @@ function ShadowRoot(props) {
     node._config_ = $config;
     node.setAttribute('__cc-name__', $name);
     instances.set($nodeId, node);
-    // triggerRelationsEvent(node, true, publish);
 
     return () => {
       instances.remove($nodeId);
-      // triggerRelationsEvent(node, false, publish);
     };
   }, []);
 

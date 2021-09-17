@@ -1,6 +1,6 @@
 const BASE_DEVICE_WIDTH = 750;
 const isIOS = navigator.userAgent.match('iPhone');
-const deviceWidth = window.innerWidth || window.screen.width || 375;
+const deviceWidth = window.innerWidth || 375;
 const deviceDPR = window.devicePixelRatio || 2;
 const eps = 1e-4;
 

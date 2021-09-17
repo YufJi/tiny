@@ -631,13 +631,13 @@ assign(MLTransformer.prototype, {
         }
         componentDeps[originalTag] = 1;
         const nextLevel = level + 2;
-        let _modifyFn;
+
         if (Object.keys(_transformedAttrs).length) {
           this.pushCode(`<${tag} `);
           this.pushCode(getRawJSXAttributeFromJson(_transformedAttrs));
-          _modifyFn = this.pushCode('>');
+          this.pushCode('>');
         } else {
-          _modifyFn = this.pushCode(`<${tag}>`);
+          this.pushCode(`<${tag}>`);
         }
         // built-in components
         if (hasChildren) {
@@ -694,7 +694,6 @@ assign(MLTransformer.prototype, {
         `const $createRoot = ${templateRenderHelpers}.createRoot;`,
         `const $createBlock = ${templateRenderHelpers}.createBlock;`,
         `const $useTemplate = ${templateRenderHelpers}.useTemplate;`,
-        `const $createTemplate = ${templateRenderHelpers}.createTemplate;`,
         `const $renderSlot = ${templateRenderHelpers}.renderSlot;`,
         `const $getSJSMember = ${templateRenderHelpers}.getSJSMember;`,
         `const $toString = ${templateRenderHelpers}.toString;`,
@@ -721,20 +720,16 @@ assign(MLTransformer.prototype, {
 
       const hasOwnTemplates = Object.keys(subTemplatesCode).length;
       if (hasOwnTemplates) {
-        header.push('let $template;');
         header.push('export const $ownTemplates = {};');
       }
       Object.keys(subTemplatesCode).forEach((name) => {
-        const _subTemplatesCode$nam = subTemplatesCode[name];
-        const templateCode = _subTemplatesCode$nam.code;
-        const { node } = _subTemplatesCode$nam;
+        const { code: templateCode } = subTemplatesCode[name];
 
-        header.push(`$template = $ownTemplates[${toLiteralString(name)}] = function (data, _ctx) {`);
+        header.push(`$ownTemplates[${toLiteralString(name)}] = function (data, _ctx) {`);
         this.pushHeaderCode('return (');
         header = this.header = header.concat(templateCode.length ? templateCode : ['null']);
         this.pushHeaderCode(');');
         header.push('};');
-        // header.push(`\n$template.Component = $createTemplate(${toLiteralString(name)}, $template);\n`);
       });
       header.push('let $templates = {};');
       if (subTemplatesName.length) {

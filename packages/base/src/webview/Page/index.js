@@ -6,52 +6,42 @@
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/Page.js
  */
 import { elementPrefix } from 'shared/config';
-import { h, useLayoutEffect, useMemo, useRef } from './nerv';
-import { ComponentHubContext } from './context';
+import { h, useLayoutEffect, useRef, transformRpx } from '../nerv';
+import { ComponentHubContext } from '../context';
+import { usePageFields } from '../common/hooks';
 import {
   useCompileResult,
   usePageData,
   useRenderContext,
+  useComponentHub,
+  useRenderMode,
   useJSCoreEvent,
   useInitAction,
-  useRenderMode,
-  usePageFields,
   useFirstRendered,
-  useComponentHub,
 } from './hooks';
-import transformRpx from './nerv/utils/transformRpx';
-
-const Fallback = null;
 
 export default function Page() {
   const { render, stylesheet } = useCompileResult();
   const data = usePageData(render);
   const ctx = useRenderContext();
   const componentHub = useComponentHub();
+  const mode = useRenderMode();
 
   useJSCoreEvent(componentHub);
   useInitAction();
 
   return (
     <ComponentHubContext.Provider value={componentHub}>
-      <Scene
-        context={ctx}
-        data={data}
-        render={render}
-        stylesheet={stylesheet}
-      />
+      {mode === 'Normal' ? (
+        <NormalScene
+          context={ctx}
+          data={data}
+          render={render}
+          stylesheet={stylesheet}
+        />
+      ) : null}
     </ComponentHubContext.Provider>
   );
-}
-
-function Scene(props) {
-  const mode = useRenderMode();
-
-  if (mode === 'Normal') {
-    return <NormalScene {...props} />;
-  } else {
-    return Fallback;
-  }
 }
 
 function NormalScene(props) {
