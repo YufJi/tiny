@@ -21,51 +21,46 @@ class App extends PureComponent {
 
     window.JSBridgeInstance = jsbridge;
 
-    this.loadAppConfig();
-
     this.state = {
       mpVisible: true,
     };
   }
 
   componentDidMount() {
-    this.initNav();
-    this.launchTinyApp();
+    const { setAppConfig, setTabBarConfig } = this.props;
+    const appConfig = requireFile('/biz/appConfig.json');
+
+    this.initNav(appConfig);
+    this.launchTinyApp(appConfig);
+
+    setAppConfig(appConfig);
+    console.log('appConfig', appConfig);
+    setTabBarConfig(appConfig.tabBar);
+    console.log('tabBarConfig', appConfig.tabBar);
   }
 
-  loadAppConfig() {
-    const config = requireFile('/biz/appConfig.json');
-    global.appConfig = config;
-    console.log('appConfig', global.appConfig);
-    global.tabBarConfig = config.tabBar;
-    console.log('tabBarConfig', global.tabBarConfig);
-  }
-
-  initNav() {
-    const { window } = global.appConfig;
+  initNav(appConfig) {
+    const { window = {} } = appConfig;
 
     this.props.setNavConfig({
       title: window.defaultTitle,
     });
   }
 
-  async launchTinyApp() {
-    const guid = createGuid();
+  async launchTinyApp(appConfig) {
+    const { pages } = appConfig;
+
     const src = 'biz/service.html';
-    const { pages } = global.appConfig;
     const homePage = query('path') || pages[0];
 
     Promise.all([
       createWorkerIframe({
-        guid,
         src,
       }),
       pushWindow(homePage),
     ]).then((iframes) => {
       const [serviceIframe, renderIframe] = iframes;
       global.service = serviceIframe;
-
-      global.webviews.set(serviceIframe.id, serviceIframe);
 
       renderIframe.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('onLoadApp', '${JSON.stringify({})}')`);
 
@@ -98,7 +93,7 @@ class App extends PureComponent {
     const { mpVisible } = this.state;
 
     return (
-      <div id="app" className={`${style.app} f-page`}>
+      <div id="app" className={`${style.app}`}>
         <StatusBar />
         <div id="serviceFrame" className={style.serviceFrame} />
         <div className={`${style.MPContainer} ${mpVisible ? '' : style.hide} f-page flex-c`}>
@@ -120,13 +115,16 @@ class App extends PureComponent {
 }
 
 const mapState = (state) => {
-  const { nav } = state;
+  const { nav, route } = state;
   return {
     navConfig: nav,
+    ...route,
   };
 };
 
 const mapDispatch = (dispatch) => ({
+  setAppConfig: (config) => dispatch.route.setAppConfig(config),
+  setTabBarConfig: (config) => dispatch.route.setTabBarConfig(config),
   setNavConfig: (config) => dispatch.nav.setNavConfig(config),
 });
 

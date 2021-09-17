@@ -7,7 +7,7 @@
  * @FilePath: /tiny-v1/packages/devtool/src/utils/jsbridge/API/navigation.js
  */
 import global from '@/utils/global';
-import { createRenderIframe, createPreloadRenderIframe, removeRenderIframeById } from '@/utils/createIframe';
+import { createRenderIframe, removeRenderIframeById } from '@/utils/createIframe';
 import { createGuid } from '@/utils/';
 import store from '@/store';
 
@@ -24,7 +24,8 @@ export function navigateTo(params) {
 }
 
 export function navigateBack(params = {}) {
-  if (global.pageStack.length > 1) {
+  const { pageStack } = store.getState().route;
+  if (pageStack.length > 1) {
     const { delta } = params;
 
     const lastIframe = popWindow(delta);
@@ -44,7 +45,7 @@ async function preloadWindow() {
       guid,
       src: 'biz/webview.html?debug=framework',
     });
-    global.preloadRenders.push(iframe);
+    global.preloadRenders.push(iframe.id);
     preloadLock = false;
     console.log('预加载iframe成功:', global.preloadRenders);
   } catch (error) {
@@ -56,11 +57,9 @@ async function preloadWindow() {
 export async function pushWindow(url, callback) {
   let iframe;
 
-  const { launchParams } = global.appConfig;
-  dispatch.nav.setNavConfig(launchParams[url] || {});
-
   if (global.preloadRenders.length > 0) {
-    iframe = global.preloadRenders.shift();
+    const webviewId = global.preloadRenders.shift();
+    iframe = global.webviews.get(webviewId);
   } else {
     iframe = await createRenderIframe({
       guid: createGuid(),
@@ -69,13 +68,16 @@ export async function pushWindow(url, callback) {
   }
 
   iframe.contentWindow.executeJavaScript(`window.generateFunc['${url}']('${iframe.id}')`);
-  iframe.setAttribute('path', url);
-  iframe.path = url;
-  iframe.className = 'frame in';
+  iframe.setAttribute('class', 'frame in');
 
   global.currentRender = iframe;
-  global.webviews.set(iframe.id, iframe);
-  global.pageStack.push(iframe.id);
+
+  /* 调试器同步更新 */
+  const { pageStack, appConfig } = store.getState().route;
+  const { launchParams } = appConfig;
+  pageStack.push(iframe.id);
+  dispatch.nav.setNavConfig(launchParams[url] || {});
+  dispatch.route.setPageStack(pageStack);
 
   if (typeof callback === 'function') {
     callback(iframe);
@@ -89,10 +91,12 @@ export async function pushWindow(url, callback) {
 export function popWindow(delta = 1) {
   if (!delta) return;
 
-  if (delta >= global.pageStack.length) {
-    delta = global.pageStack.length - 1;
+  let { pageStack } = store.getState().route;
+  if (delta >= pageStack.length) {
+    delta = pageStack.length - 1;
   }
-  const deletePages = global.pageStack.slice(global.pageStack.length - delta);
+
+  const deletePages = pageStack.slice(pageStack.length - delta);
   // 删除iframe
   deletePages.forEach((id) => {
     if (global.webviews.get(id)) {
@@ -100,13 +104,20 @@ export function popWindow(delta = 1) {
     }
   });
 
-  global.pageStack = global.pageStack.slice(0, -1 * delta);
-  global.currentRender = global.webviews.get(global.pageStack[global.pageStack.length - 1]);
+  pageStack = pageStack.slice(0, -1 * delta);
+  global.currentRender = global.webviews.get(pageStack[pageStack.length - 1]);
 
   global.service.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('onAppRoute', '${JSON.stringify({
     path: global.currentRender.path,
     openType: 'navigateBack',
   })}', '${global.currentRender.id}')`);
+
+  /* 调试器同步更新 */
+  const { appConfig } = store.getState().route;
+  const { launchParams } = appConfig;
+
+  dispatch.nav.setNavConfig(launchParams[global.currentRender.path] || {});
+  dispatch.route.setPageStack(pageStack);
 
   return global.currentRender;
 }

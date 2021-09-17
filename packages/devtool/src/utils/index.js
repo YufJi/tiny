@@ -3,7 +3,7 @@ import qs from 'qs';
 let uid = 0;
 
 export function createGuid() {
-  return `${uid+=1}`;
+  return ++uid;
 }
 
 export function query(key) {

@@ -1,12 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { connect } from 'react-redux';
-import global from '@/utils/global';
 
 import style from './index.module.less';
 
 function Nav(props) {
-  const { navConfig } = props;
-  const isShowBackIcon = global.pageStack.length > 1;
+  const { navConfig, route } = props;
+  const isShowBackIcon = route.pageStack.length > 1;
 
   const root = useRef(null);
 
@@ -33,9 +32,10 @@ function Nav(props) {
 }
 
 const mapState = (state) => {
-  const { nav } = state;
+  const { nav, route } = state;
   return {
     navConfig: nav,
+    route,
   };
 };
 

@@ -72,15 +72,12 @@ function transformPageJsForWebRender(name, config) {
     window.app = window.app || {};
     window.app['${pagePath}'] = ${info};
 
-    if (!window['generateFunc']) {
-      window['generateFunc'] = {}
-    }
-    window['generateFunc']['${pagePath}'] = function() {
-      const generateFunc = window.app['${pagePath}'];
-
+    window['generateFunc'] = window['generateFunc'] || {}
+    window['generateFunc']['${pagePath}'] = function(webviewId) {
       document.dispatchEvent(new CustomEvent("generateFuncReady", {
         detail: {
-          generateFunc
+          webviewId,
+          generateFunc: window.app['${pagePath}'],
         }
       }))
     };

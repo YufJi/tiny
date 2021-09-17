@@ -3,16 +3,12 @@
  */
 
 const global = {
+  webviews: new Map(),
   // 预热webview
   preloadRenders: [],
   // 当前webview
   currentRender: null,
-  // ['render-1', 'render-2']
-  pageStack: [],
-  webviews: new Map(),
   service: null,
-  appConfig: {},
-  tabBarConfig: null,
 };
 
 export default global;

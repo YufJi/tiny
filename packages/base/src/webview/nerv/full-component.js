@@ -26,7 +26,7 @@ export default class ComponentWrapper {
       this.name = isArray(names) ? names[0] : 'Component';
     }
 
-    type.displayName = this.name;
+    type.displayName = type.displayName || this.name;
     this._owner = props.owner;
     delete props.owner;
 

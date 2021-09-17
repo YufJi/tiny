@@ -49,7 +49,7 @@ export function defineCustomComponent(is, options, customComponentMap) {
     if (!path) return null;
 
     const component = customComponentMap.get(getRealRoute(is, path)) || null;
-    component.ComponentName = name;
+    component.displayName = name;
     return component;
   });
 
@@ -84,12 +84,10 @@ export function defineCustomComponent(is, options, customComponentMap) {
       <ShadowRoot
         $nodeId={nodeId}
         $config={config}
-        $name={Component.ComponentName || 'custom-component'}
+        $name={Component.displayName || 'custom-component'}
         attribute={props}
       >
-        {render(changedData, {
-          ...ctx,
-        })}
+        {render(changedData, ctx)}
       </ShadowRoot>
     );
   };

@@ -2,7 +2,7 @@
  * 创建rednerFrame、serviceFrame
  */
 import qs from 'qs';
-import gloabl from './global';
+import global from './global';
 
 function createIframe(options) {
   return new Promise((resolve, reject) => {
@@ -17,13 +17,14 @@ function createIframe(options) {
     el.path = url;
 
     el.setAttribute('src', `${url}?${qs.stringify(queryObj)}`);
+    el.setAttribute('style', style || '');
+    el.setAttribute('class', 'frame');
     el.setAttribute('id', id);
     el.setAttribute('name', id);
+    el.setAttribute('path', url);
     el.setAttribute('seamless', 'seamless');
     el.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-modals');
     el.setAttribute('frameborder', '0');
-    el.setAttribute('style', style || '');
-    el.setAttribute('class', 'frame');
 
     el.onload = function () {
       onload && onload(el);
@@ -34,17 +35,22 @@ function createIframe(options) {
       reject(e);
     };
 
+    global.webviews.set(id, el);
+
     container.appendChild(el);
   });
 }
 
-export function createWorkerIframe({ guid, src, onload }) {
+export function createWorkerIframe({ src, onload }) {
   return createIframe({
-    id: `service-${guid}`,
+    id: 'service',
     src,
     style: 'width:0; height:0; border:0; display:none;',
     onload,
     container: document.getElementById('serviceFrame'),
+  }).then((serviceIframe) => {
+    global.service = serviceIframe;
+    return serviceIframe;
   });
 }
 
@@ -52,7 +58,7 @@ export function createRenderIframe({ guid, src, onload }) {
   return createIframe({
     id: `webview-${guid}`,
     src,
-    style: `position: absolute; top: 0; bottom: 0; width: 100%; height: 100%; z-index: ${guid};`,
+    style: `position: absolute; left: 0; top: 0; bottom: 0; width: 100%; height: 100%; z-index: ${guid};`,
     onload,
     container: document.getElementById('pageFrames'),
   });
@@ -60,9 +66,9 @@ export function createRenderIframe({ guid, src, onload }) {
 
 export function removeRenderIframeById(guid) {
   // 通过guid删除节点信息，并且删除
-  const iframe = gloabl.webviews.get(guid);
+  const iframe = global.webviews.get(guid);
   if (iframe) {
-    gloabl.webviews.delete(guid);
+    global.webviews.delete(guid);
 
     if (iframe) {
       iframe.className = 'frame out';

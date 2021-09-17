@@ -6,7 +6,7 @@
  * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/Page.js
  */
 import { elementPrefix } from 'shared/config';
-import { h, useEffect, useLayoutEffect, useRef } from './nerv';
+import { h, useLayoutEffect, useMemo, useRef } from './nerv';
 import { ComponentHubContext } from './context';
 import {
   useCompileResult,
@@ -61,17 +61,11 @@ function NormalScene(props) {
   const { current } = useRef({ result: null, initialized: false });
 
   if (render) {
-    if (current.initialized) {
-      // patch
-    } else {
-      // first
-    }
-
     current.result = render(data, context);
   }
 
-  useEffect(() => {
-    // 插入style
+  /* 插入style */
+  useLayoutEffect(() => {
     if (stylesheet) {
       const headNode = document.getElementsByTagName('head')[0];
       const styleNode = document.createElement('style');

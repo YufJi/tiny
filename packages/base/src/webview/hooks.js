@@ -86,12 +86,13 @@ export function useCreation(callback) {
   return ref.result;
 }
 
+/* 获取generateFunc */
 export function useCompileResult() {
   const [result, setResult] = useState({});
 
   useCreation(() => {
     document.addEventListener('generateFuncReady', (e) => {
-      const { generateFunc } = e.detail;
+      const { generateFunc, webviewId } = e.detail;
       setResult((prev) => (prev.render ? prev : generateFunc));
     });
   });
@@ -99,6 +100,7 @@ export function useCompileResult() {
   return result;
 }
 
+/* 获取Page data */
 export function usePageData(render) {
   const [data, setData] = useState({});
   const ref = useRef(new Deferred());
@@ -177,7 +179,7 @@ export function useResolveComponent(config) {
 
       const cpath = createComponentResolve(route, findHandler)(is);
       const CC = getCustomComponents(cpath); // 真正调用vdom render
-      CC.ComponentName = name;
+      CC.displayName = name;
       return CC;
     };
   }, [config]);
