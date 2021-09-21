@@ -565,7 +565,7 @@ var TodoItem = /*#__PURE__*/function (_React$Component) {
                 checked: todo.completed
               }), /*#__PURE__*/Object(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__["jsx"])(_tarojs_components__WEBPACK_IMPORTED_MODULE_7__[/* Text */ "e"], {
                 style: {
-                  color: '#4d4d4d'
+                  color: 'red'
                 },
                 children: todo.text
               })]

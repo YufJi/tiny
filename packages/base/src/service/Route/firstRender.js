@@ -1,10 +1,8 @@
-import { isPlainObject, mapValues, groupBy } from 'lodash';
-import path from 'path';
-
-import { invokeWebview, publish } from '../bridge';
+import { isPlainObject, mapValues, groupBy, cloneDeep } from 'lodash';
+import { INIT_DATA_READY } from 'shared/events/custom';
+import { publish } from '../bridge';
 import context from '../context';
 import { componentBookmarks } from '../Model/common';
-import { debug } from '../utils/log';
 
 const DEFAULT_ON_REACH_BOTTOM_DISTANCE = 50;
 // 缓存页面使用的自定义组件配置
@@ -27,7 +25,7 @@ export default function firstRender(currentPage, isPageReload = false) {
     },
   };
 
-  publish('INIT_DATA_READY', data, currentPage.webviewId);
+  publish(INIT_DATA_READY, data, currentPage.webviewId);
 }
 
 function getPageExt(currentPage) {

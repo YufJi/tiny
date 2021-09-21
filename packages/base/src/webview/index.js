@@ -1,10 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-05 20:28:59
- * @LastEditTime: 2021-08-13 16:56:01
- * @Description:
- * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/index.js
- */
 import { g } from 'shared';
 import * as bridge from './bridge';
 import './web-components';
@@ -13,6 +6,8 @@ import bootstrap from './bootstrap';
 import Nerv from './nerv';
 import RenderHelpers from './render-helpers';
 import StyleSheet from './StyleSheet';
+
+g.__IS_SERVICE__ = false;
 
 g.onerror = function onerror(msg = '', url, line, col, error) {
   let stack = [];

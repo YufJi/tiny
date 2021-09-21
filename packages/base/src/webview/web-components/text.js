@@ -9,14 +9,6 @@ class Text extends Base(PolymerElement) {
 
   static get properties() {
     return {
-      style: {
-        type: String,
-        observer: '_styleChanged',
-      },
-      class: {
-        type: String,
-        observer: '_classChanged',
-      },
       selectable: {
         type: Boolean,
         value: false,
@@ -57,14 +49,6 @@ class Text extends Base(PolymerElement) {
     super.disconnectedCallback();
 
     this._observer && this._observer.disconnect();
-  }
-
-  _styleChanged(styles) {
-    this.setAttribute('style', styles);
-  }
-
-  _classChanged(cls) {
-    this.setAttribute('class', cls);
   }
 
   _decode(txt) {

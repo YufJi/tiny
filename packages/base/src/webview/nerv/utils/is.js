@@ -1,11 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-12 11:50:27
- * @LastEditTime: 2021-07-13 10:57:59
- * @Description:
- * @FilePath: /yeact/src/utils/is.js
- */
-
 export function isString(arg) {
   return typeof arg === 'string';
 }

@@ -1,12 +1,5 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-05 20:35:03
- * @LastEditTime: 2021-08-13 17:05:02
- * @Description:
- * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/Page.js
- */
 import { elementPrefix } from 'shared/config';
-import { h, useLayoutEffect, useRef, transformRpx } from '../nerv';
+import { h, useLayoutEffect, useEffect, useRef, transformRpx } from '../nerv';
 import { ComponentHubContext } from '../context';
 import { usePageFields } from '../common/hooks';
 import {
@@ -17,7 +10,7 @@ import {
   useRenderMode,
   useJSCoreEvent,
   useInitAction,
-  useFirstRendered,
+  usePageLoad,
 } from './hooks';
 
 export default function Page() {
@@ -68,7 +61,7 @@ function NormalScene(props) {
     }
   }, []);
 
-  useFirstRendered(render);
+  usePageLoad(render)
 
   useLayoutEffect(() => {
     if (render) {

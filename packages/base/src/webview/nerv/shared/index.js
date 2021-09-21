@@ -1,11 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-04-30 13:11:37
- * @LastEditTime: 2021-07-13 11:59:24
- * @Description:
- * @FilePath: /yeact/src/shared/index.js
- */
-
 export const VType = {
   Text: 1,
   Node: 1 << 1,
@@ -62,4 +54,6 @@ export function isHook(arg) {
 }
 
 // tslint:disable-next-line:no-empty
-export function noop() {}
+export function noop() {
+  /* noop */
+}

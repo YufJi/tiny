@@ -1,11 +1,10 @@
 import { isFunction, get } from 'lodash';
 
-import { warn } from '../utils/log';
-import { wrapUserFunction } from '../utils/wrapfn';
+import { warn, wrapUserFunction } from '../utils';
 import { pageModels, componentModels } from '../Model/common';
 import { resetUserInteraction, setUserInteraction } from '../context';
 
-export default function invokeUserMethod({ nodeId, type, data }, webviewId) {
+export default function handlePageEvent({ nodeId, type, data }, webviewId) {
   const page = get(pageModels, webviewId);
 
   if (!page) {

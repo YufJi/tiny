@@ -1,7 +1,7 @@
 import { isNil, memoize, isBoolean } from 'lodash';
 import { Deferred, mergeData } from 'shared';
-import { INIT_DATA_READY, APP_DATA_CHANGE, PAGE_EVENT } from 'shared/events/custom';
-import { useState, useRef, useContext, useLayoutEffect, useEffect, useMemo, useReducer, Children } from '../nerv';
+import { INIT_DATA_READY, APP_DATA_CHANGE, PAGE_EVENT, DOCUMENT_READY, DOCUMENT_SHOW } from 'shared/events/custom';
+import { useState, useRef, useLayoutEffect, useEffect, useMemo, useReducer } from '../nerv';
 import { useJSBridgeFn, useJSBridge, useConfigContext, usePageFields, useCreation } from '../common/hooks';
 import {
   onComponentDataChange,
@@ -34,19 +34,18 @@ export function useCompileResult() {
 export function usePageData(render) {
   const [data, setData] = useState({});
   const ref = useRef(new Deferred());
-
   useJSBridgeFn((bridge) => {
     const { subscribe, replyService } = bridge;
 
     subscribe(INIT_DATA_READY, (e) => {
       const { data } = e;
+
       setData(data);
     });
 
     replyService(APP_DATA_CHANGE)(async (params) => {
       const { data, options } = params;
       setData((prev) => mergeData(prev, data));
-
       return ref.current.promise;
     });
   });
@@ -220,6 +219,7 @@ function useNormalState() {
 function useSnapshotState() {
   const ref = useRef(0);
   const [bool, dispatch] = useBoolean(false);
+
   useJSBridgeFn((bridge) => {
     const { onNative, subscribe } = bridge;
 
@@ -295,13 +295,19 @@ export function useJSCoreEvent(componentHub) {
   });
 }
 
-export function useFirstRendered(render) {
+export function usePageLoad(render) {
   const { publish } = useJSBridge();
   const config = useConfigContext();
 
+  // useLayoutEffect(() => {
+  //   if (render && config && !config.isPageReload) {
+  //     publish(DOCUMENT_SHOW, {});
+  //   }
+  // }, [config, publish, render]);
+
   useEffect(() => {
     if (render && config && !config.isPageReload) {
-      publish('DOCUMENT_READY', {});
+      publish(DOCUMENT_READY, {});
     }
   }, [config, publish, render]);
 }

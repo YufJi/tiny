@@ -1,10 +1,4 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-12 21:04:41
- * @LastEditTime: 2021-07-12 21:09:53
- * @Description:
- * @FilePath: /yeact/src/dom.js
- */
+/* eslint-disable react/destructuring-assignment */
 import { nextTick } from './utils';
 import { isValidElement as isValidNervElement, VType, isComponent, isInvalid } from './shared';
 import { getChildContext } from './lifecycle';
@@ -41,7 +35,6 @@ export function createFactory(type) {
 
 class WrapperComponent extends Component {
   getChildContext() {
-    // tslint:disable-next-line
     return this.props.context;
   }
 
@@ -56,7 +49,6 @@ export function unstable_renderSubtreeIntoContainer(
   container,
   callback,
 ) {
-  // @TODO: should handle props.context?
   const wrapper = createElement(
     WrapperComponent,
     { context: getChildContext(parentComponent, parentComponent.context) },

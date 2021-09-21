@@ -1,114 +1,14 @@
-import EventEmitter from 'eventemitter3';
-import { isObject, isString, isFunction, last, cloneDeep } from 'lodash';
+import { isObject, isString, last, cloneDeep } from 'lodash';
 import qs from 'qs';
-
-import { onNative, subscribe, invokeNative } from '../bridge';
+import { invokeNative } from '../bridge';
 import context from '../context';
 import { ComponentPageModel, PageModel } from '../Model';
-import checkIsComponent from './checkIsComponent';
-import firstRender from './firstRender';
-
-// 使用过的webview
-const webviewUsed = new Map();
-
-// 页面栈
-const pageStack = [];
-
-// events
-const emitter = new EventEmitter();
+import { pageInitMap, componentBookmarks } from '../Model/common';
+import { webviewUsed, pageStack, emitter } from './common';
 
 let onAppRouteParams;
 
-function isRouteType(type) {
-  return ['appLaunch', 'navigateTo', 'redirectTo', 'navigateBack', 'switchTab', 'reLaunch'].includes(type);
-}
-
-function isTabPage(path) {
-  return Boolean(context.tabBarConfig && context.tabBarConfig.list.some((item) => {
-    return item.pagePath === path;
-  }));
-}
-
-function pageShow(page) {
-  page.implement.onShow();
-  emitter.emit('show', page);
-}
-
-function popPageStack() {
-  const pop = pageStack.pop();
-
-  if (pop) {
-    webviewUsed.delete(pop.webviewId);
-    pop.implement.onUnload();
-    emitter.emit('destroyPage', pop);
-  }
-}
-
-/**
- * 读 页面栈
- */
-export function getPageStack() {
-  return Array.from(pageStack);
-}
-/**
- * 获取当前页面栈中的页面信息
- */
-export function getCurrentPages() {
-  return getPageStack().map((i) => {
-    return i.implement;
-  });
-}
-
-export function onRouteEvent(event, handler) {
-  if (isFunction(handler)) {
-    emitter.on(event, handler);
-  }
-}
-
-/**
- * 路由创建页面的事件回调
- * @param currentPage 当前路由页面
- */
-onRouteEvent('afterCreatePage', (currentPage) => {
-  // 页面创建后控制分享菜单是否显示隐藏
-  if (!currentPage.implement.onShareAppMessage) {
-    invokeNative('hideShareMenu');
-  }
-
-  // 渲染数据
-  firstRender(currentPage);
-});
-
-export default function loadRoute() {
-  onNative('onAppRoute', handleAppRoute);
-
-  // 监听webview的domready事件，响应用户页面的onReady生命周期
-  subscribe('DOCUMENT_READY', (_, webviewId) => {
-    const page = webviewUsed.get(webviewId);
-
-    if (!page) {
-      return;
-    }
-
-    page.implement.onReady();
-  });
-
-  // 监听native的onPullDownRefresh消息，响应用户页面的onPullDownRefresh生命周期
-  onNative('onPullDownRefresh', (_, webviewId) => {
-    const page = webviewUsed.get(webviewId);
-
-    if (!page) {
-      return;
-    }
-
-    page.implement.onPullDownRefresh && page.implement.onPullDownRefresh();
-  });
-
-  // 注册分享逻辑
-  // shareAppExt(handleShareParams);
-}
-
-function handleAppRoute(_params, _webviewId) {
+export default function handleAppRoute(_params, _webviewId) {
   const params = handleAppRouteParams(_params, _webviewId);
 
   emitter.emit('route', { ..._params, query: params.query });
@@ -333,9 +233,17 @@ function actionCreatePage(route, webviewId, query) {
     throw new Error(`Page route webviewId already existed: ${webviewId}`);
   }
 
-  const isComponent = checkIsComponent(route);
+  let isComponent;
+
+  if (pageInitMap.has(route)) {
+    isComponent = false;
+  } else if (componentBookmarks.has(route)) {
+    isComponent = true;
+  } else {
+    throw new Error(`Page[${route}] not found. May be caused by: 1. Forgot to add page route in app.json. 2. Invoking Page() in async task.`);
+  }
+
   const implement = isComponent ? new ComponentPageModel(route, webviewId) : new PageModel(route, webviewId);
-  console.log('implement', implement, webviewId);
   // query副作用
   Object.assign(implement.options, cloneDeep(query));
 
@@ -357,4 +265,29 @@ function actionCreatePage(route, webviewId, query) {
   // 用户生命周期
   implement.onLoad(query);
   implement.onShow();
+}
+
+function isRouteType(type) {
+  return ['appLaunch', 'navigateTo', 'redirectTo', 'navigateBack', 'switchTab', 'reLaunch'].includes(type);
+}
+
+function isTabPage(path) {
+  return Boolean(context.tabBarConfig && context.tabBarConfig.list.some((item) => {
+    return item.pagePath === path;
+  }));
+}
+
+function pageShow(page) {
+  page.implement.onShow();
+  emitter.emit('show', page);
+}
+
+function popPageStack() {
+  const pop = pageStack.pop();
+
+  if (pop) {
+    webviewUsed.delete(pop.webviewId);
+    pop.implement.onUnload();
+    emitter.emit('destroyPage', pop);
+  }
 }

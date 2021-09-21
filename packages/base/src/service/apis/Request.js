@@ -1,6 +1,15 @@
 import EventEmitter from 'eventemitter3';
-import { beforeInvoke, beforeInvokeFail, getDataType, onMethod, invokeMethod } from './util';
-import { surroundByTryCatchFactory, validateUrl, convertObjectValueToString, addQueryStringToUrl } from '../utils';
+import {
+  beforeInvoke,
+  beforeInvokeFail,
+  getDataType,
+  onMethod,
+  invokeMethod,
+  surroundByTryCatchFactory,
+  validateUrl,
+  convertObjectValueToString,
+  addQueryStringToUrl,
+} from './util';
 
 const MAX_REQUEST_CONCURRENT = 10;
 const waitingIdStore = new WeakMap();

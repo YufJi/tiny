@@ -1,3 +1,6 @@
+/* eslint-disable prefer-rest-params */
+/* eslint-disable no-restricted-properties */
+/* eslint-disable @typescript-eslint/no-empty-function */
 /* eslint-disable no-extend-native */
 const g = typeof global !== 'undefined' ? global : self;
 
@@ -667,8 +670,8 @@ function sjsInitGlobals() {
     for (let i = 0; i < arguments.length; ++i) {
       res += `${arguments[i]} `;
     }
-    if (g.MP && g.MP.workerConsole) {
-      g.MP.workerConsole.log(res);
+    if (g.serviceConsole) {
+      g.serviceConsole.log(res);
     } else {
       // do not console log on worker
       // console.log(res);

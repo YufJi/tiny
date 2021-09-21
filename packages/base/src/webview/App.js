@@ -1,10 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-05 20:34:44
- * @LastEditTime: 2021-07-17 03:08:53
- * @Description:
- * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/MicroApp.js
- */
 import { INIT_DATA_READY } from 'shared/events/custom';
 import { DOCUMENT_READY } from 'shared/events/native';
 import { h, useState, useLayoutEffect } from './nerv';

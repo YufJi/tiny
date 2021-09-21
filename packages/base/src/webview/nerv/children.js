@@ -1,10 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-12 20:57:13
- * @LastEditTime: 2021-07-12 20:59:31
- * @Description:
- * @FilePath: /yeact/src/children.js
- */
 import { isArray } from './utils';
 import {
   isNil,

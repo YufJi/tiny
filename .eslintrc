@@ -18,6 +18,7 @@
     "new-cap":"off",
     "class-methods-use-this":"off",
     "no-plusplus":"warn",
+    "no-case-declarations":"off",
     "no-restricted-globals":"off",
     "max-len":"off",
     "import/no-cycle":"off"

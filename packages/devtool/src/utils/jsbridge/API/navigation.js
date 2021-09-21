@@ -1,11 +1,4 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-/*
- * @Author: YufJ
- * @Date: 2021-04-20 13:54:09
- * @LastEditTime: 2021-08-13 17:43:35
- * @Description:
- * @FilePath: /tiny-v1/packages/devtool/src/utils/jsbridge/API/navigation.js
- */
 import global from '@/utils/global';
 import { createRenderIframe, removeRenderIframeById } from '@/utils/createIframe';
 import { createGuid } from '@/utils/';

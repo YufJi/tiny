@@ -25,6 +25,7 @@ export default function createSubscribe() {
           params = JSON.parse(data);
         } catch (error) {
           console.error(error);
+          console.error('解析出错数据:', data);
           params = {};
         }
       }

@@ -7,14 +7,15 @@
  */
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const ProgressBarPlugin = require('progress-bar-webpack-plugin');
 
 const getConfig = (type, env) => {
-  const isWorker = type === 'worker';
+  const isService = type === 'service';
   const isDev = process.env.NODE_ENV !== 'production';
 
   return {
     mode: isDev ? 'development' : 'production',
-    entry: isWorker ? {
+    entry: isService ? {
       service: path.join(__dirname, 'src/service/index.js'),
     } : {
       webview: path.join(__dirname, 'src/webview/index.js'),
@@ -28,7 +29,6 @@ const getConfig = (type, env) => {
         shared: path.resolve(__dirname, 'src/shared'),
         'js-bridge': path.resolve(__dirname, 'src/js-bridge'),
       },
-      extensions: isWorker ? ['.worker.js', '.js', '.ts', '.json'] : ['.web.js', '.js', '.ts', '.json'],
     },
     module: {
       rules: [
@@ -68,6 +68,7 @@ const getConfig = (type, env) => {
     },
 
     plugins: [
+      new ProgressBarPlugin(),
       new MiniCssExtractPlugin({
         filename: 'webview.css',
       }),
@@ -78,6 +79,6 @@ const getConfig = (type, env) => {
 };
 
 module.exports = [
-  getConfig('index'),
-  getConfig('worker'),
+  getConfig('webview'),
+  getConfig('service'),
 ];

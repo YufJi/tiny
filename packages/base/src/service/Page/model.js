@@ -1,9 +1,10 @@
 import { set, get, cloneDeep, mapValues, isFunction } from 'lodash';
 
-import { wrapPageLifetime } from '../utils/wrapfn';
 import { invokeWebview } from '../bridge';
-import { componentModels, pageModels, pageInitMap, afterSetData } from './common';
-import BaseModel from './Base';
+import { wrapPageLifetime } from '../utils';
+import BaseModel from '../Model/Base';
+import { componentModels, pageModels, pageInitMap } from '../Model/common';
+import { afterSetData } from '../Model/util';
 
 export default class PageModel extends BaseModel {
   constructor(is, __webviewId__) {

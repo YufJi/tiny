@@ -1,11 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-13 11:40:15
- * @LastEditTime: 2021-07-13 11:45:15
- * @Description:
- * @FilePath: /yeact/src/hydrate.js
- */
-// tslint:disable:no-conditional-assignment
 import render from './render';
 
 export function hydrate(vnode, container, callback) {

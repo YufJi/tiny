@@ -1,6 +1,6 @@
 import { forOwn, hasIn, kebabCase, memoize, isEqual, camelCase, isPlainObject, isObject } from 'lodash';
 import { mergeData, getType } from 'shared';
-import { PAGE_EVENT } from 'shared/events/custom';
+import { PAGE_EVENT, COMPONENT_EVENT, COMPONENT_DATA_CHANGE } from 'shared/events/custom';
 import { useState, useContext, useLayoutEffect, useEffect, Children } from '../nerv';
 import { usePageFields, useCreation, useJSBridge, usePrevious } from '../common/hooks';
 import { ComponentHubContext } from '../context';
@@ -21,7 +21,7 @@ export function useDataChange(nodeId, _data, _props) {
   });
 
   const subscriber = useCreation(() => {
-    return events.subscribe('componentDataChange', nodeId, (e) => {
+    return events.subscribe(COMPONENT_DATA_CHANGE, nodeId, (e) => {
       const { data } = e;
       setData((prevData) => {
         return mergeData(prevData, data);
@@ -49,7 +49,7 @@ export function useLifeCycleHooks(nodeId, route) {
   return useCreation(() => {
     return LIFE_CYCLE.map((eventName) => {
       return function () {
-        publish('COMPONENT_EVENT', { route, nodeId, eventName });
+        publish(COMPONENT_EVENT, { route, nodeId, eventName });
       };
     });
   });
@@ -149,7 +149,7 @@ export function useSyncChangedDataset(dataset, nodeId, initial) {
   const { publish } = useJSBridge();
   useEffect(() => {
     if (!initial && Object.keys(dataset).length > 0) {
-      publish('COMPONENT_DATA_CHANGE', {
+      publish(COMPONENT_DATA_CHANGE, {
         datatype: 'dataset',
         data: dataset,
         nodeId,
@@ -162,7 +162,7 @@ export function useSyncChangedProps(props, nodeId, initial) {
   const { publish } = useJSBridge();
   useEffect(() => {
     if (!initial && Object.keys(props).length > 0) {
-      publish('COMPONENT_DATA_CHANGE', {
+      publish(COMPONENT_DATA_CHANGE, {
         datatype: 'properties',
         data: props,
         nodeId,
@@ -178,7 +178,7 @@ export function useNodeId() {
   });
 }
 
-export function useComponentRenderContext(props, nodeId, is, config, resolveComponent) {
+export function useRenderContext(props, nodeId, is, config, resolveComponent) {
   const { publish } = useJSBridge();
   const fields = usePageFields();
 

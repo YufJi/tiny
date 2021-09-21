@@ -16,6 +16,8 @@ Page({
     autoplay: false,
     interval: 4000,
     duration: 500,
+
+    animationData: {},
   },
   // 监听生命周期回调 onLoad
   onLoad() {
@@ -25,27 +27,51 @@ Page({
     const value = wx.getStorageSync('tinyName');
 
     console.log('getStorageSync', value);
+    const animation = wx.createAnimation({
+      duration: 1000,
+      timingFunction: 'ease-in',
+    })
+    
+    animation.scale(5, 5).rotate(120).step();
+
+    this.setData({
+      text: 'load',
+      animationData: animation.export(),
+    });
   },
   // 监听生命周期回调 onShow
   onShow() {
     // 设置全局数据到当前页面数据
-    this.setData({
-      todos: app.todos,
-    });
-    this.setData({
-      text: 'onshow',
-    });
     console.log('page show');
+
+    const animation = wx.createAnimation({
+      duration: 3000,
+      timingFunction: 'ease-in',
+    })
+    
+    animation.scale(1.5, 1.5).rotate(20).step();
+
+    this.setData({
+      text: 'show',
+      animationData: animation.export(),
+    });
   },
   onReady() {
-    this.setData({
-      text: 'ready',
-    });
     console.log('page ready');
 
     const id = setTimeout(() => {
       console.log('setTimeout');
     }, 3000);
+
+    const animation = wx.createAnimation({
+      duration: 3000,
+      timingFunction: 'ease-in',
+    })
+    
+    animation.scale(0.5, 0.5).rotate(90).step();
+    this.setData({
+      animationData: animation.export(),
+    });
   },
 
   onHide() {
@@ -175,6 +201,19 @@ Page({
   nav() {
     wx.navigateTo({
       url: '../todos/todos',
+    });
+  },
+  ani1() {
+
+    const animation = wx.createAnimation({
+      duration: 2000,
+      timingFunction: 'ease',
+    })
+    
+    animation.scale(2,2).rotate(45).step();
+    animation.scale(3,3).rotate(60).step();
+    this.setData({
+      animationData: animation.export(),
     });
   }
 });

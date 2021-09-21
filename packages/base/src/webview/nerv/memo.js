@@ -1,10 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-12 20:55:05
- * @LastEditTime: 2021-07-13 11:55:48
- * @Description:
- * @FilePath: /yeact/src/memo.js
- */
 import { shallowEqual, isFunction } from './utils';
 import Ref from './vdom/ref';
 import createElement from './create-element';

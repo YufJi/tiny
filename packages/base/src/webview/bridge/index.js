@@ -1,14 +1,4 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-05 20:35:40
- * @LastEditTime: 2021-07-09 15:48:35
- * @Description:
- * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/bridge/index.js
- */
 import createBridge from 'js-bridge';
-import { g } from 'shared';
-
-g.__IS_SERVICE__ = false;
 
 const {
   invokeHandler,
@@ -22,49 +12,50 @@ const {
   unsubscribe,
 } = createBridge();
 
-let callbackId = 0;
-const callbackMap = new Map();
+function createInvokeService(publish, subscribe) {
+  let callbackId = 0;
+  const callbackMap = new Map();
 
-subscribe('callbackServiceMethod', (data) => {
-  const callback = callbackMap.get(data.extra.callbackId);
-  if (!callback) return;
+  subscribe('callbackServiceMethod', (data) => {
+    const callback = callbackMap.get(data.extra.callbackId);
+    if (!callback) return;
 
-  if (data.error) {
-    callback.fail({
-      errMsg: data.error,
-    });
-    callback.complete({
-      errMsg: data.error,
-    });
-  } else {
-    callback.success(data.result);
-    callback.complete(data.result);
-  }
-});
-
-function invokeService(options) {
-  const { name: method, type: scene = 'sdk', args } = options;
-  const params = omitBy(args, isFunction);
-
-  callbackId += 1;
-  callbackMap.set(callbackId, {
-    success: args.success || noop,
-    fail: args.fail || noop,
-    complete: args.complete || noop,
+    if (data.error) {
+      callback.fail({
+        errMsg: data.error,
+      });
+      callback.complete({
+        errMsg: data.error,
+      });
+    } else {
+      callback.success(data.result);
+      callback.complete(data.result);
+    }
   });
 
-  publish('invokeServiceMethod', {
-    method,
-    scene,
-    params,
-    extra: {
-      callbackId,
-      timestamp: Date.now(),
-    },
-  });
+  return function invokeService(method, params, scene = 'sdk') {
+    params = omitBy(params, isFunction);
+
+    callbackId += 1;
+    callbackMap.set(callbackId, {
+      success: args.success || noop,
+      fail: args.fail || noop,
+      complete: args.complete || noop,
+    });
+
+    publish('invokeServiceMethod', {
+      method,
+      params,
+      scene,
+      extra: {
+        callbackId,
+        timestamp: Date.now(),
+      },
+    });
+  };
 }
 
-function createReply(publish, subscribe) {
+function createReplyService(publish, subscribe) {
   const callbackMap = new Map();
 
   subscribe('invokeWebviewMethod', (ev) => {
@@ -105,7 +96,8 @@ function createReply(publish, subscribe) {
   };
 }
 
-const replyService = createReply(publish, subscribe);
+const replyService = createReplyService(publish, subscribe);
+const invokeService = createInvokeService(publish, subscribe);
 
 export {
   /* 调用的回调 */

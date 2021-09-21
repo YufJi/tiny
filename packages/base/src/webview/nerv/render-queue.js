@@ -1,10 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-12 20:20:45
- * @LastEditTime: 2021-07-12 20:25:30
- * @Description:
- * @FilePath: /yeact/src/render-queue.js
- */
 import { nextTick } from './utils';
 import { updateComponent } from './lifecycle';
 

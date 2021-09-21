@@ -1,12 +1,4 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-12 20:53:01
- * @LastEditTime: 2021-07-12 20:53:56
- * @Description:
- * @FilePath: /yeact/src/utils/shallow-equal.js
- */
 /* istanbul ignore next */
-// tslint:disable-next-line
 Object.is = Object.is || function (x, y) {
   if (x === y) {
     return x !== 0 || 1 / x === 1 / y;

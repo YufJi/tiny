@@ -1,11 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-13 11:00:56
- * @LastEditTime: 2021-08-13 15:10:14
- * @Description:
- * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/nerv/event.js
- */
-
 import { elementPrefix, upperCasePerfix } from 'shared/config';
 import { xmlEventReg } from './utils/is';
 

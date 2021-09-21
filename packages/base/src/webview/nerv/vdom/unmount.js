@@ -1,10 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-13 11:34:21
- * @LastEditTime: 2021-08-16 11:31:26
- * @Description:
- * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/nerv/vdom/unmount.js
- */
 import { isNil, isInvalid, VType } from '../shared';
 import { isAttrAnEvent, isArray } from '../utils';
 import { toEventName } from '../event';

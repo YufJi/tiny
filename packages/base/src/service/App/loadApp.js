@@ -1,13 +1,8 @@
 import { last, isEqual } from 'lodash';
-
 import { onNative } from '../bridge';
-import { triggerShowCbs, triggerHideCbs } from '../apis/AppEvents';
 import context from '../context';
-import configApp from './configApp';
-
-export default function loadApp() {
-  configApp(handleApp);
-}
+import { triggerShowCbs, triggerHideCbs } from '../apis/AppEvents';
+import { getPageStack } from '../Route';
 
 const APP_STATE = {
   // willRoute 意味着onAppEnterForeground后面会有路由事件，此时不派发页面级别的 onShow
@@ -19,7 +14,7 @@ const APP_STATE = {
   },
 };
 
-function handleApp(app) {
+export default function loadApp(app) {
   app.onLaunch(context.launchOptions);
   app.onShow(context.launchOptions);
 

@@ -1,24 +1,23 @@
-/* tslint:disable: no-empty */
 import { camelCase } from 'lodash';
 import {
-  isString,
   isAttrAnEvent,
-  isNumber,
   isArray,
   isFunction,
-} from '../utils';
+} from '../../utils';
 import {
   isInvalid,
   isNil,
   isValidElement,
   EMPTY_CHILDREN,
   VType,
-} from '../shared';
-import createElement, { mountChild, mountElement, insertElement } from './create-element';
-import { unmount, unmountChildren } from './unmount';
-import Ref from './ref';
-import { addListener, eventProxy, toEventName } from '../event';
-import transformRpx from '../utils/transformRpx';
+} from '../../shared';
+import createElement, { mountChild, mountElement, insertElement } from '../create-element';
+import { unmount, unmountChildren } from '../unmount';
+import Ref from '../ref';
+
+import patchAnimation from './animation';
+import patchStyle from './style';
+import patchEvent from './event';
 
 export function patch(
   lastVnode,
@@ -490,91 +489,6 @@ const skipProps = {
   /* webcomponent渲染slot属性 插值不显示 */
   slot: 1,
 };
-
-const IS_NON_DIMENSIONAL = /acit|ex(?:s|g|n|p|$)|rph|ows|mnc|ntw|ine[ch]|zoo|^ord/i;
-
-function setStyle(domStyle, style, value) {
-  if (isNil(value) || (isNumber(value) && isNaN(value))) {
-    domStyle[style] = '';
-    return;
-  }
-  if (style === 'float') {
-    domStyle.cssFloat = value;
-    domStyle.styleFloat = value;
-    return;
-  }
-  domStyle[style] = !isNumber(value) || IS_NON_DIMENSIONAL.test(style) ? value : `${value}px`;
-}
-
-function patchEvent(
-  eventName,
-  lastEvent,
-  nextEvent,
-  domNode,
-) {
-  const { raw, name, options } = toEventName(eventName);
-  const { capture, stop } = options;
-
-  const listener = domNode._listeners || (domNode._listeners = {});
-  const callback = domNode._callback || (domNode._callback = {});
-
-  if (nextEvent) {
-    listener[`${name}`] = listener[`${name}`] || {};
-
-    if (!lastEvent) {
-      const fn = eventProxy.bind(domNode, name, capture);
-      callback[raw] = fn;
-      addListener(domNode, name, fn, options);
-    }
-
-    const eventName = nextEvent.name;
-
-    listener[`${name}`][`${capture ? 'capture' : 'bubble'}`] = {
-      options,
-      handler: nextEvent,
-      name: eventName,
-    };
-    domNode.setAttribute(raw, eventName);
-  } else {
-    listener[`${name}`][`${capture ? 'capture' : 'bubble'}`] = null;
-    domNode.removeAttribute(raw);
-  }
-}
-
-function patchStyle(lastAttrValue, nextAttrValue, dom) {
-  const domStyle = dom.style;
-  let style;
-  let value;
-
-  if (isString(nextAttrValue)) {
-    try {
-      domStyle.cssText = transformRpx(nextAttrValue);
-    } catch (error) {
-      dom.setAttribute('style', transformRpx(nextAttrValue));
-    }
-
-    return;
-  }
-  if (!isNil(lastAttrValue) && !isString(lastAttrValue)) {
-    for (style in nextAttrValue) {
-      value = nextAttrValue[style];
-      if (value !== lastAttrValue[style]) {
-        setStyle(domStyle, style, transformRpx(value));
-      }
-    }
-    for (style in lastAttrValue) {
-      if (isNil(nextAttrValue[style])) {
-        domStyle[style] = '';
-      }
-    }
-  } else {
-    for (style in nextAttrValue) {
-      value = nextAttrValue[style];
-      setStyle(domStyle, style, transformRpx(value));
-    }
-  }
-}
-
 export function patchProp(
   domNode,
   prop,
@@ -594,8 +508,12 @@ export function patchProp(
       domNode.className = nextValue;
     } else if (isAttrAnEvent(prop)) {
       patchEvent(prop, lastValue, nextValue, domNode);
-    } else if (prop === 'style') {
+    } else if (prop === 'style' ) {
       patchStyle(lastValue, nextValue, domNode);
+    } else if (prop === 'animation') {
+      if (nextValue?.steps?.length) {
+        patchAnimation(lastValue, nextValue, domNode);
+      }
     } else if (prop === 'dangerouslySetInnerHTML') {
       const lastHtml = lastValue && lastValue.__html;
       const nextHtml = nextValue && nextValue.__html;
@@ -635,6 +553,7 @@ function patchProps(
 ) {
   for (const propName in previousProps) {
     const value = previousProps[propName];
+    /* 新值为空，旧值不为空 */
     if (isNil(nextProps[propName]) && !isNil(value)) {
       if (propName === 'dangerouslySetInnerHTML') {
         domNode.textContent = '';

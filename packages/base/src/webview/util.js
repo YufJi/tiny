@@ -1,11 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-09 15:11:41
- * @LastEditTime: 2021-07-14 20:11:22
- * @Description:
- * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/util.js
- */
-
 import { isFunction, wrap, noop } from 'lodash';
 
 export function tryCatch(method, callback, context) {

@@ -1,10 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-12 20:59:46
- * @LastEditTime: 2021-07-12 21:00:54
- * @Description:
- * @FilePath: /yeact/src/clone-element.js
- */
 import { extend, clone, isArray, isString, isNumber } from './utils';
 import { isVText, isVNode, EMPTY_CHILDREN, VType, isNil, isPortal, isInvalid } from './shared';
 import createElement from './create-element';
@@ -37,6 +30,7 @@ export default function cloneElement(vnode, props, ...children) {
 
   if (childrenTmp.length) {
     if (childrenTmp.length === 1) {
+      // eslint-disable-next-line prefer-destructuring
       childrenTmp = children[0];
     }
   }

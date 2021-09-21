@@ -1,5 +1,4 @@
-import { anyTypeToString, stringToAnyType } from '../utils';
-import { invokeMethod, beforeInvoke } from './util';
+import { anyTypeToString, stringToAnyType, invokeMethod, beforeInvoke } from './util';
 
 export function getStorage(param) {
   if (beforeInvoke('getStorage', param, {

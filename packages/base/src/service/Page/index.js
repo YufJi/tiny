@@ -1,12 +1,14 @@
 import { defaults, mapValues, isFunction, noop } from 'lodash';
 import { g } from 'shared';
-
-import { wrapUserFunctions, wrapUserFunction } from '../utils/wrapfn';
-import { debug, warn } from '../utils/log';
+import { PAGE_EVENT } from 'shared/events/custom';
+import { subscribe } from '../bridge';
+import { wrapUserFunctions, wrapUserFunction, debug, warn } from '../utils';
 import { pageInitMap } from '../Model/common';
 import $global from '../common/global';
+import handlePageEvent from './handlePageEvent';
+import PageModel from './model';
 
-export default function registerPage(options = {}) {
+export function registerPage(options = {}) {
   const { is } = $global.currentPageConfig;
   $global.__allConfig__[is] = $global.currentPageConfig;
 
@@ -62,3 +64,11 @@ export default function registerPage(options = {}) {
   Object.assign(init, lifetimes, extraLifetimes);
   pageInitMap.set(is, init);
 }
+
+export function loadPageEvent() {
+  subscribe(PAGE_EVENT, handlePageEvent);
+}
+
+export {
+  PageModel,
+};

@@ -4,6 +4,7 @@ import { showToast, hideToast, showLoading, hideLoading, setNavigationBarTitle }
 import { getStorage, setStorage, getStorageSync, setStorageSync, getStorageInfo, getStorageInfoSync, clearStorage, clearStorageSync, removeStorage, removeStorageSync } from './Storage';
 import { getSystemInfoSync } from './System';
 import { request } from './Request';
+import {createAnimation} from './Animation' 
 
 export {
   request,
@@ -38,4 +39,6 @@ export {
   removeStorageSync,
 
   getSystemInfoSync,
+
+  createAnimation,
 };

@@ -1,10 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-05 15:06:14
- * @LastEditTime: 2021-08-13 17:57:08
- * @Description:
- * @FilePath: /tiny-v1/packages/base2.0/src/framework/service/Behavior/index.js
- */
 import { defaultsDeep, noop } from 'lodash';
 
 import mixinBehaviors from './mixinBehaviors';

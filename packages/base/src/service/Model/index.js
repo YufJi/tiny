@@ -1,6 +1,5 @@
-import ComponentModel from './Component';
-import ComponentPageModel from './ComponentPage';
-import PageModel from './Page';
+import { ComponentModel, ComponentPageModel } from '../Component/model';
+import PageModel from '../Page/model';
 
 export {
   ComponentModel,

@@ -591,7 +591,7 @@ assign(MLTransformer.prototype, {
             node,
             attrName: 'is',
           });
-          this.pushCode(`${this.isStartOfCodeSection(level) ? '{ ' : ''}$useTemplate($templates[${is}],${data.data},${data.key},_ctx)${this.isEndOfCodeSection(level) ? ' }' : ''}`);
+          this.pushCode(`${this.isStartOfCodeSection(level) ? '{ ' : ''}$useTemplate($templates[${is}], ${data.data}, _ctx)${this.isEndOfCodeSection(level) ? ' }' : ''}`);
         } else {
           // define
           this.pushState();

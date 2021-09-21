@@ -1,10 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-13 11:35:32
- * @LastEditTime: 2021-07-13 11:35:47
- * @Description:
- * @FilePath: /yeact/src/vdom/ref.js
- */
 import { isFunction, isString, isObject } from '../utils';
 import { isComposite } from '../shared';
 import { errorCatcher } from '../lifecycle';

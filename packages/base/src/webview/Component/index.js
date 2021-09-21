@@ -1,14 +1,6 @@
-/* eslint-disable import/no-cycle */
-/*
- * @Author: YufJ
- * @Date: 2021-07-09 17:30:43
- * @LastEditTime: 2021-08-13 11:03:13
- * @Description:
- * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/Component.js
- */
 import { memoize } from 'lodash';
 import path from 'path';
-
+import { COMPONENT_DATA_CHANGE } from 'shared/events/custom';
 import { h, useDangerousReverseLayoutEffect, useLayoutEffect, useRef } from '../nerv';
 import { useJSBridge } from '../common/hooks';
 import { getRealRoute } from '../util';
@@ -21,7 +13,7 @@ import {
   useSyncChangedDataset,
   useSyncChangedProps,
   useNodeId,
-  useComponentRenderContext,
+  useRenderContext,
 } from './hooks';
 
 export function registerCustomComponents(__allConfig__, customComponents) {
@@ -41,7 +33,7 @@ export function registerCustomComponents(__allConfig__, customComponents) {
   };
 }
 
-export function defineCustomComponent(is, options, customComponentMap) {
+function defineCustomComponent(is, options, customComponentMap) {
   const { config, using } = options;
   const { properties, data } = config;
 
@@ -59,7 +51,7 @@ export function defineCustomComponent(is, options, customComponentMap) {
 
     const { publish } = useJSBridge();
     const nodeId = useNodeId();
-    const ctx = useComponentRenderContext(props, nodeId, is, config, resolveComponent);
+    const ctx = useRenderContext(props, nodeId, is, config, resolveComponent);
     const [refinedProps, initialProps] = useRefinedProps(props, properties);
     const [refinedDataset, initialDataset] = useRefinedDataset(props);
     const changedData = useDataChange(nodeId, data, refinedProps);
@@ -124,7 +116,7 @@ function ShadowRoot(props) {
 function syncInitialInfo(props, nodeId, publish) {
   const { id, className } = props;
 
-  publish('COMPONENT_DATA_CHANGE', {
+  publish(COMPONENT_DATA_CHANGE, {
     data: {
       id: id || '',
       className: className || '',
@@ -135,7 +127,7 @@ function syncInitialInfo(props, nodeId, publish) {
 }
 
 function syncInitialProps(data, nodeId, publish) {
-  publish('COMPONENT_DATA_CHANGE', {
+  publish(COMPONENT_DATA_CHANGE, {
     datatype: 'properties',
     data,
     nodeId,
@@ -143,7 +135,7 @@ function syncInitialProps(data, nodeId, publish) {
 }
 
 function syncInitialDataset(data, nodeId, publish) {
-  publish('COMPONENT_DATA_CHANGE', {
+  publish(COMPONENT_DATA_CHANGE, {
     datatype: 'dataset',
     data,
     nodeId,

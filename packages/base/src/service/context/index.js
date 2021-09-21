@@ -1,10 +1,7 @@
 import { noop } from 'lodash';
 import { g } from 'shared';
-
-import getLaunchOptions from './getLaunchOptions';
-import getAppInfo from './getAppInfo';
 import $global from '../common/global';
-import { debug } from '../utils/log';
+import { getAppInfoSync, getLaunchOptionsSync } from '../apis/System';
 
 const context = {
   get debug() {
@@ -25,11 +22,11 @@ const context = {
   },
 
   get appInfo() {
-    return getAppInfo();
+    return getAppInfoSync();
   },
 
   get launchOptions() {
-    return getLaunchOptions();
+    return getLaunchOptionsSync();
   },
 
   get __allConfig__() {

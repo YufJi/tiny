@@ -1,19 +1,13 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-11 14:02:38
- * @LastEditTime: 2021-08-13 12:23:24
- * @Description:
- * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/api/index.js
- */
 import { isNil } from 'lodash';
+import { COMPONENT_DATA_CHANGE, PAGE_EVENT } from 'shared/events/custom';
 import { PASSIVE } from '../nerv/passive-event';
 import { tryCatch } from '../util';
 import { isShadowRoot, getShadowRootId } from './util';
 
 export function onComponentDataChange(bridge, componentHub) {
-  bridge.replyService('componentDataChange')(
-    tryCatch('COMPONENT_DATA_CHANGE', async (e) => {
-      componentHub.events.dispatch('componentDataChange', e);
+  bridge.replyService(COMPONENT_DATA_CHANGE)(
+    tryCatch(COMPONENT_DATA_CHANGE, async (e) => {
+      componentHub.events.dispatch(COMPONENT_DATA_CHANGE, e);
     }),
   );
 }
@@ -146,7 +140,7 @@ export function enableScroll(config, fields) {
 
   if (enable) {
     window.onscroll = function () {
-      enablePageScroll && publish('PAGE_EVENT', {
+      enablePageScroll && publish(PAGE_EVENT, {
         type: 'onPageScroll',
         data: { scrollTop: window.pageYOffset },
         nodeId: 0,

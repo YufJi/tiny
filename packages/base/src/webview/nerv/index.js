@@ -1,11 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-13 11:39:24
- * @LastEditTime: 2021-07-18 19:03:56
- * @Description:
- * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/nerv/index.js
- */
-
 import { nextTick } from './utils';
 import { Children } from './children';
 import Component from './component';

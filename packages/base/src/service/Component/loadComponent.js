@@ -1,10 +1,10 @@
 import { unset, get, set, isEqual, isString, isFunction, isPlainObject, cloneDeep } from 'lodash';
-
+import { COMPONENT_DATA_CHANGE, COMPONENT_EVENT } from 'shared/events/custom';
 import { subscribe } from '../bridge';
 import { componentModels, pageModels, componentBookmarks } from '../Model/common';
 import { onRouteEvent } from '../Route';
-import { ComponentModel } from '../Model';
-import { wrapUserFunction } from '../utils/wrapfn';
+import { wrapUserFunction } from '../utils';
+import { ComponentModel } from './model';
 
 const componentStatus = new WeakMap();
 
@@ -31,7 +31,7 @@ export default function loadComponent() {
   /**
    * webview component 生命周期处理
    */
-  subscribe('COMPONENT_EVENT', (params, webviewId) => {
+  subscribe(COMPONENT_EVENT, (params, webviewId) => {
     const { nodeId, eventName, route } = params;
 
     if (!nodeId) return;
@@ -56,11 +56,11 @@ export default function loadComponent() {
 
     component.lifetimes[eventName].call(component, params.data);
   });
+
   /**
    * webview component data处理
    */
-
-  subscribe('COMPONENT_DATA_CHANGE', (params, webviewId) => {
+  subscribe(COMPONENT_DATA_CHANGE, (params, webviewId) => {
     const { nodeId, datatype, data } = params;
     const componentModel = get(componentModels, [webviewId, nodeId]);
 

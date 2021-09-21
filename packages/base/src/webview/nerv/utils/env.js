@@ -1,11 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-12 20:23:06
- * @LastEditTime: 2021-08-16 11:18:27
- * @Description:
- * @FilePath: /tiny-v1/packages/base2.0/src/framework/webview/nerv/utils/env.js
- */
-// tslint:disable-next-line
 export const global = (function () {
   let local;
 

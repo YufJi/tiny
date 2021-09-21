@@ -1,6 +1,6 @@
 import { isObject } from 'lodash';
 
-import { warn } from '../utils/log';
+import { warn } from '../utils';
 
 export default function normalizeProperties(properties) {
   if (!isObject(properties)) {

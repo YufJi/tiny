@@ -40,6 +40,7 @@ function createElement(vnode, parentContext, parentComponent) {
   } else {
     throw new Error('Unsupported VNode.');
   }
+
   return domNode;
 }
 

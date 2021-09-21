@@ -1,3 +1,4 @@
+import { get } from 'lodash';
 import createBridge from 'js-bridge';
 import { g } from 'shared';
 
@@ -13,54 +14,55 @@ const {
   unsubscribe,
 } = createBridge();
 
-let callbackId = 0;
-const callbackMap = new Map();
-// 监听webview调用
-subscribe('callbackWebviewMethod', (response) => {
-  const { error, result, extra } = response;
-  const currentId = extra.callbackId;
-  const executor = callbackMap.get(currentId);
+function createInvokeWebview(publish, subscribe) {
+  let callbackId = 0;
+  const callbackMap = new Map();
+  // 监听webview调用
+  subscribe('callbackWebviewMethod', (response) => {
+    const { error, result, extra } = response;
+    const currentId = extra.callbackId;
+    const executor = callbackMap.get(currentId);
 
-  if (!executor) {
-    const info = JSON.stringify(response);
-    throw new Error(`Executor(${currentId}) in service not found.\nresponse: ${info}`);
-  }
+    if (!executor) {
+      const info = JSON.stringify(response);
+      throw new Error(`Executor(${currentId}) in service not found.\nresponse: ${info}`);
+    }
 
-  if (error) {
-    error.env = 'WEBVIEW';
-    executor.reject(error);
-  } else {
-    executor.resolve(result);
-  }
+    if (error) {
+      error.env = 'WEBVIEW';
+      executor.reject(error);
+    } else {
+      executor.resolve(result);
+    }
 
-  callbackMap.delete(currentId);
-});
+    callbackMap.delete(currentId);
+  });
 
-// 调用webview
-function invokeWebview(method, params, webviewId) {
-  return new Promise(((resolve, reject) => {
-    callbackId += 1;
-    callbackMap.set(callbackId, {
-      resolve,
-      reject,
-    });
+  return function invokeWebview(method, params, webviewId) {
+    return new Promise(((resolve, reject) => {
+      callbackId += 1;
+      callbackMap.set(callbackId, {
+        resolve,
+        reject,
+      });
 
-    publish('invokeWebviewMethod', {
-      method,
-      params,
-      extra: {
-        callbackId,
-        timestamp: Date.now(),
-      },
-    }, webviewId);
-  }));
+      publish('invokeWebviewMethod', {
+        method,
+        params,
+        extra: {
+          callbackId,
+          timestamp: Date.now(),
+        },
+      }, webviewId);
+    }));
+  };
 }
 
 // 监听且回应webview
 function replyWebview() {
   subscribe('invokeServiceMethod', async (data, webviewId) => {
     const webviewIds = [webviewId];
-    const { scene, method, extra, params } = data;
+    const { method, params, scene, extra } = data;
     let fn;
 
     if (scene === 'bridge') {
@@ -80,7 +82,7 @@ function replyWebview() {
     }
 
     if (scene === 'sdk') {
-      const api = get(innerAPI, method) || get(apis, method);
+      const api = get(g.tiny, method);
 
       if (api) {
         fn = promisifyAPI(api);
@@ -105,6 +107,8 @@ function replyWebview() {
     }, webviewIds);
   });
 }
+
+const invokeWebview = createInvokeWebview(publish, subscribe);
 
 export {
   /* 调用的回调 */

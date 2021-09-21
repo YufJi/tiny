@@ -1,8 +1,7 @@
 import { isFunction, noop } from 'lodash';
-import { wrapUserFunction } from '../utils/wrapfn';
-import { warn, error } from '../utils/log';
-
-import { componentModels, pageModels, pageInitMap, addSetDataTask } from './common';
+import { wrapUserFunction, error } from '../utils';
+import { componentModels } from './common';
+import { addSetDataTask } from './util';
 
 export default class BaseModel {
   constructor(__webviewId__, __nodeId__) {

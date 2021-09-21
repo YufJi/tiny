@@ -14,10 +14,21 @@
       catch:tap="ct"
       bindtouchstart="cts"
       catchtouchmove="ctm"
+
+      animation="{{animationData}}"
     >
       longpress/tap component
     </view>
   </view>
+
+  <view class="todo-footer">
+    <add-button id="asd"  text="{{text}}" bind:click_me="clickCom">
+      <text bind:tap="tapSlot">i am slot</text>
+    </add-button>
+    <add-button id="asxx" xx="xxx" text="xixi {{text}}" bind:click_me="{{fn}}"></add-button>
+  </view>
+
+  <button bind:tap="ani1">ani1</button>
 
   <view class="user">
     <image class="avatar" src="{{user.avatar || '../../assets/logo.png'}}" background-size="cover"></image>
@@ -47,12 +58,6 @@
     <view class="body-view">
         <switch checked="{{switchChecked}}" bindchange="switchChange"/>
     </view>
-  </view>
-  <view class="todo-footer">
-    <add-button id="asd"  text="{{text}}" bind:click_me="clickCom">
-      <text bind:tap="tapSlot">i am slot</text>
-    </add-button>
-    <add-button id="asxx" xx="xxx" text="xixi {{text}}" bind:click_me="{{fn}}"></add-button>
   </view>
 
   <view bind:tap="clickParent">

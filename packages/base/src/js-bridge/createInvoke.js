@@ -1,10 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-03 20:23:59
- * @LastEditTime: 2021-08-13 17:08:29
- * @Description:
- * @FilePath: /tiny-v1/packages/base2.0/src/js-bridge/createInvoke.js
- */
 import { Deferred, g } from 'shared';
 
 export default function createInvoke(jsCore) {

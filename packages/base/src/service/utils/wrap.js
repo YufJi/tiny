@@ -1,5 +1,5 @@
 import { wrap, mapValues, noop, isFunction } from 'lodash';
-import { error, debug } from './log';
+import { error } from './log';
 
 export function wrapAppLifetime(method, fn) {
   return wrap(fn, (life, ...args) => {

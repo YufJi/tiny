@@ -1,10 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-12 21:02:20
- * @LastEditTime: 2021-07-12 21:03:48
- * @Description:
- * @FilePath: /yeact/src/vdom/h.js
- */
 import {
   isValidElement,
   EMPTY_CHILDREN,

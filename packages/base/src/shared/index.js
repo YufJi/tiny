@@ -1,10 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-09 14:29:03
- * @LastEditTime: 2021-07-10 03:17:37
- * @Description:
- * @FilePath: /tiny-v1/packages/base2.0/src/utils/index.js
- */
 import { clone, forOwn, isObject, toPath, set } from 'lodash';
 
 export const g = (function () {
@@ -31,6 +24,10 @@ export function Deferred() {
     this.resolve = resolve;
     this.reject = reject;
   });
+}
+
+export function noop() {
+  /* noop */
 }
 
 export function getType(o) {

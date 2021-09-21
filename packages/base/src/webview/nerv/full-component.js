@@ -1,10 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-12 19:30:32
- * @LastEditTime: 2021-07-13 15:09:45
- * @Description:
- * @FilePath: /yeact/src/full-component.js
- */
 import { VType } from './shared';
 import { isUndefined, isArray } from './utils';
 import {

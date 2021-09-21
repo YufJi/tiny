@@ -1,11 +1,6 @@
+/* eslint-disable react/destructuring-assignment */
 /* eslint-disable max-classes-per-file */
-/*
- * @Author: YufJ
- * @Date: 2021-07-12 20:35:52
- * @LastEditTime: 2021-07-13 12:00:50
- * @Description:
- * @FilePath: /yeact/src/create-context.js
- */
+
 import { isUndefined, objectIs } from './utils';
 import Emitter from './emitter';
 import Component from './component';

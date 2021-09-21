@@ -1,11 +1,9 @@
-import { omitBy, isFunction, get } from 'lodash';
+import { omitBy, isFunction, get, isPlainObject } from 'lodash';
 import path from 'path';
 import { g } from 'shared';
-
+import qs from 'qs';
+import { wrapInnerFunction, wrapUserFunction, debug } from '../utils';
 import { onNative, invokeNative } from '../bridge';
-import { wrapInnerFunction, wrapUserFunction } from '../utils/wrapfn';
-import { debug } from '../utils/log';
-import { encodeEachValue } from '../utils';
 
 const S = {
   lastRoute: '',
@@ -199,6 +197,26 @@ export function encodeUrlQuery(url) {
   return url;
 }
 
+/**
+ * 对齐微信而实现的
+ * @param url
+ */
+export function encodeEachValue(url) {
+  const [prefix, search] = url.split('?');
+
+  if (search) {
+    const newSearch = search.split('&').map((kv) => {
+      const [k, v = ''] = kv.split('=');
+
+      if (!k) return '';
+      return `${encodeURIComponent(k)}=${encodeURIComponent(v)}`;
+    }).filter(Boolean).join('&');
+    return `${prefix}?${newSearch}`;
+  }
+
+  return prefix;
+}
+
 export function removeHtmlSuffixFromUrl(url) {
   if (typeof url === 'string') {
     if (url.includes('?')) {
@@ -209,4 +227,98 @@ export function removeHtmlSuffixFromUrl(url) {
   } else {
     return url;
   }
+}
+
+export function surroundByTryCatchFactory(func, msg) {
+  return wrapUserFunction(msg, func);
+}
+
+function surroundByTryCatch(func, msg) {
+  return wrapInnerFunction(msg, func);
+}
+
+export const anyTypeToString = surroundByTryCatch((any) => {
+  const protoType = Object.prototype.toString.call(any).split(' ')[1].split(']')[0];
+
+  if (protoType === 'Array' || protoType === 'Object') {
+    any = JSON.stringify(any);
+  } else if (protoType === 'String' || protoType === 'Number' || protoType === 'Boolean') {
+    any = any.toString();
+  } else if (protoType === 'Date') {
+    any = any.getTime().toString();
+  } else if (protoType === 'Undefined') {
+    any = 'undefined';
+  } else if (protoType === 'Null') {
+    any = 'null';
+  } else {
+    any = '';
+  }
+
+  return {
+    data: any,
+    dataType: protoType,
+  };
+}, 'anyTypeToString');
+
+export const stringToAnyType = surroundByTryCatch((str, protoType) => {
+  switch (protoType) {
+    case 'String':
+    case 'Array':
+    case 'Object':
+      return JSON.parse(str);
+
+    case 'Number':
+      return parseFloat(str);
+
+    case 'Boolean':
+      return str === 'true';
+
+    case 'Date':
+      return new Date(parseInt(str, 10));
+
+    case 'Undefined':
+      return undefined;
+
+    case 'Null':
+      return null;
+
+    default:
+      return '';
+  }
+}, 'stringToAnyType');
+
+export function convertObjectValueToString(obj) {
+  const result = {};
+
+  for (let i = 0; i < Object.entries(obj).length; i++) {
+    const [k, v] = Object.entries(obj)[i];
+
+    if (typeof v === 'string' || typeof v === 'number') {
+      result[k] = String(v);
+    } else {
+      result[k] = Object.prototype.toString.call(v);
+    }
+  }
+
+  return result;
+}
+
+export function validateUrl(url, protocol = 'http') {
+  if (protocol === 'http') {
+    return /^(http|https):\/\/.*/i.test(url);
+  } else if (protocol === 'websocket') {
+    return /^(ws|wss):\/\/.*/i.test(url);
+  }
+}
+
+export function addQueryStringToUrl(url, data) {
+  if (typeof url === 'string' && isPlainObject(data)) {
+    const [prefix, search] = url.split('?');
+
+    const query = { ...qs.parse(search), ...data };
+    const newSearch = qs.stringify(query);
+    return `${prefix}?${newSearch}`;
+  }
+
+  return url;
 }

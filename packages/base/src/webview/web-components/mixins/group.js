@@ -60,13 +60,21 @@ export default function Group(superClass) {
       }
     }
 
-    addItem() {}
+    addItem() {
+      /* 子类实现 */
+    }
 
-    removeItem() {}
+    removeItem() {
+      /* 子类实现 */
+    }
 
-    renameItem() {}
+    renameItem() {
+      /* 子类实现 */
+    }
 
-    changed() {}
+    changed() {
+      /* 子类实现 */
+    }
 
     hasBehavior(type) {
       if (type === `${elementPrefix}-group`) {

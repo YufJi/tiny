@@ -1,10 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-12 20:42:52
- * @LastEditTime: 2021-07-12 20:50:46
- * @Description:
- * @FilePath: /yeact/src/emiter.js
- */
 export default class Emitter {
   constructor(value) {
     this.value = value;

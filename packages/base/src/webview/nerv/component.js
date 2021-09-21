@@ -1,10 +1,3 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-12 20:13:26
- * @LastEditTime: 2021-07-13 17:29:09
- * @Description:
- * @FilePath: /yeact/src/component.js
- */
 import { EMPTY_OBJ, EMPTY_CHILDREN } from './shared';
 import { isFunction, extend, clone } from './utils';
 import { enqueueRender } from './render-queue';

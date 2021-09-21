@@ -1,14 +1,15 @@
-import { g } from 'shared';
+import { jsCore } from 'js-bridge';
+import { g, noop } from 'shared';
 
 /**
  * worker环境下polyfill
  */
 export default function timerPolyfill() {
   const timerMap = new Map();
-  const { setTimer, clearTimer } = g.JSCore;
+  const { setTimer, clearTimer } = jsCore;
 
-  g.JSCore.setTimer = () => {};
-  g.JSCore.clearTimer = () => {};
+  jsCore.setTimer = noop;
+  jsCore.clearTimer = noop;
 
   let timerCounter = 1;
 

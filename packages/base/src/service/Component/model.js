@@ -1,14 +1,12 @@
-import { set, get, setWith, cloneDeep, mapValues } from 'lodash';
-
-import { truthy } from '../utils';
-import { wrapUserFunction, wrapComponnetLifetime } from '../utils/wrapfn';
-import { warn, error } from '../utils/log';
-
+/* eslint-disable max-classes-per-file */
+import { get, set, noop, setWith, cloneDeep, mapValues } from 'lodash';
 import { invokeWebview } from '../bridge';
-import { componentModels, componentBookmarks, afterSetData } from './common';
-import BaseModel from './Base';
+import { wrapUserFunction, wrapComponnetLifetime, error } from '../utils';
+import BaseModel from '../Model/Base';
+import { pageModels, componentModels, componentBookmarks } from '../Model/common';
+import { afterSetData } from '../Model/util';
 
-export default class ComponentModel extends BaseModel {
+export class ComponentModel extends BaseModel {
   constructor(is, __webviewId__, __nodeId__) {
     super(__webviewId__, __nodeId__);
 
@@ -125,11 +123,65 @@ export default class ComponentModel extends BaseModel {
     }, this.__webviewId__).then((ids) => {
       const result = ids.map((id) => {
         return get(componentModels, [this.__webviewId__, id]);
-      }).filter(truthy);
+      }).filter(Boolean);
 
       callback.call(this, result);
     }).catch((e) => {
       error(e);
     });
+  }
+}
+
+export class ComponentPageModel extends ComponentModel {
+  constructor(is, webviewId) {
+    super(is, webviewId, 0);
+
+    this.is = is;
+    this.onShow = this.methods.onShow || noop;
+    this.onHide = this.methods.onHide || noop;
+    this.onResize = this.methods.onResize || noop;
+    this.onTabItemTap = this.methods.onTabItemTap || noop;
+
+    set(pageModels, webviewId, this);
+  }
+
+  get __route__() {
+    return this.is;
+  }
+
+  get onLoad() {
+    return function (query) {
+      this.lifetimes.created && this.lifetimes.created.call(this, query);
+      this.lifetimes.attached && this.lifetimes.attached.call(this, query);
+      this.methods.onLoad && this.methods.onLoad.call(this, query);
+    };
+  }
+
+  get onReady() {
+    return function (...args) {
+      this.lifetimes.ready && this.lifetimes.ready.apply(this, args);
+      this.methods.onReady && this.methods.onReady.apply(this, args);
+    };
+  }
+
+  get onUnload() {
+    return function (...args) {
+      this.lifetimes.detached && this.lifetimes.detached.apply(this, args);
+      this.methods.onUnload && this.methods.onUnload.apply(this, args);
+    };
+  }
+
+  set onLoad(fn) {
+    if (typeof fn !== 'function') return;
+
+    set(this, 'methods.onLoad', fn);
+  }
+
+  set onReady(fn) {
+    set(this, 'methods.onReady', fn);
+  }
+
+  set onUnload(fn) {
+    set(this, 'methods.onUnload', fn);
   }
 }
