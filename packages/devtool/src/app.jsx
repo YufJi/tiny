@@ -60,8 +60,8 @@ class App extends PureComponent {
       pushWindow(homePage),
     ]).then((iframes) => {
       const [serviceIframe, renderIframe] = iframes;
-      global.service = serviceIframe;
 
+      /* 这个事件没啥用 */
       renderIframe.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('onLoadApp', '${JSON.stringify({})}')`);
 
       serviceIframe.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('onAppRoute', '${JSON.stringify({

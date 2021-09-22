@@ -60,10 +60,10 @@ export async function pushWindow(url, callback) {
     });
   }
 
-  iframe.path = url;
+  iframe.contentWindow.executeJavaScript(`window.generateFunc['${url}']('${iframe.id}')`);
   iframe.setAttribute('class', 'frame in');
   iframe.setAttribute('path', url);
-  iframe.contentWindow.executeJavaScript(`window.generateFunc['${url}']('${iframe.id}')`);
+  iframe.path = url;
 
   global.currentRender = iframe;
 

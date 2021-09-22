@@ -1,9 +1,11 @@
-import { transformRpx } from '../..';
+import { nextTick, transformRpx } from '../..';
 
 let active = false;
 const animationQueue = [];
 
-export default function patchAnimation(lastAnimationValue, nextAnimationValue, dom) {
+export default function patchAnimation(nextAnimationValue, dom) {
+  if (!nextAnimationValue?.steps?.length) return;
+
   const handler = () => {
     active = true;
     const actions = nextAnimationValue.steps.map(animationToAction);
@@ -29,7 +31,7 @@ export default function patchAnimation(lastAnimationValue, nextAnimationValue, d
   if (active) {
     animationQueue.push(handler);
   } else {
-    microTask().then(handler);
+    nextTick(handler);
   }
 }
 
@@ -103,8 +105,4 @@ function camel2Kebab(str) {
   return str.replace(/([A-Z]{1})/g, (match) => {
     return `-${match.toLowerCase()}`;
   });
-}
-
-function microTask() {
-  return Promise.resolve();
 }

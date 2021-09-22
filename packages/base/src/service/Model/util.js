@@ -17,9 +17,8 @@ export function afterSetData(model, callback) {
 export function addSetDataTask(model, data, userCallback) {
   let task = setDataTask.get(model);
 
-  console.log('task是否存在', !!task, data);
   if (!task) {
-    const updateData = async () => {
+    const updateData = () => {
       const current = setDataTask.get(model);
 
       if (current) {

@@ -511,9 +511,7 @@ export function patchProp(
     } else if (prop === 'style' ) {
       patchStyle(lastValue, nextValue, domNode);
     } else if (prop === 'animation') {
-      if (nextValue?.steps?.length) {
-        patchAnimation(lastValue, nextValue, domNode);
-      }
+      patchAnimation(nextValue, domNode);
     } else if (prop === 'dangerouslySetInnerHTML') {
       const lastHtml = lastValue && lastValue.__html;
       const nextHtml = nextValue && nextValue.__html;

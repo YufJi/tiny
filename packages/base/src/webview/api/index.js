@@ -110,7 +110,7 @@ export function onDisableScroll(bridge) {
   disableScroll(bridge.subscribe, bridge.invokeNative);
 }
 
-// 这个事件没啥用
+/* 这个事件没啥用 */
 export function onAppLoadStatusChange(bridge) {
   bridge.onNative('onLoadApp', (e) => {
     // console.info('[framework] onLoadApp', e);
