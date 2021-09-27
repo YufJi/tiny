@@ -11,7 +11,14 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@music/eslint-config-hulk": "^0.1.0",
+    "@typescript-eslint/eslint-plugin": "2.15.0",
+    "@typescript-eslint/parser": "2.15.0",
+    "eslint": "6.5.1",
+    "eslint-config-airbnb": "^18.0.1",
+    "eslint-plugin-import": "^2.20.0",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-react": "^7.17.0",
+    "typescript": "^3.7.3",
     "lerna": "^3.22.1"
   },
   "dependencies": {

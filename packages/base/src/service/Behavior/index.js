@@ -26,14 +26,11 @@ export function createBehavior(is, options) {
       created,
       attached,
       ready,
-      moved,
       detached,
     },
     pageLifetimes: {
-      load: noop,
       show: noop,
       hide: noop,
-      unload: noop,
       resize: noop,
     },
   });

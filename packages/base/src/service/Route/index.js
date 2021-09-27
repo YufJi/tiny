@@ -1,5 +1,5 @@
 import { isFunction } from 'lodash';
-import { DOCUMENT_READY, DOCUMENT_SHOW } from 'shared/events/custom';
+import { PAGE_READY, PAGE_SHOW } from 'shared/events/custom';
 import { onNative, subscribe, invokeNative } from '../bridge';
 import handleAppRoute from './handleRoute';
 import firstRender from './firstRender';
@@ -18,16 +18,16 @@ export default function loadRoute() {
 
   onNative('onAppRoute', handleAppRoute);
 
-  // subscribe(DOCUMENT_SHOW, (_, webviewId) => {
-  //   const page = webviewUsed.get(webviewId);
+  subscribe(PAGE_SHOW, (_, webviewId) => {
+    const page = webviewUsed.get(webviewId);
 
-  //   if (!page) {
-  //     return;
-  //   }
-  //   page.implement.onShow();
-  // });
+    if (!page) {
+      return;
+    }
+    page.implement.onShow();
+  });
 
-  subscribe(DOCUMENT_READY, (_, webviewId) => {
+  subscribe(PAGE_READY, (_, webviewId) => {
     const page = webviewUsed.get(webviewId);
 
     if (!page) {

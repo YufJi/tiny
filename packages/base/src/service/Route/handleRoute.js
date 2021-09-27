@@ -11,8 +11,6 @@ let onAppRouteParams;
 export default function handleAppRoute(_params, _webviewId) {
   const params = handleAppRouteParams(_params, _webviewId);
 
-  emitter.emit('route', { ..._params, query: params.query });
-
   action(params);
 
   invokeNative('endRouteChange', {});
@@ -264,7 +262,7 @@ function actionCreatePage(route, webviewId, query) {
   pageStack.push(currentPage);
   // 用户生命周期
   implement.onLoad(query);
-  implement.onShow();
+  // implement.onShow();
 }
 
 function isRouteType(type) {

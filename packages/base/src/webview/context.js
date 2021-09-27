@@ -1,16 +1,7 @@
-import EventEmitter from 'eventemitter3';
 import { noop } from 'lodash';
 import { createContext } from './nerv';
 
-import * as bridge from './bridge';
-
-export const defaultFields = {
-  root: document.body,
-  bridge,
-  emitter: new EventEmitter(),
-};
-
-export const FieldsContext = createContext(defaultFields);
+export const FieldsContext = createContext();
 
 export const ConfigContext = createContext();
 

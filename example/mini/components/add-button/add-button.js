@@ -29,6 +29,16 @@ Component({
     },
   },
 
+  pageLifetimes: {
+    show: function() {
+      // 页面显示时触发
+      console.log('pageLifetimes show');
+    },
+    hide: function() {
+      // 页面隐藏时触发
+    },
+  },
+
   methods: {
     xx() {
       console.log('properties', this.properties, this.data);

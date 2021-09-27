@@ -14,7 +14,6 @@ export default function loadComponent() {
     const components = componentModels[webviewId];
     if (!components) return;
 
-    // ['components/a/a']
     for (let i = 0; i < Object.values(components).length; i++) {
       const component = Object.values(components)[i];
       const status = componentStatus.get(component);
@@ -28,6 +27,7 @@ export default function loadComponent() {
     unset(componentModels, webviewId);
     unset(pageModels, webviewId);
   });
+
   /**
    * webview component 生命周期处理
    */

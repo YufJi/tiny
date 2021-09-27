@@ -4,6 +4,7 @@ export function getSystemInfoSync() {
     data: {
       language: 'zh',
       platform: 'ios',
+      SDKVersion: '',
     },
   };
 }

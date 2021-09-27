@@ -10,7 +10,8 @@ import {
   useRenderMode,
   useJSCoreEvent,
   useInitAction,
-  usePageLoad,
+  usePageReady,
+  usePageShow,
 } from './hooks';
 
 export default function Page() {
@@ -47,21 +48,8 @@ function NormalScene(props) {
     current.result = render(data, context);
   }
 
-  /* 插入style */
-  useLayoutEffect(() => {
-    if (stylesheet) {
-      const headNode = document.getElementsByTagName('head')[0];
-      const styleNode = document.createElement('style');
-      let styleString = stylesheet.toString();
-
-      styleString = transformRpx(styleString);
-
-      styleNode.innerHTML = styleString;
-      headNode.appendChild(styleNode);
-    }
-  }, []);
-
-  usePageLoad(render)
+  usePageShow(stylesheet);
+  usePageReady(render);
 
   useLayoutEffect(() => {
     if (render) {

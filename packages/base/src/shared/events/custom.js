@@ -12,4 +12,6 @@ export const COMPONENT_EVENT = 'COMPONENT_EVENT';
 
 export const DOCUMENT_READY = 'DOCUMENT_READY';
 
-export const DOCUMENT_SHOW = 'DOCUMENT_SHOW';
+export const PAGE_READY = 'PAGE_READY';
+
+export const PAGE_SHOW = 'PAGE_SHOW';

@@ -7,8 +7,7 @@
     "lib"
   ],
   "scripts": {},
-  "author": "YufJ",
-  "license": "ISC",
+  "author": "YufJi",
   "dependencies": {
     "@babel/code-frame": "^7.12.13",
     "@babel/core": "^7.14.0",

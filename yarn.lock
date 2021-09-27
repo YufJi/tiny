@@ -805,20 +805,6 @@
     call-me-maybe "^1.0.1"
     glob-to-regexp "^0.3.0"
 
-"@music/eslint-config-hulk@^0.1.0":
-  version "0.1.0"
-  resolved "http://rnpm.hz.netease.com/@music/eslint-config-hulk/download/@music/eslint-config-hulk-0.1.0.tgz#bacec1cbddba6f1fa34157e7401424089b90c151"
-  integrity sha1-us7By926bx+jQVfnQBQkCJuQwVE=
-  dependencies:
-    "@typescript-eslint/eslint-plugin" "2.15.0"
-    "@typescript-eslint/parser" "2.15.0"
-    eslint "6.5.1"
-    eslint-config-airbnb "^18.0.1"
-    eslint-plugin-import "^2.20.0"
-    eslint-plugin-jsx-a11y "^6.2.3"
-    eslint-plugin-react "^7.17.0"
-    typescript "^3.7.3"
-
 "@nodelib/fs.stat@^1.1.2":
   version "1.1.3"
   resolved "https://registry.nlark.com/@nodelib/fs.stat/download/@nodelib/fs.stat-1.1.3.tgz?cache=0&sync_timestamp=1622792616417&other_urls=https%3A%2F%2Fregistry.nlark.com%2F%40nodelib%2Ffs.stat%2Fdownload%2F%40nodelib%2Ffs.stat-1.1.3.tgz#2b5a3ab3f918cca48a8c754c08168e3f03eba61b"

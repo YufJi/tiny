@@ -7,15 +7,12 @@ export default function mixinBehaviors(instance) {
     created: [instance.lifetimes.created],
     attached: [instance.lifetimes.attached],
     ready: [instance.lifetimes.ready],
-    moved: [instance.lifetimes.moved],
     detached: [instance.lifetimes.detached],
     error: [instance.lifetimes.error],
   };
   const pageLifeQueue = {
-    load: [instance.pageLifetimes.load],
     show: [instance.pageLifetimes.show],
     hide: [instance.pageLifetimes.hide],
-    unload: [instance.pageLifetimes.unload],
     resize: [instance.pageLifetimes.resize],
   };
 
@@ -42,10 +39,8 @@ export default function mixinBehaviors(instance) {
     // 确保此处是一个 function 而不是 array function
     // 因为需要依赖调用处的 this
     instance.lifetimes[life] = function (...args) {
-      const _this = this;
-
       lifeQueue[life].forEach((cb) => {
-        return cb.apply(_this, args);
+        return cb.apply(this, args);
       });
     };
   });
@@ -53,10 +48,8 @@ export default function mixinBehaviors(instance) {
     // 确保此处是一个 function 而不是 array function
     // 因为需要依赖调用处的 this
     instance.pageLifetimes[life] = function (...args) {
-      const _this = this;
-
       pageLifeQueue[life].forEach((cb) => {
-        return cb.apply(_this, args);
+        return cb.apply(this, args);
       });
     };
   });

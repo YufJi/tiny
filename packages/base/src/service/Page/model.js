@@ -1,7 +1,7 @@
-import { set, get, cloneDeep, mapValues, isFunction } from 'lodash';
+import { set, get, cloneDeep, mapValues, isFunction, wrap } from 'lodash';
 
 import { invokeWebview } from '../bridge';
-import { wrapPageLifetime } from '../utils';
+import { wrapPageLifetime, wrapUserFunction } from '../utils';
 import BaseModel from '../Model/Base';
 import { componentModels, pageModels, pageInitMap } from '../Model/common';
 import { afterSetData } from '../Model/util';
@@ -25,6 +25,28 @@ export default class PageModel extends BaseModel {
       if (isFunction(prop)) {
         if (LIFETIMES.includes(key)) {
           return wrapPageLifetime.call(this, key, prop);
+          // return wrap(prop, (life, ...args) => {
+          //   /* 执行自定义组件pageLifeTimes */
+          //   const components = componentModels[this.__webviewId__];
+          //   switch (key) {
+          //     case 'onShow':
+          //       Object.values(components).forEach((c) => {
+          //         c.pageLifetimes.show();
+          //       });
+          //       break;
+          //     case 'onHide':
+          //       Object.values(components).forEach((c) => {
+          //         c.pageLifetimes.hide();
+          //       });
+          //       break;
+          //     default:
+          //       break;
+          //   }
+
+          //   /* 执行page生命周期 */
+          //   const result = wrapUserFunction(`at ${this.is}.js Page.${key}`, life).apply(this, args);
+          //   return result;
+          // });
         }
 
         return prop.bind(this);

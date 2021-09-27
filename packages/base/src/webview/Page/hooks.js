@@ -1,7 +1,7 @@
 import { isNil, memoize, isBoolean } from 'lodash';
 import { Deferred, mergeData } from 'shared';
-import { INIT_DATA_READY, APP_DATA_CHANGE, PAGE_EVENT, DOCUMENT_READY, DOCUMENT_SHOW } from 'shared/events/custom';
-import { useState, useRef, useLayoutEffect, useEffect, useMemo, useReducer } from '../nerv';
+import { INIT_DATA_READY, APP_DATA_CHANGE, PAGE_EVENT, PAGE_READY, PAGE_SHOW } from 'shared/events/custom';
+import { useState, useRef, useLayoutEffect, useEffect, useMemo, useReducer, transformRpx } from '../nerv';
 import { useJSBridgeFn, useJSBridge, useConfigContext, usePageFields, useCreation } from '../common/hooks';
 import {
   onComponentDataChange,
@@ -88,7 +88,7 @@ export function useRenderContext() {
 }
 
 /* 注册、查找自定义组件 */
-export function useResolveComponent(config) {
+function useResolveComponent(config) {
   return useMemo(() => {
     if (!config) {
       return function () {
@@ -295,19 +295,35 @@ export function useJSCoreEvent(componentHub) {
   });
 }
 
-export function usePageLoad(render) {
+export function usePageShow(stylesheet) {
+  const { publish } = useJSBridge();
+  const ref = useRef(false);
+
+  useLayoutEffect(() => {
+    publish(PAGE_SHOW, {});
+  }, []);
+
+  useLayoutEffect(() => {
+    if (stylesheet && !ref.current) {
+      ref.current = true;
+
+      const headNode = document.getElementsByTagName('head')[0];
+      const styleNode = document.createElement('style');
+      const styleString = transformRpx(stylesheet.toString());
+
+      styleNode.innerHTML = styleString;
+      headNode.appendChild(styleNode);
+    }
+  }, [stylesheet]);
+}
+
+export function usePageReady(render) {
   const { publish } = useJSBridge();
   const config = useConfigContext();
 
-  // useLayoutEffect(() => {
-  //   if (render && config && !config.isPageReload) {
-  //     publish(DOCUMENT_SHOW, {});
-  //   }
-  // }, [config, publish, render]);
-
   useEffect(() => {
     if (render && config && !config.isPageReload) {
-      publish(DOCUMENT_READY, {});
+      publish(PAGE_READY, {});
     }
-  }, [config, publish, render]);
+  }, [config, render]);
 }
