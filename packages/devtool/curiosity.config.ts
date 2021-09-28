@@ -1,13 +1,15 @@
-const path = require('path');
+import path from 'path';
+import { IConfig } from 'curiosity-bundler';
 
-module.exports = (env) => {
+export default (env): IConfig => {
   const publicPath = '/';
 
   return {
-    entry: path.join(__dirname, 'src/main.js'),
+    entry: {
+      index: path.join(__dirname, 'src/main.js'),
+    },
     html: {
       index: {
-        filename: 'index.html',
         title: '小程序浏览器调试',
         template: path.join(__dirname, 'host.html'),
       },
@@ -35,6 +37,5 @@ module.exports = (env) => {
 
     },
     disableCompress: false,
-    stats: 'minimal',
   };
 };

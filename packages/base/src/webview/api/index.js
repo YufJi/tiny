@@ -1,8 +1,10 @@
-import { isNil } from 'lodash';
+import { isNil, debounce } from 'lodash';
 import { COMPONENT_DATA_CHANGE, PAGE_EVENT } from 'shared/events/custom';
 import { PASSIVE } from '../nerv/passive-event';
 import { tryCatch } from '../util';
-import { isShadowRoot, getShadowRootId } from './util';
+import { isShadowRoot, getShadowRootId } from './utils';
+import { disableScroll, enableScroll, pageScrollTo } from './utils/scroll';
+import { requestObserver, removeObserver, initTriggerListener } from './utils/observer';
 
 export function onComponentDataChange(bridge, componentHub) {
   bridge.replyService(COMPONENT_DATA_CHANGE)(
@@ -34,37 +36,6 @@ function triggerCustomEvent(component, eventName, detail, option) {
   event.detail = detail;
 
   component.dispatchEvent(event);
-}
-
-export function onRequestComponentObserver(bridge, componentHub, emitter, root) {
-  const { subscribe, publish } = bridge;
-
-  initTriggerListener(emitter);
-
-  subscribe('requestComponentObserver', tryCatch('COMPONENT_OBSERVER', (e) => {
-    const { req, reqId } = e;
-    const { type } = req;
-
-    if (type === 'addIntersectionObserver') {
-      const { nodeId, ...rest } = req;
-      const observerId = requestObserver(nodeId ? componentHub.get(nodeId) : root, rest, (info) => {
-        publish('responseComponentObserver', {
-          reqId,
-          res: { info },
-        });
-      });
-
-      publish('responseComponentObserver', {
-        reqId,
-        res: { observerId },
-      });
-    } else if (type === 'removeIntersectionObserver') {
-      const { observerId } = req;
-      observerId && removeObserver(observerId);
-
-      publish('responseComponentObserver', { reqId, reqEnd: true });
-    }
-  }));
 }
 
 export function onSelectComponentInPage(bridge, root) {
@@ -117,63 +88,67 @@ export function onAppLoadStatusChange(bridge) {
   });
 }
 
-function disableScroll(subscribe, invokeNative) {
-  let disable = false;
+export function onRequestComponentObserver(bridge, componentHub, emitter, root) {
+  const { subscribe, publish } = bridge;
 
-  document.addEventListener('touchmove', (e) => {
-    disable && e.preventDefault();
-  });
+  initTriggerListener(emitter);
 
-  subscribe('disable-scroll', (e) => {
-    invokeNative('disableScrollBounce', { disable: e.disable });
-    disable = e.disable;
-  });
-}
+  subscribe('requestComponentObserver', tryCatch('COMPONENT_OBSERVER', (e) => {
+    const { req, reqId } = e;
+    const { type } = req;
 
-export function enableScroll(config, fields) {
-  const { enablePageScroll, enablePullUpRefresh, onReachBottomDistance } = config;
-
-  const { root, bridge } = fields;
-  const { publish } = bridge;
-
-  const enable = enablePageScroll || enablePullUpRefresh;
-
-  if (enable) {
-    window.onscroll = function () {
-      enablePageScroll && publish(PAGE_EVENT, {
-        type: 'onPageScroll',
-        data: { scrollTop: window.pageYOffset },
-        nodeId: 0,
+    if (type === 'addIntersectionObserver') {
+      const { nodeId, ...rest } = req;
+      const observerId = requestObserver(nodeId ? componentHub.get(nodeId) : root, rest, (info) => {
+        publish('responseComponentObserver', {
+          reqId,
+          res: { info },
+        });
       });
 
-      enablePullUpRefresh && checkScroll(onReachBottomDistance, root) && triggerPullUpRefresh(publish);
-    };
-  }
+      publish('responseComponentObserver', {
+        reqId,
+        res: { observerId },
+      });
+    } else if (type === 'removeIntersectionObserver') {
+      const { observerId } = req;
+      observerId && removeObserver(observerId);
 
-  enablePullUpRefresh && trackDOMTouches(onReachBottomDistance, bridge);
+      publish('responseComponentObserver', { reqId, reqEnd: true });
+    }
+  }));
 }
 
-function trackDOMTouches(onReachBottomDistance, bridge) {
-  const { publish } = bridge;
-  let pageY = 0;
+export function onRequestComponentInfo(bridge, componentHub, root) {
+  const { publish, subscribe } = bridge;
 
-  document.addEventListener(
-    'touchstart',
-    (e) => {
-      const { touches } = e;
-      pageY = touches[0].pageY;
-      return pageY;
-    },
-    PASSIVE,
-  );
+  subscribe('requestComponentInfo', tryCatch('COMPONENT_INFO', (e) => {
+    const { reqs, reqId } = e;
 
-  document.addEventListener(
-    'touchmove',
-    (e) => {
-      if (e.touches[0].pageY < pageY) {
-        checkScroll(onReachBottomDistance) && triggerPullUpRefresh(publish);
-      }
-    },
-    PASSIVE,
-  );
+    const res = requestComponentInfo(reqs.map((req) => {
+      const { component, ...rest } = req;
+      const root = component === 0 ? null : component ? componentHub.instances.get(component) : root;
+
+      return { ...rest, root };
+    }), root);
+
+    publish('responseComponentInfo', { reqId, res });
+  }));
 }
+
+export function onAnimationStatusChange(emitter) {
+  [
+    'animationstart',
+    'animationiteration',
+    'animationend',
+    'transitionend',
+  ].forEach((type) => {
+    window.addEventListener(type, debounce(() => {
+      emitter.emit('RE_RENDER', 'animation');
+    }, 20), true);
+  });
+}
+
+export {
+  enableScroll,
+};

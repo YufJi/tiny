@@ -8,10 +8,12 @@ import {
   onDisableScroll,
   onPageScrollTo,
   onRequestComponentObserver,
+  onRequestComponentInfo,
   onSelectComponent,
   onSelectComponentInPage,
   onTriggerComponentEvent,
   onAppLoadStatusChange,
+  onAnimationStatusChange,
   enableScroll,
 } from '../api';
 import { registerCustomComponents, createComponentResolve } from '../Component';
@@ -118,8 +120,8 @@ function useResolveComponent(config) {
 }
 
 export function useComponentHub() {
-  const instances = useInstanceHub();
   const events = useEventHub();
+  const instances = useInstanceHub();
 
   return useCreation(() => {
     return {
@@ -147,16 +149,16 @@ function useInstanceHub() {
 }
 
 function useEventHub() {
-  const getDispatchKey = function (nodeId, t) {
-    return `${t}:${nodeId}`;
+  const getDispatchKey = function (nodeId, type) {
+    return `${type}:${nodeId}`;
   };
 
   return useCreation(() => {
     const eventMap = new Map();
 
     return {
-      subscribe(t, n, callback) {
-        const key = getDispatchKey(n, t);
+      subscribe(type, nodeId, callback) {
+        const key = getDispatchKey(nodeId, type);
         eventMap.set(key, callback);
 
         return {
@@ -165,10 +167,10 @@ function useEventHub() {
           },
         };
       },
-      dispatch(t, n) {
-        const { nodeId } = n;
-        const fn = eventMap.get(getDispatchKey(nodeId, t));
-        return fn ? fn(n) : null;
+      dispatch(type, e) {
+        const { nodeId } = e;
+        const fn = eventMap.get(getDispatchKey(nodeId, type));
+        return fn ? fn(e) : null;
       },
     };
   });
@@ -283,12 +285,11 @@ export function useJSCoreEvent(componentHub) {
   return useCreation(() => {
     onComponentDataChange(bridge, componentHub);
     onTriggerComponentEvent(bridge, componentHub);
-    // onRequestComponentObserver(bridge, componentHub, emitter, root);
+    onRequestComponentObserver(bridge, componentHub, emitter, root);
     onSelectComponentInPage(bridge, root);
     onSelectComponent(bridge, componentHub);
-    // onRequestComponentInfo(bridge, componentHub, root);
-    // onGetRelationNode(bridge, componentHub);
-    // onAnimationStatusChange(emitter);
+    onRequestComponentInfo(bridge, componentHub, root);
+    onAnimationStatusChange(emitter);
     onAppLoadStatusChange(bridge);
     onDisableScroll(bridge);
     onPageScrollTo(bridge);

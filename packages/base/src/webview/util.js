@@ -12,6 +12,14 @@ export function tryCatch(method, callback, context) {
     : noop;
 }
 
+export function guid() {
+  const s4 = function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+  };
+
+  return `${s4() + s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`;
+}
+
 export function getRealRoute(relative = '', path = '') {
   if (path.indexOf('/') === 0) {
     return path.substr(1);
@@ -24,9 +32,9 @@ export function getRealRoute(relative = '', path = '') {
   let count = 0;
   const pathParts = path.split('/');
 
-  for (let i = 0; i < pathParts.length; i++) {
+  for (let i = 0; i < pathParts.length; i+=1) {
     if (pathParts[i] === '..') {
-      count++;
+      count+=1;
     } else {
       break;
     }
