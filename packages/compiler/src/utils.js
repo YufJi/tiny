@@ -10,8 +10,8 @@ const { miniStore, pluginStore } = require('./configStore');
 const numberReSnippet = '(?:NaN|-?(?:(?:\\d+|\\d*\\.\\d+)(?:[E|e][+|-]?\\d+)?|Infinity))';
 const matchOnlyNumberRe = new RegExp(`^(${numberReSnippet})$`);
 
-const elementPrefix = 'mp';
-const supportedWebcomponents = [
+const elementPrefix = 'tiny';
+const supportedWebComponents = [
   'view',
   'button',
   'text',
@@ -31,6 +31,8 @@ const supportedWebcomponents = [
   'swiper',
   'swiper-item',
 ];
+
+const supportedH5Tags = ['i'];
 
 function isNumber(str) {
   return !!str.trim().match(matchOnlyNumberRe);
@@ -66,10 +68,15 @@ function camelCase(name) {
 }
 
 function toComponentName(str) {
-  if (supportedWebcomponents.indexOf(str) !== -1) {
+  if (supportedWebComponents.indexOf(str) !== -1) {
     return `${elementPrefix}-${str}`;
   }
 
+  if (supportedH5Tags.indexOf(str) !== -1) {
+    return str;
+  }
+
+  // 自定义组件
   const ret = camelCase(str);
   return ret.charAt(0).toUpperCase() + ret.slice(1);
 }
@@ -92,6 +99,16 @@ function pluginTransformSelector(n, { pluginId }) {
   return n;
 }
 
+function normalizeTag(tag) {
+  const supportTags = [...supportedWebComponents, 'page'];
+
+  if (supportTags.includes(tag)) {
+    return `${elementPrefix}-${tag}`;
+  } else {
+    return `${elementPrefix}-unknown`;
+  }
+}
+
 /**
  * 如果用户输入的选择器中,含有 [wx-]view 的tag, 替换成 .$-view
  * @param selectorString 选择器
@@ -110,7 +127,7 @@ function selectorTransformer(selectorString, { pluginId }) {
               if (n.type === 'tag') {
                 const tag = n.value;
                 return cssSelectParser.tag({
-                  value: `${elementPrefix}-${tag}`,
+                  value: normalizeTag(tag),
                 });
               }
               return n;
@@ -305,8 +322,13 @@ function getImport(p, baseDir, option) {
     throw new Error(`illegal file path ${p}`);
   }
 
+  const { transformConfig } = option;
+  const { temp } = transformConfig;
+
   const hash = genResourceHash(p, option);
-  return `require('${prefixPath(normalizePathForWin(path.join(baseDir, p)))}${
+  const relative = path.relative(temp, path.join(baseDir, p));
+
+  return `require('${prefixPath(normalizePathForWin(relative))}${
     hash ? `?hash=${hash}` : ''
   }');`;
 }
@@ -315,7 +337,10 @@ function getImports(imports = [], baseDir, option) {
   return imports.map((p) => getImport(p, baseDir, option));
 }
 
+function noop() {}
+
 module.exports = {
+  noop,
   getSecurityHeader,
   cleanPageJson(json) {
     const ret = { ...json };
@@ -366,5 +391,6 @@ module.exports = {
   getImports,
   getImport,
   isValidFilePath,
-  supportedWebcomponents,
+  supportedWebComponents,
+  supportedH5Tags,
 };

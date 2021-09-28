@@ -4,7 +4,7 @@
 }
 
 body {
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 @font-face {
@@ -48,34 +48,41 @@ body {
   right: 0;
   bottom: 0;
   left: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .frame {
   background-color: #fff;
-  transform: translateX(100%) translateZ(0);
-  animation: frameEnter .25s ease-out both;
+  transform: translateX(100%);
 }
 
-.frame.leave {
-  transform: translateX(0%) translateZ(0);
-  animation: frameLeave .25s ease-out both;
+.frame.in {
+  background-color: #fff;
+  transform: translateX(100%);
+  animation: frameIn .25s ease-out both;
 }
 
-@keyframes frameEnter {
+.frame.out {
+  background-color: #fff;
+  transform: translateX(0%);
+  animation: frameOut .25s ease-out both;
+}
+
+@keyframes frameIn {
   0% {
-    transform: translateX(100%) translateZ(0);
+    transform: translateX(100%);
   }
   100% {
-    transform: translateX(0%) translateZ(0);
+    transform: translateX(0%);
   }
 }
 
-@keyframes frameLeave {
+@keyframes frameOut {
   0% {
-    transform: translateX(0%) translateZ(0);
+    transform: translateX(0%);
   }
   100% {
-    transform: translateX(100%) translateZ(0);
+    transform: translateX(100%);
   }
 }
-

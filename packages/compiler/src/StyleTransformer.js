@@ -1,7 +1,6 @@
 const css = require('css');
 const assign = require('object-assign');
 const autoprefixer = require('autoprefixer');
-const defaultLib = require('./defaultLib');
 const {
   relative,
   isNumber,
@@ -49,11 +48,11 @@ function processDeclarations(r, { source, pluginId } = {}) {
     }
     if (d.type === 'declaration') {
       let value = String(d.value)
-        .replace(/\\/g, '\\\\')
-        .replace(
-          /\b((?:\d*\.\d+)|(?:\d+))rpx\b/g,
-          (m, num) => `${parseFloat(num) / 100}rem`,
-        );
+        .replace(/\\/g, '\\\\');
+        // .replace(
+        //   /\b((?:\d*\.\d+)|(?:\d+))rpx\b/g,
+        //   (m, num) => `${parseFloat(num) / 100}rem`,
+        // );
       if (pluginId && transformedAssetsProperties.indexOf(d.property) !== -1) {
         const pluginPrefix = `/__plugins__/${pluginId}`;
         value = value.replace(
@@ -80,18 +79,20 @@ function StyleTransformer(ss, config_) {
   this.ss = ss;
   const config = config_ || {};
   this.config = config;
-  const code = (this.code = []);
+  this.code = [];
+
+  const { code } = this;
   const {
-    library = defaultLib.tinyBaseModule,
     appStyleTransformer,
     componentStyles,
     source,
   } = config;
+
   code.push(
-    `const { StyleSheet } = ${library};`,
+    'const { TinyStyleSheet } = self;',
   );
   code.push(
-    `const stylesheet = new StyleSheet({ stylePath: '${escapeQuote(
+    `const stylesheet = new TinyStyleSheet({ stylePath: '${escapeQuote(
       source,
       true,
       true,

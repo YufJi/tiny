@@ -5,15 +5,14 @@
   "main": "index.js",
   "scripts": {
     "postinstall": "lerna bootstrap",
+    "clean": "lerna clean",
     "lint": "eslint \"packages/**/src/**/*.{js,jsx,ts,tsx}\" --fix"
   },
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@music/eslint-config-hulk": "^0.1.0",
+    "eslint-config-curiosity": "^0.1.1",
     "lerna": "^3.22.1"
   },
-  "dependencies": {
-
-  }
+  "dependencies": {}
 }

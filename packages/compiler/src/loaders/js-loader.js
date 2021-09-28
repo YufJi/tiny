@@ -16,19 +16,22 @@ function isAppJS(path) {
   return path === 'app.js' || path === 'app.ts';
 }
 
-module.exports = function g(source) {
-  const { isWorker, cwd, isNative, transformConfig } = loaderUtils.getOptions(
+module.exports = function (source) {
+  const { resourcePath } = this;
+  const { isWorker, cwd, transformConfig } = loaderUtils.getOptions(
     this,
   );
-  const { pluginId } = transformConfig;
-  // console.log('xxxxxx', isWorker, cwd, isNative, transformConfig);
-  const { resourcePath } = this;
-  if (!isWorker && !isValidFilePath(resourcePath)) {
+  const { pluginId, temp } = transformConfig;
+
+  const isRender = !isWorker;
+
+  /* 校验文件路径 */
+  if (isRender && !isValidFilePath(resourcePath)) {
     this.callback(new Error(`illegal file path ${resourcePath}`));
     return undefined;
   }
-  // native or webview
-  const isRender = !isWorker;
+
+  // webview
   const fullPath = normalizePathForWin(resourcePath);
   let type = 'normal';
   if (!source) {
@@ -36,23 +39,30 @@ module.exports = function g(source) {
     return type;
   }
 
-  const normalizeCwd = normalizePathForWin(`${cwd}/`);
-  if (fullPath.indexOf(normalizeCwd) === -1) {
+  const normalizeCwd = normalizePathForWin(`${cwd}`);
+  const normalizeTemp = normalizePathForWin(`${temp}`);
+
+  /* 不在小程序项目根目录 或者 在临时文件夹，不作处理 */
+  if (fullPath.indexOf(normalizeCwd) === -1 || fullPath.indexOf(normalizeTemp) !== -1) {
     this.callback(null, source);
+
     return type;
   }
+
   const projectPath = getProjectPath(fullPath, cwd);
   const extname = getExtname(projectPath);
   let code;
   const pageUsingComponents = getPage(projectPath, extname, {
     pluginId,
   });
+
   const is = `/${projectPath}`.slice(0, -extname.length);
   let componentInfo;
   const componentConfig = getComponent(is, cwd, { pluginId });
   if (!pageUsingComponents && componentConfig) {
     componentInfo = assign({ is }, componentConfig);
   }
+
   if (componentInfo) {
     // console.log('componentInfo', componentInfo, resourcePath, isWorker);
     const extConfig = assign(
@@ -63,13 +73,7 @@ module.exports = function g(source) {
       transformConfig,
     );
 
-    if (isNative) {
-      code = jsTransformer.transformComponentJs(
-        source,
-        componentInfo,
-        extConfig,
-      );
-    } else if (isWorker) {
+    if (isWorker) {
       code = jsTransformer.transformComponentJsForWorker(
         source,
         componentInfo,
@@ -83,19 +87,10 @@ module.exports = function g(source) {
     }
     type = 'component';
   } else if (isAppJS(projectPath)) {
-    if (isWorker) {
-      code = jsTransformer.transformAppJs(source, transformConfig, {
-        fullPath,
-      });
-    } else if (isNative) {
-      code = jsTransformer.transformAppJsForNative(source, transformConfig, {
-        fullPath,
-      });
-    } else {
-      code = jsTransformer.transformAppJsForWebRender(source, transformConfig, {
-        fullPath,
-      });
-    }
+    code = jsTransformer.transformAppJs(source, transformConfig, {
+      fullPath,
+    });
+
     type = 'app';
   } else if (pageUsingComponents) {
     let renderConfig;
@@ -119,13 +114,7 @@ module.exports = function g(source) {
         transformConfig,
       );
     }
-    if (isNative) {
-      code = jsTransformer.transformPageJs(
-        source,
-        projectPath.slice(0, -extname.length),
-        renderConfig,
-      );
-    } else if (isWorker) {
+    if (isWorker) {
       code = jsTransformer.transformPageJsForWorker(
         source || 'Page({})',
         projectPath.slice(0, -extname.length),
@@ -144,7 +133,7 @@ module.exports = function g(source) {
       );
     }
     type = 'page';
-  } else if (isWorker || isNative) {
+  } else if (isWorker) {
     code = jsTransformer.transformJsForWorker(source, transformConfig);
   } else {
     this.callback(null, source);

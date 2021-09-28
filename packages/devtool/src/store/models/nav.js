@@ -1,6 +1,6 @@
-const global = {
+export default {
   state: {
-    navigationBarTitleText: '小程序',
+    navigationBarTitleText: '',
     // backgroundColor: '#ffffff',
   },
   reducers: {
@@ -18,5 +18,3 @@ const global = {
 
   }),
 };
-
-export default global;

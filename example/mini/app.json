@@ -1,0 +1,13 @@
+{
+  "pages": [
+    "pages/todos/todos",
+    "pages/add-todo/add-todo"
+  ],
+  "window": {
+    "navigationBarTitleText": "哈哈哈"
+  },
+  "usingComponents": {
+    "add-button": "./components/add-button/add-button"
+  },
+  "sitemapLocation": "sitemap.json"
+}

@@ -11,22 +11,22 @@ const {
 const { miniStore, pluginStore } = require('./configStore');
 const { PLUGIN_PREFIX, PLUGIN_PRIVATE_PREFIX } = require('./pluginUtils');
 
-let updateComponentMap;
 let globalUsingComponents;
 
 const updateUsingComponents = function (
   cwd,
-  fullpath,
+  dirname,
   usingComponents,
   { pluginId = false } = {},
 ) {
   /* 处理usingComponents路径 */
   Object.keys(usingComponents).forEach((c) => {
     let dPath = usingComponents[c];
+
     if (dPath.startsWith('./') || dPath.startsWith('../')) {
-      dPath = path.join(path.dirname(fullpath), dPath).slice(cwd.length);
+      dPath = path.join(dirname, dPath).slice(cwd.length);
     } else if (dPath.startsWith(PLUGIN_PREFIX)) {
-      // console.log(dPath);
+      // console.log('dPath:', dPath);
     } else if (dPath.startsWith(PLUGIN_PRIVATE_PREFIX)) {
       const domain = dPath.slice(PLUGIN_PRIVATE_PREFIX.length).split('/')[0];
       if (pluginId && domain === pluginId) {
@@ -36,7 +36,7 @@ const updateUsingComponents = function (
       }
     } else if (!dPath.startsWith('/')) {
       const resolvedPath = resolve.sync(dPath, {
-        basedir: path.dirname(fullpath),
+        basedir: dirname,
         preserveSymlinks: false,
       });
       if (resolvedPath.startsWith(cwd)) {
@@ -47,7 +47,7 @@ const updateUsingComponents = function (
         }
       } else {
         throw new Error(
-          `Cannot find module '${dPath}' from '${path.dirname(fullpath)}'`,
+          `Cannot find module '${dPath}' from '${dirname}'`,
         );
       }
     }
@@ -61,7 +61,7 @@ const updateUsingComponents = function (
   });
 };
 
-updateComponentMap = function updateComponentMap2(
+function updateComponentMap(
   cwd,
   cPath,
   { pluginId = false } = {},
@@ -79,17 +79,20 @@ updateComponentMap = function updateComponentMap2(
   componentMap[cPath] = false;
   /* 自定义组件配置文件路径 */
   const cFullPath = path.join(cwd, `${cPath}.json`);
+
   if (fs.existsSync(cFullPath)) {
     const cJson = safeJsonParse(cFullPath);
+
     if (cJson.component) {
       cJson.usingComponents = assign({}, globalUsingComponents || {}, cJson.usingComponents || {});
       componentMap[cPath] = cJson;
-      updateUsingComponents(cwd, cFullPath, cJson.usingComponents, {
+
+      updateUsingComponents(cwd, path.dirname(cFullPath), cJson.usingComponents, {
         pluginId,
       });
     }
   }
-};
+}
 
 function updatePluginPageMap({ cwd, appJson, pluginId }) {
   const pages = appJson.pages || [];
@@ -99,8 +102,9 @@ function updatePluginPageMap({ cwd, appJson, pluginId }) {
     const pageJsonPath = path.join(cwd, `${page}.json`);
     if (fs.existsSync(pageJsonPath)) {
       const pageInfo = safeJsonParse(pageJsonPath);
-      const usingComponents = (pMap[page] = pageInfo.usingComponents || {});
-      updateUsingComponents(cwd, pageJsonPath, usingComponents, {
+      pMap[page] = pageInfo.usingComponents || {};
+
+      updateUsingComponents(cwd, path.dirname(pageJsonPath), pMap[page], {
         pluginId,
       });
     } else {
@@ -127,16 +131,22 @@ exports.update = function update({ src, mergeSubPackages, variables, transformCo
 
   const { tabBar, usingComponents } = extApp.app;
 
-  globalUsingComponents = usingComponents;
-
   const pages = getAllPagesFromAppJson(extApp.app);
   // console.log("update pages", pages);
-
   /* 存储每个页面的usingComponents */
   const pMap = {};
   /* 存储每个自定义组件的配置 */
   miniStore.componentMap = {};
+
+  // 处理全局自定义组件
+  globalUsingComponents = usingComponents;
+  updateUsingComponents(src, src, globalUsingComponents || {});
+
   pages.forEach((page) => {
+    if (/^[\.\/]/.test(page)) {
+      throw new Error('app.json中pages不应该以 \'/\' 或 \'.\' 开头');
+    }
+
     /* 页面配置文件路径 */
     const pageJsonPath = path.join(src, `${page}.json`);
     if (fs.existsSync(pageJsonPath)) {
@@ -148,9 +158,11 @@ exports.update = function update({ src, mergeSubPackages, variables, transformCo
           fs.writeFileSync(cssPath, '/* required by usingComponents */');
         }
       }
-      pMap[page] = assign({}, globalUsingComponents || {}, pageInfo.usingComponents || {});
 
-      updateUsingComponents(src, pageJsonPath, pMap[page]);
+      // 处理页面定义自定义组件
+      pMap[page] = assign({}, pageInfo.usingComponents || {});
+      updateUsingComponents(src, path.dirname(pageJsonPath), pMap[page]);
+      pMap[page] = assign({}, globalUsingComponents || {}, pMap[page] || {});
     } else {
       pMap[page] = {};
     }
@@ -168,12 +180,9 @@ exports.update = function update({ src, mergeSubPackages, variables, transformCo
   }
 };
 
-exports.getPage = function getPage(
-  pagePath,
-  extname,
-  { pluginId = false } = {},
-) {
+exports.getPage = function getPage(pagePath, extname, { pluginId = false } = {}) {
   const pMap = pluginId ? pluginStore.pageMap : miniStore.pageMap;
+
   if (extname) {
     return pMap[pagePath.slice(0, -extname.length)];
   }
@@ -199,10 +208,9 @@ exports.getComponent = function getComponent(
   cwd,
   { pluginId = false } = {},
 ) {
-  const componentMap = pluginId
-    ? pluginStore.componentMap
-    : miniStore.componentMap;
+  const componentMap = pluginId ? pluginStore.componentMap : miniStore.componentMap;
   updateComponentMap(cwd, f, { pluginId });
+
   return componentMap[f];
 };
 
@@ -215,13 +223,10 @@ function getComponentDeps(
   if (usingComponents) {
     Object.keys(usingComponents).forEach((u) => {
       const cPath = usingComponents[u];
-      if (
-        !cPath.startsWith(PLUGIN_PREFIX)
-        && !cPath.startsWith(PLUGIN_PRIVATE_PREFIX)
-      ) {
-        const componentMap = pluginId
-          ? pluginStore.componentMap
-          : miniStore.componentMap;
+
+      if (!cPath.startsWith(PLUGIN_PREFIX) && !cPath.startsWith(PLUGIN_PRIVATE_PREFIX)) {
+        const componentMap = pluginId ? pluginStore.componentMap : miniStore.componentMap;
+
         if (!componentMap[cPath]) {
           throw new Error(
             `${cur}.json\ncomponent ${u} => ${cPath} 不存在\n或 ${cPath}.json 中没有申明 "component: true" \n或其他异常`,
@@ -254,6 +259,7 @@ exports.getPagesComponents = function getPagesComponents(
   { pluginId = false } = {},
 ) {
   const pageMap = pluginId ? pluginStore.pageMap : miniStore.pageMap;
+
   const ret = {};
   const list = [];
   pages.forEach((p) => {

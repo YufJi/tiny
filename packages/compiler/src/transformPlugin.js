@@ -3,25 +3,17 @@ const assign = require('object-assign');
 const generateEntries = require('./generatePluginEntries');
 const generateAppJson = require('./generatePluginAppJson');
 const generateAppConfigJson = require('./generatePluginAppConfigJson');
-const transform = require('./transform');
 
 module.exports = function run(config) {
   const {
-
     pluginId,
     pluginRoot,
-    native = 0,
-    // allowedNativeComponents=['view']
   } = config;
-  // console.log(config, 'config')
   const src = pluginRoot;
   const out = `${config.out}/plugin`;
 
   const transformConfig = assign({}, config);
 
-  if (transformConfig.showFileNameInError === undefined) {
-    transformConfig.showFileNameInError = true;
-  }
   transformConfig.pluginId = pluginId;
 
   fs.ensureDirSync(out);
@@ -29,10 +21,7 @@ module.exports = function run(config) {
   const appJson = generateAppJson({ src, pluginId });
 
   generateEntries({
-
     appJson,
-    web: 1,
-    native,
     out,
     pluginId,
   });
@@ -43,5 +32,5 @@ module.exports = function run(config) {
     src,
   });
 
-  transform(assign({}, transformConfig, { cwd: src, out, src }));
+  // todo pack
 };

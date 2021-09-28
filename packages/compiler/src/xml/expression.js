@@ -1,50 +1,56 @@
+// not allow {{x:{y:1}}}
+// or use complex parser
+// const util = require('util');
+
+const parser = require('@babel/parser');
 const traverse = require('@babel/traverse').default;
 const generate = require('@babel/generator').default;
 const t = require('@babel/types');
 
-const { parseExpression } = require('./babylon');
-const { toLiteralString, startsWith, endsWith } = require('./utils');
-const JSTokenizer = require('./htmlparser2/JSTokenizer');
-
-// not allow {{x:{y:1}}}
-// or use complex parser
-const expressionTagTokenizer = new JSTokenizer();
-const spreadReg = /^\.\.\.[\w$_]/;
-const objReg = /^[\w$_](?:[\w$_\d\s]+)?:/;
-const es2015ObjReg = /^[\w$_](?:[\w$_\d\s]+)?,/;
+const expressionTagReg = /\{\{([^}]+)\}\}/g;
+const fullExpressionTagReg = /^\{\{([^}]+)\}\}$/;
+const spreadReg = /^\.\.\.[\w$_]/; // {{...abc}}
+const objReg = /^[\w$_](?:[\w$_\d\s]+)?:/; // {{name: abc}}
+const es2015ObjReg = /^[\w$_](?:[\w$_\d\s]+)?,/; // {{abc,edf}}
 
 function isObject(str_) {
   const str = str_.trim();
   return str.match(spreadReg) || str.match(objReg) || str.match(es2015ObjReg);
 }
 
-const babylonConfig = {
-  plugins: ['objectRestSpread'],
-};
-
 function findScope(scope, name) {
   if (scope) {
+    let result = false;
     for (let i = 0; i < scope.length; i++) {
-      const s = scope[i];
-      if (s[name]) {
-        return s[name];
+      const item = scope[i];
+      if (item[name]) {
+        result = item[name];
+        break;
       }
     }
+
+    return result;
   }
+
   return false;
+}
+
+function escapeString(str) {
+  return str.replace(/[\\']/g, '\\$&');
 }
 
 const visitor = {
   noScope: true,
   ReferencedIdentifier(path) {
-    const { node } = path;
-    const { parent } = path;
+    const { parent, node } = path;
 
     if (node.__xmlSkipped) {
       return;
     }
+
     const nameScope = findScope(this.xmlScope, node.name);
-    if (nameScope === 'sjs') {
+
+    if (nameScope === 'wxs') {
       const parentType = parent && parent.type;
       if (node.type === 'Identifier' && !(parentType === 'MemberExpression' && parent.object === node)) {
         const args = [t.arrayExpression([node])];
@@ -52,7 +58,7 @@ const visitor = {
           args.push(t.numericLiteral(1));
         }
         const newNode = t.callExpression(t.identifier('$getSJSMember'), args);
-        newNode.callee.__xmlSkipped = 1;
+        newNode.callee.__xmlSkipped = true;
         path.replaceWith(newNode);
         path.skip();
       }
@@ -63,13 +69,13 @@ const visitor = {
     }
   },
   MemberExpression(path) {
-    const { parent } = path;
-    const { node } = path;
+    const { parent, node } = path;
 
     const parentType = parent && parent.type;
     // do not transform function call
     // skip call callee x[y.q]
-    if (/* root member node */ parentType !== 'MemberExpression') {
+    /* root member node */
+    if (parentType !== 'MemberExpression') {
       // allow {{x.y.z}} even x is undefined
       const members = [node];
       let root = node.object;
@@ -79,7 +85,7 @@ const visitor = {
         root = root.object;
       }
 
-      const isSJS = findScope(this.xmlScope, root.name) === 'sjs';
+      const isSJS = findScope(this.xmlScope, root.name) === 'wxs';
 
       if (!isSJS && this.strictDataMember) {
         return;
@@ -91,7 +97,7 @@ const visitor = {
       const args = [root];
 
       if (isSJS) {
-        root.__xmlSkipped = 1;
+        root.__xmlSkipped = true;
       }
 
       if (root.type === 'ThisExpression') {
@@ -119,12 +125,16 @@ const visitor = {
       }
 
       const newNode = t.callExpression(t.identifier(memberFn), callArgs);
-      newNode.callee.__xmlSkipped = 1;
+      newNode.callee.__xmlSkipped = true;
       // will process a.v of x.y[a.v]
       path.replaceWith(newNode);
       // path.skip();
     }
   },
+};
+
+const babylonConfig = {
+  plugins: ['objectRestSpread'],
 };
 
 function transformCode(code_, xmlScope, config) {
@@ -134,9 +144,9 @@ function transformCode(code_, xmlScope, config) {
     codeStr = `{${codeStr}}`;
   }
 
-  const expression = parseExpression(codeStr, babylonConfig);
-  const { start } = expression;
-  const { end } = expression;
+  const expression = parser.parseExpression(codeStr, babylonConfig);
+  const { start, end } = expression;
+
   const ast = {
     type: 'File',
     start,
@@ -159,12 +169,20 @@ function transformCode(code_, xmlScope, config) {
     strictDataMember: !!config.strictDataMember,
   });
 
-  const _generate = generate(ast);
-  let { code } = _generate;
+  let code;
+
+  try {
+    code = generate(ast).code;
+  } catch (error) {
+    console.log('生成code出错：', error);
+  }
+
+  // let { code } = generate(ast);
 
   if (code.charAt(code.length - 1) === ';') {
     code = code.slice(0, -1);
   }
+
   return `(${code})`;
 }
 
@@ -173,48 +191,45 @@ function transformExpressionByPart(str_, scope, config) {
     return [str_];
   }
   const str = str_.trim();
-  expressionTagTokenizer.clear();
-  expressionTagTokenizer.append(str);
-  if (!expressionTagTokenizer.hasJSRaw()) {
-    return [toLiteralString(str_)];
+  if (!str.match(expressionTagReg)) {
+    return [`'${escapeString(str_)}'`];
   }
-  const ast = expressionTagTokenizer.getAst();
 
-  return ast.map((subAst) => {
-    const { text } = subAst;
+  let match = str.match(fullExpressionTagReg);
+  if (match) {
+    return [transformCode(match[1], scope, config)];
+  }
 
-    if (subAst.type === JSTokenizer.AST_TYPE_TEXT) {
-      return toLiteralString(text);
-    } else if (startsWith(text, '{{') && endsWith(text, '}}')) {
-      const exp = text.slice(2, -2);
-      if (exp.length > 0) {
-        return transformCode(exp, scope, config);
-      } else {
-        return toLiteralString(exp);
-      }
-    } else {
-      return toLiteralString(text);
+  const totalLength = str.length;
+  let lastIndex = 0;
+  const gen = [];
+  /* eslint no-cond-assign:0 */
+  while (match = expressionTagReg.exec(str)) {
+    const code = match[1];
+    if (match.index !== lastIndex) {
+      gen.push(`'${escapeString(str.slice(lastIndex, match.index))}'`);
     }
-  });
+    gen.push(transformCode(code, scope, config));
+    lastIndex = expressionTagReg.lastIndex;
+  }
+
+  if (lastIndex < totalLength) {
+    gen.push(`'${escapeString(str.slice(lastIndex))}'`);
+  }
+
+  return gen;
 }
 
-function transformExpression(_str, scope, config = {}) {
-  let ret = transformExpressionByPart(_str, scope, config);
-
+function transformExpression(str_, scope, config = {}) {
+  const ret = transformExpressionByPart(str_, scope, config);
   if ('text' in config) {
-    ret = ret.map((r) => {
-      return `$toString(${r})`;
-    });
-
     return ret.length > 1 ? `[${ret.join(', ')}]` : ret[0];
   }
   return ret.join(' + ');
 }
 
 function hasExpression(str) {
-  expressionTagTokenizer.clear();
-  expressionTagTokenizer.append(str);
-  return expressionTagTokenizer.hasJSRaw();
+  return str.match(expressionTagReg);
 }
 
 exports.transformExpression = transformExpression;

@@ -1,5 +1,7 @@
+/* eslint-disable react/destructuring-assignment */
+/* eslint-disable react/sort-comp */
 /* eslint-disable class-methods-use-this */
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
 import StatusBar from '@/components/statusBar';
 import Nav from '@/components/nav';
@@ -8,20 +10,16 @@ import jsbridge from '@/utils/jsbridge';
 import { createWorkerIframe } from '@/utils/createIframe';
 import global from '@/utils/global';
 import requireFile from '@/utils/requireFile';
-import EventHub, { WORKERLOADED } from '@/utils/EventHub';
-import { createGuid } from '@/utils/';
-import { doPushWindow } from '@/utils/jsbridge/API/navigation';
+import { createGuid, query, delay } from '@/utils';
+import { pushWindow, navigateBack } from '@/utils/jsbridge/API/navigation';
+
 import style from './app.module.less';
 
-class App extends Component {
+class App extends PureComponent {
   constructor(props) {
     super(props);
 
-    this.loadAppConfig();
-    this.loadTabBarConfig();
-
-    this.jsbridge = jsbridge;
-    window.JSBridgeInstance = this.jsbridge;
+    window.JSBridgeInstance = jsbridge;
 
     this.state = {
       mpVisible: true,
@@ -29,54 +27,48 @@ class App extends Component {
   }
 
   componentDidMount() {
-    this.initNav();
-    this.initWorker();
-    this.initPage();
+    const { setAppConfig, setTabBarConfig } = this.props;
+    const appConfig = requireFile('/biz/appConfig.json');
+
+    this.initNav(appConfig);
+    this.launchTinyApp(appConfig);
+
+    setAppConfig(appConfig);
+    console.log('appConfig', appConfig);
+    setTabBarConfig(appConfig.tabBar);
+    console.log('tabBarConfig', appConfig.tabBar);
   }
 
-  loadAppConfig() {
-    const config = requireFile('/biz/appConfig.json');
-    global.appConfig = config;
-    console.log('appConfig', global.appConfig);
-  }
-
-  loadTabBarConfig() {
-    const config = requireFile('/biz/tabBar.json');
-    global.tabBarConfig = config;
-    console.log('tabBarConfig', global.tabBarConfig);
-  }
-
-  initNav() {
-    const { window } = global.appConfig;
+  initNav(appConfig) {
+    const { window = {} } = appConfig;
 
     this.props.setNavConfig({
       title: window.defaultTitle,
     });
   }
 
-  initWorker() {
-    const { pages } = global.appConfig;
-    const homePage = pages[0];
+  async launchTinyApp(appConfig) {
+    const { pages } = appConfig;
 
-    const src = `worker.html?pagePath=${homePage}`;
-    const guid = createGuid('worker');
-    global.worker = createWorkerIframe({
-      guid,
-      src,
-      onload: (iframe) => {
-        EventHub.emit(WORKERLOADED);
-      },
+    const src = 'biz/service.html';
+    const homePage = query('path') || pages[0];
+
+    Promise.all([
+      createWorkerIframe({
+        src,
+      }),
+      pushWindow(homePage),
+    ]).then((iframes) => {
+      const [serviceIframe, renderIframe] = iframes;
+
+      /* 这个事件没啥用 */
+      renderIframe.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('onLoadApp', '${JSON.stringify({})}')`);
+
+      serviceIframe.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('onAppRoute', '${JSON.stringify({
+        path: homePage,
+        openType: 'appLaunch',
+      })}', '${renderIframe.id}')`);
     });
-  }
-
-  initPage() {
-    const { pages } = global.appConfig;
-    const homePage = pages[0];
-
-    const url = `#${homePage}?debug=framework`;
-    const tag = homePage;
-
-    doPushWindow(url, tag);
   }
 
   hideMP = () => {
@@ -93,30 +85,26 @@ class App extends Component {
     // 触发一些事件
   }
 
+  handleNavBack = () => {
+    navigateBack();
+  }
+
   render() {
     const { mpVisible } = this.state;
 
     return (
-      <div className={`${style.app} f-page flex-c`}>
+      <div id="app" className={`${style.app}`}>
         <StatusBar />
-        <div className={`${style.MPContainer} ${mpVisible ? '' : style.hide} flex-1 flex-c`}>
-
-          <Nav hideMP={this.hideMP} />
+        <div id="serviceFrame" className={style.serviceFrame} />
+        <div className={`${style.MPContainer} ${mpVisible ? '' : style.hide} f-page flex-c`}>
+          <Nav
+            navBack={this.handleNavBack}
+            hideMP={this.hideMP}
+          />
           <div id="pageFrames" className={`${style.pageFrames} flex-1 flex-c`}>
             <div id="tabFrames" className={`${style.tabFrames} flex-1`} />
-            <div className={`${style.tabs} flex-r`}>
-              {/* <div>
-                <div>icon</div>
-                <div>text</div>
-              </div>
-              <div>
-                <div>icon</div>
-                <div>text</div>
-              </div> */}
-            </div>
+            <div className={`${style.tabs} flex-r`} />
           </div>
-
-          <div id="workerFrame" className={style.workerFrame} />
         </div>
         {!mpVisible && (
           <div className={`${style.openMP} flex-r`} onClick={this.showMP} />
@@ -127,13 +115,16 @@ class App extends Component {
 }
 
 const mapState = (state) => {
-  const { nav } = state;
+  const { nav, global } = state;
   return {
     navConfig: nav,
+    ...global,
   };
 };
 
 const mapDispatch = (dispatch) => ({
+  setAppConfig: (config) => dispatch.global.setAppConfig(config),
+  setTabBarConfig: (config) => dispatch.global.setTabBarConfig(config),
   setNavConfig: (config) => dispatch.nav.setNavConfig(config),
 });
 

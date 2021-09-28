@@ -1,18 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import { connect } from 'react-redux';
-import global from '@/utils/global';
 
 import style from './index.module.less';
 
 function Nav(props) {
-  const { navConfig } = props;
-  const isShowBackIcon = global.pagesStack.length > 1;
+  const { navConfig, global } = props;
+  const isShowBackIcon = global.pageStack.length > 1;
 
   const root = useRef(null);
-
-  useEffect(() => {
-
-  }, []);
 
   return (
     <div
@@ -22,7 +17,7 @@ function Nav(props) {
         backgroundColor: navConfig.backgroundColor,
       }}
     >
-      <div className={`${style.left} flex-r`}>
+      <div className={`${style.left} flex-r`} onClick={props.navBack}>
         {isShowBackIcon && <div className={`${style.back} ic`}>&#xe641;</div>}
       </div>
       <div className={`${style.title} flex-1`}>
@@ -37,9 +32,10 @@ function Nav(props) {
 }
 
 const mapState = (state) => {
-  const { nav } = state;
+  const { nav, global } = state;
   return {
     navConfig: nav,
+    global,
   };
 };
 

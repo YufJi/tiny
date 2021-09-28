@@ -4,11 +4,10 @@ const { extname: getExtname, relative } = require('path');
 const TemplateTransformer = require('../TemplateTransformer');
 const { getProjectPath, isValidFilePath } = require('../utils');
 const { getComponent, getPage } = require('../pageMap');
-const { getCachedExtApp } = require('../getExtApp');
 
-module.exports = function t(source) {
+module.exports = function (source) {
   const { isWorker, cwd, transformConfig } = loaderUtils.getOptions(this);
-  const { pluginId, showFileNameInError } = transformConfig;
+  const { pluginId, showFileNameInError = true } = transformConfig;
 
   const { resourcePath: fullPath } = this;
 
@@ -17,7 +16,6 @@ module.exports = function t(source) {
     return;
   }
 
-  const { supportSjsHandler } = getCachedExtApp();
   const projectPath = getProjectPath(fullPath, cwd);
   const extname = getExtname(projectPath);
   const fileName = projectPath.slice(0, -extname.length);
@@ -29,28 +27,25 @@ module.exports = function t(source) {
     assign(
       {
         strictDataMember: false,
-        pure: true,
-        prettier: false,
         projectRoot: cwd,
         usingComponents,
         renderPath: fullPath,
         isComponent: !!componentConfig,
         isWorker,
-        supportSjsHandler,
       },
       transformConfig,
     ),
-  ).transform((e, code) => {
-    if (e) {
+  ).transform((error, code) => {
+    if (error) {
       if (showFileNameInError) {
         let fileProjectPath = relative(cwd, fullPath);
         fileProjectPath = fileProjectPath.substr(0, 2) === '..' ? fullPath : fileProjectPath;
-        e = new Error(
-          `${fileProjectPath}\nModule build failed:\n${e.message || ''}`,
+        error = new Error(
+          `${fileProjectPath}\nModule build failed:\n${error.message || ''}`,
         );
       }
       /* eslint-enable */
-      this.callback(e);
+      this.callback(error);
       return;
     }
     this.callback(null, code);

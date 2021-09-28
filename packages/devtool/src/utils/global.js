@@ -2,14 +2,13 @@
  * 一些全局变量
  */
 
-const gloabl = {
-  currentRender: null, // 当前pageFrame
-  pagesStack: [],
-  renders: {},
-  tabRenders: {},
-  worker: null,
-  appConfig: {},
-  tabBarConfig: null,
+const global = {
+  webviews: new Map(),
+  // 预热webview
+  preloadRenders: [],
+  // 当前webview
+  currentRender: null,
+  service: null,
 };
 
-export default gloabl;
+export default global;

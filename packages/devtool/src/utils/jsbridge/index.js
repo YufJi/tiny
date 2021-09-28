@@ -4,17 +4,19 @@
 
 import * as API from './API';
 
+export const CUSTOM_EVENT = 'custom_event_';
+
 const bridge = {
-  call(method, params) {
-    console.log('%cjsbridge call:', 'color: green;', method, params);
-    if (typeof API[method] === 'function') {
-      API[method](params);
-    } else {
-      console.warn(`method: ${method} 还未实现`);
-    }
+  publish(event, paramsString, webviewIds, __IS_WORKER__) {
+    return API.publish(event, paramsString, webviewIds, __IS_WORKER__);
   },
-  callSync(method, params) {
-    // console.log('jsbridge callSync:', 'method', method, 'params', params);
+  call(method, params, webviewIds, callbackId) {
+    if (typeof API[method] === 'function') {
+      const result = API[method](params, webviewIds, callbackId);
+      return JSON.stringify(result);
+    } else {
+      console.warn(`bridge: ${method}暂不支持，敬请期待`);
+    }
   },
 };
 

@@ -3,58 +3,66 @@ const fs = require('fs-extra');
 const path = require('path');
 const webpack = require('webpack');
 const CopyPlugin = require('copy-webpack-plugin');
+const ProgressBarPlugin = require('progress-bar-webpack-plugin');
+const signale = require('signale');
+
 const generateEntries = require('./generateEntries');
 const generateAppJson = require('./generateAppJson');
 const generateAppConfigJson = require('./generateAppConfigJson');
-const { safeJsonParse } = require('./utils');
-/* 完全转译出文件 */
-const transform = require('./transform');
+const { safeJsonParse, normalizePathForWin } = require('./utils');
+
+const isDev = process.env.NODE_ENV === 'development';
 
 /**
  * 小程序应用转译入口
  * @param {*} config
  */
 module.exports = function run(config) {
+  signale.time('build');
   const {
     importScripts, /* 需要注入的外链 */
-    injectScript, /* 需要注入的脚本 */
     mergeSubPackages,
-    injectScriptForNative,
-    indexPage = 'render.html',
     src, /* 小程序目录 */
     out, /* 转译输出目录 */
-    injectScriptAfterWorkerImportScripts,
-    pluginInjection,
-    baseDir,
-    native = false, /* 是否需要生成RN */
     runtimeConfig = {},
+    watch,
   } = config;
 
   const transformConfig = config;
   const { contextPath } = runtimeConfig;
 
-  if (typeof transformConfig.showFileNameInError === 'undefined') {
-    transformConfig.showFileNameInError = true;
+  /* 临时目录存放编译中间产物 */
+  if (typeof transformConfig.temp === 'undefined') {
+    transformConfig.temp = path.join(src, '.cache');
   }
 
-  /* 同步创建输出目录 */
-  if (out) {
-    fs.mkdirsSync(out);
+  const { temp } = transformConfig;
+
+  /* 清楚临时目录和输出目录 */
+  if (fs.existsSync(temp) || fs.existsSync(out)) {
+    fs.removeSync(out);
+    fs.removeSync(temp);
+    signale.success('清空就绪');
   }
+
+  /* 同步创建缓存目录 */
+  fs.mkdirsSync(temp);
+  signale.success('创建临时目录');
 
   const projectConfigPath = path.join(src, 'project.config.json');
   let projectConfigJson = {};
 
   if (fs.existsSync(projectConfigPath)) {
     projectConfigJson = safeJsonParse(projectConfigPath);
+    signale.success('读取project.config.json');
   }
 
-  const sourceDir = projectConfigJson.miniprogramRoot ? path.join(src, projectConfigJson.miniprogramRoot) : src;
+  let sourceDir = projectConfigJson.miniprogramRoot ? path.join(src, projectConfigJson.miniprogramRoot) : src;
+  sourceDir = normalizePathForWin(sourceDir).replace(/\/$/, '');
 
   /* 生成app.json */
   const appJson = generateAppJson({
     src: sourceDir,
-    out,
     mergeSubPackages,
     transformConfig,
   });
@@ -63,48 +71,42 @@ module.exports = function run(config) {
   generateEntries({
     src: sourceDir,
     appJson,
-    web: true,
-    native,
-    out,
-    injectScript,
     importScripts,
-    injectScriptForNative,
-    injectScriptAfterWorkerImportScripts,
-    pluginInjection,
-    baseDir,
     transformConfig,
   });
+  signale.success('生成入口文件');
 
   /* 生成appConfigJson */
   generateAppConfigJson({
     src: sourceDir,
-    out,
     appJson,
-    indexPage,
     contextPath,
+    transformConfig,
   });
 
-  // // todo 这里开始走webpack构建入口文件为index.web 和 index.worker
-  // transform(assign({}, transformConfig, { cwd: sourceDir }));
-  // return;
+  const assetExtnames = ['*.eot', '*.woff', '*.ttf', '*.text', '*.png', '*.jpg', '*.jpeg', '*.gif', '*.bmp', '*.svg', '*.webp'];
 
-  const assetExts = ['*.eot', '*.woff', '*.ttf', '*.text', '*.png', '*.jpg', '*.jpeg', '*.gif', '*.bmp', '*.svg', '*.webp'];
-  const isDev = true;
   const getConfig = (type) => {
     const isWorker = type === 'worker';
     const config = assign({}, transformConfig, { cwd: sourceDir });
 
+    const templateDir = path.join(__dirname, './templates/web');
+
     return {
       entry: isWorker ? {
-        'index.worker': path.join(out, 'index$.worker.js'),
+        service: path.join(temp, 'index.service.js'),
       } : {
-        'index.web': path.join(out, 'index$.web.js'),
+        webview: path.join(temp, 'index.webview.js'),
       },
       resolve: {
         alias: {
-          compiler: path.join(__dirname),
+          'tiny-compiler': path.join(__dirname),
         },
-        extensions: isWorker ? ['.worker.js', '.js', '.json'] : ['.web.js', '.js', '.json'],
+      },
+      resolveLoader: {
+        modules: [
+          path.resolve(__dirname, 'loaders'),
+        ],
       },
       output: {
         path: path.join(out),
@@ -115,7 +117,7 @@ module.exports = function run(config) {
         rules: [{
           test: /\.(j|t)s$/,
           use: [{
-            loader: path.resolve(__dirname, 'loaders/js-loader'),
+            loader: 'js-loader',
             options: {
               isWorker,
               cwd: sourceDir,
@@ -123,9 +125,9 @@ module.exports = function run(config) {
             },
           }],
         }, {
-          test: new RegExp(`\.${transformConfig.styleExtname}$`),
+          test: new RegExp(`${transformConfig.styleExtname}$`),
           use: [{
-            loader: path.resolve(__dirname, 'loaders/css-loader'),
+            loader: 'css-loader',
             options: {
               cwd: sourceDir,
               transformConfig: assign(
@@ -137,7 +139,7 @@ module.exports = function run(config) {
             },
           }],
         }, {
-          test: new RegExp(`\.${transformConfig.templateExtname}$`),
+          test: new RegExp(`${transformConfig.templateExtname}$`),
           use: [{
             loader: require.resolve('babel-loader'),
             options: {
@@ -146,7 +148,8 @@ module.exports = function run(config) {
 
                 }],
                 [require.resolve('@babel/preset-react'), {
-                  pragma: 'Nerv.createElement', // default pragma is React.createElement (only in classic runtime)
+                  pragma: 'Nerv.createElement', // 配合编译头部添加的‘const Nerv = self.Nerv’
+                  throwIfNamespace: false,
                 }],
               ],
               plugins: [
@@ -154,42 +157,49 @@ module.exports = function run(config) {
               ],
             },
           }, {
-            loader: path.resolve(__dirname, 'loaders/template-loader'),
+            loader: 'template-loader',
             options: {
               cwd: sourceDir,
               transformConfig: config,
             },
           }],
         }, {
-          test: /\.sjs$/,
+          test: new RegExp(`${transformConfig.sjsExtname}$`),
           use: [{
-            loader: path.resolve(__dirname, 'loaders/sjs-loader'),
+            loader: 'sjs-loader',
             options: {
               cwd: sourceDir,
+              transformConfig: config,
             },
           }],
         }],
       },
       plugins: [
-        new webpack.ProgressPlugin(),
-        new CopyPlugin(assetExts.map((type) => {
-          return {
-            from: path.join(sourceDir, `**/${type}`),
-            transformPath(targetPath, absolutePath) {
-              return absolutePath.replace(sourceDir, '');
-            },
-          };
-        })),
-      ],
+        new ProgressBarPlugin(),
+        !isWorker && new CopyPlugin([
+          ...assetExtnames.map((type) => {
+            return {
+              from: path.join(sourceDir, `**/${type}`),
+              transformPath(targetPath, absolutePath) {
+                return absolutePath.replace(sourceDir, '');
+              },
+            };
+          }),
+          `${path.join(temp, 'appConfig.json')}`,
+
+          // 模板文件
+          templateDir,
+        ]),
+      ].filter(Boolean),
       externals: {
-        nerv: 'self.Nerv',
+
       },
-      stats: 'normal',
+      stats: 'minimal',
     };
   };
 
   function getErrorInfo(err, stats) {
-    if (!stats.stats) {
+    if (stats && !stats.stats) {
       return {
         err: err || (stats.compilation && stats.compilation.errors && stats.compilation.errors[0]),
         stats,
@@ -221,11 +231,29 @@ module.exports = function run(config) {
     getConfig('worker'),
   ]);
 
-  compiler.run((err, stats) => {
-    if (err || stats.hasErrors()) {
-      log(getErrorInfo(err, stats));
-    }
+  signale.start('开始构建');
 
-    log(getErrorInfo(err, stats));
-  });
+  if (watch) {
+    compiler.watch({}, (err, stats) => {
+      if (err || stats.hasErrors()) {
+        log(getErrorInfo(err, stats));
+        return;
+      }
+
+      log(getErrorInfo(err, stats));
+      signale.timeEnd('build');
+      signale.complete('构建成功');
+    });
+  } else {
+    compiler.run((err, stats) => {
+      if (err || stats.hasErrors()) {
+        log(getErrorInfo(err, stats));
+        return;
+      }
+
+      log(getErrorInfo(err, stats));
+      signale.timeEnd('build');
+      signale.complete('构建成功');
+    });
+  }
 };

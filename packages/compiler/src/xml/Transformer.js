@@ -1,6 +1,5 @@
 const assign = require('object-assign');
-const DomHandler = require('domhandler');
-const HtmlParser = require('./htmlparser2/Parser');
+const { DomHandler, Parser: HtmlParser } = require('htmlparser2');
 const { transformExpression, hasExpression } = require('./expression');
 const {
   toLiteralString,
@@ -8,17 +7,16 @@ const {
   getDepCode,
   getRawJSXAttributeFromJson,
   getRawJson,
-  validAKeyName,
+  validKeyName,
   validVariableName,
   reportError,
 } = require('./utils');
-const { processSJSImport, processComponentImport } = require('./processImport');
-const trimForComponent = require('./prune');
+const { processSJSImport } = require('./processImport');
 
 const IMPORT = 'import';
 const cwd = process.cwd();
 const TOP_LEVEL = 4;
-const HEADER = 'export default function render(data) {';
+const HEADER = 'export default function render(data, _ctx) {';
 
 function defaultImportComponent() {
   return false;
@@ -28,7 +26,7 @@ function isJsx(c) {
   if (c.type === 'script') return false;
 
   const tag = c.type === 'tag' && c.name;
-  return tag !== 'import-module' && tag !== 'import';
+  return tag !== 'import';
 }
 
 function isTopLevel(level) {
@@ -57,7 +55,7 @@ function isRenderChildrenArray(children = [], considerFor) {
       if (attrs[this.ELIF_ATTR_NAME] || this.ELSE_ATTR_NAME in attrs) {
         return count;
       }
-      if (tag === 'import-module' || tag === 'template' && !attrs.is || tag === 'import') {
+      if (tag === 'template' && !attrs.is || tag === 'import') {
         return count;
       }
     }
@@ -83,13 +81,13 @@ function MLTransformer(template, _config) {
   }
 
   config.omitEndTag = !!config.omitEndTag;
-  config.templateExtname = config.templateExtname;
+  // config.templateExtname = config.templateExtname;
   config.projectRoot = config.projectRoot || cwd;
   config.usingComponents = config.usingComponents || {};
 
   const { templateNamespace } = config;
 
-  this.templateRuntimeModule = config.templateRuntimeModule;
+  this.templateRenderHelpers = config.templateRenderHelpers;
 
   this.IF_ATTR_NAME = `${templateNamespace}:if`;
   this.ELIF_ATTR_NAME = `${templateNamespace}:elif`;
@@ -107,16 +105,16 @@ function MLTransformer(template, _config) {
   this.importTplDeps = {};
   this.includeTplDeps = {};
   this.template = template;
-  this.header = ['import Nerv from \'nerv\';'];
+  this.header = [
+    'const Nerv = self.Nerv;',
+  ];
   this.subTemplatesCode = {};
   this.code = [];
   this.state = [];
-  // caused by import-module
   this.rootScope = this._makeScope();
   this.scope = [this.rootScope];
   this.importIncludeIndex = 1;
   this.codeDepth = [0];
-  this.scopedSlotSections = [];
   this.cKey = 0;
 }
 
@@ -153,47 +151,11 @@ assign(MLTransformer.prototype, {
     }
     return !isTopLevel(level) && --this.codeDepth[this.codeDepth.length - 1] === 0;
   },
-  /*  */
-  pushScopedSlots() {
-    const slots = [];
-    this.scopedSlotSections.push(slots);
-    this.scopedSlots = slots;
-    return slots;
-  },
-  popScopedSlots() {
-    const slots = this.scopedSlotSections.pop();
-    this.scopedSlots = this.scopedSlotSections[this.scopedSlotSections.length - 1];
-    return slots;
-  },
-  addScopedSlot(slot, slotScope, code) {
-    this.scopedSlots.push({
-      slot,
-      fn: `(${slotScope}) => (${code.join('\n')})`,
-    });
-  },
-  getScopedSlots() {
-    if (!this.scopedSlots.length) {
-      return null;
-    }
-    const ret = ['['];
-    this.scopedSlots.forEach((s) => {
-      ret.push('{');
-      if (s.slot) {
-        ret.push(`slot: ${s.slot},`);
-      }
-      ret.push(`fn: ${s.fn}`);
-      ret.push('},');
-    });
-    ret.push(']');
-    return ret.join(' ');
-  },
   pushCodeSection() {
     this.codeDepth.push(0);
-    this.pushScopedSlots();
   },
   popCodeSection() {
     this.codeDepth.pop();
-    this.popScopedSlots();
   },
   pushState() {
     this.state.push({
@@ -232,15 +194,12 @@ assign(MLTransformer.prototype, {
     this.header.push(str);
   },
   throwParseError(config, originalError) {
-    const { node } = config;
-    const { text } = config;
-    const { attrName } = config;
-    const { reason } = config;
+    const { node, text, attrName, reason } = config;
 
     let { endIndex } = node;
     const { startIndex } = node;
     const code = this.template.substring(startIndex, endIndex + 1);
-    let error = void 0;
+    let error;
 
     if (!text) {
       // 如果是属性错误，则将整个标签的开始标签提取出来，进行标记
@@ -248,7 +207,7 @@ assign(MLTransformer.prototype, {
         endIndex = node.children[0].startIndex - 1;
       } else {
         // 如果没有children，如果存在结束标签，因为结束标签不存在插值，较好匹配。正则取出其并计算结束位置
-        const endTag = /<\/((?:[a-zA-Z_][\-\.0-9_a-zA-Z]*\:)?[a-zA-Z_][\-\.0-9_a-zA-Z]*)[^>]*>$/;
+        const endTag = /<\/((?:[a-zA-Z_][\-\.0-9a-zA-Z_]*\:)?[a-zA-Z_][\-\.0-9a-zA-Z_]*)[^>]*>$/;
         const match = code.match(endTag);
         if (match) {
           endIndex = startIndex + match.index - 1;
@@ -278,9 +237,6 @@ assign(MLTransformer.prototype, {
         strictDataMember: this.config.strictDataMember,
       }, config));
     } catch (e) {
-      if (this.config.consoleError) {
-        console.error(e);
-      }
       this.throwParseError(config, e);
     }
   },
@@ -292,7 +248,7 @@ assign(MLTransformer.prototype, {
       if (attrName === this.IF_ATTR_NAME && this.isStartOfCodeSection(level)) {
         this.pushCode('{');
       }
-      let ifExp = void 0;
+      let ifExp;
       if (ifValue && ifValue !== true) {
         ifExp = this.processExpression(ifValue, {
           node: c,
@@ -315,7 +271,7 @@ assign(MLTransformer.prototype, {
       });
       this.pushCode(')');
       const nextChild = children && children[indexHolder.i + 1];
-      let transformed = void 0;
+      let transformed;
       if (ifExp) {
         this.pushCode(':');
       }
@@ -381,6 +337,7 @@ assign(MLTransformer.prototype, {
           }
         }
       }
+
       if (arrayForm) {
         this.pushCode(']');
         if (this.isEndOfCodeSection(level, true)) {
@@ -395,7 +352,7 @@ assign(MLTransformer.prototype, {
       node,
       attrName: 'data',
     }) || 'null' : 'null';
-    let key = void 0;
+    let key;
     if (attrs.key) {
       key = this.processExpression(attrs.key, {
         node,
@@ -413,12 +370,9 @@ assign(MLTransformer.prototype, {
     return code.join('\n');
   },
   getTransformedAttrs(transformedAttrs, node, attributeProcessor, jsx = true) {
-    const _this5 = this;
-
     const attrs = node.attribs || {};
-    Object.keys(attrs).forEach((attrName_) => {
-      let attrName = attrName_;
-      if (_this5.SPECIAL_ATTRS.indexOf(attrName) !== -1) {
+    Object.keys(attrs).forEach((attrName) => {
+      if (this.SPECIAL_ATTRS.indexOf(attrName) !== -1) {
         return;
       }
       let attrValue = attrs[attrName];
@@ -433,7 +387,7 @@ assign(MLTransformer.prototype, {
         node,
         attrs,
         transformedAttrs,
-        transformer: _this5,
+        transformer: this,
       };
       if (attributeProcessor && attributeProcessor(info) === false) {
         return;
@@ -445,7 +399,8 @@ assign(MLTransformer.prototype, {
         } else {
           transformedAttrValue = '';
         }
-        transformedAttrValue += _this5.processExpression(attrValue, {
+
+        transformedAttrValue += this.processExpression(attrValue, {
           node,
           attrName,
         });
@@ -469,7 +424,7 @@ assign(MLTransformer.prototype, {
   },
   generateCodeForTag(node, level) {
     const { importTplDeps, subTemplatesCode, componentDeps, includeTplDeps } = this;
-    const { attributeProcessor, tagProcessor, allowScript, allowImportModule, useFragment } = this.config;
+    const { attributeProcessor, tagProcessor, allowScript, useFragment } = this.config;
     level = level || 0;
 
     if (node.type === 'text') {
@@ -510,27 +465,6 @@ assign(MLTransformer.prototype, {
 
     const hasChildren = node.children && node.children.length;
 
-    if (attrs['slot-scope']) {
-      const slotScope = attrs['slot-scope'];
-      delete attrs['slot-scope'];
-      const slot = this.processExpression(attrs.slot, {
-        node,
-        attrName: 'slot',
-      });
-      delete attrs.slot;
-      this.pushState();
-
-      this.scope.push(this._makeScope({
-        [slotScope]: 1,
-      }));
-      this.generateCodeForTag(node, TOP_LEVEL);
-
-      const { code } = this.popState();
-
-      this.addScopedSlot(slot, slotScope, code);
-      return;
-    }
-
     // define slot and default content
     if (tag === 'slot') {
       if (this.isStartOfCodeSection(level)) {
@@ -539,10 +473,10 @@ assign(MLTransformer.prototype, {
       const transformedAttrs = this.getTransformedAttrs({}, node, null, false);
       const _slot = transformedAttrs.name || '"$default"';
       delete transformedAttrs.name;
-      this.pushCode(`$renderSlot(data, ${_slot}`);
+      this.pushCode(`$renderSlot(_ctx, ${_slot}`);
       if (hasChildren) {
         // do not push code section, still inside
-        // {data.$slots.x || <view/>}
+        // {_ctx.$slots.x || <view/>}
         this.pushCode(', (');
         this.protectGenerateCode(level, () => {
           this.generateCodeForTags(node.children, level + 2);
@@ -561,44 +495,28 @@ assign(MLTransformer.prototype, {
       return;
     }
 
-    /* 后门 */
-    if (tag === 'import-module') {
-      if (allowImportModule) {
-        const { from } = attrs;
-
-        if (typeof allowImportModule === 'function' && !allowImportModule(from)) {
-          return;
-        }
-        const depCode = getDepCode.call(this, node, 1, processComponentImport);
-        if (depCode) {
-          this.header.push(`import ${depCode} ` + 'from' + ` ${toLiteralString(from)};`);
-        }
-      }
-      return;
-    }
-
-    if (tag === 'import-sjs') {
-      // 参考#10，校验必填字段，为了不引起bracking change，只校验有name，无from的情况
-      if (attrs.name) {
-        if (attrs.from == null) {
+    const { tag: sjsTag, module: sjsModule, src: sjsSrc } = this.config.sjsTemplate;
+    if (tag === sjsTag) {
+      if (attrs[sjsModule]) {
+        if (attrs[sjsSrc] == null) {
           this.throwParseError({
             node,
-            reason: '"from" expected in import-sjs tag',
+            reason: `"${sjsSrc}" expected in ${sjsTag} tag`,
           });
         }
       }
 
-      const _depCode = getDepCode.call(this, node, 'sjs', processSJSImport);
-      if (_depCode) {
-        this.header.push(`import ${_depCode} ` + 'from' + ` ${toLiteralString(`${checkImport(attrs.from, '.sjs', this.config)}`)};`);
+      const depCode = getDepCode.call(this, node, sjsTag, processSJSImport);
+      if (depCode) {
+        this.header.push(`import ${depCode} from ${toLiteralString(`${checkImport(attrs[sjsSrc], this.config.sjsExtname, this.config)}`)};`);
       }
       return;
     }
 
     let inFor = false;
     let inForIf = false;
-    let forKey = void 0;
-    let forStartCodeLength = void 0;
+    let forKey;
+    let forStartCodeLength;
     if (this.FOR_ATTR_NAME in attrs) {
       inFor = true;
       if (this.isStartOfCodeSection(level, true)) {
@@ -611,9 +529,11 @@ assign(MLTransformer.prototype, {
       const indexName = attrs[this.FOR_INDEX_ATTR_NAME] || 'index';
       const itemName = attrs[this.FOR_ITEM_ATTR_NAME] || 'item';
       const keyName = attrs[this.FOR_KEY_ATTR_NAME];
-      if (keyName && !hasExpression(keyName) && validAKeyName(keyName)) {
+
+      if (keyName && !hasExpression(keyName) && validKeyName(keyName)) {
         forKey = keyName === '*this' ? itemName : `${itemName}.${keyName}`;
       }
+
       if (!validVariableName(indexName) || !validVariableName(itemName)) {
         this.throwParseError({
           node,
@@ -671,7 +591,7 @@ assign(MLTransformer.prototype, {
             node,
             attrName: 'is',
           });
-          const modifyFn = this.pushCode(`${this.isStartOfCodeSection(level) ? '{ ' : ''}$useTemplate($templates[${is}],${data.data},${data.key},this)${this.isEndOfCodeSection(level) ? ' }' : ''}`);
+          this.pushCode(`${this.isStartOfCodeSection(level) ? '{ ' : ''}$useTemplate($templates[${is}], ${data.data}, _ctx)${this.isEndOfCodeSection(level) ? ' }' : ''}`);
         } else {
           // define
           this.pushState();
@@ -688,16 +608,16 @@ assign(MLTransformer.prototype, {
         includeTplDeps[includePath] = includeTplDeps[includePath] || this.importIncludeIndex++;
         this.pushCode(`${this.isStartOfCodeSection(level) ? '{ ' : ''}$render$${includeTplDeps[includePath]}.apply(this, arguments)${this.isEndOfCodeSection(level) ? ' }' : ''}`);
       } else {
-        let _transformedAttrs2 = {};
+        let _transformedAttrs = {};
         if (forKey) {
-          _transformedAttrs2.key = `{${forKey}}`;
+          _transformedAttrs.key = `{${forKey}}`;
         }
-        this.getTransformedAttrs(_transformedAttrs2, node, attributeProcessor);
+        this.getTransformedAttrs(_transformedAttrs, node, attributeProcessor);
         const originalTag = tag;
         if (tagProcessor) {
           const tagProcessRet = tagProcessor({
             attrs,
-            transformedAttrs: _transformedAttrs2,
+            transformedAttrs: _transformedAttrs,
             node,
             tag,
           });
@@ -706,32 +626,25 @@ assign(MLTransformer.prototype, {
           }
           if (tagProcessRet) {
             tag = tagProcessRet.tag || tag;
-            _transformedAttrs2 = tagProcessRet.transformedAttrs || _transformedAttrs2;
+            _transformedAttrs = tagProcessRet.transformedAttrs || _transformedAttrs;
           }
         }
         componentDeps[originalTag] = 1;
         const nextLevel = level + 2;
-        let _modifyFn = void 0;
-        if (Object.keys(_transformedAttrs2).length) {
-          this.pushCode(`<${tag} `);
-          this.pushCode(getRawJSXAttributeFromJson(_transformedAttrs2));
-          _modifyFn = this.pushCode('>');
-        } else {
-          _modifyFn = this.pushCode(`<${tag}>`);
-        }
 
+        if (Object.keys(_transformedAttrs).length) {
+          this.pushCode(`<${tag} `);
+          this.pushCode(getRawJSXAttributeFromJson(_transformedAttrs));
+          this.pushCode('>');
+        } else {
+          this.pushCode(`<${tag}>`);
+        }
         // built-in components
         if (hasChildren) {
           // new code section start
           // <view>{}</view>
           this.pushCodeSection();
           this.generateCodeForTags(node.children, nextLevel, false);
-          const $scopedSlots = this.getScopedSlots();
-          if ($scopedSlots) {
-            _modifyFn((content) => {
-              return `${content.slice(0, -1)} $scopedSlots={$resolveScopedSlots(${$scopedSlots})}>`;
-            });
-          }
           this.popCodeSection();
         }
 
@@ -757,34 +670,18 @@ assign(MLTransformer.prototype, {
     }
   },
   transform(done) {
-    const { code, importTplDeps, componentDeps, subTemplatesCode, includeTplDeps, templateRuntimeModule } = this;
+    const { code, importTplDeps, componentDeps, subTemplatesCode, includeTplDeps, templateRenderHelpers } = this;
     let { header } = this;
-    const { importComponent = defaultImportComponent, strictDataMember, pureTemplateFactory } = this.config;
+    const { importComponent = defaultImportComponent, strictDataMember } = this.config;
 
-    const handler = new DomHandler((error, children) => {
+    const handlerCallback = (error, children) => {
       if (error) {
-        if (this.config.consoleError) {
-          console.error(error);
-        }
         return done(error);
-      }
-
-      /* 处理模版在worker运行的产物  */
-      if (this.config.prune) {
-        let { usingComponents } = this.config;
-
-        if (!Object.keys(usingComponents).length) {
-          usingComponents = undefined;
-        }
-        children = trimForComponent(children, usingComponents, this.config);
       }
 
       try {
         this.generateCodeForTags(children, TOP_LEVEL);
       } catch (e) {
-        if (this.config.consoleError) {
-          console.error(e);
-        }
         return done(e);
       }
 
@@ -792,70 +689,47 @@ assign(MLTransformer.prototype, {
         code.push('null');
       }
 
-      try {
-        Object.keys(componentDeps).forEach((dep) => {
-          const importStatement = importComponent(dep);
-          if (importStatement !== false) {
-            header.push(importStatement);
-          }
-        });
-      } catch (e) {
-        if (this.config.consoleError) {
-          console.error(e);
-        }
-        return done(e);
-      }
-
       header.push(
-        `const $iterate = ${templateRuntimeModule}.iterate;`,
-        `const $createRoot = ${templateRuntimeModule}.createRoot;`,
-        `const $createBlock = ${templateRuntimeModule}.createBlock;`,
-        `const $useTemplate = ${templateRuntimeModule}.useTemplate;`,
-        `const $createTemplate = ${templateRuntimeModule}.createTemplate;`,
-        `const $renderSlot = ${templateRuntimeModule}.renderSlot;`,
-        `const $resolveScopedSlots = ${templateRuntimeModule}.resolveScopedSlots;`,
-        `const $getSJSMember = ${templateRuntimeModule}.getSJSMember;`,
-        `const $toString = ${templateRuntimeModule}.toString;`,
+        `const $iterate = ${templateRenderHelpers}.iterate;`,
+        `const $createRoot = ${templateRenderHelpers}.createRoot;`,
+        `const $createBlock = ${templateRenderHelpers}.createBlock;`,
+        `const $useTemplate = ${templateRenderHelpers}.useTemplate;`,
+        `const $renderSlot = ${templateRenderHelpers}.renderSlot;`,
+        `const $getSJSMember = ${templateRenderHelpers}.getSJSMember;`,
+        `const $toString = ${templateRenderHelpers}.toString;`,
       );
 
       if (strictDataMember === false) {
         header.push(
-          `const $getLooseDataMember = ${templateRuntimeModule}.getLooseDataMember;`,
+          `const $getLooseDataMember = ${templateRenderHelpers}.getLooseDataMember;`,
         );
       }
 
       const subTemplatesName = [];
       Object.keys(importTplDeps).forEach((dep) => {
         const index = importTplDeps[dep];
-        header.push(`${IMPORT} { $ownTemplates as $ownTemplates${index} } ` + `from ${toLiteralString(dep)};`);
+        header.push(`${IMPORT} { $ownTemplates as $ownTemplates${index} } from ${toLiteralString(dep)};`);
         subTemplatesName.push(`$ownTemplates${index}`);
       });
       Object.keys(includeTplDeps).forEach((dep) => {
         const index = includeTplDeps[dep];
         header.push(`${IMPORT} $render$${index} from ${toLiteralString(dep)};`);
       });
+
       header.push(''); // empty line
 
       const hasOwnTemplates = Object.keys(subTemplatesCode).length;
       if (hasOwnTemplates) {
-        header.push('let $template;');
         header.push('export const $ownTemplates = {};');
       }
       Object.keys(subTemplatesCode).forEach((name) => {
-        const _subTemplatesCode$nam = subTemplatesCode[name];
-        const templateCode = _subTemplatesCode$nam.code;
-        const { node } = _subTemplatesCode$nam;
+        const { code: templateCode } = subTemplatesCode[name];
 
-        header.push(`$template = $ownTemplates[${toLiteralString(name)}] = function (data) {`);
+        header.push(`$ownTemplates[${toLiteralString(name)}] = function (data, _ctx) {`);
         this.pushHeaderCode('return (');
         header = this.header = header.concat(templateCode.length ? templateCode : ['null']);
         this.pushHeaderCode(');');
         header.push('};');
-        if (pureTemplateFactory) {
-          header.push(pureTemplateFactory({ node }));
-        } else {
-          header.push(`\n$template.Component = $createTemplate(${toLiteralString(name)}, $template);\n`);
-        }
       });
       header.push('let $templates = {};');
       if (subTemplatesName.length) {
@@ -871,6 +745,18 @@ assign(MLTransformer.prototype, {
         header.push('$templates = $ownTemplates;');
       }
       header.push(HEADER);
+
+      try {
+        Object.keys(componentDeps).forEach((dep) => {
+          const importStatement = importComponent(dep);
+          if (importStatement !== false) {
+            header.push(importStatement);
+          }
+        });
+      } catch (e) {
+        return done(e);
+      }
+
       this.pushHeaderCode('return $createRoot(');
       this.pushCode(');');
       code.push('};');
@@ -880,7 +766,9 @@ assign(MLTransformer.prototype, {
         retCode = this.config.formatCode(retCode);
       }
       done(null, retCode);
-    }, {
+    };
+
+    const handler = new DomHandler(handlerCallback, {
       normalizeWhitespace: false,
       withStartIndices: true,
       withEndIndices: true,

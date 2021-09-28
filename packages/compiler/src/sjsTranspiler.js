@@ -1,17 +1,12 @@
-let traverse = require('@babel/traverse');
-let generate = require('@babel/generator');
+const traverse = require('@babel/traverse').default;
+const generate = require('@babel/generator').default;
 const t = require('@babel/types');
-const codeFrameColumns = require('@babel/code-frame');
-let template = require('@babel/template');
-let babylon = require('./xml/babylon');
+const codeFrameColumns = require('@babel/code-frame').default;
+const template = require('@babel/template').default;
+const parser = require('@babel/parser');
+const { Hub, NodePath } = require('@babel/traverse');
+
 const { checkImport } = require('./utils');
-
-babylon = babylon.default || babylon;
-traverse = traverse.default || traverse;
-generate = generate.default || generate;
-template = template.default || template;
-
-const { Hub, NodePath } = traverse;
 
 const identifierPrefix = '$sjs_';
 
@@ -73,18 +68,14 @@ function isPrimitive(val) {
 }
 
 function looksLike(a, b) {
-  return (
-    a
-    && b
-    && Object.keys(b).every((bKey) => {
-      const bVal = b[bKey];
-      const aVal = a[bKey];
-      if (typeof bVal === 'function') {
-        return bVal(aVal);
-      }
-      return isPrimitive(bVal) ? bVal === aVal : looksLike(aVal, bVal);
-    })
-  );
+  return a && b && Object.keys(b).every((bKey) => {
+    const bVal = b[bKey];
+    const aVal = a[bKey];
+    if (typeof bVal === 'function') {
+      return bVal(aVal);
+    }
+    return isPrimitive(bVal) ? bVal === aVal : looksLike(aVal, bVal);
+  });
 }
 
 function isMemberExpressionProperty(path) {
@@ -126,12 +117,19 @@ const Identifier = (path) => {
       throw path.buildCodeFrameError('Error: Unexpected token');
     }
   }
+
+  if (['module', 'exports'].indexOf(path.node.name) !== -1) {
+    return;
+  }
+
   if (['Number', 'Date', 'Math'].indexOf(path.node.name) !== -1) {
     return;
   }
+
   if (looksLike(path, { node: { name: (name) => props.indexOf(name) !== -1 } })) {
     return;
   }
+
   if (looksLike(path, { node: { name: 'arguments' } })) {
     const funcParent = path.getFunctionParent();
     if (looksLike(funcParent, { type: 'Program' })) {
@@ -139,6 +137,7 @@ const Identifier = (path) => {
     }
     return;
   }
+
   if (
     looksLike(path, {
       node: { name: 'length' },
@@ -147,6 +146,7 @@ const Identifier = (path) => {
   ) {
     return;
   }
+
   path.node.name = identifierPrefix + path.node.name;
 };
 
@@ -248,12 +248,12 @@ const createImportDeclaration = (config) => (path) => {
   if (type !== 'StringLiteral') {
     return;
   }
-  const { projectRoot, renderPath } = config;
+  const { projectRoot, renderPath, transformConfig } = config;
 
   try {
     path.node.source.value = checkImport(
       value,
-      '.sjs',
+      transformConfig.sjsExtname,
       renderPath,
       projectRoot,
     );
@@ -305,10 +305,12 @@ function transpiler(code, config = {}) {
       return new Error(msg);
     },
   });
-  const ast = babylon.parse(code, {
+
+  const ast = parser.parse(code, {
     sourceType: 'module',
     plugins: ['objectRestSpread'],
   });
+
   const path = NodePath.get({
     hub,
     parentPath: null,
@@ -316,7 +318,9 @@ function transpiler(code, config = {}) {
     container: ast,
     key: 'program',
   }).setContext();
+
   const { scope } = path;
+
   traverse(
     ast,
     {

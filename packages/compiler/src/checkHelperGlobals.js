@@ -1,8 +1,8 @@
 let traverse = require('@babel/traverse');
 const codeFrameColumns = require('@babel/code-frame');
-let babylon = require('./xml/babylon');
+let parser = require('@babel/parser');
 
-babylon = babylon.default || babylon;
+parser = parser.default || parser;
 traverse = traverse.default || traverse;
 
 const { Hub, NodePath } = traverse;
@@ -59,7 +59,7 @@ module.exports = function check(code, file) {
     plugins: ['objectRestSpread', 'asyncGenerators'],
   };
 
-  const ast = babylon.parse(code, babylonConfig);
+  const ast = parser.parse(code, babylonConfig);
   const path = NodePath.get({
     hub,
     parentPath: null,

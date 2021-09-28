@@ -2,11 +2,15 @@
   "compilerOptions": {
       "baseUrl": ".",
       "paths": {
-          "@/*": ["./src/*"],
-          "@/utils/*": ["./src/utils/*"]
+          "@": ["./src"],
+          "shared": ["./src/shared"],
+          "js-bridge": ["./src/js-bridge"]
       },
       "experimentalDecorators": true
   },
+  "include": [
+    "src/**/*"
+  ],
   "exclude": [
     "node_modules"
   ]

@@ -7,9 +7,10 @@ export default function requireFile(url) {
   xhr.open('GET', url, false);
   xhr.send();
   const contentType = xhr.getResponseHeader('content-type');
-  if (/(java|ecma)script/.test(contentType)) {
+  if (/(java|ecma)script/i.test(contentType)) {
+    // eslint-disable-next-line no-eval
     return eval(xhr.responseText);
-  } else if (/json/.test(contentType)) {
+  } else if (/json/i.test(contentType)) {
     return JSON.parse(xhr.responseText);
   }
 }

@@ -7,35 +7,13 @@ function getComponentImports(pages = [], baseDir, option) {
   return getImports(getPagesComponents(pages), baseDir, option);
 }
 
-const defaultInjectScriptAfterWorkerImportScripts = (bridgeName = 'mp') => `
-var MP = self.MP;
-self.getCurrentPages = MP.getCurrentPages;
-self.getApp = MP.getApp;
-self.Page = MP.Page;
-self.App = MP.App;
-self.${bridgeName} = MP.bridge;
-self.Component = MP.Component;
-self.Behavior = MP.Behavior;
-self.$global = MP.$global;
-self.requirePlugin = MP.requirePlugin;
-`;
-
 module.exports = function generateEntries({
   src, /* miniprogramRoot 小程序source目录 */
   appJson,
-  importScripts,
-  out,
-  web,
-  native,
-  injectScript = '',
-  injectScriptForNative,
-  injectScriptAfterWorkerImportScripts,
-  pluginInjection = '',
   transformConfig,
 }) {
-  injectScriptForNative = injectScriptForNative || defaultInjectScriptAfterWorkerImportScripts(transformConfig.bridgeName);
-  injectScriptAfterWorkerImportScripts = injectScriptAfterWorkerImportScripts || defaultInjectScriptAfterWorkerImportScripts(transformConfig.bridgeName);
   const { app } = appJson;
+  const { temp } = transformConfig;
   /* 获取页面入口 */
   const pageImports = getImports(app.pages, src, {
     src,
@@ -53,10 +31,6 @@ module.exports = function generateEntries({
   };
 
   const mpApp = mpJson.app;
-
-  if (app.supportSjsHandler) {
-    mpApp.supportSjsHandler = app.supportSjsHandler;
-  }
 
   if (app.useDynamicPlugins) {
     mpApp.useDynamicPlugins = app.useDynamicPlugins;
@@ -92,53 +66,49 @@ module.exports = function generateEntries({
 
   const configJs = `
 const g = typeof global !== 'undefined' ? global : self;
-g.mpAppJson = ${JSON.stringify(mpJson, null, 2)};
+const appConfig = require('./appConfig.json');
+g.TinyConfig = appConfig;
 `;
 
-  if (out) {
-    fs.writeFileSync(path.join(out, 'config$.js'), configJs);
-  }
+  fs.writeFileSync(path.join(temp, 'config.js'), configJs);
 
-  const configImport = 'require(\'./config$\');';
-  const appImport = `require('${src}/app');`;
+  const configImport = 'require(\'./config\');';
+
+  const appImport = `require('${path.relative(temp, path.join(src, 'app'))}');`;
+
   const allComponentsRequires = getComponentImports(app.pages, src, {
     src,
     compileType: 'mini',
     type: 'component',
     transformConfig,
   });
-  const index = [
-    'require(\'compiler/sjsEnvInit\');',
-    configImport,
-    appImport,
-    ...allComponentsRequires,
-    ...pageImports,
-    '',
-  ];
-  const indexJs = ['// for rn: index$.bundle', injectScript, '']
-    .concat(index)
-    .join('\n');
-  if (native && out) {
-    fs.writeFileSync(path.join(out, 'index$.js'), indexJs);
-    fs.writeFileSync(
-      path.join(out, 'index$.native.js'),
-      `
-      ${injectScriptForNative}
 
-      require('./index$.js');`,
-    );
-  }
   const webIndex = [
-    'require(\'compiler/sjsEnvInit\');',
+    'require(\'tiny-compiler/sjsEnvInit\');',
     configImport,
     ...allComponentsRequires,
     ...pageImports,
     '',
   ];
   const indexWebJs = webIndex.join('\n');
-  if (web && out) {
-    fs.writeFileSync(path.join(out, 'index$.web.js'), indexWebJs);
-  }
+
+  fs.writeFileSync(path.join(temp, 'index.webview.js'), indexWebJs);
+
+  const workerIndex = [
+    'if(!self.__TinyInited__) {',
+    'self.__TinyInited__ = true;',
+    configImport,
+    'function success() {',
+    appImport,
+    ...allComponentsRequires,
+    ...pageImports,
+    '}',
+    'success();',
+    '}',
+  ];
+  const indexWorkerJs = workerIndex.join('\n');
+
+  fs.writeFileSync(path.join(temp, 'index.service.js'), indexWorkerJs);
 
   const packagesJs = {};
   if (app.subPackages) {
@@ -175,69 +145,21 @@ g.mpAppJson = ${JSON.stringify(mpJson, null, 2)};
         `self.bootstrapSubPackage('${root}', {success});`,
       ].join('\n');
       packagesJs[root] = packageIndexJs;
-      if (web && out) {
-        const rootDir = path.join(out, root);
-        fs.mkdirsSync(rootDir);
-        fs.writeFileSync(path.join(rootDir, 'index$.web.js'), packageIndexJs);
-        fs.writeFileSync(
-          path.join(rootDir, 'index$.worker.js'),
-          packageIndexJs,
-        );
-      }
+
+      const rootDir = path.join(temp, root);
+      fs.mkdirsSync(rootDir);
+      fs.writeFileSync(path.join(rootDir, 'index.webview.js'), packageIndexJs);
+      fs.writeFileSync(
+        path.join(rootDir, 'index.service.js'),
+        packageIndexJs,
+      );
     });
-  }
-
-  const hasImportScripts = importScripts && importScripts.length;
-  let importJs = `if(!self.Map || !self.Set || !self.Symbol) {
-    importScripts('https://gw.alipayobjects.com/as/g/mp_release/deps/1.0.3/es6-set-map-symbol.js');
-     }
-     `;
-  if (hasImportScripts) {
-    importJs += importScripts.reduce((acc, script) => {
-      acc += `importScripts(\`${script}\`);\n`;
-      return acc;
-    }, '');
-  }
-  const registerAppJson = `
-if(MP.registerApp) {
-  MP.registerApp({
-    appJSON: mpAppJson,
-  });
-}
-`;
-
-  if (web && out) {
-    fs.writeFileSync(path.join(out, 'importScripts$.js'), importJs);
-  }
-
-  const workerIndex = [
-    'if(!self.__mpInited) {',
-    'self.__mpInited = 1;',
-    injectScript,
-    configImport,
-    hasImportScripts ? 'require(\'./importScripts$\');' : '',
-    injectScriptAfterWorkerImportScripts,
-    registerAppJson,
-    pluginInjection,
-    'function success() {',
-    appImport,
-    ...allComponentsRequires,
-    ...pageImports,
-    '}',
-    'self.bootstrapApp ? self.bootstrapApp({ success }) : success();',
-    '}',
-  ];
-  const indexWorkerJs = workerIndex.join('\n');
-  if (web && out) {
-    fs.writeFileSync(path.join(out, 'index$.worker.js'), indexWorkerJs);
   }
 
   return {
     packagesJs,
-    indexJs,
     indexWebJs,
     indexWorkerJs,
     configJs,
-    importJs,
   };
 };

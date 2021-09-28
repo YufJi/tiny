@@ -1,3 +1,0 @@
-<view class="cweui-toptips {{className}} {{extClass}} {{show ? 'cweui-toptips_show' :  ''}}">
-    <block>{{msg}}</block>
-</view>

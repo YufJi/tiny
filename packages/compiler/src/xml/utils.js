@@ -33,13 +33,10 @@ function checkImport(moduleName, suffix, config) {
   if (config.nodeModules) {
     const { renderPath } = config;
     const { projectRoot } = config;
-    const _config$nodeModules = config.nodeModules;
-    const { fs } = _config$nodeModules;
-    const { path } = _config$nodeModules;
-    const { resolve } = _config$nodeModules;
+    const { fs, path, resolve } = config.nodeModules;
 
     if (fs) {
-      let fullPath = void 0;
+      let fullPath;
       if (from.startsWith('/')) {
         fullPath = path.join(projectRoot, from);
       } else if (from.startsWith('./') || from.startsWith('../')) {
@@ -83,18 +80,18 @@ function getRawJSXAttributeFromJson(transformedAttrs) {
 }
 
 function getDepCode(node, scopeType, processImport) {
-  let deps = void 0;
+  let deps;
   const { attribs } = node;
 
   try {
-    deps = attribs.name && processImport(attribs.name);
+    deps = attribs.module && processImport(attribs.module);
   } catch (e) {
     if (this.config.consoleError) {
       console.error(e);
     }
     this.throwParseError({
       node,
-      attrName: 'name',
+      attrName: 'module',
     }, e);
   }
 
@@ -122,12 +119,12 @@ function filter(fn, obj) {
   }, {});
 }
 
-const AKEY_REG = /^[\w.$]+$/;
+const KEY_REG = /^[\w.$]+$/;
 
 const V_REG = /^[$\w]+$/;
 
-function validAKeyName(str) {
-  return str === '*this' || !!str.match(AKEY_REG);
+function validKeyName(str) {
+  return str === '*this' || !!str.match(KEY_REG);
 }
 
 function validVariableName(str) {
@@ -293,7 +290,7 @@ exports.getRawJson = getRawJson;
 exports.getRawJSXAttributeFromJson = getRawJSXAttributeFromJson;
 exports.getDepCode = getDepCode;
 exports.filter = filter;
-exports.validAKeyName = validAKeyName;
+exports.validKeyName = validKeyName;
 exports.validVariableName = validVariableName;
 exports.clampStrIndex = clampStrIndex;
 exports.clampStr = clampStr;

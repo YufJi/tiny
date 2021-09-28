@@ -1,0 +1,155 @@
+.new-todo {
+  padding: 32rpx;
+  font-size: 48rpx;
+  font-style: italic;
+  font-weight: 300;
+  color: black;
+  box-shadow: none;
+  background: rgba(0, 0, 0, 0.003);
+}
+
+.filters-link {
+  display: flex;
+  padding: 6rpx 14rpx;
+  border-width: 2rpx;
+  border-style: solid;
+  border-color: transparent;
+  border-radius: 6rpx;
+}
+
+.filters-link:hover {
+  border-color: #efd5d5;
+}
+
+.selected {
+  border-color: #efd5d5;
+  border-width: 2rpx;
+}
+
+.title {
+  width: 100%;
+  font-size: 100rpx;
+  font-weight: 100;
+  text-align: center;
+  color: rgba(175, 47, 47, 0.55);
+}
+
+.header-title-wrap {
+  display: flex;
+  background-color: #F5F5F5;
+}
+
+.textinput-wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border: 1rpx solid #e6e6e6;
+}
+
+.textinput-wrap-icon {
+  font-size: 44rpx;
+  color: #e6e6e6;
+  padding: 20rpx 54rpx 20rpx 54rpx;
+  transform: rotate(90deg);
+}
+
+.todo-text-input {
+  flex: 1;
+}
+
+.textinput-wrap-input {
+  flex: 1;
+}
+
+.filters {
+  display: flex;
+  font-weight: 400;
+  margin: 0;
+  padding: 0;
+  flex-direction: row;
+  background-color: #F5F5F5;
+}
+
+.filters-item {
+  margin: 6rpx;
+}
+
+/*postcss-pxtransform rn eject enable*/
+.footer:before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 100rpx;
+  overflow: hidden;
+  box-shadow: 0 1rpx 1rpx rgba(0, 0, 0, 0.2), 0 8rpx 0 -3rpx #f6f6f6, 0 9rpx 1rpx -3rpx rgba(0, 0, 0, 0.2), 0 16rpx 0 -6rpx #f6f6f6, 0 17rpx 2rpx -6rpx rgba(0, 0, 0, 0.2);
+}
+/*postcss-pxtransform rn eject disable*/
+.footer {
+  padding: 20rpx 30rpx;
+  border-top-width: 2rpx;
+  border-top-color: #e6e6e6;
+  border-style: solid;
+  border-bottom-width: 0;
+  border-left-width: 0;
+  border-right-width: 0;
+}
+.footer-content {
+  display: flex;
+  flex-direction: row;
+}
+.todo-count {
+  flex: 1;
+  color: #777;
+}
+.todo-count strong {
+  font-weight: 300;
+}
+.clear-completed-text {
+  display: flex;
+  color: #777;
+  justify-content: flex-end;
+}
+@media (max-width: 430px) {
+  .footer {
+    height: 50rpx;
+  }
+}
+
+.checkbox-label {
+  display: flex;
+  margin: 10rpx;
+  flex-direction: row;
+  align-items: center;
+}
+
+.checkbox {
+  margin-right: 10rpx;
+}
+
+.todo-list {
+  margin: 0;
+  padding: 0;
+}
+
+.main {
+  position: relative;
+  z-index: 2;
+  border-top-width: 1rpx;
+  border-style: solid;
+  border-top-color: #e6e6e6;
+  border-bottom-width: 0;
+  border-left-width: 0;
+  border-right-width: 0;
+}
+
+.checkbox-group {
+  margin-bottom: 10rpx;
+}
+
+.todaoapp {
+  background-color: white;
+}
+

@@ -1,19 +1,13 @@
-let traverse = require('@babel/traverse');
-let babylon = require('./xml/babylon');
+const traverse = require('@babel/traverse').default;
+const parser = require('@babel/parser');
 
-babylon = babylon.default || babylon;
-traverse = traverse.default || traverse;
-
-const refVisitor = {
+const visitor = {
   ReferencedIdentifier(path) {
     const { node, scope } = path;
     const { name } = node;
-    if (
-      (name === 'module' || name === 'exports')
-      && !scope.hasBinding(name, true)
-    ) {
+    if ((name === 'module' || name === 'exports') && !scope.hasBinding(name, true)) {
       path.stop();
-      this.ret.cjs = 1;
+      this.ret.cjs = true;
     }
   },
 };
@@ -29,9 +23,9 @@ module.exports = function isCJS(code) {
       sourceType: 'module',
       plugins: ['objectRestSpread', 'asyncGenerators'],
     };
-    const ast = babylon.parse(code, babylonConfig);
+    const ast = parser.parse(code, babylonConfig);
     const ret = {};
-    traverse(ast, refVisitor, undefined, { ret });
+    traverse(ast, visitor, undefined, { ret });
     return !!ret.cjs;
   } catch (e) {
     return false;

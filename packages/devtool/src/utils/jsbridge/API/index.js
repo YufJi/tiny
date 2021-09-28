@@ -1,11 +1,24 @@
-import postMessage, { messageToRender, messageToWorker } from './postMessage';
-import { pushWindow, popTo } from './navigation';
+import { navigateTo, navigateBack } from './navigation';
+import { publish } from './publish';
+import getLaunchOptionsSync from './launchOptions';
+import { showToast } from './ui';
+import { getStorageSync, setStorageSync } from './storage';
+import { getSystemInfoSync } from './system';
+import { createRequestTask } from './request';
 
 export {
-  postMessage,
-  messageToRender,
-  messageToWorker,
+  publish,
+  navigateTo,
+  navigateBack,
 
-  pushWindow,
-  popTo,
+  getLaunchOptionsSync,
+
+  showToast,
+
+  getStorageSync,
+  setStorageSync,
+
+  getSystemInfoSync,
+  /* request */
+  createRequestTask,
 };
