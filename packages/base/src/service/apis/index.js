@@ -4,7 +4,9 @@ import { showToast, hideToast, showLoading, hideLoading, setNavigationBarTitle }
 import { getStorage, setStorage, getStorageSync, setStorageSync, getStorageInfo, getStorageInfoSync, clearStorage, clearStorageSync, removeStorage, removeStorageSync } from './Storage';
 import { getSystemInfoSync } from './System';
 import { request } from './Request';
-import {createAnimation} from './Animation' 
+import { createAnimation } from './Animation';
+import { createCanvasContext, canvasToTempFilePath } from './Canvas';
+import { createSelectorQuery } from './SelectorQuery';
 
 export {
   request,
@@ -41,4 +43,9 @@ export {
   getSystemInfoSync,
 
   createAnimation,
+
+  createCanvasContext,
+  canvasToTempFilePath,
+
+  createSelectorQuery,
 };

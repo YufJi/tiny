@@ -23,3 +23,4 @@ import './progress';
 import './switch';
 import './swiper';
 import './swiper-item';
+import './canvas';

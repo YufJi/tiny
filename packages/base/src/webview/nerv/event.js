@@ -247,8 +247,7 @@ function wrapEvent(node, nativeEvent, type) {
     offsetTop: node.offsetTop || 0,
   });
 
-  const isCanvasTouches = node.tagName.toUpperCase() === `${elementPrefix}-CANVAS`
-    && ['touchstart', 'touchend', 'touchmove', 'touchcancel'].includes(type);
+  const isCanvasTouches = node.tagName.toUpperCase() === `${upperCasePerfix}-CANVAS` && ['touchstart', 'touchend', 'touchmove', 'touchcancel'].includes(type);
 
   return {
     type,
@@ -267,7 +266,7 @@ function getTouches(touches) {
   if (touches) {
     const touchInfo = [];
 
-    for (let idx = 0; idx < touches.length; idx++) {
+    for (let idx = 0; idx < touches.length; idx+=1) {
       const touch = touches[idx];
       touchInfo.push({
         identifier: touch.identifier,
@@ -290,7 +289,7 @@ function getCanvasTouches(node, touches) {
     const touchInfo = [];
     const rect = node._getBox();
 
-    for (let idx = 0; idx < touches.length; idx++) {
+    for (let idx = 0; idx < touches.length; idx+=1) {
       const touch = touches[idx];
       touchInfo.push({
         identifier: touch.identifier,

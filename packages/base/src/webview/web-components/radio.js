@@ -33,8 +33,8 @@ documentContainer.innerHTML = `<dom-module id="radio-style">
       }
      
       :host .radio-input.radio-input-checked:before {
-        font: normal normal normal 14px/1 "ttui";
-        content: "\\e601";
+        font: normal normal normal 14px/1 "iconfont";
+        content: "\\e621";
         color: #ffffff;
         font-size: 28px;
         position: absolute;

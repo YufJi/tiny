@@ -5,6 +5,7 @@ export function getSystemInfoSync() {
       language: 'zh',
       platform: 'ios',
       SDKVersion: '',
+      pixelRatio: window.devicePixelRatio,
     },
   };
 }

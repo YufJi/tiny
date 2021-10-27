@@ -7,8 +7,8 @@ import * as API from './API';
 export const CUSTOM_EVENT = 'custom_event_';
 
 const bridge = {
-  publish(event, paramsString, webviewIds, __IS_WORKER__) {
-    return API.publish(event, paramsString, webviewIds, __IS_WORKER__);
+  publish(event, params, webviewIds, __IS_WORKER__) {
+    return API.publish(event, params, webviewIds, __IS_WORKER__);
   },
   call(method, params, webviewIds, callbackId) {
     if (typeof API[method] === 'function') {

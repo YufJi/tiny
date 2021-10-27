@@ -5,6 +5,8 @@ import { tryCatch } from '../util';
 import { isShadowRoot, getShadowRootId } from './utils';
 import { disableScroll, enableScroll, pageScrollTo } from './utils/scroll';
 import { requestObserver, removeObserver, initTriggerListener } from './utils/observer';
+import { requestComponentInfo } from './utils/info';
+import { getRelationNodes, getRelation, setRelation } from './utils/relation';
 
 export function onComponentDataChange(bridge, componentHub) {
   bridge.replyService(COMPONENT_DATA_CHANGE)(
@@ -25,7 +27,7 @@ export function onTriggerComponentEvent(bridge, componentHub) {
   );
 }
 
-function triggerCustomEvent(component, eventName, detail, option) {
+function triggerCustomEvent(component, eventName, detail = {}, option = {}) {
   const { bubbles, composed } = option;
 
   const event = new Event(eventName, {
@@ -99,7 +101,7 @@ export function onRequestComponentObserver(bridge, componentHub, emitter, root) 
 
     if (type === 'addIntersectionObserver') {
       const { nodeId, ...rest } = req;
-      const observerId = requestObserver(nodeId ? componentHub.get(nodeId) : root, rest, (info) => {
+      const observerId = requestObserver(nodeId ? componentHub.instances.get(nodeId) : root, rest, (info) => {
         publish('responseComponentObserver', {
           reqId,
           res: { info },
@@ -147,6 +149,27 @@ export function onAnimationStatusChange(emitter) {
       emitter.emit('RE_RENDER', 'animation');
     }, 20), true);
   });
+}
+
+export function onGetRelationNode(bridge, componentHub) {
+  bridge.replyService('getRelationNodes')(tryCatch('GET_RELATION_NODE', (e) => {
+    const { relation, nodeId } = e;
+    const component = componentHub.instances.get(nodeId);
+
+    return isNil(component) ? [] : getRelationNodes(component, relation);
+  }));
+}
+
+export function triggerRelationsEvent(element, isAttached, publish) {
+  const relation = getRelation(element) || new Map();
+
+  if (isAttached) {
+    // setRelation(element, computeRelations(element));
+  } else {
+    // publish('COMPONENT_RELATION_CHANGE', {
+    //   data: diffRelationRegistry(new Map(), relation),
+    // });
+  }
 }
 
 export {

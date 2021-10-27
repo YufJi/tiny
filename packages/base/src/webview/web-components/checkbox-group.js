@@ -13,8 +13,6 @@ class CheckboxGroup extends Group(Data(Base(PolymerElement))) {
         :host {
           display: block;
         }
-
-
       </style>
       <slot></slot>
     `;

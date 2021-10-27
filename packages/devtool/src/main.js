@@ -7,6 +7,10 @@ import App from './app';
 import 'normalize.css';
 import './global.css';
 
+window.addEventListener('resize', () => {
+  window.location.reload();
+});
+
 ReactDOM.render(
   <Provider
     store={store}

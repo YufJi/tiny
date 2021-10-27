@@ -30,6 +30,7 @@ const supportedWebComponents = [
   'switch',
   'swiper',
   'swiper-item',
+  'canvas',
 ];
 
 const supportedH5Tags = ['i'];
@@ -105,7 +106,7 @@ function normalizeTag(tag) {
   if (supportTags.includes(tag)) {
     return `${elementPrefix}-${tag}`;
   } else {
-    return `${elementPrefix}-unknown`;
+    return `${tag}`;
   }
 }
 

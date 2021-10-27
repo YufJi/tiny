@@ -1,5 +1,5 @@
 import { last, isEqual } from 'lodash';
-import { onNative } from '../bridge';
+import { onNative, publish } from '../bridge';
 import context from '../context';
 import { triggerShowCbs, triggerHideCbs } from '../apis/AppEvents';
 import { getPageStack } from '../Route';
@@ -30,8 +30,6 @@ export default function loadApp(app) {
 
   // 页面切到后台时，将最上层页面‘隐藏’，然后让App‘隐藏’
   onNative('onAppEnterBackground', () => {
-    handlePageEnterBackground();
-    triggerHideCbs();
     handleAppEnterBackground(app);
   });
 
@@ -53,7 +51,6 @@ function handleAppLaunch(param) {
 
 function handleAppEnterForeground(app, param) {
   if (APP_STATE.firstColdLaunch) {
-    // 忽略首次调用以保证冷启同步, TODO 这是怎么回事
     APP_STATE.willRoute = false;
     APP_STATE.firstColdLaunch = false;
     return;
@@ -61,8 +58,8 @@ function handleAppEnterForeground(app, param) {
 
   const pages = getPageStack();
   const currentPage = last(pages);
-  let path; let
-    query;
+  let path;
+  let query;
 
   if (APP_STATE.willRoute) {
     // 后面将有一次onAppRoute，会改变currentPage
@@ -81,8 +78,9 @@ function handleAppEnterForeground(app, param) {
     query,
     path,
   };
-  triggerShowCbs(showOptions);
+
   app.onShow(showOptions);
+  triggerShowCbs(showOptions);
 
   // 页面onShow生命周期将有route管理
   if (!APP_STATE.willRoute) {
@@ -97,7 +95,7 @@ function handleAppEnterForeground(app, param) {
   APP_STATE.willRoute = false;
 }
 
-function handlePageEnterBackground() {
+function handleAppEnterBackground(app) {
   const pages = getPageStack();
 
   if (pages.length) {
@@ -106,4 +104,7 @@ function handlePageEnterBackground() {
     // notify webview
     publish('onAppEnterBackground', {}, currentPage.webviewId);
   }
+
+  triggerHideCbs();
+  app.onHide();
 }

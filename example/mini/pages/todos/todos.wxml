@@ -1,5 +1,6 @@
 
 <scroll-view class="page-todos" scroll-y="true">
+  <canvas canvas-id="canvas" class="canvas" ></canvas>
   <view
     id="parent" 
     style="background: green;"
@@ -28,11 +29,11 @@
     <add-button id="asxx" xx="xxx" text="xixi {{text}}" bind:click_me="{{fn}}"></add-button>
   </view>
 
-  <button bind:tap="ani1">ani1</button>
-
+ <button bind:tap="nav">nav</button>
+ 
   <view class="user">
     <image class="avatar" src="{{user.avatar || '../../assets/logo.png'}}" background-size="cover"></image>
-    <view class="nickname">{{user.nickName && user.nickName + '\'s' || 'mp'}} Todo List</view>
+    <view class="nickname">{{user.nickName && user.nickName + '\'s' || 'tiny'}} Todo List</view>
     <view class="test">Todo List</view>
   </view>
 
@@ -65,7 +66,7 @@
     <view data-xhq="jyf" bind:longpress="clickChild" style="margin-top: 120rpx; background: red;">{{haha}}</view>
   </view>
 
-  <view class="container">
+  <view class="container xx-{{duration}}">
     <view class="page-body">
       <view class="page-section page-section-spacing swiper">
         <swiper indicator-dots="{{indicatorDots}}"
@@ -82,7 +83,8 @@
           <view class="weui-cell weui-cell_switch">
             <view class="weui-cell__bd">指示点</view>
             <view class="weui-cell__ft">
-              <switch checked="{{indicatorDots}}" bindchange="changeIndicatorDots" />
+              <!-- <switch checked="{{indicatorDots}}" bindchange="changeIndicatorDots" /> -->
+              <switch type="checkbox"  checked="{{indicatorDots}}" bindchange="changeIndicatorDots" />
             </view>
           </view>
           <view class="weui-cell weui-cell_switch">
@@ -108,7 +110,10 @@
       </view>
     </view>
   </view>
-
+  <icon type="success_no_circle"></icon>
+  <radio value="r1" checked="true" />
   <view bind:tap="showToast">showToast</view>
-  <button bind:tap="nav">nav</button>
+ 
+    <button bind:tap="ani1">ani1</button>
+
 </scroll-view>

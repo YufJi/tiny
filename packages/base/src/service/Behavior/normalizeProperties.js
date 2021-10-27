@@ -1,4 +1,5 @@
 import { isObject } from 'lodash';
+import { getType } from 'shared';
 
 import { warn } from '../utils';
 

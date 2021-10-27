@@ -1,9 +1,10 @@
 import { forOwn, hasIn, kebabCase, memoize, isEqual, camelCase, isPlainObject, isObject } from 'lodash';
-import { mergeData, getType } from 'shared';
+import { getType } from 'shared';
 import { PAGE_EVENT, COMPONENT_EVENT, COMPONENT_DATA_CHANGE } from 'shared/events/custom';
 import { useState, useContext, useLayoutEffect, useEffect, Children } from '../nerv';
 import { usePageFields, useCreation, useJSBridge, usePrevious } from '../common/hooks';
 import { ComponentHubContext } from '../context';
+import { mergeData } from '../util';
 
 export function useComponentHubContext() {
   return useContext(ComponentHubContext);
@@ -193,6 +194,9 @@ export function useRenderContext(props, nodeId, is, config, resolveComponent) {
   });
 
   return {
+    $$class(t) {
+      return `${String(t)}`;
+    },
     $$slots: transformChildrenToSlots(props.children),
     $$eventBinder: eventBinder,
     $$resolveComponent: resolveComponent,

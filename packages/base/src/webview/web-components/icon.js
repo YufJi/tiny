@@ -12,10 +12,8 @@ documentContainer.innerHTML = `<dom-module id="icon-style">
         font-size: 0;
       }
 
-      
-
       #icon {
-        font: normal normal normal 14px/1 "mpui";
+        font: normal normal normal 14px/1 "iconfont";
       }
 
       #icon[class^="icon-"]:before,
@@ -25,23 +23,31 @@ documentContainer.innerHTML = `<dom-module id="icon-style">
       }
 
       .icon-success { color: #09BB07; }
-      .icon-success:before { content: "\\e613"; }
+      .icon-success:before { content: "\\e61b"; }
+
       .icon-success_no_circle { color: #09BB07;}
-      .icon-success_no_circle:before { content: "\\e610";}
+      .icon-success_no_circle:before { content: "\\e621"; }
+
       .icon-info { color: #CACACA; }
-      .icon-info:before { content: "\\e60d"; }
+      .icon-info:before { content: "\\e61c"; }
+
       .icon-warn { color: #F5A623;}
-      .icon-warn:before { content: "\\e614";}
+      .icon-warn:before { content: "\\e623";}
+
       .icon-waiting { color: #50ABF9;}
-      .icon-waiting:before { content: "\\e612";}
+      .icon-waiting:before { content: "\\e61f";}
+
       .icon-clear { color: #09BB07;}
-      .icon-clear:before { content: "\\e615";}
+      .icon-clear:before { content: "\\e620";}
+
       .icon-cancel { color: #222222;}
-      .icon-cancel:before { content: "\\e611";}
+      .icon-cancel:before { content: "\\e61d";}
+
       .icon-download { color: #222222;}
-      .icon-download:before { content: "\\e60f";}
+      .icon-download:before { content: "\\e61e";}
+      
       .icon-search { color: #222222;}
-      .icon-search:before { content: "\\e60e";}
+      .icon-search:before { content: "\\e622";}
     </style>
   </template>
 </dom-module>`;

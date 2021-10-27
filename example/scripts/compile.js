@@ -21,6 +21,6 @@ compiler({
   sjsExtname: '.wxs',
 
   runtimeConfig: {
-
+    // context: 'biz/'
   },
 });

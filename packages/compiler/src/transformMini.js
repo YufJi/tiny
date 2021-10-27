@@ -68,7 +68,7 @@ module.exports = function run(config) {
   });
 
   /* 生成入口文件 index.web 和 index.worker */
-  generateEntries({
+  const { packagesJs } = generateEntries({
     src: sourceDir,
     appJson,
     importScripts,
@@ -84,17 +84,20 @@ module.exports = function run(config) {
     transformConfig,
   });
 
+  // 静态资源文件打包直接复制
   const assetExtnames = ['*.eot', '*.woff', '*.ttf', '*.text', '*.png', '*.jpg', '*.jpeg', '*.gif', '*.bmp', '*.svg', '*.webp'];
 
   const getConfig = (type) => {
     const isWorker = type === 'worker';
     const config = assign({}, transformConfig, { cwd: sourceDir });
 
-    const templateDir = path.join(__dirname, './templates/web');
+    const templateDir = path.join(__dirname, '../templates/web');
 
     return {
       entry: isWorker ? {
+        // 主包
         service: path.join(temp, 'index.service.js'),
+        // 分包
       } : {
         webview: path.join(temp, 'index.webview.js'),
       },
@@ -231,7 +234,7 @@ module.exports = function run(config) {
     getConfig('worker'),
   ]);
 
-  signale.start('开始构建');
+  signale.start('开始打包');
 
   if (watch) {
     compiler.watch({}, (err, stats) => {
@@ -241,8 +244,8 @@ module.exports = function run(config) {
       }
 
       log(getErrorInfo(err, stats));
-      signale.timeEnd('build');
       signale.complete('构建成功');
+      signale.timeEnd('build');
     });
   } else {
     compiler.run((err, stats) => {
@@ -252,8 +255,8 @@ module.exports = function run(config) {
       }
 
       log(getErrorInfo(err, stats));
-      signale.timeEnd('build');
       signale.complete('构建成功');
+      signale.timeEnd('build');
     });
   }
 };

@@ -23,7 +23,7 @@ export default (env): IConfig => {
       /\.svg$/,
     ],
     webpack(config) {
-      config.stats = 'minimal';
+      config.stats = 'normal';
     },
     devServer: {
       port: 8080,
