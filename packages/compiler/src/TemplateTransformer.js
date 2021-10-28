@@ -31,6 +31,8 @@ class TemplateTransformer extends Transformer {
 
     const {
       usingComponents,
+      renderPath,
+      projectRoot,
     } = config;
 
     assign(config, {
@@ -45,21 +47,6 @@ class TemplateTransformer extends Transformer {
         const isEvent = xmlEventReg.test(attrName);
 
         if (isEvent) {
-          /* 处理一下方便jsx中正则匹配 */
-          // attrName = attrName.replace(xmlEventReg, (match, $1, $2) => {
-          //   if (/^bind:?$/.test($1)) {
-          //     return `bind${$2}`;
-          //   } else if (/^catch:?$/.test($1)) {
-          //     return `catch${$2}`;
-          //   } else if (/^capture-bind:$/.test($1)) {
-          //     return `capture-bind${$2}`;
-          //   } else if (/^capture-catch:$/.test($1)) {
-          //     return `capture-catch${$2}`;
-          //   } else {
-          //     return match;
-          //   }
-          // });
-
           const handlerFn = this.processExpression(attrValue, {
             node,
             attrName,
@@ -69,14 +56,26 @@ class TemplateTransformer extends Transformer {
 
           transformedAttrs[attrName] = `{${handleFn}(${handlerFn})}`;
           return false;
+        } else if (attrName === 'class') {
+          const classNames = this.processExpression(attrValue, {
+            node,
+            attrName,
+          });
+          transformedAttrs.class = `{_ctx.$$class(${classNames})}`;
+          return false;
         } else if (attrName === 'children') {
           throw new Error(
             `${node.name} can not have children prop, please change prop name!`,
           );
         }
-        return undefined;
       },
-      tagProcessor: ({ tag }) => {
+      tagProcessor: ({ tag, transformedAttrs }) => {
+        // 内置组件添加属__dirname, 便于获取真实图片等资源地址
+        if (supportedWebComponents.indexOf(tag) !== -1) {
+          const dirName = path.dirname(path.relative(projectRoot, renderPath));
+          transformedAttrs.__dirname = `"${dirName}"`;
+        }
+
         return {
           tag: toComponentName(tag),
         };

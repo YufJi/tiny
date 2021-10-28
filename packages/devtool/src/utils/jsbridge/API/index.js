@@ -5,6 +5,7 @@ import { showToast } from './ui';
 import { getStorageSync, setStorageSync } from './storage';
 import { getSystemInfoSync } from './system';
 import { createRequestTask } from './request';
+import { measureText } from './measureText';
 
 export {
   publish,
@@ -21,4 +22,6 @@ export {
   getSystemInfoSync,
   /* request */
   createRequestTask,
+
+  measureText,
 };

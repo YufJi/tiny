@@ -2,8 +2,9 @@ const path = require('path');
 const argv = require('./minimist')(process.argv.slice(2));
 const compiler = require('../../packages/compiler/src');
 
+const cwd = process.cwd();
 const outPath = path.join(__dirname, '../../packages/devtool/static/biz');
-const root = path.join(__dirname, `../${argv.name}`);
+const root = path.join(cwd, argv.root);
 
 compiler({
   src: root,
@@ -21,6 +22,6 @@ compiler({
   sjsExtname: '.wxs',
 
   runtimeConfig: {
-
+    // context: 'biz/'
   },
 });

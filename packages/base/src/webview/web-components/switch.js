@@ -86,8 +86,8 @@ documentContainer.innerHTML = `
           color: #09BB07;
         }
         :host .checkbox-input.checkbox-input-checked:before {
-          font: normal normal normal 14px/1 "mpui";
-          content: "\e601";
+          font: normal normal normal 14px/1 "iconfont";
+          content: "\\e621";
           color: inherit;
           font-size: 28px;
           position: absolute;

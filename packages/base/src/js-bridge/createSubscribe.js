@@ -1,4 +1,5 @@
 import EventEmitter from 'eventemitter3';
+import { getType } from 'shared';
 
 import { CUSTOM_EVENT } from './const';
 
@@ -28,6 +29,8 @@ export default function createSubscribe() {
           console.error('解析出错数据:', data);
           params = {};
         }
+      } else if (getType(data) === 'object') {
+        params = data;
       }
 
       /* 再检查一次 */

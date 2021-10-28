@@ -1,5 +1,5 @@
 import { isNil, memoize, isBoolean } from 'lodash';
-import { Deferred, mergeData } from 'shared';
+import { Deferred } from 'shared';
 import { INIT_DATA_READY, APP_DATA_CHANGE, PAGE_EVENT, PAGE_READY, PAGE_SHOW } from 'shared/events/custom';
 import { useState, useRef, useLayoutEffect, useEffect, useMemo, useReducer, transformRpx } from '../nerv';
 import { useJSBridgeFn, useJSBridge, useConfigContext, usePageFields, useCreation } from '../common/hooks';
@@ -9,6 +9,7 @@ import {
   onPageScrollTo,
   onRequestComponentObserver,
   onRequestComponentInfo,
+  onGetRelationNode,
   onSelectComponent,
   onSelectComponentInPage,
   onTriggerComponentEvent,
@@ -17,6 +18,7 @@ import {
   enableScroll,
 } from '../api';
 import { registerCustomComponents, createComponentResolve } from '../Component';
+import { mergeData } from '../util';
 
 /* 获取generateFunc */
 export function useCompileResult() {
@@ -81,6 +83,9 @@ export function useRenderContext() {
   });
 
   return {
+    $$class(t) {
+      return `${String(t)}`;
+    },
     $$slots: {},
     $$eventBinder: eventBinder,
     $$resolveComponent: resolveComponent,
@@ -289,6 +294,7 @@ export function useJSCoreEvent(componentHub) {
     onSelectComponentInPage(bridge, root);
     onSelectComponent(bridge, componentHub);
     onRequestComponentInfo(bridge, componentHub, root);
+    onGetRelationNode(bridge, componentHub);
     onAnimationStatusChange(emitter);
     onAppLoadStatusChange(bridge);
     onDisableScroll(bridge);

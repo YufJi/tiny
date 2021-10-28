@@ -108,7 +108,7 @@ export class ComponentModel extends BaseModel {
       eventDetail: detail,
       eventOption: options,
     }, this.__webviewId__).catch((e) => {
-      error(e);
+      error('triggerComponentEvent', e);
     });
   }
 
@@ -127,7 +127,7 @@ export class ComponentModel extends BaseModel {
 
       callback.call(this, result);
     }).catch((e) => {
-      error(e);
+      error('getRelationNodes', e);
     });
   }
 }

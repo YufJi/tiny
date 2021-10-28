@@ -1,8 +1,15 @@
 {
   "pages": [
     "pages/todos/todos",
-    "pages/add-todo/add-todo"
+    "pages/add-todo/add-todo",
+    "pages/bar/index"
   ],
+  "subPackages": [{
+    "root": "packageA",
+    "pages": [
+      "pages/c/c"
+    ]
+  }],
   "window": {
     "navigationBarTitleText": "哈哈哈"
   },

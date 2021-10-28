@@ -16,10 +16,10 @@ window.JSCore = {
 
     return host.JSBridgeInstance.call(event, params, webviewIds, callbackId);
   },
-  publish(event, paramsString, webviewIdsString, __IS_SERVICE__) {
+  publish(event, params, webviewIdsString, __IS_SERVICE__) {
     const webviewIds = JSON.parse(webviewIdsString);
 
-    host.JSBridgeInstance.publish(event, paramsString, webviewIds, __IS_SERVICE__);
+    host.JSBridgeInstance.publish(event, params, webviewIds, __IS_SERVICE__);
   },
   setTimer(type, id, delay) {
     let timer;

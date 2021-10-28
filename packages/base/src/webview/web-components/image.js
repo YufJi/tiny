@@ -64,6 +64,9 @@ class Image extends Base(PolymerElement) {
         type: Boolean,
         observer: 'lazyLoadChanged',
       },
+      __dirname: {
+        type: String,
+      },
     };
   }
 
@@ -121,7 +124,7 @@ class Image extends Base(PolymerElement) {
   srcChanged(old, newOne) {
     if (this._attached && old !== newOne) {
       setTimeout(() => {
-        this._changeId++;
+        this._changeId+=1;
         document.removeEventListener('pageReRender', this.__pageReRenderCallback);
 
         this._showImage(this._changeId);
@@ -305,11 +308,10 @@ class Image extends Base(PolymerElement) {
           || source.indexOf('file://') === 0
           || source.indexOf('data:image') === 0 // base64
           || source.indexOf('local://') === 0 // support custom protocol of IDE
-          || source.indexOf('temp://') === 0 // support custom protocol of IDE
       ) {
         src = source;
       } else {
-        src = getRealRoute(window.dirName || '', source);
+        src = getRealRoute(this.__dirname || '', source);
       }
     }
 

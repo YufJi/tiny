@@ -146,13 +146,10 @@ g.TinyConfig = appConfig;
       ].join('\n');
       packagesJs[root] = packageIndexJs;
 
-      const rootDir = path.join(temp, root);
-      fs.mkdirsSync(rootDir);
-      fs.writeFileSync(path.join(rootDir, 'index.webview.js'), packageIndexJs);
-      fs.writeFileSync(
-        path.join(rootDir, 'index.service.js'),
-        packageIndexJs,
-      );
+      const subPackageDir = path.join(temp, root);
+      fs.mkdirsSync(subPackageDir);
+      fs.writeFileSync(path.join(subPackageDir, 'index.webview.js'), packageIndexJs);
+      fs.writeFileSync(path.join(subPackageDir, 'index.service.js'), packageIndexJs);
     });
   }
 

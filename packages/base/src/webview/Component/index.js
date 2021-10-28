@@ -1,9 +1,10 @@
 import { memoize } from 'lodash';
 import path from 'path';
 import { COMPONENT_DATA_CHANGE } from 'shared/events/custom';
-import { h, useDangerousReverseLayoutEffect, useLayoutEffect, useRef } from '../nerv';
+import { h, useDangerousReverseLayoutEffect, useEffect, useLayoutEffect, useRef } from '../nerv';
 import { useJSBridge } from '../common/hooks';
 import { getRealRoute } from '../util';
+import { triggerRelationsEvent } from '../api';
 import {
   useComponentHubContext,
   useDataChange,
@@ -57,12 +58,15 @@ function defineCustomComponent(is, options, customComponentMap) {
     const changedData = useDataChange(nodeId, data, refinedProps);
     const [created, attached, ready, detached] = useLifeCycleHooks(nodeId, is);
 
-    useDangerousReverseLayoutEffect(() => {
+    useLayoutEffect(() => {
       created();
       syncInitialInfo(props, nodeId, publish);
       syncInitialProps(refinedProps, nodeId, publish);
       syncInitialDataset(refinedDataset, nodeId, publish);
       attached();
+    }, []);
+
+    useEffect(() => {
       ready();
 
       return () => {
@@ -96,14 +100,15 @@ function ShadowRoot(props) {
   useLayoutEffect(() => {
     const node = ref.current;
 
-    node._type_ = 'SHADOW_ROOT:custom-comp';
+    node._type_ = 'SHADOW_ROOT:custom-component';
     node._nodeId_ = $nodeId;
     node._config_ = $config;
-    node.setAttribute('__cc-name__', $name);
     instances.set($nodeId, node);
+    triggerRelationsEvent(node, true, publish);
 
     return () => {
       instances.remove($nodeId);
+      triggerRelationsEvent(node, false, publish);
     };
   }, []);
 

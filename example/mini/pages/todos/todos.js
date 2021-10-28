@@ -35,6 +35,7 @@ Page({
     animation.scale(5, 5).rotate(120).step();
 
     this.setData({
+      todos: app.todos,
       text: 'load',
       animationData: animation.export(),
     });
@@ -72,6 +73,12 @@ Page({
     this.setData({
       animationData: animation.export(),
     });
+
+
+    const ctx = wx.createCanvasContext('canvas')
+    ctx.setFillStyle('red')
+    ctx.fillRect(10, 10, 150, 75)
+    ctx.draw();
   },
 
   onHide() {
@@ -200,7 +207,7 @@ Page({
   },
   nav() {
     wx.navigateTo({
-      url: '../todos/todos',
+      url: '../bar/index',
     });
   },
   ani1() {

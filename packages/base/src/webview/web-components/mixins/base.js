@@ -1,6 +1,7 @@
 /* eslint-disable no-inner-declarations */
 /* eslint-disable func-names */
 import { addListener } from '../../nerv/event';
+import { publish, subscribe } from '../../bridge';
 
 export default function Base(SuperClass) {
   return class extends SuperClass {
@@ -11,6 +12,14 @@ export default function Base(SuperClass) {
           reflectToAttribute: true,
         },
       };
+    }
+
+    get publish() {
+      return publish;
+    }
+
+    get subscribe() {
+      return subscribe;
     }
 
     connectedCallback() {

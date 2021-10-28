@@ -3,6 +3,7 @@
 /* eslint-disable class-methods-use-this */
 import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
+import classnames from 'classnames';
 import StatusBar from '@/components/statusBar';
 import Nav from '@/components/nav';
 
@@ -64,6 +65,11 @@ class App extends PureComponent {
       /* 这个事件没啥用 */
       renderIframe.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('onLoadApp', '${JSON.stringify({})}')`);
 
+      // 冷启动
+      global.service.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('onAppEnterForeground', '${JSON.stringify({
+
+      })}')`);
+
       serviceIframe.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('onAppRoute', '${JSON.stringify({
         path: homePage,
         openType: 'appLaunch',
@@ -75,14 +81,18 @@ class App extends PureComponent {
     this.setState({
       mpVisible: false,
     });
-    // 触发一些事件
+    // 触发切后台事件
+    global.service.contentWindow.executeJavaScript('JSBridge.subscribeHandler(\'onAppEnterBackground\')');
   }
 
   showMP = () => {
     this.setState({
       mpVisible: true,
     });
-    // 触发一些事件
+    // 触发切前台事件
+    global.service.contentWindow.executeJavaScript(`JSBridge.subscribeHandler(\'onAppEnterForeground\', '${JSON.stringify({
+
+    })}')`);
   }
 
   handleNavBack = () => {
@@ -92,11 +102,16 @@ class App extends PureComponent {
   render() {
     const { mpVisible } = this.state;
 
+    const MPContainerCls = classnames({
+      [style.MPContainer]: true,
+      [style.hide]: !mpVisible,
+    });
+
     return (
       <div id="app" className={`${style.app}`}>
         <StatusBar />
         <div id="serviceFrame" className={style.serviceFrame} />
-        <div className={`${style.MPContainer} ${mpVisible ? '' : style.hide} f-page flex-c`}>
+        <div className={`${MPContainerCls} f-page flex-c`}>
           <Nav
             navBack={this.handleNavBack}
             hideMP={this.hideMP}
@@ -109,6 +124,8 @@ class App extends PureComponent {
         {!mpVisible && (
           <div className={`${style.openMP} flex-r`} onClick={this.showMP} />
         )}
+
+        <canvas id="canvas" width="500" height="100" />
       </div>
     );
   }
