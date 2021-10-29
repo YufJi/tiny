@@ -11,6 +11,8 @@ const generateAppJson = require('./generateAppJson');
 const generateAppConfigJson = require('./generateAppConfigJson');
 const { safeJsonParse, normalizePathForWin } = require('./utils');
 
+const transform = require('./transform');
+
 const isDev = process.env.NODE_ENV === 'development';
 
 /**
@@ -83,6 +85,10 @@ module.exports = function run(config) {
     contextPath,
     transformConfig,
   });
+
+  /* 完全转译出文件 */
+  // transform(assign({}, transformConfig, { cwd: src }));
+  // return;
 
   // 静态资源文件打包直接复制
   const assetExtnames = ['*.eot', '*.woff', '*.ttf', '*.text', '*.png', '*.jpg', '*.jpeg', '*.gif', '*.bmp', '*.svg', '*.webp'];

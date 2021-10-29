@@ -192,7 +192,8 @@ function transformExpressionByPart(str_, scope, config) {
   }
   const str = str_.trim();
   if (!str.match(expressionTagReg)) {
-    return [`'${escapeString(str_)}'`];
+    /* 使用``兼容换行文本 */
+    return [`\`${escapeString(str_)}\``];
   }
 
   let match = str.match(fullExpressionTagReg);
@@ -207,14 +208,14 @@ function transformExpressionByPart(str_, scope, config) {
   while (match = expressionTagReg.exec(str)) {
     const code = match[1];
     if (match.index !== lastIndex) {
-      gen.push(`'${escapeString(str.slice(lastIndex, match.index))}'`);
+      gen.push(`\`${escapeString(str.slice(lastIndex, match.index))}\``);
     }
     gen.push(transformCode(code, scope, config));
     lastIndex = expressionTagReg.lastIndex;
   }
 
   if (lastIndex < totalLength) {
-    gen.push(`'${escapeString(str.slice(lastIndex))}'`);
+    gen.push(`\`${escapeString(str.slice(lastIndex))}\``);
   }
 
   return gen;

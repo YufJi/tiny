@@ -33,7 +33,7 @@ const supportedWebComponents = [
   'canvas',
 ];
 
-const supportedH5Tags = ['i'];
+const supportedH5Tags = ['i', 'a'];
 
 function isNumber(str) {
   return !!str.trim().match(matchOnlyNumberRe);
