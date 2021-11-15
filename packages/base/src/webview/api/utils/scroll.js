@@ -1,5 +1,7 @@
-import { COMPONENT_DATA_CHANGE, PAGE_EVENT } from 'shared/events/custom';
+import { CustomEvent } from 'shared';
 import { PASSIVE } from '../../nerv/passive-event';
+
+const { COMPONENT_DATA_CHANGE, PAGE_EVENT } = CustomEvent;
 
 let scrollFlag = false;
 let pullupRefreshLock = true;

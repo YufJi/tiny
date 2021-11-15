@@ -1,7 +1,8 @@
 import { set } from 'lodash';
-import { COMPONENT_DATA_CHANGE, APP_DATA_CHANGE } from 'shared/events/custom';
+import { CustomEvent } from 'shared';
 import { invokeWebview } from '../bridge';
 
+const { COMPONENT_DATA_CHANGE, APP_DATA_CHANGE } = CustomEvent;
 const setDataTask = new WeakMap();
 
 export function afterSetData(model, callback) {

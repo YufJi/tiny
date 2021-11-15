@@ -1,6 +1,6 @@
 import { memoize } from 'lodash';
 import path from 'path';
-import { COMPONENT_DATA_CHANGE } from 'shared/events/custom';
+import { CustomEvent } from 'shared';
 import { h, useDangerousReverseLayoutEffect, useEffect, useLayoutEffect, useRef } from '../nerv';
 import { useJSBridge } from '../common/hooks';
 import { getRealRoute } from '../util';
@@ -16,6 +16,8 @@ import {
   useNodeId,
   useRenderContext,
 } from './hooks';
+
+const { COMPONENT_DATA_CHANGE } = CustomEvent;
 
 export function registerCustomComponents(__allConfig__, customComponents) {
   const customComponentMap = new Map();

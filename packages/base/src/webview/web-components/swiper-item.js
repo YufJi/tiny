@@ -1,5 +1,5 @@
 import { html, PolymerElement } from '@polymer/polymer';
-import { elementPrefix, upperCasePerfix } from 'shared/config';
+import { elementPrefix, upperCasePerfix } from 'shared';
 import { Base } from './mixins';
 
 class SwiperItem extends Base(PolymerElement) {

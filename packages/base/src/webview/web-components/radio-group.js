@@ -1,5 +1,5 @@
 import { html, PolymerElement } from '@polymer/polymer';
-import { elementPrefix } from 'shared/config';
+import { elementPrefix } from 'shared';
 import { Base, Data, Group } from './mixins';
 
 class RadioGroup extends Group(Data(Base(PolymerElement))) {

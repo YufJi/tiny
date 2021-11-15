@@ -1,5 +1,5 @@
 import { isUndefined } from 'lodash';
-import { upperCasePerfix } from 'shared/config';
+import { upperCasePerfix } from 'shared';
 import { querySelector, querySelectorAll } from './query';
 
 export function requestComponentInfo(reqs, rootDom) {

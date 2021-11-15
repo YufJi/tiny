@@ -1,5 +1,5 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { elementPrefix } from 'shared/config';
+import { elementPrefix } from 'shared';
 
 class Page extends PolymerElement {
   static get is() {

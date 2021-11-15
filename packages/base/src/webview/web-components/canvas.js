@@ -1,6 +1,6 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { elementPrefix } from 'shared/config';
-import { getRealRoute, guid } from '../util';
+import { guid, elementPrefix } from 'shared';
+import { getRealRoute } from '../util';
 import { Base } from './mixins';
 
 const DEFAULT_WIDTH = 300;

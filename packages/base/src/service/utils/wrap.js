@@ -1,34 +1,28 @@
 import { wrap, mapValues, noop, isFunction } from 'lodash';
-import { error } from './log';
+import { error, debug } from './log';
 
 export function wrapAppLifetime(method, fn) {
   return wrap(fn, (life, ...args) => {
-    const result = wrapUserFunction(`at app.js App.${method}`, life).apply(this, args);
-
+    debug(`at app.js App.${method}`);
+    const result = (life || noop).apply(this, args);
     return result;
   });
 }
 
 export function wrapPageLifetime(method, fn) {
   return wrap(fn, (life, ...args) => {
-    const result = wrapUserFunction(`at ${this.is}.js Page.${method}`, life).apply(this, args);
-
+    debug(`at ${this.is}.js Page.${method}`);
+    const result = (life || noop).apply(this, args);
     return result;
   });
 }
 
 export function wrapComponnetLifetime(method, fn) {
-  return wrap(fn, function (life, ...args) {
-    const result = life.call(this, ...args);
-
+  return wrap(fn, (life, ...args) => {
+    debug(`at ${this.is}.js Component.${method}`);
+    const result = (life || noop).apply(this, args);
     return result;
   });
-}
-
-export function wrapUserFunction(description, callback) {
-  // debug('包装用户函数:', description);
-  if (!callback) return noop;
-  return callback;
 }
 
 export function wrapInnerFunction(desc, callback, context) {
@@ -48,4 +42,10 @@ export function wrapUserFunctions(description, callbacks) {
   return mapValues(callbacks, (fn, key) => {
     return wrapUserFunction(`${description}.${key}`, fn);
   });
+}
+
+export function wrapUserFunction(description, callback) {
+  debug(description);
+  if (!callback) return noop;
+  return callback;
 }

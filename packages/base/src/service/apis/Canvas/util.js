@@ -1,5 +1,5 @@
+import { guid } from 'shared';
 import { subscribe, publish } from '../../bridge';
-import { guid } from '../../utils';
 import { invokeMethod } from '../util';
 
 export const canvasStore = {};

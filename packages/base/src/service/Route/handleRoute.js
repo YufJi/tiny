@@ -262,7 +262,6 @@ function actionCreatePage(route, webviewId, query) {
   pageStack.push(currentPage);
   // 用户生命周期
   implement.onLoad(query);
-  // implement.onShow();
 }
 
 function isRouteType(type) {

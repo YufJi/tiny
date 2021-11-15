@@ -1,9 +1,11 @@
-import { INIT_DATA_READY } from 'shared/events/custom';
-import { DOCUMENT_READY } from 'shared/events/native';
+import { CustomEvent, NativeEvent } from 'shared';
 import { h, useState, useLayoutEffect } from './nerv';
 import { FieldsContext, ConfigContext } from './context';
 import { useCreation } from './common/hooks';
 import Page from './Page';
+
+const { INIT_DATA_READY } = CustomEvent;
+const { DOCUMENT_READY } = NativeEvent;
 
 function useInitPageConfig(bridge) {
   const [config, setConfig] = useState();

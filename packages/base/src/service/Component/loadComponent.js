@@ -1,11 +1,12 @@
 import { unset, get, set, isEqual, isString, isFunction, isPlainObject, cloneDeep } from 'lodash';
-import { COMPONENT_DATA_CHANGE, COMPONENT_EVENT } from 'shared/events/custom';
+import { CustomEvent } from 'shared';
 import { subscribe } from '../bridge';
 import { componentModels, pageModels, componentBookmarks } from '../Model/common';
 import { onRouteEvent } from '../Route';
 import { wrapUserFunction } from '../utils';
 import { ComponentModel } from './model';
 
+const { COMPONENT_DATA_CHANGE, COMPONENT_EVENT } = CustomEvent;
 const componentStatus = new WeakMap();
 
 export default function loadComponent() {

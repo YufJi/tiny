@@ -1,10 +1,11 @@
 import { forOwn, hasIn, kebabCase, memoize, isEqual, camelCase, isPlainObject, isObject } from 'lodash';
-import { getType } from 'shared';
-import { PAGE_EVENT, COMPONENT_EVENT, COMPONENT_DATA_CHANGE } from 'shared/events/custom';
+import { CustomEvent, getType } from 'shared';
 import { useState, useContext, useLayoutEffect, useEffect, Children } from '../nerv';
 import { usePageFields, useCreation, useJSBridge, usePrevious } from '../common/hooks';
 import { ComponentHubContext } from '../context';
 import { mergeData } from '../util';
+
+const { PAGE_EVENT, COMPONENT_EVENT, COMPONENT_DATA_CHANGE } = CustomEvent;
 
 export function useComponentHubContext() {
   return useContext(ComponentHubContext);

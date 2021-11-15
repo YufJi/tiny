@@ -1,12 +1,13 @@
 import { defaults, mapValues, isFunction, noop } from 'lodash';
-import { g } from 'shared';
-import { PAGE_EVENT } from 'shared/events/custom';
+import { CustomEvent, g } from 'shared';
 import { subscribe } from '../bridge';
 import { wrapUserFunctions, wrapUserFunction, debug, warn } from '../utils';
 import { pageInitMap } from '../Model/common';
 import $global from '../common/global';
 import handlePageEvent from './handlePageEvent';
 import PageModel from './model';
+
+const { PAGE_EVENT } = CustomEvent;
 
 export function registerPage(options = {}) {
   const { is } = $global.currentPageConfig;

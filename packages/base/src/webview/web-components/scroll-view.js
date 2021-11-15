@@ -1,5 +1,5 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { elementPrefix } from 'shared/config';
+import { elementPrefix } from 'shared';
 import { Base, TouchTrack } from './mixins';
 import bezier from './utils/bezier';
 

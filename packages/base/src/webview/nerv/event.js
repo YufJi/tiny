@@ -1,4 +1,4 @@
-import { elementPrefix, upperCasePerfix } from 'shared/config';
+import { elementPrefix, upperCasePerfix } from 'shared';
 import { xmlEventReg } from './utils/is';
 
 const EVENT_BLACK_LIST = ['click'];
@@ -64,7 +64,7 @@ export function addListener(node, type, callback, options = {}) {
         return callback.call(node, e);
       }, capture);
 
-      // 组件可能会取消touchmove事件，并用tt-touchmove替换, 主要是swiper会用到
+      // 组件可能会取消touchmove事件，并用touchmove替换, 主要是swiper会用到
       if (eventType === 'touchmove') {
         node.addEventListener(`${elementPrefix}-touchmove`, (e) => {
           const { srcMoveEvent } = e.detail;

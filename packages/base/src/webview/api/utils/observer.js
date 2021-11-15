@@ -1,5 +1,5 @@
 import { isNil } from 'lodash';
-import { guid } from '../../util';
+import { guid } from 'shared';
 import { querySelector } from './query';
 
 let scheduleLock = false;

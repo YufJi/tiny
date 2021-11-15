@@ -1,9 +1,11 @@
 import { isFunction } from 'lodash';
-import { PAGE_READY, PAGE_SHOW } from 'shared/events/custom';
+import { CustomEvent } from 'shared';
 import { onNative, subscribe, invokeNative } from '../bridge';
 import handleAppRoute from './handleRoute';
 import firstRender from './firstRender';
 import { webviewUsed, emitter, pageStack } from './common';
+
+const { PAGE_READY, PAGE_SHOW } = CustomEvent;
 
 export default function loadRoute() {
   onRouteEvent('afterCreatePage', (currentPage) => {

@@ -1,9 +1,8 @@
 import { defaultsDeep, noop } from 'lodash';
-
+import { guid } from 'shared';
 import mixinBehaviors from './mixinBehaviors';
 import normalizeProperties from './normalizeProperties';
 import { behaviorBookmarks } from './common';
-import { guid } from '../utils';
 
 export function createBehavior(is, options) {
   let { data = {} } = options;

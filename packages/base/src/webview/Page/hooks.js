@@ -1,6 +1,5 @@
 import { isNil, memoize, isBoolean } from 'lodash';
-import { Deferred } from 'shared';
-import { INIT_DATA_READY, APP_DATA_CHANGE, PAGE_EVENT, PAGE_READY, PAGE_SHOW } from 'shared/events/custom';
+import { CustomEvent, Deferred } from 'shared';
 import { useState, useRef, useLayoutEffect, useEffect, useMemo, useReducer, transformRpx } from '../nerv';
 import { useJSBridgeFn, useJSBridge, useConfigContext, usePageFields, useCreation } from '../common/hooks';
 import {
@@ -19,6 +18,8 @@ import {
 } from '../api';
 import { registerCustomComponents, createComponentResolve } from '../Component';
 import { mergeData } from '../util';
+
+const { INIT_DATA_READY, APP_DATA_CHANGE, PAGE_EVENT, PAGE_READY, PAGE_SHOW } = CustomEvent;
 
 /* 获取generateFunc */
 export function useCompileResult() {

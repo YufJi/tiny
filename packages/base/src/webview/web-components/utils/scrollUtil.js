@@ -1,5 +1,5 @@
 import { debounce } from 'lodash';
-import { elementPrefix, upperCasePerfix } from 'shared/config';
+import { elementPrefix, upperCasePerfix } from 'shared';
 
 const registeredImages = {};
 

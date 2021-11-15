@@ -1,6 +1,6 @@
 /* eslint-disable default-case */
 import { PolymerElement, html } from '@polymer/polymer';
-import { elementPrefix } from 'shared/config';
+import { elementPrefix } from 'shared';
 import { Base } from './mixins';
 import scrollUtil from './utils/scrollUtil';
 import { getRealRoute } from '../util';

@@ -1,4 +1,4 @@
-import { elementPrefix } from 'shared/config';
+import { elementPrefix } from 'shared';
 import { h, useLayoutEffect, useEffect, useRef, transformRpx } from '../nerv';
 import { ComponentHubContext } from '../context';
 import { usePageFields } from '../common/hooks';

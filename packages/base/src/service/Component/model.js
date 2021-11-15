@@ -7,12 +7,12 @@ import { pageModels, componentModels, componentBookmarks } from '../Model/common
 import { afterSetData } from '../Model/util';
 
 export class ComponentModel extends BaseModel {
-  constructor(is, __webviewId__, __nodeId__) {
-    super(__webviewId__, __nodeId__);
+  constructor(is, webviewId, nodeId) {
+    super(webviewId, nodeId);
 
     this.is = is;
-    this.__webviewId__ = __webviewId__;
-    this.__nodeId__ = __nodeId__;
+    this.__webviewId__ = webviewId;
+    this.__nodeId__ = nodeId;
     this.id = '';
     this.className = '';
     this.dataset = {};

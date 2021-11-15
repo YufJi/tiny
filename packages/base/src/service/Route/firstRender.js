@@ -1,8 +1,10 @@
 import { isPlainObject, mapValues, groupBy, cloneDeep } from 'lodash';
-import { INIT_DATA_READY } from 'shared/events/custom';
+import { CustomEvent } from 'shared';
 import { publish } from '../bridge';
 import context from '../context';
 import { componentBookmarks } from '../Model/common';
+
+const { INIT_DATA_READY } = CustomEvent;
 
 const DEFAULT_ON_REACH_BOTTOM_DISTANCE = 50;
 // 缓存页面使用的自定义组件配置

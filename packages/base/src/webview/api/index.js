@@ -1,12 +1,13 @@
 import { isNil, debounce } from 'lodash';
-import { COMPONENT_DATA_CHANGE, PAGE_EVENT } from 'shared/events/custom';
+import { CustomEvent, tryCatch } from 'shared';
 import { PASSIVE } from '../nerv/passive-event';
-import { tryCatch } from '../util';
 import { isShadowRoot, getShadowRootId } from './utils';
 import { disableScroll, enableScroll, pageScrollTo } from './utils/scroll';
 import { requestObserver, removeObserver, initTriggerListener } from './utils/observer';
 import { requestComponentInfo } from './utils/info';
 import { getRelationNodes, getRelation, setRelation } from './utils/relation';
+
+const { COMPONENT_DATA_CHANGE, PAGE_EVENT } = CustomEvent;
 
 export function onComponentDataChange(bridge, componentHub) {
   bridge.replyService(COMPONENT_DATA_CHANGE)(

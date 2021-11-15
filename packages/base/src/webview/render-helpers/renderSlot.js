@@ -1,4 +1,4 @@
-import { elementPrefix } from 'shared/config';
+import { elementPrefix } from 'shared';
 import { h } from '../nerv';
 
 const empty = {};

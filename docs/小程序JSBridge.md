@@ -1,11 +1,6 @@
-## 小程序中JSBridge的实现
+# 小程序中JSBridge的实现
 
-### JSBridge的介绍
-> todo...
-- 背景
-- 演变
-- 现状
-- iOS和Android端的分别实现
+## JSBridge的介绍
 
 ```js
 let jsCore;
@@ -28,9 +23,9 @@ else {
 
 ```
 
-### 根据小程序特点实现JSBridge
+## 根据小程序特点实现JSBridge
 
-小程序从底层实现来看小程序和h5唯一的区别，是将视图和逻辑隔离形成了双线程，jsb需要承载线程之间的通信功能，其实就是纯粹的转发能力。
+从底层来看小程序和h5唯一的区别，是将视图和逻辑隔离形成了双线程，jsb需要承载线程之间的通信功能，其实就是纯粹的转发能力。
 
 jsb主要可以分为：
 
@@ -146,7 +141,7 @@ function createSubscribe() {
 
 ```
 
-### 总结
+## 总结
 
 所以上面实现后的jsb，对使用者暴露的方法为：
 
@@ -159,7 +154,7 @@ function createSubscribe() {
 
 invokeHandler和subscribeHandler挂载到全局，供native调用使用。
 
-### 参考资料
+## 参考资料
 
 - [H5和Native交互原理](https://github.com/quickhybrid/quickhybrid/issues/10)
 - [JSBridge的实现](https://github.com/quickhybrid/quickhybrid/issues/9)
