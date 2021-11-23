@@ -4,8 +4,6 @@
 
 import * as API from './API';
 
-export const CUSTOM_EVENT = 'custom_event_';
-
 const bridge = {
   publish(event, params, webviewIds, __IS_WORKER__) {
     return API.publish(event, params, webviewIds, __IS_WORKER__);

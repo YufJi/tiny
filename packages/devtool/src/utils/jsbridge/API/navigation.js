@@ -54,10 +54,14 @@ export async function pushWindow(url, callback) {
     const webviewId = global.preloadRenders.shift();
     iframe = global.webviews.get(webviewId);
   } else {
-    iframe = await createRenderIframe({
-      guid: createGuid(),
-      src: 'biz/webview.html?debug=framework',
-    });
+    try {
+      iframe = await createRenderIframe({
+        guid: createGuid(),
+        src: 'biz/webview.html?debug=framework',
+      });
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   iframe.contentWindow.executeJavaScript(`window.generateFunc['${url}']('${iframe.id}')`);

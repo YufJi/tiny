@@ -28,8 +28,8 @@ function createIframe(options) {
       resolve(el);
     };
 
-    el.onerror = function (e) {
-      reject(e);
+    el.onerror = function (error) {
+      reject(error);
     };
 
     global.webviews.set(id, el);
