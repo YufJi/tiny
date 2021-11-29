@@ -1,9 +1,6 @@
-let traverse = require('@babel/traverse');
+const parser = require('@babel/parser');
+const traverse = require('@babel/traverse').default;
 const codeFrameColumns = require('@babel/code-frame');
-let parser = require('@babel/parser');
-
-parser = parser.default || parser;
-traverse = traverse.default || traverse;
 
 const { Hub, NodePath } = traverse;
 

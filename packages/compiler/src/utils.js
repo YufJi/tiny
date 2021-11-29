@@ -4,7 +4,6 @@ const fs = require('fs');
 const resolve = require('resolve');
 const loadJsonFile = require('load-json-file');
 const crypto = require('crypto');
-const defaultLib = require('./defaultLib');
 const { miniStore, pluginStore } = require('./configStore');
 
 const numberReSnippet = '(?:NaN|-?(?:(?:\\d+|\\d*\\.\\d+)(?:[E|e][+|-]?\\d+)?|Infinity))';

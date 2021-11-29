@@ -716,8 +716,6 @@ assign(MLTransformer.prototype, {
         header.push(`${IMPORT} $render$${index} from ${toLiteralString(dep)};`);
       });
 
-      header.push(''); // empty line
-
       const hasOwnTemplates = Object.keys(subTemplatesCode).length;
       if (hasOwnTemplates) {
         header.push('export const $ownTemplates = {};');

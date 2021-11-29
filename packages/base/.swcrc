@@ -1,0 +1,23 @@
+{
+  "jsc": {
+    "parser": {
+      "syntax": "ecmascript",
+      "jsx": true,
+      "dynamicImport": false,
+      "privateMethod": true,
+      "functionBind": false,
+      "exportDefaultFrom": true,
+      "exportNamespaceFrom": true,
+      "decorators": true,
+      "decoratorsBeforeExport": true,
+      "topLevelAwait": false
+    },
+    "transform": {
+      "react": {
+        "pragma": "h"
+      }
+    },
+    "target": "es5",
+    "loose": true
+  }
+}

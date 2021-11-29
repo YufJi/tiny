@@ -1,42 +1,51 @@
-/*
- * @Author: YufJ
- * @Date: 2021-07-07 14:05:04
- * @LastEditTime: 2021-07-12 01:46:08
- * @Description:
- * @FilePath: /tiny-v1/packages/base2.0/webpack.config.js
- */
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const ProgressBarPlugin = require('progress-bar-webpack-plugin');
+const ESBuildPlugin = require('./plugins/esbuild');
 
-const getConfig = (type, env) => {
+const root = path.join(__dirname, '..');
+
+const getConfig = (type) => {
   const isService = type === 'service';
   const isDev = process.env.NODE_ENV !== 'production';
 
   return {
     mode: isDev ? 'development' : 'production',
     entry: isService ? {
-      service: path.join(__dirname, 'src/service/index.js'),
+      service: path.join(root, 'src/service/index.js'),
     } : {
-      webview: path.join(__dirname, 'src/webview/index.js'),
+      webview: path.join(root, 'src/webview/index.js'),
     },
     output: {
-      path: path.join(__dirname, '../devtool/static/base'),
+      path: path.join(root, '../devtool/static/base'),
     },
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, 'src/'),
-        shared: path.resolve(__dirname, 'src/shared'),
-        'js-bridge': path.resolve(__dirname, 'src/js-bridge'),
+        '@': path.resolve(root, 'src/'),
+        shared: path.resolve(root, 'src/shared'),
+        'js-bridge': path.resolve(root, 'src/js-bridge'),
       },
+      extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
     },
     module: {
       rules: [
         {
-          test: /\.js$/,
-          use: {
-            loader: 'babel-loader',
-          },
+          test: /\.jsx?$/,
+          use: [
+            'swc-loader',
+          ],
+        },
+        {
+          test: /\.tsx?$/,
+          use: [
+            'swc-loader',
+            {
+              loader: 'ts-loader',
+              options: {
+                transpileOnly: true,
+              },
+            },
+          ],
         },
         {
           test: /\.(less|css)$/,
@@ -48,6 +57,7 @@ const getConfig = (type, env) => {
               options: {
                 plugins: () => [
                   require('autoprefixer')(),
+                  require('cssnano')(),
                 ],
               },
             }, {
@@ -65,6 +75,9 @@ const getConfig = (type, env) => {
 
     optimization: {
       minimize: !isDev,
+      minimizer: [
+        new ESBuildPlugin(),
+      ],
     },
 
     plugins: [

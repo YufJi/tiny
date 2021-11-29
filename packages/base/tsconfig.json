@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "allowJs": true,
+    "baseUrl": ".",
+    "noEmit": true,
+    "module": "ES6",
+    "moduleResolution": "node"
+  },
+  "include": [
+    "./src"
+  ]
+}

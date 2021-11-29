@@ -21,7 +21,7 @@ function isObject(str_) {
 function findScope(scope, name) {
   if (scope) {
     let result = false;
-    for (let i = 0; i < scope.length; i++) {
+    for (let i = 0; i < scope.length; i+=1) {
       const item = scope[i];
       if (item[name]) {
         result = item[name];
@@ -176,8 +176,6 @@ function transformCode(code_, xmlScope, config) {
   } catch (error) {
     console.log('生成code出错：', error);
   }
-
-  // let { code } = generate(ast);
 
   if (code.charAt(code.length - 1) === ';') {
     code = code.slice(0, -1);
