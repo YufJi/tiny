@@ -11,6 +11,10 @@ const { PAGE_EVENT } = CustomEvent;
 
 export function registerPage(options = {}) {
   const { is } = $global.currentPageConfig;
+  if ($global.__allConfig__[is]) {
+    throw new Error(`Please do not registry multiple Pages in ${is}`);
+  }
+
   $global.__allConfig__[is] = $global.currentPageConfig;
 
   debug('注册Page：', $global.currentPageConfig);
