@@ -1,6 +1,7 @@
 import { Deferred, g } from 'shared';
+import { JSCORE } from './type';
 
-export default function createInvoke(jsCore) {
+export default function createInvoke(jsCore: JSCORE) {
   let resolveId = 0;
   const resolveMap = new Map();
 
@@ -10,11 +11,9 @@ export default function createInvoke(jsCore) {
     const deferred = new Deferred();
     resolveMap.set(resolveId, deferred.resolve);
 
-    const paramsString = JSON.stringify(params);
     const webviewIds = Array.isArray(webviewId) ? webviewId : [webviewId];
-    const webviewIdsString = JSON.stringify(webviewIds);
 
-    let response = jsCore.call(method, paramsString, webviewIdsString, resolveId);
+    let response = jsCore.call(method, params, webviewIds, resolveId);
 
     // 同步事件
     if (response) {

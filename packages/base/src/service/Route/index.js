@@ -1,6 +1,6 @@
 import { isFunction } from 'lodash';
 import { CustomEvent } from 'shared';
-import { onNative, subscribe, invokeNative } from '../bridge';
+import { onNative, subscribe } from '../bridge';
 import handleAppRoute from './handleRoute';
 import firstRender from './firstRender';
 import { webviewUsed, emitter, pageStack } from './common';
@@ -8,16 +8,6 @@ import { webviewUsed, emitter, pageStack } from './common';
 const { PAGE_READY, PAGE_SHOW } = CustomEvent;
 
 export default function loadRoute() {
-  onRouteEvent('afterCreatePage', (currentPage) => {
-    // 页面创建后控制分享菜单是否显示隐藏
-    if (!currentPage.implement.onShareAppMessage) {
-      invokeNative('hideShareMenu');
-    }
-
-    // 渲染数据
-    firstRender(currentPage);
-  });
-
   onNative('onAppRoute', handleAppRoute);
 
   subscribe(PAGE_SHOW, (_, webviewId) => {

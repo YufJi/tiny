@@ -5,7 +5,13 @@
     "baseUrl": ".",
     "noEmit": true,
     "module": "ES6",
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "paths": {
+      "@/*": ["src/*"],
+      "shared": ["src/shared/index"],
+      "js-bridge": ["src/js-bridge/index"]
+    }
   },
   "include": [
     "./src"

@@ -1,5 +1,5 @@
 import { debounce } from 'lodash';
-import { elementPrefix, upperCasePerfix } from 'shared';
+import { TemplateTag } from 'shared';
 
 const registeredImages = {};
 
@@ -19,7 +19,7 @@ const checkUnloadedImages = debounce(() => {
   }
 }, 200);
 
-document.addEventListener(`${elementPrefix}-scroll-view`, debounce(i, 200));
+document.addEventListener(`${TemplateTag.LowerCasePrefix}-scroll-view`, debounce(i, 200));
 document.addEventListener('h5-scroll', checkUnloadedImages);
 document.addEventListener('scroll', checkUnloadedImages);
 
@@ -30,7 +30,7 @@ const hasScrollViewParent = (t) => {
     return false;
   }
 
-  if (n.tagName === `${upperCasePerfix}-SCROLL-VIEW`) {
+  if (n.tagName === `${TemplateTag.UpperCasePerfix}-SCROLL-VIEW`) {
     return true;
   }
 

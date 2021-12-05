@@ -1,6 +1,5 @@
 import { noop } from 'lodash';
 import { g } from 'shared';
-import $global from '../common/global';
 import { getAppInfoSync, getLaunchOptionsSync } from '../apis/System';
 
 const context = {
@@ -18,7 +17,7 @@ const context = {
 
   /** 编译阶段生成的用户配置 */
   get tabBarConfig() {
-    return g.TMAConfig && g.TMAConfig.tabBar;
+    return g.TinyConfig && g.TinyConfig.tabBar;
   },
 
   get appInfo() {
@@ -30,7 +29,7 @@ const context = {
   },
 
   get __allConfig__() {
-    return $global.__allConfig__;
+    return g.$global.__allConfig__;
   },
 };
 

@@ -3,21 +3,20 @@ import { CustomEvent, g } from 'shared';
 import { subscribe } from '../bridge';
 import { wrapUserFunctions, wrapUserFunction, debug, warn } from '../utils';
 import { pageInitMap } from '../Model/common';
-import $global from '../common/global';
 import handlePageEvent from './handlePageEvent';
 import PageModel from './model';
 
 const { PAGE_EVENT } = CustomEvent;
 
 export function registerPage(options = {}) {
-  const { is } = $global.currentPageConfig;
-  if ($global.__allConfig__[is]) {
+  const { is } = g.$global.currentPageConfig;
+  if (g.$global.__allConfig__[is]) {
     throw new Error(`Please do not registry multiple Pages in ${is}`);
   }
 
-  $global.__allConfig__[is] = $global.currentPageConfig;
+  g.$global.__allConfig__[is] = g.$global.currentPageConfig;
 
-  debug('注册Page：', $global.currentPageConfig);
+  debug('注册Page：', g.$global.currentPageConfig);
 
   if (!Array.isArray(g.TinyConfig.pages) || !g.TinyConfig.pages.includes(is)) {
     throw new Error(`Invalid path: ${is} doesn't declared in app.json`);

@@ -1,10 +1,10 @@
 import { g } from 'shared';
-
 import createSubscribe from './createSubscribe';
 import createPublish from './createPublish';
 import createInvoke from './createInvoke';
+import { JSCORE } from './type';
 
-export let jsCore;
+export let jsCore: JSCORE;
 
 if (g.JSCore) {
   jsCore = g.JSCore;
@@ -41,7 +41,7 @@ export default function createBridge() {
   const {
     invokeNative, // 调用native
     invokeHandler, // native触发回调
-  } = createInvoke(jsCore, onNative);
+  } = createInvoke(jsCore);
 
   const { publish } = createPublish(jsCore);
 

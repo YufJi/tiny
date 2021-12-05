@@ -1,4 +1,4 @@
-import { elementPrefix } from 'shared';
+import { TemplateTag } from 'shared';
 import { h, useLayoutEffect, useEffect, useRef, transformRpx } from '../nerv';
 import { ComponentHubContext } from '../context';
 import { usePageFields } from '../common/hooks';
@@ -62,5 +62,5 @@ function NormalScene(props) {
     }
   });
 
-  return h(`${elementPrefix}-page`, {}, current.result);
+  return h(`${TemplateTag.LowerCasePrefix}-page`, {}, current.result);
 }

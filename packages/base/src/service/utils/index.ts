@@ -1,5 +1,16 @@
 import { wrap, mapValues, noop, isFunction } from 'lodash';
-import { error, debug } from './log';
+
+export function debug(...args) {
+  console.log('[framework]', ...args);
+}
+
+export function error(...args) {
+  console.error('[framework]', ...args);
+}
+
+export function warn(...args) {
+  console.warn('[framework]', ...args);
+}
 
 export function wrapAppLifetime(method, fn) {
   return wrap(fn, (life, ...args) => {

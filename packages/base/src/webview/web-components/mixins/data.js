@@ -1,4 +1,4 @@
-import { elementPrefix } from 'shared';
+import { TemplateTag } from 'shared';
 
 export default function Data(superClass) {
   return class extends superClass {
@@ -19,7 +19,7 @@ export default function Data(superClass) {
     }
 
     hasBehavior(type) {
-      if (type === `${elementPrefix}-data`) {
+      if (type === `${TemplateTag.LowerCasePrefix}-data`) {
         return true;
       }
 

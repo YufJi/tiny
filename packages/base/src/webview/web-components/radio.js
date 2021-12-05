@@ -1,5 +1,5 @@
 import { html, PolymerElement } from '@polymer/polymer';
-import { elementPrefix } from 'shared';
+import { TemplateTag } from 'shared';
 import { Base, LabelTarget, Item, Disabled } from './mixins';
 
 const documentContainer = document.createElement('div');
@@ -50,7 +50,7 @@ document.head.appendChild(documentContainer);
 
 class Radio extends Disabled(Item(LabelTarget(Base(PolymerElement)))) {
   static get is() {
-    return `${elementPrefix}-radio`;
+    return `${TemplateTag.LowerCasePrefix}-radio`;
   }
 
   static get properties() {

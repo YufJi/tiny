@@ -1,14 +1,14 @@
-import { elementPrefix, upperCasePerfix } from 'shared';
+import { TemplateTag } from 'shared';
 import { xmlEventReg } from './utils/is';
 
 const EVENT_BLACK_LIST = ['click'];
 const PRESS_DELAY = 350;
 const TAP_DISTANCE = 5;
 const TAP_BLACK_LIST = [
-  `${upperCasePerfix}-BUTTON`,
-  `${upperCasePerfix}-CHECKBOX`,
-  `${upperCasePerfix}-RADIO`,
-  `${upperCasePerfix}-MAP`,
+  `${TemplateTag.UpperCasePerfix}-BUTTON`,
+  `${TemplateTag.UpperCasePerfix}-CHECKBOX`,
+  `${TemplateTag.UpperCasePerfix}-RADIO`,
+  `${TemplateTag.UpperCasePerfix}-MAP`,
 ];
 
 export function addListener(node, type, callback, options = {}) {
@@ -24,7 +24,7 @@ export function addListener(node, type, callback, options = {}) {
         addTapEvent(node);
       }
 
-      node.addEventListener(`${elementPrefix}-tap`, (e) => {
+      node.addEventListener(`${TemplateTag.LowerCasePrefix}-tap`, (e) => {
         return callback.call(node, {
           type: 'tap',
           touches: e.detail.sourceEndEvent.changedTouches,
@@ -66,7 +66,7 @@ export function addListener(node, type, callback, options = {}) {
 
       // 组件可能会取消touchmove事件，并用touchmove替换, 主要是swiper会用到
       if (eventType === 'touchmove') {
-        node.addEventListener(`${elementPrefix}-touchmove`, (e) => {
+        node.addEventListener(`${TemplateTag.LowerCasePrefix}-touchmove`, (e) => {
           const { srcMoveEvent } = e.detail;
           return callback.call(node, {
             type: eventType,
@@ -94,7 +94,7 @@ export function addListener(node, type, callback, options = {}) {
         addTapEvent(node);
       }
 
-      node.addEventListener(`${elementPrefix}-longpress`, (e) => {
+      node.addEventListener(`${TemplateTag.LowerCasePrefix}-longpress`, (e) => {
         e.longpressFired();
         callback.call(node, e);
       });
@@ -126,7 +126,7 @@ function addTapEvent(node) {
     clearTimeout(pressTimer);
     pressTimer = setTimeout(() => {
       // dispatch longpress event
-      const pressEvent = new Event(`${elementPrefix}-longpress`, {
+      const pressEvent = new Event(`${TemplateTag.LowerCasePrefix}-longpress`, {
         bubbles: true,
         composed: true,
       });
@@ -177,7 +177,7 @@ function addTapEvent(node) {
       return;
     }
 
-    const tapEvent = new Event(`${elementPrefix}-tap`, {
+    const tapEvent = new Event(`${TemplateTag.LowerCasePrefix}-tap`, {
       bubbles: true,
       composed: true,
     });
@@ -247,7 +247,7 @@ function wrapEvent(node, nativeEvent, type) {
     offsetTop: node.offsetTop || 0,
   });
 
-  const isCanvasTouches = node.tagName.toUpperCase() === `${upperCasePerfix}-CANVAS` && ['touchstart', 'touchend', 'touchmove', 'touchcancel'].includes(type);
+  const isCanvasTouches = node.tagName.toUpperCase() === `${TemplateTag.UpperCasePerfix}-CANVAS` && ['touchstart', 'touchend', 'touchmove', 'touchcancel'].includes(type);
 
   return {
     type,

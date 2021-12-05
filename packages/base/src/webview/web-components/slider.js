@@ -1,5 +1,5 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { elementPrefix } from 'shared';
+import { TemplateTag } from 'shared';
 import { Base, Data, Disabled, TouchTrack } from './mixins';
 
 const documentContainer = document.createElement('div');
@@ -99,7 +99,7 @@ document.head.appendChild(documentContainer);
 
 class Slider extends TouchTrack(Disabled(Data(Base(PolymerElement)))) {
   static get is() {
-    return `${elementPrefix}-slider`;
+    return `${TemplateTag.LowerCasePrefix}-slider`;
   }
 
   static get properties() {

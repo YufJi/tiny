@@ -1,5 +1,5 @@
 import { isUndefined } from 'lodash';
-import { upperCasePerfix } from 'shared';
+import { TemplateTag } from 'shared';
 import { querySelector, querySelectorAll } from './query';
 
 export function requestComponentInfo(reqs, rootDom) {
@@ -88,7 +88,7 @@ function filterFields(element, fields) {
   if (fields.node) {
     i.nodeCanvasType = 'default';
 
-    if (`${upperCasePerfix}-CANVAS` === (element && element.tagName)) {
+    if (`${TemplateTag.UpperCasePerfix}-CANVAS` === (element && element.tagName)) {
       i.node = {
         isCanvas: true,
         id: element && element.id,

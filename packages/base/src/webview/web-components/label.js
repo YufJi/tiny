@@ -1,10 +1,10 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { elementPrefix } from 'shared';
+import { TemplateTag } from 'shared';
 import { Base } from './mixins';
 
 class Label extends Base(PolymerElement) {
   static get is() {
-    return `${elementPrefix}-label`;
+    return `${TemplateTag.LowerCasePrefix}-label`;
   }
 
   static get properties() {

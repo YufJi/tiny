@@ -4,7 +4,7 @@ import { g, noop } from 'shared';
 /**
  * worker环境下polyfill
  */
-export default function timerPolyfill() {
+export function timerPolyfill() {
   const timerMap = new Map();
   const { setTimer, clearTimer } = jsCore;
 

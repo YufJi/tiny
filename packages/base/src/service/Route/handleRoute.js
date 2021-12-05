@@ -5,6 +5,7 @@ import context from '../context';
 import { ComponentPageModel, PageModel } from '../Model';
 import { pageInitMap, componentBookmarks } from '../Model/common';
 import { webviewUsed, pageStack, emitter } from './common';
+import firstRender from './firstRender';
 
 let onAppRouteParams;
 
@@ -254,13 +255,17 @@ function actionCreatePage(route, webviewId, query) {
     _params: cloneDeep(onAppRouteParams),
   };
 
-  // 发布事件，并且这里执行事件回调是同步的
-  emitter.emit('afterCreatePage', currentPage);
+  if (!currentPage.implement.onShareAppMessage) {
+    invokeNative('hideShareMenu');
+  }
+
+  firstRender(currentPage);
+
   // 缓存page
   webviewUsed.set(webviewId, currentPage);
-  // 压栈
+
   pageStack.push(currentPage);
-  // 用户生命周期
+
   implement.onLoad(query);
 }
 

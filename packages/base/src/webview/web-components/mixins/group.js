@@ -1,4 +1,4 @@
-import { elementPrefix } from 'shared';
+import { TemplateTag } from 'shared';
 
 export default function Group(superClass) {
   return class extends superClass {
@@ -41,15 +41,15 @@ export default function Group(superClass) {
     }
 
     resetFormData() {
-      if (this.hasBehavior(`${elementPrefix}-data`)) {
+      if (this.hasBehavior(`${TemplateTag.LowerCasePrefix}-data`)) {
         !(function dfs(t) {
           t.childNodes && Array.from(t.childNodes).forEach((t) => {
             if (t.hasBehavior) {
-              if (t.hasBehavior(`${elementPrefix}-group`)) {
+              if (t.hasBehavior(`${TemplateTag.LowerCasePrefix}-group`)) {
                 return;
               }
 
-              if (t.hasBehavior(`${elementPrefix}-item`)) {
+              if (t.hasBehavior(`${TemplateTag.LowerCasePrefix}-item`)) {
                 return t.resetFormData();
               }
             }
@@ -77,7 +77,7 @@ export default function Group(superClass) {
     }
 
     hasBehavior(type) {
-      if (type === `${elementPrefix}-group`) {
+      if (type === `${TemplateTag.LowerCasePrefix}-group`) {
         return true;
       }
 

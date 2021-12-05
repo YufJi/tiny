@@ -1,5 +1,5 @@
 import { html, PolymerElement } from '@polymer/polymer';
-import { elementPrefix, upperCasePerfix } from 'shared';
+import { TemplateTag } from 'shared';
 import transformRpx from '../nerv/utils/transformRpx';
 import { Base, TouchTrack } from './mixins';
 
@@ -98,7 +98,7 @@ const scheduleIntersectionUpdate = null;
 
 class Swiper extends TouchTrack(Base(PolymerElement)) {
   static get is() {
-    return `${elementPrefix}-swiper`;
+    return `${TemplateTag.LowerCasePrefix}-swiper`;
   }
 
   static get properties() {
@@ -387,7 +387,7 @@ class Swiper extends TouchTrack(Base(PolymerElement)) {
   _updateItemList() {
     this._itemListDirty = false;
     // get children connected to me
-    const swiperItems = Array.prototype.slice.call(this.querySelectorAll(`${elementPrefix}-swiper-item`));
+    const swiperItems = Array.prototype.slice.call(this.querySelectorAll(`${TemplateTag.LowerCasePrefix}-swiper-item`));
 
     this._items = swiperItems.filter((i) => {
       return this._isThatMyItem(i);
@@ -412,7 +412,7 @@ class Swiper extends TouchTrack(Base(PolymerElement)) {
 
   _isThatMyItem(target) {
     const isMe = (node) => {
-      if (node.tagName.toUpperCase() === `${upperCasePerfix}-SWIPER`) {
+      if (node.tagName.toUpperCase() === `${TemplateTag.UpperCasePerfix}-SWIPER`) {
         if (node === this) {
           return true;
         } else {

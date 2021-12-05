@@ -1,6 +1,6 @@
 /* eslint-disable default-case */
 import { PolymerElement, html } from '@polymer/polymer';
-import { elementPrefix } from 'shared';
+import { TemplateTag } from 'shared';
 import { Base } from './mixins';
 import scrollUtil from './utils/scrollUtil';
 import { getRealRoute } from '../util';
@@ -23,7 +23,7 @@ document.head.appendChild(documentContainer);
 
 class Image extends Base(PolymerElement) {
   static get is() {
-    return `${elementPrefix}-image`;
+    return `${TemplateTag.LowerCasePrefix}-image`;
   }
 
   static get properties() {

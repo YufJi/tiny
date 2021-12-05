@@ -1,10 +1,10 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { elementPrefix, upperCasePerfix } from 'shared';
+import { TemplateTag } from 'shared';
 import { Base } from './mixins';
 
 class Text extends Base(PolymerElement) {
   static get is() {
-    return `${elementPrefix}-text`;
+    return `${TemplateTag.LowerCasePrefix}-text`;
   }
 
   static get properties() {
@@ -84,7 +84,7 @@ class Text extends Base(PolymerElement) {
 
           textNode.appendChild(document.createTextNode(lines[i]));
         }
-      } else if (shadowNode.nodeType === 1 && shadowNode.tagName === `${upperCasePerfix}-TEXT`) {
+      } else if (shadowNode.nodeType === 1 && shadowNode.tagName === `${TemplateTag.UpperCasePerfix}-TEXT`) {
         const cloneNode = Node.prototype.cloneNode || Element.prototype.cloneNode;
 
         const _clone = (root) => {
@@ -92,7 +92,7 @@ class Text extends Base(PolymerElement) {
           outer.$$data = root.$$data;
 
           Array.from(root.childNodes).forEach((child) => {
-            if (child.nodeType === 1 && child.tagName === `${upperCasePerfix}-TEXT`) {
+            if (child.nodeType === 1 && child.tagName === `${TemplateTag.UpperCasePerfix}-TEXT`) {
               outer.appendChild(_clone(child));
             } else {
               outer.appendChild(child.cloneNode());

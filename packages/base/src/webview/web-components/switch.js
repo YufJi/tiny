@@ -1,5 +1,5 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { elementPrefix } from 'shared';
+import { TemplateTag } from 'shared';
 import { Base, LabelTarget, Disabled, Data } from './mixins';
 
 const documentContainer = document.createElement('div');
@@ -110,7 +110,7 @@ document.head.appendChild(documentContainer);
 
 class Switch extends Data(Disabled(LabelTarget(Base(PolymerElement)))) {
   static get is() {
-    return `${elementPrefix}-switch`;
+    return `${TemplateTag.LowerCasePrefix}-switch`;
   }
 
   static get properties() {

@@ -1,16 +1,16 @@
 import { defaults, isPlainObject, get } from 'lodash';
+import { g } from 'shared';
 import { createBehavior } from '../Behavior';
 import { componentBookmarks } from '../Model/common';
-import $global from '../common/global';
 import { debug } from '../utils';
 import loadComponent from './loadComponent';
 import { ComponentModel, ComponentPageModel } from './model';
 
 export function registerComponent(options = {}) {
-  const { is } = $global.currentPageConfig;
-  $global.__allConfig__[is] = $global.currentPageConfig;
+  const { is } = g.$global.currentPageConfig;
+  g.$global.__allConfig__[is] = g.$global.currentPageConfig;
 
-  debug('注册Component：', $global.currentPageConfig);
+  debug('注册Component：', g.$global.currentPageConfig);
 
   if (componentBookmarks.has(is)) {
     throw new Error(`at ${is}, Component can only register once`);

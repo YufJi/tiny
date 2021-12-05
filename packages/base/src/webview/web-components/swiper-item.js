@@ -1,10 +1,10 @@
 import { html, PolymerElement } from '@polymer/polymer';
-import { elementPrefix, upperCasePerfix } from 'shared';
+import { TemplateTag } from 'shared';
 import { Base } from './mixins';
 
 class SwiperItem extends Base(PolymerElement) {
   static get is() {
-    return `${elementPrefix}-swiper-item`;
+    return `${TemplateTag.LowerCasePrefix}-swiper-item`;
   }
 
   static get properties() {
@@ -65,7 +65,7 @@ class SwiperItem extends Base(PolymerElement) {
   }
 
   _findSwiper(el) {
-    if (el.tagName === `${upperCasePerfix}-SWIPER`) {
+    if (el.tagName === `${TemplateTag.UpperCasePerfix}-SWIPER`) {
       return el;
     }
 

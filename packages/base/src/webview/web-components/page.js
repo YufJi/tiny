@@ -1,9 +1,9 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { elementPrefix } from 'shared';
+import { TemplateTag } from 'shared';
 
 class Page extends PolymerElement {
   static get is() {
-    return `${elementPrefix}-page`;
+    return `${TemplateTag.LowerCasePrefix}-page`;
   }
 
   static get template() {

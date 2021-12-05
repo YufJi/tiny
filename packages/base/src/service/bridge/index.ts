@@ -82,11 +82,7 @@ function replyWebview() {
     }
 
     if (scene === 'sdk') {
-      const api = get(g.tiny, method);
-
-      if (api) {
-        fn = promisifyAPI(api);
-      }
+      fn = get(g.tiny, method);
     }
 
     if (!fn) {

@@ -1,5 +1,5 @@
 export const g = (function () {
-  let local;
+  let local: any;
 
   if (typeof global !== 'undefined') {
     local = global;
