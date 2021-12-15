@@ -1,12 +1,12 @@
-import { defaultsDeep, noop } from 'lodash';
+import { defaultsDeep, noop, isObject } from 'lodash';
 import { guid } from 'shared';
+import { behaviorBookmarks } from '../context';
 import mixinBehaviors from './mixinBehaviors';
 import normalizeProperties from './normalizeProperties';
-import { behaviorBookmarks } from './common';
 
 export function createBehavior(is, options) {
   let { data = {} } = options;
-  const { created = noop, attached = noop, ready = noop, moved = noop, detached = noop } = options;
+  const { created = noop, attached = noop, ready = noop, detached = noop } = options;
 
   try {
     data = JSON.parse(JSON.stringify(data));

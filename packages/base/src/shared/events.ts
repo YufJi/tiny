@@ -1,13 +1,19 @@
-export enum CustomEvent {
-  INIT_DATA_READY = 'INIT_DATA_READY',
-  APP_DATA_CHANGE = 'APP_DATA_CHANGE',
-  PAGE_EVENT = 'PAGE_EVENT',
-  COMPONENT_DATA_CHANGE = 'COMPONENT_DATA_CHANGE',
-  COMPONENT_EVENT = 'COMPONENT_EVENT',
-  PAGE_READY = 'PAGE_READY',
-  PAGE_SHOW = 'PAGE_SHOW'
-}
+export const CustomEvent = {
+  InitDataReady: 'initDataReady',
+  AppDataChange: 'appDataChange',
+  PageEvent: 'pageEvent',
+  ComponentDataChange: 'componentDataChange',
+  ComponentEvent: 'componentEvent',
+  PageReady: 'pageReady',
+  PageShow: 'pageShow',
 
-export enum NativeEvent {
- DOCUMENT_READY = 'DocumentReady'
-}
+  TriggerComponentEvent: 'triggerComponentEvent',
+  SelectComponentInPage: 'selectComponentInPage',
+};
+
+export const NativeEvent = {
+  DocumentReady: 'documentReady',
+  PageReload: 'pageReload',
+  AppRoute: 'appRoute',
+  PullDownRefresh: 'pullDownRefresh',
+};

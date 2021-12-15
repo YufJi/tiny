@@ -1,23 +1,13 @@
-import { replyWebview, onNative } from './bridge';
-import loadRoute, { getPageStack, firstRender } from './Route';
+import { replyWebview } from './bridge';
+import loadRoute from './Route';
 import { loadPageEvent } from './Page';
 import { loadComponent } from './Component';
 
 export default function bootstrap() {
+  /* 注册监听webview事件 */
   replyWebview();
-
+  /* 加载路由 */
   loadRoute();
   loadComponent();
   loadPageEvent();
-
-  // 页面对应对webview挂了，需要重新加载
-  onNative('onPageReload', ({ webviewId }) => {
-    const targetPage = getPageStack().find((page) => {
-      return page.webviewId === webviewId;
-    });
-
-    if (targetPage) {
-      firstRender(targetPage, true);
-    }
-  });
 }

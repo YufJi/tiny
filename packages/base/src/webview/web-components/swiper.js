@@ -1,6 +1,6 @@
 import { html, PolymerElement } from '@polymer/polymer';
 import { TemplateTag } from 'shared';
-import transformRpx from '../nerv/utils/transformRpx';
+import transformRpx from 'nerv/utils/transformRpx';
 import { Base, TouchTrack } from './mixins';
 
 const documentContainer = document.createElement('div');

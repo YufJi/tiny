@@ -1,11 +1,9 @@
 import { isObject } from 'lodash';
-import { getType } from 'shared';
-
 import { warn } from '../utils';
 
 export default function normalizeProperties(properties) {
   if (!isObject(properties)) {
-    throw new Error(`expect properties to be object, but it is ${getType(properties)}`);
+    throw new Error('properties is not object');
   }
 
   const result = {};
@@ -36,7 +34,12 @@ function isPropertyType(target) {
   return constructors.includes(target);
 }
 
-function isStandardProperty(target) {
+interface StandardProperty {
+  type: any;
+  value: any;
+}
+
+function isStandardProperty(target: StandardProperty) {
   if (!isObject(target)) return false;
   return isPropertyType(target.type);
 }
@@ -56,8 +59,7 @@ function getConstructorDefaultValue(type) {
       return [];
 
     case Object:
-      // TODO(yingchen: 确认原来的设计是否合理？
-      return null;
+      return {};
 
     case null:
       return null;

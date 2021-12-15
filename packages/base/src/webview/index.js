@@ -1,10 +1,9 @@
 import { g } from 'shared';
+import Nerv from 'nerv';
 import * as bridge from './bridge';
 import './web-components';
-
 import bootstrap from './bootstrap';
-import Nerv from './nerv';
-import RenderHelpers from './render-helpers';
+import helpers from './helpers';
 import StyleSheet from './StyleSheet';
 
 g.__IS_SERVICE__ = false;
@@ -36,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 g.JSBridge = bridge;
 g.Nerv = Nerv;
-g.RenderHelpers = RenderHelpers;
+g.TemplateHelpers = helpers;
 g.TinyStyleSheet = StyleSheet;
 
 bootstrap();

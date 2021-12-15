@@ -1,10 +1,8 @@
 import { isObject, isString, last, cloneDeep } from 'lodash';
 import qs from 'qs';
 import { invokeNative } from '../bridge';
-import context from '../context';
+import context, { routeEmitter, webviewUsed, pageStack, pageInitMap, componentBookmarks } from '../context';
 import { ComponentPageModel, PageModel } from '../Model';
-import { pageInitMap, componentBookmarks } from '../Model/common';
-import { webviewUsed, pageStack, emitter } from './common';
 import firstRender from './firstRender';
 
 let onAppRouteParams;
@@ -42,7 +40,7 @@ function handleAppRouteParams(params, _webviewId) {
 
     const entries = Object.entries(rawQuery);
     // 兼容老的schema解析逻辑
-    for (let i = 0; i < entries.length; i++) {
+    for (let i = 0; i < entries.length; i+=1) {
       const [key, value] = entries[i];
 
       if (!isString(value)) {
@@ -77,7 +75,7 @@ function action({ type, webviewId, route, query }) {
     return;
   }
 
-  emitter.emit('beforeRoute', currentPage);
+  routeEmitter.emit('beforeRoute', currentPage);
 
   if (type === 'appLaunch') {
     actionAppLaunch(route, webviewId, query);
@@ -98,7 +96,7 @@ function action({ type, webviewId, route, query }) {
   const lastPage = last(pageStack);
 
   if (lastPage) {
-    emitter.emit('afterRoute', currentPage, lastPage);
+    routeEmitter.emit('afterRoute', currentPage, lastPage);
   }
 }
 
@@ -281,7 +279,7 @@ function isTabPage(path) {
 
 function pageShow(page) {
   page.implement.onShow();
-  emitter.emit('show', page);
+  routeEmitter.emit('show', page);
 }
 
 function popPageStack() {
@@ -290,6 +288,6 @@ function popPageStack() {
   if (pop) {
     webviewUsed.delete(pop.webviewId);
     pop.implement.onUnload();
-    emitter.emit('destroyPage', pop);
+    routeEmitter.emit('destroyPage', pop);
   }
 }

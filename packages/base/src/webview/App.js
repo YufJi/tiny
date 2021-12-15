@@ -1,17 +1,17 @@
 import { CustomEvent, NativeEvent } from 'shared';
-import { h, useState, useLayoutEffect } from './nerv';
+import Nerv, { useState, useLayoutEffect } from 'nerv';
 import { FieldsContext, ConfigContext } from './context';
 import { useCreation } from './common/hooks';
 import Page from './Page';
 
-const { INIT_DATA_READY } = CustomEvent;
-const { DOCUMENT_READY } = NativeEvent;
+const { InitDataReady } = CustomEvent;
+const { DocumentReady } = NativeEvent;
 
 function useInitPageConfig(bridge) {
   const [config, setConfig] = useState();
 
   useCreation(() => {
-    bridge.subscribe(INIT_DATA_READY, (e) => {
+    bridge.subscribe(InitDataReady, (e) => {
       if (e.ext) {
         setConfig(e.ext);
       }
@@ -28,7 +28,7 @@ export default function MicroApp(props) {
   const config = useInitPageConfig(bridge);
 
   useLayoutEffect(() => {
-    bridge.invokeNative(DOCUMENT_READY);
+    bridge.invokeNative(DocumentReady);
   }, []);
 
   return (

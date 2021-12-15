@@ -1,4 +1,5 @@
-import { last, isEqual } from 'lodash';
+import { last, isEqual, isString } from 'lodash';
+import qs from 'qs';
 import { onNative, publish } from '../bridge';
 import context from '../context';
 import { triggerShowCbs, triggerHideCbs } from '../apis/AppEvents';

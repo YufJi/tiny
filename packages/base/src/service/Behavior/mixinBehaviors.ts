@@ -1,6 +1,9 @@
-import { defaults, mapValues, forEachRight } from 'lodash';
+import { defaults, mapValues, forEachRight, noop } from 'lodash';
+import { behaviorBookmarks } from '../context';
+import { error } from '../utils';
 
-import { behaviorBookmarks, COMPONENT_LIFETIMES, PAGE_LIFETIMES } from './common';
+const PAGE_LIFETIMES = ['show', 'hide', 'resize'];
+const COMPONENT_LIFETIMES = ['created', 'attached', 'ready', 'detached', 'error'];
 
 export default function mixinBehaviors(instance) {
   const lifeQueue = {

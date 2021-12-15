@@ -2,7 +2,7 @@ import { set } from 'lodash';
 import { CustomEvent } from 'shared';
 import { invokeWebview } from '../bridge';
 
-const { COMPONENT_DATA_CHANGE, APP_DATA_CHANGE } = CustomEvent;
+const { ComponentDataChange, AppDataChange } = CustomEvent;
 const setDataTask = new WeakMap();
 
 export function afterSetData(model, callback) {
@@ -28,12 +28,12 @@ export function addSetDataTask(model, data, userCallback) {
         let updateTask;
 
         if (model.__nodeId__) {
-          updateTask = invokeWebview(COMPONENT_DATA_CHANGE, {
+          updateTask = invokeWebview(ComponentDataChange, {
             data: current.data,
             nodeId: model.__nodeId__,
           }, model.__webviewId__);
         } else {
-          updateTask = invokeWebview(APP_DATA_CHANGE, {
+          updateTask = invokeWebview(AppDataChange, {
             data: current.data,
             options: {},
           }, model.__webviewId__);
@@ -60,7 +60,7 @@ export function addSetDataTask(model, data, userCallback) {
     setDataTask.set(model, task);
   }
 
-  for (let i = 0; i < Object.entries(data).length; i++) {
+  for (let i = 0; i < Object.entries(data).length; i+=1) {
     const [key, value] = Object.entries(data)[i];
     task.data[key] = value;
     set(model.data, key, value);
@@ -73,7 +73,7 @@ export function addSetDataTask(model, data, userCallback) {
   return task.promise;
 }
 
-function microTask(cb) {
+function microTask(cb?) {
   if (cb) {
     Promise.resolve().then(cb);
   } else {

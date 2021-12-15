@@ -1,10 +1,7 @@
-import { isPlainObject, mapValues, groupBy, cloneDeep } from 'lodash';
+import { isPlainObject, mapValues, groupBy } from 'lodash';
 import { CustomEvent } from 'shared';
 import { publish } from '../bridge';
-import context from '../context';
-import { componentBookmarks } from '../Model/common';
-
-const { INIT_DATA_READY } = CustomEvent;
+import context, { componentBookmarks } from '../context';
 
 const DEFAULT_ON_REACH_BOTTOM_DISTANCE = 50;
 // 缓存页面使用的自定义组件配置
@@ -27,7 +24,7 @@ export default function firstRender(currentPage, isPageReload = false) {
     },
   };
 
-  publish(INIT_DATA_READY, data, currentPage.webviewId);
+  publish(CustomEvent.InitDataReady, data, currentPage.webviewId);
 }
 
 function getPageExt(currentPage) {
@@ -78,10 +75,12 @@ function getPageContainComponents(route) {
 
   // 递归获取自定义组件的配置信息
   initComponentSettings(route, customComponents, allComponentsAliasName);
+
   pageComponentSettings.set(route, {
     customComponents,
     allComponentsAliasName: Array.from(allComponentsAliasName),
   });
+
   return pageComponentSettings.get(route);
 }
 
@@ -90,14 +89,13 @@ function initComponentSettings(route, componentInfoMap, componentAliasSet) {
   const usingComponents = config && config.usingComponents;
   if (!usingComponents) return;
 
-  for (let i = 0; i < Object.entries(usingComponents).length; i++) {
+  for (let i = 0; i < Object.entries(usingComponents).length; i+=1) {
     const [key, customPath] = Object.entries(usingComponents)[i];
     const name = key.toLowerCase();
     // const realPath = customPath.startsWith('/') ? customPath.substr(1) : path.join(path.dirname(route), customPath);
-    const realPath = customPath;
+    const realPath = customPath as string;
 
     componentAliasSet.add(name);
-
     if (!componentInfoMap[realPath]) {
       let setting = componentSettings.get(realPath);
 

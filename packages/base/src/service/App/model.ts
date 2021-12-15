@@ -1,4 +1,4 @@
-import { wrapAppLifetime } from '../utils';
+import { wrapAppLifetime, error } from '../utils';
 
 export default function AppModel(init) {
   this.is = 'App';

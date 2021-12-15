@@ -1,5 +1,5 @@
 import { noop } from 'lodash';
-import { createContext } from './nerv';
+import { createContext } from 'nerv';
 
 export const FieldsContext = createContext();
 

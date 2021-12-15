@@ -1,16 +1,15 @@
 import { isFunction } from 'lodash';
-import { CustomEvent } from 'shared';
+import { CustomEvent, NativeEvent } from 'shared';
 import { onNative, subscribe } from '../bridge';
+import { routeEmitter, webviewUsed, pageStack } from '../context';
+
 import handleAppRoute from './handleRoute';
 import firstRender from './firstRender';
-import { webviewUsed, emitter, pageStack } from './common';
-
-const { PAGE_READY, PAGE_SHOW } = CustomEvent;
 
 export default function loadRoute() {
-  onNative('onAppRoute', handleAppRoute);
+  onNative(NativeEvent.AppRoute, handleAppRoute);
 
-  subscribe(PAGE_SHOW, (_, webviewId) => {
+  subscribe(CustomEvent.PageShow, (_, webviewId) => {
     const page = webviewUsed.get(webviewId);
 
     if (!page) {
@@ -19,7 +18,7 @@ export default function loadRoute() {
     page.implement.onShow();
   });
 
-  subscribe(PAGE_READY, (_, webviewId) => {
+  subscribe(CustomEvent.PageReady, (_, webviewId) => {
     const page = webviewUsed.get(webviewId);
 
     if (!page) {
@@ -29,7 +28,7 @@ export default function loadRoute() {
   });
 
   // 监听native的onPullDownRefresh消息，响应用户页面的onPullDownRefresh生命周期
-  onNative('onPullDownRefresh', (_, webviewId) => {
+  onNative(NativeEvent.PullDownRefresh, (_, webviewId) => {
     const page = webviewUsed.get(webviewId);
 
     if (!page) {
@@ -38,13 +37,25 @@ export default function loadRoute() {
 
     page.implement.onPullDownRefresh && page.implement.onPullDownRefresh();
   });
+
+  /* 刷新页面 */
+  onNative(NativeEvent.PageReload, ({ webviewId }) => {
+    const targetPage = getPageStack().find((page) => {
+      return page.webviewId === webviewId;
+    });
+
+    if (targetPage) {
+      firstRender(targetPage, true);
+    }
+  });
+
   // 注册分享逻辑
   // shareAppExt(handleShareParams);
 }
 
 export function onRouteEvent(event, handler) {
   if (isFunction(handler)) {
-    emitter.on(event, handler);
+    routeEmitter.on(event, handler);
   }
 }
 
@@ -57,7 +68,3 @@ export function getCurrentPages() {
 export function getPageStack() {
   return Array.from(pageStack);
 }
-
-export {
-  firstRender,
-};

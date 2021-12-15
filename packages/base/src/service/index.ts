@@ -21,7 +21,7 @@ g.__IS_SERVICE__ = true;
 g.JSBridge = bridge;
 
 g.tiny = new Proxy(apis, {
-  get(obj, prop) {
+  get(obj, prop: string) {
     if (prop in obj) {
       return obj[prop];
     }

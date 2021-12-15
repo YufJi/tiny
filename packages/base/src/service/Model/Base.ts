@@ -1,10 +1,18 @@
 import { isFunction, noop } from 'lodash';
 import { wrapUserFunction, error } from '../utils';
-import { componentModels } from './common';
+import { componentModels } from '../context';
 import { addSetDataTask } from './util';
+import { createSelectorQuery } from '../apis';
+import { Component } from '../type';
 
 export default class BaseModel {
-  constructor(__webviewId__, __nodeId__) {
+  [is: string]: any;
+
+  public __webviewId__: string
+
+  public __nodeId__: string
+
+  constructor(__webviewId__: string, __nodeId__?: string) {
     this.__webviewId__ = __webviewId__;
     this.__nodeId__ = __nodeId__;
   }
@@ -12,7 +20,7 @@ export default class BaseModel {
   selectComponent(selector) {
     const _selector = selector.slice(1);
 
-    const components = Object.values(componentModels[this.__webviewId__] || {});
+    const components: Component[] = Object.values(componentModels[this.__webviewId__] || {});
 
     if (selector.startsWith('#')) {
       return components.find((c) => {
@@ -30,7 +38,7 @@ export default class BaseModel {
   selectAllComponents(selector) {
     const _selector = selector.slice(1);
 
-    const components = Object.values(componentModels[this.__webviewId__] || {});
+    const components: Component[] = Object.values(componentModels[this.__webviewId__] || {});
 
     if (selector.startsWith('#')) {
       return components.filter((c) => {
@@ -52,11 +60,14 @@ export default class BaseModel {
     addSetDataTask(this, data, callback).catch((e) => error(e));
   }
 
-  createIntersectionObserver(options = {}) {
-    return createIntersectionObserver.call(this, this, options);
-  }
+  /* todo */
+  // createIntersectionObserver(options = {}) {
+  //   return createIntersectionObserver.call(this, this, options);
+  // }
 
   createSelectorQuery() {
-    return createSelectorQuery() && createSelectorQuery().in(this);
+    const selectorQuery = createSelectorQuery();
+
+    return selectorQuery && selectorQuery.in(this);
   }
 }

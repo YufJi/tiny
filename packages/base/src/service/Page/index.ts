@@ -2,16 +2,17 @@ import { defaults, mapValues, isFunction, noop } from 'lodash';
 import { CustomEvent, g } from 'shared';
 import { subscribe } from '../bridge';
 import { wrapUserFunctions, wrapUserFunction, debug, warn } from '../utils';
-import { pageInitMap } from '../Model/common';
+import { pageInitMap } from '../context';
 import handlePageEvent from './handlePageEvent';
 import PageModel from './model';
 
-const { PAGE_EVENT } = CustomEvent;
+const { PageEvent } = CustomEvent;
 
 export function registerPage(options = {}) {
   const { is } = g.$global.currentPageConfig;
-  if (g.$global.__allConfig__[is]) {
-    throw new Error(`Please do not registry multiple Pages in ${is}`);
+
+  if (pageInitMap.has(is)) {
+    throw new Error(`at ${is}, Page can only register once`);
   }
 
   g.$global.__allConfig__[is] = g.$global.currentPageConfig;
@@ -70,7 +71,7 @@ export function registerPage(options = {}) {
 }
 
 export function loadPageEvent() {
-  subscribe(PAGE_EVENT, handlePageEvent);
+  subscribe(PageEvent, handlePageEvent);
 }
 
 export {

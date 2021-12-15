@@ -35,7 +35,6 @@ Page({
     animation.scale(5, 5).rotate(120).step();
 
     this.setData({
-      todos: app.todos,
       text: 'load',
       animationData: animation.export(),
     });
@@ -53,6 +52,7 @@ Page({
     animation.scale(1.5, 1.5).rotate(20).step();
 
     this.setData({
+      todos: app.todos,
       text: 'show',
       animationData: animation.export(),
     });

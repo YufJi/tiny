@@ -1,7 +1,7 @@
 import { memoize } from 'lodash';
 import path from 'path';
 import { CustomEvent } from 'shared';
-import { h, useDangerousReverseLayoutEffect, useEffect, useLayoutEffect, useRef } from '../nerv';
+import Nerv, { useEffect, useLayoutEffect, useRef } from 'nerv';
 import { useJSBridge } from '../common/hooks';
 import { getRealRoute } from '../util';
 import { triggerRelationsEvent } from '../api';
@@ -17,7 +17,7 @@ import {
   useRenderContext,
 } from './hooks';
 
-const { COMPONENT_DATA_CHANGE } = CustomEvent;
+const { ComponentDataChange } = CustomEvent;
 
 export function registerCustomComponents(__allConfig__, customComponents) {
   const customComponentMap = new Map();
@@ -114,7 +114,7 @@ function ShadowRoot(props) {
     };
   }, []);
 
-  return h($name, {
+  return Nerv.h($name, {
     ref,
     ...attribute,
   }, children);
@@ -123,7 +123,7 @@ function ShadowRoot(props) {
 function syncInitialInfo(props, nodeId, publish) {
   const { id, className } = props;
 
-  publish(COMPONENT_DATA_CHANGE, {
+  publish(ComponentDataChange, {
     data: {
       id: id || '',
       className: className || '',
@@ -134,7 +134,7 @@ function syncInitialInfo(props, nodeId, publish) {
 }
 
 function syncInitialProps(data, nodeId, publish) {
-  publish(COMPONENT_DATA_CHANGE, {
+  publish(ComponentDataChange, {
     datatype: 'properties',
     data,
     nodeId,
@@ -142,7 +142,7 @@ function syncInitialProps(data, nodeId, publish) {
 }
 
 function syncInitialDataset(data, nodeId, publish) {
-  publish(COMPONENT_DATA_CHANGE, {
+  publish(ComponentDataChange, {
     datatype: 'dataset',
     data,
     nodeId,

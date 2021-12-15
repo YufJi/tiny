@@ -1,4 +1,4 @@
-import { h, Fragment } from '../nerv';
+import Nerv, { Fragment } from 'nerv';
 
 export default function useTemplate(template, data, context) {
   return (

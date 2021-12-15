@@ -1,6 +1,6 @@
 import { isNil, memoize, isBoolean } from 'lodash';
 import { CustomEvent, Deferred } from 'shared';
-import { useState, useRef, useLayoutEffect, useEffect, useMemo, useReducer, transformRpx } from '../nerv';
+import { useState, useRef, useLayoutEffect, useEffect, useMemo, useReducer, transformRpx } from 'nerv';
 import { useJSBridgeFn, useJSBridge, useConfigContext, usePageFields, useCreation } from '../common/hooks';
 import {
   onComponentDataChange,
@@ -19,7 +19,7 @@ import {
 import { registerCustomComponents, createComponentResolve } from '../Component';
 import { mergeData } from '../util';
 
-const { INIT_DATA_READY, APP_DATA_CHANGE, PAGE_EVENT, PAGE_READY, PAGE_SHOW } = CustomEvent;
+const { InitDataReady, AppDataChange, PageEvent, PageReady, PageShow } = CustomEvent;
 
 /* 获取generateFunc */
 export function useCompileResult() {
@@ -42,13 +42,13 @@ export function usePageData(render) {
   useJSBridgeFn((bridge) => {
     const { subscribe, replyService } = bridge;
 
-    subscribe(INIT_DATA_READY, (e) => {
+    subscribe(InitDataReady, (e) => {
       const { data } = e;
 
       setData(data);
     });
 
-    replyService(APP_DATA_CHANGE)(async (params) => {
+    replyService(AppDataChange)(async (params) => {
       const { data, options } = params;
       setData((prev) => mergeData(prev, data));
       return ref.current.promise;
@@ -75,7 +75,7 @@ export function useRenderContext() {
   const eventBinder = useCreation(() => {
     return memoize((type) => {
       const handler = function (data) {
-        return publish(PAGE_EVENT, { type, data, nodeId: 0 });
+        return publish(PageEvent, { type, data, nodeId: 0 });
       };
       handler.displayName = type;
 
@@ -213,7 +213,7 @@ function useNormalState() {
   });
 
   useJSBridgeFn((bridge) => {
-    bridge.subscribe(INIT_DATA_READY, () => {
+    bridge.subscribe(InitDataReady, () => {
       dataRef.current = true;
       if (genRef.current) {
         setBool(true);
@@ -308,7 +308,7 @@ export function usePageShow(stylesheet) {
   const ref = useRef(false);
 
   useLayoutEffect(() => {
-    publish(PAGE_SHOW, {});
+    publish(PageShow, {});
   }, []);
 
   useLayoutEffect(() => {
@@ -331,7 +331,7 @@ export function usePageReady(render) {
 
   useEffect(() => {
     if (render && config && !config.isPageReload) {
-      publish(PAGE_READY, {});
+      publish(PageReady, {});
     }
   }, [config, render]);
 }

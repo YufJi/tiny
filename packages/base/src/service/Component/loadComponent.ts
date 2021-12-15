@@ -1,21 +1,21 @@
 import { unset, get, set, isEqual, isString, isFunction, isPlainObject, cloneDeep } from 'lodash';
 import { CustomEvent } from 'shared';
 import { subscribe } from '../bridge';
-import { componentModels, pageModels, componentBookmarks } from '../Model/common';
+import { componentModels, pageModels, componentBookmarks } from '../context';
 import { onRouteEvent } from '../Route';
 import { wrapUserFunction } from '../utils';
 import { ComponentModel } from './model';
+import { Component } from '../type';
 
-const { COMPONENT_DATA_CHANGE, COMPONENT_EVENT } = CustomEvent;
 const componentStatus = new WeakMap();
 
 export default function loadComponent() {
   onRouteEvent('destroyPage', (page) => {
     const { webviewId } = page;
-    const components = componentModels[webviewId];
+    const components: Component[] = componentModels[webviewId];
     if (!components) return;
 
-    for (let i = 0; i < Object.values(components).length; i++) {
+    for (let i = 0; i < Object.values(components).length; i+=1) {
       const component = Object.values(components)[i];
       const status = componentStatus.get(component);
 
@@ -32,7 +32,7 @@ export default function loadComponent() {
   /**
    * webview component 生命周期处理
    */
-  subscribe(COMPONENT_EVENT, (params, webviewId) => {
+  subscribe(CustomEvent.ComponentEvent, (params, webviewId) => {
     const { nodeId, eventName, route } = params;
 
     if (!nodeId) return;
@@ -46,7 +46,7 @@ export default function loadComponent() {
     }
 
     if (!component) {
-      console.error(`[COMPONENT_EVENT] Component(${webviewId}.${nodeId}) not found`);
+      console.error(`[ComponentEvent] Component(${webviewId}.${nodeId}) not found`);
       return;
     }
 
@@ -61,12 +61,12 @@ export default function loadComponent() {
   /**
    * webview component data处理
    */
-  subscribe(COMPONENT_DATA_CHANGE, (params, webviewId) => {
+  subscribe(CustomEvent.ComponentDataChange, (params, webviewId) => {
     const { nodeId, datatype, data } = params;
     const componentModel = get(componentModels, [webviewId, nodeId]);
 
     if (!componentModel) {
-      console.warn(`[COMPONENT_DATA_CHANGE] Component(${webviewId}.${nodeId}) not found`);
+      console.warn(`[ComponentDataChange] Component(${webviewId}.${nodeId}) not found`);
       return;
     }
 
@@ -88,13 +88,13 @@ export default function loadComponent() {
       const bookmark = componentBookmarks.get(componentModel.is);
 
       if (!bookmark) {
-        console.warn(`[COMPONENT_DATA_CHANGE] bookmark(${componentModel.is}) not found in componentBookmarks`);
+        console.warn(`[ComponentDataChange] bookmark(${componentModel.is}) not found in componentBookmarks`);
         return;
       }
 
       const { properties } = bookmark.init;
 
-      for (let i = 0; i < Object.entries(data).length; i++) {
+      for (let i = 0; i < Object.entries(data).length; i+=1) {
         const [key, newValue] = Object.entries(data)[i];
         const property = properties[key];
         const oldValue = cloneDeep(componentModel.data[key]);

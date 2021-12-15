@@ -1,4 +1,4 @@
-import { supportPassive } from '@/webview/nerv/passive-event';
+import { supportPassive } from 'nerv/passive-event';
 
 const PASSIVE_TOUCH = supportPassive ? { passive: true } : undefined;
 

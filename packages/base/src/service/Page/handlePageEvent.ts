@@ -1,8 +1,6 @@
 import { isFunction, get } from 'lodash';
-
+import { pageModels, componentModels, resetUserInteraction, setUserInteraction } from '../context';
 import { warn, wrapUserFunction } from '../utils';
-import { pageModels, componentModels } from '../Model/common';
-import { resetUserInteraction, setUserInteraction } from '../context';
 
 export default function handlePageEvent({ nodeId, type, data }, webviewId) {
   const page = get(pageModels, webviewId);

@@ -20,6 +20,7 @@ module.exports = {
       '@': path.resolve(root, 'src'),
       shared: path.resolve(root, 'src/shared'),
       'js-bridge': path.resolve(root, 'src/js-bridge'),
+      nerv: path.resolve(root, 'src/webview/nerv'),
     },
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
   },

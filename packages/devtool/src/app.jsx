@@ -70,7 +70,7 @@ class App extends PureComponent {
 
       })}')`);
 
-      serviceIframe.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('onAppRoute', '${JSON.stringify({
+      serviceIframe.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('appRoute', '${JSON.stringify({
         path: homePage,
         openType: 'appLaunch',
       })}', '${renderIframe.id}')`);

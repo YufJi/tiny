@@ -1,7 +1,7 @@
-import { defaults, isPlainObject, get } from 'lodash';
+import { defaults, isPlainObject, get, noop } from 'lodash';
 import { g } from 'shared';
 import { createBehavior } from '../Behavior';
-import { componentBookmarks } from '../Model/common';
+import { componentBookmarks } from '../context';
 import { debug } from '../utils';
 import loadComponent from './loadComponent';
 import { ComponentModel, ComponentPageModel } from './model';
@@ -16,7 +16,7 @@ export function registerComponent(options = {}) {
     throw new Error(`at ${is}, Component can only register once`);
   }
 
-  const { init, ancestors } = createBehavior(is, options, 'Component');
+  const { init, ancestors } = createBehavior(is, options);
 
   defaults(init, {
     externalClasses: [],
@@ -37,7 +37,7 @@ function normalizeRelations(relations, currentPath) {
   if (!isPlainObject(relations)) return {};
   const standardRelations = {};
 
-  for (let i = 0; i < Object.entries(relations).length; i++) {
+  for (let i = 0; i < Object.entries(relations).length; i+=1) {
     const [key, relation] = Object.entries(relations)[i];
     let target;
 
@@ -50,7 +50,7 @@ function normalizeRelations(relations, currentPath) {
       const pathArr = currentPath.split('/');
       pathArr.pop();
 
-      for (const path of key2.split('/')) {
+      for (const path of key.split('/')) {
         if (path && path !== '.') {
           if (path === '..') {
             pathArr.pop();

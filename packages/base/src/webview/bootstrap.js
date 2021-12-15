@@ -1,5 +1,5 @@
 import EventEmitter from 'eventemitter3';
-import { h, hydrate as render } from './nerv';
+import Nerv, { hydrate } from 'nerv';
 import * as bridge from './bridge';
 import App from './App';
 
@@ -11,5 +11,5 @@ export default function bootstrap() {
     emitter: new EventEmitter(),
   };
 
-  render(<App fields={fields} />, root);
+  hydrate(<App fields={fields} />, root);
 }

@@ -1,11 +1,11 @@
 import { forOwn, hasIn, kebabCase, memoize, isEqual, camelCase, isPlainObject, isObject } from 'lodash';
 import { CustomEvent, getType } from 'shared';
-import { useState, useContext, useLayoutEffect, useEffect, Children } from '../nerv';
+import { useState, useContext, useLayoutEffect, useEffect, Children } from 'nerv';
 import { usePageFields, useCreation, useJSBridge, usePrevious } from '../common/hooks';
 import { ComponentHubContext } from '../context';
 import { mergeData } from '../util';
 
-const { PAGE_EVENT, COMPONENT_EVENT, COMPONENT_DATA_CHANGE } = CustomEvent;
+const { PageEvent, ComponentEvent, ComponentDataChange } = CustomEvent;
 
 export function useComponentHubContext() {
   return useContext(ComponentHubContext);
@@ -23,7 +23,7 @@ export function useDataChange(nodeId, _data, _props) {
   });
 
   const subscriber = useCreation(() => {
-    return events.subscribe(COMPONENT_DATA_CHANGE, nodeId, (e) => {
+    return events.subscribe(ComponentDataChange, nodeId, (e) => {
       const { data } = e;
       setData((prevData) => {
         return mergeData(prevData, data);
@@ -51,7 +51,7 @@ export function useLifeCycleHooks(nodeId, route) {
   return useCreation(() => {
     return LIFE_CYCLE.map((eventName) => {
       return function () {
-        publish(COMPONENT_EVENT, { route, nodeId, eventName });
+        publish(ComponentEvent, { route, nodeId, eventName });
       };
     });
   });
@@ -151,7 +151,7 @@ export function useSyncChangedDataset(dataset, nodeId, initial) {
   const { publish } = useJSBridge();
   useEffect(() => {
     if (!initial && Object.keys(dataset).length > 0) {
-      publish(COMPONENT_DATA_CHANGE, {
+      publish(ComponentDataChange, {
         datatype: 'dataset',
         data: dataset,
         nodeId,
@@ -164,7 +164,7 @@ export function useSyncChangedProps(props, nodeId, initial) {
   const { publish } = useJSBridge();
   useEffect(() => {
     if (!initial && Object.keys(props).length > 0) {
-      publish(COMPONENT_DATA_CHANGE, {
+      publish(ComponentDataChange, {
         datatype: 'properties',
         data: props,
         nodeId,
@@ -187,7 +187,7 @@ export function useRenderContext(props, nodeId, is, config, resolveComponent) {
   const eventBinder = useCreation(() => {
     return memoize((type) => {
       const handler = function (data) {
-        return publish(PAGE_EVENT, { type, data, nodeId });
+        return publish(PageEvent, { type, data, nodeId });
       };
       handler.displayName = type;
       return handler;

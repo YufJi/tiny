@@ -1,4 +1,4 @@
-import { useRef, useContext, useEffect } from '../nerv';
+import { useRef, useContext, useEffect } from 'nerv';
 import { FieldsContext, ConfigContext } from '../context';
 
 export function useCreation(callback) {

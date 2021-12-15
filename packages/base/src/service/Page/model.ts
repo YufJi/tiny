@@ -1,9 +1,9 @@
 import { set, get, cloneDeep, mapValues, isFunction, wrap } from 'lodash';
 
 import { invokeWebview } from '../bridge';
-import { wrapPageLifetime, wrapUserFunction } from '../utils';
+import { wrapPageLifetime } from '../utils';
+import { componentModels, pageModels, pageInitMap } from '../context';
 import BaseModel from '../Model/Base';
-import { componentModels, pageModels, pageInitMap } from '../Model/common';
 import { afterSetData } from '../Model/util';
 
 export default class PageModel extends BaseModel {
@@ -11,7 +11,6 @@ export default class PageModel extends BaseModel {
     super(__webviewId__);
 
     this.is = is;
-    this.__webviewId__ = __webviewId__;
     this.options = {};
 
     const init = cloneDeep(pageInitMap.get(is));

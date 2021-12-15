@@ -14,7 +14,7 @@
     },
     "transform": {
       "react": {
-        "pragma": "h"
+        "pragma": "Nerv.h"
       }
     },
     "target": "es5",

@@ -1,18 +1,44 @@
 /* eslint-disable max-classes-per-file */
-import { get, set, noop, setWith, cloneDeep, mapValues } from 'lodash';
+import { get, set, noop, setWith, cloneDeep, mapValues, isFunction } from 'lodash';
 import { invokeWebview } from '../bridge';
 import { wrapUserFunction, wrapComponnetLifetime, error } from '../utils';
+import { pageModels, componentModels, componentBookmarks } from '../context';
 import BaseModel from '../Model/Base';
-import { pageModels, componentModels, componentBookmarks } from '../Model/common';
 import { afterSetData } from '../Model/util';
 
 export class ComponentModel extends BaseModel {
+  public is: string
+
+  public id: string
+
+  public className: string
+
+  public dataset: Record<string, any>
+
+  public data
+
+  public externalClasses
+
+  public options
+
+  public methods
+
+  public relations
+
+  public behaviors
+
+  public lifetimes
+
+  public pageLifetimes
+
+  public definitionFilter
+
+  public hasBehavior
+
   constructor(is, webviewId, nodeId) {
     super(webviewId, nodeId);
 
     this.is = is;
-    this.__webviewId__ = webviewId;
-    this.__nodeId__ = nodeId;
     this.id = '';
     this.className = '';
     this.dataset = {};
@@ -64,7 +90,7 @@ export class ComponentModel extends BaseModel {
           nodeId: this.__nodeId__,
         }, this.__webviewId__);
 
-        if (nodeIds.length === 0) {
+        if ((nodeIds as []).length === 0) {
           callback.call(this, null);
         } else {
           const component = get(componentModels, [this.__webviewId__, nodeIds[0]]);
@@ -91,7 +117,7 @@ export class ComponentModel extends BaseModel {
           nodeId: this.__nodeId__,
         }, this.__webviewId__);
 
-        const components = nodeIds.map((id) => {
+        const components = (nodeIds as []).map((id) => {
           return get(componentModels, [this.__webviewId__, id]);
         });
         callback.call(this, components);
@@ -120,7 +146,7 @@ export class ComponentModel extends BaseModel {
     invokeWebview('getRelationNodes', {
       relation,
       nodeId: this.__nodeId__,
-    }, this.__webviewId__).then((ids) => {
+    }, this.__webviewId__).then((ids: any[]) => {
       const result = ids.map((id) => {
         return get(componentModels, [this.__webviewId__, id]);
       }).filter(Boolean);
