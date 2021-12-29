@@ -1,8 +1,8 @@
-import Nerv, { Fragment } from 'nerv';
+import React from 'react';
 
 export default function createRoot(element) {
   if (Array.isArray(element)) {
-    return <Fragment>{element}</Fragment>;
+    return <>{element}</>;
   }
 
   return element;

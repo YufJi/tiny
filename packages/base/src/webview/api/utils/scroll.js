@@ -1,5 +1,5 @@
 import { CustomEvent } from 'shared';
-import { PASSIVE } from 'nerv/passive-event';
+import { PASSIVE } from '@/webview/util/passive-event';
 
 const { ComponentDataChange, PageEvent } = CustomEvent;
 

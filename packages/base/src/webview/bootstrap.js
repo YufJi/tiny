@@ -1,5 +1,7 @@
+import React from 'react';
+import ReactDOM from 'react-dom';
 import EventEmitter from 'eventemitter3';
-import Nerv, { hydrate } from 'nerv';
+
 import * as bridge from './bridge';
 import App from './App';
 
@@ -11,5 +13,5 @@ export default function bootstrap() {
     emitter: new EventEmitter(),
   };
 
-  hydrate(<App fields={fields} />, root);
+  ReactDOM.render(<App fields={fields} />, root);
 }

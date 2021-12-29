@@ -1,4 +1,4 @@
-import Nerv, { Fragment } from 'nerv';
+import React, { Fragment } from 'react';
 
 export default function createBlock(element, props) {
   let arrayElements = element;

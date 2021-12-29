@@ -1,5 +1,6 @@
+import React, { useState, useLayoutEffect } from 'react';
 import { CustomEvent, NativeEvent } from 'shared';
-import Nerv, { useState, useLayoutEffect } from 'nerv';
+
 import { FieldsContext, ConfigContext } from './context';
 import { useCreation } from './common/hooks';
 import Page from './Page';

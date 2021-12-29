@@ -1,6 +1,8 @@
+import { useState, useRef, useLayoutEffect, useEffect, useMemo, useReducer } from 'react';
 import { isNil, memoize, isBoolean } from 'lodash';
 import { CustomEvent, Deferred } from 'shared';
-import { useState, useRef, useLayoutEffect, useEffect, useMemo, useReducer, transformRpx } from 'nerv';
+
+import transformRpx from '@/webview/util/transformRpx';
 import { useJSBridgeFn, useJSBridge, useConfigContext, usePageFields, useCreation } from '../common/hooks';
 import {
   onComponentDataChange,

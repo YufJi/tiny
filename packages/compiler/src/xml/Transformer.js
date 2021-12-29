@@ -106,7 +106,7 @@ function MLTransformer(template, _config) {
   this.includeTplDeps = {};
   this.template = template;
   this.header = [
-    'const Nerv = self.Nerv;',
+    'const React = self.React;',
   ];
   this.subTemplatesCode = {};
   this.code = [];
@@ -119,7 +119,6 @@ function MLTransformer(template, _config) {
 }
 
 assign(MLTransformer.prototype, {
-  // fix mp/mp-compiler#22
   _makeScope(content) {
     if (content) {
       return assign(Object.create(null), content);

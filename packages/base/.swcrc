@@ -14,7 +14,7 @@
     },
     "transform": {
       "react": {
-        "pragma": "Nerv.h"
+        "pragma": "React.createElement"
       }
     },
     "target": "es5",

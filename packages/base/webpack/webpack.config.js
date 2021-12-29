@@ -21,6 +21,8 @@ module.exports = {
       shared: path.resolve(root, 'src/shared'),
       'js-bridge': path.resolve(root, 'src/js-bridge'),
       nerv: path.resolve(root, 'src/webview/nerv'),
+      react: path.resolve(root, 'src/webview/nerv'),
+      'react-dom': path.resolve(root, 'src/webview/nerv'),
     },
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
   },

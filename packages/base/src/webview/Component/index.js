@@ -1,7 +1,8 @@
+import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { memoize } from 'lodash';
 import path from 'path';
 import { CustomEvent } from 'shared';
-import Nerv, { useEffect, useLayoutEffect, useRef } from 'nerv';
+
 import { useJSBridge } from '../common/hooks';
 import { getRealRoute } from '../util';
 import { triggerRelationsEvent } from '../api';
@@ -114,7 +115,7 @@ function ShadowRoot(props) {
     };
   }, []);
 
-  return Nerv.h($name, {
+  return React.createElement($name, {
     ref,
     ...attribute,
   }, children);

@@ -1,6 +1,7 @@
+import { useState, useContext, useLayoutEffect, useEffect, Children } from 'react';
 import { forOwn, hasIn, kebabCase, memoize, isEqual, camelCase, isPlainObject, isObject } from 'lodash';
 import { CustomEvent, getType } from 'shared';
-import { useState, useContext, useLayoutEffect, useEffect, Children } from 'nerv';
+
 import { usePageFields, useCreation, useJSBridge, usePrevious } from '../common/hooks';
 import { ComponentHubContext } from '../context';
 import { mergeData } from '../util';
@@ -18,9 +19,11 @@ export function useDataChange(nodeId, _data, _props) {
     return JSON.parse(JSON.stringify(_data));
   });
 
-  Object.keys(_props).length > 0 && setData((prevData) => {
-    return mergeData(prevData, _props);
-  });
+  if (Object.keys(_props).length > 0) {
+    setData((prevData) => {
+      return mergeData(prevData, _props);
+    });
+  }
 
   const subscriber = useCreation(() => {
     return events.subscribe(ComponentDataChange, nodeId, (e) => {

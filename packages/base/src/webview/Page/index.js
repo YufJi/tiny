@@ -1,5 +1,6 @@
+import React, { useLayoutEffect, useRef } from 'react';
 import { TemplateTag } from 'shared';
-import Nerv, { useLayoutEffect, useRef } from 'nerv';
+
 import { ComponentHubContext } from '../context';
 import { usePageFields } from '../common/hooks';
 import {
@@ -62,5 +63,5 @@ function NormalScene(props) {
     }
   });
 
-  return Nerv.h(`${TemplateTag.LowerCasePrefix}-page`, {}, current.result);
+  return React.createElement(`${TemplateTag.LowerCasePrefix}-page`, {}, current.result);
 }

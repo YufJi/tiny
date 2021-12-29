@@ -1,5 +1,5 @@
+import { createElement } from 'react';
 import { TemplateTag } from 'shared';
-import { h } from 'nerv';
 
 const empty = {};
 
@@ -8,7 +8,7 @@ export default function renderSlot(ctx, slot, fallback) {
 
   const nodes = $$slots[slot] || fallback;
 
-  return h(`${TemplateTag.LowerCasePrefix}-slot`, {
+  return createElement(`${TemplateTag.LowerCasePrefix}-slot`, {
     id: '__slot__',
     style: `
       display:inherit; 

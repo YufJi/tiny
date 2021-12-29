@@ -157,7 +157,7 @@ module.exports = function run(config) {
 
                 }],
                 [require.resolve('@babel/preset-react'), {
-                  pragma: 'Nerv.createElement', // 配合编译头部添加的‘const Nerv = self.Nerv’
+                  pragma: 'React.createElement',
                   throwIfNamespace: false,
                 }],
               ],
