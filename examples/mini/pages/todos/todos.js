@@ -30,12 +30,12 @@ Page({
     const animation = wx.createAnimation({
       duration: 1000,
       timingFunction: 'ease-in',
-    })
-    
+    });
+
     animation.scale(5, 5).rotate(120).step();
 
     this.setData({
-      text: 'load',
+      // text: 'load',
       animationData: animation.export(),
     });
   },
@@ -47,13 +47,13 @@ Page({
     const animation = wx.createAnimation({
       duration: 3000,
       timingFunction: 'ease-in',
-    })
-    
+    });
+
     animation.scale(1.5, 1.5).rotate(20).step();
 
     this.setData({
       todos: app.todos,
-      text: 'show',
+      // text: 'show',
       animationData: animation.export(),
     });
   },
@@ -62,22 +62,21 @@ Page({
 
     const id = setTimeout(() => {
       console.log('setTimeout');
-    }, 3000);
+    }, 5000);
 
     const animation = wx.createAnimation({
       duration: 3000,
       timingFunction: 'ease-in',
-    })
-    
+    });
+
     animation.scale(0.5, 0.5).rotate(90).step();
     this.setData({
       animationData: animation.export(),
     });
 
-
-    const ctx = wx.createCanvasContext('canvas')
-    ctx.setFillStyle('red')
-    ctx.fillRect(10, 10, 150, 75)
+    const ctx = wx.createCanvasContext('canvas');
+    ctx.setFillStyle('red');
+    ctx.fillRect(10, 10, 150, 75);
     ctx.draw();
   },
 
@@ -211,16 +210,15 @@ Page({
     });
   },
   ani1() {
-
     const animation = wx.createAnimation({
       duration: 2000,
       timingFunction: 'ease',
-    })
-    
-    animation.scale(2,2).rotate(45).step();
-    animation.scale(3,3).rotate(60).step();
+    });
+
+    animation.scale(2, 2).rotate(45).step();
+    animation.scale(3, 3).rotate(60).step();
     this.setData({
       animationData: animation.export(),
     });
-  }
+  },
 });

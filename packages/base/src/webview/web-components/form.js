@@ -50,7 +50,7 @@ class Form extends Base(PolymerElement) {
   async submitHandler(e) {
     const target = {
       id: '',
-      dataset: { ...e.target.dataset },
+      dataset: { ...e.target._dataset },
       offsetLeft: e.target.offsetLeft,
       offsetTop: e.target.offsetTop,
     };
@@ -74,7 +74,7 @@ class Form extends Base(PolymerElement) {
     this.triggerEvent('reset', {
       target: {
         id: '',
-        dataset: { ...e.target.dataset },
+        dataset: { ...e.target._dataset },
         offsetLeft: e.target.offsetLeft,
         offsetTop: e.target.offsetTop,
       },

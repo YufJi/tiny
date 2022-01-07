@@ -251,6 +251,7 @@ function actionCreatePage(route, webviewId, query) {
     route,
     query,
     _params: cloneDeep(onAppRouteParams),
+    loaded: false,
   };
 
   if (!currentPage.implement.onShareAppMessage) {
@@ -264,7 +265,9 @@ function actionCreatePage(route, webviewId, query) {
 
   pageStack.push(currentPage);
 
-  implement.onLoad(query);
+  // 是否需要和微信对齐？
+  // implement.onLoad(query);
+  // implement.onShow();
 }
 
 function isRouteType(type) {

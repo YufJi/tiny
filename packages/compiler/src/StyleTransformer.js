@@ -89,7 +89,7 @@ function StyleTransformer(ss, config_) {
   } = config;
 
   code.push(
-    'const { TinyStyleSheet } = self;',
+    'const { TinyStyleSheet, insertAppStyle } = self;',
   );
   code.push(
     `const stylesheet = new TinyStyleSheet({ stylePath: '${escapeQuote(
@@ -112,21 +112,24 @@ function StyleTransformer(ss, config_) {
         true,
       )}';`,
     );
+    // page生效
     code.push('stylesheet.imports(appStyle);');
+    // 全局的
+    code.push('insertAppStyle(appStyle)');
   }
 
-  if (componentStyles && config.stylePath) {
-    componentStyles.forEach((cs, index) => {
-      code.push(
-        `import cs${index} from '${escapeQuote(
-          normalizePathForWin(relative(config.stylePath, cs.config.stylePath)),
-          true,
-          true,
-        )}';`,
-      );
-      code.push(`stylesheet.imports(cs${index});`);
-    });
-  }
+  // if (componentStyles && config.stylePath) {
+  //   componentStyles.forEach((cs, index) => {
+  //     code.push(
+  //       `import cs${index} from '${escapeQuote(
+  //         normalizePathForWin(relative(config.stylePath, cs.config.stylePath)),
+  //         true,
+  //         true,
+  //       )}';`,
+  //     );
+  //     code.push(`stylesheet.imports(cs${index});`);
+  //   });
+  // }
 }
 
 assign(StyleTransformer.prototype, {

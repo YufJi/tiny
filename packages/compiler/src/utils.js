@@ -10,7 +10,7 @@ const numberReSnippet = '(?:NaN|-?(?:(?:\\d+|\\d*\\.\\d+)(?:[E|e][+|-]?\\d+)?|In
 const matchOnlyNumberRe = new RegExp(`^(${numberReSnippet})$`);
 
 const elementPrefix = 'tiny';
-const supportedWebComponents = [
+const supportedBuiltInComponents = [
   'view',
   'button',
   'text',
@@ -32,7 +32,7 @@ const supportedWebComponents = [
   'canvas',
 ];
 
-const supportedH5Tags = ['i', 'a'];
+const supportedH5Tags = ['i', 'a', 'slot'];
 
 function isNumber(str) {
   return !!str.trim().match(matchOnlyNumberRe);
@@ -68,7 +68,7 @@ function camelCase(name) {
 }
 
 function toComponentName(str) {
-  if (supportedWebComponents.indexOf(str) !== -1) {
+  if (supportedBuiltInComponents.indexOf(str) !== -1) {
     return `${elementPrefix}-${str}`;
   }
 
@@ -77,8 +77,9 @@ function toComponentName(str) {
   }
 
   // 自定义组件
-  const ret = camelCase(str);
-  return ret.charAt(0).toUpperCase() + ret.slice(1);
+  return `${elementPrefix}-${str}`;
+  // const ret = camelCase(str);
+  // return ret.charAt(0).toUpperCase() + ret.slice(1);
 }
 
 const unSupported = ['tag', 'attribute', 'universal'];
@@ -100,12 +101,10 @@ function pluginTransformSelector(n, { pluginId }) {
 }
 
 function normalizeTag(tag) {
-  const supportTags = [...supportedWebComponents, 'page'];
-
-  if (supportTags.includes(tag)) {
-    return `${elementPrefix}-${tag}`;
-  } else {
+  if (supportedH5Tags.includes(tag)) {
     return `${tag}`;
+  } else {
+    return `${elementPrefix}-${tag}`;
   }
 }
 
@@ -391,6 +390,6 @@ module.exports = {
   getImports,
   getImport,
   isValidFilePath,
-  supportedWebComponents,
+  supportedBuiltInComponents,
   supportedH5Tags,
 };

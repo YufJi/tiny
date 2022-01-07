@@ -7,6 +7,11 @@
   resolved "https://registry.yarnpkg.com/@discoveryjs/json-ext/-/json-ext-0.5.3.tgz#90420f9f9c6d3987f176a19a7d8e764271a2f55d"
   integrity sha512-Fxt+AfXgjMoin2maPIYzFZnQjAXjAL0PHscM5pRTtatFqB+vZxAM9tLp2Optnuw3QOQC40jTNeGYFOMvyf7v9g==
 
+"@lit/reactive-element@^1.0.0":
+  version "1.0.2"
+  resolved "https://registry.npmmirror.com/@lit/reactive-element/download/@lit/reactive-element-1.0.2.tgz#daa7a7c7a6c63d735f0c9634de6b7dbd70a702ab"
+  integrity sha512-oz3d3MKjQ2tXynQgyaQaMpGTDNyNDeBdo6dXf1AbjTwhA1IRINHmA7kSaVYv9ttKweNkEoNqp9DqteDdgWzPEg==
+
 "@napi-rs/triples@^1.0.3":
   version "1.0.3"
   resolved "https://registry.nlark.com/@napi-rs/triples/download/@napi-rs/triples-1.0.3.tgz#76d6d0c3f4d16013c61e45dfca5ff1e6c31ae53c"
@@ -116,11 +121,6 @@
   resolved "https://registry.npmmirror.com/@types/lodash/download/@types/lodash-4.14.178.tgz#341f6d2247db528d4a13ddbb374bcdc80406f4f8"
   integrity sha512-0d5Wd09ItQWH1qFbEyQ7oTQ3GZrMfth5JkbN3EvTKLXcHLRDSXeLnlvlOn0wvxVIwK5o2M8JzP/OWz7T3NRsbw==
 
-"@types/prop-types@*":
-  version "15.7.4"
-  resolved "https://registry.npmmirror.com/@types/prop-types/download/@types/prop-types-15.7.4.tgz#fcf7205c25dff795ee79af1e30da2c9790808f11"
-  integrity sha1-/PcgXCXf95Xuea8eMNosl5CAjxE=
-
 "@types/q@^1.5.1":
   version "1.5.5"
   resolved "https://registry.npmmirror.com/@types/q/download/@types/q-1.5.5.tgz#75a2a8e7d8ab4b230414505d92335d1dcb53a6df"
@@ -131,19 +131,10 @@
   resolved "https://registry.npmmirror.com/@types/qs/download/@types/qs-6.9.7.tgz?cache=0&sync_timestamp=1637270140135&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2F%40types%2Fqs%2Fdownload%2F%40types%2Fqs-6.9.7.tgz#63bb7d067db107cc1e457c303bc25d511febf6cb"
   integrity sha1-Y7t9Bn2xB8weRXwwO8JdUR/r9ss=
 
-"@types/react@^17.0.38":
-  version "17.0.38"
-  resolved "https://registry.npmmirror.com/@types/react/download/@types/react-17.0.38.tgz#f24249fefd89357d5fa71f739a686b8d7c7202bd"
-  integrity sha512-SI92X1IA+FMnP3qM5m4QReluXzhcmovhZnLNm3pyeQlooi02qI7sLiepEYqT678uNiyc25XfCqxREFpy3W7YhQ==
-  dependencies:
-    "@types/prop-types" "*"
-    "@types/scheduler" "*"
-    csstype "^3.0.2"
-
-"@types/scheduler@*":
-  version "0.16.2"
-  resolved "https://registry.npmmirror.com/@types/scheduler/download/@types/scheduler-0.16.2.tgz?cache=0&sync_timestamp=1637269065452&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2F%40types%2Fscheduler%2Fdownload%2F%40types%2Fscheduler-0.16.2.tgz#1a62f89525723dde24ba1b01b092bf5df8ad4d39"
-  integrity sha1-GmL4lSVyPd4kuhsBsJK/XfitTTk=
+"@types/trusted-types@^2.0.2":
+  version "2.0.2"
+  resolved "https://registry.npmmirror.com/@types/trusted-types/download/@types/trusted-types-2.0.2.tgz#fc25ad9943bcac11cceb8168db4f275e0e72e756"
+  integrity sha1-/CWtmUO8rBHM64Fo208nXg5y51Y=
 
 "@webassemblyjs/ast@1.9.0":
   version "1.9.0"
@@ -964,6 +955,11 @@ constants-browserify@^1.0.0:
   resolved "https://registry.yarnpkg.com/constants-browserify/-/constants-browserify-1.0.0.tgz#c20b96d8c617748aaf1c16021760cd27fcb8cb75"
   integrity sha1-wguW2MYXdIqvHBYCF2DNJ/y4y3U=
 
+construct-style-sheets-polyfill@^3.0.5:
+  version "3.0.5"
+  resolved "https://registry.npmmirror.com/construct-style-sheets-polyfill/download/construct-style-sheets-polyfill-3.0.5.tgz#cdf2e4982e8f7d9ef3f4dd841e14cdb7e13abb6a"
+  integrity sha512-prLKSx9gYwtmqWtq+pZxppU1SaH9o4ug7JIc0I/1zMV2bFE3GvRtQaMTIpotlhw33XjtC7rGQFOZJsOFnlAAhQ==
+
 copy-anything@^2.0.1:
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/copy-anything/-/copy-anything-2.0.3.tgz#842407ba02466b0df844819bbe3baebbe5d45d87"
@@ -1214,11 +1210,6 @@ csso@^4.0.2:
   integrity sha1-6jpWE0bo3J9UbW/r7dUBh884lSk=
   dependencies:
     css-tree "^1.1.2"
-
-csstype@^3.0.2:
-  version "3.0.10"
-  resolved "https://registry.npmmirror.com/csstype/download/csstype-3.0.10.tgz?cache=0&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2Fcsstype%2Fdownload%2Fcsstype-3.0.10.tgz#2ad3a7bed70f35b965707c092e5f30b327c290e5"
-  integrity sha512-2u44ZG2OcNUO9HDp/Jl8C07x6pU/eTR3ncV91SiK3dhG9TWvRVsCoJw14Ckx5DgWkzGA3waZWO3d7pgqpUI/XA==
 
 cyclist@^1.0.1:
   version "1.0.1"
@@ -2347,11 +2338,6 @@ isobject@^3.0.0, isobject@^3.0.1:
   resolved "https://registry.yarnpkg.com/isobject/-/isobject-3.0.1.tgz#4e431e92b11a9731636aa1f9c8d1ccbcfdab78df"
   integrity sha1-TkMekrEalzFjaqH5yNHMvP2reN8=
 
-"js-tokens@^3.0.0 || ^4.0.0":
-  version "4.0.0"
-  resolved "https://registry.nlark.com/js-tokens/download/js-tokens-4.0.0.tgz#19203fb59991df98e3a287050d4647cdeaf32499"
-  integrity sha1-GSA/tZmR35jjoocFDUZHzerzJJk=
-
 js-yaml@^3.13.1:
   version "3.14.1"
   resolved "https://registry.yarnpkg.com/js-yaml/-/js-yaml-3.14.1.tgz#dae812fdb3825fa306609a8717383c50c36a0537"
@@ -2433,6 +2419,30 @@ less@^3.9.0:
     native-request "^1.0.5"
     source-map "~0.6.0"
 
+lit-element@^3.0.0:
+  version "3.0.2"
+  resolved "https://registry.npmmirror.com/lit-element/download/lit-element-3.0.2.tgz#6422b68ba166a32695f524d6f3eb41712610bf50"
+  integrity sha512-9vTJ47D2DSE4Jwhle7aMzEwO2ZcOPRikqfT3CVG7Qol2c9/I4KZwinZNW5Xv8hNm+G/enSSfIwqQhIXi6ioAUg==
+  dependencies:
+    "@lit/reactive-element" "^1.0.0"
+    lit-html "^2.0.0"
+
+lit-html@^2.0.0:
+  version "2.0.2"
+  resolved "https://registry.npmmirror.com/lit-html/download/lit-html-2.0.2.tgz#6a17caac4135757710c5fb3e4becc622c476e431"
+  integrity sha512-dON7Zg8btb14/fWohQLQBdSgkoiQA4mIUy87evmyJHtxRq7zS6LlC32bT5EPWiof5PUQaDpF45v2OlrxHA5Clg==
+  dependencies:
+    "@types/trusted-types" "^2.0.2"
+
+lit@^2.0.2:
+  version "2.0.2"
+  resolved "https://registry.npmmirror.com/lit/download/lit-2.0.2.tgz#5e6f422924e0732258629fb379556b6d23f7179c"
+  integrity sha1-Xm9CKSTgcyJYYp+zeVVrbSP3F5w=
+  dependencies:
+    "@lit/reactive-element" "^1.0.0"
+    lit-element "^3.0.0"
+    lit-html "^2.0.0"
+
 loader-runner@^2.4.0:
   version "2.4.0"
   resolved "https://registry.yarnpkg.com/loader-runner/-/loader-runner-2.4.0.tgz#ed47066bfe534d7e84c4c7b9998c2a75607d9357"
@@ -2485,13 +2495,6 @@ lodash@^4.17.21:
   version "4.17.21"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
   integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
-
-loose-envify@^1.1.0, loose-envify@^1.4.0:
-  version "1.4.0"
-  resolved "https://registry.nlark.com/loose-envify/download/loose-envify-1.4.0.tgz#71ee51fa7be4caec1a63839f7e682d8132d30caf"
-  integrity sha1-ce5R+nvkyuwaY4OffmgtgTLTDK8=
-  dependencies:
-    js-tokens "^3.0.0 || ^4.0.0"
 
 lru-cache@^5.1.1:
   version "5.1.1"
@@ -3430,15 +3433,6 @@ promise-inflight@^1.0.1:
   resolved "https://registry.yarnpkg.com/promise-inflight/-/promise-inflight-1.0.1.tgz#98472870bf228132fcbdd868129bad12c3c029e3"
   integrity sha1-mEcocL8igTL8vdhoEputEsPAKeM=
 
-prop-types@^15.6.2:
-  version "15.8.0"
-  resolved "https://registry.npmmirror.com/prop-types/download/prop-types-15.8.0.tgz#d237e624c45a9846e469f5f31117f970017ff588"
-  integrity sha512-fDGekdaHh65eI3lMi5OnErU6a8Ighg2KjcjQxO7m8VHyWjcPyj5kiOgV1LQDOOOgVy3+5FgjXvdSSX7B8/5/4g==
-  dependencies:
-    loose-envify "^1.4.0"
-    object-assign "^4.1.1"
-    react-is "^16.13.1"
-
 prr@~1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/prr/-/prr-1.0.1.tgz#d3fc114ba06995a45ec6893f484ceb1d78f5f476"
@@ -3540,39 +3534,6 @@ randomfill@^1.0.3:
   dependencies:
     randombytes "^2.0.5"
     safe-buffer "^5.1.0"
-
-react-dom@16:
-  version "16.14.0"
-  resolved "https://registry.npmmirror.com/react-dom/download/react-dom-16.14.0.tgz#7ad838ec29a777fb3c75c3a190f661cf92ab8b89"
-  integrity sha512-1gCeQXDLoIqMgqD3IO2Ah9bnf0w9kzhwN5q4FGnHZ67hBm9yePzB5JJAIQCc8x3pFnNlwFq4RidZggNAAkzWWw==
-  dependencies:
-    loose-envify "^1.1.0"
-    object-assign "^4.1.1"
-    prop-types "^15.6.2"
-    scheduler "^0.19.1"
-
-react-is@^16.13.1:
-  version "16.13.1"
-  resolved "https://registry.npmmirror.com/react-is/download/react-is-16.13.1.tgz#789729a4dc36de2999dc156dd6c1d9c18cea56a4"
-  integrity sha1-eJcppNw23imZ3BVt1sHZwYzqVqQ=
-
-react-reconciler@^0.26.2:
-  version "0.26.2"
-  resolved "https://registry.npmmirror.com/react-reconciler/download/react-reconciler-0.26.2.tgz#bbad0e2d1309423f76cf3c3309ac6c96e05e9d91"
-  integrity sha1-u60OLRMJQj92zzwzCaxsluBenZE=
-  dependencies:
-    loose-envify "^1.1.0"
-    object-assign "^4.1.1"
-    scheduler "^0.20.2"
-
-react@^16.14.0:
-  version "16.14.0"
-  resolved "https://registry.npmmirror.com/react/download/react-16.14.0.tgz#94d776ddd0aaa37da3eda8fc5b6b18a4c9a3114d"
-  integrity sha512-0X2CImDkJGApiAlcf0ODKIneSwBPhqJawOa5wCtKbu7ZECrmS26NvtSILynQ66cgkT/RJ4LidJOc3bUESwmU8g==
-  dependencies:
-    loose-envify "^1.1.0"
-    object-assign "^4.1.1"
-    prop-types "^15.6.2"
 
 "readable-stream@1 || 2", readable-stream@^2.0.0, readable-stream@^2.0.1, readable-stream@^2.0.2, readable-stream@^2.1.5, readable-stream@^2.2.2, readable-stream@^2.3.3, readable-stream@^2.3.6, readable-stream@~2.3.6:
   version "2.3.7"
@@ -3735,22 +3696,6 @@ sax@~1.2.4:
   version "1.2.4"
   resolved "https://registry.npm.taobao.org/sax/download/sax-1.2.4.tgz#2816234e2378bddc4e5354fab5caa895df7100d9"
   integrity sha1-KBYjTiN4vdxOU1T6tcqold9xANk=
-
-scheduler@^0.19.1:
-  version "0.19.1"
-  resolved "https://registry.npmmirror.com/scheduler/download/scheduler-0.19.1.tgz#4f3e2ed2c1a7d65681f4c854fa8c5a1ccb40f196"
-  integrity sha1-Tz4u0sGn1laB9MhU+oxaHMtA8ZY=
-  dependencies:
-    loose-envify "^1.1.0"
-    object-assign "^4.1.1"
-
-scheduler@^0.20.2:
-  version "0.20.2"
-  resolved "https://registry.npmmirror.com/scheduler/download/scheduler-0.20.2.tgz#4baee39436e34aa93b4874bddcbf0fe8b8b50e91"
-  integrity sha1-S67jlDbjSqk7SHS93L8P6Li1DpE=
-  dependencies:
-    loose-envify "^1.1.0"
-    object-assign "^4.1.1"
 
 schema-utils@^1.0.0:
   version "1.0.0"

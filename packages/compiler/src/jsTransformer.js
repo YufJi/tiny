@@ -65,7 +65,7 @@ function transformPageJsForWebRender(name, config) {
       ${styleTransformer && fullPath ? `get stylesheet() { 
         const fn = require('${normalizePathForWin(relative(fullPath, styleTransformer.config.stylePath))}${resourceQuery}'); 
         return fn.default || fn; 
-      },` : ''}
+      },` : 'get stylesheet() { return \'\' }'}
     }`;
 
   return `
@@ -133,11 +133,17 @@ function transformComponentJsForWebRender({ is, usingComponents }, config) {
     path.dirname(fullPath),
     `./${filename}${templateExtname}`,
   );
+  const cssPath = path.join(
+    path.dirname(fullPath),
+    `./${filename}${styleExtname}`,
+  );
+
   if (!existsSync(xmlPath)) {
     throw new Error(`can not find ${xmlPath}`);
   }
+
   is = pluginId ? getPluginPath(pluginId, is.slice(1)) : is;
-  const cssExists = false;
+  const cssExists = existsSync(cssPath);
 
   const info = `{
     usingComponents: ${JSON.stringify(transformUsingComponents({ usingComponents, pluginId }))},
@@ -145,10 +151,10 @@ function transformComponentJsForWebRender({ is, usingComponents }, config) {
       const fn = require('./${filename}${templateExtname}${resourceQuery}'); 
       return fn.default || fn;
     },
-    ${cssExists ? `get stylesheet() { 
+    ${cssExists ? `get stylesheet() {
       const fn = require('./${filename}${styleExtname}'); 
       return fn.default || fn;
-    },` : ''}
+    }` : 'get stylesheet() { return \'\' }'}
   }`;
 
   return `

@@ -1,42 +1,40 @@
 import WxCanvas from './wx-canvas';
 import * as echarts from './echarts';
-import EventHub from '../../EventHub'
+import EventHub from '../../EventHub';
 
 let ctx;
-
 
 Component({
   properties: {
     canvasId: {
       type: String,
-      value: 'ec-canvas'
+      value: 'ec-canvas',
     },
 
     ec: {
-      type: Object
+      type: Object,
     },
 
     forceUseOldCanvas: {
       type: Boolean,
-      value: false
-    }
+      value: false,
+    },
   },
 
   data: {
-    isUseNewCanvas: false
+    isUseNewCanvas: false,
   },
 
-  ready: function () {
+  ready() {
     // Disable prograssive because drawImage doesn't support DOM as parameter
     // See https://developers.weixin.qq.com/miniprogram/dev/api/canvas/CanvasContext.drawImage.html
-    echarts.registerPreprocessor(option => {
+    echarts.registerPreprocessor((option) => {
       if (option && option.series) {
         if (option.series.length > 0) {
-          option.series.forEach(series => {
+          option.series.forEach((series) => {
             series.progressive = 0;
           });
-        }
-        else if (typeof option.series === 'object') {
+        } else if (typeof option.series === 'object') {
           option.series.progressive = 0;
         }
       }
@@ -52,8 +50,8 @@ Component({
   },
 
   methods: {
-    init: function () {
-      this.initByNewWay()
+    init() {
+      this.initByNewWay();
     },
 
     initByOldWay() {
@@ -63,55 +61,55 @@ Component({
       echarts.setCanvasCreator(() => {
         return canvas;
       });
-      const canvasDpr = wx.getSystemInfoSync().pixelRatio // 微信旧的canvas不能传入dpr
-      var query = wx.createSelectorQuery().in(this);
+      const canvasDpr = wx.getSystemInfoSync().pixelRatio; // 微信旧的canvas不能传入dpr
+      const query = wx.createSelectorQuery().in(this);
 
-      query.select('.ec-canvas').boundingClientRect(res => {
+      query.select('.ec-canvas').boundingClientRect((res) => {
         EventHub.emit('ec-init', canvas, res.width, res.height, canvasDpr, (chart) => {
-          this.chart = chart
-        })
+          this.chart = chart;
+        });
       }).exec();
     },
 
     initByNewWay() {
-      const query = wx.createSelectorQuery().in(this)
+      const query = wx.createSelectorQuery().in(this);
       query
         .select('.ec-canvas')
         .fields({ node: true, size: true })
-        .exec(res => {
+        .exec((res) => {
           console.log('res', res);
-          const canvasNode = res[0].node
-          this.canvasNode = canvasNode
+          const canvasNode = res[0].node;
+          this.canvasNode = canvasNode;
 
-          const canvasWidth = res[0].width
-          const canvasHeight = res[0].height
+          const canvasWidth = res[0].width;
+          const canvasHeight = res[0].height;
 
-          const ctx = canvasNode.getContext('2d')
+          const ctx = canvasNode.getContext('2d');
 
-          const canvas = new WxCanvas(ctx, this.data.canvasId, true, canvasNode)
+          const canvas = new WxCanvas(ctx, this.data.canvasId, true, canvasNode);
 
           echarts.setCanvasCreator(() => {
-            return canvas
-          })
+            return canvas;
+          });
 
-          const canvasDpr = wx.getSystemInfoSync().pixelRatio
+          const canvasDpr = wx.getSystemInfoSync().pixelRatio;
           EventHub.emit('ec-init', canvas, canvasWidth, canvasHeight, canvasDpr, (chart) => {
-            this.chart = chart
-          })
-        })
+            this.chart = chart;
+          });
+        });
     },
 
     touchStart(e) {
       if (this.chart && e.touches.length > 0) {
-        var touch = e.touches[0];
-        var handler = this.chart.getZr().handler;
+        const touch = e.touches[0];
+        const { handler } = this.chart.getZr();
         handler.dispatch('mousedown', {
           zrX: touch.x,
-          zrY: touch.y
+          zrY: touch.y,
         });
         handler.dispatch('mousemove', {
           zrX: touch.x,
-          zrY: touch.y
+          zrY: touch.y,
         });
         handler.processGesture(wrapTouch(e), 'start');
       }
@@ -119,11 +117,11 @@ Component({
 
     touchMove(e) {
       if (this.chart && e.touches.length > 0) {
-        var touch = e.touches[0];
-        var handler = this.chart.getZr().handler;
+        const touch = e.touches[0];
+        const { handler } = this.chart.getZr();
         handler.dispatch('mousemove', {
           zrX: touch.x,
-          zrY: touch.y
+          zrY: touch.y,
         });
         handler.processGesture(wrapTouch(e), 'change');
       }
@@ -132,19 +130,19 @@ Component({
     touchEnd(e) {
       if (this.chart) {
         const touch = e.changedTouches ? e.changedTouches[0] : {};
-        var handler = this.chart.getZr().handler;
+        const { handler } = this.chart.getZr();
         handler.dispatch('mouseup', {
           zrX: touch.x,
-          zrY: touch.y
+          zrY: touch.y,
         });
         handler.dispatch('click', {
           zrX: touch.x,
-          zrY: touch.y
+          zrY: touch.y,
         });
         handler.processGesture(wrapTouch(e), 'end');
       }
-    }
-  }
+    },
+  },
 });
 
 function wrapTouch(event) {

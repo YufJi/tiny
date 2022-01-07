@@ -1,4 +1,4 @@
-import { createElement } from 'react';
+import { h } from 'omi';
 import { TemplateTag } from 'shared';
 
 const empty = {};
@@ -8,7 +8,7 @@ export default function renderSlot(ctx, slot, fallback) {
 
   const nodes = $$slots[slot] || fallback;
 
-  return createElement(`${TemplateTag.LowerCasePrefix}-slot`, {
+  return h(`${TemplateTag.LowerCasePrefix}-slot`, {
     id: '__slot__',
     style: `
       display:inherit; 

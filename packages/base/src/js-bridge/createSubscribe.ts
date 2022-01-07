@@ -28,7 +28,7 @@ export default function createSubscribe() {
           console.error('错误数据为:', data);
           params = {};
         }
-      } else if (getType(data) === 'object') {
+      } else if (getType(data) === 'Object') {
         params = data;
       }
 

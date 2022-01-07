@@ -157,7 +157,7 @@ module.exports = function run(config) {
 
                 }],
                 [require.resolve('@babel/preset-react'), {
-                  pragma: 'React.createElement',
+                  pragma: 'h',
                   throwIfNamespace: false,
                 }],
               ],

@@ -17,7 +17,7 @@ export function Deferred() {
 
 /* 获取类型 */
 export function getType(o) {
-  return Object.prototype.toString.call(o).slice(8, -1).toLowerCase();
+  return Object.prototype.toString.call(o).slice(8, -1);
 }
 
 /* 生成随机id */

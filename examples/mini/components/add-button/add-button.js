@@ -2,24 +2,34 @@ Component({
   properties: {
     text: {
       type: String,
-      value: 'sdas',
+      value: 'oooooo',
     },
   },
 
   data: {
-    // text: 'jyf',
     name: 'xxxxx',
   },
 
   lifetimes: {
     created() {
-      console.log('created', this.properties, this.data);
+      console.log('created', this, this.data);
     },
     attached() {
-      console.log('attached', this.properties, this.data);
+      console.log('attached', this, this.data);
     },
     ready() {
-      console.log('ready', this.properties, this.data);
+      console.log('ready', this, this.data);
+
+      console.log(this.properties)
+
+      // this.setData({
+      //   text: 'jjjjjjjjj'
+      // })
+
+
+      setTimeout(() => {
+        console.log(this.properties)
+      }, 2000)
     },
     moved() {
       console.log('moved', this.properties);

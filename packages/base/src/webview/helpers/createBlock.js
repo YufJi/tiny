@@ -1,4 +1,4 @@
-import React, { Fragment } from 'react';
+import { h, Fragment } from 'omi';
 
 export default function createBlock(element, props) {
   let arrayElements = element;

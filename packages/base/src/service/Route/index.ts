@@ -9,12 +9,19 @@ import firstRender from './firstRender';
 export default function loadRoute() {
   onNative(NativeEvent.AppRoute, handleAppRoute);
 
+  // 监听页面show事件
   subscribe(CustomEvent.PageShow, (_, webviewId) => {
     const page = webviewUsed.get(webviewId);
 
     if (!page) {
       return;
     }
+
+    if (!page.loaded) {
+      page.implement.onLoad(page.query);
+      page.loaded = true;
+    }
+
     page.implement.onShow();
   });
 

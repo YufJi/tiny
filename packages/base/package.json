@@ -17,7 +17,6 @@
     "build": "cross-env NODE_ENV=production webpack --config webpack/webpack.config.js"
   },
   "dependencies": {
-    "@polymer/polymer": "^3.4.1",
     "eventemitter3": "^4.0.7",
     "lodash": "^4.17.21",
     "path": "^0.12.7",
@@ -27,7 +26,6 @@
     "@swc/core": "^1.2.112",
     "@types/lodash": "^4.14.177",
     "@types/qs": "^6.9.7",
-    "@types/react": "^17.0.38",
     "autoprefixer": "^9.8.6",
     "cross-env": "^7.0.3",
     "css-loader": "^3.0.0",

@@ -241,7 +241,7 @@ class WebInput extends Data(GestureEventListeners(Base(PolymerElement))) {
       id: this.id || '',
       offsetLeft: this.offsetLeft,
       offsetTop: this.offsetTop,
-      dataset: this.dataset,
+      dataset: this._dataset,
     };
     return {
       type,
@@ -388,7 +388,7 @@ class WebInput extends Data(GestureEventListeners(Base(PolymerElement))) {
       bindinput: this.bindinput,
       target: {
         id: this.id || '',
-        dataset: this.dataset,
+        dataset: this._dataset,
         offsetTop: this.$.wrapper.offsetTop,
         offsetLeft: this.$.wrapper.offsetLeft,
       },

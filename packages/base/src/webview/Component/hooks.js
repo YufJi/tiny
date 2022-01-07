@@ -19,12 +19,6 @@ export function useDataChange(nodeId, _data, _props) {
     return JSON.parse(JSON.stringify(_data));
   });
 
-  if (Object.keys(_props).length > 0) {
-    setData((prevData) => {
-      return mergeData(prevData, _props);
-    });
-  }
-
   const subscriber = useCreation(() => {
     return events.subscribe(ComponentDataChange, nodeId, (e) => {
       const { data } = e;
@@ -43,6 +37,14 @@ export function useDataChange(nodeId, _data, _props) {
       return subscriber.remove();
     };
   }, [subscriber]);
+
+  useEffect(() => {
+    if (Object.keys(_props).length > 0) {
+      setData((prevData) => {
+        return mergeData(prevData, _props);
+      });
+    }
+  }, [_props]);
 
   return data;
 }
@@ -95,7 +97,9 @@ function filterDataset(props) {
 export function useRefinedProps(props, properties) {
   const _props = normalizeProps(props, properties);
   const prevProps = usePrevious(_props);
+
   if (prevProps === undefined) return [_props, true];
+
   const obj = {};
   forOwn(_props, (val, key) => {
     if (!isEqual(prevProps[key], val)) {
@@ -125,22 +129,22 @@ function normalizeProps(props, properties) {
 }
 
 const ValidateStrategy = {
-  string(o) {
+  String(o) {
     return isPlainObject(o) ? '[object Object]' : o ? String(o) : '';
   },
-  number(o) {
+  Number(o) {
     return isNaN(Number(o)) ? 0 : Number(o);
   },
-  object(o) {
+  Object(o) {
     return Array.isArray(o) ? o : isObject(o) ? {} : null;
   },
-  boolean(o) {
+  Boolean(o) {
     return !!o;
   },
-  array(o) {
+  Array(o) {
     return [];
   },
-  null(o) {
+  Null(o) {
     return o;
   },
 };

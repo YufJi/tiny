@@ -1,171 +1,222 @@
-import React, { useEffect, useLayoutEffect, useRef } from 'react';
-import { memoize } from 'lodash';
-import path from 'path';
-import { CustomEvent } from 'shared';
+import { define, WeElement, h } from 'omi';
+import { isEqual, mapValues, forOwn, hasIn, kebabCase, memoize, camelCase, isPlainObject, isObject } from 'lodash';
+import { CustomEvent, getType, TemplateTag } from 'shared';
 
-import { useJSBridge } from '../common/hooks';
-import { getRealRoute } from '../util';
-import { triggerRelationsEvent } from '../api';
-import {
-  useComponentHubContext,
-  useDataChange,
-  useLifeCycleHooks,
-  useRefinedDataset,
-  useRefinedProps,
-  useSyncChangedDataset,
-  useSyncChangedProps,
-  useNodeId,
-  useRenderContext,
-} from './hooks';
+import { mergeData } from '../util';
+import transformRpx from '../util/transformRpx';
 
-const { ComponentDataChange } = CustomEvent;
+const { PageEvent, ComponentEvent, ComponentDataChange } = CustomEvent;
 
-export function registerCustomComponents(__allConfig__, customComponents) {
-  const customComponentMap = new Map();
+export default function registryCustomComponent(provide) {
+  const { config } = provide;
+  const { __allConfig__, route, customComponents } = config;
+  const { usingComponents } = __allConfig__[route];
+  const registryedMap = new Map();
 
-  Object.keys(customComponents).forEach((is) => {
-    /* 自定义组件初始config */
-    const config = customComponents[is];
-    /* 自定义组件下的组件引用 */
-    const using = __allConfig__[is].usingComponents;
+  const loop = (usingComponents) => {
+    for (let i = 0; i < Object.entries(usingComponents).length; i+=1) {
+      const [name, is] = Object.entries(usingComponents)[i];
 
-    customComponentMap.set(is, defineCustomComponent(is, { config, using }, customComponentMap));
-  });
+      if (registryedMap.has(name)) {
+        continue;
+      }
 
-  return function (is) {
-    return customComponentMap.get(is) || null;
+      /* 自定义组件初始config */
+      const customComponentConfig = customComponents[is];
+      // 自定义组件名
+      defineCustomComponent(`${TemplateTag.LowerCasePrefix}-${name}`, is, customComponentConfig, provide);
+
+      registryedMap.set(name, true);
+
+      /* 自定义组件下的组件引用 */
+      const using = __allConfig__[is].usingComponents;
+
+      for (const name in using) {
+        if (Object.hasOwnProperty.call(using, name)) {
+          if (using[name] === is) {
+            delete using[name];
+          }
+        }
+      }
+
+      loop(using);
+    }
   };
+
+  loop(usingComponents);
 }
 
-function defineCustomComponent(is, options, customComponentMap) {
-  const { config, using } = options;
-  const { properties, data } = config;
+function defineCustomComponent(name, is, componentConfig, provide) {
+  const { properties = {}, data = {} } = componentConfig;
+  const { render: vdom, stylesheet } = window.app[is];
 
-  const resolveComponent = memoize((name) => {
-    const path = using && using[name];
-    if (!path) return null;
+  const { bridge, config, componentHub } = provide;
 
-    const component = customComponentMap.get(getRealRoute(is, path)) || null;
-    component.displayName = name;
-    return component;
-  });
+  define(name, class extends WeElement {
+    static css = transformRpx(stylesheet.toString())
 
-  return function Component(props) {
-    const { render } = window.app[is];
+    static properties = properties
 
-    const { publish } = useJSBridge();
-    const nodeId = useNodeId();
-    const ctx = useRenderContext(props, nodeId, is, config, resolveComponent);
-    const [refinedProps, initialProps] = useRefinedProps(props, properties);
-    const [refinedDataset, initialDataset] = useRefinedDataset(props);
-    const changedData = useDataChange(nodeId, data, refinedProps);
-    const [created, attached, ready, detached] = useLifeCycleHooks(nodeId, is);
+    constructor() {
+      super();
+      this.data = data;
 
-    useLayoutEffect(() => {
-      created();
-      syncInitialInfo(props, nodeId, publish);
-      syncInitialProps(refinedProps, nodeId, publish);
-      syncInitialDataset(refinedDataset, nodeId, publish);
-      attached();
-    }, []);
+      const { publish } = bridge;
 
-    useEffect(() => {
-      ready();
+      componentHub.instances.set(this.elementId, this);
 
-      return () => {
-        return detached();
+      publish(ComponentEvent, { route: is, nodeId: this.elementId, eventName: 'created' });
+    }
+
+    attached() {
+      const { publish } = bridge;
+      // 同步组件信息
+      this.syncInfo({
+        id: this.id,
+        className: this.className,
+      });
+      // 同步props
+      this.syncProps(normalizeProps(this.props, this.constructor.properties));
+      // 同步dataset
+      this.syncDataset(this._dataset);
+
+      publish(ComponentEvent, { route: is, nodeId: this.elementId, eventName: 'attached' });
+    }
+
+    ready() {
+      const { publish } = bridge;
+
+      publish(ComponentEvent, { route: is, nodeId: this.elementId, eventName: 'ready' });
+    }
+
+    detached() {
+      const { publish } = bridge;
+      componentHub.instances.remove(this.elementId);
+      publish(ComponentEvent, { route: is, nodeId: this.elementId, eventName: 'detached' });
+    }
+
+    receiveProps(newProps, oldProps) {
+      const _props = normalizeProps(newProps, this.constructor.properties);
+
+      const changedProps = {};
+      forOwn(_props, (val, key) => {
+        if (!isEqual(oldProps[key], val)) {
+          changedProps[key] = val;
+        }
+      });
+
+      this.syncDataset(this._dataset);
+
+      if (Object.keys(changedProps).length) {
+        this.syncProps(changedProps);
+        return true;
+      }
+
+      return false;
+    }
+
+    syncInfo(info) {
+      const { publish } = bridge;
+      const { id, className } = info;
+
+      publish(ComponentDataChange, {
+        datatype: 'instance',
+        data: {
+          id: id || '',
+          className: className || '',
+        },
+        nodeId: this.elementId,
+      });
+    }
+
+    // 当props变化后发送通知
+    syncProps(props) {
+      const { publish } = bridge;
+
+      mergeData(this.data, props);
+
+      publish(ComponentDataChange, {
+        datatype: 'properties',
+        data: props,
+        nodeId: this.elementId,
+      });
+    }
+
+    // 当dataset变化后发送通知
+    syncDataset(dataset) {
+      const { publish } = bridge;
+
+      publish(ComponentDataChange, {
+        datatype: 'dataset',
+        data: dataset,
+        nodeId: this.elementId,
+      });
+    }
+
+    eventBinder(methodName) {
+      const { publish } = bridge;
+      const { elementId: nodeId } = this;
+
+      const handler = function (data) {
+        return publish(PageEvent, { type: methodName, data, nodeId });
       };
-    }, []);
-
-    useSyncChangedProps(refinedProps, nodeId, initialProps);
-    useSyncChangedDataset(refinedDataset, nodeId, initialDataset);
-
-    return (
-      <ShadowRoot
-        $nodeId={nodeId}
-        $config={config}
-        $name={Component.displayName || 'custom-component'}
-        attribute={props}
-      >
-        {render(changedData, ctx)}
-      </ShadowRoot>
-    );
-  };
-}
-
-function ShadowRoot(props) {
-  const { $nodeId, $config, $name, attribute, children } = props;
-
-  const { publish } = useJSBridge();
-  const { instances } = useComponentHubContext();
-  const ref = useRef(null);
-
-  useLayoutEffect(() => {
-    const node = ref.current;
-
-    node._type_ = 'SHADOW_ROOT:custom-component';
-    node._nodeId_ = $nodeId;
-    node._config_ = $config;
-    instances.set($nodeId, node);
-    triggerRelationsEvent(node, true, publish);
-
-    return () => {
-      instances.remove($nodeId);
-      triggerRelationsEvent(node, false, publish);
-    };
-  }, []);
-
-  return React.createElement($name, {
-    ref,
-    ...attribute,
-  }, children);
-}
-
-function syncInitialInfo(props, nodeId, publish) {
-  const { id, className } = props;
-
-  publish(ComponentDataChange, {
-    data: {
-      id: id || '',
-      className: className || '',
-    },
-    datatype: 'instance',
-    nodeId,
-  });
-}
-
-function syncInitialProps(data, nodeId, publish) {
-  publish(ComponentDataChange, {
-    datatype: 'properties',
-    data,
-    nodeId,
-  });
-}
-
-function syncInitialDataset(data, nodeId, publish) {
-  publish(ComponentDataChange, {
-    datatype: 'dataset',
-    data,
-    nodeId,
-  });
-}
-
-export function createComponentResolve(route, findHandler) {
-  return function (is) {
-    if (is.startsWith('/')) {
-      const p = is.slice(1);
-
-      return [p, `${p}/index`].find(findHandler) || is;
+      handler.displayName = methodName;
+      return handler;
     }
 
-    const p = path.join(path.dirname(route), is);
-    const pp = [p, `${p}/index`];
+    render() {
+      const { data } = this;
 
-    if (!is.startsWith('./')) {
-      const list = [path.join('miniprogram_npm/', is), `${path.join('miniprogram_npm/', is)}/index`];
-      pp.push(list);
+      return vdom(data, {
+        $$class(cls) {
+          return `${String(cls)}`;
+        },
+        $$eventBinder: this.eventBinder.bind(this),
+      });
     }
+  });
+}
 
-    return pp.find(findHandler) || pp[0];
-  };
+const blackPropList = [];
+function normalizeProps(props, properties) {
+  const obj = {};
+  for (let i = 0; i < Object.entries(properties).length; i+=1) {
+    const [key, value] = Object.entries(properties)[i];
+    // eslint-disable-next-line no-continue
+    if (blackPropList.indexOf(key) !== -1) continue;
+    // eslint-disable-next-line no-loop-func
+    [key, kebabCase(key)].forEach((k) => {
+      if (hasIn(props, k)) {
+        obj[key] = normalizeValue(value.type, props[k]);
+      }
+    });
+  }
+
+  return obj;
+}
+
+const ValidateStrategy = {
+  String(o) {
+    return isPlainObject(o) ? '[object Object]' : o ? String(o) : '';
+  },
+  Number(o) {
+    return isNaN(Number(o)) ? 0 : Number(o);
+  },
+  Object(o) {
+    return Array.isArray(o) ? o : isObject(o) ? {} : null;
+  },
+  Boolean(o) {
+    return !!o;
+  },
+  Array(o) {
+    return [];
+  },
+  Null(o) {
+    return o;
+  },
+};
+function normalizeValue(type, value) {
+  return getType(value) === type
+    ? value
+    : ValidateStrategy[type] && ValidateStrategy[type].call(ValidateStrategy, value) || null;
 }

@@ -41,6 +41,7 @@ export function useCompileResult() {
 export function usePageData(render) {
   const [data, setData] = useState({});
   const ref = useRef(new Deferred());
+
   useJSBridgeFn((bridge) => {
     const { subscribe, replyService } = bridge;
 
@@ -306,16 +307,21 @@ export function useJSCoreEvent(componentHub) {
 }
 
 export function usePageShow(stylesheet) {
-  const { publish } = useJSBridge();
-  const ref = useRef(false);
+  const { publish, replyService } = useJSBridge();
+  const didInsertStyle = useRef(false);
 
   useLayoutEffect(() => {
     publish(PageShow, {});
+    // replyService(PageShow)(
+    //   tryCatch('PAGE_SHOW', async (e) => {
+
+    //   }),
+    // );
   }, []);
 
   useLayoutEffect(() => {
-    if (stylesheet && !ref.current) {
-      ref.current = true;
+    if (stylesheet && !didInsertStyle.current) {
+      didInsertStyle.current = true;
 
       const headNode = document.getElementsByTagName('head')[0];
       const styleNode = document.createElement('style');

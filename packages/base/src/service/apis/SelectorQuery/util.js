@@ -14,7 +14,8 @@ subscribe('responseComponentInfo', (e, webviewId) => {
     // 临时处理canvas node
     for (let i = 0; i < e.res.length; i+=1) {
       const item = e.res[i];
-      if (item.node && item.node.isCanvas) {
+
+      if (item.node?.isCanvas) {
         item.node.getContext = function (type) {
           if (type === '2d') {
             return new CanvasContext(item.node.canvasId, webviewId);
@@ -30,6 +31,7 @@ subscribe('responseComponentInfo', (e, webviewId) => {
 export function publishSelectQuery(webviewid, queue, callback) {
   uuid+=1;
   privateMethod[uuid] = callback;
+
   publish('requestComponentInfo', {
     reqId: uuid,
     reqs: queue,

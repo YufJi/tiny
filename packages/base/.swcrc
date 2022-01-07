@@ -14,7 +14,7 @@
     },
     "transform": {
       "react": {
-        "pragma": "React.createElement"
+        "pragma": "h"
       }
     },
     "target": "es5",

@@ -34,6 +34,10 @@ Component({
     xxxx() {
       console.log('xxxx');
     },
+
+    cad() {
+      console.log('cad')
+    }
   },
 
 });

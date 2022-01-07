@@ -18,10 +18,6 @@ const cwd = process.cwd();
 const TOP_LEVEL = 4;
 const HEADER = 'export default function render(data, _ctx) {';
 
-function defaultImportComponent() {
-  return false;
-}
-
 function isJsx(c) {
   if (c.type === 'script') return false;
 
@@ -106,7 +102,8 @@ function MLTransformer(template, _config) {
   this.includeTplDeps = {};
   this.template = template;
   this.header = [
-    'const React = self.React;',
+    // 'const React = self.React;',
+    'const h = self.Omi.h;',
   ];
   this.subTemplatesCode = {};
   this.code = [];
@@ -465,7 +462,7 @@ assign(MLTransformer.prototype, {
     const hasChildren = node.children && node.children.length;
 
     // define slot and default content
-    if (tag === 'slot') {
+    if (tag === 'slotttt') {
       if (this.isStartOfCodeSection(level)) {
         this.pushCode('{');
       }
@@ -671,7 +668,7 @@ assign(MLTransformer.prototype, {
   transform(done) {
     const { code, importTplDeps, componentDeps, subTemplatesCode, includeTplDeps, templateRenderHelpers } = this;
     let { header } = this;
-    const { importComponent = defaultImportComponent, strictDataMember } = this.config;
+    const { strictDataMember } = this.config;
 
     const handlerCallback = (error, children) => {
       if (error) {
@@ -693,7 +690,7 @@ assign(MLTransformer.prototype, {
         `const $createRoot = ${templateRenderHelpers}.createRoot;`,
         `const $createBlock = ${templateRenderHelpers}.createBlock;`,
         `const $useTemplate = ${templateRenderHelpers}.useTemplate;`,
-        `const $renderSlot = ${templateRenderHelpers}.renderSlot;`,
+        // `const $renderSlot = ${templateRenderHelpers}.renderSlot;`,
         `const $getSJSMember = ${templateRenderHelpers}.getSJSMember;`,
         `const $toString = ${templateRenderHelpers}.toString;`,
       );
@@ -742,17 +739,6 @@ assign(MLTransformer.prototype, {
         header.push('$templates = $ownTemplates;');
       }
       header.push(HEADER);
-
-      try {
-        Object.keys(componentDeps).forEach((dep) => {
-          const importStatement = importComponent(dep);
-          if (importStatement !== false) {
-            header.push(importStatement);
-          }
-        });
-      } catch (e) {
-        return done(e);
-      }
 
       this.pushHeaderCode('return $createRoot(');
       this.pushCode(');');

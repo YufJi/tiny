@@ -10,7 +10,7 @@ export function registerComponent(options = {}) {
   const { is } = g.$global.currentPageConfig;
   g.$global.__allConfig__[is] = g.$global.currentPageConfig;
 
-  debug('注册Component：', g.$global.currentPageConfig);
+  debug('注册Component：', is, g.$global.currentPageConfig);
 
   if (componentBookmarks.has(is)) {
     throw new Error(`at ${is}, Component can only register once`);

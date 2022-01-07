@@ -1,8 +1,8 @@
-import React from 'react';
+import { h, Fragment } from 'omi';
 
 export default function createRoot(element) {
   if (Array.isArray(element)) {
-    return <>{element}</>;
+    return <Fragment>{element}</Fragment>;
   }
 
   return element;

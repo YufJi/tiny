@@ -129,6 +129,7 @@ export function onRequestComponentInfo(bridge, componentHub, root) {
 
     const res = requestComponentInfo(reqs.map((req) => {
       const { component, ...rest } = req;
+
       const root = component === 0 ? null : component ? componentHub.instances.get(component) : root;
 
       return { ...rest, root };

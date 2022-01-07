@@ -2,6 +2,7 @@ import { isPlainObject, mapValues, groupBy } from 'lodash';
 import { CustomEvent } from 'shared';
 import { publish } from '../bridge';
 import context, { componentBookmarks } from '../context';
+import { warn } from '../utils';
 
 const DEFAULT_ON_REACH_BOTTOM_DISTANCE = 50;
 // 缓存页面使用的自定义组件配置
@@ -124,6 +125,7 @@ function getComponentSettings(is, route) {
       value: property.value,
     };
   });
+
   return {
     properties,
     data: componentInit.data,
@@ -137,13 +139,11 @@ function getComponentSettings(is, route) {
 function getTransferType(originFunction) {
   if (originFunction === null) return 'null';
 
-  const type = originFunction.name.toLocaleLowerCase();
+  const type = originFunction.name;
 
-  if (['string', 'number', 'boolean', 'object', 'array'].includes(type)) {
+  if (['String', 'Number', 'Boolean', 'Object', 'Array'].includes(type)) {
     return type;
   }
 
-  // 不应该走到这里
-  warn('The type of property is invalid', type);
-  return 'error';
+  throw new Error(`The type of property is invalid: ${type}`);
 }

@@ -57,6 +57,7 @@ export default function mixinBehaviors(instance) {
     };
   });
 
+  // properties中默认值写入data
   defaults(instance.data, mapValues(instance.properties, 'value'));
 }
 

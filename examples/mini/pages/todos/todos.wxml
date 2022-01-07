@@ -15,7 +15,6 @@
       catch:tap="ct"
       bindtouchstart="cts"
       catchtouchmove="ctm"
-
       animation="{{animationData}}"
     >
       longpress/tap component
@@ -23,13 +22,13 @@
   </view>
 
   <view class="todo-footer">
-    <add-button id="asd"  text="{{text}}" bind:click_me="clickCom">
+    <add-button id="asd" text="{{text}}" bind:click_me="clickCom">
       <text bind:tap="tapSlot">i am slot</text>
     </add-button>
     <add-button id="asxx" xx="xxx" text="xixi {{text}}" bind:click_me="{{fn}}"></add-button>
   </view>
 
- <button bind:tap="nav">nav</button>
+  <button bind:tap="nav">nav</button>
  
   <view class="user">
     <image class="avatar" src="{{user.avatar || '../../assets/logo.png'}}" background-size="cover"></image>
@@ -38,14 +37,12 @@
   </view>
 
   <view class="todo-items">
-
     <checkbox-group class="todo-items-group" bindchange="onTodoChanged">
       <label bindtap="clicklabel" wx:for="{{todos}}" wx:for-item="item" class="todo-item {{item.completed ? 'checked' : ''}}" wx:key="*this">
         <checkbox class="todo-item-checkbox" value="{{item.text}}" checked="{{item.completed}}" />
         <text class="todo-item-text">{{item.text}}</text>
       </label>
     </checkbox-group>
-
   </view>
 
   <slider bindchange="sliderChange" show-value="{{true}}" />
@@ -83,7 +80,6 @@
           <view class="weui-cell weui-cell_switch">
             <view class="weui-cell__bd">指示点</view>
             <view class="weui-cell__ft">
-              <!-- <switch checked="{{indicatorDots}}" bindchange="changeIndicatorDots" /> -->
               <switch type="checkbox"  checked="{{indicatorDots}}" bindchange="changeIndicatorDots" />
             </view>
           </view>
@@ -114,6 +110,6 @@
   <radio value="r1" checked="true" />
   <view bind:tap="showToast">showToast</view>
  
-    <button bind:tap="ani1">ani1</button>
+  <button bind:tap="ani1">ani1</button>
 
 </scroll-view>

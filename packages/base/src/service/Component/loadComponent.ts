@@ -101,7 +101,7 @@ export default function loadComponent() {
         // 如果相等则不需要 trigger observer
         if (!isEqual(newValue, oldValue)) {
           set(componentModel.data, key, newValue);
-          const observer = isString(property.observer) ? componentModel[property.observer] : property.observer;
+          const observer = isString(property?.observer) ? componentModel[property?.observer] : property?.observer;
 
           if (isFunction(observer)) {
             wrapUserFunction(`at the observer of '${key}' in ${componentModel.is}`, observer).call(componentModel, newValue, oldValue);

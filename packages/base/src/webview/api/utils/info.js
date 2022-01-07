@@ -1,6 +1,5 @@
 import { isUndefined } from 'lodash';
 import { TemplateTag } from 'shared';
-import { querySelector, querySelectorAll } from './query';
 
 export function requestComponentInfo(reqs, rootDom) {
   const res = [];
@@ -19,14 +18,15 @@ export function requestComponentInfo(reqs, rootDom) {
 
     if (single) {
       if (tree) {
-        const element = querySelector(selector, tree);
+        const element = (tree.shadowRoot || tree).querySelector(selector);
+
         result = element ? filterFields(element, fields) : null;
       } else {
         result = null;
       }
     } else {
       result = tree
-        ? querySelectorAll(selector, tree).map((element) => {
+        ? Array.from((tree.shadowRoot || tree).querySelectorAll(selector)).map((element) => {
           return filterFields(element, fields);
         })
         : [];

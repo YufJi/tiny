@@ -5,7 +5,7 @@ const assign = require('object-assign');
 
 const { Transformer } = require('./xml');
 const defaultLib = require('./defaultLib');
-const { toComponentName, supportedWebComponents, supportedH5Tags } = require('./utils');
+const { toComponentName, supportedBuiltInComponents, supportedH5Tags } = require('./utils');
 
 /* 属性名正则 */
 const ATTR_NAME_REG = /^[\w-:]+$/;
@@ -71,7 +71,7 @@ class TemplateTransformer extends Transformer {
       },
       tagProcessor: ({ tag, transformedAttrs }) => {
         // 内置组件添加属__dirname, 便于获取真实图片等资源地址
-        if (supportedWebComponents.indexOf(tag) !== -1) {
+        if (supportedBuiltInComponents.indexOf(tag) !== -1) {
           const dirName = path.dirname(path.relative(projectRoot, renderPath));
           transformedAttrs.__dirname = `"${dirName}"`;
         }
@@ -79,21 +79,6 @@ class TemplateTransformer extends Transformer {
         return {
           tag: toComponentName(tag),
         };
-      },
-      importComponent(dep) {
-        if (supportedWebComponents.indexOf(dep) !== -1 || supportedH5Tags.indexOf(dep) !== -1) {
-          return;
-        }
-
-        const componentInfo = usingComponents && usingComponents[dep];
-
-        if (!componentInfo) return;
-
-        const componentName = toComponentName(dep);
-
-        return [
-          `const ${componentName} = _ctx.$$resolveComponent(${JSON.stringify(dep)})`,
-        ].join('\n');
       },
     });
   }

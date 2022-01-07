@@ -121,6 +121,7 @@ function queryOnRoot(retValue, match, root, node, renderer, findOne) {
       return true;
     }
   }
+
   const children = getChildren(node);
 
   for (let i = 0; i < children.length; i+=1) {
