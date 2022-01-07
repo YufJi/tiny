@@ -1,3 +1,4 @@
+import { camelCase, hasIn, kebabCase } from 'lodash';
 import { cssToDom, isArray, hyphenate, getValByPath, capitalize, getType } from './util';
 import { diff } from './vdom/diff';
 import options from './options';
@@ -5,6 +6,27 @@ import { afterNextRender } from './render-status';
 import { mergeData } from '../util';
 
 let id = 0;
+
+const ValidateStrategy = {
+  String(o) {
+    return isPlainObject(o) ? '[object Object]' : o ? String(o) : '';
+  },
+  Number(o) {
+    return isNaN(Number(o)) ? 0 : Number(o);
+  },
+  Object(o) {
+    return Array.isArray(o) ? o : isObject(o) ? {} : null;
+  },
+  Boolean(o) {
+    return !!o;
+  },
+  Array(o) {
+    return [];
+  },
+  Null(o) {
+    return o;
+  },
+};
 
 export default class WeElement extends HTMLElement {
   static is = 'WeElement'
@@ -49,7 +71,7 @@ export default class WeElement extends HTMLElement {
   connectedCallback() {
     this.bindStoreAndProvide();
 
-    this.attrsToProps();
+    this.propsToData();
 
     let shadowRoot;
     if (this.constructor.isLightDom) {
@@ -146,8 +168,9 @@ export default class WeElement extends HTMLElement {
       this._customStyleContent = this.props.css;
       this._customStyleElement.textContent = this._customStyleContent;
     }
-    this.attrsToProps(ignoreAttrs);
+    this.propsToData(ignoreAttrs);
     const vnode = this.render(this.props, this.store);
+
     this.rendered();
     this.rootNode = diff(
       this.rootNode,
@@ -163,23 +186,6 @@ export default class WeElement extends HTMLElement {
 
   forceUpdate() {
     this.update(true);
-  }
-
-  updateProps(obj) {
-    const attrs = this.constructor.properties;
-
-    Object.keys(obj).forEach((key) => {
-      const { type } = attrs[key];
-
-      if (getType(obj[key]) === type) {
-        this.props[key] = obj[key];
-        if (this.prevProps) {
-          this.prevProps[key] = obj[key];
-        }
-      }
-    });
-
-    this.forceUpdate();
   }
 
   updateSelf(ignoreAttrs) {
@@ -210,32 +216,41 @@ export default class WeElement extends HTMLElement {
     super.setAttribute(key, val);
   }
 
-  attrsToProps(ignoreAttrs) {
+  propsToData(ignoreAttrs) {
     if (ignoreAttrs) return;
 
     const ele = this;
 
     ele.props.css = ele.getAttribute('css');
 
-    const attrs = this.constructor.properties;
+    const { properties } = this.constructor;
 
-    if (!attrs) return;
+    if (!properties) return;
 
-    Object.keys(attrs).forEach((key) => {
-      const { type, value } = attrs[key];
-      const val = ele.getAttribute(hyphenate(key));
-      if (val !== null) {
-        if (getType(val) === type) {
-          ele.props[key] = val;
+    ele.prevProps = ele.prevProps || {};
+
+    const changedProps = {};
+    // 遍历properties
+    Object.keys(properties).forEach((key) => {
+      // 拿到类型
+      const { type } = properties[key];
+
+      const val = ele.props[kebabCase(key)] || ele.props[key];
+      const prevVal = ele.prevProps[kebabCase(key)] || ele.prevProps[key];
+
+      if (val != null) {
+        // 之前不存在 或者 与之前不相等
+        if (!prevVal || prevVal !== val) {
+          changedProps[camelCase(key)] = this.normalizeValue(type, val);
         }
-      } else if (value) {
-        ele.props[key] = value;
-      } else {
-        ele.props[key] = null;
+      } else if (prevVal != null) {
+        changedProps[camelCase(key)] = this.normalizeValue(type, val);
       }
+
+      ele.prevProps[key] = val;
     });
 
-    mergeData(this.data, ele.props);
+    mergeData(this.data, changedProps);
   }
 
   fire(name, data) {
@@ -256,11 +271,33 @@ export default class WeElement extends HTMLElement {
   }
 
   setData(data) {
-    // Object.assign(this.data, data);
-
     mergeData(this.data, data);
 
-    this.forceUpdate();
+    this.updateSelf(true);
+  }
+
+  normalizeProps(props, properties) {
+    const blackPropList = [];
+    const obj = {};
+    for (let i = 0; i < Object.entries(properties).length; i+=1) {
+      const [key, value] = Object.entries(properties)[i];
+      // eslint-disable-next-line no-continue
+      if (blackPropList.indexOf(key) !== -1) continue;
+      // eslint-disable-next-line no-loop-func
+      [key, kebabCase(key)].forEach((k) => {
+        if (hasIn(props, k)) {
+          obj[camelCase(key)] = this.normalizeValue(value.type, props[k]);
+        }
+      });
+    }
+
+    return obj;
+  }
+
+  normalizeValue(type, value) {
+    return getType(value) === type
+      ? value
+      : ValidateStrategy[type] && ValidateStrategy[type].call(ValidateStrategy, value) || null;
   }
 
   attached() {}

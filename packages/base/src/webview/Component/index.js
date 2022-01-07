@@ -59,7 +59,10 @@ function defineCustomComponent(name, is, componentConfig, provide) {
 
     constructor() {
       super();
+
       this.data = data;
+
+      this.subscriber = this.listenDataChange();
 
       const { publish } = bridge;
 
@@ -76,7 +79,7 @@ function defineCustomComponent(name, is, componentConfig, provide) {
         className: this.className,
       });
       // 同步props
-      this.syncProps(normalizeProps(this.props, this.constructor.properties));
+      this.syncProps(this.normalizeProps(this.props, this.constructor.properties));
       // 同步dataset
       this.syncDataset(this._dataset);
 
@@ -92,16 +95,27 @@ function defineCustomComponent(name, is, componentConfig, provide) {
     detached() {
       const { publish } = bridge;
       componentHub.instances.remove(this.elementId);
+      this.subscriber.remove();
+
       publish(ComponentEvent, { route: is, nodeId: this.elementId, eventName: 'detached' });
     }
 
     receiveProps(newProps, oldProps) {
-      const _props = normalizeProps(newProps, this.constructor.properties);
-
       const changedProps = {};
-      forOwn(_props, (val, key) => {
-        if (!isEqual(oldProps[key], val)) {
-          changedProps[key] = val;
+
+      Object.keys(properties).forEach((key) => {
+        const { type } = properties[key];
+
+        const val = newProps[kebabCase(key)] || newProps[key];
+        const oldVal = oldProps[kebabCase(key)] || oldProps[key];
+
+        if (val != null) {
+          // 之前不存在 或者 与之前不相等
+          if (!oldVal || oldVal !== val) {
+            changedProps[camelCase(key)] = this.normalizeValue(type, val);
+          }
+        } else if (oldVal != null) {
+          changedProps[camelCase(key)] = this.normalizeValue(type, val);
         }
       });
 
@@ -113,6 +127,16 @@ function defineCustomComponent(name, is, componentConfig, provide) {
       }
 
       return false;
+    }
+
+    listenDataChange() {
+      const { elementId: nodeId } = this;
+
+      return componentHub.events.subscribe(ComponentDataChange, nodeId, (e) => {
+        const { data } = e;
+
+        this.setData(data);
+      });
     }
 
     syncInfo(info) {
@@ -175,48 +199,4 @@ function defineCustomComponent(name, is, componentConfig, provide) {
       });
     }
   });
-}
-
-const blackPropList = [];
-function normalizeProps(props, properties) {
-  const obj = {};
-  for (let i = 0; i < Object.entries(properties).length; i+=1) {
-    const [key, value] = Object.entries(properties)[i];
-    // eslint-disable-next-line no-continue
-    if (blackPropList.indexOf(key) !== -1) continue;
-    // eslint-disable-next-line no-loop-func
-    [key, kebabCase(key)].forEach((k) => {
-      if (hasIn(props, k)) {
-        obj[key] = normalizeValue(value.type, props[k]);
-      }
-    });
-  }
-
-  return obj;
-}
-
-const ValidateStrategy = {
-  String(o) {
-    return isPlainObject(o) ? '[object Object]' : o ? String(o) : '';
-  },
-  Number(o) {
-    return isNaN(Number(o)) ? 0 : Number(o);
-  },
-  Object(o) {
-    return Array.isArray(o) ? o : isObject(o) ? {} : null;
-  },
-  Boolean(o) {
-    return !!o;
-  },
-  Array(o) {
-    return [];
-  },
-  Null(o) {
-    return o;
-  },
-};
-function normalizeValue(type, value) {
-  return getType(value) === type
-    ? value
-    : ValidateStrategy[type] && ValidateStrategy[type].call(ValidateStrategy, value) || null;
 }

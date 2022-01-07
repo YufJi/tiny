@@ -155,7 +155,7 @@ function idiff(dom, vnode, component, updateSelf) {
   let props = out[ATTR_KEY];
   const vchildren = vnode.children;
 
-  if (props == null) {
+  if (!props) {
     props = out[ATTR_KEY] = {};
 
     for (let a = out.attributes, i = a.length; i--;) {
@@ -387,7 +387,6 @@ function diffAttributes(dom, attrs, old, component, updateSelf) {
         component,
       );
 
-      const ccName = camelCase(name);
       dom.props[name] = attrs[name];
       old[name] = attrs[name];
     } else if (name !== 'children' && (!(name in old) || attrs[name] !== (name === 'value' || name === 'checked' ? dom[name] : old[name]))) {
@@ -402,7 +401,6 @@ function diffAttributes(dom, attrs, old, component, updateSelf) {
       // } else {
       //   old[name] = attrs[name];
       // }
-      const ccName = camelCase(name);
 
       dom.props = dom.props || {};
       dom.props[name] = attrs[name];

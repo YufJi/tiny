@@ -72,6 +72,7 @@ Page({
     animation.scale(0.5, 0.5).rotate(90).step();
     this.setData({
       animationData: animation.export(),
+      // text: 'xxxxxxxxxx',
     });
 
     const ctx = wx.createCanvasContext('canvas');

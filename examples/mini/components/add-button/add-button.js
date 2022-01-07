@@ -20,16 +20,9 @@ Component({
     ready() {
       console.log('ready', this, this.data);
 
-      console.log(this.properties)
-
-      // this.setData({
-      //   text: 'jjjjjjjjj'
-      // })
-
-
-      setTimeout(() => {
-        console.log(this.properties)
-      }, 2000)
+      this.setData({
+        text: 'jjjjjjjjj',
+      });
     },
     moved() {
       console.log('moved', this.properties);
@@ -40,11 +33,11 @@ Component({
   },
 
   pageLifetimes: {
-    show: function() {
+    show() {
       // 页面显示时触发
       console.log('pageLifetimes show');
     },
-    hide: function() {
+    hide() {
       // 页面隐藏时触发
     },
   },
