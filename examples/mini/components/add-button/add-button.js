@@ -48,7 +48,7 @@ Component({
     },
     onClickMe() {
       this.setData({
-        // text: 'xhq',
+        text: 'xhq',
         name: 'ooo',
       });
       console.log('properties', this.properties, this.data);

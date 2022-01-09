@@ -101,7 +101,7 @@ function defineCustomComponent(name, is, componentConfig, provide) {
     }
 
     receiveProps(newProps, oldProps) {
-      const changedProps = {};
+      const changedData = {};
 
       Object.keys(properties).forEach((key) => {
         const { type } = properties[key];
@@ -112,17 +112,17 @@ function defineCustomComponent(name, is, componentConfig, provide) {
         if (val != null) {
           // 之前不存在 或者 与之前不相等
           if (!oldVal || oldVal !== val) {
-            changedProps[camelCase(key)] = this.normalizeValue(type, val);
+            changedData[camelCase(key)] = this.normalizeValue(type, val);
           }
         } else if (oldVal != null) {
-          changedProps[camelCase(key)] = this.normalizeValue(type, val);
+          changedData[camelCase(key)] = this.normalizeValue(type, val);
         }
       });
 
       this.syncDataset(this._dataset);
 
-      if (Object.keys(changedProps).length) {
-        this.syncProps(changedProps);
+      if (Object.keys(changedData).length) {
+        this.syncProps(changedData);
         return true;
       }
 

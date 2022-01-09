@@ -1,9 +1,10 @@
-import { isElement } from 'lodash';
-import { ATTR_KEY } from '../constants';
-import { isSameNodeType, isNamedNode } from './index';
+import { isUndefined } from 'lodash';
+import { CACHE } from '../constants';
 import { createNode, setAccessor, removeNode } from '../dom/index';
-import { camelCase, isArray, Fragment } from '../util';
+import { isArray, Fragment } from '../util';
 import options from '../options';
+
+import { isSameNodeType, isNamedNode } from './index';
 
 /** Queue of components that have been mounted and are awaiting componentDidMount */
 export const mounts = [];
@@ -33,7 +34,7 @@ export function diff(dom, vnode, parent, component, updateSelf) {
     isSvgMode = parent != null && parent.ownerSVGElement !== undefined;
 
     // hydration is indicated by the existing element to be diffed not having a prop cache
-    hydrating = dom != null && !(ATTR_KEY in dom);
+    hydrating = dom != null && !(CACHE in dom);
   }
   if (vnode && vnode.nodeName === Fragment) {
     vnode = vnode.children;
@@ -108,7 +109,7 @@ function idiff(dom, vnode, component, updateSelf) {
       }
     }
 
-    out[ATTR_KEY] = true;
+    out[CACHE] = true;
 
     return out;
   }
@@ -152,11 +153,11 @@ function idiff(dom, vnode, component, updateSelf) {
   }
 
   const fc = out.firstChild;
-  let props = out[ATTR_KEY];
+  let props = out[CACHE];
   const vchildren = vnode.children;
 
   if (!props) {
-    props = out[ATTR_KEY] = {};
+    props = out[CACHE] = {};
 
     for (let a = out.attributes, i = a.length; i--;) {
       props[a[i].name] = a[i].value;
@@ -225,7 +226,7 @@ function innerDiffNode(dom, vchildren, isHydrating, component, updateSelf) {
   if (len !== 0) {
     for (let i = 0; i < len; i++) {
       const child = originalChildren[i];
-      const props = child[ATTR_KEY];
+      const props = child[CACHE];
       const key = vlen && props
         ? child._component
           ? child._component.__key
@@ -315,15 +316,15 @@ function innerDiffNode(dom, vchildren, isHydrating, component, updateSelf) {
 export function recollectNodeTree(node, unmountOnly) {
   // If the node's VNode had a ref function, invoke it with null here.
   // (this is part of the React spec, and smart for unsetting references)
-  if (node[ATTR_KEY] != null && node[ATTR_KEY].ref) {
-    if (typeof node[ATTR_KEY].ref === 'function') {
-      node[ATTR_KEY].ref(null);
-    } else if (node[ATTR_KEY].ref.current) {
-      node[ATTR_KEY].ref.current = null;
+  if (node[CACHE] != null && node[CACHE].ref) {
+    if (typeof node[CACHE].ref === 'function') {
+      node[CACHE].ref(null);
+    } else if (node[CACHE].ref.current) {
+      node[CACHE].ref.current = null;
     }
   }
 
-  if (unmountOnly === false || node[ATTR_KEY] == null) {
+  if (unmountOnly === false || node[CACHE] == null) {
     removeNode(node);
   }
 
@@ -349,7 +350,7 @@ export function removeChildren(node) {
  *  @param {Object} old      Current/previous attributes (from previous VNode or element's prop cache)
  */
 function diffAttributes(dom, attrs, old, component, updateSelf) {
-  dom.props = attrs;
+  dom.props = attrs || {};
   let name;
   const isWeElement = !!dom.update;
   let oldClone;
@@ -359,15 +360,9 @@ function diffAttributes(dom, attrs, old, component, updateSelf) {
 
   // remove attributes no longer present on the vnode by setting them to undefined
   for (name in old) {
-    if (!attrs[name] && !!old[name]) {
-      setAccessor(
-        dom,
-        name,
-        old[name],
-        (old[name] = undefined),
-        isSvgMode,
-        component,
-      );
+    if (isUndefined(attrs[name])) {
+      setAccessor(dom, name, old[name], undefined, isSvgMode, component);
+      old[name] = undefined;
 
       if (isWeElement) {
         delete dom.props[name];
@@ -377,32 +372,9 @@ function diffAttributes(dom, attrs, old, component, updateSelf) {
 
   // add new & update changed attributes
   for (name in attrs) {
-    if (isWeElement && typeof attrs[name] === 'object' && name !== 'ref') {
-      setAccessor(
-        dom,
-        name,
-        old[name],
-        attrs[name],
-        isSvgMode,
-        component,
-      );
+    setAccessor(dom, name, old[name], attrs[name], isSvgMode, component);
 
-      dom.props[name] = attrs[name];
-      old[name] = attrs[name];
-    } else if (name !== 'children' && (!(name in old) || attrs[name] !== old[name])) {
-      setAccessor(dom, name, old[name], attrs[name], isSvgMode, component);
-
-      // fix lazy load props missing
-      // if (dom.nodeName.indexOf('-') !== -1) {
-      //   dom.props = dom.props || {};
-
-      //   const ccName = camelCase(name);
-      //   dom.props[ccName] = old[ccName] = attrs[name];
-      // } else {
-      //   old[name] = attrs[name];
-      // }
-
-      dom.props = dom.props || {};
+    if (isWeElement && name !== 'ref' && name !== 'children' && (!(name in old) || attrs[name] !== old[name])) {
       dom.props[name] = attrs[name];
       old[name] = attrs[name];
     }

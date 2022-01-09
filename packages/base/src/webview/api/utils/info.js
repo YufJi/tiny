@@ -91,18 +91,18 @@ function filterFields(element, fields) {
     if (`${TemplateTag.UpperCasePerfix}-CANVAS` === (element && element.tagName)) {
       i.node = {
         isCanvas: true,
-        id: element && element.id,
-        type: element && element.type,
-        canvasId: element && element.canvasId,
-        uniqCanvasId: element && element.uniqCanvasId,
-        _width: element && element.clientWidth,
-        _height: element && element.clientHeight,
-        _top: element && element.clientTop,
-        _left: element && element.clientLeft,
-        width: element && element.clientWidth,
-        height: element && element.clientHeight,
+        id: element?.id,
+        type: element?.type,
+        canvasId: element?.canvasId,
+        uniqCanvasId: element?.uniqCanvasId,
+        _width: element?.clientWidth,
+        _height: element?.clientHeight,
+        _top: element?.clientTop,
+        _left: element?.clientLeft,
+        width: element?.clientWidth,
+        height: element?.clientHeight,
       };
-      i.nodeCanvasType = element && element.type;
+      i.nodeCanvasType = element?.type;
     }
   }
 

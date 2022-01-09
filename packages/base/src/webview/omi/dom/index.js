@@ -2,9 +2,7 @@ import { camelCase } from 'lodash';
 import { isEventAttr } from 'shared/addListener';
 import transformRpx from '@/webview/util/transformRpx';
 
-import { IS_NON_DIMENSIONAL } from '../constants';
 import { applyRef } from '../util';
-import options from '../options';
 import { extension } from '../extend';
 
 import bindEvent from './bindEvent';
@@ -46,22 +44,25 @@ export function removeNode(node) {
  * @param {boolean} isSvg Are we currently diffing inside an svg?
  * @private
  */
+
+const ignoreNames = ['key'];
+
 export function setAccessor(node, name, old, value, isSvg, component) {
+  if (ignoreNames.indexOf(name) !== -1) return;
+
   if (name === 'className') name = 'class';
 
   if (name[0] === 'o' && name[1] === '-') {
     if (extension[name]) {
       extension[name](node, value, component);
     }
-  } else if (name === 'key') {
-    // ignore
   } else if (name === 'ref') {
     applyRef(old, null);
     applyRef(value, node);
   } else if (name === 'class' && !isSvg) {
     node.className = value || '';
   } else if (name === 'style') {
-    if (!value || typeof value === 'string' || typeof old === 'string') {
+    if (typeof value === 'string') {
       node.style.cssText = transformRpx(value) || '';
     }
   } else if (name === 'dangerouslySetInnerHTML') {

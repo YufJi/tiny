@@ -88,31 +88,12 @@ export default class WeElement extends HTMLElement {
       }
     }
 
-    if (this.constructor.elementStyles) {
-      shadowRoot.adoptedStyleSheets = this.constructor.elementStyles;
-    } else {
-      const { css } = this.constructor;
-      if (css) {
-        if (typeof css === 'string') {
-          const styleSheet = new CSSStyleSheet();
-          styleSheet.replaceSync(css);
-          shadowRoot.adoptedStyleSheets = [styleSheet];
-        } else if (Object.prototype.toString.call(css) === '[object Array]') {
-          const styleSheets = [];
-          css.forEach((styleSheet) => {
-            if (typeof styleSheet === 'string') {
-              const adoptedStyleSheet = new CSSStyleSheet();
-              adoptedStyleSheet.replaceSync(styleSheet);
-              styleSheets.push(adoptedStyleSheet);
-            } else {
-              styleSheets.push(styleSheet);
-            }
-            shadowRoot.adoptedStyleSheets = styleSheets;
-          });
-        } else {
-          shadowRoot.adoptedStyleSheets = [css];
-        }
-        this.constructor.elementStyles = shadowRoot.adoptedStyleSheets;
+    const { css } = this.constructor;
+    if (css) {
+      if (typeof css === 'string') {
+        const styleSheet = new CSSStyleSheet();
+        styleSheet.replaceSync(css);
+        shadowRoot.adoptedStyleSheets = [styleSheet];
       }
     }
 
@@ -123,18 +104,6 @@ export default class WeElement extends HTMLElement {
     this.rootNode = diff(null, vnode, null, this);
 
     this.rendered();
-
-    if (this.css) {
-      shadowRoot.appendChild(
-        cssToDom(typeof this.css === 'function' ? this.css() : this.css),
-      );
-    }
-
-    if (this.props.css) {
-      this._customStyleElement = cssToDom(this.props.css);
-      this._customStyleContent = this.props.css;
-      shadowRoot.appendChild(this._customStyleElement);
-    }
 
     if (isArray(this.rootNode)) {
       this.rootNode.forEach((item) => {
@@ -163,11 +132,7 @@ export default class WeElement extends HTMLElement {
     this._willUpdate = true;
     this.beforeUpdate();
     this.beforeRender();
-    // fix null !== undefined
-    if (this._customStyleContent != this.props.css) {
-      this._customStyleContent = this.props.css;
-      this._customStyleElement.textContent = this._customStyleContent;
-    }
+
     this.propsToData(ignoreAttrs);
     const vnode = this.render(this.props, this.store);
 
@@ -188,6 +153,7 @@ export default class WeElement extends HTMLElement {
     this.update(true);
   }
 
+  /* 建议不使用 */
   updateSelf(ignoreAttrs) {
     this.update(ignoreAttrs, true);
   }
@@ -229,7 +195,7 @@ export default class WeElement extends HTMLElement {
 
     ele.prevProps = ele.prevProps || {};
 
-    const changedProps = {};
+    const changedData = {};
     // 遍历properties
     Object.keys(properties).forEach((key) => {
       // 拿到类型
@@ -241,16 +207,16 @@ export default class WeElement extends HTMLElement {
       if (val != null) {
         // 之前不存在 或者 与之前不相等
         if (!prevVal || prevVal !== val) {
-          changedProps[camelCase(key)] = this.normalizeValue(type, val);
+          changedData[camelCase(key)] = this.normalizeValue(type, val);
         }
       } else if (prevVal != null) {
-        changedProps[camelCase(key)] = this.normalizeValue(type, val);
+        changedData[camelCase(key)] = this.normalizeValue(type, val);
       }
 
       ele.prevProps[key] = val;
     });
 
-    mergeData(this.data, changedProps);
+    mergeData(this.data, changedData);
   }
 
   fire(name, data) {
@@ -272,26 +238,21 @@ export default class WeElement extends HTMLElement {
 
   setData(data) {
     mergeData(this.data, data);
-
-    this.updateSelf(true);
+    // 组件内部更新，不需要同步props
+    this.forceUpdate();
   }
 
   normalizeProps(props, properties) {
-    const blackPropList = [];
-    const obj = {};
+    const data = {};
     for (let i = 0; i < Object.entries(properties).length; i+=1) {
       const [key, value] = Object.entries(properties)[i];
-      // eslint-disable-next-line no-continue
-      if (blackPropList.indexOf(key) !== -1) continue;
-      // eslint-disable-next-line no-loop-func
-      [key, kebabCase(key)].forEach((k) => {
-        if (hasIn(props, k)) {
-          obj[camelCase(key)] = this.normalizeValue(value.type, props[k]);
-        }
-      });
+
+      if (hasIn(props, kebabCase(key))) {
+        data[camelCase(key)] = this.normalizeValue(value.type, props[kebabCase(key)]);
+      }
     }
 
-    return obj;
+    return data;
   }
 
   normalizeValue(type, value) {
