@@ -389,7 +389,7 @@ function diffAttributes(dom, attrs, old, component, updateSelf) {
 
       dom.props[name] = attrs[name];
       old[name] = attrs[name];
-    } else if (name !== 'children' && (!(name in old) || attrs[name] !== (name === 'value' || name === 'checked' ? dom[name] : old[name]))) {
+    } else if (name !== 'children' && (!(name in old) || attrs[name] !== old[name])) {
       setAccessor(dom, name, old[name], attrs[name], isSvgMode, component);
 
       // fix lazy load props missing
