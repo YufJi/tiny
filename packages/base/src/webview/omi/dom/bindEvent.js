@@ -10,28 +10,23 @@ export default function bindEvent(
   const { capture } = options;
 
   const listener = dom._listeners || (dom._listeners = {});
-  const callback = dom._callback || (dom._callback = {});
 
   listener[`${name}`] = listener[`${name}`] || {};
 
-  if (nextEvent) {
-    /* 每个dom只注册一次事件 */
-    if (!lastEvent) {
-      const fn = eventProxy.bind(dom, name, capture);
-      callback[raw] = fn;
-      addListener(dom, name, fn, options);
-    }
+  /* 每个dom某个事件只注册一次 */
+  if (!lastEvent && !listener[`${name}`][`${capture ? 'capture' : 'bubble'}`]) {
+    const fn = eventProxy.bind(dom, name, capture);
 
-    const eventName = nextEvent.name;
-
-    listener[`${name}`][`${capture ? 'capture' : 'bubble'}`] = {
-      options,
-      handler: nextEvent,
-      name: eventName,
-    };
-    dom.setAttribute(raw, eventName);
-  } else {
-    listener[`${name}`][`${capture ? 'capture' : 'bubble'}`] = null;
-    dom.removeAttribute(raw);
+    addListener(dom, name, fn, options);
   }
+
+  const methodName = nextEvent.name;
+
+  listener[`${name}`][`${capture ? 'capture' : 'bubble'}`] = {
+    options,
+    handler: nextEvent,
+    name: methodName,
+  };
+
+  dom.setAttribute(raw, methodName);
 }
