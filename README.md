@@ -5,7 +5,7 @@
 ### 基础库
 > 小程序核心运行时
 
-- React原理，基于react-reconciler实现自定义渲染器
+- Page、自定义组件实现通过vdom + web-component
 - JSBridge
 - web-component
 - 路由、事件管理

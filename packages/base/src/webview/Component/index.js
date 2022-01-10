@@ -109,12 +109,7 @@ function defineCustomComponent(name, is, componentConfig, provide) {
         const val = newProps[kebabCase(key)] || newProps[key];
         const oldVal = oldProps[kebabCase(key)] || oldProps[key];
 
-        if (val != null) {
-          // 之前不存在 或者 与之前不相等
-          if (!oldVal || oldVal !== val) {
-            changedData[camelCase(key)] = this.normalizeValue(type, val);
-          }
-        } else if (oldVal != null) {
+        if (!isEqual(val, oldVal)) {
           changedData[camelCase(key)] = this.normalizeValue(type, val);
         }
       });

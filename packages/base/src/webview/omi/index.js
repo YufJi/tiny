@@ -6,7 +6,6 @@ import { define } from './define';
 import { tag } from './tag';
 import { cloneElement } from './clone-element';
 import { getHost } from './get-host';
-import { rpx } from './rpx';
 import { classNames, extractClass } from './class';
 import { o } from './o';
 import { extend, get, set, bind, unbind } from './extend';
@@ -35,7 +34,6 @@ const omi = {
   define,
   cloneElement,
   getHost,
-  rpx,
   defineElement,
   classNames,
   extractClass,
@@ -68,7 +66,6 @@ export {
   define,
   cloneElement,
   getHost,
-  rpx,
   defineElement,
   classNames,
   extractClass,

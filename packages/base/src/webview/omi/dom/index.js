@@ -6,6 +6,7 @@ import { applyRef } from '../util';
 import { extension } from '../extend';
 
 import bindEvent from './bindEvent';
+import bindAnimation from './bindAnimation';
 
 /**
  * Create an element with the given nodeName.
@@ -65,10 +66,12 @@ export function setAccessor(node, name, old, value, isSvg, component) {
     if (typeof value === 'string') {
       node.style.cssText = transformRpx(value) || '';
     }
-  } else if (name === 'dangerouslySetInnerHTML') {
-    if (value) node.innerHTML = value.__html || '';
+  } else if (name === 'animation') {
+    bindAnimation(node, value);
   } else if (isEventAttr(name)) {
     bindEvent(node, name, value, old);
+  } else if (name === 'dangerouslySetInnerHTML') {
+    if (value) node.innerHTML = value.__html || '';
   } else if (node.nodeName === 'INPUT' && name === 'value') {
     node[name] = value == null ? '' : value;
   } else {
