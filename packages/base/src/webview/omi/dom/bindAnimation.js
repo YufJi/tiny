@@ -7,21 +7,17 @@ export default function bindAnimation(dom, nextAnimationValue) {
 
   const actions = animationData.steps.map(animationToAction);
   let idx = 0;
-  const firstAction = actions[0];
-  const restActions = actions.slice(1);
-  const restLen = restActions.length;
 
   if (dom._transitionEnd_) {
     dom.removeEventListener('transitionend', dom._transitionEnd_);
   }
   dom._transitionEnd_ = function () {
-    if (idx < restLen) {
-      drain(restActions[idx], dom);
-      idx+=1;
+    if (actions[++idx]) {
+      drain(actions[idx], dom);
     }
   };
   dom.addEventListener('transitionend', dom._transitionEnd_);
-  drain(firstAction, dom);
+  drain(actions[idx], dom);
 }
 
 function animationToAction(step) {
