@@ -7,11 +7,6 @@
   resolved "https://registry.yarnpkg.com/@discoveryjs/json-ext/-/json-ext-0.5.3.tgz#90420f9f9c6d3987f176a19a7d8e764271a2f55d"
   integrity sha512-Fxt+AfXgjMoin2maPIYzFZnQjAXjAL0PHscM5pRTtatFqB+vZxAM9tLp2Optnuw3QOQC40jTNeGYFOMvyf7v9g==
 
-"@lit/reactive-element@^1.0.0":
-  version "1.0.2"
-  resolved "https://registry.npmmirror.com/@lit/reactive-element/download/@lit/reactive-element-1.0.2.tgz#daa7a7c7a6c63d735f0c9634de6b7dbd70a702ab"
-  integrity sha512-oz3d3MKjQ2tXynQgyaQaMpGTDNyNDeBdo6dXf1AbjTwhA1IRINHmA7kSaVYv9ttKweNkEoNqp9DqteDdgWzPEg==
-
 "@napi-rs/triples@^1.0.3":
   version "1.0.3"
   resolved "https://registry.nlark.com/@napi-rs/triples/download/@napi-rs/triples-1.0.3.tgz#76d6d0c3f4d16013c61e45dfca5ff1e6c31ae53c"
@@ -26,8 +21,8 @@
 
 "@polymer/polymer@^3.4.1":
   version "3.4.1"
-  resolved "https://registry.yarnpkg.com/@polymer/polymer/-/polymer-3.4.1.tgz#333bef25711f8411bb5624fb3eba8212ef8bee96"
-  integrity sha512-KPWnhDZibtqKrUz7enIPOiO4ZQoJNOuLwqrhV2MXzIt3VVnUVJVG5ORz4Z2sgO+UZ+/UZnPD0jqY+jmw/+a9mQ==
+  resolved "https://registry.nlark.com/@polymer/polymer/download/@polymer/polymer-3.4.1.tgz#333bef25711f8411bb5624fb3eba8212ef8bee96"
+  integrity sha1-MzvvJXEfhBG7ViT7PrqCEu+L7pY=
   dependencies:
     "@webcomponents/shadycss" "^1.9.1"
 
@@ -130,11 +125,6 @@
   version "6.9.7"
   resolved "https://registry.npmmirror.com/@types/qs/download/@types/qs-6.9.7.tgz?cache=0&sync_timestamp=1637270140135&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2F%40types%2Fqs%2Fdownload%2F%40types%2Fqs-6.9.7.tgz#63bb7d067db107cc1e457c303bc25d511febf6cb"
   integrity sha1-Y7t9Bn2xB8weRXwwO8JdUR/r9ss=
-
-"@types/trusted-types@^2.0.2":
-  version "2.0.2"
-  resolved "https://registry.npmmirror.com/@types/trusted-types/download/@types/trusted-types-2.0.2.tgz#fc25ad9943bcac11cceb8168db4f275e0e72e756"
-  integrity sha1-/CWtmUO8rBHM64Fo208nXg5y51Y=
 
 "@webassemblyjs/ast@1.9.0":
   version "1.9.0"
@@ -283,8 +273,8 @@
 
 "@webcomponents/shadycss@^1.9.1":
   version "1.11.0"
-  resolved "https://registry.yarnpkg.com/@webcomponents/shadycss/-/shadycss-1.11.0.tgz#73e289996c002d8be694cd3be0e83c46ad25e7e0"
-  integrity sha512-L5O/+UPum8erOleNjKq6k58GVl3fNsEQdSOyh0EUhNmi7tHUyRuCJy1uqJiWydWcLARE5IPsMoPYMZmUGrz1JA==
+  resolved "https://registry.nlark.com/@webcomponents/shadycss/download/@webcomponents/shadycss-1.11.0.tgz#73e289996c002d8be694cd3be0e83c46ad25e7e0"
+  integrity sha1-c+KJmWwALYvmlM074Og8Rq0l5+A=
 
 "@webpack-cli/configtest@^1.0.4":
   version "1.0.4"
@@ -954,11 +944,6 @@ constants-browserify@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/constants-browserify/-/constants-browserify-1.0.0.tgz#c20b96d8c617748aaf1c16021760cd27fcb8cb75"
   integrity sha1-wguW2MYXdIqvHBYCF2DNJ/y4y3U=
-
-construct-style-sheets-polyfill@^3.0.5:
-  version "3.0.5"
-  resolved "https://registry.npmmirror.com/construct-style-sheets-polyfill/download/construct-style-sheets-polyfill-3.0.5.tgz#cdf2e4982e8f7d9ef3f4dd841e14cdb7e13abb6a"
-  integrity sha512-prLKSx9gYwtmqWtq+pZxppU1SaH9o4ug7JIc0I/1zMV2bFE3GvRtQaMTIpotlhw33XjtC7rGQFOZJsOFnlAAhQ==
 
 copy-anything@^2.0.1:
   version "2.0.3"
@@ -2418,30 +2403,6 @@ less@^3.9.0:
     mime "^1.4.1"
     native-request "^1.0.5"
     source-map "~0.6.0"
-
-lit-element@^3.0.0:
-  version "3.0.2"
-  resolved "https://registry.npmmirror.com/lit-element/download/lit-element-3.0.2.tgz#6422b68ba166a32695f524d6f3eb41712610bf50"
-  integrity sha512-9vTJ47D2DSE4Jwhle7aMzEwO2ZcOPRikqfT3CVG7Qol2c9/I4KZwinZNW5Xv8hNm+G/enSSfIwqQhIXi6ioAUg==
-  dependencies:
-    "@lit/reactive-element" "^1.0.0"
-    lit-html "^2.0.0"
-
-lit-html@^2.0.0:
-  version "2.0.2"
-  resolved "https://registry.npmmirror.com/lit-html/download/lit-html-2.0.2.tgz#6a17caac4135757710c5fb3e4becc622c476e431"
-  integrity sha512-dON7Zg8btb14/fWohQLQBdSgkoiQA4mIUy87evmyJHtxRq7zS6LlC32bT5EPWiof5PUQaDpF45v2OlrxHA5Clg==
-  dependencies:
-    "@types/trusted-types" "^2.0.2"
-
-lit@^2.0.2:
-  version "2.0.2"
-  resolved "https://registry.npmmirror.com/lit/download/lit-2.0.2.tgz#5e6f422924e0732258629fb379556b6d23f7179c"
-  integrity sha1-Xm9CKSTgcyJYYp+zeVVrbSP3F5w=
-  dependencies:
-    "@lit/reactive-element" "^1.0.0"
-    lit-element "^3.0.0"
-    lit-html "^2.0.0"
 
 loader-runner@^2.4.0:
   version "2.4.0"
