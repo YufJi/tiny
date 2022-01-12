@@ -14,14 +14,12 @@ const S = {
   possessingBackgroundAudioPlayer: false,
   webviewEventCallback: null,
 };
-const SS = new Proxy(S, {
-  set: function set(trapTarget, key, value, receiver) {
-    debug('[发生改变 S]', `key:${key}`, `value:${value}`, trapTarget);
-    return Reflect.set(trapTarget, key, value, receiver);
+
+export const GlobalState = new Proxy(S, {
+  set: function set(target, key, value, receiver) {
+    return Reflect.set(target, key, value, receiver);
   },
 });
-
-export const GlobalState = SS;
 
 export function getDataType(val) {
   return Object.prototype.toString.call(val).slice(8, -1);
@@ -157,30 +155,22 @@ export function invokeMethod(method, params = {}, options = {}) {
 
     if (status === 'success') {
       call(options, 'beforeSuccess');
-
       call(params, 'success');
-
       call(options, 'afterSuccess');
     } else if (status === 'cancel') {
       res.errMsg = res.errMsg.replace(`${method}:cancel`, `${method}:fail cancel`);
 
       call(params, 'fail');
-
       call(options, 'beforeCancel');
-
       call(params, 'cancel');
-
       call(options, 'afterCancel');
     } else if (status === 'fail') {
       call(options, 'beforeFail');
-
       call(params, 'fail');
-
       call(options, 'afterFail');
     }
 
     call(params, 'complete');
-
     call(options, 'afterAll');
   }
 }

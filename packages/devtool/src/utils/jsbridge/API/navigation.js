@@ -9,7 +9,7 @@ const { dispatch } = store;
 export function navigateTo(params) {
   const { url } = params;
   pushWindow(url).then((iframe) => {
-    global.service.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('onAppRoute', '${JSON.stringify({
+    global.service.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('appRoute', '${JSON.stringify({
       path: iframe.path,
       openType: 'navigateTo',
     })}', '${iframe.id}')`);
@@ -106,7 +106,7 @@ export function popWindow(delta = 1) {
   pageStack = pageStack.slice(0, -1 * delta);
   global.currentRender = global.webviews.get(pageStack[pageStack.length - 1]);
 
-  global.service.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('onAppRoute', '${JSON.stringify({
+  global.service.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('appRoute', '${JSON.stringify({
     path: global.currentRender.path,
     openType: 'navigateBack',
   })}', '${global.currentRender.id}')`);

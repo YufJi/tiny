@@ -1,5 +1,4 @@
 const loaderUtils = require('loader-utils');
-const assign = require('object-assign');
 const { extname: getExtname, relative } = require('path');
 const TemplateTransformer = require('../TemplateTransformer');
 const { getProjectPath, isValidFilePath } = require('../utils');
@@ -22,20 +21,15 @@ module.exports = function (source) {
   const componentConfig = getComponent(`/${fileName}`, cwd, { pluginId });
   const usingComponents = (componentConfig && componentConfig.usingComponents) || getPage(fileName, undefined, { pluginId });
 
-  new TemplateTransformer(
-    source,
-    assign(
-      {
-        strictDataMember: false,
-        projectRoot: cwd,
-        usingComponents,
-        renderPath: fullPath,
-        isComponent: !!componentConfig,
-        isWorker,
-      },
-      transformConfig,
-    ),
-  ).transform((error, code) => {
+  new TemplateTransformer(source, {
+    strictDataMember: false,
+    projectRoot: cwd,
+    usingComponents,
+    renderPath: fullPath,
+    isComponent: !!componentConfig,
+    isWorker,
+    ...transformConfig,
+  }).transform((error, code) => {
     if (error) {
       if (showFileNameInError) {
         let fileProjectPath = relative(cwd, fullPath);

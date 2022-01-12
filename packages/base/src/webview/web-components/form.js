@@ -1,11 +1,11 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { elementPrefix } from 'shared';
+import { TemplateTag } from 'shared';
 import { Base } from './mixins';
 import uuid from './utils/uuid';
 
 class Form extends Base(PolymerElement) {
   static get is() {
-    return `${elementPrefix}-form`;
+    return `${TemplateTag.LowerCasePrefix}-form`;
   }
 
   static get properties() {
@@ -50,7 +50,7 @@ class Form extends Base(PolymerElement) {
   async submitHandler(e) {
     const target = {
       id: '',
-      dataset: { ...e.target.dataset },
+      dataset: { ...e.target._dataset },
       offsetLeft: e.target.offsetLeft,
       offsetTop: e.target.offsetTop,
     };
@@ -74,7 +74,7 @@ class Form extends Base(PolymerElement) {
     this.triggerEvent('reset', {
       target: {
         id: '',
-        dataset: { ...e.target.dataset },
+        dataset: { ...e.target._dataset },
         offsetLeft: e.target.offsetLeft,
         offsetTop: e.target.offsetTop,
       },

@@ -20,6 +20,7 @@
     "no-case-declarations":"off",
     "no-restricted-globals":"off",
     "max-len":"off",
-    "import/no-cycle":"off"
+    "import/no-cycle":"off",
+    "no-plusplus": "warn"
   }
 }

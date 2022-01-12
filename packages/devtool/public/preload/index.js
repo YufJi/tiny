@@ -9,16 +9,10 @@ const timerMap = new Map();
 window.WEBVIEWID = query('webviewId');
 
 window.JSCore = {
-  call(event, paramsString, webviewIdsString, callbackId) {
-    // 为了能模拟同步api
-    const params = JSON.parse(paramsString);
-    const webviewIds = JSON.parse(webviewIdsString);
-
+  call(event, params, webviewIds, callbackId) {
     return host.JSBridgeInstance.call(event, params, webviewIds, callbackId);
   },
-  publish(event, params, webviewIdsString, __IS_SERVICE__) {
-    const webviewIds = JSON.parse(webviewIdsString);
-
+  publish(event, params, webviewIds, __IS_SERVICE__) {
     host.JSBridgeInstance.publish(event, params, webviewIds, __IS_SERVICE__);
   },
   setTimer(type, id, delay) {

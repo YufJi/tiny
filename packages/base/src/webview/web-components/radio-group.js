@@ -1,10 +1,10 @@
 import { html, PolymerElement } from '@polymer/polymer';
-import { elementPrefix } from 'shared';
+import { TemplateTag } from 'shared';
 import { Base, Data, Group } from './mixins';
 
 class RadioGroup extends Group(Data(Base(PolymerElement))) {
   static get is() {
-    return `${elementPrefix}-radio-group`;
+    return `${TemplateTag.LowerCasePrefix}-radio-group`;
   }
 
   static get properties() {
@@ -27,7 +27,7 @@ class RadioGroup extends Group(Data(Base(PolymerElement))) {
   }
 
   get childItemType() {
-    return `${elementPrefix}-radio`;
+    return `${TemplateTag.LowerCasePrefix}-radio`;
   }
 
   constructor() {

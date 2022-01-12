@@ -1,18 +1,16 @@
 import { isNil, debounce } from 'lodash';
 import { CustomEvent, tryCatch } from 'shared';
-import { PASSIVE } from '../nerv/passive-event';
-import { isShadowRoot, getShadowRootId } from './utils';
 import { disableScroll, enableScroll, pageScrollTo } from './utils/scroll';
 import { requestObserver, removeObserver, initTriggerListener } from './utils/observer';
 import { requestComponentInfo } from './utils/info';
 import { getRelationNodes, getRelation, setRelation } from './utils/relation';
 
-const { COMPONENT_DATA_CHANGE, PAGE_EVENT } = CustomEvent;
+const { ComponentDataChange, PageEvent } = CustomEvent;
 
 export function onComponentDataChange(bridge, componentHub) {
-  bridge.replyService(COMPONENT_DATA_CHANGE)(
-    tryCatch(COMPONENT_DATA_CHANGE, async (e) => {
-      componentHub.events.dispatch(COMPONENT_DATA_CHANGE, e);
+  bridge.replyService(ComponentDataChange)(
+    tryCatch(ComponentDataChange, async (e) => {
+      componentHub.events.dispatch(ComponentDataChange, e);
     }),
   );
 }
@@ -67,8 +65,8 @@ function selectComponent(component, options) {
 
   const nodeList = single ? [component.querySelector(selector)] : Array.from(component.querySelectorAll(selector));
 
-  return nodeList.filter(isShadowRoot).map((node) => {
-    return getShadowRootId(node);
+  return nodeList.filter((node) => node._type_ === 'component').map((node) => {
+    return node.elementId;
   });
 }
 
@@ -130,6 +128,7 @@ export function onRequestComponentInfo(bridge, componentHub, root) {
 
     const res = requestComponentInfo(reqs.map((req) => {
       const { component, ...rest } = req;
+
       const root = component === 0 ? null : component ? componentHub.instances.get(component) : root;
 
       return { ...rest, root };

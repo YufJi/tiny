@@ -1,6 +1,6 @@
 /* eslint-disable no-inner-declarations */
 /* eslint-disable func-names */
-import { addListener } from '../../nerv/event';
+import { addListener } from 'shared/addListener';
 import { publish, subscribe } from '../../bridge';
 
 export default function Base(SuperClass) {
@@ -48,6 +48,10 @@ export default function Base(SuperClass) {
           loop.call(this, i, l);
         }
       }
+    }
+
+    disconnectedCallback() {
+      super.disconnectedCallback();
     }
 
     hasBehavior(type) {

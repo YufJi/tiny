@@ -1,10 +1,10 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { elementPrefix } from 'shared';
+import { TemplateTag } from 'shared';
 import { Base, Data, Group } from './mixins';
 
 class CheckboxGroup extends Group(Data(Base(PolymerElement))) {
   static get is() {
-    return `${elementPrefix}-checkbox-group`;
+    return `${TemplateTag.LowerCasePrefix}-checkbox-group`;
   }
 
   static get template() {
@@ -24,7 +24,7 @@ class CheckboxGroup extends Group(Data(Base(PolymerElement))) {
   }
 
   get childItemType() {
-    return `${elementPrefix}-checkbox`;
+    return `${TemplateTag.LowerCasePrefix}-checkbox`;
   }
 
   addItem(e) {

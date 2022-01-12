@@ -1,6 +1,5 @@
 import { isUndefined } from 'lodash';
-import { upperCasePerfix } from 'shared';
-import { querySelector, querySelectorAll } from './query';
+import { TemplateTag } from 'shared';
 
 export function requestComponentInfo(reqs, rootDom) {
   const res = [];
@@ -19,14 +18,15 @@ export function requestComponentInfo(reqs, rootDom) {
 
     if (single) {
       if (tree) {
-        const element = querySelector(selector, tree);
+        const element = (tree.shadowRoot || tree).querySelector(selector);
+
         result = element ? filterFields(element, fields) : null;
       } else {
         result = null;
       }
     } else {
       result = tree
-        ? querySelectorAll(selector, tree).map((element) => {
+        ? Array.from((tree.shadowRoot || tree).querySelectorAll(selector)).map((element) => {
           return filterFields(element, fields);
         })
         : [];
@@ -88,21 +88,21 @@ function filterFields(element, fields) {
   if (fields.node) {
     i.nodeCanvasType = 'default';
 
-    if (`${upperCasePerfix}-CANVAS` === (element && element.tagName)) {
+    if (`${TemplateTag.UpperCasePerfix}-CANVAS` === (element && element.tagName)) {
       i.node = {
         isCanvas: true,
-        id: element && element.id,
-        type: element && element.type,
-        canvasId: element && element.canvasId,
-        uniqCanvasId: element && element.uniqCanvasId,
-        _width: element && element.clientWidth,
-        _height: element && element.clientHeight,
-        _top: element && element.clientTop,
-        _left: element && element.clientLeft,
-        width: element && element.clientWidth,
-        height: element && element.clientHeight,
+        id: element?.id,
+        type: element?.type,
+        canvasId: element?.canvasId,
+        uniqCanvasId: element?.uniqCanvasId,
+        _width: element?.clientWidth,
+        _height: element?.clientHeight,
+        _top: element?.clientTop,
+        _left: element?.clientLeft,
+        width: element?.clientWidth,
+        height: element?.clientHeight,
       };
-      i.nodeCanvasType = element && element.type;
+      i.nodeCanvasType = element?.type;
     }
   }
 

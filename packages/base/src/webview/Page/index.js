@@ -1,66 +1,121 @@
-import { elementPrefix } from 'shared';
-import { h, useLayoutEffect, useEffect, useRef, transformRpx } from '../nerv';
-import { ComponentHubContext } from '../context';
-import { usePageFields } from '../common/hooks';
+import { define, WeElement } from 'omi';
+import { TemplateTag, CustomEvent } from 'shared';
+import transformRpx from '@/webview/util/transformRpx';
+
 import {
-  useCompileResult,
-  usePageData,
-  useRenderContext,
-  useComponentHub,
-  useRenderMode,
-  useJSCoreEvent,
-  useInitAction,
-  usePageReady,
-  usePageShow,
-} from './hooks';
+  onComponentDataChange,
+  onDisableScroll,
+  onPageScrollTo,
+  onRequestComponentObserver,
+  onRequestComponentInfo,
+  onGetRelationNode,
+  onSelectComponent,
+  onSelectComponentInPage,
+  onTriggerComponentEvent,
+  onAppLoadStatusChange,
+  onAnimationStatusChange,
+  enableScroll,
+} from '../api';
+import registryCustomComponent from '../Component';
+import { mergeData } from '../util';
 
-export default function Page() {
-  const { render, stylesheet } = useCompileResult();
-  const data = usePageData(render);
-  const ctx = useRenderContext();
-  const componentHub = useComponentHub();
-  const mode = useRenderMode();
+const { AppDataChange, PageEvent, PageReady, PageShow } = CustomEvent;
 
-  useJSCoreEvent(componentHub);
-  useInitAction();
+const tag = `${TemplateTag.LowerCasePrefix}-page`;
 
-  return (
-    <ComponentHubContext.Provider value={componentHub}>
-      {mode === 'Normal' ? (
-        <NormalScene
-          context={ctx}
-          data={data}
-          render={render}
-          stylesheet={stylesheet}
-        />
-      ) : null}
-    </ComponentHubContext.Provider>
-  );
-}
+export default function renderPage(provide, data, generateFunc) {
+  const { fields } = provide;
+  const { root } = fields;
 
-function NormalScene(props) {
-  const { data, context, render, stylesheet } = props;
+  registryCustomComponent(provide);
+  registryPage(provide, data, generateFunc);
 
-  const { emitter } = usePageFields();
-  const { current } = useRef({ result: null, initialized: false });
+  const page = document.createElement(tag);
 
-  if (render) {
-    current.result = render(data, context);
+  if (root !== null) {
+    let dom = root.lastChild;
+    while (dom) {
+      const next = dom.previousSibling;
+      root.removeChild(dom);
+      dom = next;
+    }
   }
 
-  usePageShow(stylesheet);
-  usePageReady(render);
+  root.appendChild(page);
+}
 
-  useLayoutEffect(() => {
-    if (render) {
-      if (current.initialized) {
-        emitter.emit('RE_RENDER', 'patch');
-      } else {
-        current.initialized = true;
-        emitter.emit('RE_RENDER', 'initial');
-      }
+function registryPage(provide, data, generateFunc) {
+  const { bridge, fields, componentHub } = provide;
+  const { render: vdom, stylesheet } = generateFunc;
+
+  define(tag, class extends WeElement {
+    static css = transformRpx(stylesheet.toString())
+
+    constructor() {
+      super();
+
+      this._type_ = 'page';
+
+      this.data = data;
+
+      this.listenDataChange();
+      this.listenJSCoreEvent(componentHub);
+    }
+
+    provide = provide
+
+    attached() {
+      const { publish } = bridge;
+      publish(PageShow, {});
+    }
+
+    ready() {
+      const { publish } = bridge;
+      publish(PageReady, {});
+    }
+
+    listenDataChange() {
+      const { replyService } = bridge;
+      replyService(AppDataChange)(async (params) => {
+        const { data, options } = params;
+
+        this.setData(data);
+      });
+    }
+
+    listenJSCoreEvent(componentHub) {
+      const { emitter, root } = fields;
+
+      onComponentDataChange(bridge, componentHub);
+      onTriggerComponentEvent(bridge, componentHub);
+      onRequestComponentObserver(bridge, componentHub, emitter, root);
+      onSelectComponentInPage(bridge, root);
+      onSelectComponent(bridge, componentHub);
+      onRequestComponentInfo(bridge, componentHub, root);
+      onGetRelationNode(bridge, componentHub);
+      onAnimationStatusChange(emitter);
+      onAppLoadStatusChange(bridge);
+      onDisableScroll(bridge);
+      onPageScrollTo(bridge);
+    }
+
+    eventBinder(methodName) {
+      const { publish } = bridge;
+
+      const handler = function (data) {
+        return publish(PageEvent, { type: methodName, data, nodeId: 0 });
+      };
+      handler.displayName = methodName;
+      return handler;
+    }
+
+    render() {
+      return vdom(this.data, {
+        $$class(t) {
+          return `${String(t)}`;
+        },
+        $$eventBinder: this.eventBinder.bind(this),
+      });
     }
   });
-
-  return h(`${elementPrefix}-page`, {}, current.result);
 }

@@ -1,170 +1,199 @@
-import { memoize } from 'lodash';
-import path from 'path';
-import { CustomEvent } from 'shared';
-import { h, useDangerousReverseLayoutEffect, useEffect, useLayoutEffect, useRef } from '../nerv';
-import { useJSBridge } from '../common/hooks';
-import { getRealRoute } from '../util';
-import { triggerRelationsEvent } from '../api';
-import {
-  useComponentHubContext,
-  useDataChange,
-  useLifeCycleHooks,
-  useRefinedDataset,
-  useRefinedProps,
-  useSyncChangedDataset,
-  useSyncChangedProps,
-  useNodeId,
-  useRenderContext,
-} from './hooks';
+import { define, WeElement, h } from 'omi';
+import { isEqual, mapValues, forOwn, hasIn, kebabCase, memoize, camelCase, isPlainObject, isObject } from 'lodash';
+import { CustomEvent, getType, TemplateTag } from 'shared';
 
-const { COMPONENT_DATA_CHANGE } = CustomEvent;
+import { mergeData } from '../util';
+import transformRpx from '../util/transformRpx';
 
-export function registerCustomComponents(__allConfig__, customComponents) {
-  const customComponentMap = new Map();
+const { PageEvent, ComponentEvent, ComponentDataChange } = CustomEvent;
 
-  Object.keys(customComponents).forEach((is) => {
-    /* 自定义组件初始config */
-    const config = customComponents[is];
-    /* 自定义组件下的组件引用 */
-    const using = __allConfig__[is].usingComponents;
+export default function registryCustomComponent(provide) {
+  const { config } = provide;
+  const { __allConfig__, route, customComponents } = config;
+  const { usingComponents } = __allConfig__[route];
+  const registryedMap = new Map();
 
-    customComponentMap.set(is, defineCustomComponent(is, { config, using }, customComponentMap));
-  });
+  const loop = (usingComponents) => {
+    for (let i = 0; i < Object.entries(usingComponents).length; i+=1) {
+      const [name, is] = Object.entries(usingComponents)[i];
 
-  return function (is) {
-    return customComponentMap.get(is) || null;
+      if (registryedMap.has(name)) {
+        continue;
+      }
+
+      /* 自定义组件初始config */
+      const customComponentConfig = customComponents[is];
+      // 自定义组件名
+      defineCustomComponent(`${TemplateTag.LowerCasePrefix}-${name}`, is, customComponentConfig, provide);
+
+      registryedMap.set(name, true);
+
+      /* 自定义组件下的组件引用 */
+      const using = __allConfig__[is].usingComponents;
+
+      for (const name in using) {
+        if (Object.hasOwnProperty.call(using, name)) {
+          if (using[name] === is) {
+            delete using[name];
+          }
+        }
+      }
+
+      loop(using);
+    }
   };
+
+  loop(usingComponents);
 }
 
-function defineCustomComponent(is, options, customComponentMap) {
-  const { config, using } = options;
-  const { properties, data } = config;
+function defineCustomComponent(name, is, componentConfig, provide) {
+  const { properties = {}, data = {} } = componentConfig;
+  const { render: vdom, stylesheet } = window.app[is];
 
-  const resolveComponent = memoize((name) => {
-    const path = using && using[name];
-    if (!path) return null;
+  const { bridge, config, componentHub } = provide;
 
-    const component = customComponentMap.get(getRealRoute(is, path)) || null;
-    component.displayName = name;
-    return component;
-  });
+  define(name, class extends WeElement {
+    static css = transformRpx(stylesheet.toString())
 
-  return function Component(props) {
-    const { render } = window.app[is];
+    static properties = properties
 
-    const { publish } = useJSBridge();
-    const nodeId = useNodeId();
-    const ctx = useRenderContext(props, nodeId, is, config, resolveComponent);
-    const [refinedProps, initialProps] = useRefinedProps(props, properties);
-    const [refinedDataset, initialDataset] = useRefinedDataset(props);
-    const changedData = useDataChange(nodeId, data, refinedProps);
-    const [created, attached, ready, detached] = useLifeCycleHooks(nodeId, is);
+    constructor() {
+      super();
 
-    useLayoutEffect(() => {
-      created();
-      syncInitialInfo(props, nodeId, publish);
-      syncInitialProps(refinedProps, nodeId, publish);
-      syncInitialDataset(refinedDataset, nodeId, publish);
-      attached();
-    }, []);
+      this._type_ = 'component';
 
-    useEffect(() => {
-      ready();
+      this.data = data;
 
-      return () => {
-        return detached();
+      this.subscriber = this.listenDataChange();
+
+      const { publish } = bridge;
+
+      componentHub.instances.set(this.elementId, this);
+
+      publish(ComponentEvent, { route: is, nodeId: this.elementId, eventName: 'created' });
+    }
+
+    attached() {
+      const { publish } = bridge;
+      // 同步组件信息
+      this.syncInfo({
+        id: this.id,
+        className: this.className,
+      });
+      // 同步props
+      this.syncProps(this.normalizeProps(this.props, this.constructor.properties));
+      // 同步dataset
+      this.syncDataset(this._dataset);
+
+      publish(ComponentEvent, { route: is, nodeId: this.elementId, eventName: 'attached' });
+    }
+
+    ready() {
+      const { publish } = bridge;
+
+      publish(ComponentEvent, { route: is, nodeId: this.elementId, eventName: 'ready' });
+    }
+
+    detached() {
+      const { publish } = bridge;
+      componentHub.instances.remove(this.elementId);
+      this.subscriber.remove();
+
+      publish(ComponentEvent, { route: is, nodeId: this.elementId, eventName: 'detached' });
+    }
+
+    receiveProps(newProps, oldProps) {
+      const changedData = {};
+
+      Object.keys(properties).forEach((key) => {
+        const { type } = properties[key];
+
+        const val = newProps[key] || newProps[kebabCase(key)];
+        const oldVal = oldProps[key] || oldProps[kebabCase(key)];
+
+        if (!isEqual(val, oldVal)) {
+          changedData[camelCase(key)] = this.normalizeValue(type, val);
+        }
+      });
+
+      this.syncDataset(this._dataset);
+
+      if (Object.keys(changedData).length) {
+        this.syncProps(changedData);
+        return true;
+      }
+
+      return false;
+    }
+
+    listenDataChange() {
+      const { elementId: nodeId } = this;
+
+      return componentHub.events.subscribe(ComponentDataChange, nodeId, (e) => {
+        const { data } = e;
+
+        this.setData(data);
+      });
+    }
+
+    syncInfo(info) {
+      const { publish } = bridge;
+      const { id, className } = info;
+
+      publish(ComponentDataChange, {
+        datatype: 'instance',
+        data: {
+          id: id || '',
+          className: className || '',
+        },
+        nodeId: this.elementId,
+      });
+    }
+
+    // 当props变化后发送通知
+    syncProps(props) {
+      const { publish } = bridge;
+
+      mergeData(this.data, props);
+
+      publish(ComponentDataChange, {
+        datatype: 'properties',
+        data: props,
+        nodeId: this.elementId,
+      });
+    }
+
+    // 当dataset变化后发送通知
+    syncDataset(dataset) {
+      const { publish } = bridge;
+
+      publish(ComponentDataChange, {
+        datatype: 'dataset',
+        data: dataset,
+        nodeId: this.elementId,
+      });
+    }
+
+    eventBinder(methodName) {
+      const { publish } = bridge;
+      const { elementId: nodeId } = this;
+
+      const handler = function (data) {
+        return publish(PageEvent, { type: methodName, data, nodeId });
       };
-    }, []);
-
-    useSyncChangedProps(refinedProps, nodeId, initialProps);
-    useSyncChangedDataset(refinedDataset, nodeId, initialDataset);
-
-    return (
-      <ShadowRoot
-        $nodeId={nodeId}
-        $config={config}
-        $name={Component.displayName || 'custom-component'}
-        attribute={props}
-      >
-        {render(changedData, ctx)}
-      </ShadowRoot>
-    );
-  };
-}
-
-function ShadowRoot(props) {
-  const { $nodeId, $config, $name, attribute, children } = props;
-
-  const { publish } = useJSBridge();
-  const { instances } = useComponentHubContext();
-  const ref = useRef(null);
-
-  useLayoutEffect(() => {
-    const node = ref.current;
-
-    node._type_ = 'SHADOW_ROOT:custom-component';
-    node._nodeId_ = $nodeId;
-    node._config_ = $config;
-    instances.set($nodeId, node);
-    triggerRelationsEvent(node, true, publish);
-
-    return () => {
-      instances.remove($nodeId);
-      triggerRelationsEvent(node, false, publish);
-    };
-  }, []);
-
-  return h($name, {
-    ref,
-    ...attribute,
-  }, children);
-}
-
-function syncInitialInfo(props, nodeId, publish) {
-  const { id, className } = props;
-
-  publish(COMPONENT_DATA_CHANGE, {
-    data: {
-      id: id || '',
-      className: className || '',
-    },
-    datatype: 'instance',
-    nodeId,
-  });
-}
-
-function syncInitialProps(data, nodeId, publish) {
-  publish(COMPONENT_DATA_CHANGE, {
-    datatype: 'properties',
-    data,
-    nodeId,
-  });
-}
-
-function syncInitialDataset(data, nodeId, publish) {
-  publish(COMPONENT_DATA_CHANGE, {
-    datatype: 'dataset',
-    data,
-    nodeId,
-  });
-}
-
-export function createComponentResolve(route, findHandler) {
-  return function (is) {
-    if (is.startsWith('/')) {
-      const p = is.slice(1);
-
-      return [p, `${p}/index`].find(findHandler) || is;
+      handler.displayName = methodName;
+      return handler;
     }
 
-    const p = path.join(path.dirname(route), is);
-    const pp = [p, `${p}/index`];
+    render() {
+      const { data } = this;
 
-    if (!is.startsWith('./')) {
-      const list = [path.join('miniprogram_npm/', is), `${path.join('miniprogram_npm/', is)}/index`];
-      pp.push(list);
+      return vdom(data, {
+        $$class(cls) {
+          return `${String(cls)}`;
+        },
+        $$eventBinder: this.eventBinder.bind(this),
+      });
     }
-
-    return pp.find(findHandler) || pp[0];
-  };
+  });
 }

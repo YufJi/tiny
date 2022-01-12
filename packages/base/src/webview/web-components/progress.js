@@ -1,5 +1,5 @@
 import { html, PolymerElement } from '@polymer/polymer';
-import { elementPrefix } from 'shared';
+import { TemplateTag } from 'shared';
 import { Base } from './mixins';
 
 const documentContainer = document.createElement('div');
@@ -42,7 +42,7 @@ const FORWARDS = 'forwards';
 
 class Progress extends Base(PolymerElement) {
   static get is() {
-    return `${elementPrefix}-progress`;
+    return `${TemplateTag.LowerCasePrefix}-progress`;
   }
 
   static get properties() {

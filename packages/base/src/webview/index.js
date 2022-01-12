@@ -1,11 +1,12 @@
+import Omi from 'omi';
 import { g } from 'shared';
+
 import * as bridge from './bridge';
 import './web-components';
-
 import bootstrap from './bootstrap';
-import Nerv from './nerv';
-import RenderHelpers from './render-helpers';
+import helpers from './helpers';
 import StyleSheet from './StyleSheet';
+import transformRpx from './util/transformRpx';
 
 g.__IS_SERVICE__ = false;
 
@@ -35,8 +36,17 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 g.JSBridge = bridge;
-g.Nerv = Nerv;
-g.RenderHelpers = RenderHelpers;
+g.Omi = Omi;
+g.TemplateHelpers = helpers;
 g.TinyStyleSheet = StyleSheet;
+
+g.insertAppStyle = function (stylesheet) {
+  const headNode = document.getElementsByTagName('head')[0];
+  const styleNode = document.createElement('style');
+  const styleString = transformRpx(stylesheet.toString());
+
+  styleNode.innerHTML = styleString;
+  headNode.appendChild(styleNode);
+};
 
 bootstrap();

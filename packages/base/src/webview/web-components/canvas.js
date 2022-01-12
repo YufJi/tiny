@@ -1,5 +1,5 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { guid, elementPrefix } from 'shared';
+import { guid, TemplateTag } from 'shared';
 import { getRealRoute } from '../util';
 import { Base } from './mixins';
 
@@ -8,7 +8,7 @@ const DEFAULT_HEIGHT = 225;
 
 class Canvas extends Base(PolymerElement) {
   static get is() {
-    return `${elementPrefix}-canvas`;
+    return `${TemplateTag.LowerCasePrefix}-canvas`;
   }
 
   static get properties() {

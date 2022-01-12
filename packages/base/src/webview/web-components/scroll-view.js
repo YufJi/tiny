@@ -1,5 +1,5 @@
 import { PolymerElement, html } from '@polymer/polymer';
-import { elementPrefix } from 'shared';
+import { TemplateTag } from 'shared';
 import { Base, TouchTrack } from './mixins';
 import bezier from './utils/bezier';
 
@@ -7,7 +7,7 @@ const easyOutEasing = bezier(0, 0, 0.58, 1);
 
 class ScrollView extends TouchTrack(Base(PolymerElement)) {
   static get is() {
-    return `${elementPrefix}-scroll-view`;
+    return `${TemplateTag.LowerCasePrefix}-scroll-view`;
   }
 
   static get properties() {
@@ -206,7 +206,7 @@ class ScrollView extends TouchTrack(Base(PolymerElement)) {
 
     this._handleScroll(e);
 
-    document.dispatchEvent(new CustomEvent(`${elementPrefix}-scroll-view`));
+    document.dispatchEvent(new CustomEvent(`${TemplateTag.LowerCasePrefix}-scroll-view`));
   }
 
   async scrollTo(scrollTop, direction) {
@@ -318,7 +318,7 @@ class ScrollView extends TouchTrack(Base(PolymerElement)) {
     if (this._noBubble) {
       e.stopPropagation(); // 发个别的事件，避免需要touchmove的场景得不到应有的事件
 
-      this.dispatchEvent(new CustomEvent(`${elementPrefix}-touchmove`, {
+      this.dispatchEvent(new CustomEvent(`${TemplateTag.LowerCasePrefix}-touchmove`, {
         detail: {
           srcMoveEvent: e,
         },

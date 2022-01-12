@@ -1,6 +1,6 @@
 import { PolymerElement, html } from '@polymer/polymer';
 import { GestureEventListeners } from '@polymer/polymer/lib/mixins/gesture-event-listeners';
-import { elementPrefix } from 'shared';
+import { TemplateTag } from 'shared';
 import { Data, Base } from './mixins';
 
 const documentContainer = document.createElement('div');
@@ -100,7 +100,7 @@ function castNumber(e) {
 
 class WebInput extends Data(GestureEventListeners(Base(PolymerElement))) {
   static get is() {
-    return `${elementPrefix}-input`;
+    return `${TemplateTag.LowerCasePrefix}-input`;
   }
 
   static get properties() {
@@ -241,7 +241,7 @@ class WebInput extends Data(GestureEventListeners(Base(PolymerElement))) {
       id: this.id || '',
       offsetLeft: this.offsetLeft,
       offsetTop: this.offsetTop,
-      dataset: this.dataset,
+      dataset: this._dataset,
     };
     return {
       type,
@@ -388,7 +388,7 @@ class WebInput extends Data(GestureEventListeners(Base(PolymerElement))) {
       bindinput: this.bindinput,
       target: {
         id: this.id || '',
-        dataset: this.dataset,
+        dataset: this._dataset,
         offsetTop: this.$.wrapper.offsetTop,
         offsetLeft: this.$.wrapper.offsetLeft,
       },

@@ -1,7 +1,7 @@
 import { CustomEvent } from 'shared';
-import { PASSIVE } from '../../nerv/passive-event';
+import { PASSIVE } from '@/webview/util/passive-event';
 
-const { COMPONENT_DATA_CHANGE, PAGE_EVENT } = CustomEvent;
+const { ComponentDataChange, PageEvent } = CustomEvent;
 
 let scrollFlag = false;
 let pullupRefreshLock = true;
@@ -42,7 +42,7 @@ function getScrollHeight() {
 
 export function triggerPullUpRefresh(publish) {
   if (pullupRefreshLock) {
-    publish(PAGE_EVENT, { type: 'onReachBottom', data: {}, nodeId: 0 });
+    publish(PageEvent, { type: 'onReachBottom', data: {}, nodeId: 0 });
     pullupRefreshLock = false;
     setTimeout(() => {
       pullupRefreshLock = true;
@@ -60,7 +60,7 @@ export function enableScroll(config, fields) {
 
   if (enable) {
     window.onscroll = function () {
-      enablePageScroll && publish(PAGE_EVENT, {
+      enablePageScroll && publish(PageEvent, {
         type: 'onPageScroll',
         data: { scrollTop: window.pageYOffset },
         nodeId: 0,
