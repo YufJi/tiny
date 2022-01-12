@@ -1,5 +1,5 @@
-import { camelCase, hasIn, kebabCase } from 'lodash';
-import { cssToDom, isArray, hyphenate, getValByPath, capitalize, getType } from './util';
+import { camelCase, hasIn, isEqual, kebabCase } from 'lodash';
+import { isArray, capitalize, getType } from './util';
 import { diff } from './vdom/diff';
 import options from './options';
 import { afterNextRender } from './render-status';
@@ -201,15 +201,10 @@ export default class WeElement extends HTMLElement {
       // 拿到类型
       const { type } = properties[key];
 
-      const val = ele.props[kebabCase(key)] || ele.props[key];
-      const prevVal = ele.prevProps[kebabCase(key)] || ele.prevProps[key];
+      const val = ele.props[key] || ele.props[kebabCase(key)];
+      const prevVal = ele.prevProps[key] || ele.prevProps[kebabCase(key)];
 
-      if (val != null) {
-        // 之前不存在 或者 与之前不相等
-        if (!prevVal || prevVal !== val) {
-          changedData[camelCase(key)] = this.normalizeValue(type, val);
-        }
-      } else if (prevVal != null) {
+      if (!isEqual(val, prevVal)) {
         changedData[camelCase(key)] = this.normalizeValue(type, val);
       }
 

@@ -54,6 +54,8 @@ function registryPage(provide, data, generateFunc) {
     constructor() {
       super();
 
+      this._type_ = 'page';
+
       this.data = data;
 
       this.listenDataChange();
@@ -112,7 +114,7 @@ function registryPage(provide, data, generateFunc) {
         $$class(t) {
           return `${String(t)}`;
         },
-        $$eventBinder: this.eventBinder,
+        $$eventBinder: this.eventBinder.bind(this),
       });
     }
   });

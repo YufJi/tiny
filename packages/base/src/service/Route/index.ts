@@ -25,6 +25,7 @@ export default function loadRoute() {
     page.implement.onShow();
   });
 
+  // 监听页面ready事件
   subscribe(CustomEvent.PageReady, (_, webviewId) => {
     const page = webviewUsed.get(webviewId);
 

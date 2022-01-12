@@ -1,6 +1,5 @@
 import { isNil, debounce } from 'lodash';
 import { CustomEvent, tryCatch } from 'shared';
-import { isShadowRoot, getShadowRootId } from './utils';
 import { disableScroll, enableScroll, pageScrollTo } from './utils/scroll';
 import { requestObserver, removeObserver, initTriggerListener } from './utils/observer';
 import { requestComponentInfo } from './utils/info';
@@ -66,8 +65,8 @@ function selectComponent(component, options) {
 
   const nodeList = single ? [component.querySelector(selector)] : Array.from(component.querySelectorAll(selector));
 
-  return nodeList.filter(isShadowRoot).map((node) => {
-    return getShadowRootId(node);
+  return nodeList.filter((node) => node._type_ === 'component').map((node) => {
+    return node.elementId;
   });
 }
 

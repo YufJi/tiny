@@ -10,9 +10,11 @@ import { Component } from '../type';
 const componentStatus = new WeakMap();
 
 export default function loadComponent() {
+  // 页面销毁时，所有已挂载的组件都卸载
   onRouteEvent('destroyPage', (page) => {
     const { webviewId } = page;
     const components: Component[] = componentModels[webviewId];
+
     if (!components) return;
 
     for (let i = 0; i < Object.values(components).length; i+=1) {

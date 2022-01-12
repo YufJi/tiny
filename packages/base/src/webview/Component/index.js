@@ -60,6 +60,8 @@ function defineCustomComponent(name, is, componentConfig, provide) {
     constructor() {
       super();
 
+      this._type_ = 'component';
+
       this.data = data;
 
       this.subscriber = this.listenDataChange();
@@ -106,8 +108,8 @@ function defineCustomComponent(name, is, componentConfig, provide) {
       Object.keys(properties).forEach((key) => {
         const { type } = properties[key];
 
-        const val = newProps[kebabCase(key)] || newProps[key];
-        const oldVal = oldProps[kebabCase(key)] || oldProps[key];
+        const val = newProps[key] || newProps[kebabCase(key)];
+        const oldVal = oldProps[key] || oldProps[kebabCase(key)];
 
         if (!isEqual(val, oldVal)) {
           changedData[camelCase(key)] = this.normalizeValue(type, val);
