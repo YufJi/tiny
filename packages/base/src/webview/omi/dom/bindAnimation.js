@@ -1,4 +1,4 @@
-import transformRpx from '@/webview/util/transformRpx';
+import { transformRpx } from '@/webview/util';
 
 export default function bindAnimation(dom, nextAnimationValue) {
   if (!nextAnimationValue?.steps?.length) return;

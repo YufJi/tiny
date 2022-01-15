@@ -462,29 +462,15 @@ assign(MLTransformer.prototype, {
     const hasChildren = node.children && node.children.length;
 
     // define slot and default content
-    if (tag === 'slotttt') {
+    if (tag === 'slot') {
       if (this.isStartOfCodeSection(level)) {
         this.pushCode('{');
       }
       const transformedAttrs = this.getTransformedAttrs({}, node, null, false);
       const _slot = transformedAttrs.name || '"$default"';
       delete transformedAttrs.name;
-      this.pushCode(`$renderSlot(_ctx, ${_slot}`);
-      if (hasChildren) {
-        // do not push code section, still inside
-        // {_ctx.$slots.x || <view/>}
-        this.pushCode(', (');
-        this.protectGenerateCode(level, () => {
-          this.generateCodeForTags(node.children, level + 2);
-        });
-        this.pushCode(')');
-      } else {
-        this.pushCode(', null');
-      }
-      if (Object.keys(transformedAttrs).length) {
-        this.pushCode(`, ${this.getJsonCode(transformedAttrs)}`);
-      }
-      this.pushCode(')');
+      this.pushCode(`$renderSlot(_ctx, ${_slot})`);
+
       if (this.isEndOfCodeSection(level)) {
         this.pushCode('}');
       }
@@ -690,7 +676,7 @@ assign(MLTransformer.prototype, {
         `const $createRoot = ${templateRenderHelpers}.createRoot;`,
         `const $createBlock = ${templateRenderHelpers}.createBlock;`,
         `const $useTemplate = ${templateRenderHelpers}.useTemplate;`,
-        // `const $renderSlot = ${templateRenderHelpers}.renderSlot;`,
+        `const $renderSlot = ${templateRenderHelpers}.renderSlot;`,
         `const $getSJSMember = ${templateRenderHelpers}.getSJSMember;`,
         `const $toString = ${templateRenderHelpers}.toString;`,
       );

@@ -2,8 +2,8 @@ import { define, WeElement, h } from 'omi';
 import { isEqual, mapValues, forOwn, hasIn, kebabCase, memoize, camelCase, isPlainObject, isObject } from 'lodash';
 import { CustomEvent, getType, TemplateTag } from 'shared';
 
-import { mergeData } from '../util';
-import transformRpx from '../util/transformRpx';
+import { mergeData, transformRpx } from '../util';
+import { createSlot } from '../helpers';
 
 const { PageEvent, ComponentEvent, ComponentDataChange } = CustomEvent;
 
@@ -185,14 +185,13 @@ function defineCustomComponent(name, is, componentConfig, provide) {
       return handler;
     }
 
-    render() {
-      const { data } = this;
-
-      return vdom(data, {
+    render(props) {
+      return vdom(this.data, {
         $$class(cls) {
           return `${String(cls)}`;
         },
         $$eventBinder: this.eventBinder.bind(this),
+        $$slots: createSlot(props.children),
       });
     }
   });

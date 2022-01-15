@@ -114,8 +114,6 @@ function StyleTransformer(ss, config_) {
     );
     // page生效
     code.push('stylesheet.imports(appStyle);');
-    // 全局的
-    code.push('insertAppStyle(appStyle)');
   }
 
   // if (componentStyles && config.stylePath) {

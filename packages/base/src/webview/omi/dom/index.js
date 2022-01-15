@@ -1,6 +1,6 @@
 import { camelCase } from 'lodash';
 import { isEventAttr } from 'shared/addListener';
-import transformRpx from '@/webview/util/transformRpx';
+import { transformRpx } from '@/webview/util';
 
 import { applyRef } from '../util';
 import { extension } from '../extend';

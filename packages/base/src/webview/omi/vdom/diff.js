@@ -350,7 +350,10 @@ export function removeChildren(node) {
  *  @param {Object} old      Current/previous attributes (from previous VNode or element's prop cache)
  */
 function diffAttributes(dom, attrs, old, component, updateSelf) {
-  dom.props = attrs || {};
+  if (!dom.props) {
+    dom.props = attrs || {};
+  }
+
   let name;
   const isWeElement = !!dom.update;
   let oldClone;

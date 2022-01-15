@@ -88,19 +88,12 @@ export default class WeElement extends HTMLElement {
       }
     }
 
-    const { css } = this.constructor;
-    if (css) {
-      if (typeof css === 'string') {
-        const styleSheet = new CSSStyleSheet();
-        styleSheet.replaceSync(css);
-        shadowRoot.adoptedStyleSheets = [styleSheet];
-      }
-    }
+    this.insertCss(shadowRoot);
 
     this.beforeRender();
     options.afterInstall && options.afterInstall(this);
 
-    const vnode = this.render(this.props, this.store);
+    const vnode = this.render(this.props, this.store); // props.children存在
     this.rootNode = diff(null, vnode, null, this);
 
     this.rendered();
@@ -134,6 +127,7 @@ export default class WeElement extends HTMLElement {
     this.beforeRender();
 
     this.propsToData(ignoreAttrs);
+
     const vnode = this.render(this.props, this.store);
 
     this.rendered();
@@ -186,8 +180,6 @@ export default class WeElement extends HTMLElement {
     if (ignoreAttrs) return;
 
     const ele = this;
-
-    ele.props.css = ele.getAttribute('css');
 
     const { properties } = this.constructor;
 
@@ -254,6 +246,25 @@ export default class WeElement extends HTMLElement {
     return getType(value) === type
       ? value
       : ValidateStrategy[type] && ValidateStrategy[type].call(ValidateStrategy, value) || null;
+  }
+
+  insertCss(shadowRoot) {
+    const { css, isLightDom } = this.constructor;
+    if (css) {
+      if (typeof css === 'string') {
+        if (isLightDom) {
+          const headNode = document.getElementsByTagName('head')[0];
+          const styleNode = document.createElement('style');
+
+          styleNode.innerHTML = css;
+          headNode.appendChild(styleNode);
+        } else {
+          const styleSheet = new CSSStyleSheet();
+          styleSheet.replaceSync(css);
+          shadowRoot.adoptedStyleSheets = [styleSheet];
+        }
+      }
+    }
   }
 
   attached() {}

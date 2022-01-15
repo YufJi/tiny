@@ -25,7 +25,7 @@ function rpx2px(number) {
   return number;
 }
 
-export default function transformRpx(str) {
+export function transformRpx(str) {
   if (typeof str !== 'string') {
     return str;
   }

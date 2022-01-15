@@ -6,7 +6,7 @@ import './web-components';
 import bootstrap from './bootstrap';
 import helpers from './helpers';
 import StyleSheet from './StyleSheet';
-import transformRpx from './util/transformRpx';
+import { transformRpx } from './util';
 
 g.__IS_SERVICE__ = false;
 
@@ -39,14 +39,5 @@ g.JSBridge = bridge;
 g.Omi = Omi;
 g.TemplateHelpers = helpers;
 g.TinyStyleSheet = StyleSheet;
-
-g.insertAppStyle = function (stylesheet) {
-  const headNode = document.getElementsByTagName('head')[0];
-  const styleNode = document.createElement('style');
-  const styleString = transformRpx(stylesheet.toString());
-
-  styleNode.innerHTML = styleString;
-  headNode.appendChild(styleNode);
-};
 
 bootstrap();

@@ -1,6 +1,6 @@
 import { define, WeElement } from 'omi';
 import { TemplateTag, CustomEvent } from 'shared';
-import transformRpx from '@/webview/util/transformRpx';
+import { transformRpx } from '@/webview/util';
 
 import {
   onComponentDataChange,
@@ -50,6 +50,8 @@ function registryPage(provide, data, generateFunc) {
 
   define(tag, class extends WeElement {
     static css = transformRpx(stylesheet.toString())
+
+    static isLightDom = true
 
     constructor() {
       super();

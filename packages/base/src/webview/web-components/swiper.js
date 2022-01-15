@@ -1,7 +1,7 @@
 import { html, PolymerElement } from '@polymer/polymer';
 import { TemplateTag } from 'shared';
 
-import transformRpx from '@/webview/util/transformRpx';
+import { transformRpx } from '@/webview/util';
 import { Base, TouchTrack } from './mixins';
 
 const documentContainer = document.createElement('div');

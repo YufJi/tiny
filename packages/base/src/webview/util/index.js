@@ -1,4 +1,5 @@
 export * from './mergeData';
+export * from './transformRpx';
 
 export function getRealRoute(relative = '', path = '') {
   if (path.indexOf('/') === 0) {
