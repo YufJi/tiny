@@ -1,8 +1,8 @@
-import { last } from 'lodash';
+import { last, omitBy, isFunction, forOwn } from 'lodash';
 
-import { publish } from '../bridge';
+import { publish, invokeNative } from '../bridge';
 import { getCurrentPages } from '../Route';
-import { beforeInvoke, getRealRoute, checkUrlInConfig, invokeMethod, GlobalState, encodeUrlQuery } from './util';
+import { beforeInvoke, invoke, getRealRoute, checkUrlInConfig, invokeMethod, GlobalState, encodeUrlQuery } from './util';
 
 export const navigateTo = (param) => {
   const pages = getCurrentPages();
@@ -16,14 +16,39 @@ export const navigateTo = (param) => {
 
     if (checkUrlInConfig('navigateTo', param.url, param)) {
       GlobalState.navigatorLock = true;
-      invokeMethod('navigateTo', param, {
-        beforeSuccess() {
-          publish('onHide', {}, [last(pages).__webviewId__]);
-        },
-        afterFail() {
-          GlobalState.navigatorLock = false;
-        },
+
+      const currentPage = last(pages);
+
+      param.pageWebviewId = currentPage.__webviewId__;
+
+      const { events = {}, ...restParam } = param;
+
+      const eventChannel = currentPage.__eventChannel__;
+      // eventChannel注册事件
+      forOwn(events, (fn, key) => {
+        eventChannel.on(key, fn);
       });
+
+      const pureParams = omitBy(restParam, isFunction);
+      let res = invokeNative('navigateTo', pureParams);
+
+      // navigateTo调用返回是异步的
+      if (typeof res.then === 'function') {
+        res.then((r) => {
+          res = r;
+
+          res.eventChannel = eventChannel;
+
+          invoke('navigateTo', res, restParam, {
+            beforeSuccess() {
+              publish('onHide', {}, [currentPage.__webviewId__]);
+            },
+            afterFail() {
+              GlobalState.navigatorLock = false;
+            },
+          });
+        });
+      }
     }
   }
 };

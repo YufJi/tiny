@@ -1,6 +1,6 @@
 import { isFunction } from 'lodash';
 import { CustomEvent, NativeEvent } from 'shared';
-import { onNative, subscribe } from '../bridge';
+import { invokeNative, onNative, subscribe } from '../bridge';
 import { routeEmitter, webviewUsed, pageStack } from '../context';
 
 import handleAppRoute from './handleRoute';
@@ -20,6 +20,11 @@ export default function loadRoute() {
     if (!page.loaded) {
       page.implement.onLoad(page.query);
       page.loaded = true;
+
+      // 回应host打开成功
+      invokeNative(NativeEvent.NavigateToDone, {
+        openerWebviewId: page.opener?.webviewId,
+      });
     }
 
     page.implement.onShow();

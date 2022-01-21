@@ -21,6 +21,27 @@
 
 - 了解Electron开发
 
+
+
+## 本地调试
+
+1、 构建基础库
+
+```sh
+cd packages/base && yarn dev
+```
+
+2、 启动本地调试器
+```sh
+cd packages/devtool && yarn dev
+```
+
+3、 编译demo
+```sh
+cd packages/examples && NODE_ENV=development node ./scripts/compile.js --root ./mini
+```
+
+
 ### todo list
 
 - [ ] tabBar支持

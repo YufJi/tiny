@@ -6,6 +6,7 @@ export const CustomEvent = {
   ComponentEvent: 'componentEvent',
   PageReady: 'pageReady',
   PageShow: 'pageShow',
+  PageHide: 'pageHide',
 
   TriggerComponentEvent: 'triggerComponentEvent',
   SelectComponentInPage: 'selectComponentInPage',
@@ -13,6 +14,7 @@ export const CustomEvent = {
 
 export const NativeEvent = {
   DocumentReady: 'documentReady',
+  NavigateToDone: 'navigateToDone',
   PageReload: 'pageReload',
   AppRoute: 'appRoute',
   PullDownRefresh: 'pullDownRefresh',

@@ -49,7 +49,7 @@ function getPageExt(currentPage) {
     onReachBottomDistance,
     route: currentPage.route,
     query: currentPage.query,
-    openType: currentPage._params.openType || '',
+    openType: currentPage.__params__.openType || '',
     disableSwipeBack,
     customComponents,
     allComponentsAliasName,

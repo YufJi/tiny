@@ -6,8 +6,28 @@ import store from '@/store';
 
 const { dispatch } = store;
 
-export function navigateTo(params) {
-  const { url } = params;
+const navigateToEventMap = new Map();
+
+export function navigateToDone(params) {
+  const { openerWebviewId } = params;
+  const callback = navigateToEventMap.get(openerWebviewId);
+
+  if (typeof callback === 'function') {
+    callback({
+      errMsg: 'navigateTo:ok',
+    });
+
+    navigateToEventMap.delete(openerWebviewId);
+  }
+}
+
+export function navigateTo(params, webviewIds, callbackId) {
+  const { url, pageWebviewId } = params;
+
+  navigateToEventMap.set(pageWebviewId, (data) => {
+    global.service.contentWindow.JSBridge.invokeHandler(callbackId, data);
+  });
+
   pushWindow(url).then((iframe) => {
     global.service.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('appRoute', '${JSON.stringify({
       path: iframe.path,

@@ -1,5 +1,6 @@
 /* eslint-disable max-classes-per-file */
 import { get, set, noop, setWith, cloneDeep, mapValues, isFunction } from 'lodash';
+import EventEmitter from 'eventemitter3';
 import { invokeWebview } from '../bridge';
 import { wrapUserFunction, wrapComponnetLifetime, error } from '../utils';
 import { pageModels, componentModels, componentBookmarks } from '../context';
@@ -162,6 +163,8 @@ export class ComponentPageModel extends ComponentModel {
   constructor(is, webviewId) {
     super(is, webviewId, 0);
 
+    this.__eventChannel__ = new EventEmitter();
+
     this.is = is;
     this.onShow = this.methods.onShow || noop;
     this.onHide = this.methods.onHide || noop;
@@ -209,5 +212,11 @@ export class ComponentPageModel extends ComponentModel {
 
   set onUnload(fn) {
     set(this, 'methods.onUnload', fn);
+  }
+
+  getOpenerEventChannel() {
+    const openerPage = this.__page__.opener?.implement;
+
+    return openerPage ? openerPage.__eventChannel__ : new EventEmitter();
   }
 }

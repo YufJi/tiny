@@ -4,6 +4,7 @@ import { invokeNative } from '../bridge';
 import context, { routeEmitter, webviewUsed, pageStack, pageInitMap, componentBookmarks } from '../context';
 import { ComponentPageModel, PageModel } from '../Model';
 import firstRender from './firstRender';
+import { Page } from '../type';
 
 let onAppRouteParams;
 
@@ -120,7 +121,7 @@ function actionNavigateTo(route, webviewId, query) {
     currentPage.implement.onHide();
   }
 
-  actionCreatePage(route, webviewId, query);
+  actionCreatePage(route, webviewId, query, { opener: currentPage });
 }
 
 function actionRedirectTo(route, webviewId, query) {
@@ -224,7 +225,7 @@ function actionReLaunch(route, webviewId, query) {
   actionCreatePage(route, webviewId, query);
 }
 
-function actionCreatePage(route, webviewId, query) {
+function actionCreatePage(route, webviewId, query, options?) {
   if (webviewUsed.get(webviewId)) {
     // webviewId 是不可重复的，每个 Page 对象都是唯一的
     throw new Error(`Page route webviewId already existed: ${webviewId}`);
@@ -240,34 +241,40 @@ function actionCreatePage(route, webviewId, query) {
     throw new Error(`Page[${route}] not found. May be caused by: 1. Forgot to add page route in app.json. 2. Invoking Page() in async task.`);
   }
 
+  const { opener } = options || {};
+
   const implement = isComponent ? new ComponentPageModel(route, webviewId) : new PageModel(route, webviewId);
+
   // query副作用
   Object.assign(implement.options, cloneDeep(query));
 
   // TODO，如果用户是用component的，要把options赋到data上，原来的handleDiffrenceBetwenComponent
-  const currentPage = {
+  const currentPage: Page = {
     implement,
     webviewId,
     route,
     query,
-    _params: cloneDeep(onAppRouteParams),
+    __params__: cloneDeep(onAppRouteParams),
     loaded: false,
   };
+
+  if (opener) {
+    currentPage.opener = last(pageStack);
+  }
+
+  // 循环引用
+  currentPage.implement.__page__ = currentPage;
+
+  // 首次渲染
+  firstRender(currentPage);
 
   if (!currentPage.implement.onShareAppMessage) {
     invokeNative('hideShareMenu');
   }
 
-  firstRender(currentPage);
-
   // 缓存page
   webviewUsed.set(webviewId, currentPage);
-
   pageStack.push(currentPage);
-
-  // 是否需要和微信对齐？
-  // implement.onLoad(query);
-  // implement.onShow();
 }
 
 function isRouteType(type) {

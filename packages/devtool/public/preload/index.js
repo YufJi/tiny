@@ -6,7 +6,7 @@
 const host = window.parent.window;
 const timerMap = new Map();
 
-window.WEBVIEWID = query('webviewId');
+window.WEBVIEWID = new URLSearchParams(window.location.search).get('webviewId');
 
 window.JSCore = {
   call(event, params, webviewIds, callbackId) {
@@ -55,11 +55,12 @@ window.JSCore = {
 };
 
 window.executeJavaScript = function (code) {
+  /* 返回值为Promise */
   return new Promise((resolve, reject) => {
     try {
       // eslint-disable-next-line no-eval
       const result = eval(code);
-      /* 返回值为Promise */
+
       if (result && typeof result.then === 'function') {
         result.then(resolve).catch(reject);
       } else {
@@ -70,14 +71,3 @@ window.executeJavaScript = function (code) {
     }
   });
 };
-
-function query(key) {
-  const reg = new RegExp(`(^|&)${key}=([^&]*)(&|$)`, 'i');
-  const r = window.location.search.substr(1).match(reg);
-
-  if (r) {
-    return decodeURIComponent(r[2]);
-  } else {
-    return null;
-  }
-}

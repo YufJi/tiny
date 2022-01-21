@@ -128,51 +128,51 @@ export function invokeMethod(method, params = {}, options = {}) {
     res.then((r) => {
       res = r;
 
-      invoke();
+      invoke(method, res, params, options);
     });
   } else {
     // 同步调用
-    invoke();
+    invoke(method, res, params, options);
   }
+}
 
-  function invoke() {
-    res.errMsg = res.errMsg || `${method}:ok`;
-    const status = getStatus(method, res.errMsg);
+export function invoke(method, res, params, options) {
+  res.errMsg = res.errMsg || `${method}:ok`;
+  const status = getStatus(method, res.errMsg);
 
-    const call = (obj, key) => {
-      const fn = get(obj, key);
+  const call = (obj, key) => {
+    const fn = get(obj, key);
 
-      if (typeof fn === 'function') {
-        if (obj === options) {
-          wrapInnerFunction(`at api ${method} ${key} callback function`, fn)(res);
-        } else {
-          wrapUserFunction(`at api ${method} ${key} callback function`, fn)(res);
-        }
+    if (typeof fn === 'function') {
+      if (obj === options) {
+        wrapInnerFunction(`at api ${method} ${key} callback function`, fn)(res);
+      } else {
+        wrapUserFunction(`at api ${method} ${key} callback function`, fn)(res);
       }
-    };
-
-    call(options, 'beforeAll');
-
-    if (status === 'success') {
-      call(options, 'beforeSuccess');
-      call(params, 'success');
-      call(options, 'afterSuccess');
-    } else if (status === 'cancel') {
-      res.errMsg = res.errMsg.replace(`${method}:cancel`, `${method}:fail cancel`);
-
-      call(params, 'fail');
-      call(options, 'beforeCancel');
-      call(params, 'cancel');
-      call(options, 'afterCancel');
-    } else if (status === 'fail') {
-      call(options, 'beforeFail');
-      call(params, 'fail');
-      call(options, 'afterFail');
     }
+  };
 
-    call(params, 'complete');
-    call(options, 'afterAll');
+  call(options, 'beforeAll');
+
+  if (status === 'success') {
+    call(options, 'beforeSuccess');
+    call(params, 'success');
+    call(options, 'afterSuccess');
+  } else if (status === 'cancel') {
+    res.errMsg = res.errMsg.replace(`${method}:cancel`, `${method}:fail cancel`);
+
+    call(params, 'fail');
+    call(options, 'beforeCancel');
+    call(params, 'cancel');
+    call(options, 'afterCancel');
+  } else if (status === 'fail') {
+    call(options, 'beforeFail');
+    call(params, 'fail');
+    call(options, 'afterFail');
   }
+
+  call(params, 'complete');
+  call(options, 'afterAll');
 }
 
 export function onMethod(event, callback) {

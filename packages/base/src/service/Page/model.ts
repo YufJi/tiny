@@ -1,4 +1,5 @@
 import { set, get, cloneDeep, mapValues, isFunction, wrap } from 'lodash';
+import EventEmitter from 'eventemitter3';
 
 import { invokeWebview } from '../bridge';
 import { wrapPageLifetime } from '../utils';
@@ -9,6 +10,8 @@ import { afterSetData } from '../Model/util';
 export default class PageModel extends BaseModel {
   constructor(is, __webviewId__) {
     super(__webviewId__);
+
+    this.__eventChannel__ = new EventEmitter();
 
     this.is = is;
     this.options = {};
@@ -102,5 +105,11 @@ export default class PageModel extends BaseModel {
         callback.call(this, []);
       }
     });
+  }
+
+  getOpenerEventChannel() {
+    const openerPage = this.__page__.opener?.implement;
+
+    return openerPage ? openerPage.__eventChannel__ : new EventEmitter();
   }
 }
