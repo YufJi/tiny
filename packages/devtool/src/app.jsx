@@ -125,6 +125,7 @@ class App extends PureComponent {
           <div className={`${style.openMP} flex-r`} onClick={this.showMP} />
         )}
 
+        {/* 用于canvas api调用返回结果 */}
         <canvas id="canvas" width="500" height="100" />
       </div>
     );

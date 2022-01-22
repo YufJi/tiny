@@ -10,7 +10,7 @@ export default (env): IConfig => {
     },
     html: {
       index: {
-        title: '小程序浏览器调试',
+        title: '浏览器调试',
         template: path.join(__dirname, 'host.html'),
       },
     },
@@ -23,7 +23,7 @@ export default (env): IConfig => {
       /\.svg$/,
     ],
     webpack(config) {
-      config.stats = 'normal';
+      config.stats = 'minimal';
     },
     devServer: {
       port: 8080,
