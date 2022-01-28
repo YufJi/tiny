@@ -4,6 +4,7 @@ Component({
   data: {
     inputValue: '',
     info: { name: 'test', age: 11 },
+    xxx: 'xxx'
   },
 
   methods: {

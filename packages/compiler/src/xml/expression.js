@@ -153,7 +153,7 @@ const babylonConfig = {
 function transformCode(code_, xmlScope, config) {
   let codeStr = code_;
 
-  if ((config.node.name === 'template' && config.attrName === 'data' && isObject(codeStr)) || config.forceObject) {
+  if (config.forceObject && isObject(codeStr)) {
     codeStr = `{${codeStr}}`;
   }
 

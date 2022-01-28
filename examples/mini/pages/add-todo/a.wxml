@@ -1,5 +1,7 @@
 <template name="template-a">
-  <view bindtap="cad">template a</view>
+  <view bindtap="cad">
+    template a {{name}} {{age}} {{xxx}} {{value}}
+  </view>
 
   <!-- <slot name="sad"></slot> -->
 </template>
