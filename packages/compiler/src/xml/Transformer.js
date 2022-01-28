@@ -568,12 +568,12 @@ assign(MLTransformer.prototype, {
       } else if (tag === 'template') {
         // use
         if (attrs.is) {
-          const data = this.getTemplateProps(node, attrs);
+          const props = this.getTemplateProps(node, attrs);
           const is = this.processExpression(attrs.is, {
             node,
             attrName: 'is',
           });
-          this.pushCode(`${this.isStartOfCodeSection(level) ? '{ ' : ''}$useTemplate($templates[${is}], ${data.data}, _ctx)${this.isEndOfCodeSection(level) ? ' }' : ''}`);
+          this.pushCode(`${this.isStartOfCodeSection(level) ? '{ ' : ''}$useTemplate($templates[${is}], ${props.data}, _ctx)${this.isEndOfCodeSection(level) ? ' }' : ''}`);
         } else {
           // define
           this.pushState();
