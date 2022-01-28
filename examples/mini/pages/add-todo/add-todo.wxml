@@ -20,7 +20,7 @@
 
   <view style="color: red" capture-catch:tap="xxxx">capture-catch:tap</view>
 
-  <template is="template-a">
+  <template is="template-a" data="{{...info}}">
      <template is="template-b"></template>
     <!-- <text slot="sad">slot a</text> -->
   </template>

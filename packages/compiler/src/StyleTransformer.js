@@ -89,7 +89,7 @@ function StyleTransformer(ss, config_) {
   } = config;
 
   code.push(
-    'const { TinyStyleSheet, insertAppStyle } = self;',
+    'const { TinyStyleSheet } = self;',
   );
   code.push(
     `const stylesheet = new TinyStyleSheet({ stylePath: '${escapeQuote(

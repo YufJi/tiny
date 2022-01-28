@@ -9,13 +9,26 @@ const t = require('@babel/types');
 
 const expressionTagReg = /\{\{([^}]+)\}\}/g;
 const fullExpressionTagReg = /^\{\{([^}]+)\}\}$/;
-const spreadReg = /^\.\.\.[\w$_]/; // {{...abc}}
-const objReg = /^[\w$_](?:[\w$_\d\s]+)?:/; // {{name: abc}}
-const es2015ObjReg = /^[\w$_](?:[\w$_\d\s]+)?,/; // {{abc,edf}}
+const spreadReg = /^\.\.\.[\w$_][\w$_\d]*/; // {{...abc}}
+const objReg = /^[\w$_][\w$_\d]*\s*:\s*[\w$_][\w$_\d]*/; // {{name: abc}}
+const es2015ObjReg = /^[\w$_][\w$_\d]*/; // {{abc}}
 
 function isObject(str_) {
-  const str = str_.trim();
-  return str.match(spreadReg) || str.match(objReg) || str.match(es2015ObjReg);
+  const strList = str_.trim().split(',');
+
+  let bool = true;
+
+  for (let i = 0; i < strList.length; i+=1) {
+    const str = strList[i].trim();
+    if (spreadReg.test(str) || objReg.test(str) || es2015ObjReg.test(str)) {
+      continue;
+    } else {
+      bool = false;
+      break;
+    }
+  }
+
+  return bool;
 }
 
 function findScope(scope, name) {

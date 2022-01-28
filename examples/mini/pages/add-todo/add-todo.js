@@ -3,6 +3,7 @@ const app = getApp();
 Component({
   data: {
     inputValue: '',
+    info: { name: 'test', age: 11 },
   },
 
   methods: {
@@ -36,8 +37,8 @@ Component({
     },
 
     cad() {
-      console.log('cad')
-    }
+      console.log('cad');
+    },
   },
 
 });
