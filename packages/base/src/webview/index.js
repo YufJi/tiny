@@ -6,7 +6,6 @@ import './web-components';
 import bootstrap from './bootstrap';
 import helpers from './helpers';
 import StyleSheet from './StyleSheet';
-import { transformRpx } from './util';
 
 g.__IS_SERVICE__ = false;
 
@@ -19,21 +18,6 @@ g.onerror = function onerror(msg = '', url, line, col, error) {
   const args = [msg, url, line, col, error];
   console.error('[webview] onerror', args);
 };
-
-/* 初始化root font-size */
-document.addEventListener('DOMContentLoaded', () => {
-  const width = window.innerWidth;
-  const doc = document.documentElement;
-
-  doc.style.fontSize = `${width / 20}px`;
-
-  const size = window.getComputedStyle(doc).fontSize;
-
-  if (doc.style.fontSize !== size) {
-    const ratio = parseFloat(doc.style.fontSize) / parseFloat(size);
-    doc.style.fontSize = `${(ratio * width) / 20}px`;
-  }
-});
 
 g.JSBridge = bridge;
 g.Omi = Omi;

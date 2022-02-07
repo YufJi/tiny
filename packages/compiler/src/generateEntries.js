@@ -72,6 +72,8 @@ g.TinyConfig = appConfig;
 
   fs.writeFileSync(path.join(temp, 'config.js'), configJs);
 
+  const sjsEnvInitImport = 'require(\'tiny-compiler/sjsEnvInit\');';
+
   const configImport = 'require(\'./config\');';
 
   const appImport = `require('${path.relative(temp, path.join(src, 'app'))}');`;
@@ -84,8 +86,7 @@ g.TinyConfig = appConfig;
   });
 
   const webIndex = [
-    'require(\'tiny-compiler/sjsEnvInit\');',
-    configImport,
+    sjsEnvInitImport,
     ...allComponentsRequires,
     ...pageImports,
     '',
@@ -114,42 +115,51 @@ g.TinyConfig = appConfig;
   if (app.subPackages) {
     app.subPackages.forEach((mPackage) => {
       const { root } = mPackage;
+      if (/^[\.\/]/.test(root)) {
+        throw new Error('app.json中subPackages的root不应该以 \'/\' 或 \'.\' 开头');
+      }
+
+      const subPackageDir = path.join(temp, root);
+
       const packagePages = getPagesFromPackage(mPackage);
-      const slashMatch = root.match(/\//g);
-      const slashCount = (slashMatch && slashMatch.length) || 0;
-      const packageBaseDir = path.join(
-        new Array(slashCount + 2).join('../'),
-        src,
-      );
-      const packagePagesImports = getImports(packagePages, packageBaseDir, {
+
+      const packagePagesImports = getImports(packagePages, src, {
         src,
         compileType: 'mini',
         type: 'page',
         transformConfig,
+        from: subPackageDir,
       });
-      const packageComponentsRequires = getComponentImports(
-        packagePages,
-        packageBaseDir,
-        {
-          src,
-          compileType: 'mini',
-          type: 'component',
-          transformConfig,
-        },
-      );
-      const packageIndexJs = [
+
+      const packageComponentsRequires = getComponentImports(packagePages, src, {
+        src,
+        compileType: 'mini',
+        type: 'component',
+        transformConfig,
+        from: subPackageDir,
+      });
+      const packageIndexWebJs = [
+        sjsEnvInitImport,
+        ...packageComponentsRequires,
+        ...packagePagesImports,
+      ].join('\n');
+
+      const packageIndexWorkerJs = [
         'function success(){',
         ...packageComponentsRequires,
         ...packagePagesImports,
         '}',
-        `self.bootstrapSubPackage('${root}', {success});`,
+        'success();',
       ].join('\n');
-      packagesJs[root] = packageIndexJs;
 
-      const subPackageDir = path.join(temp, root);
+      packagesJs[root] = {
+        web: packageIndexWebJs,
+        worker: packageIndexWorkerJs,
+      };
+
       fs.mkdirsSync(subPackageDir);
-      fs.writeFileSync(path.join(subPackageDir, 'index.webview.js'), packageIndexJs);
-      fs.writeFileSync(path.join(subPackageDir, 'index.service.js'), packageIndexJs);
+      fs.writeFileSync(path.join(subPackageDir, 'index.webview.js'), packageIndexWebJs);
+      fs.writeFileSync(path.join(subPackageDir, 'index.service.js'), packageIndexWorkerJs);
     });
   }
 

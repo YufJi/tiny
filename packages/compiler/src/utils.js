@@ -246,7 +246,13 @@ function safeJsonParse(jsonPath) {
 
 function getPagesFromPackage(mPackage) {
   const { root } = mPackage;
-  return mPackage.pages.map((p) => `${root}/${p}`);
+  return mPackage.pages.map((page) => {
+    if (/^[\.\/]/.test(page)) {
+      throw new Error('app.json中subPackages的pages不应该以 \'/\' 或 \'.\' 开头');
+    }
+
+    return `${root}/${page}`;
+  });
 }
 
 const globals = [
@@ -279,57 +285,20 @@ function isValidFilePath(file) {
   return !fileNameBlackListChar.test(file);
 }
 
-function genResourceHash(p, option = {}) {
-  const { src, compileType, type, transformConfig } = option;
-  if (src && compileType && type) {
-    const store = (compileType === 'mini' ? miniStore : pluginStore) || {};
-    const map = (type === 'page' ? store.pageMap : store.componentMap) || {};
-    const directDependencies = map[p] || {};
-    let indirectDependencies = {};
-    // 组件样式跟随page, 页面A依赖组件B, 组件B新增依赖组件C时，页面A.acss缓存产物有问题，需要使缓存失效
-    if (type === 'page') {
-      // eslint-disable-next-line global-require
-      indirectDependencies = require('./pageMap').getPagesComponents([p], {
-        pluginId: compileType === 'plugin',
-      });
-    }
-    let filePath = path.join(src, p);
-    const extname = path.extname(filePath);
-    if (extname) {
-      filePath = filePath.slice(0, -extname.length);
-    }
-
-    const cssFilePath = `${filePath}${transformConfig.styleExtname}`;
-    return crypto
-      .createHash('sha1')
-      .update(
-        JSON.stringify({
-          dependencies: {
-            directDependencies,
-            indirectDependencies,
-          },
-          cssExist: fs.existsSync(cssFilePath),
-        }),
-      )
-      .digest('hex');
-  }
-  return '';
-}
-
 function getImport(p, baseDir, option) {
   if (!isValidFilePath(p)) {
     throw new Error(`illegal file path ${p}`);
   }
 
-  const { transformConfig } = option;
+  const { transformConfig, from } = option;
   const { temp } = transformConfig;
 
-  const hash = genResourceHash(p, option);
-  const relative = path.relative(temp, path.join(baseDir, p));
+  const relative = path.relative(
+    from || temp,
+    path.join(baseDir, p),
+  );
 
-  return `require('${prefixPath(normalizePathForWin(relative))}${
-    hash ? `?hash=${hash}` : ''
-  }');`;
+  return `require('${prefixPath(normalizePathForWin(relative))}');`;
 }
 
 function getImports(imports = [], baseDir, option) {

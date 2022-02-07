@@ -10,6 +10,7 @@
   "author": "YufJi",
   "dependencies": {
     "@babel/code-frame": "^7.12.13",
+    "@babel/core": "^7.14.0",
     "@babel/generator": "^7.14.0",
     "@babel/parser": "^7.15.4",
     "@babel/preset-env": "^7.14.0",
@@ -27,6 +28,7 @@
     "load-json-file": "^5.0.0",
     "loader-utils": "^1.1.0",
     "lodash": "^4.17.11",
+    "minimist": "^1.2.5",
     "object-assign": "~4.1.0",
     "postcss-selector-parser": "~2.2.2",
     "progress-bar-webpack-plugin": "^2.1.0",
@@ -35,7 +37,5 @@
     "source-map": "^0.5.6",
     "webpack": "^4.46.0"
   },
-  "devDependencies": {
-    
-  }
+  "devDependencies": {}
 }

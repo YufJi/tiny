@@ -70,7 +70,7 @@ module.exports = function run(config) {
   });
 
   /* 生成入口文件 index.web 和 index.worker */
-  const { packagesJs } = generateEntries({
+  generateEntries({
     src: sourceDir,
     appJson,
     importScripts,
@@ -78,7 +78,7 @@ module.exports = function run(config) {
   });
   signale.success('生成入口文件');
 
-  /* 生成appConfigJson */
+  /* 生成appConfig.json */
   generateAppConfigJson({
     src: sourceDir,
     appJson,
@@ -99,14 +99,31 @@ module.exports = function run(config) {
 
     const templateDir = path.join(__dirname, '../templates/web');
 
-    return {
-      entry: isWorker ? {
-        // 主包
+    let entry;
+
+    const { subPackages = [] } = appJson.app;
+
+    if (isWorker) {
+      /* 主包 */
+      entry = {
         service: path.join(temp, 'index.service.js'),
-        // 分包
-      } : {
+      };
+
+      subPackages.forEach(({ root }) => {
+        entry[`${root}/service`] = path.join(temp, root, 'index.service.js');
+      });
+    } else {
+      entry = {
         webview: path.join(temp, 'index.webview.js'),
-      },
+      };
+
+      subPackages.forEach(({ root }) => {
+        entry[`${root}/webview`] = path.join(temp, root, 'index.webview.js');
+      });
+    }
+
+    return {
+      entry,
       resolve: {
         alias: {
           'tiny-compiler': path.join(__dirname),

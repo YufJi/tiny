@@ -5,7 +5,12 @@
     "pages/bar/index"
   ],
   "subPackages": [{
-    "root": "packageA",
+    "root": "subPackages/packageA",
+    "pages": [
+      "pages/c/c"
+    ]
+  }, {
+    "root": "subPackages/packageB",
     "pages": [
       "pages/c/c"
     ]

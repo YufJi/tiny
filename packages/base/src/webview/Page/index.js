@@ -17,7 +17,6 @@ import {
   enableScroll,
 } from '../api';
 import registryCustomComponent from '../Component';
-import { mergeData } from '../util';
 
 const { AppDataChange, PageEvent, PageReady, PageShow } = CustomEvent;
 

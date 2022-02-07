@@ -1,6 +1,6 @@
 import { define, WeElement, h } from 'omi';
-import { isEqual, mapValues, forOwn, hasIn, kebabCase, memoize, camelCase, isPlainObject, isObject } from 'lodash';
-import { CustomEvent, getType, TemplateTag } from 'shared';
+import { isEqual, kebabCase, camelCase } from 'lodash';
+import { CustomEvent, TemplateTag } from 'shared';
 
 import { mergeData, transformRpx } from '../util';
 import { createSlot } from '../helpers';

@@ -140,9 +140,6 @@ module.exports = function (source) {
     return type;
   }
   if (code === null || code === undefined || !source) {
-    // console.log('fullpath', fullPath);
-    // console.log('code', code);
-    // console.log('source', source);
     this.callback(new Error(`parse ${fullPath} error!`));
     return type;
   }

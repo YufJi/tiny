@@ -11,6 +11,7 @@
     "type": "git",
     "url": "git+https://github.com/YufJi/tiny-v1.git"
   },
+  "license": "MIT",
   "scripts": {
     "watch": "cross-env NODE_ENV=development webpack --config webpack/webpack.config.js --watch",
     "dev": "cross-env NODE_ENV=development webpack --config webpack/webpack.config.js",
