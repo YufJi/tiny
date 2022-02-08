@@ -31,6 +31,7 @@ export function navigateTo(params, webviewIds, callbackId) {
   pushWindow(url).then((iframe) => {
     global.service.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('appRoute', '${JSON.stringify({
       path: iframe.path,
+      query: iframe.query,
       openType: 'navigateTo',
     })}', '${iframe.id}')`);
   });
@@ -84,10 +85,14 @@ export async function pushWindow(url, callback) {
     }
   }
 
-  iframe.contentWindow.executeJavaScript(`window.generateFunc['${url}']('${iframe.id}')`);
+  const [path, query] = url.split('?');
+
+  iframe.contentWindow.executeJavaScript(`window.generateFunc['${path}']('${iframe.id}')`);
   iframe.setAttribute('class', 'frame in');
-  iframe.setAttribute('path', url);
-  iframe.path = url;
+  iframe.setAttribute('path', path);
+  iframe.setAttribute('query', query);
+  iframe.path = path;
+  iframe.query = query;
 
   global.currentRender = iframe;
 
@@ -95,7 +100,7 @@ export async function pushWindow(url, callback) {
   const { pageStack, appConfig } = store.getState().global;
   const { launchParams } = appConfig;
   pageStack.push(iframe.id);
-  dispatch.nav.setNavConfig(launchParams[url] || {});
+  dispatch.nav.setNavConfig(launchParams[path] || {});
   dispatch.global.setPageStack(pageStack);
 
   if (typeof callback === 'function') {

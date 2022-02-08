@@ -89,7 +89,7 @@ function handleAppEnterForeground(app, param) {
       currentPage.implement.onShow();
 
       // notify webview
-      publish('onAppEnterForeground', {}, currentPage.webviewId);
+      publish('onAppEnterForeground', {}, [currentPage.webviewId]);
     }
   }
 
@@ -103,7 +103,7 @@ function handleAppEnterBackground(app) {
     const currentPage = pages[pages.length - 1];
     currentPage.implement.onHide();
     // notify webview
-    publish('onAppEnterBackground', {}, currentPage.webviewId);
+    publish('onAppEnterBackground', {}, [currentPage.webviewId]);
   }
 
   triggerHideCbs();

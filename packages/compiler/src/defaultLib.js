@@ -1,1 +1,1 @@
-exports.templateRenderHelpers = 'self.TemplateHelpers';
+exports.templateRenderHelpers = 'self.JSXHelpers';

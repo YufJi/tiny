@@ -1,21 +1,4 @@
-function getGlobal() {
-  if (
-    typeof global !== 'object'
-    || !global
-    || global.Math !== Math
-    || global.Array !== Array
-  ) {
-    return (
-      self
-      || window
-      || global
-      || (function () {
-        return this;
-      })()
-    );
-  }
-  return global;
-}
+import { g } from 'shared';
 
 /** Global options
  *  @public
@@ -23,6 +6,6 @@ function getGlobal() {
  */
 export default {
   store: null,
-  root: getGlobal(),
+  root: g,
   mapping: {},
 };

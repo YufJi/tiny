@@ -5,7 +5,7 @@ export default {
   },
   reducers: {
     setTitle(state, payload) {
-      return { ...state, title: payload };
+      return { ...state, navigationBarTitleText: payload };
     },
     setBackgroundColor(state, payload) {
       return { ...state, backgroundColor: payload };

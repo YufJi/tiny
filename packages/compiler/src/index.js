@@ -11,7 +11,7 @@ module.exports = function run(config, callback = noop) {
 
   transformMini({
     ...miniConfig,
-    src: path.join(cwd, argv.root),
+    src: path.join(cwd, argv.root || ''),
     watch: argv.watch,
   });
 
@@ -19,7 +19,7 @@ module.exports = function run(config, callback = noop) {
   if (config.pluginId) {
     transformPlugin({
       ...config,
-      src: path.join(cwd, argv.root),
+      src: path.join(cwd, argv.root || ''),
       watch: argv.watch,
     });
   }

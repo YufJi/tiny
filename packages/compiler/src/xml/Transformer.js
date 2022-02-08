@@ -103,7 +103,7 @@ function MLTransformer(template, _config) {
   this.template = template;
   this.header = [
     // 'const React = self.React;',
-    'const h = self.Omi.h;',
+    'const h = self.JSX.createElement;',
   ];
   this.subTemplatesCode = {};
   this.code = [];

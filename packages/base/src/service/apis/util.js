@@ -25,6 +25,7 @@ export function getDataType(val) {
   return Object.prototype.toString.call(val).slice(8, -1);
 }
 
+/* param类型校验 */
 export function paramCheck(input, shouldbe, name = 'param') {
   const inputType = getDataType(input);
   const shouldbeType = getDataType(shouldbe);

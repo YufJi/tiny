@@ -25,7 +25,7 @@ export default function firstRender(currentPage, isPageReload = false) {
     },
   };
 
-  publish(CustomEvent.InitDataReady, data, currentPage.webviewId);
+  publish(CustomEvent.InitDataReady, data, [currentPage.webviewId]);
 }
 
 function getPageExt(currentPage) {

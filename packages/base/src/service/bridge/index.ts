@@ -53,7 +53,7 @@ function createInvokeWebview(publish, subscribe) {
           callbackId,
           timestamp: Date.now(),
         },
-      }, webviewId);
+      }, [webviewId]);
     }));
   };
 }
@@ -61,7 +61,6 @@ function createInvokeWebview(publish, subscribe) {
 // 监听且回应webview
 function replyWebview() {
   subscribe('invokeServiceMethod', async (data, webviewId) => {
-    const webviewIds = [webviewId];
     const { method, params, scene, extra } = data;
     let fn;
 
@@ -91,7 +90,7 @@ function replyWebview() {
         result: undefined,
         error: `${method} method not found`,
         extra,
-      }, webviewIds);
+      }, [webviewId]);
       return;
     }
 
@@ -100,7 +99,7 @@ function replyWebview() {
       method,
       result,
       extra,
-    }, webviewIds);
+    }, [webviewId]);
   });
 }
 

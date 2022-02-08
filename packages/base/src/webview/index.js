@@ -1,11 +1,11 @@
-import Omi from 'omi';
 import { g } from 'shared';
+import Omi from 'omi';
 
 import * as bridge from './bridge';
 import './web-components';
-import bootstrap from './bootstrap';
 import helpers from './helpers';
 import StyleSheet from './StyleSheet';
+import bootstrap from './bootstrap';
 
 g.__IS_SERVICE__ = false;
 
@@ -20,8 +20,11 @@ g.onerror = function onerror(msg = '', url, line, col, error) {
 };
 
 g.JSBridge = bridge;
-g.Omi = Omi;
-g.TemplateHelpers = helpers;
+
+g.JSX = Omi;
+
+g.JSXHelpers = helpers;
+
 g.TinyStyleSheet = StyleSheet;
 
 bootstrap();

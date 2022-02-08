@@ -1,4 +1,4 @@
-import { camelCase, hasIn, isEqual, kebabCase } from 'lodash';
+import { camelCase, hasIn, isEqual, kebabCase, isPlainObject, isObject } from 'lodash';
 import { isArray, capitalize, getType } from './util';
 import { diff } from './vdom/diff';
 import options from './options';

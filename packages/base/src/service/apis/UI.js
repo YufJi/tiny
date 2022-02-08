@@ -42,22 +42,20 @@ export function showLoading(param = {}) {
   param = Object.assign(param, coverParam);
 
   if (beforeInvoke('showLoading', param, paramDataType)) {
-    invokeMethod('showToast', param, {
-      beforeAll: function beforeAll(res) {
-        res.errMsg = res.errMsg.replace('showToast', 'showLoading');
-      },
-    });
+    invokeMethod('showLoading', param);
   }
 }
 
 export function hideLoading(param) {
-  invokeMethod('hideToast', param, {
-    beforeAll: function beforeAll(res) {
-      res.errMsg = res.errMsg.replace('hideToast', 'hideLoading');
-    },
-  });
+  invokeMethod('hideLoading', param);
 }
 
-export function setNavigationBarTitle() {
-  /* todo */
+export function setNavigationBarTitle(param) {
+  const paramDataType = {
+    title: 'String',
+  };
+
+  if (beforeInvoke('setNavigationBarTitle', param, paramDataType)) {
+    invokeMethod('setNavigationBarTitle', param);
+  }
 }

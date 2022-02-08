@@ -136,6 +136,7 @@ module.exports = function run(config) {
       },
       output: {
         path: path.join(out),
+        globalObject: 'self',
       },
       mode: isDev ? 'development' : 'production',
       devtool: false,
@@ -199,6 +200,9 @@ module.exports = function run(config) {
             },
           }],
         }],
+      },
+      optimization: {
+        runtimeChunk: isWorker ? 'single' : false,
       },
       plugins: [
         new ProgressBarPlugin(),
