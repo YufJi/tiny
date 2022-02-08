@@ -38,8 +38,8 @@ export function define(name, ctor, config) {
 
     for (const key in config) {
       if (typeof config[key] === 'function') {
-        Ele.prototype[key] = function () {
-          return config[key].apply(this, arguments);
+        Ele.prototype[key] = function (...args) {
+          return config[key].apply(this, args);
         };
       }
     }

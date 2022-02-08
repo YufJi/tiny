@@ -81,6 +81,7 @@ documentContainer.innerHTML = `<dom-module id="slider-style">
         color: #888;
         font-size: 14px;
         margin-left: 1em;
+        width: 2em;
       }
       :host .slider-disabled .slider-track {
         background-color: #ccc;

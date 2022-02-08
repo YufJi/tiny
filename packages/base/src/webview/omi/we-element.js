@@ -90,13 +90,10 @@ export default class WeElement extends HTMLElement {
 
     this.insertCss(shadowRoot);
 
-    this.beforeRender();
     options.afterInstall && options.afterInstall(this);
 
     const vnode = this.render(this.props, this.store); // props.children存在
     this.rootNode = diff(null, vnode, null, this);
-
-    this.rendered();
 
     if (isArray(this.rootNode)) {
       this.rootNode.forEach((item) => {
@@ -123,14 +120,11 @@ export default class WeElement extends HTMLElement {
 
   update(ignoreAttrs, updateSelf) {
     this._willUpdate = true;
-    this.beforeUpdate();
-    this.beforeRender();
 
     this.propsToData(ignoreAttrs);
 
     const vnode = this.render(this.props, this.store);
 
-    this.rendered();
     this.rootNode = diff(
       this.rootNode,
       vnode,
@@ -140,7 +134,6 @@ export default class WeElement extends HTMLElement {
     );
 
     this._willUpdate = false;
-    this.updated();
   }
 
   forceUpdate() {
@@ -267,19 +260,16 @@ export default class WeElement extends HTMLElement {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   attached() {}
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   ready() {}
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   detached() {}
 
-  beforeUpdate() {}
-
-  updated() {}
-
-  beforeRender() {}
-
-  rendered() {}
-
-  receiveProps() {}
+  shouldUpdate() {
+    return true;
+  }
 }

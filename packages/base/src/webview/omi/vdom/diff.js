@@ -357,7 +357,7 @@ function diffAttributes(dom, attrs, old, component, updateSelf) {
   let name;
   const isWeElement = !!dom.update;
   let oldClone;
-  if (dom.receiveProps) {
+  if (dom.shouldUpdate) {
     oldClone = { ...old };
   }
 
@@ -384,7 +384,7 @@ function diffAttributes(dom, attrs, old, component, updateSelf) {
   }
 
   if (isWeElement && !updateSelf && dom.parentNode) {
-    if (dom.receiveProps(dom.props, oldClone) !== false) {
+    if (dom.shouldUpdate(dom.props, oldClone)) {
       dom.update();
     }
   }

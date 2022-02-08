@@ -102,7 +102,7 @@ function defineCustomComponent(name, is, componentConfig, provide) {
       publish(ComponentEvent, { route: is, nodeId: this.elementId, eventName: 'detached' });
     }
 
-    receiveProps(newProps, oldProps) {
+    shouldUpdate(newProps, oldProps) {
       const changedData = {};
 
       Object.keys(properties).forEach((key) => {

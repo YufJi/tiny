@@ -6,9 +6,6 @@ import { define } from './define';
 import { tag } from './tag';
 import { cloneElement } from './clone-element';
 import { getHost } from './get-host';
-import { classNames, extractClass } from './class';
-import { o } from './o';
-import { extend, get, set, bind, unbind } from './extend';
 import { Fragment } from './util';
 
 h.f = Fragment;
@@ -35,22 +32,13 @@ const omi = {
   cloneElement,
   getHost,
   defineElement,
-  classNames,
-  extractClass,
   createRef,
-  o,
   elements,
   $,
-  extend,
-  get,
-  set,
-  bind,
-  unbind,
 };
 
 options.root.Omi = omi;
 options.root.omi = omi;
-options.root.Omi.version = '6.23.0';
 
 export default omi;
 
@@ -67,15 +55,7 @@ export {
   cloneElement,
   getHost,
   defineElement,
-  classNames,
-  extractClass,
   createRef,
-  o,
   elements,
   $,
-  extend,
-  get,
-  set,
-  bind,
-  unbind,
 };

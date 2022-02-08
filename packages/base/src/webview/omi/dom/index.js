@@ -3,7 +3,6 @@ import { isEventAttr } from 'shared/addListener';
 import { transformRpx } from '@/webview/util';
 
 import { applyRef } from '../util';
-import { extension } from '../extend';
 
 import bindEvent from './bindEvent';
 import bindAnimation from './bindAnimation';
@@ -53,11 +52,7 @@ export function setAccessor(node, name, old, value, isSvg, component) {
 
   if (name === 'className') name = 'class';
 
-  if (name[0] === 'o' && name[1] === '-') {
-    if (extension[name]) {
-      extension[name](node, value, component);
-    }
-  } else if (name === 'ref') {
+  if (name === 'ref') {
     applyRef(old, null);
     applyRef(value, node);
   } else if (name === 'class' && !isSvg) {
