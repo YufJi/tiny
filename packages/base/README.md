@@ -1,40 +1,32 @@
 ## 基础库
 
 
-## 目前主要问题
+#### 目前主要问题
 
 生命周期与微信不一致
 
-微信
-- component created 
-- component attached 
-- page load 
-- page show 
-- component ready 
-- page ready
+|  微信       |    Tiny   |
+| ----------- |--------- |
+|  component created   |   page load  |
+|  component attached    |   component created  |
+|   page load   |   component attached  |
+|   page show    |  component ready   |
+|   component ready |    page show   |
+|   page ready    |      page ready  |
 
-tiny
-- page load 
-- component created 
-- component attached 
-- component ready 
-- page show 
-- page ready
 
-## 解决方案（猜想阶段）
+#### 解决方案（猜想阶段）
 
 * 渲染全部web-component化
-* 使用lit库
-* fork源码使用
+* 使用lit、polymer等库
 
-## 与此同时需要解决的问题
+#### 与此同时需要解决的问题
+> 比较简单
 
 - 事件系统问题
-- style属性
-- animation属性
+- style、animation属性处理
 
-
-## 编译层处理事项
+#### 编译层处理事项（猜想）
 
 - 模板引用
 ```
@@ -85,21 +77,22 @@ customElements.define(templateName, class extends PolymerElement {
 ```
 
 
-## 记录
+#### 最终方案记录
 
-- 主要问题
+1、 主要问题
 
   * 生命周期与微信不一致
-  * 两套渲染（page和自定义组件走的mini版react， 内置组件走的web-component）
+  * 两套渲染机制（page和自定义组件走的mini版react， 内置组件走的web-component）
 
-- 预期
+2、 预期
 
-一致
+  - 渲染机制保持一致
+  - 生命周期一致
 
-- 解决过程
+3、 解决过程
 
-一开始的想法时使用polymer或者lit这样的web-component组件库去实现，模板解析也交它们， 但是捣鼓了一天下来发现模板解析很不动态， 数据绑定也很死板，幸好生命周期是完全对上了。至此得出结论，web-compoent化是正确的，但是模板解析还是得走vdom实现，不然解析太麻烦了。
+一开始的想法时使用polymer或者lit这样的web-component组件库去实现，模板解析也交它们， 但是捣鼓了一天下来发现模板解析很不动态， 数据绑定也很死板，幸好生命周期是完全对上了。至此得出结论，web-compoent化是正确的，但是模板解析还是得走vdom实现，不然解析太麻烦了，因此上面提到的编译环节的处理就可以不用修改。
 
-就在想是不是要在polymer中使用react时， 依稀记得之前的omi 主打web-component + vdom能力。
+就在准备在polymer中使用react时，忽然想起omi这个库的web-component + jsx vdom能力。
 
-fork下来魔改一通，成了。
+魔改一下，成了，当然修改点肯定还是比较多的。
