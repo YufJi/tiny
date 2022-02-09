@@ -1,7 +1,8 @@
 /* eslint-disable no-inner-declarations */
 /* eslint-disable func-names */
 import { addListener } from 'shared/addListener';
-import { publish, subscribe } from '../../bridge';
+import { invokeMethod } from '@/webview/api/util';
+import { onNative, publish, subscribe } from '../../bridge';
 
 export default function Base(SuperClass) {
   return class extends SuperClass {
@@ -20,6 +21,14 @@ export default function Base(SuperClass) {
 
     get subscribe() {
       return subscribe;
+    }
+
+    get invokeMethod() {
+      return invokeMethod;
+    }
+
+    get onNative() {
+      return onNative;
     }
 
     connectedCallback() {

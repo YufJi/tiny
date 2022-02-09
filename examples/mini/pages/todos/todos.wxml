@@ -1,6 +1,6 @@
 
 <scroll-view class="page-todos" scroll-y="true">
-  <canvas canvas-id="canvas" class="canvas" ></canvas>
+  <canvas canvas-id="canvas" class="canvas"></canvas>
   <view
     id="parent" 
     style="background: green;"
@@ -111,5 +111,14 @@
   <view bind:tap="showToast">showToast</view>
  
   <button bind:tap="ani1">ani1</button>
+
+  <view class="section">
+    <view class="section__title">普通选择器</view>
+    <picker bindchange="bindPickerChange" value="{{index}}" range="{{array}}">
+      <view class="picker">
+        当前选择：{{array[index]}}
+      </view>
+    </picker>
+  </view>
 
 </scroll-view>

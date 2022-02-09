@@ -1,4 +1,4 @@
-import { camelCase } from 'lodash';
+import { camelCase, isArray, isObject } from 'lodash';
 import { isEventAttr } from 'shared/addListener';
 import { transformRpx } from '@/webview/util';
 
@@ -67,7 +67,7 @@ export function setAccessor(node, name, old, value, isSvg, component) {
     bindEvent(node, name, value, old);
   } else if (name === 'dangerouslySetInnerHTML') {
     if (value) node.innerHTML = value.__html || '';
-  } else if (node.nodeName === 'INPUT' && name === 'value') {
+  } else if (/(INPUT|TEXTAREA)$/g.test(node.nodeName) && name === 'value') {
     node[name] = value == null ? '' : value;
   } else {
     if (/^data-[a-zA-z]+$/.test(name)) {
@@ -82,7 +82,7 @@ export function setAccessor(node, name, old, value, isSvg, component) {
     // spellcheck is treated differently than all other boolean values and
     // should not be removed when the value is `false`. See:
     // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#attr-spellcheck
-    if (value == null || value === false) {
+    if (value === null) {
       if (ns) {
         node.removeAttributeNS(
           'http://www.w3.org/1999/xlink',
@@ -94,16 +94,22 @@ export function setAccessor(node, name, old, value, isSvg, component) {
           : node.removeAttribute(name);
       }
     } else if (typeof value !== 'function') {
+      let finalVal = value;
+
+      if (isObject(value) || isArray(value)) {
+        finalVal = JSON.stringify(value);
+      }
+
       if (ns) {
         node.setAttributeNS(
           'http://www.w3.org/1999/xlink',
           name.toLowerCase(),
-          value,
+          finalVal,
         );
       } else {
         node.pureSetAttribute
-          ? node.pureSetAttribute(name, value)
-          : node.setAttribute(name, value);
+          ? node.pureSetAttribute(name, finalVal)
+          : node.setAttribute(name, finalVal);
       }
     }
   }

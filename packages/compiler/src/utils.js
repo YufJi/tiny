@@ -30,6 +30,7 @@ const supportedBuiltInComponents = [
   'swiper',
   'swiper-item',
   'canvas',
+  'picker',
 ];
 
 const supportedH5Tags = ['i', 'a', 'slot'];
