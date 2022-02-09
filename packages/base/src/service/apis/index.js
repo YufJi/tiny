@@ -8,6 +8,8 @@ import { createAnimation } from './Animation';
 import { createCanvasContext, canvasToTempFilePath } from './Canvas';
 import { createSelectorQuery } from './SelectorQuery';
 
+export * from './arrayBuffer';
+
 export {
   request,
 

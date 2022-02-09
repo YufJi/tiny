@@ -2,7 +2,7 @@
  * web调试时宿主环境对jsbridge的处理
  */
 
-import API from './API';
+import * as API from './API';
 
 const bridge = {
   publish(event, params, webviewIds, __IS_WORKER__) {

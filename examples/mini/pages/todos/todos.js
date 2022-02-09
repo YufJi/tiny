@@ -62,6 +62,7 @@ Page({
 
     const id = setTimeout(() => {
       console.log('setTimeout');
+      this.showToast();
     }, 5000);
 
     const animation = wx.createAnimation({
@@ -196,10 +197,14 @@ Page({
 
   showToast() {
     wx.showToast({
-      title: '成功',
-      icon: 'success',
+      title: '是的发送到发的发生发的啊的',
+      icon: 'error',
       duration: 2000,
     });
+
+    setTimeout(() => {
+      wx.hideToast();
+    }, 500);
   },
 
   tapSlot(e) {

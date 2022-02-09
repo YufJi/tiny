@@ -13,6 +13,8 @@
   "dependencies": {
     "@babel/runtime": "^7.15.4",
     "@rematch/core": "^2.0.1",
+    "antd-mobile": "^5.0.0-rc.26",
+    "antd-mobile-icons": "^0.2.2",
     "axios": "^0.21.1",
     "classnames": "^2.3.1",
     "eventemitter3": "^4.0.7",
@@ -23,6 +25,7 @@
     "react-redux": "^7.2.3"
   },
   "devDependencies": {
+    "babel-plugin-import": "^1.13.3",
     "babel-preset-curiosity": "^0.1.x",
     "curiosity-bundler": "^0.1.x"
   }

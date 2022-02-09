@@ -5,16 +5,18 @@ export function showToast(param = {}) {
     duration: 1500,
     title: '',
     icon: 'success',
+    mask: false,
   };
   const paramDataType = {
     duration: 1,
     title: 'String',
     icon: 'String',
+    mask: false,
   };
 
   param = { ...defaultParam, ...param };
 
-  if (['success', 'loading', 'fail', 'none'].indexOf(param.icon) === -1) {
+  if (['success', 'loading', 'error', 'none'].indexOf(param.icon) === -1) {
     param.icon = 'success';
   } else if (param.icon === 'none') {
     param.icon = '';

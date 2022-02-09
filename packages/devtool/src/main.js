@@ -5,6 +5,7 @@ import store from '@/store/index';
 
 import App from './app';
 import 'normalize.css';
+import 'antd-mobile/es/global';
 import './global.css';
 
 window.addEventListener('resize', () => {
