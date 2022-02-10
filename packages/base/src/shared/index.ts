@@ -1,12 +1,11 @@
 import { isFunction, wrap, noop } from 'lodash';
 
+export * from './const';
 export * from './global';
 export * from './events';
+export * from './addListener';
 
-export enum TemplateTag {
-  LowerCasePrefix = 'tiny',
-  UpperCasePerfix = 'TINY'
-}
+export { default as path } from './path';
 
 export function Deferred() {
   this.promise = new Promise((resolve, reject) => {

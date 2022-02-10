@@ -1,9 +1,9 @@
 import { camelCase, isArray, isObject } from 'lodash';
-import { isEventAttr } from 'shared/addListener';
+
+import { TemplateTag, isEventAttr } from 'shared';
 import { transformRpx } from '@/webview/util';
 
 import { applyRef } from '../util';
-
 import bindEvent from './bindEvent';
 import bindAnimation from './bindAnimation';
 
@@ -67,8 +67,10 @@ export function setAccessor(node, name, old, value, isSvg, component) {
     bindEvent(node, name, value, old);
   } else if (name === 'dangerouslySetInnerHTML') {
     if (value) node.innerHTML = value.__html || '';
-  } else if (/(INPUT|TEXTAREA)$/g.test(node.nodeName) && name === 'value') {
+  } else if (`${TemplateTag.UpperCasePerfix}-INPUT` === node.nodeName && name === 'value') {
     node[name] = value == null ? '' : value;
+  } else if (`${TemplateTag.UpperCasePerfix}-LABEL` === node.nodeName && name === 'for') {
+    node.htmlFor = value;
   } else {
     if (/^data-[a-zA-z]+$/.test(name)) {
       const key = name.replace(/^data-/, '');

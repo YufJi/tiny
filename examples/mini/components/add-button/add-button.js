@@ -7,7 +7,22 @@ Component({
   },
 
   data: {
-    name: 'xxxxx',
+    name: 'xxx',
+
+    obj: {
+      a: {
+        b: 1,
+      },
+    },
+  },
+
+  observers: {
+    'obj.a.**': (val) => {
+      console.log('observer obj', val);
+    },
+    name: (val) => {
+      console.log('observer name', val);
+    },
   },
 
   lifetimes: {
@@ -21,7 +36,8 @@ Component({
       console.log('ready', this, this.data);
 
       this.setData({
-        text: 'jjjjjjjjj',
+        name: 'xxx',
+        'obj.a': 111,
       });
     },
     moved() {

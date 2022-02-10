@@ -1,6 +1,6 @@
 /* eslint-disable no-inner-declarations */
 /* eslint-disable func-names */
-import { addListener } from 'shared/addListener';
+import { addListener } from 'shared';
 import { invokeMethod } from '@/webview/api/util';
 import { onNative, publish, subscribe } from '../../bridge';
 

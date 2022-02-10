@@ -121,4 +121,7 @@
     </picker>
   </view>
 
+  <radio id="radio"></radio>
+  <label class="label-2-text" for="radio"><text>radio</text></label>
+
 </scroll-view>

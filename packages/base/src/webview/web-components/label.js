@@ -8,12 +8,7 @@ class Label extends Base(PolymerElement) {
   }
 
   static get properties() {
-    return {
-      for: {
-        type: String,
-        value: '',
-      },
-    };
+    return {};
   }
 
   static get template() {
@@ -37,7 +32,7 @@ class Label extends Base(PolymerElement) {
 
   onTap(e) {
     let labelTarget;
-    const labelFor = this.for;
+    const labelFor = this.htmlFor;
 
     if (labelFor) {
       labelTarget = this.querySelector(`#${labelFor}`) || document.getElementById(labelFor);

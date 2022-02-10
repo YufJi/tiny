@@ -1,4 +1,4 @@
-import { addListener, eventProxy, toEventName } from 'shared/addListener';
+import { addListener, eventProxy, toEventName } from 'shared';
 
 export default function bindEvent(
   dom,

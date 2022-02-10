@@ -1,4 +1,4 @@
-import { TemplateTag } from 'shared';
+import { TemplateTag } from './const';
 
 const EVENT_BLACK_LIST = ['click'];
 const PRESS_DELAY = 350;
