@@ -27,8 +27,6 @@ g.tiny = new Proxy(apis, {
     }
 
     console.error(`tiny api ${prop}暂不支持`);
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    return () => {};
   },
 });
 

@@ -1,4 +1,4 @@
-import { camelCase, isArray, isObject } from 'lodash';
+import { camelCase, isArray, isNil, isObject } from 'lodash';
 
 import { TemplateTag, isEventAttr } from 'shared';
 import { transformRpx } from '@/webview/util';
@@ -71,48 +71,42 @@ export function setAccessor(node, name, old, value, isSvg, component) {
     node[name] = value == null ? '' : value;
   } else if (`${TemplateTag.UpperCasePerfix}-LABEL` === node.nodeName && name === 'for') {
     node.htmlFor = value;
-  } else {
-    if (/^data-[a-zA-z]+$/.test(name)) {
-      const key = name.replace(/^data-/, '');
-      if (!node._dataset) {
-        node._dataset = {};
-      }
-      node._dataset[camelCase(key)] = value;
+  } else if (/^data-[a-zA-z]+$/.test(name)) { // dataset
+    const key = name.replace(/^data-/, '');
+    if (!node._dataset) {
+      node._dataset = {};
+    }
+    node._dataset[camelCase(key)] = value;
+  } else if (isNil(value) || value === false) {
+    const ns = isSvg && name !== (name = name.replace(/^xlink:?/, ''));
+    if (ns) {
+      node.removeAttributeNS(
+        'http://www.w3.org/1999/xlink',
+        name.toLowerCase(),
+      );
+    } else {
+      node.pureRemoveAttribute
+        ? node.pureRemoveAttribute(name)
+        : node.removeAttribute(name);
+    }
+  } else if (typeof value !== 'function') {
+    const ns = isSvg && name !== (name = name.replace(/^xlink:?/, ''));
+    let finalVal = value;
+
+    if (isObject(value) || isArray(value)) {
+      finalVal = JSON.stringify(value);
     }
 
-    const ns = isSvg && name !== (name = name.replace(/^xlink:?/, ''));
-    // spellcheck is treated differently than all other boolean values and
-    // should not be removed when the value is `false`. See:
-    // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#attr-spellcheck
-    if (value === null) {
-      if (ns) {
-        node.removeAttributeNS(
-          'http://www.w3.org/1999/xlink',
-          name.toLowerCase(),
-        );
-      } else {
-        node.pureRemoveAttribute
-          ? node.pureRemoveAttribute(name)
-          : node.removeAttribute(name);
-      }
-    } else if (typeof value !== 'function') {
-      let finalVal = value;
-
-      if (isObject(value) || isArray(value)) {
-        finalVal = JSON.stringify(value);
-      }
-
-      if (ns) {
-        node.setAttributeNS(
-          'http://www.w3.org/1999/xlink',
-          name.toLowerCase(),
-          finalVal,
-        );
-      } else {
-        node.pureSetAttribute
-          ? node.pureSetAttribute(name, finalVal)
-          : node.setAttribute(name, finalVal);
-      }
+    if (ns) {
+      node.setAttributeNS(
+        'http://www.w3.org/1999/xlink',
+        name.toLowerCase(),
+        finalVal,
+      );
+    } else {
+      node.pureSetAttribute
+        ? node.pureSetAttribute(name, finalVal)
+        : node.setAttribute(name, finalVal);
     }
   }
 }
