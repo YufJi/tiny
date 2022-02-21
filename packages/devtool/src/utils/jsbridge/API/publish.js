@@ -5,8 +5,7 @@ export function messageToWorker(method, params, webviewIds) {
   webviewIds.forEach((viewId) => {
     if (gloabl.service) {
       try {
-        // gloabl.service.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('${method}', '${params}', '${viewId}')`);
-        gloabl.service.contentWindow.JSBridge.subscribeHandler(method, params, viewId);
+        gloabl.service.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('${method}', '${JSON.stringify(params)}', '${viewId}')`);
       } catch (error) {
         console.error(error);
       }
@@ -17,7 +16,7 @@ export function messageToWorker(method, params, webviewIds) {
 export function messageToRender(method, params, webviewIds) {
   forEachWebviewIds(webviewIds, (render) => {
     try {
-      render.contentWindow.JSBridge.subscribeHandler(method, params);
+      render.contentWindow.executeJavaScript(`JSBridge.subscribeHandler('${method}', '${JSON.stringify(params)}')`);
     } catch (error) {
       console.error(error);
     }

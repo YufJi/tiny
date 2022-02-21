@@ -25,7 +25,7 @@ export function navigateTo(params, webviewIds, callbackId) {
   const { url, pageWebviewId } = params;
 
   navigateToEventMap.set(pageWebviewId, (data) => {
-    global.service.contentWindow.JSBridge.invokeHandler(callbackId, data);
+    global.service.contentWindow.executeJavaScript(`JSBridge.invokeHandler(${callbackId}, '${JSON.stringify(data)}')`);
   });
 
   pushWindow(url).then((iframe) => {

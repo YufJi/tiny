@@ -40,17 +40,13 @@ export function showToast(params, webviewIds, callbackId) {
       break;
   }
 
-  global.service.contentWindow.JSBridge.invokeHandler(callbackId, {
-    errMsg: 'showToast:ok',
-  });
+  global.service.contentWindow.executeJavaScript(`JSBridge.invokeHandler(${callbackId}, '${JSON.stringify({ errMsg: 'showToast:ok' })}')`);
 }
 
 export function hideToast(params, webviewIds, callbackId) {
   Toast.clear();
 
-  global.service.contentWindow.JSBridge.invokeHandler(callbackId, {
-    errMsg: 'hideToast:ok',
-  });
+  global.service.contentWindow.executeJavaScript(`JSBridge.invokeHandler(${callbackId}, '${JSON.stringify({ errMsg: 'hideToast:ok' })}')`);
 }
 
 export function setNavigationBarTitle(params, webviewIds, callbackId) {
@@ -58,7 +54,5 @@ export function setNavigationBarTitle(params, webviewIds, callbackId) {
 
   dispatch.nav.setTitle(title);
 
-  global.service.contentWindow.JSBridge.invokeHandler(callbackId, {
-    errMsg: 'setNavigationBarTitle:ok',
-  });
+  global.service.contentWindow.executeJavaScript(`JSBridge.invokeHandler(${callbackId}, '${JSON.stringify({ errMsg: 'setNavigationBarTitle:ok' })}')`);
 }

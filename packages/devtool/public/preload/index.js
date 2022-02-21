@@ -1,3 +1,4 @@
+/* eslint-disable no-new-func */
 /**
  * 用来mock render、worker线程的jsc
  * 真实环境下由宿主注入
@@ -6,9 +7,10 @@
 const host = window.parent.window;
 const timerMap = new Map();
 
-window.WEBVIEWID = new URLSearchParams(window.location.search).get('webviewId');
+const WEBVIEWID = new URLSearchParams(window.location.search).get('webviewId');
+window.WEBVIEWID = WEBVIEWID;
 
-window.JSCore = {
+const JSCore = {
   call(event, params, webviewIds, callbackId) {
     return host.JSBridgeInstance.call(event, params, webviewIds, callbackId);
   },
@@ -53,13 +55,59 @@ window.JSCore = {
     }
   },
 };
+window.JSCore = JSCore;
 
-window.executeJavaScript = function (code) {
+/* 逻辑层执行上下文 */
+const context = Object.create(null);
+
+context.WEBVIEWID = WEBVIEWID;
+context.JSCore = JSCore;
+context.console = window.console;
+
+context.global = context;
+context.self = context;
+/* disable api */
+context.fetch = undefined;
+context.window = undefined;
+context.document = undefined;
+context.location = undefined;
+context.XMLHttpRequest = undefined;
+context.navigator = undefined;
+context.MutationObserver = undefined;
+
+window.importScriptsPolyfill = function (...urls) {
+  urls.forEach((url) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, false);
+    xhr.send();
+
+    const contentType = xhr.getResponseHeader('content-type');
+    if (/(java|ecma)script/i.test(contentType)) {
+      let result;
+      // eslint-disable-next-line no-with
+      with (context) {
+        // eslint-disable-next-line no-eval
+        result = eval(xhr.responseText);
+      }
+      return result;
+    } else if (/json/i.test(contentType)) {
+      return JSON.parse(xhr.responseText);
+    }
+  });
+};
+
+window.executeJavaScript = function (script) {
   /* 返回值为Promise */
   return new Promise((resolve, reject) => {
     try {
-      // eslint-disable-next-line no-eval
-      const result = eval(code);
+      const code = script;
+
+      let result;
+      // eslint-disable-next-line no-with
+      with (context) {
+        // eslint-disable-next-line no-eval
+        result = eval(code);
+      }
 
       if (result && typeof result.then === 'function') {
         result.then(resolve).catch(reject);

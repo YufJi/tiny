@@ -5,8 +5,6 @@ export const g = (function () {
     local = global;
   } else if (typeof self !== 'undefined') {
     local = self;
-  } else if (typeof window !== 'undefined') {
-    local = window;
   } else {
     try {
       local = Function('return this')();
