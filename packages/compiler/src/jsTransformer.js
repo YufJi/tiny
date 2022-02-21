@@ -5,12 +5,10 @@ const {
   PLUGIN_PRIVATE_PREFIX,
   getPluginPath,
 } = require('./pluginUtils');
-const { relative, normalizePathForWin, getSecurityHeader } = require('./utils');
+const { relative, normalizePathForWin } = require('./utils');
 
 function wrapRegisterPage(pageMetaConfig, code, config) {
   return `
-    ${getSecurityHeader(config.forbiddenGlobals)}
-
     $global.currentPageConfig = ${pageMetaConfig};
 
     ${code}
@@ -112,8 +110,6 @@ function transformComponentJsForWorker(str, { is, usingComponents }, config) {
 }
 }`;
   return `
-${getSecurityHeader(config.forbiddenGlobals)}
-
 $global.currentPageConfig = ${info};
 
 ${str}
@@ -166,7 +162,6 @@ function transformComponentJsForWebRender({ is, usingComponents }, config) {
 /* 处理普通js文件 */
 function transformJsForWorker(str, config) {
   return `
-    ${getSecurityHeader(config.forbiddenGlobals)}
     ${str}    
   `;
 }
@@ -174,7 +169,6 @@ function transformJsForWorker(str, config) {
 /* 处理worker app.js */
 function transformAppJs(str, config) {
   return `
-    ${getSecurityHeader(config.forbiddenGlobals)}
     ${str}
   `;
 }

@@ -87,7 +87,7 @@ export async function pushWindow(url, callback) {
 
   const [path, query] = url.split('?');
 
-  iframe.contentWindow.executeJavaScript(`window.generateFunc['${path}']('${iframe.id}')`);
+  iframe.contentWindow.executeJavaScript(`generateFunc['${path}']('${iframe.id}')`);
   iframe.setAttribute('class', 'frame in');
   iframe.setAttribute('path', path);
   iframe.setAttribute('query', query);

@@ -110,7 +110,7 @@ class App extends PureComponent {
     return (
       <div id="app" className={`${style.app}`}>
         <StatusBar />
-        <div id="serviceFrame" className={style.serviceFrame} />
+
         <div className={`${MPContainerCls} f-page flex-c`}>
           <Nav
             navBack={this.handleNavBack}
@@ -120,6 +120,7 @@ class App extends PureComponent {
             <div id="tabFrames" className={`${style.tabFrames} flex-1`} />
             <div className={`${style.tabs} flex-r`} />
           </div>
+          <div id="serviceFrame" className={style.serviceFrame} />
         </div>
         {!mpVisible && (
           <div className={`${style.openMP} flex-r`} onClick={this.showMP} />

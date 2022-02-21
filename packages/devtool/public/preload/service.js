@@ -75,38 +75,15 @@ context.XMLHttpRequest = undefined;
 context.navigator = undefined;
 context.MutationObserver = undefined;
 
-window.importScriptsPolyfill = function (...urls) {
-  urls.forEach((url) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', url, false);
-    xhr.send();
-
-    const contentType = xhr.getResponseHeader('content-type');
-    if (/(java|ecma)script/i.test(contentType)) {
-      let result;
-      // eslint-disable-next-line no-with
-      with (context) {
-        // eslint-disable-next-line no-eval
-        result = eval(xhr.responseText);
-      }
-      return result;
-    } else if (/json/i.test(contentType)) {
-      return JSON.parse(xhr.responseText);
-    }
-  });
-};
-
 window.executeJavaScript = function (script) {
   /* 返回值为Promise */
   return new Promise((resolve, reject) => {
     try {
-      const code = script;
-
       let result;
       // eslint-disable-next-line no-with
       with (context) {
         // eslint-disable-next-line no-eval
-        result = eval(code);
+        result = eval(script);
       }
 
       if (result && typeof result.then === 'function') {
@@ -116,6 +93,25 @@ window.executeJavaScript = function (script) {
       }
     } catch (error) {
       reject(error);
+    }
+  });
+};
+
+let xhr;
+
+window.importScriptsPolyfill = function (...urls) {
+  if (!xhr) {
+    xhr = new XMLHttpRequest();
+  }
+  urls.forEach((url) => {
+    xhr.open('GET', url, false);
+    xhr.send();
+
+    const contentType = xhr.getResponseHeader('content-type');
+    if (/(java|ecma)script/i.test(contentType)) {
+      return window.executeJavaScript(xhr.responseText);
+    } else if (/json/i.test(contentType)) {
+      return JSON.parse(xhr.responseText);
     }
   });
 };
