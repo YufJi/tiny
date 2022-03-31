@@ -10,10 +10,6 @@ import { Fragment } from './util';
 
 h.f = Fragment;
 
-function createRef() {
-  return {};
-}
-
 const $ = {};
 const Component = WeElement;
 const defineElement = define;
@@ -32,7 +28,6 @@ const omi = {
   cloneElement,
   getHost,
   defineElement,
-  createRef,
   elements,
   $,
 };
@@ -55,7 +50,6 @@ export {
   cloneElement,
   getHost,
   defineElement,
-  createRef,
   elements,
   $,
 };

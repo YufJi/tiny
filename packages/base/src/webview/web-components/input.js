@@ -382,8 +382,7 @@ class WebInput extends Data(GestureEventListeners(Base(PolymerElement))) {
       return '';
     }
 
-    const pid = this.parentCustomComponent();
-    // method from base
+    const pid = this.getParentCustomComponentId();
     const e = {
       bindinput: this.bindinput,
       target: {
@@ -392,7 +391,7 @@ class WebInput extends Data(GestureEventListeners(Base(PolymerElement))) {
         offsetTop: this.$.wrapper.offsetTop,
         offsetLeft: this.$.wrapper.offsetLeft,
       },
-      isCustomComponent: pid !== null,
+      isCustomComponent: !!pid,
       nodeId: pid,
     };
     e.currentTarget = e.target;

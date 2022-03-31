@@ -22,6 +22,7 @@ export function registerComponent(options = {}) {
     externalClasses: [],
     relations: {},
     options: {},
+    observers: {},
   });
 
   componentBookmarks.set(is, {

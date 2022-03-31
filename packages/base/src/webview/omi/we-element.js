@@ -35,37 +35,13 @@ export default class WeElement extends HTMLElement {
 
   constructor() {
     super();
+
     // fix lazy load props missing
     this.props = { ...this.props };
     this.data = {};
-    this.elementId = id++;
+    this.elementId = ++id;
     this.computed = {};
     this.isInstalled = false;
-  }
-
-  bindStoreAndProvide() {
-    let p = this.parentNode;
-    while (p && !this.store) {
-      this.store = p.store;
-      p = p.parentNode || p.host;
-    }
-
-    if (this.inject) {
-      this.injection = {};
-      p = this.parentNode;
-      let provide;
-      while (p && !provide) {
-        provide = p.provide;
-        p = p.parentNode || p.host;
-      }
-      if (provide) {
-        this.inject.forEach((injectKey) => {
-          this.injection[injectKey] = provide[injectKey];
-        });
-      } else {
-        throw 'The provide prop was not found on the parent node or the provide type is incorrect.';
-      }
-    }
   }
 
   connectedCallback() {
@@ -151,6 +127,10 @@ export default class WeElement extends HTMLElement {
     this.isInstalled && this.update();
   }
 
+  pureRemoveAttribute(key) {
+    super.removeAttribute(key);
+  }
+
   setAttribute(key, val) {
     if (val && typeof val === 'object') {
       super.setAttribute(key, JSON.stringify(val));
@@ -161,12 +141,33 @@ export default class WeElement extends HTMLElement {
     this.isInstalled && this.update();
   }
 
-  pureRemoveAttribute(key) {
-    super.removeAttribute(key);
-  }
-
   pureSetAttribute(key, val) {
     super.setAttribute(key, val);
+  }
+
+  bindStoreAndProvide() {
+    let p = this.parentNode;
+    while (p && !this.store) {
+      this.store = p.store;
+      p = p.parentNode || p.host;
+    }
+
+    if (this.inject) {
+      this.injection = {};
+      p = this.parentNode;
+      let provide;
+      while (p && !provide) {
+        provide = p.provide;
+        p = p.parentNode || p.host;
+      }
+      if (provide) {
+        this.inject.forEach((injectKey) => {
+          this.injection[injectKey] = provide[injectKey];
+        });
+      } else {
+        throw new Error('The provide prop was not found on the parent node or the provide type is incorrect.');
+      }
+    }
   }
 
   propsToData(ignoreAttrs) {
@@ -197,23 +198,6 @@ export default class WeElement extends HTMLElement {
     });
 
     mergeData(this.data, changedData);
-  }
-
-  fire(name, data) {
-    const handler = this.props[`on${capitalize(name)}`];
-    if (handler) {
-      handler(
-        new CustomEvent(name, {
-          detail: data,
-        }),
-      );
-    } else {
-      this.dispatchEvent(
-        new CustomEvent(name, {
-          detail: data,
-        }),
-      );
-    }
   }
 
   setData(data) {

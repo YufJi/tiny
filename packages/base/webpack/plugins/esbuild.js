@@ -19,6 +19,7 @@ module.exports = class ESBuildPlugin {
             if (!matchObject(file)) {
               continue;
             }
+            /* abc.mjs?sadfsaf=asf */
             if (!/\.m?js(\?.*)?$/i.test(file)) {
               continue;
             }

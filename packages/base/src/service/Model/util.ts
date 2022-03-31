@@ -1,4 +1,4 @@
-import { set } from 'lodash';
+import { set, toPath } from 'lodash';
 import { CustomEvent } from 'shared';
 import { invokeWebview } from '../bridge';
 
@@ -62,7 +62,9 @@ export function addSetDataTask(model, data, userCallback) {
 
   for (let i = 0; i < Object.entries(data).length; i+=1) {
     const [key, value] = Object.entries(data)[i];
+    // data的细微变动传入任务中
     task.data[key] = value;
+
     set(model.data, key, value);
   }
 

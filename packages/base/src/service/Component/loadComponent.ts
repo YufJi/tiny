@@ -110,6 +110,8 @@ export default function loadComponent() {
           }
         }
       }
+      // 触发数据监听器
+      componentModel.triggerObservers(data);
     }
   });
   /**

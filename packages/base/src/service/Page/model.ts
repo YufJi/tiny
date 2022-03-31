@@ -64,6 +64,10 @@ export default class PageModel extends BaseModel {
     return this.is;
   }
 
+  setData(data, cb) {
+    this._setData(data, cb);
+  }
+
   selectComponent(selector, callback) {
     if (!isFunction(callback)) {
       return super.selectComponent(selector);

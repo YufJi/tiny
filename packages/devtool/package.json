@@ -27,6 +27,6 @@
   "devDependencies": {
     "babel-plugin-import": "^1.13.3",
     "babel-preset-curiosity": "^0.1.x",
-    "curiosity-bundler": "^0.1.x"
+    "curiosity-bundler": "^0.1.10"
   }
 }

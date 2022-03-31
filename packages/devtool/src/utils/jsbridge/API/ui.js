@@ -14,7 +14,7 @@ export function showToast(params, webviewIds, callbackId) {
     case 'success':
     case 'loading':
       Toast.show({
-        icon: 'success',
+        icon,
         content: title,
         duration,
         maskClickable: !mask,

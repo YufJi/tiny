@@ -1797,14 +1797,6 @@ chalk@2.4.2, chalk@^2.0.0:
     escape-string-regexp "^1.0.5"
     supports-color "^5.3.0"
 
-chalk@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.nlark.com/chalk/download/chalk-3.0.0.tgz?cache=0&sync_timestamp=1627646655305&other_urls=https%3A%2F%2Fregistry.nlark.com%2Fchalk%2Fdownload%2Fchalk-3.0.0.tgz#3f73c2bf526591f574cc492c51e2456349f844e4"
-  integrity sha1-P3PCv1JlkfV0zEksUeJFY0n4ROQ=
-  dependencies:
-    ansi-styles "^4.1.0"
-    supports-color "^7.1.0"
-
 chalk@^4.1.0:
   version "4.1.2"
   resolved "https://registry.nlark.com/chalk/download/chalk-4.1.2.tgz?cache=0&sync_timestamp=1627646655305&other_urls=https%3A%2F%2Fregistry.nlark.com%2Fchalk%2Fdownload%2Fchalk-4.1.2.tgz#aac4e2b7734a740867aeb16bf02aad556a1e7a01"
@@ -2178,10 +2170,10 @@ csstype@^3.0.2:
   resolved "https://registry.nlark.com/csstype/download/csstype-3.0.9.tgz?cache=0&sync_timestamp=1631540709509&other_urls=https%3A%2F%2Fregistry.nlark.com%2Fcsstype%2Fdownload%2Fcsstype-3.0.9.tgz#6410af31b26bd0520933d02cbc64fce9ce3fbf0b"
   integrity sha1-ZBCvMbJr0FIJM9AsvGT86c4/vws=
 
-curiosity-bundler@^0.1.x:
-  version "0.1.7"
-  resolved "https://registry.npmmirror.com/curiosity-bundler/download/curiosity-bundler-0.1.7.tgz#6f3da2b4c4d3dbb7f2f5d278ea7b83d64dd5a736"
-  integrity sha1-bz2itMTT27fy9dJ46nuD1k3VpzY=
+curiosity-bundler@^0.1.10:
+  version "0.1.10"
+  resolved "https://registry.yarnpkg.com/curiosity-bundler/-/curiosity-bundler-0.1.10.tgz#965508069fc986fc151bbb626c42f6b680534181"
+  integrity sha512-oCr0FRG8KIaEL8c3dyU0sM9f3EGywnJtVBtwufHYG2bSBrOcluJBoSL4Pr1kd7M9P0+VGA9327BxOKiPJoPKhg==
   dependencies:
     "@babel/core" "7.15.5"
     address "1.1.0"
@@ -2209,7 +2201,6 @@ curiosity-bundler@^0.1.x:
     postcss "8.3.8"
     postcss-flexbugs-fixes "5.0.2"
     postcss-loader "6.1.1"
-    progress-bar-webpack-plugin "^2.1.0"
     raw-loader "4.0.2"
     rimraf "2.6.3"
     style-loader "3.3.0"
@@ -4333,19 +4324,6 @@ process-nextick-args@~2.0.0:
   version "2.0.1"
   resolved "https://registry.npm.taobao.org/process-nextick-args/download/process-nextick-args-2.0.1.tgz#7820d9b16120cc55ca9ae7792680ae7dba6d7fe2"
   integrity sha1-eCDZsWEgzFXKmud5JoCufbptf+I=
-
-progress-bar-webpack-plugin@^2.1.0:
-  version "2.1.0"
-  resolved "https://registry.npm.taobao.org/progress-bar-webpack-plugin/download/progress-bar-webpack-plugin-2.1.0.tgz#f7f8c8c461f40b87a8ff168443f494289b07ee65"
-  integrity sha1-9/jIxGH0C4eo/xaEQ/SUKJsH7mU=
-  dependencies:
-    chalk "^3.0.0"
-    progress "^2.0.3"
-
-progress@^2.0.3:
-  version "2.0.3"
-  resolved "https://registry.nlark.com/progress/download/progress-2.0.3.tgz#7e8cf8d8f5b8f239c1bc68beb4eb78567d572ef8"
-  integrity sha1-foz42PW48jnBvGi+tOt4Vn1XLvg=
 
 prop-types@^15.7.2:
   version "15.7.2"

@@ -23,7 +23,7 @@ export default function Native(superClass) {
       };
     }
 
-    _getBox(e, isRelative) {
+    _getBox(style, isRelative) {
       const rect = this.getBoundingClientRect();
       const box = {
         left: rect.left + window.scrollX,
@@ -34,16 +34,16 @@ export default function Native(superClass) {
 
       if (isRelative) return box;
 
-      const i = e || window.getComputedStyle(this);
-      const o = parseFloat(i.getPropertyValue('border-top-width')) || 0;
-      const a = parseFloat(i.getPropertyValue('border-bottom-width')) || 0;
-      const s = parseFloat(i.getPropertyValue('border-left-width')) || 0;
-      const l = parseFloat(i.getPropertyValue('border-right-width')) || 0;
+      const cs = style || window.getComputedStyle(this);
+      const borderTop = parseFloat(cs.getPropertyValue('border-top-width')) || 0;
+      const borderBottom = parseFloat(cs.getPropertyValue('border-bottom-width')) || 0;
+      const borderLeft = parseFloat(cs.getPropertyValue('border-left-width')) || 0;
+      const borderRight = parseFloat(cs.getPropertyValue('border-right-width')) || 0;
 
-      box.left += s;
-      box.top += o;
-      box.width -= s + l;
-      box.height -= o + a;
+      box.left += borderLeft;
+      box.top += borderTop;
+      box.width -= borderLeft + borderRight;
+      box.height -= borderTop + borderBottom;
 
       return box;
     }
@@ -116,7 +116,7 @@ export default function Native(superClass) {
     }
 
     _getData() {
-      const nodeId = this.parentCustomComponent();
+      const nodeId = this.getParentCustomComponentId();
       const handlers = {};
 
       Object.keys(this).forEach((key) => {

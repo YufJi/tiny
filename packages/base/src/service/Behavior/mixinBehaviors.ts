@@ -27,6 +27,9 @@ export default function mixinBehaviors(instance) {
 
     defaults(instance.properties, parent.properties); // 合并 properties
 
+    // properties中默认值写入data
+    defaults(instance.data, mapValues(instance.properties, 'value'));
+
     defaults(instance.methods, parent.methods); // 合并 methods
 
     parent.definitionFilter(instance, getFilters(parent.behaviors));
@@ -56,9 +59,6 @@ export default function mixinBehaviors(instance) {
       });
     };
   });
-
-  // properties中默认值写入data
-  defaults(instance.data, mapValues(instance.properties, 'value'));
 }
 
 function getBehaviorBookmark(is) {
