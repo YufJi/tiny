@@ -379,10 +379,10 @@ class Canvas extends Base(PolymerElement) {
   }
 
   _getBox(style, isRelative) {
-    const style = this.getBoundingClientRect();
+    const rect = this.getBoundingClientRect();
     const pos = {
-      left: style.left + window.scrollX,
-      top: style.top + window.scrollY,
+      left: rect.left + window.scrollX,
+      top: rect.top + window.scrollY,
       width: this.$.mainCanvas.offsetWidth,
       height: this.$.mainCanvas.offsetHeight,
     };

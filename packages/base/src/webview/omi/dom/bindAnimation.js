@@ -1,4 +1,5 @@
 import { transformRpx } from '@/webview/util';
+import { camel2Kebab } from '../util';
 
 export default function bindAnimation(dom, nextAnimationValue) {
   if (!nextAnimationValue?.steps?.length) return;
@@ -86,10 +87,4 @@ function stringifyAnimation(animationStyle) {
       return `${camel2Kebab(key)}:${animationStyle[key]}`;
     })
     .join(';');
-}
-
-function camel2Kebab(str) {
-  return str.replace(/([A-Z]{1})/g, (match) => {
-    return `-${match.toLowerCase()}`;
-  });
 }

@@ -1,14 +1,4 @@
 /**
- * @license
- * Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
- * This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
- * The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
- * The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
- * Code distributed by Google as part of the polymer project is also
- * subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
- */
-
-/**
  * This shim allows elements written in, or compiled to, ES5 to work on native
  * implementations of Custom Elements v1. It sets new.target to the value of
  * this.constructor so that the native HTMLElement constructor can access the
@@ -92,6 +82,12 @@ export function capitalize(name) {
     .replace(/^\S/, (s) => s.toUpperCase());
 }
 
+export function camel2Kebab(str) {
+  return str.replace(/([A-Z]{1})/g, (match) => {
+    return `-${match.toLowerCase()}`;
+  });
+}
+
 export function getValByPath(path, current) {
   const arr = pathToArr(path);
   arr.forEach((prop) => {
@@ -113,3 +109,24 @@ export function removeItem(item, arr) {
 export function getType(o) {
   return Object.prototype.toString.call(o).slice(8, -1);
 }
+
+export const ValidateStrategy = {
+  String(o) {
+    return isPlainObject(o) ? '[object Object]' : o ? String(o) : '';
+  },
+  Number(o) {
+    return isNaN(Number(o)) ? 0 : Number(o);
+  },
+  Object(o) {
+    return Array.isArray(o) ? o : isObject(o) ? {} : null;
+  },
+  Boolean(o) {
+    return !!o;
+  },
+  Array(o) {
+    return [];
+  },
+  Null(o) {
+    return o;
+  },
+};

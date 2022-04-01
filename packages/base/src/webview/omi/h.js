@@ -8,18 +8,22 @@ export function h(nodeName, attributes) {
   let lastSimple;
   let child;
   let simple;
-  let i;
-  for (i = arguments.length; i-- > 2;) {
+
+  for (let i = 2; i < arguments.length; i+=1) {
     // eslint-disable-next-line prefer-rest-params
     stack.push(arguments[i]);
   }
+
   if (attributes && attributes.children != null) {
-    if (!stack.length) stack.push(attributes.children);
+    if (!stack.length) {
+      stack.push(attributes.children);
+    }
     delete attributes.children;
   }
+
   while (stack.length) {
-    if ((child = stack.pop()) && child.pop !== undefined) {
-      for (i = child.length; i--;) {
+    if ((child = stack.shift()) && child.shift !== undefined) {
+      for (let i = 0; i < child.length; i+=1) {
         stack.push(child[i]);
       }
     } else {

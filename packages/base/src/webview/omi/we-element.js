@@ -1,33 +1,11 @@
-import { camelCase, hasIn, isEqual, kebabCase, isPlainObject, isObject } from 'lodash';
-import { isArray, capitalize, getType } from './util';
-import { diff } from './vdom/diff';
+import { camelCase, hasIn, isEqual, kebabCase } from 'lodash';
+import { getType, ValidateStrategy } from './util';
+import { patch } from './vdom/patch';
 import options from './options';
 import { afterNextRender } from './render-status';
 import { mergeData } from '../util';
 
 let id = 0;
-
-const ValidateStrategy = {
-  String(o) {
-    return isPlainObject(o) ? '[object Object]' : o ? String(o) : '';
-  },
-  Number(o) {
-    return isNaN(Number(o)) ? 0 : Number(o);
-  },
-  Object(o) {
-    return Array.isArray(o) ? o : isObject(o) ? {} : null;
-  },
-  Boolean(o) {
-    return !!o;
-  },
-  Array(o) {
-    return [];
-  },
-  Null(o) {
-    return o;
-  },
-};
-
 export default class WeElement extends HTMLElement {
   static is = 'WeElement'
 
@@ -49,35 +27,15 @@ export default class WeElement extends HTMLElement {
 
     this.propsToData();
 
-    let shadowRoot;
-    if (this.constructor.isLightDom) {
-      shadowRoot = this;
-    } else if (!this.shadowRoot) {
-      shadowRoot = this.attachShadow({
-        mode: 'open',
-      });
-    } else {
-      shadowRoot = this.shadowRoot;
-      let fc;
-      while ((fc = shadowRoot.firstChild)) {
-        shadowRoot.removeChild(fc);
-      }
-    }
+    const shadowRoot = this.initShadowRoot();
 
     this.insertCss(shadowRoot);
 
     options.afterInstall && options.afterInstall(this);
 
     const vnode = this.render(this.props, this.store); // props.children存在
-    this.rootNode = diff(null, vnode, null, this);
 
-    if (isArray(this.rootNode)) {
-      this.rootNode.forEach((item) => {
-        shadowRoot.appendChild(item);
-      });
-    } else {
-      this.rootNode && shadowRoot.appendChild(this.rootNode);
-    }
+    patch(vnode, shadowRoot, this);
 
     this.isInstalled = true;
 
@@ -94,19 +52,38 @@ export default class WeElement extends HTMLElement {
     this.detached();
   }
 
-  update(ignoreAttrs, updateSelf) {
+  initShadowRoot() {
+    let shadowRoot;
+    if (this.constructor.isLightDom) {
+      shadowRoot = this;
+    } else if (!this.shadowRoot) {
+      shadowRoot = this.attachShadow({
+        mode: 'open',
+      });
+    } else {
+      shadowRoot = this.shadowRoot;
+
+      /* 清空子节点 */
+      let firstChild;
+      while ((firstChild = shadowRoot.firstChild)) {
+        shadowRoot.removeChild(firstChild);
+      }
+    }
+
+    return shadowRoot;
+  }
+
+  update(ignoreAttrs) {
     this._willUpdate = true;
 
     this.propsToData(ignoreAttrs);
 
     const vnode = this.render(this.props, this.store);
 
-    this.rootNode = diff(
-      this.rootNode,
+    patch(
       vnode,
       this.constructor.isLightDom ? this : this.shadowRoot,
       this,
-      updateSelf,
     );
 
     this._willUpdate = false;
@@ -114,11 +91,6 @@ export default class WeElement extends HTMLElement {
 
   forceUpdate() {
     this.update(true);
-  }
-
-  /* 建议不使用 */
-  updateSelf(ignoreAttrs) {
-    this.update(ignoreAttrs, true);
   }
 
   removeAttribute(key) {
