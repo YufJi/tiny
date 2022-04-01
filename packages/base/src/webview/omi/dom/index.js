@@ -3,22 +3,18 @@ import { camelCase, isArray, isNil, isObject } from 'lodash';
 import { TemplateTag, isEventAttr } from 'shared';
 import { transformRpx } from '@/webview/util';
 
-import { applyRef } from '../util';
 import bindEvent from './bindEvent';
 import bindAnimation from './bindAnimation';
 
 /**
  * Create an element with the given nodeName.
  * @param {string} nodeName The DOM node to create
- * @param {boolean} [isSvg=false] If `true`, creates an element within the SVG
  *  namespace.
  * @returns {Element} The created DOM node
  */
-export function createNode(nodeName, isSvg) {
+export function createNode(nodeName) {
   /** @type {Element} */
-  const node = isSvg
-    ? document.createElementNS('http://www.w3.org/2000/svg', nodeName)
-    : document.createElement(nodeName);
+  const node = document.createElement(nodeName);
   node.normalizedNodeName = nodeName;
   return node;
 }
@@ -41,21 +37,19 @@ export function removeNode(node) {
  * @param {*} old The last value that was set for this name/node pair
  * @param {*} value An attribute value, such as a function to be used as an
  *  event handler
- * @param {boolean} isSvg Are we currently diffing inside an svg?
  * @private
  */
 
 const ignoreNames = ['key'];
 
-export function setAccessor(node, name, old, value, isSvg, component) {
+export function setAccessor(node, name, old, value, component) {
   if (ignoreNames.indexOf(name) !== -1) return;
 
-  if (name === 'className') name = 'class';
+  if (name === 'className') {
+    name = 'class';
+  }
 
-  if (name === 'ref') {
-    applyRef(old, null);
-    applyRef(value, node);
-  } else if (name === 'class' && !isSvg) {
+  if (name === 'class') {
     node.className = value || '';
   } else if (name === 'style') {
     if (typeof value === 'string') {
@@ -78,35 +72,18 @@ export function setAccessor(node, name, old, value, isSvg, component) {
     }
     node._dataset[camelCase(key)] = value;
   } else if (isNil(value) || value === false) {
-    const ns = isSvg && name !== (name = name.replace(/^xlink:?/, ''));
-    if (ns) {
-      node.removeAttributeNS(
-        'http://www.w3.org/1999/xlink',
-        name.toLowerCase(),
-      );
-    } else {
-      node.pureRemoveAttribute
-        ? node.pureRemoveAttribute(name)
-        : node.removeAttribute(name);
-    }
+    node.pureRemoveAttribute
+      ? node.pureRemoveAttribute(name)
+      : node.removeAttribute(name);
   } else if (typeof value !== 'function') {
-    const ns = isSvg && name !== (name = name.replace(/^xlink:?/, ''));
     let finalVal = value;
 
     if (isObject(value) || isArray(value)) {
       finalVal = JSON.stringify(value);
     }
 
-    if (ns) {
-      node.setAttributeNS(
-        'http://www.w3.org/1999/xlink',
-        name.toLowerCase(),
-        finalVal,
-      );
-    } else {
-      node.pureSetAttribute
-        ? node.pureSetAttribute(name, finalVal)
-        : node.setAttribute(name, finalVal);
-    }
+    node.pureSetAttribute
+      ? node.pureSetAttribute(name, finalVal)
+      : node.setAttribute(name, finalVal);
   }
 }

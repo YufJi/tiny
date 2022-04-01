@@ -1,4 +1,5 @@
 import { transformRpx } from '@/webview/util';
+import { camel2Kebab } from '../util';
 
 export default function bindAnimation(dom, nextAnimationValue) {
   if (!nextAnimationValue?.steps?.length) return;
@@ -8,9 +9,11 @@ export default function bindAnimation(dom, nextAnimationValue) {
   const actions = animationData.steps.map(animationToAction);
   let idx = 0;
 
+  // 如果已注册，先移除事件
   if (dom._transitionEnd_) {
     dom.removeEventListener('transitionend', dom._transitionEnd_);
   }
+
   dom._transitionEnd_ = function () {
     if (actions[++idx]) {
       drain(actions[idx], dom);
@@ -84,10 +87,4 @@ function stringifyAnimation(animationStyle) {
       return `${camel2Kebab(key)}:${animationStyle[key]}`;
     })
     .join(';');
-}
-
-function camel2Kebab(str) {
-  return str.replace(/([A-Z]{1})/g, (match) => {
-    return `-${match.toLowerCase()}`;
-  });
 }

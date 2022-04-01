@@ -11,6 +11,7 @@ export function cloneElement(vnode, props) {
   return h(
     vnode.nodeName,
     extend(extend({}, vnode.attributes), props),
+    // eslint-disable-next-line prefer-rest-params
     arguments.length > 2 ? [].slice.call(arguments, 2) : vnode.children,
   );
 }

@@ -2,6 +2,7 @@ const { isArray } = Array;
 
 export default function iterate(items, fn) {
   let ret = null;
+
   if (items) {
     ret = [];
     if (isArray(items)) {

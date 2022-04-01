@@ -1,5 +1,7 @@
 import { wrap, mapValues, noop, isFunction } from 'lodash';
 
+import { pathsParser } from './pathsParser';
+
 export function debug(...args) {
   console.log('[framework]', ...args);
 }
@@ -59,4 +61,44 @@ export function wrapUserFunction(description, callback) {
   debug(description);
   if (!callback) return noop;
   return callback;
+}
+
+export function parseObservers(observers) {
+  const parsedObservers = {};
+
+  for (let i = 0; i < Object.entries(observers).length; i+=1) {
+    const [key, value] = Object.entries(observers)[i];
+    const rules = pathsParser.parse(key);
+
+    rules.forEach((rule) => {
+      const root = rule[0];
+
+      if (!parsedObservers[root]) {
+        parsedObservers[root] = [];
+      }
+
+      parsedObservers[root].push({
+        args: rules,
+        callback: value,
+      });
+    });
+  }
+
+  return parsedObservers;
+}
+
+export function getValueByPaths(o, paths) {
+  let temp = o;
+
+  for (let i = 0; i < paths.length; i+=1) {
+    const key = paths[i];
+
+    if (key === '**') {
+      break;
+    }
+
+    temp = temp[key];
+  }
+
+  return temp;
 }

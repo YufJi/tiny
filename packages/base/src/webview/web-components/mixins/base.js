@@ -82,6 +82,20 @@ export default function Base(SuperClass) {
       this.dispatchEvent(e);
     }
 
+    /**
+     * 向上遍历父元素，找到_type_为component的elementId
+     *
+     */
+    getParentCustomComponentId() {
+      let parent = this.parentElement;
+
+      while (parent && parent._type_ !== 'component') {
+        parent = parent.parentElement || null;
+      }
+
+      return parent && parent.elementId;
+    }
+
     _deserializeValue(value, type) {
       if (type === Boolean) {
         return !!value;

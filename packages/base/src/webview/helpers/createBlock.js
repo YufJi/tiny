@@ -5,9 +5,10 @@ export default function createBlock(element, props) {
   if (!Array.isArray(arrayElements)) {
     arrayElements = [arrayElements];
   }
-  if (Fragment) {
-    return <Fragment {...props}>{arrayElements}</Fragment>;
-  } else {
-    return arrayElements;
-  }
+
+  return (
+    <Fragment {...props}>
+      {arrayElements}
+    </Fragment>
+  );
 }

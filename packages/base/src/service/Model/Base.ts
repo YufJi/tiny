@@ -55,9 +55,9 @@ export default class BaseModel {
     return [];
   }
 
-  setData(data, cb) {
+  _setData(data, cb) {
     const callback = wrapUserFunction(`at ${this.is} setData callback`, isFunction(cb) ? cb : noop);
-    addSetDataTask(this, data, callback).catch((e) => error(e));
+    return addSetDataTask(this, data, callback).catch((e) => error(e));
   }
 
   /* todo */

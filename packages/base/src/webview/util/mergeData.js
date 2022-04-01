@@ -1,4 +1,4 @@
-import { clone, forOwn, isObject, set, toPath } from 'lodash';
+import { clone, forOwn, isObject, toPath } from 'lodash';
 
 export function mergeData(a, b) {
   forOwn(b, (value, key) => {

@@ -1,8 +1,8 @@
 /* eslint-disable max-classes-per-file */
-import { get, set, noop, setWith, cloneDeep, mapValues, isFunction } from 'lodash';
+import { get, set, noop, setWith, cloneDeep, mapValues, isFunction, toPath } from 'lodash';
 import EventEmitter from 'eventemitter3';
 import { invokeWebview } from '../bridge';
-import { wrapUserFunction, wrapComponnetLifetime, error } from '../utils';
+import { wrapUserFunction, wrapComponnetLifetime, error, parseObservers, getValueByPaths } from '../utils';
 import { pageModels, componentModels, componentBookmarks } from '../context';
 import BaseModel from '../Model/Base';
 import { afterSetData } from '../Model/util';
@@ -43,6 +43,7 @@ export class ComponentModel extends BaseModel {
     this.id = '';
     this.className = '';
     this.dataset = {};
+    this.observers = [];
 
     const bookmark = componentBookmarks.get(is);
 
@@ -63,6 +64,7 @@ export class ComponentModel extends BaseModel {
     this.pageLifetimes = init.pageLifetimes;
     this.definitionFilter = init.definitionFilter;
     this.hasBehavior = init.hasBehavior;
+    this.parsedObservers = parseObservers(init.observers);
 
     // 用户的 methods 需要展开挂在到 this
     // 以满足 在 lifetimes.created 里用户可能会调用 `this.setData` 和 `this.customMethod`
@@ -76,6 +78,34 @@ export class ComponentModel extends BaseModel {
 
   get properties() {
     return this.data;
+  }
+
+  setData(data, cb) {
+    this._setData(data, cb);
+
+    this.triggerObservers(data);
+  }
+
+  triggerObservers(changedData) {
+    Object.keys(changedData).forEach((key) => {
+      const varName = toPath(key)[0];
+
+      if (this.parsedObservers[varName]) {
+        this.parsedObservers[varName].forEach((item) => {
+          const { args, callback } = item;
+
+          callback.call(this, ...args.map((arg) => getValueByPaths(this.data, arg)));
+        });
+      }
+    });
+
+    if (this.parsedObservers['**']) {
+      this.parsedObservers['**'].forEach((item) => {
+        const { args, callback } = item;
+
+        callback.call(this, ...args.map((arg) => getValueByPaths(this.data, arg)));
+      });
+    }
   }
 
   selectComponent(selector, callback) {

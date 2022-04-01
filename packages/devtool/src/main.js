@@ -8,9 +8,9 @@ import 'normalize.css';
 import 'antd-mobile/es/global';
 import './global.css';
 
-window.addEventListener('resize', () => {
-  window.location.reload();
-});
+// window.addEventListener('resize', () => {
+//   window.location.reload();
+// });
 
 ReactDOM.render(
   <Provider

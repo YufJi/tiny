@@ -1,33 +1,11 @@
-import { camelCase, hasIn, isEqual, kebabCase, isPlainObject, isObject } from 'lodash';
-import { isArray, capitalize, getType } from './util';
-import { diff } from './vdom/diff';
+import { camelCase, hasIn, isEqual, kebabCase } from 'lodash';
+import { getType, ValidateStrategy } from './util';
+import { patch } from './vdom/patch';
 import options from './options';
 import { afterNextRender } from './render-status';
 import { mergeData } from '../util';
 
 let id = 0;
-
-const ValidateStrategy = {
-  String(o) {
-    return isPlainObject(o) ? '[object Object]' : o ? String(o) : '';
-  },
-  Number(o) {
-    return isNaN(Number(o)) ? 0 : Number(o);
-  },
-  Object(o) {
-    return Array.isArray(o) ? o : isObject(o) ? {} : null;
-  },
-  Boolean(o) {
-    return !!o;
-  },
-  Array(o) {
-    return [];
-  },
-  Null(o) {
-    return o;
-  },
-};
-
 export default class WeElement extends HTMLElement {
   static is = 'WeElement'
 
@@ -35,12 +13,108 @@ export default class WeElement extends HTMLElement {
 
   constructor() {
     super();
+
     // fix lazy load props missing
     this.props = { ...this.props };
     this.data = {};
-    this.elementId = id++;
+    this.elementId = ++id;
     this.computed = {};
     this.isInstalled = false;
+  }
+
+  connectedCallback() {
+    this.bindStoreAndProvide();
+
+    this.propsToData();
+
+    const shadowRoot = this.initShadowRoot();
+
+    this.insertCss(shadowRoot);
+
+    options.afterInstall && options.afterInstall(this);
+
+    const vnode = this.render(this.props, this.store); // props.children存在
+
+    patch(vnode, shadowRoot, this);
+
+    this.isInstalled = true;
+
+    this.attached();
+
+    afterNextRender(this, () => {
+      this.ready();
+    });
+  }
+
+  disconnectedCallback() {
+    this.isInstalled = false;
+
+    this.detached();
+  }
+
+  initShadowRoot() {
+    let shadowRoot;
+    if (this.constructor.isLightDom) {
+      shadowRoot = this;
+    } else if (!this.shadowRoot) {
+      shadowRoot = this.attachShadow({
+        mode: 'open',
+      });
+    } else {
+      shadowRoot = this.shadowRoot;
+
+      /* 清空子节点 */
+      let firstChild;
+      while ((firstChild = shadowRoot.firstChild)) {
+        shadowRoot.removeChild(firstChild);
+      }
+    }
+
+    return shadowRoot;
+  }
+
+  update(ignoreAttrs) {
+    this._willUpdate = true;
+
+    this.propsToData(ignoreAttrs);
+
+    const vnode = this.render(this.props, this.store);
+
+    patch(
+      vnode,
+      this.constructor.isLightDom ? this : this.shadowRoot,
+      this,
+    );
+
+    this._willUpdate = false;
+  }
+
+  forceUpdate() {
+    this.update(true);
+  }
+
+  removeAttribute(key) {
+    super.removeAttribute(key);
+    // Avoid executing removeAttribute methods before connectedCallback
+    this.isInstalled && this.update();
+  }
+
+  pureRemoveAttribute(key) {
+    super.removeAttribute(key);
+  }
+
+  setAttribute(key, val) {
+    if (val && typeof val === 'object') {
+      super.setAttribute(key, JSON.stringify(val));
+    } else {
+      super.setAttribute(key, val);
+    }
+    // Avoid executing setAttribute methods before connectedCallback
+    this.isInstalled && this.update();
+  }
+
+  pureSetAttribute(key, val) {
+    super.setAttribute(key, val);
   }
 
   bindStoreAndProvide() {
@@ -63,110 +137,9 @@ export default class WeElement extends HTMLElement {
           this.injection[injectKey] = provide[injectKey];
         });
       } else {
-        throw 'The provide prop was not found on the parent node or the provide type is incorrect.';
+        throw new Error('The provide prop was not found on the parent node or the provide type is incorrect.');
       }
     }
-  }
-
-  connectedCallback() {
-    this.bindStoreAndProvide();
-
-    this.propsToData();
-
-    let shadowRoot;
-    if (this.constructor.isLightDom) {
-      shadowRoot = this;
-    } else if (!this.shadowRoot) {
-      shadowRoot = this.attachShadow({
-        mode: 'open',
-      });
-    } else {
-      shadowRoot = this.shadowRoot;
-      let fc;
-      while ((fc = shadowRoot.firstChild)) {
-        shadowRoot.removeChild(fc);
-      }
-    }
-
-    this.insertCss(shadowRoot);
-
-    options.afterInstall && options.afterInstall(this);
-
-    const vnode = this.render(this.props, this.store); // props.children存在
-    this.rootNode = diff(null, vnode, null, this);
-
-    if (isArray(this.rootNode)) {
-      this.rootNode.forEach((item) => {
-        shadowRoot.appendChild(item);
-      });
-    } else {
-      this.rootNode && shadowRoot.appendChild(this.rootNode);
-    }
-
-    this.isInstalled = true;
-
-    this.attached();
-
-    afterNextRender(this, () => {
-      this.ready();
-    });
-  }
-
-  disconnectedCallback() {
-    this.isInstalled = false;
-
-    this.detached();
-  }
-
-  update(ignoreAttrs, updateSelf) {
-    this._willUpdate = true;
-
-    this.propsToData(ignoreAttrs);
-
-    const vnode = this.render(this.props, this.store);
-
-    this.rootNode = diff(
-      this.rootNode,
-      vnode,
-      this.constructor.isLightDom ? this : this.shadowRoot,
-      this,
-      updateSelf,
-    );
-
-    this._willUpdate = false;
-  }
-
-  forceUpdate() {
-    this.update(true);
-  }
-
-  /* 建议不使用 */
-  updateSelf(ignoreAttrs) {
-    this.update(ignoreAttrs, true);
-  }
-
-  removeAttribute(key) {
-    super.removeAttribute(key);
-    // Avoid executing removeAttribute methods before connectedCallback
-    this.isInstalled && this.update();
-  }
-
-  setAttribute(key, val) {
-    if (val && typeof val === 'object') {
-      super.setAttribute(key, JSON.stringify(val));
-    } else {
-      super.setAttribute(key, val);
-    }
-    // Avoid executing setAttribute methods before connectedCallback
-    this.isInstalled && this.update();
-  }
-
-  pureRemoveAttribute(key) {
-    super.removeAttribute(key);
-  }
-
-  pureSetAttribute(key, val) {
-    super.setAttribute(key, val);
   }
 
   propsToData(ignoreAttrs) {
@@ -197,23 +170,6 @@ export default class WeElement extends HTMLElement {
     });
 
     mergeData(this.data, changedData);
-  }
-
-  fire(name, data) {
-    const handler = this.props[`on${capitalize(name)}`];
-    if (handler) {
-      handler(
-        new CustomEvent(name, {
-          detail: data,
-        }),
-      );
-    } else {
-      this.dispatchEvent(
-        new CustomEvent(name, {
-          detail: data,
-        }),
-      );
-    }
   }
 
   setData(data) {

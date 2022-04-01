@@ -23,7 +23,7 @@
 
   <view class="todo-footer">
     <add-button id="asd" text="{{text}}" bind:click_me="clickCom">
-      <text bind:tap="tapSlot">i am slot</text>
+      <text slot="abc-{{text}}" bind:tap="tapSlot">i am slot</text>
     </add-button>
     <add-button id="asxx" xx="xxx" text="xixi {{text}}" bind:click_me="{{fn}}"></add-button>
   </view>

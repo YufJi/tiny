@@ -378,11 +378,11 @@ class Canvas extends Base(PolymerElement) {
     }));
   }
 
-  _getBox(e, isRelative) {
-    const style = this.getBoundingClientRect();
+  _getBox(style, isRelative) {
+    const rect = this.getBoundingClientRect();
     const pos = {
-      left: style.left + window.scrollX,
-      top: style.top + window.scrollY,
+      left: rect.left + window.scrollX,
+      top: rect.top + window.scrollY,
       width: this.$.mainCanvas.offsetWidth,
       height: this.$.mainCanvas.offsetHeight,
     };
@@ -391,15 +391,16 @@ class Canvas extends Base(PolymerElement) {
       return pos;
     }
 
-    const r = e || window.getComputedStyle(this);
-    const o = parseFloat(r.getPropertyValue('border-top-width')) || 0;
-    const a = parseFloat(r.getPropertyValue('border-bottom-width')) || 0;
-    const s = parseFloat(r.getPropertyValue('border-left-width')) || 0;
-    const l = parseFloat(r.getPropertyValue('border-right-width')) || 0;
-    pos.left += s;
-    pos.top += o;
-    // pos.width -= s + l;
-    // pos.height -= o + a;
+    const cs = style || window.getComputedStyle(this);
+    const borderTop = parseFloat(cs.getPropertyValue('border-top-width')) || 0;
+    const borderBottom = parseFloat(cs.getPropertyValue('border-bottom-width')) || 0;
+    const borderLeft = parseFloat(cs.getPropertyValue('border-left-width')) || 0;
+    const borderRight = parseFloat(cs.getPropertyValue('border-right-width')) || 0;
+
+    pos.left += borderLeft;
+    pos.top += borderTop;
+    // pos.width -= borderLeft + borderRight;
+    // pos.height -= borderTop + borderBottom;
 
     return pos;
   }
