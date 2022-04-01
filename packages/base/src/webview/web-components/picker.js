@@ -90,8 +90,6 @@ class Picker extends Data(Base(PolymerElement)) {
   ready() {
     super.ready();
 
-    console.log('picker ready', this.range, this.value);
-
     document.addEventListener('onKeyboardShow', () => {
       this.__hasKeyboard = true;
     });
@@ -142,7 +140,6 @@ class Picker extends Data(Base(PolymerElement)) {
   }
 
   showPickerView() {
-    console.log('showPickerView');
     if (this.__hasKeyboard) {
       this.__whenKeyboardComplete = this._showPickerView;
     } else {
@@ -299,7 +296,6 @@ class Picker extends Data(Base(PolymerElement)) {
       }
 
       if (range.length > 5) {
-        console.error('showMultiPickerView');
         range = range.slice(0, 5);
         value = value.slice(0, 5);
       }
@@ -375,32 +371,32 @@ class Picker extends Data(Base(PolymerElement)) {
   }
 
   valueChanged(e, t) {
-    const n = this;
+    const _this = this;
 
     if (this.__pickerShow && this.__multi_picker_watching) {
       !(function i(r, o) {
         if (r < o) {
           if (e[r] !== t[r]) {
-            const a = e[r] >= n.range[r].length ? 0 : e[r];
+            const a = e[r] >= _this.range[r].length ? 0 : e[r];
             const s = [];
 
-            if (n.rangeKey) {
-              for (let l = 0; l < n.range[r].length; l++) {
-                const c = n.range[r][l];
-                s.push(`${c[n.rangeKey]}`);
+            if (_this.rangeKey) {
+              for (let l = 0; l < _this.range[r].length; l++) {
+                const c = _this.range[r][l];
+                s.push(`${c[_this.rangeKey]}`);
               }
             } else {
-              for (let _l2 = 0; _l2 < n.range[r].length; _l2++) {
-                s.push(`${n.range[r][_l2]}`);
+              for (let _l2 = 0; _l2 < _this.range[r].length; _l2++) {
+                s.push(`${_this.range[r][_l2]}`);
               }
             }
 
-            n.invokeMethod('updateMultiPickerView', {
+            _this.invokeMethod('updateMultiPickerView', {
               column: r,
               array: s,
               current: a,
               success: function success() {
-                n.value[r] = a;
+                _this.value[r] = a;
                 i(r + 1, o);
               },
             });
@@ -413,21 +409,21 @@ class Picker extends Data(Base(PolymerElement)) {
   }
 
   rangeChanged(e, t) {
-    const n = this;
+    const _this = this;
 
     if (this.__pickerShow && this.__multi_picker_watching) {
       !(function i(r, o) {
         if (r < o) {
-          if (n._diffArray(e[r], t[r])) {
+          if (_this._diffArray(e[r], t[r])) {
             i(r + 1, o);
           } else {
-            const a = n.value[r] >= e[r].length ? 0 : n.value[r];
+            const a = _this.value[r] >= e[r].length ? 0 : _this.value[r];
             const s = [];
 
-            if (n.rangeKey) {
+            if (_this.rangeKey) {
               for (let l = 0; l < e[r].length; l++) {
                 const c = e[r][l];
-                s.push(`${c[n.rangeKey]}`);
+                s.push(`${c[_this.rangeKey]}`);
               }
             } else {
               for (let _l3 = 0; _l3 < e[r].length; _l3++) {
@@ -435,12 +431,12 @@ class Picker extends Data(Base(PolymerElement)) {
               }
             }
 
-            n.invokeMethod('updateMultiPickerView', {
+            _this.invokeMethod('updateMultiPickerView', {
               column: r,
               array: s,
               current: a,
               success: function success() {
-                n.value[r] = a;
+                _this.value[r] = a;
                 i(r + 1, o);
               },
             });

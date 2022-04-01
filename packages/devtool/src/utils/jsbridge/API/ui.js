@@ -1,9 +1,11 @@
 import React from 'react';
-import { Toast } from 'antd-mobile';
+import { Toast, Picker, DatePicker } from 'antd-mobile';
 import { ExclamationCircleOutline } from 'antd-mobile-icons';
+import dayjs from 'dayjs';
 
 import global from '@/utils/global';
 import store from '@/store';
+import { forEachWebviewIds } from './util';
 
 const { dispatch } = store;
 
@@ -55,4 +57,85 @@ export function setNavigationBarTitle(params, webviewIds, callbackId) {
   dispatch.nav.setTitle(title);
 
   global.service.contentWindow.executeJavaScript(`JSBridge.invokeHandler(${callbackId}, '${JSON.stringify({ errMsg: 'setNavigationBarTitle:ok' })}')`);
+}
+
+function onCancelPicker(method, render, callbackId) {
+  render.contentWindow.executeJavaScript(`JSBridge.invokeHandler(${callbackId}, '${JSON.stringify({ errMsg: `${method}:cancel` })}')`);
+}
+
+export function showPickerView(params, webviewIds, callbackId) {
+  const { array, current } = params;
+  const columns = array.map((label, idx) => ({
+    label,
+    value: idx,
+  }));
+
+  Picker.prompt({
+    columns: [columns],
+    value: [current],
+    onConfirm: (value) => {
+      forEachWebviewIds(webviewIds, (render) => {
+        render.contentWindow.executeJavaScript(`JSBridge.invokeHandler(${callbackId}, '${JSON.stringify({ index: value[0] })}')`);
+      });
+    },
+    onCancel: () => {
+      forEachWebviewIds(webviewIds, (render) => {
+        onCancelPicker('showPickerView', render, callbackId);
+      });
+    },
+  });
+}
+
+export function showMultiPickerView(params, webviewIds, callbackId) {
+  const { array, current } = params;
+  const columns = array.map((column) => {
+    return column.map((label, idx) => ({
+      label,
+      value: idx,
+    }));
+  });
+
+  Picker.prompt({
+    columns,
+    value: current,
+    onConfirm: (value) => {
+      forEachWebviewIds(webviewIds, (render) => {
+        render.contentWindow.executeJavaScript(`JSBridge.invokeHandler(${callbackId}, '${JSON.stringify({ current: value })}')`);
+      });
+    },
+    onCancel: () => {
+      forEachWebviewIds(webviewIds, (render) => {
+        onCancelPicker('showMultiPickerView', render, callbackId);
+      });
+    },
+  });
+}
+
+export function updateMultiPickerView() {
+
+}
+
+export function showDatePickerView(params, webviewIds, callbackId) {
+  const { range, mode, current, fields } = params;
+  const { start, end } = range;
+
+  if (mode === 'date') {
+    DatePicker.prompt({
+      value: new Date(current),
+      min: new Date(start),
+      max: new Date(end),
+      precision: fields,
+      onConfirm: (value) => {
+        const date = dayjs(value).format('YYYY-MM-DD');
+        forEachWebviewIds(webviewIds, (render) => {
+          render.contentWindow.executeJavaScript(`JSBridge.invokeHandler(${callbackId}, '${JSON.stringify({ value: date })}')`);
+        });
+      },
+      onCancel: () => {
+        forEachWebviewIds(webviewIds, (render) => {
+          onCancelPicker('showDatePickerView', render, callbackId);
+        });
+      },
+    });
+  }
 }
