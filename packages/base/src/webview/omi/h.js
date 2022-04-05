@@ -1,4 +1,3 @@
-import options from './options';
 import { Fragment } from './util';
 
 const stack = [];
@@ -57,9 +56,6 @@ export function h(nodeName, attributes) {
     attributes: attributes == null ? undefined : attributes,
     key: attributes == null ? undefined : attributes.key,
   };
-
-  // if a "vnode hook" is defined, pass every created VNode to it
-  if (options.vnode !== undefined) options.vnode(p);
 
   return p;
 }

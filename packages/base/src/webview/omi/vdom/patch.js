@@ -1,6 +1,6 @@
+import { isNil } from 'lodash';
 import { createNode, setAccessor, removeNode } from '../dom/index';
 import { isArray } from '../util';
-import { CACHE } from '../constants';
 import { isSameNodeType, isNamedNode } from './index';
 
 /** Diff recursion count, used to track the end of the diff cycle. */
@@ -10,11 +10,9 @@ let diffLevel = 0;
 let hydrating = false;
 
 export function patch(vnode, parent, component) {
-  if (!vnode) return;
-
   // diffLevel having been 0 here indicates initial entry into the diff (not a subdiff)
   if (!diffLevel++) {
-    hydrating = true;
+    hydrating = !parent._hydrated;
   }
 
   diff(vnode, parent, component, hydrating);
@@ -23,6 +21,8 @@ export function patch(vnode, parent, component) {
   if (!--diffLevel) {
     hydrating = false;
   }
+
+  parent._hydrated = !hydrating;
 }
 
 function diff(vnode, parent, component, isHydrating) {
@@ -37,24 +37,20 @@ function diff(vnode, parent, component, isHydrating) {
   const vchildren = isArray(vnode) ? vnode : [vnode];
   const vlen = vchildren ? vchildren.length : 0;
 
-  let child;
-
   // Build up a map of keyed children and an Array of unkeyed children:
   for (let i = 0; i < originalChildren.length; i+=1) {
     const child = originalChildren[i];
-    const props = child[CACHE];
+    const props = child.oldProps;
     const key = vlen && props ? props.key : null;
 
-    if (key != null) {
+    if (!isNil(key)) {
       keyedLen+=1;
       keyed.set(key, child);
-    } else if (
-      props
-      || (child.splitText !== undefined
-        ? isHydrating
-          ? child.nodeValue.trim()
-          : true
-        : isHydrating)
+    } else if (props || (child.splitText !== undefined
+      ? isHydrating
+        ? child.nodeValue.trim()
+        : true
+      : isHydrating)
     ) {
       children[childrenLen++] = child;
     }
@@ -62,12 +58,12 @@ function diff(vnode, parent, component, isHydrating) {
 
   for (let i = 0; i < vlen; i+=1) {
     const vchild = vchildren[i];
-    child = null;
+    let child = null;
 
     if (vchild) {
       // attempt to find a node based on key matching
       const { key } = vchild;
-      if (key != null) {
+      if (!isNil(key)) {
         if (keyedLen && keyed.get(key) !== undefined) {
           child = keyed.get(key);
           keyed.set(key, undefined);
@@ -96,7 +92,7 @@ function diff(vnode, parent, component, isHydrating) {
 
     const f = originalChildren[i];
     if (child && child !== parent && child !== f) {
-      if (f == null) {
+      if (isNil(f)) {
         parent.appendChild(child);
       } else if (child === f.nextSibling) {
         removeNode(f);
@@ -117,7 +113,8 @@ function diff(vnode, parent, component, isHydrating) {
 
   // remove orphaned unkeyed children:
   while (min <= childrenLen) {
-    if ((child = children[childrenLen-=1]) !== undefined) {
+    const child = children[childrenLen-=1];
+    if ((child) !== undefined) {
       recollectNodeTree(child, false);
     }
   }
@@ -131,7 +128,7 @@ function innerDiff(dom, vnode, component) {
   let out = dom;
 
   // empty values (null, undefined, booleans) render as empty Text nodes
-  if (vnode == null || typeof vnode === 'boolean') {
+  if (isNil(vnode) || typeof vnode === 'boolean') {
     vnode = '';
   }
 
@@ -139,8 +136,9 @@ function innerDiff(dom, vnode, component) {
   if (typeof vnode === 'string' || typeof vnode === 'number') {
     // update if it's already a Text node:
     if (dom && dom.splitText !== undefined && dom.parentNode) {
-      /* istanbul ignore if */ /* Browser quirk that can't be covered: https://github.com/developit/preact/commit/fd4f21f5c45dfd75151bd27b4c217d8003aa5eb9 */
-      if (dom.nodeValue != vnode) {
+      /* istanbul ignore if */
+      /* Browser quirk that can't be covered: https://github.com/developit/preact/commit/fd4f21f5c45dfd75151bd27b4c217d8003aa5eb9 */
+      if (dom.nodeValue !== vnode) {
         dom.nodeValue = vnode;
       }
     } else {
@@ -154,7 +152,7 @@ function innerDiff(dom, vnode, component) {
       }
     }
 
-    out[CACHE] = true;
+    out.oldProps = true;
 
     return out;
   }
@@ -184,34 +182,11 @@ function innerDiff(dom, vnode, component) {
     }
   }
 
-  const fc = out.firstChild;
-  let props = out[CACHE];
   const vchildren = vnode.children;
 
-  if (!props) {
-    props = out[CACHE] = {};
-
-    for (let i = 0; i < out.attributes.length; i+=1) {
-      const item = out.attributes[i];
-
-      props[item.name] = item.value;
-    }
-  }
-
   // Optimization: fast-path for elements containing a single TextNode:
-  if (
-    !hydrating
-    && vchildren
-    && vchildren.length === 1
-    && typeof vchildren[0] === 'string'
-    && fc != null
-    && fc.splitText !== undefined
-    && fc.nextSibling == null
-  ) {
-    if (fc.nodeValue != vchildren[0]) {
-      fc.nodeValue = vchildren[0];
-    }
-  } else if ((vchildren && vchildren.length) || fc != null) { // otherwise, if there are existing or new children, diff them:
+  // if there are existing or new children, diff them:
+  if (vchildren && vchildren.length) {
     diff(
       vchildren,
       out,
@@ -220,8 +195,12 @@ function innerDiff(dom, vnode, component) {
     );
   }
 
+  if (!out.oldProps) {
+    out.oldProps = {};
+  }
+
   // Apply attributes/props from VNode to the DOM Element:
-  diffAttributes(out, vnode.attributes, props, component);
+  diffAttributes(out, vnode.attributes, out.oldProps, component);
 
   if (out.props) {
     out.props.children = vnode.children;
@@ -235,7 +214,7 @@ function innerDiff(dom, vnode, component) {
  *  @param {Boolean} [unmountOnly=false]  If `true`, only triggers unmount lifecycle, skips removal
  */
 export function recollectNodeTree(node, unmountOnly) {
-  if (unmountOnly === false || node[CACHE] == null) {
+  if (unmountOnly === false || isNil(node.oldProps)) {
     removeNode(node);
   }
 
@@ -252,32 +231,32 @@ function diffAttributes(dom, attrs, old, component) {
     dom.props = attrs || {};
   }
 
-  let name;
   const isWeElement = !!dom.update;
+
   let oldClone;
   if (dom.shouldUpdate) {
     oldClone = { ...old };
   }
 
   // remove attributes no longer present on the vnode by setting them to undefined
-  for (name in old) {
-    if (typeof attrs[name] === 'undefined') {
-      setAccessor(dom, name, old[name], undefined, component);
-      old[name] = undefined;
+  for (const key in old) {
+    if (typeof attrs[key] === 'undefined') {
+      setAccessor(dom, key, old[key], undefined, component);
+      old[key] = undefined;
 
       if (isWeElement) {
-        delete dom.props[name];
+        delete dom.props[key];
       }
     }
   }
 
   // add new & update changed attributes
-  for (name in attrs) {
-    setAccessor(dom, name, old[name], attrs[name], component);
+  for (const key in attrs) {
+    setAccessor(dom, key, old[key], attrs[key], component);
 
-    if (isWeElement && name !== 'children' && (!(name in old) || attrs[name] !== old[name])) {
-      dom.props[name] = attrs[name];
-      old[name] = attrs[name];
+    if (isWeElement && key !== 'children' && (!(key in old) || attrs[key] !== old[key])) {
+      dom.props[key] = attrs[key];
+      old[key] = attrs[key];
     }
   }
 
