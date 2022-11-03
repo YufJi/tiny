@@ -46,3 +46,4 @@ cd packages/examples && NODE_ENV=development node ./scripts/compile.js --root ./
 
 - [ ] tabBar支持
 - [ ] 分包加载
+- [ ] 使用quickjs wasm代替逻辑层iframe实现沙盒
