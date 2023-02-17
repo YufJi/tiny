@@ -47,3 +47,4 @@ cd examples && NODE_ENV=development node ./scripts/compile.js --root ./mini
 - [ ] tabBar支持
 - [ ] 分包加载
 - [ ] 使用quickjs wasm代替逻辑层iframe实现沙盒
+- [ ] 使用Vue2/3重写渲染层
