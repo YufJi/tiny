@@ -38,7 +38,7 @@ cd packages/devtool && yarn dev
 
 3、 编译demo
 ```sh
-cd packages/examples && NODE_ENV=development node ./scripts/compile.js --root ./mini
+cd examples && NODE_ENV=development node ./scripts/compile.js --root ./mini
 ```
 
 
