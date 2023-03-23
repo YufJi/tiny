@@ -1,7 +1,7 @@
 const fs = require('fs-extra');
 const path = require('path');
 const { getPagesComponents } = require('./pageMap');
-const { getPagesFromPackage, getImports } = require('./utils');
+const { getPagesFromPackage, getImports, normalizePathForWin } = require('./utils');
 
 function getComponentImports(pages = [], baseDir, option) {
   return getImports(getPagesComponents(pages), baseDir, option);
@@ -76,7 +76,9 @@ g.TinyConfig = appConfig;
 
   const configImport = 'require(\'./config\');';
 
-  const appImport = `require('${path.relative(temp, path.join(src, 'app'))}');`;
+  const appImport = `require('${normalizePathForWin(
+    path.relative(temp, path.join(src, 'app')),
+  )}');`;
 
   const allComponentsRequires = getComponentImports(app.pages, src, {
     src,
