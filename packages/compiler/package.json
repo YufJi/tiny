@@ -6,7 +6,9 @@
   "files": [
     "lib"
   ],
-  "scripts": {},
+  "scripts": {
+    "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --fix"
+  },
   "author": "YufJi",
   "dependencies": {
     "@babel/code-frame": "^7.12.13",

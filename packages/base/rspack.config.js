@@ -1,7 +1,5 @@
 const path = require('path');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const ProgressBarPlugin = require('progress-bar-webpack-plugin');
-const ESBuildPlugin = require('./plugins/esbuild');
+const { rspack } = require('@rspack/core');
 
 const root = path.join(__dirname, '..');
 
@@ -32,17 +30,33 @@ const getConfig = (type) => {
         {
           test: /\.jsx?$/,
           use: [
-            'swc-loader',
+            {
+              loader: 'builtin:swc-loader',
+              options: {
+                jsc: {
+                  target: 'es2015',
+                  parser: {
+                    syntax: 'ecmascript',
+                    jsx: true,
+                  },
+                },
+              },
+            },
           ],
         },
         {
           test: /\.tsx?$/,
           use: [
-            'swc-loader',
             {
-              loader: 'ts-loader',
+              loader: 'builtin:swc-loader',
               options: {
-                transpileOnly: true,
+                jsc: {
+                  target: 'es2015',
+                  parser: {
+                    syntax: 'typescript',
+                    tsx: true,
+                  },
+                },
               },
             },
           ],
@@ -50,23 +64,29 @@ const getConfig = (type) => {
         {
           test: /\.(less|css)$/,
           use: [
-            MiniCssExtractPlugin.loader,
+            rspack.CssExtractRspackPlugin.loader,
             'css-loader',
             {
               loader: 'postcss-loader',
               options: {
-                plugins: () => [
-                  require('autoprefixer')(),
-                  require('cssnano')(),
-                ],
+                postcssOptions: {
+                  plugins: [
+                    require('autoprefixer')(),
+                    require('cssnano')(),
+                  ],
+                },
               },
-            }, {
+            },
+            {
               loader: 'less-loader',
               options: {
-                javascriptEnabled: true,
+                lessOptions: {
+                  javascriptEnabled: true,
+                },
               },
             },
           ],
+          type: 'javascript/auto',
         },
       ],
     },
@@ -76,13 +96,13 @@ const getConfig = (type) => {
     optimization: {
       minimize: !isDev,
       minimizer: [
-        new ESBuildPlugin(),
+        new rspack.SwcJsMinimizerRspackPlugin(),
+        new rspack.LightningCssMinimizerRspackPlugin(),
       ],
     },
 
     plugins: [
-      new ProgressBarPlugin(),
-      new MiniCssExtractPlugin({
+      new rspack.CssExtractRspackPlugin({
         filename: 'webview.css',
       }),
     ],

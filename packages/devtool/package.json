@@ -7,8 +7,9 @@
     "lib"
   ],
   "scripts": {
-    "dev": "NODE_ENV=development curiosity-bundler dev",
-    "build": "NODE_ENV=production curiosity-bundler build"
+    "dev": "rspack serve",
+    "build": "rspack build",
+    "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --fix"
   },
   "dependencies": {
     "@babel/runtime": "^7.15.4",
@@ -23,7 +24,14 @@
     "react-redux": "^7.2.3"
   },
   "devDependencies": {
-    "babel-preset-curiosity": "^0.1.x",
-    "curiosity-bundler": "^0.1.x"
+    "@rspack/cli": "^1.7.10",
+    "@rspack/core": "^1.7.10",
+    "autoprefixer": "^10.4.27",
+    "css-loader": "^3.0.0",
+    "html-rspack-plugin": "^6.1.7",
+    "less": "^3.9.0",
+    "less-loader": "^11.1.4",
+    "postcss": "^8.5.8",
+    "postcss-loader": "^3.0.0"
   }
 }
