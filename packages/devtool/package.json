@@ -8,8 +8,7 @@
   ],
   "scripts": {
     "dev": "rspack serve",
-    "build": "rspack build",
-    "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --fix"
+    "build": "rspack build"
   },
   "dependencies": {
     "@babel/runtime": "^7.15.4",

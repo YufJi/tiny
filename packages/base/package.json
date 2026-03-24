@@ -14,8 +14,7 @@
   "scripts": {
     "watch": "rspack dev --watch",
     "dev": "rspack dev",
-    "build": "rspack build",
-    "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --fix"
+    "build": "rspack build"
   },
   "dependencies": {
     "@polymer/polymer": "^3.4.1",

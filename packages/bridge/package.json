@@ -1,0 +1,16 @@
+{
+  "name": "@tiny/bridge",
+  "version": "1.0.0",
+  "description": "A bridge package for the project",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@tiny/utils": "workspace:*",
+    "eventemitter3": "^4.0.7"
+  }
+}
