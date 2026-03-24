@@ -1,4 +1,4 @@
-# Tiny v1 - 小程序引擎
+# Tiny - 小程序引擎
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
@@ -20,7 +20,7 @@
 ## 📦 项目结构
 
 ```
-tiny-v1/
+tiny/
 ├── packages/
 │   ├── base/           # 小程序基础库 - 核心运行时
 │   ├── compiler/       # 小程序编译器 - 构建工具
@@ -262,7 +262,7 @@ packages/devtool/src/
 - [ ] TabBar 支持
 - [ ] 分包加载
 - [ ] 使用 QuickJS WASM 代替逻辑层 iframe 实现沙盒
-- [ ] 使用 Vue 2/3 重写渲染层
+- [ ] 使用 Vue 重写渲染层
 
 ## 📄 许可证
 
