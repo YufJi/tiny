@@ -1,0 +1,14 @@
+{
+  "name": "@tiny/runtime",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {},
+  "keywords": [],
+  "dependencies": {
+    "@tiny/apis": "workspace:*",
+    "@tiny/bridge": "workspace:*",
+    "@tiny/utils": "workspace:*",
+    "es-toolkit": "^1.45.1"
+  }
+}

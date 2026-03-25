@@ -1,0 +1,15 @@
+{
+  "name": "@tiny/apis",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "dependencies": {
+    "@tiny/bridge": "workspace:*",
+    "@tiny/utils": "workspace:*"
+  }
+}
