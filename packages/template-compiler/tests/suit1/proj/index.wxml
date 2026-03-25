@@ -1,0 +1,5 @@
+<view wx:for="{{arr}}" id="{{id}}" name="{{name}}" good="{{good}}" wx:for-index="idx" wx:for-item="itm" wx:key="key">
+	<view id="{{idx}}">{{idx}}-{{itm.value}}</view>
+</view>
+
+<view>{{hello}}</view>

@@ -1,0 +1,97 @@
+<!-- /page/index/index.wxml -->
+
+<wxs module="sample1">
+// 方法一：单行注释
+
+/*
+方法二：多行注释
+*/
+
+module.exports.msg = 'sample1';
+
+/* 到结尾的注释
+/* 到结尾的注释
+
+var a = 1;
+/* 到结尾的注释
+var b = 2;
+var c = "fake";
+module.exports.msg = 'sample1_1';
+*/
+</wxs>
+
+<wxs module="sample2">
+// https://developers.weixin.qq.com/miniprogram/dev/reference/wxs/03annotation.html
+// 注释
+
+// 方法一：单行注释
+
+/*
+方法二：多行注释
+*/
+
+module.exports.msg = 'sample1';
+
+/* 到结尾的注释
+/* 到结尾的注释
+
+var a = 1;
+/* 到结尾的注释
+var b = 2;
+var c = "fake";
+module.exports.msg = 'sample1_1';
+
+</wxs>
+
+<wxs module="sample3">
+// 方法一：单行注释
+
+/*
+
+/*
+方法二：多行注释
+*/
+
+module.exports.msg = 'sample1';
+
+/* 到结尾的注释
+/* 到结尾的注释
+
+var a = 1;
+/* 到结尾的注释
+var b = 2;
+var c = "fake";
+module.exports.msg = 'sample1_1';
+
+</wxs>
+
+<wxs src="./../logic.wxs" module="logic" />
+
+<view>{{logic.msg}}</view>
+<view>{{sample1.msg}}</view>
+
+<block wx:for="{{logic.arr}}" wx:for-item="itm" wx:for-index="idx" wx:key="idx">
+  <view>{{itm}}:{{idx}}</view>
+</block>
+  
+<wxs module="logic1">
+console.log("logic1");
+
+</wxs>
+
+<!-- wxml -->
+<wxs module="sample">
+// 方法一：单行注释
+
+/*
+方法二：多行注释
+*/
+
+//*
+
+var a = 1;
+var b = 2;
+var c = "fake";
+
+</wxs>
+

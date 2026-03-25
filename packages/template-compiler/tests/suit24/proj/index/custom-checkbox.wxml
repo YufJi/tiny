@@ -1,0 +1,2 @@
+<!--index/custom-checkbox.wxml-->
+<checkbox disabled="{{disabled}}" checked="{{selected}}"></checkbox>

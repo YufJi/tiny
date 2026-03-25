@@ -1,0 +1,7 @@
+<view>1</view>
+<scroll-view class="" scroll-x="false" scroll-y="false" upper-threshold="50" lower-threshold="50" 
+  scroll-top="0" scroll-left="0" scroll-into-view="" scroll-with-animation="false" enable-back-to-top="false" 
+  bindscrolltoupper="" bindscrolltolower="" bindscroll="">
+  
+</scroll-view>
+  

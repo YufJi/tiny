@@ -1,0 +1,6 @@
+<!-- 组件模板 -->
+<view class="wrapper">
+  <view>{{myBehaviorProperty}}</view>
+  <view>{{myProperty}}</view>
+  <button bindtap="myBehaviorMethod">点击触发 behavior 方法</button>
+</view>

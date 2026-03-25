@@ -1,0 +1,85 @@
+//https://developers.weixin.qq.com/miniprogram/dev/reference/wxs/07basiclibrary.html
+
+
+//console
+
+console.log(1);
+
+//Math
+
+console.log(Math.E);
+console.log(Math.LN10);
+console.log(Math.LN2);
+console.log(Math.LOG2E);
+console.log(Math.LOG10E);
+console.log(Math.PI);
+console.log(Math.SQRT1_2);
+console.log(Math.SQRT2);
+
+console.log(Math.abs(-1));
+console.log(Math.acos(1));
+console.log(Math.asin(1));
+console.log(Math.atan(1));
+console.log(Math.atan2(1));
+console.log(Math.ceil(1));
+console.log(Math.cos(1));
+console.log(Math.exp(1));
+console.log(Math.floor(1));
+console.log(Math.log(1));
+console.log(Math.max(1, 2));
+console.log(Math.min(1, 2));
+console.log(Math.pow(1, 2));
+// console.log(Math.random());
+console.log(Math.round(1.2));
+console.log(Math.sin(1));
+console.log(Math.sqrt(1));
+console.log(Math.tan(1));
+
+//JSON
+console.log(undefined === JSON.stringify());
+console.log(undefined === JSON.stringify(undefined));
+console.log("null" === JSON.stringify(null));
+
+console.log("111" === JSON.stringify(111));
+console.log('"111"' === JSON.stringify("111"));
+console.log("true" === JSON.stringify(true));
+console.log(undefined === JSON.stringify(function () {}));
+
+
+console.log(undefined === JSON.parse(JSON.stringify()));
+console.log(undefined === JSON.parse(JSON.stringify(undefined)));
+console.log(null === JSON.parse(JSON.stringify(null)));
+
+console.log(111 === JSON.parse(JSON.stringify(111)));
+console.log("111" === JSON.parse(JSON.stringify("111")));
+console.log(true === JSON.parse(JSON.stringify(true)));
+
+console.log(undefined === JSON.parse(JSON.stringify(function () {})));
+
+//Number
+
+console.log(Number.MAX_VALUE)
+console.log(Number.MIN_VALUE)
+console.log(Number.NEGATIVE_INFINITY)
+console.log(Number.POSITIVE_INFINITY)
+
+//Date
+
+// console.log(Date.parse(1))
+// console.log(Date.UTC(1))
+// console.log(Date.now())
+
+//Global
+
+console.log(NaN);
+console.log(Infinity);
+console.log(undefined);
+
+console.log(parseInt(1.2));
+console.log(parseFloat('1.2'));
+console.log(isNaN(NaN));
+console.log(isFinite(1.2));
+console.log(decodeURI(encodeURI('https://www.qq.com?手动阀')));
+console.log(decodeURIComponent(encodeURIComponent('哈哈哈')));
+console.log(encodeURI('https://www.qq.com?手动阀'));
+console.log(encodeURIComponent('哈哈哈'));

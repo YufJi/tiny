@@ -1,0 +1,4 @@
+<view>test2</view>
+<template name="test2">
+  <view>{{1}}</view>
+</template>

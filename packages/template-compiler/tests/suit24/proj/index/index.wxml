@@ -1,0 +1,25 @@
+<view bindTap>selectable-group with custom-radio</view>
+
+<selectable-group/>
+<selectable-group class="class1"/>
+<selectable-group generic:selectable="custom-radio"/>
+<selectable-group class="class1" id="id1"/>
+<selectable-group generic:selectable="custom-radio" generic:selectable1="custom-radio"/>
+<selectable-group class="class1" generic:selectable="custom-radio"/>
+<selectable-group class="class1" id="id1" generic:selectable="custom-radio"/>
+<selectable-group class="class1" generic:selectable="custom-radio" generic:selectable1="custom-radio"/>
+<selectable-group class="class1" id="id1" generic:selectable="custom-radio" generic:selectable1="custom-radio"/>
+<selectable-group class="class1" id="id1" key1 generic:selectable="custom-radio" generic:selectable1="custom-radio"/>
+<selectable-group class="class1" id="id1" generic:selectable="custom-radio" generic:selectable1="custom-radio"/>
+
+
+<scroll-view upper-threshold="50" aAttr class="class1" class id bindTap lower-threshold="50" scroll-x scroll-y   
+  scroll-top="0" scroll-left="0" scroll-into-view="scroll-into-view" scroll-with-animation 
+  bindscrolltoupper="bindscrolltoupper" enable-back-to-top bindscrolltolower="bindscrolltolower" bindscroll="bindscroll" generic:selectable="custom-radio" generic:selectable1="custom-radio">
+</scroll-view>
+<selectable-group id="{{123}}" generic:selectable="custom-radio" generic:selectable1="custom-checkbox" class="{{'123'}}" />
+<selectable-group generic:selectable="custom-radio" generic:selectable1="custom-checkbox"/>
+<selectable-group id="{{123}}" generic:selectable="custom-radio" />
+<selectable-group generic:selectable="custom-radio"/>
+<view>selectable-group with custom-checkbox</view>
+<selectable-group id="{{'123'}}" generic:selectable="custom-checkbox"  class="{{123}}"/>

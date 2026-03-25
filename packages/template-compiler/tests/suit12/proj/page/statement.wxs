@@ -1,0 +1,97 @@
+// https://developers.weixin.qq.com/miniprogram/dev/reference/wxs/05statement.html
+// 语句
+
+// if ...
+if(1) console.log(1);
+
+if(1) 
+console.log(1);
+
+if(1) {
+  console.log(1);
+}
+
+// if ... else
+
+if (1) console.log(1);
+else console.log(2);
+
+if (1)
+console.log(1);
+else
+console.log(2);
+
+if (1) {
+  console.log(1);
+} else {
+  console.log(2);
+}
+
+// if ... else if ... else ...
+
+if (1) {
+  console.log(1);
+} else if (2) {
+  console.log(2);
+} else if (3) {
+  console.log(3);
+} else {
+  console.log(4);
+}
+
+var test = 10;
+
+function test1(){
+  return 9;
+}
+
+//switch
+switch (test) {
+  case test:
+  console.log(test);
+  case 1:
+  console.log(1);
+    break;
+  case '10':
+  console.log('10');
+  default:
+  console.log('default');
+}
+
+var exp = 10;
+
+switch ( exp ) {
+case "10":
+console.log("string 10");
+  break;
+case 10:
+console.log("number 10");
+  break;
+case exp:
+console.log("var exp");
+  break;
+default:
+console.log("default");
+}
+
+//for
+for (var i = 0; i < 3; ++i)
+ console.log(i);
+
+for (var i = 0; i < 3; ++i) {
+  if( i >= 1) break;
+  console.log(i);
+}
+
+//while
+var a = 10;
+while (a >= 0)
+  a--, console.log(a);
+  var a = 10;
+while (a >= 0){
+  a--, console.log(a);
+}
+
+do {
+  a--, console.log(a);
+} while (a >= 0)

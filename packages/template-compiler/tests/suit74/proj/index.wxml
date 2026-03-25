@@ -1,0 +1,6 @@
+<view class="className" hover-class="none" hover-stop-propagation="false">
+  <view>
+    10000
+  </view>
+</view>
+  

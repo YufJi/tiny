@@ -1,0 +1,4 @@
+
+<include src="./index.wxml" />
+
+<view>{{logic.msg}}</view>

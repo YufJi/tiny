@@ -1,0 +1,21 @@
+<wxs src="./../tools.wxs" module="tools" />
+
+<view> {{tools.msg}} </view>
+
+<view>
+  <wxs module="m1">
+    module.exports.msg = '1';
+  </wxs>
+  <view>{{m1.msg}}</view>
+  <view>
+      <wxs module="m1">
+        module.exports.msg = '2';
+      </wxs>
+      <view>{{m1.msg}}</view>
+  </view>
+</view>
+
+<view> {{tools.fun1()}} </view>
+<view> {{tools.bar(tools.FOO)}} </view>
+<view> {{tools.fun2(1, 2)}} </view>
+<view> {{tools.fun2('1', '2', '3')}} </view>

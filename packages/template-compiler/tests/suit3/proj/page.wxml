@@ -1,0 +1,9 @@
+
+<view class="{{className}}">
+  {{hello}}
+
+</view>
+
+<include src="test1.wxml"></include>
+
+  <import src="template.wxml"></import>

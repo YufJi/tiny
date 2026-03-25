@@ -1,0 +1,8 @@
+var reg = getRegExp('\?tp=webp$');
+var reg = getRegExp('"\?tp=webp$"');
+var reg = getRegExp("\?tp=webp$");
+var reg = getRegExp("'\?tp=webp$'");
+
+function test111(){
+  var reg = getRegExp('\?tp=webp$');
+}

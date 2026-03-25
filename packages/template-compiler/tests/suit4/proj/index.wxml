@@ -1,0 +1,4 @@
+<template is="msgItem" data="{{...item}}"/>
+
+<import src="template.wxml" />
+<include src="log.wxml"  />

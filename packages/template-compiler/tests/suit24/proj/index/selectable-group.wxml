@@ -1,0 +1,6 @@
+<view wx:for="{{labels}}" wx:key="*this">
+  <label bindtap="itemTap" data-index="{{index}}">
+    <selectable disabled="{{false}}" selected="{{selected[index]}}"></selectable>
+    {{item}}
+  </label>
+</view>

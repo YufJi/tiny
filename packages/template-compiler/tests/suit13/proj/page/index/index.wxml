@@ -1,0 +1,5 @@
+<!-- page/index/index.wxml -->
+
+<wxs src="./../tools.wxs" module="tools" />
+<view> {{tools.msg}} </view>
+<view> {{tools.bar(tools.FOO)}} </view>

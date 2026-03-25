@@ -1,0 +1,15 @@
+<wxs src="./../logic.wxs" module="logic" />
+<wxs src="./../index/index.wxs" module="index" />
+
+<wxs module="inner">
+	var msg = 'hello world from inner';
+	module.exports.msg = msg;
+	function out(a){
+		return a + 2;
+	}
+	module.exports.out = out(3);
+</wxs>
+
+<view>logic:{{logic.msg}}</view>
+<view>index:{{index.msg}}</view>
+<view>inner:{{inner.msg}}</view>

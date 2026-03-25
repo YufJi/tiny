@@ -1,0 +1,28 @@
+.canvas {
+  width: 304px;
+  height: 304px;
+  background-color: #fff;
+}
+
+.cover-view {
+  margin-left: 52px;
+  margin-top: 20px;
+  width: 200px;
+  height: 50px;
+  text-align: center;
+  line-height: 50px;
+  background-color: #1AAD19;
+  color: #fff;
+}
+
+.image-cnt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 50px;
+}
+
+.cover-image {
+  width: 50px;
+  height: 50px;
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@tiny/template-compiler",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [],
+  "dependencies": {
+    "@babel/generator": "^7.14.0",
+    "@babel/parser": "^7.15.4",
+    "@babel/traverse": "^7.14.0",
+    "@babel/types": "^7.14.0",
+    "htmlparser2": "^7.1.1"
+  },
+  "devDependencies": {
+    "vitest": "^1.0.0"
+  }
+}

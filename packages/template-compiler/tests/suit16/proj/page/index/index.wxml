@@ -1,0 +1,11 @@
+<!-- /pages/index/index.wxml -->
+
+<wxs src="./../comm.wxs" module="some_comms"></wxs>
+<!-- 也可以直接使用单标签闭合的写法
+<wxs src="./../comm.wxs" module="some_comms" />
+-->
+
+<!-- 调用 some_comms 模块里面的 bar 函数，且参数为 some_comms 模块里面的 foo -->
+<view> {{some_comms.bar(some_comms.foo)}} </view>
+<!-- 调用 some_comms 模块里面的 bar 函数，且参数为 page/index/index.js 里面的 msg -->
+<view> {{some_comms.bar(msg)}} </view>

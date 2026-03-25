@@ -1,0 +1,37 @@
+<block  wx:for="{{array}}" wx:for-index="idx" wx:for-item="itemName" wx:key="key">
+  <view>
+    <block  wx:for="{{array}}" wx:for-index="idx" wx:for-item="itemName" wx:key="key">
+      <view>
+          <block  wx:for="{{array}}" wx:for-index="idx" wx:for-item="itemName" wx:key="key">
+            <view>
+              111111111111111111111111111111111
+            </view>
+          </block>
+      </view>
+    </block>
+  </view>
+</block>
+
+<view  wx:for="{{array}}" wx:for-index="idx" wx:for-item="itemName">
+  <view>
+    <view  wx:for="{{array}}" wx:for-index="idx" wx:for-item="itemName">
+      <view>
+        <view  wx:for="{{array}}" wx:for-index="idx" wx:for-item="itemName">
+          <view>121212121212</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view>
+  <scroll-view class="" scroll-x="false" scroll-y="false" upper-threshold="50" lower-threshold="50" 
+    scroll-top="0" scroll-left="0" scroll-into-view="" scroll-with-animation="false" enable-back-to-top="false" 
+    bindscrolltoupper="" bindscrolltolower="" bindscroll="">
+    <live-player class="" src="" mode="live" autoplay="false" muted="false" orientation="vertical" 
+      object-fit="contain" min-cache="1" max-cache="3" 
+      bindstatechange="" bindfullscreenchange="" bindnetstatus="">
+      
+    </live-player>
+  </scroll-view>
+</view>

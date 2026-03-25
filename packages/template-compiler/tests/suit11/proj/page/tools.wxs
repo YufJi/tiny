@@ -1,0 +1,24 @@
+// /page/tools.wxs
+
+var foo = "'hello world' from tools.wxs";
+var bar = function (d) {
+  return d;
+}
+var fun1 = function () {
+  return 'func1';
+}
+var fun2 = function (a, b) {
+  return a + b;
+}
+var fun3 = function (a, b, c) {
+  return a + b + c;
+}
+module.exports = {
+  FOO: foo,
+  bar: bar,
+  fun1: fun1,
+  fun2: fun2,
+  fun3: fun3,
+  msg: "some msg"
+
+};

@@ -1,0 +1,17 @@
+<view wx:for="{{[1, 2, 3, 4, 5]}}">
+  <view>{{hello}}</view>
+  <template is="{{item % 2 == 0 ? 'even' : 'odd'}}" data="{{text: 'text', hello: 'world'}}"/>
+  <view>{{hello}}</view>
+</view>
+
+<template is="msgItem" data="{{index: 1, msg: 'hello world', time: 123}}" />
+
+<template is="test2" />
+
+<import src="log.wxml" />
+
+<import src="test2.wxml" />
+
+<include src="page.wxml" />
+
+<view name="name">{{hello}}</view>

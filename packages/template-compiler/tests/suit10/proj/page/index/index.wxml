@@ -1,0 +1,25 @@
+<!-- /page/index/index.wxml -->
+
+<wxs src="./../logic.wxs" module="logic" />
+
+<view>{{logic.msg}}</view>
+<view>1</view>
+
+<wxs module="inner">
+	var msg = 'hello world from inner';
+	module.exports.msg = msg;
+	function out(a){
+		return a + 2;
+	}
+	module.exports.out = out(3);
+</wxs>
+
+
+<wxs module="inner">
+	var msg = 'hello world from inner';
+	module.exports.msg = msg;
+	function out(a){
+		return a + 2;
+	}
+	module.exports.out = out(3);
+</wxs>

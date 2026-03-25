@@ -1,0 +1,4 @@
+<view class="{{viewClass}}">
+  <template is="testTemplate" data="{{...log, time: 1234567898 }}"></template>
+</view>
+<import src="test.wxml"></import>

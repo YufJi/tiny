@@ -1,0 +1,20 @@
+// /pages/logic.wxs
+
+var tools = require("./tools.wxs");
+var operator = require("./operator.wxs");
+var statement = require("./statement.wxs");
+var statement = require("./dataType.wxs");
+var statement = require("./lib.wxs");
+
+console.log(tools.FOO);
+console.log(tools.bar("logic.wxs"));
+console.log(tools.msg);
+
+module.exports.msg = 'hello world';
+
+module.exports.arr = [1, 2, 3, 4];
+
+var a = '11';
+
+console.log(a);
+console.log(a[NaN])

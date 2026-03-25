@@ -1,0 +1,27 @@
+<view wx:if="{{showOuterView}}">
+	<view wx:if="{{foo1}}">
+		{{good}}
+	</view>
+	<view id="{{innerView}}">
+		<view wx:if="{{foo2}}">
+			{{good}}
+		</view>
+		{{innerTxt}}
+		<view wx:if="{{foo13}}">
+			{{good}}
+		</view>
+	</view>
+</view>
+<view wx:elif="{{showOuterView1}}">
+	{{innerTxt1}}
+</view>
+
+<view wx:if="{{showOuterView2}}">
+	{{innerTxt2}}
+</view>
+<view wx:elif="{{showOuterView3}}">
+	{{innerTxt3}}
+</view>
+<view wx:else="{{showOuterView4}}">
+	{{innerTxt4}}
+</view>

@@ -1,0 +1,11 @@
+// /pages/logic.wxs
+
+var tools = {
+  FOO: 'foo',
+  bar: function (a) {
+    return 'hello ' + a;
+  },
+  msg: 'tools msg'
+};
+
+module.exports.msg = "hello world from logic.";
