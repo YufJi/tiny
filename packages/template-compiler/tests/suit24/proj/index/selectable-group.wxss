@@ -1,4 +1,0 @@
-/* index/selectable-group.wxss */
-:host {
-  display: block;
-}

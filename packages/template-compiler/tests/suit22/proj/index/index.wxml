@@ -1,5 +1,0 @@
-<!-- 引用组件的页面模版 -->
-<view>
-  <my-component my-behavior-property="behavior-property" my-property="my-property">
-  </my-component>
-</view>

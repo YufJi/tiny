@@ -1,21 +1,25 @@
 {
   "name": "@tiny/template-compiler",
   "version": "1.0.0",
-  "description": "",
+  "description": "Glass-easel template compiler Node.js implementation - WXML to JavaScript code generator",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
+    "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "keywords": [],
-  "dependencies": {
-    "@babel/generator": "^7.14.0",
-    "@babel/parser": "^7.15.4",
-    "@babel/traverse": "^7.14.0",
-    "@babel/types": "^7.14.0",
-    "htmlparser2": "^7.1.1"
-  },
+  "keywords": [
+    "template-compiler",
+    "wxml",
+    "miniprogram",
+    "glass-easel"
+  ],
   "devDependencies": {
-    "vitest": "^1.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^1.6.1"
+  },
+  "dependencies": {
+    "entities": "^8.0.0"
   }
 }
