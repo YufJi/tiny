@@ -1,0 +1,37 @@
+{
+  "name": "@tiny/stylesheet-compiler",
+  "description": "The stylesheet compiler for the glass-easel project (pure TypeScript/Node.js implementation)",
+  "version": "0.19.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wechat-miniprogram/glass-easel.git"
+  },
+  "keywords": [
+    "stylesheet-compiler",
+    "css",
+    "miniprogram",
+    "glass-easel"
+  ],
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "postcss": "^8.4.38"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vitest": "^1.6.1"
+  }
+}

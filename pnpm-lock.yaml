@@ -239,6 +239,19 @@ importers:
         specifier: ^1.45.1
         version: 1.46.1
 
+  packages/stylesheet-compiler:
+    dependencies:
+      postcss:
+        specifier: ^8.4.38
+        version: 8.5.14
+    devDependencies:
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@25.6.2)(@vitest/ui@1.6.1)(less@3.13.1)
+
   packages/template-compiler:
     devDependencies:
       typescript:
