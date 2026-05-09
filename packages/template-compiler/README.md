@@ -1,221 +1,153 @@
-# @tiny/template-compiler
+# glass-easel-template-compiler-js
 
-Glass-easel template compiler 的 Node.js 实现版本，将 WXML 模板编译为 JavaScript 代码。
+The template compiler for the [glass-easel](https://github.com/wechat-miniprogram/glass-easel) project — a pure TypeScript/Node.js port of the original Rust/WebAssembly implementation.
 
-## 功能特性
+It parses glass-easel WXML templates, generates JavaScript code-gen objects, and can stringify ASTs back to HTML. No native binaries or WASM required.
 
-- **模板解析**: 将 WXML 模板解析为 AST
-- **表达式解析**: 支持完整的 JavaScript 表达式语法（包括运算符、函数调用、对象/数组字面量等）
-- **代码生成**: 将 AST 编译为可执行的 JavaScript 代码
-- **模板组管理**: 支持多模板管理和依赖关系处理
-- **指令支持**: wx:for, wx:if, wx:elif, wx:else, import, include 等
-- **WXS 支持**: 支持小程序 WXS 脚本
+## Installation
 
-## 安装
-
-```bash
-pnpm install @tiny/template-compiler
+```sh
+pnpm add glass-easel-template-compiler-js
 ```
 
-## 使用方法
+## Usage
 
-### 基础用法
+### Basic code generation
 
-```typescript
-import { TmplGroup } from '@tiny/template-compiler';
+```ts
+import { TmplGroup } from 'glass-easel-template-compiler-js'
 
-const group = new TmplGroup();
+const group = TmplGroup.new()
 
-// 添加模板
-const warnings = group.addTmpl('index', `
+group.addTmpl('pages/index/index', `
   <view class="container">
-    <text>{{title}}</text>
-    <view wx:for="{{items}}" wx:key="id">
-      {{item.name}}
-    </view>
+    <text>{{ message }}</text>
+    <button bindtap="onClick">Click</button>
   </view>
-`);
+`)
 
-if (warnings.length > 0) {
-  console.warn('编译警告:', warnings);
-}
+// Generate a single template's code-gen object (IIFE string)
+const code = group.getTmplGenObject('pages/index/index')
 
-// 获取生成的代码
-const code = group.getTemplateRuntime('index');
-console.log(code);
+// Generate all templates in one IIFE bundle
+const bundle = group.getTmplGenObjectGroups()
 ```
 
-### 模板组管理
+### Template dependencies
 
-```typescript
-import { TmplGroup } from '@tiny/template-compiler';
+```ts
+group.addTmpl('components/a', `<include src="../components/b" />`)
+group.addTmpl('components/b', `<view />`)
 
-const group = new TmplGroup();
-
-// 添加多个模板
-group.addTmpl('header', '<view>Header</view>');
-group.addTmpl('footer', '<view>Footer</view>');
-group.addTmpl('main', `
-  <view>
-    <include src="header"/>
-    <text>Main Content</text>
-    <include src="footer"/>
-  </view>
-`);
-
-// 获取依赖关系
-const deps = group.directDependencies('main');
-console.log(deps); // ['header', 'footer']
-
-// 获取所有模板运行时
-const allCode = group.getAllTemplateRuntime();
+// Returns paths of directly referenced templates (include / import)
+group.getDirectDependencies('components/a') // => ['components/b']
 ```
 
-### 开发模式
+### WXS / inline scripts
 
-```typescript
-const group = TmplGroup.newDev(); // 启用开发模式，生成格式化代码
+```ts
+// External WXS script
+group.addScript('scripts/utils', 'exports.double = (x) => x * 2')
+group.addTmpl('pages/index/index', `
+  <wxs module="utils" src="/scripts/utils" />
+  <text>{{ utils.double(n) }}</text>
+`)
+group.getScriptDependencies('pages/index/index') // => ['scripts/utils']
 
-// 或者
-const group = new TmplGroup({ devMode: true });
+// Inline WXS script
+group.addTmpl('pages/foo/foo', `
+  <wxs module="calc"> exports.add = (a, b) => a + b </wxs>
+  <text>{{ calc.add(1, 2) }}</text>
+`)
+group.inlineScriptModuleNames('pages/foo/foo')           // => ['calc']
+group.inlineScriptContent('pages/foo/foo', 'calc')       // => ' exports.add = (a, b) => a + b '
+group.setInlineScriptContent('pages/foo/foo', 'calc', 'exports.add = (a, b) => a + b')
 ```
 
-## API 文档
+### Template imports
 
-### TmplGroup
-
-模板组管理类，用于管理多个模板及其依赖关系。
-
-#### 构造函数
-
-```typescript
-new TmplGroup(options?: { devMode?: boolean })
+```ts
+group.addTmpl('shared/buttons', `
+  <template name="primary-btn">
+    <button class="primary">{{ label }}</button>
+  </template>
+`)
+group.addTmpl('pages/index/index', `
+  <import src="/shared/buttons" />
+  <template is="primary-btn" data="{{ label: 'Submit' }}" />
+`)
 ```
 
-#### 方法
+### Stringify (AST → HTML)
 
-- `addTmpl(path: string, tmplStr: string): ParseError[]` - 添加模板
-- `removeTmpl(path: string): boolean` - 移除模板
-- `getTree(path: string): Template` - 获取模板 AST
-- `containsTemplate(path: string): boolean` - 检查模板是否存在
-- `listTemplateTrees(): Array<[string, Template]>` - 列出所有模板
-- `len(): number` - 获取模板数量
-- `directDependencies(path: string): string[]` - 获取直接依赖
-- `indirectDependencies(path: string): string[]` - 获取间接依赖
-- `importGroup(group: TmplGroup): void` - 导入其他模板组
-- `getTemplateRuntime(path: string): string` - 获取单个模板运行时代码
-- `getAllTemplateRuntime(): string` - 获取所有模板运行时代码
-- `getRuntimeString(): string` - 获取运行时辅助函数
-- `getWxsRuntimeString(): string` - 获取 WXS 运行时
+```ts
+import { TmplGroup } from 'glass-easel-template-compiler-js'
 
-### parseTemplate
+const group = TmplGroup.new()
+group.addTmpl('a', `<view class="foo"><text>{{msg}}</text></view>`)
 
-解析单个模板字符串。
-
-```typescript
-import { parseTemplate } from '@tiny/template-compiler';
-
-const { template, warnings } = parseTemplate('path/to/template', '<view>content</view>');
+// Returns a minimized HTML string of the parsed AST
+const html = group.stringifyTmpl('a')
 ```
 
-### parseExpression
+### Runtime helpers
 
-解析表达式字符串。
+```ts
+// Retrieve the runtime function definitions string (inject once per page)
+const runtime = group.getRuntimeString()
 
-```typescript
-import { parseExpression, createParseState } from '@tiny/template-compiler';
+// List of runtime variable names (X, Y, Z, P, Q)
+TmplGroup.getRuntimeVarList() // => ['X', 'Y', 'Z', 'P', 'Q']
 
-const ps = createParseState('', 'a + b');
-const expr = parseExpression(ps);
+// Export all external WXS scripts as an IIFE string
+const scripts = group.exportAllScripts()
 ```
 
-### generateCode
+## API Reference
 
-生成 JavaScript 代码。
+### `TmplGroup`
 
-```typescript
-import { generateCode, parseTemplate } from '@tiny/template-compiler';
+| Method | Description |
+|---|---|
+| `TmplGroup.new()` | Create a new group (production mode) |
+| `TmplGroup.newDev()` | Create a new group (development mode, emits debug hints) |
+| `addTmpl(path, content)` | Parse and register a template |
+| `removeTmpl(path)` | Remove a registered template |
+| `addScript(path, content)` | Register an external WXS script |
+| `removeScript(path)` | Remove a registered script |
+| `getTmplGenObject(path)` | Generate code-gen IIFE for a single template |
+| `getTmplGenObjectGroups()` | Generate code-gen IIFE for all templates |
+| `getWxGenObjectGroups()` | Generate WX-style code-gen bundle (calls `__wxCodeSpace__.addCompiledTemplate`) |
+| `stringifyTmpl(path)` | Stringify a template AST back to HTML |
+| `getDirectDependencies(path)` | Paths referenced via `<include>` or `<import>` |
+| `getScriptDependencies(path)` | Paths of external WXS scripts referenced by a template |
+| `inlineScriptModuleNames(path)` | Module names of inline `<wxs>` tags |
+| `inlineScriptContent(path, moduleName)` | Content of an inline WXS module |
+| `setInlineScriptContent(path, moduleName, content)` | Update content of an inline WXS module |
+| `getRuntimeString()` | Runtime helper functions as a string |
+| `TmplGroup.getRuntimeVarList()` | Names of runtime variables |
+| `exportGlobals()` | Export runtime globals as a string |
+| `exportAllScripts()` | Export all registered WXS scripts as a string |
+| `importGroup(other)` | Merge another `TmplGroup` into this one |
 
-const { template } = parseTemplate('test', '<view>hello</view>');
-const code = generateCode(template, { minimize: true });
+## Build
+
+```sh
+pnpm install
+pnpm build
 ```
 
-## 支持的语法
+## Test
 
-### 数据绑定
-
-```xml
-<text>{{message}}</text>
-<view id="item-{{id}}"></view>
-```
-
-### 列表渲染
-
-```xml
-<view wx:for="{{array}}" wx:key="unique">
-  {{index}}: {{item.message}}
-</view>
-
-<view wx:for="{{array}}" wx:for-item="myItem" wx:for-index="myIndex">
-  {{myIndex}}: {{myItem.name}}
-</view>
-```
-
-### 条件渲染
-
-```xml
-<view wx:if="{{condition}}">True</view>
-<view wx:elif="{{anotherCondition}}">Else If</view>
-<view wx:else>Else</view>
-```
-
-### 模板
-
-```xml
-<template name="msgItem">
-  <view>
-    <text>{{index}}: {{msg}}</text>
-  </view>
-</template>
-
-<template is="msgItem" data="{{...item}}"/>
-```
-
-### 引用
-
-```xml
-<import src="item.wxml"/>
-<include src="header.wxml"/>
-```
-
-### 表达式
-
-支持完整的 JavaScript 表达式：
-
-- 运算符: `+`, `-`, `*`, `/`, `%`, `==`, `!=`, `===`, `!==`, `<`, `>`, `<=`, `>=`, `&&`, `||`, `!`
-- 三元运算符: `condition ? a : b`
-- 成员访问: `obj.prop`, `obj['prop']`
-- 函数调用: `fn(arg1, arg2)`
-- 数组字面量: `[1, 2, 3]`
-- 对象字面量: `{a: 1, b: 2}`
-- 展开运算符: `{...obj}`, `[...arr]`
-
-## 与 glass-easel-template-compiler 的差异
-
-1. **实现语言**: 原版本使用 Rust + WASM，本版本使用纯 TypeScript
-2. **性能**: 原版本性能更优，本版本更易于集成和调试
-3. **依赖**: 本版本零依赖，原版本需要 WASM 运行时
-4. **API 兼容性**: 保持 API 设计一致，便于迁移
-
-## 测试
-
-```bash
-# 运行测试
+```sh
 pnpm test
-
-# 监视模式
-pnpm test:watch
 ```
+
+## Relation to the Rust implementation
+
+This package is a pure TypeScript port of [`glass-easel-template-compiler`](https://github.com/wechat-miniprogram/glass-easel/tree/master/glass-easel-template-compiler), which compiles to WebAssembly. Use this package when WASM is unavailable or inconvenient (e.g. Node.js tooling, unit tests, server-side rendering).
+
+The generated JavaScript output is designed to be functionally identical to the Rust/WASM version.
 
 ## License
 

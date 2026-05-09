@@ -4,6 +4,13 @@
   "description": "Glass-easel template compiler Node.js implementation - WXML to JavaScript code generator",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
@@ -15,11 +22,11 @@
     "miniprogram",
     "glass-easel"
   ],
+  "dependencies": {
+    
+  },
   "devDependencies": {
     "typescript": "^5.0.0",
     "vitest": "^1.6.1"
-  },
-  "dependencies": {
-    "entities": "^8.0.0"
   }
 }
