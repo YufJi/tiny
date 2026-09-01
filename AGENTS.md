@@ -154,3 +154,17 @@ packages/
 1. Build base library: `cd packages/base && yarn dev`
 2. Start debugger: `cd packages/devtool && yarn dev`
 3. Compile demo: `cd example && NODE_ENV=development node ./scripts/compile.js --root ./mini`
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues for `YufJi/tiny` and are managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The tracker uses the five default canonical triage labels unchanged. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+The repo uses a multi-context layout rooted at `CONTEXT-MAP.md`, with package-scoped contexts. See `docs/agents/domain.md`.
