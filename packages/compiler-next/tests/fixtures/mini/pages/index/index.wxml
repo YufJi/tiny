@@ -1,0 +1,7 @@
+<view class="page">
+  <badge text="{{message}}" />
+  <block wx:for="{{items}}" wx:key="*this">
+    <text>{{item}}</text>
+  </block>
+  <wxs module="utils">exports.upper = function(value) { return value }</wxs>
+</view>

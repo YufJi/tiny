@@ -1,0 +1,35 @@
+{
+  "name": "@tiny/compiler-next",
+  "version": "0.1.0",
+  "description": "Glass-easel mini-program compiler and runtime manifest producer",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc --emitDeclarationOnly && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@tiny/stylesheet-compiler": "workspace:*",
+    "@tiny/template-compiler": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.4.21",
+    "vitest": "^1.6.1"
+  }
+}

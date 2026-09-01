@@ -45,6 +45,15 @@ describe('TmplGroup — code generation', () => {
     expect(output.length).toBeGreaterThan(0)
   })
 
+  test('procgen accepts and reuses the official binding-map argument', () => {
+    const group = TmplGroup.new()
+    group.addTmpl('a', '<div>{{msg}}</div>')
+    const output = group.getTmplGenObjectGroups()
+    expect(output).toContain('R,C,D,U,A')
+    expect(output).toContain('A||{')
+    expect(output).toContain('return {C:')
+  })
+
   test('getRuntimeString returns runtime code', () => {
     const group = TmplGroup.new()
     const runtime = group.getRuntimeString()

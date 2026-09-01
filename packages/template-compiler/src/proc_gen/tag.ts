@@ -102,7 +102,7 @@ export function writeTemplateItem(
 ): void {
   w.exprStmt((ew) => {
     ew.write(`H[${genLitStr(key)}]=`)
-    ew.functionArgs('R,C,D,U', (w) => {
+    ew.functionArgs('R,C,D,U,A', (w) => {
       if (hasScripts) {
         w.exprStmt((w) => { w.write('R.setFnFilter(Q.A,Q.B)') })
       }
@@ -117,7 +117,7 @@ export function writeTemplateItem(
         w.setVarOnTopScopeInit('M', (w) => { w.write('R.m') })
         w.setVarOnTopScopeInit('O', (w) => { w.write('R.r') })
         w.setVarOnTopScopeInit('A', (ww) => {
-          ww.write('{')
+          ww.write('A||{')
           let idx = 0
           for (const [fieldKey, size] of bmc.listFields()) {
             if (idx > 0) ww.write(',')
