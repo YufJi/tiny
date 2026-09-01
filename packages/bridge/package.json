@@ -4,7 +4,10 @@
   "description": "A bridge package for the project",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -12,5 +15,10 @@
   "dependencies": {
     "@tiny/utils": "workspace:*",
     "eventemitter3": "^4.0.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.6.1"
   }
 }

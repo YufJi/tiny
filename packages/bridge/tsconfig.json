@@ -10,6 +10,9 @@
     "skipLibCheck": true,
     "allowJs": false
   },
+  "types": [
+    "node"
+  ],
   "include": [
     "./src/**/*"
   ]

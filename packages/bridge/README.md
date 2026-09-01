@@ -9,6 +9,8 @@
 - **同步/异步调用**：支持调用原生方法并获取返回结果
 - **事件订阅**：支持订阅原生端触发的事件
 
+除了下方保留的 Native Bridge API，本包还实现了 Tiny Runtime Protocol v1。该协议面向 host、service、render 和 devtool，提供版本化 envelope、握手、请求关联、JSON-safe 校验、批处理、超时和结构化错误。协议本身的架构决策见 ADR-0003 与 ADR-0004。
+
 ## 安装
 
 ```bash

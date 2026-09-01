@@ -84,6 +84,16 @@ importers:
       eventemitter3:
         specifier: ^4.0.7
         version: 4.0.7
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
 
   packages/compiler:
     dependencies:
