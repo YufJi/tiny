@@ -1,0 +1,30 @@
+<scroll-view class="page" scroll-y="true">
+  <view class="card">
+    <text class="title">Tiny Glass-easel P0</text>
+    <text class="subtitle">marker: {{marker}}</text>
+    <button bindtap="openAddTodo">Open add todo</button>
+    <add-button text="Add" bind:custom="onCustom">Custom slot</add-button>
+  </view>
+
+  <view class="section">
+    <checkbox-group bindchange="onCheckboxChange">
+      <label wx:for="{{todos}}" wx:key="text">
+        <checkbox value="{{item.text}}" checked="{{item.completed}}" />
+        <text>{{item.text}}</text>
+      </label>
+    </checkbox-group>
+    <slider value="{{sliderValue}}" bindchange="onSliderChange" />
+    <switch checked="{{switchChecked}}" bindchange="onSwitchChange" />
+    <progress percent="{{sliderValue}}" show-info />
+    <icon type="success" />
+  </view>
+
+  <swiper indicator-dots="{{true}}">
+    <swiper-item><view class="slide">first</view></swiper-item>
+    <swiper-item><view class="slide">second</view></swiper-item>
+  </swiper>
+
+  <button bindtap="showToast">Show toast</button>
+  <canvas canvas-id="p0-canvas" class="canvas" />
+  <image class="logo" src="/logo.svg" />
+</scroll-view>

@@ -1,6 +1,0 @@
-<scroll-view class="page" scroll-y="true">
-  <view class="card">
-    <text class="title">{{message}}</text>
-    <text class="subtitle">static dual-thread page</text>
-  </view>
-</scroll-view>

@@ -5,8 +5,7 @@ const runtime = await createStandaloneDualThreadHost({
   manifest,
   serviceUrl: '/service.html',
   renderUrl: '/render.html',
-  initialPath: 'pages/index/index',
-  initialData: { message: 'Hello glass-easel' },
+  initialPath: 'pages/todos/todos',
 })
 
 await runtime.host.bootstrap()

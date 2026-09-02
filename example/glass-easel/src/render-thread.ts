@@ -18,8 +18,7 @@ listenForRuntimePort('render', async (transport) => {
     manifest,
     artifacts: { templates: renderModule.default.templates },
     backend: new CurrentWindowBackendContext(),
-    initialPath: 'pages/index/index',
-    initialData: { message: 'Hello glass-easel' },
+    initialPath: 'pages/todos/todos',
     loadStyle: (path) => styles[path] ?? '',
   })
 })

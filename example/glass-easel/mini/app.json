@@ -1,6 +1,12 @@
 {
-  "pages": ["pages/index/index"],
+  "pages": [
+    "pages/todos/todos",
+    "pages/add-todo/add-todo"
+  ],
   "window": {
     "navigationBarTitleText": "Tiny Glass Easel"
+  },
+  "usingComponents": {
+    "add-button": "./components/add-button/add-button"
   }
 }

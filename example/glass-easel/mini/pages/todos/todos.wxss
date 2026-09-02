@@ -1,0 +1,7 @@
+.page { min-height: 100vh; padding: 32rpx; }
+.card, .section { padding: 24rpx; border: 1px solid #334155; border-radius: 16rpx; margin-bottom: 24rpx; }
+.title { display: block; font-size: 40rpx; font-weight: bold; }
+.subtitle { display: block; margin: 12rpx 0 24rpx; color: #94a3b8; }
+.slide { height: 120rpx; display: flex; align-items: center; justify-content: center; }
+.canvas { width: 200px; height: 100px; border: 1px dashed #475569; }
+.logo { width: 80px; height: 80px; }

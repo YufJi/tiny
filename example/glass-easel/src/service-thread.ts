@@ -5,7 +5,7 @@ listenForRuntimePort('service', (transport) => {
   bootServiceThread({
     transport,
     manifest,
-    initialPath: 'pages/index/index',
+    initialPath: 'pages/todos/todos',
     loadArtifacts: async () => {
       await import('../generated/service.js')
     },
