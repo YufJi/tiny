@@ -3,6 +3,7 @@ import type { Manifest, PageArtifact } from '@tiny/compiler-next'
 import type { StyleLoader, TemplateRegistry } from './types'
 import { toJsonSafe, type SerializedEventNode, type SerializedMiniProgramEvent } from './events'
 import type { MiniProgramComponentSchema } from './types'
+import { createP0BuiltinComponents, type BuiltinComponentDefinitions } from '@tiny/builtin-components'
 
 export type ComponentLifecyclePhase = 'created' | 'attached' | 'ready' | 'moved' | 'detached'
 
@@ -50,6 +51,7 @@ export class GlassEaselRuntimeAdapter {
     phase: 'show' | 'hide',
     data: Record<string, unknown>,
   ) => void
+  private readonly builtinComponents: BuiltinComponentDefinitions
 
   constructor(options: GlassEaselAdapterOptions) {
     this.backend = options.backend
@@ -59,6 +61,7 @@ export class GlassEaselRuntimeAdapter {
     this.onComponentPageLifetime = options.onComponentPageLifetime
     const styleScopeManager = new glassEasel.StyleScopeManager()
     this.componentSpace = new glassEasel.ComponentSpace(undefined, undefined, styleScopeManager, true)
+    this.builtinComponents = createP0BuiltinComponents(this.componentSpace)
   }
 
   registerComponentSchemas(schemas: MiniProgramComponentSchema[]): void {
@@ -244,7 +247,7 @@ export class GlassEaselRuntimeAdapter {
     const effective = config?.effective ?? {}
     const usingComponents = effective.usingComponents
     if (!usingComponents || typeof usingComponents !== 'object') return {}
-    return Object.fromEntries(
+    const resolved = Object.fromEntries(
       Object.entries(usingComponents as Record<string, unknown>).map(([tag, reference]) => {
         const sources = (config?.usingComponentsSource ?? {}) as Record<string, string>
         const sourcePath = sources[tag] === 'global' ? '' : path
@@ -253,6 +256,7 @@ export class GlassEaselRuntimeAdapter {
         return [tag, definition ? this.registerComponentDefinition(definition) : componentPath]
       }),
     )
+    return { ...this.builtinComponents, ...resolved }
   }
 
   private resolveComponentReference(sourcePath: string, reference: string): string {

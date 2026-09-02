@@ -1,13 +1,14 @@
 {
-  "name": "@tiny/runtime",
-  "version": "1.0.0",
-  "description": "",
+  "name": "@tiny/builtin-components",
+  "version": "0.1.0",
+  "description": "Glass-easel implementations of the Tiny P0 built-in components",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js"
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
     }
   },
   "scripts": {
@@ -16,18 +17,11 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "keywords": [],
   "dependencies": {
-    "@tiny/apis": "workspace:*",
-    "@tiny/bridge": "workspace:*",
-    "@tiny/builtin-components": "workspace:*",
-    "@tiny/compiler-next": "workspace:^",
-    "@tiny/utils": "workspace:*",
-    "es-toolkit": "^1.45.1",
+    "@tiny/template-compiler": "workspace:*",
     "glass-easel": "1.1.0"
   },
   "devDependencies": {
-    "@tiny/template-compiler": "workspace:^",
     "@types/node": "^22.0.0",
     "typescript": "^5.0.0",
     "vitest": "^1.6.1"

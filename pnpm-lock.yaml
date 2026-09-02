@@ -95,6 +95,25 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
 
+  packages/builtin-components:
+    dependencies:
+      '@tiny/template-compiler':
+        specifier: workspace:*
+        version: link:../template-compiler
+      glass-easel:
+        specifier: 1.1.0
+        version: 1.1.0
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
+
   packages/compiler:
     dependencies:
       '@babel/code-frame':
@@ -264,6 +283,9 @@ importers:
       '@tiny/bridge':
         specifier: workspace:*
         version: link:../bridge
+      '@tiny/builtin-components':
+        specifier: workspace:*
+        version: link:../builtin-components
       '@tiny/compiler-next':
         specifier: workspace:^
         version: link:../compiler-next
