@@ -4,3 +4,4 @@ static/
 dist/
 .turbo/
 .sisyphus/
+example/glass-easel/generated/

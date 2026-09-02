@@ -1,0 +1,6 @@
+{
+  "pages": ["pages/index/index"],
+  "window": {
+    "navigationBarTitleText": "Tiny Glass Easel"
+  }
+}

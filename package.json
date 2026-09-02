@@ -7,6 +7,8 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "watch": "turbo run watch",
+    "compile:glass-easel": "node scripts/compile-glass-easel.mjs",
+    "dev:glass-easel": "pnpm compile:glass-easel && pnpm --filter @tiny/compiler-next exec vite --config ../../example/glass-easel/vite.config.ts",
     "lint": "biome check .",
     "lint:fix": "biome check . --write",
     "format": "biome format . --write"

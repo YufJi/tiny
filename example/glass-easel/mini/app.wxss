@@ -1,0 +1,7 @@
+page {
+  min-height: 100vh;
+  margin: 0;
+  background: #101828;
+  color: #f9fafb;
+  font-family: system-ui, sans-serif;
+}

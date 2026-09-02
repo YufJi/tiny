@@ -264,12 +264,31 @@ importers:
       '@tiny/bridge':
         specifier: workspace:*
         version: link:../bridge
+      '@tiny/compiler-next':
+        specifier: workspace:^
+        version: link:../compiler-next
       '@tiny/utils':
         specifier: workspace:*
         version: link:../utils
       es-toolkit:
         specifier: ^1.45.1
         version: 1.46.1
+      glass-easel:
+        specifier: 1.1.0
+        version: 1.1.0
+    devDependencies:
+      '@tiny/template-compiler':
+        specifier: workspace:^
+        version: link:../template-compiler
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
 
   packages/stylesheet-compiler:
     dependencies:
@@ -2741,6 +2760,9 @@ packages:
   get-value@2.0.6:
     resolution: {integrity: sha512-Ln0UQDlxH1BapMu3GPtf7CuYNwRZf2gwCuPqbyG6pB8WfmFpzqcy4xtAaAMUhnNqjMKTiCPZG2oMT3YSx8U2NA==}
     engines: {node: '>=0.10.0'}
+
+  glass-easel@1.1.0:
+    resolution: {integrity: sha512-wlyBNIQob/T4+tqbhCvjlk+AQ1IZtKuKHGRY2JNXTdBRSdnAQ0xfKTfd9zBC6wgQxNhCDr3kHy44agO1xLEkBQ==}
 
   glob-parent@3.1.0:
     resolution: {integrity: sha512-E8Ak/2+dZY6fnzlR7+ueWvhsH1SjHr4jjss4YS/h4py44jY9MhK/VFdaZJAWDz6BbL21KeteKxFSFpq8OS5gVA==}
@@ -7873,6 +7895,8 @@ snapshots:
       get-intrinsic: 1.3.0
 
   get-value@2.0.6: {}
+
+  glass-easel@1.1.0: {}
 
   glob-parent@3.1.0:
     dependencies:
