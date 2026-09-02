@@ -24,6 +24,15 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
   render.onEvent('event', 'dispatch', (message) => {
     service.sendEvent('event', 'dispatch', message.payload, { pageId: message.pageId })
   })
+  render.onEvent('runtime', 'componentLifecycle', (message) => {
+    service.sendEvent('runtime', 'componentLifecycle', message.payload)
+  })
+  render.onEvent('runtime', 'componentPageLifetime', (message) => {
+    service.sendEvent('runtime', 'componentPageLifetime', message.payload)
+  })
+  service.onEvent('event', 'trigger', (message) => {
+    render.sendEvent('event', 'trigger', message.payload)
+  })
   service.onEvent('data', 'setData', (message) => {
     render.sendEvent('data', 'setData', message.payload, { pageId: message.pageId })
   })
@@ -38,11 +47,13 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
       })
       const initialData = (serviceResult.initialData as Record<string, unknown> | undefined) ?? options.initialData
       const pageId = serviceResult.pageId as string | undefined
+      const componentSchemas = serviceResult.componentSchemas as import('./types').MiniProgramComponentSchema[] | undefined
       const renderResult = await render.control<Record<string, unknown>>('runtime', 'bootstrap', {
         manifest: options.manifest,
         initialPath: options.initialPath,
         initialData,
         pageId,
+        componentSchemas,
       })
       if (pageId) {
         await service.control('page', 'ready', { pageId })

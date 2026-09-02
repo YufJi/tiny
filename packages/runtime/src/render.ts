@@ -25,6 +25,12 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
     onMiniProgramEvent: (pageId, event) => {
       connection.sendEvent('event', 'dispatch', event, { pageId })
     },
+    onComponentLifecycle: (componentId, path, phase, data) => {
+      connection.sendEvent('runtime', 'componentLifecycle', { componentId, path, phase, data })
+    },
+    onComponentPageLifetime: (componentId, path, phase, data) => {
+      connection.sendEvent('runtime', 'componentPageLifetime', { componentId, path, phase, data })
+    },
   })
   for (const page of options.manifest.pages) adapter.registerPageArtifact(page)
   let currentPath = options.initialPath
@@ -35,11 +41,13 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
       initialPath?: string
       initialData?: Record<string, unknown>
       pageId?: string
+      componentSchemas?: import('./types').MiniProgramComponentSchema[]
     }
     const manifest = payload.manifest ?? options.manifest
     const initialPath = payload.initialPath ?? currentPath
     const initialData = payload.initialData ?? options.initialData ?? {}
     const pageId = payload.pageId
+    adapter.registerComponentSchemas(payload.componentSchemas ?? [])
     adapter.registerStyles(manifest, options.loadStyle)
     const page = findPage(manifest, initialPath)
     if (!page) throw new Error(`page is not declared: ${initialPath}`)
@@ -51,11 +59,24 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
   })
 
   connection.onEvent('data', 'setData', (message) => {
-    const payload = message.payload as { pageId?: string; patch?: DataPatch }
-    const pageId = payload.pageId
-    const component = pageId ? adapter.getMountedComponentByPageId(pageId) : undefined
+    const payload = message.payload as { pageId?: string; componentId?: string; patch?: DataPatch }
+    const component = payload.componentId
+      ? adapter.getMountedComponentByComponentId(payload.componentId)
+      : payload.pageId
+        ? adapter.getMountedComponentByPageId(payload.pageId)
+        : undefined
     if (!component) return
     component.setData(payload.patch ?? {})
+  })
+
+  connection.onEvent('event', 'trigger', (message) => {
+    const payload = message.payload as {
+      componentId: string
+      name: string
+      detail?: unknown
+      options?: Record<string, unknown>
+    }
+    adapter.triggerComponentEvent(payload.componentId, payload.name, payload.detail, payload.options)
   })
 
   return {

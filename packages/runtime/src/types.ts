@@ -13,6 +13,22 @@ export type RenderArtifacts = {
   templates: TemplateRegistry
 }
 
+export type MiniProgramPropertyType = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'function' | 'any'
+
+export type MiniProgramPropertyDefinition = {
+  type?: MiniProgramPropertyType
+  optionalTypes?: MiniProgramPropertyType[]
+  value?: unknown
+}
+
+export type MiniProgramComponentSchema = {
+  componentId: string
+  path: string
+  data: Record<string, unknown>
+  properties: Record<string, MiniProgramPropertyDefinition>
+  using: Record<string, string>
+}
+
 export type StyleLoader = (path: string) => string
 
 export type BackendFactory = () => unknown
@@ -21,6 +37,7 @@ export type BootstrapPayload = {
   manifest: RuntimeManifest
   initialPath: string
   initialData?: Record<string, unknown>
+  componentSchemas?: MiniProgramComponentSchema[]
 }
 
 export type ServiceThreadOptions = {

@@ -1,7 +1,9 @@
 import { BridgeConnection } from '@tiny/bridge'
 import type { PageArtifact } from '@tiny/compiler-next'
 import { applyDataPatch, cloneJsonSafe, type DataPatch } from './data'
+import { buildComponentSchemas } from './component-schema'
 import type { ServiceThreadOptions } from './types'
+import type { MiniProgramComponentSchema } from './types'
 
 export type MiniProgramPageOptions = {
   data?: Record<string, unknown>
@@ -11,6 +13,15 @@ export type MiniProgramPageOptions = {
   onReady?: (...args: unknown[]) => void
   onHide?: (...args: unknown[]) => void
   onUnload?: (...args: unknown[]) => void
+  [key: string]: unknown
+}
+
+export type MiniProgramComponentOptions = {
+  data?: Record<string, unknown>
+  properties?: Record<string, unknown>
+  methods?: Record<string, (...args: unknown[]) => unknown>
+  lifetimes?: Record<string, (...args: unknown[]) => void>
+  pageLifetimes?: Record<string, (...args: unknown[]) => void>
   [key: string]: unknown
 }
 
@@ -63,6 +74,90 @@ export class MiniProgramPageRegistry {
     const path = `component:${this.components.size}`
     this.components.set(path, options)
     return options
+  }
+}
+
+const COMPONENT_LIFETIMES = new Set(['created', 'attached', 'ready', 'moved', 'detached'])
+
+export class MiniProgramComponentInstance {
+  readonly componentId: string
+  readonly path: string
+  readonly data: Record<string, unknown>
+  readonly properties: Record<string, unknown>
+  readonly lifecycleEvents: string[] = []
+  private readonly options: MiniProgramComponentOptions
+  private readonly methods = new Map<string, (...args: unknown[]) => unknown>()
+
+  constructor(
+    componentId: string,
+    path: string,
+    options: MiniProgramComponentOptions,
+    private readonly bridge?: {
+      onDataPatch: (componentId: string, patch: DataPatch) => void
+      onTriggerEvent: (
+        componentId: string,
+        name: string,
+        detail: unknown,
+        options: Record<string, unknown> | undefined,
+      ) => void
+    },
+  ) {
+    this.componentId = componentId
+    this.path = path
+    this.options = options
+    this.data = cloneJsonSafe(options.data ?? {})
+    this.properties = this.data
+
+    for (const [name, value] of Object.entries(options)) {
+      if (typeof value === 'function' && !COMPONENT_LIFETIMES.has(name)) {
+        this.methods.set(name, (value as (...args: unknown[]) => unknown).bind(this))
+      }
+    }
+    for (const [name, method] of Object.entries(options.methods ?? {})) {
+      if (typeof method === 'function') this.methods.set(name, method.bind(this))
+    }
+
+    Object.assign(this, {
+      setData: this.setData.bind(this),
+      triggerEvent: this.triggerEvent.bind(this),
+    })
+  }
+
+  setData(patch: DataPatch): void {
+    const clonedPatch = cloneJsonSafe(patch)
+    applyDataPatch(this.data, clonedPatch)
+    this.bridge?.onDataPatch(this.componentId, clonedPatch)
+  }
+
+  triggerEvent(name: string, detail?: unknown, options?: Record<string, unknown>): void {
+    this.bridge?.onTriggerEvent(this.componentId, name, cloneJsonSafe(detail ?? null), options)
+  }
+
+  syncData(data: Record<string, unknown> | undefined): void {
+    if (!data) return
+    Object.assign(this.data, cloneJsonSafe(data))
+  }
+
+  invokeMethod(name: string, args: unknown[] = []): unknown {
+    const method = this.methods.get(name)
+    if (!method) throw new Error(`Component method not found: ${name}`)
+    return method(...args)
+  }
+
+  triggerLifecycle(name: 'created' | 'attached' | 'ready' | 'moved' | 'detached'): void {
+    this.lifecycleEvents.push(name)
+    const lifetime = this.options.lifetimes?.[name]
+    const topLevel = this.options[name]
+    if (typeof lifetime === 'function') lifetime.call(this)
+    else if (typeof topLevel === 'function') (topLevel as (...args: unknown[]) => void).call(this)
+  }
+
+  triggerPageLifetime(name: 'show' | 'hide'): void {
+    this.options.pageLifetimes?.[name]?.call(this)
+  }
+
+  getComponentOptions(): MiniProgramPageOptions {
+    return this.options
   }
 }
 
@@ -122,6 +217,10 @@ export class MiniProgramPageInstance {
     this.options[name]?.apply(this, args)
     if (name === 'onUnload') this.unloaded = true
   }
+
+  getComponentOptions(): MiniProgramPageOptions {
+    return this.options
+  }
 }
 
 export function installMiniProgramGlobals(
@@ -144,6 +243,7 @@ export type ServiceThreadRuntime = {
   initialPath: string
   activePage: MiniProgramPageInstance | null
   pageInstances: Map<string, MiniProgramPageInstance>
+  componentInstances: Map<string, MiniProgramComponentInstance>
 }
 
 export function createServiceApiHost(): MiniProgramApiHost {
@@ -174,6 +274,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   })
   let currentPath = options.initialPath
   const pageInstances = new Map<string, MiniProgramPageInstance>()
+  const componentInstances = new Map<string, MiniProgramComponentInstance>()
   let activePage: MiniProgramPageInstance | null = null
   let pageIdCounter = 0
   const artifactsReady = options.loadArtifacts?.() ?? Promise.resolve()
@@ -182,6 +283,37 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     const payload = message.payload as { manifest?: ServiceThreadOptions['manifest']; initialPath?: string }
     currentPath = payload.initialPath ?? currentPath
     await artifactsReady
+    const componentSchemas = buildComponentSchemas(
+      options.manifest.components,
+      registry.components as Map<string, MiniProgramComponentOptions>,
+    )
+    const initializeComponent = (path: string, reference: string): MiniProgramComponentInstance | null => {
+      const componentPath = resolveComponentReference(path, reference)
+      const existing = componentInstances.get(componentPath)
+      if (existing) return existing
+      const index = options.manifest.components.findIndex((component) => component.path === componentPath)
+      const schema = componentSchemas[index]
+      const definition = schema ? registry.components.get(`component:${index}`) : undefined
+      if (!schema || !definition) return null
+      const component = new MiniProgramComponentInstance(
+        schema.componentId,
+        componentPath,
+        definition as MiniProgramComponentOptions,
+        {
+          onDataPatch: (componentId, patch) => {
+            connection.sendEvent('data', 'setData', { componentId, patch }, { pageId: activePage?.pageId })
+          },
+          onTriggerEvent: (componentId, name, detail, triggerOptions) => {
+            connection.sendEvent('event', 'trigger', { componentId, name, detail, options: triggerOptions })
+          },
+        },
+      )
+      componentInstances.set(componentPath, component)
+      for (const nestedReference of Object.values(schema.using)) {
+        initializeComponent(componentPath, nestedReference)
+      }
+      return component
+    }
     if (!activePage || activePage.path !== currentPath) {
       const definition = registry.pages.get(currentPath)
       if (!definition) throw new Error(`page is not registered: ${currentPath}`)
@@ -195,6 +327,13 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         },
       )
       pageInstances.set(activePage.pageId, activePage)
+      const pageArtifact = findPageArtifact(options.manifest, currentPath)
+      const usingComponents = pageArtifact?.configuration?.effective.usingComponents ?? {}
+      const usingSources = pageArtifact?.configuration?.usingComponentsSource ?? {}
+      for (const [tag, reference] of Object.entries(usingComponents)) {
+        const sourcePath = usingSources[tag] === 'global' ? '' : currentPath
+        initializeComponent(sourcePath, String(reference))
+      }
       activePage.triggerLifecycle('onLoad', [{}])
       activePage.triggerLifecycle('onShow')
     }
@@ -204,6 +343,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       currentPath,
       pageId: activePage.pageId,
       initialData: cloneJsonSafe(activePage.data),
+      componentSchemas,
     }
   })
 
@@ -216,12 +356,16 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   connection.onControl('page', 'hide', async (message) => {
     const page = requireActivePage(pageInstances, (message.payload as { pageId?: string }).pageId, activePage)
     page.triggerLifecycle('onHide')
+    registry.hideApp()
+    for (const component of componentInstances.values()) component.triggerPageLifetime('hide')
     return { status: 'hidden', pageId: page.pageId }
   })
 
   connection.onControl('page', 'show', async (message) => {
     const page = requireActivePage(pageInstances, (message.payload as { pageId?: string }).pageId, activePage)
+    registry.showApp()
     page.triggerLifecycle('onShow')
+    for (const component of componentInstances.values()) component.triggerPageLifetime('show')
     return { status: 'shown', pageId: page.pageId }
   })
 
@@ -244,6 +388,23 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }
   })
 
+  connection.onEvent('runtime', 'componentLifecycle', (message) => {
+    const payload = message.payload as {
+      componentId: string
+      phase: 'created' | 'attached' | 'ready' | 'moved' | 'detached'
+      data?: Record<string, unknown>
+    }
+    const component = findComponentByInstanceId(componentInstances, payload.componentId)
+    component?.syncData(payload.data)
+    component?.triggerLifecycle(payload.phase)
+  })
+
+  connection.onEvent('runtime', 'componentPageLifetime', (message) => {
+    const payload = message.payload as { componentId: string; phase: 'show' | 'hide' }
+    findComponentByInstanceId(componentInstances, payload.componentId)
+      ?.triggerPageLifetime(payload.phase)
+  })
+
   connection.onEvent('event', 'dispatch', (message) => {
     const pageId = message.pageId
     const page = pageId ? pageInstances.get(pageId) : activePage
@@ -255,6 +416,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       return
     }
     const event = message.payload as {
+      componentId?: string
       handler?: string
       type?: string
       [key: string]: unknown
@@ -268,7 +430,14 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       return
     }
     try {
-      page.invokeMethod(handler, [event])
+      if (event.componentId) {
+        const component = findComponentByInstanceId(componentInstances, event.componentId)
+        if (!component) throw new Error(`Component not found for event: ${event.componentId}`)
+        component.syncData(event.componentData as Record<string, unknown> | undefined)
+        component.invokeMethod(handler, [event])
+      } else {
+        page.invokeMethod(handler, [event])
+      }
     } catch (error) {
       connection.sendDiagnostic('error', {
         code: 'EVENT_HANDLER_ERROR',
@@ -288,6 +457,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       return activePage
     },
     pageInstances,
+    componentInstances,
   }
 }
 
@@ -304,4 +474,27 @@ function requireActivePage(
 
 function findPageArtifact(manifest: ServiceThreadOptions['manifest'], path: string): PageArtifact | undefined {
   return manifest.pages.find((page) => page.path === path)
+}
+
+function resolveComponentReference(sourcePath: string, reference: string): string {
+  if (reference.startsWith('/')) return reference.slice(1)
+  const posix = (value: string) => value.split('\\').join('/')
+  const directory = posix(sourcePath).split('/').slice(0, -1)
+  const output: string[] = []
+  for (const segment of [...directory, ...posix(reference).split('/')]) {
+    if (!segment || segment === '.') continue
+    if (segment === '..') output.pop()
+    else output.push(segment)
+  }
+  return output.join('/')
+}
+
+function findComponentByInstanceId(
+  componentInstances: Map<string, MiniProgramComponentInstance>,
+  componentId: string,
+): MiniProgramComponentInstance | undefined {
+  for (const component of componentInstances.values()) {
+    if (component.componentId === componentId) return component
+  }
+  return undefined
 }

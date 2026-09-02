@@ -7,6 +7,7 @@ export type SerializedEventNode = {
 }
 
 export type SerializedMiniProgramEvent = {
+  componentId?: string
   handler: string
   type: string
   timeStamp: number
@@ -17,6 +18,7 @@ export type SerializedMiniProgramEvent = {
   stopped: boolean
   target: SerializedEventNode
   currentTarget: SerializedEventNode
+  componentData?: Record<string, unknown>
 }
 
 export function toJsonSafe(value: unknown, seen = new WeakSet<object>()): unknown {
