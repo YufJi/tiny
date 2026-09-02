@@ -28,6 +28,7 @@ export type ServiceThreadOptions = {
   manifest: RuntimeManifest
   initialPath: string
   capabilities?: Record<string, unknown>
+  loadArtifacts?: () => Promise<unknown>
 }
 
 export type RenderThreadOptions = {

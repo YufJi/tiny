@@ -16,6 +16,7 @@ export class GlassEaselRuntimeAdapter {
   private readonly componentDefinitions = new Map<string, glassEasel.GeneralComponentDefinition>()
   private readonly pages = new Map<string, PageArtifact>()
   private readonly mountedComponents = new Map<string, glassEasel.GeneralComponent>()
+  private readonly componentsByPageId = new Map<string, glassEasel.GeneralComponent>()
 
   constructor(options: GlassEaselAdapterOptions) {
     this.backend = options.backend
@@ -64,6 +65,14 @@ export class GlassEaselRuntimeAdapter {
 
   registerPageArtifact(page: PageArtifact): void {
     this.pages.set(page.path, page)
+  }
+
+  registerPageComponent(pageId: string, component: glassEasel.GeneralComponent): void {
+    this.componentsByPageId.set(pageId, component)
+  }
+
+  getMountedComponentByPageId(pageId: string): glassEasel.GeneralComponent | undefined {
+    return this.componentsByPageId.get(pageId)
   }
 
   mountPage(path: string, data: Record<string, unknown> = {}): glassEasel.GeneralComponent {

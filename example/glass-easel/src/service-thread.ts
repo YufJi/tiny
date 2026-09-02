@@ -6,6 +6,8 @@ listenForRuntimePort('service', (transport) => {
     transport,
     manifest,
     initialPath: 'pages/index/index',
+    loadArtifacts: async () => {
+      await import('../generated/service.js')
+    },
   })
-  void import('../generated/service.js')
 })

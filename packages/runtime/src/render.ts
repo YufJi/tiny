@@ -1,6 +1,7 @@
 import { BridgeConnection } from '@tiny/bridge'
 import type { PageArtifact } from '@tiny/compiler-next'
 import { GlassEaselRuntimeAdapter } from './glass-easel-adapter'
+import { applyDataPatch, type DataPatch } from './data'
 import type { RenderThreadOptions } from './types'
 
 export type RenderThreadRuntime = {
@@ -30,17 +31,28 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
       manifest?: RenderThreadOptions['manifest']
       initialPath?: string
       initialData?: Record<string, unknown>
+      pageId?: string
     }
     const manifest = payload.manifest ?? options.manifest
     const initialPath = payload.initialPath ?? currentPath
     const initialData = payload.initialData ?? options.initialData ?? {}
+    const pageId = payload.pageId
     adapter.registerStyles(manifest, options.loadStyle)
     const page = findPage(manifest, initialPath)
     if (!page) throw new Error(`page is not declared: ${initialPath}`)
     adapter.registerPageArtifact(page)
-    adapter.mountPage(initialPath, initialData)
+    const component = adapter.mountPage(initialPath, initialData)
+    if (pageId) adapter.registerPageComponent(pageId, component)
     currentPath = initialPath
     return { status: 'ready', currentPath }
+  })
+
+  connection.onEvent('data', 'setData', (message) => {
+    const payload = message.payload as { pageId?: string; patch?: DataPatch }
+    const pageId = payload.pageId
+    const component = pageId ? adapter.getMountedComponentByPageId(pageId) : undefined
+    if (!component) return
+    component.setData(payload.patch ?? {})
   })
 
   return {

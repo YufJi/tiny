@@ -8,7 +8,8 @@ import { bootRenderThread } from '../src/render'
 import { bootServiceThread } from '../src/service'
 
 const PAGE_PATH = 'pages/index/index'
-const WXML = '<scroll-view class="page"><view class="card"><text>{{message}}</text><image src="/logo.png" /></view></scroll-view>'
+const WXML =
+  '<scroll-view class="page"><view wx:if="{{visible}}" class="card {{className}}" style="color: red" data-id="card"><block wx:for="{{items}}" wx:key="*this"><text>{{item}}</text></block><text class="message">{{message}}</text><image src="/logo.png" /></view></scroll-view>'
 const WXSS = '.page { width: 100rpx; } .card { color: red; }'
 
 const globalKeys = ['App', 'Page', 'Component', 'Behavior', 'getApp', 'wx'] as const
@@ -103,6 +104,37 @@ describe('tiny runtime', () => {
       manifest,
       initialPath: PAGE_PATH,
     })
+    const globalObject = globalThis as unknown as Record<string, unknown>
+    const appEvents: string[] = []
+    const pageEvents: string[] = []
+    ;(globalObject.App as (options: Record<string, unknown>) => unknown)({
+      onLaunch: () => appEvents.push('launch'),
+      onShow: () => appEvents.push('show'),
+      onHide: () => appEvents.push('hide'),
+    })
+    ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
+      data: {
+        message: 'initial',
+        visible: false,
+        items: [] as string[],
+        className: '',
+      },
+      onLoad() {
+        pageEvents.push('load')
+        this.setData({
+          visible: true,
+          message: 'loaded',
+          items: ['one', 'two'],
+          className: 'active',
+        })
+      },
+      onShow() {
+        pageEvents.push('show')
+      },
+      onReady() {
+        pageEvents.push('ready')
+      },
+    })
     const render = bootRenderThread({
       transport: renderTransport,
       manifest,
@@ -123,14 +155,28 @@ describe('tiny runtime', () => {
     const result = await host.bootstrap()
     expect(result.service).toMatchObject({ status: 'ready', currentPath: PAGE_PATH })
     expect(result.render).toMatchObject({ status: 'ready', currentPath: PAGE_PATH })
+    expect(appEvents).toEqual(['launch', 'show'])
+    expect(pageEvents).toEqual(['load', 'show', 'ready'])
+    expect(service.activePage?.lifecycleEvents).toEqual(['onLoad', 'onShow', 'onReady'])
 
     const component = render.adapter.getMountedComponent(PAGE_PATH)
     expect(component).toBeDefined()
     const rendered = glassEasel.dumpElementToString(component!, true)
     expect(rendered).toContain('scroll-view')
     expect(rendered).toContain('view')
-    expect(rendered).toContain('Hello glass-easel')
+    expect(rendered).toContain('loaded')
     expect(rendered).toContain('image')
+
+    const componentBeforeUpdate = component
+    service.activePage?.setData({
+      message: 'updated',
+      'meta.count': 2,
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(render.adapter.getMountedComponent(PAGE_PATH)).toBe(componentBeforeUpdate)
+    expect(componentBeforeUpdate?.data.message).toBe('updated')
+    expect(componentBeforeUpdate?.data.meta).toEqual({ count: 2 })
+    expect(glassEasel.dumpElementToString(componentBeforeUpdate!, true)).toContain('updated')
 
     await host.close()
     void service

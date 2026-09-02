@@ -21,20 +21,29 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
     transport: options.renderTransport,
     respondToHello: false,
   })
+  service.onEvent('data', 'setData', (message) => {
+    render.sendEvent('data', 'setData', message.payload, { pageId: message.pageId })
+  })
 
   return {
     service,
     render,
     async bootstrap() {
-      const payload = {
+      const serviceResult = await service.control<Record<string, unknown>>('runtime', 'bootstrap', {
         manifest: options.manifest,
         initialPath: options.initialPath,
-        initialData: options.initialData,
+      })
+      const initialData = (serviceResult.initialData as Record<string, unknown> | undefined) ?? options.initialData
+      const pageId = serviceResult.pageId as string | undefined
+      const renderResult = await render.control<Record<string, unknown>>('runtime', 'bootstrap', {
+        manifest: options.manifest,
+        initialPath: options.initialPath,
+        initialData,
+        pageId,
+      })
+      if (pageId) {
+        await service.control('page', 'ready', { pageId })
       }
-      const [serviceResult, renderResult] = await Promise.all([
-        service.control<Record<string, unknown>>('runtime', 'bootstrap', payload),
-        render.control<Record<string, unknown>>('runtime', 'bootstrap', payload),
-      ])
       return { service: serviceResult, render: renderResult }
     },
     async close() {
