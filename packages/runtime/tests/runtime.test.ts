@@ -9,7 +9,7 @@ import { bootServiceThread } from '../src/service'
 
 const PAGE_PATH = 'pages/index/index'
 const WXML =
-  '<scroll-view class="page"><view wx:if="{{visible}}" class="card {{className}}" style="color: red" data-id="card"><block wx:for="{{items}}" wx:key="*this"><text>{{item}}</text></block><text class="message">{{message}}</text><image src="/logo.png" /></view></scroll-view>'
+  '<scroll-view class="page"><view wx:if="{{visible}}" class="card {{className}}" style="color: red" data-id="card"><block wx:for="{{items}}" wx:key="*this"><text>{{item}}</text></block><text class="message">{{message}}</text><image src="/logo.png" /><view id="outer" data-phase="outer" capture-bind:tap="captureOuter" bindtap="bubbleOuter"><view id="middle" data-phase="middle" catchtap="catchMiddle"><view id="inner" data-item="hello" bindtap="tapInner" /></view></view><input id="input" value="{{inputValue}}" bindinput="onInput" /><view id="dynamic" bindtap="{{dynamicHandler}}" /></view></scroll-view>'
 const WXSS = '.page { width: 100rpx; } .card { color: red; }'
 
 const globalKeys = ['App', 'Page', 'Component', 'Behavior', 'getApp', 'wx'] as const
@@ -25,9 +25,10 @@ afterAll(() => {
 })
 
 function createTemplateRegistry() {
-  const group = TmplGroup.new()
+  const group = TmplGroup.newDev()
   group.addTmpl(PAGE_PATH, WXML)
-  const groupList = new Function(`return ${group.getTmplGenObjectGroups()}`)() as Record<string, unknown>
+  const generated = group.getTmplGenObjectGroups()
+  const groupList = new Function(`return ${generated}`)() as Record<string, unknown>
   return {
     groupList,
     content(path: string, name = '') {
@@ -107,6 +108,7 @@ describe('tiny runtime', () => {
     const globalObject = globalThis as unknown as Record<string, unknown>
     const appEvents: string[] = []
     const pageEvents: string[] = []
+    const eventOrder: string[] = []
     ;(globalObject.App as (options: Record<string, unknown>) => unknown)({
       onLaunch: () => appEvents.push('launch'),
       onShow: () => appEvents.push('show'),
@@ -118,6 +120,8 @@ describe('tiny runtime', () => {
         visible: false,
         items: [] as string[],
         className: '',
+        inputValue: '',
+        dynamicHandler: 'dynamicTap',
       },
       onLoad() {
         pageEvents.push('load')
@@ -133,6 +137,29 @@ describe('tiny runtime', () => {
       },
       onReady() {
         pageEvents.push('ready')
+      },
+      captureOuter(event) {
+        eventOrder.push(`capture:${event.currentTarget.id}:${event.currentTarget.dataset.phase}:${event.capture}`)
+      },
+      tapInner(event) {
+        eventOrder.push(`tap:${event.target.id}:${event.target.dataset.item}`)
+        this.setData({ tapCount: (this.data.tapCount ?? 0) + 1 })
+      },
+      catchMiddle(event) {
+        eventOrder.push(`catch:${event.currentTarget.id}:${event.currentTarget.dataset.phase}`)
+        this.setData({ middleCaught: true })
+      },
+      bubbleOuter(event) {
+        eventOrder.push(`bubble:${event.currentTarget.id}`)
+      },
+      onInput(event) {
+        this.setData({ inputValue: event.detail.value })
+      },
+      dynamicTap() {
+        eventOrder.push('dynamic:initial')
+      },
+      updatedDynamicTap() {
+        eventOrder.push('dynamic:updated')
       },
     })
     const render = bootRenderThread({
@@ -177,6 +204,33 @@ describe('tiny runtime', () => {
     expect(componentBeforeUpdate?.data.message).toBe('updated')
     expect(componentBeforeUpdate?.data.meta).toEqual({ count: 2 })
     expect(glassEasel.dumpElementToString(componentBeforeUpdate!, true)).toContain('updated')
+
+    const inner = componentBeforeUpdate?.getShadowRoot()?.getElementById('inner')
+    const input = componentBeforeUpdate?.getShadowRoot()?.getElementById('input')
+    const dynamic = componentBeforeUpdate?.getShadowRoot()?.getElementById('dynamic')
+    expect(inner).toBeDefined()
+    inner?.triggerEvent('tap', null, { bubbles: true, capturePhase: true })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(eventOrder).toEqual([
+      'capture:outer:outer:true',
+      'tap:inner:hello',
+      'catch:middle:middle',
+    ])
+    expect(componentBeforeUpdate?.data.tapCount).toBe(1)
+    expect(componentBeforeUpdate?.data.middleCaught).toBe(true)
+
+    input?.triggerEvent('input', { value: 'typed' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(componentBeforeUpdate?.data.inputValue).toBe('typed')
+
+    dynamic?.triggerEvent('tap')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(eventOrder).toContain('dynamic:initial')
+    service.activePage?.setData({ dynamicHandler: 'updatedDynamicTap' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    dynamic?.triggerEvent('tap')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(eventOrder).toContain('dynamic:updated')
 
     await host.close()
     void service

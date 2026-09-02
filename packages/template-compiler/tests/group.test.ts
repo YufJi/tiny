@@ -54,6 +54,15 @@ describe('TmplGroup — code generation', () => {
     expect(output).toContain('return {C:')
   })
 
+  test('shorthand event attributes become ProcGen event registrations', () => {
+    const group = TmplGroup.newDev()
+    group.addTmpl('a', '<view bindtap="onTap" catchtouchmove="onMove" />')
+    const output = group.getTmplGenObjectGroups()
+    expect(output).toContain('R.v(N,"tap","onTap"')
+    expect(output).toContain('R.v(N,"touchmove","onMove"')
+    expect(output).not.toContain('O(N,"bindtap"')
+  })
+
   test('getRuntimeString returns runtime code', () => {
     const group = TmplGroup.new()
     const runtime = group.getRuntimeString()

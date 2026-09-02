@@ -21,6 +21,9 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
     transport: options.renderTransport,
     respondToHello: false,
   })
+  render.onEvent('event', 'dispatch', (message) => {
+    service.sendEvent('event', 'dispatch', message.payload, { pageId: message.pageId })
+  })
   service.onEvent('data', 'setData', (message) => {
     render.sendEvent('data', 'setData', message.payload, { pageId: message.pageId })
   })

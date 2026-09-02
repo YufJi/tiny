@@ -22,6 +22,9 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
     backend: options.backend as never,
     manifest: options.manifest,
     templates: options.artifacts.templates,
+    onMiniProgramEvent: (pageId, event) => {
+      connection.sendEvent('event', 'dispatch', event, { pageId })
+    },
   })
   for (const page of options.manifest.pages) adapter.registerPageArtifact(page)
   let currentPath = options.initialPath
@@ -41,8 +44,8 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
     const page = findPage(manifest, initialPath)
     if (!page) throw new Error(`page is not declared: ${initialPath}`)
     adapter.registerPageArtifact(page)
-    const component = adapter.mountPage(initialPath, initialData)
-    if (pageId) adapter.registerPageComponent(pageId, component)
+    const component = adapter.mountPage(initialPath, initialData, pageId)
+    if (!pageId) adapter.registerPageComponent(initialPath, component)
     currentPath = initialPath
     return { status: 'ready', currentPath }
   })

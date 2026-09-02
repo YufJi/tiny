@@ -244,6 +244,41 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }
   })
 
+  connection.onEvent('event', 'dispatch', (message) => {
+    const pageId = message.pageId
+    const page = pageId ? pageInstances.get(pageId) : activePage
+    if (!page) {
+      connection.sendDiagnostic('warn', {
+        code: 'EVENT_PAGE_NOT_FOUND',
+        message: `No page found for event: ${pageId ?? 'unknown'}`,
+      }, pageId)
+      return
+    }
+    const event = message.payload as {
+      handler?: string
+      type?: string
+      [key: string]: unknown
+    }
+    const handler = event.handler
+    if (!handler) {
+      connection.sendDiagnostic('warn', {
+        code: 'EVENT_HANDLER_MISSING',
+        message: 'Event payload does not contain a handler name.',
+      }, page?.pageId)
+      return
+    }
+    try {
+      page.invokeMethod(handler, [event])
+    } catch (error) {
+      connection.sendDiagnostic('error', {
+        code: 'EVENT_HANDLER_ERROR',
+        message: error instanceof Error ? error.message : String(error),
+        handler,
+        eventType: event.type,
+      }, page.pageId)
+    }
+  })
+
   return {
     connection,
     registry,

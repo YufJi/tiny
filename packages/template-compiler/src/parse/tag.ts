@@ -322,6 +322,23 @@ function parseColonSeparated(ps: ParseState): Ident[] {
   return ret
 }
 
+function splitEventShorthand(name: string): [string, string] | null {
+  const prefixes = [
+    'capture-mut-bind',
+    'capture-bind',
+    'capture-catch',
+    'mut-bind',
+    'bind',
+    'catch',
+  ]
+  for (const prefix of prefixes) {
+    if (name.startsWith(prefix) && name.length > prefix.length) {
+      return [prefix, name.slice(prefix.length)]
+    }
+  }
+  return null
+}
+
 // ---------------------------------------------------------------------------
 // AST: StrName
 // ---------------------------------------------------------------------------
@@ -1236,7 +1253,15 @@ function parseElement(ps: ParseState, globals: TemplateGlobals, ret: Node[]): vo
 
     let segs = parseColonSeparated(ps)
     if (segs.length === 0) break
-    const attrNameRaw = segs.pop()!
+    let attrNameRaw = segs.pop()!
+    if (segs.length === 0) {
+      const shorthand = splitEventShorthand(attrNameRaw.name)
+      if (shorthand) {
+        const [prefixName, eventName] = shorthand
+        segs = [{ name: prefixName, location: attrNameRaw.location }]
+        attrNameRaw = { name: eventName, location: attrNameRaw.location }
+      }
+    }
 
     type AttrKind =
       | 'Normal' | 'Id' | 'Slot' | 'ClassString' | 'StyleString'
@@ -1486,12 +1511,22 @@ function parseElement(ps: ParseState, globals: TemplateGlobals, ret: Node[]): vo
         }
         case 'DataHyphen': {
           if (element.type === 'Normal') {
-            if (result.kind === 'Value') {
-              element.common.data.push({ name: finalAttrName, value: result.value, prefixLocation: null })
+            const value = result.kind === 'Value'
+              ? result.value
+              : result.kind === 'StaticStr'
+                ? { kind: 'Static', value: result.value.name, location: finalAttrName.location } as const
+                : null
+            if (value) {
+              element.common.data.push({ name: finalAttrName, value, prefixLocation: null })
             }
           } else if (element.type === 'Slot') {
-            if (result.kind === 'Value') {
-              element.common.data.push({ name: finalAttrName, value: result.value, prefixLocation: null })
+            const value = result.kind === 'Value'
+              ? result.value
+              : result.kind === 'StaticStr'
+                ? { kind: 'Static', value: result.value.name, location: finalAttrName.location } as const
+                : null
+            if (value) {
+              element.common.data.push({ name: finalAttrName, value, prefixLocation: null })
             }
           }
           break
