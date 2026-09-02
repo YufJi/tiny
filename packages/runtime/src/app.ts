@@ -1,10 +1,7 @@
 import { subscribe } from '@tiny/bridge';
 import { type AppLaunchOptions, type AppShowOptions, triggerAppShow, triggerAppHide } from '@tiny/apis';
-import { createLogger } from '@tiny/utils';
 import { env } from './env';
 import { NativeEvent } from './const';
-
-const logger = createLogger('service-App');
 
 let appInstance: App | null = null;
 
@@ -46,7 +43,6 @@ class App {
 
 export function registryApp(options: AppOptions) {
   if (appInstance) {
-    logger.error('App instance already exists.');
     return;
   }
   appInstance = new App(options);

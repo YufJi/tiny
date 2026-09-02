@@ -88,7 +88,7 @@ Messages from one source for one page are FIFO. Messages from different pages ar
 
 ### Errors, timeouts, and retry
 
-Calls time out after 10 seconds by default. Invalid envelopes and unsupported methods fail immediately. Transport closure fails pending calls. The bridge does not automatically retry calls because API calls may have side effects.
+Calls time out after 30 seconds by default. Invalid envelopes and unsupported methods fail immediately. Transport closure fails pending calls. The bridge does not automatically retry calls because API calls may have side effects.
 
 ### Handshake
 

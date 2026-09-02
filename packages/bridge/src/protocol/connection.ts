@@ -55,7 +55,7 @@ export class BridgeConnection {
     this.localRole = options.localRole;
     this.peerRole = options.peerRole;
     this.transport = options.transport;
-    this.defaultTimeoutMs = options.defaultTimeoutMs ?? 10_000;
+    this.defaultTimeoutMs = options.defaultTimeoutMs ?? 30_000;
     this.capabilities = options.capabilities ?? {};
     this.removeFrameListener = this.transport.onFrame((frame) => this.handleFrame(frame));
 

@@ -1,7 +1,3 @@
-import { createLogger } from '@tiny/utils';
-
-const logger = createLogger('call-native');
-
 let handlderId = 0;
 const handlers: Map<number, (data: any) => void> = new Map();
 
@@ -12,7 +8,6 @@ export function call<T>(method: string, params: NativeCallParams = {}) {
   const id = ++handlderId;
 
   const response: T = native.call(id, method, params);
-  logger.debug(`Called native method ${method} with params`, params, `and got response`, response);
 
   return new Promise((resolve: (data: T) => void) => {
     handlers.set(id, resolve);
@@ -25,7 +20,6 @@ export function call<T>(method: string, params: NativeCallParams = {}) {
 export function nativeCallHandler<T>(id: number, data: T) {
   const handler = handlers.get(id);
   if (!handler) {
-    logger.error(`No handler found for id ${id}`);
     return;
   }
 
@@ -36,6 +30,5 @@ export function nativeCallHandler<T>(id: number, data: T) {
 export function callSync<T>(method: string, params: NativeCallParams = {}): T {
   const id = ++handlderId;
   const response: T = native.call(id, method, params);
-  logger.debug(`Called native method ${method} with params`, params, `and got response`, response);
   return response;
 }

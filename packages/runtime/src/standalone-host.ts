@@ -71,10 +71,6 @@ function createIframe(className: string): HTMLIFrameElement {
 
 function waitForLoad(iframe: HTMLIFrameElement): Promise<void> {
   return new Promise((resolve) => {
-    if (iframe.contentWindow?.document.readyState === 'complete') {
-      resolve()
-      return
-    }
     iframe.addEventListener('load', () => resolve(), { once: true })
   })
 }

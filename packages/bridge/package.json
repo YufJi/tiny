@@ -2,9 +2,19 @@
   "name": "@tiny/bridge",
   "version": "1.0.0",
   "description": "A bridge package for the project",
-  "main": "dist/index.js",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "dist/types/index.d.ts",
+      "import": "dist/index.js",
+      "require": "dist/index.cjs",
+      "default": "dist/index.js"
+    }
+  },
   "scripts": {
-    "build": "tsc",
+    "build": "vite build && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -19,6 +29,7 @@
   "devDependencies": {
     "@types/node": "^22.0.0",
     "typescript": "^5.0.0",
+    "vite": "^5.4.21",
     "vitest": "^1.6.1"
   }
 }
