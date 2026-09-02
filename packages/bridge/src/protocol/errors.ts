@@ -30,7 +30,7 @@ export function toProtocolErrorPayload(error: unknown): ProtocolErrorPayload {
     return {
       code: error.code,
       message: error.message,
-      details: error.details,
+      ...(error.details === undefined ? {} : { details: error.details }),
     };
   }
   return {

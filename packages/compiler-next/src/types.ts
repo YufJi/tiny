@@ -67,6 +67,7 @@ export type AppArtifact = {
 
 export type PageArtifact = {
   path: string
+  bodyType?: 'page' | 'component'
   subpackage?: string
   script?: ScriptArtifact
   template?: TemplateArtifact
@@ -88,6 +89,7 @@ export type Manifest = {
   components: ComponentArtifact[]
   styles: StyleArtifact[]
   assets: AssetArtifact[]
+  diagnostics?: Diagnostic[]
 }
 
 export type CompileResult = {

@@ -4,6 +4,7 @@ import type { StyleLoader, TemplateRegistry } from './types'
 import { toJsonSafe, type SerializedEventNode, type SerializedMiniProgramEvent } from './events'
 import type { MiniProgramComponentSchema } from './types'
 import { createP0BuiltinComponents, type BuiltinComponentDefinitions } from '@tiny/builtin-components'
+import { createRuntimeDiagnostic } from './diagnostics'
 
 export type ComponentLifecyclePhase = 'created' | 'attached' | 'ready' | 'moved' | 'detached'
 
@@ -24,6 +25,7 @@ export type GlassEaselAdapterOptions = {
     phase: 'show' | 'hide',
     data: Record<string, unknown>,
   ) => void
+  onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
 }
 
 export class GlassEaselRuntimeAdapter {
@@ -52,6 +54,7 @@ export class GlassEaselRuntimeAdapter {
     data: Record<string, unknown>,
   ) => void
   private readonly builtinComponents: BuiltinComponentDefinitions
+  private readonly onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
 
   constructor(options: GlassEaselAdapterOptions) {
     this.backend = options.backend
@@ -61,7 +64,17 @@ export class GlassEaselRuntimeAdapter {
     this.onComponentPageLifetime = options.onComponentPageLifetime
     const styleScopeManager = new glassEasel.StyleScopeManager()
     this.componentSpace = new glassEasel.ComponentSpace(undefined, undefined, styleScopeManager, true)
-    this.builtinComponents = createP0BuiltinComponents(this.componentSpace)
+    this.onDiagnostic = options.onDiagnostic
+    this.builtinComponents = createP0BuiltinComponents(this.componentSpace, {
+      onDiagnostic: (diagnostic) => this.onDiagnostic?.(createRuntimeDiagnostic(
+        diagnostic.severity,
+        diagnostic.code,
+        diagnostic.message,
+        'render',
+        this.activeEventPageId ?? undefined,
+        diagnostic.details,
+      )),
+    })
   }
 
   registerComponentSchemas(schemas: MiniProgramComponentSchema[]): void {
@@ -155,6 +168,18 @@ export class GlassEaselRuntimeAdapter {
       )
     }
     return component
+  }
+
+  unmountPage(pageId: string): void {
+    const component = this.componentsByPageId.get(pageId)
+    if (!component) return
+    if (typeof (component as unknown as { destroy?: () => void }).destroy === 'function') {
+      (component as unknown as { destroy: () => void }).destroy()
+    } else {
+      component.destroyBackendElement()
+    }
+    this.componentsByPageId.delete(pageId)
+    this.mountedComponents.delete(component.is)
   }
 
   getMountedComponent(path: string): glassEasel.GeneralComponent | undefined {
@@ -253,6 +278,16 @@ export class GlassEaselRuntimeAdapter {
         const sourcePath = sources[tag] === 'global' ? '' : path
         const componentPath = this.resolveComponentReference(sourcePath, String(reference))
         const definition = this.componentSchemas.get(componentPath)
+        if (!definition) {
+          this.onDiagnostic?.(createRuntimeDiagnostic(
+            'warning',
+            'UNSUPPORTED_COMPONENT',
+            `Component "${tag}" is not registered; using a native fallback.`,
+            'render',
+            this.activeEventPageId ?? undefined,
+            { tag, reference, componentPath },
+          ))
+        }
         return [tag, definition ? this.registerComponentDefinition(definition) : componentPath]
       }),
     )

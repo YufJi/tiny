@@ -31,6 +31,13 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
     onComponentPageLifetime: (componentId, path, phase, data) => {
       connection.sendEvent('runtime', 'componentPageLifetime', { componentId, path, phase, data })
     },
+    onDiagnostic: (diagnostic) => {
+      options.onDiagnostic?.(diagnostic)
+      connection.sendDiagnostic(
+        diagnostic.severity === 'error' ? 'error' : diagnostic.severity === 'state' ? 'state' : diagnostic.severity === 'info' ? 'log' : 'warn',
+        diagnostic,
+      )
+    },
   })
   for (const page of options.manifest.pages) adapter.registerPageArtifact(page)
   let currentPath = options.initialPath
@@ -56,6 +63,32 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
     if (!pageId) adapter.registerPageComponent(initialPath, component)
     currentPath = initialPath
     return { status: 'ready', currentPath }
+  })
+
+  connection.onControl('page', 'navigateTo', (message) => {
+    const payload = message.payload as {
+      path?: string
+      pageId?: string
+      initialData?: Record<string, unknown>
+      previousPageId?: string
+    }
+    if (payload.previousPageId) adapter.unmountPage(payload.previousPageId)
+    if (!payload.path || !payload.pageId) throw new Error('navigateTo requires a rendered page')
+    adapter.mountPage(payload.path, payload.initialData ?? {}, payload.pageId)
+    return { status: 'ready', path: payload.path, pageId: payload.pageId }
+  })
+
+  connection.onControl('page', 'navigateBack', (message) => {
+    const payload = message.payload as {
+      path?: string
+      pageId?: string
+      initialData?: Record<string, unknown>
+      unloadedPageIds?: string[]
+    }
+    for (const pageId of payload.unloadedPageIds ?? []) adapter.unmountPage(pageId)
+    if (!payload.path || !payload.pageId) throw new Error('navigateBack requires a rendered page')
+    adapter.mountPage(payload.path, payload.initialData ?? {}, payload.pageId)
+    return { status: 'ready', path: payload.path, pageId: payload.pageId }
   })
 
   connection.onEvent('data', 'setData', (message) => {

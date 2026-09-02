@@ -76,6 +76,7 @@ export type RenderThreadOptions = {
   initialData?: Record<string, unknown>
   loadStyle?: StyleLoader
   capabilities?: Record<string, unknown>
+  onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
 }
 
 export type RuntimeHostOptions = {
@@ -89,4 +90,5 @@ export type RuntimeHostOptions = {
   systemInfo?: Partial<SystemInfoSnapshot>
   storage?: StorageSnapshot
   apiHandlers?: HostApiHandlers
+  onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
 }

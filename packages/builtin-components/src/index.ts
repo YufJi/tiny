@@ -56,7 +56,19 @@ function booleanFromEvent(event: glassEasel.ShadowedEvent<unknown>, fallback = f
   return Boolean(value?.value ?? fallback)
 }
 
-export function createP0BuiltinComponents(space: glassEasel.ComponentSpace): BuiltinComponentDefinitions {
+export type BuiltinComponentFactoryOptions = {
+  onDiagnostic?: (diagnostic: {
+    severity: 'warning' | 'error'
+    code: string
+    message: string
+    details?: unknown
+  }) => void
+}
+
+export function createP0BuiltinComponents(
+  space: glassEasel.ComponentSpace,
+  options: BuiltinComponentFactoryOptions = {},
+): BuiltinComponentDefinitions {
   const definitions = {} as BuiltinComponentDefinitions
 
   definitions.view = space.defineComponent({
@@ -309,6 +321,16 @@ export function createP0BuiltinComponents(space: glassEasel.ComponentSpace): Bui
     properties: {
       canvasId: { type: String, value: '' },
       type: { type: String, value: '' },
+    },
+    lifetimes: {
+      created() {
+        options.onDiagnostic?.({
+          severity: 'warning',
+          code: 'UNSUPPORTED_CANVAS',
+          message: 'Canvas rendering is a non-blocking placeholder in the P0 runtime.',
+          details: { canvasId: this.data.canvasId, type: this.data.type },
+        })
+      },
     },
   }).general()
 

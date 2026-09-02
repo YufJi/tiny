@@ -15,11 +15,11 @@ export function buildComponentSchemas(
   artifacts: ComponentArtifact[],
   definitions: Map<string, MiniProgramComponentOptions>,
 ): MiniProgramComponentSchema[] {
-  return artifacts.map((artifact, index) => {
-    const options = definitions.get(`component:${index}`) ?? {}
+  return artifacts.map((artifact) => {
+    const options = definitions.get(artifact.path) ?? {}
     const effective = artifact.configuration?.effective ?? {}
     return {
-      componentId: `component-${index + 1}`,
+      componentId: `component-${artifacts.findIndex((item) => item.path === artifact.path) + 1}`,
       path: artifact.path,
       data: {
         ...Object.fromEntries(

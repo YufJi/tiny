@@ -656,11 +656,14 @@ class MiniProgramCompiler {
       components,
       styles: [...this.styles.values()],
       assets: this.assets,
+      diagnostics: [...this.diagnostics],
     }
   }
 
   private async createPageArtifact(root: string, entry: SourceEntry): Promise<PageArtifact> {
     const config = await this.readConfiguration(root, entry.configPath)
+    const scriptSource = entry.scriptPath ? await fs.readFile(entry.scriptPath, 'utf8') : ''
+    const bodyType = /\bComponent\s*\(/.test(scriptSource) ? 'component' as const : 'page' as const
     const globalComponents = entry.path === 'app'
       ? {}
       : this.readUsingComponents((await this.readConfiguration(root, path.join(root, 'app.json'))))
@@ -683,6 +686,7 @@ class MiniProgramCompiler {
 
     return {
       path: entry.path,
+      bodyType,
       script: entry.scriptPath ? this.scripts.get(this.relative(root, entry.scriptPath)) : undefined,
       template: entry.templatePath
         ? this.templates.get(withoutExtension(this.relative(root, entry.templatePath)))
