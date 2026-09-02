@@ -1,11 +1,14 @@
 import { BridgeConnection } from '@tiny/bridge'
 import type { RuntimeHostOptions } from './types'
+import { createHostApiRegistry, registerHostApiHandlers } from './host-api'
+import type { HostApiRegistry } from './host-api'
 
 export type TinyRuntimeHost = {
   service: BridgeConnection
   render: BridgeConnection
   bootstrap(): Promise<{ service: unknown; render: unknown }>
   close(): Promise<void>
+  apiRegistry: HostApiRegistry
 }
 
 export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost {
@@ -21,6 +24,8 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
     transport: options.renderTransport,
     respondToHello: false,
   })
+  const apiRegistry = createHostApiRegistry(options)
+  registerHostApiHandlers(service, apiRegistry)
   render.onEvent('event', 'dispatch', (message) => {
     service.sendEvent('event', 'dispatch', message.payload, { pageId: message.pageId })
   })
@@ -37,13 +42,16 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
     render.sendEvent('data', 'setData', message.payload, { pageId: message.pageId })
   })
 
-  return {
+    return {
     service,
     render,
+    apiRegistry,
     async bootstrap() {
       const serviceResult = await service.control<Record<string, unknown>>('runtime', 'bootstrap', {
         manifest: options.manifest,
         initialPath: options.initialPath,
+        systemInfo: apiRegistry.systemInfo,
+        storage: apiRegistry.storage,
       })
       const initialData = (serviceResult.initialData as Record<string, unknown> | undefined) ?? options.initialData
       const pageId = serviceResult.pageId as string | undefined

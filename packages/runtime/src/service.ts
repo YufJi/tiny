@@ -3,7 +3,11 @@ import type { PageArtifact } from '@tiny/compiler-next'
 import { applyDataPatch, cloneJsonSafe, type DataPatch } from './data'
 import { buildComponentSchemas } from './component-schema'
 import type { ServiceThreadOptions } from './types'
-import type { MiniProgramComponentSchema } from './types'
+import type {
+  MiniProgramComponentSchema,
+  StorageSnapshot,
+  SystemInfoSnapshot,
+} from './types'
 
 export type MiniProgramPageOptions = {
   data?: Record<string, unknown>
@@ -236,6 +240,14 @@ export function installMiniProgramGlobals(
   globalObject.wx = apiHost
 }
 
+export type ServiceApiContext = {
+  connection: BridgeConnection
+  getSystemInfoSnapshot: () => SystemInfoSnapshot
+  getStorageSnapshot: () => StorageSnapshot
+  setStorageSnapshot: (key: string, value: unknown) => void
+  pageId?: string
+}
+
 export type ServiceThreadRuntime = {
   connection: BridgeConnection
   registry: MiniProgramPageRegistry
@@ -246,43 +258,91 @@ export type ServiceThreadRuntime = {
   componentInstances: Map<string, MiniProgramComponentInstance>
 }
 
-export function createServiceApiHost(): MiniProgramApiHost {
-  const storage = new Map<string, unknown>()
+export function createServiceApiHost(context: ServiceApiContext): MiniProgramApiHost {
   return {
-    getSystemInfoSync: () => ({
-      pixelRatio: globalThis.devicePixelRatio ?? 1,
-      windowWidth: globalThis.innerWidth ?? 0,
-      windowHeight: globalThis.innerHeight ?? 0,
-    }),
-    getStorageSync: (key: unknown) => storage.get(String(key)),
+    getSystemInfoSync: () => cloneJsonSafe(context.getSystemInfoSnapshot()),
+    getStorageSync: (key: unknown) => cloneJsonSafe(context.getStorageSnapshot()[String(key)]),
     setStorageSync: (key: unknown, value: unknown) => {
-      storage.set(String(key), value)
+      const normalizedKey = String(key)
+      const normalizedValue = cloneJsonSafe(value)
+      context.setStorageSnapshot(normalizedKey, normalizedValue)
+      void context.connection
+        .call('api', 'storage.set', { key: normalizedKey, value: normalizedValue }, { pageId: context.pageId })
+        .catch((error) => {
+          context.connection.sendDiagnostic('error', {
+            code: 'API_STORAGE_WRITE_FAILED',
+            message: error instanceof Error ? error.message : String(error),
+            key: normalizedKey,
+          }, context.pageId)
+        })
       return undefined
     },
-    showToast: () => ({ errMsg: 'showToast:ok' }),
+    navigateTo: (params: unknown) => context.connection.call(
+      'api',
+      'navigate.to',
+      params as Record<string, unknown>,
+      { pageId: context.pageId },
+    ),
+    navigateBack: (params: unknown) => context.connection.call(
+      'api',
+      'navigate.back',
+      params as Record<string, unknown>,
+      { pageId: context.pageId },
+    ),
+    showToast: (params: unknown) => context.connection.call(
+      'api',
+      'toast.show',
+      params as Record<string, unknown>,
+      { pageId: context.pageId },
+    ),
   }
 }
 
 export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadRuntime {
   const registry = new MiniProgramPageRegistry(options.manifest.pages.map((page) => page.path))
-  installMiniProgramGlobals(registry, createServiceApiHost())
+  let currentPath = options.initialPath
+  const pageInstances = new Map<string, MiniProgramPageInstance>()
+  const componentInstances = new Map<string, MiniProgramComponentInstance>()
+  let activePage: MiniProgramPageInstance | null = null
+  let pageIdCounter = 0
+  let systemInfoSnapshot: SystemInfoSnapshot = {
+    pixelRatio: 1,
+    windowWidth: 0,
+    windowHeight: 0,
+  }
+  const storageSnapshot: StorageSnapshot = {}
+  const apiContext: ServiceApiContext = {
+    connection: null as unknown as BridgeConnection,
+    getSystemInfoSnapshot: () => systemInfoSnapshot,
+    getStorageSnapshot: () => storageSnapshot,
+    setStorageSnapshot: (key, value) => {
+      storageSnapshot[key] = value
+    },
+    get pageId() {
+      return activePage?.pageId
+    },
+  }
+  installMiniProgramGlobals(registry, createServiceApiHost(apiContext))
   const connection = new BridgeConnection({
     localRole: 'service',
     peerRole: 'host',
     transport: options.transport,
     capabilities: { role: 'service' },
   })
-  let currentPath = options.initialPath
-  const pageInstances = new Map<string, MiniProgramPageInstance>()
-  const componentInstances = new Map<string, MiniProgramComponentInstance>()
-  let activePage: MiniProgramPageInstance | null = null
-  let pageIdCounter = 0
+  apiContext.connection = connection
   const artifactsReady = options.loadArtifacts?.() ?? Promise.resolve()
 
   connection.onControl('runtime', 'bootstrap', async (message) => {
-    const payload = message.payload as { manifest?: ServiceThreadOptions['manifest']; initialPath?: string }
+    const payload = message.payload as {
+      manifest?: ServiceThreadOptions['manifest']
+      initialPath?: string
+      systemInfo?: SystemInfoSnapshot
+      storage?: StorageSnapshot
+    }
     currentPath = payload.initialPath ?? currentPath
     await artifactsReady
+    if (payload.systemInfo) systemInfoSnapshot = cloneJsonSafe(payload.systemInfo)
+    if (payload.storage) Object.assign(storageSnapshot, cloneJsonSafe(payload.storage))
     const componentSchemas = buildComponentSchemas(
       options.manifest.components,
       registry.components as Map<string, MiniProgramComponentOptions>,

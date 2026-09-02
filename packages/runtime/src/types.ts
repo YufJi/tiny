@@ -29,6 +29,25 @@ export type MiniProgramComponentSchema = {
   using: Record<string, string>
 }
 
+export type SystemInfoSnapshot = {
+  pixelRatio: number
+  windowWidth: number
+  windowHeight: number
+  language?: string
+  platform?: string
+  SDKVersion?: string
+}
+
+export type StorageSnapshot = Record<string, unknown>
+
+export type HostApiParams = Record<string, unknown>
+export type HostApiHandler = (
+  params: HostApiParams,
+  context: { pageId?: string },
+) => unknown | Promise<unknown>
+
+export type HostApiHandlers = Record<string, HostApiHandler>
+
 export type StyleLoader = (path: string) => string
 
 export type BackendFactory = () => unknown
@@ -67,4 +86,7 @@ export type RuntimeHostOptions = {
   initialData?: Record<string, unknown>
   serviceCapabilities?: Record<string, unknown>
   renderCapabilities?: Record<string, unknown>
+  systemInfo?: Partial<SystemInfoSnapshot>
+  storage?: StorageSnapshot
+  apiHandlers?: HostApiHandlers
 }
