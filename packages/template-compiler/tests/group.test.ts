@@ -135,3 +135,13 @@ describe('TmplGroup — template aliases', () => {
     expect(groupList['a.wxml']).not.toBe(groupList.a)
   })
 })
+
+describe('TmplGroup — dynamic data attributes', () => {
+  test('compiles data-* mustache values as bindings', () => {
+    const group = TmplGroup.newDev()
+    group.addTmpl('a', '<view data-index="{{item}}" data-static="x" />')
+    const output = group.getTmplGenObjectGroups()
+    expect(output).toContain('R.d(N,"index"')
+    expect(output).not.toContain('"{{item}}"')
+  })
+})

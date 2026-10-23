@@ -352,6 +352,21 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
 
       assert.equal(await render.locator('radio input[type="radio"]').isChecked(), true, 'radio is not checked')
       assert.ok((await render.locator('.tiny-icon-success_no_circle').count()) > 0, 'icon type was not applied')
+
+      const swiper = render.locator('.tiny-swiper')
+      assert.equal(await swiper.locator('.tiny-swiper-dot').count(), 3, 'swiper dots did not render')
+      await swiper.locator('.tiny-swiper-dot').nth(1).click()
+      await render.waitForFunction(
+        () => document.querySelector('.tiny-swiper-track')?.getAttribute('style')?.includes('translateX(-100%)'),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+
+      const animated = await render.evaluate(() => [...document.querySelectorAll('view')].some((element) => {
+        const style = element.getAttribute('style') ?? ''
+        return style.includes('transition: all') && getComputedStyle(element).transform !== 'none'
+      }))
+      assert.ok(animated, 'animation data did not produce a transform')
     })
 
     await step('render WXML import/include and named templates', async () => {
@@ -403,9 +418,10 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
     await step('report unsupported capabilities as warnings, not failures', async () => {
       currentStep = 'report unsupported capabilities as warnings, not failures'
       const items = await diagnostics()
-      const codes = items.filter((item) => item.severity === 'warning').map((item) => item.code)
-      assert.ok(codes.includes('UNSUPPORTED_API'), 'unsupported APIs were not reported')
-      assert.ok(codes.includes('UNSUPPORTED_CANVAS'), 'canvas was not reported')
+      const warningCodes = items.filter((item) => item.severity === 'warning').map((item) => item.code)
+      const infoCodes = items.filter((item) => item.severity === 'info').map((item) => item.code)
+      assert.ok(warningCodes.includes('UNSUPPORTED_CANVAS'), 'canvas placeholder was not reported')
+      assert.ok(infoCodes.includes('CANVAS_OFFSCREEN'), 'canvas mirroring was not reported')
       assert.equal(items.filter((item) => item.severity === 'error').length, 0, 'real app raised fatal diagnostics')
     })
 

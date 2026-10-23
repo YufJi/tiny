@@ -41,7 +41,8 @@ After the P0 demo flow, the gate compiles `example/mini` (3 pages + 1 subpackage
 3. Applies `app.wxss` page styling to the real app.
 4. Drives page interactions: checkbox-group aggregation updates `app.todos`, the first
    component instance runs its own handler without navigating, the switch and sliders
-   update page data, radio/icon state renders.
+   update page data, radio/icon state renders, the swiper moves to the selected dot,
+   and `animation="{{...}}"` data produces a CSS transform.
 5. Resolves WXML `import` / `include` and named templates.
 6. Navigates to the Component-as-page `add-todo`, updates its input, and returns.
 7. Renders the `bar` ECharts page: the service-thread canvas is mirrored to the render

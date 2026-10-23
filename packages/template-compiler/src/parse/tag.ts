@@ -1392,7 +1392,8 @@ function parseElement(ps: ParseState, globals: TemplateGlobals, ret: Node[]): vo
         switch (attrKind) {
           case 'Normal': case 'Id': case 'Slot': case 'ClassString': case 'StyleString':
           case 'SlotName': case 'TemplateIs': return 'value'
-          case 'TemplateName': case 'DataHyphen': case 'Module': return 'staticStr'
+          case 'TemplateName': case 'Module': return 'staticStr'
+          case 'DataHyphen': return 'value'
           case 'TemplateData': return 'templateData'
           default: return 'value'
         }

@@ -457,7 +457,7 @@ class MiniProgramCompiler {
     for (const [relativePath, absolutePath] of templateFiles) {
       const templatePath = withoutExtension(relativePath)
       const rawSource = await fs.readFile(absolutePath, 'utf8')
-      const source = inlineLocalImages(rawSource, absolutePath, root)
+      const source = rewriteAnimationAttributes(inlineLocalImages(rawSource, absolutePath, root))
       try {
         const warnings = group.addTmpl(templatePath, source)
         // WXML import/include resolves paths with the `.wxml` extension.
@@ -847,4 +847,31 @@ function inlineLocalImages(source: string, templateFile: string, rootDir: string
       return match
     }
   })
+}
+
+/**
+ * Mini-program `animation="{{data}}"` attributes become inline styles. The
+ * runtime animation API exports a CSS declaration string, so rewriting the
+ * attribute lets the browser run the transition without a dedicated backend
+ * animation channel.
+ */
+function rewriteAnimationAttributes(source: string): string {
+  return source.replace(
+    /<([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*)\/?>/g,
+    (match, tag: string, attributes: string) => {
+      const animation = attributes.match(/\sanimation\s*=\s*(["'])([\s\S]*?)\1/)
+      if (!animation) return match
+      const value = animation[2]!
+      let nextAttributes = attributes.replace(animation[0], '')
+      const style = nextAttributes.match(/\sstyle\s*=\s*(["'])([\s\S]*?)\1/)
+      if (style) {
+        const existing = style[2]!
+        const separator = existing.trimEnd().endsWith(';') ? '' : ';'
+        nextAttributes = nextAttributes.replace(style[0], ` style="${existing}${separator}${value}"`)
+      } else {
+        nextAttributes = `${nextAttributes} style="${value}"`
+      }
+      return `<${tag}${nextAttributes}>`
+    },
+  )
 }

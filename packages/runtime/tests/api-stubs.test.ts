@@ -18,12 +18,12 @@ function createContext() {
 }
 
 describe('P0 API stubs', () => {
-  test('createAnimation is chainable and exports an empty payload', () => {
-    const { context, diagnostics } = createContext()
+  test('createAnimation is chainable and exports CSS transitions', () => {
+    const { context } = createContext()
     const animation = createServiceApiHost(context).createAnimation() as Record<string, (...args: unknown[]) => unknown>
     expect(animation.scale!(2, 2).rotate!(45).step!()).toBe(animation)
-    expect(animation.export!()).toEqual({})
-    expect(diagnostics[0]?.[0]).toBe('warn')
+    expect(animation.export!()).toContain('transform: scale(2, 2) rotate(45deg)')
+    expect(animation.export!()).toContain('transition: all 400ms linear 0ms')
   })
 
   test('createCanvasContext tolerates any drawing call', () => {
