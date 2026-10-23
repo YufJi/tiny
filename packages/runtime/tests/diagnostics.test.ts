@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, test } from 'vitest'
 import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
-import type { Manifest, PageArtifact } from '@tiny/compiler-next'
+import type { Manifest, PageArtifact } from '@tiny/cli'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
 import { bootRenderThread } from '../src/render'

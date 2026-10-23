@@ -41,3 +41,7 @@ Create `packages/compiler-next`.
 ## Consequences
 
 Compiler-next becomes the authoritative path for the glass-easel build. Runtime, devtool, and tests can consume one versioned manifest contract. The project temporarily maintains two compiler packages, but only compiler-next may evolve.
+
+---
+
+_Update: the package was renamed to `@tiny/cli` (`packages/cli`). The original decision and contract above are unchanged._

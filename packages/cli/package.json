@@ -1,5 +1,5 @@
 {
-  "name": "@tiny/compiler-next",
+  "name": "@tiny/cli",
   "version": "0.1.0",
   "description": "Glass-easel mini-program compiler and runtime manifest producer",
   "type": "module",

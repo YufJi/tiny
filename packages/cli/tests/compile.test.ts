@@ -9,7 +9,7 @@ const fixtureDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixt
 let outputDir: string
 
 beforeAll(async () => {
-  outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'compiler-next-'))
+  outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cli-'))
   await compileMiniProgram({
     sourceDir: fixtureDir,
     outputDir,

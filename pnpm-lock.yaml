@@ -58,7 +58,7 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
 
-  packages/compiler-next:
+  packages/cli:
     dependencies:
       '@tiny/stylesheet-compiler':
         specifier: workspace:*
@@ -122,9 +122,9 @@ importers:
       '@tiny/builtin-components':
         specifier: workspace:*
         version: link:../builtin-components
-      '@tiny/compiler-next':
+      '@tiny/cli':
         specifier: workspace:^
-        version: link:../compiler-next
+        version: link:../cli
       es-toolkit:
         specifier: ^1.45.1
         version: 1.46.1

@@ -1,4 +1,4 @@
-import type { Diagnostic as CompilerDiagnostic } from '@tiny/compiler-next'
+import type { Diagnostic as CompilerDiagnostic } from '@tiny/cli'
 
 export type RuntimeDiagnosticSeverity = 'info' | 'warning' | 'error' | 'state'
 export type RuntimeDiagnosticSource = 'compiler' | 'transport' | 'service' | 'render' | 'host'

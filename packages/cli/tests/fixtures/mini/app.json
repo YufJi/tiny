@@ -1,6 +1,6 @@
 {
   "pages": ["pages/index/index"],
-  "window": { "navigationBarTitleText": "Compiler Next" },
+  "window": { "navigationBarTitleText": "Tiny CLI" },
   "usingComponents": {
     "badge": "./components/badge/badge"
   }

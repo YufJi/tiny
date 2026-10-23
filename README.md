@@ -8,7 +8,7 @@
 小程序源码 (WXML/WXSS/JS)
         │
         ▼
-compiler-next ──► manifest + templates/service/render/styles
+cli ──► manifest + templates/service/render/styles
         │
         ▼
 runtime (host)
@@ -24,7 +24,7 @@ devtool (可选) : DevtoolRuntimeClient + React 面板
 
 | Package | 作用 |
 | --- | --- |
-| `packages/compiler-next` | 活跃编译器：小程序源码 → glass-easel 产物与 manifest |
+| `packages/cli` | 活跃编译器：小程序源码 → glass-easel 产物与 manifest |
 | `packages/template-compiler` | WXML/ProcGen 编译 |
 | `packages/stylesheet-compiler` | WXSS 编译、rpx、class/tag 作用域 |
 | `packages/runtime` | 双线程 runtime、glass-easel adapter、DevtoolRuntimeClient |

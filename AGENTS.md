@@ -8,7 +8,7 @@ A mini-program engine built on glass-easel.
 - **Monorepo**: pnpm workspaces + Turborepo
 - **Language**: TypeScript (packages), JavaScript/JSX (devtool)
 - **Runtime**: dual-thread host (service + render iframes) over the versioned Tiny bridge protocol
-- **Compiler**: `compiler-next` produces the runtime manifest and artifacts
+- **Compiler**: `cli` produces the runtime manifest and artifacts
 
 Legacy `packages/base`, `packages/compiler`, and the old devtool shell were
 removed after the glass-easel migration. Do not reintroduce
@@ -19,7 +19,7 @@ remain as historical reference demos and are not part of the active build.
 
 | Package | Scope |
 | --- | --- |
-| `packages/compiler-next` | Active compiler and manifest producer |
+| `packages/cli` | Active compiler and manifest producer |
 | `packages/template-compiler` | WXML parsing and ProcGen |
 | `packages/stylesheet-compiler` | WXSS, rpx, class/tag scoping |
 | `packages/runtime` | Host runtime, glass-easel adapter, devtool client |
@@ -44,14 +44,14 @@ Package-level scripts:
 ```bash
 pnpm --filter @tiny/runtime test
 pnpm --filter @tiny/runtime build
-pnpm --filter @tiny/compiler-next build
+pnpm --filter @tiny/cli build
 pnpm --filter devtool build
 ```
 
 ## Testing
 
 Vitest is used by `bridge`, `template-compiler`, `stylesheet-compiler`,
-`compiler-next`, `builtin-components`, and `runtime`. There is no global test
+`cli`, `builtin-components`, and `runtime`. There is no global test
 runner; use `pnpm --filter <package> test`.
 
 The end-to-end gate is `pnpm accept:glass-easel`, which runs:

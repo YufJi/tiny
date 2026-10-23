@@ -1,4 +1,4 @@
-import type { Manifest } from '@tiny/compiler-next'
+import type { Manifest } from '@tiny/cli'
 
 export type RuntimeManifest = Manifest
 

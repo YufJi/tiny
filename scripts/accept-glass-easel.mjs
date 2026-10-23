@@ -18,7 +18,7 @@ const steps = [
   ['Run bridge protocol tests', ['pnpm', '--filter', '@tiny/bridge', 'test']],
   ['Run template compiler tests', ['pnpm', '--filter', '@tiny/template-compiler', 'test']],
   ['Run stylesheet compiler tests', ['pnpm', '--filter', '@tiny/stylesheet-compiler', 'test']],
-  ['Run compiler-next tests', ['pnpm', '--filter', '@tiny/compiler-next', 'test']],
+  ['Run cli tests', ['pnpm', '--filter', '@tiny/cli', 'test']],
   ['Run built-in component tests', ['pnpm', '--filter', '@tiny/builtin-components', 'test']],
   ['Run runtime tests', ['pnpm', '--filter', '@tiny/runtime', 'test']],
   ['Compile P0 example', ['pnpm', 'compile:glass-easel']],
@@ -120,7 +120,7 @@ function startDevServer() {
     'pnpm',
     [
       '--filter',
-      '@tiny/compiler-next',
+      '@tiny/cli',
       'exec',
       'vite',
       '--config',
