@@ -55,9 +55,11 @@ The gate compiles both `example/glass-easel/mini` (demo) and `example/mini` (rea
 runtime debugger:
 
 1. `DevtoolRuntimeClient` boots the dual-thread host and reports `running`.
-2. Page stack, current page, and structured diagnostics are projected into Redux.
-3. The mini program renders inside the debugger viewport.
-4. `Navigate` / `Back` drive the runtime through host API handlers.
+2. Page stack, current page, structured diagnostics, and the rendered element tree are
+   projected into Redux.
+3. The mini program renders inside the debugger viewport; the tree drawer shows `page`,
+   built-in tags, classes, attributes, and text.
+4. `Navigate` / `Back` drive the runtime through host API handlers and refresh the tree.
 5. The app selector switches from the demo to the existing example app.
 6. `Reload` restarts the runtime and `Terminate` removes both thread iframes.
 7. No console or page errors occur.

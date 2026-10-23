@@ -12,6 +12,17 @@ import { createRuntimeDiagnostic } from './diagnostics'
 
 export type ComponentLifecyclePhase = 'created' | 'attached' | 'ready' | 'moved' | 'detached'
 
+export type InspectNode = {
+  id: string
+  type: 'component' | 'element' | 'text'
+  tag: string
+  text?: string
+  attributes?: Record<string, string>
+  className?: string
+  style?: string
+  children: InspectNode[]
+}
+
 export type GlassEaselAdapterOptions = {
   backend: glassEasel.GeneralBackendContext
   manifest: Manifest
@@ -208,6 +219,44 @@ export class GlassEaselRuntimeAdapter {
 
   getMountedComponent(path: string): glassEasel.GeneralComponent | undefined {
     return this.mountedComponents.get(path)
+  }
+
+  inspectTree(pageId?: string): InspectNode | null {
+    const component = pageId
+      ? this.componentsByPageId.get(pageId)
+      : this.mountedComponents.get(this.activeEventPageId ?? '')
+        ?? [...this.mountedComponents.values()].at(-1)
+    if (!component) return null
+    const backend = (component as unknown as { getBackendElement?: () => unknown }).getBackendElement?.()
+    if (isDomInspectNode(backend)) {
+      const budget = { count: 0 }
+      const domTree = serializeDomNode(backend, '0', 0, budget)
+      if (domTree) return { ...domTree, type: 'component' }
+    }
+    return this.inspectLogicalTree(component)
+  }
+
+  private inspectLogicalTree(component: glassEasel.GeneralComponent): InspectNode | null {
+    const shadow = (component as unknown as { shadowRoot?: { childNodes?: unknown[] } }).shadowRoot
+    const nodes = shadow?.childNodes
+      ?? (component as unknown as { childNodes?: unknown[] }).childNodes
+      ?? []
+    const budget = { count: 0 }
+    const root: InspectNode = {
+      id: '0',
+      type: 'component',
+      tag: component.is,
+      children: nodes
+        .map((node, index) => serializeInspectNode(node, `0.${index}`, 1, budget))
+        .filter((node): node is InspectNode => node !== null),
+    }
+    const attributes = serializeAttributes(component as unknown as InspectElementLike)
+    if (Object.keys(attributes).length > 0) root.attributes = attributes
+    const className = readClassName(component as unknown as InspectElementLike)
+    if (className) root.className = className
+    const style = readStyle(component as unknown as InspectElementLike)
+    if (style) root.style = style
+    return root
   }
 
   triggerComponentEvent(
@@ -413,4 +462,147 @@ export class GlassEaselRuntimeAdapter {
       style: typeof element.style === 'string' ? element.style : '',
     }
   }
+}
+
+type InspectElementLike = {
+  is?: string
+  attributes?: { name: string; value: unknown }[]
+  class?: string
+  style?: string
+  childNodes?: unknown[]
+  asGeneralComponent?: () => unknown
+  shadowRoot?: { childNodes?: unknown[] }
+}
+
+const INSPECT_NODE_LIMIT = 2000
+const INSPECT_DEPTH_LIMIT = 60
+const INSPECT_TEXT_LIMIT = 200
+
+function serializeInspectNode(
+  node: unknown,
+  id: string,
+  depth: number,
+  budget: { count: number },
+): InspectNode | null {
+  if (!node || budget.count >= INSPECT_NODE_LIMIT || depth > INSPECT_DEPTH_LIMIT) return null
+  budget.count += 1
+  const cast = node as {
+    asTextNode?: () => { textContent?: string } | null
+    asElement?: () => InspectElementLike | null
+  }
+  const textNode = cast.asTextNode?.()
+  if (textNode) {
+    const text = String(textNode.textContent ?? '').trim()
+    if (text.length === 0) return null
+    return {
+      id,
+      type: 'text',
+      tag: '#text',
+      text: text.length > INSPECT_TEXT_LIMIT ? `${text.slice(0, INSPECT_TEXT_LIMIT)}…` : text,
+      children: [],
+    }
+  }
+  const element = cast.asElement?.()
+  if (!element) return null
+  const component = element.asGeneralComponent?.()
+  const isComponent = Boolean(component)
+  const childNodes = isComponent
+    ? (component as { shadowRoot?: { childNodes?: unknown[] } }).shadowRoot?.childNodes
+      ?? element.childNodes
+      ?? []
+    : element.childNodes ?? []
+  const attributes = serializeAttributes(element)
+  const result: InspectNode = {
+    id,
+    type: isComponent ? 'component' : 'element',
+    tag: String(element.is ?? 'unknown'),
+    children: childNodes
+      .map((child, index) => serializeInspectNode(child, `${id}.${index}`, depth + 1, budget))
+      .filter((child): child is InspectNode => child !== null),
+  }
+  if (Object.keys(attributes).length > 0) result.attributes = attributes
+  const className = readClassName(element)
+  if (className) result.className = className
+  const style = readStyle(element)
+  if (style) result.style = style
+  return result
+}
+
+function serializeAttributes(element: InspectElementLike): Record<string, string> {
+  const attributes: Record<string, string> = {}
+  for (const attribute of element.attributes ?? []) {
+    if (attribute.name === 'class' || attribute.name === 'style') continue
+    const value = toJsonSafe(attribute.value)
+    if (value === undefined) continue
+    attributes[attribute.name] = typeof value === 'string' ? value : JSON.stringify(value)
+  }
+  return attributes
+}
+
+function readClassName(element: InspectElementLike): string | undefined {
+  const name = element.class
+  return typeof name === 'string' && name.length > 0 ? name : undefined
+}
+
+function readStyle(element: InspectElementLike): string | undefined {
+  const style = element.style
+  return typeof style === 'string' && style.length > 0 ? style : undefined
+}
+
+type DomInspectNode = {
+  nodeType?: number
+  tagName?: string
+  textContent?: string | null
+  className?: string
+  childNodes?: ArrayLike<DomInspectNode>
+  getAttributeNames?: () => string[]
+  getAttribute?: (name: string) => string | null
+  hasAttribute?: (name: string) => boolean
+}
+
+function isDomInspectNode(node: unknown): node is DomInspectNode {
+  if (!node || typeof node !== 'object') return false
+  const candidate = node as DomInspectNode
+  return typeof candidate.nodeType === 'number' && typeof candidate.tagName === 'string'
+}
+
+function serializeDomNode(
+  node: DomInspectNode,
+  id: string,
+  depth: number,
+  budget: { count: number },
+): InspectNode | null {
+  if (budget.count >= INSPECT_NODE_LIMIT || depth > INSPECT_DEPTH_LIMIT) return null
+  budget.count += 1
+  if (node.nodeType === 3) {
+    const text = String(node.textContent ?? '').trim()
+    if (text.length === 0) return null
+    return {
+      id,
+      type: 'text',
+      tag: '#text',
+      text: text.length > INSPECT_TEXT_LIMIT ? `${text.slice(0, INSPECT_TEXT_LIMIT)}…` : text,
+      children: [],
+    }
+  }
+  if (node.nodeType !== 1) return null
+  const attributes: Record<string, string> = {}
+  for (const name of node.getAttributeNames?.() ?? []) {
+    if (name === 'class' || name === 'style') continue
+    const value = node.getAttribute?.(name)
+    if (value !== null && value !== undefined) attributes[name] = String(value)
+  }
+  const result: InspectNode = {
+    id,
+    type: node.hasAttribute?.('wx-host') ? 'component' : 'element',
+    tag: String(node.tagName ?? 'unknown').toLowerCase(),
+    children: Array.from(node.childNodes ?? [])
+      .map((child, index) => serializeDomNode(child, `${id}.${index}`, depth + 1, budget))
+      .filter((child): child is InspectNode => child !== null),
+  }
+  if (Object.keys(attributes).length > 0) result.attributes = attributes
+  if (typeof node.className === 'string' && node.className.length > 0) result.className = node.className
+  const style = node.getAttribute?.('style')
+  if (style) result.style = style
+  return result
 }

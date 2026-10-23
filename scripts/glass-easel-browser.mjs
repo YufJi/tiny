@@ -415,6 +415,13 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         0,
         'runtime reported a fatal diagnostic',
       )
+      assert.ok(current.tree, 'element tree was not projected')
+      assert.equal(current.tree.tag, 'page')
+      assert.ok(
+        JSON.stringify(current.tree).includes('Tiny Glass-easel P0'),
+        'element tree does not contain rendered text',
+      )
+      assert.ok((await page.locator('body').innerText()).includes('element tree'), 'tree panel is not visible')
     })
 
     await step('render the mini program inside the debugger', async () => {
@@ -436,6 +443,10 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         { timeout: STEP_TIMEOUT },
       )
       assert.deepEqual((await state()).pageStack, ['page-1', 'page-2'])
+      assert.ok(
+        JSON.stringify((await state()).tree).includes('Add todo'),
+        'element tree did not refresh after navigation',
+      )
 
       await page.getByText('Back', { exact: true }).click()
       await page.waitForFunction(
@@ -460,6 +471,10 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         switched.diagnostics.filter((item) => item.severity === 'error').length,
         0,
         'switched app reported a fatal diagnostic',
+      )
+      assert.ok(
+        JSON.stringify(switched.tree).includes('Learning Javascript'),
+        'element tree did not switch to the existing example app',
       )
       const renderFrame = page.frames().find((frame) => frame.url().includes('next-render.html'))
       assert.ok(renderFrame, 'render thread iframe was not created for the switched app')

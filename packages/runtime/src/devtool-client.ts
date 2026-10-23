@@ -1,4 +1,5 @@
 import type { RuntimeDiagnostic } from './diagnostics'
+import type { InspectNode } from './glass-easel-adapter'
 import type { HostApiHandler, RuntimeManifest, StorageSnapshot, SystemInfoSnapshot } from './types'
 import { createStandaloneDualThreadHost, type StandaloneHost } from './standalone-host'
 
@@ -9,6 +10,7 @@ export type DevtoolRuntimeState = {
   currentPage?: string
   pageStack: string[]
   diagnostics: RuntimeDiagnostic[]
+  tree?: InspectNode | null
   error?: string
 }
 
@@ -64,6 +66,7 @@ export class DevtoolRuntimeClient {
       currentPage: undefined,
       pageStack: [],
       diagnostics: [],
+      tree: undefined,
       error: undefined,
     })
     const container = this.options.container ?? document.createElement('div')
@@ -88,6 +91,7 @@ export class DevtoolRuntimeClient {
       })
       await this.host.host.bootstrap()
       this.update({ status: 'running' })
+      await this.inspectTree()
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       this.update({ status: 'error', error: message })
@@ -108,7 +112,7 @@ export class DevtoolRuntimeClient {
       this.container = null
       this.ownsContainer = false
     }
-    this.update({ status: 'terminated' })
+    this.update({ status: 'terminated', tree: undefined })
   }
 
   async reload(): Promise<void> {
@@ -120,11 +124,24 @@ export class DevtoolRuntimeClient {
   async navigate(url: string): Promise<void> {
     const handler = this.requireHandler('navigate.to')
     await handler({ url }, { pageId: this.activePageId })
+    await this.inspectTree()
   }
 
   async back(delta = 1): Promise<void> {
     const handler = this.requireHandler('navigate.back')
     await handler({ delta }, { pageId: this.activePageId })
+    await this.inspectTree()
+  }
+
+  async inspectTree(): Promise<InspectNode | null> {
+    const host = this.requireHost()
+    const tree = await host.host.render.control<InspectNode | null>(
+      'runtime',
+      'inspectTree',
+      { pageId: this.activePageId },
+    )
+    this.update({ tree })
+    return tree
   }
 
   async foreground(): Promise<void> {

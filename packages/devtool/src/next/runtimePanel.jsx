@@ -17,6 +17,23 @@ const SEVERITY_COLORS = {
   state: '#a78bfa',
 };
 
+function TreeNode({ node, depth = 0 }) {
+  const style = { marginLeft: depth * 10, fontSize: 12 };
+  if (node.type === 'text') {
+    return <div style={{ ...style, color: '#94a3b8', whiteSpace: 'pre-wrap' }}>&quot;{node.text}&quot;</div>;
+  }
+  const meta = [node.className, node.attributes ? JSON.stringify(node.attributes) : ''].filter(Boolean).join(' ');
+  return (
+    <details open={depth < 2} style={style}>
+      <summary style={{ cursor: 'pointer' }}>
+        <code style={{ color: node.type === 'component' ? '#fbbf24' : '#7dd3fc' }}>{node.tag}</code>
+        {meta ? <span style={{ color: '#64748b' }}> {meta}</span> : null}
+      </summary>
+      {node.children.map((child) => <TreeNode key={child.id} node={child} depth={depth + 1} />)}
+    </details>
+  );
+}
+
 const APPS = [
   { id: 'demo', label: 'P0 demo' },
   { id: 'real', label: 'example/mini' },
@@ -94,6 +111,7 @@ class RuntimePanel extends PureComponent {
     return (
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
         <button type="button" style={buttonStyle} disabled={status === 'connecting'} onClick={() => this.run(() => this.client.reload())}>Reload</button>
+        <button type="button" style={buttonStyle} disabled={!running} onClick={() => this.run(() => this.client.inspectTree())}>Inspect</button>
         <button type="button" style={buttonStyle} disabled={!running} onClick={() => this.run(() => this.client.foreground())}>Foreground</button>
         <button type="button" style={buttonStyle} disabled={!running} onClick={() => this.run(() => this.client.background())}>Background</button>
         <button type="button" style={buttonStyle} disabled={!running} onClick={() => this.run(() => this.client.back())}>Back</button>
@@ -117,7 +135,7 @@ class RuntimePanel extends PureComponent {
   }
 
   render() {
-    const { pageStack, diagnostics } = this.props.runtime;
+    const { pageStack, diagnostics, tree } = this.props.runtime;
     return (
       <div style={{ display: 'flex', height: '100vh', fontFamily: 'system-ui, sans-serif', background: '#0f172a', color: '#e2e8f0' }}>
         <div style={{ width: 380, padding: 16, boxSizing: 'border-box', borderRight: '1px solid #1e293b', overflow: 'auto' }}>
@@ -156,8 +174,14 @@ class RuntimePanel extends PureComponent {
             ))}
           </div>
         </div>
-        <div style={{ flex: 1, position: 'relative', background: '#fff' }}>
-          <div ref={this.containerRef} style={{ width: '100%', height: '100%' }} />
+        <div style={{ flex: 1, position: 'relative', background: '#fff', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          <div ref={this.containerRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
+          <div style={{ height: 260, overflow: 'auto', background: '#0b1220', borderTop: '1px solid #1e293b', padding: 8 }}>
+            <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>element tree</div>
+            {tree
+              ? <TreeNode node={tree} />
+              : <span style={{ color: '#64748b', fontSize: 12 }}>not loaded</span>}
+          </div>
         </div>
       </div>
     );

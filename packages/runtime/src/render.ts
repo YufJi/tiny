@@ -93,6 +93,11 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
     return { status: 'ready', path: payload.path, pageId: payload.pageId }
   })
 
+  connection.onControl('runtime', 'inspectTree', (message) => {
+    const payload = (message.payload ?? {}) as { pageId?: string }
+    return adapter.inspectTree(payload.pageId)
+  })
+
   connection.onEvent('data', 'setData', (message) => {
     const payload = message.payload as { pageId?: string; componentId?: string; patch?: DataPatch }
     const component = payload.componentId
