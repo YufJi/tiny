@@ -5,3 +5,4 @@ export * from './render';
 export * from './host';
 export * from './runtime-port';
 export * from './standalone-host';
+export * from './devtool-client';

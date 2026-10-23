@@ -375,6 +375,111 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
   }
 }
 
+export async function runDevtoolAcceptance({ baseUrl }) {
+  const browser = await launchBrowser()
+  const page = await browser.newPage({ viewport: { width: 1400, height: 900 } })
+  const pageErrors = []
+  const consoleErrors = []
+  const failureShot = path.join(rootDir, 'example/glass-easel/generated/acceptance-devtool-failure.png')
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text())
+  })
+
+  let currentStep = 'start'
+  try {
+    const state = () => page.evaluate(() => window.__tinyDevtool.getState())
+    const waitForStatus = (status) => page.waitForFunction(
+      (expected) => window.__tinyDevtool?.getState().status === expected,
+      status,
+      { timeout: STEP_TIMEOUT },
+    )
+
+    await step('boot the runtime debugger', async () => {
+      currentStep = 'boot the runtime debugger'
+      await page.goto(`${baseUrl}/next.html`, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
+      await waitForStatus('running')
+      assert.equal(pageErrors.length, 0, `page errors during boot: ${pageErrors.join(' | ')}`)
+    })
+
+    await step('project runtime state into the debugger', async () => {
+      currentStep = 'project runtime state into the debugger'
+      const current = await state()
+      assert.equal(current.currentPage, 'pages/todos/todos')
+      assert.deepEqual(current.pageStack, ['page-1'])
+      const codes = current.diagnostics.map((item) => item.code)
+      assert.ok(codes.includes('RUNTIME_STATE'), 'runtime state diagnostics were not projected')
+      assert.ok(codes.includes('UNSUPPORTED_CANVAS'), 'canvas diagnostics were not projected')
+      assert.equal(
+        current.diagnostics.filter((item) => item.severity === 'error').length,
+        0,
+        'runtime reported a fatal diagnostic',
+      )
+    })
+
+    await step('render the mini program inside the debugger', async () => {
+      currentStep = 'render the mini program inside the debugger'
+      const renderFrame = page.frames().find((frame) => frame.url().includes('next-render.html'))
+      assert.ok(renderFrame, 'render thread iframe was not created')
+      const body = await renderFrame.locator('#app').innerText()
+      assert.ok(body.includes('Tiny Glass-easel P0'), 'mini program did not render in the debugger')
+      assert.ok(body.includes('Learn glass-easel'), 'page data did not render in the debugger')
+    })
+
+    await step('navigate and go back from the debugger', async () => {
+      currentStep = 'navigate and go back from the debugger'
+      await page.locator('input[placeholder="pages/..."]').fill('/pages/add-todo/add-todo')
+      await page.getByText('Navigate', { exact: true }).click()
+      await page.waitForFunction(
+        () => window.__tinyDevtool.getState().currentPage === 'pages/add-todo/add-todo',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      assert.deepEqual((await state()).pageStack, ['page-1', 'page-2'])
+
+      await page.getByText('Back', { exact: true }).click()
+      await page.waitForFunction(
+        () => window.__tinyDevtool.getState().currentPage === 'pages/todos/todos',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      assert.deepEqual((await state()).pageStack, ['page-1'])
+    })
+
+    await step('reload and terminate from the debugger', async () => {
+      currentStep = 'reload and terminate from the debugger'
+      await page.getByText('Reload', { exact: true }).click()
+      await waitForStatus('running')
+      assert.deepEqual((await state()).pageStack, ['page-1'])
+
+      await page.getByText('Terminate', { exact: true }).click()
+      await waitForStatus('terminated')
+      assert.equal(await page.locator('iframe').count(), 0, 'runtime iframes were not removed')
+    })
+
+    await step('keep the debugger console free of errors', async () => {
+      currentStep = 'keep the debugger console free of errors'
+      assert.equal(consoleErrors.length, 0, `console errors: ${consoleErrors.join(' | ')}`)
+      assert.equal(pageErrors.length, 0, `page errors: ${pageErrors.join(' | ')}`)
+    })
+
+    console.log('\n✅ Runtime debugger acceptance passed.')
+  } catch (error) {
+    try {
+      await fs.mkdir(path.dirname(failureShot), { recursive: true })
+      await page.screenshot({ path: failureShot, fullPage: true })
+    } catch {
+      // Screenshots are best-effort diagnostics.
+    }
+    throw new Error(
+      `Runtime debugger acceptance failed during "${currentStep}": ${error instanceof Error ? error.message : String(error)}` +
+        `\nScreenshot: ${failureShot}`,
+    )
+  } finally {
+    await browser.close()
+  }
+}
+
 async function step(name, run) {
   console.log(`\n▶ ${name}`)
   await run()

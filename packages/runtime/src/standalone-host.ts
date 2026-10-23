@@ -1,5 +1,6 @@
 import { createHostMessageChannelPair } from '@tiny/bridge'
 import { createTinyRuntime, type TinyRuntimeHost } from './host'
+import type { RuntimeDiagnostic } from './diagnostics'
 import type { RuntimeManifest, SystemInfoSnapshot, StorageSnapshot } from './types'
 
 export type StandaloneHostOptions = {
@@ -11,6 +12,7 @@ export type StandaloneHostOptions = {
   systemInfo?: Partial<SystemInfoSnapshot>
   storage?: StorageSnapshot
   container?: HTMLElement
+  onDiagnostic?: (diagnostic: RuntimeDiagnostic) => void
 }
 
 export type StandaloneHost = {
@@ -52,6 +54,7 @@ export async function createStandaloneDualThreadHost(
     initialData: options.initialData,
     systemInfo: options.systemInfo,
     storage: options.storage,
+    onDiagnostic: options.onDiagnostic,
   })
   await Promise.all([host.service.handshake(), host.render.handshake()])
   return { host, serviceIframe, renderIframe }

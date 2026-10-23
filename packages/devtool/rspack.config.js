@@ -9,6 +9,9 @@ module.exports = {
   mode: isDev ? 'development' : 'production',
   entry: {
     index: path.join(root, 'src/main.js'),
+    nextHost: path.join(root, 'src/next/main.jsx'),
+    nextService: path.join(root, 'src/next/runtimeService.js'),
+    nextRender: path.join(root, 'src/next/runtimeRender.js'),
   },
   output: {
     path: path.join(root, 'dist'),
@@ -144,10 +147,38 @@ module.exports = {
     new rspack.CssExtractRspackPlugin({
       filename: '[name].css',
     }),
+    new rspack.CopyRspackPlugin({
+      patterns: [
+        {
+          from: path.join(root, 'static/runtime'),
+          to: 'runtime',
+          noErrorOnMissing: true,
+        },
+      ],
+    }),
     new HtmlRspackPlugin({
       title: '小程序浏览器调试',
       template: path.join(root, 'host.html'),
       filename: 'index.html',
+      chunks: ['index'],
+    }),
+    new HtmlRspackPlugin({
+      title: 'Tiny Runtime Debugger',
+      template: path.join(root, 'next.html'),
+      filename: 'next.html',
+      chunks: ['nextHost'],
+    }),
+    new HtmlRspackPlugin({
+      title: 'Tiny service thread',
+      template: path.join(root, 'next-service.html'),
+      filename: 'next-service.html',
+      chunks: ['nextService'],
+    }),
+    new HtmlRspackPlugin({
+      title: 'Tiny render thread',
+      template: path.join(root, 'next-render.html'),
+      filename: 'next-render.html',
+      chunks: ['nextRender'],
     }),
     new rspack.DefinePlugin({
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),

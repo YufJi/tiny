@@ -48,6 +48,25 @@ After the P0 demo flow, the gate compiles `example/mini` (3 pages + 1 subpackage
 The P0 demo artifacts are recompiled after this stage, so `pnpm dev:glass-easel` keeps
 serving the small demo.
 
+## Runtime debugger stage
+
+The gate then compiles the P0 demo into `packages/devtool/static/runtime/generated`, starts
+the devtool (`/next.html`), and verifies the runtime debugger:
+
+1. `DevtoolRuntimeClient` boots the dual-thread host and reports `running`.
+2. Page stack, current page, and structured diagnostics are projected into Redux.
+3. The mini program renders inside the debugger viewport.
+4. `Navigate` / `Back` drive the runtime through host API handlers.
+5. `Reload` restarts the runtime and `Terminate` removes both thread iframes.
+6. No console or page errors occur.
+
+Run it manually with:
+
+```bash
+pnpm dev:devtool
+# open http://localhost:8080/next.html
+```
+
 ## Browser selection
 
 The gate uses `playwright-core` with the system Chrome (`channel: 'chrome'`), falling
