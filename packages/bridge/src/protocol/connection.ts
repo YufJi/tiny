@@ -337,7 +337,7 @@ export class BridgeConnection {
         throw new ProtocolError(
           error.code,
           `${error.message} (reply ${message.domain}.${message.method})`,
-          error.details,
+          error.details
         );
       }
       throw error;
