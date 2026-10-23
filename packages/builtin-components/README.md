@@ -35,9 +35,9 @@ it reads all `components/*/template.wxml` files, compiles them with
 `src/generated/templates.js`. Runtime startup therefore does **no** WXML
 parsing or code generation.
 
-After editing a `template.wxml`, rebuild the package (or run
-`pnpm --filter @tiny/builtin-components templates`) and commit the regenerated
-`src/generated/templates.js`.
+`src/generated/` is gitignored. `prebuild`, `pretypecheck`, and `pretest`
+regenerate it automatically; run `pnpm --filter @tiny/builtin-components
+templates` to refresh it manually after editing a `template.wxml`.
 
 ## Adding a component
 

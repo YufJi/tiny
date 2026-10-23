@@ -17,7 +17,9 @@
     "templates": "node scripts/build-templates.mjs",
     "prebuild": "node scripts/build-templates.mjs",
     "build": "vite build && tsc -p tsconfig.build.json",
+    "pretypecheck": "node scripts/build-templates.mjs",
     "typecheck": "tsc --noEmit",
+    "pretest": "node scripts/build-templates.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
