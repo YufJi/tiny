@@ -1,3 +1,5 @@
 .badge {
   color: red;
 }
+
+text { color: blue; }

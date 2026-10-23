@@ -312,3 +312,32 @@ describe('calc() whitespace handling', () => {
     expect(out).toContain('calc')
   })
 })
+
+describe('tag selector scoping', () => {
+  test('rewrites tag selectors to scoped marker classes', () => {
+    const transformer = StyleSheetTransformer.fromCss(
+      'a.wxss',
+      'button { color: red } view .item { color: blue } button::after { content: "" }',
+      { classPrefix: 's', tagClassPrefix: 's--wx-tag-' },
+    )
+    const css = transformer.getContent()
+    expect(css).toContain('.s--wx-tag-button')
+    expect(css).toContain('.s--wx-tag-view .s--item')
+    expect(css).toContain('.s--wx-tag-button::after')
+  })
+})
+
+describe('tag selector edge cases', () => {
+  test('keeps keyframe steps and the page root selector', () => {
+    const transformer = StyleSheetTransformer.fromCss(
+      'a.wxss',
+      'page { color: red } @keyframes fade { from { opacity: 0 } to { opacity: 1 } }',
+      { classPrefix: 's', tagClassPrefix: 's--wx-tag-' },
+    )
+    const css = transformer.getContent()
+    expect(css).toContain('page')
+    expect(css).not.toContain('--wx-tag-from')
+    expect(css).not.toContain('--wx-tag-to')
+    expect(css).not.toContain('--wx-tag-page')
+  })
+})

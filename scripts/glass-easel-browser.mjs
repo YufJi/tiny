@@ -129,7 +129,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
 
       const hasInlineText = await render.evaluate(() =>
         [...document.querySelectorAll('.tiny-text')].some(
-          (element) => element.className.trim() === 'tiny-text' && getComputedStyle(element).display === 'inline',
+          (element) => getComputedStyle(element).display === 'inline',
         ),
       )
       assert.ok(hasInlineText, 'plain text should be inline')
@@ -342,6 +342,16 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       )
       const componentButtonWidth = await componentButton.evaluate((element) => element.getBoundingClientRect().width)
       assert.ok(componentButtonWidth > 100, 'component stylesheet did not apply')
+      const componentButtonStyle = await componentButton.evaluate((element) => {
+        const style = getComputedStyle(element)
+        return { radius: Number.parseFloat(style.borderRadius), spacing: style.letterSpacing }
+      })
+      assert.ok(componentButtonStyle.radius > 15, 'component tag selector did not apply')
+      assert.equal(componentButtonStyle.spacing, 'normal', 'page tag selector leaked into the component')
+
+      const pageButton = render.locator('button').filter({ hasText: 'nav' }).first()
+      const pageButtonSpacing = await pageButton.evaluate((element) => getComputedStyle(element).letterSpacing)
+      assert.equal(pageButtonSpacing, '2px', 'page tag selector did not apply')
 
       await render.locator('add-button').first().locator('button').first().click()
       await render.waitForFunction(
@@ -581,6 +591,14 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         page.selectOption('select', 'real'),
       ])
       await waitForStatus('running')
+      await page.waitForFunction(
+        () => {
+          const tree = window.__tinyDevtool?.getState().tree
+          return Boolean(tree) && JSON.stringify(tree).includes('Learning Javascript')
+        },
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
       const switched = await state()
       assert.equal(switched.currentPage, 'pages/todos/todos')
       assert.equal(

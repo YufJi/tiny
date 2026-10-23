@@ -44,6 +44,13 @@ export interface StyleSheetOptions {
   classPrefixSign?: string | undefined
 
   /**
+   * When set, type selectors (`button`, `view`) are rewritten to a marker
+   * class such as `.scope--wx-tag-button`. Templates add the matching
+   * `wx-tag-<tag>` class to elements so tag rules stay inside their scope.
+   */
+  tagClassPrefix?: string | undefined
+
+  /**
    * Ratio used to convert `rpx` units to `vw`.
    * The formula is `value * 100 / rpxRatio`.
    * Defaults to `750`.

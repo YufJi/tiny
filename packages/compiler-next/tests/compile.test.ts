@@ -98,6 +98,15 @@ describe('compileMiniProgram', () => {
     expect(typeof module.default.content('pages/index/index')).toBe('function')
   })
 
+  test('scopes tag selectors and injects tag marker classes', async () => {
+    const pageCss = await fs.readFile(path.join(outputDir, 'styles/pages/index/index.wxss.css'), 'utf8')
+    const componentCss = await fs.readFile(path.join(outputDir, 'styles/components/badge/badge.wxss.css'), 'utf8')
+    const templates = await fs.readFile(path.join(outputDir, 'templates.js'), 'utf8')
+    expect(pageCss).toContain('.tiny-pages-index-index--wx-tag-view')
+    expect(componentCss).toContain('.tiny-components-badge-badge--wx-tag-text')
+    expect(templates).toContain('wx-tag-view')
+  })
+
   test('does not report errors for the valid fixture', async () => {
     const result = await compileMiniProgram({
       sourceDir: fixtureDir,

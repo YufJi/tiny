@@ -86,23 +86,26 @@ function transformSelector(
   selector: string,
   classPrefix: string | undefined,
   classPrefixSign: string | undefined,
+  tagClassPrefix: string | undefined,
 ): string {
-  if (classPrefix === undefined && classPrefixSign === undefined) return selector
+  if (classPrefix === undefined && classPrefixSign === undefined && tagClassPrefix === undefined) {
+    return selector
+  }
 
-  // Tokenise at the character level: scan for `.` followed by identifier chars.
-  // We need to be careful not to match attribute selectors like [class~=".foo"].
-  // The Rust implementation sets `in_class = true` after a Delim('.') token, then
-  // the next Ident token is treated as a class name. Attribute values inside `[]`
-  // are not parsed as identifiers by cssparser in selector position, but in
-  // the Rust code the whole selector prelude _is_ walked. We replicate that
-  // behaviour: a `.` followed immediately by an identifier (no whitespace) is a
-  // class name, regardless of nesting context.
   let result = ''
   let i = 0
+  let squareDepth = 0
+  let parenDepth = 0
+  let previousSignificant = ''
+  const isTagBoundary = (value: string): boolean => (
+    value === '' || value === ' ' || value === '\t' || value === '\n'
+    || value === '>' || value === '+' || value === '~' || value === ','
+    || value === '('
+  )
+
   while (i < selector.length) {
     const ch = selector[i]!
     if (ch === '/' && selector[i + 1] === '*') {
-      // Pass existing comments through unchanged
       const end = selector.indexOf('*/', i + 2)
       if (end === -1) {
         result += selector.slice(i)
@@ -110,28 +113,66 @@ function transformSelector(
       }
       result += selector.slice(i, end + 2)
       i = end + 2
-    } else if (ch === '.' && i + 1 < selector.length && isIdentStart(selector[i + 1]!)) {
-      // Found a class token
+      continue
+    }
+    if (ch === '[') {
+      squareDepth += 1
+      result += ch
+      i += 1
+      previousSignificant = ch
+      continue
+    }
+    if (ch === ']') {
+      squareDepth = Math.max(0, squareDepth - 1)
+      result += ch
+      i += 1
+      previousSignificant = ch
+      continue
+    }
+    if (ch === '(') {
+      parenDepth += 1
+      result += ch
+      i += 1
+      previousSignificant = ch
+      continue
+    }
+    if (ch === ')') {
+      parenDepth = Math.max(0, parenDepth - 1)
+      result += ch
+      i += 1
+      previousSignificant = ch
+      continue
+    }
+    if (ch === '.' && i + 1 < selector.length && isIdentStart(selector[i + 1]!)) {
       result += '.'
       i++
-      // collect identifier
       const identStart = i
       while (i < selector.length && isIdentChar(selector[i]!)) i++
       const className = selector.slice(identStart, i)
-      // insert sign comment if requested
-      if (classPrefixSign !== undefined) {
-        result += `/*${classPrefixSign}*/`
-      }
-      // rewrite class name
-      if (classPrefix !== undefined) {
-        result += `${classPrefix}--${className}`
-      } else {
-        result += className
-      }
-    } else {
-      result += ch
-      i++
+      if (classPrefixSign !== undefined) result += `/*${classPrefixSign}*/`
+      result += classPrefix !== undefined ? `${classPrefix}--${className}` : className
+      previousSignificant = className.at(-1) ?? ''
+      continue
     }
+    if (
+      tagClassPrefix !== undefined
+      && squareDepth === 0
+      && parenDepth >= 0
+      && isIdentStart(ch)
+      && ch !== '-'
+      && isTagBoundary(previousSignificant)
+    ) {
+      const identStart = i
+      while (i < selector.length && isIdentChar(selector[i]!)) i++
+      const tagName = selector.slice(identStart, i)
+      // The page root is rendered outside the template, so it has no marker class.
+      result += tagName === 'page' ? tagName : `.${tagClassPrefix}${tagName}`
+      previousSignificant = tagName.at(-1) ?? ''
+      continue
+    }
+    result += ch
+    i += 1
+    if (ch !== ' ' && ch !== '\t' && ch !== '\n') previousSignificant = ch
   }
   return result
 }
@@ -231,6 +272,7 @@ export class StyleSheetTransformer {
       this._opts = {
         classPrefix: classPrefixOrOpts ?? undefined!,
         classPrefixSign: undefined!,
+        tagClassPrefix: undefined!,
         rpxRatio: rpxRatio ?? 750,
         importSign: undefined!,
         convertHost: convertHost ?? false,
@@ -249,6 +291,7 @@ export class StyleSheetTransformer {
     const opts: Required<StyleSheetOptions> = {
       classPrefix: options.classPrefix ?? undefined!,
       classPrefixSign: options.classPrefixSign ?? undefined!,
+      tagClassPrefix: options.tagClassPrefix ?? undefined!,
       rpxRatio: options.rpxRatio ?? 750,
       importSign: options.importSign ?? undefined!,
       convertHost: options.convertHost ?? false,
@@ -522,11 +565,13 @@ export class StyleSheetTransformer {
     }
 
     // Normal rule: transform selector (class prefix) + declarations (rpx)
+    const inKeyframes = atStack.some((atRule) => /^@(?:-webkit-)?keyframes\b/.test(atRule))
     const transformed = node.clone()
     transformed.selector = transformSelector(
       rawSelector,
       this._opts.classPrefix,
       this._opts.classPrefixSign,
+      inKeyframes ? undefined : this._opts.tagClassPrefix,
     )
     // Remove the space before `{` in minified output
     transformed.raws.between = ''
@@ -641,7 +686,12 @@ export class StyleSheetTransformer {
    */
   private _transformSelectorLike(s: string): string {
     let result = convertRpxInString(s, this._opts.rpxRatio)
-    result = transformSelector(result, this._opts.classPrefix, this._opts.classPrefixSign)
+    result = transformSelector(
+      result,
+      this._opts.classPrefix,
+      this._opts.classPrefixSign,
+      this._opts.tagClassPrefix,
+    )
     return result
   }
 

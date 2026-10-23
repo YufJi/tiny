@@ -457,7 +457,13 @@ class MiniProgramCompiler {
     for (const [relativePath, absolutePath] of templateFiles) {
       const templatePath = withoutExtension(relativePath)
       const rawSource = await fs.readFile(absolutePath, 'utf8')
-      const source = rewriteAnimationAttributes(inlineLocalImages(rawSource, absolutePath, root))
+      const inlined = inlineLocalImages(rawSource, absolutePath, root)
+      const hasScopedStyles = byRelative.has(`${templatePath}.wxss`) || byRelative.has(`${templatePath}.css`)
+      const scope = hasScopedStyles
+        ? `${this.options.scopePrefix}-${sanitizeScope(templatePath)}`
+        : undefined
+      const scopedSource = scope ? injectTagClasses(inlined, scope) : inlined
+      const source = rewriteAnimationAttributes(scopedSource)
       try {
         const warnings = group.addTmpl(templatePath, source)
         // WXML import/include resolves paths with the `.wxml` extension.
@@ -544,6 +550,7 @@ class MiniProgramCompiler {
       try {
         const transformer = StyleSheetTransformer.fromCss(relativePath, source, {
           classPrefix: scope,
+          tagClassPrefix: scope ? `${scope}--wx-tag-` : undefined,
           rpxRatio: this.options.rpxRatio,
         })
         const css = transformer.getContent()
@@ -872,6 +879,36 @@ function rewriteAnimationAttributes(source: string): string {
         nextAttributes = `${nextAttributes} style="${value}"`
       }
       return `<${tag}${nextAttributes}>`
+    },
+  )
+}
+
+const TAG_CLASS_SKIP = new Set(['import', 'include', 'template', 'block', 'wxs', 'slot'])
+
+/**
+ * Adds a `wx-tag-<tag>` marker class to every rendered element. Glass-easel
+ * prefixes it with the template's style scope at render time; the stylesheet
+ * compiler rewrites tag selectors to the matching scoped marker class, which
+ * keeps `button { … }` inside its page/component instead of leaking globally.
+ */
+function injectTagClasses(source: string, scope: string): string {
+  return source.replace(
+    /<([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*?)(\/?)>/g,
+    (match, rawTag: string, attributes: string, selfClose: string) => {
+      const tag = rawTag.toLowerCase()
+      if (TAG_CLASS_SKIP.has(tag) || !scope) return match
+      const marker = `wx-tag-${tag}`
+      const classMatch = attributes.match(/\sclass\s*=\s*(["'])([\s\S]*?)\1/)
+      let nextAttributes = attributes
+      if (classMatch) {
+        const quote = classMatch[1]!
+        const value = classMatch[2]!
+        const separator = value.length === 0 || /\s$/.test(value) ? '' : ' '
+        nextAttributes = attributes.replace(classMatch[0], ` class=${quote}${value}${separator}${marker}${quote}`)
+      } else {
+        nextAttributes = `${attributes} class="${marker}"`
+      }
+      return `<${rawTag}${nextAttributes}${selfClose}>`
     },
   )
 }

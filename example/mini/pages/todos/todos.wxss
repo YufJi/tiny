@@ -159,3 +159,4 @@
   width: 300px;
   height: 300px;
 }
+button { letter-spacing: 2px; }
