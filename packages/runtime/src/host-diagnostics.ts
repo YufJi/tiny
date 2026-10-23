@@ -28,7 +28,7 @@ export function registerHostDiagnosticHandlers(
 ): void {
   for (const level of ['log', 'warn', 'error', 'state'] as const) {
     connection.onEvent('diagnostic', `diagnostic.${level}`, (message) => {
-      store.record(normalizeTransportDiagnostic(message.payload, source, message.pageId))
+      store.record(normalizeTransportDiagnostic(message.payload, source, message.pageId, level))
     })
   }
 }

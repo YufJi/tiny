@@ -1,7 +1,7 @@
 import { spawn, spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { runBrowserAcceptance } from './glass-easel-browser.mjs'
+import { runBrowserAcceptance, runMiniProgramAcceptance } from './glass-easel-browser.mjs'
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const port = Number(process.env.TINY_ACCEPT_PORT ?? 5199)
@@ -19,6 +19,34 @@ const steps = [
 ]
 
 for (const [name, command] of steps) {
+  runStep(name, command)
+}
+
+if (process.env.SKIP_BROWSER === '1') {
+  console.log('\n⚠ Browser acceptance skipped because SKIP_BROWSER=1')
+} else {
+  await withServer(() => runBrowserAcceptance({ baseUrl }))
+
+  runStep('Compile existing example app', [
+    'node',
+    'scripts/compile-mini.mjs',
+    'example/mini',
+    'example/glass-easel/generated',
+  ])
+  await withServer(() => runMiniProgramAcceptance({ baseUrl }))
+
+  runStep('Restore P0 demo artifacts', ['pnpm', ['compile:glass-easel']])
+}
+
+console.log(`
+✅ P0 acceptance gate passed.
+
+Automated: build, compiler/runtime tests, P0 demo browser flow, and the existing
+example app browser flow (compile → boot → render → navigate → diagnostics).
+Manual debug host: pnpm dev:glass-easel
+`)
+
+function runStep(name, command) {
   console.log(`\n▶ ${name}`)
   const result = spawnSync(command[0], command.slice(1), { stdio: 'inherit' })
   if (result.status !== 0) {
@@ -27,24 +55,15 @@ for (const [name, command] of steps) {
   }
 }
 
-if (process.env.SKIP_BROWSER === '1') {
-  console.log('\n⚠ Browser acceptance skipped because SKIP_BROWSER=1')
-} else {
+async function withServer(run) {
   const server = startDevServer()
   try {
     await waitForServer(baseUrl, server.log)
-    await runBrowserAcceptance({ baseUrl })
+    await run()
   } finally {
     await stopDevServer(server.child)
   }
 }
-
-console.log(`
-✅ P0 acceptance gate passed.
-
-Automated: build, protocol/compiler/runtime tests, example compile, dual-thread browser flow.
-Manual debug host: pnpm dev:glass-easel
-`)
 
 function startDevServer() {
   const child = spawn(

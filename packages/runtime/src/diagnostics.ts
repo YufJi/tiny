@@ -53,11 +53,22 @@ export function normalizeTransportDiagnostic(
   payload: unknown,
   source: RuntimeDiagnosticSource,
   pageId?: string,
+  level?: 'log' | 'warn' | 'error' | 'state',
 ): RuntimeDiagnostic {
   const value = payload as { severity?: string; code?: string; message?: string; details?: unknown } | undefined
-  const severity = value?.severity === 'warning' || value?.severity === 'info' || value?.severity === 'state'
+  const fallback: RuntimeDiagnostic['severity'] = level === 'warn'
+    ? 'warning'
+    : level === 'log'
+      ? 'info'
+      : level === 'state'
+        ? 'state'
+        : 'error'
+  const severity = value?.severity === 'warning'
+    || value?.severity === 'info'
+    || value?.severity === 'state'
+    || value?.severity === 'error'
     ? value.severity
-    : 'error'
+    : fallback
   return createRuntimeDiagnostic(
     severity,
     value?.code ?? 'TRANSPORT_DIAGNOSTIC',

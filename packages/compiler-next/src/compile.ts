@@ -457,6 +457,8 @@ class MiniProgramCompiler {
       const source = await fs.readFile(absolutePath, 'utf8')
       try {
         const warnings = group.addTmpl(templatePath, source)
+        // WXML import/include resolves paths with the `.wxml` extension.
+        group.addTmplAlias(relativePath, templatePath)
         for (const warning of warnings) {
           this.diagnostics.push(diagnostic(
             'warning',

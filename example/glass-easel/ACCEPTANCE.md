@@ -29,6 +29,25 @@ The browser stage verifies:
    warning.
 10. Runtime state diagnostics observe the todos → add-todo → todos page transitions.
 
+## Existing example app stage
+
+After the P0 demo flow, the gate compiles `example/mini` (3 pages + 1 subpackage page,
+2 components) into the same host and drives the real app:
+
+1. Boots from `App.onLaunch` storage writes and renders the todos page from `getApp()`
+   state.
+2. Renders both `add-button` instances, slots, checkbox group, slider, progress, switch,
+   swiper, and the canvas placeholder.
+3. Applies `app.wxss` page styling to the real app.
+4. Resolves WXML `import` / `include` and named templates.
+5. Navigates to the Component-as-page `add-todo`, updates its input, and returns.
+6. Mounts the canvas-only `bar` page without fatal errors.
+7. Reports `wx.createAnimation` / `wx.createCanvasContext` as unsupported warnings
+   instead of throwing.
+
+The P0 demo artifacts are recompiled after this stage, so `pnpm dev:glass-easel` keeps
+serving the small demo.
+
 ## Browser selection
 
 The gate uses `playwright-core` with the system Chrome (`channel: 'chrome'`), falling

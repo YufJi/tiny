@@ -100,6 +100,7 @@ function runtimeVarList(): string[] {
 
 export class TmplGroup implements TmplGroupRef {
   private trees: Map<string, Template> = new Map()
+  private tmplAliases: Map<string, string> = new Map()
   private scripts: Map<string, string> = new Map()
   private hasScripts: boolean = false
   private extraRuntimeString: string = ''
@@ -127,6 +128,7 @@ export class TmplGroup implements TmplGroupRef {
 
   importGroup(other: TmplGroup): void {
     for (const [k, v] of other.trees) this.trees.set(k, v)
+    for (const [k, v] of other.tmplAliases) this.tmplAliases.set(k, v)
     for (const [k, v] of other.scripts) this.scripts.set(k, v)
     this.hasScripts = this.hasScripts || other.hasScripts
     this.extraRuntimeString += other.extraRuntimeString
@@ -151,6 +153,15 @@ export class TmplGroup implements TmplGroupRef {
     const warnings = ps.takeWarnings()
     this.trees.set(tmpl.path, tmpl)
     return warnings
+  }
+
+  /**
+   * Register an additional key for an existing template. Used for WXML
+   * import/include resolution, which resolves paths with their file extension.
+   */
+  addTmplAlias(alias: string, target: string): void {
+    if (this.trees.has(alias)) return
+    this.tmplAliases.set(alias, target)
   }
 
   removeTmpl(path: string): boolean {
@@ -281,6 +292,12 @@ export class TmplGroup implements TmplGroupRef {
             w.exprStmt((ww) => {
               ww.write(`G[${pathLit}]=`)
               templateToProcGen(tree, ww, this)
+            })
+          }
+          for (const [alias, target] of this.tmplAliases) {
+            if (!this.trees.has(target)) continue
+            w.exprStmt((ww) => {
+              ww.write(`G[${genLitStr(alias)}]=G[${genLitStr(target)}]`)
             })
           }
           w.exprStmt((ww) => { ww.write('return G') })

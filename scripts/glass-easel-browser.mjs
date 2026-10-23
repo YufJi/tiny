@@ -261,6 +261,120 @@ export async function runBrowserAcceptance({ baseUrl }) {
   }
 }
 
+export async function runMiniProgramAcceptance({ baseUrl }) {
+  const browser = await launchBrowser()
+  const page = await browser.newPage({ viewport: { width: 1000, height: 760 } })
+  const pageErrors = []
+  const consoleErrors = []
+  const realFailureShot = path.join(rootDir, 'example/glass-easel/generated/acceptance-real-failure.png')
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text())
+  })
+
+  let currentStep = 'start'
+  try {
+    await step('boot the existing example app', async () => {
+      currentStep = 'boot the existing example app'
+      await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
+      await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
+      assert.equal(pageErrors.length, 0, `page errors during boot: ${pageErrors.join(' | ')}`)
+    })
+
+    const render = page.frames().find((frame) => frame.url().includes('render.html'))
+    assert.ok(render, 'render iframe was not created')
+    const text = () => render.locator('#app').innerText()
+    const waitForText = async (needle) => {
+      currentStep = `wait for text "${needle}"`
+      await render.waitForFunction(
+        (expected) => (document.querySelector('#app')?.innerText ?? '').includes(expected),
+        needle,
+        { timeout: STEP_TIMEOUT },
+      )
+    }
+    const diagnostics = () => page.evaluate(() => window.__tinyRuntime.host.diagnostics)
+
+    await step('render the existing todos page from app state', async () => {
+      currentStep = 'render the existing todos page from app state'
+      const body = await text()
+      for (const expected of ['Learning Javascript', 'Learning ES2016', 'Learning 小程序', 'tiny Todo List']) {
+        assert.ok(body.includes(expected), `missing app-backed content: ${expected}`)
+      }
+      assert.equal(await render.locator('add-button').count(), 2, 'both add-button instances should render')
+      assert.ok(body.includes('i am slot'), 'component slot content did not render')
+      for (const selector of ['.tiny-checkbox', '.tiny-slider', '.tiny-progress', '.tiny-switch', '.tiny-swiper', '.tiny-canvas']) {
+        assert.ok((await render.locator(selector).count()) > 0, `missing rendered element: ${selector}`)
+      }
+      const background = await render.locator('page').evaluate((element) => getComputedStyle(element).backgroundColor)
+      assert.equal(background, 'rgb(50, 50, 57)', 'app.wxss page rule did not apply to the real app')
+    })
+
+    await step('render WXML import/include and named templates', async () => {
+      currentStep = 'render WXML import/include and named templates'
+      await render.locator('add-button').nth(1).locator('button').first().click()
+      await waitForText('capture-catch:tap')
+      const body = await text()
+      assert.ok(body.includes('include'), 'include content did not render')
+      assert.ok(body.includes('template a'), 'named template content did not render')
+      assert.equal(await render.locator('input[placeholder="What needs to be done?"]').isVisible(), true)
+    })
+
+    await step('update component input and navigate back', async () => {
+      currentStep = 'update component input and navigate back'
+      const input = render.locator('input[placeholder="What needs to be done?"]')
+      await input.fill('Core chain todo')
+      assert.equal(await input.inputValue(), 'Core chain todo')
+      await render.getByText('12121', { exact: true }).first().click()
+      await waitForText('Learning Javascript')
+      const stateEvents = (await diagnostics()).filter((item) => item.code === 'RUNTIME_STATE')
+      assert.equal(stateEvents.at(-1)?.details?.currentPage, 'pages/todos/todos', 'did not return to todos')
+    })
+
+    await step('mount the canvas-only page without fatal errors', async () => {
+      currentStep = 'mount the canvas-only page without fatal errors'
+      await render.getByText('nav', { exact: true }).first().click()
+      await page.waitForFunction(
+        () => window.__tinyRuntime.host.diagnostics.some(
+          (item) => item.code === 'RUNTIME_STATE' && item.details?.currentPage === 'pages/bar/index',
+        ),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      assert.ok((await render.locator('.tiny-canvas').count()) > 0, 'canvas placeholder did not render')
+    })
+
+    await step('report unsupported capabilities as warnings, not failures', async () => {
+      currentStep = 'report unsupported capabilities as warnings, not failures'
+      const items = await diagnostics()
+      const codes = items.filter((item) => item.severity === 'warning').map((item) => item.code)
+      assert.ok(codes.includes('UNSUPPORTED_API'), 'unsupported APIs were not reported')
+      assert.ok(codes.includes('UNSUPPORTED_CANVAS'), 'canvas was not reported')
+      assert.equal(items.filter((item) => item.severity === 'error').length, 0, 'real app raised fatal diagnostics')
+    })
+
+    await step('keep the example console free of errors', async () => {
+      currentStep = 'keep the example console free of errors'
+      assert.equal(consoleErrors.length, 0, `console errors: ${consoleErrors.join(' | ')}`)
+      assert.equal(pageErrors.length, 0, `page errors: ${pageErrors.join(' | ')}`)
+    })
+
+    console.log('\n✅ Existing example app acceptance passed.')
+  } catch (error) {
+    try {
+      await fs.mkdir(path.dirname(realFailureShot), { recursive: true })
+      await page.screenshot({ path: realFailureShot, fullPage: true })
+    } catch {
+      // Screenshots are best-effort diagnostics.
+    }
+    throw new Error(
+      `Existing example acceptance failed during "${currentStep}": ${error instanceof Error ? error.message : String(error)}` +
+        `\nScreenshot: ${realFailureShot}`,
+    )
+  } finally {
+    await browser.close()
+  }
+}
+
 async function step(name, run) {
   console.log(`\n▶ ${name}`)
   await run()

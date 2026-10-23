@@ -289,6 +289,12 @@ export type ServiceThreadRuntime = {
 }
 
 export function createServiceApiHost(context: ServiceApiContext): MiniProgramApiHost {
+  const unsupported = (name: string) => {
+    context.connection.sendDiagnostic('warn', {
+      code: 'UNSUPPORTED_API',
+      message: `wx.${name} is not supported in the P0 runtime.`,
+    }, context.pageId)
+  }
   return {
     getSystemInfoSync: () => cloneJsonSafe(context.getSystemInfoSnapshot()),
     getStorageSync: (key: unknown) => cloneJsonSafe(context.getStorageSnapshot()[String(key)]),
@@ -325,7 +331,40 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
       params as Record<string, unknown>,
       { pageId: context.pageId },
     ),
+    // Animation and canvas are outside P0, but page code still calls these
+    // APIs during lifecycle hooks. Return chainable stubs so the page can boot.
+    createAnimation: () => {
+      unsupported('createAnimation')
+      return createAnimationStub()
+    },
+    createCanvasContext: () => {
+      unsupported('createCanvasContext')
+      return createCanvasContextStub()
+    },
   }
+}
+
+function createAnimationStub(): Record<string, unknown> {
+  const animation: Record<string, unknown> = {}
+  const chain = () => animation
+  for (const method of [
+    'scale', 'rotate', 'rotateX', 'rotateY', 'rotateZ',
+    'translate', 'translateX', 'translateY', 'translateZ',
+    'skew', 'skewX', 'skewY', 'opacity', 'backgroundColor',
+    'width', 'height', 'top', 'left', 'bottom', 'right',
+    'matrix', 'step',
+  ]) {
+    animation[method] = chain
+  }
+  animation.export = () => ({})
+  return animation
+}
+
+function createCanvasContextStub(): Record<string, unknown> {
+  return new Proxy({}, {
+    get: () => () => undefined,
+    set: () => true,
+  })
 }
 
 export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadRuntime {

@@ -23,7 +23,9 @@ export function buildComponentSchemas(
       path: artifact.path,
       data: {
         ...Object.fromEntries(
-          Object.entries(normalizeProperties(options.properties)).map(([name, definition]) => [name, definition.value]),
+          Object.entries(normalizeProperties(options.properties))
+            .map(([name, definition]) => [name, definition.value])
+            .filter(([, value]) => value !== undefined),
         ),
         ...structuredCloneSafe(options.data ?? {}),
       },
@@ -45,8 +47,9 @@ function normalizeProperties(properties: unknown): Record<string, MiniProgramPro
       : undefined
     const normalized: MiniProgramPropertyDefinition = {
       type: normalizePropertyType(option.type),
-      value: structuredCloneSafe(option.value),
     }
+    const value = structuredCloneSafe(option.value)
+    if (value !== undefined) normalized.value = value
     if (optionalTypes) normalized.optionalTypes = optionalTypes
     return [name, normalized]
   }))
@@ -72,5 +75,6 @@ function readUsingComponents(config: unknown): Record<string, string> {
 }
 
 function structuredCloneSafe<T>(value: T): T {
+  if (value === undefined) return value
   return JSON.parse(JSON.stringify(value)) as T
 }

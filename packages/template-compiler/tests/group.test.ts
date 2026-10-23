@@ -114,3 +114,24 @@ describe('TmplGroup — importGroup', () => {
     expect(() => g1.getTree('b')).not.toThrow()
   })
 })
+
+describe('TmplGroup — template aliases', () => {
+  test('addTmplAlias exposes a template under its WXML path', () => {
+    const group = TmplGroup.newDev()
+    group.addTmpl('pages/a/a', '<view>a</view>')
+    group.addTmplAlias('pages/a/a.wxml', 'pages/a/a')
+    const groupList = new Function(`return ${group.getTmplGenObjectGroups()}`)() as Record<string, unknown>
+    expect(Object.keys(groupList)).toEqual(expect.arrayContaining(['pages/a/a', 'pages/a/a.wxml']))
+    expect(groupList['pages/a/a.wxml']).toBe(groupList['pages/a/a'])
+  })
+
+  test('addTmplAlias does not shadow a real template', () => {
+    const group = TmplGroup.newDev()
+    group.addTmpl('a', '<view>a</view>')
+    group.addTmpl('a.wxml', '<view>b</view>')
+    group.addTmplAlias('a.wxml', 'a')
+    const groupList = new Function(`return ${group.getTmplGenObjectGroups()}`)() as Record<string, unknown>
+    expect(typeof groupList['a.wxml']).toBe('function')
+    expect(groupList['a.wxml']).not.toBe(groupList.a)
+  })
+})
