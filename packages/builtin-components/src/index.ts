@@ -22,6 +22,77 @@ export const BUILTIN_COMPONENT_TAGS = [
   'canvas',
 ] as const
 
+/**
+ * Minimal layout defaults for built-in tags. Mini-program components are
+ * block-level by default, while their internal classes keep the host styling
+ * predictable before any application stylesheet is applied.
+ */
+export const BUILTIN_BASE_STYLES = `
+page,
+.tiny-view,
+.tiny-scroll-view,
+.tiny-swiper,
+.tiny-swiper-item,
+.tiny-checkbox-group,
+.tiny-radio-group,
+.tiny-button,
+.tiny-progress,
+.tiny-image,
+.tiny-canvas,
+.tiny-slider,
+.tiny-switch,
+.tiny-input {
+  display: block;
+  box-sizing: border-box;
+}
+.tiny-label,
+.tiny-checkbox,
+.tiny-radio {
+  display: inline-block;
+}
+.tiny-text,
+.tiny-icon {
+  display: inline;
+}
+.tiny-input {
+  width: 100%;
+}
+.tiny-scroll-view.is-vertical {
+  overflow-y: auto;
+}
+.tiny-scroll-view.is-horizontal {
+  overflow-x: auto;
+}
+.tiny-image {
+  max-width: 100%;
+}
+.tiny-button {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  background: #1e293b;
+  color: #f8fafc;
+  font: inherit;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.tiny-button-hover {
+  opacity: 0.85;
+}
+.tiny-progress-track {
+  height: 6px;
+  background: #334155;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.tiny-progress-bar {
+  height: 100%;
+  background: #3b82f6;
+}
+`
+
 export type BuiltinComponentTag = typeof BUILTIN_COMPONENT_TAGS[number]
 export type BuiltinComponentDefinitions = Record<BuiltinComponentTag, glassEasel.GeneralComponentDefinition>
 
@@ -98,30 +169,39 @@ export function createP0BuiltinComponents(
 
   definitions.view = space.defineComponent({
     is: 'tiny-builtin:view',
-    template: compileTemplate('<view class="tiny-view"><slot /></view>'),
+    template: compileTemplate('<view class="tiny-view class" style="{{style}}"><slot /></view>'),
+    properties: {
+      style: { type: String, value: '' },
+    },
+    externalClasses: ['class'],
     options: { multipleSlots: true, virtualHost: true },
   }).general()
 
   definitions.text = space.defineComponent({
     is: 'tiny-builtin:text',
-    template: compileTemplate('<text class="tiny-text"><slot /></text>'),
+    template: compileTemplate('<text class="tiny-text class" style="{{style}}"><slot /></text>'),
     properties: {
       selectable: { type: Boolean, value: false },
       space: { type: String, value: '' },
+      style: { type: String, value: '' },
     },
+    externalClasses: ['class'],
     options: { virtualHost: true },
   }).general()
 
   definitions.button = space.defineComponent({
     is: 'tiny-builtin:button',
     template: compileTemplate(
-      '<button class="tiny-button" hover-class="{{hoverClass}}" catchtap="handleTap"><slot /></button>',
+      '<button class="tiny-button class" style="{{style}}" hover-class="{{hoverClass}}" catchtap="handleTap"><slot /></button>',
     ),
     properties: {
       type: { type: String, value: 'default' },
       disabled: { type: Boolean, value: false },
       hoverClass: { type: String, value: 'tiny-button-hover' },
+      style: { type: String, value: '' },
     },
+    externalClasses: ['class'],
+    options: { virtualHost: true },
     methods: {
       handleTap(event: glassEasel.ShadowedEvent<unknown>) {
         if (this.data.disabled) return
@@ -132,21 +212,27 @@ export function createP0BuiltinComponents(
 
   definitions.label = space.defineComponent({
     is: 'tiny-builtin:label',
-    template: compileTemplate('<label class="tiny-label"><slot /></label>'),
+    template: compileTemplate('<label class="tiny-label class" style="{{style}}"><slot /></label>'),
+    properties: {
+      style: { type: String, value: '' },
+    },
+    externalClasses: ['class'],
     options: { multipleSlots: true, virtualHost: true },
   }).general()
 
   definitions.input = space.defineComponent({
     is: 'tiny-builtin:input',
     template: compileTemplate(
-      '<input id="native-input" class="tiny-input" value="{{value}}" placeholder="{{placeholder}}" disabled="{{disabled}}" type="{{type}}" catchinput="handleInput" catchchange="handleChange" />',
+      '<input id="native-input" class="tiny-input class" style="{{style}}" value="{{value}}" placeholder="{{placeholder}}" disabled="{{disabled}}" type="{{type}}" catchinput="handleInput" catchchange="handleChange" />',
     ),
     properties: {
       value: { type: String, value: '' },
       type: { type: String, value: 'text' },
       placeholder: { type: String, value: '' },
       disabled: { type: Boolean, value: false },
+      style: { type: String, value: '' },
     },
+    externalClasses: ['class'],
     options: { virtualHost: true },
     methods: {
       handleInput(event: glassEasel.ShadowedEvent<unknown>) {
@@ -183,7 +269,11 @@ export function createP0BuiltinComponents(
 
   definitions['checkbox-group'] = space.defineComponent({
     is: 'tiny-builtin:checkbox-group',
-    template: compileTemplate('<view class="tiny-checkbox-group"><slot /></view>'),
+    template: compileTemplate('<view class="tiny-checkbox-group class" style="{{style}}"><slot /></view>'),
+    properties: {
+      style: { type: String, value: '' },
+    },
+    externalClasses: ['class'],
     options: { multipleSlots: true, virtualHost: true },
   }).general()
 
@@ -208,7 +298,11 @@ export function createP0BuiltinComponents(
 
   definitions['radio-group'] = space.defineComponent({
     is: 'tiny-builtin:radio-group',
-    template: compileTemplate('<view class="tiny-radio-group"><slot /></view>'),
+    template: compileTemplate('<view class="tiny-radio-group class" style="{{style}}"><slot /></view>'),
+    properties: {
+      style: { type: String, value: '' },
+    },
+    externalClasses: ['class'],
     options: { multipleSlots: true, virtualHost: true },
   }).general()
 
@@ -248,14 +342,16 @@ export function createP0BuiltinComponents(
   definitions['scroll-view'] = space.defineComponent({
     is: 'tiny-builtin:scroll-view',
     template: compileTemplate(
-      '<view class="tiny-scroll-view {{scrollX ? \'is-horizontal\' : \'\'}} {{scrollY ? \'is-vertical\' : \'\'}}"><slot /></view>',
+      '<view class="tiny-scroll-view {{scrollX ? \'is-horizontal\' : \'\'}} {{scrollY ? \'is-vertical\' : \'\'}} class" style="{{style}}"><slot /></view>',
     ),
     properties: {
       scrollX: { type: Boolean, value: false },
       scrollY: { type: Boolean, value: false },
       upperThreshold: { type: Number, value: 50 },
       lowerThreshold: { type: Number, value: 50 },
+      style: { type: String, value: '' },
     },
+    externalClasses: ['class'],
     options: { multipleSlots: true, virtualHost: true },
   }).general()
 
@@ -289,14 +385,16 @@ export function createP0BuiltinComponents(
   definitions.progress = space.defineComponent({
     is: 'tiny-builtin:progress',
     template: compileTemplate(
-      '<view class="tiny-progress"><view class="tiny-progress-track"><view class="tiny-progress-bar" style="width: {{percent < 0 ? 0 : (percent > 100 ? 100 : percent)}}%" /></view><text class="tiny-progress-info" hidden="{{!showInfo}}">{{percent}}%</text></view>',
+      '<view class="tiny-progress class" style="{{style}}"><view class="tiny-progress-track"><view class="tiny-progress-bar" style="width: {{percent < 0 ? 0 : (percent > 100 ? 100 : percent)}}%" /></view><text class="tiny-progress-info" hidden="{{!showInfo}}">{{percent}}%</text></view>',
     ),
     properties: {
       percent: { type: Number, value: 0 },
       showInfo: { type: Boolean, value: false },
       active: { type: Boolean, value: false },
       strokeWidth: { type: String, optionalTypes: [Number], value: 6 },
+      style: { type: String, value: '' },
     },
+    externalClasses: ['class'],
     options: { virtualHost: true },
   }).general()
 
@@ -336,19 +434,25 @@ export function createP0BuiltinComponents(
 
   definitions['swiper-item'] = space.defineComponent({
     is: 'tiny-builtin:swiper-item',
-    template: compileTemplate('<view class="tiny-swiper-item"><slot /></view>'),
+    template: compileTemplate('<view class="tiny-swiper-item class" style="{{style}}"><slot /></view>'),
+    properties: {
+      style: { type: String, value: '' },
+    },
+    externalClasses: ['class'],
     options: { multipleSlots: true, virtualHost: true },
   }).general()
 
   definitions.canvas = space.defineComponent({
     is: 'tiny-builtin:canvas',
     template: compileTemplate(
-      '<canvas id="native-canvas" class="tiny-canvas" canvas-id="{{canvasId}}" type="{{type}}" data-placeholder="canvas" />',
+      '<canvas id="native-canvas" class="tiny-canvas class" style="{{style}}" canvas-id="{{canvasId}}" type="{{type}}" data-placeholder="canvas" />',
     ),
     properties: {
       canvasId: { type: String, value: '' },
       type: { type: String, value: '' },
+      style: { type: String, value: '' },
     },
+    externalClasses: ['class'],
     lifetimes: {
       created() {
         options.onDiagnostic?.({

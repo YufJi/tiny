@@ -2,3 +2,4 @@
 .card { padding: 24rpx; border: 1px solid #334155; border-radius: 16rpx; }
 .title { display: block; font-size: 40rpx; font-weight: bold; }
 .subtitle { display: block; margin: 12rpx 0 24rpx; color: #94a3b8; }
+.value { display: block; margin: 8rpx 0; color: #94a3b8; }

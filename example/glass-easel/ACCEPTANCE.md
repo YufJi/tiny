@@ -13,19 +13,21 @@ full P0 flow in a headless browser.
 
 The browser stage verifies:
 
-1. The host boots with no page or console errors.
+1. The host boots with no page or console errors, and the render frame fills the host.
 2. The todos page renders the P0 component set (`scroll-view`, checkbox group, slider,
    progress, switch, swiper, icon, image, canvas placeholder).
-3. `add-button` receives properties, renders its slot, and delivers its custom event to
+3. Page-scoped classes, `app.wxss` page styles, and built-in block/inline layout apply:
+   the page background, card padding/border, and text display are computed from CSS.
+4. `add-button` receives properties, renders its slot, and delivers its custom event to
    the page.
-4. Checkbox, slider, and switch interactions update page data.
-5. `todos → add-todo` navigation delivers the page query and releases the previous page.
-6. Input changes reach page data, and `Save and back` persists storage and restores the
+5. Checkbox, slider, and switch interactions update page data.
+6. `todos → add-todo` navigation delivers the page query and releases the previous page.
+7. Input changes reach page data, and `Save and back` persists storage and restores the
    todos marker.
-7. System info carries a non-zero window size and pixel ratio.
-8. Canvas stays a non-fatal placeholder and emits a structured `UNSUPPORTED_CANVAS`
+8. System info carries a non-zero window size and pixel ratio.
+9. Canvas stays a non-fatal placeholder and emits a structured `UNSUPPORTED_CANVAS`
    warning.
-9. Runtime state diagnostics observe the todos → add-todo → todos page transitions.
+10. Runtime state diagnostics observe the todos → add-todo → todos page transitions.
 
 ## Browser selection
 

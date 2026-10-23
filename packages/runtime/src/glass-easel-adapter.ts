@@ -3,7 +3,11 @@ import type { Manifest, PageArtifact } from '@tiny/compiler-next'
 import type { StyleLoader, TemplateRegistry } from './types'
 import { toJsonSafe, type SerializedEventNode, type SerializedMiniProgramEvent } from './events'
 import type { MiniProgramComponentSchema } from './types'
-import { createP0BuiltinComponents, type BuiltinComponentDefinitions } from '@tiny/builtin-components'
+import {
+  BUILTIN_BASE_STYLES,
+  createP0BuiltinComponents,
+  type BuiltinComponentDefinitions,
+} from '@tiny/builtin-components'
 import { createRuntimeDiagnostic } from './diagnostics'
 
 export type ComponentLifecyclePhase = 'created' | 'attached' | 'ready' | 'moved' | 'detached'
@@ -60,6 +64,7 @@ export class GlassEaselRuntimeAdapter {
   private readonly builtinComponents: BuiltinComponentDefinitions
   private readonly onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
   private readonly mountComponent?: (component: glassEasel.GeneralComponent) => void
+  private baseStylesRegistered = false
   private readonly unmountComponent?: (component: glassEasel.GeneralComponent) => void
 
   constructor(options: GlassEaselAdapterOptions) {
@@ -93,6 +98,14 @@ export class GlassEaselRuntimeAdapter {
   }
 
   registerStyles(manifest: Manifest, loadStyle: StyleLoader = () => ''): void {
+    if (!this.baseStylesRegistered) {
+      this.backend.registerStyleSheetContent('tiny-builtin-base.css', BUILTIN_BASE_STYLES)
+      this.backend.appendStyleSheetPath(
+        'tiny-builtin-base.css',
+        glassEasel.StyleScopeManager.globalScope(),
+      )
+      this.baseStylesRegistered = true
+    }
     for (const style of manifest.styles) {
       const css = loadStyle(style.outputPath)
       if (typeof css !== 'string') continue
@@ -159,7 +172,7 @@ export class GlassEaselRuntimeAdapter {
     if (!page) throw new Error(`page is not registered: ${path}`)
     this.activeEventPageId = pageId ?? path
     const component = glassEasel.Component.createWithContext(
-      'tiny-root',
+      'page',
       this.registerPage(page, data),
       this.backend,
     )

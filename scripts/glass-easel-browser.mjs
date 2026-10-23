@@ -55,6 +55,12 @@ export async function runBrowserAcceptance({ baseUrl }) {
     const render = page.frames().find((frame) => frame.url().includes('render.html'))
     assert.ok(render, 'render iframe was not created')
 
+    const renderFrameBox = await page.locator('iframe.tiny-runtime-render-frame').boundingBox()
+    assert.ok(
+      renderFrameBox && renderFrameBox.y < 5 && renderFrameBox.height > 300,
+      'render iframe should fill the host container',
+    )
+
     const text = () => render.locator('#app').innerText()
     const waitForText = async (needle) => {
       currentStep = `wait for text "${needle}"`
@@ -95,6 +101,38 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.ok((await text()).includes('Learn glass-easel'), 'todos list did not render')
       assert.ok((await text()).includes('Run P0 acceptance'), 'todos list did not render')
       assert.equal(await render.locator('input[type="checkbox"]').first().isChecked(), true)
+    })
+
+    await step('apply scoped styles and built-in base layout', async () => {
+      currentStep = 'apply scoped styles and built-in base layout'
+      const pageBackground = await render.locator('page').evaluate(
+        (element) => getComputedStyle(element).backgroundColor,
+      )
+      assert.equal(pageBackground, 'rgb(16, 24, 40)', 'app.wxss page rule did not apply')
+
+      const card = await render.locator('.tiny-pages-todos-todos--card').first().evaluate((element) => {
+        const style = getComputedStyle(element)
+        return {
+          display: style.display,
+          paddingTop: Number.parseFloat(style.paddingTop),
+          borderTopWidth: style.borderTopWidth,
+        }
+      })
+      assert.equal(card.display, 'block', 'view should be block-level')
+      assert.ok(card.paddingTop > 0, 'scoped card padding did not apply')
+      assert.equal(card.borderTopWidth, '1px', 'scoped card border did not apply')
+
+      const scrollPadding = await render.locator('.tiny-scroll-view').evaluate(
+        (element) => Number.parseFloat(getComputedStyle(element).paddingTop),
+      )
+      assert.ok(scrollPadding > 0, 'scoped page padding did not apply')
+
+      const hasInlineText = await render.evaluate(() =>
+        [...document.querySelectorAll('.tiny-text')].some(
+          (element) => element.className.trim() === 'tiny-text' && getComputedStyle(element).display === 'inline',
+        ),
+      )
+      assert.ok(hasInlineText, 'plain text should be inline')
     })
 
     await step('render app, page, and system snapshots', async () => {
@@ -145,6 +183,12 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.ok((await text()).includes('from: todos'), `page query was not delivered: ${await text()}`)
       assert.ok(!(await text()).includes('Tiny Glass-easel P0'), 'previous page was not unmounted')
       assert.equal(await render.locator('input[placeholder="Todo name"]').isVisible(), true, 'input is not visible')
+      const inputBox = await render.locator('input[placeholder="Todo name"]').evaluate((element) => {
+        const rect = element.getBoundingClientRect()
+        return { width: rect.width, display: getComputedStyle(element).display }
+      })
+      assert.equal(inputBox.display, 'block', 'input should be block-level')
+      assert.ok(inputBox.width > 100, 'input did not fill its container')
     })
 
     await step('propagate input changes to page data', async () => {
@@ -158,7 +202,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
       await render.getByText('Save and back', { exact: true }).first().click()
       await waitForText('marker: Buy milk')
       assert.ok(!(await text()).includes('Save and back'), 'add-todo page was not unmounted')
-      assert.equal(await render.locator('tiny-root').count(), 1, 'previous pages were not released')
+      assert.equal(await render.locator('page[wx-host]').count(), 1, 'previous pages were not released')
       const storage = await page.evaluate(() => window.__tinyRuntime.host.apiRegistry.storage)
       assert.equal(storage.todoMarker, 'Buy milk', 'host storage did not receive the write')
     })

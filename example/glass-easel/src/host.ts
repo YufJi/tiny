@@ -6,6 +6,7 @@ const runtime = await createStandaloneDualThreadHost({
   serviceUrl: '/service.html',
   renderUrl: '/render.html',
   initialPath: 'pages/todos/todos',
+  container: document.getElementById('app') ?? document.body,
   systemInfo: {
     pixelRatio: window.devicePixelRatio,
     windowWidth: window.innerWidth,
