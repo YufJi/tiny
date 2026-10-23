@@ -13,10 +13,7 @@ If any of these files don't exist, **proceed silently**. Don't flag their absenc
 
 The initial map treats each package as its own context:
 
-- `packages/apis` — mini-program APIs
-- `packages/base` — base runtime, vdom, web components, and JSBridge
 - `packages/bridge` — versioned runtime protocol, transport, batching, and diagnostics boundary
-- `packages/compiler` — mini-program compiler
 - `packages/compiler-next` — active glass-easel compiler and runtime manifest producer
 - `packages/devtool` — web-based debugger
 - `packages/runtime` — runtime services

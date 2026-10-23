@@ -14,7 +14,7 @@
     "dev:glass-easel": "pnpm compile:glass-easel && pnpm --filter @tiny/compiler-next exec vite --config ../../example/glass-easel/vite.config.ts",
     "dev:devtool": "node scripts/dev-devtool.mjs",
     "accept:glass-easel": "node scripts/accept-glass-easel.mjs",
-    "build:glass-easel": "pnpm --filter @tiny/utils --filter @tiny/apis --filter @tiny/stylesheet-compiler --filter @tiny/template-compiler --filter @tiny/bridge --filter @tiny/builtin-components --filter @tiny/compiler-next --filter @tiny/runtime build",
+    "build:glass-easel": "pnpm --filter @tiny/utils --filter @tiny/stylesheet-compiler --filter @tiny/template-compiler --filter @tiny/bridge --filter @tiny/builtin-components --filter @tiny/compiler-next --filter @tiny/runtime build",
     "lint": "biome check .",
     "lint:fix": "biome check . --write",
     "format": "biome format . --write"

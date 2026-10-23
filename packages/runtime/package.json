@@ -20,7 +20,6 @@
   },
   "keywords": [],
   "dependencies": {
-    "@tiny/apis": "workspace:*",
     "@tiny/bridge": "workspace:*",
     "@tiny/builtin-components": "workspace:*",
     "@tiny/compiler-next": "workspace:^",

@@ -103,3 +103,7 @@ The host sends `runtime.hello` with protocol version, role, and capabilities. Se
 ## Consequences
 
 Runtime, compiler, devtool, and future native hosts can share one inspectable protocol. The first browser implementation must add transport adapters and handshake support to `packages/bridge`; exact runtime handler implementations belong to later runtime implementation work.
+
+---
+
+_Update: the `packages/apis` stub referenced above has been removed. API semantics are now implemented by the runtime service API host (`packages/runtime/src/service.ts`)._

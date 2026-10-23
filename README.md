@@ -30,7 +30,6 @@ devtool (可选) : DevtoolRuntimeClient + React 面板
 | `packages/runtime` | 双线程 runtime、glass-easel adapter、DevtoolRuntimeClient |
 | `packages/bridge` | 版本化协议、transport、序列化与诊断边界 |
 | `packages/builtin-components` | 内置组件（view/text/input/swiper/canvas 等） |
-| `packages/apis` | 小程序 API 类型与 App 生命周期 helper |
 | `packages/utils` | 共享工具 |
 | `packages/devtool` | 浏览器调试器 |
 

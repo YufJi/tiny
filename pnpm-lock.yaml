@@ -21,15 +21,6 @@ importers:
         specifier: ^4.5.2
         version: 4.9.5
 
-  packages/apis:
-    dependencies:
-      '@tiny/bridge':
-        specifier: workspace:*
-        version: link:../bridge
-      '@tiny/utils':
-        specifier: workspace:*
-        version: link:../utils
-
   packages/bridge:
     dependencies:
       '@tiny/utils':
@@ -132,9 +123,6 @@ importers:
 
   packages/runtime:
     dependencies:
-      '@tiny/apis':
-        specifier: workspace:*
-        version: link:../apis
       '@tiny/bridge':
         specifier: workspace:*
         version: link:../bridge

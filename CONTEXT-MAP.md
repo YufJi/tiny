@@ -4,7 +4,6 @@ Each package is a bounded context. Read only the contexts relevant to the curren
 
 | Context | Path | Scope |
 | --- | --- | --- |
-| APIs | `packages/apis` | Mini-program APIs |
 | Bridge | `packages/bridge` | Versioned runtime protocol, transport, batching, and diagnostics boundary |
 | Built-in Components | `packages/builtin-components` | Glass-easel implementations of mini-program built-in tags |
 | Compiler Next | `packages/compiler-next` | Active glass-easel compiler and runtime manifest producer |
