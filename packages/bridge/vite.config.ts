@@ -7,9 +7,6 @@ export default defineConfig({
       formats: ['es', 'cjs'],
       fileName: (format) => (format === 'es' ? 'index.js' : 'index.cjs'),
     },
-    rollupOptions: {
-      external: ['@tiny/utils', 'eventemitter3'],
-    },
     minify: false,
     sourcemap: true,
     emptyOutDir: true,

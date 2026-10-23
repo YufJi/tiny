@@ -22,10 +22,6 @@
   "keywords": [],
   "author": "",
   "license": "MIT",
-  "dependencies": {
-    "@tiny/utils": "workspace:*",
-    "eventemitter3": "^4.0.7"
-  },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "typescript": "^5.0.0",

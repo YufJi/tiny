@@ -49,10 +49,6 @@ export function createMessage<T>(input: ProtocolMessageInput<T>): ProtocolMessag
   return message;
 }
 
-export function isEnvelope(value: unknown): value is ProtocolMessage {
-  return validateEnvelope(value) !== undefined;
-}
-
 export function validateEnvelope(value: unknown): ProtocolMessage {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new ProtocolError('INVALID_ENVELOPE', 'Protocol message must be an object');

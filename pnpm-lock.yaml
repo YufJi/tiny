@@ -21,14 +21,7 @@ importers:
         specifier: ^4.5.2
         version: 4.9.5
 
-  packages/bridge:
-    dependencies:
-      '@tiny/utils':
-        specifier: workspace:*
-        version: link:../utils
-      eventemitter3:
-        specifier: ^4.0.7
-        version: 4.0.7
+  packages/bridge: {}
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
