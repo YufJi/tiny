@@ -24,7 +24,7 @@ remain as historical reference demos and are not part of the active build.
 | `packages/stylesheet-compiler` | WXSS, rpx, class/tag scoping |
 | `packages/runtime` | Host runtime, glass-easel adapter, devtool client |
 | `packages/bridge` | Protocol, transport, batching, diagnostics |
-| `packages/builtin-components` | Built-in mini-program components |
+| `packages/components` | Mini-program built-in components |
 | `packages/devtool` | Browser debugger UI and thread entries |
 
 ## Commands
@@ -51,7 +51,7 @@ pnpm --filter devtool build
 ## Testing
 
 Vitest is used by `bridge`, `template-compiler`, `stylesheet-compiler`,
-`cli`, `builtin-components`, and `runtime`. There is no global test
+`cli`, `components`, and `runtime`. There is no global test
 runner; use `pnpm --filter <package> test`.
 
 The end-to-end gate is `pnpm accept:glass-easel`, which runs:

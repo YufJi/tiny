@@ -29,3 +29,7 @@ Tiny is migrating its mini-program engine to glass-easel. The old `base` package
 ## Consequences
 
 The migration starts with a clean runtime boundary and a pluggable render backend. It requires new built-in component definitions and a later devtool protocol decision before the runtime can be exercised end-to-end in the debugger.
+
+---
+
+_Update: the built-in component package was renamed to `@tiny/components` (`packages/components`). The boundary decision above is unchanged._

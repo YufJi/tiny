@@ -1,5 +1,5 @@
 {
-  "name": "@tiny/builtin-components",
+  "name": "@tiny/components",
   "version": "0.1.0",
   "description": "Glass-easel implementations of the Tiny P0 built-in components",
   "main": "./dist/index.cjs",

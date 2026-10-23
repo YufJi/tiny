@@ -19,7 +19,7 @@ const steps = [
   ['Run template compiler tests', ['pnpm', '--filter', '@tiny/template-compiler', 'test']],
   ['Run stylesheet compiler tests', ['pnpm', '--filter', '@tiny/stylesheet-compiler', 'test']],
   ['Run cli tests', ['pnpm', '--filter', '@tiny/cli', 'test']],
-  ['Run built-in component tests', ['pnpm', '--filter', '@tiny/builtin-components', 'test']],
+  ['Run built-in component tests', ['pnpm', '--filter', '@tiny/components', 'test']],
   ['Run runtime tests', ['pnpm', '--filter', '@tiny/runtime', 'test']],
   ['Compile P0 example', ['pnpm', 'compile:glass-easel']],
 ]

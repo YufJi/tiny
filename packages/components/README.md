@@ -1,4 +1,4 @@
-# @tiny/builtin-components
+# @tiny/components
 
 Glass-easel implementations of the mini-program built-in tags.
 
@@ -36,12 +36,12 @@ it reads all `components/*/template.wxml` files, compiles them with
 parsing or code generation.
 
 `src/generated/` is gitignored. `prebuild`, `pretypecheck`, and `pretest`
-regenerate it automatically; run `pnpm --filter @tiny/builtin-components
+regenerate it automatically; run `pnpm --filter @tiny/components
 templates` to refresh it manually after editing a `template.wxml`.
 
 ## Adding a component
 
 1. Create `src/components/<tag>/template.wxml` and `index.ts`.
 2. Add the tag to `src/tags.ts` and the factory map in `src/index.ts`.
-3. Run `pnpm --filter @tiny/builtin-components build` to regenerate templates.
+3. Run `pnpm --filter @tiny/components build` to regenerate templates.
 4. Add it to the runtime's built-in tag list if it is user-facing.

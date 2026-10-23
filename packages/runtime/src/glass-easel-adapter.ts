@@ -7,7 +7,7 @@ import {
   BUILTIN_BASE_STYLES,
   createP0BuiltinComponents,
   type BuiltinComponentDefinitions,
-} from '@tiny/builtin-components'
+} from '@tiny/components'
 import { createRuntimeDiagnostic } from './diagnostics'
 
 export type ComponentLifecyclePhase = 'created' | 'attached' | 'ready' | 'moved' | 'detached'

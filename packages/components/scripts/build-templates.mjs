@@ -51,4 +51,4 @@ fs.writeFileSync(
     '',
   ].join('\n'),
 )
-console.log(`[builtin-components] precompiled ${tags.length} templates`)
+console.log(`[components] precompiled ${tags.length} templates`)

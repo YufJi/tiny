@@ -36,7 +36,7 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
 
-  packages/builtin-components:
+  packages/components:
     dependencies:
       glass-easel:
         specifier: 1.1.0
@@ -119,9 +119,9 @@ importers:
       '@tiny/bridge':
         specifier: workspace:*
         version: link:../bridge
-      '@tiny/builtin-components':
+      '@tiny/components':
         specifier: workspace:*
-        version: link:../builtin-components
+        version: link:../components
       '@tiny/cli':
         specifier: workspace:^
         version: link:../cli

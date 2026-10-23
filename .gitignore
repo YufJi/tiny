@@ -6,4 +6,4 @@ dist/
 .sisyphus/
 example/glass-easel/generated/
 packages/devtool/static/runtime/
-packages/builtin-components/src/generated/
+packages/components/src/generated/

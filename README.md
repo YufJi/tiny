@@ -29,7 +29,7 @@ devtool (可选) : DevtoolRuntimeClient + React 面板
 | `packages/stylesheet-compiler` | WXSS 编译、rpx、class/tag 作用域 |
 | `packages/runtime` | 双线程 runtime、glass-easel adapter、DevtoolRuntimeClient |
 | `packages/bridge` | 版本化协议、transport、序列化与诊断边界 |
-| `packages/builtin-components` | 内置组件（view/text/input/swiper/canvas 等） |
+| `packages/components` | 内置组件（view/text/input/swiper/canvas 等） |
 | `packages/devtool` | 浏览器调试器 |
 
 ## 快速开始
