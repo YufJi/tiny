@@ -56,8 +56,10 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
     const initialPath = payload.initialPath ?? currentPath
     const initialData = payload.initialData ?? options.initialData ?? {}
     const pageId = payload.pageId
-    adapter.registerComponentSchemas(payload.componentSchemas ?? [])
+    // Register styles before component definitions so component definitions
+    // receive their style scope; otherwise their classes are never prefixed.
     adapter.registerStyles(manifest, options.loadStyle)
+    adapter.registerComponentSchemas(payload.componentSchemas ?? [])
     const page = findPage(manifest, initialPath)
     if (!page) throw new Error(`page is not declared: ${initialPath}`)
     adapter.registerPageArtifact(page)

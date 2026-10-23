@@ -311,6 +311,16 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       }
       const background = await render.locator('page').evaluate((element) => getComputedStyle(element).backgroundColor)
       assert.equal(background, 'rgb(50, 50, 57)', 'app.wxss page rule did not apply to the real app')
+
+      const avatar = render.locator('img').first()
+      assert.ok(
+        ((await avatar.getAttribute('class')) ?? '').includes('tiny-pages-todos-todos--avatar'),
+        'external class was not scoped to the page',
+      )
+      assert.ok(
+        (await avatar.evaluate((element) => element.getBoundingClientRect().width)) > 50,
+        'external class styles did not apply to the image',
+      )
     })
 
     await step('drive the existing todos page interactions', async () => {
@@ -324,6 +334,14 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
         null,
         { timeout: STEP_TIMEOUT },
       )
+
+      const componentButton = render.locator('add-button .tiny-button').first()
+      assert.ok(
+        ((await componentButton.getAttribute('class')) ?? '').includes('tiny-components-add-button-add-button--add-button'),
+        'component class was not scoped to the component',
+      )
+      const componentButtonWidth = await componentButton.evaluate((element) => element.getBoundingClientRect().width)
+      assert.ok(componentButtonWidth > 100, 'component stylesheet did not apply')
 
       await render.locator('add-button').first().locator('button').first().click()
       await render.waitForFunction(
@@ -399,6 +417,11 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
         ),
         null,
         { timeout: STEP_TIMEOUT },
+      )
+      const canvasClass = (await render.locator('canvas').first().getAttribute('class')) ?? ''
+      assert.ok(
+        canvasClass.includes('tiny-components-ec-canvas-ec-canvas--ec-canvas'),
+        'component canvas class was not scoped',
       )
       await render.waitForFunction(() => {
         const canvas = document.querySelector('canvas')
