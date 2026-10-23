@@ -37,13 +37,19 @@ After the P0 demo flow, the gate compiles `example/mini` (3 pages + 1 subpackage
 1. Boots from `App.onLaunch` storage writes and renders the todos page from `getApp()`
    state.
 2. Renders both `add-button` instances, slots, checkbox group, slider, progress, switch,
-   swiper, and the canvas placeholder.
+   swiper, the canvas placeholder, and a loaded image (assets are inlined as data URIs).
 3. Applies `app.wxss` page styling to the real app.
-4. Resolves WXML `import` / `include` and named templates.
-5. Navigates to the Component-as-page `add-todo`, updates its input, and returns.
-6. Mounts the canvas-only `bar` page without fatal errors.
-7. Reports `wx.createAnimation` / `wx.createCanvasContext` as unsupported warnings
-   instead of throwing.
+4. Drives page interactions: checkbox-group aggregation updates `app.todos`, the first
+   component instance runs its own handler without navigating, the switch and sliders
+   update page data, radio/icon state renders.
+5. Resolves WXML `import` / `include` and named templates.
+6. Navigates to the Component-as-page `add-todo`, updates its input, and returns.
+7. Mounts the canvas-only `bar` page without fatal errors. `wx.createSelectorQuery`
+   returns a synthetic size and an offscreen canvas so ECharts can initialize without
+   drawing into the visible page.
+8. Boots the `packageA/pages/c/c` subpackage page directly.
+9. Reports `wx.createAnimation` / `wx.createCanvasContext` / selector-query shims as
+   warnings instead of throwing.
 
 The P0 demo artifacts are recompiled after this stage, so `pnpm dev:glass-easel` keeps
 serving the small demo.

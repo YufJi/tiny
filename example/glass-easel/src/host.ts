@@ -1,11 +1,13 @@
 import { createStandaloneDualThreadHost } from '@tiny/runtime'
 import manifest from '../generated/manifest.json'
 
+const initialPath = new URLSearchParams(window.location.search).get('path') || 'pages/todos/todos'
+
 const runtime = await createStandaloneDualThreadHost({
   manifest,
   serviceUrl: '/service.html',
   renderUrl: '/render.html',
-  initialPath: 'pages/todos/todos',
+  initialPath,
   container: document.getElementById('app') ?? document.body,
   systemInfo: {
     pixelRatio: window.devicePixelRatio,

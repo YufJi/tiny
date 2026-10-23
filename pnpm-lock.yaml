@@ -209,6 +209,9 @@ importers:
       '@tiny/template-compiler':
         specifier: workspace:*
         version: link:../template-compiler
+      esbuild:
+        specifier: ^0.21.5
+        version: 0.21.5
     devDependencies:
       '@types/node':
         specifier: ^22.0.0

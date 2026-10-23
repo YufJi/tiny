@@ -125,6 +125,9 @@ export class MiniProgramComponentInstance {
     for (const [name, method] of Object.entries(options.methods ?? {})) {
       if (typeof method === 'function') this.methods.set(name, method.bind(this))
     }
+    for (const [name, method] of this.methods) {
+      ;(this as unknown as Record<string, unknown>)[name] = method
+    }
 
     Object.assign(this, {
       setData: this.setData.bind(this),
@@ -204,6 +207,9 @@ export class MiniProgramPageInstance {
     }
     for (const [name, method] of Object.entries(options.methods ?? {})) {
       if (typeof method === 'function') this.methods.set(name, method.bind(this))
+    }
+    for (const [name, method] of this.methods) {
+      ;(this as unknown as Record<string, unknown>)[name] = method
     }
 
     const setData = this.setData.bind(this)
@@ -341,6 +347,13 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
       unsupported('createCanvasContext')
       return createCanvasContextStub()
     },
+    createSelectorQuery: () => {
+      context.connection.sendDiagnostic('warn', {
+        code: 'SYNTHETIC_SELECTOR_QUERY',
+        message: 'wx.createSelectorQuery uses synthetic sizes and an offscreen canvas in the P0 runtime.',
+      }, context.pageId)
+      return createSelectorQueryStub(context)
+    },
   }
 }
 
@@ -368,6 +381,7 @@ function createCanvasContextStub(): Record<string, unknown> {
 }
 
 export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadRuntime {
+  installBrowserCanvasCompat()
   const expectedPagePaths = options.manifest.pages
     .filter((page) => page.bodyType !== 'component')
     .map((page) => page.path)
@@ -381,6 +395,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   let currentPath = options.initialPath
   const pageInstances = new Map<string, MiniProgramPageInstance>()
   const componentInstances = new Map<string, MiniProgramComponentInstance>()
+  let componentSchemas: MiniProgramComponentSchema[] = []
   const pageStack: MiniProgramPageInstance[] = []
   let activePage: MiniProgramPageInstance | null = null
   let pageIdCounter = 0
@@ -416,6 +431,42 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       message: `wx.${name} is not supported in the P0 runtime.`,
     }, activePage?.pageId),
   )
+  const createComponentInstance = (
+    componentId: string,
+    componentPath: string,
+    definition: MiniProgramComponentOptions,
+  ) => new MiniProgramComponentInstance(
+    componentId,
+    componentPath,
+    definition,
+    {
+      onDataPatch: (instanceId, patch) => {
+        connection.sendEvent('data', 'setData', { componentId: instanceId, patch }, { pageId: activePage?.pageId })
+      },
+      onTriggerEvent: (instanceId, name, detail, triggerOptions) => {
+        connection.sendEvent('event', 'trigger', {
+          componentId: instanceId,
+          name,
+          detail,
+          options: triggerOptions,
+        })
+      },
+    },
+  )
+  const ensureComponentInstance = (
+    componentId: string,
+    componentPath?: string,
+  ): MiniProgramComponentInstance | undefined => {
+    const existing = findComponentByInstanceId(componentInstances, componentId)
+    if (existing) return existing
+    if (!componentPath) return undefined
+    const schema = componentSchemas.find((component) => component.path === componentPath)
+    const definition = schema ? registry.components.get(componentPath) : undefined
+    if (!schema || !definition) return undefined
+    const component = createComponentInstance(componentId, componentPath, definition as MiniProgramComponentOptions)
+    componentInstances.set(componentId, component)
+    return component
+  }
   const artifactsReady = options.loadArtifacts?.() ?? Promise.resolve()
   const sendRuntimeState = () => {
     connection.sendDiagnostic('state', createRuntimeStateDiagnostic(
@@ -466,7 +517,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     await artifactsReady
     if (payload.systemInfo) systemInfoSnapshot = cloneJsonSafe(payload.systemInfo)
     if (payload.storage) Object.assign(storageSnapshot, cloneJsonSafe(payload.storage))
-    const componentSchemas = buildComponentSchemas(
+    componentSchemas = buildComponentSchemas(
       options.manifest.components,
       registry.components as Map<string, MiniProgramComponentOptions>,
     )
@@ -477,18 +528,10 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       const schema = componentSchemas.find((component) => component.path === componentPath)
       const definition = schema ? registry.components.get(componentPath) : undefined
       if (!schema || !definition) return null
-      const component = new MiniProgramComponentInstance(
+      const component = createComponentInstance(
         schema.componentId,
         componentPath,
         definition as MiniProgramComponentOptions,
-        {
-          onDataPatch: (componentId, patch) => {
-            connection.sendEvent('data', 'setData', { componentId, patch }, { pageId: activePage?.pageId })
-          },
-          onTriggerEvent: (componentId, name, detail, triggerOptions) => {
-            connection.sendEvent('event', 'trigger', { componentId, name, detail, options: triggerOptions })
-          },
-        },
       )
       componentInstances.set(componentPath, component)
       for (const nestedReference of Object.values(schema.using)) {
@@ -592,7 +635,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     page.triggerLifecycle('onHide')
     registry.hideApp()
     for (const page of pageStack) page.triggerPageLifetime('hide')
-    for (const component of componentInstances.values()) component.triggerPageLifetime('hide')
+    for (const component of uniqueComponentsByPath(componentInstances)) component.triggerPageLifetime('hide')
     sendRuntimeState()
     return { status: 'hidden', pageId: page.pageId }
   })
@@ -602,7 +645,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     registry.showApp()
     page.triggerLifecycle('onShow')
     for (const page of pageStack) page.triggerPageLifetime('show')
-    for (const component of componentInstances.values()) component.triggerPageLifetime('show')
+    for (const component of uniqueComponentsByPath(componentInstances)) component.triggerPageLifetime('show')
     sendRuntimeState()
     return { status: 'shown', pageId: page.pageId }
   })
@@ -630,19 +673,18 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   connection.onEvent('runtime', 'componentLifecycle', (message) => {
     const payload = message.payload as {
       componentId: string
+      path?: string
       phase: 'created' | 'attached' | 'ready' | 'moved' | 'detached'
       data?: Record<string, unknown>
     }
-    const component = findComponentByInstanceId(componentInstances, payload.componentId)
+    const component = ensureComponentInstance(payload.componentId, payload.path)
     component?.syncData(payload.data)
     component?.triggerLifecycle(payload.phase)
   })
 
-  connection.onEvent('runtime', 'componentPageLifetime', (message) => {
-    const payload = message.payload as { componentId: string; phase: 'show' | 'hide' }
-    findComponentByInstanceId(componentInstances, payload.componentId)
-      ?.triggerPageLifetime(payload.phase)
-  })
+  // Component page lifetimes are driven by the page show/hide controls below,
+  // which iterate every service-side instance exactly once.
+  connection.onEvent('runtime', 'componentPageLifetime', () => {})
 
   connection.onEvent('event', 'dispatch', (message) => {
     const pageId = message.pageId
@@ -656,6 +698,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }
     const event = message.payload as {
       componentId?: string
+      componentPath?: string
       handler?: string
       type?: string
       [key: string]: unknown
@@ -670,7 +713,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }
     try {
       if (event.componentId) {
-        const component = findComponentByInstanceId(componentInstances, event.componentId)
+        const component = ensureComponentInstance(event.componentId, event.componentPath)
         if (!component) throw new Error(`Component not found for event: ${event.componentId}`)
         component.syncData(event.componentData as Record<string, unknown> | undefined)
         component.invokeMethod(handler, [event])
@@ -743,4 +786,126 @@ function findComponentByInstanceId(
     if (component.componentId === componentId) return component
   }
   return undefined
+}
+
+type SelectorQuerySelection = {
+  rectCallback?: (rect: Record<string, unknown>) => void
+  fieldsCallback?: (fields: Record<string, unknown>) => void
+  nodeCallback?: (node: unknown) => void
+}
+
+function createSelectorQueryStub(context: ServiceApiContext): Record<string, unknown> {
+  const selections: SelectorQuerySelection[] = []
+  let execCallback: ((results: unknown[]) => void) | undefined
+  let scheduled = false
+
+  const schedule = () => {
+    if (scheduled) return
+    scheduled = true
+    setTimeout(() => {
+      const results = selections.map(() => buildSelectorResult(context))
+      for (const [index, selection] of selections.entries()) {
+        const result = results[index]!
+        selection.rectCallback?.(result)
+        selection.fieldsCallback?.(result)
+        selection.nodeCallback?.(result.node)
+      }
+      execCallback?.(results)
+    }, 0)
+  }
+
+  const createSelection = (): Record<string, unknown> => {
+    const selection: SelectorQuerySelection = {}
+    selections.push(selection)
+    const api: Record<string, unknown> = {
+      boundingClientRect: (callback?: (rect: Record<string, unknown>) => void) => {
+        selection.rectCallback = callback
+        return api
+      },
+      fields: (
+        _options: Record<string, unknown>,
+        callback?: (fields: Record<string, unknown>) => void,
+      ) => {
+        selection.fieldsCallback = callback
+        return api
+      },
+      node: (callback?: (node: unknown) => void) => {
+        selection.nodeCallback = callback
+        return api
+      },
+      exec: (callback?: (results: unknown[]) => void) => {
+        if (callback) execCallback = callback
+        schedule()
+        return api
+      },
+    }
+    return api
+  }
+
+  const query: Record<string, unknown> = {
+    in: () => query,
+    select: () => createSelection(),
+    selectAll: () => createSelection(),
+    exec: (callback?: (results: unknown[]) => void) => {
+      if (callback) execCallback = callback
+      schedule()
+      return query
+    },
+  }
+  return query
+}
+
+function buildSelectorResult(context: ServiceApiContext): Record<string, unknown> {
+  const { windowWidth } = context.getSystemInfoSnapshot()
+  const width = Math.max(1, Math.min(300, Math.round(windowWidth || 300)))
+  const height = 150
+  const node = typeof document !== 'undefined' ? document.createElement('canvas') : null
+  if (node) {
+    node.width = width
+    node.height = height
+  }
+  return {
+    node,
+    id: '',
+    dataset: {},
+    width,
+    height,
+    left: 0,
+    top: 0,
+    right: width,
+    bottom: height,
+  }
+}
+
+/**
+ * Mini-program canvas adapters (for example ECharts' `WxCanvas`) are plain
+ * objects in WeChat, where `document` does not exist. In the browser service
+ * thread `document` exists, so libraries that sniff `canvas.addEventListener`
+ * treat the wrapper as a DOM node. Provide inert listener methods on plain
+ * objects; DOM elements keep their own EventTarget implementation.
+ */
+function installBrowserCanvasCompat(): void {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return
+  const prototype = Object.prototype as unknown as Record<string, unknown>
+  for (const name of ['addEventListener', 'removeEventListener']) {
+    if (name in prototype) continue
+    Object.defineProperty(prototype, name, {
+      value: () => undefined,
+      configurable: true,
+      writable: true,
+    })
+  }
+}
+
+function uniqueComponentsByPath(
+  componentInstances: Map<string, MiniProgramComponentInstance>,
+): MiniProgramComponentInstance[] {
+  const seen = new Set<string>()
+  const result: MiniProgramComponentInstance[] = []
+  for (const component of componentInstances.values()) {
+    if (seen.has(component.path)) continue
+    seen.add(component.path)
+    result.push(component)
+  }
+  return result
 }

@@ -1,7 +1,8 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import ts from 'typescript'
+import { build as esbuild } from 'esbuild'
 import { TmplGroup, parseErrorMessage } from '@tiny/template-compiler'
 import { StyleSheetTransformer } from '@tiny/stylesheet-compiler'
 import type {
@@ -455,7 +456,8 @@ class MiniProgramCompiler {
 
     for (const [relativePath, absolutePath] of templateFiles) {
       const templatePath = withoutExtension(relativePath)
-      const source = await fs.readFile(absolutePath, 'utf8')
+      const rawSource = await fs.readFile(absolutePath, 'utf8')
+      const source = inlineLocalImages(rawSource, absolutePath, root)
       try {
         const warnings = group.addTmpl(templatePath, source)
         // WXML import/include resolves paths with the `.wxml` extension.
@@ -699,6 +701,30 @@ class MiniProgramCompiler {
     }
   }
 
+  private async bundleServiceEntry(): Promise<void> {
+    const entry = this.outputPath('service.js')
+    try {
+      await esbuild({
+        entryPoints: [entry],
+        outfile: entry,
+        bundle: true,
+        allowOverwrite: true,
+        format: 'esm',
+        platform: 'browser',
+        target: 'es2019',
+        sourcemap: true,
+        logLevel: 'silent',
+        absWorkingDir: this.options.outputDir,
+      })
+    } catch (error) {
+      this.diagnostics.push(diagnostic(
+        'warning',
+        'SCRIPT_BUNDLE_ERROR',
+        `Unable to bundle service scripts: ${error instanceof Error ? error.message : String(error)}`,
+      ))
+    }
+  }
+
   private async writeEntryArtifacts(manifest: Manifest): Promise<void> {
     const serviceImports = [
       manifest.app?.script?.path,
@@ -709,6 +735,7 @@ class MiniProgramCompiler {
       .map((scriptPath) => `import './${toPosixPath(scriptPath)}'`)
       .join('\n') + '\n'
     await writeFileWithSourceMap(this.outputPath('service.js'), serviceContent)
+    await this.bundleServiceEntry()
 
     const renderContent = [
       "import templates from './templates.js'",
@@ -778,4 +805,46 @@ function resolveRuntimeSpecifier(specifier: string, sourceFile: string): string 
     if (existsSync(path.join(base, `index${extension}`))) return `${specifier}/index.js`
   }
   return null
+}
+
+const IMAGE_MIME_TYPES: Record<string, string> = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.webp': 'image/webp',
+  '.bmp': 'image/bmp',
+}
+
+const INLINE_IMAGE_LIMIT = 200 * 1024
+
+/**
+ * Mini-program image paths are relative to the page/component file. Browser
+ * hosts would resolve them against the thread document instead, so inline
+ * small local images as data URIs. Large assets are left untouched for the
+ * host asset pipeline.
+ */
+function inlineLocalImages(source: string, templateFile: string, rootDir: string): string {
+  const imagePattern = /(['"])([^'"]+\.(?:png|jpe?g|gif|svg|webp|bmp))\1/gi
+  return source.replace(imagePattern, (match, quote: string, value: string) => {
+    if (/^(?:[a-z]+:|data:)/i.test(value)) return match
+    const absolute = value.startsWith('/')
+      ? path.join(rootDir, value.slice(1))
+      : path.resolve(path.dirname(templateFile), value)
+    const relative = path.relative(rootDir, absolute)
+    if (relative.startsWith('..') || path.isAbsolute(relative)) return match
+    const extension = path.extname(absolute).toLowerCase()
+    const mime = IMAGE_MIME_TYPES[extension]
+    if (!mime) return match
+    try {
+      if (!existsSync(absolute)) return match
+      const { size } = statSync(absolute)
+      if (size > INLINE_IMAGE_LIMIT) return match
+      const data = readFileSync(absolute).toString('base64')
+      return `${quote}data:${mime};base64,${data}${quote}`
+    } catch {
+      return match
+    }
+  })
 }

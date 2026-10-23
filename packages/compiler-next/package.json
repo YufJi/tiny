@@ -24,7 +24,8 @@
   },
   "dependencies": {
     "@tiny/stylesheet-compiler": "workspace:*",
-    "@tiny/template-compiler": "workspace:*"
+    "@tiny/template-compiler": "workspace:*",
+    "esbuild": "^0.21.5"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

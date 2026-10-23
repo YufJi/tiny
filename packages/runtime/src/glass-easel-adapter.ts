@@ -58,6 +58,10 @@ export class GlassEaselRuntimeAdapter {
   private readonly componentsByPageId = new Map<string, glassEasel.GeneralComponent>()
   private readonly componentSchemas = new Map<string, MiniProgramComponentSchema>()
   private readonly componentInstances = new Map<string, glassEasel.GeneralComponent>()
+  private readonly componentIds = new WeakMap<object, string>()
+  private readonly componentPaths = new WeakMap<object, string>()
+  private readonly emittedLifecycles = new WeakMap<object, Set<ComponentLifecyclePhase>>()
+  private readonly componentUsageCounters = new Map<string, number>()
   private activeEventPageId: string | null = null
   private readonly onMiniProgramEvent?: (pageId: string, event: SerializedMiniProgramEvent) => void
   private readonly onComponentLifecycle?: (
@@ -166,6 +170,22 @@ export class GlassEaselRuntimeAdapter {
     this.componentsByPageId.set(pageId, component)
   }
 
+  private componentIdFor(
+    schema: MiniProgramComponentSchema,
+    component: glassEasel.GeneralComponent,
+  ): string {
+    const key = component as unknown as object
+    const existing = this.componentIds.get(key)
+    if (existing) return existing
+    const usage = (this.componentUsageCounters.get(schema.path) ?? 0) + 1
+    this.componentUsageCounters.set(schema.path, usage)
+    const componentId = usage === 1 ? schema.componentId : `${schema.componentId}~${usage}`
+    this.componentIds.set(key, componentId)
+    this.componentPaths.set(key, schema.path)
+    this.componentInstances.set(componentId, component)
+    return componentId
+  }
+
   getMountedComponentByPageId(pageId: string): glassEasel.GeneralComponent | undefined {
     return this.componentsByPageId.get(pageId)
   }
@@ -194,12 +214,9 @@ export class GlassEaselRuntimeAdapter {
     else glassEasel.Element.pretendAttached(component)
     component.triggerLifetime('ready', [])
     for (const [componentId, instance] of this.componentInstances) {
-      this.onComponentLifecycle?.(
-        componentId,
-        instance.is,
-        'ready',
-        (toJsonSafe(instance.data ?? {}) ?? {}) as Record<string, unknown>,
-      )
+      if (this.emittedLifecycles.get(instance as unknown as object)?.has('ready')) continue
+      const path = this.componentPaths.get(instance as unknown as object) ?? instance.is
+      this.emitLifecycle(componentId, path, 'ready', instance)
     }
     return component
   }
@@ -301,8 +318,12 @@ export class GlassEaselRuntimeAdapter {
         styleScope: styleScopeId,
       })
       .methodCallerInit(function (this: glassEasel.GeneralComponent) {
-        adapter.componentInstances.set(schema.componentId, this)
-        return adapter.createEventMethodCaller(adapter.activeEventPageId ?? schema.path, schema.componentId, this)
+        return adapter.createEventMethodCaller(
+          adapter.activeEventPageId ?? schema.path,
+          adapter.componentIdFor(schema, this),
+          this,
+          schema.path,
+        )
       })
       .lifetime('created', function (this: glassEasel.GeneralComponent) {
         adapter.emitComponentLifecycle(schema, 'created', this)
@@ -321,7 +342,7 @@ export class GlassEaselRuntimeAdapter {
       })
       .pageLifetime('show', function (this: glassEasel.GeneralComponent) {
         adapter.onComponentPageLifetime?.(
-          schema.componentId,
+          adapter.componentIdFor(schema, this),
           schema.path,
           'show',
           (toJsonSafe(this.data ?? {}) ?? {}) as Record<string, unknown>,
@@ -329,7 +350,7 @@ export class GlassEaselRuntimeAdapter {
       })
       .pageLifetime('hide', function (this: glassEasel.GeneralComponent) {
         adapter.onComponentPageLifetime?.(
-          schema.componentId,
+          adapter.componentIdFor(schema, this),
           schema.path,
           'hide',
           (toJsonSafe(this.data ?? {}) ?? {}) as Record<string, unknown>,
@@ -385,6 +406,7 @@ export class GlassEaselRuntimeAdapter {
     pageId: string,
     componentId?: string,
     component?: glassEasel.GeneralComponent,
+    componentPath?: string,
   ): unknown {
     const adapter = this
     return new Proxy({}, {
@@ -393,14 +415,14 @@ export class GlassEaselRuntimeAdapter {
       },
       get(_target, property) {
         if (typeof property !== 'string') return undefined
-        return adapter.createEventDispatcher(pageId, property, componentId, component)
+        return adapter.createEventDispatcher(pageId, property, componentId, component, componentPath)
       },
       getOwnPropertyDescriptor(_target, property) {
         if (typeof property !== 'string') return undefined
         return {
           configurable: true,
           enumerable: true,
-        value: adapter.createEventDispatcher(pageId, property, componentId, component),
+        value: adapter.createEventDispatcher(pageId, property, componentId, component, componentPath),
         }
       },
     })
@@ -411,11 +433,13 @@ export class GlassEaselRuntimeAdapter {
     handler: string,
     componentId?: string,
     component?: glassEasel.GeneralComponent,
+    componentPath?: string,
   ): (event: glassEasel.ShadowedEvent<unknown>) => void {
     return (event) => {
       this.onMiniProgramEvent?.(pageId, {
         ...this.serializeEvent(handler, event),
         ...(componentId ? { componentId } : {}),
+        ...(componentPath ? { componentPath } : {}),
         ...(component ? { componentData: toJsonSafe(component.data) as Record<string, unknown> } : {}),
       })
     }
@@ -426,13 +450,29 @@ export class GlassEaselRuntimeAdapter {
     phase: ComponentLifecyclePhase,
     component: glassEasel.GeneralComponent,
   ): void {
-    const data = (toJsonSafe(component.data ?? {}) ?? {}) as Record<string, unknown>
-    this.onComponentLifecycle?.(
-      schema.componentId,
-      schema.path,
-      phase,
-      data,
-    )
+    this.emitLifecycle(this.componentIdFor(schema, component), schema.path, phase, component)
+  }
+
+  private emitLifecycle(
+    componentId: string,
+    path: string,
+    phase: ComponentLifecyclePhase,
+    component: glassEasel.GeneralComponent,
+  ): void {
+    const key = component as unknown as object
+    let phases = this.emittedLifecycles.get(key)
+    if (!phases) {
+      phases = new Set()
+      this.emittedLifecycles.set(key, phases)
+    }
+    phases.add(phase)
+    let data: Record<string, unknown> = {}
+    try {
+      data = (toJsonSafe(component.data ?? {}) ?? {}) as Record<string, unknown>
+    } catch {
+      // Component data may not be initialized yet during `created`.
+    }
+    this.onComponentLifecycle?.(componentId, path, phase, data)
   }
 
   private serializeEvent(

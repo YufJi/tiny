@@ -330,7 +330,18 @@ export class BridgeConnection {
   }
 
   private reply(message: ProtocolMessage, payload: ProtocolReplyPayload<unknown>): void {
-    this.sendNow(createReply(message, payload));
+    try {
+      this.sendNow(createReply(message, payload));
+    } catch (error) {
+      if (error instanceof ProtocolError) {
+        throw new ProtocolError(
+          error.code,
+          `${error.message} (reply ${message.domain}.${message.method})`,
+          error.details,
+        );
+      }
+      throw error;
+    }
   }
 
   private scheduleFlush(): void {
@@ -348,7 +359,15 @@ export class BridgeConnection {
 
   private sendFrame(messages: ProtocolMessage[]): void {
     if (this.closed) throw new ProtocolError('TRANSPORT_CLOSED', 'The bridge connection is closed');
-    this.transport.send(createTransportFrame(messages));
+    try {
+      this.transport.send(createTransportFrame(messages));
+    } catch (error) {
+      if (error instanceof ProtocolError) {
+        const context = messages.map((message) => `${message.kind} ${message.domain}.${message.method}`).join(' | ');
+        throw new ProtocolError(error.code, `${error.message} (${context})`, error.details);
+      }
+      throw error;
+    }
   }
 
   private handleProtocolError(error: unknown): void {

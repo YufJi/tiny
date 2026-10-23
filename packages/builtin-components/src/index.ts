@@ -65,6 +65,17 @@ page,
 }
 .tiny-image {
   max-width: 100%;
+  object-fit: fill;
+}
+.tiny-image-mode-aspectFit {
+  object-fit: contain;
+}
+.tiny-image-mode-aspectFill {
+  object-fit: cover;
+}
+.tiny-image-mode-widthFix {
+  object-fit: fill;
+  height: auto;
 }
 .tiny-button {
   width: 100%;
@@ -109,6 +120,18 @@ function compileTemplate(source: string): glassEasel.template.ComponentTemplate 
       return groupList[name](name)
     },
   }
+}
+
+const ICON_GLYPHS: Record<string, string> = {
+  success: '✓',
+  success_no_circle: '✓',
+  info: 'ℹ',
+  warn: '!',
+  waiting: '◌',
+  cancel: '✕',
+  download: '↓',
+  search: '⌕',
+  clear: '✕',
 }
 
 type BackendElementLike = {
@@ -258,6 +281,24 @@ export function createP0BuiltinComponents(
       checked: { type: Boolean, value: false },
       disabled: { type: Boolean, value: false },
     },
+    lifetimes: {
+      attached() {
+        this.triggerEvent(
+          'checkboxstate',
+          { value: this.data.value, checked: Boolean(this.data.checked) },
+          { bubbles: true, composed: true },
+        )
+      },
+    },
+    observers: {
+      checked(value: boolean) {
+        this.triggerEvent(
+          'checkboxstate',
+          { value: this.data.value, checked: Boolean(value) },
+          { bubbles: true, composed: true },
+        )
+      },
+    },
     methods: {
       handleChange(event: glassEasel.ShadowedEvent<unknown>) {
         const checked = booleanFromEvent(event, this.data.checked as boolean)
@@ -269,11 +310,33 @@ export function createP0BuiltinComponents(
 
   definitions['checkbox-group'] = space.defineComponent({
     is: 'tiny-builtin:checkbox-group',
-    template: compileTemplate('<view class="tiny-checkbox-group class" style="{{style}}"><slot /></view>'),
+    template: compileTemplate(
+      '<view class="tiny-checkbox-group class" style="{{style}}" catchchange="handleChange" catchcheckboxstate="handleState"><slot /></view>',
+    ),
     properties: {
       style: { type: String, value: '' },
     },
+    data: {
+      selected: [] as string[],
+    },
     externalClasses: ['class'],
+    methods: {
+      applyState(detail: { value?: unknown; checked?: unknown }) {
+        const value = String(detail.value ?? '')
+        const selected = new Set<string>(this.data.selected as string[])
+        if (detail.checked) selected.add(value)
+        else selected.delete(value)
+        this.setData({ selected: [...selected] })
+        return [...selected]
+      },
+      handleState(event: glassEasel.ShadowedEvent<unknown>) {
+        this.applyState(event.detail as { value?: unknown; checked?: unknown })
+      },
+      handleChange(event: glassEasel.ShadowedEvent<unknown>) {
+        const selected = this.applyState(event.detail as { value?: unknown; checked?: unknown })
+        this.triggerEvent('change', { value: selected }, { bubbles: true, composed: true })
+      },
+    },
     options: { multipleSlots: true, virtualHost: true },
   }).general()
 
@@ -308,27 +371,34 @@ export function createP0BuiltinComponents(
 
   definitions.icon = space.defineComponent({
     is: 'tiny-builtin:icon',
-    template: compileTemplate('<text class="tiny-icon tiny-icon-{{type}}">{{glyph}}</text>'),
+    template: compileTemplate('<text class="tiny-icon tiny-icon-{{type}}" style="font-size: {{size}}px; color: {{color}};">{{glyph}}</text>'),
     properties: {
       type: { type: String, value: 'success' },
       size: { type: String, optionalTypes: [Number], value: 16 },
       color: { type: String, value: '' },
     },
     data: {
-      glyph: '✓',
+      glyph: ICON_GLYPHS.success,
+    },
+    observers: {
+      type(value: string) {
+        this.setData({ glyph: ICON_GLYPHS[value] ?? ICON_GLYPHS.success })
+      },
     },
   }).general()
 
   definitions.image = space.defineComponent({
     is: 'tiny-builtin:image',
     template: compileTemplate(
-      '<image class="tiny-image" src="{{src}}" mode="{{mode}}" lazy-load="{{lazyLoad}}" binderror="handleError" bindload="handleLoad" />',
+      '<img class="tiny-image tiny-image-mode-{{mode}} class" style="{{style}}" src="{{src}}" alt="" binderror="handleError" bindload="handleLoad" />',
     ),
     properties: {
       src: { type: String, value: '' },
       mode: { type: String, value: 'scaleToFill' },
       lazyLoad: { type: Boolean, value: false },
+      style: { type: String, value: '' },
     },
+    externalClasses: ['class'],
     methods: {
       handleLoad(event: glassEasel.ShadowedEvent<unknown>) {
         this.triggerEvent('load', event.detail ?? {}, { bubbles: true, composed: true })

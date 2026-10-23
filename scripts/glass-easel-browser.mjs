@@ -94,10 +94,10 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.equal(await render.locator('input.tiny-slider').inputValue(), '20')
       assert.match(await render.locator('.tiny-progress-info').innerText(), /^20%$/)
       assert.equal((await render.locator('.tiny-icon').innerText()).trim(), '✓')
-      assert.ok(
-        (await render.locator('.tiny-image[src="/logo.svg"]').count()) > 0,
-        'image src was not forwarded',
+      const imageLoaded = await render.locator('img.tiny-image').first().evaluate(
+        (element) => element.naturalWidth > 0,
       )
+      assert.ok(imageLoaded, 'inlined image did not load')
       assert.ok((await text()).includes('Learn glass-easel'), 'todos list did not render')
       assert.ok((await text()).includes('Run P0 acceptance'), 'todos list did not render')
       assert.equal(await render.locator('input[type="checkbox"]').first().isChecked(), true)
@@ -153,7 +153,11 @@ export async function runBrowserAcceptance({ baseUrl }) {
     await step('update page data from a checkbox change', async () => {
       currentStep = 'update page data from a checkbox change'
       await render.getByText('Run P0 acceptance', { exact: true }).first().click()
-      await waitForText('checked: Run P0 acceptance')
+      await render.waitForFunction(() => {
+        const body = document.querySelector('#app')?.innerText ?? ''
+        const index = body.indexOf('checked:')
+        return index >= 0 && body.slice(index).includes('Run P0 acceptance')
+      }, null, { timeout: STEP_TIMEOUT })
     })
 
     await step('update progress and data from a slider change', async () => {
@@ -309,6 +313,47 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       assert.equal(background, 'rgb(50, 50, 57)', 'app.wxss page rule did not apply to the real app')
     })
 
+    await step('drive the existing todos page interactions', async () => {
+      currentStep = 'drive the existing todos page interactions'
+      await render.waitForFunction(() => document.querySelector('img')?.naturalWidth > 0, null, { timeout: STEP_TIMEOUT })
+      assert.equal(await render.locator('label[class*="--todo-item"][class*="--checked"]').count(), 2, 'initial checked todos are wrong')
+
+      await render.getByText('Learning 小程序', { exact: true }).click()
+      await render.waitForFunction(
+        () => document.querySelectorAll('label[class*="--todo-item"][class*="--checked"]').length === 3,
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+
+      await render.locator('add-button').first().locator('button').first().click()
+      await render.waitForFunction(
+        () => (document.querySelector('#app')?.innerText ?? '').includes('def'),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+
+      await render.locator('switch').first().locator('input[type="checkbox"]').click()
+      assert.equal(await render.locator('switch').first().locator('input[type="checkbox"]').isChecked(), true)
+
+      await render.locator('input.tiny-slider').nth(1).evaluate((element) => {
+        element.value = '1500'
+        element.dispatchEvent(new Event('change', { bubbles: true }))
+      })
+      await render.locator('input.tiny-slider').nth(2).evaluate((element) => {
+        element.value = '7000'
+        element.dispatchEvent(new Event('change', { bubbles: true }))
+      })
+      await render.waitForFunction(
+        () => [...document.querySelectorAll('[class*="--info"]')].map((element) => element.textContent?.trim()).includes('1500')
+          && [...document.querySelectorAll('[class*="--info"]')].map((element) => element.textContent?.trim()).includes('7000'),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+
+      assert.equal(await render.locator('radio input[type="radio"]').isChecked(), true, 'radio is not checked')
+      assert.ok((await render.locator('.tiny-icon-success_no_circle').count()) > 0, 'icon type was not applied')
+    })
+
     await step('render WXML import/include and named templates', async () => {
       currentStep = 'render WXML import/include and named templates'
       await render.locator('add-button').nth(1).locator('button').first().click()
@@ -341,6 +386,8 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
         { timeout: STEP_TIMEOUT },
       )
       assert.ok((await render.locator('.tiny-canvas').count()) > 0, 'canvas placeholder did not render')
+      const errorsAfterBar = (await diagnostics()).filter((item) => item.severity === 'error')
+      assert.equal(errorsAfterBar.length, 0, `bar page raised errors: ${errorsAfterBar.map((item) => item.message).join(' | ')}`)
     })
 
     await step('report unsupported capabilities as warnings, not failures', async () => {
@@ -350,6 +397,26 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       assert.ok(codes.includes('UNSUPPORTED_API'), 'unsupported APIs were not reported')
       assert.ok(codes.includes('UNSUPPORTED_CANVAS'), 'canvas was not reported')
       assert.equal(items.filter((item) => item.severity === 'error').length, 0, 'real app raised fatal diagnostics')
+    })
+
+    await step('boot the subpackage page directly', async () => {
+      currentStep = 'boot the subpackage page directly'
+      await page.goto(`${baseUrl}/?path=packageA/pages/c/c`, {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
+      const subpackageRender = page.frames().find((frame) => frame.url().includes('render.html'))
+      assert.ok(subpackageRender, 'render iframe was not created for the subpackage page')
+      await subpackageRender.waitForFunction(
+        () => (document.querySelector('#app')?.innerText ?? '').includes('ccccc'),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const state = await page.evaluate(() => window.__tinyRuntime.host.diagnostics.filter(
+        (item) => item.code === 'RUNTIME_STATE',
+      ).at(-1))
+      assert.equal(state?.details?.currentPage, 'packageA/pages/c/c')
     })
 
     await step('keep the example console free of errors', async () => {

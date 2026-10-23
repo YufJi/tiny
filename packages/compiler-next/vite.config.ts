@@ -14,6 +14,7 @@ export default defineConfig({
         'fs',
         'path',
         'typescript',
+        'esbuild',
         'postcss',
       ],
     },
