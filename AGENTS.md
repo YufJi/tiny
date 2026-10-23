@@ -25,7 +25,6 @@ remain as historical reference demos and are not part of the active build.
 | `packages/runtime` | Host runtime, glass-easel adapter, devtool client |
 | `packages/bridge` | Protocol, transport, batching, diagnostics |
 | `packages/builtin-components` | Built-in mini-program components |
-| `packages/utils` | Shared utilities |
 | `packages/devtool` | Browser debugger UI and thread entries |
 
 ## Commands
@@ -37,7 +36,7 @@ pnpm dev:glass-easel         # P0 demo host on :5173
 pnpm dev:devtool             # debugger on :8080 (watches both examples)
 pnpm compile:glass-easel     # compile the P0 demo
 pnpm compile:devtool:all     # compile demo + example/mini for devtool
-pnpm lint                    # biome (only bridge/utils are configured today)
+pnpm lint                    # biome (only bridge is configured today)
 ```
 
 Package-level scripts:
@@ -57,7 +56,7 @@ runner; use `pnpm --filter <package> test`.
 
 The end-to-end gate is `pnpm accept:glass-easel`, which runs:
 
-1. build of the seven active compiler/runtime packages
+1. build of the six active compiler/runtime packages
 2. unit tests for all packages
 3. P0 demo browser flow
 4. `example/mini` browser flow

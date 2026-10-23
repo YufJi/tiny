@@ -125,9 +125,6 @@ importers:
       '@tiny/compiler-next':
         specifier: workspace:^
         version: link:../compiler-next
-      '@tiny/utils':
-        specifier: workspace:*
-        version: link:../utils
       es-toolkit:
         specifier: ^1.45.1
         version: 1.46.1
@@ -172,8 +169,6 @@ importers:
       vitest:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@25.6.2)(@vitest/ui@1.6.1)(less@3.13.1)
-
-  packages/utils: {}
 
 packages:
 

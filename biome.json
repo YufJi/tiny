@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["packages/bridge/src/**", "packages/utils/src/**"]
+    "includes": ["packages/bridge/src/**"]
   },
   "formatter": {
     "enabled": true,

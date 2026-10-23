@@ -19,7 +19,6 @@ The initial map treats each package as its own context:
 - `packages/runtime` — runtime services
 - `packages/stylesheet-compiler` — stylesheet compilation
 - `packages/template-compiler` — template compilation
-- `packages/utils` — shared utilities
 
 When work spans packages, read every relevant context and identify the boundary that owns the concept.
 
