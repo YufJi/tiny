@@ -8,7 +8,6 @@ const isDev = process.env.NODE_ENV !== 'production';
 module.exports = {
   mode: isDev ? 'development' : 'production',
   entry: {
-    index: path.join(root, 'src/main.js'),
     nextHost: path.join(root, 'src/next/main.jsx'),
     nextService: path.join(root, 'src/next/runtimeService.js'),
     nextRender: path.join(root, 'src/next/runtimeRender.js'),
@@ -51,88 +50,6 @@ module.exports = {
           },
         ],
       },
-      {
-        test: /\.css$/,
-        use: [
-          rspack.CssExtractRspackPlugin.loader,
-          'css-loader',
-        ],
-        type: 'javascript/auto',
-      },
-      {
-        test: /\.module\.less$/,
-        use: [
-          rspack.CssExtractRspackPlugin.loader,
-          {
-            loader: 'css-loader',
-            options: {
-              modules: {
-                localIdentName: '[name]__[local]___[hash:base64:5]',
-              },
-            },
-          },
-          {
-            loader: 'postcss-loader',
-            options: {
-              postcssOptions: {
-                plugins: [
-                  require('autoprefixer')(),
-                ],
-              },
-            },
-          },
-          {
-            loader: 'less-loader',
-            options: {
-              lessOptions: {
-                javascriptEnabled: true,
-              },
-            },
-          },
-        ],
-        type: 'javascript/auto',
-      },
-      {
-        test: /\.less$/,
-        exclude: /\.module\.less$/,
-        use: [
-          rspack.CssExtractRspackPlugin.loader,
-          'css-loader',
-          {
-            loader: 'postcss-loader',
-            options: {
-              postcssOptions: {
-                plugins: [
-                  require('autoprefixer')(),
-                ],
-              },
-            },
-          },
-          {
-            loader: 'less-loader',
-            options: {
-              lessOptions: {
-                javascriptEnabled: true,
-              },
-            },
-          },
-        ],
-        type: 'javascript/auto',
-      },
-      {
-        test: /\.(png|jpe?g|gif|svg)$/i,
-        type: 'asset/resource',
-        generator: {
-          filename: 'images/[name].[hash:8][ext]',
-        },
-      },
-      {
-        test: /\.(woff2?|eot|ttf|otf)$/i,
-        type: 'asset/resource',
-        generator: {
-          filename: 'fonts/[name].[hash:8][ext]',
-        },
-      },
     ],
   },
   devtool: isDev ? 'cheap-module-source-map' : false,
@@ -140,13 +57,9 @@ module.exports = {
     minimize: !isDev,
     minimizer: [
       new rspack.SwcJsMinimizerRspackPlugin(),
-      new rspack.LightningCssMinimizerRspackPlugin(),
     ],
   },
   plugins: [
-    new rspack.CssExtractRspackPlugin({
-      filename: '[name].css',
-    }),
     new rspack.CopyRspackPlugin({
       patterns: [
         {
@@ -161,12 +74,6 @@ module.exports = {
       template: path.join(root, 'next.html'),
       filename: 'index.html',
       chunks: ['nextHost'],
-    }),
-    new HtmlRspackPlugin({
-      title: '小程序浏览器调试（legacy）',
-      template: path.join(root, 'host.html'),
-      filename: 'legacy.html',
-      chunks: ['index'],
     }),
     new HtmlRspackPlugin({
       title: 'Tiny service thread',
@@ -187,7 +94,6 @@ module.exports = {
   devServer: isDev ? {
     port: 8080,
     static: [
-      path.join(root, 'public'),
       path.join(root, 'static'),
     ],
     hot: true,

@@ -1,170 +1,101 @@
 # AGENTS.md
 
-This file provides guidelines for AI agents working in the tiny-v1 repository.
+Guidance for AI agents working in the `tiny` repository.
 
 ## Project Overview
 
-A mini-program engine (小程序引擎) that implements a WeChat-like mini-program runtime.
-- **Monorepo**: Managed with Lerna and Yarn
-- **Packages**:
-  - `packages/base`: Core runtime library (vdom + web-components, JSBridge, routing, events)
-  - `packages/compiler`: Transpiles mini-program templates, styles, and logic files
-  - `packages/devtool`: Web-based debugger using iframe dual-thread architecture
+A mini-program engine built on glass-easel.
+- **Monorepo**: pnpm workspaces + Turborepo
+- **Language**: TypeScript (packages), JavaScript/JSX (devtool)
+- **Runtime**: dual-thread host (service + render iframes) over the versioned Tiny bridge protocol
+- **Compiler**: `compiler-next` produces the runtime manifest and artifacts
 
-## Build Commands
+Legacy `packages/base`, `packages/compiler`, and the old devtool shell were
+removed after the glass-easel migration. Do not reintroduce
+JSBridge/executeJavaScript-based code. `example/todo` and `example/echarts`
+remain as historical reference demos and are not part of the active build.
+
+## Packages
+
+| Package | Scope |
+| --- | --- |
+| `packages/compiler-next` | Active compiler and manifest producer |
+| `packages/template-compiler` | WXML parsing and ProcGen |
+| `packages/stylesheet-compiler` | WXSS, rpx, class/tag scoping |
+| `packages/runtime` | Host runtime, glass-easel adapter, devtool client |
+| `packages/bridge` | Protocol, transport, batching, diagnostics |
+| `packages/builtin-components` | Built-in mini-program components |
+| `packages/apis` | API types and App lifecycle helpers |
+| `packages/utils` | Shared utilities |
+| `packages/devtool` | Browser debugger UI and thread entries |
+
+## Commands
 
 ```bash
-# Install dependencies (bootstraps all packages)
-yarn install
+pnpm install                 # install workspace dependencies
+pnpm accept:glass-easel      # full gate: build, tests, browser acceptance
+pnpm dev:glass-easel         # P0 demo host on :5173
+pnpm dev:devtool             # debugger on :8080 (watches both examples)
+pnpm compile:glass-easel     # compile the P0 demo
+pnpm compile:devtool:all     # compile demo + example/mini for devtool
+pnpm lint                    # biome (only bridge/utils are configured today)
+```
 
-# Build base library (development)
-cd packages/base && yarn dev
+Package-level scripts:
 
-# Build base library (production)
-cd packages/base && yarn build
-
-# Watch mode for base library
-cd packages/base && yarn watch
-
-# Start devtool debugger
-cd packages/devtool && yarn dev
-
-# Build devtool
-cd packages/devtool && yarn build
-
-# Lint all packages
-yarn lint
+```bash
+pnpm --filter @tiny/runtime test
+pnpm --filter @tiny/runtime build
+pnpm --filter @tiny/compiler-next build
+pnpm --filter devtool build
 ```
 
 ## Testing
 
-**No test framework is currently configured.** The project does not have:
-- Jest, Vitest, or any test runner
-- Test files or `__tests__` directories
-- Test scripts in package.json
+Vitest is used by `bridge`, `template-compiler`, `stylesheet-compiler`,
+`compiler-next`, `builtin-components`, and `runtime`. There is no global test
+runner; use `pnpm --filter <package> test`.
 
-When adding tests, use the existing `eslint-config-curiosity` devDependency as a reference for the project's preferred tooling style.
+The end-to-end gate is `pnpm accept:glass-easel`, which runs:
 
-## Code Style Guidelines
+1. build of the six active compiler/runtime packages
+2. unit tests for all packages
+3. P0 demo browser flow
+4. `example/mini` browser flow
+5. runtime debugger browser flow
 
-### Import Styles
+`SKIP_BROWSER=1`, `TINY_ACCEPT_PORT`, `TINY_DEVTOOL_PORT`, and `HEADED=1`
+control the gate. It requires a Chromium browser (`playwright-core` with system
+Chrome, or `PLAYWRIGHT_CHROMIUM_PATH`).
 
-**Base package (`packages/base`)**:
-- Uses ES6 modules (`import`/`export`)
-- TypeScript supported with `.ts` extension
+## Code Style
 
-**Compiler package (`packages/compiler`)**:
-- Uses CommonJS (`require`/`module.exports`)
-- Destructuring imports preferred: `const { fn } = require('./utils')`
-
-**Devtool package (`packages/devtool`)**:
-- Uses ES6 modules (`import`/`export`)
-- React components use JSX
-
-### Naming Conventions
-
-- **Variables/Functions**: camelCase (`createGuid`, `getAllFiles`)
-- **Classes/React Components**: PascalCase (`App`, `StatusBar`)
-- **Constants**: UPPER_SNAKE_CASE for true constants (`CUSTOM_EVENT`)
-- **Private/internal**: Leading underscore not commonly used
-- **Filenames**: camelCase for utilities, PascalCase for React components
-
-### Formatting
-
-- **Indent**: 2 spaces (from `.editorconfig`)
-- **Line endings**: LF
-- **Charset**: UTF-8
-- **Trailing whitespace**: Not trimmed
-- **Final newline**: Not required
-
-### TypeScript
-
-- Target: ESNext
-- Module: ES6
-- Module resolution: Node
-- `allowJs`: true
-- `noEmit`: true (type checking only)
-
-### ESLint Rules (Key Overrides)
-
-Extends `eslint-config-curiosity` with these overrides:
-- `@typescript-eslint/explicit-function-return-type`: off
-- `@typescript-eslint/no-use-before-define`: off
-- `react/prop-types`: off
-- `react/react-in-jsx-scope`: off
-- `react/jsx-filename-extension`: off
-- `max-len`: off
-- `no-empty`: off
-- `class-methods-use-this`: off
-- `import/no-cycle`: off
-
-### Error Handling
-
-- Use `try/catch` for JSON parsing and file operations
-- Throw descriptive Error objects: `throw new Error('message')`
-- Console warnings for unsupported features: `console.warn('bridge: ${method}暂不支持')`
-- Callback pattern used in webpack loaders with error-first convention
-
-### Comments
-
-- Use JSDoc style for function documentation
-- Chinese comments acceptable for project-specific concepts
-- Inline comments explain "why", not "what"
-
-### React Patterns
-
-- Class components with `PureComponent` for performance
-- Redux with `connect()` HOC pattern
-- CSS Modules: `import style from './app.module.less'`
-- Path alias: `@/` maps to `src/`
-
-## Project Structure
-
-```
-packages/
-├── base/           # Core runtime (web-components, JSBridge, vdom)
-│   ├── src/
-│   │   ├── js-bridge/
-│   │   ├── service/      # Worker thread code
-│   │   ├── webview/      # Render thread code
-│   │   └── shared/       # Shared utilities
-│   └── webpack/
-├── compiler/       # Build tools for mini-programs
-│   └── src/
-│       ├── loaders/      # Webpack loaders (js, css, template, sjs)
-│       └── xml/          # Template transformation
-└── devtool/        # Web debugger
-    ├── src/
-    │   ├── components/   # React UI components
-    │   ├── store/        # Redux store (rematch)
-    │   └── utils/        # JSBridge API implementations
-    └── static/           # Runtime assets
-```
-
-## Key Technologies
-
-- **Build**: Webpack 4, esbuild, SWC
-- **Frontend**: React 17, Redux (Rematch), Web Components (Polymer)
-- **Transpilation**: Babel, TypeScript
-- **Styling**: Less, CSS Modules, PostCSS
-- **Bundler**: Lerna for monorepo management
+- 2-space indentation, LF, UTF-8 (`.editorconfig`)
+- No semicolons in `packages/*` TypeScript; devtool JS follows its existing style
+- TypeScript ESM in packages; CommonJS only for devtool config files
+- Prefer explicit structured diagnostics over `console.*` in runtime code
+- Chinese comments are fine for project-specific concepts
 
 ## Local Development Workflow
 
-1. Build base library: `cd packages/base && yarn dev`
-2. Start debugger: `cd packages/devtool && yarn dev`
-3. Compile demo: `cd example && NODE_ENV=development node ./scripts/compile.js --root ./mini`
+1. `pnpm install`
+2. `pnpm accept:glass-easel` to confirm the baseline
+3. `pnpm dev:glass-easel` for the small demo, `pnpm dev:devtool` for the debugger
+4. Re-run the gate before committing
 
-## Agent skills
+## Agent Skills
 
 ### Issue tracker
 
-Issues live in GitHub Issues for `YufJi/tiny` and are managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+Issues live in GitHub Issues for `YufJi/tiny` and are managed with the `gh` CLI.
+See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-The tracker uses the five default canonical triage labels unchanged. See `docs/agents/triage-labels.md`.
+The tracker uses the five default canonical triage labels. See
+`docs/agents/triage-labels.md`.
 
 ### Domain docs
 
-The repo uses a multi-context layout rooted at `CONTEXT-MAP.md`, with package-scoped contexts. See `docs/agents/domain.md`.
+The repo uses a multi-context layout rooted at `CONTEXT-MAP.md`, with
+package-scoped contexts. See `docs/agents/domain.md`.

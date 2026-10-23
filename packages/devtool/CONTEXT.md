@@ -3,8 +3,10 @@
 ## Glossary
 
 - **Devtool**: the browser debugger UI and host adapter for inspecting and controlling the Tiny runtime.
+- **Runtime client**: `DevtoolRuntimeClient` from `@tiny/runtime`; the only permitted boundary between the React UI and the runtime.
 - **Host transport**: the explicit message channel between the debugger host, service thread, and render thread.
 - **Protocol message**: a versioned envelope with kind, domain, method, payload, page identity, and correlation ID.
 - **Runtime control**: debugger-originated lifecycle commands such as launch, foreground, background, navigate, back, reload, and terminate.
 - **Diagnostic**: structured runtime output for logs, page state, compiler diagnostics, unsupported capabilities, and transport errors.
-- **Runtime client**: the typed API and subscription surface used by React; it is the only permitted boundary between UI and runtime.
+- **Thread entries**: `runtimeService.js` / `runtimeRender.js`, served as `next-service.html` / `next-render.html`; they boot the threads from `/runtime/apps/<app>/generated`.
+- **Projection**: the Redux `runtime` model mirrors page stack, current page, diagnostics, and element tree; it never sends protocol messages itself.

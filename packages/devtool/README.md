@@ -1,29 +1,36 @@
+# devtool
 
-## 小程序web调试器
+Tiny 运行时调试器。
 
-### 目录介绍
+## 启动
 
-```sh
-├── host.html  // 调试器入口html
-├── public     // 静态资源
-├── src        // 主目录
-|  ├── app.jsx 
-|  ├── app.module.less
-|  ├── assets
-|  ├── components
-|  ├── global.css
-|  ├── main.js
-|  ├── store
-|  └── utils   // 工具方法（包含调试器层jsbridge功能的实现）
-├── static     // 小程序包目录
-   ├── base    // 小程序基础库
-   ├── biz     // 小程序业务包
-   └── preload // 模拟preload功能，如注入小程序运行时的全局对象
-
+```bash
+pnpm dev:devtool
+# http://localhost:8080/
 ```
 
-### 核心功能
+`dev:devtool` 会编译 `example/glass-easel/mini`（demo）和 `example/mini`（真实示例）到
+`static/runtime/apps/*/generated`，启动两个 watcher，再启动 rspack dev server。
+编译完成后在面板点 `Reload` 加载新产物。
 
-- webviews调度管理
-- 宿主api能力提供
-- 宿主事件通知
+## 结构
+
+```text
+src/next/
+├── main.jsx           # 入口，挂载 RuntimePanel
+├── runtimePanel.jsx   # React 面板（状态、诊断、元素树、控制）
+├── runtimeService.js  # service 线程入口
+└── runtimeRender.js   # render 线程入口
+src/store/
+├── index.js           # rematch store
+└── models/runtime.js  # 运行时状态投影
+```
+
+- 宿主编排、生命周期控制和状态投影都在 `@tiny/runtime` 的 `DevtoolRuntimeClient`
+- 面板只通过 client 订阅状态和发送控制命令
+- 线程页从 `/runtime/apps/<app>/generated` 读取 manifest、templates、styles
+
+## 验收
+
+调试器流程已包含在 `pnpm accept:glass-easel`：启动、状态投影、渲染、导航/返回、
+应用切换、Reload/Terminate、控制台零报错。

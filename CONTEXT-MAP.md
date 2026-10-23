@@ -5,12 +5,11 @@ Each package is a bounded context. Read only the contexts relevant to the curren
 | Context | Path | Scope |
 | --- | --- | --- |
 | APIs | `packages/apis` | Mini-program APIs |
-| Base | `packages/base` | Core runtime, vdom, web components, and JSBridge |
 | Bridge | `packages/bridge` | Versioned runtime protocol, transport, batching, and diagnostics boundary |
-| Compiler | `packages/compiler` | Mini-program compiler |
+| Built-in Components | `packages/builtin-components` | Glass-easel implementations of mini-program built-in tags |
 | Compiler Next | `packages/compiler-next` | Active glass-easel compiler and runtime manifest producer |
-| Devtool | `packages/devtool` | Web-based debugger and host adapter for the versioned runtime protocol |
-| Runtime | `packages/runtime` | Tiny host runtime and internal glass-easel adapter |
-| Stylesheet Compiler | `packages/stylesheet-compiler` | Stylesheet compilation |
+| Devtool | `packages/devtool` | Runtime debugger UI and host orchestration |
+| Runtime | `packages/runtime` | Tiny host runtime, glass-easel adapter, and devtool client |
+| Stylesheet Compiler | `packages/stylesheet-compiler` | Stylesheet compilation and scoping |
 | Template Compiler | `packages/template-compiler` | Template compilation |
 | Utils | `packages/utils` | Shared utilities |

@@ -1,25 +1,16 @@
 {
   "name": "devtool",
   "version": "0.0.0",
-  "description": "调试器",
-  "main": "",
-  "files": [
-    "lib"
-  ],
+  "description": "Tiny 运行时调试器",
+  "private": true,
   "scripts": {
     "dev": "rspack serve",
     "build": "rspack build"
   },
   "dependencies": {
-    "@babel/runtime": "^7.15.4",
     "@rematch/core": "^2.0.1",
     "@tiny/runtime": "workspace:*",
-    "axios": "^0.21.1",
-    "classnames": "^2.3.1",
-    "eventemitter3": "^4.0.7",
     "glass-easel": "1.1.0",
-    "normalize.css": "^8.0.1",
-    "qs": "^6.10.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-redux": "^7.2.3"
@@ -27,12 +18,6 @@
   "devDependencies": {
     "@rspack/cli": "^1.7.10",
     "@rspack/core": "^1.7.10",
-    "autoprefixer": "^10.4.27",
-    "css-loader": "^3.0.0",
-    "html-rspack-plugin": "^6.1.7",
-    "less": "^3.9.0",
-    "less-loader": "^11.1.4",
-    "postcss": "^8.5.8",
-    "postcss-loader": "^3.0.0"
+    "html-rspack-plugin": "^6.1.7"
   }
 }
