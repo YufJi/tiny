@@ -98,6 +98,51 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
     return adapter.inspectTree(payload.pageId)
   })
 
+  connection.onControl('canvas', 'measure', (message) => {
+    const payload = (message.payload ?? {}) as { selector?: string }
+    if (typeof document === 'undefined') return { width: 300, height: 150 }
+    let element: Element | null = null
+    try {
+      element = payload.selector ? document.querySelector(payload.selector) : null
+    } catch {
+      element = null
+    }
+    element ??= document.querySelector('canvas')
+    let rect = element?.getBoundingClientRect()
+    if (element?.tagName.toLowerCase() === 'canvas' && element.parentElement) {
+      const parentRect = element.parentElement.getBoundingClientRect()
+      if (parentRect.width > 0 && parentRect.height > 0) rect = parentRect
+    }
+    const measured: Record<string, unknown> = {
+      width: rect && rect.width > 0 ? Math.round(rect.width) : 300,
+      height: rect && rect.height > 0 ? Math.round(rect.height) : 150,
+    }
+    const canvasId = element?.getAttribute('canvas-id')
+    if (canvasId) measured.canvasId = canvasId
+    return measured
+  })
+
+  connection.onEvent('canvas', 'frame', (message) => {
+    const payload = message.payload as { canvasId?: string; dataUrl?: string }
+    if (typeof document === 'undefined' || !payload?.dataUrl) return
+    let target: HTMLCanvasElement | null = null
+    for (const element of Array.from(document.querySelectorAll('canvas[canvas-id]'))) {
+      if (element.getAttribute('canvas-id') === payload.canvasId) {
+        target = element as HTMLCanvasElement
+        break
+      }
+    }
+    if (!target) return
+    const canvas = target
+    const image = new Image()
+    image.onload = () => {
+      canvas.width = image.naturalWidth
+      canvas.height = image.naturalHeight
+      canvas.getContext('2d')?.drawImage(image, 0, 0)
+    }
+    image.src = payload.dataUrl
+  })
+
   connection.onEvent('data', 'setData', (message) => {
     const payload = message.payload as { pageId?: string; componentId?: string; patch?: DataPatch }
     const component = payload.componentId

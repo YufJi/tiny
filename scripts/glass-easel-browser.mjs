@@ -375,8 +375,8 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       assert.equal(stateEvents.at(-1)?.details?.currentPage, 'pages/todos/todos', 'did not return to todos')
     })
 
-    await step('mount the canvas-only page without fatal errors', async () => {
-      currentStep = 'mount the canvas-only page without fatal errors'
+    await step('render the ECharts page through mirrored canvas frames', async () => {
+      currentStep = 'render the ECharts page through mirrored canvas frames'
       await render.getByText('nav', { exact: true }).first().click()
       await page.waitForFunction(
         () => window.__tinyRuntime.host.diagnostics.some(
@@ -385,7 +385,17 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
         null,
         { timeout: STEP_TIMEOUT },
       )
-      assert.ok((await render.locator('.tiny-canvas').count()) > 0, 'canvas placeholder did not render')
+      await render.waitForFunction(() => {
+        const canvas = document.querySelector('canvas')
+        if (!canvas || canvas.width < 100 || canvas.height < 100) return false
+        const context = canvas.getContext('2d')
+        if (!context) return false
+        const data = context.getImageData(0, 0, canvas.width, canvas.height).data
+        for (let index = 3; index < data.length; index += 4) {
+          if (data[index] !== 0) return true
+        }
+        return false
+      }, null, { timeout: STEP_TIMEOUT })
       const errorsAfterBar = (await diagnostics()).filter((item) => item.severity === 'error')
       assert.equal(errorsAfterBar.length, 0, `bar page raised errors: ${errorsAfterBar.map((item) => item.message).join(' | ')}`)
     })

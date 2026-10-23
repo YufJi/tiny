@@ -57,6 +57,9 @@ page,
 .tiny-input {
   width: 100%;
 }
+page {
+  min-height: 100vh;
+}
 .tiny-scroll-view.is-vertical {
   overflow-y: auto;
 }

@@ -75,6 +75,12 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
   service.onEvent('data', 'setData', (message) => {
     render.sendEvent('data', 'setData', message.payload, { pageId: message.pageId })
   })
+  service.onCall('canvas', 'measure', (message) => (
+    render.control('canvas', 'measure', message.payload, { pageId: message.pageId })
+  ))
+  service.onEvent('canvas', 'frame', (message) => {
+    render.sendEvent('canvas', 'frame', message.payload, { pageId: message.pageId })
+  })
 
     return {
     service,

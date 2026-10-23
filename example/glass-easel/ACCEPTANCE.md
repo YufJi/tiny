@@ -44,12 +44,10 @@ After the P0 demo flow, the gate compiles `example/mini` (3 pages + 1 subpackage
    update page data, radio/icon state renders.
 5. Resolves WXML `import` / `include` and named templates.
 6. Navigates to the Component-as-page `add-todo`, updates its input, and returns.
-7. Mounts the canvas-only `bar` page without fatal errors. `wx.createSelectorQuery`
-   returns a synthetic size and an offscreen canvas so ECharts can initialize without
-   drawing into the visible page.
+7. Renders the `bar` ECharts page: the service-thread canvas is mirrored to the render
+   page as PNG frames, and the acceptance checks for non-blank pixels.
 8. Boots the `packageA/pages/c/c` subpackage page directly.
-9. Reports `wx.createAnimation` / `wx.createCanvasContext` / selector-query shims as
-   warnings instead of throwing.
+9. Reports `wx.createAnimation` / selector-query shims as warnings instead of throwing.
 
 The P0 demo artifacts are recompiled after this stage, so `pnpm dev:glass-easel` keeps
 serving the small demo.

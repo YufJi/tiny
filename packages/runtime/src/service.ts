@@ -9,6 +9,7 @@ import type {
   SystemInfoSnapshot,
 } from './types'
 import { createRuntimeStateDiagnostic } from './diagnostics'
+import { createBridgedCanvas, createLegacyCanvasContext } from './canvas-bridge'
 
 export type MiniProgramPageOptions = {
   data?: Record<string, unknown>
@@ -343,14 +344,19 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
       unsupported('createAnimation')
       return createAnimationStub()
     },
-    createCanvasContext: () => {
-      unsupported('createCanvasContext')
-      return createCanvasContextStub()
+    createCanvasContext: (canvasId: unknown = 'canvas') => {
+      const bridged = createLegacyCanvasContext(
+        String(canvasId || 'canvas'),
+        (frame) => {
+          context.connection.sendEvent('canvas', 'frame', frame, { pageId: context.pageId })
+        },
+      )
+      return bridged ?? createCanvasContextStub()
     },
     createSelectorQuery: () => {
-      context.connection.sendDiagnostic('warn', {
-        code: 'SYNTHETIC_SELECTOR_QUERY',
-        message: 'wx.createSelectorQuery uses synthetic sizes and an offscreen canvas in the P0 runtime.',
+      context.connection.sendDiagnostic('log', {
+        code: 'CANVAS_OFFSCREEN',
+        message: 'Canvas is rendered in the service thread and mirrored to the render thread.',
       }, context.pageId)
       return createSelectorQueryStub(context)
     },
@@ -789,6 +795,7 @@ function findComponentByInstanceId(
 }
 
 type SelectorQuerySelection = {
+  selector?: string
   rectCallback?: (rect: Record<string, unknown>) => void
   fieldsCallback?: (fields: Record<string, unknown>) => void
   nodeCallback?: (node: unknown) => void
@@ -796,14 +803,18 @@ type SelectorQuerySelection = {
 
 function createSelectorQueryStub(context: ServiceApiContext): Record<string, unknown> {
   const selections: SelectorQuerySelection[] = []
+  let component: { data?: Record<string, unknown> } | undefined
   let execCallback: ((results: unknown[]) => void) | undefined
   let scheduled = false
 
   const schedule = () => {
     if (scheduled) return
     scheduled = true
-    setTimeout(() => {
-      const results = selections.map(() => buildSelectorResult(context))
+    void (async () => {
+      const results: Record<string, unknown>[] = []
+      for (const selection of selections) {
+        results.push(await buildSelectorResult(context, selection, component))
+      }
       for (const [index, selection] of selections.entries()) {
         const result = results[index]!
         selection.rectCallback?.(result)
@@ -811,11 +822,11 @@ function createSelectorQueryStub(context: ServiceApiContext): Record<string, unk
         selection.nodeCallback?.(result.node)
       }
       execCallback?.(results)
-    }, 0)
+    })()
   }
 
-  const createSelection = (): Record<string, unknown> => {
-    const selection: SelectorQuerySelection = {}
+  const createSelection = (selector?: string): Record<string, unknown> => {
+    const selection: SelectorQuerySelection = { selector }
     selections.push(selection)
     const api: Record<string, unknown> = {
       boundingClientRect: (callback?: (rect: Record<string, unknown>) => void) => {
@@ -843,9 +854,12 @@ function createSelectorQueryStub(context: ServiceApiContext): Record<string, unk
   }
 
   const query: Record<string, unknown> = {
-    in: () => query,
-    select: () => createSelection(),
-    selectAll: () => createSelection(),
+    in: (target?: unknown) => {
+      component = target as { data?: Record<string, unknown> } | undefined
+      return query
+    },
+    select: (selector?: string) => createSelection(selector),
+    selectAll: (selector?: string) => createSelection(selector),
     exec: (callback?: (results: unknown[]) => void) => {
       if (callback) execCallback = callback
       schedule()
@@ -855,17 +869,34 @@ function createSelectorQueryStub(context: ServiceApiContext): Record<string, unk
   return query
 }
 
-function buildSelectorResult(context: ServiceApiContext): Record<string, unknown> {
-  const { windowWidth } = context.getSystemInfoSnapshot()
-  const width = Math.max(1, Math.min(300, Math.round(windowWidth || 300)))
-  const height = 150
-  const node = typeof document !== 'undefined' ? document.createElement('canvas') : null
-  if (node) {
-    node.width = width
-    node.height = height
+async function buildSelectorResult(
+  context: ServiceApiContext,
+  selection: SelectorQuerySelection,
+  component?: { data?: Record<string, unknown> },
+): Promise<Record<string, unknown>> {
+  let width = 300
+  let height = 150
+  let measured: { width?: number; height?: number; canvasId?: string } | undefined
+  try {
+    measured = await context.connection.call<{ width?: number; height?: number; canvasId?: string }>(
+      'canvas',
+      'measure',
+      { selector: selection.selector },
+      { pageId: context.pageId },
+    )
+    if (measured && Number(measured.width) > 0 && Number(measured.height) > 0) {
+      width = Math.round(Number(measured.width))
+      height = Math.round(Number(measured.height))
+    }
+  } catch {
+    // Fall back to the default canvas size.
   }
+  const canvasId = String(component?.data?.canvasId ?? measured?.canvasId ?? 'canvas')
+  const bridged = createBridgedCanvas(width, height, canvasId, (frame) => {
+    context.connection.sendEvent('canvas', 'frame', frame, { pageId: context.pageId })
+  })
   return {
-    node,
+    node: bridged?.canvas ?? null,
     id: '',
     dataset: {},
     width,
