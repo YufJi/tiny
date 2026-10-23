@@ -77,6 +77,10 @@ export type RenderThreadOptions = {
   loadStyle?: StyleLoader
   capabilities?: Record<string, unknown>
   onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
+  /** Host hook that inserts the root component into the backend tree. */
+  mountComponent?: (component: unknown) => void
+  /** Host hook that removes the root component from the backend tree. */
+  unmountComponent?: (component: unknown) => void
 }
 
 export type RuntimeHostOptions = {

@@ -1,6 +1,7 @@
 export type DataPatch = Record<string, unknown>
 
 export function cloneJsonSafe<T>(value: T): T {
+  if (value === undefined) return value
   return JSON.parse(JSON.stringify(value)) as T
 }
 

@@ -1,6 +1,6 @@
 import { BridgeConnection } from '@tiny/bridge'
 import type { PageArtifact } from '@tiny/compiler-next'
-import { GlassEaselRuntimeAdapter } from './glass-easel-adapter'
+import { GlassEaselRuntimeAdapter, type GlassEaselAdapterOptions } from './glass-easel-adapter'
 import { applyDataPatch, type DataPatch } from './data'
 import type { RenderThreadOptions } from './types'
 
@@ -22,6 +22,8 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
     backend: options.backend as never,
     manifest: options.manifest,
     templates: options.artifacts.templates,
+    mountComponent: options.mountComponent as GlassEaselAdapterOptions['mountComponent'],
+    unmountComponent: options.unmountComponent as GlassEaselAdapterOptions['unmountComponent'],
     onMiniProgramEvent: (pageId, event) => {
       connection.sendEvent('event', 'dispatch', event, { pageId })
     },

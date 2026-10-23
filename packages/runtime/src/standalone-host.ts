@@ -1,6 +1,6 @@
 import { createHostMessageChannelPair } from '@tiny/bridge'
 import { createTinyRuntime, type TinyRuntimeHost } from './host'
-import type { RuntimeManifest } from './types'
+import type { RuntimeManifest, SystemInfoSnapshot, StorageSnapshot } from './types'
 
 export type StandaloneHostOptions = {
   manifest: RuntimeManifest
@@ -8,6 +8,8 @@ export type StandaloneHostOptions = {
   renderUrl: string
   initialPath: string
   initialData?: Record<string, unknown>
+  systemInfo?: Partial<SystemInfoSnapshot>
+  storage?: StorageSnapshot
   container?: HTMLElement
 }
 
@@ -24,13 +26,13 @@ export async function createStandaloneDualThreadHost(
   const renderChannel = createHostMessageChannelPair()
   const container = options.container ?? document.body
 
-  const serviceIframe = createIframe('tiny-runtime-service-frame')
-  const renderIframe = createIframe('tiny-runtime-render-frame')
-  serviceIframe.src = options.serviceUrl
-  renderIframe.src = options.renderUrl
+  const serviceIframe = createIframe('tiny-runtime-service-frame', options.serviceUrl)
+  const renderIframe = createIframe('tiny-runtime-render-frame', options.renderUrl)
+  const serviceReady = waitForThreadReady(serviceIframe, 'service')
+  const renderReady = waitForThreadReady(renderIframe, 'render')
   container.append(serviceIframe, renderIframe)
 
-  await Promise.all([waitForLoad(serviceIframe), waitForLoad(renderIframe)])
+  await Promise.all([serviceReady, renderReady])
   serviceIframe.contentWindow?.postMessage(
     { type: 'tiny-runtime-port', channel: 'service' },
     '*',
@@ -48,15 +50,18 @@ export async function createStandaloneDualThreadHost(
     manifest: options.manifest,
     initialPath: options.initialPath,
     initialData: options.initialData,
+    systemInfo: options.systemInfo,
+    storage: options.storage,
   })
   await Promise.all([host.service.handshake(), host.render.handshake()])
   return { host, serviceIframe, renderIframe }
 }
 
-function createIframe(className: string): HTMLIFrameElement {
+function createIframe(className: string, src: string): HTMLIFrameElement {
   const iframe = document.createElement('iframe')
   iframe.className = className
   iframe.setAttribute('title', 'Tiny runtime thread')
+  iframe.src = src
   iframe.style.border = '0'
   iframe.style.width = '100%'
   iframe.style.height = '100%'
@@ -69,8 +74,27 @@ function createIframe(className: string): HTMLIFrameElement {
   return iframe
 }
 
-function waitForLoad(iframe: HTMLIFrameElement): Promise<void> {
-  return new Promise((resolve) => {
-    iframe.addEventListener('load', () => resolve(), { once: true })
+function waitForThreadReady(
+  iframe: HTMLIFrameElement,
+  channel: 'service' | 'render',
+  timeoutMs = 15_000,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      cleanup()
+      reject(new Error(`runtime ${channel} thread did not report ready within ${timeoutMs}ms`))
+    }, timeoutMs)
+    const onMessage = (event: MessageEvent) => {
+      const data = event.data as { type?: string; channel?: string } | undefined
+      if (data?.type !== 'tiny-runtime-port-ready' || data.channel !== channel) return
+      if (event.source !== iframe.contentWindow) return
+      cleanup()
+      resolve()
+    }
+    const cleanup = () => {
+      clearTimeout(timer)
+      window.removeEventListener('message', onMessage)
+    }
+    window.addEventListener('message', onMessage)
   })
 }

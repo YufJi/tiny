@@ -26,6 +26,10 @@ export type GlassEaselAdapterOptions = {
     data: Record<string, unknown>,
   ) => void
   onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
+  /** Attach the created root component to a host-provided backend tree. */
+  mountComponent?: (component: glassEasel.GeneralComponent) => void
+  /** Detach the root component from the host-provided backend tree. */
+  unmountComponent?: (component: glassEasel.GeneralComponent) => void
 }
 
 export class GlassEaselRuntimeAdapter {
@@ -55,6 +59,8 @@ export class GlassEaselRuntimeAdapter {
   ) => void
   private readonly builtinComponents: BuiltinComponentDefinitions
   private readonly onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
+  private readonly mountComponent?: (component: glassEasel.GeneralComponent) => void
+  private readonly unmountComponent?: (component: glassEasel.GeneralComponent) => void
 
   constructor(options: GlassEaselAdapterOptions) {
     this.backend = options.backend
@@ -65,6 +71,8 @@ export class GlassEaselRuntimeAdapter {
     const styleScopeManager = new glassEasel.StyleScopeManager()
     this.componentSpace = new glassEasel.ComponentSpace(undefined, undefined, styleScopeManager, true)
     this.onDiagnostic = options.onDiagnostic
+    this.mountComponent = options.mountComponent
+    this.unmountComponent = options.unmountComponent
     this.builtinComponents = createP0BuiltinComponents(this.componentSpace, {
       onDiagnostic: (diagnostic) => this.onDiagnostic?.(createRuntimeDiagnostic(
         diagnostic.severity,
@@ -157,7 +165,9 @@ export class GlassEaselRuntimeAdapter {
     )
     this.mountedComponents.set(path, component)
     if (pageId) this.componentsByPageId.set(pageId, component)
-    glassEasel.Element.pretendAttached(component)
+    component.setData(data)
+    if (this.mountComponent) this.mountComponent(component)
+    else glassEasel.Element.pretendAttached(component)
     component.triggerLifetime('ready', [])
     for (const [componentId, instance] of this.componentInstances) {
       this.onComponentLifecycle?.(
@@ -173,6 +183,7 @@ export class GlassEaselRuntimeAdapter {
   unmountPage(pageId: string): void {
     const component = this.componentsByPageId.get(pageId)
     if (!component) return
+    this.unmountComponent?.(component)
     if (typeof (component as unknown as { destroy?: () => void }).destroy === 'function') {
       (component as unknown as { destroy: () => void }).destroy()
     } else {
@@ -220,7 +231,7 @@ export class GlassEaselRuntimeAdapter {
         content: (name = '') => this.templates.content(schema.path, name),
       })
       .data(() => schema.data as never)
-      .usingComponents(using as never)
+      .usingComponents({ ...this.builtinComponents, ...using } as never)
       .options({
         multipleSlots: true,
         writeIdToDOM: true,

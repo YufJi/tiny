@@ -40,20 +40,45 @@ function compileTemplate(source: string): glassEasel.template.ComponentTemplate 
   }
 }
 
+type BackendElementLike = {
+  value?: unknown
+  checked?: unknown
+}
+
+function backendElementFromEvent(event: glassEasel.ShadowedEvent<unknown>): BackendElementLike | null {
+  for (const candidate of [event.currentTarget, event.target]) {
+    const getElement = (candidate as unknown as {
+      getBackendElement?: () => BackendElementLike | null
+    } | null | undefined)?.getBackendElement
+    if (typeof getElement !== 'function') continue
+    const element = getElement.call(candidate)
+    if (element) return element
+  }
+  return null
+}
+
 function numberFromEvent(event: glassEasel.ShadowedEvent<unknown>, fallback = 0): number {
-  const value = event.detail as { value?: unknown } | undefined
-  return Number(value?.value ?? fallback)
+  const detail = event.detail as { value?: unknown } | undefined
+  if (detail?.value !== undefined) return Number(detail.value)
+  const element = backendElementFromEvent(event)
+  if (element?.value !== undefined) return Number(element.value)
+  return fallback
 }
 
 function valueFromEvent(event: glassEasel.ShadowedEvent<unknown>): unknown {
   const detail = event.detail as { value?: unknown } | undefined
+  if (detail?.value !== undefined) return detail.value
   const target = event.target as { value?: unknown } | undefined
-  return detail?.value ?? target?.value
+  if (target?.value !== undefined) return target.value
+  return backendElementFromEvent(event)?.value
 }
 
 function booleanFromEvent(event: glassEasel.ShadowedEvent<unknown>, fallback = false): boolean {
-  const value = event.detail as { value?: unknown } | undefined
-  return Boolean(value?.value ?? fallback)
+  const detail = event.detail as { value?: unknown } | undefined
+  if (detail?.value !== undefined) return Boolean(detail.value)
+  const element = backendElementFromEvent(event)
+  if (element?.checked !== undefined) return Boolean(element.checked)
+  return fallback
 }
 
 export type BuiltinComponentFactoryOptions = {
@@ -122,6 +147,7 @@ export function createP0BuiltinComponents(
       placeholder: { type: String, value: '' },
       disabled: { type: Boolean, value: false },
     },
+    options: { virtualHost: true },
     methods: {
       handleInput(event: glassEasel.ShadowedEvent<unknown>) {
         const value = valueFromEvent(event)
@@ -271,6 +297,7 @@ export function createP0BuiltinComponents(
       active: { type: Boolean, value: false },
       strokeWidth: { type: String, optionalTypes: [Number], value: 6 },
     },
+    options: { virtualHost: true },
   }).general()
 
   definitions.switch = space.defineComponent({
@@ -332,6 +359,7 @@ export function createP0BuiltinComponents(
         })
       },
     },
+    options: { virtualHost: true },
   }).general()
 
   return definitions

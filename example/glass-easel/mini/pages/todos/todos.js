@@ -19,6 +19,11 @@ Page({
     })
   },
 
+  onShow() {
+    const marker = wx.getStorageSync('todoMarker')
+    if (marker) this.setData({ marker })
+  },
+
   openAddTodo() {
     wx.navigateTo({ url: '../add-todo/add-todo?from=todos' })
   },

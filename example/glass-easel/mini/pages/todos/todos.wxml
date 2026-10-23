@@ -2,6 +2,8 @@
   <view class="card">
     <text class="title">Tiny Glass-easel P0</text>
     <text class="subtitle">marker: {{marker}}</text>
+    <text class="custom-detail">custom: {{customDetail}}</text>
+    <text class="system">system: {{system.pixelRatio}} / {{system.windowWidth}}x{{system.windowHeight}}</text>
     <button bindtap="openAddTodo">Open add todo</button>
     <add-button text="Add" bind:custom="onCustom">Custom slot</add-button>
   </view>
@@ -17,6 +19,7 @@
     <switch checked="{{switchChecked}}" bindchange="onSwitchChange" />
     <progress percent="{{sliderValue}}" show-info />
     <icon type="success" />
+    <text class="state">slider: {{sliderValue}} switch: {{switchChecked}} checked: {{checkedValues}}</text>
   </view>
 
   <swiper indicator-dots="{{true}}">

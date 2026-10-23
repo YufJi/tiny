@@ -496,7 +496,7 @@ class MiniProgramCompiler {
     const generated = group.getTmplGenObjectGroups()
     const outputPath = 'templates.js'
     const content = [
-      'const groupList = (' + generated + ')()',
+      'const groupList = ' + generated,
       '',
       'export default {',
       '  groupList,',

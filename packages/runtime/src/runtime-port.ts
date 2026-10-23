@@ -8,6 +8,11 @@ export type RuntimePortMessage = {
   channel: RuntimePortChannel
 }
 
+export type RuntimePortReadyMessage = {
+  type: 'tiny-runtime-port-ready'
+  channel: RuntimePortChannel
+}
+
 export function listenForRuntimePort(
   channel: RuntimePortChannel,
   callback: (transport: Transport) => void,
@@ -20,5 +25,8 @@ export function listenForRuntimePort(
     callback(createMessagePortTransport(port as unknown as MessagePortLike))
   }
   window.addEventListener('message', listener)
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'tiny-runtime-port-ready', channel }, '*')
+  }
   return () => window.removeEventListener('message', listener)
 }

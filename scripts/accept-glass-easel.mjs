@@ -1,8 +1,17 @@
-import { spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { runBrowserAcceptance } from './glass-easel-browser.mjs'
+
+const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const port = Number(process.env.TINY_ACCEPT_PORT ?? 5199)
+const baseUrl = `http://127.0.0.1:${port}`
 
 const steps = [
   ['Build active glass-easel packages', ['pnpm', 'build:glass-easel']],
   ['Run bridge protocol tests', ['pnpm', '--filter', '@tiny/bridge', 'test']],
+  ['Run template compiler tests', ['pnpm', '--filter', '@tiny/template-compiler', 'test']],
+  ['Run stylesheet compiler tests', ['pnpm', '--filter', '@tiny/stylesheet-compiler', 'test']],
   ['Run compiler-next tests', ['pnpm', '--filter', '@tiny/compiler-next', 'test']],
   ['Run built-in component tests', ['pnpm', '--filter', '@tiny/builtin-components', 'test']],
   ['Run runtime tests', ['pnpm', '--filter', '@tiny/runtime', 'test']],
@@ -18,17 +27,96 @@ for (const [name, command] of steps) {
   }
 }
 
+if (process.env.SKIP_BROWSER === '1') {
+  console.log('\n⚠ Browser acceptance skipped because SKIP_BROWSER=1')
+} else {
+  const server = startDevServer()
+  try {
+    await waitForServer(baseUrl, server.log)
+    await runBrowserAcceptance({ baseUrl })
+  } finally {
+    await stopDevServer(server.child)
+  }
+}
+
 console.log(`
-✅ P0 automated gate passed.
+✅ P0 acceptance gate passed.
 
-Browser checklist — run: pnpm dev:glass-easel
-
-1. Launch shows the todos page and no fatal console errors.
-2. Todos list, checkbox group, slider, progress, switch, swiper, icon, image, and scroll-view render.
-3. add-button receives text, renders slot content, and emits its custom event to the page.
-4. Checkbox, slider, switch, swiper, button, and tap interactions update state or emit events.
-5. "Open add todo" navigates to add-todo and preserves the todos marker.
-6. add-todo input updates; "Save and back" stores the value, shows/resolves toast, and returns.
-7. After returning, the todos marker reflects storage and system info remains readable.
-8. Canvas renders as a placeholder and emits an unsupported diagnostic without crashing.
+Automated: build, protocol/compiler/runtime tests, example compile, dual-thread browser flow.
+Manual debug host: pnpm dev:glass-easel
 `)
+
+function startDevServer() {
+  const child = spawn(
+    'pnpm',
+    [
+      '--filter',
+      '@tiny/compiler-next',
+      'exec',
+      'vite',
+      '--config',
+      '../../example/glass-easel/vite.config.ts',
+      '--port',
+      String(port),
+      '--host',
+      '127.0.0.1',
+      '--strictPort',
+      '--clearScreen',
+      'false',
+    ],
+    {
+      cwd: rootDir,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      detached: process.platform !== 'win32',
+    },
+  )
+  const log = []
+  child.stdout.on('data', (chunk) => log.push(chunk.toString()))
+  child.stderr.on('data', (chunk) => log.push(chunk.toString()))
+  child.on('exit', (code) => {
+    if (code !== 0 && code !== null) {
+      console.error(`\n✘ dev server exited with code ${code}\n${log.join('')}`)
+    }
+  })
+  return { child, log }
+}
+
+async function waitForServer(url, log, timeoutMs = 30_000) {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(url, { method: 'GET' })
+      if (response.ok) {
+        console.log(`\n▶ Browser acceptance against ${url}`)
+        return
+      }
+    } catch {
+      // Server is still starting.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250))
+  }
+  throw new Error(
+    `dev server did not become ready at ${url} within ${timeoutMs}ms\n${log.join('')}`,
+  )
+}
+
+async function stopDevServer(child) {
+  if (child.exitCode !== null) return
+  const exited = new Promise((resolve) => child.once('exit', resolve))
+  try {
+    if (process.platform === 'win32') child.kill('SIGTERM')
+    else process.kill(-child.pid, 'SIGTERM')
+  } catch {
+    child.kill('SIGTERM')
+  }
+  const timeout = new Promise((resolve) => setTimeout(resolve, 3_000))
+  const finished = await Promise.race([exited.then(() => true), timeout.then(() => false)])
+  if (!finished) {
+    try {
+      if (process.platform === 'win32') child.kill('SIGKILL')
+      else process.kill(-child.pid, 'SIGKILL')
+    } catch {
+      child.kill('SIGKILL')
+    }
+  }
+}

@@ -86,6 +86,16 @@ describe('compileMiniProgram', () => {
     expect(templates).toContain('A||{')
   })
 
+  test('emits an executable template group', async () => {
+    const templates = await fs.readFile(path.join(outputDir, 'templates.js'), 'utf8')
+    const encoded = Buffer.from(templates).toString('base64')
+    const module = await import(`data:text/javascript;base64,${encoded}`)
+    expect(Object.keys(module.default.groupList)).toEqual(
+      expect.arrayContaining(['pages/index/index', 'components/badge/badge']),
+    )
+    expect(typeof module.default.content('pages/index/index')).toBe('function')
+  })
+
   test('does not report errors for the valid fixture', async () => {
     const result = await compileMiniProgram({
       sourceDir: fixtureDir,

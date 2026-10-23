@@ -2,6 +2,7 @@
   <view class="card">
     <text class="title">Add todo</text>
     <text class="subtitle">from: {{from}}</text>
+    <text class="value">value: {{inputValue}}</text>
     <input value="{{inputValue}}" placeholder="Todo name" bindinput="onInput" />
     <button bindtap="save">Save and back</button>
   </view>

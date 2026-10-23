@@ -183,10 +183,10 @@ export class JsFunctionScopeWriter {
   customStmtStr(content: string): void {
     const b = this.getBlock()
     if (b.needStatSep) {
-      b.needStatSep = false
       this.buf.write(';')
     }
     this.buf.write(content)
+    b.needStatSep = true
   }
 
   exprStmt(f: (w: JsExprWriter) => void): void {
