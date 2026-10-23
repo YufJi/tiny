@@ -1,5 +1,4 @@
 node_modules/
-.pnpm-store/
 .cache/
 static/
 dist/
