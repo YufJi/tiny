@@ -1,0 +1,1 @@
+<view class="tiny-progress class" style="{{style}}"><view class="tiny-progress-track"><view class="tiny-progress-bar" style="width: {{percent < 0 ? 0 : (percent > 100 ? 100 : percent)}}%" /></view><text class="tiny-progress-info" hidden="{{!showInfo}}">{{percent}}%</text></view>

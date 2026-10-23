@@ -1,0 +1,1 @@
+<view class="tiny-checkbox"><input id="native-input" type="checkbox" value="{{value}}" checked="{{checked}}" disabled="{{disabled}}" catchchange="handleChange" /><slot /></view>

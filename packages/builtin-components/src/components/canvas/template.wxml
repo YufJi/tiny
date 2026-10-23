@@ -1,0 +1,1 @@
+<canvas id="native-canvas" class="tiny-canvas class" style="{{style}}" canvas-id="{{canvasId}}" type="{{type}}" data-placeholder="canvas" />

@@ -1,0 +1,1 @@
+<view class="tiny-swiper-item class" style="{{style}}"><slot /></view>

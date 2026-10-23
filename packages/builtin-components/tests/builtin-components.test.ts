@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
 import { BUILTIN_COMPONENT_TAGS, createP0BuiltinComponents } from '../src'
+import precompiledTemplates from '../src/generated/templates'
 
 function compilePage(source: string): glassEasel.template.ComponentTemplate {
   const group = TmplGroup.newDev()
@@ -20,6 +21,10 @@ function compilePage(source: string): glassEasel.template.ComponentTemplate {
 }
 
 describe('P0 built-in components', () => {
+  test('ships a precompiled template for every tag', () => {
+    expect(Object.keys(precompiledTemplates).sort()).toEqual([...BUILTIN_COMPONENT_TAGS].sort())
+  })
+
   test('exposes every P0 component tag', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const definitions = createP0BuiltinComponents(space)

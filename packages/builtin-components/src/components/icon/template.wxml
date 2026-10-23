@@ -1,0 +1,1 @@
+<text class="tiny-icon tiny-icon-{{type}}" style="font-size: {{size}}px; color: {{color}};">{{glyph}}</text>

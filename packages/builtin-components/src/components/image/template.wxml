@@ -1,0 +1,1 @@
+<img class="tiny-image tiny-image-mode-{{mode}} class" style="{{style}}" src="{{src}}" alt="" binderror="handleError" bindload="handleLoad" />

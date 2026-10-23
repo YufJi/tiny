@@ -1,0 +1,143 @@
+import type * as glassEasel from 'glass-easel'
+import type { BuiltinContext, BuiltinDefinition } from '../../types'
+
+export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
+  return ctx.space.defineComponent({
+    is: 'tiny-builtin:swiper',
+    template: ctx.template('swiper'),
+    properties: {
+      current: { type: Number, value: 0 },
+      indicatorDots: { type: Boolean, value: false },
+      autoplay: { type: Boolean, value: false },
+      interval: { type: Number, value: 5000 },
+      duration: { type: Number, value: 500 },
+      circular: { type: Boolean, value: false },
+      vertical: { type: Boolean, value: false },
+      style: { type: String, value: '' },
+    },
+    data: {
+      activeIndex: 0,
+      dots: [] as number[],
+      trackStyle: 'transform: translateX(0%); transition-duration: 500ms;',
+    },
+    externalClasses: ['class'],
+    lifetimes: {
+      created() {
+        this.bootstrapSwiper(0)
+      },
+      detached() {
+        this.stopAutoplay()
+      },
+    },
+    observers: {
+      current(value: number) {
+        const index = Math.max(0, Number(value) || 0)
+        this.setData({ activeIndex: index })
+        this.updateTrackStyle()
+      },
+      duration() {
+        this.updateTrackStyle()
+      },
+      vertical() {
+        this.updateTrackStyle()
+      },
+      autoplay() {
+        this.restartAutoplay()
+      },
+      interval() {
+        this.restartAutoplay()
+      },
+    },
+    methods: {
+      bootstrapSwiper(attempt: number) {
+        this.syncDots()
+        this.updateTrackStyle()
+        this.restartAutoplay()
+        if ((this.data.dots as number[]).length === 0 && attempt < 10) {
+          setTimeout(() => this.bootstrapSwiper(attempt + 1), 16)
+        }
+      },
+      syncDots() {
+        const host = (this as unknown as { getBackendElement?: () => { querySelectorAll?: (selector: string) => ArrayLike<unknown> } | null }).getBackendElement?.()
+        let count = host?.querySelectorAll ? host.querySelectorAll('.tiny-swiper-item').length : 0
+        if (count === 0) {
+          const children = (this as unknown as { childNodes?: unknown[] }).childNodes
+          count = Array.isArray(children) ? children.length : 0
+        }
+        const dots = Array.from({ length: count }, (_value, index) => index)
+        this.setData({ dots })
+        if (count === 0) {
+          setTimeout(() => {
+            const retryHost = (this as unknown as { getBackendElement?: () => { querySelectorAll?: (selector: string) => ArrayLike<unknown> } | null }).getBackendElement?.()
+            const retryCount = retryHost?.querySelectorAll ? retryHost.querySelectorAll('.tiny-swiper-item').length : 0
+            if (retryCount > 0) {
+              this.setData({ dots: Array.from({ length: retryCount }, (_value, index) => index) })
+            }
+          }, 0)
+        }
+      },
+      updateTrackStyle() {
+        const index = Number(this.data.activeIndex) || 0
+        const axis = this.data.vertical ? 'Y' : 'X'
+        const duration = Number(this.data.duration) || 500
+        this.setData({
+          trackStyle: `transform: translate${axis}(-${index * 100}%); transition-duration: ${duration}ms;`,
+        })
+      },
+      setActive(index: number, source: string) {
+        const count = (this.data.dots as number[]).length
+        let next = index
+        if (count > 0) {
+          if (this.data.circular) next = (index + count) % count
+          else next = Math.max(0, Math.min(count - 1, index))
+        }
+        this.setData({ activeIndex: next })
+        this.updateTrackStyle()
+        this.triggerEvent('change', { current: next, source }, { bubbles: true, composed: true })
+      },
+      stopAutoplay() {
+        const timer = (this as unknown as { __swiperTimer?: ReturnType<typeof setInterval> }).__swiperTimer
+        if (timer) clearInterval(timer)
+        ;(this as unknown as { __swiperTimer?: ReturnType<typeof setInterval> }).__swiperTimer = undefined
+      },
+      restartAutoplay() {
+        this.stopAutoplay()
+        if (!this.data.autoplay) return
+        const interval = Math.max(100, Number(this.data.interval) || 5000)
+        ;(this as unknown as { __swiperTimer?: ReturnType<typeof setInterval> }).__swiperTimer = setInterval(() => {
+          const count = (this.data.dots as number[]).length
+          if (count < 2) return
+          const next = Number(this.data.activeIndex) + 1
+          if (next >= count && !this.data.circular) {
+            this.setActive(0, 'autoplay')
+            return
+          }
+          this.setActive(next, 'autoplay')
+        }, interval)
+      },
+      handleDotTap(event: glassEasel.ShadowedEvent<unknown>) {
+        const id = String((event.currentTarget as unknown as { id?: string }).id ?? '')
+        const index = Number(id.split('-').pop() ?? 0)
+        this.setActive(index, 'tap')
+      },
+      handleTouchStart(event: glassEasel.ShadowedEvent<unknown>) {
+        const touch = (event as unknown as { touches?: { clientX?: number; clientY?: number; x?: number; y?: number }[] }).touches?.[0]
+        ;(this as unknown as { __swiperStart?: number }).__swiperStart = this.data.vertical
+          ? Number(touch?.clientY ?? touch?.y ?? 0)
+          : Number(touch?.clientX ?? touch?.x ?? 0)
+      },
+      handleTouchEnd(event: glassEasel.ShadowedEvent<unknown>) {
+        const start = (this as unknown as { __swiperStart?: number }).__swiperStart
+        if (start === undefined) return
+        const touch = (event as unknown as { changedTouches?: { clientX?: number; clientY?: number; x?: number; y?: number }[] }).changedTouches?.[0]
+        const end = this.data.vertical
+          ? Number(touch?.clientY ?? touch?.y ?? start)
+          : Number(touch?.clientX ?? touch?.x ?? start)
+        const delta = end - start
+        if (Math.abs(delta) < 40) return
+        const direction = delta < 0 ? 1 : -1
+        this.setActive(Number(this.data.activeIndex) + direction, 'touch')
+      },
+    },
+  }).general()
+}

@@ -1,0 +1,1 @@
+<input id="native-input" class="tiny-input class" style="{{style}}" value="{{value}}" placeholder="{{placeholder}}" disabled="{{disabled}}" type="{{type}}" catchinput="handleInput" catchchange="handleChange" />

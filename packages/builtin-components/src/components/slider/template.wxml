@@ -1,0 +1,1 @@
+<input id="native-input" class="tiny-slider" type="range" min="{{min}}" max="{{max}}" step="{{step}}" value="{{value}}" disabled="{{disabled}}" catchinput="handleChanging" catchchange="handleChange" />

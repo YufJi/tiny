@@ -1,0 +1,1 @@
+<label class="tiny-switch {{checked ? 'is-checked' : ''}}"><input id="native-input" type="checkbox" checked="{{checked}}" disabled="{{disabled}}" catchchange="handleChange" /><view class="tiny-switch-control" /></label>

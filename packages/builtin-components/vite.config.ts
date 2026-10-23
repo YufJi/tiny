@@ -8,7 +8,7 @@ export default defineConfig({
       fileName: (format) => (format === 'es' ? 'index.js' : 'index.cjs'),
     },
     rollupOptions: {
-      external: ['glass-easel', '@tiny/template-compiler'],
+      external: ['glass-easel'],
     },
     minify: false,
     sourcemap: true,

@@ -1,0 +1,1 @@
+<button class="tiny-button class" style="{{style}}" hover-class="{{hoverClass}}" catchtap="handleTap"><slot /></button>

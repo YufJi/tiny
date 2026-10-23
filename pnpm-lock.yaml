@@ -54,13 +54,13 @@ importers:
 
   packages/builtin-components:
     dependencies:
-      '@tiny/template-compiler':
-        specifier: workspace:*
-        version: link:../template-compiler
       glass-easel:
         specifier: 1.1.0
         version: 1.1.0
     devDependencies:
+      '@tiny/template-compiler':
+        specifier: workspace:*
+        version: link:../template-compiler
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1
