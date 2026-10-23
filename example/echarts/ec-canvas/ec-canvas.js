@@ -63,15 +63,13 @@ Component({
       echarts.setCanvasCreator(() => {
         return canvas;
       });
-
+      const canvasDpr = wx.getSystemInfoSync().pixelRatio // 微信旧的canvas不能传入dpr
       var query = wx.createSelectorQuery().in(this);
+
       query.select('.ec-canvas').boundingClientRect(res => {
-        if (typeof callback === 'function') {
-          this.chart = callback(canvas, res.width, res.height);
-        }
-        else if (this.data.ec && this.data.ec.onInit) {
-          this.chart = this.data.ec.onInit(canvas, res.width, res.height);
-        }
+        EventHub.emit('ec-init', canvas, res.width, res.height, canvasDpr, (chart) => {
+          this.chart = chart
+        })
       }).exec();
     },
 
