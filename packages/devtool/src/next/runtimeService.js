@@ -1,6 +1,8 @@
 import { bootServiceThread, listenForRuntimePort } from '@tiny/runtime';
 
-const manifestPromise = fetch('/runtime/generated/manifest.json').then((response) => response.json());
+const appId = new URLSearchParams(window.location.search).get('app') || 'demo';
+const generatedBase = `/runtime/apps/${appId}/generated`;
+const manifestPromise = fetch(`${generatedBase}/manifest.json`).then((response) => response.json());
 const importGenerated = (url) => new Function('url', 'return import(url)')(url);
 
 // Wait for the manifest before announcing readiness: the host delivers the
@@ -12,7 +14,7 @@ manifestPromise.then((manifest) => {
       transport,
       manifest,
       initialPath: manifest.pages[0].path,
-      loadArtifacts: () => importGenerated('/runtime/generated/service.js'),
+      loadArtifacts: () => importGenerated(`${generatedBase}/service.js`),
     });
   });
 });

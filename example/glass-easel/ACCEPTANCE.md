@@ -50,22 +50,29 @@ serving the small demo.
 
 ## Runtime debugger stage
 
-The gate then compiles the P0 demo into `packages/devtool/static/runtime/generated`, starts
-the devtool (`/next.html`), and verifies the runtime debugger:
+The gate compiles both `example/glass-easel/mini` (demo) and `example/mini` (real) into
+`packages/devtool/static/runtime/apps/*/generated`, starts the devtool, and verifies the
+runtime debugger:
 
 1. `DevtoolRuntimeClient` boots the dual-thread host and reports `running`.
 2. Page stack, current page, and structured diagnostics are projected into Redux.
 3. The mini program renders inside the debugger viewport.
 4. `Navigate` / `Back` drive the runtime through host API handlers.
-5. `Reload` restarts the runtime and `Terminate` removes both thread iframes.
-6. No console or page errors occur.
+5. The app selector switches from the demo to the existing example app.
+6. `Reload` restarts the runtime and `Terminate` removes both thread iframes.
+7. No console or page errors occur.
 
+The debugger is the devtool default page; the legacy shell remains at `/legacy.html`.
 Run it manually with:
 
 ```bash
 pnpm dev:devtool
-# open http://localhost:8080/next.html
+# open http://localhost:8080/
 ```
+
+`dev:devtool` starts watchers for both example apps plus the rspack dev server. Editing a
+WXML/WXSS/JS file recompiles within ~250ms; press `Reload` in the panel to boot the new
+artifacts.
 
 ## Browser selection
 

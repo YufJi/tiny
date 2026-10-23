@@ -2,14 +2,16 @@ import * as glassEasel from 'glass-easel';
 import { CurrentWindowBackendContext } from 'glass-easel';
 import { bootRenderThread, listenForRuntimePort } from '@tiny/runtime';
 
+const appId = new URLSearchParams(window.location.search).get('app') || 'demo';
+const generatedBase = `/runtime/apps/${appId}/generated`;
 const importGenerated = (url) => new Function('url', 'return import(url)')(url);
 
 const assetsPromise = (async () => {
-  const manifest = await fetch('/runtime/generated/manifest.json').then((response) => response.json());
-  const renderModule = await importGenerated('/runtime/generated/render.js');
+  const manifest = await fetch(`${generatedBase}/manifest.json`).then((response) => response.json());
+  const renderModule = await importGenerated(`${generatedBase}/render.js`);
   const styles = Object.fromEntries(await Promise.all(
     manifest.styles.map(async (style) => {
-      const response = await fetch(`/runtime/generated/${style.outputPath}`);
+      const response = await fetch(`${generatedBase}/${style.outputPath}`);
       return [style.outputPath, await response.text()];
     }),
   ));

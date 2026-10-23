@@ -6,4 +6,4 @@ dist/
 .turbo/
 .sisyphus/
 example/glass-easel/generated/
-packages/devtool/static/runtime/generated/
+packages/devtool/static/runtime/

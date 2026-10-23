@@ -43,7 +43,7 @@ if (process.env.SKIP_BROWSER === '1') {
 
   runStep('Restore P0 demo artifacts', ['pnpm', 'compile:glass-easel'])
 
-  runStep('Compile devtool runtime artifacts', ['pnpm', 'compile:devtool'])
+  runStep('Compile devtool runtime artifacts', ['pnpm', 'compile:devtool:all'])
   await withDevtoolServer(() => runDevtoolAcceptance({ baseUrl: devtoolUrl }))
 }
 
@@ -67,7 +67,7 @@ function runStep(name, command) {
 async function withServer(run) {
   const server = startDevServer()
   try {
-    await waitForServer(baseUrl, server.log)
+    await waitForServer(baseUrl, server.log, baseUrl, server.child)
     await run()
   } finally {
     await stopDevServer(server.child)
@@ -77,7 +77,7 @@ async function withServer(run) {
 async function withDevtoolServer(run) {
   const server = startDevtoolServer()
   try {
-    await waitForServer(devtoolUrl, server.log, `${devtoolUrl}/next.html`)
+    await waitForServer(devtoolUrl, server.log, `${devtoolUrl}/`, server.child)
     await run()
   } finally {
     await stopDevServer(server.child)
@@ -150,9 +150,12 @@ function startDevServer() {
   return { child, log }
 }
 
-async function waitForServer(url, log, probeUrl = url, timeoutMs = 30_000) {
+async function waitForServer(url, log, probeUrl = url, child, timeoutMs = 30_000) {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
+    if (child && child.exitCode !== null) {
+      throw new Error(`dev server exited before becoming ready (code ${child.exitCode})\n${log.join('')}`)
+    }
     try {
       const response = await fetch(probeUrl, { method: 'GET' })
       if (response.ok) {

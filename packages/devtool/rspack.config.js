@@ -157,16 +157,16 @@ module.exports = {
       ],
     }),
     new HtmlRspackPlugin({
-      title: '小程序浏览器调试',
-      template: path.join(root, 'host.html'),
-      filename: 'index.html',
-      chunks: ['index'],
-    }),
-    new HtmlRspackPlugin({
       title: 'Tiny Runtime Debugger',
       template: path.join(root, 'next.html'),
-      filename: 'next.html',
+      filename: 'index.html',
       chunks: ['nextHost'],
+    }),
+    new HtmlRspackPlugin({
+      title: '小程序浏览器调试（legacy）',
+      template: path.join(root, 'host.html'),
+      filename: 'legacy.html',
+      chunks: ['index'],
     }),
     new HtmlRspackPlugin({
       title: 'Tiny service thread',

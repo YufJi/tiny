@@ -397,7 +397,7 @@ export async function runDevtoolAcceptance({ baseUrl }) {
 
     await step('boot the runtime debugger', async () => {
       currentStep = 'boot the runtime debugger'
-      await page.goto(`${baseUrl}/next.html`, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
+      await page.goto(`${baseUrl}/`, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
       await waitForStatus('running')
       assert.equal(pageErrors.length, 0, `page errors during boot: ${pageErrors.join(' | ')}`)
     })
@@ -444,6 +444,27 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         { timeout: STEP_TIMEOUT },
       )
       assert.deepEqual((await state()).pageStack, ['page-1'])
+    })
+
+    await step('switch the debugger to the existing example app', async () => {
+      currentStep = 'switch the debugger to the existing example app'
+      assert.equal(await page.locator('select').count(), 1, 'app selector is missing')
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT }),
+        page.selectOption('select', 'real'),
+      ])
+      await waitForStatus('running')
+      const switched = await state()
+      assert.equal(switched.currentPage, 'pages/todos/todos')
+      assert.equal(
+        switched.diagnostics.filter((item) => item.severity === 'error').length,
+        0,
+        'switched app reported a fatal diagnostic',
+      )
+      const renderFrame = page.frames().find((frame) => frame.url().includes('next-render.html'))
+      assert.ok(renderFrame, 'render thread iframe was not created for the switched app')
+      const body = await renderFrame.locator('#app').innerText()
+      assert.ok(body.includes('Learning Javascript'), 'existing example app did not render in the debugger')
     })
 
     await step('reload and terminate from the debugger', async () => {

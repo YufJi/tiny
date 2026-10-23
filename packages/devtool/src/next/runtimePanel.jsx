@@ -17,12 +17,20 @@ const SEVERITY_COLORS = {
   state: '#a78bfa',
 };
 
+const APPS = [
+  { id: 'demo', label: 'P0 demo' },
+  { id: 'real', label: 'example/mini' },
+];
+
 class RuntimePanel extends PureComponent {
   constructor(props) {
     super(props);
     this.containerRef = React.createRef();
     this.client = null;
     this.unsubscribe = null;
+    const params = new URLSearchParams(window.location.search);
+    this.appId = APPS.some((app) => app.id === params.get('app')) ? params.get('app') : 'demo';
+    this.generatedBase = `/runtime/apps/${this.appId}/generated`;
     this.state = {
       navPath: '',
       manifestPath: '',
@@ -30,13 +38,13 @@ class RuntimePanel extends PureComponent {
   }
 
   async componentDidMount() {
-    const manifest = await fetch('/runtime/generated/manifest.json').then((response) => response.json());
+    const manifest = await fetch(`${this.generatedBase}/manifest.json`).then((response) => response.json());
     const initialPath = new URLSearchParams(window.location.search).get('path') || manifest.pages[0].path;
     this.setState({ navPath: initialPath, manifestPath: manifest.pages[0].path });
     this.client = new DevtoolRuntimeClient({
       manifest,
-      serviceUrl: '/next-service.html',
-      renderUrl: '/next-render.html',
+      serviceUrl: `/next-service.html?app=${this.appId}`,
+      renderUrl: `/next-render.html?app=${this.appId}`,
       initialPath,
       container: this.containerRef.current,
       systemInfo: {
@@ -114,6 +122,15 @@ class RuntimePanel extends PureComponent {
       <div style={{ display: 'flex', height: '100vh', fontFamily: 'system-ui, sans-serif', background: '#0f172a', color: '#e2e8f0' }}>
         <div style={{ width: 380, padding: 16, boxSizing: 'border-box', borderRight: '1px solid #1e293b', overflow: 'auto' }}>
           <h2 style={{ margin: '0 0 12px', fontSize: 18 }}>Tiny Runtime</h2>
+          <select
+            value={this.appId}
+            onChange={(event) => { window.location.search = `?app=${event.target.value}`; }}
+            style={{ width: '100%', padding: '6px 8px', marginBottom: 12 }}
+          >
+            {APPS.map((app) => (
+              <option key={app.id} value={app.id}>{app.label}</option>
+            ))}
+          </select>
           {this.renderStatus()}
           {this.renderControls()}
           <div style={{ marginBottom: 12 }}>
