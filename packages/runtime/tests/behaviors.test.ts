@@ -127,6 +127,14 @@ describe('normalizeComponentDefinition', () => {
     )
   })
 
+  test('stops cyclic behavior graphs', () => {
+    const cyclic = registerBehavior({ data: { value: 1 } })
+    cyclic.behaviors = [cyclic]
+    const definition = normalizeComponentDefinition({ behaviors: [cyclic] }, 'components/a')
+    expect(definition.data).toEqual({ value: 1 })
+    expect(definition.behaviors.has(cyclic)).toBe(true)
+  })
+
   test('supports component export marker', () => {
     const definition = normalizeComponentDefinition({
       behaviors: ['wx://component-export'],

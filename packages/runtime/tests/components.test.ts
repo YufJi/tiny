@@ -10,7 +10,7 @@ import { bootServiceThread } from '../src/service'
 const PAGE_PATH = 'pages/index/index'
 const COMPONENT_PATH = 'components/badge/badge'
 const PAGE_WXML =
-  '<view class="page"><badge id="badge" text="{{badgeText}}" bindchange="onBadgeChange">slot content</badge><text class="detail">{{badgeDetail}}</text></view>'
+  '<view class="page"><badge wx:if="{{showBadge}}" id="badge" text="{{badgeText}}" bindchange="onBadgeChange">slot content</badge><text class="detail">{{badgeDetail}}</text></view>'
 const BADGE_WXML = '<view class="badge"><text>{{text}}:{{count}}</text><slot /></view>'
 
 const globalKeys = ['App', 'Page', 'Component', 'Behavior', 'getApp', 'wx'] as const
@@ -112,7 +112,7 @@ describe('mini-program custom components', () => {
     const pageLifetimeEvents: string[] = []
     ;(globalObject.App as (options: Record<string, unknown>) => unknown)({})
     ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
-      data: { badgeText: 'badge', badgeDetail: '' },
+      data: { badgeText: 'badge', badgeDetail: '', showBadge: true },
       onBadgeChange(event: { detail: { count: number } }) {
         this.setData({ badgeDetail: `changed:${event.detail.count}` })
       },
@@ -173,6 +173,16 @@ describe('mini-program custom components', () => {
     await host.service.control('page', 'hide', { pageId: result.service.pageId })
     await host.service.control('page', 'show', { pageId: result.service.pageId })
     expect(pageLifetimeEvents).toEqual(['hide', 'show'])
+    expect([...service.componentInstances.keys()]).toEqual(['component-1'])
+
+    service.activePage?.setData({ showBadge: false })
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(service.componentInstances.size).toBe(0)
+    expect(service.componentTree.descendants(`page:${result.service.pageId}`)).toEqual([])
+
+    await host.service.control('page', 'unload', { pageId: result.service.pageId })
+    expect(service.componentInstances.size).toBe(0)
+    expect(service.componentTree.pageRoot(result.service.pageId)).toBeUndefined()
 
     await host.close()
   })

@@ -78,6 +78,27 @@ describe('RelationManager', () => {
     expect(manager.getRelationNodes('parent', './child')).toEqual([])
   })
 
+  test('returns relation nodes in tree order', () => {
+    const linked: string[] = []
+    const relations = parentChildRelations(linked)
+    relations.set('child-1', relations.get('child')!)
+    relations.set('child-2', relations.get('child')!)
+    const { tree, instances, manager } = createManager(relations)
+    instances.set('parent', instance('parent', 'components/parent/parent'))
+    instances.set('child-1', instance('child-1', 'components/child/child'))
+    instances.set('child-2', instance('child-2', 'components/child/child'))
+    tree.add({ componentId: 'parent', pageId: 'page-1', path: 'components/parent/parent', tag: 'parent' })
+    manager.handleAttach('parent')
+    tree.add({ componentId: 'child-1', pageId: 'page-1', path: 'components/child/child', tag: 'child', parentId: 'parent' })
+    manager.handleAttach('child-1')
+    tree.add({ componentId: 'child-2', pageId: 'page-1', path: 'components/child/child', tag: 'child', parentId: 'parent' })
+    manager.handleAttach('child-2')
+    expect(manager.getRelationNodes('parent', './child').map((node) => node.componentId)).toEqual([
+      'child-1',
+      'child-2',
+    ])
+  })
+
   test('does not link when only one side declares the relation', () => {
     const linked: string[] = []
     const relations = parentChildRelations(linked)
