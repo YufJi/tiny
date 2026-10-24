@@ -212,6 +212,13 @@ export class MiniProgramPageInstance {
     for (const [name, method] of this.methods) {
       ;(this as unknown as Record<string, unknown>)[name] = method
     }
+    // WeChat exposes lifecycle methods on the page object itself; Taro reads
+    // e.g. `this.onReady.called`, so bind lifecycle functions onto the instance.
+    for (const [name, value] of Object.entries(options)) {
+      if (typeof value === 'function') {
+        ;(this as unknown as Record<string, unknown>)[name] = value.bind(this)
+      }
+    }
 
     const setData = this.setData.bind(this)
     Object.assign(this, { setData })
@@ -258,6 +265,7 @@ export function installMiniProgramGlobals(
   registry: MiniProgramPageRegistry,
   apiHost: MiniProgramApiHost = {},
   onUnsupportedApi?: (name: string) => void,
+  getCurrentPages?: () => unknown[],
 ): void {
   const globalObject = globalThis as unknown as Record<string, unknown>
   globalObject.App = (options: MiniProgramAppOptions) => registry.registerApp(options)
@@ -265,13 +273,27 @@ export function installMiniProgramGlobals(
   globalObject.Component = (options: MiniProgramPageOptions) => registry.registerComponent(options)
   globalObject.Behavior = (options: MiniProgramPageOptions) => options
   globalObject.getApp = () => registry.getApp()
+  globalObject.getCurrentPages = () => getCurrentPages?.() ?? []
+  const rawWxProperties = new Set([
+    'webpackJsonp',
+    'cloud',
+    'env',
+    '__wxConfig',
+    '__wxAppCode__',
+    '__wxAppData',
+  ])
   globalObject.wx = new Proxy(apiHost, {
     get(target, property) {
-      if (typeof property !== 'string' || property in target) return target[property as keyof typeof target]
+      if (typeof property !== 'string') return Reflect.get(target, property)
+      if (property in target) return Reflect.get(target, property)
+      if (rawWxProperties.has(property)) return undefined
       return (...args: unknown[]) => {
         onUnsupportedApi?.(property)
         return undefined
       }
+    },
+    set(target, property, value) {
+      return Reflect.set(target, property, value)
     },
   })
 }
@@ -304,6 +326,16 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
   }
   return {
     getSystemInfoSync: () => cloneJsonSafe(context.getSystemInfoSnapshot()),
+    getSystemInfo: (params?: unknown) => {
+      const info = cloneJsonSafe(context.getSystemInfoSnapshot())
+      const callbacks = (params ?? {}) as {
+        success?: (value: unknown) => void
+        complete?: (value: unknown) => void
+      }
+      callbacks.success?.(info)
+      callbacks.complete?.(info)
+      return info
+    },
     getStorageSync: (key: unknown) => cloneJsonSafe(context.getStorageSnapshot()[String(key)]),
     setStorageSync: (key: unknown, value: unknown) => {
       const normalizedKey = String(key)
@@ -503,6 +535,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       code: 'UNSUPPORTED_API',
       message: `wx.${name} is not supported in the P0 runtime.`,
     }, activePage?.pageId),
+    () => pageStack,
   )
   const createComponentInstance = (
     componentId: string,
@@ -580,71 +613,89 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   }
 
   connection.onControl('runtime', 'bootstrap', async (message) => {
-    const payload = message.payload as {
-      manifest?: ServiceThreadOptions['manifest']
-      initialPath?: string
-      systemInfo?: SystemInfoSnapshot
-      storage?: StorageSnapshot
-    }
-    currentPath = payload.initialPath ?? currentPath
-    await artifactsReady
-    if (payload.systemInfo) systemInfoSnapshot = cloneJsonSafe(payload.systemInfo)
-    if (payload.storage) Object.assign(storageSnapshot, cloneJsonSafe(payload.storage))
-    componentSchemas = buildComponentSchemas(
-      options.manifest.components,
-      registry.components as Map<string, MiniProgramComponentOptions>,
-    )
-    const initializeComponent = (path: string, reference: string): MiniProgramComponentInstance | null => {
-      const componentPath = resolveComponentReference(path, reference)
-      const existing = componentInstances.get(componentPath)
-      if (existing) return existing
-      const schema = componentSchemas.find((component) => component.path === componentPath)
-      const definition = schema ? registry.components.get(componentPath) : undefined
-      if (!schema || !definition) return null
-      const component = createComponentInstance(
-        schema.componentId,
-        componentPath,
-        definition as MiniProgramComponentOptions,
+    try {
+      const payload = message.payload as {
+        manifest?: ServiceThreadOptions['manifest']
+        initialPath?: string
+        systemInfo?: SystemInfoSnapshot
+        storage?: StorageSnapshot
+      }
+      currentPath = payload.initialPath ?? currentPath
+      await artifactsReady
+      if (payload.systemInfo) systemInfoSnapshot = cloneJsonSafe(payload.systemInfo)
+      if (payload.storage) Object.assign(storageSnapshot, cloneJsonSafe(payload.storage))
+      componentSchemas = buildComponentSchemas(
+        options.manifest.components,
+        registry.components as Map<string, MiniProgramComponentOptions>,
       )
-      componentInstances.set(componentPath, component)
-      for (const nestedReference of Object.values(schema.using)) {
-        initializeComponent(componentPath, nestedReference)
+      const initializeComponent = (path: string, reference: string): MiniProgramComponentInstance | null => {
+        const componentPath = resolveComponentReference(path, reference)
+        const existing = componentInstances.get(componentPath)
+        if (existing) return existing
+        const schema = componentSchemas.find((component) => component.path === componentPath)
+        const definition = schema ? registry.components.get(componentPath) : undefined
+        if (!schema || !definition) return null
+        const component = createComponentInstance(
+          schema.componentId,
+          componentPath,
+          definition as MiniProgramComponentOptions,
+        )
+        componentInstances.set(componentPath, component)
+        for (const nestedReference of Object.values(schema.using)) {
+          initializeComponent(componentPath, nestedReference)
+        }
+        return component
       }
-      return component
-    }
-    if (pageStack.length === 0) {
-      const pageArtifact = findPageArtifact(options.manifest, currentPath)
-      const currentPage = createPageInstance(currentPath, {})
-      const usingComponents = pageArtifact?.configuration?.effective.usingComponents ?? {}
-      const usingSources = pageArtifact?.configuration?.usingComponentsSource ?? {}
-      for (const [tag, reference] of Object.entries(usingComponents)) {
-        const sourcePath = usingSources[tag] === 'global' ? '' : currentPath
-        initializeComponent(sourcePath, String(reference))
+      if (pageStack.length === 0) {
+        const pageArtifact = findPageArtifact(options.manifest, currentPath)
+        const currentPage = createPageInstance(currentPath, {})
+        const usingComponents = pageArtifact?.configuration?.effective.usingComponents ?? {}
+        const usingSources = pageArtifact?.configuration?.usingComponentsSource ?? {}
+        for (const [tag, reference] of Object.entries(usingComponents)) {
+          const sourcePath = usingSources[tag] === 'global' ? '' : currentPath
+          initializeComponent(sourcePath, String(reference))
+        }
+        currentPage.triggerLifecycle('onLoad', [currentPage.query])
+        currentPage.triggerLifecycle('onShow')
+        if (pageArtifact?.bodyType === 'component') {
+          currentPage.triggerComponentLifecycle('attached')
+          currentPage.triggerComponentLifecycle('ready')
+        }
+        sendRuntimeState()
       }
-      currentPage.triggerLifecycle('onLoad', [currentPage.query])
-      currentPage.triggerLifecycle('onShow')
-      if (pageArtifact?.bodyType === 'component') {
-        currentPage.triggerComponentLifecycle('attached')
-        currentPage.triggerComponentLifecycle('ready')
+      const currentPage = pageStack.at(-1)!
+      return {
+        status: 'ready',
+        registeredPages: [...registry.pages.keys()],
+        currentPath,
+        pageId: currentPage.pageId,
+        initialData: cloneJsonSafe(currentPage.data),
+        componentSchemas,
       }
-      sendRuntimeState()
-    }
-    const currentPage = pageStack.at(-1)!
-    return {
-      status: 'ready',
-      registeredPages: [...registry.pages.keys()],
-      currentPath,
-      pageId: currentPage.pageId,
-      initialData: cloneJsonSafe(currentPage.data),
-      componentSchemas,
+    } catch (error) {
+      connection.sendDiagnostic('error', {
+        code: 'BOOTSTRAP_ERROR',
+        message: error instanceof Error ? error.message : String(error),
+        details: error instanceof Error && error.stack ? { stack: error.stack } : {},
+      })
+      throw error
     }
   })
 
   connection.onControl('page', 'ready', async (message) => {
-    const page = requireActivePage(pageInstances, (message.payload as { pageId?: string }).pageId, activePage)
-    page.triggerLifecycle('onReady')
-    sendRuntimeState()
-    return { status: 'ready', pageId: page.pageId }
+    try {
+      const page = requireActivePage(pageInstances, (message.payload as { pageId?: string }).pageId, activePage)
+      page.triggerLifecycle('onReady')
+      sendRuntimeState()
+      return { status: 'ready', pageId: page.pageId }
+    } catch (error) {
+      connection.sendDiagnostic('error', {
+        code: 'PAGE_READY_ERROR',
+        message: error instanceof Error ? error.message : String(error),
+        details: error instanceof Error && error.stack ? { stack: error.stack } : {},
+      })
+      throw error
+    }
   })
 
   connection.onControl('page', 'navigateTo', async (message) => {

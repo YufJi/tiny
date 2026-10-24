@@ -7,9 +7,10 @@ pnpm install
 pnpm accept:glass-easel
 ```
 
-The gate builds the active glass-easel packages, runs bridge/compiler/built-in/runtime
-tests, compiles this example, starts the standalone dual-thread host, and drives the
-full P0 flow in a headless browser.
+The gate builds the active glass-easel packages, runs bridge/compiler/template/
+stylesheet/components/runtime tests, compiles this example, starts the standalone
+dual-thread host, and drives the full P0, existing-app, Taro 3, and debugger flows
+in a headless browser.
 
 The browser stage verifies:
 
@@ -53,6 +54,24 @@ After the P0 demo flow, the gate compiles `example/mini` (3 pages + 1 subpackage
 
 The P0 demo artifacts are recompiled after this stage, so `pnpm dev:glass-easel` keeps
 serving the small demo.
+
+## Taro 3 example stage
+
+The gate then compiles the prebuilt Taro 3 output in `example/todo` (webpack
+`webpackJsonp` bundles, `base.wxml`, external WXS, recursive templates) and
+drives `pages/index/index`:
+
+1. Boots the Taro app and renders the Redux-backed todo list (`Use Redux`,
+   `1 item left`).
+2. Adds a todo through the Taro input by filling it and pressing Enter.
+3. Toggles a checkbox, switches `Active` / `Completed` filters, and clears
+   completed todos.
+4. Keeps page, console, and runtime error output empty.
+
+This stage also guards the compatibility pieces Taro depends on: `webpackJsonp`
+on `wx`, `getCurrentPages`, callback-style `wx.getSystemInfo`, external WXS
+modules, mutually recursive component metadata, and lifecycle methods exposed
+on the page instance.
 
 ## Runtime debugger stage
 

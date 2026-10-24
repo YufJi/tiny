@@ -26,6 +26,25 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
         this.setData({ value })
         this.triggerEvent('change', { value }, { bubbles: true, composed: true })
       },
+      handleFocus(event: glassEasel.ShadowedEvent<unknown>) {
+        const value = valueFromEvent(event) ?? this.data.value
+        this.triggerEvent('focus', { value }, { bubbles: true, composed: true })
+      },
+      handleBlur(event: glassEasel.ShadowedEvent<unknown>) {
+        const value = valueFromEvent(event) ?? this.data.value
+        this.setData({ value })
+        this.triggerEvent('blur', { value }, { bubbles: true, composed: true })
+      },
+      handleKeyDown(event: glassEasel.ShadowedEvent<unknown>) {
+        const detail = (event.detail ?? {}) as { key?: string; keyCode?: number; which?: number; value?: unknown }
+        const key = String(detail.key ?? '')
+        const keyCode = Number(detail.keyCode ?? detail.which ?? 0)
+        const value = detail.value ?? this.data.value
+        this.triggerEvent('keydown', { key, keyCode, value }, { bubbles: true, composed: true })
+        if (key === 'Enter' || keyCode === 13) {
+          this.triggerEvent('confirm', { value }, { bubbles: true, composed: true })
+        }
+      },
     },
   }).general()
 }

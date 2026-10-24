@@ -1,3 +1,4 @@
+<wxs module="external" src="./utils.wxs" />
 <view class="page">
   <badge text="{{message}}" />
   <block wx:for="{{items}}" wx:key="*this">

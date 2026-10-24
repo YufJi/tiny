@@ -53,6 +53,7 @@ export class GlassEaselRuntimeAdapter {
   private readonly templates: TemplateRegistry
   private readonly styleScopeIds = new Map<string, number>()
   private readonly componentDefinitions = new Map<string, glassEasel.GeneralComponentDefinition>()
+  private readonly registeringComponents = new Set<string>()
   private readonly pages = new Map<string, PageArtifact>()
   private readonly mountedComponents = new Map<string, glassEasel.GeneralComponent>()
   private readonly componentsByPageId = new Map<string, glassEasel.GeneralComponent>()
@@ -292,11 +293,16 @@ export class GlassEaselRuntimeAdapter {
     const existing = this.componentDefinitions.get(schema.path)
     if (existing) return existing
 
+    this.registeringComponents.add(schema.path)
     const using = Object.fromEntries(
       Object.entries(schema.using).map(([tag, reference]) => {
         const path = this.resolveComponentReference(schema.path, reference)
         const dependency = this.componentSchemas.get(path)
-        return [tag, dependency ? this.registerComponentDefinition(dependency) : path]
+        if (!dependency) return [tag, path]
+        // Taro emits mutually recursive component metadata; break the cycle by
+        // referencing the path while the definition is still being built.
+        if (this.registeringComponents.has(path)) return [tag, path]
+        return [tag, this.registerComponentDefinition(dependency)]
       }),
     )
     const styleScopeId = this.styleScopeIds.get(`${schema.path}.wxss`)
@@ -358,6 +364,7 @@ export class GlassEaselRuntimeAdapter {
       })
       .registerComponent()
 
+    this.registeringComponents.delete(schema.path)
     this.componentDefinitions.set(schema.path, definition)
     return definition
   }

@@ -12,8 +12,8 @@ A mini-program engine built on glass-easel.
 
 Legacy `packages/base`, `packages/compiler`, and the old devtool shell were
 removed after the glass-easel migration. Do not reintroduce
-JSBridge/executeJavaScript-based code. `example/todo` and `example/echarts`
-remain as historical reference demos and are not part of the active build.
+JSBridge/executeJavaScript-based code. `example/todo` is the Taro 3 compatibility
+target and part of acceptance; `example/echarts` remains a historical reference demo.
 
 ## Packages
 
@@ -60,7 +60,8 @@ The end-to-end gate is `pnpm accept:glass-easel`, which runs:
 2. unit tests for all packages
 3. P0 demo browser flow
 4. `example/mini` browser flow
-5. runtime debugger browser flow
+5. Taro 3 (`example/todo`) browser flow
+6. runtime debugger browser flow
 
 `SKIP_BROWSER=1`, `TINY_ACCEPT_PORT`, `TINY_DEVTOOL_PORT`, and `HEADED=1`
 control the gate. It requires a Chromium browser (`playwright-core` with system

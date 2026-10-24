@@ -50,7 +50,8 @@ pnpm dev:devtool             # 调试器：http://localhost:8080
 
 - `example/glass-easel`：P0 验收用的小程序 demo
 - `example/mini`：完整示例（todos / add-todo / bar ECharts / 子包页面）
-- `example/todo`、`example/echarts`：历史示例，保留参考，不接入当前构建链路
+- `example/todo`：Taro 3 预编译产物，已纳入验收（webpack/WXS/递归模板兼容）
+- `example/echarts`：历史示例，保留参考
 
 ```bash
 pnpm compile:glass-easel     # 编译 example/glass-easel/mini

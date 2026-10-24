@@ -1,1 +1,14 @@
-<input id="native-input" class="tiny-input class" style="{{style}}" value="{{value}}" placeholder="{{placeholder}}" disabled="{{disabled}}" type="{{type}}" catchinput="handleInput" catchchange="handleChange" />
+<input
+  id="native-input"
+  class="tiny-input class"
+  style="{{ style }}"
+  value="{{ value }}"
+  placeholder="{{ placeholder }}"
+  disabled="{{ disabled }}"
+  type="{{ type }}"
+  catchinput="handleInput"
+  catchchange="handleChange"
+  catchfocus="handleFocus"
+  catchblur="handleBlur"
+  catchkeydown="handleKeyDown"
+/>

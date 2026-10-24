@@ -498,8 +498,10 @@ class MiniProgramCompiler {
     }
 
     for (const [relativePath, absolutePath] of [...byRelative.entries()].filter(([file]) => WXS_EXTENSIONS.some((ext) => file.endsWith(ext)))) {
-      const scriptPath = withoutExtension(relativePath)
-      group.addScript(scriptPath, await fs.readFile(absolutePath, 'utf8'))
+      const content = await fs.readFile(absolutePath, 'utf8')
+      // WXML references may include the extension (`./utils.wxs`) or omit it.
+      group.addScript(relativePath, content)
+      group.addScript(withoutExtension(relativePath), content)
     }
 
     if (this.diagnostics.some((item) => item.severity === 'error')) return

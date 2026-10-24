@@ -5,6 +5,7 @@ import {
   runBrowserAcceptance,
   runDevtoolAcceptance,
   runMiniProgramAcceptance,
+  runTaroAcceptance,
 } from './glass-easel-browser.mjs'
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -41,6 +42,14 @@ if (process.env.SKIP_BROWSER === '1') {
   ])
   await withServer(() => runMiniProgramAcceptance({ baseUrl }))
 
+  runStep('Compile Taro 3 example', [
+    'node',
+    'scripts/compile-mini.mjs',
+    'example/todo',
+    'example/glass-easel/generated',
+  ])
+  await withServer(() => runTaroAcceptance({ baseUrl }))
+
   runStep('Restore P0 demo artifacts', ['pnpm', 'compile:glass-easel'])
 
   runStep('Compile devtool runtime artifacts', ['pnpm', 'compile:devtool:all'])
@@ -51,7 +60,8 @@ console.log(`
 ✅ P0 acceptance gate passed.
 
 Automated: build, compiler/runtime tests, P0 demo browser flow, the existing example app
-flow, and the runtime debugger flow (boot → state projection → navigate/reload/terminate).
+flow, the Taro 3 output flow, and the runtime debugger flow
+(boot → state projection → navigate/reload/terminate).
 Manual debug hosts: pnpm dev:glass-easel, pnpm dev:devtool
 `)
 

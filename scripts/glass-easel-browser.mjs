@@ -501,6 +501,99 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
   }
 }
 
+export async function runTaroAcceptance({ baseUrl }) {
+  const browser = await launchBrowser()
+  const page = await browser.newPage({ viewport: { width: 420, height: 860 } })
+  const pageErrors = []
+  const consoleErrors = []
+  const taroFailureShot = path.join(rootDir, 'example/glass-easel/generated/acceptance-taro-failure.png')
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text())
+  })
+
+  let currentStep = 'start'
+  try {
+    await step('boot the Taro 3 app', async () => {
+      currentStep = 'boot the Taro 3 app'
+      await page.goto(`${baseUrl}?path=pages/index/index`, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
+      await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
+      assert.equal(pageErrors.length, 0, `page errors during boot: ${pageErrors.join(' | ')}`)
+    })
+
+    const render = page.frames().find((frame) => frame.url().includes('render.html'))
+    assert.ok(render, 'render iframe was not created')
+    const text = () => render.locator('#app').innerText()
+    const waitForText = async (needle) => {
+      currentStep = `wait for text "${needle}"`
+      await render.waitForFunction(
+        (expected) => (document.querySelector('#app')?.innerText ?? '').includes(expected),
+        needle,
+        { timeout: STEP_TIMEOUT },
+      )
+    }
+
+    await step('render the Taro todos page', async () => {
+      currentStep = 'render the Taro todos page'
+      const body = await waitForText('Use Redux').then(text)
+      assert.ok(body.includes('1 item left'), 'Taro state did not render')
+      assert.ok(body.includes('What needs to be done?') || (await render.locator('input').count()) > 0, 'Taro input did not render')
+    })
+
+    await step('add a todo through the Taro input', async () => {
+      currentStep = 'add a todo through the Taro input'
+      const input = render.locator('input[placeholder="What needs to be done?"]')
+      await input.fill('Taro item')
+      await input.press('Enter')
+      await waitForText('Taro item')
+      await waitForText('2 items left')
+    })
+
+    await step('toggle and filter Taro todos', async () => {
+      currentStep = 'toggle and filter Taro todos'
+      await render.locator('input[type="checkbox"]').first().click()
+      await waitForText('1 item left')
+      await render.getByText('Active', { exact: true }).click()
+      await waitForText('Taro item')
+      await render.getByText('Completed', { exact: true }).click()
+      await waitForText('Use Redux')
+    })
+
+    await step('clear completed Taro todos', async () => {
+      currentStep = 'clear completed Taro todos'
+      await render.getByText('Clear completed', { exact: true }).click()
+      await render.getByText('All', { exact: true }).click()
+      await waitForText('Taro item')
+      const remaining = await text()
+      assert.ok(!remaining.includes('Use Redux'), 'completed todo was not removed')
+    })
+
+    await step('keep the Taro console free of errors', async () => {
+      currentStep = 'keep the Taro console free of errors'
+      assert.equal(pageErrors.length, 0, `page errors: ${pageErrors.join(' | ')}`)
+      assert.equal(consoleErrors.length, 0, `console errors: ${consoleErrors.join(' | ')}`)
+      const errors = (await page.evaluate(() => window.__tinyRuntime.host.diagnostics))
+        .filter((item) => item.severity === 'error')
+      assert.equal(errors.length, 0, `runtime errors: ${errors.map((item) => item.message).join(' | ')}`)
+    })
+
+    console.log('\n✅ Taro 3 example acceptance passed.')
+  } catch (error) {
+    try {
+      await fs.mkdir(path.dirname(taroFailureShot), { recursive: true })
+      await page.screenshot({ path: taroFailureShot, fullPage: true })
+    } catch {
+      // Screenshots are best-effort diagnostics.
+    }
+    throw new Error(
+      `Taro 3 acceptance failed during "${currentStep}": ${error instanceof Error ? error.message : String(error)}` +
+        `\nScreenshot: ${taroFailureShot}`,
+    )
+  } finally {
+    await browser.close()
+  }
+}
+
 export async function runDevtoolAcceptance({ baseUrl }) {
   const browser = await launchBrowser()
   const page = await browser.newPage({ viewport: { width: 1400, height: 900 } })

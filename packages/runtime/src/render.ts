@@ -45,28 +45,37 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
   let currentPath = options.initialPath
 
   connection.onControl('runtime', 'bootstrap', async (message) => {
-    const payload = message.payload as {
-      manifest?: RenderThreadOptions['manifest']
-      initialPath?: string
-      initialData?: Record<string, unknown>
-      pageId?: string
-      componentSchemas?: import('./types').MiniProgramComponentSchema[]
+    try {
+      const payload = message.payload as {
+        manifest?: RenderThreadOptions['manifest']
+        initialPath?: string
+        initialData?: Record<string, unknown>
+        pageId?: string
+        componentSchemas?: import('./types').MiniProgramComponentSchema[]
+      }
+      const manifest = payload.manifest ?? options.manifest
+      const initialPath = payload.initialPath ?? currentPath
+      const initialData = payload.initialData ?? options.initialData ?? {}
+      const pageId = payload.pageId
+      // Register styles before component definitions so component definitions
+      // receive their style scope; otherwise their classes are never prefixed.
+      adapter.registerStyles(manifest, options.loadStyle)
+      adapter.registerComponentSchemas(payload.componentSchemas ?? [])
+      const page = findPage(manifest, initialPath)
+      if (!page) throw new Error(`page is not declared: ${initialPath}`)
+      adapter.registerPageArtifact(page)
+      const component = adapter.mountPage(initialPath, initialData, pageId)
+      if (!pageId) adapter.registerPageComponent(initialPath, component)
+      currentPath = initialPath
+      return { status: 'ready', currentPath }
+    } catch (error) {
+      connection.sendDiagnostic('error', {
+        code: 'RENDER_BOOTSTRAP_ERROR',
+        message: error instanceof Error ? error.message : String(error),
+        details: error instanceof Error && error.stack ? { stack: error.stack } : {},
+      })
+      throw error
     }
-    const manifest = payload.manifest ?? options.manifest
-    const initialPath = payload.initialPath ?? currentPath
-    const initialData = payload.initialData ?? options.initialData ?? {}
-    const pageId = payload.pageId
-    // Register styles before component definitions so component definitions
-    // receive their style scope; otherwise their classes are never prefixed.
-    adapter.registerStyles(manifest, options.loadStyle)
-    adapter.registerComponentSchemas(payload.componentSchemas ?? [])
-    const page = findPage(manifest, initialPath)
-    if (!page) throw new Error(`page is not declared: ${initialPath}`)
-    adapter.registerPageArtifact(page)
-    const component = adapter.mountPage(initialPath, initialData, pageId)
-    if (!pageId) adapter.registerPageComponent(initialPath, component)
-    currentPath = initialPath
-    return { status: 'ready', currentPath }
   })
 
   connection.onControl('page', 'navigateTo', (message) => {

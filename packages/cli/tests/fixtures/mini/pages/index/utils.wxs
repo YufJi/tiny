@@ -1,0 +1,1 @@
+module.exports = { upper: function (value) { return String(value).toUpperCase() } }

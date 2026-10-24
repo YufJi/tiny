@@ -16,6 +16,6 @@ const runtime = await createStandaloneDualThreadHost({
   },
 })
 
-await runtime.host.bootstrap()
-
 ;(window as unknown as Record<string, unknown>).__tinyRuntime = runtime
+
+await runtime.host.bootstrap()

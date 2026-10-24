@@ -37,6 +37,12 @@ describe('compileMiniProgram', () => {
     expect(manifest.assets).toEqual([])
   })
 
+  test('registers external WXS files with and without their extension', async () => {
+    const templates = await fs.readFile(path.join(outputDir, 'templates.js'), 'utf8')
+    expect(templates).toContain('R["pages/index/utils.wxs"]')
+    expect(templates).toContain('R["pages/index/utils"]')
+  })
+
   test('resolves and merges component configuration', async () => {
     const manifest = JSON.parse(await fs.readFile(path.join(outputDir, 'manifest.json'), 'utf8'))
     const page = manifest.pages[0]
