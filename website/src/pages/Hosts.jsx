@@ -335,8 +335,8 @@ service.html
             <p><code>RUNTIME_STATE</code> 诊断里的 pageStack/currentPage 会被提取成独立字段，React 面板无需解析诊断文本。</p>
           </Card>
           <Card title="多应用切换" tone="violet">
-            <p>devtool 扫描 <code>tests/apps/*</code>，把每个 fixture 的产物放在 <code>/runtime/apps/&lt;app&gt;/generated</code>，并通过 <code>/runtime/apps.json</code> 生成应用下拉框；线程入口从 <code>?app=</code> 读取 appId，再 fetch 对应 manifest。</p>
-            <p>面板切换应用是整页重载（<code>window.location.assign</code>），不是运行时内切换。</p>
+            <p>devtool 扫描 <code>tests/apps/*</code>，把每个 fixture 的产物放在 <code>./runtime/apps/&lt;app&gt;/generated</code>，并通过 <code>./runtime/apps.json</code> 生成应用下拉框；线程入口从 <code>?app=</code> 读取 appId，再 fetch 对应 manifest。</p>
+            <p>面板切换应用是整页重载（<code>window.location.assign</code>），不是运行时内切换。站点里的 <a href="#/devtool">在线调试器</a> 是同一份构建，只带 <code>tests/apps/demo</code>。</p>
           </Card>
         </div>
         <Callout title="为什么用 new Function import">

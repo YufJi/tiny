@@ -83,10 +83,30 @@ src/store/
 
 - 宿主编排、生命周期控制和状态投影都在 `@tiny/runtime` 的 `DevtoolRuntimeClient`
 - 面板只通过 client 订阅状态和发送控制命令
-- 面板先从 `/runtime/apps.json` 读取应用清单，再从
-  `/runtime/apps/<app>/generated` 读取 manifest、templates、styles
+- 面板先从 `./runtime/apps.json` 读取应用清单，再从
+  `./runtime/apps/<app>/generated` 读取 manifest、templates、styles
 - 线程页通过 `?app=<app>` 定位同一个产物目录
 - `static/runtime/apps/*/generated` 和 `static/runtime/apps.json` 是编译产物，已 gitignore
+
+## 部署到子路径
+
+面板、线程页和生成产物之间的 URL 都相对当前文档解析，因此同一份构建可以挂在
+`http://localhost:8080/`、`/tiny/devtool/` 或任意静态子目录。生产构建使用
+`publicPath: './'`，`NODE_ENV=production` 时 rspack 会输出相对的脚本与 CSS URL。
+
+两个可选环境变量用于把站点产物和开发期产物隔离：
+
+```bash
+NODE_ENV=production \
+TINY_DEVTOOL_RUNTIME_ROOT=/path/to/runtime \
+TINY_DEVTOOL_OUT_DIR=/path/to/dist \
+pnpm --filter devtool build
+```
+
+website 的接入由 `pnpm site:devtool` 完成：它编译 `tests/apps/demo`、生成
+`apps.json`、调用上面的生产构建，并把结果复制到 Vite 的 public 目录
+`website/.cache/site-public/devtool`。Vite 构建后位于 `website/dist/devtool/`，
+站点用同源 iframe `./devtool/index.html` 嵌入。详见 `website/README.md`。
 
 ## 验收
 

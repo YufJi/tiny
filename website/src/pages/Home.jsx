@@ -15,6 +15,7 @@ export default function Home() {
           </p>
           <div className="hero-actions">
             <a className="button primary" href="#/architecture">从架构总览开始</a>
+            <a className="button ghost" href="#/devtool">在线调试器</a>
             <a className="button ghost" href="#/hosts">看宿主支持</a>
             <a className="button ghost" href="#/protocol">读 Bridge 协议</a>
             <a className="button ghost" href="https://github.com/YufJi/tiny">GitHub 仓库 ↗</a>
@@ -105,6 +106,23 @@ export default function Home() {
             <p><a href="#/testing">进入验证体系 →</a></p>
           </Card>
         </Cards>
+      </Section>
+
+      <Section
+        kicker="Live devtool"
+        title="在线跑一遍调试器"
+        intro="不用克隆仓库：内嵌版本加载 tests/apps/demo 的真实编译产物，双线程、Console 和 Elements 都在。"
+      >
+        <div className="split">
+          <Card tag="online" title="Tiny Runtime Debugger">
+            <p>应用切换、页面导航、前后台、Reload/Terminate、诊断流与元素树，全部来自当前会话。</p>
+            <p><a className="button primary" href="#/devtool">打开在线调试器</a></p>
+          </Card>
+          <Card tag="build-time" title="随站点构建，而不是外链">
+            <p>构建时编译 demo、打包 devtool，Vite 把产物复制到 <code>dist/devtool/</code>；页面用同源 iframe 嵌入。</p>
+            <p><a href="#/devtool">查看接入方式 →</a></p>
+          </Card>
+        </div>
       </Section>
 
       <Section

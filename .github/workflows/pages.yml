@@ -5,6 +5,13 @@ on:
     branches: [next]
     paths:
       - 'website/**'
+      - 'apps/devtool/**'
+      - 'hosts/browser/**'
+      - 'packages/**'
+      - 'tools/cli/**'
+      - 'tests/apps/demo/**'
+      - 'scripts/build-site-devtool.mjs'
+      - 'scripts/devtool-apps.mjs'
       - 'scripts/check-website.mjs'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -37,8 +44,10 @@ jobs:
           cache: pnpm
       - name: Install workspace
         run: pnpm install --frozen-lockfile
-      - name: Build website
-        run: pnpm --filter @tiny/website build
+      - name: Build workspace packages
+        run: pnpm build:glass-easel
+      - name: Build website and embedded devtool
+        run: pnpm site:build
       - name: Check website build
         run: node scripts/check-website.mjs
       - name: Configure Pages

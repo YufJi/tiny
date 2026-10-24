@@ -127,9 +127,10 @@ pnpm dev:devtool             # 调试器：http://localhost:8080（可切换全�
 ```bash
 pnpm build                   # 构建全部 workspace 包
 pnpm lint                    # Biome
-pnpm site:dev                # 本地预览架构网站：http://localhost:4173
-pnpm site:build              # 构建 website/dist
-pnpm site:check              # 构建并检查产物资源
+pnpm site:dev                # 构建内嵌 devtool 并本地预览：http://localhost:4173
+pnpm site:devtool            # 只重建 website/.cache/site-public/devtool
+pnpm site:build              # 构建内嵌 devtool + website/dist
+pnpm site:check              # 构建并检查产物资源（含 dist/devtool）
 pnpm compile:glass-easel     # tests/apps/demo -> tests/host/generated
 pnpm compile:devtool:all     # 全部 tests/apps -> devtool 静态目录
 pnpm compile:wechat-demo     # 微信官方组件/API 示例 -> tests/host/generated

@@ -6,9 +6,10 @@ import {
   measureBrowserCanvas,
   paintBrowserCanvasFrame,
 } from '@tiny/host-browser';
+import { generatedBaseFor } from './appRegistry';
 
 const appId = new URLSearchParams(window.location.search).get('app') || 'demo';
-const generatedBase = `/runtime/apps/${encodeURIComponent(appId)}/generated`;
+const generatedBase = generatedBaseFor(appId);
 const importGenerated = (url) => new Function('url', 'return import(url)')(url);
 
 const assetsPromise = (async () => {

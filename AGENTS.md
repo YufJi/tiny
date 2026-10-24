@@ -69,7 +69,8 @@ pnpm compile:wechat-demo     # compile the WeChat component/API subset
 pnpm dev:wechat-demo         # WeChat demo host on :5174
 pnpm check:runtime-purity    # assert the core runtime has no host globals
 pnpm lint                    # Biome (bridge only is configured today)
-pnpm site:dev                # preview website on :4173
+pnpm site:dev                # build embedded devtool + preview website on :4173
+pnpm site:devtool            # rebuild only website/.cache/site-public/devtool
 pnpm site:check              # build and validate the site output
 ```
 
@@ -111,7 +112,8 @@ Chrome, or `PLAYWRIGHT_CHROMIUM_PATH`).
   `apps/devtool/static/` are build output and gitignored.
 - `tests/apps/*` are complete mini-program fixtures; `tests/apps/todo` is the Taro 3
   compatibility target. `tests/apps/echarts` is historical reference only.
-- `website` is a React + Vite app; `pnpm site:build` writes `dist/` and
+- `website` is a React + Vite app; `pnpm site:build` writes `dist/` including
+  the embedded devtool (`dist/devtool/`) built from `website/.cache/`, and
   `.github/workflows/pages.yml` deploys it.
 - Do not reintroduce the legacy `packages/base`, `packages/compiler`, or the old
   devtool shell; no JSBridge/`executeJavaScript`-based code.

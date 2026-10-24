@@ -4,6 +4,14 @@ const HtmlRspackPlugin = require('html-rspack-plugin');
 
 const root = path.join(__dirname);
 const isDev = process.env.NODE_ENV !== 'production';
+// Optional overrides let the website build package the same devtool into an
+// isolated directory with only the fixtures it ships.
+const outputDir = process.env.TINY_DEVTOOL_OUT_DIR
+  ? path.resolve(process.env.TINY_DEVTOOL_OUT_DIR)
+  : path.join(root, 'dist');
+const runtimeDir = process.env.TINY_DEVTOOL_RUNTIME_ROOT
+  ? path.resolve(process.env.TINY_DEVTOOL_RUNTIME_ROOT)
+  : path.join(root, 'static/runtime');
 
 module.exports = {
   mode: isDev ? 'development' : 'production',
@@ -16,9 +24,12 @@ module.exports = {
     css: true,
   },
   output: {
-    path: path.join(root, 'dist'),
+    path: outputDir,
     filename: '[name].js',
-    publicPath: '/',
+    // A production build must stay relocatable: the website serves it from
+    // /devtool/ (and GitHub Pages adds /<repo>/ in front of that), while the
+    // dev server still needs root-absolute URLs for its HMR client.
+    publicPath: isDev ? '/' : './',
     clean: true,
   },
   resolve: {
@@ -66,7 +77,7 @@ module.exports = {
     new rspack.CopyRspackPlugin({
       patterns: [
         {
-          from: path.join(root, 'static/runtime'),
+          from: runtimeDir,
           to: 'runtime',
           noErrorOnMissing: true,
         },

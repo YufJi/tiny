@@ -7,6 +7,7 @@ const links = [
   ['runtime', '#/runtime'],
   ['protocol', '#/protocol'],
   ['hosts', '#/hosts'],
+  ['devtool', '#/devtool'],
   ['testing', '#/testing'],
   ['status', '#/status'],
 ]
@@ -18,6 +19,7 @@ const labels = {
   runtime: '运行时',
   protocol: '协议',
   hosts: '宿主',
+  devtool: '调试器',
   testing: '验证',
   status: '路线',
 }
@@ -78,6 +80,7 @@ export default function Layout({ route, children }) {
             <a href="#/runtime">运行时</a>
             <a href="#/protocol">协议</a>
             <a href="#/hosts">宿主</a>
+            <a href="#/devtool">调试器</a>
             <a href="#/testing">验证</a>
             <a href="https://github.com/YufJi/tiny">GitHub</a>
           </div>

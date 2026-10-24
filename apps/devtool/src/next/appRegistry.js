@@ -1,7 +1,13 @@
 import { APPS_REGISTRY_URL } from './config';
 
 export function generatedBaseFor(appId) {
-  return `/runtime/apps/${encodeURIComponent(appId)}/generated`;
+  // Resolve against the current document so the same helper works in the
+  // panel (`/devtool/`), in the thread iframes (`next-service.html`), and
+  // under an arbitrary deployment prefix.
+  return new URL(
+    `./runtime/apps/${encodeURIComponent(appId)}/generated`,
+    window.location.href,
+  ).href;
 }
 
 export async function fetchJson(url) {

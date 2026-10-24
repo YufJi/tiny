@@ -6,6 +6,7 @@ import Compiler from './pages/Compiler'
 import Runtime from './pages/Runtime'
 import Protocol from './pages/Protocol'
 import Hosts from './pages/Hosts'
+import Devtool from './pages/Devtool'
 import Testing from './pages/Testing'
 import Status from './pages/Status'
 
@@ -16,6 +17,7 @@ const routes = {
   runtime: Runtime,
   protocol: Protocol,
   hosts: Hosts,
+  devtool: Devtool,
   testing: Testing,
   status: Status,
 }
@@ -32,6 +34,7 @@ const titles = {
   runtime: '运行时内核 · Tiny',
   protocol: 'Bridge 协议 · Tiny',
   hosts: '宿主支持 · Tiny',
+  devtool: '在线调试器 · Tiny',
   testing: '测试与兼容 · Tiny',
   status: '现状与路线 · Tiny',
 }

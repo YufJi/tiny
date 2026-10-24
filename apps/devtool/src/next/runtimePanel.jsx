@@ -91,10 +91,14 @@ class RuntimePanel extends PureComponent {
         error: '',
       });
 
+      const threadUrl = (page) => new URL(
+        `./${page}?app=${encodeURIComponent(app.id)}`,
+        window.location.href,
+      ).href;
       this.client = new DevtoolRuntimeClient({
         manifest,
-        serviceUrl: `/next-service.html?app=${encodeURIComponent(app.id)}`,
-        renderUrl: `/next-render.html?app=${encodeURIComponent(app.id)}`,
+        serviceUrl: threadUrl('next-service.html'),
+        renderUrl: threadUrl('next-render.html'),
         initialPath,
         container: this.containerRef.current,
         systemInfo: {

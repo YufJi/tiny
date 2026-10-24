@@ -5,9 +5,10 @@ import {
   installBrowserCanvasCompat,
   listenForRuntimePort,
 } from '@tiny/host-browser';
+import { generatedBaseFor } from './appRegistry';
 
 const appId = new URLSearchParams(window.location.search).get('app') || 'demo';
-const generatedBase = `/runtime/apps/${encodeURIComponent(appId)}/generated`;
+const generatedBase = generatedBaseFor(appId);
 // The preview is an iPhone X. The service iframe is 0x0, so window.innerWidth
 // cannot provide the host geometry; mirror the capsule used by the panel.
 const PREVIEW_WIDTH = 375;
