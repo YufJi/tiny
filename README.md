@@ -34,6 +34,8 @@ devtool (可选) : DevtoolRuntimeClient + React 面板
 
 ## 快速开始
 
+环境要求：Node.js ≥ 22（见 `.nvmrc`，可执行 `nvm use`）与 pnpm 9（仓库已声明 `packageManager`，可执行 `corepack enable` 自动对齐）。
+
 ```bash
 pnpm install
 pnpm accept:glass-easel      # 构建 + 单测 + 三段浏览器验收
