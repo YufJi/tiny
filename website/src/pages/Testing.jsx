@@ -17,8 +17,8 @@ export default function Testing() {
       <PageHero
         eyebrow="Testing & compatibility"
         title={<>用真实小程序验收，<br /><span className="gradient">而不是用快照自证</span></>}
-        lede="Tiny 的验收会编译真实 WXML/WXSS/JS，启动两个 iframe，在 Chromium 里点击、输入、导航，并在失败时保存截图。115 个单测管住协议与算法，45 个浏览器步骤管住端到端行为。"
-        stats={[['115', 'unit tests'], ['45', 'browser steps'], ['5', 'browser flows'], ['5', 'test fixtures']]}
+        lede="Tiny 的验收会编译真实 WXML/WXSS/JS，启动两个 iframe，在 Chromium 里点击、输入、导航，并在失败时保存截图。116 个单测管住协议与算法，45 个浏览器步骤管住端到端行为。"
+        stats={[['116', 'unit tests'], ['45', 'browser steps'], ['5', 'browser flows'], ['5', 'test fixtures']]}
       />
       <PageNav items={[
         ['gate', '验收闸门'],
@@ -123,7 +123,7 @@ export default function Testing() {
       <Section
         id="units"
         kicker="Unit tests"
-        title="115 个测试，按包隔离"
+        title="116 个测试，按包隔离"
         intro="没有全局 test runner；每个包独立执行，避免隐式耦合，也让失败定位到包。"
       >
         <Table
@@ -134,7 +134,7 @@ export default function Testing() {
             [<code>@tiny/stylesheet-compiler</code>, '24', 'class/tag 前缀、rpx/calc、@import 编码与包装、@layer、:host 低优先级、keyframes、page 根节点'],
             [<code>@tiny/cli</code>, '10', 'manifest 全 artifact、WXS 双注册、配置合并、service/render 入口、TS + source map、样式作用域、tag marker、可执行模板 group'],
             [<code>@tiny/components</code>, '6', '18 个 tag 模板、tag 暴露、button/input 事件归一化、checkbox/slider/switch、progress/swiper/icon 结构'],
-            [<code>@tiny/runtime</code>, '37', '全局安装、双线程 bootstrap、组件 schema、behaviors/observers/relations/externalClasses/styleIsolation/selectComponent、导航、API host、诊断'],
+            [<code>@tiny/runtime</code>, '38', '全局安装、双线程 bootstrap、组件 schema、behaviors/observers/relations/externalClasses/styleIsolation/selectComponent、导航、API host、诊断'],
           ]}
         />
         <Callout title="单测也验证协议契约" >

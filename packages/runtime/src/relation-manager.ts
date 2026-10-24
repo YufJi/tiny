@@ -50,6 +50,8 @@ export class RelationManager {
     const node = this.options.tree.get(componentId)
     if (!node) return
     const targets = new Set<string>([componentId])
+    const pageRoot = this.options.tree.pageRoot(node.pageId)
+    if (pageRoot) targets.add(pageRoot.componentId)
     for (const ancestor of this.options.tree.ancestors(componentId)) targets.add(ancestor.componentId)
     for (const descendant of this.options.tree.descendants(componentId)) targets.add(descendant.componentId)
     for (const id of targets) this.refreshComponent(id, 'attach', undefined, invokeCallbacks)

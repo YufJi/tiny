@@ -65,6 +65,10 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
         initialData?: Record<string, unknown>
         pageId?: string
         componentSchemas?: import('./types').MiniProgramComponentSchema[]
+        pageComponents?: Array<{
+          path: string
+          options?: import('./glass-easel-adapter').PageComponentOptions
+        }>
       }
       const manifest = payload.manifest ?? options.manifest
       manifestForRender = manifest
@@ -74,6 +78,7 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
       // Register styles before component definitions so component definitions
       // receive their style scope; otherwise their classes are never prefixed.
       adapter.registerStyles(manifest, options.loadStyle)
+      adapter.setPageComponentOptions(payload.pageComponents ?? [])
       adapter.registerComponentSchemas(payload.componentSchemas ?? [])
       const page = findPage(manifest, initialPath)
       if (!page) throw new Error(`page is not declared: ${initialPath}`)

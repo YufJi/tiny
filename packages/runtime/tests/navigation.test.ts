@@ -111,6 +111,14 @@ describe('mini-program navigation', () => {
       },
     })
     ;(globalObject.Component as (options: Record<string, unknown>) => unknown)({
+      methods: {
+        onLoad(query: Record<string, string>) {
+          addTodoEvents.push(`load:${query.from}`)
+        },
+        async back() {
+          await wx.navigateBack()
+        },
+      },
       lifetimes: {
         attached() {
           addTodoEvents.push('attached')
@@ -121,9 +129,6 @@ describe('mini-program navigation', () => {
         detached() {
           addTodoEvents.push('detached')
         },
-        onLoad(query: Record<string, string>) {
-          addTodoEvents.push(`load:${query.from}`)
-        },
       },
       pageLifetimes: {
         show() {
@@ -131,11 +136,6 @@ describe('mini-program navigation', () => {
         },
         hide() {
           addTodoPageEvents.push('hide')
-        },
-      },
-      methods: {
-        async back() {
-          await wx.navigateBack()
         },
       },
     })

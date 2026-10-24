@@ -114,12 +114,14 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
       const initialData = (serviceResult.initialData as Record<string, unknown> | undefined) ?? options.initialData
       const pageId = serviceResult.pageId as string | undefined
       const componentSchemas = serviceResult.componentSchemas as import('./types').MiniProgramComponentSchema[] | undefined
+      const pageComponents = serviceResult.pageComponents
       const renderResult = await render.control<Record<string, unknown>>('runtime', 'bootstrap', {
         manifest: options.manifest,
         initialPath: options.initialPath,
         initialData,
         pageId,
         componentSchemas,
+        pageComponents,
       })
       if (pageId) {
         await service.control('page', 'ready', {

@@ -51,6 +51,12 @@ export type ComponentSnapshot = {
   data: Record<string, unknown>
 }
 
+export type PageComponentOptions = {
+  styleIsolation?: 'isolated' | 'apply-shared' | 'shared'
+  addGlobalClass?: boolean
+  explicitStyleIsolation?: boolean
+}
+
 export type GlassEaselAdapterOptions = {
   backend: glassEasel.GeneralBackendContext
   manifest: Manifest
@@ -100,6 +106,7 @@ export class GlassEaselRuntimeAdapter {
   private readonly styleContents = new Map<string, string>()
   private readonly styleByEntryPath = new Map<string, StyleArtifact>()
   private readonly pageStyleScopes = new Map<string, number>()
+  private readonly pageComponentOptions = new Map<string, PageComponentOptions>()
   private readonly sharedStylesApplied = new Set<string>()
   private readonly componentDefinitions = new Map<string, glassEasel.GeneralComponentDefinition>()
   private readonly registeringComponents = new Set<string>()
@@ -201,6 +208,12 @@ export class GlassEaselRuntimeAdapter {
     }
   }
 
+  setPageComponentOptions(items: Array<{ path: string; options?: PageComponentOptions }>): void {
+    for (const item of items) {
+      if (item.options) this.pageComponentOptions.set(item.path, item.options)
+    }
+  }
+
   registerPage(page: PageArtifact, data: Record<string, unknown> = {}): glassEasel.GeneralComponentDefinition {
     const existing = this.componentDefinitions.get(page.path)
     if (existing) return existing
@@ -209,8 +222,10 @@ export class GlassEaselRuntimeAdapter {
     }
 
     const pageScope = this.ensurePageScope(page)
-    const using = this.resolveComponentUsing(page.path, page.configuration, pageScope)
-    this.applySharedComponentStyles(page, pageScope)
+    const pageIsolation = this.resolvePageIsolation(page)
+    const childStyleScope = pageIsolation === 'isolated' ? undefined : pageScope
+    const using = this.resolveComponentUsing(page.path, page.configuration, childStyleScope)
+    if (pageIsolation !== 'isolated') this.applySharedComponentStyles(page, pageScope)
     const definition = this.componentSpace
       .defineWithMethodCaller(page.path)
       .template({
@@ -229,6 +244,15 @@ export class GlassEaselRuntimeAdapter {
       .registerComponent()
     this.componentDefinitions.set(page.path, definition)
     return definition
+  }
+
+  private resolvePageIsolation(page: PageArtifact): 'isolated' | 'apply-shared' | 'shared' {
+    const options = this.pageComponentOptions.get(page.path)
+    if (options?.explicitStyleIsolation && options.styleIsolation) return options.styleIsolation
+    if (options?.addGlobalClass) return 'apply-shared'
+    const fromJson = page.configuration?.effective?.styleIsolation
+    if (fromJson === 'isolated' || fromJson === 'apply-shared' || fromJson === 'shared') return fromJson
+    return 'shared'
   }
 
   private ensurePageScope(page: PageArtifact): number {

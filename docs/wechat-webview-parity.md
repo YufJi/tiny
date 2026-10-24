@@ -1,6 +1,6 @@
 # 微信 WebView 版功能对齐度分析
 
-> **快照**：2026-10-24（第二次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
+> **快照**：2026-10-24（第三次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
 >
 > **结论**：加权功能对齐约 **35%（34–37%）**；页面启动率 85.5%；生产可替换 < 20%
 >
@@ -10,9 +10,9 @@
 
 ## 1. 结论摘要
 
-- 按微信 WebView 版全量能力计算，当前引擎约完成 **三分之一强**：加权得分 **34.8%**。
-- 能力结构仍然偏科：**编译/渲染约 70%，框架约 58%，平台 API 约 6%，页面形态约 12%**。
-- 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent` 均已落地；UI 库的核心语义障碍基本移除，但 npm 构建、`generics`/`definitionFilter` 等仍有缺口。
+- 按微信 WebView 版全量能力计算，当前引擎约完成 **三分之一强**：加权得分 **35.1%**。
+- 能力结构仍然偏科：**编译/渲染约 70%，框架约 60%，平台 API 约 6%，页面形态约 12%**。
+- 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent` 均已落地，Component-as-page 也接入了同一套核心语义；UI 库的核心语义障碍基本移除，但 npm 构建、`generics`/`definitionFilter` 等仍有缺口。
 - 仓库内置的微信官方 demo 子集（117 页）中，**100 页能启动（85.5%）**，96 页有可见文本；但这是“能挂载”，不是“功能对齐”。
 - 普通业务小程序最依赖的 `wx.request`、`wx.login`、`wx.requestPayment`、`showModal`、导航栏、tabBar、picker、form、textarea 均未实现。
 - 一句话：**组件语义这条线已经补齐，平台 API 和页面形态仍是决定“能否替换微信运行时”的主要短板。**
@@ -69,15 +69,15 @@
 | 维度 | 权重 | 完成度 | 加权 | 关键依据 |
 | --- | ---: | ---: | ---: | --- |
 | 编译/构建 | 10% | 72% | 7.20 | WXML/WXSS/WXS 基本完整；app.json 只消费 3 个字段；无 npm 构建、无 TS 类型检查 |
-| 框架运行时 | 18% | 58% | 10.44 | 5/14 页面生命周期、2/5 路由仍是短板；自定义组件核心语义已补齐，缺 generics/definitionFilter |
+| 框架运行时 | 18% | 60% | 10.80 | 5/14 页面生命周期、2/5 路由仍是短板；自定义组件与 Component-as-page 核心语义已补齐，缺 generics/definitionFilter |
 | 内置组件 | 17% | 30% | 5.10 | 18/60 标签；属性 47/146；事件 13/43；默认外观非微信样式 |
 | wx API | 20% | 6% | 1.20 | 核心 10 个 + 宿主扩展 2 个 / 502；官方 demo 150 个中支持 12 个 |
 | 页面形态 | 12% | 12% | 1.44 | 无导航栏/tabBar/下拉/触底/页面滚动/分享/转场 |
 | 样式/渲染 | 8% | 68% | 5.44 | WXSS/rpx/作用域强；styleIsolation/addGlobalClass/shared 已实现；`:host` 低优先级与 canvas 仍不完整 |
 | 宿主/平台 | 8% | 15% | 1.20 | 仅浏览器宿主；无原生/网络/登录/支付/分享 |
 | 开发工具 | 4% | 35% | 1.40 | 有运行时状态/元素树/诊断；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 45% | 1.35 | 115 单测 + 45 步浏览器验收；无性能/视觉/安全/原生测试 |
-| **合计** | **100%** | — | **34.77%** | |
+| 质量/验证 | 3% | 45% | 1.35 | 116 单测 + 45 步浏览器验收；无性能/视觉/安全/原生测试 |
+| **合计** | **100%** | — | **35.13%** | |
 
 ### 条目覆盖率速览
 
@@ -248,7 +248,7 @@ hasBehavior / export / wx://component-export
 | `definitionFilter` | ❌ | 发 `UNSUPPORTED_BEHAVIOR_FILTER` 诊断 |
 | `pureDataPattern` | ❌ | 未映射 |
 | `trait behaviors` / chaining API | ❌ | 未支持 |
-| Component-as-page 全套语义 | ⚠️ | 页面路径仍走 Page 实例；behaviors/observers/relations 未完全接入 |
+| Component-as-page 全套语义 | ✅ | query→properties、methods 页面生命周期、behaviors/observers/relations/styleIsolation/selectComponent/getRelationNodes/hasBehavior 已接入；generics/definitionFilter/pureDataPattern 与普通组件同样缺失，moved/页面分享/下拉等全局页面生命周期未实现 |
 | `wx://form-field` 等内置 behaviors | ❌ | 发 `UNSUPPORTED_BEHAVIOR` 诊断 |
 
 > 这使 Vant Weapp、TDesign 等组件库的**核心语义障碍**基本移除；剩余限制主要来自 npm 构建（`miniprogram_npm`）、内置 behaviors、`generics` 和 `definitionFilter`。
@@ -277,7 +277,7 @@ hasBehavior / export / wx://component-export
 2026-10-24 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
-- **115 个单元测试**（runtime 37 个）
+- **116 个单元测试**（runtime 38 个）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
 - **45 个浏览器步骤**全部通过；P0 新增 5 步覆盖组件语义、样式隔离、relations 和 selectComponent
 - 门禁覆盖的 5 段流程无 console/page error（117 页探针的 pageerror 见 5.2）
@@ -370,8 +370,9 @@ getMenuButtonBoundingClientRect / getPerformance
 - 自定义组件 properties/data/methods/lifetimes/pageLifetimes/slots
 - `behaviors` / `observers` / `relations` / `externalClasses`
 - `styleIsolation` / `addGlobalClass` / `shared`、`selectComponent` / `selectAllComponents` / `selectOwnerComponent`
+- Component-as-page：query→properties、`methods` 页面生命周期、behaviors/observers/relations/styleIsolation
 - 组件树按 componentId 唯一，detach/page unload 清理；页面 `onReady` 可见初始组件快照
-- Component-as-page、子包页面直接启动
+- 子包页面直接启动
 
 ### 6.5 真实兼容证据
 
@@ -486,6 +487,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | --- | --- | --- |
 | 2026-10-24 | 初始快照：WebView 基准、117 页探针、加权评分 | **31.3%** |
 | 2026-10-24 | 第二次同步：补齐自定义组件高级语义（behaviors/observers/relations/externalClasses/styleIsolation/selectComponent）；框架 42→58、样式 62→68；115 单测 + 45 浏览器步骤 | **34.77%** |
+| 2026-10-24 | 第三次同步：Component-as-page 核心语义接入（query properties、methods 生命周期、behaviors/observers/relations/styleIsolation）；框架 58→60；116 单测 | **35.13%** |
 
 ---
 
@@ -508,6 +510,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 
 - [x] `behaviors` / `observers` / `relations` / `externalClasses`
 - [x] `styleIsolation` / `addGlobalClass` / `selectComponent`
+- [x] Component-as-page 全套核心语义
 - [ ] 剩余组件语义：`generics` / `placeholder` / `definitionFilter` / `pureDataPattern`
 - [ ] scroll-view / input / swiper / button 属性与事件补全
 - [ ] canvas 2D / 触摸 / rAF / `canvasToTempFilePath`
@@ -598,6 +601,8 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | relations 链接管理 | [relation-manager.ts](../packages/runtime/src/relation-manager.ts:29) |
 | 组件注册（properties/externalClasses/options/observers/lifetimes） | [glass-easel-adapter.ts](../packages/runtime/src/glass-easel-adapter.ts:463) |
 | 组件语义验收 fixture | [semantics.js](../tests/apps/demo/pages/semantics/semantics.js:1) |
+| Component-as-page 实例 | [service.ts](../packages/runtime/src/service.ts:274) |
+| Component-as-page 测试 | [component-page.test.ts](../packages/runtime/tests/component-page.test.ts:1) |
 | 页面/子包/app.json 解析 | [compile.ts](../tools/cli/src/compile.ts:165) |
 | 双 iframe 宿主 | [standalone-host.ts](../hosts/browser/src/standalone-host.ts:1) |
 | 浏览器验收步骤 | [glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs:36) |
