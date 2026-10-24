@@ -128,7 +128,7 @@
 }
 
 .td-nav-back:focus-visible {
-  outline: 2px solid rgba(56, 189, 248, 0.7);
+  outline: 2px solid rgba(163, 194, 207, 0.65);
   outline-offset: 2px;
 }
 

@@ -11,8 +11,8 @@
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(148, 163, 184, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.045) 1px, transparent 1px);
+    linear-gradient(rgba(154, 167, 186, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(154, 167, 186, 0.04) 1px, transparent 1px);
   background-size: 48px 48px;
   content: "";
   mask-image: radial-gradient(ellipse 62% 58% at 50% 48%, #000 25%, transparent 78%);
@@ -26,9 +26,9 @@
   left: 50%;
   width: 440px;
   height: 440px;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.11), transparent 68%);
+  background: radial-gradient(circle, rgba(163, 194, 207, 0.07), transparent 68%);
   content: "";
-  filter: blur(10px);
+  filter: blur(12px);
   pointer-events: none;
   transform: translateX(-50%);
 }
@@ -58,17 +58,17 @@
 
 .td-live-dot--running {
   background: var(--td-green);
-  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.12), 0 0 12px rgba(52, 211, 153, 0.7);
+  box-shadow: 0 0 0 3px rgba(147, 193, 169, 0.1), 0 0 7px rgba(147, 193, 169, 0.35);
 }
 
 .td-live-dot--connecting {
   background: var(--td-amber);
-  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.12), 0 0 12px rgba(251, 191, 36, 0.6);
+  box-shadow: 0 0 0 3px rgba(215, 189, 138, 0.1), 0 0 7px rgba(215, 189, 138, 0.32);
 }
 
 .td-live-dot--error {
   background: var(--td-red);
-  box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.12), 0 0 12px rgba(251, 113, 133, 0.6);
+  box-shadow: 0 0 0 3px rgba(217, 154, 162, 0.1), 0 0 7px rgba(217, 154, 162, 0.32);
 }
 
 .td-stage-body {
@@ -202,21 +202,21 @@
   justify-content: center;
   gap: 5px;
   padding: 28px;
-  background: rgba(6, 10, 18, 0.73);
-  color: #e2e8f0;
+  background: rgba(10, 14, 20, 0.72);
+  color: #dbe1e9;
   text-align: center;
   backdrop-filter: blur(2px);
 }
 
 .td-screen-background-label {
-  color: #e2e8f0;
+  color: #dbe1e9;
   font-size: 12px;
   font-weight: 650;
 }
 
 .td-screen-background-sub {
   max-width: 230px;
-  color: #94a3b8;
+  color: #9aa5b3;
   font-size: 10px;
   line-height: 1.55;
 }
@@ -225,10 +225,10 @@
   height: 30px;
   padding: 0 12px;
   margin-top: 8px;
-  background: rgba(148, 163, 184, 0.1);
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(154, 167, 186, 0.1);
+  border: 1px solid rgba(154, 167, 186, 0.24);
   border-radius: 8px;
-  color: #e2e8f0;
+  color: #dbe1e9;
   font: inherit;
   font-size: 10px;
   font-weight: 600;
@@ -236,15 +236,15 @@
 }
 
 .td-background-resume:hover {
-  background: rgba(56, 189, 248, 0.14);
-  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(163, 194, 207, 0.12);
+  border-color: rgba(163, 194, 207, 0.32);
 }
 
 .td-screen-glare {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: linear-gradient(125deg, rgba(255, 255, 255, 0.07), transparent 20%, transparent 72%, rgba(56, 189, 248, 0.035));
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0.07), transparent 20%, transparent 72%, rgba(163, 194, 207, 0.03));
   border-radius: inherit;
   pointer-events: none;
 }
@@ -259,7 +259,7 @@
   justify-content: center;
   gap: 8px;
   padding: 32px;
-  background: radial-gradient(circle at 50% 38%, #111d32, #060a12 72%);
+  background: radial-gradient(circle at 50% 38%, #1a222d, #10151c 72%);
   color: var(--td-muted);
   text-align: center;
   pointer-events: none;
@@ -282,7 +282,7 @@
   width: 22px;
   height: 22px;
   margin-bottom: 2px;
-  border: 2px solid rgba(148, 163, 184, 0.18);
+  border: 2px solid rgba(154, 167, 186, 0.18);
   border-top-color: var(--td-accent);
   border-radius: 50%;
   animation: td-spin 0.85s linear infinite;
@@ -304,8 +304,8 @@
 
 .td-device-size {
   padding: 1px 7px;
-  background: rgba(148, 163, 184, 0.07);
-  border: 1px solid rgba(148, 163, 184, 0.1);
+  background: rgba(154, 167, 186, 0.07);
+  border: 1px solid rgba(154, 167, 186, 0.1);
   border-radius: 999px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 9px;

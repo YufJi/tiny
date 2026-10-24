@@ -22,10 +22,10 @@
   flex: none;
   width: 34px;
   height: 34px;
-  background: linear-gradient(135deg, #67e8f9, #818cf8);
+  background: linear-gradient(135deg, #a9c7d2, #b4bbd5);
   border-radius: 11px;
-  box-shadow: 0 8px 22px rgba(56, 189, 248, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.35);
-  color: #06101e;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  color: #16202a;
   font-size: 15px;
   font-weight: 800;
   place-items: center;
@@ -51,7 +51,7 @@
   gap: 6px;
   margin-left: auto;
   padding: 4px 8px;
-  background: rgba(148, 163, 184, 0.05);
+  background: rgba(154, 167, 186, 0.06);
   border: 1px solid var(--td-border);
   border-radius: 999px;
   color: var(--td-muted);
@@ -66,18 +66,18 @@
   height: 5px;
   background: currentColor;
   border-radius: 50%;
-  box-shadow: 0 0 8px currentColor;
+  box-shadow: 0 0 5px currentColor;
 }
 
 .td-status--running {
-  background: rgba(52, 211, 153, 0.07);
-  border-color: rgba(52, 211, 153, 0.24);
+  background: rgba(147, 193, 169, 0.08);
+  border-color: rgba(147, 193, 169, 0.24);
   color: var(--td-green);
 }
 
 .td-status--connecting {
-  background: rgba(251, 191, 36, 0.07);
-  border-color: rgba(251, 191, 36, 0.24);
+  background: rgba(215, 189, 138, 0.08);
+  border-color: rgba(215, 189, 138, 0.24);
   color: var(--td-amber);
 }
 
@@ -86,8 +86,8 @@
 }
 
 .td-status--error {
-  background: rgba(251, 113, 133, 0.08);
-  border-color: rgba(251, 113, 133, 0.28);
+  background: rgba(217, 154, 162, 0.08);
+  border-color: rgba(217, 154, 162, 0.26);
   color: var(--td-red);
 }
 
@@ -109,7 +109,7 @@
   width: 100%;
   height: 36px;
   padding: 0 10px;
-  background: rgba(7, 12, 22, 0.86);
+  background: rgba(12, 16, 22, 0.82);
   border: 1px solid var(--td-border);
   border-radius: 10px;
   color: var(--td-text);
@@ -124,8 +124,8 @@
 }
 
 .td-select:focus-visible {
-  border-color: rgba(56, 189, 248, 0.6);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+  border-color: rgba(163, 194, 207, 0.5);
+  box-shadow: 0 0 0 3px rgba(163, 194, 207, 0.12);
 }
 
 .td-select:disabled {
@@ -150,7 +150,7 @@
 
 .td-app-meta code {
   padding: 1px 5px;
-  background: rgba(148, 163, 184, 0.06);
+  background: rgba(154, 167, 186, 0.07);
   border-radius: 4px;
   color: var(--td-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -160,7 +160,7 @@
 .td-page-card {
   margin-top: 16px;
   padding: 12px 13px;
-  background: linear-gradient(180deg, rgba(148, 163, 184, 0.055), rgba(148, 163, 184, 0.018));
+  background: linear-gradient(180deg, rgba(154, 167, 186, 0.055), rgba(154, 167, 186, 0.018));
   border: 1px solid var(--td-border);
   border-radius: 12px;
 }
@@ -185,12 +185,12 @@
 
 .td-page-pulse--running {
   background: var(--td-green);
-  box-shadow: 0 0 9px rgba(52, 211, 153, 0.7);
+  box-shadow: 0 0 6px rgba(147, 193, 169, 0.4);
 }
 
 .td-page-pulse--paused {
   background: var(--td-amber);
-  box-shadow: 0 0 9px rgba(251, 191, 36, 0.65);
+  box-shadow: 0 0 6px rgba(215, 189, 138, 0.4);
 }
 
 .td-page-current {
@@ -216,8 +216,8 @@
   align-items: center;
   gap: 5px;
   padding: 2px 6px 2px 3px;
-  background: rgba(7, 12, 22, 0.52);
-  border: 1px solid rgba(148, 163, 184, 0.1);
+  background: rgba(12, 16, 22, 0.52);
+  border: 1px solid rgba(154, 167, 186, 0.12);
   border-radius: 6px;
   color: var(--td-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -228,7 +228,7 @@
   display: inline-grid;
   width: 14px;
   height: 14px;
-  background: rgba(56, 189, 248, 0.1);
+  background: rgba(163, 194, 207, 0.1);
   border-radius: 4px;
   color: var(--td-accent);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -246,10 +246,10 @@
 .td-alert {
   margin-top: 12px;
   padding: 9px 11px;
-  background: rgba(251, 113, 133, 0.075);
-  border: 1px solid rgba(251, 113, 133, 0.25);
+  background: rgba(217, 154, 162, 0.09);
+  border: 1px solid rgba(217, 154, 162, 0.24);
   border-radius: 9px;
-  color: #fecdd3;
+  color: #e2bfc3;
   font-size: 11px;
   line-height: 1.55;
   overflow-wrap: anywhere;
@@ -286,7 +286,7 @@
   justify-content: center;
   height: 32px;
   padding: 0 11px;
-  background: rgba(148, 163, 184, 0.055);
+  background: rgba(154, 167, 186, 0.06);
   border: 1px solid var(--td-border);
   border-radius: 9px;
   color: var(--td-muted);
@@ -299,7 +299,7 @@
 }
 
 .td-btn:hover:not(:disabled) {
-  background: rgba(148, 163, 184, 0.11);
+  background: rgba(154, 167, 186, 0.12);
   border-color: var(--td-border-strong);
   color: var(--td-text);
   transform: translateY(-1px);
@@ -311,7 +311,7 @@
 
 .td-btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.14);
+  box-shadow: 0 0 0 3px rgba(163, 194, 207, 0.14);
 }
 
 .td-btn:disabled {
@@ -320,28 +320,28 @@
 }
 
 .td-btn--primary {
-  color: #03111f;
-  background: linear-gradient(135deg, #67e8f9, #818cf8);
+  color: #182027;
+  background: linear-gradient(135deg, #a9c8d2, #b5bbd5);
   border-color: transparent;
-  box-shadow: 0 6px 16px rgba(56, 189, 248, 0.16);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
 }
 
 .td-btn--primary:hover:not(:disabled) {
-  color: #020b15;
-  background: linear-gradient(135deg, #a5f3fc, #a5b4fc);
+  color: #111a20;
+  background: linear-gradient(135deg, #b8d3dc, #c2c7dd);
   border-color: transparent;
-  box-shadow: 0 8px 22px rgba(56, 189, 248, 0.24);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
 }
 
 .td-btn--danger {
-  color: #fda4af;
-  border-color: rgba(251, 113, 133, 0.18);
+  color: #dba8ae;
+  border-color: rgba(217, 154, 162, 0.2);
 }
 
 .td-btn--danger:hover:not(:disabled) {
-  background: rgba(251, 113, 133, 0.1);
-  border-color: rgba(251, 113, 133, 0.36);
-  color: #fecdd3;
+  background: rgba(217, 154, 162, 0.1);
+  border-color: rgba(217, 154, 162, 0.34);
+  color: #e5c1c5;
 }
 
 .td-nav {
@@ -355,7 +355,7 @@
   min-width: 0;
   height: 34px;
   padding: 0 10px;
-  background: rgba(7, 12, 22, 0.86);
+  background: rgba(12, 16, 22, 0.82);
   border: 1px solid var(--td-border);
   border-radius: 9px;
   color: var(--td-text);
@@ -370,8 +370,8 @@
 }
 
 .td-input:focus {
-  border-color: rgba(56, 189, 248, 0.55);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+  border-color: rgba(163, 194, 207, 0.5);
+  box-shadow: 0 0 0 3px rgba(163, 194, 207, 0.1);
 }
 
 .td-nav .td-btn {
