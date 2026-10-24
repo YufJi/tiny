@@ -6,6 +6,7 @@ export function defineRadio(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: 'tiny-builtin:radio',
     template: ctx.template('radio'),
+    behaviors: [ctx.behaviors.base],
     properties: {
       value: { type: String, value: '' },
       checked: { type: Boolean, value: false },

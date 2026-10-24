@@ -1,1 +1,1 @@
-<label class="tiny-label class" style="{{style}}"><slot /></label>
+<label id="native-label" class="tiny-label {{hidden ? 'tiny-hidden' : ''}} class" style="{{style}}"><slot /></label>

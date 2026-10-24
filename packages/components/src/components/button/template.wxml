@@ -1,1 +1,12 @@
-<button class="tiny-button class" style="{{style}}" hover-class="{{hoverClass}}" catchtap="handleTap"><slot /></button>
+<button
+  id="native-button"
+  class="tiny-button tiny-button-{{type}} {{size === 'mini' ? 'tiny-button-mini' : ''}} {{plain ? 'tiny-button-plain' : ''}} {{loading ? 'tiny-button-loading' : ''}} {{hovering && hoverClass !== 'none' ? hoverClass : ''}} {{hidden ? 'tiny-hidden' : ''}} class"
+  style="{{style}}"
+  disabled="{{disabled}}"
+  aria-label="{{ariaLabel}}"
+  aria-disabled="{{disabled}}"
+  bindtouchstart="handleTouchStart"
+  bindtouchend="handleTouchEnd"
+  bindtouchcancel="handleTouchCancel"
+  catchtap="handleTap"
+><slot /></button>

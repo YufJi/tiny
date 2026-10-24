@@ -243,6 +243,63 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.notEqual(await colorOf('isolated target'), 'rgb(0, 0, 255)', 'shared style leaked into isolated component')
     })
 
+    await step('render WeChat button variants', async () => {
+      currentStep = 'render WeChat button variants'
+      await waitForText('WeChat button variants')
+      const buttonByText = (text) => render.locator('button.tiny-button').filter({ hasText: text }).first()
+      const styleOf = (text) => buttonByText(text).evaluate((element) => {
+        const style = getComputedStyle(element)
+        return {
+          color: style.color,
+          backgroundColor: style.backgroundColor,
+          borderRadius: style.borderRadius,
+          fontSize: style.fontSize,
+          paddingLeft: style.paddingLeft,
+          display: style.display,
+          borderTopWidth: style.borderTopWidth,
+          borderTopColor: style.borderTopColor,
+          opacity: style.opacity,
+        }
+      })
+      assert.deepEqual(
+        await styleOf('Default button'),
+        {
+          color: 'rgb(0, 0, 0)',
+          backgroundColor: 'rgb(248, 248, 248)',
+          borderRadius: '5px',
+          fontSize: '18px',
+          paddingLeft: '14px',
+          display: 'block',
+          borderTopWidth: '0px',
+          borderTopColor: 'rgb(0, 0, 0)',
+          opacity: '1',
+        },
+        'default button does not match WeChat defaults',
+      )
+      const primary = await styleOf('Primary button')
+      assert.equal(primary.color, 'rgb(255, 255, 255)', 'primary button text color mismatch')
+      assert.equal(primary.backgroundColor, 'rgb(26, 173, 25)', 'primary button background mismatch')
+      const warnPlain = await styleOf('Warn plain')
+      assert.equal(warnPlain.color, 'rgb(230, 67, 64)', 'warn plain button text color mismatch')
+      assert.equal(warnPlain.backgroundColor, 'rgba(0, 0, 0, 0)', 'plain button must be transparent')
+      assert.equal(warnPlain.borderTopWidth, '1px', 'plain button border width mismatch')
+      assert.equal(warnPlain.borderTopColor, 'rgb(230, 67, 64)', 'plain button border color mismatch')
+      const mini = await styleOf('Mini button')
+      assert.equal(mini.fontSize, '13px', 'mini button font size mismatch')
+      assert.equal(mini.display, 'inline-block', 'mini button display mismatch')
+      const disabled = await styleOf('Disabled button')
+      assert.equal(disabled.color, 'rgba(0, 0, 0, 0.3)', 'disabled button text color mismatch')
+      assert.equal(disabled.backgroundColor, 'rgb(247, 247, 247)', 'disabled button background mismatch')
+      assert.equal(disabled.opacity, '1', 'disabled button opacity must not be reduced')
+      const loading = await buttonByText('Loading button').evaluate((element) => {
+        const style = getComputedStyle(element, '::before')
+        return { animationName: style.animationName, width: style.width, content: style.content }
+      })
+      assert.equal(loading.animationName, 'tiny-button-loading-animate', 'loading spinner animation missing')
+      assert.equal(loading.width, '18px', 'loading spinner width mismatch')
+      assert.notEqual(loading.content, 'none', 'loading spinner pseudo-element missing')
+    })
+
     await step('run behavior observers and selectComponent', async () => {
       currentStep = 'run behavior observers and selectComponent'
       await waitForText('from-behavior')

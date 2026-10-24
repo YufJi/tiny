@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
-import { BUILTIN_COMPONENT_TAGS, createP0BuiltinComponents } from '../src'
+import { BUILTIN_COMPONENT_TAGS, createBuiltinComponents } from '../src'
 import precompiledTemplates from '../src/generated/templates'
 
 function compilePage(source: string): glassEasel.template.ComponentTemplate {
@@ -27,14 +27,14 @@ describe('P0 built-in components', () => {
 
   test('exposes every P0 component tag', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
-    const definitions = createP0BuiltinComponents(space)
+    const definitions = createBuiltinComponents(space)
     expect(Object.keys(definitions)).toHaveLength(BUILTIN_COMPONENT_TAGS.length)
     expect(Object.keys(definitions)).toEqual(expect.arrayContaining([...BUILTIN_COMPONENT_TAGS]))
   })
 
   test('button catches native taps and emits a mini-program tap event', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
-    const builtins = createP0BuiltinComponents(space)
+    const builtins = createBuiltinComponents(space)
     const taps: Array<Record<string, unknown>> = []
     const page = space.defineComponent({
       is: 'page',
@@ -53,9 +53,122 @@ describe('P0 built-in components', () => {
     expect(taps).toEqual([{ value: 'ok' }])
   })
 
+
+  test('button applies WeChat type, size, plain and loading classes', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { button: builtins.button },
+      data: { type: 'primary', size: 'mini', plain: true, loading: true, disabled: false },
+      template: compilePage(
+        '<button id="button" type="{{type}}" size="{{size}}" plain="{{plain}}" loading="{{loading}}" disabled="{{disabled}}">Tap</button>',
+      ),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const buttonHost = instance.getShadowRoot()?.getElementById('button')?.asGeneralComponent()
+    expect(buttonHost).toBeDefined()
+    const html = glassEasel.dumpElementToString(buttonHost!, true)
+    expect(html).toContain('tiny-button-primary')
+    expect(html).toContain('tiny-button-mini')
+    expect(html).toContain('tiny-button-plain')
+    expect(html).toContain('tiny-button-loading')
+  })
+
+  test('button applies hover after hoverStartTime and clears it after hoverStayTime', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { button: builtins.button },
+      template: compilePage('<button id="button">Tap</button>'),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const buttonHost = instance.getShadowRoot()?.getElementById('button')?.asGeneralComponent()!
+    const nativeButton = buttonHost.getShadowRoot()?.getElementById('native-button')!
+    nativeButton.triggerEvent('touchstart', { touches: [{}] })
+    await new Promise((resolve) => setTimeout(resolve, 40))
+    expect(buttonHost.data.hovering).toBe(true)
+    expect(glassEasel.dumpElementToString(buttonHost, true)).toContain('button-hover')
+    nativeButton.triggerEvent('touchend', {})
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    expect(buttonHost.data.hovering).toBe(false)
+  })
+
+  test('button suppresses disabled taps and emits form/open-type semantics', () => {
+    const diagnostics: Array<Record<string, unknown>> = []
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space, {
+      onDiagnostic: (diagnostic) => diagnostics.push(diagnostic as unknown as Record<string, unknown>),
+    })
+    const taps: unknown[] = []
+    const submits: unknown[] = []
+    const resets: unknown[] = []
+    const page = space.defineComponent({
+      is: 'page',
+      using: { button: builtins.button },
+      data: { formType: 'submit', openType: 'getUserInfo', disabled: false },
+      template: compilePage(
+        '<button id="button" form-type="{{formType}}" open-type="{{openType}}" disabled="{{disabled}}" bindtap="onTap" bind:formSubmit="onSubmit" bind:formReset="onReset">Tap</button>',
+      ),
+      methods: {
+        onTap(event: glassEasel.ShadowedEvent<unknown>) {
+          taps.push(event.detail)
+        },
+        onSubmit(event: glassEasel.ShadowedEvent<unknown>) {
+          submits.push(event.detail)
+        },
+        onReset(event: glassEasel.ShadowedEvent<unknown>) {
+          resets.push(event.detail)
+        },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const buttonHost = instance.getShadowRoot()?.getElementById('button')?.asGeneralComponent()!
+    const nativeButton = buttonHost.getShadowRoot()?.getElementById('native-button')!
+    nativeButton.triggerEvent('tap', {})
+    expect(taps).toEqual([{}])
+    expect(submits).toEqual([{ formId: '', formPluginId: '' }])
+    expect(diagnostics.map((item) => item.code)).toContain('UNSUPPORTED_BUTTON_OPEN_TYPE')
+
+    buttonHost.setData({ formType: 'reset' })
+    nativeButton.triggerEvent('tap', {})
+    expect(resets).toEqual([undefined])
+
+    buttonHost.setData({ disabled: true })
+    nativeButton.triggerEvent('tap', {})
+    expect(taps).toHaveLength(2)
+  })
+
+
+  test('view reuses the shared base and hover behaviors', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { view: builtins.view },
+      template: compilePage('<view id="box" hover-class="hovered">content</view>'),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const viewHost = instance.getShadowRoot()?.getElementById('box')?.asGeneralComponent()!
+    const nativeView = viewHost.getShadowRoot()?.getElementById('native-view')!
+    viewHost.setData({ hidden: true })
+    expect(glassEasel.dumpElementToString(viewHost, true)).toContain('tiny-hidden')
+    viewHost.setData({ hidden: false })
+
+    nativeView.triggerEvent('touchstart', { touches: [{}] })
+    await new Promise((resolve) => setTimeout(resolve, 70))
+    expect(viewHost.data.hovering).toBe(true)
+    expect(glassEasel.dumpElementToString(viewHost, true)).toContain('hovered')
+    nativeView.triggerEvent('touchend', {})
+    await new Promise((resolve) => setTimeout(resolve, 450))
+    expect(viewHost.data.hovering).toBe(false)
+  })
+
+
   test('input syncs value and emits normalized input events', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
-    const builtins = createP0BuiltinComponents(space)
+    const builtins = createBuiltinComponents(space)
     const changes: unknown[] = []
     const page = space.defineComponent({
       is: 'page',
@@ -81,7 +194,7 @@ describe('P0 built-in components', () => {
 
   test('checkbox, slider, and switch normalize control values', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
-    const builtins = createP0BuiltinComponents(space)
+    const builtins = createBuiltinComponents(space)
     const events: Record<string, unknown> = {}
     const page = space.defineComponent({
       is: 'page',
@@ -117,7 +230,7 @@ describe('P0 built-in components', () => {
 
   test('progress, swiper, and icon render structure and state', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
-    const builtins = createP0BuiltinComponents(space)
+    const builtins = createBuiltinComponents(space)
     const page = space.defineComponent({
       is: 'page',
       using: {

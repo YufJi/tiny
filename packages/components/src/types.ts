@@ -1,5 +1,6 @@
 import type * as glassEasel from 'glass-easel'
 import type { BuiltinComponentTag } from './tags'
+import type { BuiltinBehaviors } from './behaviors'
 
 export type BuiltinComponentFactoryOptions = {
   onDiagnostic?: (diagnostic: {
@@ -14,6 +15,7 @@ export type BuiltinContext = {
   space: glassEasel.ComponentSpace
   options: BuiltinComponentFactoryOptions
   template: (tag: BuiltinComponentTag) => glassEasel.template.ComponentTemplate
+  behaviors: BuiltinBehaviors
 }
 
 export type BuiltinDefinition = glassEasel.GeneralComponentDefinition

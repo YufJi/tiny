@@ -6,6 +6,7 @@ export function defineCheckbox(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: 'tiny-builtin:checkbox',
     template: ctx.template('checkbox'),
+    behaviors: [ctx.behaviors.base],
     properties: {
       value: { type: String, value: '' },
       checked: { type: Boolean, value: false },

@@ -1,6 +1,6 @@
 # 微信 WebView 版功能对齐度分析
 
-> **快照**：2026-10-24（第三次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
+> **快照**：2026-10-24（第四次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
 >
 > **结论**：加权功能对齐约 **35%（34–37%）**；页面启动率 85.5%；生产可替换 < 20%
 >
@@ -10,7 +10,7 @@
 
 ## 1. 结论摘要
 
-- 按微信 WebView 版全量能力计算，当前引擎约完成 **三分之一强**：加权得分 **35.1%**。
+- 按微信 WebView 版全量能力计算，当前引擎约完成 **三分之一强**：加权得分 **35.5%**。
 - 能力结构仍然偏科：**编译/渲染约 70%，框架约 60%，平台 API 约 6%，页面形态约 12%**。
 - 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent` 均已落地，Component-as-page 也接入了同一套核心语义；UI 库的核心语义障碍基本移除，但 npm 构建、`generics`/`definitionFilter` 等仍有缺口。
 - 仓库内置的微信官方 demo 子集（117 页）中，**100 页能启动（85.5%）**，96 页有可见文本；但这是“能挂载”，不是“功能对齐”。
@@ -70,14 +70,14 @@
 | --- | ---: | ---: | ---: | --- |
 | 编译/构建 | 10% | 72% | 7.20 | WXML/WXSS/WXS 基本完整；app.json 只消费 3 个字段；无 npm 构建、无 TS 类型检查 |
 | 框架运行时 | 18% | 60% | 10.80 | 5/14 页面生命周期、2/5 路由仍是短板；自定义组件与 Component-as-page 核心语义已补齐，缺 generics/definitionFilter |
-| 内置组件 | 17% | 30% | 5.10 | 18/60 标签；属性 47/146；事件 13/43；默认外观非微信样式 |
+| 内置组件 | 17% | 32% | 5.44 | 18/60 标签；button 已对齐 2.7.0 核心属性/默认样式；属性 70/146；事件 13/43 |
 | wx API | 20% | 6% | 1.20 | 核心 10 个 + 宿主扩展 2 个 / 502；官方 demo 150 个中支持 12 个 |
 | 页面形态 | 12% | 12% | 1.44 | 无导航栏/tabBar/下拉/触底/页面滚动/分享/转场 |
 | 样式/渲染 | 8% | 68% | 5.44 | WXSS/rpx/作用域强；styleIsolation/addGlobalClass/shared 已实现；`:host` 低优先级与 canvas 仍不完整 |
 | 宿主/平台 | 8% | 15% | 1.20 | 仅浏览器宿主；无原生/网络/登录/支付/分享 |
 | 开发工具 | 4% | 35% | 1.40 | 有运行时状态/元素树/诊断；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 45% | 1.35 | 116 单测 + 45 步浏览器验收；无性能/视觉/安全/原生测试 |
-| **合计** | **100%** | — | **35.13%** | |
+| 质量/验证 | 3% | 45% | 1.35 | 120 单测 + 46 步浏览器验收；无性能/视觉/安全/原生测试 |
+| **合计** | **100%** | — | **35.47%** | |
 
 ### 条目覆盖率速览
 
@@ -128,14 +128,14 @@
 
 | 组件 | 文档属性 | 已支持 | 文档事件 | 已支持 | 主要缺口 |
 | --- | ---: | ---: | ---: | ---: | --- |
-| button | 22 | 3 | 9 | 0 | size、plain、loading、form-type、open-type… |
+| button | 22 | 22 | 9 | 0 | open-type 行为/事件未接（仅诊断）；其余属性已对齐 |
 | canvas | 3 | 2 | 6 | 0 | disable-scroll |
 | checkbox-group | 0 | 0 | 1 | 1 | — |
 | checkbox | 4 | 3 | 0 | 0 | color |
 | icon | 3 | 3 | 0 | 0 | — |
 | image | 6 | 3 | 2 | 2 | show-menu-by-longpress、webp、forceHttps |
 | input | 26 | 4 | 7 | 5 | password、placeholder-style、maxlength、cursor-spacing、auto-focus… |
-| label | 1 | 0 | 0 | 0 | for |
+| label | 1 | 0 | 0 | 0 | `for` 属性已声明但未绑定到原生 label；label-target 分发未接 |
 | progress | 11 | 4 | 1 | 0 | border-radius、font-size、color、activeColor、backgroundColor… |
 | radio-group | 0 | 0 | 1 | 1 | — |
 | radio | 4 | 3 | 0 | 0 | color |
@@ -145,8 +145,8 @@
 | swiper | 16 | 7 | 3 | 1 | indicator-color、indicator-active-color、display-multiple-items、previous-margin… |
 | switch | 4 | 3 | 1 | 1 | color |
 | text | 4 | 2 | 0 | 0 | user-select、decode |
-| view | 4 | 0 | 0 | 0 | hover-class、hover-stop-propagation、hover-start-time、hover-stay-time |
-| **合计** | **146** | **47（32.2%）** | **43** | **13（30.2%）** | |
+| view | 4 | 4 | 0 | 0 | hover 默认 none；shared `wx-hover` |
+| **合计** | **146** | **70（47.9%）** | **43** | **13（30.2%）** | |
 
 **外观保真度**：内置组件的默认样式是项目自定义的暗色 slate 主题（[styles.ts](../packages/components/src/styles.ts:1)），不是微信默认样式。按像素对比，默认外观对齐度很低；业务样式可以覆盖，但“开箱即用”的视觉不一致。
 
@@ -277,9 +277,9 @@ hasBehavior / export / wx://component-export
 2026-10-24 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
-- **116 个单元测试**（runtime 38 个）
+- **120 个单元测试**（runtime 38 个）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
-- **45 个浏览器步骤**全部通过；P0 新增 5 步覆盖组件语义、样式隔离、relations 和 selectComponent
+- **46 个浏览器步骤**全部通过；P0 新增 6 步覆盖组件语义、样式隔离、button 矩阵、relations 和 selectComponent
 - 门禁覆盖的 5 段流程无 console/page error（117 页探针的 pageerror 见 5.2）
 
 这说明现有能力是**真实可运行**的，不是纸面设计。
@@ -488,6 +488,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-24 | 初始快照：WebView 基准、117 页探针、加权评分 | **31.3%** |
 | 2026-10-24 | 第二次同步：补齐自定义组件高级语义（behaviors/observers/relations/externalClasses/styleIsolation/selectComponent）；框架 42→58、样式 62→68；115 单测 + 45 浏览器步骤 | **34.77%** |
 | 2026-10-24 | 第三次同步：Component-as-page 核心语义接入（query properties、methods 生命周期、behaviors/observers/relations/styleIsolation）；框架 58→60；116 单测 | **35.13%** |
+| 2026-10-24 | 第四次同步：button 对齐 2.7.0 核心属性/默认样式，内置共享 wx-base/wx-hover/wx-label-target；内置组件 30→32；120 单测 / 46 步 | **35.47%** |
 
 ---
 
@@ -511,6 +512,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 - [x] `behaviors` / `observers` / `relations` / `externalClasses`
 - [x] `styleIsolation` / `addGlobalClass` / `selectComponent`
 - [x] Component-as-page 全套核心语义
+- [x] button 属性/默认样式对齐（open-type 事件除外）
 - [ ] 剩余组件语义：`generics` / `placeholder` / `definitionFilter` / `pureDataPattern`
 - [ ] scroll-view / input / swiper / button 属性与事件补全
 - [ ] canvas 2D / 触摸 / rAF / `canvasToTempFilePath`
@@ -603,6 +605,8 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 组件语义验收 fixture | [semantics.js](../tests/apps/demo/pages/semantics/semantics.js:1) |
 | Component-as-page 实例 | [service.ts](../packages/runtime/src/service.ts:274) |
 | Component-as-page 测试 | [component-page.test.ts](../packages/runtime/tests/component-page.test.ts:1) |
+| 内置组件共享 behaviors | [behaviors.ts](../packages/components/src/behaviors.ts:1) |
+| button 组件 | [button/index.ts](../packages/components/src/components/button/index.ts:1) |
 | 页面/子包/app.json 解析 | [compile.ts](../tools/cli/src/compile.ts:165) |
 | 双 iframe 宿主 | [standalone-host.ts](../hosts/browser/src/standalone-host.ts:1) |
 | 浏览器验收步骤 | [glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs:36) |

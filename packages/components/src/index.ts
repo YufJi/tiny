@@ -1,6 +1,7 @@
 import type * as glassEasel from 'glass-easel'
 import { BUILTIN_COMPONENT_TAGS, type BuiltinComponentTag } from './tags'
 import { builtinTemplate } from './templates'
+import { createBuiltinBehaviors } from './behaviors'
 import type { BuiltinContext, BuiltinComponentFactoryOptions } from './types'
 import { defineView } from './components/view'
 import { defineButton } from './components/button'
@@ -63,6 +64,7 @@ export function createBuiltinComponents(
     space,
     options,
     template: builtinTemplate,
+    behaviors: createBuiltinBehaviors(space),
   }
   for (const tag of BUILTIN_COMPONENT_TAGS) {
     definitions[tag] = DEFINITION_FACTORIES[tag](context)

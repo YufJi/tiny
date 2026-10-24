@@ -9,6 +9,17 @@
     <text class="line page-target" data-check="page-target">page target</text>
   </view>
 
+
+  <view class="card">
+    <text class="title">WeChat button variants</text>
+    <button id="btn-default">Default button</button>
+    <button id="btn-primary" type="primary">Primary button</button>
+    <button id="btn-warn-plain" type="warn" plain>Warn plain</button>
+    <button id="btn-mini" size="mini">Mini button</button>
+    <button id="btn-loading" loading>Loading button</button>
+    <button id="btn-disabled" disabled>Disabled button</button>
+  </view>
+
   <view class="card">
     <behavior-box id="behavior-box" value="{{value}}" />
     <button bindtap="changeValue">Change value</button>
