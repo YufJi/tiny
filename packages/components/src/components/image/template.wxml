@@ -1,1 +1,1 @@
-<img class="tiny-image tiny-image-mode-{{mode}} {{hidden ? 'tiny-hidden' : ''}} class" style="{{style}}" src="{{src}}" alt="{{ariaLabel}}" loading="{{lazyLoad ? 'lazy' : 'eager'}}" binderror="handleError" bindload="handleLoad" />
+<img class="tiny-image tiny-image-mode-{{mode}} {{hidden ? 'tiny-hidden' : ''}} class" style="{{style}}" src="{{resolvedSrc}}" alt="{{ariaLabel}}" loading="{{lazyLoad ? 'lazy' : 'eager'}}" binderror="handleError" bindload="handleLoad" />

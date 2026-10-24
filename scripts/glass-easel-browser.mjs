@@ -11,25 +11,6 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const failureShot = path.join(rootDir, 'tests/host/generated/acceptance-failure.png')
 const STEP_TIMEOUT = 15_000
 
-// `tests/apps/wechat-demo` uses page-relative dynamic image paths
-// (`resources/kind/{{item.id}}.png`). The fixture README documents that these
-// unresolved local images are a known limitation; browsers request them from
-// the thread document root, which is not an app bug worth failing the gate for.
-const KNOWN_MISSING_FIXTURE_ASSETS = new Set([
-  'view', 'content', 'form', 'nav', 'media', 'map', 'canvas', 'open', 'obstacle-free',
-].flatMap((name) => [
-  `/resources/kind/${name}.png`,
-  `/resources/kind/${name}_dark.png`,
-]))
-
-function isKnownMissingFixtureAsset(url) {
-  try {
-    return KNOWN_MISSING_FIXTURE_ASSETS.has(new URL(url).pathname)
-  } catch {
-    return false
-  }
-}
-
 async function launchBrowser() {
   const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH
   const attempts = executablePath
@@ -652,6 +633,10 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
       )
       const body = await render.locator('#app').innerText()
       assert.ok(body.includes('表单组件'), 'component categories did not render')
+      await render.waitForFunction(() => {
+        const images = [...document.querySelectorAll('img[src*="resources/kind"]')]
+        return images.length > 0 && images.every((image) => image.complete && image.naturalWidth > 0)
+      }, null, { timeout: STEP_TIMEOUT })
       assert.equal(pageErrors.length, 0, `page errors: ${pageErrors.join(' | ')}`)
     })
 
@@ -815,7 +800,6 @@ export async function runDevtoolAcceptance({ baseUrl }) {
   page.on('console', (message) => {
     if (message.type() !== 'error') return
     const url = message.location().url
-    if (isKnownMissingFixtureAsset(url)) return
     consoleErrors.push(url ? `${message.text()} (${url})` : message.text())
   })
 
@@ -989,6 +973,12 @@ export async function runDevtoolAcceptance({ baseUrl }) {
 
         const renderFrame = page.frames().find((frame) => frame.url().includes('next-render.html'))
         assert.ok(renderFrame, `${fixture.id} did not create a render thread iframe`)
+        if (fixture.id === 'wechat-demo') {
+          await renderFrame.waitForFunction(() => {
+            const images = [...document.querySelectorAll('img[src*="resources/kind"]')]
+            return images.length > 0 && images.every((image) => image.complete && image.naturalWidth > 0)
+          }, null, { timeout: STEP_TIMEOUT })
+        }
         if (needle) {
           await renderFrame.waitForFunction(
             (expected) => (document.querySelector('#app')?.innerText ?? '').includes(expected),

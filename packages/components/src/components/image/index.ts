@@ -19,8 +19,36 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
       backgroundRepeat: { type: String, value: 'no-repeat' },
       style: { type: String, value: '' },
     },
+    data: {
+      resolvedSrc: '',
+    },
     externalClasses: ['class'],
+    observers: {
+      src() {
+        this.updateResolvedSrc()
+      },
+    },
+    lifetimes: {
+      attached() {
+        this.updateResolvedSrc()
+      },
+      ready() {
+        this.updateResolvedSrc()
+      },
+    },
     methods: {
+      updateResolvedSrc() {
+        const src = typeof this.data.src === 'string' ? this.data.src : ''
+        let resolved = src
+        try {
+          resolved = ctx.options.resolveAssetUrl?.(src, this) ?? src
+        } catch {
+          resolved = src
+        }
+        if (resolved !== this.data.resolvedSrc) {
+          this.setData({ resolvedSrc: resolved })
+        }
+      },
       handleLoad(event: glassEasel.ShadowedEvent<unknown>) {
         this.triggerEvent('load', event.detail ?? {}, { bubbles: true, composed: true })
       },

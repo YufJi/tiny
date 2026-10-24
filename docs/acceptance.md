@@ -54,7 +54,8 @@ After the P0 demo flow, the gate compiles `tests/apps/mini` (3 pages + 1 subpack
 1. Boots from `App.onLaunch` storage writes and renders the todos page from `getApp()`
    state.
 2. Renders both `add-button` instances, slots, checkbox group, slider, progress, switch,
-   swiper, the mirrored canvas, and a loaded image (assets are inlined as data URIs).
+   swiper, the mirrored canvas, and a loaded image (static assets are inlined or resolved
+   by the render asset hook).
 3. Applies `app.wxss` page styling to the real app.
 4. Drives page interactions: checkbox-group aggregation updates `app.todos`, the first
    component instance runs its own handler without navigating, the switch and sliders
@@ -95,7 +96,8 @@ The gate compiles `tests/apps/wechat-demo`, a subset of the official
 `wechat-miniprogram/miniprogram-demo` containing only the basic component and
 API examples:
 
-1. Boots the component index and renders its categories.
+1. Boots the component index, renders its categories, and loads the dynamic
+   `resources/kind/{{id}}.png` icons through the host `resolveAssetUrl` hook.
 2. Boots a component example (`button`).
 3. Boots an API example (`storage`).
 4. Keeps page, console, and runtime error output empty.
@@ -119,11 +121,11 @@ debugger:
 4. The host navigation bar projects the page title and exposes back; `navigate.back` is
    disabled on the first page and drives the runtime after a navigation.
 5. The app selector lists every `tests/apps` fixture; each app boots its first page and
-   renders representative content for `demo`, `mini`, `todo`, `wechat-demo`, and `echarts`.
+   renders representative content for `demo`, `mini`, `todo`, `wechat-demo`, and `echarts`;
+   page-relative dynamic images (for example the WeChat demo icons) load successfully.
 6. The capsule menu backgrounds and foregrounds the preview (with an in-preview overlay),
    `Reload` restarts the runtime, and `Terminate` removes both thread iframes.
-7. No console or page errors occur. The only tolerated console errors are the known
-   unresolved dynamic image paths in `tests/apps/wechat-demo` documented in its README.
+7. No console or page errors occur.
 
 The debugger is the devtool default page. Run it manually with:
 

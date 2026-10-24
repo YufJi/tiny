@@ -22,6 +22,7 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
     backend: options.backend as never,
     manifest: options.manifest,
     templates: options.artifacts.templates,
+    resolveAssetUrl: options.resolveAssetUrl,
     mountComponent: options.mountComponent as GlassEaselAdapterOptions['mountComponent'],
     unmountComponent: options.unmountComponent as GlassEaselAdapterOptions['unmountComponent'],
     onMiniProgramEvent: (pageId, event) => {

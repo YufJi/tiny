@@ -37,6 +37,7 @@ await runtime.host.bootstrap()
 - `service.ts` — app/page/component lifecycle, page stack, `wx` API host
 - `render.ts` — bridge + glass-easel adapter bootstrap
 - `glass-easel-adapter.ts` — component registration, events, inspect tree
+- `assets.ts` — app-root asset path resolution and WXSS `url(...)` rewriting
 - `standalone-host.ts` — iframe creation + protocol handshake
 - `devtool-client.ts` — debugger controls/state projection
 - `bridge` comes from `@tiny/bridge`; manifest types from `@tiny/manifest`
@@ -97,3 +98,26 @@ The reference implementation lives in `tests/host/src/service-thread.ts`; the
 debugger host passes the same extensions in `apps/devtool/src/next/runtimeService.js`.
 The engine only exposes mini-program semantics, host snapshots (system/storage),
 and bridge calls; it does not invent device or performance results.
+
+## Asset URLs
+
+Local mini-program asset paths are relative to the page/component source file or
+app-root absolute. Browser hosts need real URLs, so `bootRenderThread` accepts a
+host resolver:
+
+```ts
+bootRenderThread({
+  transport,
+  manifest,
+  artifacts: { templates },
+  backend,
+  initialPath,
+  resolveAssetUrl: (assetPath, { sourcePath }) =>
+    `/generated/${assetPath.split('/').map(encodeURIComponent).join('/')}`,
+})
+```
+
+The adapter resolves `<image src>` against the owning page/component path
+(including values produced by `setData`) and rewrites local WXSS `url(...)`
+values before style registration. External URLs, data URIs, fragments, and
+paths escaping the app root are left untouched.

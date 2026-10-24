@@ -1,4 +1,5 @@
 import type { Manifest } from '@tiny/manifest'
+import type { AssetUrlResolver } from './assets'
 
 export type RuntimeManifest = Manifest
 
@@ -125,6 +126,8 @@ export type RenderThreadOptions = {
   initialPath: string
   initialData?: Record<string, unknown>
   loadStyle?: StyleLoader
+  /** Host hook mapping app-root asset paths to loadable URLs (images, CSS urls). */
+  resolveAssetUrl?: AssetUrlResolver
   capabilities?: Record<string, unknown>
   /** Host canvas implementation for measuring and painting canvas frames. */
   canvas?: RenderCanvasAdapter

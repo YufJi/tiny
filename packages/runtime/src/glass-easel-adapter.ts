@@ -15,6 +15,7 @@ import {
   type BuiltinComponentDefinitions,
 } from '@tiny/components'
 import { createRuntimeDiagnostic } from './diagnostics'
+import { resolveAssetPath, rewriteCssAssetUrls, splitAssetSuffix, type AssetUrlResolver } from './assets'
 
 const NATIVE_COMPONENT_METHODS = new Set([
   'setData',
@@ -97,6 +98,8 @@ export type GlassEaselAdapterOptions = {
     origin: 'service' | 'render'
   }) => void
   onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
+  /** Host hook mapping app-root asset paths to loadable URLs. */
+  resolveAssetUrl?: AssetUrlResolver
   /** Attach the created root component to a host-provided backend tree. */
   mountComponent?: (component: glassEasel.GeneralComponent) => void
   /** Detach the root component from the host-provided backend tree. */
@@ -123,6 +126,8 @@ export class GlassEaselRuntimeAdapter {
   private readonly componentInstances = new Map<string, glassEasel.GeneralComponent>()
   private readonly componentIds = new WeakMap<object, string>()
   private readonly componentPaths = new WeakMap<object, string>()
+  /** Page/component source entry paths used for asset resolution. */
+  private readonly componentSourcePaths = new WeakMap<object, string>()
   private readonly emittedLifecycles = new WeakMap<object, Set<ComponentLifecyclePhase>>()
   private readonly componentUsageCounters = new Map<string, number>()
   private readonly applyingServicePatches = new Set<glassEasel.GeneralComponent>()
@@ -149,6 +154,7 @@ export class GlassEaselRuntimeAdapter {
   private readonly naming: ResolvedNamingConfig
   private readonly onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
   private readonly mountComponent?: (component: glassEasel.GeneralComponent) => void
+  private readonly resolveAssetUrl?: AssetUrlResolver
   private baseStylesRegistered = false
   private readonly unmountComponent?: (component: glassEasel.GeneralComponent) => void
 
@@ -167,6 +173,7 @@ export class GlassEaselRuntimeAdapter {
     this.onDiagnostic = options.onDiagnostic
     this.mountComponent = options.mountComponent
     this.unmountComponent = options.unmountComponent
+    this.resolveAssetUrl = options.resolveAssetUrl
     this.builtinComponents = createBuiltinComponents(this.componentSpace, {
       prefix: this.naming.behaviorPrefix,
       onDiagnostic: (diagnostic) => this.onDiagnostic?.(createRuntimeDiagnostic(
@@ -177,6 +184,9 @@ export class GlassEaselRuntimeAdapter {
         this.activeEventPageId ?? undefined,
         diagnostic.details,
       )),
+      resolveAssetUrl: options.resolveAssetUrl
+        ? (src, component) => this.resolveComponentAssetUrl(src, component)
+        : undefined,
     })
   }
 
@@ -197,8 +207,11 @@ export class GlassEaselRuntimeAdapter {
       this.baseStylesRegistered = true
     }
     for (const style of manifest.styles) {
-      const css = loadStyle(style.outputPath)
+      let css = loadStyle(style.outputPath)
       if (typeof css !== 'string') continue
+      if (this.resolveAssetUrl) {
+        css = rewriteCssAssetUrls(css, style.sourcePath, this.resolveAssetUrl)
+      }
       this.backend.registerStyleSheetContent(style.outputPath, css)
       this.styleContents.set(style.path, css)
       const scopeId = style.scope
@@ -390,8 +403,46 @@ export class GlassEaselRuntimeAdapter {
     const componentId = usage === 1 ? schema.componentId : `${schema.componentId}~${usage}`
     this.componentIds.set(key, componentId)
     this.componentPaths.set(key, schema.path)
+    this.componentSourcePaths.set(key, schema.path)
     this.componentInstances.set(componentId, component)
     return componentId
+  }
+
+  private resolveComponentAssetUrl(src: string, component: unknown): string {
+    if (!this.resolveAssetUrl || !src) return src
+    const sourcePath = this.componentSourcePath(component)
+    if (!sourcePath) return src
+    const assetPath = resolveAssetPath(sourcePath, src)
+    if (!assetPath) return src
+    const { suffix } = splitAssetSuffix(src)
+    try {
+      const resolved = this.resolveAssetUrl(assetPath, { sourcePath })
+      return resolved ? `${resolved}${suffix}` : src
+    } catch {
+      return src
+    }
+  }
+
+  private componentSourcePath(component: unknown): string | undefined {
+    let current: unknown = component
+    for (let depth = 0; current && depth < 32; depth += 1) {
+      const mapped = this.componentSourcePaths.get(current as object)
+      if (mapped) return mapped
+      const owner = (current as {
+        ownerShadowRoot?: { getHostNode?: () => unknown } | null
+      }).ownerShadowRoot?.getHostNode?.()
+      if (owner && owner !== current) {
+        current = owner
+        continue
+      }
+      const parent = (current as { parentNode?: unknown }).parentNode
+      if (parent) {
+        current = parent
+        continue
+      }
+      break
+    }
+    return undefined
   }
 
   getMountedComponentByPageId(pageId: string): glassEasel.GeneralComponent | undefined {
@@ -415,6 +466,7 @@ export class GlassEaselRuntimeAdapter {
       this.registerPage(page, data),
       this.backend,
     )
+    this.componentSourcePaths.set(component as unknown as object, path)
     this.mountedComponents.set(path, component)
     if (pageId) this.componentsByPageId.set(pageId, component)
     component.setData(data)
@@ -432,6 +484,7 @@ export class GlassEaselRuntimeAdapter {
   unmountPage(pageId: string): void {
     const component = this.componentsByPageId.get(pageId)
     if (!component) return
+    this.componentSourcePaths.delete(component as unknown as object)
     this.unmountComponent?.(component)
     if (typeof (component as unknown as { destroy?: () => void }).destroy === 'function') {
       (component as unknown as { destroy: () => void }).destroy()
@@ -861,6 +914,7 @@ export class GlassEaselRuntimeAdapter {
     if (componentId) this.componentInstances.delete(componentId)
     this.componentIds.delete(component as unknown as object)
     this.componentPaths.delete(component as unknown as object)
+    this.componentSourcePaths.delete(component as unknown as object)
   }
 
   private serializeEvent(

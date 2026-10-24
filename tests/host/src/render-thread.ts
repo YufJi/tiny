@@ -21,6 +21,10 @@ const styles = Object.fromEntries(
 const backend = new CurrentWindowBackendContext()
 backend.onEvent(glassEasel.Event.triggerBackendEvent)
 
+const resolveAssetUrl = (assetPath: string): string => (
+  `/generated/${assetPath.split('/').map(encodeURIComponent).join('/')}`
+)
+
 listenForRuntimePort('render', (transport) => {
   bootRenderThread({
     transport,
@@ -29,6 +33,7 @@ listenForRuntimePort('render', (transport) => {
     backend,
     initialPath: 'pages/todos/todos',
     loadStyle: (path) => styles[path] ?? '',
+    resolveAssetUrl,
     canvas: {
       measure: measureBrowserCanvas,
       paint: paintBrowserCanvasFrame,

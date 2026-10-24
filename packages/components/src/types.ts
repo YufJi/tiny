@@ -11,6 +11,8 @@ export type BuiltinComponentFactoryOptions = {
     message: string
     details?: unknown
   }) => void
+  /** Resolve a mini-program asset path for the component instance that owns it. */
+  resolveAssetUrl?: (src: string, component: unknown) => string
 }
 
 export type BuiltinContext = {

@@ -286,6 +286,24 @@ describe('P0 built-in components', () => {
     expect(inputHtml).toContain('maxlength="20"')
   })
 
+  test('image resolves src through the host asset resolver', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space, {
+      resolveAssetUrl: (src) => `https://cdn.example${src}`,
+    })
+    const page = space.defineComponent({
+      is: 'page',
+      using: { image: builtins.image },
+      template: compilePage('<image id="image" src="/a.png" mode="aspectFit" />'),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const imageHost = instance.getShadowRoot()?.getElementById('image')?.asGeneralComponent()
+    expect(imageHost).toBeDefined()
+    expect(glassEasel.dumpElementToString(imageHost!, true)).toContain('https://cdn.example/a.png')
+    imageHost!.setData({ src: '/b.png' })
+    expect(glassEasel.dumpElementToString(imageHost!, true)).toContain('https://cdn.example/b.png')
+  })
+
   test('slider and progress expose aligned color and display options', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)

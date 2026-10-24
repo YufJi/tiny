@@ -11,6 +11,9 @@ import { generatedBaseFor } from './appRegistry';
 const appId = new URLSearchParams(window.location.search).get('app') || 'demo';
 const generatedBase = generatedBaseFor(appId);
 const importGenerated = (url) => new Function('url', 'return import(url)')(url);
+const resolveAssetUrl = (assetPath) => (
+  `${generatedBase}/${assetPath.split('/').map(encodeURIComponent).join('/')}`
+);
 
 const assetsPromise = (async () => {
   const manifest = await fetch(`${generatedBase}/manifest.json`, { cache: 'no-store' })
@@ -38,6 +41,7 @@ assetsPromise.then(({ manifest, templates, styles }) => {
       backend,
       initialPath: manifest.pages[0].path,
       loadStyle: (path) => styles[path] ?? '',
+      resolveAssetUrl,
       canvas: {
         measure: measureBrowserCanvas,
         paint: paintBrowserCanvasFrame,

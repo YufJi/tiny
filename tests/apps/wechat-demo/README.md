@@ -23,7 +23,8 @@ other advanced demo packages are intentionally omitted.
   were removed.
 - The component/API indexes use `wx.navigateTo` for local example links;
   direct pages can also be booted with the host `?path=` query.
-- Local images referenced through dynamic WXML paths are not resolved yet.
+- Local images referenced through dynamic WXML paths resolve through the host
+  `resolveAssetUrl` render hook, including the `resources/kind/{{id}}.png` icons.
 
 ## Run
 
