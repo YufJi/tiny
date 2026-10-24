@@ -1,1 +1,8 @@
-<view class="tiny-scroll-view {{scrollX ? 'is-horizontal' : ''}} {{scrollY ? 'is-vertical' : ''}} class" style="{{style}}"><slot /></view>
+<view
+  id="native-scroll-view"
+  class="tiny-scroll-view {{scrollX ? 'is-horizontal' : ''}} {{scrollY ? 'is-vertical' : ''}} {{hidden ? 'tiny-hidden' : ''}} class"
+  style="{{style}}"
+  bindscroll="handleScroll"
+  bindscrolltoupper="handleScroll"
+  bindscrolltolower="handleScroll"
+><slot /></view>

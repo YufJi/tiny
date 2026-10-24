@@ -188,7 +188,7 @@ describe('P0 built-in components', () => {
     const nativeInput = inputHost?.getShadowRoot()?.getElementById('native-input')
     expect(nativeInput).toBeDefined()
     nativeInput?.triggerEvent('input', { value: 'typed' })
-    expect(changes).toEqual([{ value: 'typed' }])
+    expect(changes).toEqual([{ value: 'typed', cursor: -1, keyCode: 0 }])
     expect(inputHost?.data.value).toBe('typed')
   })
 
@@ -226,6 +226,139 @@ describe('P0 built-in components', () => {
     expect(events.checkbox).toEqual({ value: 'one', checked: true })
     expect(events.slider).toEqual({ value: 42 })
     expect(events.switch).toEqual({ value: true })
+  })
+
+
+  test('text, icon, image and form controls expose aligned properties', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: {
+        text: builtins.text,
+        icon: builtins.icon,
+        image: builtins.image,
+        checkbox: builtins.checkbox,
+        radio: builtins.radio,
+        switch: builtins.switch,
+        input: builtins.input,
+      },
+      template: compilePage(`
+        <text id="text" selectable space="nbsp">text</text>
+        <icon id="icon" type="success" size="32" color="#ff0000" />
+        <image id="image" src="/a.png" mode="aspectFit" lazy-load webp />
+        <checkbox id="checkbox" color="#ff0000" />
+        <radio id="radio" color="#00ff00" />
+        <switch id="switch" color="#0000ff" />
+        <input id="input" password maxlength="20" />
+      `),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()
+    const textHtml = glassEasel.dumpElementToString(host('text')!, true)
+    expect(textHtml).toContain('tiny-text-selectable')
+    expect(textHtml).toContain('tiny-text-space-nbsp')
+
+    const iconHtml = glassEasel.dumpElementToString(host('icon')!, true)
+    expect(iconHtml).toContain('font-size: 32px')
+    expect(iconHtml).toContain('color: #ff0000')
+
+    const imageHtml = glassEasel.dumpElementToString(host('image')!, true)
+    expect(imageHtml).toContain('tiny-image-mode-aspectFit')
+    expect(imageHtml).toContain('loading="lazy"')
+
+    expect(glassEasel.dumpElementToString(host('checkbox')!, true)).toContain('accent-color: #ff0000')
+    expect(glassEasel.dumpElementToString(host('radio')!, true)).toContain('accent-color: #00ff00')
+    expect(glassEasel.dumpElementToString(host('switch')!, true)).toContain('accent-color: #0000ff')
+
+    const inputHtml = glassEasel.dumpElementToString(host('input')!, true)
+    expect(inputHtml).toContain('type="password"')
+    expect(inputHtml).toContain('maxlength="20"')
+  })
+
+  test('slider and progress expose aligned color and display options', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { slider: builtins.slider, progress: builtins.progress },
+      template: compilePage(`
+        <slider id="slider" value="42" show-value active-color="#112233" backgroundColor="#eeeeee" block-size="32" />
+        <progress id="progress" percent="42" show-info stroke-width="10" active-color="#445566" background-color="#dddddd" border-radius="4" font-size="20" />
+      `),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()
+    const sliderHtml = glassEasel.dumpElementToString(host('slider')!, true)
+    expect(sliderHtml).toContain('tiny-slider-value')
+    expect(sliderHtml).toContain('--tiny-slider-active: #112233')
+    expect(sliderHtml).toContain('--tiny-slider-block-size: 32px')
+    const progressHtml = glassEasel.dumpElementToString(host('progress')!, true)
+    expect(progressHtml).toContain('height: 10px')
+    expect(progressHtml).toContain('background-color: #445566')
+    expect(progressHtml).toContain('font-size: 20px')
+    expect(progressHtml).toContain('42%')
+  })
+
+
+  test('scroll-view reports scroll boundaries and swiper exposes indicator colors', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const events: Record<string, unknown> = {}
+    const page = space.defineComponent({
+      is: 'page',
+      using: {
+        'scroll-view': builtins['scroll-view'],
+        swiper: builtins.swiper,
+        'swiper-item': builtins['swiper-item'],
+      },
+      template: compilePage(`
+        <scroll-view id="scroll" scroll-y upper-threshold="10" lower-threshold="20" bindscroll="onScroll" bindscrolltoupper="onUpper" bindscrolltolower="onLower"><view>content</view></scroll-view>
+        <swiper id="swiper" indicator-dots indicator-color="#112233" indicator-active-color="#445566"><swiper-item>a</swiper-item></swiper>
+      `),
+      methods: {
+        onScroll(event: glassEasel.ShadowedEvent<unknown>) { events.scroll = event.detail },
+        onUpper(event: glassEasel.ShadowedEvent<unknown>) { events.upper = event.detail },
+        onLower(event: glassEasel.ShadowedEvent<unknown>) { events.lower = event.detail },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const scrollHost = instance.getShadowRoot()?.getElementById('scroll')?.asGeneralComponent()!
+    const nativeScroll = scrollHost.getShadowRoot()?.getElementById('native-scroll-view')!
+    nativeScroll.triggerEvent('scroll', { scrollTop: 35, scrollHeight: 100, clientHeight: 50 })
+    expect(events.scroll).toMatchObject({ scrollTop: 35, scrollHeight: 100 })
+    expect(events.lower).toEqual({ direction: 'bottom' })
+    nativeScroll.triggerEvent('scroll', { scrollTop: 5, scrollHeight: 100, clientHeight: 50 })
+    expect(events.upper).toEqual({ direction: 'top' })
+
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    const swiperHost = instance.getShadowRoot()?.getElementById('swiper')?.asGeneralComponent()!
+    const swiperHtml = glassEasel.dumpElementToString(swiperHost, true)
+    expect(swiperHtml).toContain('background-color: #445566')
+  })
+
+
+  test('form controls reuse wx-disabled, wx-data-component, wx-label-target and group/item behaviors', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: {
+        'checkbox-group': builtins['checkbox-group'],
+        checkbox: builtins.checkbox,
+        input: builtins.input,
+      },
+      template: compilePage('<checkbox-group id="group"><checkbox id="checkbox" value="a" /></checkbox-group><input id="input" value="text" />'),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    expect(host('checkbox').hasBehavior('wx-disabled')).toBe(true)
+    expect(host('checkbox').hasBehavior('wx-data-component')).toBe(true)
+    expect(host('checkbox').hasBehavior('wx-label-target')).toBe(true)
+    expect(host('checkbox').hasBehavior('wx-item')).toBe(true)
+    expect(host('group').hasBehavior('wx-group')).toBe(true)
+    expect(host('input').hasBehavior('wx-data-component')).toBe(true)
+    expect((host('checkbox') as unknown as { getFormData: () => unknown }).getFormData()).toBe('a')
   })
 
   test('progress, swiper, and icon render structure and state', () => {

@@ -1,1 +1,21 @@
-<view class="tiny-progress class" style="{{style}}"><view class="tiny-progress-track"><view class="tiny-progress-bar" style="width: {{percent < 0 ? 0 : (percent > 100 ? 100 : percent)}}%" /></view><text class="tiny-progress-info" hidden="{{!showInfo}}">{{percent}}%</text></view>
+<view
+  class="tiny-progress {{hidden ? 'tiny-hidden' : ''}} class"
+  style="{{style}}"
+  aria-label="{{ariaLabel}}"
+>
+  <view
+    class="tiny-progress-track"
+    style="height: {{strokeWidth}}px; background-color: {{backgroundColor}}; border-radius: {{borderRadius}}px;"
+  >
+    <view
+      class="tiny-progress-bar {{active ? 'is-active' : ''}}"
+      style="width: {{percent < 0 ? 0 : (percent > 100 ? 100 : percent)}}%; background-color: {{activeColor || color}}; border-radius: {{borderRadius}}px;"
+      bindtransitionend="handleActiveEnd"
+    />
+  </view>
+  <text
+    wx:if="{{showInfo}}"
+    class="tiny-progress-info"
+    style="font-size: {{fontSize}}px; color: {{color}};"
+  >{{percent}}%</text>
+</view>

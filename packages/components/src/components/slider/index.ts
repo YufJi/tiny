@@ -6,13 +6,21 @@ export function defineSlider(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: 'tiny-builtin:slider',
     template: ctx.template('slider'),
+    behaviors: [ctx.behaviors.base, ctx.behaviors.disabled, ctx.behaviors.dataComponent],
     properties: {
+      ariaLabel: { type: String, value: '' },
       value: { type: Number, value: 0 },
       min: { type: Number, value: 0 },
       max: { type: Number, value: 100 },
       step: { type: Number, value: 1 },
       disabled: { type: Boolean, value: false },
       showValue: { type: Boolean, value: false },
+      activeColor: { type: String, value: '#1aad19' },
+      backgroundColor: { type: String, value: '#e9e9e9' },
+      blockSize: { type: Number, value: 28 },
+      blockColor: { type: String, value: '#ffffff' },
+      selectedColor: { type: String, value: '#1aad19' },
+      color: { type: String, value: '#e9e9e9' },
     },
     methods: {
       handleChanging(event: glassEasel.ShadowedEvent<unknown>) {

@@ -5,6 +5,7 @@ export function defineCheckboxGroup(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: 'tiny-builtin:checkbox-group',
     template: ctx.template('checkbox-group'),
+    behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent, ctx.behaviors.group],
     properties: {
       style: { type: String, value: '' },
     },

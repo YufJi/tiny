@@ -101,6 +101,79 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
     },
   })
 
+
+
+  const sizeNormalizer = space.defineBehavior({
+    is: 'wx-size-normalizer',
+    methods: {
+      normalizeSize(value: unknown): string {
+        if (typeof value === 'number') return `${value}px`
+        const text = String(value ?? '')
+        return /^\d+(\.\d+)?$/.test(text) ? `${text}px` : text
+      },
+    },
+  })
+
+  const classPrefix = space.defineBehavior({
+    is: 'wx-class-prefix',
+    methods: {
+      getClassPrefix(): string {
+        return ''
+      },
+    },
+  })
+
+  const disabled = space.defineBehavior({
+    is: 'wx-disabled',
+    properties: {
+      disabled: { type: Boolean, value: false },
+    },
+  })
+
+  const dataComponent = space.defineBehavior({
+    is: 'wx-data-component',
+    properties: {
+      name: { type: String, value: '' },
+      autoFill: { type: String, value: '' },
+    },
+    methods: {
+      getFormData(): unknown {
+        const data = this.data as { value?: unknown; selected?: unknown }
+        return data.value ?? data.selected ?? ''
+      },
+      resetFormData(): void {
+        if ('value' in this.data) this.setData({ value: '' })
+      },
+    },
+  })
+
+  const group = space.defineBehavior({
+    is: 'wx-group',
+    methods: {
+      applyItemChange(detail: { value?: unknown; checked?: unknown }): string[] {
+        const value = String(detail.value ?? '')
+        const selected = new Set<string>(((this.data as { selected?: string[] }).selected ?? []))
+        if (detail.checked) selected.add(value)
+        else selected.delete(value)
+        this.setData({ selected: [...selected] })
+        return [...selected]
+      },
+      resetFormData(): void {
+        this.setData({ selected: [] })
+      },
+    },
+  })
+
+  const item = space.defineBehavior({
+    is: 'wx-item',
+    methods: {
+      changedByTap(): void {},
+      resetFormData(): void {
+        if ('checked' in this.data) this.setData({ checked: false })
+      },
+    },
+  })
+
   const labelTarget = space.defineBehavior({
     is: 'wx-label-target',
     methods: {
@@ -110,7 +183,7 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
     },
   })
 
-  return { base, hover, labelTarget }
+  return { base, hover, labelTarget, disabled, dataComponent, group, item, sizeNormalizer, classPrefix }
 }
 
 export type BuiltinBehaviors = ReturnType<typeof createBuiltinBehaviors>

@@ -5,9 +5,19 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: 'tiny-builtin:swiper',
     template: ctx.template('swiper'),
+    behaviors: [ctx.behaviors.base],
     properties: {
+      ariaLabel: { type: String, value: '' },
       current: { type: Number, value: 0 },
+      currentItemId: { type: String, value: '' },
       indicatorDots: { type: Boolean, value: false },
+      indicatorColor: { type: String, value: '' },
+      indicatorActiveColor: { type: String, value: '' },
+      previousMargin: { type: String, value: '' },
+      nextMargin: { type: String, value: '' },
+      displayMultipleItems: { type: Number, value: 1 },
+      skipHiddenItemLayout: { type: Boolean, value: false },
+      easingFunction: { type: String, value: 'default' },
       autoplay: { type: Boolean, value: false },
       interval: { type: Number, value: 5000 },
       duration: { type: Number, value: 500 },
@@ -80,8 +90,9 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
         const index = Number(this.data.activeIndex) || 0
         const axis = this.data.vertical ? 'Y' : 'X'
         const duration = Number(this.data.duration) || 500
+        const easing = this.data.easingFunction === 'ease-in' ? 'ease-in' : this.data.easingFunction === 'ease-out' ? 'ease-out' : this.data.easingFunction === 'ease-in-out' ? 'ease-in-out' : this.data.easingFunction === 'linear' ? 'linear' : 'ease'
         this.setData({
-          trackStyle: `transform: translate${axis}(-${index * 100}%); transition-duration: ${duration}ms;`,
+          trackStyle: `transform: translate${axis}(-${index * 100}%); transition-duration: ${duration}ms; transition-timing-function: ${easing};`,
         })
       },
       setActive(index: number, source: string) {
@@ -94,6 +105,12 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
         this.setData({ activeIndex: next })
         this.updateTrackStyle()
         this.triggerEvent('change', { current: next, source }, { bubbles: true, composed: true })
+        this.triggerEvent('transition', { current: next, source }, { bubbles: true, composed: true })
+        const timer = (this as unknown as { __swiperFinishTimer?: ReturnType<typeof setTimeout> }).__swiperFinishTimer
+        if (timer) clearTimeout(timer)
+        ;(this as unknown as { __swiperFinishTimer?: ReturnType<typeof setTimeout> }).__swiperFinishTimer = setTimeout(() => {
+          this.triggerEvent('animationfinish', { current: next, source }, { bubbles: true, composed: true })
+        }, Number(this.data.duration) || 500)
       },
       stopAutoplay() {
         const timer = (this as unknown as { __swiperTimer?: ReturnType<typeof setInterval> }).__swiperTimer

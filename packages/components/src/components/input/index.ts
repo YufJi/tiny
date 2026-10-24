@@ -6,20 +6,38 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: 'tiny-builtin:input',
     template: ctx.template('input'),
+    behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent, ctx.behaviors.classPrefix],
     properties: {
+      ariaLabel: { type: String, value: '' },
       value: { type: String, value: '' },
       type: { type: String, value: 'text' },
+      password: { type: Boolean, value: false },
       placeholder: { type: String, value: '' },
+      placeholderStyle: { type: String, value: '' },
+      placeholderClass: { type: String, value: '' },
       disabled: { type: Boolean, value: false },
+      maxlength: { type: Number, value: 140 },
+      focus: { type: Boolean, value: false },
+      autoFocus: { type: Boolean, value: false },
+      confirmType: { type: String, value: 'done' },
+      confirmHold: { type: Boolean, value: false },
+      cursor: { type: Number, value: -1 },
+      selectionStart: { type: Number, value: -1 },
+      selectionEnd: { type: Number, value: -1 },
+      adjustPosition: { type: Boolean, value: true },
+      holdKeyboard: { type: Boolean, value: false },
       style: { type: String, value: '' },
     },
     externalClasses: ['class'],
     options: { virtualHost: true },
     methods: {
       handleInput(event: glassEasel.ShadowedEvent<unknown>) {
+        const detail = (event.detail ?? {}) as { value?: unknown; cursor?: unknown; keyCode?: unknown }
         const value = valueFromEvent(event)
+        const cursor = Number(detail.cursor ?? -1)
+        const keyCode = Number(detail.keyCode ?? 0)
         this.setData({ value })
-        this.triggerEvent('input', { value }, { bubbles: true, composed: true })
+        this.triggerEvent('input', { value, cursor, keyCode }, { bubbles: true, composed: true })
       },
       handleChange(event: glassEasel.ShadowedEvent<unknown>) {
         const value = valueFromEvent(event)
@@ -27,13 +45,17 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
         this.triggerEvent('change', { value }, { bubbles: true, composed: true })
       },
       handleFocus(event: glassEasel.ShadowedEvent<unknown>) {
-        const value = valueFromEvent(event) ?? this.data.value
-        this.triggerEvent('focus', { value }, { bubbles: true, composed: true })
+        const detail = (event.detail ?? {}) as { value?: unknown; height?: unknown }
+        const value = detail.value ?? this.data.value
+        const height = Number(detail.height ?? 0)
+        this.triggerEvent('focus', { value, height }, { bubbles: true, composed: true })
       },
       handleBlur(event: glassEasel.ShadowedEvent<unknown>) {
-        const value = valueFromEvent(event) ?? this.data.value
+        const detail = (event.detail ?? {}) as { value?: unknown; height?: unknown }
+        const value = detail.value ?? this.data.value
+        const height = Number(detail.height ?? 0)
         this.setData({ value })
-        this.triggerEvent('blur', { value }, { bubbles: true, composed: true })
+        this.triggerEvent('blur', { value, height }, { bubbles: true, composed: true })
       },
       handleKeyDown(event: glassEasel.ShadowedEvent<unknown>) {
         const detail = (event.detail ?? {}) as { key?: string; keyCode?: number; which?: number; value?: unknown }

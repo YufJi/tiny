@@ -16,9 +16,11 @@ export function defineIcon(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: 'tiny-builtin:icon',
     template: ctx.template('icon'),
+    behaviors: [ctx.behaviors.base, ctx.behaviors.sizeNormalizer],
     properties: {
+      ariaLabel: { type: String, value: '' },
       type: { type: String, value: 'success' },
-      size: { type: String, optionalTypes: [Number], value: 16 },
+      size: { type: String, optionalTypes: [Number], value: 23 },
       color: { type: String, value: '' },
     },
     data: {

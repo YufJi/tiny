@@ -1,1 +1,19 @@
-<input id="native-input" class="tiny-slider" type="range" min="{{min}}" max="{{max}}" step="{{step}}" value="{{value}}" disabled="{{disabled}}" catchinput="handleChanging" catchchange="handleChange" />
+<view
+  class="tiny-slider-wrapper {{hidden ? 'tiny-hidden' : ''}}"
+  style="--tiny-slider-active: {{activeColor || selectedColor}}; --tiny-slider-bg: {{backgroundColor || color}}; --tiny-slider-block: {{blockColor}}; --tiny-slider-block-size: {{blockSize}}px;"
+>
+  <input
+    id="native-input"
+    class="tiny-slider"
+    aria-label="{{ariaLabel}}"
+    type="range"
+    min="{{min}}"
+    max="{{max}}"
+    step="{{step}}"
+    value="{{value}}"
+    disabled="{{disabled}}"
+    catchinput="handleChanging"
+    catchchange="handleChange"
+  />
+  <text wx:if="{{showValue}}" class="tiny-slider-value">{{value}}</text>
+</view>

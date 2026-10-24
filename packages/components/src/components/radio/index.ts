@@ -6,11 +6,13 @@ export function defineRadio(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: 'tiny-builtin:radio',
     template: ctx.template('radio'),
-    behaviors: [ctx.behaviors.base],
+    behaviors: [ctx.behaviors.base, ctx.behaviors.disabled, ctx.behaviors.dataComponent, ctx.behaviors.labelTarget, ctx.behaviors.item],
     properties: {
+      ariaLabel: { type: String, value: '' },
       value: { type: String, value: '' },
       checked: { type: Boolean, value: false },
       disabled: { type: Boolean, value: false },
+      color: { type: String, value: '#09BB07' },
     },
     methods: {
       handleChange(event: glassEasel.ShadowedEvent<unknown>) {

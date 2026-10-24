@@ -278,4 +278,186 @@ page {
 .tiny-swiper-dot.is-active {
   background: #ffffff;
 }
+.tiny-view.is-inline {
+  display: inline-block;
+}
+.tiny-text-selectable {
+  user-select: text;
+  -webkit-user-select: text;
+}
+.tiny-text-space-en,
+.tiny-text-space-em,
+.tiny-text-space-nbsp {
+  white-space: pre-wrap;
+}
+.tiny-icon {
+  display: inline-block;
+  font-style: normal;
+  line-height: 1;
+}
+.tiny-icon-success,
+.tiny-icon-success_no_circle {
+  color: #09bb07;
+}
+.tiny-icon-info {
+  color: #10aeff;
+}
+.tiny-icon-warn,
+.tiny-icon-waiting {
+  color: #f76260;
+}
+.tiny-icon-cancel,
+.tiny-icon-clear {
+  color: #b2b2b2;
+}
+.tiny-icon-download {
+  color: #09bb07;
+}
+.tiny-input {
+  display: block;
+  width: 100%;
+  height: 1.4rem;
+  min-height: 1.4rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-family: inherit;
+  text-overflow: clip;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.tiny-input::placeholder {
+  color: #999999;
+}
+.tiny-checkbox,
+.tiny-radio {
+  vertical-align: middle;
+}
+.tiny-checkbox input,
+.tiny-radio input {
+  margin: 0;
+  vertical-align: middle;
+}
+.tiny-switch {
+  display: inline-block;
+  vertical-align: middle;
+}
+.tiny-switch input {
+  margin: 0;
+  vertical-align: middle;
+}
+.tiny-slider-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+}
+.tiny-slider {
+  flex: 1;
+  width: 100%;
+  height: 1.4rem;
+  margin: 0;
+  accent-color: var(--tiny-slider-active, #1aad19);
+}
+.tiny-slider-value {
+  min-width: 2em;
+  color: #333333;
+  font-size: 14px;
+  text-align: right;
+}
+.tiny-progress {
+  display: flex;
+  align-items: center;
+}
+.tiny-progress-track {
+  flex: 1;
+  overflow: hidden;
+}
+.tiny-progress-bar {
+  width: 0;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+.tiny-progress-info {
+  margin-left: 15px;
+  min-width: 2em;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.tiny-image-mode-scaleToFill {
+  object-fit: fill;
+}
+.tiny-image-mode-heightFix {
+  object-fit: fill;
+  width: auto;
+}
+.tiny-image-mode-top {
+  object-fit: none;
+  object-position: top;
+}
+.tiny-image-mode-bottom {
+  object-fit: none;
+  object-position: bottom;
+}
+.tiny-image-mode-center {
+  object-fit: none;
+  object-position: center;
+}
+.tiny-image-mode-left {
+  object-fit: none;
+  object-position: left;
+}
+.tiny-image-mode-right {
+  object-fit: none;
+  object-position: right;
+}
+.tiny-image-mode-topLeft {
+  object-fit: none;
+  object-position: left top;
+}
+.tiny-image-mode-topRight {
+  object-fit: none;
+  object-position: right top;
+}
+.tiny-image-mode-bottomLeft {
+  object-fit: none;
+  object-position: left bottom;
+}
+.tiny-image-mode-bottomRight {
+  object-fit: none;
+  object-position: right bottom;
+}
+.tiny-scroll-view {
+  width: 100%;
+  overflow: hidden;
+}
+.tiny-scroll-view.is-vertical {
+  overflow-y: auto;
+  height: 100%;
+}
+.tiny-scroll-view.is-horizontal {
+  overflow-x: auto;
+  width: 100%;
+}
+.tiny-swiper {
+  --tiny-swiper-items: 1;
+}
+.tiny-swiper-item {
+  flex: 0 0 calc(100% / var(--tiny-swiper-items, 1));
+  width: calc(100% / var(--tiny-swiper-items, 1));
+}
+.tiny-swiper-dot {
+  width: 8px;
+  height: 8px;
+}
+.tiny-canvas {
+  display: block;
+  width: 100%;
+  height: 150px;
+}
+
 `

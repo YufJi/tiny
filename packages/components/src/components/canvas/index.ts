@@ -4,9 +4,11 @@ export function defineCanvas(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: 'tiny-builtin:canvas',
     template: ctx.template('canvas'),
+    behaviors: [ctx.behaviors.base],
     properties: {
       canvasId: { type: String, value: '' },
       type: { type: String, value: '' },
+      disableScroll: { type: Boolean, value: false },
       style: { type: String, value: '' },
     },
     externalClasses: ['class'],
