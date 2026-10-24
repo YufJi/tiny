@@ -12,7 +12,7 @@ export function applyDataPatch(data: Record<string, unknown>, patch: DataPatch):
   return data
 }
 
-function parseDataPath(path: string): (string | number)[] {
+export function parseDataPath(path: string): (string | number)[] {
   const result: (string | number)[] = []
   const segmentPattern = /([^.[\]]+)|\[(\d+)\]/g
   let match = segmentPattern.exec(path)
@@ -23,6 +23,22 @@ function parseDataPath(path: string): (string | number)[] {
   }
   if (result.length === 0) throw new Error(`Invalid data path: ${path}`)
   return result
+}
+
+export function readDataPath(data: unknown, path: string | readonly (string | number)[]): unknown {
+  const segments = typeof path === 'string' ? parseDataPath(path) : path
+  let cursor: unknown = data
+  for (const segment of segments) {
+    if (cursor === null || cursor === undefined) return undefined
+    if (typeof segment === 'number') {
+      if (!Array.isArray(cursor)) return undefined
+      cursor = cursor[segment]
+    } else {
+      if (typeof cursor !== 'object') return undefined
+      cursor = (cursor as Record<string, unknown>)[segment]
+    }
+  }
+  return cursor
 }
 
 function writeDataPath(

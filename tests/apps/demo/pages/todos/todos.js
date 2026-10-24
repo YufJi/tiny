@@ -47,4 +47,8 @@ Page({
   showToast() {
     wx.showToast({ title: 'P0 ready' })
   },
+
+  openSemantics() {
+    wx.navigateTo({ url: '../semantics/semantics' })
+  },
 })

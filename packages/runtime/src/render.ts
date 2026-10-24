@@ -27,11 +27,23 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
     onMiniProgramEvent: (pageId, event) => {
       connection.sendEvent('event', 'dispatch', event, { pageId })
     },
-    onComponentLifecycle: (componentId, path, phase, data) => {
-      connection.sendEvent('runtime', 'componentLifecycle', { componentId, path, phase, data })
+    onComponentLifecycle: (componentId, path, phase, data, meta) => {
+      connection.sendEvent('runtime', 'componentLifecycle', {
+        componentId,
+        path,
+        phase,
+        data,
+        ...meta,
+      })
     },
     onComponentPageLifetime: (componentId, path, phase, data) => {
       connection.sendEvent('runtime', 'componentPageLifetime', { componentId, path, phase, data })
+    },
+    onComponentData: (payload) => {
+      connection.sendEvent('runtime', 'componentData', payload)
+    },
+    onComponentObserved: (payload) => {
+      connection.sendEvent('runtime', 'componentObserved', payload)
     },
     onDiagnostic: (diagnostic) => {
       options.onDiagnostic?.(diagnostic)
@@ -43,6 +55,7 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
   })
   for (const page of options.manifest.pages) adapter.registerPageArtifact(page)
   let currentPath = options.initialPath
+  let manifestForRender = options.manifest
 
   connection.onControl('runtime', 'bootstrap', async (message) => {
     try {
@@ -54,6 +67,7 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
         componentSchemas?: import('./types').MiniProgramComponentSchema[]
       }
       const manifest = payload.manifest ?? options.manifest
+      manifestForRender = manifest
       const initialPath = payload.initialPath ?? currentPath
       const initialData = payload.initialData ?? options.initialData ?? {}
       const pageId = payload.pageId
@@ -67,7 +81,8 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
       const component = adapter.mountPage(initialPath, initialData, pageId)
       if (!pageId) adapter.registerPageComponent(initialPath, component)
       currentPath = initialPath
-      return { status: 'ready', currentPath }
+      const components = await settlePage(adapter, page)
+      return { status: 'ready', currentPath, components }
     } catch (error) {
       connection.sendDiagnostic('error', {
         code: 'RENDER_BOOTSTRAP_ERROR',
@@ -78,7 +93,7 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
     }
   })
 
-  connection.onControl('page', 'navigateTo', (message) => {
+  connection.onControl('page', 'navigateTo', async (message) => {
     const payload = message.payload as {
       path?: string
       pageId?: string
@@ -87,11 +102,14 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
     }
     if (payload.previousPageId) adapter.unmountPage(payload.previousPageId)
     if (!payload.path || !payload.pageId) throw new Error('navigateTo requires a rendered page')
+    const page = findPage(manifestForRender, payload.path)
+    if (!page) throw new Error(`page is not declared: ${payload.path}`)
     adapter.mountPage(payload.path, payload.initialData ?? {}, payload.pageId)
-    return { status: 'ready', path: payload.path, pageId: payload.pageId }
+    const components = await settlePage(adapter, page)
+    return { status: 'ready', path: payload.path, pageId: payload.pageId, components }
   })
 
-  connection.onControl('page', 'navigateBack', (message) => {
+  connection.onControl('page', 'navigateBack', async (message) => {
     const payload = message.payload as {
       path?: string
       pageId?: string
@@ -100,8 +118,10 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
     }
     for (const pageId of payload.unloadedPageIds ?? []) adapter.unmountPage(pageId)
     if (!payload.path || !payload.pageId) throw new Error('navigateBack requires a rendered page')
+    const page = findPage(manifestForRender, payload.path)
     adapter.mountPage(payload.path, payload.initialData ?? {}, payload.pageId)
-    return { status: 'ready', path: payload.path, pageId: payload.pageId }
+    const components = page ? await settlePage(adapter, page) : []
+    return { status: 'ready', path: payload.path, pageId: payload.pageId, components }
   })
 
   connection.onControl('runtime', 'inspectTree', (message) => {
@@ -126,7 +146,12 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
         ? adapter.getMountedComponentByPageId(payload.pageId)
         : undefined
     if (!component) return
-    component.setData(payload.patch ?? {})
+    adapter.beginServicePatch(component)
+    try {
+      component.setData(payload.patch ?? {})
+    } finally {
+      adapter.endServicePatch(component)
+    }
   })
 
   connection.onEvent('event', 'trigger', (message) => {
@@ -149,4 +174,31 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
 
 function findPage(manifest: RenderThreadOptions['manifest'], path: string): PageArtifact | undefined {
   return manifest.pages.find((page) => page.path === path)
+}
+
+async function settlePage(
+  adapter: import('./glass-easel-adapter').GlassEaselRuntimeAdapter,
+  page: PageArtifact,
+): Promise<import('./glass-easel-adapter').ComponentSnapshot[]> {
+  await adapter.whenRendered()
+  if (hasUsingComponents(page)) {
+    let lastCount = -1
+    let stable = 0
+    const deadline = Date.now() + 100
+    while (Date.now() < deadline) {
+      const count = adapter.getComponentCount()
+      if (count === lastCount) stable += 1
+      else { stable = 0; lastCount = count }
+      if (count > 0 && stable >= 2) break
+      await new Promise((resolve) => setTimeout(resolve, 1))
+      await adapter.whenRendered()
+    }
+  }
+  return adapter.getComponentSnapshot()
+}
+
+function hasUsingComponents(page: PageArtifact): boolean {
+  const effective = page.configuration?.effective ?? {}
+  const using = effective.usingComponents
+  return Boolean(using && typeof using === 'object' && Object.keys(using).length > 0)
 }

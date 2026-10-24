@@ -17,8 +17,8 @@ export default function Testing() {
       <PageHero
         eyebrow="Testing & compatibility"
         title={<>用真实小程序验收，<br /><span className="gradient">而不是用快照自证</span></>}
-        lede="Tiny 的验收会编译真实 WXML/WXSS/JS，启动两个 iframe，在 Chromium 里点击、输入、导航，并在失败时保存截图。92 个单测管住协议与算法，40 个浏览器步骤管住端到端行为。"
-        stats={[['92', 'unit tests'], ['40', 'browser steps'], ['5', 'browser flows'], ['5', 'test fixtures']]}
+        lede="Tiny 的验收会编译真实 WXML/WXSS/JS，启动两个 iframe，在 Chromium 里点击、输入、导航，并在失败时保存截图。113 个单测管住协议与算法，45 个浏览器步骤管住端到端行为。"
+        stats={[['113', 'unit tests'], ['45', 'browser steps'], ['5', 'browser flows'], ['5', 'test fixtures']]}
       />
       <PageNav items={[
         ['gate', '验收闸门'],
@@ -55,7 +55,7 @@ export default function Testing() {
           },
           {
             title: 'P0 demo 流程',
-            detail: '14 步：启动、渲染、作用域样式、快照、自定义事件、checkbox/slider/switch、导航、input、storage、toast、canvas 诊断、零 console error。',
+            detail: '19 步：启动、渲染、作用域样式、快照、自定义事件、checkbox/slider/switch、导航、input、storage、toast、组件语义、样式隔离、relations、canvas 诊断、零 console error。',
             code: 'runBrowserAcceptance({ baseUrl })',
           },
           {
@@ -90,13 +90,13 @@ export default function Testing() {
       <Section
         id="flows"
         kicker="Browser flows"
-        title="40 步如何分布"
+        title="45 步如何分布"
         intro="每一步都在真实 Chromium 中执行，并对页面状态、DOM、像素或 console 做断言。"
       >
         <Table
           head={['流程', 'fixture', '步数', '证明什么']}
           rows={[
-            ['P0 demo', <code>tests/apps/demo</code>, '14', '双线程启动、内置组件、样式作用域、事件、导航、storage、canvas 诊断、console 干净'],
+            ['P0 demo', <code>tests/apps/demo</code>, '19', '双线程启动、内置组件、样式作用域、事件、导航、storage、canvas 诊断、组件语义、console 干净'],
             ['Existing app', <code>tests/apps/mini</code>, '9', '真实 todos、双 add-button 实例、import/include/template、输入、ECharts bar、子包、warnings'],
             ['Taro 3', <code>tests/apps/todo</code>, '6', 'Redux todos、输入 + Enter、勾选、筛选、清空、零错误'],
             ['WeChat demo', <code>tests/apps/wechat-demo</code>, '4', '组件索引、button 页、storage API 页、零错误'],
@@ -123,7 +123,7 @@ export default function Testing() {
       <Section
         id="units"
         kicker="Unit tests"
-        title="92 个测试，按包隔离"
+        title="113 个测试，按包隔离"
         intro="没有全局 test runner；每个包独立执行，避免隐式耦合，也让失败定位到包。"
       >
         <Table
@@ -134,7 +134,7 @@ export default function Testing() {
             [<code>@tiny/stylesheet-compiler</code>, '24', 'class/tag 前缀、rpx/calc、@import 编码与包装、@layer、:host 低优先级、keyframes、page 根节点'],
             [<code>@tiny/cli</code>, '10', 'manifest 全 artifact、WXS 双注册、配置合并、service/render 入口、TS + source map、样式作用域、tag marker、可执行模板 group'],
             [<code>@tiny/components</code>, '6', '18 个 tag 模板、tag 暴露、button/input 事件归一化、checkbox/slider/switch、progress/swiper/icon 结构'],
-            [<code>@tiny/runtime</code>, '14', '全局安装、双线程 bootstrap、组件 schema、properties/slots/lifetimes/events、导航、API host、诊断、animation/canvas stub'],
+            [<code>@tiny/runtime</code>, '35', '全局安装、双线程 bootstrap、组件 schema、behaviors/observers/relations/externalClasses/styleIsolation/selectComponent、导航、API host、诊断'],
           ]}
         />
         <Callout title="单测也验证协议契约" >

@@ -1,0 +1,4 @@
+<view class="box">
+  <text class="line" data-check="parent-linked">parent-linked:{{linked}}</text>
+  <slot />
+</view>

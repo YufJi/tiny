@@ -33,12 +33,21 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
       const serviceResult = await service.control<Record<string, unknown>>('page', 'navigateTo', {
         url: params.url,
       }, { pageId: context.pageId })
-      await render.control('page', 'navigateTo', {
+      const renderResult = await render.control<{
+        pageId?: string
+        components?: unknown[]
+      }>('page', 'navigateTo', {
         path: serviceResult.path,
         pageId: serviceResult.pageId,
         initialData: serviceResult.initialData,
         previousPageId: context.pageId,
       })
+      if (renderResult.pageId) {
+        await service.control('page', 'ready', {
+          pageId: renderResult.pageId,
+          components: renderResult.components,
+        })
+      }
       return serviceResult
     }
   }
@@ -69,6 +78,12 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
   render.onEvent('runtime', 'componentPageLifetime', (message) => {
     service.sendEvent('runtime', 'componentPageLifetime', message.payload)
   })
+  render.onEvent('runtime', 'componentData', (message) => {
+    service.sendEvent('runtime', 'componentData', message.payload, { pageId: message.pageId })
+  })
+  render.onEvent('runtime', 'componentObserved', (message) => {
+    service.sendEvent('runtime', 'componentObserved', message.payload, { pageId: message.pageId })
+  })
   service.onEvent('event', 'trigger', (message) => {
     render.sendEvent('event', 'trigger', message.payload)
   })
@@ -82,7 +97,7 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
     render.sendEvent('canvas', 'frame', message.payload, { pageId: message.pageId })
   })
 
-    return {
+  return {
     service,
     render,
     apiRegistry,
@@ -107,7 +122,10 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
         componentSchemas,
       })
       if (pageId) {
-        await service.control('page', 'ready', { pageId })
+        await service.control('page', 'ready', {
+          pageId,
+          components: renderResult.components,
+        })
       }
       return { service: serviceResult, render: renderResult }
     },

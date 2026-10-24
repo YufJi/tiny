@@ -1,0 +1,2 @@
+.box { display: block; }
+.line { display: block; margin: 4rpx 0; }

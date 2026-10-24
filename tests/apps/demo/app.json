@@ -1,12 +1,20 @@
 {
   "pages": [
     "pages/todos/todos",
-    "pages/add-todo/add-todo"
+    "pages/add-todo/add-todo",
+    "pages/semantics/semantics"
   ],
   "window": {
     "navigationBarTitleText": "Tiny Glass Easel"
   },
   "usingComponents": {
-    "add-button": "./components/add-button/add-button"
+    "add-button": "./components/add-button/add-button",
+    "isolated-box": "./components/isolated-box/isolated-box",
+    "apply-shared-box": "./components/apply-shared-box/apply-shared-box",
+    "shared-box": "./components/shared-box/shared-box",
+    "ext-box": "./components/ext-box/ext-box",
+    "behavior-box": "./components/behavior-box/behavior-box",
+    "semantic-parent": "./components/semantic-parent/semantic-parent",
+    "semantic-child": "./components/semantic-child/semantic-child"
   }
 }

@@ -1,0 +1,4 @@
+<view class="box">
+  <text class="page-color" data-check="shared">shared color</text>
+  <text class="page-target" data-check="shared-target">shared target</text>
+</view>

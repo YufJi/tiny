@@ -5,6 +5,7 @@
     <text class="custom-detail">custom: {{customDetail}}</text>
     <text class="system">system: {{system.pixelRatio}} / {{system.windowWidth}}x{{system.windowHeight}}</text>
     <button bindtap="openAddTodo">Open add todo</button>
+    <button bindtap="openSemantics">Semantics</button>
     <add-button text="Add" bind:custom="onCustom">Custom slot</add-button>
   </view>
 

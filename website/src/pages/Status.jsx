@@ -62,7 +62,7 @@ export default function Status() {
             ['诊断', status('可用', 'good'), '编译/transport/service/render/host 五类；结构统一，devtool 可直接消费。'],
             ['Devtool', status('运行时级', 'warn'), '状态、诊断、元素树、导航/前后台/Reload/Terminate；不是完整微信开发者工具。'],
             ['性能 / 稳定', status('未量化', 'warn'), '无启动、首屏、setData、内存、长时运行基准；无压力测试。'],
-            ['测试', status('核心链路', 'good'), '92 单测 + 40 浏览器步骤 + 5 fixture；没有性能、视觉、原生、安全测试。'],
+            ['测试', status('核心链路', 'good'), '113 单测 + 45 浏览器步骤 + 5 fixture；没有性能、视觉、原生、安全测试。'],
           ]}
         />
       </Section>
@@ -202,7 +202,7 @@ export default function Status() {
           <Card tag="runtime" title="然后看消费"><p>双线程如何注册、渲染与通信。</p><p><a href="#/runtime">运行时内核 →</a></p></Card>
           <Card tag="protocol" title="协议是边界"><p>消息目录、错误与扩展规则。</p><p><a href="#/protocol">Bridge 协议 →</a></p></Card>
           <Card tag="hosts" title="宿主是落地"><p>三种宿主与新宿主检查清单。</p><p><a href="#/hosts">宿主支持 →</a></p></Card>
-          <Card tag="testing" title="证据是底线"><p>92 单测与 40 步浏览器验收。</p><p><a href="#/testing">验证体系 →</a></p></Card>
+          <Card tag="testing" title="证据是底线"><p>113 单测与 45 步浏览器验收。</p><p><a href="#/testing">验证体系 →</a></p></Card>
         </Cards>
         <Callout title="仓库">
           <p>

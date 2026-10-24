@@ -1,0 +1,3 @@
+Component({
+  externalClasses: ['ext-class'],
+})

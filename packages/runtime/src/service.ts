@@ -1,7 +1,17 @@
 import { BridgeConnection } from '@tiny/bridge'
 import type { PageArtifact } from '@tiny/manifest'
-import { applyDataPatch, cloneJsonSafe, type DataPatch } from './data'
+import { applyDataPatch, cloneJsonSafe, readDataPath, type DataPatch } from './data'
 import { buildComponentSchemas } from './component-schema'
+import {
+  normalizeComponentDefinition,
+  type ComponentLifecycleName,
+  type NormalizedComponentDefinition,
+  type NormalizedObserver,
+} from './component-definition'
+import { registerBehavior } from './behaviors'
+import { ComponentTree } from './component-tree'
+import { RelationManager } from './relation-manager'
+import { invokeObserver, runObservers, type ObserverHost } from './observers'
 import type { ServiceThreadOptions } from './types'
 import type {
   MiniProgramComponentSchema,
@@ -27,6 +37,13 @@ export type MiniProgramComponentOptions = {
   methods?: Record<string, (...args: unknown[]) => unknown>
   lifetimes?: Record<string, (...args: unknown[]) => void>
   pageLifetimes?: Record<string, (...args: unknown[]) => void>
+  behaviors?: Array<MiniProgramComponentOptions | string>
+  observers?: Record<string, unknown> | Array<unknown>
+  relations?: Record<string, unknown>
+  externalClasses?: string[]
+  options?: Record<string, unknown>
+  export?: (...args: unknown[]) => unknown
+  definitionFilter?: (...args: unknown[]) => unknown
   [key: string]: unknown
 }
 
@@ -40,7 +57,8 @@ export type MiniProgramAppOptions = {
 
 export class MiniProgramPageRegistry {
   readonly pages = new Map<string, MiniProgramPageOptions>()
-  readonly components = new Map<string, MiniProgramPageOptions>()
+  readonly components = new Map<string, MiniProgramComponentOptions>()
+  readonly normalizedComponents = new Map<string, NormalizedComponentDefinition>()
   private app: MiniProgramAppOptions | null = null
   private readonly pagePaths: string[]
   private readonly componentPaths: string[]
@@ -79,28 +97,39 @@ export class MiniProgramPageRegistry {
     return options
   }
 
-  registerComponent(options: MiniProgramPageOptions): MiniProgramPageOptions {
+  registerComponent(options: MiniProgramComponentOptions): MiniProgramComponentOptions {
     const path = this.componentPaths[this.componentCursor++] ?? `component:${this.components.size}`
     this.components.set(path, options)
+    this.normalizedComponents.set(path, normalizeComponentDefinition(options, path))
     return options
   }
 }
 
-const COMPONENT_LIFETIMES = new Set(['created', 'attached', 'ready', 'moved', 'detached'])
+export type ComponentRuntimeContext = {
+  pageId: string
+  tree: ComponentTree
+  relations: RelationManager
+  getInstance: (componentId: string) => MiniProgramComponentInstance | undefined
+  onDiagnostic: (code: string, message: string, details?: unknown) => void
+}
 
-export class MiniProgramComponentInstance {
+export class MiniProgramComponentInstance implements ObserverHost {
   readonly componentId: string
   readonly path: string
   readonly data: Record<string, unknown>
   readonly properties: Record<string, unknown>
   readonly lifecycleEvents: string[] = []
-  private readonly options: MiniProgramComponentOptions
+  observerDepth = 0
+  private readonly definition: NormalizedComponentDefinition
   private readonly methods = new Map<string, (...args: unknown[]) => unknown>()
+  private readonly runtime: ComponentRuntimeContext
 
   constructor(
     componentId: string,
     path: string,
-    options: MiniProgramComponentOptions,
+    definition: NormalizedComponentDefinition,
+    initialData: Record<string, unknown>,
+    runtime: ComponentRuntimeContext,
     private readonly bridge?: {
       onDataPatch: (componentId: string, patch: DataPatch) => void
       onTriggerEvent: (
@@ -113,32 +142,45 @@ export class MiniProgramComponentInstance {
   ) {
     this.componentId = componentId
     this.path = path
-    this.options = options
-    this.data = cloneJsonSafe(options.data ?? {})
-    this.properties = this.data
+    this.definition = definition
+    this.runtime = runtime
+    this.data = cloneJsonSafe(initialData ?? definition.data)
+    this.properties = {}
+    for (const name of Object.keys(definition.properties)) {
+      if (name in this.data) this.properties[name] = this.data[name]
+    }
 
-    for (const [name, value] of Object.entries(options)) {
-      if (typeof value === 'function' && !COMPONENT_LIFETIMES.has(name)) {
-        this.methods.set(name, (value as (...args: unknown[]) => unknown).bind(this))
-      }
-    }
-    for (const [name, method] of Object.entries(options.methods ?? {})) {
-      if (typeof method === 'function') this.methods.set(name, method.bind(this))
-    }
-    for (const [name, method] of this.methods) {
-      ;(this as unknown as Record<string, unknown>)[name] = method
+    for (const [name, method] of definition.methods) {
+      const bound = method.bind(this)
+      this.methods.set(name, bound)
+      ;(this as unknown as Record<string, unknown>)[name] = bound
     }
 
     Object.assign(this, {
       setData: this.setData.bind(this),
       triggerEvent: this.triggerEvent.bind(this),
+      selectComponent: this.selectComponent.bind(this),
+      selectAllComponents: this.selectAllComponents.bind(this),
+      selectOwnerComponent: this.selectOwnerComponent.bind(this),
+      getRelationNodes: this.getRelationNodes.bind(this),
+      hasBehavior: this.hasBehavior.bind(this),
     })
   }
 
-  setData(patch: DataPatch): void {
+  setData(patch: DataPatch, callback?: () => void): void {
     const clonedPatch = cloneJsonSafe(patch)
+    const hasPropertyObserver = this.definition.observers.some(
+      (observer) => observer.kind === 'property',
+    )
+    const oldData = hasPropertyObserver ? cloneJsonSafe(this.data) : undefined
     applyDataPatch(this.data, clonedPatch)
+    for (const name of Object.keys(this.definition.properties)) {
+      if (name in this.data) this.properties[name] = this.data[name]
+      else delete this.properties[name]
+    }
     this.bridge?.onDataPatch(this.componentId, clonedPatch)
+    runObservers(this, this.definition.observers, Object.keys(clonedPatch), oldData)
+    callback?.()
   }
 
   triggerEvent(name: string, detail?: unknown, options?: Record<string, unknown>): void {
@@ -147,7 +189,13 @@ export class MiniProgramComponentInstance {
 
   syncData(data: Record<string, unknown> | undefined): void {
     if (!data) return
-    Object.assign(this.data, cloneJsonSafe(data))
+    const next = cloneJsonSafe(data)
+    for (const key of Object.keys(this.data)) delete this.data[key]
+    Object.assign(this.data, next)
+    for (const name of Object.keys(this.definition.properties)) {
+      if (name in this.data) this.properties[name] = this.data[name]
+      else delete this.properties[name]
+    }
   }
 
   invokeMethod(name: string, args: unknown[] = []): unknown {
@@ -156,22 +204,67 @@ export class MiniProgramComponentInstance {
     return method(...args)
   }
 
-  triggerLifecycle(name: 'created' | 'attached' | 'ready' | 'moved' | 'detached'): void {
-    this.lifecycleEvents.push(name);
-    const lifetime = this.options.lifetimes?.[name]
-    const topLevel = this.options[name]
-    if (typeof lifetime === 'function') lifetime.call(this)
-    else if (typeof topLevel === 'function') (topLevel as (...args: unknown[]) => void).call(this)
+  triggerLifecycle(name: ComponentLifecycleName): void {
+    this.lifecycleEvents.push(name)
+    for (const handler of this.definition.lifetimeHandlers[name]) {
+      handler.call(this)
+    }
   }
 
   triggerPageLifetime(name: 'show' | 'hide'): void {
-    this.options.pageLifetimes?.[name]?.call(this)
+    for (const handler of this.definition.pageLifetimeHandlers[name]) {
+      handler.call(this)
+    }
   }
 
-  getComponentOptions(): MiniProgramPageOptions {
-    return this.options
+  getComponentOptions(): NormalizedComponentDefinition {
+    return this.definition
   }
 
+  selectComponent(selector: unknown): unknown {
+    const nodes = this.runtime.tree.select(this.componentId, String(selector ?? ''), false)
+    return nodes[0] ? this.resolveSelection(nodes[0].componentId) : null
+  }
+
+  selectAllComponents(selector: unknown): unknown[] {
+    const nodes = this.runtime.tree.select(this.componentId, String(selector ?? ''), true)
+    return nodes
+      .map((node) => this.resolveSelection(node.componentId))
+      .filter((value) => value !== null && value !== undefined)
+  }
+
+  selectOwnerComponent(): unknown {
+    const owner = this.runtime.tree.owner(this.componentId)
+    return owner ? this.resolveSelection(owner.componentId) : null
+  }
+
+  getRelationNodes(relationKey: string): unknown[] {
+    return this.runtime.relations.getRelationNodes(this.componentId, relationKey)
+  }
+
+  hasBehavior(behavior: unknown): boolean {
+    return this.definition.behaviors.has(behavior as object | string)
+  }
+
+  onError(code: string, message: string, details?: unknown): void {
+    this.runtime.onDiagnostic(code, message, details)
+  }
+
+  private resolveSelection(componentId: string): unknown {
+    const instance = this.runtime.getInstance(componentId)
+    if (!instance) return null
+    const definition = instance.getComponentOptions()
+    if (definition.componentExport && typeof definition.export === 'function') {
+      try {
+        return definition.export.call(instance)
+      } catch (error) {
+        this.onError('COMPONENT_EXPORT_ERROR', error instanceof Error ? error.message : String(error), {
+          componentId,
+        })
+      }
+    }
+    return instance
+  }
 }
 
 export type MiniProgramApiHost = Record<string, (...args: unknown[]) => unknown>
@@ -194,6 +287,7 @@ export class MiniProgramPageInstance {
     options: MiniProgramPageOptions,
     query: Record<string, string> = {},
     private readonly onDataPatch?: (pageId: string, patch: DataPatch) => void,
+    private readonly runtime?: ComponentRuntimeContext,
   ) {
     this.pageId = pageId
     this.path = path
@@ -220,7 +314,12 @@ export class MiniProgramPageInstance {
     }
 
     const setData = this.setData.bind(this)
-    Object.assign(this, { setData })
+    Object.assign(this, {
+      setData,
+      selectComponent: this.selectComponent.bind(this),
+      selectAllComponents: this.selectAllComponents.bind(this),
+      selectOwnerComponent: this.selectOwnerComponent.bind(this),
+    })
   }
 
   setData(patch: DataPatch, callback?: () => void): void {
@@ -249,6 +348,25 @@ export class MiniProgramPageInstance {
     return this.options
   }
 
+  selectComponent(selector: unknown): unknown {
+    if (!this.runtime) return null
+    const nodes = this.runtime.tree.select(`page:${this.pageId}`, String(selector ?? ''), false)
+    return nodes[0] ? resolveComponentSelection(this.runtime, nodes[0].componentId) : null
+  }
+
+  selectAllComponents(selector: unknown): unknown[] {
+    const runtime = this.runtime
+    if (!runtime) return []
+    const nodes = runtime.tree.select(`page:${this.pageId}`, String(selector ?? ''), true)
+    return nodes
+      .map((node) => resolveComponentSelection(runtime, node.componentId))
+      .filter((value) => value !== null && value !== undefined)
+  }
+
+  selectOwnerComponent(): unknown {
+    return null
+  }
+
   triggerPageLifetime(name: 'show' | 'hide'): void {
     (this.options as MiniProgramComponentOptions).pageLifetimes?.[name]?.call(this)
   }
@@ -260,6 +378,24 @@ export class MiniProgramPageInstance {
   }
 }
 
+function resolveComponentSelection(runtime: ComponentRuntimeContext, componentId: string): unknown {
+  const instance = runtime.getInstance(componentId)
+  if (!instance) return null
+  const definition = instance.getComponentOptions()
+  if (definition.componentExport && typeof definition.export === 'function') {
+    try {
+      return definition.export.call(instance)
+    } catch (error) {
+      runtime.onDiagnostic(
+        'COMPONENT_EXPORT_ERROR',
+        error instanceof Error ? error.message : String(error),
+        { componentId },
+      )
+    }
+  }
+  return instance
+}
+
 export function installMiniProgramGlobals(
   registry: MiniProgramPageRegistry,
   apiHost: MiniProgramApiHost = {},
@@ -269,8 +405,8 @@ export function installMiniProgramGlobals(
   const globalObject = globalThis as unknown as Record<string, unknown>
   globalObject.App = (options: MiniProgramAppOptions) => registry.registerApp(options)
   globalObject.Page = (options: MiniProgramPageOptions) => registry.registerPage(options)
-  globalObject.Component = (options: MiniProgramPageOptions) => registry.registerComponent(options)
-  globalObject.Behavior = (options: MiniProgramPageOptions) => options
+  globalObject.Component = (options: MiniProgramComponentOptions) => registry.registerComponent(options)
+  globalObject.Behavior = (options?: MiniProgramComponentOptions) => registerBehavior(options)
   globalObject.getApp = () => registry.getApp()
   globalObject.getCurrentPages = () => getCurrentPages?.() ?? []
   const rawWxProperties = new Set([
@@ -315,6 +451,8 @@ export type ServiceThreadRuntime = {
   pageStack: MiniProgramPageInstance[]
   pageInstances: Map<string, MiniProgramPageInstance>
   componentInstances: Map<string, MiniProgramComponentInstance>
+  componentTree: ComponentTree
+  relationManager: RelationManager
 }
 
 export function createServiceApiHost(context: ServiceApiContext): MiniProgramApiHost {
@@ -541,17 +679,43 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }, activePage?.pageId),
     () => pageStack,
   )
+  const componentTree = new ComponentTree()
+  const relationManager = new RelationManager({
+    tree: componentTree,
+    getInstance: (componentId) => componentInstances.get(componentId),
+    getRelations: (componentId) => componentInstances.get(componentId)?.getComponentOptions().relations ?? [],
+    onError: (code, message, details) => connection.sendDiagnostic('warn', {
+      code,
+      message,
+      details,
+    }, activePage?.pageId),
+  })
+  const createRuntimeContext = (pageId: string): ComponentRuntimeContext => ({
+    pageId,
+    tree: componentTree,
+    relations: relationManager,
+    getInstance: (componentId) => componentInstances.get(componentId),
+    onDiagnostic: (code, message, details) => connection.sendDiagnostic('warn', {
+      code,
+      message,
+      details,
+    }, pageId),
+  })
   const createComponentInstance = (
     componentId: string,
     componentPath: string,
-    definition: MiniProgramComponentOptions,
+    definition: NormalizedComponentDefinition,
+    initialData: Record<string, unknown>,
+    pageId: string,
   ) => new MiniProgramComponentInstance(
     componentId,
     componentPath,
     definition,
+    initialData,
+    createRuntimeContext(pageId),
     {
       onDataPatch: (instanceId, patch) => {
-        connection.sendEvent('data', 'setData', { componentId: instanceId, patch }, { pageId: activePage?.pageId })
+        connection.sendEvent('data', 'setData', { componentId: instanceId, patch }, { pageId })
       },
       onTriggerEvent: (instanceId, name, detail, triggerOptions) => {
         connection.sendEvent('event', 'trigger', {
@@ -566,15 +730,26 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   const ensureComponentInstance = (
     componentId: string,
     componentPath?: string,
+    data?: Record<string, unknown>,
+    pageId?: string,
   ): MiniProgramComponentInstance | undefined => {
-    const existing = findComponentByInstanceId(componentInstances, componentId)
+    const existing = componentInstances.get(componentId)
     if (existing) return existing
     if (!componentPath) return undefined
     const schema = componentSchemas.find((component) => component.path === componentPath)
-    const definition = schema ? registry.components.get(componentPath) : undefined
+    const definition = registry.normalizedComponents.get(componentPath)
     if (!schema || !definition) return undefined
-    const component = createComponentInstance(componentId, componentPath, definition as MiniProgramComponentOptions)
+    const component = createComponentInstance(
+      componentId,
+      componentPath,
+      definition,
+      data ?? schema.data,
+      pageId ?? activePage?.pageId ?? '',
+    )
     componentInstances.set(componentId, component)
+    for (const issue of definition.diagnostics) {
+      connection.sendDiagnostic('warn', issue, pageId ?? activePage?.pageId)
+    }
     return component
   }
   const artifactsReady = options.loadArtifacts?.() ?? Promise.resolve()
@@ -593,15 +768,18 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     const definition = registry.pages.get(path) ?? registry.components.get(path)
     if (!definition) throw new Error(`page is not registered: ${path}`)
     pageIdCounter += 1
+    const pageId = `page-${pageIdCounter}`
     const page = new MiniProgramPageInstance(
-      `page-${pageIdCounter}`,
+      pageId,
       path,
       definition,
       query,
-      (pageId, patch) => {
-        connection.sendEvent('data', 'setData', { pageId, patch }, { pageId })
+      (id, patch) => {
+        connection.sendEvent('data', 'setData', { pageId: id, patch }, { pageId: id })
       },
+      createRuntimeContext(pageId),
     )
+    componentTree.ensurePage(pageId, path)
     pageInstances.set(page.pageId, page)
     pageStack.push(page)
     activePage = page
@@ -630,35 +808,11 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       if (payload.storage) Object.assign(storageSnapshot, cloneJsonSafe(payload.storage))
       componentSchemas = buildComponentSchemas(
         options.manifest.components,
-        registry.components as Map<string, MiniProgramComponentOptions>,
+        registry.normalizedComponents,
       )
-      const initializeComponent = (path: string, reference: string): MiniProgramComponentInstance | null => {
-        const componentPath = resolveComponentReference(path, reference)
-        const existing = componentInstances.get(componentPath)
-        if (existing) return existing
-        const schema = componentSchemas.find((component) => component.path === componentPath)
-        const definition = schema ? registry.components.get(componentPath) : undefined
-        if (!schema || !definition) return null
-        const component = createComponentInstance(
-          schema.componentId,
-          componentPath,
-          definition as MiniProgramComponentOptions,
-        )
-        componentInstances.set(componentPath, component)
-        for (const nestedReference of Object.values(schema.using)) {
-          initializeComponent(componentPath, nestedReference)
-        }
-        return component
-      }
       if (pageStack.length === 0) {
         const pageArtifact = findPageArtifact(options.manifest, currentPath)
         const currentPage = createPageInstance(currentPath, {})
-        const usingComponents = pageArtifact?.configuration?.effective.usingComponents ?? {}
-        const usingSources = pageArtifact?.configuration?.usingComponentsSource ?? {}
-        for (const [tag, reference] of Object.entries(usingComponents)) {
-          const sourcePath = usingSources[tag] === 'global' ? '' : currentPath
-          initializeComponent(sourcePath, String(reference))
-        }
         currentPage.triggerLifecycle('onLoad', [currentPage.query])
         currentPage.triggerLifecycle('onShow')
         if (pageArtifact?.bodyType === 'component') {
@@ -688,7 +842,38 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
 
   connection.onControl('page', 'ready', async (message) => {
     try {
-      const page = requireActivePage(pageInstances, (message.payload as { pageId?: string }).pageId, activePage)
+      const payload = message.payload as {
+        pageId?: string
+        components?: Array<{
+          componentId: string
+          path: string
+          parentComponentId?: string | null
+          tag?: string
+          id?: string
+          class?: string
+          data?: Record<string, unknown>
+        }>
+      }
+      const page = requireActivePage(pageInstances, payload.pageId, activePage)
+      for (const item of payload.components ?? []) {
+        const component = ensureComponentInstance(
+          item.componentId,
+          item.path,
+          item.data,
+          page.pageId,
+        )
+        if (!component) continue
+        component.syncData(item.data)
+        componentTree.add({
+          componentId: item.componentId,
+          pageId: page.pageId,
+          path: item.path,
+          tag: item.tag,
+          id: item.id,
+          className: item.class,
+          parentId: item.parentComponentId,
+        })
+      }
       page.triggerLifecycle('onReady')
       sendRuntimeState()
       return { status: 'ready', pageId: page.pageId }
@@ -763,7 +948,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     page.triggerLifecycle('onHide')
     registry.hideApp()
     for (const page of pageStack) page.triggerPageLifetime('hide')
-    for (const component of uniqueComponentsByPath(componentInstances)) component.triggerPageLifetime('hide')
+    for (const component of componentInstances.values()) component.triggerPageLifetime('hide')
     sendRuntimeState()
     return { status: 'hidden', pageId: page.pageId }
   })
@@ -773,7 +958,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     registry.showApp()
     page.triggerLifecycle('onShow')
     for (const page of pageStack) page.triggerPageLifetime('show')
-    for (const component of uniqueComponentsByPath(componentInstances)) component.triggerPageLifetime('show')
+    for (const component of componentInstances.values()) component.triggerPageLifetime('show')
     sendRuntimeState()
     return { status: 'shown', pageId: page.pageId }
   })
@@ -781,6 +966,12 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   connection.onControl('page', 'unload', async (message) => {
     const page = requireActivePage(pageInstances, (message.payload as { pageId?: string }).pageId, activePage)
     page.triggerLifecycle('onUnload')
+    relationManager.removePage(page.pageId)
+    for (const componentId of componentTree.removePage(page.pageId)) {
+      componentInstances.delete(componentId)
+      createdComponents.delete(componentId)
+      pendingComponentEvents.delete(componentId)
+    }
     pageInstances.delete(page.pageId)
     if (activePage === page) activePage = null
     sendRuntimeState()
@@ -798,16 +989,150 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }
   })
 
+  const createdComponents = new Set<string>()
+  const previousComponentData = new Map<string, Record<string, unknown>>()
+  const pendingComponentEvents = new Map<string, Array<
+    | { kind: 'data'; data?: Record<string, unknown> }
+    | { kind: 'observed'; key: string; data?: Record<string, unknown>; origin?: 'service' | 'render' }
+  >>()
+  const applyComponentObserved = (
+    component: MiniProgramComponentInstance,
+    payload: { key: string; data?: Record<string, unknown>; origin?: 'service' | 'render' },
+  ) => {
+    const oldData = previousComponentData.get(component.componentId) ?? cloneJsonSafe(component.data)
+    previousComponentData.delete(component.componentId)
+    component.syncData(payload.data)
+    if (payload.origin === 'service') return
+    const observer = component.getComponentOptions().observers.find(
+      (item) => item.key === payload.key,
+    )
+    if (observer) invokeObserver(component, observer, oldData)
+  }
+  const drainPendingEvents = (component: MiniProgramComponentInstance) => {
+    const pending = pendingComponentEvents.get(component.componentId)
+    if (!pending) return
+    pendingComponentEvents.delete(component.componentId)
+    for (const event of pending) {
+      if (event.kind === 'observed') {
+        applyComponentObserved(component, event)
+      } else {
+        previousComponentData.set(component.componentId, cloneJsonSafe(component.data))
+        component.syncData(event.data)
+      }
+    }
+  }
+
   connection.onEvent('runtime', 'componentLifecycle', (message) => {
     const payload = message.payload as {
       componentId: string
       path?: string
-      phase: 'created' | 'attached' | 'ready' | 'moved' | 'detached'
+      phase: ComponentLifecycleName
       data?: Record<string, unknown>
+      pageId?: string
+      parentComponentId?: string | null
+      tag?: string
+      id?: string
+      class?: string
     }
-    const component = ensureComponentInstance(payload.componentId, payload.path)
-    component?.syncData(payload.data)
-    component?.triggerLifecycle(payload.phase)
+    const pageId = payload.pageId ?? activePage?.pageId ?? ''
+    const component = payload.phase === 'detached'
+      ? componentInstances.get(payload.componentId)
+      : ensureComponentInstance(payload.componentId, payload.path, payload.data, pageId)
+    if (!component) return
+    component.syncData(payload.data)
+    switch (payload.phase) {
+      case 'created':
+        component.triggerLifecycle('created')
+        createdComponents.add(payload.componentId)
+        drainPendingEvents(component)
+        break
+      case 'attached':
+        componentTree.add({
+          componentId: payload.componentId,
+          pageId,
+          path: payload.path ?? component.path,
+          tag: payload.tag,
+          id: payload.id,
+          className: payload.class,
+          parentId: payload.parentComponentId,
+        })
+        relationManager.handleAttach(payload.componentId, false)
+        component.triggerLifecycle('attached')
+        relationManager.flushLinked()
+        break
+      case 'ready':
+        component.triggerLifecycle('ready')
+        break
+      case 'moved':
+        component.triggerLifecycle('moved')
+        componentTree.move(payload.componentId, payload.parentComponentId)
+        relationManager.handleMove(payload.componentId)
+        break
+      case 'detached':
+        component.triggerLifecycle('detached')
+        relationManager.handleDetach(payload.componentId)
+        componentTree.remove(payload.componentId)
+        componentInstances.delete(payload.componentId)
+        createdComponents.delete(payload.componentId)
+        pendingComponentEvents.delete(payload.componentId)
+        previousComponentData.delete(payload.componentId)
+        break
+    }
+  })
+
+  connection.onEvent('runtime', 'componentData', (message) => {
+    const payload = message.payload as {
+      componentId: string
+      path?: string
+      pageId?: string
+      data?: Record<string, unknown>
+      origin?: 'service' | 'render'
+    }
+    const component = ensureComponentInstance(
+      payload.componentId,
+      payload.path,
+      payload.data,
+      payload.pageId ?? activePage?.pageId,
+    )
+    if (!component) return
+    if (!createdComponents.has(payload.componentId)) {
+      const pending = pendingComponentEvents.get(payload.componentId) ?? []
+      pending.push({ kind: 'data', data: payload.data })
+      pendingComponentEvents.set(payload.componentId, pending)
+      return
+    }
+    previousComponentData.set(payload.componentId, cloneJsonSafe(component.data))
+    component.syncData(payload.data)
+  })
+
+  connection.onEvent('runtime', 'componentObserved', (message) => {
+    const payload = message.payload as {
+      componentId: string
+      path?: string
+      pageId?: string
+      key: string
+      data?: Record<string, unknown>
+      origin?: 'service' | 'render'
+    }
+    const component = ensureComponentInstance(
+      payload.componentId,
+      payload.path,
+      payload.data,
+      payload.pageId ?? activePage?.pageId,
+    )
+    if (!component) return
+    if (!createdComponents.has(payload.componentId)) {
+      const pending = pendingComponentEvents.get(payload.componentId) ?? []
+      pending.push({
+        kind: 'observed',
+        key: payload.key,
+        data: payload.data,
+        origin: payload.origin,
+      })
+      pendingComponentEvents.set(payload.componentId, pending)
+      return
+    }
+    applyComponentObserved(component, payload)
   })
 
   // Component page lifetimes are driven by the page show/hide controls below,
@@ -841,7 +1166,12 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }
     try {
       if (event.componentId) {
-        const component = ensureComponentInstance(event.componentId, event.componentPath)
+        const component = ensureComponentInstance(
+          event.componentId,
+          event.componentPath,
+          event.componentData as Record<string, unknown> | undefined,
+          pageId,
+        )
         if (!component) throw new Error(`Component not found for event: ${event.componentId}`)
         component.syncData(event.componentData as Record<string, unknown> | undefined)
         component.invokeMethod(handler, [event])
@@ -871,6 +1201,8 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     },
     pageInstances,
     componentInstances,
+    componentTree,
+    relationManager,
   }
 }
 
@@ -904,16 +1236,6 @@ function resolveComponentReference(sourcePath: string, reference: string): strin
 
 function normalizeRoutePath(path: string): string {
   return path.split('\\').join('/').replace(/^\.?\//, '').replace(/\/+$/, '')
-}
-
-function findComponentByInstanceId(
-  componentInstances: Map<string, MiniProgramComponentInstance>,
-  componentId: string,
-): MiniProgramComponentInstance | undefined {
-  for (const component of componentInstances.values()) {
-    if (component.componentId === componentId) return component
-  }
-  return undefined
 }
 
 type SelectorQuerySelection = {
@@ -1028,17 +1350,4 @@ async function buildSelectorResult(
     right: width,
     bottom: height,
   }
-}
-
-function uniqueComponentsByPath(
-  componentInstances: Map<string, MiniProgramComponentInstance>,
-): MiniProgramComponentInstance[] {
-  const seen = new Set<string>()
-  const result: MiniProgramComponentInstance[] = []
-  for (const component of componentInstances.values()) {
-    if (seen.has(component.path)) continue
-    seen.add(component.path)
-    result.push(component)
-  }
-  return result
 }

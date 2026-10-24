@@ -87,7 +87,7 @@ pnpm --filter @tiny/website build
 ## Testing
 
 Vitest is used by `bridge`, `template-compiler`, `stylesheet-compiler`, `cli`,
-`components`, and `runtime` (92 tests). There is no global test runner; use
+`components`, and `runtime` (113 tests). There is no global test runner; use
 `pnpm --filter <package> test`.
 
 The end-to-end gate is `pnpm accept:glass-easel`:

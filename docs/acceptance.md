@@ -31,7 +31,17 @@ The browser stage verifies:
 8. System info carries a non-zero window size and pixel ratio.
 9. Canvas draws through the service-thread mirror without fatal errors; the legacy
    canvas API still emits a structured `UNSUPPORTED_CANVAS` warning.
-10. Runtime state diagnostics observe the todos → add-todo → todos page transitions.
+10. The component semantics page boots from the todos page and returns to it.
+11. `Behavior` data/methods/lifetimes are merged; property observers and `observers`
+    run on page-driven property changes; `selectComponent` resolves the behavior box
+    and returns its `probe()` result.
+12. Parent/child `relations` link on attach and unlink after `wx:if` removes the child.
+13. `externalClasses` resolve the page class inside the component.
+14. `styleIsolation` works for `isolated`, `apply-shared`/`addGlobalClass`, and
+    `shared`: page styles reach only shared components, shared component styles reach
+    the page, and isolated components stay isolated.
+15. Runtime state diagnostics observe the todos → add-todo → semantics → todos page
+    transitions.
 
 ## Existing test app stage (mini)
 

@@ -1,0 +1,7 @@
+<view class="box">
+  <text class="line" data-check="behavior-data">{{behaviorData}}</text>
+  <text class="line" data-check="behavior-attached">{{behaviorAttached}}</text>
+  <text class="line" data-check="behavior-observed">{{behaviorObserved}}</text>
+  <text class="line" data-check="box-observed">{{boxObserved}}</text>
+  <text class="line" data-check="property-observed">{{propertyObserved}}</text>
+</view>

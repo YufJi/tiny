@@ -223,6 +223,53 @@ export async function runBrowserAcceptance({ baseUrl }) {
       )
     })
 
+    await step('open the component semantics page', async () => {
+      currentStep = 'open the component semantics page'
+      await render.getByText('Semantics', { exact: true }).first().click()
+      await waitForText('Component semantics')
+    })
+
+    await step('apply component style isolation and external classes', async () => {
+      currentStep = 'apply component style isolation and external classes'
+      const colorOf = (label) => render.getByText(label, { exact: true }).first().evaluate(
+        (element) => getComputedStyle(element).color,
+      )
+      assert.equal(await colorOf('page color'), 'rgb(255, 0, 0)', 'page style did not apply')
+      assert.notEqual(await colorOf('isolated color'), 'rgb(255, 0, 0)', 'isolated component leaked page style')
+      assert.equal(await colorOf('apply shared color'), 'rgb(255, 0, 0)', 'apply-shared did not receive page style')
+      assert.equal(await colorOf('shared color'), 'rgb(255, 0, 0)', 'shared did not receive page style')
+      assert.equal(await colorOf('external class'), 'rgb(255, 0, 0)', 'external class was not resolved')
+      assert.equal(await colorOf('page target'), 'rgb(0, 0, 255)', 'shared component style did not affect page')
+      assert.notEqual(await colorOf('isolated target'), 'rgb(0, 0, 255)', 'shared style leaked into isolated component')
+    })
+
+    await step('run behavior observers and selectComponent', async () => {
+      currentStep = 'run behavior observers and selectComponent'
+      await waitForText('from-behavior')
+      await waitForText('behavior-obs:first')
+      await waitForText('box-obs:first')
+      await waitForText('probe:probe-ok')
+      await render.getByText('Change value', { exact: true }).first().click()
+      await waitForText('behavior-obs:second')
+      await waitForText('box-obs:second')
+      await waitForText('second:first')
+    })
+
+    await step('link and unlink component relations', async () => {
+      currentStep = 'link and unlink component relations'
+      await waitForText('parent-linked:1')
+      await waitForText('child-linked:1')
+      await render.getByText('Toggle child', { exact: true }).first().click()
+      await waitForText('parent-linked:0')
+      assert.ok(!(await text()).includes('child-linked'), 'child relation was not unlinked')
+    })
+
+    await step('return to the P0 page', async () => {
+      currentStep = 'return to the P0 page'
+      await render.getByText('Back', { exact: true }).first().click()
+      await waitForText('Open add todo')
+    })
+
     await step('report observable runtime state and canvas diagnostics', async () => {
       currentStep = 'report observable runtime state and canvas diagnostics'
       const diagnostics = await page.evaluate(() => window.__tinyRuntime.host.diagnostics)
@@ -749,9 +796,10 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         { timeout: STEP_TIMEOUT },
       )
       assert.deepEqual((await state()).pageStack, ['page-1', 'page-2'])
-      assert.ok(
-        JSON.stringify((await state()).tree).includes('Add todo'),
-        'element tree did not refresh after navigation',
+      await page.waitForFunction(
+        () => JSON.stringify(window.__tinyDevtool.getState().tree ?? {}).includes('Add todo'),
+        null,
+        { timeout: STEP_TIMEOUT },
       )
 
       await page.getByText('Back', { exact: true }).click()

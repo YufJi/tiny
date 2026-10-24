@@ -153,7 +153,7 @@ describe('mini-program custom components', () => {
       properties: { text: { type: 'string', value: 'default' } },
     })
 
-    const badge = service.componentInstances.get(COMPONENT_PATH)
+    const badge = service.componentInstances.get('component-1')
     expect(badge).toBeDefined()
     const renderBadge = render.adapter.getMountedComponentByComponentId('component-1')
     expect(renderBadge).toBeDefined()

@@ -1,0 +1,2 @@
+.box { display: block; }
+.page-target { color: rgb(0, 0, 255); }

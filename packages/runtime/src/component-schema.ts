@@ -1,68 +1,59 @@
 import type { ComponentArtifact } from '@tiny/manifest'
-import type { MiniProgramComponentOptions } from './service'
-import type { MiniProgramComponentSchema, MiniProgramPropertyDefinition, MiniProgramPropertyType } from './types'
-
-const PROPERTY_TYPES: Record<string, MiniProgramPropertyType> = {
-  String: 'string',
-  Number: 'number',
-  Boolean: 'boolean',
-  Object: 'object',
-  Array: 'array',
-  Function: 'function',
-}
+import { normalizeComponentDefinition, type NormalizedComponentDefinition } from './component-definition'
+import type { MiniProgramComponentSchema } from './types'
 
 export function buildComponentSchemas(
   artifacts: ComponentArtifact[],
-  definitions: Map<string, MiniProgramComponentOptions>,
+  definitions: Map<string, NormalizedComponentDefinition>,
 ): MiniProgramComponentSchema[] {
-  return artifacts.map((artifact) => {
-    const options = definitions.get(artifact.path) ?? {}
+  return artifacts.map((artifact, index) => {
+    const definition = definitions.get(artifact.path)
+      ?? normalizeComponentDefinition({}, artifact.path)
     const effective = artifact.configuration?.effective ?? {}
+    const styleIsolation = resolveStyleIsolation(definition, effective)
     return {
-      componentId: `component-${artifacts.findIndex((item) => item.path === artifact.path) + 1}`,
+      componentId: `component-${index + 1}`,
       path: artifact.path,
-      data: {
-        ...Object.fromEntries(
-          Object.entries(normalizeProperties(options.properties))
-            .map(([name, definition]) => [name, definition.value])
-            .filter(([, value]) => value !== undefined),
-        ),
-        ...structuredCloneSafe(options.data ?? {}),
-      },
-      properties: normalizeProperties(options.properties),
+      data: definition.data,
+      properties: definition.properties,
       using: readUsingComponents(effective),
+      externalClasses: definition.externalClasses,
+      observers: definition.observers.map((observer) => ({
+        key: observer.key,
+        paths: observer.paths,
+      })),
+      relations: definition.relations.map((relation) => ({
+        key: relation.key,
+        type: relation.type,
+        target: relation.targetPath,
+      })),
+      options: {
+        multipleSlots: definition.options.multipleSlots,
+        virtualHost: definition.options.virtualHost,
+        styleIsolation,
+        addGlobalClass: definition.options.addGlobalClass,
+      },
     }
   })
 }
 
-function normalizeProperties(properties: unknown): Record<string, MiniProgramPropertyDefinition> {
-  if (!properties || typeof properties !== 'object') return {}
-  return Object.fromEntries(Object.entries(properties as Record<string, unknown>).map(([name, definition]) => {
-    if (!definition || typeof definition !== 'object') {
-      return [name, { type: normalizePropertyType(definition) }]
-    }
-    const option = definition as Record<string, unknown>
-    const optionalTypes = Array.isArray(option.optionalTypes)
-      ? option.optionalTypes.map((type) => normalizePropertyType(type))
-      : undefined
-    const normalized: MiniProgramPropertyDefinition = {
-      type: normalizePropertyType(option.type),
-    }
-    const value = structuredCloneSafe(option.value)
-    if (value !== undefined) normalized.value = value
-    if (optionalTypes) normalized.optionalTypes = optionalTypes
-    return [name, normalized]
-  }))
+function resolveStyleIsolation(
+  definition: NormalizedComponentDefinition,
+  effective: Record<string, unknown>,
+): 'isolated' | 'apply-shared' | 'shared' {
+  if (definition.options.explicitStyleIsolation) return definition.options.styleIsolation
+  if (definition.options.addGlobalClass) return 'apply-shared'
+  const fromJson = readStyleIsolation(effective)
+  if (fromJson) return fromJson
+  return 'isolated'
 }
 
-function normalizePropertyType(type: unknown): MiniProgramPropertyType {
-  if (type === String) return 'string'
-  if (type === Number) return 'number'
-  if (type === Boolean) return 'boolean'
-  if (type === Object) return 'object'
-  if (type === Array) return 'array'
-  if (type === Function) return 'function'
-  return PROPERTY_TYPES[String(type)] ?? 'Any'
+function readStyleIsolation(
+  config: Record<string, unknown>,
+): 'isolated' | 'apply-shared' | 'shared' | undefined {
+  const value = config.styleIsolation
+  if (value === 'isolated' || value === 'apply-shared' || value === 'shared') return value
+  return undefined
 }
 
 function readUsingComponents(config: unknown): Record<string, string> {
@@ -72,9 +63,4 @@ function readUsingComponents(config: unknown): Record<string, string> {
   return Object.fromEntries(
     Object.entries(usingComponents as Record<string, unknown>).map(([tag, value]) => [tag, String(value)]),
   )
-}
-
-function structuredCloneSafe<T>(value: T): T {
-  if (value === undefined) return value
-  return JSON.parse(JSON.stringify(value)) as T
 }

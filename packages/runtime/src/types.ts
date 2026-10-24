@@ -27,6 +27,19 @@ export type MiniProgramComponentSchema = {
   data: Record<string, unknown>
   properties: Record<string, MiniProgramPropertyDefinition>
   using: Record<string, string>
+  externalClasses?: string[]
+  observers?: Array<{ key: string; paths: string[] }>
+  relations?: Array<{
+    key: string
+    type: 'parent' | 'child' | 'ancestor' | 'descendant'
+    target: string
+  }>
+  options?: {
+    multipleSlots?: boolean
+    virtualHost?: boolean
+    styleIsolation?: 'isolated' | 'apply-shared' | 'shared'
+    addGlobalClass?: boolean
+  }
 }
 
 export type SystemInfoSnapshot = {

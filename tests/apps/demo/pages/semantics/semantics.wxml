@@ -1,0 +1,25 @@
+<scroll-view class="page" scroll-y="true">
+  <view class="card">
+    <text class="title">Component semantics</text>
+    <text class="line page-color" data-check="page-color">page color</text>
+    <isolated-box />
+    <apply-shared-box />
+    <shared-box />
+    <ext-box ext-class="page-color" />
+    <text class="line page-target" data-check="page-target">page target</text>
+  </view>
+
+  <view class="card">
+    <behavior-box id="behavior-box" value="{{value}}" />
+    <button bindtap="changeValue">Change value</button>
+    <text class="line" data-check="probe">probe:{{probe}}</text>
+  </view>
+
+  <view class="card">
+    <semantic-parent id="semantic-parent">
+      <semantic-child id="semantic-child" wx:if="{{showChild}}" />
+    </semantic-parent>
+    <button bindtap="toggleChild">Toggle child</button>
+    <button bindtap="back">Back</button>
+  </view>
+</scroll-view>

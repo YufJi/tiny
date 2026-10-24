@@ -123,22 +123,22 @@ export class DevtoolRuntimeClient {
 
   async navigate(url: string): Promise<void> {
     const handler = this.requireHandler('navigate.to')
-    await handler({ url }, { pageId: this.activePageId })
-    await this.inspectTree()
+    const result = await handler({ url }, { pageId: this.activePageId }) as { pageId?: string } | undefined
+    await this.inspectTree(result?.pageId)
   }
 
   async back(delta = 1): Promise<void> {
     const handler = this.requireHandler('navigate.back')
-    await handler({ delta }, { pageId: this.activePageId })
-    await this.inspectTree()
+    const result = await handler({ delta }, { pageId: this.activePageId }) as { pageId?: string } | undefined
+    await this.inspectTree(result?.pageId)
   }
 
-  async inspectTree(): Promise<InspectNode | null> {
+  async inspectTree(pageId: string | undefined = this.activePageId): Promise<InspectNode | null> {
     const host = this.requireHost()
     const tree = await host.host.render.control<InspectNode | null>(
       'runtime',
       'inspectTree',
-      { pageId: this.activePageId },
+      { pageId },
     )
     this.update({ tree })
     return tree
