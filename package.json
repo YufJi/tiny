@@ -17,8 +17,10 @@
     "lint": "biome check .",
     "lint:fix": "biome check . --write",
     "format": "biome format . --write",
-    "site:dev": "node scripts/serve-website.mjs",
-    "site:check": "node scripts/check-website.mjs"
+    "site:dev": "pnpm --filter @tiny/website dev",
+    "site:check": "pnpm --filter @tiny/website build && node scripts/check-website.mjs",
+    "site:build": "pnpm --filter @tiny/website build",
+    "site:preview": "pnpm --filter @tiny/website preview"
   },
   "author": "YufJi",
   "license": "MIT",

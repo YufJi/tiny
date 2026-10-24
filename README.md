@@ -83,7 +83,8 @@ pnpm dev:devtool             # 调试器：http://localhost:8080
 pnpm build                   # 构建全部 workspace 包
 pnpm lint                    # Biome
 pnpm site:dev                # 本地预览架构网站：http://localhost:4173
-pnpm site:check              # 检查网站内链
+pnpm site:build              # 构建 website/dist
+pnpm site:check              # 构建并检查产物资源
 pnpm compile:glass-easel     # tests/apps/demo -> tests/host/generated
 pnpm compile:devtool:all     # demo + tests/apps/mini -> devtool 静态目录
 

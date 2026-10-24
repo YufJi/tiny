@@ -52,6 +52,19 @@ importers:
         specifier: ^6.1.7
         version: 6.1.8(@rspack/core@1.7.11)
 
+  website:
+    dependencies:
+      react:
+        specifier: ^17.0.2
+        version: 17.0.2
+      react-dom:
+        specifier: ^17.0.2
+        version: 17.0.2(react@17.0.2)
+    devDependencies:
+      vite:
+        specifier: ^5.4.21
+        version: 5.4.21(@types/node@25.6.2)(less@3.13.1)
+
   packages/bridge:
     devDependencies:
       '@types/node':

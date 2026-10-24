@@ -6,7 +6,7 @@ Guidance for AI agents working in the `tiny` repository.
 
 A mini-program engine built on glass-easel.
 - **Monorepo**: pnpm workspaces + Turborepo
-- **Language**: TypeScript (core packages and tools), JavaScript/JSX (`apps/devtool`)
+- **Language**: TypeScript (core packages and tools), JavaScript/JSX (`apps/devtool`, `website`)
 - **Runtime**: dual-thread host (service + render iframes) over the versioned Tiny bridge protocol
 - **Compiler**: `tools/cli` produces the runtime manifest and artifacts
 
@@ -21,7 +21,7 @@ must not depend on tools, apps, or tests.
 | Tools | `tools/*` | Compiler/build tooling |
 | Apps | `apps/*` | Runnable applications (debugger) |
 | Tests | `tests/*` | Browser host + mini-program fixtures (not workspace packages) |
-| Website | `website/` | Static GitHub Pages architecture site (not a package) |
+| Website | `website` | React + Vite architecture site (workspace app) |
 
 ### Core packages
 
@@ -52,7 +52,7 @@ must not depend on tools, apps, or tests.
 
 ```bash
 pnpm install                 # install workspace dependencies
-pnpm build                   # build all 8 workspace packages
+pnpm build                   # build all 9 workspace packages
 pnpm accept:glass-easel      # full gate: build, unit tests, 4 browser stages
 pnpm dev:glass-easel         # compile tests/apps/demo + host on :5173
 pnpm dev:devtool             # debugger on :8080 (watches demo + mini)
@@ -60,7 +60,7 @@ pnpm compile:glass-easel     # compile tests/apps/demo -> tests/host/generated
 pnpm compile:devtool:all     # compile demo + mini for the debugger
 pnpm lint                    # Biome (bridge only is configured today)
 pnpm site:dev                # preview website on :4173
-pnpm site:check              # validate website links
+pnpm site:check              # build and validate the site output
 ```
 
 Package-level scripts:
@@ -71,6 +71,7 @@ pnpm --filter @tiny/cli test
 pnpm --filter @tiny/runtime test
 pnpm --filter @tiny/runtime build
 pnpm --filter devtool build
+pnpm --filter @tiny/website build
 ```
 
 ## Testing
@@ -98,8 +99,8 @@ Chrome, or `PLAYWRIGHT_CHROMIUM_PATH`).
   `apps/devtool/static/` are build output and gitignored.
 - `tests/apps/*` are complete mini-program fixtures; `tests/apps/todo` is the Taro 3
   compatibility target. `tests/apps/echarts` is historical reference only.
-- `website/` is a plain static site (no build step); deploy is handled by
-  `.github/workflows/pages.yml`.
+- `website` is a React + Vite app; `pnpm site:build` writes `dist/` and
+  `.github/workflows/pages.yml` deploys it.
 - Do not reintroduce the legacy `packages/base`, `packages/compiler`, or the old
   devtool shell; no JSBridge/`executeJavaScript`-based code.
 - The browser test host and devtool both use `createStandaloneDualThreadHost`;

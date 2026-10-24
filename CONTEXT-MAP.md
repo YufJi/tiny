@@ -14,3 +14,4 @@ Each package is a bounded context. Read only the contexts relevant to the curren
 | Template Compiler | `packages/template-compiler` | Template compilation |
 | Test Host | `tests/host` | Standalone Vite host for test apps and acceptance |
 | Test Apps | `tests/apps` | Mini-program fixtures used by acceptance |
+| Website | `website` | React + Vite architecture / GitHub Pages site |
