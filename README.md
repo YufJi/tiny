@@ -80,6 +80,8 @@ pnpm dev:devtool             # 调试器：http://localhost:8080
 ```bash
 pnpm build                   # 构建全部 workspace 包
 pnpm lint                    # Biome
+pnpm site:dev                # 本地预览架构网站：http://localhost:4173
+pnpm site:check              # 检查网站内链
 pnpm compile:glass-easel     # tests/apps/demo -> tests/host/generated
 pnpm compile:devtool:all     # demo + tests/apps/mini -> devtool 静态目录
 
@@ -98,11 +100,13 @@ pnpm --filter @tiny/components test
 
 ## 文档
 
+- [在线架构站点](https://yufji.github.io/tiny/)
 - [验收指南](docs/acceptance.md)
 - [Next 版本技术方案](docs/next.md)
 - [架构决策记录](docs/adr)
 - [上下文地图](CONTEXT-MAP.md)
 - [Agent 指南](AGENTS.md)
+- [网站源码](website/README.md)
 
 ## License
 

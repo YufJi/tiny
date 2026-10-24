@@ -21,7 +21,38 @@ importers:
         specifier: ^4.5.2
         version: 4.9.5
 
-  packages/bridge: {}
+  apps/devtool:
+    dependencies:
+      '@rematch/core':
+        specifier: ^2.0.1
+        version: 2.2.0(redux@4.2.1)
+      '@tiny/runtime':
+        specifier: workspace:*
+        version: link:../../packages/runtime
+      glass-easel:
+        specifier: 1.1.0
+        version: 1.1.0
+      react:
+        specifier: ^17.0.2
+        version: 17.0.2
+      react-dom:
+        specifier: ^17.0.2
+        version: 17.0.2(react@17.0.2)
+      react-redux:
+        specifier: ^7.2.3
+        version: 7.2.9(react-dom@17.0.2(react@17.0.2))(react@17.0.2)
+    devDependencies:
+      '@rspack/cli':
+        specifier: ^1.7.10
+        version: 1.7.11(@rspack/core@1.7.11)(@types/express@4.17.25)(tslib@2.8.1)
+      '@rspack/core':
+        specifier: ^1.7.10
+        version: 1.7.11
+      html-rspack-plugin:
+        specifier: ^6.1.7
+        version: 6.1.8(@rspack/core@1.7.11)
+
+  packages/bridge:
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -57,65 +88,6 @@ importers:
       vitest:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
-
-  tools/cli:
-    dependencies:
-      '@tiny/manifest':
-        specifier: workspace:*
-        version: link:../../packages/manifest
-      '@tiny/stylesheet-compiler':
-        specifier: workspace:*
-        version: link:../../packages/stylesheet-compiler
-      '@tiny/template-compiler':
-        specifier: workspace:*
-        version: link:../../packages/template-compiler
-      esbuild:
-        specifier: ^0.21.5
-        version: 0.21.5
-    devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
-      vite:
-        specifier: ^5.4.21
-        version: 5.4.21(@types/node@22.20.1)(less@3.13.1)
-      vitest:
-        specifier: ^1.6.1
-        version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
-
-  apps/devtool:
-    dependencies:
-      '@rematch/core':
-        specifier: ^2.0.1
-        version: 2.2.0(redux@4.2.1)
-      '@tiny/runtime':
-        specifier: workspace:*
-        version: link:../../packages/runtime
-      glass-easel:
-        specifier: 1.1.0
-        version: 1.1.0
-      react:
-        specifier: ^17.0.2
-        version: 17.0.2
-      react-dom:
-        specifier: ^17.0.2
-        version: 17.0.2(react@17.0.2)
-      react-redux:
-        specifier: ^7.2.3
-        version: 7.2.9(react-dom@17.0.2(react@17.0.2))(react@17.0.2)
-    devDependencies:
-      '@rspack/cli':
-        specifier: ^1.7.10
-        version: 1.7.11(@rspack/core@1.7.11)(@types/express@4.17.25)(tslib@2.8.1)
-      '@rspack/core':
-        specifier: ^1.7.10
-        version: 1.7.11
-      html-rspack-plugin:
-        specifier: ^6.1.7
-        version: 6.1.8(@rspack/core@1.7.11)
 
   packages/manifest:
     devDependencies:
@@ -178,6 +150,34 @@ importers:
       vitest:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@25.6.2)(@vitest/ui@1.6.1)(less@3.13.1)
+
+  tools/cli:
+    dependencies:
+      '@tiny/manifest':
+        specifier: workspace:*
+        version: link:../../packages/manifest
+      '@tiny/stylesheet-compiler':
+        specifier: workspace:*
+        version: link:../../packages/stylesheet-compiler
+      '@tiny/template-compiler':
+        specifier: workspace:*
+        version: link:../../packages/template-compiler
+      esbuild:
+        specifier: ^0.21.5
+        version: 0.21.5
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vite:
+        specifier: ^5.4.21
+        version: 5.4.21(@types/node@22.20.1)(less@3.13.1)
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
 
 packages:
 

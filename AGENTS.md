@@ -21,6 +21,7 @@ must not depend on tools, apps, or tests.
 | Tools | `tools/*` | Compiler/build tooling |
 | Apps | `apps/*` | Runnable applications (debugger) |
 | Tests | `tests/*` | Browser host + mini-program fixtures (not workspace packages) |
+| Website | `website/` | Static GitHub Pages architecture site (not a package) |
 
 ### Core packages
 
@@ -58,6 +59,8 @@ pnpm dev:devtool             # debugger on :8080 (watches demo + mini)
 pnpm compile:glass-easel     # compile tests/apps/demo -> tests/host/generated
 pnpm compile:devtool:all     # compile demo + mini for the debugger
 pnpm lint                    # Biome (bridge only is configured today)
+pnpm site:dev                # preview website on :4173
+pnpm site:check              # validate website links
 ```
 
 Package-level scripts:
@@ -95,6 +98,8 @@ Chrome, or `PLAYWRIGHT_CHROMIUM_PATH`).
   `apps/devtool/static/` are build output and gitignored.
 - `tests/apps/*` are complete mini-program fixtures; `tests/apps/todo` is the Taro 3
   compatibility target. `tests/apps/echarts` is historical reference only.
+- `website/` is a plain static site (no build step); deploy is handled by
+  `.github/workflows/pages.yml`.
 - Do not reintroduce the legacy `packages/base`, `packages/compiler`, or the old
   devtool shell; no JSBridge/`executeJavaScript`-based code.
 - The browser test host and devtool both use `createStandaloneDualThreadHost`;
