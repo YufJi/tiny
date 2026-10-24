@@ -15,7 +15,7 @@ The browser stage verifies:
 
 1. The host boots with no page or console errors, and the render frame fills the host.
 2. The todos page renders the P0 component set (`scroll-view`, checkbox group, slider,
-   progress, switch, swiper, icon, image, canvas placeholder).
+   progress, switch, swiper, icon, image, canvas).
 3. Page-scoped classes, `app.wxss` page styles, and built-in block/inline layout apply:
    the page background, card padding/border, and text display are computed from CSS.
 4. `add-button` receives properties, renders its slot, and delivers its custom event to
@@ -25,8 +25,8 @@ The browser stage verifies:
 7. Input changes reach page data, and `Save and back` persists storage and restores the
    todos marker.
 8. System info carries a non-zero window size and pixel ratio.
-9. Canvas stays a non-fatal placeholder and emits a structured `UNSUPPORTED_CANVAS`
-   warning.
+9. Canvas draws through the service-thread mirror without fatal errors; the legacy
+   canvas API still emits a structured `UNSUPPORTED_CANVAS` warning.
 10. Runtime state diagnostics observe the todos → add-todo → todos page transitions.
 
 ## Existing example app stage
@@ -37,7 +37,7 @@ After the P0 demo flow, the gate compiles `example/mini` (3 pages + 1 subpackage
 1. Boots from `App.onLaunch` storage writes and renders the todos page from `getApp()`
    state.
 2. Renders both `add-button` instances, slots, checkbox group, slider, progress, switch,
-   swiper, the canvas placeholder, and a loaded image (assets are inlined as data URIs).
+   swiper, the mirrored canvas, and a loaded image (assets are inlined as data URIs).
 3. Applies `app.wxss` page styling to the real app.
 4. Drives page interactions: checkbox-group aggregation updates `app.todos`, the first
    component instance runs its own handler without navigating, the switch and sliders
@@ -48,7 +48,8 @@ After the P0 demo flow, the gate compiles `example/mini` (3 pages + 1 subpackage
 7. Renders the `bar` ECharts page: the service-thread canvas is mirrored to the render
    page as PNG frames, and the acceptance checks for non-blank pixels.
 8. Boots the `packageA/pages/c/c` subpackage page directly.
-9. Reports `wx.createAnimation` / selector-query shims as warnings instead of throwing.
+9. Runs `wx.createAnimation` and `wx.createSelectorQuery`, reports the offscreen canvas
+   mirror as info, and keeps the legacy canvas API at warning level.
 
 The P0 demo artifacts are recompiled after this stage, so `pnpm dev:glass-easel` keeps
 serving the small demo.
@@ -69,8 +70,7 @@ runtime debugger:
 6. `Reload` restarts the runtime and `Terminate` removes both thread iframes.
 7. No console or page errors occur.
 
-The debugger is the devtool default page; the legacy shell remains at `/legacy.html`.
-Run it manually with:
+The debugger is the devtool default page. Run it manually with:
 
 ```bash
 pnpm dev:devtool
