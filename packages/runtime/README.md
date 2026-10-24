@@ -49,3 +49,27 @@ pnpm --filter @tiny/runtime typecheck
 ```
 
 The full end-to-end gate is `pnpm accept:glass-easel`.
+
+## Host-specific APIs
+
+Platform facts and host capabilities belong to the host, not the engine core.
+`bootServiceThread` accepts `apiExtensions` for APIs such as menu-button geometry
+or performance observers:
+
+```ts
+bootServiceThread({
+  transport,
+  manifest,
+  initialPath,
+  apiExtensions: {
+    getMenuButtonBoundingClientRect: () => hostChrome.menuButtonRect,
+    getPerformance: () => hostChrome.performance,
+  },
+  loadArtifacts,
+})
+```
+
+The reference implementation lives in `tests/host/src/service-thread.ts`; the
+debugger host passes the same extensions in `apps/devtool/src/next/runtimeService.js`.
+The engine only exposes mini-program semantics, host snapshots (system/storage),
+and bridge calls; it does not invent device or performance results.

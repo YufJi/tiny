@@ -65,6 +65,8 @@ export type ServiceThreadOptions = {
   initialPath: string
   capabilities?: Record<string, unknown>
   loadArtifacts?: () => Promise<unknown>
+  /** Host-specific `wx` APIs (device geometry, performance, etc.). */
+  apiExtensions?: Record<string, (...args: unknown[]) => unknown>
 }
 
 export type RenderThreadOptions = {

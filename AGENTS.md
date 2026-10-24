@@ -106,6 +106,9 @@ Chrome, or `PLAYWRIGHT_CHROMIUM_PATH`).
   `.github/workflows/pages.yml` deploys it.
 - Do not reintroduce the legacy `packages/base`, `packages/compiler`, or the old
   devtool shell; no JSBridge/`executeJavaScript`-based code.
+- Host facts (menu-button geometry, performance, device capabilities) are supplied
+  by the host through `ServiceThreadOptions.apiExtensions`; do not hardcode them in
+  `packages/runtime`'s service API host.
 - The browser test host and devtool both use `createStandaloneDualThreadHost`;
   devtool adds `DevtoolRuntimeClient` for lifecycle control, state projection, and
   element-tree inspection. Do not make the test host depend on the devtool app.
