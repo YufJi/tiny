@@ -7,7 +7,7 @@ It contains no mini-program source. The compiler writes an app to
 service/render iframes.
 
 ```bash
-pnpm compile:glass-easel     # example/demo -> hosts/browser/generated
+pnpm compile:glass-easel     # test-apps/demo -> hosts/browser/generated
 pnpm dev:glass-easel         # compile + Vite on :5173
 ```
 

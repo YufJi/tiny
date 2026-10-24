@@ -46,17 +46,17 @@ pnpm dev:glass-easel         # P0 demo：http://localhost:5173
 pnpm dev:devtool             # 调试器：http://localhost:8080
 ```
 
-## 示例
+## 测试小程序
 
 - `hosts/browser`：浏览器调试宿主（Vite，加载编译产物；不是小程序）
-- `example/demo`：P0 验收用的小程序 demo
-- `example/mini`：完整示例（todos / add-todo / bar ECharts / 子包页面）
-- `example/todo`：Taro 3 预编译产物，已纳入验收（webpack/WXS/递归模板兼容）
-- `example/echarts`：历史示例，保留参考
+- `test-apps/demo`：P0 验收用的小程序 demo
+- `test-apps/mini`：完整示例（todos / add-todo / bar ECharts / 子包页面）
+- `test-apps/todo`：Taro 3 预编译产物，已纳入验收（webpack/WXS/递归模板兼容）
+- `test-apps/echarts`：历史示例，保留参考
 
 ```bash
-pnpm compile:glass-easel     # 编译 example/demo
-pnpm compile:devtool:all     # 编译 demo + example/mini 到调试器静态目录
+pnpm compile:glass-easel     # 编译 test-apps/demo
+pnpm compile:devtool:all     # 编译 demo + test-apps/mini 到调试器静态目录
 ```
 
 ## 文档

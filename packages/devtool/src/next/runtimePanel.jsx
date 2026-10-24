@@ -36,7 +36,7 @@ function TreeNode({ node, depth = 0 }) {
 
 const APPS = [
   { id: 'demo', label: 'P0 demo' },
-  { id: 'real', label: 'example/mini' },
+  { id: 'real', label: 'test-apps/mini' },
 ];
 
 class RuntimePanel extends PureComponent {

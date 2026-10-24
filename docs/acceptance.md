@@ -1,7 +1,7 @@
 # P0 acceptance path
 
 The browser host lives in `hosts/browser`; mini-program sources live under
-`example/` (`example/demo` is the P0 demo, `example/mini` the full sample).
+`test-apps/` (`test-apps/demo` is the P0 demo, `test-apps/mini` the full sample).
 
 From a clean checkout:
 
@@ -35,7 +35,7 @@ The browser stage verifies:
 
 ## Existing example app stage
 
-After the P0 demo flow, the gate compiles `example/mini` (3 pages + 1 subpackage page,
+After the P0 demo flow, the gate compiles `test-apps/mini` (3 pages + 1 subpackage page,
 2 components) into the same host and drives the real app:
 
 1. Boots from `App.onLaunch` storage writes and renders the todos page from `getApp()`
@@ -60,7 +60,7 @@ serving the small demo.
 
 ## Taro 3 example stage
 
-The gate then compiles the prebuilt Taro 3 output in `example/todo` (webpack
+The gate then compiles the prebuilt Taro 3 output in `test-apps/todo` (webpack
 `webpackJsonp` bundles, `base.wxml`, external WXS, recursive templates) and
 drives `pages/index/index`:
 
@@ -78,7 +78,7 @@ on the page instance.
 
 ## Runtime debugger stage
 
-The gate compiles both `example/demo` (demo) and `example/mini` (real) into
+The gate compiles both `test-apps/demo` (demo) and `test-apps/mini` (real) into
 `packages/devtool/static/runtime/apps/*/generated`, starts the devtool, and verifies the
 runtime debugger:
 

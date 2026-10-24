@@ -37,7 +37,7 @@ if (process.env.SKIP_BROWSER === '1') {
   runStep('Compile existing example app', [
     'node',
     'scripts/compile-mini.mjs',
-    'example/mini',
+    'test-apps/mini',
     'hosts/browser/generated',
   ])
   await withServer(() => runMiniProgramAcceptance({ baseUrl }))
@@ -45,7 +45,7 @@ if (process.env.SKIP_BROWSER === '1') {
   runStep('Compile Taro 3 example', [
     'node',
     'scripts/compile-mini.mjs',
-    'example/todo',
+    'test-apps/todo',
     'hosts/browser/generated',
   ])
   await withServer(() => runTaroAcceptance({ baseUrl }))

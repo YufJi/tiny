@@ -5,7 +5,7 @@ import { compileMiniProgram } from '../packages/cli/dist/index.js'
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 const result = await compileMiniProgram({
-  sourceDir: path.join(rootDir, 'example/demo'),
+  sourceDir: path.join(rootDir, 'test-apps/demo'),
   outputDir: path.join(rootDir, 'hosts/browser/generated'),
   clean: true,
   dev: true,
