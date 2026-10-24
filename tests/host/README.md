@@ -1,13 +1,13 @@
-# Browser host
+# Test host
 
-Standalone Vite host for running compiled mini programs with the Tiny runtime.
+Standalone Vite host for running compiled test mini programs with the Tiny runtime.
 
 It contains no mini-program source. The compiler writes an app to
-`hosts/browser/generated`; the host imports that manifest and boots the
+`tests/host/generated`; the host imports that manifest and boots the
 service/render iframes.
 
 ```bash
-pnpm compile:glass-easel     # test-apps/demo -> hosts/browser/generated
+pnpm compile:glass-easel     # tests/apps/demo -> tests/host/generated
 pnpm dev:glass-easel         # compile + Vite on :5173
 ```
 

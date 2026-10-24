@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { compileMiniProgram } from '../tools/cli/dist/index.js'
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const sourceDir = path.resolve(rootDir, process.argv[2] ?? 'test-apps/demo')
+const sourceDir = path.resolve(rootDir, process.argv[2] ?? 'tests/apps/demo')
 const outputDir = path.resolve(rootDir, process.argv[3] ?? 'apps/devtool/static/runtime/apps/demo/generated')
 
 let building = false

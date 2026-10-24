@@ -9,7 +9,7 @@ pnpm dev:devtool
 # http://localhost:8080/
 ```
 
-`dev:devtool` 会编译 `test-apps/demo`（demo）和 `test-apps/mini`（真实示例）到
+`dev:devtool` 会编译 `tests/apps/demo`（demo）和 `tests/apps/mini`（真实示例）到
 `static/runtime/apps/*/generated`，启动两个 watcher，再启动 rspack dev server。
 编译完成后在面板点 `Reload` 加载新产物。
 

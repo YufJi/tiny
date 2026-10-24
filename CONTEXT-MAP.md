@@ -12,4 +12,5 @@ Each package is a bounded context. Read only the contexts relevant to the curren
 | Runtime | `packages/runtime` | Tiny host runtime, glass-easel adapter, and devtool client |
 | Stylesheet Compiler | `packages/stylesheet-compiler` | Stylesheet compilation and scoping |
 | Template Compiler | `packages/template-compiler` | Template compilation |
-| Browser Host | `hosts/browser` | Standalone Vite host for example apps and acceptance |
+| Test Host | `tests/host` | Standalone Vite host for test apps and acceptance |
+| Test Apps | `tests/apps` | Mini-program fixtures used by acceptance |

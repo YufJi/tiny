@@ -12,8 +12,8 @@ A mini-program engine built on glass-easel.
 
 Legacy `packages/base`, `packages/compiler`, and the old devtool shell were
 removed after the glass-easel migration. Do not reintroduce
-JSBridge/executeJavaScript-based code. `test-apps/todo` is the Taro 3 compatibility
-target and part of acceptance; `test-apps/echarts` remains a historical reference demo.
+JSBridge/executeJavaScript-based code. `tests/apps/todo` is the Taro 3 compatibility
+target and part of acceptance; `tests/apps/echarts` remains a historical reference demo.
 
 ## Core packages
 
@@ -33,11 +33,13 @@ target and part of acceptance; `test-apps/echarts` remains a historical referenc
 | `tools/cli` | Active compiler and manifest producer |
 | `apps/devtool` | Browser debugger UI and thread entries |
 
-## Hosts
+## Tests
 
-- `hosts/browser`: standalone Vite browser host used by the test apps and acceptance.
+- `tests/host`: standalone Vite browser host used by the test apps and acceptance.
   It is not a package and has no mini-program source of its own; compiled apps are
-  written to `hosts/browser/generated`.
+  written to `tests/host/generated`.
+- `tests/apps/*`: mini-program sources used as acceptance fixtures (`demo`, `mini`,
+  `todo`, `echarts`).
 
 ## Commands
 
@@ -47,7 +49,7 @@ pnpm accept:glass-easel      # full gate: build, tests, browser acceptance
 pnpm dev:glass-easel         # P0 demo host on :5173
 pnpm dev:devtool             # debugger on :8080 (watches both test apps)
 pnpm compile:glass-easel     # compile the P0 demo
-pnpm compile:devtool:all     # compile demo + test-apps/mini for devtool
+pnpm compile:devtool:all     # compile demo + tests/apps/mini for devtool
 pnpm lint                    # biome (only bridge is configured today)
 ```
 
@@ -71,8 +73,8 @@ The end-to-end gate is `pnpm accept:glass-easel`, which runs:
 1. build of the seven active compiler/runtime packages
 2. unit tests for all packages
 3. P0 demo browser flow
-4. `test-apps/mini` browser flow
-5. Taro 3 (`test-apps/todo`) browser flow
+4. `tests/apps/mini` browser flow
+5. Taro 3 (`tests/apps/todo`) browser flow
 6. runtime debugger browser flow
 
 `SKIP_BROWSER=1`, `TINY_ACCEPT_PORT`, `TINY_DEVTOOL_PORT`, and `HEADED=1`

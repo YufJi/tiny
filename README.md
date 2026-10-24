@@ -27,8 +27,7 @@ devtool (可选) : DevtoolRuntimeClient + React 面板
 | 核心引擎 | `packages/*` | 可被运行时/工具复用的库 |
 | 工具 | `tools/*` | 编译器等开发工具 |
 | 应用 | `apps/*` | 可独立运行的调试器 |
-| 宿主 | `hosts/*` | 浏览器调试宿主（非 workspace 包） |
-| 测试小程序 | `test-apps/*` | 验收输入（非 workspace 包） |
+| 测试 | `tests/*` | 浏览器宿主 + 测试小程序（非 workspace 包） |
 
 ### 核心包
 
@@ -48,13 +47,23 @@ devtool (可选) : DevtoolRuntimeClient + React 面板
 | `tools/cli` | 活跃编译器：小程序源码 → glass-easel 产物与 manifest |
 | `apps/devtool` | 浏览器调试器 |
 
+### 测试
+
+| Path | 作用 |
+| --- | --- |
+| `tests/host` | 浏览器测试宿主（Vite，加载编译产物） |
+| `tests/apps/demo` | P0 验收 demo |
+| `tests/apps/mini` | 完整示例（todos / add-todo / bar ECharts / 子包） |
+| `tests/apps/todo` | Taro 3 预编译产物 |
+| `tests/apps/echarts` | 历史示例 |
+
 ## 快速开始
 
 环境要求：Node.js ≥ 22（见 `.nvmrc`，可执行 `nvm use`）与 pnpm 9（仓库已声明 `packageManager`，可执行 `corepack enable` 自动对齐）。
 
 ```bash
 pnpm install
-pnpm accept:glass-easel      # 构建 + 单测 + 三段浏览器验收
+pnpm accept:glass-easel      # 构建 + 单测 + 四段浏览器验收
 ```
 
 本地调试：
@@ -64,17 +73,11 @@ pnpm dev:glass-easel         # P0 demo：http://localhost:5173
 pnpm dev:devtool             # 调试器：http://localhost:8080
 ```
 
-## 测试小程序
-
-- `hosts/browser`：浏览器调试宿主（Vite，加载编译产物；不是小程序）
-- `test-apps/demo`：P0 验收用的小程序 demo
-- `test-apps/mini`：完整示例（todos / add-todo / bar ECharts / 子包页面）
-- `test-apps/todo`：Taro 3 预编译产物，已纳入验收（webpack/WXS/递归模板兼容）
-- `test-apps/echarts`：历史示例，保留参考
+## 测试命令
 
 ```bash
-pnpm compile:glass-easel     # 编译 test-apps/demo
-pnpm compile:devtool:all     # 编译 demo + test-apps/mini 到调试器静态目录
+pnpm compile:glass-easel     # 编译 tests/apps/demo
+pnpm compile:devtool:all     # 编译 demo + tests/apps/mini 到调试器静态目录
 ```
 
 ## 文档

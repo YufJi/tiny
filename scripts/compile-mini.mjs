@@ -3,8 +3,8 @@ import { fileURLToPath } from 'node:url'
 import { compileMiniProgram } from '../tools/cli/dist/index.js'
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const sourceDir = path.resolve(rootDir, process.argv[2] ?? 'test-apps/mini')
-const outputDir = path.resolve(rootDir, process.argv[3] ?? 'hosts/browser/generated')
+const sourceDir = path.resolve(rootDir, process.argv[2] ?? 'tests/apps/mini')
+const outputDir = path.resolve(rootDir, process.argv[3] ?? 'tests/host/generated')
 
 const result = await compileMiniProgram({
   sourceDir,

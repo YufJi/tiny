@@ -7,7 +7,7 @@ import playwright from 'playwright-core'
 const { chromium } = playwright
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const failureShot = path.join(rootDir, 'hosts/browser/generated/acceptance-failure.png')
+const failureShot = path.join(rootDir, 'tests/host/generated/acceptance-failure.png')
 const STEP_TIMEOUT = 15_000
 
 async function launchBrowser() {
@@ -270,7 +270,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
   const page = await browser.newPage({ viewport: { width: 1000, height: 760 } })
   const pageErrors = []
   const consoleErrors = []
-  const realFailureShot = path.join(rootDir, 'hosts/browser/generated/acceptance-real-failure.png')
+  const realFailureShot = path.join(rootDir, 'tests/host/generated/acceptance-real-failure.png')
   page.on('pageerror', (error) => pageErrors.push(error.message))
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text())
@@ -507,7 +507,7 @@ export async function runTaroAcceptance({ baseUrl }) {
   const page = await browser.newPage({ viewport: { width: 420, height: 860 } })
   const pageErrors = []
   const consoleErrors = []
-  const taroFailureShot = path.join(rootDir, 'hosts/browser/generated/acceptance-taro-failure.png')
+  const taroFailureShot = path.join(rootDir, 'tests/host/generated/acceptance-taro-failure.png')
   page.on('pageerror', (error) => pageErrors.push(error.message))
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text())
@@ -600,7 +600,7 @@ export async function runDevtoolAcceptance({ baseUrl }) {
   const page = await browser.newPage({ viewport: { width: 1400, height: 900 } })
   const pageErrors = []
   const consoleErrors = []
-  const failureShot = path.join(rootDir, 'hosts/browser/generated/acceptance-devtool-failure.png')
+  const failureShot = path.join(rootDir, 'tests/host/generated/acceptance-devtool-failure.png')
   page.on('pageerror', (error) => pageErrors.push(error.message))
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text())

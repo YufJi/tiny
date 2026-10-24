@@ -4,7 +4,7 @@ static/
 dist/
 .turbo/
 .sisyphus/
-hosts/browser/generated/
+tests/host/generated/
 apps/devtool/static/runtime/
 packages/components/src/generated/
 .agents/
