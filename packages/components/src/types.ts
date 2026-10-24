@@ -3,6 +3,8 @@ import type { BuiltinComponentTag } from './tags'
 import type { BuiltinBehaviors } from './behaviors'
 
 export type BuiltinComponentFactoryOptions = {
+  /** Behavior id prefix, e.g. `wx-` or `tiny-`. Defaults to `wx-`. */
+  prefix?: string
   onDiagnostic?: (diagnostic: {
     severity: 'warning' | 'error'
     code: string

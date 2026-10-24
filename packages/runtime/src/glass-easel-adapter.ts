@@ -1,5 +1,11 @@
 import * as glassEasel from 'glass-easel'
-import type { Manifest, PageArtifact, StyleArtifact } from '@tiny/manifest'
+import {
+  namingFromManifest,
+  type Manifest,
+  type PageArtifact,
+  type ResolvedNamingConfig,
+  type StyleArtifact,
+} from '@tiny/manifest'
 import type { StyleLoader, TemplateRegistry } from './types'
 import { toJsonSafe, type SerializedEventNode, type SerializedMiniProgramEvent } from './events'
 import type { MiniProgramComponentSchema } from './types'
@@ -139,6 +145,8 @@ export class GlassEaselRuntimeAdapter {
   private readonly onComponentData?: GlassEaselAdapterOptions['onComponentData']
   private readonly onComponentObserved?: GlassEaselAdapterOptions['onComponentObserved']
   private readonly builtinComponents: BuiltinComponentDefinitions
+  /** Resolved engine naming config (behavior ids, host attribute, …). */
+  private readonly naming: ResolvedNamingConfig
   private readonly onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
   private readonly mountComponent?: (component: glassEasel.GeneralComponent) => void
   private baseStylesRegistered = false
@@ -147,6 +155,7 @@ export class GlassEaselRuntimeAdapter {
   constructor(options: GlassEaselAdapterOptions) {
     this.backend = options.backend
     this.manifest = options.manifest
+    this.naming = namingFromManifest(options.manifest)
     this.templates = options.templates
     this.onMiniProgramEvent = options.onMiniProgramEvent
     this.onComponentLifecycle = options.onComponentLifecycle
@@ -159,6 +168,7 @@ export class GlassEaselRuntimeAdapter {
     this.mountComponent = options.mountComponent
     this.unmountComponent = options.unmountComponent
     this.builtinComponents = createBuiltinComponents(this.componentSpace, {
+      prefix: this.naming.behaviorPrefix,
       onDiagnostic: (diagnostic) => this.onDiagnostic?.(createRuntimeDiagnostic(
         diagnostic.severity,
         diagnostic.code,
@@ -445,7 +455,7 @@ export class GlassEaselRuntimeAdapter {
     const backend = (component as unknown as { getBackendElement?: () => unknown }).getBackendElement?.()
     if (isDomInspectNode(backend)) {
       const budget = { count: 0 }
-      const domTree = serializeDomNode(backend, '0', 0, budget)
+      const domTree = serializeDomNode(backend, '0', 0, budget, this.naming.hostAttribute)
       if (domTree) return { ...domTree, type: 'component' }
     }
     return this.inspectLogicalTree(component)
@@ -989,6 +999,7 @@ function serializeDomNode(
   id: string,
   depth: number,
   budget: { count: number },
+  hostAttribute: string,
 ): InspectNode | null {
   if (budget.count >= INSPECT_NODE_LIMIT || depth > INSPECT_DEPTH_LIMIT) return null
   budget.count += 1
@@ -1012,10 +1023,10 @@ function serializeDomNode(
   }
   const result: InspectNode = {
     id,
-    type: node.hasAttribute?.('wx-host') ? 'component' : 'element',
+    type: node.hasAttribute?.(hostAttribute) ? 'component' : 'element',
     tag: String(node.tagName ?? 'unknown').toLowerCase(),
     children: Array.from(node.childNodes ?? [])
-      .map((child, index) => serializeDomNode(child, `${id}.${index}`, depth + 1, budget))
+      .map((child, index) => serializeDomNode(child, `${id}.${index}`, depth + 1, budget, hostAttribute))
       .filter((child): child is InspectNode => child !== null),
   }
   if (Object.keys(attributes).length > 0) result.attributes = attributes

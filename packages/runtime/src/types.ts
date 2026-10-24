@@ -111,7 +111,7 @@ export type ServiceThreadOptions = {
   initialPath: string
   capabilities?: Record<string, unknown>
   loadArtifacts?: () => Promise<unknown>
-  /** Host-specific `wx` APIs (device geometry, performance, etc.). */
+  /** Host-specific APIs (device geometry, performance, etc.) merged into the API host. */
   apiExtensions?: Record<string, (...args: unknown[]) => unknown>
   /** Host canvas implementation for legacy canvas APIs/selector nodes. */
   canvas?: ServiceCanvasAdapter

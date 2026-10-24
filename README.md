@@ -83,6 +83,42 @@ pnpm dev:glass-easel         # 编译 tests/apps/demo 并启动测试宿主：ht
 pnpm dev:devtool             # 调试器：http://localhost:8080
 ```
 
+## 命名配置
+
+引擎默认使用微信兼容的 `wx-` 命名空间；组件、API、编译器三侧的前缀都可以通过
+`tiny.config.json` 统一切换（默认可不提供该文件）：
+
+```json
+{
+  "naming": {
+    "prefix": "tiny-",
+    "apiAliases": ["wx"]
+  }
+}
+```
+
+| 配置项 | 默认值 | 影响 |
+| --- | --- | --- |
+| `naming.prefix` | `wx-` | 由它派生下面所有名字；`tiny-` 即切换为 Tiny 命名空间 |
+| `naming.directive` | 前缀去掉 `-` | 模板指令命名空间：`wx:if` / `tiny:if` |
+| `naming.api` | 前缀去掉 `-` | service 线程全局 API 对象：`wx.*` / `tiny.*` |
+| `naming.apiAliases` | `[]` | 额外挂载的 API 全局别名，便于第三方库过渡（如 `["wx"]`） |
+
+派生结果：
+
+| 位置 | `prefix: "wx-"` | `prefix: "tiny-"` |
+| --- | --- | --- |
+| 模板指令 | `wx:if`、`wx:for` | `tiny:if`、`tiny:for` |
+| 全局 API | `wx.getStorageSync()` | `tiny.getStorageSync()` |
+| 内置组件 behavior | `wx-base`、`wx-hover` | `tiny-base`、`tiny-hover` |
+| 内置 behavior scheme | `wx://component-export` | `tiny://component-export` |
+| 组件宿主属性 | `wx-host` | `tiny-host` |
+| tag 选择器标记类 | `wx-tag-button` | `tiny-tag-button` |
+
+编译器会把解析后的配置写入 `manifest.json` 的 `naming` 字段，render/service 线程据此
+保持一致。`compileMiniProgram({ naming })` 也可直接覆盖配置；内置组件标签本身
+（`<view>`、`<button>` 等）不参与前缀。
+
 ## 常用命令
 
 ```bash

@@ -71,7 +71,17 @@ export interface StyleSheetOptions {
 
   /**
    * When `convertHost` is `true` and this option is set, an additional
-   * `[is="hostIs"]` attribute selector is emitted alongside `[wx-host="…"]`.
+   * `[is="hostIs"]` attribute selector is emitted alongside
+   * `[<hostAttribute>="…"]`.
    */
   hostIs?: string | undefined
+
+  /**
+   * Attribute used to mark component hosts when converting `:host` selectors.
+   * Defaults to `wx-host`; custom-namespace builds may use `tiny-host`.
+   */
+  hostAttribute?: string | undefined
 }
+
+/** Default attribute marking a component host. */
+export const DEFAULT_HOST_ATTRIBUTE = 'wx-host'

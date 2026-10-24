@@ -2,6 +2,10 @@
  * Versioned contract between the compiler and the runtime/debugger.
  * Keep these types free of compiler- or runtime-specific dependencies.
  */
+import type { NamingConfig } from './naming'
+
+export * from './naming'
+
 export type DiagnosticSeverity = 'error' | 'warning' | 'info'
 
 export type SourceLocation = {
@@ -74,6 +78,8 @@ export type ComponentArtifact = PageArtifact
 
 export type Manifest = {
   schemaVersion: 1
+  /** Engine naming configuration resolved by the compiler. */
+  naming?: NamingConfig
   entries: {
     service: string
     render: string

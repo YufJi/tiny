@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url'
 import { beforeAll, afterAll, describe, expect, test } from 'vitest'
 import { compileMiniProgram } from '../src'
 
-const fixtureDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures/mini')
+const fixtureRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures')
+const fixtureDir = path.join(fixtureRoot, 'mini')
+const namingFixtureDir = path.join(fixtureRoot, 'naming')
 let outputDir: string
 
 beforeAll(async () => {
@@ -35,6 +37,13 @@ describe('compileMiniProgram', () => {
     expect(manifest.components).toHaveLength(1)
     expect(manifest.styles.length).toBeGreaterThan(0)
     expect(manifest.assets).toEqual([])
+    expect(manifest.naming).toMatchObject({
+      prefix: 'wx-',
+      directive: 'wx',
+      api: 'wx',
+      hostAttribute: 'wx-host',
+      tagClassPrefix: 'wx-tag-',
+    })
   })
 
   test('registers external WXS files with and without their extension', async () => {
@@ -121,5 +130,38 @@ describe('compileMiniProgram', () => {
       dev: true,
     })
     expect(result.diagnostics.filter((item) => item.severity === 'error')).toEqual([])
+  })
+})
+
+describe('compileMiniProgram — naming config', () => {
+  test('applies the prefix from tiny.config.json to directives, markers and the manifest', async () => {
+    const namingOutputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cli-naming-'))
+    try {
+      const result = await compileMiniProgram({
+        sourceDir: namingFixtureDir,
+        outputDir: namingOutputDir,
+        clean: true,
+        dev: true,
+      })
+      expect(result.diagnostics.filter((item) => item.severity === 'error')).toEqual([])
+      expect(result.manifest.naming).toMatchObject({
+        prefix: 'tiny-',
+        directive: 'tiny',
+        api: 'tiny',
+        hostAttribute: 'tiny-host',
+        tagClassPrefix: 'tiny-tag-',
+      })
+
+      const templates = await fs.readFile(path.join(namingOutputDir, 'templates.js'), 'utf8')
+      expect(templates).toContain('tiny-tag-view')
+      const css = await fs.readFile(
+        path.join(namingOutputDir, 'styles/pages/index/index.wxss.css'),
+        'utf8',
+      )
+      expect(css).toContain('--tiny-tag-view')
+      expect(css).not.toContain('wx-tag-')
+    } finally {
+      await fs.rm(namingOutputDir, { recursive: true, force: true })
+    }
   })
 })

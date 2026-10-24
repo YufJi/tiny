@@ -72,7 +72,7 @@ export const enum ParseErrorKind {
   EmptyExpression,
   InvalidEndTag,
   DeprecatedAttribute,
-  IncompatibleWithWxAttribute,
+  IncompatibleWithDirectiveAttribute,
   UninitializedScope,
   InvalidClassNames,
   DuplicatedClassNames,
@@ -116,7 +116,7 @@ export function parseErrorKindMessage(kind: ParseErrorKind): string {
     case ParseErrorKind.EmptyExpression: return 'the expression is empty'
     case ParseErrorKind.InvalidEndTag: return 'invalid end tag'
     case ParseErrorKind.DeprecatedAttribute: return 'this attribute is deprecated'
-    case ParseErrorKind.IncompatibleWithWxAttribute: return 'this attribute is incompatible with wx:* attribute'
+    case ParseErrorKind.IncompatibleWithDirectiveAttribute: return 'this attribute is incompatible with template directives'
     case ParseErrorKind.UninitializedScope: return 'this variable is uninitialized'
     case ParseErrorKind.InvalidClassNames: return 'the class name list contains invalid identifiers'
     case ParseErrorKind.DuplicatedClassNames: return 'the class name list contains duplicated class names'
@@ -161,7 +161,7 @@ export function parseErrorKindLevel(kind: ParseErrorKind): ParseErrorLevel {
     case ParseErrorKind.EmptyExpression: return ParseErrorLevel.Warn
     case ParseErrorKind.InvalidEndTag: return ParseErrorLevel.Warn
     case ParseErrorKind.DeprecatedAttribute: return ParseErrorLevel.Warn
-    case ParseErrorKind.IncompatibleWithWxAttribute: return ParseErrorLevel.Error
+    case ParseErrorKind.IncompatibleWithDirectiveAttribute: return ParseErrorLevel.Error
     case ParseErrorKind.UninitializedScope: return ParseErrorLevel.Error
     case ParseErrorKind.InvalidClassNames: return ParseErrorLevel.Error
     case ParseErrorKind.DuplicatedClassNames: return ParseErrorLevel.Error

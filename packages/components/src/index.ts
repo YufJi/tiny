@@ -64,7 +64,7 @@ export function createBuiltinComponents(
     space,
     options,
     template: builtinTemplate,
-    behaviors: createBuiltinBehaviors(space),
+    behaviors: createBuiltinBehaviors(space, { prefix: options.prefix }),
   }
   for (const tag of BUILTIN_COMPONENT_TAGS) {
     definitions[tag] = DEFINITION_FACTORIES[tag](context)

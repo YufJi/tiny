@@ -161,7 +161,7 @@ export class Stringifier {
         break
       }
       case 'If': {
-        this.write('<block wx:if="')
+        this.write(`<block ${this.options.directivePrefix}:if="`)
         this.write(escapeHtmlQuote(this.valueToString(kind.branches[0]![1])))
         this.write('">')
         this.newline()
@@ -172,7 +172,7 @@ export class Stringifier {
         break
       }
       case 'For': {
-        this.write('<block wx:for="')
+        this.write(`<block ${this.options.directivePrefix}:for="`)
         this.write(escapeHtmlQuote(this.valueToString(kind.list[1])))
         this.write('">')
         this.newline()

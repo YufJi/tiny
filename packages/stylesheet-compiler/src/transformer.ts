@@ -17,6 +17,7 @@ import postcss, {
   type Rule,
 } from 'postcss'
 import {
+  DEFAULT_HOST_ATTRIBUTE,
   ParseErrorKind,
   ParseErrorLevel,
   type StyleSheetOptions,
@@ -238,7 +239,7 @@ export class StyleSheetTransformer {
    * Create a new `StyleSheetTransformer`.
    *
    * Signature matches the Rust WASM `js_bindings.rs` constructor for
-   * drop-in compatibility with existing callers (e.g. `wxss_loader.js`):
+   * drop-in compatibility with existing style loaders:
    * ```js
    * new StyleSheetTransformer(name, css, classPrefix?, rpxRatio?, convertHost?)
    * ```
@@ -277,6 +278,7 @@ export class StyleSheetTransformer {
         importSign: undefined!,
         convertHost: convertHost ?? false,
         hostIs: undefined!,
+        hostAttribute: DEFAULT_HOST_ATTRIBUTE,
       }
     }
     this._normalRoot = postcss.root()
@@ -296,6 +298,7 @@ export class StyleSheetTransformer {
       importSign: options.importSign ?? undefined!,
       convertHost: options.convertHost ?? false,
       hostIs: options.hostIs ?? undefined!,
+      hostAttribute: options.hostAttribute ?? DEFAULT_HOST_ATTRIBUTE,
     }
     return new StyleSheetTransformer(path, css, opts)
   }
@@ -622,9 +625,10 @@ export class StyleSheetTransformer {
   private _emitHostRule(node: Rule, lowDest: Root | AtRule, atStack: string[]): void {
     const prefix = this._opts.classPrefix ?? ''
     const hostIs = this._opts.hostIs
+    const hostAttribute = this._opts.hostAttribute ?? DEFAULT_HOST_ATTRIBUTE
 
-    // Build selector: [wx-host="prefix"] or [wx-host="prefix"],[is="hostIs"]
-    let sel = `[wx-host="${prefix}"]`
+    // Build selector: [tiny-host="prefix"] or [tiny-host="prefix"],[is="hostIs"]
+    let sel = `[${hostAttribute}="${prefix}"]`
     if (hostIs !== undefined) {
       sel += `,[is="${hostIs}"]`
     }

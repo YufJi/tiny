@@ -1,5 +1,6 @@
+import { resolveNaming, type ResolvedNamingConfig } from '@tiny/manifest'
 import { cloneJsonSafe } from './data'
-import { BUILTIN_COMPONENT_EXPORT_BEHAVIOR, isBuiltinBehavior } from './behaviors'
+import { componentExportBehavior, isBuiltinBehavior } from './behaviors'
 import type { MiniProgramComponentOptions } from './service'
 import type { MiniProgramPropertyDefinition, MiniProgramPropertyType } from './types'
 
@@ -115,14 +116,16 @@ type Collector = {
 export function normalizeComponentDefinition(
   options: MiniProgramComponentOptions,
   componentPath: string,
+  naming: ResolvedNamingConfig = resolveNaming(),
 ): NormalizedComponentDefinition {
   const collector = createCollector()
   const visited = new Set<object>()
+  const exportBehavior = componentExportBehavior(naming)
 
   const visit = (source: unknown): void => {
     if (typeof source === 'string') {
       collector.behaviors.add(source)
-      if (source === BUILTIN_COMPONENT_EXPORT_BEHAVIOR) {
+      if (source === exportBehavior) {
         collector.componentExport = true
       } else if (isBuiltinBehavior(source)) {
         collector.diagnostics.push({
@@ -415,7 +418,7 @@ function normalizeRelations(
       continue
     }
     const target = typeof value.target === 'string' ? value.target : key
-    if (target.startsWith('wx://')) {
+    if (isBuiltinBehavior(target)) {
       diagnostics.push({
         code: 'UNSUPPORTED_RELATION_TARGET',
         message: `Relation "${key}" targets built-in behavior "${target}", which is not supported.`,

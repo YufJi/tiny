@@ -1,5 +1,11 @@
 import { BridgeConnection } from '@tiny/bridge'
-import type { PageArtifact } from '@tiny/manifest'
+import {
+  namingFromManifest,
+  resolveNaming,
+  type NamingConfig,
+  type PageArtifact,
+  type ResolvedNamingConfig,
+} from '@tiny/manifest'
 import { applyDataPatch, cloneJsonSafe, readDataPath, type DataPatch } from './data'
 import { buildComponentSchemas } from './component-schema'
 import {
@@ -60,15 +66,18 @@ export class MiniProgramPageRegistry {
   readonly pages = new Map<string, MiniProgramPageOptions>()
   readonly components = new Map<string, MiniProgramComponentOptions>()
   readonly normalizedComponents = new Map<string, NormalizedComponentDefinition>()
+  /** Resolved engine naming config (API global, behavior scheme, …). */
+  readonly naming: ResolvedNamingConfig
   private app: MiniProgramAppOptions | null = null
   private readonly pagePaths: string[]
   private readonly componentPaths: string[]
   private pageCursor = 0
   private componentCursor = 0
 
-  constructor(pagePaths: string[], componentPaths: string[] = []) {
+  constructor(pagePaths: string[], componentPaths: string[] = [], naming?: NamingConfig) {
     this.pagePaths = pagePaths
     this.componentPaths = componentPaths
+    this.naming = resolveNaming(naming)
   }
 
   registerApp(options: MiniProgramAppOptions): MiniProgramAppOptions {
@@ -101,7 +110,7 @@ export class MiniProgramPageRegistry {
   registerComponent(options: MiniProgramComponentOptions): MiniProgramComponentOptions {
     const path = this.componentPaths[this.componentCursor++] ?? `component:${this.components.size}`
     this.components.set(path, options)
-    this.normalizedComponents.set(path, normalizeComponentDefinition(options, path))
+    this.normalizedComponents.set(path, normalizeComponentDefinition(options, path, this.naming))
     return options
   }
 }
@@ -522,7 +531,9 @@ export function installMiniProgramGlobals(
   globalObject.Behavior = (options?: MiniProgramComponentOptions) => registerBehavior(options)
   globalObject.getApp = () => registry.getApp()
   globalObject.getCurrentPages = () => getCurrentPages?.() ?? []
-  const rawWxProperties = new Set([
+  // Third-party bundles probe these while booting; report them as absent
+  // instead of synthesizing unsupported-API handlers for them.
+  const opaqueProperties = new Set([
     'webpackJsonp',
     'cloud',
     'env',
@@ -530,11 +541,11 @@ export function installMiniProgramGlobals(
     '__wxAppCode__',
     '__wxAppData',
   ])
-  globalObject.wx = new Proxy(apiHost, {
+  const apiProxy = new Proxy(apiHost, {
     get(target, property) {
       if (typeof property !== 'string') return Reflect.get(target, property)
       if (property in target) return Reflect.get(target, property)
-      if (rawWxProperties.has(property)) return undefined
+      if (opaqueProperties.has(property)) return undefined
       return (...args: unknown[]) => {
         onUnsupportedApi?.(property)
         return undefined
@@ -544,10 +555,15 @@ export function installMiniProgramGlobals(
       return Reflect.set(target, property, value)
     },
   })
+  for (const name of [registry.naming.api, ...registry.naming.apiAliases]) {
+    globalObject[name] = apiProxy
+  }
 }
 
 export type ServiceApiContext = {
   connection: BridgeConnection
+  /** API global name used in diagnostics, e.g. `tiny`. */
+  apiName: string
   getSystemInfoSnapshot: () => SystemInfoSnapshot
   getStorageSnapshot: () => StorageSnapshot
   setStorageSnapshot: (key: string, value: unknown) => void
@@ -572,7 +588,7 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
   const unsupported = (name: string) => {
     context.connection.sendDiagnostic('warn', {
       code: 'UNSUPPORTED_API',
-      message: `wx.${name} is not supported in the P0 runtime.`,
+      message: `${context.apiName}.${name} is not supported in the P0 runtime.`,
     }, context.pageId)
   }
   return {
@@ -746,7 +762,12 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       .map((page) => page.path),
     ...options.manifest.components.map((component) => component.path),
   ]
-  const registry = new MiniProgramPageRegistry(expectedPagePaths, expectedComponentPaths)
+  const naming = namingFromManifest(options.manifest)
+  const registry = new MiniProgramPageRegistry(
+    expectedPagePaths,
+    expectedComponentPaths,
+    options.manifest.naming,
+  )
   let currentPath = options.initialPath
   const pageInstances = new Map<string, MiniProgramPageInstance>()
   const componentInstances = new Map<string, MiniProgramComponentInstance>()
@@ -762,6 +783,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   const storageSnapshot: StorageSnapshot = {}
   const apiContext: ServiceApiContext = {
     connection: null as unknown as BridgeConnection,
+    apiName: naming.api,
     getSystemInfoSnapshot: () => systemInfoSnapshot,
     getStorageSnapshot: () => storageSnapshot,
     setStorageSnapshot: (key, value) => {
@@ -788,7 +810,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     apiHost,
     (name) => connection.sendDiagnostic('warn', {
       code: 'UNSUPPORTED_API',
-      message: `wx.${name} is not supported in the P0 runtime.`,
+      message: `${naming.api}.${name} is not supported in the P0 runtime.`,
     }, activePage?.pageId),
     () => pageStack,
   )

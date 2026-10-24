@@ -3,8 +3,8 @@
 
 import { JsTopScopeWriter, JsFunctionScopeWriter } from './proc_gen/writer'
 import { parseTemplate } from './parse/tag'
-import { ParseState } from './parse/state'
-import { ParseError, TmplError } from './types'
+import { DEFAULT_DIRECTIVE_PREFIX, ParseState } from './parse/state'
+import { ParseError, TmplError, positionDefault } from './types'
 import { Template, templateDirectDependencies, templateScriptDependencies } from './parse/tag'
 import { genLitStr } from './escape'
 import { TmplGroupRef, templateToProcGen } from './proc_gen/tag'
@@ -98,6 +98,11 @@ function runtimeVarList(): string[] {
 // TmplGroup class
 // ---------------------------------------------------------------------------
 
+export type TmplGroupOptions = {
+  /** Namespace before `:` in template directives, e.g. `tiny` for `tiny:if`. */
+  directivePrefix?: string
+}
+
 export class TmplGroup implements TmplGroupRef {
   private trees: Map<string, Template> = new Map()
   private tmplAliases: Map<string, string> = new Map()
@@ -105,17 +110,20 @@ export class TmplGroup implements TmplGroupRef {
   private hasScripts: boolean = false
   private extraRuntimeString: string = ''
   private devMode: boolean = false
+  /** Namespace before `:` in template directives, e.g. `tiny` for `tiny:if`. */
+  readonly directivePrefix: string
 
-  constructor(devMode = false) {
+  constructor(devMode = false, options: TmplGroupOptions = {}) {
     this.devMode = devMode
+    this.directivePrefix = options.directivePrefix ?? DEFAULT_DIRECTIVE_PREFIX
   }
 
-  static new(): TmplGroup {
-    return new TmplGroup(false)
+  static new(options?: TmplGroupOptions): TmplGroup {
+    return new TmplGroup(false, options)
   }
 
-  static newDev(): TmplGroup {
-    return new TmplGroup(true)
+  static newDev(options?: TmplGroupOptions): TmplGroup {
+    return new TmplGroup(true, options)
   }
 
   dev(): boolean {
@@ -145,7 +153,9 @@ export class TmplGroup implements TmplGroupRef {
   }
 
   addTmpl(path: string, content: string): ParseError[] {
-    const ps = new ParseState(path, content)
+    const ps = new ParseState(path, content, positionDefault(), {
+      directivePrefix: this.directivePrefix,
+    })
     const tmpl = parseTemplate(ps)
     if (tmpl.globals.scripts.some((s) => s.kind === 'Inline')) {
       this.hasScripts = true
@@ -171,7 +181,7 @@ export class TmplGroup implements TmplGroupRef {
   stringifyTmpl(path: string): string | null {
     const tmpl = this.trees.get(path)
     if (!tmpl) return null
-    return stringifyTemplate(tmpl, { minimize: true })
+    return stringifyTemplate(tmpl, { minimize: true, directivePrefix: this.directivePrefix })
   }
 
   getScript(path: string): string {

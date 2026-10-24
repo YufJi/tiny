@@ -68,6 +68,7 @@ const sst = StyleSheetTransformer.fromCss('/path/to/file.wxss', cssContent, {
   importSign: 'IMPORT',      // replaces @import with /*IMPORT .url-encoded-path*/
   convertHost: true,
   hostIs: 'my-component',    // also emits [is="my-component"] alongside [wx-host="…"]
+  hostAttribute: 'tiny-host', // override the host marker attribute (default wx-host)
 })
 ```
 
@@ -82,6 +83,7 @@ const sst = StyleSheetTransformer.fromCss('/path/to/file.wxss', cssContent, {
 | `importSign` | `string` | — | When set, `@import './a'` is replaced with `/*SIGN .%2Fa*/` |
 | `convertHost` | `boolean` | `false` | Convert `:host {}` to `[wx-host="prefix"] {}` in low-priority output |
 | `hostIs` | `string` | — | When `convertHost` is true, also emit `[is="hostIs"]` in the selector |
+| `hostAttribute` | `string` | `wx-host` | Host marker attribute used by `convertHost` (use `tiny-host` for Tiny naming) |
 
 ## Warnings
 

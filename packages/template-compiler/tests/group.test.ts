@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { TmplGroup } from '../src/group'
+import { ParseErrorKind } from '../src/types'
 
 describe('TmplGroup — basic include', () => {
   const SRC_A = `<b a="{{a}}" /> <template name="a" />`
@@ -143,5 +144,26 @@ describe('TmplGroup — dynamic data attributes', () => {
     const output = group.getTmplGenObjectGroups()
     expect(output).toContain('R.d(N,"index"')
     expect(output).not.toContain('"{{item}}"')
+  })
+})
+
+describe('TmplGroup — directive namespace', () => {
+  test('defaults to the wx namespace', () => {
+    const group = TmplGroup.newDev()
+    expect(group.directivePrefix).toBe('wx')
+    const warnings = group.addTmpl('a', '<view wx:if="{{ok}}">a</view>')
+    expect(warnings).toEqual([])
+    expect(group.stringifyTmpl('a')).toContain('wx:if')
+  })
+
+  test('parses a configured namespace and rejects the default one', () => {
+    const group = TmplGroup.newDev({ directivePrefix: 'tiny' })
+    const warnings = group.addTmpl('a', '<view tiny:if="{{ok}}" tiny:key="id">a</view>')
+    expect(warnings).toEqual([])
+    expect(group.stringifyTmpl('a')).toContain('tiny:if')
+
+    const mismatched = TmplGroup.newDev({ directivePrefix: 'tiny' })
+    const rejected = mismatched.addTmpl('a', '<view wx:if="{{ok}}">a</view>')
+    expect(rejected.some((warning) => warning.kind === ParseErrorKind.InvalidAttributePrefix)).toBe(true)
   })
 })

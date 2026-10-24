@@ -1160,7 +1160,7 @@ function parseElement(ps: ParseState, globals: TemplateGlobals, ret: Node[]): vo
     for (const x of tagNameSlices) {
       ps.addWarning(ParseErrorKind.IllegalNamePrefix, x.location)
     }
-    tagName = { name: 'wx-x', location: end.location }
+    tagName = { name: `${ps.directivePrefix}-x`, location: end.location }
   } else {
     tagName = tagNameSlices[0]!
   }
@@ -1341,7 +1341,7 @@ function parseElement(ps: ParseState, globals: TemplateGlobals, ret: Node[]): vo
         // has prefix
         const pn = prefix.name
         switch (pn) {
-          case 'wx':
+          case ps.directivePrefix:
             switch (attrNameRaw.name) {
               case 'if': attrKind = { t: 'WxIf', loc: prefix.location }; break
               case 'elif': attrKind = { t: 'WxElif', loc: prefix.location }; break

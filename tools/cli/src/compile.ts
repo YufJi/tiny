@@ -5,6 +5,11 @@ import ts from 'typescript'
 import { build as esbuild } from 'esbuild'
 import { TmplGroup, parseErrorMessage } from '@tiny/template-compiler'
 import { StyleSheetTransformer } from '@tiny/stylesheet-compiler'
+import {
+  resolveNaming,
+  type NamingConfig,
+  type ResolvedNamingConfig,
+} from '@tiny/manifest'
 import type {
   AppArtifact,
   AssetArtifact,
@@ -37,6 +42,7 @@ const SCRIPT_EXTENSIONS = ['.js', '.ts']
 const TEMPLATE_EXTENSIONS = ['.wxml']
 const STYLE_EXTENSIONS = ['.wxss']
 const WXS_EXTENSIONS = ['.wxs', '.sjs']
+const PROJECT_CONFIG_FILE = 'tiny.config.json'
 const ASSET_EXTENSIONS = new Set([
   '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp',
   '.eot', '.woff', '.woff2', '.ttf', '.otf',
@@ -55,8 +61,74 @@ export async function compileMiniProgram(options: CompileOptions): Promise<Compi
   return compiler.compile()
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/**
+ * Reads engine naming from `<sourceDir>/tiny.config.json`:
+ *
+ * ```json
+ * { "naming": { "prefix": "tiny-" } }
+ * ```
+ *
+ * For convenience the `prefix` / `apiAliases` fields may also live at the top
+ * level. Missing files and invalid JSON fall back to the default namespace.
+ */
+function readProjectNaming(
+  sourceDir: string,
+  diagnostics: Diagnostic[],
+): NamingConfig | undefined {
+  const configPath = path.join(sourceDir, PROJECT_CONFIG_FILE)
+  if (!existsSync(configPath)) return undefined
+  try {
+    const raw = JSON.parse(readFileSync(configPath, 'utf8')) as unknown
+    if (!isRecord(raw)) return undefined
+    if (isRecord(raw.naming)) return raw.naming as NamingConfig
+    const apiAliases = Array.isArray(raw.apiAliases)
+      ? raw.apiAliases.filter((alias): alias is string => typeof alias === 'string')
+      : undefined
+    if (typeof raw.prefix === 'string' || apiAliases !== undefined) {
+      return {
+        prefix: typeof raw.prefix === 'string' ? raw.prefix : undefined,
+        apiAliases,
+      }
+    }
+    return undefined
+  } catch (error) {
+    diagnostics.push(diagnostic(
+      'warning',
+      'TINY_CONFIG_INVALID',
+      `Unable to read ${PROJECT_CONFIG_FILE}: ${error instanceof Error ? error.message : String(error)}`,
+      configPath,
+    ))
+    return undefined
+  }
+}
+
+/** Explicit compile options override `tiny.config.json`; both are optional. */
+function resolveNamingInput(
+  options: CompileOptions,
+  sourceDir: string,
+  diagnostics: Diagnostic[],
+): NamingConfig | undefined {
+  const fileNaming = readProjectNaming(sourceDir, diagnostics)
+  if (options.naming) return { ...fileNaming, ...options.naming }
+  if (options.prefix !== undefined || options.apiAliases !== undefined) {
+    return {
+      ...fileNaming,
+      ...(options.prefix !== undefined ? { prefix: options.prefix } : {}),
+      ...(options.apiAliases !== undefined ? { apiAliases: options.apiAliases } : {}),
+    }
+  }
+  return fileNaming
+}
+
 class MiniProgramCompiler {
-  private readonly options: Required<CompileOptions>
+  private readonly options: Required<
+    Omit<CompileOptions, 'naming' | 'prefix' | 'apiAliases'>
+  >
+  private readonly naming: ResolvedNamingConfig
   private readonly diagnostics: Diagnostic[] = []
   private readonly scripts = new Map<string, ScriptArtifact>()
   private readonly templates = new Map<string, TemplateArtifact>()
@@ -72,6 +144,9 @@ class MiniProgramCompiler {
       sourceDir: path.resolve(options.sourceDir),
       outputDir: path.resolve(options.outputDir),
     }
+    this.naming = resolveNaming(
+      resolveNamingInput(options, this.options.sourceDir, this.diagnostics),
+    )
   }
 
   async compile(): Promise<CompileResult> {
@@ -456,7 +531,7 @@ class MiniProgramCompiler {
     pageEntries: SourceEntry[],
     componentEntries: Map<string, SourceEntry>,
   ): Promise<void> {
-    const group = TmplGroup.newDev()
+    const group = TmplGroup.newDev({ directivePrefix: this.naming.directive })
     const templateFiles = [...byRelative.entries()]
       .filter(([relativePath]) => relativePath.endsWith('.wxml'))
 
@@ -468,7 +543,9 @@ class MiniProgramCompiler {
       const scope = hasScopedStyles
         ? `${this.options.scopePrefix}-${sanitizeScope(templatePath)}`
         : undefined
-      const scopedSource = scope ? injectTagClasses(inlined, scope) : inlined
+      const scopedSource = scope
+        ? injectTagClasses(inlined, scope, this.naming.tagClassPrefix)
+        : inlined
       const source = rewriteAnimationAttributes(scopedSource)
       try {
         const warnings = group.addTmpl(templatePath, source)
@@ -602,7 +679,8 @@ class MiniProgramCompiler {
       try {
         const transformer = StyleSheetTransformer.fromCss(relativePath, source, {
           classPrefix: scope,
-          tagClassPrefix: scope ? `${scope}--wx-tag-` : undefined,
+          tagClassPrefix: scope ? `${scope}--${this.naming.tagClassPrefix}` : undefined,
+          hostAttribute: this.naming.hostAttribute,
           rpxRatio: this.options.rpxRatio,
         })
         const css = transformer.getContent()
@@ -710,6 +788,7 @@ class MiniProgramCompiler {
 
     return {
       schemaVersion: 1,
+      naming: this.naming,
       entries: {
         service: 'service.js',
         render: 'render.js',
@@ -938,18 +1017,19 @@ function rewriteAnimationAttributes(source: string): string {
 const TAG_CLASS_SKIP = new Set(['import', 'include', 'template', 'block', 'wxs', 'slot'])
 
 /**
- * Adds a `wx-tag-<tag>` marker class to every rendered element. Glass-easel
- * prefixes it with the template's style scope at render time; the stylesheet
- * compiler rewrites tag selectors to the matching scoped marker class, which
- * keeps `button { … }` inside its page/component instead of leaking globally.
+ * Adds a `<tagClassPrefix><tag>` marker class to every rendered element, e.g.
+ * `wx-tag-button`. Glass-easel prefixes it with the template's style scope at
+ * render time; the stylesheet compiler rewrites tag selectors to the matching
+ * scoped marker class, which keeps `button { … }` inside its page/component
+ * instead of leaking globally.
  */
-function injectTagClasses(source: string, scope: string): string {
+function injectTagClasses(source: string, scope: string, tagClassPrefix: string): string {
   return source.replace(
     /<([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*?)(\/?)>/g,
     (match, rawTag: string, attributes: string, selfClose: string) => {
       const tag = rawTag.toLowerCase()
       if (TAG_CLASS_SKIP.has(tag) || !scope) return match
-      const marker = `wx-tag-${tag}`
+      const marker = `${tagClassPrefix}${tag}`
       const classMatch = attributes.match(/\sclass\s*=\s*(["'])([\s\S]*?)\1/)
       let nextAttributes = attributes
       if (classMatch) {

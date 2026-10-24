@@ -8,16 +8,29 @@ type HoverRuntime = {
   __debouncers?: Record<string, HoverTimer | undefined>
 }
 
+/** Default id prefix for built-in component behaviors. */
+export const DEFAULT_BEHAVIOR_PREFIX = 'wx-'
+
+export type BuiltinBehaviorOptions = {
+  /** Behavior id prefix, e.g. `wx-` or `tiny-`. Defaults to `wx-`. */
+  prefix?: string
+}
+
 /**
- * Internal behaviors shared by the WeChat built-in component implementations.
+ * Internal behaviors shared by the built-in component implementations.
  *
  * These are intentionally local to the built-in component space: they mirror
- * the generic wx-base / wx-hover / wx-label-target behaviors from the WebView
- * base library without exposing them as user-registerable behaviors.
+ * the generic base / hover / label-target behaviors from the native base
+ * library without exposing them as user-registerable behaviors. Their ids
+ * follow the engine naming prefix (`wx-base` by default, `tiny-base` in custom-namespace builds).
  */
-export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
+export function createBuiltinBehaviors(
+  space: glassEasel.ComponentSpace,
+  options: BuiltinBehaviorOptions = {},
+) {
+  const prefix = options.prefix ?? DEFAULT_BEHAVIOR_PREFIX
   const base = space.defineBehavior({
-    is: 'wx-base',
+    is: `${prefix}base`,
     properties: {
       hidden: { type: Boolean, value: false },
     },
@@ -45,7 +58,7 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
   })
 
   const hover = space.defineBehavior({
-    is: 'wx-hover',
+    is: `${prefix}hover`,
     properties: {
       hoverClass: { type: String, value: '' },
       hoverStartTime: { type: Number, value: 50 },
@@ -104,7 +117,7 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
 
 
   const sizeNormalizer = space.defineBehavior({
-    is: 'wx-size-normalizer',
+    is: `${prefix}size-normalizer`,
     methods: {
       normalizeSize(value: unknown): string {
         if (typeof value === 'number') return `${value}px`
@@ -115,7 +128,7 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
   })
 
   const classPrefix = space.defineBehavior({
-    is: 'wx-class-prefix',
+    is: `${prefix}class-prefix`,
     methods: {
       getClassPrefix(): string {
         return ''
@@ -124,14 +137,14 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
   })
 
   const disabled = space.defineBehavior({
-    is: 'wx-disabled',
+    is: `${prefix}disabled`,
     properties: {
       disabled: { type: Boolean, value: false },
     },
   })
 
   const dataComponent = space.defineBehavior({
-    is: 'wx-data-component',
+    is: `${prefix}data-component`,
     properties: {
       name: { type: String, value: '' },
       autoFill: { type: String, value: '' },
@@ -148,7 +161,7 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
   })
 
   const group = space.defineBehavior({
-    is: 'wx-group',
+    is: `${prefix}group`,
     methods: {
       applyItemChange(detail: { value?: unknown; checked?: unknown }): string[] {
         const value = String(detail.value ?? '')
@@ -165,7 +178,7 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
   })
 
   const item = space.defineBehavior({
-    is: 'wx-item',
+    is: `${prefix}item`,
     methods: {
       changedByTap(): void {},
       resetFormData(): void {
@@ -175,7 +188,7 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
   })
 
   const labelTarget = space.defineBehavior({
-    is: 'wx-label-target',
+    is: `${prefix}label-target`,
     methods: {
       handleLabelTap() {
         // Label activation is dispatched by the label component.

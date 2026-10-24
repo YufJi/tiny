@@ -341,3 +341,16 @@ describe('tag selector edge cases', () => {
     expect(css).not.toContain('--wx-tag-page')
   })
 })
+
+describe(':host attribute namespace', () => {
+  test('hostAttribute selects the emitted attribute', () => {
+    const t = StyleSheetTransformer.fromCss(
+      '',
+      `:host { color: red; }`,
+      { classPrefix: 'ABC', convertHost: true, hostAttribute: 'tiny-host' },
+    )
+    const lp = minify(t.getLowPriorityContent())
+    expect(lp).toContain('[tiny-host="ABC"]')
+    expect(lp).not.toContain('[wx-host=')
+  })
+})

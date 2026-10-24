@@ -1,0 +1,3 @@
+<view tiny:if="{{visible}}" class="box">
+  <text>hello</text>
+</view>
