@@ -1,119 +1,291 @@
 import React from 'react'
-import { Callout, Card, Cards, CodeBlock, PageHero, Section, Table } from '../components/ui'
+import {
+  Callout,
+  Card,
+  Cards,
+  CodeBlock,
+  PageHero,
+  PageNav,
+  Section,
+  Sequence,
+  Table,
+} from '../components/ui'
 
 export default function Testing() {
   return (
     <>
       <PageHero
         eyebrow="Testing & compatibility"
-        title="用真实小程序验收"
-        lede="Tiny 的验收不是快照测试：它编译、启动双线程、在真实浏览器里操作页面，并在失败时保存截图。"
+        title={<>用真实小程序验收，<br /><span className="gradient">而不是用快照自证</span></>}
+        lede="Tiny 的验收会编译真实 WXML/WXSS/JS，启动两个 iframe，在 Chromium 里点击、输入、导航，并在失败时保存截图。92 个单测管住协议与算法，40 个浏览器步骤管住端到端行为。"
         stats={[['92', 'unit tests'], ['40', 'browser steps'], ['5', 'browser flows'], ['5', 'test fixtures']]}
       />
+      <PageNav items={[
+        ['gate', '验收闸门'],
+        ['flows', '五段浏览器流程'],
+        ['units', '单元测试'],
+        ['hosts', '两种宿主'],
+        ['fixtures', '测试小程序'],
+        ['taro', 'Taro 3 兼容'],
+        ['commands', '命令与环境'],
+        ['uncovered', '未覆盖'],
+      ]} />
 
       <Section
-        kicker="Two hosts"
-        title="测试宿主与调试器，不是同一个东西"
-        intro="两者都基于 createStandaloneDualThreadHost，但一个服务于自动化，一个服务于人。"
+        id="gate"
+        kicker="Acceptance gate"
+        title="一条命令跑完构建、单测和五段浏览器流程"
+        intro="pnpm accept:glass-easel 是唯一的端到端入口；任何包单独测试都不能替代它。"
       >
+        <Sequence steps={[
+          {
+            title: '构建 7 个目标',
+            detail: 'manifest、stylesheet-compiler、template-compiler、bridge、components、cli、runtime 依次构建，确保后续测试消费的是最新 dist。',
+            code: 'pnpm build:glass-easel',
+          },
+          {
+            title: '跑 6 个包的单测',
+            detail: 'bridge、template-compiler、stylesheet-compiler、cli、components、runtime；没有全局 runner，逐包过滤执行。',
+            code: 'pnpm --filter <package> test',
+          },
+          {
+            title: '编译 P0 demo',
+            detail: 'tests/apps/demo → tests/host/generated，启动 5199 端口的 Vite 测试宿主。',
+            code: 'pnpm compile:glass-easel',
+          },
+          {
+            title: 'P0 demo 流程',
+            detail: '14 步：启动、渲染、作用域样式、快照、自定义事件、checkbox/slider/switch、导航、input、storage、toast、canvas 诊断、零 console error。',
+            code: 'runBrowserAcceptance({ baseUrl })',
+          },
+          {
+            title: 'mini 流程',
+            detail: '重新编译 tests/apps/mini 覆盖 generated；9 步：真实 todos、双组件实例、import/include/template、输入、ECharts、子包、warnings、零错误。',
+            code: 'runMiniProgramAcceptance()',
+          },
+          {
+            title: 'Taro 3 流程',
+            detail: '编译 tests/apps/todo 的预构建产物；6 步：Redux todos、Enter 新增、勾选、筛选、清空、零错误。',
+            code: 'runTaroAcceptance()',
+          },
+          {
+            title: 'WeChat demo 流程',
+            detail: '编译官方示例子集；4 步：组件索引、button 页、storage API 页、零错误。',
+            code: 'runWechatDemoAcceptance()',
+          },
+          {
+            title: '调试器流程',
+            detail: '编译 demo + mini 到 devtool static，启动 rspack；7 步：boot、状态投影、渲染、导航/返回、应用切换、Reload/Terminate、零错误。',
+            code: 'runDevtoolAcceptance()',
+          },
+        ]} />
+        <Callout title="阶段之间会覆盖 generated" >
+          <p>
+            五段流程共用 <code>tests/host/generated</code>。每次编译前都会 clean，因此不能并行跑两段浏览器验收；
+            最后会重新编译 P0 demo，保证 <code>pnpm dev:glass-easel</code> 的默认产物正确。
+          </p>
+        </Callout>
+      </Section>
+
+      <Section
+        id="flows"
+        kicker="Browser flows"
+        title="40 步如何分布"
+        intro="每一步都在真实 Chromium 中执行，并对页面状态、DOM、像素或 console 做断言。"
+      >
+        <Table
+          head={['流程', 'fixture', '步数', '证明什么']}
+          rows={[
+            ['P0 demo', <code>tests/apps/demo</code>, '14', '双线程启动、内置组件、样式作用域、事件、导航、storage、canvas 诊断、console 干净'],
+            ['Existing app', <code>tests/apps/mini</code>, '9', '真实 todos、双 add-button 实例、import/include/template、输入、ECharts bar、子包、warnings'],
+            ['Taro 3', <code>tests/apps/todo</code>, '6', 'Redux todos、输入 + Enter、勾选、筛选、清空、零错误'],
+            ['WeChat demo', <code>tests/apps/wechat-demo</code>, '4', '组件索引、button 页、storage API 页、零错误'],
+            ['Debugger', <code>apps/devtool</code>, '7', 'boot、状态投影、元素树、导航/返回、应用切换、Reload/Terminate、零错误'],
+          ]}
+        />
         <div className="split">
-          <Card tag="tests/host" title="无 UI 单应用测试宿主">
+          <Card title="断言的层次">
             <ul>
-              <li>Vite 提供 host / service / render 三个入口</li>
-              <li>加载 tests/host/generated 的一份 manifest</li>
-              <li>启动双线程，把页面挂到 #app</li>
-              <li>暴露 window.__tinyRuntime 给 Playwright</li>
-              <li>P0 / mini / Taro 三个阶段用它</li>
+              <li>页面对象：<code>window.__tinyRuntime</code> 的 pageStack / diagnostics</li>
+              <li>DOM：class、属性、文本、计算样式、canvas 像素</li>
+              <li>交互：真实 click / fill / press Enter</li>
+              <li>副作用：storage 写入、toast 调用、导航 query</li>
+              <li>负向：零 console error、预期的 warning</li>
             </ul>
           </Card>
-          <Card tag="apps/devtool" tone="violet" title="带 UI 的多应用调试器">
-            <ul>
-              <li>React 面板 + Redux 投影</li>
-              <li>应用切换（demo / real）</li>
-              <li>页面栈、诊断、元素树</li>
-              <li>Navigate / Back / Reload / Terminate</li>
-              <li>独立的 debugger 验收阶段</li>
-            </ul>
+          <Card title="失败可诊断">
+            <p>Playwright 失败时保存截图并输出页面/console 错误；测试宿主暴露 <code>__tinyRuntime</code>，可以直接读诊断数组与页面状态。</p>
+            <p>验收不依赖 devtool UI，测试宿主也不 import devtool。</p>
           </Card>
         </div>
       </Section>
 
       <Section
-        kicker="Acceptance gate"
-        title="五段浏览器流程"
-        intro="pnpm accept:glass-easel 会先构建并跑单测，再依次启动宿主。"
+        id="units"
+        kicker="Unit tests"
+        title="92 个测试，按包隔离"
+        intro="没有全局 test runner；每个包独立执行，避免隐式耦合，也让失败定位到包。"
       >
         <Table
-          head={['阶段', '应用', '覆盖']}
+          head={['Package', '数量', '重点']}
           rows={[
-            ['P0 demo', <code>tests/apps/demo</code>, '14 步：双线程启动、组件渲染、样式作用域、checkbox/slider/switch、导航、storage、canvas 诊断、零 console error。'],
-            ['Existing app', <code>tests/apps/mini</code>, '9 步：真实 todos、双 add-button 实例、import/include/template、输入、ECharts bar 页、子包页面、warnings。'],
-            ['Taro 3', <code>tests/apps/todo</code>, '6 步：Redux todos 渲染、输入 + Enter 新增、勾选、筛选、Clear completed、零错误。'],
-            ['WeChat demo', <code>tests/apps/wechat-demo</code>, '4 步：组件索引、button 组件页、storage API 页、零错误。'],
-            ['Debugger', <code>apps/devtool</code>, '7 步：boot、状态投影、渲染、导航/返回、应用切换、Reload/Terminate、零错误。'],
+            [<code>@tiny/bridge</code>, '10', 'envelope 校验、版本/路由/payload 错误、handshake、call 关联、超时、关闭、批处理 FIFO、诊断插队、MessagePort'],
+            [<code>@tiny/template-compiler</code>, '28', '脚本依赖、WXS、import/include、模板别名、ProcGen 签名、绑定表复用、事件简写、data-* 绑定、stringify 往返'],
+            [<code>@tiny/stylesheet-compiler</code>, '24', 'class/tag 前缀、rpx/calc、@import 编码与包装、@layer、:host 低优先级、keyframes、page 根节点'],
+            [<code>@tiny/cli</code>, '10', 'manifest 全 artifact、WXS 双注册、配置合并、service/render 入口、TS + source map、样式作用域、tag marker、可执行模板 group'],
+            [<code>@tiny/components</code>, '6', '18 个 tag 模板、tag 暴露、button/input 事件归一化、checkbox/slider/switch、progress/swiper/icon 结构'],
+            [<code>@tiny/runtime</code>, '14', '全局安装、双线程 bootstrap、组件 schema、properties/slots/lifetimes/events、导航、API host、诊断、animation/canvas stub'],
           ]}
         />
-        <Callout title="40 步的边界">
-          <p>这些步骤覆盖核心链路和真实交互，但不等于完整微信语义。API 广度、组件属性、tabBar 和页面高级事件仍需单独补齐。</p>
+        <Callout title="单测也验证协议契约" >
+          <p>
+            bridge 测试会真的建立两条内存连接并完成握手；runtime 测试会真的启动 service/render 线程、注册 Page、bootstrap 并导航。
+            这里没有“mock 掉整个引擎”的通过方式。
+          </p>
         </Callout>
       </Section>
 
       <Section
-        kicker="Unit tests"
-        title="按包拆分的 Vitest"
-        intro="没有全局 test runner；每个包独立运行，避免隐式耦合。"
+        id="hosts"
+        kicker="Two hosts"
+        title="测试宿主与调试器，不是同一个东西"
+        intro="两者都基于 createStandaloneDualThreadHost，但一个服务自动化，一个服务人。"
+      >
+        <div className="split">
+          <Card tag="tests/host" title="无 UI 单应用宿主">
+            <ul>
+              <li>Vite 提供 host / service / render 三个入口</li>
+              <li>静态导入 <code>generated/manifest.json</code></li>
+              <li>启动双线程，把页面挂到 <code>#app</code></li>
+              <li>暴露 <code>window.__tinyRuntime</code> 给 Playwright</li>
+              <li>P0 / mini / Taro / WeChat 四段都用它</li>
+              <li>不依赖 devtool</li>
+            </ul>
+          </Card>
+          <Card tag="apps/devtool" tone="violet" title="带 UI 的多应用调试器">
+            <ul>
+              <li>React 面板 + rematch/Redux 投影</li>
+              <li>demo / real 两套静态产物</li>
+              <li>页面栈、诊断、元素树、状态</li>
+              <li>Navigate / Back / Reload / Terminate</li>
+              <li>通过 <code>DevtoolRuntimeClient</code> 控制</li>
+              <li>独立的 debugger 验收阶段</li>
+            </ul>
+          </Card>
+        </div>
+        <Callout title="共享内核，不共享控制面">
+          <p>
+            测试宿主只调用 <code>host.bootstrap()</code> 并用 Playwright 操作页面；devtool 通过 client 调导航、前后台、重载和树检查。
+            两者都不直接读 iframe 全局。宿主差异详见 <a href="#/hosts">宿主支持</a>。
+          </p>
+        </Callout>
+      </Section>
+
+      <Section
+        id="fixtures"
+        kicker="Fixtures"
+        title="五个小程序，覆盖不同的真实产物"
+        intro="fixture 不是单元测试的假数据，而是完整的小程序源码或预构建产物。"
       >
         <Table
-          head={['Package', 'Tests', '重点']}
+          head={['Fixture', '形态', '覆盖点', '是否进闸门']}
           rows={[
-            [<code>@tiny/bridge</code>, '10', 'envelope、校验、超时、批处理、MessagePort'],
-            [<code>@tiny/template-compiler</code>, '28', '解析、ProcGen、WXS、import/include、dataset'],
-            [<code>@tiny/stylesheet-compiler</code>, '24', 'rpx、class/tag scope、host、keyframes'],
-            [<code>@tiny/cli</code>, '10', 'manifest、配置合并、脚本/样式/WXS 产物'],
-            [<code>@tiny/components</code>, '6', '组件注册、事件归一化、AOT 模板覆盖'],
-            [<code>@tiny/runtime</code>, '14', 'API、导航、组件 schema、诊断、生命周期'],
+            [<code>demo</code>, '2 页 + 1 组件', 'P0 内置组件、作用域样式、导航、storage、canvas 占位诊断', '是'],
+            [<code>mini</code>, '4 页 + 2 组件 + 分包', '真实 todos、import/include/template、animation、ECharts 离屏 canvas、资源内联', '是'],
+            [<code>todo</code>, 'Taro 3 预构建产物', 'webpackJsonp、外部 WXS、递归模板、循环 usingComponents、Enter 提交', '是'],
+            [<code>wechat-demo</code>, '官方示例子集', '基础组件索引、button 示例、storage API 示例', '是'],
+            [<code>echarts</code>, '历史示例', '早期 ECharts 集成参考资料', '否'],
           ]}
         />
-        <CodeBlock>{`# 全部验收
+      </Section>
+
+      <Section
+        id="taro"
+        kicker="Taro 3"
+        title="社区产物兼容不是“顺便跑跑”"
+        intro="Taro 的 prebuilt 输出把运行时假设压到了极限，因此它被当作正式验收阶段，而不是手工 demo。"
+      >
+        <Cards>
+          <Card tag="runtime" title="webpackJsonp 与页面对象">
+            <p><code>wx.webpackJsonp</code> 作为 raw 数据属性暴露；生命周期方法绑定到页面实例，支持 <code>this.onReady.called</code>。</p>
+          </Card>
+          <Card tag="template" title="WXS 与递归组件">
+            <p>外部 WXS 按带/不带扩展名注册；usingComponents 环检测避免 comp/custom-wrapper 互相引用时递归爆栈。</p>
+          </Card>
+          <Card tag="globals" title="getCurrentPages / getSystemInfo">
+            <p>补齐 Taro runtime 依赖的全局与 callback 版系统信息；raw wx 数据属性与 unsupported API 诊断分开。</p>
+          </Card>
+          <Card tag="input" title="confirm 提交">
+            <p>input 转发 focus / blur / keydown / confirm，Taro 表单按 Enter 能提交。</p>
+          </Card>
+        </Cards>
+        <Callout title="兼容不等于完整" tone="warn">
+          <p>
+            这些是“Taro 3 React 产物能跑”的最小集合。Behavior mixin、relations、generics、tabBar 等仍未实现；
+            其他社区框架没有纳入验收。
+          </p>
+        </Callout>
+      </Section>
+
+      <Section
+        id="commands"
+        kicker="Commands"
+        title="命令与环境开关"
+        intro="完整闸门需要 Chromium；没有浏览器时只能跑构建、单测和编译。"
+      >
+        <div className="split">
+          <CodeBlock>{`# 完整闸门
 pnpm accept:glass-easel
 
-# 只跑构建 + 单测，不起浏览器
+# 只构建 + 单测 + 编译，不起浏览器
 SKIP_BROWSER=1 pnpm accept:glass-easel
 
 # 单包测试
 pnpm --filter @tiny/runtime test
-pnpm --filter @tiny/cli test`}</CodeBlock>
+pnpm --filter @tiny/cli test
+
+# 本地宿主 / 调试器
+pnpm dev:glass-easel      # :5173
+pnpm dev:devtool          # :8080
+
+# 网站与产物检查
+pnpm site:check`}</CodeBlock>
+          <div className="stack">
+            <Card title="环境变量">
+              <ul>
+                <li><code>SKIP_BROWSER=1</code> 跳过浏览器阶段</li>
+                <li><code>TINY_ACCEPT_PORT</code> 测试宿主端口，默认 5199</li>
+                <li><code>TINY_DEVTOOL_PORT</code> 调试器端口，默认 5180</li>
+                <li><code>HEADED=1</code> 显示浏览器窗口</li>
+                <li><code>PLAYWRIGHT_CHROMIUM_PATH</code> 指定 Chromium</li>
+              </ul>
+            </Card>
+            <Card title="浏览器选择">
+              <p>使用 <code>playwright-core</code>，优先系统 Chrome（channel: chrome），失败后尝试 Edge。没有安装浏览器时闸门会在浏览器阶段失败。</p>
+            </Card>
+          </div>
+        </div>
       </Section>
 
       <Section
-        kicker="Taro 3"
-        title="社区产物兼容不是“顺便跑跑”"
-        intro="tests/apps/todo 是预编译的 Taro 3 React 产物，已进入正式验收。"
+        id="uncovered"
+        kicker="Not covered"
+        title="这些还没有证据"
+        intro="把“没有测试”当成“可能有问题”，而不是“应该没问题”。"
       >
-        <Cards>
-          <Card tag="runtime" title="webpackJsonp 与页面对象">
-            <p><code>wx.webpackJsonp</code> 作为 raw 数据属性暴露；生命周期方法挂到页面实例，支持 <code>this.onReady.called</code>。</p>
-          </Card>
-          <Card tag="template" title="WXS 与递归组件">
-            <p>外部 WXS 按带/不带扩展名注册；usingComponents 环检测避免 comp / custom-wrapper 互相引用时递归爆栈。</p>
-          </Card>
-          <Card tag="globals" title="getCurrentPages / getSystemInfo">
-            <p>补上 Taro runtime 依赖的全局与 callback 版系统信息；raw wx 数据属性与 unsupported API 诊断分开。</p>
-          </Card>
-          <Card tag="input" title="confirm 提交">
-            <p>input 组件转发 focus / blur / keydown / confirm，Taro 表单按 Enter 能提交。</p>
-          </Card>
+        <Cards className="three">
+          <Card tag="perf" tone="warn" title="没有性能基线"><p>启动、首屏、setData、导航、内存、长时运行都没有量化门槛。</p></Card>
+          <Card tag="visual" tone="warn" title="没有视觉回归"><p>样式断言是计算值/像素抽样，不是截图 diff；组件外观变化不会被稳定捕获。</p></Card>
+          <Card tag="native" tone="warn" title="没有原生宿主"><p>浏览器之外的 transport、backend、service 运行时都不存在。</p></Card>
+          <Card tag="pages" tone="warn" title="没有页面高级能力"><p>tabBar、下拉刷新、触底、分享、页面滚动、页面栈恢复均未验收。</p></Card>
+          <Card tag="api" tone="warn" title="API 面很窄"><p>网络、媒体、文件、位置、账号、WebSocket、IntersectionObserver 都没有。</p></Card>
+          <Card tag="security" tone="warn" title="没有安全边界"><p>iframe 无 sandbox、消息无 origin 校验、跨线程输入只做 JSON-safe，不做权限模型。</p></Card>
         </Cards>
-      </Section>
-
-      <Section kicker="Artifacts" title="生成物不入库">
-        <Cards>
-          <Card tag="ignored" title="tests/host/generated"><p>编译测试小程序的输出；每个验收阶段覆盖它。</p></Card>
-          <Card tag="ignored" title="packages/components/src/generated"><p>内置组件 ProcGen；prebuild / pretypecheck / pretest 自动生成。</p></Card>
-          <Card tag="ignored" title="apps/devtool/static"><p>devtool 的 demo / real 产物；由 dev script 或 compile:devtool:all 写入。</p></Card>
-        </Cards>
-        <Callout title="下一步阅读">
-          <p><a href="#/status">现状与路线</a> 说明哪些能力已经闭环、哪些仍是生产化前必须补的缺口。</p>
+        <Callout title="生成物不入库">
+          <p>
+            <code>tests/host/generated/</code>、<code>packages/components/src/generated/</code>、<code>apps/devtool/static/</code> 都是构建产物。
+            仓库只保留源码、manifest 契约与 fixture；验收会自己生成它们。
+          </p>
         </Callout>
       </Section>
     </>

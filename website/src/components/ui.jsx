@@ -22,9 +22,30 @@ export function PageHero({ eyebrow, title, lede, stats = [], pills = [] }) {
   )
 }
 
-export function Section({ kicker, title, intro, link, children }) {
+export function PageNav({ items }) {
   return (
-    <section className="section">
+    <div className="shell">
+      <nav className="page-nav" aria-label="本页目录">
+        <span className="page-nav-label">本页</span>
+        {items.map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            data-target={id}
+            aria-controls={id}
+            onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+    </div>
+  )
+}
+
+export function Section({ id, kicker, title, intro, link, children }) {
+  return (
+    <section className="section" id={id}>
       <div className="shell">
         <div className="section-head">
           <div>
@@ -57,6 +78,26 @@ export function Flow({ nodes }) {
   )
 }
 
+export function Sequence({ steps, label = '执行时序' }) {
+  return (
+    <ol className="sequence panel" aria-label={label}>
+      {steps.map((step, index) => (
+        <li className="sequence-step" key={step.title}>
+          <span className="sequence-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+          <div className="sequence-body">
+            <div className="sequence-head">
+              <strong>{step.title}</strong>
+              {step.actor ? <span className="sequence-actor">{step.actor}</span> : null}
+            </div>
+            {step.detail ? <p>{step.detail}</p> : null}
+            {step.code ? <code className="sequence-code">{step.code}</code> : null}
+          </div>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
 export function Cards({ children, className = '' }) {
   return <div className={`cards ${className}`.trim()}>{children}</div>
 }
@@ -71,9 +112,9 @@ export function Card({ tag, tone, title, children }) {
   )
 }
 
-export function Callout({ title, children }) {
+export function Callout({ title, tone = '', children }) {
   return (
-    <div className="callout">
+    <div className={`callout${tone ? ` ${tone}` : ''}`}>
       <div>
         <strong>{title}</strong>
         {children}

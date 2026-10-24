@@ -2,16 +2,24 @@ import React, { useEffect, useState } from 'react'
 
 const links = [
   ['home', '#/'],
-  ['internals', '#/internals'],
+  ['architecture', '#/architecture'],
+  ['compiler', '#/compiler'],
+  ['runtime', '#/runtime'],
+  ['protocol', '#/protocol'],
+  ['hosts', '#/hosts'],
   ['testing', '#/testing'],
   ['status', '#/status'],
 ]
 
 const labels = {
   home: '概览',
-  internals: '内部分层',
-  testing: '测试与兼容',
-  status: '现状与路线',
+  architecture: '架构',
+  compiler: '编译',
+  runtime: '运行时',
+  protocol: '协议',
+  hosts: '宿主',
+  testing: '验证',
+  status: '路线',
 }
 
 export default function Layout({ route, children }) {
@@ -65,9 +73,12 @@ export default function Layout({ route, children }) {
         <div className="shell footer-inner">
           <span>Tiny · 小程序引擎 · MIT</span>
           <div className="footer-links">
-            <a href="#/internals">内部分层</a>
-            <a href="#/testing">测试</a>
-            <a href="#/status">路线</a>
+            <a href="#/architecture">架构</a>
+            <a href="#/compiler">编译</a>
+            <a href="#/runtime">运行时</a>
+            <a href="#/protocol">协议</a>
+            <a href="#/hosts">宿主</a>
+            <a href="#/testing">验证</a>
             <a href="https://github.com/YufJi/tiny">GitHub</a>
           </div>
         </div>
