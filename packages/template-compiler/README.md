@@ -1,13 +1,13 @@
-# glass-easel-template-compiler-js
+# @tiny/template-compiler
 
-The template compiler for the [glass-easel](https://github.com/wechat-miniprogram/glass-easel) project — a pure TypeScript/Node.js port of the original Rust/WebAssembly implementation.
+Template compiler for the Tiny runtime. It is a pure TypeScript/Node.js port of the [glass-easel](https://github.com/wechat-miniprogram/glass-easel) template compiler.
 
 It parses glass-easel WXML templates, generates JavaScript code-gen objects, and can stringify ASTs back to HTML. No native binaries or WASM required.
 
 ## Installation
 
 ```sh
-pnpm add glass-easel-template-compiler-js
+pnpm add @tiny/template-compiler
 ```
 
 ## Usage
@@ -15,7 +15,7 @@ pnpm add glass-easel-template-compiler-js
 ### Basic code generation
 
 ```ts
-import { TmplGroup } from 'glass-easel-template-compiler-js'
+import { TmplGroup } from '@tiny/template-compiler'
 
 const group = TmplGroup.new()
 
@@ -81,7 +81,7 @@ group.addTmpl('pages/index/index', `
 ### Stringify (AST → HTML)
 
 ```ts
-import { TmplGroup } from 'glass-easel-template-compiler-js'
+import { TmplGroup } from '@tiny/template-compiler'
 
 const group = TmplGroup.new()
 group.addTmpl('a', `<view class="foo"><text>{{msg}}</text></view>`)
@@ -133,19 +133,18 @@ const scripts = group.exportAllScripts()
 ## Build
 
 ```sh
-pnpm install
-pnpm build
+pnpm --filter @tiny/template-compiler build
 ```
 
 ## Test
 
 ```sh
-pnpm test
+pnpm --filter @tiny/template-compiler test
 ```
 
 ## Relation to the Rust implementation
 
-This package is a pure TypeScript port of [`glass-easel-template-compiler`](https://github.com/wechat-miniprogram/glass-easel/tree/master/glass-easel-template-compiler), which compiles to WebAssembly. Use this package when WASM is unavailable or inconvenient (e.g. Node.js tooling, unit tests, server-side rendering).
+The implementation is maintained as the Tiny workspace package `@tiny/template-compiler`, following the upstream [`glass-easel-template-compiler`](https://github.com/wechat-miniprogram/glass-easel/tree/master/glass-easel-template-compiler) behavior. It is used by `@tiny/cli` and `@tiny/components`; no WASM is required.
 
 The generated JavaScript output is designed to be functionally identical to the Rust/WASM version.
 

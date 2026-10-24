@@ -6,16 +6,23 @@ Guidance for AI agents working in the `tiny` repository.
 
 A mini-program engine built on glass-easel.
 - **Monorepo**: pnpm workspaces + Turborepo
-- **Language**: TypeScript (packages), JavaScript/JSX (devtool)
+- **Language**: TypeScript (core packages and tools), JavaScript/JSX (`apps/devtool`)
 - **Runtime**: dual-thread host (service + render iframes) over the versioned Tiny bridge protocol
-- **Compiler**: `cli` produces the runtime manifest and artifacts
+- **Compiler**: `tools/cli` produces the runtime manifest and artifacts
 
-Legacy `packages/base`, `packages/compiler`, and the old devtool shell were
-removed after the glass-easel migration. Do not reintroduce
-JSBridge/executeJavaScript-based code. `tests/apps/todo` is the Taro 3 compatibility
-target and part of acceptance; `tests/apps/echarts` remains a historical reference demo.
+The workspace is split by role. Keep dependencies pointing inward: core packages
+must not depend on tools, apps, or tests.
 
-## Core packages
+## Workspace layout
+
+| Layer | Path | Scope |
+| --- | --- | --- |
+| Core | `packages/*` | Libraries consumed by runtime/tools/apps |
+| Tools | `tools/*` | Compiler/build tooling |
+| Apps | `apps/*` | Runnable applications (debugger) |
+| Tests | `tests/*` | Browser host + mini-program fixtures (not workspace packages) |
+
+### Core packages
 
 | Package | Scope |
 | --- | --- |
@@ -26,53 +33,54 @@ target and part of acceptance; `tests/apps/echarts` remains a historical referen
 | `packages/bridge` | Protocol, transport, batching, diagnostics |
 | `packages/components` | Mini-program built-in components |
 
-## Tools and apps
+### Tools and apps
 
 | Path | Scope |
 | --- | --- |
 | `tools/cli` | Active compiler and manifest producer |
 | `apps/devtool` | Browser debugger UI and thread entries |
 
-## Tests
+### Tests
 
-- `tests/host`: standalone Vite browser host used by the test apps and acceptance.
-  It is not a package and has no mini-program source of its own; compiled apps are
-  written to `tests/host/generated`.
-- `tests/apps/*`: mini-program sources used as acceptance fixtures (`demo`, `mini`,
-  `todo`, `echarts`).
+- `tests/host`: standalone Vite host used for development and Playwright acceptance.
+  It has no mini-program source; compiled apps are written to `tests/host/generated`.
+- `tests/apps/*`: mini-program fixtures used by acceptance (`demo`, `mini`, `todo`,
+  `echarts`).
 
 ## Commands
 
 ```bash
 pnpm install                 # install workspace dependencies
-pnpm accept:glass-easel      # full gate: build, tests, browser acceptance
-pnpm dev:glass-easel         # P0 demo host on :5173
-pnpm dev:devtool             # debugger on :8080 (watches both test apps)
-pnpm compile:glass-easel     # compile the P0 demo
-pnpm compile:devtool:all     # compile demo + tests/apps/mini for devtool
-pnpm lint                    # biome (only bridge is configured today)
+pnpm build                   # build all 8 workspace packages
+pnpm accept:glass-easel      # full gate: build, unit tests, 4 browser stages
+pnpm dev:glass-easel         # compile tests/apps/demo + host on :5173
+pnpm dev:devtool             # debugger on :8080 (watches demo + mini)
+pnpm compile:glass-easel     # compile tests/apps/demo -> tests/host/generated
+pnpm compile:devtool:all     # compile demo + mini for the debugger
+pnpm lint                    # Biome (bridge only is configured today)
 ```
 
 Package-level scripts:
 
 ```bash
+pnpm --filter @tiny/manifest build
+pnpm --filter @tiny/cli test
 pnpm --filter @tiny/runtime test
 pnpm --filter @tiny/runtime build
-pnpm --filter @tiny/cli build
 pnpm --filter devtool build
 ```
 
 ## Testing
 
-Vitest is used by `bridge`, `template-compiler`, `stylesheet-compiler`,
-`cli`, `components`, and `runtime`. There is no global test
-runner; use `pnpm --filter <package> test`.
+Vitest is used by `bridge`, `template-compiler`, `stylesheet-compiler`, `cli`,
+`components`, and `runtime` (92 tests). There is no global test runner; use
+`pnpm --filter <package> test`.
 
-The end-to-end gate is `pnpm accept:glass-easel`, which runs:
+The end-to-end gate is `pnpm accept:glass-easel`:
 
-1. build of the seven active compiler/runtime packages
+1. build of the 7 compiler/runtime targets in `build:glass-easel`
 2. unit tests for all packages
-3. P0 demo browser flow
+3. P0 demo browser flow (`tests/apps/demo`)
 4. `tests/apps/mini` browser flow
 5. Taro 3 (`tests/apps/todo`) browser flow
 6. runtime debugger browser flow
@@ -81,11 +89,23 @@ The end-to-end gate is `pnpm accept:glass-easel`, which runs:
 control the gate. It requires a Chromium browser (`playwright-core` with system
 Chrome, or `PLAYWRIGHT_CHROMIUM_PATH`).
 
+## Repository conventions
+
+- `packages/components/src/generated/`, `tests/host/generated/`, and
+  `apps/devtool/static/` are build output and gitignored.
+- `tests/apps/*` are complete mini-program fixtures; `tests/apps/todo` is the Taro 3
+  compatibility target. `tests/apps/echarts` is historical reference only.
+- Do not reintroduce the legacy `packages/base`, `packages/compiler`, or the old
+  devtool shell; no JSBridge/`executeJavaScript`-based code.
+- The browser test host and devtool both use `createStandaloneDualThreadHost`;
+  devtool adds `DevtoolRuntimeClient` for lifecycle control, state projection, and
+  element-tree inspection. Do not make the test host depend on the devtool app.
+
 ## Code Style
 
 - 2-space indentation, LF, UTF-8 (`.editorconfig`)
-- No semicolons in `packages/*` TypeScript; devtool JS follows its existing style
-- TypeScript ESM in packages; CommonJS only for devtool config files
+- No semicolons in `packages/*` and `tools/cli` TypeScript; devtool JS follows its existing style
+- TypeScript ESM in packages/tools; CommonJS only for devtool config files
 - Prefer explicit structured diagnostics over `console.*` in runtime code
 - Chinese comments are fine for project-specific concepts
 
@@ -93,7 +113,7 @@ Chrome, or `PLAYWRIGHT_CHROMIUM_PATH`).
 
 1. `pnpm install`
 2. `pnpm accept:glass-easel` to confirm the baseline
-3. `pnpm dev:glass-easel` for the small demo, `pnpm dev:devtool` for the debugger
+3. `pnpm dev:glass-easel` for the demo, `pnpm dev:devtool` for the debugger
 4. Re-run the gate before committing
 
 ## Agent Skills

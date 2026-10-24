@@ -1,6 +1,6 @@
-# glass-easel-stylesheet-compiler-js
+# @tiny/stylesheet-compiler
 
-The stylesheet compiler for the [glass-easel](https://github.com/wechat-miniprogram/glass-easel) project — a pure TypeScript/Node.js port of the original Rust/WebAssembly implementation.
+Stylesheet compiler for the Tiny runtime. It is a pure TypeScript/Node.js port of the [glass-easel](https://github.com/wechat-miniprogram/glass-easel) stylesheet compiler.
 
 No native binaries or WASM required.
 
@@ -8,6 +8,7 @@ No native binaries or WASM required.
 
 - Convert `rpx` units to `vw` (configurable ratio, default 750)
 - Add class name prefixes for style isolation (e.g. `.foo` → `.prefix--foo`)
+- Rewrite tag selectors to scoped marker classes (e.g. `button` → `.prefix--wx-tag-button`)
 - Optionally insert a marker comment before class names (for tooling)
 - Process `@import` rules: replace with a URL-encoded comment marker
 - Convert `:host` selectors to attribute selectors (`[wx-host="…"]`) for shadow-DOM emulation, with a separate low-priority output
@@ -17,7 +18,7 @@ No native binaries or WASM required.
 ## Installation
 
 ```sh
-pnpm add glass-easel-stylesheet-compiler-js
+pnpm add @tiny/stylesheet-compiler
 ```
 
 ## Usage
@@ -27,7 +28,7 @@ pnpm add glass-easel-stylesheet-compiler-js
 The constructor signature is identical to the original Rust WASM binding, so existing callers require no changes:
 
 ```js
-const { StyleSheetTransformer } = require('glass-easel-stylesheet-compiler-js')
+const { StyleSheetTransformer } = require('@tiny/stylesheet-compiler')
 
 const sst = new StyleSheetTransformer(
   '/path/to/file.wxss', // file path (used in source map)
@@ -57,11 +58,12 @@ sst.free()
 Use the static factory for options not available in the positional constructor:
 
 ```ts
-import { StyleSheetTransformer } from 'glass-easel-stylesheet-compiler-js'
+import { StyleSheetTransformer } from '@tiny/stylesheet-compiler'
 
 const sst = StyleSheetTransformer.fromCss('/path/to/file.wxss', cssContent, {
   classPrefix: 'my-prefix',
   classPrefixSign: 'SIGN',   // inserts /*SIGN*/ before each transformed class name
+  tagClassPrefix: 'my-prefix--wx-tag-', // tag selector marker classes
   rpxRatio: 750,
   importSign: 'IMPORT',      // replaces @import with /*IMPORT .url-encoded-path*/
   convertHost: true,
@@ -75,6 +77,7 @@ const sst = StyleSheetTransformer.fromCss('/path/to/file.wxss', cssContent, {
 |--------|------|---------|-------------|
 | `classPrefix` | `string` | — | Prefix added to class names: `.foo` → `.prefix--foo` |
 | `classPrefixSign` | `string` | — | Comment inserted before each transformed class name: `.foo` → `./*SIGN*/foo` |
+| `tagClassPrefix` | `string` | — | Prefix for tag marker classes: `button` → `.prefix--wx-tag-button` |
 | `rpxRatio` | `number` | `750` | Ratio for `rpx` → `vw` conversion: `value * 100 / ratio` |
 | `importSign` | `string` | — | When set, `@import './a'` is replaced with `/*SIGN .%2Fa*/` |
 | `convertHost` | `boolean` | `false` | Convert `:host {}` to `[wx-host="prefix"] {}` in low-priority output |
@@ -153,10 +156,10 @@ interface StyleSheetParseError {
 ## Building
 
 ```sh
-pnpm build   # outputs to dist/
-pnpm test    # runs Jest test suite
+pnpm --filter @tiny/stylesheet-compiler build
+pnpm --filter @tiny/stylesheet-compiler test
 ```
 
 ## Relation to the Rust/WASM version
 
-This package (`glass-easel-stylesheet-compiler-js`) is a pure TypeScript port of [`glass-easel-stylesheet-compiler`](https://github.com/wechat-miniprogram/glass-easel/tree/master/glass-easel-stylesheet-compiler), which compiles to WebAssembly. Both packages expose the same public API, so they can be used interchangeably. The JS version requires no build toolchain setup and works in any Node.js environment.
+The implementation follows the upstream [`glass-easel-stylesheet-compiler`](https://github.com/wechat-miniprogram/glass-easel/tree/master/glass-easel-stylesheet-compiler) behavior, but is maintained here as the Tiny workspace package `@tiny/stylesheet-compiler`.

@@ -11,7 +11,7 @@ pnpm accept:glass-easel
 ```
 
 The gate builds the active glass-easel packages, runs bridge/compiler/template/
-stylesheet/components/runtime tests, compiles this example, starts the standalone
+stylesheet/components/runtime tests, compiles the demo, starts the standalone
 dual-thread host, and drives the full P0, existing-app, Taro 3, and debugger flows
 in a headless browser.
 
@@ -33,7 +33,7 @@ The browser stage verifies:
    canvas API still emits a structured `UNSUPPORTED_CANVAS` warning.
 10. Runtime state diagnostics observe the todos → add-todo → todos page transitions.
 
-## Existing example app stage
+## Existing test app stage (mini)
 
 After the P0 demo flow, the gate compiles `tests/apps/mini` (3 pages + 1 subpackage page,
 2 components) into the same host and drives the real app:
@@ -58,7 +58,7 @@ After the P0 demo flow, the gate compiles `tests/apps/mini` (3 pages + 1 subpack
 The P0 demo artifacts are recompiled after this stage, so `pnpm dev:glass-easel` keeps
 serving the small demo.
 
-## Taro 3 example stage
+## Taro 3 test app stage
 
 The gate then compiles the prebuilt Taro 3 output in `tests/apps/todo` (webpack
 `webpackJsonp` bundles, `base.wxml`, external WXS, recursive templates) and
@@ -88,7 +88,7 @@ runtime debugger:
 3. The mini program renders inside the debugger viewport; the tree drawer shows `page`,
    built-in tags, classes, attributes, and text.
 4. `Navigate` / `Back` drive the runtime through host API handlers and refresh the tree.
-5. The app selector switches from the demo to the existing example app.
+5. The app selector switches from the demo to the real test app.
 6. `Reload` restarts the runtime and `Terminate` removes both thread iframes.
 7. No console or page errors occur.
 
@@ -99,7 +99,7 @@ pnpm dev:devtool
 # open http://localhost:8080/
 ```
 
-`dev:devtool` starts watchers for both example apps plus the rspack dev server. Editing a
+`dev:devtool` starts watchers for both test apps plus the rspack dev server. Editing a
 WXML/WXSS/JS file recompiles within ~250ms; press `Reload` in the panel to boot the new
 artifacts.
 
@@ -124,5 +124,5 @@ Known knobs:
 pnpm dev:glass-easel
 ```
 
-Open the printed Vite URL. The example exposes `window.__tinyRuntime` for inspecting
+Open the printed Vite URL. The host exposes `window.__tinyRuntime` for inspecting
 host diagnostics and storage in the devtools console.
