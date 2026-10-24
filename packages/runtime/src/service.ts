@@ -9,7 +9,6 @@ import type {
   SystemInfoSnapshot,
 } from './types'
 import { createRuntimeStateDiagnostic } from './diagnostics'
-import { createBridgedCanvas, createLegacyCanvasContext } from './canvas-bridge'
 
 export type MiniProgramPageOptions = {
   data?: Record<string, unknown>
@@ -303,6 +302,7 @@ export type ServiceApiContext = {
   getSystemInfoSnapshot: () => SystemInfoSnapshot
   getStorageSnapshot: () => StorageSnapshot
   setStorageSnapshot: (key: string, value: unknown) => void
+  canvas?: import('./types').ServiceCanvasAdapter
   pageId?: string
 }
 
@@ -374,7 +374,7 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
     // APIs during lifecycle hooks. Return chainable stubs so the page can boot.
     createAnimation: (options: unknown = {}) => createAnimationStub(options),
     createCanvasContext: (canvasId: unknown = 'canvas') => {
-      const bridged = createLegacyCanvasContext(
+      const bridged = context.canvas?.createLegacyCanvasContext(
         String(canvasId || 'canvas'),
         (frame) => {
           context.connection.sendEvent('canvas', 'frame', frame, { pageId: context.pageId })
@@ -486,7 +486,6 @@ function createCanvasContextStub(): Record<string, unknown> {
 }
 
 export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadRuntime {
-  installBrowserCanvasCompat()
   const expectedPagePaths = options.manifest.pages
     .filter((page) => page.bodyType !== 'component')
     .map((page) => page.path)
@@ -517,6 +516,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     setStorageSnapshot: (key, value) => {
       storageSnapshot[key] = value
     },
+    canvas: options.canvas,
     get pageId() {
       return activePage?.pageId
     },
@@ -996,8 +996,8 @@ async function buildSelectorResult(
   selection: SelectorQuerySelection,
   component?: { data?: Record<string, unknown> },
 ): Promise<Record<string, unknown>> {
-  let width = 300
-  let height = 150
+  let width = 0
+  let height = 0
   let measured: { width?: number; height?: number; canvasId?: string } | undefined
   try {
     measured = await context.connection.call<{ width?: number; height?: number; canvasId?: string }>(
@@ -1011,14 +1011,14 @@ async function buildSelectorResult(
       height = Math.round(Number(measured.height))
     }
   } catch {
-    // Fall back to the default canvas size.
+    // The host did not provide a measurement; leave the size unknown.
   }
   const canvasId = String(component?.data?.canvasId ?? measured?.canvasId ?? 'canvas')
-  const bridged = createBridgedCanvas(width, height, canvasId, (frame) => {
+  const node = context.canvas?.createCanvasNode(width, height, canvasId, (frame) => {
     context.connection.sendEvent('canvas', 'frame', frame, { pageId: context.pageId })
-  })
+  }) ?? null
   return {
-    node: bridged?.canvas ?? null,
+    node,
     id: '',
     dataset: {},
     width,
@@ -1027,26 +1027,6 @@ async function buildSelectorResult(
     top: 0,
     right: width,
     bottom: height,
-  }
-}
-
-/**
- * Mini-program canvas adapters (for example ECharts' `WxCanvas`) are plain
- * objects in WeChat, where `document` does not exist. In the browser service
- * thread `document` exists, so libraries that sniff `canvas.addEventListener`
- * treat the wrapper as a DOM node. Provide inert listener methods on plain
- * objects; DOM elements keep their own EventTarget implementation.
- */
-function installBrowserCanvasCompat(): void {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return
-  const prototype = Object.prototype as unknown as Record<string, unknown>
-  for (const name of ['addEventListener', 'removeEventListener']) {
-    if (name in prototype) continue
-    Object.defineProperty(prototype, name, {
-      value: () => undefined,
-      configurable: true,
-      writable: true,
-    })
   }
 }
 

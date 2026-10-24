@@ -13,9 +13,12 @@
 tools/cli ──► manifest + templates / service / render / styles
         │
         ▼
-packages/runtime
+hosts/browser ──► iframe / MessageChannel / Canvas / devtool overlay
+        │
+        ▼
+packages/runtime : 双线程内核（不依赖 DOM）
 ├─ service iframe : App/Page/Component 逻辑与 API
-├─ render  iframe : glass-easel 组件树与 DOM
+├─ render  iframe : glass-easel 组件树，DOM backend 由宿主注入
 └─ bridge         : Tiny Runtime Protocol v1
         │
         ▼
@@ -26,7 +29,8 @@ apps/devtool (可选) : DevtoolRuntimeClient + React 面板
 
 | 层 | 路径 | 作用 |
 | --- | --- | --- |
-| 核心引擎 | `packages/*` | 被 runtime、工具和应用复用的库 |
+| 核心引擎 | `packages/*` | 与宿主无关的库 |
+| 宿主适配 | `hosts/*` | 浏览器等环境适配，不属于内核 |
 | 工具 | `tools/*` | 编译器 / 构建工具 |
 | 应用 | `apps/*` | 可独立运行的调试器 |
 | 测试 | `tests/*` | 浏览器测试宿主 + 测试小程序（非 workspace 包） |
@@ -38,7 +42,7 @@ apps/devtool (可选) : DevtoolRuntimeClient + React 面板
 | `packages/manifest` | 编译产物 / manifest 契约 |
 | `packages/template-compiler` | WXML 解析与 ProcGen |
 | `packages/stylesheet-compiler` | WXSS、rpx、class/tag 作用域 |
-| `packages/runtime` | 双线程 runtime、glass-easel adapter、devtool client |
+| `packages/runtime` | 双线程 runtime 内核（无宿主依赖） |
 | `packages/bridge` | 版本化协议、transport、序列化与诊断边界 |
 | `packages/components` | 内置组件（view/text/input/swiper/canvas 等） |
 
@@ -48,6 +52,7 @@ apps/devtool (可选) : DevtoolRuntimeClient + React 面板
 | --- | --- |
 | `tools/cli` | 编译器：小程序源码 → glass-easel 产物与 manifest |
 | `apps/devtool` | 浏览器调试器 |
+| `hosts/browser` | 浏览器宿主：iframe、MessageChannel、Canvas、devtool overlay |
 
 ### 测试
 
@@ -89,6 +94,7 @@ pnpm site:check              # 构建并检查产物资源
 pnpm compile:glass-easel     # tests/apps/demo -> tests/host/generated
 pnpm compile:devtool:all     # demo + tests/apps/mini -> devtool 静态目录
 pnpm compile:wechat-demo     # 微信官方组件/API 示例 -> tests/host/generated
+pnpm check:runtime-purity    # 校验 runtime 内核无宿主全局依赖
 pnpm dev:wechat-demo         # 微信示例宿主：http://127.0.0.1:5174/?path=page/component/index
 
 pnpm --filter @tiny/runtime test

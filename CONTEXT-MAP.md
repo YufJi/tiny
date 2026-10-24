@@ -9,9 +9,10 @@ Each package is a bounded context. Read only the contexts relevant to the curren
 | CLI | `tools/cli` | Active glass-easel compiler and runtime manifest producer |
 | Manifest | `packages/manifest` | Artifact/manifest contract shared by compiler and runtime |
 | Devtool | `apps/devtool` | Runtime debugger UI and host orchestration |
-| Runtime | `packages/runtime` | Tiny host runtime, glass-easel adapter, and devtool client |
+| Runtime | `packages/runtime` | Host-independent runtime core, glass-easel adapter, host protocol |
 | Stylesheet Compiler | `packages/stylesheet-compiler` | Stylesheet compilation and scoping |
 | Template Compiler | `packages/template-compiler` | Template compilation |
 | Test Host | `tests/host` | Standalone Vite host for test apps and acceptance |
 | Test Apps | `tests/apps` | Mini-program fixtures used by acceptance |
+| Browser Host | `hosts/browser` | iframe/MessageChannel/DOM canvas host adapters |
 | Website | `website` | React + Vite architecture / GitHub Pages site |

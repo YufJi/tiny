@@ -1,4 +1,4 @@
-import { createStandaloneDualThreadHost } from '@tiny/runtime'
+import { createStandaloneDualThreadHost } from '@tiny/host-browser'
 import manifest from '../generated/manifest.json'
 
 const initialPath = new URLSearchParams(window.location.search).get('path') || 'pages/todos/todos'

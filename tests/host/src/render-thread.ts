@@ -1,6 +1,11 @@
 import * as glassEasel from 'glass-easel'
 import { CurrentWindowBackendContext } from 'glass-easel'
-import { bootRenderThread, listenForRuntimePort } from '@tiny/runtime'
+import { bootRenderThread } from '@tiny/runtime'
+import {
+  listenForRuntimePort,
+  measureBrowserCanvas,
+  paintBrowserCanvasFrame,
+} from '@tiny/host-browser'
 import manifest from '../generated/manifest.json'
 
 const renderModule = await import('../generated/render.js')
@@ -24,6 +29,10 @@ listenForRuntimePort('render', (transport) => {
     backend,
     initialPath: 'pages/todos/todos',
     loadStyle: (path) => styles[path] ?? '',
+    canvas: {
+      measure: measureBrowserCanvas,
+      paint: paintBrowserCanvasFrame,
+    },
     mountComponent: (component) => {
       const container = document.getElementById('app') ?? document.body
       const placeholder = document.createElement('div')

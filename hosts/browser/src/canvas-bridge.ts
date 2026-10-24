@@ -1,9 +1,4 @@
-export type CanvasFrame = {
-  canvasId: string
-  dataUrl: string
-  width: number
-  height: number
-}
+import type { CanvasFrame, CanvasMeasurement } from '@tiny/runtime'
 
 export type BridgedCanvas = {
   canvas: HTMLCanvasElement
@@ -145,4 +140,68 @@ export function createLegacyCanvasContext(
     }
   }
   return legacy
+}
+
+
+export function measureBrowserCanvas(selector?: string): CanvasMeasurement {
+  if (typeof document === 'undefined') return { width: 300, height: 150 }
+  let element: Element | null = null
+  try {
+    element = selector ? document.querySelector(selector) : null
+  } catch {
+    element = null
+  }
+  element ??= document.querySelector('canvas')
+  let rect = element?.getBoundingClientRect()
+  if (element?.tagName.toLowerCase() === 'canvas' && element.parentElement) {
+    const parentRect = element.parentElement.getBoundingClientRect()
+    if (parentRect.width > 0 && parentRect.height > 0) rect = parentRect
+  }
+  const measured: CanvasMeasurement = {
+    width: rect && rect.width > 0 ? Math.round(rect.width) : 300,
+    height: rect && rect.height > 0 ? Math.round(rect.height) : 150,
+  }
+  const canvasId = element?.getAttribute('canvas-id')
+  if (canvasId) measured.canvasId = canvasId
+  return measured
+}
+
+export function paintBrowserCanvasFrame(payload: { canvasId?: string; dataUrl?: string }): void {
+  if (typeof document === 'undefined' || !payload?.dataUrl) return
+  let target: HTMLCanvasElement | null = null
+  for (const element of Array.from(document.querySelectorAll('canvas[canvas-id]'))) {
+    if (element.getAttribute('canvas-id') === payload.canvasId) {
+      target = element as HTMLCanvasElement
+      break
+    }
+  }
+  if (!target) return
+  const canvas = target
+  const image = new Image()
+  image.onload = () => {
+    canvas.width = image.naturalWidth
+    canvas.height = image.naturalHeight
+    canvas.getContext('2d')?.drawImage(image, 0, 0)
+  }
+  image.src = payload.dataUrl
+}
+
+/**
+ * Mini-program canvas adapters (for example ECharts' `WxCanvas`) are plain
+ * objects in WeChat, where `document` does not exist. In the browser service
+ * thread `document` exists, so libraries that sniff `canvas.addEventListener`
+ * treat the wrapper as a DOM node. Provide inert listener methods on plain
+ * objects; DOM elements keep their own EventTarget implementation.
+ */
+export function installBrowserCanvasCompat(): void {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return
+  const prototype = Object.prototype as unknown as Record<string, unknown>
+  for (const name of ['addEventListener', 'removeEventListener']) {
+    if (name in prototype) continue
+    Object.defineProperty(prototype, name, {
+      value: () => undefined,
+      configurable: true,
+      writable: true,
+    })
+  }
 }

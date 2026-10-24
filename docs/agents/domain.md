@@ -17,7 +17,8 @@ The initial map treats each package as its own context:
 - `packages/manifest` — artifact/manifest contract shared by compiler and runtime
 - `tools/cli` — active glass-easel compiler and runtime manifest producer
 - `apps/devtool` — web-based debugger
-- `packages/runtime` — runtime services
+- `packages/runtime` — host-independent runtime core
+- `hosts/browser` — browser host adapters (iframes, message ports, DOM canvas, devtool overlay)
 - `packages/stylesheet-compiler` — stylesheet compilation
 - `packages/template-compiler` — template compilation
 

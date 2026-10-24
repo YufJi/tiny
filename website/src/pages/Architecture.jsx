@@ -41,7 +41,7 @@ export default function Architecture() {
           rows={[
             ['compiler', '源码扫描、模板 ProcGen、CSS 作用域、TS 转译、service bundle、manifest 与诊断', '页面生命周期、路由、wx API、DOM', <code>tools/cli</code>],
             ['manifest', '产物类型与 schemaVersion，不包含编译器或运行时逻辑', '任何实现', <code>packages/manifest</code>],
-            ['runtime', 'App/Page/Component 语义、页面栈、setData、事件分发、组件实例、canvas 镜像', '传输实现、宿主 API 实现、UI', <code>packages/runtime</code>],
+            ['runtime', 'App/Page/Component 语义、页面栈、setData、事件分发、组件实例、canvas 帧协议', '传输实现、宿主 API 实现、DOM、UI', <code>packages/runtime</code>],
             ['bridge', 'envelope、帧、transport、call/reply、批处理、超时、JSON-safe 校验', 'wx API 语义、渲染命令、页面状态', <code>packages/bridge</code>],
             ['host', '线程创建、transport、bootstrap 调用、宿主 API、后端与挂载点、诊断收集', '应用业务状态、glass-easel 组件定义', <><code>apps/devtool</code> · <code>tests/host</code> · 未来原生宿主</>],
           ]}
@@ -97,8 +97,9 @@ export default function Architecture() {
             [<code>@tiny/stylesheet-compiler</code>, 'postcss', 'WXSS → 普通/低优先级 CSS'],
             [<code>@tiny/components</code>, 'glass-easel；构建期 template-compiler', '18 个内置组件与 AOT 模板'],
             [<code>@tiny/cli</code>, 'manifest · template-compiler · stylesheet-compiler · esbuild · typescript', '唯一产物生产者'],
-            [<code>@tiny/runtime</code>, 'manifest · bridge · components · glass-easel · es-toolkit', '双线程运行时与 adapter'],
-            [<code>devtool</code>, 'runtime · glass-easel · React · Redux/rematch', '宿主适配 + 控制面板'],
+            [<code>@tiny/runtime</code>, 'manifest · bridge · components · glass-easel · es-toolkit', '双线程运行时内核（无宿主依赖）'],
+            [<code>@tiny/host-browser</code>, 'runtime · bridge', '浏览器宿主：iframe / MessageChannel / Canvas / devtool overlay'],
+            [<code>devtool</code>, 'host-browser · glass-easel · React · Redux/rematch', '调试器宿主 + 控制面板'],
             [<code>@tiny/website</code>, 'React', '架构站点，不进入引擎链路'],
           ]}
         />
@@ -108,12 +109,13 @@ export default function Architecture() {
             packages/stylesheet-compiler
             packages/components        -> glass-easel
             packages/runtime           -> manifest, bridge, components
+hosts       hosts/browser              -> runtime, bridge   (environment adapter)
 tools       tools/cli                  -> manifest, template-compiler, stylesheet-compiler
-apps        apps/devtool               -> runtime
-tests       tests/host                 -> runtime          (not a workspace package)
+apps        apps/devtool               -> host-browser
+tests       tests/host                 -> host-browser       (not a workspace package)
 fixtures    tests/apps/*               -> source only      (compiled into a host)
 
-rule: packages/* never import tools/*, apps/*, tests/*`}</CodeBlock>
+rule: packages/* never import tools/*, apps/*, hosts/*, tests/*`}</CodeBlock>
         <Callout title="一个反例">
           <p>
             runtime 如果为了类型去 import <code>@tiny/cli</code>，就会把 Node 的 fs/esbuild 依赖带进浏览器线程，

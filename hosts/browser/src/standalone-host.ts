@@ -1,7 +1,7 @@
 import { createHostMessageChannelPair } from '@tiny/bridge'
-import { createTinyRuntime, type TinyRuntimeHost } from './host'
-import type { RuntimeDiagnostic } from './diagnostics'
-import type { RuntimeManifest, SystemInfoSnapshot, StorageSnapshot } from './types'
+import { createTinyRuntime, type TinyRuntimeHost } from '@tiny/runtime'
+import type { RuntimeDiagnostic } from '@tiny/runtime'
+import type { RuntimeManifest, SystemInfoSnapshot, StorageSnapshot } from '@tiny/runtime'
 
 export type StandaloneHostOptions = {
   manifest: RuntimeManifest

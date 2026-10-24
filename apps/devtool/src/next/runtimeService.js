@@ -1,4 +1,10 @@
-import { bootServiceThread, listenForRuntimePort } from '@tiny/runtime';
+import { bootServiceThread } from '@tiny/runtime';
+import {
+  createBridgedCanvas,
+  createLegacyCanvasContext,
+  installBrowserCanvasCompat,
+  listenForRuntimePort,
+} from '@tiny/host-browser';
 
 const appId = new URLSearchParams(window.location.search).get('app') || 'demo';
 const generatedBase = `/runtime/apps/${appId}/generated`;
@@ -37,6 +43,8 @@ const createHostApiExtensions = () => ({
 // Wait for the manifest before announcing readiness: the host delivers the
 // message port as soon as it sees the ready message, and any frame that
 // arrives before `bootServiceThread` installs its connection is lost.
+installBrowserCanvasCompat();
+
 manifestPromise.then((manifest) => {
   listenForRuntimePort('service', (transport) => {
     bootServiceThread({
@@ -44,6 +52,13 @@ manifestPromise.then((manifest) => {
       manifest,
       initialPath: manifest.pages[0].path,
       apiExtensions: createHostApiExtensions(),
+      canvas: {
+        createLegacyCanvasContext,
+        createCanvasNode: (width, height, canvasId, send) => {
+          const bridged = createBridgedCanvas(width, height, canvasId, send);
+          return bridged ? bridged.canvas : null;
+        },
+      },
       loadArtifacts: () => importGenerated(`${generatedBase}/service.js`),
     });
   });

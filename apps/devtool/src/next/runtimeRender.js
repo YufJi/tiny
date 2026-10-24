@@ -1,6 +1,11 @@
 import * as glassEasel from 'glass-easel';
 import { CurrentWindowBackendContext } from 'glass-easel';
-import { bootRenderThread, listenForRuntimePort } from '@tiny/runtime';
+import { bootRenderThread } from '@tiny/runtime';
+import {
+  listenForRuntimePort,
+  measureBrowserCanvas,
+  paintBrowserCanvasFrame,
+} from '@tiny/host-browser';
 
 const appId = new URLSearchParams(window.location.search).get('app') || 'demo';
 const generatedBase = `/runtime/apps/${appId}/generated`;
@@ -31,6 +36,10 @@ assetsPromise.then(({ manifest, templates, styles }) => {
       backend,
       initialPath: manifest.pages[0].path,
       loadStyle: (path) => styles[path] ?? '',
+      canvas: {
+        measure: measureBrowserCanvas,
+        paint: paintBrowserCanvasFrame,
+      },
       mountComponent: (component) => {
         const container = document.getElementById('app') ?? document.body;
         const placeholder = document.createElement('div');

@@ -50,6 +50,30 @@ pnpm --filter @tiny/runtime typecheck
 
 The full end-to-end gate is `pnpm accept:glass-easel`.
 
+## Core vs browser entry
+
+`@tiny/runtime` is the host-independent engine entry. It exports the service
+runtime, render runtime, glass-easel adapter, host protocol/orchestration, and
+manifest/runtime types. It must not reference browser globals.
+
+`@tiny/host-browser` (workspace: `hosts/browser`) is the browser host adapter:
+
+| Module | Host capability |
+| --- | --- |
+| `canvas-bridge` | DOM canvas, PNG frame capture/paint |
+| `runtime-port` | `window.postMessage` / iframe port handshake |
+| `standalone-host` | iframe creation and page container |
+| `devtool-client` | DOM overlay and debugger UI |
+
+Canvas is injected at the thread boundary:
+
+- `ServiceThreadOptions.canvas` (`createLegacyCanvasContext`, `createCanvasNode`)
+- `RenderThreadOptions.canvas` (`measure`, `paint`)
+
+This keeps `service.ts` and `render.ts` free of `window`, `document`, `Image`,
+and `HTMLCanvasElement`; browser code lives in `@tiny/host-browser`, not in core. `pnpm check:runtime-purity` walks the core entry's import
+graph and fails if a browser global or `browser` import leaks in.
+
 ## Host-specific APIs
 
 Platform facts and host capabilities belong to the host, not the engine core.

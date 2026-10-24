@@ -1,6 +1,6 @@
-import type { RuntimeDiagnostic } from './diagnostics'
-import type { InspectNode } from './glass-easel-adapter'
-import type { HostApiHandler, RuntimeManifest, StorageSnapshot, SystemInfoSnapshot } from './types'
+import type { RuntimeDiagnostic } from '@tiny/runtime'
+import type { InspectNode } from '@tiny/runtime'
+import type { HostApiHandler, RuntimeManifest, StorageSnapshot, SystemInfoSnapshot } from '@tiny/runtime'
 import { createStandaloneDualThreadHost, type StandaloneHost } from './standalone-host'
 
 export type DevtoolRuntimeStatus = 'idle' | 'connecting' | 'running' | 'terminated' | 'error'

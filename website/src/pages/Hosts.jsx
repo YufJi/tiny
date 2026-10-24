@@ -17,7 +17,7 @@ export default function Hosts() {
       <PageHero
         eyebrow="Host support"
         title={<>宿主不是引擎，<br /><span className="gradient">宿主是环境适配层</span></>}
-        lede="createTinyRuntime 只要求两条 Transport、一个 manifest 和初始路径。createStandaloneDualThreadHost 是浏览器实现：两个 iframe、两个 MessageChannel、15 秒就绪等待和显式 bootstrap。测试宿主与调试器都建立在它之上，但控制面不同。"
+        lede="createTinyRuntime 只要求两条 Transport、一个 manifest 和初始路径。@tiny/host-browser 的 createStandaloneDualThreadHost 是浏览器实现：两个 iframe、两个 MessageChannel、15 秒就绪等待和显式 bootstrap。测试宿主与调试器都建立在它之上，但控制面不同。"
         stats={[['3', 'host shapes'], ['2', 'iframe threads'], ['2', 'API seams'], ['15s', 'thread ready timeout']]}
       />
       <PageNav items={[
@@ -219,7 +219,7 @@ listenForRuntimePort('render', (transport) => {
               <li><code>system.info</code>：宿主系统信息快照</li>
               <li>任意自定义 <code>apiHandlers</code>，比如文件、网络、设备</li>
             </ul>
-            <p>默认 handler 位于 <code>packages/runtime/src/host-api.ts</code>，可被选项覆盖。</p>
+            <p>默认 handler 位于 <code>packages/runtime/src/host-api.ts</code>，可被选项覆盖；浏览器能力位于 <code>hosts/browser</code>。</p>
           </Card>
           <Card tag="service" tone="violet" title="apiExtensions：宿主事实">
             <p>直接合并进 service 线程的 <code>wx</code> API host，运行在 service 线程。</p>

@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
-import { DevtoolRuntimeClient } from '@tiny/runtime';
+import { DevtoolRuntimeClient } from '@tiny/host-browser';
 
 const STATUS_COLORS = {
   idle: '#94a3b8',

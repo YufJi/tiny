@@ -11,7 +11,7 @@ A mini-program engine built on glass-easel.
 - **Compiler**: `tools/cli` produces the runtime manifest and artifacts
 
 The workspace is split by role. Keep dependencies pointing inward: core packages
-must not depend on tools, apps, or tests.
+must not depend on tools, apps, hosts, or tests.
 
 ## Workspace layout
 
@@ -20,6 +20,7 @@ must not depend on tools, apps, or tests.
 | Core | `packages/*` | Libraries consumed by runtime/tools/apps |
 | Tools | `tools/*` | Compiler/build tooling |
 | Apps | `apps/*` | Runnable applications (debugger) |
+| Hosts | `hosts/*` | Browser/environment adapters (not core) |
 | Tests | `tests/*` | Browser host + mini-program fixtures (not workspace packages) |
 | Website | `website` | React + Vite architecture site (workspace app) |
 
@@ -30,7 +31,7 @@ must not depend on tools, apps, or tests.
 | `packages/manifest` | Artifact/manifest contract shared by compiler and runtime |
 | `packages/template-compiler` | WXML parsing and ProcGen |
 | `packages/stylesheet-compiler` | WXSS, rpx, class/tag scoping |
-| `packages/runtime` | Host runtime, glass-easel adapter, devtool client |
+| `packages/runtime` | Host-independent runtime core |
 | `packages/bridge` | Protocol, transport, batching, diagnostics |
 | `packages/components` | Mini-program built-in components |
 
@@ -48,11 +49,17 @@ must not depend on tools, apps, or tests.
 - `tests/apps/*`: mini-program fixtures used by acceptance (`demo`, `mini`, `todo`,
   `wechat-demo`, `echarts`).
 
+### Hosts
+
+| Path | Scope |
+| --- | --- |
+| `hosts/browser` | `@tiny/host-browser`: iframes, message ports, DOM canvas, devtool overlay |
+
 ## Commands
 
 ```bash
 pnpm install                 # install workspace dependencies
-pnpm build                   # build all 9 workspace packages
+pnpm build                   # build all 10 workspace packages
 pnpm accept:glass-easel      # full gate: build, unit tests, 5 browser stages
 pnpm dev:glass-easel         # compile tests/apps/demo + host on :5173
 pnpm dev:devtool             # debugger on :8080 (watches demo + mini)
@@ -60,6 +67,7 @@ pnpm compile:glass-easel     # compile tests/apps/demo -> tests/host/generated
 pnpm compile:devtool:all     # compile demo + mini for the debugger
 pnpm compile:wechat-demo     # compile the WeChat component/API subset
 pnpm dev:wechat-demo         # WeChat demo host on :5174
+pnpm check:runtime-purity    # assert the core runtime has no host globals
 pnpm lint                    # Biome (bridge only is configured today)
 pnpm site:dev                # preview website on :4173
 pnpm site:check              # build and validate the site output
@@ -84,13 +92,14 @@ Vitest is used by `bridge`, `template-compiler`, `stylesheet-compiler`, `cli`,
 
 The end-to-end gate is `pnpm accept:glass-easel`:
 
-1. build of the 7 compiler/runtime targets in `build:glass-easel`
-2. unit tests for all packages
-3. P0 demo browser flow (`tests/apps/demo`)
-4. `tests/apps/mini` browser flow
-5. Taro 3 (`tests/apps/todo`) browser flow
-6. WeChat demo (`tests/apps/wechat-demo`) browser flow
-7. runtime debugger browser flow
+1. build of the 8 compiler/runtime/host targets in `build:glass-easel`
+2. core runtime purity check
+3. unit tests for all packages
+4. P0 demo browser flow (`tests/apps/demo`)
+5. `tests/apps/mini` browser flow
+6. Taro 3 (`tests/apps/todo`) browser flow
+7. WeChat demo (`tests/apps/wechat-demo`) browser flow
+8. runtime debugger browser flow
 
 `SKIP_BROWSER=1`, `TINY_ACCEPT_PORT`, `TINY_DEVTOOL_PORT`, and `HEADED=1`
 control the gate. It requires a Chromium browser (`playwright-core` with system
@@ -106,10 +115,15 @@ Chrome, or `PLAYWRIGHT_CHROMIUM_PATH`).
   `.github/workflows/pages.yml` deploys it.
 - Do not reintroduce the legacy `packages/base`, `packages/compiler`, or the old
   devtool shell; no JSBridge/`executeJavaScript`-based code.
+- `@tiny/runtime` must stay host-independent. Browser modules live in
+  `@tiny/host-browser`; run `pnpm check:runtime-purity` after touching the core
+  entry.
 - Host facts (menu-button geometry, performance, device capabilities) are supplied
-  by the host through `ServiceThreadOptions.apiExtensions`; do not hardcode them in
-  `packages/runtime`'s service API host.
-- The browser test host and devtool both use `createStandaloneDualThreadHost`;
+  by the host through `ServiceThreadOptions.apiExtensions`; canvas is supplied
+  through `ServiceThreadOptions.canvas` / `RenderThreadOptions.canvas`. Do not
+  hardcode them in `packages/runtime`'s service API host.
+- The browser test host and devtool both use `@tiny/host-browser`’s
+  `createStandaloneDualThreadHost`;
   devtool adds `DevtoolRuntimeClient` for lifecycle control, state projection, and
   element-tree inspection. Do not make the test host depend on the devtool app.
 

@@ -38,6 +38,39 @@ export type SystemInfoSnapshot = {
   SDKVersion?: string
 }
 
+export type CanvasFrame = {
+  canvasId: string
+  dataUrl: string
+  width: number
+  height: number
+}
+
+export type CanvasMeasurement = {
+  width: number
+  height: number
+  canvasId?: string
+}
+
+/** Browser/host canvas hooks injected into the service thread. */
+export type ServiceCanvasAdapter = {
+  createLegacyCanvasContext: (
+    canvasId: string,
+    send: (frame: CanvasFrame) => void,
+  ) => unknown | null
+  createCanvasNode: (
+    width: number,
+    height: number,
+    canvasId: string,
+    send: (frame: CanvasFrame) => void,
+  ) => unknown | null
+}
+
+/** Browser/host canvas hooks injected into the render thread. */
+export type RenderCanvasAdapter = {
+  measure: (selector?: string) => CanvasMeasurement
+  paint: (frame: { canvasId?: string; dataUrl?: string }) => void
+}
+
 export type StorageSnapshot = Record<string, unknown>
 
 export type HostApiParams = Record<string, unknown>
@@ -67,6 +100,8 @@ export type ServiceThreadOptions = {
   loadArtifacts?: () => Promise<unknown>
   /** Host-specific `wx` APIs (device geometry, performance, etc.). */
   apiExtensions?: Record<string, (...args: unknown[]) => unknown>
+  /** Host canvas implementation for legacy canvas APIs/selector nodes. */
+  canvas?: ServiceCanvasAdapter
 }
 
 export type RenderThreadOptions = {
@@ -78,6 +113,8 @@ export type RenderThreadOptions = {
   initialData?: Record<string, unknown>
   loadStyle?: StyleLoader
   capabilities?: Record<string, unknown>
+  /** Host canvas implementation for measuring and painting canvas frames. */
+  canvas?: RenderCanvasAdapter
   onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
   /** Host hook that inserts the root component into the backend tree. */
   mountComponent?: (component: unknown) => void

@@ -1,0 +1,27 @@
+{
+  "name": "@tiny/host-browser",
+  "version": "1.0.0",
+  "description": "Browser host adapters (iframes, message ports, canvas, devtool overlay)",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tiny/bridge": "workspace:*",
+    "@tiny/runtime": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

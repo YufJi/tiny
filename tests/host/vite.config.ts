@@ -7,13 +7,14 @@ export default defineConfig({
   root: __dirname,
   resolve: {
     alias: {
+      '@tiny/host-browser': path.resolve(__dirname, '../../hosts/browser/src/index.ts'),
       '@tiny/runtime': path.resolve(runtimeRoot, 'src/index.ts'),
       'glass-easel': path.resolve(runtimeRoot, 'node_modules/glass-easel/dist/glass_easel.all.es.js'),
     },
   },
   server: {
     fs: {
-      allow: ['.', '../../packages'],
+      allow: ['.', '../../packages', '../../hosts'],
     },
   },
 })
