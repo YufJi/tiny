@@ -19,13 +19,14 @@ export default function Devtool() {
       <PageHero
         eyebrow="Live devtool"
         title={<>不用安装，<br /><span className="gradient">直接在浏览器里拆运行时</span></>}
-        lede="这是 apps/devtool 的生产构建，作为静态产物随站点一起发布。它启动真实的 service / render 双线程、加载真实的编译产物，并开放应用切换、页面导航、生命周期控制、Console 与 Elements 面板。tests/apps 下的全部测试应用都会随包发布。"
-        stats={[['5', 'test apps'], ['2', 'iframe threads'], ['0', 'backend services'], ['100%', 'static assets']]}
-        pills={[['all tests/apps', 'good'], ['relative URLs', 'good'], ['GitHub Pages', 'good']]}
+        lede="这是 apps/devtool 的生产构建，作为静态产物随站点一起发布。它通过 @tiny/host-browser 启动真实的 service / render 双线程，加载真实的编译产物，并开放应用切换、设备框、宿主导航、页面导航、生命周期控制、Console 与 Elements 面板。tests/apps 下的全部测试应用都会随包发布。"
+        stats={[['5', 'test apps'], ['2', 'iframe threads'], ['1', 'host adapter'], ['0', 'backend services']]}
+        pills={[['all tests/apps', 'good'], ['host navigation', 'good'], ['relative URLs', 'good'], ['GitHub Pages', 'good']]}
       />
       <PageNav items={[
         ['live', '在线调试器'],
         ['pipeline', '产物链路'],
+        ['host', '调试器宿主'],
         ['contracts', '路径契约'],
         ['limits', '边界'],
       ]} />
@@ -56,7 +57,7 @@ export default function Devtool() {
         </div>
         <Callout title="这是真实运行时，不是录屏">
           <p>
-            iframe 内的面板通过 <code>DevtoolRuntimeClient</code> 启动两个独立线程，读取
+            iframe 内的面板通过 <code>DevtoolRuntimeClient</code>（来自 <code>@tiny/host-browser</code>）启动两个独立线程，读取
             <code>runtime/apps/&lt;app&gt;/generated</code> 下的 manifest、模板、样式与脚本；
             顶部下拉框可以在 demo、mini、Taro 3、WeChat demo 与 ECharts 之间切换。
             Console 中的诊断、Elements 中的元素树都来自当前这次会话。
@@ -106,6 +107,43 @@ pnpm site:check
 # 只发布部分 fixture（例如本地快速验证）
 TINY_SITE_DEVTOOL_APPS=demo,mini pnpm site:build`}</CodeBlock>
         </div>
+      </Section>
+
+      <Section
+        id="host"
+        kicker="Debugger host"
+        title="面板只是 DevtoolRuntimeClient 的视图"
+        intro="React 不直接发协议消息；它订阅 host-browser 投影出来的状态，再把用户操作变成 client 方法。"
+      >
+        <div className="split">
+          <div className="stack">
+            <Card tag="RuntimePanel" title="控制器">
+              <p>读取 <code>./runtime/apps.json</code>，选择 app 与首屏，fetch manifest，创建 <code>DevtoolRuntimeClient</code>，订阅状态并分发到 Redux。</p>
+              <p>切换应用使用整页重载；启动、Reload、Terminate、前后台、导航都由 client 承担。</p>
+            </Card>
+            <Card tag="PreviewStage" title="设备壳">
+              <p>iPhone X 375×812 设备框、自动缩放、状态栏/导航栏；页面 <code>navigationStyle: custom</code> 时不渲染宿主导航栏。</p>
+            </Card>
+          </div>
+          <div className="stack">
+            <Card tag="DevtoolToolbar" title="控制面">
+              <p>应用选择、manifest/当前页、页面栈、Navigate、Inspect、Reload、Terminate、Foreground/Background、Back。</p>
+            </Card>
+            <Card tag="DebugPanel" title="观察面">
+              <p>Console 显示结构化诊断（最多保留 500 条），Elements 显示 <code>runtime.inspectTree</code> 投影出的元素树。</p>
+            </Card>
+          </div>
+        </div>
+        <Table
+          head={['层', '实现', '职责']}
+          rows={[
+            [<code>DevtoolRuntimeClient</code>, <code>@tiny/host-browser</code>, '创建双 iframe、bootstrap、导航/前后台/Reload/Terminate、inspectTree'],
+            [<code>runtimeService.js</code>, 'service 线程入口', '读取 <code>?app=</code>，加载 generated manifest 与 service.js'],
+            [<code>runtimeRender.js</code>, 'render 线程入口', '加载 templates/styles，注入 backend、canvas、asset resolver、mount 钩子'],
+            [<code>RuntimePanel</code>, 'React/Redux', 'app registry、首屏、状态订阅、面板组合'],
+            [<code>PreviewStage</code>, 'React', '设备框、宿主导航、前后台遮罩、错误/加载态'],
+          ]}
+        />
       </Section>
 
       <Section

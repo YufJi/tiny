@@ -11,12 +11,12 @@ to GitHub Pages.
 | --- | --- | --- |
 | `#/` | `Home` | Engine overview, contracts, host matrix, evidence, quick start |
 | `#/architecture` | `Architecture` | Boundaries, real dependency edges, boot sequence, relay matrix, state ownership |
-| `#/compiler` | `Compiler` | Discovery, WXML → ProcGen, scoped CSS, scripts, manifest, output tree, diagnostics |
-| `#/runtime` | `Runtime` | service thread, setData/event paths, component model, adapter, built-ins, canvas, limits |
+| `#/compiler` | `Compiler` | Discovery, naming config, WXML → ProcGen, scoped CSS, scripts, manifest, output tree, diagnostics |
+| `#/runtime` | `Runtime` | Host-independent service thread, naming, setData/observers, events, component semantics, adapter, built-ins, isolation, canvas |
 | `#/protocol` | `Protocol` | Envelope, handshake, transport, batching, errors, JSON-safe rules, message catalog |
-| `#/hosts` | `Hosts` | Host seam, startup handshake, thread contract, API extensions, devtool/test hosts, checklist |
-| `#/devtool` | `Devtool` | Embedded live debugger, build pipeline, relative-path contract, limits |
-| `#/testing` | `Testing` | Gate, 40 browser steps, 92 unit tests, fixtures, Taro compatibility, uncovered areas |
+| `#/hosts` | `Hosts` | Runtime purity, host-browser, startup handshake, thread contract, canvas/asset/API injections, devtool/test hosts, checklist |
+| `#/devtool` | `Devtool` | Embedded live debugger, panel/host architecture, build pipeline, relative-path contract, limits |
+| `#/testing` | `Testing` | Gate, 46 browser steps, 148 unit tests, fixtures, Taro compatibility, uncovered areas |
 | `#/status` | `Status` | Maturity, known gaps, host gaps, roadmap, invariants |
 
 `#/internals` is kept as an alias for `#/architecture`.
@@ -47,9 +47,9 @@ Navigation uses hash routes (`#/runtime`) so the static build works on a
 GitHub Pages project subpath without a 404 fallback. Assets are emitted with a
 relative base (`vite.config.js`).
 
-Content is hand-written from the source of truth in `packages/*`, `tools/cli`,
-`tests/host`, and `apps/devtool`. When behavior changes, update the relevant
-page rather than adding a generic marketing section.
+Content is hand-written from the source of truth in `packages/*`, `hosts/browser`,
+`tools/cli`, `tests/host`, and `apps/devtool`. When behavior changes, update the
+relevant page rather than adding a generic marketing section.
 
 ## Development
 

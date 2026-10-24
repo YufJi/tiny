@@ -243,6 +243,8 @@ main { padding-bottom: 80px; }
 .cards.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .cards.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .card {
+  min-width: 0;
+  overflow: hidden;
   padding: 22px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -343,7 +345,7 @@ pre .accent { color: var(--accent); }
 .sequence-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
 .sequence-head strong { font-size: 15px; }
 .sequence-actor { color: var(--violet); font: 600 10px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 7px; border: 1px solid rgba(180, 187, 212, 0.26); border-radius: 999px; background: var(--violet-soft); }
-.sequence-body p { margin: 5px 0 0; color: var(--muted); font-size: 14px; }
+.sequence-body p { margin: 5px 0 0; color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
 .sequence-code { display: inline-block; max-width: 100%; overflow-wrap: anywhere; white-space: normal; margin-top: 8px; color: #c4cede; font: 12px var(--mono); background: rgba(154, 167, 186, 0.12); padding: 3px 7px; border-radius: 6px; }
 
 .callout.warn { border-color: rgba(213, 187, 135, 0.28); border-left-color: var(--amber); background: linear-gradient(90deg, rgba(213, 187, 135, 0.08), transparent 70%); }

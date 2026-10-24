@@ -283,32 +283,34 @@ reply(request, { ok: false, error: { code, message, details } })`}</CodeBlock>
         id="catalog"
         kicker="Message catalog"
         title="v1 的全部消息"
-        intro="domain + method 是字符串，没有集中式 schema 注册表；下方是当前代码实际注册与发送的集合。"
+        intro="domain + method 是字符串，没有集中式 schema 注册表；下方是当前代码实际注册与发送的集合。组件语义扩展通过新增 method 完成，协议版本仍为 1。"
       >
         <Table
           head={['Domain', 'Method', 'Kind', '方向', '语义']}
           rows={[
             ['runtime', <code>hello</code>, 'call', 'host → service/render', '握手；返回 protocolVersion、role、capabilities'],
             ['runtime', <code>ready</code>, 'control', 'service/render → host', '线程装配完成，host 解除握手等待'],
-            ['runtime', <code>bootstrap</code>, 'control', 'host → service', '创建首屏并返回 pageId/initialData/componentSchemas'],
-            ['runtime', <code>bootstrap</code>, 'control', 'host → render', '注册样式与 schema，挂载首屏'],
+            ['runtime', <code>bootstrap</code>, 'control', 'host → service', '创建首屏并返回 pageId/initialData/componentSchemas/pageComponents'],
+            ['runtime', <code>bootstrap</code>, 'control', 'host → render', '注册样式、schema、页面选项，挂载首屏并返回 component snapshots'],
             ['runtime', <code>inspectTree</code>, 'control', 'host/devtool → render', '按 pageId 返回 InspectNode 树'],
-            ['runtime', <code>componentLifecycle</code>, 'event', 'render → service', 'created/attached/ready/moved/detached + data'],
-            ['runtime', <code>componentPageLifetime</code>, 'event', 'render → service', 'show/hide；service 当前忽略'],
-            ['page', <code>ready</code>, 'control', 'host → service', '触发当前页 onReady'],
+            ['runtime', <code>componentLifecycle</code>, 'event', 'render → service', 'created/attached/ready/moved/detached + data + pageId/parent/tag/id/class'],
+            ['runtime', <code>componentData</code>, 'event', 'render → service', 'render 侧组件 data 变化；service 同步逻辑实例'],
+            ['runtime', <code>componentObserved</code>, 'event', 'render → service', 'render 侧 observer 变化；service 用旧值执行 observer'],
+            ['runtime', <code>componentPageLifetime</code>, 'event', 'render → service', 'show/hide；service 当前忽略，由 page.show/hide 统一分发'],
+            ['page', <code>ready</code>, 'control', 'host → service', '携带 render component snapshots，先建逻辑树再触发 onReady'],
             ['page', <code>navigateTo</code>, 'control', 'host → service', '当前页 onHide、创建新页、返回 path/pageId/query/initialData'],
-            ['page', <code>navigateTo</code>, 'control', 'host → render', '卸载 previousPageId、挂载新页'],
+            ['page', <code>navigateTo</code>, 'control', 'host → render', '卸载 previousPageId、挂载新页并返回 components'],
             ['page', <code>navigateBack</code>, 'control', 'host → service', '卸载 delta 个页面、恢复栈顶、返回 unloadedPageIds'],
-            ['page', <code>navigateBack</code>, 'control', 'host → render', '卸载 unloadedPageIds、重新挂载恢复页'],
-            ['page', <code>hide</code>, 'control', 'host → service', 'App.onHide、页面 onHide、pageLifetimes hide'],
-            ['page', <code>show</code>, 'control', 'host → service', 'App.onShow、页面 onShow、pageLifetimes show'],
+            ['page', <code>navigateBack</code>, 'control', 'host → render', '卸载 unloadedPageIds、重新挂载恢复页并返回 components'],
+            ['page', <code>hide</code>, 'control', 'host → service', 'App.onHide、页面 onHide、全部组件 pageLifetimes hide'],
+            ['page', <code>show</code>, 'control', 'host → service', 'App.onShow、页面 onShow、全部组件 pageLifetimes show'],
             ['page', <code>unload</code>, 'control', 'host → service', 'onUnload 并移除页面实例（内置宿主未调用）'],
             ['page', <code>getInitialData</code>, 'call', 'host → service', '返回页面定义 data（已注册但当前宿主未使用）'],
             ['data', <code>setData</code>, 'event', 'service → render', '页面或组件的路径补丁'],
             ['event', <code>dispatch</code>, 'event', 'render → service', '序列化后的小程序事件，调用页面/组件方法'],
             ['event', <code>trigger</code>, 'event', 'service → render', 'service 侧组件实例触发 glass-easel 事件'],
-            ['canvas', <code>measure</code>, 'call/control', 'service → host → render', '按 selector 测量；返回 width/height/canvasId'],
-            ['canvas', <code>frame</code>, 'event', 'service → render', 'PNG 帧，render 侧 drawImage'],
+            ['canvas', <code>measure</code>, 'call/control', 'service → host → render', '按 selector 测量；宿主 canvas.measure 返回 width/height/canvasId'],
+            ['canvas', <code>frame</code>, 'event', 'service → render', '宿主 canvas 适配器产生的 PNG 帧，render 侧 paint'],
             ['diagnostic', <code>diagnostic.log/warn/error/state</code>, 'event', 'service/render → host', '归一化为 RuntimeDiagnostic'],
             ['api', <code>system.info</code>, 'call', 'service → host', '宿主系统信息快照'],
             ['api', <code>storage.get</code>, 'call', 'service → host', '读取宿主 storage'],
@@ -331,19 +333,22 @@ reply(request, { ok: false, error: { code, message, details } })`}</CodeBlock>
           head={['来源', '入站', 'host 动作', '出站']}
           rows={[
             ['render', <code>event.dispatch</code>, '取 payload 与 pageId，新建 event', 'service event.dispatch'],
-            ['render', <code>runtime.componentLifecycle</code>, '取 payload', 'service runtime.componentLifecycle'],
+            ['render', <code>runtime.componentLifecycle</code>, '取 payload（含 parent/tag/id/class）', 'service runtime.componentLifecycle'],
+            ['render', <code>runtime.componentData</code>, '转发 payload（pageId 在 payload 中）', 'service runtime.componentData'],
+            ['render', <code>runtime.componentObserved</code>, '转发 payload（pageId 在 payload 中）', 'service runtime.componentObserved'],
             ['service', <code>event.trigger</code>, '取 payload', 'render event.trigger'],
             ['service', <code>data.setData</code>, '取 payload 与 pageId', 'render data.setData'],
             ['service', <code>canvas.frame</code>, '取 payload 与 pageId', 'render canvas.frame'],
             ['service', <code>canvas.measure</code>, '把 call 的 Promise 直接返回', 'render canvas.measure（control）'],
+            ['host', <code>page.navigateTo / bootstrap</code>, '等待 render 返回 components', 'service page.ready({ components })'],
             ['service/render', <code>diagnostic.*</code>, 'normalize 后写入 HostDiagnosticStore', '不转发；供 devtool / 宿主回调'],
             ['service', <code>api.*</code>, 'HostApiRegistry 查找 handler', '本地执行；navigate 类再调用两侧 control'],
           ]}
         />
         <Callout title="中继不保留 replyTo" >
           <p>
-            事件没有 reply，host 创建新消息即可；唯一保留请求语义的是 <code>canvas.measure</code>：host 的 onCall 返回 render control 的 Promise，
-            由 bridge 用新的 messageId/replyTo 完成关联。
+            事件没有 reply，host 创建新消息即可；中继里唯一保留请求语义的是 <code>canvas.measure</code>：host 的 onCall 返回 render control 的 Promise，
+            由 bridge 用新的 messageId/replyTo 完成关联。导航 handler 还会在 render 返回 components 后补发 <code>page.ready</code>。
           </p>
         </Callout>
       </Section>

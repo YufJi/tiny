@@ -17,11 +17,12 @@ export default function Architecture() {
       <PageHero
         eyebrow="Architecture"
         title={<>五个边界，<br /><span className="gradient">两条线程，一份契约</span></>}
-        lede="Tiny 的架构不是按目录切的，而是按谁能拥有状态、谁只能转发消息切的。编译器生产 manifest；runtime 消费 manifest 并拥有应用语义；bridge 只做传输；host 拥有环境；devtool 只观察和控制。"
-        stats={[['2', 'runtime threads'], ['1', 'manifest contract'], ['7', 'bridge domains'], ['0', 'direct service ↔ render channels']]}
+        lede="Tiny 的架构不是按目录切的，而是按谁能拥有状态、谁只能转发消息、谁拥有环境切的。编译器生产 manifest；host-independent 的 runtime 消费 manifest 并拥有应用语义；bridge 只做传输；@tiny/host-browser 拥有浏览器环境；devtool 只观察和控制。"
+        stats={[['2', 'runtime threads'], ['1', 'manifest contract'], ['7', 'bridge domains'], ['0', 'browser globals in runtime']]}
       />
       <PageNav items={[
         ['boundaries', '五个边界'],
+        ['purity', 'runtime 纯度'],
         ['glass-easel', 'glass-easel 边界'],
         ['dependencies', '真实依赖'],
         ['boot', '启动时序'],
@@ -40,16 +41,54 @@ export default function Architecture() {
           head={['角色', '拥有', '不拥有', '落点']}
           rows={[
             ['compiler', '源码扫描、模板 ProcGen、CSS 作用域、TS 转译、service bundle、manifest 与诊断', '页面生命周期、路由、wx API、DOM', <code>tools/cli</code>],
-            ['manifest', '产物类型与 schemaVersion，不包含编译器或运行时逻辑', '任何实现', <code>packages/manifest</code>],
-            ['runtime', 'App/Page/Component 语义、页面栈、setData、事件分发、组件实例、canvas 帧协议', '传输实现、宿主 API 实现、DOM、UI', <code>packages/runtime</code>],
+            ['manifest', '产物类型、schemaVersion 与解析后的 naming 配置，不包含编译器或运行时逻辑', '任何实现', <code>packages/manifest</code>],
+            ['runtime', 'App/Page/Component 语义、页面栈、setData、事件分发、behaviors/observers/relations、组件树、命名与 canvas 帧协议', '传输实现、宿主 API 实现、DOM、canvas 实现、UI', <code>packages/runtime</code>],
             ['bridge', 'envelope、帧、transport、call/reply、批处理、超时、JSON-safe 校验', 'wx API 语义、渲染命令、页面状态', <code>packages/bridge</code>],
-            ['host', '线程创建、transport、bootstrap 调用、宿主 API、后端与挂载点、诊断收集', '应用业务状态、glass-easel 组件定义', <><code>apps/devtool</code> · <code>tests/host</code> · 未来原生宿主</>],
+            ['host', '线程与 transport、bootstrap、宿主 API、backend/挂载点、canvas 适配、资源 URL、诊断收集', '应用业务状态、glass-easel 组件定义', <><code>hosts/browser</code> · <code>apps/devtool</code> · <code>tests/host</code> · 未来原生宿主</>],
           ]}
         />
         <Callout title="关键结论">
           <p>
             应用语义中的页面栈、页面 data 和组件逻辑实例只存在于 service 线程；render 线程拥有 glass-easel 组件树、DOM 与 adapter 维护的组件 ID 映射。
             两个线程之间没有直接通道，所有跨线程状态都必须经过 host 中继并受 bridge 校验。
+          </p>
+        </Callout>
+      </Section>
+
+      <Section
+        id="purity"
+        kicker="Runtime purity"
+        title="核心 runtime 不拥有浏览器"
+        intro="这是本次架构最重要的变化：浏览器能力从 packages/runtime 抽离到 hosts/browser，并用脚本守住边界。"
+      >
+        <div className="split">
+          <Card tag="packages/runtime" title="宿主无关内核">
+            <p>只依赖 manifest、bridge、components、glass-easel 和通用工具；入口不导出 standalone host、runtime port、canvas bridge 或 devtool client。</p>
+            <p>service / render 需要 DOM 能力时，通过 <code>canvas</code>、<code>resolveAssetUrl</code>、<code>backend</code>、<code>mountComponent</code> 等选项注入。</p>
+          </Card>
+          <Card tag="hosts/browser" tone="violet" title="浏览器适配包">
+            <p><code>@tiny/host-browser</code> 拥有 iframe、MessageChannel、DOM canvas、资源 URL 与 <code>DevtoolRuntimeClient</code>。</p>
+            <p>它依赖 runtime 与 bridge，但 runtime 永远不反向依赖它；<code>tests/host</code> 与 devtool 都从这里取浏览器能力。</p>
+          </Card>
+        </div>
+        <CodeBlock>{`# pnpm check:runtime-purity
+packages/runtime/src/index.ts
+  -> types / diagnostics / glass-easel-adapter / service / render / host
+
+forbidden in the graph:
+  window · document · navigator · localStorage · MessageChannel
+  HTMLCanvasElement · Image · requestAnimationFrame · fetch · performance
+  imports containing "browser"
+
+# hosts/browser
+  canvas-bridge.ts       service capture + render paint/measure
+  runtime-port.ts        iframe port handshake
+  standalone-host.ts     two iframes + MessageChannel
+  devtool-client.ts      debugger control surface`}</CodeBlock>
+        <Callout title="为什么这条边界值钱">
+          <p>
+            原生宿主不需要模拟浏览器，只需要提供 <code>Transport</code>、glass-easel backend、canvas 适配器和资源解析。
+            纯度检查把“runtime 里悄悄用了 document”从代码评审问题变成 CI 失败。
           </p>
         </Callout>
       </Section>
@@ -63,13 +102,16 @@ export default function Architecture() {
         <Table
           head={['能力', '由谁提供', '在 Tiny 中的表现']}
           rows={[
-            ['组件定义、properties、data、observers、methods', 'glass-easel', <><code>defineWithMethodCaller</code> / <code>defineComponent</code></>],
+            ['组件定义、properties、data、methods、模板', 'glass-easel', <><code>defineWithMethodCaller</code> / <code>defineComponent</code></>],
             ['WXML 运行时数据绑定与更新', 'glass-easel', '编译器把 WXML 编成 ProcGen，运行时只传 groupList/content'],
             ['事件捕获/冒泡、slot、shadow 边界', 'glass-easel', 'adapter 把事件序列化后送到 service'],
             ['生命周期 created/attached/ready/moved/detached', 'glass-easel', 'adapter 转发为 componentLifecycle 消息'],
-            ['样式作用域、backend 协议', 'glass-easel', 'StyleScopeManager + CurrentWindowBackendContext'],
+            ['样式作用域、backend 协议', 'glass-easel', 'StyleScopeManager + backend；styleIsolation 由 Tiny 组装'],
+            ['Behaviors / observers / relations / selectComponent', 'Tiny runtime', 'component-definition 归一化 + ComponentTree + RelationManager'],
             ['App 生命周期、页面栈、路由、onLoad/onShow/onReady', 'Tiny runtime', <code>packages/runtime/src/service.ts</code>],
-            ['wx API、storage、system info、animation、canvas', 'Tiny runtime + host', 'service 侧 API host；宿主事实由 extensions 注入'],
+            ['命名空间、manifest naming、API aliases', 'Tiny manifest + runtime', 'tiny.config.json → manifest.naming → 全局 API / marker / host attr'],
+            ['wx API、storage、system info、animation', 'Tiny runtime + host', 'service 侧 API host；宿主事实由 extensions 注入'],
+            ['canvas、资源 URL、DOM 节点', '宿主适配器', 'canvas 适配器 / resolveAssetUrl / backend / mountComponent'],
             ['跨线程 setData、事件分发、页面切换', 'Tiny runtime + bridge + host', 'data.setData / event.dispatch / page.navigateTo'],
             ['元素树检查、生命周期控制、诊断投影', 'Tiny runtime + devtool', <><code>DevtoolRuntimeClient</code> + <code>runtime.inspectTree</code></>],
           ]}
@@ -86,7 +128,7 @@ export default function Architecture() {
         id="dependencies"
         kicker="Dependency edges"
         title="依赖只向内，契约在中心"
-        intro="这是 workspace 的真实依赖，不是理想图。核心包不依赖 tools、apps 或 tests。"
+        intro="这是 workspace 的真实依赖，不是理想图。核心包不依赖 tools、apps、hosts 或 tests；宿主适配器反过来依赖内核。"
       >
         <Table
           head={['包 / 应用', '依赖', '职责']}
@@ -170,20 +212,20 @@ rule: packages/* never import tools/*, apps/*, hosts/*, tests/*`}</CodeBlock>
           {
             title: 'service bootstrap',
             actor: 'host → service',
-            detail: '导入 service.js（App/Page/Component 在这里注册，App.onLaunch/onShow 立即执行），构建组件 schema，创建首个页面，触发 onLoad/onShow，返回 pageId、initialData 与 componentSchemas。',
+            detail: '导入 service.js（App/Page/Component 在这里注册，App.onLaunch/onShow 立即执行），按 manifest.naming 安装 API 全局，构建组件 schema，创建首个页面，触发 onLoad/onShow，返回 pageId、initialData、componentSchemas 与 pageComponents。',
             code: "service.control('runtime', 'bootstrap')",
           },
           {
             title: 'render bootstrap',
             actor: 'host → render',
-            detail: '先注册基础样式与 manifest 样式，再注册组件 schema，按 path 找到页面并挂载。顺序不能反，否则组件定义拿不到 style scope。',
+            detail: '先注册基础样式与 manifest 样式，再注册组件 schema 与组件型页面选项，挂载页面并 settle 组件树，返回 component snapshots。顺序不能反，否则组件定义拿不到 style scope。',
             code: "render.control('runtime', 'bootstrap')",
           },
           {
             title: 'page.ready',
             actor: 'host → service',
-            detail: '页面已经挂到 DOM 后，service 才触发 onReady。这保证 onReady 里读取布局/查询节点时 render 已存在。',
-            code: "service.control('page', 'ready')",
+            detail: '宿主把 render 返回的 component snapshots 一起发给 service；service 先把实例与逻辑组件树补齐，再触发 onReady。这保证 onReady 里的 selectComponent / relations 已经可用。',
+            code: "service.control('page', 'ready', { pageId, components })",
           },
           {
             title: '状态诊断与可交互',
@@ -231,10 +273,12 @@ rule: packages/* never import tools/*, apps/*, hosts/*, tests/*`}</CodeBlock>
             [<code>event.dispatch</code>, 'render → service', '转发到 service 连接', '原生/组件事件交给页面或组件处理函数'],
             [<code>event.trigger</code>, 'service → render', '转发到 render 连接', 'service 侧组件实例 triggerEvent'],
             [<code>data.setData</code>, 'service → render', '带 pageId 转发', '页面或组件的路径补丁'],
-            [<code>runtime.componentLifecycle</code>, 'render → service', '转发', 'created/attached/ready/moved/detached'],
-            [<code>runtime.componentPageLifetime</code>, 'render → service', '转发', 'show/hide；当前 service 侧为空处理，由 page.show/hide 统一分发'],
-            [<code>canvas.frame</code>, 'service → render', '转发', '离屏 canvas 的 PNG 帧'],
-            [<code>canvas.measure</code>, 'service → render', 'call 转 control', 'SelectorQuery 测量'],
+            [<code>runtime.componentLifecycle</code>, 'render → service', '转发', 'created/attached/ready/moved/detached + page/tag/parent 元数据'],
+            [<code>runtime.componentData</code>, 'render → service', '转发 payload（含 pageId）', 'render 侧组件 data 变化，同步 service 实例'],
+            [<code>runtime.componentObserved</code>, 'render → service', '转发 payload（含 pageId）', 'render 侧 observer 触发，service 用旧值执行 observer'],
+            [<code>runtime.componentPageLifetime</code>, 'render → service', '转发', 'show/hide；service 侧由 page.show/hide 统一分发'],
+            [<code>canvas.frame</code>, 'service → render', '转发', '宿主 canvas 适配器产生 PNG 帧'],
+            [<code>canvas.measure</code>, 'service → render', 'call 转 control', 'SelectorQuery 测量，交给宿主 canvas.measure'],
             [<code>api.*</code>, 'service → host', 'HostApiRegistry', '导航、toast、storage 等宿主持有语义'],
             [<code>diagnostic.*</code>, 'service/render → host', '写入诊断仓库', '不跨线程回传，devtool 从 host 读取'],
           ]}
@@ -259,10 +303,13 @@ rule: packages/* never import tools/*, apps/*, hosts/*, tests/*`}</CodeBlock>
             ['manifests / artifacts', 'compiler 产出，运行时只读', '各线程内存中的 manifest', '启动时加载，不热更新'],
             ['App / Page / Component 定义', 'service registry', 'render 的组件 schema', 'bootstrap 时下发 componentSchemas'],
             ['页面栈、当前页、页面 data', 'service', 'devtool 的 pageStack 投影', 'RUNTIME_STATE 诊断'],
-            ['组件实例 data / methods', 'service（自定义组件）', 'render glass-easel 组件 data', '生命周期与事件消息中携带 data'],
+            ['组件实例 data / methods', 'service（逻辑实例）', 'render glass-easel 组件 data', 'componentLifecycle / componentData / componentObserved'],
+            ['逻辑组件树与 relations', 'service ComponentTree / RelationManager', 'render 真实组件树', 'lifecycle attached/moved/detached + page.ready snapshots'],
             ['glass-easel 节点树 / DOM', 'render', 'devtool 的 InspectNode', 'runtime.inspectTree 按需拉取'],
-            ['样式与 scope id', 'render StyleScopeManager', '—', 'registerStyles 时注册'],
-            ['宿主 transport / API 语义', 'host', 'service 侧 API 快照', 'api.* call / systemInfo / storage'],
+            ['样式与 scope id', 'render StyleScopeManager', '—', 'registerStyles 时注册；styleIsolation 按 page scope 组装'],
+            ['canvas 实现', '宿主 canvas 适配器', 'service 绘制上下文 / render 可见 canvas', 'ServiceCanvasAdapter · RenderCanvasAdapter'],
+            ['资源 URL', '宿主 resolveAssetUrl', 'render 重写后的 img/src 与 CSS url()', 'adapter 在模板/样式注册时解析'],
+            ['宿主 transport / API 语义', 'host', 'service 侧 API 快照', 'api.* call / systemInfo / storage / apiExtensions'],
             ['诊断', 'host 诊断仓库', 'devtool diagnostics', 'diagnostic.* event'],
           ]}
         />
@@ -277,7 +324,7 @@ rule: packages/* never import tools/*, apps/*, hosts/*, tests/*`}</CodeBlock>
       <Section
         id="invariants"
         kicker="Invariants"
-        title="六条不能破的约束"
+        title="七条不能破的约束"
         intro="它们不是风格偏好，而是这套架构能跨宿主、可测试、可诊断的原因。"
       >
         <Cards>
@@ -288,13 +335,16 @@ rule: packages/* never import tools/*, apps/*, hosts/*, tests/*`}</CodeBlock>
             <p>Date、Map、Set、函数、undefined、循环引用都会被 bridge 拒绝。需要传递就显式转成字符串或普通对象。</p>
           </Card>
           <Card title="依赖只向内">
-            <p>核心包不能依赖 tools/apps/tests；共享类型放 manifest，而不是从 CLI 反向 import。</p>
+            <p>核心包不能依赖 tools/apps/hosts/tests；共享类型放 manifest，而不是从 CLI 反向 import。浏览器能力只能从 <code>hosts/browser</code> 进入宿主。</p>
           </Card>
-          <Card title="宿主事实不写死在 runtime">
-            <p>菜单按钮、性能、设备能力应通过 <code>apiExtensions</code> 注入；runtime 只定义通用 <code>wx</code> 语义。</p>
+          <Card title="runtime 不碰浏览器">
+            <p><code>pnpm check:runtime-purity</code> 会从 runtime 入口遍历依赖，禁止 window/document/iframe/MessageChannel/fetch 等宿主全局。</p>
           </Card>
-          <Card title="不碰 iframe 全局">
-            <p>没有 <code>executeJavaScript</code>、没有直接读子帧变量。所有控制走 bridge 消息，才能被测试与替换传输。</p>
+          <Card title="宿主能力靠注入">
+            <p>设备事实走 <code>apiExtensions</code>，canvas 走 <code>ServiceCanvasAdapter</code> / <code>RenderCanvasAdapter</code>，资源走 <code>resolveAssetUrl</code>，backend 与挂载点也由宿主提供。</p>
+          </Card>
+          <Card title="命名只有一个来源">
+            <p>指令、API 全局、别名、behavior scheme、host attribute、tag marker 全部从 <code>manifest.naming</code> 派生；不要在 runtime 里散落 <code>wx</code> 字符串。</p>
           </Card>
           <Card title="生成物不入库">
             <p>宿主产物、内置组件 ProcGen、devtool static 都由构建生成；仓库只保留源码、契约和 fixture。</p>

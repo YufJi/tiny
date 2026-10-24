@@ -17,8 +17,8 @@ export default function Testing() {
       <PageHero
         eyebrow="Testing & compatibility"
         title={<>用真实小程序验收，<br /><span className="gradient">而不是用快照自证</span></>}
-        lede="Tiny 的验收会编译真实 WXML/WXSS/JS，启动两个 iframe，在 Chromium 里点击、输入、导航，并在失败时保存截图。125 个单测管住协议与算法，46 个浏览器步骤管住端到端行为。"
-        stats={[['125', 'unit tests'], ['46', 'browser steps'], ['5', 'browser flows'], ['5', 'test fixtures']]}
+        lede="Tiny 的验收会编译真实 WXML/WXSS/JS，启动两个 iframe，在 Chromium 里点击、输入、导航，并在失败时保存截图。148 个单测管住协议、组件语义与算法，46 个浏览器步骤管住端到端行为。"
+        stats={[['148', 'unit tests'], ['46', 'browser steps'], ['5', 'browser flows'], ['5', 'test fixtures']]}
       />
       <PageNav items={[
         ['gate', '验收闸门'],
@@ -39,9 +39,14 @@ export default function Testing() {
       >
         <Sequence steps={[
           {
-            title: '构建 7 个目标',
-            detail: 'manifest、stylesheet-compiler、template-compiler、bridge、components、cli、runtime 依次构建，确保后续测试消费的是最新 dist。',
+            title: '构建 8 个目标',
+            detail: 'manifest、stylesheet-compiler、template-compiler、bridge、components、cli、runtime、host-browser 依次构建，确保后续测试消费的是最新 dist。',
             code: 'pnpm build:glass-easel',
+          },
+          {
+            title: '检查 runtime 纯度',
+            detail: '从 packages/runtime/src/index.ts 遍历依赖图，禁止浏览器全局与 hosts/browser 反向依赖。',
+            code: 'pnpm check:runtime-purity',
           },
           {
             title: '跑 6 个包的单测',
@@ -81,8 +86,8 @@ export default function Testing() {
         ]} />
         <Callout title="阶段之间会覆盖 generated" >
           <p>
-            五段流程共用 <code>tests/host/generated</code>。每次编译前都会 clean，因此不能并行跑两段浏览器验收；
-            最后会重新编译 P0 demo，保证 <code>pnpm dev:glass-easel</code> 的默认产物正确。
+            前四段流程共用 <code>tests/host/generated</code>；调试器阶段则写入 <code>apps/devtool/static</code>。每次编译前都会 clean，
+            因此不能并行跑两段浏览器验收；最后会重新编译 P0 demo，保证 <code>pnpm dev:glass-easel</code> 的默认产物正确。
           </p>
         </Callout>
       </Section>
@@ -123,18 +128,18 @@ export default function Testing() {
       <Section
         id="units"
         kicker="Unit tests"
-        title="125 个测试，按包隔离"
+        title="148 个测试，按包隔离"
         intro="没有全局 test runner；每个包独立执行，避免隐式耦合，也让失败定位到包。"
       >
         <Table
           head={['Package', '数量', '重点']}
           rows={[
             [<code>@tiny/bridge</code>, '10', 'envelope 校验、版本/路由/payload 错误、handshake、call 关联、超时、关闭、批处理 FIFO、诊断插队、MessagePort'],
-            [<code>@tiny/template-compiler</code>, '28', '脚本依赖、WXS、import/include、模板别名、ProcGen 签名、绑定表复用、事件简写、data-* 绑定、stringify 往返'],
-            [<code>@tiny/stylesheet-compiler</code>, '24', 'class/tag 前缀、rpx/calc、@import 编码与包装、@layer、:host 低优先级、keyframes、page 根节点'],
-            [<code>@tiny/cli</code>, '10', 'manifest 全 artifact、WXS 双注册、配置合并、service/render 入口、TS + source map、样式作用域、tag marker、可执行模板 group'],
-            [<code>@tiny/components</code>, '15', '18 个 tag 模板、共享 wx-base/wx-hover/wx-label-target、button 对齐、label 基础、input 归一化、checkbox/slider/switch、progress/swiper/icon'],
-            [<code>@tiny/runtime</code>, '38', '全局安装、双线程 bootstrap、组件 schema、behaviors/observers/relations/externalClasses/styleIsolation/selectComponent、导航、API host、诊断'],
+            [<code>@tiny/template-compiler</code>, '30', '脚本依赖、WXS、import/include、模板别名、ProcGen 签名、绑定表复用、事件简写、data-* 绑定、stringify 往返'],
+            [<code>@tiny/stylesheet-compiler</code>, '25', 'class/tag 前缀、rpx/calc、@import 编码与包装、@layer、:host 低优先级、hostAttribute、keyframes、page 根节点'],
+            [<code>@tiny/cli</code>, '11', 'manifest 全 artifact、naming 配置、WXS 双注册、配置合并、service/render 入口、TS + source map、样式作用域、tag marker'],
+            [<code>@tiny/components</code>, '16', '18 个 tag 模板、共享 behaviors、button 对齐、label 基础、input 归一化、checkbox/slider/switch、progress/swiper/icon'],
+            [<code>@tiny/runtime</code>, '56', '全局安装与 naming、双线程 bootstrap、component schema、behaviors/observers/relations/externalClasses/styleIsolation/selectComponent、component-as-page、assets、导航、API host、诊断'],
           ]}
         />
         <Callout title="单测也验证协议契约" >
@@ -149,7 +154,7 @@ export default function Testing() {
         id="hosts"
         kicker="Two hosts"
         title="测试宿主与调试器，不是同一个东西"
-        intro="两者都基于 createStandaloneDualThreadHost，但一个服务自动化，一个服务人。"
+        intro="两者都通过 @tiny/host-browser 的 createStandaloneDualThreadHost 启动双 iframe，但一个服务自动化，一个服务人。"
       >
         <div className="split">
           <Card tag="tests/host" title="无 UI 单应用宿主">
@@ -190,11 +195,11 @@ export default function Testing() {
         <Table
           head={['Fixture', '形态', '覆盖点', '是否进闸门']}
           rows={[
-            [<code>demo</code>, '2 页 + 1 组件', 'P0 内置组件、作用域样式、导航、storage、canvas 占位诊断', '是'],
-            [<code>mini</code>, '4 页 + 2 组件 + 分包', '真实 todos、import/include/template、animation、ECharts 离屏 canvas、资源内联', '是'],
-            [<code>todo</code>, 'Taro 3 预构建产物', 'webpackJsonp、外部 WXS、递归模板、循环 usingComponents、Enter 提交', '是'],
-            [<code>wechat-demo</code>, '官方示例子集', '基础组件索引、button 示例、storage API 示例', '是'],
-            [<code>echarts</code>, '历史示例', '早期 ECharts 集成参考资料', '否'],
+            [<code>demo</code>, '3 页 + 8 组件', 'P0 内置组件、作用域样式、导航、storage、canvas 诊断、button 矩阵、Behavior/observers/relations、styleIsolation、externalClasses', '是'],
+            [<code>mini</code>, '4 页 + 2 组件 + 1 分包', '真实 todos、import/include/template、animation、ECharts 离屏 canvas、资源内联', '是'],
+            [<code>todo</code>, '1 页 Taro 3 预构建产物', 'webpackJsonp、外部 WXS、递归模板、循环 usingComponents、Enter 提交', '是'],
+            [<code>wechat-demo</code>, '117 页 + 2 分包（示例子集）', '基础组件索引、button 示例、storage API 示例', '是'],
+            [<code>echarts</code>, '22 页历史示例', '早期 ECharts 集成参考资料', '否'],
           ]}
         />
       </Section>
@@ -221,8 +226,8 @@ export default function Testing() {
         </Cards>
         <Callout title="兼容不等于完整" tone="warn">
           <p>
-            这些是“Taro 3 React 产物能跑”的最小集合。Behavior mixin、relations、generics、tabBar 等仍未实现；
-            其他社区框架没有纳入验收。
+            这些是“Taro 3 React 产物能跑”的最小集合。Behavior、observers、relations 已经实现，
+            但 generics、placeholder、definitionFilter、tabBar 等仍未完成；其他社区框架没有纳入验收。
           </p>
         </Callout>
       </Section>
@@ -244,11 +249,15 @@ SKIP_BROWSER=1 pnpm accept:glass-easel
 pnpm --filter @tiny/runtime test
 pnpm --filter @tiny/cli test
 
+# 核心 runtime 纯度
+pnpm check:runtime-purity
+
 # 本地宿主 / 调试器
 pnpm dev:glass-easel      # :5173
-pnpm dev:devtool          # :8080
+pnpm dev:devtool          # :8080，预览全部 tests/apps
 
-# 网站与产物检查
+# 网站（含内嵌 devtool）与产物检查
+pnpm site:build
 pnpm site:check`}</CodeBlock>
           <div className="stack">
             <Card title="环境变量">
@@ -276,9 +285,11 @@ pnpm site:check`}</CodeBlock>
         <Cards className="three">
           <Card tag="perf" tone="warn" title="没有性能基线"><p>启动、首屏、setData、导航、内存、长时运行都没有量化门槛。</p></Card>
           <Card tag="visual" tone="warn" title="没有视觉回归"><p>样式断言是计算值/像素抽样，不是截图 diff；组件外观变化不会被稳定捕获。</p></Card>
-          <Card tag="native" tone="warn" title="没有原生宿主"><p>浏览器之外的 transport、backend、service 运行时都不存在。</p></Card>
-          <Card tag="pages" tone="warn" title="没有页面高级能力"><p>tabBar、下拉刷新、触底、分享、页面滚动、页面栈恢复均未验收。</p></Card>
-          <Card tag="api" tone="warn" title="API 面很窄"><p>网络、媒体、文件、位置、账号、WebSocket、IntersectionObserver 都没有。</p></Card>
+          <Card tag="native" tone="warn" title="没有原生宿主"><p>浏览器之外的 transport、backend、service 运行时都不存在；canvas 适配器也还没有原生实现。</p></Card>
+          <Card tag="components" tone="warn" title="组件高级能力未覆盖"><p>generics、placeholder、definitionFilter、完整内置 behavior、open-type 真实能力都没有验收。</p></Card>
+          <Card tag="canvas" tone="warn" title="Canvas 交互未验收"><p>离屏帧、touch 事件、SelectorQuery 有覆盖；canvas rAF、完整 2D API 与原生 touch 链路没有。</p></Card>
+          <Card tag="pages" tone="warn" title="页面高级能力未覆盖"><p>tabBar、下拉刷新、触底、分享、页面滚动、页面栈恢复均未验收。</p></Card>
+          <Card tag="api" tone="warn" title="API 面很窄"><p>网络、媒体、文件、位置、账号、WebSocket、IntersectionObserver 都没有端到端证据。</p></Card>
           <Card tag="security" tone="warn" title="没有安全边界"><p>iframe 无 sandbox、消息无 origin 校验、跨线程输入只做 JSON-safe，不做权限模型。</p></Card>
         </Cards>
         <Callout title="生成物不入库">

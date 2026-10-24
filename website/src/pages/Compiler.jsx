@@ -17,12 +17,13 @@ export default function Compiler() {
       <PageHero
         eyebrow="Compiler"
         title={<>从 WXML 到 manifest，<br /><span className="gradient">一次编译，处处消费</span></>}
-        lede="tools/cli 是唯一的产物生产者。它自己发现页面与组件，把 WXML 编成 ProcGen、把 WXSS 编成带作用域前缀的 CSS、把 TS/JS 打包成 service bundle，最后写出一份所有宿主共享的 manifest。"
+        lede="tools/cli 是唯一的产物生产者。它发现页面与组件，解析 naming 配置，把 WXML 编成 ProcGen、把 WXSS 编成带作用域前缀的 CSS、把 TS/JS 打包成 service bundle，最后写出一份所有宿主共享的 manifest。"
         stats={[['1', 'compiler tool'], ['6', 'artifact kinds'], ['1', 'manifest schema'], ['0', 'runtime WXML parsing']]}
       />
       <PageNav items={[
         ['pipeline', '流水线'],
         ['discovery', '入口发现'],
+        ['naming', '命名契约'],
         ['templates', '模板编译'],
         ['styles', '样式编译'],
         ['scripts', '脚本与服务包'],
@@ -35,7 +36,7 @@ export default function Compiler() {
       <Section
         id="pipeline"
         kicker="Pipeline"
-        title="十个阶段，一次全量构建"
+        title="十一个阶段，一次全量构建"
         intro="compileMiniProgram 是一个 async 编排器；每个阶段只产出 artifact 或 diagnostic，不直接和 runtime 交互。"
       >
         <Sequence steps={[
@@ -53,6 +54,11 @@ export default function Compiler() {
             title: '读取 app.json',
             detail: '解析 pages 与 subPackages/subpackages；至少需要一个页面，否则记 APP_PAGES_REQUIRED。',
             code: 'readAppConfig() · resolvePagePaths()',
+          },
+          {
+            title: '读取 naming 配置',
+            detail: '读取 sourceDir/tiny.config.json 的 naming；显式 CompileOptions 覆盖文件配置。默认使用 wx- 命名空间。',
+            code: 'readProjectNaming() · resolveNaming()',
           },
           {
             title: '解析入口',
@@ -125,6 +131,62 @@ export default function Compiler() {
       </Section>
 
       <Section
+        id="naming"
+        kicker="Naming"
+        title="命名空间也是编译产物"
+        intro="Tiny 不再把 wx 写死在引擎里。指令、API 全局、behavior scheme、host attribute、tag marker 都由同一份 naming 配置派生，并随 manifest 下发给 runtime。"
+      >
+        <div className="split">
+          <CodeBlock>{`// tests/apps/my-app/tiny.config.json
+{
+  "naming": {
+    "prefix": "tiny-",
+    "apiAliases": ["wx"]
+  }
+}
+
+// 等价简写
+{
+  "prefix": "tiny-",
+  "apiAliases": ["wx"]
+}
+
+// CompileOptions 优先于文件配置
+compileMiniProgram({
+  sourceDir, outputDir,
+  naming: { prefix: 'acme-', api: 'acme' },
+})`}</CodeBlock>
+          <div className="stack">
+            <Card tag="default" title="默认：wx-">
+              <p>保持微信兼容：<code>wx:if</code>、<code>wx.getStorageSync()</code>、<code>wx-base</code>、<code>wx://component-export</code>、<code>wx-host</code>、<code>wx-tag-button</code>。</p>
+            </Card>
+            <Card tag="custom" tone="violet" title="自定义：tiny- / acme-">
+              <p>切换后指令变成 <code>tiny:if</code>，API 全局变成 <code>tiny</code>，behavior scheme 变成 <code>tiny://</code>，host attribute 与 tag marker 也同步变化。</p>
+              <p><code>apiAliases</code> 可保留 <code>wx</code>，让第三方微信库继续工作。</p>
+            </Card>
+          </div>
+        </div>
+        <Table
+          head={['表面', '默认 wx-', '自定义 tiny-', '消费方']}
+          rows={[
+            ['模板指令', <code>wx:if</code>, <code>tiny:if</code>, 'TmplGroup directivePrefix'],
+            ['API 全局', <code>wx</code>, <><code>tiny</code>（+ aliases）</>, 'service installMiniProgramGlobals'],
+            ['内置 behavior', <code>wx-base</code>, <code>tiny-base</code>, 'components behaviors'],
+            ['内置 behavior scheme', <code>wx://component-export</code>, <code>tiny://component-export</code>, 'component-definition'],
+            ['组件 host 属性', <code>wx-host</code>, <code>tiny-host</code>, 'adapter inspectTree / stylesheet compiler'],
+            ['tag marker class', <code>wx-tag-button</code>, <code>tiny-tag-button</code>, 'template 注入 + WXSS tag 选择器'],
+            ['内置组件 tag', <code>&lt;view&gt;</code>, <><code>&lt;view&gt;</code>（不变）</>, 'components 标签表'],
+          ]}
+        />
+        <Callout title="解析后的 naming 进入 manifest" >
+          <p>
+            compiler 把 <code>resolveNaming()</code> 的结果写进 <code>manifest.naming</code>；service 用它安装 API 全局与别名，
+            adapter 用它选择 behavior 前缀与 host attribute。配置文件损坏时只产生 <code>TINY_CONFIG_INVALID</code> warning，并回退默认命名。
+          </p>
+        </Callout>
+      </Section>
+
+      <Section
         id="templates"
         kicker="Template compiler"
         title="WXML 变成 ProcGen，不在运行时解析"
@@ -165,20 +227,22 @@ export default {
             ['WXML 解析', 'parse/state.ts · parse/tag.ts · parse/expr.ts', '标签、属性、表达式、事件绑定、meta 标签'],
             ['ProcGen', 'proc_gen/tag.ts · expr.ts · writer.ts', '生成 glass-easel 可执行的创建/更新函数'],
             ['WXS / SJS', 'TmplGroup.addScript + WXS runtime', '模板内可调用脚本模块，支持 require 相对路径'],
-            ['scope 标记', 'injectTagClasses()', <>给每个元素加 <code>wx-tag-&lt;tag&gt;</code>，供 tag 选择器作用域改写</>],
+            ['scope 标记', 'injectTagClasses()', <>给每个元素加 <code>{'<tagClassPrefix><tag>'}</code>（默认 <code>wx-tag-button</code>），供 tag 选择器作用域改写</>],
             ['animation', 'rewriteAnimationAttributes()', <>把 <code>{'animation="{{...}}"'}</code> 改写为内联 style</>],
             ['图片内联', 'inlineLocalImages()', '≤200KB 的本地图片转 data URI，静态宿主无需资源目录'],
           ]}
         />
 
-        <CodeBlock>{`<!-- 源 WXML -->
+        <CodeBlock>{`<!-- 源 WXML（默认 wx- 命名） -->
 <button class="primary" bindtap="submit">保存</button>
 
 <!-- 编译器注入 tag marker（存在同名 wxss 时 scope = tiny-pages-form-form） -->
 <button class="primary wx-tag-button" bindtap="submit">保存</button>
 
 <!-- 同目录 WXSS：button { color: red } -->
-<!-- 产物 CSS：.tiny-pages-form-form--wx-tag-button { color: red } -->`}</CodeBlock>
+<!-- 产物 CSS：.tiny-pages-form-form--wx-tag-button { color: red } -->
+
+<!-- tiny- 命名下 marker 变成 tiny-tag-button，WXSS 前缀同步变化 -->`}</CodeBlock>
         <Callout title="没有运行时 WXML 解析器">
           <p>
             render 线程只拿到模板 group 并交给 glass-easel 的模板引擎；它不读 <code>.wxml</code>，也不在运行时求值 WXML 语法。
@@ -196,15 +260,16 @@ export default {
         <div className="split">
           <div className="stack">
             <Card tag="scope naming" title="每份页面/组件样式一个 scope">
-              <p>scope 形如 <code>tiny-pages-todos-todos</code>：<code>scopePrefix</code> + 路径中非字母数字替换为 <code>-</code>。</p>
+              <p>scope 形如 <code>tiny-pages-todos-todos</code>：<code>scopePrefix</code> + 路径中非字母数字替换为 <code>-</code>。它与 naming prefix 相互独立。</p>
               <p><code>app.wxss</code> 没有 scope，作为全局样式注册。</p>
             </Card>
             <Card tag="transform" title="两个前缀同时工作">
               <ul>
                 <li>class：<code>.card</code> → <code>.tiny-pages-todos-todos--card</code></li>
-                <li>tag：<code>button</code> → <code>.tiny-pages-todos-todos--wx-tag-button</code></li>
+                <li>tag：<code>button</code> → <code>.tiny-pages-todos-todos--wx-tag-button</code>（前缀随 naming 变化）</li>
                 <li><code>page</code> 例外：页面根节点没有 marker class，保持 <code>page</code></li>
                 <li><code>@keyframes</code> 内不做 tag 改写</li>
+                <li><code>:host</code> 使用 <code>hostAttribute</code>（默认 <code>wx-host</code>）</li>
               </ul>
             </Card>
             <Card tag="rpx" title="750 基准换 vw">
@@ -290,6 +355,16 @@ button { height: 88rpx; }            /* -> .tiny-pages-todos-todos--wx-tag-butto
         <div className="split">
           <CodeBlock>{`{
   "schemaVersion": 1,
+  "naming": {
+    "prefix": "wx-",
+    "directive": "wx",
+    "api": "wx",
+    "apiAliases": [],
+    "hostAttribute": "wx-host",
+    "tagClassPrefix": "wx-tag-",
+    "behaviorPrefix": "wx-",
+    "behaviorScheme": "wx://"
+  },
   "entries": {
     "service": "service.js",
     "render": "render.js",
@@ -323,6 +398,7 @@ button { height: 88rpx; }            /* -> .tiny-pages-todos-todos--wx-tag-butto
           <div className="stack">
             <Card title="字段语义">
               <ul>
+                <li><code>naming</code>：解析后的命名配置，runtime / adapter 直接消费</li>
                 <li><code>app</code>：App 脚本、全局样式、app.json 的有效配置</li>
                 <li><code>pages</code> / <code>components</code>：入口、模板、样式、配置</li>
                 <li><code>styles</code>：所有样式（含 app），带 scope 与低优先级路径</li>
@@ -391,6 +467,7 @@ button { height: 88rpx; }            /* -> .tiny-pages-todos-todos--wx-tag-butto
             [<code>SCRIPT_TRANSPILE_ERROR</code>, 'error', 'TS 语法/转译失败', '保留输出，继续'],
             [<code>SCRIPT_IMPORT_NOT_FOUND</code>, 'warning', '相对 import 解析不到文件', '不进入可达图'],
             [<code>TEMPLATE_COMPILE_ERROR</code>, 'error', 'WXML 解析失败', '跳过模板 group 生成'],
+            [<code>TINY_CONFIG_INVALID</code>, 'warning', 'tiny.config.json 无法解析', '回退默认命名'],
             [<code>STYLE_IMPORT_NOT_FOUND</code>, 'warning', '@import 解析不到目标', '内联为空串'],
             [<code>STYLE_COMPILE_ERROR</code>, 'error', 'PostCSS 解析/转换失败', '跳过该样式'],
             [<code>SCRIPT_BUNDLE_ERROR</code>, 'warning', 'esbuild 打包失败', 'manifest 仍生成，启动时暴露'],
@@ -421,14 +498,14 @@ button { height: 88rpx; }            /* -> .tiny-pages-todos-todos--wx-tag-butto
           <Card tag="analysis" tone="warn" title="文本级判断">
             <p><code>bodyType</code> 靠正则匹配 <code>Component(</code>；动态注册、条件导出、别名调用等写法无法识别。</p>
           </Card>
-          <Card tag="styles" tone="warn" title="没有 style isolation">
-            <p>当前只做 class/tag 前缀，不处理 <code>styleIsolation</code>、<code>addGlobalClass</code>、<code>:host</code> 组合。</p>
+          <Card tag="styles" tone="warn" title="编译期只管 scope">
+            <p>编译器生成 class/tag scope 与 <code>hostAttribute</code>，但 <code>styleIsolation</code>、<code>addGlobalClass</code>、<code>shared</code> 的 CSS 组合发生在 render adapter；<code>:host</code> 低优先级输出仍未启用。</p>
           </Card>
           <Card tag="platform" tone="warn" title="Node 工具">
             <p>编译器依赖 fs、typescript、esbuild 和 PostCSS，只能在构建期运行；它不会进入浏览器线程。</p>
           </Card>
-          <Card tag="assets" tone="warn" title="资源只复制不处理">
-            <p>图片/字体原样复制；仅 WXML 中 ≤200KB 的本地图片会被内联。CSS url() 里的资源不会被重写或内联。</p>
+          <Card tag="assets" tone="warn" title="资源分两段处理">
+            <p>编译器按原路径复制图片/字体，并把 WXML 中 ≤200KB 的本地图片内联为 data URI；更大的资源与 CSS <code>url()</code> 由宿主 <code>resolveAssetUrl</code> 在 render 侧解析。</p>
           </Card>
         </Cards>
         <Callout title="下一层">

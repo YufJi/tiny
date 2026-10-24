@@ -17,14 +17,16 @@ export default function Hosts() {
       <PageHero
         eyebrow="Host support"
         title={<>宿主不是引擎，<br /><span className="gradient">宿主是环境适配层</span></>}
-        lede="createTinyRuntime 只要求两条 Transport、一个 manifest 和初始路径。@tiny/host-browser 的 createStandaloneDualThreadHost 是浏览器实现：两个 iframe、两个 MessageChannel、15 秒就绪等待和显式 bootstrap。测试宿主与调试器都建立在它之上，但控制面不同。"
-        stats={[['3', 'host shapes'], ['2', 'iframe threads'], ['2', 'API seams'], ['15s', 'thread ready timeout']]}
+        lede="packages/runtime 是宿主无关内核；浏览器能力单独放在 @tiny/host-browser。createTinyRuntime 只要求两条 Transport、一个 manifest 和初始路径；createStandaloneDualThreadHost 负责 iframe、MessageChannel、15 秒就绪等待和显式 bootstrap。canvas、资源 URL、backend 与挂载点都通过选项注入。"
+        stats={[['1', 'browser host package'], ['2', 'iframe threads'], ['4', 'injection seams'], ['0', 'browser globals in core']]}
+        pills={[['host-independent', 'good'], ['canvas injected', 'good'], ['assets resolved', 'good'], ['embedded devtool', 'good']]}
       />
       <PageNav items={[
         ['model', '宿主模型'],
+        ['purity', 'runtime 纯度'],
         ['boot', '启动与握手'],
         ['threads', '线程契约'],
-        ['api', '两条 API 缝'],
+        ['injections', '宿主注入面'],
         ['browser', '浏览器宿主'],
         ['devtool', '调试器宿主'],
         ['matrix', '宿主矩阵'],
@@ -35,36 +37,70 @@ export default function Hosts() {
       <Section
         id="model"
         kicker="Model"
-        title="四层：引擎、线程、宿主、应用"
-        intro="把“宿主”当成一个包会看不清边界；它其实是四层可替换的装配。"
+        title="引擎、线程、宿主、应用"
+        intro="把“宿主”当成一个包会看不清边界；它其实是可替换的装配层。"
       >
         <Table
           head={['层', '入口', '环境假设', '职责']}
           rows={[
-            ['引擎编排', <code>createTinyRuntime(options)</code>, '无 DOM 假设', '两个 BridgeConnection、HostApiRegistry、诊断仓库、bootstrap 顺序'],
-            ['线程启动', <><code>bootServiceThread</code> / <code>bootRenderThread</code></>, 'service 需要 JS 全局；render 需要 glass-easel backend', '安装注册表/API、定义组件、响应消息'],
-            ['浏览器宿主', <code>createStandaloneDualThreadHost</code>, 'window / iframe / MessageChannel / document', '创建 iframe、转移端口、握手、返回 host 与 iframe 句柄'],
+            ['内核编排', <code>createTinyRuntime(options)</code>, '无 DOM 假设', '两个 BridgeConnection、HostApiRegistry、诊断仓库、bootstrap 顺序'],
+            ['线程启动', <><code>bootServiceThread</code> / <code>bootRenderThread</code></>, 'service 需要 JS 全局；render 需要 glass-easel backend', '安装注册表/API、定义组件、响应消息；canvas / assets 通过选项注入'],
+            ['浏览器适配', <><code>@tiny/host-browser</code></>, 'window / iframe / MessageChannel / document', 'iframe、端口、DOM canvas、资源 URL、DevtoolRuntimeClient'],
             ['应用宿主', <><code>tests/host</code> · <code>apps/devtool</code></>, '静态资源服务器 / rspack', '选择 app、加载 manifest、提供 UI 或自动化钩子、调用 bootstrap'],
           ]}
         />
         <CodeBlock>{`app shell (host.ts / devtool React)
               |
               v
-createStandaloneDualThreadHost     browser adapter
+@tiny/host-browser                environment adapter
+  createStandaloneDualThreadHost
+  canvas-bridge / runtime-port
+  DevtoolRuntimeClient
               |
               v  createTinyRuntime
-createTinyRuntime                  engine orchestration
+createTinyRuntime                 engine orchestration
               |
-              v  boot*Thread(transport, manifest)
+              v  boot*Thread(transport, manifest, canvas, ...)
 service iframe / render iframe
 
-A native host replaces the middle two layers, not the runtime semantics.`}</CodeBlock>
+A native host replaces the browser adapter, not the runtime semantics.`}</CodeBlock>
         <Callout title="standalone 不是唯一入口">
           <p>
             runtime 单测完全不使用 iframe：它用 <code>createInMemoryTransportPair()</code> 启动两个线程，再用
-            <code>createTinyRuntime</code> 组装 host。这说明宿主可替换性不是口号，而是现有测试已经在用的路径。
+            <code>createTinyRuntime</code> 组装 host。宿主可替换性不是口号，而是现有测试已经在用的路径。
           </p>
         </Callout>
+      </Section>
+
+      <Section
+        id="purity"
+        kicker="Runtime purity"
+        title="core 里没有浏览器"
+        intro="这是宿主支持最重要的约束：core runtime 只定义语义，环境能力全部由宿主注入。"
+      >
+        <div className="split">
+          <Card tag="check" title="pnpm check:runtime-purity">
+            <p>脚本从 <code>packages/runtime/src/index.ts</code> 遍历相对 import，注释会被剥离，然后搜索宿主全局：</p>
+            <CodeBlock>{`window · document · navigator
+localStorage · sessionStorage
+HTMLCanvasElement · HTMLImageElement · Image
+requestAnimationFrame · cancelAnimationFrame
+MessageChannel · postMessage · indexedDB
+XMLHttpRequest · WebSocket · fetch · performance`}</CodeBlock>
+            <p>同时禁止依赖图中出现包含 <code>browser</code> 的模块。违规直接让闸门失败。</p>
+          </Card>
+          <div className="stack">
+            <Card tag="core" title="packages/runtime">
+              <p>导出 types、diagnostics、glass-easel-adapter、service、render、host。<code>canvas</code>、<code>resolveAssetUrl</code>、<code>backend</code>、<code>mountComponent</code> 都是选项。</p>
+            </Card>
+            <Card tag="hosts/browser" tone="violet" title="@tiny/host-browser">
+              <p>拥有 iframe、MessageChannel、DOM canvas、资源 URL 规则与 <code>DevtoolRuntimeClient</code>；tests/host 与 devtool 都从这里导入。</p>
+            </Card>
+            <Card tag="result" title="可移植性">
+              <p>原生宿主只需实现 Transport、backend、canvas 适配器、资源解析与宿主 API，不需要假装自己是浏览器。</p>
+            </Card>
+          </div>
+        </div>
       </Section>
 
       <Section
@@ -100,8 +136,8 @@ A native host replaces the middle two layers, not the runtime semantics.`}</Code
             code: 'Promise.all([service.handshake(), render.handshake()])',
           },
           {
-            title: '应用层显式 bootstrap',
-            detail: 'standalone host 到此返回。测试宿主与 devtool 自己调用 host.bootstrap()，按 service → render → page.ready 顺序启动页面。',
+            title: 'bootstrap：service → render → page.ready',
+            detail: 'service 返回 pageId/initialData/componentSchemas/pageComponents；render 注册样式与 schema、挂载并 settle 组件，返回 components；host 再把 components 并入 page.ready。',
             code: 'await runtime.host.bootstrap()',
           },
         ]} />
@@ -131,17 +167,15 @@ const runtime = await createStandaloneDualThreadHost({
 window.__tinyRuntime = runtime
 await runtime.host.bootstrap()
 
-// thread 侧
-listenForRuntimePort('render', (transport) => {
-  bootRenderThread({
-    transport, manifest,
-    artifacts: { templates },
-    backend,
-    initialPath,
-    loadStyle: (path) => styles[path] ?? '',
-    mountComponent,
-    unmountComponent,
-  })
+// render 线程
+bootRenderThread({
+  transport, manifest,
+  artifacts: { templates },
+  backend, initialPath,
+  loadStyle,
+  resolveAssetUrl,
+  canvas: { measure, paint },
+  mountComponent, unmountComponent,
 })`}</CodeBlock>
         </div>
       </Section>
@@ -156,23 +190,25 @@ listenForRuntimePort('render', (transport) => {
           head={['ServiceThreadOptions', '用途', '必需']}
           rows={[
             [<code>transport</code>, 'host 连接', '是'],
-            [<code>manifest</code>, '页面路径、组件、样式、诊断', '是'],
+            [<code>manifest</code>, '页面路径、组件、样式、naming、诊断', '是'],
             [<code>initialPath</code>, '首屏页面 path', '是'],
             [<code>loadArtifacts</code>, '在 bootstrap 时 import service.js；保证 App/Page 已注册', '实际必需'],
-            [<code>apiExtensions</code>, '注入宿主事实与额外 wx API', '否'],
-            [<code>capabilities</code>, '握手元数据；当前未使用', '否'],
+            [<code>apiExtensions</code>, '注入设备事实与额外同步 API', '否'],
+            [<code>canvas</code>, 'createLegacyCanvasContext / createCanvasNode', '使用 canvas API 时必需'],
+            [<code>capabilities</code>, '握手元数据；当前未用于协商', '否'],
           ]}
         />
         <Table
           head={['RenderThreadOptions', '用途', '必需']}
           rows={[
             [<code>transport</code>, 'host 连接', '是'],
-            [<code>manifest</code>, '页面、样式、组件 artifact', '是'],
+            [<code>manifest</code>, '页面、样式、组件 artifact、naming', '是'],
             [<code>artifacts.templates</code>, '从 render.js 导入的 groupList/content', '是'],
             [<code>backend</code>, 'glass-easel GeneralBackendContext', '是'],
-            [<code>initialPath</code>, '首屏页面 path', '是'],
-            [<code>initialData</code>, '首屏数据；bootstrap 消息中的值优先', '否'],
+            [<><code>initialPath</code> / <code>initialData</code></>, '首屏页面与数据；bootstrap 消息优先', 'initialPath 是'],
             [<code>loadStyle</code>, '按 outputPath 返回 CSS 文本', '实际必需'],
+            [<code>resolveAssetUrl</code>, '把 app-root 资源路径映射为可加载 URL（模板 img / CSS url）', '使用本地资源时必需'],
+            [<code>canvas</code>, 'measure / paint 适配器', '使用 canvas / SelectorQuery 时必需'],
             [<><code>mountComponent</code> / <code>unmountComponent</code></>, '把根组件挂到宿主节点', '否；缺省 pretendAttached'],
             [<code>onDiagnostic</code>, '本地诊断回调；跨线程仍走 bridge', '否'],
           ]}
@@ -180,10 +216,10 @@ listenForRuntimePort('render', (transport) => {
         <div className="split">
           <Card title="service 线程的额外要求">
             <ul>
-              <li>先安装 <code>App/Page/Component/Behavior/getApp/wx</code> 全局</li>
+              <li>先安装 App/Page/Component/Behavior/getApp 与 naming API 全局</li>
               <li>再 import service.js，让注册调用按 manifest 顺序发生</li>
               <li><code>loadArtifacts</code> 必须在 bootstrap 内 await</li>
-              <li>浏览器 canvas 依赖 <code>document</code></li>
+              <li>canvas API 由注入的 adapter 提供，core 不碰 document</li>
             </ul>
           </Card>
           <Card title="render 线程的额外要求">
@@ -191,23 +227,24 @@ listenForRuntimePort('render', (transport) => {
               <li>一个 glass-easel backend 实例</li>
               <li>模板 group 已从 render.js 取出</li>
               <li>样式文本已按 outputPath 预加载</li>
-              <li>挂载点有确定的 DOM 容器</li>
+              <li>资源路径能映射到真实 URL，canvas 能测量与绘制</li>
+              <li>挂载点有确定的容器</li>
             </ul>
           </Card>
         </div>
         <Callout title="manifest 以消息为准" >
           <p>
             render 的 bootstrap 处理器优先使用消息里的 <code>manifest</code>、<code>initialPath</code>、<code>initialData</code>、
-            <code>componentSchemas</code>；线程选项只是宿主侧默认值和样式/模板加载来源。
+            <code>componentSchemas</code> 与 <code>pageComponents</code>；线程选项只是宿主侧默认值和样式/模板/资源加载来源。
           </p>
         </Callout>
       </Section>
 
       <Section
-        id="api"
-        kicker="API seams"
-        title="两条扩展缝，别放错位置"
-        intro="这是宿主支持里最容易混的一点：跨线程 API 在 host，宿主事实在 service。"
+        id="injections"
+        kicker="Injections"
+        title="四条宿主注入面"
+        intro="跨线程 API、同步宿主事实、canvas 实现、资源 URL 各走各的缝，放错层就会出现“内核偷偷依赖浏览器”。"
       >
         <div className="split">
           <Card tag="host" title="apiHandlers：跨线程语义">
@@ -216,13 +253,12 @@ listenForRuntimePort('render', (transport) => {
               <li><code>navigate.to</code> / <code>navigate.back</code>：host 同时编排 service 与 render</li>
               <li><code>storage.get/set</code>：宿主持久化</li>
               <li><code>toast.show</code>：宿主 UI（当前仅返回 errMsg）</li>
-              <li><code>system.info</code>：宿主系统信息快照</li>
-              <li>任意自定义 <code>apiHandlers</code>，比如文件、网络、设备</li>
+              <li><code>system.info</code>：系统信息快照</li>
+              <li>任意自定义 handler，比如文件、网络、设备</li>
             </ul>
-            <p>默认 handler 位于 <code>packages/runtime/src/host-api.ts</code>，可被选项覆盖；浏览器能力位于 <code>hosts/browser</code>。</p>
           </Card>
-          <Card tag="service" tone="violet" title="apiExtensions：宿主事实">
-            <p>直接合并进 service 线程的 <code>wx</code> API host，运行在 service 线程。</p>
+          <Card tag="service" tone="violet" title="apiExtensions：同步宿主事实">
+            <p>直接合并进 service 的 API host，运行在 service 线程。</p>
             <ul>
               <li><code>getMenuButtonBoundingClientRect</code></li>
               <li><code>getPerformance</code>（now/mark/measure/observer）</li>
@@ -231,21 +267,29 @@ listenForRuntimePort('render', (transport) => {
             <p>测试宿主和 devtool 各有一份实现；核心 runtime 不硬编码这些值。</p>
           </Card>
         </div>
+        <div className="split">
+          <Card tag="canvas" title="ServiceCanvasAdapter / RenderCanvasAdapter">
+            <p>service 需要 <code>createLegacyCanvasContext</code> 与 <code>createCanvasNode</code>；render 需要 <code>measure</code> 与 <code>paint</code>。浏览器实现位于 <code>hosts/browser/src/canvas-bridge.ts</code>。</p>
+          </Card>
+          <Card tag="assets" title="resolveAssetUrl + backend + mount">
+            <p><code>{'resolveAssetUrl(assetPath, { sourcePath })'}</code> 把 app-root 资源映射为 URL；adapter 用它重写模板 img 与 CSS <code>url()</code>。<code>backend</code> 与挂载钩子决定节点最终落在哪里。</p>
+          </Card>
+        </div>
         <Table
           head={['问题', '正确落点', '原因']}
           rows={[
-            ['菜单按钮位置随设备变化', <code>apiExtensions</code>, 'service 代码同步调用，且属于宿主事实'],
+            ['菜单按钮位置随设备变化', <code>apiExtensions</code>, 'service 同步调用，属于宿主事实'],
             ['页面跳转要同时改两个线程', <code>apiHandlers</code>, '只有 host 同时持有两侧连接'],
             ['storage 写入要持久化', <code>apiHandlers</code>, '宿主拥有真实存储'],
-            ['system info 快照', 'bootstrap 的 systemInfo + 可选 apiExtensions', 'service 需要同步读取'],
-            ['原生 toast/loading', <code>apiHandlers</code>, '需要壳层 UI，不属于 runtime'],
+            ['canvas 绘制与测量', <>canvas adapters</>, 'core 不依赖 document / Image'],
+            ['本地图片与 CSS 背景图', <code>resolveAssetUrl</code>, '只有宿主知道静态资源 URL 规则'],
+            ['节点挂到哪里', <>backend + mountComponent</>, 'DOM / 原生树由宿主拥有'],
           ]}
         />
         <Callout title="AGENTS 里的硬规则">
           <p>
-            “Host facts (menu-button geometry, performance, device capabilities) are supplied by the host through
-            <code>ServiceThreadOptions.apiExtensions</code>; do not hardcode them in packages/runtime's service API host.”
-            这条规则就是这两条缝的分界。
+            Host facts 通过 <code>ServiceThreadOptions.apiExtensions</code> 注入，canvas 通过 <code>ServiceThreadOptions.canvas</code> /
+            <code>RenderThreadOptions.canvas</code> 注入；不要把这些能力塞回 <code>packages/runtime</code>。
           </p>
         </Callout>
       </Section>
@@ -253,8 +297,8 @@ listenForRuntimePort('render', (transport) => {
       <Section
         id="browser"
         kicker="Browser host"
-        title="standalone 宿主做了什么、没做什么"
-        intro="它只有约一百行，但把 iframe 生命周期、端口转移和握手都收拢在一处。"
+        title="@tiny/host-browser 做了什么、没做什么"
+        intro="它把 iframe 生命周期、端口转移、DOM canvas、资源 URL 和调试器客户端收拢在一个宿主包里。"
       >
         <div className="split">
           <div className="stack">
@@ -265,6 +309,7 @@ listenForRuntimePort('render', (transport) => {
                 <li>等待 ready 消息，最多 15s</li>
                 <li>转移 port2，调用 createTinyRuntime</li>
                 <li>并行完成两条握手</li>
+                <li>提供 canvas / asset / devtool client 适配器</li>
                 <li>返回 host + 两个 iframe 句柄</li>
               </ul>
             </Card>
@@ -272,7 +317,7 @@ listenForRuntimePort('render', (transport) => {
               <ul>
                 <li>不加载 manifest 或产物</li>
                 <li>不调用 bootstrap</li>
-                <li>不提供 backend、样式加载或挂载点</li>
+                <li>不提供业务 backend 或挂载点</li>
                 <li>不注入 systemInfo/storage/apiExtensions</li>
                 <li>不管理多应用、诊断或 UI</li>
                 <li>不负责关闭时移除 iframe</li>
@@ -282,10 +327,10 @@ listenForRuntimePort('render', (transport) => {
           <div className="stack">
             <Card tag="tests/host" title="无 UI 单应用宿主">
               <p>三个 Vite 入口：<code>index.html</code> host、<code>service.html</code>、<code>render.html</code>。host 把页面挂到 <code>#app</code>，并暴露 <code>window.__tinyRuntime</code> 给 Playwright。</p>
-              <p>service 入口注入 menu-button 与 performance；render 入口用 <code>CurrentWindowBackendContext</code>，通过 <code>Element.replaceDocumentElement</code> 挂载。</p>
+              <p>service 入口注入 menu-button、performance 与 canvas；render 入口用 <code>CurrentWindowBackendContext</code>，提供 <code>resolveAssetUrl</code>、canvas 测量/绘制与挂载钩子。</p>
             </Card>
             <Card tag="static serving" title="产物如何到达线程">
-              <p>manifest 由打包器静态导入；render.js 动态 import；styles 通过 <code>fetch('/generated/...')</code> 取文本后交给 <code>loadStyle</code>。</p>
+              <p>manifest 由打包器静态导入；render.js 动态 import；styles 通过 <code>fetch('/generated/...')</code> 取文本后交给 <code>loadStyle</code>；资源通过 <code>/generated/&lt;path&gt;</code> 提供。</p>
               <p>宿主必须能按 manifest 中的相对路径提供静态文件。</p>
             </Card>
           </div>
@@ -297,15 +342,19 @@ listenForRuntimePort('render', (transport) => {
   |-- listenForRuntimePort('render')
   +-- bootRenderThread({
         transport, manifest, artifacts, backend,
-        initialPath, loadStyle,
+        initialPath, loadStyle, resolveAssetUrl,
+        canvas: { measure: measureBrowserCanvas,
+                  paint: paintBrowserCanvasFrame },
         mountComponent, unmountComponent,
       })
 
 service.html
+  |-- installBrowserCanvasCompat()
   |-- listenForRuntimePort('service')
   +-- bootServiceThread({
         transport, manifest, initialPath,
         apiExtensions,
+        canvas: { createLegacyCanvasContext, createCanvasNode },
         loadArtifacts: () => import(service.js),
       })`}</CodeBlock>
       </Section>
@@ -313,7 +362,7 @@ service.html
       <Section
         id="devtool"
         kicker="Debugger host"
-        title="devtool 只是 standalone 的受控封装"
+        title="devtool 是 standalone 的受控封装 + 设备壳"
         intro="React/Redux 不发送协议消息；它们只调用 DevtoolRuntimeClient，并订阅它投影出来的状态。"
       >
         <Table
@@ -330,13 +379,17 @@ service.html
           ]}
         />
         <div className="split">
-          <Card title="状态投影">
-            <p><code>DevtoolRuntimeState</code> 包含 status、currentPage、pageStack、diagnostics、tree、error。诊断最多保留 500 条。</p>
-            <p><code>RUNTIME_STATE</code> 诊断里的 pageStack/currentPage 会被提取成独立字段，React 面板无需解析诊断文本。</p>
+          <Card title="面板与宿主壳">
+            <ul>
+              <li><code>RuntimePanel</code>：加载 <code>./runtime/apps.json</code>，创建 client，组合面板</li>
+              <li><code>PreviewStage</code>：iPhone X 375×812 设备框、自动缩放、宿主导航栏</li>
+              <li><code>DevtoolToolbar</code>：应用切换、页面栈、导航、Reload/Terminate</li>
+              <li><code>DebugPanel</code>：Console 诊断 + Elements 元素树</li>
+            </ul>
           </Card>
-          <Card title="多应用切换" tone="violet">
-            <p>devtool 扫描 <code>tests/apps/*</code>，把每个 fixture 的产物放在 <code>./runtime/apps/&lt;app&gt;/generated</code>，并通过 <code>./runtime/apps.json</code> 生成应用下拉框；线程入口从 <code>?app=</code> 读取 appId，再 fetch 对应 manifest。</p>
-            <p>面板切换应用是整页重载（<code>window.location.assign</code>），不是运行时内切换。站点里的 <a href="#/devtool">在线调试器</a> 是同一份构建，列出全部 <code>tests/apps</code> fixture。</p>
+          <Card title="多应用与生命周期" tone="violet">
+            <p>脚本扫描 <code>tests/apps/*</code>，把产物放在 <code>./runtime/apps/&lt;app&gt;/generated</code>，并生成 <code>apps.json</code>。切换应用是整页重载，生命周期控制与 Reload 走 client。</p>
+            <p>在线版本是同一份构建：<a href="#/devtool">#/devtool</a> 用同源 iframe 嵌入。</p>
           </Card>
         </div>
         <Callout title="为什么用 new Function import">
@@ -354,31 +407,31 @@ service.html
         intro="区别不在 runtime，而在谁提供环境、谁拥有控制面。"
       >
         <Table
-          head={['宿主', '线程容器', 'backend', '控制面', '产物加载', '诊断']}
+          head={['宿主', '线程容器', 'backend', 'canvas / assets', '控制面']}
           rows={[
-            ['tests/host', '两个 iframe（Vite）', 'CurrentWindowBackendContext', 'URL ?path + window.__tinyRuntime', '静态 import + fetch', 'host 数组 + window'],
-            ['apps/devtool', '两个 iframe（rspack）', 'CurrentWindowBackendContext', 'DevtoolRuntimeClient + React/Redux', 'fetch manifest + new Function import', '投影到 Redux'],
-            ['runtime 单测', '同进程', 'EmptyBackendContext', '直接持有 BridgeConnection', '测试内联 manifest/templates', '断言数组'],
-            ['原生宿主（未实现）', 'JSCore / 原生容器 + 原生渲染层', '需实现 GeneralBackendContext', '自定义控制面', '需为原生打包 ESM/资源', '需接入 host store 或自定义'],
+            ['tests/host', '两个 iframe（Vite）', 'CurrentWindowBackendContext', 'host-browser canvas + /generated 资源', 'URL ?path + window.__tinyRuntime'],
+            ['apps/devtool', '两个 iframe（rspack）', 'CurrentWindowBackendContext', 'host-browser canvas + 相对 URL', 'DevtoolRuntimeClient + React/Redux'],
+            ['runtime 单测', '同进程', 'EmptyBackendContext', '无 canvas / 内联 manifest', '直接持有 BridgeConnection'],
+            ['原生宿主（未实现）', 'JSCore / 原生容器 + 渲染层', '需实现 GeneralBackendContext', '需实现 canvas adapters + 资源解析', '自定义控制面'],
           ]}
         />
         <div className="split">
           <Card title="共享的部分">
             <ul>
-              <li>manifest 契约</li>
+              <li>manifest + naming 契约</li>
               <li>BridgeConnection 与消息目录</li>
               <li>service/render 启动选项</li>
-              <li>bootstrap 顺序</li>
+              <li>bootstrap 顺序与 page.ready</li>
               <li>HostApiRegistry 的默认语义</li>
             </ul>
           </Card>
           <Card title="不共享的部分">
             <ul>
-              <li>Transport 实现</li>
+              <li>Transport 与线程容器</li>
               <li>backend 与挂载方式</li>
-              <li>样式/模板加载策略</li>
+              <li>canvas 实现</li>
+              <li>样式/模板/资源加载策略</li>
               <li>控制面与 UI</li>
-              <li>关闭与重启策略</li>
             </ul>
           </Card>
         </div>
@@ -393,31 +446,27 @@ service.html
         <Sequence steps={[
           {
             title: '加载并校验 manifest',
-            detail: '读取 schemaVersion=1，按 entries 与 artifact 路径解析产物。不要复制产物类型。',
+            detail: '读取 schemaVersion=1、naming 与 artifact 路径。不要复制产物类型。',
           },
           {
             title: '创建两条 Transport',
             detail: 'service 与 render 各一条；帧边界、非空 messages、JSON-safe 由 bridge 兜底，但传输必须保序。',
           },
           {
-            title: '启动两个线程',
-            detail: 'service 侧安装全局并 loadArtifacts；render 侧提供 templates、backend、loadStyle、mount/unmount。',
+            title: '实现环境适配器',
+            detail: 'glass-easel backend、mount/unmount、styles 与 templates 加载、resolveAssetUrl、canvas measure/paint。',
           },
           {
-            title: '等待连接安装后再握手',
-            detail: '不要在 transport 接收端就绪前发送帧；用 ready 消息/显式同步点。',
+            title: '启动两个线程并等待安装',
+            detail: 'service 安装 naming 全局并 loadArtifacts；在 transport 接收端就绪后再握手，用 ready/同步点避免丢帧。',
           },
           {
             title: '提供宿主事实',
-            detail: 'systemInfo、storage 初始快照；设备相关同步 API 走 apiExtensions。',
+            detail: 'systemInfo、storage 初始快照；设备相关同步 API 走 apiExtensions，网络/文件等跨线程 API 走 apiHandlers。',
           },
           {
-            title: '实现导航与宿主 API',
-            detail: 'navigate.to/back 必须在 host 侧先 service 后 render；storage/toast 等按需实现。',
-          },
-          {
-            title: '调用 bootstrap',
-            detail: '依次 service.bootstrap → render.bootstrap → service.page.ready；不要跳过 page.ready。',
+            title: '实现导航与 page.ready',
+            detail: 'navigate.to/back 必须在 host 侧先 service 后 render；navigateTo 要把 render 返回的 components 并入 page.ready。',
           },
           {
             title: '接入诊断与控制',
@@ -431,11 +480,16 @@ service.html
             title: '跑真实 fixture',
             detail: '至少覆盖 demo、mini、Taro 3 中的一条；否则只能证明“能启动”，不能证明“能跑应用”。',
           },
+          {
+            title: '跑 runtime 纯度检查',
+            detail: '确认新宿主没有把浏览器/平台依赖反向塞回 packages/runtime。',
+            code: 'pnpm check:runtime-purity',
+          },
         ]} />
         <Callout title="原生宿主尚未实现" tone="warn">
           <p>
-            当前没有 native transport、native backend 或非浏览器 service 运行时。service 的 canvas 适配依赖 <code>document</code>，
-            render 的 selector 测量与 canvas 帧绘制也直接使用 <code>document</code>。原生宿主需要先抽象这些环境依赖，或按平台提供替代实现。
+            当前没有 native transport、native backend 或非浏览器 service 运行时。好消息是 core 已经移除了 document/Image/iframe，
+            原生宿主只需提供 canvas 适配器、backend、资源解析与控制面，不必模拟浏览器。
           </p>
         </Callout>
       </Section>
@@ -456,8 +510,11 @@ service.html
           <Card tag="close" tone="warn" title="关闭不卸载页面">
             <p><code>host.close()</code> 只关闭两条连接并 reject pending。页面 onUnload、iframe 移除、容器清理由调用方负责（devtool 自己做了）。</p>
           </Card>
+          <Card tag="back" tone="warn" title="navigateBack 不补 page.ready">
+            <p>navigateTo 会把 render components 并入 page.ready；navigateBack 只恢复页面 onShow，目前不会把 render 返回的 components 回传给 service。</p>
+          </Card>
           <Card tag="capabilities" tone="warn" title="没有能力协商">
-            <p>握手携带 capabilities，但 host 没有注入，也没有任何降级逻辑。不同宿主的能力差异只能靠代码分支和诊断。</p>
+            <p>握手携带 capabilities，但 host 没有注入，也没有降级逻辑。不同宿主的能力差异只能靠代码分支和诊断。</p>
           </Card>
           <Card tag="reload" tone="warn" title="没有热更新">
             <p>产物变更后必须重新 reload/launch；没有 HMR，也没有协议级 artifact reload。devtool 的 Reload 是重建整个 host。</p>

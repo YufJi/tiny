@@ -9,9 +9,9 @@ export default function Home() {
           <p className="eyebrow">engine internals · protocol v1</p>
           <h1>把小程序引擎<br /><span className="gradient">拆到每一条线程和契约</span></h1>
           <p className="lede">
-            Tiny 不是一层框架封装：编译器产出 manifest、ProcGen 模板、作用域样式与 service bundle；
-            宿主用两条独立通道拉起 service / render 线程；bridge 负责版本化消息、批处理、超时与诊断；
-            调试器在同一个宿主接口上做控制与观察。这份站点逐层拆开它们的实现边界。
+            Tiny 把引擎拆成可替换的三层：host-independent 的 runtime 内核、版本化的 Bridge 协议、以及独立的宿主适配层。
+            编译器产出 manifest、ProcGen 模板、作用域样式与 service bundle；<code>@tiny/host-browser</code> 用 iframe 与 MessagePort 拉起双线程；
+            naming、组件语义、canvas、资源解析都能按宿主注入。这份站点逐层拆开它们的实现边界。
           </p>
           <div className="hero-actions">
             <a className="button primary" href="#/architecture">从架构总览开始</a>
@@ -22,9 +22,9 @@ export default function Home() {
           </div>
           <ul className="hero-stats">
             <li><strong>2</strong><span>RUNTIME THREADS</span></li>
-            <li><strong>6</strong><span>CORE PACKAGES</span></li>
-            <li><strong>92</strong><span>UNIT TESTS</span></li>
-            <li><strong>40</strong><span>BROWSER STEPS</span></li>
+            <li><strong>10</strong><span>WORKSPACE PACKAGES</span></li>
+            <li><strong>148</strong><span>UNIT TESTS</span></li>
+            <li><strong>46</strong><span>BROWSER STEPS</span></li>
           </ul>
         </div>
       </section>
@@ -45,7 +45,8 @@ export default function Home() {
         <Callout title="关键分界">
           <p>
             glass-easel 只提供组件定义、模板、数据绑定、事件、生命周期和可插拔 backend；
-            App 生命周期、页面栈、路由、<code>wx</code> API、跨线程 setData、canvas 镜像与诊断，全部由 Tiny 的 runtime 补齐。
+            App 生命周期、页面栈、路由、<code>wx</code> API、跨线程 setData、组件语义与诊断由 Tiny runtime 补齐；
+            iframe、MessagePort、DOM canvas、资源 URL 和调试器 UI 则全部落在 <code>@tiny/host-browser</code>。
           </p>
         </Callout>
       </Section>
@@ -65,12 +66,12 @@ export default function Home() {
             <p><a href="#/protocol">Bridge 协议 v1 →</a></p>
           </Card>
           <Card tag="packages/runtime" title="启动契约">
-            <p><code>bootServiceThread</code> / <code>bootRenderThread</code> 接收 transport 与 manifest，宿主决定 iframe、worker 还是原生容器。</p>
+            <p><code>bootServiceThread</code> / <code>bootRenderThread</code> 接收 transport、manifest 与可注入的 canvas / asset / mount 钩子；runtime 内核本身不含浏览器全局。</p>
             <p><a href="#/hosts">宿主支持与启动时序 →</a></p>
           </Card>
-          <Card tag="host seam" tone="violet" title="宿主 API">
-            <p><code>apiHandlers</code> 处理跨线程 API；<code>apiExtensions</code> 注入设备、菜单按钮、性能等宿主事实。</p>
-            <p><a href="#/hosts">两条 API 扩展缝 →</a></p>
+          <Card tag="hosts/browser" tone="violet" title="宿主注入面">
+            <p><code>apiHandlers</code> 处理跨线程 API，<code>apiExtensions</code> 注入设备事实；canvas 与资源 URL 由宿主适配器提供。</p>
+            <p><a href="#/hosts">宿主注入面 →</a></p>
           </Card>
         </Cards>
       </Section>
@@ -90,7 +91,7 @@ export default function Home() {
             <p><a href="#/compiler">进入编译流水线 →</a></p>
           </Card>
           <Card tag="runtime" title="双线程内核">
-            <p>service 的注册表与页面栈、render 的 adapter、setData / event 两条通路、内置组件与 canvas。</p>
+            <p>注册表、页面栈、naming、behaviors / observers / relations、setData、事件、组件树与 host 注入的 canvas 适配。</p>
             <p><a href="#/runtime">进入运行时内核 →</a></p>
           </Card>
           <Card tag="protocol" title="显式的跨线程语言">
@@ -98,11 +99,11 @@ export default function Home() {
             <p><a href="#/protocol">进入 Bridge 协议 →</a></p>
           </Card>
           <Card tag="hosts" title="宿主如何接引擎">
-            <p>standalone 浏览器宿主、测试宿主、devtool 宿主，以及新宿主必须实现的十项能力。</p>
+            <p>runtime 纯度、host-browser 适配器、canvas / asset 注入、测试宿主与调试器，以及新宿主检查清单。</p>
             <p><a href="#/hosts">进入宿主支持 →</a></p>
           </Card>
           <Card tag="testing" title="证据而不是声明">
-            <p>92 个单测、40 个浏览器步骤、五段真实小程序流程，以及仍未覆盖的边界。</p>
+            <p>148 个单测、46 个浏览器步骤、五段真实小程序流程，以及仍未覆盖的边界。</p>
             <p><a href="#/testing">进入验证体系 →</a></p>
           </Card>
         </Cards>
@@ -133,29 +134,29 @@ export default function Home() {
         <div className="split">
           <Card tag="service thread" title="应用语义与平台 API">
             <ul>
-              <li>App / Page / Component 注册，按 manifest 顺序绑定路径</li>
+              <li>App / Page / Component / Behavior 注册，按 manifest 顺序绑定路径</li>
               <li>页面栈、路由、onLoad → onShow → onReady</li>
+              <li>Behaviors、observers、relations、selectComponent 组件语义</li>
               <li><code>setData</code> 路径补丁、事件处理函数调用</li>
-              <li><code>wx</code> Proxy、storage、system info、animation</li>
-              <li>canvas 离屏绘制，50ms 节流快照</li>
-              <li>组件实例的 data / methods / lifetimes</li>
+              <li>可配置 naming：API 全局、别名、diagnostics</li>
+              <li>canvas 通过注入的适配器离屏绘制</li>
             </ul>
           </Card>
           <Card tag="render thread" tone="violet" title="glass-easel 组件树">
             <ul>
               <li>ComponentSpace + StyleScopeManager</li>
-              <li>18 个内置组件的 AOT 模板</li>
+              <li>18 个内置组件，AOT 模板 + 共享 behaviors</li>
+              <li>styleIsolation / externalClasses / page scope</li>
               <li>事件序列化、dataset、target / currentTarget</li>
               <li>页面 mount / unmount 与元素树导出</li>
-              <li>样式注册顺序：base → scoped → 组件定义</li>
-              <li>canvas 帧绘制到可见 DOM</li>
+              <li>canvas 测量与帧绘制由宿主注入</li>
             </ul>
           </Card>
         </div>
         <Callout title="宿主不解释业务">
           <p>
-            host 只做四件事：创建并持有 transport、握手、启动/关闭线程、转发跨线程消息与宿主 API。
-            它不判断页面生命周期，也不直接操作 glass-easel 组件。
+            host 提供环境：transport、backend 与挂载点、宿主 API、canvas 适配、资源 URL。它不判断页面生命周期，也不直接操作 glass-easel 组件；
+            service / render 内核本身不引用 <code>window</code>、<code>document</code> 或 <code>iframe</code>。
           </p>
         </Callout>
       </Section>
@@ -171,6 +172,12 @@ export default function Home() {
               <tr><th>宿主</th><th>transport</th><th>render backend</th><th>控制面</th></tr>
             </thead>
             <tbody>
+              <tr>
+                <td><code>@tiny/host-browser</code></td>
+                <td>MessageChannel / iframe</td>
+                <td>DOM canvas + devtool overlay</td>
+                <td><code>createStandaloneDualThreadHost</code>、<code>DevtoolRuntimeClient</code></td>
+              </tr>
               <tr>
                 <td><code>tests/host</code></td>
                 <td>两个 MessageChannel</td>
@@ -201,7 +208,7 @@ export default function Home() {
         <Callout title="新宿主的入口在 createTinyRuntime">
           <p>
             只要提供 service / render 两条 transport、manifest 和初始路径，就能启动同一个引擎。
-            <code>createStandaloneDualThreadHost</code> 只是浏览器形态的适配器，不是引擎本身。
+            <code>@tiny/host-browser</code> 的 <code>createStandaloneDualThreadHost</code> 只是浏览器形态的适配器，不是引擎本身。
             <a href="#/hosts">看完整检查清单 →</a>
           </p>
         </Callout>
@@ -210,20 +217,22 @@ export default function Home() {
       <Section
         kicker="Evidence"
         title="这些能力已经有自动化证据"
-        intro="不是路线图：下面的行为都在 40 个浏览器步骤里被真实点击、输入和断言过。"
+        intro="不是路线图：下面的行为都在 46 个浏览器步骤里被真实点击、输入和断言过。"
       >
         <Cards className="three">
-          <Card title="真实示例 app"><p>todos、add-todo、ECharts bar、子包页面、组件插槽、import/include/template、animation。</p></Card>
+          <Card title="真实示例 app"><p>todos、add-todo、组件语义页、ECharts bar、子包页面、组件插槽、import/include/template、animation。</p></Card>
           <Card title="Taro 3 产物"><p>webpackJsonp、外部 WXS、递归模板、循环 usingComponents、Enter 提交、Redux todos。</p></Card>
           <Card title="微信官方示例子集"><p>基础组件索引、button 示例页、storage API 页；不包含 Skyline 与原生依赖页面。</p></Card>
-          <Card title="样式隔离"><p>页面与组件 WXSS 的 class 前缀、tag 选择器改写、rpx → vw、source map。</p></Card>
-          <Card title="Canvas 镜像"><p>service 侧 2D 绘制、50ms 节流 PNG 帧、render 侧 drawImage；ECharts 非空像素断言。</p></Card>
+          <Card title="组件语义"><p>Behavior 合并、observers、property observer、relations、selectComponent、styleIsolation 与 externalClasses。</p></Card>
+          <Card title="可替换宿主"><p>runtime 纯度检查；host-browser 注入 iframe、MessagePort、canvas 与资源 URL；在线调试器随站点发布。</p></Card>
+          <Card title="Canvas 镜像"><p>宿主 canvas 适配器：service 侧 2D 绘制、50ms 节流 PNG 帧、render 侧 drawImage；ECharts 非空像素断言。</p></Card>
+          <Card title="Naming"><p>默认 wx- 命名，也可以通过 tiny.config.json 切到 tiny- 或自定义 API 全局与别名。</p></Card>
           <Card title="可观测性"><p>编译、transport、service、render、host 五类诊断；元素树从 DOM 或逻辑树导出。</p></Card>
         </Cards>
         <Callout title="边界同样重要">
           <p>
-            当前证据只覆盖核心链路和五个真实 fixture。API 广度、组件语义、tabBar、下拉刷新、style isolation、
-            原生宿主与性能基线仍未闭环，<a href="#/status">路线页逐项列出</a>。
+            当前证据覆盖核心链路、组件语义、naming、样式隔离和五个真实 fixture。API 广度、页面能力、generics、
+            native 宿主与性能基线仍未闭环，<a href="#/status">路线页逐项列出</a>。
           </p>
         </Callout>
       </Section>
@@ -241,26 +250,31 @@ pnpm dev:glass-easel
 # 调试器（自动预览全部 tests/apps）
 pnpm dev:devtool
 
-# 只构建并校验本网站
-pnpm site:check`}</CodeBlock>
+# 站点（先打包内嵌 devtool，再构建网站）
+pnpm site:dev
+pnpm site:check
+
+# 核心 runtime 不得依赖浏览器全局
+pnpm check:runtime-purity`}</CodeBlock>
             <div className="hero-actions">
               <a className="button primary" href="https://github.com/YufJi/tiny">打开仓库</a>
               <a className="button ghost" href="#/testing">验收矩阵</a>
             </div>
           </div>
           <div className="stack">
-            <Card tag="current status" title="核心链路可用，兼容面仍在扩张">
-              <p>双线程、编译、协议、样式作用域、内置组件和调试器已闭环；API 与页面能力仍是主要缺口。</p>
+            <Card tag="current status" title="核心链路与组件语义可用，兼容面仍在扩张">
+              <p>双线程、编译、协议、naming、组件语义、样式隔离和调试器已闭环；宿主 API、页面能力与原生宿主仍是主要缺口。</p>
               <div className="pill-row">
                 <span className="pill good">core chain ready</span>
-                <span className="pill good">bridge v1</span>
+                <span className="pill good">host-independent</span>
+                <span className="pill good">component semantics</span>
                 <span className="pill good">taro 3 react</span>
                 <span className="pill warn">api surface narrow</span>
                 <span className="pill warn">browser host only</span>
               </div>
             </Card>
             <Card title="下一步">
-              <p>先把宿主 API 与常用组件补到“常见小程序能跑”，再做页面能力、样式隔离和性能基线。</p>
+              <p>先补宿主 API 与常用组件，再做页面能力、generics/definitionFilter、canvas 交互和性能基线。</p>
               <p><a href="#/status">查看完整现状与路线 →</a></p>
             </Card>
           </div>
