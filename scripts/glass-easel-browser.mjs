@@ -300,6 +300,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
 
     await step('render the existing todos page from app state', async () => {
       currentStep = 'render the existing todos page from app state'
+      await waitForText('Learning Javascript')
       const body = await text()
       for (const expected of ['Learning Javascript', 'Learning ES2016', 'Learning 小程序', 'tiny Todo List']) {
         assert.ok(body.includes(expected), `missing app-backed content: ${expected}`)
