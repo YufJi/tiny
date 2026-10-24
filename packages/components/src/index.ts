@@ -54,7 +54,7 @@ const DEFINITION_FACTORIES: Record<BuiltinComponentTag, DefinitionFactory> = {
   canvas: defineCanvas,
 }
 
-export function createP0BuiltinComponents(
+export function createBuiltinComponents(
   space: glassEasel.ComponentSpace,
   options: BuiltinComponentFactoryOptions = {},
 ): BuiltinComponentDefinitions {

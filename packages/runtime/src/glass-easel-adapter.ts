@@ -5,7 +5,7 @@ import { toJsonSafe, type SerializedEventNode, type SerializedMiniProgramEvent }
 import type { MiniProgramComponentSchema } from './types'
 import {
   BUILTIN_BASE_STYLES,
-  createP0BuiltinComponents,
+  createBuiltinComponents,
   type BuiltinComponentDefinitions,
 } from '@tiny/components'
 import { createRuntimeDiagnostic } from './diagnostics'
@@ -158,7 +158,7 @@ export class GlassEaselRuntimeAdapter {
     this.onDiagnostic = options.onDiagnostic
     this.mountComponent = options.mountComponent
     this.unmountComponent = options.unmountComponent
-    this.builtinComponents = createP0BuiltinComponents(this.componentSpace, {
+    this.builtinComponents = createBuiltinComponents(this.componentSpace, {
       onDiagnostic: (diagnostic) => this.onDiagnostic?.(createRuntimeDiagnostic(
         diagnostic.severity,
         diagnostic.code,
