@@ -79,7 +79,7 @@ on the page instance.
 ## Runtime debugger stage
 
 The gate compiles both `test-apps/demo` (demo) and `test-apps/mini` (real) into
-`packages/devtool/static/runtime/apps/*/generated`, starts the devtool, and verifies the
+`apps/devtool/static/runtime/apps/*/generated`, starts the devtool, and verifies the
 runtime debugger:
 
 1. `DevtoolRuntimeClient` boots the dual-thread host and reports `running`.

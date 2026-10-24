@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import type { ComponentArtifact } from '@tiny/cli'
+import type { ComponentArtifact } from '@tiny/manifest'
 import { buildComponentSchemas } from '../src/component-schema'
 import type { MiniProgramComponentOptions } from '../src/service'
 

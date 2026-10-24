@@ -44,4 +44,4 @@ Compiler-next becomes the authoritative path for the glass-easel build. Runtime,
 
 ---
 
-_Update: the package was renamed to `@tiny/cli` (`packages/cli`). The original decision and contract above are unchanged._
+_Update: the package was renamed to `@tiny/cli` (`tools/cli`). The original decision and contract above are unchanged._

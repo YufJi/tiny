@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { compileMiniProgram } from '../packages/cli/dist/index.js'
+import { compileMiniProgram } from '../tools/cli/dist/index.js'
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 

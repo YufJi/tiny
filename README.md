@@ -20,17 +20,33 @@ runtime (host)
 devtool (可选) : DevtoolRuntimeClient + React 面板
 ```
 
-## Packages
+## 分层
+
+| 层 | 路径 | 作用 |
+| --- | --- | --- |
+| 核心引擎 | `packages/*` | 可被运行时/工具复用的库 |
+| 工具 | `tools/*` | 编译器等开发工具 |
+| 应用 | `apps/*` | 可独立运行的调试器 |
+| 宿主 | `hosts/*` | 浏览器调试宿主（非 workspace 包） |
+| 测试小程序 | `test-apps/*` | 验收输入（非 workspace 包） |
+
+### 核心包
 
 | Package | 作用 |
 | --- | --- |
-| `packages/cli` | 活跃编译器：小程序源码 → glass-easel 产物与 manifest |
+| `packages/manifest` | 编译器与 runtime 共享的产物/manifest 契约 |
 | `packages/template-compiler` | WXML/ProcGen 编译 |
 | `packages/stylesheet-compiler` | WXSS 编译、rpx、class/tag 作用域 |
 | `packages/runtime` | 双线程 runtime、glass-easel adapter、DevtoolRuntimeClient |
 | `packages/bridge` | 版本化协议、transport、序列化与诊断边界 |
 | `packages/components` | 内置组件（view/text/input/swiper/canvas 等） |
-| `packages/devtool` | 浏览器调试器 |
+
+### 工具与应用
+
+| Package | 作用 |
+| --- | --- |
+| `tools/cli` | 活跃编译器：小程序源码 → glass-easel 产物与 manifest |
+| `apps/devtool` | 浏览器调试器 |
 
 ## 快速开始
 

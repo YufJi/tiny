@@ -1,5 +1,5 @@
 import { BridgeConnection } from '@tiny/bridge'
-import type { PageArtifact } from '@tiny/cli'
+import type { PageArtifact } from '@tiny/manifest'
 import { applyDataPatch, cloneJsonSafe, type DataPatch } from './data'
 import { buildComponentSchemas } from './component-schema'
 import type { ServiceThreadOptions } from './types'

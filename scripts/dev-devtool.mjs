@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url'
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const apps = [
-  ['test-apps/demo', 'packages/devtool/static/runtime/apps/demo/generated', 'demo'],
-  ['test-apps/mini', 'packages/devtool/static/runtime/apps/real/generated', 'real'],
+  ['test-apps/demo', 'apps/devtool/static/runtime/apps/demo/generated', 'demo'],
+  ['test-apps/mini', 'apps/devtool/static/runtime/apps/real/generated', 'real'],
 ]
 
 const children = apps.map(([source, output, label]) => {

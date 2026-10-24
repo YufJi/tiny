@@ -58,14 +58,17 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
 
-  packages/cli:
+  tools/cli:
     dependencies:
+      '@tiny/manifest':
+        specifier: workspace:*
+        version: link:../../packages/manifest
       '@tiny/stylesheet-compiler':
         specifier: workspace:*
-        version: link:../stylesheet-compiler
+        version: link:../../packages/stylesheet-compiler
       '@tiny/template-compiler':
         specifier: workspace:*
-        version: link:../template-compiler
+        version: link:../../packages/template-compiler
       esbuild:
         specifier: ^0.21.5
         version: 0.21.5
@@ -83,14 +86,14 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
 
-  packages/devtool:
+  apps/devtool:
     dependencies:
       '@rematch/core':
         specifier: ^2.0.1
         version: 2.2.0(redux@4.2.1)
       '@tiny/runtime':
         specifier: workspace:*
-        version: link:../runtime
+        version: link:../../packages/runtime
       glass-easel:
         specifier: 1.1.0
         version: 1.1.0
@@ -114,6 +117,12 @@ importers:
         specifier: ^6.1.7
         version: 6.1.8(@rspack/core@1.7.11)
 
+  packages/manifest:
+    devDependencies:
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+
   packages/runtime:
     dependencies:
       '@tiny/bridge':
@@ -122,9 +131,9 @@ importers:
       '@tiny/components':
         specifier: workspace:*
         version: link:../components
-      '@tiny/cli':
-        specifier: workspace:^
-        version: link:../cli
+      '@tiny/manifest':
+        specifier: workspace:*
+        version: link:../manifest
       es-toolkit:
         specifier: ^1.45.1
         version: 1.46.1

@@ -1,5 +1,5 @@
 import { BridgeConnection } from '@tiny/bridge'
-import type { PageArtifact } from '@tiny/cli'
+import type { PageArtifact } from '@tiny/manifest'
 import { GlassEaselRuntimeAdapter, type GlassEaselAdapterOptions } from './glass-easel-adapter'
 import { applyDataPatch, type DataPatch } from './data'
 import type { RenderThreadOptions } from './types'

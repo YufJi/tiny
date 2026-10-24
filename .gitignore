@@ -5,7 +5,7 @@ dist/
 .turbo/
 .sisyphus/
 hosts/browser/generated/
-packages/devtool/static/runtime/
+apps/devtool/static/runtime/
 packages/components/src/generated/
 .agents/
 skills-lock.json

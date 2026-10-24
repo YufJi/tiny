@@ -1,11 +1,11 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { compileMiniProgram } from '../packages/cli/dist/index.js'
+import { compileMiniProgram } from '../tools/cli/dist/index.js'
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const sourceDir = path.resolve(rootDir, process.argv[2] ?? 'test-apps/demo')
-const outputDir = path.resolve(rootDir, process.argv[3] ?? 'packages/devtool/static/runtime/apps/demo/generated')
+const outputDir = path.resolve(rootDir, process.argv[3] ?? 'apps/devtool/static/runtime/apps/demo/generated')
 
 let building = false
 let pending = false

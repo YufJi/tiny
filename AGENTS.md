@@ -15,17 +15,23 @@ removed after the glass-easel migration. Do not reintroduce
 JSBridge/executeJavaScript-based code. `test-apps/todo` is the Taro 3 compatibility
 target and part of acceptance; `test-apps/echarts` remains a historical reference demo.
 
-## Packages
+## Core packages
 
 | Package | Scope |
 | --- | --- |
-| `packages/cli` | Active compiler and manifest producer |
+| `packages/manifest` | Artifact/manifest contract shared by compiler and runtime |
 | `packages/template-compiler` | WXML parsing and ProcGen |
 | `packages/stylesheet-compiler` | WXSS, rpx, class/tag scoping |
 | `packages/runtime` | Host runtime, glass-easel adapter, devtool client |
 | `packages/bridge` | Protocol, transport, batching, diagnostics |
 | `packages/components` | Mini-program built-in components |
-| `packages/devtool` | Browser debugger UI and thread entries |
+
+## Tools and apps
+
+| Path | Scope |
+| --- | --- |
+| `tools/cli` | Active compiler and manifest producer |
+| `apps/devtool` | Browser debugger UI and thread entries |
 
 ## Hosts
 
@@ -39,7 +45,7 @@ target and part of acceptance; `test-apps/echarts` remains a historical referenc
 pnpm install                 # install workspace dependencies
 pnpm accept:glass-easel      # full gate: build, tests, browser acceptance
 pnpm dev:glass-easel         # P0 demo host on :5173
-pnpm dev:devtool             # debugger on :8080 (watches both examples)
+pnpm dev:devtool             # debugger on :8080 (watches both test apps)
 pnpm compile:glass-easel     # compile the P0 demo
 pnpm compile:devtool:all     # compile demo + test-apps/mini for devtool
 pnpm lint                    # biome (only bridge is configured today)
@@ -62,7 +68,7 @@ runner; use `pnpm --filter <package> test`.
 
 The end-to-end gate is `pnpm accept:glass-easel`, which runs:
 
-1. build of the six active compiler/runtime packages
+1. build of the seven active compiler/runtime packages
 2. unit tests for all packages
 3. P0 demo browser flow
 4. `test-apps/mini` browser flow

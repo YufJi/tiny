@@ -1,3 +1,7 @@
+/**
+ * Versioned contract between the compiler and the runtime/debugger.
+ * Keep these types free of compiler- or runtime-specific dependencies.
+ */
 export type DiagnosticSeverity = 'error' | 'warning' | 'info'
 
 export type SourceLocation = {
@@ -12,15 +16,6 @@ export type Diagnostic = {
   file?: string
   location?: SourceLocation
   details?: unknown
-}
-
-export type CompileOptions = {
-  sourceDir: string
-  outputDir: string
-  clean?: boolean
-  dev?: boolean
-  rpxRatio?: number
-  scopePrefix?: string
 }
 
 export type ScriptArtifact = {
@@ -90,12 +85,4 @@ export type Manifest = {
   styles: StyleArtifact[]
   assets: AssetArtifact[]
   diagnostics?: Diagnostic[]
-}
-
-export type CompileResult = {
-  outputDir: string
-  manifest: Manifest
-  manifestPath: string
-  diagnostics: Diagnostic[]
-  outputPath: string
 }

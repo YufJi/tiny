@@ -22,9 +22,9 @@
   "dependencies": {
     "@tiny/bridge": "workspace:*",
     "@tiny/components": "workspace:*",
-    "@tiny/cli": "workspace:^",
     "es-toolkit": "^1.45.1",
-    "glass-easel": "1.1.0"
+    "glass-easel": "1.1.0",
+    "@tiny/manifest": "workspace:*"
   },
   "devDependencies": {
     "@tiny/template-compiler": "workspace:^",

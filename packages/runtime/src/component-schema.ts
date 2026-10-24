@@ -1,4 +1,4 @@
-import type { ComponentArtifact } from '@tiny/cli'
+import type { ComponentArtifact } from '@tiny/manifest'
 import type { MiniProgramComponentOptions } from './service'
 import type { MiniProgramComponentSchema, MiniProgramPropertyDefinition, MiniProgramPropertyType } from './types'
 

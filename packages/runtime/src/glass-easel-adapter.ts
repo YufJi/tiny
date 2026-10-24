@@ -1,5 +1,5 @@
 import * as glassEasel from 'glass-easel'
-import type { Manifest, PageArtifact } from '@tiny/cli'
+import type { Manifest, PageArtifact } from '@tiny/manifest'
 import type { StyleLoader, TemplateRegistry } from './types'
 import { toJsonSafe, type SerializedEventNode, type SerializedMiniProgramEvent } from './events'
 import type { MiniProgramComponentSchema } from './types'

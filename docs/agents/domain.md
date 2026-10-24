@@ -14,8 +14,9 @@ If any of these files don't exist, **proceed silently**. Don't flag their absenc
 The initial map treats each package as its own context:
 
 - `packages/bridge` — versioned runtime protocol, transport, batching, and diagnostics boundary
-- `packages/cli` — active glass-easel compiler and runtime manifest producer
-- `packages/devtool` — web-based debugger
+- `packages/manifest` — artifact/manifest contract shared by compiler and runtime
+- `tools/cli` — active glass-easel compiler and runtime manifest producer
+- `apps/devtool` — web-based debugger
 - `packages/runtime` — runtime services
 - `packages/stylesheet-compiler` — stylesheet compilation
 - `packages/template-compiler` — template compilation
