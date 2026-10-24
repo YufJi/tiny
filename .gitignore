@@ -9,3 +9,4 @@ apps/devtool/static/runtime/
 packages/components/src/generated/
 .agents/
 skills-lock.json
+.scratch/probe/
