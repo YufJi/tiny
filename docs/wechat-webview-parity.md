@@ -1,0 +1,579 @@
+# 微信 WebView 版功能对齐度分析
+
+> **快照**：2026-10-24 · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
+>
+> **结论**：加权功能对齐约 31%（合理区间 30–35%）；页面启动率 85.5%；生产可替换 < 20%
+>
+> **维护**：功能完成后更新本文的评分表、覆盖表、实测数据和变更记录
+
+---
+
+## 1. 结论摘要
+
+- 按微信 WebView 版全量能力计算，当前引擎约完成 **三分之一**：加权得分 **31.3%**。
+- 能力结构偏科：**编译/渲染约 70%，框架约 42%，平台 API 约 6%，页面形态约 12%**。
+- 仓库内置的微信官方 demo 子集（117 页）中，**100 页能启动（85.5%）**，96 页有可见文本；但这是“能挂载”，不是“功能对齐”。
+- 普通业务小程序最依赖的 `wx.request`、`wx.login`、`wx.requestPayment`、`showModal`、导航栏、tabBar、picker、form、textarea 均未实现。
+- 一句话：**编译与渲染这条线已经打通，平台 API 和页面形态这条线基本还是 P0 子集。**
+
+仓库自己的 [Status 页](../website/src/pages/Status.jsx) 也给出了相同定性判断（“能跑真实示例，还不是完整微信兼容”），本文把它量化，并保留可复测的口径。
+
+---
+
+## 2. 评估口径
+
+### 2.1 基准规模
+
+以 2026-10-24 的[微信组件文档](https://developers.weixin.qq.com/miniprogram/dev/component/)与[微信 API 文档](https://developers.weixin.qq.com/miniprogram/dev/api/)为准：
+
+| 项目 | 微信 WebView 版规模 | 说明 |
+| --- | ---: | --- |
+| 内置组件 | **60** | 剔除 Skyline 的 23 个组件/手势；含 11 个开放能力组件（web-view/ad/store-* 等），以及 `page-meta`、`navigation-bar` 配置节点 |
+| 核心 UI 组件 | **45** | 60 减去 11 个开放组件、`aria-component`、`navigation-bar`、`page-meta`、`functional-page-navigator` |
+| wx API 条目 | **502** | API 索引中的 `wx.*` 条目；同步/异步、`on*`/`off*` 分别计数，含少量命名空间入口。分母未逐条剔除 Skyline/云开发/AI 条目，对量级结论影响很小 |
+| 页面生命周期 | **14** | onLoad / onShow / onReady / onHide / onUnload / onPullDownRefresh / onReachBottom / onPageScroll / onResize / onTabItemTap / onShareAppMessage / onShareTimeline / onAddToFavorites / onSaveExitState |
+| 应用生命周期 | **7** | onLaunch / onShow / onHide / onError / onPageNotFound / onUnhandledRejection / onThemeChange |
+| 路由 API | **5** | navigateTo / navigateBack / redirectTo / reLaunch / switchTab |
+| app.json 关键字段 | **20+** | pages / window / tabBar / subPackages / usingComponents / style / lazyCodeLoading / permission / sitemapLocation / workers / plugins / renderer / preloadRule 等 |
+
+> Skyline 对结论影响很小：把 Skyline 的 23 个组件算进来，组件覆盖率会从 30% 降到 22%，总分只掉约 1.5 个百分点。**真正拉低分数的是 API 和页面形态，不是 Skyline。**
+
+### 2.2 权重
+
+权重按“普通业务小程序能否跑起来”的主观重要性分配，不是微信官方标准：
+
+| 维度 | 权重 | 说明 |
+| --- | ---: | --- |
+| 编译/构建 | 10% | WXML/WXSS/JS/TS/WXS、产物、配置 |
+| 框架运行时 | 18% | 生命周期、路由、组件语义、setData、事件 |
+| 内置组件 | 17% | 标签数量、属性/事件、默认外观 |
+| wx API | 20% | 平台能力广度与真实行为 |
+| 页面形态 | 12% | 导航栏、tabBar、下拉/触底/滚动、分享、转场 |
+| 样式/渲染 | 8% | WXSS 能力、作用域、隔离、canvas |
+| 宿主/平台 | 8% | 浏览器/原生宿主、网络/登录/支付等平台层 |
+| 开发工具 | 4% | 调试、状态、元素树、网络/存储面板 |
+| 质量/验证 | 3% | 单测、浏览器验收、性能/视觉/安全 |
+
+### 2.3 计分方式
+
+- **完成度**：该维度内“已实现且有代码证据的条目 / 微信 WebView 文档条目”，或按关键能力清单打分。
+- **加权得分**：`Σ(权重 × 完成度)`。
+- **区间**：权重调整会让结果在 30–35% 之间浮动；把 API 权重降到 15%、框架权重升到 20%，结果约 34–35%，但不会到 50%。
+- 所有百分比都是**工程估算**，用于判断量级和优先级，不是精确指标。
+
+---
+
+## 3. 总评分
+
+| 维度 | 权重 | 完成度 | 加权 | 关键依据 |
+| --- | ---: | ---: | ---: | --- |
+| 编译/构建 | 10% | 72% | 7.2 | WXML/WXSS/WXS 基本完整；app.json 只消费 3 个字段；无 npm 构建、无 TS 类型检查 |
+| 框架运行时 | 18% | 42% | 7.6 | 5/14 页面生命周期、2/5 路由；自定义组件缺 behaviors/observers/relations/selectComponent |
+| 内置组件 | 17% | 30% | 5.1 | 18/60 标签；属性 47/146；事件 13/43；默认外观非微信样式 |
+| wx API | 20% | 6% | 1.2 | 核心 10 个 + 宿主扩展 2 个 / 502；官方 demo 150 个中支持 12 个 |
+| 页面形态 | 12% | 12% | 1.4 | 无导航栏/tabBar/下拉/触底/页面滚动/分享/转场 |
+| 样式/渲染 | 8% | 62% | 5.0 | WXSS/rpx/作用域强；styleIsolation/addGlobalClass 缺；canvas 仅镜像 |
+| 宿主/平台 | 8% | 15% | 1.2 | 仅浏览器宿主；无原生/网络/登录/支付/分享 |
+| 开发工具 | 4% | 35% | 1.4 | 有运行时状态/元素树/诊断；不是完整微信开发者工具 |
+| 质量/验证 | 3% | 40% | 1.2 | 92 单测 + 40 步浏览器验收；无性能/视觉/安全/原生测试 |
+| **合计** | **100%** | — | **31.3%** | |
+
+### 条目覆盖率速览
+
+| 指标 | 微信 WebView | Tiny | 覆盖率 |
+| --- | ---: | ---: | ---: |
+| 内置组件标签 | 60 | 18 | 30.0% |
+| 核心 UI 组件 | 45 | 18 | 40.0% |
+| wx API 条目 | 502 | 12 | 2.4% |
+| 官方 demo 实际调用 API | 150 | 12 | 8.0% |
+| 页面生命周期 | 14 | 5 | 35.7% |
+| 应用生命周期 | 7 | 3 | 42.9% |
+| 路由 API | 5 | 2 | 40.0% |
+| 已实现组件属性 | 146 | 47 | 32.2% |
+| 已实现组件事件 | 43 | 13 | 30.2% |
+| app.json 关键字段 | 20+ | 3 | ≈15% |
+
+> API 的 12 个 = 核心 10 个（`getSystemInfo` / `getSystemInfoSync`、`getStorageSync`、`setStorageSync`、`navigateTo`、`navigateBack`、`showToast`、`createAnimation`、`createCanvasContext`、`createSelectorQuery`）+ 宿主扩展 2 个（`getMenuButtonBoundingClientRect`、`getPerformance`）。
+
+---
+
+## 4. 分项覆盖
+
+### 4.1 内置组件
+
+**18 / 60 = 30%**。按分类：
+
+| 分类 | 数量 | 已实现 | 缺口 |
+| --- | ---: | ---: | --- |
+| 视图容器 | 11 | 4 | movable-area、movable-view、cover-view、cover-image、match-media、page-container、root-portal |
+| 基础内容 | 5 | 3 | rich-text、selection |
+| 表单 | 17 | 9 | picker、picker-view、picker-view-column、form、textarea、editor、editor-portal、keyboard-accessory |
+| 导航 | 2 | 0 | navigator、functional-page-navigator |
+| 媒体 | 9 | 1 | audio、video、camera、live-player、live-pusher、voip-room、channel-live、channel-video |
+| 地图 | 1 | 0 | map |
+| 画布 | 1 | 1 | canvas（仅离屏镜像，语义不完整） |
+| 开放能力 | 11 | 0 | web-view、ad、ad-custom、official-account、official-account-publish、open-data、reward、store-* |
+| 无障碍 | 1 | 0 | aria-component |
+| 导航栏 | 1 | 0 | navigation-bar |
+| 页面属性 | 1 | 0 | page-meta |
+| **合计** | **60** | **18** | |
+
+**已实现组件**（[tags.ts](../packages/components/src/tags.ts:1)）：
+`view`、`text`、`button`、`label`、`input`、`checkbox`、`checkbox-group`、`radio`、`radio-group`、`icon`、`image`、`scroll-view`、`slider`、`progress`、`switch`、`swiper`、`swiper-item`、`canvas`。
+
+**属性/事件覆盖**（仅统计 WebView 适用属性；事件按组件文档属性表中的 `bind*`/`catch*` 条目统计，不含 `tap`/`longpress` 等通用事件）：
+
+| 组件 | 文档属性 | 已支持 | 文档事件 | 已支持 | 主要缺口 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| button | 22 | 3 | 9 | 0 | size、plain、loading、form-type、open-type… |
+| canvas | 3 | 2 | 6 | 0 | disable-scroll |
+| checkbox-group | 0 | 0 | 1 | 1 | — |
+| checkbox | 4 | 3 | 0 | 0 | color |
+| icon | 3 | 3 | 0 | 0 | — |
+| image | 6 | 3 | 2 | 2 | show-menu-by-longpress、webp、forceHttps |
+| input | 26 | 4 | 7 | 5 | password、placeholder-style、maxlength、cursor-spacing、auto-focus… |
+| label | 1 | 0 | 0 | 0 | for |
+| progress | 11 | 4 | 1 | 0 | border-radius、font-size、color、activeColor、backgroundColor… |
+| radio-group | 0 | 0 | 1 | 1 | — |
+| radio | 4 | 3 | 0 | 0 | color |
+| scroll-view | 24 | 4 | 10 | 0 | scroll-top、scroll-left、scroll-into-view、scroll-with-animation… |
+| slider | 12 | 6 | 2 | 2 | color、selected-color、activeColor、backgroundColor、block-size… |
+| swiper-item | 2 | 0 | 0 | 0 | item-id、skip-hidden-item-layout |
+| swiper | 16 | 7 | 3 | 1 | indicator-color、indicator-active-color、display-multiple-items、previous-margin… |
+| switch | 4 | 3 | 1 | 1 | color |
+| text | 4 | 2 | 0 | 0 | user-select、decode |
+| view | 4 | 0 | 0 | 0 | hover-class、hover-stop-propagation、hover-start-time、hover-stay-time |
+| **合计** | **146** | **47（32.2%）** | **43** | **13（30.2%）** | |
+
+**外观保真度**：内置组件的默认样式是项目自定义的暗色 slate 主题（[styles.ts](../packages/components/src/styles.ts:1)），不是微信默认样式。按像素对比，默认外观对齐度很低；业务样式可以覆盖，但“开箱即用”的视觉不一致。
+
+> 不支持的标签会降级为普通 DOM 元素，只发 `UNSUPPORTED_COMPONENT` warning，不抛错。页面能开，但组件没有行为。
+
+### 4.2 wx API
+
+**核心 10 个 / 502 = 2.0%；含宿主扩展 12 个 = 2.4%。** 官方 demo 实际用到的 150 个唯一 `wx.*` 中支持 12 个（8%）。
+
+能力分布：
+
+| 能力 | 状态 | 说明 |
+| --- | --- | --- |
+| 系统信息 | 部分 | `getSystemInfo` / `getSystemInfoSync` 只有 pixelRatio/windowWidth/windowHeight 等少量字段；缺 SDKVersion、platform、safeArea、statusBarHeight |
+| 数据缓存 | 部分 | 仅 sync；只有内存快照，刷新即丢；无 remove/clear/info/batch/异步 |
+| 路由 | 部分 | 仅 navigateTo/navigateBack；无 redirectTo/reLaunch/switchTab |
+| 界面交互 | 桩 | `showToast` 只返回 `{errMsg}`，没有 UI；无 modal/loading/action sheet/导航栏 |
+| 网络 | 无 | 无 request/upload/download/WebSocket/UDP/TCP |
+| 登录/账号 | 无 | 无 login/checkSession/getUserProfile/getUserInfo |
+| 支付/分享/订阅 | 无 | 无 requestPayment/showShareMenu/onShareAppMessage/requestSubscribeMessage |
+| 媒体 | 无 | 无 chooseImage/chooseMedia/previewImage/audio/video/recorder/camera |
+| 文件 | 无 | 无 FileSystemManager/openDocument/saveFile |
+| 位置/设备 | 无 | 无 getLocation/chooseLocation/makePhoneCall/clipboard/networkType/蓝牙/NFC/Wi-Fi/scanCode |
+| 画布 | 桩/部分 | legacy `createCanvasContext` 是 Proxy 桩；ECharts 走 service 离屏 canvas → PNG 帧 |
+| 动画 | 部分 | `createAnimation` 只映射最终态 CSS transform/transition，无多 step 时序与回调 |
+| 选择器 | 桩 | `createSelectorQuery` 只对 canvas 做 measure，普通节点返回 0×0 |
+| 观测器 | 无 | 无 `createIntersectionObserver` |
+| 更新/性能/隐私 | 无/桩 | 无 getUpdateManager；getPerformance 为宿主桩；无隐私授权 |
+
+关键代码入口：
+
+- 服务 API：[service.ts](../packages/runtime/src/service.ts:320)
+- 宿主 API：[host-api.ts](../packages/runtime/src/host-api.ts:35)
+- 不支持 API 的降级：`wx` Proxy 返回 `undefined` + `UNSUPPORTED_API` warning（[service.ts](../packages/runtime/src/service.ts:284)）
+
+> 降级策略是“静默 undefined”，不是抛错。页面不会立刻崩，但失败会推迟到调用方 `.then`/属性访问时才暴露，排查成本高。
+
+### 4.3 生命周期与路由
+
+页面生命周期 **5 / 14**（[service.ts](../packages/runtime/src/service.ts:18)）：
+
+| 生命周期 | 状态 |
+| --- | --- |
+| onLoad / onShow / onReady / onHide / onUnload | ✅ |
+| onPullDownRefresh / onReachBottom / onPageScroll / onResize | ❌ |
+| onTabItemTap / onShareAppMessage / onShareTimeline / onAddToFavorites / onSaveExitState | ❌ |
+
+应用生命周期 **3 / 7**：
+
+| 生命周期 | 状态 |
+| --- | --- |
+| onLaunch / onShow / onHide | ✅ |
+| onError / onPageNotFound / onUnhandledRejection / onThemeChange | ❌ |
+
+路由 **2 / 5**：
+
+| API | 状态 |
+| --- | --- |
+| navigateTo / navigateBack | ✅ |
+| redirectTo / reLaunch / switchTab | ❌ |
+
+### 4.4 app.json 配置
+
+| 字段 | 状态 |
+| --- | --- |
+| `pages` | ✅ |
+| `subPackages` / `subpackages` | ✅ 编译、可直接启动；无按需加载/预下载/独立分包 |
+| `usingComponents` | ✅ |
+| `window` | ⚠️ 只透传到 manifest，运行时不消费 |
+| `tabBar` | ❌ |
+| `style` / `lazyCodeLoading` / `permission` / `sitemapLocation` / `workers` / `plugins` | ❌ |
+| `renderer` / `rendererOptions` / `preloadRule` / `resizable` / `darkmode` / `requiredPrivateInfos` | ❌ |
+
+`project.config.json` 只读取 `miniprogramRoot`。没有 npm 构建 / `miniprogram_npm`，第三方组件库无法按微信方式安装。
+
+### 4.5 自定义组件语义
+
+已注册：
+
+```text
+properties / data / methods / lifetimes / pageLifetimes / slots
+```
+
+缺失：
+
+| 能力 | 状态 | 影响 |
+| --- | --- | --- |
+| `behaviors` | ❌ 仅原样返回，无 mixin 合并 | UI 库的 behavior 复用失效 |
+| `observers` | ❌ 未注册 | 属性变化不会触发观察者 |
+| `relations` / `getRelationNodes` | ❌ | checkbox-group、picker 等父子关系无法实现 |
+| `externalClasses` | ❌ 用户组件声明不生效 | UI 库样式注入失效 |
+| `generics` / `placeholder` | ❌ 编译器能解析，运行时没接 | 泛型组件不可用 |
+| `styleIsolation` / `addGlobalClass` | ❌ | `isolated` 近似可用，但 `apply-shared`/`shared` 不可用 |
+| `selectComponent` / `selectAllComponents` | ❌ service 侧实例没有 | 页面代码无法定位子组件 |
+| `definitionFilter` | ❌ | 插件式组件扩展不可用 |
+
+> 这直接导致 Vant Weapp、TDesign 等主流组件库基本跑不起来。
+
+### 4.6 页面形态与宿主
+
+| 能力 | 状态 |
+| --- | --- |
+| 导航栏（标题/返回/背景色/`navigationStyle: custom`） | ❌ |
+| tabBar（内置/自定义、`switchTab`） | ❌ |
+| 下拉刷新、触底、页面滚动事件 | ❌ |
+| 分享菜单/转发/朋友圈 | ❌ |
+| 页面转场动画 | ❌ |
+| 原生组件（video/map/camera/live-player 等） | ❌ |
+| 浏览器宿主 | ✅ |
+| 原生/JSCore 宿主 | ❌ |
+| iframe sandbox / origin 校验 | ❌ |
+| 能力协商（capabilities） | ❌ 基本未使用 |
+
+---
+
+## 5. 实测证据
+
+### 5.1 验收门禁
+
+2026-10-24 本地跑 `pnpm accept:glass-easel`，全部通过：
+
+- 8 个编译器/运行时/宿主目标构建
+- 92 个单元测试
+- 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
+- 40 个浏览器步骤全部通过
+- 门禁覆盖的 5 段流程无 console/page error（117 页探针的 pageerror 见 5.2）
+
+这说明现有能力是**真实可运行**的，不是纸面设计。
+
+### 5.2 官方 demo 逐页启动探针
+
+对 `tests/apps/wechat-demo`（117 页，已剔除 Skyline/AR/聊天工具）全量编译，用 headless Chrome 逐页 `?path=` 启动：
+
+| 指标 | 结果 |
+| --- | --- |
+| 成功挂载 | **100 / 117（85.5%）** |
+| 有可见文本 | 96 / 117 |
+| 页面级报错/崩溃 | 17 页 |
+| console error | 0 |
+
+**探针方法**：
+
+1. `pnpm compile:wechat-demo` 生成产物到 `tests/host/generated`。
+2. 启动 `tests/host` Vite 服务。
+3. Playwright 打开 `/?path=<page>`，等待 `window.__tinyRuntime`，再等 350ms。
+4. 收集 `pageerror`、`console.error`、`window.__tinyRuntime.host.diagnostics`，以及 render iframe `#app` 的子节点/文本。
+5. 判定：`__tinyRuntime` 出现、`#app` 有子节点、无 pageerror = booted；否则 render-failed。
+
+**结果解读**：
+
+- 85.5% 是“能挂载”，不是“功能对齐”。
+- 100 页能启动，很大程度是因为不支持的组件降级成普通 DOM、不支持的 API 返回 `undefined` 且只发 warning、很多调用发生在点击之后。
+- 17 页失败集中在 canvas 2D/WebGL、媒体、平台 API、WXS、AI 相机（明细见附录 A）。
+
+### 5.3 官方 demo API 覆盖
+
+从 `tests/apps/wechat-demo` 源码中提取到 **150 个唯一 `wx.*` 调用**，引擎支持 **12 个（8%）**：
+
+```text
+getSystemInfo / getSystemInfoSync / getStorageSync / setStorageSync
+navigateTo / navigateBack / showToast / createAnimation
+createCanvasContext / createSelectorQuery
+getMenuButtonBoundingClientRect / getPerformance
+```
+
+其中 `showToast` 无 UI、`createCanvasContext` 是桩、`createSelectorQuery` 只支持 canvas、`createAnimation` 只映射最终态。真正“能用”的核心 API 约 5–6 个。
+
+### 5.4 为什么“85.5% 启动”和“31% 对齐”不矛盾
+
+| 口径 | 回答的问题 | 结果 |
+| --- | --- | --- |
+| 启动率 | 页面能不能挂载？ | 85.5% |
+| 功能对齐 | 页面上的功能是否按微信语义工作？ | ~31% |
+| 生产可替换 | 普通业务小程序能否直接上线？ | < 20% |
+
+启动率高，是因为引擎“尽量不崩”；功能对齐低，是因为大量能力只是“有名字”或“静默降级”。
+
+---
+
+## 6. 已经对齐的部分
+
+这些是实打实的能力，不是占位：
+
+### 6.1 WXML 编译器
+
+- `wx:if` / `wx:elif` / `wx:else` / `wx:for` / `wx:for-item` / `wx:for-index` / `wx:key`
+- `template` / `import` / `include`、命名模板、递归模板
+- `slot` / 作用域插槽、`generic:`、`model:` 双向绑定
+- `wxs` / `sjs`、`bind` / `catch` / `capture-bind` / `mut-bind`
+- 表达式、注释、HTML 实体、`data-*`、`mark:*`
+- 源码 7,241 行，基本是 glass-easel 编译器的完整移植
+
+### 6.2 WXSS 编译器
+
+- `rpx`、`@import`、`@media`、`@supports`、`@keyframes`、`:host`
+- class/tag 作用域、source map
+- 850 行，行为接近 glass-easel 的 Rust 版 transformer
+
+### 6.3 双线程运行时与 bridge
+
+- service iframe / render iframe / MessageChannel
+- 握手、超时、批处理、JSON-safe 校验
+- 结构化诊断：compile / transport / service / render / host
+- 跨线程只走版本化消息，不直接读 iframe 全局
+
+### 6.4 框架基本功
+
+- App / Page / Component 注册
+- 页面栈、页面 query、`getCurrentPages`、`getApp`
+- `setData` 支持 `a.b[0]` 路径
+- 事件冒泡/捕获、`dataset`、`target`/`currentTarget`、自定义事件
+- 自定义组件 properties/data/methods/lifetimes/pageLifetimes/slots
+- Component-as-page、子包页面直接启动
+
+### 6.5 真实兼容证据
+
+- Taro 3 React 产物（todo）能跑：`webpackJsonp`、递归模板、外部 WXS、Redux 列表均通过
+- 微信官方 demo 子集 100/117 页能挂载，96 页有可见文本
+- ECharts 通过 service 离屏 canvas → PNG 帧 → render `drawImage` 跑通
+- 内置组件、页面样式、`app.wxss` 作用域在验收中有真实断言
+
+### 6.6 调试器
+
+- 运行时状态、诊断、元素树
+- Navigate / Back / Reload / Terminate / 应用切换
+- 对“运行时级调试”够用，但不是完整微信开发者工具
+
+---
+
+## 7. 关键缺口与优先级
+
+### P0：不补就跑不了普通业务小程序
+
+| 缺口 | 影响 | 建议 |
+| --- | --- | --- |
+| `wx.request` / `uploadFile` / `downloadFile` | 无法联网，绝大多数业务小程序不可用 | 先做 request + 拦截器/超时/错误码 |
+| 异步 storage + remove/clear/info/batch | 只能同步、刷新即丢 | 持久化到 localStorage/IndexedDB，补全 API |
+| `redirectTo` / `reLaunch` / `switchTab` | 只能前进/后退，不能重置栈/切 tab | 补页面栈语义与 tabBar |
+| `showModal` / `showLoading` / `hideLoading` | 常用交互缺失 | 宿主层 UI + API |
+| 导航栏 + tabBar | 页面没有微信外观，普通 app 无法直接跑 | 页面配置消费 + 宿主 UI |
+| 下拉刷新 / 触底 / 页面滚动 | 列表页/feed 页不可用 | 页面生命周期 + 事件 |
+| `picker` / `textarea` / `form` / `navigator` | 表单与导航高频组件缺失 | 优先补这 4 个 |
+| 登录/支付/分享 | 商业化能力缺失 | P0 末或 P1 初 |
+
+### P1：组件与页面语义
+
+| 缺口 | 影响 |
+| --- | --- |
+| `behaviors` / `observers` / `relations` / `externalClasses` / `styleIsolation` / `selectComponent` | UI 库无法运行 |
+| scroll-view/input/swiper/button 属性与事件补全 | 已实现组件“形似神不似” |
+| canvas 2D / 触摸 / rAF / `canvasToTempFilePath` | canvas 页面与图表交互不可用 |
+| animation 多 step / 回调 | 复杂动画不可用 |
+| 子包按需加载 / 预下载 / 独立分包 | 首屏与包体不可控 |
+| npm 构建 / `miniprogram_npm` | 第三方组件库无法安装 |
+| 内置组件默认样式对齐 | 视觉不一致 |
+
+### P2：平台能力与生产化
+
+| 缺口 | 影响 |
+| --- | --- |
+| 原生/JSCore 宿主 | 只能在浏览器里跑 |
+| 原生网络桥、媒体、地图、视频、文件、Worker、订阅消息/客服等平台扩展 | 平台能力缺失 |
+| 性能基线（启动/首屏/setData/内存/长时运行） | 无法回归 |
+| 视觉回归、安全测试、原生测试 | 生产质量不可控 |
+| iframe sandbox / origin 校验 / 能力协商 | 部署安全与多宿主适配 |
+
+---
+
+## 8. 补齐路线与预期
+
+以下百分比是按同一权重表的估算，不是承诺：
+
+| 阶段 | 补齐内容 | 预计完整度 |
+| --- | --- | --- |
+| **P0：能跑常见业务** | request、异步 storage、redirectTo/reLaunch/switchTab、modal/loading、导航栏/tabBar、下拉/触底/页面滚动、picker/textarea/form/navigator | **~50%** |
+| **P1：组件与页面语义** | behaviors/observers/relations/externalClasses/styleIsolation/selectComponent；补全常用组件属性事件；canvas 2D/交互；animation 多 step；子包按需加载、npm 构建 | **~65–70%** |
+| **P2：平台能力与生产化** | 原生宿主、网络桥、登录/支付/分享、媒体/地图/视频、文件系统、Worker；性能/视觉/安全基线 | **~80%+** |
+
+**最短路径**：先补 15–20 个高频 API + 页面 chrome + 5 个高频组件。这三件事能把“能跑 demo”提升到“能跑常见业务”，投入产出比最高；继续打磨编译器的收益已经很小。
+
+---
+
+## 9. 维护指南
+
+### 9.1 复测命令
+
+```bash
+# 完整门禁（构建 + 单测 + 5 段浏览器验收）
+pnpm accept:glass-easel
+
+# 只跑单测
+pnpm --filter @tiny/runtime test
+pnpm --filter @tiny/cli test
+
+# 编译微信官方 demo 子集
+pnpm compile:wechat-demo
+
+# 启动测试宿主（默认 P0 demo；微信 demo 可用 ?path= 指定页面）
+pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --port 5174
+```
+
+### 9.2 更新本文的步骤
+
+1. **跑门禁**：确认单测/浏览器验收仍通过；记录测试数量与步骤数。
+2. **重数组件**：对照[微信组件文档](https://developers.weixin.qq.com/miniprogram/dev/component/)与 [tags.ts](../packages/components/src/tags.ts:1)，更新 18/60、分类表、属性/事件表。
+3. **重数 API**：对照[微信 API 索引](https://developers.weixin.qq.com/miniprogram/dev/api/)与 [service.ts](../packages/runtime/src/service.ts:320) + [service-thread.ts](../tests/host/src/service-thread.ts:1) 的 `apiExtensions`，更新 12/502、能力表。
+4. **重数生命周期/路由/配置**：对照第 4.3、4.4 节逐项打勾。
+5. **重跑 117 页探针**：按 5.2 节方法，更新启动率与失败明细；若后续把探针整理为 `scripts/parity-probe.mjs`，改用该脚本并在此处替换命令。
+6. **重算总分**：更新第 3 节表格的完成度/加权分；如果权重调整，在变更记录中说明。
+7. **更新变更记录**：日期、变更摘要、新的总分。
+
+### 9.3 探针口径说明
+
+- 探针使用 `tests/apps/wechat-demo` 的 117 个页面（app.json 的 `pages` + 两个 subpackage）。
+- “booted”只代表 `window.__tinyRuntime` 出现、render `#app` 有子节点、无 pageerror；不代表页面功能正确。
+- 不支持的组件/API 的 warning 不计入失败；这也是启动率偏高的原因。
+- 如果后续补了原生组件/网络能力，探针应增加“关键页面交互”断言，而不是只看启动。
+
+### 9.4 口径变更记录
+
+| 日期 | 变更 | 完整度 |
+| --- | --- | --- |
+| 2026-10-24 | 初始快照：WebView 基准、117 页探针、加权评分 | **31.3%** |
+
+---
+
+## 10. 进度清单（完成后勾选）
+
+> 每次同步：勾选已完成项 → 更新第 3 节评分 → 更新 9.4 变更记录。
+
+### P0
+
+- [ ] `wx.request` / `uploadFile` / `downloadFile`
+- [ ] 异步 storage + `removeStorage` / `clearStorage` / `getStorageInfo` / batch
+- [ ] `redirectTo` / `reLaunch` / `switchTab`
+- [ ] `showModal` / `showLoading` / `hideLoading`
+- [ ] 导航栏 + tabBar
+- [ ] 下拉刷新 / 触底 / 页面滚动
+- [ ] `picker` / `textarea` / `form` / `navigator`
+- [ ] `wx.login` / `requestPayment` / 分享
+
+### P1
+
+- [ ] `behaviors` / `observers` / `relations` / `externalClasses`
+- [ ] `styleIsolation` / `addGlobalClass` / `selectComponent`
+- [ ] scroll-view / input / swiper / button 属性与事件补全
+- [ ] canvas 2D / 触摸 / rAF / `canvasToTempFilePath`
+- [ ] animation 多 step 与回调
+- [ ] 子包按需加载 / 预下载 / 独立分包
+- [ ] npm 构建 / `miniprogram_npm`
+- [ ] 内置组件默认样式对齐
+
+### P2
+
+- [ ] 原生/JSCore 宿主
+- [ ] 原生网络桥 / 媒体 / 地图 / 视频 / 文件系统 / Worker
+- [ ] 订阅消息 / 客服 / 发票等平台扩展
+- [ ] 性能基线（启动/首屏/setData/内存/长时运行）
+- [ ] 视觉回归 / 安全测试 / 原生测试
+- [ ] iframe sandbox / origin 校验 / 能力协商
+
+---
+
+## 附录 A：117 页失败明细
+
+| 页面 | 诊断码 | 报错 |
+| --- | --- | --- |
+| `packageComponent/pages/view/scroll-view/scroll-view` | BOOTSTRAP_ERROR | `this.animate is not a function` |
+| `packageComponent/pages/media/image/image` | BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'getTempFileURL')` |
+| `packageComponent/pages/canvas/canvas-2d/canvas-2d` | pageerror | `Cannot read properties of undefined (reading 'split')` |
+| `packageComponent/pages/canvas/webgl/webgl` | PAGE_READY_ERROR | `Cannot read properties of undefined (reading 'split')` |
+| `packageComponent/pages/open/ad/ad` | BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'expt_args_2')` |
+| `packageAPI/pages/page/intersection-observer/intersection-observer` | BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'relativeTo')` |
+| `packageAPI/pages/device/bluetooth/bluetooth` | RENDER_BOOTSTRAP_ERROR | `D is not a function` |
+| `packageAPI/pages/device/on-accelerometer-change/on-accelerometer-change` | PAGE_READY_ERROR | `Cannot read properties of undefined (reading 'beginPath')` |
+| `packageAPI/pages/media/voice/voice` | BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'onStart')` |
+| `packageAPI/pages/media/background-audio/background-audio` | BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'onPlay')` |
+| `packageAPI/pages/media/audio/audio` | PAGE_READY_ERROR | `Cannot set properties of undefined (setting 'src')` |
+| `packageAPI/pages/storage/get-background-prefetch-data/get-background-prefetch-data` | BOOTSTRAP_ERROR | `Cannot destructure property 'fetchedData' of 'res' as it is undefined.` |
+| `packageAPI/pages/worker/worker/worker` | PAGE_READY_ERROR | `Cannot read properties of undefined (reading 'beginPath')` |
+| `packageAPI/pages/framework/wxs/movable` | RENDER_BOOTSTRAP_ERROR | `lastTop is not defined` |
+| `packageAPI/pages/framework/wxs/sidebar` | RENDER_BOOTSTRAP_ERROR | `startmark is not defined` |
+| `packageAPI/pages/ai/mobilenet/index` | PAGE_READY_ERROR | `Cannot read properties of undefined (reading 'onCameraFrame')` |
+| `packageAPI/pages/ai/mobilenet_int8/index` | PAGE_READY_ERROR | `Cannot read properties of undefined (reading 'onCameraFrame')` |
+
+失败类别汇总：
+
+| 类别 | 页数 | 缺失能力 |
+| --- | ---: | --- |
+| canvas 2D / WebGL / worker | 4 | canvas 2D 上下文、rAF、worker |
+| 媒体/音频/图片 | 4 | 音频上下文、云文件、图片临时文件 |
+| 平台 API | 4 | IntersectionObserver、蓝牙、广告、后台预取 |
+| WXS | 2 | WXS 作用域/全局变量语义 |
+| AI 相机 | 2 | 相机帧回调 |
+| 组件方法 | 1 | `this.animate` |
+
+---
+
+## 附录 B：WebView 组件清单（60）
+
+| 分类 | 组件（✅ 已实现 / ❌ 未实现） |
+| --- | --- |
+| 视图容器（11） | ✅ view、scroll-view、swiper、swiper-item；❌ movable-area、movable-view、cover-view、cover-image、match-media、page-container、root-portal |
+| 基础内容（5） | ✅ icon、text、progress；❌ rich-text、selection |
+| 表单（17） | ✅ button、checkbox、checkbox-group、radio、radio-group、slider、switch、input、label；❌ picker、picker-view、picker-view-column、form、textarea、editor、editor-portal、keyboard-accessory |
+| 导航（2） | ❌ navigator、functional-page-navigator |
+| 媒体（9） | ✅ image；❌ audio、video、camera、live-player、live-pusher、voip-room、channel-live、channel-video |
+| 地图（1） | ❌ map |
+| 画布（1） | ✅ canvas（部分） |
+| 开放能力（11） | ❌ web-view、ad、ad-custom、official-account、official-account-publish、open-data、reward、store-coupon、store-gift、store-home、store-product |
+| 无障碍（1） | ❌ aria-component |
+| 导航栏（1） | ❌ navigation-bar |
+| 页面属性（1） | ❌ page-meta |
+
+> 统计口径：WebView 文档中除 Skyline 专属、XR-FRAME 与 `native-component` 说明页之外的组件。`canvas` 计入已实现，但当前是离屏镜像，不是完整 2D。
+
+---
+
+## 附录 C：关键代码索引
+
+| 主题 | 位置 |
+| --- | --- |
+| 内置组件标签清单 | [tags.ts](../packages/components/src/tags.ts:1) |
+| 内置组件默认样式 | [styles.ts](../packages/components/src/styles.ts:1) |
+| service API 宿主 | [service.ts](../packages/runtime/src/service.ts:320) |
+| 不支持 API 的降级 | [service.ts](../packages/runtime/src/service.ts:284) |
+| 宿主 API（toast/storage/navigate） | [host-api.ts](../packages/runtime/src/host-api.ts:35) |
+| 组件 schema（仅 data/properties/using） | [component-schema.ts](../packages/runtime/src/component-schema.ts:14) |
+| 组件注册（仅 properties/data/template/lifetimes） | [glass-easel-adapter.ts](../packages/runtime/src/glass-easel-adapter.ts:307) |
+| 页面/子包/app.json 解析 | [compile.ts](../tools/cli/src/compile.ts:165) |
+| 双 iframe 宿主 | [standalone-host.ts](../hosts/browser/src/standalone-host.ts:1) |
+| 浏览器验收步骤 | [glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs:36) |
+| 官方 demo 子集 | [app.json](../tests/apps/wechat-demo/app.json:1) |
