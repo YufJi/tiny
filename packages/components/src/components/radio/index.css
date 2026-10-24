@@ -1,0 +1,10 @@
+.tiny-radio {
+  display: inline-block;
+}
+.tiny-radio {
+  vertical-align: middle;
+}
+.tiny-radio input {
+  margin: 0;
+  vertical-align: middle;
+}

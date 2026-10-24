@@ -1,0 +1,61 @@
+.tiny-image {
+  display: block;
+  box-sizing: border-box;
+}
+.tiny-image {
+  max-width: 100%;
+  object-fit: fill;
+}
+.tiny-image-mode-aspectFit {
+  object-fit: contain;
+}
+.tiny-image-mode-aspectFill {
+  object-fit: cover;
+}
+.tiny-image-mode-widthFix {
+  object-fit: fill;
+  height: auto;
+}
+.tiny-image-mode-scaleToFill {
+  object-fit: fill;
+}
+.tiny-image-mode-heightFix {
+  object-fit: fill;
+  width: auto;
+}
+.tiny-image-mode-top {
+  object-fit: none;
+  object-position: top;
+}
+.tiny-image-mode-bottom {
+  object-fit: none;
+  object-position: bottom;
+}
+.tiny-image-mode-center {
+  object-fit: none;
+  object-position: center;
+}
+.tiny-image-mode-left {
+  object-fit: none;
+  object-position: left;
+}
+.tiny-image-mode-right {
+  object-fit: none;
+  object-position: right;
+}
+.tiny-image-mode-topLeft {
+  object-fit: none;
+  object-position: left top;
+}
+.tiny-image-mode-topRight {
+  object-fit: none;
+  object-position: right top;
+}
+.tiny-image-mode-bottomLeft {
+  object-fit: none;
+  object-position: left bottom;
+}
+.tiny-image-mode-bottomRight {
+  object-fit: none;
+  object-position: right bottom;
+}

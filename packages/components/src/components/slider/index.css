@@ -1,0 +1,23 @@
+.tiny-slider {
+  display: block;
+  box-sizing: border-box;
+}
+.tiny-slider-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+}
+.tiny-slider {
+  flex: 1;
+  width: 100%;
+  height: 1.4rem;
+  margin: 0;
+  accent-color: var(--tiny-slider-active, #1aad19);
+}
+.tiny-slider-value {
+  min-width: 2em;
+  color: #333333;
+  font-size: 14px;
+  text-align: right;
+}

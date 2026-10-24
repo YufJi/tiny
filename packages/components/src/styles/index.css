@@ -1,0 +1,10 @@
+page {
+  display: block;
+  box-sizing: border-box;
+}
+page {
+  min-height: 100vh;
+}
+.tiny-hidden {
+  display: none !important;
+}

@@ -1,0 +1,52 @@
+.tiny-swiper {
+  display: block;
+  box-sizing: border-box;
+}
+.tiny-swiper {
+  position: relative;
+  overflow: hidden;
+  height: 150px;
+}
+.tiny-swiper-track {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  transition-property: transform;
+  transition-timing-function: ease;
+}
+.tiny-swiper.is-vertical .tiny-swiper-track {
+  flex-direction: column;
+}
+.tiny-swiper-dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+.tiny-swiper.is-vertical .tiny-swiper-dots {
+  left: auto;
+  right: 8px;
+  top: 0;
+  bottom: 0;
+  flex-direction: column;
+  justify-content: center;
+}
+.tiny-swiper-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+}
+.tiny-swiper-dot.is-active {
+  background: #ffffff;
+}
+.tiny-swiper {
+  --tiny-swiper-items: 1;
+}
+.tiny-swiper-dot {
+  width: 8px;
+  height: 8px;
+}

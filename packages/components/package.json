@@ -15,13 +15,14 @@
   },
   "scripts": {
     "templates": "node scripts/build-templates.mjs",
-    "prebuild": "node scripts/build-templates.mjs",
+    "prebuild": "node scripts/build-templates.mjs && node scripts/build-styles.mjs",
     "build": "vite build && tsc -p tsconfig.build.json",
-    "pretypecheck": "node scripts/build-templates.mjs",
+    "pretypecheck": "node scripts/build-templates.mjs && node scripts/build-styles.mjs",
     "typecheck": "tsc --noEmit",
-    "pretest": "node scripts/build-templates.mjs",
+    "pretest": "node scripts/build-templates.mjs && node scripts/build-styles.mjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "styles": "node scripts/build-styles.mjs"
   },
   "dependencies": {
     "glass-easel": "1.1.0"

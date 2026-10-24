@@ -1,0 +1,10 @@
+.tiny-checkbox {
+  display: inline-block;
+}
+.tiny-checkbox {
+  vertical-align: middle;
+}
+.tiny-checkbox input {
+  margin: 0;
+  vertical-align: middle;
+}

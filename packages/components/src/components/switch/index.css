@@ -1,0 +1,12 @@
+.tiny-switch {
+  display: block;
+  box-sizing: border-box;
+}
+.tiny-switch {
+  display: inline-block;
+  vertical-align: middle;
+}
+.tiny-switch input {
+  margin: 0;
+  vertical-align: middle;
+}

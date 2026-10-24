@@ -1,0 +1,7 @@
+.tiny-view {
+  display: block;
+  box-sizing: border-box;
+}
+.tiny-view.is-inline {
+  display: inline-block;
+}

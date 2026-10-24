@@ -1,0 +1,22 @@
+.tiny-scroll-view {
+  display: block;
+  box-sizing: border-box;
+}
+.tiny-scroll-view.is-vertical {
+  overflow-y: auto;
+}
+.tiny-scroll-view.is-horizontal {
+  overflow-x: auto;
+}
+.tiny-scroll-view {
+  width: 100%;
+  overflow: hidden;
+}
+.tiny-scroll-view.is-vertical {
+  overflow-y: auto;
+  height: 100%;
+}
+.tiny-scroll-view.is-horizontal {
+  overflow-x: auto;
+  width: 100%;
+}

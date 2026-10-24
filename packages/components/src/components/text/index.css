@@ -1,0 +1,16 @@
+.tiny-text {
+  display: inline;
+}
+.tiny-text-selectable {
+  user-select: text;
+  -webkit-user-select: text;
+}
+.tiny-text-space-en {
+  white-space: pre-wrap;
+}
+.tiny-text-space-em {
+  white-space: pre-wrap;
+}
+.tiny-text-space-nbsp {
+  white-space: pre-wrap;
+}
