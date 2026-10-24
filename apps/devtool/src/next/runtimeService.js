@@ -8,22 +8,22 @@ import {
 
 const appId = new URLSearchParams(window.location.search).get('app') || 'demo';
 const generatedBase = `/runtime/apps/${encodeURIComponent(appId)}/generated`;
+// The preview is an iPhone X. The service iframe is 0x0, so window.innerWidth
+// cannot provide the host geometry; mirror the capsule used by the panel.
+const PREVIEW_WIDTH = 375;
 const manifestPromise = fetch(`${generatedBase}/manifest.json`, { cache: 'no-store' })
   .then((response) => response.json());
 const importGenerated = (url) => new Function('url', 'return import(url)')(url);
 
 const createHostApiExtensions = () => ({
-  getMenuButtonBoundingClientRect: () => {
-    const width = typeof window === 'undefined' ? 375 : window.innerWidth;
-    return {
-      width: 87,
-      height: 32,
-      top: 24,
-      right: width - 10,
-      bottom: 56,
-      left: Math.max(0, width - 97),
-    };
-  },
+  getMenuButtonBoundingClientRect: () => ({
+    width: 87,
+    height: 32,
+    top: 48,
+    right: PREVIEW_WIDTH - 10,
+    bottom: 80,
+    left: PREVIEW_WIDTH - 97,
+  }),
   getPerformance: () => ({
     createObserver: () => ({
       observe() {},

@@ -36,6 +36,18 @@ pnpm compile:devtool:all
 `static/runtime/apps.json`；目录名就是 `app` 参数。每个应用的首个页面来自其 `app.json`
 的 `pages[0]`。
 
+## 界面布局
+
+- 左侧：iPhone X 逻辑尺寸 `375 × 812` 的预览窗口；窗口空间不足时等比缩放并显示缩放比例
+- 预览内：宿主状态栏 + 导航栏。导航栏读取页面 `app.json` 的标题/背景/文字色，左侧返回按钮
+  调用 `navigate.back`，右侧 capsule 菜单提供 Foreground / Background / Reload
+- 右上：应用选择、运行状态、当前页面栈，以及 Runtime / Lifecycle / Navigation 控制
+- 右下：Console / Elements 调试栏，分别展示结构化诊断和可展开的元素树
+
+预览内容区按宿主导航栏高度从 `812px` 中扣除（`724px`），并同步给运行时的
+`windowHeight`。`navigationStyle: "custom"` 的页面由页面自绘导航栏，宿主不再重复渲染；
+此时仍可通过右侧 Lifecycle 控制前后台，后台状态会在预览内显示遮罩和恢复按钮。
+
 devtool 是 `apps/` 下的可运行应用，不是核心包；它与 `tests/host` 的区别是：
 
 - `tests/host`：无 UI、单应用、供开发与 Playwright 验收
@@ -45,13 +57,28 @@ devtool 是 `apps/` 下的可运行应用，不是核心包；它与 `tests/host
 
 ```text
 src/next/
-├── main.jsx           # 入口，挂载 RuntimePanel
-├── runtimePanel.jsx   # React 面板（应用选择、状态、诊断、元素树、控制）
-├── runtimeService.js  # service 线程入口
-└── runtimeRender.js   # render 线程入口
+├── main.jsx                 # 入口，挂载 RuntimePanel
+├── runtimePanel.jsx         # 容器：应用加载、运行时生命周期、布局
+├── runtimePanel.css         # 根布局、主题变量、右侧面板
+├── config.js                # iPhone X / 宿主 chrome 尺寸常量
+├── appRegistry.js           # 应用清单、manifest 导航配置、fetch 工具
+├── components/
+│   ├── PreviewStage.jsx     # 设备框、缩放、预览遮罩
+│   ├── PreviewStage.css
+│   ├── HostNavigationBar.jsx # 状态栏 + 页面导航栏 + 返回
+│   ├── HostNavigationBar.css
+│   ├── HostControlsMenu.jsx # capsule 菜单（前后台/Reload）
+│   ├── HostControlsMenu.css
+│   ├── DevtoolToolbar.jsx   # 应用选择、页面信息、运行时控制
+│   ├── DevtoolToolbar.css
+│   ├── DebugPanel.jsx       # Console / Elements 调试栏
+│   ├── DebugPanel.css
+│   └── ElementTree.jsx      # 可展开元素树
+├── runtimeService.js        # service 线程入口
+└── runtimeRender.js         # render 线程入口
 src/store/
-├── index.js           # rematch store
-└── models/runtime.js  # 运行时状态投影
+├── index.js                 # rematch store
+└── models/runtime.js        # 运行时状态投影
 ```
 
 - 宿主编排、生命周期控制和状态投影都在 `@tiny/runtime` 的 `DevtoolRuntimeClient`

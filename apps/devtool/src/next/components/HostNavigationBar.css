@@ -1,0 +1,147 @@
+/* Simulated host chrome: iOS status bar + mini-program navigation bar */
+
+.td-host-chrome {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 4;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "PingFang SC", sans-serif;
+  user-select: none;
+}
+
+.td-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 22px 0 28px;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.td-statusbar-icons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.td-signal {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.5px;
+  height: 10px;
+}
+
+.td-signal i {
+  width: 2.5px;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.td-signal i:nth-child(1) {
+  height: 4px;
+  opacity: 0.45;
+}
+
+.td-signal i:nth-child(2) {
+  height: 6px;
+  opacity: 0.65;
+}
+
+.td-signal i:nth-child(3) {
+  height: 8px;
+  opacity: 0.82;
+}
+
+.td-signal i:nth-child(4) {
+  height: 10px;
+}
+
+.td-wifi {
+  width: 15px;
+  height: 12px;
+}
+
+.td-battery {
+  position: relative;
+  width: 23px;
+  height: 11px;
+  padding: 1.5px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  opacity: 0.9;
+}
+
+.td-battery::after {
+  position: absolute;
+  top: 2.5px;
+  right: -3px;
+  width: 2px;
+  height: 4px;
+  background: currentColor;
+  border-radius: 0 1px 1px 0;
+  content: "";
+  opacity: 0.55;
+}
+
+.td-battery-level {
+  display: block;
+  width: 74%;
+  height: 100%;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.td-navbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 10px 0 8px;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.13);
+}
+
+.td-nav-back {
+  display: grid;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.92;
+  place-items: center;
+}
+
+.td-nav-back:hover:not(:disabled) {
+  background: rgba(127, 127, 127, 0.12);
+}
+
+.td-nav-back:disabled {
+  opacity: 0.2;
+  cursor: default;
+}
+
+.td-nav-back:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, 0.7);
+  outline-offset: 2px;
+}
+
+.td-nav-title {
+  position: absolute;
+  right: 108px;
+  left: 108px;
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+

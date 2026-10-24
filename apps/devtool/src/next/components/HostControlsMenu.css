@@ -1,0 +1,138 @@
+/* Capsule trigger and host-controls popover */
+
+.td-host-controls {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  margin-left: auto;
+}
+
+.td-capsule {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  width: 87px;
+  height: 32px;
+  padding: 0 12px;
+  background: rgba(0, 0, 0, 0.045);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  color: inherit;
+  cursor: pointer;
+}
+
+.td-host-chrome--dark .td-capsule {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.td-capsule:hover:not(:disabled) {
+  background: rgba(127, 127, 127, 0.16);
+}
+
+.td-capsule:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.td-capsule:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, 0.7);
+  outline-offset: 2px;
+}
+
+.td-capsule-dots {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.td-capsule-dots i {
+  width: 3px;
+  height: 3px;
+  background: currentColor;
+  border-radius: 50%;
+  opacity: 0.8;
+}
+
+.td-capsule-divider {
+  width: 1px;
+  height: 13px;
+  background: currentColor;
+  opacity: 0.16;
+}
+
+.td-capsule-ring {
+  width: 12px;
+  height: 12px;
+  border: 1.4px solid currentColor;
+  border-radius: 50%;
+  opacity: 0.75;
+}
+
+.td-nav-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  width: 174px;
+  padding: 5px;
+  background: #0d1524;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
+  color: #e2e8f0;
+}
+
+.td-nav-menu-head {
+  padding: 5px 9px 4px;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.td-nav-menu button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 9px;
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.td-nav-menu button:hover:not(:disabled) {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.td-nav-menu button:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.td-nav-menu button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.5);
+}
+
+.td-nav-menu-state {
+  color: #34d399;
+  font-size: 9px;
+}
+
+.td-nav-menu-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: rgba(148, 163, 184, 0.15);
+}
+

@@ -12,6 +12,9 @@ module.exports = {
     nextService: path.join(root, 'src/next/runtimeService.js'),
     nextRender: path.join(root, 'src/next/runtimeRender.js'),
   },
+  experiments: {
+    css: true,
+  },
   output: {
     path: path.join(root, 'dist'),
     filename: '[name].js',
@@ -99,5 +102,5 @@ module.exports = {
     hot: true,
     historyApiFallback: true,
   } : undefined,
-  stats: 'normal',
+  stats: 'errors-only',
 };

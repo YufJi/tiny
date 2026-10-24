@@ -75,7 +75,7 @@ export default function Testing() {
           },
           {
             title: '调试器流程',
-            detail: '编译全部 tests/apps 到 devtool static，启动 rspack；7 步：boot、状态投影、渲染、导航/返回、逐应用预览、Reload/Terminate、零错误。',
+            detail: '编译全部 tests/apps 到 devtool static，启动 rspack；7 步：boot、状态投影、渲染、导航/返回、逐应用预览、宿主导航/前后台 + Reload/Terminate、零错误。',
             code: 'runDevtoolAcceptance()',
           },
         ]} />
@@ -100,7 +100,7 @@ export default function Testing() {
             ['Existing app', <code>tests/apps/mini</code>, '9', '真实 todos、双 add-button 实例、import/include/template、输入、ECharts bar、子包、warnings'],
             ['Taro 3', <code>tests/apps/todo</code>, '6', 'Redux todos、输入 + Enter、勾选、筛选、清空、零错误'],
             ['WeChat demo', <code>tests/apps/wechat-demo</code>, '4', '组件索引、button 页、storage API 页、零错误'],
-            ['Debugger', <code>apps/devtool</code>, '7', 'boot、状态投影、元素树、导航/返回、逐个预览全部 tests/apps、Reload/Terminate、零错误'],
+            ['Debugger', <code>apps/devtool</code>, '7', 'boot、状态投影、元素树、导航/返回、逐个预览全部 tests/apps、宿主导航/前后台 + Reload/Terminate、零错误'],
           ]}
         />
         <div className="split">

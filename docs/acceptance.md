@@ -112,13 +112,16 @@ debugger:
 
 1. `DevtoolRuntimeClient` boots the dual-thread host and reports `running`.
 2. Page stack, current page, structured diagnostics, and the rendered element tree are
-   projected into Redux.
-3. The mini program renders inside the debugger viewport; the tree drawer shows `page`,
-   built-in tags, classes, attributes, and text.
-4. `Navigate` / `Back` drive the runtime through host API handlers and refresh the tree.
+   projected into Redux and surfaced in the right-bottom Console / Elements panel.
+3. The mini program renders inside the `375 × 812` iPhone X preview. A host status bar and
+   navigation bar consume the top `88px` (content stays `375 × 724`); the Elements tab
+   shows `page`, built-in tags, classes, attributes, and text.
+4. The host navigation bar projects the page title and exposes back; `navigate.back` is
+   disabled on the first page and drives the runtime after a navigation.
 5. The app selector lists every `tests/apps` fixture; each app boots its first page and
    renders representative content for `demo`, `mini`, `todo`, `wechat-demo`, and `echarts`.
-6. `Reload` restarts the runtime and `Terminate` removes both thread iframes.
+6. The capsule menu backgrounds and foregrounds the preview (with an in-preview overlay),
+   `Reload` restarts the runtime, and `Terminate` removes both thread iframes.
 7. No console or page errors occur. The only tolerated console errors are the known
    unresolved dynamic image paths in `tests/apps/wechat-demo` documented in its README.
 

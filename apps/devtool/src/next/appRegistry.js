@@ -1,0 +1,44 @@
+import { APPS_REGISTRY_URL } from './config';
+
+export function generatedBaseFor(appId) {
+  return `/runtime/apps/${encodeURIComponent(appId)}/generated`;
+}
+
+export async function fetchJson(url) {
+  const response = await fetch(url, { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error(`${url} responded with HTTP ${response.status}`);
+  }
+  return response.json();
+}
+
+export function normalizeApps(payload) {
+  if (!payload || !Array.isArray(payload.apps)) {
+    throw new Error(`${APPS_REGISTRY_URL} must contain an "apps" array`);
+  }
+  return payload.apps
+    .filter((app) => app && typeof app.id === 'string' && app.id.length > 0)
+    .map((app) => ({
+      id: app.id,
+      label: typeof app.label === 'string' && app.label ? app.label : `tests/apps/${app.id}`,
+      title: typeof app.title === 'string' ? app.title : '',
+      pages: Number(app.pages) || 0,
+      firstPage: typeof app.firstPage === 'string' ? app.firstPage : '',
+    }));
+}
+
+export function resolveNavigationConfig(manifest, pagePath, fallbackTitle = '') {
+  const appWindow = manifest?.app?.configuration?.effective?.window ?? {};
+  const pageConfig = manifest?.pages?.find((page) => page.path === pagePath)?.configuration?.effective ?? {};
+  const merged = { ...appWindow, ...pageConfig };
+  return {
+    title: typeof merged.navigationBarTitleText === 'string' && merged.navigationBarTitleText
+      ? merged.navigationBarTitleText
+      : fallbackTitle,
+    backgroundColor: typeof merged.navigationBarBackgroundColor === 'string' && merged.navigationBarBackgroundColor
+      ? merged.navigationBarBackgroundColor
+      : '#f7f7f7',
+    textStyle: merged.navigationBarTextStyle === 'white' ? 'white' : 'black',
+    custom: merged.navigationStyle === 'custom',
+  };
+}

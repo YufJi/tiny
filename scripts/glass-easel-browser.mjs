@@ -854,7 +854,24 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         JSON.stringify(current.tree).includes('Tiny Glass-easel P0'),
         'element tree does not contain rendered text',
       )
-      assert.ok((await page.locator('body').innerText()).includes('element tree'), 'tree panel is not visible')
+      assert.equal(
+        await page.locator('.td-nav-title').innerText(),
+        'Tiny Glass Easel',
+        'host navigation bar did not project the app title',
+      )
+      assert.equal(
+        await page.getByRole('button', { name: 'Back in preview' }).isDisabled(),
+        true,
+        'host navigation back should be disabled on the first page',
+      )
+      assert.equal(await page.getByRole('tab').count(), 2, 'console/elements tabs are missing')
+      const elementsTab = page.getByRole('tab', { name: 'Elements' })
+      await elementsTab.click()
+      assert.equal(await elementsTab.getAttribute('aria-selected'), 'true')
+      assert.ok(
+        (await page.getByRole('tabpanel').innerText()).includes('page'),
+        'element tree is not rendered in the debug panel',
+      )
     })
 
     await step('render the mini program inside the debugger', async () => {
@@ -882,7 +899,9 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         { timeout: STEP_TIMEOUT },
       )
 
-      await page.getByText('Back', { exact: true }).click()
+      const previewBack = page.getByRole('button', { name: 'Back in preview' })
+      assert.equal(await previewBack.isDisabled(), false, 'host navigation back should be enabled')
+      await previewBack.click()
       await page.waitForFunction(
         () => window.__tinyDevtool.getState().currentPage === 'pages/todos/todos',
         null,
@@ -988,8 +1007,39 @@ export async function runDevtoolAcceptance({ baseUrl }) {
       )
     })
 
-    await step('reload and terminate from the debugger', async () => {
-      currentStep = 'reload and terminate from the debugger'
+    await step('operate host lifecycle, reload, and terminate', async () => {
+      currentStep = 'operate host lifecycle, reload, and terminate'
+      const appId = await page.evaluate(
+        () => new URL(window.location.href).searchParams.get('app'),
+      )
+      if (appId !== 'demo') {
+        await Promise.all([
+          page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT }),
+          page.selectOption('select', 'demo'),
+        ])
+        await waitForStatus('running')
+      }
+      assert.equal(
+        await page.locator('.td-nav-title').innerText(),
+        'Tiny Glass Easel',
+        'host navigation bar did not project the app title after switching back',
+      )
+
+      await page.getByRole('button', { name: 'Host controls' }).click()
+      await page.getByRole('menuitem', { name: 'Background' }).click()
+      await page.waitForSelector('.td-screen-background', { state: 'visible', timeout: STEP_TIMEOUT })
+      assert.equal(
+        await page.locator('.td-screen-background').isVisible(),
+        true,
+        'background lifecycle overlay is missing',
+      )
+      await page.getByRole('button', { name: 'Return to foreground' }).click()
+      await page.waitForFunction(
+        () => !document.querySelector('.td-screen-background'),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+
       await page.getByText('Reload', { exact: true }).click()
       await waitForStatus('running')
       assert.deepEqual((await state()).pageStack, ['page-1'])
