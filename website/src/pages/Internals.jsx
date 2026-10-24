@@ -155,7 +155,7 @@ export default function Internals() {
           </Card>
         </Cards>
         <Callout title="继续阅读">
-          <p><a href="#/testing">测试与兼容</a>：测试宿主、devtool、四段验收和 Taro 3 兼容点。<br />
+          <p><a href="#/testing">测试与兼容</a>：测试宿主、devtool、五段验收、Taro 3 与微信官方示例兼容点。<br />
           <a href="#/status">现状与路线</a>：成熟度、主要缺口和下一阶段优先级。</p>
         </Callout>
       </Section>

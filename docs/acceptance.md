@@ -12,7 +12,7 @@ pnpm accept:glass-easel
 
 The gate builds the active glass-easel packages, runs bridge/compiler/template/
 stylesheet/components/runtime tests, compiles the demo, starts the standalone
-dual-thread host, and drives the full P0, existing-app, Taro 3, and debugger flows
+dual-thread host, and drives the full P0, existing-app, Taro 3, WeChat demo, and debugger flows
 in a headless browser.
 
 The browser stage verifies:
@@ -75,6 +75,20 @@ This stage also guards the compatibility pieces Taro depends on: `webpackJsonp`
 on `wx`, `getCurrentPages`, callback-style `wx.getSystemInfo`, external WXS
 modules, mutually recursive component metadata, and lifecycle methods exposed
 on the page instance.
+
+## WeChat demo stage
+
+The gate compiles `tests/apps/wechat-demo`, a subset of the official
+`wechat-miniprogram/miniprogram-demo` containing only the basic component and
+API examples:
+
+1. Boots the component index and renders its categories.
+2. Boots a component example (`button`).
+3. Boots an API example (`storage`).
+4. Keeps page, console, and runtime error output empty.
+
+The subset, adaptations, and excluded advanced packages are documented in
+`tests/apps/wechat-demo/README.md`.
 
 ## Runtime debugger stage
 

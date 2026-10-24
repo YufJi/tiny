@@ -8,7 +8,7 @@ export default function Testing() {
         eyebrow="Testing & compatibility"
         title="用真实小程序验收"
         lede="Tiny 的验收不是快照测试：它编译、启动双线程、在真实浏览器里操作页面，并在失败时保存截图。"
-        stats={[['92', 'unit tests'], ['36', 'browser steps'], ['4', 'browser flows'], ['4', 'test fixtures']]}
+        stats={[['92', 'unit tests'], ['40', 'browser steps'], ['5', 'browser flows'], ['5', 'test fixtures']]}
       />
 
       <Section
@@ -40,7 +40,7 @@ export default function Testing() {
 
       <Section
         kicker="Acceptance gate"
-        title="四段浏览器流程"
+        title="五段浏览器流程"
         intro="pnpm accept:glass-easel 会先构建并跑单测，再依次启动宿主。"
       >
         <Table
@@ -49,10 +49,11 @@ export default function Testing() {
             ['P0 demo', <code>tests/apps/demo</code>, '14 步：双线程启动、组件渲染、样式作用域、checkbox/slider/switch、导航、storage、canvas 诊断、零 console error。'],
             ['Existing app', <code>tests/apps/mini</code>, '9 步：真实 todos、双 add-button 实例、import/include/template、输入、ECharts bar 页、子包页面、warnings。'],
             ['Taro 3', <code>tests/apps/todo</code>, '6 步：Redux todos 渲染、输入 + Enter 新增、勾选、筛选、Clear completed、零错误。'],
+            ['WeChat demo', <code>tests/apps/wechat-demo</code>, '4 步：组件索引、button 组件页、storage API 页、零错误。'],
             ['Debugger', <code>apps/devtool</code>, '7 步：boot、状态投影、渲染、导航/返回、应用切换、Reload/Terminate、零错误。'],
           ]}
         />
-        <Callout title="36 步的边界">
+        <Callout title="40 步的边界">
           <p>这些步骤覆盖核心链路和真实交互，但不等于完整微信语义。API 广度、组件属性、tabBar 和页面高级事件仍需单独补齐。</p>
         </Callout>
       </Section>

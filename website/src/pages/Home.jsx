@@ -21,7 +21,7 @@ export default function Home() {
             <li><strong>6</strong><span>CORE PACKAGES</span></li>
             <li><strong>9</strong><span>WORKSPACE PACKAGES</span></li>
             <li><strong>92</strong><span>UNIT TESTS</span></li>
-            <li><strong>36</strong><span>BROWSER STEPS</span></li>
+            <li><strong>40</strong><span>BROWSER STEPS</span></li>
           </ul>
         </div>
       </section>
@@ -137,7 +137,7 @@ export default function Home() {
             <CodeBlock>{`# 安装依赖
 pnpm install
 
-# 完整验收：构建、单测、四段浏览器流程
+# 完整验收：构建、单测、五段浏览器流程
 pnpm accept:glass-easel
 
 # 本地起测试宿主

@@ -39,8 +39,8 @@ describe('compileMiniProgram', () => {
 
   test('registers external WXS files with and without their extension', async () => {
     const templates = await fs.readFile(path.join(outputDir, 'templates.js'), 'utf8')
-    expect(templates).toContain('R["pages/index/utils.wxs"]')
-    expect(templates).toContain('R["pages/index/utils"]')
+    expect(templates).toContain('W["pages/index/utils.wxs"]')
+    expect(templates).toContain('W["pages/index/utils"]')
   })
 
   test('resolves and merges component configuration', async () => {

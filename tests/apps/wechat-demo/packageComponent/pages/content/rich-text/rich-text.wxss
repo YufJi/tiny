@@ -1,0 +1,35 @@
+@import "../../../../common/reset.wxss";
+.page-content {
+  width: auto;
+  margin: 15px 0;
+  padding: 0 25px;
+}
+
+.code-fragment {
+  height: 325px;
+}
+
+.code-textarea {
+  width: auto;
+  height: 325px;
+  border: 1px solid #1AAD19;
+}
+
+.p {
+  color: #1AAD19;
+  margin-top: 15px;
+}
+
+.space {
+  display: inline-block;
+  background: red;
+  width: 5px;
+}
+
+.page-scroll {
+  height: 325px;
+  border: 1px solid #1AAD19;
+  white-space: pre;
+  padding: 5px;
+  box-sizing: border-box;
+}

@@ -326,6 +326,32 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
   }
   return {
     getSystemInfoSync: () => cloneJsonSafe(context.getSystemInfoSnapshot()),
+    getMenuButtonBoundingClientRect: () => {
+      const width = Math.max(0, Number(context.getSystemInfoSnapshot().windowWidth) || 375)
+      return {
+        width: 87,
+        height: 32,
+        top: 24,
+        right: width - 10,
+        bottom: 56,
+        left: Math.max(0, width - 97),
+      }
+    },
+    getPerformance: () => ({
+      createObserver: () => ({
+        observe() {},
+        disconnect() {},
+        connect() {},
+      }),
+      now: () => Date.now(),
+      mark() {},
+      measure() {},
+      clearMarks() {},
+      clearMeasures() {},
+      getEntries: () => [],
+      getEntriesByName: () => [],
+      getEntriesByType: () => [],
+    }),
     getSystemInfo: (params?: unknown) => {
       const info = cloneJsonSafe(context.getSystemInfoSnapshot())
       const callbacks = (params ?? {}) as {

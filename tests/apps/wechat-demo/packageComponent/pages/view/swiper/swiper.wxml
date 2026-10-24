@@ -1,0 +1,53 @@
+<import src="../../../../common/head.wxml" />
+<import src="../../../../common/foot.wxml" />
+
+<mp-navigation-bar title="swiper" back="{{true}}"></mp-navigation-bar>
+<template is="head" data="{{title: 'swiper'}}"/>
+<scroll-view class="page-scroll-view" scroll-y type="list">
+<view class="container page" data-weui-theme="{{theme}}">
+ <view class="page-body">
+    <view class="page-section page-section-spacing swiper">
+      <swiper indicator-dots="{{indicatorDots}}"
+        autoplay="{{autoplay}}" interval="{{interval}}" duration="{{duration}}">
+        <block wx:for="{{background}}" wx:key="*this">
+          <swiper-item>
+            <view class="swiper-item demo-text-{{index+1}}">{{item}}</view>
+          </swiper-item>
+        </block>
+      </swiper>
+    </view>
+    <view class="page-section" style="margin-top: 20px;margin-bottom: 0;">
+      <view class="weui-cells weui-cells_after-title">
+        <view class="weui-cell weui-cell_switch">
+          <view class="weui-cell__bd" style="width:600rpx;">指示点 </view>
+          <view class="weui-cell__ft">
+            <radio checked="{{indicatorDots}}"  catchtap="changeIndicatorDots"/>
+          </view>
+        </view>
+        <view class="weui-cell_before"></view>
+        <view class="weui-cell weui-cell_switch">
+          <view class="weui-cell__bd" style="width:602rpx;">自动播放</view>
+          <view class="weui-cell__ft">
+            <radio checked="{{autoplay}}" catchtap="changeAutoplay"/>
+          </view>
+        </view>
+       </view>
+    </view>
+    <!-- slider在skyline模式下暂时不支持  -->
+    <!-- <view class="page-section page-section-spacing">
+       <view class="page-section-title">
+        <text>幻灯片切换时长(ms)</text>
+        <text class="swiper-info">{{duration}}</text>
+      </view>
+      <slider bindchange="durationChange" value="{{duration}}" min="500" max="2000"/>
+      <view class="page-section-title">
+        <text>自动播放间隔时长(ms)</text>
+        <text class="swiper-info">{{interval}}</text>
+      </view>
+      <slider bindchange="intervalChange" value="{{interval}}" min="2000" max="10000" color="#e9e9e9"/>
+    </view>  -->
+  </view>
+
+  <template is="foot"/> 
+</view>
+</scroll-view>

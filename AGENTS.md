@@ -46,18 +46,19 @@ must not depend on tools, apps, or tests.
 - `tests/host`: standalone Vite host used for development and Playwright acceptance.
   It has no mini-program source; compiled apps are written to `tests/host/generated`.
 - `tests/apps/*`: mini-program fixtures used by acceptance (`demo`, `mini`, `todo`,
-  `echarts`).
+  `wechat-demo`, `echarts`).
 
 ## Commands
 
 ```bash
 pnpm install                 # install workspace dependencies
 pnpm build                   # build all 9 workspace packages
-pnpm accept:glass-easel      # full gate: build, unit tests, 4 browser stages
+pnpm accept:glass-easel      # full gate: build, unit tests, 5 browser stages
 pnpm dev:glass-easel         # compile tests/apps/demo + host on :5173
 pnpm dev:devtool             # debugger on :8080 (watches demo + mini)
 pnpm compile:glass-easel     # compile tests/apps/demo -> tests/host/generated
 pnpm compile:devtool:all     # compile demo + mini for the debugger
+pnpm compile:wechat-demo     # compile the WeChat component/API subset
 pnpm lint                    # Biome (bridge only is configured today)
 pnpm site:dev                # preview website on :4173
 pnpm site:check              # build and validate the site output
@@ -87,7 +88,8 @@ The end-to-end gate is `pnpm accept:glass-easel`:
 3. P0 demo browser flow (`tests/apps/demo`)
 4. `tests/apps/mini` browser flow
 5. Taro 3 (`tests/apps/todo`) browser flow
-6. runtime debugger browser flow
+6. WeChat demo (`tests/apps/wechat-demo`) browser flow
+7. runtime debugger browser flow
 
 `SKIP_BROWSER=1`, `TINY_ACCEPT_PORT`, `TINY_DEVTOOL_PORT`, and `HEADED=1`
 control the gate. It requires a Chromium browser (`playwright-core` with system

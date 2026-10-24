@@ -1,0 +1,8 @@
+@import "../../../../common/reset.wxss";
+
+button .ohter-navigator {
+  background-color: #DEDEDE;
+}
+button .other-navigator-hover {
+  background-color: #DEDEDE;
+}

@@ -252,26 +252,32 @@ class MiniProgramCompiler {
     entryPath: string,
   ): Promise<SourceEntry | null> {
     const normalized = normalizeRelativePath(entryPath)
-    for (const extension of SCRIPT_EXTENSIONS) {
-      const scriptPath = byRelative.get(`${normalized}${extension}`)
-      if (scriptPath) {
+    const findTemplate = (base: string) => byRelative.get(`${base}.wxml`)
+    const findStyle = (base: string) => byRelative.get(`${base}.wxss`) ?? byRelative.get(`${base}.css`)
+    const findScript = (base: string) => {
+      for (const extension of SCRIPT_EXTENSIONS) {
+        const scriptPath = byRelative.get(`${base}${extension}`)
+        if (scriptPath) return scriptPath
+      }
+      return undefined
+    }
+
+    // Pages/components may reference a file (`foo`) or a directory with an
+    // `index` entry (`foo/index.*`), mirroring the WeChat resolution rules.
+    for (const base of [normalized, `${normalized}/index`]) {
+      const scriptPath = findScript(base)
+      const templatePath = findTemplate(base)
+      if (scriptPath || templatePath) {
         return {
           path: normalized,
           scriptPath,
-          templatePath: byRelative.get(`${normalized}.wxml`),
-          stylePath: byRelative.get(`${normalized}.wxss`) ?? byRelative.get(`${normalized}.css`),
-          configPath: path.join(root, `${normalized}.json`),
+          templatePath,
+          stylePath: findStyle(base),
+          configPath: path.join(root, `${base}.json`),
         }
       }
     }
-    const hasTemplate = byRelative.get(`${normalized}.wxml`)
-    if (!hasTemplate) return null
-    return {
-      path: normalized,
-      templatePath: hasTemplate,
-      stylePath: byRelative.get(`${normalized}.wxss`) ?? byRelative.get(`${normalized}.css`),
-      configPath: path.join(root, `${normalized}.json`),
-    }
+    return null
   }
 
   private resolveEntryReference(sourceEntryPath: string, reference: string): string {
@@ -468,6 +474,9 @@ class MiniProgramCompiler {
         const warnings = group.addTmpl(templatePath, source)
         // WXML import/include resolves paths with the `.wxml` extension.
         group.addTmplAlias(relativePath, templatePath)
+        if (relativePath.endsWith('/index.wxml')) {
+          group.addTmplAlias(relativePath.slice(0, -'/index.wxml'.length), templatePath)
+        }
         for (const warning of warnings) {
           this.diagnostics.push(diagnostic(
             'warning',
@@ -524,6 +533,49 @@ class MiniProgramCompiler {
     await writeFileWithSourceMap(this.outputPath(outputPath), content)
   }
 
+  private inlineStyleImports(
+    relativePath: string,
+    byRelative: Map<string, string>,
+    stack: string[] = [],
+  ): string {
+    const absolutePath = byRelative.get(relativePath)
+    if (!absolutePath || stack.includes(relativePath)) return ''
+    let source = ''
+    try {
+      source = readFileSync(absolutePath, 'utf8')
+    } catch {
+      return ''
+    }
+    return source.replace(
+      /@import\s+(?:url\()?["']([^"']+)["']\)?\s*;/g,
+      (full: string, specifier: string) => {
+        if (/^(?:https?:|data:)/i.test(specifier)) return full
+        const base = specifier.startsWith('/')
+          ? specifier.slice(1)
+          : path.posix.join(path.posix.dirname(relativePath), specifier)
+        const normalized = path.posix.normalize(base)
+        const candidates = [
+          normalized,
+          `${normalized}.wxss`,
+          `${normalized}.css`,
+          `${normalized}/index.wxss`,
+          `${normalized}/index.css`,
+        ]
+        const resolved = candidates.find((candidate) => byRelative.has(candidate))
+        if (!resolved) {
+          this.diagnostics.push(diagnostic(
+            'warning',
+            'STYLE_IMPORT_NOT_FOUND',
+            `Style import "${specifier}" could not be resolved.`,
+            relativePath,
+          ))
+          return ''
+        }
+        return this.inlineStyleImports(resolved, byRelative, [...stack, relativePath])
+      },
+    )
+  }
+
   private async compileStyles(
     root: string,
     byRelative: Map<string, string>,
@@ -544,7 +596,7 @@ class MiniProgramCompiler {
       const outputMapPath = `${outputPath}.map`
       const lowPriorityPath = outputPath.replace(/\.css$/, '.low.css')
       const lowPriorityMapPath = `${lowPriorityPath}.map`
-      const source = await fs.readFile(stylePath, 'utf8')
+      const source = this.inlineStyleImports(relativePath, byRelative)
       const isAppStyle = relativePath === 'app.wxss'
       const scope = isAppStyle
         ? undefined
@@ -723,7 +775,7 @@ class MiniProgramCompiler {
         target: 'es2019',
         sourcemap: true,
         logLevel: 'silent',
-        absWorkingDir: this.options.outputDir,
+        absWorkingDir: path.resolve(this.options.outputDir),
       })
     } catch (error) {
       this.diagnostics.push(diagnostic(

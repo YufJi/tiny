@@ -1,0 +1,40 @@
+@import "../../../../common/reset.wxss";
+
+.page-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.auto-rotate-container {
+    width: 100vw;
+    padding: 20px 20px 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+video {
+    width: 345px;
+}
+
+.weui-cells {
+    width: 100vw;
+    margin-top: 20px;
+    padding: 0 15px;
+    text-align: left;
+}
+
+.weui-label {
+    width: 5em;
+}
+
+.btn-area {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.page-body-button {
+    margin: 0;
+}

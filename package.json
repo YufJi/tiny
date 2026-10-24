@@ -20,7 +20,8 @@
     "site:dev": "pnpm --filter @tiny/website dev",
     "site:check": "pnpm --filter @tiny/website build && node scripts/check-website.mjs",
     "site:build": "pnpm --filter @tiny/website build",
-    "site:preview": "pnpm --filter @tiny/website preview"
+    "site:preview": "pnpm --filter @tiny/website preview",
+    "compile:wechat-demo": "node scripts/compile-mini.mjs tests/apps/wechat-demo tests/host/generated"
   },
   "author": "YufJi",
   "license": "MIT",

@@ -1,0 +1,6 @@
+{
+    "navigationBarTitleText": "form",
+    "componentFramework": "glass-easel",
+    "renderer": "skyline",
+    "navigationStyle": "custom"
+}

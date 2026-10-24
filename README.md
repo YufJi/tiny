@@ -57,6 +57,7 @@ apps/devtool (可选) : DevtoolRuntimeClient + React 面板
 | `tests/apps/demo` | P0 验收 demo |
 | `tests/apps/mini` | 完整示例（todos / add-todo / bar ECharts / 子包） |
 | `tests/apps/todo` | Taro 3 预编译产物 |
+| `tests/apps/wechat-demo` | 微信官方组件/API 示例子集 |
 | `tests/apps/echarts` | 历史参考示例 |
 
 `tests/host` 与 `apps/devtool` 都基于 `createStandaloneDualThreadHost`：前者是无 UI 的单应用测试宿主，后者通过 `DevtoolRuntimeClient` 提供面板、诊断和元素树。
@@ -67,7 +68,7 @@ apps/devtool (可选) : DevtoolRuntimeClient + React 面板
 
 ```bash
 pnpm install
-pnpm accept:glass-easel      # 构建 + 单测 + 四段浏览器验收
+pnpm accept:glass-easel      # 构建 + 单测 + 五段浏览器验收
 ```
 
 本地调试：
@@ -87,6 +88,7 @@ pnpm site:build              # 构建 website/dist
 pnpm site:check              # 构建并检查产物资源
 pnpm compile:glass-easel     # tests/apps/demo -> tests/host/generated
 pnpm compile:devtool:all     # demo + tests/apps/mini -> devtool 静态目录
+pnpm compile:wechat-demo     # 微信官方组件/API 示例 -> tests/host/generated
 
 pnpm --filter @tiny/runtime test
 pnpm --filter @tiny/cli test

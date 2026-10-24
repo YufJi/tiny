@@ -502,6 +502,92 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
   }
 }
 
+export async function runWechatDemoAcceptance({ baseUrl }) {
+  const browser = await launchBrowser()
+  const page = await browser.newPage({ viewport: { width: 420, height: 900 } })
+  const pageErrors = []
+  const consoleErrors = []
+  const shot = path.join(rootDir, 'tests/host/generated/acceptance-wechat-demo-failure.png')
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text())
+  })
+
+  let currentStep = 'start'
+  try {
+    await step('boot the WeChat component demo', async () => {
+      currentStep = 'boot the WeChat component demo'
+      await page.goto(`${baseUrl}?path=page/component/index`, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
+      await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
+      const render = page.frames().find((frame) => frame.url().includes('render.html'))
+      assert.ok(render, 'render iframe was not created')
+      await render.waitForFunction(
+        () => (document.querySelector('#app')?.innerText ?? '').includes('视图容器'),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const body = await render.locator('#app').innerText()
+      assert.ok(body.includes('表单组件'), 'component categories did not render')
+      assert.equal(pageErrors.length, 0, `page errors: ${pageErrors.join(' | ')}`)
+    })
+
+    await step('render a component example page', async () => {
+      currentStep = 'render a component example page'
+      await page.goto(`${baseUrl}?path=packageComponent/pages/form/button/button`, {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
+      const render = page.frames().find((frame) => frame.url().includes('render.html'))
+      await render.waitForFunction(
+        () => (document.querySelector('#app')?.innerText ?? '').includes('页面主操作 Normal'),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      assert.ok((await render.locator('button').count()) > 0, 'component buttons did not render')
+    })
+
+    await step('render an API example page', async () => {
+      currentStep = 'render an API example page'
+      await page.goto(`${baseUrl}?path=packageAPI/pages/storage/storage/storage`, {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
+      const render = page.frames().find((frame) => frame.url().includes('render.html'))
+      await render.waitForFunction(
+        () => (document.querySelector('#app')?.innerText ?? '').includes('get/set/clearStorage'),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+    })
+
+    await step('keep the WeChat demo console free of errors', async () => {
+      currentStep = 'keep the WeChat demo console free of errors'
+      assert.equal(pageErrors.length, 0, `page errors: ${pageErrors.join(' | ')}`)
+      assert.equal(consoleErrors.length, 0, `console errors: ${consoleErrors.join(' | ')}`)
+      const errors = (await page.evaluate(() => window.__tinyRuntime.host.diagnostics))
+        .filter((item) => item.severity === 'error')
+      assert.equal(errors.length, 0, `runtime errors: ${errors.map((item) => item.message).join(' | ')}`)
+    })
+
+    console.log('\n✅ WeChat demo acceptance passed.')
+  } catch (error) {
+    try {
+      await fs.mkdir(path.dirname(shot), { recursive: true })
+      await page.screenshot({ path: shot, fullPage: true })
+    } catch {
+      // Screenshots are best-effort diagnostics.
+    }
+    throw new Error(
+      `WeChat demo acceptance failed during "${currentStep}": ${error instanceof Error ? error.message : String(error)}` +
+        `\nScreenshot: ${shot}`,
+    )
+  } finally {
+    await browser.close()
+  }
+}
+
 export async function runTaroAcceptance({ baseUrl }) {
   const browser = await launchBrowser()
   const page = await browser.newPage({ viewport: { width: 420, height: 860 } })

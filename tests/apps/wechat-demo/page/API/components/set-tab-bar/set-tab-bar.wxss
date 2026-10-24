@@ -1,0 +1,9 @@
+
+@import "../../../../app.wxss";
+
+.container {
+  width: 100vw;
+}
+.weui-label {
+  width: 5em;
+}

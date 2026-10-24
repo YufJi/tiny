@@ -274,7 +274,7 @@ export class TmplGroup implements TmplGroupRef {
     for (const [p, script] of this.scripts) {
       const pathLit = genLitStr(p)
       w.exprStmt((ww) => {
-        ww.write(`R[${pathLit}]=D(${pathLit},(require,exports,module)=>{${script}})`)
+        ww.write(`W[${pathLit}]=D(${pathLit},(require,exports,module)=>{${script}})`)
       })
     }
   }
@@ -285,7 +285,7 @@ export class TmplGroup implements TmplGroupRef {
       ww.paren((ww) => {
         ww.function((w) => {
           w.exprStmt((ww) => { ww.write('var G={}') })
-          w.exprStmt((ww) => { ww.write('var R={}') })
+          w.exprStmt((ww) => { ww.write('var W={}') })
           this.writeGroupGlobalContent(w)
           for (const [path, tree] of this.trees) {
             const pathLit = genLitStr(path)
@@ -314,7 +314,7 @@ export class TmplGroup implements TmplGroupRef {
       ww.paren((ww) => {
         ww.function((w) => {
           w.exprStmt((ww) => { ww.write('var G={}') })
-          w.exprStmt((ww) => { ww.write('var R={}') })
+          w.exprStmt((ww) => { ww.write('var W={}') })
           this.writeGroupGlobalContent(w)
           for (const [path, tree] of this.trees) {
             const pathLit = genLitStr(path)

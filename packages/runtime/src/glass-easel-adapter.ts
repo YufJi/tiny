@@ -10,6 +10,16 @@ import {
 } from '@tiny/components'
 import { createRuntimeDiagnostic } from './diagnostics'
 
+const NATIVE_COMPONENT_METHODS = new Set([
+  'setData',
+  'triggerEvent',
+  'getBackendElement',
+  'selectComponent',
+  'selectAllComponents',
+  'getRelationNodes',
+  'getShadowRoot',
+])
+
 export type ComponentLifecyclePhase = 'created' | 'attached' | 'ready' | 'moved' | 'detached'
 
 export type InspectNode = {
@@ -306,6 +316,9 @@ export class GlassEaselRuntimeAdapter {
       }),
     )
     const styleScopeId = this.styleScopeIds.get(`${schema.path}.wxss`)
+      ?? this.styleScopeIds.get(`${schema.path}/index.wxss`)
+      ?? this.styleScopeIds.get(`${schema.path}.css`)
+      ?? this.styleScopeIds.get(`${schema.path}/index.css`)
     const adapter = this
 
     const definition = this.componentSpace
@@ -422,6 +435,13 @@ export class GlassEaselRuntimeAdapter {
       },
       get(_target, property) {
         if (typeof property !== 'string') return undefined
+        // glass-easel routes core instance methods through the method caller
+        // when `useMethodCallerListeners` is enabled; forward those to the
+        // component instead of treating them as mini-program event handlers.
+        if (component && NATIVE_COMPONENT_METHODS.has(property)) {
+          const method = (component as unknown as Record<string, unknown>)[property]
+          if (typeof method === 'function') return method.bind(component)
+        }
         return adapter.createEventDispatcher(pageId, property, componentId, component, componentPath)
       },
       getOwnPropertyDescriptor(_target, property) {
@@ -493,8 +513,8 @@ export class GlassEaselRuntimeAdapter {
       detail: toJsonSafe(event.detail) ?? null,
       bubbles: event.bubbles,
       composed: event.composed,
-      capture: event.isCapturePhase(),
-      stopped: event.propagationStopped(),
+      capture: typeof event.isCapturePhase === 'function' ? event.isCapturePhase() : false,
+      stopped: typeof event.propagationStopped === 'function' ? event.propagationStopped() : false,
       target: this.serializeEventNode(event.target),
       currentTarget: this.serializeEventNode(event.currentTarget),
     }

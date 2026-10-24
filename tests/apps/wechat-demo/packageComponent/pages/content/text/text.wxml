@@ -1,0 +1,23 @@
+<import src="../../../../common/head.wxml" />
+<import src="../../../../common/foot.wxml" />
+
+<mp-navigation-bar title="text" back="{{true}}"></mp-navigation-bar>
+<scroll-view class="page-scroll-view" scroll-y type="list">
+<view class="container page" data-weui-theme="{{theme}}">
+  <template is="head" data="{{title: 'text'}}"/>
+
+  <view class="page-body">
+    <view class="page-section page-section-spacing">
+      <view class="text-box" scroll-y="true" scroll-top="{{scrollTop}}">
+        <block wx:for="{{extraLine}}">
+          <text>{{item}}</text>
+        </block>
+      </view>
+      <button disabled="{{!canAdd}}" bindtap="add">add line</button>
+      <button disabled="{{!canRemove}}" bindtap="remove">remove line</button>
+    </view>
+  </view>
+
+  <template is="foot" />
+</view>
+</scroll-view>

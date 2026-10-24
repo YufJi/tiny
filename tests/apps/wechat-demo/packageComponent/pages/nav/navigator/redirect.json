@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "redirectPage",
+  "componentFramework": "glass-easel",
+  "renderer": "skyline",
+  "disableScroll": true,
+  "navigationStyle": "custom"
+}

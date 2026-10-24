@@ -1,0 +1,4 @@
+{
+  "renderer": "webview",
+"navigationBarTitleText": "获取WXML节点信息"
+}

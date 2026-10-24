@@ -6,6 +6,7 @@ import {
   runDevtoolAcceptance,
   runMiniProgramAcceptance,
   runTaroAcceptance,
+  runWechatDemoAcceptance,
 } from './glass-easel-browser.mjs'
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -49,6 +50,9 @@ if (process.env.SKIP_BROWSER === '1') {
     'tests/host/generated',
   ])
   await withServer(() => runTaroAcceptance({ baseUrl }))
+
+  runStep('Compile WeChat demo subset', ['pnpm', 'compile:wechat-demo'])
+  await withServer(() => runWechatDemoAcceptance({ baseUrl }))
 
   runStep('Restore P0 demo artifacts', ['pnpm', 'compile:glass-easel'])
 

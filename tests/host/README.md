@@ -18,4 +18,4 @@ pnpm dev:glass-easel         # compile + Vite on :5173
 - `index.html`, `service.html`, `render.html` are the three entry documents.
 - Use `?path=pages/...` to boot a specific page from the generated manifest.
 - `tests/host/generated` is gitignored and rebuilt by `pnpm compile:glass-easel`.
-- This host is stage 3/4/5 of `pnpm accept:glass-easel` (P0, mini, Taro).
+- This host is stage 3/4/5/6 of `pnpm accept:glass-easel` (P0, mini, Taro, WeChat demo).

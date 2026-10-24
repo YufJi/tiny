@@ -48,20 +48,27 @@ export function templateToProcGen(
         })
       })
 
-      // Script scopes (after H/S/I; use genIdent so names are sequential with other vars)
+      // Script scopes (after H/S/I; use genIdent so names are sequential with other vars).
+      // WXS modules are initialized lazily by the root template: evaluating every
+      // WXS module at bundle load would make one incompatible module break the
+      // whole application.
       const scopes: ScopeVar[] = []
+      const scriptInitializers: Array<(w: JsExprWriter) => void> = []
       let hasScripts = false
       for (const script of tmpl.globals.scripts) {
         hasScripts = true
         const varIdent = fw.genIdent()
+        fw.exprStmt((ww) => { ww.write(`var ${varIdent.name}`) })
         let lvaluePath: ScopeVarLvaluePath
         if (script.kind === 'GlobalRef') {
           const absPath = resolve(tmpl.path, script.src.name)
-          fw.exprStmt((ww) => { ww.write(`var ${varIdent.name}=R[${genLitStr(absPath)}]()`) })
+          scriptInitializers.push((ww) => {
+            ww.write(`${varIdent.name}||(${varIdent.name}=W[${genLitStr(absPath)}]())`)
+          })
           lvaluePath = { kind: 'Script', absPath }
         } else {
-          fw.exprStmt((ww) => {
-            ww.write(`var ${varIdent.name}=D(${genLitStr(tmpl.path + '#' + script.moduleName.name)},(require,exports,module)=>{${script.content}})()`)
+          scriptInitializers.push((ww) => {
+            ww.write(`${varIdent.name}||(${varIdent.name}=D(${genLitStr(tmpl.path + '#' + script.moduleName.name)},(require,exports,module)=>{${script.content}})())`)
           })
           lvaluePath = { kind: 'InlineScript', path: tmpl.path, modName: script.moduleName.name }
         }
@@ -71,11 +78,17 @@ export function templateToProcGen(
       // Sub-templates
       for (const subTmpl of tmpl.globals.subTemplates) {
         const bmc = new BindingMapCollector()
-        writeTemplateItem(subTmpl.name.name, fw, scopes, bmc, subTmpl.content, hasScripts, group, tmpl.path)
+        writeTemplateItem(
+          subTmpl.name.name, fw, scopes, bmc, subTmpl.content,
+          hasScripts, group, tmpl.path, scriptInitializers,
+        )
       }
 
       // Main template
-      writeTemplateItem('', fw, scopes, tmpl.globals.bindingMapCollector, tmpl.content, hasScripts, group, tmpl.path)
+      writeTemplateItem(
+        '', fw, scopes, tmpl.globals.bindingMapCollector, tmpl.content,
+        hasScripts, group, tmpl.path, scriptInitializers,
+      )
 
       fw.exprStmt((ww) => {
         ww.write('return Object.assign(function(R){return H[R]},{_:H})')
@@ -99,12 +112,16 @@ export function writeTemplateItem(
   hasScripts: boolean,
   group: TmplGroupRef,
   curPath: string,
+  scriptInitializers: Array<(w: JsExprWriter) => void> = [],
 ): void {
   w.exprStmt((ew) => {
     ew.write(`H[${genLitStr(key)}]=`)
     ew.functionArgs('R,C,D,U,A', (w) => {
       if (hasScripts) {
         w.exprStmt((w) => { w.write('R.setFnFilter(Q.A,Q.B)') })
+      }
+      for (const initialize of scriptInitializers) {
+        w.exprStmt(initialize)
       }
       w.exprStmt((w) => {
         w.write("if(typeof R.setEventListenerWrapper==='function')R.setEventListenerWrapper(Q.C)")
