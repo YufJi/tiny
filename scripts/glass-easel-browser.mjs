@@ -918,6 +918,7 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         'wechat-demo': '视图容器',
         echarts: '柱状图',
       }
+      const imageFixtures = new Set(['demo', 'mini', 'wechat-demo', 'echarts'])
       const currentAppId = () => page.evaluate(
         () => new URL(window.location.href).searchParams.get('app'),
       )
@@ -973,9 +974,9 @@ export async function runDevtoolAcceptance({ baseUrl }) {
 
         const renderFrame = page.frames().find((frame) => frame.url().includes('next-render.html'))
         assert.ok(renderFrame, `${fixture.id} did not create a render thread iframe`)
-        if (fixture.id === 'wechat-demo') {
+        if (imageFixtures.has(fixture.id)) {
           await renderFrame.waitForFunction(() => {
-            const images = [...document.querySelectorAll('img[src*="resources/kind"]')]
+            const images = [...document.querySelectorAll('img')]
             return images.length > 0 && images.every((image) => image.complete && image.naturalWidth > 0)
           }, null, { timeout: STEP_TIMEOUT })
         }

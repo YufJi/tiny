@@ -678,7 +678,11 @@ export class GlassEaselRuntimeAdapter {
   ): Record<string, glassEasel.GeneralComponentDefinition | string> {
     const effective = config?.effective ?? {}
     const usingComponents = effective.usingComponents
-    if (!usingComponents || typeof usingComponents !== 'object') return {}
+    if (!usingComponents || typeof usingComponents !== 'object') {
+      // Built-ins are available to every mini-program page even when it
+      // declares no custom components.
+      return { ...this.builtinComponents }
+    }
     const resolved = Object.fromEntries(
       Object.entries(usingComponents as Record<string, unknown>).map(([tag, reference]) => {
         const sources = (config?.usingComponentsSource ?? {}) as Record<string, string>
