@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const apps = [
-  ['example/glass-easel/mini', 'packages/devtool/static/runtime/apps/demo/generated', 'demo'],
+  ['example/demo', 'packages/devtool/static/runtime/apps/demo/generated', 'demo'],
   ['example/mini', 'packages/devtool/static/runtime/apps/real/generated', 'real'],
 ]
 

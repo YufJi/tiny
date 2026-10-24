@@ -4,7 +4,7 @@ static/
 dist/
 .turbo/
 .sisyphus/
-example/glass-easel/generated/
+hosts/browser/generated/
 packages/devtool/static/runtime/
 packages/components/src/generated/
 .agents/

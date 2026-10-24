@@ -1,5 +1,8 @@
 # P0 acceptance path
 
+The browser host lives in `hosts/browser`; mini-program sources live under
+`example/` (`example/demo` is the P0 demo, `example/mini` the full sample).
+
 From a clean checkout:
 
 ```bash
@@ -75,7 +78,7 @@ on the page instance.
 
 ## Runtime debugger stage
 
-The gate compiles both `example/glass-easel/mini` (demo) and `example/mini` (real) into
+The gate compiles both `example/demo` (demo) and `example/mini` (real) into
 `packages/devtool/static/runtime/apps/*/generated`, starts the devtool, and verifies the
 runtime debugger:
 

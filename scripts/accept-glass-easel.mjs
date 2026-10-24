@@ -38,7 +38,7 @@ if (process.env.SKIP_BROWSER === '1') {
     'node',
     'scripts/compile-mini.mjs',
     'example/mini',
-    'example/glass-easel/generated',
+    'hosts/browser/generated',
   ])
   await withServer(() => runMiniProgramAcceptance({ baseUrl }))
 
@@ -46,7 +46,7 @@ if (process.env.SKIP_BROWSER === '1') {
     'node',
     'scripts/compile-mini.mjs',
     'example/todo',
-    'example/glass-easel/generated',
+    'hosts/browser/generated',
   ])
   await withServer(() => runTaroAcceptance({ baseUrl }))
 
@@ -134,7 +134,7 @@ function startDevServer() {
       'exec',
       'vite',
       '--config',
-      '../../example/glass-easel/vite.config.ts',
+      '../../hosts/browser/vite.config.ts',
       '--port',
       String(port),
       '--host',

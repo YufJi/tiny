@@ -27,6 +27,12 @@ target and part of acceptance; `example/echarts` remains a historical reference 
 | `packages/components` | Mini-program built-in components |
 | `packages/devtool` | Browser debugger UI and thread entries |
 
+## Hosts
+
+- `hosts/browser`: standalone Vite browser host used by the examples and acceptance.
+  It is not a package and has no mini-program source of its own; compiled apps are
+  written to `hosts/browser/generated`.
+
 ## Commands
 
 ```bash
