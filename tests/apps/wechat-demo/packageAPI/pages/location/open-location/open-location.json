@@ -1,4 +1,3 @@
 {
-    "renderer": "webview",
-"navigationBarTitleText": "查看位置"
+  "navigationBarTitleText": "查看位置"
 }

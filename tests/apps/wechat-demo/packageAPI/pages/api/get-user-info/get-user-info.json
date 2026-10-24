@@ -1,4 +1,3 @@
 {
-    "navigationBarTitleText": "获取用户信息",
-    "renderer": "webview"
+  "navigationBarTitleText": "获取用户信息"
 }

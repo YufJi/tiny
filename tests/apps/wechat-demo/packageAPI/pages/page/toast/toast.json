@@ -1,4 +1,3 @@
 {
-    "renderer": "webview",
-"navigationBarTitleText": "消息提示框"
+  "navigationBarTitleText": "消息提示框"
 }

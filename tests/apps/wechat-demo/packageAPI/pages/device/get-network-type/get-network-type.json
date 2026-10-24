@@ -1,4 +1,3 @@
 {
-    "renderer": "webview",
-"navigationBarTitleText": "获取手机网络状态"
+  "navigationBarTitleText": "获取手机网络状态"
 }

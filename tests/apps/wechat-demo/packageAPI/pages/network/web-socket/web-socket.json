@@ -1,4 +1,3 @@
 {
-    "renderer": "webview",
-"navigationBarTitleText": "Web Socket"
+  "navigationBarTitleText": "Web Socket"
 }

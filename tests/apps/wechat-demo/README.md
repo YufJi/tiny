@@ -18,7 +18,11 @@ other advanced demo packages are intentionally omitted.
 - `app.js` is reduced to the theme/global-data surface used by these pages.
 - `util/util.js` exports its legacy CommonJS object as ESM names so the service
   bundle can resolve `compareVersion`.
-- Demo navigation is served by the test host's `?path=` query for now.
+- Skyline-only pages (grid-view/sticky/page-container/match-media/root-portal),
+  `renderer: skyline` config, the Skyline course bar, and Skyline CSS variants
+  were removed.
+- The component/API indexes use `wx.navigateTo` for local example links;
+  direct pages can also be booted with the host `?path=` query.
 - Local images referenced through dynamic WXML paths are not resolved yet.
 
 ## Run

@@ -1,6 +1,5 @@
 {
-    "navigationBarTitleText": "form",
-    "componentFramework": "glass-easel",
-    "renderer": "skyline",
-    "navigationStyle": "custom"
+  "navigationBarTitleText": "form",
+  "componentFramework": "glass-easel",
+  "navigationStyle": "custom"
 }

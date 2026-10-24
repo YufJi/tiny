@@ -1,6 +1,4 @@
 {
   "usingComponents": {},
-  "renderer": "webview",
-"navigationBarTitleText": "mDNS"
-
+  "navigationBarTitleText": "mDNS"
 }

@@ -140,6 +140,13 @@ export class GlassEaselRuntimeAdapter {
         ? this.componentSpace.styleScopeManager.register(style.scope)
         : glassEasel.StyleScopeManager.globalScope()
       this.styleScopeIds.set(style.path, scopeId)
+      // Components are addressed by their entry path (`foo`), while the style
+      // artifact may be `foo.wxss` or `foo/index.wxss`.
+      const withoutExtension = style.path.replace(/\.wxss$/, '')
+      const entryPath = withoutExtension.endsWith('/index')
+        ? withoutExtension.slice(0, -'/index'.length)
+        : withoutExtension
+      this.styleScopeIds.set(entryPath, scopeId)
       this.backend.appendStyleSheetPath(style.outputPath, scopeId)
     }
   }
@@ -315,10 +322,7 @@ export class GlassEaselRuntimeAdapter {
         return [tag, this.registerComponentDefinition(dependency)]
       }),
     )
-    const styleScopeId = this.styleScopeIds.get(`${schema.path}.wxss`)
-      ?? this.styleScopeIds.get(`${schema.path}/index.wxss`)
-      ?? this.styleScopeIds.get(`${schema.path}.css`)
-      ?? this.styleScopeIds.get(`${schema.path}/index.css`)
+    const styleScopeId = this.styleScopeIds.get(schema.path)
     const adapter = this
 
     const definition = this.componentSpace

@@ -35,7 +35,7 @@ import {
 
 const SCRIPT_EXTENSIONS = ['.js', '.ts']
 const TEMPLATE_EXTENSIONS = ['.wxml']
-const STYLE_EXTENSIONS = ['.wxss', '.css']
+const STYLE_EXTENSIONS = ['.wxss']
 const WXS_EXTENSIONS = ['.wxs', '.sjs']
 const ASSET_EXTENSIONS = new Set([
   '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp',
@@ -253,7 +253,7 @@ class MiniProgramCompiler {
   ): Promise<SourceEntry | null> {
     const normalized = normalizeRelativePath(entryPath)
     const findTemplate = (base: string) => byRelative.get(`${base}.wxml`)
-    const findStyle = (base: string) => byRelative.get(`${base}.wxss`) ?? byRelative.get(`${base}.css`)
+    const findStyle = (base: string) => byRelative.get(`${base}.wxss`)
     const findScript = (base: string) => {
       for (const extension of SCRIPT_EXTENSIONS) {
         const scriptPath = byRelative.get(`${base}${extension}`)
@@ -464,7 +464,7 @@ class MiniProgramCompiler {
       const templatePath = withoutExtension(relativePath)
       const rawSource = await fs.readFile(absolutePath, 'utf8')
       const inlined = inlineLocalImages(rawSource, absolutePath, root)
-      const hasScopedStyles = byRelative.has(`${templatePath}.wxss`) || byRelative.has(`${templatePath}.css`)
+      const hasScopedStyles = byRelative.has(`${templatePath}.wxss`)
       const scope = hasScopedStyles
         ? `${this.options.scopePrefix}-${sanitizeScope(templatePath)}`
         : undefined
@@ -557,9 +557,7 @@ class MiniProgramCompiler {
         const candidates = [
           normalized,
           `${normalized}.wxss`,
-          `${normalized}.css`,
           `${normalized}/index.wxss`,
-          `${normalized}/index.css`,
         ]
         const resolved = candidates.find((candidate) => byRelative.has(candidate))
         if (!resolved) {

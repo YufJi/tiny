@@ -1,4 +1,3 @@
 {
-    "renderer": "webview",
-"navigationBarTitleText": "数据存储"
+  "navigationBarTitleText": "数据存储"
 }

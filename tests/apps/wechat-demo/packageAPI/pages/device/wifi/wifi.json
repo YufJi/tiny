@@ -1,4 +1,3 @@
 {
-   "renderer": "webview",
-"navigationBarTitleText": "Wi-Fi"
+  "navigationBarTitleText": "Wi-Fi"
 }

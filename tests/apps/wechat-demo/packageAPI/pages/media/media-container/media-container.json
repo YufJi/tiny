@@ -1,5 +1,4 @@
 {
   "usingComponents": {},
-  "renderer": "webview",
-"navigationBarTitleText": "音视频合成"
+  "navigationBarTitleText": "音视频合成"
 }

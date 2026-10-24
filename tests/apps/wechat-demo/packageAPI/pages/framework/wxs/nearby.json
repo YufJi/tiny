@@ -1,5 +1,4 @@
 {
   "usingComponents": {},
-  "renderer": "webview",
-"navigationBarTitleText": "nearby"
+  "navigationBarTitleText": "nearby"
 }

@@ -1,4 +1,3 @@
 {
-    "navigationBarTitleText": "发起支付",
-    "renderer": "webview"
+  "navigationBarTitleText": "发起支付"
 }

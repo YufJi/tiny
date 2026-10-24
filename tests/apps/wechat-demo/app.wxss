@@ -1,5 +1,5 @@
 /* reset */
-@import './common/common-skyline.wxss';
+@import './common/common.wxss';
 
 page {
   background-color: #f7f7f7;

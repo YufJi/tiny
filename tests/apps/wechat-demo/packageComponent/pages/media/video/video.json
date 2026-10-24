@@ -1,7 +1,6 @@
 {
-    "navigationBarTitleText": "video",
-    "componentFramework": "glass-easel",
-  "renderer": "skyline",
-    "disableScroll": true,
-    "navigationStyle": "custom"
+  "navigationBarTitleText": "video",
+  "componentFramework": "glass-easel",
+  "disableScroll": true,
+  "navigationStyle": "custom"
 }

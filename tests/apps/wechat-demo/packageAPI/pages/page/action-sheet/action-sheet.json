@@ -1,4 +1,3 @@
 {
-    "renderer": "webview",
-"navigationBarTitleText": "操作菜单"
+  "navigationBarTitleText": "操作菜单"
 }

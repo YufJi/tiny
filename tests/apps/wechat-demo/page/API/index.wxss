@@ -1,5 +1,5 @@
 @import "../../common/reset.wxss";
-@import "../common/index-skyline.wxss";
+@import "../common/index.wxss";
 
 .weui-agree__link {
   display: inline;

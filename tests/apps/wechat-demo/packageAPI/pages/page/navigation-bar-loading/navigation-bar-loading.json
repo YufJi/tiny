@@ -1,4 +1,3 @@
 {
-    "renderer": "webview",
-"navigationBarTitleText": "标题栏加载动画"
+  "navigationBarTitleText": "标题栏加载动画"
 }

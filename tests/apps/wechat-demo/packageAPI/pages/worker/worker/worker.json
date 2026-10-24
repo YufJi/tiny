@@ -1,4 +1,3 @@
 {
-   "renderer": "webview",
-"navigationBarTitleText": "多线程Worker"
+  "navigationBarTitleText": "多线程Worker"
 }
