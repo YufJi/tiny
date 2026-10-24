@@ -10,12 +10,14 @@ must:
 
 - boot the same dual-thread runtime and `DevtoolRuntimeClient` used by
   `pnpm dev:devtool`;
+- keep the same app selector as local development: every fixture under
+  `tests/apps`;
 - work under the Pages project prefix (`/<repo>/`), so every devtool URL has to
   be relocatable;
 - work under the Vite dev server (`/`) without a second deployment;
-- keep generated artifacts and fixture output out of git;
-- keep the Pages artifact small. A full `compile:devtool:all` build is ~29 MiB,
-  while the demo fixture alone is ~1.3 MiB including the devtool shell.
+- keep generated artifacts and fixture output out of git. Shipping all
+  fixtures makes the artifact ~26 MiB, which is acceptable for Pages;
+  `TINY_SITE_DEVTOOL_APPS` can still produce a smaller subset.
 
 ## Options considered
 
@@ -31,11 +33,14 @@ The chosen model is a same-origin iframe:
 ```text
 website/#/devtool
   └── iframe ./devtool/index.html
-        ├── next-service.html?app=demo
-        └── next-render.html?app=demo
+        ├── next-service.html?app=<app>
+        └── next-render.html?app=<app>
               └── runtime/apps.json
-                  runtime/apps/demo/generated/{manifest,service,render,templates,styles}
+                  runtime/apps/<app>/generated/{manifest,service,render,templates,styles}
 ```
+
+The registry and generated directories contain every fixture, so the embedded
+selector offers the same apps as local development.
 
 Both thread documents are same-origin, which is required for
 `fetch`/`import()` of the generated artifacts and for transferring the
@@ -68,20 +73,26 @@ removes ambiguity about dynamic-import base URLs.
 
 1. If `tools/cli/dist`, `packages/runtime/dist`, or `hosts/browser/dist` are
    missing, run `pnpm build:glass-easel`.
-2. Compile selected fixtures (default `demo`) into
-   `website/.cache/devtool/runtime`.
-3. Write a reduced `apps.json` for that fixture set.
+2. Compile every fixture under `tests/apps` into `.cache/site-devtool/runtime`
+   (or the subset named by `TINY_SITE_DEVTOOL_APPS`).
+3. Write `apps.json` for that fixture set.
 4. Run the devtool production build with:
    - `NODE_ENV=production`
-   - `TINY_DEVTOOL_RUNTIME_ROOT=website/.cache/devtool/runtime`
-   - `TINY_DEVTOOL_OUT_DIR=website/.cache/devtool/dist`
+   - `TINY_DEVTOOL_RUNTIME_ROOT=.cache/site-devtool/runtime`
+   - `TINY_DEVTOOL_OUT_DIR=.cache/site-devtool/dist`
 5. Copy the build to `website/.cache/site-public/devtool`.
 6. Validate that the expected HTML, registry, and thread artifacts exist.
 
+Fixtures compile outside `website/` on purpose: `website/package.json` declares
+`"type": "module"`, and esbuild would classify generated CommonJS scripts as ESM
+when the output directory is under it, breaking fixtures that use
+`module.exports`.
+
 `website/vite.config.js` points `publicDir` at `.cache/site-public`. During
 `pnpm site:dev`, Vite serves `/devtool/index.html` from there. During
-`pnpm site:build`, Vite copies it to `website/dist/devtool/`. Nothing outside
-`website/.cache/` and `website/dist/` is produced, and both are gitignored.
+`pnpm site:build`, Vite copies it to `website/dist/devtool/`. Generated files
+stay in `.cache/site-devtool/`, `website/.cache/site-public/`, or
+`website/dist/`, all gitignored.
 
 The iframe uses `./devtool/index.html`, not `./devtool/`. Vite's dev server
 serves the public directory's `index.html` at the explicit file URL, but its SPA
@@ -107,11 +118,14 @@ pnpm site:preview
 `scripts/check-website.mjs` now checks the site shell plus
 `devtool/index.html`, `devtool/next-service.html`, and
 `devtool/next-render.html` for root-absolute asset URLs, scans the emitted
-bundles for root-absolute devtool/runtime URLs, verifies the demo runtime
+bundles for root-absolute devtool/runtime URLs, verifies every expected runtime
 manifest, and requires the generated `service.js`, `render.js`, and
-`templates.js`.
+`templates.js`. The expected fixture list is derived from `tests/apps` (or
+`TINY_SITE_DEVTOOL_APPS` when set).
 
 Manual browser validation used a 1400×1000 Chromium page against the Vite
-preview server: the iframe reports `status: running`, the page stack starts at
-`pages/todos/todos`, the demo body renders `Tiny Glass-easel P0`, and there are
-no console errors or failed requests.
+preview server. The embedded selector exposed all five fixtures, and switching
+through demo, mini, todo, wechat-demo, and echarts each reached
+`status: running` with a projected tree; the demo body renders
+`Tiny Glass-easel P0`. The WeChat demo and ECharts flows also exercise the
+CommonJS bundling fix above (`module.exports` and `require_mapData`).

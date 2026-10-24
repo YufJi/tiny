@@ -113,7 +113,8 @@ Chrome, or `PLAYWRIGHT_CHROMIUM_PATH`).
 - `tests/apps/*` are complete mini-program fixtures; `tests/apps/todo` is the Taro 3
   compatibility target. `tests/apps/echarts` is historical reference only.
 - `website` is a React + Vite app; `pnpm site:build` writes `dist/` including
-  the embedded devtool (`dist/devtool/`) built from `website/.cache/`, and
+  the embedded devtool (`dist/devtool/`) built from `.cache/site-devtool/` and
+  staged through `website/.cache/site-public/`, and
   `.github/workflows/pages.yml` deploys it.
 - Do not reintroduce the legacy `packages/base`, `packages/compiler`, or the old
   devtool shell; no JSBridge/`executeJavaScript`-based code.

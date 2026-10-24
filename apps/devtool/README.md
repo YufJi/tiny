@@ -103,10 +103,12 @@ TINY_DEVTOOL_OUT_DIR=/path/to/dist \
 pnpm --filter devtool build
 ```
 
-website 的接入由 `pnpm site:devtool` 完成：它编译 `tests/apps/demo`、生成
-`apps.json`、调用上面的生产构建，并把结果复制到 Vite 的 public 目录
+website 的接入由 `pnpm site:devtool` 完成：它编译 `tests/apps` 下全部 fixture
+（可用 `TINY_SITE_DEVTOOL_APPS=demo,mini` 取子集）、生成 `apps.json`、调用上面的
+生产构建，并把结果复制到 Vite 的 public 目录
 `website/.cache/site-public/devtool`。Vite 构建后位于 `website/dist/devtool/`，
-站点用同源 iframe `./devtool/index.html` 嵌入。详见 `website/README.md`。
+站点用同源 iframe `./devtool/index.html` 嵌入，应用下拉框与本地 devtool 一致。
+详见 `website/README.md`。
 
 ## 验收
 

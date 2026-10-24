@@ -10,34 +10,32 @@ import { discoverTestApps, toRegistryEntry } from './devtool-apps.mjs'
  * The site is deployed to a GitHub Pages project path, so the devtool cannot
  * reuse `apps/devtool/static/runtime` or publish under `/`. This script:
  *
- *   1. compiles a small, explicit set of fixtures (default: demo),
+ *   1. compiles every fixture under `tests/apps` (or the subset named by
+ *      `TINY_SITE_DEVTOOL_APPS`),
  *   2. builds the devtool with relative production URLs,
  *   3. copies the result into the website's Vite public directory
  *      (`website/.cache/site-public/devtool`), which Vite publishes verbatim
  *      at `dist/devtool/`.
  *
- * The embedded panel still boots the real dual-thread runtime; only the
- * fixture set is reduced to keep the Pages artifact small.
+ * The embedded panel still boots the real dual-thread runtime. By default the
+ * site ships every fixture so the app selector matches `pnpm dev:devtool`.
  */
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const cacheDir = path.join(rootDir, 'website/.cache/devtool')
+// Keep compiled fixtures outside `website/`: its package.json is an ES module,
+// and esbuild would treat generated CommonJS scripts as ESM (breaking fixtures
+// that use `module.exports`). Root has no "type" field, matching the devtool.
+const cacheDir = path.join(rootDir, '.cache/site-devtool')
 const runtimeDir = path.join(cacheDir, 'runtime')
 const outputDir = path.join(cacheDir, 'dist')
 // Vite's publicDir points at `website/.cache/site-public`, so this directory
 // is both served by `pnpm site:dev` and copied to `website/dist/devtool/` by
 // `pnpm site:build`. Everything under `.cache/` stays out of git.
 const publicDir = path.join(rootDir, 'website/.cache/site-public/devtool')
-const defaultApps = 'demo'
-const requestedApps = (process.env.TINY_SITE_DEVTOOL_APPS || defaultApps)
+const requestedApps = (process.env.TINY_SITE_DEVTOOL_APPS || '')
   .split(',')
   .map((value) => value.trim())
   .filter(Boolean)
-
-if (requestedApps.length === 0) {
-  console.error('[site:devtool] TINY_SITE_DEVTOOL_APPS must name at least one fixture')
-  process.exit(1)
-}
 
 const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
 
@@ -93,7 +91,14 @@ if (requiredBuilds.some((relativePath) => !fs.existsSync(path.join(rootDir, rela
 
 const apps = discoverTestApps()
 if (apps.length === 0) fail('no test apps found under tests/apps')
-const selectedApps = [...new Set(requestedApps)].map((id) => findRequiredApp(apps, id))
+const selectedApps = requestedApps.length > 0
+  ? [...new Set(requestedApps)].map((id) => findRequiredApp(apps, id))
+  : apps
+
+console.log(
+  `[site:devtool] fixtures: ${selectedApps.map((app) => app.id).join(', ')} ` +
+    `(${selectedApps.length}/${apps.length})`,
+)
 
 const { compileMiniProgram } = await import(
   pathToFileURL(path.join(rootDir, 'tools/cli/dist/index.js')).href

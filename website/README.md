@@ -73,26 +73,28 @@ pnpm --filter @tiny/website preview
 
 `site:check` verifies that the site shell and `devtool/index.html`,
 `devtool/next-service.html`, and `devtool/next-render.html` only reference
-relative assets, that the demo runtime manifest exists, and that the required
-generated thread artifacts are present.
+relative assets, that every expected runtime manifest exists, and that the
+required generated thread artifacts are present.
 
 ## Embedded devtool
 
 `#/devtool` embeds a production build of `apps/devtool` in a same-origin
 iframe. `pnpm site:devtool` runs `scripts/build-site-devtool.mjs`, which:
 
-1. compiles `tests/apps/demo` (override with
-   `TINY_SITE_DEVTOOL_APPS=demo,mini`) into `website/.cache/devtool/runtime`;
+1. compiles every fixture under `tests/apps` (restrict with
+   `TINY_SITE_DEVTOOL_APPS=demo,mini`) into `.cache/site-devtool/runtime`;
 2. builds `apps/devtool` with `NODE_ENV=production`, relative `publicPath`,
    `TINY_DEVTOOL_RUNTIME_ROOT`, and `TINY_DEVTOOL_OUT_DIR`;
 3. copies the build to `website/.cache/site-public/devtool`, which is Vite's
    `publicDir`.
 
-The result is `website/dist/devtool/`. All generated files live under
-`website/.cache/` or `website/dist/`; neither is tracked by git. The devtool
-panel resolves its registry, thread documents, and app artifacts relative to
-its own document, so the same build works at `/devtool/` and at a GitHub Pages
-prefix such as `/tiny/devtool/`.
+The result is `website/dist/devtool/` (~26 MiB with all fixtures). It keeps the
+app selector identical to `pnpm dev:devtool`: demo, mini, Taro 3, WeChat demo,
+and ECharts. Generated files stay in `.cache/site-devtool/`,
+`website/.cache/site-public/`, or `website/dist/`; none is tracked by git. The
+devtool panel resolves its registry, thread documents, and app artifacts
+relative to its own document, so the same build works at `/devtool/` and at a
+GitHub Pages prefix such as `/tiny/devtool/`.
 
 ## Deploy
 

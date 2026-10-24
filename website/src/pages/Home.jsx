@@ -111,7 +111,7 @@ export default function Home() {
       <Section
         kicker="Live devtool"
         title="在线跑一遍调试器"
-        intro="不用克隆仓库：内嵌版本加载 tests/apps/demo 的真实编译产物，双线程、Console 和 Elements 都在。"
+        intro="不用克隆仓库：内嵌版本加载 tests/apps 下全部测试应用的真实编译产物，双线程、Console 和 Elements 都在。"
       >
         <div className="split">
           <Card tag="online" title="Tiny Runtime Debugger">
@@ -119,7 +119,7 @@ export default function Home() {
             <p><a className="button primary" href="#/devtool">打开在线调试器</a></p>
           </Card>
           <Card tag="build-time" title="随站点构建，而不是外链">
-            <p>构建时编译 demo、打包 devtool，Vite 把产物复制到 <code>dist/devtool/</code>；页面用同源 iframe 嵌入。</p>
+            <p>构建时编译 tests/apps 下全部 fixture、打包 devtool，Vite 把产物复制到 <code>dist/devtool/</code>；页面用同源 iframe 嵌入。</p>
             <p><a href="#/devtool">查看接入方式 →</a></p>
           </Card>
         </div>

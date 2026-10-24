@@ -1,9 +1,16 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { discoverTestApps } from './devtool-apps.mjs'
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../website/dist')
 const problems = []
+// `site:devtool` ships every fixture by default; the env var is only for a
+// deliberately reduced build.
+const requestedFixtureIds = (process.env.TINY_SITE_DEVTOOL_APPS || '')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean)
 
 function readJson(relativePath) {
   const filePath = path.join(rootDir, relativePath)
@@ -87,8 +94,20 @@ const registry = readJson('devtool/runtime/apps.json')
 if (registry) {
   if (!Array.isArray(registry.apps) || registry.apps.length === 0) {
     problems.push('devtool/runtime/apps.json has no apps')
-  } else if (!registry.apps.some((app) => app && app.id === 'demo')) {
-    problems.push('devtool/runtime/apps.json does not include the demo fixture')
+  } else {
+    const actualIds = new Set(
+      registry.apps
+        .filter((app) => app && typeof app.id === 'string')
+        .map((app) => app.id),
+    )
+    const expectedIds = requestedFixtureIds.length > 0
+      ? requestedFixtureIds
+      : discoverTestApps().map((app) => app.id)
+    for (const id of expectedIds) {
+      if (!actualIds.has(id)) {
+        problems.push(`devtool/runtime/apps.json is missing the ${id} fixture`)
+      }
+    }
   }
   for (const app of registry.apps ?? []) {
     if (!app || typeof app.id !== 'string') continue
