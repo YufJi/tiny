@@ -1,5 +1,7 @@
 # Tiny - 小程序引擎
 
+[![CI](https://github.com/YufJi/tiny/actions/workflows/ci.yml/badge.svg?branch=next)](https://github.com/YufJi/tiny/actions/workflows/ci.yml)
+
 基于 [glass-easel](https://github.com/wechat-miniprogram/glass-easel) 的小程序引擎：双线程 host、版本化 bridge 协议、独立编译器，以及浏览器调试器。
 
 ## 架构
