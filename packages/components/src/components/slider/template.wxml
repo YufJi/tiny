@@ -1,5 +1,5 @@
 <view
-  class="tiny-slider-wrapper {{hidden ? 'tiny-hidden' : ''}}"
+  class="tiny-slider-wrapper {{hidden ? 'tiny-hidden' : ''}} class"
   style="--tiny-slider-active: {{activeColor || selectedColor}}; --tiny-slider-bg: {{backgroundColor || color}}; --tiny-slider-block: {{blockColor}}; --tiny-slider-block-size: {{blockSize}}px;"
 >
   <input

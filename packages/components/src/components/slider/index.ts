@@ -22,6 +22,7 @@ export function defineSlider(ctx: BuiltinContext): BuiltinDefinition {
       selectedColor: { type: String, value: '#1aad19' },
       color: { type: String, value: '#e9e9e9' },
     },
+    externalClasses: ['class'],
     methods: {
       handleChanging(event: glassEasel.ShadowedEvent<unknown>) {
         const value = numberFromEvent(event, this.data.value as number)

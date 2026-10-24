@@ -14,6 +14,7 @@ export function defineRadio(ctx: BuiltinContext): BuiltinDefinition {
       disabled: { type: Boolean, value: false },
       color: { type: String, value: '#09BB07' },
     },
+    externalClasses: ['class'],
     methods: {
       handleChange(event: glassEasel.ShadowedEvent<unknown>) {
         const checked = booleanFromEvent(event, this.data.checked as boolean)

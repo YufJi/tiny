@@ -14,6 +14,7 @@ export function defineSwitch(ctx: BuiltinContext): BuiltinDefinition {
       type: { type: String, value: 'switch' },
       color: { type: String, value: '#04BE02' },
     },
+    externalClasses: ['class'],
     methods: {
       handleChange(event: glassEasel.ShadowedEvent<unknown>) {
         const checked = booleanFromEvent(event, this.data.checked as boolean)

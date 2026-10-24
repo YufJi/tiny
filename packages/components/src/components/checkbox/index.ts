@@ -32,6 +32,7 @@ export function defineCheckbox(ctx: BuiltinContext): BuiltinDefinition {
         )
       },
     },
+    externalClasses: ['class'],
     methods: {
       handleChange(event: glassEasel.ShadowedEvent<unknown>) {
         const checked = booleanFromEvent(event, this.data.checked as boolean)

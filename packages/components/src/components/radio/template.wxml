@@ -1,1 +1,1 @@
-<view class="tiny-radio {{hidden ? 'tiny-hidden' : ''}}"><input id="native-input" aria-label="{{ariaLabel}}" style="accent-color: {{color}};" type="radio" value="{{value}}" checked="{{checked}}" disabled="{{disabled}}" catchchange="handleChange" /><slot /></view>
+<view class="tiny-radio {{hidden ? 'tiny-hidden' : ''}} class"><input id="native-input" aria-label="{{ariaLabel}}" style="accent-color: {{color}};" type="radio" value="{{value}}" checked="{{checked}}" disabled="{{disabled}}" catchchange="handleChange" /><slot /></view>
