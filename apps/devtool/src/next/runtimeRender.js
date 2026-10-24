@@ -8,11 +8,12 @@ import {
 } from '@tiny/host-browser';
 
 const appId = new URLSearchParams(window.location.search).get('app') || 'demo';
-const generatedBase = `/runtime/apps/${appId}/generated`;
+const generatedBase = `/runtime/apps/${encodeURIComponent(appId)}/generated`;
 const importGenerated = (url) => new Function('url', 'return import(url)')(url);
 
 const assetsPromise = (async () => {
-  const manifest = await fetch(`${generatedBase}/manifest.json`).then((response) => response.json());
+  const manifest = await fetch(`${generatedBase}/manifest.json`, { cache: 'no-store' })
+    .then((response) => response.json());
   const renderModule = await importGenerated(`${generatedBase}/render.js`);
   const styles = Object.fromEntries(await Promise.all(
     manifest.styles.map(async (style) => {

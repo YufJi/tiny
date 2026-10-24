@@ -105,9 +105,10 @@ The subset, adaptations, and excluded advanced packages are documented in
 
 ## Runtime debugger stage
 
-The gate compiles both `tests/apps/demo` (demo) and `tests/apps/mini` (real) into
-`apps/devtool/static/runtime/apps/*/generated`, starts the devtool, and verifies the
-runtime debugger:
+The gate scans every `tests/apps/*` fixture with an `app.json`, compiles all of them into
+`apps/devtool/static/runtime/apps/<app>/generated`, writes the app registry to
+`apps/devtool/static/runtime/apps.json`, starts the devtool, and verifies the runtime
+debugger:
 
 1. `DevtoolRuntimeClient` boots the dual-thread host and reports `running`.
 2. Page stack, current page, structured diagnostics, and the rendered element tree are
@@ -115,18 +116,21 @@ runtime debugger:
 3. The mini program renders inside the debugger viewport; the tree drawer shows `page`,
    built-in tags, classes, attributes, and text.
 4. `Navigate` / `Back` drive the runtime through host API handlers and refresh the tree.
-5. The app selector switches from the demo to the real test app.
+5. The app selector lists every `tests/apps` fixture; each app boots its first page and
+   renders representative content for `demo`, `mini`, `todo`, `wechat-demo`, and `echarts`.
 6. `Reload` restarts the runtime and `Terminate` removes both thread iframes.
-7. No console or page errors occur.
+7. No console or page errors occur. The only tolerated console errors are the known
+   unresolved dynamic image paths in `tests/apps/wechat-demo` documented in its README.
 
 The debugger is the devtool default page. Run it manually with:
 
 ```bash
 pnpm dev:devtool
 # open http://localhost:8080/
+# deep link: http://localhost:8080/?app=wechat-demo&path=page/component/index
 ```
 
-`dev:devtool` starts watchers for both test apps plus the rspack dev server. Editing a
+`dev:devtool` starts one watcher per test app plus the rspack dev server. Editing a
 WXML/WXSS/JS file recompiles within ~250ms; press `Reload` in the panel to boot the new
 artifacts.
 

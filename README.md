@@ -80,8 +80,11 @@ pnpm accept:glass-easel      # 构建 + 单测 + 五段浏览器验收
 
 ```bash
 pnpm dev:glass-easel         # 编译 tests/apps/demo 并启动测试宿主：http://localhost:5173
-pnpm dev:devtool             # 调试器：http://localhost:8080
+pnpm dev:devtool             # 调试器：http://localhost:8080（可切换全部 tests/apps）
 ```
+
+调试器会扫描 `tests/apps/*` 并为每个应用生成产物与 watcher；顶部下拉框可预览全部测试应用，
+也支持 `http://localhost:8080/?app=wechat-demo` 这样的深链。
 
 ## 命名配置
 
@@ -128,7 +131,7 @@ pnpm site:dev                # 本地预览架构网站：http://localhost:4173
 pnpm site:build              # 构建 website/dist
 pnpm site:check              # 构建并检查产物资源
 pnpm compile:glass-easel     # tests/apps/demo -> tests/host/generated
-pnpm compile:devtool:all     # demo + tests/apps/mini -> devtool 静态目录
+pnpm compile:devtool:all     # 全部 tests/apps -> devtool 静态目录
 pnpm compile:wechat-demo     # 微信官方组件/API 示例 -> tests/host/generated
 pnpm check:runtime-purity    # 校验 runtime 内核无宿主全局依赖
 pnpm dev:wechat-demo         # 微信示例宿主：http://127.0.0.1:5174/?path=page/component/index

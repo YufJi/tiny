@@ -3,12 +3,32 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import playwright from 'playwright-core'
+import { discoverTestApps } from './devtool-apps.mjs'
 
 const { chromium } = playwright
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const failureShot = path.join(rootDir, 'tests/host/generated/acceptance-failure.png')
 const STEP_TIMEOUT = 15_000
+
+// `tests/apps/wechat-demo` uses page-relative dynamic image paths
+// (`resources/kind/{{item.id}}.png`). The fixture README documents that these
+// unresolved local images are a known limitation; browsers request them from
+// the thread document root, which is not an app bug worth failing the gate for.
+const KNOWN_MISSING_FIXTURE_ASSETS = new Set([
+  'view', 'content', 'form', 'nav', 'media', 'map', 'canvas', 'open', 'obstacle-free',
+].flatMap((name) => [
+  `/resources/kind/${name}.png`,
+  `/resources/kind/${name}_dark.png`,
+]))
+
+function isKnownMissingFixtureAsset(url) {
+  try {
+    return KNOWN_MISSING_FIXTURE_ASSETS.has(new URL(url).pathname)
+  } catch {
+    return false
+  }
+}
 
 async function launchBrowser() {
   const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH
@@ -793,7 +813,10 @@ export async function runDevtoolAcceptance({ baseUrl }) {
   const failureShot = path.join(rootDir, 'tests/host/generated/acceptance-devtool-failure.png')
   page.on('pageerror', (error) => pageErrors.push(error.message))
   page.on('console', (message) => {
-    if (message.type() === 'error') consoleErrors.push(message.text())
+    if (message.type() !== 'error') return
+    const url = message.location().url
+    if (isKnownMissingFixtureAsset(url)) return
+    consoleErrors.push(url ? `${message.text()} (${url})` : message.text())
   })
 
   let currentStep = 'start'
@@ -868,37 +891,101 @@ export async function runDevtoolAcceptance({ baseUrl }) {
       assert.deepEqual((await state()).pageStack, ['page-1'])
     })
 
-    await step('switch the debugger to the existing example app', async () => {
-      currentStep = 'switch the debugger to the existing example app'
-      assert.equal(await page.locator('select').count(), 1, 'app selector is missing')
-      await Promise.all([
-        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT }),
-        page.selectOption('select', 'real'),
-      ])
-      await waitForStatus('running')
-      await page.waitForFunction(
-        () => {
-          const tree = window.__tinyDevtool?.getState().tree
-          return Boolean(tree) && JSON.stringify(tree).includes('Learning Javascript')
-        },
-        null,
-        { timeout: STEP_TIMEOUT },
+    await step('preview every tests/apps fixture in the debugger', async () => {
+      currentStep = 'preview every tests/apps fixture in the debugger'
+      const fixtures = discoverTestApps()
+      assert.ok(fixtures.length > 0, 'no tests/apps fixtures were discovered')
+      const selector = page.locator('select')
+      assert.equal(await selector.count(), 1, 'app selector is missing')
+      assert.deepEqual(
+        await selector.locator('option').evaluateAll((options) => options.map((option) => option.value)),
+        fixtures.map((fixture) => fixture.id),
+        'app selector does not list every tests/apps fixture',
       )
-      const switched = await state()
-      assert.equal(switched.currentPage, 'pages/todos/todos')
+      assert.deepEqual(
+        await selector.locator('option').evaluateAll((options) => options.map((option) => option.textContent)),
+        fixtures.map((fixture) => fixture.label),
+        'app selector labels do not match the registry',
+      )
+
+      const expectedText = {
+        demo: 'Tiny Glass-easel P0',
+        mini: 'Learning Javascript',
+        todo: 'Use Redux',
+        'wechat-demo': '视图容器',
+        echarts: '柱状图',
+      }
+      const currentAppId = () => page.evaluate(
+        () => new URL(window.location.href).searchParams.get('app'),
+      )
+
+      for (const fixture of fixtures) {
+        currentStep = `preview tests/apps/${fixture.id}`
+        if (await currentAppId() !== fixture.id) {
+          await Promise.all([
+            page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT }),
+            selector.selectOption(fixture.id),
+          ])
+        }
+        await waitForStatus('running')
+        await page.waitForFunction(
+          (expectedPage) => {
+            const current = window.__tinyDevtool?.getState()
+            return current?.status === 'running' && current.currentPage === expectedPage
+          },
+          fixture.firstPage,
+          { timeout: STEP_TIMEOUT },
+        )
+
+        const needle = expectedText[fixture.id]
+        if (needle) {
+          await page.waitForFunction(
+            (expected) => JSON.stringify(window.__tinyDevtool?.getState().tree ?? {}).includes(expected),
+            needle,
+            { timeout: STEP_TIMEOUT },
+          )
+        } else {
+          await page.waitForFunction(
+            () => Boolean(window.__tinyDevtool?.getState().tree),
+            null,
+            { timeout: STEP_TIMEOUT },
+          )
+        }
+
+        const preview = await state()
+        assert.equal(preview.currentPage, fixture.firstPage, `${fixture.id} booted the wrong page`)
+        assert.equal(
+          preview.diagnostics.filter((item) => item.severity === 'error').length,
+          0,
+          `${fixture.id} reported a fatal diagnostic`,
+        )
+        assert.ok(preview.tree, `${fixture.id} did not project an element tree`)
+
+        if (needle) {
+          assert.ok(
+            JSON.stringify(preview.tree).includes(needle),
+            `${fixture.id} element tree does not contain "${needle}"`,
+          )
+        }
+
+        const renderFrame = page.frames().find((frame) => frame.url().includes('next-render.html'))
+        assert.ok(renderFrame, `${fixture.id} did not create a render thread iframe`)
+        if (needle) {
+          await renderFrame.waitForFunction(
+            (expected) => (document.querySelector('#app')?.innerText ?? '').includes(expected),
+            needle,
+            { timeout: STEP_TIMEOUT },
+          )
+        } else {
+          await renderFrame.locator('#app').waitFor({ state: 'attached', timeout: STEP_TIMEOUT })
+        }
+      }
+
       assert.equal(
-        switched.diagnostics.filter((item) => item.severity === 'error').length,
-        0,
-        'switched app reported a fatal diagnostic',
+        await currentAppId(),
+        fixtures.at(-1).id,
+        'the last previewed fixture was not kept in the URL',
       )
-      assert.ok(
-        JSON.stringify(switched.tree).includes('Learning Javascript'),
-        'element tree did not switch to the existing example app',
-      )
-      const renderFrame = page.frames().find((frame) => frame.url().includes('next-render.html'))
-      assert.ok(renderFrame, 'render thread iframe was not created for the switched app')
-      const body = await renderFrame.locator('#app').innerText()
-      assert.ok(body.includes('Learning Javascript'), 'existing example app did not render in the debugger')
     })
 
     await step('reload and terminate from the debugger', async () => {

@@ -17,6 +17,9 @@ const SEVERITY_COLORS = {
   state: '#a78bfa',
 };
 
+const APPS_REGISTRY_URL = '/runtime/apps.json';
+const DEFAULT_APP_ID = 'demo';
+
 function TreeNode({ node, depth = 0 }) {
   const style = { marginLeft: depth * 10, fontSize: 12 };
   if (node.type === 'text') {
@@ -34,10 +37,32 @@ function TreeNode({ node, depth = 0 }) {
   );
 }
 
-const APPS = [
-  { id: 'demo', label: 'P0 demo' },
-  { id: 'real', label: 'tests/apps/mini' },
-];
+function generatedBaseFor(appId) {
+  return `/runtime/apps/${encodeURIComponent(appId)}/generated`;
+}
+
+async function fetchJson(url) {
+  const response = await fetch(url, { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error(`${url} responded with HTTP ${response.status}`);
+  }
+  return response.json();
+}
+
+function normalizeApps(payload) {
+  if (!payload || !Array.isArray(payload.apps)) {
+    throw new Error(`${APPS_REGISTRY_URL} must contain an "apps" array`);
+  }
+  return payload.apps
+    .filter((app) => app && typeof app.id === 'string' && app.id.length > 0)
+    .map((app) => ({
+      id: app.id,
+      label: typeof app.label === 'string' && app.label ? app.label : `tests/apps/${app.id}`,
+      title: typeof app.title === 'string' ? app.title : '',
+      pages: Number(app.pages) || 0,
+      firstPage: typeof app.firstPage === 'string' ? app.firstPage : '',
+    }));
+}
 
 class RuntimePanel extends PureComponent {
   constructor(props) {
@@ -45,47 +70,103 @@ class RuntimePanel extends PureComponent {
     this.containerRef = React.createRef();
     this.client = null;
     this.unsubscribe = null;
-    const params = new URLSearchParams(window.location.search);
-    this.appId = APPS.some((app) => app.id === params.get('app')) ? params.get('app') : 'demo';
-    this.generatedBase = `/runtime/apps/${this.appId}/generated`;
     this.state = {
+      apps: [],
+      appId: '',
       navPath: '',
       manifestPath: '',
+      loading: true,
+      error: '',
     };
   }
 
   async componentDidMount() {
-    const manifest = await fetch(`${this.generatedBase}/manifest.json`).then((response) => response.json());
-    const initialPath = new URLSearchParams(window.location.search).get('path') || manifest.pages[0].path;
-    this.setState({ navPath: initialPath, manifestPath: manifest.pages[0].path });
-    this.client = new DevtoolRuntimeClient({
-      manifest,
-      serviceUrl: `/next-service.html?app=${this.appId}`,
-      renderUrl: `/next-render.html?app=${this.appId}`,
-      initialPath,
-      container: this.containerRef.current,
-      systemInfo: {
-        pixelRatio: window.devicePixelRatio,
-        windowWidth: window.innerWidth,
-        windowHeight: window.innerHeight,
-      },
-    });
-    this.unsubscribe = this.client.subscribe((state) => {
-      this.props.setRuntimeState(state);
-    });
-    window.__tinyDevtool = this.client;
-    this.run(() => this.client.launch());
+    try {
+      const apps = normalizeApps(await fetchJson(APPS_REGISTRY_URL));
+      if (apps.length === 0) {
+        throw new Error(`no test apps are registered in ${APPS_REGISTRY_URL}`);
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const requestedAppId = params.get('app');
+      const app = apps.find((candidate) => candidate.id === requestedAppId)
+        || apps.find((candidate) => candidate.id === DEFAULT_APP_ID)
+        || apps[0];
+      // A `path` only belongs to the requested app; when the query points at a
+      // different (or unknown) app, boot that app from its first page instead.
+      const pathParam = !requestedAppId || requestedAppId === app.id ? params.get('path') : null;
+      const generatedBase = generatedBaseFor(app.id);
+      const manifest = await fetchJson(`${generatedBase}/manifest.json`);
+      const firstPage = Array.isArray(manifest.pages) ? manifest.pages[0]?.path : null;
+      if (!firstPage) {
+        throw new Error(`${app.label} has no pages in its manifest`);
+      }
+      const initialPath = pathParam || firstPage;
+
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('app') !== app.id) {
+        url.searchParams.set('app', app.id);
+        if (requestedAppId && requestedAppId !== app.id) url.searchParams.delete('path');
+        window.history.replaceState(null, '', url);
+      }
+
+      this.setState({
+        apps,
+        appId: app.id,
+        navPath: initialPath,
+        manifestPath: firstPage,
+        loading: false,
+        error: '',
+      });
+
+      this.client = new DevtoolRuntimeClient({
+        manifest,
+        serviceUrl: `/next-service.html?app=${encodeURIComponent(app.id)}`,
+        renderUrl: `/next-render.html?app=${encodeURIComponent(app.id)}`,
+        initialPath,
+        container: this.containerRef.current,
+        systemInfo: {
+          pixelRatio: window.devicePixelRatio,
+          windowWidth: window.innerWidth,
+          windowHeight: window.innerHeight,
+        },
+      });
+      this.unsubscribe = this.client.subscribe((state) => {
+        this.props.setRuntimeState(state);
+      });
+      window.__tinyDevtool = this.client;
+      this.run(() => this.client.launch());
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.setState({ loading: false, error: message });
+      console.error('[devtool] failed to boot the runtime', error);
+    }
   }
 
   componentWillUnmount() {
-    if (this.unsubscribe) this.unsubscribe();
-    if (this.client) this.client.terminate().catch(() => {});
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
+    if (this.client) {
+      const client = this.client;
+      this.client = null;
+      client.terminate().catch(() => {});
+    }
   }
 
   run(action) {
     Promise.resolve()
       .then(action)
       .catch((error) => console.error('[devtool-runtime]', error));
+  }
+
+  changeApp(appId) {
+    if (!appId || appId === this.state.appId) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('app', appId);
+    url.searchParams.delete('path');
+    window.location.assign(url);
   }
 
   renderStatus() {
@@ -107,10 +188,11 @@ class RuntimePanel extends PureComponent {
   renderControls() {
     const { status } = this.props.runtime;
     const running = status === 'running';
+    const ready = Boolean(this.client);
     const buttonStyle = { padding: '6px 10px', cursor: 'pointer' };
     return (
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-        <button type="button" style={buttonStyle} disabled={status === 'connecting'} onClick={() => this.run(() => this.client.reload())}>Reload</button>
+        <button type="button" style={buttonStyle} disabled={!ready || status === 'connecting'} onClick={() => this.run(() => this.client.reload())}>Reload</button>
         <button type="button" style={buttonStyle} disabled={!running} onClick={() => this.run(() => this.client.inspectTree())}>Inspect</button>
         <button type="button" style={buttonStyle} disabled={!running} onClick={() => this.run(() => this.client.foreground())}>Foreground</button>
         <button type="button" style={buttonStyle} disabled={!running} onClick={() => this.run(() => this.client.background())}>Background</button>
@@ -129,26 +211,40 @@ class RuntimePanel extends PureComponent {
         >
           Navigate
         </button>
-        <button type="button" style={buttonStyle} disabled={status !== 'running'} onClick={() => this.run(() => this.client.terminate())}>Terminate</button>
+        <button type="button" style={buttonStyle} disabled={!running} onClick={() => this.run(() => this.client.terminate())}>Terminate</button>
       </div>
     );
   }
 
   render() {
     const { pageStack, diagnostics, tree } = this.props.runtime;
+    const { apps, appId, loading, error, manifestPath } = this.state;
+    const selectedApp = apps.find((app) => app.id === appId);
+    const details = [
+      selectedApp?.title,
+      selectedApp?.pages ? `${selectedApp.pages} pages` : '',
+      manifestPath,
+    ].filter(Boolean);
     return (
       <div style={{ display: 'flex', height: '100vh', fontFamily: 'system-ui, sans-serif', background: '#0f172a', color: '#e2e8f0' }}>
         <div style={{ width: 380, padding: 16, boxSizing: 'border-box', borderRight: '1px solid #1e293b', overflow: 'auto' }}>
           <h2 style={{ margin: '0 0 12px', fontSize: 18 }}>Tiny Runtime</h2>
           <select
-            value={this.appId}
-            onChange={(event) => { window.location.search = `?app=${event.target.value}`; }}
-            style={{ width: '100%', padding: '6px 8px', marginBottom: 12 }}
+            value={appId}
+            onChange={(event) => this.changeApp(event.target.value)}
+            disabled={loading || apps.length === 0}
+            style={{ width: '100%', padding: '6px 8px', marginBottom: 6 }}
           >
-            {APPS.map((app) => (
+            {apps.map((app) => (
               <option key={app.id} value={app.id}>{app.label}</option>
             ))}
           </select>
+          <div style={{ minHeight: 18, fontSize: 12, color: '#64748b', marginBottom: 12 }}>
+            {loading ? 'loading test apps…' : details.join(' · ')}
+          </div>
+          {error ? (
+            <div style={{ fontSize: 12, color: '#f87171', marginBottom: 12 }}>{error}</div>
+          ) : null}
           {this.renderStatus()}
           {this.renderControls()}
           <div style={{ marginBottom: 12 }}>

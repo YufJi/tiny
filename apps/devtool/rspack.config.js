@@ -92,7 +92,7 @@ module.exports = {
     }),
   ],
   devServer: isDev ? {
-    port: 8080,
+    port: Number(process.env.TINY_DEVTOOL_PORT || 8080),
     static: [
       path.join(root, 'static'),
     ],

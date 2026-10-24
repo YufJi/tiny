@@ -7,8 +7,9 @@ import {
 } from '@tiny/host-browser';
 
 const appId = new URLSearchParams(window.location.search).get('app') || 'demo';
-const generatedBase = `/runtime/apps/${appId}/generated`;
-const manifestPromise = fetch(`${generatedBase}/manifest.json`).then((response) => response.json());
+const generatedBase = `/runtime/apps/${encodeURIComponent(appId)}/generated`;
+const manifestPromise = fetch(`${generatedBase}/manifest.json`, { cache: 'no-store' })
+  .then((response) => response.json());
 const importGenerated = (url) => new Function('url', 'return import(url)')(url);
 
 const createHostApiExtensions = () => ({

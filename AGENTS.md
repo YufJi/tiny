@@ -62,9 +62,9 @@ pnpm install                 # install workspace dependencies
 pnpm build                   # build all 10 workspace packages
 pnpm accept:glass-easel      # full gate: build, unit tests, 5 browser stages
 pnpm dev:glass-easel         # compile tests/apps/demo + host on :5173
-pnpm dev:devtool             # debugger on :8080 (watches demo + mini)
+pnpm dev:devtool             # debugger on :8080 (watches every tests/apps fixture)
 pnpm compile:glass-easel     # compile tests/apps/demo -> tests/host/generated
-pnpm compile:devtool:all     # compile demo + mini for the debugger
+pnpm compile:devtool:all     # compile every tests/apps fixture for the debugger
 pnpm compile:wechat-demo     # compile the WeChat component/API subset
 pnpm dev:wechat-demo         # WeChat demo host on :5174
 pnpm check:runtime-purity    # assert the core runtime has no host globals

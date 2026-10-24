@@ -220,7 +220,7 @@ pnpm accept:glass-easel
 # 测试宿主（demo -> tests/host/generated）
 pnpm dev:glass-easel
 
-# 调试器（demo + mini 两套产物）
+# 调试器（自动预览全部 tests/apps）
 pnpm dev:devtool
 
 # 只构建并校验本网站
