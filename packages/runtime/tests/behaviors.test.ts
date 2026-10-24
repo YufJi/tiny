@@ -4,6 +4,7 @@ import { normalizeComponentDefinition } from '../src/component-definition'
 
 describe('normalizeComponentDefinition', () => {
   test('merges nested behaviors with component overrides and stable ordering', () => {
+    const attachOrder: string[] = []
     const base = registerBehavior({
       properties: {
         label: { type: String, value: 'base' },
@@ -19,7 +20,7 @@ describe('normalizeComponentDefinition', () => {
         baseMethod: () => 'base-method',
       },
       lifetimes: {
-        attached: () => undefined,
+        attached: () => attachOrder.push('base'),
       },
       observers: {
         label: () => undefined,
@@ -33,6 +34,9 @@ describe('normalizeComponentDefinition', () => {
     const nested = registerBehavior({
       behaviors: [base],
       data: { nested: { b: 2 } },
+      lifetimes: {
+        attached: () => attachOrder.push('nested'),
+      },
       methods: { nestedMethod: () => 'nested-method' },
     })
 
@@ -50,7 +54,7 @@ describe('normalizeComponentDefinition', () => {
         own: () => 'own',
       },
       lifetimes: {
-        attached: () => undefined,
+        attached: () => attachOrder.push('component'),
       },
       observers: {
         'label, extra': () => undefined,
@@ -72,8 +76,9 @@ describe('normalizeComponentDefinition', () => {
     expect(definition.methods.has('baseMethod')).toBe(true)
     expect(definition.methods.has('nestedMethod')).toBe(true)
     expect(definition.methods.has('own')).toBe(true)
-    // base behavior + component; duplicate base is not executed twice
-    expect(definition.lifetimeHandlers.attached).toHaveLength(2)
+    // referenced behavior -> referencing behavior -> component; duplicate base is not executed twice
+    for (const handler of definition.lifetimeHandlers.attached) handler.call({})
+    expect(attachOrder).toEqual(['base', 'nested', 'component'])
     expect(definition.observers.map((observer) => observer.paths)).toEqual([
       ['label'],
       ['label', 'extra'],
