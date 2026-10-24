@@ -7,3 +7,5 @@ dist/
 example/glass-easel/generated/
 packages/devtool/static/runtime/
 packages/components/src/generated/
+.agents/
+skills-lock.json

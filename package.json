@@ -1,8 +1,7 @@
 {
-  "name": "tiny-v1",
-  "version": "1.0.0",
-  "description": "\u5c0f\u7a0b\u5e8f\u5f15\u64ce",
-  "main": "index.js",
+  "name": "tiny",
+  "version": "0.1.0",
+  "description": "A miniprogram framework that based on glass-easel",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -19,7 +18,7 @@
     "lint:fix": "biome check . --write",
     "format": "biome format . --write"
   },
-  "author": "",
+  "author": "YufJi",
   "license": "MIT",
   "devDependencies": {
     "@biomejs/biome": "^2.4.8",
