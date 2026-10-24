@@ -1,8 +1,8 @@
 # 微信 WebView 版功能对齐度分析
 
-> **快照**：2026-10-24 · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
+> **快照**：2026-10-24（第二次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
 >
-> **结论**：加权功能对齐约 31%（合理区间 30–35%）；页面启动率 85.5%；生产可替换 < 20%
+> **结论**：加权功能对齐约 **35%（34–37%）**；页面启动率 85.5%；生产可替换 < 20%
 >
 > **维护**：功能完成后更新本文的评分表、覆盖表、实测数据和变更记录
 
@@ -10,11 +10,12 @@
 
 ## 1. 结论摘要
 
-- 按微信 WebView 版全量能力计算，当前引擎约完成 **三分之一**：加权得分 **31.3%**。
-- 能力结构偏科：**编译/渲染约 70%，框架约 42%，平台 API 约 6%，页面形态约 12%**。
+- 按微信 WebView 版全量能力计算，当前引擎约完成 **三分之一强**：加权得分 **34.8%**。
+- 能力结构仍然偏科：**编译/渲染约 70%，框架约 58%，平台 API 约 6%，页面形态约 12%**。
+- 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent` 均已落地；UI 库的核心语义障碍基本移除，但 npm 构建、`generics`/`definitionFilter` 等仍有缺口。
 - 仓库内置的微信官方 demo 子集（117 页）中，**100 页能启动（85.5%）**，96 页有可见文本；但这是“能挂载”，不是“功能对齐”。
 - 普通业务小程序最依赖的 `wx.request`、`wx.login`、`wx.requestPayment`、`showModal`、导航栏、tabBar、picker、form、textarea 均未实现。
-- 一句话：**编译与渲染这条线已经打通，平台 API 和页面形态这条线基本还是 P0 子集。**
+- 一句话：**组件语义这条线已经补齐，平台 API 和页面形态仍是决定“能否替换微信运行时”的主要短板。**
 
 仓库自己的 [Status 页](../website/src/pages/Status.jsx) 也给出了相同定性判断（“能跑真实示例，还不是完整微信兼容”），本文把它量化，并保留可复测的口径。
 
@@ -58,7 +59,7 @@
 
 - **完成度**：该维度内“已实现且有代码证据的条目 / 微信 WebView 文档条目”，或按关键能力清单打分。
 - **加权得分**：`Σ(权重 × 完成度)`。
-- **区间**：权重调整会让结果在 30–35% 之间浮动；把 API 权重降到 15%、框架权重升到 20%，结果约 34–35%，但不会到 50%。
+- **区间**：权重调整会让结果在 34–37% 之间浮动；把 API 权重降到 15%、框架权重升到 20%，结果约 37–38%，但不会到 50%。
 - 所有百分比都是**工程估算**，用于判断量级和优先级，不是精确指标。
 
 ---
@@ -67,16 +68,16 @@
 
 | 维度 | 权重 | 完成度 | 加权 | 关键依据 |
 | --- | ---: | ---: | ---: | --- |
-| 编译/构建 | 10% | 72% | 7.2 | WXML/WXSS/WXS 基本完整；app.json 只消费 3 个字段；无 npm 构建、无 TS 类型检查 |
-| 框架运行时 | 18% | 42% | 7.6 | 5/14 页面生命周期、2/5 路由；自定义组件缺 behaviors/observers/relations/selectComponent |
-| 内置组件 | 17% | 30% | 5.1 | 18/60 标签；属性 47/146；事件 13/43；默认外观非微信样式 |
-| wx API | 20% | 6% | 1.2 | 核心 10 个 + 宿主扩展 2 个 / 502；官方 demo 150 个中支持 12 个 |
-| 页面形态 | 12% | 12% | 1.4 | 无导航栏/tabBar/下拉/触底/页面滚动/分享/转场 |
-| 样式/渲染 | 8% | 62% | 5.0 | WXSS/rpx/作用域强；styleIsolation/addGlobalClass 缺；canvas 仅镜像 |
-| 宿主/平台 | 8% | 15% | 1.2 | 仅浏览器宿主；无原生/网络/登录/支付/分享 |
-| 开发工具 | 4% | 35% | 1.4 | 有运行时状态/元素树/诊断；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 40% | 1.2 | 92 单测 + 40 步浏览器验收；无性能/视觉/安全/原生测试 |
-| **合计** | **100%** | — | **31.3%** | |
+| 编译/构建 | 10% | 72% | 7.20 | WXML/WXSS/WXS 基本完整；app.json 只消费 3 个字段；无 npm 构建、无 TS 类型检查 |
+| 框架运行时 | 18% | 58% | 10.44 | 5/14 页面生命周期、2/5 路由仍是短板；自定义组件核心语义已补齐，缺 generics/definitionFilter |
+| 内置组件 | 17% | 30% | 5.10 | 18/60 标签；属性 47/146；事件 13/43；默认外观非微信样式 |
+| wx API | 20% | 6% | 1.20 | 核心 10 个 + 宿主扩展 2 个 / 502；官方 demo 150 个中支持 12 个 |
+| 页面形态 | 12% | 12% | 1.44 | 无导航栏/tabBar/下拉/触底/页面滚动/分享/转场 |
+| 样式/渲染 | 8% | 68% | 5.44 | WXSS/rpx/作用域强；styleIsolation/addGlobalClass/shared 已实现；`:host` 低优先级与 canvas 仍不完整 |
+| 宿主/平台 | 8% | 15% | 1.20 | 仅浏览器宿主；无原生/网络/登录/支付/分享 |
+| 开发工具 | 4% | 35% | 1.40 | 有运行时状态/元素树/诊断；不是完整微信开发者工具 |
+| 质量/验证 | 3% | 45% | 1.35 | 115 单测 + 45 步浏览器验收；无性能/视觉/安全/原生测试 |
+| **合计** | **100%** | — | **34.77%** | |
 
 ### 条目覆盖率速览
 
@@ -94,6 +95,8 @@
 | app.json 关键字段 | 20+ | 3 | ≈15% |
 
 > API 的 12 个 = 核心 10 个（`getSystemInfo` / `getSystemInfoSync`、`getStorageSync`、`setStorageSync`、`navigateTo`、`navigateBack`、`showToast`、`createAnimation`、`createCanvasContext`、`createSelectorQuery`）+ 宿主扩展 2 个（`getMenuButtonBoundingClientRect`、`getPerformance`）。
+>
+> 自定义组件核心语义本次盘点 **8 / 12**：已实现 behaviors、observers、relations、externalClasses、styleIsolation/addGlobalClass、selectComponent/selectAll/selectOwner、multipleSlots/virtualHost、component-export/export；仍缺 generics、placeholders、definitionFilter、pureDataPattern。该口径只统计核心 12 项，不含 trait/chaining、内置 `wx://form-field`、Component-as-page 等边缘项；不参与上面的加权总分。
 
 ---
 
@@ -221,26 +224,34 @@
 
 ### 4.5 自定义组件语义
 
-已注册：
+2026-10-24 已完成核心语义（[component-definition.ts](../packages/runtime/src/component-definition.ts:115)）：
 
 ```text
 properties / data / methods / lifetimes / pageLifetimes / slots
+behaviors / observers / relations / externalClasses
+options: multipleSlots / virtualHost / styleIsolation / addGlobalClass
+selectComponent / selectAllComponents / selectOwnerComponent / getRelationNodes
+hasBehavior / export / wx://component-export
 ```
 
-缺失：
-
-| 能力 | 状态 | 影响 |
+| 能力 | 状态 | 说明 |
 | --- | --- | --- |
-| `behaviors` | ❌ 仅原样返回，无 mixin 合并 | UI 库的 behavior 复用失效 |
-| `observers` | ❌ 未注册 | 属性变化不会触发观察者 |
-| `relations` / `getRelationNodes` | ❌ | checkbox-group、picker 等父子关系无法实现 |
-| `externalClasses` | ❌ 用户组件声明不生效 | UI 库样式注入失效 |
-| `generics` / `placeholder` | ❌ 编译器能解析，运行时没接 | 泛型组件不可用 |
-| `styleIsolation` / `addGlobalClass` | ❌ | `isolated` 近似可用，但 `apply-shared`/`shared` 不可用 |
-| `selectComponent` / `selectAllComponents` | ❌ service 侧实例没有 | 页面代码无法定位子组件 |
-| `definitionFilter` | ❌ | 插件式组件扩展不可用 |
+| `behaviors` | ✅ | 嵌套合并、去重、环检测、组件覆盖、生命周期/observers 顺序；`wx://` 内置 behavior 仅支持 `component-export` |
+| `observers` | ✅ | `observers` 块 + 属性级 `observer`；支持多字段、`arr[12]`、`some.field.**`、`**`；本地 `setData` 同步，父级属性变化异步一个 bridge 往返 |
+| `relations` / `getRelationNodes` | ✅ | parent/child/ancestor/descendant；双向声明校验；`linked` / `unlinked` / `linkChanged` / `linkFailed`；按节点树顺序返回 |
+| `externalClasses` | ✅ | 父级 class 可在组件模板内解析，参与样式作用域 |
+| `styleIsolation` / `addGlobalClass` | ✅ | `isolated` / `apply-shared` / `shared`；`shared` 组件样式回写 page scope；页面级 JSON isolation、`:host` 低优先级未覆盖 |
+| `selectComponent` / `selectAllComponents` / `selectOwnerComponent` | ✅ | 页面/组件作用域；ID/class/tag、子代/后代/`>>>`/并集；普通选择器不跨组件边界 |
+| `multipleSlots` / `virtualHost` | ✅ | 按 options 映射；`multipleSlots` 默认 false |
+| `wx://component-export` / `export` | ✅ | `selectComponent` 返回 `export()` 结果，异常回退实例 |
+| `generics` / `placeholder` | ❌ | 编译器能解析，运行时未注册 |
+| `definitionFilter` | ❌ | 发 `UNSUPPORTED_BEHAVIOR_FILTER` 诊断 |
+| `pureDataPattern` | ❌ | 未映射 |
+| `trait behaviors` / chaining API | ❌ | 未支持 |
+| Component-as-page 全套语义 | ⚠️ | 页面路径仍走 Page 实例；behaviors/observers/relations 未完全接入 |
+| `wx://form-field` 等内置 behaviors | ❌ | 发 `UNSUPPORTED_BEHAVIOR` 诊断 |
 
-> 这直接导致 Vant Weapp、TDesign 等主流组件库基本跑不起来。
+> 这使 Vant Weapp、TDesign 等组件库的**核心语义障碍**基本移除；剩余限制主要来自 npm 构建（`miniprogram_npm`）、内置 behaviors、`generics` 和 `definitionFilter`。
 
 ### 4.6 页面形态与宿主
 
@@ -266,9 +277,9 @@ properties / data / methods / lifetimes / pageLifetimes / slots
 2026-10-24 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
-- 92 个单元测试
+- **115 个单元测试**（runtime 37 个）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
-- 40 个浏览器步骤全部通过
+- **45 个浏览器步骤**全部通过；P0 新增 5 步覆盖组件语义、样式隔离、relations 和 selectComponent
 - 门禁覆盖的 5 段流程无 console/page error（117 页探针的 pageerror 见 5.2）
 
 这说明现有能力是**真实可运行**的，不是纸面设计。
@@ -297,6 +308,7 @@ properties / data / methods / lifetimes / pageLifetimes / slots
 - 85.5% 是“能挂载”，不是“功能对齐”。
 - 100 页能启动，很大程度是因为不支持的组件降级成普通 DOM、不支持的 API 返回 `undefined` 且只发 warning、很多调用发生在点击之后。
 - 17 页失败集中在 canvas 2D/WebGL、媒体、平台 API、WXS、AI 相机（明细见附录 A）。
+- 2026-10-24 第二次探针（补齐组件语义后）结果与首次一致：仍是 100/117 启动、96 页可见文本、0 console error；新增语义没有降低启动率。
 
 ### 5.3 官方 demo API 覆盖
 
@@ -311,15 +323,15 @@ getMenuButtonBoundingClientRect / getPerformance
 
 其中 `showToast` 无 UI、`createCanvasContext` 是桩、`createSelectorQuery` 只支持 canvas、`createAnimation` 只映射最终态。真正“能用”的核心 API 约 5–6 个。
 
-### 5.4 为什么“85.5% 启动”和“31% 对齐”不矛盾
+### 5.4 为什么“85.5% 启动”和“35% 对齐”不矛盾
 
 | 口径 | 回答的问题 | 结果 |
 | --- | --- | --- |
 | 启动率 | 页面能不能挂载？ | 85.5% |
-| 功能对齐 | 页面上的功能是否按微信语义工作？ | ~31% |
+| 功能对齐 | 页面上的功能是否按微信语义工作？ | ~35% |
 | 生产可替换 | 普通业务小程序能否直接上线？ | < 20% |
 
-启动率高，是因为引擎“尽量不崩”；功能对齐低，是因为大量能力只是“有名字”或“静默降级”。
+启动率高，是因为引擎“尽量不崩”；功能对齐仍只有约 35%，是因为 API、页面形态和内置组件语义仍有大量缺口。本次补的是自定义组件语义，不会改变 `wx.request`、导航栏、tabBar、picker 等 P0 短板。
 
 ---
 
@@ -356,6 +368,9 @@ getMenuButtonBoundingClientRect / getPerformance
 - `setData` 支持 `a.b[0]` 路径
 - 事件冒泡/捕获、`dataset`、`target`/`currentTarget`、自定义事件
 - 自定义组件 properties/data/methods/lifetimes/pageLifetimes/slots
+- `behaviors` / `observers` / `relations` / `externalClasses`
+- `styleIsolation` / `addGlobalClass` / `shared`、`selectComponent` / `selectAllComponents` / `selectOwnerComponent`
+- 组件树按 componentId 唯一，detach/page unload 清理；页面 `onReady` 可见初始组件快照
 - Component-as-page、子包页面直接启动
 
 ### 6.5 真实兼容证据
@@ -364,6 +379,7 @@ getMenuButtonBoundingClientRect / getPerformance
 - 微信官方 demo 子集 100/117 页能挂载，96 页有可见文本
 - ECharts 通过 service 离屏 canvas → PNG 帧 → render `drawImage` 跑通
 - 内置组件、页面样式、`app.wxss` 作用域在验收中有真实断言
+- P0 新增 5 步组件语义验收：Behavior/observer、styleIsolation 矩阵、externalClasses、relations、selectComponent
 
 ### 6.6 调试器
 
@@ -390,9 +406,11 @@ getMenuButtonBoundingClientRect / getPerformance
 
 ### P1：组件与页面语义
 
+**已完成（2026-10-24）**：`behaviors` / `observers` / `relations` / `externalClasses` / `styleIsolation` / `addGlobalClass` / `selectComponent`。剩余：
+
 | 缺口 | 影响 |
 | --- | --- |
-| `behaviors` / `observers` / `relations` / `externalClasses` / `styleIsolation` / `selectComponent` | UI 库无法运行 |
+| 剩余组件语义：`generics` / `placeholder` / `definitionFilter` / `pureDataPattern` | 泛型组件、插件式定义扩展仍不可用 |
 | scroll-view/input/swiper/button 属性与事件补全 | 已实现组件“形似神不似” |
 | canvas 2D / 触摸 / rAF / `canvasToTempFilePath` | canvas 页面与图表交互不可用 |
 | animation 多 step / 回调 | 复杂动画不可用 |
@@ -419,10 +437,10 @@ getMenuButtonBoundingClientRect / getPerformance
 | 阶段 | 补齐内容 | 预计完整度 |
 | --- | --- | --- |
 | **P0：能跑常见业务** | request、异步 storage、redirectTo/reLaunch/switchTab、modal/loading、导航栏/tabBar、下拉/触底/页面滚动、picker/textarea/form/navigator | **~50%** |
-| **P1：组件与页面语义** | behaviors/observers/relations/externalClasses/styleIsolation/selectComponent；补全常用组件属性事件；canvas 2D/交互；animation 多 step；子包按需加载、npm 构建 | **~65–70%** |
+| **P1：组件与页面语义** | 剩余组件语义（generics/placeholder/definitionFilter/pureDataPattern）；补全常用组件属性事件；canvas 2D/交互；animation 多 step；子包按需加载、npm 构建 | **~65–70%** |
 | **P2：平台能力与生产化** | 原生宿主、网络桥、登录/支付/分享、媒体/地图/视频、文件系统、Worker；性能/视觉/安全基线 | **~80%+** |
 
-**最短路径**：先补 15–20 个高频 API + 页面 chrome + 5 个高频组件。这三件事能把“能跑 demo”提升到“能跑常见业务”，投入产出比最高；继续打磨编译器的收益已经很小。
+**最短路径**：组件语义已补齐，下一步优先补 15–20 个高频 API + 页面 chrome + 5 个高频组件。这三件事能把“能跑 demo”提升到“能跑常见业务”，投入产出比最高；继续打磨编译器的收益已经很小。
 
 ---
 
@@ -448,7 +466,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 ### 9.2 更新本文的步骤
 
 1. **跑门禁**：确认单测/浏览器验收仍通过；记录测试数量与步骤数。
-2. **重数组件**：对照[微信组件文档](https://developers.weixin.qq.com/miniprogram/dev/component/)与 [tags.ts](../packages/components/src/tags.ts:1)，更新 18/60、分类表、属性/事件表。
+2. **重数组件与组件语义**：对照[微信组件文档](https://developers.weixin.qq.com/miniprogram/dev/component/)与 [tags.ts](../packages/components/src/tags.ts:1)，更新 18/60、分类表、属性/事件表；同时按第 4.5 节更新 behaviors/observers/relations/styleIsolation/selectComponent 状态。
 3. **重数 API**：对照[微信 API 索引](https://developers.weixin.qq.com/miniprogram/dev/api/)与 [service.ts](../packages/runtime/src/service.ts:320) + [service-thread.ts](../tests/host/src/service-thread.ts:1) 的 `apiExtensions`，更新 12/502、能力表。
 4. **重数生命周期/路由/配置**：对照第 4.3、4.4 节逐项打勾。
 5. **重跑 117 页探针**：按 5.2 节方法，更新启动率与失败明细；若后续把探针整理为 `scripts/parity-probe.mjs`，改用该脚本并在此处替换命令。
@@ -467,6 +485,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 日期 | 变更 | 完整度 |
 | --- | --- | --- |
 | 2026-10-24 | 初始快照：WebView 基准、117 页探针、加权评分 | **31.3%** |
+| 2026-10-24 | 第二次同步：补齐自定义组件高级语义（behaviors/observers/relations/externalClasses/styleIsolation/selectComponent）；框架 42→58、样式 62→68；115 单测 + 45 浏览器步骤 | **34.77%** |
 
 ---
 
@@ -487,8 +506,9 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 
 ### P1
 
-- [ ] `behaviors` / `observers` / `relations` / `externalClasses`
-- [ ] `styleIsolation` / `addGlobalClass` / `selectComponent`
+- [x] `behaviors` / `observers` / `relations` / `externalClasses`
+- [x] `styleIsolation` / `addGlobalClass` / `selectComponent`
+- [ ] 剩余组件语义：`generics` / `placeholder` / `definitionFilter` / `pureDataPattern`
 - [ ] scroll-view / input / swiper / button 属性与事件补全
 - [ ] canvas 2D / 触摸 / rAF / `canvasToTempFilePath`
 - [ ] animation 多 step 与回调
@@ -571,8 +591,13 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | service API 宿主 | [service.ts](../packages/runtime/src/service.ts:320) |
 | 不支持 API 的降级 | [service.ts](../packages/runtime/src/service.ts:284) |
 | 宿主 API（toast/storage/navigate） | [host-api.ts](../packages/runtime/src/host-api.ts:35) |
-| 组件 schema（仅 data/properties/using） | [component-schema.ts](../packages/runtime/src/component-schema.ts:14) |
-| 组件注册（仅 properties/data/template/lifetimes） | [glass-easel-adapter.ts](../packages/runtime/src/glass-easel-adapter.ts:307) |
+| 组件 schema（data/properties/using + semantics metadata） | [component-schema.ts](../packages/runtime/src/component-schema.ts:5) |
+| Behavior 合并 / 组件定义规范化 | [component-definition.ts](../packages/runtime/src/component-definition.ts:115) |
+| 组件树与选择器 | [component-tree.ts](../packages/runtime/src/component-tree.ts:35) |
+| observers 匹配与调用 | [observers.ts](../packages/runtime/src/observers.ts:13) |
+| relations 链接管理 | [relation-manager.ts](../packages/runtime/src/relation-manager.ts:29) |
+| 组件注册（properties/externalClasses/options/observers/lifetimes） | [glass-easel-adapter.ts](../packages/runtime/src/glass-easel-adapter.ts:463) |
+| 组件语义验收 fixture | [semantics.js](../tests/apps/demo/pages/semantics/semantics.js:1) |
 | 页面/子包/app.json 解析 | [compile.ts](../tools/cli/src/compile.ts:165) |
 | 双 iframe 宿主 | [standalone-host.ts](../hosts/browser/src/standalone-host.ts:1) |
 | 浏览器验收步骤 | [glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs:36) |
