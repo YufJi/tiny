@@ -59,6 +59,7 @@ pnpm dev:devtool             # debugger on :8080 (watches demo + mini)
 pnpm compile:glass-easel     # compile tests/apps/demo -> tests/host/generated
 pnpm compile:devtool:all     # compile demo + mini for the debugger
 pnpm compile:wechat-demo     # compile the WeChat component/API subset
+pnpm dev:wechat-demo         # WeChat demo host on :5174
 pnpm lint                    # Biome (bridge only is configured today)
 pnpm site:dev                # preview website on :4173
 pnpm site:check              # build and validate the site output

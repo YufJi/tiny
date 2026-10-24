@@ -21,7 +21,8 @@
     "site:check": "pnpm --filter @tiny/website build && node scripts/check-website.mjs",
     "site:build": "pnpm --filter @tiny/website build",
     "site:preview": "pnpm --filter @tiny/website preview",
-    "compile:wechat-demo": "node scripts/compile-mini.mjs tests/apps/wechat-demo tests/host/generated"
+    "compile:wechat-demo": "node scripts/compile-mini.mjs tests/apps/wechat-demo tests/host/generated",
+    "dev:wechat-demo": "pnpm compile:wechat-demo && pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --port 5174"
   },
   "author": "YufJi",
   "license": "MIT",

@@ -89,6 +89,7 @@ pnpm site:check              # 构建并检查产物资源
 pnpm compile:glass-easel     # tests/apps/demo -> tests/host/generated
 pnpm compile:devtool:all     # demo + tests/apps/mini -> devtool 静态目录
 pnpm compile:wechat-demo     # 微信官方组件/API 示例 -> tests/host/generated
+pnpm dev:wechat-demo         # 微信示例宿主：http://127.0.0.1:5174/?path=page/component/index
 
 pnpm --filter @tiny/runtime test
 pnpm --filter @tiny/cli test

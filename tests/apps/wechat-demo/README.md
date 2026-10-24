@@ -25,7 +25,8 @@ other advanced demo packages are intentionally omitted.
 
 ```bash
 pnpm compile:wechat-demo
-pnpm dev:glass-easel  # then open /?path=page/component/index
+pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --port 5174
+# http://127.0.0.1:5174/?path=page/component/index
 ```
 
 The fixture is included in `pnpm accept:glass-easel` as the WeChat demo stage.
