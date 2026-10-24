@@ -15,9 +15,10 @@ must:
 - work under the Pages project prefix (`/<repo>/`), so every devtool URL has to
   be relocatable;
 - work under the Vite dev server (`/`) without a second deployment;
-- keep generated artifacts and fixture output out of git. Shipping all
-  fixtures makes the artifact ~26 MiB, which is acceptable for Pages;
-  `TINY_SITE_DEVTOOL_APPS` can still produce a smaller subset.
+- keep generated artifacts and fixture output out of git. Source maps are
+  stripped from the published fixtures; shipping all of them makes the
+  artifact ~10 MiB, which is acceptable for Pages. `TINY_SITE_DEVTOOL_APPS`
+  can still produce a smaller subset.
 
 ## Options considered
 
@@ -76,12 +77,14 @@ removes ambiguity about dynamic-import base URLs.
 2. Compile every fixture under `tests/apps` into `.cache/site-devtool/runtime`
    (or the subset named by `TINY_SITE_DEVTOOL_APPS`).
 3. Write `apps.json` for that fixture set.
-4. Run the devtool production build with:
+4. Strip generated source maps: remove `*.map`, `sourceMappingURL` comments,
+   and `sourceMapPath` / `lowPrioritySourceMapPath` from each manifest.
+5. Run the devtool production build with:
    - `NODE_ENV=production`
    - `TINY_DEVTOOL_RUNTIME_ROOT=.cache/site-devtool/runtime`
    - `TINY_DEVTOOL_OUT_DIR=.cache/site-devtool/dist`
-5. Copy the build to `website/.cache/site-public/devtool`.
-6. Validate that the expected HTML, registry, and thread artifacts exist.
+6. Copy the build to `website/.cache/site-public/devtool`.
+7. Validate that the expected HTML, registry, and thread artifacts exist.
 
 Fixtures compile outside `website/` on purpose: `website/package.json` declares
 `"type": "module"`, and esbuild would classify generated CommonJS scripts as ESM
@@ -121,7 +124,9 @@ pnpm site:preview
 bundles for root-absolute devtool/runtime URLs, verifies every expected runtime
 manifest, and requires the generated `service.js`, `render.js`, and
 `templates.js`. The expected fixture list is derived from `tests/apps` (or
-`TINY_SITE_DEVTOOL_APPS` when set).
+`TINY_SITE_DEVTOOL_APPS` when set), and the check fails if a `.map` file,
+`sourceMappingURL` comment, or `sourceMapPath` key survives into the published
+devtool directory.
 
 Manual browser validation used a 1400×1000 Chromium page against the Vite
 preview server. The embedded selector exposed all five fixtures, and switching

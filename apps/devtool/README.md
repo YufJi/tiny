@@ -108,6 +108,7 @@ website 的接入由 `pnpm site:devtool` 完成：它编译 `tests/apps` 下全�
 生产构建，并把结果复制到 Vite 的 public 目录
 `website/.cache/site-public/devtool`。Vite 构建后位于 `website/dist/devtool/`，
 站点用同源 iframe `./devtool/index.html` 嵌入，应用下拉框与本地 devtool 一致。
+站点构建会移除生成产物的 source map，避免把十几 MiB 的 `.map` 发布到 Pages。
 详见 `website/README.md`。
 
 ## 验收

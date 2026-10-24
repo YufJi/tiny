@@ -26,6 +26,16 @@ function readJson(relativePath) {
   }
 }
 
+function walkFiles(target) {
+  const files = []
+  for (const entry of fs.readdirSync(target, { withFileTypes: true })) {
+    const fullPath = path.join(target, entry.name)
+    if (entry.isDirectory()) files.push(...walkFiles(fullPath))
+    else if (entry.isFile()) files.push(fullPath)
+  }
+  return files
+}
+
 function checkHtml(relativePath, { requireRoot = false } = {}) {
   const filePath = path.join(rootDir, relativePath)
   if (!fs.existsSync(filePath)) {
@@ -111,13 +121,36 @@ if (registry) {
   }
   for (const app of registry.apps ?? []) {
     if (!app || typeof app.id !== 'string') continue
-    const manifest = readJson(`devtool/runtime/apps/${app.id}/generated/manifest.json`)
+    const manifestPath = `devtool/runtime/apps/${app.id}/generated/manifest.json`
+    const manifest = readJson(manifestPath)
     if (manifest && (!Array.isArray(manifest.pages) || manifest.pages.length === 0)) {
       problems.push(`devtool runtime manifest for ${app.id} has no pages`)
+    }
+    if (manifest) {
+      const manifestText = fs.readFileSync(path.join(rootDir, manifestPath), 'utf8')
+      if (/"(?:lowPriority)?sourceMapPath"/.test(manifestText)) {
+        problems.push(`source map path left in ${manifestPath}`)
+      }
     }
     for (const file of ['service.js', 'render.js', 'templates.js']) {
       if (!fs.existsSync(path.join(rootDir, `devtool/runtime/apps/${app.id}/generated`, file))) {
         problems.push(`missing devtool runtime artifact: ${app.id}/generated/${file}`)
+      }
+    }
+  }
+}
+
+// Source maps are deliberately stripped from published fixtures to keep the
+// Pages artifact small and avoid sourceMappingURL 404s in the debugger.
+const generatedAppsDir = path.join(rootDir, 'devtool/runtime/apps')
+if (fs.existsSync(generatedAppsDir)) {
+  for (const file of walkFiles(generatedAppsDir)) {
+    const relativePath = path.relative(rootDir, file)
+    if (file.endsWith('.map')) {
+      problems.push(`source map left in published artifacts: ${relativePath}`)
+    } else if (file.endsWith('.js') || file.endsWith('.css')) {
+      if (fs.readFileSync(file, 'utf8').includes('sourceMappingURL')) {
+        problems.push(`sourceMappingURL left in published artifacts: ${relativePath}`)
       }
     }
   }
@@ -128,4 +161,4 @@ if (problems.length > 0) {
   for (const item of problems) console.error(`- ${item}`)
   process.exit(1)
 }
-console.log('Website build OK (relative assets, #root, JS entry, devtool artifacts)')
+console.log('Website build OK (relative assets, #root, JS entry, devtool artifacts, no source maps)')

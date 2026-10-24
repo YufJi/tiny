@@ -12,8 +12,9 @@ import { discoverTestApps, toRegistryEntry } from './devtool-apps.mjs'
  *
  *   1. compiles every fixture under `tests/apps` (or the subset named by
  *      `TINY_SITE_DEVTOOL_APPS`),
- *   2. builds the devtool with relative production URLs,
- *   3. copies the result into the website's Vite public directory
+ *   2. strips generated source maps and their manifest references,
+ *   3. builds the devtool with relative production URLs,
+ *   4. copies the result into the website's Vite public directory
  *      (`website/.cache/site-public/devtool`), which Vite publishes verbatim
  *      at `dist/devtool/`.
  *
@@ -66,6 +67,57 @@ function directorySize(target) {
   return total
 }
 
+function walkFiles(target) {
+  const files = []
+  for (const entry of fs.readdirSync(target, { withFileTypes: true })) {
+    const fullPath = path.join(target, entry.name)
+    if (entry.isDirectory()) files.push(...walkFiles(fullPath))
+    else if (entry.isFile()) files.push(fullPath)
+  }
+  return files
+}
+
+function stripManifestSourceMapPaths(value) {
+  if (Array.isArray(value)) {
+    for (const child of value) stripManifestSourceMapPaths(child)
+    return
+  }
+  if (!value || typeof value !== 'object') return
+  delete value.sourceMapPath
+  delete value.lowPrioritySourceMapPath
+  for (const child of Object.values(value)) stripManifestSourceMapPaths(child)
+}
+
+/**
+ * The site only needs executable artifacts. Drop generated maps, the
+ * `sourceMappingURL` comments that would 404 on Pages, and the corresponding
+ * paths in manifest.json. This saves ~17 MiB with the full fixture set.
+ */
+function stripSourceMaps(appOutputDir) {
+  let removedMaps = 0
+  for (const file of walkFiles(appOutputDir)) {
+    if (file.endsWith('.map')) {
+      fs.rmSync(file)
+      removedMaps += 1
+      continue
+    }
+    if (!file.endsWith('.js') && !file.endsWith('.css')) continue
+    const content = fs.readFileSync(file, 'utf8')
+    const stripped = file.endsWith('.js')
+      ? content.replace(/^[ \t]*\/\/[#@] sourceMappingURL=.*\r?\n?/gm, '')
+      : content.replace(/\/\*[#@] sourceMappingURL=[\s\S]*?\*\/\s*/g, '')
+    if (stripped !== content) fs.writeFileSync(file, stripped)
+  }
+
+  const manifestPath = path.join(appOutputDir, 'manifest.json')
+  if (fs.existsSync(manifestPath)) {
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+    stripManifestSourceMapPaths(manifest)
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
+  }
+  return removedMaps
+}
+
 function findRequiredApp(apps, id) {
   const app = apps.find((candidate) => candidate.id === id)
   if (!app) {
@@ -107,6 +159,7 @@ const { compileMiniProgram } = await import(
 fs.rmSync(cacheDir, { recursive: true, force: true })
 fs.mkdirSync(runtimeDir, { recursive: true })
 
+let strippedMaps = 0
 for (const app of selectedApps) {
   const startedAt = Date.now()
   const outputDirForApp = path.join(runtimeDir, 'apps', app.id, 'generated')
@@ -122,11 +175,13 @@ for (const app of selectedApps) {
         errors.slice(0, 3).map((error) => `${error.code}: ${error.message}`).join('; '),
     )
   }
+  strippedMaps += stripSourceMaps(outputDirForApp)
   console.log(
     `[site:devtool] ${app.source} → ${path.relative(rootDir, outputDirForApp)} ` +
       `(${result.manifest.pages.length} pages, ${Date.now() - startedAt}ms)`,
   )
 }
+console.log(`[site:devtool] stripped ${strippedMaps} source map files`)
 
 fs.writeFileSync(
   path.join(runtimeDir, 'apps.json'),

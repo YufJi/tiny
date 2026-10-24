@@ -139,7 +139,7 @@ TINY_SITE_DEVTOOL_APPS=demo,mini pnpm site:build`}</CodeBlock>
         intro="它是完整的 devtool 静态构建，但仍然是展示入口，不替代本地开发流程。"
       >
         <Cards className="three">
-          <Card title="全量 fixture"><p>默认发布 <code>tests/apps</code> 下全部应用（当前 5 个），下拉框与本地 <code>pnpm dev:devtool</code> 一致；产物约 26 MiB。</p></Card>
+          <Card title="全量 fixture"><p>默认发布 <code>tests/apps</code> 下全部应用（当前 5 个），下拉框与本地 <code>pnpm dev:devtool</code> 一致；产物约 10 MiB，并移除了 source map。</p></Card>
           <Card title="纯静态"><p>没有服务端、没有编译接口。产物在站点构建时生成，页面不会触发新的编译。</p></Card>
           <Card title="需要 HTTP"><p>直接双击 <code>dist/index.html</code> 无法工作；用 <code>pnpm site:preview</code> 或静态服务器。</p></Card>
         </Cards>
