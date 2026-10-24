@@ -57,6 +57,22 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
         this.setData({ value })
         this.triggerEvent('blur', { value, height }, { bubbles: true, composed: true })
       },
+      handleCompositionStart(event: glassEasel.ShadowedEvent<unknown>) {
+        this.triggerEvent('keyboardcompositionstart', { value: valueFromEvent(event) }, { bubbles: true, composed: true })
+      },
+      handleCompositionUpdate(event: glassEasel.ShadowedEvent<unknown>) {
+        this.triggerEvent('keyboardcompositionupdate', { value: valueFromEvent(event) }, { bubbles: true, composed: true })
+      },
+      handleCompositionEnd(event: glassEasel.ShadowedEvent<unknown>) {
+        this.triggerEvent('keyboardcompositionend', { value: valueFromEvent(event) }, { bubbles: true, composed: true })
+      },
+      handleSelect(event: glassEasel.ShadowedEvent<unknown>) {
+        const element = (event.currentTarget as unknown as { getBackendElement?: () => { selectionStart?: number; selectionEnd?: number } | null } | null)?.getBackendElement?.()
+        this.triggerEvent('selectionchange', {
+          selectionStart: Number(element?.selectionStart ?? -1),
+          selectionEnd: Number(element?.selectionEnd ?? -1),
+        }, { bubbles: true, composed: true })
+      },
       handleKeyDown(event: glassEasel.ShadowedEvent<unknown>) {
         const detail = (event.detail ?? {}) as { key?: string; keyCode?: number; which?: number; value?: unknown }
         const key = String(detail.key ?? '')

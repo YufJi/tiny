@@ -3,6 +3,22 @@ import type { BuiltinContext, BuiltinDefinition } from '../../types'
 
 const DEFAULT_HOVER_CLASS = 'button-hover'
 
+const OPEN_TYPE_EVENTS: Record<string, string> = {
+  contact: 'contact',
+  share: 'share',
+  getPhoneNumber: 'getphonenumber',
+  getRealtimePhoneNumber: 'getrealtimephonenumber',
+  getUserInfo: 'getuserinfo',
+  openSetting: 'opensetting',
+  launchApp: 'launchapp',
+  chooseAvatar: 'chooseavatar',
+  agreePrivacyAuthorization: 'agreeprivacyauthorization',
+  subscribe: 'subscribe',
+  realnameAuth: 'realnameauth',
+  getRealnameAuthInfo: 'getrealnameauthinfo',
+  feedback: 'feedback',
+}
+
 export function defineButton(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: 'tiny-builtin:button',
@@ -56,6 +72,10 @@ export function defineButton(ctx: BuiltinContext): BuiltinDefinition {
             message: `<button/> open-type "${openType}" is not supported in the P0 runtime.`,
             details: { openType },
           })
+          const errMsg = `${openType}:fail not supported by the Tiny runtime`
+          const eventName = OPEN_TYPE_EVENTS[openType]
+          if (eventName) this.triggerEvent(eventName, { errMsg }, { bubbles: true, composed: true })
+          this.triggerEvent('error', { errMsg }, { bubbles: true, composed: true })
         }
         this.triggerEvent('tap', event.detail ?? {}, { bubbles: true, composed: true })
       },

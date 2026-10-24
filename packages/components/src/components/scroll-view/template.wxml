@@ -3,6 +3,8 @@
   class="tiny-scroll-view {{scrollX ? 'is-horizontal' : ''}} {{scrollY ? 'is-vertical' : ''}} {{hidden ? 'tiny-hidden' : ''}} class"
   style="{{style}}"
   bindscroll="handleScroll"
-  bindscrolltoupper="handleScroll"
-  bindscrolltolower="handleScroll"
+  bindtouchstart="handleTouchStart"
+  bindtouchmove="handleTouchMove"
+  bindtouchend="handleTouchEnd"
+  bindtouchcancel="handleTouchCancel"
 ><slot /></view>

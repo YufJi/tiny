@@ -12,6 +12,21 @@ type ScrollBackend = {
   querySelector?: (selector: string) => { scrollIntoView?: (options?: unknown) => void } | null
 }
 
+type ScrollRuntime = {
+  __scrollStartTimer?: ReturnType<typeof setTimeout>
+  __scrollEndTimer?: ReturnType<typeof setTimeout>
+  __refresherTimer?: ReturnType<typeof setTimeout>
+  __dragStart?: { x: number; y: number; scrollTop: number }
+  __dragging?: boolean
+  __pullDistance?: number
+}
+
+function touchPoint(event: glassEasel.ShadowedEvent<unknown>): { x: number; y: number } {
+  const detail = (event.detail ?? {}) as { touches?: Array<{ clientX?: number; clientY?: number; x?: number; y?: number }>; changedTouches?: Array<{ clientX?: number; clientY?: number; x?: number; y?: number }> }
+  const touch = detail.touches?.[0] ?? detail.changedTouches?.[0] ?? (event as unknown as { touches?: Array<{ clientX?: number; clientY?: number; x?: number; y?: number }> }).touches?.[0]
+  return { x: Number(touch?.clientX ?? touch?.x ?? 0), y: Number(touch?.clientY ?? touch?.y ?? 0) }
+}
+
 export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: 'tiny-builtin:scroll-view',
@@ -28,6 +43,19 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
       scrollWithAnimation: { type: Boolean, value: false },
       enableBackToTop: { type: Boolean, value: false },
       throttle: { type: Boolean, value: true },
+      refresherEnabled: { type: Boolean, value: false },
+      refresherTriggered: { type: Boolean, value: false },
+      refresherThreshold: { type: Number, value: 45 },
+      refresherDefaultStyle: { type: String, value: 'black' },
+      refresherBackground: { type: String, value: '#FFF' },
+      enhanced: { type: Boolean, value: false },
+      showScrollbar: { type: Boolean, value: true },
+      bounces: { type: Boolean, value: true },
+      fastDeceleration: { type: Boolean, value: false },
+      scrollAnchoring: { type: Boolean, value: false },
+      enableFlex: { type: Boolean, value: false },
+      pagingEnabled: { type: Boolean, value: false },
+      usingSticky: { type: Boolean, value: false },
       style: { type: String, value: '' },
     },
     externalClasses: ['class'],
@@ -38,6 +66,12 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         this.applyScrollPosition('scrollTop')
         this.applyScrollPosition('scrollLeft')
         this.applyScrollPosition('scrollIntoView')
+      },
+      detached() {
+        const instance = this as unknown as ScrollRuntime
+        if (instance.__scrollStartTimer) clearTimeout(instance.__scrollStartTimer)
+        if (instance.__scrollEndTimer) clearTimeout(instance.__scrollEndTimer)
+        if (instance.__refresherTimer) clearTimeout(instance.__refresherTimer)
       },
     },
     observers: {
@@ -52,6 +86,9 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
       },
       scrollWithAnimation() {
         this.applyScrollAnimation()
+      },
+      refresherTriggered(value: boolean) {
+        this.triggerEvent('refresherstatuschange', { status: value ? 'refreshing' : 'complete' }, { bubbles: true, composed: true })
       },
     },
     methods: {
@@ -78,13 +115,92 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         const value = Number(this.data[field] ?? 0)
         if (Number.isFinite(value)) element[field] = value
       },
+      cancelRefresher() {
+        const instance = this as unknown as ScrollRuntime
+        if (instance.__refresherTimer) clearTimeout(instance.__refresherTimer)
+        instance.__refresherTimer = undefined
+        if (this.data.refresherTriggered) this.setData({ refresherTriggered: false })
+      },
+      handleTouchStart(event: glassEasel.ShadowedEvent<unknown>) {
+        const instance = this as unknown as ScrollRuntime
+        const point = touchPoint(event)
+        instance.__dragStart = { ...point, scrollTop: Number(this.backend()?.scrollTop ?? 0) }
+        instance.__dragging = false
+        instance.__pullDistance = 0
+      },
+      handleTouchMove(event: glassEasel.ShadowedEvent<unknown>) {
+        const instance = this as unknown as ScrollRuntime
+        const start = instance.__dragStart
+        if (!start) return
+        const point = touchPoint(event)
+        const deltaX = point.x - start.x
+        const deltaY = point.y - start.y
+        if (this.data.refresherEnabled && start.scrollTop <= 0 && deltaY > 0) {
+          instance.__pullDistance = deltaY
+          this.triggerEvent('refresherpulling', { deltaY }, { bubbles: true, composed: true })
+          return
+        }
+        const distance = Math.hypot(deltaX, deltaY)
+        if (!instance.__dragging && distance > 5) {
+          instance.__dragging = true
+          this.triggerEvent('dragstart', { scrollTop: start.scrollTop, scrollLeft: Number(this.backend()?.scrollLeft ?? 0) }, { bubbles: true, composed: true })
+        }
+        if (instance.__dragging) {
+          this.triggerEvent('dragging', { deltaX, deltaY, scrollTop: Number(this.backend()?.scrollTop ?? 0), scrollLeft: Number(this.backend()?.scrollLeft ?? 0) }, { bubbles: true, composed: true })
+        }
+      },
+      handleTouchEnd() {
+        const instance = this as unknown as ScrollRuntime
+        if (instance.__dragging) {
+          this.triggerEvent('dragend', { scrollTop: Number(this.backend()?.scrollTop ?? 0), scrollLeft: Number(this.backend()?.scrollLeft ?? 0) }, { bubbles: true, composed: true })
+        }
+        const pullDistance = Number(instance.__pullDistance ?? 0)
+        instance.__dragStart = undefined
+        instance.__dragging = false
+        instance.__pullDistance = 0
+        if (this.data.refresherEnabled && pullDistance > Number(this.data.refresherThreshold ?? 45)) {
+          this.triggerEvent('refresherwillrefresh', {}, { bubbles: true, composed: true })
+          this.triggerEvent('refresherwillRefresh', {}, { bubbles: true, composed: true })
+          this.setData({ refresherTriggered: true })
+          this.triggerEvent('refresherrefresh', { dy: pullDistance }, { bubbles: true, composed: true })
+          if (instance.__refresherTimer) clearTimeout(instance.__refresherTimer)
+          instance.__refresherTimer = setTimeout(() => {
+            instance.__refresherTimer = undefined
+            this.setData({ refresherTriggered: false })
+            this.triggerEvent('refresherrestore', {}, { bubbles: true, composed: true })
+          }, 300)
+        }
+      },
+      handleTouchCancel() {
+        const instance = this as unknown as ScrollRuntime
+        if (instance.__dragging) {
+          this.triggerEvent('dragend', {}, { bubbles: true, composed: true })
+        }
+        instance.__dragStart = undefined
+        instance.__dragging = false
+        instance.__pullDistance = 0
+        if (this.data.refresherEnabled) this.triggerEvent('refresherabort', {}, { bubbles: true, composed: true })
+      },
       handleScroll(event: glassEasel.ShadowedEvent<unknown>) {
+        const instance = this as unknown as ScrollRuntime
         const detail = (event.detail ?? {}) as Record<string, unknown>
         const element = this.backend()
         const scrollTop = Number(detail.scrollTop ?? element?.scrollTop ?? 0)
         const scrollLeft = Number(detail.scrollLeft ?? element?.scrollLeft ?? 0)
         const scrollHeight = Number(detail.scrollHeight ?? element?.scrollHeight ?? 0)
         const scrollWidth = Number(detail.scrollWidth ?? element?.scrollWidth ?? 0)
+        if (!instance.__scrollStartTimer) {
+          instance.__scrollStartTimer = setTimeout(() => {
+            instance.__scrollStartTimer = undefined
+          }, 100)
+          this.triggerEvent('scrollstart', { scrollTop, scrollLeft }, { bubbles: true, composed: true })
+        }
+        if (instance.__scrollEndTimer) clearTimeout(instance.__scrollEndTimer)
+        instance.__scrollEndTimer = setTimeout(() => {
+          instance.__scrollEndTimer = undefined
+          instance.__scrollStartTimer = undefined
+          this.triggerEvent('scrollend', { scrollTop, scrollLeft }, { bubbles: true, composed: true })
+        }, 120)
         this.triggerEvent('scroll', { scrollTop, scrollLeft, scrollHeight, scrollWidth, deltaX: Number(detail.deltaX ?? 0), deltaY: Number(detail.deltaY ?? 0) }, { bubbles: true, composed: true })
         if (scrollTop <= Number(this.data.upperThreshold ?? 50)) {
           this.triggerEvent('scrolltoupper', { direction: 'top' }, { bubbles: true, composed: true })

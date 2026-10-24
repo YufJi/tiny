@@ -15,4 +15,8 @@
   catchfocus="handleFocus"
   catchblur="handleBlur"
   catchkeydown="handleKeyDown"
+  catchcompositionstart="handleCompositionStart"
+  catchcompositionupdate="handleCompositionUpdate"
+  catchcompositionend="handleCompositionEnd"
+  catchselect="handleSelect"
 />

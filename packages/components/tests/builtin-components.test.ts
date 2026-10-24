@@ -104,12 +104,14 @@ describe('P0 built-in components', () => {
     const taps: unknown[] = []
     const submits: unknown[] = []
     const resets: unknown[] = []
+    const errors: unknown[] = []
+    const userInfos: unknown[] = []
     const page = space.defineComponent({
       is: 'page',
       using: { button: builtins.button },
       data: { formType: 'submit', openType: 'getUserInfo', disabled: false },
       template: compilePage(
-        '<button id="button" form-type="{{formType}}" open-type="{{openType}}" disabled="{{disabled}}" bindtap="onTap" bind:formSubmit="onSubmit" bind:formReset="onReset">Tap</button>',
+        '<button id="button" form-type="{{formType}}" open-type="{{openType}}" disabled="{{disabled}}" bindtap="onTap" bind:formSubmit="onSubmit" bind:formReset="onReset" bind:error="onError" bind:getuserinfo="onUserInfo">Tap</button>',
       ),
       methods: {
         onTap(event: glassEasel.ShadowedEvent<unknown>) {
@@ -121,6 +123,12 @@ describe('P0 built-in components', () => {
         onReset(event: glassEasel.ShadowedEvent<unknown>) {
           resets.push(event.detail)
         },
+        onError(event: glassEasel.ShadowedEvent<unknown>) {
+          errors.push(event.detail)
+        },
+        onUserInfo(event: glassEasel.ShadowedEvent<unknown>) {
+          userInfos.push(event.detail)
+        },
       },
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
@@ -130,6 +138,8 @@ describe('P0 built-in components', () => {
     expect(taps).toEqual([{}])
     expect(submits).toEqual([{ formId: '', formPluginId: '' }])
     expect(diagnostics.map((item) => item.code)).toContain('UNSUPPORTED_BUTTON_OPEN_TYPE')
+    expect(errors).toEqual([{ errMsg: 'getUserInfo:fail not supported by the Tiny runtime' }])
+    expect(userInfos).toEqual([{ errMsg: 'getUserInfo:fail not supported by the Tiny runtime' }])
 
     buttonHost.setData({ formType: 'reset' })
     nativeButton.triggerEvent('tap', {})
@@ -313,13 +323,15 @@ describe('P0 built-in components', () => {
         'swiper-item': builtins['swiper-item'],
       },
       template: compilePage(`
-        <scroll-view id="scroll" scroll-y upper-threshold="10" lower-threshold="20" bindscroll="onScroll" bindscrolltoupper="onUpper" bindscrolltolower="onLower"><view>content</view></scroll-view>
+        <scroll-view id="scroll" scroll-y upper-threshold="10" lower-threshold="20" refresher-enabled bindscroll="onScroll" bindscrolltoupper="onUpper" bindscrolltolower="onLower" bindrefresherrefresh="onRefresh" binddragstart="onDragStart"><view>content</view></scroll-view>
         <swiper id="swiper" indicator-dots indicator-color="#112233" indicator-active-color="#445566"><swiper-item>a</swiper-item></swiper>
       `),
       methods: {
         onScroll(event: glassEasel.ShadowedEvent<unknown>) { events.scroll = event.detail },
         onUpper(event: glassEasel.ShadowedEvent<unknown>) { events.upper = event.detail },
         onLower(event: glassEasel.ShadowedEvent<unknown>) { events.lower = event.detail },
+        onRefresh(event: glassEasel.ShadowedEvent<unknown>) { events.refresh = event.detail },
+        onDragStart(event: glassEasel.ShadowedEvent<unknown>) { events.dragstart = event.detail },
       },
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
@@ -330,6 +342,16 @@ describe('P0 built-in components', () => {
     expect(events.lower).toEqual({ direction: 'bottom' })
     nativeScroll.triggerEvent('scroll', { scrollTop: 5, scrollHeight: 100, clientHeight: 50 })
     expect(events.upper).toEqual({ direction: 'top' })
+
+    nativeScroll.triggerEvent('touchstart', { touches: [{ clientX: 10, clientY: 20 }] })
+    nativeScroll.triggerEvent('touchmove', { touches: [{ clientX: 120, clientY: 20 }] })
+    expect(events.dragstart).toMatchObject({ scrollTop: expect.any(Number) })
+    nativeScroll.triggerEvent('touchend', { changedTouches: [{ clientX: 120, clientY: 20 }] })
+
+    nativeScroll.triggerEvent('touchstart', { touches: [{ clientX: 10, clientY: 20 }] })
+    nativeScroll.triggerEvent('touchmove', { touches: [{ clientX: 10, clientY: 120 }] })
+    nativeScroll.triggerEvent('touchend', { changedTouches: [{ clientX: 10, clientY: 120 }] })
+    expect(events.refresh).toMatchObject({ dy: expect.any(Number) })
 
     await new Promise((resolve) => setTimeout(resolve, 30))
     const swiperHost = instance.getShadowRoot()?.getElementById('swiper')?.asGeneralComponent()!
@@ -359,6 +381,43 @@ describe('P0 built-in components', () => {
     expect(host('group').hasBehavior('wx-group')).toBe(true)
     expect(host('input').hasBehavior('wx-data-component')).toBe(true)
     expect((host('checkbox') as unknown as { getFormData: () => unknown }).getFormData()).toBe('a')
+  })
+
+
+  test('canvas and input emit their native event surface', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const events: Record<string, unknown> = {}
+    const page = space.defineComponent({
+      is: 'page',
+      using: { canvas: builtins.canvas, input: builtins.input },
+      template: compilePage(`
+        <canvas id="canvas" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd" binderror="onCanvasError" />
+        <input id="input" bindkeyboardcompositionend="onCompositionEnd" bindselectionchange="onSelection" />
+      `),
+      methods: {
+        onTouchStart(event: glassEasel.ShadowedEvent<unknown>) { events.touchstart = event.detail },
+        onTouchEnd(event: glassEasel.ShadowedEvent<unknown>) { events.touchend = event.detail },
+        onCanvasError(event: glassEasel.ShadowedEvent<unknown>) { events.canvasError = event.detail },
+        onCompositionEnd(event: glassEasel.ShadowedEvent<unknown>) { events.composition = event.detail },
+        onSelection(event: glassEasel.ShadowedEvent<unknown>) { events.selection = event.detail },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    const nativeCanvas = host('canvas').getShadowRoot()?.getElementById('native-canvas')!
+    nativeCanvas.triggerEvent('touchstart', { touches: [{ clientX: 1, clientY: 2 }] })
+    nativeCanvas.triggerEvent('touchend', { changedTouches: [{ clientX: 3, clientY: 4 }] })
+    nativeCanvas.triggerEvent('error', { errMsg: 'canvas:fail' })
+    expect(events.touchstart).toMatchObject({ touches: [{ clientX: 1, clientY: 2 }] })
+    expect(events.touchend).toMatchObject({ changedTouches: [{ clientX: 3, clientY: 4 }] })
+    expect(events.canvasError).toEqual({ errMsg: 'canvas:fail' })
+
+    const nativeInput = host('input').getShadowRoot()?.getElementById('native-input')!
+    nativeInput.triggerEvent('compositionend', { value: '汉字' })
+    nativeInput.triggerEvent('select', {})
+    expect(events.composition).toEqual({ value: '汉字' })
+    expect(events.selection).toMatchObject({ selectionStart: expect.any(Number), selectionEnd: expect.any(Number) })
   })
 
   test('progress, swiper, and icon render structure and state', () => {

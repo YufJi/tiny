@@ -76,7 +76,7 @@
 | 样式/渲染 | 8% | 68% | 5.44 | WXSS/rpx/作用域强；styleIsolation/addGlobalClass/shared 已实现；`:host` 低优先级与 canvas 仍不完整 |
 | 宿主/平台 | 8% | 15% | 1.20 | 仅浏览器宿主；无原生/网络/登录/支付/分享 |
 | 开发工具 | 4% | 35% | 1.40 | 有运行时状态/元素树/诊断；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 45% | 1.35 | 124 单测 + 46 步浏览器验收；无性能/视觉/安全/原生测试 |
+| 质量/验证 | 3% | 45% | 1.35 | 125 单测 + 46 步浏览器验收；无性能/视觉/安全/原生测试 |
 | **合计** | **100%** | — | **36.15%** | |
 
 ### 条目覆盖率速览
@@ -128,25 +128,27 @@
 
 | 组件 | 文档属性 | 已支持 | 文档事件 | 已支持 | 主要缺口 |
 | --- | ---: | ---: | ---: | ---: | --- |
-| button | 22 | 22 | 9 | 0 | open-type 行为/事件未接（仅诊断）；其余属性已对齐 |
-| canvas | 3 | 3 | 6 | 0 | 仍为占位画布 |
+| button | 22 | 22 | 9 | 9 | open-type 事件以失败回调形式触发；真实平台 API 未接 |
+| canvas | 3 | 3 | 6 | 6 | 触摸/longtap/error 已接；仍为占位画布 |
 | checkbox-group | 0 | 0 | 1 | 1 | — |
 | checkbox | 4 | 4 | 0 | 0 | 原生外观近似 |
 | icon | 3 | 3 | 0 | 0 | — |
 | image | 6 | 5 | 2 | 2 | forceHttps；模式映射仍不完整 |
-| input | 26 | 17 | 7 | 5 | placeholder-style、keyboardheightchange、光标/选区细节 |
+| input | 26 | 17 | 10 | 8 | keyboardheightchange、nicknamereview、placeholder-style |
 | label | 1 | 1 | 0 | 0 | `for` 已绑定；label-target 分发仍依赖原生 label |
 | progress | 11 | 10 | 1 | 1 | 少量外观/动画细节 |
 | radio-group | 0 | 0 | 1 | 1 | — |
 | radio | 4 | 4 | 0 | 0 | 原生外观近似 |
-| scroll-view | 24 | 10 | 10 | 3 | 滚动控制/阈值事件仍有缺口 |
+| scroll-view | 24 | 10 | 10 | 10 | refresher/drag/scroll start-end 已有基础触发 |
 | slider | 12 | 12 | 2 | 2 | 原生 range 外观与 block 细节 |
 | swiper-item | 2 | 1 | 0 | 0 | skip-hidden-item-layout |
 | swiper | 16 | 15 | 3 | 3 | current-item-id 行为/多列布局细节 |
 | switch | 4 | 4 | 1 | 1 | 原生外观近似 |
 | text | 4 | 3 | 0 | 0 | decode 未真正解码 |
 | view | 4 | 4 | 0 | 0 | hover 默认 none；shared `wx-hover` |
-| **合计** | **146** | **119（81.5%）** | **43** | **19（44.2%）** | |
+| **合计** | **146** | **119（81.5%）** | **46** | **44（95.7%）** | |
+
+> 事件覆盖按“事件名已绑定并能触发基础 detail”统计；button open-type 事件和部分 scroll-view refresher 事件目前是失败/模拟回调，不是微信平台 API 的真实成功语义。
 
 **外观保真度**：内置组件的默认样式是项目自定义的暗色 slate 主题（[styles.ts](../packages/components/src/styles.ts:1)），不是微信默认样式。按像素对比，默认外观对齐度很低；业务样式可以覆盖，但“开箱即用”的视觉不一致。
 
@@ -277,7 +279,7 @@ hasBehavior / export / wx://component-export
 2026-10-24 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
-- **124 个单元测试**（runtime 38 个）
+- **125 个单元测试**（runtime 38 个）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
 - **46 个浏览器步骤**全部通过；P0 新增 6 步覆盖组件语义、样式隔离、button 矩阵、relations 和 selectComponent
 - 门禁覆盖的 5 段流程无 console/page error（117 页探针的 pageerror 见 5.2）
@@ -489,7 +491,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-24 | 第二次同步：补齐自定义组件高级语义（behaviors/observers/relations/externalClasses/styleIsolation/selectComponent）；框架 42→58、样式 62→68；115 单测 + 45 浏览器步骤 | **34.77%** |
 | 2026-10-24 | 第三次同步：Component-as-page 核心语义接入（query properties、methods 生命周期、behaviors/observers/relations/styleIsolation）；框架 58→60；116 单测 | **35.13%** |
 | 2026-10-24 | 第四次同步：button 对齐 2.7.0 核心属性/默认样式，内置共享 wx-base/wx-hover/wx-label-target；内置组件 30→32；120 单测 / 46 步 | **35.47%** |
-| 2026-10-24 | 第五次同步：现有内置组件属性/默认样式成批对齐（text/icon/image/input/checkbox/radio/switch/slider/progress/scroll-view/swiper/swiper-item/canvas）；属性声明 119/146；内置组件 32→36；124 单测 | **36.15%** |
+| 2026-10-24 | 第五次同步：内置组件属性/默认样式与事件面成批对齐（canvas 触摸/longtap、input 组合/选区、button open-type 失败回调、scroll-view refresher/drag/scroll 边界）；属性 119/146、事件 44/46；125 单测 | **36.15%** |
 
 ---
 
