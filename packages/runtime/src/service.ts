@@ -758,7 +758,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       'service',
       {
         pageStack: pageStack.map((page) => page.pageId),
-        currentPage: activePage?.path,
+        currentPage: activePage?.path ?? '',
         transport: 'connected',
       },
       activePage?.pageId,
