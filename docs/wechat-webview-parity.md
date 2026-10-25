@@ -400,6 +400,9 @@ getMenuButtonBoundingClientRect / getPerformance
 
 ## 7. 关键缺口与优先级
 
+> 本节是缺口与优先级的唯一清单，不再维护单独的第 10 节“进度清单”勾选表：
+> 完成度看第 3 节，变更记录看第 9.4 节，避免同一批状态在多个地方重复且过期。
+
 ### P0：不补就跑不了普通业务小程序
 
 | 缺口 | 影响 | 建议 |
@@ -503,49 +506,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-25 | 第八次同步：新增 textarea/form/picker 三个常用内置标签（form 收集、picker selector/date/time、textarea 事件）；内置组件 36→38；151 单测 | **36.92%** |
 | 2026-10-25 | 第九次同步：补主题/键盘监听、getUserProfile/getUserInfo、tabBar/导航栏/pageScrollTo、hideToast、getFileSystemManager 等高频 API 面；API 8→12%；151 单测 | **37.72%** |
 | 2026-10-25 | 第十次同步：新增 picker-view / picker-view-column（滚动列、columnchange、value 数组）；格式化 WXML 模板；内置组件 38→39；152 单测 | **37.89%** |
-
----
-
-## 10. 进度清单（完成后勾选）
-
-> 每次同步：勾选已完成项 → 更新第 3 节评分 → 更新 9.4 变更记录。
-
-### P0
-
-- [x] `wx.request`
-- [ ] `wx.uploadFile` / `wx.downloadFile`
-- [x] 异步 storage + `removeStorage` / `clearStorage` / `getStorageInfo`
-- [ ] storage batch
-- [ ] `redirectTo` / `reLaunch` / `switchTab`
-- [x] `showModal` / `showLoading` / `hideLoading`
-- [ ] 导航栏 + tabBar
-- [ ] 下拉刷新 / 触底 / 页面滚动
-- [ ] `picker` / `textarea` / `form` / `navigator`
-- [ ] `wx.login` / `requestPayment` / 分享
-
-### P1
-
-- [x] `behaviors` / `observers` / `relations` / `externalClasses`
-- [x] `styleIsolation` / `addGlobalClass` / `selectComponent`
-- [x] Component-as-page 全套核心语义
-- [x] button 属性/默认样式对齐（open-type 事件除外）
-- [x] 现有内置组件属性/默认样式第一波对齐（事件与原生外观仍待补）
-- [ ] 剩余组件语义：`generics` / `placeholder` / `definitionFilter` / `pureDataPattern`
-- [ ] scroll-view / input / swiper / button 属性与事件补全
-- [ ] canvas 2D / 触摸 / rAF / `canvasToTempFilePath`
-- [ ] animation 多 step 与回调
-- [ ] 子包按需加载 / 预下载 / 独立分包
-- [ ] npm 构建 / `miniprogram_npm`
-- [ ] 内置组件默认样式对齐
-
-### P2
-
-- [ ] 原生/JSCore 宿主
-- [ ] 原生网络桥 / 媒体 / 地图 / 视频 / 文件系统 / Worker
-- [ ] 订阅消息 / 客服 / 发票等平台扩展
-- [ ] 性能基线（启动/首屏/setData/内存/长时运行）
-- [ ] 视觉回归 / 安全测试 / 原生测试
-- [ ] iframe sandbox / origin 校验 / 能力协商
+| 2026-10-25 | 文档维护：移除重复且长期未同步的“进度清单”章节；缺口统一看第 7 节，变更看第 9.4 节 | **37.89%** |
 
 ---
 
@@ -609,10 +570,10 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 主题 | 位置 |
 | --- | --- |
 | 内置组件标签清单 | [tags.ts](../packages/components/src/tags.ts:1) |
-| 内置组件默认样式 | [styles.ts](../packages/components/src/styles.ts:1) |
-| service API 宿主 | [service.ts](../packages/runtime/src/service.ts:320) |
-| 不支持 API 的降级 | [service.ts](../packages/runtime/src/service.ts:284) |
-| 宿主 API（toast/storage/navigate） | [host-api.ts](../packages/runtime/src/host-api.ts:35) |
+| 内置组件默认样式 | [styles/index.css](../packages/components/src/styles/index.css:1) |
+| service API 宿主 | [service/api-host.ts](../packages/runtime/src/service/api-host.ts:1) |
+| 不支持 API 的降级 | [service/api-host.ts](../packages/runtime/src/service/api-host.ts:1) |
+| 宿主 API（toast/storage/navigate） | [host-api.ts](../packages/runtime/src/host-api.ts:1)、[browser api-handlers.ts](../hosts/browser/src/api-handlers.ts:1) |
 | 组件 schema（data/properties/using + semantics metadata） | [component-schema.ts](../packages/runtime/src/component-schema.ts:5) |
 | Behavior 合并 / 组件定义规范化 | [component-definition.ts](../packages/runtime/src/component-definition.ts:115) |
 | 组件树与选择器 | [component-tree.ts](../packages/runtime/src/component-tree.ts:35) |
@@ -620,7 +581,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | relations 链接管理 | [relation-manager.ts](../packages/runtime/src/relation-manager.ts:29) |
 | 组件注册（properties/externalClasses/options/observers/lifetimes） | [glass-easel-adapter.ts](../packages/runtime/src/glass-easel-adapter.ts:463) |
 | 组件语义验收 fixture | [semantics.js](../tests/apps/demo/pages/semantics/semantics.js:1) |
-| Component-as-page 实例 | [service.ts](../packages/runtime/src/service.ts:274) |
+| Component-as-page 实例 | [service/page-instance.ts](../packages/runtime/src/service/page-instance.ts:1) |
 | Component-as-page 测试 | [component-page.test.ts](../packages/runtime/tests/component-page.test.ts:1) |
 | 内置组件共享 behaviors | [behaviors.ts](../packages/components/src/behaviors.ts:1) |
 | button 组件 | [button/index.ts](../packages/components/src/components/button/index.ts:1) |
