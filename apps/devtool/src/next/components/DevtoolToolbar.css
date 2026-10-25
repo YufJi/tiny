@@ -237,6 +237,31 @@
   place-items: center;
 }
 
+.td-chip--active {
+  background: rgba(147, 193, 169, 0.08);
+  border-color: rgba(147, 193, 169, 0.28);
+  color: var(--td-text);
+}
+
+.td-chip--hidden {
+  opacity: 0.58;
+}
+
+.td-chip-path {
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.td-chip-state {
+  color: var(--td-dim);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 8px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
 .td-empty {
   color: var(--td-dim);
   font-size: 10px;

@@ -4,16 +4,47 @@ import { createHostApiRegistry, registerHostApiHandlers } from './host-api'
 import type { HostApiRegistry } from './host-api'
 import { createHostDiagnosticStore, registerHostDiagnosticHandlers } from './host-diagnostics'
 import type { RuntimeDiagnostic } from './diagnostics'
+import type { MiniProgramComponentSchema } from './types'
 
 export type TinyRuntimeHost = {
   service: BridgeConnection
+  /** The render connection of the active page (or the sole render thread). */
   render: BridgeConnection
   bootstrap(): Promise<{ service: unknown; render: unknown }>
   close(): Promise<void>
+  /** Inspect one page; defaults to the active page. */
+  inspectTree(pageId?: string): Promise<unknown>
+  /** Update the host window snapshot and deliver `onResize` to the active page. */
+  setWindowSize(width: number, height: number): Promise<void>
+  /** Hide/show every render page view when the app enters the background. */
+  setAppVisible(visible: boolean): void
   apiRegistry: HostApiRegistry
   diagnostics: RuntimeDiagnostic[]
 }
 
+type RenderPageResult = {
+  pageId: string
+  components?: unknown[]
+  status?: string
+  currentPath?: string
+}
+
+type PendingRenderEvent = {
+  domain: 'data' | 'event' | 'canvas'
+  method: string
+  payload: unknown
+  pageId?: string
+}
+
+/**
+ * Owns the host side of the bridge.
+ *
+ * In `renderTransport` mode a single render connection serves the whole page
+ * stack (in-memory tests and simple hosts). In `renderConnector` mode every
+ * page gets its own render thread, so hidden pages keep their DOM, scroll
+ * position and timers exactly like a WebView stack. All page-scoped messages
+ * are routed through the page ID.
+ */
 export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost {
   const service = new BridgeConnection({
     localRole: 'host',
@@ -21,19 +52,205 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
     transport: options.serviceTransport,
     respondToHello: false,
   })
-  const render = new BridgeConnection({
-    localRole: 'host',
-    peerRole: 'render',
-    transport: options.renderTransport,
-    respondToHello: false,
-  })
+  const renderConnector = options.renderConnector
+  const primaryRender = renderConnector
+    ? null
+    : new BridgeConnection({
+        localRole: 'host',
+        peerRole: 'render',
+        transport: requireRenderTransport(options),
+        respondToHello: false,
+      })
+  const diagnosticStore = createHostDiagnosticStore(options)
+  registerHostDiagnosticHandlers(service, 'service', diagnosticStore)
   const apiRegistry = createHostApiRegistry(options)
+  const renderSessions = new Map<string, BridgeConnection>()
+  const pendingRenderEvents = new Map<string, PendingRenderEvent[]>()
+  let activePageId: string | undefined
+  let componentSchemas: MiniProgramComponentSchema[] = []
+  let pageComponents: Array<{ path: string; options?: unknown }> = []
+
+  const getRenderConnection = (pageId?: string): BridgeConnection | null => {
+    if (!renderConnector) return primaryRender
+    const id = pageId ?? activePageId
+    if (id) return renderSessions.get(id) ?? null
+    return [...renderSessions.values()].at(-1) ?? null
+  }
+
+  const requireRenderConnection = (pageId?: string): BridgeConnection => {
+    const connection = getRenderConnection(pageId)
+    if (!connection) throw new Error('render thread is not connected')
+    return connection
+  }
+
+  const queueRenderEvent = (pageId: string | undefined, event: PendingRenderEvent) => {
+    if (!pageId) return
+    const pending = pendingRenderEvents.get(pageId) ?? []
+    pending.push(event)
+    pendingRenderEvents.set(pageId, pending)
+  }
+
+  const flushRenderEvents = (pageId: string, connection: BridgeConnection) => {
+    const pending = pendingRenderEvents.get(pageId)
+    if (!pending) return
+    pendingRenderEvents.delete(pageId)
+    for (const event of pending) {
+      if (event.domain === 'canvas') {
+        connection.sendEvent('canvas', event.method, event.payload, { pageId })
+      } else {
+        connection.sendEvent(event.domain, event.method, event.payload, { pageId })
+      }
+    }
+  }
+
+  const wireRenderConnection = (connection: BridgeConnection, pageId: string) => {
+    registerHostDiagnosticHandlers(connection, 'render', diagnosticStore)
+    connection.onEvent('event', 'dispatch', (message) => {
+      service.sendEvent('event', 'dispatch', message.payload, { pageId: message.pageId ?? pageId })
+    })
+    connection.onEvent('runtime', 'componentLifecycle', (message) => {
+      const payload = message.payload as { pageId?: string } | undefined
+      service.sendEvent('runtime', 'componentLifecycle', message.payload, {
+        pageId: payload?.pageId ?? message.pageId ?? pageId,
+      })
+    })
+    connection.onEvent('runtime', 'componentPageLifetime', (message) => {
+      service.sendEvent('runtime', 'componentPageLifetime', message.payload, { pageId })
+    })
+    connection.onEvent('runtime', 'componentData', (message) => {
+      service.sendEvent('runtime', 'componentData', message.payload, { pageId: message.pageId ?? pageId })
+    })
+    connection.onEvent('runtime', 'componentObserved', (message) => {
+      service.sendEvent('runtime', 'componentObserved', message.payload, { pageId: message.pageId ?? pageId })
+    })
+    connection.onEvent('page', 'scroll', (message) => {
+      service.sendEvent('page', 'scroll', message.payload, { pageId })
+    })
+    connection.onEvent('page', 'reachBottom', (message) => {
+      service.sendEvent('page', 'reachBottom', message.payload, { pageId })
+    })
+  }
+
+  if (primaryRender) {
+    registerHostDiagnosticHandlers(primaryRender, 'render', diagnosticStore)
+    primaryRender.onEvent('event', 'dispatch', (message) => {
+      service.sendEvent('event', 'dispatch', message.payload, { pageId: message.pageId })
+    })
+    primaryRender.onEvent('runtime', 'componentLifecycle', (message) => {
+      service.sendEvent('runtime', 'componentLifecycle', message.payload)
+    })
+    primaryRender.onEvent('runtime', 'componentPageLifetime', (message) => {
+      service.sendEvent('runtime', 'componentPageLifetime', message.payload)
+    })
+    primaryRender.onEvent('runtime', 'componentData', (message) => {
+      service.sendEvent('runtime', 'componentData', message.payload, { pageId: message.pageId })
+    })
+    primaryRender.onEvent('runtime', 'componentObserved', (message) => {
+      service.sendEvent('runtime', 'componentObserved', message.payload, { pageId: message.pageId })
+    })
+    primaryRender.onEvent('page', 'scroll', (message) => {
+      service.sendEvent('page', 'scroll', message.payload, { pageId: message.pageId })
+    })
+    primaryRender.onEvent('page', 'reachBottom', (message) => {
+      service.sendEvent('page', 'reachBottom', message.payload, { pageId: message.pageId })
+    })
+  }
+
+  const closeRenderPage = async (pageId: string) => {
+    const connection = renderSessions.get(pageId)
+    renderSessions.delete(pageId)
+    pendingRenderEvents.delete(pageId)
+    if (activePageId === pageId) activePageId = undefined
+    if (connection) {
+      try {
+        await connection.close()
+      } catch {
+        // The render document may already be gone.
+      }
+    }
+    try {
+      await renderConnector?.disconnect(pageId)
+    } catch {
+      // Frame teardown is best effort.
+    }
+  }
+
+  const openRenderPage = async (
+    pageId: string,
+    path: string,
+    initialData?: Record<string, unknown>,
+  ): Promise<RenderPageResult> => {
+    if (!renderConnector) throw new Error('per-page render connector is not configured')
+    const transport = await renderConnector.connect(pageId)
+    const connection = new BridgeConnection({
+      localRole: 'host',
+      peerRole: 'render',
+      transport,
+      respondToHello: false,
+    })
+    wireRenderConnection(connection, pageId)
+    try {
+      await connection.handshake()
+      renderSessions.set(pageId, connection)
+      const result = await connection.control<RenderPageResult>('runtime', 'bootstrap', {
+        manifest: options.manifest,
+        initialPath: path,
+        initialData,
+        pageId,
+        componentSchemas,
+        pageComponents,
+      })
+      activePageId = pageId
+      renderConnector.activate?.(pageId)
+      flushRenderEvents(pageId, connection)
+      return { ...result, pageId }
+    } catch (error) {
+      await closeRenderPage(pageId)
+      throw error
+    }
+  }
+
+  const routeServiceEvent = (
+    domain: 'data' | 'event' | 'canvas',
+    method: string,
+    payload: unknown,
+    pageId?: string,
+  ) => {
+    const connection = getRenderConnection(pageId)
+    if (connection) {
+      connection.sendEvent(domain, method, payload, { pageId })
+      return
+    }
+    queueRenderEvent(pageId, { domain, method, payload, pageId })
+  }
+
   if (!options.apiHandlers?.['navigate.to']) {
     apiRegistry.handlers['navigate.to'] = async (params, context) => {
       const serviceResult = await service.control<Record<string, unknown>>('page', 'navigateTo', {
         url: params.url,
       }, { pageId: context.pageId })
-      const renderResult = await render.control<{
+      if (renderConnector) {
+        const pageId = serviceResult.pageId as string | undefined
+        const path = serviceResult.path as string | undefined
+        if (!pageId || !path) throw new Error('navigateTo did not create a renderable page')
+        try {
+          const renderResult = await openRenderPage(
+            pageId,
+            path,
+            serviceResult.initialData as Record<string, unknown> | undefined,
+          )
+          await service.control('page', 'ready', {
+            pageId: renderResult.pageId,
+            components: renderResult.components,
+          })
+        } catch (error) {
+          // Keep the service stack consistent when the new page cannot render.
+          await service.control('page', 'navigateBack', { delta: 1 }).catch(() => {})
+          throw error
+        }
+        return serviceResult
+      }
+      const renderResult = await requireRenderConnection().control<{
         pageId?: string
         components?: unknown[]
       }>('page', 'navigateTo', {
@@ -56,7 +273,17 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
       const serviceResult = await service.control<Record<string, unknown>>('page', 'navigateBack', {
         delta: params.delta ?? 1,
       }, { pageId: context.pageId })
-      await render.control('page', 'navigateBack', {
+      if (renderConnector) {
+        const pageId = serviceResult.pageId as string | undefined
+        const unloadedPageIds = (serviceResult.unloadedPageIds as string[] | undefined) ?? []
+        for (const unloadedPageId of unloadedPageIds) await closeRenderPage(unloadedPageId)
+        if (pageId) {
+          activePageId = pageId
+          renderConnector.activate?.(pageId)
+        }
+        return serviceResult
+      }
+      await requireRenderConnection().control('page', 'navigateBack', {
         path: serviceResult.path,
         pageId: serviceResult.pageId,
         initialData: serviceResult.initialData,
@@ -66,40 +293,26 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
     }
   }
   registerHostApiHandlers(service, apiRegistry)
-  const diagnosticStore = createHostDiagnosticStore(options)
-  registerHostDiagnosticHandlers(service, 'service', diagnosticStore)
-  registerHostDiagnosticHandlers(render, 'render', diagnosticStore)
-  render.onEvent('event', 'dispatch', (message) => {
-    service.sendEvent('event', 'dispatch', message.payload, { pageId: message.pageId })
-  })
-  render.onEvent('runtime', 'componentLifecycle', (message) => {
-    service.sendEvent('runtime', 'componentLifecycle', message.payload)
-  })
-  render.onEvent('runtime', 'componentPageLifetime', (message) => {
-    service.sendEvent('runtime', 'componentPageLifetime', message.payload)
-  })
-  render.onEvent('runtime', 'componentData', (message) => {
-    service.sendEvent('runtime', 'componentData', message.payload, { pageId: message.pageId })
-  })
-  render.onEvent('runtime', 'componentObserved', (message) => {
-    service.sendEvent('runtime', 'componentObserved', message.payload, { pageId: message.pageId })
-  })
   service.onEvent('event', 'trigger', (message) => {
-    render.sendEvent('event', 'trigger', message.payload)
+    routeServiceEvent('event', 'trigger', message.payload, message.pageId)
   })
   service.onEvent('data', 'setData', (message) => {
-    render.sendEvent('data', 'setData', message.payload, { pageId: message.pageId })
+    routeServiceEvent('data', 'setData', message.payload, message.pageId)
   })
-  service.onCall('canvas', 'measure', (message) => (
-    render.control('canvas', 'measure', message.payload, { pageId: message.pageId })
-  ))
+  service.onCall('canvas', 'measure', (message) => {
+    const connection = getRenderConnection(message.pageId)
+    if (!connection) return { width: 0, height: 0 }
+    return connection.control('canvas', 'measure', message.payload, { pageId: message.pageId })
+  })
   service.onEvent('canvas', 'frame', (message) => {
-    render.sendEvent('canvas', 'frame', message.payload, { pageId: message.pageId })
+    routeServiceEvent('canvas', 'frame', message.payload, message.pageId)
   })
 
   return {
     service,
-    render,
+    get render() {
+      return requireRenderConnection()
+    },
     apiRegistry,
     get diagnostics() {
       return diagnosticStore.diagnostics
@@ -113,16 +326,26 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
       })
       const initialData = (serviceResult.initialData as Record<string, unknown> | undefined) ?? options.initialData
       const pageId = serviceResult.pageId as string | undefined
-      const componentSchemas = serviceResult.componentSchemas as import('./types').MiniProgramComponentSchema[] | undefined
-      const pageComponents = serviceResult.pageComponents
-      const renderResult = await render.control<Record<string, unknown>>('runtime', 'bootstrap', {
-        manifest: options.manifest,
-        initialPath: options.initialPath,
-        initialData,
-        pageId,
-        componentSchemas,
-        pageComponents,
-      })
+      componentSchemas = (serviceResult.componentSchemas as MiniProgramComponentSchema[] | undefined) ?? []
+      pageComponents = (serviceResult.pageComponents as Array<{ path: string; options?: unknown }> | undefined) ?? []
+      let renderResult: RenderPageResult
+      if (renderConnector) {
+        if (!pageId) throw new Error('service bootstrap did not create a page')
+        renderResult = await openRenderPage(
+          pageId,
+          (serviceResult.currentPath as string | undefined) ?? options.initialPath,
+          initialData,
+        )
+      } else {
+        renderResult = await requireRenderConnection().control<RenderPageResult>('runtime', 'bootstrap', {
+          manifest: options.manifest,
+          initialPath: options.initialPath,
+          initialData,
+          pageId,
+          componentSchemas,
+          pageComponents,
+        })
+      }
       if (pageId) {
         await service.control('page', 'ready', {
           pageId,
@@ -131,8 +354,44 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
       }
       return { service: serviceResult, render: renderResult }
     },
+    async inspectTree(pageId?: string) {
+      const connection = requireRenderConnection(pageId)
+      return connection.control('runtime', 'inspectTree', { pageId })
+    },
+    async setWindowSize(width: number, height: number) {
+      await service.control('runtime', 'resize', {
+        windowWidth: width,
+        windowHeight: height,
+      })
+    },
+    setAppVisible(visible: boolean) {
+      renderConnector?.setAppVisible?.(visible)
+    },
     async close() {
-      await Promise.all([service.close(), render.close()])
+      const sessions = [...renderSessions.entries()]
+      renderSessions.clear()
+      pendingRenderEvents.clear()
+      await Promise.all(sessions.map(async ([pageId, connection]) => {
+        try {
+          await connection.close()
+        } catch {
+          // Ignore already-closed transports.
+        }
+        try {
+          await renderConnector?.disconnect(pageId)
+        } catch {
+          // Frame teardown is best effort.
+        }
+      }))
+      if (primaryRender) await primaryRender.close()
+      await service.close()
     },
   }
+}
+
+function requireRenderTransport(options: RuntimeHostOptions): import('@tiny/bridge').Transport {
+  if (!options.renderTransport) {
+    throw new Error('createTinyRuntime requires renderTransport or renderConnector')
+  }
+  return options.renderTransport
 }

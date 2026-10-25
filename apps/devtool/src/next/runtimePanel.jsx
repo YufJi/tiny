@@ -33,12 +33,13 @@ class RuntimePanel extends PureComponent {
       initialPath: '',
       navPath: '',
       manifestPath: '',
-      hostNavigation: false,
       lifecycle: 'foreground',
       loading: true,
       error: '',
       activeTab: 'console',
     };
+    this.lastContentHeight = 0;
+    this.launchContentHeight = 0;
   }
 
   async componentDidMount() {
@@ -78,6 +79,8 @@ class RuntimePanel extends PureComponent {
         window.history.replaceState(null, '', url);
       }
 
+      this.lastContentHeight = contentHeight;
+      this.launchContentHeight = contentHeight;
       this.setState({
         apps,
         appId: app.id,
@@ -85,7 +88,6 @@ class RuntimePanel extends PureComponent {
         initialPath,
         navPath: initialPath,
         manifestPath: firstPage,
-        hostNavigation,
         lifecycle: 'foreground',
         loading: false,
         error: '',
@@ -116,6 +118,32 @@ class RuntimePanel extends PureComponent {
       const message = error instanceof Error ? error.message : String(error);
       this.setState({ loading: false, error: message });
       console.error('[devtool] failed to boot the runtime', error);
+    }
+  }
+
+  componentDidUpdate(prevProps) {
+    const page = this.props.runtime.currentPage;
+    const becameRunning = this.props.runtime.status === 'running'
+      && prevProps.runtime.status !== 'running';
+    if (!page || !this.state.manifest) return;
+    if (!becameRunning && page === prevProps.runtime.currentPage) return;
+    const app = this.state.apps.find((candidate) => candidate.id === this.state.appId);
+    // Host chrome depends on the active page, not the launch page: a custom
+    // navigation page changes the usable window height for the whole stack.
+    const navigation = resolveNavigationConfig(this.state.manifest, page, app?.title || '');
+    const contentHeight = navigation.custom
+      ? DEVICE_SCREEN_HEIGHT
+      : DEVICE_SCREEN_HEIGHT - HOST_CHROME_HEIGHT;
+    // A reload boots a fresh service thread with the launch-time system
+    // snapshot, so re-apply the active page height once it is running.
+    const needsResize = (becameRunning && contentHeight !== this.launchContentHeight)
+      || contentHeight !== this.lastContentHeight;
+    if (needsResize) {
+      this.lastContentHeight = contentHeight;
+      if (this.client) this.run(() => this.client.resize(DEVICE_SCREEN_WIDTH, contentHeight));
+    }
+    if (this.state.navPath !== page || this.state.manifestPath !== page) {
+      this.setState({ navPath: page, manifestPath: page });
     }
   }
 
@@ -163,7 +191,16 @@ class RuntimePanel extends PureComponent {
   }
 
   render() {
-    const { status, currentPage, pageStack, diagnostics, tree, error: runtimeError } = this.props.runtime;
+    const {
+      status,
+      currentPage,
+      pageStack,
+      pages,
+      lifecycle: lifecycleEvents,
+      diagnostics,
+      tree,
+      error: runtimeError,
+    } = this.props.runtime;
     const {
       apps,
       appId,
@@ -174,7 +211,6 @@ class RuntimePanel extends PureComponent {
       manifestPath,
       navPath,
       activeTab,
-      hostNavigation,
       lifecycle,
     } = this.state;
     const selectedApp = apps.find((app) => app.id === appId);
@@ -183,6 +219,7 @@ class RuntimePanel extends PureComponent {
       currentPage || initialPath,
       selectedApp?.title || '',
     );
+    const hostNavigation = !navigation.custom;
     const running = status === 'running';
     const ready = Boolean(this.client);
     const alert = error || runtimeError;
@@ -214,6 +251,7 @@ class RuntimePanel extends PureComponent {
             manifestPath={manifestPath}
             currentPage={currentPage}
             pageStack={pageStack}
+            pages={pages}
             status={status}
             lifecycle={lifecycle}
             running={running}
@@ -233,6 +271,8 @@ class RuntimePanel extends PureComponent {
             activeTab={activeTab}
             onTabChange={(nextTab) => this.setState({ activeTab: nextTab })}
             diagnostics={diagnostics}
+            lifecycleEvents={lifecycleEvents}
+            pages={pages}
             tree={tree}
           />
         </aside>

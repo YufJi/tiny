@@ -190,6 +190,15 @@
   border: 0;
 }
 
+/* One iframe per page: hidden pages stay mounted behind the active WebView. */
+.td-screen-surface iframe[data-page-id] {
+  transition: opacity 120ms ease;
+}
+
+.td-screen-surface iframe[data-state="hidden"] {
+  opacity: 0;
+}
+
 .td-screen-background {
   position: absolute;
   right: 0;

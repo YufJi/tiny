@@ -21,11 +21,11 @@ hosts/web-components ──► 内置组件定义与样式，注入 render 线�
         ▼
 packages/runtime : 双线程内核（不依赖 DOM）
 ├─ service iframe : App/Page/Component 逻辑与 API
-├─ render  iframe : glass-easel 组件树，backend 与内置组件由宿主注入
+├─ render  iframe : glass-easel 组件树；devtool 为每个页面创建独立 render 帧
 └─ bridge         : Tiny Runtime Protocol v1
         │
         ▼
-apps/devtool (可选) : DevtoolRuntimeClient + React 面板
+apps/devtool (可选) : DevtoolRuntimeClient + React 面板（多 iframe 页面栈 / 生命周期时间线）
 ```
 
 ## 工作区分层
@@ -68,7 +68,7 @@ apps/devtool (可选) : DevtoolRuntimeClient + React 面板
 | `tests/apps/wechat-demo` | 微信官方组件/API 示例子集 |
 | `tests/apps/echarts` | 历史参考示例 |
 
-`tests/host` 与 `apps/devtool` 都基于 `createStandaloneDualThreadHost`：前者是无 UI 的单应用测试宿主，后者通过 `DevtoolRuntimeClient` 提供面板、诊断和元素树。
+`tests/host` 与 `apps/devtool` 都基于 `@tiny/host-browser` 的 `createStandaloneDualThreadHost`：前者是无 UI 的单应用、单 render 帧测试宿主；后者通过 `DevtoolRuntimeClient` 使用 `renderMode: "per-page"`，为每个页面创建独立 render iframe，并提供面板、诊断、生命周期时间线和元素树。
 
 ## 快速开始
 

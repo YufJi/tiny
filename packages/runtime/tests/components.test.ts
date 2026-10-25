@@ -172,7 +172,9 @@ describe('mini-program custom components', () => {
 
     await host.service.control('page', 'hide', { pageId: result.service.pageId })
     await host.service.control('page', 'show', { pageId: result.service.pageId })
-    expect(pageLifetimeEvents).toEqual(['hide', 'show'])
+    // The component attaches after the page's initial onShow, so its first
+    // pageLifetimes.show arrives when the first render pass completes.
+    expect(pageLifetimeEvents).toEqual(['show', 'hide', 'show'])
     expect([...service.componentInstances.keys()]).toEqual(['component-1'])
 
     service.activePage?.setData({ showBadge: false })

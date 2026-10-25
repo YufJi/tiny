@@ -15,6 +15,9 @@ export type MiniProgramPageOptions = {
   onReady?: (...args: unknown[]) => void
   onHide?: (...args: unknown[]) => void
   onUnload?: (...args: unknown[]) => void
+  onPageScroll?: (event: { scrollTop: number; scrollLeft: number }) => void
+  onReachBottom?: (...args: unknown[]) => void
+  onResize?: (event: { size: { windowWidth: number; windowHeight: number } }) => void
   [key: string]: unknown
 }
 

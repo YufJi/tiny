@@ -928,7 +928,14 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         true,
         'host navigation back should be disabled on the first page',
       )
-      assert.equal(await page.getByRole('tab').count(), 2, 'console/elements tabs are missing')
+      assert.equal(await page.getByRole('tab').count(), 3, 'console/lifecycle/elements tabs are missing')
+      const lifecycleTab = page.getByRole('tab', { name: /Lifecycle/ })
+      await lifecycleTab.click()
+      assert.equal(await lifecycleTab.getAttribute('aria-selected'), 'true')
+      const lifecycleText = (await page.getByRole('tabpanel').innerText()).toLowerCase()
+      assert.ok(lifecycleText.includes('page webviews'), 'page webviews are not listed')
+      assert.ok(lifecycleText.includes('onshow'), 'page lifecycle timeline has no onShow event')
+      assert.ok(lifecycleText.includes('onready'), 'page lifecycle timeline has no onReady event')
       const elementsTab = page.getByRole('tab', { name: 'Elements' })
       await elementsTab.click()
       assert.equal(await elementsTab.getAttribute('aria-selected'), 'true')
@@ -940,8 +947,16 @@ export async function runDevtoolAcceptance({ baseUrl }) {
 
     await step('render the mini program inside the debugger', async () => {
       currentStep = 'render the mini program inside the debugger'
-      const renderFrame = page.frames().find((frame) => frame.url().includes('next-render.html'))
-      assert.ok(renderFrame, 'render thread iframe was not created')
+      assert.equal(
+        await page.locator('iframe[data-page-id]').count(),
+        1,
+        'the first page should own exactly one render iframe',
+      )
+      assert.equal(
+        await page.locator('iframe[data-page-id="page-1"]').getAttribute('data-state'),
+        'active',
+    )
+      const renderFrame = page.frameLocator('iframe[data-page-id="page-1"]')
       const body = await renderFrame.locator('#app').innerText()
       assert.ok(body.includes('Tiny Glass-easel P0'), 'mini program did not render in the debugger')
       assert.ok(body.includes('Learn glass-easel'), 'page data did not render in the debugger')
@@ -962,6 +977,24 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         null,
         { timeout: STEP_TIMEOUT },
       )
+      await page.waitForSelector('iframe[data-page-id="page-2"][data-state="active"]', {
+        timeout: STEP_TIMEOUT,
+      })
+      // The previous page keeps its own iframe and DOM while it is hidden.
+      assert.equal(
+        await page.locator('iframe[data-page-id="page-1"]').getAttribute('data-state'),
+        'hidden',
+      )
+      const previousFrame = page.frameLocator('iframe[data-page-id="page-1"]')
+      assert.ok(
+        (await previousFrame.locator('#app').innerText()).includes('Tiny Glass-easel P0'),
+        'hidden page lost its rendered DOM',
+      )
+      const phases = await page.evaluate(
+        () => window.__tinyDevtool.getState().lifecycle.map((event) => event.phase),
+      )
+      assert.ok(phases.includes('onHide'), 'navigateTo did not record page onHide')
+      assert.ok(phases.includes('onShow'), 'navigateTo did not record page onShow')
 
       const previewBack = page.getByRole('button', { name: 'Back in preview' })
       assert.equal(await previewBack.isDisabled(), false, 'host navigation back should be enabled')
@@ -971,7 +1004,16 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         null,
         { timeout: STEP_TIMEOUT },
       )
+      await page.waitForFunction(
+        () => !document.querySelector('iframe[data-page-id="page-2"]'),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
       assert.deepEqual((await state()).pageStack, ['page-1'])
+      assert.equal(
+        await page.locator('iframe[data-page-id="page-1"]').getAttribute('data-state'),
+        'active',
+      )
     })
 
     await step('preview every tests/apps fixture in the debugger', async () => {
@@ -1052,8 +1094,15 @@ export async function runDevtoolAcceptance({ baseUrl }) {
           )
         }
 
-        const renderFrame = page.frames().find((frame) => frame.url().includes('next-render.html'))
+        const renderFrame = page.frames().find(
+          (frame) => frame.url().includes(`pageId=${preview.pageStack.at(-1)}`),
+        )
         assert.ok(renderFrame, `${fixture.id} did not create a render thread iframe`)
+        assert.equal(
+          await page.locator('iframe[data-page-id]').count(),
+          preview.pageStack.length,
+          `${fixture.id} does not own one iframe per page`,
+        )
         if (imageFixtures.has(fixture.id)) {
           await renderFrame.waitForFunction(() => {
             const images = [...document.querySelectorAll('img')]

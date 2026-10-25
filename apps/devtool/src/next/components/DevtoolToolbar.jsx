@@ -11,6 +11,7 @@ function DevtoolToolbar({
   manifestPath,
   currentPage,
   pageStack,
+  pages = [],
   status,
   lifecycle,
   running,
@@ -78,12 +79,24 @@ function DevtoolToolbar({
         <div className="td-chips">
           {pageStack.length === 0 ? (
             <span className="td-empty">No pages in the stack</span>
-          ) : pageStack.map((pageId, index) => (
-            <span className="td-chip" key={pageId}>
-              <span className="td-chip-index">{index + 1}</span>
-              {pageId}
-            </span>
-          ))}
+          ) : pageStack.map((pageId, index) => {
+            const page = pages.find((candidate) => candidate.pageId === pageId);
+            return (
+              <span
+                className={
+                  page?.visible
+                    ? 'td-chip td-chip--active'
+                    : 'td-chip td-chip--hidden'
+                }
+                key={pageId}
+                title={`${pageId}${page ? ` · ${page.path}` : ''}`}
+              >
+                <span className="td-chip-index">{index + 1}</span>
+                <span className="td-chip-path">{page?.path || pageId}</span>
+                {page ? <span className="td-chip-state">{page.visible ? 'active' : 'hidden'}</span> : null}
+              </span>
+            );
+          })}
         </div>
       </div>
 

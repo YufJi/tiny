@@ -2,13 +2,25 @@ import { applyDataPatch, cloneJsonSafe, type DataPatch } from '../data'
 import { runObservers, type ObserverHost } from '../observers'
 import type { ComponentLifecycleName, NormalizedComponentDefinition } from '../component-definition'
 import type { MiniProgramPropertyType } from '../types'
+import type { RuntimePageLifecyclePhase } from '../diagnostics'
 import type {
   ComponentRuntimeContext,
   MiniProgramComponentOptions,
   MiniProgramPageOptions,
 } from './types'
 
-const LIFECYCLE_METHODS = new Set(['onLoad', 'onShow', 'onReady', 'onHide', 'onUnload'])
+const LIFECYCLE_METHODS = new Set([
+  'onLoad',
+  'onShow',
+  'onReady',
+  'onHide',
+  'onUnload',
+  'onPageScroll',
+  'onReachBottom',
+  'onResize',
+])
+
+export type PageLifecycleName = RuntimePageLifecyclePhase
 
 export class MiniProgramPageInstance implements ObserverHost {
   readonly pageId: string
@@ -126,7 +138,7 @@ export class MiniProgramPageInstance implements ObserverHost {
     return method(...args)
   }
 
-  triggerLifecycle(name: 'onLoad' | 'onShow' | 'onReady' | 'onHide' | 'onUnload', args: unknown[] = []): void {
+  triggerLifecycle(name: PageLifecycleName, args: unknown[] = []): void {
     if (this.unloaded) return
     this.lifecycleEvents.push(name)
     if (this.definition) {
@@ -137,7 +149,8 @@ export class MiniProgramPageInstance implements ObserverHost {
       if (typeof legacy === 'function') legacy.apply(this, args)
     } else {
       ;(this.options as MiniProgramComponentOptions).lifetimes?.[name]?.apply(this, args)
-      this.options[name]?.apply(this, args)
+      const legacyMethod = this.options[name] as ((...params: unknown[]) => void) | undefined
+      if (typeof legacyMethod === 'function') legacyMethod.apply(this, args)
     }
     if (name === 'onUnload') this.unloaded = true
   }

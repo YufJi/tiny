@@ -87,6 +87,25 @@ export type RenderCanvasAdapter = {
 
 export type StorageSnapshot = Record<string, unknown>
 
+/**
+ * Host-owned render thread slots.
+ *
+ * A browser host can give every page its own iframe so hidden pages keep their
+ * DOM and scroll position, like real WebViews. The runtime host asks the
+ * connector for one transport per page and never shares a render connection
+ * between pages.
+ */
+export type RenderThreadConnector = {
+  /** Boot a render thread document and return the host side of its transport. */
+  connect(pageId: string): Promise<import('@tiny/bridge').Transport>
+  /** Make this page the visible render thread (hide the other page views). */
+  activate?(pageId: string): void
+  /** Tear down the render thread document for an unloaded page. */
+  disconnect(pageId: string): void | Promise<void>
+  /** Reflect app foreground/background on the whole render frame stack. */
+  setAppVisible?(visible: boolean): void
+}
+
 export type HostApiParams = Record<string, unknown>
 export type HostApiHandler = (
   params: HostApiParams,
@@ -180,7 +199,16 @@ export type RenderThreadOptions = {
 
 export type RuntimeHostOptions = {
   serviceTransport: import('@tiny/bridge').Transport
-  renderTransport: import('@tiny/bridge').Transport
+  /**
+   * Single render thread transport. Mutually exclusive with `renderConnector`.
+   * Kept for in-memory tests and hosts that render one page at a time.
+   */
+  renderTransport?: import('@tiny/bridge').Transport
+  /**
+   * Per-page render thread connector. When set, the host creates one render
+   * connection for every page in the stack and routes messages by page ID.
+   */
+  renderConnector?: RenderThreadConnector
   manifest: RuntimeManifest
   initialPath: string
   initialData?: Record<string, unknown>

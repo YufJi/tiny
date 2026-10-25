@@ -2,6 +2,7 @@ import * as glassEasel from 'glass-easel';
 import { CurrentWindowBackendContext } from 'glass-easel';
 import { bootRenderThread } from '@tiny/runtime';
 import {
+  installPageLifecycleBridge,
   listenForRuntimePort,
   measureBrowserCanvas,
   paintBrowserCanvasFrame,
@@ -35,7 +36,7 @@ assetsPromise.then(({ manifest, templates, styles }) => {
   listenForRuntimePort('render', (transport) => {
     const backend = new CurrentWindowBackendContext();
     backend.onEvent(glassEasel.Event.triggerBackendEvent);
-    bootRenderThread({
+    const runtime = bootRenderThread({
       transport,
       manifest,
       artifacts: { templates },
@@ -59,5 +60,8 @@ assetsPromise.then(({ manifest, templates, styles }) => {
         if (element && element.remove) element.remove();
       },
     });
+    // Each page owns this iframe, so its scroll container drives the page
+    // lifecycle events (onPageScroll / onReachBottom) instead of the host.
+    installPageLifecycleBridge(runtime.connection);
   });
 });

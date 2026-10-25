@@ -115,6 +115,9 @@ describe('mini-program navigation', () => {
         onLoad(query: Record<string, string>) {
           addTodoEvents.push(`load:${query.from}`)
         },
+        onHide() {
+          addTodoEvents.push('hide')
+        },
         async back() {
           await wx.navigateBack()
         },
@@ -162,8 +165,169 @@ describe('mini-program navigation', () => {
     expect(render.adapter.getMountedComponentByPageId('page-1')).toBeDefined()
     expect(render.adapter.getMountedComponentByPageId('page-2')).toBeUndefined()
 
+    const lifecycleBeforeInvalidNavigation = [...service.activePage!.lifecycleEvents]
     await expect(service.activePage?.invokeMethod('invalidNavigate')).rejects.toMatchObject({
       code: 'HANDLER_ERROR',
+    })
+    // A failed navigation must not hide the page that is still on screen.
+    expect(service.activePage?.lifecycleEvents).toEqual(lifecycleBeforeInvalidNavigation)
+
+    await host.close()
+  })
+
+  test('per-page render threads keep hidden pages alive', async () => {
+    const manifest = createNavigationManifest()
+    const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
+    const service = bootServiceThread({
+      transport: serviceTransport,
+      manifest,
+      initialPath: TODOS_PATH,
+    })
+    const renderThreads = new Map<string, ReturnType<typeof bootRenderThread>>()
+    const connector = {
+      async connect(pageId: string) {
+        const [hostTransport, renderTransport] = createInMemoryTransportPair()
+        renderThreads.set(pageId, bootRenderThread({
+          transport: renderTransport,
+          manifest,
+          artifacts: { templates: createTemplateRegistry() },
+          backend: new glassEasel.EmptyBackendContext(),
+          initialPath: TODOS_PATH,
+        }))
+        return hostTransport
+      },
+      disconnect(pageId: string) {
+        renderThreads.get(pageId)?.connection.close()
+        renderThreads.delete(pageId)
+      },
+    }
+    const host = createTinyRuntime({
+      serviceTransport: hostServiceTransport,
+      renderConnector: connector,
+      manifest,
+      initialPath: TODOS_PATH,
+    })
+
+    const globalObject = globalThis as unknown as Record<string, unknown>
+    const todosEvents: string[] = []
+    const todosLifecycles: string[] = []
+    ;(globalObject.App as (options: Record<string, unknown>) => unknown)({})
+    ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
+      data: { marker: '' },
+      onLoad() {
+        todosEvents.push('load')
+        this.setData({ marker: 'kept' })
+      },
+      onShow() {
+        todosEvents.push('show')
+        todosLifecycles.push('onShow')
+      },
+      onHide() {
+        todosEvents.push('hide')
+        todosLifecycles.push('onHide')
+      },
+      onPageScroll(event: { scrollTop: number }) {
+        todosLifecycles.push(`scroll:${event.scrollTop}`)
+      },
+      async navigate() {
+        await wx.navigateTo({ url: '../add-todo/add-todo?from=todos' })
+      },
+    })
+    ;(globalObject.Component as (options: Record<string, unknown>) => unknown)({
+      methods: {
+        onLoad(query: Record<string, string>) {
+          this.setData({ from: query.from })
+        },
+        async back() {
+          await wx.navigateBack()
+        },
+      },
+    })
+
+    await host.bootstrap()
+    const firstPage = service.activePage!
+    const firstRender = renderThreads.get('page-1')
+    expect(firstRender?.adapter.getMountedComponentByPageId('page-1')).toBeDefined()
+
+    await firstPage.invokeMethod('navigate')
+    expect(service.pageStack.map((page) => page.path)).toEqual([TODOS_PATH, ADD_TODO_PATH])
+    expect(renderThreads.size).toBe(2)
+    expect(renderThreads.get('page-2')?.adapter.getMountedComponentByPageId('page-2')).toBeDefined()
+    // The hidden page keeps its own render thread and DOM instead of being
+    // unmounted and rebuilt from data when the user navigates back.
+    expect(firstRender?.adapter.getMountedComponentByPageId('page-1')).toBeDefined()
+
+    firstPage.setData({ marker: 'updated-while-hidden' })
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(
+      firstRender?.adapter.getMountedComponentByPageId('page-1')?.data.marker,
+    ).toBe('updated-while-hidden')
+
+    await service.activePage?.invokeMethod('back')
+    expect(service.pageStack.map((page) => page.path)).toEqual([TODOS_PATH])
+    expect(renderThreads.has('page-2')).toBe(false)
+    expect(renderThreads.get('page-1')).toBe(firstRender)
+    expect(
+      firstRender?.adapter.getMountedComponentByPageId('page-1')?.data.marker,
+    ).toBe('updated-while-hidden')
+    expect(todosEvents).toEqual(['load', 'show', 'hide', 'show'])
+    expect(todosLifecycles).toEqual(['onShow', 'onHide', 'onShow'])
+
+    await host.close()
+  })
+
+  test('delivers page scroll, reach-bottom, and resize lifecycles', async () => {
+    const manifest = createNavigationManifest()
+    const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
+    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
+    const service = bootServiceThread({
+      transport: serviceTransport,
+      manifest,
+      initialPath: TODOS_PATH,
+    })
+    bootRenderThread({
+      transport: renderTransport,
+      manifest,
+      artifacts: { templates: createTemplateRegistry() },
+      backend: new glassEasel.EmptyBackendContext(),
+      initialPath: TODOS_PATH,
+    })
+    const host = createTinyRuntime({
+      serviceTransport: hostServiceTransport,
+      renderTransport: hostRenderTransport,
+      manifest,
+      initialPath: TODOS_PATH,
+    })
+
+    const globalObject = globalThis as unknown as Record<string, unknown>
+    const lifecycles: string[] = []
+    ;(globalObject.App as (options: Record<string, unknown>) => unknown)({})
+    ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
+      onPageScroll(event: { scrollTop: number }) {
+        lifecycles.push(`scroll:${event.scrollTop}`)
+      },
+      onReachBottom() {
+        lifecycles.push('reach-bottom')
+      },
+      onResize(event: { size: { windowWidth: number; windowHeight: number } }) {
+        lifecycles.push(`resize:${event.size.windowWidth}x${event.size.windowHeight}`)
+      },
+      systemInfo() {
+        return wx.getSystemInfoSync()
+      },
+    })
+
+    await host.bootstrap()
+    host.service.sendEvent('page', 'scroll', { scrollTop: 32 }, { pageId: 'page-1' })
+    host.service.sendEvent('page', 'reachBottom', { scrollTop: 900 }, { pageId: 'page-1' })
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(lifecycles).toEqual(['scroll:32', 'reach-bottom'])
+
+    await host.setWindowSize(320, 640)
+    expect(lifecycles).toContain('resize:320x640')
+    expect(service.activePage?.invokeMethod('systemInfo')).toMatchObject({
+      windowWidth: 320,
+      windowHeight: 640,
     })
 
     await host.close()

@@ -69,7 +69,7 @@
 | 维度 | 权重 | 完成度 | 加权 | 关键依据 |
 | --- | ---: | ---: | ---: | --- |
 | 编译/构建 | 10% | 72% | 7.20 | WXML/WXSS/WXS 基本完整；app.json 只消费 3 个字段；无 npm 构建、无 TS 类型检查 |
-| 框架运行时 | 18% | 60% | 10.80 | 5/14 页面生命周期、2/5 路由仍是短板；自定义组件与 Component-as-page 核心语义已补齐，缺 generics/definitionFilter |
+| 框架运行时 | 18% | 60% | 10.80 | 8/14 页面生命周期、2/5 路由仍是短板；自定义组件与 Component-as-page 核心语义已补齐，缺 generics/definitionFilter |
 | 内置组件 | 17% | 39% | 6.63 | 23/60 标签；属性声明 119/146；事件映射 44/46；默认外观仍为近似 |
 | wx API | 20% | 12% | 2.40 | 62/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar 等已接或桩 |
 | 页面形态 | 12% | 12% | 1.44 | 无导航栏/tabBar/下拉/触底/页面滚动/分享/转场 |
@@ -87,7 +87,7 @@
 | 核心 UI 组件 | 45 | 18 | 40.0% |
 | wx API 条目 | 502 | 62 | 12.4% |
 | 官方 demo 实际调用 API | 150 | ~35 | ~23% |
-| 页面生命周期 | 14 | 5 | 35.7% |
+| 页面生命周期 | 14 | 8 | 57.1% |
 | 应用生命周期 | 7 | 3 | 42.9% |
 | 路由 API | 5 | 2 | 40.0% |
 | 已实现组件属性 | 146 | 47 | 32.2% |
@@ -192,12 +192,14 @@
 
 ### 4.3 生命周期与路由
 
-页面生命周期 **5 / 14**（[service.ts](../packages/runtime/src/service.ts:18)）：
+页面生命周期 **8 / 14**（[service.ts](../packages/runtime/src/service.ts:18)）：
 
 | 生命周期 | 状态 |
 | --- | --- |
 | onLoad / onShow / onReady / onHide / onUnload | ✅ |
-| onPullDownRefresh / onReachBottom / onPageScroll / onResize | ❌ |
+| onPageScroll / onReachBottom | ✅ 由 render 页面帧的真实滚动容器驱动 |
+| onResize | ✅ 宿主窗口快照变化时触发（devtool 导航栏/内容区变化） |
+| onPullDownRefresh | ❌ |
 | onTabItemTap / onShareAppMessage / onShareTimeline / onAddToFavorites / onSaveExitState | ❌ |
 
 应用生命周期 **3 / 7**：
@@ -254,7 +256,7 @@ hasBehavior / export / wx://component-export
 | `definitionFilter` | ❌ | 发 `UNSUPPORTED_BEHAVIOR_FILTER` 诊断 |
 | `pureDataPattern` | ❌ | 未映射 |
 | `trait behaviors` / chaining API | ❌ | 未支持 |
-| Component-as-page 全套语义 | ✅ | query→properties、methods 页面生命周期、behaviors/observers/relations/styleIsolation/selectComponent/getRelationNodes/hasBehavior 已接入；generics/definitionFilter/pureDataPattern 与普通组件同样缺失，moved/页面分享/下拉等全局页面生命周期未实现 |
+| Component-as-page 全套语义 | ✅ | query→properties、methods 页面生命周期、behaviors/observers/relations/styleIsolation/selectComponent/getRelationNodes/hasBehavior 已接入；generics/definitionFilter/pureDataPattern 与普通组件同样缺失，moved/页面分享/下拉刷新等全局页面生命周期未实现 |
 | `wx://form-field` 等内置 behaviors | ❌ | 发 `UNSUPPORTED_BEHAVIOR` 诊断 |
 
 > 这使 Vant Weapp、TDesign 等组件库的**核心语义障碍**基本移除；剩余限制主要来自 npm 构建（`miniprogram_npm`）、内置 behaviors、`generics` 和 `definitionFilter`。
@@ -306,7 +308,7 @@ hasBehavior / export / wx://component-export
 1. `pnpm compile:wechat-demo` 生成产物到 `tests/host/generated`。
 2. 启动 `tests/host` Vite 服务。
 3. Playwright 打开 `/?path=<page>`，等待 `window.__tinyRuntime`，再等 350ms。
-4. 收集 `pageerror`、`console.error`、`window.__tinyRuntime.host.diagnostics`，以及 render iframe `#app` 的子节点/文本。
+4. 收集 `pageerror`、`console.error`、`window.__tinyRuntime.host.diagnostics`，以及 render iframe `#app` 的子节点/文本（`tests/host` 为单 render 帧）。
 5. 判定：`__tinyRuntime` 出现、`#app` 有子节点、无 pageerror = booted；否则 render-failed。
 
 **结果解读**：
@@ -366,7 +368,7 @@ getMenuButtonBoundingClientRect / getPerformance
 
 ### 6.3 双线程运行时与 bridge
 
-- service iframe / render iframe / MessageChannel
+- service iframe / render iframe（devtool 为每页一帧）/ MessageChannel
 - 握手、超时、批处理、JSON-safe 校验
 - 结构化诊断：compile / transport / service / render / host
 - 跨线程只走版本化消息，不直接读 iframe 全局
@@ -414,7 +416,7 @@ getMenuButtonBoundingClientRect / getPerformance
 | `redirectTo` / `reLaunch` / `switchTab` | 只能前进/后退，不能重置栈/切 tab | 补页面栈语义与 tabBar |
 | `showModal` / `showLoading` / `hideLoading` | 常用交互缺失 | 宿主层 UI + API |
 | 导航栏 + tabBar | 页面没有微信外观，普通 app 无法直接跑 | 页面配置消费 + 宿主 UI |
-| 下拉刷新 / 触底 / 页面滚动 | 列表页/feed 页不可用 | 页面生命周期 + 事件 |
+| 下拉刷新 / tabBar | 列表页/feed 页无法下拉刷新；tab 页形态缺失 | 页面生命周期 + 宿主 UI |
 | `picker` / `textarea` / `form` / `navigator` | 表单与导航高频组件缺失 | 优先补这 4 个 |
 | 登录/支付/分享 | 商业化能力缺失 | P0 末或 P1 初 |
 
@@ -520,6 +522,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-25 | picker 采用参考 wrapper + slot 结构，原生 select/date/time 改为透明覆盖层；slot 当前值恢复展示，change/disabled 语义保持 | **37.89%** |
 | 2026-10-25 | picker 自绘浮层：wrapper + slot + toolbar + picker-view 列，支持 selector/multiSelector/date/time 的 cancel/confirm/columnchange；region 仍缺 | **37.89%** |
 | 2026-10-25 | picker-view-column 补 pointer 鼠标拖动（与 touch 共用吸附逻辑）；修正 content 居中方式，避免百分比 padding 按宽度计算 | **37.89%** |
+| 2026-10-26 | devtool 页面栈改为每页独立 render iframe（隐藏页保留 DOM/滚动位置，返回不再重建）；补 `onPageScroll`/`onReachBottom`/`onResize` 与 Lifecycle 时间线；页面生命周期 5→8/14；运行时测试 62 条，完整浏览器门禁通过（总分未重算） | **37.89%** |
 
 ---
 
@@ -599,6 +602,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 内置组件共享 behaviors | [behaviors.ts](../hosts/web-components/src/behaviors.ts:1) |
 | button 组件 | [button/index.ts](../hosts/web-components/src/components/button/index.ts:1) |
 | 页面/子包/app.json 解析 | [compile.ts](../tools/cli/src/compile.ts:165) |
-| 双 iframe 宿主 | [standalone-host.ts](../hosts/browser/src/standalone-host.ts:1) |
-| 浏览器验收步骤 | [glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs:36) |
+| 单/多 render 帧宿主 | [standalone-host.ts](../hosts/browser/src/standalone-host.ts:1) |
+| 页面滚动生命周期桥 | [page-lifecycle.ts](../hosts/browser/src/page-lifecycle.ts:1) |
+| 多 iframe 页面栈验收 | [glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs:941) |
 | 官方 demo 子集 | [app.json](../tests/apps/wechat-demo/app.json:1) |

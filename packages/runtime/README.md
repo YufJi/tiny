@@ -7,30 +7,41 @@ glass-easel adapter, and the devtool client.
 
 | API | Purpose |
 | --- | --- |
-| `createTinyRuntime` | Host-side protocol bridge over service/render transports |
-| `createStandaloneDualThreadHost` | Creates service/render iframes from a manifest and returns a host |
+| `createTinyRuntime` | Host-side protocol bridge over one render transport or a per-page `renderConnector` |
 | `bootServiceThread` | Service-thread entry: App/Page/Component registry + API host |
 | `bootRenderThread` | Render-thread entry: glass-easel backend + component tree |
-| `DevtoolRuntimeClient` | Debugger adapter: iframe lifecycle, controls, state projection, element tree |
 
-The browser host supplies the three HTML documents (`host`, service, render).
-`tests/host` is the reference host; `apps/devtool` uses `DevtoolRuntimeClient`.
+The browser host supplies the three HTML documents (`host`, service, render) and
+lives in `@tiny/host-browser`:
+
+| API | Purpose |
+| --- | --- |
+| `createStandaloneDualThreadHost` | Creates service/render iframes from a manifest; `renderMode: 'per-page'` creates one render iframe per page |
+| `DevtoolRuntimeClient` | Debugger adapter: iframe lifecycle, controls, page/lifecycle projection, element tree |
+
+`tests/host` is the reference single-render host; `apps/devtool` uses
+`DevtoolRuntimeClient` with the per-page render mode.
 
 ## Usage
 
 ```ts
-import { createStandaloneDualThreadHost } from '@tiny/runtime'
+import { createTinyRuntime } from '@tiny/runtime'
 
-const runtime = await createStandaloneDualThreadHost({
+const host = createTinyRuntime({
+  serviceTransport,
+  // Single frame:
+  renderTransport,
+  // Or one frame per page, with each transport created by the host:
+  // renderConnector: { connect, activate, disconnect, setAppVisible },
   manifest,
-  serviceUrl: '/service.html',
-  renderUrl: '/render.html',
   initialPath: 'pages/todos/todos',
-  container: document.getElementById('app')!,
 })
 
-await runtime.host.bootstrap()
+await host.bootstrap()
 ```
+
+A browser host does not import iframe helpers from this package. Use
+`createStandaloneDualThreadHost` from `@tiny/host-browser` instead.
 
 ## Modules
 
@@ -38,8 +49,7 @@ await runtime.host.bootstrap()
 - `render.ts` — bridge + glass-easel adapter bootstrap
 - `glass-easel-adapter.ts` — component registration, events, inspect tree
 - `assets.ts` — app-root asset path resolution and WXSS `url(...)` rewriting
-- `standalone-host.ts` — iframe creation + protocol handshake
-- `devtool-client.ts` — debugger controls/state projection
+- `host.ts` — host orchestration, page-scoped message routing, per-page render connectors
 - `bridge` comes from `@tiny/bridge`; manifest types from `@tiny/manifest`
 
 ## Testing
@@ -63,8 +73,9 @@ manifest/runtime types. It must not reference browser globals.
 | --- | --- |
 | `canvas-bridge` | DOM canvas, PNG frame capture/paint |
 | `runtime-port` | `window.postMessage` / iframe port handshake |
-| `standalone-host` | iframe creation and page container |
-| `devtool-client` | DOM overlay and debugger UI |
+| `standalone-host` | iframe creation, single/per-page render stacks, page visibility |
+| `page-lifecycle` | Render-frame scroll → page `onPageScroll` / `onReachBottom` bridge |
+| `devtool-client` | Debugger controls, page frames, lifecycle timeline, element tree |
 
 Canvas is injected at the thread boundary:
 

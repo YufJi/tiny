@@ -13,10 +13,37 @@ export type RuntimeDiagnostic = {
   details?: unknown
 }
 
+export type RuntimePageState = {
+  pageId: string
+  path: string
+  visible: boolean
+}
+
 export type RuntimeStateDetails = {
   pageStack: string[]
   currentPage?: string
+  pages?: RuntimePageState[]
+  appVisible?: boolean
   transport: 'connected' | 'closed'
+}
+
+export type RuntimePageLifecyclePhase =
+  | 'onLoad'
+  | 'onShow'
+  | 'onReady'
+  | 'onHide'
+  | 'onUnload'
+  | 'onPageScroll'
+  | 'onReachBottom'
+  | 'onResize'
+
+export type RuntimePageLifecycleDetails = {
+  pageId: string
+  path: string
+  phase: RuntimePageLifecyclePhase
+  sequence: number
+  visible: boolean
+  extra?: Record<string, unknown>
 }
 
 let diagnosticIdCounter = 0

@@ -1,14 +1,28 @@
-import type { RuntimeDiagnostic } from '@tiny/runtime'
+import type { RuntimeDiagnostic, RuntimePageState } from '@tiny/runtime'
 import type { InspectNode } from '@tiny/runtime'
 import type { HostApiHandler, RuntimeManifest, StorageSnapshot, SystemInfoSnapshot } from '@tiny/runtime'
 import { createStandaloneDualThreadHost, type StandaloneHost } from './standalone-host'
 
 export type DevtoolRuntimeStatus = 'idle' | 'connecting' | 'running' | 'terminated' | 'error'
 
+export type DevtoolLifecycleEvent = {
+  sequence: number
+  phase: string
+  pageId: string
+  path: string
+  visible: boolean
+  timestamp: number
+  extra?: Record<string, unknown>
+}
+
 export type DevtoolRuntimeState = {
   status: DevtoolRuntimeStatus
   currentPage?: string
   pageStack: string[]
+  /** Every page in the stack with its own render frame and visibility. */
+  pages: RuntimePageState[]
+  /** Ordered page lifecycle timeline (onLoad/onShow/onReady/onHide/onUnload/...). */
+  lifecycle: DevtoolLifecycleEvent[]
   diagnostics: RuntimeDiagnostic[]
   tree?: InspectNode | null
   error?: string
@@ -23,6 +37,9 @@ export type DevtoolRuntimeOptions = {
   storage?: StorageSnapshot
   container?: HTMLElement
   diagnosticLimit?: number
+  lifecycleLimit?: number
+  /** Defaults to one render iframe per page; set `single` for a shared frame. */
+  renderMode?: 'single' | 'per-page'
 }
 
 export type DevtoolRuntimeListener = (state: DevtoolRuntimeState) => void
@@ -40,6 +57,8 @@ export class DevtoolRuntimeClient {
   private state: DevtoolRuntimeState = {
     status: 'idle',
     pageStack: [],
+    pages: [],
+    lifecycle: [],
     diagnostics: [],
   }
 
@@ -59,12 +78,18 @@ export class DevtoolRuntimeClient {
     }
   }
 
+  get renderFrameCount(): number {
+    return this.host?.renderIframes.size ?? 0
+  }
+
   async launch(): Promise<void> {
     if (this.state.status === 'running' || this.state.status === 'connecting') return
     this.update({
       status: 'connecting',
       currentPage: undefined,
       pageStack: [],
+      pages: [],
+      lifecycle: [],
       diagnostics: [],
       tree: undefined,
       error: undefined,
@@ -87,12 +112,16 @@ export class DevtoolRuntimeClient {
         systemInfo: this.options.systemInfo,
         storage: this.options.storage,
         container,
+        renderMode: this.options.renderMode ?? 'per-page',
         onDiagnostic: (diagnostic) => this.record(diagnostic),
       })
       await this.host.host.bootstrap()
       this.update({ status: 'running' })
       await this.inspectTree()
     } catch (error) {
+      const failedHost = this.host
+      this.host = null
+      if (failedHost) await failedHost.dispose().catch(() => {})
       const message = error instanceof Error ? error.message : String(error)
       this.update({ status: 'error', error: message })
       throw error
@@ -103,16 +132,20 @@ export class DevtoolRuntimeClient {
     const host = this.host
     this.host = null
     if (host) {
-      await host.host.close()
-      host.serviceIframe.remove()
-      host.renderIframe.remove()
+      await host.dispose()
     }
     if (this.container && this.ownsContainer) {
       this.container.remove()
       this.container = null
       this.ownsContainer = false
     }
-    this.update({ status: 'terminated', tree: undefined })
+    this.update({
+      status: 'terminated',
+      currentPage: undefined,
+      pageStack: [],
+      pages: [],
+      tree: undefined,
+    })
   }
 
   async reload(): Promise<void> {
@@ -135,11 +168,7 @@ export class DevtoolRuntimeClient {
 
   async inspectTree(pageId: string | undefined = this.activePageId): Promise<InspectNode | null> {
     const host = this.requireHost()
-    const tree = await host.host.render.control<InspectNode | null>(
-      'runtime',
-      'inspectTree',
-      { pageId },
-    )
+    const tree = await host.host.inspectTree(pageId) as InspectNode | null
     this.update({ tree })
     return tree
   }
@@ -147,11 +176,19 @@ export class DevtoolRuntimeClient {
   async foreground(): Promise<void> {
     const host = this.requireHost()
     await host.host.service.control('page', 'show', {}, { pageId: this.activePageId })
+    host.host.setAppVisible(true)
   }
 
   async background(): Promise<void> {
     const host = this.requireHost()
     await host.host.service.control('page', 'hide', {}, { pageId: this.activePageId })
+    host.host.setAppVisible(false)
+  }
+
+  /** Keep `wx.getSystemInfoSync()` and `onResize` in sync with host chrome. */
+  async resize(width: number, height: number): Promise<void> {
+    const host = this.requireHost()
+    await host.host.setWindowSize(width, height)
   }
 
   private get activePageId(): string | undefined {
@@ -176,9 +213,37 @@ export class DevtoolRuntimeClient {
     const diagnostics = [...this.state.diagnostics, diagnostic].slice(-limit)
     const next: DevtoolRuntimeState = { ...this.state, diagnostics }
     if (diagnostic.code === 'RUNTIME_STATE') {
-      const details = diagnostic.details as { pageStack?: string[]; currentPage?: string } | undefined
+      const details = diagnostic.details as {
+        pageStack?: string[]
+        currentPage?: string
+        pages?: RuntimePageState[]
+      } | undefined
       if (Array.isArray(details?.pageStack)) next.pageStack = [...details.pageStack]
       if (typeof details?.currentPage === 'string') next.currentPage = details.currentPage
+      if (Array.isArray(details?.pages)) next.pages = details.pages.map((page) => ({ ...page }))
+    }
+    if (diagnostic.code === 'PAGE_LIFECYCLE') {
+      const details = diagnostic.details as {
+        pageId?: string
+        path?: string
+        phase?: string
+        sequence?: number
+        visible?: boolean
+        extra?: Record<string, unknown>
+      } | undefined
+      if (details?.phase && details.pageId && details.path) {
+        const limitLifecycle = this.options.lifecycleLimit ?? 300
+        const event: DevtoolLifecycleEvent = {
+          sequence: details.sequence ?? this.state.lifecycle.length + 1,
+          phase: details.phase,
+          pageId: details.pageId,
+          path: details.path,
+          visible: Boolean(details.visible),
+          timestamp: diagnostic.timestamp,
+          ...(details.extra ? { extra: details.extra } : {}),
+        }
+        next.lifecycle = [...this.state.lifecycle, event].slice(-limitLifecycle)
+      }
     }
     this.update(next)
   }

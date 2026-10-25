@@ -11,7 +11,7 @@ import type { MiniProgramComponentSchema, StorageSnapshot, SystemInfoSnapshot } 
 import { createRuntimeStateDiagnostic } from './diagnostics'
 import { MiniProgramPageRegistry } from './service/page-registry'
 import { MiniProgramComponentInstance } from './service/component-instance'
-import { MiniProgramPageInstance } from './service/page-instance'
+import { MiniProgramPageInstance, type PageLifecycleName } from './service/page-instance'
 import { createServiceApiHost, installMiniProgramGlobals } from './service/api-host'
 import { findPageArtifact, normalizeRoutePath, requireActivePage, resolveComponentReference } from './service/route'
 import type { ComponentRuntimeContext, MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime } from './service/types'
@@ -43,7 +43,10 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   const componentInstances = new Map<string, MiniProgramComponentInstance>()
   let componentSchemas: MiniProgramComponentSchema[] = []
   const pageStack: MiniProgramPageInstance[] = []
+  const readyPages = new Set<string>()
   let activePage: MiniProgramPageInstance | null = null
+  let appVisible = true
+  let lifecycleSequence = 0
   let pageIdCounter = 0
   let systemInfoSnapshot: SystemInfoSnapshot = {
     pixelRatio: 1,
@@ -140,7 +143,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
           name,
           detail,
           options: triggerOptions,
-        })
+        }, { pageId })
       },
     },
   )
@@ -170,16 +173,58 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     return component
   }
   const artifactsReady = options.loadArtifacts?.() ?? Promise.resolve()
+  const emitPageLifecycle = (
+    page: MiniProgramPageInstance,
+    phase: string,
+    extra?: Record<string, unknown>,
+  ) => {
+    lifecycleSequence += 1
+    const hiddenPhase = phase === 'onLoad' || phase === 'onHide' || phase === 'onUnload'
+    connection.sendDiagnostic('log', {
+      code: 'PAGE_LIFECYCLE',
+      message: `${phase} ${page.path}`,
+      details: {
+        pageId: page.pageId,
+        path: page.path,
+        phase,
+        sequence: lifecycleSequence,
+        visible: !hiddenPhase && appVisible && page === activePage,
+        ...(extra ? { extra } : {}),
+      },
+    }, page.pageId)
+  }
+  const triggerPageLifecycle = (
+    page: MiniProgramPageInstance,
+    phase: PageLifecycleName,
+    args: unknown[] = [],
+    extra?: Record<string, unknown>,
+    emitDiagnostic = true,
+  ) => {
+    page.triggerLifecycle(phase, args)
+    if (emitDiagnostic) emitPageLifecycle(page, phase, extra)
+  }
   const sendRuntimeState = () => {
+    const pages = pageStack.map((page) => ({
+      pageId: page.pageId,
+      path: page.path,
+      visible: appVisible && page === activePage,
+    }))
     connection.sendDiagnostic('state', createRuntimeStateDiagnostic(
       'service',
       {
-        pageStack: pageStack.map((page) => page.pageId),
+        pageStack: pages.map((page) => page.pageId),
         currentPage: activePage?.path ?? '',
+        pages,
+        appVisible,
         transport: 'connected',
       },
       activePage?.pageId,
     ))
+  }
+  const triggerComponentsPageLifetime = (pageId: string, phase: 'show' | 'hide') => {
+    for (const [componentId, component] of componentInstances) {
+      if (componentTree.get(componentId)?.pageId === pageId) component.triggerPageLifetime(phase)
+    }
   }
   const createPageInstance = (path: string, query: Record<string, string> = {}) => {
     const pageArtifact = findPageArtifact(options.manifest, path)
@@ -240,8 +285,8 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       if (pageStack.length === 0) {
         const pageArtifact = findPageArtifact(options.manifest, currentPath)
         const currentPage = createPageInstance(currentPath, {})
-        currentPage.triggerLifecycle('onLoad', [currentPage.query])
-        currentPage.triggerLifecycle('onShow')
+        triggerPageLifecycle(currentPage, 'onLoad', [currentPage.query])
+        triggerPageLifecycle(currentPage, 'onShow')
         if (pageArtifact?.bodyType === 'component') {
           currentPage.triggerComponentLifecycle('attached')
           currentPage.triggerComponentLifecycle('ready')
@@ -250,10 +295,10 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       }
       const currentPage = pageStack.at(-1)!
       const pageComponents = options.manifest.pages
-        .filter((page) => page.bodyType === 'component')
+        .filter((page) => page.bodyType === 'component' && registry.normalizedComponents.has(page.path))
         .map((page) => ({
           path: page.path,
-          options: registry.normalizedComponents.get(page.path)?.options,
+          options: registry.normalizedComponents.get(page.path)!.options,
         }))
       return {
         status: 'ready',
@@ -308,7 +353,13 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
           parentId: item.parentComponentId,
         })
       }
-      page.triggerLifecycle('onReady')
+      if (!readyPages.has(page.pageId)) {
+        readyPages.add(page.pageId)
+        // Components attached during this render pass missed the page's
+        // earlier onShow; deliver their pageLifetimes.show once now.
+        if (appVisible) triggerComponentsPageLifetime(page.pageId, 'show')
+        triggerPageLifecycle(page, 'onReady')
+      }
       sendRuntimeState()
       return { status: 'ready', pageId: page.pageId }
     } catch (error) {
@@ -324,12 +375,36 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   connection.onControl('page', 'navigateTo', async (message) => {
     const payload = message.payload as { url?: string }
     if (!payload.url) throw new Error('navigateTo requires a url')
-    activePage?.triggerLifecycle('onHide')
-    activePage?.triggerPageLifetime('hide')
     const route = resolveRoute(currentPath, payload.url)
-    const page = createPageInstance(route.path, route.query)
-    page.triggerLifecycle('onLoad', [page.query])
-    page.triggerLifecycle('onShow')
+    // Resolve the target before hiding the current page: a typo in a URL must
+    // not leave the app with an onHide that is never followed by onShow.
+    if (!findPageArtifact(options.manifest, route.path)) {
+      throw new Error(`page is not declared: ${route.path}`)
+    }
+    if (!registry.pages.get(route.path) && !registry.components.get(route.path)) {
+      throw new Error(`page is not registered: ${route.path}`)
+    }
+    const previousPage = activePage
+    if (previousPage) {
+      triggerPageLifecycle(previousPage, 'onHide')
+      previousPage.triggerPageLifetime('hide')
+      triggerComponentsPageLifetime(previousPage.pageId, 'hide')
+    }
+    let page: MiniProgramPageInstance
+    try {
+      page = createPageInstance(route.path, route.query)
+    } catch (error) {
+      if (previousPage) {
+        activePage = previousPage
+        currentPath = previousPage.path
+        triggerPageLifecycle(previousPage, 'onShow')
+        previousPage.triggerPageLifetime('show')
+        triggerComponentsPageLifetime(previousPage.pageId, 'show')
+      }
+      throw error
+    }
+    triggerPageLifecycle(page, 'onLoad', [page.query])
+    triggerPageLifecycle(page, 'onShow')
     page.triggerPageLifetime('show')
     if (findPageArtifact(options.manifest, page.path)?.bodyType === 'component') {
       page.triggerComponentLifecycle('attached')
@@ -353,22 +428,36 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     const removed = pageStack.splice(-delta)
     const unloadedPageIds: string[] = []
     for (const page of removed.reverse()) {
-      page.triggerLifecycle('onHide')
+      // A popped page is destroyed, not hidden. The component page lifetime
+      // still ends so components can pause resources before detaching.
       page.triggerPageLifetime('hide')
-      page.triggerLifecycle('onUnload')
+      triggerComponentsPageLifetime(page.pageId, 'hide')
+      triggerPageLifecycle(page, 'onUnload')
       if (findPageArtifact(options.manifest, page.path)?.bodyType === 'component') {
         page.triggerComponentLifecycle('detached')
       }
       relationManager.handleDetach(page.componentId)
-      componentTree.removePage(page.pageId)
+      for (const componentId of componentTree.removePage(page.pageId)) {
+        const component = componentInstances.get(componentId)
+        if (component) {
+          component.triggerLifecycle('detached')
+          relationManager.handleDetach(componentId)
+          componentInstances.delete(componentId)
+          createdComponents.delete(componentId)
+          pendingComponentEvents.delete(componentId)
+          previousComponentData.delete(componentId)
+        }
+      }
       pageInstances.delete(page.pageId)
+      readyPages.delete(page.pageId)
       unloadedPageIds.push(page.pageId)
     }
     const page = pageStack.at(-1)!
     activePage = page
     currentPath = page.path
-    page.triggerLifecycle('onShow')
+    triggerPageLifecycle(page, 'onShow')
     page.triggerPageLifetime('show')
+    triggerComponentsPageLifetime(page.pageId, 'show')
     sendRuntimeState()
     return {
       status: 'navigated-back',
@@ -381,27 +470,71 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
 
   connection.onControl('page', 'hide', async (message) => {
     const page = requireActivePage(pageInstances, (message.payload as { pageId?: string }).pageId, activePage)
-    page.triggerLifecycle('onHide')
+    if (!appVisible) return { status: 'hidden', pageId: page.pageId }
+    appVisible = false
     registry.hideApp()
-    for (const page of pageStack) page.triggerPageLifetime('hide')
-    for (const component of componentInstances.values()) component.triggerPageLifetime('hide')
+    triggerPageLifecycle(page, 'onHide')
+    page.triggerPageLifetime('hide')
+    triggerComponentsPageLifetime(page.pageId, 'hide')
     sendRuntimeState()
     return { status: 'hidden', pageId: page.pageId }
   })
 
   connection.onControl('page', 'show', async (message) => {
     const page = requireActivePage(pageInstances, (message.payload as { pageId?: string }).pageId, activePage)
+    if (appVisible) return { status: 'shown', pageId: page.pageId }
+    appVisible = true
     registry.showApp()
-    page.triggerLifecycle('onShow')
-    for (const page of pageStack) page.triggerPageLifetime('show')
-    for (const component of componentInstances.values()) component.triggerPageLifetime('show')
+    triggerPageLifecycle(page, 'onShow')
+    page.triggerPageLifetime('show')
+    triggerComponentsPageLifetime(page.pageId, 'show')
     sendRuntimeState()
     return { status: 'shown', pageId: page.pageId }
   })
 
+  connection.onControl('runtime', 'resize', async (message) => {
+    const payload = message.payload as { windowWidth?: number; windowHeight?: number }
+    const windowWidth = Number(payload.windowWidth ?? systemInfoSnapshot.windowWidth)
+    const windowHeight = Number(payload.windowHeight ?? systemInfoSnapshot.windowHeight)
+    systemInfoSnapshot = {
+      ...systemInfoSnapshot,
+      windowWidth: Number.isFinite(windowWidth) ? windowWidth : systemInfoSnapshot.windowWidth,
+      windowHeight: Number.isFinite(windowHeight) ? windowHeight : systemInfoSnapshot.windowHeight,
+    }
+    if (activePage) {
+      triggerPageLifecycle(activePage, 'onResize', [{
+        size: {
+          windowWidth: systemInfoSnapshot.windowWidth,
+          windowHeight: systemInfoSnapshot.windowHeight,
+        },
+      }])
+    }
+    sendRuntimeState()
+    return { status: 'resized', ...systemInfoSnapshot }
+  })
+
+  connection.onEvent('page', 'scroll', (message) => {
+    const pageId = message.pageId
+    const page = pageId ? pageInstances.get(pageId) : activePage
+    if (!page || !appVisible || page !== activePage) return
+    const payload = message.payload as { scrollTop?: number; scrollLeft?: number } | undefined
+    triggerPageLifecycle(page, 'onPageScroll', [{
+      scrollTop: Number(payload?.scrollTop ?? 0),
+      scrollLeft: Number(payload?.scrollLeft ?? 0),
+    }], undefined, false)
+  })
+
+  connection.onEvent('page', 'reachBottom', (message) => {
+    const pageId = message.pageId
+    const page = pageId ? pageInstances.get(pageId) : activePage
+    if (!page || !appVisible || page !== activePage) return
+    triggerPageLifecycle(page, 'onReachBottom')
+  })
+
   connection.onControl('page', 'unload', async (message) => {
     const page = requireActivePage(pageInstances, (message.payload as { pageId?: string }).pageId, activePage)
-    page.triggerLifecycle('onUnload')
+    page.triggerPageLifetime('hide')
+    triggerPageLifecycle(page, 'onUnload')
     if (page.getComponentDefinition()) page.triggerComponentLifecycle('detached')
     relationManager.removePage(page.pageId)
     for (const componentId of componentTree.removePage(page.pageId)) {
@@ -410,6 +543,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       pendingComponentEvents.delete(componentId)
     }
     pageInstances.delete(page.pageId)
+    readyPages.delete(page.pageId)
     if (activePage === page) activePage = null
     sendRuntimeState()
     return { status: 'unloaded', pageId: page.pageId }
