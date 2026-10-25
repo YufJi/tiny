@@ -19,8 +19,12 @@ other advanced demo packages are intentionally omitted.
 - `util/util.js` exports its legacy CommonJS object as ESM names so the service
   bundle can resolve `compareVersion`.
 - Skyline-only pages (grid-view/sticky/page-container/match-media/root-portal),
-  `renderer: skyline` config, the Skyline course bar, and Skyline CSS variants
-  were removed.
+  `renderer: skyline` config, and the Skyline course bar were removed.
+- The Skyline-era layout WXSS (`common/common-skyline.wxss` and
+  `page/common/index-skyline.wxss`) is kept: `common/reset.wxss` makes every
+  tag a flex column like Skyline, so the index pages need those rules
+  (`flex-direction: row`, centered logo, absolutely positioned chevrons) to
+  render like the official demo.
 - The component/API indexes use `wx.navigateTo` for local example links;
   direct pages can also be booted with the host `?path=` query.
 - Local images referenced through dynamic WXML paths resolve through the host
