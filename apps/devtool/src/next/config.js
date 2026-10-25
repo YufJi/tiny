@@ -2,7 +2,7 @@
 // by `rspack serve`, at `/devtool/` by the website, and under a GitHub Pages
 // repository prefix such as `/tiny/devtool/`.
 export const APPS_REGISTRY_URL = './runtime/apps.json';
-export const DEFAULT_APP_ID = 'demo';
+export const DEFAULT_APP_ID = 'wechat-demo';
 export const DEVICE_SCREEN_WIDTH = 375;
 export const DEVICE_SCREEN_HEIGHT = 812;
 export const DEVICE_FRAME_WIDTH = DEVICE_SCREEN_WIDTH + 24;
