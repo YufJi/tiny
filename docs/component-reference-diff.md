@@ -391,8 +391,8 @@ tiny-picker-view-column
 剩余差异：
 
 - 没有参考的 `wx-scroller` 惯性/越界回弹，拖动结束直接吸附；
-- 桌面端只有 tap 定位，没有鼠标拖拽（触摸拖动可用）；
-- `columnchange` 与参考 `wxPickerColumnValueChanged` 的中间事件名不同。
+- `columnchange` 与参考 `wxPickerColumnValueChanged` 的中间事件名不同；
+- 桌面端用 pointer 事件补了鼠标拖动，触摸/鼠标共用同一套吸附逻辑。
 
 ### 2.8 checkbox-group / radio-group
 

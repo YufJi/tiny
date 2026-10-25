@@ -3,6 +3,10 @@ import type { BuiltinContext, BuiltinDefinition } from '../../types'
 
 type ColumnElement = {
   getBoundingClientRect?: () => { top: number; height: number }
+  addEventListener?: (type: string, listener: (event: Record<string, unknown>) => void) => void
+  removeEventListener?: (type: string, listener: (event: Record<string, unknown>) => void) => void
+  setPointerCapture?: (pointerId: number) => void
+  releasePointerCapture?: (pointerId: number) => void
 }
 
 function eventY(event: glassEasel.ShadowedEvent<unknown>): number | undefined {
@@ -43,6 +47,10 @@ export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
     lifetimes: {
       attached() {
         this.syncColumnIndex()
+        this.bindPointerDrag()
+      },
+      detached() {
+        ;(this as unknown as { _pointerCleanup?: () => void })._pointerCleanup?.()
       },
       ready() {
         this.syncColumnIndex()
@@ -126,9 +134,7 @@ export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
       emitChange(column: number, value: number) {
         this.triggerEvent('columnchange', { column, value }, { bubbles: true, composed: true })
       },
-      handleTouchStart(event: glassEasel.ShadowedEvent<unknown>) {
-        const y = eventY(event)
-        if (y === undefined) return
+      beginDrag(y: number) {
         const instance = this as unknown as { _startY?: number; _startTranslate?: number; _moved?: boolean }
         instance._startY = y
         instance._startTranslate = Number(this.data.translate || 0)
@@ -136,10 +142,9 @@ export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
         this.setData({ dragging: true })
         this.triggerEvent('columnstart', {}, { bubbles: true, composed: true })
       },
-      handleTouchMove(event: glassEasel.ShadowedEvent<unknown>) {
+      moveDrag(y: number) {
         const instance = this as unknown as { _startY?: number; _startTranslate?: number; _moved?: boolean }
-        const y = eventY(event)
-        if (y === undefined || instance._startY === undefined) return
+        if (instance._startY === undefined) return
         const itemHeight = Number(this.data.itemHeight || DEFAULT_ITEM_HEIGHT)
         const count = this.columnCount()
         const min = -(Math.max(0, count - 1)) * itemHeight
@@ -148,7 +153,7 @@ export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
         const translate = Math.max(min, Math.min(0, (instance._startTranslate ?? 0) + delta))
         this.setData({ translate })
       },
-      handleTouchEnd(event: glassEasel.ShadowedEvent<unknown>) {
+      endDrag() {
         const instance = this as unknown as { _moved?: boolean }
         if (Number(this.data.translate || 0) === 0 && !instance._moved) {
           this.setData({ dragging: false })
@@ -159,6 +164,51 @@ export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
         this.setData({ dragging: false })
         if (instance._moved) this.emitChange(Number(this.data.column), index)
         this.triggerEvent('columnend', { value: index }, { bubbles: true, composed: true })
+      },
+      bindPointerDrag() {
+        const element = (this as unknown as { getBackendElement?: () => ColumnElement | null })
+          .getBackendElement?.()
+        if (!element?.addEventListener) return
+        const onDown = (event: Record<string, unknown>) => {
+          if (event.pointerType !== 'mouse' || Number(event.button ?? 0) !== 0) return
+          const y = Number(event.clientY)
+          if (!Number.isFinite(y)) return
+          element.setPointerCapture?.(Number(event.pointerId))
+          ;(event.preventDefault as (() => void) | undefined)?.()
+          this.beginDrag(y)
+        }
+        const onMove = (event: Record<string, unknown>) => {
+          if (!this.data.dragging) return
+          const y = Number(event.clientY)
+          if (Number.isFinite(y)) this.moveDrag(y)
+        }
+        const onUp = (event: Record<string, unknown>) => {
+          if (!this.data.dragging) return
+          element.releasePointerCapture?.(Number(event.pointerId))
+          this.endDrag()
+        }
+        element.addEventListener('pointerdown', onDown)
+        element.addEventListener('pointermove', onMove)
+        element.addEventListener('pointerup', onUp)
+        element.addEventListener('pointercancel', onUp)
+        ;(this as unknown as { _pointerCleanup?: () => void })._pointerCleanup = () => {
+          element.removeEventListener?.('pointerdown', onDown)
+          element.removeEventListener?.('pointermove', onMove)
+          element.removeEventListener?.('pointerup', onUp)
+          element.removeEventListener?.('pointercancel', onUp)
+        }
+      },
+      handleTouchStart(event: glassEasel.ShadowedEvent<unknown>) {
+        const y = eventY(event)
+        if (y !== undefined) this.beginDrag(y)
+      },
+      handleTouchMove(event: glassEasel.ShadowedEvent<unknown>) {
+        const y = eventY(event)
+        if (y !== undefined) this.moveDrag(y)
+      },
+      handleTouchEnd(event: glassEasel.ShadowedEvent<unknown>) {
+        void event
+        this.endDrag()
       },
       handleTap(event: glassEasel.ShadowedEvent<unknown>) {
         const instance = this as unknown as { _moved?: boolean }
