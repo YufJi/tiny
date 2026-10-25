@@ -325,6 +325,18 @@ describe('tag selector scoping', () => {
     expect(css).toContain('.s--wx-tag-view .s--item')
     expect(css).toContain('.s--wx-tag-button::after')
   })
+
+  test('rewrites tag selectors after a descendant combinator', () => {
+    const transformer = StyleSheetTransformer.fromCss(
+      'a.wxss',
+      '.card image { width: 100% } .card > image { height: 10px } .card + image { margin: 0 }',
+      { classPrefix: 's', tagClassPrefix: 's--wx-tag-' },
+    )
+    const css = transformer.getContent()
+    expect(css).toContain('.s--card .s--wx-tag-image')
+    expect(css).toContain('.s--card > .s--wx-tag-image')
+    expect(css).toContain('.s--card + .s--wx-tag-image')
+  })
 })
 
 describe('tag selector edge cases', () => {

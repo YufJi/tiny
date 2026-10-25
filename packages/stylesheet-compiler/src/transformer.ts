@@ -173,7 +173,9 @@ function transformSelector(
     }
     result += ch
     i += 1
-    if (ch !== ' ' && ch !== '\t' && ch !== '\n') previousSignificant = ch
+    // Whitespace is a descendant combinator: keep the boundary so a tag that
+    // follows it (e.g. `.item image`) is also rewritten to its marker class.
+    previousSignificant = ch === ' ' || ch === '\t' || ch === '\n' ? ' ' : ch
   }
   return result
 }
