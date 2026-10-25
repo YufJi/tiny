@@ -1,8 +1,8 @@
 # 微信 WebView 版功能对齐度分析
 
-> **快照**：2026-10-25（第六次校准） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
+> **快照**：2026-10-25（第七次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
 >
-> **结论**：加权功能对齐约 **36%（35–38%）**；页面启动率 85.5%；生产可替换 < 20%
+> **结论**：加权功能对齐约 **37%（35–39%）**；页面启动率 85.5%；生产可替换 < 20%
 >
 > **维护**：功能完成后更新本文的评分表、覆盖表、实测数据和变更记录
 
@@ -10,7 +10,7 @@
 
 ## 1. 结论摘要
 
-- 按微信 WebView 版全量能力计算，当前引擎约完成 **三分之一强**：加权得分 **36.18%**。
+- 按微信 WebView 版全量能力计算，当前引擎约完成 **三分之一强**：加权得分 **36.58%**。
 - 能力结构仍然偏科：**编译/渲染约 70%，框架约 60%，平台 API 约 6%，页面形态约 12%**。
 - 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent` 均已落地，Component-as-page 也接入了同一套核心语义；UI 库的核心语义障碍基本移除，但 npm 构建、`generics`/`definitionFilter` 等仍有缺口。
 - 仓库内置的微信官方 demo 子集（117 页）中，**100 页能启动（85.5%）**，96 页有可见文本；但这是“能挂载”，不是“功能对齐”。
@@ -59,7 +59,7 @@
 
 - **完成度**：该维度内“已实现且有代码证据的条目 / 微信 WebView 文档条目”，或按关键能力清单打分。
 - **加权得分**：`Σ(权重 × 完成度)`。
-- **区间**：权重调整会让结果在 35–38% 之间浮动；把 API 权重降到 15%、框架权重升到 20%，结果约 38%，但不会到 50%。
+- **区间**：权重调整会让结果在 35–39% 之间浮动；把 API 权重降到 15%、框架权重升到 20%，结果约 38–39%，但不会到 50%。
 - 所有百分比都是**工程估算**，用于判断量级和优先级，不是精确指标。
 
 ---
@@ -71,13 +71,13 @@
 | 编译/构建 | 10% | 72% | 7.20 | WXML/WXSS/WXS 基本完整；app.json 只消费 3 个字段；无 npm 构建、无 TS 类型检查 |
 | 框架运行时 | 18% | 60% | 10.80 | 5/14 页面生命周期、2/5 路由仍是短板；自定义组件与 Component-as-page 核心语义已补齐，缺 generics/definitionFilter |
 | 内置组件 | 17% | 36% | 6.12 | 18/60 标签；属性声明 119/146；事件映射 44/46；默认外观仍为近似 |
-| wx API | 20% | 6% | 1.20 | 核心 10 个 + 宿主扩展 2 个 / 502；官方 demo 150 个中支持 12 个 |
+| wx API | 20% | 8% | 1.60 | 核心 30+ 个 + 宿主扩展 / 502；request/async storage/modal/loading/网络/剪贴板等已接 |
 | 页面形态 | 12% | 12% | 1.44 | 无导航栏/tabBar/下拉/触底/页面滚动/分享/转场 |
 | 样式/渲染 | 8% | 68% | 5.44 | WXSS/rpx/作用域强；styleIsolation/addGlobalClass/shared 已实现；`:host` 低优先级与 canvas 仍不完整 |
 | 宿主/平台 | 8% | 15% | 1.20 | 仅浏览器宿主；无原生/网络/登录/支付/分享 |
 | 开发工具 | 4% | 35% | 1.40 | 有运行时状态/元素树/诊断；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 46% | 1.38 | 148 单测 + 46 步浏览器验收；无性能/视觉/安全/原生测试 |
-| **合计** | **100%** | — | **36.18%** | |
+| 质量/验证 | 3% | 46% | 1.38 | 150 单测 + 46 步浏览器验收；无性能/视觉/安全/原生测试 |
+| **合计** | **100%** | — | **36.58%** | |
 
 ### 条目覆盖率速览
 
@@ -85,8 +85,8 @@
 | --- | ---: | ---: | ---: |
 | 内置组件标签 | 60 | 18 | 30.0% |
 | 核心 UI 组件 | 45 | 18 | 40.0% |
-| wx API 条目 | 502 | 12 | 2.4% |
-| 官方 demo 实际调用 API | 150 | 12 | 8.0% |
+| wx API 条目 | 502 | 42 | 8.4% |
+| 官方 demo 实际调用 API | 150 | ~26 | ~17% |
 | 页面生命周期 | 14 | 5 | 35.7% |
 | 应用生命周期 | 7 | 3 | 42.9% |
 | 路由 API | 5 | 2 | 40.0% |
@@ -156,22 +156,22 @@
 
 ### 4.2 wx API
 
-**核心 10 个 / 502 = 2.0%；含宿主扩展 12 个 = 2.4%。** 官方 demo 实际用到的 150 个唯一 `wx.*` 中支持 12 个（8%）。
+**核心 40+ 个 / 502 ≈ 8%；官方 demo 实际用到的 150 个唯一 `wx.*` 中约支持 26 个（~17%）。**
 
 能力分布：
 
 | 能力 | 状态 | 说明 |
 | --- | --- | --- |
-| 系统信息 | 部分 | `getSystemInfo` / `getSystemInfoSync` 只有 pixelRatio/windowWidth/windowHeight 等少量字段；缺 SDKVersion、platform、safeArea、statusBarHeight |
-| 数据缓存 | 部分 | 仅 sync；只有内存快照，刷新即丢；无 remove/clear/info/batch/异步 |
+| 系统信息 | 部分 | `getSystemInfo` / `getSystemInfoSync` 可用；字段仍以宿主快照为准，缺完整设备/安全区信息 |
+| 数据缓存 | 部分 | sync/async、remove/clear/info 已接；仍只有宿主内存快照，刷新即丢，无 batch |
 | 路由 | 部分 | 仅 navigateTo/navigateBack；无 redirectTo/reLaunch/switchTab |
-| 界面交互 | 桩 | `showToast` 只返回 `{errMsg}`，没有 UI；无 modal/loading/action sheet/导航栏 |
-| 网络 | 无 | 无 request/upload/download/WebSocket/UDP/TCP |
-| 登录/账号 | 无 | 无 login/checkSession/getUserProfile/getUserInfo |
-| 支付/分享/订阅 | 无 | 无 requestPayment/showShareMenu/onShareAppMessage/requestSubscribeMessage |
+| 界面交互 | 部分 | toast/loading/modal/actionSheet 有浏览器 overlay；无导航栏/页面 chrome |
+| 网络 | 部分 | `request` 已接 fetch；upload/download/WebSocket/UDP/TCP 仍无 |
+| 登录/账号 | 桩 | `login` 返回宿主 stub code，`checkSession` 成功；无真实会话/getUserProfile |
+| 支付/分享/订阅 | 桩 | show/hide/updateShareMenu 成功；无 UI、支付、订阅 |
 | 媒体 | 无 | 无 chooseImage/chooseMedia/previewImage/audio/video/recorder/camera |
 | 文件 | 无 | 无 FileSystemManager/openDocument/saveFile |
-| 位置/设备 | 无 | 无 getLocation/chooseLocation/makePhoneCall/clipboard/networkType/蓝牙/NFC/Wi-Fi/scanCode |
+| 位置/设备 | 部分 | 网络类型、电池、剪贴板、震动已接；无定位/扫码/电话/蓝牙/NFC |
 | 画布 | 桩/部分 | legacy `createCanvasContext` 是 Proxy 桩；ECharts 走 service 离屏 canvas → PNG 帧 |
 | 动画 | 部分 | `createAnimation` 只映射最终态 CSS transform/transition，无多 step 时序与回调 |
 | 选择器 | 桩 | `createSelectorQuery` 只对 canvas 做 measure，普通节点返回 0×0 |
@@ -180,9 +180,9 @@
 
 关键代码入口：
 
-- 服务 API：[service.ts](../packages/runtime/src/service.ts:320)
-- 宿主 API：[host-api.ts](../packages/runtime/src/host-api.ts:35)
-- 不支持 API 的降级：`wx` Proxy 返回 `undefined` + `UNSUPPORTED_API` warning（[service.ts](../packages/runtime/src/service.ts:284)）
+- 服务 API：[service/api-host.ts](../packages/runtime/src/service/api-host.ts:1)
+- 宿主 API：[host-api.ts](../packages/runtime/src/host-api.ts:1)、[hosts/browser/api-handlers.ts](../hosts/browser/src/api-handlers.ts:1)
+- 不支持 API 的降级：`wx` Proxy 返回 `undefined` + `UNSUPPORTED_API` warning（[service/api-host.ts](../packages/runtime/src/service/api-host.ts:1)）
 
 > 降级策略是“静默 undefined”，不是抛错。页面不会立刻崩，但失败会推迟到调用方 `.then`/属性访问时才暴露，排查成本高。
 
@@ -279,7 +279,7 @@ hasBehavior / export / wx://component-export
 2026-10-24 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
-- **148 个单元测试**（runtime 56 个，components 16 个）
+- **150 个单元测试**（runtime 58 个，components 16 个）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
 - **46 个浏览器步骤**全部通过；P0 新增 6 步覆盖组件语义、样式隔离、button 矩阵、relations 和 selectComponent
 - 门禁覆盖的 5 段流程无 console/page error（117 页探针的 pageerror 见 5.2）
@@ -314,16 +314,20 @@ hasBehavior / export / wx://component-export
 
 ### 5.3 官方 demo API 覆盖
 
-从 `tests/apps/wechat-demo` 源码中提取到 **150 个唯一 `wx.*` 调用**，引擎支持 **12 个（8%）**：
+从 `tests/apps/wechat-demo` 源码中提取到 **150 个唯一 `wx.*` 调用**，引擎约支持 **26 个（~17%）**：
 
 ```text
 getSystemInfo / getSystemInfoSync / getStorageSync / setStorageSync
-navigateTo / navigateBack / showToast / createAnimation
-createCanvasContext / createSelectorQuery
+getStorage / setStorage / removeStorage / clearStorage / getStorageInfo
+navigateTo / navigateBack / request / getNetworkType / getBatteryInfo
+showToast / showLoading / hideLoading / showModal / showActionSheet
+setClipboardData / getClipboardData / vibrateShort / vibrateLong
+getSetting / openSetting / login / checkSession / canIUse / nextTick
+createAnimation / createCanvasContext / createSelectorQuery
 getMenuButtonBoundingClientRect / getPerformance
 ```
 
-其中 `showToast` 无 UI、`createCanvasContext` 是桩、`createSelectorQuery` 只支持 canvas、`createAnimation` 只映射最终态。真正“能用”的核心 API 约 5–6 个。
+其中 `login` 只是宿主 stub code，`openSetting/authorize` 还没有真实权限模型，`createCanvasContext` 仍是桩，`createSelectorQuery` 只支持 canvas，`createAnimation` 只映射最终态。真正“能用”的核心 API 约 12–15 个。
 
 ### 5.4 为什么“85.5% 启动”和“36% 对齐”不矛盾
 
@@ -493,6 +497,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-24 | 第四次同步：button 对齐 2.7.0 核心属性/默认样式，内置共享 wx-base/wx-hover/wx-label-target；内置组件 30→32；120 单测 / 46 步 | **35.47%** |
 | 2026-10-24 | 第五次同步：内置组件属性/默认样式与事件面成批对齐（canvas 触摸/longtap、input 组合/选区、button open-type 失败回调、scroll-view refresher/drag/scroll 边界）；属性 119/146、事件 44/46 | **36.18%** |
 | 2026-10-25 | 第六次校准：重新跑完整门禁；148 单测（runtime 56） / 46 浏览器步骤；修正文档中的事件覆盖与测试计数 | **36.18%** |
+| 2026-10-25 | 第七次同步：补齐 request、异步 storage、网络/电池/剪贴板/震动、modal/loading/actionSheet、login stub、share menu、canIUse/nextTick；API 8%；150 单测 | **36.58%** |
 
 ---
 
@@ -502,10 +507,12 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 
 ### P0
 
-- [ ] `wx.request` / `uploadFile` / `downloadFile`
-- [ ] 异步 storage + `removeStorage` / `clearStorage` / `getStorageInfo` / batch
+- [x] `wx.request`
+- [ ] `wx.uploadFile` / `wx.downloadFile`
+- [x] 异步 storage + `removeStorage` / `clearStorage` / `getStorageInfo`
+- [ ] storage batch
 - [ ] `redirectTo` / `reLaunch` / `switchTab`
-- [ ] `showModal` / `showLoading` / `hideLoading`
+- [x] `showModal` / `showLoading` / `hideLoading`
 - [ ] 导航栏 + tabBar
 - [ ] 下拉刷新 / 触底 / 页面滚动
 - [ ] `picker` / `textarea` / `form` / `navigator`

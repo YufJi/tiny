@@ -32,6 +32,18 @@ export function createHostApiRegistry(options: RuntimeHostOptions): HostApiRegis
       storage[String(params.key)] = cloneJsonSafe(params.value)
       return { errMsg: 'setStorageSync:ok' }
     },
+    'storage.remove': (params) => {
+      delete storage[String(params.key)]
+      return { errMsg: 'removeStorageSync:ok' }
+    },
+    'storage.clear': () => {
+      for (const key of Object.keys(storage)) delete storage[key]
+      return { errMsg: 'clearStorageSync:ok' }
+    },
+    'storage.info': () => {
+      const keys = Object.keys(storage)
+      return { keys, currentSize: JSON.stringify(storage).length, limitSize: 10240 }
+    },
     'toast.show': () => ({ errMsg: 'showToast:ok' }),
     'navigate.to': () => ({ errMsg: 'navigateTo:ok' }),
     'navigate.back': () => ({ errMsg: 'navigateBack:ok' }),
