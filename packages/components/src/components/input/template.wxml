@@ -1,3 +1,5 @@
+<!-- Use bind: for keydown/composition/select: catch: marks listeners as
+     final in glass-easel and calls preventDefault, which blocks text input. -->
 <input
   id="native-input"
   class="tiny-input {{placeholderClass}}"
@@ -13,9 +15,9 @@
   catchchange="handleChange"
   catchfocus="handleFocus"
   catchblur="handleBlur"
-  catchkeydown="handleKeyDown"
-  catchcompositionstart="handleCompositionStart"
-  catchcompositionupdate="handleCompositionUpdate"
-  catchcompositionend="handleCompositionEnd"
-  catchselect="handleSelect"
+  bindkeydown="handleKeyDown"
+  bindcompositionstart="handleCompositionStart"
+  bindcompositionupdate="handleCompositionUpdate"
+  bindcompositionend="handleCompositionEnd"
+  bindselect="handleSelect"
 />

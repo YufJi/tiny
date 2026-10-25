@@ -256,7 +256,9 @@ export async function runBrowserAcceptance({ baseUrl }) {
 
     await step('propagate input changes to page data', async () => {
       currentStep = 'propagate input changes to page data'
-      await render.locator('input[placeholder="Todo name"]').fill('Buy milk')
+      const todoInput = render.locator('input[placeholder="Todo name"]')
+      await todoInput.click()
+      await todoInput.pressSequentially('Buy milk', { delay: 10 })
       await waitForText('value: Buy milk')
     })
 
@@ -891,7 +893,8 @@ export async function runDevtoolAcceptance({ baseUrl }) {
 
     await step('boot the runtime debugger', async () => {
       currentStep = 'boot the runtime debugger'
-      await page.goto(`${baseUrl}/`, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
+      // Pin the app so the check does not depend on the devtool's default app.
+      await page.goto(`${baseUrl}/?app=demo`, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
       await waitForStatus('running')
       assert.equal(pageErrors.length, 0, `page errors during boot: ${pageErrors.join(' | ')}`)
     })
