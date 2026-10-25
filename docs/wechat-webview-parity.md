@@ -518,6 +518,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-25 | image 对齐参考结构：`div` 背景图 + 隐藏 probe `<img>` + fallback slot，补 320×240/inline-block、各 mode 的 background-size/position、widthFix/heightFix 比例计算与 load/error 宽高 | **37.89%** |
 | 2026-10-25 | picker-view / picker-view-column 对齐参考结构：mask/indicator 下放到 column，`translateY` 吸附滚动、点击定位、value 同步、columnchange/pickstart/pickend；内置模板内部统一改用原生 `div`/`span` | **37.89%** |
 | 2026-10-25 | picker 采用参考 wrapper + slot 结构，原生 select/date/time 改为透明覆盖层；slot 当前值恢复展示，change/disabled 语义保持 | **37.89%** |
+| 2026-10-25 | picker 自绘浮层：wrapper + slot + toolbar + picker-view 列，支持 selector/multiSelector/date/time 的 cancel/confirm/columnchange；region 仍缺 | **37.89%** |
 
 ---
 

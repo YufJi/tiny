@@ -10,21 +10,63 @@ tiny-picker {
   cursor: pointer;
 }
 
-.tiny-picker__native {
-  position: absolute;
+.tiny-picker__overlay {
+  position: fixed;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  opacity: 0;
-  cursor: pointer;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
 
-.tiny-picker__native:disabled {
-  cursor: default;
+.tiny-picker__backdrop {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.tiny-picker__panel {
+  position: relative;
+  z-index: 1;
+  background-color: #ffffff;
+  border-radius: 12px 12px 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  overflow: hidden;
+}
+
+.tiny-picker__toolbar {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid #eeeeee;
+  font-size: 16px;
+}
+
+.tiny-picker__title {
+  flex: 1;
+  text-align: center;
+  color: #333333;
+  font-size: 16px;
+}
+
+.tiny-picker__cancel {
+  color: #888888;
+  font-size: 16px;
+}
+
+.tiny-picker__confirm {
+  color: #09bb07;
+  font-size: 16px;
+}
+
+.tiny-picker__view {
+  display: block;
+  width: 100%;
+  height: 238px;
+}
+
+.tiny-picker__option {
+  color: #333333;
+  font-size: 16px;
 }

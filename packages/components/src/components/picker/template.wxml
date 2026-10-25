@@ -1,47 +1,37 @@
-<div id="wrapper" class="tiny-picker__wrapper" role="button" aria-label="{{ariaLabel}}">
+<div
+  class="tiny-picker__wrapper"
+  role="button"
+  aria-label="{{ariaLabel}}"
+  bindtap="handleOpen"
+>
   <slot />
-  <select
-    id="native-picker"
-    wx:if="{{mode === 'selector'}}"
-    class="tiny-picker__native"
-    value="{{value}}"
-    disabled="{{disabled}}"
-    catchchange="handleSelectorChange"
-  >
-    <option
-      wx:for="{{options}}"
-      wx:key="value"
-      value="{{item.value}}"
-      selected="{{item.value === value}}"
-    >{{item.label}}</option>
-  </select>
-  <input
-    id="native-picker"
-    wx:elif="{{mode === 'date'}}"
-    class="tiny-picker__native"
-    type="date"
-    value="{{value}}"
-    start="{{start}}"
-    end="{{end}}"
-    disabled="{{disabled}}"
-    catchchange="handleDateChange"
-  />
-  <input
-    id="native-picker"
-    wx:elif="{{mode === 'time'}}"
-    class="tiny-picker__native"
-    type="time"
-    value="{{value}}"
-    disabled="{{disabled}}"
-    catchchange="handleDateChange"
-  />
-  <input
-    id="native-picker"
-    wx:else
-    class="tiny-picker__native"
-    type="text"
-    value="{{value}}"
-    disabled="{{disabled}}"
-    catchchange="handleDateChange"
-  />
+</div>
+<div wx:if="{{overlayVisible}}" class="tiny-picker__overlay">
+  <div class="tiny-picker__backdrop" catchtap="handleCancel"></div>
+  <div class="tiny-picker__panel">
+    <div class="tiny-picker__toolbar">
+      <span class="tiny-picker__cancel" catchtap="handleCancel">取消</span>
+      <span class="tiny-picker__title">{{overlayTitle}}</span>
+      <span class="tiny-picker__confirm" catchtap="handleConfirm">确定</span>
+    </div>
+    <picker-view
+      class="tiny-picker__view"
+      value="{{draftValue}}"
+      indicator-style="height: 34px;"
+      bindchange="handleOverlayChange"
+    >
+      <picker-view-column
+        wx:for="{{overlayColumns}}"
+        wx:for-item="column"
+        wx:for-index="columnIndex"
+      >
+        <div
+          wx:for="{{column}}"
+          wx:for-item="option"
+          wx:key="value"
+          class="tiny-picker__option"
+        >{{option.label}}</div>
+      </picker-view-column>
+    </picker-view>
+  </div>
 </div>

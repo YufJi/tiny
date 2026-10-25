@@ -12,8 +12,8 @@
 
 当前 23 个内置标签里，真正“结构和默认样式都接近参考实现”的很少：
 
-- **P0：结构或默认外观明显不一致**：`picker`（1 个标签）
-- **已重写视觉结构**：`checkbox`、`radio`、`switch`、`slider`、`icon`、`image`、`picker-view`、`picker-view-column`（2026-10-25，见 2.1–2.5、2.7）
+- **P0：结构或默认外观明显不一致**：无（`picker` 仅剩 `region` 模式未实现）
+- **已重写视觉结构**：`checkbox`、`radio`、`switch`、`slider`、`icon`、`image`、`picker`、`picker-view`、`picker-view-column`（2026-10-25，见 2.1–2.7）
 - **P1：能用但结构/交互仍是近似**：`input`、`textarea`、`scroll-view`、`swiper`、`form`、`button`
 - **P2：主要是宿主结构差异**：`view`、`text`、`label`、`canvas`、`progress`、`swiper-item`
 
@@ -325,27 +325,32 @@ div#wrapper[role=button]
 - `range`、`rangeKey`、`value`、`start`、`end`、`fields`
 - `change` / `cancel` / `columnchange`
 
-我们的结构（2026-10-25 已重写 wrapper）：
+我们的结构（2026-10-25 已重写）：
 
 ```text
 tiny-picker
-  └── div.tiny-picker__wrapper[role=button]
-       ├── slot（显示当前值）
-       └── select / input[type=date/time]（透明覆盖层）
+  ├── div.tiny-picker__wrapper[role=button] > slot
+  └── div.tiny-picker__overlay（wx:if）
+       ├── backdrop
+       └── panel
+            ├── toolbar（取消 / 标题 / 确定）
+            └── picker-view > picker-view-column × N
 ```
 
 已对齐：
 
-- 采用参考的 wrapper + slot 结构，slot 内容可见；
-- 原生 select/date/time 作为透明交互层覆盖 wrapper，保留浏览器原生选择能力；
-- `change` 回写 value 并冒泡，`disabled` 透传。
+- 参考的 wrapper + slot 结构，slot 内容作为当前值展示；
+- 点击 wrapper 打开自绘浮层，取消/确定/遮罩关闭；
+- `selector` / `multiSelector` / `date` / `time` 由 `picker-view` 列渲染，支持 `range`/`rangeKey`/`start`/`end`/`fields`；
+- `columnchange`、`change`、`cancel` 事件；`disabled` 不打开；
+- date 的 year/month/day 列会随年月调整天数；time 的 start/end 限制小时范围。
 
 剩余差异：
 
-- 参考通过 `showPickerView` 原生桥弹出统一面板；我们仍是浏览器原生 select/date/time 弹层，视觉无法统一；
-- `multiSelector` / `region` 未实现；
-- 没有 `columnchange`（selector 单列场景下由 native select 替代）；
-- `headerText` 等现代属性有，但参考 2.7.0 没有；需要区分版本。
+- 参考通过 `showPickerView` 原生桥调用系统面板；我们使用 DOM 浮层近似；
+- `region` 模式未实现（点击不打开）；
+- `customItem` 未渲染，`headerText` 仅作为标题；
+- 原生桥的滚动惯性/回弹细节与自绘浮层不同。
 
 ### 2.7 picker-view / picker-view-column
 

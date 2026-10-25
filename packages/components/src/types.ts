@@ -20,6 +20,8 @@ export type BuiltinContext = {
   options: BuiltinComponentFactoryOptions
   template: (tag: BuiltinComponentTag) => glassEasel.template.ComponentTemplate
   behaviors: BuiltinBehaviors
+  /** Resolve a built-in definition created earlier in this factory pass. */
+  getBuiltin: (tag: BuiltinComponentTag) => glassEasel.GeneralComponentDefinition | undefined
   /**
    * Build the options for a built-in component definition.
    *

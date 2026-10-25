@@ -77,6 +77,7 @@ export function createBuiltinComponents(
     options,
     template: builtinTemplate,
     behaviors: createBuiltinBehaviors(space, { prefix: options.prefix }),
+    getBuiltin: (tag) => definitions[tag],
     hostOptions: (extra = {}) => ({
       virtualHost: false,
       hostNodeTagName: `${BUILTIN_HOST_TAG_PREFIX}*`,
@@ -84,8 +85,14 @@ export function createBuiltinComponents(
       ...extra,
     }),
   }
+  // picker embeds picker-view/picker-view-column in its overlay, so create
+  // it after the components it uses.
+  const deferred = new Set<BuiltinComponentTag>(['picker'])
   for (const tag of BUILTIN_COMPONENT_TAGS) {
-    definitions[tag] = DEFINITION_FACTORIES[tag](context)
+    if (!deferred.has(tag)) definitions[tag] = DEFINITION_FACTORIES[tag](context)
+  }
+  for (const tag of BUILTIN_COMPONENT_TAGS) {
+    if (deferred.has(tag)) definitions[tag] = DEFINITION_FACTORIES[tag](context)
   }
   return definitions
 }

@@ -512,11 +512,47 @@ describe('P0 built-in components', () => {
     host('submit').triggerEvent('tap', {})
     expect(events.submit).toEqual({ value: { title: 'hello' }, formId: '' })
 
-    const nativePicker = host('picker').getShadowRoot()?.getElementById('native-picker')!
-    nativePicker.triggerEvent('change', { value: '1' })
+    const picker = host('picker') as unknown as {
+      handleOpen: () => void
+      handleOverlayChange: (event: unknown) => void
+      handleConfirm: () => void
+    }
+    picker.handleOpen()
+    picker.handleOverlayChange({ detail: { value: [1] } })
+    picker.handleConfirm()
     expect(events.picker).toEqual({ value: 1 })
+    expect(host('picker').data.value).toBe(1)
   })
 
+
+  test('picker overlay builds date columns and confirms the formatted value', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const changes: unknown[] = []
+    const page = space.defineComponent({
+      is: 'page',
+      using: { picker: builtins.picker },
+      template: compilePage(`
+        <picker id="picker" mode="date" value="2016-09-01" start="2015-09-01" end="2017-09-01" bindchange="onChange" />
+      `),
+      methods: {
+        onChange(event: glassEasel.ShadowedEvent<unknown>) { changes.push(event.detail) },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const picker = instance.getShadowRoot()?.getElementById('picker')?.asGeneralComponent() as unknown as {
+      handleOpen: () => void
+      handleOverlayChange: (event: unknown) => void
+      handleConfirm: () => void
+    } & { data: { overlayColumns: Array<Array<{ label: string }>>; draftValue: number[] } }
+    picker.handleOpen()
+    expect(picker.data.overlayColumns).toHaveLength(3)
+    expect(picker.data.overlayColumns[0]?.[0]?.label).toBe('2015年')
+    expect(picker.data.draftValue).toEqual([1, 8, 0])
+    picker.handleOverlayChange({ detail: { value: [2, 11, 30] } })
+    picker.handleConfirm()
+    expect(changes).toEqual([{ value: '2017-12-31' }])
+  })
 
   test('picker-view receives column changes and updates its value array', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)

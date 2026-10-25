@@ -56,10 +56,10 @@ tiny-picker-view-column {
 
 .tiny-picker__content {
   position: absolute;
-  top: 0;
+  top: 50%;
   left: 0;
   width: 100%;
-  padding: calc(50% - var(--picker-indicator-offset)) 0;
+  margin-top: calc(-1 * var(--picker-indicator-offset));
   box-sizing: border-box;
   transition: transform 0.3s ease;
   will-change: transform;
