@@ -18,6 +18,7 @@ const LIFECYCLE_METHODS = new Set([
   'onPageScroll',
   'onReachBottom',
   'onResize',
+  'onTabItemTap',
 ])
 
 export type PageLifecycleName = RuntimePageLifecyclePhase

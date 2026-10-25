@@ -47,20 +47,20 @@ export default function Status() {
           head={['领域', '状态', '当前证据 / 边界']}
           rows={[
             ['编译核心', status('可用', 'good'), 'pages / components / subPackages、naming、WXML/WXSS/WXS、manifest、service bundle、资源、source map；只有全量构建。'],
-            ['service runtime', status('可用', 'good'), 'App/Page/Component、页面栈、导航、setData、naming、behaviors/observers/relations、逻辑组件树、storage/system/canvas 协议。'],
+            ['service runtime', status('可用', 'good'), 'App/Page/Component、页面栈、navigateTo/back/switchTab、tabBar 状态与 API、setData、naming、behaviors/observers/relations、逻辑组件树、storage/system/canvas 协议。'],
             ['render adapter', status('可用', 'good'), 'glass-easel ComponentSpace、模板、scope、styleIsolation、externalClasses、组件定义、生命周期、元素树、资源解析、canvas 适配。'],
             ['bridge', status('可用', 'good'), 'envelope、帧、MessagePort/内存 transport、握手、超时、批处理、JSON-safe 校验；capabilities 未用于协商。'],
-            ['浏览器宿主', status('可用', 'good'), '@tiny/host-browser 双 iframe、MessageChannel、DOM canvas、resolveAssetUrl、DevtoolRuntimeClient；runtime 纯度检查通过。'],
+            ['浏览器宿主', status('可用', 'good'), '@tiny/host-browser 单 service + 每页 render iframe、MessageChannel、tabBar 宿主 UI、DOM canvas、resolveAssetUrl、DevtoolRuntimeClient；runtime 纯度检查通过。'],
             ['原生宿主', status('未实现', 'warn'), '没有 native transport、backend 或非浏览器 service 运行时；但 core 已经移除 document/Image/iframe。'],
             ['内置组件', status('较完整', 'good'), '23 个组件、共享 behaviors、接近 WebView 的 button/input/scroll-view/swiper 表面；navigator/video/rich-text/map 等仍缺。'],
             ['API', status('窄', 'warn'), 'storage、导航、system、toast、animation、canvas、selector query；无网络/媒体/文件/账号/位置/WebSocket。'],
-            ['页面能力', status('部分', 'warn'), '基础生命周期与导航；无 tabBar、下拉刷新、触底、页面滚动、分享、恢复。'],
+            ['页面能力', status('部分', 'warn'), '基础生命周期、导航、内置 tabBar/switchTab、页面滚动与触底；无下拉刷新、分享、页面栈恢复。'],
             ['组件语义', status('核心可用', 'good'), 'Behaviors、observers、relations、selectComponent、component-export、component-as-page；generics/placeholder/definitionFilter 未实现。'],
             ['样式系统', status('核心可用', 'good'), 'class/tag scope、rpx、@import、styleIsolation/addGlobalClass、externalClasses、shared CSS；:host 与低优先级输出未启用。'],
             ['Canvas', status('部分', 'warn'), 'canvas 适配器注入、50ms PNG 帧、render measure/paint、内置 canvas touch；无 rAF 与完整 2D 语义。'],
             ['动画', status('部分', 'warn'), 'animation 数据编译为最终态 CSS transform/transition；无多 step 时序与回调。'],
             ['诊断', status('可用', 'good'), '编译/transport/service/render/host 五类；组件语义新增 observer/relation/behavior 诊断。'],
-            ['Devtool', status('运行时级+', 'good'), '设备框、宿主导航、全部 fixture、Console/Elements、Reload/Terminate；仍不是完整微信开发者工具。'],
+            ['Devtool', status('运行时级+', 'good'), '设备框、宿主导航/tabBar、每页 render 帧、全部 fixture、Console/Lifecycle/Elements、Reload/Terminate；仍不是完整微信开发者工具。'],
             ['性能 / 稳定', status('未量化', 'warn'), '无启动、首屏、setData、内存、长时运行基准；无压力测试。'],
             ['测试', status('核心链路', 'good'), '152 单测 + 46 浏览器步骤 + 5 fixture；没有性能、视觉、原生、安全测试。'],
           ]}
@@ -75,14 +75,14 @@ export default function Status() {
       >
         <Cards>
           <Card tag="API" tone="warn" title="宿主 API 面很窄">
-            <p>缺 request、异步 storage、reLaunch/redirectTo/switchTab、showModal/showLoading、登录、媒体、文件、位置、WebSocket、IntersectionObserver。</p>
+            <p>缺异步 storage、reLaunch/redirectTo、登录、媒体、文件、位置、WebSocket、IntersectionObserver。</p>
             <p>未实现 API 返回 undefined 并产生 UNSUPPORTED_API 警告，不会抛错。</p>
           </Card>
           <Card tag="components" tone="warn" title="组件库不完整">
             <p>缺 textarea/picker/form/navigator/video/audio/rich-text/map/movable-view 等；已有组件的 open-type 真实能力、表单提交与无障碍也未完整覆盖。</p>
           </Card>
           <Card tag="pages" tone="warn" title="页面能力有限">
-            <p>无 tabBar、下拉刷新、触底、页面滚动事件、分享；子包只验证直接启动，没有按需加载；页面返回会重建 DOM。</p>
+            <p>无下拉刷新、分享、页面栈恢复；子包只验证直接启动，没有按需加载。内置 tabBar、滚动/触底与返回保留 DOM 已覆盖。</p>
           </Card>
           <Card tag="component" tone="warn" title="高级组件语义">
             <p>generics、placeholder、definitionFilter 未实现；微信内置 behavior（如 <code>wx://form-field</code>）也不支持，只支持 component-export。</p>
@@ -157,7 +157,7 @@ export default function Status() {
             <p>明确 close/terminate 语义，评估 origin 校验与 sandbox，补齐或删除 capability 字段。</p>
           </Card>
           <Card tag="P1" title="页面能力">
-            <p>tabBar、下拉刷新、触底、页面滚动、分享、子包按需加载、页面栈恢复。</p>
+            <p>下拉刷新、分享、子包按需加载、页面栈恢复、自定义 tabBar。</p>
           </Card>
           <Card tag="P1" title="组件高级语义">
             <p>generics、placeholder、definitionFilter、完整内置 behaviors、relations 的边界情况与组件 export 校验。</p>

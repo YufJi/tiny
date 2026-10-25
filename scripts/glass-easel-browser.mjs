@@ -1098,10 +1098,9 @@ export async function runDevtoolAcceptance({ baseUrl }) {
           (frame) => frame.url().includes(`pageId=${preview.pageStack.at(-1)}`),
         )
         assert.ok(renderFrame, `${fixture.id} did not create a render thread iframe`)
-        assert.equal(
-          await page.locator('iframe[data-page-id]').count(),
-          preview.pageStack.length,
-          `${fixture.id} does not own one iframe per page`,
+        assert.ok(
+          await page.locator('iframe[data-page-id]').count() >= Math.max(preview.pageStack.length, 1),
+          `${fixture.id} did not create a render frame for every live page`,
         )
         if (imageFixtures.has(fixture.id)) {
           await renderFrame.waitForFunction(() => {
@@ -1117,6 +1116,70 @@ export async function runDevtoolAcceptance({ baseUrl }) {
           )
         } else {
           await renderFrame.locator('#app').waitFor({ state: 'attached', timeout: STEP_TIMEOUT })
+        }
+
+        if (fixture.id === 'mini') {
+          // The mini fixture declares a two-item tabBar. Switching tabs keeps
+          // both page frames mounted and only changes which one is visible.
+          const tabBar = page.locator('.td-tabbar')
+          await tabBar.waitFor({ state: 'visible', timeout: STEP_TIMEOUT })
+          assert.equal(await tabBar.getByRole('tab').count(), 2, 'mini tabBar did not render two items')
+          const firstTab = tabBar.getByRole('tab', { name: 'Todos' })
+          assert.equal(await firstTab.getAttribute('aria-selected'), 'true')
+          const tabBarBox = await tabBar.boundingBox()
+          assert.ok(tabBarBox && tabBarBox.height >= 49, 'tabBar height is not reserved')
+          const tabIcon = tabBar.locator('img').first()
+          await tabIcon.waitFor({ state: 'visible', timeout: STEP_TIMEOUT })
+          assert.equal(
+            await tabIcon.evaluate((image) => image.complete && image.naturalWidth > 0),
+            true,
+            'tabBar icon did not load',
+          )
+
+          await tabBar.getByRole('tab', { name: 'Chart' }).click()
+          await page.waitForFunction(
+            () => window.__tinyDevtool?.getState().currentPage === 'pages/bar/index',
+            null,
+            { timeout: STEP_TIMEOUT },
+          )
+          await page.waitForFunction(
+            () => document.querySelector('iframe[data-page-id="page-2"]')?.dataset.state === 'active',
+            null,
+            { timeout: STEP_TIMEOUT },
+          )
+          assert.equal(
+            await page.locator('iframe[data-page-id="page-1"]').getAttribute('data-state'),
+            'hidden',
+            'previous tab frame was not hidden',
+          )
+          assert.equal(
+            await tabBar.getByRole('tab', { name: 'Chart' }).getAttribute('aria-selected'),
+            'true',
+            'tabBar did not select the Chart tab',
+          )
+          await page.frameLocator('iframe[data-page-id="page-2"]').locator('#app')
+            .waitFor({ state: 'attached', timeout: STEP_TIMEOUT })
+
+          await tabBar.getByRole('tab', { name: 'Todos' }).click()
+          await page.waitForFunction(
+            () => window.__tinyDevtool?.getState().currentPage === 'pages/todos/todos',
+            null,
+            { timeout: STEP_TIMEOUT },
+          )
+          await page.waitForFunction(
+            () => document.querySelector('iframe[data-page-id="page-1"]')?.dataset.state === 'active',
+            null,
+            { timeout: STEP_TIMEOUT },
+          )
+          assert.equal(
+            await tabBar.getByRole('tab', { name: 'Todos' }).getAttribute('aria-selected'),
+            'true',
+            'tabBar did not return to the Todos tab',
+          )
+          assert.ok(
+            await page.locator('iframe[data-page-id]').count() >= 2,
+            'cached tab frames were removed on switchTab',
+          )
         }
       }
 

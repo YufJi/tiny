@@ -1,4 +1,4 @@
-import type { RuntimeDiagnostic, RuntimePageState } from '@tiny/runtime'
+import type { RuntimeDiagnostic, RuntimePageState, RuntimeTabBarState } from '@tiny/runtime'
 import type { InspectNode } from '@tiny/runtime'
 import type { HostApiHandler, RuntimeManifest, StorageSnapshot, SystemInfoSnapshot } from '@tiny/runtime'
 import { createStandaloneDualThreadHost, type StandaloneHost } from './standalone-host'
@@ -23,6 +23,8 @@ export type DevtoolRuntimeState = {
   pages: RuntimePageState[]
   /** Ordered page lifecycle timeline (onLoad/onShow/onReady/onHide/onUnload/...). */
   lifecycle: DevtoolLifecycleEvent[]
+  /** Native tab bar state for the active tab page, when the app declares one. */
+  tabBar?: RuntimeTabBarState
   diagnostics: RuntimeDiagnostic[]
   tree?: InspectNode | null
   error?: string
@@ -90,6 +92,7 @@ export class DevtoolRuntimeClient {
       pageStack: [],
       pages: [],
       lifecycle: [],
+      tabBar: undefined,
       diagnostics: [],
       tree: undefined,
       error: undefined,
@@ -144,6 +147,7 @@ export class DevtoolRuntimeClient {
       currentPage: undefined,
       pageStack: [],
       pages: [],
+      tabBar: undefined,
       tree: undefined,
     })
   }
@@ -163,6 +167,18 @@ export class DevtoolRuntimeClient {
   async back(delta = 1): Promise<void> {
     const handler = this.requireHandler('navigate.back')
     const result = await handler({ delta }, { pageId: this.activePageId }) as { pageId?: string } | undefined
+    await this.inspectTree(result?.pageId)
+  }
+
+  /** Tap a native tab bar item; cached tab pages are shown without remounting. */
+  async tapTab(index: number): Promise<void> {
+    const item = this.state.tabBar?.items[index]
+    if (!item) throw new Error(`tabBar item ${index} is not available`)
+    const handler = this.requireHandler('navigate.switchTab')
+    const result = await handler(
+      { url: item.pagePath, index },
+      { pageId: this.activePageId },
+    ) as { pageId?: string } | undefined
     await this.inspectTree(result?.pageId)
   }
 
@@ -217,10 +233,12 @@ export class DevtoolRuntimeClient {
         pageStack?: string[]
         currentPage?: string
         pages?: RuntimePageState[]
+        tabBar?: RuntimeTabBarState
       } | undefined
       if (Array.isArray(details?.pageStack)) next.pageStack = [...details.pageStack]
       if (typeof details?.currentPage === 'string') next.currentPage = details.currentPage
       if (Array.isArray(details?.pages)) next.pages = details.pages.map((page) => ({ ...page }))
+      if (details?.tabBar) next.tabBar = details.tabBar
     }
     if (diagnostic.code === 'PAGE_LIFECYCLE') {
       const details = diagnostic.details as {

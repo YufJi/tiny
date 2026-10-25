@@ -46,6 +46,7 @@ export function createHostApiRegistry(options: RuntimeHostOptions): HostApiRegis
     },
     'toast.show': () => ({ errMsg: 'showToast:ok' }),
     'navigate.to': () => ({ errMsg: 'navigateTo:ok' }),
+    'navigate.switchTab': () => ({ errMsg: 'switchTab:ok' }),
     'navigate.back': () => ({ errMsg: 'navigateBack:ok' }),
     ...options.apiHandlers,
   }

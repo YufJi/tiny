@@ -1,0 +1,91 @@
+.td-tabbar {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  align-items: stretch;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+}
+
+.td-tabbar-item {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+  padding: 4px 2px 2px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.td-tabbar-item:disabled {
+  cursor: default;
+}
+
+.td-tabbar-item:focus-visible {
+  outline: 2px solid #2f6fed;
+  outline-offset: -3px;
+}
+
+.td-tabbar-icon {
+  position: relative;
+  display: grid;
+  width: 23px;
+  height: 23px;
+  place-items: center;
+}
+
+.td-tabbar-icon img {
+  display: block;
+  width: 23px;
+  height: 23px;
+  object-fit: contain;
+}
+
+
+.td-tabbar-label {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 10px;
+  line-height: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.td-tabbar-badge {
+  position: absolute;
+  top: -5px;
+  right: -8px;
+  display: grid;
+  min-width: 13px;
+  height: 13px;
+  padding: 0 3px;
+  background: #fa5151;
+  border: 1px solid #fff;
+  border-radius: 7px;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 8px;
+  font-weight: 650;
+  line-height: 1;
+  place-items: center;
+}
+
+.td-tabbar-red-dot {
+  position: absolute;
+  top: -2px;
+  right: -6px;
+  width: 8px;
+  height: 8px;
+  background: #fa5151;
+  border: 1px solid #fff;
+  border-radius: 50%;
+}

@@ -11,6 +11,7 @@ const PHASE_LABELS = {
   onPageScroll: 'onPageScroll',
   onReachBottom: 'onReachBottom',
   onResize: 'onResize',
+  onTabItemTap: 'onTabItemTap',
 };
 
 // Right-bottom panel: diagnostics, page lifecycle timeline, and element tree.
@@ -131,7 +132,7 @@ function DebugPanel({
                 <span className="td-lifecycle-dot" />
                 <code>{page.path}</code>
                 <span className="td-lifecycle-page-meta">
-                  {page.pageId} · {page.visible ? 'visible' : 'hidden'}
+                  {page.pageId} · {page.cached ? 'cached' : page.visible ? 'visible' : 'hidden'}
                 </span>
               </div>
             ))}

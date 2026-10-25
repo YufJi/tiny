@@ -13,6 +13,26 @@
   "window": {
     "navigationBarTitleText": "哈哈哈"
   },
+  "tabBar": {
+    "color": "#7A7E83",
+    "selectedColor": "#3CC51F",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/todos/todos",
+        "text": "Todos",
+        "iconPath": "assets/logo.png",
+        "selectedIconPath": "assets/logo.png"
+      },
+      {
+        "pagePath": "pages/bar/index",
+        "text": "Chart",
+        "iconPath": "assets/logo.png",
+        "selectedIconPath": "assets/logo.png"
+      }
+    ]
+  },
   "usingComponents": {
     "add-button": "./components/add-button/add-button"
   },

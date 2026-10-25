@@ -14,7 +14,7 @@
 - 能力结构仍然偏科：**编译/渲染约 70%，框架约 60%，平台 API 约 6%，页面形态约 12%**。
 - 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent` 均已落地，Component-as-page 也接入了同一套核心语义；UI 库的核心语义障碍基本移除，但 npm 构建、`generics`/`definitionFilter` 等仍有缺口。
 - 仓库内置的微信官方 demo 子集（117 页）中，**100 页能启动（85.5%）**，96 页有可见文本；但这是“能挂载”，不是“功能对齐”。
-- 普通业务小程序最依赖的 `wx.request`、`wx.login`、`wx.requestPayment`、`showModal`、导航栏、tabBar、picker、form、textarea 均未实现。
+- 普通业务小程序最依赖的 `wx.login`、`wx.requestPayment`、媒体/文件/定位等平台 API 仍未实现；内置导航栏/tabBar 已在 devtool 宿主落地，但自定义 tabBar、下拉刷新、分享与转场仍缺。
 - 一句话：**组件语义这条线已经补齐，平台 API 和页面形态仍是决定“能否替换微信运行时”的主要短板。**
 
 仓库自己的 [Status 页](../website/src/pages/Status.jsx) 也给出了相同定性判断（“能跑真实示例，还不是完整微信兼容”），本文把它量化，并保留可复测的口径。
@@ -69,10 +69,10 @@
 | 维度 | 权重 | 完成度 | 加权 | 关键依据 |
 | --- | ---: | ---: | ---: | --- |
 | 编译/构建 | 10% | 72% | 7.20 | WXML/WXSS/WXS 基本完整；app.json 只消费 3 个字段；无 npm 构建、无 TS 类型检查 |
-| 框架运行时 | 18% | 60% | 10.80 | 8/14 页面生命周期、2/5 路由仍是短板；自定义组件与 Component-as-page 核心语义已补齐，缺 generics/definitionFilter |
+| 框架运行时 | 18% | 60% | 10.80 | 9/14 页面生命周期、3/5 路由；自定义组件与 Component-as-page 核心语义已补齐，缺 generics/definitionFilter |
 | 内置组件 | 17% | 39% | 6.63 | 23/60 标签；属性声明 119/146；事件映射 44/46；默认外观仍为近似 |
-| wx API | 20% | 12% | 2.40 | 62/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar 等已接或桩 |
-| 页面形态 | 12% | 12% | 1.44 | 无导航栏/tabBar/下拉/触底/页面滚动/分享/转场 |
+| wx API | 20% | 12% | 2.40 | 70/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar 等已接或桩 |
+| 页面形态 | 12% | 12% | 1.44 | devtool 宿主已实现导航栏/tabBar/页面滚动/触底；测试/生产宿主仍未提供，评分保守；缺下拉刷新/分享/转场 |
 | 样式/渲染 | 8% | 68% | 5.44 | WXSS/rpx/作用域强；styleIsolation/addGlobalClass/shared 已实现；`:host` 低优先级与 canvas 仍不完整 |
 | 宿主/平台 | 8% | 15% | 1.20 | 仅浏览器宿主；无原生/网络/登录/支付/分享 |
 | 开发工具 | 4% | 35% | 1.40 | 有运行时状态/元素树/诊断；不是完整微信开发者工具 |
@@ -87,7 +87,7 @@
 | 核心 UI 组件 | 45 | 18 | 40.0% |
 | wx API 条目 | 502 | 62 | 12.4% |
 | 官方 demo 实际调用 API | 150 | ~35 | ~23% |
-| 页面生命周期 | 14 | 8 | 57.1% |
+| 页面生命周期 | 14 | 9 | 64.3% |
 | 应用生命周期 | 7 | 3 | 42.9% |
 | 路由 API | 5 | 2 | 40.0% |
 | 已实现组件属性 | 146 | 47 | 32.2% |
@@ -192,15 +192,16 @@
 
 ### 4.3 生命周期与路由
 
-页面生命周期 **8 / 14**（[service.ts](../packages/runtime/src/service.ts:18)）：
+页面生命周期 **9 / 14**（[service.ts](../packages/runtime/src/service.ts:18)）：
 
 | 生命周期 | 状态 |
 | --- | --- |
 | onLoad / onShow / onReady / onHide / onUnload | ✅ |
 | onPageScroll / onReachBottom | ✅ 由 render 页面帧的真实滚动容器驱动 |
 | onResize | ✅ 宿主窗口快照变化时触发（devtool 导航栏/内容区变化） |
+| onTabItemTap | ✅ switchTab / 点击 tabBar 时触发 |
 | onPullDownRefresh | ❌ |
-| onTabItemTap / onShareAppMessage / onShareTimeline / onAddToFavorites / onSaveExitState | ❌ |
+| onShareAppMessage / onShareTimeline / onAddToFavorites / onSaveExitState | ❌ |
 
 应用生命周期 **3 / 7**：
 
@@ -209,12 +210,13 @@
 | onLaunch / onShow / onHide | ✅ |
 | onError / onPageNotFound / onUnhandledRejection / onThemeChange | ❌ |
 
-路由 **2 / 5**：
+路由 **3 / 5**：
 
 | API | 状态 |
 | --- | --- |
 | navigateTo / navigateBack | ✅ |
-| redirectTo / reLaunch / switchTab | ❌ |
+| switchTab | ✅ tab 页缓存、tabBar 状态、onTabItemTap |
+| redirectTo / reLaunch | ❌ |
 
 ### 4.4 app.json 配置
 
@@ -224,7 +226,7 @@
 | `subPackages` / `subpackages` | ✅ 编译、可直接启动；无按需加载/预下载/独立分包 |
 | `usingComponents` | ✅ |
 | `window` | ⚠️ 只透传到 manifest，运行时不消费 |
-| `tabBar` | ❌ |
+| `tabBar` | ✅ 内置 tabBar 配置、颜色/位置/徽标/红点/显隐、`switchTab`；`custom: true` 发 `TABBAR_CUSTOM_UNSUPPORTED` 警告 |
 | `style` / `lazyCodeLoading` / `permission` / `sitemapLocation` / `workers` / `plugins` | ❌ |
 | `renderer` / `rendererOptions` / `preloadRule` / `resizable` / `darkmode` / `requiredPrivateInfos` | ❌ |
 
@@ -265,9 +267,10 @@ hasBehavior / export / wx://component-export
 
 | 能力 | 状态 |
 | --- | --- |
-| 导航栏（标题/返回/背景色/`navigationStyle: custom`） | ❌ |
-| tabBar（内置/自定义、`switchTab`） | ❌ |
-| 下拉刷新、触底、页面滚动事件 | ❌ |
+| 导航栏（标题/返回/背景色/`navigationStyle: custom`） | ✅ devtool 宿主实现 |
+| tabBar（内置、`switchTab`、badge/red-dot、show/hide） | ✅ devtool 宿主实现；自定义 tabBar ❌ |
+| 下拉刷新 | ❌ |
+| 触底、页面滚动事件 | ✅ devtool 页面帧驱动 |
 | 分享菜单/转发/朋友圈 | ❌ |
 | 页面转场动画 | ❌ |
 | 原生组件（video/map/camera/live-player 等） | ❌ |
@@ -413,10 +416,9 @@ getMenuButtonBoundingClientRect / getPerformance
 | --- | --- | --- |
 | `wx.request` / `uploadFile` / `downloadFile` | 无法联网，绝大多数业务小程序不可用 | 先做 request + 拦截器/超时/错误码 |
 | 异步 storage + remove/clear/info/batch | 只能同步、刷新即丢 | 持久化到 localStorage/IndexedDB，补全 API |
-| `redirectTo` / `reLaunch` / `switchTab` | 只能前进/后退，不能重置栈/切 tab | 补页面栈语义与 tabBar |
+| `redirectTo` / `reLaunch` | 不能重置/替换页面栈 | 复用 `switchTab` 的页面栈与渲染帧清理逻辑 |
 | `showModal` / `showLoading` / `hideLoading` | 常用交互缺失 | 宿主层 UI + API |
-| 导航栏 + tabBar | 页面没有微信外观，普通 app 无法直接跑 | 页面配置消费 + 宿主 UI |
-| 下拉刷新 / tabBar | 列表页/feed 页无法下拉刷新；tab 页形态缺失 | 页面生命周期 + 宿主 UI |
+| 下拉刷新 | 列表页/feed 页无法下拉刷新 | 页面生命周期 + 宿主手势 |
 | `picker` / `textarea` / `form` / `navigator` | 表单与导航高频组件缺失 | 优先补这 4 个 |
 | 登录/支付/分享 | 商业化能力缺失 | P0 末或 P1 初 |
 
@@ -452,7 +454,7 @@ getMenuButtonBoundingClientRect / getPerformance
 
 | 阶段 | 补齐内容 | 预计完整度 |
 | --- | --- | --- |
-| **P0：能跑常见业务** | request、异步 storage、redirectTo/reLaunch/switchTab、modal/loading、导航栏/tabBar、下拉/触底/页面滚动、picker/textarea/form/navigator | **~50%** |
+| **P0：能跑常见业务** | request、异步 storage、redirectTo/reLaunch、modal/loading、下拉刷新、分享、picker/textarea/form/navigator | **~50%** |
 | **P1：组件与页面语义** | 剩余组件语义（generics/placeholder/definitionFilter/pureDataPattern）；补全常用组件属性事件；canvas 2D/交互；animation 多 step；子包按需加载、npm 构建 | **~65–70%** |
 | **P2：平台能力与生产化** | 原生宿主、网络桥、登录/支付/分享、媒体/地图/视频、文件系统、Worker；性能/视觉/安全基线 | **~80%+** |
 
@@ -523,6 +525,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-25 | picker 自绘浮层：wrapper + slot + toolbar + picker-view 列，支持 selector/multiSelector/date/time 的 cancel/confirm/columnchange；region 仍缺 | **37.89%** |
 | 2026-10-25 | picker-view-column 补 pointer 鼠标拖动（与 touch 共用吸附逻辑）；修正 content 居中方式，避免百分比 padding 按宽度计算 | **37.89%** |
 | 2026-10-26 | devtool 页面栈改为每页独立 render iframe（隐藏页保留 DOM/滚动位置，返回不再重建）；补 `onPageScroll`/`onReachBottom`/`onResize` 与 Lifecycle 时间线；页面生命周期 5→8/14；运行时测试 62 条，完整浏览器门禁通过（总分未重算） | **37.89%** |
+| 2026-10-26 | 内置 tabBar：app.json 配置解析、tab 页缓存、`switchTab`、`onTabItemTap`、badge/red-dot/show/hide/style/item API；devtool 渲染 tabBar 并按可用高度调整页面帧；页面生命周期 8→9/14、路由 2→3/5；mini 验收新增 tab 切换 | **37.89%** |
 
 ---
 
@@ -604,5 +607,8 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 页面/子包/app.json 解析 | [compile.ts](../tools/cli/src/compile.ts:165) |
 | 单/多 render 帧宿主 | [standalone-host.ts](../hosts/browser/src/standalone-host.ts:1) |
 | 页面滚动生命周期桥 | [page-lifecycle.ts](../hosts/browser/src/page-lifecycle.ts:1) |
+| tabBar 配置与页面栈 | [service.ts](../packages/runtime/src/service.ts:1) |
+| tabBar 宿主 UI | [HostTabBar.jsx](../apps/devtool/src/next/components/HostTabBar.jsx:1) |
+| tabBar 验收 | [glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs:1120) |
 | 多 iframe 页面栈验收 | [glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs:941) |
 | 官方 demo 子集 | [app.json](../tests/apps/wechat-demo/app.json:1) |

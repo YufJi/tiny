@@ -17,6 +17,31 @@ export type RuntimePageState = {
   pageId: string
   path: string
   visible: boolean
+  /** Live but outside the current page stack, e.g. a cached tab page. */
+  cached?: boolean
+}
+
+export type RuntimeTabBarItemState = {
+  index: number
+  pagePath: string
+  text: string
+  iconPath?: string
+  selectedIconPath?: string
+  badge?: string
+  redDot: boolean
+}
+
+export type RuntimeTabBarState = {
+  /** Native tab bar is drawn on this page; false on non-tab pages/background. */
+  visible: boolean
+  custom: boolean
+  position: 'bottom' | 'top'
+  color: string
+  selectedColor: string
+  backgroundColor: string
+  borderStyle: 'black' | 'white'
+  selectedIndex: number
+  items: RuntimeTabBarItemState[]
 }
 
 export type RuntimeStateDetails = {
@@ -24,6 +49,7 @@ export type RuntimeStateDetails = {
   currentPage?: string
   pages?: RuntimePageState[]
   appVisible?: boolean
+  tabBar?: RuntimeTabBarState
   transport: 'connected' | 'closed'
 }
 
@@ -36,6 +62,7 @@ export type RuntimePageLifecyclePhase =
   | 'onPageScroll'
   | 'onReachBottom'
   | 'onResize'
+  | 'onTabItemTap'
 
 export type RuntimePageLifecycleDetails = {
   pageId: string

@@ -206,8 +206,8 @@ Page({
     console.log('tapSlot', e);
   },
   nav() {
-    wx.navigateTo({
-      url: '../bar/index',
+    wx.switchTab({
+      url: '/pages/bar/index',
     });
   },
   ani1() {

@@ -48,3 +48,15 @@ export function resolveNavigationConfig(manifest, pagePath, fallbackTitle = '') 
     custom: merged.navigationStyle === 'custom',
   };
 }
+
+function normalizePagePath(value) {
+  return String(value || '').replace(/^\/+/, '');
+}
+
+export function resolveTabBarPage(manifest, pagePath) {
+  const tabBar = manifest?.app?.configuration?.effective?.tabBar;
+  if (!tabBar || typeof tabBar !== 'object' || tabBar.custom) return false;
+  const list = Array.isArray(tabBar.list) ? tabBar.list : [];
+  const path = normalizePagePath(pagePath);
+  return list.some((item) => item && normalizePagePath(item.pagePath) === path);
+}

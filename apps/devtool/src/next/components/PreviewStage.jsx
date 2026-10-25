@@ -5,8 +5,10 @@ import {
   DEVICE_SCREEN_HEIGHT,
   DEVICE_SCREEN_WIDTH,
   HOST_CHROME_HEIGHT,
+  TAB_BAR_HEIGHT,
 } from '../config';
 import HostNavigationBar from './HostNavigationBar';
+import HostTabBar from './HostTabBar';
 import './PreviewStage.css';
 
 // iPhone X device frame, fit-to-stage scaling, host chrome and screen overlays.
@@ -17,9 +19,12 @@ function PreviewStage({
   error,
   hostNavigation,
   navigation,
+  tabBar,
+  tabBarAssetBase,
   canGoBack,
   lifecycle,
   onBack,
+  onTabBarTap,
   onForeground,
   onBackground,
   onReload,
@@ -45,7 +50,11 @@ function PreviewStage({
   }, []);
 
   let overlay = null;
-  const contentTop = hostNavigation ? HOST_CHROME_HEIGHT : 0;
+  const hostChromeTop = hostNavigation ? HOST_CHROME_HEIGHT : 0;
+  const tabBarVisible = status === 'running' && Boolean(tabBar?.visible);
+  const tabBarAtTop = tabBarVisible && tabBar?.position === 'top';
+  const contentTop = hostChromeTop + (tabBarAtTop ? TAB_BAR_HEIGHT : 0);
+  const contentBottom = tabBarVisible && !tabBarAtTop ? TAB_BAR_HEIGHT : 0;
   if (error) {
     overlay = { title: 'Preview unavailable', detail: error };
   } else if (loading) {
@@ -109,9 +118,16 @@ function PreviewStage({
                     onReload={onReload}
                   />
                 ) : null}
-                <div className="td-screen-content" style={{ top: contentTop }}>
+                <div className="td-screen-content" style={{ top: contentTop, bottom: contentBottom }}>
                   <div className="td-screen-surface" ref={containerRef} />
                 </div>
+                <HostTabBar
+                  tabBar={tabBar}
+                  assetBase={tabBarAssetBase}
+                  topOffset={hostChromeTop}
+                  enabled={status === 'running' && lifecycle === 'foreground'}
+                  onTap={onTabBarTap}
+                />
                 <div className="td-screen-glare" />
                 {lifecycle === 'background' && status === 'running' ? (
                   <div className="td-screen-background" style={{ top: contentTop }}>

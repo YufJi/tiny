@@ -5,6 +5,7 @@ export default {
     pageStack: [],
     pages: [],
     lifecycle: [],
+    tabBar: null,
     diagnostics: [],
     error: '',
   },

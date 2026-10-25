@@ -131,6 +131,33 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
     return { status: 'ready', path: payload.path, pageId: payload.pageId, components }
   })
 
+  connection.onControl('page', 'switchTab', async (message) => {
+    const payload = message.payload as {
+      path?: string
+      pageId?: string
+      initialData?: Record<string, unknown>
+      previousPageId?: string
+      unloadedPageIds?: string[]
+    }
+    for (const pageId of payload.unloadedPageIds ?? []) adapter.unmountPage(pageId)
+    if (!payload.path || !payload.pageId) throw new Error('switchTab requires a rendered page')
+    if (payload.previousPageId && payload.previousPageId !== payload.pageId) {
+      adapter.unmountPage(payload.previousPageId)
+    }
+    if (adapter.getMountedComponentByPageId(payload.pageId)) {
+      return {
+        status: 'ready',
+        path: payload.path,
+        pageId: payload.pageId,
+        components: adapter.getComponentSnapshot(),
+      }
+    }
+    const page = findPage(manifestForRender, payload.path)
+    adapter.mountPage(payload.path, payload.initialData ?? {}, payload.pageId)
+    const components = page ? await settlePage(adapter, page) : []
+    return { status: 'ready', path: payload.path, pageId: payload.pageId, components }
+  })
+
   connection.onControl('runtime', 'inspectTree', (message) => {
     const payload = (message.payload ?? {}) as { pageId?: string }
     return adapter.inspectTree(payload.pageId)

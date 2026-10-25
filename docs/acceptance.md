@@ -119,22 +119,25 @@ debugger:
 3. The mini program renders inside the `375 × 812` iPhone X preview. Each page owns one
    `next-render.html?pageId=<page-id>` iframe; the active frame is visible and hidden
    pages stay mounted behind it. A host status bar and navigation bar consume the top
-   `88px` (content stays `375 × 724`); the Elements tab shows `page`, built-in tags,
-   classes, attributes, and text.
+   `88px` (content stays `375 × 724`, or `375 × 674` on tab pages with a `50px` tabBar);
+   the Elements tab shows `page`, built-in tags, classes, attributes, and text.
 4. The host navigation bar projects the **active page** title and exposes back;
    `navigate.back` is disabled on the first page and drives the runtime after a
    navigation. The page stack chips show page paths and visible/hidden WebView state.
 5. Navigating to the add-todo page creates a second iframe and hides the first without
    destroying its DOM; going back removes only the popped page iframe and re-shows the
    first page with its previous data. The Lifecycle timeline records
-   `onLoad/onShow/onReady/onHide/onUnload` and `onReachBottom`/`onResize`.
-6. The app selector lists every `tests/apps` fixture; each app boots its first page and
+   `onLoad/onShow/onReady/onHide/onUnload`, `onReachBottom`, `onResize`, and `onTabItemTap`.
+6. The `mini` fixture renders its two-item native tabBar with icons and selected state.
+   Tapping `Chart` calls `switchTab`, keeps the Todos frame cached and hidden, and shows
+   the Chart frame; tapping `Todos` switches back with both frames still alive.
+7. The app selector lists every `tests/apps` fixture; each app boots its first page and
    renders representative content for `demo`, `mini`, `todo`, `wechat-demo`, and `echarts`;
    page-relative dynamic images (for example the WeChat demo icons) load successfully.
-7. The capsule menu backgrounds and foregrounds the preview (with an in-preview overlay),
+8. The capsule menu backgrounds and foregrounds the preview (with an in-preview overlay),
    `Reload` restarts the runtime, and `Terminate` removes the service iframe and every
    page render iframe.
-8. No console or page errors occur.
+9. No console or page errors occur.
 
 The debugger is the devtool default page. Run it manually with:
 

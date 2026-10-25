@@ -41,13 +41,14 @@ pnpm compile:devtool:all
 - 左侧：iPhone X 逻辑尺寸 `375 × 812` 的预览窗口；窗口空间不足时等比缩放并显示缩放比例
 - 预览内：宿主状态栏 + 导航栏。导航栏读取**当前页面**的标题/背景/文字色，左侧返回按钮
   调用 `navigate.back`，右侧 capsule 菜单提供 Foreground / Background / Reload
+- tab 页底部/顶部显示内置 tabBar（图标、文字、选中色、badge、红点）；点击调用 `switchTab`
 - 右上：应用选择、运行状态、当前页面栈（显示路径和 WebView 可见性），以及 Runtime / Lifecycle / Navigation 控制
 - 右下：Console / Lifecycle / Elements 调试栏，分别展示结构化诊断、页面生命周期时间线和可展开的元素树
 
-预览内容区按当前页面是否使用 `navigationStyle: "custom"` 动态扣除宿主导航栏高度，
-并通过 `runtime.resize` 同步给 `wx.getSystemInfoSync()` 和 `onResize`。自定义导航页由页面
-自绘导航栏，宿主不再重复渲染；此时仍可通过右侧 Lifecycle 控制前后台，后台状态会在预览内
-显示遮罩和恢复按钮。
+预览内容区按当前页面是否使用 `navigationStyle: "custom"`、当前 tab 页是否显示 tabBar
+动态扣除 `88px` 导航栏 / `50px` tabBar，并通过 `runtime.resize` 同步给
+`wx.getSystemInfoSync()` 和 `onResize`。自定义导航页由页面自绘导航栏，宿主不再重复渲染；
+此时仍可通过右侧 Lifecycle 控制前后台，后台状态会在预览内显示遮罩和恢复按钮。
 
 ## 页面 WebView 栈
 
@@ -64,7 +65,17 @@ devtool 采用**一页一 iframe** 的 render 方式，而不是所有页面共�
 
 render 线程把 iframe 的真实滚动位置转成 `onPageScroll`，并在触底时发送一次
 `onReachBottom`；devtool 的 Lifecycle 时间线记录 `onLoad/onShow/onReady/onHide/onUnload/
-onReachBottom/onResize`。高频 `onPageScroll` 会送达页面，但不写入时间线，避免刷屏。
+onReachBottom/onResize/onTabItemTap`。高频 `onPageScroll` 会送达页面，但不写入时间线，避免刷屏。
+
+## tabBar
+
+- `app.json.tabBar` 的内置配置由 service 解析，状态通过 `RUNTIME_STATE.tabBar` 投影到面板
+- tab 页面实例和 iframe 会缓存：切走时只触发 `onHide`，切回时复用页面数据、滚动位置和组件状态
+- `wx.switchTab` / tabBar 点击会清理非 tab 页面、显示目标 tab 页，并触发 `onTabItemTap`
+- `setTabBarStyle` / `setTabBarItem` / `setTabBarBadge` / `removeTabBarBadge` /
+  `showTabBarRedDot` / `hideTabBarRedDot` / `showTabBar` / `hideTabBar` 会即时更新宿主 tabBar
+- `custom: true` 目前只发 `TABBAR_CUSTOM_UNSUPPORTED` 警告，自定义 tabBar 组件仍需页面自行实现
+- tab 页面外的 `navigateTo` 页面不显示 tabBar；`navigateTo` 到 tab 页面会被拒绝，和微信一致
 
 devtool 是 `apps/` 下的可运行应用，不是核心包；它与 `tests/host` 的区别是：
 
@@ -89,6 +100,8 @@ src/next/
 │   ├── HostControlsMenu.css
 │   ├── DevtoolToolbar.jsx   # 应用选择、页面 WebView 栈、运行时控制
 │   ├── DevtoolToolbar.css
+│   ├── HostTabBar.jsx       # 内置 tabBar（图标/选中态/badge/红点）
+│   ├── HostTabBar.css
 │   ├── DebugPanel.jsx       # Console / Lifecycle / Elements 调试栏
 │   ├── DebugPanel.css
 │   └── ElementTree.jsx      # 可展开元素树
@@ -135,4 +148,5 @@ website 的接入由 `pnpm site:devtool` 完成：它编译 `tests/apps` 下全�
 
 调试器流程已包含在 `pnpm accept:glass-easel`：启动、状态投影、首屏单 render 帧、
 Lifecycle 时间线、导航后旧页面 iframe 仍保留 DOM、返回后只留下首页 iframe、
-依次预览每个 `tests/apps` 测试应用、Reload/Terminate、控制台零报错。
+mini tabBar 的图标/选中态与 `switchTab` 缓存、依次预览每个 `tests/apps` 测试应用、
+Reload/Terminate、控制台零报错。

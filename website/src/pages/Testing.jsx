@@ -227,7 +227,7 @@ export default function Testing() {
         <Callout title="兼容不等于完整" tone="warn">
           <p>
             这些是“Taro 3 React 产物能跑”的最小集合。Behavior、observers、relations 已经实现，
-            但 generics、placeholder、definitionFilter、tabBar 等仍未完成；其他社区框架没有纳入验收。
+            但 generics、placeholder、definitionFilter、自定义 tabBar 等仍未完成；其他社区框架没有纳入验收。
           </p>
         </Callout>
       </Section>
@@ -288,7 +288,7 @@ pnpm site:check`}</CodeBlock>
           <Card tag="native" tone="warn" title="没有原生宿主"><p>浏览器之外的 transport、backend、service 运行时都不存在；canvas 适配器也还没有原生实现。</p></Card>
           <Card tag="components" tone="warn" title="组件高级能力未覆盖"><p>generics、placeholder、definitionFilter、完整内置 behavior、open-type 真实能力都没有验收。</p></Card>
           <Card tag="canvas" tone="warn" title="Canvas 交互未验收"><p>离屏帧、touch 事件、SelectorQuery 有覆盖；canvas rAF、完整 2D API 与原生 touch 链路没有。</p></Card>
-          <Card tag="pages" tone="warn" title="页面高级能力未覆盖"><p>tabBar、下拉刷新、触底、分享、页面滚动、页面栈恢复均未验收。</p></Card>
+          <Card tag="pages" tone="warn" title="页面高级能力未覆盖"><p>下拉刷新、分享、页面栈恢复、自定义 tabBar 均未验收；内置 tabBar、滚动/触底已有验收。</p></Card>
           <Card tag="api" tone="warn" title="API 面很窄"><p>网络、媒体、文件、位置、账号、WebSocket、IntersectionObserver 都没有端到端证据。</p></Card>
           <Card tag="security" tone="warn" title="没有安全边界"><p>iframe 无 sandbox、消息无 origin 校验、跨线程输入只做 JSON-safe，不做权限模型。</p></Card>
         </Cards>

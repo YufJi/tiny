@@ -268,6 +268,61 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
       return serviceResult
     }
   }
+  if (!options.apiHandlers?.['navigate.switchTab']) {
+    apiRegistry.handlers['navigate.switchTab'] = async (params, context) => {
+      const switchPayload: Record<string, unknown> = {}
+      if (params.url !== undefined) switchPayload.url = params.url
+      if (params.index !== undefined) switchPayload.index = params.index
+      const serviceResult = await service.control<Record<string, unknown>>(
+        'page',
+        'switchTab',
+        switchPayload,
+        { pageId: context.pageId },
+      )
+      const pageId = serviceResult.pageId as string | undefined
+      const path = serviceResult.path as string | undefined
+      const previousPageId = serviceResult.previousPageId as string | undefined
+      const unloadedPageIds = (serviceResult.unloadedPageIds as string[] | undefined) ?? []
+      const created = serviceResult.created === true
+      if (!pageId || !path) throw new Error('switchTab did not create a renderable page')
+      if (renderConnector) {
+        for (const unloadedPageId of unloadedPageIds) await closeRenderPage(unloadedPageId)
+        if (created) {
+          const renderResult = await openRenderPage(
+            pageId,
+            path,
+            serviceResult.initialData as Record<string, unknown> | undefined,
+          )
+          await service.control('page', 'ready', {
+            pageId,
+            components: renderResult.components,
+          })
+        } else if (previousPageId !== pageId) {
+          activePageId = pageId
+          renderConnector.activate?.(pageId)
+        }
+        return serviceResult
+      }
+      if (previousPageId !== pageId) {
+        const rendered = await requireRenderConnection().control<{
+          components?: unknown[]
+        }>('page', 'switchTab', {
+          path,
+          pageId,
+          initialData: serviceResult.initialData,
+          ...(previousPageId ? { previousPageId } : {}),
+          unloadedPageIds,
+        })
+        // A cached tab page is mounted again in single-frame mode; re-register
+        // its components without emitting a second onReady.
+        await service.control('page', 'ready', {
+          pageId,
+          components: rendered.components,
+        })
+      }
+      return serviceResult
+    }
+  }
   if (!options.apiHandlers?.['navigate.back']) {
     apiRegistry.handlers['navigate.back'] = async (params, context) => {
       const serviceResult = await service.control<Record<string, unknown>>('page', 'navigateBack', {

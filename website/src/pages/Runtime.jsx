@@ -411,8 +411,9 @@ export default function Runtime() {
         </div>
         <Callout title="render 侧没有业务路由">
           <p>
-            render 只响应 <code>runtime.bootstrap</code>、<code>page.navigateTo</code>、<code>page.navigateBack</code>、
-            <code>runtime.inspectTree</code> 与 data/event/canvas 消息。它不知道“当前是第几个页面”，也不知道 tabBar。
+            render 响应 <code>runtime.bootstrap</code>、<code>page.navigateTo</code>、<code>page.navigateBack</code>、
+            <code>page.switchTab</code>、<code>runtime.inspectTree</code> 与 data/event/canvas 消息。devtool 为每个页面
+            维护独立 render 帧；tabBar 由宿主渲染，服务的 <code>RUNTIME_STATE</code> 只负责投影状态。
           </p>
         </Callout>
       </Section>
@@ -538,7 +539,7 @@ export default function Runtime() {
             <p>组件泛型、占位组件、definitionFilter、完整内置 behavior 仍未实现；unsupported 项会转成诊断，而不是静默忽略。</p>
           </Card>
           <Card tag="pages" tone="warn" title="页面能力有限">
-            <p>无 tabBar、下拉刷新、触底、页面滚动事件、分享、页面栈恢复；子包只是路径，没有按需加载。</p>
+            <p>无下拉刷新、分享、页面栈恢复、自定义 tabBar；内置 tabBar、触底与页面滚动已接入 devtool。子包只是路径，没有按需加载。</p>
           </Card>
           <Card tag="api" tone="warn" title="API 面很窄">
             <p>storage、导航、system、toast、animation、canvas、selector query；无 request、媒体、文件、账号、位置、WebSocket。</p>

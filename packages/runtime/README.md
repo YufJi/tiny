@@ -45,7 +45,7 @@ A browser host does not import iframe helpers from this package. Use
 
 ## Modules
 
-- `service.ts` — app/page/component lifecycle, page stack, `wx` API host
+- `service.ts` — app/page/component lifecycle, page stack, tabBar/`switchTab`, `wx` API host
 - `render.ts` — bridge + glass-easel adapter bootstrap
 - `glass-easel-adapter.ts` — component registration, events, inspect tree
 - `assets.ts` — app-root asset path resolution and WXSS `url(...)` rewriting
@@ -75,7 +75,7 @@ manifest/runtime types. It must not reference browser globals.
 | `runtime-port` | `window.postMessage` / iframe port handshake |
 | `standalone-host` | iframe creation, single/per-page render stacks, page visibility |
 | `page-lifecycle` | Render-frame scroll → page `onPageScroll` / `onReachBottom` bridge |
-| `devtool-client` | Debugger controls, page frames, lifecycle timeline, element tree |
+| `devtool-client` | Debugger controls, page frames, tabBar state, lifecycle timeline, element tree |
 
 Canvas is injected at the thread boundary:
 

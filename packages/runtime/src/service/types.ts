@@ -18,6 +18,7 @@ export type MiniProgramPageOptions = {
   onPageScroll?: (event: { scrollTop: number; scrollLeft: number }) => void
   onReachBottom?: (...args: unknown[]) => void
   onResize?: (event: { size: { windowWidth: number; windowHeight: number } }) => void
+  onTabItemTap?: (event: { index: number; pagePath: string; text: string }) => void
   [key: string]: unknown
 }
 
@@ -56,6 +57,16 @@ export type ComponentRuntimeContext = {
 
 export type MiniProgramApiHost = Record<string, (...args: unknown[]) => unknown>
 
+export type TabBarApi = {
+  setStyle(params: Record<string, unknown>): void
+  setItem(params: Record<string, unknown>): void
+  setBadge(params: Record<string, unknown>): void
+  removeBadge(params: Record<string, unknown>): void
+  showRedDot(params: Record<string, unknown>): void
+  hideRedDot(params: Record<string, unknown>): void
+  setVisible(visible: boolean): void
+}
+
 export type ServiceApiContext = {
   connection: BridgeConnection
   /** API global name used in diagnostics, e.g. `tiny`. */
@@ -66,6 +77,7 @@ export type ServiceApiContext = {
   apiNames: Set<string>
   getCurrentPagePath?: () => string | undefined
   canvas?: ServiceCanvasAdapter
+  tabBar?: TabBarApi
   pageId?: string
 }
 

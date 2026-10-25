@@ -8,12 +8,14 @@ import {
   DEVICE_SCREEN_HEIGHT,
   DEVICE_SCREEN_WIDTH,
   HOST_CHROME_HEIGHT,
+  TAB_BAR_HEIGHT,
 } from './config';
 import {
   fetchJson,
   generatedBaseFor,
   normalizeApps,
   resolveNavigationConfig,
+  resolveTabBarPage,
 } from './appRegistry';
 import DebugPanel from './components/DebugPanel';
 import DevtoolToolbar from './components/DevtoolToolbar';
@@ -68,9 +70,10 @@ class RuntimePanel extends PureComponent {
       // `navigationStyle: "custom"` pages draw their own bar and need the full screen.
       const initialNavigation = resolveNavigationConfig(manifest, initialPath, app.title);
       const hostNavigation = !initialNavigation.custom;
-      const contentHeight = hostNavigation
-        ? DEVICE_SCREEN_HEIGHT - HOST_CHROME_HEIGHT
-        : DEVICE_SCREEN_HEIGHT;
+      const initialTabBar = resolveTabBarPage(manifest, initialPath);
+      const contentHeight = DEVICE_SCREEN_HEIGHT
+        - (hostNavigation ? HOST_CHROME_HEIGHT : 0)
+        - (initialTabBar ? TAB_BAR_HEIGHT : 0);
 
       const url = new URL(window.location.href);
       if (url.searchParams.get('app') !== app.id) {
@@ -125,15 +128,17 @@ class RuntimePanel extends PureComponent {
     const page = this.props.runtime.currentPage;
     const becameRunning = this.props.runtime.status === 'running'
       && prevProps.runtime.status !== 'running';
+    const tabBarVisible = Boolean(this.props.runtime.tabBar?.visible);
+    const tabBarChanged = tabBarVisible !== Boolean(prevProps.runtime.tabBar?.visible);
     if (!page || !this.state.manifest) return;
-    if (!becameRunning && page === prevProps.runtime.currentPage) return;
+    if (!becameRunning && !tabBarChanged && page === prevProps.runtime.currentPage) return;
     const app = this.state.apps.find((candidate) => candidate.id === this.state.appId);
     // Host chrome depends on the active page, not the launch page: a custom
-    // navigation page changes the usable window height for the whole stack.
+    // navigation page and the tabBar both change the usable window height.
     const navigation = resolveNavigationConfig(this.state.manifest, page, app?.title || '');
-    const contentHeight = navigation.custom
-      ? DEVICE_SCREEN_HEIGHT
-      : DEVICE_SCREEN_HEIGHT - HOST_CHROME_HEIGHT;
+    const contentHeight = DEVICE_SCREEN_HEIGHT
+      - (navigation.custom ? 0 : HOST_CHROME_HEIGHT)
+      - (tabBarVisible ? TAB_BAR_HEIGHT : 0);
     // A reload boots a fresh service thread with the launch-time system
     // snapshot, so re-apply the active page height once it is running.
     const needsResize = (becameRunning && contentHeight !== this.launchContentHeight)
@@ -199,6 +204,7 @@ class RuntimePanel extends PureComponent {
       lifecycle: lifecycleEvents,
       diagnostics,
       tree,
+      tabBar,
       error: runtimeError,
     } = this.props.runtime;
     const {
@@ -233,9 +239,12 @@ class RuntimePanel extends PureComponent {
           error={error}
           hostNavigation={hostNavigation}
           navigation={navigation}
+          tabBar={tabBar}
+          tabBarAssetBase={appId ? generatedBaseFor(appId) : ''}
           canGoBack={pageStack.length > 1}
           lifecycle={lifecycle}
           onBack={() => this.run(() => this.client.back())}
+          onTabBarTap={(index) => this.run(() => this.client.tapTab(index))}
           onForeground={() => this.setRuntimeLifecycle('foreground')}
           onBackground={() => this.setRuntimeLifecycle('background')}
           onReload={() => this.reloadRuntime()}

@@ -9,12 +9,13 @@ import { RelationManager } from './relation-manager'
 import type { ServiceThreadOptions } from './types'
 import type { MiniProgramComponentSchema, StorageSnapshot, SystemInfoSnapshot } from './types'
 import { createRuntimeStateDiagnostic } from './diagnostics'
+import type { RuntimePageState, RuntimeTabBarState } from './diagnostics'
 import { MiniProgramPageRegistry } from './service/page-registry'
 import { MiniProgramComponentInstance } from './service/component-instance'
 import { MiniProgramPageInstance, type PageLifecycleName } from './service/page-instance'
 import { createServiceApiHost, installMiniProgramGlobals } from './service/api-host'
 import { findPageArtifact, normalizeRoutePath, requireActivePage, resolveComponentReference } from './service/route'
-import type { ComponentRuntimeContext, MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime } from './service/types'
+import type { ComponentRuntimeContext, MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime, TabBarApi } from './service/types'
 
 export type { MiniProgramPageOptions, MiniProgramComponentOptions, MiniProgramAppOptions, ComponentRuntimeContext, MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime } from './service/types'
 export { MiniProgramPageRegistry } from './service/page-registry'
@@ -48,6 +49,96 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   let appVisible = true
   let lifecycleSequence = 0
   let pageIdCounter = 0
+  const tabBarModel = normalizeTabBar(options.manifest)
+  const tabBarPagePaths = new Set((tabBarModel?.items ?? []).map((item) => item.pagePath))
+  const tabPageCache = new Map<string, MiniProgramPageInstance>()
+  let tabBarVisiblePreference = true
+  let notifyTabBarChange: () => void = () => {}
+  const getTabBarState = (): RuntimeTabBarState | null => {
+    if (!tabBarModel) return null
+    const selectedIndex = activePage
+      ? tabBarModel.items.findIndex((item) => item.pagePath === activePage!.path)
+      : -1
+    return {
+      visible: tabBarVisiblePreference
+        && !tabBarModel.custom
+        && selectedIndex >= 0,
+      custom: tabBarModel.custom,
+      position: tabBarModel.position,
+      color: tabBarModel.color,
+      selectedColor: tabBarModel.selectedColor,
+      backgroundColor: tabBarModel.backgroundColor,
+      borderStyle: tabBarModel.borderStyle,
+      selectedIndex,
+      items: tabBarModel.items.map((item, index) => ({ ...item, index })),
+    }
+  }
+  const requireTabBar = () => {
+    if (!tabBarModel) throw new Error('tabBar is not configured')
+    return tabBarModel
+  }
+  const readTabBarIndex = (params: Record<string, unknown>) => {
+    const model = requireTabBar()
+    const index = Number(params.index)
+    if (!Number.isInteger(index) || index < 0 || index >= model.items.length) {
+      throw new Error(`invalid tabBar index: ${String(params.index)}`)
+    }
+    return index
+  }
+  const tabBarApi: TabBarApi = {
+    setStyle(params) {
+      const model = requireTabBar()
+      if (typeof params.color === 'string') model.color = params.color
+      if (typeof params.selectedColor === 'string') model.selectedColor = params.selectedColor
+      if (typeof params.backgroundColor === 'string') model.backgroundColor = params.backgroundColor
+      if (params.borderStyle === 'white' || params.borderStyle === 'black') {
+        model.borderStyle = params.borderStyle
+      }
+      notifyTabBarChange()
+    },
+    setItem(params) {
+      const model = requireTabBar()
+      const item = model.items[readTabBarIndex(params)]
+      if (typeof params.text === 'string') item.text = params.text
+      if (typeof params.iconPath === 'string') {
+        if (params.iconPath) item.iconPath = params.iconPath
+        else delete item.iconPath
+      }
+      if (typeof params.selectedIconPath === 'string') {
+        if (params.selectedIconPath) item.selectedIconPath = params.selectedIconPath
+        else delete item.selectedIconPath
+      }
+      notifyTabBarChange()
+    },
+    setBadge(params) {
+      const model = requireTabBar()
+      const item = model.items[readTabBarIndex(params)]
+      const text = String(params.text ?? '').slice(0, 4)
+      if (text) item.badge = text
+      else delete item.badge
+      notifyTabBarChange()
+    },
+    removeBadge(params) {
+      const model = requireTabBar()
+      delete model.items[readTabBarIndex(params)].badge
+      notifyTabBarChange()
+    },
+    showRedDot(params) {
+      const model = requireTabBar()
+      model.items[readTabBarIndex(params)].redDot = true
+      notifyTabBarChange()
+    },
+    hideRedDot(params) {
+      const model = requireTabBar()
+      model.items[readTabBarIndex(params)].redDot = false
+      notifyTabBarChange()
+    },
+    setVisible(visible) {
+      requireTabBar()
+      tabBarVisiblePreference = visible
+      notifyTabBarChange()
+    },
+  }
   let systemInfoSnapshot: SystemInfoSnapshot = {
     pixelRatio: 1,
     windowWidth: 0,
@@ -66,6 +157,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     apiNames: supportedApiNames,
     getCurrentPagePath: () => activePage?.path,
     canvas: options.canvas,
+    tabBar: tabBarApi,
     get pageId() {
       return activePage?.pageId
     },
@@ -204,27 +296,68 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     if (emitDiagnostic) emitPageLifecycle(page, phase, extra)
   }
   const sendRuntimeState = () => {
-    const pages = pageStack.map((page) => ({
+    const pageStackIds = pageStack.map((page) => page.pageId)
+    const pages: RuntimePageState[] = pageStack.map((page) => ({
       pageId: page.pageId,
       path: page.path,
       visible: appVisible && page === activePage,
     }))
+    const livePageIds = new Set(pageStackIds)
+    for (const cachedPage of tabPageCache.values()) {
+      if (livePageIds.has(cachedPage.pageId)) continue
+      pages.push({
+        pageId: cachedPage.pageId,
+        path: cachedPage.path,
+        visible: false,
+        cached: true,
+      })
+    }
+    const tabBar = getTabBarState()
     connection.sendDiagnostic('state', createRuntimeStateDiagnostic(
       'service',
       {
-        pageStack: pages.map((page) => page.pageId),
+        pageStack: pageStackIds,
         currentPage: activePage?.path ?? '',
         pages,
         appVisible,
+        ...(tabBar ? { tabBar } : {}),
         transport: 'connected',
       },
       activePage?.pageId,
     ))
   }
+  notifyTabBarChange = sendRuntimeState
+  if (tabBarModel?.custom) {
+    connection.sendDiagnostic('warn', {
+      code: 'TABBAR_CUSTOM_UNSUPPORTED',
+      message: 'Custom tabBar rendering is not implemented; the page owns its tab bar.',
+    })
+  }
   const triggerComponentsPageLifetime = (pageId: string, phase: 'show' | 'hide') => {
     for (const [componentId, component] of componentInstances) {
       if (componentTree.get(componentId)?.pageId === pageId) component.triggerPageLifetime(phase)
     }
+  }
+  const destroyPage = (page: MiniProgramPageInstance, unloadedPageIds?: string[]) => {
+    page.triggerPageLifetime('hide')
+    triggerComponentsPageLifetime(page.pageId, 'hide')
+    triggerPageLifecycle(page, 'onUnload')
+    if (page.getComponentDefinition()) page.triggerComponentLifecycle('detached')
+    relationManager.handleDetach(page.componentId)
+    for (const componentId of componentTree.removePage(page.pageId)) {
+      const component = componentInstances.get(componentId)
+      if (!component) continue
+      component.triggerLifecycle('detached')
+      relationManager.handleDetach(componentId)
+      componentInstances.delete(componentId)
+      createdComponents.delete(componentId)
+      pendingComponentEvents.delete(componentId)
+      previousComponentData.delete(componentId)
+    }
+    pageInstances.delete(page.pageId)
+    readyPages.delete(page.pageId)
+    tabPageCache.delete(page.path)
+    unloadedPageIds?.push(page.pageId)
   }
   const createPageInstance = (path: string, query: Record<string, string> = {}) => {
     const pageArtifact = findPageArtifact(options.manifest, path)
@@ -255,6 +388,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     pageInstances.set(page.pageId, page)
     pageStack.push(page)
     activePage = page
+    if (tabBarPagePaths.has(path)) tabPageCache.set(path, page)
     return page
   }
   const resolveRoute = (fromPath: string, url: string) => {
@@ -384,6 +518,9 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     if (!registry.pages.get(route.path) && !registry.components.get(route.path)) {
       throw new Error(`page is not registered: ${route.path}`)
     }
+    if (tabBarPagePaths.has(route.path)) {
+      throw new Error(`can not navigateTo a tabbar page: ${route.path}`)
+    }
     const previousPage = activePage
     if (previousPage) {
       triggerPageLifecycle(previousPage, 'onHide')
@@ -421,6 +558,115 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }
   })
 
+  connection.onControl('page', 'switchTab', async (message) => {
+    const model = requireTabBar()
+    const payload = message.payload as { url?: string; index?: number }
+    let index = Number.NaN
+    if (payload.index !== undefined) {
+      index = Number(payload.index)
+    } else if (payload.url) {
+      const rawPath = normalizeRoutePath((payload.url.split('?', 1)[0] ?? '').replace(/^\//, ''))
+      index = model.items.findIndex((item) => item.pagePath === rawPath)
+      if (index < 0) {
+        const route = resolveRoute(currentPath, payload.url)
+        index = model.items.findIndex((item) => item.pagePath === route.path)
+      }
+    }
+    if (!Number.isInteger(index) || index < 0 || index >= model.items.length) {
+      throw new Error(`switchTab target is not a tabBar page: ${String(payload.url ?? payload.index)}`)
+    }
+    const item = model.items[index]!
+    if (payload.url) {
+      const requested = normalizeRoutePath((payload.url.split('?', 1)[0] ?? '').replace(/^\//, ''))
+      if (requested !== item.pagePath) {
+        // Relative URLs resolve against the current page; validate the result
+        // instead of rejecting a legitimate relative switchTab target.
+        const route = resolveRoute(currentPath, payload.url)
+        if (route.path !== item.pagePath) {
+          throw new Error(`switchTab index ${index} does not match ${payload.url}`)
+        }
+      }
+    }
+    const tapEvent = { index, pagePath: item.pagePath, text: item.text }
+    if (!tabPageCache.has(item.pagePath)) {
+      if (!findPageArtifact(options.manifest, item.pagePath)) {
+        throw new Error(`tabBar page is not declared: ${item.pagePath}`)
+      }
+      if (!registry.pages.get(item.pagePath) && !registry.components.get(item.pagePath)) {
+        throw new Error(`tabBar page is not registered: ${item.pagePath}`)
+      }
+    }
+    const previousPage = activePage
+    if (previousPage && previousPage.path === item.pagePath) {
+      triggerPageLifecycle(previousPage, 'onTabItemTap', [tapEvent])
+      sendRuntimeState()
+      return {
+        status: 'switched',
+        errMsg: 'switchTab:ok',
+        path: previousPage.path,
+        pageId: previousPage.pageId,
+        index,
+        created: false,
+        previousPageId: previousPage.pageId,
+        initialData: cloneJsonSafe(previousPage.data),
+        unloadedPageIds: [],
+      }
+    }
+
+    const previousPageId = previousPage?.pageId
+    const previousTab = previousPage && tabBarPagePaths.has(previousPage.path) ? previousPage : null
+    const unloadedPageIds: string[] = []
+    const oldStack = [...pageStack]
+    if (previousTab) {
+      triggerPageLifecycle(previousTab, 'onHide')
+      previousTab.triggerPageLifetime('hide')
+      triggerComponentsPageLifetime(previousTab.pageId, 'hide')
+    }
+    pageStack.length = 0
+    activePage = null
+    for (const oldPage of oldStack) {
+      if (oldPage === previousTab) continue
+      // Tab pages stay cached between switches; only non-tab pages unload.
+      if (tabBarPagePaths.has(oldPage.path)) continue
+      destroyPage(oldPage, unloadedPageIds)
+    }
+
+    let target = tabPageCache.get(item.pagePath)
+    let created = false
+    if (!target) {
+      target = createPageInstance(item.pagePath, {})
+      created = true
+      triggerPageLifecycle(target, 'onLoad', [target.query])
+      triggerPageLifecycle(target, 'onShow')
+      target.triggerPageLifetime('show')
+      if (findPageArtifact(options.manifest, target.path)?.bodyType === 'component') {
+        target.triggerComponentLifecycle('attached')
+        target.triggerComponentLifecycle('ready')
+      }
+      currentPath = target.path
+    } else {
+      pageStack.push(target)
+      activePage = target
+      currentPath = target.path
+      triggerPageLifecycle(target, 'onShow')
+      target.triggerPageLifetime('show')
+      triggerComponentsPageLifetime(target.pageId, 'show')
+    }
+    triggerPageLifecycle(target, 'onTabItemTap', [tapEvent])
+    sendRuntimeState()
+    return {
+      status: 'switched',
+      errMsg: 'switchTab:ok',
+      path: target.path,
+      pageId: target.pageId,
+      index,
+      created,
+      ...(previousPageId ? { previousPageId } : {}),
+      initialData: cloneJsonSafe(target.data),
+      unloadedPageIds,
+    }
+  })
+
   connection.onControl('page', 'navigateBack', async (message) => {
     const payload = message.payload as { delta?: number }
     const delta = Math.max(1, Number(payload.delta ?? 1))
@@ -430,27 +676,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     for (const page of removed.reverse()) {
       // A popped page is destroyed, not hidden. The component page lifetime
       // still ends so components can pause resources before detaching.
-      page.triggerPageLifetime('hide')
-      triggerComponentsPageLifetime(page.pageId, 'hide')
-      triggerPageLifecycle(page, 'onUnload')
-      if (findPageArtifact(options.manifest, page.path)?.bodyType === 'component') {
-        page.triggerComponentLifecycle('detached')
-      }
-      relationManager.handleDetach(page.componentId)
-      for (const componentId of componentTree.removePage(page.pageId)) {
-        const component = componentInstances.get(componentId)
-        if (component) {
-          component.triggerLifecycle('detached')
-          relationManager.handleDetach(componentId)
-          componentInstances.delete(componentId)
-          createdComponents.delete(componentId)
-          pendingComponentEvents.delete(componentId)
-          previousComponentData.delete(componentId)
-        }
-      }
-      pageInstances.delete(page.pageId)
-      readyPages.delete(page.pageId)
-      unloadedPageIds.push(page.pageId)
+      destroyPage(page, unloadedPageIds)
     }
     const page = pageStack.at(-1)!
     activePage = page
@@ -533,18 +759,11 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
 
   connection.onControl('page', 'unload', async (message) => {
     const page = requireActivePage(pageInstances, (message.payload as { pageId?: string }).pageId, activePage)
-    page.triggerPageLifetime('hide')
-    triggerPageLifecycle(page, 'onUnload')
-    if (page.getComponentDefinition()) page.triggerComponentLifecycle('detached')
-    relationManager.removePage(page.pageId)
-    for (const componentId of componentTree.removePage(page.pageId)) {
-      componentInstances.delete(componentId)
-      createdComponents.delete(componentId)
-      pendingComponentEvents.delete(componentId)
-    }
-    pageInstances.delete(page.pageId)
-    readyPages.delete(page.pageId)
-    if (activePage === page) activePage = null
+    const stackIndex = pageStack.indexOf(page)
+    if (stackIndex >= 0) pageStack.splice(stackIndex, 1)
+    destroyPage(page)
+    if (activePage === page) activePage = pageStack.at(-1) ?? null
+    if (activePage) currentPath = activePage.path
     sendRuntimeState()
     return { status: 'unloaded', pageId: page.pageId }
   })
@@ -774,5 +993,61 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     componentInstances,
     componentTree,
     relationManager,
+  }
+}
+
+type TabBarItemModel = {
+  pagePath: string
+  text: string
+  iconPath?: string
+  selectedIconPath?: string
+  badge?: string
+  redDot: boolean
+}
+
+type TabBarModel = {
+  custom: boolean
+  position: 'bottom' | 'top'
+  color: string
+  selectedColor: string
+  backgroundColor: string
+  borderStyle: 'black' | 'white'
+  items: TabBarItemModel[]
+}
+
+function normalizeTabBar(manifest: ServiceThreadOptions['manifest']): TabBarModel | null {
+  const raw = manifest.app?.configuration?.effective?.tabBar
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const value = raw as Record<string, unknown>
+  const list = Array.isArray(value.list) ? value.list : []
+  const items: TabBarItemModel[] = []
+  for (const entry of list) {
+    if (!entry || typeof entry !== 'object') continue
+    const item = entry as Record<string, unknown>
+    const pagePath = normalizeRoutePath(String(item.pagePath ?? '').replace(/^\//, ''))
+    if (!pagePath) continue
+    items.push({
+      pagePath,
+      text: typeof item.text === 'string' ? item.text : '',
+      ...(typeof item.iconPath === 'string' && item.iconPath
+        ? { iconPath: item.iconPath }
+        : {}),
+      ...(typeof item.selectedIconPath === 'string' && item.selectedIconPath
+        ? { selectedIconPath: item.selectedIconPath }
+        : {}),
+      redDot: false,
+    })
+  }
+  if (items.length === 0) return null
+  return {
+    custom: value.custom === true,
+    position: value.position === 'top' ? 'top' : 'bottom',
+    color: typeof value.color === 'string' ? value.color : '#7A7E83',
+    selectedColor: typeof value.selectedColor === 'string' ? value.selectedColor : '#3CC51F',
+    backgroundColor: typeof value.backgroundColor === 'string'
+      ? value.backgroundColor
+      : '#FFFFFF',
+    borderStyle: value.borderStyle === 'white' ? 'white' : 'black',
+    items,
   }
 }

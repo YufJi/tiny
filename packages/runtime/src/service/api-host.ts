@@ -107,6 +107,10 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
       message: `${context.apiName}.${name} is not supported in the P0 runtime.`,
     }, context.pageId)
   }
+  const requireTabBar = () => {
+    if (!context.tabBar) throw new Error('tabBar is not configured')
+    return context.tabBar
+  }
   return {
     getSystemInfoSync: () => cloneJsonSafe(context.getSystemInfoSnapshot()),
     getSystemInfo: (params?: unknown) => {
@@ -147,6 +151,12 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
       params as Record<string, unknown>,
       { pageId: context.pageId },
     ),
+    switchTab: (params: unknown = {}) => runApi(params, 'switchTab', () => context.connection.call(
+      'api',
+      'navigate.switchTab',
+      params as Record<string, unknown>,
+      { pageId: context.pageId },
+    )),
     showToast: (params: unknown = {}) => runApi(params, 'showToast', () => context.connection.call(
       'api',
       'toast.show',
@@ -289,14 +299,38 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
     showNavigationBarLoading: (params: unknown = {}) => runApi(params, 'showNavigationBarLoading', () => ({ errMsg: 'showNavigationBarLoading:ok' })),
     hideNavigationBarLoading: (params: unknown = {}) => runApi(params, 'hideNavigationBarLoading', () => ({ errMsg: 'hideNavigationBarLoading:ok' })),
     pageScrollTo: (params: unknown = {}) => runApi(params, 'pageScrollTo', () => ({ errMsg: 'pageScrollTo:ok' })),
-    setTabBarStyle: (params: unknown = {}) => runApi(params, 'setTabBarStyle', () => ({ errMsg: 'setTabBarStyle:ok' })),
-    setTabBarItem: (params: unknown = {}) => runApi(params, 'setTabBarItem', () => ({ errMsg: 'setTabBarItem:ok' })),
-    setTabBarBadge: (params: unknown = {}) => runApi(params, 'setTabBarBadge', () => ({ errMsg: 'setTabBarBadge:ok' })),
-    removeTabBarBadge: (params: unknown = {}) => runApi(params, 'removeTabBarBadge', () => ({ errMsg: 'removeTabBarBadge:ok' })),
-    showTabBarRedDot: (params: unknown = {}) => runApi(params, 'showTabBarRedDot', () => ({ errMsg: 'showTabBarRedDot:ok' })),
-    hideTabBarRedDot: (params: unknown = {}) => runApi(params, 'hideTabBarRedDot', () => ({ errMsg: 'hideTabBarRedDot:ok' })),
-    showTabBar: (params: unknown = {}) => runApi(params, 'showTabBar', () => ({ errMsg: 'showTabBar:ok' })),
-    hideTabBar: (params: unknown = {}) => runApi(params, 'hideTabBar', () => ({ errMsg: 'hideTabBar:ok' })),
+    setTabBarStyle: (params: unknown = {}) => runApi(params, 'setTabBarStyle', () => {
+      requireTabBar().setStyle((params ?? {}) as Record<string, unknown>)
+      return { errMsg: 'setTabBarStyle:ok' }
+    }),
+    setTabBarItem: (params: unknown = {}) => runApi(params, 'setTabBarItem', () => {
+      requireTabBar().setItem((params ?? {}) as Record<string, unknown>)
+      return { errMsg: 'setTabBarItem:ok' }
+    }),
+    setTabBarBadge: (params: unknown = {}) => runApi(params, 'setTabBarBadge', () => {
+      requireTabBar().setBadge((params ?? {}) as Record<string, unknown>)
+      return { errMsg: 'setTabBarBadge:ok' }
+    }),
+    removeTabBarBadge: (params: unknown = {}) => runApi(params, 'removeTabBarBadge', () => {
+      requireTabBar().removeBadge((params ?? {}) as Record<string, unknown>)
+      return { errMsg: 'removeTabBarBadge:ok' }
+    }),
+    showTabBarRedDot: (params: unknown = {}) => runApi(params, 'showTabBarRedDot', () => {
+      requireTabBar().showRedDot((params ?? {}) as Record<string, unknown>)
+      return { errMsg: 'showTabBarRedDot:ok' }
+    }),
+    hideTabBarRedDot: (params: unknown = {}) => runApi(params, 'hideTabBarRedDot', () => {
+      requireTabBar().hideRedDot((params ?? {}) as Record<string, unknown>)
+      return { errMsg: 'hideTabBarRedDot:ok' }
+    }),
+    showTabBar: (params: unknown = {}) => runApi(params, 'showTabBar', () => {
+      requireTabBar().setVisible(true)
+      return { errMsg: 'showTabBar:ok' }
+    }),
+    hideTabBar: (params: unknown = {}) => runApi(params, 'hideTabBar', () => {
+      requireTabBar().setVisible(false)
+      return { errMsg: 'hideTabBar:ok' }
+    }),
     onThemeChange: (callback: unknown) => {
       if (typeof callback === 'function') themeListeners.add(callback as (value: unknown) => void)
     },
