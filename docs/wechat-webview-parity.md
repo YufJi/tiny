@@ -517,6 +517,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-25 | icon 对齐 WeUI 字体实现：内嵌 `@font-face`、15 种 type 的 `::before` 字形与参考颜色表；`i` 宿主内渲染并支持 `size`/`color`/`aria`；补浏览器 fontFamily/伪元素断言 | **37.89%** |
 | 2026-10-25 | image 对齐参考结构：`div` 背景图 + 隐藏 probe `<img>` + fallback slot，补 320×240/inline-block、各 mode 的 background-size/position、widthFix/heightFix 比例计算与 load/error 宽高 | **37.89%** |
 | 2026-10-25 | picker-view / picker-view-column 对齐参考结构：mask/indicator 下放到 column，`translateY` 吸附滚动、点击定位、value 同步、columnchange/pickstart/pickend；内置模板内部统一改用原生 `div`/`span` | **37.89%** |
+| 2026-10-25 | picker 采用参考 wrapper + slot 结构，原生 select/date/time 改为透明覆盖层；slot 当前值恢复展示，change/disabled 语义保持 | **37.89%** |
 
 ---
 

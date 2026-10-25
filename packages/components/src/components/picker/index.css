@@ -2,11 +2,29 @@ tiny-picker {
   display: block;
   box-sizing: border-box;
 }
-.tiny-picker-select {
+
+.tiny-picker__wrapper {
+  position: relative;
+  display: block;
   width: 100%;
-  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.tiny-picker__native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
   border: 0;
   background: transparent;
   color: inherit;
   font: inherit;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.tiny-picker__native:disabled {
+  cursor: default;
 }

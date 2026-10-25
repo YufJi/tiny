@@ -325,21 +325,27 @@ div#wrapper[role=button]
 - `range`、`rangeKey`、`value`、`start`、`end`、`fields`
 - `change` / `cancel` / `columnchange`
 
-我们的结构：
+我们的结构（2026-10-25 已重写 wrapper）：
 
 ```text
-view.tiny-picker
-  ├── select（selector）
-  └── input[type=date/time/text]（其他模式）
+tiny-picker
+  └── div.tiny-picker__wrapper[role=button]
+       ├── slot（显示当前值）
+       └── select / input[type=date/time]（透明覆盖层）
 ```
 
-差异：
+已对齐：
 
-- 没有参考的浮层/`picker-view` 结构
-- `multiSelector` / `region` 未实现
-- 没有 `columnchange`
-- 原生 select/date/time 的弹层由浏览器控制，无法统一视觉
-- `headerText` 等现代属性有，但参考 2.7.0 没有；需要区分版本
+- 采用参考的 wrapper + slot 结构，slot 内容可见；
+- 原生 select/date/time 作为透明交互层覆盖 wrapper，保留浏览器原生选择能力；
+- `change` 回写 value 并冒泡，`disabled` 透传。
+
+剩余差异：
+
+- 参考通过 `showPickerView` 原生桥弹出统一面板；我们仍是浏览器原生 select/date/time 弹层，视觉无法统一；
+- `multiSelector` / `region` 未实现；
+- 没有 `columnchange`（selector 单列场景下由 native select 替代）；
+- `headerText` 等现代属性有，但参考 2.7.0 没有；需要区分版本。
 
 ### 2.7 picker-view / picker-view-column
 
