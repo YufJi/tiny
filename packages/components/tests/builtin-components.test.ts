@@ -473,6 +473,34 @@ describe('P0 built-in components', () => {
     expect(events.picker).toEqual({ value: 1 })
   })
 
+
+  test('picker-view receives column changes and updates its value array', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const events: unknown[] = []
+    const page = space.defineComponent({
+      is: 'page',
+      using: {
+        'picker-view': builtins['picker-view'],
+        'picker-view-column': builtins['picker-view-column'],
+      },
+      template: compilePage(`
+        <picker-view id="view" value="{{[0, 0]}}" bindchange="onChange">
+          <picker-view-column id="col-0"><view>a</view><view>b</view></picker-view-column>
+          <picker-view-column id="col-1"><view>c</view><view>d</view></picker-view-column>
+        </picker-view>
+      `),
+      methods: {
+        onChange(event: glassEasel.ShadowedEvent<unknown>) { events.push(event.detail) },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const view = instance.getShadowRoot()?.getElementById('view')?.asGeneralComponent()!
+    ;(view as unknown as { handleColumnChange: (event: unknown) => void }).handleColumnChange({ detail: { column: 1, value: 1 } })
+    expect(view.data.value).toEqual([0, 1])
+    expect(events).toEqual([{ value: [0, 1] }])
+  })
+
   test('progress, swiper, and icon render structure and state', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)

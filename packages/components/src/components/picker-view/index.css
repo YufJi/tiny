@@ -1,0 +1,33 @@
+.tiny-picker-view {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  height: 238px;
+  box-sizing: border-box;
+}
+.tiny-picker-view-wrapper {
+  display: flex;
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+.tiny-picker-view-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 102px;
+  height: 34px;
+  border-top: 1px solid #e5e5e5;
+  border-bottom: 1px solid #e5e5e5;
+  pointer-events: none;
+  z-index: 3;
+}
+.tiny-picker-view-mask {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.6)) top / 100% 102px no-repeat,
+    linear-gradient(0deg, rgba(255,255,255,.95), rgba(255,255,255,.6)) bottom / 100% 102px no-repeat;
+}

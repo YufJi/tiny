@@ -1,8 +1,8 @@
 # 微信 WebView 版功能对齐度分析
 
-> **快照**：2026-10-25（第九次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
+> **快照**：2026-10-25（第十次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
 >
-> **结论**：加权功能对齐约 **38%（36–40%）**；页面启动率 85.5%；生产可替换 < 20%
+> **结论**：加权功能对齐约 **38%（37–40%）**；页面启动率 85.5%；生产可替换 < 20%
 >
 > **维护**：功能完成后更新本文的评分表、覆盖表、实测数据和变更记录
 
@@ -10,7 +10,7 @@
 
 ## 1. 结论摘要
 
-- 按微信 WebView 版全量能力计算，当前引擎约完成 **三分之一强**：加权得分 **37.72%**。
+- 按微信 WebView 版全量能力计算，当前引擎约完成 **三分之一强**：加权得分 **37.89%**。
 - 能力结构仍然偏科：**编译/渲染约 70%，框架约 60%，平台 API 约 6%，页面形态约 12%**。
 - 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent` 均已落地，Component-as-page 也接入了同一套核心语义；UI 库的核心语义障碍基本移除，但 npm 构建、`generics`/`definitionFilter` 等仍有缺口。
 - 仓库内置的微信官方 demo 子集（117 页）中，**100 页能启动（85.5%）**，96 页有可见文本；但这是“能挂载”，不是“功能对齐”。
@@ -70,14 +70,14 @@
 | --- | ---: | ---: | ---: | --- |
 | 编译/构建 | 10% | 72% | 7.20 | WXML/WXSS/WXS 基本完整；app.json 只消费 3 个字段；无 npm 构建、无 TS 类型检查 |
 | 框架运行时 | 18% | 60% | 10.80 | 5/14 页面生命周期、2/5 路由仍是短板；自定义组件与 Component-as-page 核心语义已补齐，缺 generics/definitionFilter |
-| 内置组件 | 17% | 38% | 6.46 | 21/60 标签；属性声明 119/146；事件映射 44/46；默认外观仍为近似 |
+| 内置组件 | 17% | 39% | 6.63 | 23/60 标签；属性声明 119/146；事件映射 44/46；默认外观仍为近似 |
 | wx API | 20% | 12% | 2.40 | 62/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar 等已接或桩 |
 | 页面形态 | 12% | 12% | 1.44 | 无导航栏/tabBar/下拉/触底/页面滚动/分享/转场 |
 | 样式/渲染 | 8% | 68% | 5.44 | WXSS/rpx/作用域强；styleIsolation/addGlobalClass/shared 已实现；`:host` 低优先级与 canvas 仍不完整 |
 | 宿主/平台 | 8% | 15% | 1.20 | 仅浏览器宿主；无原生/网络/登录/支付/分享 |
 | 开发工具 | 4% | 35% | 1.40 | 有运行时状态/元素树/诊断；不是完整微信开发者工具 |
 | 质量/验证 | 3% | 46% | 1.38 | 151 单测 + 46 步浏览器验收；无性能/视觉/安全/原生测试 |
-| **合计** | **100%** | — | **37.72%** | |
+| **合计** | **100%** | — | **37.89%** | |
 
 ### 条目覆盖率速览
 
@@ -104,13 +104,13 @@
 
 ### 4.1 内置组件
 
-**21 / 60 = 35%**。按分类：
+**23 / 60 = 38%**。按分类：
 
 | 分类 | 数量 | 已实现 | 缺口 |
 | --- | ---: | ---: | --- |
 | 视图容器 | 11 | 4 | movable-area、movable-view、cover-view、cover-image、match-media、page-container、root-portal |
 | 基础内容 | 5 | 3 | rich-text、selection |
-| 表单 | 17 | 12 | picker-view、picker-view-column、editor、editor-portal、keyboard-accessory |
+| 表单 | 17 | 14 | editor、editor-portal、keyboard-accessory |
 | 导航 | 2 | 0 | navigator、functional-page-navigator |
 | 媒体 | 9 | 1 | audio、video、camera、live-player、live-pusher、voip-room、channel-live、channel-video |
 | 地图 | 1 | 0 | map |
@@ -119,10 +119,10 @@
 | 无障碍 | 1 | 0 | aria-component |
 | 导航栏 | 1 | 0 | navigation-bar |
 | 页面属性 | 1 | 0 | page-meta |
-| **合计** | **60** | **21** | |
+| **合计** | **60** | **23** | |
 
 **已实现组件**（[tags.ts](../packages/components/src/tags.ts:1)）：
-`view`、`text`、`button`、`label`、`input`、`checkbox`、`checkbox-group`、`radio`、`radio-group`、`icon`、`image`、`scroll-view`、`slider`、`progress`、`switch`、`swiper`、`swiper-item`、`canvas`、`textarea`、`form`、`picker`。
+`view`、`text`、`button`、`label`、`input`、`checkbox`、`checkbox-group`、`radio`、`radio-group`、`icon`、`image`、`scroll-view`、`slider`、`progress`、`switch`、`swiper`、`swiper-item`、`canvas`、`textarea`、`form`、`picker`、`picker-view`、`picker-view-column`。
 
 **属性/事件覆盖**（仅统计 WebView 适用属性；事件按组件文档属性表中的 `bind*`/`catch*` 条目统计，不含 `tap`/`longpress` 等通用事件）：
 
@@ -281,7 +281,7 @@ hasBehavior / export / wx://component-export
 2026-10-24 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
-- **151 个单元测试**（runtime 58 个，components 17 个）
+- **152 个单元测试**（runtime 58 个，components 18 个）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
 - **46 个浏览器步骤**全部通过；P0 新增 6 步覆盖组件语义、样式隔离、button 矩阵、relations 和 selectComponent
 - 门禁覆盖的 5 段流程无 console/page error（117 页探针的 pageerror 见 5.2）
@@ -502,6 +502,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-25 | 第七次同步：补齐 request、异步 storage、网络/电池/剪贴板/震动、modal/loading/actionSheet、login stub、share menu、canIUse/nextTick；API 8%；150 单测 | **36.58%** |
 | 2026-10-25 | 第八次同步：新增 textarea/form/picker 三个常用内置标签（form 收集、picker selector/date/time、textarea 事件）；内置组件 36→38；151 单测 | **36.92%** |
 | 2026-10-25 | 第九次同步：补主题/键盘监听、getUserProfile/getUserInfo、tabBar/导航栏/pageScrollTo、hideToast、getFileSystemManager 等高频 API 面；API 8→12%；151 单测 | **37.72%** |
+| 2026-10-25 | 第十次同步：新增 picker-view / picker-view-column（滚动列、columnchange、value 数组）；格式化 WXML 模板；内置组件 38→39；152 单测 | **37.89%** |
 
 ---
 

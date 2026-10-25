@@ -1,1 +1,10 @@
-<view id="native-view" class="tiny-view {{inline ? 'is-inline' : ''}} {{hovering && hoverClass !== 'none' ? hoverClass : ''}} {{hidden ? 'tiny-hidden' : ''}} class" style="{{style}}" bindtouchstart="handleTouchStart" bindtouchend="handleTouchEnd" bindtouchcancel="handleTouchCancel" role="{{ariaRole}}" aria-label="{{ariaLabel}}"><slot /></view>
+<view
+  id="native-view"
+  class="tiny-view {{inline ? 'is-inline' : ''}} {{hovering && hoverClass !== 'none' ? hoverClass : ''}} {{hidden ? 'tiny-hidden' : ''}} class"
+  style="{{style}}"
+  bindtouchstart="handleTouchStart"
+  bindtouchend="handleTouchEnd"
+  bindtouchcancel="handleTouchCancel"
+  role="{{ariaRole}}"
+  aria-label="{{ariaLabel}}"
+><slot /></view>

@@ -1,0 +1,10 @@
+<view
+  class="tiny-picker-view {{hidden ? 'tiny-hidden' : ''}} class"
+  style="{{style}}"
+  aria-label="{{ariaLabel}}"
+  bind:columnchange="handleColumnChange"
+>
+  <view class="tiny-picker-view-wrapper"><slot /></view>
+  <view class="tiny-picker-view-indicator {{indicatorClass}}" style="{{indicatorStyle}}"></view>
+  <view class="tiny-picker-view-mask {{maskClass}}" style="{{maskStyle}}"></view>
+</view>

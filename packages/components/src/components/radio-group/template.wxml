@@ -1,1 +1,5 @@
-<view class="tiny-radio-group {{hidden ? 'tiny-hidden' : ''}} class" style="{{style}}" catchchange="handleChange"><slot /></view>
+<view
+  class="tiny-radio-group {{hidden ? 'tiny-hidden' : ''}} class"
+  style="{{style}}"
+  catchchange="handleChange"
+><slot /></view>

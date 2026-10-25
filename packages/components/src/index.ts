@@ -24,6 +24,8 @@ import { defineCanvas } from './components/canvas'
 import { defineTextarea } from './components/textarea'
 import { defineForm } from './components/form'
 import { definePicker } from './components/picker'
+import { definePickerView } from './components/picker-view'
+import { definePickerViewColumn } from './components/picker-view-column'
 
 export { BUILTIN_COMPONENT_TAGS }
 export { BUILTIN_BASE_STYLES } from './styles'
@@ -59,6 +61,8 @@ const DEFINITION_FACTORIES: Record<BuiltinComponentTag, DefinitionFactory> = {
   textarea: defineTextarea,
   form: defineForm,
   picker: definePicker,
+  'picker-view': definePickerView,
+  'picker-view-column': definePickerViewColumn,
 }
 
 export function createBuiltinComponents(

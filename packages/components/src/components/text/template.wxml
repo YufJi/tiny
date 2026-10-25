@@ -1,1 +1,4 @@
-<text class="tiny-text {{selectable ? 'tiny-text-selectable' : ''}} {{space ? 'tiny-text-space-' + space : ''}} {{hidden ? 'tiny-hidden' : ''}} class" style="{{style}}"><slot /></text>
+<text
+  class="tiny-text {{selectable ? 'tiny-text-selectable' : ''}} {{space ? 'tiny-text-space-' + space : ''}} {{hidden ? 'tiny-hidden' : ''}} class"
+  style="{{style}}"
+><slot /></text>

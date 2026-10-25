@@ -20,6 +20,8 @@ export const BUILTIN_COMPONENT_TAGS = [
   'textarea',
   'form',
   'picker',
+  'picker-view',
+  'picker-view-column',
 ] as const
 
 export type BuiltinComponentTag = typeof BUILTIN_COMPONENT_TAGS[number]

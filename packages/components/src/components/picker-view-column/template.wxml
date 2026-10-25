@@ -1,0 +1,10 @@
+<view
+  id="native-column"
+  class="tiny-picker-view-column {{hidden ? 'tiny-hidden' : ''}} class"
+  style="{{style}}"
+  aria-label="{{ariaLabel}}"
+  bindscroll="handleScroll"
+  bindtap="handleTap"
+>
+  <view class="tiny-picker-view-column-content"><slot /></view>
+</view>

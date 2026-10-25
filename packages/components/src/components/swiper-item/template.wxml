@@ -1,1 +1,5 @@
-<view data-item-id="{{itemId}}" class="tiny-swiper-item {{hidden ? 'tiny-hidden' : ''}} class" style="{{style}}"><slot /></view>
+<view
+  data-item-id="{{itemId}}"
+  class="tiny-swiper-item {{hidden ? 'tiny-hidden' : ''}} class"
+  style="{{style}}"
+><slot /></view>

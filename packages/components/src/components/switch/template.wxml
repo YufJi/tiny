@@ -1,1 +1,12 @@
-<label class="tiny-switch {{checked ? 'is-checked' : ''}} {{hidden ? 'tiny-hidden' : ''}} class"><input id="native-input" aria-label="{{ariaLabel}}" style="accent-color: {{color}};" type="checkbox" checked="{{checked}}" disabled="{{disabled}}" catchchange="handleChange" /><view class="tiny-switch-control" /></label>
+<label class="tiny-switch {{checked ? 'is-checked' : ''}} {{hidden ? 'tiny-hidden' : ''}} class">
+  <input
+    id="native-input"
+    aria-label="{{ariaLabel}}"
+    style="accent-color: {{color}};"
+    type="checkbox"
+    checked="{{checked}}"
+    disabled="{{disabled}}"
+    catchchange="handleChange"
+  />
+  <view class="tiny-switch-control" />
+</label>
