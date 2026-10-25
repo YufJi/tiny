@@ -110,7 +110,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.equal(iconMetrics.color, 'rgb(9, 187, 7)', 'icon success color mismatch')
       assert.notEqual(iconMetrics.content, 'none', 'icon should render a font glyph')
       assert.equal(iconMetrics.width, 23, 'icon width mismatch')
-      const imageLoaded = await render.locator('img.tiny-image').first().evaluate(
+      const imageLoaded = await render.locator('img.tiny-image-probe, img.tiny-image-img').first().evaluate(
         (element) => element.naturalWidth > 0,
       )
       assert.ok(imageLoaded, 'inlined image did not load')

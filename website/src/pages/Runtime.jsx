@@ -447,7 +447,7 @@ export default function Runtime() {
             ['slider', 'value/min/max/step/disabled/colors/blockSize；changing/change', '自定义 track/thumb + 透明 range 交互层；数值归一化'],
             ['scroll-view', 'scrollX/Y、scrollTop/Left、scrollIntoView、refresher、drag/scroll 事件', 'CSS overflow + touch/scroll handlers'],
             ['swiper / swiper-item', 'current/currentItemId/indicator/autoplay/circular/vertical；change/transition/animationfinish', 'CSS transform + backend query / touch handlers'],
-            ['progress / icon / image', 'percent/showInfo/active/activeMode/colors、type/size/color、src/mode/webp/background', '模板 + observers；icon 内嵌 WeUI 字体 + 15 type 伪元素；image 转发 load/error'],
+            ['progress / icon / image', 'percent/showInfo/active/activeMode/colors、type/size/color、src/mode/webp/background', '模板 + observers；icon 内嵌 WeUI 字体 + 15 type 伪元素；image 走 div 背景图 + probe 测量 fallback'],
             ['canvas', 'canvas-id/type/disableScroll；touchstart/move/end/cancel/longtap/error', 'surface 组件；绘制由宿主 canvas 适配器完成'],
           ]}
         />

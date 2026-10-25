@@ -515,6 +515,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-25 | 视觉结构重写：checkbox/radio 改为 22×22 自定义控件，switch 改为 52×32 轨道+滑块，slider 改为自定义 track/thumb + 透明 range 交互层；保留视觉隐藏原生 input 与既有属性/事件/表单语义；新增尺寸/结构浏览器断言 | **37.89%** |
 | 2026-10-25 | 全局标签选择器映射：`app.wxss` 的 `view`/`button`/`input`/`canvas` 等 tag 规则编译为 `tiny-*` 宿主选择器；scoped 页面/组件继续使用 marker class；修复后代选择器中的 tag 未 scoped 的问题 | **37.89%** |
 | 2026-10-25 | icon 对齐 WeUI 字体实现：内嵌 `@font-face`、15 种 type 的 `::before` 字形与参考颜色表；`i` 宿主内渲染并支持 `size`/`color`/`aria`；补浏览器 fontFamily/伪元素断言 | **37.89%** |
+| 2026-10-25 | image 对齐参考结构：`div` 背景图 + 隐藏 probe `<img>` + fallback slot，补 320×240/inline-block、各 mode 的 background-size/position、widthFix/heightFix 比例计算与 load/error 宽高 | **37.89%** |
 
 ---
 

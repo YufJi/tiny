@@ -12,8 +12,8 @@
 
 当前 23 个内置标签里，真正“结构和默认样式都接近参考实现”的很少：
 
-- **P0：结构或默认外观明显不一致**：`image`、`picker`、`picker-view`、`picker-view-column`（4 个标签）
-- **已重写视觉结构**：`checkbox`、`radio`、`switch`、`slider`、`icon`（2026-10-25，见 2.1–2.3、2.5）
+- **P0：结构或默认外观明显不一致**：`picker`、`picker-view`、`picker-view-column`（3 个标签）
+- **已重写视觉结构**：`checkbox`、`radio`、`switch`、`slider`、`icon`、`image`（2026-10-25，见 2.1–2.5）
 - **P1：能用但结构/交互仍是近似**：`input`、`textarea`、`scroll-view`、`swiper`、`form`、`button`
 - **P2：主要是宿主结构差异**：`view`、`text`、`label`、`canvas`、`progress`、`swiper-item`
 
@@ -64,8 +64,8 @@
 
 2026-10-25 已完成 checkbox/radio/switch/slider 的视觉结构替换：控件外观改为 `div`/`span` + 伪元素绘制，原生 `input` 只作为视觉隐藏的无障碍/表单兜底。仍在用原生结构的是：
 
-- image：`<img>` + `object-fit`
 - icon 已改为 `<i>` + WeUI 字体 + `::before`，不再使用 Unicode 字符
+- image 已改为 `<div>` 背景图 + 隐藏 probe `<img>` + fallback slot
 
 这不是“默认样式略有差异”，而是：
 
@@ -251,19 +251,28 @@ wx-image (320×240，inline-block，overflow hidden)
 - `div` 宽高 100%
 - 背景图通过 `background-size/position/repeat` 控制
 
-我们的结构：
+我们的结构（2026-10-25 已重写）：
 
 ```text
-img.tiny-image
+tiny-image (320×240，inline-block，overflow hidden)
+  ├── div.tiny-image-div（background-image）
+  │    └── img.tiny-image-probe / img.tiny-image-img
+  └── view.tiny-image-fallback > slot
 ```
 
-差异：
+已对齐：
 
-- 用 `<img>`，不是 `div` 背景图；`widthFix`/`top`/`bottom` 等模式靠 `object-fit/object-position` 近似
-- 默认是 `display:block; max-width:100%`，没有 320×240 / inline-block
-- `widthFix` 没有按图片实际比例计算高度
-- 缺少 `longpress` 事件
-- 缺少 fallback slot 的定位/尺寸
+- 默认 320×240、`inline-block`、宿主 `overflow:hidden`；
+- `scaleToFill`/`aspectFit`/`aspectFill`/`top`/`bottom`/`center`/`left`/`right`/四角通过 `background-size/position` 控制；
+- `widthFix`/`heightFix` 在 probe load 后用 `naturalWidth/naturalHeight` 和宿主尺寸计算另一条边；
+- `renderingMode="img"` 走内部 `<img>`，默认背景图模式走 `div`；
+- load/error 事件带 `width`/`height`，fallback slot 在加载完成前可见。
+
+剩余差异：
+
+- `showMenuByLongpress` 的长按菜单未实现；
+- `backgroundSize`/`backgroundPosition`/`backgroundRepeat` 属性还不能覆盖 mode 派生值；
+- `lazyLoad` 仍是 probe 的 `loading="lazy"` 近似，不是 IntersectionObserver。
 
 ### 2.5 icon（2026-10-25 已重写）
 

@@ -1,4 +1,5 @@
 tiny-image {
+  position: relative;
   display: inline-block;
   width: 320px;
   height: 240px;
@@ -11,63 +12,22 @@ tiny-image[mode=widthFix] {
 tiny-image[mode=heightFix] {
   width: auto;
 }
-.tiny-image {
-  display: block;
+.tiny-image-div {
   width: 100%;
   height: 100%;
+}
+.tiny-image-img {
+  display: block;
+  width: 100%;
   max-width: 100%;
-  object-fit: fill;
 }
-.tiny-image-mode-aspectFit {
-  object-fit: contain;
+.tiny-image-probe {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
 }
-.tiny-image-mode-aspectFill {
-  object-fit: cover;
-}
-.tiny-image-mode-widthFix {
-  object-fit: fill;
-  height: auto;
-}
-.tiny-image-mode-scaleToFill {
-  object-fit: fill;
-}
-.tiny-image-mode-heightFix {
-  object-fit: fill;
-  width: auto;
-}
-.tiny-image-mode-top {
-  object-fit: none;
-  object-position: top;
-}
-.tiny-image-mode-bottom {
-  object-fit: none;
-  object-position: bottom;
-}
-.tiny-image-mode-center {
-  object-fit: none;
-  object-position: center;
-}
-.tiny-image-mode-left {
-  object-fit: none;
-  object-position: left;
-}
-.tiny-image-mode-right {
-  object-fit: none;
-  object-position: right;
-}
-.tiny-image-mode-topLeft {
-  object-fit: none;
-  object-position: left top;
-}
-.tiny-image-mode-topRight {
-  object-fit: none;
-  object-position: right top;
-}
-.tiny-image-mode-bottomLeft {
-  object-fit: none;
-  object-position: left bottom;
-}
-.tiny-image-mode-bottomRight {
-  object-fit: none;
-  object-position: right bottom;
+.tiny-image-fallback.is-loaded {
+  display: none;
 }

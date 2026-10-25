@@ -1,8 +1,29 @@
-<img
-  class="tiny-image tiny-image-mode-{{mode}}"
-  src="{{resolvedSrc}}"
-  alt="{{ariaLabel}}"
-  loading="{{lazyLoad ? 'lazy' : 'eager'}}"
-  binderror="handleError"
-  bindload="handleLoad"
-/>
+<view
+  id="native-image"
+  class="tiny-image-div tiny-image-mode-{{mode}}"
+  style="{{imageStyle}}"
+  role="img"
+  aria-label="{{ariaLabel}}"
+>
+  <block wx:if="{{resolvedSrc}}">
+    <img
+      wx:if="{{useImg}}"
+      class="tiny-image-img"
+      src="{{resolvedSrc}}"
+      alt=""
+      loading="{{lazyLoad ? 'lazy' : 'eager'}}"
+      bindload="handleLoad"
+      binderror="handleError"
+    />
+    <img
+      wx:else
+      class="tiny-image-probe"
+      src="{{resolvedSrc}}"
+      alt=""
+      loading="{{lazyLoad ? 'lazy' : 'eager'}}"
+      bindload="handleLoad"
+      binderror="handleError"
+    />
+  </block>
+</view>
+<view class="tiny-image-fallback {{loaded ? 'is-loaded' : ''}}"><slot /></view>
