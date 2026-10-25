@@ -10,12 +10,12 @@
 
 ## 0. 结论
 
-当前 23 个内置标签里，真正“结构和默认样式都接近参考实现”的很少：
+当前 23 个内置标签里，P0 视觉结构已经重写完成，剩余差异集中到交互语义和 P1 组件：
 
 - **P0：结构或默认外观明显不一致**：无（`picker` 仅剩 `region` 模式未实现）
 - **已重写视觉结构**：`checkbox`、`radio`、`switch`、`slider`、`icon`、`image`、`picker`、`picker-view`、`picker-view-column`（2026-10-25，见 2.1–2.7）
-- **P1：能用但结构/交互仍是近似**：`input`、`textarea`、`scroll-view`、`swiper`、`form`、`button`
-- **P2：主要是宿主结构差异**：`view`、`text`、`label`、`canvas`、`progress`、`swiper-item`
+- **P1：能用但结构/交互仍是近似**：`input`、`textarea`、`scroll-view`、`swiper`、`form`、`button`；另有 `checkbox-group`/`radio-group` 受控 `value`、`switch` 的 `type="checkbox"`、`label-target` 分发
+- **P2：主要是细节差异**：`text`、`label`、`canvas`、`progress`、`swiper-item`、`view` 的宿主命名/边界
 
 最大的问题不是“少了几条 CSS”，而是：
 
@@ -104,7 +104,7 @@
 
 因此很多逻辑差异不是“少一个属性”，而是事件顺序、受控值、子项注册方式不同。
 
-## 2. P0：结构或默认外观明显不一致
+## 2. 已重写的 P0 视觉结构
 
 ### 2.1 checkbox / radio
 
@@ -531,12 +531,12 @@ span#wrapper > slot
 我们的：
 
 ```text
-view#native-form > slot
+tiny-form > slot
 ```
 
 差异：
 
-- 参考是 `span`，我们是 `view`；默认 display 不同
+- 参考内部还有 `span#wrapper`，我们是 `tiny-form` 真宿主直接挂 slot；默认 display 不同
 - 参考 `formSubmit`/`formReset` 与 `wx-group`、`wx-data-component`、自动填充逻辑组合；我们只做 DFS 收集
 - 自定义组件 `wx://form-field` 还没有接入
 - `reportSubmit` 只保留属性，没有上报行为
@@ -553,12 +553,12 @@ slot（native=false）
 我们的：
 
 ```text
-button.tiny-button > slot
+tiny-button > slot
 ```
 
 差异：
 
-- 参考宿主是 `wx-button`，native 模式才走原生 cover-view；我们始终是原生 `<button>`
+- 参考宿主是 `wx-button`，native 模式才走原生 cover-view；我们是 `tiny-button` 真宿主 + slot，宿主形态已接近，但还没有 native/cover-view 分支
 - 基础 CSS（尺寸/颜色/圆角/loading/plain/mini）大体已对齐
 - 缺少 `native` 属性和 cover-view 结构
 - `open-type` 仍是失败回调，不是真实能力
@@ -574,23 +574,23 @@ button.tiny-button > slot
 | `canvas` | 参考默认 300×150，内部 canvas 绝对定位；我们宽度 100%、没有内部定位层，实际是离屏镜像 |
 | `progress` | 参考结构 `div.wx-progress-bar > div.wx-progress-inner-bar`；我们是 track/bar。默认色和属性已对齐，但 `active` 的逐帧动画/curPercent 未实现 |
 | `swiper-item` | 参考依赖 `wx-swiper` relation 和 slide-frame 布局；我们只是普通 slot 容器，单独使用没有尺寸/定位语义 |
-| `button` 的 `:after` 边框 | 已复制，但原生 button 的 `appearance`/`cursor` 与参考宿主不同 |
+| `button` 的 `:after` 边框 | 已复制，宿主已改为 `tiny-button`；仍缺 native/cover-view 分支 |
 | `icon` 的字体 | 已改为 WeUI 字体 + 15 种 type 的伪元素，颜色按参考表 |
 
 ## 5. 建议修复顺序
 
-1. **先做共享视觉原语**：checkbox、radio、switch、slider
-   - 放弃原生 input，改成参考的 wrapper + `div` 结构
-   - 迁移参考 CSS 的 22×22、52×32、2px 轨道、28px 滑块、WeUI 勾选
-   - 同步 `tap`/`touchtrack`/disabled 语义
+1. **✅ 已完成：checkbox、radio、switch、slider**
+   - 已改为 wrapper + `div`/`span` 结构，22×22、52×32、2px 轨道、28px 滑块
+   - 剩余：checkbox/radio 的 tap/aria/group 语义，switch 的 `type="checkbox"`
 
-2. **再做 image + icon**
-   - image 改成 `div` 背景图 + 320×240/inline-block；补 widthFix 测量和 longpress
-   - icon 迁到 `i` + weui 字体/伪元素，补全 type 和颜色
+2. **✅ 已完成：image + icon**
+   - image 已改为背景图 + 320×240/inline-block + widthFix 测量
+   - icon 已迁到 `i` + WeUI 字体/伪元素，15 种 type 和颜色表
+   - 剩余：image longpress/lazy、icon longpress
 
-3. **做 picker / picker-view**
-   - 恢复 wrapper + 浮层 + column 的 mask/indicator/content 结构
-   - 补 multiSelector/region、初始 value、columnchange 时序
+3. **✅ 已完成：picker / picker-view**
+   - 已完成 wrapper + 浮层 + column 的 mask/indicator/content 结构
+   - 剩余：region/customItem、部分初始 value/列时序
 
 4. **补 input/textarea 的 wrapper 结构**
    - 密码镜像、placeholder、autoHeight、selection/focus 同步
@@ -614,7 +614,7 @@ button.tiny-button > slot
    - 组件单测：结构 class、默认尺寸、选中/禁用状态、事件 detail
    - 浏览器验收：真实布局（getBoundingClientRect）和交互
 
-### 6.1 checkbox / radio
+### 6.1 checkbox / radio（✅ 视觉已重写；剩余 tap/aria/group）
 
 目标模板：
 
@@ -718,7 +718,7 @@ handleTap() {
 
 风险：`label for` 跨组件 shadow 边界可能失效；如果验证失败，下一步实现 label-target 派发（见 6.9）。
 
-### 6.2 switch
+### 6.2 switch（✅ 视觉已重写；剩余 type="checkbox"）
 
 目标模板：
 
@@ -812,7 +812,7 @@ handleTap() {
 - 切换后 `vibrateShort`（参考在 switch 模式调用 `wx.vibrateShort`；渲染线程不能直接调 service API，需要宿主桥或省略，先记录差异）
 - 保留隐藏 input 的 `change` 兜底
 
-### 6.3 slider
+### 6.3 slider（✅ 视觉已重写；剩余 touchtrack 交互层）
 
 目标模板：
 
@@ -901,7 +901,7 @@ handleTap() {
 - 拖动发 `changing`/`change`
 - disabled 不响应
 
-### 6.4 image
+### 6.4 image（✅ 已重写；剩余 longpress/lazy）
 
 目标模板：
 
@@ -969,7 +969,7 @@ handleTap() {
 - `widthFix` 且图片 2:1 时高度变为宽度的一半
 - 图片失败触发 `error`
 
-### 6.5 icon
+### 6.5 icon（✅ 已重写）
 
 目标模板（已实现）：
 
@@ -1020,7 +1020,7 @@ CSS：
 - 每个 type 的 `::before` content 正确
 - 颜色与参考一致
 
-### 6.6 picker
+### 6.6 picker（✅ selector/multi/date/time；剩余 region/customItem）
 
 分两阶段，避免一次重写全部模式。
 
@@ -1085,7 +1085,7 @@ CSS：
 - 取消发 `cancel`
 - date 模式 value 为 `YYYY-MM-DD`
 
-### 6.7 picker-view / picker-view-column
+### 6.7 picker-view / picker-view-column（✅ 结构/pointer 已重写）
 
 目标结构按参考：
 
@@ -1136,7 +1136,7 @@ CSS：
 - 结束触发 `change`，value 数组正确
 - 两列互不干扰
 
-### 6.8 checkbox-group / radio-group
+### 6.8 checkbox-group / radio-group（❌ 仍缺受控 value）
 
 新增受控属性：
 
@@ -1183,7 +1183,7 @@ radio-group 用 `value: String`，observer 同步 `checked`。
 - 外部 setData value 后 UI 同步
 - radio-group 单选互斥
 
-### 6.9 label-target
+### 6.9 label-target（❌ 未完成）
 
 checkbox/radio/switch 改成自定义视觉后，`<label for>` 不再天然工作。两条路线：
 
@@ -1213,7 +1213,7 @@ handleTap() {
 - 嵌套 `<label><checkbox/></label>` 切换
 - 不重复触发（避免 label + input 双切换）
 
-### 6.10 input / textarea
+### 6.10 input / textarea（⚠️ input 文本输入已修；wrapper/autoHeight 仍缺）
 
 **input**：
 
@@ -1254,7 +1254,7 @@ handleTap() {
 - 输入多行后 autoHeight 高度增加
 - placeholder 不遮挡输入
 
-### 6.11 scroll-view / swiper
+### 6.11 scroll-view / swiper（⚠️ 结构仍是近似）
 
 **scroll-view**：
 
@@ -1298,7 +1298,7 @@ handleTap() {
 - current 变化 transform 正确
 - vertical 方向正确
 
-### 6.12 form / button
+### 6.12 form / button（⚠️ 仍为近似）
 
 **form**：
 
@@ -1314,7 +1314,7 @@ handleTap() {
 - 中期：如果必须和参考完全一致，改成 `wx-button` 宿主 + `<slot>`，`native` 时才渲染原生/cover-view；这会牵动 `.tiny-button` 样式和点击区域，单独排期
 - open-type 继续 fail-close（当前诊断 + error），不要伪装成成功
 
-### 6.13 view 宿主（长期）
+### 6.13 view 宿主（✅ 宿主迁移已完成）
 
 - 目标：`view` 改成 `virtualHost: false`，模板 `<slot />`，宿主自己承担 `.tiny-view`、hover、hidden、style
 - 收益：data-* 转发 shim 可以删除；参考宿主选择器可直接复用
@@ -1362,9 +1362,9 @@ expect(events).toEqual([{ value: 'a', checked: true }])
 ## 8. 统计
 
 - 已接入标签：23 / 60
-- 结构/默认外观 P0：11 个标签（9 类问题）
-- 结构/交互 P1：6 个组件
+- 结构/默认外观 P0：0（2026-10-25 已完成 8 个标签的视觉重写）
+- 结构/交互 P1：6 个组件 + 3 个语义缺口（group value、switch type、label-target）
 - 结构差异为主 P2：6 个标签
 - 参考实现中尚未接入的标签：37 个（见主文档第 4.1 节）
 
-> 本文只做差异审计，不包含修复代码；修复时优先以参考 CSS 的宿主选择器/尺寸/颜色和参考 JS 的 behaviors 为准，而不是继续给原生控件打补丁。
+> 本文同时保留差异记录、目标设计和已完成状态；第 6 节的部分方案已落地，未完成项仍以参考 CSS 的宿主选择器/尺寸/颜色和参考 JS 的 behaviors 为准。

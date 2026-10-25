@@ -52,8 +52,8 @@ export default function Status() {
             ['bridge', status('可用', 'good'), 'envelope、帧、MessagePort/内存 transport、握手、超时、批处理、JSON-safe 校验；capabilities 未用于协商。'],
             ['浏览器宿主', status('可用', 'good'), '@tiny/host-browser 单 service + 每页 render iframe、MessageChannel、tabBar 宿主 UI、DOM canvas、resolveAssetUrl、DevtoolRuntimeClient；runtime 纯度检查通过。'],
             ['原生宿主', status('未实现', 'warn'), '没有 native transport、backend 或非浏览器 service 运行时；但 core 已经移除 document/Image/iframe。'],
-            ['内置组件', status('较完整', 'good'), '23 个组件、共享 behaviors、接近 WebView 的 button/input/scroll-view/swiper 表面；navigator/video/rich-text/map 等仍缺。'],
-            ['API', status('窄', 'warn'), 'storage、导航、system、toast、animation、canvas、selector query；无网络/媒体/文件/账号/位置/WebSocket。'],
+            ['内置组件', status('较完整', 'good'), '23 个组件、共享 behaviors；checkbox/radio/switch/slider/icon/image/picker 已按 2.7.0 参考重写；input/textarea/scroll-view/swiper 仍近似；navigator/video/rich-text/map 等缺。'],
+            ['API', status('部分', 'warn'), 'request、异步 storage、导航/switchTab、system、toast/modal、canvas、selector query；无媒体/真实文件/账号/位置/WebSocket。'],
             ['页面能力', status('部分', 'warn'), '基础生命周期、导航、内置 tabBar/switchTab、页面滚动与触底；无下拉刷新、分享、页面栈恢复。'],
             ['组件语义', status('核心可用', 'good'), 'Behaviors、observers、relations、selectComponent、component-export、component-as-page；generics/placeholder/definitionFilter 未实现。'],
             ['样式系统', status('核心可用', 'good'), 'class/tag scope、rpx、@import、styleIsolation/addGlobalClass、externalClasses、shared CSS；:host 与低优先级输出未启用。'],
@@ -62,7 +62,7 @@ export default function Status() {
             ['诊断', status('可用', 'good'), '编译/transport/service/render/host 五类；组件语义新增 observer/relation/behavior 诊断。'],
             ['Devtool', status('运行时级+', 'good'), '设备框、宿主导航/tabBar、每页 render 帧、全部 fixture、Console/Lifecycle/Elements、Reload/Terminate；仍不是完整微信开发者工具。'],
             ['性能 / 稳定', status('未量化', 'warn'), '无启动、首屏、setData、内存、长时运行基准；无压力测试。'],
-            ['测试', status('核心链路', 'good'), '152 单测 + 46 浏览器步骤 + 5 fixture；没有性能、视觉、原生、安全测试。'],
+            ['测试', status('核心链路', 'good'), '167 单测 + 46 浏览器步骤 + 5 fixture；没有性能、视觉、原生、安全测试。'],
           ]}
         />
       </Section>
@@ -210,7 +210,7 @@ export default function Status() {
           <Card tag="runtime" title="然后看消费"><p>双线程、组件语义、样式隔离与 canvas 注入。</p><p><a href="#/runtime">运行时内核 →</a></p></Card>
           <Card tag="protocol" title="协议是边界"><p>消息目录、错误与扩展规则。</p><p><a href="#/protocol">Bridge 协议 →</a></p></Card>
           <Card tag="hosts" title="宿主是落地"><p>host-browser、注入面与新宿主检查清单。</p><p><a href="#/hosts">宿主支持 →</a></p></Card>
-          <Card tag="testing" title="证据是底线"><p>152 单测与 46 步浏览器验收。</p><p><a href="#/testing">验证体系 →</a></p></Card>
+          <Card tag="testing" title="证据是底线"><p>167 单测与 46 步浏览器验收。</p><p><a href="#/testing">验证体系 →</a></p></Card>
         </Cards>
         <Callout title="仓库">
           <p>

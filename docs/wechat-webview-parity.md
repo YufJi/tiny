@@ -1,8 +1,8 @@
 # 微信 WebView 版功能对齐度分析
 
-> **快照**：2026-10-25（第十次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
+> **快照**：2026-10-26（第十一次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
 >
-> **结论**：加权功能对齐约 **38%（37–40%）**；页面启动率 85.5%；生产可替换 < 20%
+> **结论**：加权功能对齐约 **42%（40–43%）**；页面启动率 85.5%；生产可替换 < 20%
 >
 > **维护**：功能完成后更新本文的评分表、覆盖表、实测数据和变更记录
 
@@ -10,11 +10,12 @@
 
 ## 1. 结论摘要
 
-- 按微信 WebView 版全量能力计算，当前引擎约完成 **三分之一强**：加权得分 **37.89%**。
-- 能力结构仍然偏科：**编译/渲染约 70%，框架约 60%，平台 API 约 6%，页面形态约 12%**。
+- 按微信 WebView 版全量能力计算，当前引擎约完成 **四成**：加权得分 **41.91%**。
+- 能力结构仍然偏科：**编译/渲染约 70%，框架约 62%，内置组件约 45%，平台 API 约 13%，页面形态约 25%**。
 - 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent` 均已落地，Component-as-page 也接入了同一套核心语义；UI 库的核心语义障碍基本移除，但 npm 构建、`generics`/`definitionFilter` 等仍有缺口。
+- 内置组件已完成宿主迁移和第一轮视觉重写：23 个标签的真实宿主为 `tiny-*`，checkbox/radio/switch/slider/icon/image/picker/picker-view 的结构与默认外观已按 2.7.0 参考实现重写；input/textarea/scroll-view/swiper/form/button 仍是 P1 近似。
 - 仓库内置的微信官方 demo 子集（117 页）中，**100 页能启动（85.5%）**，96 页有可见文本；但这是“能挂载”，不是“功能对齐”。
-- 普通业务小程序最依赖的 `wx.login`、`wx.requestPayment`、媒体/文件/定位等平台 API 仍未实现；内置导航栏/tabBar 已在 devtool 宿主落地，但自定义 tabBar、下拉刷新、分享与转场仍缺。
+- 普通业务小程序最依赖的 `wx.login`、`wx.requestPayment`、媒体/文件/定位等平台 API 仍未实现；内置导航栏/tabBar 已在 devtool 宿主落地并接入 `switchTab`，但自定义 tabBar、下拉刷新、分享与转场仍缺。
 - 一句话：**组件语义这条线已经补齐，平台 API 和页面形态仍是决定“能否替换微信运行时”的主要短板。**
 
 仓库自己的 [Status 页](../website/src/pages/Status.jsx) 也给出了相同定性判断（“能跑真实示例，还不是完整微信兼容”），本文把它量化，并保留可复测的口径。
@@ -68,33 +69,33 @@
 
 | 维度 | 权重 | 完成度 | 加权 | 关键依据 |
 | --- | ---: | ---: | ---: | --- |
-| 编译/构建 | 10% | 72% | 7.20 | WXML/WXSS/WXS 基本完整；app.json 只消费 3 个字段；无 npm 构建、无 TS 类型检查 |
-| 框架运行时 | 18% | 60% | 10.80 | 9/14 页面生命周期、3/5 路由；自定义组件与 Component-as-page 核心语义已补齐，缺 generics/definitionFilter |
-| 内置组件 | 17% | 39% | 6.63 | 23/60 标签；属性声明 119/146；事件映射 44/46；默认外观仍为近似 |
-| wx API | 20% | 12% | 2.40 | 70/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar 等已接或桩 |
-| 页面形态 | 12% | 12% | 1.44 | devtool 宿主已实现导航栏/tabBar/页面滚动/触底；测试/生产宿主仍未提供，评分保守；缺下拉刷新/分享/转场 |
-| 样式/渲染 | 8% | 68% | 5.44 | WXSS/rpx/作用域强；styleIsolation/addGlobalClass/shared 已实现；`:host` 低优先级与 canvas 仍不完整 |
+| 编译/构建 | 10% | 74% | 7.40 | WXML/WXSS/WXS 基本完整；app.wxss tag 选择器已映射到内置宿主；app.json 只消费少量字段；无 npm 构建、无 TS 类型检查 |
+| 框架运行时 | 18% | 62% | 11.16 | 9/14 页面生命周期、3/5 路由；tab 页缓存/onTabItemTap 已接；自定义组件核心语义已补齐，缺 generics/definitionFilter |
+| 内置组件 | 17% | 45% | 7.65 | 23/60 标签；P0 视觉重写完成；已统计属性 118/146、事件 44/46；P1 仍有 6 个近似组件 |
+| wx API | 20% | 13% | 2.60 | 65/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar/switchTab 等已接或桩 |
+| 页面形态 | 12% | 25% | 3.00 | devtool 宿主已实现导航栏/tabBar/页面滚动/触底/tab 页缓存；测试/生产宿主仍未提供，评分保守；缺下拉刷新/分享/转场 |
+| 样式/渲染 | 8% | 70% | 5.60 | WXSS/rpx/作用域强；app.wxss tag 映射与内置宿主选择器已落地；`:host` 低优先级与 canvas 仍不完整 |
 | 宿主/平台 | 8% | 15% | 1.20 | 仅浏览器宿主；无原生/网络/登录/支付/分享 |
-| 开发工具 | 4% | 35% | 1.40 | 有运行时状态/元素树/诊断；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 46% | 1.38 | 151 单测 + 46 步浏览器验收；无性能/视觉/安全/原生测试 |
-| **合计** | **100%** | — | **37.89%** | |
+| 开发工具 | 4% | 45% | 1.80 | 每页 render 帧、生命周期时间线、宿主导航/tabBar；不是完整微信开发者工具 |
+| 质量/验证 | 3% | 50% | 1.50 | 167 单测 + 46 步浏览器验收；新增 tabBar/视觉结构断言；无性能/安全/原生测试 |
+| **合计** | **100%** | — | **41.91%** | |
 
 ### 条目覆盖率速览
 
 | 指标 | 微信 WebView | Tiny | 覆盖率 |
 | --- | ---: | ---: | ---: |
-| 内置组件标签 | 60 | 18 | 30.0% |
-| 核心 UI 组件 | 45 | 18 | 40.0% |
-| wx API 条目 | 502 | 62 | 12.4% |
+| 内置组件标签 | 60 | 23 | 38.3% |
+| 核心 UI 组件 | 45 | 23 | 51.1% |
+| wx API 条目 | 502 | 65 | 12.9% |
 | 官方 demo 实际调用 API | 150 | ~35 | ~23% |
 | 页面生命周期 | 14 | 9 | 64.3% |
 | 应用生命周期 | 7 | 3 | 42.9% |
-| 路由 API | 5 | 2 | 40.0% |
-| 已实现组件属性 | 146 | 47 | 32.2% |
-| 已实现组件事件 | 43 | 13 | 30.2% |
-| app.json 关键字段 | 20+ | 3 | ≈15% |
+| 路由 API | 5 | 3 | 60.0% |
+| 已统计组件属性 | 146 | 118 | 80.8% |
+| 已统计组件事件 | 46 | 44 | 95.7% |
+| app.json 关键字段 | 20+ | 4 | ≈20% |
 
-> API 的 12 个 = 核心 10 个（`getSystemInfo` / `getSystemInfoSync`、`getStorageSync`、`setStorageSync`、`navigateTo`、`navigateBack`、`showToast`、`createAnimation`、`createCanvasContext`、`createSelectorQuery`）+ 宿主扩展 2 个（`getMenuButtonBoundingClientRect`、`getPerformance`）。
+> API 的 65 个 = 63 个 core service API + 2 个宿主扩展（`getMenuButtonBoundingClientRect`、`getPerformance`）；不含命名空间、同步/异步别名去重后的额外条目。
 >
 > 自定义组件核心语义本次盘点 **8 / 12**：已实现 behaviors、observers、relations、externalClasses、styleIsolation/addGlobalClass、selectComponent/selectAll/selectOwner、multipleSlots/virtualHost、component-export/export；仍缺 generics、placeholders、definitionFilter、pureDataPattern。该口径只统计核心 12 项，不含 trait/chaining、内置 `wx://form-field`、Component-as-page 等边缘项；不参与上面的加权总分。
 
@@ -132,35 +133,37 @@
 | --- | ---: | ---: | ---: | ---: | --- |
 | button | 22 | 22 | 9 | 9 | open-type 事件以失败回调形式触发；真实平台 API 未接 |
 | canvas | 3 | 3 | 6 | 6 | 触摸/longtap/error 已接；仍为占位画布 |
-| checkbox-group | 0 | 0 | 1 | 1 | — |
-| checkbox | 4 | 4 | 0 | 0 | 原生外观近似 |
-| icon | 3 | 3 | 0 | 0 | — |
-| image | 6 | 5 | 2 | 2 | forceHttps；模式映射仍不完整 |
+| checkbox-group | 0 | 0 | 1 | 1 | 缺公开受控 `value` |
+| checkbox | 4 | 4 | 0 | 0 | 自定义视觉已对齐；tap/group 语义仍差 |
+| icon | 3 | 3 | 0 | 0 | WeUI 字体重写完成；longpress 缺 |
+| image | 6 | 5 | 2 | 2 | 背景图已对齐；longpress/lazy 仍缺 |
 | input | 26 | 17 | 10 | 8 | keyboardheightchange、nicknamereview、placeholder-style |
 | label | 1 | 1 | 0 | 0 | `for` 已绑定；label-target 分发仍依赖原生 label |
 | progress | 11 | 10 | 1 | 1 | 少量外观/动画细节 |
-| radio-group | 0 | 0 | 1 | 1 | — |
-| radio | 4 | 4 | 0 | 0 | 原生外观近似 |
-| scroll-view | 24 | 10 | 10 | 10 | refresher/drag/scroll start-end 已有基础触发 |
-| slider | 12 | 12 | 2 | 2 | 原生 range 外观与 block 细节 |
+| radio-group | 0 | 0 | 1 | 1 | 缺公开受控 `value` |
+| radio | 4 | 4 | 0 | 0 | 自定义视觉已对齐；tap/group 语义仍差 |
+| scroll-view | 24 | 10 | 10 | 10 | 三层结构/touchtrack 仍是近似 |
+| slider | 12 | 12 | 2 | 2 | 自定义 track/thumb；透明 range 交互层 |
 | swiper-item | 2 | 1 | 0 | 0 | skip-hidden-item-layout |
-| swiper | 16 | 15 | 3 | 3 | current-item-id 行为/多列布局细节 |
-| switch | 4 | 4 | 1 | 1 | 原生外观近似 |
+| swiper | 16 | 15 | 3 | 3 | 仍为 flex track，未改 slide-frame |
+| switch | 4 | 4 | 1 | 1 | 52×32 自定义视觉；type="checkbox" 缺 |
 | text | 4 | 3 | 0 | 0 | decode 未真正解码 |
 | view | 4 | 4 | 0 | 0 | hover 默认 none；shared `wx-hover` |
-| **合计** | **146** | **119（81.5%）** | **46** | **44（95.7%）** | |
+| **合计（19 个已统计组件）** | **146** | **118（80.8%）** | **46** | **44（95.7%）** | |
 
-> 本轮新增的 `textarea` / `form` / `picker` 已计入标签数，但属性/事件明细尚未并入上表；`picker-view` / `picker-view-column` 仍未实现。
+> `textarea` / `form` / `picker` / `picker-view` / `picker-view-column` 已计入标签数，但属性/事件明细尚未并入上表；因此 146 是这 19 个组件的文档条目之和，不是 23 个组件的全量分母。
+>
+> 当前 P1 组件：`input`、`textarea`、`scroll-view`、`swiper`、`form`、`button`；另有 group 受控 value、switch `type="checkbox"`、label-target 三个语义缺口。
 
 > 事件覆盖按“事件名已绑定并能触发基础 detail”统计；button open-type 事件和部分 scroll-view refresher 事件目前是失败/模拟回调，不是微信平台 API 的真实成功语义。
 
-**外观保真度**：默认样式已从自定义暗色主题迁移为各组件的 WeChat 近似默认（button/input/progress 等较完整，checkbox/radio/switch/slider 仍是原生控件近似），但还没有逐像素对齐微信，也存在平台/设备差异。
+**外观保真度**：P0 视觉重写已完成——checkbox/radio 22×22、switch 52×32、slider 自定义 track/thumb、image 背景图、icon WeUI 字体、picker/picker-view 参考结构；input/textarea/scroll-view/swiper/form/button 仍是 P1 近似，尚未逐像素对齐。
 
 > 不支持的标签会降级为普通 DOM 元素，只发 `UNSUPPORTED_COMPONENT` warning，不抛错。页面能开，但组件没有行为。
 
 ### 4.2 wx API
 
-**62 / 502 ≈ 12%；官方 demo 实际用到的 150 个唯一 `wx.*` 中约支持 35 个（~23%）。**
+**65 / 502 ≈ 13%；官方 demo 实际用到的 150 个唯一 `wx.*` 中约支持 35 个（~23%）。**
 
 能力分布：
 
@@ -168,13 +171,13 @@
 | --- | --- | --- |
 | 系统信息 | 部分 | `getSystemInfo` / `getSystemInfoSync` 可用；字段仍以宿主快照为准，缺完整设备/安全区信息 |
 | 数据缓存 | 部分 | sync/async、remove/clear/info 已接；仍只有宿主内存快照，刷新即丢，无 batch |
-| 路由 | 部分 | 仅 navigateTo/navigateBack；无 redirectTo/reLaunch/switchTab |
-| 界面交互 | 部分 | toast/loading/modal/actionSheet 有浏览器 overlay；无导航栏/页面 chrome |
+| 路由 | 部分 | navigateTo/navigateBack/switchTab；无 redirectTo/reLaunch |
+| 界面交互 | 部分 | toast/loading/modal/actionSheet 有浏览器 overlay；导航栏/tabBar 在 devtool 宿主可用 |
 | 网络 | 部分 | `request` 已接 fetch；upload/download/WebSocket/UDP/TCP 仍无 |
 | 登录/账号 | 桩 | `login` 返回宿主 stub code，`checkSession` 成功；无真实会话/getUserProfile |
-| 支付/分享/订阅 | 桩 | show/hide/updateShareMenu 成功；无 UI、支付、订阅 |
+| 支付/分享/订阅 | 桩 | show/hide/updateShareMenu 成功；无 UI、支付、订阅；tabBar badge/red-dot 已接 |
 | 媒体 | 无 | 无 chooseImage/chooseMedia/previewImage/audio/video/recorder/camera |
-| 文件 | 无 | 无 FileSystemManager/openDocument/saveFile |
+| 文件 | 桩 | getFileSystemManager 只有可调用的 fail stub；无真实读写/openDocument/saveFile |
 | 位置/设备 | 部分 | 网络类型、电池、剪贴板、震动已接；无定位/扫码/电话/蓝牙/NFC |
 | 画布 | 桩/部分 | legacy `createCanvasContext` 是 Proxy 桩；ECharts 走 service 离屏 canvas → PNG 帧 |
 | 动画 | 部分 | `createAnimation` 只映射最终态 CSS transform/transition，无多 step 时序与回调 |
@@ -288,9 +291,9 @@ hasBehavior / export / wx://component-export
 2026-10-24 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
-- **164 个单元测试**（runtime 60 个，host-web-components 23 个）
+- **167 个单元测试**（runtime 63 个，host-web-components 23 个）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
-- **46 个浏览器步骤**全部通过；P0 新增 6 步覆盖组件语义、样式隔离、button 矩阵、relations 和 selectComponent
+- **46 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent，devtool 覆盖 tabBar/每页 render 帧
 - 门禁覆盖的 5 段流程无 console/page error（117 页探针的 pageerror 见 5.2）
 
 这说明现有能力是**真实可运行**的，不是纸面设计。
@@ -323,7 +326,7 @@ hasBehavior / export / wx://component-export
 
 ### 5.3 官方 demo API 覆盖
 
-从 `tests/apps/wechat-demo` 源码中提取到 **150 个唯一 `wx.*` 调用**，引擎约支持 **35 个（~23%）**：
+从 `tests/apps/wechat-demo` 源码中提取到 **150 个唯一 `wx.*` 调用**，引擎约支持 **35 个（~23%）**；服务 API 总面 65/502：
 
 ```text
 getSystemInfo / getSystemInfoSync / getStorageSync / setStorageSync
@@ -332,21 +335,23 @@ navigateTo / navigateBack / request / getNetworkType / getBatteryInfo
 showToast / showLoading / hideLoading / showModal / showActionSheet
 setClipboardData / getClipboardData / vibrateShort / vibrateLong
 getSetting / openSetting / login / checkSession / canIUse / nextTick
+switchTab / setTabBarStyle / setTabBarItem / setTabBarBadge / showTabBar / hideTabBar
+onThemeChange / offThemeChange / hideToast / getFileSystemManager
 createAnimation / createCanvasContext / createSelectorQuery
 getMenuButtonBoundingClientRect / getPerformance
 ```
 
-其中 `login` 只是宿主 stub code，`openSetting/authorize` 还没有真实权限模型，`createCanvasContext` 仍是桩，`createSelectorQuery` 只支持 canvas，`createAnimation` 只映射最终态。真正“能用”的核心 API 约 12–15 个。
+其中 `login` 只是宿主 stub code，`openSetting/authorize` 还没有真实权限模型，`createCanvasContext` 仍是桩，`createSelectorQuery` 只支持 canvas，`createAnimation` 只映射最终态，`getFileSystemManager` 只有 fail stub。真正“能用”的核心 API 约 18–22 个。
 
-### 5.4 为什么“85.5% 启动”和“38% 对齐”不矛盾
+### 5.4 为什么“85.5% 启动”和“42% 对齐”不矛盾
 
 | 口径 | 回答的问题 | 结果 |
 | --- | --- | --- |
 | 启动率 | 页面能不能挂载？ | 85.5% |
-| 功能对齐 | 页面上的功能是否按微信语义工作？ | ~38% |
+| 功能对齐 | 页面上的功能是否按微信语义工作？ | ~42% |
 | 生产可替换 | 普通业务小程序能否直接上线？ | < 20% |
 
-启动率高，是因为引擎“尽量不崩”；功能对齐仍只有约 38%，是因为 API、页面形态和内置组件语义仍有大量缺口。本次补的是自定义组件语义，不会改变 `wx.request`、导航栏、tabBar、picker 等 P0 短板。
+启动率高，是因为引擎“尽量不崩”；功能对齐仍只有约 42%，是因为 API、页面形态和 P1 组件语义仍有大量缺口；组件视觉重写和 tabBar 只把高权重短板抬了一部分。
 
 ---
 
@@ -454,11 +459,11 @@ getMenuButtonBoundingClientRect / getPerformance
 
 | 阶段 | 补齐内容 | 预计完整度 |
 | --- | --- | --- |
-| **P0：能跑常见业务** | request、异步 storage、redirectTo/reLaunch、modal/loading、下拉刷新、分享、picker/textarea/form/navigator | **~50%** |
+| **P0：能跑常见业务** | redirectTo/reLaunch、下拉刷新、分享、navigator、真实登录/支付；picker/textarea/form 已补 | **~50%** |
 | **P1：组件与页面语义** | 剩余组件语义（generics/placeholder/definitionFilter/pureDataPattern）；补全常用组件属性事件；canvas 2D/交互；animation 多 step；子包按需加载、npm 构建 | **~65–70%** |
 | **P2：平台能力与生产化** | 原生宿主、网络桥、登录/支付/分享、媒体/地图/视频、文件系统、Worker；性能/视觉/安全基线 | **~80%+** |
 
-**最短路径**：组件语义已补齐，下一步优先补 15–20 个高频 API + 页面 chrome + 5 个高频组件。这三件事能把“能跑 demo”提升到“能跑常见业务”，投入产出比最高；继续打磨编译器的收益已经很小。
+**最短路径**：组件语义和第一轮视觉结构已补齐，下一步优先补 redirectTo/reLaunch、下拉刷新/分享、navigator 与真实平台 API；页面 chrome 仍只在 devtool 宿主，测试/生产宿主需要复用同一套实现。继续打磨编译器的收益已经很小。
 
 ---
 
@@ -484,8 +489,8 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 ### 9.2 更新本文的步骤
 
 1. **跑门禁**：确认单测/浏览器验收仍通过；记录测试数量与步骤数。
-2. **重数组件与组件语义**：对照[微信组件文档](https://developers.weixin.qq.com/miniprogram/dev/component/)与 [tags.ts](../hosts/web-components/src/tags.ts:1)，更新 18/60、分类表、属性/事件表；同时按第 4.5 节更新 behaviors/observers/relations/styleIsolation/selectComponent 状态。
-3. **重数 API**：对照[微信 API 索引](https://developers.weixin.qq.com/miniprogram/dev/api/)与 [service.ts](../packages/runtime/src/service.ts:320) + [service-thread.ts](../tests/host/src/service-thread.ts:1) 的 `apiExtensions`，更新 12/502、能力表。
+2. **重数组件与组件语义**：对照[微信组件文档](https://developers.weixin.qq.com/miniprogram/dev/component/)与 [tags.ts](../hosts/web-components/src/tags.ts:1)，更新 23/60、分类表、属性/事件表；同时按第 4.5 节更新 behaviors/observers/relations/styleIsolation/selectComponent 状态。
+3. **重数 API**：对照[微信 API 索引](https://developers.weixin.qq.com/miniprogram/dev/api/)与 [service.ts](../packages/runtime/src/service.ts:320) + [service-thread.ts](../tests/host/src/service-thread.ts:1) 的 `apiExtensions`，更新 65/502、能力表。
 4. **重数生命周期/路由/配置**：对照第 4.3、4.4 节逐项打勾。
 5. **重跑 117 页探针**：按 5.2 节方法，更新启动率与失败明细；若后续把探针整理为 `scripts/parity-probe.mjs`，改用该脚本并在此处替换命令。
 6. **重算总分**：更新第 3 节表格的完成度/加权分；如果权重调整，在变更记录中说明。
@@ -612,3 +617,5 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | tabBar 验收 | [glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs:1120) |
 | 多 iframe 页面栈验收 | [glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs:941) |
 | 官方 demo 子集 | [app.json](../tests/apps/wechat-demo/app.json:1) |
+
+| 2026-10-26 | 第十一次校准：按当前 HEAD 重数——23/60 标签、65/502 API、9/14 页面生命周期、3/5 路由、167 单测；P0 组件视觉重写完成，页面形态按 devtool 宿主保守计 25%；总分 37.89→41.91 | **41.91%** |
