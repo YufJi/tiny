@@ -21,3 +21,17 @@ bootRenderThread({ ..., canvas: { measure, paint } })
 ```
 
 `tests/host` and `apps/devtool` wire these adapters from this package.
+
+## Built-in components
+
+The web/DOM implementations of the built-in tags live in the sibling package
+`@tiny/host-web-components` (`hosts/web-components`). Browser hosts inject them
+into the render thread:
+
+```ts
+import { webBuiltinComponents } from '@tiny/host-web-components'
+
+bootRenderThread({ ..., builtinComponents: webBuiltinComponents })
+```
+
+The core runtime does not import either host package.

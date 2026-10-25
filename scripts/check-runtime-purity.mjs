@@ -40,6 +40,7 @@ function stripComments(source) {
 
 const visited = new Set()
 const files = []
+const hostPackagePrefixes = ['@tiny/host-']
 function visit(file) {
   const normalized = path.normalize(file)
   if (visited.has(normalized)) return
@@ -48,6 +49,11 @@ function visit(file) {
   const source = fs.readFileSync(normalized, 'utf8')
   for (const match of source.matchAll(/from\s+['"]([^'"]+)['"]/g)) {
     const specifier = match[1]
+    for (const hostPrefix of hostPackagePrefixes) {
+      if (specifier.startsWith(hostPrefix)) {
+        throw new Error(`${path.relative(rootDir, normalized)} imports host package "${specifier}"`)
+      }
+    }
     for (const hostModule of hostModules) {
       if (specifier.includes(hostModule)) {
         throw new Error(`${path.relative(rootDir, normalized)} imports browser module "${specifier}"`)
@@ -76,4 +82,4 @@ if (violations.length > 0) {
   process.exit(1)
 }
 
-console.log(`Runtime core purity OK (${files.length} modules, no host globals).`)
+console.log(`Runtime core purity OK (${files.length} modules, no host globals or @tiny/host-* imports).`)

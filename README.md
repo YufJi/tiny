@@ -16,9 +16,12 @@ tools/cli ──► manifest + templates / service / render / styles
 hosts/browser ──► iframe / MessageChannel / Canvas / devtool overlay
         │
         ▼
+hosts/web-components ──► 内置组件定义与样式，注入 render 线程
+        │
+        ▼
 packages/runtime : 双线程内核（不依赖 DOM）
 ├─ service iframe : App/Page/Component 逻辑与 API
-├─ render  iframe : glass-easel 组件树，DOM backend 由宿主注入
+├─ render  iframe : glass-easel 组件树，backend 与内置组件由宿主注入
 └─ bridge         : Tiny Runtime Protocol v1
         │
         ▼
@@ -44,7 +47,6 @@ apps/devtool (可选) : DevtoolRuntimeClient + React 面板
 | `packages/stylesheet-compiler` | WXSS、rpx、class/tag 作用域 |
 | `packages/runtime` | 双线程 runtime 内核（无宿主依赖） |
 | `packages/bridge` | 版本化协议、transport、序列化与诊断边界 |
-| `packages/components` | 内置组件（view/text/input/swiper/canvas 等） |
 
 ### 工具与应用
 
@@ -53,6 +55,7 @@ apps/devtool (可选) : DevtoolRuntimeClient + React 面板
 | `tools/cli` | 编译器：小程序源码 → glass-easel 产物与 manifest |
 | `apps/devtool` | 浏览器调试器 |
 | `hosts/browser` | 浏览器宿主：iframe、MessageChannel、Canvas、devtool overlay |
+| `hosts/web-components` | 内置组件的 Web/DOM 实现（view/text/input/swiper/canvas 等），注入 render 线程 |
 
 ### 测试
 
@@ -139,7 +142,7 @@ pnpm dev:wechat-demo         # 微信示例宿主：http://127.0.0.1:5174/?path=
 
 pnpm --filter @tiny/runtime test
 pnpm --filter @tiny/cli test
-pnpm --filter @tiny/components test
+pnpm --filter @tiny/host-web-components test
 ```
 
 ## 生成物
@@ -147,7 +150,7 @@ pnpm --filter @tiny/components test
 以下目录是构建产物，不提交：
 
 - `tests/host/generated/`
-- `packages/components/src/generated/`
+- `hosts/web-components/src/generated/`
 - `apps/devtool/static/`
 
 ## 文档

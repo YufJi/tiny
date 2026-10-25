@@ -23,7 +23,7 @@ afterAll(() => {
 
 function createTemplateRegistry(): { groupList: Record<string, unknown>; content: (path: string, name?: string) => unknown } {
   const group = TmplGroup.newDev()
-  group.addTmpl(PAGE_PATH, '<canvas id="canvas" /><unknown-widget id="unknown" />')
+  group.addTmpl(PAGE_PATH, '<unknown-widget id="unknown" />')
   const generated = group.getTmplGenObjectGroups()
   const groupList = new Function(`return ${generated}`)() as Record<string, unknown>
   return {
@@ -108,11 +108,10 @@ describe('runtime diagnostics', () => {
 
     expect(host.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(expect.arrayContaining([
       'UNSUPPORTED_COMPONENT',
-      'UNSUPPORTED_CANVAS',
       'UNSUPPORTED_API',
       'RUNTIME_STATE',
     ]))
-    expect(reported).toEqual(expect.arrayContaining(['UNSUPPORTED_COMPONENT', 'UNSUPPORTED_CANVAS', 'UNSUPPORTED_API']))
+    expect(reported).toEqual(expect.arrayContaining(['UNSUPPORTED_COMPONENT', 'UNSUPPORTED_API']))
 
     const state = host.diagnostics.find((diagnostic) => diagnostic.code === 'RUNTIME_STATE')
     expect(state?.details).toMatchObject({

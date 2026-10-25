@@ -1,7 +1,7 @@
 {
-  "name": "@tiny/components",
+  "name": "@tiny/host-web-components",
   "version": "0.1.0",
-  "description": "Glass-easel implementations of the Tiny P0 built-in components",
+  "description": "Web/DOM implementations of the Tiny mini-program built-in components (host package, not runtime core)",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/types/index.d.ts",
@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@tiny/manifest": "workspace:*",
+    "@tiny/runtime": "workspace:*",
     "glass-easel": "1.1.0"
   },
   "devDependencies": {

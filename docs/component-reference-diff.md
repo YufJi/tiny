@@ -2,7 +2,7 @@
 
 > 参考实现：`～/Downloads/微信小程序.js`、`微信小程序.css`（微信 WebView 版，`__libVersionInfo__ = 2.7.0`）
 >
-> 对照实现：`packages/components/src/components/*`
+> 对照实现：`hosts/web-components/src/components/*`
 >
 > 范围：当前已接入的 23 个内置标签；剩余 37 个标签不在本文逐项展开。
 >
@@ -38,7 +38,7 @@
 
 我们此前是“`virtualHost: true` + 内层 `<view>` 作为样式根”，因此需要 `externalClasses`/`style` 属性/`data-*` shim 逐项转发，且宿主选择器、`id`、`hidden` 属性都不在 DOM 上。
 
-2026-10-25 已完成宿主迁移（[components/src/index.ts](../packages/components/src/index.ts:68)）：
+2026-10-25 已完成宿主迁移（[hosts/web-components/src/index.ts](../hosts/web-components/src/index.ts:68)）：
 
 - 23 个内置组件全部 `virtualHost: false`，真实宿主标签为 `tiny-<tag>`（`tiny-view`、`tiny-text`、`tiny-checkbox` …），不占用微信的 `wx-*` 命名空间；
 - 宿主通过 `reflectToAttributes` 反射 `hidden`/`type`/`checked`/`value`/`percent` 等属性，`tiny-view[hidden]` 这类宿主选择器可用；
@@ -984,7 +984,7 @@ handleTap() {
 
 CSS：
 
-- `@font-face` 和 `.tiny-icon-*` 段在 `packages/components/src/components/icon/index.css` 中一次性声明
+- `@font-face` 和 `.tiny-icon-*` 段在 `hosts/web-components/src/components/icon/index.css` 中一次性声明
 - `.tiny-icon { font: normal normal normal 14px/1 "weui"; }`
 - 每个 type 用 `.tiny-icon-<type>::before { content: "\EAxx" }`
 - 颜色表按参考：

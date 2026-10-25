@@ -483,6 +483,25 @@ describe('P0 built-in components', () => {
     expect(events.selection).toMatchObject({ selectionStart: expect.any(Number), selectionEnd: expect.any(Number) })
   })
 
+  test('canvas reports a structured placeholder diagnostic', () => {
+    const diagnostics: Array<Record<string, unknown>> = []
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space, {
+      onDiagnostic: (diagnostic) => diagnostics.push(diagnostic as unknown as Record<string, unknown>),
+    })
+    const page = space.defineComponent({
+      is: 'page',
+      using: { canvas: builtins.canvas },
+      template: compilePage('<canvas canvas-id="chart" type="2d" />'),
+    })
+    space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    expect(diagnostics).toContainEqual(expect.objectContaining({
+      severity: 'warning',
+      code: 'UNSUPPORTED_CANVAS',
+      message: expect.stringContaining('placeholder'),
+    }))
+  })
+
 
   test('textarea, form and picker expose the new built-in surfaces', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)

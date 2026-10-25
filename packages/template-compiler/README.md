@@ -144,7 +144,7 @@ pnpm --filter @tiny/template-compiler test
 
 ## Relation to the Rust implementation
 
-The implementation is maintained as the Tiny workspace package `@tiny/template-compiler`, following the upstream [`glass-easel-template-compiler`](https://github.com/wechat-miniprogram/glass-easel/tree/master/glass-easel-template-compiler) behavior. It is used by `@tiny/cli` and `@tiny/components`; no WASM is required.
+The implementation is maintained as the Tiny workspace package `@tiny/template-compiler`, following the upstream [`glass-easel-template-compiler`](https://github.com/wechat-miniprogram/glass-easel/tree/master/glass-easel-template-compiler) behavior. It is used by `@tiny/cli` and `@tiny/host-web-components`; no WASM is required.
 
 The generated JavaScript output is designed to be functionally identical to the Rust/WASM version.
 

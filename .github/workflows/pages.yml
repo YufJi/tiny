@@ -6,7 +6,7 @@ on:
     paths:
       - 'website/**'
       - 'apps/devtool/**'
-      - 'hosts/browser/**'
+      - 'hosts/**'
       - 'packages/**'
       - 'tools/cli/**'
       - 'tests/apps/demo/**'

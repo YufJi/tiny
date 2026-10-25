@@ -1,19 +1,13 @@
 import type * as glassEasel from 'glass-easel'
+import type { BuiltinComponentFactoryContext } from '@tiny/runtime'
 import type { BuiltinComponentTag } from './tags'
 import type { BuiltinBehaviors } from './behaviors'
 
-export type BuiltinComponentFactoryOptions = {
-  /** Behavior id prefix, e.g. `wx-` or `tiny-`. Defaults to `wx-`. */
-  prefix?: string
-  onDiagnostic?: (diagnostic: {
-    severity: 'warning' | 'error'
-    code: string
-    message: string
-    details?: unknown
-  }) => void
-  /** Resolve a mini-program asset path for the component instance that owns it. */
-  resolveAssetUrl?: (src: string, component: unknown) => string
-}
+/**
+ * Options are defined by the runtime's injection seam so the web host package
+ * and `bootRenderThread({ builtinComponents })` cannot drift apart.
+ */
+export type BuiltinComponentFactoryOptions = BuiltinComponentFactoryContext
 
 export type BuiltinContext = {
   space: glassEasel.ComponentSpace

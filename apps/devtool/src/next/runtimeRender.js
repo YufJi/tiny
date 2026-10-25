@@ -6,6 +6,7 @@ import {
   measureBrowserCanvas,
   paintBrowserCanvasFrame,
 } from '@tiny/host-browser';
+import { webBuiltinComponents } from '@tiny/host-web-components';
 import { generatedBaseFor } from './appRegistry';
 
 const appId = new URLSearchParams(window.location.search).get('app') || 'demo';
@@ -39,6 +40,7 @@ assetsPromise.then(({ manifest, templates, styles }) => {
       manifest,
       artifacts: { templates },
       backend,
+      builtinComponents: webBuiltinComponents,
       initialPath: manifest.pages[0].path,
       loadStyle: (path) => styles[path] ?? '',
       resolveAssetUrl,

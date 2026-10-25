@@ -6,7 +6,7 @@ export default defineConfig({
     // Use manifest sources so the library build does not bundle the CommonJS
     // manifest output (named re-exports are not statically analyzable there).
     alias: {
-      '@tiny/manifest': path.resolve(__dirname, '../manifest/src/index.ts'),
+      '@tiny/manifest': path.resolve(__dirname, '../../packages/manifest/src/index.ts'),
     },
   },
   build: {

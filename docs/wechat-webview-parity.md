@@ -121,7 +121,7 @@
 | 页面属性 | 1 | 0 | page-meta |
 | **合计** | **60** | **23** | |
 
-**已实现组件**（[tags.ts](../packages/components/src/tags.ts:1)）：
+**已实现组件**（[tags.ts](../hosts/web-components/src/tags.ts:1)）：
 `view`、`text`、`button`、`label`、`input`、`checkbox`、`checkbox-group`、`radio`、`radio-group`、`icon`、`image`、`scroll-view`、`slider`、`progress`、`switch`、`swiper`、`swiper-item`、`canvas`、`textarea`、`form`、`picker`、`picker-view`、`picker-view-column`。
 
 > 逐组件的结构/样式/逻辑差异与修复方案见 [component-reference-diff.md](./component-reference-diff.md)。
@@ -283,7 +283,7 @@ hasBehavior / export / wx://component-export
 2026-10-24 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
-- **152 个单元测试**（runtime 58 个，components 18 个）
+- **164 个单元测试**（runtime 60 个，host-web-components 23 个）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
 - **46 个浏览器步骤**全部通过；P0 新增 6 步覆盖组件语义、样式隔离、button 矩阵、relations 和 selectComponent
 - 门禁覆盖的 5 段流程无 console/page error（117 页探针的 pageerror 见 5.2）
@@ -480,7 +480,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 ### 9.2 更新本文的步骤
 
 1. **跑门禁**：确认单测/浏览器验收仍通过；记录测试数量与步骤数。
-2. **重数组件与组件语义**：对照[微信组件文档](https://developers.weixin.qq.com/miniprogram/dev/component/)与 [tags.ts](../packages/components/src/tags.ts:1)，更新 18/60、分类表、属性/事件表；同时按第 4.5 节更新 behaviors/observers/relations/styleIsolation/selectComponent 状态。
+2. **重数组件与组件语义**：对照[微信组件文档](https://developers.weixin.qq.com/miniprogram/dev/component/)与 [tags.ts](../hosts/web-components/src/tags.ts:1)，更新 18/60、分类表、属性/事件表；同时按第 4.5 节更新 behaviors/observers/relations/styleIsolation/selectComponent 状态。
 3. **重数 API**：对照[微信 API 索引](https://developers.weixin.qq.com/miniprogram/dev/api/)与 [service.ts](../packages/runtime/src/service.ts:320) + [service-thread.ts](../tests/host/src/service-thread.ts:1) 的 `apiExtensions`，更新 12/502、能力表。
 4. **重数生命周期/路由/配置**：对照第 4.3、4.4 节逐项打勾。
 5. **重跑 117 页探针**：按 5.2 节方法，更新启动率与失败明细；若后续把探针整理为 `scripts/parity-probe.mjs`，改用该脚本并在此处替换命令。
@@ -582,8 +582,8 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 
 | 主题 | 位置 |
 | --- | --- |
-| 内置组件标签清单 | [tags.ts](../packages/components/src/tags.ts:1) |
-| 内置组件默认样式 | [styles/index.css](../packages/components/src/styles/index.css:1) |
+| 内置组件标签清单 | [tags.ts](../hosts/web-components/src/tags.ts:1) |
+| 内置组件默认样式 | [styles/index.css](../hosts/web-components/src/styles/index.css:1) |
 | service API 宿主 | [service/api-host.ts](../packages/runtime/src/service/api-host.ts:1) |
 | 不支持 API 的降级 | [service/api-host.ts](../packages/runtime/src/service/api-host.ts:1) |
 | 宿主 API（toast/storage/navigate） | [host-api.ts](../packages/runtime/src/host-api.ts:1)、[browser api-handlers.ts](../hosts/browser/src/api-handlers.ts:1) |
@@ -596,8 +596,8 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 组件语义验收 fixture | [semantics.js](../tests/apps/demo/pages/semantics/semantics.js:1) |
 | Component-as-page 实例 | [service/page-instance.ts](../packages/runtime/src/service/page-instance.ts:1) |
 | Component-as-page 测试 | [component-page.test.ts](../packages/runtime/tests/component-page.test.ts:1) |
-| 内置组件共享 behaviors | [behaviors.ts](../packages/components/src/behaviors.ts:1) |
-| button 组件 | [button/index.ts](../packages/components/src/components/button/index.ts:1) |
+| 内置组件共享 behaviors | [behaviors.ts](../hosts/web-components/src/behaviors.ts:1) |
+| button 组件 | [button/index.ts](../hosts/web-components/src/components/button/index.ts:1) |
 | 页面/子包/app.json 解析 | [compile.ts](../tools/cli/src/compile.ts:165) |
 | 双 iframe 宿主 | [standalone-host.ts](../hosts/browser/src/standalone-host.ts:1) |
 | 浏览器验收步骤 | [glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs:36) |

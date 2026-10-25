@@ -6,7 +6,7 @@ dist/
 .sisyphus/
 tests/host/generated/
 apps/devtool/static/runtime/
-packages/components/src/generated/
+hosts/web-components/src/generated/
 .agents/
 skills-lock.json
 .scratch/

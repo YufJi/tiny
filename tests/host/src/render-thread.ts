@@ -6,6 +6,7 @@ import {
   measureBrowserCanvas,
   paintBrowserCanvasFrame,
 } from '@tiny/host-browser'
+import { webBuiltinComponents } from '@tiny/host-web-components'
 import manifest from '../generated/manifest.json'
 
 const renderModule = await import('../generated/render.js')
@@ -31,6 +32,7 @@ listenForRuntimePort('render', (transport) => {
     manifest,
     artifacts: { templates: renderModule.default.templates },
     backend,
+    builtinComponents: webBuiltinComponents,
     initialPath: 'pages/todos/todos',
     loadStyle: (path) => styles[path] ?? '',
     resolveAssetUrl,

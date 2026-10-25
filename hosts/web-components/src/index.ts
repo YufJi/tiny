@@ -1,7 +1,9 @@
 import type * as glassEasel from 'glass-easel'
+import type { BuiltinComponents } from '@tiny/runtime'
 import { BUILTIN_COMPONENT_TAGS, BUILTIN_HOST_TAG_PREFIX, type BuiltinComponentTag } from './tags'
 import { builtinTemplate } from './templates'
 import { createBuiltinBehaviors } from './behaviors'
+import { BUILTIN_BASE_STYLES } from './styles'
 import type { BuiltinContext, BuiltinComponentFactoryOptions } from './types'
 import { defineView } from './components/view'
 import { defineButton } from './components/button'
@@ -28,7 +30,7 @@ import { definePickerView } from './components/picker-view'
 import { definePickerViewColumn } from './components/picker-view-column'
 
 export { BUILTIN_COMPONENT_TAGS }
-export { BUILTIN_BASE_STYLES } from './styles'
+export { BUILTIN_BASE_STYLES }
 export type { BuiltinComponentTag }
 export type { BuiltinComponentFactoryOptions, BuiltinContext } from './types'
 
@@ -95,4 +97,20 @@ export function createBuiltinComponents(
     if (deferred.has(tag)) definitions[tag] = DEFINITION_FACTORIES[tag](context)
   }
   return definitions
+}
+
+/**
+ * Web/DOM implementation of the built-in mini-program tags.
+ *
+ * Browser hosts inject this object into
+ * `bootRenderThread({ builtinComponents: webBuiltinComponents })`. The runtime
+ * core never imports this package, so non-DOM hosts can supply their own tags
+ * (or none) without pulling in web-specific behavior or CSS.
+ */
+export const webBuiltinComponents: BuiltinComponents = {
+  create: createBuiltinComponents,
+  baseStyles: {
+    path: 'tiny-builtin-base.css',
+    content: BUILTIN_BASE_STYLES,
+  },
 }

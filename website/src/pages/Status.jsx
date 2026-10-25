@@ -52,7 +52,7 @@ export default function Status() {
             ['bridge', status('可用', 'good'), 'envelope、帧、MessagePort/内存 transport、握手、超时、批处理、JSON-safe 校验；capabilities 未用于协商。'],
             ['浏览器宿主', status('可用', 'good'), '@tiny/host-browser 双 iframe、MessageChannel、DOM canvas、resolveAssetUrl、DevtoolRuntimeClient；runtime 纯度检查通过。'],
             ['原生宿主', status('未实现', 'warn'), '没有 native transport、backend 或非浏览器 service 运行时；但 core 已经移除 document/Image/iframe。'],
-            ['内置组件', status('较完整', 'good'), '18 个组件、共享 behaviors、接近 WebView 的 button/input/scroll-view/swiper 表面；textarea/picker/form 等仍缺。'],
+            ['内置组件', status('较完整', 'good'), '23 个组件、共享 behaviors、接近 WebView 的 button/input/scroll-view/swiper 表面；navigator/video/rich-text/map 等仍缺。'],
             ['API', status('窄', 'warn'), 'storage、导航、system、toast、animation、canvas、selector query；无网络/媒体/文件/账号/位置/WebSocket。'],
             ['页面能力', status('部分', 'warn'), '基础生命周期与导航；无 tabBar、下拉刷新、触底、页面滚动、分享、恢复。'],
             ['组件语义', status('核心可用', 'good'), 'Behaviors、observers、relations、selectComponent、component-export、component-as-page；generics/placeholder/definitionFilter 未实现。'],
@@ -188,11 +188,11 @@ export default function Status() {
       >
         <Cards>
           <Card title="内核不拥有环境"><p><code>packages/runtime</code> 不碰 window/document/iframe/MessageChannel；<code>pnpm check:runtime-purity</code> 是硬门槛。</p></Card>
-          <Card title="宿主适配器在 core 外"><p>iframe、DOM canvas、devtool overlay 都在 <code>hosts/browser</code>；核心包不反向依赖 hosts。</p></Card>
+          <Card title="宿主适配器在 core 外"><p>iframe、DOM canvas、devtool overlay 在 <code>hosts/browser</code>，内置组件在 <code>hosts/web-components</code>；核心包不反向依赖 hosts。</p></Card>
           <Card title="一个 manifest 契约"><p>compiler、runtime、host、devtool 都消费 <code>@tiny/manifest</code>，包括 naming；不要复制产物类型。</p></Card>
           <Card title="命名只有一个来源"><p>指令、API、别名、behavior scheme、host attribute、tag marker 全部派生自 <code>manifest.naming</code>。</p></Card>
           <Card title="跨线程只走 bridge"><p>不直接读 iframe 全局、不 executeJavaScript；所有控制面都是版本化消息。</p></Card>
-          <Card title="能力靠注入"><p>设备事实走 apiExtensions，canvas 走 canvas adapters，资源走 resolveAssetUrl，backend/mount 由宿主提供。</p></Card>
+          <Card title="能力靠注入"><p>设备事实走 apiExtensions，canvas 走 canvas adapters，资源走 resolveAssetUrl，backend/mount 与 builtinComponents 由宿主提供。</p></Card>
           <Card title="生成物不入库"><p>宿主产物、组件 ProcGen、devtool static、站点 devtool 都由构建生成；仓库只保留源码、契约和 fixture。</p></Card>
           <Card title="验收必须真实"><p>核心链路用真实双线程 + 浏览器操作验证；不接受只靠 mock 的“通过”。</p></Card>
         </Cards>

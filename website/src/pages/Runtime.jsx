@@ -17,8 +17,8 @@ export default function Runtime() {
       <PageHero
         eyebrow="Runtime core"
         title={<>宿主无关的内核，<br /><span className="gradient">两个线程的应用</span></>}
-        lede="packages/runtime 不引用 window、document 或 iframe。service 线程拥有 App/Page/Component、页面栈、setData、naming、behaviors/observers/relations 与逻辑组件树；render 线程拥有 glass-easel 组件定义、样式隔离、事件和 DOM。canvas、资源 URL 与 backend 都由宿主注入。"
-        stats={[['2', 'threads'], ['18', 'built-in tags'], ['5', 'component lifetimes'], ['7', 'bridge domains']]}
+        lede="packages/runtime 不引用 window、document 或 iframe。service 线程拥有 App/Page/Component、页面栈、setData、naming、behaviors/observers/relations 与逻辑组件树；render 线程拥有 glass-easel 组件树、样式隔离、事件和 DOM。canvas、资源 URL、backend 与内置组件定义都由宿主注入。"
+        stats={[['2', 'threads'], ['23', 'built-in tags'], ['5', 'component lifetimes'], ['7', 'bridge domains']]}
         pills={[['host-independent', 'good'], ['behaviors / relations', 'good'], ['style isolation', 'good'], ['canvas injected', 'good']]}
       />
       <PageNav items={[
@@ -420,21 +420,21 @@ export default function Runtime() {
       <Section
         id="builtins"
         kicker="Built-ins"
-        title="18 个组件，接近 WebView 的表面"
-        intro="内置组件模板在构建期生成 ProcGen，样式按组件拆分后再合成 19 份 stylesheet；每个组件共享同一组 behaviors。"
+        title="23 个组件，接近 WebView 的表面"
+        intro="内置组件模板在构建期生成 ProcGen，样式按组件拆分后再合成 24 份 stylesheet；每个组件共享同一组 behaviors。"
       >
         <Cards className="three">
           <Card tag="AOT" title="模板与样式">
-            <p><code>build-templates.mjs</code> 把 18 个 <code>template.wxml</code> 编成一个模板 group；<code>build-styles.mjs</code> 合成 base + 18 个组件样式。</p>
-            <p>生成物在 <code>packages/components/src/generated</code>，不入库。</p>
+            <p><code>build-templates.mjs</code> 把 23 个 <code>template.wxml</code> 编成一个模板 group；<code>build-styles.mjs</code> 合成 base + 23 个组件样式。</p>
+            <p>生成物在 <code>hosts/web-components/src/generated</code>，不入库。</p>
           </Card>
           <Card tag="behaviors" title="共享 behaviors">
             <p><code>wx-base</code>、<code>wx-hover</code>、<code>wx-label-target</code>、<code>wx-disabled</code>、<code>wx-data-component</code>、<code>wx-group</code>、<code>wx-item</code>、<code>wx-size-normalizer</code>、<code>wx-class-prefix</code>。</p>
             <p>id 前缀跟随 naming。</p>
           </Card>
           <Card tag="always-on" title="无需 usingComponents">
-            <p>built-in 组件始终挂在每个页面/组件的 <code>usingComponents</code> 上；即使页面没有声明任何自定义组件也能使用。</p>
-            <p>自定义组件同名时会被页面声明覆盖。</p>
+            <p>宿主注入内置组件后，它们始终挂在每个页面/组件的 <code>usingComponents</code> 上；即使页面没有声明任何自定义组件也能使用。</p>
+            <p>提供方是 <code>RenderThreadOptions.builtinComponents</code>；自定义组件同名时会被页面声明覆盖。</p>
           </Card>
         </Cards>
         <Table
@@ -453,7 +453,7 @@ export default function Runtime() {
         />
         <Callout title="仍然不是完整组件库" tone="warn">
           <p>
-            textarea、picker、form、navigator、video、rich-text、map、movable-view 等尚未实现；已有组件的 open-type、表单提交、
+            navigator、video、rich-text、map、movable-view 等尚未实现；已有组件的 open-type、表单提交、
             无障碍和 Skyline 语义也不完整。
           </p>
         </Callout>

@@ -11,7 +11,7 @@ pnpm accept:glass-easel
 ```
 
 The gate builds the active glass-easel packages, runs bridge/compiler/template/
-stylesheet/components/runtime tests, compiles the demo, starts the standalone
+stylesheet/built-in-component/runtime tests, compiles the demo, starts the standalone
 dual-thread host, and drives the full P0, existing-app, Taro 3, WeChat demo, and debugger flows
 in a headless browser.
 

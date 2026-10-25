@@ -73,7 +73,24 @@ Canvas is injected at the thread boundary:
 
 This keeps `service.ts` and `render.ts` free of `window`, `document`, `Image`,
 and `HTMLCanvasElement`; browser code lives in `@tiny/host-browser`, not in core. `pnpm check:runtime-purity` walks the core entry's import
-graph and fails if a browser global or `browser` import leaks in.
+graph and fails if a browser global, a `browser` import, or an `@tiny/host-*`
+import leaks in.
+
+## Built-in components
+
+The core runtime does not own UI. A host supplies the built-in tag
+implementations through `RenderThreadOptions.builtinComponents`:
+
+```ts
+import { webBuiltinComponents } from '@tiny/host-web-components'
+
+bootRenderThread({ ..., builtinComponents: webBuiltinComponents })
+```
+
+`@tiny/host-web-components` (`hosts/web-components`) provides the web/DOM
+implementation (`tiny-*` host nodes, behaviors, and base CSS). A native host can
+provide its own factory or omit the option; the runtime then registers no
+built-in definitions and unknown tags fall back to native backend elements.
 
 ## Host-specific APIs
 

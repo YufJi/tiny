@@ -66,11 +66,11 @@ export default function Home() {
             <p><a href="#/protocol">Bridge 协议 v1 →</a></p>
           </Card>
           <Card tag="packages/runtime" title="启动契约">
-            <p><code>bootServiceThread</code> / <code>bootRenderThread</code> 接收 transport、manifest 与可注入的 canvas / asset / mount 钩子；runtime 内核本身不含浏览器全局。</p>
+            <p><code>bootServiceThread</code> / <code>bootRenderThread</code> 接收 transport、manifest 与可注入的 canvas / asset / mount / builtinComponents 钩子；runtime 内核本身不含浏览器全局。</p>
             <p><a href="#/hosts">宿主支持与启动时序 →</a></p>
           </Card>
           <Card tag="hosts/browser" tone="violet" title="宿主注入面">
-            <p><code>apiHandlers</code> 处理跨线程 API，<code>apiExtensions</code> 注入设备事实；canvas 与资源 URL 由宿主适配器提供。</p>
+            <p><code>apiHandlers</code> 处理跨线程 API，<code>apiExtensions</code> 注入设备事实；canvas 与资源 URL 由宿主适配器提供，内置组件由 <code>@tiny/host-web-components</code> 注入。</p>
             <p><a href="#/hosts">宿主注入面 →</a></p>
           </Card>
         </Cards>
@@ -145,7 +145,7 @@ export default function Home() {
           <Card tag="render thread" tone="violet" title="glass-easel 组件树">
             <ul>
               <li>ComponentSpace + StyleScopeManager</li>
-              <li>18 个内置组件，AOT 模板 + 共享 behaviors</li>
+              <li>23 个内置组件，AOT 模板 + 共享 behaviors</li>
               <li>styleIsolation / externalClasses / page scope</li>
               <li>事件序列化、dataset、target / currentTarget</li>
               <li>页面 mount / unmount 与元素树导出</li>

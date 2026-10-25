@@ -44,7 +44,7 @@ export default function Architecture() {
             ['manifest', '产物类型、schemaVersion 与解析后的 naming 配置，不包含编译器或运行时逻辑', '任何实现', <code>packages/manifest</code>],
             ['runtime', 'App/Page/Component 语义、页面栈、setData、事件分发、behaviors/observers/relations、组件树、命名与 canvas 帧协议', '传输实现、宿主 API 实现、DOM、canvas 实现、UI', <code>packages/runtime</code>],
             ['bridge', 'envelope、帧、transport、call/reply、批处理、超时、JSON-safe 校验', 'wx API 语义、渲染命令、页面状态', <code>packages/bridge</code>],
-            ['host', '线程与 transport、bootstrap、宿主 API、backend/挂载点、canvas 适配、资源 URL、诊断收集', '应用业务状态、glass-easel 组件定义', <><code>hosts/browser</code> · <code>apps/devtool</code> · <code>tests/host</code> · 未来原生宿主</>],
+            ['host', '线程与 transport、bootstrap、宿主 API、backend/挂载点、canvas 适配、资源 URL、诊断收集、内置组件定义与样式', '应用业务状态、glass-easel 内核语义', <><code>hosts/browser</code> · <code>hosts/web-components</code> · <code>apps/devtool</code> · <code>tests/host</code> · 未来原生宿主</>],
           ]}
         />
         <Callout title="关键结论">
@@ -59,17 +59,23 @@ export default function Architecture() {
         id="purity"
         kicker="Runtime purity"
         title="核心 runtime 不拥有浏览器"
-        intro="这是本次架构最重要的变化：浏览器能力从 packages/runtime 抽离到 hosts/browser，并用脚本守住边界。"
+        intro="这是本次架构最重要的变化：浏览器能力与内置组件实现从 packages/runtime 抽离到 hosts/*，并用脚本守住边界。"
       >
         <div className="split">
           <Card tag="packages/runtime" title="宿主无关内核">
-            <p>只依赖 manifest、bridge、components、glass-easel 和通用工具；入口不导出 standalone host、runtime port、canvas bridge 或 devtool client。</p>
-            <p>service / render 需要 DOM 能力时，通过 <code>canvas</code>、<code>resolveAssetUrl</code>、<code>backend</code>、<code>mountComponent</code> 等选项注入。</p>
+            <p>只依赖 manifest、bridge、glass-easel 和通用工具；入口不导出 standalone host、runtime port、canvas bridge 或 devtool client。</p>
+            <p>service / render 需要 DOM 能力时，通过 <code>canvas</code>、<code>resolveAssetUrl</code>、<code>backend</code>、<code>mountComponent</code> 等选项注入；内置组件通过 <code>builtinComponents</code> 注入。</p>
           </Card>
-          <Card tag="hosts/browser" tone="violet" title="浏览器适配包">
-            <p><code>@tiny/host-browser</code> 拥有 iframe、MessageChannel、DOM canvas、资源 URL 与 <code>DevtoolRuntimeClient</code>。</p>
-            <p>它依赖 runtime 与 bridge，但 runtime 永远不反向依赖它；<code>tests/host</code> 与 devtool 都从这里取浏览器能力。</p>
-          </Card>
+          <div className="stack">
+            <Card tag="hosts/browser" tone="violet" title="浏览器适配包">
+              <p><code>@tiny/host-browser</code> 拥有 iframe、MessageChannel、DOM canvas、资源 URL 与 <code>DevtoolRuntimeClient</code>。</p>
+              <p>它依赖 runtime 与 bridge，但 runtime 永远不反向依赖它；<code>tests/host</code> 与 devtool 都从这里取浏览器能力。</p>
+            </Card>
+            <Card tag="hosts/web-components" tone="violet" title="内置组件实现">
+              <p><code>@tiny/host-web-components</code> 拥有 <code>tiny-*</code> 宿主定义、Web/DOM 行为与默认 CSS。</p>
+              <p>它是宿主包而不是内核：render 线程通过 <code>builtinComponents</code> 注入 <code>webBuiltinComponents</code>，原生宿主可以换成自己的实现。</p>
+            </Card>
+          </div>
         </div>
         <CodeBlock>{`# pnpm check:runtime-purity
 packages/runtime/src/index.ts
@@ -78,13 +84,16 @@ packages/runtime/src/index.ts
 forbidden in the graph:
   window · document · navigator · localStorage · MessageChannel
   HTMLCanvasElement · Image · requestAnimationFrame · fetch · performance
-  imports containing "browser"
+  imports containing "browser" · @tiny/host-* imports
 
 # hosts/browser
   canvas-bridge.ts       service capture + render paint/measure
   runtime-port.ts        iframe port handshake
   standalone-host.ts     two iframes + MessageChannel
-  devtool-client.ts      debugger control surface`}</CodeBlock>
+  devtool-client.ts      debugger control surface
+
+# hosts/web-components
+  webBuiltinComponents   tiny-* definitions + base CSS, injected into render`}</CodeBlock>
         <Callout title="为什么这条边界值钱">
           <p>
             原生宿主不需要模拟浏览器，只需要提供 <code>Transport</code>、glass-easel backend、canvas 适配器和资源解析。
@@ -137,11 +146,11 @@ forbidden in the graph:
             [<code>@tiny/bridge</code>, '无', '协议、transport、批处理与错误'],
             [<code>@tiny/template-compiler</code>, '无（纯 TS）', 'WXML → ProcGen'],
             [<code>@tiny/stylesheet-compiler</code>, 'postcss', 'WXSS → 普通/低优先级 CSS'],
-            [<code>@tiny/components</code>, 'glass-easel；构建期 template-compiler', '18 个内置组件与 AOT 模板'],
             [<code>@tiny/cli</code>, 'manifest · template-compiler · stylesheet-compiler · esbuild · typescript', '唯一产物生产者'],
-            [<code>@tiny/runtime</code>, 'manifest · bridge · components · glass-easel · es-toolkit', '双线程运行时内核（无宿主依赖）'],
+            [<code>@tiny/runtime</code>, 'manifest · bridge · glass-easel · es-toolkit', '双线程运行时内核（无宿主依赖）'],
             [<code>@tiny/host-browser</code>, 'runtime · bridge', '浏览器宿主：iframe / MessageChannel / Canvas / devtool overlay'],
-            [<code>devtool</code>, 'host-browser · glass-easel · React · Redux/rematch', '调试器宿主 + 控制面板'],
+            [<code>@tiny/host-web-components</code>, 'manifest · runtime · glass-easel；构建期 template-compiler', '23 个内置组件、AOT 模板与默认 CSS（宿主包）'],
+            [<code>devtool</code>, 'host-browser · host-web-components · glass-easel · React · Redux/rematch', '调试器宿主 + 控制面板'],
             [<code>@tiny/website</code>, 'React', '架构站点，不进入引擎链路'],
           ]}
         />
@@ -149,12 +158,14 @@ forbidden in the graph:
             packages/bridge
             packages/template-compiler
             packages/stylesheet-compiler
-            packages/components        -> glass-easel
-            packages/runtime           -> manifest, bridge, components
+            packages/runtime           -> manifest, bridge, glass-easel
 hosts       hosts/browser              -> runtime, bridge   (environment adapter)
+            hosts/web-components       -> runtime, manifest, glass-easel
+                                          (built-in tags, injected into render)
 tools       tools/cli                  -> manifest, template-compiler, stylesheet-compiler
-apps        apps/devtool               -> host-browser
-tests       tests/host                 -> host-browser       (not a workspace package)
+apps        apps/devtool               -> host-browser, host-web-components
+tests       tests/host                 -> host-browser, host-web-components
+                                          (not a workspace package)
 fixtures    tests/apps/*               -> source only      (compiled into a host)
 
 rule: packages/* never import tools/*, apps/*, hosts/*, tests/*`}</CodeBlock>
@@ -335,7 +346,7 @@ rule: packages/* never import tools/*, apps/*, hosts/*, tests/*`}</CodeBlock>
             <p>Date、Map、Set、函数、undefined、循环引用都会被 bridge 拒绝。需要传递就显式转成字符串或普通对象。</p>
           </Card>
           <Card title="依赖只向内">
-            <p>核心包不能依赖 tools/apps/hosts/tests；共享类型放 manifest，而不是从 CLI 反向 import。浏览器能力只能从 <code>hosts/browser</code> 进入宿主。</p>
+            <p>核心包不能依赖 tools/apps/hosts/tests；共享类型放 manifest，而不是从 CLI 反向 import。浏览器能力只能从 <code>hosts/browser</code>、内置组件只能从 <code>hosts/web-components</code> 进入宿主。</p>
           </Card>
           <Card title="runtime 不碰浏览器">
             <p><code>pnpm check:runtime-purity</code> 会从 runtime 入口遍历依赖，禁止 window/document/iframe/MessageChannel/fetch 等宿主全局。</p>

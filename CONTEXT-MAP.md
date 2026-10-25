@@ -5,7 +5,6 @@ Each package is a bounded context. Read only the contexts relevant to the curren
 | Context | Path | Scope |
 | --- | --- | --- |
 | Bridge | `packages/bridge` | Versioned runtime protocol, transport, batching, and diagnostics boundary |
-| Components | `packages/components` | Glass-easel implementations of mini-program built-in tags |
 | CLI | `tools/cli` | Active glass-easel compiler and runtime manifest producer |
 | Manifest | `packages/manifest` | Artifact/manifest contract shared by compiler and runtime |
 | Devtool | `apps/devtool` | Runtime debugger UI and host orchestration |
@@ -15,4 +14,5 @@ Each package is a bounded context. Read only the contexts relevant to the curren
 | Test Host | `tests/host` | Standalone Vite host for test apps and acceptance |
 | Test Apps | `tests/apps` | Mini-program fixtures used by acceptance |
 | Browser Host | `hosts/browser` | iframe/MessageChannel/DOM canvas host adapters |
+| Web Components | `hosts/web-components` | Web/DOM implementations of mini-program built-in tags, injected into the render thread |
 | Website | `website` | React + Vite architecture / GitHub Pages site |

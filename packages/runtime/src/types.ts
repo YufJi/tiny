@@ -99,6 +99,44 @@ export type StyleLoader = (path: string) => string
 
 export type BackendFactory = () => unknown
 
+/** Context the runtime passes to a host-provided built-in component factory. */
+export type BuiltinComponentFactoryContext = {
+  /** Behavior id prefix derived from `manifest.naming` (e.g. `wx-`). */
+  prefix?: string
+  onDiagnostic?: (diagnostic: {
+    severity: 'warning' | 'error'
+    code: string
+    message: string
+    details?: unknown
+  }) => void
+  /** Resolve a mini-program asset path for the component instance that owns it. */
+  resolveAssetUrl?: (src: string, component: unknown) => string
+}
+
+export type BuiltinComponentFactory = (
+  space: import('glass-easel').ComponentSpace,
+  context: BuiltinComponentFactoryContext,
+) => BuiltinComponentDefinitions
+
+export type BuiltinComponentDefinitions = Record<string, import('glass-easel').GeneralComponentDefinition>
+
+/**
+ * Host-provided implementations of the mini-program built-in tags.
+ *
+ * The runtime core does not own UI: a host supplies the tags its backend can
+ * render. `@tiny/host-web-components` is the DOM/browser implementation used by
+ * `tests/host` and `apps/devtool`; a native host can provide its own factory or
+ * omit this option entirely.
+ */
+export type BuiltinComponents = {
+  create: BuiltinComponentFactory
+  /**
+   * Stylesheet registered into the global scope before app styles, e.g. the
+   * base layout CSS for real `tiny-*` host nodes on the web.
+   */
+  baseStyles?: { path: string; content: string }
+}
+
 export type BootstrapPayload = {
   manifest: RuntimeManifest
   initialPath: string
@@ -123,6 +161,8 @@ export type RenderThreadOptions = {
   manifest: RuntimeManifest
   artifacts: RenderArtifacts
   backend: unknown
+  /** Host-provided implementations of the mini-program built-in tags. */
+  builtinComponents?: BuiltinComponents
   initialPath: string
   initialData?: Record<string, unknown>
   loadStyle?: StyleLoader

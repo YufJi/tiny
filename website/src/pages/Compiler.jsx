@@ -171,11 +171,11 @@ compileMiniProgram({
           rows={[
             ['模板指令', <code>wx:if</code>, <code>tiny:if</code>, 'TmplGroup directivePrefix'],
             ['API 全局', <code>wx</code>, <><code>tiny</code>（+ aliases）</>, 'service installMiniProgramGlobals'],
-            ['内置 behavior', <code>wx-base</code>, <code>tiny-base</code>, 'components behaviors'],
+            ['内置 behavior', <code>wx-base</code>, <code>tiny-base</code>, '内置组件 behaviors'],
             ['内置 behavior scheme', <code>wx://component-export</code>, <code>tiny://component-export</code>, 'component-definition'],
             ['组件 host 属性', <code>wx-host</code>, <code>tiny-host</code>, 'adapter inspectTree / stylesheet compiler'],
             ['tag marker class', <code>wx-tag-button</code>, <code>tiny-tag-button</code>, 'template 注入 + WXSS tag 选择器'],
-            ['内置组件 tag', <code>&lt;view&gt;</code>, <><code>&lt;view&gt;</code>（不变）</>, 'components 标签表'],
+            ['内置组件 tag', <code>&lt;view&gt;</code>, <><code>&lt;view&gt;</code>（不变）</>, '内置组件 tag 表'],
           ]}
         />
         <Callout title="解析后的 naming 进入 manifest" >

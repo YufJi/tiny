@@ -33,7 +33,6 @@ must not depend on tools, apps, hosts, or tests.
 | `packages/stylesheet-compiler` | WXSS, rpx, class/tag scoping |
 | `packages/runtime` | Host-independent runtime core |
 | `packages/bridge` | Protocol, transport, batching, diagnostics |
-| `packages/components` | Mini-program built-in components |
 
 ### Tools and apps
 
@@ -54,6 +53,7 @@ must not depend on tools, apps, hosts, or tests.
 | Path | Scope |
 | --- | --- |
 | `hosts/browser` | `@tiny/host-browser`: iframes, message ports, DOM canvas, devtool overlay |
+| `hosts/web-components` | `@tiny/host-web-components`: web/DOM implementations of the built-in tags, injected into the render thread |
 
 ## Commands
 
@@ -88,7 +88,7 @@ pnpm --filter @tiny/website build
 ## Testing
 
 Vitest is used by `bridge`, `template-compiler`, `stylesheet-compiler`, `cli`,
-`components`, and `runtime` (152 tests). There is no global test runner; use
+`host-web-components`, and `runtime`. There is no global test runner; use
 `pnpm --filter <package> test`.
 
 The end-to-end gate is `pnpm accept:glass-easel`:
@@ -108,7 +108,7 @@ Chrome, or `PLAYWRIGHT_CHROMIUM_PATH`).
 
 ## Repository conventions
 
-- `packages/components/src/generated/`, `tests/host/generated/`, and
+- `hosts/web-components/src/generated/`, `tests/host/generated/`, and
   `apps/devtool/static/` are build output and gitignored.
 - `tests/apps/*` are complete mini-program fixtures; `tests/apps/todo` is the Taro 3
   compatibility target. `tests/apps/echarts` is historical reference only.
@@ -119,8 +119,10 @@ Chrome, or `PLAYWRIGHT_CHROMIUM_PATH`).
 - Do not reintroduce the legacy `packages/base`, `packages/compiler`, or the old
   devtool shell; no JSBridge/`executeJavaScript`-based code.
 - `@tiny/runtime` must stay host-independent. Browser modules live in
-  `@tiny/host-browser`; run `pnpm check:runtime-purity` after touching the core
-  entry.
+  `@tiny/host-browser`; built-in tag implementations live in
+  `@tiny/host-web-components` and enter the render thread through
+  `RenderThreadOptions.builtinComponents`. Run `pnpm check:runtime-purity` after
+  touching the core entry.
 - Host facts (menu-button geometry, performance, device capabilities) are supplied
   by the host through `ServiceThreadOptions.apiExtensions`; canvas is supplied
   through `ServiceThreadOptions.canvas` / `RenderThreadOptions.canvas`. Do not

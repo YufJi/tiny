@@ -8,6 +8,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@tiny/host-browser': path.resolve(__dirname, '../../hosts/browser/src/index.ts'),
+      '@tiny/host-web-components': path.resolve(__dirname, '../../hosts/web-components/src/index.ts'),
       '@tiny/runtime': path.resolve(runtimeRoot, 'src/index.ts'),
       // The runtime imports naming helpers as values; resolve them from source
       // so the dev host does not mix ESM sources with the CommonJS manifest build.

@@ -33,3 +33,5 @@ The migration starts with a clean runtime boundary and a pluggable render backen
 ---
 
 _Update: the built-in component package was renamed to `@tiny/components` (`packages/components`). The boundary decision above is unchanged._
+
+_Update (2026-10-26): the built-in component decision above is superseded. The web/DOM built-in implementations now live in `hosts/web-components` (`@tiny/host-web-components`) and are injected through `RenderThreadOptions.builtinComponents`. `packages/runtime` must not depend on them; a non-DOM host supplies its own definitions (or none). The rest of the boundary decision is unchanged._

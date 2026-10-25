@@ -17,8 +17,8 @@ export default function Testing() {
       <PageHero
         eyebrow="Testing & compatibility"
         title={<>用真实小程序验收，<br /><span className="gradient">而不是用快照自证</span></>}
-        lede="Tiny 的验收会编译真实 WXML/WXSS/JS，启动两个 iframe，在 Chromium 里点击、输入、导航，并在失败时保存截图。152 个单测管住协议、组件语义与算法，46 个浏览器步骤管住端到端行为。"
-        stats={[['152', 'unit tests'], ['46', 'browser steps'], ['5', 'browser flows'], ['5', 'test fixtures']]}
+        lede="Tiny 的验收会编译真实 WXML/WXSS/JS，启动两个 iframe，在 Chromium 里点击、输入、导航，并在失败时保存截图。164 个单测管住协议、组件语义与算法，46 个浏览器步骤管住端到端行为。"
+        stats={[['164', 'unit tests'], ['46', 'browser steps'], ['5', 'browser flows'], ['5', 'test fixtures']]}
       />
       <PageNav items={[
         ['gate', '验收闸门'],
@@ -40,12 +40,12 @@ export default function Testing() {
         <Sequence steps={[
           {
             title: '构建 8 个目标',
-            detail: 'manifest、stylesheet-compiler、template-compiler、bridge、components、cli、runtime、host-browser 依次构建，确保后续测试消费的是最新 dist。',
+            detail: 'manifest、stylesheet-compiler、template-compiler、bridge、cli、runtime、host-web-components、host-browser 依次构建，确保后续测试消费的是最新 dist。',
             code: 'pnpm build:glass-easel',
           },
           {
             title: '检查 runtime 纯度',
-            detail: '从 packages/runtime/src/index.ts 遍历依赖图，禁止浏览器全局与 hosts/browser 反向依赖。',
+            detail: '从 packages/runtime/src/index.ts 遍历依赖图，禁止浏览器全局、@tiny/host-* 与 hosts/* 反向依赖。',
             code: 'pnpm check:runtime-purity',
           },
           {
@@ -128,7 +128,7 @@ export default function Testing() {
       <Section
         id="units"
         kicker="Unit tests"
-        title="152 个测试，按包隔离"
+        title="164 个测试，按包隔离"
         intro="没有全局 test runner；每个包独立执行，避免隐式耦合，也让失败定位到包。"
       >
         <Table
@@ -136,10 +136,10 @@ export default function Testing() {
           rows={[
             [<code>@tiny/bridge</code>, '10', 'envelope 校验、版本/路由/payload 错误、handshake、call 关联、超时、关闭、批处理 FIFO、诊断插队、MessagePort'],
             [<code>@tiny/template-compiler</code>, '30', '脚本依赖、WXS、import/include、模板别名、ProcGen 签名、绑定表复用、事件简写、data-* 绑定、stringify 往返'],
-            [<code>@tiny/stylesheet-compiler</code>, '25', 'class/tag 前缀、rpx/calc、@import 编码与包装、@layer、:host 低优先级、hostAttribute、keyframes、page 根节点'],
-            [<code>@tiny/cli</code>, '11', 'manifest 全 artifact、naming 配置、WXS 双注册、配置合并、service/render 入口、TS + source map、样式作用域、tag marker'],
-            [<code>@tiny/components</code>, '18', '18 个 tag 模板、共享 behaviors、button 对齐、label 基础、input 归一化、checkbox/slider/switch、progress/swiper/icon'],
-            [<code>@tiny/runtime</code>, '58', '全局安装与 naming、双线程 bootstrap、component schema、behaviors/observers/relations/externalClasses/styleIsolation/selectComponent、component-as-page、assets、导航、API host、诊断'],
+            [<code>@tiny/stylesheet-compiler</code>, '29', 'class/tag 前缀、rpx/calc、@import 编码与包装、@layer、:host 低优先级、hostAttribute、keyframes、page 根节点'],
+            [<code>@tiny/cli</code>, '12', 'manifest 全 artifact、naming 配置、WXS 双注册、配置合并、service/render 入口、TS + source map、样式作用域、tag marker'],
+            [<code>@tiny/host-web-components</code>, '23', '23 个 tag 模板、共享 behaviors、button 对齐、label 基础、input 归一化、checkbox/slider/switch、progress/swiper/icon'],
+            [<code>@tiny/runtime</code>, '60', '全局安装与 naming、双线程 bootstrap、component schema、behaviors/observers/relations/externalClasses/styleIsolation/selectComponent、component-as-page、assets、导航、API host、诊断'],
           ]}
         />
         <Callout title="单测也验证协议契约" >
@@ -294,7 +294,7 @@ pnpm site:check`}</CodeBlock>
         </Cards>
         <Callout title="生成物不入库">
           <p>
-            <code>tests/host/generated/</code>、<code>packages/components/src/generated/</code>、<code>apps/devtool/static/</code> 都是构建产物。
+            <code>tests/host/generated/</code>、<code>hosts/web-components/src/generated/</code>、<code>apps/devtool/static/</code> 都是构建产物。
             仓库只保留源码、manifest 契约与 fixture；验收会自己生成它们。
           </p>
         </Callout>

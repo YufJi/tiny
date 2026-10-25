@@ -44,8 +44,9 @@ export default function Hosts() {
           head={['层', '入口', '环境假设', '职责']}
           rows={[
             ['内核编排', <code>createTinyRuntime(options)</code>, '无 DOM 假设', '两个 BridgeConnection、HostApiRegistry、诊断仓库、bootstrap 顺序'],
-            ['线程启动', <><code>bootServiceThread</code> / <code>bootRenderThread</code></>, 'service 需要 JS 全局；render 需要 glass-easel backend', '安装注册表/API、定义组件、响应消息；canvas / assets 通过选项注入'],
+            ['线程启动', <><code>bootServiceThread</code> / <code>bootRenderThread</code></>, 'service 需要 JS 全局；render 需要 glass-easel backend', '安装注册表/API、定义组件、响应消息；canvas / assets / builtinComponents 通过选项注入'],
             ['浏览器适配', <><code>@tiny/host-browser</code></>, 'window / iframe / MessageChannel / document', 'iframe、端口、DOM canvas、资源 URL、DevtoolRuntimeClient'],
+            ['内置组件', <><code>@tiny/host-web-components</code></>, 'DOM / CSS', 'tiny-* 宿主定义、共享 behaviors、base CSS；通过 builtinComponents 注入 render'],
             ['应用宿主', <><code>tests/host</code> · <code>apps/devtool</code></>, '静态资源服务器 / rspack', '选择 app、加载 manifest、提供 UI 或自动化钩子、调用 bootstrap'],
           ]}
         />
@@ -56,6 +57,9 @@ export default function Hosts() {
   createStandaloneDualThreadHost
   canvas-bridge / runtime-port
   DevtoolRuntimeClient
+
+@tiny/host-web-components         built-in tag implementation
+  webBuiltinComponents (definitions + base CSS)
               |
               v  createTinyRuntime
 createTinyRuntime                 engine orchestration
@@ -87,14 +91,17 @@ HTMLCanvasElement · HTMLImageElement · Image
 requestAnimationFrame · cancelAnimationFrame
 MessageChannel · postMessage · indexedDB
 XMLHttpRequest · WebSocket · fetch · performance`}</CodeBlock>
-            <p>同时禁止依赖图中出现包含 <code>browser</code> 的模块。违规直接让闸门失败。</p>
+            <p>同时禁止依赖图中出现包含 <code>browser</code> 的模块或 <code>@tiny/host-*</code> 导入。违规直接让闸门失败。</p>
           </Card>
           <div className="stack">
             <Card tag="core" title="packages/runtime">
-              <p>导出 types、diagnostics、glass-easel-adapter、service、render、host。<code>canvas</code>、<code>resolveAssetUrl</code>、<code>backend</code>、<code>mountComponent</code> 都是选项。</p>
+              <p>导出 types、diagnostics、glass-easel-adapter、service、render、host。<code>canvas</code>、<code>resolveAssetUrl</code>、<code>backend</code>、<code>mountComponent</code>、<code>builtinComponents</code> 都是选项。</p>
             </Card>
             <Card tag="hosts/browser" tone="violet" title="@tiny/host-browser">
               <p>拥有 iframe、MessageChannel、DOM canvas、资源 URL 规则与 <code>DevtoolRuntimeClient</code>；tests/host 与 devtool 都从这里导入。</p>
+            </Card>
+            <Card tag="hosts/web-components" tone="violet" title="@tiny/host-web-components">
+              <p>拥有 <code>tiny-*</code> 宿主定义、behaviors 与 base CSS；tests/host 与 devtool 在 render 入口注入 <code>webBuiltinComponents</code>。</p>
             </Card>
             <Card tag="result" title="可移植性">
               <p>原生宿主只需实现 Transport、backend、canvas 适配器、资源解析与宿主 API，不需要假装自己是浏览器。</p>

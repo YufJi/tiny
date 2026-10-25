@@ -6,14 +6,14 @@ import {
   type ResolvedNamingConfig,
   type StyleArtifact,
 } from '@tiny/manifest'
-import type { StyleLoader, TemplateRegistry } from './types'
+import type {
+  BuiltinComponentDefinitions,
+  BuiltinComponents,
+  MiniProgramComponentSchema,
+  StyleLoader,
+  TemplateRegistry,
+} from './types'
 import { toJsonSafe, type SerializedEventNode, type SerializedMiniProgramEvent } from './events'
-import type { MiniProgramComponentSchema } from './types'
-import {
-  BUILTIN_BASE_STYLES,
-  createBuiltinComponents,
-  type BuiltinComponentDefinitions,
-} from '@tiny/components'
 import { createRuntimeDiagnostic } from './diagnostics'
 import { resolveAssetPath, rewriteCssAssetUrls, splitAssetSuffix, type AssetUrlResolver } from './assets'
 
@@ -98,6 +98,8 @@ export type GlassEaselAdapterOptions = {
     origin: 'service' | 'render'
   }) => void
   onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
+  /** Host-provided implementations of the mini-program built-in tags. */
+  builtinComponents?: BuiltinComponents
   /** Host hook mapping app-root asset paths to loadable URLs. */
   resolveAssetUrl?: AssetUrlResolver
   /** Attach the created root component to a host-provided backend tree. */
@@ -150,6 +152,7 @@ export class GlassEaselRuntimeAdapter {
   private readonly onComponentData?: GlassEaselAdapterOptions['onComponentData']
   private readonly onComponentObserved?: GlassEaselAdapterOptions['onComponentObserved']
   private readonly builtinComponents: BuiltinComponentDefinitions
+  private readonly builtinBaseStyles?: BuiltinComponents['baseStyles']
   /** Resolved engine naming config (behavior ids, host attribute, …). */
   private readonly naming: ResolvedNamingConfig
   private readonly onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
@@ -174,20 +177,23 @@ export class GlassEaselRuntimeAdapter {
     this.mountComponent = options.mountComponent
     this.unmountComponent = options.unmountComponent
     this.resolveAssetUrl = options.resolveAssetUrl
-    this.builtinComponents = createBuiltinComponents(this.componentSpace, {
-      prefix: this.naming.behaviorPrefix,
-      onDiagnostic: (diagnostic) => this.onDiagnostic?.(createRuntimeDiagnostic(
-        diagnostic.severity,
-        diagnostic.code,
-        diagnostic.message,
-        'render',
-        this.activeEventPageId ?? undefined,
-        diagnostic.details,
-      )),
-      resolveAssetUrl: options.resolveAssetUrl
-        ? (src, component) => this.resolveComponentAssetUrl(src, component)
-        : undefined,
-    })
+    this.builtinBaseStyles = options.builtinComponents?.baseStyles
+    this.builtinComponents = options.builtinComponents
+      ? options.builtinComponents.create(this.componentSpace, {
+          prefix: this.naming.behaviorPrefix,
+          onDiagnostic: (diagnostic) => this.onDiagnostic?.(createRuntimeDiagnostic(
+            diagnostic.severity,
+            diagnostic.code,
+            diagnostic.message,
+            'render',
+            this.activeEventPageId ?? undefined,
+            diagnostic.details,
+          )),
+          resolveAssetUrl: options.resolveAssetUrl
+            ? (src, component) => this.resolveComponentAssetUrl(src, component)
+            : undefined,
+        })
+      : {}
   }
 
   registerComponentSchemas(schemas: MiniProgramComponentSchema[]): void {
@@ -198,10 +204,11 @@ export class GlassEaselRuntimeAdapter {
   }
 
   registerStyles(manifest: Manifest, loadStyle: StyleLoader = () => ''): void {
-    if (!this.baseStylesRegistered) {
-      this.backend.registerStyleSheetContent('tiny-builtin-base.css', BUILTIN_BASE_STYLES)
+    if (!this.baseStylesRegistered && this.builtinBaseStyles) {
+      const { path, content } = this.builtinBaseStyles
+      this.backend.registerStyleSheetContent(path, content)
       this.backend.appendStyleSheetPath(
-        'tiny-builtin-base.css',
+        path,
         glassEasel.StyleScopeManager.globalScope(),
       )
       this.baseStylesRegistered = true
