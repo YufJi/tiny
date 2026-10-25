@@ -1,11 +1,12 @@
 import React from 'react';
 import './DevtoolToolbar.css';
 
-// Right-side toolbar: app selection, page state and runtime controls.
+// Right-side toolbar: active app state, runtime controls and navigation.
 function DevtoolToolbar({
-  apps,
-  appId,
   selectedApp,
+  sessionCount,
+  maxLiveApps,
+  maxPageStack,
   loading,
   alert,
   manifestPath,
@@ -13,19 +14,16 @@ function DevtoolToolbar({
   pageStack,
   pages = [],
   status,
-  lifecycle,
   running,
   ready,
   navPath,
-  onAppChange,
+  onOpenApps,
   onNavPathChange,
   onNavigate,
   onReload,
   onInspect,
-  onForeground,
-  onBackground,
   onBack,
-  onTerminate,
+  onCloseApp,
 }) {
   return (
     <div className="td-toolbar td-scroll">
@@ -41,41 +39,45 @@ function DevtoolToolbar({
         </span>
       </div>
 
-      <label className="td-field">
-        <span className="td-field-label">Test app</span>
-        <select
-          className="td-select"
-          value={appId}
-          disabled={loading || apps.length === 0}
-          onChange={(event) => onAppChange(event.target.value)}
+      <div className="td-actions td-actions--toolbar">
+        <button
+          type="button"
+          className="td-btn"
+          disabled={!ready}
+          title="Send the running app to the background and open the app list"
+          onClick={onOpenApps}
         >
-          {apps.map((app) => (
-            <option key={app.id} value={app.id}>{app.label}</option>
-          ))}
-        </select>
-      </label>
+          App list
+        </button>
+        <span className="td-warm-count">{sessionCount} / {maxLiveApps} warm</span>
+      </div>
 
       <div className="td-app-meta">
         {loading ? <span>Loading test apps…</span> : null}
-        {selectedApp?.title ? <span>{selectedApp.title}</span> : null}
-        {selectedApp?.pages ? <span>{selectedApp.pages} pages</span> : null}
+        {selectedApp ? (
+          <>
+            <span>{selectedApp.label}</span>
+            {selectedApp.title ? <span>{selectedApp.title}</span> : null}
+            {selectedApp.pages ? <span>{selectedApp.pages} pages</span> : null}
+          </>
+        ) : (
+          <span>No app open — choose one from the list</span>
+        )}
         {manifestPath ? <code>{manifestPath}</code> : null}
       </div>
 
       <div className="td-page-card">
         <div className="td-page-head">
           <span className="td-field-label">Current page</span>
-          <span
-            className={
-              running
-                ? `td-page-pulse td-page-pulse--${lifecycle === 'background' ? 'paused' : 'running'}`
-                : 'td-page-pulse'
-            }
-          />
+          <span className={running ? 'td-page-pulse td-page-pulse--running' : 'td-page-pulse'} />
         </div>
         <code className="td-page-current" title={currentPage || ''}>
           {currentPage || 'No page loaded'}
         </code>
+        <div className="td-page-depth">
+          <span>Page stack</span>
+          <span>{pageStack.length} / {maxPageStack}</span>
+        </div>
         <div className="td-chips">
           {pageStack.length === 0 ? (
             <span className="td-empty">No pages in the stack</span>
@@ -108,7 +110,7 @@ function DevtoolToolbar({
           type="button"
           className="td-btn td-btn--primary"
           disabled={!ready || status === 'connecting'}
-          title="Rebuild both runtime threads"
+          title="Rebuild the active app's runtime threads"
           onClick={onReload}
         >
           Reload
@@ -125,39 +127,11 @@ function DevtoolToolbar({
         <button
           type="button"
           className="td-btn td-btn--danger"
-          disabled={!running}
-          title="Stop the runtime and remove the preview frames"
-          onClick={onTerminate}
+          disabled={!ready}
+          title="Close the active app and release its frames"
+          onClick={onCloseApp}
         >
-          Terminate
-        </button>
-      </div>
-
-      <div className="td-section-title">Lifecycle</div>
-      <div className="td-actions">
-        <button
-          type="button"
-          className="td-btn"
-          disabled={!running || lifecycle === 'foreground'}
-          onClick={onForeground}
-        >
-          Foreground
-        </button>
-        <button
-          type="button"
-          className="td-btn"
-          disabled={!running || lifecycle === 'background'}
-          onClick={onBackground}
-        >
-          Background
-        </button>
-        <button
-          type="button"
-          className="td-btn"
-          disabled={!running}
-          onClick={onBack}
-        >
-          Back
+          Close app
         </button>
       </div>
 
@@ -169,6 +143,7 @@ function DevtoolToolbar({
           onChange={(event) => onNavPathChange(event.target.value)}
           placeholder="pages/..."
           aria-label="Page path"
+          disabled={!ready}
         />
         <button
           type="button"
@@ -177,6 +152,11 @@ function DevtoolToolbar({
           onClick={onNavigate}
         >
           Navigate
+        </button>
+      </div>
+      <div className="td-actions td-actions--back">
+        <button type="button" className="td-btn" disabled={!running || pageStack.length <= 1} onClick={onBack}>
+          Back
         </button>
       </div>
     </div>

@@ -5,11 +5,10 @@ import './HostNavigationBar.css';
 // Simulated host chrome: iOS status bar, mini-program navigation bar and back.
 function HostNavigationBar({
   navigation,
+  launcher,
   enabled,
   canGoBack,
-  lifecycle,
   onBack,
-  onForeground,
   onBackground,
   onReload,
 }) {
@@ -41,32 +40,36 @@ function HostNavigationBar({
         </span>
       </div>
       <div className="td-navbar">
-        <button
-          type="button"
-          className="td-nav-back"
-          disabled={!enabled || !canGoBack}
-          aria-label="Back in preview"
-          title={canGoBack ? 'Back' : 'Already at the first page'}
-          onClick={onBack}
-        >
-          <svg viewBox="0 0 24 24" width="21" height="21" fill="none" aria-hidden="true">
-            <path
-              d="M14.5 5.5 8 12l6.5 6.5"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
+        {launcher ? null : (
+          <button
+            type="button"
+            className="td-nav-back"
+            disabled={!enabled || !canGoBack}
+            aria-label="Back in preview"
+            title={canGoBack ? 'Back' : 'Already at the first page'}
+            onClick={onBack}
+          >
+            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" aria-hidden="true">
+              <path
+                d="M14.5 5.5 8 12l6.5 6.5"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        )}
         <div className="td-nav-title" title={navigation.title}>{navigation.title}</div>
-        <HostControlsMenu
-          enabled={enabled}
-          lifecycle={lifecycle}
-          onForeground={onForeground}
-          onBackground={onBackground}
-          onReload={onReload}
-        />
+        {launcher ? (
+          <span className="td-nav-launcher-mark" aria-hidden="true">◎</span>
+        ) : (
+          <HostControlsMenu
+            enabled={enabled}
+            onBackground={onBackground}
+            onReload={onReload}
+          />
+        )}
       </div>
     </div>
   );

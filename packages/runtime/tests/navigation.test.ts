@@ -332,4 +332,53 @@ describe('mini-program navigation', () => {
 
     await host.close()
   })
+
+  test('enforces the host-configured page stack limit', async () => {
+    const manifest = createNavigationManifest()
+    const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
+    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
+    const service = bootServiceThread({
+      transport: serviceTransport,
+      manifest,
+      initialPath: TODOS_PATH,
+    })
+    bootRenderThread({
+      transport: renderTransport,
+      manifest,
+      artifacts: { templates: createTemplateRegistry() },
+      backend: new glassEasel.EmptyBackendContext(),
+      initialPath: TODOS_PATH,
+    })
+    const host = createTinyRuntime({
+      serviceTransport: hostServiceTransport,
+      renderTransport: hostRenderTransport,
+      manifest,
+      initialPath: TODOS_PATH,
+      maxPageStack: 1,
+    })
+
+    const globalObject = globalThis as unknown as Record<string, unknown>
+    const lifecycles: string[] = []
+    ;(globalObject.App as (options: Record<string, unknown>) => unknown)({})
+    ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
+      onHide() {
+        lifecycles.push('hide')
+      },
+      async navigate() {
+        await wx.navigateTo({ url: '../add-todo/add-todo' })
+      },
+    })
+    ;(globalObject.Component as (options: Record<string, unknown>) => unknown)({})
+
+    await host.bootstrap()
+    await expect(service.activePage?.invokeMethod('navigate')).rejects.toMatchObject({
+      code: 'HANDLER_ERROR',
+    })
+    expect(service.pageStack.map((page) => page.path)).toEqual([TODOS_PATH])
+    expect(lifecycles).toEqual([])
+    const state = host.diagnostics.filter((item) => item.code === 'RUNTIME_STATE').at(-1)
+    expect(state?.details).toMatchObject({ maxPageStack: 1 })
+
+    await host.close()
+  })
 })

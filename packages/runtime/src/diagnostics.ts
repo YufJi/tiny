@@ -50,6 +50,7 @@ export type RuntimeStateDetails = {
   pages?: RuntimePageState[]
   appVisible?: boolean
   tabBar?: RuntimeTabBarState
+  maxPageStack?: number
   transport: 'connected' | 'closed'
 }
 

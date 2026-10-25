@@ -66,7 +66,7 @@ console.log(`
 
 Automated: build, compiler/runtime tests, P0 demo browser flow, the existing example app
 flow, the Taro 3 output flow, and the runtime debugger flow
-(boot → state projection → preview every tests/apps fixture → reload/terminate).
+(launcher → per-app preview → 3-app LRU keepalive → reload/close/deep links).
 Manual debug hosts: pnpm dev:glass-easel, pnpm dev:devtool
 `)
 

@@ -116,7 +116,7 @@ export default function Home() {
       >
         <div className="split">
           <Card tag="online" title="Tiny Runtime Debugger">
-            <p>应用切换、页面导航、前后台、Reload/Terminate、诊断流与元素树，全部来自当前会话。</p>
+            <p>默认应用列表、最近 3 个应用保活、页面导航、前后台、Reload/Close app、诊断流与元素树。</p>
             <p><a className="button primary" href="#/devtool">打开在线调试器</a></p>
           </Card>
           <Card tag="build-time" title="随站点构建，而不是外链">

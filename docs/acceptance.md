@@ -112,34 +112,41 @@ The gate scans every `tests/apps/*` fixture with an `app.json`, compiles all of 
 `apps/devtool/static/runtime/apps.json`, starts the devtool, and verifies the runtime
 debugger:
 
-1. `DevtoolRuntimeClient` boots the dual-thread host and reports `running`.
-2. Page stack, current page, per-page render frames, structured diagnostics, and the
+1. Opening `/` shows the **Mini programs** launcher by default: every fixture is listed,
+   no runtime iframe exists, and the warm-app counter reads `0 / 3`.
+2. Clicking `demo` creates that app's service/render iframes, updates the URL to
+   `?app=demo`, and `DevtoolRuntimeClient` reports `running`.
+3. Page stack, current page, per-page render frames, structured diagnostics, and the
    rendered element tree are projected into Redux and surfaced in the right-bottom
    Console / Lifecycle / Elements panel.
-3. The mini program renders inside the `375 × 812` iPhone X preview. Each page owns one
+4. The mini program renders inside the `375 × 812` iPhone X preview. Each page owns one
    `next-render.html?pageId=<page-id>` iframe; the active frame is visible and hidden
    pages stay mounted behind it. A host status bar and navigation bar consume the top
    `88px` (content stays `375 × 724`, or `375 × 674` on tab pages with a `50px` tabBar);
    the Elements tab shows `page`, built-in tags, classes, attributes, and text.
-4. The host navigation bar projects the **active page** title and exposes back;
+5. The host navigation bar projects the **active page** title and exposes back;
    `navigate.back` is disabled on the first page and drives the runtime after a
-   navigation. The page stack chips show page paths and visible/hidden WebView state.
-5. Navigating to the add-todo page creates a second iframe and hides the first without
+   navigation. The page stack chips show page paths, visibility, and `n / maxPageStack`.
+6. Navigating to the add-todo page creates a second iframe and hides the first without
    destroying its DOM; going back removes only the popped page iframe and re-shows the
    first page with its previous data. The Lifecycle timeline records
    `onLoad/onShow/onReady/onHide/onUnload`, `onReachBottom`, `onResize`, and `onTabItemTap`.
-6. The `mini` fixture renders its two-item native tabBar with icons and selected state.
+7. The `mini` fixture renders its two-item native tabBar with icons and selected state.
    Tapping `Chart` calls `switchTab`, keeps the Todos frame cached and hidden, and shows
    the Chart frame; tapping `Todos` switches back with both frames still alive.
-7. The app selector lists every `tests/apps` fixture; each app boots its first page and
-   renders representative content for `demo`, `mini`, `todo`, `wechat-demo`, and `echarts`;
-   page-relative dynamic images (for example the WeChat demo icons) load successfully.
-8. The capsule menu backgrounds and foregrounds the preview (with an in-preview overlay),
-   `Reload` restarts the runtime, and `Terminate` removes the service iframe and every
-   page render iframe.
-9. No console or page errors occur.
+8. Every fixture boots from the launcher and renders representative content for `demo`,
+   `mini`, `todo`, `wechat-demo`, and `echarts`; page-relative dynamic images (for example
+   the WeChat demo icons) load successfully. At most three apps stay warm; opening
+   `wechat-demo` evicts the least recently used `demo`, and opening `echarts` evicts `mini`.
+9. The capsule ring calls `page.hide`, hides all page frames, and returns to the launcher;
+   reopening the app resumes its page state. `Reload` restarts only the active app,
+   `Close app` / list close buttons release their iframes, and deep links
+   (`?app=wechat-demo&path=page/component/index`) still start the requested page.
+10. `?maxPageStack=1` is honored by the host: navigating to a second page is rejected,
+    the current page stays visible, and the toolbar surfaces the page stack limit error.
+11. No console or page errors occur.
 
-The debugger is the devtool default page. Run it manually with:
+The devtool root is the mini-program launcher. Run it manually with:
 
 ```bash
 pnpm dev:devtool
@@ -148,8 +155,8 @@ pnpm dev:devtool
 ```
 
 `dev:devtool` starts one watcher per test app plus the rspack dev server. Editing a
-WXML/WXSS/JS file recompiles within ~250ms; press `Reload` in the panel to boot the new
-artifacts.
+WXML/WXSS/JS file recompiles within ~250ms; open the app from the list and press `Reload`
+to boot the new artifacts.
 
 ## Browser selection
 

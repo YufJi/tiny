@@ -884,18 +884,121 @@ export async function runDevtoolAcceptance({ baseUrl }) {
 
   let currentStep = 'start'
   try {
+    const fixtures = discoverTestApps()
+    assert.ok(fixtures.length > 0, 'no tests/apps fixtures were discovered')
+    const expectedText = {
+      demo: 'Tiny Glass-easel P0',
+      mini: 'Learning Javascript',
+      todo: 'Use Redux',
+      'wechat-demo': '视图容器',
+      echarts: '柱状图',
+    }
+    const imageFixtures = new Set(['demo', 'mini', 'wechat-demo', 'echarts'])
+    const fixtureById = new Map(fixtures.map((fixture) => [fixture.id, fixture]))
     const state = () => page.evaluate(() => window.__tinyDevtool.getState())
     const waitForStatus = (status) => page.waitForFunction(
       (expected) => window.__tinyDevtool?.getState().status === expected,
       status,
       { timeout: STEP_TIMEOUT },
     )
-
-    await step('boot the runtime debugger', async () => {
-      currentStep = 'boot the runtime debugger'
-      // Pin the app so the check does not depend on the devtool's default app.
-      await page.goto(`${baseUrl}/?app=demo`, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
+    const managerState = () => page.evaluate(() => ({
+      active: window.__tinyDevtoolApps?.getActiveAppId() ?? null,
+      sessions: window.__tinyDevtoolApps?.getSessions() ?? [],
+      maxLive: window.__tinyDevtoolApps?.getMaxLiveApps(),
+      maxStack: window.__tinyDevtoolApps?.getMaxPageStack(),
+    }))
+    const sessionIds = async () => (await managerState()).sessions.map((session) => session.appId).sort()
+    const waitForLauncher = () => page.waitForSelector('.td-launcher', {
+      state: 'visible',
+      timeout: STEP_TIMEOUT,
+    })
+    const ensureLauncher = async () => {
+      if (await page.locator('.td-launcher').isVisible().catch(() => false)) return
+      const background = page.getByRole('button', { name: 'Background app' })
+      assert.equal(await background.count(), 1, 'background control is missing')
+      await background.click()
+      await waitForLauncher()
+      await page.waitForFunction(
+        () => window.__tinyDevtoolApps?.getActiveAppId() === null,
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+    }
+    const openFixture = async (fixture) => {
+      if (!(await page.locator('.td-launcher').isVisible().catch(() => false))) {
+        await ensureLauncher()
+      }
+      const row = page.locator('.td-launcher-main').filter({ hasText: fixture.label }).first()
+      assert.ok(await row.count(), `launcher row for ${fixture.label} is missing`)
+      await row.click()
+      await page.waitForFunction(
+        (appId) => window.__tinyDevtoolApps?.getActiveAppId() === appId,
+        fixture.id,
+        { timeout: STEP_TIMEOUT },
+      )
       await waitForStatus('running')
+    }
+    const surfaceSelector = (appId) => `.td-app-surface[data-app-id="${appId}"]`
+    const activeRenderFrame = (appId, pageId) => page.frames().find(
+      (frame) => frame.url().includes('next-render.html')
+        && frame.url().includes(`app=${appId}`)
+        && frame.url().includes(`pageId=${pageId}`),
+    )
+    const waitForSession = async (appId, present = true) => {
+      await page.waitForFunction(
+        ({ expectedAppId, expectedPresent }) => {
+          const ids = window.__tinyDevtoolApps?.getSessions().map((session) => session.appId) ?? []
+          return ids.includes(expectedAppId) === expectedPresent
+        },
+        { expectedAppId: appId, expectedPresent: present },
+        { timeout: STEP_TIMEOUT },
+      )
+    }
+
+    await step('show the app launcher by default', async () => {
+      currentStep = 'show the app launcher by default'
+      await page.goto(`${baseUrl}/`, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
+      await page.waitForFunction(
+        (count) => window.__tinyDevtoolApps?.getApps().length === count,
+        fixtures.length,
+        { timeout: STEP_TIMEOUT },
+      )
+      await waitForLauncher()
+      assert.equal(await page.locator('iframe').count(), 0, 'launcher should not start a runtime')
+      const manager = await managerState()
+      assert.deepEqual(manager.sessions, [], 'launcher should start with no warm apps')
+      assert.equal(manager.maxLive, 3, 'keepalive budget is not 3')
+      assert.equal(manager.maxStack, 10, 'default page stack limit is not 10')
+      assert.equal(await page.locator('.td-launcher-main').count(), fixtures.length)
+      assert.deepEqual(
+        await page.locator('.td-launcher-name').allInnerTexts(),
+        fixtures.map((fixture) => fixture.label),
+        'launcher does not list every fixture in registry order',
+      )
+      assert.equal(await page.locator('.td-nav-title').innerText(), 'Test apps')
+      assert.equal(
+        await page.locator('.td-warm-count').innerText(),
+        '0 / 3 warm',
+        'warm-app counter is missing',
+      )
+      assert.equal(
+        await page.evaluate(() => new URL(window.location.href).searchParams.has('app')),
+        false,
+        'default launcher URL should not pin an app',
+      )
+    })
+
+    await step('launch an app from the list', async () => {
+      currentStep = 'launch an app from the list'
+      await openFixture(fixtureById.get('demo'))
+      assert.equal((await managerState()).active, 'demo')
+      assert.equal(await page.locator('.td-launcher').count(), 0, 'launcher stayed visible after launch')
+      assert.equal(
+        await page.evaluate(() => new URL(window.location.href).searchParams.get('app')),
+        'demo',
+        'launch did not update the URL',
+      )
+      assert.equal(await page.locator('iframe[data-page-id]').count(), 1)
       assert.equal(pageErrors.length, 0, `page errors during boot: ${pageErrors.join(' | ')}`)
     })
 
@@ -947,16 +1050,17 @@ export async function runDevtoolAcceptance({ baseUrl }) {
 
     await step('render the mini program inside the debugger', async () => {
       currentStep = 'render the mini program inside the debugger'
+      const demoSurface = surfaceSelector('demo')
       assert.equal(
-        await page.locator('iframe[data-page-id]').count(),
+        await page.locator(`${demoSurface} iframe[data-page-id]`).count(),
         1,
         'the first page should own exactly one render iframe',
       )
       assert.equal(
-        await page.locator('iframe[data-page-id="page-1"]').getAttribute('data-state'),
+        await page.locator(`${demoSurface} iframe[data-page-id="page-1"]`).getAttribute('data-state'),
         'active',
-    )
-      const renderFrame = page.frameLocator('iframe[data-page-id="page-1"]')
+      )
+      const renderFrame = page.frameLocator(`${demoSurface} iframe[data-page-id="page-1"]`)
       const body = await renderFrame.locator('#app').innerText()
       assert.ok(body.includes('Tiny Glass-easel P0'), 'mini program did not render in the debugger')
       assert.ok(body.includes('Learn glass-easel'), 'page data did not render in the debugger')
@@ -964,6 +1068,7 @@ export async function runDevtoolAcceptance({ baseUrl }) {
 
     await step('navigate and go back from the debugger', async () => {
       currentStep = 'navigate and go back from the debugger'
+      const demoSurface = surfaceSelector('demo')
       await page.locator('input[placeholder="pages/..."]').fill('/pages/add-todo/add-todo')
       await page.getByText('Navigate', { exact: true }).click()
       await page.waitForFunction(
@@ -977,15 +1082,15 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         null,
         { timeout: STEP_TIMEOUT },
       )
-      await page.waitForSelector('iframe[data-page-id="page-2"][data-state="active"]', {
+      await page.waitForSelector(`${demoSurface} iframe[data-page-id="page-2"][data-state="active"]`, {
         timeout: STEP_TIMEOUT,
       })
       // The previous page keeps its own iframe and DOM while it is hidden.
       assert.equal(
-        await page.locator('iframe[data-page-id="page-1"]').getAttribute('data-state'),
+        await page.locator(`${demoSurface} iframe[data-page-id="page-1"]`).getAttribute('data-state'),
         'hidden',
       )
-      const previousFrame = page.frameLocator('iframe[data-page-id="page-1"]')
+      const previousFrame = page.frameLocator(`${demoSurface} iframe[data-page-id="page-1"]`)
       assert.ok(
         (await previousFrame.locator('#app').innerText()).includes('Tiny Glass-easel P0'),
         'hidden page lost its rendered DOM',
@@ -1005,60 +1110,32 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         { timeout: STEP_TIMEOUT },
       )
       await page.waitForFunction(
-        () => !document.querySelector('iframe[data-page-id="page-2"]'),
-        null,
+        (selector) => !document.querySelector(`${selector} iframe[data-page-id="page-2"]`),
+        demoSurface,
         { timeout: STEP_TIMEOUT },
       )
       assert.deepEqual((await state()).pageStack, ['page-1'])
       assert.equal(
-        await page.locator('iframe[data-page-id="page-1"]').getAttribute('data-state'),
+        await page.locator(`${demoSurface} iframe[data-page-id="page-1"]`).getAttribute('data-state'),
         'active',
       )
     })
 
-    await step('preview every tests/apps fixture in the debugger', async () => {
-      currentStep = 'preview every tests/apps fixture in the debugger'
-      const fixtures = discoverTestApps()
-      assert.ok(fixtures.length > 0, 'no tests/apps fixtures were discovered')
-      const selector = page.locator('select')
-      assert.equal(await selector.count(), 1, 'app selector is missing')
-      assert.deepEqual(
-        await selector.locator('option').evaluateAll((options) => options.map((option) => option.value)),
-        fixtures.map((fixture) => fixture.id),
-        'app selector does not list every tests/apps fixture',
-      )
-      assert.deepEqual(
-        await selector.locator('option').evaluateAll((options) => options.map((option) => option.textContent)),
-        fixtures.map((fixture) => fixture.label),
-        'app selector labels do not match the registry',
-      )
-
-      const expectedText = {
-        demo: 'Tiny Glass-easel P0',
-        mini: 'Learning Javascript',
-        todo: 'Use Redux',
-        'wechat-demo': '视图容器',
-        echarts: '柱状图',
-      }
-      const imageFixtures = new Set(['demo', 'mini', 'wechat-demo', 'echarts'])
-      const currentAppId = () => page.evaluate(
-        () => new URL(window.location.href).searchParams.get('app'),
+    await step('preview every fixture and keep the three most recent warm', async () => {
+      currentStep = 'preview every fixture and keep the three most recent warm'
+      await ensureLauncher()
+      assert.deepEqual(await sessionIds(), ['demo'])
+      await page.waitForFunction(
+        () => document.querySelector('.td-warm-count')?.textContent === '1 / 3 warm',
+        null,
+        { timeout: STEP_TIMEOUT },
       )
 
       for (const fixture of fixtures) {
         currentStep = `preview tests/apps/${fixture.id}`
-        if (await currentAppId() !== fixture.id) {
-          await Promise.all([
-            page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT }),
-            selector.selectOption(fixture.id),
-          ])
-        }
-        await waitForStatus('running')
+        await openFixture(fixture)
         await page.waitForFunction(
-          (expectedPage) => {
-            const current = window.__tinyDevtool?.getState()
-            return current?.status === 'running' && current.currentPage === expectedPage
-          },
+          (expectedPage) => window.__tinyDevtool?.getState().currentPage === expectedPage,
           fixture.firstPage,
           { timeout: STEP_TIMEOUT },
         )
@@ -1079,6 +1156,8 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         }
 
         const preview = await state()
+        const appId = (await managerState()).active
+        assert.equal(appId, fixture.id)
         assert.equal(preview.currentPage, fixture.firstPage, `${fixture.id} booted the wrong page`)
         assert.equal(
           preview.diagnostics.filter((item) => item.severity === 'error').length,
@@ -1086,7 +1165,6 @@ export async function runDevtoolAcceptance({ baseUrl }) {
           `${fixture.id} reported a fatal diagnostic`,
         )
         assert.ok(preview.tree, `${fixture.id} did not project an element tree`)
-
         if (needle) {
           assert.ok(
             JSON.stringify(preview.tree).includes(needle),
@@ -1094,12 +1172,13 @@ export async function runDevtoolAcceptance({ baseUrl }) {
           )
         }
 
-        const renderFrame = page.frames().find(
-          (frame) => frame.url().includes(`pageId=${preview.pageStack.at(-1)}`),
-        )
+        const surface = surfaceSelector(fixture.id)
+        const currentPageId = preview.pageStack.at(-1)
+        const renderFrame = activeRenderFrame(fixture.id, currentPageId)
         assert.ok(renderFrame, `${fixture.id} did not create a render thread iframe`)
         assert.ok(
-          await page.locator('iframe[data-page-id]').count() >= Math.max(preview.pageStack.length, 1),
+          await page.locator(`${surface} iframe[data-page-id]`).count()
+            >= Math.max(preview.pageStack.length, 1),
           `${fixture.id} did not create a render frame for every live page`,
         )
         if (imageFixtures.has(fixture.id)) {
@@ -1143,12 +1222,12 @@ export async function runDevtoolAcceptance({ baseUrl }) {
             { timeout: STEP_TIMEOUT },
           )
           await page.waitForFunction(
-            () => document.querySelector('iframe[data-page-id="page-2"]')?.dataset.state === 'active',
-            null,
+            (selector) => document.querySelector(`${selector} iframe[data-page-id="page-2"]`)?.dataset.state === 'active',
+            surface,
             { timeout: STEP_TIMEOUT },
           )
           assert.equal(
-            await page.locator('iframe[data-page-id="page-1"]').getAttribute('data-state'),
+            await page.locator(`${surface} iframe[data-page-id="page-1"]`).getAttribute('data-state'),
             'hidden',
             'previous tab frame was not hidden',
           )
@@ -1157,7 +1236,7 @@ export async function runDevtoolAcceptance({ baseUrl }) {
             'true',
             'tabBar did not select the Chart tab',
           )
-          await page.frameLocator('iframe[data-page-id="page-2"]').locator('#app')
+          await page.frameLocator(`${surface} iframe[data-page-id="page-2"]`).locator('#app')
             .waitFor({ state: 'attached', timeout: STEP_TIMEOUT })
 
           await tabBar.getByRole('tab', { name: 'Todos' }).click()
@@ -1167,8 +1246,8 @@ export async function runDevtoolAcceptance({ baseUrl }) {
             { timeout: STEP_TIMEOUT },
           )
           await page.waitForFunction(
-            () => document.querySelector('iframe[data-page-id="page-1"]')?.dataset.state === 'active',
-            null,
+            (selector) => document.querySelector(`${selector} iframe[data-page-id="page-1"]`)?.dataset.state === 'active',
+            surface,
             { timeout: STEP_TIMEOUT },
           )
           assert.equal(
@@ -1177,59 +1256,101 @@ export async function runDevtoolAcceptance({ baseUrl }) {
             'tabBar did not return to the Todos tab',
           )
           assert.ok(
-            await page.locator('iframe[data-page-id]').count() >= 2,
+            await page.locator(`${surface} iframe[data-page-id]`).count() >= 2,
             'cached tab frames were removed on switchTab',
           )
         }
+
+        await ensureLauncher()
+        const ids = await sessionIds()
+        assert.ok(ids.length <= 3, `keepalive exceeded 3 apps after ${fixture.id}`)
+        if (fixture.id === 'wechat-demo') {
+          assert.deepEqual(ids, ['mini', 'todo', 'wechat-demo'], 'LRU did not evict demo')
+        }
+        if (fixture.id === 'echarts') {
+          assert.deepEqual(ids, ['echarts', 'todo', 'wechat-demo'], 'LRU did not evict mini')
+        }
       }
 
+      assert.deepEqual(await sessionIds(), ['echarts', 'todo', 'wechat-demo'])
       assert.equal(
-        await currentAppId(),
-        fixtures.at(-1).id,
-        'the last previewed fixture was not kept in the URL',
+        await page.locator('.td-launcher-main').filter({ hasText: 'tests/apps/demo' }).getByText('Launch').count(),
+        1,
+        'evicted app did not return to the Launch state',
       )
     })
 
-    await step('operate host lifecycle, reload, and terminate', async () => {
-      currentStep = 'operate host lifecycle, reload, and terminate'
-      const appId = await page.evaluate(
-        () => new URL(window.location.href).searchParams.get('app'),
-      )
-      if (appId !== 'demo') {
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT }),
-          page.selectOption('select', 'demo'),
-        ])
-        await waitForStatus('running')
-      }
-      assert.equal(
-        await page.locator('.td-nav-title').innerText(),
-        'Tiny Glass Easel',
-        'host navigation bar did not project the app title after switching back',
-      )
-
-      await page.getByRole('button', { name: 'Host controls' }).click()
-      await page.getByRole('menuitem', { name: 'Background' }).click()
-      await page.waitForSelector('.td-screen-background', { state: 'visible', timeout: STEP_TIMEOUT })
-      assert.equal(
-        await page.locator('.td-screen-background').isVisible(),
-        true,
-        'background lifecycle overlay is missing',
-      )
-      await page.getByRole('button', { name: 'Return to foreground' }).click()
-      await page.waitForFunction(
-        () => !document.querySelector('.td-screen-background'),
-        null,
-        { timeout: STEP_TIMEOUT },
-      )
-
+    await step('reload, close apps, and honor deep links', async () => {
+      currentStep = 'reload, close apps, and honor deep links'
+      await openFixture(fixtureById.get('demo'))
+      assert.equal((await managerState()).active, 'demo')
       await page.getByText('Reload', { exact: true }).click()
       await waitForStatus('running')
       assert.deepEqual((await state()).pageStack, ['page-1'])
 
-      await page.getByText('Terminate', { exact: true }).click()
-      await waitForStatus('terminated')
+      await ensureLauncher()
+      await waitForSession('demo', true)
+      await openFixture(fixtureById.get('demo'))
+      assert.equal((await state()).currentPage, 'pages/todos/todos')
+
+      await page.getByText('Close app', { exact: true }).click()
+      await waitForLauncher()
+      await waitForSession('demo', false)
+      assert.equal(
+        await page.locator(`${surfaceSelector('demo')} iframe`).count(),
+        0,
+        'closing the active app did not remove its surface',
+      )
+
+      while (await page.locator('.td-launcher-close').count()) {
+        const before = (await managerState()).sessions.length
+        await page.locator('.td-launcher-close').first().click()
+        await page.waitForFunction(
+          (count) => window.__tinyDevtoolApps?.getSessions().length < count,
+          before,
+          { timeout: STEP_TIMEOUT },
+        )
+      }
+      const cleared = await managerState()
+      assert.deepEqual(cleared.sessions, [], 'warm apps were not closed')
       assert.equal(await page.locator('iframe').count(), 0, 'runtime iframes were not removed')
+
+      await page.goto(`${baseUrl}/?app=wechat-demo&path=page/component/index`, {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await waitForStatus('running')
+      assert.equal((await state()).currentPage, 'page/component/index')
+      assert.equal(await page.locator('.td-host-chrome').count(), 0, 'custom nav app should own its bar')
+      await page.getByRole('button', { name: 'Background app' }).click()
+      await waitForLauncher()
+      await waitForSession('wechat-demo', true)
+      while (await page.locator('.td-launcher-close').count()) {
+        await page.locator('.td-launcher-close').first().click()
+        await page.waitForFunction(
+          () => window.__tinyDevtoolApps?.getSessions().length === 0,
+          null,
+          { timeout: STEP_TIMEOUT },
+        )
+      }
+
+      await page.goto(`${baseUrl}/?app=demo&maxPageStack=1`, {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await waitForStatus('running')
+      assert.equal((await managerState()).maxStack, 1)
+      await page.locator('input[placeholder="pages/..."]').fill('/pages/add-todo/add-todo')
+      await page.getByText('Navigate', { exact: true }).click()
+      await page.waitForSelector('.td-alert', { state: 'visible', timeout: STEP_TIMEOUT })
+      assert.ok(
+        (await page.locator('.td-alert').innerText()).includes('page stack limit 1'),
+        'page stack limit error was not surfaced',
+      )
+      assert.equal((await state()).currentPage, 'pages/todos/todos')
+      assert.deepEqual((await state()).pageStack, ['page-1'])
+      await page.getByText('Close app', { exact: true }).click()
+      await waitForLauncher()
     })
 
     await step('keep the debugger console free of errors', async () => {

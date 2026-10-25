@@ -7,7 +7,7 @@ glass-easel adapter, and the devtool client.
 
 | API | Purpose |
 | --- | --- |
-| `createTinyRuntime` | Host-side protocol bridge over one render transport or a per-page `renderConnector` |
+| `createTinyRuntime` | Host-side protocol bridge over one render transport or a per-page `renderConnector`; `maxPageStack` defaults to 10 |
 | `bootServiceThread` | Service-thread entry: App/Page/Component registry + API host |
 | `bootRenderThread` | Render-thread entry: glass-easel backend + component tree |
 

@@ -378,6 +378,7 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
         initialPath: options.initialPath,
         systemInfo: apiRegistry.systemInfo,
         storage: apiRegistry.storage,
+        ...(options.maxPageStack !== undefined ? { maxPageStack: options.maxPageStack } : {}),
       })
       const initialData = (serviceResult.initialData as Record<string, unknown> | undefined) ?? options.initialData
       const pageId = serviceResult.pageId as string | undefined

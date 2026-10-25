@@ -76,8 +76,8 @@
 | 页面形态 | 12% | 25% | 3.00 | devtool 宿主已实现导航栏/tabBar/页面滚动/触底/tab 页缓存；测试/生产宿主仍未提供，评分保守；缺下拉刷新/分享/转场 |
 | 样式/渲染 | 8% | 70% | 5.60 | WXSS/rpx/作用域强；app.wxss tag 映射与内置宿主选择器已落地；`:host` 低优先级与 canvas 仍不完整 |
 | 宿主/平台 | 8% | 15% | 1.20 | 仅浏览器宿主；无原生/网络/登录/支付/分享 |
-| 开发工具 | 4% | 45% | 1.80 | 每页 render 帧、生命周期时间线、宿主导航/tabBar；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 50% | 1.50 | 167 单测 + 46 步浏览器验收；新增 tabBar/视觉结构断言；无性能/安全/原生测试 |
+| 开发工具 | 4% | 45% | 1.80 | 应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar；不是完整微信开发者工具 |
+| 质量/验证 | 3% | 50% | 1.50 | 168 单测 + 47 步浏览器验收；新增 tabBar/视觉结构、应用列表/LRU/页面栈上限断言；无性能/安全/原生测试 |
 | **合计** | **100%** | — | **41.91%** | |
 
 ### 条目覆盖率速览
@@ -291,9 +291,9 @@ hasBehavior / export / wx://component-export
 2026-10-24 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
-- **167 个单元测试**（runtime 63 个，host-web-components 23 个）
+- **168 个单元测试**（runtime 64 个，host-web-components 23 个）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
-- **46 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent，devtool 覆盖 tabBar/每页 render 帧
+- **47 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧
 - 门禁覆盖的 5 段流程无 console/page error（117 页探针的 pageerror 见 5.2）
 
 这说明现有能力是**真实可运行**的，不是纸面设计。
@@ -405,7 +405,7 @@ getMenuButtonBoundingClientRect / getPerformance
 ### 6.6 调试器
 
 - 运行时状态、诊断、元素树
-- Navigate / Back / Reload / Terminate / 应用切换
+- 测试应用列表 / 3 应用保活 / Navigate / Back / Reload / Close app / `maxPageStack`
 - 对“运行时级调试”够用，但不是完整微信开发者工具
 
 ---
@@ -531,6 +531,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-25 | picker-view-column 补 pointer 鼠标拖动（与 touch 共用吸附逻辑）；修正 content 居中方式，避免百分比 padding 按宽度计算 | **37.89%** |
 | 2026-10-26 | devtool 页面栈改为每页独立 render iframe（隐藏页保留 DOM/滚动位置，返回不再重建）；补 `onPageScroll`/`onReachBottom`/`onResize` 与 Lifecycle 时间线；页面生命周期 5→8/14；运行时测试 62 条，完整浏览器门禁通过（总分未重算） | **37.89%** |
 | 2026-10-26 | 内置 tabBar：app.json 配置解析、tab 页缓存、`switchTab`、`onTabItemTap`、badge/red-dot/show/hide/style/item API；devtool 渲染 tabBar 并按可用高度调整页面帧；页面生命周期 8→9/14、路由 2→3/5；mini 验收新增 tab 切换 | **37.89%** |
+| 2026-10-26 | Devtool 多应用工作台：默认测试应用列表、点击启动、最近 3 个应用保活/LRU、圆圈回列表、每个应用独立线程组；runtime 页面栈默认上限 10，宿主可通过 `maxPageStack` 配置；168 单测 + 47 步浏览器验收 | **41.91%** |
 
 ---
 
@@ -615,6 +616,8 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | tabBar 配置与页面栈 | [service.ts](../packages/runtime/src/service.ts:1) |
 | tabBar 宿主 UI | [HostTabBar.jsx](../apps/devtool/src/next/components/HostTabBar.jsx:1) |
 | tabBar 验收 | [glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs:1120) |
+| 页面栈上限（默认 10，宿主可配） | [service.ts](../packages/runtime/src/service.ts:1) |
+| Devtool 应用列表 / 3 应用保活 | [runtimePanel.jsx](../apps/devtool/src/next/runtimePanel.jsx:1) |
 | 多 iframe 页面栈验收 | [glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs:941) |
 | 官方 demo 子集 | [app.json](../tests/apps/wechat-demo/app.json:1) |
 

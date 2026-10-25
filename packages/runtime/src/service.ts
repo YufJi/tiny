@@ -48,6 +48,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   let activePage: MiniProgramPageInstance | null = null
   let appVisible = true
   let lifecycleSequence = 0
+  let maxPageStack = 10
   let pageIdCounter = 0
   const tabBarModel = normalizeTabBar(options.manifest)
   const tabBarPagePaths = new Set((tabBarModel?.items ?? []).map((item) => item.pagePath))
@@ -321,6 +322,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         pages,
         appVisible,
         ...(tabBar ? { tabBar } : {}),
+        maxPageStack,
         transport: 'connected',
       },
       activePage?.pageId,
@@ -407,8 +409,15 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         initialPath?: string
         systemInfo?: SystemInfoSnapshot
         storage?: StorageSnapshot
+        maxPageStack?: number
       }
       currentPath = payload.initialPath ?? currentPath
+      if (payload.maxPageStack !== undefined) {
+        const configuredLimit = Number(payload.maxPageStack)
+        if (Number.isInteger(configuredLimit) && configuredLimit > 0) {
+          maxPageStack = configuredLimit
+        }
+      }
       await artifactsReady
       if (payload.systemInfo) systemInfoSnapshot = cloneJsonSafe(payload.systemInfo)
       if (payload.storage) Object.assign(storageSnapshot, cloneJsonSafe(payload.storage))
@@ -520,6 +529,9 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }
     if (tabBarPagePaths.has(route.path)) {
       throw new Error(`can not navigateTo a tabbar page: ${route.path}`)
+    }
+    if (pageStack.length >= maxPageStack) {
+      throw new Error(`navigateTo:fail page stack limit ${maxPageStack}`)
     }
     const previousPage = activePage
     if (previousPage) {

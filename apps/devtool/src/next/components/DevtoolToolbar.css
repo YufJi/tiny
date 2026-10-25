@@ -204,6 +204,14 @@
   white-space: nowrap;
 }
 
+.td-page-depth {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  color: var(--td-dim);
+  font-size: 9px;
+}
+
 .td-chips {
   display: flex;
   flex-wrap: wrap;
@@ -303,6 +311,22 @@
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
+}
+
+.td-actions--toolbar {
+  align-items: center;
+  margin-top: 14px;
+}
+
+.td-actions--back {
+  margin-top: 8px;
+}
+
+.td-warm-count {
+  margin-left: auto;
+  color: var(--td-dim);
+  font-size: 9px;
+  white-space: nowrap;
 }
 
 .td-btn {

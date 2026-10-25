@@ -60,7 +60,7 @@ export default function Status() {
             ['Canvas', status('部分', 'warn'), 'canvas 适配器注入、50ms PNG 帧、render measure/paint、内置 canvas touch；无 rAF 与完整 2D 语义。'],
             ['动画', status('部分', 'warn'), 'animation 数据编译为最终态 CSS transform/transition；无多 step 时序与回调。'],
             ['诊断', status('可用', 'good'), '编译/transport/service/render/host 五类；组件语义新增 observer/relation/behavior 诊断。'],
-            ['Devtool', status('运行时级+', 'good'), '设备框、宿主导航/tabBar、每页 render 帧、全部 fixture、Console/Lifecycle/Elements、Reload/Terminate；仍不是完整微信开发者工具。'],
+            ['Devtool', status('运行时级+', 'good'), '默认测试应用列表、点击启动、最近 3 个应用保活/LRU、圆圈回列表、设备框、宿主导航/tabBar、每页 render 帧、Console/Lifecycle/Elements、Reload/Close app；页面栈默认上限 10 且宿主可配；仍不是完整微信开发者工具。'],
             ['性能 / 稳定', status('未量化', 'warn'), '无启动、首屏、setData、内存、长时运行基准；无压力测试。'],
             ['测试', status('核心链路', 'good'), '167 单测 + 46 浏览器步骤 + 5 fixture；没有性能、视觉、原生、安全测试。'],
           ]}

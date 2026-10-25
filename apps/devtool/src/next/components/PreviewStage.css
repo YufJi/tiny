@@ -338,3 +338,51 @@
   }
 }
 
+
+/* Each warm app owns one absolutely positioned surface inside the device. */
+.td-app-surface {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.td-app-surface[data-state="active"] {
+  z-index: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Custom navigation pages own the top bar, so keep a debugger-only way out. */
+.td-float-apps {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background: rgba(16, 21, 28, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  color: #e5edf4;
+  font-size: 15px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  place-items: center;
+}
+
+.td-float-apps:hover {
+  background: rgba(16, 21, 28, 0.86);
+}
+
+.td-float-apps:focus-visible {
+  outline: 2px solid rgba(163, 194, 207, 0.8);
+  outline-offset: 2px;
+}
+
+.td-float-apps:disabled {
+  cursor: default;
+  opacity: 0.4;
+}

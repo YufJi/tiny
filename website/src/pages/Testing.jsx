@@ -80,7 +80,7 @@ export default function Testing() {
           },
           {
             title: '调试器流程',
-            detail: '编译全部 tests/apps 到 devtool static，启动 rspack；7 步：boot、状态投影、渲染、导航/返回、逐应用预览、宿主导航/前后台 + Reload/Terminate、零错误。',
+            detail: '编译全部 tests/apps 到 devtool static，启动 rspack；8 步：默认列表、点击启动、状态投影、渲染、导航/返回、逐应用预览与 3 应用 LRU 保活、圆圈回列表/深链/maxPageStack/Reload/Close app、零错误。',
             code: 'runDevtoolAcceptance()',
           },
         ]} />
@@ -105,7 +105,7 @@ export default function Testing() {
             ['Existing app', <code>tests/apps/mini</code>, '9', '真实 todos、双 add-button 实例、import/include/template、输入、ECharts bar、子包、warnings'],
             ['Taro 3', <code>tests/apps/todo</code>, '6', 'Redux todos、输入 + Enter、勾选、筛选、清空、零错误'],
             ['WeChat demo', <code>tests/apps/wechat-demo</code>, '4', '组件索引、button 页、storage API 页、零错误'],
-            ['Debugger', <code>apps/devtool</code>, '7', 'boot、状态投影、元素树、导航/返回、逐个预览全部 tests/apps、宿主导航/前后台 + Reload/Terminate、零错误'],
+            ['Debugger', <code>apps/devtool</code>, '8', '默认列表、点击启动、状态投影、元素树、导航/返回、逐应用预览与 3 应用 LRU、圆圈回列表/深链/maxPageStack/Reload/Close app、零错误'],
           ]}
         />
         <div className="split">
@@ -170,9 +170,11 @@ export default function Testing() {
           <Card tag="apps/devtool" tone="violet" title="带 UI 的多应用调试器">
             <ul>
               <li>React 面板 + rematch/Redux 投影</li>
-              <li>扫描 tests/apps/*，全部 fixture 可切换预览</li>
-              <li>页面栈、诊断、元素树、状态</li>
-              <li>Navigate / Back / Reload / Terminate</li>
+              <li>扫描 tests/apps/*，默认列表页点击启动</li>
+              <li>最近 3 个应用保活，打开第 4 个按 LRU 淘汰</li>
+              <li>圆圈/App list 进入后台回列表，重新点击恢复现场</li>
+              <li>页面栈、诊断、元素树、状态；页面栈默认上限 10，宿主可配</li>
+              <li>Navigate / Back / Reload / Close app</li>
               <li>通过 <code>DevtoolRuntimeClient</code> 控制</li>
               <li>独立的 debugger 验收阶段</li>
             </ul>

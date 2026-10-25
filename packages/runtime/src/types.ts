@@ -173,6 +173,8 @@ export type ServiceThreadOptions = {
   apiExtensions?: Record<string, (...args: unknown[]) => unknown>
   /** Host canvas implementation for legacy canvas APIs/selector nodes. */
   canvas?: ServiceCanvasAdapter
+  /** Maximum pages in the runtime page stack. Defaults to 10. */
+  maxPageStack?: number
 }
 
 export type RenderThreadOptions = {
@@ -217,5 +219,7 @@ export type RuntimeHostOptions = {
   systemInfo?: Partial<SystemInfoSnapshot>
   storage?: StorageSnapshot
   apiHandlers?: HostApiHandlers
+  /** Maximum pages in the runtime page stack. Defaults to 10. */
+  maxPageStack?: number
   onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
 }

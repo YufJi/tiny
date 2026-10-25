@@ -145,3 +145,10 @@
   white-space: nowrap;
 }
 
+
+.td-nav-launcher-mark {
+  margin-left: auto;
+  color: currentColor;
+  font-size: 17px;
+  opacity: 0.28;
+}

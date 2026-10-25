@@ -7,13 +7,23 @@ import {
   HOST_CHROME_HEIGHT,
   TAB_BAR_HEIGHT,
 } from '../config';
+import AppLauncher from './AppLauncher';
 import HostNavigationBar from './HostNavigationBar';
 import HostTabBar from './HostTabBar';
 import './PreviewStage.css';
 
-// iPhone X device frame, fit-to-stage scaling, host chrome and screen overlays.
+// iPhone X device frame, fit-to-stage scaling, host chrome and app launcher.
 function PreviewStage({
-  containerRef,
+  surfaceHostRef,
+  launcher,
+  apps,
+  sessions,
+  launchingAppId,
+  launcherError,
+  maxLiveApps,
+  maxPageStack,
+  onOpenApp,
+  onCloseApp,
   loading,
   status,
   error,
@@ -22,10 +32,8 @@ function PreviewStage({
   tabBar,
   tabBarAssetBase,
   canGoBack,
-  lifecycle,
   onBack,
   onTabBarTap,
-  onForeground,
   onBackground,
   onReload,
 }) {
@@ -51,7 +59,7 @@ function PreviewStage({
 
   let overlay = null;
   const hostChromeTop = hostNavigation ? HOST_CHROME_HEIGHT : 0;
-  const tabBarVisible = status === 'running' && Boolean(tabBar?.visible);
+  const tabBarVisible = !launcher && status === 'running' && Boolean(tabBar?.visible);
   const tabBarAtTop = tabBarVisible && tabBar?.position === 'top';
   const contentTop = hostChromeTop + (tabBarAtTop ? TAB_BAR_HEIGHT : 0);
   const contentBottom = tabBarVisible && !tabBarAtTop ? TAB_BAR_HEIGHT : 0;
@@ -63,34 +71,29 @@ function PreviewStage({
       title: 'Loading test apps…',
       detail: 'Reading the generated app registry',
     };
-  } else if (status === 'connecting') {
+  } else if (!launcher && status === 'connecting') {
     overlay = {
       spinner: true,
       title: 'Booting preview…',
       detail: 'Starting the service and render threads',
     };
-  } else if (status === 'terminated') {
+  } else if (!launcher && status === 'terminated') {
     overlay = {
       title: 'Runtime terminated',
-      detail: 'Press Reload in the toolbar to start the preview again',
+      detail: 'Use Reload in the toolbar or open the app again',
     };
-  } else if (status === 'error') {
+  } else if (!launcher && status === 'error') {
     overlay = {
       title: 'Preview failed',
       detail: 'Check the runtime error in the toolbar',
-    };
-  } else if (status === 'idle') {
-    overlay = {
-      title: 'Preview idle',
-      detail: 'The runtime will start automatically',
     };
   }
 
   return (
     <main className="td-stage">
       <div className="td-stage-hint">
-        <span className={`td-live-dot td-live-dot--${status}`} />
-        Live preview
+        <span className={`td-live-dot td-live-dot--${launcher ? 'idle' : status}`} />
+        {launcher ? 'App launcher' : 'Live preview'}
       </div>
       <div className="td-stage-body" ref={stageBodyRef}>
         <div
@@ -109,37 +112,49 @@ function PreviewStage({
                 {hostNavigation ? (
                   <HostNavigationBar
                     navigation={navigation}
+                    launcher={launcher}
                     enabled={status === 'running'}
                     canGoBack={canGoBack}
-                    lifecycle={lifecycle}
                     onBack={onBack}
-                    onForeground={onForeground}
                     onBackground={onBackground}
                     onReload={onReload}
                   />
                 ) : null}
+                {!launcher && !hostNavigation ? (
+                  <button
+                    type="button"
+                    className="td-float-apps"
+                    aria-label="Background app"
+                    title="Background app and open the app list"
+                    disabled={status !== 'running'}
+                    onClick={onBackground}
+                  >
+                    ◎
+                  </button>
+                ) : null}
                 <div className="td-screen-content" style={{ top: contentTop, bottom: contentBottom }}>
-                  <div className="td-screen-surface" ref={containerRef} />
+                  <div className="td-screen-surface" ref={surfaceHostRef} />
+                  {launcher ? (
+                    <AppLauncher
+                      apps={apps}
+                      sessions={sessions}
+                      launchingAppId={launchingAppId}
+                      error={launcherError}
+                      maxLiveApps={maxLiveApps}
+                      maxPageStack={maxPageStack}
+                      onOpen={onOpenApp}
+                      onClose={onCloseApp}
+                    />
+                  ) : null}
                 </div>
                 <HostTabBar
-                  tabBar={tabBar}
+                  tabBar={launcher ? null : tabBar}
                   assetBase={tabBarAssetBase}
                   topOffset={hostChromeTop}
-                  enabled={status === 'running' && lifecycle === 'foreground'}
+                  enabled={!launcher && status === 'running'}
                   onTap={onTabBarTap}
                 />
                 <div className="td-screen-glare" />
-                {lifecycle === 'background' && status === 'running' ? (
-                  <div className="td-screen-background" style={{ top: contentTop }}>
-                    <div className="td-screen-background-label">App in background</div>
-                    <div className="td-screen-background-sub">
-                      The page received onHide. Return to foreground to trigger onShow again.
-                    </div>
-                    <button type="button" className="td-background-resume" onClick={onForeground}>
-                      Return to foreground
-                    </button>
-                  </div>
-                ) : null}
                 {overlay ? (
                   <div className="td-screen-overlay">
                     {overlay.spinner ? <div className="td-spinner" /> : null}

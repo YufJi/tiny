@@ -1,0 +1,214 @@
+.td-launcher {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  box-sizing: border-box;
+  padding: 18px 16px 22px;
+  background:
+    radial-gradient(420px 280px at 100% 0%, rgba(163, 194, 207, 0.22), transparent 70%),
+    #f5f6f8;
+  color: #1b222c;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
+  overflow-y: auto;
+}
+
+.td-launcher-head {
+  padding: 2px 2px 14px;
+}
+
+.td-launcher-eyebrow {
+  color: #7d8797;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.td-launcher-title {
+  margin: 3px 0 4px;
+  font-size: 25px;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+}
+
+.td-launcher-sub {
+  margin: 0;
+  color: #6b7687;
+  font-size: 11px;
+}
+
+.td-launcher-error {
+  padding: 9px 11px;
+  margin-bottom: 10px;
+  background: #fff1f1;
+  border: 1px solid #f0c8c8;
+  border-radius: 10px;
+  color: #b54a4a;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.td-launcher-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.td-launcher-row {
+  display: flex;
+  align-items: stretch;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(27, 34, 44, 0.07);
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(27, 34, 44, 0.04);
+  overflow: hidden;
+}
+
+.td-launcher-row--alive {
+  border-color: rgba(86, 156, 118, 0.28);
+}
+
+.td-launcher-main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  padding: 12px 10px 12px 12px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.td-launcher-main:hover:not(:disabled) {
+  background: rgba(163, 194, 207, 0.09);
+}
+
+.td-launcher-main:focus-visible {
+  outline: 2px solid #4f7fc2;
+  outline-offset: -3px;
+}
+
+.td-launcher-main:disabled {
+  cursor: progress;
+}
+
+.td-launcher-glyph {
+  display: grid;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  background: linear-gradient(145deg, #263746, #101820);
+  border-radius: 11px;
+  color: #cfe0e8;
+  font-size: 15px;
+  font-weight: 700;
+  place-items: center;
+}
+
+.td-launcher-info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+
+.td-launcher-name {
+  overflow: hidden;
+  color: #17202b;
+  font-size: 13px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.td-launcher-meta {
+  overflow: hidden;
+  color: #7a8494;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.td-launcher-page {
+  overflow: hidden;
+  color: #51627a;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.td-launcher-state {
+  flex: none;
+  padding: 3px 7px;
+  background: rgba(27, 34, 44, 0.055);
+  border-radius: 999px;
+  color: #7a8494;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.td-launcher-row--alive .td-launcher-state {
+  background: rgba(86, 156, 118, 0.12);
+  color: #3d7a56;
+}
+
+.td-launcher-state--starting {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #6b7687;
+}
+
+.td-launcher-spinner {
+  width: 8px;
+  height: 8px;
+  border: 1.4px solid rgba(27, 34, 44, 0.2);
+  border-top-color: #4d6172;
+  border-radius: 50%;
+  animation: td-launcher-spin 0.7s linear infinite;
+}
+
+@keyframes td-launcher-spin {
+  to { transform: rotate(360deg); }
+}
+
+.td-launcher-close {
+  display: grid;
+  flex: none;
+  width: 34px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-left: 1px solid rgba(27, 34, 44, 0.06);
+  color: #93a0b0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 16px;
+  cursor: pointer;
+  place-items: center;
+}
+
+.td-launcher-close:hover:not(:disabled) {
+  background: rgba(217, 154, 162, 0.12);
+  color: #a8505b;
+}
+
+.td-launcher-close:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.td-launcher-foot {
+  padding: 14px 4px 0;
+  color: #8a94a2;
+  font-size: 9px;
+  line-height: 1.55;
+}

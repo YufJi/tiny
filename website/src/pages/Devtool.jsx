@@ -118,16 +118,16 @@ TINY_SITE_DEVTOOL_APPS=demo,mini pnpm site:build`}</CodeBlock>
         <div className="split">
           <div className="stack">
             <Card tag="RuntimePanel" title="控制器">
-              <p>读取 <code>./runtime/apps.json</code>，选择 app 与首屏，fetch manifest，创建 <code>DevtoolRuntimeClient</code>，订阅状态并分发到 Redux。</p>
-              <p>切换应用使用整页重载；启动、Reload、Terminate、前后台、导航都由 client 承担。</p>
+              <p>读取 <code>./runtime/apps.json</code>，默认展示测试应用列表；点击后按需 fetch manifest，创建该应用的 <code>DevtoolRuntimeClient</code> 并订阅状态。</p>
+              <p>维护最多 3 个应用会话（LRU）；后台应用保留自己的 service/render iframe。Reload/Close app、导航与生命周期暂停都由 client 承担。</p>
             </Card>
             <Card tag="PreviewStage" title="设备壳">
-              <p>iPhone X 375×812 设备框、自动缩放、状态栏/导航栏；页面 <code>navigationStyle: custom</code> 时不渲染宿主导航栏。</p>
+              <p>iPhone X 375×812 设备框、自动缩放、状态栏/导航栏和 tabBar；无前台应用时显示 launcher；页面 <code>navigationStyle: custom</code> 时不渲染宿主导航栏，但保留浮动回列表按钮。</p>
             </Card>
           </div>
           <div className="stack">
             <Card tag="DevtoolToolbar" title="控制面">
-              <p>应用选择、manifest/当前页、页面栈、Navigate、Inspect、Reload、Terminate、Foreground/Background、Back。</p>
+              <p>当前应用、manifest/当前页、页面栈深度与上限、Navigate、Inspect、Reload、Close app、App list、Back。</p>
             </Card>
             <Card tag="DebugPanel" title="观察面">
               <p>Console 显示结构化诊断（最多保留 500 条），Elements 显示 <code>runtime.inspectTree</code> 投影出的元素树。</p>
@@ -137,11 +137,11 @@ TINY_SITE_DEVTOOL_APPS=demo,mini pnpm site:build`}</CodeBlock>
         <Table
           head={['层', '实现', '职责']}
           rows={[
-            [<code>DevtoolRuntimeClient</code>, <code>@tiny/host-browser</code>, '创建双 iframe、bootstrap、导航/前后台/Reload/Terminate、inspectTree'],
+            [<code>DevtoolRuntimeClient</code>, <code>@tiny/host-browser</code>, '创建单个应用的线程组、bootstrap、导航/前后台/Reload/Close app、inspectTree'],
             [<code>runtimeService.js</code>, 'service 线程入口', '读取 <code>?app=</code>，加载 generated manifest 与 service.js'],
             [<code>runtimeRender.js</code>, 'render 线程入口', '加载 templates/styles，注入 backend、canvas、asset resolver、mount 钩子'],
-            [<code>RuntimePanel</code>, 'React/Redux', 'app registry、首屏、状态订阅、面板组合'],
-            [<code>PreviewStage</code>, 'React', '设备框、宿主导航、前后台遮罩、错误/加载态'],
+            [<code>RuntimePanel</code>, 'React/Redux', 'app registry、launcher、3 应用 LRU 会话池、状态订阅、面板组合'],
+            [<code>PreviewStage</code>, 'React', '设备框、launcher/应用 surface、宿主导航、tabBar、错误/加载态'],
           ]}
         />
       </Section>

@@ -23,6 +23,8 @@ export type StandaloneHostOptions = {
    * DOM, scroll position and timers like a real WebView stack.
    */
   renderMode?: StandaloneRenderMode
+  /** Maximum pages per mini-program page stack. Defaults to 10. */
+  maxPageStack?: number
 }
 
 export type StandaloneHost = {
@@ -82,6 +84,7 @@ export async function createStandaloneDualThreadHost(
     systemInfo: options.systemInfo,
     storage: options.storage,
     onDiagnostic: options.onDiagnostic,
+    maxPageStack: options.maxPageStack,
     apiHandlers: { ...createBrowserApiHandlers(), ...options.apiHandlers },
   })
   await Promise.all([host.service.handshake(), host.render.handshake()])
@@ -174,6 +177,7 @@ async function createPerPageHost(
     systemInfo: options.systemInfo,
     storage: options.storage,
     onDiagnostic: options.onDiagnostic,
+    maxPageStack: options.maxPageStack,
     apiHandlers: { ...createBrowserApiHandlers(), ...options.apiHandlers },
   })
   await host.service.handshake()

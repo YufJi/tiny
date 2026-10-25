@@ -14,8 +14,9 @@ TINY_DEVTOOL_PORT=8090 pnpm dev:devtool
 
 `dev:devtool` 会扫描 `tests/apps/*`（要求目录内存在 `app.json`），为每个测试应用启动
 一个 watcher，把产物写到 `apps/devtool/static/runtime/apps/<app>/generated`，再启动
-rspack dev server。面板顶部的应用下拉框会列出全部测试应用；编译完成后点 `Reload`
-加载新产物。新增或删除 `tests/apps/*` 后需要重启 `dev:devtool`。
+rspack dev server。首次打开显示测试小程序列表；点击某个应用启动，列表会自动展示已保活/后台
+运行的应用。编译完成后进入应用点 `Reload` 重新加载产物。新增或删除 `tests/apps/*` 后需要
+重启 `dev:devtool`。
 
 也可以一次性编译全部测试应用而不启动服务：
 
@@ -24,6 +25,8 @@ pnpm compile:devtool:all
 ```
 
 ## 预览测试应用
+
+默认打开 `http://localhost:8080/` 的测试应用列表；点击应用卡片启动。也支持深链直接启动：
 
 - `http://localhost:8080/?app=demo`：P0 demo
 - `http://localhost:8080/?app=mini`：完整示例
@@ -39,16 +42,28 @@ pnpm compile:devtool:all
 ## 界面布局
 
 - 左侧：iPhone X 逻辑尺寸 `375 × 812` 的预览窗口；窗口空间不足时等比缩放并显示缩放比例
+- 无前台应用时显示 **Mini programs** 列表：每个 fixture 的状态、当前页面、保活/关闭操作
 - 预览内：宿主状态栏 + 导航栏。导航栏读取**当前页面**的标题/背景/文字色，左侧返回按钮
-  调用 `navigate.back`，右侧 capsule 菜单提供 Foreground / Background / Reload
+  调用 `navigate.back`；capsule 左侧三点打开 Host controls，右侧圆圈把当前应用送入后台
+  并回到列表页
 - tab 页底部/顶部显示内置 tabBar（图标、文字、选中色、badge、红点）；点击调用 `switchTab`
-- 右上：应用选择、运行状态、当前页面栈（显示路径和 WebView 可见性），以及 Runtime / Lifecycle / Navigation 控制
+- 右上：当前应用、运行状态、页面栈深度（`n / maxPageStack`）、Runtime / Navigation 控制
 - 右下：Console / Lifecycle / Elements 调试栏，分别展示结构化诊断、页面生命周期时间线和可展开的元素树
 
 预览内容区按当前页面是否使用 `navigationStyle: "custom"`、当前 tab 页是否显示 tabBar
 动态扣除 `88px` 导航栏 / `50px` tabBar，并通过 `runtime.resize` 同步给
 `wx.getSystemInfoSync()` 和 `onResize`。自定义导航页由页面自绘导航栏，宿主不再重复渲染；
-此时仍可通过右侧 Lifecycle 控制前后台，后台状态会在预览内显示遮罩和恢复按钮。
+同时保留一个 debugger-only 的浮动圆圈，用于把应用送入后台并返回列表。
+
+## 多应用保活
+
+- 默认列表页不启动任何 runtime；点击应用才创建 service/render iframe
+- 圆圈 / `App list` 会先调用 `page.hide`（App/Page `onHide`），隐藏该应用的全部页面帧，
+  再回到列表；应用保持运行，重新点击即恢复现场
+- 最多保活最近 `MAX_LIVE_APPS = 3` 个应用（含前台）；打开第 4 个时关闭最久未使用的后台应用
+- 每个应用拥有独立的 service iframe、页面 render 帧和 DOM surface；最多同时存在 3 套
+- 列表里可以关闭任意后台应用，释放全部线程
+- `?maxPageStack=<n>` 可覆盖每个应用的页面栈上限，宿主 API 默认 `10`
 
 ## 页面 WebView 栈
 
@@ -60,8 +75,8 @@ devtool 采用**一页一 iframe** 的 render 方式，而不是所有页面共�
   不会从 `initialData` 重建页面，因此滚动位置、输入态和组件内部状态都保留
 - `navigateBack` 触发被卸载页面的 `onUnload` 后才移除它的 iframe；生命周期顺序由
   service 线程统一驱动
-- Foreground / Background 通过 `page.show` / `page.hide` 触发页面生命周期，同时隐藏/恢复整组
-  page frame
+- 把应用送入后台通过 `page.hide` 触发页面生命周期，同时隐藏整组 page frame；从列表恢复时
+  通过 `page.show` 恢复
 
 render 线程把 iframe 的真实滚动位置转成 `onPageScroll`，并在触底时发送一次
 `onReachBottom`；devtool 的 Lifecycle 时间线记录 `onLoad/onShow/onReady/onHide/onUnload/
@@ -92,13 +107,15 @@ src/next/
 ├── config.js                # iPhone X / 宿主 chrome 尺寸常量
 ├── appRegistry.js           # 应用清单、manifest 导航配置、fetch 工具
 ├── components/
-│   ├── PreviewStage.jsx     # 设备框、缩放、预览遮罩
+│   ├── PreviewStage.jsx     # 设备框、缩放、launcher/应用 surface 容器
 │   ├── PreviewStage.css
+│   ├── AppLauncher.jsx      # 默认测试应用列表 / 保活状态 / 关闭
+│   ├── AppLauncher.css
 │   ├── HostNavigationBar.jsx # 状态栏 + 页面导航栏 + 返回
 │   ├── HostNavigationBar.css
-│   ├── HostControlsMenu.jsx # capsule 菜单（前后台/Reload）
+│   ├── HostControlsMenu.jsx # capsule 菜单 + 回列表圆圈
 │   ├── HostControlsMenu.css
-│   ├── DevtoolToolbar.jsx   # 应用选择、页面 WebView 栈、运行时控制
+│   ├── DevtoolToolbar.jsx   # 当前应用、页面 WebView 栈、运行时控制
 │   ├── DevtoolToolbar.css
 │   ├── HostTabBar.jsx       # 内置 tabBar（图标/选中态/badge/红点）
 │   ├── HostTabBar.css
@@ -112,6 +129,7 @@ src/store/
 └── models/runtime.js        # 运行时状态投影
 ```
 
+- 每个应用一个 `DevtoolRuntimeClient`；`RuntimePanel` 管理 LRU 会话池和 DOM surface
 - 宿主编排、多 render 帧连接、生命周期控制和状态投影都在 `@tiny/host-browser` 的
   `DevtoolRuntimeClient`
 - 面板只通过 client 订阅状态和发送控制命令
@@ -140,13 +158,13 @@ website 的接入由 `pnpm site:devtool` 完成：它编译 `tests/apps` 下全�
 （可用 `TINY_SITE_DEVTOOL_APPS=demo,mini` 取子集）、生成 `apps.json`、调用上面的
 生产构建，并把结果复制到 Vite 的 public 目录
 `website/.cache/site-public/devtool`。Vite 构建后位于 `website/dist/devtool/`，
-站点用同源 iframe `./devtool/index.html` 嵌入，应用下拉框与本地 devtool 一致。
+站点用同源 iframe `./devtool/index.html` 嵌入，应用列表与本地 devtool 一致。
 站点构建会移除生成产物的 source map，避免把十几 MiB 的 `.map` 发布到 Pages。
 详见 `website/README.md`。
 
 ## 验收
 
-调试器流程已包含在 `pnpm accept:glass-easel`：启动、状态投影、首屏单 render 帧、
-Lifecycle 时间线、导航后旧页面 iframe 仍保留 DOM、返回后只留下首页 iframe、
-mini tabBar 的图标/选中态与 `switchTab` 缓存、依次预览每个 `tests/apps` 测试应用、
-Reload/Terminate、控制台零报错。
+调试器流程已包含在 `pnpm accept:glass-easel`：默认列表页、点击启动、状态投影、首屏单 render 帧、
+Lifecycle 时间线、导航后旧页面 iframe 仍保留 DOM、返回后只留下首页 iframe、mini tabBar 的
+图标/选中态与 `switchTab` 缓存、依次预览每个 `tests/apps` 测试应用、最近 3 个保活与 LRU 淘汰、
+圆圈回列表、深链启动、`maxPageStack` 限制、Reload/关闭应用、控制台零报错。

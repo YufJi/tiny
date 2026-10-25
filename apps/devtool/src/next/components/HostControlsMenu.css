@@ -12,15 +12,39 @@
   display: flex;
   flex: none;
   align-items: center;
-  justify-content: space-between;
-  width: 87px;
+  gap: 8px;
   height: 32px;
-  padding: 0 12px;
+  padding: 0 10px;
   background: rgba(0, 0, 0, 0.045);
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 999px;
   color: inherit;
+}
+
+.td-capsule-menu,
+.td-capsule-background {
+  display: grid;
+  width: 22px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: inherit;
   cursor: pointer;
+  place-items: center;
+}
+
+.td-capsule-menu:disabled,
+.td-capsule-background:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.td-capsule-menu:focus-visible,
+.td-capsule-background:focus-visible {
+  outline: 2px solid rgba(163, 194, 207, 0.65);
+  outline-offset: 1px;
 }
 
 .td-host-chrome--dark .td-capsule {
@@ -28,18 +52,9 @@
   border-color: rgba(255, 255, 255, 0.18);
 }
 
-.td-capsule:hover:not(:disabled) {
+.td-capsule-menu:hover:not(:disabled),
+.td-capsule-background:hover:not(:disabled) {
   background: rgba(127, 127, 127, 0.16);
-}
-
-.td-capsule:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.td-capsule:focus-visible {
-  outline: 2px solid rgba(163, 194, 207, 0.65);
-  outline-offset: 2px;
 }
 
 .td-capsule-dots {

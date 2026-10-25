@@ -388,14 +388,14 @@ service.html
         <div className="split">
           <Card title="面板与宿主壳">
             <ul>
-              <li><code>RuntimePanel</code>：加载 <code>./runtime/apps.json</code>，创建 client，组合面板</li>
+              <li><code>RuntimePanel</code>：加载 <code>./runtime/apps.json</code>，管理 launcher 与 3 个应用会话</li>
               <li><code>PreviewStage</code>：iPhone X 375×812 设备框、自动缩放、宿主导航栏</li>
-              <li><code>DevtoolToolbar</code>：应用切换、页面栈、导航、Reload/Terminate</li>
+              <li><code>DevtoolToolbar</code>：当前应用、页面栈与上限、导航、Reload/Close app</li>
               <li><code>DebugPanel</code>：Console 诊断 + Elements 元素树</li>
             </ul>
           </Card>
           <Card title="多应用与生命周期" tone="violet">
-            <p>脚本扫描 <code>tests/apps/*</code>，把产物放在 <code>./runtime/apps/&lt;app&gt;/generated</code>，并生成 <code>apps.json</code>。切换应用是整页重载，生命周期控制与 Reload 走 client。</p>
+            <p>脚本扫描 <code>tests/apps/*</code>，把产物放在 <code>./runtime/apps/&lt;app&gt;/generated</code>，并生成 <code>apps.json</code>。列表页按需启动应用，最多保活最近 3 个；生命周期控制与 Reload 走各自 client。</p>
             <p>在线版本是同一份构建：<a href="#/devtool">#/devtool</a> 用同源 iframe 嵌入。</p>
           </Card>
         </div>
