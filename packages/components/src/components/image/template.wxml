@@ -1,4 +1,4 @@
-<view
+<div
   id="native-image"
   class="tiny-image-div tiny-image-mode-{{mode}}"
   style="{{imageStyle}}"
@@ -25,5 +25,5 @@
       binderror="handleError"
     />
   </block>
-</view>
-<view class="tiny-image-fallback {{loaded ? 'is-loaded' : ''}}"><slot /></view>
+</div>
+<span class="tiny-image-fallback {{loaded ? 'is-loaded' : ''}}"><slot /></span>

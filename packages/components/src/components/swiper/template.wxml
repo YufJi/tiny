@@ -1,19 +1,19 @@
-<view
+<div
   class="tiny-swiper {{vertical ? 'is-vertical' : ''}}"
   style="padding-left: {{previousMargin}}; padding-right: {{nextMargin}}; --tiny-swiper-items: {{displayMultipleItems}};"
   aria-label="{{ariaLabel}}"
   bindtouchstart="handleTouchStart"
   bindtouchend="handleTouchEnd"
 >
-  <view class="tiny-swiper-track" style="{{trackStyle}}"><slot /></view>
-  <view class="tiny-swiper-dots" hidden="{{!indicatorDots}}">
-    <view
+  <div class="tiny-swiper-track" style="{{trackStyle}}"><slot /></div>
+  <div class="tiny-swiper-dots" hidden="{{!indicatorDots}}">
+    <div
       wx:for="{{dots}}"
       wx:key="*this"
       id="tiny-swiper-dot-{{item}}"
       class="tiny-swiper-dot {{item === activeIndex ? 'is-active' : ''}}"
       style="background-color: {{item === activeIndex ? (indicatorActiveColor || '') : (indicatorColor || '')}};"
       catchtap="handleDotTap"
-    ></view>
-  </view>
-</view>
+    ></div>
+  </div>
+</div>

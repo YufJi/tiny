@@ -20,7 +20,6 @@ tiny-slider {
 .tiny-slider-handle-wrapper {
   position: relative;
   z-index: 0;
-  display: block;
   width: 100%;
   height: 2px;
   border-radius: 5px;
@@ -31,7 +30,6 @@ tiny-slider {
 }
 
 .tiny-slider-track {
-  display: block;
   height: 100%;
   border-radius: 6px;
   background-color: #1aad19;

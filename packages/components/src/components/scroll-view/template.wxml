@@ -1,4 +1,4 @@
-<view
+<div
   id="native-scroll-view"
   class="tiny-scroll-view {{scrollX ? 'is-horizontal' : ''}} {{scrollY ? 'is-vertical' : ''}}"
   bindscroll="handleScroll"
@@ -6,4 +6,4 @@
   bindtouchmove="handleTouchMove"
   bindtouchend="handleTouchEnd"
   bindtouchcancel="handleTouchCancel"
-><slot /></view>
+><slot /></div>

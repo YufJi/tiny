@@ -1,15 +1,15 @@
-<view
+<div
   class="tiny-progress-track"
   style="height: {{strokeWidth}}px; background-color: {{backgroundColor}}; border-radius: {{borderRadius}}px;"
 >
-  <view
+  <div
     class="tiny-progress-bar {{active ? 'is-active' : ''}}"
     style="width: {{percent < 0 ? 0 : (percent > 100 ? 100 : percent)}}%; background-color: {{activeColor || color}}; border-radius: {{borderRadius}}px;"
     bindtransitionend="handleActiveEnd"
   />
-</view>
-<text
+</div>
+<span
   wx:if="{{showInfo}}"
   class="tiny-progress-info"
   style="font-size: {{fontSize}}px; color: {{color}};"
->{{percent}}%</text>
+>{{percent}}%</span>

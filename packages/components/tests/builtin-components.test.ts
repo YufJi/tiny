@@ -545,6 +545,60 @@ describe('P0 built-in components', () => {
     expect(events).toEqual([{ value: [0, 1] }])
   })
 
+  test('picker-view initializes its columns from value', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: {
+        'picker-view': builtins['picker-view'],
+        'picker-view-column': builtins['picker-view-column'],
+      },
+      template: compilePage(`
+        <picker-view id="view" value="{{[1]}}">
+          <picker-view-column id="col"><view>a</view><view>b</view><view>c</view></picker-view-column>
+        </picker-view>
+      `),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    const column = instance.getShadowRoot()?.getElementById('col')?.asGeneralComponent()
+    expect(column).toBeDefined()
+    expect(column?.data.current).toBe(1)
+    expect(column?.data.translate).toBe(-34)
+  })
+
+  test('picker-view column snaps to an item and updates the parent value', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: {
+        'picker-view': builtins['picker-view'],
+        'picker-view-column': builtins['picker-view-column'],
+      },
+      template: compilePage(`
+        <picker-view id="view" value="{{[0]}}">
+          <picker-view-column id="col"><view>a</view><view>b</view><view>c</view></picker-view-column>
+        </picker-view>
+      `),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    const view = instance.getShadowRoot()?.getElementById('view')?.asGeneralComponent()!
+    const column = instance.getShadowRoot()?.getElementById('col')?.asGeneralComponent() as unknown as {
+      handleTouchStart: (event: unknown) => void
+      handleTouchMove: (event: unknown) => void
+      handleTouchEnd: (event: unknown) => void
+    }
+    column.handleTouchStart({ touches: [{ clientY: 100 }] })
+    column.handleTouchMove({ touches: [{ clientY: 10 }] })
+    column.handleTouchEnd({ changedTouches: [{ clientY: 10 }] })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect((instance.getShadowRoot()?.getElementById('col')?.asGeneralComponent()?.data as { current: number }).current).toBe(2)
+    expect(view.data.value).toEqual([2])
+  })
+
   test('progress, swiper, and icon render structure and state', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)

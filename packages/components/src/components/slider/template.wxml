@@ -1,4 +1,4 @@
-<view
+<div
   class="tiny-slider-wrapper {{disabled ? 'is-disabled' : ''}}"
   role="slider"
   aria-label="{{ariaLabel}}"
@@ -7,21 +7,21 @@
   aria-valuenow="{{displayValue}}"
   aria-disabled="{{disabled}}"
 >
-  <view class="tiny-slider-tap-area">
-    <view
+  <div class="tiny-slider-tap-area">
+    <div
       class="tiny-slider-handle-wrapper"
       style="background-color: {{backgroundColor || color}};"
     >
-      <view
+      <div
         class="tiny-slider-track"
         style="width: {{percent}}%; background-color: {{activeColor || selectedColor}};"
-      ></view>
-      <view
+      ></div>
+      <div
         class="tiny-slider-thumb"
         style="left: {{percent}}%; width: {{blockSize}}px; height: {{blockSize}}px; margin-left: {{blockOffset}}px; margin-top: {{blockOffset}}px; background-color: {{blockColor}};"
-      ></view>
-      <view class="tiny-slider-handle" style="left: {{percent}}%;"></view>
-      <view class="tiny-slider-step"></view>
+      ></div>
+      <div class="tiny-slider-handle" style="left: {{percent}}%;"></div>
+      <div class="tiny-slider-step"></div>
       <input
         id="native-input"
         class="tiny-slider"
@@ -35,7 +35,7 @@
         catchinput="handleChanging"
         catchchange="handleChange"
       />
-    </view>
-  </view>
-  <text wx:if="{{showValue}}" class="tiny-slider-value">{{displayValue}}</text>
-</view>
+    </div>
+  </div>
+  <span wx:if="{{showValue}}" class="tiny-slider-value">{{displayValue}}</span>
+</div>

@@ -1,28 +1,79 @@
 tiny-picker-view-column {
   flex: 1;
   position: relative;
+  z-index: 0;
   height: 100%;
+  overflow: hidden;
 }
-.tiny-picker-view-column {
+
+.tiny-picker__group {
+  position: relative;
+  width: 100%;
   height: 100%;
-  overflow-y: auto;
-  scroll-snap-type: y mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  overflow: hidden;
 }
-.tiny-picker-view-column::-webkit-scrollbar {
-  display: none;
+
+.tiny-picker__mask {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.6)),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.6));
+  background-position: top, bottom;
+  background-size: 100% calc(50% - var(--picker-indicator-offset));
+  background-repeat: no-repeat;
 }
-.tiny-picker-view-column-content {
+
+.tiny-picker__indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% - var(--picker-indicator-offset));
+  height: var(--picker-item-height);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.tiny-picker__indicator::before,
+.tiny-picker__indicator::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: #e5e5e5;
+}
+
+.tiny-picker__indicator::before {
+  top: 0;
+}
+
+.tiny-picker__indicator::after {
+  bottom: 0;
+}
+
+.tiny-picker__content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: calc(50% - var(--picker-indicator-offset)) 0;
+  box-sizing: border-box;
+  transition: transform 0.3s ease;
+  will-change: transform;
+}
+
+.tiny-picker__content.is-dragging {
+  transition: none;
+}
+
+.tiny-picker__content > * {
   display: block;
-  padding: 102px 0;
-}
-.tiny-picker-view-column-content > * {
-  display: block;
-  height: 34px;
-  line-height: 34px;
+  height: var(--picker-item-height);
+  line-height: var(--picker-item-height);
   text-align: center;
-  scroll-snap-align: center;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;

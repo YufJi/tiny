@@ -12,8 +12,8 @@
 
 当前 23 个内置标签里，真正“结构和默认样式都接近参考实现”的很少：
 
-- **P0：结构或默认外观明显不一致**：`picker`、`picker-view`、`picker-view-column`（3 个标签）
-- **已重写视觉结构**：`checkbox`、`radio`、`switch`、`slider`、`icon`、`image`（2026-10-25，见 2.1–2.5）
+- **P0：结构或默认外观明显不一致**：`picker`（1 个标签）
+- **已重写视觉结构**：`checkbox`、`radio`、`switch`、`slider`、`icon`、`image`、`picker-view`、`picker-view-column`（2026-10-25，见 2.1–2.5、2.7）
 - **P1：能用但结构/交互仍是近似**：`input`、`textarea`、`scroll-view`、`swiper`、`form`、`button`
 - **P2：主要是宿主结构差异**：`view`、`text`、`label`、`canvas`、`progress`、`swiper-item`
 
@@ -50,7 +50,8 @@
 - 参考 CSS 的 `wx-view {}`、`wx-checkbox {}` 需要机械替换为 `tiny-view {}`、`tiny-checkbox {}`，不能原样复用；
 - 参考实现里 host-only 的标签（`view`/`button`/`checkbox-group`/`radio-group`/`swiper-item`）已收敛为 `<slot />`；`label` 暂时保留内部原生 `<label>` 以复用 `for`/包裹激活，其余标签保留内部 wrapper；
 - 宿主事件监听通过 `bindHostListeners` + `addListener` 实现，对应参考实现的 `listeners: { "this.tap": ... }`；
-- 全局 `app.wxss` 的 tag 选择器会在编译时映射到宿主标签（`button {}` → `tiny-button {}`），页面/组件 WXSS 仍用 scoped marker class。`input::placeholder` 这类规则因此指向宿主，内部原生控件的默认样式由组件 CSS 兜底。
+- 全局 `app.wxss` 的 tag 选择器会在编译时映射到宿主标签（`button {}` → `tiny-button {}`），页面/组件 WXSS 仍用 scoped marker class。`input::placeholder` 这类规则因此指向宿主，内部原生控件的默认样式由组件 CSS 兜底；
+- 内置模板的内部容器使用原生 `div`/`span`（与参考实现一致），不再用 `<view>`/`<text>` 再补 `display:block`。
 
 ### 1.2 原生控件替代自定义结构
 
@@ -356,25 +357,31 @@ picker-view-column
        └── div.wx-picker__content > slot
 ```
 
-我们的结构：
+我们的结构（2026-10-25 已重写）：
 
 ```text
-picker-view
+tiny-picker-view
   └── div.tiny-picker-view-wrapper > slot
-  └── div.tiny-picker-view-indicator
-  └── div.tiny-picker-view-mask
 
-picker-view-column
-  └── div.tiny-picker-view-column-content > slot
+tiny-picker-view-column
+  └── div.tiny-picker__group
+       ├── div.tiny-picker__mask
+       ├── div.tiny-picker__indicator
+       └── div.tiny-picker__content > slot
 ```
 
-差异：
+已对齐：
 
-- 参考把 mask/indicator 放在 column 内部；我们放在 picker-view 外层
-- 参考用 `wx-touchtrack` + transform，滚动惯性/吸附/点击项定位是完整模型；我们只是 `overflow-y:auto` + `scroll-snap`
-- 参考高度由外部样式/列内容决定；我们硬编码 `height:238px`、item 34px、上下 padding 102px
-- 初始 `value` 没有滚动到对应项
-- `columnchange` 时序、`pickstart/pickend` 不完整
+- mask/indicator 下放到 column；picker-view 只保留 flex wrapper；
+- column 用 `translateY` + `transition` 做吸附滚动，触摸拖动/点击定位后发 `columnchange`；
+- 指示器高度从 `indicator-style` 解析，item 高度/上下留白/遮罩尺寸通过 CSS 变量跟随；
+- picker-view 把 `value` 同步到各列，`columnchange` 回写 value 并触发 `change`，同时转发 `pickstart`/`pickend`。
+
+剩余差异：
+
+- 没有参考的 `wx-scroller` 惯性/越界回弹，拖动结束直接吸附；
+- 桌面端只有 tap 定位，没有鼠标拖拽（触摸拖动可用）；
+- `columnchange` 与参考 `wxPickerColumnValueChanged` 的中间事件名不同。
 
 ### 2.8 checkbox-group / radio-group
 

@@ -1,9 +1,20 @@
-<view
-  id="native-column"
-  class="tiny-picker-view-column"
+<div
+  id="main"
+  class="tiny-picker__group"
+  role="listbox"
   aria-label="{{ariaLabel}}"
-  bindscroll="handleScroll"
+  style="--picker-item-height: {{itemHeight}}px; --picker-indicator-offset: {{halfItemHeight}}px;"
+  catchtouchstart="handleTouchStart"
+  catchtouchmove="handleTouchMove"
+  catchtouchend="handleTouchEnd"
+  catchtouchcancel="handleTouchEnd"
   bindtap="handleTap"
 >
-  <view class="tiny-picker-view-column-content"><slot /></view>
-</view>
+  <div class="tiny-picker__mask {{maskClass}}" style="{{maskStyle}}"></div>
+  <div class="tiny-picker__indicator {{indicatorClass}}" style="{{indicatorStyle}}"></div>
+  <div
+    id="content"
+    class="tiny-picker__content {{dragging ? 'is-dragging' : ''}}"
+    style="transform: translateY({{translate}}px);"
+  ><slot /></div>
+</div>

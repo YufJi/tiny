@@ -4,7 +4,6 @@ tiny-scroll-view {
   width: 100%;
 }
 .tiny-scroll-view {
-  display: block;
   box-sizing: border-box;
   width: 100%;
   overflow: hidden;

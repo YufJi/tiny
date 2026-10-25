@@ -4,7 +4,6 @@ tiny-swiper {
   height: 150px;
 }
 .tiny-swiper {
-  display: block;
   position: relative;
   overflow: hidden;
   height: 100%;
