@@ -1,27 +1,5 @@
-export const BUILTIN_COMPONENT_TAGS = [
-  'view',
-  'button',
-  'text',
-  'label',
-  'input',
-  'checkbox',
-  'checkbox-group',
-  'radio',
-  'radio-group',
-  'icon',
-  'image',
-  'scroll-view',
-  'slider',
-  'progress',
-  'switch',
-  'swiper',
-  'swiper-item',
-  'canvas',
-  'textarea',
-  'form',
-  'picker',
-  'picker-view',
-  'picker-view-column',
-] as const
-
-export type BuiltinComponentTag = typeof BUILTIN_COMPONENT_TAGS[number]
+export {
+  BUILTIN_COMPONENT_TAGS,
+  BUILTIN_HOST_TAG_PREFIX,
+  type BuiltinComponentTag,
+} from '@tiny/manifest'

@@ -51,6 +51,19 @@ export interface StyleSheetOptions {
   tagClassPrefix?: string | undefined
 
   /**
+   * Built-in component tags. Used for **global** (unscoped) styles, where
+   * `tagClassPrefix` is not available: `button {}` is rewritten to the real
+   * host tag (e.g. `tiny-button {}`). Scoped styles keep using marker classes.
+   */
+  builtinTags?: readonly string[] | undefined
+
+  /**
+   * Prefix of built-in host tags used by `builtinTags`.
+   * Defaults to `tiny-`.
+   */
+  builtinHostTagPrefix?: string | undefined
+
+  /**
    * Ratio used to convert `rpx` units to `vw`.
    * The formula is `value * 100 / rpxRatio`.
    * Defaults to `750`.

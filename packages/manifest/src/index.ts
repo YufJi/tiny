@@ -5,6 +5,7 @@
 import type { NamingConfig } from './naming'
 
 export * from './naming'
+export * from './builtin'
 
 export type DiagnosticSeverity = 'error' | 'warning' | 'info'
 

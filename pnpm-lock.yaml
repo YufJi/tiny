@@ -85,6 +85,9 @@ importers:
 
   packages/components:
     dependencies:
+      '@tiny/manifest':
+        specifier: workspace:*
+        version: link:../manifest
       glass-easel:
         specifier: 1.1.0
         version: 1.1.0

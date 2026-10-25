@@ -6,6 +6,8 @@ import { build as esbuild } from 'esbuild'
 import { TmplGroup, parseErrorMessage } from '@tiny/template-compiler'
 import { StyleSheetTransformer } from '@tiny/stylesheet-compiler'
 import {
+  BUILTIN_COMPONENT_TAGS,
+  BUILTIN_HOST_TAG_PREFIX,
   resolveNaming,
   type NamingConfig,
   type ResolvedNamingConfig,
@@ -680,6 +682,8 @@ class MiniProgramCompiler {
         const transformer = StyleSheetTransformer.fromCss(relativePath, source, {
           classPrefix: scope,
           tagClassPrefix: scope ? `${scope}--${this.naming.tagClassPrefix}` : undefined,
+          builtinTags: BUILTIN_COMPONENT_TAGS,
+          builtinHostTagPrefix: BUILTIN_HOST_TAG_PREFIX,
           hostAttribute: this.naming.hostAttribute,
           rpxRatio: this.options.rpxRatio,
         })

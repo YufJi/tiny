@@ -1,5 +1,5 @@
 import type * as glassEasel from 'glass-easel'
-import { BUILTIN_COMPONENT_TAGS, type BuiltinComponentTag } from './tags'
+import { BUILTIN_COMPONENT_TAGS, BUILTIN_HOST_TAG_PREFIX, type BuiltinComponentTag } from './tags'
 import { builtinTemplate } from './templates'
 import { createBuiltinBehaviors } from './behaviors'
 import type { BuiltinContext, BuiltinComponentFactoryOptions } from './types'
@@ -70,9 +70,8 @@ export function createBuiltinComponents(
   options: BuiltinComponentFactoryOptions = {},
 ): BuiltinComponentDefinitions {
   const definitions = {} as BuiltinComponentDefinitions
-  // Built-ins own a real host node, but stay in the engine's `tiny-`
-  // namespace instead of impersonating WeChat's internal `wx-*` elements.
-  const hostTagPrefix = 'tiny-'
+  // Built-ins own a real host node in the engine's `tiny-` namespace instead
+  // of impersonating WeChat's internal `wx-*` elements.
   const context: BuiltinContext = {
     space,
     options,
@@ -80,7 +79,7 @@ export function createBuiltinComponents(
     behaviors: createBuiltinBehaviors(space, { prefix: options.prefix }),
     hostOptions: (extra = {}) => ({
       virtualHost: false,
-      hostNodeTagName: `${hostTagPrefix}*`,
+      hostNodeTagName: `${BUILTIN_HOST_TAG_PREFIX}*`,
       reflectToAttributes: true,
       ...extra,
     }),

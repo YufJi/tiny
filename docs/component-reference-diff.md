@@ -49,7 +49,8 @@
 
 - 参考 CSS 的 `wx-view {}`、`wx-checkbox {}` 需要机械替换为 `tiny-view {}`、`tiny-checkbox {}`，不能原样复用；
 - 参考实现里 host-only 的标签（`view`/`button`/`checkbox-group`/`radio-group`/`swiper-item`）已收敛为 `<slot />`；`label` 暂时保留内部原生 `<label>` 以复用 `for`/包裹激活，其余标签保留内部 wrapper；
-- 宿主事件监听通过 `bindHostListeners` + `addListener` 实现，对应参考实现的 `listeners: { "this.tap": ... }`。
+- 宿主事件监听通过 `bindHostListeners` + `addListener` 实现，对应参考实现的 `listeners: { "this.tap": ... }`；
+- 全局 `app.wxss` 的 tag 选择器会在编译时映射到宿主标签（`button {}` → `tiny-button {}`），页面/组件 WXSS 仍用 scoped marker class。`input::placeholder` 这类规则因此指向宿主，内部原生控件的默认样式由组件 CSS 兜底。
 
 ### 1.2 原生控件替代自定义结构
 

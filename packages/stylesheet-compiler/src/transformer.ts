@@ -88,8 +88,15 @@ function transformSelector(
   classPrefix: string | undefined,
   classPrefixSign: string | undefined,
   tagClassPrefix: string | undefined,
+  builtinTags: readonly string[] | undefined,
+  builtinHostTagPrefix: string | undefined,
 ): string {
-  if (classPrefix === undefined && classPrefixSign === undefined && tagClassPrefix === undefined) {
+  if (
+    classPrefix === undefined
+    && classPrefixSign === undefined
+    && tagClassPrefix === undefined
+    && (builtinTags === undefined || builtinTags.length === 0)
+  ) {
     return selector
   }
 
@@ -156,8 +163,7 @@ function transformSelector(
       continue
     }
     if (
-      tagClassPrefix !== undefined
-      && squareDepth === 0
+      squareDepth === 0
       && parenDepth >= 0
       && isIdentStart(ch)
       && ch !== '-'
@@ -166,8 +172,16 @@ function transformSelector(
       const identStart = i
       while (i < selector.length && isIdentChar(selector[i]!)) i++
       const tagName = selector.slice(identStart, i)
-      // The page root is rendered outside the template, so it has no marker class.
-      result += tagName === 'page' ? tagName : `.${tagClassPrefix}${tagName}`
+      if (tagClassPrefix !== undefined) {
+        // Scoped styles use the marker class injected into the template.
+        // The page root is rendered outside the template, so it has no marker.
+        result += tagName === 'page' ? tagName : `.${tagClassPrefix}${tagName}`
+      } else if (tagName !== 'page' && builtinTags?.includes(tagName)) {
+        // Global styles target the real DOM host of a built-in component.
+        result += `${builtinHostTagPrefix ?? 'tiny-'}${tagName}`
+      } else {
+        result += tagName
+      }
       previousSignificant = tagName.at(-1) ?? ''
       continue
     }
@@ -276,6 +290,8 @@ export class StyleSheetTransformer {
         classPrefix: classPrefixOrOpts ?? undefined!,
         classPrefixSign: undefined!,
         tagClassPrefix: undefined!,
+        builtinTags: undefined!,
+        builtinHostTagPrefix: undefined!,
         rpxRatio: rpxRatio ?? 750,
         importSign: undefined!,
         convertHost: convertHost ?? false,
@@ -296,6 +312,8 @@ export class StyleSheetTransformer {
       classPrefix: options.classPrefix ?? undefined!,
       classPrefixSign: options.classPrefixSign ?? undefined!,
       tagClassPrefix: options.tagClassPrefix ?? undefined!,
+      builtinTags: options.builtinTags ?? undefined!,
+      builtinHostTagPrefix: options.builtinHostTagPrefix ?? undefined!,
       rpxRatio: options.rpxRatio ?? 750,
       importSign: options.importSign ?? undefined!,
       convertHost: options.convertHost ?? false,
@@ -577,6 +595,8 @@ export class StyleSheetTransformer {
       this._opts.classPrefix,
       this._opts.classPrefixSign,
       inKeyframes ? undefined : this._opts.tagClassPrefix,
+      inKeyframes ? undefined : this._opts.builtinTags,
+      this._opts.builtinHostTagPrefix,
     )
     // Remove the space before `{` in minified output
     transformed.raws.between = ''
@@ -697,6 +717,8 @@ export class StyleSheetTransformer {
       this._opts.classPrefix,
       this._opts.classPrefixSign,
       this._opts.tagClassPrefix,
+      this._opts.builtinTags,
+      this._opts.builtinHostTagPrefix,
     )
     return result
   }

@@ -1,6 +1,14 @@
+import path from 'node:path'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
+  resolve: {
+    // Use manifest sources so the library build does not bundle the CommonJS
+    // manifest output (named re-exports are not statically analyzable there).
+    alias: {
+      '@tiny/manifest': path.resolve(__dirname, '../manifest/src/index.ts'),
+    },
+  },
   build: {
     lib: {
       entry: 'src/index.ts',

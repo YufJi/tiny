@@ -339,6 +339,51 @@ describe('tag selector scoping', () => {
   })
 })
 
+describe('global builtin tag mapping', () => {
+  test('rewrites unscoped builtin tags to their real host tags', () => {
+    const transformer = StyleSheetTransformer.fromCss(
+      'app.wxss',
+      'page > view { width: 100% } .card image { width: 100% } input::placeholder { color: red } button { display: flex }',
+      {
+        builtinTags: ['view', 'button', 'image', 'input'],
+        builtinHostTagPrefix: 'tiny-',
+      },
+    )
+    const css = transformer.getContent()
+    expect(css).toContain('page > tiny-view')
+    expect(css).toContain('.card tiny-image')
+    expect(css).toContain('tiny-input::placeholder')
+    expect(css).toContain('tiny-button')
+  })
+
+  test('keeps page and custom component tags untouched in global styles', () => {
+    const transformer = StyleSheetTransformer.fromCss(
+      'app.wxss',
+      'page { color: red } add-button { color: blue } .scope add-button { margin: 0 }',
+      { builtinTags: ['view', 'button'], builtinHostTagPrefix: 'tiny-' },
+    )
+    const css = transformer.getContent()
+    expect(css).toContain('page{')
+    expect(css).toContain('add-button{')
+    expect(css).toContain('.scope add-button')
+    expect(css).not.toContain('tiny-add-button')
+  })
+
+  test('scoped marker classes take precedence over host mapping', () => {
+    const transformer = StyleSheetTransformer.fromCss(
+      'page.wxss',
+      'view { color: red }',
+      {
+        classPrefix: 's',
+        tagClassPrefix: 's--wx-tag-',
+        builtinTags: ['view'],
+        builtinHostTagPrefix: 'tiny-',
+      },
+    )
+    expect(transformer.getContent()).toContain('.s--wx-tag-view')
+  })
+})
+
 describe('tag selector edge cases', () => {
   test('keeps keyframe steps and the page root selector', () => {
     const transformer = StyleSheetTransformer.fromCss(

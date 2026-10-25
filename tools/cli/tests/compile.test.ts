@@ -46,6 +46,12 @@ describe('compileMiniProgram', () => {
     })
   })
 
+  test('maps global app.wxss tag selectors to built-in hosts', async () => {
+    const css = await fs.readFile(path.join(outputDir, 'styles/app.wxss.css'), 'utf8')
+    expect(css).toContain('tiny-button')
+    expect(css).not.toMatch(/(^|[\s,])button\s*\{/)
+  })
+
   test('registers external WXS files with and without their extension', async () => {
     const templates = await fs.readFile(path.join(outputDir, 'templates.js'), 'utf8')
     expect(templates).toContain('W["pages/index/utils.wxs"]')

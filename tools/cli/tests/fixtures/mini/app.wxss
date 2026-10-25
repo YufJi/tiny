@@ -1,3 +1,7 @@
 page {
   background: #fff;
 }
+
+button {
+  margin: 0;
+}
