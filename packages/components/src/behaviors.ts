@@ -34,6 +34,14 @@ export function createBuiltinBehaviors(
     properties: {
       hidden: { type: Boolean, value: false },
     },
+    lifetimes: {
+      attached() {
+        scheduleDataAttributeSync(this as unknown as DataAttributeHost)
+      },
+      ready() {
+        scheduleDataAttributeSync(this as unknown as DataAttributeHost)
+      },
+    },
     methods: {
       getNodeId(): string {
         return ''
@@ -200,6 +208,30 @@ export function createBuiltinBehaviors(
 }
 
 export type BuiltinBehaviors = ReturnType<typeof createBuiltinBehaviors>
+
+type DataAttributeHost = {
+  dataset?: Record<string, unknown>
+  getShadowRoot?: () => {
+    childNodes?: ArrayLike<{ setAttribute?: (name: string, value: string) => void }>
+  } | null
+}
+
+function scheduleDataAttributeSync(host: DataAttributeHost): void {
+  // virtualHost components have no DOM host; mirror dataset attributes onto
+  // the first rendered root so `[data-*]` selectors and CSS variables work.
+  const sync = () => {
+    const root = host.getShadowRoot?.()?.childNodes?.[0]
+    if (!root || typeof root.setAttribute !== 'function') return
+    for (const [key, value] of Object.entries(host.dataset ?? {})) {
+      if (value === undefined || value === null) continue
+      const attribute = `data-${key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`
+      root.setAttribute(attribute, String(value))
+    }
+  }
+  sync()
+  Promise.resolve().then(sync)
+  setTimeout(sync, 0)
+}
 
 function clearHoverTimers(instance: HoverRuntime): void {
   if (instance._hoverStartTimer) {

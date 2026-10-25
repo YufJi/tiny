@@ -506,6 +506,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-25 | 第八次同步：新增 textarea/form/picker 三个常用内置标签（form 收集、picker selector/date/time、textarea 事件）；内置组件 36→38；151 单测 | **36.92%** |
 | 2026-10-25 | 第九次同步：补主题/键盘监听、getUserProfile/getUserInfo、tabBar/导航栏/pageScrollTo、hideToast、getFileSystemManager 等高频 API 面；API 8→12%；151 单测 | **37.72%** |
 | 2026-10-25 | 第十次同步：新增 picker-view / picker-view-column（滚动列、columnchange、value 数组）；格式化 WXML 模板；内置组件 38→39；152 单测 | **37.89%** |
+| 2026-10-25 | 修复：virtualHost 内置组件丢失 `data-*` 属性；WeChat demo 的 `[data-weui-theme]` 重新生效，深色系统下恢复浅色主题变量；新增 dark color-scheme 验收 | **37.89%** |
 | 2026-10-25 | 文档维护：移除重复且长期未同步的“进度清单”章节；缺口统一看第 7 节，变更看第 9.4 节 | **37.89%** |
 
 ---

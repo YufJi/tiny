@@ -622,6 +622,7 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
   try {
     await step('boot the WeChat component demo', async () => {
       currentStep = 'boot the WeChat component demo'
+      await page.emulateMedia({ colorScheme: 'dark' })
       await page.goto(`${baseUrl}?path=page/component/index`, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
       await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
       const render = page.frames().find((frame) => frame.url().includes('render.html'))
@@ -637,7 +638,17 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
         const images = [...document.querySelectorAll('img[src*="resources/kind"]')]
         return images.length > 0 && images.every((image) => image.complete && image.naturalWidth > 0)
       }, null, { timeout: STEP_TIMEOUT })
+      const theme = await render.evaluate(() => {
+        const element = document.querySelector('[data-weui-theme]')
+        return {
+          value: element?.getAttribute('data-weui-theme'),
+          background: element ? getComputedStyle(element).getPropertyValue('--weui-BG-2').trim() : '',
+        }
+      })
+      assert.equal(theme.value, 'light', 'WeUI light theme attribute was not forwarded to the built-in view root')
+      assert.equal(theme.background, '#fff', 'WeUI light theme variables did not win over the dark color scheme')
       assert.equal(pageErrors.length, 0, `page errors: ${pageErrors.join(' | ')}`)
+      await page.emulateMedia({ colorScheme: 'light' })
     })
 
     await step('render a component example page', async () => {
