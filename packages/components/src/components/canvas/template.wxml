@@ -1,7 +1,6 @@
 <canvas
   id="native-canvas"
-  class="tiny-canvas {{hidden ? 'tiny-hidden' : ''}} class"
-  style="{{style}}"
+  class="tiny-canvas"
   canvas-id="{{canvasId}}"
   type="{{type}}"
   data-placeholder="canvas"

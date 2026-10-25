@@ -1,28 +1,19 @@
-.tiny-progress {
-  display: block;
+tiny-progress {
+  display: flex;
+  align-items: center;
   box-sizing: border-box;
 }
 .tiny-progress-track {
+  flex: 1;
   height: 6px;
   background: #334155;
   border-radius: 3px;
   overflow: hidden;
 }
 .tiny-progress-bar {
-  height: 100%;
-  background: #3b82f6;
-}
-.tiny-progress {
-  display: flex;
-  align-items: center;
-}
-.tiny-progress-track {
-  flex: 1;
-  overflow: hidden;
-}
-.tiny-progress-bar {
   width: 0;
   height: 100%;
+  background: #3b82f6;
   transition: width 0.3s ease;
 }
 .tiny-progress-info {

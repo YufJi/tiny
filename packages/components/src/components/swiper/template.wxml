@@ -1,6 +1,6 @@
 <view
-  class="tiny-swiper {{vertical ? 'is-vertical' : ''}} {{hidden ? 'tiny-hidden' : ''}} class"
-  style="{{style}} padding-left: {{previousMargin}}; padding-right: {{nextMargin}}; --tiny-swiper-items: {{displayMultipleItems}};"
+  class="tiny-swiper {{vertical ? 'is-vertical' : ''}}"
+  style="padding-left: {{previousMargin}}; padding-right: {{nextMargin}}; --tiny-swiper-items: {{displayMultipleItems}};"
   aria-label="{{ariaLabel}}"
   bindtouchstart="handleTouchStart"
   bindtouchend="handleTouchEnd"

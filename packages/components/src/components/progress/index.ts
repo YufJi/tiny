@@ -18,10 +18,8 @@ export function defineProgress(ctx: BuiltinContext): BuiltinDefinition {
       borderRadius: { type: String, optionalTypes: [Number], value: 0 },
       fontSize: { type: String, optionalTypes: [Number], value: 16 },
       strokeWidth: { type: String, optionalTypes: [Number], value: 6 },
-      style: { type: String, value: '' },
     },
-    externalClasses: ['class'],
-    options: { virtualHost: true },
+    options: ctx.hostOptions(),
     methods: {
       handleActiveEnd() {
         if (this.data.active) this.triggerEvent('activeend', {}, { bubbles: true, composed: true })

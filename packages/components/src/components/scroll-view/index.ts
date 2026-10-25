@@ -56,10 +56,8 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
       enableFlex: { type: Boolean, value: false },
       pagingEnabled: { type: Boolean, value: false },
       usingSticky: { type: Boolean, value: false },
-      style: { type: String, value: '' },
     },
-    externalClasses: ['class'],
-    options: { multipleSlots: true, virtualHost: true },
+    options: ctx.hostOptions({ multipleSlots: true }),
     lifetimes: {
       attached() {
         this.applyScrollAnimation()

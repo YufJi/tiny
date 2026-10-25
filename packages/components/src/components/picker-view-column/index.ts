@@ -16,9 +16,7 @@ export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
     behaviors: [ctx.behaviors.base],
     properties: {
       ariaLabel: { type: String, value: '' },
-      style: { type: String, value: '' },
     },
-    externalClasses: ['class'],
     data: {
       column: 0,
     },
@@ -34,6 +32,7 @@ export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
         this.setData({ column: index >= 0 ? index : Number(this.data.column) })
       },
     },
+    options: ctx.hostOptions(),
     methods: {
       backend(): ColumnBackend | null {
         return (this as unknown as { getBackendElement?: () => ColumnBackend | null }).getBackendElement?.() ?? null

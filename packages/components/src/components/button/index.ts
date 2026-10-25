@@ -1,4 +1,5 @@
 import type * as glassEasel from 'glass-easel'
+import { bindHostListeners, unbindHostListeners } from '../../behaviors'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 
 const DEFAULT_HOVER_CLASS = 'button-hover'
@@ -48,16 +49,30 @@ export function defineButton(ctx: BuiltinContext): BuiltinDefinition {
       showMessageCard: { type: Boolean, value: false },
       categoryId: { type: Array, value: [] },
       needPhoneNumber: { type: Boolean, value: false },
-      style: { type: String, value: '' },
     },
-    externalClasses: ['class'],
-    options: { virtualHost: true },
+    options: ctx.hostOptions(),
+    lifetimes: {
+      created() {
+        // The host is the button in WeChat. `[disabled] { pointer-events:none }`
+        // blocks real taps; programmatic triggerEvent still reaches same-node
+        // page listeners, so disabled only suppresses form/open-type semantics.
+        bindHostListeners(this, {
+          tap: (event) => this.handleTap(event),
+        })
+      },
+      detached() {
+        unbindHostListeners(this)
+      },
+    },
     methods: {
       handleLabelTap(event: glassEasel.ShadowedEvent<unknown>) {
         this.handleTap(event)
       },
       handleTap(event: glassEasel.ShadowedEvent<unknown>) {
-        if (this.data.disabled) return
+        if (this.data.disabled) {
+          event.stopPropagation()
+          return
+        }
         const formType = String(this.data.formType ?? '')
         if (formType === 'submit') {
           this.triggerEvent('formSubmit', { formId: '', formPluginId: '' }, { bubbles: true, composed: true })
@@ -77,7 +92,6 @@ export function defineButton(ctx: BuiltinContext): BuiltinDefinition {
           if (eventName) this.triggerEvent(eventName, { errMsg }, { bubbles: true, composed: true })
           this.triggerEvent('error', { errMsg }, { bubbles: true, composed: true })
         }
-        this.triggerEvent('tap', event.detail ?? {}, { bubbles: true, composed: true })
       },
     },
   }).general()

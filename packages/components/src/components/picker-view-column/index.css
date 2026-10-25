@@ -1,6 +1,9 @@
-.tiny-picker-view-column {
+tiny-picker-view-column {
   flex: 1;
   position: relative;
+  height: 100%;
+}
+.tiny-picker-view-column {
   height: 100%;
   overflow-y: auto;
   scroll-snap-type: y mandatory;

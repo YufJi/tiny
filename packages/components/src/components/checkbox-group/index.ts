@@ -1,4 +1,3 @@
-import type * as glassEasel from 'glass-easel'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 
 export function defineCheckboxGroup(ctx: BuiltinContext): BuiltinDefinition {
@@ -6,30 +5,40 @@ export function defineCheckboxGroup(ctx: BuiltinContext): BuiltinDefinition {
     is: 'tiny-builtin:checkbox-group',
     template: ctx.template('checkbox-group'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent, ctx.behaviors.group],
-    properties: {
-      style: { type: String, value: '' },
-    },
     data: {
       selected: [] as string[],
     },
-    externalClasses: ['class'],
+    options: ctx.hostOptions({ multipleSlots: true }),
+    lifetimes: {
+      ready() {
+        this.syncSelected()
+      },
+    },
     methods: {
-      applyState(detail: { value?: unknown; checked?: unknown }) {
-        const value = String(detail.value ?? '')
-        const selected = new Set<string>(this.data.selected as string[])
-        if (detail.checked) selected.add(value)
-        else selected.delete(value)
-        this.setData({ selected: [...selected] })
-        return [...selected]
+      collectChecked(nodes: unknown[] | undefined, out: string[]): void {
+        for (const node of nodes ?? []) {
+          const item = node as {
+            hasBehavior?: (behavior: string) => boolean
+            data?: Record<string, unknown>
+            childNodes?: unknown[]
+          }
+          if (item.hasBehavior?.('wx-item') && item.data?.checked) {
+            const value = String(item.data.value ?? '')
+            if (value) out.push(value)
+          }
+          this.collectChecked(item.childNodes, out)
+        }
       },
-      handleState(event: glassEasel.ShadowedEvent<unknown>) {
-        this.applyState(event.detail as { value?: unknown; checked?: unknown })
+      syncSelected(): string[] {
+        const selected: string[] = []
+        this.collectChecked((this as unknown as { childNodes?: unknown[] }).childNodes, selected)
+        this.setData({ selected })
+        return selected
       },
-      handleChange(event: glassEasel.ShadowedEvent<unknown>) {
-        const selected = this.applyState(event.detail as { value?: unknown; checked?: unknown })
+      handleItemChange() {
+        const selected = this.syncSelected()
         this.triggerEvent('change', { value: selected }, { bubbles: true, composed: true })
       },
     },
-    options: { multipleSlots: true, virtualHost: true },
   }).general()
 }

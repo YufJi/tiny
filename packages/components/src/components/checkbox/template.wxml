@@ -1,13 +1,17 @@
-<view class="tiny-checkbox {{hidden ? 'tiny-hidden' : ''}} class">
+<label class="tiny-checkbox-wrapper {{disabled ? 'is-disabled' : ''}}">
   <input
     id="native-input"
+    class="tiny-checkbox-native"
     aria-label="{{ariaLabel}}"
-    style="accent-color: {{color}};"
     type="checkbox"
     value="{{value}}"
     checked="{{checked}}"
     disabled="{{disabled}}"
     catchchange="handleChange"
   />
+  <span
+    class="tiny-checkbox-input {{checked ? 'is-checked' : ''}} {{disabled ? 'is-disabled' : ''}}"
+    style="color: {{color}};"
+  ></span>
   <slot />
-</view>
+</label>

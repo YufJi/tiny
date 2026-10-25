@@ -1,6 +1,5 @@
 <view
-  class="tiny-picker-view {{hidden ? 'tiny-hidden' : ''}} class"
-  style="{{style}}"
+  class="tiny-picker-view"
   aria-label="{{ariaLabel}}"
   bind:columnchange="handleColumnChange"
 >

@@ -1,23 +1,110 @@
-.tiny-slider {
+tiny-slider {
   display: block;
+  margin: 10px 18px;
+  padding: 0;
   box-sizing: border-box;
 }
+
 .tiny-slider-wrapper {
   display: flex;
   align-items: center;
+  min-height: 16px;
   width: 100%;
-  gap: 8px;
 }
-.tiny-slider {
+
+.tiny-slider-tap-area {
   flex: 1;
-  width: 100%;
-  height: 1.4rem;
-  margin: 0;
-  accent-color: var(--tiny-slider-active, #1aad19);
+  padding: 8px 0;
 }
+
+.tiny-slider-handle-wrapper {
+  position: relative;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 2px;
+  border-radius: 5px;
+  background-color: #e9e9e9;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tiny-slider-track {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background-color: #1aad19;
+  transition: background-color 0.3s ease;
+}
+
+.tiny-slider-thumb {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  box-sizing: border-box;
+  cursor: pointer;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+  transition: border-color 0.3s ease;
+}
+
+.tiny-slider-handle {
+  position: absolute;
+  top: 50%;
+  width: 28px;
+  height: 28px;
+  margin-top: -14px;
+  margin-left: -14px;
+  z-index: 3;
+  background-color: transparent;
+  cursor: pointer;
+}
+
+.tiny-slider-step {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background: transparent;
+  z-index: 1;
+}
+
+.tiny-slider {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  z-index: 4;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  opacity: 0;
+  cursor: pointer;
+  transform: translateY(-50%);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.tiny-slider:disabled {
+  cursor: default;
+}
+
 .tiny-slider-value {
   min-width: 2em;
-  color: #333333;
+  margin-left: 1em;
+  color: #888888;
   font-size: 14px;
-  text-align: right;
+  text-align: center;
+}
+
+.tiny-slider-wrapper.is-disabled .tiny-slider-track {
+  background-color: #cccccc;
+}
+
+.tiny-slider-wrapper.is-disabled .tiny-slider-thumb {
+  background-color: #ffffff;
+  border-color: #cccccc;
 }

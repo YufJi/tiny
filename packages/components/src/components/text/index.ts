@@ -9,9 +9,7 @@ export function defineText(ctx: BuiltinContext): BuiltinDefinition {
       selectable: { type: Boolean, value: false },
       decode: { type: Boolean, value: false },
       space: { type: String, value: '' },
-      style: { type: String, value: '' },
     },
-    externalClasses: ['class'],
-    options: { virtualHost: true },
+    options: ctx.hostOptions(),
   }).general()
 }

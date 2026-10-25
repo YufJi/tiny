@@ -1,5 +1,6 @@
-.tiny-icon {
-  display: inline;
+tiny-icon {
+  display: inline-block;
+  font-size: 0;
 }
 .tiny-icon {
   display: inline-block;

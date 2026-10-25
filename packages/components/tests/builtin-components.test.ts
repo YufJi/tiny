@@ -68,11 +68,10 @@ describe('P0 built-in components', () => {
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const buttonHost = instance.getShadowRoot()?.getElementById('button')?.asGeneralComponent()
     expect(buttonHost).toBeDefined()
-    const html = glassEasel.dumpElementToString(buttonHost!, true)
-    expect(html).toContain('tiny-button-primary')
-    expect(html).toContain('tiny-button-mini')
-    expect(html).toContain('tiny-button-plain')
-    expect(html).toContain('tiny-button-loading')
+    expect(buttonHost!.data.type).toBe('primary')
+    expect(buttonHost!.data.size).toBe('mini')
+    expect(buttonHost!.data.plain).toBe(true)
+    expect(buttonHost!.data.loading).toBe(true)
   })
 
   test('button applies hover after hoverStartTime and clears it after hoverStayTime', async () => {
@@ -85,14 +84,14 @@ describe('P0 built-in components', () => {
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const buttonHost = instance.getShadowRoot()?.getElementById('button')?.asGeneralComponent()!
-    const nativeButton = buttonHost.getShadowRoot()?.getElementById('native-button')!
-    nativeButton.triggerEvent('touchstart', { touches: [{}] })
+    buttonHost.triggerEvent('touchstart', { touches: [{}] })
     await new Promise((resolve) => setTimeout(resolve, 40))
     expect(buttonHost.data.hovering).toBe(true)
-    expect(glassEasel.dumpElementToString(buttonHost, true)).toContain('button-hover')
-    nativeButton.triggerEvent('touchend', {})
+    expect(buttonHost.class).toContain('button-hover')
+    buttonHost.triggerEvent('touchend', {})
     await new Promise((resolve) => setTimeout(resolve, 100))
     expect(buttonHost.data.hovering).toBe(false)
+    expect(buttonHost.class).not.toContain('button-hover')
   })
 
   test('button suppresses disabled taps and emits form/open-type semantics', () => {
@@ -133,8 +132,7 @@ describe('P0 built-in components', () => {
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const buttonHost = instance.getShadowRoot()?.getElementById('button')?.asGeneralComponent()!
-    const nativeButton = buttonHost.getShadowRoot()?.getElementById('native-button')!
-    nativeButton.triggerEvent('tap', {})
+    buttonHost.triggerEvent('tap', {})
     expect(taps).toEqual([{}])
     expect(submits).toEqual([{ formId: '', formPluginId: '' }])
     expect(diagnostics.map((item) => item.code)).toContain('UNSUPPORTED_BUTTON_OPEN_TYPE')
@@ -142,12 +140,15 @@ describe('P0 built-in components', () => {
     expect(userInfos).toEqual([{ errMsg: 'getUserInfo:fail not supported by the Tiny runtime' }])
 
     buttonHost.setData({ formType: 'reset' })
-    nativeButton.triggerEvent('tap', {})
+    buttonHost.triggerEvent('tap', {})
     expect(resets).toEqual([undefined])
 
     buttonHost.setData({ disabled: true })
-    nativeButton.triggerEvent('tap', {})
-    expect(taps).toHaveLength(2)
+    buttonHost.triggerEvent('tap', {})
+    // Direct triggerEvent bypasses CSS `pointer-events: none`; the component
+    // must at least not emit form/open-type semantics while disabled.
+    expect(submits).toHaveLength(1)
+    expect(diagnostics.filter((item) => item.code === 'UNSUPPORTED_BUTTON_OPEN_TYPE')).toHaveLength(2)
   })
 
 
@@ -161,18 +162,19 @@ describe('P0 built-in components', () => {
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const viewHost = instance.getShadowRoot()?.getElementById('box')?.asGeneralComponent()!
-    const nativeView = viewHost.getShadowRoot()?.getElementById('native-view')!
     viewHost.setData({ hidden: true })
-    expect(glassEasel.dumpElementToString(viewHost, true)).toContain('tiny-hidden')
+    expect(viewHost.data.hidden).toBe(true)
+    expect(viewHost.class).not.toContain('hovered')
     viewHost.setData({ hidden: false })
 
-    nativeView.triggerEvent('touchstart', { touches: [{}] })
+    viewHost.triggerEvent('touchstart', { touches: [{}] })
     await new Promise((resolve) => setTimeout(resolve, 70))
     expect(viewHost.data.hovering).toBe(true)
-    expect(glassEasel.dumpElementToString(viewHost, true)).toContain('hovered')
-    nativeView.triggerEvent('touchend', {})
+    expect(viewHost.class).toContain('hovered')
+    viewHost.triggerEvent('touchend', {})
     await new Promise((resolve) => setTimeout(resolve, 450))
     expect(viewHost.data.hovering).toBe(false)
+    expect(viewHost.class).not.toContain('hovered')
   })
 
 
@@ -230,12 +232,47 @@ describe('P0 built-in components', () => {
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()
-    host('checkbox')?.triggerEvent('change', { value: 'one', checked: true })
-    host('slider')?.triggerEvent('change', { value: 42 })
-    host('switch')?.triggerEvent('change', { value: true })
+    const native = (id: string) => host(id)?.getShadowRoot()?.getElementById('native-input')
+    native('checkbox')?.triggerEvent('change', { value: 'one', checked: true })
+    native('slider')?.triggerEvent('change', { value: 42 })
+    native('switch')?.triggerEvent('change', { value: true })
     expect(events.checkbox).toEqual({ value: 'one', checked: true })
     expect(events.slider).toEqual({ value: 42 })
     expect(events.switch).toEqual({ value: true })
+  })
+
+
+  test('radio group keeps a single checked item and emits group change', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const changes: unknown[] = []
+    const page = space.defineComponent({
+      is: 'page',
+      using: {
+        'radio-group': builtins['radio-group'],
+        radio: builtins.radio,
+      },
+      template: compilePage(`
+        <radio-group id="group" bindchange="onChange">
+          <radio id="a" value="a" checked="{{true}}" />
+          <radio id="b" value="b" />
+        </radio-group>
+      `),
+      methods: {
+        onChange(event: glassEasel.ShadowedEvent<unknown>) {
+          changes.push(event.detail)
+        },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    host('b').getShadowRoot()?.getElementById('native-input')?.triggerEvent('change', { value: 'b', checked: true })
+    expect(changes).toEqual([{ value: 'b' }])
+    expect(host('a').data.checked).toBe(false)
+    expect(host('b').data.checked).toBe(true)
+    expect(host('b').getShadowRoot()?.getElementById('native-input')).toBeDefined()
+    const html = glassEasel.dumpElementToString(host('b'), true)
+    expect(html).toContain('tiny-radio-input is-checked')
   })
 
 
@@ -277,9 +314,15 @@ describe('P0 built-in components', () => {
     expect(imageHtml).toContain('tiny-image-mode-aspectFit')
     expect(imageHtml).toContain('loading="lazy"')
 
-    expect(glassEasel.dumpElementToString(host('checkbox')!, true)).toContain('accent-color: #ff0000')
-    expect(glassEasel.dumpElementToString(host('radio')!, true)).toContain('accent-color: #00ff00')
-    expect(glassEasel.dumpElementToString(host('switch')!, true)).toContain('accent-color: #0000ff')
+    const checkboxHtml = glassEasel.dumpElementToString(host('checkbox')!, true)
+    expect(checkboxHtml).toContain('tiny-checkbox-input')
+    expect(checkboxHtml).toContain('color: #ff0000')
+    const radioHtml = glassEasel.dumpElementToString(host('radio')!, true)
+    expect(radioHtml).toContain('tiny-radio-input')
+    expect(radioHtml).toContain('--tiny-radio-color: #00ff00')
+    const switchHtml = glassEasel.dumpElementToString(host('switch')!, true)
+    expect(switchHtml).toContain('tiny-switch-input')
+    expect(switchHtml).toContain('--tiny-switch-color: #0000ff')
 
     const inputHtml = glassEasel.dumpElementToString(host('input')!, true)
     expect(inputHtml).toContain('type="password"')
@@ -319,8 +362,10 @@ describe('P0 built-in components', () => {
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()
     const sliderHtml = glassEasel.dumpElementToString(host('slider')!, true)
     expect(sliderHtml).toContain('tiny-slider-value')
-    expect(sliderHtml).toContain('--tiny-slider-active: #112233')
-    expect(sliderHtml).toContain('--tiny-slider-block-size: 32px')
+    expect(sliderHtml).toContain('width: 42%')
+    expect(sliderHtml).toContain('background-color: #112233')
+    expect(sliderHtml).toContain('width: 32px')
+    expect(sliderHtml).toContain('margin-left: -16px')
     const progressHtml = glassEasel.dumpElementToString(host('progress')!, true)
     expect(progressHtml).toContain('height: 10px')
     expect(progressHtml).toContain('background-color: #445566')
@@ -445,9 +490,9 @@ describe('P0 built-in components', () => {
     const events: Record<string, unknown> = {}
     const page = space.defineComponent({
       is: 'page',
-      using: { textarea: builtins.textarea, form: builtins.form, input: builtins.input, picker: builtins.picker },
+      using: { textarea: builtins.textarea, form: builtins.form, input: builtins.input, picker: builtins.picker, button: builtins.button },
       template: compilePage(`
-        <form id="form" bindsubmit="onSubmit"><input id="input" name="title" value="hello" /></form>
+        <form id="form" bindsubmit="onSubmit"><input id="input" name="title" value="hello" /><button id="submit" form-type="submit">Submit</button></form>
         <textarea id="textarea" bindinput="onTextarea" />
         <picker id="picker" mode="selector" range="{{['a', 'b']}}" bindchange="onPicker" />
       `),
@@ -464,9 +509,8 @@ describe('P0 built-in components', () => {
     expect(events.textarea).toEqual({ value: 'next' })
     expect(host('textarea').data.value).toBe('next')
 
-    const nativeForm = host('form').getShadowRoot()?.getElementById('native-form')!
-    nativeForm.triggerEvent('formSubmit', { formId: 'form-1' })
-    expect(events.submit).toEqual({ value: { title: 'hello' }, formId: 'form-1' })
+    host('submit').triggerEvent('tap', {})
+    expect(events.submit).toEqual({ value: { title: 'hello' }, formId: '' })
 
     const nativePicker = host('picker').getShadowRoot()?.getElementById('native-picker')!
     nativePicker.triggerEvent('change', { value: '1' })

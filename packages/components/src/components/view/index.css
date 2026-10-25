@@ -1,7 +1,7 @@
-.tiny-view {
+tiny-view {
   display: block;
   box-sizing: border-box;
 }
-.tiny-view.is-inline {
+tiny-view[inline] {
   display: inline-block;
 }

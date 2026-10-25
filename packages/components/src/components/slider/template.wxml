@@ -1,19 +1,41 @@
 <view
-  class="tiny-slider-wrapper {{hidden ? 'tiny-hidden' : ''}} class"
-  style="--tiny-slider-active: {{activeColor || selectedColor}}; --tiny-slider-bg: {{backgroundColor || color}}; --tiny-slider-block: {{blockColor}}; --tiny-slider-block-size: {{blockSize}}px;"
+  class="tiny-slider-wrapper {{disabled ? 'is-disabled' : ''}}"
+  role="slider"
+  aria-label="{{ariaLabel}}"
+  aria-valuemin="{{min}}"
+  aria-valuemax="{{max}}"
+  aria-valuenow="{{displayValue}}"
+  aria-disabled="{{disabled}}"
 >
-  <input
-    id="native-input"
-    class="tiny-slider"
-    aria-label="{{ariaLabel}}"
-    type="range"
-    min="{{min}}"
-    max="{{max}}"
-    step="{{step}}"
-    value="{{value}}"
-    disabled="{{disabled}}"
-    catchinput="handleChanging"
-    catchchange="handleChange"
-  />
-  <text wx:if="{{showValue}}" class="tiny-slider-value">{{value}}</text>
+  <view class="tiny-slider-tap-area">
+    <view
+      class="tiny-slider-handle-wrapper"
+      style="background-color: {{backgroundColor || color}};"
+    >
+      <view
+        class="tiny-slider-track"
+        style="width: {{percent}}%; background-color: {{activeColor || selectedColor}};"
+      ></view>
+      <view
+        class="tiny-slider-thumb"
+        style="left: {{percent}}%; width: {{blockSize}}px; height: {{blockSize}}px; margin-left: {{blockOffset}}px; margin-top: {{blockOffset}}px; background-color: {{blockColor}};"
+      ></view>
+      <view class="tiny-slider-handle" style="left: {{percent}}%;"></view>
+      <view class="tiny-slider-step"></view>
+      <input
+        id="native-input"
+        class="tiny-slider"
+        aria-label="{{ariaLabel}}"
+        type="range"
+        min="{{min}}"
+        max="{{max}}"
+        step="{{step}}"
+        value="{{displayValue}}"
+        disabled="{{disabled}}"
+        catchinput="handleChanging"
+        catchchange="handleChange"
+      />
+    </view>
+  </view>
+  <text wx:if="{{showValue}}" class="tiny-slider-value">{{displayValue}}</text>
 </view>

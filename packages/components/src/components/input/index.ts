@@ -26,10 +26,8 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
       selectionEnd: { type: Number, value: -1 },
       adjustPosition: { type: Boolean, value: true },
       holdKeyboard: { type: Boolean, value: false },
-      style: { type: String, value: '' },
     },
-    externalClasses: ['class'],
-    options: { virtualHost: true },
+    options: ctx.hostOptions(),
     methods: {
       handleInput(event: glassEasel.ShadowedEvent<unknown>) {
         const detail = (event.detail ?? {}) as { value?: unknown; cursor?: unknown; keyCode?: unknown }

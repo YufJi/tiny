@@ -1,6 +1,1 @@
-<view
-  class="tiny-checkbox-group {{hidden ? 'tiny-hidden' : ''}} class"
-  style="{{style}}"
-  catchchange="handleChange"
-  catchcheckboxstate="handleState"
-><slot /></view>
+<slot />

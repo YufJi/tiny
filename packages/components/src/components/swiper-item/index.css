@@ -1,13 +1,7 @@
-.tiny-swiper-item {
+tiny-swiper-item {
   display: block;
   box-sizing: border-box;
-}
-.tiny-swiper-item {
-  flex: 0 0 100%;
-  width: 100%;
-  height: 100%;
-}
-.tiny-swiper-item {
   flex: 0 0 calc(100% / var(--tiny-swiper-items, 1));
   width: calc(100% / var(--tiny-swiper-items, 1));
+  height: 100%;
 }

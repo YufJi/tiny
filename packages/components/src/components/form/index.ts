@@ -1,4 +1,5 @@
 import type * as glassEasel from 'glass-easel'
+import { bindHostListeners, unbindHostListeners } from '../../behaviors'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 
 type FormControl = {
@@ -17,10 +18,19 @@ export function defineForm(ctx: BuiltinContext): BuiltinDefinition {
     properties: {
       reportSubmit: { type: Boolean, value: false },
       reportSubmitTimeout: { type: Number, value: 0 },
-      style: { type: String, value: '' },
     },
-    externalClasses: ['class'],
-    options: { multipleSlots: true, virtualHost: true },
+    options: ctx.hostOptions({ multipleSlots: true }),
+    lifetimes: {
+      created() {
+        bindHostListeners(this, {
+          formSubmit: (event) => this.handleSubmit(event),
+          formReset: (event) => this.handleReset(event),
+        })
+      },
+      detached() {
+        unbindHostListeners(this)
+      },
+    },
     methods: {
       collectControls(nodes: unknown[] | undefined, value: Record<string, unknown>): void {
         for (const node of nodes ?? []) {
@@ -40,12 +50,14 @@ export function defineForm(ctx: BuiltinContext): BuiltinDefinition {
         }
       },
       handleSubmit(event: glassEasel.ShadowedEvent<unknown>) {
+        event.stopPropagation()
         const value: Record<string, unknown> = {}
         this.collectControls((this as unknown as { childNodes?: unknown[] }).childNodes, value)
         const detail = event.detail as { formId?: string } | undefined
         this.triggerEvent('submit', { value, formId: detail?.formId ?? '' }, { bubbles: true, composed: true })
       },
-      handleReset() {
+      handleReset(event: glassEasel.ShadowedEvent<unknown>) {
+        event.stopPropagation()
         this.resetControls((this as unknown as { childNodes?: unknown[] }).childNodes)
         this.triggerEvent('reset', {}, { bubbles: true, composed: true })
       },

@@ -20,7 +20,6 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
       disabled: { type: Boolean, value: false },
       headerText: { type: String, value: '' },
       customItem: { type: String, value: '' },
-      style: { type: String, value: '' },
     },
     data: {
       options: [] as PickerOption[],
@@ -35,6 +34,7 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
         this.syncOptions()
       },
     },
+    options: ctx.hostOptions(),
     methods: {
       syncOptions() {
         const range = Array.isArray(this.data.range) ? this.data.range : []

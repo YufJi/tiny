@@ -1,12 +1,81 @@
-.tiny-switch {
-  display: block;
-  box-sizing: border-box;
-}
-.tiny-switch {
+tiny-switch {
+  -webkit-tap-highlight-color: transparent;
   display: inline-block;
   vertical-align: middle;
 }
-.tiny-switch input {
-  margin: 0;
+
+.tiny-switch-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
   vertical-align: middle;
+  cursor: pointer;
+}
+
+.tiny-switch-wrapper.is-disabled {
+  cursor: default;
+}
+
+.tiny-switch-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.tiny-switch-input {
+  position: relative;
+  flex: none;
+  width: 52px;
+  height: 32px;
+  margin-right: 5px;
+  border: 1px solid #dfdfdf;
+  border-radius: 16px;
+  background-color: #dfdfdf;
+  box-sizing: border-box;
+  transition: background-color 0.1s, border 0.1s;
+}
+
+.tiny-switch-input::before {
+  content: " ";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50px;
+  height: 30px;
+  border-radius: 15px;
+  background-color: #fdfdfd;
+  transition: transform 0.3s;
+}
+
+.tiny-switch-input::after {
+  content: " ";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: transform 0.3s;
+}
+
+.tiny-switch-input.is-checked {
+  border-color: var(--tiny-switch-color, #04be02);
+  background-color: var(--tiny-switch-color, #04be02);
+}
+
+.tiny-switch-input.is-checked::before {
+  transform: scale(0);
+}
+
+.tiny-switch-input.is-checked::after {
+  transform: translateX(20px);
 }

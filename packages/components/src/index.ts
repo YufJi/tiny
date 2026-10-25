@@ -70,11 +70,20 @@ export function createBuiltinComponents(
   options: BuiltinComponentFactoryOptions = {},
 ): BuiltinComponentDefinitions {
   const definitions = {} as BuiltinComponentDefinitions
+  // Built-ins own a real host node, but stay in the engine's `tiny-`
+  // namespace instead of impersonating WeChat's internal `wx-*` elements.
+  const hostTagPrefix = 'tiny-'
   const context: BuiltinContext = {
     space,
     options,
     template: builtinTemplate,
     behaviors: createBuiltinBehaviors(space, { prefix: options.prefix }),
+    hostOptions: (extra = {}) => ({
+      virtualHost: false,
+      hostNodeTagName: `${hostTagPrefix}*`,
+      reflectToAttributes: true,
+      ...extra,
+    }),
   }
   for (const tag of BUILTIN_COMPONENT_TAGS) {
     definitions[tag] = DEFINITION_FACTORIES[tag](context)

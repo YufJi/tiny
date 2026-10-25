@@ -13,10 +13,8 @@ export function definePickerView(ctx: BuiltinContext): BuiltinDefinition {
       indicatorClass: { type: String, value: '' },
       maskStyle: { type: String, value: '' },
       maskClass: { type: String, value: '' },
-      style: { type: String, value: '' },
     },
-    externalClasses: ['class'],
-    options: { multipleSlots: true, virtualHost: true },
+    options: ctx.hostOptions({ multipleSlots: true }),
     methods: {
       handleColumnChange(event: glassEasel.ShadowedEvent<unknown>) {
         const detail = (event.detail ?? {}) as { column?: unknown; value?: unknown }

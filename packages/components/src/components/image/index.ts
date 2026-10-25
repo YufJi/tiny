@@ -17,12 +17,10 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
       backgroundSize: { type: String, value: '100% 100%' },
       backgroundPosition: { type: String, value: '' },
       backgroundRepeat: { type: String, value: 'no-repeat' },
-      style: { type: String, value: '' },
     },
     data: {
       resolvedSrc: '',
     },
-    externalClasses: ['class'],
     observers: {
       src() {
         this.updateResolvedSrc()
@@ -36,6 +34,7 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
         this.updateResolvedSrc()
       },
     },
+    options: ctx.hostOptions(),
     methods: {
       updateResolvedSrc() {
         const src = typeof this.data.src === 'string' ? this.data.src : ''

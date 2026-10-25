@@ -1,4 +1,5 @@
 import type * as glassEasel from 'glass-easel'
+import { findAncestorWithBehavior } from '../../behaviors'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { booleanFromEvent } from '../../events'
 
@@ -14,12 +15,17 @@ export function defineRadio(ctx: BuiltinContext): BuiltinDefinition {
       disabled: { type: Boolean, value: false },
       color: { type: String, value: '#09BB07' },
     },
-    externalClasses: ['class'],
+    options: ctx.hostOptions(),
     methods: {
       handleChange(event: glassEasel.ShadowedEvent<unknown>) {
         const checked = booleanFromEvent(event, this.data.checked as boolean)
+        const value = this.data.value as string
         this.setData({ checked })
-        this.triggerEvent('change', { value: this.data.value, checked }, { bubbles: true, composed: true })
+        const group = findAncestorWithBehavior(this, 'wx-group') as
+          | { handleItemChange?: (detail: { value?: unknown; checked?: unknown }) => void }
+          | null
+        group?.handleItemChange?.({ value, checked })
+        this.triggerEvent('change', { value, checked }, { bubbles: false, composed: true })
       },
     },
   }).general()

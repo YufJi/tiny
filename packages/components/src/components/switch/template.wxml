@@ -1,12 +1,15 @@
-<label class="tiny-switch {{checked ? 'is-checked' : ''}} {{hidden ? 'tiny-hidden' : ''}} class">
+<label class="tiny-switch-wrapper {{disabled ? 'is-disabled' : ''}}">
   <input
     id="native-input"
+    class="tiny-switch-native"
     aria-label="{{ariaLabel}}"
-    style="accent-color: {{color}};"
     type="checkbox"
     checked="{{checked}}"
     disabled="{{disabled}}"
     catchchange="handleChange"
   />
-  <view class="tiny-switch-control" />
+  <span
+    class="tiny-switch-input {{checked ? 'is-checked' : ''}} {{disabled ? 'is-disabled' : ''}}"
+    style="--tiny-switch-color: {{color}};"
+  ></span>
 </label>

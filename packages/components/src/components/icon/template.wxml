@@ -1,5 +1,5 @@
 <text
-  class="tiny-icon tiny-icon-{{type}} {{hidden ? 'tiny-hidden' : ''}} class"
+  class="tiny-icon tiny-icon-{{type}}"
   aria-label="{{ariaLabel}}"
   style="font-size: {{size}}px; color: {{color}};"
 >{{glyph}}</text>

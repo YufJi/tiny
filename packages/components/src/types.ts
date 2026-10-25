@@ -20,6 +20,17 @@ export type BuiltinContext = {
   options: BuiltinComponentFactoryOptions
   template: (tag: BuiltinComponentTag) => glassEasel.template.ComponentTemplate
   behaviors: BuiltinBehaviors
+  /**
+   * Build the options for a built-in component definition.
+   *
+   * Every built-in is a real host node (`virtualHost: false`) named
+   * `tiny-<tag>` (`tiny-view`, `tiny-text`, …), and reflects its public
+   * properties to the host as attributes so host CSS such as
+   * `tiny-button[type=primary]` and `tiny-view[hidden]` keeps working.
+   * The `tiny-` namespace is deliberate: built-ins must not impersonate
+   * WeChat's internal `wx-*` elements.
+   */
+  hostOptions: (extra?: glassEasel.ComponentOptions) => glassEasel.ComponentOptions
 }
 
 export type BuiltinDefinition = glassEasel.GeneralComponentDefinition

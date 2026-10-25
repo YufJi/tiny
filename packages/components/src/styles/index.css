@@ -1,10 +1,31 @@
-page {
-  display: block;
-  box-sizing: border-box;
-}
-page {
-  min-height: 100vh;
-}
-.tiny-hidden {
-  display: none !important;
+/*
+ * Real built-in hosts. `hidden` is reflected from the `hidden` property to a
+ * host attribute, so the host rules below must beat the component display
+ * rules (an author `display: block` overrides the UA `[hidden]` rule).
+ * Keep this list in sync with BUILTIN_COMPONENT_TAGS.
+ */
+tiny-view[hidden],
+tiny-text[hidden],
+tiny-label[hidden],
+tiny-button[hidden],
+tiny-checkbox[hidden],
+tiny-checkbox-group[hidden],
+tiny-radio[hidden],
+tiny-radio-group[hidden],
+tiny-switch[hidden],
+tiny-slider[hidden],
+tiny-input[hidden],
+tiny-textarea[hidden],
+tiny-form[hidden],
+tiny-picker[hidden],
+tiny-picker-view[hidden],
+tiny-picker-view-column[hidden],
+tiny-scroll-view[hidden],
+tiny-swiper[hidden],
+tiny-swiper-item[hidden],
+tiny-progress[hidden],
+tiny-image[hidden],
+tiny-icon[hidden],
+tiny-canvas[hidden] {
+  display: none;
 }

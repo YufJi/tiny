@@ -23,9 +23,7 @@ export function defineCanvas(ctx: BuiltinContext): BuiltinDefinition {
       canvasId: { type: String, value: '' },
       type: { type: String, value: '' },
       disableScroll: { type: Boolean, value: false },
-      style: { type: String, value: '' },
     },
-    externalClasses: ['class'],
     lifetimes: {
       created() {
         ctx.options.onDiagnostic?.({
@@ -76,6 +74,6 @@ export function defineCanvas(ctx: BuiltinContext): BuiltinDefinition {
         this.triggerEvent('error', event.detail ?? {}, { bubbles: true, composed: true })
       },
     },
-    options: { virtualHost: true },
+    options: ctx.hostOptions(),
   }).general()
 }

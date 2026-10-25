@@ -7,9 +7,7 @@ export function defineLabel(ctx: BuiltinContext): BuiltinDefinition {
     behaviors: [ctx.behaviors.base],
     properties: {
       for: { type: String, value: '' },
-      style: { type: String, value: '' },
     },
-    externalClasses: ['class'],
-    options: { multipleSlots: true, virtualHost: true },
+    options: ctx.hostOptions({ multipleSlots: true }),
   }).general()
 }

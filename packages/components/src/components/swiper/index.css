@@ -1,11 +1,12 @@
-.tiny-swiper {
+tiny-swiper {
   display: block;
   box-sizing: border-box;
+  height: 150px;
 }
 .tiny-swiper {
   position: relative;
   overflow: hidden;
-  height: 150px;
+  height: 100%;
 }
 .tiny-swiper-track {
   display: flex;
@@ -35,8 +36,8 @@
   justify-content: center;
 }
 .tiny-swiper-dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.4);
 }
@@ -45,8 +46,4 @@
 }
 .tiny-swiper {
   --tiny-swiper-items: 1;
-}
-.tiny-swiper-dot {
-  width: 8px;
-  height: 8px;
 }

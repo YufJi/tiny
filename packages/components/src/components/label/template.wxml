@@ -1,13 +1,11 @@
 <label
   wx:if="{{for}}"
   id="native-label"
-  class="tiny-label {{hidden ? 'tiny-hidden' : ''}} class"
-  style="{{style}}"
+  class="tiny-label"
   for="{{for}}"
 ><slot /></label>
 <label
   wx:else
   id="native-label"
-  class="tiny-label {{hidden ? 'tiny-hidden' : ''}} class"
-  style="{{style}}"
+  class="tiny-label"
 ><slot /></label>

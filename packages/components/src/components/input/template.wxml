@@ -1,7 +1,6 @@
 <input
   id="native-input"
-  class="tiny-input {{hidden ? 'tiny-hidden' : ''}} class {{placeholderClass}}"
-  style="{{style}}"
+  class="tiny-input {{placeholderClass}}"
   value="{{value}}"
   placeholder="{{placeholder}}"
   disabled="{{disabled}}"

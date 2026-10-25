@@ -1,8 +1,4 @@
-.tiny-button {
-  display: block;
-  box-sizing: border-box;
-}
-.tiny-button {
+tiny-button {
   position: relative;
   display: block;
   width: 100%;
@@ -28,7 +24,7 @@
   background-color: #f8f8f8;
   cursor: pointer;
 }
-.tiny-button::after {
+tiny-button::after {
   content: " ";
   position: absolute;
   top: 0;
@@ -42,66 +38,68 @@
   transform: scale(0.5);
   transform-origin: 0 0;
 }
-.tiny-button:disabled {
+tiny-button[disabled] {
   color: rgba(255, 255, 255, 0.6);
   opacity: 1;
   cursor: default;
+  pointer-events: none;
 }
-.tiny-button-default {
+tiny-button[type=default] {
   color: #000000;
   background-color: #f8f8f8;
 }
-.tiny-button-primary {
+tiny-button[type=primary] {
   color: #ffffff;
   background-color: #1aad19;
 }
-.tiny-button-warn {
+tiny-button[type=warn] {
   color: #ffffff;
   background-color: #e64340;
 }
-.tiny-button-default:disabled {
+tiny-button[type=default][disabled],
+tiny-button[disabled]:not([type]) {
   color: rgba(0, 0, 0, 0.3);
   background-color: #f7f7f7;
 }
-.tiny-button-primary:disabled {
+tiny-button[type=primary][disabled] {
   background-color: #9ed99d;
 }
-.tiny-button-warn:disabled {
+tiny-button[type=warn][disabled] {
   background-color: #ec8b89;
 }
-.tiny-button-plain {
+tiny-button[plain] {
   color: #353535;
   border: 1px solid #353535;
   background-color: transparent;
 }
-.tiny-button-plain::after {
+tiny-button[plain]::after {
   border-width: 0;
 }
-.tiny-button-default.tiny-button-plain {
+tiny-button[type=default][plain] {
   color: #353535;
   border-color: #353535;
 }
-.tiny-button-primary.tiny-button-plain {
+tiny-button[type=primary][plain] {
   color: #1aad19;
   border-color: #1aad19;
 }
-.tiny-button-warn.tiny-button-plain {
+tiny-button[type=warn][plain] {
   color: #e64340;
   border-color: #e64340;
 }
-.tiny-button-plain:disabled {
+tiny-button[plain][disabled] {
   color: rgba(0, 0, 0, 0.2);
   border-color: rgba(0, 0, 0, 0.2);
   background-color: transparent;
 }
-.tiny-button-mini {
+tiny-button[size=mini] {
   display: inline-block;
   width: auto;
   padding: 0 1.34em;
   font-size: 13px;
   line-height: 2.3;
 }
-.tiny-button-loading::before {
+tiny-button[loading]::before {
   content: " ";
   display: inline-block;
   width: 18px;
@@ -112,53 +110,53 @@
   background-size: 100%;
   animation: tiny-button-loading-animate 1s steps(12, end) infinite;
 }
-.tiny-button-loading {
+tiny-button[loading] {
   color: rgba(0, 0, 0, 0.6);
   background-color: #dedede;
 }
-.tiny-button-loading.tiny-button-primary {
+tiny-button[loading][type=primary] {
   color: rgba(255, 255, 255, 0.6);
   background-color: #179b16;
 }
-.tiny-button-loading.tiny-button-warn {
+tiny-button[loading][type=warn] {
   color: rgba(255, 255, 255, 0.6);
   background-color: #ce3c39;
 }
-.tiny-button-loading.tiny-button-plain {
+tiny-button[loading][plain] {
   color: #353535;
   background-color: transparent;
 }
-.tiny-button-loading.tiny-button-default.tiny-button-plain {
+tiny-button[loading][type=default][plain] {
   color: #353535;
 }
-.tiny-button-loading.tiny-button-primary.tiny-button-plain {
+tiny-button[loading][type=primary][plain] {
   color: #1aad19;
 }
-.tiny-button-loading.tiny-button-warn.tiny-button-plain {
+tiny-button[loading][type=warn][plain] {
   color: #e64340;
 }
-.button-hover {
+tiny-button.button-hover {
   color: rgba(0, 0, 0, 0.6);
   background-color: #dedede;
 }
-.button-hover.tiny-button-primary {
+tiny-button.button-hover[type=primary] {
   color: rgba(255, 255, 255, 0.6);
   background-color: #179b16;
 }
-.button-hover.tiny-button-warn {
+tiny-button.button-hover[type=warn] {
   color: rgba(255, 255, 255, 0.6);
   background-color: #ce3c39;
 }
-.button-hover.tiny-button-plain {
+tiny-button.button-hover[plain] {
   color: rgba(53, 53, 53, 0.6);
   border-color: rgba(53, 53, 53, 0.6);
   background-color: transparent;
 }
-.button-hover.tiny-button-primary.tiny-button-plain {
+tiny-button.button-hover[type=primary][plain] {
   color: rgba(26, 173, 25, 0.6);
   border-color: rgba(26, 173, 25, 0.6);
 }
-.button-hover.tiny-button-warn.tiny-button-plain {
+tiny-button.button-hover[type=warn][plain] {
   color: rgba(230, 67, 64, 0.6);
   border-color: rgba(230, 67, 64, 0.6);
 }

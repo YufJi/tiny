@@ -1,6 +1,5 @@
 <img
-  class="tiny-image tiny-image-mode-{{mode}} {{hidden ? 'tiny-hidden' : ''}} class"
-  style="{{style}}"
+  class="tiny-image tiny-image-mode-{{mode}}"
   src="{{resolvedSrc}}"
   alt="{{ariaLabel}}"
   loading="{{lazyLoad ? 'lazy' : 'eager'}}"

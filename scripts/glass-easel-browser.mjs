@@ -77,21 +77,21 @@ export async function runBrowserAcceptance({ baseUrl }) {
       const html = await render.locator('#app').evaluate((element) => element.innerHTML)
       assert.ok(html.length > 0, 'rendered app is empty')
       for (const selector of [
-        '.tiny-scroll-view',
-        '.tiny-button',
-        '.tiny-checkbox',
-        '.tiny-slider',
-        '.tiny-switch',
-        '.tiny-progress',
-        '.tiny-icon',
-        '.tiny-swiper',
-        '.tiny-swiper-item',
-        '.tiny-image',
-        '.tiny-canvas',
+        'tiny-scroll-view',
+        'tiny-button',
+        'tiny-checkbox',
+        'tiny-slider',
+        'tiny-switch',
+        'tiny-progress',
+        'tiny-icon',
+        'tiny-swiper',
+        'tiny-swiper-item',
+        'tiny-image',
+        'tiny-canvas',
       ]) {
         assert.ok((await render.locator(selector).count()) > 0, `missing rendered element: ${selector}`)
       }
-      assert.equal(await render.locator('.tiny-swiper-item').count(), 2, 'swiper should render two items')
+      assert.equal(await render.locator('tiny-swiper-item').count(), 2, 'swiper should render two items')
       assert.equal(await render.locator('input.tiny-slider').inputValue(), '20')
       assert.match(await render.locator('.tiny-progress-info').innerText(), /^20%$/)
       assert.equal((await render.locator('.tiny-icon').innerText()).trim(), '✓')
@@ -99,6 +99,49 @@ export async function runBrowserAcceptance({ baseUrl }) {
         (element) => element.naturalWidth > 0,
       )
       assert.ok(imageLoaded, 'inlined image did not load')
+
+      const checkboxMetrics = await render.locator('tiny-checkbox .tiny-checkbox-input').first().evaluate((element) => {
+        const style = getComputedStyle(element)
+        const check = getComputedStyle(element, '::before')
+        return {
+          width: style.width,
+          height: style.height,
+          borderWidth: style.borderTopWidth,
+          checkContent: check.content,
+        }
+      })
+      assert.deepEqual(
+        [checkboxMetrics.width, checkboxMetrics.height, checkboxMetrics.borderWidth],
+        ['22px', '22px', '1px'],
+        'checkbox visual structure does not match WeChat',
+      )
+      assert.notEqual(checkboxMetrics.checkContent, 'none', 'checked checkbox should draw a check mark')
+
+      const switchMetrics = await render.locator('tiny-switch .tiny-switch-input').first().evaluate((element) => {
+        const style = getComputedStyle(element)
+        const knob = getComputedStyle(element, '::after')
+        return { width: style.width, height: style.height, radius: style.borderTopLeftRadius, knobWidth: knob.width }
+      })
+      assert.deepEqual(
+        [switchMetrics.width, switchMetrics.height, switchMetrics.radius, switchMetrics.knobWidth],
+        ['52px', '32px', '16px', '30px'],
+        'switch visual structure does not match WeChat',
+      )
+
+      const sliderMetrics = await render.locator('tiny-slider').first().evaluate((element) => {
+        const track = element.querySelector('.tiny-slider-track')
+        const thumb = element.querySelector('.tiny-slider-thumb')
+        return {
+          trackHeight: track ? getComputedStyle(track).height : '',
+          thumbWidth: thumb ? getComputedStyle(thumb).width : '',
+          thumbRadius: thumb ? getComputedStyle(thumb).borderTopLeftRadius : '',
+        }
+      })
+      assert.deepEqual(
+        [sliderMetrics.trackHeight, sliderMetrics.thumbWidth, sliderMetrics.thumbRadius],
+        ['2px', '28px', '50%'],
+        'slider visual structure does not match WeChat',
+      )
       assert.ok((await text()).includes('Learn glass-easel'), 'todos list did not render')
       assert.ok((await text()).includes('Run P0 acceptance'), 'todos list did not render')
       assert.equal(await render.locator('input[type="checkbox"]').first().isChecked(), true)
@@ -123,7 +166,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.ok(card.paddingTop > 0, 'scoped card padding did not apply')
       assert.equal(card.borderTopWidth, '1px', 'scoped card border did not apply')
 
-      const scrollPadding = await render.locator('.tiny-scroll-view').evaluate(
+      const scrollPadding = await render.locator('tiny-scroll-view').evaluate(
         (element) => Number.parseFloat(getComputedStyle(element).paddingTop),
       )
       assert.ok(scrollPadding > 0, 'scoped page padding did not apply')
@@ -147,7 +190,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
       currentStep = 'dispatch a custom component event through a slot'
       assert.equal(await render.locator('add-button').count(), 1, 'add-button component did not render')
       assert.ok(((await render.locator('add-button').innerText()) ?? '').includes('Custom slot'), 'slot content missing')
-      await render.locator('add-button .tiny-button').click()
+      await render.locator('add-button tiny-button').click()
       await waitForText('custom: Add')
     })
 
@@ -177,7 +220,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
 
     await step('update page data from a switch change', async () => {
       currentStep = 'update page data from a switch change'
-      await render.locator('switch input[type="checkbox"]').click()
+      await render.locator('tiny-switch').first().click()
       await waitForText('switch: true')
     })
 
@@ -247,7 +290,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
     await step('render WeChat button variants', async () => {
       currentStep = 'render WeChat button variants'
       await waitForText('WeChat button variants')
-      const buttonByText = (text) => render.locator('button.tiny-button').filter({ hasText: text }).first()
+      const buttonByText = (text) => render.locator('tiny-button').filter({ hasText: text }).first()
       const styleOf = (text) => buttonByText(text).evaluate((element) => {
         const style = getComputedStyle(element)
         return {
@@ -412,13 +455,13 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       }
       assert.equal(await render.locator('add-button').count(), 2, 'both add-button instances should render')
       assert.ok(body.includes('i am slot'), 'component slot content did not render')
-      for (const selector of ['.tiny-checkbox', '.tiny-slider', '.tiny-progress', '.tiny-switch', '.tiny-swiper', '.tiny-canvas']) {
+      for (const selector of ['tiny-checkbox', 'tiny-slider', 'tiny-progress', 'tiny-switch', 'tiny-swiper', 'tiny-canvas']) {
         assert.ok((await render.locator(selector).count()) > 0, `missing rendered element: ${selector}`)
       }
       const background = await render.locator('page').evaluate((element) => getComputedStyle(element).backgroundColor)
       assert.equal(background, 'rgb(50, 50, 57)', 'app.wxss page rule did not apply to the real app')
 
-      const avatar = render.locator('img').first()
+      const avatar = render.locator('tiny-image').first()
       assert.ok(
         ((await avatar.getAttribute('class')) ?? '').includes('tiny-pages-todos-todos--avatar'),
         'external class was not scoped to the page',
@@ -432,16 +475,16 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
     await step('drive the existing todos page interactions', async () => {
       currentStep = 'drive the existing todos page interactions'
       await render.waitForFunction(() => document.querySelector('img')?.naturalWidth > 0, null, { timeout: STEP_TIMEOUT })
-      assert.equal(await render.locator('label[class*="--todo-item"][class*="--checked"]').count(), 2, 'initial checked todos are wrong')
+      assert.equal(await render.locator('tiny-label[class*="--todo-item"][class*="--checked"]').count(), 2, 'initial checked todos are wrong')
 
       await render.getByText('Learning 小程序', { exact: true }).click()
       await render.waitForFunction(
-        () => document.querySelectorAll('label[class*="--todo-item"][class*="--checked"]').length === 3,
+        () => document.querySelectorAll('tiny-label[class*="--todo-item"][class*="--checked"]').length === 3,
         null,
         { timeout: STEP_TIMEOUT },
       )
 
-      const componentButton = render.locator('add-button .tiny-button').first()
+      const componentButton = render.locator('add-button tiny-button').first()
       assert.ok(
         ((await componentButton.getAttribute('class')) ?? '').includes('tiny-components-add-button-add-button--add-button'),
         'component class was not scoped to the component',
@@ -455,19 +498,19 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       assert.ok(componentButtonStyle.radius > 15, 'component tag selector did not apply')
       assert.equal(componentButtonStyle.spacing, 'normal', 'page tag selector leaked into the component')
 
-      const pageButton = render.locator('button').filter({ hasText: 'nav' }).first()
+      const pageButton = render.locator('tiny-button').filter({ hasText: 'nav' }).first()
       const pageButtonSpacing = await pageButton.evaluate((element) => getComputedStyle(element).letterSpacing)
       assert.equal(pageButtonSpacing, '2px', 'page tag selector did not apply')
 
-      await render.locator('add-button').first().locator('button').first().click()
+      await render.locator('add-button').first().locator('tiny-button').first().click()
       await render.waitForFunction(
         () => (document.querySelector('#app')?.innerText ?? '').includes('def'),
         null,
         { timeout: STEP_TIMEOUT },
       )
 
-      await render.locator('switch').first().locator('input[type="checkbox"]').click()
-      assert.equal(await render.locator('switch').first().locator('input[type="checkbox"]').isChecked(), true)
+      await render.locator('tiny-switch').first().click()
+      assert.equal(await render.locator('tiny-switch').first().locator('input[type="checkbox"]').isChecked(), true)
 
       await render.locator('input.tiny-slider').nth(1).evaluate((element) => {
         element.value = '1500'
@@ -484,7 +527,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
         { timeout: STEP_TIMEOUT },
       )
 
-      assert.equal(await render.locator('radio input[type="radio"]').isChecked(), true, 'radio is not checked')
+      assert.equal(await render.locator('tiny-radio input[type="radio"]').isChecked(), true, 'radio is not checked')
       assert.ok((await render.locator('.tiny-icon-success_no_circle').count()) > 0, 'icon type was not applied')
 
       const swiper = render.locator('.tiny-swiper')
@@ -496,7 +539,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
         { timeout: STEP_TIMEOUT },
       )
 
-      const animated = await render.evaluate(() => [...document.querySelectorAll('view')].some((element) => {
+      const animated = await render.evaluate(() => [...document.querySelectorAll('tiny-view, view')].some((element) => {
         const style = element.getAttribute('style') ?? ''
         return style.includes('transition: all') && getComputedStyle(element).transform !== 'none'
       }))
@@ -505,7 +548,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
 
     await step('render WXML import/include and named templates', async () => {
       currentStep = 'render WXML import/include and named templates'
-      await render.locator('add-button').nth(1).locator('button').first().click()
+      await render.locator('add-button').nth(1).locator('tiny-button').first().click()
       await waitForText('capture-catch:tap')
       const body = await text()
       assert.ok(body.includes('include'), 'include content did not render')
@@ -534,7 +577,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
         null,
         { timeout: STEP_TIMEOUT },
       )
-      const canvasClass = (await render.locator('canvas').first().getAttribute('class')) ?? ''
+      const canvasClass = (await render.locator('tiny-canvas').first().getAttribute('class')) ?? ''
       assert.ok(
         canvasClass.includes('tiny-components-ec-canvas-ec-canvas--ec-canvas'),
         'component canvas class was not scoped',
@@ -664,7 +707,7 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
         null,
         { timeout: STEP_TIMEOUT },
       )
-      assert.ok((await render.locator('button').count()) > 0, 'component buttons did not render')
+      assert.ok((await render.locator('tiny-button').count()) > 0, 'component buttons did not render')
     })
 
     await step('render an API example page', async () => {
@@ -758,7 +801,7 @@ export async function runTaroAcceptance({ baseUrl }) {
 
     await step('toggle and filter Taro todos', async () => {
       currentStep = 'toggle and filter Taro todos'
-      await render.locator('input[type="checkbox"]').first().click()
+      await render.locator('tiny-checkbox').first().click()
       await waitForText('1 item left')
       await render.getByText('Active', { exact: true }).click()
       await waitForText('Taro item')

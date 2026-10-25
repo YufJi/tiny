@@ -124,6 +124,8 @@
 **已实现组件**（[tags.ts](../packages/components/src/tags.ts:1)）：
 `view`、`text`、`button`、`label`、`input`、`checkbox`、`checkbox-group`、`radio`、`radio-group`、`icon`、`image`、`scroll-view`、`slider`、`progress`、`switch`、`swiper`、`swiper-item`、`canvas`、`textarea`、`form`、`picker`、`picker-view`、`picker-view-column`。
 
+> 逐组件的结构/样式/逻辑差异与修复方案见 [component-reference-diff.md](./component-reference-diff.md)。
+
 **属性/事件覆盖**（仅统计 WebView 适用属性；事件按组件文档属性表中的 `bind*`/`catch*` 条目统计，不含 `tap`/`longpress` 等通用事件）：
 
 | 组件 | 文档属性 | 已支持 | 文档事件 | 已支持 | 主要缺口 |
@@ -506,8 +508,11 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-25 | 第八次同步：新增 textarea/form/picker 三个常用内置标签（form 收集、picker selector/date/time、textarea 事件）；内置组件 36→38；151 单测 | **36.92%** |
 | 2026-10-25 | 第九次同步：补主题/键盘监听、getUserProfile/getUserInfo、tabBar/导航栏/pageScrollTo、hideToast、getFileSystemManager 等高频 API 面；API 8→12%；151 单测 | **37.72%** |
 | 2026-10-25 | 第十次同步：新增 picker-view / picker-view-column（滚动列、columnchange、value 数组）；格式化 WXML 模板；内置组件 38→39；152 单测 | **37.89%** |
+| 2026-10-25 | 审计与方案：新增 [内置组件参考差异与修复方案](./component-reference-diff.md)，逐项对照微信 2.7.0 的结构/逻辑/CSS，并给出目标模板/CSS/TS 改造与验收清单 | **37.89%** |
 | 2026-10-25 | 修复：virtualHost 内置组件丢失 `data-*` 属性；WeChat demo 的 `[data-weui-theme]` 重新生效，深色系统下恢复浅色主题变量；新增 dark color-scheme 验收 | **37.89%** |
 | 2026-10-25 | 文档维护：移除重复且长期未同步的“进度清单”章节；缺口统一看第 7 节，变更看第 9.4 节 | **37.89%** |
+| 2026-10-25 | 宿主迁移：23 个内置组件从 `virtualHost` + 内层根迁移为真实 `tiny-*` 宿主；`class`/`style`/`id`/`data-*`/`hidden` 与属性反射落到宿主，根级 `.tiny-*` 样式上移；新增宿主事件监听与 group 子项回传；P0 + mini 浏览器验收保持通过 | **37.89%** |
+| 2026-10-25 | 视觉结构重写：checkbox/radio 改为 22×22 自定义控件，switch 改为 52×32 轨道+滑块，slider 改为自定义 track/thumb + 透明 range 交互层；保留视觉隐藏原生 input 与既有属性/事件/表单语义；新增尺寸/结构浏览器断言 | **37.89%** |
 
 ---
 

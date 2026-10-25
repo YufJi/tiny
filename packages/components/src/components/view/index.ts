@@ -6,7 +6,6 @@ export function defineView(ctx: BuiltinContext): BuiltinDefinition {
     template: ctx.template('view'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.hover],
     properties: {
-      style: { type: String, value: '' },
       inline: { type: Boolean, value: false },
       hoverClass: { type: String, value: 'none' },
       hover: { type: Boolean, value: false },
@@ -14,7 +13,6 @@ export function defineView(ctx: BuiltinContext): BuiltinDefinition {
       ariaRole: { type: String, value: '' },
       ariaLabel: { type: String, value: '' },
     },
-    externalClasses: ['class'],
-    options: { multipleSlots: true, virtualHost: true },
+    options: ctx.hostOptions({ multipleSlots: true }),
   }).general()
 }

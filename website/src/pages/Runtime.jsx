@@ -440,11 +440,11 @@ export default function Runtime() {
         <Table
           head={['组件', '当前表面', '实现方式']}
           rows={[
-            ['view / text / label', 'hover、inline、selectable、decode、space、aria；label for', 'virtualHost + slot；hover behavior'],
-            ['button', 'type/size/plain/loading/disabled、formType submit/reset、openType 事件映射、hover 时序、aria', '原生 button + form/hover behaviors；openType 未支持时发 error 事件'],
+            ['view / text / label', 'hover、inline、selectable、decode、space、aria；label for', '真实 tiny-* 宿主 + slot；hover 走宿主 touchstart 监听'],
+            ['button', 'type/size/plain/loading/disabled、formType submit/reset、openType 事件映射、hover 时序、aria', '真实 tiny-button 宿主 + 宿主 tap；form/hover behaviors；openType 未支持时发 error 事件'],
             ['input', 'value/type/password/maxlength/focus/confirm/cursor/selection/adjustPosition；input/change/focus/blur/keydown/confirm/composition/selectionchange', '原生 input + dataComponent/classPrefix behaviors'],
-            ['checkbox / radio / switch', 'checked/disabled/value/color；change/checkboxstate；group change', 'dataComponent/group/item behaviors'],
-            ['slider', 'value/min/max/step/disabled/colors/blockSize；changing/change', '原生 range + 数值归一化'],
+            ['checkbox / radio / switch', 'checked/disabled/value/color；change/checkboxstate；group change', '自定义 22×22 / 52×32 结构 + 隐藏原生 input；dataComponent/group/item behaviors'],
+            ['slider', 'value/min/max/step/disabled/colors/blockSize；changing/change', '自定义 track/thumb + 透明 range 交互层；数值归一化'],
             ['scroll-view', 'scrollX/Y、scrollTop/Left、scrollIntoView、refresher、drag/scroll 事件', 'CSS overflow + touch/scroll handlers'],
             ['swiper / swiper-item', 'current/currentItemId/indicator/autoplay/circular/vertical；change/transition/animationfinish', 'CSS transform + backend query / touch handlers'],
             ['progress / icon / image', 'percent/showInfo/active/activeMode/colors、type/size/color、src/mode/webp/background', '模板 + observers；image 转发 load/error'],

@@ -1,7 +1,6 @@
 <view
   id="native-scroll-view"
-  class="tiny-scroll-view {{scrollX ? 'is-horizontal' : ''}} {{scrollY ? 'is-vertical' : ''}} {{hidden ? 'tiny-hidden' : ''}} class"
-  style="{{style}}"
+  class="tiny-scroll-view {{scrollX ? 'is-horizontal' : ''}} {{scrollY ? 'is-vertical' : ''}}"
   bindscroll="handleScroll"
   bindtouchstart="handleTouchStart"
   bindtouchmove="handleTouchMove"

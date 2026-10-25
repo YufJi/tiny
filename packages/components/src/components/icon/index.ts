@@ -31,6 +31,6 @@ export function defineIcon(ctx: BuiltinContext): BuiltinDefinition {
         this.setData({ glyph: ICON_GLYPHS[value] ?? ICON_GLYPHS.success })
       },
     },
-    externalClasses: ['class'],
+    options: ctx.hostOptions(),
   }).general()
 }

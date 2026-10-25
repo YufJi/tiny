@@ -23,14 +23,12 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
       duration: { type: Number, value: 500 },
       circular: { type: Boolean, value: false },
       vertical: { type: Boolean, value: false },
-      style: { type: String, value: '' },
     },
     data: {
       activeIndex: 0,
       dots: [] as number[],
       trackStyle: 'transform: translateX(0%); transition-duration: 500ms;',
     },
-    externalClasses: ['class'],
     lifetimes: {
       created() {
         this.bootstrapSwiper(0)
@@ -58,6 +56,7 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
         this.restartAutoplay()
       },
     },
+    options: ctx.hostOptions(),
     methods: {
       bootstrapSwiper(attempt: number) {
         this.syncDots()
@@ -69,7 +68,7 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
       },
       syncDots() {
         const host = (this as unknown as { getBackendElement?: () => { querySelectorAll?: (selector: string) => ArrayLike<unknown> } | null }).getBackendElement?.()
-        let count = host?.querySelectorAll ? host.querySelectorAll('.tiny-swiper-item').length : 0
+        let count = host?.querySelectorAll ? host.querySelectorAll('tiny-swiper-item, .tiny-swiper-item').length : 0
         if (count === 0) {
           const children = (this as unknown as { childNodes?: unknown[] }).childNodes
           count = Array.isArray(children) ? children.length : 0
@@ -79,7 +78,7 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
         if (count === 0) {
           setTimeout(() => {
             const retryHost = (this as unknown as { getBackendElement?: () => { querySelectorAll?: (selector: string) => ArrayLike<unknown> } | null }).getBackendElement?.()
-            const retryCount = retryHost?.querySelectorAll ? retryHost.querySelectorAll('.tiny-swiper-item').length : 0
+            const retryCount = retryHost?.querySelectorAll ? retryHost.querySelectorAll('tiny-swiper-item, .tiny-swiper-item').length : 0
             if (retryCount > 0) {
               this.setData({ dots: Array.from({ length: retryCount }, (_value, index) => index) })
             }

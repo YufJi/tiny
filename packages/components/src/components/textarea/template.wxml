@@ -1,7 +1,6 @@
 <textarea
   id="native-textarea"
-  class="tiny-textarea {{autoHeight ? 'is-auto-height' : ''}} {{hidden ? 'tiny-hidden' : ''}} class {{placeholderClass}}"
-  style="{{style}}"
+  class="tiny-textarea {{autoHeight ? 'is-auto-height' : ''}} {{placeholderClass}}"
   value="{{value}}"
   placeholder="{{placeholder}}"
   disabled="{{disabled}}"

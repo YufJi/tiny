@@ -29,10 +29,8 @@ export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
       disableDefaultPadding: { type: Boolean, value: false },
       confirmType: { type: String, value: 'return' },
       confirmHold: { type: Boolean, value: false },
-      style: { type: String, value: '' },
     },
-    externalClasses: ['class'],
-    options: { virtualHost: true },
+    options: ctx.hostOptions(),
     methods: {
       handleInput(event: glassEasel.ShadowedEvent<unknown>) {
         const value = valueFromEvent(event)

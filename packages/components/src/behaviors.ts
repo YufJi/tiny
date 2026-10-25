@@ -2,10 +2,103 @@ import type * as glassEasel from 'glass-easel'
 
 type HoverTimer = ReturnType<typeof setTimeout>
 
+type HostEvent = glassEasel.ShadowedEvent<unknown>
+
+type HostListenable = {
+  addListener?: (name: string, listener: (event: HostEvent) => void) => void
+  removeListener?: (name: string, listener: (event: HostEvent) => void) => void
+}
+
+type HostClassElement = {
+  classList?: { add?: (name: string) => void; remove?: (name: string) => void }
+}
+
 type HoverRuntime = {
   _hoverStartTimer?: HoverTimer
   _hoverStayTimer?: HoverTimer
+  _hostListeners?: Array<{ name: string; listener: (event: HostEvent) => void }>
+  _hoverClasses?: string[]
   __debouncers?: Record<string, HoverTimer | undefined>
+  classList?: { toggle(name: string, force?: boolean): boolean } | null
+  getBackendElement?: () => HostClassElement | null
+}
+
+/**
+ * Attach glass-easel event listeners to the component host node.
+ *
+ * This mirrors WeChat's `listeners: { "this.tap": ... }`: the real host is the
+ * element users style and tap, so built-in behaviors must observe events there.
+ * Listeners are installed in `created` and removed in `detached`.
+ */
+export function bindHostListeners(
+  instance: unknown,
+  bindings: Record<string, (event: HostEvent) => void>,
+): void {
+  const target = instance as HostListenable & HoverRuntime
+  if (typeof target.addListener !== 'function') return
+  target._hostListeners ??= []
+  for (const [name, handler] of Object.entries(bindings)) {
+    if (target._hostListeners.some((item) => item.name === name)) continue
+    const listener = (event: HostEvent) => handler(event)
+    target.addListener(name, listener)
+    target._hostListeners.push({ name, listener })
+  }
+}
+
+/** Remove all host listeners previously installed by `bindHostListeners`. */
+export function unbindHostListeners(instance: unknown): void {
+  const target = instance as HostListenable & HoverRuntime
+  const listeners = target._hostListeners
+  if (!listeners || listeners.length === 0) return
+  if (typeof target.removeListener === 'function') {
+    for (const { name, listener } of listeners) target.removeListener(name, listener)
+  }
+  target._hostListeners = []
+}
+
+function hoverClassNames(data: Record<string, unknown>): string[] {
+  const hoverClass = String(data.hoverClass ?? '').trim()
+  if (hoverClass === '' || hoverClass === 'none') return []
+  return hoverClass.split(/\s+/).filter(Boolean)
+}
+
+function applyHoverClass(instance: HoverRuntime & { data: Record<string, unknown> }, active: boolean): void {
+  const classList = instance.classList
+  const rawClassList = instance.getBackendElement?.()?.classList
+  if (!classList && !rawClassList) return
+  if (active) {
+    const names = hoverClassNames(instance.data)
+    instance._hoverClasses = names
+    for (const name of names) {
+      // Scoped form matches page/component WXSS hover classes.
+      classList?.toggle(name, true)
+      // Raw form matches the built-in global stylesheet (`button-hover`).
+      rawClassList?.add?.(name)
+    }
+  } else {
+    for (const name of instance._hoverClasses ?? []) {
+      classList?.toggle(name, false)
+      rawClassList?.remove?.(name)
+    }
+    instance._hoverClasses = []
+  }
+}
+
+/**
+ * Find the nearest ancestor component that declares a behavior (e.g. the
+ * `wx-group` of a checkbox/radio). Walks the light-DOM parent chain so slot
+ * content wrapped in a `<label>` still finds its group.
+ */
+export function findAncestorWithBehavior(instance: unknown, behavior: string): unknown | null {
+  let node = (instance as { parentNode?: unknown }).parentNode
+  for (let depth = 0; node && depth < 100; depth += 1) {
+    const component = node as { hasBehavior?: (name: string) => boolean; parentNode?: unknown }
+    if (typeof component.hasBehavior === 'function' && component.hasBehavior(behavior)) {
+      return component
+    }
+    node = component.parentNode
+  }
+  return null
 }
 
 /** Default id prefix for built-in component behaviors. */
@@ -33,14 +126,6 @@ export function createBuiltinBehaviors(
     is: `${prefix}base`,
     properties: {
       hidden: { type: Boolean, value: false },
-    },
-    lifetimes: {
-      attached() {
-        scheduleDataAttributeSync(this as unknown as DataAttributeHost)
-      },
-      ready() {
-        scheduleDataAttributeSync(this as unknown as DataAttributeHost)
-      },
     },
     methods: {
       getNodeId(): string {
@@ -78,10 +163,22 @@ export function createBuiltinBehaviors(
     },
     lifetimes: {
       created() {
-        clearHoverTimers(this as unknown as HoverRuntime)
+        const instance = this as unknown as HoverRuntime
+        clearHoverTimers(instance)
+        instance._hoverClasses = []
+        bindHostListeners(this, {
+          touchstart: (event) => (this as unknown as { handleTouchStart: (e: HostEvent) => void }).handleTouchStart(event),
+          touchend: (event) => (this as unknown as { handleTouchEnd: (e: HostEvent) => void }).handleTouchEnd(event),
+          touchcancel: (event) => (this as unknown as { handleTouchCancel: (e: HostEvent) => void }).handleTouchCancel(event),
+        })
       },
       detached() {
         clearHoverTimers(this as unknown as HoverRuntime)
+        unbindHostListeners(this)
+        applyHoverClass(
+          this as unknown as HoverRuntime & { data: Record<string, unknown> },
+          false,
+        )
       },
     },
     methods: {
@@ -99,7 +196,13 @@ export function createBuiltinBehaviors(
         const hoverStartTime = Number(this.data.hoverStartTime ?? 50)
         instance._hoverStartTimer = setTimeout(() => {
           instance._hoverStartTimer = undefined
-          if (!(this.data as { disabled?: boolean }).disabled) this.setData({ hovering: true })
+          if (!(this.data as { disabled?: boolean }).disabled) {
+            this.setData({ hovering: true })
+            applyHoverClass(
+              this as unknown as HoverRuntime & { data: Record<string, unknown> },
+              true,
+            )
+          }
         }, Number.isFinite(hoverStartTime) ? Math.max(0, hoverStartTime) : 50)
       },
       handleTouchEnd() {
@@ -113,11 +216,21 @@ export function createBuiltinBehaviors(
         instance._hoverStayTimer = setTimeout(() => {
           instance._hoverStayTimer = undefined
           this.setData({ hovering: false })
+          applyHoverClass(
+            this as unknown as HoverRuntime & { data: Record<string, unknown> },
+            false,
+          )
         }, Number.isFinite(hoverStayTime) ? Math.max(0, hoverStayTime) : 400)
       },
       handleTouchCancel() {
         clearHoverTimers(this as unknown as HoverRuntime)
-        if (this.data.hovering) this.setData({ hovering: false })
+        if (this.data.hovering) {
+          this.setData({ hovering: false })
+          applyHoverClass(
+            this as unknown as HoverRuntime & { data: Record<string, unknown> },
+            false,
+          )
+        }
       },
     },
   })
@@ -208,30 +321,6 @@ export function createBuiltinBehaviors(
 }
 
 export type BuiltinBehaviors = ReturnType<typeof createBuiltinBehaviors>
-
-type DataAttributeHost = {
-  dataset?: Record<string, unknown>
-  getShadowRoot?: () => {
-    childNodes?: ArrayLike<{ setAttribute?: (name: string, value: string) => void }>
-  } | null
-}
-
-function scheduleDataAttributeSync(host: DataAttributeHost): void {
-  // virtualHost components have no DOM host; mirror dataset attributes onto
-  // the first rendered root so `[data-*]` selectors and CSS variables work.
-  const sync = () => {
-    const root = host.getShadowRoot?.()?.childNodes?.[0]
-    if (!root || typeof root.setAttribute !== 'function') return
-    for (const [key, value] of Object.entries(host.dataset ?? {})) {
-      if (value === undefined || value === null) continue
-      const attribute = `data-${key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`
-      root.setAttribute(attribute, String(value))
-    }
-  }
-  sync()
-  Promise.resolve().then(sync)
-  setTimeout(sync, 0)
-}
 
 function clearHoverTimers(instance: HoverRuntime): void {
   if (instance._hoverStartTimer) {
