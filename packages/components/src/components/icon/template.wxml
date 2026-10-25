@@ -1,5 +1,6 @@
-<text
+<i
   class="tiny-icon tiny-icon-{{type}}"
+  role="img"
   aria-label="{{ariaLabel}}"
-  style="font-size: {{size}}px; color: {{color}};"
->{{glyph}}</text>
+  style="color: {{color}}; font-size: {{fontSize}}px;"
+></i>

@@ -1,16 +1,6 @@
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 
-const ICON_GLYPHS: Record<string, string> = {
-  success: '✓',
-  success_no_circle: '✓',
-  info: 'ℹ',
-  warn: '!',
-  waiting: '◌',
-  cancel: '✕',
-  download: '↓',
-  search: '⌕',
-  clear: '✕',
-}
+const DEFAULT_ICON_SIZE = 23
 
 export function defineIcon(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
@@ -20,17 +10,33 @@ export function defineIcon(ctx: BuiltinContext): BuiltinDefinition {
     properties: {
       ariaLabel: { type: String, value: '' },
       type: { type: String, value: 'success' },
-      size: { type: String, optionalTypes: [Number], value: 23 },
+      size: { type: String, optionalTypes: [Number], value: DEFAULT_ICON_SIZE },
       color: { type: String, value: '' },
     },
     data: {
-      glyph: ICON_GLYPHS.success,
+      fontSize: DEFAULT_ICON_SIZE,
     },
     observers: {
-      type(value: string) {
-        this.setData({ glyph: ICON_GLYPHS[value] ?? ICON_GLYPHS.success })
+      size() {
+        this.syncFontSize()
+      },
+    },
+    lifetimes: {
+      created() {
+        this.syncFontSize()
+      },
+      attached() {
+        this.syncFontSize()
       },
     },
     options: ctx.hostOptions(),
+    methods: {
+      syncFontSize() {
+        const normalizeSize = (this as unknown as {
+          normalizeSize: (value: unknown) => number
+        }).normalizeSize
+        this.setData({ fontSize: normalizeSize.call(this, this.data.size) })
+      },
+    },
   }).general()
 }

@@ -94,7 +94,22 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.equal(await render.locator('tiny-swiper-item').count(), 2, 'swiper should render two items')
       assert.equal(await render.locator('input.tiny-slider').inputValue(), '20')
       assert.match(await render.locator('.tiny-progress-info').innerText(), /^20%$/)
-      assert.equal((await render.locator('.tiny-icon').innerText()).trim(), '✓')
+      const iconMetrics = await render.locator('tiny-icon .tiny-icon').first().evaluate((element) => {
+        const style = getComputedStyle(element)
+        const before = getComputedStyle(element, '::before')
+        return {
+          fontFamily: style.fontFamily,
+          fontSize: style.fontSize,
+          color: style.color,
+          content: before.content,
+          width: element.getBoundingClientRect().width,
+        }
+      })
+      assert.ok(iconMetrics.fontFamily.includes('weui'), 'icon should use the weui font')
+      assert.equal(iconMetrics.fontSize, '23px', 'icon default size mismatch')
+      assert.equal(iconMetrics.color, 'rgb(9, 187, 7)', 'icon success color mismatch')
+      assert.notEqual(iconMetrics.content, 'none', 'icon should render a font glyph')
+      assert.equal(iconMetrics.width, 23, 'icon width mismatch')
       const imageLoaded = await render.locator('img.tiny-image').first().evaluate(
         (element) => element.naturalWidth > 0,
       )

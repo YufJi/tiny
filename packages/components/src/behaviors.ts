@@ -240,10 +240,11 @@ export function createBuiltinBehaviors(
   const sizeNormalizer = space.defineBehavior({
     is: `${prefix}size-normalizer`,
     methods: {
-      normalizeSize(value: unknown): string {
-        if (typeof value === 'number') return `${value}px`
-        const text = String(value ?? '')
-        return /^\d+(\.\d+)?$/.test(text) ? `${text}px` : text
+      normalizeSize(value: unknown): number {
+        if (typeof value === 'number') return Number.isFinite(value) ? value : 0
+        const text = String(value ?? '').trim()
+        const match = /^(-?\d+(?:\.\d+)?)(?:px)?$/.exec(text)
+        return match ? Number(match[1]) : 0
       },
     },
   })

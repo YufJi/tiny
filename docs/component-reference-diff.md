@@ -12,8 +12,8 @@
 
 当前 23 个内置标签里，真正“结构和默认样式都接近参考实现”的很少：
 
-- **P0：结构或默认外观明显不一致**：`image`、`icon`、`picker`、`picker-view`、`picker-view-column`（5 个标签）
-- **已重写视觉结构**：`checkbox`、`radio`、`switch`、`slider`（2026-10-25，见 2.1–2.3）
+- **P0：结构或默认外观明显不一致**：`image`、`picker`、`picker-view`、`picker-view-column`（4 个标签）
+- **已重写视觉结构**：`checkbox`、`radio`、`switch`、`slider`、`icon`（2026-10-25，见 2.1–2.3、2.5）
 - **P1：能用但结构/交互仍是近似**：`input`、`textarea`、`scroll-view`、`swiper`、`form`、`button`
 - **P2：主要是宿主结构差异**：`view`、`text`、`label`、`canvas`、`progress`、`swiper-item`
 
@@ -65,7 +65,7 @@
 2026-10-25 已完成 checkbox/radio/switch/slider 的视觉结构替换：控件外观改为 `div`/`span` + 伪元素绘制，原生 `input` 只作为视觉隐藏的无障碍/表单兜底。仍在用原生结构的是：
 
 - image：`<img>` + `object-fit`
-- icon：`<text>` + Unicode 字符
+- icon 已改为 `<i>` + WeUI 字体 + `::before`，不再使用 Unicode 字符
 
 这不是“默认样式略有差异”，而是：
 
@@ -265,7 +265,7 @@ img.tiny-image
 - 缺少 `longpress` 事件
 - 缺少 fallback slot 的定位/尺寸
 
-### 2.5 icon
+### 2.5 icon（2026-10-25 已重写）
 
 参考结构：
 
@@ -280,18 +280,24 @@ i.wx-icon-<type>
 - 每种 type 通过 `:before { content: "\EA0x" }` 和颜色定义
 - 支持 `success`、`info`、`warn`、`waiting`、`safe_success`、`safe_warn`、`success_circle`、`success_no_circle`、`waiting_circle`、`circle`、`download`、`info_circle`、`cancel`、`search`、`clear`
 
-我们的结构：
+我们的结构（已重写）：
 
 ```text
-text.tiny-icon
+tiny-icon
+  i.tiny-icon.tiny-icon-<type>
 ```
 
-差异：
+已对齐：
 
-- 用 Unicode 字符（`✓`、`ℹ`、`×` 等）代替 WeUI 字体
-- 缺少 `safe_success`、`safe_warn`、`success_circle`、`waiting_circle`、`circle`、`info_circle` 等类型
-- 颜色不一致：参考 `waiting` 是 `#10AEFF`，我们是 `#f76260`；参考 `cancel` 是 `#F43530`，我们是 `#b2b2b2`
-- 没有 `longpress` 事件
+- 内嵌 WeUI `@font-face`，`i` 使用 `weui` 字体；
+- 15 种 type 全部通过 `::before { content: "\EAxx" }` 渲染，颜色按参考表；
+- 宿主 `font-size:0`，内部 `i` 默认 `14px/1`，`size` 经 `normalizeSize` 转成 px 后内联；
+- `color` 内联覆盖 class 颜色，`role="img"` + `aria-label` 放在 `i` 上。
+
+剩余差异：
+
+- `type` 默认值保留 `success`（参考 2.7.0 JS 未声明默认值，但官方文档默认 `success`）；
+- 没有 `longpress` 事件。
 
 ### 2.6 picker
 
@@ -542,7 +548,7 @@ button.tiny-button > slot
 | `progress` | 参考结构 `div.wx-progress-bar > div.wx-progress-inner-bar`；我们是 track/bar。默认色和属性已对齐，但 `active` 的逐帧动画/curPercent 未实现 |
 | `swiper-item` | 参考依赖 `wx-swiper` relation 和 slide-frame 布局；我们只是普通 slot 容器，单独使用没有尺寸/定位语义 |
 | `button` 的 `:after` 边框 | 已复制，但原生 button 的 `appearance`/`cursor` 与参考宿主不同 |
-| `icon` 的字体 | 已列在 P0，因为不仅是结构，颜色/类型也不对 |
+| `icon` 的字体 | 已改为 WeUI 字体 + 15 种 type 的伪元素，颜色按参考表 |
 
 ## 5. 建议修复顺序
 
@@ -938,21 +944,21 @@ handleTap() {
 
 ### 6.5 icon
 
-目标模板：
+目标模板（已实现）：
 
 ```wxml
-<text
-  class="tiny-icon tiny-icon-{{type}} {{hidden ? 'tiny-hidden' : ''}} class"
-  style="font-size: {{size}}px; color: {{color}};"
+<i
+  class="tiny-icon tiny-icon-{{type}}"
   role="img"
   aria-label="{{ariaLabel}}"
-></text>
+  style="color: {{color}}; font-size: {{fontSize}}px;"
+></i>
 ```
 
 CSS：
 
-- 把参考 CSS 的 `@font-face` 和 `.wx-icon-*` 段迁到 `packages/components/src/styles/icon-font.css`，只在 base 样式里引入一次
-- 组件根使用 `font-family: "weui"; font-style: normal; font-weight: normal; line-height: 1;`
+- `@font-face` 和 `.tiny-icon-*` 段在 `packages/components/src/components/icon/index.css` 中一次性声明
+- `.tiny-icon { font: normal normal normal 14px/1 "weui"; }`
 - 每个 type 用 `.tiny-icon-<type>::before { content: "\EAxx" }`
 - 颜色表按参考：
 

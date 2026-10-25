@@ -565,6 +565,6 @@ describe('P0 built-in components', () => {
     expect(html).toContain('25%')
     expect(html).toContain('first')
     expect(html).toContain('second')
-    expect(html).toContain('✓')
+    expect(html).toContain('tiny-icon-success')
   })
 })
