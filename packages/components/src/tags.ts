@@ -17,6 +17,9 @@ export const BUILTIN_COMPONENT_TAGS = [
   'swiper',
   'swiper-item',
   'canvas',
+  'textarea',
+  'form',
+  'picker',
 ] as const
 
 export type BuiltinComponentTag = typeof BUILTIN_COMPONENT_TAGS[number]

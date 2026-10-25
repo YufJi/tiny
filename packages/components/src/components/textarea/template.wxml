@@ -1,0 +1,16 @@
+<textarea
+  id="native-textarea"
+  class="tiny-textarea {{autoHeight ? 'is-auto-height' : ''}} {{hidden ? 'tiny-hidden' : ''}} class {{placeholderClass}}"
+  style="{{style}}"
+  value="{{value}}"
+  placeholder="{{placeholder}}"
+  disabled="{{disabled}}"
+  maxlength="{{maxlength}}"
+  autofocus="{{autoFocus || focus}}"
+  confirm-type="{{confirmType}}"
+  aria-label="{{ariaLabel}}"
+  catchinput="handleInput"
+  catchfocus="handleFocus"
+  catchblur="handleBlur"
+  catchconfirm="handleConfirm"
+></textarea>

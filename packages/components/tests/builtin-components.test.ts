@@ -438,6 +438,41 @@ describe('P0 built-in components', () => {
     expect(events.selection).toMatchObject({ selectionStart: expect.any(Number), selectionEnd: expect.any(Number) })
   })
 
+
+  test('textarea, form and picker expose the new built-in surfaces', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const events: Record<string, unknown> = {}
+    const page = space.defineComponent({
+      is: 'page',
+      using: { textarea: builtins.textarea, form: builtins.form, input: builtins.input, picker: builtins.picker },
+      template: compilePage(`
+        <form id="form" bindsubmit="onSubmit"><input id="input" name="title" value="hello" /></form>
+        <textarea id="textarea" bindinput="onTextarea" />
+        <picker id="picker" mode="selector" range="{{['a', 'b']}}" bindchange="onPicker" />
+      `),
+      methods: {
+        onSubmit(event: glassEasel.ShadowedEvent<unknown>) { events.submit = event.detail },
+        onTextarea(event: glassEasel.ShadowedEvent<unknown>) { events.textarea = event.detail },
+        onPicker(event: glassEasel.ShadowedEvent<unknown>) { events.picker = event.detail },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    const nativeTextarea = host('textarea').getShadowRoot()?.getElementById('native-textarea')!
+    nativeTextarea.triggerEvent('input', { value: 'next' })
+    expect(events.textarea).toEqual({ value: 'next' })
+    expect(host('textarea').data.value).toBe('next')
+
+    const nativeForm = host('form').getShadowRoot()?.getElementById('native-form')!
+    nativeForm.triggerEvent('formSubmit', { formId: 'form-1' })
+    expect(events.submit).toEqual({ value: { title: 'hello' }, formId: 'form-1' })
+
+    const nativePicker = host('picker').getShadowRoot()?.getElementById('native-picker')!
+    nativePicker.triggerEvent('change', { value: '1' })
+    expect(events.picker).toEqual({ value: 1 })
+  })
+
   test('progress, swiper, and icon render structure and state', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)

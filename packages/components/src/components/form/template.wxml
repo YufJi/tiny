@@ -1,0 +1,1 @@
+<view id="native-form" class="tiny-form {{hidden ? 'tiny-hidden' : ''}} class" style="{{style}}" bind:formSubmit="handleSubmit" bind:formReset="handleReset"><slot /></view>

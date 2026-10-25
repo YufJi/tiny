@@ -21,6 +21,9 @@ import { defineSwitch } from './components/switch'
 import { defineSwiper } from './components/swiper'
 import { defineSwiperItem } from './components/swiper-item'
 import { defineCanvas } from './components/canvas'
+import { defineTextarea } from './components/textarea'
+import { defineForm } from './components/form'
+import { definePicker } from './components/picker'
 
 export { BUILTIN_COMPONENT_TAGS }
 export { BUILTIN_BASE_STYLES } from './styles'
@@ -53,6 +56,9 @@ const DEFINITION_FACTORIES: Record<BuiltinComponentTag, DefinitionFactory> = {
   swiper: defineSwiper,
   'swiper-item': defineSwiperItem,
   canvas: defineCanvas,
+  textarea: defineTextarea,
+  form: defineForm,
+  picker: definePicker,
 }
 
 export function createBuiltinComponents(

@@ -1,0 +1,8 @@
+<view aria-label="{{ariaLabel}}" class="tiny-picker {{hidden ? 'tiny-hidden' : ''}} class" style="{{style}}">
+  <select id="native-picker" wx:if="{{mode === 'selector'}}" class="tiny-picker-select" value="{{value}}" disabled="{{disabled}}" catchchange="handleSelectorChange">
+    <option wx:for="{{options}}" wx:key="value" value="{{item.value}}" selected="{{item.value === value}}">{{item.label}}</option>
+  </select>
+  <input id="native-picker" wx:elif="{{mode === 'date'}}" class="tiny-picker-select" type="date" value="{{value}}" start="{{start}}" end="{{end}}" disabled="{{disabled}}" catchchange="handleDateChange" />
+  <input id="native-picker" wx:elif="{{mode === 'time'}}" class="tiny-picker-select" type="time" value="{{value}}" disabled="{{disabled}}" catchchange="handleDateChange" />
+  <input id="native-picker" wx:else class="tiny-picker-select" type="text" value="{{value}}" disabled="{{disabled}}" catchchange="handleDateChange" />
+</view>

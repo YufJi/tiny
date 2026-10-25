@@ -1,0 +1,12 @@
+.tiny-picker {
+  display: block;
+  box-sizing: border-box;
+}
+.tiny-picker-select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}

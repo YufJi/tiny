@@ -1,8 +1,8 @@
 # 微信 WebView 版功能对齐度分析
 
-> **快照**：2026-10-25（第七次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
+> **快照**：2026-10-25（第九次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
 >
-> **结论**：加权功能对齐约 **37%（35–39%）**；页面启动率 85.5%；生产可替换 < 20%
+> **结论**：加权功能对齐约 **38%（36–40%）**；页面启动率 85.5%；生产可替换 < 20%
 >
 > **维护**：功能完成后更新本文的评分表、覆盖表、实测数据和变更记录
 
@@ -10,7 +10,7 @@
 
 ## 1. 结论摘要
 
-- 按微信 WebView 版全量能力计算，当前引擎约完成 **三分之一强**：加权得分 **36.58%**。
+- 按微信 WebView 版全量能力计算，当前引擎约完成 **三分之一强**：加权得分 **37.72%**。
 - 能力结构仍然偏科：**编译/渲染约 70%，框架约 60%，平台 API 约 6%，页面形态约 12%**。
 - 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent` 均已落地，Component-as-page 也接入了同一套核心语义；UI 库的核心语义障碍基本移除，但 npm 构建、`generics`/`definitionFilter` 等仍有缺口。
 - 仓库内置的微信官方 demo 子集（117 页）中，**100 页能启动（85.5%）**，96 页有可见文本；但这是“能挂载”，不是“功能对齐”。
@@ -70,14 +70,14 @@
 | --- | ---: | ---: | ---: | --- |
 | 编译/构建 | 10% | 72% | 7.20 | WXML/WXSS/WXS 基本完整；app.json 只消费 3 个字段；无 npm 构建、无 TS 类型检查 |
 | 框架运行时 | 18% | 60% | 10.80 | 5/14 页面生命周期、2/5 路由仍是短板；自定义组件与 Component-as-page 核心语义已补齐，缺 generics/definitionFilter |
-| 内置组件 | 17% | 36% | 6.12 | 18/60 标签；属性声明 119/146；事件映射 44/46；默认外观仍为近似 |
-| wx API | 20% | 8% | 1.60 | 核心 30+ 个 + 宿主扩展 / 502；request/async storage/modal/loading/网络/剪贴板等已接 |
+| 内置组件 | 17% | 38% | 6.46 | 21/60 标签；属性声明 119/146；事件映射 44/46；默认外观仍为近似 |
+| wx API | 20% | 12% | 2.40 | 62/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar 等已接或桩 |
 | 页面形态 | 12% | 12% | 1.44 | 无导航栏/tabBar/下拉/触底/页面滚动/分享/转场 |
 | 样式/渲染 | 8% | 68% | 5.44 | WXSS/rpx/作用域强；styleIsolation/addGlobalClass/shared 已实现；`:host` 低优先级与 canvas 仍不完整 |
 | 宿主/平台 | 8% | 15% | 1.20 | 仅浏览器宿主；无原生/网络/登录/支付/分享 |
 | 开发工具 | 4% | 35% | 1.40 | 有运行时状态/元素树/诊断；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 46% | 1.38 | 150 单测 + 46 步浏览器验收；无性能/视觉/安全/原生测试 |
-| **合计** | **100%** | — | **36.58%** | |
+| 质量/验证 | 3% | 46% | 1.38 | 151 单测 + 46 步浏览器验收；无性能/视觉/安全/原生测试 |
+| **合计** | **100%** | — | **37.72%** | |
 
 ### 条目覆盖率速览
 
@@ -85,8 +85,8 @@
 | --- | ---: | ---: | ---: |
 | 内置组件标签 | 60 | 18 | 30.0% |
 | 核心 UI 组件 | 45 | 18 | 40.0% |
-| wx API 条目 | 502 | 42 | 8.4% |
-| 官方 demo 实际调用 API | 150 | ~26 | ~17% |
+| wx API 条目 | 502 | 62 | 12.4% |
+| 官方 demo 实际调用 API | 150 | ~35 | ~23% |
 | 页面生命周期 | 14 | 5 | 35.7% |
 | 应用生命周期 | 7 | 3 | 42.9% |
 | 路由 API | 5 | 2 | 40.0% |
@@ -104,13 +104,13 @@
 
 ### 4.1 内置组件
 
-**18 / 60 = 30%**。按分类：
+**21 / 60 = 35%**。按分类：
 
 | 分类 | 数量 | 已实现 | 缺口 |
 | --- | ---: | ---: | --- |
 | 视图容器 | 11 | 4 | movable-area、movable-view、cover-view、cover-image、match-media、page-container、root-portal |
 | 基础内容 | 5 | 3 | rich-text、selection |
-| 表单 | 17 | 9 | picker、picker-view、picker-view-column、form、textarea、editor、editor-portal、keyboard-accessory |
+| 表单 | 17 | 12 | picker-view、picker-view-column、editor、editor-portal、keyboard-accessory |
 | 导航 | 2 | 0 | navigator、functional-page-navigator |
 | 媒体 | 9 | 1 | audio、video、camera、live-player、live-pusher、voip-room、channel-live、channel-video |
 | 地图 | 1 | 0 | map |
@@ -119,10 +119,10 @@
 | 无障碍 | 1 | 0 | aria-component |
 | 导航栏 | 1 | 0 | navigation-bar |
 | 页面属性 | 1 | 0 | page-meta |
-| **合计** | **60** | **18** | |
+| **合计** | **60** | **21** | |
 
 **已实现组件**（[tags.ts](../packages/components/src/tags.ts:1)）：
-`view`、`text`、`button`、`label`、`input`、`checkbox`、`checkbox-group`、`radio`、`radio-group`、`icon`、`image`、`scroll-view`、`slider`、`progress`、`switch`、`swiper`、`swiper-item`、`canvas`。
+`view`、`text`、`button`、`label`、`input`、`checkbox`、`checkbox-group`、`radio`、`radio-group`、`icon`、`image`、`scroll-view`、`slider`、`progress`、`switch`、`swiper`、`swiper-item`、`canvas`、`textarea`、`form`、`picker`。
 
 **属性/事件覆盖**（仅统计 WebView 适用属性；事件按组件文档属性表中的 `bind*`/`catch*` 条目统计，不含 `tap`/`longpress` 等通用事件）：
 
@@ -148,6 +148,8 @@
 | view | 4 | 4 | 0 | 0 | hover 默认 none；shared `wx-hover` |
 | **合计** | **146** | **119（81.5%）** | **46** | **44（95.7%）** | |
 
+> 本轮新增的 `textarea` / `form` / `picker` 已计入标签数，但属性/事件明细尚未并入上表；`picker-view` / `picker-view-column` 仍未实现。
+
 > 事件覆盖按“事件名已绑定并能触发基础 detail”统计；button open-type 事件和部分 scroll-view refresher 事件目前是失败/模拟回调，不是微信平台 API 的真实成功语义。
 
 **外观保真度**：默认样式已从自定义暗色主题迁移为各组件的 WeChat 近似默认（button/input/progress 等较完整，checkbox/radio/switch/slider 仍是原生控件近似），但还没有逐像素对齐微信，也存在平台/设备差异。
@@ -156,7 +158,7 @@
 
 ### 4.2 wx API
 
-**核心 40+ 个 / 502 ≈ 8%；官方 demo 实际用到的 150 个唯一 `wx.*` 中约支持 26 个（~17%）。**
+**62 / 502 ≈ 12%；官方 demo 实际用到的 150 个唯一 `wx.*` 中约支持 35 个（~23%）。**
 
 能力分布：
 
@@ -279,7 +281,7 @@ hasBehavior / export / wx://component-export
 2026-10-24 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
-- **150 个单元测试**（runtime 58 个，components 16 个）
+- **151 个单元测试**（runtime 58 个，components 17 个）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
 - **46 个浏览器步骤**全部通过；P0 新增 6 步覆盖组件语义、样式隔离、button 矩阵、relations 和 selectComponent
 - 门禁覆盖的 5 段流程无 console/page error（117 页探针的 pageerror 见 5.2）
@@ -314,7 +316,7 @@ hasBehavior / export / wx://component-export
 
 ### 5.3 官方 demo API 覆盖
 
-从 `tests/apps/wechat-demo` 源码中提取到 **150 个唯一 `wx.*` 调用**，引擎约支持 **26 个（~17%）**：
+从 `tests/apps/wechat-demo` 源码中提取到 **150 个唯一 `wx.*` 调用**，引擎约支持 **35 个（~23%）**：
 
 ```text
 getSystemInfo / getSystemInfoSync / getStorageSync / setStorageSync
@@ -329,15 +331,15 @@ getMenuButtonBoundingClientRect / getPerformance
 
 其中 `login` 只是宿主 stub code，`openSetting/authorize` 还没有真实权限模型，`createCanvasContext` 仍是桩，`createSelectorQuery` 只支持 canvas，`createAnimation` 只映射最终态。真正“能用”的核心 API 约 12–15 个。
 
-### 5.4 为什么“85.5% 启动”和“36% 对齐”不矛盾
+### 5.4 为什么“85.5% 启动”和“38% 对齐”不矛盾
 
 | 口径 | 回答的问题 | 结果 |
 | --- | --- | --- |
 | 启动率 | 页面能不能挂载？ | 85.5% |
-| 功能对齐 | 页面上的功能是否按微信语义工作？ | ~36% |
+| 功能对齐 | 页面上的功能是否按微信语义工作？ | ~38% |
 | 生产可替换 | 普通业务小程序能否直接上线？ | < 20% |
 
-启动率高，是因为引擎“尽量不崩”；功能对齐仍只有约 36%，是因为 API、页面形态和内置组件语义仍有大量缺口。本次补的是自定义组件语义，不会改变 `wx.request`、导航栏、tabBar、picker 等 P0 短板。
+启动率高，是因为引擎“尽量不崩”；功能对齐仍只有约 38%，是因为 API、页面形态和内置组件语义仍有大量缺口。本次补的是自定义组件语义，不会改变 `wx.request`、导航栏、tabBar、picker 等 P0 短板。
 
 ---
 
@@ -498,6 +500,8 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-24 | 第五次同步：内置组件属性/默认样式与事件面成批对齐（canvas 触摸/longtap、input 组合/选区、button open-type 失败回调、scroll-view refresher/drag/scroll 边界）；属性 119/146、事件 44/46 | **36.18%** |
 | 2026-10-25 | 第六次校准：重新跑完整门禁；148 单测（runtime 56） / 46 浏览器步骤；修正文档中的事件覆盖与测试计数 | **36.18%** |
 | 2026-10-25 | 第七次同步：补齐 request、异步 storage、网络/电池/剪贴板/震动、modal/loading/actionSheet、login stub、share menu、canIUse/nextTick；API 8%；150 单测 | **36.58%** |
+| 2026-10-25 | 第八次同步：新增 textarea/form/picker 三个常用内置标签（form 收集、picker selector/date/time、textarea 事件）；内置组件 36→38；151 单测 | **36.92%** |
+| 2026-10-25 | 第九次同步：补主题/键盘监听、getUserProfile/getUserInfo、tabBar/导航栏/pageScrollTo、hideToast、getFileSystemManager 等高频 API 面；API 8→12%；151 单测 | **37.72%** |
 
 ---
 

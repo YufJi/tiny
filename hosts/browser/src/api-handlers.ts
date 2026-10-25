@@ -4,6 +4,7 @@ const OVERLAY_ID = 'tiny-api-overlay'
 const STYLE_ID = 'tiny-api-overlay-style'
 
 let loadingElement: HTMLElement | null = null
+let toastElement: HTMLElement | null = null
 
 /**
  * Browser implementations for the host-side wx APIs.
@@ -24,6 +25,27 @@ export function createBrowserApiHandlers(): HostApiHandlers {
     'login': () => ({ code: createLoginCode(), errMsg: 'login:ok' }),
     'toast.show': (params) => showToast(params),
     'ui.toast': (params) => showToast(params),
+    'ui.hideToast': () => hideToast(),
+    'profile.get': () => ({
+      userInfo: {
+        nickName: 'Tiny User',
+        avatarUrl: '',
+        gender: 0,
+        country: '',
+        province: '',
+        city: '',
+        language: 'zh_CN',
+      },
+      rawData: '{}',
+      signature: '',
+      encryptedData: '',
+      iv: '',
+      errMsg: 'getUserProfile:ok',
+    }),
+    'navigation.title': (params) => {
+      if (typeof document !== 'undefined') document.title = String(params.title ?? '')
+      return { errMsg: 'setNavigationBarTitle:ok' }
+    },
     'ui.loading': (params) => showLoading(params),
     'ui.hideLoading': () => hideLoading(),
     'ui.modal': (params) => showModal(params),
@@ -187,8 +209,12 @@ function showToast(params: Record<string, unknown>): { errMsg: string } {
   toast.className = 'tiny-api-toast'
   toast.textContent = String(params.title ?? '')
   root.appendChild(toast)
+  toastElement = toast
   const duration = Math.max(500, Number(params.duration ?? 1500))
-  setTimeout(() => toast.remove(), duration)
+  setTimeout(() => {
+    toast.remove()
+    if (toastElement === toast) toastElement = null
+  }, duration)
   return { errMsg: 'showToast:ok' }
 }
 
@@ -204,6 +230,12 @@ function showLoading(params: Record<string, unknown>): { errMsg: string } {
   root.appendChild(panel)
   loadingElement = root
   return { errMsg: 'showLoading:ok' }
+}
+
+function hideToast(): { errMsg: string } {
+  toastElement?.remove()
+  toastElement = null
+  return { errMsg: 'hideToast:ok' }
 }
 
 function hideLoading(): { errMsg: string } {

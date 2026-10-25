@@ -99,6 +99,8 @@ function storageInfo(snapshot: StorageSnapshot): Record<string, unknown> {
 }
 
 export function createServiceApiHost(context: ServiceApiContext): MiniProgramApiHost {
+  const themeListeners = new Set<(value: unknown) => void>()
+  const keyboardListeners = new Set<(value: unknown) => void>()
   const unsupported = (name: string) => {
     context.connection.sendDiagnostic('warn', {
       code: 'UNSUPPORTED_API',
@@ -257,6 +259,60 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
       for (const key of Object.keys(snapshot)) delete snapshot[key]
       void context.connection.call('api', 'storage.clear', {}, { pageId: context.pageId }).catch(() => undefined)
     },
+    hideToast: (params: unknown = {}) => runApi(params, 'hideToast', () => context.connection.call(
+      'api',
+      'ui.hideToast',
+      {},
+      { pageId: context.pageId },
+    )),
+    getUserProfile: (params: unknown = {}) => {
+      context.connection.sendDiagnostic('warn', {
+        code: 'API_PROFILE_STUB',
+        message: 'wx.getUserProfile returns a stub profile in the P0 runtime.',
+      }, context.pageId)
+      return runApi(params, 'getUserProfile', () => context.connection.call('api', 'profile.get', {}, { pageId: context.pageId }))
+    },
+    getUserInfo: (params: unknown = {}) => {
+      context.connection.sendDiagnostic('warn', {
+        code: 'API_PROFILE_STUB',
+        message: 'wx.getUserInfo returns a stub profile in the P0 runtime.',
+      }, context.pageId)
+      return runApi(params, 'getUserInfo', () => context.connection.call('api', 'profile.get', {}, { pageId: context.pageId }))
+    },
+    setNavigationBarTitle: (params: unknown = {}) => runApi(params, 'setNavigationBarTitle', () => context.connection.call(
+      'api',
+      'navigation.title',
+      params as Record<string, unknown>,
+      { pageId: context.pageId },
+    )),
+    setNavigationBarColor: (params: unknown = {}) => runApi(params, 'setNavigationBarColor', () => ({ errMsg: 'setNavigationBarColor:ok' })),
+    showNavigationBarLoading: (params: unknown = {}) => runApi(params, 'showNavigationBarLoading', () => ({ errMsg: 'showNavigationBarLoading:ok' })),
+    hideNavigationBarLoading: (params: unknown = {}) => runApi(params, 'hideNavigationBarLoading', () => ({ errMsg: 'hideNavigationBarLoading:ok' })),
+    pageScrollTo: (params: unknown = {}) => runApi(params, 'pageScrollTo', () => ({ errMsg: 'pageScrollTo:ok' })),
+    setTabBarStyle: (params: unknown = {}) => runApi(params, 'setTabBarStyle', () => ({ errMsg: 'setTabBarStyle:ok' })),
+    setTabBarItem: (params: unknown = {}) => runApi(params, 'setTabBarItem', () => ({ errMsg: 'setTabBarItem:ok' })),
+    setTabBarBadge: (params: unknown = {}) => runApi(params, 'setTabBarBadge', () => ({ errMsg: 'setTabBarBadge:ok' })),
+    removeTabBarBadge: (params: unknown = {}) => runApi(params, 'removeTabBarBadge', () => ({ errMsg: 'removeTabBarBadge:ok' })),
+    showTabBarRedDot: (params: unknown = {}) => runApi(params, 'showTabBarRedDot', () => ({ errMsg: 'showTabBarRedDot:ok' })),
+    hideTabBarRedDot: (params: unknown = {}) => runApi(params, 'hideTabBarRedDot', () => ({ errMsg: 'hideTabBarRedDot:ok' })),
+    showTabBar: (params: unknown = {}) => runApi(params, 'showTabBar', () => ({ errMsg: 'showTabBar:ok' })),
+    hideTabBar: (params: unknown = {}) => runApi(params, 'hideTabBar', () => ({ errMsg: 'hideTabBar:ok' })),
+    onThemeChange: (callback: unknown) => {
+      if (typeof callback === 'function') themeListeners.add(callback as (value: unknown) => void)
+    },
+    offThemeChange: (callback?: unknown) => {
+      if (typeof callback === 'function') themeListeners.delete(callback as (value: unknown) => void)
+      else themeListeners.clear()
+    },
+    onKeyboardHeightChange: (callback: unknown) => {
+      if (typeof callback === 'function') keyboardListeners.add(callback as (value: unknown) => void)
+    },
+    offKeyboardHeightChange: (callback?: unknown) => {
+      if (typeof callback === 'function') keyboardListeners.delete(callback as (value: unknown) => void)
+      else keyboardListeners.clear()
+    },
+    hideKeyboard: (params: unknown = {}) => runApi(params, 'hideKeyboard', () => ({ errMsg: 'hideKeyboard:ok' })),
+    getFileSystemManager: () => createFileSystemManagerStub(),
     setClipboardData: (params: unknown = {}) => {
       return runApi(params, 'setClipboardData', () => context.connection.call(
         'api',
@@ -374,3 +430,22 @@ function createCanvasContextStub(): Record<string, unknown> {
   })
 }
 
+
+function createFileSystemManagerStub(): Record<string, unknown> {
+  const fail = (apiName: string, params: unknown) => {
+    const callbacks = (params ?? {}) as { fail?: (value: unknown) => void; complete?: (value: unknown) => void }
+    const result = { errMsg: `${apiName}:fail not supported by the Tiny runtime` }
+    callbacks.fail?.(result)
+    callbacks.complete?.(result)
+  }
+  return {
+    access: (params: unknown) => fail('access', params),
+    readFile: (params: unknown) => fail('readFile', params),
+    writeFile: (params: unknown) => fail('writeFile', params),
+    mkdir: (params: unknown) => fail('mkdir', params),
+    readdir: (params: unknown) => fail('readdir', params),
+    stat: (params: unknown) => fail('stat', params),
+    unlink: (params: unknown) => fail('unlink', params),
+    rmdir: (params: unknown) => fail('rmdir', params),
+  }
+}
