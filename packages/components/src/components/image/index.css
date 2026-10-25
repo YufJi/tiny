@@ -13,6 +13,7 @@ tiny-image[mode=heightFix] {
   width: auto;
 }
 .tiny-image-div {
+  display: block;
   width: 100%;
   height: 100%;
 }

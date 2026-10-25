@@ -485,6 +485,14 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
         (await avatar.evaluate((element) => element.getBoundingClientRect().width)) > 50,
         'external class styles did not apply to the image',
       )
+      const avatarLayer = await avatar.locator('.tiny-image-div').evaluate((element) => {
+        const style = getComputedStyle(element)
+        const rect = element.getBoundingClientRect()
+        return { width: rect.width, height: rect.height, backgroundImage: style.backgroundImage }
+      })
+      assert.ok(avatarLayer.width > 0 && avatarLayer.height > 0, 'image background layer has no box')
+      assert.ok(avatarLayer.backgroundImage.includes('url('), 'image background did not resolve')
+
     })
 
     await step('drive the existing todos page interactions', async () => {

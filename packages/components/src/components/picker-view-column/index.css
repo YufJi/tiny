@@ -14,6 +14,7 @@ tiny-picker-view-column {
   display: none;
 }
 .tiny-picker-view-column-content {
+  display: block;
   padding: 102px 0;
 }
 .tiny-picker-view-column-content > * {
