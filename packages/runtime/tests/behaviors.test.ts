@@ -122,14 +122,19 @@ describe('normalizeComponentDefinition', () => {
     })
   })
 
-  test('records unsupported built-in behaviors and definition filters', () => {
+  test('normalizes form-field and records unsupported built-in behaviors', () => {
     const definition = normalizeComponentDefinition({
-      behaviors: ['wx://form-field'],
+      behaviors: ['wx://form-field', 'wx://unsupported-behavior'],
       definitionFilter: () => undefined,
     }, 'components/foo/foo')
+    expect(definition.behaviors.has('wx://form-field')).toBe(true)
+    expect(definition.formField).toBe(true)
+    expect(definition.properties.name).toBeDefined()
+    expect(definition.properties.value).toBeDefined()
     expect(definition.diagnostics.map((item) => item.code)).toEqual(
       expect.arrayContaining(['UNSUPPORTED_BEHAVIOR', 'UNSUPPORTED_BEHAVIOR_FILTER']),
     )
+    expect(definition.diagnostics.filter((item) => item.code === 'UNSUPPORTED_BEHAVIOR')).toHaveLength(1)
   })
 
   test('stops cyclic behavior graphs', () => {

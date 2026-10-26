@@ -11,6 +11,7 @@ type FormControl = {
 }
 
 export function defineForm(ctx: BuiltinContext): BuiltinDefinition {
+  const formFieldBehavior = 'tiny-form-field'
   return ctx.space.defineComponent({
     is: 'tiny-builtin:form',
     template: ctx.template('form'),
@@ -38,6 +39,9 @@ export function defineForm(ctx: BuiltinContext): BuiltinDefinition {
           if (control.hasBehavior?.('wx-data-component')) {
             const name = String(control.data?.name ?? '')
             if (name) value[name] = control.getFormData?.()
+          } else if (control.hasBehavior?.(formFieldBehavior)) {
+            const name = String(control.data?.name ?? '')
+            if (name) value[name] = control.data?.value
           }
           this.collectControls(control.childNodes, value)
         }
@@ -54,7 +58,13 @@ export function defineForm(ctx: BuiltinContext): BuiltinDefinition {
         const value: Record<string, unknown> = {}
         this.collectControls((this as unknown as { childNodes?: unknown[] }).childNodes, value)
         const detail = event.detail as { formId?: string } | undefined
-        this.triggerEvent('submit', { value, formId: detail?.formId ?? '' }, { bubbles: true, composed: true })
+        if (this.data.reportSubmit) {
+          this.triggerEvent('beforereportsubmit', { value }, { bubbles: true, composed: true })
+        }
+        const formId = this.data.reportSubmit
+          ? 'the formId is a mock one'
+          : detail?.formId ?? ''
+        this.triggerEvent('submit', { value, formId }, { bubbles: true, composed: true })
       },
       handleReset(event: glassEasel.ShadowedEvent<unknown>) {
         event.stopPropagation()

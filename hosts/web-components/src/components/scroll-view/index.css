@@ -2,17 +2,28 @@ tiny-scroll-view {
   display: block;
   box-sizing: border-box;
   width: 100%;
+  height: 100%;
+  max-height: inherit;
 }
+
 .tiny-scroll-view {
-  box-sizing: border-box;
+  position: relative;
   width: 100%;
+  height: 100%;
+  max-height: inherit;
+  box-sizing: border-box;
   overflow: hidden;
+  -webkit-overflow-scrolling: touch;
 }
+
 .tiny-scroll-view.is-vertical {
   overflow-y: auto;
-  height: 100%;
 }
+
 .tiny-scroll-view.is-horizontal {
   overflow-x: auto;
+}
+
+.tiny-scroll-view-content {
   width: 100%;
 }

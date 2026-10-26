@@ -1,1 +1,1 @@
-<slot />
+<span id="wrapper" class="tiny-form-wrapper"><slot /></span>

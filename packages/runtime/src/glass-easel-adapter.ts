@@ -111,6 +111,8 @@ export type GlassEaselAdapterOptions = {
 export class GlassEaselRuntimeAdapter {
   readonly backend: glassEasel.GeneralBackendContext
   readonly componentSpace: glassEasel.ComponentSpace
+  /** Internal marker behavior for custom wx://form-field components. */
+  private readonly formFieldBehavior: glassEasel.GeneralBehavior
   private readonly manifest: Manifest
   private readonly templates: TemplateRegistry
   private readonly styleScopeIds = new Map<string, number>()
@@ -173,6 +175,9 @@ export class GlassEaselRuntimeAdapter {
     this.onComponentObserved = options.onComponentObserved
     const styleScopeManager = new glassEasel.StyleScopeManager()
     this.componentSpace = new glassEasel.ComponentSpace(undefined, undefined, styleScopeManager, true)
+    this.formFieldBehavior = this.componentSpace.defineBehavior({
+      is: 'tiny-form-field',
+    })
     this.onDiagnostic = options.onDiagnostic
     this.mountComponent = options.mountComponent
     this.unmountComponent = options.unmountComponent
@@ -603,6 +608,7 @@ export class GlassEaselRuntimeAdapter {
       .definition({
         properties: schema.properties as never,
         externalClasses: schema.externalClasses,
+        behaviors: schema.formField ? [this.formFieldBehavior] : undefined,
         observers: observers as never,
       })
       .template({

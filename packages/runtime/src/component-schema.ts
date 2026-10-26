@@ -18,6 +18,7 @@ export function buildComponentSchemas(
       properties: definition.properties,
       using: readUsingComponents(effective),
       externalClasses: definition.externalClasses,
+      formField: definition.formField,
       observers: definition.observers.map((observer) => ({
         key: observer.key,
         paths: observer.paths,

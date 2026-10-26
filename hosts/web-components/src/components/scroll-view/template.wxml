@@ -1,9 +1,12 @@
 <div
   id="native-scroll-view"
   class="tiny-scroll-view {{scrollX ? 'is-horizontal' : ''}} {{scrollY ? 'is-vertical' : ''}}"
+  role="listbox"
   bindscroll="handleScroll"
   bindtouchstart="handleTouchStart"
   bindtouchmove="handleTouchMove"
   bindtouchend="handleTouchEnd"
   bindtouchcancel="handleTouchCancel"
-><slot /></div>
+>
+  <div class="tiny-scroll-view-content"><slot /></div>
+</div>

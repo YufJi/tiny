@@ -18,6 +18,11 @@ export function componentExportBehavior(naming: ResolvedNamingConfig): string {
   return `${naming.behaviorScheme}component-export`
 }
 
+/** Built-in behavior id for custom form fields, e.g. `wx://form-field`. */
+export function formFieldBehavior(naming: ResolvedNamingConfig): string {
+  return `${naming.behaviorScheme}form-field`
+}
+
 const BUILTIN_BEHAVIOR_SCHEME = /^[A-Za-z][\w-]*:\/\//
 
 /**

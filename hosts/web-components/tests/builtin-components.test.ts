@@ -346,12 +346,13 @@ describe('P0 built-in components', () => {
       is: 'page',
       using: {
         label: builtins.label,
+        'checkbox-group': builtins['checkbox-group'],
         checkbox: builtins.checkbox,
         radio: builtins.radio,
         switch: builtins.switch,
       },
       template: compilePage(`
-        <label id="wrap"><view>wrap</view><checkbox id="checkbox" value="a" /></label>
+        <checkbox-group id="group"><label id="wrap"><view>wrap</view><checkbox id="checkbox" value="a" /></label></checkbox-group>
         <label id="for-label" for="radio">radio</label>
         <radio id="radio" value="r" />
         <label id="switch-label" for="switch">switch</label>
@@ -366,6 +367,7 @@ describe('P0 built-in components', () => {
     }
     tap('wrap')
     expect(host('checkbox').data.checked).toBe(true)
+    expect(host('group').data.value).toEqual(['a'])
     tap('for-label')
     expect(host('radio').data.checked).toBe(true)
     tap('switch-label')
@@ -542,6 +544,49 @@ describe('P0 built-in components', () => {
     expect((host('checkbox') as unknown as { getFormData: () => unknown }).getFormData()).toBe('a')
   })
 
+
+  test('form collects custom wx://form-field components and mocks reportSubmit', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const formField = space.defineBehavior({
+      is: 'tiny-form-field',
+      properties: {
+        name: { type: String, value: '' },
+        value: { type: String, value: '' },
+      },
+    })
+    const field = space.defineComponent({
+      is: 'field',
+      behaviors: [formField],
+      template: compilePage('<slot />'),
+    })
+    const events: unknown[] = []
+    const page = space.defineComponent({
+      is: 'page',
+      using: { form: builtins.form, input: builtins.input, button: builtins.button, field },
+      template: compilePage(`
+        <form id="form" report-submit bindsubmit="onSubmit" bindbeforereportsubmit="onBefore">
+          <field id="field" name="custom" value="v" />
+          <input id="input" name="title" value="hello" />
+          <button id="submit" form-type="submit">Submit</button>
+        </form>
+      `),
+      methods: {
+        onSubmit(event: glassEasel.ShadowedEvent<unknown>) { events.push({ type: 'submit', detail: event.detail }) },
+        onBefore(event: glassEasel.ShadowedEvent<unknown>) { events.push({ type: 'before', detail: event.detail }) },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    expect(host('field').hasBehavior('tiny-form-field')).toBe(true)
+    expect(host('field').data).toMatchObject({ name: 'custom', value: 'v' })
+    host('submit').triggerEvent('tap', {})
+    expect(events).toEqual([
+      { type: 'before', detail: { value: { custom: 'v', title: 'hello' } } },
+      { type: 'submit', detail: { value: { custom: 'v', title: 'hello' }, formId: 'the formId is a mock one' } },
+    ])
+    expect(host('form').data.reportSubmit).toBe(true)
+  })
 
   test('canvas and input emit their native event surface', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)

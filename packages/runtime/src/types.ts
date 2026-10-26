@@ -29,6 +29,7 @@ export type MiniProgramComponentSchema = {
   properties: Record<string, MiniProgramPropertyDefinition>
   using: Record<string, string>
   externalClasses?: string[]
+  formField?: boolean
   observers?: Array<{ key: string; paths: string[] }>
   relations?: Array<{
     key: string

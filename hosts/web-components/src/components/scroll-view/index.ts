@@ -91,7 +91,10 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
     },
     methods: {
       backend(): ScrollBackend | null {
-        return (this as unknown as { getBackendElement?: () => ScrollBackend | null }).getBackendElement?.() ?? null
+        const element = (this.getShadowRoot?.() as {
+          getElementById?: (id: string) => { getBackendElement?: () => ScrollBackend | null } | null
+        } | null)?.getElementById?.('native-scroll-view')?.getBackendElement?.()
+        return element ?? (this as unknown as { getBackendElement?: () => ScrollBackend | null }).getBackendElement?.() ?? null
       },
       applyScrollAnimation() {
         const element = this.backend()

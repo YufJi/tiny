@@ -1,4 +1,5 @@
 import type * as glassEasel from 'glass-easel'
+import { bindHostListeners, unbindHostListeners } from '../../behaviors'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 
 type LabelTarget = {
@@ -16,6 +17,16 @@ export function defineLabel(ctx: BuiltinContext): BuiltinDefinition {
       for: { type: String, value: '' },
     },
     options: ctx.hostOptions({ multipleSlots: true }),
+    lifetimes: {
+      created() {
+        bindHostListeners(this, {
+          tap: (event) => this.handleTap(event),
+        })
+      },
+      detached() {
+        unbindHostListeners(this)
+      },
+    },
     methods: {
       handleLabelTarget(node: unknown, event: unknown): boolean {
         const component = (node as { asGeneralComponent?: () => LabelTarget | null })
@@ -47,7 +58,9 @@ export function defineLabel(ctx: BuiltinContext): BuiltinDefinition {
         this.dispatchLabelTarget(this as unknown, event)
       },
       dispatchLabelTarget(node: unknown, event: unknown): boolean {
-        for (const child of (node as { childNodes?: unknown[] }).childNodes ?? []) {
+        const children = (node as { childNodes?: unknown[] }).childNodes ?? []
+        const slotChildren = (node as { slotNodes?: unknown[] }).slotNodes ?? []
+        for (const child of [...children, ...slotChildren]) {
           if (this.handleLabelTarget(child, event)) return true
           if (this.dispatchLabelTarget(child, event)) return true
         }

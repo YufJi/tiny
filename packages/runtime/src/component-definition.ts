@@ -1,6 +1,6 @@
 import { resolveNaming, type ResolvedNamingConfig } from '@tiny/manifest'
 import { cloneJsonSafe } from './data'
-import { componentExportBehavior, isBuiltinBehavior } from './behaviors'
+import { componentExportBehavior, formFieldBehavior, isBuiltinBehavior } from './behaviors'
 import type { MiniProgramComponentOptions } from './service'
 import type { MiniProgramPropertyDefinition, MiniProgramPropertyType } from './types'
 
@@ -55,6 +55,7 @@ export type NormalizedComponentDefinition = {
   options: NormalizedComponentOptions
   behaviors: Set<object | string>
   componentExport: boolean
+  formField: boolean
   export?: Function
   diagnostics: DefinitionDiagnostic[]
 }
@@ -107,6 +108,7 @@ type Collector = {
   options: NormalizedComponentOptions
   behaviors: Set<object | string>
   componentExport: boolean
+  formField: boolean
   export?: Function
   diagnostics: DefinitionDiagnostic[]
   observerIndex: number
@@ -121,12 +123,22 @@ export function normalizeComponentDefinition(
   const collector = createCollector()
   const visited = new Set<object>()
   const exportBehavior = componentExportBehavior(naming)
+  const formField = formFieldBehavior(naming)
 
   const visit = (source: unknown): void => {
     if (typeof source === 'string') {
       collector.behaviors.add(source)
       if (source === exportBehavior) {
         collector.componentExport = true
+      } else if (source === formField) {
+        collector.formField = true
+        // Custom form fields contribute `name`/`value` to the enclosing form.
+        if (!collector.properties.name) {
+          collector.properties.name = { type: 'string', value: '' }
+        }
+        if (!collector.properties.value) {
+          collector.properties.value = { value: '' }
+        }
       } else if (isBuiltinBehavior(source)) {
         collector.diagnostics.push({
           code: 'UNSUPPORTED_BEHAVIOR',
@@ -175,6 +187,7 @@ export function normalizeComponentDefinition(
     options: collector.options,
     behaviors: collector.behaviors,
     componentExport: collector.componentExport,
+    formField: collector.formField,
     export: collector.export,
     diagnostics: collector.diagnostics,
   }
@@ -206,6 +219,7 @@ function createCollector(): Collector {
     },
     behaviors: new Set(),
     componentExport: false,
+    formField: false,
     diagnostics: [],
     observerIndex: 0,
     propertyObserverIndex: 0,
