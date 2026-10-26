@@ -62,7 +62,7 @@ export default function Status() {
             ['诊断', status('可用', 'good'), '编译、transport、service、render、host 五类诊断统一收集；组件语义新增了 observer、relation、behavior 相关诊断。'],
             ['Devtool', status('运行时级+', 'good'), '应用列表、点击启动、最近 3 个应用保活、返回列表、设备框、宿主导航和 tabBar、每页 render 帧、Console/Lifecycle/Elements、Reload/Close app；页面栈默认上限 10，宿主可配置。它仍不是完整的微信开发者工具。'],
             ['性能与稳定', status('未量化', 'warn'), '启动、首屏、setData、内存和长时运行都没有基准，也没有压力测试。'],
-            ['测试', status('核心链路', 'good'), '168 个单元测试、47 个浏览器步骤和 5 个测试小程序；没有性能、视觉、原生和安全测试。'],
+            ['测试', status('核心链路', 'good'), '180 个单元测试、47 个浏览器步骤和 5 个测试小程序；没有性能、视觉、原生和安全测试。'],
           ]}
         />
       </Section>
@@ -210,7 +210,7 @@ export default function Status() {
           <Card tag="运行时" title="然后看执行"><p>双线程、组件语义、样式隔离和 canvas 注入。</p><p><a href="#/runtime">运行时内核 →</a></p></Card>
           <Card tag="协议" title="协议是通信边界"><p>消息格式、错误处理和扩展规则。</p><p><a href="#/protocol">Bridge 协议 →</a></p></Card>
           <Card tag="宿主" title="宿主负责接入环境"><p>host-browser、host-web-components、注入能力和接入步骤。</p><p><a href="#/hosts">宿主适配 →</a></p></Card>
-          <Card tag="测试" title="以测试为准"><p>168 个单元测试和 47 个浏览器步骤。</p><p><a href="#/testing">测试与验收 →</a></p></Card>
+          <Card tag="测试" title="以测试为准"><p>180 个单元测试和 47 个浏览器步骤。</p><p><a href="#/testing">测试与验收 →</a></p></Card>
         </Cards>
         <Callout title="仓库">
           <p>

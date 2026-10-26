@@ -103,7 +103,7 @@ export default function Home() {
             <p><a href="#/hosts">进入宿主适配 →</a></p>
           </Card>
           <Card tag="testing" title="靠真实小程序验证">
-            <p>168 个单元测试、47 个浏览器步骤、五个测试小程序，以及目前还没有覆盖的部分。</p>
+            <p>180 个单元测试、47 个浏览器步骤、五个测试小程序，以及目前还没有覆盖的部分。</p>
             <p><a href="#/testing">进入测试与验收 →</a></p>
           </Card>
         </Cards>

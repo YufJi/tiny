@@ -17,8 +17,8 @@ export default function Testing() {
       <PageHero
         eyebrow="测试与验收"
         title={<>用真实小程序验收，<br /><span className="gradient">不只跑单元测试</span></>}
-        lede="Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 和 render 线程，在 Chromium 里点击、输入、导航，失败时保存截图。168 个单元测试覆盖协议、组件语义和编译逻辑，47 个浏览器步骤验证端到端行为。"
-        stats={[['168', '单元测试'], ['47', '浏览器步骤'], ['5', '浏览器流程'], ['5', '测试小程序']]}
+        lede="Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 和 render 线程，在 Chromium 里点击、输入、导航，失败时保存截图。180 个单元测试覆盖协议、组件语义和编译逻辑，47 个浏览器步骤验证端到端行为。"
+        stats={[['180', '单元测试'], ['47', '浏览器步骤'], ['5', '浏览器流程'], ['5', '测试小程序']]}
       />
       <PageNav items={[
         ['gate', '验收流程'],
@@ -128,7 +128,7 @@ export default function Testing() {
       <Section
         id="units"
         kicker="单元测试"
-        title="168 个单元测试，按包执行"
+        title="180 个单元测试，按包执行"
         intro="没有全局 test runner，每个包单独跑，避免隐式耦合，也方便定位失败。"
       >
         <Table
@@ -137,8 +137,8 @@ export default function Testing() {
             [<code>@tiny/bridge</code>, '10', '信封校验、版本和路由错误、payload 校验、握手、调用关联、超时、关闭、批处理顺序、诊断插队、MessagePort'],
             [<code>@tiny/template-compiler</code>, '30', '脚本依赖、WXS、import/include、模板别名、ProcGen 签名、绑定表复用、事件简写、data-* 绑定、stringify 往返'],
             [<code>@tiny/stylesheet-compiler</code>, '29', 'class/tag 前缀、rpx/calc、@import 编码和包装、@layer、:host 低优先级、hostAttribute、keyframes、page 根节点'],
-            [<code>@tiny/cli</code>, '12', 'manifest 全产物、命名配置、WXS 双注册、配置合并、service/render 入口、TS/source map、样式作用域、tag marker'],
-            [<code>@tiny/host-web-components</code>, '23', '23 个 tag 模板、共享 behaviors、button 对齐、label、input、checkbox/slider/switch、progress/swiper/icon、image/icon 渲染'],
+            [<code>@tiny/cli</code>, '13', 'manifest 全产物、命名配置、WXS 双注册、配置合并、service/render 入口、TS/source map、样式作用域、tag marker'],
+            [<code>@tiny/host-web-components</code>, '30', '23 个 tag 模板、共享 behaviors、button 对齐、label、input、checkbox/slider/switch、progress/swiper/icon、image/icon 渲染'],
             [<code>@tiny/runtime</code>, '64', '全局安装和命名、双线程 bootstrap、组件 schema、behaviors/observers/relations/externalClasses/styleIsolation/selectComponent、组件型页面、资源、导航、API host、诊断'],
           ]}
         />
