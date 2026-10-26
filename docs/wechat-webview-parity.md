@@ -1,8 +1,8 @@
 # 微信 WebView 版功能对齐度分析
 
-> **快照**：2026-10-26（第十二次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
+> **快照**：2026-10-26（第十三次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
 >
-> **结论**：加权功能对齐约 **44%（43–45%）**；页面启动率 85.5%；生产可替换 < 20%
+> **结论**：加权功能对齐约 **44.7%（43–46%）**；页面启动率 92.3%；生产可替换 < 20%
 >
 > **维护**：功能完成后更新本文的评分表、覆盖表、实测数据和变更记录
 
@@ -10,11 +10,11 @@
 
 ## 1. 结论摘要
 
-- 按微信 WebView 版全量能力计算，当前引擎约完成 **四成四**：加权得分 **44.23%**。
+- 按微信 WebView 版全量能力计算，当前引擎约完成 **四成半**：加权得分 **44.67%**。
 - 能力结构仍然偏科：**编译/渲染约 75%，框架约 63%，内置组件约 54%，平台 API 约 13%，页面形态约 25%**。
 - 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent` 均已落地，Component-as-page 也接入了同一套核心语义；UI 库的核心语义障碍基本移除，但 npm 构建、`generics`/`definitionFilter` 等仍有缺口。
 - 内置组件已完成宿主迁移、P0 视觉重写和 P1 内部结构收口：23 个标签为真实 `tiny-*` 宿主，checkbox/radio/switch/slider/icon/image/picker/picker-view 已按 2.7.0 参考实现重写；input/textarea/button/form 完成 wrapper/分支/语义补强，scroll-view 接受 native 滚动近似。
-- 仓库内置的微信官方 demo 子集（117 页）中，**100 页能启动（85.5%）**，96 页有可见文本；但这是“能挂载”，不是“功能对齐”。
+- 仓库内置的微信官方 demo 子集（117 页）中，**108 页能启动（92.3%）**，104 页有可见文本；canvas 2D/WebGL 两页已修复，但启动率仍是“能挂载”，不是“功能对齐”。
 - 普通业务小程序最依赖的 `wx.login`、`wx.requestPayment`、媒体/文件/定位等平台 API 仍未实现；内置导航栏/tabBar 已在 devtool 宿主落地并接入 `switchTab`，但自定义 tabBar、下拉刷新、分享与转场仍缺。
 - 一句话：**组件语义这条线已经补齐，平台 API 和页面形态仍是决定“能否替换微信运行时”的主要短板。**
 
@@ -71,14 +71,14 @@
 | --- | ---: | ---: | ---: | --- |
 | 编译/构建 | 10% | 75% | 7.50 | WXML/WXSS/WXS 基本完整；app.wxss 的 tag/class 规则可作用到页面与内置宿主；app.json 只消费少量字段；无 npm 构建、无 TS 类型检查 |
 | 框架运行时 | 18% | 63% | 11.34 | 9/14 页面生命周期、3/5 路由；tab 页缓存/onTabItemTap、group/label/touchtrack/scroller 基础已接；缺 generics/definitionFilter |
-| 内置组件 | 17% | 54% | 9.18 | 23/60 标签；P0 视觉完成，P1 内部结构大幅收口；已统计属性 118/146、事件 44/46；scroll-view 为已知 native 近似 |
+| 内置组件 | 17% | 55% | 9.35 | 23/60 标签；P0 视觉完成，P1 内部结构大幅收口；canvas 2D/WebGL 已接真实 context；已统计属性 118/146、事件 44/46 |
 | wx API | 20% | 13% | 2.60 | 65/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar/switchTab 等已接或桩 |
 | 页面形态 | 12% | 25% | 3.00 | devtool 宿主已实现导航栏/tabBar/页面滚动/触底/tab 页缓存；测试/生产宿主仍未提供，评分保守；缺下拉刷新/分享/转场 |
-| 样式/渲染 | 8% | 73% | 5.84 | WXSS/rpx/作用域强；app.wxss tag/class 规则作用到页面与共享组件；`:host` 低优先级与 canvas 仍不完整 |
+| 样式/渲染 | 8% | 76% | 6.08 | WXSS/rpx/作用域强；app.wxss tag/class 规则作用到页面与共享组件；canvas 2D/WebGL/RAF 已接，导出 API 仍缺 |
 | 宿主/平台 | 8% | 15% | 1.20 | 仅浏览器宿主；无原生/网络/登录/支付/分享 |
 | 开发工具 | 4% | 45% | 1.80 | 应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar、移动端访问提示；不是完整微信开发者工具 |
 | 质量/验证 | 3% | 55% | 1.65 | 180 单测 + 48 步浏览器验收；新增 tabBar/视觉结构、应用列表/LRU/页面栈上限、移动端提示页断言；无性能/安全/原生测试 |
-| **合计** | **100%** | — | **44.23%** | |
+| **合计** | **100%** | — | **44.67%** | |
 
 ### 条目覆盖率速览
 
@@ -288,12 +288,12 @@ hasBehavior / export / wx://component-export
 
 ### 5.1 验收门禁
 
-2026-10-24 本地跑 `pnpm accept:glass-easel`，全部通过：
+2026-10-26 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
 - **180 个单元测试**（runtime 68 个，host-web-components 30 个）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
-- **48 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧
+- **51 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧，canvas 覆盖 2D/WebGL/legacy/ECharts
 - 门禁覆盖的 5 段流程无 console/page error（117 页探针的 pageerror 见 5.2）
 
 这说明现有能力是**真实可运行**的，不是纸面设计。
@@ -304,9 +304,9 @@ hasBehavior / export / wx://component-export
 
 | 指标 | 结果 |
 | --- | --- |
-| 成功挂载 | **100 / 117（85.5%）** |
-| 有可见文本 | 96 / 117 |
-| 页面级报错/崩溃 | 17 页 |
+| 成功挂载 | **108 / 117（92.3%）** |
+| 有可见文本 | 104 / 117 |
+| 页面级报错/崩溃 | 9 页 |
 | console error | 0 |
 
 **探针方法**：
@@ -319,10 +319,10 @@ hasBehavior / export / wx://component-export
 
 **结果解读**：
 
-- 85.5% 是“能挂载”，不是“功能对齐”。
-- 100 页能启动，很大程度是因为不支持的组件降级成普通 DOM、不支持的 API 返回 `undefined` 且只发 warning、很多调用发生在点击之后。
-- 17 页失败集中在 worker、媒体、平台 API、WXS、AI 相机（该快照中的 canvas 2D/WebGL 两页已修复，明细见附录 A）。
-- 2026-10-24 第二次探针（补齐组件语义后）结果与首次一致：仍是 100/117 启动、96 页可见文本、0 console error；新增语义没有降低启动率。
+- 92.3% 是“能挂载”，不是“功能对齐”。
+- 108 页能启动，很大程度是因为不支持的组件降级成普通 DOM、不支持的 API 返回 `undefined` 且只发 warning、很多调用发生在点击之后。
+- 9 页失败集中在 worker、媒体/音频、平台 API、WXS 和 `this.animate`（canvas 2D/WebGL 已修复，明细见附录 A）。
+- 2026-10-26 第十三次探针：canvas 2D/WebGL handoff 后从 100/117 提升到 108/117，可见文本 104/117；仍保持 0 console error。
 
 ### 5.3 官方 demo API 覆盖
 
@@ -343,15 +343,15 @@ getMenuButtonBoundingClientRect / getPerformance
 
 其中 `login` 只是宿主 stub code，`openSetting/authorize` 还没有真实权限模型；`createCanvasContext` 已接 OffscreenCanvas handoff；`createSelectorQuery` 只支持 canvas；`createAnimation` 只映射最终态；`getFileSystemManager` 只有 fail stub。真正“能用”的核心 API 约 18–22 个。
 
-### 5.4 为什么“85.5% 启动”和“44% 对齐”不矛盾
+### 5.4 为什么“92.3% 启动”和“44.7% 对齐”不矛盾
 
 | 口径 | 回答的问题 | 结果 |
 | --- | --- | --- |
-| 启动率 | 页面能不能挂载？ | 85.5% |
-| 功能对齐 | 页面上的功能是否按微信语义工作？ | ~44% |
+| 启动率 | 页面能不能挂载？ | 92.3% |
+| 功能对齐 | 页面上的功能是否按微信语义工作？ | ~44.7% |
 | 生产可替换 | 普通业务小程序能否直接上线？ | < 20% |
 
-启动率高，是因为引擎“尽量不崩”；功能对齐仍只有约 44%，是因为 API、页面形态和剩余 P1 组件语义仍有大量缺口；组件结构收口和 tabBar 只把高权重短板抬了一部分。
+启动率高，是因为引擎“尽量不崩”；功能对齐仍只有约 44.7%，是因为 API、页面形态和剩余 P1 组件语义仍有大量缺口；canvas 修复和组件结构收口只把高权重短板抬了一部分。
 
 ---
 
@@ -397,7 +397,7 @@ getMenuButtonBoundingClientRect / getPerformance
 ### 6.5 真实兼容证据
 
 - Taro 3 React 产物（todo）能跑：`webpackJsonp`、递归模板、外部 WXS、Redux 列表均通过
-- 微信官方 demo 子集 100/117 页能挂载，96 页有可见文本
+- 微信官方 demo 子集 108/117 页能挂载，104 页有可见文本
 - ECharts 通过 service 离屏 canvas → PNG 帧 → render `drawImage` 跑通
 - 内置组件、页面样式、`app.wxss` 作用域在验收中有真实断言
 - P0 新增 5 步组件语义验收：Behavior/observer、styleIsolation 矩阵、externalClasses、relations、selectComponent
@@ -541,32 +541,22 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 页面 | 诊断码 | 报错 |
 | --- | --- | --- |
 | `packageComponent/pages/view/scroll-view/scroll-view` | BOOTSTRAP_ERROR | `this.animate is not a function` |
-| `packageComponent/pages/media/image/image` | BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'getTempFileURL')` |
-| `packageComponent/pages/canvas/canvas-2d/canvas-2d` | ✅ 已修复 | canvas node / `requestAnimationFrame` / `createImage` 已支持 |
-| `packageComponent/pages/canvas/webgl/webgl` | ✅ 已修复 | OffscreenCanvas handoff 后 WebGL context 可用 |
 | `packageComponent/pages/open/ad/ad` | BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'expt_args_2')` |
 | `packageAPI/pages/page/intersection-observer/intersection-observer` | BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'relativeTo')` |
 | `packageAPI/pages/device/bluetooth/bluetooth` | RENDER_BOOTSTRAP_ERROR | `D is not a function` |
-| `packageAPI/pages/device/on-accelerometer-change/on-accelerometer-change` | PAGE_READY_ERROR | `Cannot read properties of undefined (reading 'beginPath')` |
 | `packageAPI/pages/media/voice/voice` | BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'onStart')` |
 | `packageAPI/pages/media/background-audio/background-audio` | BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'onPlay')` |
-| `packageAPI/pages/media/audio/audio` | PAGE_READY_ERROR | `Cannot set properties of undefined (setting 'src')` |
 | `packageAPI/pages/storage/get-background-prefetch-data/get-background-prefetch-data` | BOOTSTRAP_ERROR | `Cannot destructure property 'fetchedData' of 'res' as it is undefined.` |
-| `packageAPI/pages/worker/worker/worker` | PAGE_READY_ERROR | `Cannot read properties of undefined (reading 'beginPath')` |
 | `packageAPI/pages/framework/wxs/movable` | RENDER_BOOTSTRAP_ERROR | `lastTop is not defined` |
 | `packageAPI/pages/framework/wxs/sidebar` | RENDER_BOOTSTRAP_ERROR | `startmark is not defined` |
-| `packageAPI/pages/ai/mobilenet/index` | PAGE_READY_ERROR | `Cannot read properties of undefined (reading 'onCameraFrame')` |
-| `packageAPI/pages/ai/mobilenet_int8/index` | PAGE_READY_ERROR | `Cannot read properties of undefined (reading 'onCameraFrame')` |
 
 失败类别汇总：
 
 | 类别 | 页数 | 缺失能力 |
 | --- | ---: | --- |
-| canvas 2D / WebGL / worker | 4 | canvas 2D/WebGL 主链路已修复；worker 与部分 node API 仍缺 |
-| 媒体/音频/图片 | 4 | 音频上下文、云文件、图片临时文件 |
-| 平台 API | 4 | IntersectionObserver、蓝牙、广告、后台预取 |
+| 平台 API | 4 | 广告 expt、IntersectionObserver、蓝牙、后台预取 |
+| 媒体/音频 | 2 | 音频上下文 onStart/onPlay |
 | WXS | 2 | WXS 作用域/全局变量语义 |
-| AI 相机 | 2 | 相机帧回调 |
 | 组件方法 | 1 | `this.animate` |
 
 ---
@@ -577,7 +567,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | --- | --- |
 | 视图容器（11） | ✅ view、scroll-view、swiper、swiper-item；❌ movable-area、movable-view、cover-view、cover-image、match-media、page-container、root-portal |
 | 基础内容（5） | ✅ icon、text、progress；❌ rich-text、selection |
-| 表单（17） | ✅ button、checkbox、checkbox-group、radio、radio-group、slider、switch、input、label；❌ picker、picker-view、picker-view-column、form、textarea、editor、editor-portal、keyboard-accessory |
+| 表单（17） | ✅ button、checkbox、checkbox-group、radio、radio-group、slider、switch、input、label、picker、picker-view、picker-view-column、form、textarea；❌ editor、editor-portal、keyboard-accessory |
 | 导航（2） | ❌ navigator、functional-page-navigator |
 | 媒体（9） | ✅ image；❌ audio、video、camera、live-player、live-pusher、voip-room、channel-live、channel-video |
 | 地图（1） | ❌ map |
@@ -626,3 +616,5 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 
 | 2026-10-26 | 第十二次校准：P1 组件收口（input/textarea wrapper、button native/longtap、form-field/reportSubmit、swiper 绝对布局、scroll-view 三层、progress ARIA/动画）、app.wxss class 规则作用域修复；180 单测 / 47 步；总分 41.91→44.23 | **44.23%** |
 | 2026-10-26 | Devtool 移动端设备识别：手机/平板浏览器显示“请在电脑端访问”提示页，不加载 launcher/runtime；桌面端行为不变；`?desktop=1` 保留显式绕过；devtool 验收新增移动端 UA 步骤，总步数 48 | **44.23%** |
+
+| 2026-10-26 | 第十三次校准：canvas 2D/WebGL 通过 OffscreenCanvas handoff 接入真实同步 context；117 页探针 100→108 启动、104 可见、9 失败；51 步浏览器验收；总分 44.23→44.67 | **44.67%** |

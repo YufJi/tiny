@@ -37,7 +37,7 @@
 | 交互语义 | ⚠️ 部分 | 触摸/滚动/group/label 仍是近似 |
 | P1 组件内部结构 | ⚠️ 部分 | input/textarea/swiper/form/button；scroll-view 接受 native 近似 |
 | 表单/受控能力 | ⚠️ 部分 | group value、自定义 form-field、reportSubmit |
-| 全项目能力对齐分 | 44.23% | 来自 [wechat-webview-parity.md](./wechat-webview-parity.md)，是整体能力分，不是组件单项分 |
+| 全项目能力对齐分 | 44.67% | 来自 [wechat-webview-parity.md](./wechat-webview-parity.md)，是整体能力分，不是组件单项分 |
 
 一句话：**结构层已经基本对齐，主要差距在交互模型、P1 组件内部结构和表单语义。**
 
@@ -332,4 +332,4 @@ pnpm lint                # 8 files checked, no fixes applied
 
 ### 6.5 全项目分数
 
-`44.23%` 来自 [wechat-webview-parity.md](./wechat-webview-parity.md) 的整体能力校准（23/60 标签、65/502 API、页面生命周期 9/14、路由 3/5 等），**不是**本文 23 个组件的单项得分；组件结构对齐不应直接等同于总分提升。
+`44.67%` 来自 [wechat-webview-parity.md](./wechat-webview-parity.md) 的整体能力校准（23/60 标签、65/502 API、页面生命周期 9/14、路由 3/5 等），**不是**本文 23 个组件的单项得分；组件结构对齐不应直接等同于总分提升。

@@ -17,8 +17,8 @@ export default function Testing() {
       <PageHero
         eyebrow="测试与验收"
         title={<>用真实小程序验收，<br /><span className="gradient">不只跑单元测试</span></>}
-        lede="Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 和 render 线程，在 Chromium 里点击、输入、导航，失败时保存截图。180 个单元测试覆盖协议、组件语义和编译逻辑，47 个浏览器步骤验证端到端行为。"
-        stats={[['180', '单元测试'], ['47', '浏览器步骤'], ['5', '浏览器流程'], ['5', '测试小程序']]}
+        lede="Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 和 render 线程，在 Chromium 里点击、输入、导航，失败时保存截图。180 个单元测试覆盖协议、组件语义和编译逻辑，51 个浏览器步骤验证端到端行为。"
+        stats={[['180', '单元测试'], ['51', '浏览器步骤'], ['5', '浏览器流程'], ['5', '测试小程序']]}
       />
       <PageNav items={[
         ['gate', '验收流程'],
@@ -95,13 +95,13 @@ export default function Testing() {
       <Section
         id="flows"
         kicker="浏览器流程"
-        title="47 个步骤怎么分配"
+        title="51 个步骤怎么分配"
         intro="每一步都在真实 Chromium 中执行，会检查页面状态、DOM、像素或 console。"
       >
         <Table
           head={['流程', '测试小程序', '步数', '验证内容']}
           rows={[
-            ['P0 demo', <code>tests/apps/demo</code>, '20', '双线程启动、内置组件、按钮矩阵、样式作用域、事件、导航、storage、canvas 诊断、组件语义、零 console error'],
+            ['P0 demo', <code>tests/apps/demo</code>, '24', '双线程启动、内置组件、按钮矩阵、样式作用域、事件、导航、storage、canvas 诊断/2D/WebGL/legacy/ECharts、组件语义、零 console error'],
             ['现有示例', <code>tests/apps/mini</code>, '9', '真实 todos、双 add-button 实例、import/include/template、输入、ECharts 柱状图、子包、warning'],
             ['Taro 3', <code>tests/apps/todo</code>, '6', 'Redux todos、输入 + Enter、勾选、筛选、清空、零错误'],
             ['WeChat demo', <code>tests/apps/wechat-demo</code>, '4', '组件索引、button 页、storage API 页、零错误'],

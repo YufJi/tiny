@@ -103,7 +103,7 @@ export default function Home() {
             <p><a href="#/hosts">进入宿主适配 →</a></p>
           </Card>
           <Card tag="testing" title="靠真实小程序验证">
-            <p>180 个单元测试、47 个浏览器步骤、五个测试小程序，以及目前还没有覆盖的部分。</p>
+            <p>180 个单元测试、51 个浏览器步骤、五个测试小程序，以及目前还没有覆盖的部分。</p>
             <p><a href="#/testing">进入测试与验收 →</a></p>
           </Card>
         </Cards>
@@ -217,7 +217,7 @@ export default function Home() {
       <Section
         kicker="测试覆盖"
         title="这些能力都有自动化测试"
-        intro="下面这些行为都在 47 个浏览器步骤里实际点击、输入和断言过。"
+        intro="下面这些行为都在 51 个浏览器步骤里实际点击、输入和断言过。"
       >
         <Cards className="three">
           <Card title="真实示例小程序"><p>todos、add-todo、组件语义页、ECharts 柱状图、子包页面、组件插槽、import/include/template 和 animation。</p></Card>
