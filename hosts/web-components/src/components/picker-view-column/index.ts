@@ -167,7 +167,12 @@ export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
         const min = -(Math.max(0, count - 1)) * itemHeight
         const delta = y - instance._startY
         if (Math.abs(delta) > 4) instance._moved = true
-        const translate = Math.max(min, Math.min(0, (instance._startTranslate ?? 0) + delta))
+        const raw = (instance._startTranslate ?? 0) + delta
+        const translate = raw > 0
+          ? raw * 0.3
+          : raw < min
+            ? min + (raw - min) * 0.3
+            : raw
         const now = Date.now()
         const elapsed = Math.max(1, now - Number(instance._lastTime ?? now))
         const velocity = (y - Number(instance._lastY ?? y)) / elapsed

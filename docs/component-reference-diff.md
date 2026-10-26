@@ -112,7 +112,7 @@
 - [x] `translateY` + `transition` 吸附滚动，触摸和 pointer 鼠标拖动共用逻辑；
 - [x] `indicator-style` 高度解析、item 高度/遮罩/居中位置跟随；
 - [x] 初始 `value` 同步、越界 clamp、`columnchange`/`pickstart`/`pickend`；
-- [x] 已补基于拖动速度的简单惯性；仍无参考的越界回弹；
+- [x] 已补基于拖动速度的惯性 + 越界阻力回弹；
 - [ ] 内部事件名与参考 `wxPickerColumnValueChanged` 等不同。
 
 **button**
@@ -130,6 +130,7 @@
 - [x] input 的 `focus`/`autoFocus`/`cursor`/`selectionStart`/`selectionEnd` 已映射到原生 input；
 - [ ] input 的镜像 div/下拉候选/`dropdownStyle` 仍未实现；
 - [x] textarea 的 wrapper/placeholder/scrollHeight autoHeight 已补；
+- [x] textarea 的 focus/autoFocus/cursor/selection 已映射到原生控件；
 - [ ] textarea 的 `fixed`/`showConfirmBar`/`disableDefaultPadding` 和 placeholderClass 前缀仍未实现。
 
 **scroll-view / swiper**
@@ -208,6 +209,8 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 - `placeholderClass` 的参考前缀处理；
 - 参考 `compute`/`stylecompute` 层的完整镜像语义。
 
+`focus`/`autoFocus`/`cursor`/`selectionStart`/`selectionEnd` 已映射到原生 textarea。
+
 ### 4.3 scroll-view 的滚动模型
 
 三层结构和 `backend` 指向 main 已完成。仍缺：
@@ -256,7 +259,7 @@ wrapper/slides/slide-frame 层级和指示点默认值已补（8×8/bottom 10/ga
 - `wx-touchtrack`：各组件零散 touch/pointer 事件，没有统一 tap 判定、捕获和取消语义；
 - checkbox/radio 的精确 tap/aria 仍依赖原生 label/input，没有复刻参考的 touchtrack/aria 组合；
 - `wx-scroller`：scroll-view 已做 scroll 节流、picker-view 已做简单惯性，但 swiper/scroll 的统一滚动状态模型仍缺；
-- picker-view：已补简单速度惯性，仍无参考的越界回弹，内部事件名不同。
+- picker-view：已补速度惯性和越界阻力回弹，内部事件名仍与参考不同。
 
 ## 5. 历史处理记录
 

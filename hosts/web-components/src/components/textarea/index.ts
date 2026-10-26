@@ -37,10 +37,20 @@ export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
       autoHeight() {
         this.scheduleAutoHeight()
       },
+      focus(value: number) {
+        if (Number(value) > 0) this.focusNative()
+      },
+      autoFocus(value: boolean) {
+        if (value) setTimeout(() => this.focusNative(), 0)
+      },
+      'cursor, selectionStart, selectionEnd'() {
+        this.applySelection()
+      },
     },
     lifetimes: {
       attached() {
         this.scheduleAutoHeight()
+        if (this.data.autoFocus) setTimeout(() => this.focusNative(), 0)
       },
     },
     options: ctx.hostOptions(),
@@ -49,6 +59,32 @@ export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
         return (this.getShadowRoot?.() as {
           getElementById?: (id: string) => { getBackendElement?: () => { style?: { height?: string }; scrollHeight?: number } | null } | null
         } | null)?.getElementById?.('native-textarea')?.getBackendElement?.() ?? null
+      },
+      focusNative() {
+        const element = this.textareaElement() as {
+          focus?: () => void
+        } | null
+        element?.focus?.()
+        this.applySelection()
+      },
+      applySelection() {
+        const element = this.textareaElement() as {
+          value?: string
+          setSelectionRange?: (start: number, end: number) => void
+        } | null
+        if (!element?.setSelectionRange) return
+        const value = String(element.value ?? this.data.value ?? '')
+        const cursor = Number(this.data.cursor ?? -1)
+        let start = Number(this.data.selectionStart ?? -1)
+        let end = Number(this.data.selectionEnd ?? -1)
+        if (cursor >= 0) {
+          start = cursor
+          end = cursor
+        }
+        if (start < 0 && end < 0) return
+        const max = value.length
+        const clamp = (position: number) => Math.max(0, Math.min(max, Number.isFinite(position) ? position : 0))
+        element.setSelectionRange(clamp(start), clamp(end))
       },
       scheduleAutoHeight() {
         if (!this.data.autoHeight) return
