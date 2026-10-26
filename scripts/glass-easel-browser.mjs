@@ -930,8 +930,8 @@ export async function runDevtoolAcceptance({ baseUrl }) {
       if (!(await page.locator('.td-launcher').isVisible().catch(() => false))) {
         await ensureLauncher()
       }
-      const row = page.locator('.td-launcher-main').filter({ hasText: fixture.label }).first()
-      assert.ok(await row.count(), `launcher row for ${fixture.label} is missing`)
+      const row = page.locator(`.td-launcher-main[aria-label$="${fixture.label}"]`)
+      assert.equal(await row.count(), 1, `launcher row for ${fixture.label} is missing`)
       await row.click()
       await page.waitForFunction(
         (appId) => window.__tinyDevtoolApps?.getActiveAppId() === appId,
@@ -974,8 +974,13 @@ export async function runDevtoolAcceptance({ baseUrl }) {
       assert.equal(await page.locator('.td-launcher-main').count(), fixtures.length)
       assert.deepEqual(
         await page.locator('.td-launcher-name').allInnerTexts(),
-        fixtures.map((fixture) => fixture.label),
-        'launcher does not list every fixture in registry order',
+        fixtures.map((fixture) => fixture.title),
+        'launcher does not list every fixture title in registry order',
+      )
+      assert.deepEqual(
+        await page.locator('.td-launcher-meta').allInnerTexts(),
+        fixtures.map((fixture) => `${fixture.id} · ${fixture.pages} pages`),
+        'launcher meta does not show every fixture id and page count',
       )
       assert.equal(await page.locator('.td-nav-title').innerText(), 'Test apps')
       assert.equal(
@@ -1025,7 +1030,7 @@ export async function runDevtoolAcceptance({ baseUrl }) {
       )
       assert.equal(
         await page.locator('.td-nav-title').innerText(),
-        'Tiny Glass Easel',
+        fixtureById.get('demo').title,
         'host navigation bar did not project the app title',
       )
       assert.equal(
@@ -1275,9 +1280,12 @@ export async function runDevtoolAcceptance({ baseUrl }) {
       }
 
       assert.deepEqual(await sessionIds(), ['echarts', 'todo', 'wechat-demo'])
+      const evictedDemoRow = page.locator(
+        `.td-launcher-main[aria-label$="${fixtureById.get('demo').label}"] .td-launcher-state`,
+      )
       assert.equal(
-        await page.locator('.td-launcher-main').filter({ hasText: 'tests/apps/demo' }).getByText('Launch').count(),
-        1,
+        await evictedDemoRow.innerText(),
+        'Launch',
         'evicted app did not return to the Launch state',
       )
     })

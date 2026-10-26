@@ -113,8 +113,9 @@ The gate scans every `tests/apps/*` fixture with an `app.json`, compiles all of 
 `apps/devtool/static/runtime/apps.json`, starts the devtool, and verifies the runtime
 debugger:
 
-1. Opening `/` shows the **Mini programs** launcher by default: every fixture is listed,
-   no runtime iframe exists, and the warm-app counter reads `0 / 3`.
+1. Opening `/` shows the **Mini programs** launcher by default: every fixture is listed with
+   its `navigationBarTitleText` as the row title and the fixture id plus page count as
+   metadata, no runtime iframe exists, and the warm-app counter reads `0 / 3`.
 2. Clicking `demo` creates that app's service/render iframes, updates the URL to
    `?app=demo`, and `DevtoolRuntimeClient` reports `running`.
 3. Page stack, current page, per-page render frames, structured diagnostics, and the
