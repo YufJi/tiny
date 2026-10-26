@@ -550,6 +550,28 @@ describe('P0 built-in components', () => {
   })
 
 
+  test('swiper honors displayMultipleItems and skipHiddenItemLayout', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { swiper: builtins.swiper, 'swiper-item': builtins['swiper-item'] },
+      template: compilePage(`
+        <swiper id="multi" display-multiple-items="2" current="1">
+          <swiper-item>a</swiper-item><swiper-item>b</swiper-item><swiper-item>c</swiper-item>
+        </swiper>
+        <swiper id="hidden" indicator-dots skip-hidden-item-layout>
+          <swiper-item>a</swiper-item><swiper-item hidden>b</swiper-item><swiper-item>c</swiper-item>
+        </swiper>
+      `),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    expect(host('multi').data.trackStyle).toContain('translateX(-50%)')
+    expect(host('hidden').data.dots).toHaveLength(2)
+  })
+
   test('form controls reuse wx-disabled, wx-data-component, wx-label-target and group/item behaviors', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)

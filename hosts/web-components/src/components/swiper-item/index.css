@@ -5,3 +5,7 @@ tiny-swiper-item {
   width: calc(100% / var(--tiny-swiper-items, 1));
   height: 100%;
 }
+
+tiny-swiper-item[hidden] {
+  display: none;
+}

@@ -55,6 +55,12 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
       interval() {
         this.restartAutoplay()
       },
+      displayMultipleItems() {
+        this.updateTrackStyle()
+      },
+      skipHiddenItemLayout() {
+        this.syncDots()
+      },
       currentItemId(value: string) {
         if (!value) return
         this.applyCurrentItemId(String(value), 0)
@@ -97,19 +103,31 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
         }
         if (attempt < 10) setTimeout(() => this.applyCurrentItemId(itemId, attempt + 1), 16)
       },
-      syncDots() {
+      itemElements(): unknown[] {
         const host = (this as unknown as { getBackendElement?: () => { querySelectorAll?: (selector: string) => ArrayLike<unknown> } | null }).getBackendElement?.()
-        let count = host?.querySelectorAll ? host.querySelectorAll('tiny-swiper-item, .tiny-swiper-item').length : 0
-        if (count === 0) {
-          const children = (this as unknown as { childNodes?: unknown[] }).childNodes
-          count = Array.isArray(children) ? children.length : 0
-        }
+        const items = host?.querySelectorAll
+          ? Array.from(host.querySelectorAll('tiny-swiper-item, .tiny-swiper-item'))
+          : []
+        const all = items.length > 0
+          ? items
+          : Array.isArray((this as unknown as { childNodes?: unknown[] }).childNodes)
+            ? (this as unknown as { childNodes: unknown[] }).childNodes
+            : []
+        if (!this.data.skipHiddenItemLayout) return all
+        return all.filter((item) => {
+          const element = item as { hidden?: boolean; hasAttribute?: (name: string) => boolean; data?: { hidden?: boolean } }
+          if (typeof element.hasAttribute === 'function') return !element.hasAttribute('hidden')
+          if (typeof element.hidden === 'boolean') return !element.hidden
+          return !element.data?.hidden
+        })
+      },
+      syncDots() {
+        const count = this.itemElements().length
         const dots = Array.from({ length: count }, (_value, index) => index)
         this.setData({ dots })
         if (count === 0) {
           setTimeout(() => {
-            const retryHost = (this as unknown as { getBackendElement?: () => { querySelectorAll?: (selector: string) => ArrayLike<unknown> } | null }).getBackendElement?.()
-            const retryCount = retryHost?.querySelectorAll ? retryHost.querySelectorAll('tiny-swiper-item, .tiny-swiper-item').length : 0
+            const retryCount = this.itemElements().length
             if (retryCount > 0) {
               this.setData({ dots: Array.from({ length: retryCount }, (_value, index) => index) })
             }
@@ -119,10 +137,11 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
       updateTrackStyle() {
         const index = Number(this.data.activeIndex) || 0
         const axis = this.data.vertical ? 'Y' : 'X'
+        const step = 100 / Math.max(1, Number(this.data.displayMultipleItems) || 1)
         const duration = Number(this.data.duration) || 500
         const easing = this.data.easingFunction === 'ease-in' ? 'ease-in' : this.data.easingFunction === 'ease-out' ? 'ease-out' : this.data.easingFunction === 'ease-in-out' ? 'ease-in-out' : this.data.easingFunction === 'linear' ? 'linear' : 'ease'
         this.setData({
-          trackStyle: `transform: translate${axis}(-${index * 100}%); transition-duration: ${duration}ms; transition-timing-function: ${easing};`,
+          trackStyle: `transform: translate${axis}(-${index * step}%); transition-duration: ${duration}ms; transition-timing-function: ${easing};`,
         })
       },
       setActive(index: number, source: string) {

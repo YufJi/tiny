@@ -139,7 +139,8 @@
 - [x] swiper 已补 `wrapper > slides > slide-frame` 结构；track 仍是 flex，参考是绝对定位 + transform；
 - [x] swiper 指示点默认已对齐：8×8、bottom 10、gap 8、`rgba(0,0,0,.3)`/`#000`；
 - [x] `currentItemId` 可定位到对应 item；
-- [ ] `skipHiddenItemLayout`、`displayMultipleItems`/margin 的精确布局未完整实现。
+- [x] `displayMultipleItems` 的 track 步长和 `skipHiddenItemLayout` 的可见项计数已补；
+- [ ] `previousMargin`/`nextMargin` 的精确布局和 swiper-item relation 未完整实现。
 
 **form / 分组**
 
@@ -216,8 +217,7 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 wrapper/slides/slide-frame 层级和指示点默认值已补（8×8/bottom 10/gap 8/`rgba(0,0,0,.3)`/`#000`）。仍缺：
 
 - slide-frame 仍用 flex track，参考是绝对定位 + transform；
-- `displayMultipleItems`、`previousMargin`/`nextMargin` 的精确布局（`currentItemId` 已补）；
-- `skipHiddenItemLayout`；
+- `previousMargin`/`nextMargin` 的精确布局；
 - swiper-item 与 swiper 的 relation。
 
 ### 4.5 button 的 native/open-type
@@ -282,9 +282,9 @@ pnpm lint                # 8 files checked, no fixes applied
 | `@tiny/template-compiler` | 30 |
 | `@tiny/stylesheet-compiler` | 29 |
 | `@tiny/cli` | 12 |
-| `@tiny/host-web-components` | 29 |
+| `@tiny/host-web-components` | 30 |
 | `@tiny/runtime` | 65 |
-| **合计** | **175** |
+| **合计** | **176** |
 
 ### 6.3 浏览器验收
 
@@ -304,7 +304,7 @@ pnpm lint                # 8 files checked, no fixes applied
 - picker-view 的拖动/吸附/初始 value；
 - form-field/reportSubmit 在真实多线程宿主中的完整链路；
 - button native/open-type；
-- swiper 绝对定位布局、picker-view 越界回弹。
+- swiper 绝对定位布局、margin 细节、picker-view 越界回弹。
 
 ### 6.5 全项目分数
 
