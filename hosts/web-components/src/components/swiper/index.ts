@@ -56,6 +56,7 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
         this.restartAutoplay()
       },
       displayMultipleItems() {
+        this.layoutItems()
         this.updateTrackStyle()
       },
       skipHiddenItemLayout() {
@@ -121,14 +122,25 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
           return !element.data?.hidden
         })
       },
+      layoutItems() {
+        const items = this.itemElements() as Array<{
+          style?: { setProperty?: (name: string, value: string) => void }
+        }>
+        const step = 100 / Math.max(1, Number(this.data.displayMultipleItems) || 1)
+        items.forEach((item, index) => {
+          item.style?.setProperty?.('--tiny-swiper-offset', `${index * step}%`)
+        })
+      },
       syncDots() {
         const count = this.itemElements().length
         const dots = Array.from({ length: count }, (_value, index) => index)
+        this.layoutItems()
         this.setData({ dots })
         if (count === 0) {
           setTimeout(() => {
             const retryCount = this.itemElements().length
             if (retryCount > 0) {
+              this.layoutItems()
               this.setData({ dots: Array.from({ length: retryCount }, (_value, index) => index) })
             }
           }, 0)

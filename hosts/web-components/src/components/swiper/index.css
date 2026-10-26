@@ -9,14 +9,10 @@ tiny-swiper {
   height: 100%;
 }
 .tiny-swiper-track {
-  display: flex;
-  flex-direction: row;
+  display: block;
   height: 100%;
   transition-property: transform;
   transition-timing-function: ease;
-}
-.tiny-swiper.is-vertical .tiny-swiper-track {
-  flex-direction: column;
 }
 .tiny-swiper-dots {
   position: absolute;

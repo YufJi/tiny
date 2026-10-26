@@ -144,7 +144,7 @@
 - [x] `scroll-into-view` 增加目标延迟重试，滚动结果更稳定；
 - [x] `showScrollbar`/`bounces`/`pagingEnabled`/`scrollAnchoring`/`enableFlex` 映射到 CSS 状态类；
 - [ ] `wx-touchtrack`/`wx-scroller` 的完整状态和回收策略仍是近似；
-- [x] swiper 的 `wrapper > slides > slide-frame` 已改为绝对定位层；track 仍是 flex，item 级绝对定位未做；
+- [x] swiper 的 wrapper/slides/slide-frame 和 item 均为绝对定位层，offset 通过 CSS 变量写入；
 - [x] swiper 指示点默认已对齐：8×8、bottom 10、gap 8、`rgba(0,0,0,.3)`/`#000`；
 - [x] `currentItemId` 可定位到对应 item；
 - [x] swiper wrapper 补 `role=listbox`/aria-label。
@@ -317,7 +317,7 @@ pnpm lint                # 8 files checked, no fixes applied
 - picker-view 的拖动/吸附/初始 value；
 - form-field/reportSubmit 在真实多线程宿主中的完整链路；
 - button native/open-type；
-- swiper 绝对定位布局、margin 细节、picker-view 越界回弹。
+- swiper-item relation、picker-view 越界回弹细节。
 
 ### 6.5 全项目分数
 
