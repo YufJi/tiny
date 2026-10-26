@@ -45,18 +45,20 @@ export type StyleArtifact = {
   lowPrioritySourceMapPath?: string
   scope?: string
   /**
-   * Present on the app stylesheet page-scope template. The compiler wraps every
-   * class selector with `/*<sign>*\/`; the render thread replaces it with the
-   * page's scope prefix before appending a per-page copy. Such an artifact is
-   * not registered as a normal stylesheet. Consumers must identify it by this
-   * field rather than by a source filename or extension.
+   * Present on the app stylesheet page-scope template. The compiler anchors every
+   * selector compound to the placeholder scope and marks class names with
+   * `/*<sign>*\/`; the render thread expands both placeholders before appending
+   * a per-page copy. Such an artifact is not registered as a normal stylesheet.
+   * Consumers must identify it by this field rather than by a source filename or
+   * extension.
    */
   pageScopeClassSign?: string
 }
 
 /**
- * Comment marker inserted before app stylesheet class selectors in the page-scope
- * template. Chosen to be unlikely to appear in user stylesheets.
+ * Placeholder used by app page-scope selectors: inserted before class names and
+ * as the dynamic page-scope/host-attribute value. Chosen to be unlikely to
+ * appear in user stylesheets.
  */
 export const APP_PAGE_SCOPE_CLASS_SIGN = '__TINY_APP_PAGE_SCOPE__'
 

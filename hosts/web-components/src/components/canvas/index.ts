@@ -314,6 +314,6 @@ export function defineCanvas(ctx: BuiltinContext): BuiltinDefinition {
         }, 350)
       },
     },
-    options: ctx.hostOptions(),
+    options: ctx.hostOptions('canvas'),
   }).general()
 }

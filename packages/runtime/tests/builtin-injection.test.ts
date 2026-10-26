@@ -78,17 +78,21 @@ class RecordingBackend extends glassEasel.EmptyBackendContext {
 }
 
 describe('host-provided built-in components', () => {
-  test('receive the manifest naming prefix and own their base styles', async () => {
+  test('receive the manifest naming prefix and own scoped built-in styles', async () => {
     const manifest = createManifest()
     const [, renderTransport] = createInMemoryTransportPair()
     const backend = new RecordingBackend()
     const contexts: BuiltinComponentFactoryContext[] = []
+    let probeScope: number | undefined
     const builtinComponents: BuiltinComponents = {
       create(space, context) {
         contexts.push(context)
+        const scope = context.registerStyleScope('tiny-builtin-probe')
+        probeScope = scope
         return {
           probe: space.defineComponent({
             is: 'test:probe',
+            options: { styleScope: scope },
             properties: {
               label: { type: String, value: '' },
             },
@@ -96,10 +100,17 @@ describe('host-provided built-in components', () => {
           }).general(),
         }
       },
-      baseStyles: {
-        path: 'host-base.css',
-        content: 'tiny-probe { display: block; }',
-      },
+      styles: [
+        {
+          path: 'host-base.css',
+          content: 'tiny-probe { display: block; }',
+        },
+        {
+          path: 'probe-internal.css',
+          content: '.tiny-builtin-probe--inner { color: red; }',
+          scope: 'tiny-builtin-probe',
+        },
+      ],
     }
     const render = bootRenderThread({
       transport: renderTransport,
@@ -117,6 +128,9 @@ describe('host-provided built-in components', () => {
     render.adapter.registerStyles(manifest)
     expect(backend.styleSheets.get('host-base.css')).toBe('tiny-probe { display: block; }')
     expect(backend.styleSheetPaths.map((item) => item.path)).toContain('host-base.css')
+    expect(backend.styleSheets.get('probe-internal.css')).toBe('.tiny-builtin-probe--inner { color: red; }')
+    expect(backend.styleSheetPaths.find((item) => item.path === 'probe-internal.css')?.scope)
+      .toBe(probeScope)
 
     render.adapter.registerPageArtifact(manifest.pages[0]!)
     const instance = render.adapter.mountPage(PAGE_PATH, { label: 'injected' })

@@ -113,9 +113,9 @@ export async function runBrowserAcceptance({ baseUrl }) {
         assert.ok((await render.locator(selector).count()) > 0, `missing rendered element: ${selector}`)
       }
       assert.equal(await render.locator('tiny-swiper-item').count(), 2, 'swiper should render two items')
-      assert.equal(await render.locator('input.tiny-slider').inputValue(), '20')
-      assert.match(await render.locator('.tiny-progress-info').innerText(), /^20%$/)
-      const iconMetrics = await render.locator('tiny-icon .tiny-icon').first().evaluate((element) => {
+      assert.equal(await render.locator('input.tiny-builtin-slider--tiny-slider').inputValue(), '20')
+      assert.match(await render.locator('.tiny-builtin-progress--tiny-progress-info').innerText(), /^20%$/)
+      const iconMetrics = await render.locator('tiny-icon .tiny-builtin-icon--tiny-icon').first().evaluate((element) => {
         const style = getComputedStyle(element)
         const before = getComputedStyle(element, '::before')
         return {
@@ -131,12 +131,16 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.equal(iconMetrics.color, 'rgb(9, 187, 7)', 'icon success color mismatch')
       assert.notEqual(iconMetrics.content, 'none', 'icon should render a font glyph')
       assert.equal(iconMetrics.width, 23, 'icon width mismatch')
-      const imageLoaded = await render.locator('img.tiny-image-probe, img.tiny-image-img').first().evaluate(
+      const imageLoaded = await render.locator(
+        'img.tiny-builtin-image--tiny-image-probe, img.tiny-builtin-image--tiny-image-img',
+      ).first().evaluate(
         (element) => element.naturalWidth > 0,
       )
       assert.ok(imageLoaded, 'inlined image did not load')
 
-      const checkboxMetrics = await render.locator('tiny-checkbox .tiny-checkbox-input').first().evaluate((element) => {
+      const checkboxMetrics = await render.locator(
+        'tiny-checkbox .tiny-builtin-checkbox--tiny-checkbox-input',
+      ).first().evaluate((element) => {
         const style = getComputedStyle(element)
         const check = getComputedStyle(element, '::before')
         return {
@@ -153,7 +157,9 @@ export async function runBrowserAcceptance({ baseUrl }) {
       )
       assert.notEqual(checkboxMetrics.checkContent, 'none', 'checked checkbox should draw a check mark')
 
-      const switchMetrics = await render.locator('tiny-switch .tiny-switch-input').first().evaluate((element) => {
+      const switchMetrics = await render.locator(
+        'tiny-switch .tiny-builtin-switch--tiny-switch-input',
+      ).first().evaluate((element) => {
         const style = getComputedStyle(element)
         const knob = getComputedStyle(element, '::after')
         return { width: style.width, height: style.height, radius: style.borderTopLeftRadius, knobWidth: knob.width }
@@ -165,8 +171,8 @@ export async function runBrowserAcceptance({ baseUrl }) {
       )
 
       const sliderMetrics = await render.locator('tiny-slider').first().evaluate((element) => {
-        const track = element.querySelector('.tiny-slider-track')
-        const thumb = element.querySelector('.tiny-slider-thumb')
+        const track = element.querySelector('.tiny-builtin-slider--tiny-slider-track')
+        const thumb = element.querySelector('.tiny-builtin-slider--tiny-slider-thumb')
         return {
           trackHeight: track ? getComputedStyle(track).height : '',
           thumbWidth: thumb ? getComputedStyle(thumb).width : '',
@@ -200,6 +206,15 @@ export async function runBrowserAcceptance({ baseUrl }) {
         'rgb(9, 8, 7)',
         'universal selector did not match the page host scope',
       )
+      assert.equal(
+        await render.locator('page').evaluate((element) => getComputedStyle(element).outlineStyle),
+        'dotted',
+        'app universal selector did not match the page root marker',
+      )
+      const internalTextOutline = await render.locator('tiny-text span').first().evaluate(
+        (element) => getComputedStyle(element).outlineStyle,
+      )
+      assert.equal(internalTextOutline, 'none', 'app global selectors leaked into built-in component internals')
 
       const tagSpecificButton = render.locator('tiny-button').filter({ hasText: 'Show toast' }).first()
       assert.equal(
@@ -226,7 +241,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.ok(scrollPadding > 0, 'scoped page padding did not apply')
 
       const hasInlineText = await render.evaluate(() =>
-        [...document.querySelectorAll('.tiny-text')].some(
+        [...document.querySelectorAll('tiny-text span')].some(
           (element) => getComputedStyle(element).display === 'inline',
         ),
       )
@@ -260,13 +275,13 @@ export async function runBrowserAcceptance({ baseUrl }) {
 
     await step('update progress and data from a slider change', async () => {
       currentStep = 'update progress and data from a slider change'
-      await render.locator('input.tiny-slider').evaluate((element) => {
+      await render.locator('input.tiny-builtin-slider--tiny-slider').evaluate((element) => {
         element.value = '65'
         element.dispatchEvent(new Event('change', { bubbles: true }))
       })
       await waitForText('slider: 65')
       await render.waitForFunction(
-        () => document.querySelector('.tiny-progress-info')?.textContent?.trim() === '65%',
+        () => document.querySelector('.tiny-builtin-progress--tiny-progress-info')?.textContent?.trim() === '65%',
         null,
         { timeout: STEP_TIMEOUT },
       )
@@ -291,6 +306,10 @@ export async function runBrowserAcceptance({ baseUrl }) {
       })
       assert.equal(inputBox.display, 'block', 'input should be block-level')
       assert.ok(inputBox.width > 100, 'input did not fill its container')
+      const placeholderColor = await render.locator('.tiny-builtin-input--tiny-input-placeholder').evaluate(
+        (element) => getComputedStyle(element).color,
+      )
+      assert.equal(placeholderColor, 'rgb(77, 88, 99)', 'placeholder-class external style did not cross into input internals')
     })
 
     await step('propagate input changes to page data', async () => {
@@ -344,6 +363,29 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.notEqual(await colorOf('isolated target'), 'rgb(0, 0, 255)', 'shared style leaked into isolated component')
       assert.equal(await colorOf('app shared probe'), 'rgb(0, 128, 0)', 'app.wxss did not reach apply-shared component')
       assert.notEqual(await colorOf('isolated app probe'), 'rgb(0, 128, 0)', 'app.wxss leaked into isolated component')
+      assert.equal(
+        await render.locator('apply-shared-box tiny-view').first().evaluate(
+          (element) => getComputedStyle(element).outlineStyle,
+        ),
+        'dotted',
+        'app universal selector did not reach page-scoped component nodes',
+      )
+      assert.equal(
+        await render.locator('apply-shared-box tiny-text span').first().evaluate(
+          (element) => getComputedStyle(element).outlineStyle,
+        ),
+        'none',
+        'app page-scope selectors leaked into built-in internal DOM',
+      )
+      const verticalItems = await render.locator('#vertical-swiper tiny-swiper-item').evaluateAll(
+        (elements) => elements.map((element) => {
+          const rect = element.getBoundingClientRect()
+          return { left: rect.left, top: rect.top }
+        }),
+      )
+      assert.equal(verticalItems.length, 2, 'vertical swiper items did not render')
+      assert.ok(verticalItems[1].top > verticalItems[0].top, 'vertical swiper item offset did not cross the component boundary')
+      assert.equal(verticalItems[1].left, verticalItems[0].left, 'vertical swiper item retained a horizontal offset')
       assert.equal(await colorOf('parent escape'), 'rgb(12, 34, 56)', '^parent-class did not resolve parent scope')
       assert.equal(await colorOf('ancestor escape'), 'rgb(255, 0, 0)', '^^page-class did not resolve ancestor scope')
       const isolatedHostBorder = await render.locator('isolated-box').first().evaluate(
@@ -563,7 +605,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
         (await avatar.evaluate((element) => element.getBoundingClientRect().width)) > 50,
         'external class styles did not apply to the image',
       )
-      const avatarLayer = await avatar.locator('.tiny-image-div').evaluate((element) => {
+      const avatarLayer = await avatar.locator('.tiny-builtin-image--tiny-image-div').evaluate((element) => {
         const style = getComputedStyle(element)
         const rect = element.getBoundingClientRect()
         return { width: rect.width, height: rect.height, backgroundImage: style.backgroundImage }
@@ -613,11 +655,11 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       await render.locator('tiny-switch').first().click()
       assert.equal(await render.locator('tiny-switch').first().locator('input[type="checkbox"]').isChecked(), true)
 
-      await render.locator('input.tiny-slider').nth(1).evaluate((element) => {
+      await render.locator('input.tiny-builtin-slider--tiny-slider').nth(1).evaluate((element) => {
         element.value = '1500'
         element.dispatchEvent(new Event('change', { bubbles: true }))
       })
-      await render.locator('input.tiny-slider').nth(2).evaluate((element) => {
+      await render.locator('input.tiny-builtin-slider--tiny-slider').nth(2).evaluate((element) => {
         element.value = '7000'
         element.dispatchEvent(new Event('change', { bubbles: true }))
       })
@@ -629,13 +671,21 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       )
 
       assert.equal(await render.locator('tiny-radio input[type="radio"]').isChecked(), true, 'radio is not checked')
-      assert.ok((await render.locator('.tiny-icon-success_no_circle').count()) > 0, 'icon type was not applied')
+      assert.ok(
+        (await render.locator('.tiny-builtin-icon--tiny-icon-success_no_circle').count()) > 0,
+        'icon type was not applied',
+      )
 
-      const swiper = render.locator('.tiny-swiper')
-      assert.equal(await swiper.locator('.tiny-swiper-dot').count(), 3, 'swiper dots did not render')
-      await swiper.locator('.tiny-swiper-dot').nth(1).click()
+      const swiper = render.locator('.tiny-builtin-swiper--tiny-swiper')
+      assert.equal(
+        await swiper.locator('.tiny-builtin-swiper--tiny-swiper-dot').count(),
+        3,
+        'swiper dots did not render',
+      )
+      await swiper.locator('.tiny-builtin-swiper--tiny-swiper-dot').nth(1).click()
       await render.waitForFunction(
-        () => document.querySelector('.tiny-swiper-track')?.getAttribute('style')?.includes('translateX(-100%)'),
+        () => document.querySelector('.tiny-builtin-swiper--tiny-swiper-track')
+          ?.getAttribute('style')?.includes('translateX(-100%)'),
         null,
         { timeout: STEP_TIMEOUT },
       )

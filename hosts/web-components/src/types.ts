@@ -26,7 +26,10 @@ export type BuiltinContext = {
    * The `tiny-` namespace is deliberate: built-ins must not impersonate
    * WeChat's internal `wx-*` elements.
    */
-  hostOptions: (extra?: glassEasel.ComponentOptions) => glassEasel.ComponentOptions
+  hostOptions: (
+    tag: BuiltinComponentTag,
+    extra?: glassEasel.ComponentOptions,
+  ) => glassEasel.ComponentOptions
 }
 
 export type BuiltinDefinition = glassEasel.GeneralComponentDefinition

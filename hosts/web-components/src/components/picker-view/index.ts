@@ -51,7 +51,7 @@ export function definePickerView(ctx: BuiltinContext): BuiltinDefinition {
         this.syncColumnValues()
       },
     },
-    options: ctx.hostOptions({ multipleSlots: true }),
+    options: ctx.hostOptions('picker-view', { multipleSlots: true }),
     methods: {
       collectColumns(nodes: unknown[] | undefined, out: PickerColumn[]): void {
         for (const node of nodes ?? []) {

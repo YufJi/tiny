@@ -59,7 +59,7 @@ export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
         this.refresh()
       },
     },
-    options: ctx.hostOptions(),
+    options: ctx.hostOptions('picker-view-column'),
     methods: {
       columnCount(): number {
         const content = (this.getShadowRoot?.() as { getElementById?: (id: string) => unknown } | null)

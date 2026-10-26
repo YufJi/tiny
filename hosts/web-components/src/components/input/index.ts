@@ -14,7 +14,6 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
       password: { type: Boolean, value: false },
       placeholder: { type: String, value: '' },
       placeholderStyle: { type: String, value: '' },
-      placeholderClass: { type: String, value: '' },
       dropdownStyle: { type: Object, value: {} },
       disabled: { type: Boolean, value: false },
       maxlength: { type: Number, value: 140 },
@@ -45,7 +44,8 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
         if (this.data.autoFocus || this.data.focus) setTimeout(() => this.focusNative(), 0)
       },
     },
-    options: ctx.hostOptions(),
+    externalClasses: ['placeholder-class'],
+    options: ctx.hostOptions('input'),
     methods: {
       nativeInput(): {
         focus?: () => void

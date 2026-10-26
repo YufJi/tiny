@@ -51,7 +51,7 @@ export function defineButton(ctx: BuiltinContext): BuiltinDefinition {
       needPhoneNumber: { type: Boolean, value: false },
       native: { type: Boolean, value: false },
     },
-    options: ctx.hostOptions(),
+    options: ctx.hostOptions('button'),
     lifetimes: {
       attached() {
         const element = (this as unknown as {

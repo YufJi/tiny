@@ -51,6 +51,9 @@ describe('compileMiniProgram', () => {
   test('maps global app.wxss tag selectors to built-in hosts', async () => {
     const css = await fs.readFile(path.join(outputDir, 'styles/app.wxss.css'), 'utf8')
     expect(css).toContain('tiny-button')
+    expect(css).toContain('tiny-button:where(.wx-scope)')
+    expect(css).toContain(':where(.wx-scope).app-shell')
+    expect(css).toContain('page:where(.wx-scope)')
     expect(css).not.toMatch(/(^|[\s,])button\s*\{/)
     expect(css).not.toContain(APP_PAGE_SCOPE_CLASS_SIGN)
   })
@@ -66,7 +69,11 @@ describe('compileMiniProgram', () => {
     })
     expect(template.scope).toBeUndefined()
     const css = await fs.readFile(path.join(outputDir, template.outputPath), 'utf8')
-    expect(css).toContain(`./*${APP_PAGE_SCOPE_CLASS_SIGN}*/app-shell`)
+    const marker = `:where(.${APP_PAGE_SCOPE_CLASS_SIGN}, [wx-host="${APP_PAGE_SCOPE_CLASS_SIGN}"])`
+    expect(css).toContain(`*${marker}`)
+    expect(css).toContain(`span${marker}`)
+    expect(css).toContain(`${marker}./*${APP_PAGE_SCOPE_CLASS_SIGN}*/app-shell`)
+    expect(css).toContain(`tiny-button${marker}`)
   })
 
   test('registers external WXS files with and without their extension', async () => {
@@ -237,9 +244,20 @@ describe('compileMiniProgram', () => {
       expect(result.manifest.pages[0]?.style?.path).toBe('pages/index/index.acss')
 
       const appCss = await fs.readFile(path.join(acssOutput, 'styles/app.acss.css'), 'utf8')
+      const appPageScopeStyle = result.manifest.styles.find(
+        (style) => style.pageScopeClassSign === APP_PAGE_SCOPE_CLASS_SIGN,
+      )
+      expect(appPageScopeStyle).toBeDefined()
+      const appPageScopeCss = await fs.readFile(
+        path.join(acssOutput, appPageScopeStyle!.outputPath),
+        'utf8',
+      )
       const pageCss = await fs.readFile(path.join(acssOutput, 'styles/pages/index/index.acss.css'), 'utf8')
       const templates = await fs.readFile(path.join(acssOutput, 'templates.js'), 'utf8')
       expect(appCss).toContain('tiny-button')
+      expect(appPageScopeCss).toContain(
+        `tiny-button:where(.${APP_PAGE_SCOPE_CLASS_SIGN}, [wx-host="${APP_PAGE_SCOPE_CLASS_SIGN}"])`,
+      )
       expect(pageCss).toContain('tiny-view:where(.tiny-pages-index-index--wx-tag-view)')
       expect(pageCss).toContain('.tiny-pages-index-index--imported')
       expect(templates).toContain('wx-scope')

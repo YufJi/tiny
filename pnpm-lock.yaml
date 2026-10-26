@@ -83,12 +83,18 @@ importers:
         specifier: 1.1.0
         version: 1.1.0
     devDependencies:
+      '@tiny/stylesheet-compiler':
+        specifier: workspace:*
+        version: link:../../packages/stylesheet-compiler
       '@tiny/template-compiler':
         specifier: workspace:*
         version: link:../../packages/template-compiler
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1
+      postcss:
+        specifier: ^8.4.38
+        version: 8.5.14
       typescript:
         specifier: ^5.0.0
         version: 5.9.3

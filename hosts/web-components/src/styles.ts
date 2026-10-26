@@ -1,1 +1,5 @@
-export { BUILTIN_BASE_STYLES } from './generated/styles'
+export {
+  BUILTIN_BASE_STYLES,
+  BUILTIN_COMPONENT_STYLES,
+  BUILTIN_HOST_STYLES,
+} from './generated/styles'

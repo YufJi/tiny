@@ -20,7 +20,7 @@ export function defineForm(ctx: BuiltinContext): BuiltinDefinition {
       reportSubmit: { type: Boolean, value: false },
       reportSubmitTimeout: { type: Number, value: 0 },
     },
-    options: ctx.hostOptions({ multipleSlots: true }),
+    options: ctx.hostOptions('form', { multipleSlots: true }),
     lifetimes: {
       created() {
         bindHostListeners(this, {

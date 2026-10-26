@@ -164,13 +164,13 @@ export class GlassEaselRuntimeAdapter {
   private readonly onComponentData?: GlassEaselAdapterOptions['onComponentData']
   private readonly onComponentObserved?: GlassEaselAdapterOptions['onComponentObserved']
   private readonly builtinComponents: BuiltinComponentDefinitions
-  private readonly builtinBaseStyles?: BuiltinComponents['baseStyles']
+  private readonly builtinStyles: NonNullable<BuiltinComponents['styles']>
   /** Resolved engine naming config (behavior ids, host attribute, …). */
   private readonly naming: ResolvedNamingConfig
   private readonly onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
   private readonly mountComponent?: (component: glassEasel.GeneralComponent) => void
   private readonly resolveAssetUrl?: AssetUrlResolver
-  private baseStylesRegistered = false
+  private builtinStylesRegistered = false
   private readonly unmountComponent?: (component: glassEasel.GeneralComponent) => void
 
   constructor(options: GlassEaselAdapterOptions) {
@@ -192,10 +192,11 @@ export class GlassEaselRuntimeAdapter {
     this.mountComponent = options.mountComponent
     this.unmountComponent = options.unmountComponent
     this.resolveAssetUrl = options.resolveAssetUrl
-    this.builtinBaseStyles = options.builtinComponents?.baseStyles
+    this.builtinStyles = options.builtinComponents?.styles ?? []
     this.builtinComponents = options.builtinComponents
       ? options.builtinComponents.create(this.componentSpace, {
           prefix: this.naming.behaviorPrefix,
+          registerStyleScope: (name) => this.registerScope(name),
           onDiagnostic: (diagnostic) => this.onDiagnostic?.(createRuntimeDiagnostic(
             diagnostic.severity,
             diagnostic.code,
@@ -224,14 +225,15 @@ export class GlassEaselRuntimeAdapter {
     componentSchemas: MiniProgramComponentSchema[] = [],
     options: StyleRegistrationOptions = {},
   ): void {
-    if (!this.baseStylesRegistered && this.builtinBaseStyles) {
-      const { path, content } = this.builtinBaseStyles
-      this.backend.registerStyleSheetContent(path, content)
-      this.backend.appendStyleSheetPath(
-        path,
-        glassEasel.StyleScopeManager.globalScope(),
-      )
-      this.baseStylesRegistered = true
+    if (!this.builtinStylesRegistered && this.builtinStyles.length > 0) {
+      for (const style of this.builtinStyles) {
+        const scopeId = style.scope
+          ? this.registerScope(style.scope)
+          : glassEasel.StyleScopeManager.globalScope()
+        this.backend.registerStyleSheetContent(style.path, style.content)
+        this.backend.appendStyleSheetPath(style.path, scopeId)
+      }
+      this.builtinStylesRegistered = true
     }
     const selectedPage = options.pagePath
       ? manifest.pages.find((page) => page.path === options.pagePath)
@@ -494,7 +496,10 @@ export class GlassEaselRuntimeAdapter {
     if (!template || !sign) return
     const scopeName = this.componentSpace.styleScopeManager.queryName(pageScope)
     if (!scopeName) return
-    const scoped = template.css.split(`/*${sign}*/`).join(`${scopeName}--`)
+    const scoped = template.css
+      .split(`.${sign}`).join(`.${scopeName}--${this.naming.scopeMarkerClass}`)
+      .split(`="${sign}"`).join(`="${scopeName}"`)
+      .split(`/*${sign}*/`).join(`${scopeName}--`)
     const path = `${template.style.outputPath}@page:${pageScope}`
     this.backend.registerStyleSheetContent(path, scoped)
     this.backend.appendStyleSheetPath(path, pageScope)
@@ -635,6 +640,9 @@ export class GlassEaselRuntimeAdapter {
       this.registerPage(page, data),
       this.backend,
     )
+    // App-global selectors are anchored to this unprefixed marker so the page
+    // root participates without exposing built-in component internals.
+    component.classList?.toggle(this.naming.scopeMarkerClass, true)
     this.componentSourcePaths.set(component as unknown as object, path)
     this.mountedComponents.set(path, component)
     if (pageId) this.componentsByPageId.set(pageId, component)

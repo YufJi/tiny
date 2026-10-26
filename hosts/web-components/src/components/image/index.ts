@@ -108,7 +108,7 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
         ;(this as unknown as { _contextMenuCleanup?: () => void })._contextMenuCleanup?.()
       },
     },
-    options: ctx.hostOptions(),
+    options: ctx.hostOptions('image'),
     methods: {
       bindLazyObserver() {
         const instance = this as unknown as {

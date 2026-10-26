@@ -13,6 +13,6 @@ export function defineView(ctx: BuiltinContext): BuiltinDefinition {
       ariaRole: { type: String, value: '' },
       ariaLabel: { type: String, value: '' },
     },
-    options: ctx.hostOptions({ multipleSlots: true }),
+    options: ctx.hostOptions('view', { multipleSlots: true }),
   }).general()
 }

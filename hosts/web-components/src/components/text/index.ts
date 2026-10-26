@@ -10,6 +10,6 @@ export function defineText(ctx: BuiltinContext): BuiltinDefinition {
       decode: { type: Boolean, value: false },
       space: { type: String, value: '' },
     },
-    options: ctx.hostOptions(),
+    options: ctx.hostOptions('text'),
   }).general()
 }

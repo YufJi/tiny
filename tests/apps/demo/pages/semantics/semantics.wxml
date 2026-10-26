@@ -22,6 +22,14 @@
   </view>
 
   <view class="card">
+    <text class="title">Vertical swiper</text>
+    <swiper id="vertical-swiper" vertical>
+      <swiper-item>vertical one</swiper-item>
+      <swiper-item>vertical two</swiper-item>
+    </swiper>
+  </view>
+
+  <view class="card">
     <behavior-box id="behavior-box" value="{{value}}" />
     <button bindtap="changeValue">Change value</button>
     <text class="line" data-check="probe">probe:{{probe}}</text>

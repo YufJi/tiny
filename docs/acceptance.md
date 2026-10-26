@@ -21,8 +21,9 @@ The browser stage verifies:
 2. The todos page renders the P0 component set (`scroll-view`, checkbox group, slider,
    progress, switch, swiper, icon, image, canvas).
 3. Page-scoped classes, page-root selectors, universal selectors, `app.wxss` page styles,
-   and built-in block/inline layout apply without leaking into isolated components.
-   Tag marker selectors preserve class-over-tag cascade specificity.
+   and built-in host block/inline layout apply without leaking into isolated components or
+   built-in private internals. Tag marker selectors preserve class-over-tag cascade
+   specificity, and public built-in host styles remain customizable.
 4. `add-button` receives properties, renders its slot, and delivers its custom event to
    the page.
 5. Checkbox, slider, and switch interactions update page data.
@@ -39,11 +40,12 @@ The browser stage verifies:
 12. Parent/child `relations` link on attach and unlink after `wx:if` removes the child.
 13. `externalClasses` resolve the page class inside the component.
 14. `styleIsolation` works for `isolated`, `apply-shared`/`addGlobalClass`, and
-    `shared`: page styles and `app.wxss` class rules reach only apply-shared/shared
-    components, shared component styles reach the page, and isolated components stay
-    isolated. `:host`, `^`/`^^` ancestor classes, and multi-level component style
-    traversal are browser-verified. Component-as-page explicit isolation is resolved
-    from the component definition, while ordinary Page roots remain shared.
+    `shared`: page styles and anchored `app.wxss` rules reach only apply-shared/shared
+    components, shared component styles reach the page, and isolated/built-in internal
+    DOM stays isolated. `:host`, `^`/`^^` ancestor classes, multi-level component style
+    traversal, and external-class entry points such as `placeholder-class` are
+    browser-verified. Component-as-page explicit isolation is resolved from the
+    component definition, while ordinary Page roots remain shared.
 15. `button` renders WeChat-compatible default/primary/warn-plain/mini/loading/disabled
     variants; computed colors, background, radius, font size, padding, border and loading
     spinner are asserted.

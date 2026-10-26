@@ -16,7 +16,7 @@ export function defineLabel(ctx: BuiltinContext): BuiltinDefinition {
     properties: {
       for: { type: String, value: '' },
     },
-    options: ctx.hostOptions({ multipleSlots: true }),
+    options: ctx.hostOptions('label', { multipleSlots: true }),
     lifetimes: {
       created() {
         bindHostListeners(this, {

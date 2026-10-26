@@ -13,7 +13,7 @@
 - 按微信 WebView 版全量能力计算，当前引擎约完成 **四成半**：加权得分 **44.67%**。
 - 能力结构仍然偏科：**编译/渲染约 75%，框架约 63%，内置组件约 54%，平台 API 约 13%，页面形态约 25%**。
 - 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent` 均已落地，Component-as-page 也接入了同一套核心语义；UI 库的核心语义障碍基本移除，但 npm 构建、`generics`/`definitionFilter` 等仍有缺口。
-- 内置组件已完成宿主迁移、P0 视觉重写和 P1 内部结构收口：23 个标签为真实 `tiny-*` 宿主，checkbox/radio/switch/slider/icon/image/picker/picker-view 已按 2.7.0 参考实现重写；input/textarea/button/form 完成 wrapper/分支/语义补强，scroll-view 接受 native 滚动近似。
+- 内置组件已完成宿主迁移、P0 视觉重写和 P1 内部结构收口：23 个标签为真实 `tiny-*` 宿主，采用 Flat DOM + scoped CSS 隔离公开宿主与私有内部实现；checkbox/radio/switch/slider/icon/image/picker/picker-view 已按 2.7.0 参考实现重写；input/textarea/button/form 完成 wrapper/分支/语义补强，scroll-view 接受 native 滚动近似。
 - 仓库内置的微信官方 demo 子集（117 页）中，**108 页能启动（92.3%）**，104 页有可见文本；canvas 2D/WebGL 两页已修复，但启动率仍是“能挂载”，不是“功能对齐”。
 - 普通业务小程序最依赖的 `wx.login`、`wx.requestPayment`、媒体/文件/定位等平台 API 仍未实现；内置导航栏/tabBar 已在 devtool 宿主落地并接入 `switchTab`，但自定义 tabBar、下拉刷新、分享与转场仍缺。
 - 一句话：**组件语义这条线已经补齐，平台 API 和页面形态仍是决定“能否替换微信运行时”的主要短板。**
@@ -253,7 +253,7 @@ hasBehavior / export / wx://component-export
 | `observers` | ✅ | `observers` 块 + 属性级 `observer`；支持多字段、`arr[12]`、`some.field.**`、`**`；本地 `setData` 同步，父级属性变化异步一个 bridge 往返 |
 | `relations` / `getRelationNodes` | ✅ | parent/child/ancestor/descendant；双向声明校验；`linked` / `unlinked` / `linkChanged` / `linkFailed`；按节点树顺序返回 |
 | `externalClasses` | ✅ | 父级 class 可在组件模板内解析，参与样式作用域 |
-| `styleIsolation` / `addGlobalClass` | ✅ | `isolated` / `apply-shared` / `shared`；`shared` 组件样式回写 page scope；`:host` 已接入 low-priority CSS；component-as-page 显式 isolation 生效，普通 Page 根固定 shared |
+| `styleIsolation` / `addGlobalClass` | ✅ | `isolated` / `apply-shared` / `shared`；`shared` 组件样式回写 page scope；`:host` 已接入 low-priority CSS；component-as-page 显式 isolation 生效，普通 Page 根固定 shared；内置组件宿主公开、内部私有 |
 | `selectComponent` / `selectAllComponents` / `selectOwnerComponent` | ✅ | 页面/组件作用域；ID/class/tag、子代/后代/`>>>`/并集；普通选择器不跨组件边界 |
 | `multipleSlots` / `virtualHost` | ✅ | 按 options 映射；`multipleSlots` 默认 false |
 | `wx://component-export` / `export` | ✅ | `selectComponent` 返回 `export()` 结果，异常回退实例 |
@@ -266,7 +266,28 @@ hasBehavior / export / wx://component-export
 
 > 这使 Vant Weapp、TDesign 等组件库的**核心语义障碍**基本移除；剩余限制主要来自 npm 构建（`miniprogram_npm`）、内置 behaviors、`generics` 和 `definitionFilter`。
 
-### 4.6 页面形态与宿主
+### 4.6 样式作用域与内置组件边界
+
+Tiny 当前对齐 WebView 渲染模型，采用 Flat DOM + scoped CSS，不使用真实
+Shadow DOM：
+
+- `app.wxss` 保持在全局作用域，但每个 compound 都以应用节点的通用 marker
+  锚定；class、tag、`*`、id 和裸伪类规则不能通过全局 CSS 穿透页面外节点。
+- 页面和自定义组件的 class/tag 由 page/component scope 加 marker class 重写。
+  普通 Page 根固定 `shared`；Component-as-page 仅在显式配置时读取
+  `styleIsolation`，否则仍为 `shared`。
+- `apply-shared` / `shared` 组件额外获得当前 page scope，因此能收到页面规则和
+  经 page-scope 模板展开的 app 规则；`isolated` 组件不会获得该 scope。
+- 内置组件的 `tiny-*` 宿主是公开样式边界，可用 app/page/component 规则定制。
+  其余内部 DOM 由独立的 `tiny-builtin-<tag>` stylesheet scope 保护，外部选择器
+  不能直接命中；继承属性、CSS 变量和声明的 `externalClasses` 仍可进入内部。
+- `input` / `textarea` 的 `placeholder-class` 通过 `externalClasses` 受控穿透，
+  而不是通过取消整个组件的样式隔离实现。
+
+当前仍不等同于浏览器原生 Shadow DOM：宿主 DOM 是扁平树，隔离依赖编译期 marker
+和 glass-easel scope 前缀；动态写入且绕过编译器的 CSS 不在保证范围内。
+
+### 4.7 页面形态与宿主
 
 | 能力 | 状态 |
 | --- | --- |
@@ -533,6 +554,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-26 | 内置 tabBar：app.json 配置解析、tab 页缓存、`switchTab`、`onTabItemTap`、badge/red-dot/show/hide/style/item API；devtool 渲染 tabBar 并按可用高度调整页面帧；页面生命周期 8→9/14、路由 2→3/5；mini 验收新增 tab 切换 | **37.89%** |
 | 2026-10-26 | Devtool 多应用工作台：默认测试应用列表、点击启动、最近 3 个应用保活/LRU、圆圈回列表、每个应用独立线程组；runtime 页面栈默认上限 10，宿主可通过 `maxPageStack` 配置；168 单测 + 48 步浏览器验收 | **41.91%** |
 | 2026-10-26 | `app.wxss` 类选择器生效：页面组件增加全局 extra style scope，页面元素同时保留无前缀类名，全局 `.container` 等规则不再失效；编译输出 page-scope 模板，render 线程按页面 scope 展开并按 app → 页面 → 组件顺序注册，`apply-shared`/`shared` 组件内部也能收到全局 app class，`isolated` 不受影响；P0 验收新增全局 class 颜色断言 | **41.91%** |
+| 2026-10-27 | 样式边界收口：app 全局规则按应用 marker 锚定，page-scope 模板同步保护 `*`/tag/id/裸伪类；内置组件拆分公开 host 样式与独立 `tiny-builtin-<tag>` 私有样式，降低 app/page/component 规则对内部 DOM 的穿透；`placeholder-class` 改为 external class；P0 增加全局泄漏与受控穿透断言，总分暂未重算 | **44.67%** |
 
 ---
 

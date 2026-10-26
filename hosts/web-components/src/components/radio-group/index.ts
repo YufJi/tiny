@@ -33,7 +33,7 @@ export function defineRadioGroup(ctx: BuiltinContext): BuiltinDefinition {
         this.initializeGroup()
       },
     },
-    options: ctx.hostOptions({ multipleSlots: true }),
+    options: ctx.hostOptions('radio-group', { multipleSlots: true }),
     methods: {
       initializeGroup() {
         if (!this.hasItems((this as unknown as { childNodes?: unknown[] }).childNodes)) return

@@ -15,8 +15,12 @@ const COMPONENT_PATH = 'components/box/box'
 const APP_SCOPE = 'tiny-pages-index-index'
 const COMPONENT_SCOPE = 'tiny-components-box-box'
 
-const APP_CSS = '.box { color: red }'
-const APP_PAGE_SCOPE_CSS = `./*${APP_PAGE_SCOPE_CLASS_SIGN}*/box { color: red }`
+const APP_CSS = '*:where(.wx-scope) { box-sizing: border-box }'
+const APP_PAGE_SCOPE_CSS = [
+  `*:where(.${APP_PAGE_SCOPE_CLASS_SIGN}, [wx-host="${APP_PAGE_SCOPE_CLASS_SIGN}"]) { box-sizing: border-box }`,
+  `page:where(.${APP_PAGE_SCOPE_CLASS_SIGN}, [wx-host="${APP_PAGE_SCOPE_CLASS_SIGN}"]) > span:where(.${APP_PAGE_SCOPE_CLASS_SIGN}, [wx-host="${APP_PAGE_SCOPE_CLASS_SIGN}"]) { display: inline }`,
+  `:where(.${APP_PAGE_SCOPE_CLASS_SIGN}, [wx-host="${APP_PAGE_SCOPE_CLASS_SIGN}"])./*${APP_PAGE_SCOPE_CLASS_SIGN}*/box { color: red }`,
+].join('\n')
 
 class RecordingBackend extends glassEasel.EmptyBackendContext {
   readonly styleSheets = new Map<string, unknown>()
@@ -160,7 +164,10 @@ describe('app stylesheet page-scope delivery', () => {
       const sheet = backend.styleSheetPaths.find((item) => item.path.includes('@page:'))
       expect(sheet).toBeDefined()
       const css = backend.styleSheets.get(sheet!.path)
-      expect(css).toBe(`.${APP_SCOPE}--box { color: red }`)
+      const marker = `:where(.${APP_SCOPE}--wx-scope, [wx-host="${APP_SCOPE}"])`
+      expect(css).toContain(`*${marker} { box-sizing: border-box }`)
+      expect(css).toContain(`page${marker} > span${marker} { display: inline }`)
+      expect(css).toContain(`${marker}.${APP_SCOPE}--box { color: red }`)
       expect(css).not.toContain(APP_PAGE_SCOPE_CLASS_SIGN)
       // The template itself is never registered as a standalone sheet.
       expect(backend.styleSheetPaths.some(

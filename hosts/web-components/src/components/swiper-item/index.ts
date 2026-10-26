@@ -24,6 +24,6 @@ export function defineSwiperItem(ctx: BuiltinContext): BuiltinDefinition {
         }
       },
     },
-    options: ctx.hostOptions({ multipleSlots: true }),
+    options: ctx.hostOptions('swiper-item', { multipleSlots: true }),
   }).general()
 }

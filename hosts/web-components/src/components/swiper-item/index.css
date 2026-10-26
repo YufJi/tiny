@@ -1,16 +1,11 @@
 tiny-swiper-item {
   position: absolute;
-  top: 0;
-  left: var(--tiny-swiper-offset, 0%);
+  top: var(--tiny-swiper-item-top, 0);
+  left: var(--tiny-swiper-item-left, 0);
   display: block;
   box-sizing: border-box;
   width: calc(100% / var(--tiny-swiper-items, 1));
   height: 100%;
-}
-
-.tiny-swiper.is-vertical tiny-swiper-item {
-  top: var(--tiny-swiper-offset, 0%);
-  left: 0;
 }
 
 tiny-swiper-item[hidden] {

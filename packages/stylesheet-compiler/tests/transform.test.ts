@@ -469,6 +469,45 @@ describe('tag selector edge cases', () => {
     expect(css).toContain(`${marker}:first-child`)
   })
 
+  test('anchors every app-global compound to app-owned nodes', () => {
+    const css = StyleSheetTransformer.fromCss(
+      'app.wxss',
+      `page { color: black }
+      .app-shell { color: red }
+      button { display: block }
+      * { box-sizing: border-box }
+      page > view { width: 100% }
+      #root { margin: 0 }`,
+      {
+        scopeMarkerClass: 'wx-scope',
+        forceScopeAnchor: true,
+        builtinTags: ['button', 'view'],
+        builtinHostTagPrefix: 'tiny-',
+      },
+    ).getContent()
+    expect(css).toContain('page:where(.wx-scope)')
+    expect(css).toContain(':where(.wx-scope).app-shell')
+    expect(css).toContain('tiny-button:where(.wx-scope)')
+    expect(css).toContain('*:where(.wx-scope)')
+    expect(css).toContain('page:where(.wx-scope) >tiny-view:where(.wx-scope)')
+    expect(css).toContain(':where(.wx-scope)#root')
+  })
+
+  test('uses a dynamic marker sentinel as the page host anchor value', () => {
+    const css = StyleSheetTransformer.fromCss(
+      'app.wxss',
+      'page > span { color: red }',
+      {
+        classPrefixSign: 'SIGN',
+        scopeMarkerClass: 'SIGN',
+        scopeHostAttribute: 'wx-host',
+        forceScopeAnchor: true,
+      },
+    ).getContent()
+    expect(css).toContain('page:where(.SIGN, [wx-host="SIGN"])')
+    expect(css).toContain('span:where(.SIGN, [wx-host="SIGN"])')
+  })
+
   test('keeps tag specificity by combining the host tag with a zero-specificity marker', () => {
     const css = StyleSheetTransformer.fromCss(
       'a.wxss',

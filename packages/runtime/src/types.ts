@@ -160,6 +160,8 @@ export type BackendFactory = () => unknown
 export type BuiltinComponentFactoryContext = {
   /** Behavior id prefix derived from `manifest.naming` (e.g. `wx-`). */
   prefix?: string
+  /** Register or reuse a render style scope shared with stylesheet registration. */
+  registerStyleScope?: (name: string) => number
   onDiagnostic?: (diagnostic: {
     severity: 'warning' | 'error'
     code: string
@@ -185,13 +187,17 @@ export type BuiltinComponentDefinitions = Record<string, import('glass-easel').G
  * `tests/host` and `apps/devtool`; a native host can provide its own factory or
  * omit this option entirely.
  */
+export type BuiltinStyleSheet = {
+  path: string
+  content: string
+  /** Internal style scope. Omit for globally applicable host/base styles. */
+  scope?: string
+}
+
 export type BuiltinComponents = {
   create: BuiltinComponentFactory
-  /**
-   * Stylesheet registered into the global scope before app styles, e.g. the
-   * base layout CSS for real `tiny-*` host nodes on the web.
-   */
-  baseStyles?: { path: string; content: string }
+  /** Stylesheets registered before app/page/component styles. */
+  styles?: BuiltinStyleSheet[]
 }
 
 export type BootstrapPayload = {

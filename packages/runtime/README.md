@@ -29,7 +29,7 @@ import { createTinyRuntime } from '@tiny/runtime'
 
 const host = createTinyRuntime({
   serviceTransport,
-  // Single frame:
+  // Host-independent single-frame fallback (the browser host uses renderConnector):
   renderTransport,
   // Or one frame per page, with each transport created by the host:
   // renderConnector: { connect, activate, disconnect, setAppVisible },
@@ -99,9 +99,14 @@ bootRenderThread({ ..., builtinComponents: webBuiltinComponents })
 ```
 
 `@tiny/host-web-components` (`hosts/web-components`) provides the web/DOM
-implementation (`tiny-*` host nodes, behaviors, and base CSS). A native host can
-provide its own factory or omit the option; the runtime then registers no
-built-in definitions and unknown tags fall back to native backend elements.
+implementation (`tiny-*` host nodes, behaviors, and CSS). Its
+`BuiltinComponents.styles` array separates public host/base rules (no scope)
+from private per-component implementation rules (an explicit
+`tiny-builtin-<tag>` scope). The factory reuses those scope IDs through
+`registerStyleScope`, so component definitions and their internal templates
+share the same scope without re-registering names. A native host can provide its
+own factory or omit the option; the runtime then registers no built-in
+definitions and unknown tags fall back to native backend elements.
 
 ## Host-specific APIs
 

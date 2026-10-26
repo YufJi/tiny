@@ -37,7 +37,7 @@ export function defineCheckboxGroup(ctx: BuiltinContext): BuiltinDefinition {
         this.initializeGroup()
       },
     },
-    options: ctx.hostOptions({ multipleSlots: true }),
+    options: ctx.hostOptions('checkbox-group', { multipleSlots: true }),
     methods: {
       initializeGroup() {
         if (!this.hasItems((this as unknown as { childNodes?: unknown[] }).childNodes)) return

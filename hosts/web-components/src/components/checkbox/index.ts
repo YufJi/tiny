@@ -33,7 +33,7 @@ export function defineCheckbox(ctx: BuiltinContext): BuiltinDefinition {
         )
       },
     },
-    options: ctx.hostOptions(),
+    options: ctx.hostOptions('checkbox'),
     methods: {
       commitChecked(checked: boolean) {
         if (this.data.disabled) return

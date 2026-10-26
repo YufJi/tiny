@@ -61,7 +61,7 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
       pagingEnabled: { type: Boolean, value: false },
       usingSticky: { type: Boolean, value: false },
     },
-    options: ctx.hostOptions({ multipleSlots: true }),
+    options: ctx.hostOptions('scroll-view', { multipleSlots: true }),
     lifetimes: {
       attached() {
         ;(this as unknown as { initScroller: (element: unknown) => void }).initScroller(this.backend())

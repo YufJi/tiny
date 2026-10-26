@@ -3,7 +3,12 @@
     <text class="title">Add todo</text>
     <text class="subtitle">from: {{from}}</text>
     <text class="value">value: {{inputValue}}</text>
-    <input value="{{inputValue}}" placeholder="Todo name" bindinput="onInput" />
+    <input
+      value="{{inputValue}}"
+      placeholder="Todo name"
+      placeholder-class="placeholder-probe"
+      bindinput="onInput"
+    />
     <button bindtap="save">Save and back</button>
   </view>
 </view>

@@ -61,6 +61,9 @@ export interface StyleSheetOptions {
   /** Host attribute used to include the page root in page-scope selectors. */
   scopeHostAttribute?: string | undefined
 
+  /** Apply the scope marker to every compound, including class/tag anchored ones. */
+  forceScopeAnchor?: boolean | undefined
+
   /**
    * Built-in component tags. Used for **global** (unscoped) styles, where
    * `tagClassPrefix` is not available: `button {}` is rewritten to the real

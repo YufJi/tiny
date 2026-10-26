@@ -14,7 +14,7 @@ export function defineSwitch(ctx: BuiltinContext): BuiltinDefinition {
       type: { type: String, value: 'switch' },
       color: { type: String, value: '#04BE02' },
     },
-    options: ctx.hostOptions(),
+    options: ctx.hostOptions('switch'),
     methods: {
       commitChecked(checked: boolean) {
         if (this.data.disabled) return

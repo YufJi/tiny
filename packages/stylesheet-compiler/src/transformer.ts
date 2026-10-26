@@ -90,6 +90,7 @@ function transformSelector(
   tagClassPrefix: string | undefined,
   scopeMarkerClass: string | undefined,
   scopeHostAttribute: string | undefined,
+  forceScopeAnchor: boolean,
   builtinTags: readonly string[] | undefined,
   builtinHostTagPrefix: string | undefined,
 ): string {
@@ -124,13 +125,27 @@ function transformSelector(
   const flushCompound = (separator = ''): void => {
     if (compound.length > 0) {
       let output = compound
-      if (classPrefix !== undefined && scopeMarkerClass !== undefined && !compoundHasAnchor) {
-        const marker = `.${classPrefix}--${scopeMarkerClass}`
-        const host = scopeHostAttribute
-          ? `, [${scopeHostAttribute}="${classPrefix}"]`
+      if (
+        scopeMarkerClass !== undefined
+        && (forceScopeAnchor || !compoundHasAnchor)
+      ) {
+        const markerName = classPrefix !== undefined
+          ? `${classPrefix}--${scopeMarkerClass}`
+          : scopeMarkerClass
+        const marker = `.${markerName}`
+        const hostScopeValue = classPrefix ?? scopeMarkerClass
+        const host = scopeHostAttribute && hostScopeValue
+          ? `, [${scopeHostAttribute}="${hostScopeValue}"]`
           : ''
         const scope = `:where(${marker}${host})`
-        output = output.startsWith('*') ? `*${scope}${output.slice(1)}` : `${scope}${output}`
+        if (output.startsWith('*')) {
+          output = `*${scope}${output.slice(1)}`
+        } else {
+          const typeSelector = output.match(/^[a-zA-Z][\w-]*/)?.[0]
+          output = typeSelector
+            ? `${typeSelector}${scope}${output.slice(typeSelector.length)}`
+            : `${scope}${output}`
+        }
       }
       result += output
     }
@@ -363,6 +378,7 @@ export class StyleSheetTransformer {
         tagClassPrefix: undefined!,
         scopeMarkerClass: undefined!,
         scopeHostAttribute: undefined!,
+        forceScopeAnchor: false,
         builtinTags: undefined!,
         builtinHostTagPrefix: undefined!,
         rpxRatio: rpxRatio ?? 750,
@@ -387,6 +403,7 @@ export class StyleSheetTransformer {
       tagClassPrefix: options.tagClassPrefix ?? undefined!,
       scopeMarkerClass: options.scopeMarkerClass ?? undefined!,
       scopeHostAttribute: options.scopeHostAttribute ?? undefined!,
+      forceScopeAnchor: options.forceScopeAnchor ?? false,
       builtinTags: options.builtinTags ?? undefined!,
       builtinHostTagPrefix: options.builtinHostTagPrefix ?? undefined!,
       rpxRatio: options.rpxRatio ?? 750,
@@ -672,6 +689,7 @@ export class StyleSheetTransformer {
       inKeyframes ? undefined : this._opts.tagClassPrefix,
       inKeyframes ? undefined : this._opts.scopeMarkerClass,
       inKeyframes ? undefined : this._opts.scopeHostAttribute,
+      inKeyframes ? false : this._opts.forceScopeAnchor,
       inKeyframes ? undefined : this._opts.builtinTags,
       this._opts.builtinHostTagPrefix,
     )

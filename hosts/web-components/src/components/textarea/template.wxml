@@ -1,13 +1,13 @@
 <div class="tiny-textarea-wrapper">
   <div
     wx:if="{{placeholder && !value}}"
-    class="tiny-textarea-placeholder {{placeholderClass}}"
+    class="tiny-textarea-placeholder placeholder-class"
     style="{{placeholderStyle}}"
   >{{placeholder}}</div>
   <div id="compute" class="tiny-textarea-compute" aria-hidden="true">{{value}}</div>
   <div
     id="stylecompute"
-    class="tiny-textarea-stylecompute {{placeholderClass}}"
+    class="tiny-textarea-stylecompute placeholder-class"
     style="{{placeholderStyle}}"
     aria-hidden="true"
   >{{placeholder}}</div>

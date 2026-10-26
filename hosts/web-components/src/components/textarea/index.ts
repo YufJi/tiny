@@ -12,7 +12,6 @@ export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
       value: { type: String, value: '' },
       placeholder: { type: String, value: '' },
       placeholderStyle: { type: String, value: '' },
-      placeholderClass: { type: String, value: 'textarea-placeholder' },
       disabled: { type: Boolean, value: false },
       maxlength: { type: Number, value: 140 },
       autoFocus: { type: Boolean, value: false },
@@ -53,7 +52,8 @@ export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
         if (this.data.autoFocus) setTimeout(() => this.focusNative(), 0)
       },
     },
-    options: ctx.hostOptions(),
+    externalClasses: ['placeholder-class'],
+    options: ctx.hostOptions('textarea'),
     methods: {
       textareaElement(): { style?: { height?: string }; scrollHeight?: number } | null {
         return (this.getShadowRoot?.() as {

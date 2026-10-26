@@ -9,3 +9,11 @@ button {
 .app-shell {
   color: #111;
 }
+
+* {
+  box-sizing: border-box;
+}
+
+span {
+  display: inline;
+}

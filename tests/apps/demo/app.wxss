@@ -9,3 +9,7 @@ page {
 .app-probe {
   color: rgb(0, 128, 0);
 }
+
+* { outline-style: dotted; outline-width: 0; }
+span { outline-style: solid; outline-width: 0; }
+.tiny-text { outline-style: double; outline-width: 0; }

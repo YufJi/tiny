@@ -3,7 +3,11 @@ import type { BuiltinComponents } from '@tiny/runtime'
 import { BUILTIN_COMPONENT_TAGS, BUILTIN_HOST_TAG_PREFIX, type BuiltinComponentTag } from './tags'
 import { builtinTemplate } from './templates'
 import { createBuiltinBehaviors } from './behaviors'
-import { BUILTIN_BASE_STYLES } from './styles'
+import {
+  BUILTIN_BASE_STYLES,
+  BUILTIN_COMPONENT_STYLES,
+  BUILTIN_HOST_STYLES,
+} from './styles'
 import type { BuiltinContext, BuiltinComponentFactoryOptions } from './types'
 import { defineView } from './components/view'
 import { defineButton } from './components/button'
@@ -30,7 +34,7 @@ import { definePickerView } from './components/picker-view'
 import { definePickerViewColumn } from './components/picker-view-column'
 
 export { BUILTIN_COMPONENT_TAGS }
-export { BUILTIN_BASE_STYLES }
+export { BUILTIN_BASE_STYLES, BUILTIN_COMPONENT_STYLES, BUILTIN_HOST_STYLES }
 export type { BuiltinComponentTag }
 export type { BuiltinComponentFactoryOptions, BuiltinContext } from './types'
 
@@ -72,6 +76,15 @@ export function createBuiltinComponents(
   options: BuiltinComponentFactoryOptions = {},
 ): BuiltinComponentDefinitions {
   const definitions = {} as BuiltinComponentDefinitions
+  const styleScopes = new Map<BuiltinComponentTag, number>()
+  const styleScopeFor = (tag: BuiltinComponentTag): number => {
+    const existing = styleScopes.get(tag)
+    if (existing !== undefined) return existing
+    const scope = (options.registerStyleScope
+      ?? ((name: string) => space.styleScopeManager.register(name)))(`tiny-builtin-${tag}`)
+    styleScopes.set(tag, scope)
+    return scope
+  }
   // Built-ins own a real host node in the engine's `tiny-` namespace instead
   // of impersonating WeChat's internal `wx-*` elements.
   const context: BuiltinContext = {
@@ -80,10 +93,11 @@ export function createBuiltinComponents(
     template: builtinTemplate,
     behaviors: createBuiltinBehaviors(space, { prefix: options.prefix }),
     getBuiltin: (tag) => definitions[tag],
-    hostOptions: (extra = {}) => ({
+    hostOptions: (tag, extra = {}) => ({
       virtualHost: false,
       hostNodeTagName: `${BUILTIN_HOST_TAG_PREFIX}*`,
       reflectToAttributes: true,
+      styleScope: styleScopeFor(tag),
       ...extra,
     }),
   }
@@ -109,8 +123,11 @@ export function createBuiltinComponents(
  */
 export const webBuiltinComponents: BuiltinComponents = {
   create: createBuiltinComponents,
-  baseStyles: {
-    path: 'tiny-builtin-base.css',
-    content: BUILTIN_BASE_STYLES,
-  },
+  styles: [
+    {
+      path: 'tiny-builtin-host.css',
+      content: BUILTIN_HOST_STYLES,
+    },
+    ...BUILTIN_COMPONENT_STYLES.map(({ path, content, scope }) => ({ path, content, scope })),
+  ],
 }

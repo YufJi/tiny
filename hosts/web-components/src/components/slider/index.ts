@@ -41,7 +41,7 @@ export function defineSlider(ctx: BuiltinContext): BuiltinDefinition {
         this.syncDisplayValue()
       },
     },
-    options: ctx.hostOptions(),
+    options: ctx.hostOptions('slider'),
     methods: {
       normalizeValue(raw: unknown): number {
         const min = Number(this.data.min)

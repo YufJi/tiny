@@ -2,6 +2,12 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
+import {
+  HOST_TAG_PREFIX,
+  INTERNAL_SCOPE_MARKER,
+  INTERNAL_TAG_MARKER_PREFIX,
+  TEMPLATE_META_TAGS,
+} from './shared.mjs'
 
 const require = createRequire(import.meta.url)
 const { TmplGroup } = require('@tiny/template-compiler')
@@ -14,6 +20,33 @@ const tags = fs.readdirSync(componentsRoot, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
   .map((entry) => entry.name)
   .sort()
+const tagSet = new Set(tags)
+
+function injectInternalScopeClasses(source) {
+  return source.replace(
+    /<([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*?)(\/?)>/g,
+    (match, rawTag, attributes, selfClose) => {
+      const tag = rawTag.toLowerCase()
+      if (TEMPLATE_META_TAGS.has(tag)) return match
+      const hostTag = tagSet.has(tag) ? `${HOST_TAG_PREFIX}${tag}` : tag
+      const markers = `${INTERNAL_TAG_MARKER_PREFIX}${hostTag} ${INTERNAL_SCOPE_MARKER}`
+      const classMatch = attributes.match(/\sclass\s*=\s*(["'])([\s\S]*?)\1/)
+      let nextAttributes = attributes
+      if (classMatch) {
+        const quote = classMatch[1]
+        const value = classMatch[2]
+        const separator = value.length === 0 || /\s$/.test(value) ? '' : ' '
+        nextAttributes = attributes.replace(
+          classMatch[0],
+          ` class=${quote}${value}${separator}${markers}${quote}`,
+        )
+      } else {
+        nextAttributes = `${attributes} class="${markers}"`
+      }
+      return `<${rawTag}${nextAttributes}${selfClose}>`
+    },
+  )
+}
 
 const group = TmplGroup.newDev()
 for (const tag of tags) {
@@ -21,7 +54,8 @@ for (const tag of tags) {
   if (!fs.existsSync(templatePath)) {
     throw new Error(`Missing built-in template: ${templatePath}`)
   }
-  const warnings = group.addTmpl(tag, fs.readFileSync(templatePath, 'utf8'))
+  const source = injectInternalScopeClasses(fs.readFileSync(templatePath, 'utf8'))
+  const warnings = group.addTmpl(tag, source)
   if (warnings.length > 0) {
     const messages = warnings.map((warning) => `${warning.kind} at ${JSON.stringify(warning.start)}`)
     throw new Error(`Template warnings for ${tag}: ${messages.join(', ')}`)

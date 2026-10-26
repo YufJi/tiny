@@ -29,7 +29,7 @@ export function defineIcon(ctx: BuiltinContext): BuiltinDefinition {
         this.syncFontSize()
       },
     },
-    options: ctx.hostOptions(),
+    options: ctx.hostOptions('icon'),
     methods: {
       syncFontSize() {
         const normalizeSize = (this as unknown as {

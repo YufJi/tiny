@@ -15,7 +15,7 @@ export function defineRadio(ctx: BuiltinContext): BuiltinDefinition {
       disabled: { type: Boolean, value: false },
       color: { type: String, value: '#09BB07' },
     },
-    options: ctx.hostOptions(),
+    options: ctx.hostOptions('radio'),
     methods: {
       select() {
         if (this.data.disabled) return

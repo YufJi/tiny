@@ -7,6 +7,11 @@ It contains no mini-program source. The compiler writes an app to
 service/render iframes, with one render iframe per page. It is intentionally
 UI-less and single-app, unlike the debugger in `apps/devtool`.
 
+The browser host has no single-render fallback: every page owns a render iframe,
+and only that page's transitive styles are registered in the frame. P0 exercises
+app/page/component scoping, built-in host styling, private built-in internals,
+and external-class entry points such as `placeholder-class`.
+
 ```bash
 pnpm compile:glass-easel     # tests/apps/demo -> tests/host/generated
 pnpm dev:glass-easel         # compile + Vite on :5173

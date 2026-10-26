@@ -45,7 +45,7 @@ export function defineProgress(ctx: BuiltinContext): BuiltinDefinition {
         this.stopActiveAnimation()
       },
     },
-    options: ctx.hostOptions(),
+    options: ctx.hostOptions('progress'),
     methods: {
       stopActiveAnimation() {
         const instance = this as unknown as { __activeTimer?: ReturnType<typeof setInterval> }

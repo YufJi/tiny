@@ -3,7 +3,7 @@
 <div class="tiny-input-wrapper">
   <div
     wx:if="{{placeholder && !value}}"
-    class="tiny-input-placeholder {{placeholderClass}}"
+    class="tiny-input-placeholder placeholder-class"
     style="{{placeholderStyle}}"
   >{{placeholder}}</div>
   <input

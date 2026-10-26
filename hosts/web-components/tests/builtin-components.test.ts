@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'vitest'
 import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
-import { BUILTIN_COMPONENT_TAGS, createBuiltinComponents } from '../src'
+import {
+  BUILTIN_COMPONENT_STYLES,
+  BUILTIN_COMPONENT_TAGS,
+  BUILTIN_HOST_STYLES,
+  createBuiltinComponents,
+} from '../src'
 import precompiledTemplates from '../src/generated/templates'
 
 function compilePage(source: string): glassEasel.template.ComponentTemplate {
@@ -30,6 +35,16 @@ describe('P0 built-in components', () => {
     const definitions = createBuiltinComponents(space)
     expect(Object.keys(definitions)).toHaveLength(BUILTIN_COMPONENT_TAGS.length)
     expect(Object.keys(definitions)).toEqual(expect.arrayContaining([...BUILTIN_COMPONENT_TAGS]))
+  })
+
+  test('keeps cross-component layout in public host CSS and private styles in component scopes', () => {
+    expect(BUILTIN_HOST_STYLES).toContain('top: var(--tiny-swiper-item-top, 0)')
+    expect(BUILTIN_HOST_STYLES).toContain('left: var(--tiny-swiper-item-left, 0)')
+    expect(BUILTIN_HOST_STYLES).not.toContain('.tiny-swiper.is-vertical tiny-swiper-item')
+
+    const swiperStyles = BUILTIN_COMPONENT_STYLES.find((style) => style.tag === 'swiper')
+    expect(swiperStyles?.scope).toBe('tiny-builtin-swiper')
+    expect(swiperStyles?.content).not.toContain(' tiny-swiper-item')
   })
 
   test('button catches native taps and emits a mini-program tap event', () => {

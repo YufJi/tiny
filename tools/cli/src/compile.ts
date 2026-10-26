@@ -701,8 +701,9 @@ class MiniProgramCompiler {
         const transformer = StyleSheetTransformer.fromCss(relativePath, source, {
           classPrefix: scope,
           tagClassPrefix: scope ? `${scope}--${this.naming.tagClassPrefix}` : undefined,
-          scopeMarkerClass: scope ? this.naming.scopeMarkerClass : undefined,
+          scopeMarkerClass: scope || isAppStyle ? this.naming.scopeMarkerClass : undefined,
           scopeHostAttribute: isPageStyle ? this.naming.hostAttribute : undefined,
+          forceScopeAnchor: isAppStyle,
           builtinTags: BUILTIN_COMPONENT_TAGS,
           builtinHostTagPrefix: BUILTIN_HOST_TAG_PREFIX,
           hostAttribute: this.naming.hostAttribute,
@@ -755,13 +756,16 @@ class MiniProgramCompiler {
           // isolated components still do not.
           const pageScopeTransformer = StyleSheetTransformer.fromCss(relativePath, source, {
             classPrefixSign: APP_PAGE_SCOPE_CLASS_SIGN,
+            scopeMarkerClass: APP_PAGE_SCOPE_CLASS_SIGN,
+            scopeHostAttribute: this.naming.hostAttribute,
+            forceScopeAnchor: true,
             builtinTags: BUILTIN_COMPONENT_TAGS,
             builtinHostTagPrefix: BUILTIN_HOST_TAG_PREFIX,
             hostAttribute: this.naming.hostAttribute,
             rpxRatio: this.options.rpxRatio,
           })
           const pageScopeCss = pageScopeTransformer.getContent()
-          if (pageScopeCss.includes(`/*${APP_PAGE_SCOPE_CLASS_SIGN}*/`)) {
+          if (pageScopeCss.includes(`.${APP_PAGE_SCOPE_CLASS_SIGN}`)) {
             const pageScopeOutputPath = `styles/${relativePath}.page-scope.css`
             await writeFileWithSourceMap(this.outputPath(pageScopeOutputPath), pageScopeCss)
             const pageScopeArtifact: StyleArtifact = {

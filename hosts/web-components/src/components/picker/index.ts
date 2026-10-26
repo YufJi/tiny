@@ -64,7 +64,7 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
       draftValue: [] as number[],
       overlayTitle: '',
     },
-    options: ctx.hostOptions(),
+    options: ctx.hostOptions('picker'),
     methods: {
       rangeLabels(range: unknown): string[] {
         const list = Array.isArray(range) ? range : []
