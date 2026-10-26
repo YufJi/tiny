@@ -166,12 +166,8 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
   })
 
   connection.onControl('canvas', 'measure', (message) => {
-    const payload = (message.payload ?? {}) as { selector?: string }
-    return options.canvas?.measure(payload.selector) ?? { width: 0, height: 0 }
-  })
-
-  connection.onEvent('canvas', 'frame', (message) => {
-    options.canvas?.paint(message.payload as { canvasId?: string; dataUrl?: string })
+    const payload = (message.payload ?? {}) as { selector?: string; canvasId?: string }
+    return options.canvas?.measure(payload.selector, payload.canvasId) ?? { width: 0, height: 0 }
   })
 
   connection.onEvent('data', 'setData', (message) => {

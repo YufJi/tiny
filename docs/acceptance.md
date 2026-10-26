@@ -29,8 +29,8 @@ The browser stage verifies:
 7. Input changes reach page data, and `Save and back` persists storage and restores the
    todos marker.
 8. System info carries a non-zero window size and pixel ratio.
-9. Canvas draws through the service-thread mirror without fatal errors; the legacy
-   canvas API still emits a structured `UNSUPPORTED_CANVAS` warning.
+9. Canvas draws through the service/render bridge without fatal errors; the bridged
+   canvas reports its advanced-API limitation as a structured `UNSUPPORTED_CANVAS` warning.
 10. The component semantics page boots from the todos page and returns to it.
 11. `Behavior` data/methods/lifetimes are merged; property observers and `observers`
     run on page-driven property changes; `selectComponent` resolves the behavior box
@@ -55,7 +55,7 @@ After the P0 demo flow, the gate compiles `tests/apps/mini` (3 pages + 1 subpack
 1. Boots from `App.onLaunch` storage writes and renders the todos page from `getApp()`
    state.
 2. Renders both `add-button` instances, slots, checkbox group, slider, progress, switch,
-   swiper, the mirrored canvas, and a loaded image (static assets are inlined or resolved
+   swiper, the handed-off canvas, and a loaded image (static assets are inlined or resolved
    by the render asset hook).
 3. Applies `app.wxss` page styling to the real app.
 4. Drives page interactions: checkbox-group aggregation updates `app.todos`, the first
@@ -64,11 +64,12 @@ After the P0 demo flow, the gate compiles `tests/apps/mini` (3 pages + 1 subpack
    and `animation="{{...}}"` data produces a CSS transform.
 5. Resolves WXML `import` / `include` and named templates.
 6. Navigates to the Component-as-page `add-todo`, updates its input, and returns.
-7. Renders the `bar` ECharts page: the service-thread canvas is mirrored to the render
-   page as PNG frames, and the acceptance checks for non-blank pixels.
+7. Renders the `bar` ECharts page: the render canvas is handed to the service thread as
+   an OffscreenCanvas, the acceptance checks rendered canvas content, and dragging over
+   the chart repaints without duplicate handler events.
 8. Boots the `packageA/pages/c/c` subpackage page directly.
-9. Runs `wx.createAnimation` and `wx.createSelectorQuery`, reports the offscreen canvas
-   mirror as info, and keeps the legacy canvas API at warning level.
+9. Runs `wx.createAnimation` and `wx.createSelectorQuery`, reports the OffscreenCanvas
+   bridge as info, and keeps the canvas advanced-API limitation at warning level.
 
 The P0 demo artifacts are recompiled after this stage, so `pnpm dev:glass-easel` keeps
 serving the small demo.
@@ -101,7 +102,13 @@ API examples:
    `resources/kind/{{id}}.png` icons through the host `resolveAssetUrl` hook.
 2. Boots a component example (`button`).
 3. Boots an API example (`storage`).
-4. Keeps page, console, and runtime error output empty.
+4. Runs the canvas 2D node example: `selectorQuery().fields({ node, size })` returns a
+   drawable node, `canvas.createImage()` resolves `./car.png` through the service asset
+   hook, the `requestAnimationFrame` loop advances frames, and the service-side
+   `measureText` / `getImageData` / `toDataURL` calls stay synchronous.
+5. Runs the canvas WebGL example through the OffscreenCanvas handoff; both legacy
+   `createCanvasContext` and selector-query canvas nodes require the handoff, with no PNG fallback.
+6. Keeps page, console, and runtime error output empty.
 
 The subset, adaptations, and excluded advanced packages are documented in
 `tests/apps/wechat-demo/README.md`.

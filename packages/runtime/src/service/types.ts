@@ -1,5 +1,6 @@
 import type { BridgeConnection } from '@tiny/bridge'
 import type { ServiceThreadOptions, StorageSnapshot, SystemInfoSnapshot, ServiceCanvasAdapter } from '../types'
+import type { AssetUrlResolver } from '../assets'
 import type { ComponentTree } from '../component-tree'
 import type { RelationManager } from '../relation-manager'
 import type { NormalizedComponentDefinition } from '../component-definition'
@@ -77,6 +78,8 @@ export type ServiceApiContext = {
   apiNames: Set<string>
   getCurrentPagePath?: () => string | undefined
   canvas?: ServiceCanvasAdapter
+  /** Host hook mapping app-root asset paths to loadable URLs (canvas images, …). */
+  resolveAssetUrl?: AssetUrlResolver
   tabBar?: TabBarApi
   pageId?: string
 }

@@ -158,6 +158,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     apiNames: supportedApiNames,
     getCurrentPagePath: () => activePage?.path,
     canvas: options.canvas,
+    resolveAssetUrl: options.resolveAssetUrl,
     tabBar: tabBarApi,
     get pageId() {
       return activePage?.pageId
@@ -346,6 +347,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     triggerPageLifecycle(page, 'onUnload')
     if (page.getComponentDefinition()) page.triggerComponentLifecycle('detached')
     relationManager.handleDetach(page.componentId)
+    options.canvas?.releaseCanvasNode?.({ pageId: page.pageId })
     for (const componentId of componentTree.removePage(page.pageId)) {
       const component = componentInstances.get(componentId)
       if (!component) continue

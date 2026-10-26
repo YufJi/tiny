@@ -71,7 +71,7 @@ manifest/runtime types. It must not reference browser globals.
 
 | Module | Host capability |
 | --- | --- |
-| `canvas-bridge` | DOM canvas, PNG frame capture/paint |
+| `canvas-bridge` | Canvas 2D/WebGL OffscreenCanvas handoff, legacy CanvasContext |
 | `runtime-port` | `window.postMessage` / iframe port handshake |
 | `standalone-host` | iframe creation, single/per-page render stacks, page visibility |
 | `page-lifecycle` | Render-frame scroll → page `onPageScroll` / `onReachBottom` bridge |
@@ -79,8 +79,8 @@ manifest/runtime types. It must not reference browser globals.
 
 Canvas is injected at the thread boundary:
 
-- `ServiceThreadOptions.canvas` (`createLegacyCanvasContext`, `createCanvasNode`)
-- `RenderThreadOptions.canvas` (`measure`, `paint`)
+- `ServiceThreadOptions.canvas` (`createLegacyCanvasContext`, `acquireCanvasNode`, `releaseCanvasNode`)
+- `RenderThreadOptions.canvas` (`measure`)
 
 This keeps `service.ts` and `render.ts` free of `window`, `document`, `Image`,
 and `HTMLCanvasElement`; browser code lives in `@tiny/host-browser`, not in core. `pnpm check:runtime-purity` walks the core entry's import

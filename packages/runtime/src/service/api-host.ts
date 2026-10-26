@@ -434,22 +434,18 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
       query: {},
       scene: 1001,
     }),
-    // Animation and canvas are outside P0, but page code still calls these
-    // APIs during lifecycle hooks. Return chainable stubs so the page can boot.
     createAnimation: (options: unknown = {}) => createAnimationStub(options),
     createCanvasContext: (canvasId: unknown = 'canvas') => {
-      const bridged = context.canvas?.createLegacyCanvasContext(
+      const legacy = context.canvas?.createLegacyCanvasContext(
         String(canvasId || 'canvas'),
-        (frame) => {
-          context.connection.sendEvent('canvas', 'frame', frame, { pageId: context.pageId })
-        },
+        { pageId: context.pageId },
       )
-      return bridged ?? createCanvasContextStub()
+      return legacy ?? createCanvasContextStub()
     },
     createSelectorQuery: () => {
       context.connection.sendDiagnostic('log', {
         code: 'CANVAS_OFFSCREEN',
-        message: 'Canvas is rendered in the service thread and mirrored to the render thread.',
+        message: 'Canvas is rendered in the service thread and presented by the render thread.',
       }, context.pageId)
       return createSelectorQueryStub(context)
     },

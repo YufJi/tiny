@@ -6,9 +6,9 @@ core runtime.
 
 ## Modules
 
-- `canvas-bridge`: service-side DOM canvas capture and render-side paint/measure
+- `canvas-bridge`: OffscreenCanvas handoff, legacy CanvasContext, service/render canvas adapters
 - `runtime-port`: iframe `postMessage` handshake and `MessagePort` transfer
-- `standalone-host`: iframe creation, port transfer, bootstrap orchestration
+- `standalone-host`: iframe creation, port transfer, canvas relay, bootstrap orchestration
 - `devtool-client`: DOM overlay and debugger panel bridge
 
 ## Canvas injection
@@ -16,9 +16,21 @@ core runtime.
 The core service/render threads accept canvas adapters:
 
 ```ts
-bootServiceThread({ ..., canvas: { createLegacyCanvasContext, createCanvasNode } })
-bootRenderThread({ ..., canvas: { measure, paint } })
+bootServiceThread({ ..., canvas: createBrowserCanvasAdapter() })
+bootRenderThread({ ..., canvas: { measure } })
 ```
+
+The render entry must also install the OffscreenCanvas responder, and the host
+page must relay the handoff between the service and render iframes:
+
+```ts
+installOffscreenCanvasResponder() // render thread
+installCanvasHandoffRelay({ serviceIframe, getRenderIframe, isRenderSource })
+```
+
+Selector-query canvas nodes and legacy `createCanvasContext` both use the
+OffscreenCanvas handoff, with no PNG fallback. They expose synchronous 2D/WebGL
+APIs in the service thread.
 
 `tests/host` and `apps/devtool` wire these adapters from this package.
 

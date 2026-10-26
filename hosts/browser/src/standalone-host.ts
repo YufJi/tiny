@@ -75,6 +75,11 @@ export async function createStandaloneDualThreadHost(
     [renderChannel.peerPort as unknown as Transferable],
   )
 
+  const removeCanvasRelay = installCanvasHandoffRelay({
+    serviceIframe,
+    getRenderIframe: () => renderIframe,
+    isRenderSource: (source) => source === renderIframe.contentWindow,
+  })
   const host = createTinyRuntime({
     serviceTransport: serviceChannel.hostTransport,
     renderTransport: renderChannel.hostTransport,
@@ -99,6 +104,7 @@ export async function createStandaloneDualThreadHost(
       return renderIframes
     },
     async dispose() {
+      removeCanvasRelay()
       await host.close()
       serviceIframe.remove()
       renderIframe.remove()
@@ -117,6 +123,20 @@ async function createPerPageHost(
   const frames = new Map<string, HTMLIFrameElement>()
   let activePageId: string | undefined
   let appVisible = true
+  const removeCanvasRelay = installCanvasHandoffRelay({
+    serviceIframe,
+    getRenderIframe: (pageId) => {
+      if (pageId) return frames.get(pageId)
+      if (activePageId) return frames.get(activePageId)
+      return frames.values().next().value
+    },
+    isRenderSource: (source) => {
+      for (const frame of frames.values()) {
+        if (frame.contentWindow === source) return true
+      }
+      return false
+    },
+  })
 
   const updateVisibility = () => {
     for (const [pageId, frame] of frames) {
@@ -192,12 +212,94 @@ async function createPerPageHost(
       return frames
     },
     async dispose() {
+      removeCanvasRelay()
       await host.close()
       serviceIframe.remove()
       for (const frame of frames.values()) frame.remove()
       frames.clear()
     },
   }
+}
+
+export type CanvasHandoffRelayOptions = {
+  serviceIframe: HTMLIFrameElement
+  /** Resolve the render iframe for a page; single-render hosts can ignore pageId. */
+  getRenderIframe: (pageId?: string) => HTMLIFrameElement | undefined
+  isRenderSource: (source: MessageEventSource | null) => boolean
+}
+
+/**
+ * Browser-host relay for the OffscreenCanvas handoff.
+ *
+ * The service thread asks its parent for a canvas handle; the parent forwards
+ * the request to the render iframe that owns the page. The render iframe
+ * transfers the OffscreenCanvas back through this relay.
+ */
+export function installCanvasHandoffRelay(
+  options: CanvasHandoffRelayOptions,
+): () => void {
+  const targetOrigin = window.location.origin === 'null' ? '*' : window.location.origin
+  const serviceWindow = options.serviceIframe.contentWindow
+  const sendToService = (payload: Record<string, unknown>, transfer: Transferable[] = []): void => {
+    try {
+      serviceWindow?.postMessage(payload, targetOrigin, transfer)
+    } catch {
+      // The service iframe may already be gone.
+    }
+  }
+  const listener = (event: MessageEvent) => {
+    if (event.origin !== window.location.origin) return
+    const data = event.data as {
+      type?: string
+      token?: string
+      status?: string
+      pageId?: string
+      offscreen?: OffscreenCanvas
+    } | undefined
+    if (!data?.type || !data.token) return
+    if (event.source === serviceWindow && data.type === 'tiny-canvas-request') {
+      const renderWindow = options.getRenderIframe(data.pageId)?.contentWindow
+      if (!renderWindow) {
+        sendToService({
+          type: 'tiny-canvas-error',
+          token: data.token,
+          reason: 'render-not-found',
+        })
+        return
+      }
+      try {
+        renderWindow.postMessage(data, targetOrigin)
+      } catch {
+        sendToService({
+          type: 'tiny-canvas-error',
+          token: data.token,
+          reason: 'render-post-failed',
+        })
+      }
+      return
+    }
+    if (!options.isRenderSource(event.source)) return
+    if (data.type === 'tiny-canvas-handoff') {
+      if (data.status === 'transferred' && !data.offscreen) {
+        sendToService({
+          type: 'tiny-canvas-error',
+          token: data.token,
+          reason: 'missing-offscreen',
+        })
+        return
+      }
+      const transfer = data.status === 'transferred' && data.offscreen
+        ? [data.offscreen]
+        : []
+      sendToService(data as Record<string, unknown>, transfer)
+      return
+    }
+    if (data.type === 'tiny-canvas-error') {
+      sendToService(data as Record<string, unknown>)
+    }
+  }
+  window.addEventListener('message', listener)
+  return () => window.removeEventListener('message', listener)
 }
 
 function createIframe(className: string, src: string): HTMLIFrameElement {

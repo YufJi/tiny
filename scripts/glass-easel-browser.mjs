@@ -477,6 +477,9 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       for (const selector of ['tiny-checkbox', 'tiny-slider', 'tiny-progress', 'tiny-switch', 'tiny-swiper', 'tiny-canvas']) {
         assert.ok((await render.locator(selector).count()) > 0, `missing rendered element: ${selector}`)
       }
+      const legacyCanvas = render.locator('canvas[canvas-id="canvas"]').first()
+      await waitForCanvasHandoff(render, 'canvas[canvas-id="canvas"]')
+      await waitForCanvasStats(page, legacyCanvas, 100)
       const background = await render.locator('page').evaluate((element) => getComputedStyle(element).backgroundColor)
       assert.equal(background, 'rgb(50, 50, 57)', 'app.wxss page rule did not apply to the real app')
 
@@ -594,8 +597,8 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       assert.equal(stateEvents.at(-1)?.details?.currentPage, 'pages/todos/todos', 'did not return to todos')
     })
 
-    await step('render the ECharts page through mirrored canvas frames', async () => {
-      currentStep = 'render the ECharts page through mirrored canvas frames'
+    await step('render the ECharts page through the canvas bridge', async () => {
+      currentStep = 'render the ECharts page through the canvas bridge'
       await render.getByText('nav', { exact: true }).first().click()
       await page.waitForFunction(
         () => window.__tinyRuntime.host.diagnostics.some(
@@ -609,19 +612,48 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
         canvasClass.includes('tiny-components-ec-canvas-ec-canvas--ec-canvas'),
         'component canvas class was not scoped',
       )
-      await render.waitForFunction(() => {
-        const canvas = document.querySelector('canvas')
-        if (!canvas || canvas.width < 100 || canvas.height < 100) return false
-        const context = canvas.getContext('2d')
-        if (!context) return false
-        const data = context.getImageData(0, 0, canvas.width, canvas.height).data
-        for (let index = 3; index < data.length; index += 4) {
-          if (data[index] !== 0) return true
-        }
-        return false
-      }, null, { timeout: STEP_TIMEOUT })
+      const chartCanvas = render.locator('canvas[canvas-id="mychart-bar"]').first()
+      await waitForCanvasHandoff(render, 'canvas[canvas-id="mychart-bar"]')
+      await waitForCanvasStats(page, chartCanvas, 100)
       const errorsAfterBar = (await diagnostics()).filter((item) => item.severity === 'error')
       assert.equal(errorsAfterBar.length, 0, `bar page raised errors: ${errorsAfterBar.map((item) => item.message).join(' | ')}`)
+    })
+
+    await step('interact with the ECharts canvas', async () => {
+      currentStep = 'interact with the ECharts canvas'
+      const chartCanvas = render.locator('canvas[canvas-id="mychart-bar"]').first()
+      const box = await chartCanvas.boundingBox()
+      assert.ok(box && box.width > 100 && box.height > 100, 'bar chart canvas has no layout box')
+      const transferred = await chartCanvas.evaluate((element) => {
+        try {
+          element.getContext('2d')
+          return false
+        } catch (error) {
+          return error instanceof Error && error.name === 'InvalidStateError'
+        }
+      })
+      assert.ok(transferred, 'ECharts canvas was not handed off through OffscreenCanvas')
+      // Let the initial ECharts animation settle so the next frame change is
+      // attributable to the drag.
+      await page.waitForTimeout(1200)
+      const before = await chartCanvas.screenshot()
+      const x = box.x + box.width * 0.7
+      const y = box.y + box.height * 0.4
+      await page.mouse.move(x, y)
+      await page.mouse.down()
+      await page.mouse.move(x + 24, y + 12, { steps: 6 })
+      await page.mouse.up()
+      await page.waitForTimeout(300)
+      const after = await chartCanvas.screenshot()
+      assert.ok(!before.equals(after), 'canvas interaction did not repaint the chart')
+      const interactionErrors = (await diagnostics()).filter(
+        (item) => item.severity === 'error' || item.code === 'EVENT_HANDLER_ERROR',
+      )
+      assert.equal(
+        interactionErrors.length,
+        0,
+        `canvas interaction raised errors: ${interactionErrors.map((item) => item.message).join(' | ')}`,
+      )
     })
 
     await step('report unsupported capabilities as warnings, not failures', async () => {
@@ -630,7 +662,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       const warningCodes = items.filter((item) => item.severity === 'warning').map((item) => item.code)
       const infoCodes = items.filter((item) => item.severity === 'info').map((item) => item.code)
       assert.ok(warningCodes.includes('UNSUPPORTED_CANVAS'), 'canvas placeholder was not reported')
-      assert.ok(infoCodes.includes('CANVAS_OFFSCREEN'), 'canvas mirroring was not reported')
+      assert.ok(infoCodes.includes('CANVAS_OFFSCREEN'), 'canvas bridging was not reported')
       assert.equal(items.filter((item) => item.severity === 'error').length, 0, 'real app raised fatal diagnostics')
     })
 
@@ -682,10 +714,14 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
   const page = await browser.newPage({ viewport: { width: 420, height: 900 } })
   const pageErrors = []
   const consoleErrors = []
+  const canvasImageResponses = []
   const shot = path.join(rootDir, 'tests/host/generated/acceptance-wechat-demo-failure.png')
   page.on('pageerror', (error) => pageErrors.push(error.message))
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text())
+  })
+  page.on('response', (response) => {
+    if (response.url().includes('/canvas-2d/car.png')) canvasImageResponses.push(response.status())
   })
 
   let currentStep = 'start'
@@ -750,6 +786,104 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
         null,
         { timeout: STEP_TIMEOUT },
       )
+    })
+
+    await step('run the canvas 2D node example', async () => {
+      currentStep = 'run the canvas 2D node example'
+      await page.goto(`${baseUrl}?path=packageComponent/pages/canvas/canvas-2d/canvas-2d`, {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
+      const render = page.frames().find((frame) => frame.url().includes('render.html'))
+      assert.ok(render, 'render iframe was not created for the canvas 2D page')
+      const canvas = render.locator('#canvas2D canvas').first()
+      await waitForCanvasHandoff(render, '#canvas2D canvas')
+      await waitForCanvasStats(page, canvas, 100)
+      const before = await canvas.screenshot()
+      await page.waitForTimeout(300)
+      const after = await canvas.screenshot()
+      assert.ok(!before.equals(after), 'canvas 2D requestAnimationFrame loop did not advance')
+      assert.ok(canvasImageResponses.includes(200), 'canvas 2D createImage() did not load car.png')
+      assert.ok(
+        !(await render.locator('#app').innerText()).includes('微信版本过低'),
+        'canvas 2D node was reported as unavailable',
+      )
+      const transferred = await canvas.evaluate((element) => {
+        try {
+          element.getContext('2d')
+          return false
+        } catch (error) {
+          return error instanceof Error && error.name === 'InvalidStateError'
+        }
+      })
+      assert.ok(transferred, 'canvas 2D node was not handed off through OffscreenCanvas')
+      const service = page.frames().find((frame) => frame.url().includes('service.html'))
+      assert.ok(service, 'service iframe was not created for the canvas 2D page')
+      const sync = await service.evaluate(async () => {
+        const result = await new Promise((resolve) => {
+          wx.createSelectorQuery().select('#canvas2D').fields({ node: true, size: true }).exec(resolve)
+        })
+        const node = result[0].node
+        const context = node.getContext('2d')
+        const metrics = context.measureText('sync')
+        return {
+          width: metrics.width,
+          bytes: context.getImageData(0, 0, 1, 1).data.length,
+          dataUrl: node.toDataURL().startsWith('data:image/png'),
+        }
+      })
+      assert.ok(sync.width > 0, 'measureText() did not return synchronously')
+      assert.equal(sync.bytes, 4, 'getImageData() did not return synchronously')
+      assert.ok(sync.dataUrl, 'toDataURL() did not return a PNG data URL')
+      const errors = (await page.evaluate(() => window.__tinyRuntime.host.diagnostics))
+        .filter((item) => item.severity === 'error' || item.code === 'EVENT_HANDLER_ERROR')
+      assert.equal(errors.length, 0, `canvas 2D errors: ${errors.map((item) => item.message).join(' | ')}`)
+    })
+
+    await step('run the canvas WebGL example', async () => {
+      currentStep = 'run the canvas WebGL example'
+      await page.goto(`${baseUrl}?path=packageComponent/pages/canvas/webgl/webgl`, {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
+      const render = page.frames().find((frame) => frame.url().includes('render.html'))
+      assert.ok(render, 'render iframe was not created for the WebGL page')
+      const canvas = render.locator('#canvasWebGL canvas').first()
+      await waitForCanvasHandoff(render, '#canvasWebGL canvas')
+      await waitForCanvasStats(page, canvas, 100)
+      const transferInfo = await canvas.evaluate((element) => {
+        let context = null
+        let errorName = null
+        try {
+          context = element.getContext('2d') ? 'context' : null
+        } catch (error) {
+          errorName = error instanceof Error ? error.name : String(error)
+        }
+        return {
+          transferred: context === null && errorName === 'InvalidStateError',
+          context,
+          errorName,
+          id: element.id,
+          canvasId: element.getAttribute('canvas-id'),
+          connected: element.isConnected,
+          width: element.width,
+          height: element.height,
+          matches: document.querySelectorAll('#canvasWebGL canvas').length,
+        }
+      })
+      assert.ok(
+        transferInfo.transferred,
+        `canvas WebGL node was not handed off through OffscreenCanvas: ${JSON.stringify(transferInfo)}`,
+      )
+      assert.ok(
+        !(await render.locator('#app').innerText()).includes('微信版本过低'),
+        'canvas WebGL node was reported as unavailable',
+      )
+      const errors = (await page.evaluate(() => window.__tinyRuntime.host.diagnostics))
+        .filter((item) => item.severity === 'error' || item.code === 'EVENT_HANDLER_ERROR')
+      assert.equal(errors.length, 0, `canvas WebGL errors: ${errors.map((item) => item.message).join(' | ')}`)
     })
 
     await step('keep the WeChat demo console free of errors', async () => {
@@ -1404,6 +1538,64 @@ export async function runDevtoolAcceptance({ baseUrl }) {
   } finally {
     await browser.close()
   }
+}
+
+
+async function canvasScreenshotStats(page, locator) {
+  const buffer = await locator.screenshot()
+  const dataUrl = `data:image/png;base64,${buffer.toString('base64')}`
+  return page.evaluate(async (url) => {
+    const image = new Image()
+    image.src = url
+    await image.decode()
+    const canvas = document.createElement('canvas')
+    canvas.width = image.naturalWidth
+    canvas.height = image.naturalHeight
+    const context = canvas.getContext('2d')
+    if (!context) return { changed: 0, width: 0, height: 0 }
+    context.drawImage(image, 0, 0)
+    const data = context.getImageData(0, 0, canvas.width, canvas.height).data
+    const background = [data[0], data[1], data[2], data[3]]
+    let changed = 0
+    for (let index = 0; index < data.length; index += 4) {
+      const alphaDelta = Math.abs(data[index + 3] - background[3])
+      const colorDelta = background[3] === 0
+        ? 0
+        : Math.abs(data[index] - background[0])
+          + Math.abs(data[index + 1] - background[1])
+          + Math.abs(data[index + 2] - background[2])
+      if (alphaDelta > 4 || colorDelta > 24) changed += 1
+    }
+    return { changed, width: canvas.width, height: canvas.height }
+  }, dataUrl)
+}
+
+async function waitForCanvasHandoff(render, selector, timeout = STEP_TIMEOUT) {
+  await render.waitForFunction(
+    (target) => {
+      const element = document.querySelector(target)
+      return element?.getAttribute('data-tiny-canvas-offscreen') === 'true'
+    },
+    selector,
+    { timeout },
+  )
+}
+
+async function waitForCanvasStats(page, locator, minimum, timeout = STEP_TIMEOUT) {
+  const deadline = Date.now() + timeout
+  let last = { changed: 0, width: 0, height: 0 }
+  while (Date.now() < deadline) {
+    try {
+      last = await canvasScreenshotStats(page, locator)
+      if (last.changed >= minimum && last.width > 50 && last.height > 50) return last
+    } catch {
+      // The canvas may not be mounted yet.
+    }
+    await page.waitForTimeout(150)
+  }
+  throw new Error(
+    `canvas screenshot stayed blank (${last.changed} changed pixels, ${last.width}x${last.height})`,
+  )
 }
 
 async function step(name, run) {

@@ -359,9 +359,6 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
     if (!connection) return { width: 0, height: 0 }
     return connection.control('canvas', 'measure', message.payload, { pageId: message.pageId })
   })
-  service.onEvent('canvas', 'frame', (message) => {
-    routeServiceEvent('canvas', 'frame', message.payload, message.pageId)
-  })
 
   return {
     service,

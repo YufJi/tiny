@@ -2,10 +2,10 @@ import * as glassEasel from 'glass-easel';
 import { CurrentWindowBackendContext } from 'glass-easel';
 import { bootRenderThread } from '@tiny/runtime';
 import {
+  installOffscreenCanvasResponder,
   installPageLifecycleBridge,
   listenForRuntimePort,
   measureBrowserCanvas,
-  paintBrowserCanvasFrame,
 } from '@tiny/host-browser';
 import { webBuiltinComponents } from '@tiny/host-web-components';
 import { generatedBaseFor } from './appRegistry';
@@ -16,6 +16,8 @@ const importGenerated = (url) => new Function('url', 'return import(url)')(url);
 const resolveAssetUrl = (assetPath) => (
   `${generatedBase}/${assetPath.split('/').map(encodeURIComponent).join('/')}`
 );
+
+installOffscreenCanvasResponder();
 
 const assetsPromise = (async () => {
   const manifest = await fetch(`${generatedBase}/manifest.json`, { cache: 'no-store' })
@@ -47,7 +49,6 @@ assetsPromise.then(({ manifest, templates, styles }) => {
       resolveAssetUrl,
       canvas: {
         measure: measureBrowserCanvas,
-        paint: paintBrowserCanvasFrame,
       },
       mountComponent: (component) => {
         const container = document.getElementById('app') ?? document.body;

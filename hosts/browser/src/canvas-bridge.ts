@@ -1,189 +1,701 @@
-import type { CanvasFrame, CanvasMeasurement } from '@tiny/runtime'
+import type {
+  CanvasMeasurement,
+  CanvasNodeHandle,
+  CanvasNodeRequest,
+  ServiceCanvasAdapter,
+} from '@tiny/runtime'
 
-export type BridgedCanvas = {
-  canvas: HTMLCanvasElement
-  context: CanvasRenderingContext2D
-  sendFrame: () => void
+type CanvasImageOptions = {
+  resolveAssetUrl?: (src: string) => string | undefined
+}
+
+function postTargetOrigin(): string {
+  return window.location.origin === 'null' ? '*' : window.location.origin
+}
+
+function isSameOrigin(origin: string): boolean {
+  return origin === window.location.origin
+}
+
+function createFrameScheduler(afterFrame: () => void): {
+  requestFrame: (callback: FrameRequestCallback) => number
+  cancelFrame: (handle: number) => void
+  dispose: () => void
+} {
+  const handles = new Set<number>()
+  let disposed = false
+  const cancelFrame = (handle: number): void => {
+    if (!handle) return
+    handles.delete(handle)
+    if (typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'function') {
+      window.cancelAnimationFrame(handle)
+      return
+    }
+    clearTimeout(handle as unknown as ReturnType<typeof setTimeout>)
+  }
+  const requestFrame = (callback: FrameRequestCallback): number => {
+    if (disposed || typeof callback !== 'function') return 0
+    const run = (time: number) => {
+      handles.delete(handle)
+      if (disposed) return
+      callback(time)
+      afterFrame()
+    }
+    const handle = typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function'
+      ? window.requestAnimationFrame(run)
+      : setTimeout(() => run(Date.now()), 16) as unknown as number
+    handles.add(handle)
+    return handle
+  }
+  const dispose = (): void => {
+    if (disposed) return
+    disposed = true
+    for (const handle of Array.from(handles)) cancelFrame(handle)
+    handles.clear()
+  }
+  return { requestFrame, cancelFrame, dispose }
+}
+
+function createCanvasImageFactory(options: CanvasImageOptions): () => HTMLImageElement {
+  return () => {
+    const image = new Image()
+    const nativeDescriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src')
+    let source = ''
+    Object.defineProperty(image, 'src', {
+      configurable: true,
+      enumerable: true,
+      get: () => source,
+      set(value: string) {
+        source = String(value)
+        let resolved = source
+        try {
+          resolved = options.resolveAssetUrl?.(source) || source
+        } catch {
+          resolved = source
+        }
+        if (nativeDescriptor?.set) nativeDescriptor.set.call(image, resolved)
+        else image.setAttribute('src', resolved)
+      },
+    })
+    return image
+  }
+}
+
+export function measureBrowserCanvas(selector?: string, canvasId?: string): CanvasMeasurement {
+  if (typeof document === 'undefined') return { width: 300, height: 150 }
+  const element = findBrowserCanvas(selector, canvasId)
+  if (!element) return { width: 0, height: 0, hasCanvas: false }
+  let rect = element.getBoundingClientRect()
+  if (element.tagName.toLowerCase() === 'canvas' && element.parentElement) {
+    const parentRect = element.parentElement.getBoundingClientRect()
+    if (parentRect.width > 0 && parentRect.height > 0) rect = parentRect
+  }
+  const measured: CanvasMeasurement = {
+    width: rect.width > 0 ? Math.round(rect.width) : 300,
+    height: rect.height > 0 ? Math.round(rect.height) : 150,
+    hasCanvas: true,
+  }
+  const host = element.closest('tiny-canvas')
+  const resolvedId = element.getAttribute('canvas-id') || host?.id || element.id || canvasId
+  if (resolvedId) measured.canvasId = resolvedId
+  return measured
+}
+
+function findBrowserCanvas(selector?: string, canvasId?: string): HTMLCanvasElement | null {
+  if (typeof document === 'undefined') return null
+  const fromId = (id?: string): HTMLCanvasElement | null => {
+    if (!id) return null
+    for (const candidate of Array.from(document.querySelectorAll('canvas[canvas-id]'))) {
+      if (candidate.getAttribute('canvas-id') === id) return candidate as HTMLCanvasElement
+    }
+    const host = document.getElementById(id)
+    if (!host) return null
+    if (host.tagName.toLowerCase() === 'canvas') return host as HTMLCanvasElement
+    return host.querySelector('canvas') as HTMLCanvasElement | null
+  }
+  if (selector) {
+    let target: Element | null = null
+    try {
+      target = document.querySelector(selector)
+    } catch {
+      target = null
+    }
+    if (target) {
+      const targetCanvas = target.tagName.toLowerCase() === 'canvas'
+        ? target as HTMLCanvasElement
+        : target.querySelector('canvas') as HTMLCanvasElement | null
+      if (!targetCanvas) return null
+      // A canvas-id is unique per page, while `.ec-canvas` can match several
+      // charts. Prefer the explicit id when the selector resolves a canvas host.
+      return fromId(canvasId) ?? targetCanvas
+    }
+    // Component-scoped class selectors (`.ec-canvas`) do not match the scoped
+    // host class in the DOM, but the component's canvas-id still identifies it.
+    return fromId(canvasId)
+  }
+  return fromId(canvasId) ?? document.querySelector('canvas')
+}
+
+function createOffscreenCanvasNode(
+  offscreen: OffscreenCanvas,
+  width: number,
+  height: number,
+  options: CanvasImageOptions,
+): { node: CanvasNodeHandle; dispose: () => void } {
+  offscreen.width = Math.max(1, Math.round(width))
+  offscreen.height = Math.max(1, Math.round(height))
+  const exportCanvas = document.createElement('canvas')
+  const createImage = createCanvasImageFactory(options)
+  const { requestFrame, cancelFrame, dispose } = createFrameScheduler(() => undefined)
+  const node: Record<string, unknown> = {
+    getContext(type: string, attributes?: unknown) {
+      const context = (offscreen as unknown as {
+        getContext: (type: string, attributes?: unknown) => unknown
+      }).getContext(type, attributes)
+      return context ?? null
+    },
+    createImage,
+    requestAnimationFrame: requestFrame,
+    cancelAnimationFrame: cancelFrame,
+    toDataURL(...args: unknown[]) {
+      try {
+        exportCanvas.width = offscreen.width
+        exportCanvas.height = offscreen.height
+        const context = exportCanvas.getContext('2d')
+        if (!context) return ''
+        context.clearRect(0, 0, exportCanvas.width, exportCanvas.height)
+        context.drawImage(offscreen, 0, 0)
+        const [type, quality] = args as [string?, number?]
+        return exportCanvas.toDataURL(type ?? 'image/png', quality)
+      } catch {
+        return ''
+      }
+    },
+  }
+  Object.defineProperties(node, {
+    width: {
+      configurable: true,
+      enumerable: true,
+      get: () => offscreen.width,
+      set: (value: number) => {
+        offscreen.width = Math.max(1, Math.round(Number(value) || 1))
+      },
+    },
+    height: {
+      configurable: true,
+      enumerable: true,
+      get: () => offscreen.height,
+      set: (value: number) => {
+        offscreen.height = Math.max(1, Math.round(Number(value) || 1))
+      },
+    },
+  })
+  return {
+    node: node as unknown as CanvasNodeHandle,
+    dispose: () => {
+      dispose()
+      exportCanvas.width = 0
+      exportCanvas.height = 0
+    },
+  }
+}
+
+export type CanvasHandoffResult =
+  | { status: 'transferred'; offscreen: OffscreenCanvas; surfaceId?: string }
+  | { status: 'already'; surfaceId?: string }
+  | { status: 'error'; reason?: string }
+
+export type CanvasHandoffRequest = {
+  type: 'tiny-canvas-request'
+  token: string
+  pageId?: string
+  selector?: string
+  canvasId: string
+  width: number
+  height: number
+}
+
+const pendingHandoffs = new Map<string, CanvasHandoffResult>()
+const handoffWaiters = new Map<string, {
+  resolve: (value: CanvasHandoffResult) => void
+  timer: ReturnType<typeof setTimeout>
+}>()
+let offscreenReceiverInstalled = false
+
+function resolveHandoff(token: string, result: CanvasHandoffResult): void {
+  const waiter = handoffWaiters.get(token)
+  if (!waiter) {
+    pendingHandoffs.set(token, result)
+    return
+  }
+  clearTimeout(waiter.timer)
+  handoffWaiters.delete(token)
+  waiter.resolve(result)
+}
+
+/** Install the service-side receiver for canvas handoff responses. */
+export function installOffscreenCanvasReceiver(): void {
+  if (offscreenReceiverInstalled || typeof window === 'undefined') return
+  offscreenReceiverInstalled = true
+  window.addEventListener('message', (event) => {
+    if (event.source !== window.parent) return
+    if (!isSameOrigin(event.origin)) return
+    const data = event.data as {
+      type?: string
+      token?: string
+      status?: string
+      surfaceId?: string
+      offscreen?: OffscreenCanvas
+      reason?: string
+    } | undefined
+    if (!data?.type || !data.token) return
+    if (data.type === 'tiny-canvas-error') {
+      resolveHandoff(data.token, { status: 'error', reason: data.reason })
+      return
+    }
+    if (data.type !== 'tiny-canvas-handoff') return
+    if (data.status === 'transferred' && data.offscreen) {
+      resolveHandoff(data.token, {
+        status: 'transferred',
+        offscreen: data.offscreen,
+        surfaceId: data.surfaceId,
+      })
+      return
+    }
+    if (data.status === 'already') {
+      resolveHandoff(data.token, { status: 'already', surfaceId: data.surfaceId })
+    }
+  })
+}
+
+/** Wait for the host response that belongs to a service-side handoff token. */
+export function takeCanvasHandoff(
+  token: string,
+  timeoutMs = 5000,
+): Promise<CanvasHandoffResult> {
+  const existing = pendingHandoffs.get(token)
+  if (existing) {
+    pendingHandoffs.delete(token)
+    return Promise.resolve(existing)
+  }
+  installOffscreenCanvasReceiver()
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      handoffWaiters.delete(token)
+      resolve({ status: 'error', reason: 'timeout' })
+    }, timeoutMs)
+    handoffWaiters.set(token, { resolve, timer })
+  })
+}
+
+function requestCanvasHandoff(
+  request: Omit<CanvasHandoffRequest, 'type'>,
+): Promise<CanvasHandoffResult> {
+  if (typeof window === 'undefined' || window.parent === window) {
+    return Promise.resolve({ status: 'error', reason: 'no-parent' })
+  }
+  installOffscreenCanvasReceiver()
+  try {
+    window.parent.postMessage(
+      { type: 'tiny-canvas-request', ...request } satisfies CanvasHandoffRequest,
+      postTargetOrigin(),
+    )
+  } catch {
+    return Promise.resolve({ status: 'error', reason: 'post-failed' })
+  }
+  // The receiver stores a response that arrives before the waiter is created.
+  return takeCanvasHandoff(request.token)
+}
+
+function supportsOffscreenCanvas(): boolean {
+  return typeof OffscreenCanvas !== 'undefined'
+    && typeof window !== 'undefined'
+    && window.parent !== window
+}
+
+function createHandoffToken(): string {
+  return `canvas-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
 }
 
 /**
- * Service-thread canvas that mirrors itself to the render thread as PNG
- * frames. Mini-program canvas libraries draw into the service thread; the
- * visible canvas lives in the render thread, so frames are forwarded over the
- * bridge after each batch of drawing calls.
+ * Browser service canvas adapter.
+ *
+ * Both selector-query nodes and legacy `createCanvasContext` acquire the render
+ * canvas by transferring its control surface to the service thread. There is no
+ * PNG mirror fallback.
  */
-export function createBridgedCanvas(
-  width: number,
-  height: number,
+type LegacyContext = OffscreenCanvasRenderingContext2D
+type LegacyTask = (context: LegacyContext) => void
+
+type LegacySession = {
+  facade: Record<string, unknown>
+  tasks: LegacyTask[]
+  callbacks: Array<() => void>
+  context: LegacyContext | null
+  offscreen: OffscreenCanvas | null
+  disposed: boolean
+}
+
+/**
+ * Legacy `createCanvasContext` facade over an OffscreenCanvas.
+ *
+ * The legacy API is synchronous but the canvas handoff is asynchronous, so
+ * drawing calls are buffered until the service owns the canvas surface.
+ */
+function createLegacyCanvasSession(
   canvasId: string,
-  send: (frame: CanvasFrame) => void,
-): BridgedCanvas | null {
-  if (typeof document === 'undefined') return null
-  const canvas = document.createElement('canvas')
-  canvas.width = Math.max(1, Math.round(width))
-  canvas.height = Math.max(1, Math.round(height))
-  const target = canvas.getContext('2d')
-  if (!target) return null
-
-  let timer: ReturnType<typeof setTimeout> | null = null
-  let lastSent = 0
-  const sendFrame = () => {
-    const id = canvasId || 'canvas'
-    try {
-      send({
-        canvasId: id,
-        dataUrl: canvas.toDataURL('image/png'),
-        width: canvas.width,
-        height: canvas.height,
-      })
-    } catch {
-      // Snapshotting can fail while the canvas is being resized.
-    }
-  }
-  const schedule = () => {
-    if (timer) return
-    const delay = Math.max(0, 50 - (Date.now() - lastSent))
-    timer = setTimeout(() => {
-      timer = null
-      lastSent = Date.now()
-      sendFrame()
-    }, delay)
+  pageId: string | undefined,
+): LegacySession {
+  const session: LegacySession = {
+    facade: {},
+    tasks: [],
+    callbacks: [],
+    context: null,
+    offscreen: null,
+    disposed: false,
   }
 
-  const wrapped = new Proxy(target, {
-    get(object, property) {
-      const value = (object as unknown as Record<string | symbol, unknown>)[property]
-      if (typeof value === 'function') {
-        return (...args: unknown[]) => {
-          const result = (value as (...inner: unknown[]) => unknown).apply(object, args)
-          schedule()
-          return result
-        }
+  const run = (task: LegacyTask): void => {
+    if (session.disposed) return
+    if (session.context) {
+      try {
+        task(session.context)
+      } catch {
+        // A legacy context call should not break the surrounding page code.
       }
-      return value
-    },
-    set(object, property, value) {
-      ;(object as unknown as Record<string | symbol, unknown>)[property] = value
-      schedule()
-      return true
-    },
-  }) as CanvasRenderingContext2D
-
-  Object.defineProperty(canvas, 'getContext', {
-    configurable: true,
-    value: (type: string) => (type === '2d' ? wrapped : null),
-  })
-  for (const dimension of ['width', 'height'] as const) {
-    const descriptor = Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, dimension)
-    if (!descriptor?.get || !descriptor.set) continue
-    Object.defineProperty(canvas, dimension, {
-      configurable: true,
-      get() {
-        return descriptor.get!.call(canvas)
-      },
-      set(value: number) {
-        descriptor.set!.call(canvas, value)
-        schedule()
-      },
+      return
+    }
+    session.tasks.push(task)
+  }
+  const setStyle = (property: string) => (value: unknown): Record<string, unknown> => {
+    run((context) => {
+      ;(context as unknown as Record<string, unknown>)[property] = value
     })
+    return session.facade
   }
-
-  return { canvas, context: wrapped, sendFrame }
-}
-
-const LEGACY_STYLE_METHODS: Record<string, string> = {
-  setFillStyle: 'fillStyle',
-  setStrokeStyle: 'strokeStyle',
-  setFontSize: 'font',
-  setLineWidth: 'lineWidth',
-  setGlobalAlpha: 'globalAlpha',
-  setTextAlign: 'textAlign',
-  setTextBaseline: 'textBaseline',
-  setLineCap: 'lineCap',
-  setLineJoin: 'lineJoin',
-  setShadow: 'shadowColor',
-}
-
-/** Minimal `wx.createCanvasContext` facade over a bridged canvas. */
-export function createLegacyCanvasContext(
-  canvasId: string,
-  send: (frame: CanvasFrame) => void,
-  width = 300,
-  height = 300,
-): Record<string, unknown> | null {
-  const bridged = createBridgedCanvas(width, height, canvasId, send)
-  if (!bridged) return null
-  const context = bridged.context
-  const legacy: Record<string, unknown> = {
-    draw: () => {
-      bridged.sendFrame()
-    },
-  }
-  for (const [method, property] of Object.entries(LEGACY_STYLE_METHODS)) {
-    legacy[method] = (value: unknown) => {
-      if (property === 'font' && typeof value === 'number') {
-        context.font = `${value}px sans-serif`
-      } else {
-        ;(context as unknown as Record<string, unknown>)[property] = value
+  const invoke = (method: string) => (...args: unknown[]): Record<string, unknown> => {
+    run((context) => {
+      const fn = (context as unknown as Record<string, unknown>)[method]
+      if (typeof fn === 'function') {
+        ;(fn as (...inner: unknown[]) => unknown).apply(context, args)
       }
-    }
+    })
+    return session.facade
   }
+
   for (const method of [
     'fillRect', 'strokeRect', 'clearRect', 'beginPath', 'closePath',
     'moveTo', 'lineTo', 'arc', 'rect', 'fill', 'stroke', 'clip',
     'fillText', 'strokeText', 'translate', 'rotate', 'scale',
     'save', 'restore', 'drawImage',
   ]) {
-    legacy[method] = (...args: unknown[]) => {
-      const fn = (context as unknown as Record<string, (...inner: unknown[]) => unknown>)[method]
-      if (typeof fn === 'function') fn.apply(context, args)
+    session.facade[method] = invoke(method)
+  }
+  session.facade.setFillStyle = setStyle('fillStyle')
+  session.facade.setStrokeStyle = setStyle('strokeStyle')
+  session.facade.setLineWidth = setStyle('lineWidth')
+  session.facade.setGlobalAlpha = setStyle('globalAlpha')
+  session.facade.setTextAlign = setStyle('textAlign')
+  session.facade.setTextBaseline = setStyle('textBaseline')
+  session.facade.setLineCap = setStyle('lineCap')
+  session.facade.setLineJoin = setStyle('lineJoin')
+  session.facade.setFontSize = (value: unknown): Record<string, unknown> => {
+    run((context) => {
+      context.font = `${Number(value) || 12}px sans-serif`
+    })
+    return session.facade
+  }
+  session.facade.setShadow = (
+    offsetX?: unknown,
+    offsetY?: unknown,
+    blur?: unknown,
+    color?: unknown,
+  ): Record<string, unknown> => {
+    run((context) => {
+      context.shadowOffsetX = Number(offsetX) || 0
+      context.shadowOffsetY = Number(offsetY) || 0
+      context.shadowBlur = Number(blur) || 0
+      context.shadowColor = String(color ?? 'transparent')
+    })
+    return session.facade
+  }
+  session.facade.draw = (...args: unknown[]): Record<string, unknown> => {
+    const callback = args.find((arg): arg is () => void => typeof arg === 'function')
+    if (callback) {
+      if (session.context) callback()
+      else session.callbacks.push(callback)
+    }
+    return session.facade
+  }
+
+  const attach = async (): Promise<void> => {
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (session.disposed) return
+      const token = createHandoffToken()
+      const result = await requestCanvasHandoff({
+        token,
+        pageId,
+        canvasId,
+        width: 0,
+        height: 0,
+      })
+      if (session.disposed) {
+        if (result.status === 'transferred') {
+          result.offscreen.width = 0
+          result.offscreen.height = 0
+        }
+        return
+      }
+      if (result.status === 'transferred') {
+        const context = result.offscreen.getContext('2d') as LegacyContext | null
+        if (!context) {
+          result.offscreen.width = 0
+          result.offscreen.height = 0
+          return
+        }
+        session.context = context
+        session.offscreen = result.offscreen
+        for (const task of session.tasks.splice(0)) {
+          try {
+            task(context)
+          } catch {
+            // Ignore individual legacy drawing failures.
+          }
+        }
+        for (const callback of session.callbacks.splice(0)) callback()
+        return
+      }
+      if (result.status === 'error' && result.reason === 'canvas-not-found' && attempt < 19) {
+        await new Promise((resolve) => setTimeout(resolve, 50))
+        continue
+      }
+      return
     }
   }
-  return legacy
+  void attach()
+
+  return session
 }
 
+function disposeLegacySession(session: LegacySession): void {
+  if (session.disposed) return
+  session.disposed = true
+  session.tasks.length = 0
+  session.callbacks.length = 0
+  if (session.offscreen) {
+    session.offscreen.width = 0
+    session.offscreen.height = 0
+  }
+  session.context = null
+  session.offscreen = null
+}
 
-export function measureBrowserCanvas(selector?: string): CanvasMeasurement {
-  if (typeof document === 'undefined') return { width: 300, height: 150 }
-  let element: Element | null = null
+export function createBrowserCanvasAdapter(): ServiceCanvasAdapter {
+  const nodes = new Map<string, {
+    node: CanvasNodeHandle
+    dispose: () => void
+    surfaceId?: string
+  }>()
+  const pending = new Map<string, Promise<CanvasNodeHandle | null>>()
+  const legacySessions = new Map<string, LegacySession>()
+  const released = new Set<string>()
+
+  const keyFor = (request: { pageId?: string; canvasId: string }): string => (
+    `${request.pageId ?? ''}:${request.canvasId}`
+  )
+  const disposeKey = (key: string): void => {
+    const entry = nodes.get(key)
+    if (!entry) return
+    entry.dispose()
+    nodes.delete(key)
+  }
+  const disposeLegacyKey = (key: string): void => {
+    const session = legacySessions.get(key)
+    if (!session) return
+    disposeLegacySession(session)
+    legacySessions.delete(key)
+  }
+  const createLegacy = (
+    canvasId: string,
+    request: { pageId?: string } = {},
+  ): Record<string, unknown> | null => {
+    if (!supportsOffscreenCanvas()) return null
+    const key = keyFor({ pageId: request.pageId, canvasId })
+    const existing = legacySessions.get(key)
+    if (existing && !existing.disposed) return existing.facade
+    const session = createLegacyCanvasSession(canvasId, request.pageId)
+    legacySessions.set(key, session)
+    return session.facade
+  }
+  const acquire = async (request: CanvasNodeRequest): Promise<CanvasNodeHandle | null> => {
+    const key = keyFor(request)
+    if (released.has(key)) return null
+    const inFlight = pending.get(key)
+    if (inFlight) return inFlight
+    if (!supportsOffscreenCanvas()) return null
+    const token = createHandoffToken()
+    const task = (async (): Promise<CanvasNodeHandle | null> => {
+      const result = await requestCanvasHandoff({
+        token,
+        pageId: request.pageId,
+        selector: request.selector,
+        canvasId: request.canvasId,
+        width: request.width,
+        height: request.height,
+      })
+      if (result.status === 'transferred' && released.has(key)) {
+        result.offscreen.width = 0
+        result.offscreen.height = 0
+        return null
+      }
+      if (released.has(key) || result.status === 'error') return null
+      if (result.status === 'already') {
+        const existing = nodes.get(key)
+        if (existing && (existing.surfaceId ?? '') === (result.surfaceId ?? '')) {
+          return existing.node
+        }
+        disposeKey(key)
+        return null
+      }
+      disposeKey(key)
+      const created = createOffscreenCanvasNode(
+        result.offscreen,
+        request.width,
+        request.height,
+        { resolveAssetUrl: request.resolveAssetUrl },
+      )
+      nodes.set(key, {
+        node: created.node,
+        dispose: created.dispose,
+        surfaceId: result.surfaceId,
+      })
+      return created.node
+    })()
+    const tracked = task.finally(() => pending.delete(key))
+    pending.set(key, tracked)
+    return tracked
+  }
+
+  installOffscreenCanvasReceiver()
+
+  return {
+    createLegacyCanvasContext: createLegacy,
+    acquireCanvasNode: acquire,
+    releaseCanvasNode(request) {
+      if (request.canvasId) {
+        const key = keyFor({ pageId: request.pageId, canvasId: request.canvasId })
+        released.add(key)
+        disposeKey(key)
+        disposeLegacyKey(key)
+        return
+      }
+      const prefix = `${request.pageId ?? ''}:`
+      for (const key of new Set([...nodes.keys(), ...pending.keys()])) {
+        if (!key.startsWith(prefix)) continue
+        released.add(key)
+        disposeKey(key)
+      }
+      for (const key of Array.from(legacySessions.keys())) {
+        if (key.startsWith(prefix)) disposeLegacyKey(key)
+      }
+    },
+  }
+}
+
+const canvasSurfaceIds = new WeakMap<HTMLCanvasElement, string>()
+const transferredCanvases = new WeakSet<HTMLCanvasElement>()
+let offscreenResponderInstalled = false
+
+function canvasSurfaceId(canvas: HTMLCanvasElement): string {
+  const existing = canvasSurfaceIds.get(canvas)
+  if (existing) return existing
+  const surfaceId = createHandoffToken().replace('canvas-', 'surface-')
+  canvasSurfaceIds.set(canvas, surfaceId)
+  return surfaceId
+}
+
+function respondToHost(
+  payload: Record<string, unknown>,
+  transfer: Transferable[] = [],
+): void {
+  if (typeof window === 'undefined' || window.parent === window) return
   try {
-    element = selector ? document.querySelector(selector) : null
+    window.parent.postMessage(payload, postTargetOrigin(), transfer)
   } catch {
-    element = null
+    // The host disappeared while the canvas was being handed off.
   }
-  element ??= document.querySelector('canvas')
-  let rect = element?.getBoundingClientRect()
-  if (element?.tagName.toLowerCase() === 'canvas' && element.parentElement) {
-    const parentRect = element.parentElement.getBoundingClientRect()
-    if (parentRect.width > 0 && parentRect.height > 0) rect = parentRect
-  }
-  const measured: CanvasMeasurement = {
-    width: rect && rect.width > 0 ? Math.round(rect.width) : 300,
-    height: rect && rect.height > 0 ? Math.round(rect.height) : 150,
-  }
-  const canvasId = element?.getAttribute('canvas-id')
-  if (canvasId) measured.canvasId = canvasId
-  return measured
 }
 
-export function paintBrowserCanvasFrame(payload: { canvasId?: string; dataUrl?: string }): void {
-  if (typeof document === 'undefined' || !payload?.dataUrl) return
-  let target: HTMLCanvasElement | null = null
-  for (const element of Array.from(document.querySelectorAll('canvas[canvas-id]'))) {
-    if (element.getAttribute('canvas-id') === payload.canvasId) {
-      target = element as HTMLCanvasElement
-      break
+/**
+ * Render-thread side of the OffscreenCanvas handoff.
+ *
+ * The visible canvas transfers its control surface to the service thread, so
+ * page code draws directly into the compositor-backed canvas.
+ */
+export function installOffscreenCanvasResponder(): void {
+  if (offscreenResponderInstalled || typeof window === 'undefined') return
+  if (window.parent === window) return
+  offscreenResponderInstalled = true
+  window.addEventListener('message', (event) => {
+    if (event.source !== window.parent) return
+    if (!isSameOrigin(event.origin)) return
+    const data = event.data as CanvasHandoffRequest | undefined
+    if (data?.type !== 'tiny-canvas-request' || !data.token) return
+    const canvas = findBrowserCanvas(data.selector, data.canvasId)
+    if (!canvas) {
+      respondToHost({
+        type: 'tiny-canvas-error',
+        token: data.token,
+        reason: 'canvas-not-found',
+      })
+      return
     }
-  }
-  if (!target) return
-  const canvas = target
-  const image = new Image()
-  image.onload = () => {
-    canvas.width = image.naturalWidth
-    canvas.height = image.naturalHeight
-    canvas.getContext('2d')?.drawImage(image, 0, 0)
-  }
-  image.src = payload.dataUrl
+    const surfaceId = canvasSurfaceId(canvas)
+    if (transferredCanvases.has(canvas)) {
+      canvas.setAttribute('data-tiny-canvas-offscreen', 'true')
+      respondToHost({
+        type: 'tiny-canvas-handoff',
+        token: data.token,
+        status: 'already',
+        surfaceId,
+      })
+      return
+    }
+    if (typeof canvas.transferControlToOffscreen !== 'function') {
+      respondToHost({
+        type: 'tiny-canvas-error',
+        token: data.token,
+        reason: 'offscreen-unsupported',
+      })
+      return
+    }
+    try {
+      const rect = canvas.parentElement?.getBoundingClientRect() ?? canvas.getBoundingClientRect()
+      const width = data.width > 0 ? data.width : Math.round(rect.width) || canvas.width || 300
+      const height = data.height > 0 ? data.height : Math.round(rect.height) || canvas.height || 150
+      const offscreen = canvas.transferControlToOffscreen()
+      offscreen.width = Math.max(1, Math.round(width))
+      offscreen.height = Math.max(1, Math.round(height))
+      transferredCanvases.add(canvas)
+      canvas.setAttribute('data-tiny-canvas-offscreen', 'true')
+      respondToHost(
+        {
+          type: 'tiny-canvas-handoff',
+          token: data.token,
+          status: 'transferred',
+          surfaceId,
+          offscreen,
+        },
+        [offscreen],
+      )
+    } catch {
+      respondToHost({
+        type: 'tiny-canvas-error',
+        token: data.token,
+        reason: 'transfer-failed',
+      })
+    }
+  })
 }
 
 /**

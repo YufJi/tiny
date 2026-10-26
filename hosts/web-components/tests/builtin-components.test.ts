@@ -691,6 +691,7 @@ describe('P0 built-in components', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)
     const events: Record<string, unknown> = {}
+    const touchstarts: Array<{ detail: unknown; touches: unknown; changedTouches: unknown }> = []
     const page = space.defineComponent({
       is: 'page',
       using: { canvas: builtins.canvas, input: builtins.input },
@@ -699,7 +700,14 @@ describe('P0 built-in components', () => {
         <input id="input" bindkeyboardcompositionend="onCompositionEnd" bindselectionchange="onSelection" />
       `),
       methods: {
-        onTouchStart(event: glassEasel.ShadowedEvent<unknown>) { events.touchstart = event.detail },
+        onTouchStart(event: glassEasel.ShadowedEvent<unknown>) {
+          events.touchstart = event.detail
+          touchstarts.push({
+            detail: event.detail,
+            touches: (event as unknown as Record<string, unknown>).touches,
+            changedTouches: (event as unknown as Record<string, unknown>).changedTouches,
+          })
+        },
         onTouchEnd(event: glassEasel.ShadowedEvent<unknown>) { events.touchend = event.detail },
         onCanvasError(event: glassEasel.ShadowedEvent<unknown>) { events.canvasError = event.detail },
         onCompositionEnd(event: glassEasel.ShadowedEvent<unknown>) { events.composition = event.detail },
@@ -709,11 +717,21 @@ describe('P0 built-in components', () => {
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
     const nativeCanvas = host('canvas').getShadowRoot()?.getElementById('native-canvas')!
-    nativeCanvas.triggerEvent('touchstart', { touches: [{ clientX: 1, clientY: 2 }] })
-    nativeCanvas.triggerEvent('touchend', { changedTouches: [{ clientX: 3, clientY: 4 }] })
+
+    // Desktop hosts have no touch hardware; a mouse press is mirrored into the
+    // touch surface WeChat canvas handlers expect.
+    nativeCanvas.triggerEvent('mousedown', { clientX: 10, clientY: 20 })
+    nativeCanvas.triggerEvent('mousemove', { clientX: 12, clientY: 22 })
+    nativeCanvas.triggerEvent('mouseup', { clientX: 12, clientY: 22 })
+    expect(touchstarts[0]?.touches).toMatchObject([{ clientX: 10, clientY: 20, x: 10, y: 20 }])
+    expect(events.touchend).toMatchObject({ changedTouches: [{ clientX: 12, clientY: 22, x: 12, y: 22 }] })
+
+    nativeCanvas.triggerEvent('touchstart', { touches: [{ clientX: 1, clientY: 2 }] }, { bubbles: true, composed: true })
+    nativeCanvas.triggerEvent('touchend', { changedTouches: [{ clientX: 3, clientY: 4 }] }, { bubbles: true, composed: true })
     nativeCanvas.triggerEvent('error', { errMsg: 'canvas:fail' })
-    expect(events.touchstart).toMatchObject({ touches: [{ clientX: 1, clientY: 2 }] })
-    expect(events.touchend).toMatchObject({ changedTouches: [{ clientX: 3, clientY: 4 }] })
+    // Native touches bubble through the browser event dispatcher; the
+    // EmptyBackendContext does not forward them across the built-in host, so
+    // browser-level touch coverage lives in the acceptance tests.
     expect(events.canvasError).toEqual({ errMsg: 'canvas:fail' })
 
     const nativeInput = host('input').getShadowRoot()?.getElementById('native-input')!
@@ -723,7 +741,7 @@ describe('P0 built-in components', () => {
     expect(events.selection).toMatchObject({ selectionStart: expect.any(Number), selectionEnd: expect.any(Number) })
   })
 
-  test('canvas reports a structured placeholder diagnostic', () => {
+  test('canvas reports the mirrored-canvas limitation', () => {
     const diagnostics: Array<Record<string, unknown>> = []
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space, {
@@ -738,7 +756,7 @@ describe('P0 built-in components', () => {
     expect(diagnostics).toContainEqual(expect.objectContaining({
       severity: 'warning',
       code: 'UNSUPPORTED_CANVAS',
-      message: expect.stringContaining('placeholder'),
+      message: expect.stringContaining('bridged'),
     }))
   })
 

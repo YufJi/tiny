@@ -1,7 +1,6 @@
 import { bootServiceThread } from '@tiny/runtime'
 import {
-  createBridgedCanvas,
-  createLegacyCanvasContext,
+  createBrowserCanvasAdapter,
   installBrowserCanvasCompat,
   listenForRuntimePort,
 } from '@tiny/host-browser'
@@ -36,6 +35,10 @@ const createHostApiExtensions = () => ({
   }),
 })
 
+const resolveAssetUrl = (assetPath: string): string => (
+  `/generated/${assetPath.split('/').map(encodeURIComponent).join('/')}`
+)
+
 installBrowserCanvasCompat()
 
 listenForRuntimePort('service', (transport) => {
@@ -44,13 +47,8 @@ listenForRuntimePort('service', (transport) => {
     manifest,
     initialPath: 'pages/todos/todos',
     apiExtensions: createHostApiExtensions(),
-    canvas: {
-      createLegacyCanvasContext,
-      createCanvasNode: (width, height, canvasId, send) => {
-        const bridged = createBridgedCanvas(width, height, canvasId, send)
-        return bridged?.canvas ?? null
-      },
-    },
+    resolveAssetUrl,
+    canvas: createBrowserCanvasAdapter(),
     loadArtifacts: async () => {
       await import('../generated/service.js')
     },

@@ -115,7 +115,7 @@
 | 导航 | 2 | 0 | navigator、functional-page-navigator |
 | 媒体 | 9 | 1 | audio、video、camera、live-player、live-pusher、voip-room、channel-live、channel-video |
 | 地图 | 1 | 0 | map |
-| 画布 | 1 | 1 | canvas（仅离屏镜像，语义不完整） |
+| 画布 | 1 | 1 | canvas（selector node 与 legacy 均走 OffscreenCanvas） |
 | 开放能力 | 11 | 0 | web-view、ad、ad-custom、official-account、official-account-publish、open-data、reward、store-* |
 | 无障碍 | 1 | 0 | aria-component |
 | 导航栏 | 1 | 0 | navigation-bar |
@@ -179,7 +179,7 @@
 | 媒体 | 无 | 无 chooseImage/chooseMedia/previewImage/audio/video/recorder/camera |
 | 文件 | 桩 | getFileSystemManager 只有可调用的 fail stub；无真实读写/openDocument/saveFile |
 | 位置/设备 | 部分 | 网络类型、电池、剪贴板、震动已接；无定位/扫码/电话/蓝牙/NFC |
-| 画布 | 桩/部分 | legacy `createCanvasContext` 是 Proxy 桩；ECharts 走 service 离屏 canvas → PNG 帧 |
+| 画布 | 部分 | 浏览器宿主把 selector-query 与 legacy canvas 都 handoff 为 OffscreenCanvas，service 侧保留同步 Canvas API；触摸、RAF、createImage、WebGL 已接，导出 API 仍缺 |
 | 动画 | 部分 | `createAnimation` 只映射最终态 CSS transform/transition，无多 step 时序与回调 |
 | 选择器 | 桩 | `createSelectorQuery` 只对 canvas 做 measure，普通节点返回 0×0 |
 | 观测器 | 无 | 无 `createIntersectionObserver` |
@@ -321,7 +321,7 @@ hasBehavior / export / wx://component-export
 
 - 85.5% 是“能挂载”，不是“功能对齐”。
 - 100 页能启动，很大程度是因为不支持的组件降级成普通 DOM、不支持的 API 返回 `undefined` 且只发 warning、很多调用发生在点击之后。
-- 17 页失败集中在 canvas 2D/WebGL、媒体、平台 API、WXS、AI 相机（明细见附录 A）。
+- 17 页失败集中在 worker、媒体、平台 API、WXS、AI 相机（该快照中的 canvas 2D/WebGL 两页已修复，明细见附录 A）。
 - 2026-10-24 第二次探针（补齐组件语义后）结果与首次一致：仍是 100/117 启动、96 页可见文本、0 console error；新增语义没有降低启动率。
 
 ### 5.3 官方 demo API 覆盖
@@ -341,7 +341,7 @@ createAnimation / createCanvasContext / createSelectorQuery
 getMenuButtonBoundingClientRect / getPerformance
 ```
 
-其中 `login` 只是宿主 stub code，`openSetting/authorize` 还没有真实权限模型，`createCanvasContext` 仍是桩，`createSelectorQuery` 只支持 canvas，`createAnimation` 只映射最终态，`getFileSystemManager` 只有 fail stub。真正“能用”的核心 API 约 18–22 个。
+其中 `login` 只是宿主 stub code，`openSetting/authorize` 还没有真实权限模型；`createCanvasContext` 已接 OffscreenCanvas handoff；`createSelectorQuery` 只支持 canvas；`createAnimation` 只映射最终态；`getFileSystemManager` 只有 fail stub。真正“能用”的核心 API 约 18–22 个。
 
 ### 5.4 为什么“85.5% 启动”和“44% 对齐”不矛盾
 
@@ -435,7 +435,7 @@ getMenuButtonBoundingClientRect / getPerformance
 | --- | --- |
 | 剩余组件语义：`generics` / `placeholder` / `definitionFilter` / `pureDataPattern` | 泛型组件、插件式定义扩展仍不可用 |
 | scroll-view/input/swiper/button 属性与事件补全 | 已实现组件“形似神不似” |
-| canvas 2D / 触摸 / rAF / `canvasToTempFilePath` | canvas 页面与图表交互不可用 |
+| `canvasToTempFilePath` / `wx.createOffscreenCanvas` / node 事件 | selector-query 2D/WebGL 动画、图片与触摸已可用；导出、独立离屏画布与 node 事件仍缺 |
 | animation 多 step / 回调 | 复杂动画不可用 |
 | 子包按需加载 / 预下载 / 独立分包 | 首屏与包体不可控 |
 | npm 构建 / `miniprogram_npm` | 第三方组件库无法安装 |
@@ -542,8 +542,8 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | --- | --- | --- |
 | `packageComponent/pages/view/scroll-view/scroll-view` | BOOTSTRAP_ERROR | `this.animate is not a function` |
 | `packageComponent/pages/media/image/image` | BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'getTempFileURL')` |
-| `packageComponent/pages/canvas/canvas-2d/canvas-2d` | pageerror | `Cannot read properties of undefined (reading 'split')` |
-| `packageComponent/pages/canvas/webgl/webgl` | PAGE_READY_ERROR | `Cannot read properties of undefined (reading 'split')` |
+| `packageComponent/pages/canvas/canvas-2d/canvas-2d` | ✅ 已修复 | canvas node / `requestAnimationFrame` / `createImage` 已支持 |
+| `packageComponent/pages/canvas/webgl/webgl` | ✅ 已修复 | OffscreenCanvas handoff 后 WebGL context 可用 |
 | `packageComponent/pages/open/ad/ad` | BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'expt_args_2')` |
 | `packageAPI/pages/page/intersection-observer/intersection-observer` | BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'relativeTo')` |
 | `packageAPI/pages/device/bluetooth/bluetooth` | RENDER_BOOTSTRAP_ERROR | `D is not a function` |
@@ -562,7 +562,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 
 | 类别 | 页数 | 缺失能力 |
 | --- | ---: | --- |
-| canvas 2D / WebGL / worker | 4 | canvas 2D 上下文、rAF、worker |
+| canvas 2D / WebGL / worker | 4 | canvas 2D/WebGL 主链路已修复；worker 与部分 node API 仍缺 |
 | 媒体/音频/图片 | 4 | 音频上下文、云文件、图片临时文件 |
 | 平台 API | 4 | IntersectionObserver、蓝牙、广告、后台预取 |
 | WXS | 2 | WXS 作用域/全局变量语义 |
@@ -587,7 +587,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 导航栏（1） | ❌ navigation-bar |
 | 页面属性（1） | ❌ page-meta |
 
-> 统计口径：WebView 文档中除 Skyline 专属、XR-FRAME 与 `native-component` 说明页之外的组件。`canvas` 计入已实现，但当前是离屏镜像，不是完整 2D。
+> 统计口径：WebView 文档中除 Skyline 专属、XR-FRAME 与 `native-component` 说明页之外的组件。`canvas` 计入已实现；selector-query 2D node 与 legacy CanvasContext 都通过 OffscreenCanvas handoff 使用真实同步 context。RAF、createImage 与 WebGL 已接，导出 API 仍不完整。
 
 ---
 

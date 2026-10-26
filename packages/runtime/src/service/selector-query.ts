@@ -1,3 +1,4 @@
+import { resolveAssetPath } from '../assets'
 import type { ServiceApiContext } from './types'
 
 type SelectorQuerySelection = {
@@ -5,6 +6,7 @@ type SelectorQuerySelection = {
   rectCallback?: (rect: Record<string, unknown>) => void
   fieldsCallback?: (fields: Record<string, unknown>) => void
   nodeCallback?: (node: unknown) => void
+  wantsNode?: boolean
 }
 
 export function createSelectorQueryStub(context: ServiceApiContext): Record<string, unknown> {
@@ -40,13 +42,15 @@ export function createSelectorQueryStub(context: ServiceApiContext): Record<stri
         return api
       },
       fields: (
-        _options: Record<string, unknown>,
+        options: Record<string, unknown>,
         callback?: (fields: Record<string, unknown>) => void,
       ) => {
+        if (options?.node === true) selection.wantsNode = true
         selection.fieldsCallback = callback
         return api
       },
       node: (callback?: (node: unknown) => void) => {
+        selection.wantsNode = true
         selection.nodeCallback = callback
         return api
       },
@@ -78,32 +82,68 @@ export function createSelectorQueryStub(context: ServiceApiContext): Record<stri
 async function buildSelectorResult(
   context: ServiceApiContext,
   selection: SelectorQuerySelection,
-  component?: { data?: Record<string, unknown> },
+  component?: { data?: Record<string, unknown>; path?: string },
 ): Promise<Record<string, unknown>> {
   let width = 0
   let height = 0
-  let measured: { width?: number; height?: number; canvasId?: string } | undefined
-  try {
-    measured = await context.connection.call<{ width?: number; height?: number; canvasId?: string }>(
-      'canvas',
-      'measure',
-      { selector: selection.selector },
-      { pageId: context.pageId },
-    )
-    if (measured && Number(measured.width) > 0 && Number(measured.height) > 0) {
-      width = Math.round(Number(measured.width))
-      height = Math.round(Number(measured.height))
+  let measured: {
+    width?: number
+    height?: number
+    canvasId?: string
+    hasCanvas?: boolean
+  } | undefined
+  const attempts = selection.wantsNode ? 20 : 1
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      measured = await context.connection.call<{
+        width?: number
+        height?: number
+        canvasId?: string
+        hasCanvas?: boolean
+      }>(
+        'canvas',
+        'measure',
+        {
+          selector: selection.selector,
+          canvasId: String(component?.data?.canvasId || ''),
+        },
+        { pageId: context.pageId },
+      )
+    } catch {
+      measured = undefined
     }
-  } catch {
-    // The host did not provide a measurement; leave the size unknown.
+    const found = measured?.hasCanvas === true
+      || (Number(measured?.width) > 0 && Number(measured?.height) > 0)
+    if (found || attempt === attempts - 1) break
+    await new Promise((resolve) => setTimeout(resolve, 50))
   }
-  const canvasId = String(component?.data?.canvasId ?? measured?.canvasId ?? 'canvas')
-  const node = context.canvas?.createCanvasNode(width, height, canvasId, (frame) => {
-    context.connection.sendEvent('canvas', 'frame', frame, { pageId: context.pageId })
-  }) ?? null
+  if (measured && Number(measured.width) > 0 && Number(measured.height) > 0) {
+    width = Math.round(Number(measured.width))
+    height = Math.round(Number(measured.height))
+  }
+  const canvasId = String(component?.data?.canvasId || measured?.canvasId || '')
+  const sourcePath = component?.path ?? context.getCurrentPagePath?.() ?? ''
+  const resolveAssetUrl = context.resolveAssetUrl
+  const resolveCanvasAssetUrl = resolveAssetUrl
+    ? (src: string) => {
+        const assetPath = resolveAssetPath(sourcePath, src)
+        if (!assetPath) return undefined
+        return resolveAssetUrl(assetPath, { sourcePath }) ?? undefined
+      }
+    : undefined
+  const node = selection.wantsNode
+    ? (await context.canvas?.acquireCanvasNode?.({
+        selector: selection.selector,
+        pageId: context.pageId,
+        canvasId,
+        width,
+        height,
+        resolveAssetUrl: resolveCanvasAssetUrl,
+      })) ?? null
+    : null
   return {
     node,
-    id: '',
+    id: canvasId,
     dataset: {},
     width,
     height,

@@ -2,9 +2,9 @@ import * as glassEasel from 'glass-easel'
 import { CurrentWindowBackendContext } from 'glass-easel'
 import { bootRenderThread } from '@tiny/runtime'
 import {
+  installOffscreenCanvasResponder,
   listenForRuntimePort,
   measureBrowserCanvas,
-  paintBrowserCanvasFrame,
 } from '@tiny/host-browser'
 import { webBuiltinComponents } from '@tiny/host-web-components'
 import manifest from '../generated/manifest.json'
@@ -26,6 +26,8 @@ const resolveAssetUrl = (assetPath: string): string => (
   `/generated/${assetPath.split('/').map(encodeURIComponent).join('/')}`
 )
 
+installOffscreenCanvasResponder()
+
 listenForRuntimePort('render', (transport) => {
   bootRenderThread({
     transport,
@@ -38,7 +40,6 @@ listenForRuntimePort('render', (transport) => {
     resolveAssetUrl,
     canvas: {
       measure: measureBrowserCanvas,
-      paint: paintBrowserCanvasFrame,
     },
     mountComponent: (component) => {
       const container = document.getElementById('app') ?? document.body

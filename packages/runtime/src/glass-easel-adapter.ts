@@ -13,7 +13,7 @@ import type {
   StyleLoader,
   TemplateRegistry,
 } from './types'
-import { toJsonSafe, type SerializedEventNode, type SerializedMiniProgramEvent } from './events'
+import { isNativeEventHandled, toJsonSafe, type SerializedEventNode, type SerializedMiniProgramEvent } from './events'
 import { createRuntimeDiagnostic } from './diagnostics'
 import { resolveAssetPath, rewriteCssAssetUrls, splitAssetSuffix, type AssetUrlResolver } from './assets'
 
@@ -879,6 +879,11 @@ export class GlassEaselRuntimeAdapter {
     componentPath?: string,
   ): (event: glassEasel.ShadowedEvent<unknown>) => void {
     return (event) => {
+      // A built-in component may translate the native event into a normalized
+      // mini-program event (canvas touches are the current case). Do not also
+      // forward the raw native event to the same page handler.
+      const original = (event as unknown as { getOriginalEvent?: () => unknown }).getOriginalEvent?.()
+      if (String(event.type).startsWith('touch') && isNativeEventHandled(original)) return
       this.onMiniProgramEvent?.(pageId, {
         ...this.serializeEvent(handler, event),
         ...(componentId ? { componentId } : {}),
@@ -1020,6 +1025,8 @@ export class GlassEaselRuntimeAdapter {
     handler: string,
     event: glassEasel.ShadowedEvent<unknown>,
   ): SerializedMiniProgramEvent {
+    const touches = toJsonSafe((event as unknown as Record<string, unknown>).touches)
+    const changedTouches = toJsonSafe((event as unknown as Record<string, unknown>).changedTouches)
     return {
       handler,
       type: event.type,
@@ -1031,6 +1038,8 @@ export class GlassEaselRuntimeAdapter {
       stopped: typeof event.propagationStopped === 'function' ? event.propagationStopped() : false,
       target: this.serializeEventNode(event.target),
       currentTarget: this.serializeEventNode(event.currentTarget),
+      ...(touches !== undefined ? { touches } : {}),
+      ...(changedTouches !== undefined ? { changedTouches } : {}),
     }
   }
 

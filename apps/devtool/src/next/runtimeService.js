@@ -1,7 +1,6 @@
 import { bootServiceThread } from '@tiny/runtime';
 import {
-  createBridgedCanvas,
-  createLegacyCanvasContext,
+  createBrowserCanvasAdapter,
   installBrowserCanvasCompat,
   listenForRuntimePort,
 } from '@tiny/host-browser';
@@ -9,6 +8,9 @@ import { generatedBaseFor } from './appRegistry';
 
 const appId = new URLSearchParams(window.location.search).get('app') || 'demo';
 const generatedBase = generatedBaseFor(appId);
+const resolveAssetUrl = (assetPath) => (
+  `${generatedBase}/${assetPath.split('/').map(encodeURIComponent).join('/')}`
+);
 // The preview is an iPhone X. The service iframe is 0x0, so window.innerWidth
 // cannot provide the host geometry; mirror the capsule used by the panel.
 const PREVIEW_WIDTH = 375;
@@ -54,13 +56,8 @@ manifestPromise.then((manifest) => {
       manifest,
       initialPath: manifest.pages[0].path,
       apiExtensions: createHostApiExtensions(),
-      canvas: {
-        createLegacyCanvasContext,
-        createCanvasNode: (width, height, canvasId, send) => {
-          const bridged = createBridgedCanvas(width, height, canvasId, send);
-          return bridged ? bridged.canvas : null;
-        },
-      },
+      resolveAssetUrl,
+      canvas: createBrowserCanvasAdapter(),
       loadArtifacts: () => importGenerated(`${generatedBase}/service.js`),
     });
   });

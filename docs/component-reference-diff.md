@@ -165,7 +165,7 @@
 - [x] `view`：真宿主 + slot，class/style/id/data-*/hidden 均可用；
 - [x] `text`：`display:inline`、`selectable` 基础语义；
 - [x] `label`：slot-only 宿主 + host tap，`for`/包裹激活走 label-target；
-- [x] `canvas` 默认尺寸 300×150 + 容器/绝对定位层已补；实际渲染仍是离屏镜像；
+- [x] `canvas` 默认尺寸 300×150 + 容器/绝对定位层已补；selector-query 与 legacy canvas 均走 OffscreenCanvas handoff；
 - [x] `progress` 结构已改为参考的 `bar > inner-bar`；
 - [x] `progress` 的 `active` 逐帧动画已补，`activeend` 带 `curPercent`；
 - [x] progress bar 补 `role=progressbar`/aria-valuenow。
@@ -257,7 +257,7 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 
 ### 4.7 P2 结构
 
-- `canvas`：默认尺寸/容器层已补，实际渲染仍是离屏镜像。
+- `canvas`：默认尺寸/容器层已补，selector-query 与 legacy canvas 均走 OffscreenCanvas handoff。
 
 ### 4.8 behaviors / 事件语义（基础层完成，scroller 为已知近似）
 

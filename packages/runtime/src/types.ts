@@ -53,37 +53,72 @@ export type SystemInfoSnapshot = {
   SDKVersion?: string
 }
 
-export type CanvasFrame = {
-  canvasId: string
-  dataUrl: string
-  width: number
-  height: number
-}
-
 export type CanvasMeasurement = {
   width: number
   height: number
   canvasId?: string
+  /** Whether the host found a canvas backing the selector. */
+  hasCanvas?: boolean
+}
+
+/** Options a host uses when acquiring a selector-query canvas node. */
+export type CanvasNodeOptions = {
+  /** Selector used by `createSelectorQuery`, for hosts that hand off a node. */
+  selector?: string
+  /** Page that owns the selector query. */
+  pageId?: string
+  /**
+   * Resolve a mini-program image path (for example `./car.png`) to a loadable
+   * URL for `canvas.createImage()`.
+   */
+  resolveAssetUrl?: (src: string) => string | undefined
+}
+
+/** A synchronous Canvas 2D/WebGL handle owned by the host. */
+export type CanvasNodeHandle = {
+  width: number
+  height: number
+  getContext: (type: string, options?: unknown) => unknown
+  createImage?: () => unknown
+  toDataURL?: (type?: string, quality?: number) => string
+}
+
+/** Request passed to a host when selector-query needs a canvas node. */
+export type CanvasNodeRequest = CanvasNodeOptions & {
+  canvasId: string
+  width: number
+  height: number
+}
+
+/** Request passed to a host when the legacy `createCanvasContext` API runs. */
+export type LegacyCanvasRequest = {
+  pageId?: string
 }
 
 /** Browser/host canvas hooks injected into the service thread. */
 export type ServiceCanvasAdapter = {
+  /** Legacy CanvasContext over the same host-owned canvas surface. */
   createLegacyCanvasContext: (
     canvasId: string,
-    send: (frame: CanvasFrame) => void,
+    request?: LegacyCanvasRequest,
   ) => unknown | null
-  createCanvasNode: (
-    width: number,
-    height: number,
-    canvasId: string,
-    send: (frame: CanvasFrame) => void,
-  ) => unknown | null
+  /**
+   * Acquire the host canvas handle for a selector query. Acquisition may be
+   * asynchronous, but the returned handle must expose synchronous Canvas APIs.
+   */
+  acquireCanvasNode?: (
+    request: CanvasNodeRequest,
+  ) => Promise<CanvasNodeHandle | null> | CanvasNodeHandle | null
+  /** Release every node owned by a page (or one canvas of that page). */
+  releaseCanvasNode?: (request: {
+    pageId?: string
+    canvasId?: string
+  }) => void
 }
 
 /** Browser/host canvas hooks injected into the render thread. */
 export type RenderCanvasAdapter = {
-  measure: (selector?: string) => CanvasMeasurement
-  paint: (frame: { canvasId?: string; dataUrl?: string }) => void
+  measure: (selector?: string, canvasId?: string) => CanvasMeasurement
 }
 
 export type StorageSnapshot = Record<string, unknown>
@@ -174,6 +209,8 @@ export type ServiceThreadOptions = {
   apiExtensions?: Record<string, (...args: unknown[]) => unknown>
   /** Host canvas implementation for legacy canvas APIs/selector nodes. */
   canvas?: ServiceCanvasAdapter
+  /** Host hook mapping app-root asset paths to loadable URLs (canvas images, …). */
+  resolveAssetUrl?: AssetUrlResolver
   /** Maximum pages in the runtime page stack. Defaults to 10. */
   maxPageStack?: number
 }
@@ -191,7 +228,7 @@ export type RenderThreadOptions = {
   /** Host hook mapping app-root asset paths to loadable URLs (images, CSS urls). */
   resolveAssetUrl?: AssetUrlResolver
   capabilities?: Record<string, unknown>
-  /** Host canvas implementation for measuring and painting canvas frames. */
+  /** Host canvas implementation for measuring selector-query surfaces. */
   canvas?: RenderCanvasAdapter
   onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
   /** Host hook that inserts the root component into the backend tree. */
