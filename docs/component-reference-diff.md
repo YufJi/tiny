@@ -85,7 +85,7 @@
 - [x] 320×240、`inline-block`、`scaleToFill`/`aspectFit`/`aspectFill`/方位模式；
 - [x] `widthFix`/`heightFix` 按 naturalWidth/naturalHeight 计算另一条边；
 - [ ] `showMenuByLongpress` 长按菜单未实现；
-- [ ] `backgroundSize`/`backgroundPosition`/`backgroundRepeat` 还不能覆盖 mode 派生值；
+- [x] `backgroundSize`/`backgroundPosition`/`backgroundRepeat` 可覆盖 mode 派生值；
 - [ ] `lazyLoad` 仍是 probe 的 `loading="lazy"` 近似，不是 IntersectionObserver。
 
 **icon**
@@ -137,7 +137,8 @@
 - [ ] scroll-view 的 `wx-touchtrack`/`wx-scroller` 状态、节流、`scroll-into-view` 精确语义仍是近似；
 - [x] swiper 已补 `wrapper > slides > slide-frame` 结构；track 仍是 flex，参考是绝对定位 + transform；
 - [x] swiper 指示点默认已对齐：8×8、bottom 10、gap 8、`rgba(0,0,0,.3)`/`#000`；
-- [ ] `skipHiddenItemLayout`、`currentItemId` 等布局细节未完整实现。
+- [x] `currentItemId` 可定位到对应 item；
+- [ ] `skipHiddenItemLayout`、`displayMultipleItems`/margin 的精确布局未完整实现。
 
 **form / 分组**
 
@@ -214,7 +215,7 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 wrapper/slides/slide-frame 层级和指示点默认值已补（8×8/bottom 10/gap 8/`rgba(0,0,0,.3)`/`#000`）。仍缺：
 
 - slide-frame 仍用 flex track，参考是绝对定位 + transform；
-- `currentItemId`、`displayMultipleItems`、`previousMargin`/`nextMargin` 的精确布局；
+- `displayMultipleItems`、`previousMargin`/`nextMargin` 的精确布局（`currentItemId` 已补）；
 - `skipHiddenItemLayout`；
 - swiper-item 与 swiper 的 relation。
 
@@ -235,7 +236,6 @@ wrapper/slides/slide-frame 层级和指示点默认值已补（8×8/bottom 10/ga
 
 - image `showMenuByLongpress` 未实现；
 - image `lazyLoad` 只是 probe 的 `loading="lazy"`；
-- image `backgroundSize`/`backgroundPosition`/`backgroundRepeat` 不能覆盖 mode 派生值；
 - icon 没有 `longpress`；
 - icon `type` 默认值与参考 2.7.0 的声明方式有版本差异。
 

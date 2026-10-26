@@ -69,9 +69,20 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
       renderingMode() {
         this.syncPresentation()
       },
+      'backgroundSize, backgroundPosition, backgroundRepeat'() {
+        if (!(this as unknown as { _imageReady?: boolean })._imageReady) return
+        ;(this as unknown as { _backgroundCustomized?: boolean })._backgroundCustomized = true
+        this.syncPresentation()
+      },
     },
     lifetimes: {
       attached() {
+        ;(this as unknown as { _imageReady?: boolean })._imageReady = true
+        const instance = this as unknown as { _backgroundCustomized?: boolean }
+        instance._backgroundCustomized =
+          String(this.data.backgroundSize ?? '100% 100%') !== '100% 100%' ||
+          String(this.data.backgroundPosition ?? '') !== '' ||
+          String(this.data.backgroundRepeat ?? 'no-repeat') !== 'no-repeat'
         this.updateResolvedSrc()
       },
       ready() {
@@ -102,6 +113,12 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
       },
       syncPresentation() {
         const mode = String(this.data.mode || 'scaleToFill')
+        const customFlag = (this as unknown as { _backgroundCustomized?: boolean })._backgroundCustomized
+        const customized = customFlag === undefined
+          ? String(this.data.backgroundSize ?? '100% 100%') !== '100% 100%' ||
+            String(this.data.backgroundPosition ?? '') !== '' ||
+            String(this.data.backgroundRepeat ?? 'no-repeat') !== 'no-repeat'
+          : customFlag
         let size = '100% 100%'
         let position = '0% 0%'
         if (mode === 'aspectFit') {
@@ -114,11 +131,16 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
           size = 'auto auto'
           position = POSITION_MODES[mode]!
         }
+        if (customized) {
+          size = String(this.data.backgroundSize || size)
+          position = String(this.data.backgroundPosition || position)
+        }
         const useImg = String(this.data.renderingMode) === 'img'
         const src = String(this.data.resolvedSrc || '')
         const showBackground = !useImg && src !== '' && (!this.data.lazyLoad || this.data.loaded)
+        const repeat = String(this.data.backgroundRepeat || 'no-repeat')
         const imageStyle = showBackground
-          ? `background-image: ${cssUrl(src)}; background-size: ${size}; background-position: ${position}; background-repeat: ${String(this.data.backgroundRepeat || 'no-repeat')};`
+          ? `background-image: ${cssUrl(src)}; background-size: ${size}; background-position: ${position}; background-repeat: ${repeat};`
           : ''
         this.setData({ imageStyle, useImg })
       },

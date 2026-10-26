@@ -55,6 +55,10 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
       interval() {
         this.restartAutoplay()
       },
+      currentItemId(value: string) {
+        if (!value) return
+        this.applyCurrentItemId(String(value), 0)
+      },
     },
     options: ctx.hostOptions(),
     methods: {
@@ -65,6 +69,33 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
         if ((this.data.dots as number[]).length === 0 && attempt < 10) {
           setTimeout(() => this.bootstrapSwiper(attempt + 1), 16)
         }
+      },
+      applyCurrentItemId(itemId: string, attempt: number) {
+        const host = (this as unknown as { getBackendElement?: () => { querySelectorAll?: (selector: string) => ArrayLike<Element> } | null }).getBackendElement?.()
+        const items = host?.querySelectorAll?.('tiny-swiper-item, .tiny-swiper-item')
+        let index = -1
+        if (items) {
+          for (let i = 0; i < items.length; i += 1) {
+            const element = items[i] as unknown as { getAttribute?: (name: string) => string | null }
+            if (String(element.getAttribute?.('item-id') ?? '') === itemId) {
+              index = i
+              break
+            }
+          }
+        }
+        if (index < 0) {
+          const children = (this as unknown as { childNodes?: unknown[] }).childNodes ?? []
+          index = children.findIndex((child) => {
+            const data = (child as { data?: { itemId?: string } }).data
+            return String(data?.itemId ?? '') === itemId
+          })
+        }
+        if (index >= 0) {
+          this.setData({ activeIndex: index })
+          this.updateTrackStyle()
+          return
+        }
+        if (attempt < 10) setTimeout(() => this.applyCurrentItemId(itemId, attempt + 1), 16)
       },
       syncDots() {
         const host = (this as unknown as { getBackendElement?: () => { querySelectorAll?: (selector: string) => ArrayLike<unknown> } | null }).getBackendElement?.()

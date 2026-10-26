@@ -415,6 +415,7 @@ describe('P0 built-in components', () => {
         <text id="text" selectable space="nbsp">text</text>
         <icon id="icon" type="success" size="32" color="#ff0000" />
         <image id="image" src="/a.png" mode="aspectFit" lazy-load webp />
+        <image id="image2" src="/b.png" mode="aspectFit" background-size="cover" background-position="top left" />
         <checkbox id="checkbox" color="#ff0000" />
         <radio id="radio" color="#00ff00" />
         <switch id="switch" color="#0000ff" />
@@ -433,6 +434,9 @@ describe('P0 built-in components', () => {
 
     const imageHtml = glassEasel.dumpElementToString(host('image')!, true)
     expect(imageHtml).toContain('tiny-image-mode-aspectFit')
+    const image2Html = glassEasel.dumpElementToString(host('image2')!, true)
+    expect(image2Html).toContain('background-size: cover')
+    expect(image2Html).toContain('background-position: top left')
     expect(imageHtml).toContain('loading="lazy"')
 
     const checkboxHtml = glassEasel.dumpElementToString(host('checkbox')!, true)
@@ -508,7 +512,7 @@ describe('P0 built-in components', () => {
       },
       template: compilePage(`
         <scroll-view id="scroll" scroll-y upper-threshold="10" lower-threshold="20" refresher-enabled bindscroll="onScroll" bindscrolltoupper="onUpper" bindscrolltolower="onLower" bindrefresherrefresh="onRefresh" binddragstart="onDragStart"><view>content</view></scroll-view>
-        <swiper id="swiper" indicator-dots indicator-color="#112233" indicator-active-color="#445566"><swiper-item>a</swiper-item></swiper>
+        <swiper id="swiper" indicator-dots indicator-color="#112233" indicator-active-color="#445566" current-item-id="b"><swiper-item item-id="a">a</swiper-item><swiper-item item-id="b">b</swiper-item></swiper>
       `),
       methods: {
         onScroll(event: glassEasel.ShadowedEvent<unknown>) { events.scroll = event.detail },
@@ -541,6 +545,8 @@ describe('P0 built-in components', () => {
     const swiperHost = instance.getShadowRoot()?.getElementById('swiper')?.asGeneralComponent()!
     const swiperHtml = glassEasel.dumpElementToString(swiperHost, true)
     expect(swiperHtml).toContain('background-color: #445566')
+    expect(swiperHost.data.activeIndex).toBe(1)
+    expect(swiperHost.data.trackStyle).toContain('translateX(-100%)')
   })
 
 
