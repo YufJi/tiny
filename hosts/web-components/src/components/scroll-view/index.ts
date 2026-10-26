@@ -15,6 +15,9 @@ type ScrollBackend = {
 type ScrollRuntime = {
   __scrollStartTimer?: ReturnType<typeof setTimeout>
   __scrollEndTimer?: ReturnType<typeof setTimeout>
+  __scrollThrottleTimer?: ReturnType<typeof setTimeout>
+  __scrollPendingDetail?: Record<string, unknown>
+  __lastScrollEmit?: number
   __refresherTimer?: ReturnType<typeof setTimeout>
   __dragStart?: { x: number; y: number; scrollTop: number }
   __dragging?: boolean
@@ -69,6 +72,7 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         const instance = this as unknown as ScrollRuntime
         if (instance.__scrollStartTimer) clearTimeout(instance.__scrollStartTimer)
         if (instance.__scrollEndTimer) clearTimeout(instance.__scrollEndTimer)
+        if (instance.__scrollThrottleTimer) clearTimeout(instance.__scrollThrottleTimer)
         if (instance.__refresherTimer) clearTimeout(instance.__refresherTimer)
       },
     },
@@ -182,6 +186,34 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         instance.__pullDistance = 0
         if (this.data.refresherEnabled) this.triggerEvent('refresherabort', {}, { bubbles: true, composed: true })
       },
+      emitThrottledScroll(detail: Record<string, unknown>) {
+        const instance = this as unknown as ScrollRuntime
+        const emit = () => {
+          instance.__lastScrollEmit = Date.now()
+          this.triggerEvent('scroll', detail, { bubbles: true, composed: true })
+        }
+        if (!this.data.throttle) {
+          emit()
+          return
+        }
+        const now = Date.now()
+        const elapsed = now - Number(instance.__lastScrollEmit ?? 0)
+        if (!instance.__lastScrollEmit || elapsed >= 50) {
+          emit()
+          return
+        }
+        instance.__scrollPendingDetail = detail
+        if (instance.__scrollThrottleTimer) return
+        instance.__scrollThrottleTimer = setTimeout(() => {
+          instance.__scrollThrottleTimer = undefined
+          const pending = instance.__scrollPendingDetail
+          instance.__scrollPendingDetail = undefined
+          if (pending) {
+            instance.__lastScrollEmit = Date.now()
+            this.triggerEvent('scroll', pending, { bubbles: true, composed: true })
+          }
+        }, 50 - elapsed)
+      },
       handleScroll(event: glassEasel.ShadowedEvent<unknown>) {
         const instance = this as unknown as ScrollRuntime
         const detail = (event.detail ?? {}) as Record<string, unknown>
@@ -202,7 +234,15 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
           instance.__scrollStartTimer = undefined
           this.triggerEvent('scrollend', { scrollTop, scrollLeft }, { bubbles: true, composed: true })
         }, 120)
-        this.triggerEvent('scroll', { scrollTop, scrollLeft, scrollHeight, scrollWidth, deltaX: Number(detail.deltaX ?? 0), deltaY: Number(detail.deltaY ?? 0) }, { bubbles: true, composed: true })
+        const scrollDetail = {
+          scrollTop,
+          scrollLeft,
+          scrollHeight,
+          scrollWidth,
+          deltaX: Number(detail.deltaX ?? 0),
+          deltaY: Number(detail.deltaY ?? 0),
+        }
+        this.emitThrottledScroll(scrollDetail)
         if (scrollTop <= Number(this.data.upperThreshold ?? 50)) {
           this.triggerEvent('scrolltoupper', { direction: 'top' }, { bubbles: true, composed: true })
         }

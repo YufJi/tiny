@@ -112,7 +112,7 @@
 - [x] `translateY` + `transition` 吸附滚动，触摸和 pointer 鼠标拖动共用逻辑；
 - [x] `indicator-style` 高度解析、item 高度/遮罩/居中位置跟随；
 - [x] 初始 `value` 同步、越界 clamp、`columnchange`/`pickstart`/`pickend`；
-- [ ] 没有参考 `wx-scroller` 的惯性/越界回弹；
+- [x] 已补基于拖动速度的简单惯性；仍无参考的越界回弹；
 - [ ] 内部事件名与参考 `wxPickerColumnValueChanged` 等不同。
 
 **button**
@@ -134,7 +134,8 @@
 **scroll-view / swiper**
 
 - [x] scroll-view 已改为 wrap/main/content 三层，滚动发生在外层 main，backend 指向 main；
-- [ ] scroll-view 的 `wx-touchtrack`/`wx-scroller` 状态、节流、`scroll-into-view` 精确语义仍是近似；
+- [x] scroll-view 的 `scroll` 事件已按 `throttle` 做 50ms 节流；
+- [ ] `scroll-into-view`、滚动状态和 `wx-scroller` 的完整语义仍是近似；
 - [x] swiper 已补 `wrapper > slides > slide-frame` 结构；track 仍是 flex，参考是绝对定位 + transform；
 - [x] swiper 指示点默认已对齐：8×8、bottom 10、gap 8、`rgba(0,0,0,.3)`/`#000`；
 - [x] `currentItemId` 可定位到对应 item；
@@ -206,9 +207,9 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 
 三层结构和 `backend` 指向 main 已完成。仍缺：
 
-- `wx-touchtrack`/`wx-scroller` 的滚动状态、节流、`scroll-into-view` 精确语义；
-- 当前 refresher 是自定义扩展，参考 2.7.0 没有同套属性/事件；
-- 列表回收/长列表性能策略未实现。
+- `wx-touchtrack`/`wx-scroller` 的滚动状态和 `scroll-into-view` 精确语义；
+- `scroll` 事件已做 50ms 节流，但滚动状态/回收策略仍是近似；
+- 当前 refresher 是自定义扩展，参考 2.7.0 没有同套属性/事件。
 
 ### 4.4 swiper 的布局与剩余属性
 
@@ -249,8 +250,8 @@ wrapper/slides/slide-frame 层级和指示点默认值已补（8×8/bottom 10/ga
 
 - `wx-touchtrack`：各组件零散 touch/pointer 事件，没有统一 tap 判定、捕获和取消语义；
 - checkbox/radio 的精确 tap/aria 仍依赖原生 label/input，没有复刻参考的 touchtrack/aria 组合；
-- `wx-scroller`：scroll-view/swiper 的滚动状态、节流、惯性没有统一模型；
-- picker-view：没有参考的惯性/回弹，内部事件名不同。
+- `wx-scroller`：scroll-view 已做 scroll 节流、picker-view 已做简单惯性，但 swiper/scroll 的统一滚动状态模型仍缺；
+- picker-view：已补简单速度惯性，仍无参考的越界回弹，内部事件名不同。
 
 ## 5. 历史处理记录
 
@@ -303,7 +304,7 @@ pnpm lint                # 8 files checked, no fixes applied
 - picker-view 的拖动/吸附/初始 value；
 - form-field/reportSubmit 在真实多线程宿主中的完整链路；
 - button native/open-type；
-- swiper 绝对定位布局、picker-view 惯性。
+- swiper 绝对定位布局、picker-view 越界回弹。
 
 ### 6.5 全项目分数
 

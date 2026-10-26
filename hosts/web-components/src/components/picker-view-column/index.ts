@@ -135,15 +135,32 @@ export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
         this.triggerEvent('columnchange', { column, value }, { bubbles: true, composed: true })
       },
       beginDrag(y: number) {
-        const instance = this as unknown as { _startY?: number; _startTranslate?: number; _moved?: boolean }
+        const instance = this as unknown as {
+          _startY?: number
+          _startTranslate?: number
+          _moved?: boolean
+          _lastY?: number
+          _lastTime?: number
+          _velocity?: number
+        }
         instance._startY = y
         instance._startTranslate = Number(this.data.translate || 0)
         instance._moved = false
+        instance._lastY = y
+        instance._lastTime = Date.now()
+        instance._velocity = 0
         this.setData({ dragging: true })
         this.triggerEvent('columnstart', {}, { bubbles: true, composed: true })
       },
       moveDrag(y: number) {
-        const instance = this as unknown as { _startY?: number; _startTranslate?: number; _moved?: boolean }
+        const instance = this as unknown as {
+          _startY?: number
+          _startTranslate?: number
+          _moved?: boolean
+          _lastY?: number
+          _lastTime?: number
+          _velocity?: number
+        }
         if (instance._startY === undefined) return
         const itemHeight = Number(this.data.itemHeight || DEFAULT_ITEM_HEIGHT)
         const count = this.columnCount()
@@ -151,16 +168,23 @@ export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
         const delta = y - instance._startY
         if (Math.abs(delta) > 4) instance._moved = true
         const translate = Math.max(min, Math.min(0, (instance._startTranslate ?? 0) + delta))
+        const now = Date.now()
+        const elapsed = Math.max(1, now - Number(instance._lastTime ?? now))
+        const velocity = (y - Number(instance._lastY ?? y)) / elapsed
+        instance._velocity = Number(instance._velocity ?? 0) * 0.7 + velocity * 0.3
+        instance._lastY = y
+        instance._lastTime = now
         this.setData({ translate })
       },
       endDrag() {
-        const instance = this as unknown as { _moved?: boolean }
+        const instance = this as unknown as { _moved?: boolean; _velocity?: number }
         if (Number(this.data.translate || 0) === 0 && !instance._moved) {
           this.setData({ dragging: false })
           return
         }
         const itemHeight = Number(this.data.itemHeight || DEFAULT_ITEM_HEIGHT)
-        const index = this.setCurrent(Math.round(-Number(this.data.translate || 0) / itemHeight))
+        const projected = Number(this.data.translate || 0) + Number(instance._velocity ?? 0) * 120
+        const index = this.setCurrent(Math.round(-projected / itemHeight))
         this.setData({ dragging: false })
         if (instance._moved) this.emitChange(Number(this.data.column), index)
         this.triggerEvent('columnend', { value: index }, { bubbles: true, composed: true })
