@@ -658,6 +658,8 @@ describe('P0 built-in components', () => {
     expect(html).toContain('tiny-textarea-placeholder')
     expect(html).toContain('say something')
     expect(html).toContain('is-auto-height')
+    expect(html).toContain('tiny-textarea-compute')
+    expect(html).toContain('tiny-textarea-stylecompute')
     expect(html).toContain('color: #123456')
   })
 

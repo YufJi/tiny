@@ -4,9 +4,16 @@
     class="tiny-textarea-placeholder {{placeholderClass}}"
     style="{{placeholderStyle}}"
   >{{placeholder}}</div>
+  <div id="compute" class="tiny-textarea-compute" aria-hidden="true">{{value}}</div>
+  <div
+    id="stylecompute"
+    class="tiny-textarea-stylecompute {{placeholderClass}}"
+    style="{{placeholderStyle}}"
+    aria-hidden="true"
+  >{{placeholder}}</div>
   <textarea
     id="native-textarea"
-    class="tiny-textarea {{autoHeight ? 'is-auto-height' : ''}}"
+    class="tiny-textarea {{autoHeight ? 'is-auto-height' : ''}} {{disableDefaultPadding ? 'is-no-default-padding' : ''}}"
     value="{{value}}"
     disabled="{{disabled}}"
     maxlength="{{maxlength}}"

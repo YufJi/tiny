@@ -50,3 +50,29 @@ tiny-textarea[auto-height] {
   white-space: pre-wrap;
   overflow: hidden;
 }
+
+.tiny-textarea-compute,
+.tiny-textarea-stylecompute {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  color: transparent;
+  line-height: 1.2;
+  word-break: break-all;
+  pointer-events: none;
+  white-space: pre-wrap;
+  overflow: hidden;
+}
+
+.tiny-textarea-compute {
+  z-index: 0;
+}
+
+.tiny-textarea-stylecompute {
+  z-index: 1;
+}
+
+.tiny-textarea.is-no-default-padding {
+  padding: 0;
+}

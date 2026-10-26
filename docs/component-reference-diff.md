@@ -132,7 +132,8 @@
 - [ ] input 的镜像 div 仍未实现；
 - [x] textarea 的 wrapper/placeholder/scrollHeight autoHeight 已补；
 - [x] textarea 的 focus/autoFocus/cursor/selection 已映射到原生控件；
-- [ ] textarea 的 `fixed`/`showConfirmBar`/`disableDefaultPadding` 和 placeholderClass 前缀仍未实现。
+- [x] textarea 的 compute/stylecompute 层和 `disable-default-padding` class 已补；
+- [ ] textarea 的 `fixed`/`showConfirmBar` 和 placeholderClass 前缀仍未实现。
 
 **scroll-view / swiper**
 
@@ -206,9 +207,9 @@ wrapper 和 placeholder 层已补，原生 placeholder 仍保留用于查询/无
 
 wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 
-- `fixed`、`showConfirmBar`、`disableDefaultPadding` 的视觉/键盘行为；
+- `fixed`、`showConfirmBar` 的键盘行为仍依赖原生宿主；
 - `placeholderClass` 的参考前缀处理；
-- 参考 `compute`/`stylecompute` 层的完整镜像语义。
+- `disableDefaultPadding` 已映射为 class，compute/stylecompute 层已补。
 
 `focus`/`autoFocus`/`cursor`/`selectionStart`/`selectionEnd` 已映射到原生 textarea。
 
