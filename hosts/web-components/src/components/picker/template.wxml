@@ -6,7 +6,13 @@
 >
   <slot />
 </div>
-<div wx:if="{{overlayVisible}}" class="tiny-picker__overlay">
+<div
+  wx:if="{{overlayVisible}}"
+  class="tiny-picker__overlay"
+  role="dialog"
+  aria-modal="true"
+  aria-label="{{overlayTitle || '选择器'}}"
+>
   <div class="tiny-picker__backdrop" catchtap="handleCancel"></div>
   <div class="tiny-picker__panel">
     <div class="tiny-picker__toolbar">

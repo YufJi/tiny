@@ -99,7 +99,7 @@
 **picker**
 
 - [x] wrapper + slot 结构，slot 显示当前值；
-- [x] 自绘浮层：遮罩、取消/标题/确定、`picker-view` 列；
+- [x] 自绘浮层：遮罩、取消/标题/确定、`picker-view` 列；浮层补 `role=dialog`/`aria-modal`；
 - [x] `selector`/`multiSelector`/`date`/`time` 的 `range`/`rangeKey`/`start`/`end`/`fields`；
 - [x] `columnchange`/`change`/`cancel`/`disabled`；
 - [ ] `region` 模式未实现，点击不打开；
