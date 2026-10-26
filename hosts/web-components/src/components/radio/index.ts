@@ -17,15 +17,26 @@ export function defineRadio(ctx: BuiltinContext): BuiltinDefinition {
     },
     options: ctx.hostOptions(),
     methods: {
-      handleChange(event: glassEasel.ShadowedEvent<unknown>) {
-        const checked = booleanFromEvent(event, this.data.checked as boolean)
+      select() {
+        if (this.data.disabled) return
         const value = this.data.value as string
-        this.setData({ checked })
+        this.setData({ checked: true })
         const group = findAncestorWithBehavior(this, 'wx-group') as
           | { handleItemChange?: (detail: { value?: unknown; checked?: unknown }) => void }
           | null
-        group?.handleItemChange?.({ value, checked })
-        this.triggerEvent('change', { value, checked }, { bubbles: false, composed: true })
+        group?.handleItemChange?.({ value, checked: true })
+        this.triggerEvent('change', { value, checked: true }, { bubbles: false, composed: true })
+      },
+      handleChange(event: glassEasel.ShadowedEvent<unknown>) {
+        const checked = booleanFromEvent(event, this.data.checked as boolean)
+        if (!checked) {
+          this.setData({ checked: false })
+          return
+        }
+        this.select()
+      },
+      handleLabelTap() {
+        this.select()
       },
     },
   }).general()

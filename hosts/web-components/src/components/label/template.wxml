@@ -3,9 +3,11 @@
   id="native-label"
   class="tiny-label"
   for="{{for}}"
+  bindtap="handleTap"
 ><slot /></label>
 <label
   wx:else
   id="native-label"
   class="tiny-label"
+  bindtap="handleTap"
 ><slot /></label>

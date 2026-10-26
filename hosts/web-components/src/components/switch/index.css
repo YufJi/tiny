@@ -79,3 +79,36 @@ tiny-switch {
 .tiny-switch-input.is-checked::after {
   transform: translateX(20px);
 }
+
+.tiny-switch-checkbox {
+  position: relative;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-right: 5px;
+  border: 1px solid #d1d1d1;
+  border-radius: 3px;
+  background-color: #ffffff;
+  box-sizing: border-box;
+}
+
+.tiny-switch-checkbox.is-checked::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 6px;
+  height: 11px;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  box-sizing: border-box;
+}
+
+.tiny-switch-checkbox.is-disabled {
+  background-color: #e1e1e1;
+}
+
+.tiny-switch-checkbox.is-disabled.is-checked::before {
+  color: #adadad;
+}

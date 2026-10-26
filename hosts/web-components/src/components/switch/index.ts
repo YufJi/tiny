@@ -16,10 +16,16 @@ export function defineSwitch(ctx: BuiltinContext): BuiltinDefinition {
     },
     options: ctx.hostOptions(),
     methods: {
-      handleChange(event: glassEasel.ShadowedEvent<unknown>) {
-        const checked = booleanFromEvent(event, this.data.checked as boolean)
+      commitChecked(checked: boolean) {
+        if (this.data.disabled) return
         this.setData({ checked })
         this.triggerEvent('change', { value: checked }, { bubbles: true, composed: true })
+      },
+      handleChange(event: glassEasel.ShadowedEvent<unknown>) {
+        this.commitChecked(booleanFromEvent(event, this.data.checked as boolean))
+      },
+      handleLabelTap() {
+        this.commitChecked(!this.data.checked)
       },
     },
   }).general()

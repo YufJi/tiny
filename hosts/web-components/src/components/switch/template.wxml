@@ -1,4 +1,8 @@
-<label class="tiny-switch-wrapper {{disabled ? 'is-disabled' : ''}}">
+<label
+  class="tiny-switch-wrapper {{disabled ? 'is-disabled' : ''}}"
+  role="switch"
+  aria-checked="{{checked}}"
+>
   <input
     id="native-input"
     class="tiny-switch-native"
@@ -9,7 +13,13 @@
     catchchange="handleChange"
   />
   <span
+    wx:if="{{type === 'switch'}}"
     class="tiny-switch-input {{checked ? 'is-checked' : ''}} {{disabled ? 'is-disabled' : ''}}"
     style="--tiny-switch-color: {{color}};"
+  ></span>
+  <span
+    wx:else
+    class="tiny-switch-checkbox {{checked ? 'is-checked' : ''}} {{disabled ? 'is-disabled' : ''}}"
+    style="color: {{color}};"
   ></span>
 </label>

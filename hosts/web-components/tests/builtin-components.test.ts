@@ -242,6 +242,28 @@ describe('P0 built-in components', () => {
   })
 
 
+  test('switch type=checkbox renders the checkbox branch and toggles', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const events: unknown[] = []
+    const page = space.defineComponent({
+      is: 'page',
+      using: { switch: builtins.switch },
+      template: compilePage('<switch id="switch" type="checkbox" checked="{{true}}" bindchange="onChange" />'),
+      methods: {
+        onChange(event: glassEasel.ShadowedEvent<unknown>) { events.push(event.detail) },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = instance.getShadowRoot()?.getElementById('switch')?.asGeneralComponent()!
+    const html = glassEasel.dumpElementToString(host, true)
+    expect(html).toContain('tiny-switch-checkbox is-checked')
+    expect(html).not.toContain('tiny-switch-input')
+    host.getShadowRoot()?.getElementById('native-input')?.triggerEvent('change', { value: false })
+    expect(host.data.checked).toBe(false)
+    expect(events).toEqual([{ value: false }])
+  })
+
   test('radio group keeps a single checked item and emits group change', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)
@@ -275,6 +297,80 @@ describe('P0 built-in components', () => {
     expect(html).toContain('tiny-radio-input is-checked')
   })
 
+
+  test('checkbox-group and radio-group apply controlled values', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: {
+        'checkbox-group': builtins['checkbox-group'],
+        checkbox: builtins.checkbox,
+        'radio-group': builtins['radio-group'],
+        radio: builtins.radio,
+      },
+      template: compilePage(`
+        <checkbox-group id="cg" value="{{['b']}}">
+          <checkbox id="ca" value="a" />
+          <checkbox id="cb" value="b" />
+        </checkbox-group>
+        <radio-group id="rg" value="b">
+          <radio id="ra" value="a" />
+          <radio id="rb" value="b" />
+        </radio-group>
+      `),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    expect(host('ca').data.checked).toBe(false)
+    expect(host('cb').data.checked).toBe(true)
+    expect(host('cg').data.value).toEqual(['b'])
+    expect(host('ra').data.checked).toBe(false)
+    expect(host('rb').data.checked).toBe(true)
+    expect(host('rg').data.value).toBe('b')
+
+    host('cg').setData({ value: ['a'] })
+    host('rg').setData({ value: 'a' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(host('ca').data.checked).toBe(true)
+    expect(host('cb').data.checked).toBe(false)
+    expect(host('ra').data.checked).toBe(true)
+    expect(host('rb').data.checked).toBe(false)
+  })
+
+  test('label dispatches label-target taps by wrapping and for id', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: {
+        label: builtins.label,
+        checkbox: builtins.checkbox,
+        radio: builtins.radio,
+        switch: builtins.switch,
+      },
+      template: compilePage(`
+        <label id="wrap"><view>wrap</view><checkbox id="checkbox" value="a" /></label>
+        <label id="for-label" for="radio">radio</label>
+        <radio id="radio" value="r" />
+        <label id="switch-label" for="switch">switch</label>
+        <switch id="switch" />
+      `),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    const tap = (id: string) => {
+      const label = host(id) as unknown as { handleTap: (event: unknown) => void }
+      label.handleTap({ target: host(id), detail: {} })
+    }
+    tap('wrap')
+    expect(host('checkbox').data.checked).toBe(true)
+    tap('for-label')
+    expect(host('radio').data.checked).toBe(true)
+    tap('switch-label')
+    expect(host('switch').data.checked).toBe(true)
+  })
 
   test('text, icon, image and form controls expose aligned properties', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
