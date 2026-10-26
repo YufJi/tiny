@@ -164,6 +164,12 @@ pnpm --filter @tiny/host-web-components test
 - [Agent 指南](AGENTS.md)
 - [网站源码](website/README.md)
 
+## 致谢
+
+本项目基于微信小程序团队开源的 [glass-easel](https://github.com/wechat-miniprogram/glass-easel) 构建：
+render 线程的组件树、behavior 机制与模板执行均由它承载，`hosts/web-components` 的内置组件也经由
+`packages/runtime` 的适配层接入。
+
 ## License
 
 MIT
