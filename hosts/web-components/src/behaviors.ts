@@ -147,7 +147,10 @@ export function createBuiltinBehaviors(
     },
     methods: {
       getNodeId(): string {
-        return ''
+        const element = (this as unknown as {
+          getBackendElement?: () => { id?: string } | null
+        }).getBackendElement?.()
+        return String(element?.id ?? '')
       },
       getPluginId(): string {
         return ''

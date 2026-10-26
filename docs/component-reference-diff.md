@@ -57,7 +57,7 @@
 - [x] 内置模板内部容器从 `<view>`/`<text>` 改为原生 `<div>`/`<span>`，避免 inline 默认值导致零尺寸（曾导致 ECharts 缩略图空白）；
 - [x] 宿主事件监听统一走 `bindHostListeners`/`addListener`，对应参考的 `listeners: { "this.tap": ... }`；
 - [x] 纯宿主标签（`view`/`button`/`checkbox-group`/`radio-group`/`swiper-item`）收敛为 slot-only；
-- [ ] behaviors 等价替换仍不完整：`wx-touchtrack`/`wx-scroller` 已抽象并接入，`wx-group` 的 add/remove/rename/changed 已补；`class-prefix`、`base` 细节仍未完整。
+- [x] behaviors 基础层已补齐：`wx-touchtrack`/`wx-scroller` 已抽象并接入，`wx-group` 的 add/remove/rename/changed、`wx-base` 的 getNodeId/debounce 已补；scroller 底层 native 为已知近似。
 
 ### 2.2 组件结构与默认外观
 
@@ -259,20 +259,20 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 
 - `canvas`：默认尺寸/容器层已补，实际渲染仍是离屏镜像。
 
-### 4.8 behaviors / 事件语义（未解决）
+### 4.8 behaviors / 事件语义（基础层完成，scroller 为已知近似）
 
 **结论：behaviors 等价替换没有解决，只完成了基础部分。**
 
 | behavior | 状态 |
 | --- | --- |
-| `wx-base` | [x] 基础方法，`getNodeId`/`getPluginId`/`getRealRoute`/`debounce` 仍有简化 |
+| `wx-base` | [x] `getNodeId`/`getPluginId`/`getRealRoute`/`debounce` 已补 |
 | `wx-hover` | [x] hover-class/start/stay，未复刻 isScrolling 判断 |
 | `wx-disabled` | [x] |
 | `wx-size-normalizer` | [x] |
-| `wx-data-component` | [x] 基础 get/reset，未复刻全部自动填充语义 |
+| `wx-data-component` | [x] 基础 get/reset；自动填充按决策关闭 |
 | `wx-group` / `wx-item` | [x] 受控 value + addItem/removeItem/renameItem/changed 已补 |
 | `wx-label-target` | [x] label 分发 |
-| `wx-touchtrack` | [x] 已抽象；swiper 已接入，scroll/picker 仍各自处理 |
+| `wx-touchtrack` | [x] 已抽象；swiper 已接入，scroll/picker 仍 natively 处理（已知近似） |
 | `wx-scroller` | [x] 已抽象 state API 并接入 scroll-view；底层 native 滚动（已知近似） |
 
 `scroll-view` 的“已知近似”结案只关闭了 scroll-view 组件本身，不等于 `wx-touchtrack`/`wx-scroller` behaviors 已实现。
