@@ -6,24 +6,26 @@
   aria-label="{{ariaLabel}}"
 >
   <block wx:if="{{resolvedSrc}}">
-    <img
-      wx:if="{{useImg}}"
-      class="tiny-image-img"
-      src="{{resolvedSrc}}"
-      alt=""
-      loading="{{lazyLoad ? 'lazy' : 'eager'}}"
-      bindload="handleLoad"
-      binderror="handleError"
-    />
-    <img
-      wx:else
-      class="tiny-image-probe"
-      src="{{resolvedSrc}}"
-      alt=""
-      loading="{{lazyLoad ? 'lazy' : 'eager'}}"
-      bindload="handleLoad"
-      binderror="handleError"
-    />
+    <block wx:if="{{!lazyLoad || inViewport}}">
+      <img
+        wx:if="{{useImg}}"
+        class="tiny-image-img"
+        src="{{resolvedSrc}}"
+        alt=""
+        loading="{{lazyLoad ? 'lazy' : 'eager'}}"
+        bindload="handleLoad"
+        binderror="handleError"
+      />
+      <img
+        wx:else
+        class="tiny-image-probe"
+        src="{{resolvedSrc}}"
+        alt=""
+        loading="{{lazyLoad ? 'lazy' : 'eager'}}"
+        bindload="handleLoad"
+        binderror="handleError"
+      />
+    </block>
   </block>
 </div>
 <span class="tiny-image-fallback {{loaded ? 'is-loaded' : ''}}"><slot /></span>

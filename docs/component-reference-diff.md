@@ -86,7 +86,7 @@
 - [x] `widthFix`/`heightFix` 按 naturalWidth/naturalHeight 计算另一条边；
 - [x] `showMenuByLongpress` 用浏览器 contextmenu 门控近似；
 - [x] `backgroundSize`/`backgroundPosition`/`backgroundRepeat` 可覆盖 mode 派生值；
-- [ ] `lazyLoad` 仍是 probe 的 `loading="lazy"` 近似，不是 IntersectionObserver。
+- [x] `lazyLoad` 使用 IntersectionObserver 控制 probe 挂载；仍保留原生 `loading="lazy"`。
 
 **icon**
 
@@ -244,7 +244,7 @@ wrapper/slides/slide-frame 层级和指示点默认值已补（8×8/bottom 10/ga
 ### 4.7 image contextmenu/lazy 与 icon 默认值
 
 - image `showMenuByLongpress` 已用浏览器 contextmenu 门控近似，仍不是微信系统菜单；
-- image `lazyLoad` 只是 probe 的 `loading="lazy"`；
+- image `lazyLoad` 已用 IntersectionObserver 控制 probe 挂载，并保留原生 `loading="lazy"` 作为双保险；
 - icon `type` 默认值与参考 2.7.0 的声明方式有版本差异。
 
 ### 4.8 P2 结构

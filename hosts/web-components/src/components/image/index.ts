@@ -55,6 +55,7 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
       imageStyle: '',
       useImg: false,
       loaded: false,
+      inViewport: true,
       naturalWidth: 0,
       naturalHeight: 0,
     },
@@ -68,6 +69,17 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
       },
       renderingMode() {
         this.syncPresentation()
+      },
+      lazyLoad(value: boolean) {
+        if (!value) {
+          ;(this as unknown as { _lazyObserver?: { disconnect?: () => void } })._lazyObserver?.disconnect?.()
+          ;(this as unknown as { _lazyObserver?: unknown })._lazyObserver = undefined
+          this.setData({ inViewport: true })
+          this.syncPresentation()
+        } else {
+          this.setData({ inViewport: false })
+          this.bindLazyObserver()
+        }
       },
       'backgroundSize, backgroundPosition, backgroundRepeat'() {
         if (!(this as unknown as { _imageReady?: boolean })._imageReady) return
@@ -84,10 +96,12 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
           String(this.data.backgroundPosition ?? '') !== '' ||
           String(this.data.backgroundRepeat ?? 'no-repeat') !== 'no-repeat'
         this.bindContextMenu()
+        this.bindLazyObserver()
         this.updateResolvedSrc()
       },
       ready() {
         this.bindContextMenu()
+        this.bindLazyObserver()
         this.updateResolvedSrc()
       },
       detached() {
@@ -96,6 +110,31 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
     },
     options: ctx.hostOptions(),
     methods: {
+      bindLazyObserver() {
+        const instance = this as unknown as {
+          _lazyObserver?: { disconnect?: () => void }
+        }
+        instance._lazyObserver?.disconnect?.()
+        instance._lazyObserver = undefined
+        if (!this.data.lazyLoad) {
+          if (!this.data.inViewport) this.setData({ inViewport: true })
+          return
+        }
+        const host = (this as unknown as { getBackendElement?: () => ImageBackendElement | null }).getBackendElement?.()
+        if (!host || typeof IntersectionObserver === 'undefined') {
+          this.setData({ inViewport: true })
+          return
+        }
+        const observer = new IntersectionObserver((entries) => {
+          if (entries.some((entry) => entry.isIntersecting)) {
+            this.setData({ inViewport: true })
+            observer.disconnect()
+            instance._lazyObserver = undefined
+          }
+        }, { rootMargin: '50px' })
+        observer.observe(host as unknown as Element)
+        instance._lazyObserver = observer
+      },
       bindContextMenu() {
         const element = (this.getShadowRoot?.() as {
           getElementById?: (id: string) => {
@@ -162,7 +201,9 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
         }
         const useImg = String(this.data.renderingMode) === 'img'
         const src = String(this.data.resolvedSrc || '')
-        const showBackground = !useImg && src !== '' && (!this.data.lazyLoad || this.data.loaded)
+        const showBackground = !useImg &&
+          src !== '' &&
+          (!this.data.lazyLoad || (this.data.inViewport && this.data.loaded))
         const repeat = String(this.data.backgroundRepeat || 'no-repeat')
         const imageStyle = showBackground
           ? `background-image: ${cssUrl(src)}; background-size: ${size}; background-position: ${position}; background-repeat: ${repeat};`
