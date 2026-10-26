@@ -1,15 +1,21 @@
-<textarea
-  id="native-textarea"
-  class="tiny-textarea {{autoHeight ? 'is-auto-height' : ''}} {{placeholderClass}}"
-  value="{{value}}"
-  placeholder="{{placeholder}}"
-  disabled="{{disabled}}"
-  maxlength="{{maxlength}}"
-  autofocus="{{autoFocus || focus}}"
-  confirm-type="{{confirmType}}"
-  aria-label="{{ariaLabel}}"
-  catchinput="handleInput"
-  catchfocus="handleFocus"
-  catchblur="handleBlur"
-  catchconfirm="handleConfirm"
-></textarea>
+<div class="tiny-textarea-wrapper">
+  <div
+    wx:if="{{placeholder && !value}}"
+    class="tiny-textarea-placeholder {{placeholderClass}}"
+    style="{{placeholderStyle}}"
+  >{{placeholder}}</div>
+  <textarea
+    id="native-textarea"
+    class="tiny-textarea {{autoHeight ? 'is-auto-height' : ''}}"
+    value="{{value}}"
+    disabled="{{disabled}}"
+    maxlength="{{maxlength}}"
+    autofocus="{{autoFocus || focus}}"
+    confirm-type="{{confirmType}}"
+    aria-label="{{ariaLabel}}"
+    catchinput="handleInput"
+    catchfocus="handleFocus"
+    catchblur="handleBlur"
+    catchconfirm="handleConfirm"
+  ></textarea>
+</div>

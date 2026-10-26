@@ -30,13 +30,43 @@ export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
       confirmType: { type: String, value: 'return' },
       confirmHold: { type: Boolean, value: false },
     },
+    observers: {
+      value() {
+        this.scheduleAutoHeight()
+      },
+      autoHeight() {
+        this.scheduleAutoHeight()
+      },
+    },
+    lifetimes: {
+      attached() {
+        this.scheduleAutoHeight()
+      },
+    },
     options: ctx.hostOptions(),
     methods: {
+      textareaElement(): { style?: { height?: string }; scrollHeight?: number } | null {
+        return (this.getShadowRoot?.() as {
+          getElementById?: (id: string) => { getBackendElement?: () => { style?: { height?: string }; scrollHeight?: number } | null } | null
+        } | null)?.getElementById?.('native-textarea')?.getBackendElement?.() ?? null
+      },
+      scheduleAutoHeight() {
+        if (!this.data.autoHeight) return
+        setTimeout(() => this.syncAutoHeight(), 0)
+      },
+      syncAutoHeight() {
+        const element = this.textareaElement()
+        if (!element?.style) return
+        element.style.height = 'auto'
+        const height = Number(element.scrollHeight ?? 0)
+        if (height > 0) element.style.height = `${height}px`
+      },
       handleInput(event: glassEasel.ShadowedEvent<unknown>) {
         const value = valueFromEvent(event)
         this.setData({ value })
         this.triggerEvent('input', { value }, { bubbles: true, composed: true })
         this.triggerEvent('linechange', { value, lineCount: String(value).split('\n').length }, { bubbles: true, composed: true })
+        this.scheduleAutoHeight()
       },
       handleFocus(event: glassEasel.ShadowedEvent<unknown>) {
         this.triggerEvent('focus', { value: valueFromEvent(event) ?? this.data.value }, { bubbles: true, composed: true })

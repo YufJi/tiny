@@ -22,10 +22,10 @@ tiny-swiper {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 8px;
+  bottom: 10px;
   display: flex;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
 }
 .tiny-swiper.is-vertical .tiny-swiper-dots {
   left: auto;
@@ -39,10 +39,10 @@ tiny-swiper {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.3);
 }
 .tiny-swiper-dot.is-active {
-  background: #ffffff;
+  background: #000000;
 }
 .tiny-swiper {
   --tiny-swiper-items: 1;

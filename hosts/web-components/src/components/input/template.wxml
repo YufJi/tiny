@@ -1,23 +1,30 @@
 <!-- Use bind: for keydown/composition/select: catch: marks listeners as
      final in glass-easel and calls preventDefault, which blocks text input. -->
-<input
-  id="native-input"
-  class="tiny-input {{placeholderClass}}"
-  value="{{value}}"
-  placeholder="{{placeholder}}"
-  disabled="{{disabled}}"
-  type="{{password ? 'password' : type}}"
-  maxlength="{{maxlength}}"
-  autofocus="{{autoFocus || focus}}"
-  enterkeyhint="{{confirmType}}"
-  aria-label="{{ariaLabel}}"
-  catchinput="handleInput"
-  catchchange="handleChange"
-  catchfocus="handleFocus"
-  catchblur="handleBlur"
-  bindkeydown="handleKeyDown"
-  bindcompositionstart="handleCompositionStart"
-  bindcompositionupdate="handleCompositionUpdate"
-  bindcompositionend="handleCompositionEnd"
-  bindselect="handleSelect"
-/>
+<div class="tiny-input-wrapper">
+  <div
+    wx:if="{{placeholder && !value}}"
+    class="tiny-input-placeholder {{placeholderClass}}"
+    style="{{placeholderStyle}}"
+  >{{placeholder}}</div>
+  <input
+    id="native-input"
+    class="tiny-input"
+    value="{{value}}"
+    placeholder="{{placeholder}}"
+    disabled="{{disabled}}"
+    type="{{password ? 'password' : type}}"
+    maxlength="{{maxlength}}"
+    autofocus="{{autoFocus || focus}}"
+    enterkeyhint="{{confirmType}}"
+    aria-label="{{ariaLabel}}"
+    catchinput="handleInput"
+    catchchange="handleChange"
+    catchfocus="handleFocus"
+    catchblur="handleBlur"
+    bindkeydown="handleKeyDown"
+    bindcompositionstart="handleCompositionStart"
+    bindcompositionupdate="handleCompositionUpdate"
+    bindcompositionend="handleCompositionEnd"
+    bindselect="handleSelect"
+  />
+</div>

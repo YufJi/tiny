@@ -588,6 +588,24 @@ describe('P0 built-in components', () => {
     expect(host('form').data.reportSubmit).toBe(true)
   })
 
+  test('textarea renders placeholder/compute layers and auto-height state', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { textarea: builtins.textarea },
+      template: compilePage('<textarea id="textarea" placeholder="say something" auto-height placeholder-style="color: #123456" />'),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = instance.getShadowRoot()?.getElementById('textarea')?.asGeneralComponent()!
+    const html = glassEasel.dumpElementToString(host, true)
+    expect(html).toContain('tiny-textarea-wrapper')
+    expect(html).toContain('tiny-textarea-placeholder')
+    expect(html).toContain('say something')
+    expect(html).toContain('is-auto-height')
+    expect(html).toContain('color: #123456')
+  })
+
   test('canvas and input emit their native event surface', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)

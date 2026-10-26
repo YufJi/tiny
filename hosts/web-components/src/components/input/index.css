@@ -1,5 +1,6 @@
 tiny-input {
   display: block;
+  position: relative;
   box-sizing: border-box;
   width: 100%;
   height: 1.4rem;
@@ -8,8 +9,17 @@ tiny-input {
   overflow: hidden;
   white-space: nowrap;
 }
+
+.tiny-input-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
 .tiny-input {
   display: block;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   min-height: 1.4rem;
@@ -25,6 +35,19 @@ tiny-input {
   overflow: hidden;
   white-space: nowrap;
 }
+
 .tiny-input::placeholder {
+  color: transparent;
+}
+
+.tiny-input-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
   color: #999999;
+  pointer-events: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }

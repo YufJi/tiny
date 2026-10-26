@@ -3,19 +3,22 @@ tiny-progress {
   align-items: center;
   box-sizing: border-box;
 }
-.tiny-progress-track {
+
+.tiny-progress-bar {
   flex: 1;
   height: 6px;
-  background: #334155;
+  background-color: #ebebeb;
   border-radius: 3px;
   overflow: hidden;
 }
-.tiny-progress-bar {
+
+.tiny-progress-inner-bar {
   width: 0;
   height: 100%;
-  background: #3b82f6;
+  background-color: #09bb07;
   transition: width 0.3s ease;
 }
+
 .tiny-progress-info {
   margin-left: 15px;
   min-width: 2em;

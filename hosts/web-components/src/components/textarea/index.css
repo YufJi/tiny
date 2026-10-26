@@ -1,13 +1,24 @@
 tiny-textarea {
   display: block;
+  position: relative;
   box-sizing: border-box;
   width: 300px;
   height: 150px;
 }
+
 tiny-textarea[auto-height] {
   height: auto;
 }
+
+.tiny-textarea-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
 .tiny-textarea {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -21,13 +32,21 @@ tiny-textarea[auto-height] {
   line-height: 1.2;
   cursor: auto;
 }
+
 .tiny-textarea.is-auto-height {
+  position: relative;
   height: auto;
   min-height: 1.2em;
 }
-.tiny-textarea::placeholder {
+
+.tiny-textarea-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
   color: #999999;
-}
-.tiny-textarea.textarea-placeholder::placeholder {
-  color: #999999;
+  line-height: 1.2;
+  pointer-events: none;
+  white-space: pre-wrap;
+  overflow: hidden;
 }
