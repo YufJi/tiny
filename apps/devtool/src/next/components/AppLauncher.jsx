@@ -60,9 +60,9 @@ function AppLauncher({
               >
                 <span className="td-launcher-glyph" aria-hidden="true">{appInitial(app)}</span>
                 <span className="td-launcher-info">
-                  <span className="td-launcher-name">{app.label}</span>
+                  <span className="td-launcher-name">{app.title}</span>
                   <span className="td-launcher-meta">
-                    {app.title || app.id}
+                    {app.id}
                     {app.pages ? ` · ${app.pages} pages` : ''}
                   </span>
                   {session?.currentPage ? (

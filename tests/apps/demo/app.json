@@ -5,7 +5,7 @@
     "pages/semantics/semantics"
   ],
   "window": {
-    "navigationBarTitleText": "Tiny Glass Easel"
+    "navigationBarTitleText": "P0 demo"
   },
   "usingComponents": {
     "add-button": "./components/add-button/add-button",
