@@ -25,8 +25,8 @@
 
 23 个内置标签的**宿主结构和 P0 默认视觉已经完成一轮重写**，当前没有 P0 级“结构或默认外观明显不一致”的标签。剩余问题集中在三类：
 
-1. **交互语义**：`wx-touchtrack`/`wx-scroller` 的等价逻辑、group 受控值、label 激活、picker 的 region 模式；
-2. **P1 组件的内部结构**：`input`、`textarea`、`scroll-view`、`swiper`、`form`、`button` 仍是“能用但近似”；
+1. **交互语义**：`wx-touchtrack`/`wx-scroller` 尚未抽象；group 受控值和 label 激活已补，picker region 按决策暂不支持；
+2. **P1 组件的内部结构**：`input`、`textarea`、`swiper`、`form`、`button` 仍是“能用但近似”；`scroll-view` 已按决策接受 native 滚动近似。
 3. **P2 细节**：`canvas`、`progress` 等结构差异，以及部分事件名/keyboard 行为差异。
 
 | 维度 | 状态 | 说明 |
@@ -35,7 +35,7 @@
 | P0 视觉结构 | ✅ 完成 | checkbox/radio/switch/slider/icon/image/picker/picker-view/column |
 | 基础样式/属性转发 | ✅ 完成 | class/style/id/data-*/hidden 直接落在宿主 |
 | 交互语义 | ⚠️ 部分 | 触摸/滚动/group/label 仍是近似 |
-| P1 组件内部结构 | ⚠️ 部分 | input/textarea/scroll-view/swiper/form/button |
+| P1 组件内部结构 | ⚠️ 部分 | input/textarea/swiper/form/button；scroll-view 接受 native 近似 |
 | 表单/受控能力 | ⚠️ 部分 | group value、自定义 form-field、reportSubmit |
 | 全项目能力对齐分 | 41.91% | 来自 [wechat-webview-parity.md](./wechat-webview-parity.md)，是整体能力分，不是组件单项分 |
 
@@ -140,10 +140,11 @@
 **scroll-view / swiper**
 
 - [x] scroll-view 已改为 wrap/main/content 三层，滚动发生在外层 main，backend 指向 main；
+- [x] **已知近似（决策）**：底层保留 native 滚动，不再追求完整自绘 scroller；
 - [x] scroll-view 的 `scroll` 事件已按 `throttle` 做 50ms 节流；`enableBackToTop` 支持双击回顶；
 - [x] `scroll-into-view` 增加目标延迟重试，滚动结果更稳定；
 - [x] `showScrollbar`/`bounces`/`pagingEnabled`/`scrollAnchoring`/`enableFlex` 映射到 CSS 状态类；
-- [ ] `wx-touchtrack`/`wx-scroller` 的完整状态和回收策略仍是近似（已补 scroller state API，底层仍 native）；
+- [x] **已知近似（决策）**：scroller 只补了 state API，底层仍 native，不再追求完整自绘；
 - [x] swiper 的 wrapper/slides/slide-frame 和 item 均为绝对定位层，offset 通过 CSS 变量写入；
 - [x] swiper 指示点默认已对齐：8×8、bottom 10、gap 8、`rgba(0,0,0,.3)`/`#000`；
 - [x] `currentItemId` 可定位到对应 item；
@@ -228,15 +229,13 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 
 `focus`/`autoFocus`/`cursor`/`selectionStart`/`selectionEnd` 已映射到原生 textarea。
 
-### 4.3 scroll-view 的滚动模型
+### 4.3 scroll-view（已结案：已知近似）
 
-三层结构和 `backend` 指向 main 已完成。仍缺：
+2026-10-26 决策：接受 native 滚动近似，不再把完整自绘 scroller 作为待修复项。
 
-- `wx-touchtrack`/`wx-scroller` 的完整触摸/滚动状态；当前补了 scroller 的 `isScrolling`/`scrollTo` 状态 API，但底层仍是原生滚动；
-- 当前 refresher 是自定义扩展，参考 2.7.0 没有同套属性/事件；
-- 列表回收/长列表性能策略未实现。
+已对齐：wrap/main/content 三层、50ms scroll 节流、scroll-into-view 重试、enableBackToTop、showScrollbar/bounces/pagingEnabled/scrollAnchoring/enableFlex CSS、scroller 的 isScrolling/scrollTo 状态 API。
 
-已对齐：50ms scroll 节流、scroll-into-view 重试、enableBackToTop 双击回顶、showScrollbar/bounces/pagingEnabled/scrollAnchoring/enableFlex CSS 映射。
+已知近似：`wx-touchtrack`/`wx-scroller` 的完整触摸/滚动状态仍由 native 滚动承担；refresher 是自定义扩展；列表回收/长列表策略未实现。
 
 ### 4.4 button 的 native/open-type
 
@@ -260,11 +259,23 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 
 - `canvas`：默认尺寸/容器层已补，实际渲染仍是离屏镜像。
 
-### 4.8 behaviors / 事件语义
+### 4.8 behaviors / 事件语义（未解决）
 
-- `wx-touchtrack`：各组件零散 touch/pointer 事件，没有统一 tap 判定、捕获和取消语义；
-- checkbox/radio 的精确 tap/aria 仍依赖原生 label/input，没有复刻参考的 touchtrack/aria 组合；
-- `wx-scroller`：scroll-view 已做 scroll 节流、picker-view 已做惯性/回弹，但 swiper/scroll 的统一滚动状态模型仍缺。
+**结论：behaviors 等价替换没有解决，只完成了基础部分。**
+
+| behavior | 状态 |
+| --- | --- |
+| `wx-base` | [x] 基础方法，`getNodeId`/`getPluginId`/`getRealRoute`/`debounce` 仍有简化 |
+| `wx-hover` | [x] hover-class/start/stay，未复刻 isScrolling 判断 |
+| `wx-disabled` | [x] |
+| `wx-size-normalizer` | [x] |
+| `wx-data-component` | [x] 基础 get/reset，未复刻全部自动填充语义 |
+| `wx-group` / `wx-item` | [ ] 受控 value 已补，addItem/removeItem/renameItem/changed 未完整 |
+| `wx-label-target` | [x] label 分发 |
+| `wx-touchtrack` | [ ] 未抽象，组件各自处理 touch/pointer |
+| `wx-scroller` | [ ] 未实现；scroll-view 已按决策接受 native 近似 |
+
+`scroll-view` 的“已知近似”结案只关闭了 scroll-view 组件本身，不等于 `wx-touchtrack`/`wx-scroller` behaviors 已实现。
 
 ## 5. 历史处理记录
 
