@@ -10,14 +10,6 @@ Page({
 
   },
   onReady() {
-    // 解决基础库小于 2.7.0 的兼容问题
-    const { SDKVersion } = wx.getSystemInfoSync()
-    if (compareVersion(SDKVersion, '2.7.0') < 0) {
-      console.log('123')
-      this.setData({
-        canIUse: false,
-      })
-    } else {
       // canvas
       this.position = {
         x: 150,
@@ -28,7 +20,7 @@ Page({
 
       this.drawBall()
       this.interval = setInterval(this.drawBall, 17)
-    }
+    
   },
 
   /**
