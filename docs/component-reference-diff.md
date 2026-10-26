@@ -200,9 +200,9 @@
 wrapper 和 placeholder 层已补，原生 placeholder 仍保留用于查询/无障碍。仍缺：
 
 - 下拉候选目前只有空 `<ul>` 骨架，devtools 自动填充数据未接；
-- 密码/占位 `showValue` 镜像同步；
-- `placeholderClass` 的参考前缀处理；
-- `adjustPosition`/`holdKeyboard` 的键盘行为。
+- `adjustPosition`/`holdKeyboard` 的键盘行为依赖原生宿主。
+
+参考 2.7.0 的 input 模板本身没有单独的密码镜像层，原生 `type=password` 已覆盖显示。
 
 `focus`/`autoFocus`/`cursor`/`selectionStart`/`selectionEnd` 已映射到原生 input。
 
@@ -213,7 +213,6 @@ wrapper 和 placeholder 层已补，原生 placeholder 仍保留用于查询/无
 wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 
 - `fixed`、`showConfirmBar` 的键盘行为仍依赖原生宿主；
-- `placeholderClass` 的参考前缀处理；
 - `disableDefaultPadding` 已映射为 class，compute/stylecompute 层已补。
 
 `focus`/`autoFocus`/`cursor`/`selectionStart`/`selectionEnd` 已映射到原生 textarea。
@@ -223,9 +222,10 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 三层结构和 `backend` 指向 main 已完成。仍缺：
 
 - `wx-touchtrack`/`wx-scroller` 的完整滚动状态；
-- `scroll` 事件已做 50ms 节流，`scroll-into-view` 带重试，`enableBackToTop` 支持双击回顶；`showScrollbar`/`bounces`/`pagingEnabled`/`scrollAnchoring`/`enableFlex` 已映射到 CSS；
 - 当前 refresher 是自定义扩展，参考 2.7.0 没有同套属性/事件；
 - 列表回收/长列表性能策略未实现。
+
+已对齐：50ms scroll 节流、scroll-into-view 重试、enableBackToTop 双击回顶、showScrollbar/bounces/pagingEnabled/scrollAnchoring/enableFlex CSS 映射。
 
 ### 4.4 button 的 native/open-type
 
@@ -247,15 +247,13 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 
 ### 4.7 P2 结构
 
-- `canvas`：默认尺寸/容器层已补，实际渲染仍是离屏镜像；
-- `progress`：`bar > inner-bar` 结构、默认色和 `active` 逐帧动画已对齐；
+- `canvas`：默认尺寸/容器层已补，实际渲染仍是离屏镜像。
 
 ### 4.8 behaviors / 事件语义
 
 - `wx-touchtrack`：各组件零散 touch/pointer 事件，没有统一 tap 判定、捕获和取消语义；
 - checkbox/radio 的精确 tap/aria 仍依赖原生 label/input，没有复刻参考的 touchtrack/aria 组合；
-- `wx-scroller`：scroll-view 已做 scroll 节流、picker-view 已做简单惯性，但 swiper/scroll 的统一滚动状态模型仍缺；
-- picker-view：已补速度惯性、越界阻力回弹和参考内部事件名兼容。
+- `wx-scroller`：scroll-view 已做 scroll 节流、picker-view 已做惯性/回弹，但 swiper/scroll 的统一滚动状态模型仍缺。
 
 ## 5. 历史处理记录
 
