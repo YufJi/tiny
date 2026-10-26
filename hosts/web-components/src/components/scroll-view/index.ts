@@ -196,6 +196,21 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         instance.__pullDistance = 0
         if (this.data.refresherEnabled) this.triggerEvent('refresherabort', {}, { bubbles: true, composed: true })
       },
+      handleTap() {
+        if (!this.data.enableBackToTop) return
+        const instance = this as unknown as { __lastTap?: number }
+        const now = Date.now()
+        if (instance.__lastTap && now - instance.__lastTap < 300) {
+          instance.__lastTap = 0
+          const element = this.backend()
+          if (element) {
+            element.scrollTop = 0
+            element.scrollLeft = 0
+          }
+          return
+        }
+        instance.__lastTap = now
+      },
       emitThrottledScroll(detail: Record<string, unknown>) {
         const instance = this as unknown as ScrollRuntime
         const emit = () => {

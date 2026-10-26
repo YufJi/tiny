@@ -140,7 +140,7 @@
 **scroll-view / swiper**
 
 - [x] scroll-view 已改为 wrap/main/content 三层，滚动发生在外层 main，backend 指向 main；
-- [x] scroll-view 的 `scroll` 事件已按 `throttle` 做 50ms 节流；
+- [x] scroll-view 的 `scroll` 事件已按 `throttle` 做 50ms 节流；`enableBackToTop` 支持双击回顶；
 - [x] `scroll-into-view` 增加目标延迟重试，滚动结果更稳定；
 - [x] `showScrollbar`/`bounces`/`pagingEnabled`/`scrollAnchoring`/`enableFlex` 映射到 CSS 状态类；
 - [ ] `wx-touchtrack`/`wx-scroller` 的完整状态和回收策略仍是近似；
@@ -223,7 +223,7 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 三层结构和 `backend` 指向 main 已完成。仍缺：
 
 - `wx-touchtrack`/`wx-scroller` 的完整滚动状态；
-- `scroll` 事件已做 50ms 节流，`scroll-into-view` 带重试，`showScrollbar`/`bounces`/`pagingEnabled`/`scrollAnchoring`/`enableFlex` 已映射到 CSS；
+- `scroll` 事件已做 50ms 节流，`scroll-into-view` 带重试，`enableBackToTop` 支持双击回顶；`showScrollbar`/`bounces`/`pagingEnabled`/`scrollAnchoring`/`enableFlex` 已映射到 CSS；
 - 当前 refresher 是自定义扩展，参考 2.7.0 没有同套属性/事件；
 - 列表回收/长列表性能策略未实现。
 

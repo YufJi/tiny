@@ -3,6 +3,7 @@
   class="tiny-scroll-view {{scrollX ? 'is-horizontal' : ''}} {{scrollY ? 'is-vertical' : ''}} {{showScrollbar ? '' : 'is-hidden-scrollbar'}} {{bounces ? '' : 'is-no-bounce'}} {{pagingEnabled ? 'is-paging' : ''}} {{scrollAnchoring ? 'is-anchoring' : ''}} {{enableFlex ? 'is-flex' : ''}}"
   role="listbox"
   bindscroll="handleScroll"
+  bindtap="handleTap"
   bindtouchstart="handleTouchStart"
   bindtouchmove="handleTouchMove"
   bindtouchend="handleTouchEnd"
