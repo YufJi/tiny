@@ -57,7 +57,7 @@
 - [x] 内置模板内部容器从 `<view>`/`<text>` 改为原生 `<div>`/`<span>`，避免 inline 默认值导致零尺寸（曾导致 ECharts 缩略图空白）；
 - [x] 宿主事件监听统一走 `bindHostListeners`/`addListener`，对应参考的 `listeners: { "this.tap": ... }`；
 - [x] 纯宿主标签（`view`/`button`/`checkbox-group`/`radio-group`/`swiper-item`）收敛为 slot-only；
-- [ ] behaviors 等价替换仍不完整：`wx-touchtrack`/`wx-scroller` 已抽象并接入，`wx-group` 的 add/remove/rename、`class-prefix`、`base` 细节仍未完整。
+- [ ] behaviors 等价替换仍不完整：`wx-touchtrack`/`wx-scroller` 已抽象并接入，`wx-group` 的 add/remove/rename/changed 已补；`class-prefix`、`base` 细节仍未完整。
 
 ### 2.2 组件结构与默认外观
 
@@ -270,7 +270,7 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 | `wx-disabled` | [x] |
 | `wx-size-normalizer` | [x] |
 | `wx-data-component` | [x] 基础 get/reset，未复刻全部自动填充语义 |
-| `wx-group` / `wx-item` | [ ] 受控 value 已补，addItem/removeItem/renameItem/changed 未完整 |
+| `wx-group` / `wx-item` | [x] 受控 value + addItem/removeItem/renameItem/changed 已补 |
 | `wx-label-target` | [x] label 分发 |
 | `wx-touchtrack` | [x] 已抽象；swiper 已接入，scroll/picker 仍各自处理 |
 | `wx-scroller` | [x] 已抽象 state API 并接入 scroll-view；底层 native 滚动（已知近似） |

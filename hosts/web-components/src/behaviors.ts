@@ -415,6 +415,75 @@ export function createBuiltinBehaviors(
   const group = space.defineBehavior({
     is: `${prefix}group`,
     methods: {
+      groupItem(item: unknown): { value: string; checked: boolean } {
+        const data = (item as { data?: { value?: unknown; checked?: unknown } } | null)?.data
+        return { value: String(data?.value ?? ''), checked: Boolean(data?.checked) }
+      },
+      addItem(item: unknown): void {
+        if (this.groupItem(item).checked) this.changed(item)
+      },
+      removeItem(item: unknown): void {
+        const { value } = this.groupItem(item)
+        const current = (this.data as { value?: unknown; selected?: unknown }).value
+        if (Array.isArray(current)) {
+          this.setData({ value: current.filter((item) => String(item) !== value) })
+        } else if (typeof current === 'string' && current === value) {
+          this.setData({ value: '' })
+        }
+        const selected = (this.data as { selected?: unknown }).selected
+        if (Array.isArray(selected)) {
+          this.setData({ selected: selected.filter((item) => String(item) !== value) })
+        } else if (typeof selected === 'string' && selected === value) {
+          this.setData({ selected: '' })
+        }
+      },
+      renameItem(item: unknown, newVal: string, oldVal: string): void {
+        if (!this.groupItem(item).checked) return
+        const current = (this.data as { value?: unknown }).value
+        if (Array.isArray(current)) {
+          const index = current.findIndex((entry) => String(entry) === oldVal)
+          if (index >= 0) {
+            const next = [...current]
+            next[index] = newVal
+            this.setData({ value: next })
+          }
+        } else if (typeof current === 'string' && current === oldVal) {
+          this.setData({ value: newVal })
+        }
+        const selected = (this.data as { selected?: unknown }).selected
+        if (Array.isArray(selected)) {
+          const index = selected.findIndex((entry) => String(entry) === oldVal)
+          if (index >= 0) {
+            const next = [...selected]
+            next[index] = newVal
+            this.setData({ selected: next })
+          }
+        } else if (typeof selected === 'string' && selected === oldVal) {
+          this.setData({ selected: newVal })
+        }
+      },
+      changed(item: unknown): void {
+        const { value, checked } = this.groupItem(item)
+        if (!value) return
+        const current = (this.data as { value?: unknown; selected?: unknown }).value
+        if (Array.isArray(current)) {
+          const set = new Set(current.map((entry) => String(entry)))
+          if (checked) set.add(value)
+          else set.delete(value)
+          this.setData({ value: [...set] })
+        } else if (checked) {
+          this.setData({ value })
+        }
+        const selected = (this.data as { selected?: unknown }).selected
+        if (Array.isArray(selected)) {
+          const set = new Set(selected.map((entry) => String(entry)))
+          if (checked) set.add(value)
+          else set.delete(value)
+          this.setData({ selected: [...set] })
+        } else if (checked) {
+          this.setData({ selected: value })
+        }
+      },
       applyItemChange(detail: { value?: unknown; checked?: unknown }): string[] {
         const value = String(detail.value ?? '')
         const selected = new Set<string>(((this.data as { selected?: string[] }).selected ?? []))
@@ -424,7 +493,11 @@ export function createBuiltinBehaviors(
         return [...selected]
       },
       resetFormData(): void {
-        this.setData({ selected: [] })
+        const current = (this.data as { value?: unknown }).value
+        this.setData({
+          selected: [],
+          ...(Array.isArray(current) ? { value: [] } : typeof current === 'string' ? { value: '' } : {}),
+        })
       },
     },
   })
