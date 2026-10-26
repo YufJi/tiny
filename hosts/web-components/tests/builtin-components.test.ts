@@ -520,7 +520,7 @@ describe('P0 built-in components', () => {
       },
       template: compilePage(`
         <scroll-view id="scroll" scroll-y upper-threshold="10" lower-threshold="20" refresher-enabled paging-enabled show-scrollbar="{{false}}" bindscroll="onScroll" bindscrolltoupper="onUpper" bindscrolltolower="onLower" bindrefresherrefresh="onRefresh" binddragstart="onDragStart"><view>content</view></scroll-view>
-        <swiper id="swiper" indicator-dots indicator-color="#112233" indicator-active-color="#445566" current-item-id="b"><swiper-item item-id="a">a</swiper-item><swiper-item item-id="b">b</swiper-item></swiper>
+        <swiper id="swiper" indicator-dots indicator-color="#112233" indicator-active-color="#445566" current-item-id="b" previous-margin="20px" next-margin="10px"><swiper-item item-id="a">a</swiper-item><swiper-item item-id="b">b</swiper-item></swiper>
       `),
       methods: {
         onScroll(event: glassEasel.ShadowedEvent<unknown>) { events.scroll = event.detail },
@@ -557,6 +557,8 @@ describe('P0 built-in components', () => {
     const swiperHtml = glassEasel.dumpElementToString(swiperHost, true)
     expect(swiperHtml).toContain('background-color: #445566')
     expect(swiperHtml).toContain('role="listbox"')
+    expect(swiperHtml).toContain('padding-left: 20px')
+    expect(swiperHtml).toContain('padding-right: 10px')
     expect(swiperHost.data.activeIndex).toBe(1)
     expect(swiperHost.data.trackStyle).toContain('translateX(-100%)')
   })

@@ -149,7 +149,8 @@
 - [x] `currentItemId` 可定位到对应 item；
 - [x] swiper wrapper 补 `role=listbox`/aria-label。
 - [x] `displayMultipleItems` 的 track 步长和 `skipHiddenItemLayout` 的可见项计数已补；
-- [ ] `previousMargin`/`nextMargin` 的精确布局和 swiper-item relation 未完整实现。
+- [x] `previousMargin`/`nextMargin` 已落到 wrapper padding，dots 不再被 inset；
+- [ ] swiper-item relation 未实现（用 DOM/child 扫描代替）。
 
 **form / 分组**
 
