@@ -15,6 +15,7 @@
     "ext-box": "./components/ext-box/ext-box",
     "behavior-box": "./components/behavior-box/behavior-box",
     "semantic-parent": "./components/semantic-parent/semantic-parent",
-    "semantic-child": "./components/semantic-child/semantic-child"
+    "semantic-child": "./components/semantic-child/semantic-child",
+    "nested-style-parent": "./components/nested-style-parent/nested-style-parent"
   }
 }

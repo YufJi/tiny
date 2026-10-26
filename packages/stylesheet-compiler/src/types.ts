@@ -51,6 +51,17 @@ export interface StyleSheetOptions {
   tagClassPrefix?: string | undefined
 
   /**
+   * Generic marker class added to every scoped element. Selectors without a
+   * class or tag anchor (for example `*`, `#id`, or a bare pseudo-class) are
+   * prefixed with `:where(.scope--<scopeMarkerClass>)` so they cannot escape
+   * the page/component scope.
+   */
+  scopeMarkerClass?: string | undefined
+
+  /** Host attribute used to include the page root in page-scope selectors. */
+  scopeHostAttribute?: string | undefined
+
+  /**
    * Built-in component tags. Used for **global** (unscoped) styles, where
    * `tagClassPrefix` is not available: `button {}` is rewritten to the real
    * host tag (e.g. `tiny-button {}`). Scoped styles keep using marker classes.

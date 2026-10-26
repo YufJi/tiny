@@ -23,10 +23,14 @@ const assetsPromise = (async () => {
   const manifest = await fetch(`${generatedBase}/manifest.json`, { cache: 'no-store' })
     .then((response) => response.json());
   const renderModule = await importGenerated(`${generatedBase}/render.js`);
+  const stylePaths = [...new Set(manifest.styles.flatMap((style) => [
+    style.outputPath,
+    ...(style.lowPriorityPath ? [style.lowPriorityPath] : []),
+  ]))];
   const styles = Object.fromEntries(await Promise.all(
-    manifest.styles.map(async (style) => {
-      const response = await fetch(`${generatedBase}/${style.outputPath}`);
-      return [style.outputPath, await response.text()];
+    stylePaths.map(async (stylePath) => {
+      const response = await fetch(`${generatedBase}/${stylePath}`);
+      return [stylePath, await response.text()];
     }),
   ));
   return { manifest, templates: renderModule.default.templates, styles };

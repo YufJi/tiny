@@ -439,12 +439,11 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         sendRuntimeState()
       }
       const currentPage = pageStack.at(-1)!
-      const pageComponents = options.manifest.pages
-        .filter((page) => page.bodyType === 'component' && registry.normalizedComponents.has(page.path))
-        .map((page) => ({
-          path: page.path,
-          options: registry.normalizedComponents.get(page.path)!.options,
-        }))
+      const pageComponents = options.manifest.pages.flatMap((page) => {
+        if (page.bodyType !== 'component' || !registry.normalizedComponents.has(page.path)) return []
+        const [schema] = buildComponentSchemas([page], registry.normalizedComponents)
+        return schema ? [{ path: page.path, options: schema.options }] : []
+      })
       return {
         status: 'ready',
         registeredPages: [...registry.pages.keys()],

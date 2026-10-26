@@ -16,6 +16,8 @@ const result = await compileMiniProgram({
   outputDir: 'tests/host/generated',
   clean: true,
   dev: true,
+  // Optional; defaults to ['.wxss'].
+  styleExtensions: ['.wxss'],
 })
 
 if (result.diagnostics.some((item) => item.severity === 'error')) {

@@ -8,7 +8,8 @@ No native binaries or WASM required.
 
 - Convert `rpx` units to `vw` (configurable ratio, default 750)
 - Add class name prefixes for style isolation (e.g. `.foo` → `.prefix--foo`)
-- Rewrite tag selectors to scoped marker classes (e.g. `button` → `.prefix--wx-tag-button`)
+- Rewrite tag selectors to `host-tag:where(.marker)` so tag specificity is preserved
+- Anchor selector-only rules (`*`, `#id`, bare pseudo-classes) with a generic `:where()` scope marker
 - Optionally insert a marker comment before class names (for tooling)
 - Process `@import` rules: replace with a URL-encoded comment marker
 - Convert `:host` selectors to attribute selectors (`[wx-host="…"]`) for shadow-DOM emulation, with a separate low-priority output
@@ -64,6 +65,8 @@ const sst = StyleSheetTransformer.fromCss('/path/to/file.wxss', cssContent, {
   classPrefix: 'my-prefix',
   classPrefixSign: 'SIGN',   // inserts /*SIGN*/ before each transformed class name
   tagClassPrefix: 'my-prefix--wx-tag-', // tag selector marker classes
+  scopeMarkerClass: 'wx-scope', // generic element scope marker
+  scopeHostAttribute: 'wx-host', // include page root in page-scope anchors
   rpxRatio: 750,
   importSign: 'IMPORT',      // replaces @import with /*IMPORT .url-encoded-path*/
   convertHost: true,
@@ -79,6 +82,8 @@ const sst = StyleSheetTransformer.fromCss('/path/to/file.wxss', cssContent, {
 | `classPrefix` | `string` | — | Prefix added to class names: `.foo` → `.prefix--foo` |
 | `classPrefixSign` | `string` | — | Comment inserted before each transformed class name: `.foo` → `./*SIGN*/foo` |
 | `tagClassPrefix` | `string` | — | Prefix for tag marker classes: `button` → `.prefix--wx-tag-button` |
+| `scopeMarkerClass` | `string` | — | Generic element marker class used to anchor selectors without a class/tag anchor |
+| `scopeHostAttribute` | `string` | — | Host attribute included in page-scope anchors so the page root is matched |
 | `rpxRatio` | `number` | `750` | Ratio for `rpx` → `vw` conversion: `value * 100 / ratio` |
 | `importSign` | `string` | — | When set, `@import './a'` is replaced with `/*SIGN .%2Fa*/` |
 | `convertHost` | `boolean` | `false` | Convert `:host {}` to `[wx-host="prefix"] {}` in low-priority output |

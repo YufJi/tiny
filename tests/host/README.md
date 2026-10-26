@@ -4,8 +4,8 @@ Standalone Vite host for running compiled test mini programs with the Tiny runti
 
 It contains no mini-program source. The compiler writes an app to
 `tests/host/generated`; the host imports that manifest and boots the
-service/render iframes. It is intentionally UI-less and single-app, unlike the
-debugger in `apps/devtool`.
+service/render iframes, with one render iframe per page. It is intentionally
+UI-less and single-app, unlike the debugger in `apps/devtool`.
 
 ```bash
 pnpm compile:glass-easel     # tests/apps/demo -> tests/host/generated

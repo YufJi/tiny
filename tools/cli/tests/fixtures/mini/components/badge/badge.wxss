@@ -2,4 +2,8 @@
   color: red;
 }
 
+:host {
+  color: rgb(1, 2, 3);
+}
+
 text { color: blue; }

@@ -1,0 +1,3 @@
+<view class="parent-token">
+  <nested-style-child />
+</view>

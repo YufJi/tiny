@@ -70,7 +70,7 @@ apps/devtool (可选) : DevtoolRuntimeClient + React 面板（多 iframe 页面�
 | `tests/apps/wechat-demo` | 微信官方组件/API 示例子集 |
 | `tests/apps/echarts` | 历史参考示例 |
 
-`tests/host` 与 `apps/devtool` 都基于 `@tiny/host-browser` 的 `createStandaloneDualThreadHost`：前者是无 UI 的单应用、单 render 帧测试宿主；后者通过 `DevtoolRuntimeClient` 使用 `renderMode: "per-page"`，为每个页面创建独立 render iframe，并提供测试应用列表、最近 3 个应用保活/LRU、面板、诊断、生命周期时间线、元素树和内置 tabBar。每个应用页面栈默认最多 10 层，宿主可通过 `maxPageStack` 配置。
+`tests/host` 与 `apps/devtool` 都基于 `@tiny/host-browser` 的 `createStandaloneDualThreadHost`，浏览器宿主固定为每页一个 render iframe。前者是无 UI 的单应用测试宿主；后者通过 `DevtoolRuntimeClient` 提供测试应用列表、最近 3 个应用保活/LRU、面板、诊断、生命周期时间线、元素树和内置 tabBar。每个应用页面栈默认最多 10 层，宿主可通过 `maxPageStack` 配置。
 
 ## 快速开始
 
@@ -122,6 +122,7 @@ pnpm dev:devtool             # 调试器：http://localhost:8080（可切换全�
 | 内置 behavior scheme | `wx://component-export` | `tiny://component-export` |
 | 组件宿主属性 | `wx-host` | `tiny-host` |
 | tag 选择器标记类 | `wx-tag-button` | `tiny-tag-button` |
+| 元素 scope 标记类 | `wx-scope` | `tiny-scope` |
 
 编译器会把解析后的配置写入 `manifest.json` 的 `naming` 字段，render/service 线程据此
 保持一致。`compileMiniProgram({ naming })` 也可直接覆盖配置；内置组件标签本身

@@ -8,6 +8,8 @@ export type CompileOptions = {
   dev?: boolean
   rpxRatio?: number
   scopePrefix?: string
+  /** Source stylesheet extensions. Defaults to the mini-program `['.wxss']`. */
+  styleExtensions?: string[]
   /**
    * Engine naming config (directive namespace, API global, tag markers…).
    * Overrides `tiny.config.json`; defaults to the `wx-` namespace.

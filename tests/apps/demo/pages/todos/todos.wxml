@@ -28,7 +28,7 @@
     <swiper-item><view class="slide">second</view></swiper-item>
   </swiper>
 
-  <button bindtap="showToast">Show toast</button>
+  <button class="tag-specific" bindtap="showToast">Show toast</button>
   <canvas canvas-id="p0-canvas" class="canvas" />
   <image class="logo" src="/logo.svg" />
 </scroll-view>

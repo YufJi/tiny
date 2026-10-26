@@ -102,7 +102,7 @@ onReachBottom/onResize/onTabItemTap`。高频 `onPageScroll` 会送达页面，�
 
 devtool 是 `apps/` 下的可运行应用，不是核心包；它与 `tests/host` 的区别是：
 
-- `tests/host`：无 UI、单应用、单 render 帧、供开发与 Playwright 验收
+- `tests/host`：无 UI、单应用、每页独立 render 帧、供开发与 Playwright 验收
 - `apps/devtool`：React 面板、多应用切换、多 render 帧、诊断/元素树/生命周期控制
 
 ## 结构
@@ -172,7 +172,7 @@ website 的接入由 `pnpm site:devtool` 完成：它编译 `tests/apps` 下全�
 
 ## 验收
 
-调试器流程已包含在 `pnpm accept:glass-easel`：默认列表页、点击启动、状态投影、首屏单 render 帧、
+调试器流程已包含在 `pnpm accept:glass-easel`：默认列表页、点击启动、状态投影、首屏 render 帧、
 Lifecycle 时间线、导航后旧页面 iframe 仍保留 DOM、返回后只留下首页 iframe、mini tabBar 的
 图标/选中态与 `switchTab` 缓存、依次预览每个 `tests/apps` 测试应用、最近 3 个保活与 LRU 淘汰、
 圆圈回列表、深链启动、`maxPageStack` 限制、Reload/关闭应用、控制台零报错。

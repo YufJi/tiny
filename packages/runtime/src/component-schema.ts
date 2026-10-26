@@ -32,6 +32,8 @@ export function buildComponentSchemas(
         multipleSlots: definition.options.multipleSlots,
         virtualHost: definition.options.virtualHost,
         styleIsolation,
+        explicitStyleIsolation:
+          definition.options.explicitStyleIsolation || readStyleIsolation(effective) !== undefined,
         addGlobalClass: definition.options.addGlobalClass,
       },
     }

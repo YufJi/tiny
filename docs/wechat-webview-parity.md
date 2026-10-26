@@ -253,7 +253,7 @@ hasBehavior / export / wx://component-export
 | `observers` | ✅ | `observers` 块 + 属性级 `observer`；支持多字段、`arr[12]`、`some.field.**`、`**`；本地 `setData` 同步，父级属性变化异步一个 bridge 往返 |
 | `relations` / `getRelationNodes` | ✅ | parent/child/ancestor/descendant；双向声明校验；`linked` / `unlinked` / `linkChanged` / `linkFailed`；按节点树顺序返回 |
 | `externalClasses` | ✅ | 父级 class 可在组件模板内解析，参与样式作用域 |
-| `styleIsolation` / `addGlobalClass` | ✅ | `isolated` / `apply-shared` / `shared`；`shared` 组件样式回写 page scope；页面级 JSON isolation、`:host` 低优先级未覆盖 |
+| `styleIsolation` / `addGlobalClass` | ✅ | `isolated` / `apply-shared` / `shared`；`shared` 组件样式回写 page scope；`:host` 已接入 low-priority CSS；component-as-page 显式 isolation 生效，普通 Page 根固定 shared |
 | `selectComponent` / `selectAllComponents` / `selectOwnerComponent` | ✅ | 页面/组件作用域；ID/class/tag、子代/后代/`>>>`/并集；普通选择器不跨组件边界 |
 | `multipleSlots` / `virtualHost` | ✅ | 按 options 映射；`multipleSlots` 默认 false |
 | `wx://component-export` / `export` | ✅ | `selectComponent` 返回 `export()` 结果，异常回退实例 |
@@ -314,7 +314,7 @@ hasBehavior / export / wx://component-export
 1. `pnpm compile:wechat-demo` 生成产物到 `tests/host/generated`。
 2. 启动 `tests/host` Vite 服务。
 3. Playwright 打开 `/?path=<page>`，等待 `window.__tinyRuntime`，再等 350ms。
-4. 收集 `pageerror`、`console.error`、`window.__tinyRuntime.host.diagnostics`，以及 render iframe `#app` 的子节点/文本（`tests/host` 为单 render 帧）。
+4. 收集 `pageerror`、`console.error`、`window.__tinyRuntime.host.diagnostics`，以及当前 active render iframe `#app` 的子节点/文本（浏览器宿主固定每页一个 render 帧）。
 5. 判定：`__tinyRuntime` 出现、`#app` 有子节点、无 pageerror = booted；否则 render-failed。
 
 **结果解读**：

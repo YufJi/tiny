@@ -202,7 +202,15 @@ describe('Component-as-page', () => {
       },
     })
 
-    await host.bootstrap()
+    const bootstrapped = await host.bootstrap()
+    const componentPageOptions = (bootstrapped.service.pageComponents as Array<{
+      path: string
+      options?: Record<string, unknown>
+    }>).find((item) => item.path === FORM_PATH)?.options
+    expect(componentPageOptions).toMatchObject({
+      styleIsolation: 'shared',
+      explicitStyleIsolation: true,
+    })
     await service.activePage?.invokeMethod('open')
     await new Promise((resolve) => setTimeout(resolve, 20))
     const page = service.activePage!

@@ -4,8 +4,6 @@ import type { RenderThreadConnector, RuntimeDiagnostic } from '@tiny/runtime'
 import type { HostApiHandlers, RuntimeManifest, SystemInfoSnapshot, StorageSnapshot } from '@tiny/runtime'
 import { createBrowserApiHandlers } from './api-handlers'
 
-export type StandaloneRenderMode = 'single' | 'per-page'
-
 export type StandaloneHostOptions = {
   manifest: RuntimeManifest
   serviceUrl: string
@@ -17,12 +15,6 @@ export type StandaloneHostOptions = {
   container?: HTMLElement
   onDiagnostic?: (diagnostic: RuntimeDiagnostic) => void
   apiHandlers?: HostApiHandlers
-  /**
-   * `single` keeps one render iframe for the whole page stack (default).
-   * `per-page` gives every page its own render iframe, preserving hidden page
-   * DOM, scroll position and timers like a real WebView stack.
-   */
-  renderMode?: StandaloneRenderMode
   /** Maximum pages per mini-program page stack. Defaults to 10. */
   maxPageStack?: number
 }
@@ -42,21 +34,14 @@ export async function createStandaloneDualThreadHost(
   options: StandaloneHostOptions,
 ): Promise<StandaloneHost> {
   const container = options.container ?? document.body
-  const perPage = options.renderMode === 'per-page'
   const serviceChannel = createHostMessageChannelPair()
   const serviceIframe = createIframe('tiny-runtime-service-frame', options.serviceUrl)
   const serviceReady = waitForThreadReady(serviceIframe, 'service')
-  const renderChannel = perPage ? null : createHostMessageChannelPair()
-  const renderIframe = perPage ? null : createIframe('tiny-runtime-render-frame', options.renderUrl)
-  const renderReady = renderIframe ? waitForThreadReady(renderIframe, 'render') : null
   container.append(serviceIframe)
-  if (renderIframe) container.append(renderIframe)
   try {
     await serviceReady
-    if (renderReady) await renderReady
   } catch (error) {
     serviceIframe.remove()
-    renderIframe?.remove()
     throw error
   }
   serviceIframe.contentWindow?.postMessage(
@@ -64,53 +49,7 @@ export async function createStandaloneDualThreadHost(
     '*',
     [serviceChannel.peerPort as unknown as Transferable],
   )
-
-  if (perPage) {
-    return createPerPageHost(options, container, serviceIframe, serviceChannel.hostTransport)
-  }
-  if (!renderChannel || !renderIframe) throw new Error('render iframe was not created')
-  renderIframe.contentWindow?.postMessage(
-    { type: 'tiny-runtime-port', channel: 'render' },
-    '*',
-    [renderChannel.peerPort as unknown as Transferable],
-  )
-
-  const removeCanvasRelay = installCanvasHandoffRelay({
-    serviceIframe,
-    getRenderIframe: () => renderIframe,
-    isRenderSource: (source) => source === renderIframe.contentWindow,
-  })
-  const host = createTinyRuntime({
-    serviceTransport: serviceChannel.hostTransport,
-    renderTransport: renderChannel.hostTransport,
-    manifest: options.manifest,
-    initialPath: options.initialPath,
-    initialData: options.initialData,
-    systemInfo: options.systemInfo,
-    storage: options.storage,
-    onDiagnostic: options.onDiagnostic,
-    maxPageStack: options.maxPageStack,
-    apiHandlers: { ...createBrowserApiHandlers(), ...options.apiHandlers },
-  })
-  await Promise.all([host.service.handshake(), host.render.handshake()])
-  const renderIframes = new Map<string, HTMLIFrameElement>()
-  return {
-    host,
-    serviceIframe,
-    get renderIframe() {
-      return renderIframe
-    },
-    get renderIframes() {
-      return renderIframes
-    },
-    async dispose() {
-      removeCanvasRelay()
-      await host.close()
-      serviceIframe.remove()
-      renderIframe.remove()
-      renderIframes.clear()
-    },
-  }
+  return createPerPageHost(options, container, serviceIframe, serviceChannel.hostTransport)
 }
 
 async function createPerPageHost(
@@ -223,7 +162,7 @@ async function createPerPageHost(
 
 export type CanvasHandoffRelayOptions = {
   serviceIframe: HTMLIFrameElement
-  /** Resolve the render iframe for a page; single-render hosts can ignore pageId. */
+  /** Resolve the render iframe for a page. */
   getRenderIframe: (pageId?: string) => HTMLIFrameElement | undefined
   isRenderSource: (source: MessageEventSource | null) => boolean
 }

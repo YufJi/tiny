@@ -75,7 +75,7 @@ function createManifest(
     configuration: {
       path: PAGE_PATH,
       sourcePath: `${PAGE_PATH}.json`,
-      effective: { usingComponents: { box: `/${COMPONENT_PATH}` } },
+      effective: { styleIsolation: 'isolated', usingComponents: { box: `/${COMPONENT_PATH}` } },
       usingComponents: { box: `/${COMPONENT_PATH}` },
       usingComponentsSource: { box: 'local' },
     },
@@ -216,7 +216,7 @@ describe('app stylesheet page-scope delivery', () => {
       configuration: {
         path: otherPagePath,
         sourcePath: `${otherPagePath}.json`,
-        effective: { usingComponents: { box: `/${COMPONENT_PATH}` } },
+        effective: { styleIsolation: 'isolated', usingComponents: { box: `/${COMPONENT_PATH}` } },
         usingComponents: { box: `/${COMPONENT_PATH}` },
         usingComponentsSource: { box: 'local' },
       },
@@ -257,5 +257,30 @@ describe('app stylesheet page-scope delivery', () => {
     expect(paths.filter((path) => path.includes('@page:'))).toHaveLength(1)
     expect(backend.styleSheets.has(`styles/${otherPagePath}.wxss.css`)).toBe(false)
     expect(loadedPaths).not.toContain(`styles/${otherPagePath}.wxss.css`)
+  })
+
+  test('registers low-priority host styles before normal page and component sheets', () => {
+    const manifest = createManifest('isolated')
+    const component = manifest.components[0]!
+    const style = component.style!
+    style.lowPriorityPath = `styles/${COMPONENT_PATH}.wxss.low.css`
+    const backend = new RecordingBackend()
+    const adapter = new GlassEaselRuntimeAdapter({
+      backend,
+      manifest,
+      templates: createTemplateRegistry(),
+    })
+    const lowPriorityKey = `${style.outputPath}@low-priority`
+    adapter.registerStyles(
+      manifest,
+      (path) => path === style.lowPriorityPath ? ':host { color: red }' : '.probe { color: red }',
+      [createSchema('isolated')],
+      { pagePath: PAGE_PATH },
+    )
+
+    const paths = backend.styleSheetPaths.map((item) => item.path)
+    expect(paths[0]).toBe(lowPriorityKey)
+    expect(paths.indexOf(lowPriorityKey)).toBeLessThan(paths.indexOf('styles/app.wxss.css'))
+    expect(backend.styleSheets.get(lowPriorityKey)).toBe(':host { color: red }')
   })
 })

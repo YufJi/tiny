@@ -10,11 +10,15 @@ import { webBuiltinComponents } from '@tiny/host-web-components'
 import manifest from '../generated/manifest.json'
 
 const renderModule = await import('../generated/render.js')
+const stylePaths = [...new Set(manifest.styles.flatMap((style) => [
+  style.outputPath,
+  ...(style.lowPriorityPath ? [style.lowPriorityPath] : []),
+]))]
 const styles = Object.fromEntries(
   await Promise.all(
-    manifest.styles.map(async (style) => {
-      const response = await fetch(`/generated/${style.outputPath}?direct`)
-      return [style.outputPath, await response.text()]
+    stylePaths.map(async (stylePath) => {
+      const response = await fetch(`/generated/${stylePath}?direct`)
+      return [stylePath, await response.text()]
     }),
   ),
 )

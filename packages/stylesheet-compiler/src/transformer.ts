@@ -88,6 +88,8 @@ function transformSelector(
   classPrefix: string | undefined,
   classPrefixSign: string | undefined,
   tagClassPrefix: string | undefined,
+  scopeMarkerClass: string | undefined,
+  scopeHostAttribute: string | undefined,
   builtinTags: readonly string[] | undefined,
   builtinHostTagPrefix: string | undefined,
 ): string {
@@ -101,15 +103,41 @@ function transformSelector(
   }
 
   let result = ''
+  let compound = ''
   let i = 0
   let squareDepth = 0
   let parenDepth = 0
   let previousSignificant = ''
+  let compoundHasAnchor = false
+  const functionStack: string[] = []
   const isTagBoundary = (value: string): boolean => (
     value === '' || value === ' ' || value === '\t' || value === '\n'
     || value === '>' || value === '+' || value === '~' || value === ','
     || value === '('
   )
+  const inNegativeContext = (): boolean => (
+    functionStack.some((name) => name === 'not' || name === 'has')
+  )
+  const markAnchor = (): void => {
+    if (squareDepth === 0 && !inNegativeContext()) compoundHasAnchor = true
+  }
+  const flushCompound = (separator = ''): void => {
+    if (compound.length > 0) {
+      let output = compound
+      if (classPrefix !== undefined && scopeMarkerClass !== undefined && !compoundHasAnchor) {
+        const marker = `.${classPrefix}--${scopeMarkerClass}`
+        const host = scopeHostAttribute
+          ? `, [${scopeHostAttribute}="${classPrefix}"]`
+          : ''
+        const scope = `:where(${marker}${host})`
+        output = output.startsWith('*') ? `*${scope}${output.slice(1)}` : `${scope}${output}`
+      }
+      result += output
+    }
+    result += separator
+    compound = ''
+    compoundHasAnchor = false
+  }
 
   while (i < selector.length) {
     const ch = selector[i]!
@@ -119,46 +147,82 @@ function transformSelector(
         result += selector.slice(i)
         break
       }
-      result += selector.slice(i, end + 2)
+      compound += selector.slice(i, end + 2)
       i = end + 2
+      continue
+    }
+    if (squareDepth === 0 && parenDepth === 0 && /\s/.test(ch)) {
+      let end = i + 1
+      while (end < selector.length && /\s/.test(selector[end]!)) end++
+      flushCompound(' ')
+      previousSignificant = ' '
+      i = end
+      continue
+    }
+    if (squareDepth === 0 && parenDepth === 0 && ch === ',') {
+      flushCompound(',')
+      previousSignificant = ','
+      i += 1
+      while (i < selector.length && /\s/.test(selector[i]!)) i += 1
+      continue
+    }
+    if (squareDepth === 0 && parenDepth === 0 && (ch === '>' || ch === '+' || ch === '~')) {
+      flushCompound(ch)
+      previousSignificant = ch
+      i += 1
+      while (i < selector.length && /\s/.test(selector[i]!)) i += 1
       continue
     }
     if (ch === '[') {
       squareDepth += 1
-      result += ch
+      compound += ch
       i += 1
       previousSignificant = ch
       continue
     }
     if (ch === ']') {
       squareDepth = Math.max(0, squareDepth - 1)
-      result += ch
+      compound += ch
       i += 1
       previousSignificant = ch
       continue
     }
+    if (ch === ':' && selector[i + 1] !== ':') {
+      const match = selector.slice(i).match(/^:([-\w]+)\(/)
+      if (match) {
+        compound += match[0]
+        functionStack.push(match[1]!.toLowerCase())
+        parenDepth += 1
+        i += match[0].length
+        previousSignificant = '('
+        continue
+      }
+    }
     if (ch === '(') {
       parenDepth += 1
-      result += ch
+      compound += ch
+      functionStack.push('')
       i += 1
       previousSignificant = ch
       continue
     }
     if (ch === ')') {
       parenDepth = Math.max(0, parenDepth - 1)
-      result += ch
+      compound += ch
+      functionStack.pop()
       i += 1
       previousSignificant = ch
       continue
     }
     if (ch === '.' && i + 1 < selector.length && isIdentStart(selector[i + 1]!)) {
-      result += '.'
+      compound += '.'
       i++
       const identStart = i
       while (i < selector.length && isIdentChar(selector[i]!)) i++
       const className = selector.slice(identStart, i)
-      if (classPrefixSign !== undefined) result += `/*${classPrefixSign}*/`
-      result += classPrefix !== undefined ? `${classPrefix}--${className}` : className
+      if (classPrefixSign !== undefined) compound += `/*${classPrefixSign}*/`
+      compound += classPrefix !== undefined ? `${classPrefix}--${className}` : className
+      markAnchor()
       previousSignificant = className.at(-1) ?? ''
       continue
     }
@@ -173,24 +237,31 @@ function transformSelector(
       while (i < selector.length && isIdentChar(selector[i]!)) i++
       const tagName = selector.slice(identStart, i)
       if (tagClassPrefix !== undefined) {
-        // Scoped styles use the marker class injected into the template.
-        // The page root is rendered outside the template, so it has no marker.
-        result += tagName === 'page' ? tagName : `.${tagClassPrefix}${tagName}`
+        const hostTag = tagName !== 'page' && builtinTags?.includes(tagName)
+          ? `${builtinHostTagPrefix ?? 'tiny-'}${tagName}`
+          : tagName
+        if (tagName === 'page' && classPrefix !== undefined && scopeHostAttribute !== undefined) {
+          compound += `${hostTag}:where([${scopeHostAttribute}="${classPrefix}"])`
+        } else {
+          compound += `${hostTag}:where(.${tagClassPrefix}${tagName})`
+        }
+        markAnchor()
       } else if (tagName !== 'page' && builtinTags?.includes(tagName)) {
         // Global styles target the real DOM host of a built-in component.
-        result += `${builtinHostTagPrefix ?? 'tiny-'}${tagName}`
+        compound += `${builtinHostTagPrefix ?? 'tiny-'}${tagName}`
       } else {
-        result += tagName
+        compound += tagName
       }
       previousSignificant = tagName.at(-1) ?? ''
       continue
     }
-    result += ch
+    compound += ch
     i += 1
     // Whitespace is a descendant combinator: keep the boundary so a tag that
     // follows it (e.g. `.item image`) is also rewritten to its marker class.
     previousSignificant = ch === ' ' || ch === '\t' || ch === '\n' ? ' ' : ch
   }
+  flushCompound()
   return result
 }
 
@@ -290,6 +361,8 @@ export class StyleSheetTransformer {
         classPrefix: classPrefixOrOpts ?? undefined!,
         classPrefixSign: undefined!,
         tagClassPrefix: undefined!,
+        scopeMarkerClass: undefined!,
+        scopeHostAttribute: undefined!,
         builtinTags: undefined!,
         builtinHostTagPrefix: undefined!,
         rpxRatio: rpxRatio ?? 750,
@@ -312,6 +385,8 @@ export class StyleSheetTransformer {
       classPrefix: options.classPrefix ?? undefined!,
       classPrefixSign: options.classPrefixSign ?? undefined!,
       tagClassPrefix: options.tagClassPrefix ?? undefined!,
+      scopeMarkerClass: options.scopeMarkerClass ?? undefined!,
+      scopeHostAttribute: options.scopeHostAttribute ?? undefined!,
       builtinTags: options.builtinTags ?? undefined!,
       builtinHostTagPrefix: options.builtinHostTagPrefix ?? undefined!,
       rpxRatio: options.rpxRatio ?? 750,
@@ -435,7 +510,7 @@ export class StyleSheetTransformer {
 
     if (node.nodes) {
       // Has a block — treat content as declarations / values (rpx only)
-      transformed.params = this._transformSelectorLike(node.params)
+      transformed.params = convertRpxInString(node.params, this._opts.rpxRatio)
       normalDest.append(transformed)
       node.nodes.forEach((child: ChildNode) => {
         if (child.type === 'decl') {
@@ -595,6 +670,8 @@ export class StyleSheetTransformer {
       this._opts.classPrefix,
       this._opts.classPrefixSign,
       inKeyframes ? undefined : this._opts.tagClassPrefix,
+      inKeyframes ? undefined : this._opts.scopeMarkerClass,
+      inKeyframes ? undefined : this._opts.scopeHostAttribute,
       inKeyframes ? undefined : this._opts.builtinTags,
       this._opts.builtinHostTagPrefix,
     )
@@ -699,28 +776,6 @@ export class StyleSheetTransformer {
     cloned.value = convertRpxInString(decl.value, this._opts.rpxRatio)
     cloned.raws.before = decl.raws.before ?? ''
     return cloned
-  }
-
-  // -------------------------------------------------------------------------
-  // Selector-like string transformation (rpx + class names in at-rule params)
-  // -------------------------------------------------------------------------
-
-  /**
-   * Transform a "selector-like" string (at-rule params in simple at-rules).
-   * Applies rpx → vw and class prefix (the Rust code applies both in
-   * `convert_class_names_and_rpx_in_block` for paren-blocks inside at-rules).
-   */
-  private _transformSelectorLike(s: string): string {
-    let result = convertRpxInString(s, this._opts.rpxRatio)
-    result = transformSelector(
-      result,
-      this._opts.classPrefix,
-      this._opts.classPrefixSign,
-      this._opts.tagClassPrefix,
-      this._opts.builtinTags,
-      this._opts.builtinHostTagPrefix,
-    )
-    return result
   }
 
   // -------------------------------------------------------------------------

@@ -16,11 +16,11 @@ lives in `@tiny/host-browser`:
 
 | API | Purpose |
 | --- | --- |
-| `createStandaloneDualThreadHost` | Creates service/render iframes from a manifest; `renderMode: 'per-page'` creates one render iframe per page |
+| `createStandaloneDualThreadHost` | Creates a service iframe and one render iframe per page from a manifest |
 | `DevtoolRuntimeClient` | Debugger adapter: iframe lifecycle, controls, page/lifecycle projection, element tree |
 
-`tests/host` is the reference single-render host; `apps/devtool` uses
-`DevtoolRuntimeClient` with the per-page render mode.
+Both `tests/host` and `apps/devtool` use the browser host's fixed per-page render
+topology through `createStandaloneDualThreadHost` / `DevtoolRuntimeClient`.
 
 ## Usage
 
@@ -73,7 +73,7 @@ manifest/runtime types. It must not reference browser globals.
 | --- | --- |
 | `canvas-bridge` | Canvas 2D/WebGL OffscreenCanvas handoff, legacy CanvasContext |
 | `runtime-port` | `window.postMessage` / iframe port handshake |
-| `standalone-host` | iframe creation, single/per-page render stacks, page visibility |
+| `standalone-host` | iframe creation, per-page render stacks, page visibility |
 | `page-lifecycle` | Render-frame scroll → page `onPageScroll` / `onReachBottom` bridge |
 | `devtool-client` | Debugger controls, page frames, tabBar state, lifecycle timeline, element tree |
 

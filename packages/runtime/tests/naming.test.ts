@@ -34,6 +34,7 @@ describe('resolveNaming', () => {
       apiAliases: [],
       hostAttribute: 'wx-host',
       tagClassPrefix: 'wx-tag-',
+      scopeMarkerClass: 'wx-scope',
       behaviorPrefix: 'wx-',
       behaviorScheme: 'wx://',
     })
@@ -48,6 +49,7 @@ describe('resolveNaming', () => {
       apiAliases: ['wx'],
       hostAttribute: 'tiny-host',
       tagClassPrefix: 'tiny-tag-',
+      scopeMarkerClass: 'tiny-scope',
       behaviorPrefix: 'tiny-',
       behaviorScheme: 'tiny://',
     })

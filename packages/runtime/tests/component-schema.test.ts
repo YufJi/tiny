@@ -57,6 +57,7 @@ describe('buildComponentSchemas', () => {
       multipleSlots: true,
       virtualHost: true,
       styleIsolation: 'apply-shared',
+      explicitStyleIsolation: false,
       addGlobalClass: true,
     })
   })
@@ -81,5 +82,6 @@ describe('buildComponentSchemas', () => {
       artifact('components/a', { styleIsolation: 'shared' }),
     ], definitions)
     expect(schemas[0]!.options?.styleIsolation).toBe('shared')
+    expect(schemas[0]!.options?.explicitStyleIsolation).toBe(true)
   })
 })

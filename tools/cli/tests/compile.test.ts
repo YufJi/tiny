@@ -44,6 +44,7 @@ describe('compileMiniProgram', () => {
       api: 'wx',
       hostAttribute: 'wx-host',
       tagClassPrefix: 'wx-tag-',
+      scopeMarkerClass: 'wx-scope',
     })
   })
 
@@ -116,6 +117,17 @@ describe('compileMiniProgram', () => {
     expect(map.sourcesContent[0]).toContain('100rpx')
   })
 
+  test('routes :host rules to scoped low-priority CSS', async () => {
+    const manifest = JSON.parse(await fs.readFile(path.join(outputDir, 'manifest.json'), 'utf8'))
+    const badge = manifest.components.find((component: { path: string }) => component.path === 'components/badge/badge')
+    const style = badge.style
+    const normal = await fs.readFile(path.join(outputDir, style.outputPath), 'utf8')
+    const lowPriority = await fs.readFile(path.join(outputDir, style.lowPriorityPath), 'utf8')
+    expect(normal).not.toContain(':host')
+    expect(lowPriority).toContain('[wx-host="tiny-components-badge-badge"]')
+    expect(lowPriority).toContain('color: rgb(1, 2, 3)')
+  })
+
   test('compiles inline WXS into the shared template group', async () => {
     const templates = await fs.readFile(path.join(outputDir, 'templates.js'), 'utf8')
     expect(templates).toContain('modules')
@@ -139,9 +151,102 @@ describe('compileMiniProgram', () => {
     const pageCss = await fs.readFile(path.join(outputDir, 'styles/pages/index/index.wxss.css'), 'utf8')
     const componentCss = await fs.readFile(path.join(outputDir, 'styles/components/badge/badge.wxss.css'), 'utf8')
     const templates = await fs.readFile(path.join(outputDir, 'templates.js'), 'utf8')
-    expect(pageCss).toContain('.tiny-pages-index-index--wx-tag-view')
-    expect(componentCss).toContain('.tiny-components-badge-badge--wx-tag-text')
+    expect(pageCss).toContain('tiny-view:where(.tiny-pages-index-index--wx-tag-view)')
+    expect(componentCss).toContain('tiny-text:where(.tiny-components-badge-badge--wx-tag-text)')
     expect(templates).toContain('wx-tag-view')
+    expect(templates).toContain('wx-scope')
+  })
+
+  test('injects scope markers into components without a local stylesheet', async () => {
+    const sourceDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cli-unstyled-component-'))
+    const unstyledOutput = await fs.mkdtemp(path.join(os.tmpdir(), 'cli-unstyled-output-'))
+    try {
+      await fs.mkdir(path.join(sourceDir, 'pages/index'), { recursive: true })
+      await fs.mkdir(path.join(sourceDir, 'components/plain'), { recursive: true })
+      await fs.writeFile(path.join(sourceDir, 'app.json'), JSON.stringify({
+        pages: ['pages/index/index'],
+      }))
+      await fs.writeFile(path.join(sourceDir, 'app.js'), 'App({})')
+      await fs.writeFile(path.join(sourceDir, 'pages/index/index.js'), 'Page({})')
+      await fs.writeFile(path.join(sourceDir, 'pages/index/index.json'), JSON.stringify({
+        usingComponents: { plain: '../../components/plain/plain' },
+      }))
+      await fs.writeFile(path.join(sourceDir, 'pages/index/index.wxml'), '<plain />')
+      await fs.writeFile(
+        path.join(sourceDir, 'components/plain/plain.js'),
+        'Component({ options: { styleIsolation: "apply-shared" } })',
+      )
+      await fs.writeFile(
+        path.join(sourceDir, 'components/plain/plain.json'),
+        JSON.stringify({ component: true, styleIsolation: 'apply-shared' }),
+      )
+      await fs.writeFile(
+        path.join(sourceDir, 'components/plain/plain.wxml'),
+        '<inner-probe />',
+      )
+
+      const result = await compileMiniProgram({
+        sourceDir,
+        outputDir: unstyledOutput,
+        clean: true,
+        dev: true,
+      })
+      expect(result.diagnostics.filter((item) => item.severity === 'error')).toEqual([])
+      const component = result.manifest.components.find((item) => item.path === 'components/plain/plain')
+      expect(component?.style).toBeUndefined()
+      const templates = await fs.readFile(path.join(unstyledOutput, 'templates.js'), 'utf8')
+      expect(templates).toContain('wx-tag-inner-probe')
+      expect(templates).toContain('wx-scope')
+    } finally {
+      await fs.rm(sourceDir, { recursive: true, force: true })
+      await fs.rm(unstyledOutput, { recursive: true, force: true })
+    }
+  })
+
+  test('honors configured stylesheet extensions throughout compilation', async () => {
+    const sourceDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cli-acss-'))
+    const acssOutput = await fs.mkdtemp(path.join(os.tmpdir(), 'cli-acss-output-'))
+    try {
+      await fs.mkdir(path.join(sourceDir, 'pages/index'), { recursive: true })
+      await fs.writeFile(path.join(sourceDir, 'app.json'), JSON.stringify({
+        pages: ['pages/index/index'],
+      }))
+      await fs.writeFile(path.join(sourceDir, 'app.js'), 'App({})')
+      await fs.writeFile(path.join(sourceDir, 'app.acss'), 'button { display: flex }')
+      await fs.writeFile(path.join(sourceDir, 'pages/index/index.js'), 'Page({})')
+      await fs.writeFile(path.join(sourceDir, 'pages/index/index.json'), '{}')
+      await fs.writeFile(
+        path.join(sourceDir, 'pages/index/index.wxml'),
+        '<view><button>Go</button></view>',
+      )
+      await fs.writeFile(
+        path.join(sourceDir, 'pages/index/index.acss'),
+        '@import "./common.acss"; view { color: red }',
+      )
+      await fs.writeFile(path.join(sourceDir, 'pages/index/common.acss'), '.imported { color: blue }')
+
+      const result = await compileMiniProgram({
+        sourceDir,
+        outputDir: acssOutput,
+        clean: true,
+        dev: true,
+        styleExtensions: ['.acss'],
+      })
+      expect(result.diagnostics.filter((item) => item.severity === 'error')).toEqual([])
+      expect(result.manifest.app?.style?.path).toBe('app.acss')
+      expect(result.manifest.pages[0]?.style?.path).toBe('pages/index/index.acss')
+
+      const appCss = await fs.readFile(path.join(acssOutput, 'styles/app.acss.css'), 'utf8')
+      const pageCss = await fs.readFile(path.join(acssOutput, 'styles/pages/index/index.acss.css'), 'utf8')
+      const templates = await fs.readFile(path.join(acssOutput, 'templates.js'), 'utf8')
+      expect(appCss).toContain('tiny-button')
+      expect(pageCss).toContain('tiny-view:where(.tiny-pages-index-index--wx-tag-view)')
+      expect(pageCss).toContain('.tiny-pages-index-index--imported')
+      expect(templates).toContain('wx-scope')
+    } finally {
+      await fs.rm(sourceDir, { recursive: true, force: true })
+      await fs.rm(acssOutput, { recursive: true, force: true })
+    }
   })
 
   test('does not report errors for the valid fixture', async () => {
@@ -172,6 +277,7 @@ describe('compileMiniProgram — naming config', () => {
         api: 'tiny',
         hostAttribute: 'tiny-host',
         tagClassPrefix: 'tiny-tag-',
+        scopeMarkerClass: 'tiny-scope',
       })
 
       const templates = await fs.readFile(path.join(namingOutputDir, 'templates.js'), 'utf8')

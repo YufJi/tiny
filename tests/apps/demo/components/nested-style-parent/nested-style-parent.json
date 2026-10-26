@@ -1,0 +1,6 @@
+{
+  "component": true,
+  "usingComponents": {
+    "nested-style-child": "../nested-style-child/nested-style-child"
+  }
+}

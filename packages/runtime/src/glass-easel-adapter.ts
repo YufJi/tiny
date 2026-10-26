@@ -245,6 +245,7 @@ export class GlassEaselRuntimeAdapter {
     const appStyleOutputPath = manifest.app?.style?.outputPath
     const styleEntryPaths = this.collectStyleEntryPaths(manifest)
     const pending: Array<{ style: StyleArtifact; scopeId: number }> = []
+    const lowPriorityPending: Array<{ style: StyleArtifact; scopeId: number }> = []
     for (const style of manifest.styles) {
       if (
         allowedStyleOutputPaths
@@ -268,6 +269,20 @@ export class GlassEaselRuntimeAdapter {
       const scopeId = style.scope
         ? this.registerScope(style.scope)
         : glassEasel.StyleScopeManager.globalScope()
+      if (style.lowPriorityPath) {
+        let lowPriorityCss = loadStyle(style.lowPriorityPath)
+        if (typeof lowPriorityCss === 'string' && lowPriorityCss.trim().length > 0) {
+          if (this.resolveAssetUrl) {
+            lowPriorityCss = rewriteCssAssetUrls(
+              lowPriorityCss,
+              style.sourcePath,
+              this.resolveAssetUrl,
+            )
+          }
+          this.backend.registerStyleSheetContent(`${style.outputPath}@low-priority`, lowPriorityCss)
+          lowPriorityPending.push({ style, scopeId })
+        }
+      }
       this.styleScopeIds.set(style.path, scopeId)
       this.styleByEntryPath.set(style.path, style)
       const entryPath = styleEntryPaths.get(style.outputPath)
@@ -278,9 +293,12 @@ export class GlassEaselRuntimeAdapter {
       pending.push({ style, scopeId })
     }
 
-    // Append the app sheet, then its page-scoped copies, then page/component
-    // sheets. This preserves the mini-program cascade where page/component
-    // styles win over app styles at equal specificity.
+    // Append low-priority host defaults first, then the app sheet, its
+    // page-scoped copies, and page/component sheets. This preserves the
+    // mini-program cascade while keeping :host defaults overridable.
+    for (const entry of lowPriorityPending) {
+      this.backend.appendStyleSheetPath(`${entry.style.outputPath}@low-priority`, entry.scopeId)
+    }
     const appStyle = pending.find((entry) => entry.style.outputPath === appStyleOutputPath)
     if (appStyle) {
       this.backend.appendStyleSheetPath(appStyle.style.outputPath, appStyle.scopeId)
@@ -342,11 +360,10 @@ export class GlassEaselRuntimeAdapter {
   }
 
   private resolvePageIsolation(page: PageArtifact): 'isolated' | 'apply-shared' | 'shared' {
+    if (page.bodyType !== 'component') return 'shared'
     const options = this.pageComponentOptions.get(page.path)
     if (options?.explicitStyleIsolation && options.styleIsolation) return options.styleIsolation
     if (options?.addGlobalClass) return 'apply-shared'
-    const fromJson = page.configuration?.effective?.styleIsolation
-    if (fromJson === 'isolated' || fromJson === 'apply-shared' || fromJson === 'shared') return fromJson
     return 'shared'
   }
 

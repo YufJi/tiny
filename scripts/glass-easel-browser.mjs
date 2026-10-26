@@ -53,8 +53,18 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.equal(pageErrors.length, 0, `page errors during boot: ${pageErrors.join(' | ')}`)
     })
 
-    const render = page.frames().find((frame) => frame.url().includes('render.html'))
-    assert.ok(render, 'render iframe was not created')
+    const activeRender = async () => {
+      await page.waitForSelector('iframe.tiny-runtime-render-frame[data-state="active"]', {
+        state: 'attached',
+        timeout: STEP_TIMEOUT,
+      })
+      const src = await page.locator('iframe.tiny-runtime-render-frame[data-state="active"]').getAttribute('src')
+      const url = src ? new URL(src, baseUrl).href : ''
+      const frame = page.frames().find((item) => item.url() === url)
+      assert.ok(frame, 'active render iframe was not found')
+      return frame
+    }
+    let render = await activeRender()
 
     const renderFrameBox = await page.locator('iframe.tiny-runtime-render-frame').boundingBox()
     assert.ok(
@@ -62,14 +72,25 @@ export async function runBrowserAcceptance({ baseUrl }) {
       'render iframe should fill the host container',
     )
 
-    const text = () => render.locator('#app').innerText()
+    const text = async () => {
+      render = await activeRender()
+      return render.locator('#app').innerText()
+    }
     const waitForText = async (needle) => {
       currentStep = `wait for text "${needle}"`
-      await render.waitForFunction(
-        (expected) => (document.querySelector('#app')?.innerText ?? '').includes(expected),
-        needle,
-        { timeout: STEP_TIMEOUT },
-      )
+      const deadline = Date.now() + STEP_TIMEOUT
+      let lastText = ''
+      while (Date.now() < deadline) {
+        try {
+          render = await activeRender()
+          lastText = await render.locator('#app').innerText()
+          if (lastText.includes(needle)) return
+        } catch {
+          // The active frame may be between iframe creation and activation.
+        }
+        await page.waitForTimeout(100)
+      }
+      throw new Error(`text "${needle}" was not found in the active render frame: ${lastText}`)
     }
 
     await step('render the todos page structure', async () => {
@@ -168,6 +189,24 @@ export async function runBrowserAcceptance({ baseUrl }) {
         (element) => getComputedStyle(element).backgroundColor,
       )
       assert.equal(pageBackground, 'rgb(16, 24, 40)', 'app.wxss page rule did not apply')
+      const pageScopeProbe = await render.locator('page').evaluate((element) => ({
+        page: getComputedStyle(element).getPropertyValue('--tiny-page-scope-probe').trim(),
+        componentLeak: getComputedStyle(element).getPropertyValue('--tiny-component-page-probe').trim(),
+      }))
+      assert.equal(pageScopeProbe.page, 'todos', 'page tag selector did not match the page root scope')
+      assert.equal(pageScopeProbe.componentLeak, '', 'component page selector leaked to the page root')
+      assert.equal(
+        await render.locator('page').evaluate((element) => getComputedStyle(element).outlineColor),
+        'rgb(9, 8, 7)',
+        'universal selector did not match the page host scope',
+      )
+
+      const tagSpecificButton = render.locator('tiny-button').filter({ hasText: 'Show toast' }).first()
+      assert.equal(
+        await tagSpecificButton.evaluate((element) => getComputedStyle(element).letterSpacing),
+        '4px',
+        'tag marker selector changed class-over-tag cascade specificity',
+      )
 
       const card = await render.locator('.tiny-pages-todos-todos--card').first().evaluate((element) => {
         const style = getComputedStyle(element)
@@ -297,6 +336,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
       )
       assert.equal(await colorOf('page color'), 'rgb(255, 0, 0)', 'page style did not apply')
       assert.notEqual(await colorOf('isolated color'), 'rgb(255, 0, 0)', 'isolated component leaked page style')
+      assert.equal(await colorOf('page escape color'), 'rgb(255, 0, 0)', '~page-class did not resolve page scope')
       assert.equal(await colorOf('apply shared color'), 'rgb(255, 0, 0)', 'apply-shared did not receive page style')
       assert.equal(await colorOf('shared color'), 'rgb(255, 0, 0)', 'shared did not receive page style')
       assert.equal(await colorOf('external class'), 'rgb(255, 0, 0)', 'external class was not resolved')
@@ -304,6 +344,16 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.notEqual(await colorOf('isolated target'), 'rgb(0, 0, 255)', 'shared style leaked into isolated component')
       assert.equal(await colorOf('app shared probe'), 'rgb(0, 128, 0)', 'app.wxss did not reach apply-shared component')
       assert.notEqual(await colorOf('isolated app probe'), 'rgb(0, 128, 0)', 'app.wxss leaked into isolated component')
+      assert.equal(await colorOf('parent escape'), 'rgb(12, 34, 56)', '^parent-class did not resolve parent scope')
+      assert.equal(await colorOf('ancestor escape'), 'rgb(255, 0, 0)', '^^page-class did not resolve ancestor scope')
+      const isolatedHostBorder = await render.locator('isolated-box').first().evaluate(
+        (element) => getComputedStyle(element).borderLeftWidth,
+      )
+      assert.equal(isolatedHostBorder, '3px', ':host styles did not apply to the component host')
+      const isolatedOutline = await render.getByText('isolated color', { exact: true }).first().evaluate(
+        (element) => getComputedStyle(element).outlineColor,
+      )
+      assert.notEqual(isolatedOutline, 'rgb(9, 8, 7)', 'page universal selector leaked into an isolated component')
     })
 
     await step('render WeChat button variants', async () => {
@@ -452,16 +502,37 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       assert.equal(pageErrors.length, 0, `page errors during boot: ${pageErrors.join(' | ')}`)
     })
 
-    const render = page.frames().find((frame) => frame.url().includes('render.html'))
-    assert.ok(render, 'render iframe was not created')
-    const text = () => render.locator('#app').innerText()
+    const activeRender = async () => {
+      await page.waitForSelector('iframe.tiny-runtime-render-frame[data-state="active"]', {
+        state: 'attached',
+        timeout: STEP_TIMEOUT,
+      })
+      const src = await page.locator('iframe.tiny-runtime-render-frame[data-state="active"]').getAttribute('src')
+      const url = src ? new URL(src, baseUrl).href : ''
+      const frame = page.frames().find((item) => item.url() === url)
+      assert.ok(frame, 'active render iframe was not found')
+      return frame
+    }
+    let render = await activeRender()
+    const text = async () => {
+      render = await activeRender()
+      return render.locator('#app').innerText()
+    }
     const waitForText = async (needle) => {
       currentStep = `wait for text "${needle}"`
-      await render.waitForFunction(
-        (expected) => (document.querySelector('#app')?.innerText ?? '').includes(expected),
-        needle,
-        { timeout: STEP_TIMEOUT },
-      )
+      const deadline = Date.now() + STEP_TIMEOUT
+      let lastText = ''
+      while (Date.now() < deadline) {
+        try {
+          render = await activeRender()
+          lastText = await render.locator('#app').innerText()
+          if (lastText.includes(needle)) return
+        } catch {
+          // The active frame may be between iframe creation and activation.
+        }
+        await page.waitForTimeout(100)
+      }
+      throw new Error(`text "${needle}" was not found in the active render frame: ${lastText}`)
     }
     const diagnostics = () => page.evaluate(() => window.__tinyRuntime.host.diagnostics)
 
@@ -599,6 +670,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
 
     await step('render the ECharts page through the canvas bridge', async () => {
       currentStep = 'render the ECharts page through the canvas bridge'
+      const previousRenderUrl = render.url()
       await render.getByText('nav', { exact: true }).first().click()
       await page.waitForFunction(
         () => window.__tinyRuntime.host.diagnostics.some(
@@ -607,6 +679,15 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
         null,
         { timeout: STEP_TIMEOUT },
       )
+      await page.waitForFunction(
+        (previousUrl) => {
+          const frame = document.querySelector('iframe.tiny-runtime-render-frame[data-state="active"]')
+          return Boolean(frame && frame.src !== previousUrl)
+        },
+        previousRenderUrl,
+        { timeout: STEP_TIMEOUT },
+      )
+      render = await activeRender()
       const canvasClass = (await render.locator('tiny-canvas').first().getAttribute('class')) ?? ''
       assert.ok(
         canvasClass.includes('tiny-components-ec-canvas-ec-canvas--ec-canvas'),
@@ -673,8 +754,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
         timeout: STEP_TIMEOUT,
       })
       await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
-      const subpackageRender = page.frames().find((frame) => frame.url().includes('render.html'))
-      assert.ok(subpackageRender, 'render iframe was not created for the subpackage page')
+      const subpackageRender = await activeRender()
       await subpackageRender.waitForFunction(
         () => (document.querySelector('#app')?.innerText ?? '').includes('ccccc'),
         null,
@@ -726,13 +806,24 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
 
   let currentStep = 'start'
   try {
+    const activeRender = async () => {
+      await page.waitForSelector('iframe.tiny-runtime-render-frame[data-state="active"]', {
+        state: 'attached',
+        timeout: STEP_TIMEOUT,
+      })
+      const src = await page.locator('iframe.tiny-runtime-render-frame[data-state="active"]').getAttribute('src')
+      const url = src ? new URL(src, baseUrl).href : ''
+      const frame = page.frames().find((item) => item.url() === url)
+      assert.ok(frame, 'active render iframe was not found')
+      return frame
+    }
+
     await step('boot the WeChat component demo', async () => {
       currentStep = 'boot the WeChat component demo'
       await page.emulateMedia({ colorScheme: 'dark' })
       await page.goto(`${baseUrl}?path=page/component/index`, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
       await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
-      const render = page.frames().find((frame) => frame.url().includes('render.html'))
-      assert.ok(render, 'render iframe was not created')
+      const render = await activeRender()
       await render.waitForFunction(
         () => (document.querySelector('#app')?.innerText ?? '').includes('视图容器'),
         null,
@@ -764,7 +855,7 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
         timeout: STEP_TIMEOUT,
       })
       await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
-      const render = page.frames().find((frame) => frame.url().includes('render.html'))
+      const render = await activeRender()
       await render.waitForFunction(
         () => (document.querySelector('#app')?.innerText ?? '').includes('页面主操作 Normal'),
         null,
@@ -780,7 +871,7 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
         timeout: STEP_TIMEOUT,
       })
       await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
-      const render = page.frames().find((frame) => frame.url().includes('render.html'))
+      const render = await activeRender()
       await render.waitForFunction(
         () => (document.querySelector('#app')?.innerText ?? '').includes('get/set/clearStorage'),
         null,
@@ -795,8 +886,7 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
         timeout: STEP_TIMEOUT,
       })
       await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
-      const render = page.frames().find((frame) => frame.url().includes('render.html'))
-      assert.ok(render, 'render iframe was not created for the canvas 2D page')
+      const render = await activeRender()
       const canvas = render.locator('#canvas2D canvas').first()
       await waitForCanvasHandoff(render, '#canvas2D canvas')
       await waitForCanvasStats(page, canvas, 100)
@@ -848,8 +938,7 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
         timeout: STEP_TIMEOUT,
       })
       await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
-      const render = page.frames().find((frame) => frame.url().includes('render.html'))
-      assert.ok(render, 'render iframe was not created for the WebGL page')
+      const render = await activeRender()
       const canvas = render.locator('#canvasWebGL canvas').first()
       await waitForCanvasHandoff(render, '#canvasWebGL canvas')
       await waitForCanvasStats(page, canvas, 100)
@@ -925,6 +1014,18 @@ export async function runTaroAcceptance({ baseUrl }) {
 
   let currentStep = 'start'
   try {
+    const activeRender = async () => {
+      await page.waitForSelector('iframe.tiny-runtime-render-frame[data-state="active"]', {
+        state: 'attached',
+        timeout: STEP_TIMEOUT,
+      })
+      const src = await page.locator('iframe.tiny-runtime-render-frame[data-state="active"]').getAttribute('src')
+      const url = src ? new URL(src, baseUrl).href : ''
+      const frame = page.frames().find((item) => item.url() === url)
+      assert.ok(frame, 'active render iframe was not found')
+      return frame
+    }
+
     await step('boot the Taro 3 app', async () => {
       currentStep = 'boot the Taro 3 app'
       await page.goto(`${baseUrl}?path=pages/index/index`, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
@@ -932,8 +1033,7 @@ export async function runTaroAcceptance({ baseUrl }) {
       assert.equal(pageErrors.length, 0, `page errors during boot: ${pageErrors.join(' | ')}`)
     })
 
-    const render = page.frames().find((frame) => frame.url().includes('render.html'))
-    assert.ok(render, 'render iframe was not created')
+    const render = await activeRender()
     const text = () => render.locator('#app').innerText()
     const waitForText = async (needle) => {
       currentStep = `wait for text "${needle}"`

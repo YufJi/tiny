@@ -43,7 +43,7 @@ import {
 
 const SCRIPT_EXTENSIONS = ['.js', '.ts']
 const TEMPLATE_EXTENSIONS = ['.wxml']
-const STYLE_EXTENSIONS = ['.wxss']
+const DEFAULT_STYLE_EXTENSIONS = ['.wxss']
 const WXS_EXTENSIONS = ['.wxs', '.sjs']
 const PROJECT_CONFIG_FILE = 'tiny.config.json'
 const ASSET_EXTENSIONS = new Set([
@@ -129,9 +129,10 @@ function resolveNamingInput(
 
 class MiniProgramCompiler {
   private readonly options: Required<
-    Omit<CompileOptions, 'naming' | 'prefix' | 'apiAliases'>
+    Omit<CompileOptions, 'naming' | 'prefix' | 'apiAliases' | 'styleExtensions'>
   >
   private readonly naming: ResolvedNamingConfig
+  private readonly styleExtensions: string[]
   private readonly diagnostics: Diagnostic[] = []
   private readonly scripts = new Map<string, ScriptArtifact>()
   private readonly templates = new Map<string, TemplateArtifact>()
@@ -147,6 +148,13 @@ class MiniProgramCompiler {
       sourceDir: path.resolve(options.sourceDir),
       outputDir: path.resolve(options.outputDir),
     }
+    const styleExtensions = (options.styleExtensions?.length
+      ? options.styleExtensions
+      : DEFAULT_STYLE_EXTENSIONS)
+      .map((extension) => extension.startsWith('.') ? extension : `.${extension}`)
+    this.styleExtensions = [...new Set(styleExtensions)]
+      .filter((extension) => extension.length > 1)
+    if (this.styleExtensions.length === 0) this.styleExtensions.push('.wxss')
     this.naming = resolveNaming(
       resolveNamingInput(options, this.options.sourceDir, this.diagnostics),
     )
@@ -158,7 +166,7 @@ class MiniProgramCompiler {
     const files = await collectFiles(root, [
       ...SCRIPT_EXTENSIONS,
       ...TEMPLATE_EXTENSIONS,
-      ...STYLE_EXTENSIONS,
+      ...this.styleExtensions,
       ...WXS_EXTENSIONS,
     ])
     const byRelative = new Map(files.map((file) => [this.relative(root, file), file]))
@@ -331,7 +339,13 @@ class MiniProgramCompiler {
   ): Promise<SourceEntry | null> {
     const normalized = normalizeRelativePath(entryPath)
     const findTemplate = (base: string) => byRelative.get(`${base}.wxml`)
-    const findStyle = (base: string) => byRelative.get(`${base}.wxss`)
+    const findStyle = (base: string) => {
+      for (const extension of this.styleExtensions) {
+        const stylePath = byRelative.get(`${base}${extension}`)
+        if (stylePath) return stylePath
+      }
+      return undefined
+    }
     const findScript = (base: string) => {
       for (const extension of SCRIPT_EXTENSIONS) {
         const scriptPath = byRelative.get(`${base}${extension}`)
@@ -542,14 +556,12 @@ class MiniProgramCompiler {
       const templatePath = withoutExtension(relativePath)
       const rawSource = await fs.readFile(absolutePath, 'utf8')
       const inlined = inlineLocalImages(rawSource, absolutePath, root)
-      const hasScopedStyles = byRelative.has(`${templatePath}.wxss`)
-      const scope = hasScopedStyles
-        ? `${this.options.scopePrefix}-${sanitizeScope(templatePath)}`
-        : undefined
-      const scopedSource = scope
-        ? injectTagClasses(inlined, scope, this.naming.tagClassPrefix)
-        : inlined
-      const source = rewriteAnimationAttributes(scopedSource)
+      const markedSource = injectScopeClasses(
+        inlined,
+        this.naming.tagClassPrefix,
+        this.naming.scopeMarkerClass,
+      )
+      const source = rewriteAnimationAttributes(markedSource)
       try {
         const warnings = group.addTmpl(templatePath, source)
         // WXML import/include resolves paths with the `.wxml` extension.
@@ -636,8 +648,8 @@ class MiniProgramCompiler {
         const normalized = path.posix.normalize(base)
         const candidates = [
           normalized,
-          `${normalized}.wxss`,
-          `${normalized}/index.wxss`,
+          ...this.styleExtensions.map((extension) => `${normalized}${extension}`),
+          ...this.styleExtensions.map((extension) => `${normalized}/index${extension}`),
         ]
         const resolved = candidates.find((candidate) => byRelative.has(candidate))
         if (!resolved) {
@@ -664,8 +676,13 @@ class MiniProgramCompiler {
       ...pageEntries.map((entry) => entry.stylePath),
       ...[...componentEntries.values()].map((entry) => entry.stylePath),
     ].filter((value): value is string => Boolean(value))
-    const appStyle = byRelative.get('app.wxss')
-    if (appStyle) stylePaths.unshift(appStyle)
+    const pageStylePaths = new Set(
+      pageEntries
+        .filter((entry) => entry.path !== 'app')
+        .map((entry) => entry.stylePath)
+        .filter((value): value is string => Boolean(value)),
+    )
+    const appStylePath = pageEntries.find((entry) => entry.path === 'app')?.stylePath
 
     for (const stylePath of stylePaths) {
       const relativePath = this.relative(root, stylePath)
@@ -675,7 +692,8 @@ class MiniProgramCompiler {
       const lowPriorityPath = outputPath.replace(/\.css$/, '.low.css')
       const lowPriorityMapPath = `${lowPriorityPath}.map`
       const source = this.inlineStyleImports(relativePath, byRelative)
-      const isAppStyle = relativePath === 'app.wxss'
+      const isAppStyle = stylePath === appStylePath
+      const isPageStyle = pageStylePaths.has(stylePath)
       const scope = isAppStyle
         ? undefined
         : `${this.options.scopePrefix}-${sanitizeScope(withoutExtension(relativePath))}`
@@ -683,9 +701,12 @@ class MiniProgramCompiler {
         const transformer = StyleSheetTransformer.fromCss(relativePath, source, {
           classPrefix: scope,
           tagClassPrefix: scope ? `${scope}--${this.naming.tagClassPrefix}` : undefined,
+          scopeMarkerClass: scope ? this.naming.scopeMarkerClass : undefined,
+          scopeHostAttribute: isPageStyle ? this.naming.hostAttribute : undefined,
           builtinTags: BUILTIN_COMPONENT_TAGS,
           builtinHostTagPrefix: BUILTIN_HOST_TAG_PREFIX,
           hostAttribute: this.naming.hostAttribute,
+          convertHost: scope !== undefined,
           rpxRatio: this.options.rpxRatio,
         })
         const css = transformer.getContent()
@@ -1047,28 +1068,31 @@ function rewriteAnimationAttributes(source: string): string {
 const TAG_CLASS_SKIP = new Set(['import', 'include', 'template', 'block', 'wxs', 'slot'])
 
 /**
- * Adds a `<tagClassPrefix><tag>` marker class to every rendered element, e.g.
- * `wx-tag-button`. Glass-easel prefixes it with the template's style scope at
- * render time; the stylesheet compiler rewrites tag selectors to the matching
- * scoped marker class, which keeps `button { … }` inside its page/component
- * instead of leaking globally.
+ * Adds the generic scope marker and a tag-specific marker to every rendered
+ * element. Glass-easel prefixes both with the template's style scope at render
+ * time. The stylesheet compiler uses them to keep tag and anchorless selectors
+ * inside their page/component instead of leaking globally.
  */
-function injectTagClasses(source: string, scope: string, tagClassPrefix: string): string {
+function injectScopeClasses(
+  source: string,
+  tagClassPrefix: string,
+  scopeMarkerClass: string,
+): string {
   return source.replace(
     /<([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*?)(\/?)>/g,
     (match, rawTag: string, attributes: string, selfClose: string) => {
       const tag = rawTag.toLowerCase()
-      if (TAG_CLASS_SKIP.has(tag) || !scope) return match
-      const marker = `${tagClassPrefix}${tag}`
+      if (TAG_CLASS_SKIP.has(tag)) return match
+      const markers = `${tagClassPrefix}${tag} ${scopeMarkerClass}`
       const classMatch = attributes.match(/\sclass\s*=\s*(["'])([\s\S]*?)\1/)
       let nextAttributes = attributes
       if (classMatch) {
         const quote = classMatch[1]!
         const value = classMatch[2]!
         const separator = value.length === 0 || /\s$/.test(value) ? '' : ' '
-        nextAttributes = attributes.replace(classMatch[0], ` class=${quote}${value}${separator}${marker}${quote}`)
+        nextAttributes = attributes.replace(classMatch[0], ` class=${quote}${value}${separator}${markers}${quote}`)
       } else {
-        nextAttributes = `${attributes} class="${marker}"`
+        nextAttributes = `${attributes} class="${markers}"`
       }
       return `<${rawTag}${nextAttributes}${selfClose}>`
     },

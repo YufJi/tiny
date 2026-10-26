@@ -1,0 +1,2 @@
+<text class="^parent-token" data-check="parent-escape">parent escape</text>
+<text class="^^page-color" data-check="ancestor-escape">ancestor escape</text>

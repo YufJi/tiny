@@ -318,24 +318,34 @@ describe('tag selector scoping', () => {
     const transformer = StyleSheetTransformer.fromCss(
       'a.wxss',
       'button { color: red } view .item { color: blue } button::after { content: "" }',
-      { classPrefix: 's', tagClassPrefix: 's--wx-tag-' },
+      {
+        classPrefix: 's',
+        tagClassPrefix: 's--wx-tag-',
+        builtinTags: ['button', 'view'],
+        builtinHostTagPrefix: 'tiny-',
+      },
     )
     const css = transformer.getContent()
-    expect(css).toContain('.s--wx-tag-button')
-    expect(css).toContain('.s--wx-tag-view .s--item')
-    expect(css).toContain('.s--wx-tag-button::after')
+    expect(css).toContain('tiny-button:where(.s--wx-tag-button)')
+    expect(css).toContain('tiny-view:where(.s--wx-tag-view) .s--item')
+    expect(css).toContain('tiny-button:where(.s--wx-tag-button)::after')
   })
 
   test('rewrites tag selectors after a descendant combinator', () => {
     const transformer = StyleSheetTransformer.fromCss(
       'a.wxss',
       '.card image { width: 100% } .card > image { height: 10px } .card + image { margin: 0 }',
-      { classPrefix: 's', tagClassPrefix: 's--wx-tag-' },
+      {
+        classPrefix: 's',
+        tagClassPrefix: 's--wx-tag-',
+        builtinTags: ['image'],
+        builtinHostTagPrefix: 'tiny-',
+      },
     )
     const css = transformer.getContent()
-    expect(css).toContain('.s--card .s--wx-tag-image')
-    expect(css).toContain('.s--card > .s--wx-tag-image')
-    expect(css).toContain('.s--card + .s--wx-tag-image')
+    expect(css).toContain('.s--card tiny-image:where(.s--wx-tag-image)')
+    expect(css).toContain('.s--card >tiny-image:where(.s--wx-tag-image)')
+    expect(css).toContain('.s--card +tiny-image:where(.s--wx-tag-image)')
   })
 })
 
@@ -350,7 +360,7 @@ describe('global builtin tag mapping', () => {
       },
     )
     const css = transformer.getContent()
-    expect(css).toContain('page > tiny-view')
+    expect(css).toContain('page >tiny-view')
     expect(css).toContain('.card tiny-image')
     expect(css).toContain('tiny-input::placeholder')
     expect(css).toContain('tiny-button')
@@ -389,13 +399,90 @@ describe('tag selector edge cases', () => {
     const transformer = StyleSheetTransformer.fromCss(
       'a.wxss',
       'page { color: red } @keyframes fade { from { opacity: 0 } to { opacity: 1 } }',
-      { classPrefix: 's', tagClassPrefix: 's--wx-tag-' },
+      {
+        classPrefix: 's',
+        tagClassPrefix: 's--wx-tag-',
+        scopeMarkerClass: 'wx-scope',
+        scopeHostAttribute: 'wx-host',
+      },
     )
     const css = transformer.getContent()
-    expect(css).toContain('page')
+    expect(css).toContain('page:where([wx-host="s"])')
+    expect(css).toContain('@keyframes fade')
+    expect(css).not.toContain('--wx-tag-fade')
     expect(css).not.toContain('--wx-tag-from')
     expect(css).not.toContain('--wx-tag-to')
     expect(css).not.toContain('--wx-tag-page')
+  })
+
+  test('anchors selectors without a class or tag anchor', () => {
+    const transformer = StyleSheetTransformer.fromCss(
+      'a.wxss',
+      `* { box-sizing: border-box }
+      #root { color: red }
+      [data-state] { color: blue }
+      :first-child { margin: 0 }
+      .item :first-child { margin: 1px }
+      :not(.disabled) { opacity: 1 }
+      :is(.active) { color: green }`,
+      {
+        classPrefix: 's',
+        tagClassPrefix: 's--wx-tag-',
+        scopeMarkerClass: 'wx-scope',
+      },
+    )
+    const css = transformer.getContent()
+    expect(css).toContain('*:where(.s--wx-scope)')
+    expect(css).toContain(':where(.s--wx-scope)#root')
+    expect(css).toContain(':where(.s--wx-scope)[data-state]')
+    expect(css).toContain(':where(.s--wx-scope):first-child')
+    expect(css).toContain('.s--item :where(.s--wx-scope):first-child')
+    expect(css).toContain(':where(.s--wx-scope):not(.s--disabled)')
+    expect(css).toContain(':is(.s--active)')
+    expect(css).not.toContain(':where(.s--wx-scope):is(.s--active)')
+  })
+
+  test('anchors has() on the subject while preserving positive class selectors', () => {
+    const css = StyleSheetTransformer.fromCss(
+      'a.wxss',
+      ':has(.child) { color: red } .parent { color: blue }',
+      { classPrefix: 's', scopeMarkerClass: 'wx-scope' },
+    ).getContent()
+    expect(css).toContain(':where(.s--wx-scope):has(.s--child)')
+    expect(css).toContain('.s--parent')
+    expect(css).not.toContain(':where(.s--wx-scope).s--parent')
+  })
+
+  test('includes the page host attribute in page-scope anchors', () => {
+    const css = StyleSheetTransformer.fromCss(
+      'page.wxss',
+      '* { box-sizing: border-box } #root { color: red } :first-child { margin: 0 }',
+      {
+        classPrefix: 's',
+        scopeMarkerClass: 'wx-scope',
+        scopeHostAttribute: 'wx-host',
+      },
+    ).getContent()
+    const marker = ':where(.s--wx-scope, [wx-host="s"])'
+    expect(css).toContain(`*${marker}`)
+    expect(css).toContain(`${marker}#root`)
+    expect(css).toContain(`${marker}:first-child`)
+  })
+
+  test('keeps tag specificity by combining the host tag with a zero-specificity marker', () => {
+    const css = StyleSheetTransformer.fromCss(
+      'a.wxss',
+      'button { color: red }',
+      {
+        classPrefix: 's',
+        tagClassPrefix: 's--wx-tag-',
+        builtinTags: ['button'],
+        builtinHostTagPrefix: 'tiny-',
+        scopeMarkerClass: 'wx-scope',
+      },
+    ).getContent()
+    expect(css).toContain('tiny-button:where(.s--wx-tag-button)')
+    expect(css).not.toContain('.s--wx-tag-button{')
   })
 })
 

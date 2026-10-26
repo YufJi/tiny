@@ -13,6 +13,7 @@
  * | Built-in behavior scheme | `wx://component-export` | `tiny://component-export` |
  * | Host attribute | `wx-host` | `tiny-host` |
  * | Tag marker class | `wx-tag-button` | `tiny-tag-button` |
+ * | Element scope class | `wx-scope` | `tiny-scope` |
  *
  * Built-in component tags (`<view>`, `<button>`, …) keep the mini-program
  * grammar and are not prefixed.
@@ -47,6 +48,8 @@ export type ResolvedNamingConfig = {
   hostAttribute: string
   /** Marker class prefix for tag selectors, e.g. `tiny-tag-`. */
   tagClassPrefix: string
+  /** Marker class added to every page/component element, e.g. `tiny-scope`. */
+  scopeMarkerClass: string
   /** Prefix for built-in behavior ids, e.g. `tiny-base`. */
   behaviorPrefix: string
   /** URL scheme for built-in behaviors, e.g. `tiny://`. */
@@ -93,6 +96,7 @@ export function resolveNaming(config?: NamingConfig | null): ResolvedNamingConfi
     apiAliases: aliases,
     hostAttribute: `${namespace}-host`,
     tagClassPrefix: `${namespace}-tag-`,
+    scopeMarkerClass: `${namespace}-scope`,
     behaviorPrefix: prefix,
     behaviorScheme: `${namespace}://`,
   }

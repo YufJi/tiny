@@ -40,8 +40,6 @@ export type DevtoolRuntimeOptions = {
   container?: HTMLElement
   diagnosticLimit?: number
   lifecycleLimit?: number
-  /** Defaults to one render iframe per page; set `single` for a shared frame. */
-  renderMode?: 'single' | 'per-page'
   /** Maximum pages per mini program. Defaults to 10. */
   maxPageStack?: number
 }
@@ -117,7 +115,6 @@ export class DevtoolRuntimeClient {
         systemInfo: this.options.systemInfo,
         storage: this.options.storage,
         container,
-        renderMode: this.options.renderMode ?? 'per-page',
         maxPageStack: this.options.maxPageStack,
         onDiagnostic: (diagnostic) => this.record(diagnostic),
       })

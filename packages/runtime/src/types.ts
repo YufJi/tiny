@@ -40,6 +40,8 @@ export type MiniProgramComponentSchema = {
     multipleSlots?: boolean
     virtualHost?: boolean
     styleIsolation?: 'isolated' | 'apply-shared' | 'shared'
+    /** Whether styleIsolation was set explicitly by component JS/JSON. */
+    explicitStyleIsolation?: boolean
     addGlobalClass?: boolean
   }
 }

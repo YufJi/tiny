@@ -6,6 +6,7 @@
     <apply-shared-box />
     <shared-box />
     <ext-box ext-class="page-color" />
+    <nested-style-parent />
     <text class="line page-target" data-check="page-target">page target</text>
   </view>
 
