@@ -51,3 +51,7 @@ tiny-input {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+.tiny-input-dropdown {
+  display: none;
+}

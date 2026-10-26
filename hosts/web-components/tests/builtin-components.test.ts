@@ -434,6 +434,7 @@ describe('P0 built-in components', () => {
 
     const imageHtml = glassEasel.dumpElementToString(host('image')!, true)
     expect(imageHtml).toContain('tiny-image-mode-aspectFit')
+    expect(glassEasel.dumpElementToString(host('input')!, true)).toContain('tiny-input-dropdown')
     const image2Html = glassEasel.dumpElementToString(host('image2')!, true)
     expect(image2Html).toContain('background-size: cover')
     expect(image2Html).toContain('background-position: top left')

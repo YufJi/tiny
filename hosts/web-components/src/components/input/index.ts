@@ -15,6 +15,7 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
       placeholder: { type: String, value: '' },
       placeholderStyle: { type: String, value: '' },
       placeholderClass: { type: String, value: '' },
+      dropdownStyle: { type: Object, value: {} },
       disabled: { type: Boolean, value: false },
       maxlength: { type: Number, value: 140 },
       focus: { type: Boolean, value: false },

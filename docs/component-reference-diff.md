@@ -128,7 +128,8 @@
 - [x] input 键盘输入（`catchkeydown` 导致 `preventDefault`，字符无法插入）已修复；
 - [x] input 的 wrapper/placeholder 层已补；原生 placeholder 保留用于查询和无障碍；
 - [x] input 的 `focus`/`autoFocus`/`cursor`/`selectionStart`/`selectionEnd` 已映射到原生 input；
-- [ ] input 的镜像 div/下拉候选/`dropdownStyle` 仍未实现；
+- [x] input 已补 dropdown `<ul>` 骨架和 `dropdownStyle` 属性；自动填充数据仍未接；
+- [ ] input 的镜像 div 仍未实现；
 - [x] textarea 的 wrapper/placeholder/scrollHeight autoHeight 已补；
 - [x] textarea 的 focus/autoFocus/cursor/selection 已映射到原生控件；
 - [ ] textarea 的 `fixed`/`showConfirmBar`/`disableDefaultPadding` 和 placeholderClass 前缀仍未实现。
@@ -192,7 +193,7 @@
 
 wrapper 和 placeholder 层已补，原生 placeholder 仍保留用于查询/无障碍。仍缺：
 
-- `dropdownStyle` 和下拉候选结构；
+- 下拉候选目前只有空 `<ul>` 骨架，devtools 自动填充数据未接；
 - 密码/占位 `showValue` 镜像同步；
 - `placeholderClass` 的参考前缀处理；
 - `adjustPosition`/`holdKeyboard` 的键盘行为。
