@@ -262,12 +262,16 @@ main { padding-bottom: 80px; }
 
 .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .pill {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
   padding: 4px 9px;
   border: 1px solid var(--border);
   border-radius: 999px;
   color: var(--muted);
   font-size: 11px;
   font-family: var(--mono);
+  white-space: nowrap;
 }
 .pill.good { color: var(--accent); border-color: rgba(159, 195, 184, 0.3); background: var(--accent-soft); }
 .pill.warn { color: var(--amber); border-color: rgba(213, 187, 135, 0.28); background: rgba(213, 187, 135, 0.09); }
