@@ -1,5 +1,10 @@
 <div
   class="tiny-progress-bar"
+  role="progressbar"
+  aria-label="{{ariaLabel}}"
+  aria-valuemin="0"
+  aria-valuemax="100"
+  aria-valuenow="{{curPercent}}"
   style="height: {{strokeWidth}}px; background-color: {{backgroundColor}}; border-radius: {{borderRadius}}px;"
 >
   <div

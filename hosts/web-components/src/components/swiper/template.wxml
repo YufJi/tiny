@@ -5,7 +5,7 @@
   bindtouchstart="handleTouchStart"
   bindtouchend="handleTouchEnd"
 >
-  <div class="tiny-swiper-wrapper">
+  <div class="tiny-swiper-wrapper" role="listbox" aria-label="{{ariaLabel}}">
     <div class="tiny-swiper-slides">
       <div class="tiny-swiper-track tiny-swiper-slide-frame" style="{{trackStyle}}"><slot /></div>
     </div>

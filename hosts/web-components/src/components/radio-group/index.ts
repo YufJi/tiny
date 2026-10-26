@@ -22,6 +22,11 @@ export function defineRadioGroup(ctx: BuiltinContext): BuiltinDefinition {
         setTimeout(() => this.initializeGroup(), 0)
       },
       attached() {
+        const element = (this as unknown as {
+          getBackendElement?: () => { setAttribute?: (name: string, value: string) => void } | null
+        }).getBackendElement?.()
+        element?.setAttribute?.('role', 'radiogroup')
+        element?.setAttribute?.('aria-label', '单选区')
         this.initializeGroup()
       },
       ready() {

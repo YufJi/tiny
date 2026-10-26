@@ -26,6 +26,11 @@ export function defineCheckboxGroup(ctx: BuiltinContext): BuiltinDefinition {
         setTimeout(() => this.initializeGroup(), 0)
       },
       attached() {
+        const element = (this as unknown as {
+          getBackendElement?: () => { setAttribute?: (name: string, value: string) => void } | null
+        }).getBackendElement?.()
+        element?.setAttribute?.('role', 'group')
+        element?.setAttribute?.('aria-label', '复选区')
         this.initializeGroup()
       },
       ready() {

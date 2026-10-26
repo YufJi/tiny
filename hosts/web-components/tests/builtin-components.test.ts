@@ -497,6 +497,8 @@ describe('P0 built-in components', () => {
     expect(progressHtml).toContain('background-color: #445566')
     expect(progressHtml).toContain('font-size: 20px')
     expect(progressHtml).toContain('42%')
+    expect(progressHtml).toContain('role="progressbar"')
+    expect(progressHtml).toContain('aria-valuenow="42"')
   })
 
 
@@ -549,6 +551,7 @@ describe('P0 built-in components', () => {
     const swiperHost = instance.getShadowRoot()?.getElementById('swiper')?.asGeneralComponent()!
     const swiperHtml = glassEasel.dumpElementToString(swiperHost, true)
     expect(swiperHtml).toContain('background-color: #445566')
+    expect(swiperHtml).toContain('role="listbox"')
     expect(swiperHost.data.activeIndex).toBe(1)
     expect(swiperHost.data.trackStyle).toContain('translateX(-100%)')
   })

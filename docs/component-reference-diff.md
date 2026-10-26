@@ -65,6 +65,7 @@
 
 - [x] 从原生控件改为 `label` + 隐藏原生 input + 自定义视觉 span；
 - [x] 22×22、边框/圆角/选中色/禁用态对齐参考；
+- [x] group 宿主补 `role=group`/`radiogroup` 和 aria-label；
 - [x] `checkbox-group` / `radio-group` 的受控 `value`：初始值、外部更新和子项回写已打通；
 - [ ] 与参考 `wx-touchtrack`/aria 的精确 tap 判定尚未完全对齐（基础点击走原生 label/input）。
 
@@ -145,6 +146,7 @@
 - [x] swiper 的 `wrapper > slides > slide-frame` 已改为绝对定位层；track 仍是 flex，item 级绝对定位未做；
 - [x] swiper 指示点默认已对齐：8×8、bottom 10、gap 8、`rgba(0,0,0,.3)`/`#000`；
 - [x] `currentItemId` 可定位到对应 item；
+- [x] swiper wrapper 补 `role=listbox`/aria-label。
 - [x] `displayMultipleItems` 的 track 步长和 `skipHiddenItemLayout` 的可见项计数已补；
 - [ ] `previousMargin`/`nextMargin` 的精确布局和 swiper-item relation 未完整实现。
 
@@ -163,6 +165,7 @@
 - [x] `canvas` 默认尺寸 300×150 + 容器/绝对定位层已补；实际渲染仍是离屏镜像；
 - [x] `progress` 结构已改为参考的 `bar > inner-bar`；
 - [x] `progress` 的 `active` 逐帧动画已补，`activeend` 带 `curPercent`；
+- [x] progress bar 补 `role=progressbar`/aria-valuenow。
 - [ ] `swiper-item`：参考依赖 `wx-swiper` relation 和 slide-frame 布局；我们只是普通 slot 容器。
 
 
