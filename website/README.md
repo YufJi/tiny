@@ -14,9 +14,9 @@ to GitHub Pages.
 | `#/compiler` | `Compiler` | Discovery, naming config, WXML → ProcGen, scoped CSS, scripts, manifest, output tree, diagnostics |
 | `#/runtime` | `Runtime` | Host-independent service thread, naming, setData/observers, events, component semantics, adapter, built-ins, isolation, canvas |
 | `#/protocol` | `Protocol` | Envelope, handshake, transport, batching, errors, JSON-safe rules, message catalog |
-| `#/hosts` | `Hosts` | Runtime purity, host-browser, startup handshake, thread contract, canvas/asset/API injections, devtool/test hosts, checklist |
+| `#/hosts` | `Hosts` | Runtime purity, host-browser, host-web-components, startup handshake, thread contract, canvas/asset/API injections, devtool/test hosts, checklist |
 | `#/devtool` | `Devtool` | Embedded live debugger, panel/host architecture, build pipeline, relative-path contract, limits |
-| `#/testing` | `Testing` | Gate, 46 browser steps, 148 unit tests, fixtures, Taro compatibility, uncovered areas |
+| `#/testing` | `Testing` | Gate, 47 browser steps, 168 unit tests, fixtures, Taro compatibility, uncovered areas |
 | `#/status` | `Status` | Maturity, known gaps, host gaps, roadmap, invariants |
 
 `#/internals` is kept as an alias for `#/architecture`.
@@ -47,7 +47,7 @@ Navigation uses hash routes (`#/runtime`) so the static build works on a
 GitHub Pages project subpath without a 404 fallback. Assets are emitted with a
 relative base (`vite.config.js`).
 
-Content is hand-written from the source of truth in `packages/*`, `hosts/browser`,
+Content is hand-written from the source of truth in `packages/*`, `hosts/browser`, `hosts/web-components`,
 `tools/cli`, `tests/host`, and `apps/devtool`. When behavior changes, update the
 relevant page rather than adding a generic marketing section.
 

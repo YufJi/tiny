@@ -15,127 +15,129 @@ export default function Runtime() {
   return (
     <>
       <PageHero
-        eyebrow="Runtime core"
-        title={<>宿主无关的内核，<br /><span className="gradient">两个线程的应用</span></>}
-        lede="packages/runtime 不引用 window、document 或 iframe。service 线程拥有 App/Page/Component、页面栈、setData、naming、behaviors/observers/relations 与逻辑组件树；render 线程拥有 glass-easel 组件树、样式隔离、事件和 DOM。canvas、资源 URL、backend 与内置组件定义都由宿主注入。"
-        stats={[['2', 'threads'], ['23', 'built-in tags'], ['5', 'component lifetimes'], ['7', 'bridge domains']]}
-        pills={[['host-independent', 'good'], ['behaviors / relations', 'good'], ['style isolation', 'good'], ['canvas injected', 'good']]}
+        eyebrow="运行时"
+        title={<>service 管状态，<br /><span className="gradient">render 管组件树</span></>}
+        lede="packages/runtime 不引用 window、document 或 iframe。service 线程负责 App/Page/Component、页面栈、setData、命名、组件语义和逻辑组件树；render 线程负责 glass-easel 组件定义、样式隔离、事件和 DOM。canvas、资源 URL、渲染后端和内置组件都由宿主注入。"
+        stats={[['2', '线程角色'], ['23', '内置组件'], ['5', '组件生命周期'], ['7', '消息域']]}
+        pills={[['内核不依赖宿主', 'good'], ['组件语义', 'good'], ['样式隔离', 'good'], ['canvas 由宿主提供', 'good']]}
       />
       <PageNav items={[
-        ['overview', '全景'],
+        ['overview', '总览'],
         ['service', 'service 线程'],
         ['naming', '命名'],
-        ['data', 'setData / observers'],
+        ['data', 'setData 与 observer'],
         ['events', '事件'],
         ['components', '组件语义'],
-        ['render', 'render adapter'],
+        ['render', 'render 适配'],
         ['builtins', '内置组件'],
         ['styles', '样式隔离'],
-        ['canvas', 'Canvas / Animation'],
+        ['canvas', 'Canvas 与动画'],
         ['limits', '限制'],
       ]} />
 
       <Section
         id="overview"
-        kicker="Overview"
-        title="一个应用，两个运行时"
-        intro="两个线程各自执行，只有宿主同时持有两侧连接；业务状态在 service，组件树与 DOM 在 render。"
+        kicker="总览"
+        title="一个小程序，两个运行时角色"
+        intro="service 负责逻辑和状态，render 负责组件树和 DOM。默认使用两个 iframe；如果需要保留隐藏页面的 DOM 和滚动位置，也可以让每个页面各用一个 render iframe。"
       >
-        <CodeBlock>{`service iframe                                  render iframe
+        <CodeBlock>{`service iframe                                  render iframe (one per page optional)
 +------------------------------+                +------------------------------+
 | bootServiceThread            |                | bootRenderThread             |
 | host-independent             |                | glass-easel adapter          |
-| pageStack / page data        |   messages     | ComponentSpace / DOM         |
-| naming / behaviors / tree    | <------------> | styles / events / slots      |
+| pageStack / page data        |    messages    | ComponentSpace / DOM         |
+| naming / definitions / tree  | <------------> | styles / events / slots      |
 | canvas: injected adapter     |   via host     | canvas: injected adapter     |
 +------------------------------+                +------------------------------+
              ^                                               ^
              +------------- BridgeConnection ---------------+
-                          (host relays)`}</CodeBlock>
+                            (host relays)`}</CodeBlock>
         <div className="split">
-          <Card tag="service" title="应用语义与逻辑状态">
-            <p>拥有页面栈、当前页、页面/组件 data、命名空间、归一化组件定义、逻辑组件树、relations 与 API host。所有业务状态都在这里。</p>
+          <Card tag="service" title="应用逻辑和状态">
+            <p>页面栈、当前页、页面和组件 data、命名空间、组件定义、逻辑组件树、relations 和 API host 都在这里。小程序的业务状态只存在这一侧。</p>
           </Card>
-          <Card tag="render" tone="violet" title="组件框架与 DOM">
-            <p>拥有 glass-easel 组件定义、模板实例、样式作用域与隔离、DOM 节点、事件派发和元素树。它不知道页面栈，也不读取 URL。</p>
+          <Card tag="render" tone="violet" title="组件树和 DOM">
+            <p>glass-easel 组件定义、模板实例、样式作用域、DOM 节点、事件派发和元素树都在这里。render 不知道页面栈，也不读取 URL。</p>
           </Card>
         </div>
-        <Callout title="内核不拥有环境">
+        <Callout title="内核不直接接触运行环境">
           <p>
-            service 需要 canvas 时调用注入的 <code>ServiceCanvasAdapter</code>；render 测量/绘制 canvas 时调用注入的 <code>RenderCanvasAdapter</code>；
-            图片与 CSS 资源由 <code>resolveAssetUrl</code> 映射；DOM 挂载由 <code>mountComponent</code> 完成。<code>pnpm check:runtime-purity</code> 保证这条规则不被破坏。
+            service 需要 canvas 时，调用注入的 <code>ServiceCanvasAdapter</code>；render 测量和绘制 canvas 时，调用注入的 <code>RenderCanvasAdapter</code>；
+            图片和 CSS 资源由 <code>resolveAssetUrl</code> 解析；DOM 挂载由 <code>mountComponent</code> 完成。
+            <code>pnpm check:runtime-purity</code> 会检查这条规则有没有被破坏。
           </p>
         </Callout>
       </Section>
 
       <Section
         id="service"
-        kicker="Service thread"
-        title="注册、命名、页面栈"
-        intro="service 线程是“小程序应用”真正存在的地方。它由 bootServiceThread 一次性装配。"
+        kicker="service 线程"
+        title="注册、命名和页面栈"
+        intro="service 是“小程序应用”真正运行的地方，由 bootServiceThread 一次性装配。"
       >
         <Sequence steps={[
           {
-            title: '按 manifest.naming 安装全局',
-            detail: '写入 App / Page / Component / Behavior、getApp、getCurrentPages；API 对象安装到 naming.api，并额外挂载 apiAliases。未实现的 API 返回 undefined 并产生 UNSUPPORTED_API 警告。',
+            title: '按 manifest.naming 安装全局对象',
+            detail: '写入 App、Page、Component、Behavior、getApp 和 getCurrentPages；API 对象安装到 naming.api，同时挂上 apiAliases。未实现的 API 返回 undefined，并产生 UNSUPPORTED_API 警告。',
             code: 'installMiniProgramGlobals(registry, apiHost)',
           },
           {
-            title: '启动时注册 App',
-            detail: 'service.js 被 import 时执行 App(...)，registerApp 立即调用 onLaunch 和 onShow。此时页面尚未创建。',
+            title: '注册 App',
+            detail: 'service.js 被导入时执行 App(...)，registerApp 会立即调用 onLaunch 和 onShow。此时页面还没有创建。',
             code: 'registerApp(options)',
           },
           {
-            title: '归一化 Page / Component 定义',
-            detail: 'Page() 按游标绑定到 manifest 中的页面路径；Component() 额外执行 normalizeComponentDefinition，合并 behaviors、observers、relations、options、externalClasses。',
+            title: '整理 Page 和 Component 定义',
+            detail: 'Page() 按顺序绑定到 manifest 里的页面路径；Component() 还会执行 normalizeComponentDefinition，合并 behaviors、observers、relations、options 和 externalClasses。',
             code: 'registerComponent(options)',
           },
           {
             title: 'bootstrap 创建首屏',
-            detail: '等待 loadArtifacts，写入 systemInfo/storage，构建组件 schema，创建页面并触发 onLoad/onShow；返回 pageComponents 供 render 注册组件型页面。',
+            detail: '等待 loadArtifacts，写入 systemInfo 和 storage，构建组件 schema，创建页面并触发 onLoad/onShow；最后返回 pageComponents，供 render 注册组件型页面。',
             code: "control('runtime', 'bootstrap')",
           },
           {
-            title: 'page.ready 建立逻辑组件树',
-            detail: 'render settle 后把组件快照发给 service；service 创建组件实例、加入 ComponentTree，并触发 onReady。此时 selectComponent / relations 已经可用。',
+            title: 'page.ready 补齐组件树',
+            detail: 'render 等组件树稳定后，把组件快照发给 service。service 创建组件实例、加入 ComponentTree，再触发 onReady。这时 selectComponent 和 relations 已经可用。',
             code: "control('page', 'ready', { components })",
           },
         ]} />
 
         <Table
-          head={['控制', 'service 行为', 'render 行为']}
+          head={['页面操作', 'service 做什么', 'render 做什么']}
           rows={[
-            [<code>page.navigateTo</code>, '当前页 onHide；解析 url/query；创建 pageId；新页 onLoad → onShow；组件型页面 created/attached/ready', '卸载 previousPageId；按新 path + initialData 挂载并 settle 组件'],
-            [<code>page.navigateBack</code>, 'splice(delta)；倒序 onHide → onUnload；卸载组件树与 relations；恢复页 onShow', '卸载 unloadedPageIds；用 service 返回的 data 重新挂载恢复页'],
-            [<code>page.hide</code>, '当前页 onHide；App.onHide；所有页面/组件 pageLifetime hide', '无消息；组件树仍在'],
-            [<code>page.show</code>, 'App.onShow；当前页 onShow；所有页面/组件 pageLifetime show', '无消息'],
-            [<code>page.unload</code>, 'onUnload；组件型页面 detached；移除 ComponentTree / relations / 组件实例', '无消息'],
+            [<code>page.navigateTo</code>, '当前页 onHide；解析 url 和 query；创建 pageId；新页 onLoad → onShow；组件型页面执行 created/attached/ready', '不再使用的页面会被卸载，新页面按 path 和 initialData 挂载，等待组件树稳定'],
+            [<code>page.navigateBack</code>, '按 delta 移除页面；倒序触发 onHide → onUnload；恢复页 onShow', '每页 render 模式保留原页面 iframe；单 render 模式需要重新挂载恢复页'],
+            [<code>page.switchTab</code>, '切换到 tabBar 页面；复用缓存页面，必要时创建新页面', '每页 render 模式关闭不再使用的 tab 页，其余页面只切换可见性'],
+            [<code>page.hide</code>, '当前页 onHide；App.onHide；所有页面和组件触发 pageLifetimes hide', '不销毁组件树'],
+            [<code>page.show</code>, 'App.onShow；当前页 onShow；所有页面和组件触发 pageLifetimes show', '不销毁组件树'],
+            [<code>page.unload</code>, 'onUnload；组件型页面执行 detached；移除 ComponentTree、relations 和组件实例', '没有额外消息'],
           ]}
         />
         <div className="split">
-          <Card title="页面实例与组件型页面">
-            <p>普通页面保留 <code>pageId</code>、path、query、data、methods 与 lifecycle 轨迹。组件型页面（<code>bodyType=component</code>）改用归一化组件定义：URL query 会按 property 类型强制转换，并执行 created/attached/ready/detached。</p>
-            <p>页面根节点也会进入逻辑树（<code>page:&lt;pageId&gt;</code>），所以 relations 与 selectComponent 能识别页面边界。</p>
+          <Card title="页面实例和组件型页面">
+            <p>普通页面保留 pageId、path、query、data、methods 和生命周期记录。组件型页面（<code>bodyType=component</code>）使用整理后的组件定义：URL query 会按 property 类型转换，并执行 created/attached/ready/detached。</p>
+            <p>页面根节点也会进入逻辑树（<code>page:&lt;pageId&gt;</code>），所以 relations 和 selectComponent 能识别页面边界。</p>
           </Card>
           <Card title="Taro 兼容仍然保留">
             <p>普通页面会把顶层函数（包括生命周期）绑定到实例，兼容 Taro 读取 <code>this.onReady.called</code> 的写法；组件型页面走标准 Component 定义。</p>
-            <p>这是兼容路径，不是所有微信页面语义的完整还原。</p>
+            <p>这是兼容路径，并不等于完整还原了微信的页面语义。</p>
           </Card>
         </div>
 
-        <Callout title="返回不是 DOM 回放" tone="warn">
+        <Callout title="返回页面时 DOM 是否保留，取决于 render 模式" tone="warn">
           <p>
-            service 保留页面 <code>data</code>，但 render 在 <code>navigateTo</code> 时卸载旧页、在 <code>navigateBack</code> 时重新挂载。
-            返回后 DOM 与滚动位置会重建，只有页面 data、组件逻辑状态和 relations 被恢复。
+            每页 render 模式下，每个页面有独立的 render iframe，返回时只需切换可见性，DOM、滚动位置和定时器都能保留。
+            单 render 模式下所有页面共用一个 render 线程，返回时需要重新挂载页面。devtool 默认使用每页 render 模式，测试宿主默认使用单 render 模式。
           </p>
         </Callout>
       </Section>
 
       <Section
         id="naming"
-        kicker="Naming"
+        kicker="命名"
         title="wx 不是写死的"
-        intro="naming 从 tiny.config.json 进入 manifest，再由 service 与 adapter 派生所有引擎自有名称。"
+        intro="naming 从 tiny.config.json 进入 manifest，再由 service 和 adapter 生成所有引擎自有的名称。"
       >
         <div className="split">
           <CodeBlock>{`// tiny.config.json
@@ -158,66 +160,66 @@ export default function Runtime() {
   "behaviorScheme": "tiny://"
 }`}</CodeBlock>
           <div className="stack">
-            <Card tag="runtime" title="service 侧">
-              <p><code>namingFromManifest()</code> 决定安装哪个 API 全局、哪些别名、diagnostic 里写什么名字，以及 <code>wx://component-export</code> 对应哪个 behavior id。</p>
-              <p>默认 <code>wx</code>；切到 <code>tiny</code> 时旧第三方库仍可通过 <code>apiAliases: ["wx"]</code> 使用。</p>
+            <Card tag="service" title="service 侧">
+              <p><code>namingFromManifest()</code> 决定安装哪个 API 全局、挂哪些别名、诊断里写什么名字，以及 <code>wx://component-export</code> 对应哪个 behavior id。</p>
+              <p>默认是 <code>wx</code>。切到 <code>tiny</code> 后，旧第三方库仍然可以通过 <code>apiAliases: ["wx"]</code> 使用。</p>
             </Card>
             <Card tag="render" title="adapter 侧">
-              <p>adapter 用 <code>behaviorPrefix</code> 注册内置组件 behaviors，用 <code>hostAttribute</code> 标记组件 host，用 <code>tagClassPrefix</code> 处理 tag 选择器。</p>
-              <p>内置组件 tag 本身（<code>view</code>、<code>button</code>）不跟随 prefix。</p>
+              <p>adapter 用 <code>behaviorPrefix</code> 注册内置组件 behaviors，用 <code>hostAttribute</code> 标记组件宿主节点，用 <code>tagClassPrefix</code> 处理 tag 选择器。</p>
+              <p>内置组件的 tag 本身（<code>view</code>、<code>button</code>）不跟随前缀变化。</p>
             </Card>
           </div>
         </div>
         <Table
-          head={['表面', 'wx-（默认）', 'tiny-', '生效位置']}
+          head={['名称', 'wx-（默认）', 'tiny-', '生效位置']}
           rows={[
             ['模板指令', <code>wx:if</code>, <code>tiny:if</code>, 'TmplGroup directivePrefix'],
-            ['API 全局', <code>wx.getStorageSync()</code>, <><code>tiny.getStorageSync()</code>（可保留 <code>wx</code> alias）</>, 'installMiniProgramGlobals'],
+            ['API 全局', <code>wx.getStorageSync()</code>, <><code>tiny.getStorageSync()</code>（也可以保留 <code>wx</code> 别名）</>, 'installMiniProgramGlobals'],
             ['内置 behavior', <><code>wx-base</code> / <code>wx-hover</code></>, <><code>tiny-base</code> / <code>tiny-hover</code></>, 'createBuiltinBehaviors'],
             ['component-export', <code>wx://component-export</code>, <code>tiny://component-export</code>, 'component-definition'],
-            ['组件 host', <code>wx-host</code>, <code>tiny-host</code>, 'adapter / stylesheet compiler'],
-            ['tag marker', <code>wx-tag-button</code>, <code>tiny-tag-button</code>, 'template 注入 / WXSS'],
+            ['组件宿主属性', <code>wx-host</code>, <code>tiny-host</code>, 'adapter / 样式编译器'],
+            ['tag marker', <code>wx-tag-button</code>, <code>tiny-tag-button</code>, '模板注入 / WXSS'],
           ]}
         />
-        <Callout title="命名不是字符串替换">
+        <Callout title="改命名不只是替换字符串">
           <p>
-            它同时影响编译器输出、manifest 契约、service 全局安装、内置组件 behavior id、host attribute 与样式选择器。
-            <a href="#/compiler">编译页的命名契约</a>列出了完整链路。
+            它会同时影响编译器输出、manifest、service 的全局安装、内置组件 behavior id、宿主属性和样式选择器。
+            <a href="#/compiler">编译页的命名配置</a>列出了完整链路。
           </p>
         </Callout>
       </Section>
 
       <Section
         id="data"
-        kicker="Data flow"
-        title="setData 与跨线程观察者"
-        intro="service 先改自己的 data，再把 patch 发给 render；render 的组件 data/observer 变化也会回流 service，保证逻辑实例与渲染实例一致。"
+        kicker="数据同步"
+        title="setData 和跨线程 observer"
+        intro="service 先改自己的 data，再把更新发给 render；render 侧组件 data 和 observer 的变化也会回流 service，保证逻辑实例和渲染实例一致。"
       >
         <Sequence steps={[
           {
-            title: '克隆 JSON-safe 补丁',
-            detail: '页面/组件 setData 先 cloneJsonSafe，再按 a.b、list[0] 等路径写入本地 data。',
+            title: '生成一份可 JSON 序列化的更新',
+            detail: '页面或组件调用 setData 时，先做 cloneJsonSafe，再按 a.b、list[0] 这样的路径写入本地 data。',
             code: 'cloneJsonSafe(patch) · applyDataPatch(data, patch)',
           },
           {
-            title: '本地 observers 立即运行',
-            detail: 'service 侧组件定义带有 observers 与 property observer。setData 后按变更路径匹配 observer，property observer 额外收到旧值。',
+            title: '本地 observer 先执行',
+            detail: 'service 侧的组件定义里有 observers 和 property observer。setData 后按变更路径匹配 observer，property observer 还会收到旧值。',
             code: 'runObservers(instance, observers, changedPaths, oldData)',
           },
           {
             title: '发送 data.setData',
-            detail: '页面带 pageId；组件带 componentId。bridge 把同一 source + pageId 的事件放进批次，在下一个 microtask 发出。',
+            detail: '页面更新带 pageId，组件更新带 componentId。Bridge 会把同一来源、同一页面的事件攒起来，在下一个 microtask 发出。',
             code: "sendEvent('data', 'setData', { componentId, patch })",
           },
           {
-            title: 'render 应用补丁',
-            detail: 'render 找到页面/组件实例并 setData；adapter 用 begin/endServicePatch 标记这次变更来自 service，避免 observer 重复执行。',
+            title: 'render 应用更新',
+            detail: 'render 找到页面或组件实例并执行 setData。adapter 用 beginServicePatch/endServicePatch 标出这次变化来自 service，避免 observer 再执行一遍。',
             code: 'adapter.beginServicePatch(component) → component.setData(patch)',
           },
           {
             title: 'render 侧变化回流',
-            detail: '组件 data 的任意变化触发 runtime.componentData；schema 中声明的 observer 额外触发 runtime.componentObserved。service 同步 data，并按需用旧值执行 observer。',
-            code: "runtime.componentData / runtime.componentObserved",
+            detail: '组件 data 变化会触发 runtime.componentData；schema 里声明的 observer 还会触发 runtime.componentObserved。service 同步 data，需要时再用旧值执行 observer。',
+            code: 'runtime.componentData / runtime.componentObserved',
           },
         ]} />
         <div className="split">
@@ -239,14 +241,14 @@ export default function Runtime() {
 })`}</CodeBlock>
           </div>
           <div className="stack">
-            <Card title="没有 diff，也没有 ack">
-              <p>每次 setData 都生成一个 patch 事件；bridge 只做帧批处理，不做字段合并。service 不等待 render 确认。</p>
+            <Card title="不合并字段，也没有渲染完成回调">
+              <p>每次 setData 都会生成一条更新消息；Bridge 只做帧批处理，不会合并字段。service 也不会等 render 确认。</p>
             </Card>
-            <Card title="observer 只在 service 执行">
+            <Card title="observer 在 service 执行">
               <p>render 负责发现变化并上报 <code>componentObserved</code>，真正的 observer 逻辑在 service 执行。property observer 的参数是 <code>(newValue, oldValue)</code>。</p>
             </Card>
-            <Card title="递归与失败可见" tone="warn">
-              <p>observer 递归深度上限 20，超过产生 <code>OBSERVER_RECURSION_LIMIT</code>；observer 抛错产生 <code>OBSERVER_ERROR</code>，不会击穿线程。</p>
+            <Card title="递归和异常都有诊断" tone="warn">
+              <p>observer 递归深度上限是 20，超过会产生 <code>OBSERVER_RECURSION_LIMIT</code>；observer 抛错会产生 <code>OBSERVER_ERROR</code>，不会影响其他逻辑。</p>
             </Card>
           </div>
         </div>
@@ -254,40 +256,40 @@ export default function Runtime() {
 
       <Section
         id="events"
-        kicker="Events"
-        title="两条事件通路，一次往返"
-        intro="render 侧事件先序列化，再到 service 调处理函数；service 侧 triggerEvent 反过来走 render。"
+        kicker="事件"
+        title="事件要跨线程走一个来回"
+        intro="render 侧先把事件序列化，再交给 service 调用处理函数；service 侧的 triggerEvent 反过来经过 render。"
       >
         <Sequence steps={[
           {
-            title: 'glass-easel 捕获/冒泡',
-            detail: '模板里的 bind/catch 被编译成监听器；glass-easel 完成 capture、target、bubble 三个阶段，处理 shadow/slot 边界。',
+            title: 'glass-easel 处理捕获和冒泡',
+            detail: '模板里的 bind/catch 会编译成监听器；glass-easel 完成捕获、target 和冒泡三个阶段，并处理 shadow/slot 边界。',
             code: 'methodCaller → event listener',
           },
           {
             title: 'adapter 序列化事件',
-            detail: '提取 type、detail、timeStamp、bubbles、composed、capture、stopped，以及 target/currentTarget 的 id、tag、dataset、class、style。',
+            detail: '提取 type、detail、timeStamp、bubbles、composed、capture、stopped，以及 target 和 currentTarget 的 id、tag、dataset、class、style。',
             code: 'serializeEvent(handler, event)',
           },
           {
             title: '发送 event.dispatch',
-            detail: '自定义组件事件额外带 componentId、componentPath 和当前 componentData，确保 service 侧组件实例能同步。',
+            detail: '自定义组件事件会额外带上 componentId、componentPath 和当前 componentData，确保 service 侧组件实例能同步。',
             code: "sendEvent('event', 'dispatch')",
           },
           {
             title: 'service 找到接收者',
-            detail: '有 pageId 用页面实例；有 componentId 则先 ensureComponentInstance、同步 data，再调用方法。',
+            detail: '有 pageId 就找页面实例；有 componentId 就先确保组件实例存在、同步 data，再调用方法。',
             code: 'page.invokeMethod(handler, [event])',
           },
           {
-            title: '异常变成诊断',
-            detail: '处理函数抛错不会击穿线程，而是发送 EVENT_HANDLER_ERROR，带 handler、eventType 与 pageId。',
+            title: '异常转成诊断',
+            detail: '处理函数抛错不会中断线程，而是发送 EVENT_HANDLER_ERROR，带上 handler、eventType 和 pageId。',
             code: "sendDiagnostic('error', { code: 'EVENT_HANDLER_ERROR' })",
           },
         ]} />
         <div className="split">
           <div className="stack">
-            <Card tag="event object" title="service 侧收到什么">
+            <Card tag="事件对象" title="service 收到的内容">
               <CodeBlock>{`{
   handler: 'onTap',
   type: 'tap',
@@ -304,17 +306,17 @@ export default function Runtime() {
   componentData?: { ... }
 }`}</CodeBlock>
             </Card>
-            <Callout title="handler 缺失也会诊断">
-              <p><code>EVENT_HANDLER_MISSING</code> 与 <code>EVENT_PAGE_NOT_FOUND</code> 都是 warning，不会中断其他事件。</p>
+            <Callout title="handler 对不上也会出诊断">
+              <p><code>EVENT_HANDLER_MISSING</code> 和 <code>EVENT_PAGE_NOT_FOUND</code> 都是 warning，不会影响其他事件。</p>
             </Callout>
           </div>
           <div className="stack">
             <Card tag="service → render" title="组件 triggerEvent 的回路">
-              <p>service 侧组件实例调用 <code>triggerEvent(name, detail)</code>，bridge 发 <code>event.trigger</code> 到 render，render 调用 glass-easel 组件的 <code>triggerEvent</code>。</p>
-              <p>如果父级监听器在 render 侧再次触发 <code>event.dispatch</code>，就形成一次完整往返。</p>
+              <p>service 侧组件实例调用 <code>triggerEvent(name, detail)</code>，Bridge 发送 <code>event.trigger</code> 到 render，render 再调用 glass-easel 组件的 <code>triggerEvent</code>。</p>
+              <p>如果父级监听器在 render 侧又触发 <code>event.dispatch</code>，就形成一次完整往返。</p>
             </Card>
-            <Card tag="native events" title="内置组件归一化">
-              <p>button 把原生 tap 转成小程序 tap，并处理 formType/openType；input 处理 input/change/focus/blur/keydown/confirm/composition/selectionchange；scroll-view 处理 scroll/refresher/drag；canvas 转发 touch。</p>
+            <Card tag="原生事件" title="内置组件做了事件归一化">
+              <p>button 把原生 tap 转成小程序 tap，并处理 formType 和 openType；input 处理 input/change/focus/blur/keydown/confirm/composition/selectionchange；scroll-view 处理 scroll/refresher/drag；canvas 转发 touch。</p>
             </Card>
           </div>
         </div>
@@ -322,43 +324,43 @@ export default function Runtime() {
 
       <Section
         id="components"
-        kicker="Component semantics"
-        title="Behavior、observer、relation、tree"
-        intro="组件不再是“两份 data 的镜像”：service 侧有完整的归一化定义、逻辑组件树与关系图。"
+        kicker="组件语义"
+        title="Behavior、observer、relation 和组件树"
+        intro="service 侧维护完整的组件定义、逻辑组件树和关系图，并不只是保存一份 data。"
       >
         <Table
-          head={['能力', '实现', '关键语义']}
+          head={['能力', '实现', '关键行为']}
           rows={[
-            ['Behavior', <code>normalizeComponentDefinition</code>, '嵌套 behaviors 去重、循环检测；执行顺序为被引用 behavior → 引用者 → 组件；组件覆盖 properties/methods/data'],
-            ['component-export', <><code>wx://component-export</code> behavior + export()</>, 'selectComponent 返回 export() 结果而不是实例'],
-            ['observers', <><code>observers</code> / property observer</>, '支持对象/数组写法、逗号多路径、** 与 .** 通配；property observer 收到旧值；递归上限 20'],
-            ['relations', <><code>RelationManager</code> + <code>ComponentTree</code></>, 'parent / child / ancestor / descendant；双方声明才建立；linked / unlinked / linkChanged / linkFailed'],
-            ['选择器', <><code>selectComponent</code> / <code>selectAllComponents</code> / <code>selectOwnerComponent</code></>, '默认不穿透组件边界；>>> 显式穿透；返回 tree order'],
-            ['组件型页面', <><code>MiniProgramPageInstance</code> + normalized definition</>, 'query 按 property 类型转换；created/attached/ready/detached；页面根也进入逻辑树'],
+            ['Behavior', <code>normalizeComponentDefinition</code>, '嵌套 behaviors 会去重并检测循环；执行顺序是被引用 behavior → 引用者 → 组件；组件覆盖 properties/methods/data'],
+            ['component-export', <><code>wx://component-export</code> behavior + export()</>, 'selectComponent 返回 export() 的结果，而不是组件实例'],
+            ['observers', <><code>observers</code> / property observer</>, '支持对象/数组写法、逗号分隔的多路径、** 和 .** 通配；property observer 收到旧值；递归上限 20'],
+            ['relations', <><code>RelationManager</code> + <code>ComponentTree</code></>, 'parent / child / ancestor / descendant；双方都声明才会建立；支持 linked / unlinked / linkChanged / linkFailed'],
+            ['选择器', <><code>selectComponent</code> / <code>selectAllComponents</code> / <code>selectOwnerComponent</code></>, '默认不穿透组件边界；>>> 可以显式穿透；结果按树中的顺序返回'],
+            ['组件型页面', <><code>MiniProgramPageInstance</code> + 整理后的定义</>, 'query 按 property 类型转换；执行 created/attached/ready/detached；页面根也会进入逻辑树'],
           ]}
         />
         <div className="split">
           <div className="stack">
-            <Card tag="behaviors" title="合并与执行顺序">
-              <p>每个 behavior 的 properties/data/methods/lifetimes/pageLifetimes/observers/relations/externalClasses/options 会被收集；重复引用只执行一次。</p>
-              <p>内置 behavior id（默认 <code>wx://...</code>）目前只支持 <code>component-export</code>；其他会产生 <code>UNSUPPORTED_BEHAVIOR</code>。definitionFilter 尚未实现。</p>
+            <Card tag="behaviors" title="合并顺序和限制">
+              <p>每个 behavior 的 properties/data/methods/lifetimes/pageLifetimes/observers/relations/externalClasses/options 都会被收集；重复引用只执行一次。</p>
+              <p>内置 behavior id（默认 <code>wx://...</code>）目前只支持 <code>component-export</code>，其他会报 <code>UNSUPPORTED_BEHAVIOR</code>。definitionFilter 还没有实现。</p>
             </Card>
-            <Card tag="relations" title="双向声明才连边">
-              <p>父组件声明 <code>child</code>，子组件必须声明对应的 <code>parent</code>；祖先/后代同理。只声明一侧不会建立关系。</p>
-              <p>attached 时触发 linked，detached 时 unlinked，移动时 linkChanged；父/祖先找不到目标时触发 linkFailed。</p>
+            <Card tag="relations" title="双方声明才会建立关系">
+              <p>父组件声明 <code>child</code> 时，子组件也要声明对应的 <code>parent</code>；祖先和后代同理。只声明一侧不会连上。</p>
+              <p>attached 触发 linked，detached 触发 unlinked，移动时触发 linkChanged；父级或祖先找不到目标时触发 linkFailed。</p>
             </Card>
           </div>
           <div className="stack">
             <Card tag="tree" title="逻辑树在 service，真实树在 render">
-              <p>service 的 ComponentTree 记录 pageId、path、tag、id、class、parent 与顺序；render 的 glass-easel 树才是 DOM 来源。</p>
-              <p>两者通过 componentLifecycle 的 parentComponentId/tag/id/class 对齐，page.ready 的 snapshots 做首屏补全。</p>
+              <p>service 的 ComponentTree 记录 pageId、path、tag、id、class、parent 和顺序；render 的 glass-easel 树才是 DOM 的来源。</p>
+              <p>两边通过 componentLifecycle 里的 parentComponentId/tag/id/class 对齐，page.ready 的组件快照负责补齐首屏。</p>
             </Card>
-            <Card tag="pageLifetimes" tone="warn" title="按实例分发">
-              <p>page.show/hide 现在遍历全部 service 组件实例，逐个调用 pageLifetimes；render 发来的 <code>componentPageLifetime</code> 仍被忽略，避免重复。</p>
-              <p>generics、placeholder、definitionFilter 仍未实现。</p>
+            <Card tag="页面生命周期" tone="warn" title="按实例分发">
+              <p>page.show/hide 会遍历 service 里的所有组件实例，逐个调用 pageLifetimes；render 发来的 <code>componentPageLifetime</code> 会被忽略，避免重复执行。</p>
+              <p>generics、placeholder 和 definitionFilter 仍未实现。</p>
             </Card>
-            <Card tag="style" title="组件 options 也进入 schema">
-              <p><code>multipleSlots</code>、<code>virtualHost</code>、<code>styleIsolation</code>、<code>addGlobalClass</code>、<code>externalClasses</code> 会随 componentSchemas 下发，render 用它们注册定义。</p>
+            <Card tag="样式" title="组件配置也会进入 schema">
+              <p><code>multipleSlots</code>、<code>virtualHost</code>、<code>styleIsolation</code>、<code>addGlobalClass</code> 和 <code>externalClasses</code> 会随 componentSchemas 下发，render 用它们注册组件。</p>
             </Card>
           </div>
         </div>
@@ -366,163 +368,161 @@ export default function Runtime() {
 
       <Section
         id="render"
-        kicker="Render adapter"
-        title="把产物装配成 glass-easel 组件"
+        kicker="render 适配"
+        title="render 适配器如何装配组件"
         intro="GlassEaselRuntimeAdapter 是 runtime 内部唯一直接依赖 glass-easel 的地方。"
       >
         <Cards>
-          <Card tag="space" title="ComponentSpace + StyleScopeManager">
-            <p>每个 render 线程一个 ComponentSpace 和一个 StyleScopeManager；所有页面、组件、内置组件都注册在这里。</p>
+          <Card tag="组件空间" title="ComponentSpace + StyleScopeManager">
+            <p>每个 render 线程有一个 ComponentSpace 和一个 StyleScopeManager；页面、组件和内置组件都注册在这里。</p>
           </Card>
-          <Card tag="definition" title="定义与隔离">
-            <p>页面与组件使用 <code>defineWithMethodCaller(path)</code>。组件 options 写入 multipleSlots、virtualHost、styleScope、extraStyleScope 与 isolation。</p>
+          <Card tag="定义" title="定义与隔离">
+            <p>页面和组件使用 <code>defineWithMethodCaller(path)</code>。组件 options 会写入 multipleSlots、virtualHost、styleScope、extraStyleScope 和 isolation。</p>
           </Card>
-          <Card tag="caller" title="事件方法代理">
-            <p><code>useMethodCallerListeners</code> 打开后，glass-easel 把模板事件交给 Proxy；核心方法（setData、selectComponent 等）透传，其余变成 service dispatcher。</p>
+          <Card tag="事件代理" title="模板事件怎么找到处理函数">
+            <p>打开 <code>useMethodCallerListeners</code> 后，glass-easel 会把模板事件交给 Proxy。核心方法（setData、selectComponent 等）直接透传，其他名字交给 service 处理。</p>
           </Card>
-          <Card tag="assets" title="资源与宿主">
-            <p><code>resolveAssetUrl</code> 在模板 img/src 与 CSS url() 注册时调用；<code>canvas.measure</code> / <code>paint</code> 由宿主提供，adapter 不碰 DOM。</p>
+          <Card tag="宿主" title="资源和画布">
+            <p><code>resolveAssetUrl</code> 会在模板 img/src 和 CSS url() 注册时调用；<code>canvas.measure</code> 和 <code>paint</code> 由宿主提供，adapter 不直接操作 DOM。</p>
           </Card>
         </Cards>
         <div className="split">
           <div className="stack">
-            <Card title="bootstrap 的顺序">
+            <Card title="启动顺序">
               <ol style={{ margin: '8px 0 0', paddingLeft: 18, color: 'var(--muted)', fontSize: 14 }}>
-                <li><code>registerStyles</code>：base CSS → manifest styles</li>
-                <li><code>setPageComponentOptions</code>：组件型页面的 isolation/options</li>
-                <li><code>registerComponentSchemas</code>：定义组件与 observers</li>
-                <li><code>mountPage</code>：挂载页面并 settle 组件树</li>
+                <li><code>registerStyles</code>：注册基础样式和 manifest 样式</li>
+                <li><code>setPageComponentOptions</code>：设置组件型页面的 isolation/options</li>
+                <li><code>registerComponentSchemas</code>：注册组件定义和 observers</li>
+                <li><code>mountPage</code>：挂载页面，等待组件树稳定</li>
               </ol>
-              <p style={{ marginTop: 10 }}>顺序反了，组件定义会拿不到 style scope id。</p>
+              <p style={{ marginTop: 10 }}>顺序反了，组件定义就拿不到样式作用域 id。</p>
             </Card>
-            <Card title="settle 与 page.ready">
-              <p><code>whenRendered()</code> 等 backend 完成一次渲染；如果页面声明了 usingComponents，再等待组件数量稳定，生成 snapshots 返回给 host。host 把它们并入 <code>page.ready</code>。</p>
+            <Card title="组件树稳定后发 page.ready">
+              <p><code>whenRendered()</code> 会等 backend 完成一次渲染。如果页面声明了 usingComponents，还要等组件数量稳定，再生成组件快照返回给宿主。宿主把它并入 <code>page.ready</code>。</p>
             </Card>
           </div>
-          <Card tag="inspect" title="元素树导出">
-            <p>如果 backend 返回 DOM，按 DOM 序列化；否则退回 glass-easel 逻辑树（shadowRoot/childNodes）。</p>
+          <Card tag="元素树" title="元素树导出">
+            <p>如果 backend 返回 DOM，就按 DOM 序列化；否则退回 glass-easel 逻辑树（shadowRoot/childNodes）。</p>
             <ul>
               <li>最多 2000 个节点</li>
               <li>最大深度 60</li>
-              <li>文本截断 200 字符</li>
+              <li>文本截断到 200 个字符</li>
               <li>组件节点用 <code>naming.hostAttribute</code>（默认 <code>wx-host</code>）标记</li>
             </ul>
           </Card>
         </div>
-        <Callout title="render 侧没有业务路由">
+        <Callout title="render 不负责业务路由">
           <p>
-            render 响应 <code>runtime.bootstrap</code>、<code>page.navigateTo</code>、<code>page.navigateBack</code>、
-            <code>page.switchTab</code>、<code>runtime.inspectTree</code> 与 data/event/canvas 消息。devtool 为每个页面
-            维护独立 render 帧；tabBar 由宿主渲染，服务的 <code>RUNTIME_STATE</code> 只负责投影状态。
+            render 会响应 <code>runtime.bootstrap</code>、<code>page.navigateTo</code>、<code>page.navigateBack</code>、<code>page.switchTab</code>、
+            <code>runtime.inspectTree</code> 以及 data/event/canvas 消息。devtool 会给每个页面维护独立的 render 帧；tabBar 由宿主绘制，service 只负责投影状态。
           </p>
         </Callout>
       </Section>
 
       <Section
         id="builtins"
-        kicker="Built-ins"
-        title="23 个组件，接近 WebView 的表面"
-        intro="内置组件模板在构建期生成 ProcGen，样式按组件拆分后再合成 24 份 stylesheet；每个组件共享同一组 behaviors。"
+        kicker="内置组件"
+        title="23 个内置组件，已经比较接近 WebView"
+        intro="内置组件模板在构建期生成 ProcGen，样式按组件拆分后再合成 24 份 stylesheet；每个组件共用一组 behaviors。"
       >
         <Cards className="three">
-          <Card tag="AOT" title="模板与样式">
-            <p><code>build-templates.mjs</code> 把 23 个 <code>template.wxml</code> 编成一个模板 group；<code>build-styles.mjs</code> 合成 base + 23 个组件样式。</p>
-            <p>生成物在 <code>hosts/web-components/src/generated</code>，不入库。</p>
+          <Card tag="AOT" title="模板和样式">
+            <p><code>build-templates.mjs</code> 把 23 个 <code>template.wxml</code> 编成一个模板 group；<code>build-styles.mjs</code> 合成基础样式加 23 份组件样式。</p>
+            <p>生成物在 <code>hosts/web-components/src/generated</code>，不提交到仓库。</p>
           </Card>
           <Card tag="behaviors" title="共享 behaviors">
             <p><code>wx-base</code>、<code>wx-hover</code>、<code>wx-label-target</code>、<code>wx-disabled</code>、<code>wx-data-component</code>、<code>wx-group</code>、<code>wx-item</code>、<code>wx-size-normalizer</code>、<code>wx-class-prefix</code>。</p>
-            <p>id 前缀跟随 naming。</p>
+            <p>id 前缀跟随 naming 配置。</p>
           </Card>
-          <Card tag="always-on" title="无需 usingComponents">
-            <p>宿主注入内置组件后，它们始终挂在每个页面/组件的 <code>usingComponents</code> 上；即使页面没有声明任何自定义组件也能使用。</p>
+          <Card tag="默认可用" title="不需要写 usingComponents">
+            <p>宿主注入内置组件后，它们会默认挂到每个页面和组件上，即使页面没有声明自定义组件也能使用。</p>
             <p>提供方是 <code>RenderThreadOptions.builtinComponents</code>；自定义组件同名时会被页面声明覆盖。</p>
           </Card>
         </Cards>
         <Table
-          head={['组件', '当前表面', '实现方式']}
+          head={['组件', '当前支持的接口', '实现方式']}
           rows={[
-            ['view / text / label', 'hover、inline、selectable、decode、space、aria；label for', '真实 tiny-* 宿主 + slot；hover 走宿主 touchstart 监听'],
-            ['button', 'type/size/plain/loading/disabled、formType submit/reset、openType 事件映射、hover 时序、aria', '真实 tiny-button 宿主 + 宿主 tap；form/hover behaviors；openType 未支持时发 error 事件'],
+            ['view / text / label', 'hover、inline、selectable、decode、space、aria；label for', '真实 tiny-* 宿主 + slot；hover 监听宿主 touchstart'],
+            ['button', 'type/size/plain/loading/disabled、formType submit/reset、openType 事件映射、hover 时序、aria', '真实 tiny-button 宿主 + 宿主 tap；form/hover behaviors；openType 不支持时发 error 事件'],
             ['input', 'value/type/password/maxlength/focus/confirm/cursor/selection/adjustPosition；input/change/focus/blur/keydown/confirm/composition/selectionchange', '原生 input + dataComponent/classPrefix behaviors'],
             ['checkbox / radio / switch', 'checked/disabled/value/color；change/checkboxstate；group change', '自定义 22×22 / 52×32 结构 + 隐藏原生 input；dataComponent/group/item behaviors'],
-            ['slider', 'value/min/max/step/disabled/colors/blockSize；changing/change', '自定义 track/thumb + 透明 range 交互层；数值归一化'],
-            ['scroll-view', 'scrollX/Y、scrollTop/Left、scrollIntoView、refresher、drag/scroll 事件', 'CSS overflow + touch/scroll handlers'],
-            ['swiper / swiper-item', 'current/currentItemId/indicator/autoplay/circular/vertical；change/transition/animationfinish', 'CSS transform + backend query / touch handlers'],
-            ['progress / icon / image', 'percent/showInfo/active/activeMode/colors、type/size/color、src/mode/webp/background', '模板 + observers；icon 内嵌 WeUI 字体 + 15 type 伪元素；image 走 div 背景图 + probe 测量 fallback'],
-            ['canvas', 'canvas-id/type/disableScroll；touchstart/move/end/cancel/longtap/error', 'surface 组件；绘制由宿主 canvas 适配器完成'],
+            ['slider', 'value/min/max/step/disabled/colors/blockSize；changing/change', '自定义 track/thumb + 透明的 range 交互层；数值归一化'],
+            ['scroll-view', 'scrollX/Y、scrollTop/Left、scrollIntoView、refresher、drag/scroll 事件', 'CSS overflow + touch/scroll 事件处理'],
+            ['swiper / swiper-item', 'current/currentItemId/indicator/autoplay/circular/vertical；change/transition/animationfinish', 'CSS transform + 后端查询和 touch 事件'],
+            ['progress / icon / image', 'percent/showInfo/active/activeMode/colors、type/size/color、src/mode/webp/background', '模板 + observers；icon 使用内嵌 WeUI 字体和 15 种伪元素；image 用 div 背景图，并用 probe 测量兜底'],
+            ['canvas', 'canvas-id/type/disableScroll；touchstart/move/end/cancel/longtap/error', 'surface 组件；实际绘制由宿主 canvas 适配器完成'],
           ]}
         />
-        <Callout title="仍然不是完整组件库" tone="warn">
+        <Callout title="还不是完整组件库" tone="warn">
           <p>
-            navigator、video、rich-text、map、movable-view 等尚未实现；已有组件的 open-type、表单提交、
-            无障碍和 Skyline 语义也不完整。
+            navigator、video、rich-text、map、movable-view 等还没有实现；已有组件的 open-type、表单提交、无障碍和 Skyline 语义也不完整。
           </p>
         </Callout>
       </Section>
 
       <Section
         id="styles"
-        kicker="Styles"
-        title="作用域之外，还有 styleIsolation"
-        intro="编译期生成 class/tag scope；render 期再按 page/component 的 isolation 组合样式。"
+        kicker="样式隔离"
+        title="除了作用域，还有 styleIsolation"
+        intro="编译期生成 class/tag 作用域；render 期再按页面或组件的 isolation 配置组合样式。"
       >
         <Table
-          head={['选项', '生效范围', '行为']}
+          head={['配置', '生效范围', '行为']}
           rows={[
             ['页面 isolation', '页面根 + 子组件', '默认 shared；显式 isolated/apply-shared/shared 或 styleIsolation 配置优先'],
-            ['组件 isolated', '组件自身', '默认；不接收页面样式'],
-            ['apply-shared', '组件自身', '页面样式可影响组件；组件样式不反向影响页面'],
-            ['shared', '组件自身 + 页面', '组件的 WXSS 以页面 scope 重新注册一份，页面可使用组件样式'],
-            ['addGlobalClass', '组件自身', '等价 apply-shared；可由 JSON/options 设置'],
+            ['组件 isolated', '组件自身', '默认值；不接收页面样式'],
+            ['apply-shared', '组件自身', '页面样式可以影响组件；组件样式不会反过来影响页面'],
+            ['shared', '组件自身 + 页面', '组件的 WXSS 会以页面 scope 重新注册一份，页面也可以使用组件样式'],
+            ['addGlobalClass', '组件自身', '等价于 apply-shared；可以通过 JSON 或 options 设置'],
             ['externalClasses', '组件根节点', '把外部 class 透传到组件内部元素'],
           ]}
         />
         <div className="split">
           <Card title="注册顺序">
             <ul>
-              <li>base styles 以 global scope 注册</li>
+              <li>基础样式以 global scope 注册</li>
               <li>manifest.styles 逐份注册，scope 来自 style.scope</li>
-              <li>共享组件样式按 page scope 重新写入</li>
-              <li>最后注册页面/组件定义</li>
+              <li>共享组件样式按页面 scope 重新写入</li>
+              <li>最后注册页面和组件定义</li>
             </ul>
           </Card>
-          <Card title="命名与低优先级">
-            <p>tag marker 与 <code>hostAttribute</code> 跟随 naming；<code>page</code> 根不做 marker。CLI 仍会写 <code>*.low.css</code>，但当前没有启用 <code>convertHost</code>，runtime 也只加载普通 CSS。</p>
-            <p><code>:host</code> 组合与优先级矩阵仍未系统化。</p>
+          <Card title="命名和低优先级样式">
+            <p>tag marker 和 <code>hostAttribute</code> 跟随 naming；<code>page</code> 根节点不加 marker。CLI 仍会写 <code>*.low.css</code>，但目前没有启用 <code>convertHost</code>，runtime 也只加载普通 CSS。</p>
+            <p><code>:host</code> 的组合和优先级还没有系统整理。</p>
           </Card>
         </div>
-        <Callout title="app.wxss 是全局的" >
-          <p>app.wxss 不带 scope，作为 globalScope 注册。页面的 styleIsolation 只决定组件是否接收页面样式，不会把 app.wxss 变成组件局部样式。</p>
+        <Callout title="app.wxss 仍然是全局样式">
+          <p>app.wxss 不带 scope，按 globalScope 注册。页面的 styleIsolation 只决定组件是否接收页面样式，不会把 app.wxss 变成组件的局部样式。</p>
         </Callout>
       </Section>
 
       <Section
         id="canvas"
-        kicker="Canvas & Animation"
-        title="宿主提供画布，内核只定义协议"
-        intro="canvas 已从 core runtime 移出：service/render 只接收适配器，浏览器实现位于 hosts/browser。"
+        kicker="Canvas 与动画"
+        title="画布由宿主提供，内核只定义消息"
+        intro="canvas 已经从核心 runtime 移出：service 和 render 只接收适配器，浏览器实现放在 hosts/browser。"
       >
         <div className="split">
           <div className="stack">
-            <Card tag="service adapter" title="离屏绘制">
-              <p><code>ServiceCanvasAdapter.createLegacyCanvasContext</code> 提供旧版 canvas API；<code>createCanvasNode</code> 为 SelectorQuery 构造节点。</p>
-              <p>浏览器实现用隐藏 canvas + 2D context，50ms 节流 <code>toDataURL('image/png')</code>，通过 <code>canvas.frame</code> 发送。</p>
+            <Card tag="service 适配器" title="离屏绘制">
+              <p><code>ServiceCanvasAdapter.createLegacyCanvasContext</code> 提供旧版 canvas API，<code>createCanvasNode</code> 为 SelectorQuery 构造节点。</p>
+              <p>浏览器实现会创建一个隐藏 canvas + 2D context，每 50ms 最多生成一次 PNG 快照，通过 <code>canvas.frame</code> 发送。</p>
             </Card>
-            <Card tag="render adapter" title="测量与绘制">
-              <p><code>RenderCanvasAdapter.measure(selector)</code> 返回宽高；<code>paint(frame)</code> 把 PNG 绘制到可见 <code>canvas[canvas-id]</code>。</p>
-              <p>core 中不再出现 <code>document</code> / <code>Image</code>。</p>
+            <Card tag="render 适配器" title="测量和绘制">
+              <p><code>RenderCanvasAdapter.measure(selector)</code> 返回宽高，<code>paint(frame)</code> 把 PNG 画到可见的 <code>canvas[canvas-id]</code> 上。</p>
+              <p>核心 runtime 里不再出现 <code>document</code> 或 <code>Image</code>。</p>
             </Card>
           </div>
           <div className="stack">
-            <Card tag="selector query" title="跨线程测量">
-              <p><code>createSelectorQuery</code> 仍不是通用 DOM 查询：它把 selector 发到 render 做测量，返回宽高与 canvas 节点；每次创建 query 会记 <code>CANVAS_OFFSCREEN</code> info。</p>
+            <Card tag="SelectorQuery" title="跨线程测量">
+              <p><code>createSelectorQuery</code> 仍然不是通用 DOM 查询：它把 selector 发到 render 测量，返回宽高和 canvas 节点；每次创建 query 都会记一条 <code>CANVAS_OFFSCREEN</code> info。</p>
             </Card>
-            <Card tag="animation" title="最终态 CSS">
-              <p><code>wx.createAnimation</code> 仍是链式 CSS transform/transition 生成器；编译期把 <code>animation</code> 属性改写为内联 style。</p>
-              <p>多 step 时序、事件回调与 rAF 没有还原。</p>
+            <Card tag="animation" title="目前仍是最终态 CSS">
+              <p><code>wx.createAnimation</code> 会生成链式的 CSS transform/transition；编译期把 <code>animation</code> 属性改写成内联 style。</p>
+              <p>多 step 时序、事件回调和 rAF 都还没有还原。</p>
             </Card>
-            <Card tag="compat" tone="warn" title="浏览器 canvas 兼容">
-              <p><code>installBrowserCanvasCompat()</code> 在 host-browser 中给 <code>Object.prototype</code> 补 inert 的 add/removeEventListener，避免 ECharts 把普通包装对象误判为 DOM。</p>
+            <Card tag="兼容处理" tone="warn" title="浏览器 canvas 兼容">
+              <p><code>installBrowserCanvasCompat()</code> 会在 host-browser 里给 <code>Object.prototype</code> 补上空的 add/removeEventListener，避免 ECharts 把普通包装对象当成 DOM 节点。</p>
             </Card>
           </div>
         </div>
@@ -530,33 +530,33 @@ export default function Runtime() {
 
       <Section
         id="limits"
-        kicker="Limits"
-        title="当前内核的硬边界"
+        kicker="限制"
+        title="当前还有哪些限制"
         intro="组件语义和宿主抽象已经补上，但下面这些仍是明确缺口。"
       >
         <Cards>
-          <Card tag="components" tone="warn" title="generics / placeholder / definitionFilter">
-            <p>组件泛型、占位组件、definitionFilter、完整内置 behavior 仍未实现；unsupported 项会转成诊断，而不是静默忽略。</p>
+          <Card tag="组件" tone="warn" title="generics / placeholder / definitionFilter">
+            <p>组件泛型、占位组件、definitionFilter，以及微信内置 behavior 仍未实现。遇到不支持的写法会生成诊断，但不会自动降级。</p>
           </Card>
-          <Card tag="pages" tone="warn" title="页面能力有限">
-            <p>无下拉刷新、分享、页面栈恢复、自定义 tabBar；内置 tabBar、触底与页面滚动已接入 devtool。子包只是路径，没有按需加载。</p>
+          <Card tag="页面" tone="warn" title="页面能力不完整">
+            <p>还没有下拉刷新、分享、页面栈恢复和自定义 tabBar；内置 tabBar、触底和页面滚动已经接入 devtool。子包目前只是路径，没有按需加载。</p>
           </Card>
-          <Card tag="api" tone="warn" title="API 面很窄">
-            <p>storage、导航、system、toast、animation、canvas、selector query；无 request、媒体、文件、账号、位置、WebSocket。</p>
+          <Card tag="API" tone="warn" title="API 覆盖有限">
+            <p>目前支持 storage、导航、system、toast、animation、canvas 和 selector query；request、媒体、文件、账号、位置、WebSocket 还没有。</p>
           </Card>
-          <Card tag="render" tone="warn" title="返回会重挂 DOM">
-            <p>navigateTo 卸载旧页，navigateBack 用 service 的 data 重新挂载；滚动位置、焦点、非 data 的内部状态会丢失。navigateBack 目前也不会把 render components 回传为 page.ready。</p>
+          <Card tag="render 模式" tone="warn" title="单 render 模式返回会重建页面">
+            <p>每页 render 模式会保留每个页面的 DOM；单 render 模式共用一个 render 线程，返回时需要重新挂载。单 render 模式下 navigateBack 也不会重新下发组件快照。</p>
           </Card>
           <Card tag="canvas" tone="warn" title="离屏镜像不是交互 canvas">
-            <p>没有 canvas rAF、完整 2D API、原生触摸到 service 的完整链路；内置 canvas 的 touch 事件目前主要面向组件层。</p>
+            <p>没有 canvas rAF、完整 2D API，也没有从原生触摸到 service 的完整链路。内置 canvas 的 touch 事件目前主要停留在组件层。</p>
           </Card>
-          <Card tag="host" tone="warn" title="浏览器外仍无宿主">
-            <p>runtime 已无浏览器全局，但还没有 native transport/backend；service 的 canvas 适配器也要由原生宿主提供。</p>
+          <Card tag="宿主" tone="warn" title="浏览器之外还没有宿主">
+            <p>runtime 已经不依赖浏览器全局，但还没有 native transport 和 backend；原生宿主需要自己提供 canvas 适配器。</p>
           </Card>
         </Cards>
-        <Callout title="下一步">
+        <Callout title="继续阅读">
           <p>
-            这些边界如何被宿主放大或缓解，见 <a href="#/hosts">宿主支持</a>；证据与验收覆盖见 <a href="#/testing">验证体系</a>。
+            这些问题在宿主侧怎么处理，可以看 <a href="#/hosts">宿主适配</a>；现有测试覆盖到哪里，可以看 <a href="#/testing">测试与验收</a>。
           </p>
         </Callout>
       </Section>

@@ -20,8 +20,8 @@ const labels = {
   protocol: '协议',
   hosts: '宿主',
   devtool: '调试器',
-  testing: '验证',
-  status: '路线',
+  testing: '测试',
+  status: '现状',
 }
 
 export default function Layout({ route, children }) {
@@ -41,7 +41,7 @@ export default function Layout({ route, children }) {
           document.getElementById('main')?.focus()
         }}
       >
-        跳到主要内容
+        跳到正文
       </a>
       <header className="site-header">
         <div className="shell header-inner">
@@ -81,7 +81,7 @@ export default function Layout({ route, children }) {
             <a href="#/protocol">协议</a>
             <a href="#/hosts">宿主</a>
             <a href="#/devtool">调试器</a>
-            <a href="#/testing">验证</a>
+            <a href="#/testing">测试</a>
             <a href="https://github.com/YufJi/tiny">GitHub</a>
           </div>
         </div>

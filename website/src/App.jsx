@@ -29,14 +29,14 @@ const aliases = {
 
 const titles = {
   home: 'Tiny · 小程序引擎架构',
-  architecture: '架构总览 · Tiny',
-  compiler: '编译流水线 · Tiny',
-  runtime: '运行时内核 · Tiny',
+  architecture: '架构 · Tiny',
+  compiler: '编译流程 · Tiny',
+  runtime: '运行时 · Tiny',
   protocol: 'Bridge 协议 · Tiny',
-  hosts: '宿主支持 · Tiny',
+  hosts: '宿主适配 · Tiny',
   devtool: '在线调试器 · Tiny',
-  testing: '测试与兼容 · Tiny',
-  status: '现状与路线 · Tiny',
+  testing: '测试与验收 · Tiny',
+  status: '现状 · Tiny',
 }
 
 const readRoute = () => {
