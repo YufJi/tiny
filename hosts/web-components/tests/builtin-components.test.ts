@@ -511,7 +511,7 @@ describe('P0 built-in components', () => {
         'swiper-item': builtins['swiper-item'],
       },
       template: compilePage(`
-        <scroll-view id="scroll" scroll-y upper-threshold="10" lower-threshold="20" refresher-enabled bindscroll="onScroll" bindscrolltoupper="onUpper" bindscrolltolower="onLower" bindrefresherrefresh="onRefresh" binddragstart="onDragStart"><view>content</view></scroll-view>
+        <scroll-view id="scroll" scroll-y upper-threshold="10" lower-threshold="20" refresher-enabled paging-enabled show-scrollbar="{{false}}" bindscroll="onScroll" bindscrolltoupper="onUpper" bindscrolltolower="onLower" bindrefresherrefresh="onRefresh" binddragstart="onDragStart"><view>content</view></scroll-view>
         <swiper id="swiper" indicator-dots indicator-color="#112233" indicator-active-color="#445566" current-item-id="b"><swiper-item item-id="a">a</swiper-item><swiper-item item-id="b">b</swiper-item></swiper>
       `),
       methods: {
@@ -525,6 +525,9 @@ describe('P0 built-in components', () => {
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const scrollHost = instance.getShadowRoot()?.getElementById('scroll')?.asGeneralComponent()!
     const nativeScroll = scrollHost.getShadowRoot()?.getElementById('native-scroll-view')!
+    const scrollHtml = glassEasel.dumpElementToString(nativeScroll, true)
+    expect(scrollHtml).toContain('is-paging')
+    expect(scrollHtml).toContain('is-hidden-scrollbar')
     nativeScroll.triggerEvent('scroll', { scrollTop: 35, scrollHeight: 100, clientHeight: 50 })
     expect(events.scroll).toMatchObject({ scrollTop: 35, scrollHeight: 100 })
     expect(events.lower).toEqual({ direction: 'bottom' })

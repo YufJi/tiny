@@ -27,3 +27,35 @@ tiny-scroll-view {
 .tiny-scroll-view-content {
   width: 100%;
 }
+
+.tiny-scroll-view.is-hidden-scrollbar {
+  scrollbar-width: none;
+}
+
+.tiny-scroll-view.is-hidden-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.tiny-scroll-view.is-no-bounce {
+  overscroll-behavior: none;
+}
+
+.tiny-scroll-view.is-anchoring {
+  overflow-anchor: auto;
+}
+
+.tiny-scroll-view.is-flex {
+  display: flex;
+}
+
+.tiny-scroll-view.is-paging {
+  scroll-snap-type: y mandatory;
+}
+
+.tiny-scroll-view.is-paging.is-horizontal {
+  scroll-snap-type: x mandatory;
+}
+
+.tiny-scroll-view.is-paging .tiny-scroll-view-content > * {
+  scroll-snap-align: start;
+}

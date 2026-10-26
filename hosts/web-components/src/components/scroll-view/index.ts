@@ -110,15 +110,25 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         if (field === 'scrollIntoView') {
           const id = String(this.data.scrollIntoView ?? '')
           if (!id) return
-          try {
-            element.querySelector?.(`#${id}`)?.scrollIntoView?.({ behavior: this.data.scrollWithAnimation ? 'smooth' : 'auto' })
-          } catch {
-            // Ignore invalid selectors; scrollIntoView is best effort.
-          }
+          this.scrollToElement(id, 0)
           return
         }
         const value = Number(this.data[field] ?? 0)
         if (Number.isFinite(value)) element[field] = value
+      },
+      scrollToElement(id: string, attempt: number) {
+        const element = this.backend()
+        if (!element) return
+        try {
+          const target = element.querySelector?.(`#${id}`)
+          if (target?.scrollIntoView) {
+            target.scrollIntoView({ behavior: this.data.scrollWithAnimation ? 'smooth' : 'auto' })
+            return
+          }
+        } catch {
+          // Ignore invalid selectors and retry; ids may be attached later.
+        }
+        if (attempt < 5) setTimeout(() => this.scrollToElement(id, attempt + 1), 16)
       },
       cancelRefresher() {
         const instance = this as unknown as ScrollRuntime
