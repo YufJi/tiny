@@ -47,17 +47,25 @@ function createTemplateRegistry() {
   }
 }
 
-function createManifest(isolation: 'isolated' | 'apply-shared' | 'shared'): Manifest {
+function createManifest(
+  isolation: 'isolated' | 'apply-shared' | 'shared',
+  styleExtension = '.wxss',
+): Manifest {
+  const appStyle: StyleArtifact = {
+    path: `app${styleExtension}`,
+    sourcePath: `app${styleExtension}`,
+    outputPath: `styles/app${styleExtension}.css`,
+  }
   const pageStyle: StyleArtifact = {
-    path: `${PAGE_PATH}.wxss`,
-    sourcePath: `${PAGE_PATH}.wxss`,
-    outputPath: `styles/${PAGE_PATH}.wxss.css`,
+    path: `${PAGE_PATH}${styleExtension}`,
+    sourcePath: `${PAGE_PATH}${styleExtension}`,
+    outputPath: `styles/${PAGE_PATH}${styleExtension}.css`,
     scope: APP_SCOPE,
   }
   const componentStyle: StyleArtifact = {
-    path: `${COMPONENT_PATH}.wxss`,
-    sourcePath: `${COMPONENT_PATH}.wxss`,
-    outputPath: `styles/${COMPONENT_PATH}.wxss.css`,
+    path: `${COMPONENT_PATH}${styleExtension}`,
+    sourcePath: `${COMPONENT_PATH}${styleExtension}`,
+    outputPath: `styles/${COMPONENT_PATH}${styleExtension}.css`,
     scope: COMPONENT_SCOPE,
   }
   const page: PageArtifact = {
@@ -75,6 +83,11 @@ function createManifest(isolation: 'isolated' | 'apply-shared' | 'shared'): Mani
   return {
     schemaVersion: 1,
     entries: { service: 'service.js', render: 'render.js', templates: 'templates.js' },
+    app: {
+      path: 'app',
+      style: appStyle,
+      configuration: { path: 'app', sourcePath: 'app.json', effective: {} },
+    },
     pages: [page],
     components: [{
       path: COMPONENT_PATH,
@@ -87,11 +100,11 @@ function createManifest(isolation: 'isolated' | 'apply-shared' | 'shared'): Mani
       configuration: { path: COMPONENT_PATH, sourcePath: `${COMPONENT_PATH}.json`, effective: {} },
     }],
     styles: [
-      { path: 'app.wxss', sourcePath: 'app.wxss', outputPath: 'styles/app.wxss.css' },
+      appStyle,
       {
-        path: 'app.wxss@page-scope',
-        sourcePath: 'app.wxss',
-        outputPath: 'styles/app.wxss.page-scope.css',
+        path: `app${styleExtension}@page-scope`,
+        sourcePath: `app${styleExtension}`,
+        outputPath: `styles/app${styleExtension}.page-scope.css`,
         pageScopeClassSign: APP_PAGE_SCOPE_CLASS_SIGN,
       },
       pageStyle,
@@ -112,14 +125,18 @@ function createSchema(isolation: 'isolated' | 'apply-shared' | 'shared'): MiniPr
   }
 }
 
-function createAdapter(isolation: 'isolated' | 'apply-shared' | 'shared') {
-  const manifest = createManifest(isolation)
+function createAdapter(
+  isolation: 'isolated' | 'apply-shared' | 'shared',
+  styleExtension = '.wxss',
+  pagePath?: string,
+) {
+  const manifest = createManifest(isolation, styleExtension)
   const backend = new RecordingBackend()
   const contents: Record<string, string> = {
-    'styles/app.wxss.css': APP_CSS,
-    'styles/app.wxss.page-scope.css': APP_PAGE_SCOPE_CSS,
-    [`styles/${PAGE_PATH}.wxss.css`]: '.page { padding: 0 }',
-    [`styles/${COMPONENT_PATH}.wxss.css`]: '.box { display: block }',
+    [`styles/app${styleExtension}.css`]: APP_CSS,
+    [`styles/app${styleExtension}.page-scope.css`]: APP_PAGE_SCOPE_CSS,
+    [`styles/${PAGE_PATH}${styleExtension}.css`]: '.page { padding: 0 }',
+    [`styles/${COMPONENT_PATH}${styleExtension}.css`]: '.box { display: block }',
   }
   const adapter = new GlassEaselRuntimeAdapter({
     backend,
@@ -127,15 +144,17 @@ function createAdapter(isolation: 'isolated' | 'apply-shared' | 'shared') {
     templates: createTemplateRegistry(),
   })
   const schema = createSchema(isolation)
-  adapter.registerStyles(manifest, (path) => contents[path] ?? '', [schema])
+  adapter.registerStyles(manifest, (path) => contents[path] ?? '', [schema], {
+    ...(pagePath ? { pagePath } : {}),
+  })
   adapter.registerComponentSchemas([schema])
   adapter.registerPage(manifest.pages[0]!, {})
   return { adapter, backend }
 }
 
-describe('app.wxss page-scope delivery', () => {
+describe('app stylesheet page-scope delivery', () => {
   test.each(['apply-shared', 'shared'] as const)(
-    're-scopes app.wxss for %s components',
+    're-scopes the app stylesheet for %s components',
     (isolation) => {
       const { backend } = createAdapter(isolation)
       const sheet = backend.styleSheetPaths.find((item) => item.path.includes('@page:'))
@@ -147,7 +166,7 @@ describe('app.wxss page-scope delivery', () => {
       expect(backend.styleSheetPaths.some(
         (item) => item.path === 'styles/app.wxss.page-scope.css',
       )).toBe(false)
-      // Cascade order: app.wxss < its page-scoped copy < page wxss < component wxss.
+      // Cascade order: app style < its page-scoped copy < page style < component style.
       const paths = backend.styleSheetPaths.map((item) => item.path)
       const appIndex = paths.indexOf('styles/app.wxss.css')
       const copyIndex = paths.indexOf(sheet!.path)
@@ -162,5 +181,81 @@ describe('app.wxss page-scope delivery', () => {
   test('keeps isolated components on their own scope', () => {
     const { backend } = createAdapter('isolated')
     expect(backend.styleSheetPaths.some((item) => item.path.includes('@page:'))).toBe(false)
+  })
+
+  test.each(['.wxss', '.acss'])(
+    'identifies app and entry styles from manifest references (%s)',
+    (styleExtension) => {
+      const { backend } = createAdapter('shared', styleExtension, PAGE_PATH)
+      const paths = backend.styleSheetPaths.map((item) => item.path)
+      expect(paths).toContain(`styles/app${styleExtension}.css`)
+      expect(paths).toContain(`styles/${PAGE_PATH}${styleExtension}.css`)
+      expect(paths).toContain(`styles/${COMPONENT_PATH}${styleExtension}.css`)
+      expect(paths.filter((path) => path.includes('@page:'))).toHaveLength(1)
+      expect(paths.some((path) => path.includes('@shared:'))).toBe(true)
+    },
+  )
+
+  test('registers only styles reachable from the selected page', () => {
+    const manifest = createManifest('shared')
+    const otherPagePath = 'pages/other/other'
+    const otherPageStyle: StyleArtifact = {
+      path: `${otherPagePath}.wxss`,
+      sourcePath: `${otherPagePath}.wxss`,
+      outputPath: `styles/${otherPagePath}.wxss.css`,
+      scope: 'tiny-pages-other-other',
+    }
+    const otherPage: PageArtifact = {
+      path: otherPagePath,
+      template: {
+        path: otherPagePath,
+        outputPath: 'templates.js',
+        sourcePath: `${otherPagePath}.wxml`,
+      },
+      style: otherPageStyle,
+      configuration: {
+        path: otherPagePath,
+        sourcePath: `${otherPagePath}.json`,
+        effective: { usingComponents: { box: `/${COMPONENT_PATH}` } },
+        usingComponents: { box: `/${COMPONENT_PATH}` },
+        usingComponentsSource: { box: 'local' },
+      },
+    }
+    manifest.pages.push(otherPage)
+    manifest.styles.push(otherPageStyle)
+
+    const backend = new RecordingBackend()
+    const adapter = new GlassEaselRuntimeAdapter({
+      backend,
+      manifest,
+      templates: createTemplateRegistry(),
+    })
+    const schema = createSchema('shared')
+    const contents: Record<string, string> = {
+      'styles/app.wxss.css': APP_CSS,
+      'styles/app.wxss.page-scope.css': APP_PAGE_SCOPE_CSS,
+      [`styles/${PAGE_PATH}.wxss.css`]: '.page { padding: 0 }',
+      [`styles/${otherPagePath}.wxss.css`]: '.other { padding: 0 }',
+      [`styles/${COMPONENT_PATH}.wxss.css`]: '.box { display: block }',
+    }
+    const loadedPaths: string[] = []
+
+    adapter.registerStyles(
+      manifest,
+      (path) => {
+        loadedPaths.push(path)
+        return contents[path] ?? ''
+      },
+      [schema],
+      { pagePath: PAGE_PATH },
+    )
+
+    const paths = backend.styleSheetPaths.map((item) => item.path)
+    expect(paths).toContain(`styles/${PAGE_PATH}.wxss.css`)
+    expect(paths).toContain(`styles/${COMPONENT_PATH}.wxss.css`)
+    expect(paths).not.toContain(`styles/${otherPagePath}.wxss.css`)
+    expect(paths.filter((path) => path.includes('@page:'))).toHaveLength(1)
+    expect(backend.styleSheets.has(`styles/${otherPagePath}.wxss.css`)).toBe(false)
+    expect(loadedPaths).not.toContain(`styles/${otherPagePath}.wxss.css`)
   })
 })

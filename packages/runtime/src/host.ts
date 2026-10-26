@@ -197,6 +197,7 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
         initialPath: path,
         initialData,
         pageId,
+        styleMode: 'page',
         componentSchemas,
         pageComponents,
       })

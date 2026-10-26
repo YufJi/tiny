@@ -130,9 +130,11 @@ debugger:
    Console / Lifecycle / Elements panel.
 4. The mini program renders inside the `375 × 812` iPhone X preview. Each page owns one
    `next-render.html?pageId=<page-id>` iframe; the active frame is visible and hidden
-   pages stay mounted behind it. A host status bar and navigation bar consume the top
-   `88px` (content stays `375 × 724`, or `375 × 674` on tab pages with a `50px` tabBar);
-   the Elements tab shows `page`, built-in tags, classes, attributes, and text.
+   pages stay mounted behind it. Each page frame registers only its own page WXSS and
+   recursive component styles, not the other pages in the manifest. A host status bar and
+   navigation bar consume the top `88px` (content stays `375 × 724`, or `375 × 674` on tab
+   pages with a `50px` tabBar); the Elements tab shows `page`, built-in tags, classes,
+   attributes, and text.
 5. The host navigation bar projects the **active page** title and exposes back;
    `navigate.back` is disabled on the first page and drives the runtime after a
    navigation. The page stack chips show page paths, visibility, and `n / maxPageStack`.

@@ -1225,6 +1225,14 @@ export async function runDevtoolAcceptance({ baseUrl }) {
       const body = await renderFrame.locator('#app').innerText()
       assert.ok(body.includes('Tiny Glass-easel P0'), 'mini program did not render in the debugger')
       assert.ok(body.includes('Learn glass-easel'), 'page data did not render in the debugger')
+      const firstPageCss = (
+        await renderFrame.locator('head style[wx-style-scope]').allTextContents()
+      ).join('\n')
+      assert.ok(firstPageCss.includes('.tiny-pages-todos-todos--'), 'first page WXSS was not registered')
+      assert.ok(
+        !firstPageCss.includes('.tiny-pages-add-todo-add-todo--'),
+        'first page iframe registered another page\'s WXSS',
+      )
     })
 
     await step('navigate and go back from the debugger', async () => {
@@ -1255,6 +1263,22 @@ export async function runDevtoolAcceptance({ baseUrl }) {
       assert.ok(
         (await previousFrame.locator('#app').innerText()).includes('Tiny Glass-easel P0'),
         'hidden page lost its rendered DOM',
+      )
+      const nextFrame = page.frameLocator(`${demoSurface} iframe[data-page-id="page-2"]`)
+      const nextFrameCss = (
+        await nextFrame.locator('head style[wx-style-scope]').allTextContents()
+      ).join('\n')
+      assert.ok(nextFrameCss.includes('.tiny-pages-add-todo-add-todo--'), 'second page WXSS was not registered')
+      assert.ok(
+        !nextFrameCss.includes('.tiny-pages-todos-todos--'),
+        'second page iframe registered another page\'s WXSS',
+      )
+      const previousFrameCss = (
+        await previousFrame.locator('head style[wx-style-scope]').allTextContents()
+      ).join('\n')
+      assert.ok(
+        !previousFrameCss.includes('.tiny-pages-add-todo-add-todo--'),
+        'hidden page iframe registered another page\'s WXSS',
       )
       const phases = await page.evaluate(
         () => window.__tinyDevtool.getState().lifecycle.map((event) => event.phase),

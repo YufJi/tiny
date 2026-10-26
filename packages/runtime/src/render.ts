@@ -66,6 +66,7 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
         initialPath?: string
         initialData?: Record<string, unknown>
         pageId?: string
+        styleMode?: 'all' | 'page'
         componentSchemas?: import('./types').MiniProgramComponentSchema[]
         pageComponents?: Array<{
           path: string
@@ -79,9 +80,12 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
       const pageId = payload.pageId
       // Register styles before component definitions so component definitions
       // receive their style scope; otherwise their classes are never prefixed.
-      // Component schemas are passed up front so app.wxss can be expanded for
-      // pages that use apply-shared/shared components before page sheets load.
-      adapter.registerStyles(manifest, options.loadStyle, payload.componentSchemas ?? [])
+      // Component schemas are passed up front so the app stylesheet can be
+      // expanded for pages that use apply-shared/shared components before page
+      // sheets load.
+      adapter.registerStyles(manifest, options.loadStyle, payload.componentSchemas ?? [], {
+        ...(payload.styleMode === 'page' ? { pagePath: initialPath } : {}),
+      })
       adapter.setPageComponentOptions(payload.pageComponents ?? [])
       adapter.registerComponentSchemas(payload.componentSchemas ?? [])
       const page = findPage(manifest, initialPath)

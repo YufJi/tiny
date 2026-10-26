@@ -108,6 +108,14 @@ export type GlassEaselAdapterOptions = {
   unmountComponent?: (component: glassEasel.GeneralComponent) => void
 }
 
+export type StyleRegistrationOptions = {
+  /**
+   * Register only global styles and sheets reachable from this page.
+   * Per-page render threads use this because one frame mounts one page only.
+   */
+  pagePath?: string
+}
+
 export class GlassEaselRuntimeAdapter {
   readonly backend: glassEasel.GeneralBackendContext
   readonly componentSpace: glassEasel.ComponentSpace
@@ -214,6 +222,7 @@ export class GlassEaselRuntimeAdapter {
     manifest: Manifest,
     loadStyle: StyleLoader = () => '',
     componentSchemas: MiniProgramComponentSchema[] = [],
+    options: StyleRegistrationOptions = {},
   ): void {
     if (!this.baseStylesRegistered && this.builtinBaseStyles) {
       const { path, content } = this.builtinBaseStyles
@@ -224,8 +233,25 @@ export class GlassEaselRuntimeAdapter {
       )
       this.baseStylesRegistered = true
     }
+    const selectedPage = options.pagePath
+      ? manifest.pages.find((page) => page.path === options.pagePath)
+      : undefined
+    if (options.pagePath && !selectedPage) {
+      throw new Error(`page is not declared: ${options.pagePath}`)
+    }
+    const allowedStyleOutputPaths = selectedPage
+      ? this.collectPageStylePaths(manifest, selectedPage, componentSchemas)
+      : undefined
+    const appStyleOutputPath = manifest.app?.style?.outputPath
+    const styleEntryPaths = this.collectStyleEntryPaths(manifest)
     const pending: Array<{ style: StyleArtifact; scopeId: number }> = []
     for (const style of manifest.styles) {
+      if (
+        allowedStyleOutputPaths
+        && style.outputPath !== appStyleOutputPath
+        && !style.pageScopeClassSign
+        && !allowedStyleOutputPaths.has(style.outputPath)
+      ) continue
       let css = loadStyle(style.outputPath)
       if (typeof css !== 'string') continue
       if (this.resolveAssetUrl) {
@@ -243,26 +269,27 @@ export class GlassEaselRuntimeAdapter {
         ? this.registerScope(style.scope)
         : glassEasel.StyleScopeManager.globalScope()
       this.styleScopeIds.set(style.path, scopeId)
-      // Components are addressed by their entry path (`foo`), while the style
-      // artifact may be `foo.wxss` or `foo/index.wxss`.
-      const withoutExtension = style.path.replace(/\.wxss$/, '')
-      const entryPath = withoutExtension.endsWith('/index')
-        ? withoutExtension.slice(0, -'/index'.length)
-        : withoutExtension
-      this.styleScopeIds.set(entryPath, scopeId)
       this.styleByEntryPath.set(style.path, style)
-      this.styleByEntryPath.set(entryPath, style)
+      const entryPath = styleEntryPaths.get(style.outputPath)
+      if (entryPath) {
+        this.styleScopeIds.set(entryPath, scopeId)
+        this.styleByEntryPath.set(entryPath, style)
+      }
       pending.push({ style, scopeId })
     }
 
     // Append the app sheet, then its page-scoped copies, then page/component
-    // sheets. This preserves the WeChat cascade where page/component wxss wins
-    // over app.wxss at equal specificity.
-    const appStyle = pending.find((entry) => entry.style.path === 'app.wxss')
+    // sheets. This preserves the mini-program cascade where page/component
+    // styles win over app styles at equal specificity.
+    const appStyle = pending.find((entry) => entry.style.outputPath === appStyleOutputPath)
     if (appStyle) {
       this.backend.appendStyleSheetPath(appStyle.style.outputPath, appStyle.scopeId)
     }
-    for (const scopeId of this.collectAppPageScopes(manifest, componentSchemas)) {
+    for (const scopeId of this.collectAppPageScopes(
+      manifest,
+      componentSchemas,
+      options.pagePath,
+    )) {
       this.appendAppPageScope(scopeId)
     }
     for (const entry of pending) {
@@ -303,9 +330,9 @@ export class GlassEaselRuntimeAdapter {
         useMethodCallerListeners: true,
         styleScope: pageScope,
         // Keep page/component classes scoped, but also expose the unscoped
-        // class names so global `app.wxss` class selectors can match. Without
-        // this, glass-easel only writes `<pageScope>--<class>` to the DOM and
-        // every class rule in app.wxss is dead.
+        // class names so global app stylesheet class selectors can match.
+        // Without this, glass-easel only writes `<pageScope>--<class>` to the
+        // DOM and every app class rule is dead.
         extraStyleScope: glassEasel.StyleScopeManager.globalScope(),
       })
       .methodCallerInit(() => this.createEventMethodCaller(this.activeEventPageId ?? page.path))
@@ -381,7 +408,7 @@ export class GlassEaselRuntimeAdapter {
   }
 
   /**
-   * Page scopes that need a page-scoped copy of app.wxss.
+   * Page scopes that need a page-scoped copy of the app stylesheet.
    *
    * Page elements get unscoped class names, so the global app sheet already
    * styles them. Components only receive page classes when their isolation is
@@ -392,6 +419,7 @@ export class GlassEaselRuntimeAdapter {
   private collectAppPageScopes(
     manifest: Manifest,
     schemas: MiniProgramComponentSchema[],
+    pagePath?: string,
   ): number[] {
     if (!this.appPageScopeTemplate || schemas.length === 0) return []
     const isolation = new Map(
@@ -400,12 +428,47 @@ export class GlassEaselRuntimeAdapter {
     const using = new Map(schemas.map((schema) => [schema.path, schema.using]))
     const scopes: number[] = []
     for (const page of manifest.pages) {
+      if (pagePath && page.path !== pagePath) continue
       const used = this.collectUsedComponentPaths(page.path, page.configuration, using)
       const needsAppScope = [...used].some((path) =>
         isolation.get(path) === 'apply-shared' || isolation.get(path) === 'shared')
       if (needsAppScope) scopes.push(this.ensurePageScope(page))
     }
     return scopes
+  }
+
+  private collectPageStylePaths(
+    manifest: Manifest,
+    page: PageArtifact,
+    schemas: MiniProgramComponentSchema[],
+  ): Set<string> {
+    const paths = new Set<string>()
+    if (page.style) paths.add(page.style.outputPath)
+    const using = new Map(schemas.map((schema) => [schema.path, schema.using]))
+    const components = new Map(manifest.components.map((component) => [component.path, component]))
+    for (const componentPath of this.collectUsedComponentPaths(
+      page.path,
+      page.configuration,
+      using,
+    )) {
+      const style = components.get(componentPath)?.style
+      if (style) paths.add(style.outputPath)
+    }
+    return paths
+  }
+
+  private collectStyleEntryPaths(manifest: Manifest): Map<string, string> {
+    const entries = new Map<string, string>()
+    if (manifest.app?.style) {
+      entries.set(manifest.app.style.outputPath, manifest.app.path)
+    }
+    for (const page of manifest.pages) {
+      if (page.style) entries.set(page.style.outputPath, page.path)
+    }
+    for (const component of manifest.components) {
+      if (component.style) entries.set(component.style.outputPath, component.path)
+    }
+    return entries
   }
 
   private appendAppPageScope(pageScope: number): void {

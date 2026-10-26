@@ -36,6 +36,7 @@ export type TemplateArtifact = {
 }
 
 export type StyleArtifact = {
+  /** Compiler-defined source path; consumers must not infer style type from it. */
   path: string
   sourcePath: string
   outputPath: string
@@ -44,16 +45,17 @@ export type StyleArtifact = {
   lowPrioritySourceMapPath?: string
   scope?: string
   /**
-   * Present on the `app.wxss` page-scope template. The compiler wraps every
+   * Present on the app stylesheet page-scope template. The compiler wraps every
    * class selector with `/*<sign>*\/`; the render thread replaces it with the
    * page's scope prefix before appending a per-page copy. Such an artifact is
-   * not registered as a normal stylesheet.
+   * not registered as a normal stylesheet. Consumers must identify it by this
+   * field rather than by a source filename or extension.
    */
   pageScopeClassSign?: string
 }
 
 /**
- * Comment marker inserted before `app.wxss` class selectors in the page-scope
+ * Comment marker inserted before app stylesheet class selectors in the page-scope
  * template. Chosen to be unlikely to appear in user stylesheets.
  */
 export const APP_PAGE_SCOPE_CLASS_SIGN = '__TINY_APP_PAGE_SCOPE__'
@@ -74,6 +76,7 @@ export type ConfigurationArtifact = {
 export type AppArtifact = {
   path: string
   script?: ScriptArtifact
+  /** App-global stylesheet. Runtime consumers must use this reference, not a filename. */
   style?: StyleArtifact
   configuration?: ConfigurationArtifact
 }

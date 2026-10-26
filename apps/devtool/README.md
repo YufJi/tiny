@@ -78,6 +78,7 @@ devtool 采用**一页一 iframe** 的 render 方式，而不是所有页面共�
 
 - 首个页面启动时创建一个 `next-render.html?pageId=page-1` iframe，service 线程仍只有一个 iframe
 - `navigateTo` 为新页面创建独立 iframe，页面拥有自己的 glass-easel 组件树、DOM 和滚动容器
+- 每个页面 iframe 只注册全局 app 样式（如 `app.wxss`）、当前页面样式和递归组件样式，不加载 manifest 中其他页面的样式
 - 旧页面 iframe 不销毁，只隐藏（`data-state="hidden"`）；返回时直接恢复该 iframe，
   不会从 `initialData` 重建页面，因此滚动位置、输入态和组件内部状态都保留
 - `navigateBack` 触发被卸载页面的 `onUnload` 后才移除它的 iframe；生命周期顺序由

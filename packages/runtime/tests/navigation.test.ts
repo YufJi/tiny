@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, test } from 'vitest'
 import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
-import type { Manifest, PageArtifact } from '@tiny/manifest'
+import type { Manifest, PageArtifact, StyleArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
 import { bootRenderThread } from '../src/render'
@@ -14,6 +14,15 @@ const globalKeys = ['App', 'Page', 'Component', 'Behavior', 'getApp', 'wx'] as c
 const originalGlobals = new Map<string, unknown>()
 for (const key of globalKeys) {
   originalGlobals.set(key, (globalThis as unknown as Record<string, unknown>)[key])
+}
+
+class RecordingBackend extends glassEasel.EmptyBackendContext {
+  readonly styleSheetPaths: Array<{ path: string; scope?: number }> = []
+
+  appendStyleSheetPath(path: string, styleScope?: number): number {
+    this.styleSheetPaths.push({ path, scope: styleScope })
+    return super.appendStyleSheetPath(path, styleScope)
+  }
 }
 
 afterAll(() => {
@@ -177,6 +186,19 @@ describe('mini-program navigation', () => {
 
   test('per-page render threads keep hidden pages alive', async () => {
     const manifest = createNavigationManifest()
+    const todosStyle: StyleArtifact = {
+      path: `${TODOS_PATH}.wxss`,
+      sourcePath: `${TODOS_PATH}.wxss`,
+      outputPath: `styles/${TODOS_PATH}.wxss.css`,
+    }
+    const addTodoStyle: StyleArtifact = {
+      path: `${ADD_TODO_PATH}.wxss`,
+      sourcePath: `${ADD_TODO_PATH}.wxss`,
+      outputPath: `styles/${ADD_TODO_PATH}.wxss.css`,
+    }
+    manifest.pages[0]!.style = todosStyle
+    manifest.pages[1]!.style = addTodoStyle
+    manifest.styles = [{ ...todosStyle }, { ...addTodoStyle }]
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({
       transport: serviceTransport,
@@ -184,15 +206,19 @@ describe('mini-program navigation', () => {
       initialPath: TODOS_PATH,
     })
     const renderThreads = new Map<string, ReturnType<typeof bootRenderThread>>()
+    const renderBackends = new Map<string, RecordingBackend>()
     const connector = {
       async connect(pageId: string) {
         const [hostTransport, renderTransport] = createInMemoryTransportPair()
+        const backend = new RecordingBackend()
+        renderBackends.set(pageId, backend)
         renderThreads.set(pageId, bootRenderThread({
           transport: renderTransport,
           manifest,
           artifacts: { templates: createTemplateRegistry() },
-          backend: new glassEasel.EmptyBackendContext(),
+          backend,
           initialPath: TODOS_PATH,
+          loadStyle: (path) => `/* ${path} */`,
         }))
         return hostTransport
       },
@@ -248,11 +274,17 @@ describe('mini-program navigation', () => {
     const firstPage = service.activePage!
     const firstRender = renderThreads.get('page-1')
     expect(firstRender?.adapter.getMountedComponentByPageId('page-1')).toBeDefined()
+    expect(renderBackends.get('page-1')?.styleSheetPaths.map((item) => item.path)).toEqual([
+      todosStyle.outputPath,
+    ])
 
     await firstPage.invokeMethod('navigate')
     expect(service.pageStack.map((page) => page.path)).toEqual([TODOS_PATH, ADD_TODO_PATH])
     expect(renderThreads.size).toBe(2)
     expect(renderThreads.get('page-2')?.adapter.getMountedComponentByPageId('page-2')).toBeDefined()
+    expect(renderBackends.get('page-2')?.styleSheetPaths.map((item) => item.path)).toEqual([
+      addTodoStyle.outputPath,
+    ])
     // The hidden page keeps its own render thread and DOM instead of being
     // unmounted and rebuilt from data when the user navigates back.
     expect(firstRender?.adapter.getMountedComponentByPageId('page-1')).toBeDefined()

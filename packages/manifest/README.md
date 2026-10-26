@@ -13,6 +13,11 @@ them without a dependency inversion.
 - `ConfigurationArtifact`
 - `Diagnostic`
 
+Style artifacts are identified through their owning entries (`app.style`, `page.style`,
+or `component.style`) and semantic fields such as `pageScopeClassSign`. Consumers must
+not infer an artifact's kind or role from its filename or extension; source style
+extensions belong to the compiler contract.
+
 `schemaVersion` is currently `1`.
 
 ## Usage
