@@ -153,7 +153,7 @@
 - [x] `label`：slot-only 宿主 + host tap，`for`/包裹激活走 label-target；
 - [x] `canvas` 默认尺寸 300×150 + 容器/绝对定位层已补；实际渲染仍是离屏镜像；
 - [x] `progress` 结构已改为参考的 `bar > inner-bar`；
-- [ ] `progress` 的 `active` 逐帧动画仍未实现（默认色已对齐）；
+- [x] `progress` 的 `active` 逐帧动画已补，`activeend` 带 `curPercent`；
 - [ ] `swiper-item`：参考依赖 `wx-swiper` relation 和 slide-frame 布局；我们只是普通 slot 容器。
 
 
@@ -242,7 +242,7 @@ wrapper/slides/slide-frame 层级和指示点默认值已补（8×8/bottom 10/ga
 ### 4.8 P2 结构
 
 - `canvas`：默认尺寸/容器层已补，实际渲染仍是离屏镜像；
-- `progress`：`bar > inner-bar` 结构已对齐，`active` 逐帧动画未实现；
+- `progress`：`bar > inner-bar` 结构、默认色和 `active` 逐帧动画已对齐；
 - `swiper-item`：参考依赖 swiper relation 和 slide-frame；当前普通 slot 容器。
 
 ### 4.9 behaviors / 事件语义
@@ -303,7 +303,7 @@ pnpm lint                # 8 files checked, no fixes applied
 - picker-view 的拖动/吸附/初始 value；
 - form-field/reportSubmit 在真实多线程宿主中的完整链路；
 - button native/open-type；
-- progress active 动画、swiper 绝对定位布局。
+- swiper 绝对定位布局、picker-view 惯性。
 
 ### 6.5 全项目分数
 

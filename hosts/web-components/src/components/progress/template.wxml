@@ -4,7 +4,7 @@
 >
   <div
     class="tiny-progress-inner-bar {{active ? 'is-active' : ''}}"
-    style="width: {{percent < 0 ? 0 : (percent > 100 ? 100 : percent)}}%; background-color: {{activeColor || color}}; border-radius: {{borderRadius}}px;"
+    style="width: {{curPercent}}%; background-color: {{activeColor || color}}; border-radius: {{borderRadius}}px;"
     bindtransitionend="handleActiveEnd"
   />
 </div>
@@ -12,4 +12,4 @@
   wx:if="{{showInfo}}"
   class="tiny-progress-info"
   style="font-size: {{fontSize}}px; color: {{color}};"
->{{percent}}%</span>
+>{{curPercent}}%</span>
