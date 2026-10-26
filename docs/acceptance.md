@@ -38,8 +38,9 @@ The browser stage verifies:
 12. Parent/child `relations` link on attach and unlink after `wx:if` removes the child.
 13. `externalClasses` resolve the page class inside the component.
 14. `styleIsolation` works for `isolated`, `apply-shared`/`addGlobalClass`, and
-    `shared`: page styles reach only shared components, shared component styles reach
-    the page, and isolated components stay isolated.
+    `shared`: page styles and `app.wxss` class rules reach only apply-shared/shared
+    components, shared component styles reach the page, and isolated components stay
+    isolated.
 15. `button` renders WeChat-compatible default/primary/warn-plain/mini/loading/disabled
     variants; computed colors, background, radius, font size, padding, border and loading
     spinner are asserted.

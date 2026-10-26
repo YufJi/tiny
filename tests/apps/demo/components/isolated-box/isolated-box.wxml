@@ -1,4 +1,5 @@
 <view class="box">
   <text class="page-color" data-check="isolated">isolated color</text>
   <text class="page-target" data-check="isolated-target">isolated target</text>
+  <text class="app-probe" data-check="isolated-app-probe">isolated app probe</text>
 </view>

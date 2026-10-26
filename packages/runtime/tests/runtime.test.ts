@@ -188,6 +188,11 @@ describe('tiny runtime', () => {
 
     const component = render.adapter.getMountedComponent(PAGE_PATH)
     expect(component).toBeDefined()
+    // Pages keep their scoped class names but also expose the unscoped ones so
+    // global `app.wxss` class selectors can match page elements.
+    const pageOptions = component!.getComponentOptions()
+    expect(pageOptions.styleScope).toBeGreaterThan(0)
+    expect(pageOptions.extraStyleScope).toBe(glassEasel.StyleScopeManager.globalScope())
     const rendered = glassEasel.dumpElementToString(component!, true)
     expect(rendered).toContain('scroll-view')
     expect(rendered).toContain('view')

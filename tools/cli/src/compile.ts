@@ -6,6 +6,7 @@ import { build as esbuild } from 'esbuild'
 import { TmplGroup, parseErrorMessage } from '@tiny/template-compiler'
 import { StyleSheetTransformer } from '@tiny/stylesheet-compiler'
 import {
+  APP_PAGE_SCOPE_CLASS_SIGN,
   BUILTIN_COMPONENT_TAGS,
   BUILTIN_HOST_TAG_PREFIX,
   resolveNaming,
@@ -726,6 +727,31 @@ class MiniProgramCompiler {
           scope,
         }
         this.styles.set(relativePath, artifact)
+        if (isAppStyle) {
+          // A second, marker-annotated copy of app.wxss lets the render thread
+          // re-scope its class rules to each page scope. That is how
+          // `apply-shared` / `shared` components see global app styles, while
+          // isolated components still do not.
+          const pageScopeTransformer = StyleSheetTransformer.fromCss(relativePath, source, {
+            classPrefixSign: APP_PAGE_SCOPE_CLASS_SIGN,
+            builtinTags: BUILTIN_COMPONENT_TAGS,
+            builtinHostTagPrefix: BUILTIN_HOST_TAG_PREFIX,
+            hostAttribute: this.naming.hostAttribute,
+            rpxRatio: this.options.rpxRatio,
+          })
+          const pageScopeCss = pageScopeTransformer.getContent()
+          if (pageScopeCss.includes(`/*${APP_PAGE_SCOPE_CLASS_SIGN}*/`)) {
+            const pageScopeOutputPath = `styles/${relativePath}.page-scope.css`
+            await writeFileWithSourceMap(this.outputPath(pageScopeOutputPath), pageScopeCss)
+            const pageScopeArtifact: StyleArtifact = {
+              path: `${relativePath}@page-scope`,
+              sourcePath: relativePath,
+              outputPath: pageScopeOutputPath,
+              pageScopeClassSign: APP_PAGE_SCOPE_CLASS_SIGN,
+            }
+            this.styles.set(pageScopeArtifact.path, pageScopeArtifact)
+          }
+        }
       } catch (error) {
         this.diagnostics.push(diagnostic(
           'error',

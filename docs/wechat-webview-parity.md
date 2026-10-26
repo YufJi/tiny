@@ -532,6 +532,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-26 | devtool 页面栈改为每页独立 render iframe（隐藏页保留 DOM/滚动位置，返回不再重建）；补 `onPageScroll`/`onReachBottom`/`onResize` 与 Lifecycle 时间线；页面生命周期 5→8/14；运行时测试 62 条，完整浏览器门禁通过（总分未重算） | **37.89%** |
 | 2026-10-26 | 内置 tabBar：app.json 配置解析、tab 页缓存、`switchTab`、`onTabItemTap`、badge/red-dot/show/hide/style/item API；devtool 渲染 tabBar 并按可用高度调整页面帧；页面生命周期 8→9/14、路由 2→3/5；mini 验收新增 tab 切换 | **37.89%** |
 | 2026-10-26 | Devtool 多应用工作台：默认测试应用列表、点击启动、最近 3 个应用保活/LRU、圆圈回列表、每个应用独立线程组；runtime 页面栈默认上限 10，宿主可通过 `maxPageStack` 配置；168 单测 + 47 步浏览器验收 | **41.91%** |
+| 2026-10-26 | `app.wxss` 类选择器生效：页面组件增加全局 extra style scope，页面元素同时保留无前缀类名，全局 `.container` 等规则不再失效；编译输出 page-scope 模板，render 线程按页面 scope 展开并按 app → 页面 → 组件顺序注册，`apply-shared`/`shared` 组件内部也能收到全局 app class，`isolated` 不受影响；P0 验收新增全局 class 颜色断言 | **41.91%** |
 
 ---
 

@@ -302,6 +302,8 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.equal(await colorOf('external class'), 'rgb(255, 0, 0)', 'external class was not resolved')
       assert.equal(await colorOf('page target'), 'rgb(0, 0, 255)', 'shared component style did not affect page')
       assert.notEqual(await colorOf('isolated target'), 'rgb(0, 0, 255)', 'shared style leaked into isolated component')
+      assert.equal(await colorOf('app shared probe'), 'rgb(0, 128, 0)', 'app.wxss did not reach apply-shared component')
+      assert.notEqual(await colorOf('isolated app probe'), 'rgb(0, 128, 0)', 'app.wxss leaked into isolated component')
     })
 
     await step('render WeChat button variants', async () => {

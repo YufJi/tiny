@@ -116,11 +116,13 @@ export class GlassEaselRuntimeAdapter {
   private readonly manifest: Manifest
   private readonly templates: TemplateRegistry
   private readonly styleScopeIds = new Map<string, number>()
+  private readonly scopeIdsByName = new Map<string, number>()
   private readonly styleContents = new Map<string, string>()
   private readonly styleByEntryPath = new Map<string, StyleArtifact>()
   private readonly pageStyleScopes = new Map<string, number>()
   private readonly pageComponentOptions = new Map<string, PageComponentOptions>()
   private readonly sharedStylesApplied = new Set<string>()
+  private appPageScopeTemplate?: { style: StyleArtifact; css: string }
   private readonly componentDefinitions = new Map<string, glassEasel.GeneralComponentDefinition>()
   private readonly registeringComponents = new Set<string>()
   private readonly pages = new Map<string, PageArtifact>()
@@ -208,7 +210,11 @@ export class GlassEaselRuntimeAdapter {
     }
   }
 
-  registerStyles(manifest: Manifest, loadStyle: StyleLoader = () => ''): void {
+  registerStyles(
+    manifest: Manifest,
+    loadStyle: StyleLoader = () => '',
+    componentSchemas: MiniProgramComponentSchema[] = [],
+  ): void {
     if (!this.baseStylesRegistered && this.builtinBaseStyles) {
       const { path, content } = this.builtinBaseStyles
       this.backend.registerStyleSheetContent(path, content)
@@ -218,16 +224,23 @@ export class GlassEaselRuntimeAdapter {
       )
       this.baseStylesRegistered = true
     }
+    const pending: Array<{ style: StyleArtifact; scopeId: number }> = []
     for (const style of manifest.styles) {
       let css = loadStyle(style.outputPath)
       if (typeof css !== 'string') continue
       if (this.resolveAssetUrl) {
         css = rewriteCssAssetUrls(css, style.sourcePath, this.resolveAssetUrl)
       }
+      // The page-scope template is not a sheet of its own: it is expanded per
+      // page scope below, before page/component sheets are appended.
+      if (style.pageScopeClassSign) {
+        this.appPageScopeTemplate = { style, css }
+        continue
+      }
       this.backend.registerStyleSheetContent(style.outputPath, css)
       this.styleContents.set(style.path, css)
       const scopeId = style.scope
-        ? this.componentSpace.styleScopeManager.register(style.scope)
+        ? this.registerScope(style.scope)
         : glassEasel.StyleScopeManager.globalScope()
       this.styleScopeIds.set(style.path, scopeId)
       // Components are addressed by their entry path (`foo`), while the style
@@ -239,7 +252,22 @@ export class GlassEaselRuntimeAdapter {
       this.styleScopeIds.set(entryPath, scopeId)
       this.styleByEntryPath.set(style.path, style)
       this.styleByEntryPath.set(entryPath, style)
-      this.backend.appendStyleSheetPath(style.outputPath, scopeId)
+      pending.push({ style, scopeId })
+    }
+
+    // Append the app sheet, then its page-scoped copies, then page/component
+    // sheets. This preserves the WeChat cascade where page/component wxss wins
+    // over app.wxss at equal specificity.
+    const appStyle = pending.find((entry) => entry.style.path === 'app.wxss')
+    if (appStyle) {
+      this.backend.appendStyleSheetPath(appStyle.style.outputPath, appStyle.scopeId)
+    }
+    for (const scopeId of this.collectAppPageScopes(manifest, componentSchemas)) {
+      this.appendAppPageScope(scopeId)
+    }
+    for (const entry of pending) {
+      if (entry === appStyle) continue
+      this.backend.appendStyleSheetPath(entry.style.outputPath, entry.scopeId)
     }
   }
 
@@ -274,6 +302,11 @@ export class GlassEaselRuntimeAdapter {
         writeIdToDOM: true,
         useMethodCallerListeners: true,
         styleScope: pageScope,
+        // Keep page/component classes scoped, but also expose the unscoped
+        // class names so global `app.wxss` class selectors can match. Without
+        // this, glass-easel only writes `<pageScope>--<class>` to the DOM and
+        // every class rule in app.wxss is dead.
+        extraStyleScope: glassEasel.StyleScopeManager.globalScope(),
       })
       .methodCallerInit(() => this.createEventMethodCaller(this.activeEventPageId ?? page.path))
       .registerComponent()
@@ -290,20 +323,24 @@ export class GlassEaselRuntimeAdapter {
     return 'shared'
   }
 
+  private registerScope(name: string): number {
+    const existing = this.scopeIdsByName.get(name)
+    if (existing !== undefined) return existing
+    const scopeId = this.componentSpace.styleScopeManager.register(name)
+    this.scopeIdsByName.set(name, scopeId)
+    return scopeId
+  }
+
   private ensurePageScope(page: PageArtifact): number {
     const existing = this.pageStyleScopes.get(page.path)
     if (existing !== undefined) return existing
     const style = page.style
     if (style?.scope) {
-      const scopeId = this.styleScopeIds.get(style.path)
-      if (scopeId !== undefined) {
-        this.pageStyleScopes.set(page.path, scopeId)
-        return scopeId
-      }
+      const scopeId = this.styleScopeIds.get(style.path) ?? this.registerScope(style.scope)
+      this.pageStyleScopes.set(page.path, scopeId)
+      return scopeId
     }
-    const scopeId = this.componentSpace.styleScopeManager.register(
-      `page-${page.path.replace(/[^a-zA-Z0-9_-]/g, '-')}`,
-    )
+    const scopeId = this.registerScope(`page-${page.path.replace(/[^a-zA-Z0-9_-]/g, '-')}`)
     this.pageStyleScopes.set(page.path, scopeId)
     return scopeId
   }
@@ -341,6 +378,46 @@ export class GlassEaselRuntimeAdapter {
       this.backend.registerStyleSheetContent(sharedPath, rescoped)
       this.backend.appendStyleSheetPath(sharedPath, pageScope)
     }
+  }
+
+  /**
+   * Page scopes that need a page-scoped copy of app.wxss.
+   *
+   * Page elements get unscoped class names, so the global app sheet already
+   * styles them. Components only receive page classes when their isolation is
+   * `apply-shared`/`shared` (page scope as extra scope), so only pages using
+   * such components need the expanded copy. Isolated components never get the
+   * page scope.
+   */
+  private collectAppPageScopes(
+    manifest: Manifest,
+    schemas: MiniProgramComponentSchema[],
+  ): number[] {
+    if (!this.appPageScopeTemplate || schemas.length === 0) return []
+    const isolation = new Map(
+      schemas.map((schema) => [schema.path, schema.options?.styleIsolation ?? 'isolated']),
+    )
+    const using = new Map(schemas.map((schema) => [schema.path, schema.using]))
+    const scopes: number[] = []
+    for (const page of manifest.pages) {
+      const used = this.collectUsedComponentPaths(page.path, page.configuration, using)
+      const needsAppScope = [...used].some((path) =>
+        isolation.get(path) === 'apply-shared' || isolation.get(path) === 'shared')
+      if (needsAppScope) scopes.push(this.ensurePageScope(page))
+    }
+    return scopes
+  }
+
+  private appendAppPageScope(pageScope: number): void {
+    const template = this.appPageScopeTemplate
+    const sign = template?.style.pageScopeClassSign
+    if (!template || !sign) return
+    const scopeName = this.componentSpace.styleScopeManager.queryName(pageScope)
+    if (!scopeName) return
+    const scoped = template.css.split(`/*${sign}*/`).join(`${scopeName}--`)
+    const path = `${template.style.outputPath}@page:${pageScope}`
+    this.backend.registerStyleSheetContent(path, scoped)
+    this.backend.appendStyleSheetPath(path, pageScope)
   }
 
   whenRendered(): Promise<void> {
@@ -718,7 +795,11 @@ export class GlassEaselRuntimeAdapter {
     return { ...this.builtinComponents, ...resolved }
   }
 
-  private collectUsedComponentPaths(path: string, config?: Record<string, any>): Set<string> {
+  private collectUsedComponentPaths(
+    path: string,
+    config?: Record<string, any>,
+    usingByPath?: Map<string, Record<string, string>>,
+  ): Set<string> {
     const result = new Set<string>()
     const visit = (sourcePath: string, current?: Record<string, any>) => {
       const effective = current?.effective ?? {}
@@ -731,9 +812,10 @@ export class GlassEaselRuntimeAdapter {
         if (result.has(componentPath)) continue
         result.add(componentPath)
         const schema = this.componentSchemas.get(componentPath)
-        if (!schema) continue
+        const using = usingByPath?.get(componentPath) ?? schema?.using
+        if (!using) continue
         visit(componentPath, {
-          effective: { usingComponents: schema.using },
+          effective: { usingComponents: using },
           usingComponentsSource: {},
         })
       }

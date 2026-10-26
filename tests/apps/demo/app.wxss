@@ -5,3 +5,7 @@ page {
   color: #f9fafb;
   font-family: system-ui, sans-serif;
 }
+
+.app-probe {
+  color: rgb(0, 128, 0);
+}

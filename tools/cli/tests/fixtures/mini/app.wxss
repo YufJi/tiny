@@ -5,3 +5,7 @@ page {
 button {
   margin: 0;
 }
+
+.app-shell {
+  color: #111;
+}

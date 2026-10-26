@@ -43,7 +43,20 @@ export type StyleArtifact = {
   lowPriorityPath?: string
   lowPrioritySourceMapPath?: string
   scope?: string
+  /**
+   * Present on the `app.wxss` page-scope template. The compiler wraps every
+   * class selector with `/*<sign>*\/`; the render thread replaces it with the
+   * page's scope prefix before appending a per-page copy. Such an artifact is
+   * not registered as a normal stylesheet.
+   */
+  pageScopeClassSign?: string
 }
+
+/**
+ * Comment marker inserted before `app.wxss` class selectors in the page-scope
+ * template. Chosen to be unlikely to appear in user stylesheets.
+ */
+export const APP_PAGE_SCOPE_CLASS_SIGN = '__TINY_APP_PAGE_SCOPE__'
 
 export type AssetArtifact = {
   path: string

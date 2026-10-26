@@ -3,6 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { beforeAll, afterAll, describe, expect, test } from 'vitest'
+import { APP_PAGE_SCOPE_CLASS_SIGN } from '@tiny/manifest'
 import { compileMiniProgram } from '../src'
 
 const fixtureRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures')
@@ -50,6 +51,21 @@ describe('compileMiniProgram', () => {
     const css = await fs.readFile(path.join(outputDir, 'styles/app.wxss.css'), 'utf8')
     expect(css).toContain('tiny-button')
     expect(css).not.toMatch(/(^|[\s,])button\s*\{/)
+    expect(css).not.toContain(APP_PAGE_SCOPE_CLASS_SIGN)
+  })
+
+  test('emits a page-scope app.wxss template for apply-shared components', async () => {
+    const manifest = JSON.parse(await fs.readFile(path.join(outputDir, 'manifest.json'), 'utf8'))
+    const template = manifest.styles.find(
+      (style: { pageScopeClassSign?: string }) => style.pageScopeClassSign === APP_PAGE_SCOPE_CLASS_SIGN,
+    )
+    expect(template).toMatchObject({
+      path: 'app.wxss@page-scope',
+      outputPath: 'styles/app.wxss.page-scope.css',
+    })
+    expect(template.scope).toBeUndefined()
+    const css = await fs.readFile(path.join(outputDir, template.outputPath), 'utf8')
+    expect(css).toContain(`./*${APP_PAGE_SCOPE_CLASS_SIGN}*/app-shell`)
   })
 
   test('registers external WXS files with and without their extension', async () => {
