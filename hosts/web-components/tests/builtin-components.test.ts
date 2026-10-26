@@ -357,6 +357,12 @@ describe('P0 built-in components', () => {
     expect(host('ra').data.checked).toBe(false)
     expect(host('rb').data.checked).toBe(true)
     expect(host('rg').data.value).toBe('b')
+    ;(host('cg') as unknown as { renameItem: (item: unknown, next: string, prev: string) => void })
+      .renameItem(host('cb'), 'c', 'b')
+    expect(host('cg').data.value).toEqual(['c'])
+    ;(host('rg') as unknown as { renameItem: (item: unknown, next: string, prev: string) => void })
+      .renameItem(host('rb'), 'b2', 'b')
+    expect(host('rg').data.value).toBe('b2')
 
     host('cg').setData({ value: ['a'] })
     host('rg').setData({ value: 'a' })
