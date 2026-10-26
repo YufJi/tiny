@@ -35,7 +35,7 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: 'tiny-builtin:scroll-view',
     template: ctx.template('scroll-view'),
-    behaviors: [ctx.behaviors.base],
+    behaviors: [ctx.behaviors.base, ctx.behaviors.scroller],
     properties: {
       scrollX: { type: Boolean, value: false },
       scrollY: { type: Boolean, value: false },
@@ -64,7 +64,7 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
     options: ctx.hostOptions({ multipleSlots: true }),
     lifetimes: {
       attached() {
-        this.initScroller()
+        ;(this as unknown as { initScroller: (element: unknown) => void }).initScroller(this.backend())
         this.applyScrollAnimation()
         this.applyScrollPosition('scrollTop')
         this.applyScrollPosition('scrollLeft')
@@ -96,24 +96,6 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
       },
     },
     methods: {
-      initScroller() {
-        ;(this as unknown as { __scrollerInitialized?: boolean }).__scrollerInitialized = true
-      },
-      isScrolling() {
-        return Date.now() < Number((this as unknown as ScrollRuntime).__scrollingUntil ?? 0)
-      },
-      scrollTo(scrollTop: number, scrollLeft: number, behavior: 'auto' | 'smooth' = 'auto') {
-        const element = this.backend() as (ScrollBackend & {
-          scrollTo?: (options: { top: number; left: number; behavior: string }) => void
-        }) | null
-        if (!element) return
-        if (typeof element.scrollTo === 'function') {
-          element.scrollTo({ top: scrollTop, left: scrollLeft, behavior })
-        } else {
-          element.scrollTop = scrollTop
-          element.scrollLeft = scrollLeft
-        }
-      },
       backend(): ScrollBackend | null {
         const element = (this.getShadowRoot?.() as {
           getElementById?: (id: string) => { getBackendElement?: () => ScrollBackend | null } | null
@@ -135,7 +117,9 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         }
         const value = Number(this.data[field] ?? 0)
         if (Number.isFinite(value)) {
-          this.scrollTo(
+          ;(this as unknown as {
+            scrollTo: (top: number, left: number, behavior: 'auto' | 'smooth') => void
+          }).scrollTo(
             field === 'scrollTop' ? value : Number(element.scrollTop ?? 0),
             field === 'scrollLeft' ? value : Number(element.scrollLeft ?? 0),
             this.data.scrollWithAnimation ? 'smooth' : 'auto',
@@ -228,7 +212,9 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         const now = Date.now()
         if (instance.__lastTap && now - instance.__lastTap < 300) {
           instance.__lastTap = 0
-          this.scrollTo(0, 0, this.data.scrollWithAnimation ? 'smooth' : 'auto')
+          ;(this as unknown as {
+            scrollTo: (top: number, left: number, behavior: 'auto' | 'smooth') => void
+          }).scrollTo(0, 0, this.data.scrollWithAnimation ? 'smooth' : 'auto')
           return
         }
         instance.__lastTap = now

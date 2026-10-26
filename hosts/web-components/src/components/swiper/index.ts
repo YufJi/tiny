@@ -5,7 +5,7 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: 'tiny-builtin:swiper',
     template: ctx.template('swiper'),
-    behaviors: [ctx.behaviors.base],
+    behaviors: [ctx.behaviors.base, ctx.behaviors.touchTrack],
     properties: {
       ariaLabel: { type: String, value: '' },
       current: { type: Number, value: 0 },
@@ -33,7 +33,26 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
       created() {
         this.bootstrapSwiper(0)
       },
+      attached() {
+        const element = (this as unknown as { getBackendElement?: () => unknown }).getBackendElement?.()
+        const instance = this as unknown as { _swiperTouchCleanup?: () => void }
+        instance._swiperTouchCleanup?.()
+        const track = (this as unknown as {
+          touchtrack?: (element: unknown, handler: (event: unknown) => void) => () => void
+        }).touchtrack
+        if (!track || !element) return
+        instance._swiperTouchCleanup = track.call(this, element, (event) => {
+          const detail = (event as { detail?: { state?: string } }).detail
+          const touches = (event as { touches?: unknown[] }).touches
+          const changedTouches = (event as { changedTouches?: unknown[] }).changedTouches
+          if (detail?.state === 'start') this.handleTouchStart({ touches } as never)
+          else if (detail?.state === 'end' || detail?.state === 'cancel') {
+            this.handleTouchEnd({ changedTouches } as never)
+          }
+        })
+      },
       detached() {
+        ;(this as unknown as { _swiperTouchCleanup?: () => void })._swiperTouchCleanup?.()
         this.stopAutoplay()
       },
     },

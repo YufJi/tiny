@@ -2,8 +2,6 @@
   class="tiny-swiper {{vertical ? 'is-vertical' : ''}}"
   style="--tiny-swiper-items: {{displayMultipleItems}};"
   aria-label="{{ariaLabel}}"
-  bindtouchstart="handleTouchStart"
-  bindtouchend="handleTouchEnd"
 >
   <div
     class="tiny-swiper-wrapper"

@@ -13,6 +13,25 @@ type HostClassElement = {
   classList?: { add?: (name: string) => void; remove?: (name: string) => void }
 }
 
+type TouchTrackEvent = {
+  target: unknown
+  currentTarget: unknown
+  preventDefault: () => void
+  stopPropagation: () => void
+  touches: unknown[]
+  changedTouches: unknown[]
+  detail: {
+    state: 'start' | 'move' | 'end' | 'cancel'
+    x: number
+    y: number
+    dx: number
+    dy: number
+    ddx: number
+    ddy: number
+    timeStamp: number
+  }
+}
+
 type HoverRuntime = {
   _hoverStartTimer?: HoverTimer
   _hoverStayTimer?: HoverTimer
@@ -236,6 +255,118 @@ export function createBuiltinBehaviors(
 
 
 
+  const touchTrack = space.defineBehavior({
+    is: `${prefix}touchtrack`,
+    methods: {
+      touchtrack(
+        element: unknown,
+        handler: (event: TouchTrackEvent) => boolean | void,
+        useCapture = false,
+      ): () => void {
+        const target = element as {
+          addEventListener?: (type: string, listener: (event: TouchEvent) => void, capture?: boolean) => void
+          removeEventListener?: (type: string, listener: (event: TouchEvent) => void, capture?: boolean) => void
+        } | null
+        if (!target?.addEventListener) return () => {}
+        let active = false
+        let startX = 0
+        let startY = 0
+        let lastX = 0
+        let lastY = 0
+        let previousX = 0
+        let previousY = 0
+        const emit = (event: TouchEvent, state: TouchTrackEvent['detail']['state'], x: number, y: number) => {
+          const result = handler({
+            target: event.target,
+            currentTarget: event.currentTarget,
+            preventDefault: () => event.preventDefault(),
+            stopPropagation: () => event.stopPropagation(),
+            touches: Array.from(event.touches ?? []),
+            changedTouches: Array.from(event.changedTouches ?? []),
+            detail: {
+              state,
+              x,
+              y,
+              dx: x - startX,
+              dy: y - startY,
+              ddx: x - previousX,
+              ddy: y - previousY,
+              timeStamp: event.timeStamp,
+            },
+          })
+          previousX = x
+          previousY = y
+          return result
+        }
+        const onStart = (event: TouchEvent) => {
+          if (event.touches.length !== 1 || active) return
+          active = true
+          const touch = event.touches[0]!
+          startX = lastX = previousX = touch.clientX
+          startY = lastY = previousY = touch.clientY
+          emit(event, 'start', startX, startY)
+        }
+        const onMove = (event: TouchEvent) => {
+          if (!active || event.touches.length !== 1) return
+          const touch = event.touches[0]!
+          lastX = touch.clientX
+          lastY = touch.clientY
+          emit(event, 'move', lastX, lastY)
+        }
+        const onEnd = (event: TouchEvent) => {
+          if (!active || event.touches.length !== 0) return
+          active = false
+          const touch = event.changedTouches[0]
+          emit(event, 'end', touch?.clientX ?? lastX, touch?.clientY ?? lastY)
+        }
+        const onCancel = (event: TouchEvent) => {
+          if (!active) return
+          active = false
+          const touch = event.changedTouches[0]
+          emit(event, 'cancel', touch?.clientX ?? lastX, touch?.clientY ?? lastY)
+        }
+        target.addEventListener('touchstart', onStart, useCapture)
+        target.addEventListener('touchmove', onMove, useCapture)
+        target.addEventListener('touchend', onEnd, useCapture)
+        target.addEventListener('touchcancel', onCancel, useCapture)
+        return () => {
+          target.removeEventListener?.('touchstart', onStart, useCapture)
+          target.removeEventListener?.('touchmove', onMove, useCapture)
+          target.removeEventListener?.('touchend', onEnd, useCapture)
+          target.removeEventListener?.('touchcancel', onCancel, useCapture)
+        }
+      },
+    },
+  })
+
+  const scroller = space.defineBehavior({
+    is: `${prefix}scroller`,
+    methods: {
+      initScroller(element: unknown) {
+        ;(this as unknown as { __scrollerElement?: unknown }).__scrollerElement = element ?? null
+      },
+      isScrolling() {
+        return Date.now() < Number((this as unknown as { __scrollingUntil?: number }).__scrollingUntil ?? 0)
+      },
+      scrollTo(scrollTop: number, scrollLeft: number, behavior: 'auto' | 'smooth' = 'auto') {
+        const element = (this as unknown as {
+          __scrollerElement?: {
+            scrollTop?: number
+            scrollLeft?: number
+            scrollTo?: (options: { top: number; left: number; behavior: string }) => void
+          } | null
+        }).__scrollerElement
+        if (!element) return
+        if (typeof element.scrollTo === 'function') {
+          element.scrollTo({ top: scrollTop, left: scrollLeft, behavior })
+        } else {
+          element.scrollTop = scrollTop
+          element.scrollLeft = scrollLeft
+        }
+      },
+    },
+  })
+
   const sizeNormalizer = space.defineBehavior({
     is: `${prefix}size-normalizer`,
     methods: {
@@ -317,7 +448,7 @@ export function createBuiltinBehaviors(
     },
   })
 
-  return { base, hover, labelTarget, disabled, dataComponent, group, item, sizeNormalizer, classPrefix }
+  return { base, hover, labelTarget, disabled, dataComponent, group, item, sizeNormalizer, classPrefix, touchTrack, scroller }
 }
 
 export type BuiltinBehaviors = ReturnType<typeof createBuiltinBehaviors>
