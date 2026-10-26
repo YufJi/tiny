@@ -3,6 +3,7 @@
 ## Glossary
 
 - **Devtool**: the browser debugger UI and host adapter for inspecting and controlling the Tiny runtime.
+- **Mobile gate**: phone/tablet browsers get a full-screen “请在电脑端访问” notice instead of the launcher and runtime. Detection uses `userAgentData.mobile`, mobile user agents, and the iPadOS Macintosh + touch heuristic; `?desktop=1` is the explicit escape hatch.
 - **Runtime client**: `DevtoolRuntimeClient` from `@tiny/host-browser`; the only permitted boundary between the React UI and the runtime.
 - **Host transport**: the explicit message channel between the debugger host, service thread, and each page render thread.
 - **Protocol message**: a versioned envelope with kind, domain, method, payload, page identity, and correlation ID.

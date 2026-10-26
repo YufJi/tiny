@@ -24,6 +24,13 @@ rspack dev server。首次打开显示测试小程序列表；点击某个应用
 pnpm compile:devtool:all
 ```
 
+## 移动端访问
+
+- 通过手机/平板浏览器打开时，面板只显示“请在电脑端访问”的提示页，不加载应用列表或任何 runtime iframe
+- 识别依据：`navigator.userAgentData.mobile`、移动端 User-Agent、iPadOS 的 Macintosh + 多点触控组合
+- 调试器需要桌面端的大屏、多窗口预览和元素检查能力；手机端不提供降级布局
+- 显式加上 `?desktop=1` 可绕过提示页（仅供桌面模式/特殊调试）
+
 ## 预览测试应用
 
 默认打开 `http://localhost:8080/` 的测试应用列表；点击应用卡片启动。也支持深链直接启动：

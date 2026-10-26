@@ -76,8 +76,8 @@
 | 页面形态 | 12% | 25% | 3.00 | devtool 宿主已实现导航栏/tabBar/页面滚动/触底/tab 页缓存；测试/生产宿主仍未提供，评分保守；缺下拉刷新/分享/转场 |
 | 样式/渲染 | 8% | 73% | 5.84 | WXSS/rpx/作用域强；app.wxss tag/class 规则作用到页面与共享组件；`:host` 低优先级与 canvas 仍不完整 |
 | 宿主/平台 | 8% | 15% | 1.20 | 仅浏览器宿主；无原生/网络/登录/支付/分享 |
-| 开发工具 | 4% | 45% | 1.80 | 应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 55% | 1.65 | 180 单测 + 47 步浏览器验收；新增 tabBar/视觉结构、应用列表/LRU/页面栈上限断言；无性能/安全/原生测试 |
+| 开发工具 | 4% | 45% | 1.80 | 应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar、移动端访问提示；不是完整微信开发者工具 |
+| 质量/验证 | 3% | 55% | 1.65 | 180 单测 + 48 步浏览器验收；新增 tabBar/视觉结构、应用列表/LRU/页面栈上限、移动端提示页断言；无性能/安全/原生测试 |
 | **合计** | **100%** | — | **44.23%** | |
 
 ### 条目覆盖率速览
@@ -293,7 +293,7 @@ hasBehavior / export / wx://component-export
 - 8 个编译器/运行时/宿主目标构建
 - **180 个单元测试**（runtime 68 个，host-web-components 30 个）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
-- **47 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧
+- **48 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧
 - 门禁覆盖的 5 段流程无 console/page error（117 页探针的 pageerror 见 5.2）
 
 这说明现有能力是**真实可运行**的，不是纸面设计。
@@ -531,7 +531,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-25 | picker-view-column 补 pointer 鼠标拖动（与 touch 共用吸附逻辑）；修正 content 居中方式，避免百分比 padding 按宽度计算 | **37.89%** |
 | 2026-10-26 | devtool 页面栈改为每页独立 render iframe（隐藏页保留 DOM/滚动位置，返回不再重建）；补 `onPageScroll`/`onReachBottom`/`onResize` 与 Lifecycle 时间线；页面生命周期 5→8/14；运行时测试 62 条，完整浏览器门禁通过（总分未重算） | **37.89%** |
 | 2026-10-26 | 内置 tabBar：app.json 配置解析、tab 页缓存、`switchTab`、`onTabItemTap`、badge/red-dot/show/hide/style/item API；devtool 渲染 tabBar 并按可用高度调整页面帧；页面生命周期 8→9/14、路由 2→3/5；mini 验收新增 tab 切换 | **37.89%** |
-| 2026-10-26 | Devtool 多应用工作台：默认测试应用列表、点击启动、最近 3 个应用保活/LRU、圆圈回列表、每个应用独立线程组；runtime 页面栈默认上限 10，宿主可通过 `maxPageStack` 配置；168 单测 + 47 步浏览器验收 | **41.91%** |
+| 2026-10-26 | Devtool 多应用工作台：默认测试应用列表、点击启动、最近 3 个应用保活/LRU、圆圈回列表、每个应用独立线程组；runtime 页面栈默认上限 10，宿主可通过 `maxPageStack` 配置；168 单测 + 48 步浏览器验收 | **41.91%** |
 | 2026-10-26 | `app.wxss` 类选择器生效：页面组件增加全局 extra style scope，页面元素同时保留无前缀类名，全局 `.container` 等规则不再失效；编译输出 page-scope 模板，render 线程按页面 scope 展开并按 app → 页面 → 组件顺序注册，`apply-shared`/`shared` 组件内部也能收到全局 app class，`isolated` 不受影响；P0 验收新增全局 class 颜色断言 | **41.91%** |
 
 ---
@@ -625,3 +625,4 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-26 | 第十一次校准：按当前 HEAD 重数——23/60 标签、65/502 API、9/14 页面生命周期、3/5 路由、167 单测；P0 组件视觉重写完成，页面形态按 devtool 宿主保守计 25%；总分 37.89→41.91 | **41.91%** |
 
 | 2026-10-26 | 第十二次校准：P1 组件收口（input/textarea wrapper、button native/longtap、form-field/reportSubmit、swiper 绝对布局、scroll-view 三层、progress ARIA/动画）、app.wxss class 规则作用域修复；180 单测 / 47 步；总分 41.91→44.23 | **44.23%** |
+| 2026-10-26 | Devtool 移动端设备识别：手机/平板浏览器显示“请在电脑端访问”提示页，不加载 launcher/runtime；桌面端行为不变；`?desktop=1` 保留显式绕过；devtool 验收新增移动端 UA 步骤，总步数 48 | **44.23%** |

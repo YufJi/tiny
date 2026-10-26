@@ -957,6 +957,26 @@ export async function runDevtoolAcceptance({ baseUrl }) {
       )
     }
 
+    await step('gate mobile browsers to a desktop-only notice', async () => {
+      currentStep = 'gate mobile browsers to a desktop-only notice'
+      const mobilePage = await browser.newPage({
+        viewport: { width: 390, height: 844 },
+        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+        isMobile: true,
+        hasTouch: true,
+      })
+      const mobileErrors = []
+      mobilePage.on('pageerror', (error) => mobileErrors.push(error.message))
+      await mobilePage.goto(`${baseUrl}/`, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
+      await mobilePage.waitForSelector('.td-mobile-gate', { state: 'visible', timeout: STEP_TIMEOUT })
+      const mobileText = await mobilePage.locator('.td-mobile-gate').innerText()
+      assert.ok(mobileText.includes('请在电脑端访问'), 'mobile notice text is missing')
+      assert.equal(await mobilePage.locator('.td-launcher').count(), 0, 'mobile page started the launcher')
+      assert.equal(await mobilePage.locator('iframe').count(), 0, 'mobile page started a runtime')
+      assert.deepEqual(mobileErrors, [], `mobile page errors: ${mobileErrors.join(' | ')}`)
+      await mobilePage.close()
+    })
+
     await step('show the app launcher by default', async () => {
       currentStep = 'show the app launcher by default'
       await page.goto(`${baseUrl}/`, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
