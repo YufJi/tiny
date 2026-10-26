@@ -737,7 +737,7 @@ describe('P0 built-in components', () => {
       template: compilePage(`
         <form id="form" bindsubmit="onSubmit"><input id="input" name="title" value="hello" /><button id="submit" form-type="submit">Submit</button></form>
         <textarea id="textarea" bindinput="onTextarea" />
-        <picker id="picker" mode="selector" range="{{['a', 'b']}}" bindchange="onPicker" />
+        <picker id="picker" mode="selector" range="{{['a', 'b']}}" custom-item="Other" bindchange="onPicker" />
       `),
       methods: {
         onSubmit(event: glassEasel.ShadowedEvent<unknown>) { events.submit = event.detail },

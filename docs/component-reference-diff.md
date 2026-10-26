@@ -103,7 +103,7 @@
 - [x] `selector`/`multiSelector`/`date`/`time` 的 `range`/`rangeKey`/`start`/`end`/`fields`；
 - [x] `columnchange`/`change`/`cancel`/`disabled`；
 - [ ] `region` 模式未实现，点击不打开；
-- [ ] `customItem` 未渲染，`headerText` 只作为标题；
+- [x] `customItem` 已支持 selector/multiSelector 的最后一列；`headerText` 作为标题；
 - [ ] 参考通过原生 `showPickerView` 桥弹出系统面板，我们仍用 DOM 浮层近似。
 
 **picker-view / picker-view-column**
@@ -134,6 +134,7 @@
 - [x] textarea 的 wrapper/placeholder/scrollHeight autoHeight 已补；
 - [x] textarea 的 focus/autoFocus/cursor/selection 已映射到原生控件；
 - [x] textarea 的 compute/stylecompute 层和 `disable-default-padding` class 已补；
+- [x] textarea 补 `enterkeyhint` 映射；
 - [ ] textarea 的 `fixed`/`showConfirmBar` 和 placeholderClass 前缀仍未实现。
 
 **scroll-view / swiper**
@@ -242,7 +243,6 @@ wrapper/slides/slide-frame 层级和指示点默认值已补（8×8/bottom 10/ga
 ### 4.6 picker 的剩余模式
 
 - `region` 未实现；
-- `customItem` 未渲染；
 - 参考用原生 `showPickerView` 桥，当前是 DOM 浮层，滚动惯性和系统面板细节不同；
 - `headerText` 当前只作为标题。
 

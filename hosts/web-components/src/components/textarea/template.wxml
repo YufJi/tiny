@@ -19,6 +19,7 @@
     maxlength="{{maxlength}}"
     autofocus="{{autoFocus || focus}}"
     confirm-type="{{confirmType}}"
+    enterkeyhint="{{confirmType}}"
     aria-label="{{ariaLabel}}"
     catchinput="handleInput"
     catchfocus="handleFocus"

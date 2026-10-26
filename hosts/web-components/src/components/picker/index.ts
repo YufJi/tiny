@@ -77,17 +77,25 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
         })
       },
       selectorColumn(): PickerColumn {
-        return this.rangeLabels(this.data.range).map((label, index) => ({
+        const labels = this.rangeLabels(this.data.range)
+        const custom = String(this.data.customItem ?? '')
+        if (custom) labels.push(custom)
+        return labels.map((label, index) => ({
           label,
           value: String(index),
         }))
       },
       multiColumns(): PickerColumn[] {
         const range = Array.isArray(this.data.range) ? this.data.range : []
-        return range.map((column) => this.rangeLabels(column).map((label, index) => ({
+        const columns = range.map((column) => this.rangeLabels(column).map((label, index) => ({
           label,
           value: String(index),
         })))
+        const custom = String(this.data.customItem ?? '')
+        if (custom && columns.length > 0) {
+          columns[columns.length - 1]!.push({ label: custom, value: String(columns[columns.length - 1]!.length) })
+        }
+        return columns
       },
       dateParts(): {
         startYear: number
@@ -197,9 +205,10 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
           return { columns, draft }
         }
         if (mode === 'region') return null
+        const column = this.selectorColumn()
         return {
-          columns: [this.selectorColumn()],
-          draft: [clamp(Number(this.data.value ?? 0), 0, Math.max(0, this.rangeLabels(this.data.range).length - 1))],
+          columns: [column],
+          draft: [clamp(Number(this.data.value ?? 0), 0, Math.max(0, column.length - 1))],
         }
       },
       handleOpen() {
