@@ -541,6 +541,9 @@ describe('P0 built-in components', () => {
     expect(events.lower).toEqual({ direction: 'bottom' })
     nativeScroll.triggerEvent('scroll', { scrollTop: 5, scrollHeight: 100, clientHeight: 50 })
     expect(events.upper).toEqual({ direction: 'top' })
+    expect(scrollHost.isScrolling?.()).toBe(true)
+    await new Promise((resolve) => setTimeout(resolve, 120))
+    expect(scrollHost.isScrolling?.()).toBe(false)
 
     nativeScroll.triggerEvent('touchstart', { touches: [{ clientX: 10, clientY: 20 }] })
     nativeScroll.triggerEvent('touchmove', { touches: [{ clientX: 120, clientY: 20 }] })
