@@ -83,14 +83,39 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
           String(this.data.backgroundSize ?? '100% 100%') !== '100% 100%' ||
           String(this.data.backgroundPosition ?? '') !== '' ||
           String(this.data.backgroundRepeat ?? 'no-repeat') !== 'no-repeat'
+        this.bindContextMenu()
         this.updateResolvedSrc()
       },
       ready() {
+        this.bindContextMenu()
         this.updateResolvedSrc()
+      },
+      detached() {
+        ;(this as unknown as { _contextMenuCleanup?: () => void })._contextMenuCleanup?.()
       },
     },
     options: ctx.hostOptions(),
     methods: {
+      bindContextMenu() {
+        const element = (this.getShadowRoot?.() as {
+          getElementById?: (id: string) => {
+            getBackendElement?: () => {
+              addEventListener?: (type: string, listener: (event: Event) => void) => void
+              removeEventListener?: (type: string, listener: (event: Event) => void) => void
+            } | null
+          } | null
+        } | null)?.getElementById?.('native-image')?.getBackendElement?.()
+        if (!element?.addEventListener) return
+        const instance = this as unknown as { _contextMenuCleanup?: () => void }
+        instance._contextMenuCleanup?.()
+        const onContextMenu = (event: Event) => {
+          if (!this.data.showMenuByLongpress) event.preventDefault()
+        }
+        element.addEventListener('contextmenu', onContextMenu)
+        instance._contextMenuCleanup = () => {
+          element.removeEventListener?.('contextmenu', onContextMenu)
+        }
+      },
       updateResolvedSrc() {
         const src = typeof this.data.src === 'string' ? this.data.src : ''
         let resolved = src

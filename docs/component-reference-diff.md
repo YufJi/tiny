@@ -84,7 +84,7 @@
 - [x] `div` 背景图 + 隐藏 probe `<img>` + fallback slot；
 - [x] 320×240、`inline-block`、`scaleToFill`/`aspectFit`/`aspectFill`/方位模式；
 - [x] `widthFix`/`heightFix` 按 naturalWidth/naturalHeight 计算另一条边；
-- [ ] `showMenuByLongpress` 长按菜单未实现；
+- [x] `showMenuByLongpress` 用浏览器 contextmenu 门控近似；
 - [x] `backgroundSize`/`backgroundPosition`/`backgroundRepeat` 可覆盖 mode 派生值；
 - [ ] `lazyLoad` 仍是 probe 的 `loading="lazy"` 近似，不是 IntersectionObserver。
 
@@ -92,7 +92,7 @@
 
 - [x] 改为 `<i>` + 内嵌 WeUI 字体 + `::before`，15 种 type 和参考颜色表；
 - [x] `size`/`color`/`aria-label` 对齐；
-- [ ] 没有 `longpress`；
+- [x] 参考 icon 本身没有 longpress 事件，不需要补；
 - [ ] `type` 默认值保留 `success`（参考 JS 未声明，官方文档默认 `success`，需要按版本确认）。
 
 **picker**
@@ -241,11 +241,10 @@ wrapper/slides/slide-frame 层级和指示点默认值已补（8×8/bottom 10/ga
 - 参考用原生 `showPickerView` 桥，当前是 DOM 浮层，滚动惯性和系统面板细节不同；
 - `headerText` 当前只作为标题。
 
-### 4.7 image / icon 的 longpress 与 lazy
+### 4.7 image contextmenu/lazy 与 icon 默认值
 
-- image `showMenuByLongpress` 未实现；
+- image `showMenuByLongpress` 已用浏览器 contextmenu 门控近似，仍不是微信系统菜单；
 - image `lazyLoad` 只是 probe 的 `loading="lazy"`；
-- icon 没有 `longpress`；
 - icon `type` 默认值与参考 2.7.0 的声明方式有版本差异。
 
 ### 4.8 P2 结构
