@@ -4,6 +4,8 @@
 
 基于 [glass-easel](https://github.com/wechat-miniprogram/glass-easel) 的小程序引擎：双线程 host、版本化 bridge 协议、独立编译器，以及浏览器调试器。
 
+**在线体验**：[Tiny 调试器在线版](https://yufji.github.io/tiny/devtool/index.html)，无需本地构建，可直接选择 `tests/apps` 下的示例应用运行。
+
 ## 架构
 
 ```text
