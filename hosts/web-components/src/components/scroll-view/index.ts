@@ -18,6 +18,7 @@ type ScrollRuntime = {
   __scrollThrottleTimer?: ReturnType<typeof setTimeout>
   __scrollPendingDetail?: Record<string, unknown>
   __lastScrollEmit?: number
+  __scrollingUntil?: number
   __refresherTimer?: ReturnType<typeof setTimeout>
   __dragStart?: { x: number; y: number; scrollTop: number }
   __dragging?: boolean
@@ -63,6 +64,7 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
     options: ctx.hostOptions({ multipleSlots: true }),
     lifetimes: {
       attached() {
+        this.initScroller()
         this.applyScrollAnimation()
         this.applyScrollPosition('scrollTop')
         this.applyScrollPosition('scrollLeft')
@@ -94,6 +96,24 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
       },
     },
     methods: {
+      initScroller() {
+        ;(this as unknown as { __scrollerInitialized?: boolean }).__scrollerInitialized = true
+      },
+      isScrolling() {
+        return Date.now() < Number((this as unknown as ScrollRuntime).__scrollingUntil ?? 0)
+      },
+      scrollTo(scrollTop: number, scrollLeft: number, behavior: 'auto' | 'smooth' = 'auto') {
+        const element = this.backend() as (ScrollBackend & {
+          scrollTo?: (options: { top: number; left: number; behavior: string }) => void
+        }) | null
+        if (!element) return
+        if (typeof element.scrollTo === 'function') {
+          element.scrollTo({ top: scrollTop, left: scrollLeft, behavior })
+        } else {
+          element.scrollTop = scrollTop
+          element.scrollLeft = scrollLeft
+        }
+      },
       backend(): ScrollBackend | null {
         const element = (this.getShadowRoot?.() as {
           getElementById?: (id: string) => { getBackendElement?: () => ScrollBackend | null } | null
@@ -114,7 +134,13 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
           return
         }
         const value = Number(this.data[field] ?? 0)
-        if (Number.isFinite(value)) element[field] = value
+        if (Number.isFinite(value)) {
+          this.scrollTo(
+            field === 'scrollTop' ? value : Number(element.scrollTop ?? 0),
+            field === 'scrollLeft' ? value : Number(element.scrollLeft ?? 0),
+            this.data.scrollWithAnimation ? 'smooth' : 'auto',
+          )
+        }
       },
       scrollToElement(id: string, attempt: number) {
         const element = this.backend()
@@ -202,11 +228,7 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         const now = Date.now()
         if (instance.__lastTap && now - instance.__lastTap < 300) {
           instance.__lastTap = 0
-          const element = this.backend()
-          if (element) {
-            element.scrollTop = 0
-            element.scrollLeft = 0
-          }
+          this.scrollTo(0, 0, this.data.scrollWithAnimation ? 'smooth' : 'auto')
           return
         }
         instance.__lastTap = now
@@ -259,6 +281,7 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
           instance.__scrollStartTimer = undefined
           this.triggerEvent('scrollend', { scrollTop, scrollLeft }, { bubbles: true, composed: true })
         }, 120)
+        ;(this as unknown as ScrollRuntime).__scrollingUntil = Date.now() + 100
         const scrollDetail = {
           scrollTop,
           scrollLeft,

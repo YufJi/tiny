@@ -102,7 +102,7 @@
 - [x] 自绘浮层：遮罩、取消/标题/确定、`picker-view` 列；浮层补 `role=dialog`/`aria-modal`；
 - [x] `selector`/`multiSelector`/`date`/`time` 的 `range`/`rangeKey`/`start`/`end`/`fields`；
 - [x] `columnchange`/`change`/`cancel`/`disabled`；
-- [ ] `region` 模式未实现，点击不打开；
+- [x] `region` 模式按决策暂不支持；
 - [x] `customItem` 已支持 selector/multiSelector 的最后一列；`headerText` 作为标题；
 - [ ] 参考通过原生 `showPickerView` 桥弹出系统面板，我们仍用 DOM 浮层近似。
 
@@ -121,7 +121,7 @@
 - [x] 基础尺寸/颜色/圆角/loading/plain/mini/`:after` 边框；
 - [x] form submit/reset、hover、label 激活入口；
 - [x] `native` 分支已补 cover-view wrapper 结构（浏览器下仍是普通 DOM 容器）；
-- [ ] `open-type` 仍走失败回调，不是真实能力；
+- [x] 真实 `open-type` 按决策暂不支持，仍走失败回调；
 - [x] `longtap`/`canceltap` 通过 touch 定时器补上，并抑制长按后的 tap。
 
 **input / textarea**
@@ -129,13 +129,13 @@
 - [x] input 键盘输入（`catchkeydown` 导致 `preventDefault`，字符无法插入）已修复；
 - [x] input 的 wrapper/placeholder 层已补；原生 placeholder 保留用于查询和无障碍；
 - [x] input 的 `focus`/`autoFocus`/`cursor`/`selectionStart`/`selectionEnd` 已映射到原生 input；
-- [x] input 已补 dropdown `<ul>` 骨架和 `dropdownStyle` 属性；自动填充数据仍未接；
-- [ ] input 的镜像 div 仍未实现；
+- [x] input 已补 dropdown `<ul>` 骨架和 `dropdownStyle` 属性；按决策默认关闭，不接自动填充数据；
+
 - [x] textarea 的 wrapper/placeholder/scrollHeight autoHeight 已补；
 - [x] textarea 的 focus/autoFocus/cursor/selection 已映射到原生控件；
 - [x] textarea 的 compute/stylecompute 层和 `disable-default-padding` class 已补；
 - [x] textarea 补 `enterkeyhint` 映射；
-- [ ] textarea 的 `fixed`/`showConfirmBar` 和 placeholderClass 前缀仍未实现。
+- [x] textarea 的 `fixed`/`showConfirmBar` 按决策暂不支持，等待 native 宿主。
 
 **scroll-view / swiper**
 
@@ -143,7 +143,7 @@
 - [x] scroll-view 的 `scroll` 事件已按 `throttle` 做 50ms 节流；`enableBackToTop` 支持双击回顶；
 - [x] `scroll-into-view` 增加目标延迟重试，滚动结果更稳定；
 - [x] `showScrollbar`/`bounces`/`pagingEnabled`/`scrollAnchoring`/`enableFlex` 映射到 CSS 状态类；
-- [ ] `wx-touchtrack`/`wx-scroller` 的完整状态和回收策略仍是近似；
+- [ ] `wx-touchtrack`/`wx-scroller` 的完整状态和回收策略仍是近似（已补 scroller state API，底层仍 native）；
 - [x] swiper 的 wrapper/slides/slide-frame 和 item 均为绝对定位层，offset 通过 CSS 变量写入；
 - [x] swiper 指示点默认已对齐：8×8、bottom 10、gap 8、`rgba(0,0,0,.3)`/`#000`；
 - [x] `currentItemId` 可定位到对应 item；
@@ -195,12 +195,23 @@
 
 ## 4. 剩余问题详细
 
+### 4.0 已确认暂不支持（2026-10-26）
+
+以下为产品/宿主决策，不再作为待修复项：
+
+- `picker` 的 `region` 模式暂不支持；
+- `button` 的真实 `open-type` 暂不支持；
+- `input` 自动填充 dropdown 默认关闭，不接 devtools 自动填充数据；
+- input/textarea 的原生键盘属性（`adjustPosition`/`holdKeyboard`/`fixed`/`showConfirmBar`）暂不支持，待后续 native 宿主；
+- swiper-item 继续使用祖先通知的等价 relation，不接 glass `getRelationNodes`。
+
+
 ### 4.1 input 的剩余交互
 
 wrapper 和 placeholder 层已补，原生 placeholder 仍保留用于查询/无障碍。仍缺：
 
-- 下拉候选目前只有空 `<ul>` 骨架，devtools 自动填充数据未接；
-- `adjustPosition`/`holdKeyboard` 的键盘行为依赖原生宿主。
+- 下拉候选只有空 `<ul>` 骨架，按决策默认关闭，不接自动填充数据；
+- `adjustPosition`/`holdKeyboard` 按决策暂不支持，等待 native 宿主。
 
 参考 2.7.0 的 input 模板本身没有单独的密码镜像层，原生 `type=password` 已覆盖显示。
 
@@ -212,7 +223,7 @@ wrapper 和 placeholder 层已补，原生 placeholder 仍保留用于查询/无
 
 wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 
-- `fixed`、`showConfirmBar` 的键盘行为仍依赖原生宿主；
+- `fixed`、`showConfirmBar` 按决策暂不支持，等待 native 宿主；
 - `disableDefaultPadding` 已映射为 class，compute/stylecompute 层已补。
 
 `focus`/`autoFocus`/`cursor`/`selectionStart`/`selectionEnd` 已映射到原生 textarea。
@@ -221,7 +232,7 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 
 三层结构和 `backend` 指向 main 已完成。仍缺：
 
-- `wx-touchtrack`/`wx-scroller` 的完整滚动状态；
+- `wx-touchtrack`/`wx-scroller` 的完整触摸/滚动状态；当前补了 scroller 的 `isScrolling`/`scrollTo` 状态 API，但底层仍是原生滚动；
 - 当前 refresher 是自定义扩展，参考 2.7.0 没有同套属性/事件；
 - 列表回收/长列表性能策略未实现。
 
@@ -230,12 +241,12 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 ### 4.4 button 的 native/open-type
 
 - `native` 分支已有 cover-view 结构，但没有原生 cover-view 能力；
-- `open-type` 只触发失败回调，不是真实能力；
+- `open-type` 按决策暂不支持，只触发失败回调；
 - `longtap`/`canceltap` 已补，剩余是原生能力分支。
 
 ### 4.5 picker 的剩余模式
 
-- `region` 未实现；
+- `region` 按决策暂不支持；
 - 参考用原生 `showPickerView` 桥，当前是 DOM 浮层，滚动惯性和系统面板细节不同；
 - `headerText` 当前只作为标题。
 
