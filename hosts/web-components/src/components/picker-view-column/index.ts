@@ -48,9 +48,11 @@ export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
       attached() {
         this.syncColumnIndex()
         this.bindPointerDrag()
+        this.triggerEvent('wxPickerColumnChanged', {}, { bubbles: true, composed: true })
       },
       detached() {
         ;(this as unknown as { _pointerCleanup?: () => void })._pointerCleanup?.()
+        this.triggerEvent('wxPickerColumnChanged', {}, { bubbles: true, composed: true })
       },
       ready() {
         this.syncColumnIndex()
@@ -133,6 +135,7 @@ export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
       },
       emitChange(column: number, value: number) {
         this.triggerEvent('columnchange', { column, value }, { bubbles: true, composed: true })
+        this.triggerEvent('wxPickerColumnValueChanged', { idx: value }, { bubbles: true, composed: true })
       },
       beginDrag(y: number) {
         const instance = this as unknown as {
@@ -151,6 +154,7 @@ export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
         instance._velocity = 0
         this.setData({ dragging: true })
         this.triggerEvent('columnstart', {}, { bubbles: true, composed: true })
+        this.triggerEvent('wxPickerColumnValueChangeStart', {}, { bubbles: true, composed: true })
       },
       moveDrag(y: number) {
         const instance = this as unknown as {
@@ -193,6 +197,7 @@ export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
         this.setData({ dragging: false })
         if (instance._moved) this.emitChange(Number(this.data.column), index)
         this.triggerEvent('columnend', { value: index }, { bubbles: true, composed: true })
+        this.triggerEvent('wxPickerColumnValueChangeEnd', { idx: index }, { bubbles: true, composed: true })
       },
       bindPointerDrag() {
         const element = (this as unknown as { getBackendElement?: () => ColumnElement | null })

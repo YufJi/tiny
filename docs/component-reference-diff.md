@@ -113,7 +113,7 @@
 - [x] `indicator-style` 高度解析、item 高度/遮罩/居中位置跟随；
 - [x] 初始 `value` 同步、越界 clamp、`columnchange`/`pickstart`/`pickend`；
 - [x] 已补基于拖动速度的惯性 + 越界阻力回弹；
-- [ ] 内部事件名与参考 `wxPickerColumnValueChanged` 等不同。
+- [x] 兼容触发 `wxPickerColumnChanged`/`wxPickerColumnValueChanged`/`wxPickerColumnValueChangeStart/End`。
 
 **button**
 
@@ -258,7 +258,7 @@ wrapper/slides/slide-frame 层级和指示点默认值已补（8×8/bottom 10/ga
 - `wx-touchtrack`：各组件零散 touch/pointer 事件，没有统一 tap 判定、捕获和取消语义；
 - checkbox/radio 的精确 tap/aria 仍依赖原生 label/input，没有复刻参考的 touchtrack/aria 组合；
 - `wx-scroller`：scroll-view 已做 scroll 节流、picker-view 已做简单惯性，但 swiper/scroll 的统一滚动状态模型仍缺；
-- picker-view：已补速度惯性和越界阻力回弹，内部事件名仍与参考不同。
+- picker-view：已补速度惯性、越界阻力回弹和参考内部事件名兼容。
 
 ## 5. 历史处理记录
 
