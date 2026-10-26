@@ -27,8 +27,66 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
       adjustPosition: { type: Boolean, value: true },
       holdKeyboard: { type: Boolean, value: false },
     },
+    observers: {
+      focus(value: boolean) {
+        if (value) this.focusNative()
+        else this.blurNative()
+      },
+      autoFocus(value: boolean) {
+        if (value) setTimeout(() => this.focusNative(), 0)
+      },
+      'cursor, selectionStart, selectionEnd'() {
+        this.applySelection()
+      },
+    },
+    lifetimes: {
+      attached() {
+        if (this.data.autoFocus || this.data.focus) setTimeout(() => this.focusNative(), 0)
+      },
+    },
     options: ctx.hostOptions(),
     methods: {
+      nativeInput(): {
+        focus?: () => void
+        blur?: () => void
+        setSelectionRange?: (start: number, end: number) => void
+        value?: string
+      } | null {
+        const element = (this.getShadowRoot?.() as {
+          getElementById?: (id: string) => { getBackendElement?: () => unknown } | null
+        } | null)?.getElementById?.('native-input')?.getBackendElement?.()
+        return (element as {
+          focus?: () => void
+          blur?: () => void
+          setSelectionRange?: (start: number, end: number) => void
+          value?: string
+        } | null) ?? null
+      },
+      focusNative() {
+        const element = this.nativeInput()
+        if (!element?.focus) return
+        element.focus()
+        this.applySelection()
+      },
+      blurNative() {
+        this.nativeInput()?.blur?.()
+      },
+      applySelection() {
+        const element = this.nativeInput()
+        if (!element?.setSelectionRange) return
+        const value = String(element.value ?? this.data.value ?? '')
+        const cursor = Number(this.data.cursor ?? -1)
+        let start = Number(this.data.selectionStart ?? -1)
+        let end = Number(this.data.selectionEnd ?? -1)
+        if (cursor >= 0) {
+          start = cursor
+          end = cursor
+        }
+        if (start < 0 && end < 0) return
+        const max = value.length
+        const clamp = (position: number) => Math.max(0, Math.min(max, Number.isFinite(position) ? position : 0))
+        element.setSelectionRange(clamp(start), clamp(end))
+      },
       handleInput(event: glassEasel.ShadowedEvent<unknown>) {
         const detail = (event.detail ?? {}) as { value?: unknown; cursor?: unknown; keyCode?: unknown }
         const value = valueFromEvent(event)

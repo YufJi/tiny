@@ -127,7 +127,8 @@
 
 - [x] input 键盘输入（`catchkeydown` 导致 `preventDefault`，字符无法插入）已修复；
 - [x] input 的 wrapper/placeholder 层已补；原生 placeholder 保留用于查询和无障碍；
-- [ ] input 的镜像 div/下拉候选/`dropdownStyle`/focus/selection 镜像仍未实现；
+- [x] input 的 `focus`/`autoFocus`/`cursor`/`selectionStart`/`selectionEnd` 已映射到原生 input；
+- [ ] input 的镜像 div/下拉候选/`dropdownStyle` 仍未实现；
 - [x] textarea 的 wrapper/placeholder/scrollHeight autoHeight 已补；
 - [ ] textarea 的 `fixed`/`showConfirmBar`/`disableDefaultPadding` 和 placeholderClass 前缀仍未实现。
 
@@ -191,8 +192,9 @@ wrapper 和 placeholder 层已补，原生 placeholder 仍保留用于查询/无
 - `dropdownStyle` 和下拉候选结构；
 - 密码/占位 `showValue` 镜像同步；
 - `placeholderClass` 的参考前缀处理；
-- `focus`/`selection` 的镜像逻辑；
 - `adjustPosition`/`holdKeyboard` 的键盘行为。
+
+`focus`/`autoFocus`/`cursor`/`selectionStart`/`selectionEnd` 已映射到原生 input。
 
 键盘输入本身已在 [input/template.wxml](../hosts/web-components/src/components/input/template.wxml) 修复，不再使用 `catchkeydown`。
 
