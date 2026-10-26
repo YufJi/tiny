@@ -58,6 +58,10 @@ export function defineButton(ctx: BuiltinContext): BuiltinDefinition {
         // page listeners, so disabled only suppresses form/open-type semantics.
         bindHostListeners(this, {
           tap: (event) => this.handleTap(event),
+          touchstart: (event) => this.handleButtonTouchStart(event),
+          touchmove: (event) => this.handleButtonTouchMove(event),
+          touchend: (event) => this.handleButtonTouchEnd(event),
+          touchcancel: (event) => this.handleButtonTouchEnd(event),
         })
       },
       detached() {
@@ -65,10 +69,64 @@ export function defineButton(ctx: BuiltinContext): BuiltinDefinition {
       },
     },
     methods: {
+      touchPoint(event: glassEasel.ShadowedEvent<unknown>): { x: number; y: number } {
+        const detail = (event.detail ?? {}) as {
+          touches?: Array<{ clientX?: number; clientY?: number }>
+          changedTouches?: Array<{ clientX?: number; clientY?: number }>
+        }
+        const touch = detail.touches?.[0] ?? detail.changedTouches?.[0]
+        return { x: Number(touch?.clientX ?? 0), y: Number(touch?.clientY ?? 0) }
+      },
+      clearLongTap() {
+        const instance = this as unknown as { _longTapTimer?: ReturnType<typeof setTimeout> }
+        if (instance._longTapTimer) clearTimeout(instance._longTapTimer)
+        instance._longTapTimer = undefined
+      },
+      handleButtonTouchStart(event: glassEasel.ShadowedEvent<unknown>) {
+        if (this.data.disabled) return
+        const instance = this as unknown as {
+          _longTapTimer?: ReturnType<typeof setTimeout>
+          _longTapStart?: { x: number; y: number }
+          _longTapFired?: boolean
+        }
+        this.clearLongTap()
+        instance._longTapStart = this.touchPoint(event)
+        instance._longTapFired = false
+        instance._longTapTimer = setTimeout(() => {
+          instance._longTapTimer = undefined
+          instance._longTapFired = true
+          this.triggerEvent('longtap', { ...instance._longTapStart }, { bubbles: true, composed: true })
+        }, 350)
+      },
+      handleButtonTouchMove(event: glassEasel.ShadowedEvent<unknown>) {
+        const instance = this as unknown as {
+          _longTapStart?: { x: number; y: number }
+          _longTapFired?: boolean
+        }
+        const start = instance._longTapStart
+        if (!start) return
+        const point = this.touchPoint(event)
+        if (Math.hypot(point.x - start.x, point.y - start.y) > 10) {
+          this.clearLongTap()
+          if (!instance._longTapFired) {
+            instance._longTapFired = true
+            this.triggerEvent('canceltap', {}, { bubbles: true, composed: true })
+          }
+        }
+      },
+      handleButtonTouchEnd(_event?: unknown) {
+        void _event
+        this.clearLongTap()
+      },
       handleLabelTap(event: glassEasel.ShadowedEvent<unknown>) {
         this.handleTap(event)
       },
       handleTap(event: glassEasel.ShadowedEvent<unknown>) {
+        const instance = this as unknown as { _longTapFired?: boolean }
+        if (instance._longTapFired) {
+          instance._longTapFired = false
+          return
+        }
         if (this.data.disabled) {
           event.stopPropagation()
           return

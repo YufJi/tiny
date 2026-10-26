@@ -152,6 +152,29 @@ describe('P0 built-in components', () => {
   })
 
 
+  test('button emits longtap and canceltap without also emitting tap', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const events: string[] = []
+    const page = space.defineComponent({
+      is: 'page',
+      using: { button: builtins.button },
+      template: compilePage('<button id="button" bindlongtap="onLong" bindcanceltap="onCancel">Tap</button>'),
+      methods: {
+        onLong() { events.push('longtap') },
+        onCancel() { events.push('canceltap') },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const button = instance.getShadowRoot()?.getElementById('button')?.asGeneralComponent()!
+    button.triggerEvent('touchstart', { touches: [{ clientX: 10, clientY: 20 }] })
+    await new Promise((resolve) => setTimeout(resolve, 370))
+    expect(events).toEqual(['longtap'])
+    button.triggerEvent('touchstart', { touches: [{ clientX: 10, clientY: 20 }] })
+    button.triggerEvent('touchmove', { touches: [{ clientX: 40, clientY: 20 }] })
+    expect(events).toEqual(['longtap', 'canceltap'])
+  })
+
   test('view reuses the shared base and hover behaviors', async () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)

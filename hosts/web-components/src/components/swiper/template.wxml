@@ -5,7 +5,11 @@
   bindtouchstart="handleTouchStart"
   bindtouchend="handleTouchEnd"
 >
-  <div class="tiny-swiper-track" style="{{trackStyle}}"><slot /></div>
+  <div class="tiny-swiper-wrapper">
+    <div class="tiny-swiper-slides">
+      <div class="tiny-swiper-track tiny-swiper-slide-frame" style="{{trackStyle}}"><slot /></div>
+    </div>
+  </div>
   <div class="tiny-swiper-dots" hidden="{{!indicatorDots}}">
     <div
       wx:for="{{dots}}"

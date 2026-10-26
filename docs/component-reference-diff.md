@@ -65,13 +65,13 @@
 
 - [x] 从原生控件改为 `label` + 隐藏原生 input + 自定义视觉 span；
 - [x] 22×22、边框/圆角/选中色/禁用态对齐参考；
-- [ ] `checkbox-group` / `radio-group` 没有公开受控 `value`，初始值和外部更新不会同步子项；
+- [x] `checkbox-group` / `radio-group` 的受控 `value`：初始值、外部更新和子项回写已打通；
 - [ ] 与参考 `wx-touchtrack`/aria 的精确 tap 判定尚未完全对齐（基础点击走原生 label/input）。
 
 **switch**
 
 - [x] 52×32、圆形滑块、选中色 `#04BE02`；
-- [ ] `type="checkbox"` 只有属性，没有对应的 checkbox 视觉分支；
+- [x] `type="checkbox"` 渲染独立 checkbox 视觉分支，原生 input 继续承担表单语义；
 - [x] 原生 checkbox input 作为表单/无障碍兜底。
 
 **slider**
@@ -121,39 +121,41 @@
 - [x] form submit/reset、hover、label 激活入口；
 - [ ] 没有 `native` 的 cover-view 分支；
 - [ ] `open-type` 仍走失败回调，不是真实能力；
-- [ ] `longtap`/`canceltap` 事件没有完整映射。
+- [x] `longtap`/`canceltap` 通过 touch 定时器补上，并抑制长按后的 tap。
 
 **input / textarea**
 
 - [x] input 键盘输入（`catchkeydown` 导致 `preventDefault`，字符无法插入）已修复；
-- [ ] input 参考 wrapper/镜像 div/下拉候选/`dropdownStyle`/`autoHeight` 未实现；
-- [ ] textarea 参考 placeholder/compute 层、`autoHeight`、`fixed`、`showConfirmBar`、`disableDefaultPadding` 未实现。
+- [x] input 的 wrapper/placeholder 层已补；原生 placeholder 保留用于查询和无障碍；
+- [ ] input 的镜像 div/下拉候选/`dropdownStyle`/focus/selection 镜像仍未实现；
+- [x] textarea 的 wrapper/placeholder/scrollHeight autoHeight 已补；
+- [ ] textarea 的 `fixed`/`showConfirmBar`/`disableDefaultPadding` 和 placeholderClass 前缀仍未实现。
 
 **scroll-view / swiper**
 
-- [ ] scroll-view 仍是单层原生 overflow，参考是 `wrap > main > content` 三层；
-- [ ] scroll-view 缺少 `wx-touchtrack`/`wx-scroller` 的滚动状态、节流、`scroll-into-view` 精确语义；
-- [ ] swiper 仍是 flex track，参考是绝对定位 slide-frame + transform；
-- [ ] swiper 指示点尺寸已到 8×8，但 bottom 仍是 8（参考 10）、gap 6（参考 8）、颜色是白色（参考 `rgba(0,0,0,.3)`/`#000`）；
+- [x] scroll-view 已改为 wrap/main/content 三层，滚动发生在外层 main，backend 指向 main；
+- [ ] scroll-view 的 `wx-touchtrack`/`wx-scroller` 状态、节流、`scroll-into-view` 精确语义仍是近似；
+- [x] swiper 已补 `wrapper > slides > slide-frame` 结构；track 仍是 flex，参考是绝对定位 + transform；
+- [x] swiper 指示点默认已对齐：8×8、bottom 10、gap 8、`rgba(0,0,0,.3)`/`#000`；
 - [ ] `skipHiddenItemLayout`、`currentItemId` 等布局细节未完整实现。
 
 **form / 分组**
 
-- [ ] form 参考有 `span#wrapper`，我们是宿主直接挂 slot；
-- [ ] 自定义组件 `wx://form-field` 尚未接入；
-- [ ] `reportSubmit` 只有属性，没有上报行为；
-- [ ] `label` 的 `for`/包裹激活只依赖原生 `<label>`，`label-target` behavior 仍为空实现。
+- [x] form 已补参考的 `span#wrapper`；
+- [x] 自定义组件 `wx://form-field` 已接入 form 收集（内部 `tiny-form-field` marker behavior）；
+- [x] `reportSubmit` 已补 `beforereportsubmit` + mock formId；真实上报仍依赖宿主能力；
+- [x] `label` 改为 slot-only 宿主 + host tap，`for`/包裹激活走 label-target，不再依赖原生 double activation。
 
 ### 2.3 P2 细节
 
 - [x] `view`：真宿主 + slot，class/style/id/data-*/hidden 均可用；
 - [x] `text`：`display:inline`、`selectable` 基础语义；
-- [x] `label`：带 `for` 用原生 label，否则包裹式 label；
-- [ ] `canvas`：参考默认 300×150 且内部 canvas 绝对定位；我们宽度 100%、高度 150，实际是离屏镜像；
-- [ ] `progress`：参考 `div.wx-progress-bar > div.wx-progress-inner-bar`；我们 track/bar 结构，`active` 逐帧动画未实现（默认色已对齐）；
+- [x] `label`：slot-only 宿主 + host tap，`for`/包裹激活走 label-target；
+- [x] `canvas` 默认尺寸 300×150 + 容器/绝对定位层已补；实际渲染仍是离屏镜像；
+- [x] `progress` 结构已改为参考的 `bar > inner-bar`；
+- [ ] `progress` 的 `active` 逐帧动画仍未实现（默认色已对齐）；
 - [ ] `swiper-item`：参考依赖 `wx-swiper` relation 和 slide-frame 布局；我们只是普通 slot 容器。
 
-group 受控 `value`、`switch type="checkbox"`、`label-target` 属于交互/语义缺口，见 2.2 和 4.1–4.3。
 
 ### 2.4 历史回归问题（已修复，保留记录）
 
@@ -170,96 +172,66 @@ group 受控 `value`、`switch type="checkbox"`、`label-target` 属于交互/�
 - **P0 视觉**：checkbox、radio、switch、slider、icon、image、picker、picker-view、picker-view-column 共 9 个标签完成结构/默认外观重写。
 - **picker 交互**：selector/multiSelector/date/time 的浮层、确认/取消/columnchange、列值同步。
 - **picker-view 交互**：mask/indicator/content、transform 吸附、tap 定位、触摸/鼠标拖动、pickstart/pickend。
-- **回归修复**：input 键盘输入、ECharts 图片样式/空白、picker-view 居中/初始值、devtool 验收 app 固定。
+- **表单/语义**：group 受控 value、switch type=checkbox、label-target、form-field、reportSubmit mock、form wrapper。
+- **输入/滚动**：input/textarea wrapper + placeholder 层、textarea autoHeight、scroll-view 三层、progress bar/inner-bar、canvas 300×150、swiper 默认指示点。
+- **回归修复**：input 键盘输入、label 双触发、ECharts 图片样式/空白、picker-view 居中/初始值、devtool 验收 app 固定。
+- **P2 补强**：button longtap/canceltap、canvas 容器层、swiper wrapper/slides/frame、progress bar/inner-bar。
 
 对应实现集中在 [hosts/web-components/src/components](../hosts/web-components/src/components)，单测在 [hosts/web-components/tests/builtin-components.test.ts](../hosts/web-components/tests/builtin-components.test.ts)。
 
 ## 4. 剩余问题详细
 
-### 4.1 group 受控 value
+### 4.1 input 的剩余交互
 
-`checkbox-group` 只有内部 `selected`，`radio-group` 只有内部 `value`，两者都没有公开 property。结果是：
+wrapper 和 placeholder 层已补，原生 placeholder 仍保留用于查询/无障碍。仍缺：
 
-- `<checkbox-group value="{{selected}}">` 初始值不生效；
-- 外部 `setData` 改 group value 不会同步子项；
-- 表单收集与参考 `wx-group` 语义不一致。
+- `dropdownStyle` 和下拉候选结构；
+- 密码/占位 `showValue` 镜像同步；
+- `placeholderClass` 的参考前缀处理；
+- `focus`/`selection` 的镜像逻辑；
+- `adjustPosition`/`holdKeyboard` 的键盘行为。
 
-修复方向：补 `value` property + observer，group 初始化时按 value 设置子项，子项 change 时回写并触发 group change；参考 `wx-group` 的 `addItem/removeItem/renameItem/changed`。
+键盘输入本身已在 [input/template.wxml](../hosts/web-components/src/components/input/template.wxml) 修复，不再使用 `catchkeydown`。
 
-### 4.2 switch `type="checkbox"`
+### 4.2 textarea 的剩余属性
 
-`type` property 存在，但模板始终渲染 switch 轨道。参考在 `type="checkbox"` 时渲染方形 checkbox 外观。需要模板分支 + 对应 CSS，保持原生 checkbox input 的表单语义。
+wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 
-### 4.3 label-target
+- `fixed`、`showConfirmBar`、`disableDefaultPadding` 的视觉/键盘行为；
+- `placeholderClass` 的参考前缀处理；
+- 参考 `compute`/`stylecompute` 层的完整镜像语义。
 
-`labelTarget` behavior 目前是空方法；`label` 通过原生 `<label for>`/包裹激活，能覆盖基础场景，但：
+### 4.3 scroll-view 的滚动模型
 
-- 自定义组件作为 label 目标时没有显式分发；
-- 参考的 `label` 对 checkbox/radio/button/input 的激活时序没有完整对齐。
+三层结构和 `backend` 指向 main 已完成。仍缺：
 
-修复方向：label tap 时查找 `for` 对应宿主或包裹内的 label-target 组件，调用 `handleLabelTap`；补对应单测。
-
-### 4.4 form-field / reportSubmit
-
-- 未接入 `wx://form-field`，自定义表单组件不能进入 form 收集；
-- `reportSubmit` 只保留属性，没有提交上报；
-- form 使用 DFS 收集，和参考的 `wx-group` + data-component 组合仍有差异。
-
-### 4.5 input 内部结构
-
-当前是一个原生 `input.tiny-input`。参考结构包含 wrapper、密码/占位镜像、下拉候选。缺口：
-
-- `dropdownStyle`、`showValue` 镜像同步；
-- `placeholderClass` 的前缀处理（当前直接拼 class）；
-- `autoHeight`/`adjustPosition`/`holdKeyboard` 的视觉/键盘行为；
-- `focus`/selection 的镜像逻辑。
-
-注：键盘输入本身已在 [input/template.wxml](../hosts/web-components/src/components/input/template.wxml) 修复，当前不再用 `catchkeydown`。
-
-### 4.6 textarea 内部结构
-
-当前是原生 `textarea.tiny-textarea`。参考是：
-
-```text
-div#wrapped
-  ├── div#placeholder
-  ├── textarea#textarea
-  ├── div#compute
-  └── div#stylecompute
-```
-
-缺口：`autoHeight` 真正计算高度、placeholder 层、`fixed`、`showConfirmBar`、`disableDefaultPadding`、`placeholderStyle` 完整支持。
-
-### 4.7 scroll-view
-
-当前单层 `div.tiny-scroll-view` + 原生 overflow。参考是 `wrap > main > content` 三层，且：
-
-- 默认 `height:100%; max-height:inherit`；
 - `wx-touchtrack`/`wx-scroller` 的滚动状态、节流、`scroll-into-view` 精确语义；
-- 当前 refresher 是自定义扩展，参考 2.7.0 没有同套属性/事件。
+- 当前 refresher 是自定义扩展，参考 2.7.0 没有同套属性/事件；
+- 列表回收/长列表性能策略未实现。
 
-### 4.8 swiper
+### 4.4 swiper 的布局与剩余属性
 
-当前 flex track。参考是绝对定位 slide-frame + transform，指示点默认 8×8/bottom 10/gap 8/`rgba(0,0,0,.3)`，我们 6×6/bottom 8/gap 6/白色。还需：
+wrapper/slides/slide-frame 层级和指示点默认值已补（8×8/bottom 10/gap 8/`rgba(0,0,0,.3)`/`#000`）。仍缺：
 
-- `currentItemId`、`displayMultipleItems`、`previousMargin`/`nextMargin` 的布局细节；
+- slide-frame 仍用 flex track，参考是绝对定位 + transform；
+- `currentItemId`、`displayMultipleItems`、`previousMargin`/`nextMargin` 的精确布局；
 - `skipHiddenItemLayout`；
 - swiper-item 与 swiper 的 relation。
 
-### 4.9 button 的 native/open-type
+### 4.5 button 的 native/open-type
 
 - 没有 `native` 的 cover-view 分支；
 - `open-type` 只触发失败回调，不是真实能力；
-- `longtap`/`canceltap` 未完整映射。
+- `longtap`/`canceltap` 已补，剩余是原生能力分支。
 
-### 4.10 picker 的剩余模式
+### 4.6 picker 的剩余模式
 
 - `region` 未实现；
 - `customItem` 未渲染；
 - 参考用原生 `showPickerView` 桥，当前是 DOM 浮层，滚动惯性和系统面板细节不同；
 - `headerText` 当前只作为标题。
 
-### 4.11 image / icon 的 longpress 与 lazy
+### 4.7 image / icon 的 longpress 与 lazy
 
 - image `showMenuByLongpress` 未实现；
 - image `lazyLoad` 只是 probe 的 `loading="lazy"`；
@@ -267,19 +239,17 @@ div#wrapped
 - icon 没有 `longpress`；
 - icon `type` 默认值与参考 2.7.0 的声明方式有版本差异。
 
-### 4.12 P2 结构
+### 4.8 P2 结构
 
-- `canvas`：参考默认 300×150、内部 canvas 绝对定位；当前宽度 100%、高度 150，离屏镜像；
-- `progress`：参考 `div.wx-progress-bar > div.wx-progress-inner-bar`；当前 track/bar，`active` 逐帧动画未实现；
-- `swiper-item`：参考依赖 swiper relation 和 slide-frame；当前普通 slot 容器；
-- `view`/`text`/`label` 的基础宿主已对齐，但 label-target 仍是缺口（见 4.3）。
+- `canvas`：默认尺寸/容器层已补，实际渲染仍是离屏镜像；
+- `progress`：`bar > inner-bar` 结构已对齐，`active` 逐帧动画未实现；
+- `swiper-item`：参考依赖 swiper relation 和 slide-frame；当前普通 slot 容器。
 
-### 4.13 behaviors / 事件语义
+### 4.9 behaviors / 事件语义
 
 - `wx-touchtrack`：各组件零散 touch/pointer 事件，没有统一 tap 判定、捕获和取消语义；
 - checkbox/radio 的精确 tap/aria 仍依赖原生 label/input，没有复刻参考的 touchtrack/aria 组合；
 - `wx-scroller`：scroll-view/swiper 的滚动状态、节流、惯性没有统一模型；
-- `wx-group`：group 的子项注册/重命名/受控值仍不完整；
 - picker-view：没有参考的惯性/回弹，内部事件名不同。
 
 ## 5. 历史处理记录
@@ -311,9 +281,9 @@ pnpm lint                # 8 files checked, no fixes applied
 | `@tiny/template-compiler` | 30 |
 | `@tiny/stylesheet-compiler` | 29 |
 | `@tiny/cli` | 12 |
-| `@tiny/host-web-components` | 23 |
-| `@tiny/runtime` | 64 |
-| **合计** | **168** |
+| `@tiny/host-web-components` | 29 |
+| `@tiny/runtime` | 65 |
+| **合计** | **175** |
 
 ### 6.3 浏览器验收
 
@@ -331,10 +301,9 @@ pnpm lint                # 8 files checked, no fixes applied
 
 - picker 浮层的 selector/multiSelector/date/time；
 - picker-view 的拖动/吸附/初始 value；
-- group 受控 value；
-- form-field；
+- form-field/reportSubmit 在真实多线程宿主中的完整链路；
 - button native/open-type；
-- canvas 300×150、progress active 动画。
+- progress active 动画、swiper 绝对定位布局。
 
 ### 6.5 全项目分数
 

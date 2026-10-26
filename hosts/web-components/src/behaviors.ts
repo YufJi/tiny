@@ -38,7 +38,6 @@ export function bindHostListeners(
   if (typeof target.addListener !== 'function') return
   target._hostListeners ??= []
   for (const [name, handler] of Object.entries(bindings)) {
-    if (target._hostListeners.some((item) => item.name === name)) continue
     const listener = (event: HostEvent) => handler(event)
     target.addListener(name, listener)
     target._hostListeners.push({ name, listener })
