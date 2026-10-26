@@ -77,6 +77,14 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
           setTimeout(() => this.bootstrapSwiper(attempt + 1), 16)
         }
       },
+      handleItemIdChanged(item: unknown, itemId: string) {
+        const items = this.itemElements()
+        const index = items.indexOf(item)
+        if (index < 0) return
+        if (String(this.data.currentItemId ?? '') !== itemId) return
+        this.setData({ activeIndex: index })
+        this.updateTrackStyle()
+      },
       applyCurrentItemId(itemId: string, attempt: number) {
         const host = (this as unknown as { getBackendElement?: () => { querySelectorAll?: (selector: string) => ArrayLike<Element> } | null }).getBackendElement?.()
         const items = host?.querySelectorAll?.('tiny-swiper-item, .tiny-swiper-item')

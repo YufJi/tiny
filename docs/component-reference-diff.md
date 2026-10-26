@@ -27,7 +27,7 @@
 
 1. **交互语义**：`wx-touchtrack`/`wx-scroller` 的等价逻辑、group 受控值、label 激活、picker 的 region 模式；
 2. **P1 组件的内部结构**：`input`、`textarea`、`scroll-view`、`swiper`、`form`、`button` 仍是“能用但近似”；
-3. **P2 细节**：`canvas`、`progress`、`swiper-item` 等结构差异，以及部分 longpress/lazy/事件名差异。
+3. **P2 细节**：`canvas`、`progress` 等结构差异，以及部分事件名/keyboard 行为差异。
 
 | 维度 | 状态 | 说明 |
 | --- | --- | --- |
@@ -150,7 +150,7 @@
 - [x] swiper wrapper 补 `role=listbox`/aria-label。
 - [x] `displayMultipleItems` 的 track 步长和 `skipHiddenItemLayout` 的可见项计数已补；
 - [x] `previousMargin`/`nextMargin` 已落到 wrapper padding，dots 不再被 inset；
-- [ ] swiper-item relation 未实现（用 DOM/child 扫描代替）。
+- [x] swiper-item 的 itemId 变化通过祖先通知同步 swiper（等价 relation 的主要用途）；未使用 glass `getRelationNodes`。
 
 **form / 分组**
 
@@ -168,7 +168,7 @@
 - [x] `progress` 结构已改为参考的 `bar > inner-bar`；
 - [x] `progress` 的 `active` 逐帧动画已补，`activeend` 带 `curPercent`；
 - [x] progress bar 补 `role=progressbar`/aria-valuenow。
-- [ ] `swiper-item`：参考依赖 `wx-swiper` relation 和 slide-frame 布局；我们只是普通 slot 容器。
+- [x] `swiper-item`：由 swiper 绝对定位和祖先通知驱动，不再只是普通 slot 容器。
 
 
 ### 2.4 历史回归问题（已修复，保留记录）
@@ -227,39 +227,30 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 - 当前 refresher 是自定义扩展，参考 2.7.0 没有同套属性/事件；
 - 列表回收/长列表性能策略未实现。
 
-### 4.4 swiper 的布局与剩余属性
-
-wrapper/slides/slide-frame 层级和指示点默认值已补（8×8/bottom 10/gap 8/`rgba(0,0,0,.3)`/`#000`）。仍缺：
-
-- slide-frame 已绝对定位，track 仍用 flex，item 级绝对定位未做；
-- `previousMargin`/`nextMargin` 的精确布局；
-- swiper-item 与 swiper 的 relation（当前用 DOM/child 扫描代替 glass relation）。
-
-### 4.5 button 的 native/open-type
+### 4.4 button 的 native/open-type
 
 - `native` 分支已有 cover-view 结构，但没有原生 cover-view 能力；
 - `open-type` 只触发失败回调，不是真实能力；
 - `longtap`/`canceltap` 已补，剩余是原生能力分支。
 
-### 4.6 picker 的剩余模式
+### 4.5 picker 的剩余模式
 
 - `region` 未实现；
 - 参考用原生 `showPickerView` 桥，当前是 DOM 浮层，滚动惯性和系统面板细节不同；
 - `headerText` 当前只作为标题。
 
-### 4.7 image contextmenu/lazy 与 icon 默认值
+### 4.6 image contextmenu/lazy 与 icon 默认值
 
 - image `showMenuByLongpress` 已用浏览器 contextmenu 门控近似，仍不是微信系统菜单；
 - image `lazyLoad` 已用 IntersectionObserver 控制 probe 挂载，并保留原生 `loading="lazy"` 作为双保险；
 - icon `type` 默认值与参考 2.7.0 的声明方式有版本差异。
 
-### 4.8 P2 结构
+### 4.7 P2 结构
 
 - `canvas`：默认尺寸/容器层已补，实际渲染仍是离屏镜像；
 - `progress`：`bar > inner-bar` 结构、默认色和 `active` 逐帧动画已对齐；
-- `swiper-item`：参考依赖 swiper relation 和 slide-frame；当前普通 slot 容器。
 
-### 4.9 behaviors / 事件语义
+### 4.8 behaviors / 事件语义
 
 - `wx-touchtrack`：各组件零散 touch/pointer 事件，没有统一 tap 判定、捕获和取消语义；
 - checkbox/radio 的精确 tap/aria 仍依赖原生 label/input，没有复刻参考的 touchtrack/aria 组合；
@@ -317,7 +308,7 @@ pnpm lint                # 8 files checked, no fixes applied
 - picker-view 的拖动/吸附/初始 value；
 - form-field/reportSubmit 在真实多线程宿主中的完整链路；
 - button native/open-type；
-- swiper-item relation、picker-view 越界回弹细节。
+- picker-view 越界回弹细节。
 
 ### 6.5 全项目分数
 

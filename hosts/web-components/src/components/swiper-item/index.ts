@@ -8,6 +8,22 @@ export function defineSwiperItem(ctx: BuiltinContext): BuiltinDefinition {
     properties: {
       itemId: { type: String, value: '' },
     },
+    observers: {
+      itemId(value: string) {
+        let node = (this as unknown as { parentNode?: unknown }).parentNode as {
+          asGeneralComponent?: () => { is?: string; handleItemIdChanged?: (item: unknown, id: string) => void } | null
+          parentNode?: unknown
+        } | null
+        for (let depth = 0; node && depth < 20; depth += 1) {
+          const parent = node.asGeneralComponent?.()
+          if (parent?.is === 'tiny-builtin:swiper') {
+            parent.handleItemIdChanged?.(this, String(value ?? ''))
+            return
+          }
+          node = node.parentNode as typeof node
+        }
+      },
+    },
     options: ctx.hostOptions({ multipleSlots: true }),
   }).general()
 }
