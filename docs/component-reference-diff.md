@@ -140,7 +140,7 @@
 - [x] `scroll-into-view` 增加目标延迟重试，滚动结果更稳定；
 - [x] `showScrollbar`/`bounces`/`pagingEnabled`/`scrollAnchoring`/`enableFlex` 映射到 CSS 状态类；
 - [ ] `wx-touchtrack`/`wx-scroller` 的完整状态和回收策略仍是近似；
-- [x] swiper 已补 `wrapper > slides > slide-frame` 结构；track 仍是 flex，参考是绝对定位 + transform；
+- [x] swiper 的 `wrapper > slides > slide-frame` 已改为绝对定位层；track 仍是 flex，item 级绝对定位未做；
 - [x] swiper 指示点默认已对齐：8×8、bottom 10、gap 8、`rgba(0,0,0,.3)`/`#000`；
 - [x] `currentItemId` 可定位到对应 item；
 - [x] `displayMultipleItems` 的 track 步长和 `skipHiddenItemLayout` 的可见项计数已补；
@@ -224,9 +224,9 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 
 wrapper/slides/slide-frame 层级和指示点默认值已补（8×8/bottom 10/gap 8/`rgba(0,0,0,.3)`/`#000`）。仍缺：
 
-- slide-frame 仍用 flex track，参考是绝对定位 + transform；
+- slide-frame 已绝对定位，track 仍用 flex，item 级绝对定位未做；
 - `previousMargin`/`nextMargin` 的精确布局；
-- swiper-item 与 swiper 的 relation。
+- swiper-item 与 swiper 的 relation（当前用 DOM/child 扫描代替 glass relation）。
 
 ### 4.5 button 的 native/open-type
 

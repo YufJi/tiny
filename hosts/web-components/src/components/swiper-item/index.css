@@ -9,3 +9,8 @@ tiny-swiper-item {
 tiny-swiper-item[hidden] {
   display: none;
 }
+
+tiny-swiper-item {
+  overflow: hidden;
+  will-change: transform;
+}
