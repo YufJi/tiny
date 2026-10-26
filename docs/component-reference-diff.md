@@ -120,7 +120,7 @@
 
 - [x] 基础尺寸/颜色/圆角/loading/plain/mini/`:after` 边框；
 - [x] form submit/reset、hover、label 激活入口；
-- [ ] 没有 `native` 的 cover-view 分支；
+- [x] `native` 分支已补 cover-view wrapper 结构（浏览器下仍是普通 DOM 容器）；
 - [ ] `open-type` 仍走失败回调，不是真实能力；
 - [x] `longtap`/`canceltap` 通过 touch 定时器补上，并抑制长按后的 tap。
 
@@ -235,7 +235,7 @@ wrapper/slides/slide-frame 层级和指示点默认值已补（8×8/bottom 10/ga
 
 ### 4.5 button 的 native/open-type
 
-- 没有 `native` 的 cover-view 分支；
+- `native` 分支已有 cover-view 结构，但没有原生 cover-view 能力；
 - `open-type` 只触发失败回调，不是真实能力；
 - `longtap`/`canceltap` 已补，剩余是原生能力分支。
 

@@ -49,9 +49,17 @@ export function defineButton(ctx: BuiltinContext): BuiltinDefinition {
       showMessageCard: { type: Boolean, value: false },
       categoryId: { type: Array, value: [] },
       needPhoneNumber: { type: Boolean, value: false },
+      native: { type: Boolean, value: false },
     },
     options: ctx.hostOptions(),
     lifetimes: {
+      attached() {
+        const element = (this as unknown as {
+          getBackendElement?: () => { setAttribute?: (name: string, value: string) => void } | null
+        }).getBackendElement?.()
+        element?.setAttribute?.('role', 'button')
+        element?.setAttribute?.('aria-label', String(this.data.ariaLabel ?? ''))
+      },
       created() {
         // The host is the button in WeChat. `[disabled] { pointer-events:none }`
         // blocks real taps; programmatic triggerEvent still reaches same-node

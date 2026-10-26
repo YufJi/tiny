@@ -149,6 +149,11 @@ describe('P0 built-in components', () => {
     // must at least not emit form/open-type semantics while disabled.
     expect(submits).toHaveLength(1)
     expect(diagnostics.filter((item) => item.code === 'UNSUPPORTED_BUTTON_OPEN_TYPE')).toHaveLength(2)
+
+    buttonHost.setData({ native: true })
+    const nativeHtml = glassEasel.dumpElementToString(buttonHost, true)
+    expect(nativeHtml).toContain('tiny-button-cover-view-wrapper')
+    expect(nativeHtml).toContain('tiny-button-cover-view')
   })
 
 

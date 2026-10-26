@@ -1,1 +1,6 @@
-<slot />
+<block wx:if="{{!native}}"><slot /></block>
+<block wx:else>
+  <cover-view class="tiny-button-cover-view-wrapper">
+    <cover-view class="tiny-button-cover-view"><slot /></cover-view>
+  </cover-view>
+</block>
