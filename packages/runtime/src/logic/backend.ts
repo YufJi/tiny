@@ -415,6 +415,14 @@ export class LogicBackendContext {
         tag: node === rootElement ? 'page' : node.tagName,
         props: propsFor(node),
         ...(datasetFor(node) ? { dataset: datasetFor(node) } : {}),
+        ...(node.listeners.length > 0
+          ? {
+              events: node.listeners.map((listener) => ({
+                name: listener.type,
+                capture: listener.capture,
+              })),
+            }
+          : {}),
         ...(children.length > 0 ? { children } : {}),
       }
       return element

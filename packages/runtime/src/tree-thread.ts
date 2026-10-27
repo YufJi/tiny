@@ -48,6 +48,20 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     )
   })
 
+  connection.onControl('runtime', 'bootstrap', (message) => {
+    const payload = (message.payload ?? {}) as {
+      initialPath?: string
+      pageId?: string
+    }
+    currentPageId = payload.pageId ?? message.pageId ?? currentPageId
+    return {
+      status: 'ready',
+      currentPath: payload.initialPath ?? '',
+      pageId: currentPageId,
+      components: [],
+    }
+  })
+
   connection.onEvent('tree', 'snapshot', (message) => {
     const payload = (message.payload ?? {}) as { root?: RenderNode; pageId?: string }
     currentPageId = payload.pageId ?? message.pageId ?? currentPageId

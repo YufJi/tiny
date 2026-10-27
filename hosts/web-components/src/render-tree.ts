@@ -12,11 +12,14 @@ export type GlassRenderTreeOptions = {
   backend?: glassEasel.GeneralBackendContext
   /** Trigger attached/ready after the tree is assembled. Defaults to true. */
   attach?: boolean
+  /** Forward DOM events from render nodes back to the logic layer. */
+  onEvent?: (event: { id: string; name: string; native: Record<string, unknown> }) => void
 }
 
 export type GlassRenderTree = {
   root: AnyComponent
   rootElement: HTMLElement | null
+  setEventSink?: (sink: (event: { id: string; name: string; native: Record<string, unknown> }) => void) => void
   mount: (node: RenderNode) => void
   applyPatches: (patches: RenderPatch[]) => void
   getNode: (id: string) => AnyComponent | glassEasel.TextNode | undefined
@@ -55,6 +58,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   }
   const containers = new Map<string, glassEasel.GeneralComponentDefinition>()
   const nodes = new Map<string, AnyComponent | glassEasel.TextNode>()
+  const eventCleanups = new Map<string, Array<() => void>>()
+  let eventSink: ((event: { id: string; name: string; native: Record<string, unknown> }) => void) | undefined
   const currentTree = new Map<string, RenderNode>()
 
   const containerDefinition = (tag: string): glassEasel.GeneralComponentDefinition => {
@@ -107,6 +112,49 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     return text
   }
 
+  const domEventName = (name: string): string | null => {
+    if (name === 'tap') return 'click'
+    if (name === 'longpress') return null
+    if (name === 'confirm') return 'keydown'
+    return name
+  }
+
+  const nativeFields = (event: Event): Record<string, unknown> => {
+    const source = event as unknown as Record<string, unknown>
+    const native: Record<string, unknown> = {}
+    for (const key of [
+      'clientX', 'clientY', 'pageX', 'pageY', 'x', 'y', 'key', 'code', 'value',
+      'checked', 'selectedIndex', 'scrollTop', 'scrollLeft', 'deltaX', 'deltaY',
+    ]) {
+      if (source[key] !== undefined) native[key] = source[key]
+    }
+    const target = event.target as HTMLInputElement | null
+    if (target && typeof target.value === 'string') native.value = target.value
+    if (target && typeof target.checked === 'boolean') native.checked = target.checked
+    return native
+  }
+
+  const attachEvents = (node: RenderElement, component: AnyComponent): void => {
+    const events = node.events ?? []
+    if (events.length === 0) return
+    const element = component.getBackendElement() as unknown as HTMLElement | null
+    if (!element || typeof element.addEventListener !== 'function') return
+    const cleanups: Array<() => void> = []
+    for (const binding of events) {
+      const domName = domEventName(binding.name)
+      if (!domName) continue
+      const listener = (event: Event) => {
+        if (binding.name === 'confirm' && (event as KeyboardEvent).key !== 'Enter') return
+        const payload = { id: node.id, name: binding.name, native: nativeFields(event) }
+        if (eventSink) eventSink(payload)
+        else options.onEvent?.(payload)
+      }
+      element.addEventListener(domName, listener, binding.capture === true)
+      cleanups.push(() => element.removeEventListener(domName, listener, binding.capture === true))
+    }
+    if (cleanups.length > 0) eventCleanups.set(node.id, cleanups)
+  }
+
   const createElement = (node: RenderElement, owner: AnyComponent): AnyComponent => {
     const builtin = builtinTags.has(node.tag)
     const definition = builtin
@@ -116,6 +164,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     const component = lightShadow(owner).createComponentByDef(node.tag, definition)
     nodes.set(node.id, component)
     currentTree.set(node.id, node)
+    attachEvents(node, component)
     if (builtin) {
       const props = { ...(node.props ?? {}) }
       delete props.class
@@ -154,6 +203,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
 
   const dropNode = (node: RenderNode): void => {
     for (const id of collectIds(node)) {
+      for (const cleanup of eventCleanups.get(id) ?? []) cleanup()
+      eventCleanups.delete(id)
       nodes.delete(id)
       currentTree.delete(id)
     }
@@ -287,11 +338,25 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   return {
     root,
     rootElement,
+    setEventSink: (sink) => {
+      eventSink = sink
+    },
     mount(node) {
-      const children = node.type === 'element' ? node.children ?? [] : []
+      for (const cleanups of eventCleanups.values()) {
+        for (const cleanup of cleanups) cleanup()
+      }
+      eventCleanups.clear()
+      nodes.clear()
+      currentTree.clear()
       const shadow = root.shadowRoot as unknown as {
         appendChild: (child: unknown) => void
+        childNodes: ArrayLike<unknown>
+        removeChild: (child: unknown) => void
       }
+      while (shadow.childNodes.length > 0) {
+        shadow.removeChild(shadow.childNodes[0])
+      }
+      const children = node.type === 'element' ? node.children ?? [] : []
       for (const child of children) {
         shadow.appendChild(child.type === 'text'
           ? createText(child, root)
@@ -309,6 +374,10 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       return nodes.get(id)
     },
     destroy() {
+      for (const cleanups of eventCleanups.values()) {
+        for (const cleanup of cleanups) cleanup()
+      }
+      eventCleanups.clear()
       nodes.clear()
       currentTree.clear()
       ;(root as unknown as { destroy?: () => void }).destroy?.()

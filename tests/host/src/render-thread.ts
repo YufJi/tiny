@@ -1,13 +1,19 @@
 import * as glassEasel from 'glass-easel'
 import { CurrentWindowBackendContext } from 'glass-easel'
-import { bootRenderThread } from '@tiny/runtime'
+import { bootRenderThread, bootTreeThread } from '@tiny/runtime'
 import {
   createBrowserRenderQuery,
   installOffscreenCanvasResponder,
   listenForRuntimePort,
   measureBrowserCanvas,
 } from '@tiny/host-browser'
-import { webBuiltinComponents } from '@tiny/host-web-components'
+import {
+  BUILTIN_BASE_STYLES,
+  BUILTIN_COMPONENT_STYLES,
+  BUILTIN_HOST_STYLES,
+  createGlassRenderTree,
+  webBuiltinComponents,
+} from '@tiny/host-web-components'
 import manifest from '../generated/manifest.json'
 
 const renderModule = await import('../generated/render.js')
@@ -33,7 +39,28 @@ const resolveAssetUrl = (assetPath: string): string => (
 
 installOffscreenCanvasResponder()
 
+const logicMode = new URLSearchParams(window.location.search).get('logic') === 'service'
+const initialPageId = new URLSearchParams(window.location.search).get('pageId') ?? undefined
+
 listenForRuntimePort('render', (transport) => {
+  if (logicMode) {
+    const style = document.createElement('style')
+    style.setAttribute('data-tiny-tree-styles', '')
+    style.textContent = [
+      BUILTIN_BASE_STYLES,
+      BUILTIN_HOST_STYLES,
+      ...BUILTIN_COMPONENT_STYLES.map((item) => (
+        typeof item === 'string' ? item : item.content
+      )),
+      ...Object.values(styles),
+    ].join('\n')
+    document.head.appendChild(style)
+    const renderer = createGlassRenderTree({
+      container: document.getElementById('app') ?? document.body,
+    })
+    bootTreeThread({ transport, renderer, initialPageId })
+    return
+  }
   bootRenderThread({
     transport,
     manifest,

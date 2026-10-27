@@ -23,6 +23,7 @@ import { MiniProgramComponentInstance } from './service/component-instance'
 import { MiniProgramPageInstance, type PageLifecycleName } from './service/page-instance'
 import { createServiceApiHost, installMiniProgramGlobals } from './service/api-host'
 import { createSelectorQuery } from './service/selector-query'
+import { LogicTreeAdapter } from './logic/tree'
 import { findPageArtifact, normalizeRoutePath, requireActivePage, resolveComponentReference } from './service/route'
 import type { ComponentRuntimeContext, MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime, TabBarApi } from './service/types'
 
@@ -60,6 +61,10 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   const pageInstances = new Map<string, MiniProgramPageInstance>()
   const componentInstances = new Map<string, MiniProgramComponentInstance>()
   let componentSchemas: MiniProgramComponentSchema[] = []
+  let logicTree: LogicTreeAdapter | null = null
+  const mountedTreePages = new Set<string>()
+  const pendingTreePages = new Set<string>()
+  let treeUpdateScheduled = false
   const pageStack: MiniProgramPageInstance[] = []
   const readyPages = new Set<string>()
   let activePage: MiniProgramPageInstance | null = null
@@ -535,6 +540,66 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     tabPageCache.delete(page.path)
     unloadedPageIds?.push(page.pageId)
   }
+
+  const mountTreePage = (page: MiniProgramPageInstance): void => {
+    if (!logicTree || mountedTreePages.has(page.pageId)) return
+    logicTree.mountPage(page.path, page.data, page.pageId)
+    mountedTreePages.add(page.pageId)
+    const root = logicTree.snapshotRenderTree(page.pageId)
+    if (root) {
+      connection.sendEvent(
+        'tree',
+        'snapshot',
+        { pageId: page.pageId, root: cloneJsonSafe(root) },
+        { pageId: page.pageId },
+      )
+    }
+  }
+
+  const scheduleTreeUpdate = (pageId: string): void => {
+    if (!logicTree || !mountedTreePages.has(pageId)) return
+    pendingTreePages.add(pageId)
+    if (treeUpdateScheduled) return
+    treeUpdateScheduled = true
+    queueMicrotask(() => {
+      treeUpdateScheduled = false
+      const pages = [...pendingTreePages]
+      pendingTreePages.clear()
+      for (const id of pages) {
+        if (!logicTree || !mountedTreePages.has(id)) continue
+        try {
+          const { patches } = logicTree.updateRenderTree(id)
+          if (patches.length > 0) {
+            connection.sendEvent(
+              'tree',
+              'patch',
+              { pageId: id, patches: cloneJsonSafe(patches) },
+              { pageId: id },
+            )
+          }
+        } catch (error) {
+          connection.sendDiagnostic('warn', {
+            code: 'LOGIC_TREE_ERROR',
+            message: error instanceof Error ? error.message : String(error),
+          }, id)
+        }
+      }
+    })
+  }
+
+  const syncTreePatch = (pageId: string, patch: Record<string, unknown>): void => {
+    if (!logicTree || !mountedTreePages.has(pageId)) return
+    try {
+      logicTree.applyPageData(pageId, patch)
+      scheduleTreeUpdate(pageId)
+    } catch (error) {
+      connection.sendDiagnostic('warn', {
+        code: 'LOGIC_TREE_ERROR',
+        message: error instanceof Error ? error.message : String(error),
+      }, pageId)
+    }
+  }
+
   const createPageInstance = (path: string, query: Record<string, string> = {}) => {
     const pageArtifact = findPageArtifact(options.manifest, path)
     const isComponentPage = pageArtifact?.bodyType === 'component'
@@ -553,6 +618,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       query,
       (id, patch) => {
         queueDataPatch('page', id, id, patch)
+        syncTreePatch(id, patch)
       },
       createRuntimeContext(pageId),
       componentDefinition,
@@ -565,6 +631,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     pageStack.push(page)
     activePage = page
     if (tabBarPagePaths.has(path)) tabPageCache.set(path, page)
+    mountTreePage(page)
     return page
   }
   const assertRouteTarget = (
@@ -601,6 +668,37 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     return { path, query }
   }
 
+  connection.onEvent('tree', 'event', (message) => {
+    if (!logicTree) return
+    const payload = (message.payload ?? {}) as {
+      id?: string
+      name?: string
+      detail?: unknown
+      native?: Record<string, unknown>
+    }
+    if (!payload.id || !payload.name) return
+    logicTree.dispatchViewEvent({
+      viewId: payload.id,
+      name: payload.name,
+      pageId: message.pageId,
+      detail: payload.detail,
+      native: payload.native,
+    })
+  })
+
+  connection.onEvent('tree', 'ready', (message) => {
+    if (!logicTree || !message.pageId || !mountedTreePages.has(message.pageId)) return
+    const root = logicTree.snapshotRenderTree(message.pageId)
+    if (root) {
+      connection.sendEvent(
+        'tree',
+        'snapshot',
+        { pageId: message.pageId, root: cloneJsonSafe(root) },
+        { pageId: message.pageId },
+      )
+    }
+  })
+
   connection.onControl('runtime', 'bootstrap', async (message) => {
     try {
       const payload = message.payload as {
@@ -626,6 +724,18 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         options.manifest.components,
         registry.normalizedComponents,
       )
+      if (options.logicLayer === 'service' && options.loadTemplates) {
+        const templates = await options.loadTemplates()
+        logicTree = new LogicTreeAdapter({
+          manifest: options.manifest,
+          templates,
+          loadStyle: options.loadStyle,
+          pageOptions: registry.pages,
+          componentDefinitions: registry.normalizedComponents,
+          onDataChange: scheduleTreeUpdate,
+        })
+        logicTree.registerComponentSchemas(componentSchemas)
+      }
       if (pageStack.length === 0) {
         const pageArtifact = findPageArtifact(options.manifest, currentPath)
         const currentPage = createPageInstance(currentPath, {})

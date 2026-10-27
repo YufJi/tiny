@@ -41,11 +41,21 @@ const resolveAssetUrl = (assetPath: string): string => (
 
 installBrowserCanvasCompat()
 
+const logicLayer = new URLSearchParams(window.location.search).get('logic') === 'service'
+  ? 'service' as const
+  : undefined
+
 listenForRuntimePort('service', (transport) => {
+
   bootServiceThread({
     transport,
     manifest,
     initialPath: 'pages/todos/todos',
+    ...(logicLayer ? {
+      logicLayer,
+      loadTemplates: async () => (await import('../generated/templates.js')).default,
+      loadStyle: () => '',
+    } : {}),
     apiExtensions: createHostApiExtensions(),
     resolveAssetUrl,
     canvas: createBrowserCanvasAdapter(),

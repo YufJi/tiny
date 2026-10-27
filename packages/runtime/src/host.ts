@@ -122,6 +122,9 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
         pageId: payload?.pageId ?? message.pageId ?? pageId,
       })
     })
+    connection.onEvent('tree', 'event', (message) => {
+      service.sendEvent('tree', 'event', message.payload, { pageId: message.pageId ?? pageId })
+    })
     connection.onEvent('runtime', 'componentPageLifetime', (message) => {
       service.sendEvent('runtime', 'componentPageLifetime', message.payload, { pageId })
     })
@@ -224,6 +227,7 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
       activePageId = pageId
       renderConnector.activate?.(pageId)
       flushRenderEvents(pageId, connection)
+      service.sendEvent('tree', 'ready', { pageId }, { pageId })
       return { ...result, pageId }
     } catch (error) {
       await closeRenderPage(pageId)
@@ -451,6 +455,12 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
   registerHostApiHandlers(service, apiRegistry)
   service.onEvent('event', 'trigger', (message) => {
     routeServiceEvent('event', 'trigger', message.payload, message.pageId)
+  })
+  service.onEvent('tree', 'snapshot', (message) => {
+    routeServiceEvent('tree', 'snapshot', message.payload, message.pageId)
+  })
+  service.onEvent('tree', 'patch', (message) => {
+    routeServiceEvent('tree', 'patch', message.payload, message.pageId)
   })
   service.onEvent('data', 'setData', (message) => {
     routeServiceEvent('data', 'setData', message.payload, message.pageId)

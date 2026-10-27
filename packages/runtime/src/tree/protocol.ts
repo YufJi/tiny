@@ -18,6 +18,7 @@ export type RenderElement = {
   tag: string
   props?: Record<string, unknown>
   dataset?: Record<string, unknown>
+  events?: Array<{ name: string; capture?: boolean }>
   children?: RenderNode[]
   /** Optional reconciliation key for repeated children. */
   key?: string
