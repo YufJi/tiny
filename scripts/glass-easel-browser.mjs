@@ -331,6 +331,16 @@ export async function runBrowserAcceptance({ baseUrl }) {
       await todoInput.click()
       await todoInput.pressSequentially('Buy milk', { delay: 10 })
       await waitForText('value: Buy milk')
+      await todoInput.press('Enter')
+      await page.waitForTimeout(50)
+      const caret = await todoInput.evaluate((element) => ({
+        value: element.value,
+        selectionStart: element.selectionStart,
+        active: document.activeElement === element,
+      }))
+      assert.equal(caret.value, 'Buy milk', 'Enter cleared the input value')
+      assert.equal(caret.active, true, 'Enter removed input focus')
+      assert.equal(caret.selectionStart, 'Buy milk'.length, 'Enter moved the caret to the start')
     })
 
     await step('save, navigate back, and preserve storage state', async () => {
@@ -1121,6 +1131,19 @@ export async function runTaroAcceptance({ baseUrl }) {
       await input.press('Enter')
       await waitForText('Taro item')
       await waitForText('2 items left')
+      await render.waitForFunction(
+        () => document.querySelector('input[placeholder="What needs to be done?"]')?.value === '',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const taroInputState = await input.evaluate((element) => ({
+        value: element.value,
+        selectionStart: element.selectionStart,
+        active: document.activeElement === element,
+      }))
+      assert.equal(taroInputState.value, '', 'Taro input retained the submitted value')
+      assert.equal(taroInputState.active, true, 'Taro input lost focus after Enter')
+      assert.equal(taroInputState.selectionStart, 0, 'Taro input caret was not reset with the value')
     })
 
     await step('toggle and filter Taro todos', async () => {

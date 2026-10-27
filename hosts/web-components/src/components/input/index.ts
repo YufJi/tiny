@@ -39,6 +39,10 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
       'cursor, selectionStart, selectionEnd'() {
         this.applySelection()
       },
+      value(next: string) {
+        this.syncNativeValue(next)
+        this.restoreSelection()
+      },
     },
     lifetimes: {
       attached() {
@@ -52,6 +56,8 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
         focus?: () => void
         blur?: () => void
         setSelectionRange?: (start: number, end: number) => void
+        selectionStart?: number
+        selectionEnd?: number
         value?: string
       } | null {
         const element = (this.getShadowRoot?.() as {
@@ -61,8 +67,43 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
           focus?: () => void
           blur?: () => void
           setSelectionRange?: (start: number, end: number) => void
+          selectionStart?: number
+          selectionEnd?: number
           value?: string
         } | null) ?? null
+      },
+      syncNativeValue(next: unknown) {
+        const element = this.nativeInput()
+        const value = String(next ?? '')
+        if (element && typeof element.value === 'string' && element.value !== value) {
+          element.value = value
+        }
+      },
+      rememberSelection() {
+        const element = this.nativeInput()
+        if (!element || typeof element.selectionStart !== 'number' || typeof element.selectionEnd !== 'number') return
+        ;(this as unknown as { _selection?: { start: number; end: number } })._selection = {
+          start: element.selectionStart,
+          end: element.selectionEnd,
+        }
+      },
+      restoreSelection() {
+        const selection = (this as unknown as {
+          _selection?: { start: number; end: number }
+        })._selection
+        if (!selection) return
+        const explicit = Number(this.data.cursor ?? -1) >= 0 ||
+          Number(this.data.selectionStart ?? -1) >= 0 ||
+          Number(this.data.selectionEnd ?? -1) >= 0
+        if (explicit) return
+        setTimeout(() => {
+          const element = this.nativeInput()
+          if (!element?.setSelectionRange) return
+          if (typeof document !== 'undefined' && document.activeElement !== element) return
+          const value = String(element.value ?? '')
+          const clamp = (position: number) => Math.max(0, Math.min(value.length, position))
+          element.setSelectionRange(clamp(selection.start), clamp(selection.end))
+        }, 0)
       },
       focusNative() {
         const element = this.nativeInput()
@@ -94,12 +135,16 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
         const value = valueFromEvent(event)
         const cursor = Number(detail.cursor ?? -1)
         const keyCode = Number(detail.keyCode ?? 0)
+        this.rememberSelection()
         this.setData({ value })
+        this.restoreSelection()
         this.triggerEvent('input', { value, cursor, keyCode }, { bubbles: true, composed: true })
       },
       handleChange(event: glassEasel.ShadowedEvent<unknown>) {
         const value = valueFromEvent(event)
-        this.setData({ value })
+        this.rememberSelection()
+        if (value !== this.data.value) this.setData({ value })
+        this.restoreSelection()
         this.triggerEvent('change', { value }, { bubbles: true, composed: true })
       },
       handleFocus(event: glassEasel.ShadowedEvent<unknown>) {
@@ -112,7 +157,7 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
         const detail = (event.detail ?? {}) as { value?: unknown; height?: unknown }
         const value = detail.value ?? this.data.value
         const height = Number(detail.height ?? 0)
-        this.setData({ value })
+        if (value !== this.data.value) this.setData({ value })
         this.triggerEvent('blur', { value, height }, { bubbles: true, composed: true })
       },
       handleCompositionStart(event: glassEasel.ShadowedEvent<unknown>) {
@@ -125,7 +170,10 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
         this.triggerEvent('keyboardcompositionend', { value: valueFromEvent(event) }, { bubbles: true, composed: true })
       },
       handleSelect(event: glassEasel.ShadowedEvent<unknown>) {
-        const element = (event.currentTarget as unknown as { getBackendElement?: () => { selectionStart?: number; selectionEnd?: number } | null } | null)?.getBackendElement?.()
+        const element = (event.currentTarget as unknown as {
+          getBackendElement?: () => { selectionStart?: number; selectionEnd?: number } | null
+        } | null)?.getBackendElement?.()
+        this.rememberSelection()
         this.triggerEvent('selectionchange', {
           selectionStart: Number(element?.selectionStart ?? -1),
           selectionEnd: Number(element?.selectionEnd ?? -1),
@@ -136,6 +184,7 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
         const key = String(detail.key ?? '')
         const keyCode = Number(detail.keyCode ?? detail.which ?? 0)
         const value = detail.value ?? this.data.value
+        this.rememberSelection()
         this.triggerEvent('keydown', { key, keyCode, value }, { bubbles: true, composed: true })
         if (key === 'Enter' || keyCode === 13) {
           this.triggerEvent('confirm', { value }, { bubbles: true, composed: true })
