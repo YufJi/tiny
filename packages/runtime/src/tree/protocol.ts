@@ -115,12 +115,3 @@ export type ComponentFlow =
   | { type: 'group-end' }
   | { type: 'ready' }
 
-export type ComponentFlowBatch = {
-  pageId: string
-  messages: ComponentFlow[]
-}
-
-export type RenderPatchBatch = {
-  pageId: string
-  patches: RenderPatch[]
-}

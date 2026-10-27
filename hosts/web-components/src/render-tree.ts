@@ -396,15 +396,36 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     }
   }
 
+  // Root children live in the page component's shadow root; component nodes
+  // keep their children on the light tree.
+  const parentChildren = (parentId: string): {
+    childNodes: ArrayLike<unknown>
+    removeChild: (child: unknown) => void
+    insertBefore: (child: unknown, ref: unknown) => void
+  } | null => {
+    if (parentId === rootId.value) {
+      return root.shadowRoot as unknown as {
+        childNodes: ArrayLike<unknown>
+        removeChild: (child: unknown) => void
+        insertBefore: (child: unknown, ref: unknown) => void
+      }
+    }
+    const parent = nodes.get(parentId)
+    if (!parent || glassEasel.TextNode.isTextNode(parent)) return null
+    return parent as unknown as {
+      childNodes: ArrayLike<unknown>
+      removeChild: (child: unknown) => void
+      insertBefore: (child: unknown, ref: unknown) => void
+    }
+  }
+
   const removeNode = (parentId: string, index: number, count: number): void => {
-    const parent = parentId === rootId.value
-      ? root
-      : nodes.get(parentId)
-    if (!parent || glassEasel.TextNode.isTextNode(parent)) return
+    const parent = parentChildren(parentId)
+    if (!parent) return
     for (let offset = 0; offset < count; offset += 1) {
       const child = parent.childNodes[index]
       if (!child) break
-      parent.removeChild(child as never)
+      parent.removeChild(child)
       for (const [id, value] of nodes) {
         if (value === child) {
           const snapshot = currentTree.get(id)
@@ -416,15 +437,13 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   }
 
   const reorderNode = (parentId: string, moves: Array<{ from: number; to: number }>): void => {
-    const parent = parentId === rootId.value
-      ? root
-      : nodes.get(parentId)
-    if (!parent || glassEasel.TextNode.isTextNode(parent)) return
+    const parent = parentChildren(parentId)
+    if (!parent) return
     for (const move of moves) {
       const child = parent.childNodes[move.from]
       if (!child) continue
-      parent.removeChild(child as never)
-      parent.insertBefore(child as never, parent.childNodes[move.to] ?? null)
+      parent.removeChild(child)
+      parent.insertBefore(child, parent.childNodes[move.to] ?? null)
     }
   }
 

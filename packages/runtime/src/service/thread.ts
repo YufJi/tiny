@@ -1,15 +1,18 @@
 import { BridgeConnection } from '@tiny/bridge'
-import { QUERY_CONTROL, RUNTIME_CONTROL, TREE_PROTOCOL } from '../tree/protocol'
+import { QUERY_CONTROL, RUNTIME_CONTROL, TREE_PROTOCOL } from '../tree'
 import {
   DIAGNOSTIC_CODES,
   runtimeCompatibilityFromManifest,
   TINY_ENGINE_NAMING,
   type PageArtifact,
 } from '@tiny/manifest'
-import { buildComponentSchemas } from '../component/component-schema'
-import type { ComponentLifecycleName, NormalizedComponentDefinition } from '../component/component-definition'
+import {
+  buildComponentSchemas,
+  ComponentTree,
+  type ComponentLifecycleName,
+  type NormalizedComponentDefinition,
+} from '../component'
 import { cloneJsonSafe, readDataPath, type DataPatch } from '../data'
-import { ComponentTree } from '../component/component-tree'
 import type { ServiceThreadOptions } from '../types'
 import type {
   MiniProgramComponentSchema,
@@ -23,14 +26,9 @@ import { MiniProgramPageRegistry } from './page-registry'
 import { MiniProgramPageInstance, type PageLifecycleName } from './page-instance'
 import { createServiceApiHost, installMiniProgramGlobals } from './api-host'
 import { createSelectorQuery } from './selector-query'
-import { LogicTreeAdapter } from '../tree/logic/adapter'
+import { LogicTreeAdapter } from '../tree/logic'
 import { findPageArtifact, normalizeRoutePath, requireActivePage, resolveComponentReference } from './route'
 import type { MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime, TabBarApi } from './types'
-
-export type { MiniProgramPageOptions, MiniProgramComponentOptions, MiniProgramAppOptions, MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime } from './types'
-export { MiniProgramPageRegistry } from './page-registry'
-export { MiniProgramPageInstance } from './page-instance'
-export { createServiceApiHost, installMiniProgramGlobals } from './api-host'
 
 export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadRuntime {
   const expectedPagePaths = options.manifest.pages

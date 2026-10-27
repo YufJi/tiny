@@ -3,7 +3,7 @@ import type { RenderNode, RenderPatch } from '../protocol'
 import { diffRenderTree } from '../diff'
 import * as glassEasel from 'glass-easel'
 import type { MiniProgramComponentSchema, QueryNodeSnapshot, TemplateRegistry } from '../../types'
-import type { NormalizedComponentDefinition } from '../../component/component-definition'
+import type { NormalizedComponentDefinition } from '../../component'
 import { GlassEaselRuntimeAdapter } from './glass-easel-adapter'
 import {
   LogicBackendContext,

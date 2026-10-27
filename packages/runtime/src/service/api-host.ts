@@ -1,8 +1,8 @@
 import type { BridgeConnection } from '@tiny/bridge'
 import { DIAGNOSTIC_CODES } from '@tiny/manifest'
 import { cloneJsonSafe } from '../data'
-import { registerBehavior } from '../component/behaviors'
-import { applyDefinitionFilters } from '../component/component-definition'
+import { registerBehavior } from '../component'
+import { applyDefinitionFilters } from '../component'
 import type { StorageSnapshot, SystemInfoSnapshot } from '../types'
 import type { MiniProgramPageRegistry } from './page-registry'
 import type {

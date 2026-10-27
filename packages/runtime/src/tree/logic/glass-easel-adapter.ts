@@ -8,18 +8,19 @@ import {
 } from '@tiny/manifest'
 import type { LogicStyleSheetRole } from './backend'
 import type {
+  InspectNode,
   MiniProgramComponentSchema,
   StyleLoader,
   TemplateRegistry,
 } from '../../types'
 import { toJsonSafe } from '../../events'
 import { createRuntimeDiagnostic } from '../../diagnostics'
-import { readComponentGenerics } from '../../component/component-schema'
+import { readComponentGenerics } from '../../component'
 import {
   parsePureDataPattern,
   type NormalizedComponentDefinition,
   type NormalizedRelation,
-} from '../../component/component-definition'
+} from '../../component'
 
 
 
@@ -46,17 +47,6 @@ const ELEMENT_RESERVED_NAMES = new Set([
 ])
 
 export type ComponentLifecyclePhase = 'created' | 'attached' | 'ready' | 'moved' | 'detached'
-
-export type InspectNode = {
-  id: string
-  type: 'component' | 'element' | 'text'
-  tag: string
-  text?: string
-  attributes?: Record<string, string>
-  className?: string
-  style?: string
-  children: InspectNode[]
-}
 
 export type ComponentLifecycleMeta = {
   pageId: string | null

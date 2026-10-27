@@ -1,8 +1,8 @@
 import type { BridgeConnection } from '@tiny/bridge'
 import type { ServiceThreadOptions, StorageSnapshot, SystemInfoSnapshot, ServiceCanvasAdapter } from '../types'
 import type { AssetUrlResolver } from '../assets'
-import type { ComponentTree } from '../component/component-tree'
-import type { NormalizedComponentDefinition } from '../component/component-definition'
+import type { ComponentTree } from '../component'
+import type { NormalizedComponentDefinition } from '../component'
 import type { MiniProgramPageRegistry } from './page-registry'
 import type { MiniProgramPageInstance } from './page-instance'
 

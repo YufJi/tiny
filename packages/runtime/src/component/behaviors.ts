@@ -1,5 +1,5 @@
 import type { RuntimeCompatibilityConfig } from '@tiny/manifest'
-import type { MiniProgramComponentOptions } from '../service/thread'
+import type { MiniProgramComponentOptions } from '../service'
 
 const behaviorRegistry = new WeakSet<object>()
 

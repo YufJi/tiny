@@ -55,6 +55,27 @@ A browser host does not import iframe helpers from this package. Use
 - `assets.ts` / `data.ts` / `events.ts` / `diagnostics.ts` — shared primitives
 - `bridge` comes from `@tiny/bridge`; manifest types from `@tiny/manifest`
 
+## Public API
+
+The package exposes one entry, `src/index.ts`. The layer barrels under `host/`,
+`service/`, `tree/`, `tree/logic/`, `tree/render/` and `component/` are for the
+runtime implementation; only the symbols below are part of the external
+contract.
+
+| Consumer | Entry | Main types |
+| --- | --- | --- |
+| Host shell | `createTinyRuntime` | `TinyRuntimeHost`, `RuntimeHostOptions`, `RenderThreadConnector`, `HostApiHandler(s)` |
+| Service iframe | `bootServiceThread` | `ServiceThreadOptions`, `ServiceCanvasAdapter`, `CanvasNode*` |
+| Render iframe (web) | `bootTreeThread` | `TreeThreadOptions`, `TreeRenderer`, `TreeEventPayload` |
+| Render host (native) | `createNativeTreeRenderer` | `NativeTreeHost`, `NativeNodeSpec`, `NativeTreeRenderer` |
+| Both threads | `tree/protocol` | `RenderNode`, `RenderPatch`, `ComponentFlow`, `TREE_PROTOCOL`, `RUNTIME_CONTROL` |
+| Host components | `BuiltinComponents` | `BuiltinComponentFactoryContext`, `BuiltinStyleSheet` |
+| Utilities | `resolveAssetPath`, `TINY_ENGINE_NAMING`, `DIAGNOSTIC_CODES` | `RuntimeDiagnostic`, `InspectNode`, manifest/runtime types |
+
+Internal modules (the logic-tree adapter/backend, glass-easel bridge, service
+page registry/instances, component definitions) are intentionally not
+re-exported. Hosts run the runtime through the thread entries above.
+
 ## Testing
 
 ```bash

@@ -6,7 +6,8 @@ import {
   runtimeCompatibilityFrom,
 } from '@tiny/manifest'
 import { normalizeComponentDefinition } from '../src/component/component-definition'
-import { installMiniProgramGlobals, MiniProgramPageRegistry } from '../src/service/thread'
+import { installMiniProgramGlobals } from '../src/service/api-host'
+import { MiniProgramPageRegistry } from '../src/service/page-registry'
 
 const globalObject = globalThis as unknown as Record<string, unknown>
 const globalKeys = [

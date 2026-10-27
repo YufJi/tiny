@@ -6,7 +6,7 @@ import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
 import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
 import { bootServiceThread } from './helpers/split-service'
-import type { InspectNode } from '../src/tree/logic/glass-easel-adapter'
+import type { InspectNode } from '../src/types'
 
 const PAGE_PATH = 'pages/index/index'
 const COMPONENT_PATH = 'components/pure/pure'
