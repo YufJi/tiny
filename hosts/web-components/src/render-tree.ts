@@ -304,8 +304,17 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       if (!NATIVE_EVENT_NAMES.has(binding.name)) continue
       if (!element || typeof element.addEventListener !== 'function') continue
       const domName = binding.name === 'tap' ? 'click' : binding.name
+      // A `<label>` around a native checkbox/radio forwards its click to the
+      // input, so one user tap produces two DOM clicks with the same timestamp.
+      // Keep the first one; otherwise toggle handlers run twice and end up
+      // back at the original value.
+      let lastPointerStamp = -1
       const domListener = (event: Event): void => {
         if (isHandledNativeEvent(event)) return
+        if (binding.name === 'tap' || binding.name === 'click') {
+          if (event.timeStamp === lastPointerStamp) return
+          lastPointerStamp = event.timeStamp
+        }
         emit({ id: node.id, name: binding.name, native: nativeFields(event) })
       }
       element.addEventListener(domName, domListener, capture)
