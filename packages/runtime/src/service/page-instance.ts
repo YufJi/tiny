@@ -51,6 +51,7 @@ export class MiniProgramPageInstance implements ObserverHost {
     private readonly onDataPatch?: (pageId: string, patch: DataPatch) => void,
     private readonly runtime?: ComponentRuntimeContext,
     definition?: NormalizedComponentDefinition,
+    private readonly logicSelection?: (selector: string, all: boolean) => unknown[],
   ) {
     this.pageId = pageId
     this.componentId = `page:${pageId}`
@@ -179,18 +180,26 @@ export class MiniProgramPageInstance implements ObserverHost {
   }
 
   selectComponent(selector: unknown): unknown {
-    if (!this.runtime) return null
-    const nodes = this.runtime.tree.select(`page:${this.pageId}`, String(selector ?? ''), false)
-    return nodes[0] ? resolveComponentSelection(this.runtime, nodes[0].componentId) : null
+    const selected = this.runtime
+      ? (() => {
+          const nodes = this.runtime!.tree.select(`page:${this.pageId}`, String(selector ?? ''), false)
+          return nodes[0] ? resolveComponentSelection(this.runtime!, nodes[0].componentId) : null
+        })()
+      : null
+    if (selected) return selected
+    return this.logicSelection?.(String(selector ?? ''), false)[0] ?? null
   }
 
   selectAllComponents(selector: unknown): unknown[] {
     const runtime = this.runtime
-    if (!runtime) return []
-    const nodes = runtime.tree.select(`page:${this.pageId}`, String(selector ?? ''), true)
-    return nodes
-      .map((node) => resolveComponentSelection(runtime, node.componentId))
-      .filter((value) => value !== null && value !== undefined)
+    if (runtime) {
+      const nodes = runtime.tree.select(`page:${this.pageId}`, String(selector ?? ''), true)
+      const selected = nodes
+        .map((node) => resolveComponentSelection(runtime, node.componentId))
+        .filter((value) => value !== null && value !== undefined)
+      if (selected.length > 0) return selected
+    }
+    return this.logicSelection?.(String(selector ?? ''), true) ?? []
   }
 
   selectOwnerComponent(): unknown {

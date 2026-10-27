@@ -227,6 +227,7 @@ export class GlassEaselRuntimeAdapter {
   private readonly logicQueryFactory?: GlassEaselAdapterOptions['logicQueryFactory']
   private readonly onLogicDataChange?: GlassEaselAdapterOptions['onLogicDataChange']
   private readonly pageIdsByComponent = new WeakMap<object, string>()
+  private readonly logicPropertyValues = new WeakMap<object, Record<string, unknown>>()
   private readonly logicIntersectionFactory?: GlassEaselAdapterOptions['logicIntersectionFactory']
 
   constructor(options: GlassEaselAdapterOptions) {
@@ -974,6 +975,21 @@ export class GlassEaselRuntimeAdapter {
           ? methods[observer.handler]
           : observer.handler
         if (typeof handler !== 'function') continue
+        if (observer.kind === 'property' && observer.propertyName) {
+          const property = observer.propertyName
+          builder = builder.observer(observer.paths, function (
+            this: glassEasel.GeneralComponent,
+            ...args: unknown[]
+          ) {
+            const target = adapter.resolveMethodCaller(this) ?? this
+            const values = adapter.logicPropertyValues.get(target as unknown as object) ?? {}
+            const previous = values[property]
+            values[property] = args[0]
+            adapter.logicPropertyValues.set(target as unknown as object, values)
+            return handler.apply(target, [args[0], previous])
+          })
+          continue
+        }
         builder = builder.observer(observer.paths, handler)
       }
       for (const relation of logicDefinition.relations) {

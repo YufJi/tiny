@@ -19,6 +19,8 @@ export type RenderElement = {
   props?: Record<string, unknown>
   dataset?: Record<string, unknown>
   scopes?: string[]
+  scopeChain?: string[]
+  externalClasses?: Record<string, string[]>
   events?: Array<{ name: string; capture?: boolean }>
   children?: RenderNode[]
   /** Optional reconciliation key for repeated children. */

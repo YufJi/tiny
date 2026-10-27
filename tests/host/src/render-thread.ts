@@ -53,7 +53,9 @@ listenForRuntimePort('render', (transport) => {
       ...BUILTIN_COMPONENT_STYLES.map((item) => (
         typeof item === 'string' ? item : item.content
       )),
-      ...Object.values(styles),
+      ...Object.entries(styles)
+        .filter(([stylePath]) => !stylePath.includes('app.wxss'))
+        .map(([, content]) => content),
     ].join('\n')
     document.head.appendChild(style)
     const renderer = createGlassRenderTree({

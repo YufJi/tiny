@@ -45,6 +45,8 @@ export class LogicBackendElement {
   virtualName = ''
   scopeNames: string[] = []
   childScopeNames: string[] = []
+  scopeChain: string[] = []
+  hostScopeName = ''
   scopeNameResolver?: (scopeId: number) => string | undefined
   text = ''
   children: LogicBackendElement[] = []
@@ -210,6 +212,7 @@ export class LogicBackendShadowRoot extends LogicBackendElement {
     const element = new LogicBackendElement('element')
     element.tagName = logicalName
     element.scopeNames = this.scopeNames
+    element.scopeChain = this.scopeChain
     element.scopeNameResolver = this.scopeNameResolver
     return element
   }
@@ -240,9 +243,14 @@ export class LogicBackendShadowRoot extends LogicBackendElement {
       if (name && !childScopes.includes(name)) childScopes.push(name)
     }
     node.scopeNames = tagName === 'page' ? childScopes : this.scopeNames
+    node.hostScopeName = styleScope
+      ? this.scopeNameResolver?.(styleScope) ?? ''
+      : ''
+    node.scopeChain = this.scopeChain
     node.childScopeNames = childScopes
     if (node.shadowRoot) {
       node.shadowRoot.scopeNames = childScopes
+      node.shadowRoot.scopeChain = [...childScopes, ...this.scopeChain]
       node.shadowRoot.scopeNameResolver = this.scopeNameResolver
     }
     return node
@@ -264,6 +272,8 @@ export class LogicBackendContext {
   private readonly nodesByViewId = new Map<string, LogicBackendElement>()
   private viewIdCounter = 0
   private styleSheetCounter = 0
+  private readonly styleContents = new Map<string, string>()
+  private readonly appendedStyles: Array<{ path: string; scope?: number }> = []
 
   destroy(): void {
     // No host resources.
@@ -285,13 +295,31 @@ export class LogicBackendContext {
     return 'light'
   }
 
-  registerStyleSheetContent(_path: string, _content: unknown): void {
-    // Styles are a view concern.
+  registerStyleSheetContent(path: string, content: unknown): void {
+    if (typeof content === 'string') this.styleContents.set(path, content)
   }
 
-  appendStyleSheetPath(_path: string, _styleScope?: number): number {
+  appendStyleSheetPath(path: string, styleScope?: number): number {
     this.styleSheetCounter += 1
+    this.appendedStyles.push({ path, scope: styleScope })
     return this.styleSheetCounter
+  }
+
+  getAppendedStyleTexts(): string[] {
+    const seen = new Set<string>()
+    const result: string[] = []
+    for (const entry of this.appendedStyles) {
+      if (seen.has(entry.path)) continue
+      // Raw app/page/component sheets are already present in the view thread.
+      // Only runtime-generated page-scoped/shared copies are sent here.
+      if (!entry.path.includes('@shared:') && !entry.path.includes('page-scope') && !entry.path.includes('@page:')) {
+        continue
+      }
+      seen.add(entry.path)
+      const css = this.styleContents.get(entry.path)
+      if (typeof css === 'string' && css.trim().length > 0) result.push(css)
+    }
+    return result
   }
 
   disableStyleSheet(_index: number): void {
@@ -350,7 +378,7 @@ export class LogicBackendContext {
       const props = Object.fromEntries(node.attributes)
       if (node.id) props.id = node.id
       if (node.classes.length > 0) props.class = node.classes.join(' ')
-      if (node.tagName === 'page' && node.scopeNames[0]) props['wx-host'] = node.scopeNames[0]
+      if (node.hostScopeName) props['wx-host'] = node.hostScopeName
       if (node.styleText) props.style = node.styleText
       return props
     }
@@ -411,13 +439,24 @@ export class LogicBackendContext {
       const children = node.nodeType === 'component' && node.shadowRoot
         ? convertChildren(node.shadowRoot.children, node.children)
         : convertChildren(node.children, slotContent)
+      const externalClasses = (node.__wxElement as unknown as {
+        getExternalClasses?: () => Record<string, string[] | undefined>
+      } | undefined)?.getExternalClasses?.()
+      const external = externalClasses
+        ? Object.fromEntries(
+            Object.entries(externalClasses)
+              .filter((entry): entry is [string, string[]] => Array.isArray(entry[1]) && entry[1].length > 0),
+          )
+        : undefined
       const element: RenderElement = {
         type: 'element',
         id: nextId(node),
         tag: node === rootElement ? 'page' : node.tagName,
         props: propsFor(node),
+        ...(external && Object.keys(external).length > 0 ? { externalClasses: external } : {}),
         ...(datasetFor(node) ? { dataset: datasetFor(node) } : {}),
         ...(node.scopeNames.length > 0 ? { scopes: [...new Set(node.scopeNames)] } : {}),
+        ...(node.scopeChain.length > 0 ? { scopeChain: [...new Set(node.scopeChain)] } : {}),
         ...(node.listeners.length > 0
           ? {
               events: node.listeners.map((listener) => ({

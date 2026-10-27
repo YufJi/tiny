@@ -134,6 +134,20 @@ export class LogicTreeAdapter {
     return snapshot
   }
 
+  /** Runtime-registered stylesheets (shared/page scopes) for the render tree. */
+  styleTexts(): string[] {
+    return this.backend.getAppendedStyleTexts()
+  }
+
+  /** Resolve a mini-program selector to render-side glass components. */
+  selectComponents(pageId: string, selector: string, all: boolean): unknown[] {
+    const root = this.pageRoots.get(pageId)
+    if (!root) return []
+    const nodes = queryLogicNodes(root, selector, all)
+      .filter((node) => node.nodeType === 'component' && node.__wxElement)
+    return nodes.map((node) => node.__wxElement)
+  }
+
   /** Snapshot the logic tree in the host-neutral render-tree protocol. */
   snapshotRenderTree(pageId: string): RenderNode | null {
     const page = this.glass.getMountedComponentByPageId(pageId)
