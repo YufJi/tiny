@@ -29,6 +29,33 @@ Accepted — implementation branch `feat/wechat-split-tree`, based on `next`
   checkbox-group or canvas events.
 - Render-tree tags, attributes and id formats come from `TINY_ENGINE_NAMING`;
   the runtime purity check covers modern host globals.
+- Component-as-page relations are resolved over the page's render shadow tree:
+  glass-easel relation linking follows parent pointers, which stop at a shadow
+  root, so the adapter matches page relations by target path and invokes both
+  sides' `linked` / `unlinked`.
+- `@tiny/runtime` exposes one curated entry (host shell, both thread entries,
+  tree protocol/renderers, host adapters, diagnostics and utilities). Internal
+  logic-tree/backend/glass/service modules are not re-exported.
+- Runtime layers are grouped under `component/`, `service/`, `tree/` (with
+  `tree/logic` and `tree/render`) and `host/`, each with a single `index.ts`.
+
+### Known gaps against the reference protocol
+
+- Component flow currently covers **initial mount** only (`define`,
+  `create-node`, `props`, `children`, `ready`). Updates travel as virtual-node
+  patches; WeChat additionally emits `FLOW_UPDATE`, `FLOW_SET_DATA`,
+  `FLOW_DATA_OBSERVER`, `FLOW_APPLY_PROPERTY`, `FLOW_MINIPULATE_CHILD`,
+  `FLOW_GROUP` / `FLOW_GROUP_END` and callbacks.
+- Intersection observers are not wired to render measurements yet: the render
+  tree thread answers `query.intersection` with `missing-intersection`. Selector
+  queries do resolve through render node ids.
+- `tree.event` carries `id` / `name` / `detail` / native fields and touches, but
+  not a target geometry object; the service resolves the logic node (dataset and
+  ids) when dispatching.
+- `createNativeTreeRenderer` is a contract plus headless smoke tests; no native
+  host implementation ships in this repository.
+- The acceptance gate previews Vant/WeUI and asserts their initial render; deep
+  Vant calendar/sticky interactions are not asserted end-to-end.
 
 ## Context
 
@@ -117,13 +144,13 @@ host-owned.
 
 | Reference implementation | Tiny target |
 | --- | --- |
-| `WxVirtualNode` / `WxVirtualText` | `ViewNode` + stable render node id |
-| `PATCH_TYPE` text/vnode/props/reorder/insert/remove/extra | `view.patch` |
-| `COMPONENT_DEF` and `FLOW_*` | component-flow messages |
-| `WX_EVENT` | `view.event` |
+| `WxVirtualNode` / `WxVirtualText` | `RenderElement` / `RenderText` with a stable `RenderNodeId` |
+| `PATCH_TYPE` text/vnode/props/reorder/insert/remove/extra | `RenderPatch` text/replace/props/reorder/insert/remove/extra |
+| `COMPONENT_DEF` and `FLOW_*` | component-flow `define` / `create-node` / `props` / `children` / `ready` |
+| `WX_EVENT` | `tree.event` (node id, name, detail, native fields) |
 | service has no `wx-*` built-ins | service emits semantic built-in tags |
 | webview exparser built-ins | host render tree creates real built-ins |
-| `vdSync` / `vdSyncBatch` | batched view patches |
+| `vdSync` / `vdSyncBatch` | batched `tree.patch` per page |
 
 ## Migration phases
 
