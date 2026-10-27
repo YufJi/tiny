@@ -349,6 +349,7 @@ export class LogicBackendContext {
       const props = Object.fromEntries(node.attributes)
       if (node.id) props.id = node.id
       if (node.classes.length > 0) props.class = node.classes.join(' ')
+      if (node.tagName === 'page' && node.scopeNames[0]) props['wx-host'] = node.scopeNames[0]
       if (node.styleText) props.style = node.styleText
       return props
     }
@@ -415,6 +416,7 @@ export class LogicBackendContext {
         tag: node === rootElement ? 'page' : node.tagName,
         props: propsFor(node),
         ...(datasetFor(node) ? { dataset: datasetFor(node) } : {}),
+        ...(node.scopeNames.length > 0 ? { scopes: [...new Set(node.scopeNames)] } : {}),
         ...(node.listeners.length > 0
           ? {
               events: node.listeners.map((listener) => ({

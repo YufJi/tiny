@@ -46,6 +46,7 @@ listenForRuntimePort('render', (transport) => {
   if (logicMode) {
     const style = document.createElement('style')
     style.setAttribute('data-tiny-tree-styles', '')
+    style.setAttribute('wx-style-scope', '')
     style.textContent = [
       BUILTIN_BASE_STYLES,
       BUILTIN_HOST_STYLES,

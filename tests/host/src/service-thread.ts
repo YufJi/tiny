@@ -44,6 +44,18 @@ installBrowserCanvasCompat()
 const logicLayer = new URLSearchParams(window.location.search).get('logic') === 'service'
   ? 'service' as const
   : undefined
+const stylePaths = [...new Set(manifest.styles.flatMap((style) => [
+  style.outputPath,
+  ...(style.lowPriorityPath ? [style.lowPriorityPath] : []),
+]))]
+const styles = Object.fromEntries(
+  await Promise.all(
+    stylePaths.map(async (stylePath) => {
+      const response = await fetch(`/generated/${stylePath}?direct`)
+      return [stylePath, await response.text()]
+    }),
+  ),
+)
 
 listenForRuntimePort('service', (transport) => {
 
@@ -54,7 +66,7 @@ listenForRuntimePort('service', (transport) => {
     ...(logicLayer ? {
       logicLayer,
       loadTemplates: async () => (await import('../generated/templates.js')).default,
-      loadStyle: () => '',
+      loadStyle: (stylePath) => styles[stylePath] ?? '',
     } : {}),
     apiExtensions: createHostApiExtensions(),
     resolveAssetUrl,

@@ -28,6 +28,28 @@ export type GlassRenderTree = {
 
 const builtinTags = new Set<string>(BUILTIN_COMPONENT_TAGS)
 
+const propertyName = (name: string): string => (
+  name.replace(/-([a-z])/g, (_match, letter: string) => letter.toUpperCase())
+)
+
+function applyClassProps(element: HTMLElement | null, props: Record<string, unknown> | undefined, scopes: string[] | undefined): void {
+  if (!element?.setAttribute) return
+  const classes = String(props?.class ?? '').split(/\s+/).filter(Boolean)
+  const scoped = (scopes ?? []).flatMap((scope) => classes.map((name) => `${scope}--${name}`))
+  if (classes.length > 0 || scoped.length > 0) {
+    element.setAttribute('class', [...classes, ...scoped].join(' '))
+  }
+}
+
+function glassProps(props: Record<string, unknown> | undefined): Record<string, unknown> {
+  const result: Record<string, unknown> = {}
+  for (const [name, value] of Object.entries(props ?? {})) {
+    if (name === 'class' || name === 'style' || name === 'id') continue
+    result[propertyName(name)] = value
+  }
+  return result
+}
+
 function applyHostProps(component: AnyComponent, props: Record<string, unknown> | undefined): void {
   const element = component.getBackendElement() as unknown as {
     setAttribute?: (name: string, value: string) => void
@@ -84,7 +106,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       reflectToAttributes: true,
     },
   }).general()
-  const root = glassEasel.Component.createWithContext('page', rootDefinition, backend)
+  const root = glassEasel.Component.createWithContext('tiny-page', rootDefinition, backend)
   const rootElement = root.getBackendElement() as unknown as HTMLElement | null
   if (rootElement && options.container) options.container.replaceChildren(rootElement)
 
@@ -164,13 +186,10 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     const component = lightShadow(owner).createComponentByDef(node.tag, definition)
     nodes.set(node.id, component)
     currentTree.set(node.id, node)
+    applyClassProps(component.getBackendElement() as unknown as HTMLElement | null, node.props, node.scopes)
     attachEvents(node, component)
     if (builtin) {
-      const props = { ...(node.props ?? {}) }
-      delete props.class
-      delete props.style
-      delete props.id
-      component.setData(props as never)
+      component.setData(glassProps(node.props) as never)
     }
     applyHostProps(component, node.props)
     const childOwner = component
@@ -292,7 +311,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     delete props.class
     delete props.style
     delete props.id
-    if (builtinTags.has(node.tag)) component.setData(props as never)
+    if (builtinTags.has(node.tag)) component.setData(glassProps(node.props) as never)
     else {
       const element = component.getBackendElement() as unknown as {
         setAttribute?: (name: string, value: string) => void
@@ -302,6 +321,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       }
     }
     applyHostProps(component, node.props)
+    applyClassProps(component.getBackendElement() as unknown as HTMLElement | null, node.props, node.scopes)
   }
 
   const applyPatches = (patches: RenderPatch[]): void => {
@@ -366,6 +386,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         rootId.value = node.id
         nodes.set(node.id, root)
         currentTree.set(node.id, node)
+        applyClassProps(rootElement, node.props, node.scopes)
+        applyHostProps(root, node.props)
       }
       if (options.attach !== false) glassEasel.Element.pretendAttached(root)
     },
