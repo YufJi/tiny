@@ -1,4 +1,4 @@
-import { bootServiceThread as bootRealServiceThread } from '../../src/service'
+import { bootServiceThread as bootRealServiceThread } from '../../src/service/thread'
 import type { ServiceThreadRuntime } from '../../src/service/types'
 import type { TemplateRegistry } from '../../src/types'
 

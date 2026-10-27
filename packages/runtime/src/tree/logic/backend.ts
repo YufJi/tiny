@@ -5,8 +5,8 @@ import {
   RENDER_PAGE_TAG,
   RENDER_TEXT_TAG,
   RENDER_VIRTUAL_TAG,
-} from '../tree/protocol'
-import type { RenderElement, RenderNode, RenderText } from '../tree/protocol'
+} from '../protocol'
+import type { RenderElement, RenderNode, RenderText } from '../protocol'
 
 type LogicNodeType = 'element' | 'text' | 'component' | 'virtual' | 'fragment' | 'root'
 

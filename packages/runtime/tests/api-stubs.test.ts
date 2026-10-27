@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { normalizeTransportDiagnostic } from '../src/diagnostics'
-import { createServiceApiHost, type ServiceApiContext } from '../src/service'
+import { createServiceApiHost, type ServiceApiContext } from '../src/service/thread'
 
 function createContext() {
   const diagnostics: unknown[][] = []

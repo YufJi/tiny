@@ -1,9 +1,9 @@
 import { DIAGNOSTIC_CODES, type Manifest, type PageArtifact } from '@tiny/manifest'
-import type { RenderNode, RenderPatch } from '../tree/protocol'
-import { diffRenderTree } from '../tree/diff'
+import type { RenderNode, RenderPatch } from '../protocol'
+import { diffRenderTree } from '../diff'
 import * as glassEasel from 'glass-easel'
-import type { MiniProgramComponentSchema, QueryNodeSnapshot, TemplateRegistry } from '../types'
-import type { NormalizedComponentDefinition } from '../component/component-definition'
+import type { MiniProgramComponentSchema, QueryNodeSnapshot, TemplateRegistry } from '../../types'
+import type { NormalizedComponentDefinition } from '../../component/component-definition'
 import { GlassEaselRuntimeAdapter } from './glass-easel-adapter'
 import {
   LogicBackendContext,
@@ -11,14 +11,14 @@ import {
   findLogicNodeByElement,
   type LogicStyleSheetRole,
 } from './backend'
-import { createRuntimeDiagnostic } from '../diagnostics'
+import { createRuntimeDiagnostic } from '../../diagnostics'
 import { createLogicSelectorQuery, queryLogicNodes, snapshotLogicNode } from './query'
 import type {
   ViewEventPayload,
   ViewIntersectionEntry,
   ViewIntersectionRequest,
   ViewRect,
-} from './protocol'
+} from './events'
 
 export type LogicTreeAdapterOptions = {
   manifest: Manifest
@@ -28,7 +28,7 @@ export type LogicTreeAdapterOptions = {
   measureView?: (viewIds: string[]) => Promise<Record<string, ViewRect>>
   loadStyle?: (outputPath: string) => string
   onDataChange?: (pageId: string) => void
-  onDiagnostic?: (diagnostic: import('../diagnostics').RuntimeDiagnostic) => void
+  onDiagnostic?: (diagnostic: import('../../diagnostics').RuntimeDiagnostic) => void
   /** Report a handler/observer error raised inside glass-easel. */
   onError?: (pageId: string | undefined, message: string, details?: unknown) => void
   viewIntersection?: {

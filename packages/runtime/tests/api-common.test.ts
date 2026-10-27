@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { createServiceApiHost, type ServiceApiContext } from '../src/service'
+import { createServiceApiHost, type ServiceApiContext } from '../src/service/thread'
 
 function createContext() {
   const storage: Record<string, unknown> = {}

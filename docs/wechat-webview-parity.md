@@ -189,7 +189,7 @@
 关键代码入口：
 
 - 服务 API：[service/api-host.ts](../packages/runtime/src/service/api-host.ts:1)
-- 宿主 API：[host-api.ts](../packages/runtime/src/host-api.ts:1)、[hosts/browser/api-handlers.ts](../hosts/browser/src/api-handlers.ts:1)
+- 宿主 API：[host/api.ts](../packages/runtime/src/host/api.ts:1)、[hosts/browser/api-handlers.ts](../hosts/browser/src/api-handlers.ts:1)
 - 不支持 API 的降级：`wx` Proxy 返回 `undefined` + `UNSUPPORTED_API` warning（[service/api-host.ts](../packages/runtime/src/service/api-host.ts:1)）
 
 > 降级策略是“静默 undefined”，不是抛错。页面不会立刻崩，但失败会推迟到调用方 `.then`/属性访问时才暴露，排查成本高。
@@ -624,13 +624,13 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 内置组件默认样式 | [styles/index.css](../hosts/web-components/src/styles/index.css:1) |
 | service API 宿主 | [service/api-host.ts](../packages/runtime/src/service/api-host.ts:1) |
 | 不支持 API 的降级 | [service/api-host.ts](../packages/runtime/src/service/api-host.ts:1) |
-| 宿主 API（toast/storage/navigate） | [host-api.ts](../packages/runtime/src/host-api.ts:1)、[browser api-handlers.ts](../hosts/browser/src/api-handlers.ts:1) |
+| 宿主 API（toast/storage/navigate） | [host/api.ts](../packages/runtime/src/host/api.ts:1)、[browser api-handlers.ts](../hosts/browser/src/api-handlers.ts:1) |
 | 组件 schema（data/properties/using + semantics metadata） | [component-schema.ts](../packages/runtime/src/component-schema.ts:5) |
 | Behavior 合并 / 组件定义规范化 | [component-definition.ts](../packages/runtime/src/component-definition.ts:115) |
 | 组件树与选择器 | [component-tree.ts](../packages/runtime/src/component-tree.ts:35) |
 | observers 匹配与调用 | [observers.ts](../packages/runtime/src/observers.ts:13) |
 | relations 链接管理 | [relation-manager.ts](../packages/runtime/src/relation-manager.ts:29) |
-| 组件注册（properties/externalClasses/options/observers/lifetimes/generics/pureDataPattern） | [glass-easel-adapter.ts](../packages/runtime/src/glass-easel-adapter.ts:463) |
+| 组件注册（properties/externalClasses/options/observers/lifetimes/generics/pureDataPattern） | [tree/logic/glass-easel-adapter.ts](../packages/runtime/src/tree/logic/glass-easel-adapter.ts:1) |
 | definitionFilter / pureDataPattern 归一化 | [component-definition.ts](../packages/runtime/src/component-definition.ts:115) |
 | componentGenerics / pureDataPattern schema | [component-schema.ts](../packages/runtime/src/component-schema.ts:5) |
 | 路由与页面/应用生命周期 | [service.ts](../packages/runtime/src/service.ts:1) |

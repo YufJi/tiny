@@ -60,7 +60,7 @@ service 和 render 需要 DOM 能力时，通过 `canvas`、`resolveAssetUrl`、
 ```text
 # pnpm check:runtime-purity
 packages/runtime/src/index.ts
-  -> types / diagnostics / glass-easel-adapter / service / render / host
+  -> types / diagnostics / component / tree (logic + render) / service / host
 
 不允许出现在依赖图里的内容：
   window · document · navigator · localStorage · MessageChannel

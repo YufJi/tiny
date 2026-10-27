@@ -79,7 +79,7 @@ XMLHttpRequest · WebSocket · fetch · performance
 
 ::::stack
 :::card{tag="内核" title="packages/runtime"}
-导出 types、diagnostics、glass-easel-adapter、service、render 和 host。`canvas`、`resolveAssetUrl`、`backend`、`mountComponent`、`builtinComponents` 都是可选参数。
+导出 types、diagnostics、component、tree（logic/render protocol 与 thread）、service 和 host。宿主通过 `renderConnector`、`canvas`、`apiHandlers`、`loadStyle` 等选项注入能力。
 :::
 
 :::card{tag="宿主" tone="violet" title="@tiny/host-browser"}

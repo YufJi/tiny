@@ -3,9 +3,9 @@
  * onto its own view system (iOS/Android/macOS); the adapter keeps the service
  * node ids and patch semantics identical to the web glass render tree.
  */
-import { RENDER_TEXT_TAG } from './protocol'
-import type { RenderElement, RenderNode, RenderPatch, RenderText } from './protocol'
-import type { TreeEventPayload, TreeRenderer } from '../tree-thread'
+import { RENDER_TEXT_TAG } from '../protocol'
+import type { RenderElement, RenderNode, RenderPatch, RenderText } from '../protocol'
+import type { TreeEventPayload, TreeRenderer } from './thread'
 
 export type NativeNodeSpec = {
   id: string

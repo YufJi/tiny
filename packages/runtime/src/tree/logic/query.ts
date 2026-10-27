@@ -1,5 +1,5 @@
-import type { QueryNodeSnapshot } from '../types'
-import type { ViewRect } from './protocol'
+import type { QueryNodeSnapshot } from '../../types'
+import type { ViewRect } from './events'
 import type { LogicBackendContext, LogicBackendElement } from './backend'
 
 function classMatches(node: LogicBackendElement, className: string): boolean {

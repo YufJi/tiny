@@ -10,7 +10,7 @@ import {
   type RenderNode,
   type RenderPatch,
   type RenderText,
-} from './tree/protocol'
+} from '../protocol'
 
 export type TreeEventPayload = {
   id: string

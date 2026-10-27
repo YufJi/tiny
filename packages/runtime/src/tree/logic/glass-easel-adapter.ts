@@ -11,15 +11,15 @@ import type {
   MiniProgramComponentSchema,
   StyleLoader,
   TemplateRegistry,
-} from '../types'
-import { toJsonSafe } from '../events'
-import { createRuntimeDiagnostic } from '../diagnostics'
-import { readComponentGenerics } from '../component/component-schema'
+} from '../../types'
+import { toJsonSafe } from '../../events'
+import { createRuntimeDiagnostic } from '../../diagnostics'
+import { readComponentGenerics } from '../../component/component-schema'
 import {
   parsePureDataPattern,
   type NormalizedComponentDefinition,
   type NormalizedRelation,
-} from '../component/component-definition'
+} from '../../component/component-definition'
 
 
 
@@ -86,7 +86,7 @@ export type GlassEaselAdapterOptions = {
   backend: glassEasel.GeneralBackendContext
   manifest: Manifest
   templates: TemplateRegistry
-  onDiagnostic?: (diagnostic: import('../diagnostics').RuntimeDiagnostic) => void
+  onDiagnostic?: (diagnostic: import('../../diagnostics').RuntimeDiagnostic) => void
   /** Page/component JavaScript options for the service-side logic tree. */
   logicPageOptions?: ReadonlyMap<string, { methods?: Record<string, (...args: unknown[]) => unknown> }>
   logicComponentDefinitions?: ReadonlyMap<string, NormalizedComponentDefinition>
@@ -153,7 +153,7 @@ export class GlassEaselRuntimeAdapter {
   private readonly componentPaths = new WeakMap<object, string>()
   private readonly componentUsageCounters = new Map<string, number>()
   private readonly methodCallerComponents = new WeakMap<object, glassEasel.GeneralComponent>()
-  private readonly onDiagnostic?: (diagnostic: import('../diagnostics').RuntimeDiagnostic) => void
+  private readonly onDiagnostic?: (diagnostic: import('../../diagnostics').RuntimeDiagnostic) => void
   private readonly logicPageOptions?: GlassEaselAdapterOptions['logicPageOptions']
   private readonly logicComponentDefinitions?: GlassEaselAdapterOptions['logicComponentDefinitions']
   private readonly logicQueryFactory?: GlassEaselAdapterOptions['logicQueryFactory']

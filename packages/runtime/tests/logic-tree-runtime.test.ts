@@ -8,7 +8,7 @@ import {
 } from '@tiny/manifest'
 import { buildComponentSchemas } from '../src/component/component-schema'
 import { normalizeComponentDefinition } from '../src/component/component-definition'
-import { LogicTreeAdapter } from '../src/logic/tree'
+import { LogicTreeAdapter } from '../src/tree/logic/adapter'
 
 const PAGE_PATH = 'pages/index/index'
 const PARENT_PATH = 'components/parent/index'

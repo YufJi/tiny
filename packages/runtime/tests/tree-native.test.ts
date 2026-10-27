@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { createNativeTreeRenderer, type NativeTreeHost } from '../src/tree/native-renderer'
+import { createNativeTreeRenderer, type NativeTreeHost } from '../src/tree/render/native-renderer'
 import type { RenderNode } from '../src/tree/protocol'
 
 function createHost() {

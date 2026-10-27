@@ -1,4 +1,4 @@
-import { bootTreeThread, type TreeRenderer, type TreeThreadOptions } from '../../src/tree-thread'
+import { bootTreeThread, type TreeRenderer, type TreeThreadOptions } from '../../src/tree/render/thread'
 import type { Manifest } from '@tiny/manifest'
 import type { StyleLoader, TemplateRegistry } from '../../src/types'
 import { lastLogicTree, provideHarnessConfig } from './split-service'

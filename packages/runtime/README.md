@@ -45,11 +45,14 @@ A browser host does not import iframe helpers from this package. Use
 
 ## Modules
 
-- `service.ts` — app/page/component lifecycle, page stack, tabBar/`switchTab`, `wx` API host
-- `render.ts` — bridge + glass-easel adapter bootstrap
-- `glass-easel-adapter.ts` — component registration, events, inspect tree
-- `assets.ts` — app-root asset path resolution and WXSS `url(...)` rewriting
-- `host.ts` — host orchestration, page-scoped message routing, per-page render connectors
+- `service/thread.ts` — app/page lifecycle, page stack, tabBar/`switchTab`, `wx` API host
+- `service/` — page/component instances, registry, selector query, route parsing
+- `tree/logic/` — service-side logic tree (adapter, backend, query, glass-easel bridge)
+- `tree/render/` — render thread entry and native render-tree adapter
+- `tree/protocol.ts` / `tree/diff.ts` — cross-thread tree contract and patches
+- `component/` — component definitions, schemas, tree, behaviors, observers
+- `host/` — host orchestration, page-scoped message routing, per-page render connectors
+- `assets.ts` / `data.ts` / `events.ts` / `diagnostics.ts` — shared primitives
 - `bridge` comes from `@tiny/bridge`; manifest types from `@tiny/manifest`
 
 ## Testing
@@ -82,7 +85,7 @@ Canvas is injected at the thread boundary:
 - `ServiceThreadOptions.canvas` (`createLegacyCanvasContext`, `acquireCanvasNode`, `releaseCanvasNode`)
 - `RenderThreadOptions.canvas` (`measure`)
 
-This keeps `service.ts` and `render.ts` free of `window`, `document`, `Image`,
+This keeps the service and render thread entries free of `window`, `document`, `Image`,
 and `HTMLCanvasElement`; browser code lives in `@tiny/host-browser`, not in core. `pnpm check:runtime-purity` walks the core entry's import
 graph and fails if a browser global, a `browser` import, or an `@tiny/host-*`
 import leaks in.

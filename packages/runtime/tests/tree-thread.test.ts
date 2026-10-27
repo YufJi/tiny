@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { BridgeConnection, createInMemoryTransportPair } from '@tiny/bridge'
-import { bootTreeThread } from '../src/tree-thread'
+import { bootTreeThread } from '../src/tree/render/thread'
 import type { RenderNode, RenderPatch } from '../src/tree/protocol'
 
 const tree: RenderNode = {

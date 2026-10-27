@@ -1,36 +1,36 @@
 import { BridgeConnection } from '@tiny/bridge'
-import { QUERY_CONTROL, RUNTIME_CONTROL, TREE_PROTOCOL } from './tree/protocol'
+import { QUERY_CONTROL, RUNTIME_CONTROL, TREE_PROTOCOL } from '../tree/protocol'
 import {
   DIAGNOSTIC_CODES,
   runtimeCompatibilityFromManifest,
   TINY_ENGINE_NAMING,
   type PageArtifact,
 } from '@tiny/manifest'
-import { buildComponentSchemas } from './component/component-schema'
-import type { ComponentLifecycleName, NormalizedComponentDefinition } from './component/component-definition'
-import { cloneJsonSafe, readDataPath, type DataPatch } from './data'
-import { ComponentTree } from './component/component-tree'
-import type { ServiceThreadOptions } from './types'
+import { buildComponentSchemas } from '../component/component-schema'
+import type { ComponentLifecycleName, NormalizedComponentDefinition } from '../component/component-definition'
+import { cloneJsonSafe, readDataPath, type DataPatch } from '../data'
+import { ComponentTree } from '../component/component-tree'
+import type { ServiceThreadOptions } from '../types'
 import type {
   MiniProgramComponentSchema,
   QueryIntersectionEntry,
   StorageSnapshot,
   SystemInfoSnapshot,
-} from './types'
-import { createRuntimeStateDiagnostic } from './diagnostics'
-import type { RuntimePageState, RuntimeTabBarState } from './diagnostics'
-import { MiniProgramPageRegistry } from './service/page-registry'
-import { MiniProgramPageInstance, type PageLifecycleName } from './service/page-instance'
-import { createServiceApiHost, installMiniProgramGlobals } from './service/api-host'
-import { createSelectorQuery } from './service/selector-query'
-import { LogicTreeAdapter } from './logic/tree'
-import { findPageArtifact, normalizeRoutePath, requireActivePage, resolveComponentReference } from './service/route'
-import type { MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime, TabBarApi } from './service/types'
+} from '../types'
+import { createRuntimeStateDiagnostic } from '../diagnostics'
+import type { RuntimePageState, RuntimeTabBarState } from '../diagnostics'
+import { MiniProgramPageRegistry } from './page-registry'
+import { MiniProgramPageInstance, type PageLifecycleName } from './page-instance'
+import { createServiceApiHost, installMiniProgramGlobals } from './api-host'
+import { createSelectorQuery } from './selector-query'
+import { LogicTreeAdapter } from '../tree/logic/adapter'
+import { findPageArtifact, normalizeRoutePath, requireActivePage, resolveComponentReference } from './route'
+import type { MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime, TabBarApi } from './types'
 
-export type { MiniProgramPageOptions, MiniProgramComponentOptions, MiniProgramAppOptions, MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime } from './service/types'
-export { MiniProgramPageRegistry } from './service/page-registry'
-export { MiniProgramPageInstance } from './service/page-instance'
-export { createServiceApiHost, installMiniProgramGlobals } from './service/api-host'
+export type { MiniProgramPageOptions, MiniProgramComponentOptions, MiniProgramAppOptions, MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime } from './types'
+export { MiniProgramPageRegistry } from './page-registry'
+export { MiniProgramPageInstance } from './page-instance'
+export { createServiceApiHost, installMiniProgramGlobals } from './api-host'
 
 export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadRuntime {
   const expectedPagePaths = options.manifest.pages
@@ -456,8 +456,8 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }
   }
 
-  const treeFlow = (root: import('./tree/protocol').RenderNode): import('./tree/protocol').ComponentFlow[] => {
-    const messages: import('./tree/protocol').ComponentFlow[] = componentSchemas.map((schema) => ({
+  const treeFlow = (root: import('../tree/protocol').RenderNode): import('../tree/protocol').ComponentFlow[] => {
+    const messages: import('../tree/protocol').ComponentFlow[] = componentSchemas.map((schema) => ({
       type: 'define' as const,
       path: schema.path,
       definition: {
@@ -467,7 +467,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       },
     }))
     const visit = (
-      node: import('./tree/protocol').RenderNode,
+      node: import('../tree/protocol').RenderNode,
       parentId: string | undefined,
       index: number,
     ): void => {
