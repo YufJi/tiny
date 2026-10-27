@@ -2,7 +2,11 @@ import { BridgeConnection } from '@tiny/bridge'
 import type { PageArtifact } from '@tiny/manifest'
 import { GlassEaselRuntimeAdapter, type GlassEaselAdapterOptions } from './glass-easel-adapter'
 import { applyDataPatch, type DataPatch } from './data'
-import type { RenderThreadOptions } from './types'
+import type {
+  QuerySelectorRequest,
+  RenderIntersectionHandle,
+  RenderThreadOptions,
+} from './types'
 
 export type RenderThreadRuntime = {
   connection: BridgeConnection
@@ -210,6 +214,97 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
   connection.onControl('canvas', 'measure', (message) => {
     const payload = (message.payload ?? {}) as { selector?: string; canvasId?: string }
     return options.canvas?.measure(payload.selector, payload.canvasId) ?? { width: 0, height: 0 }
+  })
+
+  const resolveQueryRoot = (payload: {
+    componentId?: string
+    pageId?: string
+  }): unknown => {
+    const component = payload.componentId
+      ? adapter.getMountedComponentByComponentId(payload.componentId)
+      : payload.pageId
+        ? adapter.getMountedComponentByPageId(payload.pageId)
+        : undefined
+    return (component as unknown as { getBackendElement?: () => unknown })
+      ?.getBackendElement?.()
+  }
+
+  connection.onControl('query', 'select', (message) => {
+    const payload = (message.payload ?? {}) as QuerySelectorRequest
+    const root = resolveQueryRoot({
+      componentId: payload.componentId,
+      pageId: payload.pageId ?? message.pageId,
+    })
+    if (!root || !options.query) return { nodes: [] }
+    return {
+      nodes: options.query.query(root, String(payload.selector ?? ''), payload.all === true),
+    }
+  })
+
+  const intersectionObservers = new Map<string, RenderIntersectionHandle>()
+  const intersectionKey = (observerId: string, selector: string) => `${observerId}::${selector}`
+
+  connection.onControl('query', 'intersection', (message) => {
+    const payload = (message.payload ?? {}) as {
+      action?: 'observe' | 'unobserve' | 'disconnect'
+      observerId?: string
+      selector?: string
+      componentId?: string
+      pageId?: string
+      thresholds?: number[]
+      observeAll?: boolean
+      relativeTo?: {
+        type?: 'viewport' | 'selector'
+        selector?: string
+        margins?: { left?: number; right?: number; top?: number; bottom?: number }
+      }
+    }
+    const observerId = String(payload.observerId ?? '')
+    const selector = String(payload.selector ?? '')
+    if (!observerId) return { status: 'ignored' }
+    if (payload.action === 'observe') {
+      const key = intersectionKey(observerId, selector)
+      intersectionObservers.get(key)?.disconnect()
+      intersectionObservers.delete(key)
+      const root = resolveQueryRoot({
+        componentId: payload.componentId,
+        pageId: payload.pageId ?? message.pageId,
+      })
+      if (!root || !selector || !options.query) return { status: 'unsupported' }
+      const pageId = payload.pageId ?? message.pageId
+      const handle = options.query.createIntersectionObserver({
+        root,
+        selector,
+        all: payload.observeAll === true,
+        thresholds: payload.thresholds,
+        relativeTo: payload.relativeTo,
+      }, (entries) => {
+        connection.sendEvent(
+          'query',
+          'intersection',
+          { observerId, selector, entries },
+          { pageId },
+        )
+      })
+      handle.start()
+      intersectionObservers.set(key, handle)
+      return { status: 'observing' }
+    }
+    if (payload.action === 'unobserve') {
+      const key = intersectionKey(observerId, selector)
+      intersectionObservers.get(key)?.disconnect()
+      intersectionObservers.delete(key)
+      return { status: 'ok' }
+    }
+    if (payload.action === 'disconnect') {
+      for (const [key, handle] of intersectionObservers) {
+        if (!key.startsWith(`${observerId}::`)) continue
+        handle.disconnect()
+        intersectionObservers.delete(key)
+      }
+      return { status: 'ok' }
+    }
+    return { status: 'ignored' }
   })
 
   connection.onEvent('data', 'setData', (message) => {

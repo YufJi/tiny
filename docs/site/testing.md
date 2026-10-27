@@ -221,7 +221,7 @@ componentPlaceholder、完整内置 behavior 和 open-type 真实能力都没有
 :::
 
 :::card{tag="API" tone="warn" title="API 覆盖有限"}
-网络、媒体、文件、位置、账号、WebSocket 和 IntersectionObserver 都没有端到端测试。
+网络、媒体、文件、位置、账号和 WebSocket 都没有端到端测试；组件级 selector query 与 IntersectionObserver 已接通 render 线程，尚未加入独立端到端用例。
 :::
 
 :::card{tag="安全" tone="warn" title="缺少安全隔离"}

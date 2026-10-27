@@ -48,7 +48,7 @@ order: 9
 
 ::::cards
 :::card{tag="API" tone="warn" title="宿主 API 还不够全"}
-还缺异步 storage 持久化、showModal/showLoading、登录、媒体、文件、位置、WebSocket 和 IntersectionObserver。
+还缺异步 storage 持久化、showModal/showLoading、登录、媒体、文件、位置和 WebSocket；组件级 IntersectionObserver 已接通。
 
 未实现的 API 会返回 undefined 并产生 UNSUPPORTED_API 警告，不会直接抛错。
 :::

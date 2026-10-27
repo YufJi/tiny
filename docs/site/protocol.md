@@ -245,11 +245,14 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | page | `reachBottom` | event | render → service | 触发页面触底回调 |
 | page | `unload` | control | host → service | onUnload，并移除页面实例（内置宿主没有调用） |
 | page | `getInitialData` | call | host → service | 返回页面定义的 data（已注册，但目前没有宿主使用） |
-| data | `setData` | event | service → render | 页面或组件的路径更新 |
+| data | `setData` | event | service → render | 页面或组件的路径更新；同一 tick 的多个 patch 合并为一条 |
 | event | `dispatch` | event | render → service | 序列化后的小程序事件，用来调用页面或组件方法 |
 | event | `trigger` | event | service → render | service 侧组件实例触发 glass-easel 事件 |
 | canvas | `measure` | call/control | service → host → render | 按 selector 测量，返回 width/height/canvasId |
 | canvas | `frame` | event | service → render | 宿主 canvas 适配器产生的 PNG 帧，render 侧负责上屏 |
+| query | `select` | call/control | service → host → render | 按 selector 在组件/页面作用域查询真实 DOM，返回 rect/dataset/scroll |
+| query | `intersection` | call/control | service → host → render | 创建/更新/断开组件级 IntersectionObserver |
+| query | `intersection` | event | render → service | 投影相交 entry，触发 observe 回调 |
 | diagnostic | `diagnostic.log/warn/error/state` | event | service/render → host | 统一转成 RuntimeDiagnostic |
 | api | `system.info` | call | service → host | 获取宿主系统信息快照 |
 | api | `storage.get` | call | service → host | 读取宿主 storage |

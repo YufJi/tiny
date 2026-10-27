@@ -224,6 +224,7 @@ service 只知道页面栈，render 只知道组件树。一次 `navigateTo` 必
 | glass-easel 节点树 / DOM | render | devtool 的 InspectNode | 按需调用 runtime.inspectTree |
 | 样式和 scope id | render StyleScopeManager | 无 | registerStyles 时注册；styleIsolation 按页面作用域组装 |
 | canvas 实现 | 宿主 canvas 适配器 | service 绘制上下文 / render 可见 canvas | ServiceCanvasAdapter · RenderCanvasAdapter |
+| DOM 查询 | 宿主 DOM 适配器 | selector query / IntersectionObserver | RenderQueryAdapter |
 | 资源 URL | 宿主 resolveAssetUrl | render 重写后的 img/src 和 CSS url() | adapter 在模板/样式注册时解析 |
 | 宿主 transport / API 语义 | 宿主 | service 侧 API 快照 | api.* 调用 / systemInfo / storage / apiExtensions |
 | 诊断 | 宿主诊断仓库 | devtool diagnostics | diagnostic.* 事件 |
@@ -254,7 +255,7 @@ Date、Map、Set、函数、undefined 和循环引用都会被 Bridge 拒绝。�
 :::
 
 :::card{title="环境能力由宿主注入"}
-设备信息走 `apiExtensions`，canvas 走 `ServiceCanvasAdapter` / `RenderCanvasAdapter`，资源走 `resolveAssetUrl`，渲染后端和挂载点也由宿主提供。
+设备信息走 `apiExtensions`，canvas 走 `ServiceCanvasAdapter` / `RenderCanvasAdapter`，DOM 查询与相交观测走 `RenderQueryAdapter`，资源走 `resolveAssetUrl`，渲染后端和挂载点也由宿主提供。
 :::
 
 :::card{title="命名配置只有一个来源"}

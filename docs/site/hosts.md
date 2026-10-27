@@ -178,7 +178,8 @@ service 和 render 不读取 URL，也不读取全局 manifest，所有输入都
 | `initialPath` / `initialData` | 首屏页面和数据；bootstrap 消息里的值优先 | initialPath 必需 |
 | `loadStyle` | 按 outputPath 返回 CSS 文本 | 实际必需 |
 | `resolveAssetUrl` | 把 app-root 资源路径映射成可加载 URL（模板 img / CSS url） | 使用本地资源时必需 |
-| `canvas` | measure / paint 适配器 | 使用 canvas 或 SelectorQuery 时必需 |
+| `canvas` | measure / paint 适配器 | 使用 canvas 时必需 |
+| `query` | DOM 查询 + IntersectionObserver 适配器 | 使用 selector query 或组件级 IntersectionObserver 时必需 |
 | `builtinComponents` | 内置组件定义和基础样式 | 使用内置组件时必需 |
 | `mountComponent` / `unmountComponent` | 把根组件挂到宿主节点 | 否；不传时使用 pretendAttached |
 | `onDiagnostic` | 本地诊断回调；跨线程诊断仍走 Bridge | 否 |
@@ -204,9 +205,9 @@ service 和 render 不读取 URL，也不读取全局 manifest，所有输入都
 render 的 bootstrap 处理器会优先使用消息里的 `manifest`、`initialPath`、`initialData`、`componentSchemas` 和 `pageComponents`；线程参数只是默认值，以及样式、模板和资源的加载来源。
 :::
 
-## 宿主可以注入四类能力 {#injections kicker="注入能力"}
+## 宿主可以注入五类能力 {#injections kicker="注入能力"}
 
-跨线程 API、同步宿主信息、canvas 实现、资源 URL 各有自己的入口，放错层就会出现“内核偷偷依赖浏览器”的问题。
+跨线程 API、同步宿主信息、canvas 实现、DOM 查询、资源 URL 各有自己的入口，放错层就会出现“内核偷偷依赖浏览器”的问题。
 
 ::::split
 :::card{tag="宿主" title="apiHandlers：跨线程 API"}
@@ -231,6 +232,10 @@ render 的 bootstrap 处理器会优先使用消息里的 `manifest`、`initialP
 ::::
 
 ::::split
+:::card{tag="query" title="RenderQueryAdapter"}
+`createSelectorQuery` / `createIntersectionObserver` 由宿主在 render 入口注入：浏览器实现是 `createBrowserRenderQuery()`（真实 DOM 查询 + 原生 IntersectionObserver）。不注入时普通查询返回空、观察器返回 unsupported。
+:::
+
 :::card{tag="canvas" title="ServiceCanvasAdapter / RenderCanvasAdapter"}
 service 需要 `createLegacyCanvasContext` 和 `createCanvasNode`；render 需要 `measure` 和 `paint`。浏览器实现位于 `hosts/browser/src/canvas-bridge.ts`。
 :::
@@ -247,10 +252,11 @@ service 需要 `createLegacyCanvasContext` 和 `createCanvasNode`；render 需�
 | storage 需要持久化 | `apiHandlers` | 真实存储由宿主管理 |
 | canvas 绘制和测量 | canvas 适配器 | 内核不能依赖 document / Image |
 | 本地图片和 CSS 背景图 | `resolveAssetUrl` | 只有宿主知道静态资源的 URL 规则 |
+| selector query / 相交观测 | `RenderThreadOptions.query` | 内核不能依赖 Element / IntersectionObserver |
 | 节点挂到哪里 | backend + mountComponent | DOM 或原生树归宿主所有 |
 
 :::callout{title="仓库里已经定下的规则"}
-宿主信息通过 `ServiceThreadOptions.apiExtensions` 注入，canvas 通过 `ServiceThreadOptions.canvas` / `RenderThreadOptions.canvas` 注入。不要再把这些能力放回 `packages/runtime`。
+宿主信息通过 `ServiceThreadOptions.apiExtensions` 注入，canvas 通过 `ServiceThreadOptions.canvas` / `RenderThreadOptions.canvas` 注入，DOM 查询与相交观测通过 `RenderThreadOptions.query` 注入。不要再把这些能力放回 `packages/runtime`。
 :::
 
 ## @tiny/host-browser 负责什么 {#browser kicker="浏览器宿主"}

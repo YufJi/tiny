@@ -2,6 +2,7 @@ import * as glassEasel from 'glass-easel'
 import { CurrentWindowBackendContext } from 'glass-easel'
 import { bootRenderThread } from '@tiny/runtime'
 import {
+  createBrowserRenderQuery,
   installOffscreenCanvasResponder,
   listenForRuntimePort,
   measureBrowserCanvas,
@@ -45,6 +46,7 @@ listenForRuntimePort('render', (transport) => {
     canvas: {
       measure: measureBrowserCanvas,
     },
+    query: createBrowserRenderQuery(),
     mountComponent: (component) => {
       const container = document.getElementById('app') ?? document.body
       const placeholder = document.createElement('div')

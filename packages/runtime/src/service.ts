@@ -6,18 +6,23 @@ import {
 import { buildComponentSchemas } from './component-schema'
 import type { ComponentLifecycleName, NormalizedComponentDefinition } from './component-definition'
 import { invokeObserver } from './observers'
-import { cloneJsonSafe, readDataPath } from './data'
+import { cloneJsonSafe, readDataPath, type DataPatch } from './data'
 import { ComponentTree } from './component-tree'
 import { RelationManager } from './relation-manager'
 import type { ServiceThreadOptions } from './types'
-import type { MiniProgramComponentSchema, StorageSnapshot, SystemInfoSnapshot } from './types'
+import type {
+  MiniProgramComponentSchema,
+  QueryIntersectionEntry,
+  StorageSnapshot,
+  SystemInfoSnapshot,
+} from './types'
 import { createRuntimeStateDiagnostic } from './diagnostics'
 import type { RuntimePageState, RuntimeTabBarState } from './diagnostics'
 import { MiniProgramPageRegistry } from './service/page-registry'
 import { MiniProgramComponentInstance } from './service/component-instance'
 import { MiniProgramPageInstance, type PageLifecycleName } from './service/page-instance'
 import { createServiceApiHost, installMiniProgramGlobals } from './service/api-host'
-import { createIntersectionObserverStub, createSelectorQueryStub } from './service/selector-query'
+import { createSelectorQuery } from './service/selector-query'
 import { findPageArtifact, normalizeRoutePath, requireActivePage, resolveComponentReference } from './service/route'
 import type { ComponentRuntimeContext, MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime, TabBarApi } from './service/types'
 
@@ -219,6 +224,145 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       details,
     }, activePage?.pageId),
   })
+  type IntersectionRelativeTo = {
+    type: 'viewport' | 'selector'
+    selector?: string
+    margins?: { left?: number; right?: number; top?: number; bottom?: number }
+  }
+  type IntersectionObserverRegistration = {
+    callbacks: Map<string, Set<(entry: QueryIntersectionEntry) => void>>
+    relativeTo: IntersectionRelativeTo
+    thresholds: number[]
+  }
+  const intersectionObservers = new Map<string, IntersectionObserverRegistration>()
+  let intersectionObserverCounter = 0
+
+  connection.onEvent('query', 'intersection', (message) => {
+    const payload = (message.payload ?? {}) as {
+      observerId?: string
+      selector?: string
+      entries?: QueryIntersectionEntry[]
+    }
+    const registration = payload.observerId
+      ? intersectionObservers.get(payload.observerId)
+      : undefined
+    if (!registration) return
+    const callbacks = registration.callbacks.get(String(payload.selector ?? ''))
+    if (!callbacks) return
+    for (const entry of payload.entries ?? []) {
+      for (const callback of callbacks) {
+        try {
+          callback(entry)
+        } catch (error) {
+          connection.sendDiagnostic('warn', {
+            code: 'INTERSECTION_CALLBACK_ERROR',
+            message: error instanceof Error ? error.message : String(error),
+          }, message.pageId)
+        }
+      }
+    }
+  })
+
+  const createComponentIntersectionObserver = (
+    pageId: string,
+    componentId: string,
+    options: Record<string, unknown> = {},
+  ): Record<string, unknown> => {
+    intersectionObserverCounter += 1
+    const observerId = `intersection-${intersectionObserverCounter}`
+    const registration: IntersectionObserverRegistration = {
+      callbacks: new Map(),
+      relativeTo: { type: 'viewport' },
+      thresholds: Array.isArray(options.thresholds)
+        ? options.thresholds.map((value) => Number(value)).filter((value) => Number.isFinite(value))
+        : [0],
+    }
+    intersectionObservers.set(observerId, registration)
+    const send = (action: 'observe' | 'unobserve' | 'disconnect', selector?: string): void => {
+      const payload = cloneJsonSafe({
+        action,
+        observerId,
+        componentId,
+        pageId,
+        selector,
+        thresholds: registration.thresholds,
+        observeAll: options.observeAll === true,
+        relativeTo: registration.relativeTo,
+      })
+      void connection.call('query', 'intersection', payload, { pageId }).catch(() => undefined)
+    }
+    const resendRelativeTo = (): void => {
+      for (const selector of registration.callbacks.keys()) send('observe', selector)
+    }
+    const handle: Record<string, unknown> = {
+      relativeTo(selector: string, margins?: IntersectionRelativeTo['margins']) {
+        registration.relativeTo = { type: 'selector', selector: String(selector), margins }
+        resendRelativeTo()
+        return handle
+      },
+      relativeToViewport(margins?: IntersectionRelativeTo['margins']) {
+        registration.relativeTo = { type: 'viewport', margins }
+        resendRelativeTo()
+        return handle
+      },
+      observe(selector: string, callback: (entry: QueryIntersectionEntry) => void) {
+        if (typeof selector !== 'string' || typeof callback !== 'function') return handle
+        const callbacks = registration.callbacks.get(selector) ?? new Set()
+        callbacks.add(callback)
+        registration.callbacks.set(selector, callbacks)
+        send('observe', selector)
+        return handle
+      },
+      unobserve(selector: string) {
+        registration.callbacks.delete(selector)
+        send('unobserve', selector)
+        return handle
+      },
+      disconnect() {
+        send('disconnect')
+        intersectionObservers.delete(observerId)
+        return undefined
+      },
+    }
+    return handle
+  }
+
+  const pendingDataPatches = new Map<string, {
+    kind: 'page' | 'component'
+    id: string
+    pageId: string
+    patch: DataPatch
+  }>()
+  let dataFlushScheduled = false
+  const flushDataPatches = (): void => {
+    dataFlushScheduled = false
+    if (pendingDataPatches.size === 0) return
+    const entries = [...pendingDataPatches.values()]
+    pendingDataPatches.clear()
+    for (const entry of entries) {
+      if (entry.kind === 'page') {
+        connection.sendEvent('data', 'setData', { pageId: entry.id, patch: entry.patch }, { pageId: entry.id })
+      } else {
+        connection.sendEvent('data', 'setData', { componentId: entry.id, patch: entry.patch }, { pageId: entry.pageId })
+      }
+    }
+  }
+  const queueDataPatch = (
+    kind: 'page' | 'component',
+    id: string,
+    pageId: string,
+    patch: DataPatch,
+  ): void => {
+    const key = `${kind}:${id}`
+    const pending = pendingDataPatches.get(key)
+    if (pending) Object.assign(pending.patch, patch)
+    else pendingDataPatches.set(key, { kind, id, pageId, patch: { ...patch } })
+    if (!dataFlushScheduled) {
+      dataFlushScheduled = true
+      queueMicrotask(flushDataPatches)
+    }
+  }
+
   const createRuntimeContext = (pageId: string): ComponentRuntimeContext => ({
     pageId,
     tree: componentTree,
@@ -229,8 +373,11 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       message,
       details,
     }, pageId),
-    createSelectorQuery: () => createSelectorQueryStub(apiContext),
-    createIntersectionObserver: () => createIntersectionObserverStub(),
+    createSelectorQuery: (componentId) => createSelectorQuery(apiContext, { componentId }),
+    createIntersectionObserver: (componentId, options) => (
+      createComponentIntersectionObserver(pageId, componentId, options)
+    ),
+    flushDataPatches,
   })
   const createComponentInstance = (
     componentId: string,
@@ -246,7 +393,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     createRuntimeContext(pageId),
     {
       onDataPatch: (instanceId, patch) => {
-        connection.sendEvent('data', 'setData', { componentId: instanceId, patch }, { pageId })
+        queueDataPatch('component', instanceId, pageId, patch)
       },
       onTriggerEvent: (instanceId, name, detail, triggerOptions) => {
         connection.sendEvent('event', 'trigger', {
@@ -405,7 +552,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       definition,
       query,
       (id, patch) => {
-        connection.sendEvent('data', 'setData', { pageId: id, patch }, { pageId: id })
+        queueDataPatch('page', id, id, patch)
       },
       createRuntimeContext(pageId),
       componentDefinition,

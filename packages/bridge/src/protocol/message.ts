@@ -6,7 +6,7 @@ export const PROTOCOL_VERSION = 1;
 
 export type ProtocolRole = 'host' | 'service' | 'render' | 'devtool';
 export type ProtocolKind = 'call' | 'reply' | 'event' | 'control';
-export type ProtocolDomain = 'runtime' | 'page' | 'data' | 'event' | 'api' | 'diagnostic' | 'canvas';
+export type ProtocolDomain = 'runtime' | 'page' | 'data' | 'event' | 'api' | 'diagnostic' | 'canvas' | 'query';
 
 export type ProtocolReplyPayload<T> = { ok: true; result: T } | { ok: false; error: ProtocolErrorPayload };
 
@@ -28,7 +28,7 @@ export type ProtocolMessageInput<T> = Omit<ProtocolMessage<T>, 'protocolVersion'
 
 const ROLES: ProtocolRole[] = ['host', 'service', 'render', 'devtool'];
 const KINDS: ProtocolKind[] = ['call', 'reply', 'event', 'control'];
-const DOMAINS: ProtocolDomain[] = ['runtime', 'page', 'data', 'event', 'api', 'diagnostic', 'canvas'];
+const DOMAINS: ProtocolDomain[] = ['runtime', 'page', 'data', 'event', 'api', 'diagnostic', 'canvas', 'query'];
 
 let messageIdCounter = 0;
 

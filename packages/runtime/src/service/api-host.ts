@@ -12,7 +12,7 @@ import type {
   ServiceApiContext,
 } from './types'
 import { createAnimationStub } from './animation'
-import { createSelectorQueryStub } from './selector-query'
+import { createSelectorQuery } from './selector-query'
 
 export function installMiniProgramGlobals(
   registry: MiniProgramPageRegistry,
@@ -494,7 +494,7 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
         code: 'CANVAS_OFFSCREEN',
         message: 'Canvas is rendered in the service thread and presented by the render thread.',
       }, context.pageId)
-      return createSelectorQueryStub(context)
+      return createSelectorQuery(context)
     },
   }
 }

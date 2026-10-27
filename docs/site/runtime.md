@@ -49,7 +49,7 @@ glass-easel 组件定义、模板实例、样式作用域、DOM 节点、事件�
 ::::
 
 :::callout{title="内核不直接接触运行环境"}
-service 需要 canvas 时，调用注入的 `ServiceCanvasAdapter`；render 测量和绘制 canvas 时，调用注入的 `RenderCanvasAdapter`；图片和 CSS 资源由 `resolveAssetUrl` 解析；DOM 挂载由 `mountComponent` 完成。`pnpm check:runtime-purity` 会检查这条规则有没有被破坏。
+service 需要 canvas 时，调用注入的 `ServiceCanvasAdapter`；render 测量和绘制 canvas 时，调用注入的 `RenderCanvasAdapter`；selector query 和 IntersectionObserver 走注入的 `RenderQueryAdapter`；图片和 CSS 资源由 `resolveAssetUrl` 解析；DOM 挂载由 `mountComponent` 完成。`pnpm check:runtime-purity` 会检查这条规则有没有被破坏。
 :::
 
 ## 注册、命名和页面栈 {#service kicker="service 线程"}
@@ -456,8 +456,8 @@ canvas 已经从核心 runtime 移出：service 和 render 只接收适配器，
 ::::
 
 ::::stack
-:::card{tag="SelectorQuery" title="跨线程测量"}
-`createSelectorQuery` 仍然不是通用 DOM 查询：它把 selector 发到 render 测量，返回宽高和 canvas 节点；每次创建 query 都会记一条 `CANVAS_OFFSCREEN` info。
+:::card{tag="SelectorQuery" title="跨线程 DOM 查询"}
+`createSelectorQuery` 把选择器发到 render 线程，由宿主注入的 `RenderQueryAdapter` 对真实 DOM 返回 `rect`/`dataset`/`scroll`，并支持组件作用域（`this.createSelectorQuery()`、`.in(component)`）与样式作用域下的原类名选择器。浏览器实现位于 `@tiny/host-browser` 的 `createBrowserRenderQuery()`；canvas 的 `.node()` 仍走宿主 handoff。
 :::
 
 :::card{tag="animation" title="目前仍是最终态 CSS"}

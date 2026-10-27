@@ -241,4 +241,54 @@ describe('tiny runtime', () => {
     await host.close()
     void service
   })
+
+  test('batches synchronous setData calls into one bridge message', async () => {
+    const manifest = createManifest()
+    const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
+    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
+    const service = bootServiceThread({
+      transport: serviceTransport,
+      manifest,
+      initialPath: PAGE_PATH,
+    })
+    const globalObject = globalThis as unknown as Record<string, unknown>
+    ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
+      data: {},
+      onLoad() {
+        this.setData({ first: 1 })
+        this.setData({ second: 2 })
+      },
+    })
+    const render = bootRenderThread({
+      transport: renderTransport,
+      manifest,
+      artifacts: { templates: createTemplateRegistry() },
+      backend: new glassEasel.EmptyBackendContext(),
+      initialPath: PAGE_PATH,
+    })
+    const host = createTinyRuntime({
+      serviceTransport: hostServiceTransport,
+      renderTransport: hostRenderTransport,
+      manifest,
+      initialPath: PAGE_PATH,
+    })
+    const dataMessages: Array<Record<string, unknown>> = []
+    hostServiceTransport.onFrame((frame) => {
+      for (const message of frame.messages) {
+        if (message.kind !== 'event' || message.domain !== 'data' || message.method !== 'setData') continue
+        dataMessages.push(message.payload as Record<string, unknown>)
+      }
+    })
+    await Promise.all([host.service.handshake(), host.render.handshake()])
+    await host.bootstrap()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(dataMessages).toHaveLength(1)
+    expect(dataMessages[0]).toMatchObject({
+      pageId: 'page-1',
+      patch: { first: 1, second: 2 },
+    })
+    await host.close()
+    void service
+    void render
+  })
 })

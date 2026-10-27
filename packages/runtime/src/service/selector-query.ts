@@ -1,17 +1,28 @@
 import { resolveAssetPath } from '../assets'
+import type { QueryNodeSnapshot } from '../types'
 import type { ServiceApiContext } from './types'
 
 type SelectorQuerySelection = {
   selector?: string
-  rectCallback?: (rect: Record<string, unknown>) => void
-  fieldsCallback?: (fields: Record<string, unknown>) => void
+  all: boolean
+  rectCallback?: (result: unknown) => void
+  fieldsCallback?: (result: unknown) => void
   nodeCallback?: (node: unknown) => void
   wantsNode?: boolean
 }
 
-export function createSelectorQueryStub(context: ServiceApiContext): Record<string, unknown> {
+/**
+ * WeChat-compatible selector query. Node lookups round-trip to the render
+ * thread, which resolves them against the real DOM (scoped to the component or
+ * page); canvas `.node()` selections keep using the host canvas handoff.
+ */
+export function createSelectorQuery(
+  context: ServiceApiContext,
+  options: { componentId?: string } = {},
+): Record<string, unknown> {
   const selections: SelectorQuerySelection[] = []
-  let component: { data?: Record<string, unknown> } | undefined
+  let scopedComponentId = options.componentId
+  let scopedComponent: { data?: Record<string, unknown>; path?: string } | undefined
   let execCallback: ((results: unknown[]) => void) | undefined
   let scheduled = false
 
@@ -19,33 +30,40 @@ export function createSelectorQueryStub(context: ServiceApiContext): Record<stri
     if (scheduled) return
     scheduled = true
     void (async () => {
-      const results: Record<string, unknown>[] = []
+      const results: unknown[] = []
       for (const selection of selections) {
-        results.push(await buildSelectorResult(context, selection, component))
+        const result = await resolveSelection(
+          context,
+          selection,
+          scopedComponent,
+          scopedComponentId,
+        )
+        results.push(result)
       }
       for (const [index, selection] of selections.entries()) {
-        const result = results[index]!
+        const result = results[index]
         selection.rectCallback?.(result)
         selection.fieldsCallback?.(result)
-        selection.nodeCallback?.(result.node)
+        const node = (result as { node?: unknown } | null | undefined)?.node
+        selection.nodeCallback?.(node)
       }
       execCallback?.(results)
     })()
   }
 
-  const createSelection = (selector?: string): Record<string, unknown> => {
-    const selection: SelectorQuerySelection = { selector }
+  const createSelection = (selector: string | undefined, all: boolean): Record<string, unknown> => {
+    const selection: SelectorQuerySelection = { selector, all }
     selections.push(selection)
     const api: Record<string, unknown> = {
-      boundingClientRect: (callback?: (rect: Record<string, unknown>) => void) => {
+      boundingClientRect: (callback?: (rect: unknown) => void) => {
         selection.rectCallback = callback
         return api
       },
       fields: (
-        options: Record<string, unknown>,
-        callback?: (fields: Record<string, unknown>) => void,
+        fields: Record<string, unknown>,
+        callback?: (result: unknown) => void,
       ) => {
-        if (options?.node === true) selection.wantsNode = true
+        if (fields?.node === true) selection.wantsNode = true
         selection.fieldsCallback = callback
         return api
       },
@@ -65,11 +83,19 @@ export function createSelectorQueryStub(context: ServiceApiContext): Record<stri
 
   const query: Record<string, unknown> = {
     in: (target?: unknown) => {
-      component = target as { data?: Record<string, unknown> } | undefined
+      const componentId = (target as { componentId?: unknown } | undefined)?.componentId
+      if (typeof componentId === 'string' && componentId.length > 0) {
+        // Page instances use a `page:` prefix and scope to the active page.
+        scopedComponentId = componentId.startsWith('page:') ? undefined : componentId
+        scopedComponent = target as { data?: Record<string, unknown>; path?: string }
+      } else {
+        scopedComponent = target as { data?: Record<string, unknown>; path?: string } | undefined
+        scopedComponentId = undefined
+      }
       return query
     },
-    select: (selector?: string) => createSelection(selector),
-    selectAll: (selector?: string) => createSelection(selector),
+    select: (selector?: string) => createSelection(selector, false),
+    selectAll: (selector?: string) => createSelection(selector, true),
     exec: (callback?: (results: unknown[]) => void) => {
       if (callback) execCallback = callback
       schedule()
@@ -77,6 +103,41 @@ export function createSelectorQueryStub(context: ServiceApiContext): Record<stri
     },
   }
   return query
+}
+
+async function resolveSelection(
+  context: ServiceApiContext,
+  selection: SelectorQuerySelection,
+  component: { data?: Record<string, unknown>; path?: string } | undefined,
+  componentId: string | undefined,
+): Promise<unknown> {
+  const selector = String(selection.selector ?? '')
+  let nodes: QueryNodeSnapshot[] = []
+  try {
+    const response = await context.connection.call<{ nodes?: QueryNodeSnapshot[] }>(
+      'query',
+      'select',
+      {
+        pageId: context.pageId,
+        ...(componentId ? { componentId } : {}),
+        selector,
+        all: selection.all,
+      },
+      { pageId: context.pageId },
+    )
+    nodes = Array.isArray(response?.nodes) ? response.nodes : []
+  } catch {
+    // Hosts without render-thread query support resolve to no nodes.
+    nodes = []
+  }
+  if (selection.wantsNode) {
+    const canvasResult = await buildSelectorResult(context, selection, component)
+    if (!nodes[0]) return canvasResult
+    // Prefer the real DOM rect/dataset; keep the host canvas node handle.
+    return { ...canvasResult, ...nodes[0], node: canvasResult.node }
+  }
+  if (selection.all) return nodes
+  return nodes[0] ?? null
 }
 
 async function buildSelectorResult(
@@ -152,20 +213,4 @@ async function buildSelectorResult(
     right: width,
     bottom: height,
   }
-}
-
-/**
- * Minimal component-level intersection observer. The browser render thread does
- * not project intersection geometry yet, so observers never fire; the API shape
- * still lets component libraries such as Vant initialize without throwing.
- */
-export function createIntersectionObserverStub(): Record<string, unknown> {
-  const observer: Record<string, unknown> = {}
-  const chain = () => observer
-  observer.relativeTo = chain
-  observer.relativeToViewport = chain
-  observer.observe = chain
-  observer.unobserve = chain
-  observer.disconnect = () => undefined
-  return observer
 }

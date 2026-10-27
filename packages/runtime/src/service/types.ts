@@ -64,9 +64,14 @@ export type ComponentRuntimeContext = {
   getInstance: (componentId: string) => MiniProgramComponentInstance | undefined
   onDiagnostic: (code: string, message: string, details?: unknown) => void
   /** Component-level `this.createSelectorQuery()`. */
-  createSelectorQuery: () => Record<string, unknown>
+  createSelectorQuery: (componentId?: string) => Record<string, unknown>
   /** Component-level `this.createIntersectionObserver()`. */
-  createIntersectionObserver: (options?: Record<string, unknown>) => Record<string, unknown>
+  createIntersectionObserver: (
+    componentId: string,
+    options?: Record<string, unknown>,
+  ) => Record<string, unknown>
+  /** Flush queued `setData` patches (used by `groupSetData`). */
+  flushDataPatches: () => void
 }
 
 export type MiniProgramApiHost = Record<string, (...args: unknown[]) => unknown>

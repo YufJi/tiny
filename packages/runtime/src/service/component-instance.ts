@@ -85,19 +85,23 @@ export class MiniProgramComponentInstance implements ObserverHost {
     )
   }
 
-  /** Component-level selector query, scoped like `this.createSelectorQuery()`. */
+  /** Component-level selector query, scoped to this component. */
   createSelectorQuery(): Record<string, unknown> {
-    return this.runtime.createSelectorQuery()
+    return this.runtime.createSelectorQuery(this.componentId)
   }
 
-  /** Component-level intersection observer (API shape only). */
+  /** Component-level intersection observer backed by the render DOM. */
   createIntersectionObserver(options?: Record<string, unknown>): Record<string, unknown> {
-    return this.runtime.createIntersectionObserver(options)
+    return this.runtime.createIntersectionObserver(this.componentId, options)
   }
 
-  /** Batch several `setData` calls; this runtime applies them synchronously. */
+  /** Batch the `setData` calls made by the callback into one render update. */
   groupSetData(callback?: () => void): void {
-    callback?.()
+    try {
+      callback?.()
+    } finally {
+      this.runtime.flushDataPatches()
+    }
   }
 
   syncData(data: Record<string, unknown> | undefined): void {

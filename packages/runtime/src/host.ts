@@ -140,6 +140,9 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
     connection.onEvent('page', 'reachBottom', (message) => {
       service.sendEvent('page', 'reachBottom', message.payload, { pageId })
     })
+    connection.onEvent('query', 'intersection', (message) => {
+      service.sendEvent('query', 'intersection', message.payload, { pageId: message.pageId ?? pageId })
+    })
   }
 
   if (primaryRender) {
@@ -167,6 +170,9 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
     })
     primaryRender.onEvent('page', 'reachBottom', (message) => {
       service.sendEvent('page', 'reachBottom', message.payload, { pageId: message.pageId })
+    })
+    primaryRender.onEvent('query', 'intersection', (message) => {
+      service.sendEvent('query', 'intersection', message.payload, { pageId: message.pageId })
     })
   }
 
@@ -453,6 +459,16 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
     const connection = getRenderConnection(message.pageId)
     if (!connection) return { width: 0, height: 0 }
     return connection.control('canvas', 'measure', message.payload, { pageId: message.pageId })
+  })
+  service.onCall('query', 'select', (message) => {
+    const connection = getRenderConnection(message.pageId)
+    if (!connection) return { nodes: [] }
+    return connection.control('query', 'select', message.payload, { pageId: message.pageId })
+  })
+  service.onCall('query', 'intersection', (message) => {
+    const connection = getRenderConnection(message.pageId)
+    if (!connection) return { status: 'missing-render' }
+    return connection.control('query', 'intersection', message.payload, { pageId: message.pageId })
   })
 
   return {
