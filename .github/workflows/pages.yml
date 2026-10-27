@@ -31,6 +31,10 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # Project site lives at https://yufji.github.io/tiny/.
+      TINY_SITE_BASE: /tiny/
+      TINY_SITE_URL: https://yufji.github.io/tiny/
     steps:
       - name: Checkout
         uses: actions/checkout@v4

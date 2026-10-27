@@ -1,4 +1,5 @@
 import React from 'react'
+import { resolveAssetSrc, resolveContentHref } from './site'
 import {
   Callout,
   Card,
@@ -143,11 +144,12 @@ function renderBlock(block, index) {
     case 'flow':
       return h(Flow, { key, nodes: block.nodes })
     case 'embed': {
+      const src = resolveAssetSrc(block.src)
       const frame = h(
         'div',
         { key: `${key}-frame`, className: 'devtool-frame' },
         h('iframe', {
-          src: block.src,
+          src,
           title: block.title,
           loading: 'lazy',
           allow: 'fullscreen',
@@ -170,7 +172,7 @@ function renderBlock(block, index) {
           block.open
             ? h(
                 'a',
-                { className: 'button ghost', href: block.src, target: '_blank', rel: 'noreferrer' },
+                { className: 'button ghost', href: src, target: '_blank', rel: 'noreferrer' },
                 block.open,
               )
             : null,
@@ -202,7 +204,7 @@ function renderInline(nodes, prefix = 'inline') {
       case 'strong':
         return h('strong', { key }, renderInline(node.children, key))
       case 'link':
-        return h('a', { key, href: node.href }, renderInline(node.children, key))
+        return h('a', { key, href: resolveContentHref(node.href) }, renderInline(node.children, key))
       case 'pill':
         return h(
           'span',
@@ -212,7 +214,7 @@ function renderInline(nodes, prefix = 'inline') {
       case 'button':
         return h(
           'a',
-          { key, className: `button ${node.variant}`, href: node.href },
+          { key, className: `button ${node.variant}`, href: resolveContentHref(node.href) },
           node.text,
         )
       case 'br':

@@ -15,6 +15,7 @@ pills:
   - ['样式隔离', 'good']
   - ['canvas 由宿主提供', 'good']
 description: '运行时内核：service 与 render 的分工、页面栈、setData、事件、组件语义、内置组件和样式隔离。'
+name: '运行时'
 order: 4
 ---
 

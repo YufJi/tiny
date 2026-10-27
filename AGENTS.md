@@ -113,8 +113,14 @@ Chrome, or `PLAYWRIGHT_CHROMIUM_PATH`).
 - `tests/apps/*` are complete mini-program fixtures; `tests/apps/todo` is the Taro 3
   compatibility target. `tests/apps/echarts` is historical reference only.
 - Site page content lives in `docs/site/*.md` (contract:
-  `docs/site/CONTEXT.md`). The website parses it at build time and fails on
-  syntax outside that contract; do not add page prose back into JSX.
+  `docs/site/CONTEXT.md`). The filename is the route, `name`/`order` drive the
+  navigation, and the build fails on syntax outside the contract; do not add
+  page prose back into JSX.
+- The site is prerendered (`scripts/prerender.mjs`): every route becomes a
+  static `dist/<route>/index.html` plus a `.md` mirror, `llms.txt`,
+  `llms-full.txt` and `sitemap.xml`. Build it with `TINY_SITE_BASE=/tiny/` to
+  reproduce the GitHub Pages prefix; `devtool` and `assets` are reserved route
+  names.
 - `website` is a React + Vite app; `pnpm site:build` writes `dist/` including
   the embedded devtool (`dist/devtool/`) built from `.cache/site-devtool/` and
   staged through `website/.cache/site-public/`, and

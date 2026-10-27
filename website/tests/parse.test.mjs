@@ -9,6 +9,7 @@ const here = path.dirname(fileURLToPath(import.meta.url))
 const protocolPath = path.join(here, '..', '..', 'docs', 'site', 'protocol.md')
 
 const page = (body) => `---
+name: '页面'
 title: '标题'
 eyebrow: '标签'
 lede: '导语'

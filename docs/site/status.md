@@ -13,6 +13,7 @@ pills:
   - ['API 覆盖有限', 'warn']
   - ['性能未量化', 'warn']
 description: 'Tiny 当前成熟度：已跑通的能力、主要缺口、宿主缺口、下一步和设计约束。'
+name: '现状'
 order: 9
 ---
 

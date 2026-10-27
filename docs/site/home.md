@@ -7,7 +7,7 @@ lede: >-
   Tiny 是一个基于 glass-easel 的小程序引擎。它把小程序源码编译成 manifest 和线程产物，默认用 service、render 两个 iframe 跑起一个小程序，再由 Bridge 协议负责跨线程通信；也可以让每个页面各用一个 render iframe。浏览器相关能力单独放在宿主包里，内核不依赖 window、document 或 iframe。
 actions:
   - ['先看整体架构', '#/architecture', 'primary']
-  - ['打开在线调试器', '#/devtool', 'ghost']
+  - ['打开在线调试器', '#/debugger', 'ghost']
   - ['了解宿主适配', '#/hosts', 'ghost']
   - ['阅读 Bridge 协议', '#/protocol', 'ghost']
   - ['GitHub 仓库 ↗', 'https://github.com/YufJi/tiny', 'ghost']
@@ -17,6 +17,8 @@ stats:
   - ['168', '单元测试']
   - ['47', '浏览器步骤']
 description: 'Tiny 是一个基于 glass-easel 的小程序引擎：编译、双线程运行时、Bridge 协议和宿主适配。'
+name: '概览'
+pageTitle: 'Tiny · 小程序引擎架构'
 order: 1
 ---
 
@@ -119,13 +121,13 @@ Bridge 定义消息信封、帧、调用与回复、事件批处理、超时和 
 :::card{tag="在线" title="Tiny Runtime Debugger"}
 默认应用列表、最近 3 个应用保活、页面导航、前后台切换、Reload/Close app、诊断和元素树都可以直接操作。
 
-:button[打开在线调试器]{href="#/devtool" variant="primary"}
+:button[打开在线调试器]{href="#/debugger" variant="primary"}
 :::
 
 :::card{tag="构建时生成" title="跟站点一起发布"}
 构建站点时会先编译 tests/apps 下的全部 fixture，再打包 devtool。Vite 把产物复制到 `dist/devtool/`，页面通过同源 iframe 嵌入。
 
-[查看接入方式 →](#/devtool)
+[查看接入方式 →](#/debugger)
 :::
 ::::
 

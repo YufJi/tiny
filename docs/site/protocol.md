@@ -10,6 +10,8 @@ stats:
   - ['7', '消息域']
   - ['30s', '默认调用超时']
 description: 'Bridge 协议：消息信封、握手、传输、批处理、错误处理与消息列表。'
+name: '协议'
+pageTitle: 'Bridge 协议 · Tiny'
 order: 5
 ---
 

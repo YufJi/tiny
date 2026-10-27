@@ -5,8 +5,12 @@ parses these files at build time with the small vocabulary below; anything
 outside it fails `vite build` with a `file:line` error. Editing content means
 editing Markdown only — never the renderer.
 
-Each file is one page. The file name is the route (`protocol.md` → `#/protocol`;
-`index.md` → `#/`).
+Each file is one page. The file name is the route (`protocol.md` → `/protocol/`;
+`home.md` → `/`). The site is prerendered, so every page is a real HTML
+document; adding a file is all it takes to add a page.
+
+Internal links keep the readable `#/hosts` form in Markdown and are rewritten
+to real routes at render time.
 
 ## Frontmatter
 
@@ -88,7 +92,7 @@ opened with.
 | `**粗体**` | 加粗 |
 | `[文案](#/hosts)` | 链接（站内锚点或绝对 URL） |
 | `:pill[可用]{tone="good"}` | 行内状态标签 |
-| `:button[打开调试器]{href="#/devtool" variant="primary"}` | 按钮（`primary` / `ghost`，默认 ghost） |
+| `:button[打开调试器]{href="#/debugger" variant="primary"}` | 按钮（`primary` / `ghost`，默认 ghost） |
 
 ## Rules
 

@@ -15,6 +15,8 @@ pills:
   - ['资源解析', 'good']
   - ['在线调试器', 'good']
 description: '宿主适配：宿主无关的内核如何通过 iframe 线程、canvas、资源解析和宿主 API 装配出浏览器与调试器宿主。'
+name: '宿主'
+pageTitle: '宿主适配 · Tiny'
 order: 6
 ---
 
@@ -344,7 +346,7 @@ React/Redux 不直接发送协议消息，只调用 DevtoolRuntimeClient，并�
 :::card{title="多应用和生命周期" tone="violet"}
 脚本会扫描 `tests/apps/*`，把产物放到 `./runtime/apps/<app>/generated`，并生成 `apps.json`。应用列表页按需启动应用，最多保活最近 3 个；每个应用有自己的 client、页面栈和 render 帧。
 
-在线版本是同一份构建：[#/devtool](#/devtool) 通过同源 iframe 嵌入。
+在线版本是同一份构建：[#/debugger](#/debugger) 通过同源 iframe 嵌入。
 :::
 ::::
 

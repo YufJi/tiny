@@ -36,7 +36,15 @@ function walkFiles(target) {
   return files
 }
 
-function checkHtml(relativePath, { requireRoot = false } = {}) {
+const siteBaseRaw = process.env.TINY_SITE_BASE || '/'
+const siteBase = siteBaseRaw.endsWith('/') ? siteBaseRaw : `${siteBaseRaw}/`
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+/**
+ * The embedded devtool must stay relocatable: every asset it references has to
+ * be relative so the same build works at `/` and at `/<repo>/`.
+ */
+function checkRelativeHtml(relativePath) {
   const filePath = path.join(rootDir, relativePath)
   if (!fs.existsSync(filePath)) {
     problems.push(`missing ${relativePath}`)
@@ -59,23 +67,75 @@ function checkHtml(relativePath, { requireRoot = false } = {}) {
       problems.push(`missing asset referenced by ${relativePath}: ${target}`)
     }
   }
-
-  if (requireRoot) {
-    if (!/<script[^>]+src="[^"]+"/.test(html)) problems.push('no emitted JS entry')
-    if (!/<div id="root"><\/div>/.test(html)) problems.push('missing #root mount point')
-  }
   return html
 }
 
-// Site shell.
-checkHtml('index.html', { requireRoot: true })
+/**
+ * Every site page is prerendered: full markup inside #root, absolute asset
+ * URLs under the configured base, and a real title.
+ */
+function checkSitePage(relativePath) {
+  const filePath = path.join(rootDir, relativePath)
+  if (!fs.existsSync(filePath)) {
+    problems.push(`missing prerendered page ${relativePath}`)
+    return
+  }
+  const html = fs.readFileSync(filePath, 'utf8')
+  if (!/<div id="root">\s*</.test(html)) {
+    problems.push(`no prerendered markup in ${relativePath}`)
+  }
+  if (!new RegExp(`<script[^>]+src="${escapeRegExp(siteBase)}assets/`).test(html)) {
+    problems.push(`JS entry does not use the site base in ${relativePath}`)
+  }
+  if (!/<title>[^<]+<\/title>/.test(html)) {
+    problems.push(`missing <title> in ${relativePath}`)
+  }
+  for (const match of html.matchAll(/\b(?:href|src)="(\/[^"]*)"/g)) {
+    if (!match[1].startsWith(siteBase)) {
+      problems.push(`URL outside the site base in ${relativePath}: ${match[1]}`)
+    }
+  }
+  for (const match of html.matchAll(/<a[^>]+href="(\/[^"]*)"/g)) {
+    const target = match[1].split(/[?#]/)[0]
+    const file = path.join(rootDir, target.slice(siteBase.length), 'index.html')
+    const landing = path.join(rootDir, target.slice(siteBase.length))
+    if (!fs.existsSync(file) && !fs.existsSync(landing)) {
+      problems.push(`internal link without a page in ${relativePath}: ${match[1]}`)
+    }
+  }
+}
 
-// The devtool is served from dist/devtool/ and embedded by the site. Its
-// panel and both thread documents must keep relative asset URLs, otherwise
-// GitHub Pages' /<repo>/ prefix breaks every fetch.
-checkHtml('devtool/index.html')
-checkHtml('devtool/next-service.html')
-checkHtml('devtool/next-render.html')
+// Site shell + every prerendered route.
+checkSitePage('index.html')
+const routeDirectories = fs
+  .readdirSync(rootDir, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name)
+  .filter((name) => !['assets', 'devtool'].includes(name))
+  .filter((name) => fs.existsSync(path.join(rootDir, name, 'index.html')))
+for (const name of routeDirectories) {
+  checkSitePage(path.join(name, 'index.html'))
+}
+
+// Machine-readable artifacts: one Markdown mirror per page plus the indexes.
+for (const name of routeDirectories) {
+  if (!fs.existsSync(path.join(rootDir, `${name}.md`))) {
+    problems.push(`missing markdown mirror ${name}.md`)
+  }
+}
+for (const file of ['index.md', 'llms.txt', 'llms-full.txt', 'sitemap.xml']) {
+  if (!fs.existsSync(path.join(rootDir, file))) problems.push(`missing ${file}`)
+}
+if (fs.existsSync(path.join(rootDir, 'sitemap.xml'))) {
+  const sitemap = fs.readFileSync(path.join(rootDir, 'sitemap.xml'), 'utf8')
+  for (const name of routeDirectories) {
+    if (!sitemap.includes(`/${name}/<`)) problems.push(`sitemap.xml is missing /${name}/`)
+  }
+}
+
+checkRelativeHtml('devtool/index.html')
+checkRelativeHtml('devtool/next-service.html')
+checkRelativeHtml('devtool/next-render.html')
 
 // HTML staying relative is not enough: a regression in the JS string
 // constants would still fetch /runtime/... from the domain root. Check the
@@ -161,4 +221,7 @@ if (problems.length > 0) {
   for (const item of problems) console.error(`- ${item}`)
   process.exit(1)
 }
-console.log('Website build OK (relative assets, #root, JS entry, devtool artifacts, no source maps)')
+console.log(
+  `Website build OK (${routeDirectories.length + 1} prerendered pages at ${siteBase}, ` +
+    'markdown mirrors, llms.txt, sitemap, relative devtool artifacts, no source maps)',
+)

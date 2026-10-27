@@ -15,6 +15,8 @@ pills:
   - ['相对路径', 'good']
   - ['GitHub Pages', 'good']
 description: '站点内嵌的 Tiny 运行时调试器：构建方式、宿主结构和路径约定。'
+name: '调试器'
+pageTitle: '在线调试器 · Tiny'
 order: 7
 ---
 

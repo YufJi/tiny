@@ -36,13 +36,16 @@ export function splitFrontmatter(source, file) {
 }
 
 function validateMeta(meta, file) {
-  for (const key of ['title', 'eyebrow', 'lede', 'description']) {
+  for (const key of ['name', 'title', 'eyebrow', 'lede', 'description']) {
     if (typeof meta[key] !== 'string' || meta[key].length === 0) {
       fail(file, 1, `frontmatter 缺少必填字段：${key}（非空字符串）`)
     }
   }
   if (meta.highlight !== undefined && typeof meta.highlight !== 'string') {
     fail(file, 1, 'frontmatter 字段 highlight 必须是字符串')
+  }
+  if (meta.pageTitle !== undefined && typeof meta.pageTitle !== 'string') {
+    fail(file, 1, 'frontmatter 字段 pageTitle 必须是字符串')
   }
   if (meta.order !== undefined && typeof meta.order !== 'number') {
     fail(file, 1, 'frontmatter 字段 order 必须是数字')

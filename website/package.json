@@ -6,9 +6,10 @@
   "description": "Tiny architecture site (GitHub Pages)",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && TINY_SSR=1 vite build --ssr src/entry-server.jsx --outDir .cache/ssr --emptyOutDir && node scripts/prerender.mjs",
     "preview": "vite preview",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "build:client": "vite build"
   },
   "dependencies": {
     "react": "^17.0.2",

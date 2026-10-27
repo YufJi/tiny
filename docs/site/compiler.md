@@ -10,6 +10,8 @@ stats:
   - ['1', 'manifest 版本']
   - ['0', '运行时 WXML 解析']
 description: '编译流程：从入口发现、命名配置和模板/样式/脚本编译，到 manifest 与产物目录的完整拆解。'
+name: '编译'
+pageTitle: '编译流程 · Tiny'
 order: 3
 ---
 

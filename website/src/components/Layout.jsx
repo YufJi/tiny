@@ -1,28 +1,10 @@
 import React, { useEffect, useState } from 'react'
+import { pages, pageHref } from '../content/pages'
 
-const links = [
-  ['home', '#/'],
-  ['architecture', '#/architecture'],
-  ['compiler', '#/compiler'],
-  ['runtime', '#/runtime'],
-  ['protocol', '#/protocol'],
-  ['hosts', '#/hosts'],
-  ['devtool', '#/devtool'],
-  ['testing', '#/testing'],
-  ['status', '#/status'],
-]
-
-const labels = {
-  home: '概览',
-  architecture: '架构',
-  compiler: '编译',
-  runtime: '运行时',
-  protocol: '协议',
-  hosts: '宿主',
-  devtool: '调试器',
-  testing: '测试',
-  status: '现状',
-}
+// Navigation is derived from the Markdown frontmatter (`name` + `order`), so
+// adding a page never means editing this file.
+const links = pages.map((page) => [page, pageHref(page), page.meta.name])
+const footerLinks = links.filter(([page]) => page.route && page.route !== 'status')
 
 export default function Layout({ route, children }) {
   const [open, setOpen] = useState(false)
@@ -45,7 +27,7 @@ export default function Layout({ route, children }) {
       </a>
       <header className="site-header">
         <div className="shell header-inner">
-          <a className="brand" href="#/">
+          <a className="brand" href={pageHref(pages[0])}>
             <span className="brand-mark" aria-hidden="true">T</span>
             <span className="brand-copy"><strong>Tiny</strong><small>mini-program engine</small></span>
           </a>
@@ -59,9 +41,9 @@ export default function Layout({ route, children }) {
             ☰
           </button>
           <nav className={`site-nav${open ? ' open' : ''}`} aria-label="主导航">
-            {links.map(([key, href]) => (
-              <a key={key} href={href} aria-current={route === key ? 'page' : undefined}>
-                {labels[key]}
+            {links.map(([page, href, label]) => (
+              <a key={page.route} href={href} aria-current={route === page.route ? 'page' : undefined}>
+                {label}
               </a>
             ))}
             <a className="nav-github" href="https://github.com/YufJi/tiny">GitHub ↗</a>
@@ -75,13 +57,9 @@ export default function Layout({ route, children }) {
         <div className="shell footer-inner">
           <span>Tiny · 小程序引擎 · MIT</span>
           <div className="footer-links">
-            <a href="#/architecture">架构</a>
-            <a href="#/compiler">编译</a>
-            <a href="#/runtime">运行时</a>
-            <a href="#/protocol">协议</a>
-            <a href="#/hosts">宿主</a>
-            <a href="#/devtool">调试器</a>
-            <a href="#/testing">测试</a>
+            {footerLinks.map(([page, href, label]) => (
+              <a key={page.route} href={href}>{label}</a>
+            ))}
             <a href="https://github.com/YufJi/tiny">GitHub</a>
           </div>
         </div>
