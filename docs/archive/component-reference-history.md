@@ -4,7 +4,7 @@
 >
 > 本文件保留 2026-10-25/26 的差异审计、逐组件参考结构、修复方案和历史状态，**不再作为当前状态来源**。
 >
-> 当前结论、问题清单、剩余问题和验收结果见 [component-reference-diff.md](./component-reference-diff.md)。
+> 当前结论、问题清单、剩余问题和验收结果见 [component-reference-diff.md](../component-reference-diff.md)。
 >
 > 原始标题：内置组件与微信 2.7.0 参考实现差异与修复方案
 
@@ -46,7 +46,7 @@
 
 我们此前是“`virtualHost: true` + 内层 `<view>` 作为样式根”，因此需要 `externalClasses`/`style` 属性/`data-*` shim 逐项转发，且宿主选择器、`id`、`hidden` 属性都不在 DOM 上。
 
-2026-10-25 已完成宿主迁移（[hosts/web-components/src/index.ts](../hosts/web-components/src/index.ts:68)）：
+2026-10-25 已完成宿主迁移（[hosts/web-components/src/index.ts](../../hosts/web-components/src/index.ts:68)）：
 
 - 23 个内置组件全部 `virtualHost: false`，真实宿主标签为 `tiny-<tag>`（`tiny-view`、`tiny-text`、`tiny-checkbox` …），不占用微信的 `wx-*` 命名空间；
 - 宿主通过 `reflectToAttributes` 反射 `hidden`/`type`/`checked`/`value`/`percent` 等属性，`tiny-view[hidden]` 这类宿主选择器可用；

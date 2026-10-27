@@ -125,7 +125,7 @@
 **已实现组件**（[tags.ts](../hosts/web-components/src/tags.ts:1)）：
 `view`、`text`、`button`、`label`、`input`、`checkbox`、`checkbox-group`、`radio`、`radio-group`、`icon`、`image`、`scroll-view`、`slider`、`progress`、`switch`、`swiper`、`swiper-item`、`canvas`、`textarea`、`form`、`picker`、`picker-view`、`picker-view-column`。
 
-> 逐组件的当前状态/剩余问题见 [component-reference-diff.md](./component-reference-diff.md)；历史差异审计与修复方案见 [component-reference-history.md](./component-reference-history.md)。
+> 逐组件的当前状态/剩余问题见 [component-reference-diff.md](./component-reference-diff.md)；历史差异审计与修复方案见 [component-reference-history.md](./archive/component-reference-history.md)。
 
 **属性/事件覆盖**（仅统计 WebView 适用属性；事件按组件文档属性表中的 `bind*`/`catch*` 条目统计，不含 `tap`/`longpress` 等通用事件）：
 
@@ -538,7 +538,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-25 | 第八次同步：新增 textarea/form/picker 三个常用内置标签（form 收集、picker selector/date/time、textarea 事件）；内置组件 36→38；151 单测 | **36.92%** |
 | 2026-10-25 | 第九次同步：补主题/键盘监听、getUserProfile/getUserInfo、tabBar/导航栏/pageScrollTo、hideToast、getFileSystemManager 等高频 API 面；API 8→12%；151 单测 | **37.72%** |
 | 2026-10-25 | 第十次同步：新增 picker-view / picker-view-column（滚动列、columnchange、value 数组）；格式化 WXML 模板；内置组件 38→39；152 单测 | **37.89%** |
-| 2026-10-25 | 审计与方案：新增 [内置组件参考差异与修复方案（归档）](./component-reference-history.md)，逐项对照微信 2.7.0 的结构/逻辑/CSS，并给出目标模板/CSS/TS 改造与验收清单 | **37.89%** |
+| 2026-10-25 | 审计与方案：新增 [内置组件参考差异与修复方案（归档）](./archive/component-reference-history.md)，逐项对照微信 2.7.0 的结构/逻辑/CSS，并给出目标模板/CSS/TS 改造与验收清单 | **37.89%** |
 | 2026-10-25 | 修复：virtualHost 内置组件丢失 `data-*` 属性；WeChat demo 的 `[data-weui-theme]` 重新生效，深色系统下恢复浅色主题变量；新增 dark color-scheme 验收 | **37.89%** |
 | 2026-10-25 | 文档维护：移除重复且长期未同步的“进度清单”章节；缺口统一看第 7 节，变更看第 9.4 节 | **37.89%** |
 | 2026-10-25 | 宿主迁移：23 个内置组件从 `virtualHost` + 内层根迁移为真实 `tiny-*` 宿主；`class`/`style`/`id`/`data-*`/`hidden` 与属性反射落到宿主，根级 `.tiny-*` 样式上移；新增宿主事件监听与 group 子项回传；P0 + mini 浏览器验收保持通过 | **37.89%** |
@@ -623,7 +623,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | Component-as-page 测试 | [component-page.test.ts](../packages/runtime/tests/component-page.test.ts:1) |
 | 内置组件共享 behaviors | [behaviors.ts](../hosts/web-components/src/behaviors.ts:1) |
 | button 组件 | [button/index.ts](../hosts/web-components/src/components/button/index.ts:1) |
-| 页面/子包/app.json 解析 | [compile.ts](../tools/cli/src/compile.ts:165) |
+| 页面/子包/app.json 解析 | [project.ts](../tools/cli/src/compiler/project.ts:75) |
 | 单/多 render 帧宿主 | [standalone-host.ts](../hosts/browser/src/standalone-host.ts:1) |
 | 页面滚动生命周期桥 | [page-lifecycle.ts](../hosts/browser/src/page-lifecycle.ts:1) |
 | tabBar 配置与页面栈 | [service.ts](../packages/runtime/src/service.ts:1) |

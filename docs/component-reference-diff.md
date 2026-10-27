@@ -6,7 +6,7 @@
 >
 > 范围：当前已接入的 23 个内置标签；剩余 37 个标签不在本文逐项展开。
 >
-> 历史差异审计、逐组件参考结构和修复方案已归档到 [component-reference-history.md](./component-reference-history.md)。
+> 历史差异审计、逐组件参考结构和修复方案已归档到 [component-reference-history.md](./archive/component-reference-history.md)。
 >
 > 更新时间：2026-10-26
 >
@@ -281,7 +281,7 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 
 历史差异审计、逐组件参考结构、修复方案和已落地过程已单独归档：
 
-- [component-reference-history.md](./component-reference-history.md)
+- [component-reference-history.md](./archive/component-reference-history.md)
 
 主文档只保留当前状态、问题清单和验收结果，避免历史方案和当前结论混在一起。
 

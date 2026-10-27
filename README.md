@@ -188,10 +188,7 @@ pnpm --filter @tiny/host-web-components test
 ## 文档
 
 - [在线架构站点](https://yufji.github.io/tiny/)
-- [验收指南](docs/acceptance.md)
-- [微信 WebView 版功能对齐度分析](docs/wechat-webview-parity.md)
-- [Next 版本技术方案](docs/next.md)
-- [架构决策记录](docs/adr)
+- [文档索引](docs/README.md)：验收指南、微信对齐度、组件对齐状态、ADR
 - [上下文地图](CONTEXT-MAP.md)
 - [Agent 指南](AGENTS.md)
 - [网站源码](website/README.md)

@@ -163,3 +163,7 @@ The tracker uses the five default canonical triage labels. See
 
 The repo uses a multi-context layout rooted at `CONTEXT-MAP.md`, with
 package-scoped contexts. See `docs/agents/domain.md`.
+
+The docs tree is indexed in `docs/README.md` (ADRs, acceptance, parity,
+known issues, archive). Delete stale docs instead of keeping a second copy of
+what the code or `CONTEXT.md` already says.
