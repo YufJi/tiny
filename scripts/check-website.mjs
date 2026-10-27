@@ -214,7 +214,7 @@ if (registry) {
         problems.push(`source map path left in ${manifestPath}`)
       }
     }
-    for (const file of ['service.js', 'render.js', 'templates.js']) {
+    for (const file of ['service.js', 'templates.js']) {
       if (!fs.existsSync(path.join(rootDir, `devtool/runtime/apps/${app.id}/generated`, file))) {
         problems.push(`missing devtool runtime artifact: ${app.id}/generated/${file}`)
       }

@@ -35,12 +35,12 @@ order: 9
 | 页面能力 | :pill[部分]{tone="warn"} | 14 项页面生命周期、5 个路由 API、内置 tabBar/switchTab、页面滚动/触底/下拉刷新、分享回调和退出状态已经支持；分享菜单 UI、页面转场、页面栈恢复、自定义 tabBar 还缺。 |
 | 组件语义 | :pill[核心可用]{tone="good"} | Behaviors、observers、relations、selectComponent、component-export、component-as-page、generics、definitionFilter、pureDataPattern 已实现；componentPlaceholder、trait behaviors 和 chaining API 未实现。 |
 | 样式系统 | :pill[核心可用]{tone="good"} | class/tag 作用域、rpx、@import、styleIsolation/addGlobalClass、externalClasses、shared CSS 已支持；:host 和低优先级输出未启用。 |
-| Canvas | :pill[部分]{tone="warn"} | canvas 适配器注入、50ms PNG 帧、render 测量/绘制、内置 canvas touch 已支持；没有 rAF 和完整 2D 语义。 |
+| Canvas | :pill[部分]{tone="warn"} | selector-query 与 legacy canvas 走 OffscreenCanvas handoff；2D/WebGL/RAF/createImage/touch 已支持；canvasToTempFilePath、createOffscreenCanvas 和 node 事件仍缺。 |
 | 动画 | :pill[部分]{tone="warn"} | animation 数据会编译成最终态 CSS transform/transition；没有多 step 时序和事件回调。 |
 | 诊断 | :pill[可用]{tone="good"} | 编译、transport、service、render、host 五类诊断统一收集；组件语义新增了 observer、relation、behavior 相关诊断。 |
 | Devtool | :pill[运行时级+]{tone="good"} | 应用列表、点击启动、最近 3 个应用保活、返回列表、设备框、宿主导航和 tabBar、每页 render 帧、Console/Lifecycle/Elements、Reload/Close app；页面栈默认上限 10，宿主可配置。它仍不是完整的微信开发者工具。 |
 | 性能与稳定 | :pill[未量化]{tone="warn"} | 启动、首屏、setData、内存和长时运行都没有基准，也没有压力测试。 |
-| 测试 | :pill[核心链路]{tone="good"} | 207 个单元测试、51 个浏览器步骤和 5 个测试小程序；没有性能、视觉、原生和安全测试。 |
+| 测试 | :pill[核心链路]{tone="good"} | 221 个单元测试、52 个浏览器步骤和 5 个测试小程序；没有性能、视觉、原生和安全测试。 |
 
 ## 现在最影响使用的问题 {#gaps kicker="主要缺口"}
 
@@ -150,7 +150,7 @@ componentPlaceholder、trait behaviors / chaining API、完整内置 behaviors�
 :::
 
 :::card{tag="P1" title="Canvas 和动画"}
-canvas rAF、完整 2D API、触摸到 service 的链路；animation 多 step 时序和事件回调。
+canvasToTempFilePath、wx.createOffscreenCanvas、canvas node 事件；animation 多 step 时序和事件回调。
 :::
 
 :::card{tag="P2" title="性能和稳定性"}
@@ -240,7 +240,7 @@ host-browser、host-web-components、注入能力和接入步骤。
 :::
 
 :::card{tag="测试" title="以测试为准"}
-207 个单元测试和 51 个浏览器步骤。
+221 个单元测试和 52 个浏览器步骤。
 
 [测试与验收 →](#/testing)
 :::

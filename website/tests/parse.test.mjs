@@ -44,7 +44,7 @@ test('protocol page keeps its structure', async () => {
   const tables = children.filter((child) => child.type === 'table')
   assert.equal(tables.length, 5)
   const catalog = tables.find((table) => table.head[0][0]?.value === 'Domain')
-  assert.equal(catalog.rows.length, 34)
+  assert.equal(catalog.rows.length, 37)
 
   const sequence = children.find((child) => child.type === 'sequence')
   assert.equal(sequence.steps.length, 5)

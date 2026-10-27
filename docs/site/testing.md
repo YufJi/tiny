@@ -3,10 +3,10 @@ title: '用真实小程序验收，'
 highlight: '不只跑单元测试'
 eyebrow: '测试与验收'
 lede: >-
-  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 和 render 线程，在 Chromium 里点击、输入、导航，失败时保存截图。207 个单元测试覆盖协议、组件语义和编译逻辑，51 个浏览器步骤验证端到端行为。
+  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 和 render 线程，在 Chromium 里点击、输入、导航，失败时保存截图。221 个单元测试覆盖协议、组件语义和编译逻辑，52 个浏览器步骤验证端到端行为。
 stats:
-  - ['207', '单元测试']
-  - ['51', '浏览器步骤']
+  - ['221', '单元测试']
+  - ['52', '浏览器步骤']
   - ['5', '浏览器流程']
   - ['5', '测试小程序']
 description: '小程序引擎的验收方式：构建、内核检查、单元测试和五段真实浏览器流程（demo、mini、Taro 3、WeChat）。'
@@ -26,24 +26,24 @@ pnpm accept:glass-easel 是唯一完整的端到端入口，任何单个包的�
 | 检查内核依赖 | 从 packages/runtime/src/index.ts 遍历依赖图，禁止浏览器全局，也禁止反向依赖 @tiny/host-* 或 hosts/*。 | `pnpm check:runtime-purity` |
 | 跑 6 个包的单元测试 | bridge、template-compiler、stylesheet-compiler、cli、host-web-components、runtime。没有全局 runner，按包逐个执行。 | `pnpm --filter <package> test` |
 | 编译 P0 demo | 把 tests/apps/demo 编到 tests/host/generated，然后在 5199 端口启动 Vite 测试宿主。 | `pnpm compile:glass-easel` |
-| P0 demo 流程 | 20 步：启动、渲染、作用域样式、快照、自定义事件、checkbox/slider/switch、导航、输入、storage、toast、组件语义、样式隔离、按钮矩阵、relations、canvas 诊断和零 console error。 | `runBrowserAcceptance({ baseUrl })` |
-| mini 流程 | 重新编译 tests/apps/mini 覆盖 generated；9 步：真实 todos、双组件实例、import/include/template、输入、ECharts、子包、warning 和零错误。 | `runMiniProgramAcceptance()` |
+| P0 demo 流程 | 21 步：启动、渲染、作用域样式、快照、自定义事件、checkbox/slider/switch、导航、输入、storage、toast、组件语义、样式隔离、按钮矩阵、relations、canvas 诊断和零 console error。 | `runBrowserAcceptance({ baseUrl })` |
+| mini 流程 | 重新编译 tests/apps/mini 覆盖 generated；10 步：真实 todos、双组件实例、import/include/template、输入、ECharts、子包、warning 和零错误。 | `runMiniProgramAcceptance()` |
 | Taro 3 流程 | 编译 tests/apps/todo 的预构建产物；6 步：Redux todos、Enter 新增、勾选、筛选、清空和零错误。 | `runTaroAcceptance()` |
-| WeChat demo 流程 | 编译官方示例子集；4 步：组件索引、button 页、storage API 页和零错误。 | `runWechatDemoAcceptance()` |
-| 调试器流程 | 把全部 tests/apps 编到 devtool static，再用 rspack 启动；8 步：默认应用列表、点击启动、状态投影、渲染、导航/返回、逐应用预览与 3 个应用 LRU 保活、回到列表/深链/页面栈上限/Reload/Close app、零错误。 | `runDevtoolAcceptance()` |
+| WeChat demo 流程 | 编译官方示例子集；6 步：组件索引、button 页、storage API 页和零错误。 | `runWechatDemoAcceptance()` |
+| 调试器流程 | 把全部 tests/apps 编到 devtool static，再用 rspack 启动；9 步：默认应用列表、点击启动、状态投影、渲染、导航/返回、逐应用预览与 3 个应用 LRU 保活、回到列表/深链/页面栈上限/Reload/Close app、零错误。 | `runDevtoolAcceptance()` |
 :::
 
 :::callout{title="各阶段会覆盖 generated"}
 前四段流程共用 `tests/host/generated`，调试器阶段写入 `apps/devtool/static`。每次编译前都会清空输出，所以不能并行跑两段浏览器验收。最后会重新编译 P0 demo，保证 `pnpm dev:glass-easel` 打开时看到的是默认示例。
 :::
 
-## 51 个步骤怎么分配 {#flows kicker="浏览器流程"}
+## 52 个步骤怎么分配 {#flows kicker="浏览器流程"}
 
 每一步都在真实 Chromium 中执行，会检查页面状态、DOM、像素或 console。
 
 | 流程 | 测试小程序 | 步数 | 验证内容 |
 | --- | --- | --- | --- |
-| P0 demo | `tests/apps/demo` | 20 | 双线程启动、内置组件、按钮矩阵、样式作用域、事件、导航、storage、canvas 诊断/2D/WebGL/legacy/ECharts、组件语义、零 console error |
+| P0 demo | `tests/apps/demo` | 21 | 双线程启动、内置组件、按钮矩阵、样式作用域、事件、导航、storage、canvas 诊断/2D/WebGL/legacy/ECharts、组件语义、零 console error |
 | 现有示例 | `tests/apps/mini` | 10 | 真实 todos、双 add-button 实例、import/include/template、输入、ECharts 柱状图、子包、warning |
 | Taro 3 | `tests/apps/todo` | 6 | Redux todos、输入 + Enter、勾选、筛选、清空、零错误 |
 | WeChat demo | `tests/apps/wechat-demo` | 6 | 组件索引、button 页、storage API 页、零错误 |
@@ -65,7 +65,7 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 :::
 ::::
 
-## 207 个单元测试，按包执行 {#units kicker="单元测试"}
+## 221 个单元测试，按包执行 {#units kicker="单元测试"}
 
 没有全局 test runner，每个包单独跑，避免隐式耦合，也方便定位失败。
 
@@ -74,9 +74,9 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 | `@tiny/bridge` | 10 | 信封校验、版本和路由错误、payload 校验、握手、调用关联、超时、关闭、批处理顺序、诊断插队、MessagePort |
 | `@tiny/template-compiler` | 30 | 脚本依赖、WXS、import/include、模板别名、ProcGen 签名、绑定表复用、事件简写、data-* 绑定、stringify 往返 |
 | `@tiny/stylesheet-compiler` | 36 | class/tag 前缀、rpx/calc、@import 编码和包装、@layer、:host 低优先级、hostAttribute、keyframes、page 根节点 |
-| `@tiny/cli` | 17 | manifest 全产物、命名配置、WXS 双注册、配置合并、service/render 入口、TS/source map、样式作用域、tag marker |
-| `@tiny/host-web-components` | 31 | 23 个 tag 模板、共享 behaviors、button 对齐、label、input、checkbox/slider/switch、progress/swiper/icon、image/icon 渲染 |
-| `@tiny/runtime` | 83 | 全局安装和命名、双线程 bootstrap、组件 schema、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、API host、诊断 |
+| `@tiny/cli` | 18 | manifest 全产物、命名配置、WXS 双注册、配置合并、service/render 入口、TS/source map、样式作用域、tag marker |
+| `@tiny/host-web-components` | 35 | 23 个 tag 模板、共享 behaviors、button 对齐、label、input、checkbox/slider/switch、progress/swiper/icon、image/icon 渲染 |
+| `@tiny/runtime` | 92 | 全局安装和命名、双线程 bootstrap、组件 schema、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、API host、诊断 |
 
 :::callout{title="单测也会跑真实连接"}
 Bridge 测试会真的建立两条内存连接并完成握手；runtime 测试会启动 service/render 线程、注册 Page、执行 bootstrap 和导航。这里没有把整个引擎 mock 掉的做法。
