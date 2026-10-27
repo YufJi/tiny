@@ -32,6 +32,7 @@ export type TreeRenderer = {
   }) => void) => void
   inspectTree?: () => unknown
   measure?: (ids: string[]) => Record<string, unknown>
+  query?: (selector: string, all: boolean) => unknown[]
   dispose?: () => void
 }
 
@@ -96,13 +97,23 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     currentPageId = payload.pageId ?? message.pageId ?? currentPageId
     options.renderer.setPagePath?.(payload.pagePath ?? '')
     if (payload.root) options.renderer.mount(payload.root)
-    const styles = payload.styles?.length ? payload.styles : payload.fallbackAppStyles
-    if (styles && styles.length > 0) options.renderer.applyStyles?.(styles)
+    const styles = [...(payload.styles ?? []), ...(payload.fallbackAppStyles ?? [])]
+    if (styles.length > 0) options.renderer.applyStyles?.(styles)
   })
   connection.onEvent('tree', 'patch', (message) => {
     const payload = (message.payload ?? {}) as { patches?: RenderPatch[] }
     options.renderer.applyPatches(payload.patches ?? [])
   })
+  connection.onControl('runtime', 'inspectTree', () => options.renderer.inspectTree?.() ?? null)
+  connection.onControl('runtime', 'measure', (message) => {
+    const payload = (message.payload ?? {}) as { ids?: string[] }
+    return options.renderer.measure?.(payload.ids ?? []) ?? {}
+  })
+  connection.onControl('query', 'select', (message) => {
+    const payload = (message.payload ?? {}) as { selector?: string; all?: boolean }
+    return { nodes: options.renderer.query?.(String(payload.selector ?? ''), payload.all === true) ?? [] }
+  })
+  connection.onControl('query', 'intersection', () => ({ status: 'missing-intersection' }))
   connection.onControl('tree', 'inspectTree', () => options.renderer.inspectTree?.() ?? null)
   connection.onControl('canvas', 'measure', (message) => {
     const payload = (message.payload ?? {}) as { selector?: string; canvasId?: string }

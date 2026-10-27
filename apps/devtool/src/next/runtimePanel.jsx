@@ -296,6 +296,7 @@ class RuntimePanel extends PureComponent {
           windowHeight: contentHeight,
         },
         maxPageStack: this.maxPageStack,
+        logicLayer: 'service',
       });
       const session = {
         appId: app.id,

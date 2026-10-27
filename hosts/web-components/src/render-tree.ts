@@ -21,6 +21,9 @@ export type GlassRenderTree = {
   root: AnyComponent
   rootElement: HTMLElement | null
   applyStyles?: (styles: string[]) => void
+  inspectTree?: () => unknown
+  measure?: (ids: string[]) => Record<string, unknown>
+  query?: (selector: string, all: boolean) => unknown[]
   measureCanvas?: (selector: string, canvasId: string) => {
     width: number
     height: number
@@ -131,6 +134,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const eventCleanups = new Map<string, Array<() => void>>()
   const touchBridges = new Set<string>()
   const canvasComponents = new Map<string, { node: RenderElement; component: AnyComponent }>()
+  let currentRoot: RenderNode | undefined
   let eventSink: ((event: { id: string; name: string; native: Record<string, unknown> }) => void) | undefined
   let styleElement: HTMLStyleElement | undefined
   let diagnosticSink: ((diagnostic: {
@@ -349,6 +353,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     }
     const external = node.externalClasses ?? inheritedExternal
     applyHostProps(component, node.props)
+    component.getBackendElement()?.setAttribute?.('data-tiny-node-id', node.id)
     applyClassProps(component.getBackendElement() as unknown as HTMLElement | null, node.props, node.scopes, node.scopeChain, external)
     const childOwner = component
     for (const child of node.children ?? []) {
@@ -525,6 +530,65 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     setDiagnosticSink: (sink) => {
       diagnosticSink = sink
     },
+    inspectTree: () => {
+      const toInspect = (node: RenderNode, isRoot = false): Record<string, unknown> => {
+        if (node.type === 'text') {
+          return { id: node.id, type: 'text', tag: '#text', text: node.text, children: [] }
+        }
+        const attributes = Object.fromEntries(
+          Object.entries(node.props ?? {}).map(([key, value]) => [key, String(value ?? '')]),
+        )
+        for (const [key, value] of Object.entries(node.dataset ?? {})) {
+          attributes[`data-${key}`] = String(value ?? '')
+        }
+        return {
+          id: node.id,
+          type: builtinTags.has(node.tag) ? 'element' : 'component',
+          tag: isRoot && node.tag === 'page' ? 'tiny-page' : node.tag,
+          attributes,
+          className: String(node.props?.class ?? ''),
+          style: String(node.props?.style ?? ''),
+          children: (node.children ?? []).map((child) => toInspect(child)),
+        }
+      }
+      return currentRoot ? toInspect(currentRoot, true) : null
+    },
+    measure: (ids) => {
+      const result: Record<string, unknown> = {}
+      for (const id of ids) {
+        const element = rootElement?.querySelector(`[data-tiny-node-id="${id}"]`)
+        if (!element) continue
+        const rect = element.getBoundingClientRect()
+        result[id] = {
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
+        }
+      }
+      return result
+    },
+    query: (selector, all) => {
+      if (!rootElement) return []
+      const elements = Array.from(rootElement.querySelectorAll(selector))
+      if (!all) elements.splice(1)
+      return elements.map((element) => {
+        const rect = element.getBoundingClientRect()
+        return {
+          viewId: element.getAttribute('data-tiny-node-id') ?? '',
+          id: element.id,
+          dataset: { ...(element as HTMLElement).dataset },
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
+          scrollLeft: element.scrollLeft,
+          scrollTop: element.scrollTop,
+        }
+      })
+    },
     measureCanvas: (selector, canvasId) => {
       if (typeof document === 'undefined') {
         return { width: 0, height: 0, canvasId, hasCanvas: false }
@@ -551,11 +615,13 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       if (!styleElement) {
         styleElement = document.createElement('style')
         styleElement.setAttribute('data-tiny-tree-runtime-styles', '')
+        styleElement.setAttribute('wx-style-scope', '')
         document.head.appendChild(styleElement)
       }
       styleElement.textContent = styles.join('\n')
     },
     mount(node) {
+      currentRoot = node
       for (const cleanups of eventCleanups.values()) {
         for (const cleanup of cleanups) cleanup()
       }
@@ -583,6 +649,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         nodes.set(node.id, root)
         currentTree.set(node.id, node)
         pageScopes = node.scopes ?? []
+        rootElement?.setAttribute('data-tiny-node-id', node.id)
         applyHostProps(root, node.props)
         applyClassProps(rootElement, node.props, node.scopes, node.scopeChain)
       }

@@ -43,6 +43,7 @@ export class LogicTreeAdapter {
   private readonly pageRoots = new Map<string, LogicBackendElement>()
   private activePageId?: string
   private readonly pagePaths = new Map<string, string>()
+  private readonly pageStyleEntries = new Map<string, Array<{ path: string; content: string }>>()
   private activeTouches: unknown[] | undefined
   private activeChangedTouches: unknown[] | undefined
   private readonly lastSnapshots = new Map<string, ViewSnapshot>()
@@ -101,8 +102,10 @@ export class LogicTreeAdapter {
     data: Record<string, unknown> = {},
     pageId: string,
   ): ViewSnapshot {
+    let styleStart: number | undefined
     if (!this.styledPages.has(path)) {
       this.styledPages.add(path)
+      styleStart = this.backend.styleEntryCount()
       this.glass.registerStyles(
         this.manifest,
         this.loadStyle,
@@ -113,6 +116,9 @@ export class LogicTreeAdapter {
     this.activePageId = pageId
     this.pagePaths.set(pageId, path)
     const page = this.glass.mountPage(path, data, pageId)
+    if (styleStart !== undefined) {
+      this.pageStyleEntries.set(path, this.backend.styleEntriesSince(styleStart))
+    }
     const backendElement = (page as unknown as { getBackendElement?: () => unknown })
       .getBackendElement?.() as LogicBackendElement | undefined
     if (backendElement) this.pageRoots.set(pageId, backendElement)
@@ -144,8 +150,26 @@ export class LogicTreeAdapter {
     return this.pagePaths.get(pageId) ?? ''
   }
 
-  styleTexts(): string[] {
-    return this.backend.getAppendedStyleTexts()
+  private pageStyles(pageId?: string): Array<{ path: string; content: string }> {
+    const path = pageId ? this.pagePaths.get(pageId) : undefined
+    if (path) return this.pageStyleEntries.get(path) ?? []
+    return [...this.pageStyleEntries.values()].flat()
+  }
+
+  hasAppPageScope(pageId?: string): boolean {
+    if (pageId) {
+      const entries = this.pageStyles(pageId)
+      return entries.length > 0
+        ? entries.some((entry) => entry.path.includes('@page:'))
+        : this.backend.hasAppPageScope()
+    }
+    return this.backend.hasAppPageScope()
+  }
+
+  styleTexts(pageId?: string): string[] {
+    return this.pageStyles(pageId)
+      .filter((entry) => !(entry.path.startsWith('styles/app.') && !entry.path.includes('page-scope')))
+      .map((entry) => entry.content)
   }
 
   /** Resolve a mini-program selector to render-side glass components. */

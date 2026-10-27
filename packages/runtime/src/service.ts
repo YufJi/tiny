@@ -541,9 +541,9 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     unloadedPageIds?.push(page.pageId)
   }
 
-  const treeStyles = (): { styles: string[]; fallbackAppStyles?: string[] } => {
-    const styles = logicTree?.styleTexts() ?? []
-    if (styles.length > 0) return { styles }
+  const treeStyles = (pageId: string): { styles: string[]; fallbackAppStyles?: string[] } => {
+    const styles = logicTree?.styleTexts(pageId) ?? []
+    if (logicTree?.hasAppPageScope(pageId)) return { styles }
     const appStylePath = options.manifest.app?.style?.outputPath
     const appCss = appStylePath ? options.loadStyle?.(appStylePath) : undefined
     return {
@@ -559,7 +559,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     connection.sendEvent(
       'tree',
       'snapshot',
-      { pageId, pagePath: logicTree.pagePathFor(pageId), root: cloneJsonSafe(root), ...treeStyles() },
+      { pageId, pagePath: logicTree.pagePathFor(pageId), root: cloneJsonSafe(root), ...treeStyles(pageId) },
       { pageId },
     )
   }

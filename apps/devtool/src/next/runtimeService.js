@@ -6,7 +6,9 @@ import {
 } from '@tiny/host-browser';
 import { generatedBaseFor } from './appRegistry';
 
-const appId = new URLSearchParams(window.location.search).get('app') || 'demo';
+const search = new URLSearchParams(window.location.search);
+const appId = search.get('app') || 'demo';
+const logicLayer = search.get('logic') === 'service' ? 'service' : undefined;
 const generatedBase = generatedBaseFor(appId);
 const resolveAssetUrl = (assetPath) => (
   `${generatedBase}/${assetPath.split('/').map(encodeURIComponent).join('/')}`
@@ -49,7 +51,17 @@ const createHostApiExtensions = () => ({
 // arrives before `bootServiceThread` installs its connection is lost.
 installBrowserCanvasCompat();
 
-manifestPromise.then((manifest) => {
+manifestPromise.then(async (manifest) => {
+  const stylePaths = [...new Set(manifest.styles.flatMap((style) => [
+    style.outputPath,
+    ...(style.lowPriorityPath ? [style.lowPriorityPath] : []),
+  ]))];
+  const styles = Object.fromEntries(await Promise.all(
+    stylePaths.map(async (stylePath) => {
+      const response = await fetch(`${generatedBase}/${stylePath}`);
+      return [stylePath, await response.text()];
+    }),
+  ));
   listenForRuntimePort('service', (transport) => {
     bootServiceThread({
       transport,
@@ -58,6 +70,11 @@ manifestPromise.then((manifest) => {
       apiExtensions: createHostApiExtensions(),
       resolveAssetUrl,
       canvas: createBrowserCanvasAdapter(),
+      ...(logicLayer ? {
+        logicLayer,
+        loadTemplates: async () => (await importGenerated(`${generatedBase}/templates.js`)).default,
+        loadStyle: (stylePath) => styles[stylePath] ?? '',
+      } : {}),
       loadArtifacts: () => importGenerated(`${generatedBase}/service.js`),
     });
   });

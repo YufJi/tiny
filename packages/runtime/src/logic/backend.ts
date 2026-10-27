@@ -305,16 +305,28 @@ export class LogicBackendContext {
     return this.styleSheetCounter
   }
 
+  styleEntryCount(): number {
+    return this.appendedStyles.length
+  }
+
+  styleEntriesSince(index: number): Array<{ path: string; content: string }> {
+    return this.appendedStyles.slice(index).flatMap((entry) => {
+      const content = this.styleContents.get(entry.path)
+      return typeof content === 'string' ? [{ path: entry.path, content }] : []
+    })
+  }
+
+  hasAppPageScope(): boolean {
+    return this.appendedStyles.some((entry) => entry.path.includes('@page:'))
+  }
+
   getAppendedStyleTexts(): string[] {
     const seen = new Set<string>()
     const result: string[] = []
     for (const entry of this.appendedStyles) {
       if (seen.has(entry.path)) continue
-      // Raw app/page/component sheets are already present in the view thread.
-      // Only runtime-generated page-scoped/shared copies are sent here.
-      if (!entry.path.includes('@shared:') && !entry.path.includes('page-scope') && !entry.path.includes('@page:')) {
-        continue
-      }
+      // Raw app CSS is global; send its page-scoped copy instead.
+      if (entry.path.startsWith('styles/app.') && !entry.path.includes('page-scope')) continue
       seen.add(entry.path)
       const css = this.styleContents.get(entry.path)
       if (typeof css === 'string' && css.trim().length > 0) result.push(css)

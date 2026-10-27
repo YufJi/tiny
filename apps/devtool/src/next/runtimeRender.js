@@ -1,6 +1,6 @@
 import * as glassEasel from 'glass-easel';
 import { CurrentWindowBackendContext } from 'glass-easel';
-import { bootRenderThread } from '@tiny/runtime';
+import { bootRenderThread, bootTreeThread, resolveAssetPath } from '@tiny/runtime';
 import {
   createBrowserRenderQuery,
   installOffscreenCanvasResponder,
@@ -8,10 +8,18 @@ import {
   listenForRuntimePort,
   measureBrowserCanvas,
 } from '@tiny/host-browser';
-import { webBuiltinComponents } from '@tiny/host-web-components';
+import {
+  BUILTIN_BASE_STYLES,
+  BUILTIN_COMPONENT_STYLES,
+  BUILTIN_HOST_STYLES,
+  createGlassRenderTree,
+  webBuiltinComponents,
+} from '@tiny/host-web-components';
 import { generatedBaseFor } from './appRegistry';
 
-const appId = new URLSearchParams(window.location.search).get('app') || 'demo';
+const search = new URLSearchParams(window.location.search);
+const appId = search.get('app') || 'demo';
+const logicMode = search.get('logic') === 'service';
 const generatedBase = generatedBaseFor(appId);
 const importGenerated = (url) => new Function('url', 'return import(url)')(url);
 const resolveAssetUrl = (assetPath) => (
@@ -41,6 +49,30 @@ const assetsPromise = (async () => {
 // deliver the message port before the render connection is installed.
 assetsPromise.then(({ manifest, templates, styles }) => {
   listenForRuntimePort('render', (transport) => {
+    if (logicMode) {
+      const style = document.createElement('style')
+      style.setAttribute('data-tiny-tree-styles', '')
+      style.textContent = [
+        BUILTIN_BASE_STYLES,
+        BUILTIN_HOST_STYLES,
+        ...BUILTIN_COMPONENT_STYLES.map((item) => (
+          typeof item === 'string' ? item : item.content
+        )),
+        ...Object.entries(styles)
+          .filter(([stylePath]) => !stylePath.includes('app.wxss'))
+          .map(([, content]) => content),
+      ].join('\n')
+      document.head.appendChild(style)
+      const renderer = createGlassRenderTree({
+        container: document.getElementById('app') ?? document.body,
+        resolveAssetUrl: (src, sourcePath) => {
+          const resolved = resolveAssetPath(sourcePath || '', src)
+          return resolved ? `${generatedBase}/${resolved}` : undefined
+        },
+      })
+      bootTreeThread({ transport, renderer })
+      return
+    }
     const backend = new CurrentWindowBackendContext();
     backend.onEvent(glassEasel.Event.triggerBackendEvent);
     const runtime = bootRenderThread({
