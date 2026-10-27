@@ -1,5 +1,7 @@
 import { BridgeConnection } from '@tiny/bridge'
+import { QUERY_CONTROL, RUNTIME_CONTROL, TREE_PROTOCOL } from './tree/protocol'
 import {
+  DIAGNOSTIC_CODES,
   runtimeCompatibilityFromManifest,
   TINY_ENGINE_NAMING,
   type PageArtifact,
@@ -206,7 +208,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     registry,
     apiHost,
     (name) => connection.sendDiagnostic('warn', {
-      code: 'UNSUPPORTED_API',
+      code: DIAGNOSTIC_CODES.UNSUPPORTED_API,
       message: `${compatibility.api.global}.${name} is not supported in the P0 runtime.`,
     }, activePage?.pageId),
     () => pageStack,
@@ -243,7 +245,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   const intersectionObservers = new Map<string, IntersectionObserverRegistration>()
   let intersectionObserverCounter = 0
 
-  connection.onEvent('query', 'intersection', (message) => {
+  connection.onEvent(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, (message) => {
     const payload = (message.payload ?? {}) as {
       observerId?: string
       selector?: string
@@ -261,7 +263,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
           callback(entry)
         } catch (error) {
           connection.sendDiagnostic('warn', {
-            code: 'INTERSECTION_CALLBACK_ERROR',
+            code: DIAGNOSTIC_CODES.INTERSECTION_CALLBACK_ERROR,
             message: error instanceof Error ? error.message : String(error),
           }, message.pageId)
         }
@@ -295,7 +297,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         observeAll: options.observeAll === true,
         relativeTo: registration.relativeTo,
       })
-      void connection.call('query', 'intersection', payload, { pageId }).catch(() => undefined)
+      void connection.call(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, payload, { pageId }).catch(() => undefined)
     }
     const resendRelativeTo = (): void => {
       for (const selector of registration.callbacks.keys()) send('observe', selector)
@@ -445,7 +447,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     lifecycleSequence += 1
     const hiddenPhase = phase === 'onLoad' || phase === 'onHide' || phase === 'onUnload'
     connection.sendDiagnostic('log', {
-      code: 'PAGE_LIFECYCLE',
+      code: DIAGNOSTIC_CODES.PAGE_LIFECYCLE,
       message: `${phase} ${page.path}`,
       details: {
         pageId: page.pageId,
@@ -503,7 +505,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   notifyTabBarChange = sendRuntimeState
   if (tabBarModel?.custom) {
     connection.sendDiagnostic('warn', {
-      code: 'TABBAR_CUSTOM_UNSUPPORTED',
+      code: DIAGNOSTIC_CODES.TABBAR_CUSTOM_UNSUPPORTED,
       message: 'Custom tabBar rendering is not implemented; the page owns its tab bar.',
     })
   }
@@ -614,8 +616,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     const root = logicTree.snapshotRenderTree(pageId)
     if (!root) return
     connection.sendEvent(
-      'tree',
-      'flow',
+      TREE_PROTOCOL.domain, TREE_PROTOCOL.flow,
       {
         pageId,
         pagePath: logicTree.pagePathFor(pageId),
@@ -648,15 +649,14 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
           const { patches } = logicTree.updateRenderTree(id)
           if (patches.length > 0) {
             connection.sendEvent(
-              'tree',
-              'patch',
+              TREE_PROTOCOL.domain, TREE_PROTOCOL.patch,
               { pageId: id, patches: cloneJsonSafe(patches) },
               { pageId: id },
             )
           }
         } catch (error) {
           connection.sendDiagnostic('warn', {
-            code: 'LOGIC_TREE_ERROR',
+            code: DIAGNOSTIC_CODES.LOGIC_TREE_ERROR,
             message: error instanceof Error ? error.message : String(error),
           }, id)
         }
@@ -671,7 +671,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       scheduleTreeUpdate(pageId)
     } catch (error) {
       connection.sendDiagnostic('warn', {
-        code: 'LOGIC_TREE_ERROR',
+        code: DIAGNOSTIC_CODES.LOGIC_TREE_ERROR,
         message: error instanceof Error ? error.message : String(error),
       }, pageId)
     }
@@ -746,7 +746,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     return { path, query }
   }
 
-  connection.onEvent('tree', 'event', (message) => {
+  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, (message) => {
     if (!logicTree) return
     const payload = (message.payload ?? {}) as {
       id?: string
@@ -768,12 +768,12 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     })
   })
 
-  connection.onEvent('tree', 'ready', (message) => {
+  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.ready, (message) => {
     if (!logicTree || !message.pageId || !mountedTreePages.has(message.pageId)) return
     sendTreeSnapshot(message.pageId)
   })
 
-  connection.onControl('runtime', 'bootstrap', async (message) => {
+  connection.onControl(RUNTIME_CONTROL.domain, RUNTIME_CONTROL.bootstrap, async (message) => {
     try {
       const payload = message.payload as {
         manifest?: ServiceThreadOptions['manifest']
@@ -845,7 +845,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         registry.reportPageNotFound({ path: currentPath, query: {}, isEntryPage: true })
       }
       connection.sendDiagnostic('error', {
-        code: 'BOOTSTRAP_ERROR',
+        code: DIAGNOSTIC_CODES.BOOTSTRAP_ERROR,
         message,
         details: error instanceof Error && error.stack ? { stack: error.stack } : {},
       })
@@ -902,7 +902,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         error instanceof Error && error.stack ? `${message}\n${error.stack}` : message,
       )
       connection.sendDiagnostic('error', {
-        code: 'PAGE_READY_ERROR',
+        code: DIAGNOSTIC_CODES.PAGE_READY_ERROR,
         message,
         details: error instanceof Error && error.stack ? { stack: error.stack } : {},
       })
@@ -1236,7 +1236,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     return { status: 'saved', state: cloneJsonSafe(state ?? null) }
   })
 
-  connection.onControl('runtime', 'resize', async (message) => {
+  connection.onControl(RUNTIME_CONTROL.domain, RUNTIME_CONTROL.resize, async (message) => {
     const payload = message.payload as { windowWidth?: number; windowHeight?: number }
     const windowWidth = Number(payload.windowWidth ?? systemInfoSnapshot.windowWidth)
     const windowHeight = Number(payload.windowHeight ?? systemInfoSnapshot.windowHeight)
@@ -1265,7 +1265,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         listener({ theme })
       } catch (error) {
         connection.sendDiagnostic('warn', {
-          code: 'THEME_LISTENER_ERROR',
+          code: DIAGNOSTIC_CODES.THEME_LISTENER_ERROR,
           message: error instanceof Error ? error.message : String(error),
         }, activePage?.pageId)
       }
@@ -1475,7 +1475,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     const page = pageId ? pageInstances.get(pageId) : activePage
     if (!page) {
       connection.sendDiagnostic('warn', {
-        code: 'EVENT_PAGE_NOT_FOUND',
+        code: DIAGNOSTIC_CODES.EVENT_PAGE_NOT_FOUND,
         message: `No page found for event: ${pageId ?? 'unknown'}`,
       }, pageId)
       return
@@ -1490,7 +1490,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     const handler = event.handler
     if (!handler) {
       connection.sendDiagnostic('warn', {
-        code: 'EVENT_HANDLER_MISSING',
+        code: DIAGNOSTIC_CODES.EVENT_HANDLER_MISSING,
         message: 'Event payload does not contain a handler name.',
       }, page?.pageId)
       return
@@ -1515,7 +1515,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         error instanceof Error && error.stack ? `${message}\n${error.stack}` : message,
       )
       connection.sendDiagnostic('error', {
-        code: 'EVENT_HANDLER_ERROR',
+        code: DIAGNOSTIC_CODES.EVENT_HANDLER_ERROR,
         message,
         handler,
         eventType: event.type,

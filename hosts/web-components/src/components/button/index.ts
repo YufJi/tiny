@@ -1,4 +1,5 @@
 import type * as glassEasel from 'glass-easel'
+import { DIAGNOSTIC_CODES } from '@tiny/manifest'
 import { bindHostListeners, unbindHostListeners } from '../../behaviors'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { builtinDefinitionName } from '../../tags'
@@ -150,7 +151,7 @@ export function defineButton(ctx: BuiltinContext): BuiltinDefinition {
         if (openType !== '') {
           ctx.options.onDiagnostic?.({
             severity: 'warning',
-            code: 'UNSUPPORTED_BUTTON_OPEN_TYPE',
+            code: DIAGNOSTIC_CODES.UNSUPPORTED_BUTTON_OPEN_TYPE,
             message: `<button/> open-type "${openType}" is not supported in the P0 runtime.`,
             details: { openType },
           })

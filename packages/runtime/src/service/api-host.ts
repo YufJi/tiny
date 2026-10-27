@@ -1,4 +1,5 @@
 import type { BridgeConnection } from '@tiny/bridge'
+import { DIAGNOSTIC_CODES } from '@tiny/manifest'
 import { cloneJsonSafe } from '../data'
 import { registerBehavior } from '../behaviors'
 import { applyDefinitionFilters } from '../component-definition'
@@ -121,7 +122,7 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
   const keyboardListeners = new Set<(value: unknown) => void>()
   const unsupported = (name: string) => {
     context.connection.sendDiagnostic('warn', {
-      code: 'UNSUPPORTED_API',
+      code: DIAGNOSTIC_CODES.UNSUPPORTED_API,
       message: `${context.apiName}.${name} is not supported in the P0 runtime.`,
     }, context.pageId)
   }
@@ -150,7 +151,7 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
         .call('api', 'storage.set', { key: normalizedKey, value: normalizedValue }, { pageId: context.pageId })
         .catch((error) => {
           context.connection.sendDiagnostic('error', {
-            code: 'API_STORAGE_WRITE_FAILED',
+            code: DIAGNOSTIC_CODES.API_STORAGE_WRITE_FAILED,
             message: error instanceof Error ? error.message : String(error),
             key: normalizedKey,
           }, context.pageId)
@@ -319,14 +320,14 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
     )),
     getUserProfile: (params: unknown = {}) => {
       context.connection.sendDiagnostic('warn', {
-        code: 'API_PROFILE_STUB',
+        code: DIAGNOSTIC_CODES.API_PROFILE_STUB,
         message: `${context.apiName}.getUserProfile returns a stub profile in the P0 runtime.`,
       }, context.pageId)
       return runApi(params, 'getUserProfile', () => context.connection.call('api', 'profile.get', {}, { pageId: context.pageId }))
     },
     getUserInfo: (params: unknown = {}) => {
       context.connection.sendDiagnostic('warn', {
-        code: 'API_PROFILE_STUB',
+        code: DIAGNOSTIC_CODES.API_PROFILE_STUB,
         message: `${context.apiName}.getUserInfo returns a stub profile in the P0 runtime.`,
       }, context.pageId)
       return runApi(params, 'getUserInfo', () => context.connection.call('api', 'profile.get', {}, { pageId: context.pageId }))
@@ -442,7 +443,7 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
     },
     login: (params: unknown = {}) => {
       context.connection.sendDiagnostic('warn', {
-        code: 'API_LOGIN_STUB',
+        code: DIAGNOSTIC_CODES.API_LOGIN_STUB,
         message: `${context.apiName}.login returns a host-generated stub code; no session is created.`,
       }, context.pageId)
       return runApi(params, 'login', () => context.connection.call(
@@ -491,7 +492,7 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
     },
     createSelectorQuery: () => {
       context.connection.sendDiagnostic('log', {
-        code: 'CANVAS_OFFSCREEN',
+        code: DIAGNOSTIC_CODES.CANVAS_OFFSCREEN,
         message: 'Canvas is rendered in the service thread and presented by the render thread.',
       }, context.pageId)
       return createSelectorQuery(context)

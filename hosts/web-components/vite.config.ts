@@ -16,7 +16,7 @@ export default defineConfig({
       fileName: (format) => (format === 'es' ? 'index.js' : 'index.cjs'),
     },
     rollupOptions: {
-      external: ['glass-easel'],
+      external: ['glass-easel', '@tiny/runtime'],
     },
     minify: false,
     sourcemap: true,

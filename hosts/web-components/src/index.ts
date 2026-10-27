@@ -135,3 +135,4 @@ export const webBuiltinComponents: BuiltinComponents = {
 
 export { createGlassRenderTree } from './render-tree'
 export type { GlassRenderTree, GlassRenderTreeOptions } from './render-tree'
+export { bootGlassRenderEntry, installBuiltinStyles, type RenderEntryOptions } from './render-entry'

@@ -1,4 +1,5 @@
 import {
+  DIAGNOSTIC_CODES,
   WECHAT_RUNTIME_COMPATIBILITY,
   type RuntimeCompatibilityConfig,
 } from '@tiny/manifest'
@@ -134,7 +135,7 @@ export function normalizeComponentDefinition(
   if (configuredPureDataPattern) collector.options.pureDataPattern = configuredPureDataPattern
   if (typeof options.definitionFilter === 'function') {
     collector.diagnostics.push({
-      code: 'UNSUPPORTED_COMPONENT_DEFINITION_FILTER',
+      code: DIAGNOSTIC_CODES.UNSUPPORTED_COMPONENT_DEFINITION_FILTER,
       message: 'definitionFilter on Component is ignored; declare it in a Behavior.',
     })
   }
@@ -157,7 +158,7 @@ export function normalizeComponentDefinition(
         }
       } else if (isBuiltinBehavior(source)) {
         collector.diagnostics.push({
-          code: 'UNSUPPORTED_BEHAVIOR',
+          code: DIAGNOSTIC_CODES.UNSUPPORTED_BEHAVIOR,
           message: `Built-in behavior "${source}" is not supported.`,
           details: { behavior: source },
         })
@@ -345,7 +346,7 @@ function mergeSource(
         collector.options.explicitStyleIsolation = true
       } else {
         collector.diagnostics.push({
-          code: 'INVALID_STYLE_ISOLATION',
+          code: DIAGNOSTIC_CODES.INVALID_STYLE_ISOLATION,
           message: `Invalid styleIsolation "${rawOptions.styleIsolation}"; expected isolated, apply-shared or shared.`,
         })
       }
@@ -356,7 +357,7 @@ function mergeSource(
         collector.options.pureDataPattern = pattern
       } else if (rawOptions.pureDataPattern !== null) {
         collector.diagnostics.push({
-          code: 'INVALID_PURE_DATA_PATTERN',
+          code: DIAGNOSTIC_CODES.INVALID_PURE_DATA_PATTERN,
           message: 'pureDataPattern must be a RegExp or a valid regular-expression string.',
         })
       }
@@ -457,7 +458,7 @@ function normalizeRelations(
     const type = value.type
     if (type !== 'parent' && type !== 'child' && type !== 'ancestor' && type !== 'descendant') {
       diagnostics.push({
-        code: 'UNSUPPORTED_RELATION_TYPE',
+        code: DIAGNOSTIC_CODES.UNSUPPORTED_RELATION_TYPE,
         message: `Relation "${key}" has unsupported type "${String(type)}".`,
       })
       continue
@@ -465,7 +466,7 @@ function normalizeRelations(
     const target = typeof value.target === 'string' ? value.target : key
     if (isBuiltinBehavior(target)) {
       diagnostics.push({
-        code: 'UNSUPPORTED_RELATION_TARGET',
+        code: DIAGNOSTIC_CODES.UNSUPPORTED_RELATION_TARGET,
         message: `Relation "${key}" targets built-in behavior "${target}", which is not supported.`,
       })
       continue
@@ -512,7 +513,7 @@ export function applyDefinitionFilters(
       filter(source, filterArr)
     } catch (error) {
       onDiagnostic?.({
-        code: 'DEFINITION_FILTER_ERROR',
+        code: DIAGNOSTIC_CODES.DEFINITION_FILTER_ERROR,
         message: error instanceof Error ? error.message : String(error),
         details: { behavior: describeBehavior(behavior) },
       })

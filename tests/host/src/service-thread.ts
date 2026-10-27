@@ -1,9 +1,4 @@
-import { bootServiceThread } from '@tiny/runtime'
-import {
-  createBrowserCanvasAdapter,
-  installBrowserCanvasCompat,
-  listenForRuntimePort,
-} from '@tiny/host-browser'
+import { bootBrowserServiceEntry } from '@tiny/host-browser'
 import manifest from '../generated/manifest.json'
 
 const createHostApiExtensions = () => ({
@@ -39,8 +34,6 @@ const resolveAssetUrl = (assetPath: string): string => (
   `/generated/${assetPath.split('/').map(encodeURIComponent).join('/')}`
 )
 
-installBrowserCanvasCompat()
-
 const stylePaths = [...new Set(manifest.styles.flatMap((style) => [
   style.outputPath,
   ...(style.lowPriorityPath ? [style.lowPriorityPath] : []),
@@ -54,19 +47,14 @@ const styles = Object.fromEntries(
   ),
 )
 
-listenForRuntimePort('service', (transport) => {
-
-  bootServiceThread({
-    transport,
-    manifest,
-    initialPath: 'pages/todos/todos',
-    loadTemplates: async () => (await import('../generated/templates.js')).default,
-    loadStyle: (stylePath) => styles[stylePath] ?? '',
-    apiExtensions: createHostApiExtensions(),
-    resolveAssetUrl,
-    canvas: createBrowserCanvasAdapter(),
-    loadArtifacts: async () => {
-      await import('../generated/service.js')
-    },
-  })
+bootBrowserServiceEntry({
+  manifest,
+  initialPath: manifest.pages[0]?.path ?? '',
+  loadTemplates: async () => (await import('../generated/templates.js')).default,
+  loadStyle: (stylePath) => styles[stylePath] ?? '',
+  apiExtensions: createHostApiExtensions(),
+  resolveAssetUrl,
+  loadArtifacts: async () => {
+    await import('../generated/service.js')
+  },
 })

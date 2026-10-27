@@ -1,4 +1,4 @@
-import type { Manifest, PageArtifact } from '@tiny/manifest'
+import { DIAGNOSTIC_CODES, type Manifest, type PageArtifact } from '@tiny/manifest'
 import type { RenderNode, RenderPatch } from '../tree/protocol'
 import { diffRenderTree } from '../tree/diff'
 import * as glassEasel from 'glass-easel'
@@ -225,7 +225,7 @@ export class LogicTreeAdapter {
       if (known.has(normalized)) continue
       this.onDiagnostic?.(createRuntimeDiagnostic(
         'warning',
-        'UNSUPPORTED_COMPONENT',
+        DIAGNOSTIC_CODES.UNSUPPORTED_COMPONENT,
         `unsupported component: ${tag}`,
         'service',
         path,

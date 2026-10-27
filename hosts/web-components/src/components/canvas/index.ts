@@ -1,5 +1,5 @@
 import type * as glassEasel from 'glass-easel'
-import { TINY_ENGINE_NAMING } from '@tiny/manifest'
+import { DIAGNOSTIC_CODES, TINY_ENGINE_NAMING } from '@tiny/manifest'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { builtinDefinitionName } from '../../tags'
 
@@ -183,7 +183,7 @@ export function defineCanvas(ctx: BuiltinContext): BuiltinDefinition {
       created() {
         ctx.options.onDiagnostic?.({
           severity: 'warning',
-          code: 'UNSUPPORTED_CANVAS',
+          code: DIAGNOSTIC_CODES.UNSUPPORTED_CANVAS,
           message: 'Canvas rendering is bridged to the service thread; export APIs may be limited.',
           details: { canvasId: this.data.canvasId, type: this.data.type },
         })

@@ -6,6 +6,37 @@
 
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 
+/** Bridge domains/methods used by the split-tree protocol. */
+export const TREE_PROTOCOL = Object.freeze({
+  domain: 'tree',
+  flow: 'flow',
+  snapshot: 'snapshot',
+  patch: 'patch',
+  event: 'event',
+  ready: 'ready',
+  inspectTree: 'inspectTree',
+  measure: 'measure',
+} as const)
+
+export const RUNTIME_CONTROL = Object.freeze({
+  domain: 'runtime',
+  bootstrap: 'bootstrap',
+  inspectTree: 'inspectTree',
+  measure: 'measure',
+  resize: 'resize',
+} as const)
+
+export const QUERY_CONTROL = Object.freeze({
+  domain: 'query',
+  select: 'select',
+  intersection: 'intersection',
+} as const)
+
+export const CANVAS_CONTROL = Object.freeze({
+  domain: 'canvas',
+  measure: 'measure',
+} as const)
+
 export type RenderNodeId = string
 
 /** Root page node tag emitted by the service logic tree. */

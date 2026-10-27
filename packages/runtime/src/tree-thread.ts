@@ -1,6 +1,16 @@
 import { BridgeConnection } from '@tiny/bridge'
 import type { Transport } from '@tiny/bridge'
-import type { ComponentFlow, RenderElement, RenderNode, RenderPatch, RenderText } from './tree/protocol'
+import {
+  CANVAS_CONTROL,
+  QUERY_CONTROL,
+  RUNTIME_CONTROL,
+  TREE_PROTOCOL,
+  type ComponentFlow,
+  type RenderElement,
+  type RenderNode,
+  type RenderPatch,
+  type RenderText,
+} from './tree/protocol'
 
 export type TreeEventPayload = {
   id: string
@@ -65,14 +75,13 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
 
   options.renderer.setEventSink?.((event) => {
     connection.sendEvent(
-      'tree',
-      'event',
+      TREE_PROTOCOL.domain, TREE_PROTOCOL.event,
       { ...event, pageId: event.pageId ?? currentPageId },
       currentPageId ? { pageId: currentPageId } : {},
     )
   })
 
-  connection.onControl('runtime', 'bootstrap', (message) => {
+  connection.onControl(RUNTIME_CONTROL.domain, RUNTIME_CONTROL.bootstrap, (message) => {
     const payload = (message.payload ?? {}) as {
       initialPath?: string
       pageId?: string
@@ -86,7 +95,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     }
   })
 
-  connection.onEvent('tree', 'snapshot', (message) => {
+  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.snapshot, (message) => {
     const payload = (message.payload ?? {}) as {
       root?: RenderNode
       pageId?: string
@@ -100,7 +109,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     const styles = [...(payload.styles ?? []), ...(payload.fallbackAppStyles ?? [])]
     if (styles.length > 0) options.renderer.applyStyles?.(styles)
   })
-  connection.onEvent('tree', 'flow', (message) => {
+  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.flow, (message) => {
     const payload = (message.payload ?? {}) as {
       pageId?: string
       pagePath?: string
@@ -157,7 +166,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     const styles = [...(payload.styles ?? []), ...(payload.fallbackAppStyles ?? [])]
     if (styles.length > 0) options.renderer.applyStyles?.(styles)
   })
-  connection.onEvent('tree', 'patch', (message) => {
+  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.patch, (message) => {
     const payload = (message.payload ?? {}) as { patches?: RenderPatch[] }
     options.renderer.applyPatches(payload.patches ?? [])
   })
@@ -169,18 +178,18 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     })
   }
 
-  connection.onControl('runtime', 'inspectTree', () => options.renderer.inspectTree?.() ?? null)
-  connection.onControl('runtime', 'measure', (message) => {
+  connection.onControl(RUNTIME_CONTROL.domain, RUNTIME_CONTROL.inspectTree, () => options.renderer.inspectTree?.() ?? null)
+  connection.onControl(RUNTIME_CONTROL.domain, RUNTIME_CONTROL.measure, (message) => {
     const payload = (message.payload ?? {}) as { ids?: string[] }
     return options.renderer.measure?.(payload.ids ?? []) ?? {}
   })
-  connection.onControl('query', 'select', (message) => {
+  connection.onControl(QUERY_CONTROL.domain, QUERY_CONTROL.select, (message) => {
     const payload = (message.payload ?? {}) as { selector?: string; all?: boolean }
     return { nodes: options.renderer.query?.(String(payload.selector ?? ''), payload.all === true) ?? [] }
   })
-  connection.onControl('query', 'intersection', () => ({ status: 'missing-intersection' }))
-  connection.onControl('tree', 'inspectTree', () => options.renderer.inspectTree?.() ?? null)
-  connection.onControl('canvas', 'measure', (message) => {
+  connection.onControl(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, () => ({ status: 'missing-intersection' }))
+  connection.onControl(TREE_PROTOCOL.domain, TREE_PROTOCOL.inspectTree, () => options.renderer.inspectTree?.() ?? null)
+  connection.onControl(CANVAS_CONTROL.domain, CANVAS_CONTROL.measure, (message) => {
     const payload = (message.payload ?? {}) as { selector?: string; canvasId?: string }
     return options.renderer.measureCanvas?.(
       String(payload.selector ?? ''),
@@ -188,7 +197,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     ) ?? { width: 0, height: 0, canvasId: '', hasCanvas: false }
   })
 
-  connection.onControl('tree', 'measure', (message) => {
+  connection.onControl(TREE_PROTOCOL.domain, TREE_PROTOCOL.measure, (message) => {
     const payload = (message.payload ?? {}) as { ids?: string[] }
     return options.renderer.measure?.(payload.ids ?? []) ?? {}
   })

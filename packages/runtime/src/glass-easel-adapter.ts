@@ -1,5 +1,6 @@
 import * as glassEasel from 'glass-easel'
 import {
+  DIAGNOSTIC_CODES,
   TINY_ENGINE_NAMING,
   type Manifest,
   type PageArtifact,
@@ -499,7 +500,7 @@ export class GlassEaselRuntimeAdapter {
       if (!componentScopeName || !css) {
         this.onDiagnostic?.(createRuntimeDiagnostic(
           'warning',
-          'STYLE_ISOLATION_FALLBACK',
+          DIAGNOSTIC_CODES.STYLE_ISOLATION_FALLBACK,
           `Unable to re-scope shared styles for "${componentPath}"; falling back to apply-shared behavior.`,
           'render',
           undefined,
@@ -1165,7 +1166,7 @@ export class GlassEaselRuntimeAdapter {
         if (!definition) {
           this.onDiagnostic?.(createRuntimeDiagnostic(
             'warning',
-            'UNSUPPORTED_COMPONENT',
+            DIAGNOSTIC_CODES.UNSUPPORTED_COMPONENT,
             `Component "${tag}" is not registered; using a native fallback.`,
             'render',
             undefined,

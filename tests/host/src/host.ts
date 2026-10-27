@@ -2,7 +2,7 @@ import { createStandaloneDualThreadHost } from '@tiny/host-browser'
 import manifest from '../generated/manifest.json'
 
 const search = new URLSearchParams(window.location.search)
-const initialPath = search.get('path') || 'pages/todos/todos'
+const initialPath = search.get('path') || manifest.pages[0]?.path || ''
 
 const runtime = await createStandaloneDualThreadHost({
   manifest,

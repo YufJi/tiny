@@ -241,6 +241,15 @@ describe('logic tree runtime options', () => {
       detail: { value: true },
     })).toBe(true)
     expect((parent as unknown as { data: { switchValue?: boolean } }).data.switchValue).toBe(true)
+    // A host-provided detail always wins over raw native fields; the service
+    // must not re-derive switch/checkbox-group values from the tag name.
+    expect(tree.dispatchViewEvent({
+      viewId: sw!.viewId,
+      name: 'change',
+      detail: { value: false },
+      native: { checked: true },
+    })).toBe(true)
+    expect((parent as unknown as { data: { switchValue?: boolean } }).data.switchValue).toBe(false)
     const group = findById(snapshot.root, 'group')
     expect(group).toBeDefined()
     expect(tree.dispatchViewEvent({
