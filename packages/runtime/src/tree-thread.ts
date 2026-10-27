@@ -104,6 +104,14 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     const payload = (message.payload ?? {}) as { patches?: RenderPatch[] }
     options.renderer.applyPatches(payload.patches ?? [])
   })
+  for (const method of ['navigateTo', 'redirectTo', 'reLaunch', 'navigateBack', 'switchTab'] as const) {
+    connection.onControl('page', method, (message) => {
+      const payload = (message.payload ?? {}) as { path?: string; pageId?: string }
+      if (payload.pageId) currentPageId = payload.pageId
+      return { status: 'ready', path: payload.path ?? '', pageId: payload.pageId ?? currentPageId, components: [] }
+    })
+  }
+
   connection.onControl('runtime', 'inspectTree', () => options.renderer.inspectTree?.() ?? null)
   connection.onControl('runtime', 'measure', (message) => {
     const payload = (message.payload ?? {}) as { ids?: string[] }

@@ -1,4 +1,4 @@
-import type { Manifest } from '@tiny/manifest'
+import type { Manifest, PageArtifact } from '@tiny/manifest'
 import type { RenderNode, RenderPatch } from '../tree/protocol'
 import { diffRenderTree } from '../tree/diff'
 import * as glassEasel from 'glass-easel'
@@ -6,6 +6,7 @@ import type { MiniProgramComponentSchema, QueryNodeSnapshot, TemplateRegistry } 
 import type { NormalizedComponentDefinition } from '../component-definition'
 import { GlassEaselRuntimeAdapter } from '../glass-easel-adapter'
 import { LogicBackendContext, LogicBackendElement, findLogicNodeByElement } from './backend'
+import { createRuntimeDiagnostic } from '../diagnostics'
 import { diffView } from './patch'
 import { createLogicSelectorQuery, queryLogicNodes, snapshotLogicNode } from './query'
 import type {
@@ -24,6 +25,7 @@ export type LogicTreeAdapterOptions = {
   measureView?: (viewIds: string[]) => Promise<Record<string, ViewRect>>
   loadStyle?: (outputPath: string) => string
   onDataChange?: (pageId: string) => void
+  onDiagnostic?: (diagnostic: import('../diagnostics').RuntimeDiagnostic) => void
   viewIntersection?: {
     observe: (request: ViewIntersectionRequest & { pageId: string }) => void
     unobserve: (observerId: string, pageId: string) => void
@@ -53,6 +55,8 @@ export class LogicTreeAdapter {
   private componentSchemas: MiniProgramComponentSchema[] = []
   private readonly styledPages = new Set<string>()
   private readonly measureView?: (viewIds: string[]) => Promise<Record<string, ViewRect>>
+  private readonly onDiagnostic?: LogicTreeAdapterOptions['onDiagnostic']
+  private readonly reportedPages = new Set<string>()
   private readonly viewIntersection?: LogicTreeAdapterOptions['viewIntersection']
   private readonly intersectionObservers = new Map<string, {
     callbacks: Map<string, (entry: Record<string, unknown>) => void>
@@ -67,6 +71,7 @@ export class LogicTreeAdapter {
     this.loadStyle = options.loadStyle ?? (() => '')
     this.measureView = options.measureView
     this.viewIntersection = options.viewIntersection
+    this.onDiagnostic = options.onDiagnostic
     this.glass = new GlassEaselRuntimeAdapter({
       backend: this.backend as unknown as glassEasel.GeneralBackendContext,
       manifest: options.manifest,
@@ -116,6 +121,7 @@ export class LogicTreeAdapter {
     this.activePageId = pageId
     this.pagePaths.set(pageId, path)
     const page = this.glass.mountPage(path, data, pageId)
+    this.reportMissingComponents(path)
     if (styleStart !== undefined) {
       this.pageStyleEntries.set(path, this.backend.styleEntriesSince(styleStart))
     }
@@ -172,13 +178,124 @@ export class LogicTreeAdapter {
       .map((entry) => entry.content)
   }
 
-  /** Resolve a mini-program selector to render-side glass components. */
+  /** Resolve a mini-program selector to logic-tree component handles. */
   selectComponents(pageId: string, selector: string, all: boolean): unknown[] {
     const root = this.pageRoots.get(pageId)
     if (!root) return []
-    const nodes = queryLogicNodes(root, selector, all)
+    const deep = selector.split('>>>')
+    if (deep.length === 2) {
+      const ownerSelector = deep[0]!.trim()
+      const innerSelector = deep[1]!.trim()
+      const owner = queryLogicNodes(root, ownerSelector, false, true)
+        .find((node) => node.nodeType === 'component')
+      if (!owner) return []
+      const nodes = queryLogicNodes(owner, innerSelector, all)
+        .filter((node) => node.nodeType === 'component' && node.__wxElement)
+      return nodes.map((node) => this.componentHandle(node.__wxElement, pageId))
+    }
+    const nodes = queryLogicNodes(root, selector, all, true)
       .filter((node) => node.nodeType === 'component' && node.__wxElement)
-    return nodes.map((node) => node.__wxElement)
+    return nodes.map((node) => this.componentHandle(node.__wxElement, pageId))
+  }
+
+  private reportMissingComponents(path: string): void {
+    if (this.reportedPages.has(path)) return
+    this.reportedPages.add(path)
+    const page = this.manifest.pages.find((item) => item.path === path)
+    const using = page?.configuration?.effective?.usingComponents
+    if (!using || typeof using !== 'object') return
+    const known = new Set([
+      ...this.manifest.pages.map((item) => item.path),
+      ...this.manifest.components.map((item) => item.path),
+    ])
+    for (const [tag, target] of Object.entries(using as Record<string, unknown>)) {
+      if (typeof target !== 'string') continue
+      const normalized = target.replace(/^\//, '').replace(/\.js$/, '')
+      if (known.has(normalized)) continue
+      this.onDiagnostic?.(createRuntimeDiagnostic(
+        'warning',
+        'UNSUPPORTED_COMPONENT',
+        `unsupported component: ${tag}`,
+        'service',
+        path,
+        { tag, target },
+      ))
+    }
+  }
+
+  private componentHandle(component: unknown, pageId: string): unknown {
+    const target = component as Record<string, unknown>
+    const element = (target as { getBackendElement?: () => unknown }).getBackendElement?.()
+    const select = (selector: string, all: boolean): unknown[] => {
+      if (!element) return []
+      const nodes = queryLogicNodes(element as LogicBackendElement, selector, all, true)
+        .filter((node) => node.nodeType === 'component' && node.__wxElement)
+      return nodes.map((node) => this.componentHandle(node.__wxElement, pageId))
+    }
+    return new Proxy(target, {
+      get: (source, property) => {
+        if (property === 'selectComponent') {
+          return (selector: string) => select(selector, false)[0] ?? null
+        }
+        if (property === 'selectAllComponents') {
+          return (selector: string) => select(selector, true)
+        }
+        if (property === 'selectOwnerComponent') {
+          return () => {
+            const componentId = this.glass.componentIdOf(component)
+            const snapshot = this.glass.getComponentSnapshot()
+              .find((item) => item.componentId === componentId)
+            const parent = snapshot?.parentComponentId
+              ? this.glass.getMountedComponentByComponentId(snapshot.parentComponentId)
+              : undefined
+            return parent ? this.componentHandle(parent, pageId) : null
+          }
+        }
+        const value = Reflect.get(source, property)
+        return typeof value === 'function' ? value.bind(source) : value
+      },
+    })
+  }
+
+  getMountedComponent(path: string): unknown {
+    return this.glass.getMountedComponent(path)
+  }
+
+  getMountedComponentByPageId(pageId: string): unknown {
+    return this.glass.getMountedComponentByPageId(pageId)
+  }
+
+  getMountedComponentByComponentId(componentId: string): unknown {
+    return this.glass.getMountedComponentByComponentId(componentId)
+  }
+
+  getComponentSnapshot(): unknown[] {
+    return this.glass.getComponentSnapshot()
+  }
+
+  getComponentCount(): number {
+    return this.glass.getComponentCount()
+  }
+
+  whenRendered(): Promise<void> {
+    return this.glass.whenRendered()
+  }
+
+  inspectTree(): unknown {
+    return this.glass.inspectTree()
+  }
+
+  registerStyles(
+    manifest: Manifest,
+    loadStyle?: (path: string) => string,
+    schemas?: MiniProgramComponentSchema[],
+    options?: { pagePath?: string },
+  ): void {
+    this.glass.registerStyles(manifest, loadStyle, schemas, options)
+  }
+
+  registerPageArtifact(page: PageArtifact): void {
+    this.glass.registerPageArtifact(page)
   }
 
   /** Snapshot the logic tree in the host-neutral render-tree protocol. */

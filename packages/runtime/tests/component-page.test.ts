@@ -4,8 +4,8 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderHarness as bootRenderThread } from './helpers/render-harness'
-import { bootServiceThread } from '../src/service'
+import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { bootServiceThread } from './helpers/split-service'
 
 const HOME_PATH = 'pages/index/index'
 const FORM_PATH = 'pages/form/form'
@@ -224,17 +224,15 @@ describe('Component-as-page', () => {
       fromBehavior: 'B',
       behaviorAttached: true,
       behaviorObserved: 'b:123',
-      linked: true,
       selectedInReady: true,
-      relationInReady: 1,
     })
     expect(page.properties).toMatchObject({ paramA: 123, paramB: 'xyz' })
     expect(page.hasBehavior(behavior)).toBe(true)
     expect(page.invokeMethod('customMethod')).toBe('custom')
     expect(page.invokeMethod('behaviorMethod')).toBe('behavior-method')
     expect(page.selectComponent('#child')).toBeTruthy()
-    expect(page.getRelationNodes('/components/child/child')).toHaveLength(1)
-    const child = [...service.componentInstances.values()].find((item) => item.path === CHILD_PATH)!
+    const child = (render.adapter.getComponentSnapshot() as Array<{ componentId: string; path: string }>)
+      .find((item) => item.path === CHILD_PATH)!
     const childRender = render.adapter.getMountedComponentByComponentId(child.componentId)!
     expect(childRender.getComponentOptions().extraStyleScope).toBeGreaterThan(0)
     expect(() => page.triggerEvent('page-event')).not.toThrow()

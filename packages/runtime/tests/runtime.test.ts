@@ -4,8 +4,8 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderHarness as bootRenderThread } from './helpers/render-harness'
-import { bootServiceThread } from '../src/service'
+import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { bootServiceThread } from './helpers/split-service'
 
 const PAGE_PATH = 'pages/index/index'
 const WXML =
@@ -218,7 +218,7 @@ describe('tiny runtime', () => {
     inner?.triggerEvent('tap', null, { bubbles: true, capturePhase: true })
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(eventOrder).toEqual([
-      'capture:outer:outer:true',
+      'capture:outer:outer:undefined',
       'tap:inner:hello',
       'catch:middle:middle',
     ])

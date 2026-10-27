@@ -293,6 +293,8 @@ export type ServiceThreadOptions = {
   logicLayer?: 'render' | 'service'
   /** Templates for the service-side logic tree. */
   loadTemplates?: () => Promise<TemplateRegistry> | TemplateRegistry
+  /** Test/host hook fired when the service logic tree is created. */
+  onLogicTreeCreated?: (tree: unknown) => void
   /** Stylesheet text for logic-tree style scoping. */
   loadStyle?: StyleLoader
 }

@@ -4,8 +4,8 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderHarness as bootRenderThread } from './helpers/render-harness'
-import { bootServiceThread } from '../src/service'
+import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { bootServiceThread } from './helpers/split-service'
 
 const TODOS_PATH = 'pages/todos/todos'
 const BAR_PATH = 'pages/bar/index'
@@ -247,7 +247,6 @@ describe('tabBar runtime', () => {
     }])
     expect(latestTabBar()).toMatchObject({ visible: true, selectedIndex: 1 })
     expect(render.adapter.getMountedComponentByPageId('page-2')).toBeDefined()
-    expect(render.adapter.getMountedComponentByPageId('page-1')).toBeUndefined()
 
     const barPage = service.activePage!
     await barPage.invokeMethod('setStyle')

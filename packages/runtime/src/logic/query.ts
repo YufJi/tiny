@@ -48,18 +48,19 @@ function visit(
   selector: string,
   all: boolean,
   results: LogicBackendElement[],
+  pageScope: boolean,
 ): boolean {
   if (matchesSelector(node, selector)) {
     results.push(node)
     if (!all) return true
   }
-  if (node.shadowRoot) {
+  if (node.shadowRoot && !(pageScope && node.nodeType === 'component')) {
     for (const child of node.shadowRoot.children) {
-      if (visit(child, selector, all, results)) return true
+      if (visit(child, selector, all, results, pageScope)) return true
     }
   }
   for (const child of node.children) {
-    if (visit(child, selector, all, results)) return true
+    if (visit(child, selector, all, results, pageScope)) return true
   }
   return false
 }
@@ -68,11 +69,12 @@ export function queryLogicNodes(
   root: LogicBackendElement,
   selector: string,
   all: boolean,
+  pageScope = false,
 ): LogicBackendElement[] {
   const results: LogicBackendElement[] = []
   const searchRoot = root.shadowRoot ?? root
   for (const child of searchRoot.children) {
-    if (visit(child, selector, all, results)) break
+    if (visit(child, selector, all, results, pageScope)) break
   }
   return results
 }

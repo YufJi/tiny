@@ -4,8 +4,8 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderHarness as bootRenderThread } from './helpers/render-harness'
-import { bootServiceThread } from '../src/service'
+import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { bootServiceThread } from './helpers/split-service'
 import type { InspectNode } from '../src/glass-easel-adapter'
 
 const PAGE_PATH = 'pages/index/index'
@@ -132,7 +132,10 @@ describe('pureDataPattern', () => {
   test('keeps matching fields out of WXML while service data and observers still see them', async () => {
     const { host, service, render } = await boot({})
     expect(collectText(render.adapter.inspectTree())).toEqual(['shown'])
-    const component = service.componentInstances.get('page-1:component-1')!
+    const component = render.adapter.getMountedComponentByComponentId('page-1:component-1') as {
+      data: Record<string, unknown>
+      setData: (data: Record<string, unknown>) => void
+    }
     expect(component.data._hidden).toBe('secret')
 
     component.setData({ _hidden: 'next' })
@@ -174,7 +177,7 @@ describe('pureDataPattern', () => {
     await host.bootstrap()
     await new Promise((resolve) => setTimeout(resolve, 10))
     expect(collectText(render.adapter.inspectTree())).toEqual(['shown'])
-    expect(service.componentInstances.get('page-1:component-1')!.data._hidden).toBe('secret')
+    expect((render.adapter.getMountedComponentByComponentId('page-1:component-1') as { data: Record<string, unknown> }).data._hidden).toBe('secret')
     await host.close()
   })
 })

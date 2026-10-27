@@ -4,8 +4,8 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderHarness as bootRenderThread } from './helpers/render-harness'
-import { bootServiceThread } from '../src/service'
+import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { bootServiceThread } from './helpers/split-service'
 import type { InspectNode } from '../src/glass-easel-adapter'
 
 const PAGE_PATH = 'pages/index/index'
@@ -146,7 +146,7 @@ describe('componentGenerics (abstract nodes)', () => {
       },
     })
 
-    const paths = [...service.componentInstances.values()].map((component) => component.path)
+    const paths = (render.adapter.getComponentSnapshot() as Array<{ path: string }>).map((component) => component.path)
     expect(paths).toContain(RADIO_PATH)
     expect(collectText(render.adapter.inspectTree())).toContain('hello')
     await host.close()
@@ -169,7 +169,7 @@ describe('componentGenerics (abstract nodes)', () => {
       },
     })
 
-    const paths = [...service.componentInstances.values()].map((component) => component.path)
+    const paths = (render.adapter.getComponentSnapshot() as Array<{ path: string }>).map((component) => component.path)
     expect(paths).toContain(RADIO_PATH)
     expect(collectText(render.adapter.inspectTree())).toContain('fallback')
     await host.close()

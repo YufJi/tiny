@@ -126,9 +126,7 @@ export type GlassEaselAdapterOptions = {
   /** Host hook mapping app-root asset paths to loadable URLs. */
   resolveAssetUrl?: AssetUrlResolver
   /** Attach the created root component to a host-provided backend tree. */
-  mountComponent?: (component: glassEasel.GeneralComponent) => void
   /** Detach the root component from the host-provided backend tree. */
-  unmountComponent?: (component: glassEasel.GeneralComponent) => void
   /** Page/component JavaScript options for the service-side logic tree. */
   logicPageOptions?: ReadonlyMap<string, { methods?: Record<string, (...args: unknown[]) => unknown> }>
   logicComponentDefinitions?: ReadonlyMap<string, NormalizedComponentDefinition>
@@ -197,7 +195,6 @@ export class GlassEaselRuntimeAdapter {
   private readonly componentSourcePaths = new WeakMap<object, string>()
   private readonly emittedLifecycles = new WeakMap<object, Set<ComponentLifecyclePhase>>()
   private readonly componentUsageCounters = new Map<string, number>()
-  private readonly applyingServicePatches = new Set<glassEasel.GeneralComponent>()
   private readonly methodCallerComponents = new WeakMap<object, glassEasel.GeneralComponent>()
   private activeEventPageId: string | null = null
   private activeComponentIdPrefix = ''
@@ -220,10 +217,8 @@ export class GlassEaselRuntimeAdapter {
   private readonly builtinComponents: BuiltinComponentDefinitions
   private readonly builtinStyles: NonNullable<BuiltinComponents['styles']>
   private readonly onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
-  private readonly mountComponent?: (component: glassEasel.GeneralComponent) => void
   private readonly resolveAssetUrl?: AssetUrlResolver
   private builtinStylesRegistered = false
-  private readonly unmountComponent?: (component: glassEasel.GeneralComponent) => void
   private readonly logicPageOptions?: GlassEaselAdapterOptions['logicPageOptions']
   private readonly logicComponentDefinitions?: GlassEaselAdapterOptions['logicComponentDefinitions']
   private readonly logicQueryFactory?: GlassEaselAdapterOptions['logicQueryFactory']
@@ -258,8 +253,6 @@ export class GlassEaselRuntimeAdapter {
       is: TINY_ENGINE_NAMING.formFieldBehaviorId,
     })
     this.onDiagnostic = options.onDiagnostic
-    this.mountComponent = options.mountComponent
-    this.unmountComponent = options.unmountComponent
     this.resolveAssetUrl = options.resolveAssetUrl
     this.builtinStyles = options.builtinComponents?.styles ?? []
     this.builtinComponents = options.builtinComponents
@@ -383,12 +376,6 @@ export class GlassEaselRuntimeAdapter {
     for (const entry of pending) {
       if (entry === appStyle) continue
       this.backend.appendStyleSheetPath(entry.style.outputPath, entry.scopeId)
-    }
-  }
-
-  setPageComponentOptions(items: Array<{ path: string; options?: PageComponentOptions }>): void {
-    for (const item of items) {
-      if (item.options) this.pageComponentOptions.set(item.path, item.options)
     }
   }
 
@@ -646,10 +633,6 @@ export class GlassEaselRuntimeAdapter {
     this.pages.set(page.path, page)
   }
 
-  registerPageComponent(pageId: string, component: glassEasel.GeneralComponent): void {
-    this.componentsByPageId.set(pageId, component)
-  }
-
   private componentIdFor(
     schema: MiniProgramComponentSchema,
     component: glassEasel.GeneralComponent,
@@ -709,6 +692,10 @@ export class GlassEaselRuntimeAdapter {
     return this.componentsByPageId.get(pageId)
   }
 
+  componentIdOf(component: unknown): string | undefined {
+    return this.componentIds.get(component as object)
+  }
+
   getMountedComponentByComponentId(componentId: string): glassEasel.GeneralComponent | undefined {
     return this.componentInstances.get(componentId)
   }
@@ -737,8 +724,7 @@ export class GlassEaselRuntimeAdapter {
     this.mountedComponents.set(path, component)
     if (pageId) this.componentsByPageId.set(pageId, component)
     component.setData(data)
-    if (this.mountComponent) this.mountComponent(component)
-    else glassEasel.Element.pretendAttached(component)
+    glassEasel.Element.pretendAttached(component)
     component.triggerLifetime('ready', [])
     if (this.logicComponentDefinitions) {
       // glass-easel only fires `attached` automatically; the mini-program
@@ -755,20 +741,6 @@ export class GlassEaselRuntimeAdapter {
       this.emitLifecycle(componentId, path, 'ready', instance)
     }
     return component
-  }
-
-  unmountPage(pageId: string): void {
-    const component = this.componentsByPageId.get(pageId)
-    if (!component) return
-    this.componentSourcePaths.delete(component as unknown as object)
-    this.unmountComponent?.(component)
-    if (typeof (component as unknown as { destroy?: () => void }).destroy === 'function') {
-      (component as unknown as { destroy: () => void }).destroy()
-    } else {
-      component.destroyBackendElement()
-    }
-    this.componentsByPageId.delete(pageId)
-    this.mountedComponents.delete(component.is)
   }
 
   getMountedComponent(path: string): glassEasel.GeneralComponent | undefined {
@@ -811,16 +783,6 @@ export class GlassEaselRuntimeAdapter {
     const style = readStyle(component as unknown as InspectElementLike)
     if (style) root.style = style
     return root
-  }
-
-  triggerComponentEvent(
-    componentId: string,
-    name: string,
-    detail: unknown,
-    options?: Record<string, unknown>,
-  ): void {
-    const component = this.componentInstances.get(componentId)
-    component?.triggerEvent(name, detail, options as never)
   }
 
   private registerComponentDefinition(
@@ -1391,14 +1353,6 @@ export class GlassEaselRuntimeAdapter {
     return undefined
   }
 
-  beginServicePatch(component: glassEasel.GeneralComponent): void {
-    this.applyingServicePatches.add(component)
-  }
-
-  endServicePatch(component: glassEasel.GeneralComponent): void {
-    this.applyingServicePatches.delete(component)
-  }
-
   private emitComponentData(
     schema: MiniProgramComponentSchema,
     component: glassEasel.GeneralComponent,
@@ -1409,7 +1363,7 @@ export class GlassEaselRuntimeAdapter {
       path: schema.path,
       pageId: this.activeEventPageId,
       data: (toJsonSafe(component.data ?? {}) ?? {}) as Record<string, unknown>,
-      origin: this.applyingServicePatches.has(component) ? 'service' : 'render',
+      origin: 'render',
     })
   }
 
@@ -1425,7 +1379,7 @@ export class GlassEaselRuntimeAdapter {
       pageId: this.activeEventPageId,
       key,
       data: (toJsonSafe(component.data ?? {}) ?? {}) as Record<string, unknown>,
-      origin: this.applyingServicePatches.has(component) ? 'service' : 'render',
+      origin: 'render',
     })
   }
 

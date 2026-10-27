@@ -3,9 +3,9 @@ import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest } from '@tiny/manifest'
-import { bootServiceThread } from '../src/service'
+import { bootServiceThread } from './helpers/split-service'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderHarness as bootRenderThread } from './helpers/render-harness'
+import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
 
 const PAGE_PATH = 'pages/index/index'
 

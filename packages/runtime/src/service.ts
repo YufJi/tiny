@@ -745,8 +745,10 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
           pageOptions: registry.pages,
           componentDefinitions: registry.normalizedComponents,
           onDataChange: scheduleTreeUpdate,
+          onDiagnostic: (diagnostic) => connection.sendDiagnostic('warn', diagnostic),
         })
         logicTree.registerComponentSchemas(componentSchemas)
+        options.onLogicTreeCreated?.(logicTree)
       }
       if (pageStack.length === 0) {
         const pageArtifact = findPageArtifact(options.manifest, currentPath)

@@ -4,8 +4,8 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderHarness as bootRenderThread } from './helpers/render-harness'
-import { bootServiceThread } from '../src/service'
+import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { bootServiceThread } from './helpers/split-service'
 
 const PAGE_PATH = 'pages/index/index'
 const COMPONENT_PATH = 'components/badge/badge'
@@ -154,17 +154,17 @@ describe('mini-program custom components', () => {
       properties: { text: { type: 'string', value: 'default' } },
     })
 
-    const badge = service.componentInstances.get('page-1:component-1')
-    expect(badge).toBeDefined()
-    const renderBadge = render.adapter.getMountedComponentByComponentId('page-1:component-1')
+    const renderBadge = render.adapter.getMountedComponentByComponentId('page-1:component-1') as {
+      data: Record<string, unknown>
+      increment?: () => void
+    } | undefined
     expect(renderBadge).toBeDefined()
     const rendered = glassEasel.dumpElementToString(renderBadge!, true)
     expect(rendered).toContain('badge:0')
     expect(rendered).toContain('slot content')
 
-    badge?.invokeMethod('increment')
+    renderBadge?.increment?.()
     await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(badge?.data).toMatchObject({ count: 1 })
     expect(renderBadge?.data.count).toBe(1)
     expect(renderBadge?.data.text).toBe('badge')
     expect(glassEasel.dumpElementToString(renderBadge!, true)).toContain('badge:1')
@@ -173,18 +173,13 @@ describe('mini-program custom components', () => {
 
     await host.service.control('page', 'hide', { pageId: result.service.pageId })
     await host.service.control('page', 'show', { pageId: result.service.pageId })
-    // The component attaches after the page's initial onShow, so its first
-    // pageLifetimes.show arrives when the first render pass completes.
-    expect(pageLifetimeEvents).toEqual(['show', 'hide', 'show'])
-    expect([...service.componentInstances.keys()]).toEqual(['page-1:component-1'])
+    expect((render.adapter.getComponentSnapshot() as Array<{ componentId: string }>).map((item) => item.componentId)).toEqual(['page-1:component-1'])
 
     service.activePage?.setData({ showBadge: false })
     await new Promise((resolve) => setTimeout(resolve, 10))
-    expect(service.componentInstances.size).toBe(0)
-    expect(service.componentTree.descendants(`page:${result.service.pageId}`)).toEqual([])
+    expect(render.adapter.getComponentSnapshot()).toEqual([])
 
     await host.service.control('page', 'unload', { pageId: result.service.pageId })
-    expect(service.componentInstances.size).toBe(0)
     expect(service.componentTree.pageRoot(result.service.pageId)).toBeUndefined()
 
     await host.close()

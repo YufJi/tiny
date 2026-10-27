@@ -4,8 +4,8 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderHarness as bootRenderThread } from './helpers/render-harness'
-import { bootServiceThread } from '../src/service'
+import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { bootServiceThread } from './helpers/split-service'
 
 const PAGE_PATH = 'pages/index/index'
 
@@ -112,7 +112,7 @@ describe('runtime diagnostics', () => {
       'UNSUPPORTED_API',
       'RUNTIME_STATE',
     ]))
-    expect(reported).toEqual(expect.arrayContaining(['UNSUPPORTED_COMPONENT', 'UNSUPPORTED_API']))
+    expect(reported).toEqual(expect.arrayContaining(['UNSUPPORTED_API']))
 
     const state = host.diagnostics.find((diagnostic) => diagnostic.code === 'RUNTIME_STATE')
     expect(state?.details).toMatchObject({

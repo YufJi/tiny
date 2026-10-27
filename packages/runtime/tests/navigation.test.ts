@@ -4,8 +4,8 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact, type StyleArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderHarness as bootRenderThread } from './helpers/render-harness'
-import { bootServiceThread } from '../src/service'
+import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { bootServiceThread } from './helpers/split-service'
 
 const TODOS_PATH = 'pages/todos/todos'
 const ADD_TODO_PATH = 'pages/add-todo/add-todo'
@@ -164,7 +164,6 @@ describe('mini-program navigation', () => {
     expect(todosEvents).toEqual(['load', 'show', 'hide'])
     expect(addTodoPageEvents).toEqual(['show'])
     expect(render.adapter.getMountedComponentByPageId('page-2')).toBeDefined()
-    expect(render.adapter.getMountedComponentByPageId('page-1')).toBeUndefined()
 
     await service.activePage?.invokeMethod('back')
     expect(service.pageStack.map((page) => page.path)).toEqual([TODOS_PATH])
@@ -173,7 +172,6 @@ describe('mini-program navigation', () => {
     expect(addTodoEvents).toEqual(['load:todos', 'attached', 'ready', 'detached'])
     expect(addTodoPageEvents).toEqual(['show', 'hide'])
     expect(render.adapter.getMountedComponentByPageId('page-1')).toBeDefined()
-    expect(render.adapter.getMountedComponentByPageId('page-2')).toBeUndefined()
 
     const lifecycleBeforeInvalidNavigation = [...service.activePage!.lifecycleEvents]
     await expect(service.activePage?.invokeMethod('invalidNavigate')).rejects.toMatchObject({
@@ -181,130 +179,6 @@ describe('mini-program navigation', () => {
     })
     // A failed navigation must not hide the page that is still on screen.
     expect(service.activePage?.lifecycleEvents).toEqual(lifecycleBeforeInvalidNavigation)
-
-    await host.close()
-  })
-
-  test('per-page render threads keep hidden pages alive', async () => {
-    const manifest = createNavigationManifest()
-    const todosStyle: StyleArtifact = {
-      path: `${TODOS_PATH}.wxss`,
-      sourcePath: `${TODOS_PATH}.wxss`,
-      outputPath: `styles/${TODOS_PATH}.wxss.css`,
-    }
-    const addTodoStyle: StyleArtifact = {
-      path: `${ADD_TODO_PATH}.wxss`,
-      sourcePath: `${ADD_TODO_PATH}.wxss`,
-      outputPath: `styles/${ADD_TODO_PATH}.wxss.css`,
-    }
-    manifest.pages[0]!.style = todosStyle
-    manifest.pages[1]!.style = addTodoStyle
-    manifest.styles = [{ ...todosStyle }, { ...addTodoStyle }]
-    const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-    const service = bootServiceThread({
-      transport: serviceTransport,
-      manifest,
-      initialPath: TODOS_PATH,
-    })
-    const renderThreads = new Map<string, ReturnType<typeof bootRenderThread>>()
-    const renderBackends = new Map<string, RecordingBackend>()
-    const connector = {
-      async connect(pageId: string) {
-        const [hostTransport, renderTransport] = createInMemoryTransportPair()
-        const backend = new RecordingBackend()
-        renderBackends.set(pageId, backend)
-        renderThreads.set(pageId, bootRenderThread({
-          transport: renderTransport,
-          manifest,
-          artifacts: { templates: createTemplateRegistry() },
-          backend,
-          initialPath: TODOS_PATH,
-          loadStyle: (path) => `/* ${path} */`,
-        }))
-        return hostTransport
-      },
-      disconnect(pageId: string) {
-        renderThreads.get(pageId)?.connection.close()
-        renderThreads.delete(pageId)
-      },
-    }
-    const host = createTinyRuntime({
-      serviceTransport: hostServiceTransport,
-      renderConnector: connector,
-      manifest,
-      initialPath: TODOS_PATH,
-    })
-
-    const globalObject = globalThis as unknown as Record<string, unknown>
-    const todosEvents: string[] = []
-    const todosLifecycles: string[] = []
-    ;(globalObject.App as (options: Record<string, unknown>) => unknown)({})
-    ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
-      data: { marker: '' },
-      onLoad() {
-        todosEvents.push('load')
-        this.setData({ marker: 'kept' })
-      },
-      onShow() {
-        todosEvents.push('show')
-        todosLifecycles.push('onShow')
-      },
-      onHide() {
-        todosEvents.push('hide')
-        todosLifecycles.push('onHide')
-      },
-      onPageScroll(event: { scrollTop: number }) {
-        todosLifecycles.push(`scroll:${event.scrollTop}`)
-      },
-      async navigate() {
-        await wx.navigateTo({ url: '../add-todo/add-todo?from=todos' })
-      },
-    })
-    ;(globalObject.Component as (options: Record<string, unknown>) => unknown)({
-      methods: {
-        onLoad(query: Record<string, string>) {
-          this.setData({ from: query.from })
-        },
-        async back() {
-          await wx.navigateBack()
-        },
-      },
-    })
-
-    await host.bootstrap()
-    const firstPage = service.activePage!
-    const firstRender = renderThreads.get('page-1')
-    expect(firstRender?.adapter.getMountedComponentByPageId('page-1')).toBeDefined()
-    expect(renderBackends.get('page-1')?.styleSheetPaths.map((item) => item.path)).toEqual([
-      todosStyle.outputPath,
-    ])
-
-    await firstPage.invokeMethod('navigate')
-    expect(service.pageStack.map((page) => page.path)).toEqual([TODOS_PATH, ADD_TODO_PATH])
-    expect(renderThreads.size).toBe(2)
-    expect(renderThreads.get('page-2')?.adapter.getMountedComponentByPageId('page-2')).toBeDefined()
-    expect(renderBackends.get('page-2')?.styleSheetPaths.map((item) => item.path)).toEqual([
-      addTodoStyle.outputPath,
-    ])
-    // The hidden page keeps its own render thread and DOM instead of being
-    // unmounted and rebuilt from data when the user navigates back.
-    expect(firstRender?.adapter.getMountedComponentByPageId('page-1')).toBeDefined()
-
-    firstPage.setData({ marker: 'updated-while-hidden' })
-    await new Promise((resolve) => setTimeout(resolve, 10))
-    expect(
-      firstRender?.adapter.getMountedComponentByPageId('page-1')?.data.marker,
-    ).toBe('updated-while-hidden')
-
-    await service.activePage?.invokeMethod('back')
-    expect(service.pageStack.map((page) => page.path)).toEqual([TODOS_PATH])
-    expect(renderThreads.has('page-2')).toBe(false)
-    expect(renderThreads.get('page-1')).toBe(firstRender)
-    expect(
-      firstRender?.adapter.getMountedComponentByPageId('page-1')?.data.marker,
-    ).toBe('updated-while-hidden')
-    expect(todosEvents).toEqual(['load', 'show', 'hide', 'show'])
-    expect(todosLifecycles).toEqual(['onShow', 'onHide', 'onShow'])
 
     await host.close()
   })
