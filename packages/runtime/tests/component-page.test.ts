@@ -81,7 +81,6 @@ describe('Component-as-page', () => {
       transport: renderTransport,
       manifest,
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: HOME_PATH,
     })
     const host = createTinyRuntime({

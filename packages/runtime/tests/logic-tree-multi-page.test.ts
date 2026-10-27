@@ -6,8 +6,8 @@ import {
   type Manifest,
   type PageArtifact,
 } from '@tiny/manifest'
-import { buildComponentSchemas } from '../src/component-schema'
-import { normalizeComponentDefinition } from '../src/component-definition'
+import { buildComponentSchemas } from '../src/component/component-schema'
+import { normalizeComponentDefinition } from '../src/component/component-definition'
 import { LogicTreeAdapter } from '../src/logic/tree'
 
 const FIRST_PAGE = 'pages/todos/todos'
@@ -110,13 +110,16 @@ const PAGE_OPTIONS = new Map([[FIRST_PAGE, {
   data: { value: 'second' },
 }]])
 
-function findById(
-  node: { attributes?: Record<string, string>; children?: unknown[] } | undefined,
-  id: string,
-): { viewId?: string } | null {
+type RenderView = {
+  id: string
+  props?: Record<string, unknown>
+  children?: RenderView[]
+}
+
+function findById(node: RenderView | null | undefined, id: string): RenderView | null {
   if (!node) return null
-  if (node.attributes?.id === id) return node as { viewId?: string }
-  for (const child of (node.children ?? []) as Array<{ attributes?: Record<string, string>; children?: unknown[] }>) {
+  if (node.props?.id === id) return node
+  for (const child of node.children ?? []) {
     const found = findById(child, id)
     if (found) return found
   }
@@ -131,13 +134,13 @@ describe('logic tree with multiple mounted pages', () => {
     tree.mountPage(SECOND_PAGE, { value: 'second' }, 'page-2')
     await tree.glass.whenRendered()
 
-    const first = tree.snapshot('page-1')
-    const probe = findById(first.root as never, 'probe')
+    const first = tree.snapshotRenderTree('page-1') as unknown as RenderView | null
+    const probe = findById(first, 'probe')
     expect(probe).toBeDefined()
 
     changes.length = 0
     expect(tree.dispatchViewEvent({
-      viewId: probe!.viewId,
+      viewId: probe!.id,
       name: 'tap',
       pageId: 'page-1',
       native: { clientX: 1, clientY: 1 },

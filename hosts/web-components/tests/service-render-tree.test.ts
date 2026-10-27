@@ -107,18 +107,18 @@ describe('service logic tree to glass render tree', () => {
     expect(footer).toBeDefined()
     expect((footer as unknown as { textContent: string }).textContent).toBe('hello hello')
 
-    logic.setPageData('page-1', { label: 'bye', checked: true })
+    logic.applyPageData('page-1', { label: 'bye', checked: true })
     const update = logic.updateRenderTree('page-1')
     render.applyPatches(update.patches)
     expect((render.getNode(footerId!) as unknown as { textContent: string }).textContent).toBe('hello bye')
     expect((render.getNode(checkboxId!) as unknown as { data: { checked: boolean } }).data.checked).toBe(true)
 
-    logic.setPageData('page-1', { show: false })
+    logic.applyPageData('page-1', { show: false })
     const hide = logic.updateRenderTree('page-1')
     render.applyPatches(hide.patches)
     expect(render.getNode(footerId!)).toBeUndefined()
 
-    logic.setPageData('page-1', { show: true })
+    logic.applyPageData('page-1', { show: true })
     const show = logic.updateRenderTree('page-1')
     render.applyPatches(show.patches)
     const footerAgain = findTextId(show.snapshot)

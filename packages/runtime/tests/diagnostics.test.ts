@@ -80,9 +80,7 @@ describe('runtime diagnostics', () => {
       transport: renderTransport,
       manifest,
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: PAGE_PATH,
-      onDiagnostic: (diagnostic) => reported.push(diagnostic.code),
     })
     const reported: string[] = []
     const host = createTinyRuntime({

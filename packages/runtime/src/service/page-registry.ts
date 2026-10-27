@@ -1,7 +1,7 @@
 import {
   normalizeComponentDefinition,
   type NormalizedComponentDefinition,
-} from '../component-definition'
+} from '../component/component-definition'
 import {
   WECHAT_RUNTIME_COMPATIBILITY,
   type RuntimeCompatibilityConfig,

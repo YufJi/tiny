@@ -83,7 +83,6 @@ describe('mini-program navigation', () => {
       transport: renderTransport,
       manifest,
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: TODOS_PATH,
     })
     const host = createTinyRuntime({
@@ -196,7 +195,6 @@ describe('mini-program navigation', () => {
       transport: renderTransport,
       manifest,
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: TODOS_PATH,
     })
     const host = createTinyRuntime({
@@ -253,7 +251,6 @@ describe('mini-program navigation', () => {
       transport: renderTransport,
       manifest,
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: TODOS_PATH,
     })
     const host = createTinyRuntime({
@@ -324,7 +321,6 @@ describe('mini-program navigation', () => {
       transport: renderTransport,
       manifest,
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: TODOS_PATH,
     })
     const host = createTinyRuntime({
@@ -392,7 +388,6 @@ describe('mini-program navigation', () => {
       transport: renderTransport,
       manifest,
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: TODOS_PATH,
     })
     const host = createTinyRuntime({

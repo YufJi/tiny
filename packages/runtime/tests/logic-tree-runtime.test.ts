@@ -6,8 +6,8 @@ import {
   type Manifest,
   type PageArtifact,
 } from '@tiny/manifest'
-import { buildComponentSchemas } from '../src/component-schema'
-import { normalizeComponentDefinition } from '../src/component-definition'
+import { buildComponentSchemas } from '../src/component/component-schema'
+import { normalizeComponentDefinition } from '../src/component/component-definition'
 import { LogicTreeAdapter } from '../src/logic/tree'
 
 const PAGE_PATH = 'pages/index/index'
@@ -158,23 +158,29 @@ describe('logic tree runtime options', () => {
     expect(typeof (parent as unknown as { data: { fn?: unknown } }).data.fn).toBe('function')
     expect(typeof (child as unknown as { data: { fn?: unknown } }).data.fn).toBe('function')
 
-    const snapshot = tree.snapshot('page-1')
-    const findProbe = (node: typeof snapshot.root | undefined): typeof snapshot.root | null => {
+    type RenderView = {
+      id: string
+      props?: Record<string, unknown>
+      children?: RenderView[]
+    }
+    const findById = (node: RenderView | null | undefined, id: string): RenderView | null => {
       if (!node) return null
-      if (node.attributes?.id === 'probe') return node
+      if (node.props?.id === id) return node
       for (const childNode of node.children ?? []) {
-        const found = findProbe(childNode)
+        const found = findById(childNode, id)
         if (found) return found
       }
       return null
     }
-    const probe = findProbe(snapshot.root)
+    const snapshot = tree.snapshotRenderTree('page-1') as unknown as RenderView | null
+    expect(snapshot).toBeTruthy()
+    const probe = findById(snapshot, 'probe')
     expect(probe).toBeDefined()
     const queried = tree.query('page-1', '.probe', false)
     expect(queried).toHaveLength(1)
     expect(queried[0]?.dataset.count).toBe(3)
     expect(queried[0]?.dataset.date).toBeInstanceOf(Date)
-    expect(queried[0]?.viewId).toBe(probe!.viewId)
+    expect(queried[0]?.viewId).toBe(probe!.id)
     let queryResult: { dataset?: Record<string, unknown>; width?: number } | null = null
     ;(parent as unknown as {
       createSelectorQuery: () => {
@@ -214,29 +220,20 @@ describe('logic tree runtime options', () => {
     expect(entries[0]?.dataset).toMatchObject({ date: expect.any(Date), count: 3 })
 
     expect(tree.dispatchViewEvent({
-      viewId: probe!.viewId,
+      viewId: probe!.id,
       name: 'tap',
       native: { clientX: 1, clientY: 2 },
     })).toBe(true)
-    const findById = (node: typeof snapshot.root | undefined, id: string): typeof snapshot.root | null => {
-      if (!node) return null
-      if (node.attributes?.id === id) return node
-      for (const childNode of node.children ?? []) {
-        const found = findById(childNode, id)
-        if (found) return found
-      }
-      return null
-    }
-    const fire = findById(snapshot.root, 'fire')
+    const fire = findById(snapshot, 'fire')
     expect(fire).toBeDefined()
-    expect(tree.dispatchViewEvent({ viewId: fire!.viewId, name: 'tap', native: {} })).toBe(true)
+    expect(tree.dispatchViewEvent({ viewId: fire!.id, name: 'tap', native: {} })).toBe(true)
     expect((parent as unknown as { data: { custom?: string } }).data.custom).toBe('hi')
-    const sw = findById(snapshot.root, 'sw')
+    const sw = findById(snapshot, 'sw')
     expect(sw).toBeDefined()
     // The host owns built-in event normalization; the service dispatches the
     // detail as-is instead of re-deriving switch/checkbox-group internals.
     expect(tree.dispatchViewEvent({
-      viewId: sw!.viewId,
+      viewId: sw!.id,
       name: 'change',
       detail: { value: true },
     })).toBe(true)
@@ -244,22 +241,22 @@ describe('logic tree runtime options', () => {
     // A host-provided detail always wins over raw native fields; the service
     // must not re-derive switch/checkbox-group values from the tag name.
     expect(tree.dispatchViewEvent({
-      viewId: sw!.viewId,
+      viewId: sw!.id,
       name: 'change',
       detail: { value: false },
       native: { checked: true },
     })).toBe(true)
     expect((parent as unknown as { data: { switchValue?: boolean } }).data.switchValue).toBe(false)
-    const group = findById(snapshot.root, 'group')
+    const group = findById(snapshot, 'group')
     expect(group).toBeDefined()
     expect(tree.dispatchViewEvent({
-      viewId: group!.viewId,
+      viewId: group!.id,
       name: 'change',
       detail: { value: ['a', 'b'] },
     })).toBe(true)
     expect((parent as unknown as { data: { groupValue?: string[] } }).data.groupValue).toEqual(['a', 'b'])
     expect((parent as unknown as { data: { seen?: string } }).data.seen).toBe('tapped')
-    const { patches } = tree.update('page-1')
+    const { patches } = tree.updateRenderTree('page-1')
     expect(patches.some((patch) => patch.type === 'text' && patch.text === 'tapped')).toBe(true)
 
     ;(parent as unknown as { setData: (patch: Record<string, unknown>) => void }).setData({ count: 4 })

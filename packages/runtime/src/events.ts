@@ -1,32 +1,3 @@
-export type SerializedEventNode = {
-  id: string
-  tag: string
-  dataset: Record<string, unknown>
-  class: string
-  style: string
-}
-
-export type SerializedMiniProgramEvent = {
-  componentId?: string
-  handler: string
-  type: string
-  timeStamp: number
-  detail: unknown
-  bubbles: boolean
-  composed: boolean
-  capture: boolean
-  stopped: boolean
-  target: SerializedEventNode
-  currentTarget: SerializedEventNode
-  /**
-   * Native-style touch fields. Built-in hosts deliver canvas touches through
-   * event extras because WeChat canvas handlers read `event.touches` directly.
-   */
-  touches?: unknown
-  changedTouches?: unknown
-  componentData?: Record<string, unknown>
-}
-
 export function toJsonSafe(value: unknown, seen = new WeakSet<object>()): unknown {
   if (value === null) return null
   const valueType = typeof value
@@ -52,31 +23,4 @@ export function toJsonSafe(value: unknown, seen = new WeakSet<object>()): unknow
     if (converted !== undefined) output[key] = converted
   }
   return output
-}
-
-/**
- * Marker for native events that a built-in component has already translated
- * into a mini-program-style event.
- *
- * A host can mark the original native event from its target-phase listener; the
- * render adapter then skips serializing the same native event again for page
- * handlers. Without this, a component that emits synthetic touch events would
- * deliver every touch twice.
- */
-import { TINY_ENGINE_NAMING } from '@tiny/manifest'
-
-export const HANDLED_NATIVE_EVENT = Symbol.for(TINY_ENGINE_NAMING.handledNativeEventSymbol)
-
-export function markNativeEventHandled(event: unknown): void {
-  if (event && typeof event === 'object') {
-    (event as Record<PropertyKey, unknown>)[HANDLED_NATIVE_EVENT] = true
-  }
-}
-
-export function isNativeEventHandled(event: unknown): boolean {
-  return Boolean(
-    event
-    && typeof event === 'object'
-    && (event as Record<PropertyKey, unknown>)[HANDLED_NATIVE_EVENT],
-  )
 }

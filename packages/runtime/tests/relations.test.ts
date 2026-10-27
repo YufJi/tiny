@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
-import { ComponentTree } from '../src/component-tree'
-import { RelationManager, type RelationInstance } from '../src/relation-manager'
-import type { NormalizedRelation } from '../src/component-definition'
+import { ComponentTree } from '../src/component/component-tree'
+import { RelationManager, type RelationInstance } from '../src/component/relation-manager'
+import type { NormalizedRelation } from '../src/component/component-definition'
 
 function instance(componentId: string, path: string): RelationInstance & { calls: string[] } {
   return {

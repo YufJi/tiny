@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest'
-import { normalizeComponentDefinition } from '../src/component-definition'
+import { normalizeComponentDefinition } from '../src/component/component-definition'
 import { MiniProgramComponentInstance } from '../src/service/component-instance'
 import type { ComponentRuntimeContext } from '../src/service/types'
 

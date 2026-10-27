@@ -6,7 +6,7 @@ import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
 import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
 import { bootServiceThread } from './helpers/split-service'
-import type { InspectNode } from '../src/glass-easel-adapter'
+import type { InspectNode } from '../src/logic/glass-easel-adapter'
 
 const PAGE_PATH = 'pages/index/index'
 const COMPONENT_PATH = 'components/pure/pure'
@@ -100,7 +100,6 @@ async function boot(componentEffective: Record<string, unknown>) {
     transport: renderTransport,
     manifest,
     artifacts: { templates: createTemplateRegistry() },
-    backend: new glassEasel.EmptyBackendContext(),
     initialPath: PAGE_PATH,
   })
   const host = createTinyRuntime({
@@ -159,7 +158,6 @@ describe('pureDataPattern', () => {
       transport: renderTransport,
       manifest,
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: PAGE_PATH,
     })
     const host = createTinyRuntime({

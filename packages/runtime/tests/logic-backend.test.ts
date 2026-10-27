@@ -7,8 +7,8 @@ import {
   type Manifest,
   type PageArtifact,
 } from '@tiny/manifest'
-import { buildComponentSchemas } from '../src/component-schema'
-import { normalizeComponentDefinition } from '../src/component-definition'
+import { buildComponentSchemas } from '../src/component/component-schema'
+import { normalizeComponentDefinition } from '../src/component/component-definition'
 import { LogicTreeAdapter } from '../src/logic/tree'
 import type { MiniProgramComponentSchema } from '../src/types'
 
@@ -89,7 +89,7 @@ describe('logic backend', () => {
 
     const container = () => 'container'
     const date = new Date('2012-02-01T00:00:00.000Z')
-    const snapshot = tree.mountPage(PAGE_PATH, {
+    const renderTree = tree.mountPage(PAGE_PATH, {
       container,
       date,
       count: 3,
@@ -97,38 +97,34 @@ describe('logic backend', () => {
     }, 'page-1')
     await tree.glass.whenRendered()
 
-    expect(snapshot.revision).toBe(1)
-    expect(snapshot.root.children?.map((node) => node.tag)).toEqual(['child', 'view', 'image'])
-
-    const child = snapshot.root.children?.[0]
-    expect(child?.dataset).toMatchObject({ count: '3' })
-    expect(child?.dataset?.date).toContain('2012-02-01')
-
-    const typed = tree.getTypedDataset(child!.viewId)
-    expect(typed?.date).toBe(date)
-    expect(typed?.count).toBe(3)
-
-    const after = snapshot.root.children?.[1]
-    expect(after?.className).toBe('after')
-    expect(after?.styleScopes).toContain('page-pages-index-index')
-    expect(after?.style).toBe('color: red')
-    expect(after?.children?.[0]).toMatchObject({ tag: '#text', text: 'page' })
-
-    const updated = tree.setPageData('page-1', { count: 4 })
-    expect(updated.revision).toBe(2)
-    const updatedChild = updated.root.children?.[0]
-    expect(tree.getTypedDataset(updatedChild!.viewId)?.count).toBe(4)
-
-    const renderTree = tree.snapshotRenderTree('page-1')
     expect(renderTree?.type).toBe('element')
-    expect(renderTree && 'tag' in renderTree ? renderTree.tag : '').toBe('page')
-    const renderChildren = renderTree && 'children' in renderTree ? renderTree.children ?? [] : []
-    const image = renderChildren.find((node) => node.type === 'element' && node.tag === 'image')
-    expect(image && 'props' in image ? image.props?.src : undefined).toBe('/a.png')
-    expect(image && 'children' in image ? image.children : undefined).toBeUndefined()
-    const childNode = renderChildren.find((node) => node.type === 'element' && node.tag === 'child')
-    expect(childNode && 'dataset' in childNode ? childNode.dataset?.count : undefined).toBe(4)
-    expect(childNode && 'dataset' in childNode ? childNode.dataset?.date : undefined).toBeInstanceOf(Date)
+    const children = renderTree && 'children' in renderTree ? renderTree.children ?? [] : []
+    const elements = children.filter((node) => node.type === 'element')
+    expect(elements.map((node) => node.tag)).toEqual(['child', 'view', 'image'])
+
+    const child = elements[0]
+    expect(child?.type === 'element' ? child.dataset : undefined).toMatchObject({ count: 3 })
+    const childDate = child?.type === 'element' ? child.dataset?.date : undefined
+    expect(childDate).toBeInstanceOf(Date)
+    expect((childDate as Date).toISOString()).toBe(date.toISOString())
+
+    const after = elements[1]
+    expect(after?.type === 'element' ? after.props?.class : undefined).toContain('after')
+    expect(after?.type === 'element' ? after.props?.style : undefined).toBe('color: red')
+    expect(after?.type === 'element' ? after.scopes : undefined).toContain('page-pages-index-index')
+    expect(after?.type === 'element' ? after.children?.[0] : undefined).toMatchObject({
+      type: 'text',
+      text: 'page',
+    })
+
+    tree.applyPageData('page-1', { count: 4 })
+    const updated = tree.snapshotRenderTree('page-1')
+    const updatedElements = updated && 'children' in updated ? updated.children ?? [] : []
+    const updatedChild = updatedElements.find((node) => node.type === 'element' && node.tag === 'child')
+    expect(updatedChild?.type === 'element' ? updatedChild.dataset?.count : undefined).toBe(4)
+    const image = updatedElements.find((node) => node.type === 'element' && node.tag === 'image')
+    expect(image?.type === 'element' ? image.props?.src : undefined).toBe('/a.png')
+    expect(image?.type === 'element' ? image.children : undefined).toBeUndefined()
 
     const page = tree.glass.getMountedComponentByPageId('page-1')
     const childLogic = page?.shadowRoot?.getElementById('child')?.asGeneralComponent()

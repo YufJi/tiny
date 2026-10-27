@@ -67,7 +67,6 @@ describe('P0 platform APIs', () => {
       transport: renderTransport,
       manifest: createManifest(),
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: PAGE_PATH,
     })
     const host = createTinyRuntime({
@@ -116,7 +115,6 @@ describe('P0 platform APIs', () => {
       transport: renderTransport,
       manifest: createManifest(),
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: PAGE_PATH,
     })
     const navigationCalls: Array<Record<string, unknown>> = []

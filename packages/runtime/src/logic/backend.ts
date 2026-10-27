@@ -7,7 +7,6 @@ import {
   RENDER_VIRTUAL_TAG,
 } from '../tree/protocol'
 import type { RenderElement, RenderNode, RenderText } from '../tree/protocol'
-import type { ViewEventBinding, ViewNode, ViewSnapshot } from './protocol'
 
 type LogicNodeType = 'element' | 'text' | 'component' | 'virtual' | 'fragment' | 'root'
 
@@ -535,116 +534,5 @@ export class LogicBackendContext {
     return convert(rootElement)
   }
 
-  /** Serialize the recorded tree and keep typed datasets keyed by viewId. */
-  snapshot(
-    pageId: string,
-    rootElement?: LogicBackendElement,
-  ): { snapshot: ViewSnapshot; datasets: Map<string, Record<string, unknown>> } {
-    const datasets = new Map<string, Record<string, unknown>>()
-    const nextId = (node: LogicBackendElement): string => this.ensureViewId(node)
-    const convertChildren = (
-      nodes: LogicBackendElement[],
-      slotContent?: LogicBackendElement[],
-    ): ViewNode[] => {
-      const result: ViewNode[] = []
-      for (const node of nodes) {
-        const converted = convert(node, slotContent)
-        if (!converted) continue
-        if (converted.tag === RENDER_FRAGMENT_TAG || converted.tag === RENDER_VIRTUAL_TAG) {
-          result.push(...(converted.children ?? []))
-        } else {
-          result.push(converted)
-        }
-      }
-      return result
-    }
-    const convert = (
-      node: LogicBackendElement,
-      slotContent?: LogicBackendElement[],
-    ): ViewNode | null => {
-      if (node.nodeType === 'text') {
-        return { viewId: nextId(node), tag: RENDER_TEXT_TAG, text: node.text }
-      }
-      if (node.nodeType === 'fragment') {
-        return { viewId: nextId(node), tag: RENDER_FRAGMENT_TAG, children: convertChildren(node.children) }
-      }
-      if (node.nodeType === 'virtual') {
-        if (node.virtualName === 'slot' || node.tagName === 'slot') {
-          const slotName = node.slotName ?? ''
-          const matched = slotContent?.filter((child) => (child.slot || '') === slotName) ?? []
-          const content = matched.length > 0 ? matched : node.children
-          return {
-            viewId: nextId(node),
-            tag: RENDER_FRAGMENT_TAG,
-            children: convertChildren(content),
-          }
-        }
-        return {
-          viewId: nextId(node),
-          tag: RENDER_VIRTUAL_TAG,
-          children: convertChildren(node.children, slotContent),
-        }
-      }
-      const viewId = nextId(node)
-      const dataset: Record<string, string> = {}
-      const typedDataset: Record<string, unknown> = {}
-      for (const [key, value] of node.dataset) {
-        dataset[key] = toAttributeString(value)
-        typedDataset[key] = value
-      }
-      if (Object.keys(typedDataset).length > 0) datasets.set(viewId, typedDataset)
-      const attributes: Record<string, string> = {}
-      for (const [key, value] of node.attributes) {
-        if (key === 'class' || key === 'style' || key === 'id') continue
-        attributes[key] = toAttributeString(value)
-      }
-      if (node.tagName === RENDER_PAGE_TAG && node.scopeNames[0]) {
-        attributes[TINY_ENGINE_NAMING.hostAttribute] = node.scopeNames[0]
-      }
-      const rawChildren = node.nodeType === 'component' && node.shadowRoot
-        ? convertChildren(node.shadowRoot.children, node.children)
-        : convertChildren(node.children, slotContent)
-      const children = rawChildren
-      const events = new Map<string, ViewEventBinding>()
-      for (const listener of node.listeners) {
-        const key = `${listener.type}:${listener.capture}`
-        if (events.has(key)) continue
-        events.set(key, {
-          name: listener.type,
-          capture: listener.capture,
-        })
-      }
-      return {
-        viewId,
-        tag: node.tagName,
-        ...(node.id ? { attributes: { ...attributes, id: node.id } } : (Object.keys(attributes).length > 0 ? { attributes } : {})),
-        ...(node.classes.length > 0 ? { className: node.classes.join(' ') } : {}),
-        ...(node.scopeNames.length > 0
-          ? { styleScopes: [...new Set(node.scopeNames)] }
-          : {}),
-        ...(node.styleText ? { style: node.styleText } : {}),
-        ...(Object.keys(dataset).length > 0 ? { dataset } : {}),
-        ...(events.size > 0 ? { events: [...events.values()] } : {}),
-        ...(children.length > 0 ? { children } : {}),
-      }
-    }
-    let root: ViewNode
-    if (rootElement) {
-      root = convert(rootElement) ?? {
-        viewId: nextId(rootElement),
-        tag: '#root',
-        children: [],
-      }
-    } else {
-      root = {
-        viewId: nextId(this.root),
-        tag: '#root',
-        children: convertChildren(this.root.children),
-      }
-    }
-    return {
-      snapshot: { pageId, revision: 1, root },
-      datasets,
-    }
-  }
+
 }

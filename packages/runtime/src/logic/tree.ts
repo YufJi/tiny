@@ -3,8 +3,8 @@ import type { RenderNode, RenderPatch } from '../tree/protocol'
 import { diffRenderTree } from '../tree/diff'
 import * as glassEasel from 'glass-easel'
 import type { MiniProgramComponentSchema, QueryNodeSnapshot, TemplateRegistry } from '../types'
-import type { NormalizedComponentDefinition } from '../component-definition'
-import { GlassEaselRuntimeAdapter } from '../glass-easel-adapter'
+import type { NormalizedComponentDefinition } from '../component/component-definition'
+import { GlassEaselRuntimeAdapter } from './glass-easel-adapter'
 import {
   LogicBackendContext,
   LogicBackendElement,
@@ -12,14 +12,12 @@ import {
   type LogicStyleSheetRole,
 } from './backend'
 import { createRuntimeDiagnostic } from '../diagnostics'
-import { diffView } from './patch'
 import { createLogicSelectorQuery, queryLogicNodes, snapshotLogicNode } from './query'
 import type {
   ViewEventPayload,
   ViewIntersectionEntry,
   ViewIntersectionRequest,
   ViewRect,
-  ViewSnapshot,
 } from './protocol'
 
 export type LogicTreeAdapterOptions = {
@@ -39,14 +37,11 @@ export type LogicTreeAdapterOptions = {
 
 /**
  * Service-side logic tree: glass-easel runs against a recording backend and
- * exposes the resulting view description. This is the future source of truth
- * for data, properties and typed dataset values.
+ * projects a host-neutral render tree (`tree/protocol`) for the render thread.
  */
 export class LogicTreeAdapter {
   readonly backend: LogicBackendContext
   readonly glass: GlassEaselRuntimeAdapter
-  private readonly revisions = new Map<string, number>()
-  private readonly typedDatasets = new Map<string, Record<string, unknown>>()
   private readonly pageRoots = new Map<string, LogicBackendElement>()
   private activePageId?: string
   private readonly pagePaths = new Map<string, string>()
@@ -57,7 +52,6 @@ export class LogicTreeAdapter {
   }>>()
   private activeTouches: unknown[] | undefined
   private activeChangedTouches: unknown[] | undefined
-  private readonly lastSnapshots = new Map<string, ViewSnapshot>()
   private readonly lastRenderTrees = new Map<string, RenderNode>()
   private readonly manifest: Manifest
   private readonly loadStyle: (outputPath: string) => string
@@ -115,7 +109,7 @@ export class LogicTreeAdapter {
     path: string,
     data: Record<string, unknown> = {},
     pageId: string,
-  ): ViewSnapshot {
+  ): RenderNode | null {
     let styleStart: number | undefined
     if (!this.styledPages.has(path)) {
       this.styledPages.add(path)
@@ -137,27 +131,15 @@ export class LogicTreeAdapter {
     const backendElement = (page as unknown as { getBackendElement?: () => unknown })
       .getBackendElement?.() as LogicBackendElement | undefined
     if (backendElement) this.pageRoots.set(pageId, backendElement)
-    const snapshot = this.snapshot(pageId)
     const renderTree = this.snapshotRenderTree(pageId)
     if (renderTree) this.lastRenderTrees.set(pageId, renderTree)
-    return snapshot
+    return renderTree
   }
 
   applyPageData(pageId: string, patch: Record<string, unknown>): void {
     const page = this.glass.getMountedComponentByPageId(pageId)
     if (!page) throw new Error(`logic page is not mounted: ${pageId}`)
     page.setData(patch)
-  }
-
-  setPageData(pageId: string, patch: Record<string, unknown>): ViewSnapshot {
-    this.applyPageData(pageId, patch)
-    return this.snapshot(pageId)
-  }
-
-  snapshot(pageId: string): ViewSnapshot {
-    const snapshot = this.buildSnapshot(pageId)
-    this.lastSnapshots.set(pageId, snapshot)
-    return snapshot
   }
 
   /** Runtime-registered stylesheets (shared/page scopes) for the render tree. */
@@ -325,35 +307,6 @@ export class LogicTreeAdapter {
     const previous = this.lastRenderTrees.get(pageId)
     this.lastRenderTrees.set(pageId, snapshot)
     return { snapshot, patches: previous ? diffRenderTree(previous, snapshot) : [] }
-  }
-
-  /** Build the next snapshot and diff it against the last one. */
-  update(pageId: string): { snapshot: ViewSnapshot; patches: ReturnType<typeof diffView> } {
-    const snapshot = this.buildSnapshot(pageId)
-    const previous = this.lastSnapshots.get(pageId)
-    this.lastSnapshots.set(pageId, snapshot)
-    return {
-      snapshot,
-      patches: previous ? diffView(previous.root, snapshot.root) : [],
-    }
-  }
-
-  private buildSnapshot(pageId: string): ViewSnapshot {
-    const page = this.glass.getMountedComponentByPageId(pageId)
-    if (!page) throw new Error(`logic page is not mounted: ${pageId}`)
-    const backendElement = (page as unknown as { getBackendElement?: () => unknown })
-      .getBackendElement?.() as LogicBackendElement | undefined
-    const { snapshot, datasets } = this.backend.snapshot(pageId, backendElement)
-    const revision = (this.revisions.get(pageId) ?? 0) + 1
-    this.revisions.set(pageId, revision)
-    snapshot.revision = revision
-    for (const [viewId, dataset] of datasets) this.typedDatasets.set(viewId, dataset)
-    return snapshot
-  }
-
-  /** Typed dataset of a view node (numbers, dates and objects stay intact). */
-  getTypedDataset(viewId: string): Record<string, unknown> | undefined {
-    return this.typedDatasets.get(viewId)
   }
 
   /**

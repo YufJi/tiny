@@ -6,12 +6,12 @@ import {
   TINY_ENGINE_NAMING,
   type PageArtifact,
 } from '@tiny/manifest'
-import { buildComponentSchemas } from './component-schema'
-import type { ComponentLifecycleName, NormalizedComponentDefinition } from './component-definition'
-import { invokeObserver } from './observers'
+import { buildComponentSchemas } from './component/component-schema'
+import type { ComponentLifecycleName, NormalizedComponentDefinition } from './component/component-definition'
+import { invokeObserver } from './component/observers'
 import { cloneJsonSafe, readDataPath, type DataPatch } from './data'
-import { ComponentTree } from './component-tree'
-import { RelationManager } from './relation-manager'
+import { ComponentTree } from './component/component-tree'
+import { RelationManager } from './component/relation-manager'
 import type { ServiceThreadOptions } from './types'
 import type {
   MiniProgramComponentSchema,

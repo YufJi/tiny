@@ -1,6 +1,6 @@
 import { applyDataPatch, cloneJsonSafe, type DataPatch } from '../data'
-import { runObservers, type ObserverHost } from '../observers'
-import type { ComponentLifecycleName, NormalizedComponentDefinition } from '../component-definition'
+import { runObservers, type ObserverHost } from '../component/observers'
+import type { ComponentLifecycleName, NormalizedComponentDefinition } from '../component/component-definition'
 import type { ComponentRuntimeContext } from './types'
 
 export class MiniProgramComponentInstance implements ObserverHost {

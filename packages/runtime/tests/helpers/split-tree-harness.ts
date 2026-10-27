@@ -1,7 +1,15 @@
-import { bootTreeThread, type TreeRenderer } from '../../src/tree-thread'
+import { bootTreeThread, type TreeRenderer, type TreeThreadOptions } from '../../src/tree-thread'
 import type { Manifest } from '@tiny/manifest'
-import type { RenderThreadOptions } from '../../src/types'
+import type { StyleLoader, TemplateRegistry } from '../../src/types'
 import { lastLogicTree, provideHarnessConfig } from './split-service'
+
+export type SplitTreeHarnessOptions = {
+  transport: TreeThreadOptions['transport']
+  manifest: Manifest
+  artifacts: { templates: TemplateRegistry }
+  initialPath?: string
+  loadStyle?: StyleLoader
+}
 
 export type RenderThreadRuntime = {
   connection: ReturnType<typeof bootTreeThread>['connection']
@@ -22,7 +30,7 @@ const noopRenderer: TreeRenderer = {
   query: () => [],
 }
 
-export function bootSplitTreeHarness(options: RenderThreadOptions): RenderThreadRuntime {
+export function bootSplitTreeHarness(options: SplitTreeHarnessOptions): RenderThreadRuntime {
   provideHarnessConfig({
     templates: options.artifacts.templates,
     loadStyle: options.loadStyle ?? (() => ''),

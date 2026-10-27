@@ -6,29 +6,18 @@ import {
   type PageArtifact,
   type StyleArtifact,
 } from '@tiny/manifest'
-import type { LogicStyleSheetRole } from './logic/backend'
+import type { LogicStyleSheetRole } from './backend'
 import type {
-  BuiltinComponentDefinitions,
-  BuiltinComponents,
   MiniProgramComponentSchema,
   StyleLoader,
   TemplateRegistry,
-} from './types'
-import { isNativeEventHandled, toJsonSafe, type SerializedEventNode, type SerializedMiniProgramEvent } from './events'
-import { createRuntimeDiagnostic } from './diagnostics'
-import { readComponentGenerics } from './component-schema'
-import { parsePureDataPattern, type NormalizedComponentDefinition } from './component-definition'
-import { resolveAssetPath, rewriteCssAssetUrls, splitAssetSuffix, type AssetUrlResolver } from './assets'
+} from '../types'
+import { toJsonSafe } from '../events'
+import { createRuntimeDiagnostic } from '../diagnostics'
+import { readComponentGenerics } from '../component/component-schema'
+import { parsePureDataPattern, type NormalizedComponentDefinition } from '../component/component-definition'
 
-const NATIVE_COMPONENT_METHODS = new Set([
-  'setData',
-  'triggerEvent',
-  'getBackendElement',
-  'selectComponent',
-  'selectAllComponents',
-  'getRelationNodes',
-  'getShadowRoot',
-])
+
 
 /**
  * Fields glass-easel owns on every element. `writeFieldsToNode` copies component
@@ -93,42 +82,7 @@ export type GlassEaselAdapterOptions = {
   backend: glassEasel.GeneralBackendContext
   manifest: Manifest
   templates: TemplateRegistry
-  onMiniProgramEvent?: (pageId: string, event: SerializedMiniProgramEvent) => void
-  onComponentLifecycle?: (
-    componentId: string,
-    path: string,
-    phase: ComponentLifecyclePhase,
-    data: Record<string, unknown>,
-    meta?: ComponentLifecycleMeta,
-  ) => void
-  onComponentPageLifetime?: (
-    componentId: string,
-    path: string,
-    phase: 'show' | 'hide',
-    data: Record<string, unknown>,
-  ) => void
-  onComponentData?: (payload: {
-    componentId: string
-    path: string
-    pageId: string | null
-    data: Record<string, unknown>
-    origin: 'service' | 'render'
-  }) => void
-  onComponentObserved?: (payload: {
-    componentId: string
-    path: string
-    pageId: string | null
-    key: string
-    data: Record<string, unknown>
-    origin: 'service' | 'render'
-  }) => void
-  onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
-  /** Host-provided implementations of the mini-program built-in tags. */
-  builtinComponents?: BuiltinComponents
-  /** Host hook mapping app-root asset paths to loadable URLs. */
-  resolveAssetUrl?: AssetUrlResolver
-  /** Attach the created root component to a host-provided backend tree. */
-  /** Detach the root component from the host-provided backend tree. */
+  onDiagnostic?: (diagnostic: import('../diagnostics').RuntimeDiagnostic) => void
   /** Page/component JavaScript options for the service-side logic tree. */
   logicPageOptions?: ReadonlyMap<string, { methods?: Record<string, (...args: unknown[]) => unknown> }>
   logicComponentDefinitions?: ReadonlyMap<string, NormalizedComponentDefinition>
@@ -193,32 +147,9 @@ export class GlassEaselRuntimeAdapter {
   private readonly componentInstances = new Map<string, glassEasel.GeneralComponent>()
   private readonly componentIds = new WeakMap<object, string>()
   private readonly componentPaths = new WeakMap<object, string>()
-  /** Page/component source entry paths used for asset resolution. */
-  private readonly componentSourcePaths = new WeakMap<object, string>()
-  private readonly emittedLifecycles = new WeakMap<object, Set<ComponentLifecyclePhase>>()
   private readonly componentUsageCounters = new Map<string, number>()
   private readonly methodCallerComponents = new WeakMap<object, glassEasel.GeneralComponent>()
-  private readonly onMiniProgramEvent?: (pageId: string, event: SerializedMiniProgramEvent) => void
-  private readonly onComponentLifecycle?: (
-    componentId: string,
-    path: string,
-    phase: ComponentLifecyclePhase,
-    data: Record<string, unknown>,
-    meta?: ComponentLifecycleMeta,
-  ) => void
-  private readonly onComponentPageLifetime?: (
-    componentId: string,
-    path: string,
-    phase: 'show' | 'hide',
-    data: Record<string, unknown>,
-  ) => void
-  private readonly onComponentData?: GlassEaselAdapterOptions['onComponentData']
-  private readonly onComponentObserved?: GlassEaselAdapterOptions['onComponentObserved']
-  private readonly builtinComponents: BuiltinComponentDefinitions
-  private readonly builtinStyles: NonNullable<BuiltinComponents['styles']>
-  private readonly onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
-  private readonly resolveAssetUrl?: AssetUrlResolver
-  private builtinStylesRegistered = false
+  private readonly onDiagnostic?: (diagnostic: import('../diagnostics').RuntimeDiagnostic) => void
   private readonly logicPageOptions?: GlassEaselAdapterOptions['logicPageOptions']
   private readonly logicComponentDefinitions?: GlassEaselAdapterOptions['logicComponentDefinitions']
   private readonly logicQueryFactory?: GlassEaselAdapterOptions['logicQueryFactory']
@@ -245,11 +176,6 @@ export class GlassEaselRuntimeAdapter {
     this.onLogicDataChange = options.onLogicDataChange
     this.logicTouchState = options.logicTouchState
     this.logicIntersectionFactory = options.logicIntersectionFactory
-    this.onMiniProgramEvent = options.onMiniProgramEvent
-    this.onComponentLifecycle = options.onComponentLifecycle
-    this.onComponentPageLifetime = options.onComponentPageLifetime
-    this.onComponentData = options.onComponentData
-    this.onComponentObserved = options.onComponentObserved
     const styleScopeManager = new glassEasel.StyleScopeManager()
     this.componentSpace = new glassEasel.ComponentSpace(undefined, undefined, styleScopeManager, true)
     this.componentSpace.updateComponentOptions({
@@ -260,24 +186,6 @@ export class GlassEaselRuntimeAdapter {
       is: TINY_ENGINE_NAMING.formFieldBehaviorId,
     })
     this.onDiagnostic = options.onDiagnostic
-    this.resolveAssetUrl = options.resolveAssetUrl
-    this.builtinStyles = options.builtinComponents?.styles ?? []
-    this.builtinComponents = options.builtinComponents
-      ? options.builtinComponents.create(this.componentSpace, {
-          registerStyleScope: (name) => this.registerScope(name),
-          onDiagnostic: (diagnostic) => this.onDiagnostic?.(createRuntimeDiagnostic(
-            diagnostic.severity,
-            diagnostic.code,
-            diagnostic.message,
-            'render',
-            undefined,
-            diagnostic.details,
-          )),
-          resolveAssetUrl: options.resolveAssetUrl
-            ? (src, component) => this.resolveComponentAssetUrl(src, component)
-            : undefined,
-        })
-      : {}
   }
 
   registerComponentSchemas(schemas: MiniProgramComponentSchema[]): void {
@@ -293,16 +201,6 @@ export class GlassEaselRuntimeAdapter {
     componentSchemas: MiniProgramComponentSchema[] = [],
     options: StyleRegistrationOptions = {},
   ): void {
-    if (!this.builtinStylesRegistered && this.builtinStyles.length > 0) {
-      for (const style of this.builtinStyles) {
-        const scopeId = style.scope
-          ? this.registerScope(style.scope)
-          : glassEasel.StyleScopeManager.globalScope()
-        this.backend.registerStyleSheetContent(style.path, style.content)
-        this.appendStyleSheet(style.path, scopeId, { role: 'builtin' })
-      }
-      this.builtinStylesRegistered = true
-    }
     const selectedPage = options.pagePath
       ? manifest.pages.find((page) => page.path === options.pagePath)
       : undefined
@@ -324,11 +222,8 @@ export class GlassEaselRuntimeAdapter {
         && !style.pageScopeClassSign
         && !allowedStyleOutputPaths.has(style.outputPath)
       ) continue
-      let css = loadStyle(style.outputPath)
+      const css = loadStyle(style.outputPath)
       if (typeof css !== 'string') continue
-      if (this.resolveAssetUrl) {
-        css = rewriteCssAssetUrls(css, style.sourcePath, this.resolveAssetUrl)
-      }
       // The page-scope template is not a sheet of its own: it is expanded per
       // page scope below, before page/component sheets are appended.
       if (style.pageScopeClassSign) {
@@ -341,15 +236,8 @@ export class GlassEaselRuntimeAdapter {
         ? this.registerScope(style.scope)
         : glassEasel.StyleScopeManager.globalScope()
       if (style.lowPriorityPath) {
-        let lowPriorityCss = loadStyle(style.lowPriorityPath)
+        const lowPriorityCss = loadStyle(style.lowPriorityPath)
         if (typeof lowPriorityCss === 'string' && lowPriorityCss.trim().length > 0) {
-          if (this.resolveAssetUrl) {
-            lowPriorityCss = rewriteCssAssetUrls(
-              lowPriorityCss,
-              style.sourcePath,
-              this.resolveAssetUrl,
-            )
-          }
           this.backend.registerStyleSheetContent(`${style.outputPath}@low-priority`, lowPriorityCss)
           lowPriorityPending.push({ style, scopeId })
         }
@@ -434,12 +322,7 @@ export class GlassEaselRuntimeAdapter {
         extraStyleScope: glassEasel.StyleScopeManager.globalScope(),
       })
       .methodCallerInit(function (this: glassEasel.GeneralComponent) {
-        return adapter.createEventMethodCaller(
-          () => adapter.pageIdOf(this) ?? page.path,
-          undefined,
-          this,
-          page.path,
-        )
+        return adapter.createEventMethodCaller(this)
       })
       .observer('**', function (this: glassEasel.GeneralComponent) {
         adapter.notifyLogicDataChange(adapter.resolveMethodCaller(this) ?? this)
@@ -706,46 +589,8 @@ export class GlassEaselRuntimeAdapter {
       : baseId
     this.componentIds.set(key, componentId)
     this.componentPaths.set(key, schema.path)
-    this.componentSourcePaths.set(key, schema.path)
     this.componentInstances.set(componentId, component)
     return componentId
-  }
-
-  private resolveComponentAssetUrl(src: string, component: unknown): string {
-    if (!this.resolveAssetUrl || !src) return src
-    const sourcePath = this.componentSourcePath(component)
-    if (!sourcePath) return src
-    const assetPath = resolveAssetPath(sourcePath, src)
-    if (!assetPath) return src
-    const { suffix } = splitAssetSuffix(src)
-    try {
-      const resolved = this.resolveAssetUrl(assetPath, { sourcePath })
-      return resolved ? `${resolved}${suffix}` : src
-    } catch {
-      return src
-    }
-  }
-
-  private componentSourcePath(component: unknown): string | undefined {
-    let current: unknown = component
-    for (let depth = 0; current && depth < 32; depth += 1) {
-      const mapped = this.componentSourcePaths.get(current as object)
-      if (mapped) return mapped
-      const owner = (current as {
-        ownerShadowRoot?: { getHostNode?: () => unknown } | null
-      }).ownerShadowRoot?.getHostNode?.()
-      if (owner && owner !== current) {
-        current = owner
-        continue
-      }
-      const parent = (current as { parentNode?: unknown }).parentNode
-      if (parent) {
-        current = parent
-        continue
-      }
-      break
-    }
-    return undefined
   }
 
   getMountedComponentByPageId(pageId: string): glassEasel.GeneralComponent | undefined {
@@ -782,7 +627,6 @@ export class GlassEaselRuntimeAdapter {
     // App-global selectors are anchored to this unprefixed marker so the page
     // root participates without exposing built-in component internals.
     component.classList?.toggle(TINY_ENGINE_NAMING.scopeMarkerClass, true)
-    this.componentSourcePaths.set(component as unknown as object, path)
     this.mountedComponents.set(path, component)
     if (pageId) {
       this.componentsByPageId.set(pageId, component)
@@ -810,11 +654,6 @@ export class GlassEaselRuntimeAdapter {
         if (path && this.logicComponentDefinitions.has(path)) instance.triggerLifetime('ready', [])
       }
     }
-    for (const [componentId, instance] of this.componentInstances) {
-      if (this.emittedLifecycles.get(instance as unknown as object)?.has('ready')) continue
-      const path = this.componentPaths.get(instance as unknown as object) ?? instance.is
-      this.emitLifecycle(componentId, path, 'ready', instance)
-    }
     return component
   }
 
@@ -828,12 +667,6 @@ export class GlassEaselRuntimeAdapter {
       : [...this.componentsByPageId.entries()].at(-1)?.[1]
         ?? [...this.mountedComponents.values()].at(-1)
     if (!component) return null
-    const backend = (component as unknown as { getBackendElement?: () => unknown }).getBackendElement?.()
-    if (isDomInspectNode(backend)) {
-      const budget = { count: 0 }
-      const domTree = serializeDomNode(backend, '0', 0, budget, TINY_ENGINE_NAMING.hostAttribute)
-      if (domTree) return { ...domTree, type: 'component' }
-    }
     return this.inspectLogicalTree(component)
   }
 
@@ -886,23 +719,6 @@ export class GlassEaselRuntimeAdapter {
       ? pageScope
       : undefined
     const adapter = this
-    const observers: Array<{ fields: string; observer: (this: glassEasel.GeneralComponent) => void }> = []
-    observers.push({
-      fields: '**',
-      observer: function (this: glassEasel.GeneralComponent) {
-        const component = adapter.resolveMethodCaller(this)
-        if (component) adapter.emitComponentData(schema, component)
-      },
-    })
-    for (const observer of schema.observers ?? []) {
-      observers.push({
-        fields: observer.paths.join(','),
-        observer: function (this: glassEasel.GeneralComponent) {
-          const component = adapter.resolveMethodCaller(this)
-          if (component) adapter.emitComponentObserved(schema, observer.key, component)
-        },
-      })
-    }
 
     const generics = this.resolveGenerics(schema.path, schema.generics)
     const pureDataPattern = parsePureDataPattern(schema.pureDataPattern)
@@ -921,14 +737,13 @@ export class GlassEaselRuntimeAdapter {
         properties: declaredProperties as never,
         externalClasses: schema.externalClasses,
         behaviors: schema.formField ? [this.formFieldBehavior] : undefined,
-        observers: observers as never,
       })
       .template({
         groupList: this.templates.groupList,
         content: (name = '') => this.templates.content(schema.path, name),
       })
       .data(() => ({ ...(schema.data as Record<string, unknown>), ...reservedData } as never))
-      .usingComponents({ ...this.builtinComponents, ...using } as never)
+      .usingComponents(using as never)
       .generics(generics as never)
       .options({
         multipleSlots: schema.options?.multipleSlots ?? false,
@@ -953,12 +768,10 @@ export class GlassEaselRuntimeAdapter {
           : {}),
       })
       .methodCallerInit(function (this: glassEasel.GeneralComponent) {
-        const methodCaller = adapter.createEventMethodCaller(
-          () => adapter.pageIdOf(this) ?? schema.path,
-          adapter.componentIdFor(schema, this),
-          this,
-          schema.path,
-        )
+        // Assigning the id registers the instance in the component tree even
+        // though render-mode event dispatch no longer needs it.
+        adapter.componentIdFor(schema, this)
+        const methodCaller = adapter.createEventMethodCaller(this)
         adapter.methodCallerComponents.set(methodCaller as object, this)
         return methodCaller
       })
@@ -1068,47 +881,9 @@ export class GlassEaselRuntimeAdapter {
       }
     }
     const definition = builder
-      .lifetime('created', function (this: glassEasel.GeneralComponent) {
-        const component = adapter.resolveMethodCaller(this)
-        if (component) adapter.emitComponentLifecycle(schema, 'created', component)
-      })
-      .lifetime('attached', function (this: glassEasel.GeneralComponent) {
-        const component = adapter.resolveMethodCaller(this)
-        if (component) adapter.emitComponentLifecycle(schema, 'attached', component)
-      })
-      .lifetime('ready', function (this: glassEasel.GeneralComponent) {
-        const component = adapter.resolveMethodCaller(this)
-        if (component) adapter.emitComponentLifecycle(schema, 'ready', component)
-      })
-      .lifetime('moved', function (this: glassEasel.GeneralComponent) {
-        const component = adapter.resolveMethodCaller(this)
-        if (component) adapter.emitComponentLifecycle(schema, 'moved', component)
-      })
       .lifetime('detached', function (this: glassEasel.GeneralComponent) {
         const component = adapter.resolveMethodCaller(this)
-        if (!component) return
-        adapter.emitComponentLifecycle(schema, 'detached', component)
-        adapter.cleanupComponent(schema, component)
-      })
-      .pageLifetime('show', function (this: unknown) {
-        const component = adapter.resolveMethodCaller(this)
-        if (!component) return
-        adapter.onComponentPageLifetime?.(
-          adapter.componentIdFor(schema, component),
-          schema.path,
-          'show',
-          (toJsonSafe(component.data ?? {}) ?? {}) as Record<string, unknown>,
-        )
-      })
-      .pageLifetime('hide', function (this: unknown) {
-        const component = adapter.resolveMethodCaller(this)
-        if (!component) return
-        adapter.onComponentPageLifetime?.(
-          adapter.componentIdFor(schema, component),
-          schema.path,
-          'hide',
-          (toJsonSafe(component.data ?? {}) ?? {}) as Record<string, unknown>,
-        )
+        if (component) adapter.cleanupComponent(component)
       })
       .registerComponent()
 
@@ -1135,7 +910,7 @@ export class GlassEaselRuntimeAdapter {
         result[alias] = true
         continue
       }
-      const builtin = this.builtinComponents[value.default]
+      const builtin = undefined
       if (builtin) {
         result[alias] = { default: builtin }
         continue
@@ -1153,9 +928,7 @@ export class GlassEaselRuntimeAdapter {
     const effective = config?.effective ?? {}
     const usingComponents = effective.usingComponents
     if (!usingComponents || typeof usingComponents !== 'object') {
-      // Built-ins are available to every mini-program page even when it
-      // declares no custom components.
-      return { ...this.builtinComponents }
+      return {}
     }
     const resolved = Object.fromEntries(
       Object.entries(usingComponents as Record<string, unknown>).map(([tag, reference]) => {
@@ -1176,7 +949,7 @@ export class GlassEaselRuntimeAdapter {
         return [tag, definition ? this.registerComponentDefinition(definition, pageScope) : componentPath]
       }),
     )
-    return { ...this.builtinComponents, ...resolved }
+    return resolved
   }
 
   private collectUsedComponentPaths(
@@ -1290,14 +1063,7 @@ export class GlassEaselRuntimeAdapter {
     return undefined
   }
 
-  private createEventMethodCaller(
-    pageId: string | (() => string),
-    componentId?: string,
-    component?: glassEasel.GeneralComponent,
-    componentPath?: string,
-  ): unknown {
-    const adapter = this
-    const resolvePageId = typeof pageId === 'function' ? pageId : () => pageId
+  private createEventMethodCaller(component?: glassEasel.GeneralComponent): unknown {
     const logicMode = Boolean(this.logicComponentDefinitions)
     const instanceFields: Record<string, unknown> = {}
     return new Proxy(instanceFields, {
@@ -1313,108 +1079,13 @@ export class GlassEaselRuntimeAdapter {
             return typeof value === 'function' ? value.bind(component) : value
           }
         }
-        // glass-easel routes core instance methods through the method caller
-        // when `useMethodCallerListeners` is enabled; forward those to the
-        // component instead of treating them as mini-program event handlers.
-        if (component && NATIVE_COMPONENT_METHODS.has(property)) {
-          const method = (component as unknown as Record<string, unknown>)[property]
-          if (typeof method === 'function') return method.bind(component)
-        }
-        return adapter.createEventDispatcher(resolvePageId(), property, componentId, component, componentPath)
+        return undefined
       },
       set(target, property, value) {
         if (typeof property === 'string') target[property] = value
         return true
       },
-      getOwnPropertyDescriptor(target, property) {
-        if (typeof property !== 'string') return undefined
-        if (Object.prototype.hasOwnProperty.call(target, property)) {
-          return {
-            configurable: true,
-            enumerable: true,
-            writable: true,
-            value: target[property],
-          }
-        }
-        return {
-          configurable: true,
-          enumerable: true,
-          value: adapter.createEventDispatcher(resolvePageId(), property, componentId, component, componentPath),
-        }
-      },
     })
-  }
-
-  private createEventDispatcher(
-    pageId: string,
-    handler: string,
-    componentId?: string,
-    component?: glassEasel.GeneralComponent,
-    componentPath?: string,
-  ): (event: glassEasel.ShadowedEvent<unknown>) => void {
-    return (event) => {
-      // A built-in component may translate the native event into a normalized
-      // mini-program event (canvas touches are the current case). Do not also
-      // forward the raw native event to the same page handler.
-      const original = (event as unknown as { getOriginalEvent?: () => unknown }).getOriginalEvent?.()
-      if (String(event.type).startsWith('touch') && isNativeEventHandled(original)) return
-      this.onMiniProgramEvent?.(pageId, {
-        ...this.serializeEvent(handler, event),
-        ...(componentId ? { componentId } : {}),
-        ...(componentPath ? { componentPath } : {}),
-        ...(component ? { componentData: toJsonSafe(component.data) as Record<string, unknown> } : {}),
-      })
-    }
-  }
-
-  private emitComponentLifecycle(
-    schema: MiniProgramComponentSchema,
-    phase: ComponentLifecyclePhase,
-    component: glassEasel.GeneralComponent,
-  ): void {
-    this.emitLifecycle(this.componentIdFor(schema, component), schema.path, phase, component)
-  }
-
-  private emitLifecycle(
-    componentId: string,
-    path: string,
-    phase: ComponentLifecyclePhase,
-    component: glassEasel.GeneralComponent,
-  ): void {
-    const key = component as unknown as object
-    let phases = this.emittedLifecycles.get(key)
-    if (!phases) {
-      phases = new Set()
-      this.emittedLifecycles.set(key, phases)
-    }
-    phases.add(phase)
-    let data: Record<string, unknown> = {}
-    try {
-      data = (toJsonSafe(component.data ?? {}) ?? {}) as Record<string, unknown>
-    } catch {
-      // Component data may not be initialized yet during `created`.
-    }
-    this.onComponentLifecycle?.(componentId, path, phase, data, this.lifecycleMeta(component))
-  }
-
-  private lifecycleMeta(component: glassEasel.GeneralComponent): ComponentLifecycleMeta {
-    const element = component as unknown as {
-      tagName?: unknown
-      id?: unknown
-      class?: unknown
-      ownerShadowRoot?: { getHostNode?: () => unknown }
-    }
-    return {
-      pageId: this.pageIdOf(component) ?? null,
-      parentComponentId: this.findParentComponentId(component),
-      tag: typeof element.tagName === 'string'
-        ? element.tagName
-        : (typeof (component as unknown as { is?: unknown }).is === 'string'
-            ? (component as unknown as { is: string }).is
-            : ''),
-      id: typeof element.id === 'string' ? element.id : '',
-      class: typeof element.class === 'string' ? element.class : '',
-    }
   }
 
   private findParentComponentId(component: glassEasel.GeneralComponent): string | null {
@@ -1446,78 +1117,15 @@ export class GlassEaselRuntimeAdapter {
     return undefined
   }
 
-  private emitComponentData(
-    schema: MiniProgramComponentSchema,
-    component: glassEasel.GeneralComponent,
-  ): void {
-    if (!this.onComponentData) return
-    this.onComponentData({
-      componentId: this.componentIdFor(schema, component),
-      path: schema.path,
-      pageId: this.pageIdOf(component) ?? null,
-      data: (toJsonSafe(component.data ?? {}) ?? {}) as Record<string, unknown>,
-      origin: 'render',
-    })
-  }
-
-  private emitComponentObserved(
-    schema: MiniProgramComponentSchema,
-    key: string,
-    component: glassEasel.GeneralComponent,
-  ): void {
-    if (!this.onComponentObserved) return
-    this.onComponentObserved({
-      componentId: this.componentIdFor(schema, component),
-      path: schema.path,
-      pageId: this.pageIdOf(component) ?? null,
-      key,
-      data: (toJsonSafe(component.data ?? {}) ?? {}) as Record<string, unknown>,
-      origin: 'render',
-    })
-  }
-
-  private cleanupComponent(
-    schema: MiniProgramComponentSchema,
-    component: glassEasel.GeneralComponent,
-  ): void {
+  private cleanupComponent(component: glassEasel.GeneralComponent): void {
     const componentId = this.componentIds.get(component as unknown as object)
     if (componentId) this.componentInstances.delete(componentId)
     this.componentIds.delete(component as unknown as object)
     this.componentPaths.delete(component as unknown as object)
-    this.componentSourcePaths.delete(component as unknown as object)
   }
 
-  private serializeEvent(
-    handler: string,
-    event: glassEasel.ShadowedEvent<unknown>,
-  ): SerializedMiniProgramEvent {
-    const touches = toJsonSafe((event as unknown as Record<string, unknown>).touches)
-    const changedTouches = toJsonSafe((event as unknown as Record<string, unknown>).changedTouches)
-    return {
-      handler,
-      type: event.type,
-      timeStamp: event.timeStamp,
-      detail: toJsonSafe(event.detail) ?? null,
-      bubbles: event.bubbles,
-      composed: event.composed,
-      capture: typeof event.isCapturePhase === 'function' ? event.isCapturePhase() : false,
-      stopped: typeof event.propagationStopped === 'function' ? event.propagationStopped() : false,
-      target: this.serializeEventNode(event.target),
-      currentTarget: this.serializeEventNode(event.currentTarget),
-      ...(touches !== undefined ? { touches } : {}),
-      ...(changedTouches !== undefined ? { changedTouches } : {}),
-    }
-  }
 
-  private serializeEventNode(element: glassEasel.Element): SerializedEventNode {
-    return {
-      id: typeof element.id === 'string' ? element.id : '',
-      tag: typeof element.is === 'string' ? element.is : '',
-      dataset: (toJsonSafe(element.dataset ?? {}) ?? {}) as Record<string, unknown>,
-      class: typeof element.class === 'string' ? element.class : '',
-      style: typeof element.style === 'string' ? element.style : '',
-    }
-  }
+
 }
 
 type InspectElementLike = {
@@ -1605,61 +1213,4 @@ function readStyle(element: InspectElementLike): string | undefined {
   return typeof style === 'string' && style.length > 0 ? style : undefined
 }
 
-type DomInspectNode = {
-  nodeType?: number
-  tagName?: string
-  textContent?: string | null
-  className?: string
-  childNodes?: ArrayLike<DomInspectNode>
-  getAttributeNames?: () => string[]
-  getAttribute?: (name: string) => string | null
-  hasAttribute?: (name: string) => boolean
-}
 
-function isDomInspectNode(node: unknown): node is DomInspectNode {
-  if (!node || typeof node !== 'object') return false
-  const candidate = node as DomInspectNode
-  return typeof candidate.nodeType === 'number' && typeof candidate.tagName === 'string'
-}
-
-function serializeDomNode(
-  node: DomInspectNode,
-  id: string,
-  depth: number,
-  budget: { count: number },
-  hostAttribute: string,
-): InspectNode | null {
-  if (budget.count >= INSPECT_NODE_LIMIT || depth > INSPECT_DEPTH_LIMIT) return null
-  budget.count += 1
-  if (node.nodeType === 3) {
-    const text = String(node.textContent ?? '').trim()
-    if (text.length === 0) return null
-    return {
-      id,
-      type: 'text',
-      tag: '#text',
-      text: text.length > INSPECT_TEXT_LIMIT ? `${text.slice(0, INSPECT_TEXT_LIMIT)}…` : text,
-      children: [],
-    }
-  }
-  if (node.nodeType !== 1) return null
-  const attributes: Record<string, string> = {}
-  for (const name of node.getAttributeNames?.() ?? []) {
-    if (name === 'class' || name === 'style') continue
-    const value = node.getAttribute?.(name)
-    if (value !== null && value !== undefined) attributes[name] = String(value)
-  }
-  const result: InspectNode = {
-    id,
-    type: node.hasAttribute?.(hostAttribute) ? 'component' : 'element',
-    tag: String(node.tagName ?? 'unknown').toLowerCase(),
-    children: Array.from(node.childNodes ?? [])
-      .map((child, index) => serializeDomNode(child, `${id}.${index}`, depth + 1, budget, hostAttribute))
-      .filter((child): child is InspectNode => child !== null),
-  }
-  if (Object.keys(attributes).length > 0) result.attributes = attributes
-  if (typeof node.className === 'string' && node.className.length > 0) result.className = node.className
-  const style = node.getAttribute?.('style')
-  if (style) result.style = style
-  return result
-}
