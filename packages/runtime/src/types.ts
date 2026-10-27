@@ -61,6 +61,8 @@ export type SystemInfoSnapshot = {
 
 /** One DOM node resolved by a component/page selector query. */
 export type QueryNodeSnapshot = {
+  /** Logic-layer node identity, present for service-side query results. */
+  viewId?: string
   id: string
   dataset: Record<string, unknown>
   left: number
@@ -287,6 +289,12 @@ export type ServiceThreadOptions = {
   resolveAssetUrl?: AssetUrlResolver
   /** Maximum pages in the runtime page stack. Defaults to 10. */
   maxPageStack?: number
+  /** 'service' runs the logic tree in this thread and projects a view. */
+  logicLayer?: 'render' | 'service'
+  /** Templates for the service-side logic tree. */
+  loadTemplates?: () => Promise<TemplateRegistry> | TemplateRegistry
+  /** Stylesheet text for logic-tree style scoping. */
+  loadStyle?: StyleLoader
 }
 
 export type RenderThreadOptions = {

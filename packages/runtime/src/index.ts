@@ -10,3 +10,7 @@ export { TINY_ENGINE_NAMING } from '@tiny/manifest'
 
 export * from './tree/protocol'
 export * from './tree/diff'
+
+export * from './logic/backend'
+export * from './logic/tree'
+export * from './logic/protocol'

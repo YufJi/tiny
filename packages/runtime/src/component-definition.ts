@@ -2,7 +2,7 @@ import {
   WECHAT_RUNTIME_COMPATIBILITY,
   type RuntimeCompatibilityConfig,
 } from '@tiny/manifest'
-import { cloneJsonSafe } from './data'
+import { cloneDataValue, cloneJsonSafe } from './data'
 import { componentExportBehavior, formFieldBehavior, isBuiltinBehavior } from './behaviors'
 import type { MiniProgramComponentOptions } from './service'
 import type { MiniProgramPropertyDefinition, MiniProgramPropertyType } from './types'
@@ -389,7 +389,7 @@ export function normalizeProperties(raw: unknown): {
     const normalized: MiniProgramPropertyDefinition = {
       type: normalizePropertyType(option.type),
     }
-    const defaultValue = cloneJsonSafe(option.value)
+    const defaultValue = cloneDataValue(option.value)
     if (defaultValue !== undefined) normalized.value = defaultValue
     if (Array.isArray(option.optionalTypes)) {
       normalized.optionalTypes = option.optionalTypes.map((type) => normalizePropertyType(type))
@@ -597,11 +597,11 @@ function mergeDataInto(target: Record<string, unknown>, source: Record<string, u
   for (const [key, value] of Object.entries(source)) {
     if (value === undefined) continue
     if (isPlainObject(value) && isPlainObject(target[key])) {
-      const merged = cloneJsonSafe(target[key]) as Record<string, unknown>
+      const merged = cloneDataValue(target[key]) as Record<string, unknown>
       mergeDataInto(merged, value)
       target[key] = merged
     } else {
-      target[key] = cloneJsonSafe(value)
+      target[key] = cloneDataValue(value)
     }
   }
 }

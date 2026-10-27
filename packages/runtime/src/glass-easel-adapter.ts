@@ -15,7 +15,7 @@ import type {
 import { isNativeEventHandled, toJsonSafe, type SerializedEventNode, type SerializedMiniProgramEvent } from './events'
 import { createRuntimeDiagnostic } from './diagnostics'
 import { readComponentGenerics } from './component-schema'
-import { parsePureDataPattern } from './component-definition'
+import { parsePureDataPattern, type NormalizedComponentDefinition } from './component-definition'
 import { resolveAssetPath, rewriteCssAssetUrls, splitAssetSuffix, type AssetUrlResolver } from './assets'
 
 const NATIVE_COMPONENT_METHODS = new Set([
@@ -129,7 +129,35 @@ export type GlassEaselAdapterOptions = {
   mountComponent?: (component: glassEasel.GeneralComponent) => void
   /** Detach the root component from the host-provided backend tree. */
   unmountComponent?: (component: glassEasel.GeneralComponent) => void
+  /** Page/component JavaScript options for the service-side logic tree. */
+  logicPageOptions?: ReadonlyMap<string, { methods?: Record<string, (...args: unknown[]) => unknown> }>
+  logicComponentDefinitions?: ReadonlyMap<string, NormalizedComponentDefinition>
+  /** Logic-layer selector query factory used by `this.createSelectorQuery()`. */
+  logicQueryFactory?: (component: glassEasel.GeneralComponent) => unknown
+  /** Called after logic-tree page/component data changes. */
+  onLogicDataChange?: (pageId: string) => void
+  logicIntersectionFactory?: (
+    component: glassEasel.GeneralComponent,
+    options?: Record<string, unknown>,
+  ) => unknown
 }
+
+const PAGE_LIFECYCLE_KEYS = new Set([
+  'onLoad',
+  'onShow',
+  'onReady',
+  'onHide',
+  'onUnload',
+  'onPullDownRefresh',
+  'onReachBottom',
+  'onShareAppMessage',
+  'onShareTimeline',
+  'onPageScroll',
+  'onResize',
+  'onTabItemTap',
+  'onAddToFavorites',
+  'onSaveExitState',
+])
 
 export type StyleRegistrationOptions = {
   /**
@@ -194,11 +222,22 @@ export class GlassEaselRuntimeAdapter {
   private readonly resolveAssetUrl?: AssetUrlResolver
   private builtinStylesRegistered = false
   private readonly unmountComponent?: (component: glassEasel.GeneralComponent) => void
+  private readonly logicPageOptions?: GlassEaselAdapterOptions['logicPageOptions']
+  private readonly logicComponentDefinitions?: GlassEaselAdapterOptions['logicComponentDefinitions']
+  private readonly logicQueryFactory?: GlassEaselAdapterOptions['logicQueryFactory']
+  private readonly onLogicDataChange?: GlassEaselAdapterOptions['onLogicDataChange']
+  private readonly pageIdsByComponent = new WeakMap<object, string>()
+  private readonly logicIntersectionFactory?: GlassEaselAdapterOptions['logicIntersectionFactory']
 
   constructor(options: GlassEaselAdapterOptions) {
     this.backend = options.backend
     this.manifest = options.manifest
     this.templates = options.templates
+    this.logicPageOptions = options.logicPageOptions
+    this.logicComponentDefinitions = options.logicComponentDefinitions
+    this.logicQueryFactory = options.logicQueryFactory
+    this.onLogicDataChange = options.onLogicDataChange
+    this.logicIntersectionFactory = options.logicIntersectionFactory
     this.onMiniProgramEvent = options.onMiniProgramEvent
     this.onComponentLifecycle = options.onComponentLifecycle
     this.onComponentPageLifetime = options.onComponentPageLifetime
@@ -349,6 +388,7 @@ export class GlassEaselRuntimeAdapter {
   }
 
   registerPage(page: PageArtifact, data: Record<string, unknown> = {}): glassEasel.GeneralComponentDefinition {
+    const adapter = this
     const existing = this.componentDefinitions.get(page.path)
     if (existing) return existing
     if (!this.templates.groupList[page.path]) {
@@ -384,7 +424,18 @@ export class GlassEaselRuntimeAdapter {
         // DOM and every app class rule is dead.
         extraStyleScope: glassEasel.StyleScopeManager.globalScope(),
       })
-      .methodCallerInit(() => this.createEventMethodCaller(this.activeEventPageId ?? page.path))
+      .methodCallerInit(function (this: glassEasel.GeneralComponent) {
+        return adapter.createEventMethodCaller(
+          adapter.activeEventPageId ?? page.path,
+          undefined,
+          this,
+          page.path,
+        )
+      })
+      .observer('**', function (this: glassEasel.GeneralComponent) {
+        adapter.notifyLogicDataChange(adapter.resolveMethodCaller(this) ?? this)
+      })
+      .methods(this.logicPageMethods(page.path) as never)
       .registerComponent()
     this.componentDefinitions.set(page.path, definition)
     return definition
@@ -684,6 +735,15 @@ export class GlassEaselRuntimeAdapter {
     if (this.mountComponent) this.mountComponent(component)
     else glassEasel.Element.pretendAttached(component)
     component.triggerLifetime('ready', [])
+    if (this.logicComponentDefinitions) {
+      // glass-easel only fires `attached` automatically; the mini-program
+      // `ready` lifetime is triggered by the runtime after the tree is stable.
+      // Children first, so parent ready handlers observe settled children.
+      for (const instance of [...this.componentInstances.values()].reverse()) {
+        const path = this.componentPaths.get(instance as unknown as object)
+        if (path && this.logicComponentDefinitions.has(path)) instance.triggerLifetime('ready', [])
+      }
+    }
     for (const [componentId, instance] of this.componentInstances) {
       if (this.emittedLifecycles.get(instance as unknown as object)?.has('ready')) continue
       const path = this.componentPaths.get(instance as unknown as object) ?? instance.is
@@ -813,7 +873,7 @@ export class GlassEaselRuntimeAdapter {
     const reservedData = Object.fromEntries(
       [...reservedNames].map((name) => [name, schema.properties[name]?.value]),
     )
-    const definition = this.componentSpace
+    let builder: any = this.componentSpace
       .defineWithMethodCaller(schema.path)
       .definition({
         properties: declaredProperties as never,
@@ -860,6 +920,78 @@ export class GlassEaselRuntimeAdapter {
         adapter.methodCallerComponents.set(methodCaller as object, this)
         return methodCaller
       })
+    const logicDefinition = this.logicComponentDefinitions?.get(schema.path)
+    if (logicDefinition) {
+      const methods = Object.fromEntries(logicDefinition.methods) as Record<string, (...args: unknown[]) => unknown>
+      if (this.logicQueryFactory) {
+        methods.createSelectorQuery = function (this: glassEasel.GeneralComponent) {
+          return adapter.logicQueryFactory?.(this)
+        }
+      }
+      methods.groupSetData = function (...args: unknown[]) {
+        const callback = args[0]
+        if (typeof callback === 'function') (callback as () => void)()
+      }
+      if (this.logicIntersectionFactory) {
+        methods.createIntersectionObserver = function (
+          this: glassEasel.GeneralComponent,
+          ...args: unknown[]
+        ) {
+          return adapter.logicIntersectionFactory?.(
+            this,
+            args[0] as Record<string, unknown> | undefined,
+          )
+        }
+      }
+      if (Object.keys(methods).length > 0) builder = builder.methods(methods)
+      builder = builder.observer('**', function (this: glassEasel.GeneralComponent) {
+        adapter.notifyLogicDataChange(adapter.resolveMethodCaller(this) ?? this)
+      })
+      for (const [name, handlers] of Object.entries(logicDefinition.lifetimeHandlers)) {
+        for (const handler of handlers) {
+          builder = builder.lifetime(name, function (
+            this: glassEasel.GeneralComponent,
+            ...args: unknown[]
+          ) {
+            const target = adapter.resolveMethodCaller(this) ?? this
+            return handler.apply(target, args)
+          })
+        }
+      }
+      for (const [name, handlers] of Object.entries(logicDefinition.pageLifetimeHandlers)) {
+        for (const handler of handlers) {
+          builder = builder.pageLifetime(name, function (
+            this: glassEasel.GeneralComponent,
+            ...args: unknown[]
+          ) {
+            const target = adapter.resolveMethodCaller(this) ?? this
+            return handler.apply(target, args)
+          })
+        }
+      }
+      for (const observer of logicDefinition.observers) {
+        const handler = typeof observer.handler === 'string'
+          ? methods[observer.handler]
+          : observer.handler
+        if (typeof handler !== 'function') continue
+        builder = builder.observer(observer.paths, handler)
+      }
+      for (const relation of logicDefinition.relations) {
+        const params: Record<string, unknown> = {
+          type: relation.type,
+          // Glass resolves string targets relative to the owner's `is`; relation
+          // targets are already normalized to the root, so keep them absolute.
+          target: `/${relation.targetPath}`,
+        }
+        for (const name of ['linked', 'unlinked', 'linkChanged', 'linkFailed'] as const) {
+          const handler = relation[name]
+          if (!handler) continue
+          params[name] = typeof handler === 'string' ? methods[handler] : handler
+        }
+        builder = builder.relation(relation.key, params)
+      }
+    }
+    const definition = builder
       .lifetime('created', function (this: glassEasel.GeneralComponent) {
         const component = adapter.resolveMethodCaller(this)
         if (component) adapter.emitComponentLifecycle(schema, 'created', component)
@@ -1014,6 +1146,57 @@ export class GlassEaselRuntimeAdapter {
     return output.join('/')
   }
 
+  private logicPageMethods(path: string): Record<string, (...args: unknown[]) => unknown> {
+    const methods: Record<string, (...args: unknown[]) => unknown> = {}
+    const options = this.logicPageOptions?.get(path)
+    if (options) {
+      const explicit = (options as { methods?: Record<string, unknown> }).methods
+      if (explicit && typeof explicit === 'object') {
+        for (const [name, value] of Object.entries(explicit)) {
+          if (typeof value === 'function') methods[name] = value as (...args: unknown[]) => unknown
+        }
+      }
+      for (const [name, value] of Object.entries(options)) {
+        if (typeof value !== 'function') continue
+        if (name === 'data' || name === 'methods' || name === 'options' || name === 'behaviors') continue
+        if (PAGE_LIFECYCLE_KEYS.has(name)) continue
+        methods[name] = value as (...args: unknown[]) => unknown
+      }
+    }
+    const component = this.logicComponentDefinitions?.get(path)
+    if (component) {
+      for (const [name, value] of component.methods) {
+        if (!(name in methods)) methods[name] = value as (...args: unknown[]) => unknown
+      }
+    }
+    return methods
+  }
+
+  private notifyLogicDataChange(component: glassEasel.GeneralComponent): void {
+    const resolved = this.resolveMethodCaller(component) ?? component
+    let current = resolved as unknown as {
+      parentNode?: unknown
+      ownerShadowRoot?: { owner?: unknown }
+    } | undefined
+    for (let depth = 0; depth < 8 && current; depth += 1) {
+      const pageId = this.pageIdsByComponent.get(current as unknown as object)
+      if (pageId) {
+        this.onLogicDataChange?.(pageId)
+        return
+      }
+      const parent = current.parentNode
+      if (parent && typeof parent === 'object') {
+        current = parent as typeof current
+        continue
+      }
+      const owner = current.ownerShadowRoot
+      current = owner && typeof owner === 'object' && owner.owner && typeof owner.owner === 'object'
+        ? owner.owner as typeof current
+        : undefined
+    }
+    if (this.activeEventPageId) this.onLogicDataChange?.(this.activeEventPageId)
+  }
+
   private createEventMethodCaller(
     pageId: string,
     componentId?: string,
@@ -1021,12 +1204,21 @@ export class GlassEaselRuntimeAdapter {
     componentPath?: string,
   ): unknown {
     const adapter = this
-    return new Proxy({}, {
+    const logicMode = Boolean(this.logicComponentDefinitions)
+    const instanceFields: Record<string, unknown> = {}
+    return new Proxy(instanceFields, {
       has() {
         return true
       },
-      get(_target, property) {
+      get(target, property) {
         if (typeof property !== 'string') return undefined
+        if (Object.prototype.hasOwnProperty.call(target, property)) return target[property]
+        if (logicMode && component && !property.startsWith('_$')) {
+          const value = (component as unknown as Record<string, unknown>)[property]
+          if (value !== undefined) {
+            return typeof value === 'function' ? value.bind(component) : value
+          }
+        }
         // glass-easel routes core instance methods through the method caller
         // when `useMethodCallerListeners` is enabled; forward those to the
         // component instead of treating them as mini-program event handlers.
@@ -1036,12 +1228,24 @@ export class GlassEaselRuntimeAdapter {
         }
         return adapter.createEventDispatcher(pageId, property, componentId, component, componentPath)
       },
-      getOwnPropertyDescriptor(_target, property) {
+      set(target, property, value) {
+        if (typeof property === 'string') target[property] = value
+        return true
+      },
+      getOwnPropertyDescriptor(target, property) {
         if (typeof property !== 'string') return undefined
+        if (Object.prototype.hasOwnProperty.call(target, property)) {
+          return {
+            configurable: true,
+            enumerable: true,
+            writable: true,
+            value: target[property],
+          }
+        }
         return {
           configurable: true,
           enumerable: true,
-        value: adapter.createEventDispatcher(pageId, property, componentId, component, componentPath),
+          value: adapter.createEventDispatcher(pageId, property, componentId, component, componentPath),
         }
       },
     })

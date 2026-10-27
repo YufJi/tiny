@@ -5,6 +5,24 @@ export function cloneJsonSafe<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
 }
 
+/**
+ * Clone mini-program data without dropping function values. Function values
+ * stay in the logic layer; bridge payloads are sanitized separately.
+ */
+export function cloneDataValue<T>(value: T): T {
+  if (typeof value === 'function') return value
+  if (Array.isArray(value)) return value.map((item) => cloneDataValue(item)) as T
+  if (value && typeof value === 'object') {
+    if (value instanceof Date) return new Date(value.getTime()) as T
+    const result: Record<string, unknown> = {}
+    for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+      result[key] = cloneDataValue(item)
+    }
+    return result as T
+  }
+  return value
+}
+
 export function applyDataPatch(data: Record<string, unknown>, patch: DataPatch): Record<string, unknown> {
   for (const [path, value] of Object.entries(patch)) {
     writeDataPath(data, parseDataPath(path), value)
