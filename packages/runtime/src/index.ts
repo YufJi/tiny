@@ -7,3 +7,6 @@ export * from './render';
 export * from './host';
 export { HANDLED_NATIVE_EVENT, isNativeEventHandled, markNativeEventHandled } from './events'
 export { TINY_ENGINE_NAMING } from '@tiny/manifest'
+
+export * from './tree/protocol'
+export * from './tree/diff'
