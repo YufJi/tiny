@@ -114,69 +114,15 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
 
   const wireRenderConnection = (connection: BridgeConnection, pageId: string) => {
     registerHostDiagnosticHandlers(connection, 'render', diagnosticStore)
-    connection.onEvent('event', 'dispatch', (message) => {
-      service.sendEvent('event', 'dispatch', message.payload, { pageId: message.pageId ?? pageId })
-    })
-    connection.onEvent('runtime', 'componentLifecycle', (message) => {
-      const payload = message.payload as { pageId?: string } | undefined
-      service.sendEvent('runtime', 'componentLifecycle', message.payload, {
-        pageId: payload?.pageId ?? message.pageId ?? pageId,
-      })
-    })
     connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, (message) => {
       service.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, message.payload, { pageId: message.pageId ?? pageId })
-    })
-    connection.onEvent('runtime', 'componentPageLifetime', (message) => {
-      service.sendEvent('runtime', 'componentPageLifetime', message.payload, { pageId })
-    })
-    connection.onEvent('runtime', 'componentData', (message) => {
-      service.sendEvent('runtime', 'componentData', message.payload, { pageId: message.pageId ?? pageId })
-    })
-    connection.onEvent('runtime', 'componentObserved', (message) => {
-      service.sendEvent('runtime', 'componentObserved', message.payload, { pageId: message.pageId ?? pageId })
-    })
-    connection.onEvent('page', 'pullDownRefresh', (message) => {
-      service.sendEvent('page', 'pullDownRefresh', message.payload, { pageId })
-    })
-    connection.onEvent('page', 'scroll', (message) => {
-      service.sendEvent('page', 'scroll', message.payload, { pageId })
-    })
-    connection.onEvent('page', 'reachBottom', (message) => {
-      service.sendEvent('page', 'reachBottom', message.payload, { pageId })
-    })
-    connection.onEvent(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, (message) => {
-      service.sendEvent(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, message.payload, { pageId: message.pageId ?? pageId })
     })
   }
 
   if (primaryRender) {
     registerHostDiagnosticHandlers(primaryRender, 'render', diagnosticStore)
-    primaryRender.onEvent('event', 'dispatch', (message) => {
-      service.sendEvent('event', 'dispatch', message.payload, { pageId: message.pageId })
-    })
-    primaryRender.onEvent('runtime', 'componentLifecycle', (message) => {
-      service.sendEvent('runtime', 'componentLifecycle', message.payload)
-    })
-    primaryRender.onEvent('runtime', 'componentPageLifetime', (message) => {
-      service.sendEvent('runtime', 'componentPageLifetime', message.payload)
-    })
-    primaryRender.onEvent('runtime', 'componentData', (message) => {
-      service.sendEvent('runtime', 'componentData', message.payload, { pageId: message.pageId })
-    })
-    primaryRender.onEvent('runtime', 'componentObserved', (message) => {
-      service.sendEvent('runtime', 'componentObserved', message.payload, { pageId: message.pageId })
-    })
-    primaryRender.onEvent('page', 'pullDownRefresh', (message) => {
-      service.sendEvent('page', 'pullDownRefresh', message.payload, { pageId: message.pageId })
-    })
-    primaryRender.onEvent('page', 'scroll', (message) => {
-      service.sendEvent('page', 'scroll', message.payload, { pageId: message.pageId })
-    })
-    primaryRender.onEvent('page', 'reachBottom', (message) => {
-      service.sendEvent('page', 'reachBottom', message.payload, { pageId: message.pageId })
-    })
-    primaryRender.onEvent(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, (message) => {
-      service.sendEvent(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, message.payload, { pageId: message.pageId })
+    primaryRender.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, (message) => {
+      service.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, message.payload, { pageId: message.pageId })
     })
   }
 
@@ -454,9 +400,6 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
     apiRegistry.handlers['page.stopPullDownRefresh'] = () => ({ status: 'stopped' })
   }
   registerHostApiHandlers(service, apiRegistry)
-  service.onEvent('event', 'trigger', (message) => {
-    routeServiceEvent('event', 'trigger', message.payload, message.pageId)
-  })
   service.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.flow, (message) => {
     routeServiceEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.flow, message.payload, message.pageId)
   })
@@ -465,9 +408,6 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
   })
   service.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.patch, (message) => {
     routeServiceEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.patch, message.payload, message.pageId)
-  })
-  service.onEvent('data', 'setData', (message) => {
-    routeServiceEvent('data', 'setData', message.payload, message.pageId)
   })
   service.onCall(CANVAS_CONTROL.domain, CANVAS_CONTROL.measure, (message) => {
     const connection = getRenderConnection(message.pageId)
