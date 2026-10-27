@@ -117,12 +117,22 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
     connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, (message) => {
       service.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, message.payload, { pageId: message.pageId ?? pageId })
     })
+    connection.onEvent(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, (message) => {
+      service.sendEvent(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, message.payload, {
+        pageId: message.pageId ?? pageId,
+      })
+    })
   }
 
   if (primaryRender) {
     registerHostDiagnosticHandlers(primaryRender, 'render', diagnosticStore)
     primaryRender.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, (message) => {
       service.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, message.payload, { pageId: message.pageId })
+    })
+    primaryRender.onEvent(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, (message) => {
+      service.sendEvent(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, message.payload, {
+        pageId: message.pageId,
+      })
     })
   }
 

@@ -52,6 +52,8 @@ export class MiniProgramPageInstance implements ObserverHost {
     definition?: NormalizedComponentDefinition,
     private readonly logicSelection?: (selector: string, all: boolean) => unknown[],
     private readonly logicRelations?: (relationKey: string) => unknown[],
+    private readonly logicQuery?: () => Record<string, unknown>,
+    private readonly logicIntersection?: (options?: Record<string, unknown>) => Record<string, unknown>,
   ) {
     this.pageId = pageId
     this.componentId = `page:${pageId}`
@@ -114,6 +116,8 @@ export class MiniProgramPageInstance implements ObserverHost {
       selectAllComponents: this.selectAllComponents.bind(this),
       selectOwnerComponent: this.selectOwnerComponent.bind(this),
       getRelationNodes: this.getRelationNodes.bind(this),
+      createSelectorQuery: this.createSelectorQuery.bind(this),
+      createIntersectionObserver: this.createIntersectionObserver.bind(this),
       hasBehavior: this.hasBehavior.bind(this),
       triggerEvent: this.triggerEvent.bind(this),
     })
@@ -195,6 +199,14 @@ export class MiniProgramPageInstance implements ObserverHost {
     // Relations are resolved by the glass-easel logic tree; the page wrapper
     // forwards to it instead of mirroring a second component graph.
     return this.logicRelations?.(relationKey) ?? []
+  }
+
+  createSelectorQuery(): Record<string, unknown> {
+    return this.logicQuery?.() ?? {}
+  }
+
+  createIntersectionObserver(options?: Record<string, unknown>): Record<string, unknown> {
+    return this.logicIntersection?.(options) ?? {}
   }
 
   hasBehavior(behavior: unknown): boolean {

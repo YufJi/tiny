@@ -71,6 +71,32 @@ export type RenderElement = {
 
 export type RenderNode = RenderText | RenderElement
 
+export type RenderRect = {
+  left: number
+  top: number
+  right: number
+  bottom: number
+  width: number
+  height: number
+}
+
+export type RenderIntersectionRequest = {
+  observerId: string
+  viewIds: RenderNodeId[]
+  rootViewId?: RenderNodeId
+  thresholds?: number[]
+  rootMargin?: { left?: number; right?: number; top?: number; bottom?: number }
+}
+
+export type RenderIntersectionEntry = {
+  viewId: RenderNodeId
+  boundingClientRect: RenderRect
+  intersectionRect: RenderRect
+  relativeRect: RenderRect
+  intersectionRatio: number
+  time: number
+}
+
 export type RenderPatch =
   | { type: 'text'; id: RenderNodeId; text: string }
   | { type: 'replace'; id: RenderNodeId; node: RenderNode }

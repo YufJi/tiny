@@ -447,6 +447,22 @@ export class LogicTreeAdapter {
     return { touches: this.activeTouches, changedTouches: this.activeChangedTouches }
   }
 
+  /** Page-level `this.createSelectorQuery()`; resolved by the glass page. */
+  pageSelectorQuery(pageId: string): Record<string, unknown> {
+    return this.createSelectorQueryFor(this.glass.getMountedComponentByPageId(pageId))
+  }
+
+  /** Page-level `this.createIntersectionObserver()`. */
+  pageIntersectionObserver(
+    pageId: string,
+    options?: Record<string, unknown>,
+  ): Record<string, unknown> {
+    return this.createIntersectionObserverFor(
+      this.glass.getMountedComponentByPageId(pageId),
+      options ?? {},
+    )
+  }
+
   createSelectorQueryFor(component: unknown): Record<string, unknown> {
     const node = findLogicNodeByElement(component)
       ?? [...this.pageRoots.values()][0]

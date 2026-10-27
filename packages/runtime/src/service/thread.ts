@@ -26,7 +26,7 @@ import { MiniProgramPageRegistry } from './page-registry'
 import { MiniProgramPageInstance, type PageLifecycleName } from './page-instance'
 import { createServiceApiHost, installMiniProgramGlobals } from './api-host'
 import { createSelectorQuery } from './selector-query'
-import { LogicTreeAdapter } from '../tree/logic'
+import { LogicTreeAdapter, type ViewIntersectionEntry } from '../tree/logic'
 import { findPageArtifact, normalizeRoutePath, requireActivePage, resolveComponentReference } from './route'
 import type { MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime, TabBarApi } from './types'
 
@@ -207,108 +207,14 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     () => pageStack,
   )
   const componentTree = new ComponentTree()
-  type IntersectionRelativeTo = {
-    type: 'viewport' | 'selector'
-    selector?: string
-    margins?: { left?: number; right?: number; top?: number; bottom?: number }
-  }
-  type IntersectionObserverRegistration = {
-    callbacks: Map<string, Set<(entry: QueryIntersectionEntry) => void>>
-    relativeTo: IntersectionRelativeTo
-    thresholds: number[]
-  }
-  const intersectionObservers = new Map<string, IntersectionObserverRegistration>()
-  let intersectionObserverCounter = 0
-
   connection.onEvent(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, (message) => {
     const payload = (message.payload ?? {}) as {
       observerId?: string
-      selector?: string
-      entries?: QueryIntersectionEntry[]
+      entries?: ViewIntersectionEntry[]
     }
-    const registration = payload.observerId
-      ? intersectionObservers.get(payload.observerId)
-      : undefined
-    if (!registration) return
-    const callbacks = registration.callbacks.get(String(payload.selector ?? ''))
-    if (!callbacks) return
-    for (const entry of payload.entries ?? []) {
-      for (const callback of callbacks) {
-        try {
-          callback(entry)
-        } catch (error) {
-          connection.sendDiagnostic('warn', {
-            code: DIAGNOSTIC_CODES.INTERSECTION_CALLBACK_ERROR,
-            message: error instanceof Error ? error.message : String(error),
-          }, message.pageId)
-        }
-      }
-    }
+    if (!logicTree || !payload.observerId || !payload.entries) return
+    logicTree.handleViewIntersection(payload.observerId, payload.entries)
   })
-
-  const createComponentIntersectionObserver = (
-    pageId: string,
-    componentId: string,
-    options: Record<string, unknown> = {},
-  ): Record<string, unknown> => {
-    intersectionObserverCounter += 1
-    const observerId = `intersection-${intersectionObserverCounter}`
-    const registration: IntersectionObserverRegistration = {
-      callbacks: new Map(),
-      relativeTo: { type: 'viewport' },
-      thresholds: Array.isArray(options.thresholds)
-        ? options.thresholds.map((value) => Number(value)).filter((value) => Number.isFinite(value))
-        : [0],
-    }
-    intersectionObservers.set(observerId, registration)
-    const send = (action: 'observe' | 'unobserve' | 'disconnect', selector?: string): void => {
-      const payload = cloneJsonSafe({
-        action,
-        observerId,
-        componentId,
-        pageId,
-        selector,
-        thresholds: registration.thresholds,
-        observeAll: options.observeAll === true,
-        relativeTo: registration.relativeTo,
-      })
-      void connection.call(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, payload, { pageId }).catch(() => undefined)
-    }
-    const resendRelativeTo = (): void => {
-      for (const selector of registration.callbacks.keys()) send('observe', selector)
-    }
-    const handle: Record<string, unknown> = {
-      relativeTo(selector: string, margins?: IntersectionRelativeTo['margins']) {
-        registration.relativeTo = { type: 'selector', selector: String(selector), margins }
-        resendRelativeTo()
-        return handle
-      },
-      relativeToViewport(margins?: IntersectionRelativeTo['margins']) {
-        registration.relativeTo = { type: 'viewport', margins }
-        resendRelativeTo()
-        return handle
-      },
-      observe(selector: string, callback: (entry: QueryIntersectionEntry) => void) {
-        if (typeof selector !== 'string' || typeof callback !== 'function') return handle
-        const callbacks = registration.callbacks.get(selector) ?? new Set()
-        callbacks.add(callback)
-        registration.callbacks.set(selector, callbacks)
-        send('observe', selector)
-        return handle
-      },
-      unobserve(selector: string) {
-        registration.callbacks.delete(selector)
-        send('unobserve', selector)
-        return handle
-      },
-      disconnect() {
-        send('disconnect')
-        intersectionObservers.delete(observerId)
-        return undefined
-      },
-    }
-    return handle
-  }
 
   const pendingDataPatches = new Map<string, {
     kind: 'page' | 'component'
@@ -604,6 +510,8 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       componentDefinition,
       (selector, all) => logicTree?.selectComponents(pageId, selector, all) ?? [],
       (relationKey) => logicTree?.relationNodes(pageId, relationKey) ?? [],
+      () => logicTree?.pageSelectorQuery(pageId) ?? {},
+      (observerOptions) => logicTree?.pageIntersectionObserver(pageId, observerOptions) ?? {},
     )
     if (componentDefinition) page.triggerComponentLifecycle('created')
     pageInstances.set(page.pageId, page)
@@ -727,6 +635,24 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
             message,
             details,
           }, pageId)
+        },
+        viewIntersection: {
+          observe: (request) => {
+            void connection.call(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, {
+              action: 'observe',
+              observerId: request.observerId,
+              viewIds: request.viewIds,
+              ...(request.rootViewId ? { rootViewId: request.rootViewId } : {}),
+              ...(request.thresholds ? { thresholds: request.thresholds } : {}),
+              ...(request.rootMargin ? { rootMargin: request.rootMargin } : {}),
+            }, { pageId: request.pageId }).catch(() => undefined)
+          },
+          unobserve: (observerId, pageId) => {
+            void connection.call(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, {
+              action: 'disconnect',
+              observerId,
+            }, { pageId }).catch(() => undefined)
+          },
         },
       })
       logicTree.registerComponentSchemas(componentSchemas)

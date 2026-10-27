@@ -7,6 +7,8 @@ import {
   TREE_PROTOCOL,
   type ComponentFlow,
   type RenderElement,
+  type RenderIntersectionEntry,
+  type RenderIntersectionRequest,
   type RenderNode,
   type RenderPatch,
   type RenderText,
@@ -43,6 +45,10 @@ export type TreeRenderer = {
   inspectTree?: () => unknown
   measure?: (ids: string[]) => Record<string, unknown>
   query?: (selector: string, all: boolean) => unknown[]
+  observeIntersection?: (
+    request: RenderIntersectionRequest,
+    emit: (entries: RenderIntersectionEntry[]) => void,
+  ) => (() => void) | undefined
   dispose?: () => void
 }
 
@@ -187,7 +193,33 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     const payload = (message.payload ?? {}) as { selector?: string; all?: boolean }
     return { nodes: options.renderer.query?.(String(payload.selector ?? ''), payload.all === true) ?? [] }
   })
-  connection.onControl(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, () => ({ status: 'missing-intersection' }))
+  const intersectionObservers = new Map<string, () => void>()
+  connection.onControl(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, (message) => {
+    const payload = (message.payload ?? {}) as {
+      action?: 'observe' | 'unobserve' | 'disconnect'
+      observerId?: string
+    } & RenderIntersectionRequest
+    const observerId = payload.observerId
+    if (!observerId) return { status: 'missing-observer' }
+    if (payload.action === 'unobserve' || payload.action === 'disconnect') {
+      intersectionObservers.get(observerId)?.()
+      intersectionObservers.delete(observerId)
+      return { status: 'unobserved' }
+    }
+    if (payload.action !== 'observe') return { status: 'missing-action' }
+    const cleanup = options.renderer.observeIntersection?.(payload, (entries) => {
+      connection.sendEvent(
+        QUERY_CONTROL.domain,
+        QUERY_CONTROL.intersection,
+        { observerId, entries },
+        currentPageId ? { pageId: currentPageId } : {},
+      )
+    })
+    if (!cleanup) return { status: 'unsupported-intersection' }
+    intersectionObservers.get(observerId)?.()
+    intersectionObservers.set(observerId, cleanup)
+    return { status: 'observing' }
+  })
   connection.onControl(TREE_PROTOCOL.domain, TREE_PROTOCOL.inspectTree, () => options.renderer.inspectTree?.() ?? null)
   connection.onControl(CANVAS_CONTROL.domain, CANVAS_CONTROL.measure, (message) => {
     const payload = (message.payload ?? {}) as { selector?: string; canvasId?: string }

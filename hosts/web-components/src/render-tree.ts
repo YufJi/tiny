@@ -1,6 +1,14 @@
 import * as glassEasel from 'glass-easel'
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
-import type { RenderElement, RenderNode, RenderPatch, RenderText } from '@tiny/runtime'
+import type {
+  RenderElement,
+  RenderIntersectionEntry,
+  RenderIntersectionRequest,
+  RenderNode,
+  RenderPatch,
+  RenderRect,
+  RenderText,
+} from '@tiny/runtime'
 import { createBuiltinComponents } from './index'
 import { BUILTIN_COMPONENT_TAGS, type BuiltinComponentTag } from './tags'
 
@@ -40,6 +48,10 @@ export type GlassRenderTree = {
     canvasId: string
     hasCanvas: boolean
   }
+  observeIntersection?: (
+    request: RenderIntersectionRequest,
+    emit: (entries: RenderIntersectionEntry[]) => void,
+  ) => (() => void) | undefined
   setEventSink?: (sink: (event: GlassRenderEvent) => void) => void
   setPagePath?: (pagePath: string) => void
   setDiagnosticSink?: (sink: (diagnostic: {
@@ -529,6 +541,69 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     },
     setPagePath: (pagePath) => {
       currentPagePath = pagePath
+    },
+    observeIntersection: (request, emit) => {
+      if (typeof IntersectionObserver === 'undefined' || !rootElement) return undefined
+      const elementFor = (id: string): Element | null => (
+        rootElement.querySelector(`[${TINY_ENGINE_NAMING.nodeIdAttribute}="${id}"]`)
+      )
+      const targets = request.viewIds
+        .map((id) => elementFor(id))
+        .filter((element): element is Element => element !== null)
+      if (targets.length === 0) return undefined
+      const root = request.rootViewId ? elementFor(request.rootViewId) : null
+      const margin = request.rootMargin
+      const rootMargin = margin
+        ? [margin.top ?? 0, margin.right ?? 0, margin.bottom ?? 0, margin.left ?? 0]
+          .map((value) => `${value}px`)
+          .join(' ')
+        : undefined
+      const toRect = (rect: {
+        left: number
+        top: number
+        right: number
+        bottom: number
+        width: number
+        height: number
+      } | null): RenderRect => ({
+        left: rect?.left ?? 0,
+        top: rect?.top ?? 0,
+        right: rect?.right ?? 0,
+        bottom: rect?.bottom ?? 0,
+        width: rect?.width ?? 0,
+        height: rect?.height ?? 0,
+      })
+      const observer = new IntersectionObserver((entries) => {
+        const payload: RenderIntersectionEntry[] = []
+        for (const entry of entries) {
+          const element = entry.target as Element
+          const viewId = element.getAttribute(TINY_ENGINE_NAMING.nodeIdAttribute) ?? ''
+          if (!viewId) continue
+          const viewport = entry.rootBounds ?? {
+            left: 0,
+            top: 0,
+            right: typeof window === 'undefined' ? 0 : window.innerWidth,
+            bottom: typeof window === 'undefined' ? 0 : window.innerHeight,
+            width: typeof window === 'undefined' ? 0 : window.innerWidth,
+            height: typeof window === 'undefined' ? 0 : window.innerHeight,
+          }
+          payload.push({
+            viewId,
+            boundingClientRect: toRect(entry.boundingClientRect),
+            intersectionRect: toRect(entry.intersectionRect),
+            relativeRect: toRect(viewport),
+            intersectionRatio: entry.intersectionRatio,
+            time: entry.time,
+          })
+        }
+        if (payload.length > 0) emit(payload)
+      }, {
+        root,
+        ...(rootMargin ? { rootMargin } : {}),
+        threshold: request.thresholds?.length ? request.thresholds : [0],
+      })
+      for (const target of targets) observer.observe(target)
+      return () => observer.disconnect()
     },
     setDiagnosticSink: (sink) => {
       diagnosticSink = sink

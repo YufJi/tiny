@@ -5,14 +5,9 @@
 
 export type ViewNodeId = string
 
-export type ViewIntersectionEntry = {
-  viewId: ViewNodeId
-  boundingClientRect: ViewRect
-  intersectionRect: ViewRect
-  relativeRect: ViewRect
-  intersectionRatio: number
-  time: number
-}
+import type { RenderIntersectionEntry, RenderRect } from '../protocol'
+
+export type ViewIntersectionEntry = RenderIntersectionEntry
 
 export type ViewIntersectionRequest = {
   observerId: string
@@ -22,14 +17,7 @@ export type ViewIntersectionRequest = {
   rootMargin?: { left?: number; right?: number; top?: number; bottom?: number }
 }
 
-export type ViewRect = {
-  left: number
-  top: number
-  right: number
-  bottom: number
-  width: number
-  height: number
-}
+export type ViewRect = RenderRect
 
 export type ViewEventPayload = {
   viewId: ViewNodeId

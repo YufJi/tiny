@@ -9,6 +9,7 @@ export type SplitTreeHarnessOptions = {
   artifacts: { templates: TemplateRegistry }
   initialPath?: string
   loadStyle?: StyleLoader
+  renderer?: Partial<TreeRenderer>
 }
 
 export type RenderThreadRuntime = {
@@ -35,7 +36,10 @@ export function bootSplitTreeHarness(options: SplitTreeHarnessOptions): RenderTh
     templates: options.artifacts.templates,
     loadStyle: options.loadStyle ?? (() => ''),
   })
-  const runtime = bootTreeThread({ transport: options.transport, renderer: noopRenderer })
+  const runtime = bootTreeThread({
+    transport: options.transport,
+    renderer: { ...noopRenderer, ...options.renderer },
+  })
   return {
     adapter: new Proxy({} as Record<string, unknown>, {
       get: (_target, property: string) => {

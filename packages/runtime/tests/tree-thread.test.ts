@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { BridgeConnection, createInMemoryTransportPair } from '@tiny/bridge'
 import { bootTreeThread } from '../src/tree/render/thread'
-import type { RenderNode, RenderPatch } from '../src/tree/protocol'
+import { QUERY_CONTROL, type RenderNode, type RenderPatch } from '../src/tree/protocol'
 
 const tree: RenderNode = {
   type: 'element',
@@ -101,5 +101,64 @@ describe('tree thread', () => {
       pageId: 'page-1',
       native: { clientX: 1 },
     })
+  })
+
+  test('bridges intersection observers to the renderer', async () => {
+    const [hostTransport, renderTransport] = createInMemoryTransportPair()
+    const entries: unknown[] = []
+    let observed: Record<string, unknown> | undefined
+    let cleaned = false
+    const rect = () => ({ left: 0, top: 0, right: 120, bottom: 40, width: 120, height: 40 })
+
+    bootTreeThread({
+      transport: renderTransport,
+      initialPageId: 'page-1',
+      renderer: {
+        mount: () => {},
+        applyPatches: () => {},
+        observeIntersection: (request, emit) => {
+          observed = request as unknown as Record<string, unknown>
+          emit([{
+            viewId: 'view',
+            boundingClientRect: rect(),
+            intersectionRect: rect(),
+            relativeRect: rect(),
+            intersectionRatio: 1,
+            time: 1,
+          }])
+          return () => { cleaned = true }
+        },
+      },
+    })
+    const host = new BridgeConnection({
+      localRole: 'host',
+      peerRole: 'render',
+      transport: hostTransport,
+      respondToHello: false,
+    })
+    host.onEvent(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, (message) => {
+      entries.push(message.payload)
+    })
+    await host.handshake()
+
+    const result = await host.control(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, {
+      action: 'observe',
+      observerId: 'observer-1',
+      viewIds: ['view'],
+      thresholds: [0.5],
+    }, { pageId: 'page-1' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(result).toMatchObject({ status: 'observing' })
+    expect(observed).toMatchObject({ observerId: 'observer-1', viewIds: ['view'], thresholds: [0.5] })
+    expect(entries[0]).toMatchObject({
+      observerId: 'observer-1',
+      entries: [{ viewId: 'view', intersectionRatio: 1 }],
+    })
+
+    await host.control(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, {
+      action: 'disconnect',
+      observerId: 'observer-1',
+    }, { pageId: 'page-1' })
+    expect(cleaned).toBe(true)
   })
 })
