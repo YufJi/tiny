@@ -3,9 +3,9 @@ title: '用真实小程序验收，'
 highlight: '不只跑单元测试'
 eyebrow: '测试与验收'
 lede: >-
-  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 和 render 线程，在 Chromium 里点击、输入、导航，失败时保存截图。180 个单元测试覆盖协议、组件语义和编译逻辑，51 个浏览器步骤验证端到端行为。
+  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 和 render 线程，在 Chromium 里点击、输入、导航，失败时保存截图。207 个单元测试覆盖协议、组件语义和编译逻辑，51 个浏览器步骤验证端到端行为。
 stats:
-  - ['180', '单元测试']
+  - ['207', '单元测试']
   - ['51', '浏览器步骤']
   - ['5', '浏览器流程']
   - ['5', '测试小程序']
@@ -43,11 +43,11 @@ pnpm accept:glass-easel 是唯一完整的端到端入口，任何单个包的�
 
 | 流程 | 测试小程序 | 步数 | 验证内容 |
 | --- | --- | --- | --- |
-| P0 demo | `tests/apps/demo` | 24 | 双线程启动、内置组件、按钮矩阵、样式作用域、事件、导航、storage、canvas 诊断/2D/WebGL/legacy/ECharts、组件语义、零 console error |
-| 现有示例 | `tests/apps/mini` | 9 | 真实 todos、双 add-button 实例、import/include/template、输入、ECharts 柱状图、子包、warning |
+| P0 demo | `tests/apps/demo` | 20 | 双线程启动、内置组件、按钮矩阵、样式作用域、事件、导航、storage、canvas 诊断/2D/WebGL/legacy/ECharts、组件语义、零 console error |
+| 现有示例 | `tests/apps/mini` | 10 | 真实 todos、双 add-button 实例、import/include/template、输入、ECharts 柱状图、子包、warning |
 | Taro 3 | `tests/apps/todo` | 6 | Redux todos、输入 + Enter、勾选、筛选、清空、零错误 |
-| WeChat demo | `tests/apps/wechat-demo` | 4 | 组件索引、button 页、storage API 页、零错误 |
-| 调试器 | `apps/devtool` | 8 | 默认列表和启动、状态投影、元素树、导航/返回、逐个预览测试应用、3 应用 LRU 保活、页面栈上限、Reload/Close app、零错误 |
+| WeChat demo | `tests/apps/wechat-demo` | 6 | 组件索引、button 页、storage API 页、零错误 |
+| 调试器 | `apps/devtool` | 9 | 默认列表和启动、状态投影、元素树、导航/返回、逐个预览测试应用、3 应用 LRU 保活、页面栈上限、Reload/Close app、零错误 |
 
 ::::split
 :::card{title="检查哪些内容"}
@@ -65,7 +65,7 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 :::
 ::::
 
-## 180 个单元测试，按包执行 {#units kicker="单元测试"}
+## 207 个单元测试，按包执行 {#units kicker="单元测试"}
 
 没有全局 test runner，每个包单独跑，避免隐式耦合，也方便定位失败。
 
@@ -73,10 +73,10 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 | --- | --- | --- |
 | `@tiny/bridge` | 10 | 信封校验、版本和路由错误、payload 校验、握手、调用关联、超时、关闭、批处理顺序、诊断插队、MessagePort |
 | `@tiny/template-compiler` | 30 | 脚本依赖、WXS、import/include、模板别名、ProcGen 签名、绑定表复用、事件简写、data-* 绑定、stringify 往返 |
-| `@tiny/stylesheet-compiler` | 29 | class/tag 前缀、rpx/calc、@import 编码和包装、@layer、:host 低优先级、hostAttribute、keyframes、page 根节点 |
-| `@tiny/cli` | 13 | manifest 全产物、命名配置、WXS 双注册、配置合并、service/render 入口、TS/source map、样式作用域、tag marker |
-| `@tiny/host-web-components` | 30 | 23 个 tag 模板、共享 behaviors、button 对齐、label、input、checkbox/slider/switch、progress/swiper/icon、image/icon 渲染 |
-| `@tiny/runtime` | 64 | 全局安装和命名、双线程 bootstrap、组件 schema、behaviors/observers/relations/externalClasses/styleIsolation/selectComponent、组件型页面、资源、导航、API host、诊断 |
+| `@tiny/stylesheet-compiler` | 36 | class/tag 前缀、rpx/calc、@import 编码和包装、@layer、:host 低优先级、hostAttribute、keyframes、page 根节点 |
+| `@tiny/cli` | 17 | manifest 全产物、命名配置、WXS 双注册、配置合并、service/render 入口、TS/source map、样式作用域、tag marker |
+| `@tiny/host-web-components` | 31 | 23 个 tag 模板、共享 behaviors、button 对齐、label、input、checkbox/slider/switch、progress/swiper/icon、image/icon 渲染 |
+| `@tiny/runtime` | 83 | 全局安装和命名、双线程 bootstrap、组件 schema、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、API host、诊断 |
 
 :::callout{title="单测也会跑真实连接"}
 Bridge 测试会真的建立两条内存连接并完成握手；runtime 测试会启动 service/render 线程、注册 Page、执行 bootstrap 和导航。这里没有把整个引擎 mock 掉的做法。
@@ -145,7 +145,7 @@ input 会转发 focus、blur、keydown 和 confirm，Taro 表单按 Enter 可以
 ::::
 
 :::callout{title="兼容不等于完整" tone="warn"}
-这些只是让 Taro 3 React 产物能跑起来的最小集合。Behavior、observers 和 relations 已经实现，但 generics、placeholder、definitionFilter 和自定义 tabBar 还没有完成；其他社区框架没有进入验收。
+这些只是让 Taro 3 React 产物能跑起来的最小集合。Behavior、observers、relations、generics、definitionFilter 和 pureDataPattern 已经有覆盖，但 componentPlaceholder、自定义 tabBar 和其他社区框架没有进入验收。
 :::
 
 ## 常用命令 {#commands kicker="命令和环境变量"}
@@ -209,7 +209,7 @@ pnpm site:check
 :::
 
 :::card{tag="组件" tone="warn" title="组件高级能力未覆盖"}
-generics、placeholder、definitionFilter、完整内置 behavior 和 open-type 真实能力都没有验收。
+componentPlaceholder、完整内置 behavior 和 open-type 真实能力都没有验收；generics、definitionFilter、pureDataPattern 只在 P0 组件语义用例里覆盖。
 :::
 
 :::card{tag="Canvas" tone="warn" title="Canvas 交互未验收"}

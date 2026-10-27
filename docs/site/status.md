@@ -3,13 +3,13 @@ title: '核心已经跑通，'
 highlight: '兼容性还在补齐'
 eyebrow: '现状'
 lede: >-
-  内核已经和宿主解耦，命名配置、组件语义、样式隔离、tabBar、多应用调试器都已就位；接下来主要是补宿主 API、组件覆盖、页面能力、generics/definitionFilter、canvas 交互、原生宿主和性能基线。下面的判断都按当前代码和测试来，不按计划来。
+  内核已经和宿主解耦，命名配置、组件语义、样式隔离、tabBar、多应用调试器都已就位；接下来主要是补宿主 API、组件覆盖、分享菜单等页面形态、canvas 交互、原生宿主和性能基线。下面的判断都按当前代码和测试来，不按计划来。
 pills:
   - ['内核不依赖宿主', 'good']
   - ['组件语义', 'good']
   - ['样式隔离', 'good']
   - ['仅浏览器宿主', 'warn']
-  - ['generics 未实现', 'warn']
+  - ['generics 已接', 'good']
   - ['API 覆盖有限', 'warn']
   - ['性能未量化', 'warn']
 description: 'Tiny 小程序引擎的现状：已跑通的能力、主要缺口、宿主缺口、下一步和设计约束。'
@@ -25,22 +25,22 @@ order: 9
 | 领域 | 状态 | 当前情况和边界 |
 | --- | --- | --- |
 | 编译核心 | :pill[可用]{tone="good"} | 支持 pages、components、subPackages、可配置文件/指令/API 约定、WXML/WXSS/WXS、manifest、service bundle、资源复制和 source map；目前只有全量构建。 |
-| service runtime | :pill[可用]{tone="good"} | App/Page/Component、页面栈、navigateTo/back/switchTab、tabBar 状态和 API、setData、兼容全局与行为 scheme、behaviors/observers/relations、逻辑组件树、storage/system/canvas 协议。 |
+| service runtime | :pill[可用]{tone="good"} | App/Page/Component、页面栈、navigateTo/back/switchTab/redirectTo/reLaunch、tabBar 状态和 API、14 项页面生命周期、7 项应用生命周期、setData、兼容全局与行为 scheme、behaviors/observers/relations/definitionFilter/pureDataPattern、逻辑组件树、storage/system/canvas 协议。 |
 | render adapter | :pill[可用]{tone="good"} | glass-easel ComponentSpace、模板、作用域、styleIsolation、externalClasses、组件定义、生命周期、元素树、资源解析和 canvas 适配。 |
 | bridge | :pill[可用]{tone="good"} | 信封和帧、MessagePort/内存 transport、握手、超时、批处理、JSON 校验；capabilities 还没有用于协商。 |
 | 浏览器宿主 | :pill[可用]{tone="good"} | @tiny/host-browser 支持单 render 和每页 render 两种模式、MessageChannel、tabBar 宿主 UI、DOM canvas、resolveAssetUrl 和 DevtoolRuntimeClient；内核依赖检查通过。 |
 | 原生宿主 | :pill[未实现]{tone="warn"} | 还没有 native transport、native 渲染后端或非浏览器 service 运行时；不过内核已经移除了 document、Image 和 iframe。 |
 | 内置组件 | :pill[较完整]{tone="good"} | 23 个组件和共享 behaviors；checkbox/radio/switch/slider/icon/image/picker 已按 2.7.0 参考重写；input/textarea/scroll-view/swiper 仍是近似实现；navigator/video/rich-text/map 等还缺。 |
-| API | :pill[部分]{tone="warn"} | request、异步 storage、导航/switchTab、system、toast/modal、canvas、selector query 已有；媒体、真实文件、账号、位置、WebSocket 还没有。 |
-| 页面能力 | :pill[部分]{tone="warn"} | 基础生命周期、导航、内置 tabBar/switchTab、页面滚动和触底已经支持；下拉刷新、分享、页面栈恢复还在计划里。 |
-| 组件语义 | :pill[核心可用]{tone="good"} | Behaviors、observers、relations、selectComponent、component-export、component-as-page 已实现；generics、placeholder、definitionFilter 未实现。 |
+| API | :pill[部分]{tone="warn"} | request、异步 storage、5 个路由 API、system、toast/modal、canvas、selector query 已有；媒体、真实文件、账号、位置、WebSocket 还没有。 |
+| 页面能力 | :pill[部分]{tone="warn"} | 14 项页面生命周期、5 个路由 API、内置 tabBar/switchTab、页面滚动/触底/下拉刷新、分享回调和退出状态已经支持；分享菜单 UI、页面转场、页面栈恢复、自定义 tabBar 还缺。 |
+| 组件语义 | :pill[核心可用]{tone="good"} | Behaviors、observers、relations、selectComponent、component-export、component-as-page、generics、definitionFilter、pureDataPattern 已实现；componentPlaceholder、trait behaviors 和 chaining API 未实现。 |
 | 样式系统 | :pill[核心可用]{tone="good"} | class/tag 作用域、rpx、@import、styleIsolation/addGlobalClass、externalClasses、shared CSS 已支持；:host 和低优先级输出未启用。 |
 | Canvas | :pill[部分]{tone="warn"} | canvas 适配器注入、50ms PNG 帧、render 测量/绘制、内置 canvas touch 已支持；没有 rAF 和完整 2D 语义。 |
 | 动画 | :pill[部分]{tone="warn"} | animation 数据会编译成最终态 CSS transform/transition；没有多 step 时序和事件回调。 |
 | 诊断 | :pill[可用]{tone="good"} | 编译、transport、service、render、host 五类诊断统一收集；组件语义新增了 observer、relation、behavior 相关诊断。 |
 | Devtool | :pill[运行时级+]{tone="good"} | 应用列表、点击启动、最近 3 个应用保活、返回列表、设备框、宿主导航和 tabBar、每页 render 帧、Console/Lifecycle/Elements、Reload/Close app；页面栈默认上限 10，宿主可配置。它仍不是完整的微信开发者工具。 |
 | 性能与稳定 | :pill[未量化]{tone="warn"} | 启动、首屏、setData、内存和长时运行都没有基准，也没有压力测试。 |
-| 测试 | :pill[核心链路]{tone="good"} | 180 个单元测试、51 个浏览器步骤和 5 个测试小程序；没有性能、视觉、原生和安全测试。 |
+| 测试 | :pill[核心链路]{tone="good"} | 207 个单元测试、51 个浏览器步骤和 5 个测试小程序；没有性能、视觉、原生和安全测试。 |
 
 ## 现在最影响使用的问题 {#gaps kicker="主要缺口"}
 
@@ -48,7 +48,7 @@ order: 9
 
 ::::cards
 :::card{tag="API" tone="warn" title="宿主 API 还不够全"}
-还缺异步 storage、reLaunch/redirectTo、showModal/showLoading、登录、媒体、文件、位置、WebSocket 和 IntersectionObserver。
+还缺异步 storage 持久化、showModal/showLoading、登录、媒体、文件、位置、WebSocket 和 IntersectionObserver。
 
 未实现的 API 会返回 undefined 并产生 UNSUPPORTED_API 警告，不会直接抛错。
 :::
@@ -58,11 +58,11 @@ order: 9
 :::
 
 :::card{tag="页面" tone="warn" title="页面能力有限"}
-没有下拉刷新、分享、页面栈恢复和自定义 tabBar；子包只验证了直接启动，没有按需加载。
+下拉刷新和分享回调已接，但分享菜单 UI、页面栈恢复、页面转场和自定义 tabBar 还缺；子包只验证了直接启动，没有按需加载。
 :::
 
 :::card{tag="组件语义" tone="warn" title="高级组件能力缺失"}
-generics、placeholder、definitionFilter 未实现；微信内置 behavior（例如 `wx://form-field`）也不支持，目前只支持 component-export。
+generics、definitionFilter、pureDataPattern 已实现；componentPlaceholder、trait behaviors / chaining API 和大多数微信内置 behavior（例如 `wx://form-field`）仍未实现，目前只支持 component-export。
 :::
 
 :::card{tag="Canvas" tone="warn" title="canvas 还不是完整交互"}
@@ -126,11 +126,11 @@ navigateTo 会补发 `page.ready({ components })`；navigateBack 在单 render �
 
 ::::stack
 :::card{tag="P0" title="补齐宿主 API"}
-异步 storage、reLaunch/redirectTo、modal/loading、系统信息异步版；同时把 unsupported API 从“静默返回 undefined”变成可查询的能力清单和明确诊断。
+异步 storage 持久化、modal/loading、系统信息异步版；同时把 unsupported API 从“静默返回 undefined”变成可查询的能力清单和明确诊断。
 :::
 
 :::card{tag="P0" title="补常用组件"}
-navigator、textarea、picker、form、video、rich-text、map；把已有组件的 open-type、表单、颜色和焦点语义补全，并同步扩展组件测试与 P0 fixture。
+navigator、video、rich-text、map、movable-view；把已有组件的 open-type、表单、颜色和焦点语义补全，并同步扩展组件测试与 P0 fixture。
 :::
 
 :::card{tag="P0" title="修复单 render 模式的返回流程"}
@@ -142,11 +142,11 @@ navigator、textarea、picker、form、video、rich-text、map；把已有组件
 :::
 
 :::card{tag="P1" title="页面能力"}
-下拉刷新、分享、页面栈恢复、自定义 tabBar、子包按需加载。
+分享菜单 UI、页面栈恢复、页面转场、自定义 tabBar、子包按需加载。
 :::
 
 :::card{tag="P1" title="组件高级语义"}
-generics、placeholder、definitionFilter、完整内置 behaviors，以及 relations 的边界情况和组件 export 校验。
+componentPlaceholder、trait behaviors / chaining API、完整内置 behaviors，以及 relations 的边界情况和组件 export 校验。
 :::
 
 :::card{tag="P1" title="Canvas 和动画"}
@@ -240,7 +240,7 @@ host-browser、host-web-components、注入能力和接入步骤。
 :::
 
 :::card{tag="测试" title="以测试为准"}
-180 个单元测试和 51 个浏览器步骤。
+207 个单元测试和 51 个浏览器步骤。
 
 [测试与验收 →](#/testing)
 :::

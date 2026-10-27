@@ -283,7 +283,7 @@ service 侧维护完整的组件定义、逻辑组件树和关系图，并不只
 :::card{tag="behaviors" title="合并顺序和限制"}
 每个 behavior 的 properties/data/methods/lifetimes/pageLifetimes/observers/relations/externalClasses/options 都会被收集；重复引用只执行一次。
 
-内置 behavior id（默认 `wx://...`）目前只支持 `component-export`，其他会报 `UNSUPPORTED_BEHAVIOR`。definitionFilter 还没有实现。
+内置 behavior id（默认 `wx://...`）目前只支持 `component-export`，其他会报 `UNSUPPORTED_BEHAVIOR`。Behavior 的 definitionFilter 已按引用链执行；写在 Component 上的 definitionFilter 仍会报诊断。
 :::
 
 :::card{tag="relations" title="双方声明才会建立关系"}
@@ -303,7 +303,7 @@ service 的 ComponentTree 记录 pageId、path、tag、id、class、parent 和�
 :::card{tag="页面生命周期" tone="warn" title="按实例分发"}
 page.show/hide 会遍历 service 里的所有组件实例，逐个调用 pageLifetimes；render 发来的 `componentPageLifetime` 会被忽略，避免重复执行。
 
-generics、placeholder 和 definitionFilter 仍未实现。
+generics、definitionFilter 和 pureDataPattern 已接入；componentPlaceholder 仍未实现。
 :::
 
 :::card{tag="样式" title="组件配置也会进入 schema"}
@@ -477,12 +477,12 @@ canvas 已经从核心 runtime 移出：service 和 render 只接收适配器，
 组件语义和宿主抽象已经补上，但下面这些仍是明确缺口。
 
 ::::cards
-:::card{tag="组件" tone="warn" title="generics / placeholder / definitionFilter"}
-组件泛型、占位组件、definitionFilter，以及微信内置 behavior 仍未实现。遇到不支持的写法会生成诊断，但不会自动降级。
+:::card{tag="组件" tone="warn" title="componentPlaceholder / 内置 behavior"}
+componentPlaceholder、trait behaviors / chaining API 和大多数微信内置 behavior 仍未实现。遇到不支持的写法会生成诊断，但不会自动降级。
 :::
 
-:::card{tag="页面" tone="warn" title="页面能力不完整"}
-还没有下拉刷新、分享、页面栈恢复和自定义 tabBar；内置 tabBar、触底和页面滚动已经接入 devtool。子包目前只是路径，没有按需加载。
+:::card{tag="页面" tone="warn" title="页面形态不完整"}
+14 项页面生命周期和 5 个路由 API 已接，分享回调、下拉刷新和退出状态可用；分享菜单 UI、页面栈恢复、页面转场和自定义 tabBar 还缺。子包目前只是路径，没有按需加载。
 :::
 
 :::card{tag="API" tone="warn" title="API 覆盖有限"}
