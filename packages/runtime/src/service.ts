@@ -649,7 +649,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         currentPath,
         pageId: currentPage.pageId,
         initialData: cloneJsonSafe(currentPage.data),
-        componentSchemas,
+        componentSchemas: cloneJsonSafe(componentSchemas),
         pageComponents,
       }
     } catch (error) {
