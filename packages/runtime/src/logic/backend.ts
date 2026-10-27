@@ -232,7 +232,8 @@ export class LogicBackendShadowRoot extends LogicBackendElement {
   ): LogicBackendElement {
     const node = new LogicBackendElement('component')
     node.tagName = tagName
-    const childScopes = [...this.scopeNames]
+    // An isolated component must not inherit the page/owner class scopes.
+    const childScopes = extraStyleScope ? [...this.scopeNames] : []
     for (const scopeId of [extraStyleScope, styleScope]) {
       if (!scopeId) continue
       const name = this.scopeNameResolver?.(scopeId)

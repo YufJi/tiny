@@ -309,7 +309,10 @@ export class LogicTreeAdapter {
       if (node.tagName === 'switch' && payload.name === 'change') {
         detail = { value: native.checked === true }
       } else if (node.tagName === 'checkbox-group' && payload.name === 'change') {
-        const values: string[] = []
+        const nativeValues = payload.native?.checkedValues
+        const values: string[] = Array.isArray(nativeValues)
+          ? nativeValues.map((value) => String(value))
+          : []
         const visit = (element: LogicBackendElement): void => {
           if (element.tagName === 'checkbox') {
             const checked = element.attributes.get('checked')
@@ -319,7 +322,7 @@ export class LogicTreeAdapter {
           }
           for (const child of element.shadowRoot?.children ?? element.children) visit(child)
         }
-        visit(node)
+        if (values.length === 0) visit(node)
         detail = { value: values }
       } else {
         detail = { value: native.value ?? '', cursor: native.cursor }

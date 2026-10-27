@@ -32,10 +32,21 @@ const propertyName = (name: string): string => (
   name.replace(/-([a-z])/g, (_match, letter: string) => letter.toUpperCase())
 )
 
+let pageScopes: string[] = []
+
 function applyClassProps(element: HTMLElement | null, props: Record<string, unknown> | undefined, scopes: string[] | undefined): void {
   if (!element?.setAttribute) return
-  const classes = String(props?.class ?? '').split(/\s+/).filter(Boolean)
-  const scoped = (scopes ?? []).flatMap((scope) => classes.map((name) => `${scope}--${name}`))
+  const raw = String(props?.class ?? '').split(/\s+/).filter(Boolean)
+  const classes: string[] = []
+  const scoped: string[] = []
+  for (const name of raw) {
+    const escaped = name.startsWith('~')
+    const className = escaped ? name.slice(1) : name
+    classes.push(className)
+    for (const scope of escaped ? pageScopes : (scopes ?? [])) {
+      scoped.push(`${scope}--${className}`)
+    }
+  }
   if (classes.length > 0 || scoped.length > 0) {
     element.setAttribute('class', [...classes, ...scoped].join(' '))
   }
@@ -56,9 +67,8 @@ function applyHostProps(component: AnyComponent, props: Record<string, unknown> 
   } | null
   if (!element?.setAttribute) return
   for (const [name, value] of Object.entries(props ?? {})) {
-    if (name === 'class' || name === 'style' || name === 'id') {
-      element.setAttribute(name, String(value ?? ''))
-    }
+    if (value === undefined) continue
+    element.setAttribute(name, String(value))
   }
 }
 
@@ -183,15 +193,51 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       ? definitions[node.tag as BuiltinComponentTag]
       : containerDefinition(node.tag)
     if (!definition) throw new Error(`no render definition for tag: ${node.tag}`)
-    const component = lightShadow(owner).createComponentByDef(node.tag, definition)
+    const component = lightShadow(owner).createComponentByDef(
+      builtin ? node.tag : `tiny-${node.tag}`,
+      definition,
+    )
     nodes.set(node.id, component)
     currentTree.set(node.id, node)
-    applyClassProps(component.getBackendElement() as unknown as HTMLElement | null, node.props, node.scopes)
     attachEvents(node, component)
+    if (node.tag === 'checkbox-group') {
+      const element = component.getBackendElement() as unknown as HTMLElement | null
+      if (element && typeof element.addEventListener === 'function') {
+        const listener = () => {
+          setTimeout(() => {
+            const native = {
+              checkedValues: Array.from(element.querySelectorAll('input[type="checkbox"]:checked'))
+                .map((input) => (input as HTMLInputElement).value),
+            }
+            const payload = { id: node.id, name: 'change', native }
+            if (eventSink) eventSink(payload)
+            else options.onEvent?.(payload)
+          }, 0)
+        }
+        element.addEventListener('click', listener)
+        const cleanups = eventCleanups.get(node.id) ?? []
+        cleanups.push(() => element.removeEventListener('click', listener))
+        eventCleanups.set(node.id, cleanups)
+      }
+    }
     if (builtin) {
-      component.setData(glassProps(node.props) as never)
+      const props = node.props ?? {}
+      for (const name of ['placeholder-class', 'hover-class']) {
+        const value = props[name]
+        if (value !== undefined && typeof (component as unknown as { setExternalClass?: unknown }).setExternalClass === 'function') {
+          const classes = String(value).split(/\s+/).filter(Boolean)
+          const scoped = classes.flatMap((className) => [
+            className,
+            ...(node.scopes ?? []).map((scope) => `${scope}--${className}`),
+          ])
+          ;(component as unknown as { setExternalClass: (name: string, value: string) => void })
+            .setExternalClass(name, [...new Set(scoped)].join(' '))
+        }
+      }
+      component.setData(glassProps(props) as never)
     }
     applyHostProps(component, node.props)
+    applyClassProps(component.getBackendElement() as unknown as HTMLElement | null, node.props, node.scopes)
     const childOwner = component
     for (const child of node.children ?? []) {
       appendChild(component, child.type === 'text'
@@ -386,8 +432,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         rootId.value = node.id
         nodes.set(node.id, root)
         currentTree.set(node.id, node)
-        applyClassProps(rootElement, node.props, node.scopes)
+        pageScopes = node.scopes ?? []
         applyHostProps(root, node.props)
+        applyClassProps(rootElement, node.props, node.scopes)
       }
       if (options.attach !== false) glassEasel.Element.pretendAttached(root)
     },
