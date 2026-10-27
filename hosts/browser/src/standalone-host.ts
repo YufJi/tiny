@@ -45,7 +45,6 @@ export async function createStandaloneDualThreadHost(
   const container = options.container ?? document.body
   const serviceChannel = createHostMessageChannelPair()
   const withLogic = (url: string): string => {
-    if (options.logicLayer !== 'service') return url
     const target = new URL(url, window.location.href)
     target.searchParams.set('logic', 'service')
     return target.href
@@ -106,7 +105,7 @@ async function createPerPageHost(
 
   const connector: RenderThreadConnector = {
     async connect(pageId) {
-      const iframe = createRenderIframe(options.renderUrl, pageId, options.logicLayer === 'service')
+      const iframe = createRenderIframe(options.renderUrl, pageId, true)
       frames.set(pageId, iframe)
       container.append(iframe)
       updateVisibility()
