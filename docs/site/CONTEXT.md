@@ -27,7 +27,9 @@ stats:                         # optional，hero 下的数字条
   - ['1', '协议版本']
 pills:                         # optional，hero 下的彩色标签
   - ['内核不依赖宿主', 'good']  # tone: good | warn | bad | violet
-description: '一句话摘要，用于 meta description 与 sitemap'
+name: '协议'                   # 导航标签，也用于默认浏览器标题
+pageTitle: 'Bridge 协议 · Tiny 小程序引擎'   # optional，浏览器标题（≤ 30 字）
+description: '一句话摘要，用于 meta description、og:description 与 llms.txt'
 order: 5                       # optional，站点导航顺序
 # 下面两个只用于首页（layout: home）：自定义 hero 的按钮行
 layout: 'home'                 # optional，只有 home 页使用
@@ -35,6 +37,11 @@ actions:                       # layout: home 时必填
   - ['先看整体架构', '#/architecture', 'primary']   # [文案, 链接, primary|ghost]
 ---
 ```
+
+`pageTitle` and `description` are indexed: keep the target terms（小程序引擎 /
+小程序内核）where they read naturally and skip keyword stuffing. The build
+turns them into `<title>`, meta description, Open Graph tags, canonical URL,
+JSON-LD (`WebSite` / `TechArticle` / `BreadcrumbList`) and the sitemap entry.
 
 ## Sections
 

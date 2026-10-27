@@ -69,7 +69,11 @@ function renderLandingHero(meta) {
         'div',
         { className: 'hero-actions' },
         ...meta.actions.map(([label, href, variant], index) =>
-          h('a', { key: index, className: `button ${variant}`, href }, label),
+          h(
+            'a',
+            { key: index, className: `button ${variant}`, href: resolveContentHref(href) },
+            label,
+          ),
         ),
       ),
       h(

@@ -63,8 +63,14 @@ marketing section.
 - `<route>.md` (and `index.md` for the landing page) — the Markdown source,
   served as-is for agents that prefer text over HTML;
 - `llms.txt`, `llms-full.txt` — page index and concatenated content;
-- `sitemap.xml` — one entry per route;
-- `devtool/` — the embedded debugger (unchanged relative-path contract).
+- `sitemap.xml` — one entry per route with `<lastmod>`;
+- `robots.txt`, `404.html` — crawler hint and a styled not-found page;
+- `devtool/` — the embedded debugger (unchanged relative-path contract,
+  marked `noindex`).
+
+Each prerendered page carries a canonical URL, Open Graph / Twitter tags and
+JSON-LD (`WebSite` + `TechArticle` + `BreadcrumbList`); titles and descriptions
+come from frontmatter (`pageTitle`, `description`).
 
 `site:check` verifies that every route has prerendered markup, that assets and
 internal links stay under the configured base, that the Markdown mirrors and

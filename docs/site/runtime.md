@@ -3,7 +3,7 @@ title: 'service 管状态，'
 highlight: 'render 管组件树'
 eyebrow: '运行时'
 lede: >-
-  packages/runtime 不引用 window、document 或 iframe。service 线程负责 App/Page/Component、页面栈、setData、命名、组件语义和逻辑组件树；render 线程负责 glass-easel 组件定义、样式隔离、事件和 DOM。canvas、资源 URL、渲染后端和内置组件都由宿主注入。
+  packages/runtime 是 Tiny 的小程序内核：不引用 window、document 或 iframe。service 线程负责 App/Page/Component、页面栈、setData、命名、组件语义和逻辑组件树；render 线程负责 glass-easel 组件定义、样式隔离、事件和 DOM。canvas、资源 URL、渲染后端和内置组件都由宿主注入。
 stats:
   - ['2', '线程角色']
   - ['23', '内置组件']
@@ -14,8 +14,9 @@ pills:
   - ['组件语义', 'good']
   - ['样式隔离', 'good']
   - ['canvas 由宿主提供', 'good']
-description: '运行时内核：service 与 render 的分工、页面栈、setData、事件、组件语义、内置组件和样式隔离。'
+description: '小程序内核：service 与 render 双线程分工、页面栈、setData、事件、组件语义、内置组件和样式隔离。'
 name: '运行时'
+pageTitle: '小程序内核与运行时 · Tiny'
 order: 4
 ---
 

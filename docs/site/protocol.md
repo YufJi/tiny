@@ -9,9 +9,9 @@ stats:
   - ['4', '消息类型']
   - ['7', '消息域']
   - ['30s', '默认调用超时']
-description: 'Bridge 协议：消息信封、握手、传输、批处理、错误处理与消息列表。'
+description: 'Bridge 协议：消息信封、握手、传输、批处理、错误处理和完整消息列表，是内核与宿主之间的唯一边界。'
 name: '协议'
-pageTitle: 'Bridge 协议 · Tiny'
+pageTitle: 'Bridge 协议 · Tiny 小程序引擎'
 order: 5
 ---
 

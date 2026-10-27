@@ -12,8 +12,9 @@ pills:
   - ['generics 未实现', 'warn']
   - ['API 覆盖有限', 'warn']
   - ['性能未量化', 'warn']
-description: 'Tiny 当前成熟度：已跑通的能力、主要缺口、宿主缺口、下一步和设计约束。'
+description: 'Tiny 小程序引擎的现状：已跑通的能力、主要缺口、宿主缺口、下一步和设计约束。'
 name: '现状'
+pageTitle: '现状 · Tiny 小程序引擎'
 order: 9
 ---
 

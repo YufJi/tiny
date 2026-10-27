@@ -14,9 +14,9 @@ pills:
   - ['canvas 注入', 'good']
   - ['资源解析', 'good']
   - ['在线调试器', 'good']
-description: '宿主适配：宿主无关的内核如何通过 iframe 线程、canvas、资源解析和宿主 API 装配出浏览器与调试器宿主。'
+description: '小程序内核如何接入宿主：host-browser、host-web-components、iframe 线程、canvas 与资源注入。'
 name: '宿主'
-pageTitle: '宿主适配 · Tiny'
+pageTitle: '宿主适配 · Tiny 小程序引擎'
 order: 6
 ---
 

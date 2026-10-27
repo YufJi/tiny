@@ -9,9 +9,9 @@ stats:
   - ['6', '产物类型']
   - ['1', 'manifest 版本']
   - ['0', '运行时 WXML 解析']
-description: '编译流程：从入口发现、命名配置和模板/样式/脚本编译，到 manifest 与产物目录的完整拆解。'
+description: '小程序引擎的编译流程：入口发现、命名配置、WXML 到 ProcGen、WXSS 作用域、TS 转译、service bundle 与 manifest。'
 name: '编译'
-pageTitle: '编译流程 · Tiny'
+pageTitle: '编译流程 · Tiny 小程序引擎'
 order: 3
 ---
 

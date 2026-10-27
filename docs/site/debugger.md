@@ -14,9 +14,9 @@ pills:
   - ['宿主导航和 tabBar', 'good']
   - ['相对路径', 'good']
   - ['GitHub Pages', 'good']
-description: '站点内嵌的 Tiny 运行时调试器：构建方式、宿主结构和路径约定。'
+description: '在浏览器里调试真实的小程序运行时：内嵌 devtool 的生产构建、构建流程和路径约定。'
 name: '调试器'
-pageTitle: '在线调试器 · Tiny'
+pageTitle: '在线调试器 · Tiny 小程序引擎'
 order: 7
 ---
 

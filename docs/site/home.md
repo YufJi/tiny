@@ -4,7 +4,7 @@ title: '从编译器到宿主'
 highlight: '看清小程序引擎的每一层'
 eyebrow: 'Tiny 引擎内部 · Bridge v1'
 lede: >-
-  Tiny 是一个基于 glass-easel 的小程序引擎。它把小程序源码编译成 manifest 和线程产物，默认用 service、render 两个 iframe 跑起一个小程序，再由 Bridge 协议负责跨线程通信；也可以让每个页面各用一个 render iframe。浏览器相关能力单独放在宿主包里，内核不依赖 window、document 或 iframe。
+  Tiny 是一个基于 glass-easel 的小程序引擎。它把小程序源码编译成 manifest 和线程产物，默认用 service、render 两个 iframe 跑起一个小程序，再由 Bridge 协议负责跨线程通信；也可以让每个页面各用一个 render iframe。浏览器相关能力单独放在宿主包里，小程序内核不依赖 window、document 或 iframe。
 actions:
   - ['先看整体架构', '#/architecture', 'primary']
   - ['打开在线调试器', '#/debugger', 'ghost']
@@ -16,9 +16,9 @@ stats:
   - ['10', '工作区包']
   - ['168', '单元测试']
   - ['47', '浏览器步骤']
-description: 'Tiny 是一个基于 glass-easel 的小程序引擎：编译、双线程运行时、Bridge 协议和宿主适配。'
+description: 'Tiny 是一个基于 glass-easel 的小程序引擎：编译 WXML/WXSS/TS，service 与 render 双线程运行，核心小程序内核不依赖宿主。'
 name: '概览'
-pageTitle: 'Tiny · 小程序引擎架构'
+pageTitle: 'Tiny 小程序引擎：编译、双线程运行时与宿主适配'
 order: 1
 ---
 
@@ -133,7 +133,7 @@ Bridge 定义消息信封、帧、调用与回复、事件批处理、超时和 
 
 ## service 管状态，render 管组件树 {kicker="运行时结构"}
 
-service 和 render 各自启动，host 分别持有它们的连接；页面和组件状态始终在 service。
+service 和 render 各自启动，host 分别持有它们的连接；页面和组件状态始终在 service。两条线程加上 Bridge 协议边界，构成小程序内核。
 
 ::::split
 :::card{tag="service 线程" title="小程序逻辑和平台 API"}

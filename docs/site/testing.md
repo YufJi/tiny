@@ -9,9 +9,9 @@ stats:
   - ['51', '浏览器步骤']
   - ['5', '浏览器流程']
   - ['5', '测试小程序']
-description: 'Tiny 的验收方式：构建、内核检查、单元测试和五段真实浏览器流程。'
+description: '小程序引擎的验收方式：构建、内核检查、单元测试和五段真实浏览器流程（demo、mini、Taro 3、WeChat）。'
 name: '测试'
-pageTitle: '测试与验收 · Tiny'
+pageTitle: '测试与验收 · Tiny 小程序引擎'
 order: 8
 ---
 

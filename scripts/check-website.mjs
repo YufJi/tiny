@@ -90,6 +90,12 @@ function checkSitePage(relativePath) {
   if (!/<title>[^<]+<\/title>/.test(html)) {
     problems.push(`missing <title> in ${relativePath}`)
   }
+  if (!/<link rel="canonical" href="[^"]+" \/>/.test(html)) {
+    problems.push(`missing canonical link in ${relativePath}`)
+  }
+  if (!/<script type="application\/ld\+json">/.test(html)) {
+    problems.push(`missing JSON-LD in ${relativePath}`)
+  }
   for (const match of html.matchAll(/\b(?:href|src)="(\/[^"]*)"/g)) {
     if (!match[1].startsWith(siteBase)) {
       problems.push(`URL outside the site base in ${relativePath}: ${match[1]}`)
@@ -123,8 +129,21 @@ for (const name of routeDirectories) {
     problems.push(`missing markdown mirror ${name}.md`)
   }
 }
-for (const file of ['index.md', 'llms.txt', 'llms-full.txt', 'sitemap.xml']) {
+for (const file of ['index.md', 'llms.txt', 'llms-full.txt', 'sitemap.xml', 'robots.txt', '404.html']) {
   if (!fs.existsSync(path.join(rootDir, file))) problems.push(`missing ${file}`)
+}
+if (fs.existsSync(path.join(rootDir, '404.html'))) {
+  const notFound = fs.readFileSync(path.join(rootDir, '404.html'), 'utf8')
+  if (!/name="robots" content="noindex"/.test(notFound)) {
+    problems.push('404.html is not marked noindex')
+  }
+  if (/<script[^>]+src="[^"]*assets\//.test(notFound)) {
+    problems.push('404.html still loads the app bundle')
+  }
+}
+if (fs.existsSync(path.join(rootDir, 'robots.txt'))) {
+  const robots = fs.readFileSync(path.join(rootDir, 'robots.txt'), 'utf8')
+  if (!robots.includes('Sitemap:')) problems.push('robots.txt has no Sitemap entry')
 }
 if (fs.existsSync(path.join(rootDir, 'sitemap.xml'))) {
   const sitemap = fs.readFileSync(path.join(rootDir, 'sitemap.xml'), 'utf8')
@@ -133,9 +152,12 @@ if (fs.existsSync(path.join(rootDir, 'sitemap.xml'))) {
   }
 }
 
-checkRelativeHtml('devtool/index.html')
-checkRelativeHtml('devtool/next-service.html')
-checkRelativeHtml('devtool/next-render.html')
+for (const file of ['devtool/index.html', 'devtool/next-service.html', 'devtool/next-render.html']) {
+  const html = checkRelativeHtml(file)
+  if (html && !/name="robots" content="noindex"/.test(html)) {
+    problems.push(`${file} is not marked noindex`)
+  }
+}
 
 // HTML staying relative is not enough: a regression in the JS string
 // constants would still fetch /runtime/... from the domain root. Check the
