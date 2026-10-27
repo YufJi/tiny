@@ -14,11 +14,11 @@ const WXML = `
 <view class="page">
   <checkbox-group id="group" bindchange="onChange">
     <label id="label">
-      <checkbox id="check" value="a" checked="{{true}}" />
+      <checkbox id="check" value="a" checked="{{checked}}" />
       <text id="label-text">Label A</text>
     </label>
   </checkbox-group>
-  <text id="footer">hello</text>
+  <text id="footer">hello {{label}}</text>
 </view>
 `
 
@@ -65,7 +65,7 @@ describe('service logic tree to glass render tree', () => {
   test('mounts a snapshot and preserves built-in composition', () => {
     const logic = new LogicTreeAdapter({ manifest: manifest(), templates: templates() })
     logic.registerComponentSchemas([])
-    logic.mountPage(PAGE_PATH, {}, 'page-1')
+    logic.mountPage(PAGE_PATH, { label: 'hello', checked: false }, 'page-1')
     const snapshot = logic.snapshotRenderTree('page-1')
     expect(snapshot).toBeTruthy()
 
@@ -82,18 +82,33 @@ describe('service logic tree to glass render tree', () => {
     }
     const groupId = findId(snapshot, 'checkbox-group')
     const checkboxId = findId(snapshot, 'checkbox')
-    const footerId = findId(snapshot, 'text')
+    const findTextId = (node: any): string | undefined => {
+      if (node?.type === 'text' && String(node.text).includes('hello')) return node.id
+      for (const child of node?.children ?? []) {
+        const found = findTextId(child)
+        if (found) return found
+      }
+      return undefined
+    }
+    const footerId = findTextId(snapshot)
     expect(groupId && checkboxId && footerId).toBeTruthy()
     const group = render.getNode(groupId!) as unknown as {
       hasItems: (nodes: unknown[]) => boolean
       childNodes: unknown[]
     }
     const checkbox = render.getNode(checkboxId!) as unknown as { is: string }
-    const footer = render.getNode(footerId!) as unknown as { is: string }
+    const footer = render.getNode(footerId!) as unknown as { textContent: string }
     expect(group).toBeDefined()
     expect(checkbox).toBeDefined()
     expect(group.hasItems(group.childNodes)).toBe(true)
     expect(checkbox.is).toContain('checkbox')
     expect(footer).toBeDefined()
+    expect((footer as unknown as { textContent: string }).textContent).toBe('hello hello')
+
+    logic.setPageData('page-1', { label: 'bye', checked: true })
+    const update = logic.updateRenderTree('page-1')
+    render.applyPatches(update.patches)
+    expect((render.getNode(footerId!) as unknown as { textContent: string }).textContent).toBe('hello bye')
+    expect((render.getNode(checkboxId!) as unknown as { data: { checked: boolean } }).data.checked).toBe(true)
   })
 })

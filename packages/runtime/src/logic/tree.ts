@@ -1,5 +1,6 @@
 import type { Manifest } from '@tiny/manifest'
-import type { RenderNode } from '../tree/protocol'
+import type { RenderNode, RenderPatch } from '../tree/protocol'
+import { diffRenderTree } from '../tree/diff'
 import * as glassEasel from 'glass-easel'
 import type { MiniProgramComponentSchema, QueryNodeSnapshot, TemplateRegistry } from '../types'
 import type { NormalizedComponentDefinition } from '../component-definition'
@@ -42,6 +43,7 @@ export class LogicTreeAdapter {
   private readonly pageRoots = new Map<string, LogicBackendElement>()
   private activePageId?: string
   private readonly lastSnapshots = new Map<string, ViewSnapshot>()
+  private readonly lastRenderTrees = new Map<string, RenderNode>()
   private readonly manifest: Manifest
   private readonly loadStyle: (outputPath: string) => string
   private componentSchemas: MiniProgramComponentSchema[] = []
@@ -109,7 +111,10 @@ export class LogicTreeAdapter {
     const backendElement = (page as unknown as { getBackendElement?: () => unknown })
       .getBackendElement?.() as LogicBackendElement | undefined
     if (backendElement) this.pageRoots.set(pageId, backendElement)
-    return this.snapshot(pageId)
+    const snapshot = this.snapshot(pageId)
+    const renderTree = this.snapshotRenderTree(pageId)
+    if (renderTree) this.lastRenderTrees.set(pageId, renderTree)
+    return snapshot
   }
 
   applyPageData(pageId: string, patch: Record<string, unknown>): void {
@@ -136,6 +141,15 @@ export class LogicTreeAdapter {
     const backendElement = (page as unknown as { getBackendElement?: () => unknown })
       .getBackendElement?.() as LogicBackendElement | undefined
     return this.backend.snapshotRenderTree(pageId, backendElement)
+  }
+
+  /** Diff the current render-node tree against the previous one. */
+  updateRenderTree(pageId: string): { snapshot: RenderNode; patches: RenderPatch[] } {
+    const snapshot = this.snapshotRenderTree(pageId)
+    if (!snapshot) throw new Error(`logic page is not mounted: ${pageId}`)
+    const previous = this.lastRenderTrees.get(pageId)
+    this.lastRenderTrees.set(pageId, snapshot)
+    return { snapshot, patches: previous ? diffRenderTree(previous, snapshot) : [] }
   }
 
   /** Build the next snapshot and diff it against the last one. */

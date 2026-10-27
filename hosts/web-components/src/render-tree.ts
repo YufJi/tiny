@@ -1,5 +1,5 @@
 import * as glassEasel from 'glass-easel'
-import type { RenderElement, RenderNode, RenderText } from '@tiny/runtime'
+import type { RenderElement, RenderNode, RenderPatch, RenderText } from '@tiny/runtime'
 import { createBuiltinComponents } from './index'
 import { BUILTIN_COMPONENT_TAGS, type BuiltinComponentTag } from './tags'
 
@@ -18,6 +18,7 @@ export type GlassRenderTree = {
   root: AnyComponent
   rootElement: HTMLElement | null
   mount: (node: RenderNode) => void
+  applyPatches: (patches: RenderPatch[]) => void
   getNode: (id: string) => AnyComponent | glassEasel.TextNode | undefined
   destroy: () => void
 }
@@ -54,6 +55,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   }
   const containers = new Map<string, glassEasel.GeneralComponentDefinition>()
   const nodes = new Map<string, AnyComponent | glassEasel.TextNode>()
+  const currentTree = new Map<string, RenderNode>()
 
   const containerDefinition = (tag: string): glassEasel.GeneralComponentDefinition => {
     const existing = containers.get(tag)
@@ -101,6 +103,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const createText = (node: RenderText, owner: AnyComponent): glassEasel.TextNode => {
     const text = lightShadow(owner).createTextNode(node.text)
     nodes.set(node.id, text)
+    currentTree.set(node.id, node)
     return text
   }
 
@@ -112,6 +115,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     if (!definition) throw new Error(`no render definition for tag: ${node.tag}`)
     const component = lightShadow(owner).createComponentByDef(node.tag, definition)
     nodes.set(node.id, component)
+    currentTree.set(node.id, node)
     if (builtin) {
       const props = { ...(node.props ?? {}) }
       delete props.class
@@ -129,6 +133,49 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     return component
   }
 
+  const updateProps = (node: RenderElement): void => {
+    const component = nodes.get(node.id)
+    if (!component) return
+    if (glassEasel.TextNode.isTextNode(component)) return
+    const props = { ...(node.props ?? {}) }
+    delete props.class
+    delete props.style
+    delete props.id
+    if (builtinTags.has(node.tag)) component.setData(props as never)
+    else {
+      const element = component.getBackendElement() as unknown as {
+        setAttribute?: (name: string, value: string) => void
+      } | null
+      for (const [name, value] of Object.entries(props)) {
+        element?.setAttribute?.(name, String(value ?? ''))
+      }
+    }
+    applyHostProps(component, node.props)
+  }
+
+  const applyPatches = (patches: RenderPatch[]): void => {
+    for (const patch of patches) {
+      if (patch.type === 'text') {
+        const node = nodes.get(patch.id)
+        if (node && glassEasel.TextNode.isTextNode(node)) node.textContent = patch.text
+      } else if (patch.type === 'props') {
+        const node = nodes.get(patch.id)
+        if (node && node instanceof glassEasel.Element) {
+          const current = currentTree.get(patch.id)
+          if (current?.type === 'element') {
+            const next: RenderElement = {
+              ...current,
+              props: { ...(current.props ?? {}), ...patch.props },
+            }
+            for (const name of patch.removed ?? []) delete next.props?.[name]
+            currentTree.set(patch.id, next)
+            updateProps(next)
+          }
+        }
+      }
+    }
+  }
+
   return {
     root,
     rootElement,
@@ -142,13 +189,16 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
           ? createText(child, root)
           : createElement(child, root))
       }
+      if (node.type === 'element') nodes.set(node.id, root)
       if (options.attach !== false) glassEasel.Element.pretendAttached(root)
     },
+    applyPatches,
     getNode(id) {
       return nodes.get(id)
     },
     destroy() {
       nodes.clear()
+      currentTree.clear()
       ;(root as unknown as { destroy?: () => void }).destroy?.()
     },
   }
