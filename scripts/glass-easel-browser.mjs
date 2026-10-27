@@ -365,6 +365,18 @@ export async function runBrowserAcceptance({ baseUrl }) {
       )
     })
 
+    await step('mutate the first page after navigating back', async () => {
+      currentStep = 'mutate the first page after navigating back'
+      // The hidden page stays mounted on the service side; a data change raised
+      // after navigateBack must patch that page, not the most recently mounted one.
+      await render.getByText('Run P0 acceptance', { exact: true }).first().click()
+      await render.waitForFunction(() => {
+        const body = document.querySelector('#app')?.innerText ?? ''
+        const index = body.indexOf('checked:')
+        return index >= 0 && !body.slice(index).includes('Run P0 acceptance')
+      }, null, { timeout: STEP_TIMEOUT })
+    })
+
     await step('open the component semantics page', async () => {
       currentStep = 'open the component semantics page'
       await render.getByText('Semantics', { exact: true }).first().click()
@@ -1499,6 +1511,16 @@ export async function runDevtoolAcceptance({ baseUrl }) {
       assert.equal(
         await page.locator(`${primarySurface} iframe[data-page-id="page-1"]`).getAttribute('data-state'),
         'active',
+      )
+      const restoredFrame = activeRenderFrame(primary.id, 'page-1')
+      assert.ok(restoredFrame, 'restored page render frame was not found')
+      const checkedLabels = 'tiny-label[class*="--todo-item"][class*="--checked"]'
+      assert.equal(await restoredFrame.locator(checkedLabels).count(), 2, 'restored page lost its initial state')
+      await restoredFrame.getByText('Learning 小程序', { exact: true }).click()
+      await restoredFrame.waitForFunction(
+        (selector) => document.querySelectorAll(selector).length === 3,
+        checkedLabels,
+        { timeout: STEP_TIMEOUT },
       )
     })
 
