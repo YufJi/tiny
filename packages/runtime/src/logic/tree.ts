@@ -146,6 +146,12 @@ export class LogicTreeAdapter {
     return renderTree
   }
 
+  /** Relation nodes of the service-side page component. */
+  relationNodes(pageId: string, relationKey: string): unknown[] {
+    const page = this.glass.getMountedComponentByPageId(pageId)
+    return page ? page.getRelationNodes(relationKey) : []
+  }
+
   /** Deliver a page lifetime to the page's service-side components. */
   triggerPageLifetime(pageId: string, phase: 'show' | 'hide'): void {
     this.glass.triggerPageLifetime(pageId, phase)

@@ -51,6 +51,7 @@ export class MiniProgramPageInstance implements ObserverHost {
     private readonly onDiagnostic?: (code: string, message: string, details?: unknown) => void,
     definition?: NormalizedComponentDefinition,
     private readonly logicSelection?: (selector: string, all: boolean) => unknown[],
+    private readonly logicRelations?: (relationKey: string) => unknown[],
   ) {
     this.pageId = pageId
     this.componentId = `page:${pageId}`
@@ -190,10 +191,10 @@ export class MiniProgramPageInstance implements ObserverHost {
     return null
   }
 
-  getRelationNodes(_relationKey: string): unknown[] {
-    // Relations are resolved by the glass-easel logic tree; the service page
-    // wrapper no longer mirrors a second component graph.
-    return []
+  getRelationNodes(relationKey: string): unknown[] {
+    // Relations are resolved by the glass-easel logic tree; the page wrapper
+    // forwards to it instead of mirroring a second component graph.
+    return this.logicRelations?.(relationKey) ?? []
   }
 
   hasBehavior(behavior: unknown): boolean {

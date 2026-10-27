@@ -602,6 +602,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       }, pageId),
       componentDefinition,
       (selector, all) => logicTree?.selectComponents(pageId, selector, all) ?? [],
+      (relationKey) => logicTree?.relationNodes(pageId, relationKey) ?? [],
     )
     if (componentDefinition) page.triggerComponentLifecycle('created')
     pageInstances.set(page.pageId, page)
