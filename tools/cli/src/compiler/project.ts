@@ -148,7 +148,7 @@ async function resolveComponentEntries(
   const visit = async (entry: SourceEntry, componentRefs: Record<string, string>): Promise<void> => {
     for (const tag of Object.keys(componentRefs)) context.customComponentTags.add(tag)
     for (const componentPath of Object.values(componentRefs)) {
-      const normalized = resolveEntryReference(context, entry.path, componentPath)
+      const normalized = resolveEntryReference(context, byRelative, entry.path, componentPath)
       if (components.has(normalized)) continue
       const component = await resolveEntry(context, byRelative, normalized)
       if (!component) {
@@ -212,19 +212,47 @@ async function resolveEntry(
   return null
 }
 
-function resolveEntryReference(
+export function resolveEntryReference(
   context: CompilerContext,
+  byRelative: Map<string, string>,
   sourceEntryPath: string,
   reference: string,
 ): string {
   if (reference.startsWith('/')) return normalizeRelativePath(reference.slice(1))
-  return normalizeRelativePath(path.relative(
+  // An empty owner means the mini-program root (app-level `usingComponents`).
+  const baseDirectory = sourceEntryPath
+    ? path.dirname(path.join(context.options.sourceDir, sourceEntryPath))
+    : context.options.sourceDir
+  const relativeReference = normalizeRelativePath(path.relative(
     context.options.sourceDir,
-    path.resolve(
-      path.dirname(path.join(context.options.sourceDir, sourceEntryPath)),
-      reference,
-    ),
+    path.resolve(baseDirectory, reference),
   ))
+  if (reference.startsWith('.')) return relativeReference
+  // Bare specifiers follow the WeChat npm convention and resolve from the
+  // pre-built `miniprogram_npm` tree (e.g. `@vant/weapp/button/index`).
+  if (reference.startsWith('miniprogram_npm/')) return normalizeRelativePath(reference)
+  if (reference.startsWith('plugin://')) return normalizeRelativePath(reference)
+  const npmReference = normalizeRelativePath(`miniprogram_npm/${reference}`)
+  if (hasEntryFiles(context, byRelative, npmReference)) return npmReference
+  // Keep supporting bare paths that happen to name a local component.
+  if (hasEntryFiles(context, byRelative, relativeReference)) return relativeReference
+  return npmReference
+}
+
+function hasEntryFiles(
+  context: CompilerContext,
+  byRelative: Map<string, string>,
+  entryPath: string,
+): boolean {
+  const extensions = [
+    ...context.extensions.script,
+    ...context.extensions.template,
+    ...context.extensions.style,
+    ...context.extensions.config,
+  ]
+  return [entryPath, `${entryPath}/index`].some((base) =>
+    extensions.some((extension) => byRelative.has(`${base}${extension}`)),
+  )
 }
 
 export function readUsingComponents(config: Record<string, unknown>): Record<string, string> {

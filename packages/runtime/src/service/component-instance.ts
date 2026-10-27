@@ -54,6 +54,9 @@ export class MiniProgramComponentInstance implements ObserverHost {
       selectOwnerComponent: this.selectOwnerComponent.bind(this),
       getRelationNodes: this.getRelationNodes.bind(this),
       hasBehavior: this.hasBehavior.bind(this),
+      createSelectorQuery: this.createSelectorQuery.bind(this),
+      createIntersectionObserver: this.createIntersectionObserver.bind(this),
+      groupSetData: this.groupSetData.bind(this),
     })
   }
 
@@ -74,7 +77,27 @@ export class MiniProgramComponentInstance implements ObserverHost {
   }
 
   triggerEvent(name: string, detail?: unknown, options?: Record<string, unknown>): void {
-    this.bridge?.onTriggerEvent(this.componentId, name, cloneJsonSafe(detail ?? null), options)
+    this.bridge?.onTriggerEvent(
+      this.componentId,
+      name,
+      cloneJsonSafe(detail ?? null),
+      cloneJsonSafe(options ?? {}),
+    )
+  }
+
+  /** Component-level selector query, scoped like `this.createSelectorQuery()`. */
+  createSelectorQuery(): Record<string, unknown> {
+    return this.runtime.createSelectorQuery()
+  }
+
+  /** Component-level intersection observer (API shape only). */
+  createIntersectionObserver(options?: Record<string, unknown>): Record<string, unknown> {
+    return this.runtime.createIntersectionObserver(options)
+  }
+
+  /** Batch several `setData` calls; this runtime applies them synchronously. */
+  groupSetData(callback?: () => void): void {
+    callback?.()
   }
 
   syncData(data: Record<string, unknown> | undefined): void {

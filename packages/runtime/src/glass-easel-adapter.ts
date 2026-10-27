@@ -28,6 +28,28 @@ const NATIVE_COMPONENT_METHODS = new Set([
   'getShadowRoot',
 ])
 
+/**
+ * Fields glass-easel owns on every element. `writeFieldsToNode` copies component
+ * properties onto the instance, so a property with one of these names (Vant's
+ * `van-button` declares `dataset`) would shadow the field and break element
+ * construction. Such properties are kept as data and fed from the incoming
+ * attribute through `unknownPropertyHandler` instead.
+ */
+const ELEMENT_RESERVED_NAMES = new Set([
+  'is',
+  'dataset',
+  'classList',
+  'parentNode',
+  'parentIndex',
+  'childNodes',
+  'ownerShadowRoot',
+  'shadowRoot',
+  'tagName',
+  'id',
+  'slot',
+  'style',
+])
+
 export type ComponentLifecyclePhase = 'created' | 'attached' | 'ready' | 'moved' | 'detached'
 
 export type InspectNode = {
@@ -782,10 +804,19 @@ export class GlassEaselRuntimeAdapter {
 
     const generics = this.resolveGenerics(schema.path, schema.generics)
     const pureDataPattern = parsePureDataPattern(schema.pureDataPattern)
+    const reservedNames = new Set(
+      Object.keys(schema.properties).filter((name) => ELEMENT_RESERVED_NAMES.has(name)),
+    )
+    const declaredProperties = Object.fromEntries(
+      Object.entries(schema.properties).filter(([name]) => !reservedNames.has(name)),
+    )
+    const reservedData = Object.fromEntries(
+      [...reservedNames].map((name) => [name, schema.properties[name]?.value]),
+    )
     const definition = this.componentSpace
       .defineWithMethodCaller(schema.path)
       .definition({
-        properties: schema.properties as never,
+        properties: declaredProperties as never,
         externalClasses: schema.externalClasses,
         behaviors: schema.formField ? [this.formFieldBehavior] : undefined,
         observers: observers as never,
@@ -794,7 +825,7 @@ export class GlassEaselRuntimeAdapter {
         groupList: this.templates.groupList,
         content: (name = '') => this.templates.content(schema.path, name),
       })
-      .data(() => schema.data as never)
+      .data(() => ({ ...(schema.data as Record<string, unknown>), ...reservedData } as never))
       .usingComponents({ ...this.builtinComponents, ...using } as never)
       .generics(generics as never)
       .options({
@@ -805,6 +836,19 @@ export class GlassEaselRuntimeAdapter {
         styleScope: styleScopeId,
         extraStyleScope,
         ...(pureDataPattern ? { pureDataPattern } : {}),
+        ...(reservedNames.size > 0
+          ? {
+              unknownPropertyHandler(
+                this: glassEasel.GeneralComponent,
+                name: string,
+                value: unknown,
+              ) {
+                if (!reservedNames.has(name)) return false
+                this.setData({ [name]: value } as never)
+                return true
+              },
+            }
+          : {}),
       })
       .methodCallerInit(function (this: glassEasel.GeneralComponent) {
         const methodCaller = adapter.createEventMethodCaller(

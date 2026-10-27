@@ -20,6 +20,12 @@ export type StandaloneHostOptions = {
   maxPageStack?: number
 }
 
+/**
+ * WeChat base-library level the browser host reports to mini-programs.
+ * A host wrapping another engine should pass its own `systemInfo.SDKVersion`.
+ */
+export const BROWSER_SDK_VERSION = '3.0.0'
+
 export type StandaloneHost = {
   host: TinyRuntimeHost
   serviceIframe: HTMLIFrameElement
@@ -134,7 +140,7 @@ async function createPerPageHost(
     manifest: options.manifest,
     initialPath: options.initialPath,
     initialData: options.initialData,
-    systemInfo: options.systemInfo,
+    systemInfo: { SDKVersion: BROWSER_SDK_VERSION, ...options.systemInfo },
     storage: options.storage,
     onDiagnostic: options.onDiagnostic,
     maxPageStack: options.maxPageStack,

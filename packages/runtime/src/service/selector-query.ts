@@ -153,3 +153,19 @@ async function buildSelectorResult(
     bottom: height,
   }
 }
+
+/**
+ * Minimal component-level intersection observer. The browser render thread does
+ * not project intersection geometry yet, so observers never fire; the API shape
+ * still lets component libraries such as Vant initialize without throwing.
+ */
+export function createIntersectionObserverStub(): Record<string, unknown> {
+  const observer: Record<string, unknown> = {}
+  const chain = () => observer
+  observer.relativeTo = chain
+  observer.relativeToViewport = chain
+  observer.observe = chain
+  observer.unobserve = chain
+  observer.disconnect = () => undefined
+  return observer
+}

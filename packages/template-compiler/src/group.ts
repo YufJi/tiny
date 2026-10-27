@@ -32,6 +32,9 @@ const WXS_RUNTIME_ITEMS: [string, string][] = [
 ]
 
 const WXS_RUNTIME = `
+// WXS global helpers, available to every WXS module in this group.
+var getRegExp = (pattern, flags) => new RegExp(pattern, flags);
+var getDate = (...args) => new Date(...args);
 var D = (() => {
     var modules = Object.create(null);
     var load = (filename) => {

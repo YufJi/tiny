@@ -11,7 +11,13 @@ import type {
 import { ensureDir } from '../utils'
 import { withoutConfiguredExtension } from './extensions'
 import { relativePath, type CompilerContext } from './context'
-import { readConfiguration, readUsingComponents, type Project, type SourceEntry } from './project'
+import {
+  readConfiguration,
+  readUsingComponents,
+  resolveEntryReference,
+  type Project,
+  type SourceEntry,
+} from './project'
 
 /**
  * Assembles the versioned manifest that the service/render threads consume.
@@ -93,12 +99,23 @@ async function createPageArtifact(
     : readUsingComponents(await readConfiguration(context, project.appConfig.path))
   const localComponents = readUsingComponents(config)
   const effectiveComponents: Record<string, string> = { ...globalComponents, ...localComponents }
+  // The runtime resolves component references against the owning page, so emit
+  // root-anchored paths. This also folds npm-style references
+  // (`@vant/weapp/button/index`) into the compiled `miniprogram_npm` tree.
+  const resolvedComponents = Object.fromEntries(
+    Object.entries(effectiveComponents).map(([tag, reference]) => {
+      // App-level components are declared relative to the mini-program root;
+      // page-level ones are relative to the declaring page.
+      const declaringPath = localComponents[tag] ? entry.path : ''
+      return [tag, `/${resolveEntryReference(context, project.files, declaringPath, reference)}`]
+    }),
+  )
   const componentSource: Record<string, 'global' | 'local'> = {}
   for (const tag of Object.keys(effectiveComponents)) {
     componentSource[tag] = localComponents[tag] ? 'local' : 'global'
   }
-  const effectiveConfig: Record<string, unknown> = Object.keys(effectiveComponents).length > 0
-    ? { ...config, usingComponents: effectiveComponents }
+  const effectiveConfig: Record<string, unknown> = Object.keys(resolvedComponents).length > 0
+    ? { ...config, usingComponents: resolvedComponents }
     : config
   const configuration: ConfigurationArtifact = {
     path: entry.path,
@@ -106,7 +123,7 @@ async function createPageArtifact(
       ? relativePath(context, entry.configPath)
       : `${entry.path}${context.extensions.config[0]}`,
     effective: effectiveConfig,
-    usingComponents: effectiveComponents,
+    usingComponents: resolvedComponents,
     usingComponentsSource: componentSource,
   }
 

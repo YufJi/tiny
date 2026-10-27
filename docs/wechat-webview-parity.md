@@ -239,7 +239,7 @@
 | `style` / `lazyCodeLoading` / `permission` / `sitemapLocation` / `workers` / `plugins` | ❌ |
 | `renderer` / `rendererOptions` / `preloadRule` / `resizable` / `darkmode` / `requiredPrivateInfos` | ❌ |
 
-`project.config.json` 只读取 `miniprogramRoot`。没有 npm 构建 / `miniprogram_npm`，第三方组件库无法按微信方式安装。
+`project.config.json` 只读取 `miniprogramRoot`。编译器接受微信工具生成的预构建 `miniprogram_npm/`：`usingComponents: "@vant/weapp/button/index"` 会解析到 `miniprogram_npm/@vant/weapp/button/index`；不做 npm 安装/构建。
 
 ### 4.5 自定义组件语义
 
@@ -269,9 +269,9 @@ hasBehavior / export / wx://component-export
 | `componentPlaceholder` | ❌ | 编译是 eager，异步占位暂不需要；配置会被忽略 |
 | `trait behaviors` / chaining API | ❌ | 未支持 |
 | Component-as-page 全套语义 | ✅ | query→properties、methods 页面生命周期、behaviors/observers/relations/styleIsolation/selectComponent/getRelationNodes/hasBehavior 已接入；generics/definitionFilter/pureDataPattern 与普通组件一致，分享/下拉刷新/退出状态回调随页面生命周期接入 |
-| `wx://form-field` 等内置 behaviors | ❌ | 发 `UNSUPPORTED_BEHAVIOR` 诊断 |
+| `wx://form-field` / `wx://form-field-button` | ✅ | 映射到表单字段语义；其他内置 behaviors 仍发 `UNSUPPORTED_BEHAVIOR` 诊断 |
 
-> 这使 Vant Weapp、TDesign 等组件库的**核心语义障碍**基本移除；剩余限制主要来自 npm 构建（`miniprogram_npm`）、内置 behaviors 和异步占位组件。
+> 这使 Vant Weapp、TDesign 等组件库的**核心语义障碍**基本移除；`tests/apps/vant` 与 `tests/apps/weui` 作为回归样例。剩余限制主要是 npm 安装/构建、未覆盖的内置 behaviors 和异步占位组件。
 
 ### 4.6 样式作用域与内置组件边界
 
@@ -467,7 +467,7 @@ getMenuButtonBoundingClientRect / getPerformance
 | `canvasToTempFilePath` / `wx.createOffscreenCanvas` / node 事件 | selector-query 2D/WebGL 动画、图片与触摸已可用；导出、独立离屏画布与 node 事件仍缺 |
 | animation 多 step / 回调 | 复杂动画不可用 |
 | 子包按需加载 / 预下载 / 独立分包 | 首屏与包体不可控 |
-| npm 构建 / `miniprogram_npm` | 第三方组件库无法安装 |
+| npm 安装/构建 | 只消费预构建 `miniprogram_npm`，不能从 `package.json` 安装依赖 |
 | 内置组件默认样式对齐 | 视觉不一致 |
 
 ### P2：平台能力与生产化

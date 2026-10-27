@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { compileMiniProgram } from '../tools/cli/dist/index.js'
@@ -8,7 +9,13 @@ import {
 } from './devtool-apps.mjs'
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const apps = discoverTestApps()
+const allApps = discoverTestApps()
+const apps = allApps.filter((app) => app.devtool)
+
+// Drop artifacts of fixtures that are no longer listed in the launcher.
+for (const app of allApps.filter((item) => !item.devtool)) {
+  fs.rmSync(path.dirname(app.outputDir), { recursive: true, force: true })
+}
 
 if (apps.length === 0) {
   console.error(`[devtool] no test apps found under ${path.join(rootDir, 'tests/apps')}`)

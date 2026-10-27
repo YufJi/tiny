@@ -13,6 +13,9 @@ const testAppsRoot = path.join(rootDir, 'tests/apps')
 // Keep the fixtures that the acceptance gate exercises first; any new fixture
 // is appended alphabetically without touching this list.
 const preferredOrder = ['demo', 'mini', 'todo', 'wechat-demo', 'echarts']
+// The P0 demo stays in the acceptance gate (`pnpm accept:glass-easel`) but is
+// no longer listed or compiled for the devtool launcher.
+const hiddenFromDevtool = new Set(['demo'])
 
 /**
  * Discover every mini-program fixture under tests/apps.
@@ -64,6 +67,7 @@ export function discoverTestApps() {
         : '',
       pages: pages.length + subPackagePages,
       firstPage: pages[0],
+      devtool: !hiddenFromDevtool.has(entry.name),
       sourceDir,
       outputDir,
       source: relativeToRoot(sourceDir),
@@ -87,7 +91,7 @@ export function writeDevtoolAppsRegistry(apps) {
   fs.mkdirSync(path.dirname(devtoolRegistryPath), { recursive: true })
   const payload = {
     schemaVersion: 1,
-    apps: apps.map(toRegistryEntry),
+    apps: apps.filter((app) => app.devtool).map(toRegistryEntry),
   }
   fs.writeFileSync(devtoolRegistryPath, `${JSON.stringify(payload, null, 2)}\n`)
   return devtoolRegistryPath

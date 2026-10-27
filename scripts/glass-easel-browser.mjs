@@ -1206,17 +1206,22 @@ export async function runDevtoolAcceptance({ baseUrl }) {
 
   let currentStep = 'start'
   try {
-    const fixtures = discoverTestApps()
+    // `tests/apps/demo` stays in the P0 gate but is hidden from the launcher.
+    const fixtures = discoverTestApps().filter((fixture) => fixture.devtool)
     assert.ok(fixtures.length > 0, 'no tests/apps fixtures were discovered')
     const expectedText = {
-      demo: 'Tiny Glass-easel P0',
       mini: 'Learning Javascript',
       todo: 'Use Redux',
       'wechat-demo': '视图容器',
       echarts: '柱状图',
+      vant: 'Vant Weapp',
+      weui: 'WeUI 是一套同微信原生视觉体验一致的',
     }
-    const imageFixtures = new Set(['demo', 'mini', 'wechat-demo', 'echarts'])
+    const imageFixtures = new Set(['mini', 'wechat-demo', 'echarts'])
     const fixtureById = new Map(fixtures.map((fixture) => [fixture.id, fixture]))
+    // Exercise host navigation against the first launcher entry (mini).
+    const primary = fixtureById.get('mini')
+    assert.ok(primary, 'tests/apps/mini is required for the devtool flow')
     const state = () => page.evaluate(() => window.__tinyDevtool.getState())
     const waitForStatus = (status) => page.waitForFunction(
       (expected) => window.__tinyDevtool?.getState().status === expected,
@@ -1337,12 +1342,12 @@ export async function runDevtoolAcceptance({ baseUrl }) {
 
     await step('launch an app from the list', async () => {
       currentStep = 'launch an app from the list'
-      await openFixture(fixtureById.get('demo'))
-      assert.equal((await managerState()).active, 'demo')
+      await openFixture(primary)
+      assert.equal((await managerState()).active, primary.id)
       assert.equal(await page.locator('.td-launcher').count(), 0, 'launcher stayed visible after launch')
       assert.equal(
         await page.evaluate(() => new URL(window.location.href).searchParams.get('app')),
-        'demo',
+        primary.id,
         'launch did not update the URL',
       )
       assert.equal(await page.locator('iframe[data-page-id]').count(), 1)
@@ -1365,20 +1370,25 @@ export async function runDevtoolAcceptance({ baseUrl }) {
       assert.ok(current.tree, 'element tree was not projected')
       assert.equal(current.tree.tag, 'tiny-page')
       assert.ok(
-        JSON.stringify(current.tree).includes('Tiny Glass-easel P0'),
+        JSON.stringify(current.tree).includes('Learning Javascript'),
         'element tree does not contain rendered text',
       )
+      // The host bar shows the effective page title (`pages/todos/todos.json`).
       assert.equal(
         await page.locator('.td-nav-title').innerText(),
-        fixtureById.get('demo').title,
-        'host navigation bar did not project the app title',
+        'Index',
+        'host navigation bar did not project the page title',
       )
       assert.equal(
         await page.getByRole('button', { name: 'Back in preview' }).isDisabled(),
         true,
         'host navigation back should be disabled on the first page',
       )
-      assert.equal(await page.getByRole('tab').count(), 3, 'console/lifecycle/elements tabs are missing')
+      assert.equal(
+        await page.locator('.td-tabs [role="tab"]').count(),
+        3,
+        'console/lifecycle/elements tabs are missing',
+      )
       const lifecycleTab = page.getByRole('tab', { name: /Lifecycle/ })
       await lifecycleTab.click()
       assert.equal(await lifecycleTab.getAttribute('aria-selected'), 'true')
@@ -1397,20 +1407,20 @@ export async function runDevtoolAcceptance({ baseUrl }) {
 
     await step('render the mini program inside the debugger', async () => {
       currentStep = 'render the mini program inside the debugger'
-      const demoSurface = surfaceSelector('demo')
+      const primarySurface = surfaceSelector(primary.id)
       assert.equal(
-        await page.locator(`${demoSurface} iframe[data-page-id]`).count(),
+        await page.locator(`${primarySurface} iframe[data-page-id]`).count(),
         1,
         'the first page should own exactly one render iframe',
       )
       assert.equal(
-        await page.locator(`${demoSurface} iframe[data-page-id="page-1"]`).getAttribute('data-state'),
+        await page.locator(`${primarySurface} iframe[data-page-id="page-1"]`).getAttribute('data-state'),
         'active',
       )
-      const renderFrame = page.frameLocator(`${demoSurface} iframe[data-page-id="page-1"]`)
+      const renderFrame = page.frameLocator(`${primarySurface} iframe[data-page-id="page-1"]`)
       const body = await renderFrame.locator('#app').innerText()
-      assert.ok(body.includes('Tiny Glass-easel P0'), 'mini program did not render in the debugger')
-      assert.ok(body.includes('Learn glass-easel'), 'page data did not render in the debugger')
+      assert.ok(body.includes('Learning Javascript'), 'mini program did not render in the debugger')
+      assert.ok(body.includes('tiny Todo List'), 'page data did not render in the debugger')
       const firstPageCss = (
         await renderFrame.locator('head style[wx-style-scope]').allTextContents()
       ).join('\n')
@@ -1423,7 +1433,7 @@ export async function runDevtoolAcceptance({ baseUrl }) {
 
     await step('navigate and go back from the debugger', async () => {
       currentStep = 'navigate and go back from the debugger'
-      const demoSurface = surfaceSelector('demo')
+      const primarySurface = surfaceSelector(primary.id)
       await page.locator('input[placeholder="pages/..."]').fill('/pages/add-todo/add-todo')
       await page.getByText('Navigate', { exact: true }).click()
       await page.waitForFunction(
@@ -1433,24 +1443,24 @@ export async function runDevtoolAcceptance({ baseUrl }) {
       )
       assert.deepEqual((await state()).pageStack, ['page-1', 'page-2'])
       await page.waitForFunction(
-        () => JSON.stringify(window.__tinyDevtool.getState().tree ?? {}).includes('Add todo'),
+        () => JSON.stringify(window.__tinyDevtool.getState().tree ?? {}).includes('Add Todo'),
         null,
         { timeout: STEP_TIMEOUT },
       )
-      await page.waitForSelector(`${demoSurface} iframe[data-page-id="page-2"][data-state="active"]`, {
+      await page.waitForSelector(`${primarySurface} iframe[data-page-id="page-2"][data-state="active"]`, {
         timeout: STEP_TIMEOUT,
       })
       // The previous page keeps its own iframe and DOM while it is hidden.
       assert.equal(
-        await page.locator(`${demoSurface} iframe[data-page-id="page-1"]`).getAttribute('data-state'),
+        await page.locator(`${primarySurface} iframe[data-page-id="page-1"]`).getAttribute('data-state'),
         'hidden',
       )
-      const previousFrame = page.frameLocator(`${demoSurface} iframe[data-page-id="page-1"]`)
+      const previousFrame = page.frameLocator(`${primarySurface} iframe[data-page-id="page-1"]`)
       assert.ok(
-        (await previousFrame.locator('#app').innerText()).includes('Tiny Glass-easel P0'),
+        (await previousFrame.locator('#app').innerText()).includes('Learning Javascript'),
         'hidden page lost its rendered DOM',
       )
-      const nextFrame = page.frameLocator(`${demoSurface} iframe[data-page-id="page-2"]`)
+      const nextFrame = page.frameLocator(`${primarySurface} iframe[data-page-id="page-2"]`)
       const nextFrameCss = (
         await nextFrame.locator('head style[wx-style-scope]').allTextContents()
       ).join('\n')
@@ -1482,12 +1492,12 @@ export async function runDevtoolAcceptance({ baseUrl }) {
       )
       await page.waitForFunction(
         (selector) => !document.querySelector(`${selector} iframe[data-page-id="page-2"]`),
-        demoSurface,
+        primarySurface,
         { timeout: STEP_TIMEOUT },
       )
       assert.deepEqual((await state()).pageStack, ['page-1'])
       assert.equal(
-        await page.locator(`${demoSurface} iframe[data-page-id="page-1"]`).getAttribute('data-state'),
+        await page.locator(`${primarySurface} iframe[data-page-id="page-1"]`).getAttribute('data-state'),
         'active',
       )
     })
@@ -1495,7 +1505,7 @@ export async function runDevtoolAcceptance({ baseUrl }) {
     await step('preview every fixture and keep the three most recent warm', async () => {
       currentStep = 'preview every fixture and keep the three most recent warm'
       await ensureLauncher()
-      assert.deepEqual(await sessionIds(), ['demo'])
+      assert.deepEqual(await sessionIds(), [primary.id])
       await page.waitForFunction(
         () => document.querySelector('.td-warm-count')?.textContent === '1 / 3 warm',
         null,
@@ -1505,6 +1515,7 @@ export async function runDevtoolAcceptance({ baseUrl }) {
       for (const fixture of fixtures) {
         currentStep = `preview tests/apps/${fixture.id}`
         await openFixture(fixture)
+        currentStep = `preview ${fixture.id}: wait for ${fixture.firstPage}`
         await page.waitForFunction(
           (expectedPage) => window.__tinyDevtool?.getState().currentPage === expectedPage,
           fixture.firstPage,
@@ -1568,6 +1579,21 @@ export async function runDevtoolAcceptance({ baseUrl }) {
           await renderFrame.locator('#app').waitFor({ state: 'attached', timeout: STEP_TIMEOUT })
         }
 
+        if (fixture.id === 'weui') {
+          // The WeUI footer logo carries an inline `width: 84px; height: 19px`.
+          // The image component must not reset host dimensions it does not own.
+          const footerLogo = renderFrame.locator('.page__ft tiny-image').first()
+          await footerLogo.waitFor({ state: 'attached', timeout: STEP_TIMEOUT })
+          const logoBox = await footerLogo.evaluate((element) => {
+            const rect = element.getBoundingClientRect()
+            return { width: rect.width, height: rect.height }
+          })
+          assert.ok(
+            Math.abs(logoBox.width - 84) < 1 && Math.abs(logoBox.height - 19) < 1,
+            `weui footer image lost its inline size: ${logoBox.width}x${logoBox.height}`,
+          )
+        }
+
         if (fixture.id === 'mini') {
           // The mini fixture declares a two-item tabBar. Switching tabs keeps
           // both page frames mounted and only changes which one is visible.
@@ -1586,15 +1612,18 @@ export async function runDevtoolAcceptance({ baseUrl }) {
             'tabBar icon did not load',
           )
 
+          currentStep = 'preview mini: switch to the Chart tab'
           await tabBar.getByRole('tab', { name: 'Chart' }).click()
           await page.waitForFunction(
             () => window.__tinyDevtool?.getState().currentPage === 'pages/bar/index',
             null,
             { timeout: STEP_TIMEOUT },
           )
+          const barPageId = (await state()).pageStack.at(-1)
           await page.waitForFunction(
-            (selector) => document.querySelector(`${selector} iframe[data-page-id="page-2"]`)?.dataset.state === 'active',
-            surface,
+            ({ selector, pageId }) => document
+              .querySelector(`${selector} iframe[data-page-id="${pageId}"]`)?.dataset.state === 'active',
+            { selector: surface, pageId: barPageId },
             { timeout: STEP_TIMEOUT },
           )
           assert.equal(
@@ -1607,9 +1636,10 @@ export async function runDevtoolAcceptance({ baseUrl }) {
             'true',
             'tabBar did not select the Chart tab',
           )
-          await page.frameLocator(`${surface} iframe[data-page-id="page-2"]`).locator('#app')
+          await page.frameLocator(`${surface} iframe[data-page-id="${barPageId}"]`).locator('#app')
             .waitFor({ state: 'attached', timeout: STEP_TIMEOUT })
 
+          currentStep = 'preview mini: switch back to the Todos tab'
           await tabBar.getByRole('tab', { name: 'Todos' }).click()
           await page.waitForFunction(
             () => window.__tinyDevtool?.getState().currentPage === 'pages/todos/todos',
@@ -1636,19 +1666,23 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         const ids = await sessionIds()
         assert.ok(ids.length <= 3, `keepalive exceeded 3 apps after ${fixture.id}`)
         if (fixture.id === 'wechat-demo') {
-          assert.deepEqual(ids, ['mini', 'todo', 'wechat-demo'], 'LRU did not evict demo')
+          assert.deepEqual(ids, ['mini', 'todo', 'wechat-demo'], 'LRU kept the wrong warm apps')
         }
         if (fixture.id === 'echarts') {
-          assert.deepEqual(ids, ['echarts', 'todo', 'wechat-demo'], 'LRU did not evict mini')
+          assert.deepEqual(ids, ['echarts', 'todo', 'wechat-demo'], 'LRU kept the wrong warm apps')
         }
       }
 
-      assert.deepEqual(await sessionIds(), ['echarts', 'todo', 'wechat-demo'])
-      const evictedDemoRow = page.locator(
-        `.td-launcher-main[aria-label$="${fixtureById.get('demo').label}"] .td-launcher-state`,
+      assert.deepEqual(
+        await sessionIds(),
+        fixtures.slice(-3).map((fixture) => fixture.id).sort(),
+        'keepalive did not retain the three most recent apps',
+      )
+      const evictedRow = page.locator(
+        `.td-launcher-main[aria-label$="${fixtures[0].label}"] .td-launcher-state`,
       )
       assert.equal(
-        await evictedDemoRow.innerText(),
+        await evictedRow.innerText(),
         'Launch',
         'evicted app did not return to the Launch state',
       )
@@ -1656,22 +1690,22 @@ export async function runDevtoolAcceptance({ baseUrl }) {
 
     await step('reload, close apps, and honor deep links', async () => {
       currentStep = 'reload, close apps, and honor deep links'
-      await openFixture(fixtureById.get('demo'))
-      assert.equal((await managerState()).active, 'demo')
+      await openFixture(primary)
+      assert.equal((await managerState()).active, primary.id)
       await page.getByText('Reload', { exact: true }).click()
       await waitForStatus('running')
       assert.deepEqual((await state()).pageStack, ['page-1'])
 
       await ensureLauncher()
-      await waitForSession('demo', true)
-      await openFixture(fixtureById.get('demo'))
+      await waitForSession(primary.id, true)
+      await openFixture(primary)
       assert.equal((await state()).currentPage, 'pages/todos/todos')
 
       await page.getByText('Close app', { exact: true }).click()
       await waitForLauncher()
-      await waitForSession('demo', false)
+      await waitForSession(primary.id, false)
       assert.equal(
-        await page.locator(`${surfaceSelector('demo')} iframe`).count(),
+        await page.locator(`${surfaceSelector(primary.id)} iframe`).count(),
         0,
         'closing the active app did not remove its surface',
       )
@@ -1708,7 +1742,7 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         )
       }
 
-      await page.goto(`${baseUrl}/?app=demo&maxPageStack=1`, {
+      await page.goto(`${baseUrl}/?app=mini&maxPageStack=1`, {
         waitUntil: 'domcontentloaded',
         timeout: STEP_TIMEOUT,
       })

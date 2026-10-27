@@ -120,16 +120,17 @@ The subset, adaptations, and excluded advanced packages are documented in
 
 ## Runtime debugger stage
 
-The gate scans every `tests/apps/*` fixture with an `app.json`, compiles all of them into
-`apps/devtool/static/runtime/apps/<app>/generated`, writes the app registry to
-`apps/devtool/static/runtime/apps.json`, starts the devtool, and verifies the runtime
-debugger:
+The gate scans every `tests/apps/*` fixture with an `app.json`, compiles the fixtures that
+are listed in the launcher into `apps/devtool/static/runtime/apps/<app>/generated`, writes
+the app registry to `apps/devtool/static/runtime/apps.json`, starts the devtool, and
+verifies the runtime debugger. `tests/apps/demo` stays in the P0 gate but is hidden from
+the devtool (`hiddenFromDevtool` in `scripts/devtool-apps.mjs`):
 
 1. Opening `/` shows the **Mini programs** launcher by default: every fixture is listed with
    its `navigationBarTitleText` as the row title and the fixture id plus page count as
    metadata, no runtime iframe exists, and the warm-app counter reads `0 / 3`.
-2. Clicking `demo` creates that app's service/render iframes, updates the URL to
-   `?app=demo`, and `DevtoolRuntimeClient` reports `running`.
+2. Clicking `mini` creates that app's service/render iframes, updates the URL to
+   `?app=mini`, and `DevtoolRuntimeClient` reports `running`.
 3. Page stack, current page, per-page render frames, structured diagnostics, and the
    rendered element tree are projected into Redux and surfaced in the right-bottom
    Console / Lifecycle / Elements panel.
@@ -150,10 +151,11 @@ debugger:
 7. The `mini` fixture renders its two-item native tabBar with icons and selected state.
    Tapping `Chart` calls `switchTab`, keeps the Todos frame cached and hidden, and shows
    the Chart frame; tapping `Todos` switches back with both frames still alive.
-8. Every fixture boots from the launcher and renders representative content for `demo`,
-   `mini`, `todo`, `wechat-demo`, and `echarts`; page-relative dynamic images (for example
-   the WeChat demo icons) load successfully. At most three apps stay warm; opening
-   `wechat-demo` evicts the least recently used `demo`, and opening `echarts` evicts `mini`.
+8. Every listed fixture boots from the launcher and renders representative content for
+   `mini`, `todo`, `wechat-demo`, `echarts`, `vant`, and `weui`; page-relative dynamic
+   images (for example the WeChat demo icons) load successfully. At most three apps stay
+   warm; opening `echarts` evicts `mini`, opening `vant` evicts `todo`, and opening `weui`
+   evicts `wechat-demo`.
 9. The capsule ring calls `page.hide`, hides all page frames, and returns to the launcher;
    reopening the app resumes its page state. `Reload` restarts only the active app,
    `Close app` / list close buttons release their iframes, and deep links

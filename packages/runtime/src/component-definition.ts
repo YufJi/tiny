@@ -144,7 +144,9 @@ export function normalizeComponentDefinition(
       collector.behaviors.add(source)
       if (source === exportBehavior) {
         collector.componentExport = true
-      } else if (source === formField) {
+      } else if (source === formField || source === `${formField}-button`) {
+        // `wx://form-field-button` is the built-in button variant of a form
+        // field; Vant declares it on `van-button`.
         collector.formField = true
         // Custom form fields contribute `name`/`value` to the enclosing form.
         if (!collector.properties.name) {

@@ -67,6 +67,7 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
       mode() {
         this.resetHostSize()
         this.syncPresentation()
+        this.applyIntrinsicSize(this.data.naturalWidth, this.data.naturalHeight)
       },
       renderingMode() {
         this.syncPresentation()
@@ -173,8 +174,29 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
       resetHostSize() {
         const host = (this as unknown as ImageHost).getBackendElement?.()
         if (!host?.style) return
-        host.style.height = ''
-        host.style.width = ''
+        // Only undo the dimension this component changed. Clearing both would
+        // drop author `style="width: ...; height: ..."` on the host element.
+        const instance = this as unknown as {
+          _managedSize?: { dimension: 'width' | 'height'; original: string }
+        }
+        const managed = instance._managedSize
+        if (!managed) return
+        if (managed.dimension === 'height') host.style.height = managed.original
+        else host.style.width = managed.original
+        instance._managedSize = undefined
+      },
+      manageHostDimension(dimension: 'width' | 'height'): void {
+        const host = (this as unknown as ImageHost).getBackendElement?.()
+        if (!host?.style) return
+        const instance = this as unknown as {
+          _managedSize?: { dimension: 'width' | 'height'; original: string }
+        }
+        if (instance._managedSize?.dimension === dimension) return
+        if (instance._managedSize) this.resetHostSize()
+        instance._managedSize = {
+          dimension,
+          original: (dimension === 'width' ? host.style.width : host.style.height) ?? '',
+        }
       },
       syncPresentation() {
         const mode = String(this.data.mode || 'scaleToFill')
@@ -216,9 +238,12 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
         if (!host?.style || !width || !height) return
         const rect = host.getBoundingClientRect?.()
         if (!rect) return
-        if (String(this.data.mode) === 'widthFix') {
+        const mode = String(this.data.mode)
+        if (mode === 'widthFix') {
+          this.manageHostDimension('height')
           host.style.height = `${(rect.width || 320) * height / width}px`
-        } else if (String(this.data.mode) === 'heightFix') {
+        } else if (mode === 'heightFix') {
+          this.manageHostDimension('width')
           host.style.width = `${(rect.height || 240) * width / height}px`
         }
       },

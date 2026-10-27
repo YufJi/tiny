@@ -63,6 +63,10 @@ export type ComponentRuntimeContext = {
   relations: RelationManager
   getInstance: (componentId: string) => MiniProgramComponentInstance | undefined
   onDiagnostic: (code: string, message: string, details?: unknown) => void
+  /** Component-level `this.createSelectorQuery()`. */
+  createSelectorQuery: () => Record<string, unknown>
+  /** Component-level `this.createIntersectionObserver()`. */
+  createIntersectionObserver: (options?: Record<string, unknown>) => Record<string, unknown>
 }
 
 export type MiniProgramApiHost = Record<string, (...args: unknown[]) => unknown>

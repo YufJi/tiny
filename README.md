@@ -64,11 +64,13 @@ apps/devtool (可选) : DevtoolRuntimeClient + React 面板（多 iframe 页面�
 | Path | 作用 |
 | --- | --- |
 | `tests/host` | 浏览器测试宿主（Vite，加载编译产物） |
-| `tests/apps/demo` | P0 验收 demo |
+| `tests/apps/demo` | P0 验收 demo（保留在门禁中，不再展示于 devtool） |
 | `tests/apps/mini` | 完整示例（todos / add-todo / bar ECharts / 子包） |
 | `tests/apps/todo` | Taro 3 预编译产物 |
 | `tests/apps/wechat-demo` | 微信官方组件/API 示例子集 |
 | `tests/apps/echarts` | 历史参考示例 |
+| `tests/apps/vant` | Vant Weapp 组件库示例（`miniprogram_npm` 预构建包） |
+| `tests/apps/weui` | WeUI 官方样式库示例（54 个页面，无自定义组件） |
 
 `tests/host` 与 `apps/devtool` 都基于 `@tiny/host-browser` 的 `createStandaloneDualThreadHost`，浏览器宿主固定为每页一个 render iframe。前者是无 UI 的单应用测试宿主；后者通过 `DevtoolRuntimeClient` 提供测试应用列表、最近 3 个应用保活/LRU、面板、诊断、生命周期时间线、元素树和内置 tabBar。每个应用页面栈默认最多 10 层，宿主可通过 `maxPageStack` 配置。
 
@@ -88,7 +90,7 @@ pnpm dev:glass-easel         # 编译 tests/apps/demo 并启动测试宿主：ht
 pnpm dev:devtool             # 调试器：http://localhost:8080（可切换全部 tests/apps）
 ```
 
-调试器会扫描 `tests/apps/*` 并为每个应用生成产物与 watcher；顶部下拉框可预览全部测试应用，
+调试器会扫描 `tests/apps/*`（`demo` 除外）并为每个应用生成产物与 watcher；顶部下拉框可预览全部测试应用，
 也支持 `http://localhost:8080/?app=wechat-demo` 这样的深链。
 
 ## 兼容输入与内部命名

@@ -93,9 +93,48 @@ describe('compileMiniProgram', () => {
     const manifest = JSON.parse(await fs.readFile(path.join(outputDir, 'manifest.json'), 'utf8'))
     const page = manifest.pages[0]
     expect(page.configuration.effective.usingComponents).toEqual({
-      badge: './components/badge/badge',
+      badge: '/components/badge/badge',
     })
     expect(page.configuration.usingComponentsSource).toEqual({ badge: 'global' })
+  })
+
+  test('resolves npm-style usingComponents through miniprogram_npm', async () => {
+    const sourceDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cli-npm-components-'))
+    const npmOutput = await fs.mkdtemp(path.join(os.tmpdir(), 'cli-npm-output-'))
+    try {
+      await fs.mkdir(path.join(sourceDir, 'pages/index'), { recursive: true })
+      await fs.mkdir(path.join(sourceDir, 'miniprogram_npm/pkg/button'), { recursive: true })
+      await fs.writeFile(path.join(sourceDir, 'app.json'), JSON.stringify({
+        pages: ['pages/index/index'],
+      }))
+      await fs.writeFile(path.join(sourceDir, 'app.js'), 'App({})')
+      await fs.writeFile(path.join(sourceDir, 'pages/index/index.js'), 'Page({})')
+      await fs.writeFile(path.join(sourceDir, 'pages/index/index.json'), JSON.stringify({
+        usingComponents: { 'pkg-button': 'pkg/button/index' },
+      }))
+      await fs.writeFile(path.join(sourceDir, 'pages/index/index.wxml'), '<pkg-button />')
+      await fs.writeFile(
+        path.join(sourceDir, 'miniprogram_npm/pkg/button/index.js'),
+        'Component({ properties: { label: String } })',
+      )
+      await fs.writeFile(
+        path.join(sourceDir, 'miniprogram_npm/pkg/button/index.json'),
+        JSON.stringify({ component: true }),
+      )
+      await fs.writeFile(path.join(sourceDir, 'miniprogram_npm/pkg/button/index.wxml'), '<view>{{label}}</view>')
+
+      const result = await compileMiniProgram({ sourceDir, outputDir: npmOutput, clean: true, dev: true })
+      expect(result.diagnostics.filter((item) => item.severity === 'error')).toEqual([])
+      const manifest = JSON.parse(await fs.readFile(path.join(npmOutput, 'manifest.json'), 'utf8'))
+      expect(manifest.pages[0].configuration.usingComponents).toEqual({
+        'pkg-button': '/miniprogram_npm/pkg/button/index',
+      })
+      expect(manifest.components.map((component: { path: string }) => component.path))
+        .toContain('miniprogram_npm/pkg/button/index')
+    } finally {
+      await fs.rm(sourceDir, { recursive: true, force: true })
+      await fs.rm(npmOutput, { recursive: true, force: true })
+    }
   })
 
   test('emits loadable service and render entry points', async () => {

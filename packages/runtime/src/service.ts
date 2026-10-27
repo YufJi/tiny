@@ -17,6 +17,7 @@ import { MiniProgramPageRegistry } from './service/page-registry'
 import { MiniProgramComponentInstance } from './service/component-instance'
 import { MiniProgramPageInstance, type PageLifecycleName } from './service/page-instance'
 import { createServiceApiHost, installMiniProgramGlobals } from './service/api-host'
+import { createIntersectionObserverStub, createSelectorQueryStub } from './service/selector-query'
 import { findPageArtifact, normalizeRoutePath, requireActivePage, resolveComponentReference } from './service/route'
 import type { ComponentRuntimeContext, MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime, TabBarApi } from './service/types'
 
@@ -228,6 +229,8 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       message,
       details,
     }, pageId),
+    createSelectorQuery: () => createSelectorQueryStub(apiContext),
+    createIntersectionObserver: () => createIntersectionObserverStub(),
   })
   const createComponentInstance = (
     componentId: string,
@@ -467,9 +470,11 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
           maxPageStack = configuredLimit
         }
       }
-      await artifactsReady
+      // Apply host state before artifacts run: top-level component/app code
+      // reads `wx.getSystemInfoSync().SDKVersion` and `getStorageSync`.
       if (payload.systemInfo) systemInfoSnapshot = cloneJsonSafe(payload.systemInfo)
       if (payload.storage) Object.assign(storageSnapshot, cloneJsonSafe(payload.storage))
+      await artifactsReady
       componentSchemas = buildComponentSchemas(
         options.manifest.components,
         registry.normalizedComponents,
