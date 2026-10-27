@@ -50,8 +50,19 @@ pnpm --filter @tiny/cli test
 pnpm --filter @tiny/cli typecheck
 ```
 
-Entry points:
+Source layout:
 
-- `src/compile.ts` — source discovery, app/page/component resolution, bundling
+- `src/index.ts` — public barrel (`compileMiniProgram`, types, path helpers)
+- `src/compile.ts` — orchestration only: runs the stages below in order
+- `src/compiler/context.ts` — shared per-run state: options, extensions, diagnostics, artifact maps
+- `src/compiler/project.ts` — `project.config.json` root, `app.json` pages, `usingComponents` graph
+- `src/compiler/scripts.ts` — reachable-script walk, TypeScript transpile, source maps
+- `src/compiler/templates.ts` — `TmplGroup` registration and `templates.js` emission
+- `src/compiler/styles.ts` — scoped CSS, rpx, low-priority and page-scope stylesheets
+- `src/compiler/manifest.ts` — schema-v2 manifest and page/component artifacts
+- `src/compiler/output.ts` — asset copy plus `service.js`/`render.js` entries and bundling
+- `src/compiler/template-source.ts` — WXML pre-passes (image inlining, `animation`, scope markers)
+- `src/compiler/module-specifiers.ts` — extensionless import rewriting for ESM hosts
+- `src/compiler/extensions.ts` — extension matching helpers
 - `src/types.ts` — compiler options/results; re-exports `@tiny/manifest`
 - `src/utils.ts` — path/JSON helpers
