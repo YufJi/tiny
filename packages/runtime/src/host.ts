@@ -38,7 +38,7 @@ type RenderPageResult = {
 }
 
 type PendingRenderEvent = {
-  domain: 'data' | 'event' | 'canvas'
+  domain: 'data' | 'event' | 'canvas' | 'tree'
   method: string
   payload: unknown
   pageId?: string
@@ -236,7 +236,7 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
   }
 
   const routeServiceEvent = (
-    domain: 'data' | 'event' | 'canvas',
+    domain: 'data' | 'event' | 'canvas' | 'tree',
     method: string,
     payload: unknown,
     pageId?: string,
