@@ -6,8 +6,8 @@ lede: >-
   tools/cli 是 Tiny 的产物生成工具。它先找到页面和组件，读取命名配置，再把 WXML 编成 ProcGen、WXSS 编成带作用域的 CSS、TS/JS 打包成 service bundle，最后生成一份所有宿主都能读取的 manifest。
 stats:
   - ['1', '编译工具']
-  - ['6', '产物类型']
-  - ['1', 'manifest 版本']
+  - ['5', '产物类型']
+  - ['2', 'manifest schema']
   - ['0', '运行时 WXML 解析']
 description: '小程序引擎的编译流程：入口发现、命名配置、WXML 到 ProcGen、WXSS 作用域、TS 转译、service bundle 与 manifest。'
 name: '编译'
@@ -32,7 +32,7 @@ compileMiniProgram 会按顺序执行这些阶段。每个阶段只生成产物�
 | 编译模板 |  | 把所有模板文件放进同一个 TmplGroup，处理 import/include/template、模板脚本、作用域标记和 animation。 | compileTemplates() |
 | 编译样式 |  | app 样式保持全局；页面和组件样式加固定 Tiny class/tag scope；rpx 转成 vw；内联 @import。 | compileStyles() |
 | 复制资源 |  | 图片和字体按原相对路径复制；小图还会在模板编译阶段内联成 data URI。 | copyAssets() |
-| 生成 manifest 和入口 |  | 汇总产物、runtimeCompatibility 和诊断，写出 manifest.json；生成 service.js、render.js，并用 esbuild 打包 service。 | createManifest() · writeEntryArtifacts() |
+| 生成 manifest 和入口 |  | 汇总产物、runtimeCompatibility 和诊断，写出 manifest.json；生成 service.js 和 templates.js，并用 esbuild 打包 service。 | createManifest() · writeEntryArtifacts() |
 :::
 
 ## 页面和组件是怎么找到的 {#discovery kicker="入口规则"}
@@ -197,7 +197,7 @@ export default {
 ```
 
 :::callout{title="运行时不需要解析 WXML"}
-render 线程只拿到模板 group，再交给 glass-easel 的模板引擎。它不会读取 `.wxml`，也不会在运行时计算 WXML 语法。这样模板错误会在构建期暴露，启动开销也不会随着模板体积线性增长。
+service 的逻辑树拿到模板 group，再交给 glass-easel 求值。render 树不读取模板，也不执行 WXML 表达式；它只接收逻辑树生成的 component flow 和 patch。这样模板错误会在构建期暴露，类型和语义也不会因为跨 DOM 而丢失。
 :::
 
 ## class 和 tag 两套作用域 {#styles kicker="样式编译"}
@@ -242,8 +242,8 @@ CLI 会同时写出 `*.low.css`，但目前没有启用 `convertHost`，所以�
 ::::
 :::::
 
-:::callout{title="样式作用域在 render 线程注册"}
-编译器只负责生成 CSS 和 scope 名称；render 线程调用 `StyleScopeManager.register(scope)` 拿到数字 scope id，再在定义页面/组件时传给 glass-easel。注册顺序必须是先样式、后组件定义，否则组件拿不到作用域。
+:::callout{title="样式编译给逻辑树用"}
+编译器只负责生成 CSS、cascade role 和 scope 名称；service 的逻辑树在挂载页面时注册样式并计算 scope，再把页面/组件样式随 tree.flow 下发给渲染树。渲染树不根据文件名猜样式类型，只按 role 应用。
 :::
 
 ## TypeScript 转译、模块路径修正和 service 打包 {#scripts kicker="脚本打包"}
@@ -258,7 +258,6 @@ CLI 会同时写出 `*.low.css`，但目前没有启用 `convertHost`，所以�
 | 修正相对模块路径 |  | 浏览器 ESM 需要显式扩展名。把 ./foo 改成 ./foo.js，目录入口改成 ./foo/index.js；裸模块名不变。 | rewriteRelativeModuleSpecifiers() |
 | 生成 service.js 入口 |  | 入口会 import app、所有页面和所有组件的脚本。App/Page/Component 在导入时执行，注册到 service 的 registry。 | import './scripts/app.js' ... |
 | 用 esbuild 打包 service |  | format 为 esm，platform 为 browser，target 为 es2019，同时开启 bundle 和 sourcemap。ECharts 这类 CJS/UMD 依赖会在这里被吸收。 | bundle() · SCRIPT_BUNDLE_ERROR = warning |
-| 生成 render.js |  | render 入口只重新导出 templates，组件逻辑不会进入 render。 | render.js |
 :::
 
 :::callout{title="打包失败不会直接中断编译" tone="warn"}
@@ -288,7 +287,6 @@ CLI 会同时写出 `*.low.css`，但目前没有启用 `convertHost`，所以�
   },
   "entries": {
     "service": "service.js",
-    "render": "render.js",
     "templates": "templates.js"
   },
   "app": {
@@ -329,8 +327,8 @@ CLI 会同时写出 `*.low.css`，但目前没有启用 `convertHost`，所以�
 :::
 
 :::card{title="谁会读取 manifest"}
-- service：注册表、页面路径、组件 schema 和配置
-- render：模板、样式、组件 schema 和页面产物
+- service：注册表、页面路径、组件 schema、模板和样式，负责创建逻辑树
+- render：只接收 tree flow/patch 和宿主渲染能力，不读取 manifest 里的页面产物
 - 宿主：加载入口、收集编译诊断
 - devtool：显示应用列表和诊断
 :::
@@ -346,7 +344,6 @@ generated/
 |-- manifest.json            # 唯一索引
 |-- service.js               # esbuild 打包后的服务线程入口
 |-- service.js.map
-|-- render.js                # 只导出 templates
 |-- templates.js             # groupList + content(path, name)
 |-- scripts/
 |   |-- app.js
@@ -413,7 +410,7 @@ devtool 的监听是外部脚本在 250ms 防抖后重新全量构建。
 :::
 
 :::card{tag="样式" tone="warn" title="编译期只处理作用域"}
-编译器生成 class/tag 作用域和 `hostAttribute`，但 `styleIsolation`、`addGlobalClass` 和 `shared` 的样式组合发生在 render adapter。`:host` 的低优先级输出目前也还没有启用。
+编译器生成 class/tag 作用域、cascade role 和 `hostAttribute`；`styleIsolation`、`addGlobalClass` 和 `shared` 的样式组合发生在逻辑树和渲染树的样式应用阶段。`:host` 的低优先级输出目前也还没有启用。
 :::
 
 :::card{tag="运行环境" tone="warn" title="依赖 Node 工具链"}
@@ -421,7 +418,7 @@ devtool 的监听是外部脚本在 250ms 防抖后重新全量构建。
 :::
 
 :::card{tag="资源" tone="warn" title="资源分两段处理"}
-编译器按原路径复制图片和字体，并把 WXML 里小于 200KB 的本地图片内联成 data URI。更大的资源、以及 CSS 里的 `url()`，由宿主的 `resolveAssetUrl` 在 render 侧解析。
+编译器按原路径复制图片和字体，并把 WXML 里小于 200KB 的本地图片内联成 data URI。更大的资源、以及 CSS 里的 `url()`，由宿主的 `resolveAssetUrl` 在渲染树应用 flow 时解析。
 :::
 ::::
 

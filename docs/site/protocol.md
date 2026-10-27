@@ -7,7 +7,7 @@ lede: >-
 stats:
   - ['1', '协议版本']
   - ['4', '消息类型']
-  - ['7', '消息域']
+  - ['9', '消息域']
   - ['30s', '默认调用超时']
 description: 'Bridge 协议：消息信封、握手、传输、批处理、错误处理和完整消息列表，是内核与宿主之间的唯一边界。'
 name: '协议'
@@ -51,7 +51,8 @@ order: 5
   messageId: "msg-m...-1-a1b2c3d4",
   kind: "call" | "reply" | "event" | "control",
   domain: "runtime" | "page" | "data" | "event"
-        | "api" | "diagnostic" | "canvas",
+        | "api" | "diagnostic" | "canvas"
+        | "query" | "tree",
   method: "navigate.to",
   source: "host" | "service" | "render" | "devtool",
   target: "host" | "service" | "render" | "devtool",
@@ -218,49 +219,88 @@ reply(request, { ok: false, error: { code, message, details } })
 Bridge 的 `assertJsonSafe` 做严格校验；runtime 的 `toJsonSafe` 会主动丢弃函数和 undefined、转换 Date/Map/Set，并把循环引用写成 `[Circular]`。事件序列化会先用后者清洗，确保能通过前者的校验。
 :::
 
+## tree 域：两棵树之间的同步 {#tree-protocol kicker="tree 协议"}
+
+双侧树不共享内存。service 逻辑树生成 component flow 和 virtual node patch，render 渲染树应用它们；事件、查询和相交观测再按 node id 回到 service。
+
+| 消息 | 方向 | 内容 |
+| --- | --- | --- |
+| `tree.flow` | service → render | 首屏 component flow：`define`、`create-node`、`props`、`children`、`ready`；带页面样式和 fallback app 样式 |
+| `tree.snapshot` | service → render | 完整虚拟节点快照；渲染树保留该入口 |
+| `tree.patch` | service → render | `text`、`replace`、`props`、`insert`、`remove`、`reorder`、`extra` |
+| `tree.event` | render → service | node id、name、detail、native 字段、touches；service 负责找到逻辑节点并分发 |
+| `tree.ready` | host → service | render 根挂载完成后请求逻辑树发送首屏 flow |
+| `tree.inspectTree` | host → render | 从渲染树导出 InspectNode |
+| `tree.measure` | service/host → render | 按 node id 读取 layout 矩形 |
+| `query.select` | service → host → render | selector query 在真实 DOM 中查节点，返回 rect/dataset/scroll |
+| `query.intersection` | service → render / render → service | 创建、更新、断开 IntersectionObserver；entry 回到逻辑树 |
+| `canvas.measure` | service → render | 测量 canvas 节点 |
+
+首屏 flow 的核心是稳定 node id：
+
+```js
+[
+  { type: 'define', path: 'pages/index/index', definition: { ... } },
+  { type: 'create-node', id: 'node-1', tag: 'view', parentId: undefined, index: 0 },
+  { type: 'props', id: 'node-1', props: { class: 'card' } },
+  { type: 'children', id: 'node-1', inserts: ['node-2'] },
+  { type: 'ready' },
+]
+```
+
+后续更新只发送 patch：
+
+```js
+[
+  { type: 'props', id: 'node-2', props: { class: 'card active' } },
+  { type: 'text', id: 'node-3', text: '新的标题' },
+]
+```
+
+:::callout{title="patch 按页面合批"}
+service 在一个 microtask 内合并同一页面的模板更新，再发一条 `tree.patch`；渲染树按顺序应用 patch，不重新求值模板。component flow 目前只覆盖首屏挂载，后续更新统一走 patch，这是和微信参考协议的已知差异。
+:::
+
 ## v1 现在有哪些消息 {#catalog kicker="消息列表"}
 
-domain 和 method 都是字符串，没有集中式的 schema 注册表；下面是当前代码实际注册和发送的消息。组件语义扩展通过新增 method 完成，协议版本仍是 1。
+domain 和 method 都是字符串，没有集中式的 schema 注册表；下面是当前代码实际注册和发送的消息。tree/query 是双侧树新增的域，协议版本仍是 1。
 
 | Domain | Method | 类型 | 方向 | 语义 |
 | --- | --- | --- | --- | --- |
 | runtime | `hello` | call | host → service/render | 握手，返回 protocolVersion、role 和 capabilities |
 | runtime | `ready` | control | service/render → host | 线程装配完成，宿主结束握手等待 |
-| runtime | `bootstrap` | control | host → service | 创建首屏，返回 pageId/initialData/componentSchemas/pageComponents |
-| runtime | `bootstrap` | control | host → render | 注册样式、schema 和页面选项，挂载首屏并返回组件快照 |
-| runtime | `inspectTree` | control | host/devtool → render | 按 pageId 返回 InspectNode 树 |
-| runtime | `componentLifecycle` | event | render → service | created/attached/ready/moved/detached，附带 data、pageId/parent/tag/id/class |
-| runtime | `componentData` | event | render → service | render 侧组件 data 变化，service 同步逻辑实例 |
-| runtime | `componentObserved` | event | render → service | render 侧 observer 变化，service 用旧值执行 observer |
-| runtime | `componentPageLifetime` | event | render → service | show/hide；service 目前忽略，由 page.show/hide 统一分发 |
-| page | `ready` | control | host → service | 携带 render 的组件快照，先建立逻辑树，再触发 onReady |
-| page | `navigateTo` | control | host → service | 当前页 onHide，创建新页，返回 path/pageId/query/initialData |
-| page | `navigateTo` | control | host → render | 卸载 previousPageId，挂载新页并返回组件 |
-| page | `navigateBack` | control | host → service | 移除 delta 个页面，恢复栈顶，返回 unloadedPageIds |
-| page | `navigateBack` | control | host → render | 卸载 unloadedPageIds，重新挂载恢复页并返回组件 |
-| page | `switchTab` | control | host → service/render | 切换 tabBar 页面；service 复用缓存页面，render 切换或挂载对应帧 |
-| page | `hide` | control | host → service | App.onHide、页面 onHide、所有组件 pageLifetimes hide |
-| page | `show` | control | host → service | App.onShow、页面 onShow、所有组件 pageLifetimes show |
-| page | `scroll` | event | render → service | 把页面滚动位置和事件交给 service |
-| page | `reachBottom` | event | render → service | 触发页面触底回调 |
-| page | `unload` | control | host → service | onUnload，并移除页面实例（内置宿主没有调用） |
-| page | `getInitialData` | call | host → service | 返回页面定义的 data（已注册，但目前没有宿主使用） |
-| data | `setData` | event | service → render | 页面或组件的路径更新；同一 tick 的多个 patch 合并为一条 |
-| event | `dispatch` | event | render → service | 序列化后的小程序事件，用来调用页面或组件方法 |
-| event | `trigger` | event | service → render | service 侧组件实例触发 glass-easel 事件 |
-| canvas | `measure` | call/control | service → host → render | 按 selector 测量，返回 width/height/canvasId |
-| canvas | `frame` | event | service → render | 宿主 canvas 适配器产生的 PNG 帧，render 侧负责上屏 |
-| query | `select` | call/control | service → host → render | 按 selector 在组件/页面作用域查询真实 DOM，返回 rect/dataset/scroll |
-| query | `intersection` | call/control | service → host → render | 创建/更新/断开组件级 IntersectionObserver |
-| query | `intersection` | event | render → service | 投影相交 entry，触发 observe 回调 |
+| runtime | `bootstrap` | control | host → service | 创建逻辑树和首屏，返回 pageId/initialData/componentSchemas |
+| runtime | `bootstrap` | control | host → render | 创建 TreeRenderer 并等待 tree.flow |
+| runtime | `inspectTree` | control | host/devtool → render | 返回渲染树 InspectNode |
+| runtime | `resize` | control | host → service | 更新窗口快照并触发页面 resize |
+| page | `ready` | control | host → service | 首屏同步后触发 onReady |
+| page | `navigateTo` | control | host → service | 创建新页逻辑树，返回 pageId/path/initialData |
+| page | `navigateBack` | control | host → service | 移除页面，恢复栈顶 |
+| page | `redirectTo` / `reLaunch` | control | host → service | 替换或重置页面栈 |
+| page | `switchTab` | control | host → service | 切换 tabBar 页面并复用缓存 |
+| page | `show` / `hide` | control | host → service | 应用和页面前后台生命周期 |
+| page | `scroll` / `reachBottom` | event | render → service | 页面滚动和触底回调 |
+| page | `share` / `saveExitState` / `pullDownRefresh` | control | host → service | 页面分享、退出状态和下拉刷新 |
+| tree | `flow` | event | service → render | 首屏 component flow |
+| tree | `snapshot` | event | service → render | 完整虚拟节点快照 |
+| tree | `patch` | event | service → render | 虚拟节点增量 patch |
+| tree | `event` | event | render → service | 渲染树事件回传逻辑树 |
+| tree | `ready` | event | host → service | 请求首屏 flow |
+| tree | `inspectTree` | control | host/devtool → render | 导出渲染树元素树 |
+| tree | `measure` | control | service → render | 按 node id 测量矩形 |
+| query | `select` | call/control | service → host → render | 在渲染树中查 selector，返回 rect/dataset/scroll |
+| query | `intersection` | control/event | service ↔ render | observe/unobserve 与 IntersectionObserver entry |
+| canvas | `measure` | call/control | service → host → render | 测量 canvas 节点 |
 | diagnostic | `diagnostic.log/warn/error/state` | event | service/render → host | 统一转成 RuntimeDiagnostic |
 | api | `system.info` | call | service → host | 获取宿主系统信息快照 |
-| api | `storage.get` | call | service → host | 读取宿主 storage |
-| api | `storage.set` | call | service → host | 写入宿主 storage |
+| api | `storage.get/set` | call | service → host | 读写宿主 storage |
 | api | `toast.show` | call | service → host | 宿主 toast（目前只返回 errMsg） |
-| api | `navigate.to` | call | service → host | 宿主协调 service 和 render 完成导航 |
-| api | `navigate.back` | call | service → host | 宿主协调 service 和 render 完成返回 |
+| api | `navigate.to/back/switchTab` | call | service → host | 宿主协调 service 和 render 完成导航 |
 | api | `*` | call | service → host | apiHandlers 注入的任意宿主 API |
+
+:::callout{title="data.setData 是旧路径，不要作为新宿主依赖" tone="warn"}
+service 里还保留旧的 `data.setData` 发送代码，但双侧树的渲染树不消费它；模板更新以 `tree.patch` 为准。新宿主只需要实现 tree/query/canvas 域，不要基于 `data.setData` 实现渲染。
+:::
 
 ## 宿主如何转发消息 {#relay kicker="转发"}
 
@@ -268,21 +308,17 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 
 | 来源 | 收到 | 宿主处理 | 发出 |
 | --- | --- | --- | --- |
-| render | `event.dispatch` | 取出 payload 和 pageId，新建事件 | service event.dispatch |
-| render | `runtime.componentLifecycle` | 取出 payload（含 parent/tag/id/class） | service runtime.componentLifecycle |
-| render | `runtime.componentData` | 转发 payload（pageId 在 payload 里） | service runtime.componentData |
-| render | `runtime.componentObserved` | 转发 payload（pageId 在 payload 里） | service runtime.componentObserved |
-| render | `page.scroll` / `page.reachBottom` | 按 pageId 转发 | service 对应页面事件 |
-| service | `event.trigger` | 取出 payload | render event.trigger |
-| service | `data.setData` | 取出 payload 和 pageId | render data.setData |
-| service | `canvas.frame` | 取出 payload 和 pageId | render canvas.frame |
-| service | `canvas.measure` | 把调用 Promise 直接返回 | render canvas.measure（control） |
-| host | `page.navigateTo / bootstrap` | 等待 render 返回组件 | service page.ready({ components }) |
+| service | `tree.flow` / `tree.snapshot` / `tree.patch` | 按 pageId 找渲染树连接，未就绪时先排队 | render 对应 tree 消息 |
+| render | `tree.event` | 补上 pageId 后转发 | service `tree.event` |
+| render | `query.intersection` | 按 pageId 转发 | service `query.intersection` |
+| service | `query.select` / `canvas.measure` | 把调用 Promise 转给渲染树 | render 对应 control |
+| host | `tree.ready` | 通知 service 发送首屏 flow | service `tree.flow` |
+| host | `page.navigateTo / bootstrap` | 创建 service 页面和 render root | service `page.ready` |
 | service/render | `diagnostic.*` | normalize 后写入 HostDiagnosticStore | 不转发，供 devtool 或宿主回调 |
 | service | `api.*` | 在 HostApiRegistry 里查 handler | 本地执行；导航类 API 再调用两侧 control |
 
 :::callout{title="转发时不会保留 replyTo"}
-事件没有 reply，宿主新建一条消息就可以；转发中唯一保留请求语义的是 `canvas.measure`：宿主的 onCall 返回 render control 的 Promise，Bridge 会用新的 messageId/replyTo 完成关联。导航 handler 也会在 render 返回组件后补发 `page.ready`。
+tree 事件没有 reply，宿主新建一条消息即可；`query.select` 和 `canvas.measure` 这类调用会返回 render control 的 Promise，由 Bridge 用新的 messageId/replyTo 完成关联。导航 handler 还会在 render root 就绪后补发 `tree.ready` / `page.ready`。
 :::
 
 ## 新增一条消息要改哪些地方 {#extend kicker="扩展"}

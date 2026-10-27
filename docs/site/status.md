@@ -3,10 +3,11 @@ title: '核心已经跑通，'
 highlight: '兼容性还在补齐'
 eyebrow: '现状'
 lede: >-
-  内核已经和宿主解耦，命名配置、组件语义、样式隔离、tabBar、多应用调试器都已就位；接下来主要是补宿主 API、组件覆盖、分享菜单等页面形态、canvas 交互、原生宿主和性能基线。下面的判断都按当前代码和测试来，不按计划来。
+  内核已经和宿主解耦，双侧树、组件语义、样式隔离、tabBar、多应用调试器都已就位；接下来主要是补 tree 协议细节、宿主 API、组件覆盖、页面形态、原生渲染树和性能基线。下面的判断都按当前代码和测试来，不按计划来。
 pills:
   - ['内核不依赖宿主', 'good']
   - ['组件语义', 'good']
+  - ['双侧树', 'good']
   - ['样式隔离', 'good']
   - ['仅浏览器宿主', 'warn']
   - ['generics 已接', 'good']
@@ -25,22 +26,22 @@ order: 9
 | 领域 | 状态 | 当前情况和边界 |
 | --- | --- | --- |
 | 编译核心 | :pill[可用]{tone="good"} | 支持 pages、components、subPackages、可配置文件/指令/API 约定、WXML/WXSS/WXS、manifest、service bundle、资源复制和 source map；目前只有全量构建。 |
-| service runtime | :pill[可用]{tone="good"} | App/Page/Component、页面栈、navigateTo/back/switchTab/redirectTo/reLaunch、tabBar 状态和 API、14 项页面生命周期、7 项应用生命周期、setData、兼容全局与行为 scheme、behaviors/observers/relations/definitionFilter/pureDataPattern、逻辑组件树、storage/system/canvas 协议。 |
-| render adapter | :pill[可用]{tone="good"} | glass-easel ComponentSpace、模板、作用域、styleIsolation、externalClasses、组件定义、生命周期、元素树、资源解析和 canvas 适配。 |
-| bridge | :pill[可用]{tone="good"} | 信封和帧、MessagePort/内存 transport、握手、超时、批处理、JSON 校验；capabilities 还没有用于协商。 |
-| 浏览器宿主 | :pill[可用]{tone="good"} | @tiny/host-browser 支持单 render 和每页 render 两种模式、MessageChannel、tabBar 宿主 UI、DOM canvas、resolveAssetUrl 和 DevtoolRuntimeClient；内核依赖检查通过。 |
-| 原生宿主 | :pill[未实现]{tone="warn"} | 还没有 native transport、native 渲染后端或非浏览器 service 运行时；不过内核已经移除了 document、Image 和 iframe。 |
+| service runtime | :pill[可用]{tone="good"} | App/Page/Component、页面栈、5 个路由 API、14 项页面生命周期、7 项应用生命周期、setData、兼容全局与 behavior scheme、behaviors/observers/relations/definitionFilter/pureDataPattern、glass-easel 逻辑树、virtual node diff、tree 协议、storage/system/canvas 协议。 |
+| render tree | :pill[可用]{tone="good"} | 宿主 `TreeRenderer`：真实内置组件、slot、shadow root、样式、布局、DOM、元素树、query、measure、IntersectionObserver；Web 实现是 `createGlassRenderTree`。 |
+| bridge | :pill[可用]{tone="good"} | 9 个消息域，含 tree/query；信封和帧、MessagePort/内存 transport、握手、超时、批处理、JSON 校验；capabilities 还没有用于协商。 |
+| 浏览器宿主 | :pill[可用]{tone="good"} | @tiny/host-browser 支持每页 render 连接、MessageChannel、tabBar 宿主 UI、OffscreenCanvas handoff、resolveAssetUrl 和 DevtoolRuntimeClient；@tiny/host-web-components 提供 Web 渲染树和 23 个内置组件。内核依赖检查通过。 |
+| 原生宿主 | :pill[未实现]{tone="warn"} | 还没有 native transport、native `TreeRenderer` 或非浏览器 service 运行时；`createNativeTreeRenderer` 只有契约和 headless smoke test。 |
 | 内置组件 | :pill[较完整]{tone="good"} | 23 个组件和共享 behaviors；checkbox/radio/switch/slider/icon/image/picker 已按 2.7.0 参考重写；input/textarea/scroll-view/swiper 仍是近似实现；navigator/video/rich-text/map 等还缺。 |
 | API | :pill[部分]{tone="warn"} | request、异步 storage、5 个路由 API、system、toast/modal、canvas、selector query 已有；媒体、真实文件、账号、位置、WebSocket 还没有。 |
 | 页面能力 | :pill[部分]{tone="warn"} | 14 项页面生命周期、5 个路由 API、内置 tabBar/switchTab、页面滚动/触底/下拉刷新、分享回调和退出状态已经支持；分享菜单 UI、页面转场、页面栈恢复、自定义 tabBar 还缺。 |
-| 组件语义 | :pill[核心可用]{tone="good"} | Behaviors、observers、relations、selectComponent、component-export、component-as-page、generics、definitionFilter、pureDataPattern 已实现；componentPlaceholder、trait behaviors 和 chaining API 未实现。 |
+| 组件语义 | :pill[核心可用]{tone="good"} | Behaviors、observers、relations、selectComponent、component-export、component-as-page、generics、definitionFilter、pureDataPattern 已实现，全部运行在 service 逻辑树；componentPlaceholder、trait behaviors 和 chaining API 未实现。 |
 | 样式系统 | :pill[核心可用]{tone="good"} | class/tag 作用域、rpx、@import、styleIsolation/addGlobalClass、externalClasses、shared CSS 已支持；:host 和低优先级输出未启用。 |
 | Canvas | :pill[部分]{tone="warn"} | selector-query 与 legacy canvas 走 OffscreenCanvas handoff；2D/WebGL/RAF/createImage/touch 已支持；canvasToTempFilePath、createOffscreenCanvas 和 node 事件仍缺。 |
 | 动画 | :pill[部分]{tone="warn"} | animation 数据会编译成最终态 CSS transform/transition；没有多 step 时序和事件回调。 |
 | 诊断 | :pill[可用]{tone="good"} | 编译、transport、service、render、host 五类诊断统一收集；组件语义新增了 observer、relation、behavior 相关诊断。 |
 | Devtool | :pill[运行时级+]{tone="good"} | 应用列表、点击启动、最近 3 个应用保活、返回列表、设备框、宿主导航和 tabBar、每页 render 帧、Console/Lifecycle/Elements、Reload/Close app；页面栈默认上限 10，宿主可配置。它仍不是完整的微信开发者工具。 |
 | 性能与稳定 | :pill[未量化]{tone="warn"} | 启动、首屏、setData、内存和长时运行都没有基准，也没有压力测试。 |
-| 测试 | :pill[核心链路]{tone="good"} | 221 个单元测试、52 个浏览器步骤和 5 个测试小程序；没有性能、视觉、原生和安全测试。 |
+| 测试 | :pill[核心链路]{tone="good"} | 221 个单元测试、52 个浏览器步骤和 7 个测试小程序；tree flow/patch 有单元和浏览器覆盖，参考协议的细节仍有缺口。 |
 
 ## 现在最影响使用的问题 {#gaps kicker="主要缺口"}
 
@@ -65,16 +66,20 @@ order: 9
 generics、definitionFilter、pureDataPattern 已实现；componentPlaceholder、trait behaviors / chaining API 和大多数微信内置 behavior（例如 `wx://form-field`）仍未实现，目前只支持 component-export。
 :::
 
-:::card{tag="Canvas" tone="warn" title="canvas 还不是完整交互"}
-目前是宿主 canvas 适配器加 PNG 帧镜像；没有 canvas rAF、完整 2D API，也没有原生触摸到 service 的完整链路。
+:::card{tag="tree" tone="warn" title="component flow 只覆盖首屏"}
+首屏用 define/create-node/props/children/ready 同步，后续更新走 virtual node patch；微信参考协议中的 FLOW_UPDATE、FLOW_SET_DATA、FLOW_DATA_OBSERVER 和 target geometry 还没有对齐。
+:::
+
+:::card{tag="Canvas" tone="warn" title="canvas 边缘能力未覆盖"}
+OffscreenCanvas handoff、2D/WebGL/RAF/createImage 和 touch 已支持；canvasToTempFilePath、createOffscreenCanvas 和 node 事件还没有端到端覆盖。
 :::
 
 :::card{tag="动画" tone="warn" title="动画只有最终态"}
 `animation` 会编译成 CSS transform/transition；多 step 时序和事件回调还没有还原。
 :::
 
-:::card{tag="导航" tone="warn" title="单 render 模式返回语义不完整"}
-每页 render 模式会保留页面 DOM；单 render 模式返回时仍会重新挂载页面，不会把 render 返回的组件快照重新发给 service。
+:::card{tag="原生" tone="warn" title="原生渲染树只有契约"}
+`createNativeTreeRenderer` 有契约和 headless 测试，但没有实际原生宿主；原生 host 还要实现 canvas handoff、query、measure 和 IntersectionObserver。
 :::
 
 :::card{tag="性能" tone="warn" title="没有性能基线"}
@@ -89,7 +94,7 @@ generics、definitionFilter、pureDataPattern 已实现；componentPlaceholder�
 :::::split
 ::::stack
 :::card{tag="原生" tone="warn" title="原生宿主还没有"}
-内核已经不依赖 document，但原生宿主还需要实现 Transport、glass-easel 渲染后端、canvas 适配器、resolveAssetUrl 和控制界面。
+内核已经不依赖 document，但原生宿主还需要实现 Transport、`TreeRenderer`、canvas handoff、query/measure/IntersectionObserver、resolveAssetUrl 和控制界面。
 :::
 
 :::card{tag="部署" tone="warn" title="部署假设还没有建模"}
@@ -114,8 +119,8 @@ iframe 没有 sandbox；转移端口和发送 ready 时使用 targetOrigin `'*'`
 service bundle 包含所有页面脚本；manifest 记录了 subpackage，但宿主还没有按需下载和执行策略。
 :::
 
-:::card{tag="返回" tone="warn" title="单 render 模式缺少 page.ready"}
-navigateTo 会补发 `page.ready({ components })`；navigateBack 在单 render 模式下不会重新下发组件快照。
+:::card{tag="返回" tone="warn" title="单 render 模式的页面恢复"}
+navigateTo 会创建新的 render root 并触发 tree.ready；navigateBack 依赖 render root 的保留或重建，单 render 模式仍需补组件状态恢复。
 :::
 ::::
 :::::
@@ -133,8 +138,8 @@ navigateTo 会补发 `page.ready({ components })`；navigateBack 在单 render �
 navigator、video、rich-text、map、movable-view；把已有组件的 open-type、表单、颜色和焦点语义补全，并同步扩展组件测试与 P0 fixture。
 :::
 
-:::card{tag="P0" title="修复单 render 模式的返回流程"}
-让 navigateBack 在单 render 模式下也把 render 返回的组件并入 page.ready，或者让 service 复用已有组件实例；同时补浏览器断言。
+:::card{tag="P0" title="补齐 tree 协议"}
+补 FLOW_UPDATE、FLOW_SET_DATA、FLOW_DATA_OBSERVER、target geometry 等参考协议字段，并给 tree event 补端到端断言。
 :::
 
 :::card{tag="P0" title="宿主加固"}
@@ -158,7 +163,7 @@ canvasToTempFilePath、wx.createOffscreenCanvas、canvas node 事件；animation
 :::
 
 :::card{tag="P2" title="原生宿主和更多渲染后端"}
-用现有的 Transport、渲染后端、canvas 和资源注入接口实现原生宿主；再评估多渲染后端和编译产物抽象化。
+用现有的 Transport、`TreeRenderer`、canvas handoff 和资源注入接口实现原生宿主；再评估多渲染后端。
 :::
 ::::
 
@@ -199,8 +204,12 @@ iframe、DOM canvas 和 devtool 覆盖层放在 `hosts/browser`，内置组件�
 宿主产物、组件 ProcGen、devtool 静态文件和站点里的 devtool 都由构建生成；仓库只保留源码、约定和测试 fixture。
 :::
 
+:::card{title="两棵树不互相越界"}
+service 不创建真实 DOM、不加载 Web 内置组件；render 不执行 app methods、observer 或 relations。node id 由 service 分配。
+:::
+
 :::card{title="验收必须跑真实应用"}
-核心链路要用真实双线程和浏览器操作验证，不能只靠 mock 通过。
+核心链路要用真实双线程、tree flow/patch 和浏览器操作验证，不能只靠 mock 通过。
 :::
 ::::
 
