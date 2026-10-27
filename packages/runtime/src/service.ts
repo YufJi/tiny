@@ -552,14 +552,75 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }
   }
 
+  const treeFlow = (root: import('./tree/protocol').RenderNode): import('./tree/protocol').ComponentFlow[] => {
+    const messages: import('./tree/protocol').ComponentFlow[] = componentSchemas.map((schema) => ({
+      type: 'define' as const,
+      path: schema.path,
+      definition: {
+        componentId: schema.componentId,
+        options: schema.options,
+        properties: schema.properties,
+      },
+    }))
+    const visit = (
+      node: import('./tree/protocol').RenderNode,
+      parentId: string | undefined,
+      index: number,
+    ): void => {
+      if (node.type === 'text') {
+        messages.push({
+          type: 'create-node',
+          id: node.id,
+          tag: '#text',
+          parentId,
+          index,
+          text: node.text,
+        })
+        return
+      }
+      messages.push({
+        type: 'create-node',
+        id: node.id,
+        tag: node.tag,
+        parentId,
+        index,
+        dataset: node.dataset,
+        scopes: node.scopes,
+        scopeChain: node.scopeChain,
+        externalClasses: node.externalClasses,
+        events: node.events,
+        key: node.key,
+      })
+      if (node.props && Object.keys(node.props).length > 0) {
+        messages.push({ type: 'props', id: node.id, props: node.props })
+      }
+      const childIds: string[] = []
+      for (const [childIndex, child] of (node.children ?? []).entries()) {
+        childIds.push(child.id)
+        visit(child, node.id, childIndex)
+      }
+      if (childIds.length > 0) {
+        messages.push({ type: 'children', id: node.id, inserts: childIds })
+      }
+    }
+    visit(root, undefined, 0)
+    messages.push({ type: 'ready' })
+    return messages
+  }
+
   const sendTreeSnapshot = (pageId: string): void => {
     if (!logicTree) return
     const root = logicTree.snapshotRenderTree(pageId)
     if (!root) return
     connection.sendEvent(
       'tree',
-      'snapshot',
-      { pageId, pagePath: logicTree.pagePathFor(pageId), root: cloneJsonSafe(root), ...treeStyles(pageId) },
+      'flow',
+      {
+        pageId,
+        pagePath: logicTree.pagePathFor(pageId),
+        messages: cloneJsonSafe(treeFlow(root)),
+        ...treeStyles(pageId),
+      },
       { pageId },
     )
   }

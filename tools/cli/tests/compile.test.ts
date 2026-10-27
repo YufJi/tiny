@@ -35,7 +35,6 @@ describe('compileMiniProgram', () => {
     expect(manifest.schemaVersion).toBe(2)
     expect(manifest.entries).toEqual({
       service: 'service.js',
-      render: 'render.js',
       templates: 'templates.js',
     })
     expect(manifest.pages).toHaveLength(1)

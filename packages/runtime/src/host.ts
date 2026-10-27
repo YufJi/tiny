@@ -456,6 +456,9 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
   service.onEvent('event', 'trigger', (message) => {
     routeServiceEvent('event', 'trigger', message.payload, message.pageId)
   })
+  service.onEvent('tree', 'flow', (message) => {
+    routeServiceEvent('tree', 'flow', message.payload, message.pageId)
+  })
   service.onEvent('tree', 'snapshot', (message) => {
     routeServiceEvent('tree', 'snapshot', message.payload, message.pageId)
   })

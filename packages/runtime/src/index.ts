@@ -16,3 +16,5 @@ export * from './logic/protocol'
 export * from './tree-thread'
 
 export { resolveAssetPath } from './assets'
+
+export * from './tree/native-renderer'

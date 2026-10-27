@@ -1,6 +1,6 @@
 import { BridgeConnection } from '@tiny/bridge'
 import type { Transport } from '@tiny/bridge'
-import type { RenderNode, RenderPatch } from './tree/protocol'
+import type { ComponentFlow, RenderElement, RenderNode, RenderPatch, RenderText } from './tree/protocol'
 
 export type TreeEventPayload = {
   id: string
@@ -97,6 +97,63 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     currentPageId = payload.pageId ?? message.pageId ?? currentPageId
     options.renderer.setPagePath?.(payload.pagePath ?? '')
     if (payload.root) options.renderer.mount(payload.root)
+    const styles = [...(payload.styles ?? []), ...(payload.fallbackAppStyles ?? [])]
+    if (styles.length > 0) options.renderer.applyStyles?.(styles)
+  })
+  connection.onEvent('tree', 'flow', (message) => {
+    const payload = (message.payload ?? {}) as {
+      pageId?: string
+      pagePath?: string
+      messages?: ComponentFlow[]
+      styles?: string[]
+      fallbackAppStyles?: string[]
+    }
+    currentPageId = payload.pageId ?? message.pageId ?? currentPageId
+    options.renderer.setPagePath?.(payload.pagePath ?? '')
+    const nodes = new Map<string, RenderNode>()
+    const roots: RenderNode[] = []
+    let pageRoot: RenderNode | undefined
+    const attach = (node: RenderNode, parentId?: string, index?: number): void => {
+      nodes.set(node.id, node)
+      if (!parentId) {
+        roots.push(node)
+        return
+      }
+      const parent = nodes.get(parentId)
+      if (!parent || parent.type !== 'element') return
+      parent.children ??= []
+      if (typeof index === 'number') parent.children.splice(index, 0, node)
+      else parent.children.push(node)
+    }
+    for (const entry of payload.messages ?? []) {
+      if (entry.type === 'create-node') {
+        const node: RenderText | RenderElement = entry.tag === '#text'
+          ? { type: 'text', id: entry.id, text: entry.text ?? '' }
+          : {
+              type: 'element',
+              id: entry.id,
+              tag: entry.tag,
+              ...(entry.props ? { props: entry.props } : {}),
+              ...(entry.dataset ? { dataset: entry.dataset } : {}),
+              ...(entry.scopes ? { scopes: entry.scopes } : {}),
+              ...(entry.scopeChain ? { scopeChain: entry.scopeChain } : {}),
+              ...(entry.externalClasses ? { externalClasses: entry.externalClasses } : {}),
+              ...(entry.events ? { events: entry.events } : {}),
+              ...(entry.key ? { key: entry.key } : {}),
+            }
+        attach(node, entry.parentId, entry.index)
+        if (!entry.parentId) pageRoot ??= node
+        continue
+      }
+      if (entry.type === 'props') {
+        const node = nodes.get(entry.id)
+        if (node?.type === 'element') node.props = entry.props
+        continue
+      }
+      if (entry.type === 'ready' && pageRoot) {
+        options.renderer.mount(pageRoot)
+      }
+    }
     const styles = [...(payload.styles ?? []), ...(payload.fallbackAppStyles ?? [])]
     if (styles.length > 0) options.renderer.applyStyles?.(styles)
   })

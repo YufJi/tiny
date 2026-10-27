@@ -56,7 +56,7 @@ function createManifest(): Manifest {
   return {
     schemaVersion: 2,
     runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
-    entries: { service: 'service.js', render: 'render.js', templates: 'templates.js' },
+    entries: { service: 'service.js', templates: 'templates.js' },
     pages: [
       artifact(HOME_PATH, 'page'),
       artifact(FORM_PATH, 'component', { child: `/${CHILD_PATH}` }),

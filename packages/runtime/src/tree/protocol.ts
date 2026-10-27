@@ -57,6 +57,14 @@ export type ComponentFlow =
     path?: string
     parentId?: RenderNodeId
     index?: number
+    text?: string
+    props?: Record<string, unknown>
+    dataset?: Record<string, unknown>
+    scopes?: string[]
+    scopeChain?: string[]
+    externalClasses?: Record<string, string[]>
+    events?: Array<{ name: string; capture?: boolean }>
+    key?: string
   }
   | { type: 'props'; id: RenderNodeId; props: Record<string, unknown> }
   | { type: 'data'; id: RenderNodeId; patch: Record<string, unknown> }

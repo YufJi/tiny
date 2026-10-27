@@ -5,6 +5,22 @@
 Accepted — implementation branch `feat/wechat-split-tree`, based on `next`
 (`feb5f61`). The earlier `feat/service-logic-tree` branch is a reference only.
 
+### Implementation status
+
+- The standalone test host and the debugger boot the split tree by default;
+  the `logic=render` escape hatch is gone.
+- The production render entry (`packages/runtime/src/render.ts`) has been
+  deleted. The compiler no longer emits `render.js`; hosts load `templates.js`
+  directly.
+- Initial page mount is driven by component-flow messages
+  (`define` / `create-node` / `props` / `children` / `ready`). Subsequent
+  template updates use virtual-node patches.
+- The runtime exposes a host-neutral native tree adapter
+  (`createNativeTreeRenderer`) behind the same `TreeRenderer` contract as the
+  web glass tree, with its own smoke tests.
+- Runtime tests boot a service logic tree plus a headless tree thread; the old
+  render-adapter test fixture is gone.
+
 ## Context
 
 Tiny currently runs glass-easel in the render thread. Render evaluates WXML/WXS,
@@ -146,6 +162,8 @@ host-owned.
 - Update backend/devtool projections and acceptance docs.
 - Acceptance: full `pnpm accept:glass-easel`; Vant/WeUI; native render-tree
   smoke test (node tree, no DOM).
+- Done: default hosts switched, old render entry deleted, compiler output
+  reduced to `service.js` + `templates.js`, adapter render-only APIs removed.
 
 ## Risks
 

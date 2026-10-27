@@ -103,7 +103,6 @@ export type Manifest = {
   runtimeCompatibility: RuntimeCompatibilityConfig
   entries: {
     service: string
-    render: string
     templates: string
   }
   app?: AppArtifact

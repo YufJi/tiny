@@ -11,6 +11,54 @@ const tree: RenderNode = {
 }
 
 describe('tree thread', () => {
+  test('builds the render mirror from component-flow messages', async () => {
+    const [hostTransport, renderTransport] = createInMemoryTransportPair()
+    const mounted: RenderNode[] = []
+    bootTreeThread({
+      transport: renderTransport,
+      renderer: {
+        mount: (root) => mounted.push(root),
+        applyPatches: () => {},
+      },
+    })
+    const host = new BridgeConnection({
+      localRole: 'host',
+      peerRole: 'render',
+      transport: hostTransport,
+      respondToHello: false,
+    })
+    await host.handshake()
+    host.sendEvent('tree', 'flow', {
+      pageId: 'page-1',
+      pagePath: 'pages/index/index',
+      styles: [],
+      messages: [
+        { type: 'define', path: 'components/card/card', definition: {} },
+        { type: 'create-node', id: 'page', tag: 'page', index: 0 },
+        { type: 'create-node', id: 'view', tag: 'view', parentId: 'page', index: 0 },
+        { type: 'create-node', id: 'text', tag: '#text', parentId: 'view', index: 0, text: 'flow' },
+        { type: 'create-node', id: 'card', tag: 'card', parentId: 'view', index: 1 },
+        { type: 'props', id: 'card', props: { label: 'flow' } },
+        { type: 'children', id: 'view', inserts: ['text', 'card'] },
+        { type: 'ready' },
+      ],
+    }, { pageId: 'page-1' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(mounted).toHaveLength(1)
+    expect(mounted[0]).toMatchObject({
+      type: 'element',
+      id: 'page',
+      children: [{
+        type: 'element',
+        id: 'view',
+        children: [
+          { type: 'text', id: 'text', text: 'flow' },
+          { type: 'element', id: 'card', tag: 'card', props: { label: 'flow' } },
+        ],
+      }],
+    })
+  })
+
   test('receives snapshots/patches and sends render events', async () => {
     const [hostTransport, renderTransport] = createInMemoryTransportPair()
     const mounted: RenderNode[] = []

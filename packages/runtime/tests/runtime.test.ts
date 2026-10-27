@@ -68,7 +68,6 @@ function createManifest(): Manifest {
     runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
     entries: {
       service: 'service.js',
-      render: 'render.js',
       templates: 'templates.js',
     },
     pages: [page],

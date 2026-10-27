@@ -55,7 +55,7 @@ function createManifest(): Manifest {
   return {
     schemaVersion: 2,
     runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
-    entries: { service: 'service.js', render: 'render.js', templates: 'templates.js' },
+    entries: { service: 'service.js', templates: 'templates.js' },
     pages: [artifact(PAGE_PATH, { semantic: `/${COMPONENT_PATH}` })],
     components: [artifact(COMPONENT_PATH)],
     styles: [],
