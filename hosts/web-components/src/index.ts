@@ -132,3 +132,6 @@ export const webBuiltinComponents: BuiltinComponents = {
     ...BUILTIN_COMPONENT_STYLES.map(({ path, content, scope }) => ({ path, content, scope })),
   ],
 }
+
+export { createGlassRenderTree } from './render-tree'
+export type { GlassRenderTree, GlassRenderTreeOptions } from './render-tree'
