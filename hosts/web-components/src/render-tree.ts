@@ -133,6 +133,106 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     return component
   }
 
+  const rootId = { value: '' }
+
+  const ownerFor = (parentId: string): { owner: AnyComponent; shadow: any } | null => {
+    if (parentId === rootId.value) {
+      return {
+        owner: root,
+        shadow: root.shadowRoot as unknown as { insertBefore: (child: unknown, ref: unknown) => void },
+      }
+    }
+    const parent = nodes.get(parentId)
+    if (!parent || glassEasel.TextNode.isTextNode(parent)) return null
+    return { owner: parent, shadow: null }
+  }
+
+  const collectIds = (node: RenderNode): string[] => {
+    if (node.type === 'text') return [node.id]
+    return [node.id, ...(node.children ?? []).flatMap(collectIds)]
+  }
+
+  const dropNode = (node: RenderNode): void => {
+    for (const id of collectIds(node)) {
+      nodes.delete(id)
+      currentTree.delete(id)
+    }
+  }
+
+  const destroyComponent = (node: unknown): void => {
+    if (!node) return
+    ;(node as { destroy?: () => void }).destroy?.()
+  }
+
+  const insertNode = (parentId: string, index: number, node: RenderNode): void => {
+    const target = ownerFor(parentId)
+    if (!target) return
+    const child = node.type === 'text'
+      ? createText(node, target.owner)
+      : createElement(node, target.owner)
+    if (target.shadow) {
+      const ref = (root.shadowRoot as unknown as { childNodes: ArrayLike<unknown> }).childNodes[index] ?? null
+      target.shadow.insertBefore(child, ref)
+    } else {
+      const parent = target.owner
+      parent.insertBefore(child as never, parent.childNodes[index] ?? null)
+    }
+  }
+
+  const removeNode = (parentId: string, index: number, count: number): void => {
+    const parent = parentId === rootId.value
+      ? root
+      : nodes.get(parentId)
+    if (!parent || glassEasel.TextNode.isTextNode(parent)) return
+    for (let offset = 0; offset < count; offset += 1) {
+      const child = parent.childNodes[index]
+      if (!child) break
+      parent.removeChild(child as never)
+      for (const [id, value] of nodes) {
+        if (value === child) {
+          const snapshot = currentTree.get(id)
+          if (snapshot) dropNode(snapshot)
+          destroyComponent(child)
+        }
+      }
+    }
+  }
+
+  const reorderNode = (parentId: string, moves: Array<{ from: number; to: number }>): void => {
+    const parent = parentId === rootId.value
+      ? root
+      : nodes.get(parentId)
+    if (!parent || glassEasel.TextNode.isTextNode(parent)) return
+    for (const move of moves) {
+      const child = parent.childNodes[move.from]
+      if (!child) continue
+      parent.removeChild(child as never)
+      parent.insertBefore(child as never, parent.childNodes[move.to] ?? null)
+    }
+  }
+
+  const replaceNode = (id: string, node: RenderNode): void => {
+    const previous = nodes.get(id)
+    const snapshot = currentTree.get(id)
+    if (!previous || !snapshot) return
+    if (snapshot.type === 'element' && node.type === 'element' && id === rootId.value) {
+      nodes.set(id, root)
+      currentTree.set(id, node)
+      return
+    }
+    const parent = (previous as unknown as { parentNode?: AnyComponent }).parentNode
+    if (!parent) return
+    const owner = parent
+    const child = node.type === 'text'
+      ? createText(node, owner)
+      : createElement(node, owner)
+    parent.replaceChild(child as never, previous as never)
+    dropNode(snapshot)
+    nodes.set(id, node.type === 'text' ? child as never : child)
+    currentTree.set(id, node)
+    if (snapshot.type === 'element' && node.type !== 'element') destroyComponent(previous)
+  }
+
   const updateProps = (node: RenderElement): void => {
     const component = nodes.get(node.id)
     if (!component) return
@@ -172,6 +272,14 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
             updateProps(next)
           }
         }
+      } else if (patch.type === 'insert') {
+        insertNode(patch.parentId, patch.index, patch.node)
+      } else if (patch.type === 'remove') {
+        removeNode(patch.parentId, patch.index, patch.count)
+      } else if (patch.type === 'reorder') {
+        reorderNode(patch.parentId, patch.moves)
+      } else if (patch.type === 'replace') {
+        replaceNode(patch.id, patch.node)
       }
     }
   }
@@ -189,7 +297,11 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
           ? createText(child, root)
           : createElement(child, root))
       }
-      if (node.type === 'element') nodes.set(node.id, root)
+      if (node.type === 'element') {
+        rootId.value = node.id
+        nodes.set(node.id, root)
+        currentTree.set(node.id, node)
+      }
       if (options.attach !== false) glassEasel.Element.pretendAttached(root)
     },
     applyPatches,

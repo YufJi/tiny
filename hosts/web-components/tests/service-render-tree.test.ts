@@ -18,7 +18,9 @@ const WXML = `
       <text id="label-text">Label A</text>
     </label>
   </checkbox-group>
-  <text id="footer">hello {{label}}</text>
+  <view wx:if="{{show}}" id="footer-box">
+    <text id="footer">hello {{label}}</text>
+  </view>
 </view>
 `
 
@@ -65,7 +67,7 @@ describe('service logic tree to glass render tree', () => {
   test('mounts a snapshot and preserves built-in composition', () => {
     const logic = new LogicTreeAdapter({ manifest: manifest(), templates: templates() })
     logic.registerComponentSchemas([])
-    logic.mountPage(PAGE_PATH, { label: 'hello', checked: false }, 'page-1')
+    logic.mountPage(PAGE_PATH, { label: 'hello', checked: false, show: true }, 'page-1')
     const snapshot = logic.snapshotRenderTree('page-1')
     expect(snapshot).toBeTruthy()
 
@@ -110,5 +112,17 @@ describe('service logic tree to glass render tree', () => {
     render.applyPatches(update.patches)
     expect((render.getNode(footerId!) as unknown as { textContent: string }).textContent).toBe('hello bye')
     expect((render.getNode(checkboxId!) as unknown as { data: { checked: boolean } }).data.checked).toBe(true)
+
+    logic.setPageData('page-1', { show: false })
+    const hide = logic.updateRenderTree('page-1')
+    render.applyPatches(hide.patches)
+    expect(render.getNode(footerId!)).toBeUndefined()
+
+    logic.setPageData('page-1', { show: true })
+    const show = logic.updateRenderTree('page-1')
+    render.applyPatches(show.patches)
+    const footerAgain = findTextId(show.snapshot)
+    expect(footerAgain).toBeDefined()
+    expect((render.getNode(footerAgain!) as unknown as { textContent: string }).textContent).toBe('hello bye')
   })
 })
