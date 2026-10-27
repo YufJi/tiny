@@ -136,6 +136,8 @@ export type GlassEaselAdapterOptions = {
   logicQueryFactory?: (component: glassEasel.GeneralComponent) => unknown
   /** Called after logic-tree page/component data changes. */
   onLogicDataChange?: (pageId: string) => void
+  /** Touch payload currently being dispatched by the logic tree. */
+  logicTouchState?: () => { touches?: unknown[]; changedTouches?: unknown[] }
   logicIntersectionFactory?: (
     component: glassEasel.GeneralComponent,
     options?: Record<string, unknown>,
@@ -226,6 +228,7 @@ export class GlassEaselRuntimeAdapter {
   private readonly logicComponentDefinitions?: GlassEaselAdapterOptions['logicComponentDefinitions']
   private readonly logicQueryFactory?: GlassEaselAdapterOptions['logicQueryFactory']
   private readonly onLogicDataChange?: GlassEaselAdapterOptions['onLogicDataChange']
+  private readonly logicTouchState?: GlassEaselAdapterOptions['logicTouchState']
   private readonly pageIdsByComponent = new WeakMap<object, string>()
   private readonly logicPropertyValues = new WeakMap<object, Record<string, unknown>>()
   private readonly logicIntersectionFactory?: GlassEaselAdapterOptions['logicIntersectionFactory']
@@ -238,6 +241,7 @@ export class GlassEaselRuntimeAdapter {
     this.logicComponentDefinitions = options.logicComponentDefinitions
     this.logicQueryFactory = options.logicQueryFactory
     this.onLogicDataChange = options.onLogicDataChange
+    this.logicTouchState = options.logicTouchState
     this.logicIntersectionFactory = options.logicIntersectionFactory
     this.onMiniProgramEvent = options.onMiniProgramEvent
     this.onComponentLifecycle = options.onComponentLifecycle
@@ -923,7 +927,26 @@ export class GlassEaselRuntimeAdapter {
       })
     const logicDefinition = this.logicComponentDefinitions?.get(schema.path)
     if (logicDefinition) {
-      const methods = Object.fromEntries(logicDefinition.methods) as Record<string, (...args: unknown[]) => unknown>
+      const methods = Object.fromEntries(
+        [...logicDefinition.methods].map(([name, method]) => [
+          name,
+          function (this: unknown, ...args: unknown[]) {
+            const event = args[0]
+            const touch = adapter.logicTouchState?.()
+            if (
+              event && typeof event === 'object'
+              && (touch?.touches || touch?.changedTouches)
+            ) {
+              const target = event as Record<string, unknown>
+              if (target.touches === undefined && touch.touches) target.touches = touch.touches
+              if (target.changedTouches === undefined && touch.changedTouches) {
+                target.changedTouches = touch.changedTouches
+              }
+            }
+            return (method as (...inner: unknown[]) => unknown).apply(this, args)
+          },
+        ]),
+      ) as Record<string, (...args: unknown[]) => unknown>
       if (this.logicQueryFactory) {
         methods.createSelectorQuery = function (this: glassEasel.GeneralComponent) {
           return adapter.logicQueryFactory?.(this)

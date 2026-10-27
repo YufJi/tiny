@@ -42,6 +42,8 @@ export class LogicTreeAdapter {
   private readonly typedDatasets = new Map<string, Record<string, unknown>>()
   private readonly pageRoots = new Map<string, LogicBackendElement>()
   private activePageId?: string
+  private activeTouches: unknown[] | undefined
+  private activeChangedTouches: unknown[] | undefined
   private readonly lastSnapshots = new Map<string, ViewSnapshot>()
   private readonly lastRenderTrees = new Map<string, RenderNode>()
   private readonly manifest: Manifest
@@ -71,6 +73,7 @@ export class LogicTreeAdapter {
       logicComponentDefinitions: options.componentDefinitions,
       logicQueryFactory: (component) => this.createSelectorQueryFor(component),
       onLogicDataChange: options.onDataChange,
+      logicTouchState: () => this.getActiveTouches(),
       logicIntersectionFactory: (component, observerOptions) => (
         this.createIntersectionObserverFor(component, observerOptions)
       ),
@@ -299,6 +302,10 @@ export class LogicTreeAdapter {
     }
   }
 
+  getActiveTouches(): { touches?: unknown[]; changedTouches?: unknown[] } {
+    return { touches: this.activeTouches, changedTouches: this.activeChangedTouches }
+  }
+
   createSelectorQueryFor(component: unknown): Record<string, unknown> {
     const node = findLogicNodeByElement(component)
       ?? [...this.pageRoots.values()][0]
@@ -314,6 +321,10 @@ export class LogicTreeAdapter {
 
   /** Dispatch a projected DOM event through the glass-easel logic tree. */
   dispatchViewEvent(payload: ViewEventPayload): boolean {
+    if (payload.touches || payload.changedTouches) {
+      this.activeTouches = payload.touches
+      this.activeChangedTouches = payload.changedTouches
+    }
     const node = this.backend.findByViewId(payload.viewId)
     const element = node?.__wxElement
     if (!element) return false
@@ -343,6 +354,12 @@ export class LogicTreeAdapter {
       }
     } else if (payload.name === 'tap' || payload.name === 'longpress') {
       detail = { x: native.clientX ?? 0, y: native.clientY ?? 0 }
+    } else if (payload.name.startsWith('touch')) {
+      detail = {
+        ...(payload.detail && typeof payload.detail === 'object' ? payload.detail as object : {}),
+        touches: payload.touches ?? [],
+        changedTouches: payload.changedTouches ?? [],
+      }
     } else if (payload.name === 'scroll') {
       detail = {
         scrollTop: native.scrollTop ?? 0,
@@ -353,7 +370,33 @@ export class LogicTreeAdapter {
         deltaY: native.deltaY ?? 0,
       }
     }
-    element.triggerEvent(payload.name, detail, { bubbles: true, composed: true })
+    if (payload.name.startsWith('touch')) {
+      const event = {
+        type: payload.name,
+        detail,
+        touches: payload.touches ?? [],
+        changedTouches: payload.changedTouches ?? [],
+      }
+      let current: unknown = element
+      while (current) {
+        const component = (current as { asGeneralComponent?: () => unknown }).asGeneralComponent?.()
+        const target = component as Record<string, unknown> | undefined
+        const handler = target?.[payload.name]
+        if (typeof handler === 'function') {
+          ;(handler as (event: unknown) => void).call(target, event)
+          this.activeTouches = undefined
+          this.activeChangedTouches = undefined
+          return true
+        }
+        current = (current as { parentNode?: unknown }).parentNode
+      }
+    }
+    try {
+      element.triggerEvent(payload.name, detail, { bubbles: true, composed: true })
+    } finally {
+      this.activeTouches = undefined
+      this.activeChangedTouches = undefined
+    }
     return true
   }
 }

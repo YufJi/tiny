@@ -691,6 +691,8 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       name?: string
       detail?: unknown
       native?: Record<string, unknown>
+      touches?: unknown[]
+      changedTouches?: unknown[]
     }
     if (!payload.id || !payload.name) return
     logicTree.dispatchViewEvent({
@@ -699,6 +701,8 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       pageId: message.pageId,
       detail: payload.detail,
       native: payload.native,
+      touches: payload.touches,
+      changedTouches: payload.changedTouches,
     })
   })
 

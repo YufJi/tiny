@@ -8,6 +8,8 @@ export type TreeEventPayload = {
   pageId?: string
   detail?: unknown
   native?: Record<string, unknown>
+  touches?: unknown[]
+  changedTouches?: unknown[]
 }
 
 export type TreeRenderer = {
@@ -15,6 +17,12 @@ export type TreeRenderer = {
   applyPatches: (patches: RenderPatch[]) => void
   setEventSink?: (sink: (event: TreeEventPayload) => void) => void
   applyStyles?: (styles: string[]) => void
+  measureCanvas?: (selector: string, canvasId: string) => {
+    width: number
+    height: number
+    canvasId: string
+    hasCanvas: boolean
+  }
   setDiagnosticSink?: (sink: (diagnostic: {
     severity: 'warning' | 'error'
     code: string
@@ -93,6 +101,14 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     options.renderer.applyPatches(payload.patches ?? [])
   })
   connection.onControl('tree', 'inspectTree', () => options.renderer.inspectTree?.() ?? null)
+  connection.onControl('canvas', 'measure', (message) => {
+    const payload = (message.payload ?? {}) as { selector?: string; canvasId?: string }
+    return options.renderer.measureCanvas?.(
+      String(payload.selector ?? ''),
+      String(payload.canvasId ?? ''),
+    ) ?? { width: 0, height: 0, canvasId: '', hasCanvas: false }
+  })
+
   connection.onControl('tree', 'measure', (message) => {
     const payload = (message.payload ?? {}) as { ids?: string[] }
     return options.renderer.measure?.(payload.ids ?? []) ?? {}

@@ -20,6 +20,12 @@ export type GlassRenderTree = {
   root: AnyComponent
   rootElement: HTMLElement | null
   applyStyles?: (styles: string[]) => void
+  measureCanvas?: (selector: string, canvasId: string) => {
+    width: number
+    height: number
+    canvasId: string
+    hasCanvas: boolean
+  }
   setEventSink?: (sink: (event: { id: string; name: string; native: Record<string, unknown> }) => void) => void
   setDiagnosticSink?: (sink: (diagnostic: {
     severity: 'warning' | 'error'
@@ -116,6 +122,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const containers = new Map<string, glassEasel.GeneralComponentDefinition>()
   const nodes = new Map<string, AnyComponent | glassEasel.TextNode>()
   const eventCleanups = new Map<string, Array<() => void>>()
+  const touchBridges = new Set<string>()
+  const canvasComponents = new Map<string, { node: RenderElement; component: AnyComponent }>()
   let eventSink: ((event: { id: string; name: string; native: Record<string, unknown> }) => void) | undefined
   let styleElement: HTMLStyleElement | undefined
   let diagnosticSink: ((diagnostic: {
@@ -198,6 +206,58 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     return native
   }
 
+  const attachTouchBridge = (node: RenderElement, component: AnyComponent): void => {
+    if (node.tag !== 'canvas' || touchBridges.has(node.id)) return
+    const host = component.getBackendElement() as unknown as HTMLElement | null
+    const canvas = host?.querySelector?.('canvas') ?? host
+    if (!canvas || typeof canvas.addEventListener !== 'function') return
+    const emit = (name: string, changed: boolean): void => {
+      const rect = canvas.getBoundingClientRect()
+      const touch = {
+        identifier: 0,
+        clientX: rect.left + pointerX,
+        clientY: rect.top + pointerY,
+        pageX: rect.left + pointerX,
+        pageY: rect.top + pointerY,
+        x: pointerX,
+        y: pointerY,
+      }
+      const clone = (): Record<string, unknown> => ({ ...touch })
+      const payload = {
+        id: node.id,
+        name,
+        native: {
+          touches: [clone()],
+          changedTouches: changed ? [clone()] : [],
+        },
+        ...(name === 'touchend' ? { changedTouches: [clone()] } : { touches: [clone()] }),
+      }
+      if (eventSink) eventSink(payload as never)
+      else options.onEvent?.(payload as never)
+    }
+    let pointerX = 0
+    let pointerY = 0
+    let pressed = false
+    const update = (event: MouseEvent): void => {
+      const rect = canvas.getBoundingClientRect()
+      pointerX = event.clientX - rect.left
+      pointerY = event.clientY - rect.top
+    }
+    const down = (event: MouseEvent): void => { update(event); pressed = true; emit('touchstart', false) }
+    const move = (event: MouseEvent): void => { if (!pressed) return; update(event); emit('touchmove', false) }
+    const up = (event: MouseEvent): void => { if (!pressed) return; update(event); pressed = false; emit('touchend', true) }
+    canvas.addEventListener('mousedown', down)
+    canvas.addEventListener('mousemove', move)
+    canvas.addEventListener('mouseup', up)
+    const cleanups = eventCleanups.get(node.id) ?? []
+    cleanups.push(() => {
+      canvas.removeEventListener('mousedown', down)
+      canvas.removeEventListener('mousemove', move)
+      canvas.removeEventListener('mouseup', up)
+    })
+    eventCleanups.set(node.id, cleanups)
+  }
+
   const attachEvents = (node: RenderElement, component: AnyComponent): void => {
     const events = node.events ?? []
     if (events.length === 0) return
@@ -243,6 +303,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     nodes.set(node.id, component)
     currentTree.set(node.id, node)
     attachEvents(node, component)
+    if (node.tag === 'canvas') canvasComponents.set(node.id, { node, component })
     if (node.tag === 'checkbox-group') {
       const element = component.getBackendElement() as unknown as HTMLElement | null
       if (element && typeof element.addEventListener === 'function') {
@@ -454,6 +515,27 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     setDiagnosticSink: (sink) => {
       diagnosticSink = sink
     },
+    measureCanvas: (selector, canvasId) => {
+      if (typeof document === 'undefined') {
+        return { width: 0, height: 0, canvasId, hasCanvas: false }
+      }
+      const host = (canvasId
+        ? rootElement?.querySelector(`tiny-canvas[canvas-id="${canvasId}"]`)
+        : null)
+        ?? (selector ? rootElement?.querySelector(selector) : null)
+        ?? (selector ? rootElement?.querySelector(`tiny-canvas ${selector}`) : null)
+      const canvas = host?.tagName === 'CANVAS'
+        ? host
+        : host?.querySelector('canvas')
+      if (!canvas) return { width: 0, height: 0, canvasId, hasCanvas: false }
+      const rect = canvas.getBoundingClientRect()
+      return {
+        width: rect.width,
+        height: rect.height,
+        canvasId,
+        hasCanvas: true,
+      }
+    },
     applyStyles: (styles) => {
       if (typeof document === 'undefined') return
       if (!styleElement) {
@@ -495,6 +577,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         applyClassProps(rootElement, node.props, node.scopes, node.scopeChain)
       }
       if (options.attach !== false) glassEasel.Element.pretendAttached(root)
+      for (const { node, component } of canvasComponents.values()) {
+        attachTouchBridge(node, component)
+      }
     },
     applyPatches,
     getNode(id) {
