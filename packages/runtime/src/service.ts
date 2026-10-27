@@ -8,10 +8,8 @@ import {
 } from '@tiny/manifest'
 import { buildComponentSchemas } from './component/component-schema'
 import type { ComponentLifecycleName, NormalizedComponentDefinition } from './component/component-definition'
-import { invokeObserver } from './component/observers'
 import { cloneJsonSafe, readDataPath, type DataPatch } from './data'
 import { ComponentTree } from './component/component-tree'
-import { RelationManager } from './component/relation-manager'
 import type { ServiceThreadOptions } from './types'
 import type {
   MiniProgramComponentSchema,
@@ -22,17 +20,15 @@ import type {
 import { createRuntimeStateDiagnostic } from './diagnostics'
 import type { RuntimePageState, RuntimeTabBarState } from './diagnostics'
 import { MiniProgramPageRegistry } from './service/page-registry'
-import { MiniProgramComponentInstance } from './service/component-instance'
 import { MiniProgramPageInstance, type PageLifecycleName } from './service/page-instance'
 import { createServiceApiHost, installMiniProgramGlobals } from './service/api-host'
 import { createSelectorQuery } from './service/selector-query'
 import { LogicTreeAdapter } from './logic/tree'
 import { findPageArtifact, normalizeRoutePath, requireActivePage, resolveComponentReference } from './service/route'
-import type { ComponentRuntimeContext, MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime, TabBarApi } from './service/types'
+import type { MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime, TabBarApi } from './service/types'
 
-export type { MiniProgramPageOptions, MiniProgramComponentOptions, MiniProgramAppOptions, ComponentRuntimeContext, MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime } from './service/types'
+export type { MiniProgramPageOptions, MiniProgramComponentOptions, MiniProgramAppOptions, MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime } from './service/types'
 export { MiniProgramPageRegistry } from './service/page-registry'
-export { MiniProgramComponentInstance } from './service/component-instance'
 export { MiniProgramPageInstance } from './service/page-instance'
 export { createServiceApiHost, installMiniProgramGlobals } from './service/api-host'
 
@@ -62,7 +58,6 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   )
   let currentPath = options.initialPath
   const pageInstances = new Map<string, MiniProgramPageInstance>()
-  const componentInstances = new Map<string, MiniProgramComponentInstance>()
   let componentSchemas: MiniProgramComponentSchema[] = []
   let logicTree: LogicTreeAdapter | null = null
   const mountedTreePages = new Set<string>()
@@ -214,24 +209,6 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     () => pageStack,
   )
   const componentTree = new ComponentTree()
-  const getPageByRootId = (componentId: string): MiniProgramPageInstance | undefined => {
-    if (!componentId.startsWith('page:')) return undefined
-    return pageInstances.get(componentId.slice('page:'.length))
-  }
-  const relationManager = new RelationManager({
-    tree: componentTree,
-    getInstance: (componentId) => componentInstances.get(componentId) ?? getPageByRootId(componentId),
-    getRelations: (componentId) => (
-      componentInstances.get(componentId)?.getComponentOptions().relations
-      ?? getPageByRootId(componentId)?.getComponentDefinition()?.relations
-      ?? []
-    ),
-    onError: (code, message, details) => connection.sendDiagnostic('warn', {
-      code,
-      message,
-      details,
-    }, activePage?.pageId),
-  })
   type IntersectionRelativeTo = {
     type: 'viewport' | 'selector'
     selector?: string
@@ -371,73 +348,6 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }
   }
 
-  const createRuntimeContext = (pageId: string): ComponentRuntimeContext => ({
-    pageId,
-    tree: componentTree,
-    relations: relationManager,
-    getInstance: (componentId) => componentInstances.get(componentId),
-    onDiagnostic: (code, message, details) => connection.sendDiagnostic('warn', {
-      code,
-      message,
-      details,
-    }, pageId),
-    createSelectorQuery: (componentId) => createSelectorQuery(apiContext, { componentId }),
-    createIntersectionObserver: (componentId, options) => (
-      createComponentIntersectionObserver(pageId, componentId, options)
-    ),
-    flushDataPatches,
-  })
-  const createComponentInstance = (
-    componentId: string,
-    componentPath: string,
-    definition: NormalizedComponentDefinition,
-    initialData: Record<string, unknown>,
-    pageId: string,
-  ) => new MiniProgramComponentInstance(
-    componentId,
-    componentPath,
-    definition,
-    initialData,
-    createRuntimeContext(pageId),
-    {
-      onDataPatch: (instanceId, patch) => {
-        queueDataPatch('component', instanceId, pageId, patch)
-      },
-      onTriggerEvent: (instanceId, name, detail, triggerOptions) => {
-        connection.sendEvent('event', 'trigger', {
-          componentId: instanceId,
-          name,
-          detail,
-          options: triggerOptions,
-        }, { pageId })
-      },
-    },
-  )
-  const ensureComponentInstance = (
-    componentId: string,
-    componentPath?: string,
-    data?: Record<string, unknown>,
-    pageId?: string,
-  ): MiniProgramComponentInstance | undefined => {
-    const existing = componentInstances.get(componentId)
-    if (existing) return existing
-    if (!componentPath) return undefined
-    const schema = componentSchemas.find((component) => component.path === componentPath)
-    const definition = registry.normalizedComponents.get(componentPath)
-    if (!schema || !definition) return undefined
-    const component = createComponentInstance(
-      componentId,
-      componentPath,
-      definition,
-      data ?? schema.data,
-      pageId ?? activePage?.pageId ?? '',
-    )
-    componentInstances.set(componentId, component)
-    for (const issue of definition.diagnostics) {
-      connection.sendDiagnostic('warn', issue, pageId ?? activePage?.pageId)
-    }
-    return component
-  }
   const artifactsReady = options.loadArtifacts?.() ?? Promise.resolve()
   const emitPageLifecycle = (
     page: MiniProgramPageInstance,
@@ -510,9 +420,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     })
   }
   const triggerComponentsPageLifetime = (pageId: string, phase: 'show' | 'hide') => {
-    for (const [componentId, component] of componentInstances) {
-      if (componentTree.get(componentId)?.pageId === pageId) component.triggerPageLifetime(phase)
-    }
+    logicTree?.triggerPageLifetime(pageId, phase)
   }
   const saveExitState = (page: MiniProgramPageInstance): unknown => {
     const state = triggerPageLifecycle(page, 'onSaveExitState')
@@ -526,18 +434,8 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     triggerComponentsPageLifetime(page.pageId, 'hide')
     triggerPageLifecycle(page, 'onUnload')
     if (page.getComponentDefinition()) page.triggerComponentLifecycle('detached')
-    relationManager.handleDetach(page.componentId)
     options.canvas?.releaseCanvasNode?.({ pageId: page.pageId })
-    for (const componentId of componentTree.removePage(page.pageId)) {
-      const component = componentInstances.get(componentId)
-      if (!component) continue
-      component.triggerLifecycle('detached')
-      relationManager.handleDetach(componentId)
-      componentInstances.delete(componentId)
-      createdComponents.delete(componentId)
-      pendingComponentEvents.delete(componentId)
-      previousComponentData.delete(componentId)
-    }
+    componentTree.removePage(page.pageId)
     pageInstances.delete(page.pageId)
     readyPages.delete(page.pageId)
     tabPageCache.delete(page.path)
@@ -697,14 +595,15 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         queueDataPatch('page', id, id, patch)
         syncTreePatch(id, patch)
       },
-      createRuntimeContext(pageId),
+      (code, message, details) => connection.sendDiagnostic('warn', {
+        code,
+        message,
+        details,
+      }, pageId),
       componentDefinition,
       (selector, all) => logicTree?.selectComponents(pageId, selector, all) ?? [],
     )
-    if (componentDefinition) {
-      page.triggerComponentLifecycle('created')
-      relationManager.handleAttach(page.componentId, false)
-    }
+    if (componentDefinition) page.triggerComponentLifecycle('created')
     pageInstances.set(page.pageId, page)
     pageStack.push(page)
     activePage = page
@@ -757,15 +656,27 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       changedTouches?: unknown[]
     }
     if (!payload.id || !payload.name) return
-    logicTree.dispatchViewEvent({
-      viewId: payload.id,
-      name: payload.name,
-      pageId: message.pageId,
-      detail: payload.detail,
-      native: payload.native,
-      touches: payload.touches,
-      changedTouches: payload.changedTouches,
-    })
+    try {
+      logicTree.dispatchViewEvent({
+        viewId: payload.id,
+        name: payload.name,
+        pageId: message.pageId,
+        detail: payload.detail,
+        native: payload.native,
+        touches: payload.touches,
+        changedTouches: payload.changedTouches,
+      })
+    } catch (error) {
+      const description = error instanceof Error ? error.message : String(error)
+      registry.reportError(
+        error instanceof Error && error.stack ? `${description}\n${error.stack}` : description,
+      )
+      connection.sendDiagnostic('error', {
+        code: DIAGNOSTIC_CODES.EVENT_HANDLER_ERROR,
+        message: description,
+        handler: payload.name,
+      }, message.pageId)
+    }
   })
 
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.ready, (message) => {
@@ -807,6 +718,14 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         componentDefinitions: registry.normalizedComponents,
         onDataChange: scheduleTreeUpdate,
         onDiagnostic: (diagnostic) => connection.sendDiagnostic('warn', diagnostic),
+        onError: (pageId, message, details) => {
+          registry.reportError(message)
+          connection.sendDiagnostic('error', {
+            code: DIAGNOSTIC_CODES.EVENT_HANDLER_ERROR,
+            message,
+            details,
+          }, pageId)
+        },
       })
       logicTree.registerComponentSchemas(componentSchemas)
       options.onLogicTreeCreated?.(logicTree)
@@ -868,25 +787,6 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         }>
       }
       const page = requireActivePage(pageInstances, payload.pageId, activePage)
-      for (const item of payload.components ?? []) {
-        const component = ensureComponentInstance(
-          item.componentId,
-          item.path,
-          item.data,
-          page.pageId,
-        )
-        if (!component) continue
-        component.syncData(item.data)
-        componentTree.add({
-          componentId: item.componentId,
-          pageId: page.pageId,
-          path: item.path,
-          tag: item.tag,
-          id: item.id,
-          className: item.class,
-          parentId: item.parentComponentId,
-        })
-      }
       if (!readyPages.has(page.pageId)) {
         readyPages.add(page.pageId)
         // Components attached during this render pass missed the page's
@@ -1320,209 +1220,6 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }
   })
 
-  const createdComponents = new Set<string>()
-  const previousComponentData = new Map<string, Record<string, unknown>>()
-  const pendingComponentEvents = new Map<string, Array<
-    | { kind: 'data'; data?: Record<string, unknown> }
-    | { kind: 'observed'; key: string; data?: Record<string, unknown>; origin?: 'service' | 'render' }
-  >>()
-  const applyComponentObserved = (
-    component: MiniProgramComponentInstance,
-    payload: { key: string; data?: Record<string, unknown>; origin?: 'service' | 'render' },
-  ) => {
-    const oldData = previousComponentData.get(component.componentId) ?? cloneJsonSafe(component.data)
-    previousComponentData.delete(component.componentId)
-    component.syncData(payload.data)
-    if (payload.origin === 'service') return
-    const observer = component.getComponentOptions().observers.find(
-      (item) => item.key === payload.key,
-    )
-    if (observer) invokeObserver(component, observer, oldData)
-  }
-  const drainPendingEvents = (component: MiniProgramComponentInstance) => {
-    const pending = pendingComponentEvents.get(component.componentId)
-    if (!pending) return
-    pendingComponentEvents.delete(component.componentId)
-    for (const event of pending) {
-      if (event.kind === 'observed') {
-        applyComponentObserved(component, event)
-      } else {
-        previousComponentData.set(component.componentId, cloneJsonSafe(component.data))
-        component.syncData(event.data)
-      }
-    }
-  }
-
-  connection.onEvent('runtime', 'componentLifecycle', (message) => {
-    const payload = message.payload as {
-      componentId: string
-      path?: string
-      phase: ComponentLifecycleName
-      data?: Record<string, unknown>
-      pageId?: string
-      parentComponentId?: string | null
-      tag?: string
-      id?: string
-      class?: string
-    }
-    const pageId = payload.pageId ?? activePage?.pageId ?? ''
-    const component = payload.phase === 'detached'
-      ? componentInstances.get(payload.componentId)
-      : ensureComponentInstance(payload.componentId, payload.path, payload.data, pageId)
-    if (!component) return
-    component.syncData(payload.data)
-    switch (payload.phase) {
-      case 'created':
-        component.triggerLifecycle('created')
-        createdComponents.add(payload.componentId)
-        drainPendingEvents(component)
-        break
-      case 'attached':
-        componentTree.add({
-          componentId: payload.componentId,
-          pageId,
-          path: payload.path ?? component.path,
-          tag: payload.tag,
-          id: payload.id,
-          className: payload.class,
-          parentId: payload.parentComponentId,
-        })
-        relationManager.handleAttach(payload.componentId, false)
-        component.triggerLifecycle('attached')
-        relationManager.flushLinked()
-        break
-      case 'ready':
-        component.triggerLifecycle('ready')
-        break
-      case 'moved':
-        component.triggerLifecycle('moved')
-        componentTree.move(payload.componentId, payload.parentComponentId)
-        relationManager.handleMove(payload.componentId)
-        break
-      case 'detached':
-        component.triggerLifecycle('detached')
-        relationManager.handleDetach(payload.componentId)
-        componentTree.remove(payload.componentId)
-        componentInstances.delete(payload.componentId)
-        createdComponents.delete(payload.componentId)
-        pendingComponentEvents.delete(payload.componentId)
-        previousComponentData.delete(payload.componentId)
-        break
-    }
-  })
-
-  connection.onEvent('runtime', 'componentData', (message) => {
-    const payload = message.payload as {
-      componentId: string
-      path?: string
-      pageId?: string
-      data?: Record<string, unknown>
-      origin?: 'service' | 'render'
-    }
-    const component = ensureComponentInstance(
-      payload.componentId,
-      payload.path,
-      payload.data,
-      payload.pageId ?? activePage?.pageId,
-    )
-    if (!component) return
-    if (!createdComponents.has(payload.componentId)) {
-      const pending = pendingComponentEvents.get(payload.componentId) ?? []
-      pending.push({ kind: 'data', data: payload.data })
-      pendingComponentEvents.set(payload.componentId, pending)
-      return
-    }
-    previousComponentData.set(payload.componentId, cloneJsonSafe(component.data))
-    component.syncData(payload.data)
-  })
-
-  connection.onEvent('runtime', 'componentObserved', (message) => {
-    const payload = message.payload as {
-      componentId: string
-      path?: string
-      pageId?: string
-      key: string
-      data?: Record<string, unknown>
-      origin?: 'service' | 'render'
-    }
-    const component = ensureComponentInstance(
-      payload.componentId,
-      payload.path,
-      payload.data,
-      payload.pageId ?? activePage?.pageId,
-    )
-    if (!component) return
-    if (!createdComponents.has(payload.componentId)) {
-      const pending = pendingComponentEvents.get(payload.componentId) ?? []
-      pending.push({
-        kind: 'observed',
-        key: payload.key,
-        data: payload.data,
-        origin: payload.origin,
-      })
-      pendingComponentEvents.set(payload.componentId, pending)
-      return
-    }
-    applyComponentObserved(component, payload)
-  })
-
-  // Component page lifetimes are driven by the page show/hide controls below,
-  // which iterate every service-side instance exactly once.
-  connection.onEvent('runtime', 'componentPageLifetime', () => {})
-
-  connection.onEvent('event', 'dispatch', (message) => {
-    const pageId = message.pageId
-    const page = pageId ? pageInstances.get(pageId) : activePage
-    if (!page) {
-      connection.sendDiagnostic('warn', {
-        code: DIAGNOSTIC_CODES.EVENT_PAGE_NOT_FOUND,
-        message: `No page found for event: ${pageId ?? 'unknown'}`,
-      }, pageId)
-      return
-    }
-    const event = message.payload as {
-      componentId?: string
-      componentPath?: string
-      handler?: string
-      type?: string
-      [key: string]: unknown
-    }
-    const handler = event.handler
-    if (!handler) {
-      connection.sendDiagnostic('warn', {
-        code: DIAGNOSTIC_CODES.EVENT_HANDLER_MISSING,
-        message: 'Event payload does not contain a handler name.',
-      }, page?.pageId)
-      return
-    }
-    try {
-      if (event.componentId) {
-        const component = ensureComponentInstance(
-          event.componentId,
-          event.componentPath,
-          event.componentData as Record<string, unknown> | undefined,
-          pageId,
-        )
-        if (!component) throw new Error(`Component not found for event: ${event.componentId}`)
-        component.syncData(event.componentData as Record<string, unknown> | undefined)
-        component.invokeMethod(handler, [event])
-      } else {
-        page.invokeMethod(handler, [event])
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      registry.reportError(
-        error instanceof Error && error.stack ? `${message}\n${error.stack}` : message,
-      )
-      connection.sendDiagnostic('error', {
-        code: DIAGNOSTIC_CODES.EVENT_HANDLER_ERROR,
-        message,
-        handler,
-        eventType: event.type,
-      }, page.pageId)
-    }
-  })
-
   return {
     connection,
     registry,
@@ -1535,9 +1232,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       return pageStack
     },
     pageInstances,
-    componentInstances,
     componentTree,
-    relationManager,
     notifyUnhandledRejection(reason, promise) {
       registry.reportUnhandledRejection(reason, promise)
     },

@@ -3,9 +3,10 @@ import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
+import { TREE_PROTOCOL } from '../src/tree/protocol'
 import { createTinyRuntime } from '../src/host'
 import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
-import { bootServiceThread } from './helpers/split-service'
+import { bootServiceThread, lastLogicTree } from './helpers/split-service'
 
 const PAGE_PATH = 'pages/index/index'
 
@@ -45,7 +46,7 @@ function createTemplateRegistry() {
     templateExtension: '.wxml',
     templateScriptExtension: '.wxs',
   })
-  group.addTmpl(PAGE_PATH, '<view>{{draft}}</view>')
+  group.addTmpl(PAGE_PATH, '<view id="boom" bindtap="boom">{{draft}}</view>')
   const groupList = new Function(`return ${group.getTmplGenObjectGroups()}`)() as Record<string, unknown>
   return {
     groupList,
@@ -175,7 +176,13 @@ describe('page and app lifecycle hooks', () => {
     await expect(page.invokeMethod('missing')).rejects.toMatchObject({ code: 'HANDLER_ERROR' })
     expect(appEvents).toContain('not-found:pages/missing/missing')
 
-    host.service.sendEvent('event', 'dispatch', { handler: 'boom' }, { pageId: page.pageId })
+    const logic = lastLogicTree() as { query: (pageId: string, selector: string, all: boolean) => Array<{ viewId: string }> }
+    const boomNode = logic.query('page-1', '#boom', false)[0]
+    expect(boomNode).toBeDefined()
+    host.service.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, {
+      id: boomNode!.viewId,
+      name: 'tap',
+    }, { pageId: page.pageId })
     await new Promise((resolve) => setTimeout(resolve, 10))
     expect(appEvents.some((event) => event.startsWith('error:boom'))).toBe(true)
 

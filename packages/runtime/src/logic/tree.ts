@@ -29,6 +29,8 @@ export type LogicTreeAdapterOptions = {
   loadStyle?: (outputPath: string) => string
   onDataChange?: (pageId: string) => void
   onDiagnostic?: (diagnostic: import('../diagnostics').RuntimeDiagnostic) => void
+  /** Report a handler/observer error raised inside glass-easel. */
+  onError?: (pageId: string | undefined, message: string, details?: unknown) => void
   viewIntersection?: {
     observe: (request: ViewIntersectionRequest & { pageId: string }) => void
     unobserve: (observerId: string, pageId: string) => void
@@ -88,6 +90,14 @@ export class LogicTreeAdapter {
         this.createIntersectionObserverFor(component, observerOptions)
       ),
     })
+    glassEasel.addGlobalErrorListener((error, method, relatedComponent) => {
+      const message = error instanceof Error ? error.message : String(error)
+      options.onError?.(
+        this.glass.pageIdFor(relatedComponent),
+        message,
+        method ? { method } : undefined,
+      )
+    })
     this.backend.setScopeNameResolver(
       (scopeId) => this.glass.componentSpace.styleScopeManager.queryName(scopeId),
     )
@@ -134,6 +144,11 @@ export class LogicTreeAdapter {
     const renderTree = this.snapshotRenderTree(pageId)
     if (renderTree) this.lastRenderTrees.set(pageId, renderTree)
     return renderTree
+  }
+
+  /** Deliver a page lifetime to the page's service-side components. */
+  triggerPageLifetime(pageId: string, phase: 'show' | 'hide'): void {
+    this.glass.triggerPageLifetime(pageId, phase)
   }
 
   applyPageData(pageId: string, patch: Record<string, unknown>): void {

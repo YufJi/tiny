@@ -4,7 +4,6 @@ import type { ComponentLifecycleName, NormalizedComponentDefinition } from '../c
 import type { MiniProgramPropertyType } from '../types'
 import type { RuntimePageLifecyclePhase } from '../diagnostics'
 import type {
-  ComponentRuntimeContext,
   MiniProgramComponentOptions,
   MiniProgramPageOptions,
 } from './types'
@@ -49,7 +48,7 @@ export class MiniProgramPageInstance implements ObserverHost {
     options: MiniProgramPageOptions,
     query: Record<string, string> = {},
     private readonly onDataPatch?: (pageId: string, patch: DataPatch) => void,
-    private readonly runtime?: ComponentRuntimeContext,
+    private readonly onDiagnostic?: (code: string, message: string, details?: unknown) => void,
     definition?: NormalizedComponentDefinition,
     private readonly logicSelection?: (selector: string, all: boolean) => unknown[],
   ) {
@@ -180,25 +179,10 @@ export class MiniProgramPageInstance implements ObserverHost {
   }
 
   selectComponent(selector: unknown): unknown {
-    const selected = this.runtime
-      ? (() => {
-          const nodes = this.runtime!.tree.select(`page:${this.pageId}`, String(selector ?? ''), false)
-          return nodes[0] ? resolveComponentSelection(this.runtime!, nodes[0].componentId) : null
-        })()
-      : null
-    if (selected) return selected
     return this.logicSelection?.(String(selector ?? ''), false)[0] ?? null
   }
 
   selectAllComponents(selector: unknown): unknown[] {
-    const runtime = this.runtime
-    if (runtime) {
-      const nodes = runtime.tree.select(`page:${this.pageId}`, String(selector ?? ''), true)
-      const selected = nodes
-        .map((node) => resolveComponentSelection(runtime, node.componentId))
-        .filter((value) => value !== null && value !== undefined)
-      if (selected.length > 0) return selected
-    }
     return this.logicSelection?.(String(selector ?? ''), true) ?? []
   }
 
@@ -206,8 +190,10 @@ export class MiniProgramPageInstance implements ObserverHost {
     return null
   }
 
-  getRelationNodes(relationKey: string): unknown[] {
-    return this.runtime?.relations.getRelationNodes(this.componentId, relationKey) ?? []
+  getRelationNodes(_relationKey: string): unknown[] {
+    // Relations are resolved by the glass-easel logic tree; the service page
+    // wrapper no longer mirrors a second component graph.
+    return []
   }
 
   hasBehavior(behavior: unknown): boolean {
@@ -237,7 +223,7 @@ export class MiniProgramPageInstance implements ObserverHost {
   }
 
   onError(code: string, message: string, details?: unknown): void {
-    this.runtime?.onDiagnostic(code, message, details)
+    this.onDiagnostic?.(code, message, details)
   }
 }
 
@@ -267,20 +253,3 @@ function coerceQueryProperty(type: MiniProgramPropertyType | undefined, raw: str
 }
 
 
-function resolveComponentSelection(runtime: ComponentRuntimeContext, componentId: string): unknown {
-  const instance = runtime.getInstance(componentId)
-  if (!instance) return null
-  const definition = instance.getComponentOptions()
-  if (definition.componentExport && typeof definition.export === 'function') {
-    try {
-      return definition.export.call(instance)
-    } catch (error) {
-      runtime.onDiagnostic(
-        'COMPONENT_EXPORT_ERROR',
-        error instanceof Error ? error.message : String(error),
-        { componentId },
-      )
-    }
-  }
-  return instance
-}

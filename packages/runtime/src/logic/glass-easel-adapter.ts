@@ -597,6 +597,19 @@ export class GlassEaselRuntimeAdapter {
     return this.componentsByPageId.get(pageId)
   }
 
+  /** Deliver a page lifetime to every logic component mounted on the page. */
+  triggerPageLifetime(pageId: string, phase: 'show' | 'hide'): void {
+    for (const component of this.componentInstances.values()) {
+      if (this.pageIdOf(component) !== pageId) continue
+      component.triggerPageLifetime(phase, [])
+    }
+  }
+
+  /** Resolve the page that owns a component, for host diagnostics. */
+  pageIdFor(component: unknown): string | undefined {
+    return component ? this.pageIdOf(component) : undefined
+  }
+
   componentIdOf(component: unknown): string | undefined {
     return this.componentIds.get(component as object)
   }
