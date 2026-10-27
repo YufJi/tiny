@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import Layout from './components/Layout'
-import Home from './pages/Home'
-import Architecture from './pages/Architecture'
-import Compiler from './pages/Compiler'
-import Runtime from './pages/Runtime'
-import Protocol from './pages/Protocol'
-import Hosts from './pages/Hosts'
-import Devtool from './pages/Devtool'
-import Testing from './pages/Testing'
-import Status from './pages/Status'
+import Home from '../../docs/site/home.md'
+import Architecture from '../../docs/site/architecture.md'
+import Compiler from '../../docs/site/compiler.md'
+import Runtime from '../../docs/site/runtime.md'
+import Protocol from '../../docs/site/protocol.md'
+import Hosts from '../../docs/site/hosts.md'
+import Devtool from '../../docs/site/devtool.md'
+import Testing from '../../docs/site/testing.md'
+import Status from '../../docs/site/status.md'
 
 const routes = {
   home: Home,

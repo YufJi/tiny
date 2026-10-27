@@ -9,21 +9,22 @@ to GitHub Pages.
 
 | Route | Page | Content |
 | --- | --- | --- |
-| `#/` | `Home` | Engine overview, contracts, host matrix, evidence, quick start |
-| `#/architecture` | `Architecture` | Boundaries, real dependency edges, boot sequence, relay matrix, state ownership |
-| `#/compiler` | `Compiler` | Discovery, naming config, WXML → ProcGen, scoped CSS, scripts, manifest, output tree, diagnostics |
-| `#/runtime` | `Runtime` | Host-independent service thread, naming, setData/observers, events, component semantics, adapter, built-ins, isolation, canvas |
-| `#/protocol` | `Protocol` | Envelope, handshake, transport, batching, errors, JSON-safe rules, message catalog |
-| `#/hosts` | `Hosts` | Runtime purity, host-browser, host-web-components, startup handshake, thread contract, canvas/asset/API injections, devtool/test hosts, checklist |
-| `#/devtool` | `Devtool` | Embedded live debugger, panel/host architecture, build pipeline, relative-path contract, limits |
-| `#/testing` | `Testing` | Gate, 47 browser steps, 168 unit tests, fixtures, Taro compatibility, uncovered areas |
-| `#/status` | `Status` | Maturity, known gaps, host gaps, roadmap, invariants |
+| `#/` | [docs/site/home.md](../docs/site/home.md) | Engine overview, contracts, host matrix, evidence, quick start |
+| `#/architecture` | [docs/site/architecture.md](../docs/site/architecture.md) | Boundaries, real dependency edges, boot sequence, relay matrix, state ownership |
+| `#/compiler` | [docs/site/compiler.md](../docs/site/compiler.md) | Discovery, naming config, WXML → ProcGen, scoped CSS, scripts, manifest, output tree, diagnostics |
+| `#/runtime` | [docs/site/runtime.md](../docs/site/runtime.md) | Host-independent service thread, naming, setData/observers, events, component semantics, adapter, built-ins, isolation, canvas |
+| `#/protocol` | [docs/site/protocol.md](../docs/site/protocol.md) | Envelope, handshake, transport, batching, errors, JSON-safe rules, message catalog |
+| `#/hosts` | [docs/site/hosts.md](../docs/site/hosts.md) | Runtime purity, host-browser, host-web-components, startup handshake, thread contract, canvas/asset/API injections, devtool/test hosts, checklist |
+| `#/devtool` | [docs/site/devtool.md](../docs/site/devtool.md) | Embedded live debugger, panel/host architecture, build pipeline, relative-path contract, limits |
+| `#/testing` | [docs/site/testing.md](../docs/site/testing.md) | Gate, browser flows, unit tests, fixtures, Taro compatibility, uncovered areas |
+| `#/status` | [docs/site/status.md](../docs/site/status.md) | Maturity, known gaps, host gaps, roadmap, invariants |
 
 `#/internals` is kept as an alias for `#/architecture`.
 
 ## Structure
 
 ```text
+vite-plugin-docs.js         # compiles docs/site/*.md into React page modules
 src/
 ├── App.jsx                 # hash router + aliases + route table
 ├── main.jsx                # React entry
@@ -31,25 +32,29 @@ src/
 ├── components/
 │   ├── Layout.jsx          # header/nav/footer
 │   └── ui.jsx              # Section/Card/Flow/Sequence/Table/CodeBlock/PageNav/Pill
-└── pages/
-    ├── Home.jsx
-    ├── Architecture.jsx
-    ├── Compiler.jsx
-    ├── Runtime.jsx
-    ├── Protocol.jsx
-    ├── Hosts.jsx
-    ├── Devtool.jsx
-    ├── Testing.jsx
-    └── Status.jsx
+└── content/
+    ├── parse.js            # Markdown → page AST, with contract validation
+    ├── frontmatter.js      # frontmatter parsing + metadata checks
+    └── render.js           # AST → the ui.jsx vocabulary
 ```
+
+Page prose lives in `../docs/site/*.md`; `src/` only holds the shell and the
+renderer.
 
 Navigation uses hash routes (`#/runtime`) so the static build works on a
 GitHub Pages project subpath without a 404 fallback. Assets are emitted with a
 relative base (`vite.config.js`).
 
-Content is hand-written from the source of truth in `packages/*`, `hosts/browser`, `hosts/web-components`,
-`tools/cli`, `tests/host`, and `apps/devtool`. When behavior changes, update the
-relevant page rather than adding a generic marketing section.
+Page content lives in [`docs/site/`](../docs/site/CONTEXT.md) as Markdown and is
+the single source for the site; [docs/site/CONTEXT.md](../docs/site/CONTEXT.md)
+documents the frontmatter, block and inline contract. The build parses these
+files and fails on anything outside that vocabulary, so keep prose in
+`docs/site/` and the visual vocabulary in `src/components/ui.jsx`.
+
+Content is written from the source of truth in `packages/*`, `hosts/browser`,
+`hosts/web-components`, `tools/cli`, `tests/host`, and `apps/devtool`. When
+behavior changes, update the relevant page rather than adding a generic
+marketing section.
 
 ## Development
 

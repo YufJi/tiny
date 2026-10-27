@@ -10,3 +10,4 @@ hosts/web-components/src/generated/
 .agents/
 skills-lock.json
 .scratch/
+.pnpm-store/

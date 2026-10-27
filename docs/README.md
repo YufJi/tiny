@@ -12,6 +12,7 @@
 | `component-reference-diff.md` | 23 个内置组件的当前对齐状态与剩余问题 | 改内置组件 |
 | `known-issues/` | 已知问题与临时处理 | 遇到相关症状时 |
 | `agents/` | 给 agent 的操作手册（上下文布局、issue 流程、标签） | 开始任务前 |
+| `site/` | 架构站点的页面源（Markdown），契约见 `site/CONTEXT.md` | 改站点正文时 |
 | `archive/` | 历史审计与探索产物，只读，不再维护 | 考古时 |
 
 ## 写什么、放哪里

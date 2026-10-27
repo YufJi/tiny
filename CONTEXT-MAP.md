@@ -15,4 +15,4 @@ Each package is a bounded context. Read only the contexts relevant to the curren
 | Test Apps | `tests/apps` | Mini-program fixtures used by acceptance |
 | Browser Host | `hosts/browser` | iframe/MessageChannel/DOM canvas host adapters |
 | Web Components | `hosts/web-components` | Web/DOM implementations of mini-program built-in tags, injected into the render thread |
-| Website | `website` | React + Vite architecture / GitHub Pages site |
+| Website | `website` | React + Vite site shell; page content lives in `docs/site` |

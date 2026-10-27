@@ -1,0 +1,264 @@
+---
+layout: 'home'
+title: '从编译器到宿主'
+highlight: '看清小程序引擎的每一层'
+eyebrow: 'Tiny 引擎内部 · Bridge v1'
+lede: >-
+  Tiny 是一个基于 glass-easel 的小程序引擎。它把小程序源码编译成 manifest 和线程产物，默认用 service、render 两个 iframe 跑起一个小程序，再由 Bridge 协议负责跨线程通信；也可以让每个页面各用一个 render iframe。浏览器相关能力单独放在宿主包里，内核不依赖 window、document 或 iframe。
+actions:
+  - ['先看整体架构', '#/architecture', 'primary']
+  - ['打开在线调试器', '#/devtool', 'ghost']
+  - ['了解宿主适配', '#/hosts', 'ghost']
+  - ['阅读 Bridge 协议', '#/protocol', 'ghost']
+  - ['GitHub 仓库 ↗', 'https://github.com/YufJi/tiny', 'ghost']
+stats:
+  - ['2', '运行时线程']
+  - ['10', '工作区包']
+  - ['168', '单元测试']
+  - ['47', '浏览器步骤']
+description: 'Tiny 是一个基于 glass-easel 的小程序引擎：编译、双线程运行时、Bridge 协议和宿主适配。'
+order: 1
+---
+
+## 一次编译，产出运行所需的全部产物 {kicker="整体流程"}
+
+编译器只负责生成产物，宿主负责提供运行环境，运行时负责执行小程序语义。三者通过 manifest 和 Bridge 协议衔接，不共享隐式全局状态。
+
+:::flow
+| step | title | detail | accent |
+| --- | --- | --- | --- |
+| 01 · 源码 | 小程序源码 | app.json · WXML · WXSS · JS/TS · WXS | yes |
+| 02 · 编译 | tools/cli | ProcGen · 作用域 CSS · service bundle | |
+| 03 · 产物 | manifest.json | @tiny/manifest · schemaVersion 2 | |
+| 04 · 启动 | 宿主装配 | iframe / worker / native · service + render | yes |
+| 05 · 运行 | service + render | 应用语义 · glass-easel 组件树 | |
+| 06 · 观察 | devtool | 控制 · 诊断 · 元素树 | |
+:::
+
+:::callout{title="各层分工"}
+glass-easel 提供组件定义、模板、数据绑定、事件和生命周期；App、页面栈、路由、`wx` API、setData、组件语义和诊断由 Tiny 自己实现。iframe、MessagePort、DOM canvas、资源 URL 和调试器界面则属于宿主适配层。
+:::
+
+## 四类接口，连接编译、运行和调试 {kicker="接口约定"}
+
+改动之前，先分清改的是产物格式、消息协议、线程启动参数，还是宿主注入的能力。
+
+::::cards
+:::card{tag="packages/manifest" title="产物格式"}
+编译器、运行时、宿主和调试器共用 manifest 及相关类型，包括页面、组件、样式、资源和编译诊断。
+
+[看编译流程和 manifest →](#/compiler)
+:::
+
+:::card{tag="packages/bridge" tone="violet" title="消息协议"}
+Bridge 定义消息信封、帧、调用与回复、事件批处理、超时和 JSON 可序列化校验。
+
+[看 Bridge v1 →](#/protocol)
+:::
+
+:::card{tag="packages/runtime" title="线程启动参数"}
+`bootServiceThread` / `bootRenderThread` 接收 transport、manifest，以及 canvas、资源解析、挂载点和内置组件等可选注入。内核本身不依赖浏览器。
+
+[看宿主如何启动线程 →](#/hosts)
+:::
+
+:::card{tag="hosts/browser" tone="violet" title="宿主注入的能力"}
+`apiHandlers` 处理需要跨线程的 API，`apiExtensions` 补充设备信息；canvas、资源 URL 和内置组件分别由宿主提供。
+
+[看宿主注入方式 →](#/hosts)
+:::
+::::
+
+## 想改哪一层，就从哪一页开始 {kicker="按模块阅读"}
+
+每一页都从实际代码出发，说明这一层做什么、和相邻层怎么衔接。
+
+::::cards{layout="three"}
+:::card{tag="architecture" title="系统分层与状态归属"}
+编译器、运行时、Bridge、宿主和 devtool 各自负责什么，以及一次启动如何串起来。
+
+[进入架构总览 →](#/architecture)
+:::
+
+:::card{tag="compiler" title="从源码到 manifest"}
+入口发现、兼容输入配置、WXML 到 ProcGen、WXSS 作用域、TS 转译、service bundle 和产物目录。
+
+[进入编译流程 →](#/compiler)
+:::
+
+:::card{tag="runtime" title="双线程如何协作"}
+页面栈、兼容全局、setData、observer、事件、组件语义、渲染适配、内置组件和按需注入的 canvas。
+
+[进入运行时内核 →](#/runtime)
+:::
+
+:::card{tag="protocol" title="跨线程消息怎么走"}
+消息格式、握手、传输、批处理、错误码、JSON 校验和完整消息列表。
+
+[进入 Bridge 协议 →](#/protocol)
+:::
+
+:::card{tag="hosts" title="如何接入运行环境"}
+内核约束、host-browser、内置组件宿主、canvas 与资源注入、测试宿主和调试器，以及新宿主的接入步骤。
+
+[进入宿主适配 →](#/hosts)
+:::
+
+:::card{tag="testing" title="靠真实小程序验证"}
+180 个单元测试、51 个浏览器步骤、五个测试小程序，以及目前还没有覆盖的部分。
+
+[进入测试与验收 →](#/testing)
+:::
+::::
+
+## 在浏览器里试用调试器 {kicker="在线调试器"}
+
+不用克隆仓库。页面里嵌的是 devtool 的生产构建，加载 tests/apps 下真实编译产物，Console 和 Elements 都来自当前会话。
+
+::::split
+:::card{tag="在线" title="Tiny Runtime Debugger"}
+默认应用列表、最近 3 个应用保活、页面导航、前后台切换、Reload/Close app、诊断和元素树都可以直接操作。
+
+:button[打开在线调试器]{href="#/devtool" variant="primary"}
+:::
+
+:::card{tag="构建时生成" title="跟站点一起发布"}
+构建站点时会先编译 tests/apps 下的全部 fixture，再打包 devtool。Vite 把产物复制到 `dist/devtool/`，页面通过同源 iframe 嵌入。
+
+[查看接入方式 →](#/devtool)
+:::
+::::
+
+## service 管状态，render 管组件树 {kicker="运行时结构"}
+
+service 和 render 各自启动，host 分别持有它们的连接；页面和组件状态始终在 service。
+
+::::split
+:::card{tag="service 线程" title="小程序逻辑和平台 API"}
+- App / Page / Component / Behavior 注册，按 manifest 顺序绑定路径
+- 页面栈、路由和 onLoad → onShow → onReady
+- Behaviors、observers、relations、selectComponent 等组件语义
+- `setData` 路径更新和事件处理函数调用
+- 可配置的命名空间：API 全局、别名和诊断名称
+- 通过注入的适配器使用 canvas
+:::
+
+:::card{tag="render 线程" tone="violet" title="glass-easel 组件树和 DOM"}
+- ComponentSpace + StyleScopeManager
+- 23 个内置组件，AOT 模板和共享 behaviors
+- styleIsolation / externalClasses / 页面作用域
+- 事件序列化、dataset、target / currentTarget
+- 页面挂载、卸载和元素树导出
+- canvas 测量与帧绘制由宿主注入
+:::
+::::
+
+:::callout{title="宿主只提供环境"}
+宿主负责 transport、backend、挂载点、宿主 API、canvas 和资源 URL，但不判断页面生命周期，也不直接操作 glass-easel 组件。service 和 render 内核都不引用 `window`、`document` 或 `iframe`。
+:::
+
+## 同一套内核，可以换不同宿主 {kicker="宿主对比"}
+
+浏览器宿主、无界面测试宿主和调试器都复用 createTinyRuntime；单元测试甚至不需要 iframe。
+
+| 宿主 | 通信方式 | 渲染后端 | 控制方式 |
+| --- | --- | --- | --- |
+| `@tiny/host-browser` | MessageChannel / iframe | DOM canvas + 调试器覆盖层 | `createStandaloneDualThreadHost`、`DevtoolRuntimeClient` |
+| `tests/host` | 两个 MessageChannel | `CurrentWindowBackendContext` | URL `?path=`、`window.__tinyRuntime` |
+| `apps/devtool` | 两个 MessageChannel | `CurrentWindowBackendContext` | `DevtoolRuntimeClient` + React/Redux |
+| runtime 单测 | `createInMemoryTransportPair()` | `EmptyBackendContext` | 直接持有 service / render 连接 |
+| 原生宿主（未实现） | 需要实现 `Transport` | 需要实现 `GeneralBackendContext` | 复用宿主 API 注册表和控制消息 |
+
+:::callout{title="新宿主从 createTinyRuntime 接进来"}
+只要提供 service 和 render 两条 transport、manifest 和初始页面，就能启动同一个引擎。`@tiny/host-browser` 的 `createStandaloneDualThreadHost` 只是浏览器适配器，不是引擎本身。[看完整接入步骤 →](#/hosts)
+:::
+
+## 这些能力都有自动化测试 {kicker="测试覆盖"}
+
+下面这些行为都在 51 个浏览器步骤里实际点击、输入和断言过。
+
+::::cards{layout="three"}
+:::card{title="真实示例小程序"}
+todos、add-todo、组件语义页、ECharts 柱状图、子包页面、组件插槽、import/include/template 和 animation。
+:::
+
+:::card{title="Taro 3 产物"}
+webpackJsonp、外部 WXS、递归模板、循环 usingComponents、Enter 提交和 Redux todos。
+:::
+
+:::card{title="微信官方示例子集"}
+基础组件索引、button 示例页和 storage API 页；不包含 Skyline 和依赖原生能力的页面。
+:::
+
+:::card{title="组件语义"}
+Behavior 合并、observers、property observer、relations、selectComponent、styleIsolation 和 externalClasses。
+:::
+
+:::card{title="可替换宿主"}
+内核边界检查；host-browser 注入 iframe、MessagePort、canvas 和资源 URL；在线调试器随站点发布。
+:::
+
+:::card{title="Canvas 镜像"}
+宿主 canvas 适配器负责 service 侧 2D 绘制、50ms 节流 PNG 帧和 render 侧 drawImage；ECharts 会检查非空像素。
+:::
+
+:::card{title="兼容输入与内部命名"}
+扩展名、指令、API 和注册全局可配置；Tiny 产物内部始终使用固定的 tiny-* 名称。
+:::
+
+:::card{title="诊断与元素树"}
+编译、transport、service、render、host 五类诊断统一收集；元素树可以从 DOM 或逻辑树导出。
+:::
+::::
+
+:::callout{title="也要看清没有覆盖的部分"}
+当前测试覆盖核心链路、组件语义、兼容输入、内部命名、样式隔离和五个测试小程序。API 覆盖、页面能力、generics、原生宿主和性能基线仍未完成，[现状页会逐项说明](#/status)。
+:::
+
+## 从源码跑到调试器 {kicker="快速开始"}
+
+需要 Node.js 22+ 和 pnpm 9；跑浏览器验收还需要 Chromium。
+
+::::::split
+:::::group
+```bash
+# 安装并跑完整验收
+pnpm install
+pnpm accept:glass-easel
+
+# 测试宿主（demo -> tests/host/generated）
+pnpm dev:glass-easel
+
+# 调试器（自动预览全部 tests/apps）
+pnpm dev:devtool
+
+# 站点（先打包内嵌 devtool，再构建网站）
+pnpm site:dev
+pnpm site:check
+
+# 检查核心 runtime 是否依赖了浏览器 API
+pnpm check:runtime-purity
+```
+
+::::actions
+:button[打开仓库]{href="https://github.com/YufJi/tiny" variant="primary"}
+:button[查看测试矩阵]{href="#/testing" variant="ghost"}
+::::
+:::::
+
+:::::stack
+::::card{tag="当前状态" title="核心链路和组件语义已经跑通"}
+双线程、编译、协议、命名配置、组件语义、样式隔离和调试器都已跑通；宿主 API、页面能力、原生宿主和性能基线仍是主要缺口。
+
+:::pill-row
+:pill[核心链路可用]{tone="good"} :pill[内核不依赖宿主]{tone="good"} :pill[组件语义]{tone="good"} :pill[Taro 3 React]{tone="good"} :pill[API 覆盖有限]{tone="warn"} :pill[仅浏览器宿主]{tone="warn"}
+:::
+::::
+
+::::card{title="接下来"}
+先补宿主 API 和常用组件，再完善页面能力、generics/definitionFilter、canvas 交互和性能基线。
+
+[查看完整现状和计划 →](#/status)
+::::
+:::::
+::::::

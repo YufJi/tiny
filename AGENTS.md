@@ -112,6 +112,9 @@ Chrome, or `PLAYWRIGHT_CHROMIUM_PATH`).
   `apps/devtool/static/` are build output and gitignored.
 - `tests/apps/*` are complete mini-program fixtures; `tests/apps/todo` is the Taro 3
   compatibility target. `tests/apps/echarts` is historical reference only.
+- Site page content lives in `docs/site/*.md` (contract:
+  `docs/site/CONTEXT.md`). The website parses it at build time and fails on
+  syntax outside that contract; do not add page prose back into JSX.
 - `website` is a React + Vite app; `pnpm site:build` writes `dist/` including
   the embedded devtool (`dist/devtool/`) built from `.cache/site-devtool/` and
   staged through `website/.cache/site-public/`, and

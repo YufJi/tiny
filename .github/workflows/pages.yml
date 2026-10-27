@@ -5,6 +5,7 @@ on:
     branches: [next]
     paths:
       - 'website/**'
+      - 'docs/site/**'
       - 'apps/devtool/**'
       - 'hosts/**'
       - 'packages/**'
