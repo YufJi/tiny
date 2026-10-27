@@ -17,6 +17,7 @@ export type RenderElement = {
   id: RenderNodeId
   tag: string
   props?: Record<string, unknown>
+  dataset?: Record<string, unknown>
   children?: RenderNode[]
   /** Optional reconciliation key for repeated children. */
   key?: string

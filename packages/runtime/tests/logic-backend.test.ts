@@ -119,6 +119,17 @@ describe('logic backend', () => {
     const updatedChild = updated.root.children?.[0]
     expect(tree.getTypedDataset(updatedChild!.viewId)?.count).toBe(4)
 
+    const renderTree = tree.snapshotRenderTree('page-1')
+    expect(renderTree?.type).toBe('element')
+    expect(renderTree && 'tag' in renderTree ? renderTree.tag : '').toBe('page')
+    const renderChildren = renderTree && 'children' in renderTree ? renderTree.children ?? [] : []
+    const image = renderChildren.find((node) => node.type === 'element' && node.tag === 'image')
+    expect(image && 'props' in image ? image.props?.src : undefined).toBe('/a.png')
+    expect(image && 'children' in image ? image.children : undefined).toBeUndefined()
+    const childNode = renderChildren.find((node) => node.type === 'element' && node.tag === 'child')
+    expect(childNode && 'dataset' in childNode ? childNode.dataset?.count : undefined).toBe(4)
+    expect(childNode && 'dataset' in childNode ? childNode.dataset?.date : undefined).toBeInstanceOf(Date)
+
     const page = tree.glass.getMountedComponentByPageId('page-1')
     const childLogic = page?.shadowRoot?.getElementById('child')?.asGeneralComponent()
     expect(childLogic?.data.container).toBe(container)

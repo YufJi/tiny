@@ -1,4 +1,5 @@
 import type { Manifest } from '@tiny/manifest'
+import type { RenderNode } from '../tree/protocol'
 import * as glassEasel from 'glass-easel'
 import type { MiniProgramComponentSchema, QueryNodeSnapshot, TemplateRegistry } from '../types'
 import type { NormalizedComponentDefinition } from '../component-definition'
@@ -126,6 +127,15 @@ export class LogicTreeAdapter {
     const snapshot = this.buildSnapshot(pageId)
     this.lastSnapshots.set(pageId, snapshot)
     return snapshot
+  }
+
+  /** Snapshot the logic tree in the host-neutral render-tree protocol. */
+  snapshotRenderTree(pageId: string): RenderNode | null {
+    const page = this.glass.getMountedComponentByPageId(pageId)
+    if (!page) throw new Error(`logic page is not mounted: ${pageId}`)
+    const backendElement = (page as unknown as { getBackendElement?: () => unknown })
+      .getBackendElement?.() as LogicBackendElement | undefined
+    return this.backend.snapshotRenderTree(pageId, backendElement)
   }
 
   /** Build the next snapshot and diff it against the last one. */

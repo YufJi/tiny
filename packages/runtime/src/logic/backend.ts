@@ -1,4 +1,5 @@
 import * as glassEasel from 'glass-easel'
+import type { RenderElement, RenderNode, RenderText } from '../tree/protocol'
 import type { ViewEventBinding, ViewNode, ViewSnapshot } from './protocol'
 
 type LogicNodeType = 'element' | 'text' | 'component' | 'virtual' | 'fragment' | 'root'
@@ -331,6 +332,95 @@ export class LogicBackendContext {
       this.nodesByViewId.set(node.viewId, node)
     }
     return node.viewId
+  }
+
+
+  /**
+   * Serialize the recorded tree into the host-neutral render-tree protocol.
+   * Built-in tags stay semantic; custom components keep their host tag and
+   * children. Props and dataset are typed (Date/function values intact).
+   */
+  snapshotRenderTree(
+    pageId: string,
+    rootElement?: LogicBackendElement,
+  ): RenderNode | null {
+    const nextId = (node: LogicBackendElement): string => this.ensureViewId(node)
+    const propsFor = (node: LogicBackendElement): Record<string, unknown> => {
+      const props = Object.fromEntries(node.attributes)
+      if (node.id) props.id = node.id
+      if (node.classes.length > 0) props.class = node.classes.join(' ')
+      if (node.styleText) props.style = node.styleText
+      return props
+    }
+    const datasetFor = (node: LogicBackendElement): Record<string, unknown> | undefined => {
+      if (node.dataset.size === 0) return undefined
+      return Object.fromEntries(node.dataset)
+    }
+    const convertChildren = (
+      nodes: LogicBackendElement[],
+      slotContent?: LogicBackendElement[],
+    ): RenderNode[] => {
+      const result: RenderNode[] = []
+      for (const node of nodes) {
+        const converted = convert(node, slotContent)
+        if (!converted) continue
+        if (converted.type === 'element' && converted.tag === '#fragment') {
+          result.push(...(converted.children ?? []))
+        } else {
+          result.push(converted)
+        }
+      }
+      return result
+    }
+    const convert = (
+      node: LogicBackendElement,
+      slotContent?: LogicBackendElement[],
+    ): RenderNode | null => {
+      if (node.nodeType === 'text') {
+        return { type: 'text', id: nextId(node), text: node.text }
+      }
+      if (node.nodeType === 'fragment') {
+        return {
+          type: 'element',
+          id: nextId(node),
+          tag: '#fragment',
+          children: convertChildren(node.children),
+        }
+      }
+      if (node.nodeType === 'virtual') {
+        if (node.virtualName === 'slot' || node.tagName === 'slot') {
+          const slotName = node.slotName ?? ''
+          const matched = slotContent?.filter((child) => (child.slot || '') === slotName) ?? []
+          const content = matched.length > 0 ? matched : node.children
+          return {
+            type: 'element',
+            id: nextId(node),
+            tag: '#fragment',
+            children: convertChildren(content),
+          }
+        }
+        return {
+          type: 'element',
+          id: nextId(node),
+          tag: '#fragment',
+          children: convertChildren(node.children, slotContent),
+        }
+      }
+      const children = node.nodeType === 'component' && node.shadowRoot
+        ? convertChildren(node.shadowRoot.children, node.children)
+        : convertChildren(node.children, slotContent)
+      const element: RenderElement = {
+        type: 'element',
+        id: nextId(node),
+        tag: node === rootElement ? 'page' : node.tagName,
+        props: propsFor(node),
+        ...(datasetFor(node) ? { dataset: datasetFor(node) } : {}),
+        ...(children.length > 0 ? { children } : {}),
+      }
+      return element
+    }
+    if (!rootElement) return null
+    return convert(rootElement)
   }
 
   /** Serialize the recorded tree and keep typed datasets keyed by viewId. */
