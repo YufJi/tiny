@@ -3,9 +3,9 @@ import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest } from '@tiny/manifest'
-import { bootServiceThread } from '../src/service'
+import { bootServiceThread } from './helpers/split-service'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderThread } from '../src/render'
+import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
 
 const PAGE_PATH = 'pages/index/index'
 
@@ -25,7 +25,7 @@ function createManifest(): Manifest {
   return {
     schemaVersion: 2,
     runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
-    entries: { service: 'service.js', render: 'render.js', templates: 'templates.js' },
+    entries: { service: 'service.js', templates: 'templates.js' },
     pages: [{
       path: PAGE_PATH,
       template: {
@@ -67,7 +67,6 @@ describe('P0 platform APIs', () => {
       transport: renderTransport,
       manifest: createManifest(),
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: PAGE_PATH,
     })
     const host = createTinyRuntime({
@@ -116,7 +115,6 @@ describe('P0 platform APIs', () => {
       transport: renderTransport,
       manifest: createManifest(),
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: PAGE_PATH,
     })
     const navigationCalls: Array<Record<string, unknown>> = []

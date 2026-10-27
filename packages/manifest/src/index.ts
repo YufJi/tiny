@@ -8,6 +8,7 @@ import { TINY_ENGINE_NAMING } from './engine-naming'
 export * from './compatibility'
 export * from './engine-naming'
 export * from './builtin'
+export * from './diagnostic-codes'
 
 export type DiagnosticSeverity = 'error' | 'warning' | 'info'
 
@@ -103,7 +104,6 @@ export type Manifest = {
   runtimeCompatibility: RuntimeCompatibilityConfig
   entries: {
     service: string
-    render: string
     templates: string
   }
   app?: AppArtifact

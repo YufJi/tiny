@@ -60,7 +60,6 @@ export async function createManifest(
     runtimeCompatibility: runtimeCompatibilityFrom(context.compatibility),
     entries: {
       service: 'service.js',
-      render: 'render.js',
       templates: 'templates.js',
     },
     app,

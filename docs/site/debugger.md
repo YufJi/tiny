@@ -3,9 +3,9 @@ title: '不用安装，'
 highlight: '在浏览器里调试真实运行时'
 eyebrow: '在线调试器'
 lede: >-
-  这是 apps/devtool 的生产构建，会随网站一起发布。它通过 @tiny/host-browser 启动 service 和 render 线程，加载 tests/apps 里的真实编译产物，并提供应用列表、设备框、宿主导航、页面导航、生命周期控制、Console 和 Elements。
+  这是 apps/devtool 的生产构建，会随网站一起发布。它通过 @tiny/host-browser 启动 service 逻辑树和每页 render 树，加载 tests/apps 里的真实编译产物，并提供应用列表、设备框、宿主导航、页面导航、生命周期控制、Console 和 Elements。
 stats:
-  - ['5', '测试应用']
+  - ['7', '测试应用']
   - ['1', 'service iframe']
   - ['每页', 'render iframe']
   - ['3', '应用保活']
@@ -24,11 +24,11 @@ order: 7
 
 面板会列出 tests/apps 下的全部测试应用。第一次打开时进入应用列表，点击应用后启动运行时，默认从它的首页开始。
 
-:::embed{src="./devtool/index.html" title="Tiny 在线调试器" label="Tiny Runtime Debugger" badge="5 个测试应用" open="在新标签页打开 ↗"}
+:::embed{src="./devtool/index.html" title="Tiny 在线调试器" label="Tiny Runtime Debugger" badge="7 个测试应用" open="在新标签页打开 ↗"}
 :::
 
 :::callout{title="这里跑的是真实运行时"}
-iframe 里的面板通过 `DevtoolRuntimeClient`（来自 `@tiny/host-browser`）启动线程，读取 `runtime/apps/<app>/generated` 下的 manifest、模板、样式和脚本。Console 里的诊断、Elements 里的元素树、Lifecycle 里的时间线，都来自当前这次会话。
+iframe 里的面板通过 `DevtoolRuntimeClient`（来自 `@tiny/host-browser`）启动 service 和 render 线程，读取 `runtime/apps/<app>/generated` 下的 manifest、templates、styles 和 service.js。Console 里的诊断、Elements 里的元素树、Lifecycle 里的时间线，都来自当前这次会话。
 :::
 
 ## 调试器是网站构建的一部分 {#pipeline kicker="构建流程"}
@@ -38,8 +38,8 @@ iframe 里的面板通过 `DevtoolRuntimeClient`（来自 `@tiny/host-browser`�
 :::flow
 | step | title | detail | accent |
 | --- | --- | --- | --- |
-| 01 · 测试应用 | tests/apps/* | demo · mini · todo · wechat-demo · echarts | yes |
-| 02 · 编译 | compileMiniProgram | manifest · templates · styles · service/render | |
+| 01 · 测试应用 | tests/apps/* | demo · mini · todo · wechat-demo · echarts · vant · weui | yes |
+| 02 · 编译 | compileMiniProgram | manifest · templates · styles · service | |
 | 03 · 打包 | rspack build | nextHost · nextService · nextRender | |
 | 04 · 发布 | Vite publicDir | .cache/site-public/devtool → dist/devtool | |
 | 05 · 嵌入 | 网站 iframe | ./devtool/index.html · 同源静态资源 | yes |
@@ -102,8 +102,8 @@ Console 显示结构化诊断（最多保留 500 条），Elements 显示 `runti
 | 层 | 实现 | 职责 |
 | --- | --- | --- |
 | `DevtoolRuntimeClient` | `@tiny/host-browser` | 创建线程、bootstrap、导航/前后台/Reload/Close、inspectTree，并维护页面栈和生命周期 |
-| `runtimeService.js` | service 线程入口 | 读取 `?app=`，加载 generated manifest 和 service.js |
-| `runtimeRender.js` | render 线程入口 | 加载 templates/styles，注入渲染后端、canvas、资源解析、挂载钩子和内置组件 |
+| `runtimeService.js` | service 线程入口 | 读取 `?app=`，加载 manifest、templates、styles 和 service.js，创建逻辑树 |
+| `runtimeRender.js` | render 线程入口 | 调用 `bootGlassRenderEntry`，创建 Web 渲染树、内置组件和 canvas responder |
 | `RuntimePanel` | React/Redux | 应用列表、会话管理、首屏选择、状态订阅和面板组合 |
 | `PreviewStage` | React | 设备框、宿主导航/tabBar、前后台遮罩、加载和错误状态 |
 
@@ -128,7 +128,7 @@ Console 显示结构化诊断（最多保留 500 条），Elements 显示 `runti
 
 ::::cards{layout="three"}
 :::card{title="全部测试应用"}
-默认发布 `tests/apps` 下全部 5 个应用，和本地 `pnpm dev:devtool` 的选择器一致；产物约 10 MiB，已移除 source map。
+默认发布 `tests/apps` 下全部 7 个应用，和本地 `pnpm dev:devtool` 的选择器一致；产物约 13 MiB，已移除 source map。
 :::
 
 :::card{title="纯静态"}

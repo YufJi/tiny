@@ -1,12 +1,8 @@
-import { bootServiceThread } from '@tiny/runtime';
-import {
-  createBrowserCanvasAdapter,
-  installBrowserCanvasCompat,
-  listenForRuntimePort,
-} from '@tiny/host-browser';
+import { bootBrowserServiceEntry } from '@tiny/host-browser';
 import { generatedBaseFor } from './appRegistry';
 
-const appId = new URLSearchParams(window.location.search).get('app') || 'demo';
+const search = new URLSearchParams(window.location.search);
+const appId = search.get('app') || 'demo';
 const generatedBase = generatedBaseFor(appId);
 const resolveAssetUrl = (assetPath) => (
   `${generatedBase}/${assetPath.split('/').map(encodeURIComponent).join('/')}`
@@ -46,19 +42,25 @@ const createHostApiExtensions = () => ({
 
 // Wait for the manifest before announcing readiness: the host delivers the
 // message port as soon as it sees the ready message, and any frame that
-// arrives before `bootServiceThread` installs its connection is lost.
-installBrowserCanvasCompat();
-
-manifestPromise.then((manifest) => {
-  listenForRuntimePort('service', (transport) => {
-    bootServiceThread({
-      transport,
-      manifest,
-      initialPath: manifest.pages[0].path,
-      apiExtensions: createHostApiExtensions(),
-      resolveAssetUrl,
-      canvas: createBrowserCanvasAdapter(),
-      loadArtifacts: () => importGenerated(`${generatedBase}/service.js`),
-    });
+// arrives before the service entry installs its connection is lost.
+manifestPromise.then(async (manifest) => {
+  const stylePaths = [...new Set(manifest.styles.flatMap((style) => [
+    style.outputPath,
+    ...(style.lowPriorityPath ? [style.lowPriorityPath] : []),
+  ]))];
+  const styles = Object.fromEntries(await Promise.all(
+    stylePaths.map(async (stylePath) => {
+      const response = await fetch(`${generatedBase}/${stylePath}`);
+      return [stylePath, await response.text()];
+    }),
+  ));
+  bootBrowserServiceEntry({
+    manifest,
+    initialPath: manifest.pages[0].path,
+    apiExtensions: createHostApiExtensions(),
+    resolveAssetUrl,
+    loadTemplates: async () => (await importGenerated(`${generatedBase}/templates.js`)).default,
+    loadStyle: (stylePath) => styles[stylePath] ?? '',
+    loadArtifacts: () => importGenerated(`${generatedBase}/service.js`),
   });
 });

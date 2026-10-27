@@ -1,0 +1,771 @@
+import * as glassEasel from 'glass-easel'
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
+import type {
+  RenderElement,
+  RenderIntersectionEntry,
+  RenderIntersectionRequest,
+  RenderNode,
+  RenderPatch,
+  RenderRect,
+  RenderText,
+} from '@tiny/runtime'
+import { createBuiltinComponents } from './index'
+import { BUILTIN_COMPONENT_TAGS, type BuiltinComponentTag } from './tags'
+
+type AnyComponent = glassEasel.GeneralComponent
+
+export type GlassRenderEvent = {
+  id: string
+  name: string
+  detail?: unknown
+  native?: Record<string, unknown>
+  touches?: unknown[]
+  changedTouches?: unknown[]
+}
+
+export type GlassRenderTreeOptions = {
+  resolveAssetUrl?: (src: string, sourcePath?: string) => string | undefined
+  /** DOM container for the root host. Omit for a detached/empty backend tree. */
+  container?: HTMLElement
+  /** Defaults to the current window; tests can pass EmptyBackendContext. */
+  backend?: glassEasel.GeneralBackendContext
+  /** Trigger attached/ready after the tree is assembled. Defaults to true. */
+  attach?: boolean
+  /** Forward host events from render nodes back to the logic layer. */
+  onEvent?: (event: GlassRenderEvent) => void
+}
+
+export type GlassRenderTree = {
+  root: AnyComponent
+  rootElement: HTMLElement | null
+  applyStyles?: (styles: string[]) => void
+  inspectTree?: () => unknown
+  measure?: (ids: string[]) => Record<string, unknown>
+  query?: (selector: string, all: boolean) => unknown[]
+  measureCanvas?: (selector: string, canvasId: string) => {
+    width: number
+    height: number
+    canvasId: string
+    hasCanvas: boolean
+  }
+  observeIntersection?: (
+    request: RenderIntersectionRequest,
+    emit: (entries: RenderIntersectionEntry[]) => void,
+  ) => (() => void) | undefined
+  setEventSink?: (sink: (event: GlassRenderEvent) => void) => void
+  setPagePath?: (pagePath: string) => void
+  setDiagnosticSink?: (sink: (diagnostic: {
+    severity: 'warning' | 'error'
+    code: string
+    message: string
+    details?: unknown
+  }) => void) => void
+  mount: (node: RenderNode) => void
+  applyPatches: (patches: RenderPatch[]) => void
+  getNode: (id: string) => AnyComponent | glassEasel.TextNode | undefined
+  destroy: () => void
+}
+
+const builtinTags = new Set<string>(BUILTIN_COMPONENT_TAGS)
+
+const HANDLED_NATIVE_EVENT = Symbol.for(TINY_ENGINE_NAMING.handledNativeEventSymbol)
+const isHandledNativeEvent = (event: unknown): boolean => Boolean(
+  event
+  && typeof event === 'object'
+  && (event as Record<PropertyKey, unknown>)[HANDLED_NATIVE_EVENT],
+)
+
+const propertyName = (name: string): string => (
+  name.replace(/-([a-z])/g, (_match, letter: string) => letter.toUpperCase())
+)
+
+function applyClassProps(
+  element: HTMLElement | null,
+  props: Record<string, unknown> | undefined,
+  scopes: string[] | undefined,
+  scopeChain: string[] | undefined,
+  externalClasses: Record<string, string[]> | undefined,
+  pageScopes: string[],
+): void {
+  if (!element?.setAttribute) return
+  const raw = String(props?.class ?? '').split(/\s+/).filter(Boolean)
+  const classes: string[] = []
+  const scoped: string[] = []
+  for (const name of raw) {
+    if (name.startsWith('^')) {
+      const carets = /^\^+/.exec(name)?.[0].length ?? 1
+      const className = name.slice(carets)
+      const scope = scopeChain?.[carets] ?? scopeChain?.[scopeChain.length - 1]
+      classes.push(className)
+      if (scope) scoped.push(`${scope}--${className}`)
+      continue
+    }
+    const escaped = name.startsWith('~')
+    const className = escaped ? name.slice(1) : name
+    classes.push(className)
+    for (const scope of escaped ? pageScopes : (scopes ?? [])) {
+      scoped.push(`${scope}--${className}`)
+    }
+    for (const target of externalClasses?.[name] ?? []) {
+      classes.push(target)
+      for (const scope of pageScopes) scoped.push(`${scope}--${target}`)
+    }
+  }
+  if (classes.length > 0 || scoped.length > 0) {
+    element.setAttribute('class', [...classes, ...scoped].join(' '))
+  }
+}
+
+function glassProps(props: Record<string, unknown> | undefined): Record<string, unknown> {
+  const result: Record<string, unknown> = {}
+  for (const [name, value] of Object.entries(props ?? {})) {
+    if (name === 'class' || name === 'style' || name === 'id') continue
+    result[propertyName(name)] = value
+  }
+  return result
+}
+
+function applyHostProps(component: AnyComponent, props: Record<string, unknown> | undefined): void {
+  const element = component.getBackendElement() as unknown as {
+    setAttribute?: (name: string, value: string) => void
+  } | null
+  if (!element?.setAttribute) return
+  for (const [name, value] of Object.entries(props ?? {})) {
+    if (value === undefined) continue
+    element.setAttribute(name, String(value))
+  }
+}
+
+/**
+ * R1 render-tree foundation: one glass-easel root owns a real built-in
+ * component tree. It is intentionally independent of the service tree; the
+ * component-flow layer will drive it later.
+ */
+export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): GlassRenderTree {
+  const backend = options.backend ?? new glassEasel.CurrentWindowBackendContext()
+  ;(backend as unknown as { onEvent: (listener: unknown) => void })
+    .onEvent(glassEasel.Event.triggerBackendEvent)
+  const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+  space.updateComponentOptions({
+    hostNodeTagName: TINY_ENGINE_NAMING.hostNodeTagName,
+    reflectToAttributes: true,
+  })
+  let currentPagePath = ''
+  let pageScopes: string[] = []
+  let diagnosticSink: ((diagnostic: {
+    severity: 'warning' | 'error'
+    code: string
+    message: string
+    details?: unknown
+  }) => void) | undefined
+  const definitions = createBuiltinComponents(space, {
+    resolveAssetUrl: (src: string, _component: unknown) => (
+      options.resolveAssetUrl?.(src, currentPagePath) ?? src
+    ),
+    onDiagnostic: (diagnostic) => diagnosticSink?.(diagnostic),
+  })
+  for (const [tag, definition] of Object.entries(definitions)) {
+    space.registerComponent(tag, definition)
+  }
+  const containers = new Map<string, glassEasel.GeneralComponentDefinition>()
+  const nodes = new Map<string, AnyComponent | glassEasel.TextNode>()
+  const eventCleanups = new Map<string, Array<() => void>>()
+  let currentRoot: RenderNode | undefined
+  let eventSink: ((event: GlassRenderEvent) => void) | undefined
+  let styleElement: HTMLStyleElement | undefined
+  const currentTree = new Map<string, RenderNode>()
+
+  const containerDefinition = (tag: string): glassEasel.GeneralComponentDefinition => {
+    const existing = containers.get(tag)
+    if (existing) return existing
+    const definition = space.defineComponent({
+      is: `${TINY_ENGINE_NAMING.renderContainerDefinitionPrefix}${tag}`,
+      options: {
+        hostNodeTagName: `${TINY_ENGINE_NAMING.hostTagPrefix}${tag}`,
+        reflectToAttributes: true,
+      },
+    }).general()
+    containers.set(tag, definition)
+    space.registerComponent(tag, definition)
+    return definition
+  }
+
+  const rootDefinition = space.defineComponent({
+    is: TINY_ENGINE_NAMING.renderRootDefinition,
+    options: {
+      hostNodeTagName: TINY_ENGINE_NAMING.renderRootTag,
+      reflectToAttributes: true,
+    },
+  }).general()
+  const root = glassEasel.Component.createWithContext(TINY_ENGINE_NAMING.renderRootTag, rootDefinition, backend)
+  const rootElement = root.getBackendElement() as unknown as HTMLElement | null
+  if (rootElement && options.container) options.container.replaceChildren(rootElement)
+
+  const appendChild = (parent: AnyComponent, child: AnyComponent | glassEasel.TextNode): void => {
+    parent.appendChild(child as never)
+  }
+
+  type ShadowLike = {
+    createTextNode: (text: string) => glassEasel.TextNode
+    createComponentByDef: (
+      tagName: string,
+      definition: glassEasel.GeneralComponentDefinition,
+    ) => AnyComponent
+  }
+
+  const lightShadow = (owner: AnyComponent): ShadowLike => {
+    const ownerShadow = (owner as unknown as { ownerShadowRoot?: ShadowLike }).ownerShadowRoot
+    return ownerShadow ?? (root.shadowRoot as unknown as ShadowLike)
+  }
+
+  const createText = (node: RenderText, owner: AnyComponent): glassEasel.TextNode => {
+    const text = lightShadow(owner).createTextNode(node.text)
+    nodes.set(node.id, text)
+    currentTree.set(node.id, node)
+    return text
+  }
+
+  const nativeFields = (event: Event): Record<string, unknown> => {
+    const source = event as unknown as Record<string, unknown>
+    const native: Record<string, unknown> = {}
+    for (const key of [
+      'clientX', 'clientY', 'pageX', 'pageY', 'x', 'y', 'key', 'code', 'value',
+      'checked', 'selectedIndex', 'scrollTop', 'scrollLeft', 'deltaX', 'deltaY',
+    ]) {
+      if (source[key] !== undefined) native[key] = source[key]
+    }
+    const target = event.target as HTMLInputElement | null
+    if (target && typeof target.value === 'string') native.value = target.value
+    if (target && typeof target.checked === 'boolean') native.checked = target.checked
+    return native
+  }
+
+  // A touch object is often shared by `touches`, `changedTouches` and the
+  // detail copy; clone each occurrence so the bridge serializer sees a tree,
+  // not a repeated reference it reports as circular.
+  const cloneTouch = (value: unknown): unknown => (
+    value && typeof value === 'object' ? { ...(value as Record<string, unknown>) } : value
+  )
+  const cloneTouchList = (value: unknown): unknown[] | undefined => (
+    Array.isArray(value) ? value.map(cloneTouch) : undefined
+  )
+  const cloneTouchDetail = (detail: unknown): unknown => {
+    if (!detail || typeof detail !== 'object') return detail
+    const copy = { ...(detail as Record<string, unknown>) }
+    for (const key of ['touches', 'changedTouches']) {
+      if (Array.isArray(copy[key])) copy[key] = (copy[key] as unknown[]).map(cloneTouch)
+    }
+    return copy
+  }
+
+  // Events the host maps from raw DOM. Everything else is emitted by the
+  // built-in components through glass-easel with a normalized detail payload.
+  const NATIVE_EVENT_NAMES = new Set(['tap', 'click', 'touchstart', 'touchmove', 'touchend', 'touchcancel'])
+
+  const attachEvents = (node: RenderElement, component: AnyComponent): void => {
+    const events = node.events ?? []
+    if (events.length === 0) return
+    const element = component.getBackendElement() as unknown as HTMLElement | null
+    const cleanups: Array<() => void> = []
+    const emit = (event: GlassRenderEvent): void => {
+      if (eventSink) eventSink(event)
+      else options.onEvent?.(event)
+    }
+    for (const binding of events) {
+      const capture = binding.capture === true
+      // Semantic events from host built-ins (change/input/scroll/...) carry
+      // the mini-program detail; forward that instead of re-deriving it.
+      const listener = (event: glassEasel.Event<unknown> & {
+        touches?: unknown
+        changedTouches?: unknown
+      }): void => {
+        const original = (event as unknown as { getOriginalEvent?: () => unknown })
+          .getOriginalEvent?.()
+        // A raw backend event is re-dispatched through the glass tree; it has
+        // no normalized detail and is handled by the DOM bridge below.
+        if (original) return
+        const isTouch = binding.name.startsWith('touch')
+        emit({
+          id: node.id,
+          name: binding.name,
+          ...(event.detail !== undefined
+            ? { detail: isTouch ? cloneTouchDetail(event.detail) : event.detail }
+            : {}),
+          ...(isTouch && event.touches !== undefined
+            ? { touches: cloneTouchList(event.touches) }
+            : {}),
+          ...(isTouch && event.changedTouches !== undefined
+            ? { changedTouches: cloneTouchList(event.changedTouches) }
+            : {}),
+        })
+      }
+      component.addListener(binding.name, listener as never, { capture })
+      cleanups.push(() => component.removeListener(binding.name, listener as never, { capture }))
+      if (!NATIVE_EVENT_NAMES.has(binding.name)) continue
+      if (!element || typeof element.addEventListener !== 'function') continue
+      const domName = binding.name === 'tap' ? 'click' : binding.name
+      // A `<label>` around a native checkbox/radio forwards its click to the
+      // input, so one user tap produces two DOM clicks with the same timestamp.
+      // Keep the first one; otherwise toggle handlers run twice and end up
+      // back at the original value.
+      let lastPointerStamp = -1
+      const domListener = (event: Event): void => {
+        if (isHandledNativeEvent(event)) return
+        if (binding.name === 'tap' || binding.name === 'click') {
+          if (event.timeStamp === lastPointerStamp) return
+          lastPointerStamp = event.timeStamp
+        }
+        emit({ id: node.id, name: binding.name, native: nativeFields(event) })
+      }
+      element.addEventListener(domName, domListener, capture)
+      cleanups.push(() => element.removeEventListener(domName, domListener, capture))
+    }
+    if (cleanups.length > 0) eventCleanups.set(node.id, cleanups)
+  }
+
+  const createElement = (
+    node: RenderElement,
+    owner: AnyComponent,
+    inheritedExternal?: Record<string, string[]>,
+  ): AnyComponent => {
+    const builtin = builtinTags.has(node.tag)
+    const definition = builtin
+      ? definitions[node.tag as BuiltinComponentTag]
+      : containerDefinition(node.tag)
+    if (!definition) throw new Error(`no render definition for tag: ${node.tag}`)
+    const component = lightShadow(owner).createComponentByDef(
+      builtin ? node.tag : `${TINY_ENGINE_NAMING.hostTagPrefix}${node.tag}`,
+      definition,
+    )
+    nodes.set(node.id, component)
+    currentTree.set(node.id, node)
+    attachEvents(node, component)
+    if (builtin) {
+      const props = node.props ?? {}
+      for (const name of ['placeholder-class', 'hover-class']) {
+        const value = props[name]
+        if (value !== undefined && typeof (component as unknown as { setExternalClass?: unknown }).setExternalClass === 'function') {
+          const classes = String(value).split(/\s+/).filter(Boolean)
+          const scoped = classes.flatMap((className) => [
+            className,
+            ...(node.scopes ?? []).map((scope) => `${scope}--${className}`),
+          ])
+          ;(component as unknown as { setExternalClass: (name: string, value: string) => void })
+            .setExternalClass(name, [...new Set(scoped)].join(' '))
+        }
+      }
+      component.setData(glassProps(props) as never)
+    }
+    const external = node.externalClasses ?? inheritedExternal
+    applyHostProps(component, node.props)
+    component.getBackendElement()?.setAttribute?.(TINY_ENGINE_NAMING.nodeIdAttribute, node.id)
+    applyClassProps(component.getBackendElement() as unknown as HTMLElement | null, node.props, node.scopes, node.scopeChain, external, pageScopes)
+    const childOwner = component
+    for (const child of node.children ?? []) {
+      appendChild(component, child.type === 'text'
+        ? createText(child, childOwner)
+        : createElement(child, childOwner, external))
+    }
+    return component
+  }
+
+  const rootId = { value: '' }
+
+  const ownerFor = (parentId: string): { owner: AnyComponent; shadow: any } | null => {
+    if (parentId === rootId.value) {
+      return {
+        owner: root,
+        shadow: root.shadowRoot as unknown as { insertBefore: (child: unknown, ref: unknown) => void },
+      }
+    }
+    const parent = nodes.get(parentId)
+    if (!parent || glassEasel.TextNode.isTextNode(parent)) return null
+    return { owner: parent, shadow: null }
+  }
+
+  const collectIds = (node: RenderNode): string[] => {
+    if (node.type === 'text') return [node.id]
+    return [node.id, ...(node.children ?? []).flatMap(collectIds)]
+  }
+
+  const dropNode = (node: RenderNode): void => {
+    for (const id of collectIds(node)) {
+      for (const cleanup of eventCleanups.get(id) ?? []) cleanup()
+      eventCleanups.delete(id)
+      nodes.delete(id)
+      currentTree.delete(id)
+    }
+  }
+
+  const destroyComponent = (node: unknown): void => {
+    if (!node) return
+    ;(node as { destroy?: () => void }).destroy?.()
+  }
+
+  const insertNode = (parentId: string, index: number, node: RenderNode): void => {
+    const target = ownerFor(parentId)
+    if (!target) return
+    const child = node.type === 'text'
+      ? createText(node, target.owner)
+      : createElement(node, target.owner)
+    if (target.shadow) {
+      const ref = (root.shadowRoot as unknown as { childNodes: ArrayLike<unknown> }).childNodes[index] ?? null
+      target.shadow.insertBefore(child, ref)
+    } else {
+      const parent = target.owner
+      parent.insertBefore(child as never, parent.childNodes[index] ?? null)
+    }
+  }
+
+  // Root children live in the page component's shadow root; component nodes
+  // keep their children on the light tree.
+  const parentChildren = (parentId: string): {
+    childNodes: ArrayLike<unknown>
+    removeChild: (child: unknown) => void
+    insertBefore: (child: unknown, ref: unknown) => void
+  } | null => {
+    if (parentId === rootId.value) {
+      return root.shadowRoot as unknown as {
+        childNodes: ArrayLike<unknown>
+        removeChild: (child: unknown) => void
+        insertBefore: (child: unknown, ref: unknown) => void
+      }
+    }
+    const parent = nodes.get(parentId)
+    if (!parent || glassEasel.TextNode.isTextNode(parent)) return null
+    return parent as unknown as {
+      childNodes: ArrayLike<unknown>
+      removeChild: (child: unknown) => void
+      insertBefore: (child: unknown, ref: unknown) => void
+    }
+  }
+
+  const removeNode = (parentId: string, index: number, count: number): void => {
+    const parent = parentChildren(parentId)
+    if (!parent) return
+    for (let offset = 0; offset < count; offset += 1) {
+      const child = parent.childNodes[index]
+      if (!child) break
+      parent.removeChild(child)
+      for (const [id, value] of nodes) {
+        if (value === child) {
+          const snapshot = currentTree.get(id)
+          if (snapshot) dropNode(snapshot)
+          destroyComponent(child)
+        }
+      }
+    }
+  }
+
+  const reorderNode = (parentId: string, moves: Array<{ from: number; to: number }>): void => {
+    const parent = parentChildren(parentId)
+    if (!parent) return
+    for (const move of moves) {
+      const child = parent.childNodes[move.from]
+      if (!child) continue
+      parent.removeChild(child)
+      parent.insertBefore(child, parent.childNodes[move.to] ?? null)
+    }
+  }
+
+  const replaceNode = (id: string, node: RenderNode): void => {
+    const previous = nodes.get(id)
+    const snapshot = currentTree.get(id)
+    if (!previous || !snapshot) return
+    if (snapshot.type === 'element' && node.type === 'element' && id === rootId.value) {
+      nodes.set(id, root)
+      currentTree.set(id, node)
+      return
+    }
+    const parent = (previous as unknown as { parentNode?: AnyComponent }).parentNode
+    if (!parent) return
+    const owner = parent
+    const child = node.type === 'text'
+      ? createText(node, owner)
+      : createElement(node, owner)
+    parent.replaceChild(child as never, previous as never)
+    dropNode(snapshot)
+    nodes.set(id, node.type === 'text' ? child as never : child)
+    currentTree.set(id, node)
+    if (snapshot.type === 'element' && node.type !== 'element') destroyComponent(previous)
+  }
+
+  const updateProps = (node: RenderElement): void => {
+    const component = nodes.get(node.id)
+    if (!component) return
+    if (glassEasel.TextNode.isTextNode(component)) return
+    const props = { ...(node.props ?? {}) }
+    delete props.class
+    delete props.style
+    delete props.id
+    if (builtinTags.has(node.tag)) component.setData(glassProps(node.props) as never)
+    else {
+      const element = component.getBackendElement() as unknown as {
+        setAttribute?: (name: string, value: string) => void
+      } | null
+      for (const [name, value] of Object.entries(props)) {
+        element?.setAttribute?.(name, String(value ?? ''))
+      }
+    }
+    applyHostProps(component, node.props)
+    applyClassProps(component.getBackendElement() as unknown as HTMLElement | null, node.props, node.scopes, node.scopeChain, undefined, pageScopes)
+  }
+
+  const applyPatches = (patches: RenderPatch[]): void => {
+    for (const patch of patches) {
+      if (patch.type === 'text') {
+        const node = nodes.get(patch.id)
+        if (node && glassEasel.TextNode.isTextNode(node)) node.textContent = patch.text
+      } else if (patch.type === 'props') {
+        const node = nodes.get(patch.id)
+        if (node && node instanceof glassEasel.Element) {
+          const current = currentTree.get(patch.id)
+          if (current?.type === 'element') {
+            const next: RenderElement = {
+              ...current,
+              props: { ...(current.props ?? {}), ...patch.props },
+            }
+            for (const name of patch.removed ?? []) delete next.props?.[name]
+            currentTree.set(patch.id, next)
+            updateProps(next)
+          }
+        }
+      } else if (patch.type === 'insert') {
+        insertNode(patch.parentId, patch.index, patch.node)
+      } else if (patch.type === 'remove') {
+        removeNode(patch.parentId, patch.index, patch.count)
+      } else if (patch.type === 'reorder') {
+        reorderNode(patch.parentId, patch.moves)
+      } else if (patch.type === 'replace') {
+        replaceNode(patch.id, patch.node)
+      }
+    }
+  }
+
+  return {
+    root,
+    rootElement,
+    setEventSink: (sink) => {
+      eventSink = sink
+    },
+    setPagePath: (pagePath) => {
+      currentPagePath = pagePath
+    },
+    observeIntersection: (request, emit) => {
+      if (typeof IntersectionObserver === 'undefined' || !rootElement) return undefined
+      const elementFor = (id: string): Element | null => (
+        rootElement.querySelector(`[${TINY_ENGINE_NAMING.nodeIdAttribute}="${id}"]`)
+      )
+      const targets = request.viewIds
+        .map((id) => elementFor(id))
+        .filter((element): element is Element => element !== null)
+      if (targets.length === 0) return undefined
+      const root = request.rootViewId ? elementFor(request.rootViewId) : null
+      const margin = request.rootMargin
+      const rootMargin = margin
+        ? [margin.top ?? 0, margin.right ?? 0, margin.bottom ?? 0, margin.left ?? 0]
+          .map((value) => `${value}px`)
+          .join(' ')
+        : undefined
+      const toRect = (rect: {
+        left: number
+        top: number
+        right: number
+        bottom: number
+        width: number
+        height: number
+      } | null): RenderRect => ({
+        left: rect?.left ?? 0,
+        top: rect?.top ?? 0,
+        right: rect?.right ?? 0,
+        bottom: rect?.bottom ?? 0,
+        width: rect?.width ?? 0,
+        height: rect?.height ?? 0,
+      })
+      const observer = new IntersectionObserver((entries) => {
+        const payload: RenderIntersectionEntry[] = []
+        for (const entry of entries) {
+          const element = entry.target as Element
+          const viewId = element.getAttribute(TINY_ENGINE_NAMING.nodeIdAttribute) ?? ''
+          if (!viewId) continue
+          const viewport = entry.rootBounds ?? {
+            left: 0,
+            top: 0,
+            right: typeof window === 'undefined' ? 0 : window.innerWidth,
+            bottom: typeof window === 'undefined' ? 0 : window.innerHeight,
+            width: typeof window === 'undefined' ? 0 : window.innerWidth,
+            height: typeof window === 'undefined' ? 0 : window.innerHeight,
+          }
+          payload.push({
+            viewId,
+            boundingClientRect: toRect(entry.boundingClientRect),
+            intersectionRect: toRect(entry.intersectionRect),
+            relativeRect: toRect(viewport),
+            intersectionRatio: entry.intersectionRatio,
+            time: entry.time,
+          })
+        }
+        if (payload.length > 0) emit(payload)
+      }, {
+        root,
+        ...(rootMargin ? { rootMargin } : {}),
+        threshold: request.thresholds?.length ? request.thresholds : [0],
+      })
+      for (const target of targets) observer.observe(target)
+      return () => observer.disconnect()
+    },
+    setDiagnosticSink: (sink) => {
+      diagnosticSink = sink
+    },
+    inspectTree: () => {
+      const toInspect = (node: RenderNode, isRoot = false): Record<string, unknown> => {
+        if (node.type === 'text') {
+          return {
+            id: node.id,
+            type: 'text',
+            tag: TINY_ENGINE_NAMING.textNodeTag,
+            text: node.text,
+            children: [],
+          }
+        }
+        const attributes = Object.fromEntries(
+          Object.entries(node.props ?? {}).map(([key, value]) => [key, String(value ?? '')]),
+        )
+        for (const [key, value] of Object.entries(node.dataset ?? {})) {
+          attributes[`data-${key}`] = String(value ?? '')
+        }
+        return {
+          id: node.id,
+          type: builtinTags.has(node.tag) ? 'element' : 'component',
+          tag: isRoot && node.tag === TINY_ENGINE_NAMING.pageTag
+            ? TINY_ENGINE_NAMING.renderRootTag
+            : node.tag,
+          attributes,
+          className: String(node.props?.class ?? ''),
+          style: String(node.props?.style ?? ''),
+          children: (node.children ?? []).map((child) => toInspect(child)),
+        }
+      }
+      return currentRoot ? toInspect(currentRoot, true) : null
+    },
+    measure: (ids) => {
+      const result: Record<string, unknown> = {}
+      for (const id of ids) {
+        const element = rootElement?.querySelector(`[${TINY_ENGINE_NAMING.nodeIdAttribute}="${id}"]`)
+        if (!element) continue
+        const rect = element.getBoundingClientRect()
+        result[id] = {
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
+        }
+      }
+      return result
+    },
+    query: (selector, all) => {
+      if (!rootElement) return []
+      const elements = Array.from(rootElement.querySelectorAll(selector))
+      if (!all) elements.splice(1)
+      return elements.map((element) => {
+        const rect = element.getBoundingClientRect()
+        return {
+          viewId: element.getAttribute(TINY_ENGINE_NAMING.nodeIdAttribute) ?? '',
+          id: element.id,
+          dataset: { ...(element as HTMLElement).dataset },
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
+          scrollLeft: element.scrollLeft,
+          scrollTop: element.scrollTop,
+        }
+      })
+    },
+    measureCanvas: (selector, canvasId) => {
+      if (typeof document === 'undefined') {
+        return { width: 0, height: 0, canvasId, hasCanvas: false }
+      }
+      const host = (canvasId
+        ? rootElement?.querySelector(
+            `${TINY_ENGINE_NAMING.hostTagPrefix}canvas[canvas-id="${canvasId}"]`,
+          )
+        : null)
+        ?? (selector ? rootElement?.querySelector(selector) : null)
+        ?? (selector
+          ? rootElement?.querySelector(`${TINY_ENGINE_NAMING.hostTagPrefix}canvas ${selector}`)
+          : null)
+      const canvas = host?.tagName === 'CANVAS'
+        ? host
+        : host?.querySelector('canvas')
+      if (!canvas) return { width: 0, height: 0, canvasId, hasCanvas: false }
+      const rect = canvas.getBoundingClientRect()
+      return {
+        width: rect.width,
+        height: rect.height,
+        canvasId,
+        hasCanvas: true,
+      }
+    },
+    applyStyles: (styles) => {
+      if (typeof document === 'undefined') return
+      if (!styleElement) {
+        styleElement = document.createElement('style')
+        styleElement.setAttribute(TINY_ENGINE_NAMING.runtimeStylesAttribute, '')
+        styleElement.setAttribute(TINY_ENGINE_NAMING.styleScopeAttribute, '')
+        document.head.appendChild(styleElement)
+      }
+      styleElement.textContent = styles.join('\n')
+    },
+    mount(node) {
+      currentRoot = node
+      for (const cleanups of eventCleanups.values()) {
+        for (const cleanup of cleanups) cleanup()
+      }
+      eventCleanups.clear()
+      nodes.clear()
+      currentTree.clear()
+      styleElement?.remove()
+      styleElement = undefined
+      const shadow = root.shadowRoot as unknown as {
+        appendChild: (child: unknown) => void
+        childNodes: ArrayLike<unknown>
+        removeChild: (child: unknown) => void
+      }
+      while (shadow.childNodes.length > 0) {
+        shadow.removeChild(shadow.childNodes[0])
+      }
+      const children = node.type === 'element' ? node.children ?? [] : []
+      for (const child of children) {
+        shadow.appendChild(child.type === 'text'
+          ? createText(child, root)
+          : createElement(child, root))
+      }
+      if (node.type === 'element') {
+        rootId.value = node.id
+        nodes.set(node.id, root)
+        currentTree.set(node.id, node)
+        pageScopes = node.scopes ?? []
+        rootElement?.setAttribute(TINY_ENGINE_NAMING.nodeIdAttribute, node.id)
+        applyHostProps(root, node.props)
+        applyClassProps(rootElement, node.props, node.scopes, node.scopeChain, undefined, pageScopes)
+      }
+      if (options.attach !== false) glassEasel.Element.pretendAttached(root)
+    },
+    applyPatches,
+    getNode(id) {
+      return nodes.get(id)
+    },
+    destroy() {
+      for (const cleanups of eventCleanups.values()) {
+        for (const cleanup of cleanups) cleanup()
+      }
+      eventCleanups.clear()
+      nodes.clear()
+      currentTree.clear()
+      ;(root as unknown as { destroy?: () => void }).destroy?.()
+    },
+  }
+}

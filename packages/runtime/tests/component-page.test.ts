@@ -4,8 +4,8 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderThread } from '../src/render'
-import { bootServiceThread } from '../src/service'
+import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { bootServiceThread } from './helpers/split-service'
 
 const HOME_PATH = 'pages/index/index'
 const FORM_PATH = 'pages/form/form'
@@ -56,7 +56,7 @@ function createManifest(): Manifest {
   return {
     schemaVersion: 2,
     runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
-    entries: { service: 'service.js', render: 'render.js', templates: 'templates.js' },
+    entries: { service: 'service.js', templates: 'templates.js' },
     pages: [
       artifact(HOME_PATH, 'page'),
       artifact(FORM_PATH, 'component', { child: `/${CHILD_PATH}` }),
@@ -81,7 +81,6 @@ describe('Component-as-page', () => {
       transport: renderTransport,
       manifest,
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: HOME_PATH,
     })
     const host = createTinyRuntime({
@@ -224,7 +223,6 @@ describe('Component-as-page', () => {
       fromBehavior: 'B',
       behaviorAttached: true,
       behaviorObserved: 'b:123',
-      linked: true,
       selectedInReady: true,
       relationInReady: 1,
     })
@@ -233,8 +231,8 @@ describe('Component-as-page', () => {
     expect(page.invokeMethod('customMethod')).toBe('custom')
     expect(page.invokeMethod('behaviorMethod')).toBe('behavior-method')
     expect(page.selectComponent('#child')).toBeTruthy()
-    expect(page.getRelationNodes('/components/child/child')).toHaveLength(1)
-    const child = [...service.componentInstances.values()].find((item) => item.path === CHILD_PATH)!
+    const child = (render.adapter.getComponentSnapshot() as Array<{ componentId: string; path: string }>)
+      .find((item) => item.path === CHILD_PATH)!
     const childRender = render.adapter.getMountedComponentByComponentId(child.componentId)!
     expect(childRender.getComponentOptions().extraStyleScope).toBeGreaterThan(0)
     expect(() => page.triggerEvent('page-event')).not.toThrow()

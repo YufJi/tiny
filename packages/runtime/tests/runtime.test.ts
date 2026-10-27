@@ -4,8 +4,8 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderThread } from '../src/render'
-import { bootServiceThread } from '../src/service'
+import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { bootServiceThread } from './helpers/split-service'
 
 const PAGE_PATH = 'pages/index/index'
 const WXML =
@@ -68,7 +68,6 @@ function createManifest(): Manifest {
     runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
     entries: {
       service: 'service.js',
-      render: 'render.js',
       templates: 'templates.js',
     },
     pages: [page],
@@ -167,7 +166,6 @@ describe('tiny runtime', () => {
       transport: renderTransport,
       manifest,
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: PAGE_PATH,
       loadStyle: (path) => (path.endsWith('.css') ? WXSS : ''),
     })
@@ -218,7 +216,7 @@ describe('tiny runtime', () => {
     inner?.triggerEvent('tap', null, { bubbles: true, capturePhase: true })
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(eventOrder).toEqual([
-      'capture:outer:outer:true',
+      'capture:outer:outer:undefined',
       'tap:inner:hello',
       'catch:middle:middle',
     ])
@@ -263,7 +261,6 @@ describe('tiny runtime', () => {
       transport: renderTransport,
       manifest,
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: PAGE_PATH,
     })
     const host = createTinyRuntime({

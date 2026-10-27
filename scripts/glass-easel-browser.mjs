@@ -365,6 +365,18 @@ export async function runBrowserAcceptance({ baseUrl }) {
       )
     })
 
+    await step('mutate the first page after navigating back', async () => {
+      currentStep = 'mutate the first page after navigating back'
+      // The hidden page stays mounted on the service side; a data change raised
+      // after navigateBack must patch that page, not the most recently mounted one.
+      await render.getByText('Run P0 acceptance', { exact: true }).first().click()
+      await render.waitForFunction(() => {
+        const body = document.querySelector('#app')?.innerText ?? ''
+        const index = body.indexOf('checked:')
+        return index >= 0 && !body.slice(index).includes('Run P0 acceptance')
+      }, null, { timeout: STEP_TIMEOUT })
+    })
+
     await step('open the component semantics page', async () => {
       currentStep = 'open the component semantics page'
       await render.getByText('Semantics', { exact: true }).first().click()
@@ -937,6 +949,35 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
       assert.ok((await render.locator('tiny-button').count()) > 0, 'component buttons did not render')
     })
 
+    await step('toggle a radio in the swiper demo', async () => {
+      currentStep = 'toggle a radio in the swiper demo'
+      await page.goto(`${baseUrl}?path=packageComponent/pages/view/swiper/swiper`, {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
+      const render = await activeRender()
+      await render.waitForFunction(
+        () => document.querySelectorAll('tiny-radio').length >= 2,
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const autoplay = render.locator('tiny-radio').nth(1)
+      assert.equal(await autoplay.getAttribute('checked'), 'false', 'autoplay radio should start unchecked')
+      await autoplay.click()
+      await render.waitForFunction(
+        () => document.querySelectorAll('tiny-radio')[1]?.getAttribute('checked') === 'true',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      await page.waitForTimeout(2300)
+      const activeDot = await render.evaluate(() => {
+        const dots = [...document.querySelectorAll('.tiny-builtin-swiper--tiny-swiper-dot')]
+        return dots.findIndex((dot) => getComputedStyle(dot).backgroundColor === 'rgb(0, 0, 0)')
+      })
+      assert.notEqual(activeDot, 0, 'swiper autoplay did not advance after enabling it')
+    })
+
     await step('render an API example page', async () => {
       currentStep = 'render an API example page'
       await page.goto(`${baseUrl}?path=packageAPI/pages/storage/storage/storage`, {
@@ -1499,6 +1540,16 @@ export async function runDevtoolAcceptance({ baseUrl }) {
       assert.equal(
         await page.locator(`${primarySurface} iframe[data-page-id="page-1"]`).getAttribute('data-state'),
         'active',
+      )
+      const restoredFrame = activeRenderFrame(primary.id, 'page-1')
+      assert.ok(restoredFrame, 'restored page render frame was not found')
+      const checkedLabels = 'tiny-label[class*="--todo-item"][class*="--checked"]'
+      assert.equal(await restoredFrame.locator(checkedLabels).count(), 2, 'restored page lost its initial state')
+      await restoredFrame.getByText('Learning 小程序', { exact: true }).click()
+      await restoredFrame.waitForFunction(
+        (selector) => document.querySelectorAll(selector).length === 3,
+        checkedLabels,
+        { timeout: STEP_TIMEOUT },
       )
     })
 

@@ -1,79 +1,78 @@
 ---
-title: 'service 管状态，'
-highlight: 'render 管组件树'
+title: 'service 跑逻辑树，'
+highlight: '宿主跑渲染树'
 eyebrow: '运行时'
 lede: >-
-  packages/runtime 是 Tiny 的小程序内核：不引用 window、document 或 iframe。service 线程负责 App/Page/Component、页面栈、setData、命名、组件语义和逻辑组件树；render 线程负责 glass-easel 组件定义、样式隔离、事件和 DOM。canvas、资源 URL、渲染后端和内置组件都由宿主注入。
+  packages/runtime 是 Tiny 的小程序内核，不引用 window、document 或 iframe。service 线程用 glass-easel 维护逻辑树，负责 App/Page/Component、页面栈、setData、observer、relations 和模板求值；render 线程由宿主持有真实渲染树，只负责内置组件、样式、布局和 DOM。两棵树通过 tree.flow、tree.patch 和 tree.event 同步。
 stats:
-  - ['2', '线程角色']
+  - ['2', '运行时树']
   - ['23', '内置组件']
+  - ['9', '消息域']
   - ['5', '组件生命周期']
-  - ['7', '消息域']
 pills:
-  - ['内核不依赖宿主', 'good']
-  - ['组件语义', 'good']
-  - ['样式隔离', 'good']
-  - ['canvas 由宿主提供', 'good']
-description: '小程序内核：service 与 render 双线程分工、页面栈、setData、事件、组件语义、内置组件和样式隔离。'
+  - ['双侧树', 'good']
+  - ['逻辑树在 service', 'good']
+  - ['渲染树在 host', 'good']
+  - ['不再产出 render.js', 'good']
+description: '小程序内核：service 逻辑树与宿主渲染树的分工、tree 协议、setData、组件语义、样式、查询和 canvas。'
 name: '运行时'
 pageTitle: '小程序内核与运行时 · Tiny'
 order: 4
 ---
 
-## 一个小程序，两个运行时角色 {#overview kicker="总览"}
+## 两棵树，各管各的 {#overview kicker="总览"}
 
-service 负责逻辑和状态，render 负责组件树和 DOM。默认使用两个 iframe；如果需要保留隐藏页面的 DOM 和滚动位置，也可以让每个页面各用一个 render iframe。
+service 执行小程序逻辑并维护 glass-easel 逻辑树；render 线程由宿主持有真实组件树。两棵树不共享内存，靠稳定的 node id、component flow 和 virtual node patch 对齐。
 
 ```text
-service iframe                                  render iframe (one per page optional)
-+------------------------------+                +------------------------------+
-| bootServiceThread            |                | bootRenderThread             |
-| host-independent             |                | glass-easel adapter          |
-| pageStack / page data        |    messages    | ComponentSpace / DOM         |
-| naming / definitions / tree  | <------------> | styles / events / slots      |
-| canvas: injected adapter     |   via host     | canvas: injected adapter     |
-+------------------------------+                +------------------------------+
-             ^                                               ^
-             +------------- BridgeConnection ---------------+
-                            (host relays)
+service thread                              render thread (one root per page)
++-------------------------------+           +-------------------------------+
+| App / Page / Component        |           | host TreeRenderer             |
+| glass-easel logic ComponentSpace |  tree  | real built-in components      |
+| template -> virtual RenderNode | <------> | glass-easel render tree       |
+| data / observers / relations  |  flow    | DOM / layout / styles         |
+| node ids + patches            |  patch   | no app methods                |
++-------------------------------+           +-------------------------------+
 ```
 
 ::::split
-:::card{tag="service" title="应用逻辑和状态"}
-页面栈、当前页、页面和组件 data、命名空间、组件定义、逻辑组件树、relations 和 API host 都在这里。小程序的业务状态只存在这一侧。
+:::card{tag="service" title="逻辑树和业务状态"}
+glass-easel ComponentSpace 在 service 中运行，自定义组件是完整实例，拥有 data、properties、observers、relations、lifetimes、事件回调、带类型的 dataset 和 node id。模板也在 service 求值，输出 `RenderNode` 虚拟树。
 :::
 
-:::card{tag="render" tone="violet" title="组件树和 DOM"}
-glass-easel 组件定义、模板实例、样式作用域、DOM 节点、事件派发和元素树都在这里。render 不知道页面栈，也不读取 URL。
+:::card{tag="render" tone="violet" title="真实组件和 DOM"}
+每个页面有一个 render root。宿主的 `TreeRenderer` 创建真实内置组件、自定义组件容器、slot、shadow root、样式和布局。render 不执行 app methods、observer 或 relations。
 :::
 ::::
 
-:::callout{title="内核不直接接触运行环境"}
-service 需要 canvas 时，调用注入的 `ServiceCanvasAdapter`；render 测量和绘制 canvas 时，调用注入的 `RenderCanvasAdapter`；selector query 和 IntersectionObserver 走注入的 `RenderQueryAdapter`；图片和 CSS 资源由 `resolveAssetUrl` 解析；DOM 挂载由 `mountComponent` 完成。`pnpm check:runtime-purity` 会检查这条规则有没有被破坏。
+:::callout{title="node id 由 service 分配"}
+service 在创建虚拟节点时分配稳定 id，render 只维护 id 到真实组件的映射。后续 patch、事件、查询和元素树检查都以这个 id 为锚点，而不是从 DOM 反推小程序语义。
+
+当前模板更新走 virtual node patch；component flow 只覆盖首屏挂载（`define`、`create-node`、`props`、`children`、`ready`）。这一点和微信参考协议还有协议面差异，见 [限制](#limits)。
 :::
 
-## 注册、命名和页面栈 {#service kicker="service 线程"}
+## service 线程：逻辑树和页面栈 {#service kicker="service 线程"}
 
 service 是“小程序应用”真正运行的地方，由 bootServiceThread 一次性装配。
 
 :::sequence
-| title | actor | detail | code |
-| --- | --- | --- | --- |
-| 按 runtimeCompatibility 安装兼容全局 | | 按配置写入 App/Page/Component、getApp/getCurrentPages 等全局；API 对象安装到配置的 namespace 和 aliases。未实现的 API 返回 undefined，并产生 UNSUPPORTED_API 警告。 | installMiniProgramGlobals(registry, apiHost) |
-| 注册 App | | service.js 被导入时执行 App(...)，registerApp 会立即调用 onLaunch 和 onShow。此时页面还没有创建。 | registerApp(options) |
-| 整理 Page 和 Component 定义 | | Page() 按顺序绑定到 manifest 里的页面路径；Component() 还会执行 normalizeComponentDefinition，合并 behaviors、observers、relations、options 和 externalClasses。 | registerComponent(options) |
-| bootstrap 创建首屏 | | 等待 loadArtifacts，写入 systemInfo 和 storage，构建组件 schema，创建页面并触发 onLoad/onShow；最后返回 pageComponents，供 render 注册组件型页面。 | control('runtime', 'bootstrap') |
-| page.ready 补齐组件树 | | render 等组件树稳定后，把组件快照发给 service。service 创建组件实例、加入 ComponentTree，再触发 onReady。这时 selectComponent 和 relations 已经可用。 | control('page', 'ready', { components }) |
+| title | detail | code |
+| --- | --- | --- |
+| 安装兼容全局 | 按 runtimeCompatibility 写入 App/Page/Component、getApp/getCurrentPages 等全局；API 对象安装到配置的 namespace 和 aliases。未实现的 API 返回 undefined，并产生 UNSUPPORTED_API 警告。 | installMiniProgramGlobals(registry, apiHost) |
+| 注册 App | service.js 被导入时执行 App(...)，registerApp 会立即调用 onLaunch 和 onShow。此时页面还没有创建。 | registerApp(options) |
+| 整理 Page 和 Component 定义 | Page() 按顺序绑定到 manifest 里的页面路径；Component() 执行 normalizeComponentDefinition，合并 behaviors、observers、relations、options 和 externalClasses。 | registerComponent(options) |
+| bootstrap 创建逻辑树 | 等待 loadArtifacts，加载 templates 和 styles，构建组件 schema，创建 LogicTreeAdapter，挂载首屏逻辑树并触发 onLoad/onShow。 | control('runtime', 'bootstrap') |
+| render 就绪后同步首屏 | 宿主的渲染树挂载完成后发送 `tree.ready`，service 用逻辑树快照发送 `tree.flow`；随后宿主发 `page.ready`，service 触发 onReady。 | control('page', 'ready', { pageId }) |
 :::
 
-| 页面操作 | service 做什么 | render 做什么 |
+| 页面操作 | service 逻辑树 | render 渲染树 |
 | --- | --- | --- |
-| `page.navigateTo` | 当前页 onHide；解析 url 和 query；创建 pageId；新页 onLoad → onShow；组件型页面执行 created/attached/ready | 不再使用的页面会被卸载，新页面按 path 和 initialData 挂载，等待组件树稳定 |
-| `page.navigateBack` | 按 delta 移除页面；倒序触发 onHide → onUnload；恢复页 onShow | 每页 render 模式保留原页面 iframe；单 render 模式需要重新挂载恢复页 |
-| `page.switchTab` | 切换到 tabBar 页面；复用缓存页面，必要时创建新页面 | 每页 render 模式关闭不再使用的 tab 页，其余页面只切换可见性 |
-| `page.hide` | 当前页 onHide；App.onHide；所有页面和组件触发 pageLifetimes hide | 不销毁组件树 |
-| `page.show` | App.onShow；当前页 onShow；所有页面和组件触发 pageLifetimes show | 不销毁组件树 |
-| `page.unload` | onUnload；组件型页面执行 detached；移除 ComponentTree、relations 和组件实例 | 没有额外消息 |
+| `page.navigateTo` | 当前页 onHide；创建 pageId；挂载新页逻辑树；onLoad → onShow | 宿主创建新的 render root，应用新页 flow |
+| `page.navigateBack` | 移除页面；倒序触发 onHide → onUnload；恢复页 onShow | 每页 render 模式保留原 root；单 render 模式重新挂载 |
+| `page.redirectTo` / `reLaunch` | 销毁旧页，创建目标页；执行对应生命周期 | 关闭不再使用的 render root，挂载新页 |
+| `page.switchTab` | 复用 tab 页缓存，更新 tabBar 状态 | 切换可见 root，关闭已卸载页 |
+| `page.hide` / `page.show` | 分发页面和组件 pageLifetimes | 只切换可见性，不销毁渲染树 |
+| `page.unload` | onUnload；组件 detached；清理逻辑树和 relations | 关闭 render root |
 
 ::::split
 :::card{title="页面实例和组件型页面"}
@@ -95,7 +94,7 @@ service 是“小程序应用”真正运行的地方，由 bootServiceThread �
 
 ## 兼容输入可配，Tiny 内部名固定 {#naming kicker="命名边界" nav="命名"}
 
-runtimeCompatibility 只决定应用需要哪些兼容全局和 behavior scheme；adapter 与 web-components 的内部名称由 TINY_ENGINE_NAMING 统一提供。
+runtimeCompatibility 只决定应用需要哪些兼容全局和 behavior scheme；逻辑树和渲染树的内部名称由 TINY_ENGINE_NAMING 统一提供。
 
 :::::split
 ```json
@@ -140,7 +139,7 @@ runtimeCompatibility 只决定应用需要哪些兼容全局和 behavior scheme�
 :::
 
 :::card{tag="render" title="Tiny 内部命名"}
-ComponentSpace 使用 `tiny-*` host node；scope marker、tag marker 和内置 behavior 都从 `TINY_ENGINE_NAMING` 读取。
+逻辑树和渲染树使用 `tiny-*` host node；scope marker、tag marker 和内置 behavior 都从 `TINY_ENGINE_NAMING` 读取。
 
 glass-easel 尚未公开 host/style scope 属性配置，因此 `TINY_ENGINE_NAMING` 暂时同步其 `wx-host` / `wx-style-scope`；runtime 不做 DOM 观察或属性改写。
 :::
@@ -152,7 +151,7 @@ glass-easel 尚未公开 host/style scope 属性配置，因此 `TINY_ENGINE_NAM
 | 模板指令 | `wx:if / directive:if` | 编译期消除 | TmplGroup directivePrefix |
 | API 全局 | `wx / my` | 不参与内部命名 | installMiniProgramGlobals |
 | 组件宿主 | `add-button` | `tiny-add-button` | ComponentSpace hostNodeTagName |
-| 宿主属性 | `—` | `wx-host`（临时） | adapter / 样式编译器 |
+| 宿主属性 | `—` | `wx-host`（临时） | render tree / 样式编译器 |
 | style scope attribute | `—` | `wx-style-scope`（临时） | glass-easel DOM |
 | 内置 behavior | `my://component-export` | `tiny-base / tiny-item` | runtime + web-components |
 | tag / scope marker | `—` | `tiny-tag-* / tiny-scope` | 模板注入 + WXSS |
@@ -161,18 +160,18 @@ glass-easel 尚未公开 host/style scope 属性配置，因此 `TINY_ENGINE_NAM
 切换 API 或指令 namespace 不会改变 DOM、CSS scope 或内部 behavior。要支持第三方微信库时只增加 `api.aliases: ["wx"]`。当前唯一例外是 glass-easel 尚未配置化的 host/style scope 属性名。
 :::
 
-## setData 和跨线程 observer {#data kicker="数据同步" nav="setData 与 observer"}
+## setData 走逻辑树，更新走 patch {#data kicker="数据同步" nav="setData 与 patch"}
 
-service 先改自己的 data，再把更新发给 render；render 侧组件 data 和 observer 的变化也会回流 service，保证逻辑实例和渲染实例一致。
+页面和组件的 setData 只改 service 的逻辑树。模板重新求值后，service 把旧虚拟树和新虚拟树做 diff，再把 patch 发给渲染树。
 
 :::sequence
-| title | actor | detail | code |
-| --- | --- | --- | --- |
-| 生成一份可 JSON 序列化的更新 | | 页面或组件调用 setData 时，先做 cloneJsonSafe，再按 a.b、list[0] 这样的路径写入本地 data。 | cloneJsonSafe(patch) · applyDataPatch(data, patch) |
-| 本地 observer 先执行 | | service 侧的组件定义里有 observers 和 property observer。setData 后按变更路径匹配 observer，property observer 还会收到旧值。 | runObservers(instance, observers, changedPaths, oldData) |
-| 发送 data.setData | | 页面更新带 pageId，组件更新带 componentId。Bridge 会把同一来源、同一页面的事件攒起来，在下一个 microtask 发出。 | sendEvent('data', 'setData', { componentId, patch }) |
-| render 应用更新 | | render 找到页面或组件实例并执行 setData。adapter 用 beginServicePatch/endServicePatch 标出这次变化来自 service，避免 observer 再执行一遍。 | adapter.beginServicePatch(component) → component.setData(patch) |
-| render 侧变化回流 | | 组件 data 变化会触发 runtime.componentData；schema 里声明的 observer 还会触发 runtime.componentObserved。service 同步 data，需要时再用旧值执行 observer。 | runtime.componentData / runtime.componentObserved |
+| title | detail | code |
+| --- | --- | --- |
+| 写入逻辑树 | 页面或组件调用 setData 时，先做 cloneJsonSafe，再按 a.b、list[0] 这样的路径写入 service 的 data。 | cloneJsonSafe(patch) · applyDataPatch(data, patch) |
+| 执行 observer | service 侧的 observers 和 property observer 按变更路径匹配执行；property observer 会收到旧值。 | runObservers(instance, observers, changedPaths, oldData) |
+| 重新求值模板 | 逻辑树里的 glass-easel 重新计算模板，得到新的虚拟 RenderNode。 | logicTree.updateRenderTree(pageId) |
+| diff 出 patch | 旧快照和新快照按 text、replace、props、insert、remove、reorder、extra 做 diff，同一个 microtask 内的更新会合批。 | diffRenderTree(previous, next) |
+| 渲染树应用 patch | 宿主 TreeRenderer 把 patch 应用到真实组件和 DOM；service 不等待 render 的确认。 | tree.patch |
 :::
 
 :::::split
@@ -197,12 +196,12 @@ Component({
 ::::
 
 ::::stack
-:::card{title="不合并字段，也没有渲染完成回调"}
-每次 setData 都会生成一条更新消息；Bridge 只做帧批处理，不会合并字段。service 也不会等 render 确认。
+:::card{title="没有 render 侧 data 镜像"}
+组件 data、observer 和 property 都只在 service 逻辑树里。render 只收到节点 props 和 patch，不保存第二份小程序 data。
 :::
 
-:::card{title="observer 在 service 执行"}
-render 负责发现变化并上报 `componentObserved`，真正的 observer 逻辑在 service 执行。property observer 的参数是 `(newValue, oldValue)`。
+:::card{title="observer 只在 service 执行"}
+render 发现 DOM 事件后把 node id 和 native 字段发回 service；事件处理、setData、observer 和模板求值都在逻辑树完成。
 :::
 
 :::card{title="递归和异常都有诊断" tone="warn"}
@@ -211,18 +210,17 @@ observer 递归深度上限是 20，超过会产生 `OBSERVER_RECURSION_LIMIT`�
 ::::
 :::::
 
-## 事件要跨线程走一个来回 {#events kicker="事件"}
+## 事件从渲染树回到逻辑树 {#events kicker="事件"}
 
-render 侧先把事件序列化，再交给 service 调用处理函数；service 侧的 triggerEvent 反过来经过 render。
+渲染树只负责把真实 DOM 事件转成 `tree.event`：带 node id、事件名、detail、native 字段和 touch 列表。service 用 node id 找到逻辑节点，取出带类型的 dataset，再走 glass-easel 的捕获/冒泡。
 
 :::sequence
-| title | actor | detail | code |
-| --- | --- | --- | --- |
-| glass-easel 处理捕获和冒泡 | | 模板里的 bind/catch 会编译成监听器；glass-easel 完成捕获、target 和冒泡三个阶段，并处理 shadow/slot 边界。 | methodCaller → event listener |
-| adapter 序列化事件 | | 提取 type、detail、timeStamp、bubbles、composed、capture、stopped，以及 target 和 currentTarget 的 id、tag、dataset、class、style。 | serializeEvent(handler, event) |
-| 发送 event.dispatch | | 自定义组件事件会额外带上 componentId、componentPath 和当前 componentData，确保 service 侧组件实例能同步。 | sendEvent('event', 'dispatch') |
-| service 找到接收者 | | 有 pageId 就找页面实例；有 componentId 就先确保组件实例存在、同步 data，再调用方法。 | page.invokeMethod(handler, [event]) |
-| 异常转成诊断 | | 处理函数抛错不会中断线程，而是发送 EVENT_HANDLER_ERROR，带上 handler、eventType 和 pageId。 | sendDiagnostic('error', { code: 'EVENT_HANDLER_ERROR' }) |
+| title | detail | code |
+| --- | --- | --- |
+| 渲染树收到原生事件 | 宿主内置组件和 DOM 监听器先处理点击、输入、滚动、触摸等原生事件，并归一化 detail。 | host event listener |
+| 发送 tree.event | 渲染树按稳定 node id 发出事件；不再传 componentData，也不要求 service 根据 tag 猜事件语义。 | sendEvent('tree', 'event', payload) |
+| service 找到逻辑节点 | 逻辑树按 node id 找到绑定监听器的元素，读取 typed dataset 和 id，执行 capture/bubble。 | logicTree.dispatchViewEvent(payload) |
+| 调用页面或组件方法 | 逻辑树调用对应的方法；抛错会转成 EVENT_HANDLER_ERROR 诊断。 | page.invokeMethod(handler, [event]) |
 :::
 
 :::::split
@@ -230,19 +228,12 @@ render 侧先把事件序列化，再交给 service 调用处理函数；service
 :::card{tag="事件对象" title="service 收到的内容"}
 ```js
 {
-  handler: 'onTap',
-  type: 'tap',
-  timeStamp: 1710000000000,
+  viewId: 'node-42',
+  name: 'tap',
   detail: { ... },
-  bubbles: true,
-  composed: true,
-  capture: false,
-  stopped: false,
-  target: { id, tag, dataset, class, style },
-  currentTarget: { id, tag, dataset, class, style },
-  componentId?: 'component-1',
-  componentPath?: 'components/card/card',
-  componentData?: { ... }
+  native: { clientX: 120, clientY: 80, ... },
+  touches: [ ... ],
+  changedTouches: [ ... ]
 }
 ```
 :::
@@ -253,29 +244,27 @@ render 侧先把事件序列化，再交给 service 调用处理函数；service
 ::::
 
 ::::stack
-:::card{tag="service → render" title="组件 triggerEvent 的回路"}
-service 侧组件实例调用 `triggerEvent(name, detail)`，Bridge 发送 `event.trigger` 到 render，render 再调用 glass-easel 组件的 `triggerEvent`。
-
-如果父级监听器在 render 侧又触发 `event.dispatch`，就形成一次完整往返。
+:::card{tag="组件事件" title="triggerEvent 不再跨线程"}
+自定义组件的 `triggerEvent` 在 service 的逻辑树内部完成捕获和冒泡，不会为了一个自定义事件再走一次 render 往返。
 :::
 
-:::card{tag="原生事件" title="内置组件做了事件归一化"}
-button 把原生 tap 转成小程序 tap，并处理 formType 和 openType；input 处理 input/change/focus/blur/keydown/confirm/composition/selectionchange；scroll-view 处理 scroll/refresher/drag；canvas 转发 touch。
+:::card{tag="内置组件" title="detail 由宿主归一化"}
+button、input、scroll-view、swiper、canvas 等内置组件把原生字段归一化成小程序 detail；service 只负责分发，不再按 tag 合成领域事件。
 :::
 ::::
 :::::
 
-## Behavior、observer、relation 和组件树 {#components kicker="组件语义"}
+## 组件定义、observer、relation 都在逻辑树 {#components kicker="组件语义"}
 
-service 侧维护完整的组件定义、逻辑组件树和关系图，并不只是保存一份 data。
+service 侧维护完整的组件定义、逻辑树和关系图。render 只保留组件容器和真实节点。
 
 | 能力 | 实现 | 关键行为 |
 | --- | --- | --- |
-| Behavior | `normalizeComponentDefinition` | 嵌套 behaviors 会去重并检测循环；执行顺序是被引用 behavior → 引用者 → 组件；组件覆盖 properties/methods/data |
+| Behavior | `normalizeComponentDefinition` | 嵌套 behaviors 去重并检测循环；执行顺序是被引用 behavior → 引用者 → 组件；组件覆盖 properties/methods/data |
 | component-export | `wx://component-export`（scheme 可配置）+ export() | selectComponent 返回 export() 的结果，而不是组件实例 |
 | observers | `observers` / property observer | 支持对象/数组写法、逗号分隔的多路径、** 和 .** 通配；property observer 收到旧值；递归上限 20 |
 | relations | `RelationManager` + `ComponentTree` | parent / child / ancestor / descendant；双方都声明才会建立；支持 linked / unlinked / linkChanged / linkFailed |
-| 选择器 | `selectComponent` / `selectAllComponents` / `selectOwnerComponent` | 默认不穿透组件边界；>>> 可以显式穿透；结果按树中的顺序返回 |
+| 选择器 | `selectComponent` / `selectAllComponents` / `selectOwnerComponent` | 默认不穿透组件边界；>>> 可以显式穿透；结果按逻辑树顺序返回 |
 | 组件型页面 | `MiniProgramPageInstance` + 整理后的定义 | query 按 property 类型转换；执行 created/attached/ready/detached；页面根也会进入逻辑树 |
 
 :::::split
@@ -289,84 +278,87 @@ service 侧维护完整的组件定义、逻辑组件树和关系图，并不只
 :::card{tag="relations" title="双方声明才会建立关系"}
 父组件声明 `child` 时，子组件也要声明对应的 `parent`；祖先和后代同理。只声明一侧不会连上。
 
-attached 触发 linked，detached 触发 unlinked，移动时触发 linkChanged；父级或祖先找不到目标时触发 linkFailed。
+attached 触发 linked，detached 触发 unlinked，移动时触发 linkChanged；父级或祖先找不到目标时触发 linkFailed。组件型页面的 relations 会按 page shadow tree 的 target path 匹配，并手动触发两端的 linked/unlinked。
 :::
 ::::
 
 ::::stack
-:::card{tag="tree" title="逻辑树在 service，真实树在 render"}
-service 的 ComponentTree 记录 pageId、path、tag、id、class、parent 和顺序；render 的 glass-easel 树才是 DOM 的来源。
-
-两边通过 componentLifecycle 里的 parentComponentId/tag/id/class 对齐，page.ready 的组件快照负责补齐首屏。
+:::card{tag="tree" title="逻辑树和渲染树只共享 node id"}
+逻辑树保存 pageId、path、tag、id、class、parent、顺序和虚拟节点；渲染树只保存 node id 到真实组件的映射，不保存组件 data 或 observer。
 :::
 
 :::card{tag="页面生命周期" tone="warn" title="按实例分发"}
-page.show/hide 会遍历 service 里的所有组件实例，逐个调用 pageLifetimes；render 发来的 `componentPageLifetime` 会被忽略，避免重复执行。
+page.show/hide 会遍历 service 里的所有组件实例，逐个调用 pageLifetimes。render 没有 componentPageLifetime 回路，避免重复执行。
 
 generics、definitionFilter 和 pureDataPattern 已接入；componentPlaceholder 仍未实现。
 :::
 
-:::card{tag="样式" title="组件配置也会进入 schema"}
-`multipleSlots`、`virtualHost`、`styleIsolation`、`addGlobalClass` 和 `externalClasses` 会随 componentSchemas 下发，render 用它们注册组件。
+:::card{tag="样式" title="组件配置进入 flow"}
+`multipleSlots`、`virtualHost`、`styleIsolation`、`addGlobalClass` 和 `externalClasses` 会随 component schema/flow 下发给渲染树，渲染树用它们创建组件容器和作用域。
 :::
 ::::
 :::::
 
-## render 适配器如何装配组件 {#render kicker="render 适配"}
+## 渲染树：宿主实现真实组件 {#render kicker="渲染树"}
 
-GlassEaselRuntimeAdapter 是 runtime 内部唯一直接依赖 glass-easel 的地方。
+渲染树由宿主实现。runtime 只定义 `TreeRenderer` 契约：mount、applyPatches、applyStyles、query、measure、inspectTree、observeIntersection、dispose。它不知道 WXML，也不执行 app methods。
 
-::::cards
-:::card{tag="组件空间" title="ComponentSpace + StyleScopeManager"}
-每个 render 线程有一个 ComponentSpace 和一个 StyleScopeManager；页面、组件和内置组件都注册在这里。
+```ts
+export type TreeRenderer = {
+  mount(root: RenderNode): void
+  applyPatches(patches: RenderPatch[]): void
+  applyStyles?(styles: string[]): void
+  setEventSink?(sink: (event: TreeEventPayload) => void): void
+  setPagePath?(pagePath: string): void
+  query?(selector: string, all: boolean): unknown[]
+  measure?(ids: string[]): Record<string, unknown>
+  inspectTree?(): unknown
+  observeIntersection?(request, emit): (() => void) | undefined
+  dispose?(): void
+}
+```
+
+::::cards{layout="three"}
+:::card{tag="Web" title="createGlassRenderTree"}
+`@tiny/host-web-components` 的 Web 渲染树注册真实 `tiny-*` 内置组件，维护 slot、shadow root、class/scope、样式和 DOM；`bootGlassRenderEntry` 负责创建它并安装基础 CSS。
 :::
 
-:::card{tag="定义" title="定义与隔离"}
-页面和组件使用 `defineWithMethodCaller(path)`。组件 options 会写入 multipleSlots、virtualHost、styleScope、extraStyleScope 和 isolation。
+:::card{tag="Native" title="createNativeTreeRenderer"}
+同一个 `TreeRenderer` 契约，把 RenderNode 和 patch 映射到原生视图。目前只有契约和 headless smoke test，没有实际原生宿主。
 :::
 
-:::card{tag="事件代理" title="模板事件怎么找到处理函数"}
-打开 `useMethodCallerListeners` 后，glass-easel 会把模板事件交给 Proxy。核心方法（setData、selectComponent 等）直接透传，其他名字交给 service 处理。
-:::
-
-:::card{tag="宿主" title="资源和画布"}
-`resolveAssetUrl` 会在模板 img/src 和 CSS url() 注册时调用；`canvas.measure` 和 `paint` 由宿主提供，adapter 不直接操作 DOM。
+:::card{tag="Test" title="headless renderer"}
+runtime 单测用 headless renderer 验证整棵树、patch 顺序、node id 和事件回传，不需要 iframe 或 DOM。
 :::
 ::::
 
 :::::split
 ::::stack
-:::card{title="启动顺序"}
-1. `registerStyles`：注册基础样式和 manifest 样式
-2. `setPageComponentOptions`：设置组件型页面的 isolation/options
-3. `registerComponentSchemas`：注册组件定义和 observers
-4. `mountPage`：挂载页面，等待组件树稳定
-
-顺序反了，组件定义就拿不到样式作用域 id。
+:::card{title="首屏：tree.flow"}
+service 把组件定义、create-node、props、children 和 ready 编成 component flow，渲染树按顺序创建真实节点，最后把页面根挂到容器。
 :::
 
-:::card{title="组件树稳定后发 page.ready"}
-`whenRendered()` 会等 backend 完成一次渲染。如果页面声明了 usingComponents，还要等组件数量稳定，再生成组件快照返回给宿主。宿主把它并入 `page.ready`。
+:::card{title="更新：tree.patch"}
+service 对虚拟树做 diff，渲染树只应用 text、replace、props、insert、remove、reorder、extra。patch 按 pageId 合批，保持页面内顺序。
 :::
 ::::
 
-:::card{tag="元素树" title="元素树导出"}
-如果 backend 返回 DOM，就按 DOM 序列化；否则退回 glass-easel 逻辑树（shadowRoot/childNodes）。
+:::card{tag="元素树" title="inspectTree"}
+渲染树按自己的真实组件树返回 `InspectNode`，包括 tag、attributes、className、style 和 children；宿主和 devtool 通过 `runtime.inspectTree` 读取。
 
 - 最多 2000 个节点
 - 最大深度 60
 - 文本截断到 200 个字符
-- 组件节点当前用 `wx-host` 标记，待 glass-easel 提供配置后切换为 `tiny-host`
 :::
 :::::
 
 :::callout{title="render 不负责业务路由"}
-render 会响应 `runtime.bootstrap`、`page.navigateTo`、`page.navigateBack`、`page.switchTab`、`runtime.inspectTree` 以及 data/event/canvas 消息。devtool 会给每个页面维护独立的 render 帧；tabBar 由宿主绘制，service 只负责投影状态。
+渲染树不保存页面栈，也不决定页面切换。它只响应宿主转发的 tree flow/patch、query/canvas 控制和 inspectTree，并把事件按 node id 回传 service。
 :::
 
-## 23 个内置组件，已经比较接近 WebView {#builtins kicker="内置组件"}
+## 23 个内置组件由宿主提供 {#builtins kicker="内置组件"}
 
-内置组件模板在构建期生成 ProcGen，样式按组件拆分后再合成 24 份 stylesheet；每个组件共用一组 behaviors。
+内置组件不再是 service 里的玻璃组件，也不是 render 里重新求值的 WXML；service 只输出语义 tag，宿主把它们映射成真实内置组件。
 
 ::::cards{layout="three"}
 :::card{tag="AOT" title="模板和样式"}
@@ -375,130 +367,112 @@ render 会响应 `runtime.bootstrap`、`page.navigateTo`、`page.navigateBack`�
 生成物在 `hosts/web-components/src/generated`，不提交到仓库。
 :::
 
-:::card{tag="behaviors" title="共享 behaviors"}
-`tiny-base`、`tiny-hover`、`tiny-label-target`、`tiny-disabled`、`tiny-data-component`、`tiny-group`、`tiny-item`、`tiny-size-normalizer`、`tiny-class-prefix`。
-
-id 前缀跟随 naming 配置。
+:::card{tag="host-owned" title="Web 内置组件"}
+`@tiny/host-web-components` 用真实 `tiny-*` 自定义元素实现 view/button/input/textarea/picker 等组件，并维护 behaviors、默认 CSS、事件归一化和 canvas surface。
 :::
 
-:::card{tag="默认可用" title="不需要写 usingComponents"}
-宿主注入内置组件后，它们会默认挂到每个页面和组件上，即使页面没有声明自定义组件也能使用。
-
-提供方是 `RenderThreadOptions.builtinComponents`；自定义组件同名时会被页面声明覆盖。
+:::card{tag="semantic" title="service 只发语义 tag"}
+逻辑树里的内置节点是语义虚拟节点，不带 Web/native 实现。无论宿主是 Web 还是原生，service 发出的是 `view`、`button`、`checkbox-group` 这类小程序 tag。
 :::
 ::::
 
-| 组件 | 当前支持的接口 | 实现方式 |
+| 组件组 | 当前支持 | 实现方式 |
 | --- | --- | --- |
-| view / text / label | hover、inline、selectable、decode、space、aria；label for | 真实 tiny-* 宿主 + slot；hover 监听宿主 touchstart |
-| button | type/size/plain/loading/disabled、formType submit/reset、openType 事件映射、hover 时序、aria | 真实 tiny-button 宿主 + 宿主 tap；form/hover behaviors；openType 不支持时发 error 事件 |
-| input | value/type/password/maxlength/focus/confirm/cursor/selection/adjustPosition；input/change/focus/blur/keydown/confirm/composition/selectionchange | 原生 input + dataComponent/classPrefix behaviors |
-| checkbox / radio / switch | checked/disabled/value/color；change/checkboxstate；group change | 自定义 22×22 / 52×32 结构 + 隐藏原生 input；dataComponent/group/item behaviors |
-| slider | value/min/max/step/disabled/colors/blockSize；changing/change | 自定义 track/thumb + 透明的 range 交互层；数值归一化 |
-| scroll-view | scrollX/Y、scrollTop/Left、scrollIntoView、refresher、drag/scroll 事件 | CSS overflow + touch/scroll 事件处理 |
-| swiper / swiper-item | current/currentItemId/indicator/autoplay/circular/vertical；change/transition/animationfinish | CSS transform + 后端查询和 touch 事件 |
-| progress / icon / image | percent/showInfo/active/activeMode/colors、type/size/color、src/mode/webp/background | 模板 + observers；icon 使用内嵌 WeUI 字体和 15 种伪元素；image 用 div 背景图，并用 probe 测量兜底 |
-| canvas | canvas-id/type/disableScroll；touchstart/move/end/cancel/longtap/error | surface 组件；实际绘制由宿主 canvas 适配器完成 |
+| view / text / label / image / icon | hover、inline、selectable、decode、space、aria；label for；图片 mode/background | 真实 tiny-* 宿主 + slot；默认 CSS |
+| button | type/size/plain/loading/disabled、formType、openType 事件映射、hover 时序 | tiny-button + 宿主 tap；form/hover behaviors |
+| input / textarea / picker | value、focus、confirm、selection、composition；picker 列和值 | 原生输入 / 自定义 picker surface |
+| checkbox / radio / switch / slider | checked/disabled/value/color；change/checkboxstate；group change | 自定义 22×22 等结构 + 隐藏原生输入 |
+| scroll-view / swiper | scrollX/Y、scrollTop/Left、refresher、drag/scroll；swiper change/transition | CSS overflow / transform + touch/scroll 监听 |
+| progress / canvas | percent/showInfo/active；canvas-id、2D/WebGL、rAF、createImage、touch | tiny-progress；canvas surface + OffscreenCanvas handoff |
 
-:::callout{title="还不是完整组件库" tone="warn"}
+:::callout{title="仍然不是完整组件库" tone="warn"}
 navigator、video、rich-text、map、movable-view 等还没有实现；已有组件的 open-type、表单提交、无障碍和 Skyline 语义也不完整。
 :::
 
-## 除了作用域，还有 styleIsolation {#styles kicker="样式隔离"}
+## 样式：service 算 scope，render 应用 {#styles kicker="样式隔离"}
 
-编译期生成 class/tag 作用域；render 期再按页面或组件的 isolation 配置组合样式。
+样式表按 cascade role 分类（builtin / app / page / component / page-scope / shared）。service 过滤并计算 scope，渲染树把样式应用到真实组件树；内置 CSS 始终归宿主。
 
 | 配置 | 生效范围 | 行为 |
 | --- | --- | --- |
-| 页面 isolation | 页面根 + 子组件 | 默认 shared；显式 isolated/apply-shared/shared 或 styleIsolation 配置优先 |
+| 页面 isolation | 页面根 + 子组件 | 默认 shared；显式 isolated/apply-shared/shared 优先 |
 | 组件 isolated | 组件自身 | 默认值；不接收页面样式 |
-| apply-shared | 组件自身 | 页面样式可以影响组件；组件样式不会反过来影响页面 |
-| shared | 组件自身 + 页面 | 组件的 WXSS 会以页面 scope 重新注册一份，页面也可以使用组件样式 |
-| addGlobalClass | 组件自身 | 等价于 apply-shared；可以通过 JSON 或 options 设置 |
-| externalClasses | 组件根节点 | 把外部 class 透传到组件内部元素 |
+| apply-shared | 组件自身 | 页面样式可以影响组件；组件样式不影响页面 |
+| shared | 组件自身 + 页面 | 组件样式按页面 scope 重新生成一份 |
+| addGlobalClass | 组件自身 | 等价 apply-shared；可由 JSON 或 options 设置 |
+| externalClasses | 组件根节点 | 把外部 class 透传到组件内部 |
 
 ::::split
-:::card{title="注册顺序"}
-- 基础样式以 global scope 注册
-- manifest.styles 逐份注册，scope 来自 style.scope
-- 共享组件样式按页面 scope 重新写入
-- 最后注册页面和组件定义
+:::card{title="逻辑树负责"}
+- 读取 manifest.styles 的 role 和 scope
+- 注册 glass-easel 逻辑树样式
+- 在 tree.flow 里带页面/组件样式文本和 fallback app 样式
 :::
 
-:::card{title="命名和低优先级样式"}
-tag marker 和 `hostAttribute` 跟随 naming；`page` 根节点不加 marker。CLI 仍会写 `*.low.css`，但目前没有启用 `convertHost`，runtime 也只加载普通 CSS。
-
-`:host` 的组合和优先级还没有系统整理。
+:::card{title="渲染树负责"}
+- 应用 flow 里的样式
+- 维护真实组件的 scope 和 class marker
+- 用样式作用域渲染内置组件和自定义组件容器
 :::
 ::::
 
-:::callout{title="app.wxss 仍然是全局样式"}
-app.wxss 不带 scope，按 globalScope 注册。页面的 styleIsolation 只决定组件是否接收页面样式，不会把 app.wxss 变成组件的局部样式。
+:::callout{title="低优先级 CSS 还没有启用"}
+CLI 仍会写 `*.low.css`，但目前没有启用 `convertHost`，runtime 也不会加载它。`:host` 组合和优先级还没有系统整理。
 :::
 
-## 画布由宿主提供，内核只定义消息 {#canvas kicker="Canvas 与动画"}
+## Canvas、查询和相交观测 {#canvas kicker="Canvas 与查询"}
 
-canvas 已经从核心 runtime 移出：service 和 render 只接收适配器，浏览器实现放在 hosts/browser。
+canvas 已经从核心 runtime 移出。service 通过 `ServiceCanvasAdapter` 取得 OffscreenCanvas 控制面，渲染树提供画布 surface 和测量；selector query 和 IntersectionObserver 通过 `query` 控制面回到真实 DOM。
 
 :::::split
 ::::stack
-:::card{tag="service 适配器" title="离屏绘制"}
-`ServiceCanvasAdapter.createLegacyCanvasContext` 提供旧版 canvas API，`createCanvasNode` 为 SelectorQuery 构造节点。
-
-浏览器实现会创建一个隐藏 canvas + 2D context，每 50ms 最多生成一次 PNG 快照，通过 `canvas.frame` 发送。
+:::card{tag="Canvas handoff" title="2D / WebGL / RAF"}
+浏览器宿主把 render iframe 的 OffscreenCanvas 通过 postMessage 中继给 service；之后 service 直接持有控制面，支持 2D、WebGL、requestAnimationFrame 和 `createImage`。不再走 PNG 帧镜像。
 :::
 
-:::card{tag="render 适配器" title="测量和绘制"}
-`RenderCanvasAdapter.measure(selector)` 返回宽高，`paint(frame)` 把 PNG 画到可见的 `canvas[canvas-id]` 上。
-
-核心 runtime 里不再出现 `document` 或 `Image`。
+:::card{tag="SelectorQuery" title="在渲染树里查节点"}
+`createSelectorQuery` 把 selector、page/component 作用域和 all 发给渲染树；宿主返回 rect、dataset 和 scroll。`.node()` 仍走 canvas handoff，并支持组件作用域下的样式 class。
 :::
 ::::
 
 ::::stack
-:::card{tag="SelectorQuery" title="跨线程 DOM 查询"}
-`createSelectorQuery` 把选择器发到 render 线程，由宿主注入的 `RenderQueryAdapter` 对真实 DOM 返回 `rect`/`dataset`/`scroll`，并支持组件作用域（`this.createSelectorQuery()`、`.in(component)`）与样式作用域下的原类名选择器。浏览器实现位于 `@tiny/host-browser` 的 `createBrowserRenderQuery()`；canvas 的 `.node()` 仍走宿主 handoff。
+:::card{tag="IntersectionObserver" title="observe / unobserve"}
+service 把 observe 请求和 view id 发给渲染树；Web 宿主用原生 IntersectionObserver，entry 通过 `query.intersection` 事件回到逻辑树。
 :::
 
-:::card{tag="animation" title="目前仍是最终态 CSS"}
-`wx.createAnimation` 会生成链式的 CSS transform/transition；编译期把 `animation` 属性改写成内联 style。
-
-多 step 时序、事件回调和 rAF 都还没有还原。
-:::
-
-:::card{tag="兼容处理" tone="warn" title="浏览器 canvas 兼容"}
-`installBrowserCanvasCompat()` 会在 host-browser 里给 `Object.prototype` 补上空的 add/removeEventListener，避免 ECharts 把普通包装对象当成 DOM 节点。
+:::card{tag="animation" title="仍是最终态 CSS"}
+`wx.createAnimation` 会生成链式的 CSS transform/transition；编译期把 `animation` 属性改写成内联 style。多 step 时序和事件回调还没有还原。
 :::
 ::::
 :::::
 
-## 当前还有哪些限制 {#limits kicker="限制"}
+## 当前限制 {#limits kicker="限制"}
 
-组件语义和宿主抽象已经补上，但下面这些仍是明确缺口。
+两侧树已经接管默认宿主，但下面这些仍是明确缺口。
 
 ::::cards
-:::card{tag="组件" tone="warn" title="componentPlaceholder / 内置 behavior"}
-componentPlaceholder、trait behaviors / chaining API 和大多数微信内置 behavior 仍未实现。遇到不支持的写法会生成诊断，但不会自动降级。
+:::card{tag="协议" tone="warn" title="component flow 只覆盖首屏"}
+目前只有 `define`、`create-node`、`props`、`children` 和 `ready`；后续更新走 virtual node patch。微信还会发送 FLOW_UPDATE、FLOW_SET_DATA、FLOW_DATA_OBSERVER 等，这是协议面差异，不影响常规 UI 更新。
+:::
+
+:::card{tag="事件" tone="warn" title="tree.event 还没有 target geometry"}
+事件只带 node id、name、detail、native 字段和 touches；目标节点的几何信息由 service 侧逻辑节点补足，和微信协议仍有差别。
+:::
+
+:::card{tag="原生" tone="warn" title="原生渲染器只有契约"}
+`createNativeTreeRenderer` 有契约和 headless smoke test，没有实际原生宿主。原生宿主还需要实现 OffscreenCanvas/查询/相交观测等 host 能力。
+:::
+
+:::card{tag="组件" tone="warn" title="componentPlaceholder 等未实现"}
+componentPlaceholder、trait behaviors / chaining API 和大多数微信内置 behavior 仍未实现；generics、definitionFilter、pureDataPattern 已接入。
 :::
 
 :::card{tag="页面" tone="warn" title="页面形态不完整"}
-14 项页面生命周期和 5 个路由 API 已接，分享回调、下拉刷新和退出状态可用；分享菜单 UI、页面栈恢复、页面转场和自定义 tabBar 还缺。子包目前只是路径，没有按需加载。
+14 项页面生命周期和 5 个路由 API 已接，分享回调、下拉刷新和退出状态可用；分享菜单 UI、页面栈恢复、页面转场和自定义 tabBar 还缺。
 :::
 
 :::card{tag="API" tone="warn" title="API 覆盖有限"}
 目前支持 storage、导航、system、toast、animation、canvas 和 selector query；request、媒体、文件、账号、位置、WebSocket 还没有。
-:::
-
-:::card{tag="render 模式" tone="warn" title="单 render 模式返回会重建页面"}
-每页 render 模式会保留每个页面的 DOM；单 render 模式共用一个 render 线程，返回时需要重新挂载。单 render 模式下 navigateBack 也不会重新下发组件快照。
-:::
-
-:::card{tag="canvas" tone="warn" title="离屏镜像不是交互 canvas"}
-没有 canvas rAF、完整 2D API，也没有从原生触摸到 service 的完整链路。内置 canvas 的 touch 事件目前主要停留在组件层。
-:::
-
-:::card{tag="宿主" tone="warn" title="浏览器之外还没有宿主"}
-runtime 已经不依赖浏览器全局，但还没有 native transport 和 backend；原生宿主需要自己提供 canvas 适配器。
 :::
 ::::
 

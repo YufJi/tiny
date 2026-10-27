@@ -4,9 +4,9 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderThread } from '../src/render'
-import { bootServiceThread } from '../src/service'
-import type { InspectNode } from '../src/glass-easel-adapter'
+import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { bootServiceThread } from './helpers/split-service'
+import type { InspectNode } from '../src/types'
 
 const PAGE_PATH = 'pages/index/index'
 const GROUP_PATH = 'components/group/group'
@@ -65,7 +65,7 @@ function createManifest(options: {
   return {
     schemaVersion: 2,
     runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
-    entries: { service: 'service.js', render: 'render.js', templates: 'templates.js' },
+    entries: { service: 'service.js', templates: 'templates.js' },
     pages: [artifact(PAGE_PATH, 'page', { usingComponents: options.pageUsing })],
     components: [
       artifact(GROUP_PATH, 'component', {
@@ -103,7 +103,6 @@ async function boot(options: {
     transport: renderTransport,
     manifest,
     artifacts: { templates: createTemplateRegistry(options.pageMarkup) },
-    backend: new glassEasel.EmptyBackendContext(),
     initialPath: PAGE_PATH,
   })
   const host = createTinyRuntime({
@@ -146,7 +145,7 @@ describe('componentGenerics (abstract nodes)', () => {
       },
     })
 
-    const paths = [...service.componentInstances.values()].map((component) => component.path)
+    const paths = (render.adapter.getComponentSnapshot() as Array<{ path: string }>).map((component) => component.path)
     expect(paths).toContain(RADIO_PATH)
     expect(collectText(render.adapter.inspectTree())).toContain('hello')
     await host.close()
@@ -169,7 +168,7 @@ describe('componentGenerics (abstract nodes)', () => {
       },
     })
 
-    const paths = [...service.componentInstances.values()].map((component) => component.path)
+    const paths = (render.adapter.getComponentSnapshot() as Array<{ path: string }>).map((component) => component.path)
     expect(paths).toContain(RADIO_PATH)
     expect(collectText(render.adapter.inspectTree())).toContain('fallback')
     await host.close()

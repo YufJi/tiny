@@ -4,9 +4,9 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderThread } from '../src/render'
-import { bootServiceThread } from '../src/service'
-import type { InspectNode } from '../src/glass-easel-adapter'
+import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { bootServiceThread } from './helpers/split-service'
+import type { InspectNode } from '../src/types'
 
 const PAGE_PATH = 'pages/index/index'
 const COMPONENT_PATH = 'components/pure/pure'
@@ -51,7 +51,7 @@ function createManifest(componentEffective: Record<string, unknown>): Manifest {
   return {
     schemaVersion: 2,
     runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
-    entries: { service: 'service.js', render: 'render.js', templates: 'templates.js' },
+    entries: { service: 'service.js', templates: 'templates.js' },
     pages: [page],
     components: [component],
     styles: [],
@@ -100,7 +100,6 @@ async function boot(componentEffective: Record<string, unknown>) {
     transport: renderTransport,
     manifest,
     artifacts: { templates: createTemplateRegistry() },
-    backend: new glassEasel.EmptyBackendContext(),
     initialPath: PAGE_PATH,
   })
   const host = createTinyRuntime({
@@ -132,7 +131,10 @@ describe('pureDataPattern', () => {
   test('keeps matching fields out of WXML while service data and observers still see them', async () => {
     const { host, service, render } = await boot({})
     expect(collectText(render.adapter.inspectTree())).toEqual(['shown'])
-    const component = service.componentInstances.get('page-1:component-1')!
+    const component = render.adapter.getMountedComponentByComponentId('page-1:component-1') as {
+      data: Record<string, unknown>
+      setData: (data: Record<string, unknown>) => void
+    }
     expect(component.data._hidden).toBe('secret')
 
     component.setData({ _hidden: 'next' })
@@ -156,7 +158,6 @@ describe('pureDataPattern', () => {
       transport: renderTransport,
       manifest,
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: PAGE_PATH,
     })
     const host = createTinyRuntime({
@@ -174,7 +175,7 @@ describe('pureDataPattern', () => {
     await host.bootstrap()
     await new Promise((resolve) => setTimeout(resolve, 10))
     expect(collectText(render.adapter.inspectTree())).toEqual(['shown'])
-    expect(service.componentInstances.get('page-1:component-1')!.data._hidden).toBe('secret')
+    expect((render.adapter.getMountedComponentByComponentId('page-1:component-1') as { data: Record<string, unknown> }).data._hidden).toBe('secret')
     await host.close()
   })
 })

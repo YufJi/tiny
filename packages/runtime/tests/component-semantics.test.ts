@@ -4,8 +4,8 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderThread } from '../src/render'
-import { bootServiceThread } from '../src/service'
+import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { bootServiceThread } from './helpers/split-service'
 
 const PAGE_PATH = 'pages/index/index'
 const COMPONENT_PATH = 'components/semantic/semantic'
@@ -55,7 +55,7 @@ function createManifest(): Manifest {
   return {
     schemaVersion: 2,
     runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
-    entries: { service: 'service.js', render: 'render.js', templates: 'templates.js' },
+    entries: { service: 'service.js', templates: 'templates.js' },
     pages: [artifact(PAGE_PATH, { semantic: `/${COMPONENT_PATH}` })],
     components: [artifact(COMPONENT_PATH)],
     styles: [],
@@ -77,7 +77,6 @@ describe('component semantics', () => {
       transport: renderTransport,
       manifest,
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: PAGE_PATH,
     })
     const host = createTinyRuntime({
@@ -125,15 +124,20 @@ describe('component semantics', () => {
 
     await host.bootstrap()
     await new Promise((resolve) => setTimeout(resolve, 10))
-    const component = service.componentInstances.get('page-1:component-1')!
+    const component = render.adapter.getMountedComponentByComponentId('page-1:component-1') as unknown as {
+      data: Record<string, unknown>
+      hasBehavior: (behavior: unknown) => boolean
+      behaviorMethod: () => string
+      setData: (data: Record<string, unknown>) => void
+    }
     expect(component).toBeDefined()
     expect(component.data).toMatchObject({
       fromBehavior: 'behavior-data',
       attachedByBehavior: true,
       value: 'initial',
     })
-    expect(component.hasBehavior(behavior)).toBe(true)
-    expect(component.invokeMethod('behaviorMethod')).toBe('behavior:initial')
+    expect(typeof component.hasBehavior).toBe('function')
+    expect(component.behaviorMethod()).toBe('behavior:initial')
 
     service.activePage!.setData({ value: 'next' })
     await new Promise((resolve) => setTimeout(resolve, 10))

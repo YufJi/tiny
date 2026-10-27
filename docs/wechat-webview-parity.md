@@ -2,7 +2,7 @@
 
 > **快照**：2026-10-27（第十四次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
 >
-> **结论**：加权功能对齐约 **48.8%（47–51%）**；页面启动率 92.3%；生产可替换 < 20%
+> **结论**：加权功能对齐约 **48.9%（47–51%）**；页面启动率 92.3%；生产可替换 < 20%
 >
 > **维护**：功能完成后更新本文的评分表、覆盖表、实测数据和变更记录
 
@@ -10,7 +10,7 @@
 
 ## 1. 结论摘要
 
-- 按微信 WebView 版全量能力计算，当前引擎约完成 **一半**：加权得分 **48.80%**。
+- 按微信 WebView 版全量能力计算，当前引擎约完成 **一半**：加权得分 **48.90%**。
 - 能力结构仍然偏科：**编译/渲染约 75%，框架约 86%，内置组件约 55%，平台 API 约 14%，页面形态约 25%**。
 - 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent`、`generics`、`definitionFilter`、`pureDataPattern` 均已落地，Component-as-page 也接入了同一套核心语义；UI 库的核心语义障碍基本移除，剩余缺口主要是 npm 构建、`componentPlaceholder` 与内置 behaviors。
 - 内置组件已完成宿主迁移、P0 视觉重写和 P1 内部结构收口：23 个标签为真实 `tiny-*` 宿主，采用 Flat DOM + scoped CSS 隔离公开宿主与私有内部实现；checkbox/radio/switch/slider/icon/image/picker/picker-view 已按 2.7.0 参考实现重写；input/textarea/button/form 完成 wrapper/分支/语义补强，scroll-view 接受 native 滚动近似。
@@ -73,13 +73,13 @@
 | 编译/构建 | 10% | 75% | 7.50 | WXML/WXSS/WXS 基本完整；app.wxss 的 tag/class 规则可作用到页面与内置宿主；app.json 只消费少量字段；无 npm 构建、无 TS 类型检查 |
 | 框架运行时 | 18% | 86% | 15.48 | 14/14 页面生命周期、7/7 应用生命周期、5/5 路由；generics/definitionFilter/pureDataPattern 已接；tab 页缓存、group/label/touchtrack/scroller 基础保持；componentPlaceholder 未接 |
 | 内置组件 | 17% | 55% | 9.35 | 23/60 标签；P0 视觉完成，P1 内部结构大幅收口；canvas 2D/WebGL 已接真实 context；已统计属性 118/146、事件 44/46 |
-| wx API | 20% | 13.7% | 2.74 | 69/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar/switchTab/redirectTo/reLaunch/下拉刷新等已接或桩 |
+| wx API | 20% | 14% | 2.80 | 70/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar/switchTab/redirectTo/reLaunch/下拉刷新/IntersectionObserver 等已接或桩 |
 | 页面形态 | 12% | 25% | 3.00 | devtool 宿主已实现导航栏/tabBar/页面滚动/触底/tab 页缓存，浏览器宿主已接下拉刷新手势；分享菜单 UI、页面转场、测试/生产宿主页面 chrome 仍缺，评分保守 |
 | 样式/渲染 | 8% | 76% | 6.08 | WXSS/rpx/作用域强；app.wxss tag/class 规则作用到页面与共享组件；canvas 2D/WebGL/RAF 已接，导出 API 仍缺 |
 | 宿主/平台 | 8% | 15% | 1.20 | 仅浏览器宿主；无原生/网络/登录/支付/分享 |
 | 开发工具 | 4% | 45% | 1.80 | 应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar、移动端访问提示；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 55% | 1.65 | 207 单测 + 51 步浏览器验收；新增 tabBar/视觉结构、应用列表/LRU/页面栈上限、移动端提示页断言；无性能/安全/原生测试 |
-| **合计** | **100%** | — | **48.80%** | |
+| 质量/验证 | 3% | 56% | 1.68 | 221 单测 + 52 步浏览器验收；新增 tabBar/视觉结构、应用列表/LRU/页面栈上限、移动端提示页断言；无性能/安全/原生测试 |
+| **合计** | **100%** | — | **48.90%** | |
 
 ### 条目覆盖率速览
 
@@ -87,7 +87,7 @@
 | --- | ---: | ---: | ---: |
 | 内置组件标签 | 60 | 23 | 38.3% |
 | 核心 UI 组件 | 45 | 23 | 51.1% |
-| wx API 条目 | 502 | 69 | 13.7% |
+| wx API 条目 | 502 | 70 | 13.9% |
 | 官方 demo 实际调用 API | 150 | ~35 | ~23% |
 | 页面生命周期 | 14 | 14 | 100% |
 | 应用生命周期 | 7 | 7 | 100% |
@@ -96,7 +96,7 @@
 | 已统计组件事件 | 46 | 44 | 95.7% |
 | app.json 关键字段 | 20+ | 4 | ≈20% |
 
-> API 的 69 个 = 67 个 core service API + 2 个宿主扩展（`getMenuButtonBoundingClientRect`、`getPerformance`）；不含命名空间、同步/异步别名去重后的额外条目。
+> API 的 70 个 = 68 个 core service API + 2 个宿主扩展（`getMenuButtonBoundingClientRect`、`getPerformance`）；不含命名空间、同步/异步别名去重后的额外条目。
 >
 > 自定义组件核心语义本次盘点 **11 / 12**：已实现 behaviors、observers、relations、externalClasses、styleIsolation/addGlobalClass、selectComponent/selectAll/selectOwner、multipleSlots/virtualHost、component-export/export、generics（`componentGenerics` + `generic:`）、definitionFilter、pureDataPattern；仍缺 `componentPlaceholder`（异步占位；当前编译是 eager，不会被触发）。该口径只统计核心 12 项，不含 trait/chaining、内置 `wx://form-field`、Component-as-page 等边缘项；不参与上面的加权总分。
 
@@ -164,7 +164,7 @@
 
 ### 4.2 wx API
 
-**69 / 502 ≈ 13.7%；官方 demo 实际用到的 150 个唯一 `wx.*` 中约支持 35 个（~23%）。**
+**70 / 502 ≈ 13.9%；官方 demo 实际用到的 150 个唯一 `wx.*` 中约支持 35 个（~23%）。**
 
 能力分布：
 
@@ -189,7 +189,7 @@
 关键代码入口：
 
 - 服务 API：[service/api-host.ts](../packages/runtime/src/service/api-host.ts:1)
-- 宿主 API：[host-api.ts](../packages/runtime/src/host-api.ts:1)、[hosts/browser/api-handlers.ts](../hosts/browser/src/api-handlers.ts:1)
+- 宿主 API：[host/api.ts](../packages/runtime/src/host/api.ts:1)、[hosts/browser/api-handlers.ts](../hosts/browser/src/api-handlers.ts:1)
 - 不支持 API 的降级：`wx` Proxy 返回 `undefined` + `UNSUPPORTED_API` warning（[service/api-host.ts](../packages/runtime/src/service/api-host.ts:1)）
 
 > 降级策略是“静默 undefined”，不是抛错。页面不会立刻崩，但失败会推迟到调用方 `.then`/属性访问时才暴露，排查成本高。
@@ -319,9 +319,9 @@ Shadow DOM：
 2026-10-27 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
-- **207 个单元测试**（runtime 83 个，host-web-components 31 个）
+- **221 个单元测试**（runtime 92 个，host-web-components 35 个）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
-- **51 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧，canvas 覆盖 2D/WebGL/legacy/ECharts
+- **52 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧，canvas 覆盖 2D/WebGL/legacy/ECharts
 - 门禁覆盖的 5 段流程无 console/page error（117 页探针的 pageerror 见 5.2）
 
 这说明现有能力是**真实可运行**的，不是纸面设计。
@@ -354,7 +354,7 @@ Shadow DOM：
 
 ### 5.3 官方 demo API 覆盖
 
-从 `tests/apps/wechat-demo` 源码中提取到 **150 个唯一 `wx.*` 调用**，引擎约支持 **35 个（~23%）**；服务 API 总面 69/502：
+从 `tests/apps/wechat-demo` 源码中提取到 **150 个唯一 `wx.*` 调用**，引擎约支持 **35 个（~23%）**；服务 API 总面 70/502：
 
 ```text
 getSystemInfo / getSystemInfoSync / getStorageSync / setStorageSync
@@ -362,7 +362,7 @@ getStorage / setStorage / removeStorage / clearStorage / getStorageInfo
 navigateTo / navigateBack / request / getNetworkType / getBatteryInfo
 showToast / showLoading / hideLoading / showModal / showActionSheet
 setClipboardData / getClipboardData / vibrateShort / vibrateLong
-getSetting / openSetting / login / checkSession / canIUse / nextTick
+getSetting / openSetting / login / checkSession / canIUse / nextTick / createIntersectionObserver
 switchTab / setTabBarStyle / setTabBarItem / setTabBarBadge / showTabBar / hideTabBar
 onThemeChange / offThemeChange / hideToast / getFileSystemManager
 createAnimation / createCanvasContext / createSelectorQuery
@@ -519,7 +519,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 
 1. **跑门禁**：确认单测/浏览器验收仍通过；记录测试数量与步骤数。
 2. **重数组件与组件语义**：对照[微信组件文档](https://developers.weixin.qq.com/miniprogram/dev/component/)与 [tags.ts](../hosts/web-components/src/tags.ts:1)，更新 23/60、分类表、属性/事件表；同时按第 4.5 节更新 behaviors/observers/relations/styleIsolation/selectComponent 状态。
-3. **重数 API**：对照[微信 API 索引](https://developers.weixin.qq.com/miniprogram/dev/api/)与 [service.ts](../packages/runtime/src/service.ts:320) + [service-thread.ts](../tests/host/src/service-thread.ts:1) 的 `apiExtensions`，更新 69/502、能力表。
+3. **重数 API**：对照[微信 API 索引](https://developers.weixin.qq.com/miniprogram/dev/api/)与 [service.ts](../packages/runtime/src/service.ts:320) + [service-thread.ts](../tests/host/src/service-thread.ts:1) 的 `apiExtensions`，更新 70/502、能力表。
 4. **重数生命周期/路由/配置**：对照第 4.3、4.4 节逐项打勾。
 5. **重跑 117 页探针**：按 5.2 节方法，更新启动率与失败明细；若后续把探针整理为 `scripts/parity-probe.mjs`，改用该脚本并在此处替换命令。
 6. **重算总分**：更新第 3 节表格的完成度/加权分；如果权重调整，在变更记录中说明。
@@ -568,14 +568,14 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-26 | 第十三次校准：canvas 2D/WebGL 通过 OffscreenCanvas handoff 接入真实同步 context；117 页探针 100→108 启动、104 可见、9 失败；51 步浏览器验收；总分 44.23→44.67 | **44.67%** |
 | 2026-10-27 | 样式边界收口：app 全局规则按应用 marker 锚定，page-scope 模板同步保护 `*`/tag/id/裸伪类；内置组件拆分公开 host 样式与独立 `tiny-builtin-<tag>` 私有样式，降低 app/page/component 规则对内部 DOM 的穿透；`placeholder-class` 改为 external class；P0 增加全局泄漏与受控穿透断言，总分暂未重算 | **44.67%** |
 | 2026-10-27 | 第十四次同步：`generics`（componentGenerics + generic:）、`definitionFilter`、`pureDataPattern` 落地；`redirectTo`/`reLaunch`、下拉刷新、分享/收藏/退出状态回调、`onError`/`onPageNotFound`/`onUnhandledRejection`/`onThemeChange` 接入；页面生命周期 9→14/14、应用生命周期 3→7/7、路由 3→5/5、组件语义 8→11/12；runtime 83 单测，总分 44.67→48.80 | **48.80%** |
-
+| 2026-10-28 | 第十五次校准：IntersectionObserver 桥接、split-tree 运行路径、Vant/WeUI fixture；221 单测 / 52 步；117 页探针保持 108 启动、104 可见、9 失败；总分 48.80→48.90 | **48.90%** |
 ---
 
 ## 附录 A：117 页失败明细
 
 | 页面 | 诊断码 | 报错 |
 | --- | --- | --- |
-| `packageComponent/pages/view/scroll-view/scroll-view` | BOOTSTRAP_ERROR | `this.animate is not a function` |
+| `packageComponent/pages/view/scroll-view/scroll-view` | BOOTSTRAP_ERROR | `D is not a function` |
 | `packageComponent/pages/open/ad/ad` | BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'expt_args_2')` |
 | `packageAPI/pages/page/intersection-observer/intersection-observer` | BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'relativeTo')` |
 | `packageAPI/pages/device/bluetooth/bluetooth` | RENDER_BOOTSTRAP_ERROR | `D is not a function` |
@@ -624,13 +624,13 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 内置组件默认样式 | [styles/index.css](../hosts/web-components/src/styles/index.css:1) |
 | service API 宿主 | [service/api-host.ts](../packages/runtime/src/service/api-host.ts:1) |
 | 不支持 API 的降级 | [service/api-host.ts](../packages/runtime/src/service/api-host.ts:1) |
-| 宿主 API（toast/storage/navigate） | [host-api.ts](../packages/runtime/src/host-api.ts:1)、[browser api-handlers.ts](../hosts/browser/src/api-handlers.ts:1) |
+| 宿主 API（toast/storage/navigate） | [host/api.ts](../packages/runtime/src/host/api.ts:1)、[browser api-handlers.ts](../hosts/browser/src/api-handlers.ts:1) |
 | 组件 schema（data/properties/using + semantics metadata） | [component-schema.ts](../packages/runtime/src/component-schema.ts:5) |
 | Behavior 合并 / 组件定义规范化 | [component-definition.ts](../packages/runtime/src/component-definition.ts:115) |
 | 组件树与选择器 | [component-tree.ts](../packages/runtime/src/component-tree.ts:35) |
 | observers 匹配与调用 | [observers.ts](../packages/runtime/src/observers.ts:13) |
 | relations 链接管理 | [relation-manager.ts](../packages/runtime/src/relation-manager.ts:29) |
-| 组件注册（properties/externalClasses/options/observers/lifetimes/generics/pureDataPattern） | [glass-easel-adapter.ts](../packages/runtime/src/glass-easel-adapter.ts:463) |
+| 组件注册（properties/externalClasses/options/observers/lifetimes/generics/pureDataPattern） | [tree/logic/glass-easel-adapter.ts](../packages/runtime/src/tree/logic/glass-easel-adapter.ts:1) |
 | definitionFilter / pureDataPattern 归一化 | [component-definition.ts](../packages/runtime/src/component-definition.ts:115) |
 | componentGenerics / pureDataPattern schema | [component-schema.ts](../packages/runtime/src/component-schema.ts:5) |
 | 路由与页面/应用生命周期 | [service.ts](../packages/runtime/src/service.ts:1) |

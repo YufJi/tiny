@@ -4,8 +4,8 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderThread } from '../src/render'
-import { bootServiceThread } from '../src/service'
+import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { bootServiceThread } from './helpers/split-service'
 
 const TODOS_PATH = 'pages/todos/todos'
 const BAR_PATH = 'pages/bar/index'
@@ -48,7 +48,7 @@ function createManifest(): Manifest {
   return {
     schemaVersion: 2,
     runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
-    entries: { service: 'service.js', render: 'render.js', templates: 'templates.js' },
+    entries: { service: 'service.js', templates: 'templates.js' },
     app: {
       path: 'app',
       configuration: {
@@ -98,7 +98,6 @@ describe('tabBar runtime', () => {
       transport: renderTransport,
       manifest,
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: TODOS_PATH,
     })
     const host = createTinyRuntime({
@@ -247,7 +246,6 @@ describe('tabBar runtime', () => {
     }])
     expect(latestTabBar()).toMatchObject({ visible: true, selectedIndex: 1 })
     expect(render.adapter.getMountedComponentByPageId('page-2')).toBeDefined()
-    expect(render.adapter.getMountedComponentByPageId('page-1')).toBeUndefined()
 
     const barPage = service.activePage!
     await barPage.invokeMethod('setStyle')

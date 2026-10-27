@@ -3,12 +3,12 @@ title: '引擎不依赖环境，'
 highlight: '运行环境由宿主提供'
 eyebrow: '宿主适配'
 lede: >-
-  packages/runtime 是宿主无关的内核；浏览器能力放在 @tiny/host-browser，内置组件放在 @tiny/host-web-components。createTinyRuntime 只需要两条 Transport、manifest 和初始页面；createStandaloneDualThreadHost 负责创建 iframe、转移端口、等待就绪并完成握手。canvas、资源 URL、渲染后端和挂载点都通过参数注入。
+  packages/runtime 是宿主无关的内核：service 跑逻辑树，宿主提供渲染树。@tiny/host-browser 负责浏览器线程、端口、canvas handoff 和调试器客户端，@tiny/host-web-components 提供 Web 渲染树与 23 个内置组件。createTinyRuntime 需要 service transport、render connector、manifest 和初始页面；createStandaloneDualThreadHost 负责创建 iframe、转移端口、等待就绪并完成握手。
 stats:
   - ['2', '宿主包']
   - ['1', 'service iframe']
   - ['每页', 'render iframe']
-  - ['4', '注入能力']
+  - ['5', '注入能力']
 pills:
   - ['内核不依赖宿主', 'good']
   - ['canvas 注入', 'good']
@@ -27,9 +27,9 @@ order: 6
 | 层 | 入口 | 环境假设 | 职责 |
 | --- | --- | --- | --- |
 | 内核编排 | `createTinyRuntime(options)` | 不假设有 DOM | 两个 BridgeConnection、HostApiRegistry、诊断仓库和启动顺序 |
-| 线程启动 | `bootServiceThread` / `bootRenderThread` | service 需要 JS 全局；render 需要 glass-easel 后端 | 安装注册表/API、定义组件、响应消息；canvas、资源和 builtinComponents 通过参数注入 |
+| 线程启动 | `bootServiceThread` + `bootTreeThread` / `bootGlassRenderEntry` | service 需要 JS 全局；render 需要 `TreeRenderer` | service 加载 templates 并创建逻辑树；render 消费 tree flow/patch；canvas 和资源由宿主注入 |
 | 浏览器适配 | `@tiny/host-browser` | window、iframe、MessageChannel、document | iframe、端口、DOM canvas、资源 URL、DevtoolRuntimeClient |
-| 内置组件 | `@tiny/host-web-components` | DOM 和 CSS | tiny-* 宿主定义、共享 behaviors、基础 CSS，通过 builtinComponents 注入 render |
+| 渲染树 | `@tiny/host-web-components` | DOM 和 CSS | `createGlassRenderTree`、23 个 tiny-* 内置组件、共享 behaviors 和基础 CSS |
 | 应用宿主 | `tests/host` · `apps/devtool` | 静态资源服务器 / rspack | 选择应用、加载 manifest、提供界面或自动化钩子、调用 bootstrap |
 
 ```text
@@ -38,11 +38,12 @@ order: 6
               v
 @tiny/host-browser                浏览器环境适配
   createStandaloneDualThreadHost
-  canvas-bridge / runtime-port
+  canvas handoff / runtime-port
   DevtoolRuntimeClient
 
-@tiny/host-web-components         内置组件实现
-  webBuiltinComponents（定义 + 基础 CSS）
+@tiny/host-web-components         Web 渲染树
+  createGlassRenderTree（tiny-* + 基础 CSS）
+  bootGlassRenderEntry
               |
               v  createTinyRuntime
 createTinyRuntime                 内核编排
@@ -79,19 +80,19 @@ XMLHttpRequest · WebSocket · fetch · performance
 
 ::::stack
 :::card{tag="内核" title="packages/runtime"}
-导出 types、diagnostics、glass-easel-adapter、service、render 和 host。`canvas`、`resolveAssetUrl`、`backend`、`mountComponent`、`builtinComponents` 都是可选参数。
+导出 types、diagnostics、component、tree（logic/render protocol 与 renderer）、service 和 host。宿主通过 `renderConnector`、`canvas`、`apiHandlers`、`loadTemplates`、`loadStyle` 等选项注入能力。
 :::
 
 :::card{tag="宿主" tone="violet" title="@tiny/host-browser"}
-负责 iframe、MessageChannel、DOM canvas、资源 URL 规则和 `DevtoolRuntimeClient`；tests/host 和 devtool 都从这里导入。
+负责 iframe、MessageChannel、OffscreenCanvas handoff、资源 URL 规则和 `DevtoolRuntimeClient`；tests/host 和 devtool 都从这里导入。
 :::
 
 :::card{tag="组件" tone="violet" title="@tiny/host-web-components"}
-负责 `tiny-*` 宿主定义、behaviors 和基础 CSS；tests/host 与 devtool 会在 render 入口注入 `webBuiltinComponents`。
+负责 Web 渲染树、`tiny-*` 内置组件、behaviors 和基础 CSS；tests/host 与 devtool 的 render 入口调用 `bootGlassRenderEntry`。
 :::
 
 :::card{tag="结果" title="可移植性"}
-原生宿主只要实现 Transport、渲染后端、canvas 适配器、资源解析和宿主 API，不需要假装自己是浏览器。
+原生宿主只要实现 `TreeRenderer`、Transport、canvas handoff、资源解析和宿主 API，不需要假装自己是浏览器。
 :::
 ::::
 :::::
@@ -103,12 +104,14 @@ XMLHttpRequest · WebSocket · fetch · performance
 :::sequence
 | title | detail | code |
 | --- | --- | --- |
-| 创建 MessageChannel | 单 render 模式创建两对端口；每页 render 模式先创建 service 端口，渲染端口等到具体页面创建时再建。 | createHostMessageChannelPair() |
-| 创建 iframe | service iframe 被隐藏（0×0、absolute、opacity 0）；render iframe 填满容器。每页 render 模式下，每新建一个页面就创建一个 render iframe。 | createIframe('tiny-runtime-service-frame', serviceUrl) |
-| 等待线程就绪 | 宿主监听 window message，只接受类型为 tiny-runtime-port-ready、channel 匹配，并且来源是目标 iframe 的消息，最多等 15 秒。 | waitForThreadReady(iframe, 'service') |
-| 转移端口 | 宿主把 port2 作为 transferable 发给对应 iframe，线程再用 createMessagePortTransport 包装成 Transport。 | postMessage({ type: 'tiny-runtime-port' }, '*', [port]) |
-| 创建运行时并握手 | createTinyRuntime 用两条 hostTransport 建立连接，然后并行等待 service 和 render 的握手。 | Promise.all([service.handshake(), render.handshake()]) |
-| 启动首屏 | service 返回 pageId、initialData、componentSchemas 和 pageComponents；render 注册样式和 schema、挂载页面、等组件树稳定后返回组件；宿主再把组件并入 page.ready。 | await runtime.host.bootstrap() |
+| 创建 service 通道 | 宿先创建 service 的 MessageChannel；render 连接由每页 connector 在页面创建时建立。 | createHostMessageChannelPair() |
+| 启动 service iframe | service iframe 被隐藏（0×0、absolute、opacity 0），加载 service.html。 | createIframe(serviceUrl) |
+| 等待 service 就绪 | 宿主监听 tiny-runtime-port-ready，只接受目标 iframe 的消息，最多等 15 秒。 | waitForThreadReady(iframe, 'service') |
+| 转移 service 端口并握手 | 宿主把 port2 交给 service，service 安装 Transport 后完成 runtime.hello。 | postMessage({ type: 'tiny-runtime-port' }, '*', [port]) |
+| service bootstrap | 导入 service.js，安装兼容全局，加载 templates/styles，创建 glass-easel 逻辑树和首屏页面，返回 pageId、initialData 和 componentSchemas。 | service.control('runtime', 'bootstrap') |
+| 创建 render root | 宿主为页面创建 render iframe，render 入口用 `bootGlassRenderEntry` 创建 `createGlassRenderTree` 和宿主内置组件。 | bootGlassRenderEntry({ transport, ... }) |
+| render 就绪，发送首屏 flow | render 收到 bootstrap 后返回 ready；宿主发 `tree.ready`，service 用逻辑树快照发送 `tree.flow`，render 挂载页面根。 | tree.ready → tree.flow |
+| 触发 onReady | 宿主发 `page.ready`，service 触发页面 onReady 并广播 RUNTIME_STATE。 | service.control('page', 'ready', { pageId }) |
 :::
 
 :::::split
@@ -141,73 +144,78 @@ const runtime = await createStandaloneDualThreadHost({
 window.__tinyRuntime = runtime
 await runtime.host.bootstrap()
 
-// render 线程
-bootRenderThread({
-  transport, manifest,
-  artifacts: { templates },
-  backend, initialPath,
-  loadStyle,
+// service 线程：加载模板并创建逻辑树
+bootBrowserServiceEntry({
+  manifest,
+  initialPath,
+  loadTemplates: () => import('/generated/templates.js'),
+  loadArtifacts: () => import('/generated/service.js'),
+  loadStyle: (path) => styles[path] ?? '',
   resolveAssetUrl,
-  canvas: { measure, paint },
-  mountComponent, unmountComponent,
-  builtinComponents: webBuiltinComponents,
+  apiExtensions,
+})
+
+// render 线程：创建宿主渲染树和内置组件
+listenForRuntimePort('render', (transport) => {
+  bootGlassRenderEntry({
+    transport,
+    container: document.getElementById('app'),
+    resolveAssetUrl: (src, sourcePath) => resolveAssetPath(sourcePath, src),
+  })
 })
 ```
 :::::
 
 ## 线程只接收宿主显式传入的参数 {#threads kicker="线程参数"}
 
-service 和 render 不读取 URL，也不读取全局 manifest，所有输入都由宿主传入。
+service 和 render 都不读取 URL，也不读取全局 manifest；所有输入都由宿主传入。
 
 | ServiceThreadOptions | 用途 | 是否必需 |
 | --- | --- | --- |
-| `transport` | 宿主连接 | 是 |
-| `manifest` | 页面路径、组件、样式、运行期兼容信息和诊断 | 是 |
+| `transport` | service 连接 | 是 |
+| `manifest` | 页面、组件、样式、兼容输入和诊断 | 是 |
 | `initialPath` | 首屏页面路径 | 是 |
 | `loadArtifacts` | 在 bootstrap 时导入 service.js，保证 App/Page 已注册 | 实际必需 |
+| `loadTemplates` | 加载 templates.js，供 service 逻辑树求值 | 是 |
+| `loadStyle` | 按 outputPath 返回样式文本，供逻辑树计算样式作用域 | 使用样式时必需 |
 | `apiExtensions` | 注入设备信息和额外的同步 API | 否 |
-| `canvas` | createLegacyCanvasContext / createCanvasNode | 使用 canvas API 时必需 |
-| `capabilities` | 握手元数据，目前没有用于协商 | 否 |
+| `canvas` | 宿主 canvas handoff 与节点获取 | 使用 canvas 时必需 |
+| `resolveAssetUrl` | 把 app-root 资源路径映射成 URL（canvas image 等） | 否 |
+| `maxPageStack` | 页面栈上限，默认 10 | 否 |
 
-| RenderThreadOptions | 用途 | 是否必需 |
+render 线程不再接收 templates、backend 或 builtinComponents；这些都在宿主渲染树里。
+
+| TreeThreadOptions / RenderEntryOptions | 用途 | 是否必需 |
 | --- | --- | --- |
-| `transport` | 宿主连接 | 是 |
-| `manifest` | 页面、样式、组件产物和运行期兼容信息 | 是 |
-| `artifacts.templates` | 从 render.js 导入的 groupList/content | 是 |
-| `backend` | glass-easel GeneralBackendContext | 是 |
-| `initialPath` / `initialData` | 首屏页面和数据；bootstrap 消息里的值优先 | initialPath 必需 |
-| `loadStyle` | 按 outputPath 返回 CSS 文本 | 实际必需 |
-| `resolveAssetUrl` | 把 app-root 资源路径映射成可加载 URL（模板 img / CSS url） | 使用本地资源时必需 |
-| `canvas` | measure / paint 适配器 | 使用 canvas 时必需 |
-| `query` | DOM 查询 + IntersectionObserver 适配器 | 使用 selector query 或组件级 IntersectionObserver 时必需 |
-| `builtinComponents` | 内置组件定义和基础样式 | 使用内置组件时必需 |
-| `mountComponent` / `unmountComponent` | 把根组件挂到宿主节点 | 否；不传时使用 pretendAttached |
-| `onDiagnostic` | 本地诊断回调；跨线程诊断仍走 Bridge | 否 |
+| `transport` | render 连接 | 是 |
+| `renderer` | 宿主 `TreeRenderer`：mount / applyPatches / applyStyles / query / measure / inspectTree | `bootTreeThread` 必需 |
+| `initialPageId` | 这个 render root 对应的页面 | 否 |
+| `container` | Web 渲染树的 DOM 容器 | `bootGlassRenderEntry` 使用 |
+| `resolveAssetUrl` | Web 内置组件解析图片等资源 | 使用本地资源时必需 |
 
 ::::split
 :::card{title="service 线程还要做什么"}
-- 先安装 App/Page/Component/Behavior/getApp 和命名后的 API 全局
+- 先安装 App/Page/Component/Behavior/getApp 和配置后的 API 全局
 - 再导入 service.js，让注册调用按 manifest 顺序发生
-- 在 bootstrap 内 await `loadArtifacts`
-- canvas API 由注入的适配器提供，内核不碰 document
+- 在 bootstrap 内加载 templates/styles，创建 LogicTreeAdapter
+- canvas API 由注入的 adapter 提供，内核不碰 document
 :::
 
 :::card{title="render 线程还要做什么"}
-- 准备一个 glass-easel 后端实例
-- 从 render.js 取出模板 group
-- 按 outputPath 预加载样式文本
-- 把资源路径映射到真实 URL，并能测量和绘制 canvas
-- 提供确定的挂载容器
+- 实现 TreeRenderer（Web 侧 `createGlassRenderTree`）
+- 创建真实内置组件和页面根容器
+- 接收 `tree.flow` / `tree.patch`，维护 node id 到真实组件的映射
+- 提供 query、measure、inspectTree 和 IntersectionObserver
 :::
 ::::
 
-:::callout{title="bootstrap 消息优先于线程参数"}
-render 的 bootstrap 处理器会优先使用消息里的 `manifest`、`initialPath`、`initialData`、`componentSchemas` 和 `pageComponents`；线程参数只是默认值，以及样式、模板和资源的加载来源。
+:::callout{title="bootstrap 之后还有 tree.ready 和 page.ready"}
+service bootstrap 只创建逻辑树并返回 pageId 和 componentSchemas；render bootstrap 只创建渲染根。宿主再发 `tree.ready` 让 service 发送首屏 flow，最后发 `page.ready` 触发 onReady。
 :::
 
 ## 宿主可以注入五类能力 {#injections kicker="注入能力"}
 
-跨线程 API、同步宿主信息、canvas 实现、DOM 查询、资源 URL 各有自己的入口，放错层就会出现“内核偷偷依赖浏览器”的问题。
+跨线程 API、同步宿主信息、渲染树、canvas handoff 和资源 URL 各有自己的入口。放错层，就会让内核偷偷依赖浏览器。
 
 ::::split
 :::card{tag="宿主" title="apiHandlers：跨线程 API"}
@@ -232,16 +240,16 @@ render 的 bootstrap 处理器会优先使用消息里的 `manifest`、`initialP
 ::::
 
 ::::split
-:::card{tag="query" title="RenderQueryAdapter"}
-`createSelectorQuery` / `createIntersectionObserver` 由宿主在 render 入口注入：浏览器实现是 `createBrowserRenderQuery()`（真实 DOM 查询 + 原生 IntersectionObserver）。不注入时普通查询返回空、观察器返回 unsupported。
+:::card{tag="renderer" title="TreeRenderer"}
+render 线程的核心注入：mount、applyPatches、applyStyles、query、measure、inspectTree、observeIntersection。Web 实现是 `createGlassRenderTree`；原生宿主实现同一个契约。
 :::
 
-:::card{tag="canvas" title="ServiceCanvasAdapter / RenderCanvasAdapter"}
-service 需要 `createLegacyCanvasContext` 和 `createCanvasNode`；render 需要 `measure` 和 `paint`。浏览器实现位于 `hosts/browser/src/canvas-bridge.ts`。
+:::card{tag="canvas" title="ServiceCanvasAdapter"}
+service 通过 `createLegacyCanvasContext` / `acquireCanvasNode` 拿到 OffscreenCanvas 控制面。浏览器实现会把 render iframe 的 OffscreenCanvas 经 postMessage handoff 给 service。
 :::
 
-:::card{tag="资源" title="resolveAssetUrl + backend + mount"}
-`resolveAssetUrl(assetPath, { sourcePath })` 会把 app-root 资源映射成 URL；adapter 用它重写模板 img 和 CSS `url()`。`backend` 和挂载钩子决定节点最终落在哪里。
+:::card{tag="资源" title="resolveAssetUrl"}
+`resolveAssetUrl(assetPath, { sourcePath })` 把 app-root 资源映射成 URL；service 用于 canvas image，render tree 用于内置组件图片和 CSS `url()`。
 :::
 ::::
 
@@ -250,13 +258,13 @@ service 需要 `createLegacyCanvasContext` 和 `createCanvasNode`；render 需�
 | 菜单按钮位置随设备变化 | `apiExtensions` | service 需要同步调用，属于宿主信息 |
 | 页面跳转要同时改两个线程 | `apiHandlers` | 只有宿主同时持有两侧连接 |
 | storage 需要持久化 | `apiHandlers` | 真实存储由宿主管理 |
-| canvas 绘制和测量 | canvas 适配器 | 内核不能依赖 document / Image |
+| canvas 2D / WebGL / RAF | ServiceCanvasAdapter + OffscreenCanvas handoff | 内核不能依赖 document / Image |
+| 真实组件、布局和 DOM | `TreeRenderer` | 渲染树归宿主所有 |
+| selector query / IntersectionObserver | 渲染树的 query / observeIntersection | 内核不能依赖 Element / IntersectionObserver |
 | 本地图片和 CSS 背景图 | `resolveAssetUrl` | 只有宿主知道静态资源的 URL 规则 |
-| selector query / 相交观测 | `RenderThreadOptions.query` | 内核不能依赖 Element / IntersectionObserver |
-| 节点挂到哪里 | backend + mountComponent | DOM 或原生树归宿主所有 |
 
 :::callout{title="仓库里已经定下的规则"}
-宿主信息通过 `ServiceThreadOptions.apiExtensions` 注入，canvas 通过 `ServiceThreadOptions.canvas` / `RenderThreadOptions.canvas` 注入，DOM 查询与相交观测通过 `RenderThreadOptions.query` 注入。不要再把这些能力放回 `packages/runtime`。
+宿主信息通过 `ServiceThreadOptions.apiExtensions` 注入，canvas 通过 `ServiceThreadOptions.canvas` 注入，渲染树通过 `TreeRenderer` 注入。不要再把这些能力放回 `packages/runtime`。
 :::
 
 ## @tiny/host-browser 负责什么 {#browser kicker="浏览器宿主"}
@@ -288,11 +296,11 @@ service 需要 `createLegacyCanvasContext` 和 `createCanvasNode`；render 需�
 :::card{tag="tests/host" title="无界面单应用宿主"}
 Vite 提供三个入口：`index.html` 宿主、`service.html` 和 `render.html`。宿主把页面挂到 `#app`，并暴露 `window.__tinyRuntime` 给 Playwright。
 
-service 入口注入菜单按钮、performance 和 canvas；render 入口使用 `CurrentWindowBackendContext`，提供资源解析、canvas 测量/绘制和挂载钩子。
+service 入口使用 `bootBrowserServiceEntry` 加载 templates/styles 和 service bundle；render 入口使用 `bootGlassRenderEntry` 创建 Web 渲染树、内置组件和 OffscreenCanvas responder。
 :::
 
 :::card{tag="静态资源" title="产物怎么到线程里"}
-manifest 由打包器静态导入；render.js 动态导入；styles 通过 `fetch('/generated/...')` 取文本后交给 `loadStyle`；资源通过 `/generated/<path>` 提供。
+manifest 由打包器静态导入；templates.js 和 service.js 由 service 入口动态导入；styles 通过 `fetch('/generated/...')` 取文本后交给 `loadStyle`；资源通过 `/generated/<path>` 提供。
 
 宿主需要能按 manifest 里的相对路径提供静态文件。
 :::
@@ -300,30 +308,24 @@ manifest 由打包器静态导入；render.js 动态导入；styles 通过 `fetc
 :::::
 
 ```text
-render.html
-  |-- import render.js
-  |-- fetch manifest + styles
-  |-- new CurrentWindowBackendContext
-  |-- listenForRuntimePort('render')
-  +-- bootRenderThread({
-        transport, manifest, artifacts, backend,
-        initialPath, loadStyle, resolveAssetUrl,
-        canvas: { measure: measureBrowserCanvas,
-                  paint: paintBrowserCanvasFrame },
-        mountComponent, unmountComponent,
-        builtinComponents: webBuiltinComponents,
+service.html
+  |-- bootBrowserServiceEntry({
+        manifest, initialPath,
+        loadTemplates: () => import('/generated/templates.js'),
+        loadArtifacts: () => import('/generated/service.js'),
+        loadStyle, resolveAssetUrl, apiExtensions,
       })
 
-service.html
-  |-- installBrowserCanvasCompat()
-  |-- listenForRuntimePort('service')
-  +-- bootServiceThread({
-        transport, manifest, initialPath,
-        apiExtensions,
-        canvas: { createLegacyCanvasContext, createCanvasNode },
-        loadArtifacts: () => import(service.js),
+render.html
+  |-- installOffscreenCanvasResponder()
+  |-- listenForRuntimePort('render')
+  +-- bootGlassRenderEntry({
+        transport,
+        container: document.getElementById('app'),
+        resolveAssetUrl,
       })
 ```
+
 
 ## devtool 在宿主之上加了控制界面 {#devtool kicker="调试器宿主"}
 
@@ -366,10 +368,10 @@ devtool 的 service/render 入口用 `new Function('url', 'return import(url)')`
 
 | 宿主 | 线程容器 | 渲染后端 | canvas / 资源 | 控制方式 |
 | --- | --- | --- | --- | --- |
-| tests/host | 1 个 service + 1 个 render iframe（Vite） | CurrentWindowBackendContext | host-browser canvas + /generated 资源 | URL ?path + window.__tinyRuntime |
-| apps/devtool | 1 个 service + 每页一个 render iframe（rspack） | CurrentWindowBackendContext | host-browser canvas + 相对 URL | DevtoolRuntimeClient + React/Redux |
-| runtime 单测 | 同进程 | EmptyBackendContext | 无 canvas，manifest 内联 | 直接持有 BridgeConnection |
-| 原生宿主（未实现） | JSCore / 原生容器 + 渲染层 | 需要实现 GeneralBackendContext | 需要实现 canvas 适配器和资源解析 | 自定义控制界面 |
+| tests/host | 1 个 service + 每页 1 个 render iframe（Vite） | `createGlassRenderTree` | OffscreenCanvas handoff + /generated 资源 | URL ?path + window.__tinyRuntime |
+| apps/devtool | 1 个 service + 每页一个 render iframe（rspack） | `createGlassRenderTree` | OffscreenCanvas handoff + 相对 URL | DevtoolRuntimeClient + React/Redux |
+| runtime 单测 | 同进程 | headless TreeRenderer | 无 canvas，manifest 内联 | 直接持有 BridgeConnection |
+| 原生宿主（未实现） | JSCore / 原生容器 + 渲染层 | 实现 `TreeRenderer` | 需要实现 canvas handoff 和资源解析 | 自定义控制界面 |
 
 ::::split
 :::card{title="共享的部分"}
@@ -398,10 +400,10 @@ devtool 的 service/render 入口用 `new Function('url', 'return import(url)')`
 | --- | --- | --- |
 | 加载并校验 manifest | 读取 schemaVersion=2、runtimeCompatibility 和产物路径。不要自己复制一份产物类型。 | |
 | 创建两条 Transport | service 和 render 各一条；帧边界、非空 messages 和 JSON 安全由 Bridge 兜底，但传输必须保序。 | |
-| 实现环境适配器 | glass-easel 后端、mount/unmount、样式和模板加载、resolveAssetUrl、canvas measure/paint，以及内置组件。 | |
-| 启动线程并等待连接装好 | service 安装命名后的全局对象并 loadArtifacts；等 transport 接收端就绪后再握手，用 ready 或同步点避免丢帧。 | |
+| 实现渲染树 | 实现 `TreeRenderer`：mount、applyPatches、applyStyles、query、measure、inspectTree、observeIntersection；Web 侧可直接用 `createGlassRenderTree`。 | |
+| 启动线程并等待连接装好 | service 安装兼容全局、loadTemplates 和 loadArtifacts；render 创建 TreeRenderer；等 transport 接收端就绪后再握手，用 ready 或同步点避免丢帧。 | |
 | 提供宿主信息 | systemInfo、storage 初始快照；设备相关的同步 API 走 apiExtensions，网络和文件等跨线程 API 走 apiHandlers。 | |
-| 实现导航和 page.ready | navigate.to/back/switchTab 必须由宿主先调用 service、再调用 render；navigateTo 和 switchTab 要把 render 返回的组件并入 page.ready。 | |
+| 实现导航和 tree.ready | navigate.to/back/switchTab 必须由宿主先调用 service、再创建/激活 render root；render 挂载后发 tree.ready，service 发送 tree.flow，最后 page.ready。 | |
 | 接入诊断和控制 | 收集 diagnostic.*；按需暴露 inspectTree、page.show/hide 和关闭方法。 | |
 | 定义关闭语义 | 关闭两条连接、释放线程、卸载页面。当前 host.close 只关连接，不自动移除 iframe；standalone 的 dispose 会负责清理。 | |
 | 跑真实测试小程序 | 至少覆盖 demo、mini、Taro 3 中的一条；否则只能证明“能启动”，不能证明“能跑应用”。 | |
@@ -409,7 +411,7 @@ devtool 的 service/render 入口用 `new Function('url', 'return import(url)')`
 :::
 
 :::callout{title="原生宿主还没有实现" tone="warn"}
-目前没有 native transport、native 渲染后端，也没有非浏览器的 service 运行时。好消息是内核已经移除了 document/Image/iframe， 原生宿主只需要提供 canvas 适配器、渲染后端、资源解析和控制界面，不必模拟浏览器。
+目前没有 native transport、native `TreeRenderer` 实现，也没有非浏览器的 service 运行时。`createNativeTreeRenderer` 只是契约加 headless 测试；原生宿主还需要提供 canvas handoff、查询/相交观测和控制界面，不必模拟浏览器。
 :::
 
 ## 当前宿主实现的已知问题 {#risks kicker="风险"}
@@ -429,8 +431,12 @@ service iframe 只是视觉上隐藏，没有 sandbox 属性，仍然可以访�
 `host.close()` 只关闭连接并 reject 等待中的调用。页面 onUnload、iframe 移除和容器清理由调用方负责；standalone 宿主的 `dispose()` 会统一清理。
 :::
 
-:::card{tag="back" tone="warn" title="单 render 模式返回不补 page.ready"}
-每页 render 模式会保留页面 DOM；单 render 模式返回时需要重新挂载，而且不会把 render 返回的组件快照重新发给 service。
+:::card{tag="flow" tone="warn" title="component flow 只覆盖首屏"}
+首屏用 define/create-node/props/children/ready 同步；后续更新走 virtual node patch。微信参考协议还有 FLOW_UPDATE、FLOW_SET_DATA、FLOW_DATA_OBSERVER 等，这是协议面差异。
+:::
+
+:::card{tag="event" tone="warn" title="tree.event 没有 target geometry"}
+tree.event 只带 node id、name、detail、native 和 touches；目标几何信息由 service 侧逻辑节点补足，和微信协议仍有差别。
 :::
 
 :::card{tag="capability" tone="warn" title="没有能力协商"}

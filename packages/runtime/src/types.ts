@@ -10,10 +10,6 @@ export type TemplateRegistry = {
   content: (path: string, name?: string) => unknown
 }
 
-export type RenderArtifacts = {
-  templates: TemplateRegistry
-}
-
 export type MiniProgramPropertyType = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'function' | 'any'
 
 export type MiniProgramPropertyDefinition = {
@@ -50,6 +46,18 @@ export type MiniProgramComponentSchema = {
   }
 }
 
+/** Host-neutral element-tree projection used by the debugger. */
+export type InspectNode = {
+  id: string
+  type: 'component' | 'element' | 'text'
+  tag: string
+  text?: string
+  attributes?: Record<string, string>
+  className?: string
+  style?: string
+  children: InspectNode[]
+}
+
 export type SystemInfoSnapshot = {
   pixelRatio: number
   windowWidth: number
@@ -61,6 +69,8 @@ export type SystemInfoSnapshot = {
 
 /** One DOM node resolved by a component/page selector query. */
 export type QueryNodeSnapshot = {
+  /** Logic-layer node identity, present for service-side query results. */
+  viewId?: string
   id: string
   dataset: Record<string, unknown>
   left: number
@@ -152,43 +162,6 @@ export type ServiceCanvasAdapter = {
     pageId?: string
     canvasId?: string
   }) => void
-}
-
-export type RenderIntersectionRequest = {
-  /** Opaque backend root element of the component or page. */
-  root: unknown
-  selector: string
-  all: boolean
-  thresholds?: number[]
-  relativeTo?: {
-    type?: 'viewport' | 'selector'
-    selector?: string
-    margins?: { left?: number; right?: number; top?: number; bottom?: number }
-  }
-}
-
-export type RenderIntersectionHandle = {
-  /** Start observing resolved targets. */
-  start: () => void
-  disconnect: () => void
-}
-
-/**
- * Host-provided render-thread DOM capabilities. The runtime core stays free of
- * `Element`, `IntersectionObserver` and other browser globals; a browser host
- * implements these against real DOM nodes, while other hosts may omit them.
- */
-export type RenderQueryAdapter = {
-  query: (root: unknown, selector: string, all: boolean) => QueryNodeSnapshot[]
-  createIntersectionObserver: (
-    request: RenderIntersectionRequest,
-    onEntries: (entries: QueryIntersectionEntry[]) => void,
-  ) => RenderIntersectionHandle
-}
-
-/** Browser/host canvas hooks injected into the render thread. */
-export type RenderCanvasAdapter = {
-  measure: (selector?: string, canvasId?: string) => CanvasMeasurement
 }
 
 export type StorageSnapshot = Record<string, unknown>
@@ -287,31 +260,14 @@ export type ServiceThreadOptions = {
   resolveAssetUrl?: AssetUrlResolver
   /** Maximum pages in the runtime page stack. Defaults to 10. */
   maxPageStack?: number
+  /** Templates for the service-side logic tree. */
+  loadTemplates: () => Promise<TemplateRegistry> | TemplateRegistry
+  /** Test/host hook fired when the service logic tree is created. */
+  onLogicTreeCreated?: (tree: unknown) => void
+  /** Stylesheet text for logic-tree style scoping. */
+  loadStyle?: StyleLoader
 }
 
-export type RenderThreadOptions = {
-  transport: import('@tiny/bridge').Transport
-  manifest: RuntimeManifest
-  artifacts: RenderArtifacts
-  backend: unknown
-  /** Host-provided implementations of the mini-program built-in tags. */
-  builtinComponents?: BuiltinComponents
-  initialPath: string
-  initialData?: Record<string, unknown>
-  loadStyle?: StyleLoader
-  /** Host hook mapping app-root asset paths to loadable URLs (images, CSS urls). */
-  resolveAssetUrl?: AssetUrlResolver
-  capabilities?: Record<string, unknown>
-  /** Host canvas implementation for measuring selector-query surfaces. */
-  canvas?: RenderCanvasAdapter
-  /** Host DOM query and intersection-observer implementation. */
-  query?: RenderQueryAdapter
-  onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
-  /** Host hook that inserts the root component into the backend tree. */
-  mountComponent?: (component: unknown) => void
-  /** Host hook that removes the root component from the backend tree. */
-  unmountComponent?: (component: unknown) => void
-}
 
 export type RuntimeHostOptions = {
   serviceTransport: import('@tiny/bridge').Transport

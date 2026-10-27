@@ -20,8 +20,9 @@ export async function copyAssets(context: CompilerContext): Promise<void> {
 }
 
 /**
- * Emits the two thread entry points: `service.js` imports every page/component
- * script and is bundled, `render.js` exposes the shared template group.
+ * Emits the service thread entry point: `service.js` imports every
+ * page/component script and is bundled. The split-tree renderer consumes
+ * `templates.js` directly, so no `render.js` wrapper is emitted.
  */
 export async function writeEntryArtifacts(
   context: CompilerContext,
@@ -38,13 +39,6 @@ export async function writeEntryArtifacts(
   await writeFileWithSourceMap(outputPath(context, 'service.js'), serviceContent)
   await bundleServiceEntry(context)
 
-  const renderContent = [
-    "import templates from './templates.js'",
-    '',
-    'export default { templates }',
-    '',
-  ].join('\n')
-  await writeFileWithSourceMap(outputPath(context, 'render.js'), renderContent)
 }
 
 async function bundleServiceEntry(context: CompilerContext): Promise<void> {

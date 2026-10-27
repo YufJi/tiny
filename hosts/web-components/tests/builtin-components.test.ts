@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import * as glassEasel from 'glass-easel'
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import { TmplGroup } from '@tiny/template-compiler'
 import {
   BUILTIN_COMPONENT_STYLES,
@@ -35,6 +36,12 @@ describe('P0 built-in components', () => {
     const definitions = createBuiltinComponents(space)
     expect(Object.keys(definitions)).toHaveLength(BUILTIN_COMPONENT_TAGS.length)
     expect(Object.keys(definitions)).toEqual(expect.arrayContaining([...BUILTIN_COMPONENT_TAGS]))
+  })
+
+  test('hides every built-in host tag with the shared [hidden] rule', () => {
+    for (const tag of BUILTIN_COMPONENT_TAGS) {
+      expect(BUILTIN_HOST_STYLES).toContain(`${TINY_ENGINE_NAMING.hostTagPrefix}${tag}[hidden]`)
+    }
   })
 
   test('keeps cross-component layout in public host CSS and private styles in component scopes', () => {

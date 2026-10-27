@@ -1,4 +1,6 @@
-import type { Diagnostic as CompilerDiagnostic } from '@tiny/manifest'
+import { DIAGNOSTIC_CODES, type Diagnostic as CompilerDiagnostic } from '@tiny/manifest'
+
+export { DIAGNOSTIC_CODES }
 
 export type RuntimeDiagnosticSeverity = 'info' | 'warning' | 'error' | 'state'
 export type RuntimeDiagnosticSource = 'compiler' | 'transport' | 'service' | 'render' | 'host'
@@ -106,7 +108,7 @@ export function createRuntimeStateDiagnostic(
   state: RuntimeStateDetails,
   pageId?: string,
 ): RuntimeDiagnostic {
-  return createRuntimeDiagnostic('state', 'RUNTIME_STATE', 'Runtime state changed.', source, pageId, state)
+  return createRuntimeDiagnostic('state', DIAGNOSTIC_CODES.RUNTIME_STATE, 'Runtime state changed.', source, pageId, state)
 }
 
 export function normalizeTransportDiagnostic(
@@ -131,7 +133,7 @@ export function normalizeTransportDiagnostic(
     : fallback
   return createRuntimeDiagnostic(
     severity,
-    value?.code ?? 'TRANSPORT_DIAGNOSTIC',
+    value?.code ?? DIAGNOSTIC_CODES.TRANSPORT_DIAGNOSTIC,
     value?.message ?? 'Transport emitted a diagnostic.',
     source,
     pageId,

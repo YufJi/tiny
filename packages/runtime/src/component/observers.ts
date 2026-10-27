@@ -1,4 +1,4 @@
-import { parseDataPath, readDataPath } from './data'
+import { parseDataPath, readDataPath } from '../data'
 import type { NormalizedObserver } from './component-definition'
 
 export type ObserverHost = {

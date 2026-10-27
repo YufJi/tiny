@@ -4,7 +4,7 @@ import {
   parsePureDataPattern,
   type NormalizedComponentDefinition,
 } from './component-definition'
-import type { MiniProgramComponentSchema } from './types'
+import type { MiniProgramComponentSchema } from '../types'
 
 export function buildComponentSchemas(
   artifacts: ComponentArtifact[],

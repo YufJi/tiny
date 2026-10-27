@@ -9,7 +9,7 @@ import {
   type PageArtifact,
   type StyleArtifact,
 } from '@tiny/manifest'
-import { GlassEaselRuntimeAdapter } from '../src/glass-easel-adapter'
+import { GlassEaselRuntimeAdapter } from '../src/tree/logic/glass-easel-adapter'
 import type { MiniProgramComponentSchema } from '../src/types'
 
 const HOST_ATTRIBUTE = TINY_ENGINE_NAMING.hostAttribute
@@ -90,7 +90,7 @@ function createManifest(
   return {
     schemaVersion: 2,
     runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
-    entries: { service: 'service.js', render: 'render.js', templates: 'templates.js' },
+    entries: { service: 'service.js', templates: 'templates.js' },
     app: {
       path: 'app',
       style: appStyle,

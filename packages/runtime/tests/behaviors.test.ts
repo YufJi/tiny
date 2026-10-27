@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
-import { registerBehavior } from '../src/behaviors'
-import { normalizeComponentDefinition } from '../src/component-definition'
+import { registerBehavior } from '../src/component/behaviors'
+import { normalizeComponentDefinition } from '../src/component/component-definition'
 
 describe('normalizeComponentDefinition', () => {
   test('merges nested behaviors with component overrides and stable ordering', () => {

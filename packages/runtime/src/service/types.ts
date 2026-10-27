@@ -1,11 +1,9 @@
 import type { BridgeConnection } from '@tiny/bridge'
 import type { ServiceThreadOptions, StorageSnapshot, SystemInfoSnapshot, ServiceCanvasAdapter } from '../types'
 import type { AssetUrlResolver } from '../assets'
-import type { ComponentTree } from '../component-tree'
-import type { RelationManager } from '../relation-manager'
-import type { NormalizedComponentDefinition } from '../component-definition'
+import type { ComponentTree } from '../component'
+import type { NormalizedComponentDefinition } from '../component'
 import type { MiniProgramPageRegistry } from './page-registry'
-import type { MiniProgramComponentInstance } from './component-instance'
 import type { MiniProgramPageInstance } from './page-instance'
 
 export type MiniProgramPageOptions = {
@@ -57,23 +55,6 @@ export type MiniProgramAppOptions = {
 }
 
 
-export type ComponentRuntimeContext = {
-  pageId: string
-  tree: ComponentTree
-  relations: RelationManager
-  getInstance: (componentId: string) => MiniProgramComponentInstance | undefined
-  onDiagnostic: (code: string, message: string, details?: unknown) => void
-  /** Component-level `this.createSelectorQuery()`. */
-  createSelectorQuery: (componentId?: string) => Record<string, unknown>
-  /** Component-level `this.createIntersectionObserver()`. */
-  createIntersectionObserver: (
-    componentId: string,
-    options?: Record<string, unknown>,
-  ) => Record<string, unknown>
-  /** Flush queued `setData` patches (used by `groupSetData`). */
-  flushDataPatches: () => void
-}
-
 export type MiniProgramApiHost = Record<string, (...args: unknown[]) => unknown>
 
 export type TabBarApi = {
@@ -114,9 +95,7 @@ export type ServiceThreadRuntime = {
   activePage: MiniProgramPageInstance | null
   pageStack: MiniProgramPageInstance[]
   pageInstances: Map<string, MiniProgramPageInstance>
-  componentInstances: Map<string, MiniProgramComponentInstance>
   componentTree: ComponentTree
-  relationManager: RelationManager
   /** Report a rejected promise that escaped page/component code. */
   notifyUnhandledRejection(reason: unknown, promise?: unknown): void
 }

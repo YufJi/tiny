@@ -20,5 +20,29 @@ export const TINY_ENGINE_NAMING = Object.freeze({
   behaviorPrefix: 'tiny-',
   behaviorScheme: 'tiny://',
   formFieldBehaviorId: 'tiny-form-field',
+  /** Symbol key marking a native event that a built-in already normalized. */
+  handledNativeEventSymbol: 'tiny.handledNativeEvent',
   appPageScopeSign: '__TINY_APP_PAGE_SCOPE__',
+  /** Root page tag in the logic-tree/render-tree protocol. */
+  pageTag: 'page',
+  /** Text node tag shared by patches and render hosts. */
+  textNodeTag: '#text',
+  /** Transparent grouping node tags. */
+  fragmentTag: '#fragment',
+  virtualTag: '#virtual',
+  /** Glass-easel definition/host names for the web render tree. */
+  renderRootDefinition: 'tiny-render-root',
+  renderRootTag: 'tiny-page',
+  renderContainerDefinitionPrefix: 'tiny-render-container:',
+  /** DOM attributes owned by the render tree. */
+  nodeIdAttribute: 'data-tiny-node-id',
+  runtimeStylesAttribute: 'data-tiny-tree-styles',
+  /** Runtime-generated style keys. */
+  pageScopeSheetMarker: '@page:',
+  sharedSheetMarker: '@shared:',
+  /** Page and view identity prefixes. */
+  pageIdPrefix: 'page-',
+  viewIdPrefix: 'view-',
+  componentIdSeparator: ':',
+  componentInstanceSeparator: '~',
 } as const)

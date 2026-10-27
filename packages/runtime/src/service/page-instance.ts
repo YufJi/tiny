@@ -1,10 +1,9 @@
 import { applyDataPatch, cloneJsonSafe, type DataPatch } from '../data'
-import { runObservers, type ObserverHost } from '../observers'
-import type { ComponentLifecycleName, NormalizedComponentDefinition } from '../component-definition'
+import { runObservers, type ObserverHost } from '../component'
+import type { ComponentLifecycleName, NormalizedComponentDefinition } from '../component'
 import type { MiniProgramPropertyType } from '../types'
 import type { RuntimePageLifecyclePhase } from '../diagnostics'
 import type {
-  ComponentRuntimeContext,
   MiniProgramComponentOptions,
   MiniProgramPageOptions,
 } from './types'
@@ -49,8 +48,12 @@ export class MiniProgramPageInstance implements ObserverHost {
     options: MiniProgramPageOptions,
     query: Record<string, string> = {},
     private readonly onDataPatch?: (pageId: string, patch: DataPatch) => void,
-    private readonly runtime?: ComponentRuntimeContext,
+    private readonly onDiagnostic?: (code: string, message: string, details?: unknown) => void,
     definition?: NormalizedComponentDefinition,
+    private readonly logicSelection?: (selector: string, all: boolean) => unknown[],
+    private readonly logicRelations?: (relationKey: string) => unknown[],
+    private readonly logicQuery?: () => Record<string, unknown>,
+    private readonly logicIntersection?: (options?: Record<string, unknown>) => Record<string, unknown>,
   ) {
     this.pageId = pageId
     this.componentId = `page:${pageId}`
@@ -113,6 +116,8 @@ export class MiniProgramPageInstance implements ObserverHost {
       selectAllComponents: this.selectAllComponents.bind(this),
       selectOwnerComponent: this.selectOwnerComponent.bind(this),
       getRelationNodes: this.getRelationNodes.bind(this),
+      createSelectorQuery: this.createSelectorQuery.bind(this),
+      createIntersectionObserver: this.createIntersectionObserver.bind(this),
       hasBehavior: this.hasBehavior.bind(this),
       triggerEvent: this.triggerEvent.bind(this),
     })
@@ -179,18 +184,11 @@ export class MiniProgramPageInstance implements ObserverHost {
   }
 
   selectComponent(selector: unknown): unknown {
-    if (!this.runtime) return null
-    const nodes = this.runtime.tree.select(`page:${this.pageId}`, String(selector ?? ''), false)
-    return nodes[0] ? resolveComponentSelection(this.runtime, nodes[0].componentId) : null
+    return this.logicSelection?.(String(selector ?? ''), false)[0] ?? null
   }
 
   selectAllComponents(selector: unknown): unknown[] {
-    const runtime = this.runtime
-    if (!runtime) return []
-    const nodes = runtime.tree.select(`page:${this.pageId}`, String(selector ?? ''), true)
-    return nodes
-      .map((node) => resolveComponentSelection(runtime, node.componentId))
-      .filter((value) => value !== null && value !== undefined)
+    return this.logicSelection?.(String(selector ?? ''), true) ?? []
   }
 
   selectOwnerComponent(): unknown {
@@ -198,7 +196,17 @@ export class MiniProgramPageInstance implements ObserverHost {
   }
 
   getRelationNodes(relationKey: string): unknown[] {
-    return this.runtime?.relations.getRelationNodes(this.componentId, relationKey) ?? []
+    // Relations are resolved by the glass-easel logic tree; the page wrapper
+    // forwards to it instead of mirroring a second component graph.
+    return this.logicRelations?.(relationKey) ?? []
+  }
+
+  createSelectorQuery(): Record<string, unknown> {
+    return this.logicQuery?.() ?? {}
+  }
+
+  createIntersectionObserver(options?: Record<string, unknown>): Record<string, unknown> {
+    return this.logicIntersection?.(options) ?? {}
   }
 
   hasBehavior(behavior: unknown): boolean {
@@ -228,7 +236,7 @@ export class MiniProgramPageInstance implements ObserverHost {
   }
 
   onError(code: string, message: string, details?: unknown): void {
-    this.runtime?.onDiagnostic(code, message, details)
+    this.onDiagnostic?.(code, message, details)
   }
 }
 
@@ -258,20 +266,3 @@ function coerceQueryProperty(type: MiniProgramPropertyType | undefined, raw: str
 }
 
 
-function resolveComponentSelection(runtime: ComponentRuntimeContext, componentId: string): unknown {
-  const instance = runtime.getInstance(componentId)
-  if (!instance) return null
-  const definition = instance.getComponentOptions()
-  if (definition.componentExport && typeof definition.export === 'function') {
-    try {
-      return definition.export.call(instance)
-    } catch (error) {
-      runtime.onDiagnostic(
-        'COMPONENT_EXPORT_ERROR',
-        error instanceof Error ? error.message : String(error),
-        { componentId },
-      )
-    }
-  }
-  return instance
-}

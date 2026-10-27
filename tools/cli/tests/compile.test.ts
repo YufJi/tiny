@@ -35,7 +35,6 @@ describe('compileMiniProgram', () => {
     expect(manifest.schemaVersion).toBe(2)
     expect(manifest.entries).toEqual({
       service: 'service.js',
-      render: 'render.js',
       templates: 'templates.js',
     })
     expect(manifest.pages).toHaveLength(1)
@@ -137,14 +136,13 @@ describe('compileMiniProgram', () => {
     }
   })
 
-  test('emits loadable service and render entry points', async () => {
+  test('emits the service entry without a render wrapper', async () => {
     const service = await fs.readFile(path.join(outputDir, 'service.js'), 'utf8')
-    const render = await fs.readFile(path.join(outputDir, 'render.js'), 'utf8')
     expect(service).toContain('App({')
     expect(service).toContain('Page({')
     expect(service).toContain('Component({')
     expect(service).not.toContain("import './scripts/")
-    expect(render).toContain("import templates from './templates.js'")
+    await expect(fs.access(path.join(outputDir, 'render.js'))).rejects.toThrow()
     await expect(fs.access(path.join(outputDir, 'service.js.map'))).resolves.toBeUndefined()
     await expect(fs.access(path.join(outputDir, 'scripts/app.js'))).resolves.toBeUndefined()
     await expect(fs.access(path.join(outputDir, 'templates.js'))).resolves.toBeUndefined()

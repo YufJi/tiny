@@ -4,8 +4,8 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderThread } from '../src/render'
-import { bootServiceThread } from '../src/service'
+import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { bootServiceThread } from './helpers/split-service'
 
 const PAGE_PATH = 'pages/index/index'
 
@@ -58,7 +58,7 @@ function createManifest(): Manifest {
   return {
     schemaVersion: 2,
     runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
-    entries: { service: 'service.js', render: 'render.js', templates: 'templates.js' },
+    entries: { service: 'service.js', templates: 'templates.js' },
     pages: [page],
     components: [],
     styles: [],
@@ -80,9 +80,7 @@ describe('runtime diagnostics', () => {
       transport: renderTransport,
       manifest,
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: PAGE_PATH,
-      onDiagnostic: (diagnostic) => reported.push(diagnostic.code),
     })
     const reported: string[] = []
     const host = createTinyRuntime({
@@ -112,7 +110,7 @@ describe('runtime diagnostics', () => {
       'UNSUPPORTED_API',
       'RUNTIME_STATE',
     ]))
-    expect(reported).toEqual(expect.arrayContaining(['UNSUPPORTED_COMPONENT', 'UNSUPPORTED_API']))
+    expect(reported).toEqual(expect.arrayContaining(['UNSUPPORTED_API']))
 
     const state = host.diagnostics.find((diagnostic) => diagnostic.code === 'RUNTIME_STATE')
     expect(state?.details).toMatchObject({

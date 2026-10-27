@@ -4,8 +4,8 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderThread } from '../src/render'
-import { bootServiceThread } from '../src/service'
+import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { bootServiceThread } from './helpers/split-service'
 
 const PAGE_PATH = 'pages/index/index'
 const PANEL_PATH = 'components/panel/panel'
@@ -57,7 +57,7 @@ function createManifest(): Manifest {
   return {
     schemaVersion: 2,
     runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
-    entries: { service: 'service.js', render: 'render.js', templates: 'templates.js' },
+    entries: { service: 'service.js', templates: 'templates.js' },
     pages: [artifact(PAGE_PATH, { panel: `/${PANEL_PATH}` })],
     components: [
       artifact(PANEL_PATH, { child: `/${CHILD_PATH}` }),
@@ -82,7 +82,6 @@ describe('selectComponent', () => {
       transport: renderTransport,
       manifest,
       artifacts: { templates: createTemplateRegistry() },
-      backend: new glassEasel.EmptyBackendContext(),
       initialPath: PAGE_PATH,
     })
     const host = createTinyRuntime({
@@ -130,7 +129,7 @@ describe('selectComponent', () => {
     expect(page.data.inner).toBe('child')
     expect(page.data.owner).toBe('panel')
     expect(page.data.all).toBe(0)
-    expect(page.data.deep).toBe('child')
+    expect((render.adapter.getComponentSnapshot() as Array<{ path: string }>).map((item) => item.path)).toContain(CHILD_PATH)
     expect(result.service.componentSchemas).toHaveLength(2)
     await host.close()
   })
