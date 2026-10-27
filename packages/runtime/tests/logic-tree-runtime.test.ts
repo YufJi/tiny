@@ -21,7 +21,7 @@ function createTemplates() {
     templateScriptExtension: '.wxs',
   })
   group.addTmpl(PAGE_PATH, '<parent id="parent" />')
-  group.addTmpl(PARENT_PATH, '<view id="probe" class="probe" data-count="{{ count }}" data-date="{{ date }}" bindtap="onTap">{{ seen }}</view><switch id="sw" bindchange="onSwitch" /><child id="child" fn="{{ fn }}" bind:custom="onCustom" />')
+  group.addTmpl(PARENT_PATH, '<view id="probe" class="probe" data-count="{{ count }}" data-date="{{ date }}" bindtap="onTap">{{ seen }}</view><switch id="sw" bindchange="onSwitch" /><checkbox-group id="group" bindchange="onGroupChange" /><child id="child" fn="{{ fn }}" bind:custom="onCustom" />')
   group.addTmpl(CHILD_PATH, '<view id="fire" bindtap="fire">fire</view><view>{{ seen }}</view>')
   const groupList = new Function(`return ${group.getTmplGenObjectGroups()}`)() as Record<string, unknown>
   return {
@@ -70,7 +70,7 @@ describe('logic tree runtime options', () => {
   test('runs component lifetimes and methods so function properties propagate', async () => {
     const manifest = createManifest()
     const parentDefinition = normalizeComponentDefinition({
-      data: { fn: null, seen: 'none', count: 3, custom: null, switchValue: false, date: new Date('2012-02-01T00:00:00.000Z') },
+      data: { fn: null, seen: 'none', count: 3, custom: null, switchValue: false, groupValue: null, date: new Date('2012-02-01T00:00:00.000Z') },
       methods: {
         onTap() {
           ;(this as unknown as { setData: (patch: Record<string, unknown>) => void })
@@ -83,6 +83,10 @@ describe('logic tree runtime options', () => {
         onSwitch(event: { detail: { value: boolean } }) {
           ;(this as unknown as { setData: (patch: Record<string, unknown>) => void })
             .setData({ switchValue: event.detail.value })
+        },
+        onGroupChange(event: { detail: { value: string[] } }) {
+          ;(this as unknown as { setData: (patch: Record<string, unknown>) => void })
+            .setData({ groupValue: event.detail.value })
         },
       },
       observers: {
@@ -229,12 +233,22 @@ describe('logic tree runtime options', () => {
     expect((parent as unknown as { data: { custom?: string } }).data.custom).toBe('hi')
     const sw = findById(snapshot.root, 'sw')
     expect(sw).toBeDefined()
+    // The host owns built-in event normalization; the service dispatches the
+    // detail as-is instead of re-deriving switch/checkbox-group internals.
     expect(tree.dispatchViewEvent({
       viewId: sw!.viewId,
       name: 'change',
-      native: { checked: true },
+      detail: { value: true },
     })).toBe(true)
     expect((parent as unknown as { data: { switchValue?: boolean } }).data.switchValue).toBe(true)
+    const group = findById(snapshot.root, 'group')
+    expect(group).toBeDefined()
+    expect(tree.dispatchViewEvent({
+      viewId: group!.viewId,
+      name: 'change',
+      detail: { value: ['a', 'b'] },
+    })).toBe(true)
+    expect((parent as unknown as { data: { groupValue?: string[] } }).data.groupValue).toEqual(['a', 'b'])
     expect((parent as unknown as { data: { seen?: string } }).data.seen).toBe('tapped')
     const { patches } = tree.update('page-1')
     expect(patches.some((patch) => patch.type === 'text' && patch.text === 'tapped')).toBe(true)

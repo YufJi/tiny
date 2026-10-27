@@ -4,7 +4,18 @@
  * they are never derived from DOM nodes.
  */
 
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
+
 export type RenderNodeId = string
+
+/** Root page node tag emitted by the service logic tree. */
+export const RENDER_PAGE_TAG = TINY_ENGINE_NAMING.pageTag
+/** Text node tag shared by patches and render hosts. */
+export const RENDER_TEXT_TAG = TINY_ENGINE_NAMING.textNodeTag
+/** Transparent grouping nodes; render hosts expand their children. */
+export const RENDER_FRAGMENT_TAG = TINY_ENGINE_NAMING.fragmentTag
+/** Conditional/loop grouping nodes kept by the legacy view snapshot. */
+export const RENDER_VIRTUAL_TAG = TINY_ENGINE_NAMING.virtualTag
 
 export type RenderText = {
   type: 'text'

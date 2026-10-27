@@ -289,10 +289,8 @@ export type ServiceThreadOptions = {
   resolveAssetUrl?: AssetUrlResolver
   /** Maximum pages in the runtime page stack. Defaults to 10. */
   maxPageStack?: number
-  /** 'service' runs the logic tree in this thread and projects a view. */
-  logicLayer?: 'render' | 'service'
   /** Templates for the service-side logic tree. */
-  loadTemplates?: () => Promise<TemplateRegistry> | TemplateRegistry
+  loadTemplates: () => Promise<TemplateRegistry> | TemplateRegistry
   /** Test/host hook fired when the service logic tree is created. */
   onLogicTreeCreated?: (tree: unknown) => void
   /** Stylesheet text for logic-tree style scoping. */

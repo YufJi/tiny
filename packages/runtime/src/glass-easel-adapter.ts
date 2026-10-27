@@ -5,6 +5,7 @@ import {
   type PageArtifact,
   type StyleArtifact,
 } from '@tiny/manifest'
+import type { LogicStyleSheetRole } from './logic/backend'
 import type {
   BuiltinComponentDefinitions,
   BuiltinComponents,
@@ -297,7 +298,7 @@ export class GlassEaselRuntimeAdapter {
           ? this.registerScope(style.scope)
           : glassEasel.StyleScopeManager.globalScope()
         this.backend.registerStyleSheetContent(style.path, style.content)
-        this.backend.appendStyleSheetPath(style.path, scopeId)
+        this.appendStyleSheet(style.path, scopeId, { role: 'builtin' })
       }
       this.builtinStylesRegistered = true
     }
@@ -312,6 +313,7 @@ export class GlassEaselRuntimeAdapter {
       : undefined
     const appStyleOutputPath = manifest.app?.style?.outputPath
     const styleEntryPaths = this.collectStyleEntryPaths(manifest)
+    const styleRoles = this.collectStyleRoles(manifest)
     const pending: Array<{ style: StyleArtifact; scopeId: number }> = []
     const lowPriorityPending: Array<{ style: StyleArtifact; scopeId: number }> = []
     for (const style of manifest.styles) {
@@ -365,22 +367,31 @@ export class GlassEaselRuntimeAdapter {
     // page-scoped copies, and page/component sheets. This preserves the
     // mini-program cascade while keeping :host defaults overridable.
     for (const entry of lowPriorityPending) {
-      this.backend.appendStyleSheetPath(`${entry.style.outputPath}@low-priority`, entry.scopeId)
+      this.appendStyleSheet(`${entry.style.outputPath}@low-priority`, entry.scopeId, {
+        role: 'low-priority',
+        ownerPath: entry.style.path,
+      })
     }
     const appStyle = pending.find((entry) => entry.style.outputPath === appStyleOutputPath)
     if (appStyle) {
-      this.backend.appendStyleSheetPath(appStyle.style.outputPath, appStyle.scopeId)
+      this.appendStyleSheet(appStyle.style.outputPath, appStyle.scopeId, {
+        role: 'app',
+        ownerPath: appStyle.style.path,
+      })
     }
-    for (const scopeId of this.collectAppPageScopes(
+    for (const scope of this.collectAppPageScopes(
       manifest,
       componentSchemas,
       options.pagePath,
     )) {
-      this.appendAppPageScope(scopeId)
+      this.appendAppPageScope(scope.scopeId, scope.pagePath)
     }
     for (const entry of pending) {
       if (entry === appStyle) continue
-      this.backend.appendStyleSheetPath(entry.style.outputPath, entry.scopeId)
+      this.appendStyleSheet(entry.style.outputPath, entry.scopeId, {
+        role: styleRoles.get(entry.style.outputPath) ?? 'other',
+        ownerPath: entry.style.path,
+      })
     }
   }
 
@@ -497,9 +508,12 @@ export class GlassEaselRuntimeAdapter {
         continue
       }
       const rescoped = css.split(componentScopeName).join(pageScopeName)
-      const sharedPath = `${style.outputPath}@shared:${pageScope}`
+      const sharedPath = `${style.outputPath}${TINY_ENGINE_NAMING.sharedSheetMarker}${pageScope}`
       this.backend.registerStyleSheetContent(sharedPath, rescoped)
-      this.backend.appendStyleSheetPath(sharedPath, pageScope)
+      this.appendStyleSheet(sharedPath, pageScope, {
+        role: 'shared',
+        ownerPath: page.path,
+      })
     }
   }
 
@@ -516,19 +530,19 @@ export class GlassEaselRuntimeAdapter {
     manifest: Manifest,
     schemas: MiniProgramComponentSchema[],
     pagePath?: string,
-  ): number[] {
+  ): Array<{ scopeId: number; pagePath: string }> {
     if (!this.appPageScopeTemplate || schemas.length === 0) return []
     const isolation = new Map(
       schemas.map((schema) => [schema.path, schema.options?.styleIsolation ?? 'isolated']),
     )
     const using = new Map(schemas.map((schema) => [schema.path, schema.using]))
-    const scopes: number[] = []
+    const scopes: Array<{ scopeId: number; pagePath: string }> = []
     for (const page of manifest.pages) {
       if (pagePath && page.path !== pagePath) continue
       const used = this.collectUsedComponentPaths(page.path, page.configuration, using)
       const needsAppScope = [...used].some((path) =>
         isolation.get(path) === 'apply-shared' || isolation.get(path) === 'shared')
-      if (needsAppScope) scopes.push(this.ensurePageScope(page))
+      if (needsAppScope) scopes.push({ scopeId: this.ensurePageScope(page), pagePath: page.path })
     }
     return scopes
   }
@@ -553,6 +567,35 @@ export class GlassEaselRuntimeAdapter {
     return paths
   }
 
+  /**
+   * Append a stylesheet together with its cascade role. Only the logic backend
+   * records the metadata; a DOM backend simply ignores the extra argument.
+   */
+  private appendStyleSheet(
+    path: string,
+    scope: number | undefined,
+    meta: { role: LogicStyleSheetRole; ownerPath?: string },
+  ): void {
+    ;(this.backend as unknown as {
+      appendStyleSheetPath: (
+        target: string,
+        targetScope?: number,
+        targetMeta?: { role: LogicStyleSheetRole; ownerPath?: string },
+      ) => number
+    }).appendStyleSheetPath(path, scope, meta)
+  }
+
+  private collectStyleRoles(manifest: Manifest): Map<string, LogicStyleSheetRole> {
+    const roles = new Map<string, LogicStyleSheetRole>()
+    for (const page of manifest.pages) {
+      if (page.style) roles.set(page.style.outputPath, 'page')
+    }
+    for (const component of manifest.components) {
+      if (component.style) roles.set(component.style.outputPath, 'component')
+    }
+    return roles
+  }
+
   private collectStyleEntryPaths(manifest: Manifest): Map<string, string> {
     const entries = new Map<string, string>()
     if (manifest.app?.style) {
@@ -567,7 +610,7 @@ export class GlassEaselRuntimeAdapter {
     return entries
   }
 
-  private appendAppPageScope(pageScope: number): void {
+  private appendAppPageScope(pageScope: number, pagePath: string): void {
     const template = this.appPageScopeTemplate
     const sign = template?.style.pageScopeClassSign
     if (!template || !sign) return
@@ -577,9 +620,12 @@ export class GlassEaselRuntimeAdapter {
       .split(`.${sign}`).join(`.${scopeName}--${TINY_ENGINE_NAMING.scopeMarkerClass}`)
       .split(`="${sign}"`).join(`="${scopeName}"`)
       .split(`/*${sign}*/`).join(`${scopeName}--`)
-    const path = `${template.style.outputPath}@page:${pageScope}`
+    const path = `${template.style.outputPath}${TINY_ENGINE_NAMING.pageScopeSheetMarker}${pageScope}`
     this.backend.registerStyleSheetContent(path, scoped)
-    this.backend.appendStyleSheetPath(path, pageScope)
+    this.appendStyleSheet(path, pageScope, {
+      role: 'page-scope',
+      ownerPath: pagePath,
+    })
   }
 
   whenRendered(): Promise<void> {
@@ -647,12 +693,16 @@ export class GlassEaselRuntimeAdapter {
     if (existing) return existing
     const usage = (this.componentUsageCounters.get(schema.path) ?? 0) + 1
     this.componentUsageCounters.set(schema.path, usage)
-    const baseId = usage === 1 ? schema.componentId : `${schema.componentId}~${usage}`
+    const baseId = usage === 1
+      ? schema.componentId
+      : `${schema.componentId}${TINY_ENGINE_NAMING.componentInstanceSeparator}${usage}`
     // Component IDs are scoped per page in the service instance registry. Two
     // pages using the same global component would otherwise resolve to the
     // first page's component instance (and its event method callers).
     const pageId = this.pageIdOf(component)
-    const componentId = pageId ? `${pageId}:${baseId}` : baseId
+    const componentId = pageId
+      ? `${pageId}${TINY_ENGINE_NAMING.componentIdSeparator}${baseId}`
+      : baseId
     this.componentIds.set(key, componentId)
     this.componentPaths.set(key, schema.path)
     this.componentSourcePaths.set(key, schema.path)

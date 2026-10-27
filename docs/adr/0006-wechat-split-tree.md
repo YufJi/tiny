@@ -7,8 +7,9 @@ Accepted — implementation branch `feat/wechat-split-tree`, based on `next`
 
 ### Implementation status
 
-- The standalone test host and the debugger boot the split tree by default;
-  the `logic=render` escape hatch is gone.
+- The standalone test host and the debugger boot the split tree by default.
+  The `logicLayer` option, the `logic=` URL parameter and the `logic=render`
+  escape hatch are gone: the service thread always owns the logic tree.
 - The production render entry (`packages/runtime/src/render.ts`) has been
   deleted. The compiler no longer emits `render.js`; hosts load `templates.js`
   directly.
@@ -20,6 +21,14 @@ Accepted — implementation branch `feat/wechat-split-tree`, based on `next`
   web glass tree, with its own smoke tests.
 - Runtime tests boot a service logic tree plus a headless tree thread; the old
   render-adapter test fixture is gone.
+- Stylesheets carry an explicit cascade role (builtin/app/page/component/
+  page-scope/shared); consumers filter by role and never infer it from output
+  filenames. Built-in CSS stays host-owned.
+- Hosts normalize built-in event detail; the service dispatches it without
+  per-tag knowledge. The generic render tree no longer synthesizes
+  checkbox-group or canvas events.
+- Render-tree tags, attributes and id formats come from `TINY_ENGINE_NAMING`;
+  the runtime purity check covers modern host globals.
 
 ## Context
 
@@ -157,7 +166,7 @@ host-owned.
 
 ### R5 — retire the old path
 
-- Make `logicLayer: 'service'` the default.
+- Remove the `logicLayer` switch; the service thread always owns the logic tree.
 - Delete the render-side expression/property path.
 - Update backend/devtool projections and acceptance docs.
 - Acceptance: full `pnpm accept:glass-easel`; Vant/WeUI; native render-tree
@@ -167,8 +176,8 @@ host-owned.
 
 ## Risks
 
-- **Two trees can diverge.** Mitigate with snapshot parity tests and the
-  switchable `logicLayer` flag.
+- **Two trees can diverge.** Mitigate with snapshot parity tests against the
+  shared tree protocol and the acceptance fixtures.
 - **Component definitions in render** must not execute app methods or duplicate
   state authority.
 - **Slots and built-in relations** require real parent/child composition; this

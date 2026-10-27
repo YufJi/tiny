@@ -8,7 +8,6 @@ import { generatedBaseFor } from './appRegistry';
 
 const search = new URLSearchParams(window.location.search);
 const appId = search.get('app') || 'demo';
-const logicLayer = search.get('logic') === 'service' ? 'service' : undefined;
 const generatedBase = generatedBaseFor(appId);
 const resolveAssetUrl = (assetPath) => (
   `${generatedBase}/${assetPath.split('/').map(encodeURIComponent).join('/')}`
@@ -70,11 +69,8 @@ manifestPromise.then(async (manifest) => {
       apiExtensions: createHostApiExtensions(),
       resolveAssetUrl,
       canvas: createBrowserCanvasAdapter(),
-      ...(logicLayer ? {
-        logicLayer,
-        loadTemplates: async () => (await importGenerated(`${generatedBase}/templates.js`)).default,
-        loadStyle: (stylePath) => styles[stylePath] ?? '',
-      } : {}),
+      loadTemplates: async () => (await importGenerated(`${generatedBase}/templates.js`)).default,
+      loadStyle: (stylePath) => styles[stylePath] ?? '',
       loadArtifacts: () => importGenerated(`${generatedBase}/service.js`),
     });
   });

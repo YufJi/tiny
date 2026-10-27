@@ -1,4 +1,5 @@
 import type { NormalizedRelation, RelationType } from './component-definition'
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import type { ComponentTree, ComponentTreeNode } from './component-tree'
 
 export type RelationInstance = {
@@ -171,7 +172,7 @@ export class RelationManager {
       case 'parent': {
         let current = node.parentId ? tree.get(node.parentId) : undefined
         while (current) {
-          if (current.tag !== 'page' && current.path === relation.targetPath) return [current]
+          if (current.tag !== TINY_ENGINE_NAMING.pageTag && current.path === relation.targetPath) return [current]
           current = current.parentId ? tree.get(current.parentId) : undefined
         }
         return []

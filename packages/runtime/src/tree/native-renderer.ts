@@ -3,6 +3,7 @@
  * onto its own view system (iOS/Android/macOS); the adapter keeps the service
  * node ids and patch semantics identical to the web glass render tree.
  */
+import { RENDER_TEXT_TAG } from './protocol'
 import type { RenderElement, RenderNode, RenderPatch, RenderText } from './protocol'
 import type { TreeEventPayload, TreeRenderer } from '../tree-thread'
 
@@ -38,7 +39,7 @@ export type NativeTreeRenderer = TreeRenderer & {
 
 const specOf = (node: RenderNode): NativeNodeSpec => (
   node.type === 'text'
-    ? { id: node.id, tag: '#text', text: node.text }
+    ? { id: node.id, tag: RENDER_TEXT_TAG, text: node.text }
     : {
         id: node.id,
         tag: node.tag,
@@ -155,7 +156,7 @@ export function createNativeTreeRenderer(host: NativeTreeHost): NativeTreeRender
     inspectTree: () => {
       const toInspect = (node: RenderNode): unknown => (
         node.type === 'text'
-          ? { id: node.id, type: 'text', tag: '#text', text: node.text, children: [] }
+          ? { id: node.id, type: 'text', tag: RENDER_TEXT_TAG, text: node.text, children: [] }
           : {
               id: node.id,
               type: 'element',

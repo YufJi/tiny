@@ -5,7 +5,12 @@ import * as glassEasel from 'glass-easel'
 import type { MiniProgramComponentSchema, QueryNodeSnapshot, TemplateRegistry } from '../types'
 import type { NormalizedComponentDefinition } from '../component-definition'
 import { GlassEaselRuntimeAdapter } from '../glass-easel-adapter'
-import { LogicBackendContext, LogicBackendElement, findLogicNodeByElement } from './backend'
+import {
+  LogicBackendContext,
+  LogicBackendElement,
+  findLogicNodeByElement,
+  type LogicStyleSheetRole,
+} from './backend'
 import { createRuntimeDiagnostic } from '../diagnostics'
 import { diffView } from './patch'
 import { createLogicSelectorQuery, queryLogicNodes, snapshotLogicNode } from './query'
@@ -45,7 +50,11 @@ export class LogicTreeAdapter {
   private readonly pageRoots = new Map<string, LogicBackendElement>()
   private activePageId?: string
   private readonly pagePaths = new Map<string, string>()
-  private readonly pageStyleEntries = new Map<string, Array<{ path: string; content: string }>>()
+  private readonly pageStyleEntries = new Map<string, Array<{
+    path: string
+    content: string
+    role: LogicStyleSheetRole
+  }>>()
   private activeTouches: unknown[] | undefined
   private activeChangedTouches: unknown[] | undefined
   private readonly lastSnapshots = new Map<string, ViewSnapshot>()
@@ -156,7 +165,11 @@ export class LogicTreeAdapter {
     return this.pagePaths.get(pageId) ?? ''
   }
 
-  private pageStyles(pageId?: string): Array<{ path: string; content: string }> {
+  private pageStyles(pageId?: string): Array<{
+    path: string
+    content: string
+    role: LogicStyleSheetRole
+  }> {
     const path = pageId ? this.pagePaths.get(pageId) : undefined
     if (path) return this.pageStyleEntries.get(path) ?? []
     return [...this.pageStyleEntries.values()].flat()
@@ -165,16 +178,14 @@ export class LogicTreeAdapter {
   hasAppPageScope(pageId?: string): boolean {
     if (pageId) {
       const entries = this.pageStyles(pageId)
-      return entries.length > 0
-        ? entries.some((entry) => entry.path.includes('@page:'))
-        : this.backend.hasAppPageScope()
+      if (entries.length > 0) return entries.some((entry) => entry.role === 'page-scope')
     }
     return this.backend.hasAppPageScope()
   }
 
   styleTexts(pageId?: string): string[] {
     return this.pageStyles(pageId)
-      .filter((entry) => !(entry.path.startsWith('styles/app.') && !entry.path.includes('page-scope')))
+      .filter((entry) => entry.role !== 'app' && entry.role !== 'builtin')
       .map((entry) => entry.content)
   }
 
@@ -476,38 +487,21 @@ export class LogicTreeAdapter {
     const element = node?.__wxElement
     if (!element) return false
     const native = payload.native ?? {}
+    // Hosts normalize built-in event detail (switch/checkbox-group/slider/...);
+    // the service must not re-derive it from tag names. The fallback below only
+    // covers hosts that still send raw native fields.
     let detail: unknown = payload.detail ?? {}
-    if (payload.name === 'input' || payload.name === 'change' || payload.name === 'confirm') {
-      if (node.tagName === 'switch' && payload.name === 'change') {
-        detail = { value: native.checked === true }
-      } else if (node.tagName === 'checkbox-group' && payload.name === 'change') {
-        const nativeValues = payload.native?.checkedValues
-        const values: string[] = Array.isArray(nativeValues)
-          ? nativeValues.map((value) => String(value))
-          : []
-        const visit = (element: LogicBackendElement): void => {
-          if (element.tagName === 'checkbox') {
-            const checked = element.attributes.get('checked')
-            if (checked === true || checked === 'true' || checked === '') {
-              values.push(String(element.attributes.get('value') ?? ''))
-            }
-          }
-          for (const child of element.shadowRoot?.children ?? element.children) visit(child)
-        }
-        if (values.length === 0) visit(node)
-        detail = { value: values }
-      } else {
-        detail = { value: native.value ?? '', cursor: native.cursor }
-      }
-    } else if (payload.name === 'tap' || payload.name === 'longpress') {
-      detail = { x: native.clientX ?? 0, y: native.clientY ?? 0 }
-    } else if (payload.name.startsWith('touch')) {
+    if (payload.name.startsWith('touch')) {
       detail = {
         ...(payload.detail && typeof payload.detail === 'object' ? payload.detail as object : {}),
         touches: payload.touches ?? [],
         changedTouches: payload.changedTouches ?? [],
       }
-    } else if (payload.name === 'scroll') {
+    } else if (payload.detail === undefined && (payload.name === 'input' || payload.name === 'change' || payload.name === 'confirm')) {
+      detail = { value: native.value ?? '', cursor: native.cursor }
+    } else if (payload.detail === undefined && (payload.name === 'tap' || payload.name === 'longpress')) {
+      detail = { x: native.clientX ?? 0, y: native.clientY ?? 0 }
+    } else if (payload.detail === undefined && payload.name === 'scroll') {
       detail = {
         scrollTop: native.scrollTop ?? 0,
         scrollLeft: native.scrollLeft ?? 0,

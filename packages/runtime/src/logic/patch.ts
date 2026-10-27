@@ -1,4 +1,5 @@
 import type { ViewNode, ViewPatch } from './protocol'
+import { RENDER_TEXT_TAG } from '../tree/protocol'
 
 function sameRecord(
   left: Record<string, string> | undefined,
@@ -29,7 +30,7 @@ function diffNode(
     patches.push({ type: 'insert', parentId, index, node: next })
     return
   }
-  if (next.tag === '#text') {
+  if (next.tag === RENDER_TEXT_TAG) {
     if (previous.text !== next.text) {
       patches.push({ type: 'text', viewId: next.viewId, text: next.text ?? '' })
     }

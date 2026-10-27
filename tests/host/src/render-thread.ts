@@ -16,7 +16,6 @@ const initialPageId = new URLSearchParams(window.location.search).get('pageId') 
 
 listenForRuntimePort('render', (transport) => {
   const style = document.createElement('style')
-  style.setAttribute('data-tiny-tree-styles', '')
   style.textContent = [
     BUILTIN_BASE_STYLES,
     BUILTIN_HOST_STYLES,

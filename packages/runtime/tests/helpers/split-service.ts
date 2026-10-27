@@ -32,7 +32,6 @@ export function lastLogicTree(): Record<string, unknown> {
 export function bootServiceThread(options: Parameters<typeof bootRealServiceThread>[0]): ServiceThreadRuntime {
   return bootRealServiceThread({
     ...options,
-    logicLayer: 'service',
     onLogicTreeCreated: (tree) => {
       lastTree = tree
     },

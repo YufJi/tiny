@@ -23,6 +23,15 @@ const hostGlobals = [
   'WebSocket',
   'fetch',
   'performance',
+  'OffscreenCanvas',
+  'getComputedStyle',
+  'HTMLElement',
+  'MessagePort',
+  'devicePixelRatio',
+  'CustomEvent',
+  'process',
+  'Buffer',
+  'require',
 ]
 
 function resolveRelative(specifier, fromFile) {
@@ -67,12 +76,21 @@ function visit(file) {
 visit(entry)
 
 const pattern = new RegExp(`\\b(${hostGlobals.join('|')})\\b`)
+// `glassEasel.Element` is a framework type; only a bare DOM `Element` is a
+// host dependency.
+const bareElement = /(?<![.\w$])Element\b/
 const violations = []
 for (const file of files) {
   const source = stripComments(fs.readFileSync(file, 'utf8'))
   for (const [index, line] of source.split('\n').entries()) {
     const match = line.match(pattern)
-    if (match) violations.push(`${path.relative(rootDir, file)}:${index + 1}: ${match[1]} -> ${line.trim()}`)
+    if (match) {
+      violations.push(`${path.relative(rootDir, file)}:${index + 1}: ${match[1]} -> ${line.trim()}`)
+      continue
+    }
+    if (bareElement.test(line)) {
+      violations.push(`${path.relative(rootDir, file)}:${index + 1}: Element -> ${line.trim()}`)
+    }
   }
 }
 

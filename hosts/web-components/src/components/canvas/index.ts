@@ -1,4 +1,5 @@
 import type * as glassEasel from 'glass-easel'
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { builtinDefinitionName } from '../../tags'
 
@@ -43,7 +44,7 @@ const MOUSE_AFTER_TOUCH_MS = 600
 
 // Shared with `@tiny/runtime`'s render adapter; the symbol registry keeps the
 // marker stable even when the two packages are bundled separately.
-const HANDLED_NATIVE_EVENT = Symbol.for('tiny.handledNativeEvent')
+const HANDLED_NATIVE_EVENT = Symbol.for(TINY_ENGINE_NAMING.handledNativeEventSymbol)
 
 function canvasHost(instance: unknown): CanvasHost | null {
   const backend = (instance as { getBackendElement?: () => unknown }).getBackendElement?.()

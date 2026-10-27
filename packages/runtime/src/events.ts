@@ -63,11 +63,13 @@ export function toJsonSafe(value: unknown, seen = new WeakSet<object>()): unknow
  * handlers. Without this, a component that emits synthetic touch events would
  * deliver every touch twice.
  */
-export const HANDLED_NATIVE_EVENT = Symbol.for('tiny.handledNativeEvent')
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
+
+export const HANDLED_NATIVE_EVENT = Symbol.for(TINY_ENGINE_NAMING.handledNativeEventSymbol)
 
 export function markNativeEventHandled(event: unknown): void {
   if (event && typeof event === 'object') {
-    ;(event as Record<PropertyKey, unknown>)[HANDLED_NATIVE_EVENT] = true
+    (event as Record<PropertyKey, unknown>)[HANDLED_NATIVE_EVENT] = true
   }
 }
 

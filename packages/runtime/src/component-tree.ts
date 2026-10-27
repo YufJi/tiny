@@ -1,3 +1,5 @@
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
+
 export type ComponentTreeNode = {
   componentId: string
   pageId: string
@@ -46,7 +48,7 @@ export class ComponentTree {
       componentId: rootId,
       pageId,
       path,
-      tag: 'page',
+      tag: TINY_ENGINE_NAMING.pageTag,
       id: '',
       className: '',
       parentId: null,
@@ -135,7 +137,7 @@ export class ComponentTree {
     const node = this.nodes.get(componentId)
     if (!node || !node.parentId) return undefined
     const parent = this.nodes.get(node.parentId)
-    if (!parent || parent.tag === 'page') return undefined
+    if (!parent || parent.tag === TINY_ENGINE_NAMING.pageTag) return undefined
     return parent
   }
 
@@ -145,7 +147,7 @@ export class ComponentTree {
     while (node?.parentId) {
       const parent = this.nodes.get(node.parentId)
       if (!parent) break
-      if (parent.tag !== 'page') result.push(parent)
+      if (parent.tag !== TINY_ENGINE_NAMING.pageTag) result.push(parent)
       node = parent
     }
     return result
@@ -300,7 +302,7 @@ function matchSelectorPart(
       let ancestor = current.parentId ? tree.get(current.parentId) : undefined
       let found: ComponentTreeNode | undefined
       while (ancestor) {
-        if (ancestor.tag !== 'page' && matchCompound(ancestor, compound)) {
+        if (ancestor.tag !== TINY_ENGINE_NAMING.pageTag && matchCompound(ancestor, compound)) {
           found = ancestor
           break
         }
@@ -310,13 +312,13 @@ function matchSelectorPart(
       current = found
     } else {
       const parent = current.parentId ? tree.get(current.parentId) : undefined
-      if (!parent || parent.tag === 'page' || !matchCompound(parent, compound)) return false
+      if (!parent || parent.tag === TINY_ENGINE_NAMING.pageTag || !matchCompound(parent, compound)) return false
       current = parent
     }
   }
   const scope = tree.get(scopeId)
   if (!scope) return false
-  if (scope.tag === 'page') {
+  if (scope.tag === TINY_ENGINE_NAMING.pageTag) {
     if (node.pageId !== scope.pageId) return false
   } else if (!isDescendantOf(node, scopeId, tree)) {
     return false

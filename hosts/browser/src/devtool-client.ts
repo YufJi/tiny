@@ -42,7 +42,6 @@ export type DevtoolRuntimeOptions = {
   lifecycleLimit?: number
   /** Maximum pages per mini program. Defaults to 10. */
   maxPageStack?: number
-  logicLayer?: 'render' | 'service'
 }
 
 export type DevtoolRuntimeListener = (state: DevtoolRuntimeState) => void
@@ -117,7 +116,6 @@ export class DevtoolRuntimeClient {
         storage: this.options.storage,
         container,
         maxPageStack: this.options.maxPageStack,
-        logicLayer: this.options.logicLayer,
         onDiagnostic: (diagnostic) => this.record(diagnostic),
       })
       await this.host.host.bootstrap()

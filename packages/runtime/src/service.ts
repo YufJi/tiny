@@ -1,6 +1,7 @@
 import { BridgeConnection } from '@tiny/bridge'
 import {
   runtimeCompatibilityFromManifest,
+  TINY_ENGINE_NAMING,
   type PageArtifact,
 } from '@tiny/manifest'
 import { buildComponentSchemas } from './component-schema'
@@ -685,7 +686,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       ? registry.normalizedComponents.get(path)
       : undefined
     pageIdCounter += 1
-    const pageId = `page-${pageIdCounter}`
+    const pageId = `${TINY_ENGINE_NAMING.pageIdPrefix}${pageIdCounter}`
     componentTree.ensurePage(pageId, path)
     const page = new MiniProgramPageInstance(
       pageId,
@@ -797,20 +798,18 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         options.manifest.components,
         registry.normalizedComponents,
       )
-      if (options.logicLayer === 'service' && options.loadTemplates) {
-        const templates = await options.loadTemplates()
-        logicTree = new LogicTreeAdapter({
-          manifest: options.manifest,
-          templates,
-          loadStyle: options.loadStyle,
-          pageOptions: registry.pages,
-          componentDefinitions: registry.normalizedComponents,
-          onDataChange: scheduleTreeUpdate,
-          onDiagnostic: (diagnostic) => connection.sendDiagnostic('warn', diagnostic),
-        })
-        logicTree.registerComponentSchemas(componentSchemas)
-        options.onLogicTreeCreated?.(logicTree)
-      }
+      const templates = await options.loadTemplates()
+      logicTree = new LogicTreeAdapter({
+        manifest: options.manifest,
+        templates,
+        loadStyle: options.loadStyle,
+        pageOptions: registry.pages,
+        componentDefinitions: registry.normalizedComponents,
+        onDataChange: scheduleTreeUpdate,
+        onDiagnostic: (diagnostic) => connection.sendDiagnostic('warn', diagnostic),
+      })
+      logicTree.registerComponentSchemas(componentSchemas)
+      options.onLogicTreeCreated?.(logicTree)
       if (pageStack.length === 0) {
         const pageArtifact = findPageArtifact(options.manifest, currentPath)
         const currentPage = createPageInstance(currentPath, {})

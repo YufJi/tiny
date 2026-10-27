@@ -1,4 +1,11 @@
 import * as glassEasel from 'glass-easel'
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
+import {
+  RENDER_FRAGMENT_TAG,
+  RENDER_PAGE_TAG,
+  RENDER_TEXT_TAG,
+  RENDER_VIRTUAL_TAG,
+} from '../tree/protocol'
 import type { RenderElement, RenderNode, RenderText } from '../tree/protocol'
 import type { ViewEventBinding, ViewNode, ViewSnapshot } from './protocol'
 
@@ -242,7 +249,7 @@ export class LogicBackendShadowRoot extends LogicBackendElement {
       const name = this.scopeNameResolver?.(scopeId)
       if (name && !childScopes.includes(name)) childScopes.push(name)
     }
-    node.scopeNames = tagName === 'page' ? childScopes : this.scopeNames
+    node.scopeNames = tagName === RENDER_PAGE_TAG ? childScopes : this.scopeNames
     node.hostScopeName = styleScope
       ? this.scopeNameResolver?.(styleScope) ?? ''
       : ''
@@ -266,6 +273,32 @@ export class LogicBackendShadowRoot extends LogicBackendElement {
   }
 }
 
+/** Role of a stylesheet in the mini-program cascade. */
+export type LogicStyleSheetRole =
+  | 'builtin'
+  | 'low-priority'
+  | 'app'
+  | 'page'
+  | 'component'
+  | 'page-scope'
+  | 'shared'
+  | 'other'
+
+export type LogicStyleSheetEntry = {
+  path: string
+  content: string
+  role: LogicStyleSheetRole
+  /** Page/component source path that owns this sheet, when known. */
+  ownerPath?: string
+}
+
+type AppendedStyleSheet = {
+  path: string
+  scope?: number
+  role: LogicStyleSheetRole
+  ownerPath?: string
+}
+
 export class LogicBackendContext {
   mode = glassEasel.BackendMode.Shadow
   private readonly root: LogicBackendShadowRoot = new LogicBackendShadowRoot()
@@ -273,7 +306,7 @@ export class LogicBackendContext {
   private viewIdCounter = 0
   private styleSheetCounter = 0
   private readonly styleContents = new Map<string, string>()
-  private readonly appendedStyles: Array<{ path: string; scope?: number }> = []
+  private readonly appendedStyles: AppendedStyleSheet[] = []
 
   destroy(): void {
     // No host resources.
@@ -299,9 +332,18 @@ export class LogicBackendContext {
     if (typeof content === 'string') this.styleContents.set(path, content)
   }
 
-  appendStyleSheetPath(path: string, styleScope?: number): number {
+  appendStyleSheetPath(
+    path: string,
+    styleScope?: number,
+    meta: { role?: LogicStyleSheetRole; ownerPath?: string } = {},
+  ): number {
     this.styleSheetCounter += 1
-    this.appendedStyles.push({ path, scope: styleScope })
+    this.appendedStyles.push({
+      path,
+      scope: styleScope,
+      role: meta.role ?? 'other',
+      ...(meta.ownerPath ? { ownerPath: meta.ownerPath } : {}),
+    })
     return this.styleSheetCounter
   }
 
@@ -309,15 +351,22 @@ export class LogicBackendContext {
     return this.appendedStyles.length
   }
 
-  styleEntriesSince(index: number): Array<{ path: string; content: string }> {
+  styleEntriesSince(index: number): LogicStyleSheetEntry[] {
     return this.appendedStyles.slice(index).flatMap((entry) => {
       const content = this.styleContents.get(entry.path)
-      return typeof content === 'string' ? [{ path: entry.path, content }] : []
+      return typeof content === 'string'
+        ? [{
+            path: entry.path,
+            content,
+            role: entry.role,
+            ...(entry.ownerPath ? { ownerPath: entry.ownerPath } : {}),
+          }]
+        : []
     })
   }
 
   hasAppPageScope(): boolean {
-    return this.appendedStyles.some((entry) => entry.path.includes('@page:'))
+    return this.appendedStyles.some((entry) => entry.role === 'page-scope')
   }
 
   getAppendedStyleTexts(): string[] {
@@ -325,8 +374,9 @@ export class LogicBackendContext {
     const result: string[] = []
     for (const entry of this.appendedStyles) {
       if (seen.has(entry.path)) continue
-      // Raw app CSS is global; send its page-scoped copy instead.
-      if (entry.path.startsWith('styles/app.') && !entry.path.includes('page-scope')) continue
+      // The raw app sheet is global to the app; only its page-scoped copies
+      // travel to a page render tree. Built-in styles are host-owned.
+      if (entry.role === 'app' || entry.role === 'builtin') continue
       seen.add(entry.path)
       const css = this.styleContents.get(entry.path)
       if (typeof css === 'string' && css.trim().length > 0) result.push(css)
@@ -369,7 +419,7 @@ export class LogicBackendContext {
   ensureViewId(node: LogicBackendElement): string {
     if (!node.viewId) {
       this.viewIdCounter += 1
-      node.viewId = `view-${this.viewIdCounter}`
+      node.viewId = `${TINY_ENGINE_NAMING.viewIdPrefix}${this.viewIdCounter}`
       this.nodesByViewId.set(node.viewId, node)
     }
     return node.viewId
@@ -390,7 +440,7 @@ export class LogicBackendContext {
       const props = Object.fromEntries(node.attributes)
       if (node.id) props.id = node.id
       if (node.classes.length > 0) props.class = node.classes.join(' ')
-      if (node.hostScopeName) props['wx-host'] = node.hostScopeName
+      if (node.hostScopeName) props[TINY_ENGINE_NAMING.hostAttribute] = node.hostScopeName
       if (node.styleText) props.style = node.styleText
       return props
     }
@@ -406,7 +456,7 @@ export class LogicBackendContext {
       for (const node of nodes) {
         const converted = convert(node, slotContent)
         if (!converted) continue
-        if (converted.type === 'element' && converted.tag === '#fragment') {
+        if (converted.type === 'element' && converted.tag === RENDER_FRAGMENT_TAG) {
           result.push(...(converted.children ?? []))
         } else {
           result.push(converted)
@@ -425,7 +475,7 @@ export class LogicBackendContext {
         return {
           type: 'element',
           id: nextId(node),
-          tag: '#fragment',
+          tag: RENDER_FRAGMENT_TAG,
           children: convertChildren(node.children),
         }
       }
@@ -437,14 +487,14 @@ export class LogicBackendContext {
           return {
             type: 'element',
             id: nextId(node),
-            tag: '#fragment',
+            tag: RENDER_FRAGMENT_TAG,
             children: convertChildren(content),
           }
         }
         return {
           type: 'element',
           id: nextId(node),
-          tag: '#fragment',
+          tag: RENDER_FRAGMENT_TAG,
           children: convertChildren(node.children, slotContent),
         }
       }
@@ -463,7 +513,7 @@ export class LogicBackendContext {
       const element: RenderElement = {
         type: 'element',
         id: nextId(node),
-        tag: node === rootElement ? 'page' : node.tagName,
+        tag: node === rootElement ? RENDER_PAGE_TAG : node.tagName,
         props: propsFor(node),
         ...(external && Object.keys(external).length > 0 ? { externalClasses: external } : {}),
         ...(datasetFor(node) ? { dataset: datasetFor(node) } : {}),
@@ -500,7 +550,7 @@ export class LogicBackendContext {
       for (const node of nodes) {
         const converted = convert(node, slotContent)
         if (!converted) continue
-        if (converted.tag === '#fragment' || converted.tag === '#virtual') {
+        if (converted.tag === RENDER_FRAGMENT_TAG || converted.tag === RENDER_VIRTUAL_TAG) {
           result.push(...(converted.children ?? []))
         } else {
           result.push(converted)
@@ -513,10 +563,10 @@ export class LogicBackendContext {
       slotContent?: LogicBackendElement[],
     ): ViewNode | null => {
       if (node.nodeType === 'text') {
-        return { viewId: nextId(node), tag: '#text', text: node.text }
+        return { viewId: nextId(node), tag: RENDER_TEXT_TAG, text: node.text }
       }
       if (node.nodeType === 'fragment') {
-        return { viewId: nextId(node), tag: '#fragment', children: convertChildren(node.children) }
+        return { viewId: nextId(node), tag: RENDER_FRAGMENT_TAG, children: convertChildren(node.children) }
       }
       if (node.nodeType === 'virtual') {
         if (node.virtualName === 'slot' || node.tagName === 'slot') {
@@ -525,13 +575,13 @@ export class LogicBackendContext {
           const content = matched.length > 0 ? matched : node.children
           return {
             viewId: nextId(node),
-            tag: '#fragment',
+            tag: RENDER_FRAGMENT_TAG,
             children: convertChildren(content),
           }
         }
         return {
           viewId: nextId(node),
-          tag: '#virtual',
+          tag: RENDER_VIRTUAL_TAG,
           children: convertChildren(node.children, slotContent),
         }
       }
@@ -548,8 +598,8 @@ export class LogicBackendContext {
         if (key === 'class' || key === 'style' || key === 'id') continue
         attributes[key] = toAttributeString(value)
       }
-      if (node.tagName === 'page' && node.scopeNames[0]) {
-        attributes['wx-host'] = node.scopeNames[0]
+      if (node.tagName === RENDER_PAGE_TAG && node.scopeNames[0]) {
+        attributes[TINY_ENGINE_NAMING.hostAttribute] = node.scopeNames[0]
       }
       const rawChildren = node.nodeType === 'component' && node.shadowRoot
         ? convertChildren(node.shadowRoot.children, node.children)
