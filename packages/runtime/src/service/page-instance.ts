@@ -19,6 +19,11 @@ const LIFECYCLE_METHODS = new Set([
   'onReachBottom',
   'onResize',
   'onTabItemTap',
+  'onPullDownRefresh',
+  'onShareAppMessage',
+  'onShareTimeline',
+  'onAddToFavorites',
+  'onSaveExitState',
 ])
 
 export type PageLifecycleName = RuntimePageLifecyclePhase
@@ -32,6 +37,7 @@ export class MiniProgramPageInstance implements ObserverHost {
   readonly properties: Record<string, unknown>
   readonly lifecycleEvents: string[] = []
   observerDepth = 0
+  savedExitState?: unknown
   private readonly options: MiniProgramPageOptions
   private readonly definition?: NormalizedComponentDefinition
   private readonly methods = new Map<string, (...args: unknown[]) => unknown>()
@@ -139,21 +145,29 @@ export class MiniProgramPageInstance implements ObserverHost {
     return method(...args)
   }
 
-  triggerLifecycle(name: PageLifecycleName, args: unknown[] = []): void {
-    if (this.unloaded) return
+  triggerLifecycle(name: PageLifecycleName, args: unknown[] = []): unknown {
+    if (this.unloaded) return undefined
     this.lifecycleEvents.push(name)
+    let result: unknown
     if (this.definition) {
       // WeChat requires page lifecycle methods to live in `methods`.
-      this.methods.get(name)?.(...args)
+      result = this.methods.get(name)?.(...args)
       // Keep the engine's legacy compatibility path for lifetimes.onXxx.
       const legacy = (this.options.lifetimes as Record<string, ((...args: unknown[]) => void) | undefined> | undefined)?.[name]
-      if (typeof legacy === 'function') legacy.apply(this, args)
+      if (typeof legacy === 'function') {
+        const legacyResult = legacy.apply(this, args)
+        if (result === undefined) result = legacyResult
+      }
     } else {
-      ;(this.options as MiniProgramComponentOptions).lifetimes?.[name]?.apply(this, args)
-      const legacyMethod = this.options[name] as ((...params: unknown[]) => void) | undefined
-      if (typeof legacyMethod === 'function') legacyMethod.apply(this, args)
+      result = (this.options as MiniProgramComponentOptions).lifetimes?.[name]?.apply(this, args)
+      const legacyMethod = this.options[name] as ((...params: unknown[]) => unknown) | undefined
+      if (typeof legacyMethod === 'function') {
+        const legacyResult = legacyMethod.apply(this, args)
+        if (result === undefined) result = legacyResult
+      }
     }
     if (name === 'onUnload') this.unloaded = true
+    return result
   }
 
   getComponentOptions(): MiniProgramPageOptions | NormalizedComponentDefinition {

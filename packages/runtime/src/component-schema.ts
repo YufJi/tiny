@@ -1,5 +1,9 @@
 import type { ComponentArtifact } from '@tiny/manifest'
-import { normalizeComponentDefinition, type NormalizedComponentDefinition } from './component-definition'
+import {
+  normalizeComponentDefinition,
+  parsePureDataPattern,
+  type NormalizedComponentDefinition,
+} from './component-definition'
 import type { MiniProgramComponentSchema } from './types'
 
 export function buildComponentSchemas(
@@ -11,12 +15,16 @@ export function buildComponentSchemas(
       ?? normalizeComponentDefinition({}, artifact.path)
     const effective = artifact.configuration?.effective ?? {}
     const styleIsolation = resolveStyleIsolation(definition, effective)
+    const pureDataPattern = definition.options.pureDataPattern
+      ?? parsePureDataPattern(effective.pureDataPattern)
     return {
       componentId: `component-${index + 1}`,
       path: artifact.path,
       data: definition.data,
       properties: definition.properties,
       using: readUsingComponents(effective),
+      generics: readComponentGenerics(effective),
+      ...(pureDataPattern ? { pureDataPattern: pureDataPattern.source } : {}),
       externalClasses: definition.externalClasses,
       formField: definition.formField,
       observers: definition.observers.map((observer) => ({
@@ -57,6 +65,27 @@ function readStyleIsolation(
   const value = config.styleIsolation
   if (value === 'isolated' || value === 'apply-shared' || value === 'shared') return value
   return undefined
+}
+
+export function readComponentGenerics(
+  config: Record<string, unknown>,
+): Record<string, { default?: string } | true> {
+  const raw = config.componentGenerics
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  const result: Record<string, { default?: string } | true> = {}
+  for (const [alias, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!alias) continue
+    if (value === true) {
+      result[alias] = true
+      continue
+    }
+    if (!value || typeof value !== 'object') continue
+    const defaultPath = (value as Record<string, unknown>).default
+    result[alias] = typeof defaultPath === 'string' && defaultPath.length > 0
+      ? { default: defaultPath }
+      : true
+  }
+  return result
 }
 
 function readUsingComponents(config: unknown): Record<string, string> {

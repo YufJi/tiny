@@ -37,10 +37,18 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     ...options.manifest.components.map((component) => component.path),
   ]
   const compatibility = runtimeCompatibilityFromManifest(options.manifest)
+  const componentConfigurations = new Map<string, Record<string, unknown>>()
+  for (const artifact of [
+    ...options.manifest.components,
+    ...options.manifest.pages.filter((page) => page.bodyType === 'component'),
+  ]) {
+    componentConfigurations.set(artifact.path, artifact.configuration?.effective ?? {})
+  }
   const registry = new MiniProgramPageRegistry(
     expectedPagePaths,
     expectedComponentPaths,
     compatibility,
+    componentConfigurations,
   )
   let currentPath = options.initialPath
   const pageInstances = new Map<string, MiniProgramPageInstance>()
@@ -149,6 +157,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     windowHeight: 0,
   }
   const storageSnapshot: StorageSnapshot = {}
+  const themeListeners = new Set<(value: unknown) => void>()
   const supportedApiNames = new Set<string>()
   const apiContext: ServiceApiContext = {
     connection: null as unknown as BridgeConnection,
@@ -164,6 +173,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     canvas: options.canvas,
     resolveAssetUrl: options.resolveAssetUrl,
     tabBar: tabBarApi,
+    themeListeners,
     get pageId() {
       return activePage?.pageId
     },
@@ -297,9 +307,10 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     args: unknown[] = [],
     extra?: Record<string, unknown>,
     emitDiagnostic = true,
-  ) => {
-    page.triggerLifecycle(phase, args)
+  ): unknown => {
+    const result = page.triggerLifecycle(phase, args)
     if (emitDiagnostic) emitPageLifecycle(page, phase, extra)
+    return result
   }
   const sendRuntimeState = () => {
     const pageStackIds = pageStack.map((page) => page.pageId)
@@ -344,6 +355,13 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     for (const [componentId, component] of componentInstances) {
       if (componentTree.get(componentId)?.pageId === pageId) component.triggerPageLifetime(phase)
     }
+  }
+  const saveExitState = (page: MiniProgramPageInstance): unknown => {
+    const state = triggerPageLifecycle(page, 'onSaveExitState')
+    if (state !== undefined) {
+      page.savedExitState = cloneJsonSafe(state)
+    }
+    return state
   }
   const destroyPage = (page: MiniProgramPageInstance, unloadedPageIds?: string[]) => {
     page.triggerPageLifetime('hide')
@@ -398,6 +416,31 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     activePage = page
     if (tabBarPagePaths.has(path)) tabPageCache.set(path, page)
     return page
+  }
+  const assertRouteTarget = (
+    path: string,
+    query: Record<string, string>,
+    optionsForTarget: { allowTabBar: boolean; isEntryPage?: boolean } = { allowTabBar: true },
+  ): void => {
+    if (!findPageArtifact(options.manifest, path)) {
+      registry.reportPageNotFound({
+        path,
+        query,
+        isEntryPage: optionsForTarget.isEntryPage === true,
+      })
+      throw new Error(`page is not declared: ${path}`)
+    }
+    if (!registry.pages.get(path) && !registry.components.get(path)) {
+      registry.reportPageNotFound({
+        path,
+        query,
+        isEntryPage: optionsForTarget.isEntryPage === true,
+      })
+      throw new Error(`page is not registered: ${path}`)
+    }
+    if (!optionsForTarget.allowTabBar && tabBarPagePaths.has(path)) {
+      throw new Error(`can not navigateTo a tabbar page: ${path}`)
+    }
   }
   const resolveRoute = (fromPath: string, url: string) => {
     const [rawPath, queryString] = url.split('?', 2)
@@ -458,9 +501,16 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         pageComponents,
       }
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      registry.reportError(
+        error instanceof Error && error.stack ? `${message}\n${error.stack}` : message,
+      )
+      if (!findPageArtifact(options.manifest, currentPath)) {
+        registry.reportPageNotFound({ path: currentPath, query: {}, isEntryPage: true })
+      }
       connection.sendDiagnostic('error', {
         code: 'BOOTSTRAP_ERROR',
-        message: error instanceof Error ? error.message : String(error),
+        message,
         details: error instanceof Error && error.stack ? { stack: error.stack } : {},
       })
       throw error
@@ -511,9 +561,13 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       sendRuntimeState()
       return { status: 'ready', pageId: page.pageId }
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      registry.reportError(
+        error instanceof Error && error.stack ? `${message}\n${error.stack}` : message,
+      )
       connection.sendDiagnostic('error', {
         code: 'PAGE_READY_ERROR',
-        message: error instanceof Error ? error.message : String(error),
+        message,
         details: error instanceof Error && error.stack ? { stack: error.stack } : {},
       })
       throw error
@@ -526,15 +580,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     const route = resolveRoute(currentPath, payload.url)
     // Resolve the target before hiding the current page: a typo in a URL must
     // not leave the app with an onHide that is never followed by onShow.
-    if (!findPageArtifact(options.manifest, route.path)) {
-      throw new Error(`page is not declared: ${route.path}`)
-    }
-    if (!registry.pages.get(route.path) && !registry.components.get(route.path)) {
-      throw new Error(`page is not registered: ${route.path}`)
-    }
-    if (tabBarPagePaths.has(route.path)) {
-      throw new Error(`can not navigateTo a tabbar page: ${route.path}`)
-    }
+    assertRouteTarget(route.path, route.query, { allowTabBar: false })
     if (pageStack.length >= maxPageStack) {
       throw new Error(`navigateTo:fail page stack limit ${maxPageStack}`)
     }
@@ -575,6 +621,76 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }
   })
 
+  connection.onControl('page', 'redirectTo', async (message) => {
+    const payload = message.payload as { url?: string }
+    if (!payload.url) throw new Error('redirectTo requires a url')
+    const route = resolveRoute(currentPath, payload.url)
+    assertRouteTarget(route.path, route.query, { allowTabBar: false })
+    const previousPage = activePage
+    const previousPageId = previousPage?.pageId
+    const unloadedPageIds: string[] = []
+    if (previousPage) {
+      const stackIndex = pageStack.lastIndexOf(previousPage)
+      if (stackIndex >= 0) pageStack.splice(stackIndex, 1)
+      destroyPage(previousPage, unloadedPageIds)
+      activePage = pageStack.at(-1) ?? null
+    }
+    const page = createPageInstance(route.path, route.query)
+    triggerPageLifecycle(page, 'onLoad', [page.query])
+    triggerPageLifecycle(page, 'onShow')
+    page.triggerPageLifetime('show')
+    if (findPageArtifact(options.manifest, page.path)?.bodyType === 'component') {
+      page.triggerComponentLifecycle('attached')
+      page.triggerComponentLifecycle('ready')
+    }
+    currentPath = page.path
+    sendRuntimeState()
+    return {
+      status: 'redirected',
+      errMsg: 'redirectTo:ok',
+      path: page.path,
+      pageId: page.pageId,
+      query: page.query,
+      ...(previousPageId ? { previousPageId } : {}),
+      initialData: cloneJsonSafe(page.data),
+      unloadedPageIds,
+    }
+  })
+
+  connection.onControl('page', 'reLaunch', async (message) => {
+    const payload = message.payload as { url?: string }
+    if (!payload.url) throw new Error('reLaunch requires a url')
+    const route = resolveRoute(currentPath, payload.url)
+    assertRouteTarget(route.path, route.query, { allowTabBar: true })
+    const previousPageId = activePage?.pageId
+    const unloadedPageIds: string[] = []
+    const pages = new Set<MiniProgramPageInstance>([...pageStack].reverse())
+    for (const cachedPage of tabPageCache.values()) pages.add(cachedPage)
+    pageStack.length = 0
+    activePage = null
+    for (const oldPage of pages) destroyPage(oldPage, unloadedPageIds)
+    const page = createPageInstance(route.path, route.query)
+    triggerPageLifecycle(page, 'onLoad', [page.query])
+    triggerPageLifecycle(page, 'onShow')
+    page.triggerPageLifetime('show')
+    if (findPageArtifact(options.manifest, page.path)?.bodyType === 'component') {
+      page.triggerComponentLifecycle('attached')
+      page.triggerComponentLifecycle('ready')
+    }
+    currentPath = page.path
+    sendRuntimeState()
+    return {
+      status: 'relaunched',
+      errMsg: 'reLaunch:ok',
+      path: page.path,
+      pageId: page.pageId,
+      query: page.query,
+      ...(previousPageId ? { previousPageId } : {}),
+      initialData: cloneJsonSafe(page.data),
+      unloadedPageIds,
+    }
+  })
+
   connection.onControl('page', 'switchTab', async (message) => {
     const model = requireTabBar()
     const payload = message.payload as { url?: string; index?: number }
@@ -606,12 +722,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }
     const tapEvent = { index, pagePath: item.pagePath, text: item.text }
     if (!tabPageCache.has(item.pagePath)) {
-      if (!findPageArtifact(options.manifest, item.pagePath)) {
-        throw new Error(`tabBar page is not declared: ${item.pagePath}`)
-      }
-      if (!registry.pages.get(item.pagePath) && !registry.components.get(item.pagePath)) {
-        throw new Error(`tabBar page is not registered: ${item.pagePath}`)
-      }
+      assertRouteTarget(item.pagePath, {}, { allowTabBar: true })
     }
     const previousPage = activePage
     if (previousPage && previousPage.path === item.pagePath) {
@@ -715,6 +826,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     const page = requireActivePage(pageInstances, (message.payload as { pageId?: string }).pageId, activePage)
     if (!appVisible) return { status: 'hidden', pageId: page.pageId }
     appVisible = false
+    saveExitState(page)
     registry.hideApp()
     triggerPageLifecycle(page, 'onHide')
     page.triggerPageLifetime('hide')
@@ -733,6 +845,59 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     triggerComponentsPageLifetime(page.pageId, 'show')
     sendRuntimeState()
     return { status: 'shown', pageId: page.pageId }
+  })
+
+  connection.onControl('page', 'pullDownRefresh', async (message) => {
+    const page = requireActivePage(pageInstances, (message.payload as { pageId?: string }).pageId, activePage)
+    if (!appVisible) return { status: 'ignored', pageId: page.pageId }
+    triggerPageLifecycle(page, 'onPullDownRefresh')
+    return { status: 'refreshed', pageId: page.pageId }
+  })
+
+  connection.onControl('page', 'share', async (message) => {
+    const payload = message.payload as {
+      pageId?: string
+      type?: 'appMessage' | 'timeline' | 'favorites'
+      from?: 'button' | 'menu'
+      target?: unknown
+      webViewUrl?: string
+    }
+    const page = requireActivePage(pageInstances, payload.pageId, activePage)
+    const type = payload.type === 'timeline' || payload.type === 'favorites'
+      ? payload.type
+      : 'appMessage'
+    const phase: PageLifecycleName = type === 'timeline'
+      ? 'onShareTimeline'
+      : type === 'favorites'
+        ? 'onAddToFavorites'
+        : 'onShareAppMessage'
+    const args = type === 'appMessage'
+      ? [{
+          from: payload.from === 'button' ? 'button' : 'menu',
+          ...(payload.target !== undefined ? { target: payload.target } : {}),
+          ...(payload.webViewUrl ? { webViewUrl: payload.webViewUrl } : {}),
+        }]
+      : type === 'favorites'
+        ? [{ ...(payload.webViewUrl ? { webViewUrl: payload.webViewUrl } : {}) }]
+        : []
+    const result = triggerPageLifecycle(page, phase, args)
+    // onShareAppMessage may return `{ promise }` or a Promise; resolve it before
+    // crossing the bridge so the host receives the final share object.
+    const resolved = result && typeof (result as PromiseLike<unknown>).then === 'function'
+      ? await (result as PromiseLike<unknown>)
+      : result
+    return {
+      status: 'shared',
+      type,
+      handled: resolved !== undefined,
+      share: cloneJsonSafe(resolved ?? null),
+    }
+  })
+
+  connection.onControl('page', 'saveExitState', async (message) => {
+    const page = requireActivePage(pageInstances, (message.payload as { pageId?: string }).pageId, activePage)
+    const state = saveExitState(page)
+    return { status: 'saved', state: cloneJsonSafe(state ?? null) }
   })
 
   connection.onControl('runtime', 'resize', async (message) => {
@@ -754,6 +919,29 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }
     sendRuntimeState()
     return { status: 'resized', ...systemInfoSnapshot }
+  })
+
+  connection.onControl('runtime', 'themeChange', async (message) => {
+    const theme = (message.payload as { theme?: string }).theme === 'dark' ? 'dark' : 'light'
+    registry.reportThemeChange(theme)
+    for (const listener of themeListeners) {
+      try {
+        listener({ theme })
+      } catch (error) {
+        connection.sendDiagnostic('warn', {
+          code: 'THEME_LISTENER_ERROR',
+          message: error instanceof Error ? error.message : String(error),
+        }, activePage?.pageId)
+      }
+    }
+    return { status: 'theme-changed', theme }
+  })
+
+  connection.onEvent('page', 'pullDownRefresh', (message) => {
+    const pageId = message.pageId
+    const page = pageId ? pageInstances.get(pageId) : activePage
+    if (!page || !appVisible || page !== activePage) return
+    triggerPageLifecycle(page, 'onPullDownRefresh')
   })
 
   connection.onEvent('page', 'scroll', (message) => {
@@ -986,9 +1174,13 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         page.invokeMethod(handler, [event])
       }
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      registry.reportError(
+        error instanceof Error && error.stack ? `${message}\n${error.stack}` : message,
+      )
       connection.sendDiagnostic('error', {
         code: 'EVENT_HANDLER_ERROR',
-        message: error instanceof Error ? error.message : String(error),
+        message,
         handler,
         eventType: event.type,
       }, page.pageId)
@@ -1010,6 +1202,9 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     componentInstances,
     componentTree,
     relationManager,
+    notifyUnhandledRejection(reason, promise) {
+      registry.reportUnhandledRejection(reason, promise)
+    },
   }
 }
 

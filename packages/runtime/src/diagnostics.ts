@@ -64,6 +64,11 @@ export type RuntimePageLifecyclePhase =
   | 'onReachBottom'
   | 'onResize'
   | 'onTabItemTap'
+  | 'onPullDownRefresh'
+  | 'onShareAppMessage'
+  | 'onShareTimeline'
+  | 'onAddToFavorites'
+  | 'onSaveExitState'
 
 export type RuntimePageLifecycleDetails = {
   pageId: string

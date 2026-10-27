@@ -122,6 +122,44 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
     return { status: 'ready', path: payload.path, pageId: payload.pageId, components }
   })
 
+  connection.onControl('page', 'redirectTo', async (message) => {
+    const payload = message.payload as {
+      path?: string
+      pageId?: string
+      initialData?: Record<string, unknown>
+      previousPageId?: string
+      unloadedPageIds?: string[]
+    }
+    const unmounted = new Set(payload.unloadedPageIds ?? [])
+    if (payload.previousPageId) unmounted.add(payload.previousPageId)
+    for (const pageId of unmounted) adapter.unmountPage(pageId)
+    if (!payload.path || !payload.pageId) throw new Error('redirectTo requires a rendered page')
+    const page = findPage(manifestForRender, payload.path)
+    if (!page) throw new Error(`page is not declared: ${payload.path}`)
+    adapter.mountPage(payload.path, payload.initialData ?? {}, payload.pageId)
+    const components = await settlePage(adapter, page)
+    return { status: 'ready', path: payload.path, pageId: payload.pageId, components }
+  })
+
+  connection.onControl('page', 'reLaunch', async (message) => {
+    const payload = message.payload as {
+      path?: string
+      pageId?: string
+      initialData?: Record<string, unknown>
+      previousPageId?: string
+      unloadedPageIds?: string[]
+    }
+    const unmounted = new Set(payload.unloadedPageIds ?? [])
+    if (payload.previousPageId) unmounted.add(payload.previousPageId)
+    for (const pageId of unmounted) adapter.unmountPage(pageId)
+    if (!payload.path || !payload.pageId) throw new Error('reLaunch requires a rendered page')
+    const page = findPage(manifestForRender, payload.path)
+    if (!page) throw new Error(`page is not declared: ${payload.path}`)
+    adapter.mountPage(payload.path, payload.initialData ?? {}, payload.pageId)
+    const components = page ? await settlePage(adapter, page) : []
+    return { status: 'ready', path: payload.path, pageId: payload.pageId, components }
+  })
+
   connection.onControl('page', 'navigateBack', async (message) => {
     const payload = message.payload as {
       path?: string

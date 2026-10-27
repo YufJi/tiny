@@ -14,6 +14,8 @@ import type {
 } from './types'
 import { isNativeEventHandled, toJsonSafe, type SerializedEventNode, type SerializedMiniProgramEvent } from './events'
 import { createRuntimeDiagnostic } from './diagnostics'
+import { readComponentGenerics } from './component-schema'
+import { parsePureDataPattern } from './component-definition'
 import { resolveAssetPath, rewriteCssAssetUrls, splitAssetSuffix, type AssetUrlResolver } from './assets'
 
 const NATIVE_COMPONENT_METHODS = new Set([
@@ -334,6 +336,9 @@ export class GlassEaselRuntimeAdapter {
     const pageIsolation = this.resolvePageIsolation(page)
     const childStyleScope = pageIsolation === 'isolated' ? undefined : pageScope
     const using = this.resolveComponentUsing(page.path, page.configuration, childStyleScope)
+    const effective = (page.configuration?.effective ?? {}) as Record<string, unknown>
+    const generics = this.resolveGenerics(page.path, readComponentGenerics(effective))
+    const pureDataPattern = parsePureDataPattern(effective.pureDataPattern)
     if (pageIsolation !== 'isolated') this.applySharedComponentStyles(page, pageScope)
     const definition = this.componentSpace
       .defineWithMethodCaller(page.path)
@@ -343,11 +348,13 @@ export class GlassEaselRuntimeAdapter {
       })
       .data(() => data)
       .usingComponents(using as never)
+      .generics(generics as never)
       .options({
         multipleSlots: true,
         writeIdToDOM: true,
         useMethodCallerListeners: true,
         styleScope: pageScope,
+        ...(pureDataPattern ? { pureDataPattern } : {}),
         // Keep page/component classes scoped, but also expose the unscoped
         // class names so global app stylesheet class selectors can match.
         // Without this, glass-easel only writes `<pageScope>--<class>` to the
@@ -767,6 +774,8 @@ export class GlassEaselRuntimeAdapter {
       })
     }
 
+    const generics = this.resolveGenerics(schema.path, schema.generics)
+    const pureDataPattern = parsePureDataPattern(schema.pureDataPattern)
     const definition = this.componentSpace
       .defineWithMethodCaller(schema.path)
       .definition({
@@ -781,6 +790,7 @@ export class GlassEaselRuntimeAdapter {
       })
       .data(() => schema.data as never)
       .usingComponents({ ...this.builtinComponents, ...using } as never)
+      .generics(generics as never)
       .options({
         multipleSlots: schema.options?.multipleSlots ?? false,
         virtualHost: schema.options?.virtualHost ?? false,
@@ -788,6 +798,7 @@ export class GlassEaselRuntimeAdapter {
         useMethodCallerListeners: true,
         styleScope: styleScopeId,
         extraStyleScope,
+        ...(pureDataPattern ? { pureDataPattern } : {}),
       })
       .methodCallerInit(function (this: glassEasel.GeneralComponent) {
         const methodCaller = adapter.createEventMethodCaller(
@@ -846,6 +857,34 @@ export class GlassEaselRuntimeAdapter {
     this.registeringComponents.delete(schema.path)
     this.componentDefinitions.set(cacheKey, definition)
     return definition
+  }
+
+  /**
+   * Translate `componentGenerics` JSON into glass-easel generic declarations.
+   * Default implementations are resolved as app-root paths (prefixed with `/`
+   * so glass-easel does not resolve them relative to the declaring component).
+   */
+  private resolveGenerics(
+    path: string,
+    raw: Record<string, { default?: string } | true> | undefined,
+  ): Record<string, { default?: string | glassEasel.GeneralComponentDefinition } | true> {
+    const result: Record<
+      string,
+      { default?: string | glassEasel.GeneralComponentDefinition } | true
+    > = {}
+    for (const [alias, value] of Object.entries(raw ?? {})) {
+      if (value === true || !value.default) {
+        result[alias] = true
+        continue
+      }
+      const builtin = this.builtinComponents[value.default]
+      if (builtin) {
+        result[alias] = { default: builtin }
+        continue
+      }
+      result[alias] = { default: `/${this.resolveComponentReference(path, value.default)}` }
+    }
+    return result
   }
 
   private resolveComponentUsing(

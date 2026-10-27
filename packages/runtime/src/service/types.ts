@@ -20,6 +20,11 @@ export type MiniProgramPageOptions = {
   onReachBottom?: (...args: unknown[]) => void
   onResize?: (event: { size: { windowWidth: number; windowHeight: number } }) => void
   onTabItemTap?: (event: { index: number; pagePath: string; text: string }) => void
+  onPullDownRefresh?: (...args: unknown[]) => void
+  onShareAppMessage?: (...args: unknown[]) => unknown
+  onShareTimeline?: (...args: unknown[]) => unknown
+  onAddToFavorites?: (...args: unknown[]) => unknown
+  onSaveExitState?: (...args: unknown[]) => unknown
   [key: string]: unknown
 }
 
@@ -44,6 +49,10 @@ export type MiniProgramAppOptions = {
   onLaunch?: (...args: unknown[]) => void
   onShow?: (...args: unknown[]) => void
   onHide?: (...args: unknown[]) => void
+  onError?: (message: string) => void
+  onPageNotFound?: (info: { path: string; query: Record<string, string>; isEntryPage: boolean }) => void
+  onUnhandledRejection?: (info: { reason: unknown; promise?: unknown }) => void
+  onThemeChange?: (info: { theme: 'light' | 'dark' }) => void
   [key: string]: unknown
 }
 
@@ -83,6 +92,8 @@ export type ServiceApiContext = {
   /** Host hook mapping app-root asset paths to loadable URLs (canvas images, …). */
   resolveAssetUrl?: AssetUrlResolver
   tabBar?: TabBarApi
+  /** Runtime-owned set so a host theme notification can reach `wx.onThemeChange`. */
+  themeListeners?: Set<(value: unknown) => void>
   pageId?: string
 }
 
@@ -97,4 +108,6 @@ export type ServiceThreadRuntime = {
   componentInstances: Map<string, MiniProgramComponentInstance>
   componentTree: ComponentTree
   relationManager: RelationManager
+  /** Report a rejected promise that escaped page/component code. */
+  notifyUnhandledRejection(reason: unknown, promise?: unknown): void
 }

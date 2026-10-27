@@ -38,6 +38,8 @@ export type NormalizedComponentOptions = {
   styleIsolation: StyleIsolation
   addGlobalClass: boolean
   explicitStyleIsolation: boolean
+  /** Fields whose names match this pattern stay service-side (not rendered). */
+  pureDataPattern?: RegExp
 }
 
 export type DefinitionDiagnostic = {
@@ -122,11 +124,20 @@ export function normalizeComponentDefinition(
   options: MiniProgramComponentOptions,
   componentPath: string,
   compatibility: RuntimeCompatibilityConfig = WECHAT_RUNTIME_COMPATIBILITY,
+  configuration?: Record<string, unknown>,
 ): NormalizedComponentDefinition {
   const collector = createCollector()
   const visited = new Set<object>()
   const exportBehavior = componentExportBehavior(compatibility)
   const formField = formFieldBehavior(compatibility)
+  const configuredPureDataPattern = parsePureDataPattern(configuration?.pureDataPattern)
+  if (configuredPureDataPattern) collector.options.pureDataPattern = configuredPureDataPattern
+  if (typeof options.definitionFilter === 'function') {
+    collector.diagnostics.push({
+      code: 'UNSUPPORTED_COMPONENT_DEFINITION_FILTER',
+      message: 'definitionFilter on Component is ignored; declare it in a Behavior.',
+    })
+  }
 
   const visit = (source: unknown): void => {
     if (typeof source === 'string') {
@@ -163,6 +174,11 @@ export function normalizeComponentDefinition(
         visit(item)
       }
     }
+    // WeChat calls a behavior's definitionFilter when the *user* of that
+    // behavior is declared. Visiting nested behaviors first reproduces that
+    // bottom-up order: behavior3 filters behavior2, behavior2 filters
+    // behavior1, and behavior1 filters the component.
+    applyDefinitionFilters(behavior, (diagnostic) => collector.diagnostics.push(diagnostic))
     mergeSource(collector, behavior, componentPath)
   }
 
@@ -178,13 +194,18 @@ export function normalizeComponentDefinition(
   mergeDataInto(data, collector.data)
 
   const relations = [...collector.relations.values()]
+  const pureDataPattern = collector.options.pureDataPattern
+  const observers = [...collector.propertyObservers, ...collector.observers].filter(
+    (observer) => observer.kind !== 'property'
+      || !isPureDataField(pureDataPattern, observer.propertyName ?? ''),
+  )
   return {
     properties: collector.properties,
     data,
     methods: collector.methods,
     lifetimeHandlers: collector.lifetimeHandlers,
     pageLifetimeHandlers: collector.pageLifetimeHandlers,
-    observers: [...collector.propertyObservers, ...collector.observers],
+    observers,
     relations,
     externalClasses: collector.externalClasses,
     options: collector.options,
@@ -327,16 +348,21 @@ function mergeSource(
         })
       }
     }
+    if (rawOptions.pureDataPattern !== undefined) {
+      const pattern = parsePureDataPattern(rawOptions.pureDataPattern)
+      if (pattern) {
+        collector.options.pureDataPattern = pattern
+      } else if (rawOptions.pureDataPattern !== null) {
+        collector.diagnostics.push({
+          code: 'INVALID_PURE_DATA_PATTERN',
+          message: 'pureDataPattern must be a RegExp or a valid regular-expression string.',
+        })
+      }
+    }
   }
 
   if (typeof source.export === 'function') {
     collector.export = source.export
-  }
-  if (source.definitionFilter) {
-    collector.diagnostics.push({
-      code: 'UNSUPPORTED_BEHAVIOR_FILTER',
-      message: 'definitionFilter is not supported yet.',
-    })
   }
 }
 
@@ -458,6 +484,82 @@ function normalizeRelations(
 
 function isRelationCallback(value: unknown): value is RelationCallback {
   return typeof value === 'function' || typeof value === 'string'
+}
+
+const filteredDefinitions = new WeakSet<object>()
+
+/**
+ * Run the definitionFilter chain contributed by the direct behaviors of
+ * `source`, matching WeChat's declaration-time filtering. Nested behaviors are
+ * visited first by normalizeComponentDefinition, so each filter observes a
+ * fully prepared user definition.
+ */
+export function applyDefinitionFilters(
+  source: Record<string, unknown>,
+  onDiagnostic?: (diagnostic: DefinitionDiagnostic) => void,
+): void {
+  if (filteredDefinitions.has(source)) return
+  filteredDefinitions.add(source)
+  const behaviors = Array.isArray(source.behaviors) ? source.behaviors : []
+  for (const behavior of behaviors) {
+    if (!behavior || typeof behavior !== 'object') continue
+    const filter = (behavior as MiniProgramComponentOptions).definitionFilter
+    if (typeof filter !== 'function') continue
+    const filterArr = collectDirectDefinitionFilters(behavior as MiniProgramComponentOptions)
+    try {
+      filter(source, filterArr)
+    } catch (error) {
+      onDiagnostic?.({
+        code: 'DEFINITION_FILTER_ERROR',
+        message: error instanceof Error ? error.message : String(error),
+        details: { behavior: describeBehavior(behavior) },
+      })
+    }
+  }
+}
+
+function collectDirectDefinitionFilters(
+  behavior: MiniProgramComponentOptions,
+): Array<(defFields: unknown) => unknown> {
+  if (!Array.isArray(behavior.behaviors)) return []
+  const filters: Array<(defFields: unknown) => unknown> = []
+  for (const item of behavior.behaviors) {
+    if (!item || typeof item !== 'object') continue
+    const filter = (item as MiniProgramComponentOptions).definitionFilter
+    if (typeof filter === 'function') {
+      // WeChat supplies the nested filter array when a filter invokes
+      // `definitionFilterArr[i](defFields)`; wrap it so callers only pass the
+      // definition object.
+      filters.push((defFields: unknown) => filter(
+        defFields,
+        collectDirectDefinitionFilters(item as MiniProgramComponentOptions),
+      ))
+    }
+  }
+  return filters
+}
+
+function describeBehavior(behavior: object): string {
+  const is = (behavior as MiniProgramComponentOptions).is
+  return typeof is === 'string' ? is : '[object Behavior]'
+}
+
+export function parsePureDataPattern(value: unknown): RegExp | undefined {
+  if (value instanceof RegExp) return value
+  if (typeof value === 'string' && value.length > 0) {
+    try {
+      return new RegExp(value)
+    } catch {
+      return undefined
+    }
+  }
+  return undefined
+}
+
+export function isPureDataField(pattern: RegExp | undefined, field: string): boolean {
+  if (!pattern) return false
+  pattern.lastIndex = 0
+  return pattern.test(field)
 }
 
 export function resolveComponentReference(sourcePath: string, reference: string): string {

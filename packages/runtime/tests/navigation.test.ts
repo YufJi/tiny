@@ -366,6 +366,145 @@ describe('mini-program navigation', () => {
     await host.close()
   })
 
+  test('redirectTo replaces the current page instead of growing the stack', async () => {
+    const manifest = createNavigationManifest()
+    const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
+    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
+    const service = bootServiceThread({
+      transport: serviceTransport,
+      manifest,
+      initialPath: TODOS_PATH,
+    })
+    bootRenderThread({
+      transport: renderTransport,
+      manifest,
+      artifacts: { templates: createTemplateRegistry() },
+      backend: new glassEasel.EmptyBackendContext(),
+      initialPath: TODOS_PATH,
+    })
+    const host = createTinyRuntime({
+      serviceTransport: hostServiceTransport,
+      renderTransport: hostRenderTransport,
+      manifest,
+      initialPath: TODOS_PATH,
+    })
+
+    const globalObject = globalThis as unknown as Record<string, unknown>
+    const lifecycles: string[] = []
+    ;(globalObject.App as (options: Record<string, unknown>) => unknown)({})
+    ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
+      onLoad() {
+        lifecycles.push('load:todos')
+      },
+      onShow() {
+        lifecycles.push('show:todos')
+      },
+      onUnload() {
+        lifecycles.push('unload:todos')
+      },
+      async redirect() {
+        await wx.redirectTo({ url: '../add-todo/add-todo?from=redirect' })
+      },
+    })
+    ;(globalObject.Component as (options: Record<string, unknown>) => unknown)({
+      methods: {
+        onLoad(query: Record<string, string>) {
+          lifecycles.push(`load:${query.from}`)
+        },
+        onShow() {
+          lifecycles.push('show:add')
+        },
+        onUnload() {
+          lifecycles.push('unload:add')
+        },
+      },
+    })
+
+    await host.bootstrap()
+    const firstPageId = service.activePage!.pageId
+    await service.activePage!.invokeMethod('redirect')
+
+    expect(service.pageStack.map((page) => page.path)).toEqual([ADD_TODO_PATH])
+    expect(service.activePage?.pageId).not.toBe(firstPageId)
+    expect(service.activePage?.query).toEqual({ from: 'redirect' })
+    expect(lifecycles).toEqual([
+      'load:todos',
+      'show:todos',
+      'unload:todos',
+      'load:redirect',
+      'show:add',
+    ])
+    await host.close()
+  })
+
+  test('reLaunch clears every page, including hidden tab pages', async () => {
+    const manifest = createNavigationManifest()
+    const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
+    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
+    const service = bootServiceThread({
+      transport: serviceTransport,
+      manifest,
+      initialPath: TODOS_PATH,
+    })
+    bootRenderThread({
+      transport: renderTransport,
+      manifest,
+      artifacts: { templates: createTemplateRegistry() },
+      backend: new glassEasel.EmptyBackendContext(),
+      initialPath: TODOS_PATH,
+    })
+    const host = createTinyRuntime({
+      serviceTransport: hostServiceTransport,
+      renderTransport: hostRenderTransport,
+      manifest,
+      initialPath: TODOS_PATH,
+    })
+
+    const globalObject = globalThis as unknown as Record<string, unknown>
+    const lifecycles: string[] = []
+    ;(globalObject.App as (options: Record<string, unknown>) => unknown)({})
+    ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
+      onLoad() {
+        lifecycles.push('load:todos')
+      },
+      onUnload() {
+        lifecycles.push('unload:todos')
+      },
+      async navigate() {
+        await wx.navigateTo({ url: '../add-todo/add-todo' })
+      },
+    })
+    ;(globalObject.Component as (options: Record<string, unknown>) => unknown)({
+      methods: {
+        onLoad() {
+          lifecycles.push('load:add')
+        },
+        onUnload() {
+          lifecycles.push('unload:add')
+        },
+        async relaunchHome() {
+          await wx.reLaunch({ url: '/pages/todos/todos?from=relaunch' })
+        },
+      },
+    })
+
+    await host.bootstrap()
+    await service.activePage!.invokeMethod('navigate')
+    expect(service.pageStack.map((page) => page.path)).toEqual([TODOS_PATH, ADD_TODO_PATH])
+
+    await service.activePage!.invokeMethod('relaunchHome')
+    expect(service.pageStack.map((page) => page.path)).toEqual([TODOS_PATH])
+    expect(service.activePage?.query).toEqual({ from: 'relaunch' })
+    expect(lifecycles).toEqual([
+      'load:todos',
+      'load:add',
+      'unload:add',
+      'unload:todos',
+      'load:todos',
+    ])
+    await host.close()
+  })
+
   test('enforces the host-configured page stack limit', async () => {
     const manifest = createNavigationManifest()
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()

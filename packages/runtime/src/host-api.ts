@@ -48,6 +48,10 @@ export function createHostApiRegistry(options: RuntimeHostOptions): HostApiRegis
     'navigate.to': () => ({ errMsg: 'navigateTo:ok' }),
     'navigate.switchTab': () => ({ errMsg: 'switchTab:ok' }),
     'navigate.back': () => ({ errMsg: 'navigateBack:ok' }),
+    'navigate.redirectTo': () => ({ errMsg: 'redirectTo:ok' }),
+    'navigate.reLaunch': () => ({ errMsg: 'reLaunch:ok' }),
+    'page.pullDownRefresh': () => ({ errMsg: 'startPullDownRefresh:ok' }),
+    'page.stopPullDownRefresh': () => ({ errMsg: 'stopPullDownRefresh:ok' }),
     ...options.apiHandlers,
   }
   return { systemInfo, storage, handlers }

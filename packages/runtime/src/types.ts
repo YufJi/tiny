@@ -28,6 +28,10 @@ export type MiniProgramComponentSchema = {
   data: Record<string, unknown>
   properties: Record<string, MiniProgramPropertyDefinition>
   using: Record<string, string>
+  /** Abstract-node declarations from `componentGenerics` (JSON). */
+  generics?: Record<string, { default?: string } | true>
+  /** Regex source applied to data field names in the render thread. */
+  pureDataPattern?: string
   externalClasses?: string[]
   formField?: boolean
   observers?: Array<{ key: string; paths: string[] }>

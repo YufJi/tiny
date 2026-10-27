@@ -1,6 +1,7 @@
 import type { BridgeConnection } from '@tiny/bridge'
 import { cloneJsonSafe } from '../data'
 import { registerBehavior } from '../behaviors'
+import { applyDefinitionFilters } from '../component-definition'
 import type { StorageSnapshot, SystemInfoSnapshot } from '../types'
 import type { MiniProgramPageRegistry } from './page-registry'
 import type {
@@ -26,7 +27,13 @@ export function installMiniProgramGlobals(
   globalObject[globals.component] = (options: MiniProgramComponentOptions) => (
     registry.registerComponent(options)
   )
-  globalObject[globals.behavior] = (options?: MiniProgramComponentOptions) => registerBehavior(options)
+  globalObject[globals.behavior] = (options?: MiniProgramComponentOptions) => {
+    const behavior = registerBehavior(options)
+    // Match WeChat's declaration-time filtering: a behavior's own filter chain
+    // runs when the behavior is declared, before any component uses it.
+    applyDefinitionFilters(behavior)
+    return behavior
+  }
   globalObject[globals.getApp] = () => registry.getApp()
   globalObject[globals.getCurrentPages] = () => getCurrentPages?.() ?? []
   // Third-party bundles probe these while booting; report them as absent
@@ -51,6 +58,18 @@ export function installMiniProgramGlobals(
     ...registry.compatibility.api.aliases,
   ]) {
     globalObject[name] = apiProxy
+  }
+  // Service threads run in their own event target in production hosts. Keep
+  // the app-level rejection hook host-independent by installing it through the
+  // global EventTarget when one exists (Node unit tests do not have one).
+  const eventTarget = globalObject as unknown as {
+    addEventListener?: (type: string, listener: (event: unknown) => void) => void
+  }
+  if (typeof eventTarget.addEventListener === 'function') {
+    eventTarget.addEventListener('unhandledrejection', (event) => {
+      const detail = event as { reason?: unknown; promise?: unknown }
+      registry.reportUnhandledRejection(detail?.reason, detail?.promise)
+    })
   }
 }
 
@@ -98,7 +117,7 @@ function storageInfo(snapshot: StorageSnapshot): Record<string, unknown> {
 }
 
 export function createServiceApiHost(context: ServiceApiContext): MiniProgramApiHost {
-  const themeListeners = new Set<(value: unknown) => void>()
+  const themeListeners = context.themeListeners ?? new Set<(value: unknown) => void>()
   const keyboardListeners = new Set<(value: unknown) => void>()
   const unsupported = (name: string) => {
     context.connection.sendDiagnostic('warn', {
@@ -150,6 +169,30 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
       params as Record<string, unknown>,
       { pageId: context.pageId },
     ),
+    redirectTo: (params: unknown = {}) => runApi(params, 'redirectTo', () => context.connection.call(
+      'api',
+      'navigate.redirectTo',
+      params as Record<string, unknown>,
+      { pageId: context.pageId },
+    )),
+    reLaunch: (params: unknown = {}) => runApi(params, 'reLaunch', () => context.connection.call(
+      'api',
+      'navigate.reLaunch',
+      params as Record<string, unknown>,
+      { pageId: context.pageId },
+    )),
+    startPullDownRefresh: (params: unknown = {}) => runApi(params, 'startPullDownRefresh', () => context.connection.call(
+      'api',
+      'page.pullDownRefresh',
+      params as Record<string, unknown>,
+      { pageId: context.pageId },
+    )),
+    stopPullDownRefresh: (params: unknown = {}) => runApi(params, 'stopPullDownRefresh', () => context.connection.call(
+      'api',
+      'page.stopPullDownRefresh',
+      params as Record<string, unknown>,
+      { pageId: context.pageId },
+    )),
     switchTab: (params: unknown = {}) => runApi(params, 'switchTab', () => context.connection.call(
       'api',
       'navigate.switchTab',

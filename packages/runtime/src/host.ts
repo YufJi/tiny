@@ -18,6 +18,14 @@ export type TinyRuntimeHost = {
   setWindowSize(width: number, height: number): Promise<void>
   /** Hide/show every render page view when the app enters the background. */
   setAppVisible(visible: boolean): void
+  /** Trigger the active page's pull-down lifecycle (host gesture or API). */
+  pullDownRefresh(): Promise<unknown>
+  /** Ask the active page for share information. */
+  share(type?: 'appMessage' | 'timeline' | 'favorites'): Promise<unknown>
+  /** Invoke the active page's `onSaveExitState` and return its state. */
+  saveExitState(): Promise<unknown>
+  /** Deliver a host theme change to the app and `wx.onThemeChange`. */
+  setTheme(theme: 'light' | 'dark'): Promise<unknown>
   apiRegistry: HostApiRegistry
   diagnostics: RuntimeDiagnostic[]
 }
@@ -123,6 +131,9 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
     connection.onEvent('runtime', 'componentObserved', (message) => {
       service.sendEvent('runtime', 'componentObserved', message.payload, { pageId: message.pageId ?? pageId })
     })
+    connection.onEvent('page', 'pullDownRefresh', (message) => {
+      service.sendEvent('page', 'pullDownRefresh', message.payload, { pageId })
+    })
     connection.onEvent('page', 'scroll', (message) => {
       service.sendEvent('page', 'scroll', message.payload, { pageId })
     })
@@ -147,6 +158,9 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
     })
     primaryRender.onEvent('runtime', 'componentObserved', (message) => {
       service.sendEvent('runtime', 'componentObserved', message.payload, { pageId: message.pageId })
+    })
+    primaryRender.onEvent('page', 'pullDownRefresh', (message) => {
+      service.sendEvent('page', 'pullDownRefresh', message.payload, { pageId: message.pageId })
     })
     primaryRender.onEvent('page', 'scroll', (message) => {
       service.sendEvent('page', 'scroll', message.payload, { pageId: message.pageId })
@@ -348,6 +362,86 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
       return serviceResult
     }
   }
+  if (!options.apiHandlers?.['navigate.redirectTo']) {
+    apiRegistry.handlers['navigate.redirectTo'] = async (params, context) => {
+      const serviceResult = await service.control<Record<string, unknown>>('page', 'redirectTo', {
+        url: params.url,
+      }, { pageId: context.pageId })
+      const pageId = serviceResult.pageId as string | undefined
+      const path = serviceResult.path as string | undefined
+      const initialData = serviceResult.initialData as Record<string, unknown> | undefined
+      const unloadedPageIds = (serviceResult.unloadedPageIds as string[] | undefined) ?? []
+      if (!pageId || !path) throw new Error('redirectTo did not create a renderable page')
+      if (renderConnector) {
+        for (const unloadedPageId of unloadedPageIds) await closeRenderPage(unloadedPageId)
+        const renderResult = await openRenderPage(pageId, path, initialData)
+        await service.control('page', 'ready', {
+          pageId,
+          components: renderResult.components,
+        })
+      } else {
+        const renderResult = await requireRenderConnection().control<{
+          pageId?: string
+          components?: unknown[]
+        }>('page', 'redirectTo', {
+          path,
+          pageId,
+          initialData,
+          previousPageId: context.pageId,
+          unloadedPageIds,
+        })
+        await service.control('page', 'ready', {
+          pageId,
+          components: renderResult.components,
+        })
+      }
+      return serviceResult
+    }
+  }
+  if (!options.apiHandlers?.['navigate.reLaunch']) {
+    apiRegistry.handlers['navigate.reLaunch'] = async (params, context) => {
+      const serviceResult = await service.control<Record<string, unknown>>('page', 'reLaunch', {
+        url: params.url,
+      }, { pageId: context.pageId })
+      const pageId = serviceResult.pageId as string | undefined
+      const path = serviceResult.path as string | undefined
+      const initialData = serviceResult.initialData as Record<string, unknown> | undefined
+      const unloadedPageIds = (serviceResult.unloadedPageIds as string[] | undefined) ?? []
+      if (!pageId || !path) throw new Error('reLaunch did not create a renderable page')
+      if (renderConnector) {
+        for (const unloadedPageId of unloadedPageIds) await closeRenderPage(unloadedPageId)
+        const renderResult = await openRenderPage(pageId, path, initialData)
+        await service.control('page', 'ready', {
+          pageId,
+          components: renderResult.components,
+        })
+      } else {
+        const renderResult = await requireRenderConnection().control<{
+          pageId?: string
+          components?: unknown[]
+        }>('page', 'reLaunch', {
+          path,
+          pageId,
+          initialData,
+          previousPageId: context.pageId,
+          unloadedPageIds,
+        })
+        await service.control('page', 'ready', {
+          pageId,
+          components: renderResult.components,
+        })
+      }
+      return serviceResult
+    }
+  }
+  if (!options.apiHandlers?.['page.pullDownRefresh']) {
+    apiRegistry.handlers['page.pullDownRefresh'] = async (_params, context) => (
+      service.control('page', 'pullDownRefresh', {}, { pageId: context.pageId })
+    )
+  }
+  if (!options.apiHandlers?.['page.stopPullDownRefresh']) {
+    apiRegistry.handlers['page.stopPullDownRefresh'] = () => ({ status: 'stopped' })
+  }
   registerHostApiHandlers(service, apiRegistry)
   service.onEvent('event', 'trigger', (message) => {
     routeServiceEvent('event', 'trigger', message.payload, message.pageId)
@@ -369,6 +463,18 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
     apiRegistry,
     get diagnostics() {
       return diagnosticStore.diagnostics
+    },
+    pullDownRefresh() {
+      return service.control('page', 'pullDownRefresh', {}, { pageId: activePageId })
+    },
+    share(type: 'appMessage' | 'timeline' | 'favorites' = 'appMessage') {
+      return service.control('page', 'share', { type }, { pageId: activePageId })
+    },
+    saveExitState() {
+      return service.control('page', 'saveExitState', {}, { pageId: activePageId })
+    },
+    setTheme(theme: 'light' | 'dark') {
+      return service.control('runtime', 'themeChange', { theme }, { pageId: activePageId })
     },
     async bootstrap() {
       const serviceResult = await service.control<Record<string, unknown>>('runtime', 'bootstrap', {

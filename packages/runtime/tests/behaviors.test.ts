@@ -132,9 +132,61 @@ describe('normalizeComponentDefinition', () => {
     expect(definition.properties.name).toBeDefined()
     expect(definition.properties.value).toBeDefined()
     expect(definition.diagnostics.map((item) => item.code)).toEqual(
-      expect.arrayContaining(['UNSUPPORTED_BEHAVIOR', 'UNSUPPORTED_BEHAVIOR_FILTER']),
+      expect.arrayContaining(['UNSUPPORTED_BEHAVIOR', 'UNSUPPORTED_COMPONENT_DEFINITION_FILTER']),
     )
     expect(definition.diagnostics.filter((item) => item.code === 'UNSUPPORTED_BEHAVIOR')).toHaveLength(1)
+  })
+
+  test('applies behavior definitionFilter chains in declaration order', () => {
+    const calls: string[] = []
+    const base = registerBehavior({
+      definitionFilter(defFields: Record<string, unknown>, filterArr: unknown[]) {
+        calls.push(`base:${filterArr.length}`)
+        const data = (defFields.data ??= {}) as Record<string, unknown>
+        data.baseFiltered = true
+      },
+    })
+    const parent = registerBehavior({
+      behaviors: [base],
+      definitionFilter(defFields: Record<string, unknown>, filterArr: Array<(fields: unknown) => unknown>) {
+        calls.push(`parent:${filterArr.length}`)
+        filterArr[0]!(defFields)
+        const data = (defFields.data ??= {}) as Record<string, unknown>
+        data.parentFiltered = true
+      },
+    })
+    const definition = normalizeComponentDefinition({
+      behaviors: [parent],
+      data: { own: true },
+    }, 'components/filter/filter')
+
+    expect(calls).toEqual(['base:0', 'parent:1', 'base:0'])
+    expect(definition.data).toMatchObject({
+      own: true,
+      baseFiltered: true,
+      parentFiltered: true,
+    })
+  })
+
+  test('does not fire property observers for pure data properties', () => {
+    const jsDefinition = normalizeComponentDefinition({
+      options: { pureDataPattern: /^_/ },
+      properties: {
+        visible: { type: Boolean, observer: 'onVisible' },
+        _hidden: { type: Boolean, observer: 'onHidden' },
+      },
+    }, 'components/filter/filter')
+    expect(jsDefinition.observers.map((observer) => observer.paths)).toEqual([['visible']])
+    expect(jsDefinition.options.pureDataPattern).toBeInstanceOf(RegExp)
+
+    const jsonDefinition = normalizeComponentDefinition({
+      properties: {
+        visible: { type: Boolean, observer: 'onVisible' },
+        _hidden: { type: Boolean, observer: 'onHidden' },
+      },
+    }, 'components/filter/filter', undefined, { pureDataPattern: '^_' })
+    expect(jsonDefinition.observers.map((observer) => observer.paths)).toEqual([['visible']])
+    expect(jsonDefinition.options.pureDataPattern?.source).toBe('^_')
   })
 
   test('stops cyclic behavior graphs', () => {

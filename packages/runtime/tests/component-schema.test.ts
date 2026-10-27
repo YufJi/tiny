@@ -74,6 +74,26 @@ describe('buildComponentSchemas', () => {
     expect(schemas[0]!.properties.value).toBeDefined()
   })
 
+  test('serializes componentGenerics and pureDataPattern', () => {
+    const definitions = new Map([
+      ['components/a', normalizeComponentDefinition({}, 'components/a')],
+    ])
+    const schemas = buildComponentSchemas([
+      artifact('components/a', {
+        componentGenerics: {
+          selectable: true,
+          fallback: { default: './fallback/fallback' },
+        },
+        pureDataPattern: '^_',
+      }),
+    ], definitions)
+    expect(schemas[0]!.generics).toEqual({
+      selectable: true,
+      fallback: { default: './fallback/fallback' },
+    })
+    expect(schemas[0]!.pureDataPattern).toBe('^_')
+  })
+
   test('reads styleIsolation from component json when JS does not set it', () => {
     const definitions = new Map([
       ['components/a', normalizeComponentDefinition({}, 'components/a')],
