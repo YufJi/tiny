@@ -3,7 +3,7 @@ import manifest from '../generated/manifest.json'
 
 const search = new URLSearchParams(window.location.search)
 const initialPath = search.get('path') || 'pages/todos/todos'
-const logicLayer = search.get('logic') === 'service' ? 'service' as const : undefined
+const logicLayer = search.get('logic') === 'render' ? undefined : 'service' as const
 
 const runtime = await createStandaloneDualThreadHost({
   manifest,

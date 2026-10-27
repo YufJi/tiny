@@ -559,7 +559,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     connection.sendEvent(
       'tree',
       'snapshot',
-      { pageId, root: cloneJsonSafe(root), ...treeStyles() },
+      { pageId, pagePath: logicTree.pagePathFor(pageId), root: cloneJsonSafe(root), ...treeStyles() },
       { pageId },
     )
   }

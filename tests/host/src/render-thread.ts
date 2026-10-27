@@ -1,6 +1,6 @@
 import * as glassEasel from 'glass-easel'
 import { CurrentWindowBackendContext } from 'glass-easel'
-import { bootRenderThread, bootTreeThread } from '@tiny/runtime'
+import { bootRenderThread, bootTreeThread, resolveAssetPath } from '@tiny/runtime'
 import {
   createBrowserRenderQuery,
   installOffscreenCanvasResponder,
@@ -60,6 +60,10 @@ listenForRuntimePort('render', (transport) => {
     document.head.appendChild(style)
     const renderer = createGlassRenderTree({
       container: document.getElementById('app') ?? document.body,
+      resolveAssetUrl: (src, sourcePath) => {
+        const resolved = resolveAssetPath(sourcePath || '', src)
+        return resolved ? `/generated/${resolved}` : undefined
+      },
     })
     bootTreeThread({ transport, renderer, initialPageId })
     return

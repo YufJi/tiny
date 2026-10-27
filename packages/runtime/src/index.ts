@@ -15,3 +15,5 @@ export * from './logic/backend'
 export * from './logic/tree'
 export * from './logic/protocol'
 export * from './tree-thread'
+
+export { resolveAssetPath } from './assets'

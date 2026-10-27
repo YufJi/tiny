@@ -17,6 +17,7 @@ export type TreeRenderer = {
   applyPatches: (patches: RenderPatch[]) => void
   setEventSink?: (sink: (event: TreeEventPayload) => void) => void
   applyStyles?: (styles: string[]) => void
+  setPagePath?: (pagePath: string) => void
   measureCanvas?: (selector: string, canvasId: string) => {
     width: number
     height: number
@@ -88,10 +89,12 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     const payload = (message.payload ?? {}) as {
       root?: RenderNode
       pageId?: string
+      pagePath?: string
       styles?: string[]
       fallbackAppStyles?: string[]
     }
     currentPageId = payload.pageId ?? message.pageId ?? currentPageId
+    options.renderer.setPagePath?.(payload.pagePath ?? '')
     if (payload.root) options.renderer.mount(payload.root)
     const styles = payload.styles?.length ? payload.styles : payload.fallbackAppStyles
     if (styles && styles.length > 0) options.renderer.applyStyles?.(styles)

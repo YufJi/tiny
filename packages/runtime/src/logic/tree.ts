@@ -42,6 +42,7 @@ export class LogicTreeAdapter {
   private readonly typedDatasets = new Map<string, Record<string, unknown>>()
   private readonly pageRoots = new Map<string, LogicBackendElement>()
   private activePageId?: string
+  private readonly pagePaths = new Map<string, string>()
   private activeTouches: unknown[] | undefined
   private activeChangedTouches: unknown[] | undefined
   private readonly lastSnapshots = new Map<string, ViewSnapshot>()
@@ -110,6 +111,7 @@ export class LogicTreeAdapter {
       )
     }
     this.activePageId = pageId
+    this.pagePaths.set(pageId, path)
     const page = this.glass.mountPage(path, data, pageId)
     const backendElement = (page as unknown as { getBackendElement?: () => unknown })
       .getBackendElement?.() as LogicBackendElement | undefined
@@ -138,6 +140,10 @@ export class LogicTreeAdapter {
   }
 
   /** Runtime-registered stylesheets (shared/page scopes) for the render tree. */
+  pagePathFor(pageId: string): string {
+    return this.pagePaths.get(pageId) ?? ''
+  }
+
   styleTexts(): string[] {
     return this.backend.getAppendedStyleTexts()
   }
@@ -377,18 +383,29 @@ export class LogicTreeAdapter {
         touches: payload.touches ?? [],
         changedTouches: payload.changedTouches ?? [],
       }
+      const methodName = payload.name === 'touchstart'
+        ? 'touchStart'
+        : payload.name === 'touchmove'
+          ? 'touchMove'
+          : payload.name === 'touchend'
+            ? 'touchEnd'
+            : payload.name === 'touchcancel' ? 'touchCancel' : payload.name
       let current: unknown = element
       while (current) {
         const component = (current as { asGeneralComponent?: () => unknown }).asGeneralComponent?.()
         const target = component as Record<string, unknown> | undefined
-        const handler = target?.[payload.name]
+        const handler = target?.[methodName] ?? target?.[payload.name]
         if (typeof handler === 'function') {
           ;(handler as (event: unknown) => void).call(target, event)
           this.activeTouches = undefined
           this.activeChangedTouches = undefined
           return true
         }
+        const ownerShadow = (current as {
+          ownerShadowRoot?: { _$host?: unknown }
+        }).ownerShadowRoot
         current = (current as { parentNode?: unknown }).parentNode
+          ?? ownerShadow?._$host
       }
     }
     try {

@@ -6,6 +6,7 @@ import { BUILTIN_COMPONENT_TAGS, type BuiltinComponentTag } from './tags'
 type AnyComponent = glassEasel.GeneralComponent
 
 export type GlassRenderTreeOptions = {
+  resolveAssetUrl?: (src: string, sourcePath?: string) => string | undefined
   /** DOM container for the root host. Omit for a detached/empty backend tree. */
   container?: HTMLElement
   /** Defaults to the current window; tests can pass EmptyBackendContext. */
@@ -27,6 +28,7 @@ export type GlassRenderTree = {
     hasCanvas: boolean
   }
   setEventSink?: (sink: (event: { id: string; name: string; native: Record<string, unknown> }) => void) => void
+  setPagePath?: (pagePath: string) => void
   setDiagnosticSink?: (sink: (diagnostic: {
     severity: 'warning' | 'error'
     code: string
@@ -115,7 +117,12 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     hostNodeTagName: 'tiny-*',
     reflectToAttributes: true,
   })
-  const definitions = createBuiltinComponents(space)
+  let currentPagePath = ''
+  const definitions = createBuiltinComponents(space, {
+    resolveAssetUrl: (src: string, _component: unknown) => (
+      options.resolveAssetUrl?.(src, currentPagePath) ?? src
+    ),
+  })
   for (const [tag, definition] of Object.entries(definitions)) {
     space.registerComponent(tag, definition)
   }
@@ -511,6 +518,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     rootElement,
     setEventSink: (sink) => {
       eventSink = sink
+    },
+    setPagePath: (pagePath) => {
+      currentPagePath = pagePath
     },
     setDiagnosticSink: (sink) => {
       diagnosticSink = sink
