@@ -1,5 +1,7 @@
 // types.ts — public types for glass-easel-stylesheet-compiler-js
 
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
+
 /** Error level, ordered from informational to fatal. */
 export const enum ParseErrorLevel {
   Note = 1,
@@ -45,8 +47,8 @@ export interface StyleSheetOptions {
 
   /**
    * When set, type selectors (`button`, `view`) are rewritten to a marker
-   * class such as `.scope--wx-tag-button`. Templates add the matching
-   * `wx-tag-<tag>` class to elements so tag rules stay inside their scope.
+   * class such as `.scope--tiny-tag-button`. Templates add the matching
+   * `tiny-tag-<tag>` class to elements so tag rules stay inside their scope.
    */
   tagClassPrefix?: string | undefined
 
@@ -71,9 +73,12 @@ export interface StyleSheetOptions {
    */
   builtinTags?: readonly string[] | undefined
 
+  /** Custom component tags whose internal host nodes also use the Tiny prefix. */
+  componentTags?: readonly string[] | undefined
+
   /**
    * Prefix of built-in host tags used by `builtinTags`.
-   * Defaults to `tiny-`.
+   * Defaults to the fixed Tiny engine prefix.
    */
   builtinHostTagPrefix?: string | undefined
 
@@ -105,10 +110,10 @@ export interface StyleSheetOptions {
 
   /**
    * Attribute used to mark component hosts when converting `:host` selectors.
-   * Defaults to `wx-host`; custom-namespace builds may use `tiny-host`.
+   * Defaults to the host attribute currently used by the Tiny engine.
    */
   hostAttribute?: string | undefined
 }
 
 /** Default attribute marking a component host. */
-export const DEFAULT_HOST_ATTRIBUTE = 'wx-host'
+export const DEFAULT_HOST_ATTRIBUTE = TINY_ENGINE_NAMING.hostAttribute

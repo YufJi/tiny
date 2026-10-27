@@ -3,6 +3,8 @@ import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
 import {
   APP_PAGE_SCOPE_CLASS_SIGN,
+  TINY_ENGINE_NAMING,
+  WECHAT_RUNTIME_COMPATIBILITY,
   type Manifest,
   type PageArtifact,
   type StyleArtifact,
@@ -10,16 +12,17 @@ import {
 import { GlassEaselRuntimeAdapter } from '../src/glass-easel-adapter'
 import type { MiniProgramComponentSchema } from '../src/types'
 
+const HOST_ATTRIBUTE = TINY_ENGINE_NAMING.hostAttribute
 const PAGE_PATH = 'pages/index/index'
 const COMPONENT_PATH = 'components/box/box'
 const APP_SCOPE = 'tiny-pages-index-index'
 const COMPONENT_SCOPE = 'tiny-components-box-box'
 
-const APP_CSS = '*:where(.wx-scope) { box-sizing: border-box }'
+const APP_CSS = '*:where(.tiny-scope) { box-sizing: border-box }'
 const APP_PAGE_SCOPE_CSS = [
-  `*:where(.${APP_PAGE_SCOPE_CLASS_SIGN}, [wx-host="${APP_PAGE_SCOPE_CLASS_SIGN}"]) { box-sizing: border-box }`,
-  `page:where(.${APP_PAGE_SCOPE_CLASS_SIGN}, [wx-host="${APP_PAGE_SCOPE_CLASS_SIGN}"]) > span:where(.${APP_PAGE_SCOPE_CLASS_SIGN}, [wx-host="${APP_PAGE_SCOPE_CLASS_SIGN}"]) { display: inline }`,
-  `:where(.${APP_PAGE_SCOPE_CLASS_SIGN}, [wx-host="${APP_PAGE_SCOPE_CLASS_SIGN}"])./*${APP_PAGE_SCOPE_CLASS_SIGN}*/box { color: red }`,
+  `*:where(.${APP_PAGE_SCOPE_CLASS_SIGN}, [${HOST_ATTRIBUTE}="${APP_PAGE_SCOPE_CLASS_SIGN}"]) { box-sizing: border-box }`,
+  `tiny-page:where(.${APP_PAGE_SCOPE_CLASS_SIGN}, [${HOST_ATTRIBUTE}="${APP_PAGE_SCOPE_CLASS_SIGN}"]) > span:where(.${APP_PAGE_SCOPE_CLASS_SIGN}, [${HOST_ATTRIBUTE}="${APP_PAGE_SCOPE_CLASS_SIGN}"]) { display: inline }`,
+  `:where(.${APP_PAGE_SCOPE_CLASS_SIGN}, [${HOST_ATTRIBUTE}="${APP_PAGE_SCOPE_CLASS_SIGN}"])./*${APP_PAGE_SCOPE_CLASS_SIGN}*/box { color: red }`,
 ].join('\n')
 
 class RecordingBackend extends glassEasel.EmptyBackendContext {
@@ -37,7 +40,7 @@ class RecordingBackend extends glassEasel.EmptyBackendContext {
 }
 
 function createTemplateRegistry() {
-  const group = TmplGroup.newDev()
+  const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
   group.addTmpl(PAGE_PATH, '<box />')
   group.addTmpl(COMPONENT_PATH, '<view class="box" />')
   const groupList = new Function(`return ${group.getTmplGenObjectGroups()}`)() as Record<string, unknown>
@@ -85,7 +88,8 @@ function createManifest(
     },
   }
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
+    runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
     entries: { service: 'service.js', render: 'render.js', templates: 'templates.js' },
     app: {
       path: 'app',
@@ -164,7 +168,7 @@ describe('app stylesheet page-scope delivery', () => {
       const sheet = backend.styleSheetPaths.find((item) => item.path.includes('@page:'))
       expect(sheet).toBeDefined()
       const css = backend.styleSheets.get(sheet!.path)
-      const marker = `:where(.${APP_SCOPE}--wx-scope, [wx-host="${APP_SCOPE}"])`
+      const marker = `:where(.${APP_SCOPE}--tiny-scope, [${HOST_ATTRIBUTE}="${APP_SCOPE}"])`
       expect(css).toContain(`*${marker} { box-sizing: border-box }`)
       expect(css).toContain(`page${marker} > span${marker} { display: inline }`)
       expect(css).toContain(`${marker}.${APP_SCOPE}--box { color: red }`)

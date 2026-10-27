@@ -1,15 +1,16 @@
 import { createMessagePortTransport, type MessagePortLike } from '@tiny/bridge'
 import type { Transport } from '@tiny/bridge'
+import { BROWSER_RUNTIME_NAMES } from './naming'
 
 export type RuntimePortChannel = 'service' | 'render'
 
 export type RuntimePortMessage = {
-  type: 'tiny-runtime-port'
+  type: typeof BROWSER_RUNTIME_NAMES.runtimePort
   channel: RuntimePortChannel
 }
 
 export type RuntimePortReadyMessage = {
-  type: 'tiny-runtime-port-ready'
+  type: typeof BROWSER_RUNTIME_NAMES.runtimePortReady
   channel: RuntimePortChannel
 }
 
@@ -19,14 +20,17 @@ export function listenForRuntimePort(
 ): () => void {
   const listener = (event: MessageEvent) => {
     const data = event.data as RuntimePortMessage | undefined
-    if (data?.type !== 'tiny-runtime-port' || data.channel !== channel) return
+    if (data?.type !== BROWSER_RUNTIME_NAMES.runtimePort || data.channel !== channel) return
     const port = event.ports[0]
     if (!port) return
     callback(createMessagePortTransport(port as unknown as MessagePortLike))
   }
   window.addEventListener('message', listener)
   if (window.parent !== window) {
-    window.parent.postMessage({ type: 'tiny-runtime-port-ready', channel }, '*')
+    window.parent.postMessage({
+      type: BROWSER_RUNTIME_NAMES.runtimePortReady,
+      channel,
+    }, '*')
   }
   return () => window.removeEventListener('message', listener)
 }

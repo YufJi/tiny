@@ -1,10 +1,11 @@
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
+import { builtinDefinitionName } from '../../tags'
 
 const DEFAULT_ICON_SIZE = 23
 
 export function defineIcon(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
-    is: 'tiny-builtin:icon',
+    is: builtinDefinitionName('icon'),
     template: ctx.template('icon'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.sizeNormalizer],
     properties: {

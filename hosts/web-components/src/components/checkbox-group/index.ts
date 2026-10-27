@@ -1,4 +1,6 @@
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
+import { builtinDefinitionName } from '../../tags'
+import { BUILTIN_BEHAVIOR_IDS } from '../../behaviors'
 
 function asValues(value: unknown): string[] {
   return Array.isArray(value) ? value.map((item) => String(item)) : []
@@ -6,7 +8,7 @@ function asValues(value: unknown): string[] {
 
 export function defineCheckboxGroup(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
-    is: 'tiny-builtin:checkbox-group',
+    is: builtinDefinitionName('checkbox-group'),
     template: ctx.template('checkbox-group'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent, ctx.behaviors.group],
     properties: {
@@ -53,7 +55,7 @@ export function defineCheckboxGroup(ctx: BuiltinContext): BuiltinDefinition {
             hasBehavior?: (behavior: string) => boolean
             childNodes?: unknown[]
           }
-          if (item.hasBehavior?.('wx-item')) return true
+          if (item.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.item)) return true
           if (this.hasItems(item.childNodes)) return true
         }
         return false
@@ -65,7 +67,7 @@ export function defineCheckboxGroup(ctx: BuiltinContext): BuiltinDefinition {
             data?: Record<string, unknown>
             childNodes?: unknown[]
           }
-          if (item.hasBehavior?.('wx-item') && item.data?.checked) {
+          if (item.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.item) && item.data?.checked) {
             const value = String(item.data.value ?? '')
             if (value && !out.includes(value)) out.push(value)
           }
@@ -87,7 +89,7 @@ export function defineCheckboxGroup(ctx: BuiltinContext): BuiltinDefinition {
               childNodes?: unknown[]
               setData?: (data: Record<string, unknown>) => void
             }
-            if (item.hasBehavior?.('wx-item') && item.data && 'checked' in item.data) {
+            if (item.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.item) && item.data && 'checked' in item.data) {
               const should = set.has(String(item.data.value ?? ''))
               if (Boolean(item.data.checked) !== should) item.setData?.({ checked: should })
             }

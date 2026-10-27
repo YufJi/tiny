@@ -28,6 +28,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@tiny/manifest": "workspace:*",
     "postcss": "^8.4.38"
   },
   "devDependencies": {

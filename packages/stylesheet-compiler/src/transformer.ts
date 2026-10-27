@@ -16,6 +16,7 @@ import postcss, {
   type Root,
   type Rule,
 } from 'postcss'
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import {
   DEFAULT_HOST_ATTRIBUTE,
   ParseErrorKind,
@@ -88,6 +89,7 @@ function transformSelector(
   classPrefix: string | undefined,
   classPrefixSign: string | undefined,
   tagClassPrefix: string | undefined,
+  componentTags: readonly string[] | undefined,
   scopeMarkerClass: string | undefined,
   scopeHostAttribute: string | undefined,
   forceScopeAnchor: boolean,
@@ -99,6 +101,7 @@ function transformSelector(
     && classPrefixSign === undefined
     && tagClassPrefix === undefined
     && (builtinTags === undefined || builtinTags.length === 0)
+    && (componentTags === undefined || componentTags.length === 0)
   ) {
     return selector
   }
@@ -252,8 +255,10 @@ function transformSelector(
       while (i < selector.length && isIdentChar(selector[i]!)) i++
       const tagName = selector.slice(identStart, i)
       if (tagClassPrefix !== undefined) {
-        const hostTag = tagName !== 'page' && builtinTags?.includes(tagName)
-          ? `${builtinHostTagPrefix ?? 'tiny-'}${tagName}`
+        const hostTag = tagName === 'page'
+          || builtinTags?.includes(tagName)
+          || componentTags?.includes(tagName)
+          ? `${builtinHostTagPrefix ?? TINY_ENGINE_NAMING.hostTagPrefix}${tagName}`
           : tagName
         if (tagName === 'page' && classPrefix !== undefined && scopeHostAttribute !== undefined) {
           compound += `${hostTag}:where([${scopeHostAttribute}="${classPrefix}"])`
@@ -261,9 +266,13 @@ function transformSelector(
           compound += `${hostTag}:where(.${tagClassPrefix}${tagName})`
         }
         markAnchor()
-      } else if (tagName !== 'page' && builtinTags?.includes(tagName)) {
-        // Global styles target the real DOM host of a built-in component.
-        compound += `${builtinHostTagPrefix ?? 'tiny-'}${tagName}`
+      } else if (
+        tagName === 'page'
+        || builtinTags?.includes(tagName)
+        || componentTags?.includes(tagName)
+      ) {
+        // Global styles target the real DOM host of a component.
+        compound += `${builtinHostTagPrefix ?? TINY_ENGINE_NAMING.hostTagPrefix}${tagName}`
       } else {
         compound += tagName
       }
@@ -380,6 +389,7 @@ export class StyleSheetTransformer {
         scopeHostAttribute: undefined!,
         forceScopeAnchor: false,
         builtinTags: undefined!,
+        componentTags: undefined!,
         builtinHostTagPrefix: undefined!,
         rpxRatio: rpxRatio ?? 750,
         importSign: undefined!,
@@ -405,6 +415,7 @@ export class StyleSheetTransformer {
       scopeHostAttribute: options.scopeHostAttribute ?? undefined!,
       forceScopeAnchor: options.forceScopeAnchor ?? false,
       builtinTags: options.builtinTags ?? undefined!,
+      componentTags: options.componentTags ?? undefined!,
       builtinHostTagPrefix: options.builtinHostTagPrefix ?? undefined!,
       rpxRatio: options.rpxRatio ?? 750,
       importSign: options.importSign ?? undefined!,
@@ -687,6 +698,7 @@ export class StyleSheetTransformer {
       this._opts.classPrefix,
       this._opts.classPrefixSign,
       inKeyframes ? undefined : this._opts.tagClassPrefix,
+      inKeyframes ? undefined : this._opts.componentTags,
       inKeyframes ? undefined : this._opts.scopeMarkerClass,
       inKeyframes ? undefined : this._opts.scopeHostAttribute,
       inKeyframes ? false : this._opts.forceScopeAnchor,
@@ -744,7 +756,7 @@ export class StyleSheetTransformer {
     const hostIs = this._opts.hostIs
     const hostAttribute = this._opts.hostAttribute ?? DEFAULT_HOST_ATTRIBUTE
 
-    // Build selector: [tiny-host="prefix"] or [tiny-host="prefix"],[is="hostIs"]
+    // Build selector: [host-attribute="prefix"] or [host-attribute="prefix"],[is="hostIs"]
     let sel = `[${hostAttribute}="${prefix}"]`
     if (hostIs !== undefined) {
       sel += `,[is="${hostIs}"]`

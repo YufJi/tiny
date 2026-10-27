@@ -25,7 +25,7 @@
 
 23 个内置标签的**宿主结构和 P0 默认视觉已经完成一轮重写**，当前没有 P0 级“结构或默认外观明显不一致”的标签。剩余问题集中在三类：
 
-1. **交互语义**：`wx-touchtrack`/`wx-scroller` 尚未抽象；group 受控值和 label 激活已补，picker region 按决策暂不支持；
+1. **交互语义**：`tiny-touchtrack`/`tiny-scroller` 尚未抽象；group 受控值和 label 激活已补，picker region 按决策暂不支持；
 2. **P1 组件的内部结构**：`input`、`textarea`、`swiper`、`form`、`button` 仍是“能用但近似”；`scroll-view` 已按决策接受 native 滚动近似。
 3. **P2 细节**：`canvas`、`progress` 等结构差异，以及部分事件名/keyboard 行为差异。
 
@@ -57,7 +57,7 @@
 - [x] 内置模板内部容器从 `<view>`/`<text>` 改为原生 `<div>`/`<span>`，避免 inline 默认值导致零尺寸（曾导致 ECharts 缩略图空白）；
 - [x] 宿主事件监听统一走 `bindHostListeners`/`addListener`，对应参考的 `listeners: { "this.tap": ... }`；
 - [x] 纯宿主标签（`view`/`button`/`checkbox-group`/`radio-group`/`swiper-item`）收敛为 slot-only；
-- [x] behaviors 基础层已补齐：`wx-touchtrack`/`wx-scroller` 已抽象并接入，`wx-group` 的 add/remove/rename/changed、`wx-base` 的 getNodeId/debounce 已补；scroller 底层 native 为已知近似。
+- [x] behaviors 基础层已补齐：`tiny-touchtrack`/`tiny-scroller` 已抽象并接入，`tiny-group` 的 add/remove/rename/changed、`tiny-base` 的 getNodeId/debounce 已补；scroller 底层 native 为已知近似。
 
 ### 2.2 组件结构与默认外观
 
@@ -235,7 +235,7 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 
 已对齐：wrap/main/content 三层、50ms scroll 节流、scroll-into-view 重试、enableBackToTop、showScrollbar/bounces/pagingEnabled/scrollAnchoring/enableFlex CSS、scroller 的 isScrolling/scrollTo 状态 API。
 
-已知近似：`wx-touchtrack`/`wx-scroller` 的完整触摸/滚动状态仍由 native 滚动承担；refresher 是自定义扩展；列表回收/长列表策略未实现。
+已知近似：`tiny-touchtrack`/`tiny-scroller` 的完整触摸/滚动状态仍由 native 滚动承担；refresher 是自定义扩展；列表回收/长列表策略未实现。
 
 ### 4.4 button 的 native/open-type
 
@@ -265,17 +265,17 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 
 | behavior | 状态 |
 | --- | --- |
-| `wx-base` | [x] `getNodeId`/`getPluginId`/`getRealRoute`/`debounce` 已补 |
-| `wx-hover` | [x] hover-class/start/stay，未复刻 isScrolling 判断 |
-| `wx-disabled` | [x] |
-| `wx-size-normalizer` | [x] |
-| `wx-data-component` | [x] 基础 get/reset；自动填充按决策关闭 |
-| `wx-group` / `wx-item` | [x] 受控 value + addItem/removeItem/renameItem/changed 已补 |
-| `wx-label-target` | [x] label 分发 |
-| `wx-touchtrack` | [x] 已抽象；swiper 已接入，scroll/picker 仍 natively 处理（已知近似） |
-| `wx-scroller` | [x] 已抽象 state API 并接入 scroll-view；底层 native 滚动（已知近似） |
+| `tiny-base` | [x] `getNodeId`/`getPluginId`/`getRealRoute`/`debounce` 已补 |
+| `tiny-hover` | [x] hover-class/start/stay，未复刻 isScrolling 判断 |
+| `tiny-disabled` | [x] |
+| `tiny-size-normalizer` | [x] |
+| `tiny-data-component` | [x] 基础 get/reset；自动填充按决策关闭 |
+| `tiny-group` / `tiny-item` | [x] 受控 value + addItem/removeItem/renameItem/changed 已补 |
+| `tiny-label-target` | [x] label 分发 |
+| `tiny-touchtrack` | [x] 已抽象；swiper 已接入，scroll/picker 仍 natively 处理（已知近似） |
+| `tiny-scroller` | [x] 已抽象 state API 并接入 scroll-view；底层 native 滚动（已知近似） |
 
-`scroll-view` 的“已知近似”结案只关闭了 scroll-view 组件本身，不等于 `wx-touchtrack`/`wx-scroller` behaviors 已实现。
+`scroll-view` 的“已知近似”结案只关闭了 scroll-view 组件本身，不等于 `tiny-touchtrack`/`tiny-scroller` behaviors 已实现。
 
 ## 5. 历史处理记录
 

@@ -1,5 +1,5 @@
 export * from '@tiny/manifest'
-import type { Diagnostic, Manifest, NamingConfig } from '@tiny/manifest'
+import type { CompatibilityConfig, Diagnostic, Manifest } from '@tiny/manifest'
 
 export type CompileOptions = {
   sourceDir: string
@@ -7,18 +7,11 @@ export type CompileOptions = {
   clean?: boolean
   dev?: boolean
   rpxRatio?: number
-  scopePrefix?: string
-  /** Source stylesheet extensions. Defaults to the mini-program `['.wxss']`. */
-  styleExtensions?: string[]
   /**
-   * Engine naming config (directive namespace, API global, tag markers…).
-   * Overrides `tiny.config.json`; defaults to the `wx-` namespace.
+   * Mini-program source conventions. Omitted fields use WeChat defaults.
+   * Explicit values override `tiny.config.json`.
    */
-  naming?: NamingConfig
-  /** Shorthand for `naming.prefix`. */
-  prefix?: string
-  /** Shorthand for `naming.apiAliases`. */
-  apiAliases?: string[]
+  compatibility?: CompatibilityConfig
 }
 
 export type CompileResult = {

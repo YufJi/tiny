@@ -41,6 +41,7 @@ function createContext() {
   const context = {
     connection,
     apiName: 'wx',
+    apiNamespaces: ['wx'],
     getSystemInfoSnapshot: () => ({ pixelRatio: 1, windowWidth: 0, windowHeight: 0 }),
     getStorageSnapshot: () => storage,
     setStorageSnapshot: (key: string, value: unknown) => { storage[key] = value },
@@ -85,6 +86,10 @@ describe('common host APIs', () => {
 
     expect(host.canIUse('wx.request')).toBe(true)
     expect(host.canIUse('wx.notImplemented')).toBe(false)
+    context.apiNamespaces = ['my', 'wx']
+    expect(host.canIUse('my.request')).toBe(true)
+    expect(host.canIUse('my.notImplemented')).toBe(false)
+    expect(host.canIUse('other.request')).toBe(false)
     expect(host.getLaunchOptionsSync()).toMatchObject({ path: 'pages/index/index', scene: 1001 })
   })
 })

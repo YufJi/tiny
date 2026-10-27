@@ -201,7 +201,7 @@ export class DevtoolRuntimeClient {
     host.host.setAppVisible(false)
   }
 
-  /** Keep `wx.getSystemInfoSync()` and `onResize` in sync with host chrome. */
+  /** Keep the configured system-info API and `onResize` in sync with host chrome. */
   async resize(width: number, height: number): Promise<void> {
     const host = this.requireHost()
     await host.host.setWindowSize(width, height)

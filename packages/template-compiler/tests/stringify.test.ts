@@ -3,12 +3,12 @@ import { TmplGroup } from '../src/group'
 
 describe('stringify — basic', () => {
   test('stringifyTmpl returns null for unknown path', () => {
-    const group = TmplGroup.new()
+    const group = TmplGroup.new({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     expect(group.stringifyTmpl('nonexistent')).toBeNull()
   })
 
   test('stringifyTmpl returns string for known template', () => {
-    const group = TmplGroup.new()
+    const group = TmplGroup.new({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     group.addTmpl('a', '<div class="foo">hello</div>')
     const result = group.stringifyTmpl('a')
     expect(typeof result).toBe('string')
@@ -16,7 +16,7 @@ describe('stringify — basic', () => {
   })
 
   test('stringifyTmpl roundtrips basic element', () => {
-    const group = TmplGroup.new()
+    const group = TmplGroup.new({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     group.addTmpl('a', '<div><span>text</span></div>')
     const result = group.stringifyTmpl('a')
     expect(result).toContain('<div>')

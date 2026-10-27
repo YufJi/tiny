@@ -1,5 +1,6 @@
 import type * as glassEasel from 'glass-easel'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
+import { builtinDefinitionName } from '../../tags'
 
 type PickerColumn = {
   is?: string
@@ -15,7 +16,7 @@ type PickerColumn = {
 
 export function definePickerView(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
-    is: 'tiny-builtin:picker-view',
+    is: builtinDefinitionName('picker-view'),
     template: ctx.template('picker-view'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent],
     properties: {
@@ -57,7 +58,7 @@ export function definePickerView(ctx: BuiltinContext): BuiltinDefinition {
         for (const node of nodes ?? []) {
           const component = (node as { asGeneralComponent?: () => PickerColumn | null })
             .asGeneralComponent?.()
-          if (component?.is === 'tiny-builtin:picker-view-column') {
+          if (component?.is === builtinDefinitionName('picker-view-column')) {
             out.push(component)
           }
           const children = (node as { childNodes?: unknown[] }).childNodes

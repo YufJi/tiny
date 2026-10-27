@@ -1,7 +1,8 @@
 import type { HostApiHandlers } from '@tiny/runtime'
+import { BROWSER_RUNTIME_NAMES } from './naming'
 
-const OVERLAY_ID = 'tiny-api-overlay'
-const STYLE_ID = 'tiny-api-overlay-style'
+const OVERLAY_ID = BROWSER_RUNTIME_NAMES.apiOverlayId
+const STYLE_ID = BROWSER_RUNTIME_NAMES.apiOverlayStyleId
 
 let loadingElement: HTMLElement | null = null
 let toastElement: HTMLElement | null = null

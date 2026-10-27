@@ -2,7 +2,7 @@ import { afterAll, describe, expect, test } from 'vitest'
 import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
 import { createInMemoryTransportPair } from '@tiny/bridge'
-import type { Manifest } from '@tiny/manifest'
+import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest } from '@tiny/manifest'
 import { bootServiceThread } from '../src/service'
 import { createTinyRuntime } from '../src/host'
 import { bootRenderThread } from '../src/render'
@@ -23,7 +23,8 @@ afterAll(() => {
 
 function createManifest(): Manifest {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
+    runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
     entries: { service: 'service.js', render: 'render.js', templates: 'templates.js' },
     pages: [{
       path: PAGE_PATH,
@@ -41,7 +42,7 @@ function createManifest(): Manifest {
 }
 
 function createTemplateRegistry() {
-  const group = TmplGroup.newDev()
+  const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
   group.addTmpl(PAGE_PATH, '<text>{{token}}</text>')
   const generated = group.getTmplGenObjectGroups()
   const groupList = new Function(`return ${generated}`)() as Record<string, unknown>

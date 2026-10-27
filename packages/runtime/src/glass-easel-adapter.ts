@@ -1,9 +1,8 @@
 import * as glassEasel from 'glass-easel'
 import {
-  namingFromManifest,
+  TINY_ENGINE_NAMING,
   type Manifest,
   type PageArtifact,
-  type ResolvedNamingConfig,
   type StyleArtifact,
 } from '@tiny/manifest'
 import type {
@@ -119,7 +118,7 @@ export type StyleRegistrationOptions = {
 export class GlassEaselRuntimeAdapter {
   readonly backend: glassEasel.GeneralBackendContext
   readonly componentSpace: glassEasel.ComponentSpace
-  /** Internal marker behavior for custom wx://form-field components. */
+  /** Internal marker behavior for custom form-field components. */
   private readonly formFieldBehavior: glassEasel.GeneralBehavior
   private readonly manifest: Manifest
   private readonly templates: TemplateRegistry
@@ -165,8 +164,6 @@ export class GlassEaselRuntimeAdapter {
   private readonly onComponentObserved?: GlassEaselAdapterOptions['onComponentObserved']
   private readonly builtinComponents: BuiltinComponentDefinitions
   private readonly builtinStyles: NonNullable<BuiltinComponents['styles']>
-  /** Resolved engine naming config (behavior ids, host attribute, …). */
-  private readonly naming: ResolvedNamingConfig
   private readonly onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
   private readonly mountComponent?: (component: glassEasel.GeneralComponent) => void
   private readonly resolveAssetUrl?: AssetUrlResolver
@@ -176,7 +173,6 @@ export class GlassEaselRuntimeAdapter {
   constructor(options: GlassEaselAdapterOptions) {
     this.backend = options.backend
     this.manifest = options.manifest
-    this.naming = namingFromManifest(options.manifest)
     this.templates = options.templates
     this.onMiniProgramEvent = options.onMiniProgramEvent
     this.onComponentLifecycle = options.onComponentLifecycle
@@ -185,8 +181,12 @@ export class GlassEaselRuntimeAdapter {
     this.onComponentObserved = options.onComponentObserved
     const styleScopeManager = new glassEasel.StyleScopeManager()
     this.componentSpace = new glassEasel.ComponentSpace(undefined, undefined, styleScopeManager, true)
+    this.componentSpace.updateComponentOptions({
+      hostNodeTagName: TINY_ENGINE_NAMING.hostNodeTagName,
+      reflectToAttributes: true,
+    })
     this.formFieldBehavior = this.componentSpace.defineBehavior({
-      is: 'tiny-form-field',
+      is: TINY_ENGINE_NAMING.formFieldBehaviorId,
     })
     this.onDiagnostic = options.onDiagnostic
     this.mountComponent = options.mountComponent
@@ -195,7 +195,6 @@ export class GlassEaselRuntimeAdapter {
     this.builtinStyles = options.builtinComponents?.styles ?? []
     this.builtinComponents = options.builtinComponents
       ? options.builtinComponents.create(this.componentSpace, {
-          prefix: this.naming.behaviorPrefix,
           registerStyleScope: (name) => this.registerScope(name),
           onDiagnostic: (diagnostic) => this.onDiagnostic?.(createRuntimeDiagnostic(
             diagnostic.severity,
@@ -497,7 +496,7 @@ export class GlassEaselRuntimeAdapter {
     const scopeName = this.componentSpace.styleScopeManager.queryName(pageScope)
     if (!scopeName) return
     const scoped = template.css
-      .split(`.${sign}`).join(`.${scopeName}--${this.naming.scopeMarkerClass}`)
+      .split(`.${sign}`).join(`.${scopeName}--${TINY_ENGINE_NAMING.scopeMarkerClass}`)
       .split(`="${sign}"`).join(`="${scopeName}"`)
       .split(`/*${sign}*/`).join(`${scopeName}--`)
     const path = `${template.style.outputPath}@page:${pageScope}`
@@ -642,7 +641,7 @@ export class GlassEaselRuntimeAdapter {
     )
     // App-global selectors are anchored to this unprefixed marker so the page
     // root participates without exposing built-in component internals.
-    component.classList?.toggle(this.naming.scopeMarkerClass, true)
+    component.classList?.toggle(TINY_ENGINE_NAMING.scopeMarkerClass, true)
     this.componentSourcePaths.set(component as unknown as object, path)
     this.mountedComponents.set(path, component)
     if (pageId) this.componentsByPageId.set(pageId, component)
@@ -685,7 +684,7 @@ export class GlassEaselRuntimeAdapter {
     const backend = (component as unknown as { getBackendElement?: () => unknown }).getBackendElement?.()
     if (isDomInspectNode(backend)) {
       const budget = { count: 0 }
-      const domTree = serializeDomNode(backend, '0', 0, budget, this.naming.hostAttribute)
+      const domTree = serializeDomNode(backend, '0', 0, budget, TINY_ENGINE_NAMING.hostAttribute)
       if (domTree) return { ...domTree, type: 'component' }
     }
     return this.inspectLogicalTree(component)

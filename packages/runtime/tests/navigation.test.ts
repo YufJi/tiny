@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, test } from 'vitest'
 import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
-import type { Manifest, PageArtifact, StyleArtifact } from '@tiny/manifest'
+import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact, type StyleArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
 import { bootRenderThread } from '../src/render'
@@ -32,7 +32,7 @@ afterAll(() => {
 })
 
 function createTemplateRegistry() {
-  const group = TmplGroup.newDev()
+  const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
   group.addTmpl(TODOS_PATH, '<view>{{marker}}</view>')
   group.addTmpl(ADD_TODO_PATH, '<view>{{from}}</view>')
   const generated = group.getTmplGenObjectGroups()
@@ -59,7 +59,8 @@ function createNavigationManifest(): Manifest {
     configuration: { path: ADD_TODO_PATH, sourcePath: `${ADD_TODO_PATH}.json`, effective: {} },
   }
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
+    runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
     entries: { service: 'service.js', render: 'render.js', templates: 'templates.js' },
     pages: [todos, addTodo],
     components: [],

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
-import type { Manifest, PageArtifact } from '@tiny/manifest'
+import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { bootRenderThread } from '../src/render'
 import type { BuiltinComponentFactoryContext, BuiltinComponents } from '../src/types'
@@ -9,7 +9,7 @@ import type { BuiltinComponentFactoryContext, BuiltinComponents } from '../src/t
 const PAGE_PATH = 'pages/index/index'
 
 function compileTemplate(source: string): glassEasel.template.ComponentTemplate {
-  const group = TmplGroup.newDev()
+  const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
   group.addTmpl('', source)
   const generated = group.getTmplGenObjectGroups()
   const groupList = new Function(`return ${generated}`)() as Record<string, unknown>
@@ -24,7 +24,7 @@ function compileTemplate(source: string): glassEasel.template.ComponentTemplate 
 }
 
 function createTemplateRegistry() {
-  const group = TmplGroup.newDev()
+  const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
   group.addTmpl(PAGE_PATH, '<probe id="probe" label="{{label}}" />')
   const generated = group.getTmplGenObjectGroups()
   const groupList = new Function(`return ${generated}`)() as Record<string, unknown>
@@ -53,8 +53,8 @@ function createManifest(): Manifest {
     },
   }
   return {
-    schemaVersion: 1,
-    naming: { prefix: 'tiny-' },
+    schemaVersion: 2,
+    runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
     entries: { service: 'service.js', render: 'render.js', templates: 'templates.js' },
     pages: [page],
     components: [],
@@ -78,7 +78,7 @@ class RecordingBackend extends glassEasel.EmptyBackendContext {
 }
 
 describe('host-provided built-in components', () => {
-  test('receive the manifest naming prefix and own scoped built-in styles', async () => {
+  test('own scoped built-in styles', async () => {
     const manifest = createManifest()
     const [, renderTransport] = createInMemoryTransportPair()
     const backend = new RecordingBackend()
@@ -122,7 +122,6 @@ describe('host-provided built-in components', () => {
     })
 
     expect(contexts).toHaveLength(1)
-    expect(contexts[0]?.prefix).toBe('tiny-')
     expect(typeof contexts[0]?.onDiagnostic).toBe('function')
 
     render.adapter.registerStyles(manifest)

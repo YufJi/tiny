@@ -1,9 +1,3 @@
-page {
-  display: block;
-  box-sizing: border-box;
-  min-height: 100vh;
-}
-
 /*
  * Real built-in hosts. `hidden` is reflected from the `hidden` property to a
  * host attribute, so the host rules below must beat the component display

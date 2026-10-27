@@ -1,6 +1,7 @@
 import type * as glassEasel from 'glass-easel'
 import { bindHostListeners, unbindHostListeners } from '../../behaviors'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
+import { builtinDefinitionName } from '../../tags'
 
 const DEFAULT_HOVER_CLASS = 'button-hover'
 
@@ -22,7 +23,7 @@ const OPEN_TYPE_EVENTS: Record<string, string> = {
 
 export function defineButton(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
-    is: 'tiny-builtin:button',
+    is: builtinDefinitionName('button'),
     template: ctx.template('button'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.hover, ctx.behaviors.labelTarget],
     properties: {

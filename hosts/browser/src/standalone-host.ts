@@ -3,6 +3,7 @@ import { createTinyRuntime, type TinyRuntimeHost } from '@tiny/runtime'
 import type { RenderThreadConnector, RuntimeDiagnostic } from '@tiny/runtime'
 import type { HostApiHandlers, RuntimeManifest, SystemInfoSnapshot, StorageSnapshot } from '@tiny/runtime'
 import { createBrowserApiHandlers } from './api-handlers'
+import { BROWSER_RUNTIME_NAMES } from './naming'
 
 export type StandaloneHostOptions = {
   manifest: RuntimeManifest
@@ -35,7 +36,7 @@ export async function createStandaloneDualThreadHost(
 ): Promise<StandaloneHost> {
   const container = options.container ?? document.body
   const serviceChannel = createHostMessageChannelPair()
-  const serviceIframe = createIframe('tiny-runtime-service-frame', options.serviceUrl)
+  const serviceIframe = createIframe(BROWSER_RUNTIME_NAMES.serviceFrameClass, options.serviceUrl)
   const serviceReady = waitForThreadReady(serviceIframe, 'service')
   container.append(serviceIframe)
   try {
@@ -45,7 +46,7 @@ export async function createStandaloneDualThreadHost(
     throw error
   }
   serviceIframe.contentWindow?.postMessage(
-    { type: 'tiny-runtime-port', channel: 'service' },
+    { type: BROWSER_RUNTIME_NAMES.runtimePort, channel: 'service' },
     '*',
     [serviceChannel.peerPort as unknown as Transferable],
   )
@@ -104,7 +105,7 @@ async function createPerPageHost(
       }
       const channel = createHostMessageChannelPair()
       iframe.contentWindow?.postMessage(
-        { type: 'tiny-runtime-port', channel: 'render' },
+        { type: BROWSER_RUNTIME_NAMES.runtimePort, channel: 'render' },
         '*',
         [channel.peerPort as unknown as Transferable],
       )
@@ -196,11 +197,11 @@ export function installCanvasHandoffRelay(
       offscreen?: OffscreenCanvas
     } | undefined
     if (!data?.type || !data.token) return
-    if (event.source === serviceWindow && data.type === 'tiny-canvas-request') {
+    if (event.source === serviceWindow && data.type === BROWSER_RUNTIME_NAMES.canvasRequest) {
       const renderWindow = options.getRenderIframe(data.pageId)?.contentWindow
       if (!renderWindow) {
         sendToService({
-          type: 'tiny-canvas-error',
+          type: BROWSER_RUNTIME_NAMES.canvasError,
           token: data.token,
           reason: 'render-not-found',
         })
@@ -210,7 +211,7 @@ export function installCanvasHandoffRelay(
         renderWindow.postMessage(data, targetOrigin)
       } catch {
         sendToService({
-          type: 'tiny-canvas-error',
+          type: BROWSER_RUNTIME_NAMES.canvasError,
           token: data.token,
           reason: 'render-post-failed',
         })
@@ -218,10 +219,10 @@ export function installCanvasHandoffRelay(
       return
     }
     if (!options.isRenderSource(event.source)) return
-    if (data.type === 'tiny-canvas-handoff') {
+    if (data.type === BROWSER_RUNTIME_NAMES.canvasHandoff) {
       if (data.status === 'transferred' && !data.offscreen) {
         sendToService({
-          type: 'tiny-canvas-error',
+          type: BROWSER_RUNTIME_NAMES.canvasError,
           token: data.token,
           reason: 'missing-offscreen',
         })
@@ -233,7 +234,7 @@ export function installCanvasHandoffRelay(
       sendToService(data as Record<string, unknown>, transfer)
       return
     }
-    if (data.type === 'tiny-canvas-error') {
+    if (data.type === BROWSER_RUNTIME_NAMES.canvasError) {
       sendToService(data as Record<string, unknown>)
     }
   }
@@ -261,10 +262,10 @@ function createIframe(className: string, src: string): HTMLIFrameElement {
 function createRenderIframe(renderUrl: string, pageId: string): HTMLIFrameElement {
   const url = new URL(renderUrl, window.location.href)
   url.searchParams.set('pageId', pageId)
-  const iframe = createIframe('tiny-runtime-render-frame', url.href)
+  const iframe = createIframe(BROWSER_RUNTIME_NAMES.renderFrameClass, url.href)
   iframe.dataset.pageId = pageId
   iframe.dataset.state = 'hidden'
-  iframe.name = `tiny-render-${pageId}`
+  iframe.name = `${BROWSER_RUNTIME_NAMES.renderFrameNamePrefix}${pageId}`
   iframe.title = `Tiny render thread ${pageId}`
   iframe.style.position = 'absolute'
   iframe.style.inset = '0'
@@ -296,7 +297,7 @@ function waitForThreadReady(
     }, timeoutMs)
     const onMessage = (event: MessageEvent) => {
       const data = event.data as { type?: string; channel?: string } | undefined
-      if (data?.type !== 'tiny-runtime-port-ready' || data.channel !== channel) return
+      if (data?.type !== BROWSER_RUNTIME_NAMES.runtimePortReady || data.channel !== channel) return
       if (event.source !== iframe.contentWindow) return
       cleanup()
       resolve()

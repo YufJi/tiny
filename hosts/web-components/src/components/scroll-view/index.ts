@@ -1,5 +1,6 @@
 import type * as glassEasel from 'glass-easel'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
+import { builtinDefinitionName } from '../../tags'
 
 type ScrollBackend = {
   scrollTop?: number
@@ -33,7 +34,7 @@ function touchPoint(event: glassEasel.ShadowedEvent<unknown>): { x: number; y: n
 
 export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
-    is: 'tiny-builtin:scroll-view',
+    is: builtinDefinitionName('scroll-view'),
     template: ctx.template('scroll-view'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.scroller],
     properties: {

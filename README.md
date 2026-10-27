@@ -91,42 +91,71 @@ pnpm dev:devtool             # 调试器：http://localhost:8080（可切换全�
 调试器会扫描 `tests/apps/*` 并为每个应用生成产物与 watcher；顶部下拉框可预览全部测试应用，
 也支持 `http://localhost:8080/?app=wechat-demo` 这样的深链。
 
-## 命名配置
+## 兼容输入与内部命名
 
-引擎默认使用微信兼容的 `wx-` 命名空间；组件、API、编译器三侧的前缀都可以通过
-`tiny.config.json` 统一切换（默认可不提供该文件）：
+接入侧的小程序格式通过 `tiny.config.json` 的 `compatibility` 配置；未填写字段按微信规则解析。Tiny 编译产物和运行时内部名称始终使用固定的 `tiny-*` 命名，不受接入侧配置影响。
 
 ```json
 {
-  "naming": {
-    "prefix": "tiny-",
-    "apiAliases": ["wx"]
+  "compatibility": {
+    "extensions": {
+      "script": [".js", ".ts"],
+      "template": [".wxml"],
+      "style": [".wxss"],
+      "templateScript": [".wxs", ".sjs"],
+      "config": [".json"]
+    },
+    "files": {
+      "appConfig": "app.json",
+      "projectConfig": "project.config.json"
+    },
+    "directiveNamespace": "wx",
+    "api": {
+      "global": "wx",
+      "aliases": []
+    },
+    "globals": {
+      "app": "App",
+      "page": "Page",
+      "component": "Component",
+      "behavior": "Behavior",
+      "getApp": "getApp",
+      "getCurrentPages": "getCurrentPages"
+    },
+    "behaviorScheme": "wx://"
   }
 }
 ```
 
 | 配置项 | 默认值 | 影响 |
 | --- | --- | --- |
-| `naming.prefix` | `wx-` | 由它派生下面所有名字；`tiny-` 即切换为 Tiny 命名空间 |
-| `naming.directive` | 前缀去掉 `-` | 模板指令命名空间：`wx:if` / `tiny:if` |
-| `naming.api` | 前缀去掉 `-` | service 线程全局 API 对象：`wx.*` / `tiny.*` |
-| `naming.apiAliases` | `[]` | 额外挂载的 API 全局别名，便于第三方库过渡（如 `["wx"]`） |
+| `compatibility.extensions.*` | 微信扩展名 | 脚本、模板、样式、模板脚本和配置文件的发现规则 |
+| `compatibility.files.*` | `app.json` / `project.config.json` | 小程序入口配置与项目配置文件 |
+| `compatibility.directiveNamespace` | `wx` | 模板指令命名空间：`wx:if` |
+| `compatibility.api.global` | `wx` | service 线程 API 全局对象 |
+| `compatibility.api.aliases` | `[]` | 额外安装的 API 全局别名，便于第三方库过渡 |
+| `compatibility.globals.*` | `App` / `Page` / ... | 最小程序注册和查询全局名 |
+| `compatibility.behaviorScheme` | `wx://` | 组件 behavior 的接入侧 URI scheme |
+| `compatibility.opaqueGlobals` | `__wxConfig` 等 | 第三方兼容代码会探测、但不应生成不支持 API 的全局名 |
 
-派生结果：
+兼容配置只影响输入解析和运行期兼容全局。除 glass-easel 当前仍硬编码的两个属性外，编译产物和执行时内部名称统一使用 Tiny 命名：
 
-| 位置 | `prefix: "wx-"` | `prefix: "tiny-"` |
-| --- | --- | --- |
-| 模板指令 | `wx:if`、`wx:for` | `tiny:if`、`tiny:for` |
-| 全局 API | `wx.getStorageSync()` | `tiny.getStorageSync()` |
-| 内置组件 behavior | `wx-base`、`wx-hover` | `tiny-base`、`tiny-hover` |
-| 内置 behavior scheme | `wx://component-export` | `tiny://component-export` |
-| 组件宿主属性 | `wx-host` | `tiny-host` |
-| tag 选择器标记类 | `wx-tag-button` | `tiny-tag-button` |
-| 元素 scope 标记类 | `wx-scope` | `tiny-scope` |
+| 内部对象 | 当前内部名称 |
+| --- | --- |
+| page/component host tag | `tiny-page`、`tiny-add-button` |
+| 内置组件 host tag | `tiny-view`、`tiny-button` |
+| 内置 glass-easel definition | `tiny-builtin:view` |
+| style scope | `tiny-<path>` |
+| tag marker | `tiny-tag-button` |
+| scope marker | `tiny-scope` |
+| host attribute | `wx-host`（临时同步 glass-easel） |
+| style scope attribute | `wx-style-scope`（临时同步 glass-easel） |
+| 内置 behavior | `tiny-base`、`tiny-item` 等 |
+| 内置 behavior scheme | `tiny://` |
 
-编译器会把解析后的配置写入 `manifest.json` 的 `naming` 字段，render/service 线程据此
-保持一致。`compileMiniProgram({ naming })` 也可直接覆盖配置；内置组件标签本身
-（`<view>`、`<button>` 等）不参与前缀。
+编译器会把运行时仍需要的兼容信息写入 `manifest.json` 的 `runtimeCompatibility`；内部 Tiny 名称由 `@tiny/manifest` 的 `TINY_ENGINE_NAMING` 统一提供。当前 manifest schema 为 `2`。`compileMiniProgram({ compatibility })` 可覆盖配置文件中的同名字段。
+
+`glass-easel@1.1.0` 没有公开配置 host/style scope 属性名的 API。当前不使用 patch，也不在 runtime 观察或改写 DOM，而是让 `TINY_ENGINE_NAMING.hostAttribute` / `styleScopeAttribute` 暂时同步为 `wx-host` / `wx-style-scope`。后续处理见 [known issue](docs/known-issues/glass-easel-naming.md)。
 
 ## 常用命令
 

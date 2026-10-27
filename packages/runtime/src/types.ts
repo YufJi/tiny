@@ -158,8 +158,6 @@ export type BackendFactory = () => unknown
 
 /** Context the runtime passes to a host-provided built-in component factory. */
 export type BuiltinComponentFactoryContext = {
-  /** Behavior id prefix derived from `manifest.naming` (e.g. `wx-`). */
-  prefix?: string
   /** Register or reuse a render style scope shared with stylesheet registration. */
   registerStyleScope?: (name: string) => number
   onDiagnostic?: (diagnostic: {

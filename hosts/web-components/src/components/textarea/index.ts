@@ -1,10 +1,11 @@
 import type * as glassEasel from 'glass-easel'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { valueFromEvent } from '../../events'
+import { builtinDefinitionName } from '../../tags'
 
 export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
-    is: 'tiny-builtin:textarea',
+    is: builtinDefinitionName('textarea'),
     template: ctx.template('textarea'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent, ctx.behaviors.classPrefix],
     properties: {

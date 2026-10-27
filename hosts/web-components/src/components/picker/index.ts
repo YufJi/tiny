@@ -1,5 +1,6 @@
 import type * as glassEasel from 'glass-easel'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
+import { builtinDefinitionName } from '../../tags'
 
 type PickerOption = { label: string; value: string }
 type PickerColumn = PickerOption[]
@@ -38,7 +39,7 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
     throw new Error('picker requires picker-view and picker-view-column')
   }
   return ctx.space.defineComponent({
-    is: 'tiny-builtin:picker',
+    is: builtinDefinitionName('picker'),
     template: ctx.template('picker'),
     using: {
       'picker-view': pickerView,

@@ -1,8 +1,10 @@
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
+import { builtinDefinitionName } from '../../tags'
+import { BUILTIN_BEHAVIOR_IDS } from '../../behaviors'
 
 export function defineRadioGroup(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
-    is: 'tiny-builtin:radio-group',
+    is: builtinDefinitionName('radio-group'),
     template: ctx.template('radio-group'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent, ctx.behaviors.group],
     properties: {
@@ -49,7 +51,7 @@ export function defineRadioGroup(ctx: BuiltinContext): BuiltinDefinition {
             hasBehavior?: (behavior: string) => boolean
             childNodes?: unknown[]
           }
-          if (item.hasBehavior?.('wx-item')) return true
+          if (item.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.item)) return true
           if (this.hasItems(item.childNodes)) return true
         }
         return false
@@ -61,7 +63,7 @@ export function defineRadioGroup(ctx: BuiltinContext): BuiltinDefinition {
             data?: Record<string, unknown>
             childNodes?: unknown[]
           }
-          if (item.hasBehavior?.('wx-item') && item.data?.checked) {
+          if (item.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.item) && item.data?.checked) {
             return String(item.data.value ?? '')
           }
           const nested = this.collectChecked(item.childNodes)
@@ -82,7 +84,7 @@ export function defineRadioGroup(ctx: BuiltinContext): BuiltinDefinition {
             childNodes?: unknown[]
             setData?: (data: Record<string, unknown>) => void
           }
-          if (item.hasBehavior?.('wx-item') && item.data && 'checked' in item.data) {
+          if (item.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.item) && item.data && 'checked' in item.data) {
             const should = String(item.data.value ?? '') === value
             if (Boolean(item.data.checked) !== should) item.setData?.({ checked: should })
           }

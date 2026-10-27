@@ -1,5 +1,6 @@
 import type * as glassEasel from 'glass-easel'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
+import { builtinDefinitionName } from '../../tags'
 
 type ImageBackendElement = {
   naturalWidth?: number
@@ -35,7 +36,7 @@ const POSITION_MODES: Record<string, string> = {
 
 export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
-    is: 'tiny-builtin:image',
+    is: builtinDefinitionName('image'),
     template: ctx.template('image'),
     behaviors: [ctx.behaviors.base],
     properties: {

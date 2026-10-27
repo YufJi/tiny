@@ -191,23 +191,36 @@ export async function runBrowserAcceptance({ baseUrl }) {
 
     await step('apply scoped styles and built-in base layout', async () => {
       currentStep = 'apply scoped styles and built-in base layout'
-      const pageBackground = await render.locator('page').evaluate(
+      const pageBackground = await render.locator('tiny-page').evaluate(
         (element) => getComputedStyle(element).backgroundColor,
       )
       assert.equal(pageBackground, 'rgb(16, 24, 40)', 'app.wxss page rule did not apply')
-      const pageScopeProbe = await render.locator('page').evaluate((element) => ({
+      assert.ok(
+        (await render.locator('tiny-page[wx-host]').count()) > 0,
+        'temporary glass-easel wx-host boundary is missing',
+      )
+      assert.ok(
+        (await render.locator('style[wx-style-scope]').count()) > 0,
+        'temporary glass-easel wx-style-scope boundary is missing',
+      )
+      assert.equal(
+        await render.locator('[tiny-host], [tiny-style-scope]').count(),
+        0,
+        'unexpected Tiny host attributes appeared before the glass-easel naming issue is resolved',
+      )
+      const pageScopeProbe = await render.locator('tiny-page').evaluate((element) => ({
         page: getComputedStyle(element).getPropertyValue('--tiny-page-scope-probe').trim(),
         componentLeak: getComputedStyle(element).getPropertyValue('--tiny-component-page-probe').trim(),
       }))
       assert.equal(pageScopeProbe.page, 'todos', 'page tag selector did not match the page root scope')
       assert.equal(pageScopeProbe.componentLeak, '', 'component page selector leaked to the page root')
       assert.equal(
-        await render.locator('page').evaluate((element) => getComputedStyle(element).outlineColor),
+        await render.locator('tiny-page').evaluate((element) => getComputedStyle(element).outlineColor),
         'rgb(9, 8, 7)',
         'universal selector did not match the page host scope',
       )
       assert.equal(
-        await render.locator('page').evaluate((element) => getComputedStyle(element).outlineStyle),
+        await render.locator('tiny-page').evaluate((element) => getComputedStyle(element).outlineStyle),
         'dotted',
         'app universal selector did not match the page root marker',
       )
@@ -257,9 +270,9 @@ export async function runBrowserAcceptance({ baseUrl }) {
 
     await step('dispatch a custom component event through a slot', async () => {
       currentStep = 'dispatch a custom component event through a slot'
-      assert.equal(await render.locator('add-button').count(), 1, 'add-button component did not render')
-      assert.ok(((await render.locator('add-button').innerText()) ?? '').includes('Custom slot'), 'slot content missing')
-      await render.locator('add-button tiny-button').click()
+      assert.equal(await render.locator('tiny-add-button').count(), 1, 'add-button component did not render')
+      assert.ok(((await render.locator('tiny-add-button').innerText()) ?? '').includes('Custom slot'), 'slot content missing')
+      await render.locator('tiny-add-button tiny-button').click()
       await waitForText('custom: Add')
     })
 
@@ -325,7 +338,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
       await render.getByText('Save and back', { exact: true }).first().click()
       await waitForText('marker: Buy milk')
       assert.ok(!(await text()).includes('Save and back'), 'add-todo page was not unmounted')
-      assert.equal(await render.locator('page[wx-host]').count(), 1, 'previous pages were not released')
+      assert.equal(await render.locator('tiny-page[wx-host]').count(), 1, 'previous pages were not released')
       const storage = await page.evaluate(() => window.__tinyRuntime.host.apiRegistry.storage)
       assert.equal(storage.todoMarker, 'Buy milk', 'host storage did not receive the write')
     })
@@ -364,14 +377,14 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.equal(await colorOf('app shared probe'), 'rgb(0, 128, 0)', 'app.wxss did not reach apply-shared component')
       assert.notEqual(await colorOf('isolated app probe'), 'rgb(0, 128, 0)', 'app.wxss leaked into isolated component')
       assert.equal(
-        await render.locator('apply-shared-box tiny-view').first().evaluate(
+        await render.locator('tiny-apply-shared-box tiny-view').first().evaluate(
           (element) => getComputedStyle(element).outlineStyle,
         ),
         'dotted',
         'app universal selector did not reach page-scoped component nodes',
       )
       assert.equal(
-        await render.locator('apply-shared-box tiny-text span').first().evaluate(
+        await render.locator('tiny-apply-shared-box tiny-text span').first().evaluate(
           (element) => getComputedStyle(element).outlineStyle,
         ),
         'none',
@@ -388,7 +401,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.equal(verticalItems[1].left, verticalItems[0].left, 'vertical swiper item retained a horizontal offset')
       assert.equal(await colorOf('parent escape'), 'rgb(12, 34, 56)', '^parent-class did not resolve parent scope')
       assert.equal(await colorOf('ancestor escape'), 'rgb(255, 0, 0)', '^^page-class did not resolve ancestor scope')
-      const isolatedHostBorder = await render.locator('isolated-box').first().evaluate(
+      const isolatedHostBorder = await render.locator('tiny-isolated-box').first().evaluate(
         (element) => getComputedStyle(element).borderLeftWidth,
       )
       assert.equal(isolatedHostBorder, '3px', ':host styles did not apply to the component host')
@@ -585,7 +598,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       for (const expected of ['Learning Javascript', 'Learning ES2016', 'Learning 小程序', 'tiny Todo List']) {
         assert.ok(body.includes(expected), `missing app-backed content: ${expected}`)
       }
-      assert.equal(await render.locator('add-button').count(), 2, 'both add-button instances should render')
+      assert.equal(await render.locator('tiny-add-button').count(), 2, 'both add-button instances should render')
       assert.ok(body.includes('i am slot'), 'component slot content did not render')
       for (const selector of ['tiny-checkbox', 'tiny-slider', 'tiny-progress', 'tiny-switch', 'tiny-swiper', 'tiny-canvas']) {
         assert.ok((await render.locator(selector).count()) > 0, `missing rendered element: ${selector}`)
@@ -593,7 +606,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       const legacyCanvas = render.locator('canvas[canvas-id="canvas"]').first()
       await waitForCanvasHandoff(render, 'canvas[canvas-id="canvas"]')
       await waitForCanvasStats(page, legacyCanvas, 100)
-      const background = await render.locator('page').evaluate((element) => getComputedStyle(element).backgroundColor)
+      const background = await render.locator('tiny-page').evaluate((element) => getComputedStyle(element).backgroundColor)
       assert.equal(background, 'rgb(50, 50, 57)', 'app.wxss page rule did not apply to the real app')
 
       const avatar = render.locator('tiny-image').first()
@@ -627,7 +640,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
         { timeout: STEP_TIMEOUT },
       )
 
-      const componentButton = render.locator('add-button tiny-button').first()
+      const componentButton = render.locator('tiny-add-button tiny-button').first()
       assert.ok(
         ((await componentButton.getAttribute('class')) ?? '').includes('tiny-components-add-button-add-button--add-button'),
         'component class was not scoped to the component',
@@ -645,7 +658,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       const pageButtonSpacing = await pageButton.evaluate((element) => getComputedStyle(element).letterSpacing)
       assert.equal(pageButtonSpacing, '2px', 'page tag selector did not apply')
 
-      await render.locator('add-button').first().locator('tiny-button').first().click()
+      await render.locator('tiny-add-button').first().locator('tiny-button').first().click()
       await render.waitForFunction(
         () => (document.querySelector('#app')?.innerText ?? '').includes('def'),
         null,
@@ -699,7 +712,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
 
     await step('render WXML import/include and named templates', async () => {
       currentStep = 'render WXML import/include and named templates'
-      await render.locator('add-button').nth(1).locator('tiny-button').first().click()
+      await render.locator('tiny-add-button').nth(1).locator('tiny-button').first().click()
       await waitForText('capture-catch:tap')
       const body = await text()
       assert.ok(body.includes('include'), 'include content did not render')
@@ -1327,7 +1340,7 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         'runtime reported a fatal diagnostic',
       )
       assert.ok(current.tree, 'element tree was not projected')
-      assert.equal(current.tree.tag, 'page')
+      assert.equal(current.tree.tag, 'tiny-page')
       assert.ok(
         JSON.stringify(current.tree).includes('Tiny Glass-easel P0'),
         'element tree does not contain rendered text',
@@ -1354,7 +1367,7 @@ export async function runDevtoolAcceptance({ baseUrl }) {
       await elementsTab.click()
       assert.equal(await elementsTab.getAttribute('aria-selected'), 'true')
       assert.ok(
-        (await page.getByRole('tabpanel').innerText()).includes('page'),
+        (await page.getByRole('tabpanel').innerText()).includes('tiny-page'),
         'element tree is not rendered in the debug panel',
       )
     })

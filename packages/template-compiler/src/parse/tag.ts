@@ -1309,7 +1309,9 @@ function parseElement(ps: ParseState, globals: TemplateGlobals, ret: Node[]): vo
             break
           case 'Include':
             if (attrNameRaw.name === 'src') {
-              const suffix = externalTagType === 'Script' ? '.wxs' : '.wxml'
+              const suffix = externalTagType === 'Script'
+                ? ps.templateScriptExtension
+                : ps.templateExtension
               attrKind = { t: 'Src', suffix }
             } else if (attrNameRaw.name === 'module') {
               attrKind = externalTagType === 'Script' ? 'Module' : 'Normal'

@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, test } from 'vitest'
 import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
-import type { Manifest, PageArtifact } from '@tiny/manifest'
+import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
 import { bootRenderThread } from '../src/render'
@@ -24,7 +24,7 @@ afterAll(() => {
 })
 
 function createTemplateRegistry() {
-  const group = TmplGroup.newDev()
+  const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
   group.addTmpl(HOME_PATH, '<view>home</view>')
   group.addTmpl(FORM_PATH, '<view>{{paramA}}/{{paramB}}/{{loadValue}}/{{observed}}/{{fromBehavior}}</view><child id="child" />')
   group.addTmpl(CHILD_PATH, '<view>child</view>')
@@ -54,7 +54,8 @@ function artifact(path: string, bodyType: 'page' | 'component', using?: Record<s
 
 function createManifest(): Manifest {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
+    runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
     entries: { service: 'service.js', render: 'render.js', templates: 'templates.js' },
     pages: [
       artifact(HOME_PATH, 'page'),

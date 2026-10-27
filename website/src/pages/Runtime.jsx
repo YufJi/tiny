@@ -77,8 +77,8 @@ export default function Runtime() {
       >
         <Sequence steps={[
           {
-            title: '按 manifest.naming 安装全局对象',
-            detail: '写入 App、Page、Component、Behavior、getApp 和 getCurrentPages；API 对象安装到 naming.api，同时挂上 apiAliases。未实现的 API 返回 undefined，并产生 UNSUPPORTED_API 警告。',
+            title: '按 runtimeCompatibility 安装兼容全局',
+            detail: '按配置写入 App/Page/Component、getApp/getCurrentPages 等全局；API 对象安装到配置的 namespace 和 aliases。未实现的 API 返回 undefined，并产生 UNSUPPORTED_API 警告。',
             code: 'installMiniProgramGlobals(registry, apiHost)',
           },
           {
@@ -135,56 +135,68 @@ export default function Runtime() {
 
       <Section
         id="naming"
-        kicker="命名"
-        title="wx 不是写死的"
-        intro="naming 从 tiny.config.json 进入 manifest，再由 service 和 adapter 生成所有引擎自有的名称。"
+        kicker="命名边界"
+        title="兼容输入可配，Tiny 内部名固定"
+        intro="runtimeCompatibility 只决定应用需要哪些兼容全局和 behavior scheme；adapter 与 web-components 的内部名称由 TINY_ENGINE_NAMING 统一提供。"
       >
         <div className="split">
           <CodeBlock>{`// tiny.config.json
 {
-  "naming": {
-    "prefix": "tiny-",
-    "apiAliases": ["wx"]
+  "compatibility": {
+    "api": { "global": "my", "aliases": ["wx"] },
+    "globals": {
+      "app": "HostApp",
+      "page": "HostPage",
+      "component": "HostComponent"
+    },
+    "behaviorScheme": "my://"
   }
 }
 
-// manifest.naming（解析后）
+// manifest.runtimeCompatibility
 {
-  "prefix": "tiny-",
-  "directive": "tiny",
-  "api": "tiny",
-  "apiAliases": ["wx"],
-  "hostAttribute": "tiny-host",
+  "api": { "global": "my", "aliases": ["wx"] },
+  "globals": { "app": "HostApp", "page": "HostPage", ... },
+  "behaviorScheme": "my://",
+  "opaqueGlobals": ["webpackJsonp", "cloud", "env"]
+}
+
+// 固定内部命名
+{
+  "hostTag": "tiny-add-button",
+  "hostAttribute": "wx-host", // 临时同步 glass-easel
+  "styleScopeAttribute": "wx-style-scope",
+  "scopeMarkerClass": "tiny-scope",
   "tagClassPrefix": "tiny-tag-",
   "behaviorPrefix": "tiny-",
   "behaviorScheme": "tiny://"
 }`}</CodeBlock>
           <div className="stack">
-            <Card tag="service" title="service 侧">
-              <p><code>namingFromManifest()</code> 决定安装哪个 API 全局、挂哪些别名、诊断里写什么名字，以及 <code>wx://component-export</code> 对应哪个 behavior id。</p>
-              <p>默认是 <code>wx</code>。切到 <code>tiny</code> 后，旧第三方库仍然可以通过 <code>apiAliases: ["wx"]</code> 使用。</p>
+            <Card tag="service" title="兼容全局与 API">
+              <p><code>installMiniProgramGlobals()</code> 按 runtimeCompatibility 安装配置的 App/Page/Component/Behavior/getApp/getCurrentPages，以及 API namespace 和 aliases。</p>
+              <p><code>canIUse()</code>、诊断和建议信息也使用同一组 namespace。</p>
             </Card>
-            <Card tag="render" title="adapter 侧">
-              <p>adapter 用 <code>behaviorPrefix</code> 注册内置组件 behaviors，用 <code>hostAttribute</code> 标记组件宿主节点，用 <code>tagClassPrefix</code> 处理 tag 选择器。</p>
-              <p>内置组件的 tag 本身（<code>view</code>、<code>button</code>）不跟随前缀变化。</p>
+            <Card tag="render" title="Tiny 内部命名">
+              <p>ComponentSpace 使用 <code>tiny-*</code> host node；scope marker、tag marker 和内置 behavior 都从 <code>TINY_ENGINE_NAMING</code> 读取。</p>
+              <p>glass-easel 尚未公开 host/style scope 属性配置，因此 <code>TINY_ENGINE_NAMING</code> 暂时同步其 <code>wx-host</code> / <code>wx-style-scope</code>；runtime 不做 DOM 观察或属性改写。</p>
             </Card>
           </div>
         </div>
         <Table
-          head={['名称', 'wx-（默认）', 'tiny-', '生效位置']}
+          head={['名称', '输入侧配置', '当前内部值', '生效位置']}
           rows={[
-            ['模板指令', <code>wx:if</code>, <code>tiny:if</code>, 'TmplGroup directivePrefix'],
-            ['API 全局', <code>wx.getStorageSync()</code>, <><code>tiny.getStorageSync()</code>（也可以保留 <code>wx</code> 别名）</>, 'installMiniProgramGlobals'],
-            ['内置 behavior', <><code>wx-base</code> / <code>wx-hover</code></>, <><code>tiny-base</code> / <code>tiny-hover</code></>, 'createBuiltinBehaviors'],
-            ['component-export', <code>wx://component-export</code>, <code>tiny://component-export</code>, 'component-definition'],
-            ['组件宿主属性', <code>wx-host</code>, <code>tiny-host</code>, 'adapter / 样式编译器'],
-            ['tag marker', <code>wx-tag-button</code>, <code>tiny-tag-button</code>, '模板注入 / WXSS'],
+            ['模板指令', <code>wx:if / directive:if</code>, '编译期消除', 'TmplGroup directivePrefix'],
+            ['API 全局', <code>wx / my</code>, '不参与内部命名', 'installMiniProgramGlobals'],
+            ['组件宿主', <code>add-button</code>, <code>tiny-add-button</code>, 'ComponentSpace hostNodeTagName'],
+            ['宿主属性', <code>—</code>, <><code>wx-host</code>（临时）</>, 'adapter / 样式编译器'],
+            ['style scope attribute', <code>—</code>, <><code>wx-style-scope</code>（临时）</>, 'glass-easel DOM'],
+            ['内置 behavior', <code>my://component-export</code>, <code>tiny-base / tiny-item</code>, 'runtime + web-components'],
+            ['tag / scope marker', <code>—</code>, <code>tiny-tag-* / tiny-scope</code>, '模板注入 + WXSS'],
           ]}
         />
-        <Callout title="改命名不只是替换字符串">
+        <Callout title="输入兼容不等于内部命名">
           <p>
-            它会同时影响编译器输出、manifest、service 的全局安装、内置组件 behavior id、宿主属性和样式选择器。
-            <a href="#/compiler">编译页的命名配置</a>列出了完整链路。
+            切换 API 或指令 namespace 不会改变 DOM、CSS scope 或内部 behavior。要支持第三方微信库时只增加 <code>api.aliases: ["wx"]</code>。当前唯一例外是 glass-easel 尚未配置化的 host/style scope 属性名。
           </p>
         </Callout>
       </Section>
@@ -332,7 +344,7 @@ export default function Runtime() {
           head={['能力', '实现', '关键行为']}
           rows={[
             ['Behavior', <code>normalizeComponentDefinition</code>, '嵌套 behaviors 会去重并检测循环；执行顺序是被引用 behavior → 引用者 → 组件；组件覆盖 properties/methods/data'],
-            ['component-export', <><code>wx://component-export</code> behavior + export()</>, 'selectComponent 返回 export() 的结果，而不是组件实例'],
+            ['component-export', <><code>wx://component-export</code>（scheme 可配置）+ export()</>, 'selectComponent 返回 export() 的结果，而不是组件实例'],
             ['observers', <><code>observers</code> / property observer</>, '支持对象/数组写法、逗号分隔的多路径、** 和 .** 通配；property observer 收到旧值；递归上限 20'],
             ['relations', <><code>RelationManager</code> + <code>ComponentTree</code></>, 'parent / child / ancestor / descendant；双方都声明才会建立；支持 linked / unlinked / linkChanged / linkFailed'],
             ['选择器', <><code>selectComponent</code> / <code>selectAllComponents</code> / <code>selectOwnerComponent</code></>, '默认不穿透组件边界；>>> 可以显式穿透；结果按树中的顺序返回'],
@@ -407,7 +419,7 @@ export default function Runtime() {
               <li>最多 2000 个节点</li>
               <li>最大深度 60</li>
               <li>文本截断到 200 个字符</li>
-              <li>组件节点用 <code>naming.hostAttribute</code>（默认 <code>wx-host</code>）标记</li>
+              <li>组件节点当前用 <code>wx-host</code> 标记，待 glass-easel 提供配置后切换为 <code>tiny-host</code></li>
             </ul>
           </Card>
         </div>
@@ -431,7 +443,7 @@ export default function Runtime() {
             <p>生成物在 <code>hosts/web-components/src/generated</code>，不提交到仓库。</p>
           </Card>
           <Card tag="behaviors" title="共享 behaviors">
-            <p><code>wx-base</code>、<code>wx-hover</code>、<code>wx-label-target</code>、<code>wx-disabled</code>、<code>wx-data-component</code>、<code>wx-group</code>、<code>wx-item</code>、<code>wx-size-normalizer</code>、<code>wx-class-prefix</code>。</p>
+            <p><code>tiny-base</code>、<code>tiny-hover</code>、<code>tiny-label-target</code>、<code>tiny-disabled</code>、<code>tiny-data-component</code>、<code>tiny-group</code>、<code>tiny-item</code>、<code>tiny-size-normalizer</code>、<code>tiny-class-prefix</code>。</p>
             <p>id 前缀跟随 naming 配置。</p>
           </Card>
           <Card tag="默认可用" title="不需要写 usingComponents">

@@ -37,7 +37,7 @@ export default function Home() {
         <Flow nodes={[
           { step: '01 · 源码', title: '小程序源码', detail: 'app.json · WXML · WXSS · JS/TS · WXS', accent: true },
           { step: '02 · 编译', title: 'tools/cli', detail: 'ProcGen · 作用域 CSS · service bundle' },
-          { step: '03 · 产物', title: 'manifest.json', detail: '@tiny/manifest · schemaVersion 1' },
+          { step: '03 · 产物', title: 'manifest.json', detail: '@tiny/manifest · schemaVersion 2' },
           { step: '04 · 启动', title: '宿主装配', detail: 'iframe / worker / native · service + render', accent: true },
           { step: '05 · 运行', title: 'service + render', detail: '应用语义 · glass-easel 组件树' },
           { step: '06 · 观察', title: 'devtool', detail: '控制 · 诊断 · 元素树' },
@@ -87,11 +87,11 @@ export default function Home() {
             <p><a href="#/architecture">进入架构总览 →</a></p>
           </Card>
           <Card tag="compiler" title="从源码到 manifest">
-            <p>入口发现、命名配置、WXML 到 ProcGen、WXSS 作用域、TS 转译、service bundle 和产物目录。</p>
+            <p>入口发现、兼容输入配置、WXML 到 ProcGen、WXSS 作用域、TS 转译、service bundle 和产物目录。</p>
             <p><a href="#/compiler">进入编译流程 →</a></p>
           </Card>
           <Card tag="runtime" title="双线程如何协作">
-            <p>页面栈、命名、setData、observer、事件、组件语义、渲染适配、内置组件和按需注入的 canvas。</p>
+            <p>页面栈、兼容全局、setData、observer、事件、组件语义、渲染适配、内置组件和按需注入的 canvas。</p>
             <p><a href="#/runtime">进入运行时内核 →</a></p>
           </Card>
           <Card tag="protocol" title="跨线程消息怎么走">
@@ -226,12 +226,12 @@ export default function Home() {
           <Card title="组件语义"><p>Behavior 合并、observers、property observer、relations、selectComponent、styleIsolation 和 externalClasses。</p></Card>
           <Card title="可替换宿主"><p>内核边界检查；host-browser 注入 iframe、MessagePort、canvas 和资源 URL；在线调试器随站点发布。</p></Card>
           <Card title="Canvas 镜像"><p>宿主 canvas 适配器负责 service 侧 2D 绘制、50ms 节流 PNG 帧和 render 侧 drawImage；ECharts 会检查非空像素。</p></Card>
-          <Card title="命名配置"><p>默认使用 wx- 命名，也可以通过 tiny.config.json 改成 tiny- 或自定义 API 全局与别名。</p></Card>
+          <Card title="兼容输入与内部命名"><p>扩展名、指令、API 和注册全局可配置；Tiny 产物内部始终使用固定的 tiny-* 名称。</p></Card>
           <Card title="诊断与元素树"><p>编译、transport、service、render、host 五类诊断统一收集；元素树可以从 DOM 或逻辑树导出。</p></Card>
         </Cards>
         <Callout title="也要看清没有覆盖的部分">
           <p>
-            当前测试覆盖核心链路、组件语义、命名配置、样式隔离和五个测试小程序。API 覆盖、页面能力、generics、
+            当前测试覆盖核心链路、组件语义、兼容输入、内部命名、样式隔离和五个测试小程序。API 覆盖、页面能力、generics、
             原生宿主和性能基线仍未完成，<a href="#/status">现状页会逐项说明</a>。
           </p>
         </Callout>

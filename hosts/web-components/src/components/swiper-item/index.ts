@@ -1,8 +1,9 @@
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
+import { builtinDefinitionName } from '../../tags'
 
 export function defineSwiperItem(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
-    is: 'tiny-builtin:swiper-item',
+    is: builtinDefinitionName('swiper-item'),
     template: ctx.template('swiper-item'),
     behaviors: [ctx.behaviors.base],
     properties: {
@@ -16,7 +17,7 @@ export function defineSwiperItem(ctx: BuiltinContext): BuiltinDefinition {
         } | null
         for (let depth = 0; node && depth < 20; depth += 1) {
           const parent = node.asGeneralComponent?.()
-          if (parent?.is === 'tiny-builtin:swiper') {
+          if (parent?.is === builtinDefinitionName('swiper')) {
             parent.handleItemIdChanged?.(this, String(value ?? ''))
             return
           }

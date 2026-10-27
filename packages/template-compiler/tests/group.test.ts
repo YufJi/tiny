@@ -7,7 +7,7 @@ describe('TmplGroup — basic include', () => {
   const SRC_B = `<c a="{{a}}"> <include src="b/.././a" /> </c>`
 
   test('directDependencies with include', () => {
-    const group = TmplGroup.new()
+    const group = TmplGroup.new({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     group.addTmpl('a', SRC_A)
     group.addTmpl('b', SRC_B)
     expect(group.getDirectDependencies('a')).toEqual([])
@@ -20,7 +20,7 @@ describe('TmplGroup — basic import', () => {
   const SRC_B = `<c a="{{a}}"> <import src="/a" /> <template is="aa" data="{{ bb: a + 1, cc: false }}" /> </c>`
 
   test('directDependencies with import', () => {
-    const group = TmplGroup.new()
+    const group = TmplGroup.new({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     group.addTmpl('a', SRC_A)
     group.addTmpl('b', SRC_B)
     expect(group.getDirectDependencies('a')).toEqual([])
@@ -30,7 +30,7 @@ describe('TmplGroup — basic import', () => {
 
 describe('TmplGroup — code generation', () => {
   test('getTmplGenObject returns a string', () => {
-    const group = TmplGroup.new()
+    const group = TmplGroup.new({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     group.addTmpl('a', '<div class="foo">hello</div>')
     const output = group.getTmplGenObject('a')
     expect(typeof output).toBe('string')
@@ -38,7 +38,7 @@ describe('TmplGroup — code generation', () => {
   })
 
   test('getTmplGenObjectGroups returns a string', () => {
-    const group = TmplGroup.new()
+    const group = TmplGroup.new({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     group.addTmpl('a', '<div>{{msg}}</div>')
     group.addTmpl('b', '<span>world</span>')
     const output = group.getTmplGenObjectGroups()
@@ -47,7 +47,7 @@ describe('TmplGroup — code generation', () => {
   })
 
   test('procgen accepts and reuses the official binding-map argument', () => {
-    const group = TmplGroup.new()
+    const group = TmplGroup.new({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     group.addTmpl('a', '<div>{{msg}}</div>')
     const output = group.getTmplGenObjectGroups()
     expect(output).toContain('R,C,D,U,A')
@@ -56,7 +56,7 @@ describe('TmplGroup — code generation', () => {
   })
 
   test('shorthand event attributes become ProcGen event registrations', () => {
-    const group = TmplGroup.newDev()
+    const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     group.addTmpl('a', '<view bindtap="onTap" catchtouchmove="onMove" />')
     const output = group.getTmplGenObjectGroups()
     expect(output).toContain('R.v(N,"tap","onTap"')
@@ -65,7 +65,7 @@ describe('TmplGroup — code generation', () => {
   })
 
   test('getRuntimeString returns runtime code', () => {
-    const group = TmplGroup.new()
+    const group = TmplGroup.new({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     const runtime = group.getRuntimeString()
     expect(typeof runtime).toBe('string')
     expect(runtime).toContain('function')
@@ -80,25 +80,25 @@ describe('TmplGroup — code generation', () => {
 
 describe('TmplGroup — addTmpl and getTree', () => {
   test('addTmpl returns no errors for valid template', () => {
-    const group = TmplGroup.new()
+    const group = TmplGroup.new({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     const errors = group.addTmpl('a', '<div>hello world</div>')
     expect(errors).toEqual([])
   })
 
   test('getTree throws for unknown path', () => {
-    const group = TmplGroup.new()
+    const group = TmplGroup.new({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     expect(() => group.getTree('nonexistent')).toThrow()
   })
 
   test('removeTmpl removes template', () => {
-    const group = TmplGroup.new()
+    const group = TmplGroup.new({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     group.addTmpl('a', '<div/>')
     expect(group.removeTmpl('a')).toBe(true)
     expect(() => group.getTree('a')).toThrow()
   })
 
   test('directDependencies empty for standalone template', () => {
-    const group = TmplGroup.new()
+    const group = TmplGroup.new({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     group.addTmpl('a', '<div>{{a}}</div>')
     expect(group.getDirectDependencies('a')).toEqual([])
   })
@@ -106,9 +106,9 @@ describe('TmplGroup — addTmpl and getTree', () => {
 
 describe('TmplGroup — importGroup', () => {
   test('importGroup merges templates', () => {
-    const g1 = TmplGroup.new()
+    const g1 = TmplGroup.new({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     g1.addTmpl('a', '<div/>')
-    const g2 = TmplGroup.new()
+    const g2 = TmplGroup.new({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     g2.addTmpl('b', '<span/>')
     g1.importGroup(g2)
     expect(() => g1.getTree('a')).not.toThrow()
@@ -118,7 +118,7 @@ describe('TmplGroup — importGroup', () => {
 
 describe('TmplGroup — template aliases', () => {
   test('addTmplAlias exposes a template under its WXML path', () => {
-    const group = TmplGroup.newDev()
+    const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     group.addTmpl('pages/a/a', '<view>a</view>')
     group.addTmplAlias('pages/a/a.wxml', 'pages/a/a')
     const groupList = new Function(`return ${group.getTmplGenObjectGroups()}`)() as Record<string, unknown>
@@ -127,7 +127,7 @@ describe('TmplGroup — template aliases', () => {
   })
 
   test('addTmplAlias does not shadow a real template', () => {
-    const group = TmplGroup.newDev()
+    const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     group.addTmpl('a', '<view>a</view>')
     group.addTmpl('a.wxml', '<view>b</view>')
     group.addTmplAlias('a.wxml', 'a')
@@ -139,7 +139,7 @@ describe('TmplGroup — template aliases', () => {
 
 describe('TmplGroup — dynamic data attributes', () => {
   test('compiles data-* mustache values as bindings', () => {
-    const group = TmplGroup.newDev()
+    const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     group.addTmpl('a', '<view data-index="{{item}}" data-static="x" />')
     const output = group.getTmplGenObjectGroups()
     expect(output).toContain('R.d(N,"index"')
@@ -148,8 +148,8 @@ describe('TmplGroup — dynamic data attributes', () => {
 })
 
 describe('TmplGroup — directive namespace', () => {
-  test('defaults to the wx namespace', () => {
-    const group = TmplGroup.newDev()
+  test('uses the explicitly configured wx namespace', () => {
+    const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     expect(group.directivePrefix).toBe('wx')
     const warnings = group.addTmpl('a', '<view wx:if="{{ok}}">a</view>')
     expect(warnings).toEqual([])
@@ -157,12 +157,12 @@ describe('TmplGroup — directive namespace', () => {
   })
 
   test('parses a configured namespace and rejects the default one', () => {
-    const group = TmplGroup.newDev({ directivePrefix: 'tiny' })
+    const group = TmplGroup.newDev({ directivePrefix: 'tiny', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     const warnings = group.addTmpl('a', '<view tiny:if="{{ok}}" tiny:key="id">a</view>')
     expect(warnings).toEqual([])
     expect(group.stringifyTmpl('a')).toContain('tiny:if')
 
-    const mismatched = TmplGroup.newDev({ directivePrefix: 'tiny' })
+    const mismatched = TmplGroup.newDev({ directivePrefix: 'tiny', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
     const rejected = mismatched.addTmpl('a', '<view wx:if="{{ok}}">a</view>')
     expect(rejected.some((warning) => warning.kind === ParseErrorKind.InvalidAttributePrefix)).toBe(true)
   })

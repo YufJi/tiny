@@ -1,5 +1,6 @@
 import type * as glassEasel from 'glass-easel'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
+import { builtinDefinitionName } from '../../tags'
 
 type CanvasRuntime = {
   __canvasLongTapTimer?: ReturnType<typeof setTimeout>
@@ -169,7 +170,7 @@ function dispatchTouch(
 
 export function defineCanvas(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
-    is: 'tiny-builtin:canvas',
+    is: builtinDefinitionName('canvas'),
     template: ctx.template('canvas'),
     behaviors: [ctx.behaviors.base],
     properties: {

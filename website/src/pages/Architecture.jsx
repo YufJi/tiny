@@ -118,7 +118,7 @@ packages/runtime/src/index.ts
             ['样式作用域和 render backend', 'glass-easel', 'StyleScopeManager + backend；styleIsolation 由 Tiny 组装'],
             ['Behaviors / observers / relations / selectComponent', 'Tiny runtime', 'component-definition 归一化 + ComponentTree + RelationManager'],
             ['App 生命周期、页面栈、路由、onLoad/onShow/onReady', 'Tiny runtime', <code>packages/runtime/src/service.ts</code>],
-            ['命名空间、manifest naming、API 别名', 'Tiny manifest + runtime', 'tiny.config.json → manifest.naming → 全局 API / marker / host 属性'],
+            ['兼容输入配置、内部 Tiny 命名', 'Tiny manifest + runtime', 'tiny.config.json → compatibility / runtimeCompatibility；内部名来自 TINY_ENGINE_NAMING'],
             ['wx API、storage、system info、animation', 'Tiny runtime + host', 'service 侧 API host；设备信息由 extensions 注入'],
             ['canvas、资源 URL、DOM 节点', '宿主适配器', 'canvas 适配器 / resolveAssetUrl / backend / mountComponent'],
             ['跨线程 setData、事件分发、页面切换', 'Tiny runtime + bridge + host', 'data.setData / event.dispatch / page.navigateTo'],
@@ -223,7 +223,7 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
           {
             title: 'service 启动首屏',
             actor: '宿主 → service',
-            detail: '导入 service.js，App/Page/Component 在这里注册，App.onLaunch/onShow 也会立即执行。随后按 manifest.naming 安装 API 全局，构建组件 schema，创建首个页面并触发 onLoad/onShow，返回 pageId、initialData、componentSchemas 和 pageComponents。',
+            detail: '导入 service.js，App/Page/Component 在这里注册，App.onLaunch/onShow 也会立即执行。随后按 manifest.runtimeCompatibility 安装兼容 API/全局，构建组件 schema，创建首个页面并触发 onLoad/onShow，返回 pageId、initialData、componentSchemas 和 pageComponents。',
             code: "service.control('runtime', 'bootstrap')",
           },
           {
@@ -355,7 +355,7 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
             <p>设备信息走 <code>apiExtensions</code>，canvas 走 <code>ServiceCanvasAdapter</code> / <code>RenderCanvasAdapter</code>，资源走 <code>resolveAssetUrl</code>，渲染后端和挂载点也由宿主提供。</p>
           </Card>
           <Card title="命名配置只有一个来源">
-            <p>模板指令、API 全局、别名、behavior scheme、宿主属性和 tag marker 全部从 <code>manifest.naming</code> 派生，不要在 runtime 里散落 <code>wx</code> 字符串。</p>
+            <p>输入侧模板指令、API、注册全局和 behavior scheme 来自 compatibility；Tiny 宿主属性、scope、marker 和内部 behavior 只来自 <code>TINY_ENGINE_NAMING</code>。不要在 runtime 里散落兼容字符串。</p>
           </Card>
           <Card title="构建产物不入库">
             <p>宿主产物、内置组件 ProcGen、devtool 静态文件和站点里的 devtool 都由构建生成；仓库只保留源码、约定和测试 fixture。</p>

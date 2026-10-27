@@ -27,7 +27,7 @@ export function discoverTestApps() {
   for (const entry of fs.readdirSync(testAppsRoot, { withFileTypes: true })) {
     if (!entry.isDirectory() || entry.name.startsWith('.')) continue
     const sourceDir = path.join(testAppsRoot, entry.name)
-    const configPath = path.join(sourceDir, 'app.json')
+    const configPath = resolveAppConfigPath(sourceDir)
     if (!fs.existsSync(configPath)) continue
 
     let config
@@ -91,6 +91,24 @@ export function writeDevtoolAppsRegistry(apps) {
   }
   fs.writeFileSync(devtoolRegistryPath, `${JSON.stringify(payload, null, 2)}\n`)
   return devtoolRegistryPath
+}
+
+function resolveAppConfigPath(sourceDir) {
+  const tinyConfigPath = path.join(sourceDir, 'tiny.config.json')
+  if (!fs.existsSync(tinyConfigPath)) return path.join(sourceDir, 'app.json')
+  try {
+    const config = JSON.parse(fs.readFileSync(tinyConfigPath, 'utf8'))
+    const appConfig = config?.compatibility?.files?.appConfig
+    if (typeof appConfig === 'string' && appConfig.trim().length > 0) {
+      return path.resolve(sourceDir, appConfig.trim())
+    }
+  } catch (error) {
+    throw new Error(
+      `Failed to parse ${path.relative(rootDir, tinyConfigPath)}: ` +
+        (error instanceof Error ? error.message : String(error)),
+    )
+  }
+  return path.join(sourceDir, 'app.json')
 }
 
 function relativeToRoot(target) {

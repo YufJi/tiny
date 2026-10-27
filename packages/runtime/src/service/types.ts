@@ -70,8 +70,10 @@ export type TabBarApi = {
 
 export type ServiceApiContext = {
   connection: BridgeConnection
-  /** API global name used in diagnostics, e.g. `tiny`. */
+  /** API global name used in diagnostics. */
   apiName: string
+  /** API namespaces accepted by canIUse, including aliases. */
+  apiNamespaces: string[]
   getSystemInfoSnapshot: () => SystemInfoSnapshot
   getStorageSnapshot: () => StorageSnapshot
   setStorageSnapshot: (key: string, value: unknown) => void

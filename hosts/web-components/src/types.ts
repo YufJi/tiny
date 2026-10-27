@@ -23,8 +23,8 @@ export type BuiltinContext = {
    * `tiny-<tag>` (`tiny-view`, `tiny-text`, …), and reflects its public
    * properties to the host as attributes so host CSS such as
    * `tiny-button[type=primary]` and `tiny-view[hidden]` keeps working.
-   * The `tiny-` namespace is deliberate: built-ins must not impersonate
-   * WeChat's internal `wx-*` elements.
+   * The `tiny-` namespace is deliberate: built-ins must not impersonate a
+   * mini-program implementation's private host elements.
    */
   hostOptions: (
     tag: BuiltinComponentTag,

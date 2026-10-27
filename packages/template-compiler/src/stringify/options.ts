@@ -1,7 +1,5 @@
 // Stringify options — mirrors stringify/options.rs
 
-import { DEFAULT_DIRECTIVE_PREFIX } from '../parse/state'
-
 export interface StringifyOptions {
   sourceMap: boolean
   mangling: boolean
@@ -14,7 +12,7 @@ export interface StringifyOptions {
   directivePrefix: string
 }
 
-export function defaultStringifyOptions(): StringifyOptions {
+export function defaultStringifyOptions(directivePrefix: string): StringifyOptions {
   return {
     sourceMap: false,
     mangling: false,
@@ -23,6 +21,6 @@ export function defaultStringifyOptions(): StringifyOptions {
     useTabCharacter: false,
     lineWidthLimit: 100,
     expressionStringSingleQuote: false,
-    directivePrefix: DEFAULT_DIRECTIVE_PREFIX,
+    directivePrefix,
   }
 }

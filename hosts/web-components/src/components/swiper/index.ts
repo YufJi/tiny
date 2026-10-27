@@ -1,9 +1,10 @@
 import type * as glassEasel from 'glass-easel'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
+import { builtinDefinitionName } from '../../tags'
 
 export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
-    is: 'tiny-builtin:swiper',
+    is: builtinDefinitionName('swiper'),
     template: ctx.template('swiper'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.touchTrack],
     properties: {

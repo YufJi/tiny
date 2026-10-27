@@ -8,10 +8,9 @@ import { StyleSheetTransformer } from '@tiny/stylesheet-compiler'
 import {
   APP_PAGE_SCOPE_CLASS_SIGN,
   BUILTIN_COMPONENT_TAGS,
-  BUILTIN_HOST_TAG_PREFIX,
-  resolveNaming,
-  type NamingConfig,
-  type ResolvedNamingConfig,
+  TINY_ENGINE_NAMING,
+  runtimeCompatibilityFrom,
+  type ResolvedCompatibilityConfig,
 } from '@tiny/manifest'
 import type {
   AppArtifact,
@@ -40,12 +39,8 @@ import {
   withoutExtension,
   writeFileWithSourceMap,
 } from './utils'
+import { resolveCompatibilityInput } from './compatibility'
 
-const SCRIPT_EXTENSIONS = ['.js', '.ts']
-const TEMPLATE_EXTENSIONS = ['.wxml']
-const DEFAULT_STYLE_EXTENSIONS = ['.wxss']
-const WXS_EXTENSIONS = ['.wxs', '.sjs']
-const PROJECT_CONFIG_FILE = 'tiny.config.json'
 const ASSET_EXTENSIONS = new Set([
   '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp',
   '.eot', '.woff', '.woff2', '.ttf', '.otf',
@@ -64,75 +59,15 @@ export async function compileMiniProgram(options: CompileOptions): Promise<Compi
   return compiler.compile()
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-/**
- * Reads engine naming from `<sourceDir>/tiny.config.json`:
- *
- * ```json
- * { "naming": { "prefix": "tiny-" } }
- * ```
- *
- * For convenience the `prefix` / `apiAliases` fields may also live at the top
- * level. Missing files and invalid JSON fall back to the default namespace.
- */
-function readProjectNaming(
-  sourceDir: string,
-  diagnostics: Diagnostic[],
-): NamingConfig | undefined {
-  const configPath = path.join(sourceDir, PROJECT_CONFIG_FILE)
-  if (!existsSync(configPath)) return undefined
-  try {
-    const raw = JSON.parse(readFileSync(configPath, 'utf8')) as unknown
-    if (!isRecord(raw)) return undefined
-    if (isRecord(raw.naming)) return raw.naming as NamingConfig
-    const apiAliases = Array.isArray(raw.apiAliases)
-      ? raw.apiAliases.filter((alias): alias is string => typeof alias === 'string')
-      : undefined
-    if (typeof raw.prefix === 'string' || apiAliases !== undefined) {
-      return {
-        prefix: typeof raw.prefix === 'string' ? raw.prefix : undefined,
-        apiAliases,
-      }
-    }
-    return undefined
-  } catch (error) {
-    diagnostics.push(diagnostic(
-      'warning',
-      'TINY_CONFIG_INVALID',
-      `Unable to read ${PROJECT_CONFIG_FILE}: ${error instanceof Error ? error.message : String(error)}`,
-      configPath,
-    ))
-    return undefined
-  }
-}
-
-/** Explicit compile options override `tiny.config.json`; both are optional. */
-function resolveNamingInput(
-  options: CompileOptions,
-  sourceDir: string,
-  diagnostics: Diagnostic[],
-): NamingConfig | undefined {
-  const fileNaming = readProjectNaming(sourceDir, diagnostics)
-  if (options.naming) return { ...fileNaming, ...options.naming }
-  if (options.prefix !== undefined || options.apiAliases !== undefined) {
-    return {
-      ...fileNaming,
-      ...(options.prefix !== undefined ? { prefix: options.prefix } : {}),
-      ...(options.apiAliases !== undefined ? { apiAliases: options.apiAliases } : {}),
-    }
-  }
-  return fileNaming
-}
-
 class MiniProgramCompiler {
-  private readonly options: Required<
-    Omit<CompileOptions, 'naming' | 'prefix' | 'apiAliases' | 'styleExtensions'>
-  >
-  private readonly naming: ResolvedNamingConfig
+  private readonly options: Required<Omit<CompileOptions, 'compatibility'>>
+  private readonly compatibility: ResolvedCompatibilityConfig
+  private readonly scriptExtensions: string[]
+  private readonly templateExtensions: string[]
   private readonly styleExtensions: string[]
+  private readonly templateScriptExtensions: string[]
+  private readonly configExtensions: string[]
+  private readonly customComponentTags = new Set<string>()
   private readonly diagnostics: Diagnostic[] = []
   private readonly scripts = new Map<string, ScriptArtifact>()
   private readonly templates = new Map<string, TemplateArtifact>()
@@ -144,30 +79,26 @@ class MiniProgramCompiler {
       clean: options.clean ?? true,
       dev: options.dev ?? false,
       rpxRatio: options.rpxRatio ?? 750,
-      scopePrefix: options.scopePrefix ?? 'tiny',
       sourceDir: path.resolve(options.sourceDir),
       outputDir: path.resolve(options.outputDir),
     }
-    const styleExtensions = (options.styleExtensions?.length
-      ? options.styleExtensions
-      : DEFAULT_STYLE_EXTENSIONS)
-      .map((extension) => extension.startsWith('.') ? extension : `.${extension}`)
-    this.styleExtensions = [...new Set(styleExtensions)]
-      .filter((extension) => extension.length > 1)
-    if (this.styleExtensions.length === 0) this.styleExtensions.push('.wxss')
-    this.naming = resolveNaming(
-      resolveNamingInput(options, this.options.sourceDir, this.diagnostics),
-    )
+    this.compatibility = resolveCompatibilityInput(options, this.diagnostics)
+    this.scriptExtensions = [...this.compatibility.extensions.script]
+    this.templateExtensions = [...this.compatibility.extensions.template]
+    this.styleExtensions = [...this.compatibility.extensions.style]
+    this.templateScriptExtensions = [...this.compatibility.extensions.templateScript]
+    this.configExtensions = [...this.compatibility.extensions.config]
   }
 
   async compile(): Promise<CompileResult> {
     await this.prepareOutput()
     const root = await this.resolveRoot()
     const files = await collectFiles(root, [
-      ...SCRIPT_EXTENSIONS,
-      ...TEMPLATE_EXTENSIONS,
+      ...this.scriptExtensions,
+      ...this.templateExtensions,
       ...this.styleExtensions,
-      ...WXS_EXTENSIONS,
+      ...this.templateScriptExtensions,
+      ...this.configExtensions,
     ])
     const byRelative = new Map(files.map((file) => [this.relative(root, file), file]))
     const appConfig = await this.readAppConfig(root)
@@ -217,7 +148,7 @@ class MiniProgramCompiler {
   }
 
   private async resolveRoot(): Promise<string> {
-    const projectConfigPath = path.join(this.options.sourceDir, 'project.config.json')
+    const projectConfigPath = path.join(this.options.sourceDir, this.compatibility.files.projectConfig)
     try {
       const { value } = await readJson(projectConfigPath)
       const miniProgramRoot = value.miniprogramRoot
@@ -234,14 +165,14 @@ class MiniProgramCompiler {
     path: string
     value: Record<string, unknown>
   }> {
-    const configPath = path.join(root, 'app.json')
+    const configPath = path.join(root, this.compatibility.files.appConfig)
     const { value, diagnostics } = await readJson(configPath)
     this.diagnostics.push(...diagnostics)
     if (!Array.isArray(value.pages) || value.pages.length === 0) {
       this.diagnostics.push(diagnostic(
         'error',
         'APP_PAGES_REQUIRED',
-        'app.json must declare at least one page.',
+        `${this.compatibility.files.appConfig} must declare at least one page.`,
         configPath,
       ))
     }
@@ -303,6 +234,7 @@ class MiniProgramCompiler {
     const components = new Map<string, SourceEntry>()
     const appComponents = this.readUsingComponents(appConfig)
     const visit = async (entry: SourceEntry, componentRefs: Record<string, string>): Promise<void> => {
+      for (const tag of Object.keys(componentRefs)) this.customComponentTags.add(tag)
       for (const componentPath of Object.values(componentRefs)) {
         const normalized = this.resolveEntryReference(entry.path, componentPath)
         if (components.has(normalized)) continue
@@ -338,21 +270,17 @@ class MiniProgramCompiler {
     entryPath: string,
   ): Promise<SourceEntry | null> {
     const normalized = normalizeRelativePath(entryPath)
-    const findTemplate = (base: string) => byRelative.get(`${base}.wxml`)
-    const findStyle = (base: string) => {
-      for (const extension of this.styleExtensions) {
-        const stylePath = byRelative.get(`${base}${extension}`)
-        if (stylePath) return stylePath
+    const findByExtension = (base: string, extensions: readonly string[]) => {
+      for (const extension of extensions) {
+        const found = byRelative.get(`${base}${extension}`)
+        if (found) return found
       }
       return undefined
     }
-    const findScript = (base: string) => {
-      for (const extension of SCRIPT_EXTENSIONS) {
-        const scriptPath = byRelative.get(`${base}${extension}`)
-        if (scriptPath) return scriptPath
-      }
-      return undefined
-    }
+    const findTemplate = (base: string) => findByExtension(base, this.templateExtensions)
+    const findStyle = (base: string) => findByExtension(base, this.styleExtensions)
+    const findScript = (base: string) => findByExtension(base, this.scriptExtensions)
+    const findConfig = (base: string) => findByExtension(base, this.configExtensions)
 
     // Pages/components may reference a file (`foo`) or a directory with an
     // `index` entry (`foo/index.*`), mirroring the WeChat resolution rules.
@@ -365,7 +293,7 @@ class MiniProgramCompiler {
           scriptPath,
           templatePath,
           stylePath: findStyle(base),
-          configPath: path.join(root, `${base}.json`),
+          configPath: findConfig(base),
         }
       }
     }
@@ -415,7 +343,11 @@ class MiniProgramCompiler {
     for (const scriptPath of scriptPaths) {
       const relativePath = this.relative(root, scriptPath)
       if (this.scripts.has(relativePath)) continue
-      const outputPath = `scripts/${relativePath.replace(/\.(ts|tsx)$/i, '.js')}`
+      const outputPath = `scripts/${replaceConfiguredExtension(
+        relativePath,
+        this.scriptExtensions,
+        '.js',
+      )}`
       const source = await fs.readFile(scriptPath, 'utf8')
       const transformed = ts.transpileModule(source, {
         fileName: scriptPath,
@@ -459,7 +391,11 @@ class MiniProgramCompiler {
       this.scripts.set(relativePath, artifact)
       await writeFileWithSourceMap(
         this.outputPath(outputPath),
-        rewriteRelativeModuleSpecifiers(transformed.outputText, scriptPath),
+        rewriteRelativeModuleSpecifiers(
+          transformed.outputText,
+          scriptPath,
+          this.scriptExtensions,
+        ),
         sourceMap,
       )
     }
@@ -484,7 +420,9 @@ class MiniProgramCompiler {
         source,
         ts.ScriptTarget.Latest,
         true,
-        current.endsWith('.ts') ? ts.ScriptKind.TS : ts.ScriptKind.JS,
+        isTypeScriptFile(current, this.scriptExtensions)
+          ? ts.ScriptKind.TS
+          : ts.ScriptKind.JS,
       )
 
       const visitNode = (node: ts.Node): void => {
@@ -524,10 +462,8 @@ class MiniProgramCompiler {
     const referenceRelative = this.relative(root, absoluteReference)
     const candidates = [
       referenceRelative,
-      `${referenceRelative}.js`,
-      `${referenceRelative}.ts`,
-      `${referenceRelative}/index.js`,
-      `${referenceRelative}/index.ts`,
+      ...this.scriptExtensions.map((extension) => `${referenceRelative}${extension}`),
+      ...this.scriptExtensions.map((extension) => `${referenceRelative}/index${extension}`),
     ]
     const candidate = candidates.map((item) => byRelative.get(item)).find(Boolean)
     if (!candidate) {
@@ -548,26 +484,34 @@ class MiniProgramCompiler {
     pageEntries: SourceEntry[],
     componentEntries: Map<string, SourceEntry>,
   ): Promise<void> {
-    const group = TmplGroup.newDev({ directivePrefix: this.naming.directive })
+    const group = TmplGroup.newDev({
+      directivePrefix: this.compatibility.directiveNamespace,
+      templateExtension: this.templateExtensions[0]!,
+      templateScriptExtension: this.templateScriptExtensions[0]!,
+    })
     const templateFiles = [...byRelative.entries()]
-      .filter(([relativePath]) => relativePath.endsWith('.wxml'))
+      .filter(([relativePath]) => matchesConfiguredExtension(relativePath, this.templateExtensions))
 
     for (const [relativePath, absolutePath] of templateFiles) {
-      const templatePath = withoutExtension(relativePath)
+      const templatePath = withoutConfiguredExtension(relativePath, this.templateExtensions)
       const rawSource = await fs.readFile(absolutePath, 'utf8')
       const inlined = inlineLocalImages(rawSource, absolutePath, root)
       const markedSource = injectScopeClasses(
         inlined,
-        this.naming.tagClassPrefix,
-        this.naming.scopeMarkerClass,
+        TINY_ENGINE_NAMING.tagClassPrefix,
+        TINY_ENGINE_NAMING.scopeMarkerClass,
       )
       const source = rewriteAnimationAttributes(markedSource)
       try {
         const warnings = group.addTmpl(templatePath, source)
-        // WXML import/include resolves paths with the `.wxml` extension.
+        // Template import/include aliases include the configured extension.
         group.addTmplAlias(relativePath, templatePath)
-        if (relativePath.endsWith('/index.wxml')) {
-          group.addTmplAlias(relativePath.slice(0, -'/index.wxml'.length), templatePath)
+        for (const extension of this.templateExtensions) {
+          const indexSuffix = `/index${extension}`
+          if (relativePath.endsWith(indexSuffix)) {
+            group.addTmplAlias(relativePath.slice(0, -indexSuffix.length), templatePath)
+            break
+          }
         }
         for (const warning of warnings) {
           this.diagnostics.push(diagnostic(
@@ -598,11 +542,13 @@ class MiniProgramCompiler {
       }
     }
 
-    for (const [relativePath, absolutePath] of [...byRelative.entries()].filter(([file]) => WXS_EXTENSIONS.some((ext) => file.endsWith(ext)))) {
+    for (const [relativePath, absolutePath] of [...byRelative.entries()].filter(([file]) => (
+      matchesConfiguredExtension(file, this.templateScriptExtensions)
+    ))) {
       const content = await fs.readFile(absolutePath, 'utf8')
-      // WXML references may include the extension (`./utils.wxs`) or omit it.
+      // Template scripts may be referenced with the configured extension or omitted.
       group.addScript(relativePath, content)
-      group.addScript(withoutExtension(relativePath), content)
+      group.addScript(withoutConfiguredExtension(relativePath, this.templateScriptExtensions), content)
     }
 
     if (this.diagnostics.some((item) => item.severity === 'error')) return
@@ -696,17 +642,20 @@ class MiniProgramCompiler {
       const isPageStyle = pageStylePaths.has(stylePath)
       const scope = isAppStyle
         ? undefined
-        : `${this.options.scopePrefix}-${sanitizeScope(withoutExtension(relativePath))}`
+        : `${TINY_ENGINE_NAMING.styleScopePrefix}${sanitizeScope(
+          withoutConfiguredExtension(relativePath, this.styleExtensions),
+        )}`
       try {
         const transformer = StyleSheetTransformer.fromCss(relativePath, source, {
           classPrefix: scope,
-          tagClassPrefix: scope ? `${scope}--${this.naming.tagClassPrefix}` : undefined,
-          scopeMarkerClass: scope || isAppStyle ? this.naming.scopeMarkerClass : undefined,
-          scopeHostAttribute: isPageStyle ? this.naming.hostAttribute : undefined,
+          tagClassPrefix: scope ? `${scope}--${TINY_ENGINE_NAMING.tagClassPrefix}` : undefined,
+          scopeMarkerClass: scope || isAppStyle ? TINY_ENGINE_NAMING.scopeMarkerClass : undefined,
+          scopeHostAttribute: isPageStyle ? TINY_ENGINE_NAMING.hostAttribute : undefined,
           forceScopeAnchor: isAppStyle,
           builtinTags: BUILTIN_COMPONENT_TAGS,
-          builtinHostTagPrefix: BUILTIN_HOST_TAG_PREFIX,
-          hostAttribute: this.naming.hostAttribute,
+          componentTags: [...this.customComponentTags],
+          builtinHostTagPrefix: TINY_ENGINE_NAMING.hostTagPrefix,
+          hostAttribute: TINY_ENGINE_NAMING.hostAttribute,
           convertHost: scope !== undefined,
           rpxRatio: this.options.rpxRatio,
         })
@@ -750,18 +699,19 @@ class MiniProgramCompiler {
         }
         this.styles.set(relativePath, artifact)
         if (isAppStyle) {
-          // A second, marker-annotated copy of app.wxss lets the render thread
+          // A second, marker-annotated copy of the app stylesheet lets the render thread
           // re-scope its class rules to each page scope. That is how
           // `apply-shared` / `shared` components see global app styles, while
           // isolated components still do not.
           const pageScopeTransformer = StyleSheetTransformer.fromCss(relativePath, source, {
             classPrefixSign: APP_PAGE_SCOPE_CLASS_SIGN,
             scopeMarkerClass: APP_PAGE_SCOPE_CLASS_SIGN,
-            scopeHostAttribute: this.naming.hostAttribute,
+            scopeHostAttribute: TINY_ENGINE_NAMING.hostAttribute,
             forceScopeAnchor: true,
             builtinTags: BUILTIN_COMPONENT_TAGS,
-            builtinHostTagPrefix: BUILTIN_HOST_TAG_PREFIX,
-            hostAttribute: this.naming.hostAttribute,
+            componentTags: [...this.customComponentTags],
+            builtinHostTagPrefix: TINY_ENGINE_NAMING.hostTagPrefix,
+            hostAttribute: TINY_ENGINE_NAMING.hostAttribute,
             rpxRatio: this.options.rpxRatio,
           })
           const pageScopeCss = pageScopeTransformer.getContent()
@@ -834,16 +784,16 @@ class MiniProgramCompiler {
 
     const pages: PageArtifact[] = []
     for (const entry of pageEntries.filter((item) => item.path !== 'app')) {
-      pages.push(await this.createPageArtifact(root, entry))
+      pages.push(await this.createPageArtifact(root, entry, appConfig.path))
     }
     const components: ComponentArtifact[] = []
     for (const entry of componentEntries.values()) {
-      components.push(await this.createPageArtifact(root, entry))
+      components.push(await this.createPageArtifact(root, entry, appConfig.path))
     }
 
     return {
-      schemaVersion: 1,
-      naming: this.naming,
+      schemaVersion: 2,
+      runtimeCompatibility: runtimeCompatibilityFrom(this.compatibility),
       entries: {
         service: 'service.js',
         render: 'render.js',
@@ -858,13 +808,20 @@ class MiniProgramCompiler {
     }
   }
 
-  private async createPageArtifact(root: string, entry: SourceEntry): Promise<PageArtifact> {
+  private async createPageArtifact(
+    root: string,
+    entry: SourceEntry,
+    appConfigPath: string,
+  ): Promise<PageArtifact> {
     const config = await this.readConfiguration(root, entry.configPath)
     const scriptSource = entry.scriptPath ? await fs.readFile(entry.scriptPath, 'utf8') : ''
-    const bodyType = /\bComponent\s*\(/.test(scriptSource) ? 'component' as const : 'page' as const
+    const componentGlobal = escapeRegExp(this.compatibility.globals.component)
+    const bodyType = new RegExp(`\\b${componentGlobal}\\s*\\(`).test(scriptSource)
+      ? 'component' as const
+      : 'page' as const
     const globalComponents = entry.path === 'app'
       ? {}
-      : this.readUsingComponents((await this.readConfiguration(root, path.join(root, 'app.json'))))
+      : this.readUsingComponents((await this.readConfiguration(root, appConfigPath)))
     const localComponents = this.readUsingComponents(config)
     const effectiveComponents: Record<string, string> = { ...globalComponents, ...localComponents }
     const componentSource: Record<string, 'global' | 'local'> = {}
@@ -876,7 +833,7 @@ class MiniProgramCompiler {
       : config
     const configuration: ConfigurationArtifact = {
       path: entry.path,
-      sourcePath: entry.configPath ? this.relative(root, entry.configPath) : `${entry.path}.json`,
+      sourcePath: entry.configPath ? this.relative(root, entry.configPath) : `${entry.path}${this.configExtensions[0]}`,
       effective: effectiveConfig,
       usingComponents: effectiveComponents,
       usingComponentsSource: componentSource,
@@ -887,7 +844,10 @@ class MiniProgramCompiler {
       bodyType,
       script: entry.scriptPath ? this.scripts.get(this.relative(root, entry.scriptPath)) : undefined,
       template: entry.templatePath
-        ? this.templates.get(withoutExtension(this.relative(root, entry.templatePath)))
+        ? this.templates.get(withoutConfiguredExtension(
+          this.relative(root, entry.templatePath),
+          this.templateExtensions,
+        ))
         : undefined,
       style: entry.stylePath ? this.styles.get(this.relative(root, entry.stylePath)) : undefined,
       configuration,
@@ -945,11 +905,15 @@ class MiniProgramCompiler {
  * extensions. Mini-program sources use extensionless relative imports, so
  * append `.js` (or `/index.js`) when the target script exists.
  */
-function rewriteRelativeModuleSpecifiers(code: string, sourceFile: string): string {
+function rewriteRelativeModuleSpecifiers(
+  code: string,
+  sourceFile: string,
+  scriptExtensions: readonly string[],
+): string {
   const parsed = ts.createSourceFile(sourceFile, code, ts.ScriptTarget.ESNext, true, ts.ScriptKind.JS)
   const edits: Array<{ start: number; end: number; text: string }> = []
   const consider = (literal: ts.StringLiteralLike) => {
-    const next = resolveRuntimeSpecifier(literal.text, sourceFile)
+    const next = resolveRuntimeSpecifier(literal.text, sourceFile, scriptExtensions)
     if (!next || next === literal.text) return
     edits.push({ start: literal.getStart(parsed) + 1, end: literal.getEnd() - 1, text: next })
   }
@@ -980,24 +944,57 @@ function rewriteRelativeModuleSpecifiers(code: string, sourceFile: string): stri
   return output
 }
 
-function resolveRuntimeSpecifier(specifier: string, sourceFile: string): string | null {
+function resolveRuntimeSpecifier(
+  specifier: string,
+  sourceFile: string,
+  scriptExtensions: readonly string[],
+): string | null {
   if (!specifier.startsWith('.')) return null
-  if (specifier.endsWith('.js') || specifier.endsWith('.mjs') || specifier.endsWith('.cjs') || specifier.endsWith('.json')) {
-    return null
-  }
-  if (specifier.endsWith('.ts') || specifier.endsWith('.tsx')) {
-    return specifier.replace(/\.tsx?$/, '.js')
+  if (specifier.endsWith('.js') || specifier.endsWith('.json')) return null
+  const configured = scriptExtensions.find((extension) => specifier.endsWith(extension))
+  if (configured) {
+    return `${specifier.slice(0, -configured.length)}.js`
   }
   const base = path.resolve(path.dirname(sourceFile), specifier)
-  for (const extension of ['.ts', '.tsx', '.js', '.mjs', '.cjs']) {
-    if (existsSync(`${base}${extension}`)) {
-      return `${specifier}${extension === '.ts' || extension === '.tsx' ? '.js' : extension}`
-    }
+  for (const extension of scriptExtensions) {
+    if (existsSync(`${base}${extension}`)) return `${specifier}.js`
   }
-  for (const extension of ['.ts', '.js']) {
+  for (const extension of scriptExtensions) {
     if (existsSync(path.join(base, `index${extension}`))) return `${specifier}/index.js`
   }
   return null
+}
+
+function matchesConfiguredExtension(value: string, extensions: readonly string[]): boolean {
+  return extensions.some((extension) => value.endsWith(extension))
+}
+
+function withoutConfiguredExtension(value: string, extensions: readonly string[]): string {
+  const extension = extensions.find((candidate) => value.endsWith(candidate))
+  return extension ? value.slice(0, -extension.length) : withoutExtension(value)
+}
+
+function replaceConfiguredExtension(
+  value: string,
+  extensions: readonly string[],
+  replacement: string,
+): string {
+  const extension = extensions.find((candidate) => value.endsWith(candidate))
+  return extension ? `${value.slice(0, -extension.length)}${replacement}` : `${value}${replacement}`
+}
+
+function isTypeScriptFile(filePath: string, scriptExtensions: readonly string[]): boolean {
+  const lower = filePath.toLowerCase()
+  const typescriptExtensions = new Set(
+    scriptExtensions
+      .map((extension) => extension.toLowerCase())
+      .filter((extension) => ['.ts', '.tsx', '.mts', '.cts'].includes(extension)),
+  )
+  return [...typescriptExtensions].some((extension) => lower.endsWith(extension))
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 const IMAGE_MIME_TYPES: Record<string, string> = {

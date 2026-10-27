@@ -407,7 +407,7 @@ describe('tag selector edge cases', () => {
       },
     )
     const css = transformer.getContent()
-    expect(css).toContain('page:where([wx-host="s"])')
+    expect(css).toContain('tiny-page:where([wx-host="s"])')
     expect(css).toContain('@keyframes fade')
     expect(css).not.toContain('--wx-tag-fade')
     expect(css).not.toContain('--wx-tag-from')
@@ -485,12 +485,29 @@ describe('tag selector edge cases', () => {
         builtinHostTagPrefix: 'tiny-',
       },
     ).getContent()
-    expect(css).toContain('page:where(.wx-scope)')
+    expect(css).toContain('tiny-page:where(.wx-scope)')
     expect(css).toContain(':where(.wx-scope).app-shell')
     expect(css).toContain('tiny-button:where(.wx-scope)')
     expect(css).toContain('*:where(.wx-scope)')
-    expect(css).toContain('page:where(.wx-scope) >tiny-view:where(.wx-scope)')
+    expect(css).toContain('tiny-page:where(.wx-scope) >tiny-view:where(.wx-scope)')
     expect(css).toContain(':where(.wx-scope)#root')
+  })
+
+  test('rewrites page and registered custom component tags to Tiny host nodes', () => {
+    const css = StyleSheetTransformer.fromCss(
+      'page.wxss',
+      'page > badge { color: red }',
+      {
+        classPrefix: 's',
+        tagClassPrefix: 's--tiny-tag-',
+        scopeMarkerClass: 'tiny-scope',
+        scopeHostAttribute: 'tiny-host',
+        componentTags: ['badge'],
+      },
+    ).getContent()
+    expect(css).toContain('tiny-page:where([tiny-host="s"])')
+    expect(css).toContain('tiny-badge:where(.s--tiny-tag-badge)')
+    expect(css).not.toContain(' >badge')
   })
 
   test('uses a dynamic marker sentinel as the page host anchor value', () => {
@@ -504,7 +521,7 @@ describe('tag selector edge cases', () => {
         forceScopeAnchor: true,
       },
     ).getContent()
-    expect(css).toContain('page:where(.SIGN, [wx-host="SIGN"])')
+    expect(css).toContain('tiny-page:where(.SIGN, [wx-host="SIGN"])')
     expect(css).toContain('span:where(.SIGN, [wx-host="SIGN"])')
   })
 

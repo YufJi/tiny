@@ -2,9 +2,11 @@
  * Versioned contract between the compiler and the runtime/debugger.
  * Keep these types free of compiler- or runtime-specific dependencies.
  */
-import type { NamingConfig } from './naming'
+import type { RuntimeCompatibilityConfig } from './compatibility'
+import { TINY_ENGINE_NAMING } from './engine-naming'
 
-export * from './naming'
+export * from './compatibility'
+export * from './engine-naming'
 export * from './builtin'
 
 export type DiagnosticSeverity = 'error' | 'warning' | 'info'
@@ -60,7 +62,7 @@ export type StyleArtifact = {
  * as the dynamic page-scope/host-attribute value. Chosen to be unlikely to
  * appear in user stylesheets.
  */
-export const APP_PAGE_SCOPE_CLASS_SIGN = '__TINY_APP_PAGE_SCOPE__'
+export const APP_PAGE_SCOPE_CLASS_SIGN = TINY_ENGINE_NAMING.appPageScopeSign
 
 export type AssetArtifact = {
   path: string
@@ -96,9 +98,9 @@ export type PageArtifact = {
 export type ComponentArtifact = PageArtifact
 
 export type Manifest = {
-  schemaVersion: 1
-  /** Engine naming configuration resolved by the compiler. */
-  naming?: NamingConfig
+  schemaVersion: 2
+  /** Runtime-facing mini-program input compatibility resolved by the compiler. */
+  runtimeCompatibility: RuntimeCompatibilityConfig
   entries: {
     service: string
     render: string

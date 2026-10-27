@@ -48,7 +48,7 @@ function injectInternalScopeClasses(source) {
   )
 }
 
-const group = TmplGroup.newDev()
+const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
 for (const tag of tags) {
   const templatePath = path.join(componentsRoot, tag, 'template.wxml')
   if (!fs.existsSync(templatePath)) {

@@ -24,9 +24,9 @@ export class Stringifier {
   private options: StringifyOptions
   private sourceMappings: SourceMapEntry[] = []
 
-  constructor(sourcePath: string, options?: Partial<StringifyOptions>) {
+  constructor(sourcePath: string, options: Partial<StringifyOptions> & Pick<StringifyOptions, 'directivePrefix'>) {
     this.sourcePath = sourcePath
-    this.options = { ...defaultStringifyOptions(), ...options }
+    this.options = { ...defaultStringifyOptions(options.directivePrefix), ...options }
   }
 
   private write(s: string): void {
@@ -234,7 +234,10 @@ export class Stringifier {
   }
 }
 
-export function stringifyTemplate(tmpl: Template, options?: Partial<StringifyOptions>): string {
+export function stringifyTemplate(
+  tmpl: Template,
+  options: Partial<StringifyOptions> & Pick<StringifyOptions, 'directivePrefix'>,
+): string {
   const s = new Stringifier(tmpl.path, options)
   s.stringifyTemplate(tmpl)
   return s.finish().output

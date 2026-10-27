@@ -1,6 +1,7 @@
 import type * as glassEasel from 'glass-easel'
 import type { BuiltinComponents } from '@tiny/runtime'
 import { BUILTIN_COMPONENT_TAGS, BUILTIN_HOST_TAG_PREFIX, type BuiltinComponentTag } from './tags'
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import { builtinTemplate } from './templates'
 import { createBuiltinBehaviors } from './behaviors'
 import {
@@ -81,17 +82,17 @@ export function createBuiltinComponents(
     const existing = styleScopes.get(tag)
     if (existing !== undefined) return existing
     const scope = (options.registerStyleScope
-      ?? ((name: string) => space.styleScopeManager.register(name)))(`tiny-builtin-${tag}`)
+      ?? ((name: string) => space.styleScopeManager.register(name)))(`${TINY_ENGINE_NAMING.builtinStyleScopePrefix}${tag}`)
     styleScopes.set(tag, scope)
     return scope
   }
-  // Built-ins own a real host node in the engine's `tiny-` namespace instead
-  // of impersonating WeChat's internal `wx-*` elements.
+  // Built-ins own a real host node in Tiny's internal namespace instead of
+  // impersonating a mini-program implementation's private elements.
   const context: BuiltinContext = {
     space,
     options,
     template: builtinTemplate,
-    behaviors: createBuiltinBehaviors(space, { prefix: options.prefix }),
+    behaviors: createBuiltinBehaviors(space),
     getBuiltin: (tag) => definitions[tag],
     hostOptions: (tag, extra = {}) => ({
       virtualHost: false,

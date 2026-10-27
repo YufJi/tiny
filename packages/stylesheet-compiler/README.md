@@ -64,15 +64,15 @@ import { StyleSheetTransformer } from '@tiny/stylesheet-compiler'
 const sst = StyleSheetTransformer.fromCss('/path/to/file.wxss', cssContent, {
   classPrefix: 'my-prefix',
   classPrefixSign: 'SIGN',   // inserts /*SIGN*/ before each transformed class name
-  tagClassPrefix: 'my-prefix--wx-tag-', // tag selector marker classes
-  scopeMarkerClass: 'wx-scope', // generic element scope marker
+  tagClassPrefix: 'my-prefix--tiny-tag-', // tag selector marker classes
+  scopeMarkerClass: 'tiny-scope', // generic element scope marker
   scopeHostAttribute: 'wx-host', // include page root in page-scope anchors
   forceScopeAnchor: true,         // anchor class/tag compounds too (app-global CSS)
   rpxRatio: 750,
   importSign: 'IMPORT',      // replaces @import with /*IMPORT .url-encoded-path*/
   convertHost: true,
   hostIs: 'my-component',    // also emits [is="my-component"] alongside [wx-host="…"]
-  hostAttribute: 'tiny-host', // override the host marker attribute (default wx-host)
+  hostAttribute: 'wx-host', // override the host marker attribute (default wx-host)
 })
 ```
 
@@ -82,7 +82,8 @@ const sst = StyleSheetTransformer.fromCss('/path/to/file.wxss', cssContent, {
 |--------|------|---------|-------------|
 | `classPrefix` | `string` | — | Prefix added to class names: `.foo` → `.prefix--foo` |
 | `classPrefixSign` | `string` | — | Comment inserted before each transformed class name: `.foo` → `./*SIGN*/foo` |
-| `tagClassPrefix` | `string` | — | Prefix for tag marker classes: `button` → `.prefix--wx-tag-button` |
+| `tagClassPrefix` | `string` | — | Prefix for tag marker classes: `button` → `.prefix--tiny-tag-button` |
+| `componentTags` | `string[]` | — | Custom component tags rewritten to `tiny-<tag>` host selectors |
 | `scopeMarkerClass` | `string` | — | Generic element marker class used to anchor selectors without a class/tag anchor |
 | `scopeHostAttribute` | `string` | — | Host attribute included in scope anchors so the page root is matched; with no `classPrefix`, `scopeMarkerClass` supplies the placeholder value |
 | `forceScopeAnchor` | `boolean` | `false` | Anchor every compound, including class/tag-anchored ones; used for app-global styles |
@@ -90,7 +91,7 @@ const sst = StyleSheetTransformer.fromCss('/path/to/file.wxss', cssContent, {
 | `importSign` | `string` | — | When set, `@import './a'` is replaced with `/*SIGN .%2Fa*/` |
 | `convertHost` | `boolean` | `false` | Convert `:host {}` to `[wx-host="prefix"] {}` in low-priority output |
 | `hostIs` | `string` | — | When `convertHost` is true, also emit `[is="hostIs"]` in the selector |
-| `hostAttribute` | `string` | `wx-host` | Host marker attribute used by `convertHost` (use `tiny-host` for Tiny naming) |
+| `hostAttribute` | `string` | `wx-host` | Host marker attribute used by `convertHost` |
 
 ## Warnings
 

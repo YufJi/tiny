@@ -46,8 +46,8 @@ export default function Status() {
         <Table
           head={['领域', '状态', '当前情况和边界']}
           rows={[
-            ['编译核心', status('可用', 'good'), '支持 pages、components、subPackages、命名配置、WXML/WXSS/WXS、manifest、service bundle、资源复制和 source map；目前只有全量构建。'],
-            ['service runtime', status('可用', 'good'), 'App/Page/Component、页面栈、navigateTo/back/switchTab、tabBar 状态和 API、setData、命名、behaviors/observers/relations、逻辑组件树、storage/system/canvas 协议。'],
+            ['编译核心', status('可用', 'good'), '支持 pages、components、subPackages、可配置文件/指令/API 约定、WXML/WXSS/WXS、manifest、service bundle、资源复制和 source map；目前只有全量构建。'],
+            ['service runtime', status('可用', 'good'), 'App/Page/Component、页面栈、navigateTo/back/switchTab、tabBar 状态和 API、setData、兼容全局与行为 scheme、behaviors/observers/relations、逻辑组件树、storage/system/canvas 协议。'],
             ['render adapter', status('可用', 'good'), 'glass-easel ComponentSpace、模板、作用域、styleIsolation、externalClasses、组件定义、生命周期、元素树、资源解析和 canvas 适配。'],
             ['bridge', status('可用', 'good'), '信封和帧、MessagePort/内存 transport、握手、超时、批处理、JSON 校验；capabilities 还没有用于协商。'],
             ['浏览器宿主', status('可用', 'good'), '@tiny/host-browser 支持单 render 和每页 render 两种模式、MessageChannel、tabBar 宿主 UI、DOM canvas、resolveAssetUrl 和 DevtoolRuntimeClient；内核依赖检查通过。'],
@@ -189,8 +189,8 @@ export default function Status() {
         <Cards>
           <Card title="内核不负责环境"><p><code>packages/runtime</code> 不碰 window、document、iframe 或 MessageChannel；<code>pnpm check:runtime-purity</code> 是硬门槛。</p></Card>
           <Card title="宿主适配器在核心之外"><p>iframe、DOM canvas 和 devtool 覆盖层放在 <code>hosts/browser</code>，内置组件放在 <code>hosts/web-components</code>；核心包不能反向依赖 hosts。</p></Card>
-          <Card title="所有宿主共用一个 manifest"><p>编译器、runtime、宿主和 devtool 都读 <code>@tiny/manifest</code>，包括 naming。不要复制一份产物类型。</p></Card>
-          <Card title="命名只有一个来源"><p>模板指令、API、别名、behavior scheme、宿主属性和 tag marker 都从 <code>manifest.naming</code> 派生。</p></Card>
+          <Card title="所有宿主共用一个 manifest"><p>编译器、runtime、宿主和 devtool 都读 <code>@tiny/manifest</code>，包括 runtimeCompatibility 和固定 Tiny 命名常量。不要复制一份产物类型。</p></Card>
+          <Card title="输入与内部命名分离"><p>扩展名、指令、API、注册全局和 behavior scheme 来自 compatibility；Tiny 宿主、scope、marker 和内部 behavior 只来自 <code>TINY_ENGINE_NAMING</code>。</p></Card>
           <Card title="跨线程只走 Bridge"><p>不直接读 iframe 全局，也不使用 executeJavaScript；所有控制都走版本化消息。</p></Card>
           <Card title="环境能力靠注入"><p>设备信息走 apiExtensions，canvas 走 canvas 适配器，资源走 resolveAssetUrl，渲染后端和挂载点由宿主提供。</p></Card>
           <Card title="构建产物不入库"><p>宿主产物、组件 ProcGen、devtool 静态文件和站点里的 devtool 都由构建生成；仓库只保留源码、约定和测试 fixture。</p></Card>

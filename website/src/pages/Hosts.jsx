@@ -198,7 +198,7 @@ bootRenderThread({
           head={['ServiceThreadOptions', '用途', '是否必需']}
           rows={[
             [<code>transport</code>, '宿主连接', '是'],
-            [<code>manifest</code>, '页面路径、组件、样式、命名和诊断', '是'],
+            [<code>manifest</code>, '页面路径、组件、样式、运行期兼容信息和诊断', '是'],
             [<code>initialPath</code>, '首屏页面路径', '是'],
             [<code>loadArtifacts</code>, '在 bootstrap 时导入 service.js，保证 App/Page 已注册', '实际必需'],
             [<code>apiExtensions</code>, '注入设备信息和额外的同步 API', '否'],
@@ -210,7 +210,7 @@ bootRenderThread({
           head={['RenderThreadOptions', '用途', '是否必需']}
           rows={[
             [<code>transport</code>, '宿主连接', '是'],
-            [<code>manifest</code>, '页面、样式、组件产物和命名配置', '是'],
+            [<code>manifest</code>, '页面、样式、组件产物和运行期兼容信息', '是'],
             [<code>artifacts.templates</code>, '从 render.js 导入的 groupList/content', '是'],
             [<code>backend</code>, 'glass-easel GeneralBackendContext', '是'],
             [<><code>initialPath</code> / <code>initialData</code></>, '首屏页面和数据；bootstrap 消息里的值优先', 'initialPath 必需'],
@@ -456,7 +456,7 @@ service.html
         <Sequence steps={[
           {
             title: '加载并校验 manifest',
-            detail: '读取 schemaVersion=1、naming 和产物路径。不要自己复制一份产物类型。',
+            detail: '读取 schemaVersion=2、runtimeCompatibility 和产物路径。不要自己复制一份产物类型。',
           },
           {
             title: '创建两条 Transport',

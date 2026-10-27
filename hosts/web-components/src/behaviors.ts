@@ -1,4 +1,5 @@
 import type * as glassEasel from 'glass-easel'
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 
 type HoverTimer = ReturnType<typeof setTimeout>
 
@@ -104,7 +105,7 @@ function applyHoverClass(instance: HoverRuntime & { data: Record<string, unknown
 
 /**
  * Find the nearest ancestor component that declares a behavior (e.g. the
- * `wx-group` of a checkbox/radio). Walks the light-DOM parent chain so slot
+ * `tiny-group` of a checkbox/radio). Walks the light-DOM parent chain so slot
  * content wrapped in a `<label>` still finds its group.
  */
 export function findAncestorWithBehavior(instance: unknown, behavior: string): unknown | null {
@@ -119,13 +120,20 @@ export function findAncestorWithBehavior(instance: unknown, behavior: string): u
   return null
 }
 
-/** Default id prefix for built-in component behaviors. */
-export const DEFAULT_BEHAVIOR_PREFIX = 'wx-'
-
-export type BuiltinBehaviorOptions = {
-  /** Behavior id prefix, e.g. `wx-` or `tiny-`. Defaults to `wx-`. */
-  prefix?: string
-}
+/** Fixed ids for behaviors shared by Tiny's built-in components. */
+export const BUILTIN_BEHAVIOR_IDS = Object.freeze({
+  base: `${TINY_ENGINE_NAMING.behaviorPrefix}base`,
+  hover: `${TINY_ENGINE_NAMING.behaviorPrefix}hover`,
+  touchTrack: `${TINY_ENGINE_NAMING.behaviorPrefix}touchtrack`,
+  scroller: `${TINY_ENGINE_NAMING.behaviorPrefix}scroller`,
+  sizeNormalizer: `${TINY_ENGINE_NAMING.behaviorPrefix}size-normalizer`,
+  classPrefix: `${TINY_ENGINE_NAMING.behaviorPrefix}class-prefix`,
+  disabled: `${TINY_ENGINE_NAMING.behaviorPrefix}disabled`,
+  dataComponent: `${TINY_ENGINE_NAMING.behaviorPrefix}data-component`,
+  group: `${TINY_ENGINE_NAMING.behaviorPrefix}group`,
+  item: `${TINY_ENGINE_NAMING.behaviorPrefix}item`,
+  labelTarget: `${TINY_ENGINE_NAMING.behaviorPrefix}label-target`,
+} as const)
 
 /**
  * Internal behaviors shared by the built-in component implementations.
@@ -133,15 +141,11 @@ export type BuiltinBehaviorOptions = {
  * These are intentionally local to the built-in component space: they mirror
  * the generic base / hover / label-target behaviors from the native base
  * library without exposing them as user-registerable behaviors. Their ids
- * follow the engine naming prefix (`wx-base` by default, `tiny-base` in custom-namespace builds).
+ * use Tiny's fixed internal behavior ids.
  */
-export function createBuiltinBehaviors(
-  space: glassEasel.ComponentSpace,
-  options: BuiltinBehaviorOptions = {},
-) {
-  const prefix = options.prefix ?? DEFAULT_BEHAVIOR_PREFIX
+export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
   const base = space.defineBehavior({
-    is: `${prefix}base`,
+    is: BUILTIN_BEHAVIOR_IDS.base,
     properties: {
       hidden: { type: Boolean, value: false },
     },
@@ -172,7 +176,7 @@ export function createBuiltinBehaviors(
   })
 
   const hover = space.defineBehavior({
-    is: `${prefix}hover`,
+    is: BUILTIN_BEHAVIOR_IDS.hover,
     properties: {
       hoverClass: { type: String, value: '' },
       hoverStartTime: { type: Number, value: 50 },
@@ -259,7 +263,7 @@ export function createBuiltinBehaviors(
 
 
   const touchTrack = space.defineBehavior({
-    is: `${prefix}touchtrack`,
+    is: BUILTIN_BEHAVIOR_IDS.touchTrack,
     methods: {
       touchtrack(
         element: unknown,
@@ -343,7 +347,7 @@ export function createBuiltinBehaviors(
   })
 
   const scroller = space.defineBehavior({
-    is: `${prefix}scroller`,
+    is: BUILTIN_BEHAVIOR_IDS.scroller,
     methods: {
       initScroller(element: unknown) {
         ;(this as unknown as { __scrollerElement?: unknown }).__scrollerElement = element ?? null
@@ -371,7 +375,7 @@ export function createBuiltinBehaviors(
   })
 
   const sizeNormalizer = space.defineBehavior({
-    is: `${prefix}size-normalizer`,
+    is: BUILTIN_BEHAVIOR_IDS.sizeNormalizer,
     methods: {
       normalizeSize(value: unknown): number {
         if (typeof value === 'number') return Number.isFinite(value) ? value : 0
@@ -383,7 +387,7 @@ export function createBuiltinBehaviors(
   })
 
   const classPrefix = space.defineBehavior({
-    is: `${prefix}class-prefix`,
+    is: BUILTIN_BEHAVIOR_IDS.classPrefix,
     methods: {
       getClassPrefix(): string {
         return ''
@@ -392,14 +396,14 @@ export function createBuiltinBehaviors(
   })
 
   const disabled = space.defineBehavior({
-    is: `${prefix}disabled`,
+    is: BUILTIN_BEHAVIOR_IDS.disabled,
     properties: {
       disabled: { type: Boolean, value: false },
     },
   })
 
   const dataComponent = space.defineBehavior({
-    is: `${prefix}data-component`,
+    is: BUILTIN_BEHAVIOR_IDS.dataComponent,
     properties: {
       name: { type: String, value: '' },
       autoFill: { type: String, value: '' },
@@ -416,7 +420,7 @@ export function createBuiltinBehaviors(
   })
 
   const group = space.defineBehavior({
-    is: `${prefix}group`,
+    is: BUILTIN_BEHAVIOR_IDS.group,
     methods: {
       groupItem(item: unknown): { value: string; checked: boolean } {
         const data = (item as { data?: { value?: unknown; checked?: unknown } } | null)?.data
@@ -506,7 +510,7 @@ export function createBuiltinBehaviors(
   })
 
   const item = space.defineBehavior({
-    is: `${prefix}item`,
+    is: BUILTIN_BEHAVIOR_IDS.item,
     methods: {
       changedByTap(): void {},
       resetFormData(): void {
@@ -516,7 +520,7 @@ export function createBuiltinBehaviors(
   })
 
   const labelTarget = space.defineBehavior({
-    is: `${prefix}label-target`,
+    is: BUILTIN_BEHAVIOR_IDS.labelTarget,
     methods: {
       handleLabelTap() {
         // Label activation is dispatched by the label component.

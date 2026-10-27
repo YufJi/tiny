@@ -20,22 +20,18 @@ export function installMiniProgramGlobals(
   getCurrentPages?: () => unknown[],
 ): void {
   const globalObject = globalThis as unknown as Record<string, unknown>
-  globalObject.App = (options: MiniProgramAppOptions) => registry.registerApp(options)
-  globalObject.Page = (options: MiniProgramPageOptions) => registry.registerPage(options)
-  globalObject.Component = (options: MiniProgramComponentOptions) => registry.registerComponent(options)
-  globalObject.Behavior = (options?: MiniProgramComponentOptions) => registerBehavior(options)
-  globalObject.getApp = () => registry.getApp()
-  globalObject.getCurrentPages = () => getCurrentPages?.() ?? []
+  const globals = registry.compatibility.globals
+  globalObject[globals.app] = (options: MiniProgramAppOptions) => registry.registerApp(options)
+  globalObject[globals.page] = (options: MiniProgramPageOptions) => registry.registerPage(options)
+  globalObject[globals.component] = (options: MiniProgramComponentOptions) => (
+    registry.registerComponent(options)
+  )
+  globalObject[globals.behavior] = (options?: MiniProgramComponentOptions) => registerBehavior(options)
+  globalObject[globals.getApp] = () => registry.getApp()
+  globalObject[globals.getCurrentPages] = () => getCurrentPages?.() ?? []
   // Third-party bundles probe these while booting; report them as absent
   // instead of synthesizing unsupported-API handlers for them.
-  const opaqueProperties = new Set([
-    'webpackJsonp',
-    'cloud',
-    'env',
-    '__wxConfig',
-    '__wxAppCode__',
-    '__wxAppData',
-  ])
+  const opaqueProperties = new Set(registry.compatibility.opaqueGlobals)
   const apiProxy = new Proxy(apiHost, {
     get(target, property) {
       if (typeof property !== 'string') return Reflect.get(target, property)
@@ -50,7 +46,10 @@ export function installMiniProgramGlobals(
       return Reflect.set(target, property, value)
     },
   })
-  for (const name of [registry.naming.api, ...registry.naming.apiAliases]) {
+  for (const name of [
+    registry.compatibility.api.global,
+    ...registry.compatibility.api.aliases,
+  ]) {
     globalObject[name] = apiProxy
   }
 }
@@ -278,14 +277,14 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
     getUserProfile: (params: unknown = {}) => {
       context.connection.sendDiagnostic('warn', {
         code: 'API_PROFILE_STUB',
-        message: 'wx.getUserProfile returns a stub profile in the P0 runtime.',
+        message: `${context.apiName}.getUserProfile returns a stub profile in the P0 runtime.`,
       }, context.pageId)
       return runApi(params, 'getUserProfile', () => context.connection.call('api', 'profile.get', {}, { pageId: context.pageId }))
     },
     getUserInfo: (params: unknown = {}) => {
       context.connection.sendDiagnostic('warn', {
         code: 'API_PROFILE_STUB',
-        message: 'wx.getUserInfo returns a stub profile in the P0 runtime.',
+        message: `${context.apiName}.getUserInfo returns a stub profile in the P0 runtime.`,
       }, context.pageId)
       return runApi(params, 'getUserInfo', () => context.connection.call('api', 'profile.get', {}, { pageId: context.pageId }))
     },
@@ -401,7 +400,7 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
     login: (params: unknown = {}) => {
       context.connection.sendDiagnostic('warn', {
         code: 'API_LOGIN_STUB',
-        message: 'wx.login returns a host-generated stub code; no WeChat session is created.',
+        message: `${context.apiName}.login returns a host-generated stub code; no session is created.`,
       }, context.pageId)
       return runApi(params, 'login', () => context.connection.call(
         'api',
@@ -424,7 +423,12 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
     },
     canIUse: (name: unknown) => {
       const key = String(name ?? '')
-      return key.startsWith('wx.') ? context.apiNames.has(key.slice(3)) : false
+      const separator = key.indexOf('.')
+      if (separator <= 0) return false
+      const namespace = key.slice(0, separator)
+      return context.apiNamespaces.includes(namespace)
+        ? context.apiNames.has(key.slice(separator + 1))
+        : false
     },
     nextTick: (callback: unknown) => {
       if (typeof callback === 'function') Promise.resolve().then(() => callback())

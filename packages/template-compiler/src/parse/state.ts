@@ -22,18 +22,23 @@ export function isTemplateWhitespace(ch: number): boolean {
 /** A function that tries to skip whitespace and returns whether it consumed any. */
 type AutoSkipFn = (ps: ParseState) => Range<Position> | null
 
-/** Default template directive namespace (`wx:if`). */
-export const DEFAULT_DIRECTIVE_PREFIX = 'wx'
-
 export type ParseOptions = {
   /** Namespace before `:` in template directives, e.g. `tiny` for `tiny:if`. */
-  directivePrefix?: string
+  directivePrefix: string
+  /** Extension appended to template import/include paths without one. */
+  templateExtension: string
+  /** Extension appended to external template-script paths without one. */
+  templateScriptExtension: string
 }
 
 export class ParseState {
   readonly path: string
   /** Namespace before `:` in template directives, e.g. `tiny` for `tiny:if`. */
   readonly directivePrefix: string
+  /** Extension used by template import/include references. */
+  readonly templateExtension: string
+  /** Extension used by external template-script references. */
+  readonly templateScriptExtension: string
   private readonly wholeStr: string
   private curIndex: number = 0
   private line: number
@@ -45,10 +50,12 @@ export class ParseState {
     path: string,
     content: string,
     positionOffset: Position = positionDefault(),
-    options: ParseOptions = {},
+    options: ParseOptions,
   ) {
     this.path = path
-    this.directivePrefix = options.directivePrefix ?? DEFAULT_DIRECTIVE_PREFIX
+    this.directivePrefix = options.directivePrefix
+    this.templateExtension = options.templateExtension
+    this.templateScriptExtension = options.templateScriptExtension
     // Rust truncates at u32::MAX - 1; we omit that guard (JS strings can't be that long)
     this.wholeStr = content
     this.line = positionOffset.line

@@ -1,5 +1,6 @@
 import type * as glassEasel from 'glass-easel'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
+import { builtinDefinitionName } from '../../tags'
 
 type ColumnElement = {
   getBoundingClientRect?: () => { top: number; height: number }
@@ -26,7 +27,7 @@ const DEFAULT_ITEM_HEIGHT = 34
 
 export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
-    is: 'tiny-builtin:picker-view-column',
+    is: builtinDefinitionName('picker-view-column'),
     template: ctx.template('picker-view-column'),
     behaviors: [ctx.behaviors.base],
     properties: {
@@ -77,7 +78,7 @@ export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
           const component = (node as { asGeneralComponent?: () => unknown }).asGeneralComponent?.() as
             | { is?: string; data?: { column?: number } }
             | null
-          if (component?.is !== 'tiny-builtin:picker-view-column') continue
+          if (component?.is !== builtinDefinitionName('picker-view-column')) continue
           if (component === (this as unknown)) break
           index += 1
         }

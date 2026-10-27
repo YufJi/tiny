@@ -6,6 +6,7 @@
  */
 export * from './canvas-bridge'
 export * from './runtime-port'
+export * from './naming'
 export * from './standalone-host'
 export * from './devtool-client'
 export * from './api-handlers'

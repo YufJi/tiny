@@ -2,7 +2,10 @@ import {
   normalizeComponentDefinition,
   type NormalizedComponentDefinition,
 } from '../component-definition'
-import { resolveNaming, type NamingConfig, type ResolvedNamingConfig } from '@tiny/manifest'
+import {
+  WECHAT_RUNTIME_COMPATIBILITY,
+  type RuntimeCompatibilityConfig,
+} from '@tiny/manifest'
 import type {
   MiniProgramAppOptions,
   MiniProgramComponentOptions,
@@ -13,18 +16,22 @@ export class MiniProgramPageRegistry {
   readonly pages = new Map<string, MiniProgramPageOptions>()
   readonly components = new Map<string, MiniProgramComponentOptions>()
   readonly normalizedComponents = new Map<string, NormalizedComponentDefinition>()
-  /** Resolved engine naming config (API global, behavior scheme, …). */
-  readonly naming: ResolvedNamingConfig
+  /** Runtime-facing input compatibility (API global, behavior scheme, …). */
+  readonly compatibility: RuntimeCompatibilityConfig
   private app: MiniProgramAppOptions | null = null
   private readonly pagePaths: string[]
   private readonly componentPaths: string[]
   private pageCursor = 0
   private componentCursor = 0
 
-  constructor(pagePaths: string[], componentPaths: string[] = [], naming?: NamingConfig) {
+  constructor(
+    pagePaths: string[],
+    componentPaths: string[] = [],
+    compatibility: RuntimeCompatibilityConfig = WECHAT_RUNTIME_COMPATIBILITY,
+  ) {
     this.pagePaths = pagePaths
     this.componentPaths = componentPaths
-    this.naming = resolveNaming(naming)
+    this.compatibility = compatibility
   }
 
   registerApp(options: MiniProgramAppOptions): MiniProgramAppOptions {
@@ -57,7 +64,7 @@ export class MiniProgramPageRegistry {
   registerComponent(options: MiniProgramComponentOptions): MiniProgramComponentOptions {
     const path = this.componentPaths[this.componentCursor++] ?? `component:${this.components.size}`
     this.components.set(path, options)
-    this.normalizedComponents.set(path, normalizeComponentDefinition(options, path, this.naming))
+    this.normalizedComponents.set(path, normalizeComponentDefinition(options, path, this.compatibility))
     return options
   }
 }

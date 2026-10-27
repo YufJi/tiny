@@ -1,10 +1,11 @@
 import type * as glassEasel from 'glass-easel'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { numberFromEvent } from '../../events'
+import { builtinDefinitionName } from '../../tags'
 
 export function defineSlider(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
-    is: 'tiny-builtin:slider',
+    is: builtinDefinitionName('slider'),
     template: ctx.template('slider'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.disabled, ctx.behaviors.dataComponent],
     properties: {

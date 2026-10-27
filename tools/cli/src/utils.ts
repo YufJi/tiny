@@ -61,7 +61,7 @@ export async function collectFiles(
   ignoredDirectories: string[] = ['.git', '.cache', 'node_modules'],
 ): Promise<string[]> {
   const output: string[] = []
-  const extensionSet = new Set(extensions)
+  const orderedExtensions = [...new Set(extensions)].sort((left, right) => right.length - left.length)
 
   async function walk(currentDir: string): Promise<void> {
     const entries = await fs.readdir(currentDir, { withFileTypes: true })
@@ -69,7 +69,10 @@ export async function collectFiles(
       const entryPath = path.join(currentDir, entry.name)
       if (entry.isDirectory()) {
         if (!ignoredDirectories.includes(entry.name)) await walk(entryPath)
-      } else if (entry.isFile() && extensionSet.has(path.extname(entry.name))) {
+      } else if (
+        entry.isFile()
+        && orderedExtensions.some((extension) => entry.name.endsWith(extension))
+      ) {
         output.push(entryPath)
       }
     }

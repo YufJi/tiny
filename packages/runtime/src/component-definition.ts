@@ -1,4 +1,7 @@
-import { resolveNaming, type ResolvedNamingConfig } from '@tiny/manifest'
+import {
+  WECHAT_RUNTIME_COMPATIBILITY,
+  type RuntimeCompatibilityConfig,
+} from '@tiny/manifest'
 import { cloneJsonSafe } from './data'
 import { componentExportBehavior, formFieldBehavior, isBuiltinBehavior } from './behaviors'
 import type { MiniProgramComponentOptions } from './service'
@@ -118,12 +121,12 @@ type Collector = {
 export function normalizeComponentDefinition(
   options: MiniProgramComponentOptions,
   componentPath: string,
-  naming: ResolvedNamingConfig = resolveNaming(),
+  compatibility: RuntimeCompatibilityConfig = WECHAT_RUNTIME_COMPATIBILITY,
 ): NormalizedComponentDefinition {
   const collector = createCollector()
   const visited = new Set<object>()
-  const exportBehavior = componentExportBehavior(naming)
-  const formField = formFieldBehavior(naming)
+  const exportBehavior = componentExportBehavior(compatibility)
+  const formField = formFieldBehavior(compatibility)
 
   const visit = (source: unknown): void => {
     if (typeof source === 'string') {

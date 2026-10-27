@@ -4,6 +4,7 @@ import type {
   CanvasNodeRequest,
   ServiceCanvasAdapter,
 } from '@tiny/runtime'
+import { BROWSER_RUNTIME_NAMES } from './naming'
 
 type CanvasImageOptions = {
   resolveAssetUrl?: (src: string) => string | undefined
@@ -95,7 +96,7 @@ export function measureBrowserCanvas(selector?: string, canvasId?: string): Canv
     height: rect.height > 0 ? Math.round(rect.height) : 150,
     hasCanvas: true,
   }
-  const host = element.closest('tiny-canvas')
+  const host = element.closest(BROWSER_RUNTIME_NAMES.canvasHostTag)
   const resolvedId = element.getAttribute('canvas-id') || host?.id || element.id || canvasId
   if (resolvedId) measured.canvasId = resolvedId
   return measured
@@ -206,7 +207,7 @@ export type CanvasHandoffResult =
   | { status: 'error'; reason?: string }
 
 export type CanvasHandoffRequest = {
-  type: 'tiny-canvas-request'
+  type: typeof BROWSER_RUNTIME_NAMES.canvasRequest
   token: string
   pageId?: string
   selector?: string
@@ -249,11 +250,11 @@ export function installOffscreenCanvasReceiver(): void {
       reason?: string
     } | undefined
     if (!data?.type || !data.token) return
-    if (data.type === 'tiny-canvas-error') {
+    if (data.type === BROWSER_RUNTIME_NAMES.canvasError) {
       resolveHandoff(data.token, { status: 'error', reason: data.reason })
       return
     }
-    if (data.type !== 'tiny-canvas-handoff') return
+    if (data.type !== BROWSER_RUNTIME_NAMES.canvasHandoff) return
     if (data.status === 'transferred' && data.offscreen) {
       resolveHandoff(data.token, {
         status: 'transferred',
@@ -297,7 +298,7 @@ function requestCanvasHandoff(
   installOffscreenCanvasReceiver()
   try {
     window.parent.postMessage(
-      { type: 'tiny-canvas-request', ...request } satisfies CanvasHandoffRequest,
+      { type: BROWSER_RUNTIME_NAMES.canvasRequest, ...request } satisfies CanvasHandoffRequest,
       postTargetOrigin(),
     )
   } catch {
@@ -640,11 +641,11 @@ export function installOffscreenCanvasResponder(): void {
     if (event.source !== window.parent) return
     if (!isSameOrigin(event.origin)) return
     const data = event.data as CanvasHandoffRequest | undefined
-    if (data?.type !== 'tiny-canvas-request' || !data.token) return
+    if (data?.type !== BROWSER_RUNTIME_NAMES.canvasRequest || !data.token) return
     const canvas = findBrowserCanvas(data.selector, data.canvasId)
     if (!canvas) {
       respondToHost({
-        type: 'tiny-canvas-error',
+        type: BROWSER_RUNTIME_NAMES.canvasError,
         token: data.token,
         reason: 'canvas-not-found',
       })
@@ -652,9 +653,9 @@ export function installOffscreenCanvasResponder(): void {
     }
     const surfaceId = canvasSurfaceId(canvas)
     if (transferredCanvases.has(canvas)) {
-      canvas.setAttribute('data-tiny-canvas-offscreen', 'true')
+      canvas.setAttribute(BROWSER_RUNTIME_NAMES.canvasOffscreenAttribute, 'true')
       respondToHost({
-        type: 'tiny-canvas-handoff',
+        type: BROWSER_RUNTIME_NAMES.canvasHandoff,
         token: data.token,
         status: 'already',
         surfaceId,
@@ -663,7 +664,7 @@ export function installOffscreenCanvasResponder(): void {
     }
     if (typeof canvas.transferControlToOffscreen !== 'function') {
       respondToHost({
-        type: 'tiny-canvas-error',
+        type: BROWSER_RUNTIME_NAMES.canvasError,
         token: data.token,
         reason: 'offscreen-unsupported',
       })
@@ -677,10 +678,10 @@ export function installOffscreenCanvasResponder(): void {
       offscreen.width = Math.max(1, Math.round(width))
       offscreen.height = Math.max(1, Math.round(height))
       transferredCanvases.add(canvas)
-      canvas.setAttribute('data-tiny-canvas-offscreen', 'true')
+      canvas.setAttribute(BROWSER_RUNTIME_NAMES.canvasOffscreenAttribute, 'true')
       respondToHost(
         {
-          type: 'tiny-canvas-handoff',
+          type: BROWSER_RUNTIME_NAMES.canvasHandoff,
           token: data.token,
           status: 'transferred',
           surfaceId,
@@ -690,7 +691,7 @@ export function installOffscreenCanvasResponder(): void {
       )
     } catch {
       respondToHost({
-        type: 'tiny-canvas-error',
+        type: BROWSER_RUNTIME_NAMES.canvasError,
         token: data.token,
         reason: 'transfer-failed',
       })

@@ -1,10 +1,11 @@
 import type * as glassEasel from 'glass-easel'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { booleanFromEvent } from '../../events'
+import { builtinDefinitionName } from '../../tags'
 
 export function defineSwitch(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
-    is: 'tiny-builtin:switch',
+    is: builtinDefinitionName('switch'),
     template: ctx.template('switch'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.disabled, ctx.behaviors.dataComponent, ctx.behaviors.labelTarget],
     properties: {

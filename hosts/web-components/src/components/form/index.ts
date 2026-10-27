@@ -1,6 +1,8 @@
 import type * as glassEasel from 'glass-easel'
-import { bindHostListeners, unbindHostListeners } from '../../behaviors'
+import { bindHostListeners, unbindHostListeners, BUILTIN_BEHAVIOR_IDS } from '../../behaviors'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
+import { builtinDefinitionName } from '../../tags'
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 
 type FormControl = {
   hasBehavior?: (behavior: string) => boolean
@@ -11,9 +13,8 @@ type FormControl = {
 }
 
 export function defineForm(ctx: BuiltinContext): BuiltinDefinition {
-  const formFieldBehavior = 'tiny-form-field'
   return ctx.space.defineComponent({
-    is: 'tiny-builtin:form',
+    is: builtinDefinitionName('form'),
     template: ctx.template('form'),
     behaviors: [ctx.behaviors.base],
     properties: {
@@ -36,10 +37,10 @@ export function defineForm(ctx: BuiltinContext): BuiltinDefinition {
       collectControls(nodes: unknown[] | undefined, value: Record<string, unknown>): void {
         for (const node of nodes ?? []) {
           const control = node as FormControl
-          if (control.hasBehavior?.('wx-data-component')) {
+          if (control.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.dataComponent)) {
             const name = String(control.data?.name ?? '')
             if (name) value[name] = control.getFormData?.()
-          } else if (control.hasBehavior?.(formFieldBehavior)) {
+          } else if (control.hasBehavior?.(TINY_ENGINE_NAMING.formFieldBehaviorId)) {
             const name = String(control.data?.name ?? '')
             if (name) value[name] = control.data?.value
           }
@@ -49,7 +50,7 @@ export function defineForm(ctx: BuiltinContext): BuiltinDefinition {
       resetControls(nodes: unknown[] | undefined): void {
         for (const node of nodes ?? []) {
           const control = node as FormControl
-          if (control.hasBehavior?.('wx-data-component')) control.resetFormData?.()
+          if (control.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.dataComponent)) control.resetFormData?.()
           this.resetControls(control.childNodes)
         }
       },

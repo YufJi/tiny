@@ -10,7 +10,7 @@ import {
 import precompiledTemplates from '../src/generated/templates'
 
 function compilePage(source: string): glassEasel.template.ComponentTemplate {
-  const group = TmplGroup.newDev()
+  const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
   group.addTmpl('', source)
   const generated = group.getTmplGenObjectGroups()
   group.free()
@@ -615,7 +615,7 @@ describe('P0 built-in components', () => {
     expect(host('hidden').data.dots).toHaveLength(2)
   })
 
-  test('form controls reuse wx-disabled, wx-data-component, wx-label-target and group/item behaviors', () => {
+  test('form controls reuse tiny-disabled, tiny-data-component, tiny-label-target and group/item behaviors', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)
     const page = space.defineComponent({
@@ -629,12 +629,12 @@ describe('P0 built-in components', () => {
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
-    expect(host('checkbox').hasBehavior('wx-disabled')).toBe(true)
-    expect(host('checkbox').hasBehavior('wx-data-component')).toBe(true)
-    expect(host('checkbox').hasBehavior('wx-label-target')).toBe(true)
-    expect(host('checkbox').hasBehavior('wx-item')).toBe(true)
-    expect(host('group').hasBehavior('wx-group')).toBe(true)
-    expect(host('input').hasBehavior('wx-data-component')).toBe(true)
+    expect(host('checkbox').hasBehavior('tiny-disabled')).toBe(true)
+    expect(host('checkbox').hasBehavior('tiny-data-component')).toBe(true)
+    expect(host('checkbox').hasBehavior('tiny-label-target')).toBe(true)
+    expect(host('checkbox').hasBehavior('tiny-item')).toBe(true)
+    expect(host('group').hasBehavior('tiny-group')).toBe(true)
+    expect(host('input').hasBehavior('tiny-data-component')).toBe(true)
     expect((host('checkbox') as unknown as { getFormData: () => unknown }).getFormData()).toBe('a')
   })
 

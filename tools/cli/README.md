@@ -16,8 +16,12 @@ const result = await compileMiniProgram({
   outputDir: 'tests/host/generated',
   clean: true,
   dev: true,
-  // Optional; defaults to ['.wxss'].
-  styleExtensions: ['.wxss'],
+  // Optional; omitted fields use WeChat conventions.
+  compatibility: {
+    extensions: { style: ['.wxss'] },
+    directiveNamespace: 'wx',
+    api: { global: 'wx' },
+  },
 })
 
 if (result.diagnostics.some((item) => item.severity === 'error')) {
@@ -29,7 +33,7 @@ if (result.diagnostics.some((item) => item.severity === 'error')) {
 
 The compiler writes:
 
-- `manifest.json` — app/page/component/style/template/asset index
+- `manifest.json` — schema-v2 app/page/component/style/template/asset index plus runtime compatibility
 - `service.js` / `render.js` — bundled thread entries
 - `templates.js` — ProcGen group list
 - `styles/` — compiled WXSS (+ source maps)

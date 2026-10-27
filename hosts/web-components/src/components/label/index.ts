@@ -1,6 +1,7 @@
 import type * as glassEasel from 'glass-easel'
-import { bindHostListeners, unbindHostListeners } from '../../behaviors'
+import { bindHostListeners, unbindHostListeners, BUILTIN_BEHAVIOR_IDS } from '../../behaviors'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
+import { builtinDefinitionName } from '../../tags'
 
 type LabelTarget = {
   hasBehavior?: (behavior: string) => boolean
@@ -10,7 +11,7 @@ type LabelTarget = {
 
 export function defineLabel(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
-    is: 'tiny-builtin:label',
+    is: builtinDefinitionName('label'),
     template: ctx.template('label'),
     behaviors: [ctx.behaviors.base],
     properties: {
@@ -31,7 +32,7 @@ export function defineLabel(ctx: BuiltinContext): BuiltinDefinition {
       handleLabelTarget(node: unknown, event: unknown): boolean {
         const component = (node as { asGeneralComponent?: () => LabelTarget | null })
           ?.asGeneralComponent?.()
-        if (component?.hasBehavior?.('wx-label-target')) {
+        if (component?.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.labelTarget)) {
           component.handleLabelTap?.(event)
           return true
         }
@@ -44,7 +45,7 @@ export function defineLabel(ctx: BuiltinContext): BuiltinDefinition {
         for (let node = target; node; node = node.parentNode as typeof node) {
           const component = (node as { asGeneralComponent?: () => LabelTarget | null })
             ?.asGeneralComponent?.()
-          if (component?.hasBehavior?.('wx-label-target')) return
+          if (component?.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.labelTarget)) return
         }
         const forId = String(this.data.for ?? '')
         if (forId) {

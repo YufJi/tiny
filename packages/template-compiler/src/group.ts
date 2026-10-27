@@ -3,7 +3,7 @@
 
 import { JsTopScopeWriter, JsFunctionScopeWriter } from './proc_gen/writer'
 import { parseTemplate } from './parse/tag'
-import { DEFAULT_DIRECTIVE_PREFIX, ParseState } from './parse/state'
+import { ParseState } from './parse/state'
 import { ParseError, TmplError, positionDefault } from './types'
 import { Template, templateDirectDependencies, templateScriptDependencies } from './parse/tag'
 import { genLitStr } from './escape'
@@ -100,7 +100,11 @@ function runtimeVarList(): string[] {
 
 export type TmplGroupOptions = {
   /** Namespace before `:` in template directives, e.g. `tiny` for `tiny:if`. */
-  directivePrefix?: string
+  directivePrefix: string
+  /** Extension appended to extensionless import/include references. */
+  templateExtension: string
+  /** Extension appended to extensionless external template-script references. */
+  templateScriptExtension: string
 }
 
 export class TmplGroup implements TmplGroupRef {
@@ -112,17 +116,21 @@ export class TmplGroup implements TmplGroupRef {
   private devMode: boolean = false
   /** Namespace before `:` in template directives, e.g. `tiny` for `tiny:if`. */
   readonly directivePrefix: string
+  readonly templateExtension: string
+  readonly templateScriptExtension: string
 
-  constructor(devMode = false, options: TmplGroupOptions = {}) {
+  constructor(devMode: boolean, options: TmplGroupOptions) {
     this.devMode = devMode
-    this.directivePrefix = options.directivePrefix ?? DEFAULT_DIRECTIVE_PREFIX
+    this.directivePrefix = options.directivePrefix
+    this.templateExtension = options.templateExtension
+    this.templateScriptExtension = options.templateScriptExtension
   }
 
-  static new(options?: TmplGroupOptions): TmplGroup {
+  static new(options: TmplGroupOptions): TmplGroup {
     return new TmplGroup(false, options)
   }
 
-  static newDev(options?: TmplGroupOptions): TmplGroup {
+  static newDev(options: TmplGroupOptions): TmplGroup {
     return new TmplGroup(true, options)
   }
 
@@ -155,6 +163,8 @@ export class TmplGroup implements TmplGroupRef {
   addTmpl(path: string, content: string): ParseError[] {
     const ps = new ParseState(path, content, positionDefault(), {
       directivePrefix: this.directivePrefix,
+      templateExtension: this.templateExtension,
+      templateScriptExtension: this.templateScriptExtension,
     })
     const tmpl = parseTemplate(ps)
     if (tmpl.globals.scripts.some((s) => s.kind === 'Inline')) {

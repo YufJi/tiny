@@ -1,9 +1,10 @@
 import type * as glassEasel from 'glass-easel'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
+import { builtinDefinitionName } from '../../tags'
 
 export function defineProgress(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
-    is: 'tiny-builtin:progress',
+    is: builtinDefinitionName('progress'),
     template: ctx.template('progress'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.sizeNormalizer],
     properties: {

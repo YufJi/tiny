@@ -1,5 +1,8 @@
 import { BridgeConnection } from '@tiny/bridge'
-import { namingFromManifest, type PageArtifact } from '@tiny/manifest'
+import {
+  runtimeCompatibilityFromManifest,
+  type PageArtifact,
+} from '@tiny/manifest'
 import { buildComponentSchemas } from './component-schema'
 import type { ComponentLifecycleName, NormalizedComponentDefinition } from './component-definition'
 import { invokeObserver } from './observers'
@@ -33,11 +36,11 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       .map((page) => page.path),
     ...options.manifest.components.map((component) => component.path),
   ]
-  const naming = namingFromManifest(options.manifest)
+  const compatibility = runtimeCompatibilityFromManifest(options.manifest)
   const registry = new MiniProgramPageRegistry(
     expectedPagePaths,
     expectedComponentPaths,
-    options.manifest.naming,
+    compatibility,
   )
   let currentPath = options.initialPath
   const pageInstances = new Map<string, MiniProgramPageInstance>()
@@ -149,7 +152,8 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   const supportedApiNames = new Set<string>()
   const apiContext: ServiceApiContext = {
     connection: null as unknown as BridgeConnection,
-    apiName: naming.api,
+    apiName: compatibility.api.global,
+    apiNamespaces: [compatibility.api.global, ...compatibility.api.aliases],
     getSystemInfoSnapshot: () => systemInfoSnapshot,
     getStorageSnapshot: () => storageSnapshot,
     setStorageSnapshot: (key, value) => {
@@ -181,7 +185,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     apiHost,
     (name) => connection.sendDiagnostic('warn', {
       code: 'UNSUPPORTED_API',
-      message: `${naming.api}.${name} is not supported in the P0 runtime.`,
+      message: `${compatibility.api.global}.${name} is not supported in the P0 runtime.`,
     }, activePage?.pageId),
     () => pageStack,
   )
