@@ -224,6 +224,7 @@ describe('Component-as-page', () => {
       behaviorAttached: true,
       behaviorObserved: 'b:123',
       selectedInReady: true,
+      relationInReady: 1,
     })
     expect(page.properties).toMatchObject({ paramA: 123, paramB: 'xyz' })
     expect(page.hasBehavior(behavior)).toBe(true)

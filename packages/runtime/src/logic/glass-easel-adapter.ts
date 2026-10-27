@@ -15,7 +15,11 @@ import type {
 import { toJsonSafe } from '../events'
 import { createRuntimeDiagnostic } from '../diagnostics'
 import { readComponentGenerics } from '../component/component-schema'
-import { parsePureDataPattern, type NormalizedComponentDefinition } from '../component/component-definition'
+import {
+  parsePureDataPattern,
+  type NormalizedComponentDefinition,
+  type NormalizedRelation,
+} from '../component/component-definition'
 
 
 
@@ -156,6 +160,12 @@ export class GlassEaselRuntimeAdapter {
   private readonly onLogicDataChange?: GlassEaselAdapterOptions['onLogicDataChange']
   private readonly logicTouchState?: GlassEaselAdapterOptions['logicTouchState']
   private readonly pageIdsByComponent = new WeakMap<object, string>()
+  /**
+   * Page-root relations. glass-easel links relations through the light tree;
+   * a page template is a shadow tree, so page relations are resolved here.
+   */
+  private readonly pageRelationNodes = new Map<string, Map<string, glassEasel.GeneralComponent[]>>()
+  private readonly pageLinkedTargets = new Map<string, Map<string, Set<glassEasel.GeneralComponent>>>()
   /**
    * Page being constructed right now. glass-easel renders a page's template
    * during `Component.createWithContext`, before `mountPage` receives the page
@@ -300,7 +310,8 @@ export class GlassEaselRuntimeAdapter {
     const generics = this.resolveGenerics(page.path, readComponentGenerics(effective))
     const pureDataPattern = parsePureDataPattern(effective.pureDataPattern)
     if (pageIsolation !== 'isolated') this.applySharedComponentStyles(page, pageScope)
-    const definition = this.componentSpace
+    const methods = this.logicPageMethods(page.path)
+    let builder: any = this.componentSpace
       .defineWithMethodCaller(page.path)
       .template({
         groupList: this.templates.groupList,
@@ -327,10 +338,38 @@ export class GlassEaselRuntimeAdapter {
       .observer('**', function (this: glassEasel.GeneralComponent) {
         adapter.notifyLogicDataChange(adapter.resolveMethodCaller(this) ?? this)
       })
-      .methods(this.logicPageMethods(page.path) as never)
-      .registerComponent()
+      .methods(methods as never)
+    // A component-as-page owns relations like any other component; without
+    // them glass cannot link its children and `this.getRelationNodes` is empty.
+    const pageComponent = this.logicComponentDefinitions?.get(page.path)
+    if (pageComponent && pageComponent.relations.length > 0) {
+      builder = this.applyRelations(builder, pageComponent.relations, methods)
+    }
+    const definition = builder.registerComponent()
     this.componentDefinitions.set(page.path, definition)
     return definition
+  }
+
+  private applyRelations(
+    builder: any,
+    relations: NormalizedRelation[],
+    methods: Record<string, (...args: unknown[]) => unknown>,
+  ): any {
+    for (const relation of relations) {
+      const params: Record<string, unknown> = {
+        type: relation.type,
+        // Glass resolves string targets relative to the owner's `is`; relation
+        // targets are already normalized to the root, so keep them absolute.
+        target: `/${relation.targetPath}`,
+      }
+      for (const name of ['linked', 'unlinked', 'linkChanged', 'linkFailed'] as const) {
+        const handler = relation[name]
+        if (!handler) continue
+        params[name] = typeof handler === 'string' ? methods[handler] : handler
+      }
+      builder = builder.relation(relation.key, params)
+    }
+    return builder
   }
 
   private resolvePageIsolation(page: PageArtifact): 'isolated' | 'apply-shared' | 'shared' {
@@ -591,6 +630,123 @@ export class GlassEaselRuntimeAdapter {
     this.componentPaths.set(key, schema.path)
     this.componentInstances.set(componentId, component)
     return componentId
+  }
+
+  /** Tear down the logic page root and its page-scoped relation index. */
+  unmountPage(pageId: string): void {
+    const component = this.componentsByPageId.get(pageId)
+    this.componentsByPageId.delete(pageId)
+    this.pageRelationNodes.delete(pageId)
+    this.pageLinkedTargets.delete(pageId)
+    if (!component) return
+    this.pageIdsByComponent.delete(component as unknown as object)
+    const methodCaller = (component as unknown as { _$methodCaller?: unknown })._$methodCaller
+    if (methodCaller && typeof methodCaller === 'object') {
+      this.methodCallerComponents.delete(methodCaller as object)
+      this.pageIdsByComponent.delete(methodCaller as object)
+    }
+    this.mountedComponents.delete(component.is)
+    const componentId = this.componentIds.get(component as unknown as object)
+    if (componentId) this.componentInstances.delete(componentId)
+    this.componentIds.delete(component as unknown as object)
+    this.componentPaths.delete(component as unknown as object)
+    ;(component as unknown as { destroy?: () => void }).destroy?.()
+  }
+
+  /** Resolve page-root relations over the rendered shadow tree. */
+  resolvePageRelations(pageId: string): void {
+    const page = this.componentsByPageId.get(pageId)
+    const definition = page ? this.logicComponentDefinitions?.get(page.is) : undefined
+    if (!page || !definition || definition.relations.length === 0) return
+    const candidates = this.collectPageComponents(page)
+    const nodes = this.pageRelationNodes.get(pageId) ?? new Map()
+    const linked = this.pageLinkedTargets.get(pageId) ?? new Map()
+    for (const relation of definition.relations) {
+      const targets = candidates.filter((component) => {
+        if (component.is !== relation.targetPath) return false
+        return relation.type === 'descendant' || relation.type === 'child'
+      })
+      nodes.set(relation.key, targets)
+      const previous = linked.get(relation.key) ?? new Set<glassEasel.GeneralComponent>()
+      const next = new Set(targets)
+      for (const target of next) {
+        if (previous.has(target)) continue
+        this.invokeRelation(relation.linked, page, target)
+        this.invokeReciprocal(relation, page, target, 'linked')
+      }
+      for (const target of previous) {
+        if (next.has(target)) continue
+        this.invokeRelation(relation.unlinked, page, target)
+        this.invokeReciprocal(relation, page, target, 'unlinked')
+      }
+      linked.set(relation.key, next)
+    }
+    this.pageRelationNodes.set(pageId, nodes)
+    this.pageLinkedTargets.set(pageId, linked)
+  }
+
+  /** Relation nodes of the page root, resolved over the render shadow tree. */
+  relationNodes(pageId: string, relationKey: string): glassEasel.GeneralComponent[] {
+    const resolved = this.pageRelationNodes.get(pageId)?.get(relationKey)
+    if (resolved) return resolved
+    const page = this.componentsByPageId.get(pageId)
+    return page ? page.getRelationNodes(relationKey) : []
+  }
+
+  private collectPageComponents(page: glassEasel.GeneralComponent): glassEasel.GeneralComponent[] {
+    const result: glassEasel.GeneralComponent[] = []
+    const visited = new Set<unknown>()
+    const walk = (node: unknown): void => {
+      if (!node || visited.has(node)) return
+      visited.add(node)
+      const element = node as {
+        childNodes?: unknown[]
+        shadowRoot?: { childNodes?: unknown[] }
+        asGeneralComponent?: () => glassEasel.GeneralComponent | undefined
+      }
+      const component = element.asGeneralComponent?.()
+      if (component) {
+        result.push(component)
+        walk(component.shadowRoot)
+      }
+      for (const child of element.childNodes ?? []) walk(child)
+    }
+    walk(page.shadowRoot)
+    return result
+  }
+
+  private invokeRelation(
+    handler: NormalizedRelation['linked'],
+    owner: glassEasel.GeneralComponent,
+    target: glassEasel.GeneralComponent,
+  ): void {
+    if (!handler) return
+    const caller = (component: glassEasel.GeneralComponent): unknown => (
+      (component as unknown as { getMethodCaller?: () => unknown }).getMethodCaller?.() ?? component
+    )
+    const targetCaller = caller(target)
+    if (typeof handler === 'function') {
+      handler.call(caller(owner), targetCaller)
+      return
+    }
+    const definition = this.logicComponentDefinitions?.get(owner.is)
+    const method = definition?.methods.get(handler)
+    if (method) method.call(caller(owner), targetCaller)
+  }
+
+  private invokeReciprocal(
+    relation: NormalizedRelation,
+    page: glassEasel.GeneralComponent,
+    target: glassEasel.GeneralComponent,
+    phase: 'linked' | 'unlinked',
+  ): void {
+    const definition = this.logicComponentDefinitions?.get(target.is)
+    const reciprocal = definition?.relations.find((candidate) => (
+      candidate.targetPath === page.is
+      && ((relation.type === 'child' && candidate.type === 'parent')
+        || (relation.type === 'descendant' && candidate.type === 'ancestor'))
+    ))
+    if (reciprocal) this.invokeRelation(reciprocal[phase], target, page)
   }
 
   getMountedComponentByPageId(pageId: string): glassEasel.GeneralComponent | undefined {
@@ -878,20 +1034,7 @@ export class GlassEaselRuntimeAdapter {
         }
         builder = builder.observer(observer.paths, handler)
       }
-      for (const relation of logicDefinition.relations) {
-        const params: Record<string, unknown> = {
-          type: relation.type,
-          // Glass resolves string targets relative to the owner's `is`; relation
-          // targets are already normalized to the root, so keep them absolute.
-          target: `/${relation.targetPath}`,
-        }
-        for (const name of ['linked', 'unlinked', 'linkChanged', 'linkFailed'] as const) {
-          const handler = relation[name]
-          if (!handler) continue
-          params[name] = typeof handler === 'string' ? methods[handler] : handler
-        }
-        builder = builder.relation(relation.key, params)
-      }
+      builder = this.applyRelations(builder, logicDefinition.relations, methods)
     }
     const definition = builder
       .lifetime('detached', function (this: glassEasel.GeneralComponent) {

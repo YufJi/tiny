@@ -148,8 +148,16 @@ export class LogicTreeAdapter {
 
   /** Relation nodes of the service-side page component. */
   relationNodes(pageId: string, relationKey: string): unknown[] {
-    const page = this.glass.getMountedComponentByPageId(pageId)
-    return page ? page.getRelationNodes(relationKey) : []
+    return this.glass.relationNodes(pageId, relationKey)
+  }
+
+  /** Tear down a page root and its render/relation state. */
+  unmountPage(pageId: string): void {
+    this.glass.unmountPage(pageId)
+    this.pageRoots.delete(pageId)
+    this.pagePaths.delete(pageId)
+    this.lastRenderTrees.delete(pageId)
+    if (this.activePageId === pageId) this.activePageId = undefined
   }
 
   /** Deliver a page lifetime to the page's service-side components. */
@@ -161,6 +169,7 @@ export class LogicTreeAdapter {
     const page = this.glass.getMountedComponentByPageId(pageId)
     if (!page) throw new Error(`logic page is not mounted: ${pageId}`)
     page.setData(patch)
+    this.glass.resolvePageRelations(pageId)
   }
 
   /** Runtime-registered stylesheets (shared/page scopes) for the render tree. */
