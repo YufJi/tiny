@@ -132,7 +132,7 @@ describe('pureDataPattern', () => {
   test('keeps matching fields out of WXML while service data and observers still see them', async () => {
     const { host, service, render } = await boot({})
     expect(collectText(render.adapter.inspectTree())).toEqual(['shown'])
-    const component = service.componentInstances.get('component-1')!
+    const component = service.componentInstances.get('page-1:component-1')!
     expect(component.data._hidden).toBe('secret')
 
     component.setData({ _hidden: 'next' })
@@ -174,7 +174,7 @@ describe('pureDataPattern', () => {
     await host.bootstrap()
     await new Promise((resolve) => setTimeout(resolve, 10))
     expect(collectText(render.adapter.inspectTree())).toEqual(['shown'])
-    expect(service.componentInstances.get('component-1')!.data._hidden).toBe('secret')
+    expect(service.componentInstances.get('page-1:component-1')!.data._hidden).toBe('secret')
     await host.close()
   })
 })

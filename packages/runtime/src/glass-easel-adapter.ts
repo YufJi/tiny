@@ -148,6 +148,7 @@ export class GlassEaselRuntimeAdapter {
   private readonly applyingServicePatches = new Set<glassEasel.GeneralComponent>()
   private readonly methodCallerComponents = new WeakMap<object, glassEasel.GeneralComponent>()
   private activeEventPageId: string | null = null
+  private activeComponentIdPrefix = ''
   private readonly onMiniProgramEvent?: (pageId: string, event: SerializedMiniProgramEvent) => void
   private readonly onComponentLifecycle?: (
     componentId: string,
@@ -580,7 +581,8 @@ export class GlassEaselRuntimeAdapter {
     if (existing) return existing
     const usage = (this.componentUsageCounters.get(schema.path) ?? 0) + 1
     this.componentUsageCounters.set(schema.path, usage)
-    const componentId = usage === 1 ? schema.componentId : `${schema.componentId}~${usage}`
+    const baseId = usage === 1 ? schema.componentId : `${schema.componentId}~${usage}`
+    const componentId = `${this.activeComponentIdPrefix}${baseId}`
     this.componentIds.set(key, componentId)
     this.componentPaths.set(key, schema.path)
     this.componentSourcePaths.set(key, schema.path)
@@ -641,6 +643,10 @@ export class GlassEaselRuntimeAdapter {
     const page = this.pages.get(path)
     if (!page) throw new Error(`page is not registered: ${path}`)
     this.activeEventPageId = pageId ?? path
+    // Component IDs are scoped per page in the service instance registry. Two
+    // pages using the same global component would otherwise resolve to the
+    // first page's component instance (and its event method callers).
+    this.activeComponentIdPrefix = pageId ? `${pageId}:` : ''
     const component = glassEasel.Component.createWithContext(
       'page',
       this.registerPage(page, data),

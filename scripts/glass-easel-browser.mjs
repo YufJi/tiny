@@ -735,7 +735,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       const input = render.locator('input[placeholder="What needs to be done?"]')
       await input.fill('Core chain todo')
       assert.equal(await input.inputValue(), 'Core chain todo')
-      await render.getByText('12121', { exact: true }).first().click()
+      await render.locator('tiny-add-button').first().locator('tiny-button').first().click()
       await waitForText('Learning Javascript')
       const stateEvents = (await diagnostics()).filter((item) => item.code === 'RUNTIME_STATE')
       assert.equal(stateEvents.at(-1)?.details?.currentPage, 'pages/todos/todos', 'did not return to todos')

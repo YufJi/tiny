@@ -154,9 +154,9 @@ describe('mini-program custom components', () => {
       properties: { text: { type: 'string', value: 'default' } },
     })
 
-    const badge = service.componentInstances.get('component-1')
+    const badge = service.componentInstances.get('page-1:component-1')
     expect(badge).toBeDefined()
-    const renderBadge = render.adapter.getMountedComponentByComponentId('component-1')
+    const renderBadge = render.adapter.getMountedComponentByComponentId('page-1:component-1')
     expect(renderBadge).toBeDefined()
     const rendered = glassEasel.dumpElementToString(renderBadge!, true)
     expect(rendered).toContain('badge:0')
@@ -176,7 +176,7 @@ describe('mini-program custom components', () => {
     // The component attaches after the page's initial onShow, so its first
     // pageLifetimes.show arrives when the first render pass completes.
     expect(pageLifetimeEvents).toEqual(['show', 'hide', 'show'])
-    expect([...service.componentInstances.keys()]).toEqual(['component-1'])
+    expect([...service.componentInstances.keys()]).toEqual(['page-1:component-1'])
 
     service.activePage?.setData({ showBadge: false })
     await new Promise((resolve) => setTimeout(resolve, 10))

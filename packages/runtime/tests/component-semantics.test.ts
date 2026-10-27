@@ -125,7 +125,7 @@ describe('component semantics', () => {
 
     await host.bootstrap()
     await new Promise((resolve) => setTimeout(resolve, 10))
-    const component = service.componentInstances.get('component-1')!
+    const component = service.componentInstances.get('page-1:component-1')!
     expect(component).toBeDefined()
     expect(component.data).toMatchObject({
       fromBehavior: 'behavior-data',
