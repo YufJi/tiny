@@ -115,6 +115,8 @@ function applyHostProps(component: AnyComponent, props: Record<string, unknown> 
  */
 export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): GlassRenderTree {
   const backend = options.backend ?? new glassEasel.CurrentWindowBackendContext()
+  ;(backend as unknown as { onEvent: (listener: unknown) => void })
+    .onEvent(glassEasel.Event.triggerBackendEvent)
   const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
   space.updateComponentOptions({
     hostNodeTagName: 'tiny-*',

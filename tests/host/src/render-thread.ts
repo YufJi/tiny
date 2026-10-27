@@ -1,22 +1,16 @@
-import * as glassEasel from 'glass-easel'
-import { CurrentWindowBackendContext } from 'glass-easel'
-import { bootRenderThread, bootTreeThread, resolveAssetPath } from '@tiny/runtime'
+import { bootTreeThread, resolveAssetPath } from '@tiny/runtime'
 import {
-  createBrowserRenderQuery,
   installOffscreenCanvasResponder,
   listenForRuntimePort,
-  measureBrowserCanvas,
 } from '@tiny/host-browser'
 import {
   BUILTIN_BASE_STYLES,
   BUILTIN_COMPONENT_STYLES,
   BUILTIN_HOST_STYLES,
   createGlassRenderTree,
-  webBuiltinComponents,
 } from '@tiny/host-web-components'
 import manifest from '../generated/manifest.json'
 
-const renderModule = await import('../generated/render.js')
 const stylePaths = [...new Set(manifest.styles.flatMap((style) => [
   style.outputPath,
   ...(style.lowPriorityPath ? [style.lowPriorityPath] : []),
@@ -30,70 +24,31 @@ const styles = Object.fromEntries(
   ),
 )
 
-const backend = new CurrentWindowBackendContext()
-backend.onEvent(glassEasel.Event.triggerBackendEvent)
-
-const resolveAssetUrl = (assetPath: string): string => (
-  `/generated/${assetPath.split('/').map(encodeURIComponent).join('/')}`
-)
-
 installOffscreenCanvasResponder()
 
-const logicMode = new URLSearchParams(window.location.search).get('logic') === 'service'
 const initialPageId = new URLSearchParams(window.location.search).get('pageId') ?? undefined
 
 listenForRuntimePort('render', (transport) => {
-  if (logicMode) {
-    const style = document.createElement('style')
-    style.setAttribute('data-tiny-tree-styles', '')
-    style.setAttribute('wx-style-scope', '')
-    style.textContent = [
-      BUILTIN_BASE_STYLES,
-      BUILTIN_HOST_STYLES,
-      ...BUILTIN_COMPONENT_STYLES.map((item) => (
-        typeof item === 'string' ? item : item.content
-      )),
-      ...Object.entries(styles)
-        .filter(([stylePath]) => !stylePath.includes('app.wxss'))
-        .map(([, content]) => content),
-    ].join('\n')
-    document.head.appendChild(style)
-    const renderer = createGlassRenderTree({
-      container: document.getElementById('app') ?? document.body,
-      resolveAssetUrl: (src, sourcePath) => {
-        const resolved = resolveAssetPath(sourcePath || '', src)
-        return resolved ? `/generated/${resolved}` : undefined
-      },
-    })
-    bootTreeThread({ transport, renderer, initialPageId })
-    return
-  }
-  bootRenderThread({
-    transport,
-    manifest,
-    artifacts: { templates: renderModule.default.templates },
-    backend,
-    builtinComponents: webBuiltinComponents,
-    initialPath: 'pages/todos/todos',
-    loadStyle: (path) => styles[path] ?? '',
-    resolveAssetUrl,
-    canvas: {
-      measure: measureBrowserCanvas,
-    },
-    query: createBrowserRenderQuery(),
-    mountComponent: (component) => {
-      const container = document.getElementById('app') ?? document.body
-      const placeholder = document.createElement('div')
-      container.appendChild(placeholder)
-      glassEasel.Element.replaceDocumentElement(
-        component as glassEasel.GeneralComponent,
-        container,
-        placeholder,
-      )
-    },
-    unmountComponent: (component) => {
-      const element = (component as glassEasel.GeneralComponent).getBackendElement?.()
-      ;(element as unknown as { remove?: () => void } | null)?.remove?.()
+  const style = document.createElement('style')
+  style.setAttribute('data-tiny-tree-styles', '')
+  style.setAttribute('wx-style-scope', '')
+  style.textContent = [
+    BUILTIN_BASE_STYLES,
+    BUILTIN_HOST_STYLES,
+    ...BUILTIN_COMPONENT_STYLES.map((item) => (
+      typeof item === 'string' ? item : item.content
+    )),
+    ...Object.entries(styles)
+      .filter(([stylePath]) => !stylePath.includes('app.wxss'))
+      .map(([, content]) => content),
+  ].join('\n')
+  document.head.appendChild(style)
+  const renderer = createGlassRenderTree({
+    container: document.getElementById('app') ?? document.body,
+    resolveAssetUrl: (src, sourcePath) => {
+      const resolved = resolveAssetPath(sourcePath || '', src)
+      return resolved ? `/generated/${resolved}` : undefined
     },
   })
+  bootTreeThread({ transport, renderer, initialPageId })
 })

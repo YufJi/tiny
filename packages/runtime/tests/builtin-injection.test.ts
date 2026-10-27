@@ -3,7 +3,7 @@ import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
-import { bootRenderThread } from '../src/render'
+import { bootRenderHarness as bootRenderThread } from './helpers/render-harness'
 import type { BuiltinComponentFactoryContext, BuiltinComponents } from '../src/types'
 
 const PAGE_PATH = 'pages/index/index'

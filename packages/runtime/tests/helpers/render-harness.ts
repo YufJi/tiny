@@ -1,12 +1,12 @@
 import { BridgeConnection } from '@tiny/bridge'
 import type { PageArtifact } from '@tiny/manifest'
-import { GlassEaselRuntimeAdapter, type GlassEaselAdapterOptions } from './glass-easel-adapter'
-import { applyDataPatch, type DataPatch } from './data'
+import { GlassEaselRuntimeAdapter, type GlassEaselAdapterOptions } from '../../src/glass-easel-adapter'
+import { applyDataPatch, type DataPatch } from '../../src/data'
 import type {
   QuerySelectorRequest,
   RenderIntersectionHandle,
   RenderThreadOptions,
-} from './types'
+} from '../../src/types'
 
 export type RenderThreadRuntime = {
   connection: BridgeConnection
@@ -15,7 +15,7 @@ export type RenderThreadRuntime = {
   currentPath: string
 }
 
-export function bootRenderThread(options: RenderThreadOptions): RenderThreadRuntime {
+export function bootRenderHarness(options: RenderThreadOptions): RenderThreadRuntime {
   const connection = new BridgeConnection({
     localRole: 'render',
     peerRole: 'host',
@@ -71,10 +71,10 @@ export function bootRenderThread(options: RenderThreadOptions): RenderThreadRunt
         initialData?: Record<string, unknown>
         pageId?: string
         styleMode?: 'all' | 'page'
-        componentSchemas?: import('./types').MiniProgramComponentSchema[]
+        componentSchemas?: import('../../src/types').MiniProgramComponentSchema[]
         pageComponents?: Array<{
           path: string
-          options?: import('./glass-easel-adapter').PageComponentOptions
+          options?: import('../../src/glass-easel-adapter').PageComponentOptions
         }>
       }
       const manifest = payload.manifest ?? options.manifest
@@ -346,9 +346,9 @@ function findPage(manifest: RenderThreadOptions['manifest'], path: string): Page
 }
 
 async function settlePage(
-  adapter: import('./glass-easel-adapter').GlassEaselRuntimeAdapter,
+  adapter: import('../../src/glass-easel-adapter').GlassEaselRuntimeAdapter,
   page: PageArtifact,
-): Promise<import('./glass-easel-adapter').ComponentSnapshot[]> {
+): Promise<import('../../src/glass-easel-adapter').ComponentSnapshot[]> {
   await adapter.whenRendered()
   if (hasUsingComponents(page)) {
     let lastCount = -1

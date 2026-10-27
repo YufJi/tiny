@@ -4,7 +4,7 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderThread } from '../src/render'
+import { bootRenderHarness as bootRenderThread } from './helpers/render-harness'
 import { bootServiceThread } from '../src/service'
 
 const PAGE_PATH = 'pages/index/index'

@@ -5,7 +5,7 @@ import { createInMemoryTransportPair } from '@tiny/bridge'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest } from '@tiny/manifest'
 import { bootServiceThread } from '../src/service'
 import { createTinyRuntime } from '../src/host'
-import { bootRenderThread } from '../src/render'
+import { bootRenderHarness as bootRenderThread } from './helpers/render-harness'
 
 const PAGE_PATH = 'pages/index/index'
 
