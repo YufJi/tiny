@@ -3,13 +3,13 @@ title: '用真实小程序验收，'
 highlight: '不只跑单元测试'
 eyebrow: '测试与验收'
 lede: >-
-  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。247 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，55 个浏览器步骤验证端到端行为。
+  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。247 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，56 个浏览器步骤验证端到端行为。
 stats:
   - ['247', '单元测试']
-  - ['55', '浏览器步骤']
+  - ['56', '浏览器步骤']
   - ['5', '浏览器流程']
   - ['7', '测试小程序']
-description: '小程序引擎的验收方式：构建、内核检查、247 个单元测试、55 个浏览器步骤和七套测试小程序。'
+description: '小程序引擎的验收方式：构建、内核检查、247 个单元测试、56 个浏览器步骤和七套测试小程序。'
 name: '测试'
 pageTitle: '测试与验收 · Tiny 小程序引擎'
 order: 8
@@ -26,7 +26,7 @@ pnpm accept:glass-easel 是唯一完整的端到端入口，任何单个包的�
 | 检查内核依赖 | 从 packages/runtime/src/index.ts 遍历依赖图，禁止浏览器全局，也禁止反向依赖 @tiny/host-* 或 hosts/*。 | `pnpm check:runtime-purity` |
 | 跑 6 个包的单元测试 | bridge、template-compiler、stylesheet-compiler、cli、host-web-components、runtime。没有全局 runner，按包逐个执行。 | `pnpm --filter <package> test` |
 | 编译 P0 demo | 把 tests/apps/demo 编到 tests/host/generated，然后在 5199 端口启动 Vite 测试宿主。 | `pnpm compile:glass-easel` |
-| P0 demo 流程 | 21 步：启动、渲染、作用域样式、快照、自定义事件、checkbox/slider/switch、导航、输入、storage、toast、组件语义、样式隔离、按钮矩阵、relations、canvas 诊断和零 console error；同时覆盖逻辑树的首屏 flow 和 patch 更新。 | `runBrowserAcceptance({ baseUrl })` |
+| P0 demo 流程 | 22 步：启动、渲染、作用域样式、快照、自定义事件、checkbox/slider/switch、导航、输入、storage、toast、组件语义、样式隔离、按钮矩阵、relations、真实滚动触发 `onPageScroll`、canvas 诊断和零 console error；同时覆盖逻辑树的首屏 flow 和 patch 更新。 | `runBrowserAcceptance({ baseUrl })` |
 | mini 流程 | 重新编译 tests/apps/mini 覆盖 generated；10 步：真实 todos、双组件实例、import/include/template、输入、ECharts、子包、warning 和零错误。 | `runMiniProgramAcceptance()` |
 | Taro 3 流程 | 编译 tests/apps/todo 的预构建产物；6 步：Redux todos、Enter 新增、勾选、筛选、清空和零错误。 | `runTaroAcceptance()` |
 | WeChat demo 流程 | 编译官方示例子集；9 步：组件索引、button 页、storage API 页、swiper/navigator/WXS 交互和零错误。 | `runWechatDemoAcceptance()` |
@@ -37,13 +37,13 @@ pnpm accept:glass-easel 是唯一完整的端到端入口，任何单个包的�
 前四段流程共用 `tests/host/generated`，调试器阶段写入 `apps/devtool/static`。每次编译前都会清空输出，所以不能并行跑两段浏览器验收。最后会重新编译 P0 demo，保证 `pnpm dev:glass-easel` 打开时看到的是默认示例。
 :::
 
-## 55 个步骤怎么分配 {#flows kicker="浏览器流程"}
+## 56 个步骤怎么分配 {#flows kicker="浏览器流程"}
 
 每一步都在真实 Chromium 中执行，会检查页面状态、DOM、像素或 console。
 
 | 流程 | 测试小程序 | 步数 | 验证内容 |
 | --- | --- | --- | --- |
-| P0 demo | `tests/apps/demo` | 21 | 双线程启动、内置组件、按钮矩阵、样式作用域、事件、导航、storage、canvas 诊断/2D/WebGL/legacy/ECharts、组件语义、零 console error |
+| P0 demo | `tests/apps/demo` | 22 | 双线程启动、内置组件、按钮矩阵、样式作用域、事件、导航、storage、页面滚动 `onPageScroll`、canvas 诊断/2D/WebGL/legacy/ECharts、组件语义、零 console error |
 | 现有示例 | `tests/apps/mini` | 10 | 真实 todos、双 add-button 实例、import/include/template、输入、ECharts 柱状图、子包、warning |
 | Taro 3 | `tests/apps/todo` | 6 | Redux todos、输入 + Enter、勾选、筛选、清空、零错误 |
 | WeChat demo | `tests/apps/wechat-demo` | 9 | 组件索引、button 页、storage API 页、swiper radio 点击/自动播放、navigator 点击跳转、WXS 拖拽、零错误 |
@@ -117,7 +117,7 @@ fixture 不是单元测试里的假数据，而是完整的小程序源码或预
 
 | Fixture | 形态 | 覆盖内容 | 是否进入验收 |
 | --- | --- | --- | --- |
-| `demo` | 3 个页面 + 8 个组件 | P0 内置组件、作用域样式、导航、storage、canvas 诊断、按钮矩阵、Behavior/observers/relations、styleIsolation、externalClasses | 是 |
+| `demo` | 4 个页面 + 8 个组件 | P0 内置组件、作用域样式、导航、storage、页面滚动、canvas 诊断、按钮矩阵、Behavior/observers/relations、styleIsolation、externalClasses | 是 |
 | `mini` | 4 个页面 + 2 个组件 + 1 个分包 | 真实 todos、import/include/template、animation、ECharts 离屏 canvas、资源内联 | 是 |
 | `todo` | 1 个页面，Taro 3 预构建产物 | webpackJsonp、外部 WXS、递归模板、循环 usingComponents、Enter 提交 | 是 |
 | `wechat-demo` | 117 个页面 + 2 个分包（示例子集） | 基础组件索引、button 示例、storage API 示例 | 是 |
