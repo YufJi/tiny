@@ -2,7 +2,8 @@
   "pages": [
     "pages/todos/todos",
     "pages/add-todo/add-todo",
-    "pages/semantics/semantics"
+    "pages/semantics/semantics",
+    "pages/scroll/scroll"
   ],
   "window": {
     "navigationBarTitleText": "P0 demo"

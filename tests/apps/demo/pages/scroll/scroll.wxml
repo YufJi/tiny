@@ -1,0 +1,5 @@
+<view class="page">
+  <view class="hero">Scroll probe</view>
+  <text class="probe">scroll: {{scrollTop}}</text>
+  <view wx:for="{{rows}}" wx:key="*this" class="row">row {{item}}</view>
+</view>

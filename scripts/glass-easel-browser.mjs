@@ -536,6 +536,37 @@ export async function runBrowserAcceptance({ baseUrl }) {
       )
     })
 
+    await step('deliver onPageScroll from the render scroll container', async () => {
+      currentStep = 'deliver onPageScroll from the render scroll container'
+      await render.getByText('Scroll page', { exact: true }).first().click()
+      await waitForText('Scroll probe')
+      const metrics = await render.evaluate(() => ({
+        scrollHeight: document.documentElement.scrollHeight,
+        innerHeight: window.innerHeight,
+      }))
+      assert.ok(
+        metrics.scrollHeight > metrics.innerHeight + 200,
+        `scroll page should be taller than the viewport (${metrics.scrollHeight} <= ${metrics.innerHeight})`,
+      )
+      await render.evaluate(() => window.scrollTo(0, 900))
+      const deadline = Date.now() + STEP_TIMEOUT
+      let lastText = ''
+      let scrollTop = 0
+      while (Date.now() < deadline) {
+        lastText = await text()
+        const match = /scroll: (\d+)/.exec(lastText)
+        scrollTop = match ? Number(match[1]) : 0
+        if (scrollTop > 0) break
+        await page.waitForTimeout(50)
+      }
+      assert.ok(scrollTop > 0, `onPageScroll did not update page data: ${lastText}`)
+      const windowScrollTop = await render.evaluate(() => Math.round(window.scrollY))
+      assert.ok(
+        Math.abs(windowScrollTop - scrollTop) <= 24,
+        `page data scrollTop ${scrollTop} did not track window.scrollY ${windowScrollTop}`,
+      )
+    })
+
     await step('keep the console free of errors', async () => {
       currentStep = 'keep the console free of errors'
       assert.equal(consoleErrors.length, 0, `console errors: ${consoleErrors.join(' | ')}`)

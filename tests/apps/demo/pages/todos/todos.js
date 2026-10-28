@@ -28,6 +28,10 @@ Page({
     wx.navigateTo({ url: '../add-todo/add-todo?from=todos' })
   },
 
+  openScrollPage() {
+    wx.navigateTo({ url: '../scroll/scroll' })
+  },
+
   onCustom(event) {
     this.setData({ customDetail: event.detail.text })
   },

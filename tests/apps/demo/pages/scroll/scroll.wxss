@@ -1,0 +1,22 @@
+.page {
+  padding: 32rpx;
+}
+
+.hero {
+  font-size: 40rpx;
+  font-weight: bold;
+}
+
+.probe {
+  display: block;
+  margin: 16rpx 0 24rpx;
+  color: #94a3b8;
+}
+
+.row {
+  height: 96rpx;
+  margin-bottom: 16rpx;
+  padding: 0 24rpx;
+  border: 1px solid #334155;
+  border-radius: 12rpx;
+}
