@@ -1429,6 +1429,18 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         && frame.url().includes(`app=${appId}`)
         && frame.url().includes(`pageId=${pageId}`),
     )
+    const waitForActiveRenderFrame = async (appId, pageId) => {
+      await page.waitForSelector(
+        `.td-app-surface[data-app-id="${appId}"] iframe[data-page-id="${pageId}"][data-state="active"]`,
+        { timeout: STEP_TIMEOUT },
+      )
+      for (let attempt = 0; attempt < 100; attempt += 1) {
+        const frame = activeRenderFrame(appId, pageId)
+        if (frame) return frame
+        await page.waitForTimeout(50)
+      }
+      return undefined
+    }
     const waitForSession = async (appId, present = true) => {
       await page.waitForFunction(
         ({ expectedAppId, expectedPresent }) => {
@@ -1745,6 +1757,57 @@ export async function runDevtoolAcceptance({ baseUrl }) {
           )
         } else {
           await renderFrame.locator('#app').waitFor({ state: 'attached', timeout: STEP_TIMEOUT })
+        }
+
+        if (fixture.id === 'vant') {
+          // Vant's overlay/popup path combines two host contracts: WXS
+          // `.constructor` reads and external classes that arrive after the
+          // transition's root view is inserted.
+          currentStep = 'preview vant: open a popup'
+          await page.locator('input[placeholder="pages/..."]').fill('/pages/popup/index')
+          await page.getByText('Navigate', { exact: true }).click()
+          await page.waitForFunction(
+            () => window.__tinyDevtool?.getState().currentPage === 'pages/popup/index',
+            null,
+            { timeout: STEP_TIMEOUT },
+          )
+          const popupPageId = (await state()).pageStack.at(-1)
+          const popupFrame = await waitForActiveRenderFrame(fixture.id, popupPageId)
+          assert.ok(popupFrame, 'vant popup page did not create a render frame')
+          await popupFrame.locator('tiny-van-cell').first().click()
+          const popupMetrics = await popupFrame.waitForFunction(() => {
+            const popup = document.querySelector('tiny-van-popup')
+            const popupView = popup?.querySelector(':scope > tiny-view')
+            const overlayView = popup?.querySelector('tiny-van-overlay tiny-view')
+            if (!popupView || !overlayView) return false
+            const popupRect = popupView.getBoundingClientRect()
+            const overlayRect = overlayView.getBoundingClientRect()
+            if (popupRect.width < 100 || overlayRect.width < 300) return false
+            return {
+              popupClass: popupView.className,
+              popupStyle: popupView.getAttribute('style') ?? '',
+              popupRect: popupRect.toJSON(),
+              overlayClass: overlayView.className,
+              overlayPosition: getComputedStyle(overlayView).position,
+              overlayRect: overlayRect.toJSON(),
+              viewport: { width: window.innerWidth, height: window.innerHeight },
+            }
+          }, null, { timeout: STEP_TIMEOUT })
+          const metrics = await popupMetrics.jsonValue()
+          assert.ok(metrics.popupClass.includes('van-popup--center'), 'van-popup lost its center modifier')
+          assert.ok(metrics.popupStyle.includes('z-index'), 'van-popup lost its WXS-computed style')
+          assert.ok(metrics.overlayClass.includes('van-overlay'), 'van-overlay lost its external class')
+          assert.equal(metrics.overlayPosition, 'fixed', 'van-overlay is not fixed')
+          assert.ok(
+            Math.abs(metrics.overlayRect.width - metrics.viewport.width) < 2
+              && Math.abs(metrics.overlayRect.height - metrics.viewport.height) < 2,
+            'van-overlay does not cover the viewport',
+          )
+          assert.ok(
+            Math.abs(metrics.popupRect.x + metrics.popupRect.width / 2 - metrics.viewport.width / 2) < 2
+              && Math.abs(metrics.popupRect.y + metrics.popupRect.height / 2 - metrics.viewport.height / 2) < 2,
+            'van-popup is not centered',
+          )
         }
 
         if (fixture.id === 'weui') {

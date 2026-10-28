@@ -129,7 +129,7 @@ export function applyClassProps(
     }
   }
   if (classes.length > 0 || scoped.length > 0) {
-    element.setAttribute('class', [...classes, ...scoped].join(' '))
+    element.setAttribute('class', [...new Set([...classes, ...scoped])].join(' '))
   }
 }
 
@@ -193,6 +193,44 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   let hostActionSink: ((action: RenderHostAction) => void) | undefined
   let styleElement: HTMLStyleElement | undefined
   const currentTree = new Map<string, RenderNode>()
+  const externalByNode = new Map<string, Record<string, string[]> | undefined>()
+  const idByComponent = new WeakMap<object, string>()
+  const pendingClasses = new Map<string, () => boolean>()
+
+  const applyElementClass = (
+    node: RenderElement,
+    component: AnyComponent,
+    external: Record<string, string[]> | undefined,
+  ): boolean => {
+    const element = component.getBackendElement() as unknown as HTMLElement | null
+    if (!element?.setAttribute) return false
+    applyClassProps(element, node.props, node.scopes, node.scopeChain, external, pageScopes)
+    return true
+  }
+
+  const queueElementClass = (
+    node: RenderElement,
+    component: AnyComponent,
+    external: Record<string, string[]> | undefined,
+  ): void => {
+    if (applyElementClass(node, component, external)) {
+      pendingClasses.delete(node.id)
+      return
+    }
+    // Built-in components do not own their backend element until they are
+    // attached. Keep the latest external-class map so a later flush does not
+    // lose `custom-class` values while the element is still being created.
+    pendingClasses.set(node.id, () => {
+      const latest = currentTree.get(node.id)
+      return applyElementClass(latest?.type === 'element' ? latest : node, component, external)
+    })
+  }
+
+  const flushPendingClasses = (): void => {
+    for (const [id, apply] of pendingClasses) {
+      if (apply()) pendingClasses.delete(id)
+    }
+  }
 
   const containerDefinition = (tag: string): glassEasel.GeneralComponentDefinition => {
     const existing = containers.get(tag)
@@ -422,6 +460,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       definition,
     )
     nodes.set(node.id, component)
+    idByComponent.set(component, node.id)
     currentTree.set(node.id, node)
     attachEvents(node, component)
     if (builtin) {
@@ -441,9 +480,10 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       component.setData(glassProps(props) as never)
     }
     const external = node.externalClasses ?? inheritedExternal
+    externalByNode.set(node.id, external)
     applyHostProps(component, node.props)
     component.getBackendElement()?.setAttribute?.(TINY_ENGINE_NAMING.nodeIdAttribute, node.id)
-    applyClassProps(component.getBackendElement() as unknown as HTMLElement | null, node.props, node.scopes, node.scopeChain, external, pageScopes)
+    queueElementClass(node, component, external)
     const childOwner = component
     for (const child of node.children ?? []) {
       appendChild(component, child.type === 'text'
@@ -478,6 +518,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       eventCleanups.delete(id)
       nodes.delete(id)
       currentTree.delete(id)
+      externalByNode.delete(id)
+      pendingClasses.delete(id)
     }
   }
 
@@ -489,9 +531,10 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const insertNode = (parentId: string, index: number, node: RenderNode): void => {
     const target = ownerFor(parentId)
     if (!target) return
+    const inheritedExternal = externalByNode.get(parentId)
     const child = node.type === 'text'
       ? createText(node, target.owner)
-      : createElement(node, target.owner)
+      : createElement(node, target.owner, inheritedExternal)
     if (target.shadow) {
       const ref = (root.shadowRoot as unknown as { childNodes: ArrayLike<unknown> }).childNodes[index] ?? null
       target.shadow.insertBefore(child, ref)
@@ -564,9 +607,10 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     const parent = (previous as unknown as { parentNode?: AnyComponent }).parentNode
     if (!parent) return
     const owner = parent
+    const parentId = idByComponent.get(parent as unknown as object)
     const child = node.type === 'text'
       ? createText(node, owner)
-      : createElement(node, owner)
+      : createElement(node, owner, parentId ? externalByNode.get(parentId) : undefined)
     parent.replaceChild(child as never, previous as never)
     dropNode(snapshot)
     nodes.set(id, node.type === 'text' ? child as never : child)
@@ -592,7 +636,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       }
     }
     applyHostProps(component, node.props)
-    applyClassProps(component.getBackendElement() as unknown as HTMLElement | null, node.props, node.scopes, node.scopeChain, undefined, pageScopes)
+    const external = node.externalClasses ?? externalByNode.get(node.id)
+    externalByNode.set(node.id, external)
+    queueElementClass(node, component, external)
   }
 
   const applyPatches = (patches: RenderPatch[]): void => {
@@ -625,6 +671,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       }
     }
     flushPendingAnimations()
+    flushPendingClasses()
   }
 
   // `this.animate` runs on the render side: the service resolved the selector
@@ -907,6 +954,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       }
       if (options.attach !== false) glassEasel.Element.pretendAttached(root)
       flushPendingAnimations()
+      flushPendingClasses()
     },
     applyPatches,
     getNode(id) {
@@ -919,6 +967,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       eventCleanups.clear()
       nodes.clear()
       currentTree.clear()
+      externalByNode.clear()
+      pendingClasses.clear()
       ;(root as unknown as { destroy?: () => void }).destroy?.()
     },
   }

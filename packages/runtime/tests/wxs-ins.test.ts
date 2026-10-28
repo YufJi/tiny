@@ -14,6 +14,8 @@ const originals = new Map<string, unknown>()
 for (const key of globalKeys) originals.set(key, (globalThis as unknown as Record<string, unknown>)[key])
 afterAll(() => {
   for (const [key, value] of originals) (globalThis as unknown as Record<string, unknown>)[key] = value
+  delete (globalThis as unknown as Record<string, unknown>).__tinyWxsArrayCtor
+  delete (globalThis as unknown as Record<string, unknown>).__tinyWxsObjectCtor
 })
 
 const TEMPLATE = `
@@ -29,8 +31,17 @@ exports.plain = function () {
   exports.plainCalls = (exports.plainCalls || 0) + 1
 }
 </wxs>
+<wxs module="ctor">
+exports.probe = function () {
+  var list = [];
+  var object = {};
+  globalThis.__tinyWxsArrayCtor = list.constructor;
+  globalThis.__tinyWxsObjectCtor = object.constructor;
+}
+</wxs>
 <view class="box" data-role="target" style="position: absolute; top: 5px;" bindtap="{{h.start}}">x</view>
 <view class="plain" bindtap="onPlain">y</view>
+<view class="ctor" bindtap="{{ctor.probe}}">z</view>
 `
 
 function createTemplates() {
@@ -150,6 +161,19 @@ describe('WXS event descriptor (ins)', () => {
     }, { pageId })
     await new Promise((resolve) => setTimeout(resolve, 10))
     expect(records.at(-1)).toEqual(['plain', true])
+
+    // WXS sees type names through .constructor, while host JS keeps the real
+    // intrinsic constructor.
+    const ctor = tree.query(pageId, '.ctor', false)[0]!
+    host.service.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, {
+      id: ctor.viewId,
+      name: 'tap',
+    }, { pageId })
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    const globals = globalThis as unknown as Record<string, unknown>
+    expect(globals.__tinyWxsArrayCtor).toBe('Array')
+    expect(globals.__tinyWxsObjectCtor).toBe('Object')
+    expect([].constructor).toBe(Array)
     await host.close()
   })
 })
