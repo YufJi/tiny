@@ -9,7 +9,7 @@
 | `adr/` | 架构决策记录（Accepted），解释“为什么是现在这样” | 改动跨包边界、协议、命名约定之前 |
 | `acceptance.md` | 验收门禁、浏览器阶段、fixture 说明 | 跑 `pnpm accept:glass-easel` 前 |
 | `wechat-webview-parity.md` | 微信 WebView 能力对齐分与缺口 | 评估兼容性、排优先级 |
-| `component-reference-diff.md` | 23 个内置组件的当前对齐状态与剩余问题 | 改内置组件 |
+| `component-reference-diff.md` | 24 个内置组件的当前对齐状态与剩余问题 | 改内置组件 |
 | `known-issues/` | 已知问题与临时处理 | 遇到相关症状时 |
 | `agents/` | 给 agent 的操作手册（上下文布局、issue 流程、标签） | 开始任务前 |
 | `site/` | 架构站点的页面源（Markdown），契约见 `site/CONTEXT.md` | 改站点正文时 |

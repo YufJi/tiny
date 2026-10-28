@@ -4,7 +4,7 @@
 >
 > 对照实现：[hosts/web-components/src/components](../hosts/web-components/src/components)
 >
-> 范围：当前已接入的 23 个内置标签；剩余 37 个标签不在本文逐项展开。
+> 范围：当前已接入的 24 个内置标签；剩余 36 个标签不在本文逐项展开。
 >
 > 历史差异审计、逐组件参考结构和修复方案已归档到 [component-reference-history.md](./archive/component-reference-history.md)。
 >
@@ -23,7 +23,7 @@
 
 ## 1. 当前整体结论
 
-23 个内置标签的**宿主结构和 P0 默认视觉已经完成一轮重写**，当前没有 P0 级“结构或默认外观明显不一致”的标签。剩余问题集中在三类：
+24 个内置标签的**宿主结构和 P0 默认视觉已经完成一轮重写**，当前没有 P0 级“结构或默认外观明显不一致”的标签。剩余问题集中在三类：
 
 1. **交互语义**：`tiny-touchtrack`/`tiny-scroller` 尚未抽象；group 受控值和 label 激活已补，picker region 按决策暂不支持；
 2. **P1 组件的内部结构**：`input`、`textarea`、`swiper`、`form`、`button` 仍是“能用但近似”；`scroll-view` 已按决策接受 native 滚动近似。
@@ -31,7 +31,7 @@
 
 | 维度 | 状态 | 说明 |
 | --- | --- | --- |
-| 宿主模型 | ✅ 完成 | 23 个组件全部使用 `virtualHost: false` + `tiny-*` 真宿主 |
+| 宿主模型 | ✅ 完成 | 24 个组件全部使用 `virtualHost: false` + `tiny-*` 真宿主 |
 | P0 视觉结构 | ✅ 完成 | checkbox/radio/switch/slider/icon/image/picker/picker-view/column |
 | 基础样式/属性转发 | ✅ 完成 | class/style/id/data-*/hidden 直接落在宿主 |
 | 交互语义 | ⚠️ 部分 | 触摸/滚动/group/label 仍是近似 |
@@ -49,7 +49,7 @@
 
 - [x] `virtualHost: true` + 内层根导致宿主不可选、`class`/`style`/`id`/`data-*` 需要逐项转发；
 - [x] 内置组件宿主标签从占位元素迁移为 `tiny-*` 真宿主，并使用 `reflectToAttributes` 反射属性；
-- [x] `hidden` 在 23 个宿主上的默认样式重置；
+- [x] `hidden` 在 24 个宿主上的默认样式重置；
 - [x] `class`/`style`/`id`/`data-*`/`hidden` 直接落在宿主，删除 `externalClasses`/`style` 属性和 `scheduleDataAttributeSync` 等 shim；
 - [x] 参考 CSS 的 `wx-*` 宿主选择器机械替换为 `tiny-*`；
 - [x] 全局 `app.wxss` 的 tag 选择器在编译时映射到宿主（`button {}` → `tiny-button {}`）；
@@ -183,13 +183,14 @@
 
 ## 3. 已解决项（[x] 汇总）
 
-- **宿主/样式**：23 个 `tiny-*` 真宿主、属性反射、hidden reset、全局 tag 映射、scoped tag 重写、内部 `div`/`span`。
+- **宿主/样式**：24 个 `tiny-*` 真宿主、属性反射、hidden reset、全局 tag 映射、scoped tag 重写、内部 `div`/`span`。
 - **P0 视觉**：checkbox、radio、switch、slider、icon、image、picker、picker-view、picker-view-column 共 9 个标签完成结构/默认外观重写。
 - **picker 交互**：selector/multiSelector/date/time 的浮层、确认/取消/columnchange、列值同步。
 - **picker-view 交互**：mask/indicator/content、transform 吸附、tap 定位、触摸/鼠标拖动、pickstart/pickend。
 - **表单/语义**：group 受控 value、switch type=checkbox、label-target、form-field、reportSubmit mock、form wrapper。
 - **输入/滚动**：input/textarea wrapper + placeholder 层、textarea autoHeight、scroll-view 三层、progress bar/inner-bar、canvas 300×150、swiper 默认指示点。
 - **回归修复**：input 键盘输入、label 双触发、ECharts 图片样式/空白、picker-view 居中/初始值、devtool 验收 app 固定。
+- **导航**：`navigator` 为真实 `tiny-navigator` 宿主，复用 hover 行为（`hover-class`/`hover-start-time`/`hover-stay-time`），点击经 `tree.hostAction` 交给宿主的 5 个路由 API；`target="miniProgram"` 与非法 `open-type`/空 `url` 发结构化诊断。
 - **P2 补强**：button longtap/canceltap、canvas 容器层、swiper wrapper/slides/frame、progress bar/inner-bar。
 
 对应实现集中在 [hosts/web-components/src/components](../hosts/web-components/src/components)，单测在 [hosts/web-components/tests/builtin-components.test.ts](../hosts/web-components/tests/builtin-components.test.ts)。
@@ -322,7 +323,7 @@ pnpm lint                # 8 files checked, no fixes applied
 
 ### 6.4 覆盖不到的部分
 
-自动化门禁**没有逐页覆盖全部 23 个组件**，以下主要依赖单测/手工验证，后续补浏览器用例时优先补：
+自动化门禁**没有逐页覆盖全部 24 个组件**，以下主要依赖单测/手工验证，后续补浏览器用例时优先补：
 
 - picker 浮层的 selector/multiSelector/date/time；
 - picker-view 的拖动/吸附/初始 value；
@@ -332,4 +333,4 @@ pnpm lint                # 8 files checked, no fixes applied
 
 ### 6.5 全项目分数
 
-`48.90%` 来自 [wechat-webview-parity.md](./wechat-webview-parity.md) 的整体能力校准（23/60 标签、70/502 API、页面生命周期 14/14、路由 5/5 等），**不是**本文 23 个组件的单项得分；组件结构对齐不应直接等同于总分提升。
+`49.33%` 来自 [wechat-webview-parity.md](./wechat-webview-parity.md) 的整体能力校准（24/60 标签、71/502 API、页面生命周期 14/14、路由 5/5 等），**不是**本文 24 个组件的单项得分；组件结构对齐不应直接等同于总分提升。

@@ -145,7 +145,7 @@ glass-easel 不是完整的小程序 SDK。它负责组件、模板、数据绑�
 | `@tiny/cli` | manifest · template-compiler · stylesheet-compiler · esbuild · typescript | 负责生成全部产物 |
 | `@tiny/runtime` | manifest · bridge · glass-easel · es-toolkit | 双线程运行时内核，不依赖宿主 |
 | `@tiny/host-browser` | runtime · bridge | 浏览器宿主：iframe、MessageChannel、Canvas、devtool 覆盖层 |
-| `@tiny/host-web-components` | manifest · runtime · glass-easel；构建期 template-compiler | 23 个内置组件、AOT 模板和默认 CSS（宿主包） |
+| `@tiny/host-web-components` | manifest · runtime · glass-easel；构建期 template-compiler | 24 个内置组件、AOT 模板和默认 CSS（宿主包） |
 | `devtool` | host-browser · host-web-components · glass-easel · React · Redux/rematch | 调试器宿主和控制面板 |
 | `@tiny/website` | React | 架构站点，不进入引擎链路 |
 

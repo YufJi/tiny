@@ -62,6 +62,11 @@ Accepted and implemented. Merged into `next` as #27 (`1ac6d3a`), originally on
 - Events carry measured `offsetLeft` / `offsetTop` / `offsetWidth` /
   `offsetHeight` on the dispatched node so handlers can read
   `event.currentTarget.offsetLeft` synchronously.
+- Built-in behaviour the page never binds (currently `<navigator>`) travels as
+  `tree.hostAction` from the render tree to the host, which runs it through the
+  same navigation handlers as `wx.navigateTo` and friends. This keeps routing,
+  the page stack and render-page lifecycle in one place instead of
+  synthesising a page event.
 
 ### Known gaps against the reference protocol
 

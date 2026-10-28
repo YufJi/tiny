@@ -3,13 +3,13 @@ title: '用真实小程序验收，'
 highlight: '不只跑单元测试'
 eyebrow: '测试与验收'
 lede: >-
-  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。237 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，53 个浏览器步骤验证端到端行为。
+  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。243 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，54 个浏览器步骤验证端到端行为。
 stats:
-  - ['237', '单元测试']
-  - ['53', '浏览器步骤']
+  - ['243', '单元测试']
+  - ['54', '浏览器步骤']
   - ['5', '浏览器流程']
   - ['7', '测试小程序']
-description: '小程序引擎的验收方式：构建、内核检查、237 个单元测试、53 个浏览器步骤和七套测试小程序。'
+description: '小程序引擎的验收方式：构建、内核检查、243 个单元测试、54 个浏览器步骤和七套测试小程序。'
 name: '测试'
 pageTitle: '测试与验收 · Tiny 小程序引擎'
 order: 8
@@ -37,7 +37,7 @@ pnpm accept:glass-easel 是唯一完整的端到端入口，任何单个包的�
 前四段流程共用 `tests/host/generated`，调试器阶段写入 `apps/devtool/static`。每次编译前都会清空输出，所以不能并行跑两段浏览器验收。最后会重新编译 P0 demo，保证 `pnpm dev:glass-easel` 打开时看到的是默认示例。
 :::
 
-## 53 个步骤怎么分配 {#flows kicker="浏览器流程"}
+## 54 个步骤怎么分配 {#flows kicker="浏览器流程"}
 
 每一步都在真实 Chromium 中执行，会检查页面状态、DOM、像素或 console。
 
@@ -46,7 +46,7 @@ pnpm accept:glass-easel 是唯一完整的端到端入口，任何单个包的�
 | P0 demo | `tests/apps/demo` | 21 | 双线程启动、内置组件、按钮矩阵、样式作用域、事件、导航、storage、canvas 诊断/2D/WebGL/legacy/ECharts、组件语义、零 console error |
 | 现有示例 | `tests/apps/mini` | 10 | 真实 todos、双 add-button 实例、import/include/template、输入、ECharts 柱状图、子包、warning |
 | Taro 3 | `tests/apps/todo` | 6 | Redux todos、输入 + Enter、勾选、筛选、清空、零错误 |
-| WeChat demo | `tests/apps/wechat-demo` | 7 | 组件索引、button 页、storage API 页、swiper radio 点击/自动播放、零错误 |
+| WeChat demo | `tests/apps/wechat-demo` | 8 | 组件索引、button 页、storage API 页、swiper radio 点击/自动播放、navigator 点击跳转、零错误 |
 | 调试器 | `apps/devtool` | 9 | 默认列表和启动、状态投影、元素树、导航/返回、逐个预览测试应用、3 应用 LRU 保活、页面栈上限、Reload/Close app、零错误 |
 
 ::::split
@@ -65,7 +65,7 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 :::
 ::::
 
-## 237 个单元测试，按包执行 {#units kicker="单元测试"}
+## 243 个单元测试，按包执行 {#units kicker="单元测试"}
 
 没有全局 test runner，每个包单独跑，避免隐式耦合，也方便定位失败。
 
@@ -75,8 +75,8 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 | `@tiny/template-compiler` | 33 | 脚本依赖、WXS、import/include、模板别名、ProcGen 签名、绑定表复用、事件简写、data-* 绑定、stringify 往返 |
 | `@tiny/stylesheet-compiler` | 36 | class/tag 前缀、rpx/calc、@import 编码和包装、@layer、:host 低优先级、hostAttribute、keyframes、page 根节点 |
 | `@tiny/cli` | 18 | manifest 全产物、兼容输入配置、WXS 双注册、配置合并、service/templates 入口、TS/source map、样式 role、tag marker |
-| `@tiny/host-web-components` | 35 | 23 个 tag 模板、共享 behaviors、button 对齐、label、input、checkbox/slider/switch、progress/swiper/icon、image/icon 渲染 |
-| `@tiny/runtime` | 105 | 全局安装和命名、双线程 bootstrap、逻辑树、tree protocol/patch diff、headless renderer、组件 schema、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、API host、诊断、WXS 宽松求值、`this.animate`、事件冒泡/几何 |
+| `@tiny/host-web-components` | 39 | 23 个 tag 模板、共享 behaviors、button 对齐、label、input、checkbox/slider/switch、progress/swiper/icon、image/icon 渲染 |
+| `@tiny/runtime` | 107 | 全局安装和命名、双线程 bootstrap、逻辑树、tree protocol/patch diff、headless renderer、组件 schema、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、API host、诊断、WXS 宽松求值、`this.animate`、事件冒泡/几何 |
 
 :::callout{title="单测也会跑真实连接"}
 Bridge 测试会真的建立两条内存连接并完成握手；runtime 测试会启动 service 逻辑树和 headless render tree、注册 Page、执行 bootstrap 和导航，并验证 tree flow 与 patch。这里没有把整个引擎 mock 掉的做法。
