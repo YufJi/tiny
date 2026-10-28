@@ -9,9 +9,10 @@ import { Template, templateDirectDependencies, templateScriptDependencies } from
 import { genLitStr } from './escape'
 import { TmplGroupRef, templateToProcGen } from './proc_gen/tag'
 import { stringifyTemplate } from './stringify/stringifier'
+import wxsRuntimeSource from './runtime/wxs-runtime.js?raw'
 
 // ---------------------------------------------------------------------------
-// Runtime snippets (mirrors RUNTIME_ITEMS, EXTRA_RUNTIME_ITEMS, WXS_RUNTIME_ITEMS)
+// Runtime snippets (mirrors RUNTIME_ITEMS and EXTRA_RUNTIME_ITEMS)
 // ---------------------------------------------------------------------------
 
 const RUNTIME_ITEMS: [string, string][] = [
@@ -26,156 +27,12 @@ const EXTRA_RUNTIME_ITEMS: [string, string][] = [
   ['b', "function(b){var a=Object.values(b);for(var i=0;i<a.length;i++)if(a[i])return a}"],
 ]
 
-const WXS_RUNTIME_ITEMS: [string, string][] = [
+// Q.A / Q.B are the event-filter helpers used by `R.setFnFilter(...)` in the
+// generated template code. They are not part of the WXS runtime itself.
+const EVENT_FILTER_RUNTIME_ITEMS: [string, string][] = [
   ['A', "function(a){return a}"],
   ['B', "function(a){return a}"],
 ]
-
-const WXS_RUNTIME = `
-// WXS global helpers, available to every WXS module in this group.
-var getRegExp = (pattern, flags) => new RegExp(pattern, flags);
-var getDate = (...args) => new Date(...args);
-// WXS reports type names through .constructor:
-//   [].constructor === 'Array'
-//   ({}).constructor === 'Object'
-// WXS source is executed in the host realm, where .constructor is the
-// intrinsic constructor. Rewrite those reads to a WXS-aware helper instead of
-// changing the host's prototypes.
-var __wxsCtor = (value) => {
-    if (Array.isArray(value)) return 'Array';
-    if (value === null) return 'Null';
-    if (typeof value === 'object') return 'Object';
-    if (typeof value === 'function') return 'Function';
-    if (typeof value === 'string') return 'String';
-    if (typeof value === 'number') return 'Number';
-    if (typeof value === 'boolean') return 'Boolean';
-    return 'Undefined';
-};
-var __wxsRewriteConstructors = (chunk) => chunk.replace(
-    /((?:[A-Za-z_$][\\w$]*|this)(?:\\s*(?:\\.[A-Za-z_$][\\w$]*|\\[[^\\]]+\\]))*)\\.constructor\\b(?!\\s*=(?!=))/g,
-    '__wxsCtor($1)',
-);
-// Skip strings and comments so the rewrite only touches executable code.
-var __wxsTransform = (code) => {
-    var out = '';
-    var start = 0;
-    var index = 0;
-    var flush = (end) => {
-        if (end > start) out += __wxsRewriteConstructors(code.slice(start, end));
-    };
-    while (index < code.length) {
-        var ch = code[index];
-        if (ch === '"' || ch === "'" || ch === '\`') {
-            flush(index);
-            var quote = ch;
-            out += ch;
-            index += 1;
-            while (index < code.length) {
-                var current = code[index];
-                out += current;
-                if (current === '\\\\') {
-                    index += 1;
-                    if (index < code.length) out += code[index];
-                    index += 1;
-                    continue;
-                }
-                index += 1;
-                if (current === quote) break;
-            }
-            start = index;
-            continue;
-        }
-        if (ch === '/' && code[index + 1] === '/') {
-            flush(index);
-            var lineEnd = code.indexOf('\\n', index);
-            if (lineEnd < 0) lineEnd = code.length;
-            out += code.slice(index, lineEnd);
-            index = lineEnd;
-            start = index;
-            continue;
-        }
-        if (ch === '/' && code[index + 1] === '*') {
-            flush(index);
-            var blockEnd = code.indexOf('*/', index + 2);
-            if (blockEnd < 0) blockEnd = code.length - 2;
-            blockEnd += 2;
-            out += code.slice(index, blockEnd);
-            index = blockEnd;
-            start = index;
-            continue;
-        }
-        index += 1;
-    }
-    flush(code.length);
-    return out;
-};
-var D = (() => {
-    var modules = Object.create(null);
-    var load = (filename) => {
-        var module = modules[filename];
-        if (!module) throw new Error('no such WXS module: ' + filename);
-        if (!module.loaded) {
-            module.loaded = true;
-            var require = (rel) => {
-                var slices;
-                if (rel[0] === '/') {
-                    slices = rel.split('/');
-                } else {
-                    slices = filename.split('/').slice(0, -1).concat(rel.split('/'));
-                }
-                var normalized = [];
-                slices.forEach((slice) => {
-                    if (slice === '' || slice === '.') return;
-                    if (slice === '..') {
-                        normalized.pop();
-                    } else {
-                        normalized.push(slice);
-                    }
-                })
-                return load(normalized.join('/'));
-            };
-            module.loader.call(null, require, module.exports, module);
-        }
-        return module.exports;
-    };
-    return (filename, func) => {
-        modules[filename] = { exports: {}, loader: func, loaded: false };
-        return () => load(filename);
-    };
-})()
-// WXS is sloppy-mode script in WeChat: an undeclared assignment such as
-// "var a = b = 1" creates a binding instead of throwing. The template bundle is
-// an ES module, which is always strict, so the module body is compiled with the
-// Function constructor to get sloppy semantics back. The helper lives on Q
-// because the procgen function signature shadows D with its data argument.
-Q.S = (filename, code) => D(filename, (require, exports, module) => {
-    const fn = Function(
-        'require', 'exports', 'module', 'getRegExp', 'getDate', '__wxsCtor',
-        '//# sourceURL=wxs://' + filename + '\\n' + __wxsTransform(code),
-    );
-    fn(require, exports, module, getRegExp, getDate, __wxsCtor);
-})
-// WXS event handlers take the owning component descriptor as their second
-// argument, and legacy WXS reads the same object from event.instance. The
-// wrapper only rewrites listeners whose value comes from a WXS module
-// (generalLvaluePath), so plain bindtap bindings stay untouched.
-Q.C = (elem, evName, listener, final, mutated, capture, lvaluePath) => {
-    const host = typeof globalThis === 'undefined' ? undefined : globalThis.__tinyWxsEventHost;
-    const wantsDescriptor = Boolean(lvaluePath) && Boolean(host);
-    // Mirror glass-easel's default wrapper: it binds "this" to the host's
-    // method caller, and replacing it without doing the same detaches page
-    // methods from their component (this.data becoming undefined).
-    return function (event) {
-        const owner = elem.ownerShadowRoot;
-        const caller = owner && owner.getHostNode ? owner.getHostNode().getMethodCaller() : undefined;
-        if (!wantsDescriptor) return listener.call(caller, event);
-        const descriptor = host.descriptorFor(elem);
-        if (descriptor && event && typeof event === 'object' && event.instance === undefined) {
-            event.instance = descriptor;
-        }
-        return listener.call(caller, event, descriptor);
-    };
-}`
 
 function runtimeFns(w: JsFunctionScopeWriter, needWxsRuntime: boolean): void {
   for (const [k, v] of RUNTIME_ITEMS) {
@@ -189,14 +46,14 @@ function runtimeFns(w: JsFunctionScopeWriter, needWxsRuntime: boolean): void {
       ww.write(`${k}:${v}`)
     }
     if (needWxsRuntime) {
-      for (const [k, v] of WXS_RUNTIME_ITEMS) {
+      for (const [k, v] of EVENT_FILTER_RUNTIME_ITEMS) {
         ww.write(`,${k}:${v}`)
       }
     }
     ww.write('}')
   })
   if (needWxsRuntime) {
-    w.customStmtStr(WXS_RUNTIME)
+    w.customStmtStr(wxsRuntimeSource)
   }
 }
 
