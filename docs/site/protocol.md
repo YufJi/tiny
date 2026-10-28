@@ -273,18 +273,21 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | runtime | `bootstrap` | control | host → render | 创建 TreeRenderer 并等待 tree.flow |
 | runtime | `inspectTree` | control | host/devtool → render | 返回渲染树 InspectNode |
 | runtime | `resize` | control | host → service | 更新窗口快照并触发页面 resize |
+| runtime | `themeChange` | control | host → service | 转发宿主深浅色主题，触发 `wx.onThemeChange` |
 | page | `ready` | control | host → service | 首屏同步后触发 onReady |
 | page | `navigateTo` | control | host → service | 创建新页逻辑树，返回 pageId/path/initialData |
 | page | `navigateBack` | control | host → service | 移除页面，恢复栈顶 |
 | page | `redirectTo` / `reLaunch` | control | host → service | 替换或重置页面栈 |
 | page | `switchTab` | control | host → service | 切换 tabBar 页面并复用缓存 |
 | page | `show` / `hide` | control | host → service | 应用和页面前后台生命周期 |
-| page | `scroll` / `reachBottom` | event | render → service | 页面滚动和触底回调 |
-| page | `share` / `saveExitState` / `pullDownRefresh` | control | host → service | 页面分享、退出状态和下拉刷新 |
+| page | `scroll` / `reachBottom` / `pullDownRefresh` | event | render → service | 页面滚动、触底和下拉手势 |
+| page | `share` / `saveExitState` / `pullDownRefresh` | control | host → service | 页面分享、退出状态和下拉刷新 API |
 | tree | `flow` | event | service → render | 首屏 component flow |
 | tree | `snapshot` | event | service → render | 完整虚拟节点快照 |
 | tree | `patch` | event | service → render | 虚拟节点增量 patch |
+| tree | `animate` / `clearAnimate` | event | service → render | `this.animate` 关键帧与取消 |
 | tree | `event` | event | render → service | 渲染树事件回传逻辑树 |
+| tree | `hostAction` | event | render → host | 内置组件主动导航（navigator） |
 | tree | `ready` | event | host → service | 请求首屏 flow |
 | tree | `inspectTree` | control | host/devtool → render | 导出渲染树元素树 |
 | tree | `measure` | control | service → render | 按 node id 测量矩形 |
@@ -298,18 +301,15 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | api | `navigate.to/back/switchTab` | call | service → host | 宿主协调 service 和 render 完成导航 |
 | api | `*` | call | service → host | apiHandlers 注入的任意宿主 API |
 
-:::callout{title="data.setData 是旧路径，不要作为新宿主依赖" tone="warn"}
-service 里还保留旧的 `data.setData` 发送代码，但双侧树的渲染树不消费它；模板更新以 `tree.patch` 为准。新宿主只需要实现 tree/query/canvas 域，不要基于 `data.setData` 实现渲染。
-:::
-
 ## 宿主如何转发消息 {#relay kicker="转发"}
 
 转发不是透明的：宿主会重新创建消息、选择目标连接，有时还要把 call 变成 control。
 
 | 来源 | 收到 | 宿主处理 | 发出 |
 | --- | --- | --- | --- |
-| service | `tree.flow` / `tree.snapshot` / `tree.patch` | 按 pageId 找渲染树连接，未就绪时先排队 | render 对应 tree 消息 |
+| service | `tree.flow` / `tree.snapshot` / `tree.patch` / `tree.animate` | 按 pageId 找渲染树连接，未就绪时先排队 | render 对应 tree 消息 |
 | render | `tree.event` | 补上 pageId 后转发 | service `tree.event` |
+| render | `page.scroll` / `page.reachBottom` / `page.pullDownRefresh` | 补上 pageId 后转发 | service `page` 事件 |
 | render | `query.intersection` | 按 pageId 转发 | service `query.intersection` |
 | service | `query.select` / `canvas.measure` | 把调用 Promise 转给渲染树 | render 对应 control |
 | host | `tree.ready` | 通知 service 发送首屏 flow | service `tree.flow` |

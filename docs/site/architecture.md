@@ -198,46 +198,82 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
 
 ## service 和 render 没有直连 {#channels kicker="消息转发"}
 
-所有跨线程消息都经过宿主的两条 BridgeConnection。宿主负责转发，也是唯一能同时看到两侧状态的地方。
+所有跨线程消息都经过宿主的两条 BridgeConnection。宿主不是透明管道：它按 pageId 路由、在页面还没打开时排队、把请求代理到渲染树，还自己处理宿主 API 和诊断。
 
 ```text
-                    +---------------- host ----------------+
-                    | createTinyRuntime(options)           |
-                    |                                      |
-                    |  BridgeConnection(host <-> service)  |
-                    |  BridgeConnection(host <-> render)   |
-                    |  HostApiRegistry                     |
-                    |  HostDiagnosticStore                 |
-                    +--------------+------------+----------+
-                                   |            |
-                          MessageChannel   MessageChannel
-                                   |            |
-                    +--------------v--+  +------v-----------+
-                    |  service iframe |  |  render iframe   |
-                    |                 |  |                  |
-                    | pages / data    |  | glass-easel tree |
-                    | wx API / canvas |  | DOM / styles     |
-                    +-----------------+  +------------------+
+                     +------------------- host --------------------+
+                     | createTinyRuntime(options)                  |
+                     |                                             |
+                     |  BridgeConnection(host <-> service)         |
+                     |  BridgeConnection(host <-> render) × 每页    |
+                     |  pageId → render 连接 + 待发队列              |
+                     |  HostApiRegistry / HostDiagnosticStore     |
+                     +------+--------------------------+----------+
+                            |                          |
+                     MessageChannel             MessageChannel
+                            |                          |
+                  +---------v---------+      +---------v---------+
+                  |   service iframe  |      |   render iframe   |
+                  | 逻辑树 / 页面栈     |      |  渲染树 / DOM      |
+                  +---------+---------+      +---------+---------+
+                            ^                          ^
+                            |   window.postMessage     |
+                            +--- 端口交接 / canvas transferable ---+
+                                     （不承载业务协议）
 
                         service 和 render 之间没有直连通道
 ```
 
-| 消息 | 方向 | 宿主处理 | 用途 |
+### 转发、代理、终结、发起
+
+宿主对消息有四种处理方式，决定了这条链路要等几次往返。
+
+```text
+转发（event，host 重新封装后立即发给另一侧）
+  service ── tree.flow / tree.snapshot / tree.patch / tree.animate ──► host ──► render
+  service ◄── tree.event ───────────────────────────────────────────── host ◄── render
+  service ◄── page.scroll / reachBottom / pullDownRefresh ──────────── host ◄── render
+
+代理（call/control，host 等渲染树回包后再回 service）
+  service ── query.select / query.intersection / canvas.measure ──► host ──► render
+  service ◄──────────────── reply ───────────────────────────────── host ◄── reply
+
+终结（host 自己处理，不再转发）
+  service ── api.* ─────────────────────────────────► HostApiRegistry
+  render  ── tree.hostAction ───────────────────────► navigate.* handler
+  service/render ── diagnostic.* ───────────────────► HostDiagnosticStore
+
+发起（host 主动驱动两侧）
+  host ── runtime.bootstrap / page.ready / page.navigateTo ──► service
+  host ── runtime.bootstrap / runtime.inspectTree ──────────► render
+```
+
+| 消息 | 路径 | 宿主处理 | 用途 |
 | --- | --- | --- | --- |
-| `tree.flow` | service → render | 按 pageId 转发 | 首屏 component flow：define、create-node、props、children、ready |
-| `tree.snapshot` | service → render | 按 pageId 转发 | 完整虚拟节点快照；渲染树保留该入口 |
-| `tree.patch` | service → render | 按 pageId 转发 | 模板更新：text、replace、props、insert、remove、reorder、extra |
-| `tree.event` | render → service | 按 pageId 转发 | 事件带上 node id、name、detail、native、touches |
-| `tree.ready` | host → service | 宿主在 render 挂载后发送 | 请求逻辑树发送首屏 flow |
-| `query.select` | service → host → render | 把 call 转给渲染树 | selector query 在真实 DOM 中查节点，返回 rect/dataset/scroll |
-| `query.intersection` | service ↔ render | 转发 observe/unobserve 和 entry | 页面/组件级 IntersectionObserver |
-| `canvas.measure` | service → render | 把 call 转给宿主 | 测量 canvas 节点 |
-| `canvas` handoff | service ↔ render | 浏览器宿主用 postMessage 中继 OffscreenCanvas | 2D/WebGL/RAF 画布共享，不再走 PNG 帧 |
-| `api.*` | service → host | HostApiRegistry 查 handler | 导航、toast、storage 等由宿主提供语义 |
-| `diagnostic.*` | service/render → host | 写入诊断仓库 | 不回传另一侧，devtool 从宿主读取 |
+| `tree.flow` · `tree.snapshot` · `tree.patch` | service → host → render | 按 pageId 转发；目标页还没打开时先入队 | 首屏 component flow、完整快照、虚拟节点 patch |
+| `tree.animate` · `tree.clearAnimate` | service → host → render | 按 pageId 转发 | `this.animate` / `clearAnimate` 的关键帧 |
+| `tree.event` | render → host → service | 按 pageId 转发 | 事件带 node id、name、detail、native、touches |
+| `tree.ready` | host → service | render bootstrap 完成后由宿主发送 | 请求逻辑树发送首屏 flow |
+| `query.select` | service → host → render → host → service | 两次 RPC | selector query 在真实 DOM 中查节点，返回 rect/dataset/scroll |
+| `query.intersection` | service → host → render；entry 反向 render → host → service | 代理 observe/unobserve，再转发回调 | 页面/组件级 IntersectionObserver |
+| `canvas.measure` | service → host → render → host → service | 把 call 转给渲染树 | 测量 canvas 节点 |
+| `canvas` handoff | service → host → render → host → service | 只中继 transferable，不解析 | 把 OffscreenCanvas 交给 service；之后直接绘制 |
+| `api.*` | service → host | `HostApiRegistry` 查 handler；`navigate.*` 会再 control service | 导航、toast、storage、request 等宿主语义 |
+| `page.scroll` · `page.reachBottom` · `page.pullDownRefresh` | render → host → service | 按 pageId 转发 | 页面滚动、触底和下拉手势——render 文档才是页面的滚动容器 |
+| `page.ready` · `page.navigateTo` · `page.navigateBack` · `page.switchTab` · `page.redirectTo` · `page.reLaunch` · `page.pullDownRefresh` · `page.share` · `page.saveExitState` · `page.hide` · `page.show` | host → service | 宿主发起 | 页面栈和生命周期由 service 执行，宿主负责开/关 render 页面 |
+| `runtime.bootstrap` · `runtime.resize` · `runtime.themeChange` | host → service | 宿主发起 | 启动、窗口尺寸、主题 |
+| `diagnostic.*` | service/render → host | 写入 `HostDiagnosticStore` | 不回传另一侧，devtool 从宿主读取 |
+
+:::callout{title="首屏 flow 会先于 render 到达"}
+service 在 `runtime.bootstrap` 里就发出首屏 `tree.flow`，而 render 页面要等 bootstrap 返回 pageId 之后才会被宿主创建。宿主把这段窗口期的消息放进待发队列（最多 16 页），页面打开后按顺序 flush；没有 pageId 或队列溢出会记 `RENDER_SESSION_MISSING`，而不是静默丢弃。
+:::
 
 :::callout{title="导航为什么要经过宿主"}
 service 只知道页面栈，render 只知道组件树。一次 `navigateTo` 必须由宿主先让 service 创建页面并返回 pageId/initialData，再让 render 卸载旧页、挂载新页。只有宿主同时持有两侧的连接。
+:::
+
+:::callout{title="canvas 不是第二条通道"}
+唯一的“点对点”是 `OffscreenCanvas` 对象移交：render 在 iframe 内执行 `transferControlToOffscreen()`，宿主把它作为 transferable 转给 service。移交完成后 service 直接持有控制面，绘制不再产生任何跨线程消息——这也是它和普通消息链路的区别。
 :::
 
 ## 状态应该放在哪一层 {#ownership kicker="状态归属"}
