@@ -10,7 +10,7 @@ import { discoverTestApps, toRegistryEntry } from './devtool-apps.mjs'
  * The site is deployed to a GitHub Pages project path, so the devtool cannot
  * reuse `apps/devtool/static/runtime` or publish under `/`. This script:
  *
- *   1. compiles every fixture under `tests/apps` (or the subset named by
+ *   1. compiles the fixtures the launcher lists (or the subset named by
  *      `TINY_SITE_DEVTOOL_APPS`),
  *   2. strips generated source maps and their manifest references,
  *   3. builds the devtool with relative production URLs,
@@ -18,8 +18,8 @@ import { discoverTestApps, toRegistryEntry } from './devtool-apps.mjs'
  *      (`website/.cache/site-public/devtool`), which Vite publishes verbatim
  *      at `dist/devtool/`.
  *
- * The embedded panel still boots the real dual-thread runtime. By default the
- * site ships every fixture so the app selector matches `pnpm dev:devtool`.
+ * The embedded panel still boots the real dual-thread runtime and ships the
+ * same fixtures as `pnpm dev:devtool`.
  */
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')

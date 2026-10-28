@@ -1362,10 +1362,12 @@ export async function runDevtoolAcceptance({ baseUrl }) {
 
   let currentStep = 'start'
   try {
-    // `tests/apps/demo` stays in the P0 gate but is hidden from the launcher.
-    const fixtures = discoverTestApps().filter((fixture) => fixture.devtool)
+    // The launcher ships every fixture; only the CI-built public site hides
+    // the local-only P0 demo.
+    const fixtures = discoverTestApps()
     assert.ok(fixtures.length > 0, 'no tests/apps fixtures were discovered')
     const expectedText = {
+      demo: 'Tiny Glass-easel P0',
       mini: 'Learning Javascript',
       todo: 'Use Redux',
       'wechat-demo': '视图容器',

@@ -30,7 +30,7 @@ pnpm accept:glass-easel 是唯一完整的端到端入口，任何单个包的�
 | mini 流程 | 重新编译 tests/apps/mini 覆盖 generated；10 步：真实 todos、双组件实例、import/include/template、输入、ECharts、子包、warning 和零错误。 | `runMiniProgramAcceptance()` |
 | Taro 3 流程 | 编译 tests/apps/todo 的预构建产物；6 步：Redux todos、Enter 新增、勾选、筛选、清空和零错误。 | `runTaroAcceptance()` |
 | WeChat demo 流程 | 编译官方示例子集；9 步：组件索引、button 页、storage API 页、swiper/navigator/WXS 交互和零错误。 | `runWechatDemoAcceptance()` |
-| 调试器流程 | 把全部 tests/apps 编到 devtool static，再用 rspack 启动；9 步：默认应用列表、点击启动、状态投影、渲染、导航/返回、逐应用预览与 3 个应用 LRU 保活、回到列表/深链/页面栈上限/Reload/Close app、零错误；渲染树由 `createGlassRenderEntry` 创建。 | `runDevtoolAcceptance()` |
+| 调试器流程 | 把 tests/apps 下的全部应用编到 devtool static，再用 rspack 启动；9 步：默认应用列表、点击启动、状态投影、渲染、导航/返回、逐应用预览与 3 个应用 LRU 保活、回到列表/深链/页面栈上限/Reload/Close app、零错误；渲染树由 `createGlassRenderEntry` 创建。 | `runDevtoolAcceptance()` |
 :::
 
 :::callout{title="各阶段会覆盖 generated"}
