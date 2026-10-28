@@ -66,6 +66,7 @@ pnpm dev:devtool             # debugger on :8080 (watches every tests/apps fixtu
 pnpm compile:glass-easel     # compile tests/apps/demo -> tests/host/generated
 pnpm compile:devtool:all     # compile every tests/apps fixture for the debugger
 pnpm compile:wechat-demo     # compile the WeChat component/API subset
+pnpm parity:probe            # compile tests/apps/wechat-demo and probe every page in headless Chrome
 pnpm dev:wechat-demo         # WeChat demo host on :5174
 pnpm check:runtime-purity    # assert the core runtime has no host globals
 pnpm lint                    # Biome (bridge only is configured today)
@@ -105,6 +106,13 @@ The end-to-end gate is `pnpm accept:glass-easel`:
 `SKIP_BROWSER=1`, `TINY_ACCEPT_PORT`, `TINY_DEVTOOL_PORT`, and `HEADED=1`
 control the gate. It requires a Chromium browser (`playwright-core` with system
 Chrome, or `PLAYWRIGHT_CHROMIUM_PATH`).
+
+`pnpm parity:probe` (117 pages) is a separate diagnostic, not part of the gate:
+it compiles `tests/apps/wechat-demo`, serves `tests/host` on port 5198 and
+records boot state, visible text, page errors and diagnostics per page into
+`tests/host/generated/parity-report.json`. Reuse a running host with
+`TINY_PROBE_BASE_URL=...`; `--limit`/`--only` narrow the run. It rewrites
+`tests/host/generated`, so never run it alongside the gate.
 
 ## Repository conventions
 

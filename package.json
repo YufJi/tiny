@@ -22,6 +22,7 @@
     "site:build": "pnpm site:devtool && pnpm --filter @tiny/website build",
     "site:preview": "pnpm --filter @tiny/website preview",
     "compile:wechat-demo": "node scripts/compile-mini.mjs tests/apps/wechat-demo tests/host/generated",
+  "parity:probe": "node scripts/parity-probe.mjs",
     "dev:wechat-demo": "pnpm compile:wechat-demo && pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --port 5174",
     "check:runtime-purity": "node scripts/check-runtime-purity.mjs"
   },
