@@ -1,6 +1,6 @@
 # 微信 WebView 版功能对齐度分析
 
-> **快照**：2026-10-28（第十六次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
+> **快照**：2026-10-28（第十七次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
 >
 > **结论**：加权功能对齐约 **49.3%（47–51%）**；页面启动率 92.3%；生产可替换 < 20%
 >
@@ -14,7 +14,7 @@
 - 能力结构仍然偏科：**编译/渲染约 75%，框架约 86%，内置组件约 55%，平台 API 约 14%，页面形态约 25%**。
 - 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent`、`generics`、`definitionFilter`、`pureDataPattern` 均已落地，Component-as-page 也接入了同一套核心语义；UI 库的核心语义障碍基本移除，剩余缺口主要是 npm 构建、`componentPlaceholder` 与内置 behaviors。
 - 内置组件已完成宿主迁移、P0 视觉重写和 P1 内部结构收口：24 个标签为真实 `tiny-*` 宿主，采用 Flat DOM + scoped CSS 隔离公开宿主与私有内部实现；checkbox/radio/switch/slider/icon/image/picker/picker-view 已按 2.7.0 参考实现重写；input/textarea/button/form 完成 wrapper/分支/语义补强，scroll-view 接受 native 滚动近似。
-- 仓库内置的微信官方 demo 子集（117 页）中，**108 页能启动（92.3%）**，104 页有可见文本；canvas 2D/WebGL 两页已修复，但启动率仍是“能挂载”，不是“功能对齐”。
+- 仓库内置的微信官方 demo 子集（117 页）中，**108 页能启动（92.3%）**，108 页有可见文本；canvas 2D/WebGL 两页已修复，但启动率仍是“能挂载”，不是“功能对齐”。
 - 路由补齐 `redirectTo` / `reLaunch`，页面生命周期补齐下拉刷新、分享和 `onSaveExitState`，应用生命周期补齐 `onError` / `onPageNotFound` / `onUnhandledRejection` / `onThemeChange`。
 - 普通业务小程序最依赖的 `wx.login`、`wx.requestPayment`、媒体/文件/定位等平台 API 仍未实现；内置导航栏/tabBar 已在 devtool 宿主落地并接入 `switchTab`，但自定义 tabBar、分享菜单 UI、页面转场仍缺。
 - 一句话：**组件语义、路由和生命周期这条线已经基本补齐，平台 API 和页面形态仍是决定“能否替换微信运行时”的主要短板。**
@@ -96,7 +96,7 @@
 | 已统计组件事件 | 46 | 44 | 95.7% |
 | app.json 关键字段 | 20+ | 4 | ≈20% |
 
-> API 的 70 个 = 68 个 core service API + 2 个宿主扩展（`getMenuButtonBoundingClientRect`、`getPerformance`）；不含命名空间、同步/异步别名去重后的额外条目。
+> API 的 71 个 = 69 个 core service API + 2 个宿主扩展（`getMenuButtonBoundingClientRect`、`getPerformance`）；不含命名空间、同步/异步别名去重后的额外条目。
 >
 > 自定义组件核心语义本次盘点 **11 / 12**：已实现 behaviors、observers、relations、externalClasses、styleIsolation/addGlobalClass、selectComponent/selectAll/selectOwner、multipleSlots/virtualHost、component-export/export、generics（`componentGenerics` + `generic:`）、definitionFilter、pureDataPattern；仍缺 `componentPlaceholder`（异步占位；当前编译是 eager，不会被触发）。该口径只统计核心 12 项，不含 trait/chaining、内置 `wx://form-field`、Component-as-page 等边缘项；不参与上面的加权总分。
 
@@ -121,10 +121,10 @@
 | 无障碍 | 1 | 0 | aria-component |
 | 导航栏 | 1 | 0 | navigation-bar |
 | 页面属性 | 1 | 0 | page-meta |
-| **合计** | **60** | **23** | |
+| **合计** | **60** | **24** | |
 
 **已实现组件**（[tags.ts](../hosts/web-components/src/tags.ts:1)）：
-`view`、`text`、`button`、`label`、`input`、`checkbox`、`checkbox-group`、`radio`、`radio-group`、`icon`、`image`、`scroll-view`、`slider`、`progress`、`switch`、`swiper`、`swiper-item`、`canvas`、`textarea`、`form`、`picker`、`picker-view`、`picker-view-column`。
+`view`、`text`、`button`、`label`、`input`、`checkbox`、`checkbox-group`、`radio`、`radio-group`、`icon`、`image`、`scroll-view`、`slider`、`progress`、`switch`、`swiper`、`swiper-item`、`canvas`、`textarea`、`form`、`picker`、`picker-view`、`picker-view-column`、`navigator`。
 
 > 逐组件的当前状态/剩余问题见 [component-reference-diff.md](./component-reference-diff.md)；历史差异审计与修复方案见 [component-reference-history.md](./archive/component-reference-history.md)。
 
@@ -152,7 +152,7 @@
 | view | 4 | 4 | 0 | 0 | hover 默认 none；shared `wx-hover` |
 | **合计（18 个已统计组件）** | **146** | **120（82.2%）** | **46** | **44（95.7%）** | |
 
-> `textarea` / `form` / `picker` / `picker-view` / `picker-view-column` 已计入标签数，但属性/事件明细尚未并入上表；因此 146 是这 18 个组件的文档条目之和，不是 24 个组件的全量分母。
+> `textarea` / `form` / `picker` / `picker-view` / `picker-view-column` / `navigator` 已计入标签数，但属性/事件明细尚未并入上表；因此 146 是这 18 个组件的文档条目之和，不是 24 个组件的全量分母。
 >
 > 当前剩余项：`input`/`textarea` 的原生键盘属性、`button` 的 native/open-type、`form` 的真实上报、`picker` 的 region；`scroll-view` 接受 native 滚动近似，不再列为待修复。
 
@@ -435,7 +435,7 @@ getMenuButtonBoundingClientRect / getPerformance
 ### 6.5 真实兼容证据
 
 - Taro 3 React 产物（todo）能跑：`webpackJsonp`、递归模板、外部 WXS、Redux 列表均通过
-- 微信官方 demo 子集 108/117 页能挂载，104 页有可见文本
+- 微信官方 demo 子集 108/117 页能挂载，108 页有可见文本
 - ECharts 通过 service 离屏 canvas → PNG 帧 → render `drawImage` 跑通
 - 内置组件、页面样式、`app.wxss` 作用域在验收中有真实断言
 - P0 新增 5 步组件语义验收：Behavior/observer、styleIsolation 矩阵、externalClasses、relations、selectComponent
@@ -585,6 +585,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-28 | 宿主去掉隐式“当前页”：`inspectTree` / `pullDownRefresh` / `share` / `saveExitState` / `setTheme` 改为显式 `pageId`，runtime 不再持有 `activePageId` 或猜页；未连接页的 tree 消息仍按页暂存（service 在 bootstrap 内就会发首帧 flow，协议上必须缓冲），打开时投递、关闭时丢弃，超过 16 页上限或无 pageId 的页面级消息报 `RENDER_SESSION_MISSING`；帧可见性仍由宿主 connector 持有 | **49.33%** |
 | 2026-10-28 | 宿主收敛为单一 render 连接方式：删除 `renderTransport` / `primaryRender` 单连接模式，`RuntimeHostOptions` 只接受 `renderConnector`；25 处 runtime 单测改用内存 connector（`connect`/`activate`/`disconnect` 从此进单测，覆盖与浏览器宿主相同拓扑）；同时清掉 render bootstrap 的死 payload（`manifest`/`initialData`/`styleMode`/`componentSchemas`/`pageComponents`）、恒空的 `components` 回传链、`flushRenderEvents` 的 canvas 重复分支与过宽的 `domain` 联合、`getRenderConnection` 的插入序兜底；245 单测 / 54 步 | **49.33%** |
 | 2026-10-28 | 第十六次校准：内核收尾——WXS 改为宽松求值（`Q.S` + `Function`，修掉 ESM 严格模式下的隐式全局 `ReferenceError` 与内联 `<wxs>` 的 `D is not a function`）、`this.animate`/`clearAnimate`、`wx.createIntersectionObserver`、`tree.event` 的 target/currentTarget 几何；117 页探针固化为 `pnpm parity:probe`；117 页 108 启动、108 可见、9 失败（全部平台 API），WXS/animate/intersection 失败清零；237 单测 / 53 步；总分 48.90→49.16 | **49.16%** |
+| 2026-10-28 | 第十七次校准：WXS ComponentDescriptor、connector-only render 连接、显式 pageId 宿主动作、死代码清理；117 页探针复跑 108 启动、108 可见、9 失败（全部平台 API）；246 单测 / 55 步；总分保持 49.33 | **49.33%** |
 ---
 
 ## 附录 A：117 页失败明细

@@ -29,7 +29,7 @@ pnpm accept:glass-easel 是唯一完整的端到端入口，任何单个包的�
 | P0 demo 流程 | 21 步：启动、渲染、作用域样式、快照、自定义事件、checkbox/slider/switch、导航、输入、storage、toast、组件语义、样式隔离、按钮矩阵、relations、canvas 诊断和零 console error；同时覆盖逻辑树的首屏 flow 和 patch 更新。 | `runBrowserAcceptance({ baseUrl })` |
 | mini 流程 | 重新编译 tests/apps/mini 覆盖 generated；10 步：真实 todos、双组件实例、import/include/template、输入、ECharts、子包、warning 和零错误。 | `runMiniProgramAcceptance()` |
 | Taro 3 流程 | 编译 tests/apps/todo 的预构建产物；6 步：Redux todos、Enter 新增、勾选、筛选、清空和零错误。 | `runTaroAcceptance()` |
-| WeChat demo 流程 | 编译官方示例子集；6 步：组件索引、button 页、storage API 页和零错误。 | `runWechatDemoAcceptance()` |
+| WeChat demo 流程 | 编译官方示例子集；9 步：组件索引、button 页、storage API 页、swiper/navigator/WXS 交互和零错误。 | `runWechatDemoAcceptance()` |
 | 调试器流程 | 把全部 tests/apps 编到 devtool static，再用 rspack 启动；9 步：默认应用列表、点击启动、状态投影、渲染、导航/返回、逐应用预览与 3 个应用 LRU 保活、回到列表/深链/页面栈上限/Reload/Close app、零错误；渲染树由 `bootGlassRenderEntry` 创建。 | `runDevtoolAcceptance()` |
 :::
 
@@ -75,7 +75,7 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 | `@tiny/template-compiler` | 33 | 脚本依赖、WXS、import/include、模板别名、ProcGen 签名、绑定表复用、事件简写、data-* 绑定、stringify 往返 |
 | `@tiny/stylesheet-compiler` | 36 | class/tag 前缀、rpx/calc、@import 编码和包装、@layer、:host 低优先级、hostAttribute、keyframes、page 根节点 |
 | `@tiny/cli` | 18 | manifest 全产物、兼容输入配置、WXS 双注册、配置合并、service/templates 入口、TS/source map、样式 role、tag marker |
-| `@tiny/host-web-components` | 39 | 23 个 tag 模板、共享 behaviors、button 对齐、label、input、checkbox/slider/switch、progress/swiper/icon、image/icon 渲染 |
+| `@tiny/host-web-components` | 39 | 24 个 tag 模板、共享 behaviors、button 对齐、label、input、checkbox/slider/switch、progress/swiper/icon、image/icon 渲染 |
 | `@tiny/runtime` | 110 | 全局安装和命名、双线程 bootstrap、逻辑树、tree protocol/patch diff、headless renderer、组件 schema、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、API host、诊断、WXS 宽松求值、`this.animate`、事件冒泡/几何 |
 
 :::callout{title="单测也会跑真实连接"}
