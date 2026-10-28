@@ -47,13 +47,29 @@ Accepted and implemented. Merged into `next` as #27 (`1ac6d3a`), originally on
   the render tree, web hosts resolve them with DOM `IntersectionObserver`, and
   entries return through `query.intersection` to the logic tree. Page and
   component `this.createIntersectionObserver` / `this.createSelectorQuery` are
-  wired.
+  wired, and `wx.createIntersectionObserver(component?, options?)` resolves to
+  the same page/component-scoped observer.
+- `this.animate` / `this.clearAnimate` (alias `clearAnimation`) resolve the
+  selector in the logic tree and send normalized keyframes over
+  `tree.animate`; web hosts play them with the Web Animations API. Scroll-driven
+  timing (`scrollSource`) runs as a timed animation and reports
+  `ANIMATION_SCROLL_DRIVEN_APPROXIMATED`.
+- WXS modules run as sloppy script: the template bundle is an ES module (always
+  strict), so the compiler emits module bodies as strings and evaluates them
+  through `Q.S` (`Function`-compiled) instead of inlining arrow functions. This
+  also fixes inline `<wxs>` shadowing the `D` module registry with the procgen
+  data argument.
+- Events carry measured `offsetLeft` / `offsetTop` / `offsetWidth` /
+  `offsetHeight` on the dispatched node so handlers can read
+  `event.currentTarget.offsetLeft` synchronously.
 
 ### Known gaps against the reference protocol
 
-- `tree.event` carries `id` / `name` / `detail` / native fields and touches, but
-  not a target geometry object; the service resolves the logic node (dataset and
-  ids) when dispatching.
+- `tree.event` carries `id` / `name` / `detail` / native fields, touches and
+  `target` / `currentTarget` geometry (`offsetLeft` / `offsetTop` /
+  `offsetWidth` / `offsetHeight`). Dispatch still targets the binding node, so
+  nested `target` semantics remain approximate: both objects resolve to the
+  node that owns the handler.
 - `createNativeTreeRenderer` is a contract plus headless smoke tests; no native
   host implementation ships in this repository. Native hosts must implement
   `observeIntersection` to support intersection observers.
@@ -62,9 +78,9 @@ Accepted and implemented. Merged into `next` as #27 (`1ac6d3a`), originally on
 
 ## Context
 
-Tiny currently runs glass-easel in the render thread. Render evaluates WXML/WXS,
-owns properties, dataset and the DOM, while the service thread keeps page and
-component JavaScript state. This causes the known compatibility gaps:
+Tiny used to run glass-easel in the render thread: render evaluated WXML/WXS,
+owned properties, dataset and the DOM, while the service thread kept page and
+component JavaScript state. That split caused the compatibility gaps:
 
 - dataset values lose their types when read back from DOM nodes;
 - function-valued properties cannot cross the bridge;

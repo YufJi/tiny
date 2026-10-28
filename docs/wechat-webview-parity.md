@@ -1,8 +1,8 @@
 # 微信 WebView 版功能对齐度分析
 
-> **快照**：2026-10-28（第十五次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
+> **快照**：2026-10-28（第十六次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
 >
-> **结论**：加权功能对齐约 **48.9%（47–51%）**；页面启动率 92.3%；生产可替换 < 20%
+> **结论**：加权功能对齐约 **49.2%（47–51%）**；页面启动率 92.3%；生产可替换 < 20%
 >
 > **维护**：功能完成后更新本文的评分表、覆盖表、实测数据和变更记录
 
@@ -10,7 +10,7 @@
 
 ## 1. 结论摘要
 
-- 按微信 WebView 版全量能力计算，当前引擎约完成 **一半**：加权得分 **48.90%**。
+- 按微信 WebView 版全量能力计算，当前引擎约完成 **一半**：加权得分 **49.16%**。
 - 能力结构仍然偏科：**编译/渲染约 75%，框架约 86%，内置组件约 55%，平台 API 约 14%，页面形态约 25%**。
 - 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent`、`generics`、`definitionFilter`、`pureDataPattern` 均已落地，Component-as-page 也接入了同一套核心语义；UI 库的核心语义障碍基本移除，剩余缺口主要是 npm 构建、`componentPlaceholder` 与内置 behaviors。
 - 内置组件已完成宿主迁移、P0 视觉重写和 P1 内部结构收口：23 个标签为真实 `tiny-*` 宿主，采用 Flat DOM + scoped CSS 隔离公开宿主与私有内部实现；checkbox/radio/switch/slider/icon/image/picker/picker-view 已按 2.7.0 参考实现重写；input/textarea/button/form 完成 wrapper/分支/语义补强，scroll-view 接受 native 滚动近似。
@@ -71,15 +71,15 @@
 | 维度 | 权重 | 完成度 | 加权 | 关键依据 |
 | --- | ---: | ---: | ---: | --- |
 | 编译/构建 | 10% | 75% | 7.50 | WXML/WXSS/WXS 基本完整；app.wxss 的 tag/class 规则可作用到页面与内置宿主；app.json 只消费少量字段；无 npm 构建、无 TS 类型检查 |
-| 框架运行时 | 18% | 86% | 15.48 | 14/14 页面生命周期、7/7 应用生命周期、5/5 路由；generics/definitionFilter/pureDataPattern 已接；tab 页缓存、group/label/touchtrack/scroller 基础保持；componentPlaceholder 未接 |
+| 框架运行时 | 18% | 87% | 15.66 | 14/14 页面生命周期、7/7 应用生命周期、5/5 路由；generics/definitionFilter/pureDataPattern 已接；`this.animate`/`clearAnimate`、`wx.createIntersectionObserver`、事件 `target/currentTarget` 几何落地；tab 页缓存、group/label/touchtrack/scroller 基础保持；componentPlaceholder 未接 |
 | 内置组件 | 17% | 55% | 9.35 | 23/60 标签；P0 视觉完成，P1 内部结构大幅收口；canvas 2D/WebGL 已接真实 context；已统计属性 120/146、事件 44/46 |
-| wx API | 20% | 14% | 2.80 | 70/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar/switchTab/redirectTo/reLaunch/下拉刷新/IntersectionObserver 等已接或桩 |
+| wx API | 20% | 14.1% | 2.83 | 71/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar/switchTab/redirectTo/reLaunch/下拉刷新/IntersectionObserver（含 `wx.createIntersectionObserver`）等已接或桩 |
 | 页面形态 | 12% | 25% | 3.00 | devtool 宿主已实现导航栏/tabBar/页面滚动/触底/tab 页缓存，浏览器宿主已接下拉刷新手势；分享菜单 UI、页面转场、测试/生产宿主页面 chrome 仍缺，评分保守 |
 | 样式/渲染 | 8% | 76% | 6.08 | WXSS/rpx/作用域强；app.wxss tag/class 规则作用到页面与共享组件；canvas 2D/WebGL/RAF 已接，导出 API 仍缺 |
 | 宿主/平台 | 8% | 15% | 1.20 | 仅浏览器宿主；无原生/网络/登录/支付/分享 |
 | 开发工具 | 4% | 45% | 1.80 | 应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar、移动端访问提示；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 56% | 1.68 | 221 单测 + 53 步浏览器验收；新增 tabBar/视觉结构、应用列表/LRU/页面栈上限、移动端提示页断言、swiper radio 点击回归；无性能/安全/原生测试 |
-| **合计** | **100%** | — | **48.90%** | |
+| 质量/验证 | 3% | 58% | 1.74 | 237 单测 + 53 步浏览器验收 + 117 页探针脚本（`pnpm parity:probe`）；新增 WXS 宽松求值、`this.animate`、事件冒泡/几何回归；无性能/安全/原生测试 |
+| **合计** | **100%** | — | **49.16%** | |
 
 ### 条目覆盖率速览
 
@@ -87,7 +87,7 @@
 | --- | ---: | ---: | ---: |
 | 内置组件标签 | 60 | 23 | 38.3% |
 | 核心 UI 组件 | 45 | 23 | 51.1% |
-| wx API 条目 | 502 | 70 | 13.9% |
+| wx API 条目 | 502 | 71 | 14.1% |
 | 官方 demo 实际调用 API | 150 | ~35 | ~23% |
 | 页面生命周期 | 14 | 14 | 100% |
 | 应用生命周期 | 7 | 7 | 100% |
@@ -164,7 +164,7 @@
 
 ### 4.2 wx API
 
-**70 / 502 ≈ 13.9%；官方 demo 实际用到的 150 个唯一 `wx.*` 中约支持 35–36 个（~23–24%）。**
+**71 / 502 ≈ 14.1%；官方 demo 实际用到的 150 个唯一 `wx.*` 中约支持 36–37 个（~24–25%）。**
 
 能力分布：
 
@@ -319,7 +319,7 @@ Shadow DOM：
 2026-10-28 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
-- **221 个单元测试**（runtime 92 个，host-web-components 35 个）
+- **237 个单元测试**（runtime 105、stylesheet-compiler 36、host-web-components 35、template-compiler 33、cli 18、bridge 10）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
 - **53 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent，WeChat demo 覆盖 swiper radio 点击去重，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧，canvas 覆盖 2D/WebGL/legacy/ECharts
 - 门禁覆盖的 5 段流程无 console/page error（117 页探针的 pageerror 见 5.2）
@@ -333,28 +333,31 @@ Shadow DOM：
 | 指标 | 结果 |
 | --- | --- |
 | 成功挂载 | **108 / 117（92.3%）** |
-| 有可见文本 | 104 / 117 |
-| 页面级报错/崩溃 | 9 页 |
+| 有可见文本 | 108 / 117 |
+| 页面级报错/崩溃 | 9 页（全部为平台能力缺口） |
 | console error | 0 |
 
-**探针方法**：
+**探针方法**：`pnpm parity:probe`（2026-10-28 起固化为脚本，替代此前的手工步骤）。
 
-1. `pnpm compile:wechat-demo` 生成产物到 `tests/host/generated`。
-2. 启动 `tests/host` Vite 服务。
-3. Playwright 打开 `/?path=<page>`，等待 `window.__tinyRuntime`，再等 350ms。
-4. 收集 `pageerror`、`console.error`、`window.__tinyRuntime.host.diagnostics`，以及当前 active render iframe `#app` 的子节点/文本（浏览器宿主固定每页一个 render 帧）。
-5. 判定：`__tinyRuntime` 出现、`#app` 有子节点、无 pageerror = booted；否则 render-failed。
+1. `pnpm compile:wechat-demo` 生成产物到 `tests/host/generated`（脚本自动执行；`TINY_PROBE_BASE_URL` 可复用已启动的宿主，跳过编译与启服）。
+2. 在 5198 端口启动 `tests/host` Vite 服务（`TINY_PROBE_PORT` 可改）。
+3. Playwright 逐页打开 `/?path=<page>`，等待 `window.__tinyRuntime`，再 settle 350ms。
+4. 收集 `pageerror`、`console.error`、`window.__tinyRuntime.host.diagnostics`，以及 active render iframe `#app` 的子节点/文本（浏览器宿主固定每页一个 render 帧；帧被重建时重取）。
+5. 判定：`__tinyRuntime` 出现、`#app` 有子节点、无 pageerror、无 `BOOTSTRAP_ERROR` = booted；否则归类为 `NO_RUNTIME` / `SERVICE_BOOTSTRAP_ERROR` / `RENDER_BOOTSTRAP_ERROR` / `PAGE_ERROR`。
+6. 报告写入 `tests/host/generated/parity-report.json`：每页的 `booted` / `hasVisibleText` / `failureClass` / 诊断码 / 耗时，便于和下一次探针对比。
 
 **结果解读**：
 
 - 92.3% 是“能挂载”，不是“功能对齐”。
 - 108 页能启动，很大程度是因为不支持的组件降级成普通 DOM、不支持的 API 返回 `undefined` 且只发 warning、很多调用发生在点击之后。
-- 9 页失败集中在 worker、媒体/音频、平台 API、WXS 和 `this.animate`（canvas 2D/WebGL 已修复，明细见附录 A）。
-- 2026-10-26 第十三次探针：canvas 2D/WebGL handoff 后从 100/117 提升到 108/117，可见文本 104/117；仍保持 0 console error。
+- 9 页失败的根因**全部是平台能力缺口**：广告（`ad`）、音频上下文（`voice`/`audio`/`background-audio`）、摄像头帧（`ai/mobilenet*`）、旧 `wx.createContext`（`on-accelerometer-change`/`worker`）、后台预取（`get-background-prefetch-data`）。明细见附录 A。
+- WXS 语义、`this.animate`、`wx.createIntersectionObserver` 造成的失败已清零：2026-10-28 第十六次校准后，此前失败的 `scroll-view`、`bluetooth`、`intersection-observer`、`wxs/movable`、`wxs/sidebar` 全部可挂载，可见文本从 104 升到 108。
+- 探针口径也已收紧：`PAGE_ERROR`（onReady/异步回调里抛错）现在计为失败，因此附录 A 里出现了此前未列出的 5 页；它们不是新回归，而是旧探针只统计了启动阶段的 `BOOTSTRAP_ERROR`。
+- 2026-10-26 第十三次探针：canvas 2D/WebGL handoff 后从 100/117 提升到 108/117；仍保持 0 console error。
 
 ### 5.3 官方 demo API 覆盖
 
-从 `tests/apps/wechat-demo` 源码中提取到 **150 个唯一 `wx.*` 调用**，引擎约支持 **35–36 个（~23–24%）**；服务 API 总面 70/502：
+从 `tests/apps/wechat-demo` 源码中提取到 **150 个唯一 `wx.*` 调用**，引擎约支持 **36–37 个（~24–25%）**；服务 API 总面 71/502：
 
 ```text
 getSystemInfo / getSystemInfoSync / getStorageSync / setStorageSync
@@ -369,17 +372,17 @@ createAnimation / createCanvasContext / createSelectorQuery
 getMenuButtonBoundingClientRect / getPerformance
 ```
 
-其中 `login` 只是宿主 stub code，`openSetting/authorize` 还没有真实权限模型；`createCanvasContext` 已接 OffscreenCanvas handoff；`createSelectorQuery` 已支持页面/组件作用域、节点 rect/dataset 和 canvas node；`createIntersectionObserver` 仅页面/组件 `this.*` 接通 service→render，`wx.createIntersectionObserver` 仍缺；`createAnimation` 只映射最终态；`getFileSystemManager` 只有 fail stub。真正“能用”的核心 API 约 20–24 个。
+其中 `login` 只是宿主 stub code，`openSetting/authorize` 还没有真实权限模型；`createCanvasContext` 已接 OffscreenCanvas handoff；`createSelectorQuery` 已支持页面/组件作用域、节点 rect/dataset 和 canvas node；`createIntersectionObserver` 的页面/组件 `this.*` 与 `wx.*` 入口都已接通 service→render（`wx.createIntersectionObserver(component?, options?)` 会解析到同一个 page/component 作用域的 observer）；`createAnimation` 只映射最终态；`getFileSystemManager` 只有 fail stub。真正“能用”的核心 API 约 20–24 个。
 
-### 5.4 为什么“92.3% 启动”和“48.9% 对齐”不矛盾
+### 5.4 为什么“92.3% 启动”和“49.2% 对齐”不矛盾
 
 | 口径 | 回答的问题 | 结果 |
 | --- | --- | --- |
 | 启动率 | 页面能不能挂载？ | 92.3% |
-| 功能对齐 | 页面上的功能是否按微信语义工作？ | ~48.9% |
+| 功能对齐 | 页面上的功能是否按微信语义工作？ | ~49.2% |
 | 生产可替换 | 普通业务小程序能否直接上线？ | < 20% |
 
-启动率高，是因为引擎“尽量不崩”；功能对齐仍只有约 48.9%，是因为 API、页面形态和剩余组件属性/事件仍有大量缺口；组件语义、路由和生命周期补齐只把框架维度的短板抬了一部分。
+启动率高，是因为引擎“尽量不崩”；功能对齐仍只有约 49.2%，是因为 API、页面形态和剩余组件属性/事件仍有大量缺口；组件语义、路由和生命周期补齐只把框架维度的短板抬了一部分。
 
 ---
 
@@ -417,6 +420,7 @@ getMenuButtonBoundingClientRect / getPerformance
 - 页面栈、页面 query、`getCurrentPages`、`getApp`
 - `setData` 支持 `a.b[0]` 路径
 - 事件冒泡/捕获、`dataset`、`target`/`currentTarget`、自定义事件
+- `event.target`/`currentTarget` 带 `offsetLeft`/`offsetTop`/`offsetWidth`/`offsetHeight`（render 线程测量后随 `tree.event` 回传；嵌套 `target` 仍按绑定节点近似）
 - 自定义组件 properties/data/methods/lifetimes/pageLifetimes/slots
 - `behaviors` / `observers` / `relations` / `externalClasses` / `definitionFilter`
 - `styleIsolation` / `addGlobalClass` / `shared`、`selectComponent` / `selectAllComponents` / `selectOwnerComponent`
@@ -516,6 +520,9 @@ pnpm --filter @tiny/cli test
 # 编译微信官方 demo 子集
 pnpm compile:wechat-demo
 
+# 117 页探针（编译 + 启服 + 逐页 headless Chrome）
+pnpm parity:probe
+
 # 启动测试宿主（默认 P0 demo；微信 demo 可用 ?path= 指定页面）
 pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --port 5174
 ```
@@ -524,9 +531,9 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 
 1. **跑门禁**：确认单测/浏览器验收仍通过；记录测试数量与步骤数。
 2. **重数组件与组件语义**：对照[微信组件文档](https://developers.weixin.qq.com/miniprogram/dev/component/)与 [tags.ts](../hosts/web-components/src/tags.ts:1)，更新 23/60、分类表、属性/事件表；同时按第 4.5 节更新 behaviors/observers/relations/styleIsolation/selectComponent 状态。
-3. **重数 API**：对照[微信 API 索引](https://developers.weixin.qq.com/miniprogram/dev/api/)与 [service/thread.ts](../packages/runtime/src/service/thread.ts:1) + [service-thread.ts](../tests/host/src/service-thread.ts:1) 的 `apiExtensions`，更新 70/502、能力表。
+3. **重数 API**：对照[微信 API 索引](https://developers.weixin.qq.com/miniprogram/dev/api/)与 [service/thread.ts](../packages/runtime/src/service/thread.ts:1) + [service-thread.ts](../tests/host/src/service-thread.ts:1) 的 `apiExtensions`，更新 71/502、能力表。
 4. **重数生命周期/路由/配置**：对照第 4.3、4.4 节逐项打勾。
-5. **重跑 117 页探针**：按 5.2 节方法，更新启动率与失败明细；若后续把探针整理为 `scripts/parity-probe.mjs`，改用该脚本并在此处替换命令。
+5. **重跑 117 页探针**：`pnpm parity:probe`，按 `tests/host/generated/parity-report.json` 更新启动率、可见文本与失败明细。
 6. **重算总分**：更新第 3 节表格的完成度/加权分；如果权重调整，在变更记录中说明。
 7. **更新变更记录**：日期、变更摘要、新的总分。
 
@@ -574,30 +581,36 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-27 | 样式边界收口：app 全局规则按应用 marker 锚定，page-scope 模板同步保护 `*`/tag/id/裸伪类；内置组件拆分公开 host 样式与独立 `tiny-builtin-<tag>` 私有样式，降低 app/page/component 规则对内部 DOM 的穿透；`placeholder-class` 改为 external class；P0 增加全局泄漏与受控穿透断言，总分暂未重算 | **44.67%** |
 | 2026-10-27 | 第十四次同步：`generics`（componentGenerics + generic:）、`definitionFilter`、`pureDataPattern` 落地；`redirectTo`/`reLaunch`、下拉刷新、分享/收藏/退出状态回调、`onError`/`onPageNotFound`/`onUnhandledRejection`/`onThemeChange` 接入；页面生命周期 9→14/14、应用生命周期 3→7/7、路由 3→5/5、组件语义 8→11/12；runtime 83 单测，总分 44.67→48.80 | **48.80%** |
 | 2026-10-28 | 第十五次校准：IntersectionObserver 桥接、split-tree 运行路径、Vant/WeUI fixture；修正已实现但未记录的项（group 受控 value、switch type=checkbox、input placeholder-style、image lazyLoad、radio label 点击去重、页面级 query/intersection）；221 单测 / 53 步；117 页探针保持 108 启动、104 可见、9 失败；总分保持 48.90 | **48.90%** |
+| 2026-10-28 | 第十六次校准：内核收尾——WXS 改为宽松求值（`Q.S` + `Function`，修掉 ESM 严格模式下的隐式全局 `ReferenceError` 与内联 `<wxs>` 的 `D is not a function`）、`this.animate`/`clearAnimate`、`wx.createIntersectionObserver`、`tree.event` 的 target/currentTarget 几何；117 页探针固化为 `pnpm parity:probe`；117 页 108 启动、108 可见、9 失败（全部平台 API），WXS/animate/intersection 失败清零；237 单测 / 53 步；总分 48.90→49.16 | **49.16%** |
 ---
 
 ## 附录 A：117 页失败明细
 
-| 页面 | 诊断码 | 报错 |
-| --- | --- | --- |
-| `packageComponent/pages/view/scroll-view/scroll-view` | BOOTSTRAP_ERROR | `D is not a function` |
-| `packageComponent/pages/open/ad/ad` | BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'expt_args_2')` |
-| `packageAPI/pages/page/intersection-observer/intersection-observer` | BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'relativeTo')` |
-| `packageAPI/pages/device/bluetooth/bluetooth` | RENDER_BOOTSTRAP_ERROR | `D is not a function` |
-| `packageAPI/pages/media/voice/voice` | BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'onStart')` |
-| `packageAPI/pages/media/background-audio/background-audio` | BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'onPlay')` |
-| `packageAPI/pages/storage/get-background-prefetch-data/get-background-prefetch-data` | BOOTSTRAP_ERROR | `Cannot destructure property 'fetchedData' of 'res' as it is undefined.` |
-| `packageAPI/pages/framework/wxs/movable` | RENDER_BOOTSTRAP_ERROR | `lastTop is not defined` |
-| `packageAPI/pages/framework/wxs/sidebar` | RENDER_BOOTSTRAP_ERROR | `startmark is not defined` |
+口径来自 `pnpm parity:probe`（`tests/host/generated/parity-report.json`，2026-10-28 第十六次校准）。`RENDER_BOOTSTRAP_ERROR` 是探针的归类名，不是运行时诊断码；运行时只有 `BOOTSTRAP_ERROR`。
 
-失败类别汇总：
+| 页面 | 失败类 | 报错 | 缺失能力 |
+| --- | --- | --- | --- |
+| `packageComponent/pages/open/ad/ad` | SERVICE_BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'expt_args_2')` | 激励视频广告（开放能力） |
+| `packageAPI/pages/device/on-accelerometer-change/on-accelerometer-change` | PAGE_ERROR | `Cannot read properties of undefined (reading 'beginPath')` | 旧 `wx.createContext` |
+| `packageAPI/pages/media/voice/voice` | SERVICE_BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'onStart')` | 音频/录音上下文 |
+| `packageAPI/pages/media/background-audio/background-audio` | SERVICE_BOOTSTRAP_ERROR | `Cannot read properties of undefined (reading 'onPlay')` | `getBackgroundAudioManager` |
+| `packageAPI/pages/media/audio/audio` | PAGE_ERROR | `Cannot set properties of undefined (setting 'src')` | `createInnerAudioContext` |
+| `packageAPI/pages/storage/get-background-prefetch-data/get-background-prefetch-data` | SERVICE_BOOTSTRAP_ERROR | `Cannot destructure property 'fetchedData' of 'res' as it is undefined.` | 后台预取数据 |
+| `packageAPI/pages/worker/worker/worker` | PAGE_ERROR | `Cannot read properties of undefined (reading 'beginPath')` | 旧 `wx.createContext` |
+| `packageAPI/pages/ai/mobilenet/index` | PAGE_ERROR | `Cannot read properties of undefined (reading 'onCameraFrame')` | `createCameraContext` |
+| `packageAPI/pages/ai/mobilenet_int8/index` | PAGE_ERROR | `Cannot read properties of undefined (reading 'onCameraFrame')` | `createCameraContext` |
+
+失败类别汇总（全部是平台能力，不再有编译/运行时语义问题）：
 
 | 类别 | 页数 | 缺失能力 |
 | --- | ---: | --- |
-| 平台 API | 4 | 广告 expt、IntersectionObserver、蓝牙、后台预取 |
-| 媒体/音频 | 2 | 音频上下文 onStart/onPlay |
-| WXS | 2 | WXS 作用域/全局变量语义 |
-| 组件方法 | 1 | `this.animate` |
+| 媒体/音频 | 3 | `createInnerAudioContext`、`getBackgroundAudioManager`、录音上下文 |
+| 旧 canvas API | 2 | `wx.createContext`（canvas 2D node 已有，页面用的是废弃入口） |
+| 摄像头 | 2 | `createCameraContext().onCameraFrame` |
+| 开放能力 | 1 | 激励视频广告 |
+| 后台预取 | 1 | `getBackgroundPrefetchData` |
+
+**已修复（第十六次校准）**：`scroll-view`（内联 WXS 的 `D` 被 procgen data 参数遮蔽）、`bluetooth`（同）、`wxs/movable`、`wxs/sidebar`（WXS 隐式全局在 ESM 严格模式下抛 `ReferenceError`）、`intersection-observer`（缺 `wx.createIntersectionObserver`）。`this.animate` 落地后 `scroll-view` 的 onLoad 不再抛错。
 
 ---
 
@@ -657,3 +670,9 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | Devtool 应用列表 / 3 应用保活 | [runtimePanel.jsx](../apps/devtool/src/next/runtimePanel.jsx:1) |
 | 多 iframe 页面栈验收 | [glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs:941) |
 | 官方 demo 子集 | [app.json](../tests/apps/wechat-demo/app.json:1) |
+| 117 页探针 | [parity-probe.mjs](../scripts/parity-probe.mjs:1) |
+| WXS 宽松求值（`Q.S`） | [group.ts](../packages/template-compiler/src/group.ts:77) |
+| `this.animate` keyframes 归一化 | [animation.ts](../packages/runtime/src/tree/animation.ts:1) |
+| 动画下载/播放（WAAPI） | [render-tree.ts](../hosts/web-components/src/render-tree.ts:629) |
+| 事件 target/currentTarget 几何 | [render-tree.ts](../hosts/web-components/src/render-tree.ts:252) |
+| `wx.createIntersectionObserver` | [api-host.ts](../packages/runtime/src/service/api-host.ts:501) |
