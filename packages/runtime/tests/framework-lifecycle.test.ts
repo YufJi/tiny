@@ -5,7 +5,7 @@ import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { TREE_PROTOCOL } from '../src/tree/protocol'
 import { createTinyRuntime } from '../src/host'
-import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { createHarnessRenderConnector } from './helpers/render-connector'
 import { bootServiceThread, lastLogicTree } from './helpers/split-service'
 
 const PAGE_PATH = 'pages/index/index'
@@ -60,21 +60,19 @@ describe('page and app lifecycle hooks', () => {
   test('delivers pull-down, share, save-exit-state, theme and app error hooks', async () => {
     const manifest = createManifest()
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({
       transport: serviceTransport,
       manifest,
       initialPath: PAGE_PATH,
     })
-    bootRenderThread({
-      transport: renderTransport,
+    const renderConnector = createHarnessRenderConnector({
       manifest,
       artifacts: { templates: createTemplateRegistry() },
       initialPath: PAGE_PATH,
     })
     const host = createTinyRuntime({
       serviceTransport: hostServiceTransport,
-      renderTransport: hostRenderTransport,
+      renderConnector,
       manifest,
       initialPath: PAGE_PATH,
     })
@@ -137,19 +135,19 @@ describe('page and app lifecycle hooks', () => {
     await page.invokeMethod('refresh')
     expect(appEvents).toContain('pulled')
 
-    await host.pullDownRefresh()
+    await host.pullDownRefresh(page.pageId)
     expect(appEvents.filter((event) => event === 'pulled')).toHaveLength(2)
 
-    await expect(host.share('appMessage')).resolves.toMatchObject({
+    await expect(host.share(page.pageId, 'appMessage')).resolves.toMatchObject({
       status: 'shared',
       type: 'appMessage',
       handled: true,
       share: { title: 'share-title', path: '/pages/index/index?from=share' },
     })
-    await expect(host.share('timeline')).resolves.toMatchObject({
+    await expect(host.share(page.pageId, 'timeline')).resolves.toMatchObject({
       share: { title: 'timeline-title', query: 'from=timeline' },
     })
-    await expect(host.share('favorites')).resolves.toMatchObject({
+    await expect(host.share(page.pageId, 'favorites')).resolves.toMatchObject({
       share: { title: 'favorite-title' },
     })
     expect(shareCalls).toEqual([
@@ -161,12 +159,12 @@ describe('page and app lifecycle hooks', () => {
     await host.service.control('page', 'hide', {}, { pageId: page.pageId })
     host.setAppVisible(false)
     expect(appEvents).toContain('save-exit-state')
-    await expect(host.saveExitState()).resolves.toMatchObject({
+    await expect(host.saveExitState(page.pageId)).resolves.toMatchObject({
       status: 'saved',
       state: { data: { draft: 'draft' } },
     })
 
-    await expect(host.setTheme('dark')).resolves.toMatchObject({
+    await expect(host.setTheme('dark', page.pageId)).resolves.toMatchObject({
       status: 'theme-changed',
       theme: 'dark',
     })

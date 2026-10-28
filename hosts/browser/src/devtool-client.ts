@@ -184,6 +184,12 @@ export class DevtoolRuntimeClient {
 
   async inspectTree(pageId: string | undefined = this.activePageId): Promise<InspectNode | null> {
     const host = this.requireHost()
+    // Host inspection is page-scoped: no active page means there is nothing to
+    // inspect yet (e.g. before the first page is ready).
+    if (!pageId) {
+      this.update({ tree: null })
+      return null
+    }
     const tree = await host.host.inspectTree(pageId) as InspectNode | null
     this.update({ tree })
     return tree

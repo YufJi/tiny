@@ -4,7 +4,7 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { createHarnessRenderConnector, harnessRenderView } from './helpers/render-connector'
 import { bootServiceThread } from './helpers/split-service'
 
 const TODOS_PATH = 'pages/todos/todos'
@@ -88,21 +88,20 @@ describe('tabBar runtime', () => {
   test('switches cached tab pages, updates tabBar APIs, and drives onTabItemTap', async () => {
     const manifest = createManifest()
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({
       transport: serviceTransport,
       manifest,
       initialPath: TODOS_PATH,
     })
-    const render = bootRenderThread({
-      transport: renderTransport,
+    const renderConnector = createHarnessRenderConnector({
       manifest,
       artifacts: { templates: createTemplateRegistry() },
       initialPath: TODOS_PATH,
     })
+    const render = harnessRenderView(renderConnector)
     const host = createTinyRuntime({
       serviceTransport: hostServiceTransport,
-      renderTransport: hostRenderTransport,
+      renderConnector,
       manifest,
       initialPath: TODOS_PATH,
     })

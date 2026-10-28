@@ -4,7 +4,7 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { createHarnessRenderConnector, harnessRenderView } from './helpers/render-connector'
 import { bootServiceThread } from './helpers/split-service'
 
 const PAGE_PATH = 'pages/index/index'
@@ -67,21 +67,20 @@ describe('component semantics', () => {
   test('merges behaviors, runs observers and property observers, and supports hasBehavior', async () => {
     const manifest = createManifest()
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({
       transport: serviceTransport,
       manifest,
       initialPath: PAGE_PATH,
     })
-    const render = bootRenderThread({
-      transport: renderTransport,
+    const renderConnector = createHarnessRenderConnector({
       manifest,
       artifacts: { templates: createTemplateRegistry() },
       initialPath: PAGE_PATH,
     })
+    const render = harnessRenderView(renderConnector)
     const host = createTinyRuntime({
       serviceTransport: hostServiceTransport,
-      renderTransport: hostRenderTransport,
+      renderConnector,
       manifest,
       initialPath: PAGE_PATH,
     })

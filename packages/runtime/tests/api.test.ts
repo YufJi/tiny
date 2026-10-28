@@ -5,7 +5,7 @@ import { createInMemoryTransportPair } from '@tiny/bridge'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest } from '@tiny/manifest'
 import { bootServiceThread } from './helpers/split-service'
 import { createTinyRuntime } from '../src/host'
-import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { createHarnessRenderConnector } from './helpers/render-connector'
 
 const PAGE_PATH = 'pages/index/index'
 
@@ -57,21 +57,19 @@ function createTemplateRegistry() {
 describe('P0 platform APIs', () => {
   test('uses host snapshots for sync reads and authoritative storage writes', async () => {
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({
       transport: serviceTransport,
       manifest: createManifest(),
       initialPath: PAGE_PATH,
     })
-    bootRenderThread({
-      transport: renderTransport,
+    const renderConnector = createHarnessRenderConnector({
       manifest: createManifest(),
       artifacts: { templates: createTemplateRegistry() },
       initialPath: PAGE_PATH,
     })
     const host = createTinyRuntime({
       serviceTransport: hostServiceTransport,
-      renderTransport: hostRenderTransport,
+      renderConnector,
       manifest: createManifest(),
       initialPath: PAGE_PATH,
       systemInfo: { pixelRatio: 3, windowWidth: 390, windowHeight: 844 },
@@ -105,14 +103,12 @@ describe('P0 platform APIs', () => {
 
   test('routes toast and navigation calls to host handlers', async () => {
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({
       transport: serviceTransport,
       manifest: createManifest(),
       initialPath: PAGE_PATH,
     })
-    bootRenderThread({
-      transport: renderTransport,
+    const renderConnector = createHarnessRenderConnector({
       manifest: createManifest(),
       artifacts: { templates: createTemplateRegistry() },
       initialPath: PAGE_PATH,
@@ -121,7 +117,7 @@ describe('P0 platform APIs', () => {
     const toastCalls: Array<Record<string, unknown>> = []
     const host = createTinyRuntime({
       serviceTransport: hostServiceTransport,
-      renderTransport: hostRenderTransport,
+      renderConnector,
       manifest: createManifest(),
       initialPath: PAGE_PATH,
       apiHandlers: {

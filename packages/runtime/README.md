@@ -30,10 +30,9 @@ import { createTinyRuntime } from '@tiny/runtime'
 
 const host = createTinyRuntime({
   serviceTransport,
-  // Host-independent single-frame fallback (the browser host uses renderConnector):
-  renderTransport,
-  // Or one frame per page, with each transport created by the host:
-  // renderConnector: { connect, activate, disconnect, setAppVisible },
+  // One render thread per page, created by the host. The browser host passes
+  // iframe frames; in-memory tests pass a connector that boots a headless tree.
+  renderConnector: { connect, activate, disconnect, setAppVisible },
   manifest,
   initialPath: 'pages/todos/todos',
 })

@@ -4,7 +4,7 @@ import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
 import { TREE_PROTOCOL, type RenderEventGeometry } from '../src/tree/protocol'
-import { bootSplitTreeHarness } from './helpers/split-tree-harness'
+import { createHarnessRenderConnector } from './helpers/render-connector'
 import { bootServiceThread, lastLogicTree } from './helpers/split-service'
 
 const PAGE_PATH = 'pages/index/index'
@@ -58,17 +58,15 @@ type EventShape = {
 async function boot(body: string, pageOptions: Record<string, unknown>) {
   const manifest = createManifest()
   const [hostService, serviceTransport] = createInMemoryTransportPair()
-  const [hostRender, renderTransport] = createInMemoryTransportPair()
   const service = bootServiceThread({ transport: serviceTransport, manifest, initialPath: PAGE_PATH })
-  bootSplitTreeHarness({
-    transport: renderTransport,
+  const renderConnector = createHarnessRenderConnector({
     manifest,
     artifacts: { templates: createTemplates(body) },
     initialPath: PAGE_PATH,
   })
   const host = createTinyRuntime({
     serviceTransport: hostService,
-    renderTransport: hostRender,
+    renderConnector,
     manifest,
     initialPath: PAGE_PATH,
   })

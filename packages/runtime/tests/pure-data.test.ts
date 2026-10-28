@@ -4,7 +4,7 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { createHarnessRenderConnector, harnessRenderView } from './helpers/render-connector'
 import { bootServiceThread } from './helpers/split-service'
 import type { InspectNode } from '../src/types'
 
@@ -90,21 +90,20 @@ function collectText(node: InspectNode | null): string[] {
 async function boot(componentEffective: Record<string, unknown>) {
   const manifest = createManifest(componentEffective)
   const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-  const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
   const service = bootServiceThread({
     transport: serviceTransport,
     manifest,
     initialPath: PAGE_PATH,
   })
-  const render = bootRenderThread({
-    transport: renderTransport,
+  const renderConnector = createHarnessRenderConnector({
     manifest,
     artifacts: { templates: createTemplateRegistry() },
     initialPath: PAGE_PATH,
   })
+  const render = harnessRenderView(renderConnector)
   const host = createTinyRuntime({
     serviceTransport: hostServiceTransport,
-    renderTransport: hostRenderTransport,
+    renderConnector,
     manifest,
     initialPath: PAGE_PATH,
   })
@@ -148,21 +147,20 @@ describe('pureDataPattern', () => {
   test('reads the pattern from component JSON when JS does not set it', async () => {
     const manifest = createManifest({ pureDataPattern: '^_' })
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({
       transport: serviceTransport,
       manifest,
       initialPath: PAGE_PATH,
     })
-    const render = bootRenderThread({
-      transport: renderTransport,
+    const renderConnector = createHarnessRenderConnector({
       manifest,
       artifacts: { templates: createTemplateRegistry() },
       initialPath: PAGE_PATH,
     })
+    const render = harnessRenderView(renderConnector)
     const host = createTinyRuntime({
       serviceTransport: hostServiceTransport,
-      renderTransport: hostRenderTransport,
+      renderConnector,
       manifest,
       initialPath: PAGE_PATH,
     })

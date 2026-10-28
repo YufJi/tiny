@@ -4,7 +4,7 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { createHarnessRenderConnector, harnessRenderView } from './helpers/render-connector'
 import { bootServiceThread } from './helpers/split-service'
 
 const PAGE_PATH = 'pages/index/index'
@@ -99,7 +99,6 @@ describe('tiny runtime', () => {
   test('boots a static page across host, service, and render connections', async () => {
     const manifest = createManifest()
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({
       transport: serviceTransport,
       manifest,
@@ -162,22 +161,23 @@ describe('tiny runtime', () => {
         eventOrder.push('dynamic:updated')
       },
     })
-    const render = bootRenderThread({
-      transport: renderTransport,
+    const renderConnector = createHarnessRenderConnector({
       manifest,
       artifacts: { templates: createTemplateRegistry() },
       initialPath: PAGE_PATH,
       loadStyle: (path) => (path.endsWith('.css') ? WXSS : ''),
     })
+    const render = harnessRenderView(renderConnector)
     const host = createTinyRuntime({
       serviceTransport: hostServiceTransport,
-      renderTransport: hostRenderTransport,
+      renderConnector,
       manifest,
       initialPath: PAGE_PATH,
       initialData: { message: 'Hello glass-easel' },
     })
 
-    await Promise.all([host.service.handshake(), host.render.handshake()])
+    // The render thread is created per page by the connector during bootstrap.
+    await host.service.handshake()
     const result = await host.bootstrap()
     expect(result.service).toMatchObject({ status: 'ready', currentPath: PAGE_PATH })
     expect(result.render).toMatchObject({ status: 'ready', currentPath: PAGE_PATH })
@@ -243,7 +243,6 @@ describe('tiny runtime', () => {
   test('batches synchronous setData calls into one bridge message', async () => {
     const manifest = createManifest()
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({
       transport: serviceTransport,
       manifest,
@@ -257,15 +256,15 @@ describe('tiny runtime', () => {
         this.setData({ second: 2 })
       },
     })
-    const render = bootRenderThread({
-      transport: renderTransport,
+    const renderConnector = createHarnessRenderConnector({
       manifest,
       artifacts: { templates: createTemplateRegistry() },
       initialPath: PAGE_PATH,
     })
+    const render = harnessRenderView(renderConnector)
     const host = createTinyRuntime({
       serviceTransport: hostServiceTransport,
-      renderTransport: hostRenderTransport,
+      renderConnector,
       manifest,
       initialPath: PAGE_PATH,
     })
@@ -276,7 +275,8 @@ describe('tiny runtime', () => {
         dataMessages.push(message.payload as Record<string, unknown>)
       }
     })
-    await Promise.all([host.service.handshake(), host.render.handshake()])
+    // The render thread is created per page by the connector during bootstrap.
+    await host.service.handshake()
     await host.bootstrap()
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(dataMessages).toHaveLength(1)

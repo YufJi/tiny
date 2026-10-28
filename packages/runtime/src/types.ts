@@ -278,15 +278,12 @@ export type ServiceThreadOptions = {
 export type RuntimeHostOptions = {
   serviceTransport: import('@tiny/bridge').Transport
   /**
-   * Single render thread transport. Mutually exclusive with `renderConnector`.
-   * Kept for in-memory tests and hosts that render one page at a time.
+   * Per-page render thread connector: the host creates one render connection
+   * for every page in the stack and routes messages by page ID. In-memory tests
+   * use the same seam (see `tests/helpers/render-connector.ts`), so there is no
+   * second "single render connection" mode.
    */
-  renderTransport?: import('@tiny/bridge').Transport
-  /**
-   * Per-page render thread connector. When set, the host creates one render
-   * connection for every page in the stack and routes messages by page ID.
-   */
-  renderConnector?: RenderThreadConnector
+  renderConnector: RenderThreadConnector
   manifest: RuntimeManifest
   initialPath: string
   initialData?: Record<string, unknown>

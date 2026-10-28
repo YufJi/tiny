@@ -4,7 +4,7 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact, type StyleArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootSplitTreeHarness as bootRenderThread } from './helpers/split-tree-harness'
+import { createHarnessRenderConnector, harnessRenderView } from './helpers/render-connector'
 import { bootServiceThread } from './helpers/split-service'
 
 const TODOS_PATH = 'pages/todos/todos'
@@ -73,21 +73,20 @@ describe('mini-program navigation', () => {
   test('pushes component-as-page, preserves state, and navigates back', async () => {
     const manifest = createNavigationManifest()
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({
       transport: serviceTransport,
       manifest,
       initialPath: TODOS_PATH,
     })
-    const render = bootRenderThread({
-      transport: renderTransport,
+    const renderConnector = createHarnessRenderConnector({
       manifest,
       artifacts: { templates: createTemplateRegistry() },
       initialPath: TODOS_PATH,
     })
+    const render = harnessRenderView(renderConnector)
     const host = createTinyRuntime({
       serviceTransport: hostServiceTransport,
-      renderTransport: hostRenderTransport,
+      renderConnector,
       manifest,
       initialPath: TODOS_PATH,
     })
@@ -185,21 +184,19 @@ describe('mini-program navigation', () => {
   test('delivers page scroll, reach-bottom, and resize lifecycles', async () => {
     const manifest = createNavigationManifest()
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({
       transport: serviceTransport,
       manifest,
       initialPath: TODOS_PATH,
     })
-    bootRenderThread({
-      transport: renderTransport,
+    const renderConnector = createHarnessRenderConnector({
       manifest,
       artifacts: { templates: createTemplateRegistry() },
       initialPath: TODOS_PATH,
     })
     const host = createTinyRuntime({
       serviceTransport: hostServiceTransport,
-      renderTransport: hostRenderTransport,
+      renderConnector,
       manifest,
       initialPath: TODOS_PATH,
     })
@@ -241,21 +238,19 @@ describe('mini-program navigation', () => {
   test('redirectTo replaces the current page instead of growing the stack', async () => {
     const manifest = createNavigationManifest()
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({
       transport: serviceTransport,
       manifest,
       initialPath: TODOS_PATH,
     })
-    bootRenderThread({
-      transport: renderTransport,
+    const renderConnector = createHarnessRenderConnector({
       manifest,
       artifacts: { templates: createTemplateRegistry() },
       initialPath: TODOS_PATH,
     })
     const host = createTinyRuntime({
       serviceTransport: hostServiceTransport,
-      renderTransport: hostRenderTransport,
+      renderConnector,
       manifest,
       initialPath: TODOS_PATH,
     })
@@ -311,21 +306,19 @@ describe('mini-program navigation', () => {
   test('reLaunch clears every page, including hidden tab pages', async () => {
     const manifest = createNavigationManifest()
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({
       transport: serviceTransport,
       manifest,
       initialPath: TODOS_PATH,
     })
-    bootRenderThread({
-      transport: renderTransport,
+    const renderConnector = createHarnessRenderConnector({
       manifest,
       artifacts: { templates: createTemplateRegistry() },
       initialPath: TODOS_PATH,
     })
     const host = createTinyRuntime({
       serviceTransport: hostServiceTransport,
-      renderTransport: hostRenderTransport,
+      renderConnector,
       manifest,
       initialPath: TODOS_PATH,
     })
@@ -378,21 +371,19 @@ describe('mini-program navigation', () => {
   test('enforces the host-configured page stack limit', async () => {
     const manifest = createNavigationManifest()
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({
       transport: serviceTransport,
       manifest,
       initialPath: TODOS_PATH,
     })
-    bootRenderThread({
-      transport: renderTransport,
+    const renderConnector = createHarnessRenderConnector({
       manifest,
       artifacts: { templates: createTemplateRegistry() },
       initialPath: TODOS_PATH,
     })
     const host = createTinyRuntime({
       serviceTransport: hostServiceTransport,
-      renderTransport: hostRenderTransport,
+      renderConnector,
       manifest,
       initialPath: TODOS_PATH,
       maxPageStack: 1,

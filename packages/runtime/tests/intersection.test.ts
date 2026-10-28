@@ -7,7 +7,7 @@ import {
 } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
-import { bootSplitTreeHarness } from './helpers/split-tree-harness'
+import { createHarnessRenderConnector } from './helpers/render-connector'
 import { bootServiceThread } from './helpers/split-service'
 
 const PAGE_PATH = 'pages/index/index'
@@ -62,7 +62,6 @@ describe('intersection observers', () => {
   test('delivers render intersections back to page callbacks', async () => {
     const manifest = createManifest()
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({
       transport: serviceTransport,
       manifest,
@@ -70,8 +69,7 @@ describe('intersection observers', () => {
     })
     const rect = () => ({ left: 0, top: 0, right: 100, bottom: 40, width: 100, height: 40 })
     const observedCounts: number[] = []
-    bootSplitTreeHarness({
-      transport: renderTransport,
+    const renderConnector = createHarnessRenderConnector({
       manifest,
       artifacts: { templates: createTemplates() },
       initialPath: PAGE_PATH,
@@ -92,7 +90,7 @@ describe('intersection observers', () => {
     })
     const host = createTinyRuntime({
       serviceTransport: hostServiceTransport,
-      renderTransport: hostRenderTransport,
+      renderConnector,
       manifest,
       initialPath: PAGE_PATH,
     })
@@ -131,7 +129,6 @@ describe('intersection observers', () => {
   test('wx.createIntersectionObserver scopes to the page instance it receives', async () => {
     const manifest = createManifest()
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({
       transport: serviceTransport,
       manifest,
@@ -139,8 +136,7 @@ describe('intersection observers', () => {
     })
     const rect = () => ({ left: 0, top: 0, right: 100, bottom: 40, width: 100, height: 40 })
     const observedCounts: number[] = []
-    bootSplitTreeHarness({
-      transport: renderTransport,
+    const renderConnector = createHarnessRenderConnector({
       manifest,
       artifacts: { templates: createTemplates() },
       initialPath: PAGE_PATH,
@@ -161,7 +157,7 @@ describe('intersection observers', () => {
     })
     const host = createTinyRuntime({
       serviceTransport: hostServiceTransport,
-      renderTransport: hostRenderTransport,
+      renderConnector,
       manifest,
       initialPath: PAGE_PATH,
     })

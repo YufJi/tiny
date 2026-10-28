@@ -8,7 +8,7 @@ import {
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTinyRuntime } from '../src/host'
 import type { RenderAnimationRequest, RenderClearAnimationRequest } from '../src/tree/protocol'
-import { bootSplitTreeHarness } from './helpers/split-tree-harness'
+import { createHarnessRenderConnector } from './helpers/render-connector'
 import { bootServiceThread } from './helpers/split-service'
 
 const PAGE_PATH = 'pages/index/index'
@@ -66,14 +66,12 @@ async function boot(options: {
 }) {
   const manifest = createManifest()
   const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-  const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
   const service = bootServiceThread({
     transport: serviceTransport,
     manifest,
     initialPath: PAGE_PATH,
   })
-  bootSplitTreeHarness({
-    transport: renderTransport,
+  const renderConnector = createHarnessRenderConnector({
     manifest,
     artifacts: { templates: createTemplates() },
     initialPath: PAGE_PATH,
@@ -84,7 +82,7 @@ async function boot(options: {
   })
   const host = createTinyRuntime({
     serviceTransport: hostServiceTransport,
-    renderTransport: hostRenderTransport,
+    renderConnector,
     manifest,
     initialPath: PAGE_PATH,
   })

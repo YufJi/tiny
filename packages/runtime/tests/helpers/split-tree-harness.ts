@@ -31,6 +31,21 @@ const noopRenderer: TreeRenderer = {
   query: () => [],
 }
 
+/**
+ * Live proxy over the service-side logic tree. Several tests read the logic
+ * tree through the harness; it is page-independent, so every render session
+ * and the connector view share one instance.
+ */
+export function logicTreeAdapter(): Record<string, unknown> {
+  return new Proxy({} as Record<string, unknown>, {
+    get: (_target, property: string) => {
+      const tree = lastLogicTree()
+      const value = tree[property]
+      return typeof value === 'function' ? value.bind(tree) : value
+    },
+  })
+}
+
 export function bootSplitTreeHarness(options: SplitTreeHarnessOptions): RenderThreadRuntime {
   provideHarnessConfig({
     templates: options.artifacts.templates,
@@ -41,13 +56,7 @@ export function bootSplitTreeHarness(options: SplitTreeHarnessOptions): RenderTh
     renderer: { ...noopRenderer, ...options.renderer },
   })
   return {
-    adapter: new Proxy({} as Record<string, unknown>, {
-      get: (_target, property: string) => {
-        const tree = lastLogicTree()
-        const value = tree[property]
-        return typeof value === 'function' ? value.bind(tree) : value
-      },
-    }),
+    adapter: logicTreeAdapter(),
     connection: runtime.connection,
     manifest: options.manifest,
     currentPath: options.initialPath,
