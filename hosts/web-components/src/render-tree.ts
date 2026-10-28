@@ -5,6 +5,7 @@ import type {
   RenderClearAnimationRequest,
   RenderElement,
   RenderEventGeometry,
+  RenderHostAction,
   RenderIntersectionEntry,
   RenderIntersectionRequest,
   RenderNode,
@@ -62,6 +63,8 @@ export type GlassRenderTree = {
   /** `this.clearAnimate`: cancel the animations this tree started. */
   clearAnimation?: (request: RenderClearAnimationRequest) => void
   setEventSink?: (sink: (event: GlassRenderEvent) => void) => void
+  /** Built-in components ask the host to act (`<navigator>` routing). */
+  setHostActionSink?: (sink: (action: RenderHostAction) => void) => void
   setPagePath?: (pagePath: string) => void
   setDiagnosticSink?: (sink: (diagnostic: {
     severity: 'warning' | 'error'
@@ -172,6 +175,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       options.resolveAssetUrl?.(src, currentPagePath) ?? src
     ),
     onDiagnostic: (diagnostic) => diagnosticSink?.(diagnostic),
+    hostAction: (action) => hostActionSink?.(action),
   })
   for (const [tag, definition] of Object.entries(definitions)) {
     space.registerComponent(tag, definition)
@@ -181,6 +185,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const eventCleanups = new Map<string, Array<() => void>>()
   let currentRoot: RenderNode | undefined
   let eventSink: ((event: GlassRenderEvent) => void) | undefined
+  let hostActionSink: ((action: RenderHostAction) => void) | undefined
   let styleElement: HTMLStyleElement | undefined
   const currentTree = new Map<string, RenderNode>()
 
@@ -656,6 +661,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     rootElement,
     setEventSink: (sink) => {
       eventSink = sink
+    },
+    setHostActionSink: (sink) => {
+      hostActionSink = sink
     },
     playAnimation,
     clearAnimation,

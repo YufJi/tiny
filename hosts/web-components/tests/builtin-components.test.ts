@@ -957,3 +957,86 @@ describe('P0 built-in components', () => {
     expect(html).toContain('tiny-icon-success')
   })
 })
+
+describe('navigator', () => {
+  function mountNavigator(
+    attributes: string,
+    hostActions: Array<Record<string, unknown>>,
+    diagnostics: Array<Record<string, unknown>>,
+  ) {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space, {
+      hostAction: (action) => hostActions.push(action as unknown as Record<string, unknown>),
+      onDiagnostic: (diagnostic) => diagnostics.push(diagnostic as unknown as Record<string, unknown>),
+    })
+    const page = space.defineComponent({
+      is: 'page',
+      using: { navigator: builtins.navigator },
+      template: compilePage(`<navigator id="nav" ${attributes}>Go</navigator>`),
+    })
+    const instance = space.createComponentByUrl(
+      'root',
+      'page',
+      null,
+      new glassEasel.EmptyBackendContext(),
+    )
+    const navigator = instance.getShadowRoot()?.getElementById('nav')?.asGeneralComponent()
+    expect(navigator).toBeDefined()
+    return navigator!
+  }
+
+  test('routes every open-type through a host action', () => {
+    const hostActions: Array<Record<string, unknown>> = []
+    const diagnostics: Array<Record<string, unknown>> = []
+    const cases: Array<[string, Record<string, unknown>]> = [
+      ['url="/pages/a/a"', { action: 'navigateTo', url: '/pages/a/a' }],
+      ['open-type="redirect" url="/pages/a/a"', { action: 'redirectTo', url: '/pages/a/a' }],
+      ['open-type="switchTab" url="/pages/b/b"', { action: 'switchTab', url: '/pages/b/b' }],
+      ['open-type="reLaunch" url="/pages/c/c"', { action: 'reLaunch', url: '/pages/c/c' }],
+      ['open-type="navigateBack" delta="2"', { action: 'navigateBack', delta: 2 }],
+      ['open-type="exit"', { action: 'exit' }],
+    ]
+    for (const [attributes, expected] of cases) {
+      const navigator = mountNavigator(attributes, hostActions, diagnostics)
+      navigator.triggerEvent('tap', {})
+      expect(hostActions.pop()).toEqual(expected)
+    }
+    expect(diagnostics).toEqual([])
+  })
+
+  test('reports an unsupported target instead of navigating', () => {
+    const hostActions: Array<Record<string, unknown>> = []
+    const diagnostics: Array<Record<string, unknown>> = []
+    const navigator = mountNavigator(
+      'target="miniProgram" app-id="wx123" url="/pages/a/a"',
+      hostActions,
+      diagnostics,
+    )
+    navigator.triggerEvent('tap', {})
+    expect(hostActions).toEqual([])
+    expect(diagnostics).toMatchObject([
+      { severity: 'warning', code: 'UNSUPPORTED_NAVIGATOR_TARGET', details: { target: 'miniProgram' } },
+    ])
+  })
+
+  test('reports a missing url and an unknown open-type', () => {
+    const hostActions: Array<Record<string, unknown>> = []
+    const diagnostics: Array<Record<string, unknown>> = []
+    mountNavigator('url=""', hostActions, diagnostics).triggerEvent('tap', {})
+    mountNavigator('open-type="teleport" url="/a"', hostActions, diagnostics).triggerEvent('tap', {})
+    expect(hostActions).toEqual([])
+    expect(diagnostics.map((item) => item.code)).toEqual([
+      'INVALID_NAVIGATOR_URL',
+      'INVALID_NAVIGATOR_OPEN_TYPE',
+    ])
+  })
+
+  test('hover-class defaults to navigator-hover without touching data', () => {
+    const navigator = mountNavigator('url="/pages/a/a"', [], []) as unknown as {
+      data: Record<string, unknown>
+    }
+    expect(navigator.data.hoverClass).toBe('navigator-hover')
+    expect(navigator.data.hoverStartTime).toBe(400)
+    expect(navigator.data.hoverStayTime).toBe(50)
+  })
+})

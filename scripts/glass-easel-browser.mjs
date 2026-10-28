@@ -993,6 +993,33 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
       )
     })
 
+    await step('navigate with a built-in navigator', async () => {
+      currentStep = 'navigate with a built-in navigator'
+      await page.goto(`${baseUrl}?path=packageComponent/pages/nav/navigator/navigator`, {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
+      const render = await activeRender()
+      await render.waitForFunction(
+        () => document.querySelectorAll('tiny-navigator').length > 0,
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const framesBefore = await page.locator('iframe.tiny-runtime-render-frame').count()
+      // The first navigator is `open-type="navigate"` with a relative url.
+      await render.locator('tiny-navigator').first().click()
+      await page.waitForFunction(() => {
+        const state = window.__tinyRuntime?.host?.diagnostics
+          ?.filter((item) => item.code === 'RUNTIME_STATE').at(-1)
+        return state?.details?.currentPage === 'packageComponent/pages/nav/navigator/navigate'
+      }, null, { timeout: STEP_TIMEOUT })
+      await page.waitForTimeout(200)
+      const framesAfter = await page.locator('iframe.tiny-runtime-render-frame').count()
+      assert.equal(framesAfter, framesBefore + 1, 'navigate did not push a render page')
+      assert.equal(pageErrors.length, 0, `page errors after navigator tap: ${pageErrors.join(' | ')}`)
+    })
+
     await step('run the canvas 2D node example', async () => {
       currentStep = 'run the canvas 2D node example'
       await page.goto(`${baseUrl}?path=packageComponent/pages/canvas/canvas-2d/canvas-2d`, {

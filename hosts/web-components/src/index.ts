@@ -21,6 +21,7 @@ import { defineRadio } from './components/radio'
 import { defineRadioGroup } from './components/radio-group'
 import { defineIcon } from './components/icon'
 import { defineImage } from './components/image'
+import { defineNavigator } from './components/navigator'
 import { defineScrollView } from './components/scroll-view'
 import { defineSlider } from './components/slider'
 import { defineProgress } from './components/progress'
@@ -58,6 +59,7 @@ const DEFINITION_FACTORIES: Record<BuiltinComponentTag, DefinitionFactory> = {
   'radio-group': defineRadioGroup,
   icon: defineIcon,
   image: defineImage,
+  navigator: defineNavigator,
   'scroll-view': defineScrollView,
   slider: defineSlider,
   progress: defineProgress,

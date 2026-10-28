@@ -18,6 +18,7 @@ export const BUILTIN_COMPONENT_TAGS = [
   'radio-group',
   'icon',
   'image',
+  'navigator',
   'scroll-view',
   'slider',
   'progress',
