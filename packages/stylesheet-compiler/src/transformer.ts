@@ -7,12 +7,8 @@
 import postcss, {
   type AtRule,
   type ChildNode,
-  type Comment,
-  type Container,
   type Declaration,
-  type Document,
   type Node,
-  type Result,
   type Root,
   type Rule,
 } from 'postcss'

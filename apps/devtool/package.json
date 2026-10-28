@@ -10,7 +10,6 @@
   "dependencies": {
     "@rematch/core": "^2.0.1",
     "@tiny/runtime": "workspace:*",
-    "glass-easel": "1.1.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-redux": "^7.2.3",

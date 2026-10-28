@@ -46,16 +46,6 @@ const ELEMENT_RESERVED_NAMES = new Set([
   'style',
 ])
 
-export type ComponentLifecyclePhase = 'created' | 'attached' | 'ready' | 'moved' | 'detached'
-
-export type ComponentLifecycleMeta = {
-  pageId: string | null
-  parentComponentId: string | null
-  tag: string
-  id: string
-  class: string
-}
-
 export type ComponentSnapshot = {
   componentId: string
   path: string
@@ -138,7 +128,6 @@ export class GlassEaselRuntimeAdapter {
   readonly componentSpace: glassEasel.ComponentSpace
   /** Internal marker behavior for custom form-field components. */
   private readonly formFieldBehavior: glassEasel.GeneralBehavior
-  private readonly manifest: Manifest
   private readonly templates: TemplateRegistry
   private readonly styleScopeIds = new Map<string, number>()
   private readonly scopeIdsByName = new Map<string, number>()
@@ -185,7 +174,6 @@ export class GlassEaselRuntimeAdapter {
 
   constructor(options: GlassEaselAdapterOptions) {
     this.backend = options.backend
-    this.manifest = options.manifest
     this.templates = options.templates
     this.logicPageOptions = options.logicPageOptions
     this.logicComponentDefinitions = options.logicComponentDefinitions

@@ -72,15 +72,6 @@ export type RuntimePageLifecyclePhase =
   | 'onAddToFavorites'
   | 'onSaveExitState'
 
-export type RuntimePageLifecycleDetails = {
-  pageId: string
-  path: string
-  phase: RuntimePageLifecyclePhase
-  sequence: number
-  visible: boolean
-  extra?: Record<string, unknown>
-}
-
 let diagnosticIdCounter = 0
 
 export function createRuntimeDiagnostic(

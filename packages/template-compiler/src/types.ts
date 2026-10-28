@@ -1,4 +1,4 @@
-// Core shared types — mirrors src/parse/mod.rs Position, ParseError, ParseErrorKind, ParseErrorLevel
+// Core shared types — mirrors src/parse/mod.rs Position, ParseError, ParseErrorKind
 
 export interface Position {
   line: number
@@ -9,18 +9,6 @@ export function positionDefault(): Position {
   return { line: 0, utf16Col: 0 }
 }
 
-export function positionCmp(a: Position, b: Position): number {
-  if (a.line !== b.line) return a.line - b.line
-  return a.utf16Col - b.utf16Col
-}
-
-export function positionAddOffset(base: Position, offset: Position): Position {
-  return {
-    line: base.line + offset.line,
-    utf16Col: offset.line === 0 ? base.utf16Col + offset.utf16Col : offset.utf16Col,
-  }
-}
-
 export interface Range<T> {
   start: T
   end: T
@@ -28,14 +16,6 @@ export interface Range<T> {
 
 export function range<T>(start: T, end: T): Range<T> {
   return { start, end }
-}
-
-// ParseErrorLevel — mirrors ParseErrorLevel enum
-export const enum ParseErrorLevel {
-  Note = 1,
-  Warn = 2,
-  Error = 3,
-  Fatal = 4,
 }
 
 // ParseErrorKind — mirrors ParseErrorKind enum (code = discriminant value)
@@ -127,76 +107,14 @@ export function parseErrorKindMessage(kind: ParseErrorKind): string {
   }
 }
 
-export function parseErrorKindLevel(kind: ParseErrorKind): ParseErrorLevel {
-  switch (kind) {
-    case ParseErrorKind.UnexpectedCharacter: return ParseErrorLevel.Fatal
-    case ParseErrorKind.UnexpectedExpressionCharacter: return ParseErrorLevel.Fatal
-    case ParseErrorKind.UnknownMetaTag: return ParseErrorLevel.Note
-    case ParseErrorKind.MissingExpressionEnd: return ParseErrorLevel.Fatal
-    case ParseErrorKind.IllegalEntity: return ParseErrorLevel.Error
-    case ParseErrorKind.IncompleteTag: return ParseErrorLevel.Fatal
-    case ParseErrorKind.MissingEndTag: return ParseErrorLevel.Warn
-    case ParseErrorKind.IllegalNamePrefix: return ParseErrorLevel.Warn
-    case ParseErrorKind.InvalidAttributePrefix: return ParseErrorLevel.Warn
-    case ParseErrorKind.InvalidAttributeName: return ParseErrorLevel.Warn
-    case ParseErrorKind.InvalidAttributeValue: return ParseErrorLevel.Note
-    case ParseErrorKind.InvalidAttribute: return ParseErrorLevel.Warn
-    case ParseErrorKind.DuplicatedAttribute: return ParseErrorLevel.Warn
-    case ParseErrorKind.DuplicatedName: return ParseErrorLevel.Note
-    case ParseErrorKind.AvoidUppercaseLetters: return ParseErrorLevel.Note
-    case ParseErrorKind.UnexpectedWhitespace: return ParseErrorLevel.Note
-    case ParseErrorKind.MissingAttributeValue: return ParseErrorLevel.Note
-    case ParseErrorKind.DataBindingNotAllowed: return ParseErrorLevel.Note
-    case ParseErrorKind.InvalidIdentifier: return ParseErrorLevel.Fatal
-    case ParseErrorKind.InvalidScopeName: return ParseErrorLevel.Note
-    case ParseErrorKind.ChildNodesNotAllowed: return ParseErrorLevel.Error
-    case ParseErrorKind.IllegalEscapeSequence: return ParseErrorLevel.Error
-    case ParseErrorKind.IncompleteConditionExpression: return ParseErrorLevel.Fatal
-    case ParseErrorKind.UnmatchedBracket: return ParseErrorLevel.Fatal
-    case ParseErrorKind.UnmatchedParenthesis: return ParseErrorLevel.Fatal
-    case ParseErrorKind.MissingModuleName: return ParseErrorLevel.Error
-    case ParseErrorKind.MissingSourcePath: return ParseErrorLevel.Error
-    case ParseErrorKind.UnsupportedSyntax: return ParseErrorLevel.Error
-    case ParseErrorKind.ShouldQuoted: return ParseErrorLevel.Warn
-    case ParseErrorKind.EmptyExpression: return ParseErrorLevel.Warn
-    case ParseErrorKind.InvalidEndTag: return ParseErrorLevel.Warn
-    case ParseErrorKind.DeprecatedAttribute: return ParseErrorLevel.Warn
-    case ParseErrorKind.IncompatibleWithDirectiveAttribute: return ParseErrorLevel.Error
-    case ParseErrorKind.UninitializedScope: return ParseErrorLevel.Error
-    case ParseErrorKind.InvalidClassNames: return ParseErrorLevel.Error
-    case ParseErrorKind.DuplicatedClassNames: return ParseErrorLevel.Error
-    case ParseErrorKind.IncompatibleWithClassColonAttributes: return ParseErrorLevel.Error
-    case ParseErrorKind.InvalidInlineStyleString: return ParseErrorLevel.Error
-    case ParseErrorKind.DuplicatedStylePropertyNames: return ParseErrorLevel.Error
-    case ParseErrorKind.IncompatibleWithStyleColonAttributes: return ParseErrorLevel.Error
-  }
-}
-
 export interface ParseError {
   path: string
   kind: ParseErrorKind
   location: Range<Position>
 }
 
-export function parseErrorLevel(err: ParseError): ParseErrorLevel {
-  return parseErrorKindLevel(err.kind)
-}
-
-export function parseErrorCode(err: ParseError): number {
-  return err.kind
-}
-
 export function parseErrorMessage(err: ParseError): string {
   return parseErrorKindMessage(err.kind)
-}
-
-export function parseErrorToString(err: ParseError): string {
-  return (
-    `template parsing error at ${err.path}:` +
-    `${err.location.start.line + 1}:${err.location.start.utf16Col + 1}-` +
-    `${err.location.end.line + 1}:${err.location.end.utf16Col + 1}: ` +
-    parseErrorKindMessage(err.kind)
-  )
 }
 
 // TmplError — general template processing error (mirrors TmplError in group.rs)

@@ -4,7 +4,7 @@
  * node ids and patch semantics identical to the web glass render tree.
  */
 import { RENDER_TEXT_TAG } from '../protocol'
-import type { RenderElement, RenderNode, RenderPatch, RenderText } from '../protocol'
+import type { RenderElement, RenderNode, RenderPatch } from '../protocol'
 import type { TreeEventPayload, TreeRenderer } from './thread'
 
 export type NativeNodeSpec = {
@@ -55,8 +55,6 @@ const specOf = (node: RenderNode): NativeNodeSpec => (
 export function createNativeTreeRenderer(host: NativeTreeHost): NativeTreeRenderer {
   const nodes = new Map<string, RenderNode>()
   let eventSink: ((event: TreeEventPayload) => void) | undefined
-  let styles: string[] = []
-  let pagePath = ''
 
   const create = (node: RenderNode): void => {
     nodes.set(node.id, node)
@@ -144,12 +142,6 @@ export function createNativeTreeRenderer(host: NativeTreeHost): NativeTreeRender
   return {
     mount,
     applyPatches,
-    applyStyles: (value) => {
-      styles = value
-    },
-    setPagePath: (value) => {
-      pagePath = value
-    },
     setEventSink: (sink) => {
       eventSink = sink
     },

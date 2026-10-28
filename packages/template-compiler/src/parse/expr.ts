@@ -394,20 +394,6 @@ export function forEachStaticOrDynamicPart(
   }
 }
 
-export function hasMultipleStaticOrDynamicParts(expr: Expression): boolean {
-  if (expr.kind === 'Plus') {
-    const l = expr.left
-    const r = expr.right
-    return (
-      l.kind === 'ToStringWithoutUndefined' ||
-      l.kind === 'LitStr' ||
-      r.kind === 'ToStringWithoutUndefined' ||
-      r.kind === 'LitStr'
-    )
-  }
-  return false
-}
-
 // ---------------------------------------------------------------------------
 // Parsing helpers
 // ---------------------------------------------------------------------------
@@ -938,25 +924,6 @@ function makeBinParser(
         }
       }
       break
-    }
-    return left
-  }
-}
-
-function makeBinKeywordParser(
-  parseSub: (ps: ParseState) => Expression | null,
-  keyword: string,
-  kind: string,
-): (ps: ParseState) => Expression | null {
-  return (ps) => {
-    let left = parseSub(ps)
-    if (left === null) return null
-    while (true) {
-      const loc = opKeyword(ps, keyword)
-      if (loc === null) break
-      const right = parseSub(ps)
-      if (right === null) return null
-      left = { kind, left, right, location: loc } as unknown as Expression
     }
     return left
   }

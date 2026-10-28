@@ -165,7 +165,3 @@ export function CodeBlock({ children }) {
 export function Pill({ tone, children }) {
   return <span className={`pill${tone ? ` ${tone}` : ''}`}>{children}</span>
 }
-
-export function PillRow({ children }) {
-  return <div className="pill-row">{children}</div>
-}

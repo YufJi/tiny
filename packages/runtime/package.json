@@ -21,7 +21,6 @@
   "keywords": [],
   "dependencies": {
     "@tiny/bridge": "workspace:*",
-    "es-toolkit": "^1.45.1",
     "glass-easel": "1.1.0",
     "@tiny/manifest": "workspace:*"
   },

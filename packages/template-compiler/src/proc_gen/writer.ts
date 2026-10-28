@@ -15,8 +15,6 @@
 //   VAR_NAME_START_CHARS  = ['A'-'Z','a'-'z']              (52 chars)
 //   VAR_NAME_INDEX_PRESERVE = 26  (A-Z are reserved)
 
-import { TmplError } from '../types'
-
 // ---------------------------------------------------------------------------
 // Character tables for variable name generation
 // ---------------------------------------------------------------------------

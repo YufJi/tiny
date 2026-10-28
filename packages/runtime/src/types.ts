@@ -84,24 +84,6 @@ export type QueryNodeSnapshot = {
   scrollTop: number
 }
 
-export type QuerySelectorRequest = {
-  pageId?: string
-  componentId?: string
-  selector: string
-  all?: boolean
-}
-
-/** Intersection entry projected from the render thread. */
-export type QueryIntersectionEntry = {
-  id: string
-  dataset: Record<string, unknown>
-  boundingClientRect: QueryNodeSnapshot
-  intersectionRect: QueryNodeSnapshot
-  relativeRect: QueryNodeSnapshot
-  intersectionRatio: number
-  time: number
-}
-
 export type CanvasMeasurement = {
   width: number
   height: number
@@ -196,8 +178,6 @@ export type HostApiHandlers = Record<string, HostApiHandler>
 
 export type StyleLoader = (path: string) => string
 
-export type BackendFactory = () => unknown
-
 /** Context the runtime passes to a host-provided built-in component factory. */
 export type BuiltinComponentFactoryContext = {
   /** Register or reuse a render style scope shared with stylesheet registration. */
@@ -243,13 +223,6 @@ export type BuiltinComponents = {
   create: BuiltinComponentFactory
   /** Stylesheets registered before app/page/component styles. */
   styles?: BuiltinStyleSheet[]
-}
-
-export type BootstrapPayload = {
-  manifest: RuntimeManifest
-  initialPath: string
-  initialData?: Record<string, unknown>
-  componentSchemas?: MiniProgramComponentSchema[]
 }
 
 export type ServiceThreadOptions = {

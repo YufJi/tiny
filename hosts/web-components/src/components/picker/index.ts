@@ -230,7 +230,7 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
         const column = next.findIndex((item, index) => item !== previous[index])
         const mode = String(this.data.mode || 'selector')
         if (mode === 'date' && next.length >= 2) {
-          const { startYear, fields } = this.dateParts()
+          const { startYear } = this.dateParts()
           const year = startYear + (next[0] ?? 0)
           const month = (next[1] ?? 0) + 1
           const columns = this.dateColumns({ year, month, day: 1 })

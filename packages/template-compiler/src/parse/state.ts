@@ -5,7 +5,7 @@
 
 import { ParseError, ParseErrorKind, Position, Range, positionDefault, range } from '../types'
 
-export { ParseErrorKind, ParseErrorLevel } from '../types'
+export { ParseErrorKind } from '../types'
 
 // ---------------------------------------------------------------------------
 // Template whitespace

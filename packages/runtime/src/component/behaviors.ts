@@ -1,16 +1,8 @@
 import type { RuntimeCompatibilityConfig } from '@tiny/manifest'
 import type { MiniProgramComponentOptions } from '../service'
 
-const behaviorRegistry = new WeakSet<object>()
-
 export function registerBehavior(options?: MiniProgramComponentOptions): MiniProgramComponentOptions {
-  const behavior = options ?? {}
-  behaviorRegistry.add(behavior)
-  return behavior
-}
-
-export function isRegisteredBehavior(value: unknown): boolean {
-  return typeof value === 'object' && value !== null && behaviorRegistry.has(value)
+  return options ?? {}
 }
 
 /** Mini-program compatibility behavior id for component export. */

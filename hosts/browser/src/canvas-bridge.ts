@@ -1,5 +1,4 @@
 import type {
-  CanvasMeasurement,
   CanvasNodeHandle,
   CanvasNodeRequest,
   ServiceCanvasAdapter,
@@ -80,26 +79,6 @@ function createCanvasImageFactory(options: CanvasImageOptions): () => HTMLImageE
     })
     return image
   }
-}
-
-export function measureBrowserCanvas(selector?: string, canvasId?: string): CanvasMeasurement {
-  if (typeof document === 'undefined') return { width: 300, height: 150 }
-  const element = findBrowserCanvas(selector, canvasId)
-  if (!element) return { width: 0, height: 0, hasCanvas: false }
-  let rect = element.getBoundingClientRect()
-  if (element.tagName.toLowerCase() === 'canvas' && element.parentElement) {
-    const parentRect = element.parentElement.getBoundingClientRect()
-    if (parentRect.width > 0 && parentRect.height > 0) rect = parentRect
-  }
-  const measured: CanvasMeasurement = {
-    width: rect.width > 0 ? Math.round(rect.width) : 300,
-    height: rect.height > 0 ? Math.round(rect.height) : 150,
-    hasCanvas: true,
-  }
-  const host = element.closest(BROWSER_RUNTIME_NAMES.canvasHostTag)
-  const resolvedId = element.getAttribute('canvas-id') || host?.id || element.id || canvasId
-  if (resolvedId) measured.canvasId = resolvedId
-  return measured
 }
 
 function findBrowserCanvas(selector?: string, canvasId?: string): HTMLCanvasElement | null {

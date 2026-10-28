@@ -8,15 +8,13 @@ import { resolve as resolvePath } from '../path'
 import { ParseErrorKind, Position, Range, range } from '../types'
 import {
   Expression,
-  ObjectFieldKind,
   collectBindingMapKeys,
   convertScopes,
   disableBindingMapKeys,
-  exprLocation,
   validateScopes,
   parseExpressionOrObjectInner,
 } from './expr'
-import { ParseState, isTemplateWhitespace } from './state'
+import { ParseState } from './state'
 
 export const DEFAULT_FOR_ITEM_SCOPE_NAME = 'item'
 export const DEFAULT_FOR_INDEX_SCOPE_NAME = 'index'
@@ -89,18 +87,6 @@ export type Script =
       srcLocation: Range<Position>
       src: StrName
     }
-
-export function scriptModuleName(s: Script): StrName {
-  return s.moduleName
-}
-
-export function scriptModuleLocation(s: Script): Range<Position> {
-  return s.moduleLocation
-}
-
-export function scriptTagLocation(s: Script): TagLocation {
-  return s.tagLocation
-}
 
 // ---------------------------------------------------------------------------
 // AST: Node
@@ -203,16 +189,6 @@ function defaultCommon(): CommonElementAttributes {
   return { id: null, slot: null, slotValueRefs: [], eventBindings: [], data: [], marks: [] }
 }
 
-function commonIsEmpty(c: CommonElementAttributes): boolean {
-  return (
-    c.id === null &&
-    c.slot === null &&
-    c.slotValueRefs.length === 0 &&
-    c.eventBindings.length === 0 &&
-    c.marks.length === 0
-  )
-}
-
 // ---------------------------------------------------------------------------
 // AST: Attributes
 // ---------------------------------------------------------------------------
@@ -285,10 +261,6 @@ function identHasUppercase(ident: Ident): boolean {
   return false
 }
 
-function identLocation(ident: Ident): Range<Position> {
-  return ident.location
-}
-
 function identNameEq(a: Ident, b: Ident): boolean {
   return a.name === b.name
 }
@@ -352,23 +324,8 @@ function strNameNewEmpty(pos: Position): StrName {
   return { name: '', location: range(pos, pos) }
 }
 
-function strNameLocation(s: StrName): Range<Position> {
-  return s.location
-}
-
 function strNameNameEq(a: StrName, b: StrName): boolean {
   return a.name === b.name
-}
-
-function strNameIsValidJsIdentifier(s: StrName): boolean {
-  if (s.name.length === 0) return false
-  const first = s.name[0]!
-  if (!identIsStartChar(first) && first !== '$') return false
-  for (let i = 1; i < s.name.length; i++) {
-    const ch = s.name[i]!
-    if (!identIsStartChar(ch) && !(ch >= '0' && ch <= '9') && ch !== '$') return false
-  }
-  return true
 }
 
 /** Parse the next HTML entity or character from the stream (no auto-skip-whitespace). */
@@ -470,10 +427,6 @@ export function valueLocation(v: Value): Range<Position> {
 
 export function valueNewEmpty(pos: Position): Value {
   return { kind: 'Static', value: '', location: range(pos, pos) }
-}
-
-export function valueIsEmpty(v: Value): boolean {
-  return v.kind === 'Static' && v.value === ''
 }
 
 function wrapToString(expr: Expression, location: Range<Position>): Expression {
@@ -1696,7 +1649,6 @@ function parseElement(ps: ParseState, globals: TemplateGlobals, ret: Node[]): vo
     if (!isSelfClose) {
       // read until </wxs>
       const contentStart = ps.position()
-      const contentStartIndex = ps.curByteIndex()
       const contentStr = ps.skipUntilBefore('</wxs>')
       if (contentStr !== null) {
         content = contentStr
@@ -1716,7 +1668,7 @@ function parseElement(ps: ParseState, globals: TemplateGlobals, ret: Node[]): vo
   let endTagLoc: [Range<Position>, Range<Position>] | null = null
 
   if (!isSelfClose && externalTagType !== 'Script') {
-    const result = parseChildren(ps, globals, tagName.name)
+    const result = parseChildren(ps, globals)
     newChildren = result.children
     closeTagLoc = result.closeLoc
     endTagLoc = result.endTagLoc
@@ -1949,7 +1901,7 @@ interface ParseChildrenResult {
   endTagLoc: [Range<Position>, Range<Position>] | null
 }
 
-function parseChildren(ps: ParseState, globals: TemplateGlobals, parentTagName: string): ParseChildrenResult {
+function parseChildren(ps: ParseState, globals: TemplateGlobals): ParseChildrenResult {
   const children: Node[] = []
   parseVecNode(ps, globals, children)
 
@@ -1959,7 +1911,7 @@ function parseChildren(ps: ParseState, globals: TemplateGlobals, parentTagName: 
   if (ps.peekStr('</')) {
     const endTagStart = ps.consumeStr('</')!
     ps.skipWhitespace()
-    const endTagName = parseColonSeparated(ps)
+    parseColonSeparated(ps)
     const endTagEndPos = ps.position()
     const remaining = ps.skipUntilBefore('>')
     if (remaining !== null && remaining.length > 0) {
@@ -1977,10 +1929,6 @@ function parseChildren(ps: ParseState, globals: TemplateGlobals, parentTagName: 
 // ---------------------------------------------------------------------------
 // Template public helpers
 // ---------------------------------------------------------------------------
-
-export function templateGlobalScopes(tmpl: Template): StrName[] {
-  return tmpl.globals.scripts.map((s) => s.moduleName)
-}
 
 export function templateDirectDependencies(tmpl: Template): string[] {
   return [

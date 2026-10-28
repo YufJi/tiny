@@ -29,7 +29,6 @@ export const TINY_ENGINE_NAMING = Object.freeze({
   textNodeTag: '#text',
   /** Transparent grouping node tags. */
   fragmentTag: '#fragment',
-  virtualTag: '#virtual',
   /** Glass-easel definition/host names for the web render tree. */
   renderRootDefinition: 'tiny-render-root',
   renderRootTag: 'tiny-page',

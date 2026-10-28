@@ -3,7 +3,7 @@ import {
   WECHAT_RUNTIME_COMPATIBILITY,
   type RuntimeCompatibilityConfig,
 } from '@tiny/manifest'
-import { cloneDataValue, cloneJsonSafe } from '../data'
+import { cloneDataValue } from '../data'
 import { componentExportBehavior, formFieldBehavior, isBuiltinBehavior } from './behaviors'
 import type { MiniProgramComponentOptions } from '../service'
 import type { MiniProgramPropertyDefinition, MiniProgramPropertyType } from '../types'

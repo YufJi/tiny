@@ -9,11 +9,6 @@ export type RuntimePortMessage = {
   channel: RuntimePortChannel
 }
 
-export type RuntimePortReadyMessage = {
-  type: typeof BROWSER_RUNTIME_NAMES.runtimePortReady
-  channel: RuntimePortChannel
-}
-
 export function listenForRuntimePort(
   channel: RuntimePortChannel,
   callback: (transport: Transport) => void,

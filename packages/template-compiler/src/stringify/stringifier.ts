@@ -3,10 +3,9 @@
 // Full source-map support requires the 'source-map' package.
 
 import { StringifyOptions, defaultStringifyOptions } from './options'
-import { Template, Node, Element, ElementKind, Value, Attribute, NormalAttribute, EventBinding, ClassAttribute, StyleAttribute } from '../parse/tag'
+import { Template, Node, Element, Value, Attribute, NormalAttribute } from '../parse/tag'
 import { escapeHtmlBody, escapeHtmlQuote } from '../escape'
 import { Expression } from '../parse/expr'
-import { Position } from '../types'
 
 export interface SourceMapEntry {
   generatedLine: number
@@ -18,26 +17,15 @@ export interface SourceMapEntry {
 
 export class Stringifier {
   private output: string = ''
-  private line: number = 0
-  private col: number = 0
-  private sourcePath: string
   private options: StringifyOptions
   private sourceMappings: SourceMapEntry[] = []
 
-  constructor(sourcePath: string, options: Partial<StringifyOptions> & Pick<StringifyOptions, 'directivePrefix'>) {
-    this.sourcePath = sourcePath
+  constructor(_sourcePath: string, options: Partial<StringifyOptions> & Pick<StringifyOptions, 'directivePrefix'>) {
     this.options = { ...defaultStringifyOptions(options.directivePrefix), ...options }
   }
 
   private write(s: string): void {
     this.output += s
-    const newlines = s.split('\n')
-    if (newlines.length > 1) {
-      this.line += newlines.length - 1
-      this.col = newlines[newlines.length - 1]!.length
-    } else {
-      this.col += s.length
-    }
   }
 
   private writeIndent(level: number): void {
@@ -52,25 +40,6 @@ export class Stringifier {
     if (!this.options.minimize) {
       this.write('\n')
     }
-  }
-
-  private space(): void {
-    if (!this.options.minimize) {
-      this.write(' ')
-    }
-  }
-
-  private addToken(loc: { start: Position }, text: string, name?: string): void {
-    if (this.options.sourceMap) {
-      this.sourceMappings.push({
-        generatedLine: this.line,
-        generatedColumn: this.col,
-        sourceLine: loc.start.line,
-        sourceColumn: loc.start.utf16Col,
-        name,
-      })
-    }
-    this.write(text)
   }
 
   stringifyTemplate(tmpl: Template): void {

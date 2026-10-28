@@ -7,7 +7,7 @@
 // assignment prefixes.
 
 import { genLitStr } from './escape'
-import type { JsExprWriter, JsFunctionScopeWriter } from './proc_gen/writer'
+import type { JsFunctionScopeWriter } from './proc_gen/writer'
 
 // ---------------------------------------------------------------------------
 // BindingMapField

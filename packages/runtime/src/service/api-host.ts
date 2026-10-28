@@ -1,9 +1,8 @@
-import type { BridgeConnection } from '@tiny/bridge'
 import { DIAGNOSTIC_CODES } from '@tiny/manifest'
 import { cloneJsonSafe } from '../data'
 import { registerBehavior } from '../component'
 import { applyDefinitionFilters } from '../component'
-import type { StorageSnapshot, SystemInfoSnapshot } from '../types'
+import type { StorageSnapshot } from '../types'
 import type { MiniProgramPageRegistry } from './page-registry'
 import type {
   MiniProgramApiHost,
@@ -120,12 +119,6 @@ function storageInfo(snapshot: StorageSnapshot): Record<string, unknown> {
 export function createServiceApiHost(context: ServiceApiContext): MiniProgramApiHost {
   const themeListeners = context.themeListeners ?? new Set<(value: unknown) => void>()
   const keyboardListeners = new Set<(value: unknown) => void>()
-  const unsupported = (name: string) => {
-    context.connection.sendDiagnostic('warn', {
-      code: DIAGNOSTIC_CODES.UNSUPPORTED_API,
-      message: `${context.apiName}.${name} is not supported in the P0 runtime.`,
-    }, context.pageId)
-  }
   const requireTabBar = () => {
     if (!context.tabBar) throw new Error('tabBar is not configured')
     return context.tabBar
