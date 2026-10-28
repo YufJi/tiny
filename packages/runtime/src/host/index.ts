@@ -5,6 +5,7 @@ import { createHostApiRegistry, registerHostApiHandlers } from './api'
 import type { HostApiRegistry } from './api'
 import { createHostDiagnosticStore, registerHostDiagnosticHandlers } from './diagnostics'
 import type { RuntimeDiagnostic } from '../diagnostics'
+import type { RenderHostAction } from '../tree/protocol'
 import type { MiniProgramComponentSchema } from '../types'
 
 export type TinyRuntimeHost = {
@@ -112,10 +113,44 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
     }
   }
 
+  /**
+   * Built-in tags that navigate on their own (`<navigator>`) send a host action
+   * from the render thread; run it through the same handlers `wx.*` uses so the
+   * page stack, render page lifecycle and diagnostics stay identical.
+   */
+  const runRenderHostAction = (pageId: string | undefined, raw: unknown): unknown => {
+    const payload = (raw ?? {}) as Partial<RenderHostAction> & { action?: string }
+    const context = { pageId }
+    switch (payload.action) {
+      case 'navigateTo':
+        return apiRegistry.handlers['navigate.to']?.({ url: payload.url ?? '' }, context)
+      case 'redirectTo':
+        return apiRegistry.handlers['navigate.redirectTo']?.({ url: payload.url ?? '' }, context)
+      case 'switchTab':
+        return apiRegistry.handlers['navigate.switchTab']?.({ url: payload.url ?? '' }, context)
+      case 'reLaunch':
+        return apiRegistry.handlers['navigate.reLaunch']?.({ url: payload.url ?? '' }, context)
+      case 'navigateBack':
+        return apiRegistry.handlers['navigate.back']?.(
+          { delta: (payload as { delta?: number }).delta ?? 1 },
+          context,
+        )
+      case 'exit':
+        // A browser host has nothing to exit; keeping the app mounted is the
+        // honest behaviour and matches `wx.exitMiniProgram` diagnostics.
+        return { errMsg: 'exitMiniProgram:fail not supported by the browser host' }
+      default:
+        return undefined
+    }
+  }
+
   const wireRenderConnection = (connection: BridgeConnection, pageId: string) => {
     registerHostDiagnosticHandlers(connection, 'render', diagnosticStore)
     connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, (message) => {
       service.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, message.payload, { pageId: message.pageId ?? pageId })
+    })
+    connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.hostAction, (message) => {
+      void runRenderHostAction(message.pageId ?? pageId, message.payload)
     })
     connection.onEvent(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, (message) => {
       service.sendEvent(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, message.payload, {
@@ -128,6 +163,9 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
     registerHostDiagnosticHandlers(primaryRender, 'render', diagnosticStore)
     primaryRender.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, (message) => {
       service.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, message.payload, { pageId: message.pageId })
+    })
+    primaryRender.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.hostAction, (message) => {
+      void runRenderHostAction(message.pageId, message.payload)
     })
     primaryRender.onEvent(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, (message) => {
       service.sendEvent(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, message.payload, {

@@ -18,6 +18,7 @@ export const TREE_PROTOCOL = Object.freeze({
   measure: 'measure',
   animate: 'animate',
   clearAnimate: 'clearAnimate',
+  hostAction: 'hostAction',
 } as const)
 
 export const RUNTIME_CONTROL = Object.freeze({
@@ -126,6 +127,16 @@ export type RenderAnimationRequest = {
   iterations?: number
   fill?: 'none' | 'forwards' | 'backwards' | 'both'
 }
+
+/**
+ * Render-initiated host command. Built-in components such as `<navigator>` own
+ * behaviour the page never binds (a tap navigates), so the render tree asks the
+ * host to run the equivalent host API instead of synthesising a page event.
+ */
+export type RenderHostAction =
+  | { action: 'navigateTo' | 'redirectTo' | 'switchTab' | 'reLaunch'; url: string }
+  | { action: 'navigateBack'; delta?: number }
+  | { action: 'exit' }
 
 export type RenderClearAnimationRequest = {
   viewIds: RenderNodeId[]

@@ -10,6 +10,7 @@ import {
   type RenderClearAnimationRequest,
   type RenderElement,
   type RenderEventGeometry,
+  type RenderHostAction,
   type RenderIntersectionEntry,
   type RenderIntersectionRequest,
   type RenderNode,
@@ -35,6 +36,8 @@ export type TreeRenderer = {
   mount: (root: RenderNode) => void
   applyPatches: (patches: RenderPatch[]) => void
   setEventSink?: (sink: (event: TreeEventPayload) => void) => void
+  /** Built-in components ask the host to act (e.g. `<navigator>` routing). */
+  setHostActionSink?: (sink: (action: RenderHostAction) => void) => void
   applyStyles?: (styles: string[]) => void
   setPagePath?: (pagePath: string) => void
   measureCanvas?: (selector: string, canvasId: string) => {
@@ -87,6 +90,14 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     connection.sendDiagnostic(
       diagnostic.severity === 'error' ? 'error' : 'warn',
       diagnostic,
+    )
+  })
+
+  options.renderer.setHostActionSink?.((action) => {
+    connection.sendEvent(
+      TREE_PROTOCOL.domain, TREE_PROTOCOL.hostAction,
+      action,
+      currentPageId ? { pageId: currentPageId } : {},
     )
   })
 

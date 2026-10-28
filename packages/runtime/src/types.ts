@@ -1,5 +1,6 @@
 import type { Manifest } from '@tiny/manifest'
 import type { AssetUrlResolver } from './assets'
+import type { RenderHostAction } from './tree/protocol'
 
 export type RuntimeManifest = Manifest
 
@@ -209,6 +210,11 @@ export type BuiltinComponentFactoryContext = {
   }) => void
   /** Resolve a mini-program asset path for the component instance that owns it. */
   resolveAssetUrl?: (src: string, component: unknown) => string
+  /**
+   * Ask the host to run a navigation the page does not bind itself
+   * (`<navigator>`); the render tree forwards it as `tree.hostAction`.
+   */
+  hostAction?: (action: RenderHostAction) => void
 }
 
 export type BuiltinComponentFactory = (
