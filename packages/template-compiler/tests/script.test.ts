@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'vitest'
+import { afterEach, describe, expect, test } from 'vitest'
 import { TmplGroup } from '../src/group'
 
 describe('script dependencies — external script', () => {
@@ -72,5 +72,68 @@ describe('script — code generation with WXS runtime', () => {
     const output = group.getTmplGenObjectGroups()
     expect(typeof output).toBe('string')
     expect(output).toContain('modules')
+  })
+})
+
+describe('script — WXS runs as sloppy script inside the strict bundle', () => {
+  // The template artifact is an ES module, so everything in it is strict.
+  // WeChat's WXS is sloppy script: an undeclared assignment such as
+  // `var a = b = 7` must create a binding instead of throwing.
+  const PROC_GEN_STUB = () => ({
+    c() {}, d() {}, e() {}, ei() {}, i() {}, l() {}, m() {}, p() {},
+    r() {}, s() {}, w() {}, wi() {}, y() {}, wl() {},
+    a() {},
+    setEventListenerWrapper() {},
+    setFnFilter() {},
+    shadowRoot: { getSlotMode: () => 0 },
+    procGen: () => () => ({}),
+  })
+
+  const runTemplatesStrict = (source: string): Record<string, (name: string) => unknown> => {
+    // Equivalent to importing the artifact as an ES module: the module body is
+    // strict, which used to leak into the generated WXS functions.
+    const groupList = new Function(`"use strict"; return (${source})`)() as Record<
+      string,
+      (name: string) => (renderer: unknown, ...rest: unknown[]) => unknown
+    >
+    return groupList
+  }
+
+  const evaluate = (group: TmplGroup, path: string): void => {
+    const groupList = runTemplatesStrict(group.getTmplGenObjectGroups())
+    const procGen = groupList[path]!('') as (renderer: unknown, ...rest: unknown[]) => unknown
+    procGen(PROC_GEN_STUB(), {}, undefined, undefined, undefined)
+  }
+
+  const globals = globalThis as unknown as Record<string, unknown>
+  afterEach(() => {
+    delete globals.__tinyWxsInlineProbe
+    delete globals.__tinyWxsExternalProbe
+  })
+
+  test('an inline WXS module may assign to an undeclared name', () => {
+    const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
+    group.addTmpl(
+      'pages/x/x',
+      '<view>{{ mod.top }}</view><wxs module="mod">var a = b = 7\nglobalThis.__tinyWxsInlineProbe = b</wxs>',
+    )
+    expect(() => evaluate(group, 'pages/x/x')).not.toThrow()
+    expect(globals.__tinyWxsInlineProbe).toBe(7)
+  })
+
+  test('an external WXS file may assign to an undeclared name', () => {
+    const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
+    group.addScript('scripts/movable', 'var lastLeft = lastTop = 50\nglobalThis.__tinyWxsExternalProbe = lastTop')
+    group.addTmpl('pages/y/y', '<view>{{ mod.top }}</view><wxs module="mod" src="/scripts/movable" />')
+    expect(() => evaluate(group, 'pages/y/y')).not.toThrow()
+    expect(globals.__tinyWxsExternalProbe).toBe(50)
+  })
+
+  test('inline WXS is registered through the Q helper, not the shadowed D', () => {
+    const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
+    group.addTmpl('pages/z/z', '<view>{{ mod.top }}</view><wxs module="mod">exports.top = 1</wxs>')
+    const output = group.getTmplGenObjectGroups()
+    expect(output).toContain('Q.S(')
+    expect(output).not.toContain('(require,exports,module)=>{exports.top')
   })
 })

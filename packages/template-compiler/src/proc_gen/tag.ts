@@ -67,8 +67,10 @@ export function templateToProcGen(
           })
           lvaluePath = { kind: 'Script', absPath }
         } else {
+          const moduleLit = genLitStr(tmpl.path + '#' + script.moduleName.name)
+          const contentLit = genLitStr(script.content)
           scriptInitializers.push((ww) => {
-            ww.write(`${varIdent.name}||(${varIdent.name}=D(${genLitStr(tmpl.path + '#' + script.moduleName.name)},(require,exports,module)=>{${script.content}})())`)
+            ww.write(`${varIdent.name}||(${varIdent.name}=Q.S(${moduleLit},${contentLit})())`)
           })
           lvaluePath = { kind: 'InlineScript', path: tmpl.path, modName: script.moduleName.name }
         }

@@ -68,7 +68,19 @@ var D = (() => {
         modules[filename] = { exports: {}, loader: func, loaded: false };
         return () => load(filename);
     };
-})()`
+})()
+// WXS is sloppy-mode script in WeChat: an undeclared assignment such as
+// "var a = b = 1" creates a binding instead of throwing. The template bundle is
+// an ES module, which is always strict, so the module body is compiled with the
+// Function constructor to get sloppy semantics back. The helper lives on Q
+// because the procgen function signature shadows D with its data argument.
+Q.S = (filename, code) => D(filename, (require, exports, module) => {
+    const fn = Function(
+        'require', 'exports', 'module', 'getRegExp', 'getDate',
+        '//# sourceURL=wxs://' + filename + '\\n' + code,
+    );
+    fn(require, exports, module, getRegExp, getDate);
+})`
 
 function runtimeFns(w: JsFunctionScopeWriter, needWxsRuntime: boolean): void {
   for (const [k, v] of RUNTIME_ITEMS) {
@@ -296,8 +308,9 @@ export class TmplGroup implements TmplGroupRef {
   private writeAllScripts(w: JsFunctionScopeWriter): void {
     for (const [p, script] of this.scripts) {
       const pathLit = genLitStr(p)
+      const scriptLit = genLitStr(script)
       w.exprStmt((ww) => {
-        ww.write(`W[${pathLit}]=D(${pathLit},(require,exports,module)=>{${script}})`)
+        ww.write(`W[${pathLit}]=Q.S(${pathLit},${scriptLit})`)
       })
     }
   }
