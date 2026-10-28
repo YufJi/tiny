@@ -1,5 +1,4 @@
-import { bootTreeThread } from '@tiny/runtime'
-import type { TreeThreadOptions } from '@tiny/runtime'
+import type { TreeRenderer } from '@tiny/runtime'
 import { createGlassRenderTree } from './render-tree'
 import {
   BUILTIN_BASE_STYLES,
@@ -8,7 +7,6 @@ import {
 } from './generated/styles'
 
 export type RenderEntryOptions = {
-  transport: TreeThreadOptions['transport']
   /** DOM container for the page root. Defaults to `#app`, then `<body>`. */
   container?: HTMLElement
   /** Host hook mapping app asset paths to loadable URLs. */
@@ -17,6 +15,14 @@ export type RenderEntryOptions = {
   pageId?: string
   /** Document used to install built-in styles; defaults to the current one. */
   document?: Document
+}
+
+/** Renderer factory a host can boot over any transport. */
+export type GlassRenderEntry = {
+  /** Install the host-owned built-in styles; run before the thread says ready. */
+  prepare: () => void
+  createRenderer: () => TreeRenderer
+  pageId?: string
 }
 
 /**
@@ -35,17 +41,21 @@ export function installBuiltinStyles(document: Document = globalThis.document): 
   document.head.appendChild(style)
 }
 
-/** Boot a web render thread from a host transport. */
-export function bootGlassRenderEntry(options: RenderEntryOptions): void {
+/**
+ * Bind the Web render tree to a renderer factory. `prepare` installs the
+ * built-in styles before the thread announces readiness; the tree itself is
+ * only created when the host asks for the renderer, so a browser entry can
+ * hand this to `bootBrowserRenderEntry` and keep the port handshake in the
+ * host package.
+ */
+export function createGlassRenderEntry(options: RenderEntryOptions = {}): GlassRenderEntry {
   const document = options.document ?? globalThis.document
-  installBuiltinStyles(document)
-  const renderer = createGlassRenderTree({
-    container: options.container ?? document.getElementById('app') ?? document.body,
-    resolveAssetUrl: options.resolveAssetUrl,
-  })
-  bootTreeThread({
-    transport: options.transport,
-    renderer,
-    ...(options.pageId ? { initialPageId: options.pageId } : {}),
-  })
+  return {
+    prepare: () => installBuiltinStyles(document),
+    createRenderer: () => createGlassRenderTree({
+      container: options.container ?? document.getElementById('app') ?? document.body,
+      ...(options.resolveAssetUrl ? { resolveAssetUrl: options.resolveAssetUrl } : {}),
+    }),
+    ...(options.pageId ? { pageId: options.pageId } : {}),
+  }
 }

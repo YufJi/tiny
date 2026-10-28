@@ -1,21 +1,13 @@
 import { resolveAssetPath } from '@tiny/runtime'
-import {
-  installOffscreenCanvasResponder,
-  listenForRuntimePort,
-} from '@tiny/host-browser'
-import { bootGlassRenderEntry } from '@tiny/host-web-components'
-
-installOffscreenCanvasResponder()
+import { bootBrowserRenderEntry } from '@tiny/host-browser'
+import { createGlassRenderEntry } from '@tiny/host-web-components'
 
 const initialPageId = new URLSearchParams(window.location.search).get('pageId') ?? undefined
 
-listenForRuntimePort('render', (transport) => {
-  bootGlassRenderEntry({
-    transport,
-    pageId: initialPageId,
-    resolveAssetUrl: (src, sourcePath) => {
-      const resolved = resolveAssetPath(sourcePath || '', src)
-      return resolved ? `/generated/${resolved}` : undefined
-    },
-  })
-})
+bootBrowserRenderEntry(createGlassRenderEntry({
+  pageId: initialPageId,
+  resolveAssetUrl: (src, sourcePath) => {
+    const resolved = resolveAssetPath(sourcePath || '', src)
+    return resolved ? `/generated/${resolved}` : undefined
+  },
+}))
