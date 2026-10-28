@@ -1,6 +1,6 @@
 # 微信 WebView 版功能对齐度分析
 
-> **快照**：2026-10-27（第十四次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
+> **快照**：2026-10-28（第十五次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
 >
 > **结论**：加权功能对齐约 **48.9%（47–51%）**；页面启动率 92.3%；生产可替换 < 20%
 >
@@ -61,7 +61,7 @@
 
 - **完成度**：该维度内“已实现且有代码证据的条目 / 微信 WebView 文档条目”，或按关键能力清单打分。
 - **加权得分**：`Σ(权重 × 完成度)`。
-- **区间**：权重调整会让结果在 35–39% 之间浮动；把 API 权重降到 15%、框架权重升到 20%，结果约 38–39%，但不会到 50%。
+- **区间**：权重调整会让结果在 47–51% 之间浮动；把 API 权重降到 15%、框架权重升到 20%，结果约 49–53%，但不会到 60%。
 - 所有百分比都是**工程估算**，用于判断量级和优先级，不是精确指标。
 
 ---
@@ -72,13 +72,13 @@
 | --- | ---: | ---: | ---: | --- |
 | 编译/构建 | 10% | 75% | 7.50 | WXML/WXSS/WXS 基本完整；app.wxss 的 tag/class 规则可作用到页面与内置宿主；app.json 只消费少量字段；无 npm 构建、无 TS 类型检查 |
 | 框架运行时 | 18% | 86% | 15.48 | 14/14 页面生命周期、7/7 应用生命周期、5/5 路由；generics/definitionFilter/pureDataPattern 已接；tab 页缓存、group/label/touchtrack/scroller 基础保持；componentPlaceholder 未接 |
-| 内置组件 | 17% | 55% | 9.35 | 23/60 标签；P0 视觉完成，P1 内部结构大幅收口；canvas 2D/WebGL 已接真实 context；已统计属性 118/146、事件 44/46 |
+| 内置组件 | 17% | 55% | 9.35 | 23/60 标签；P0 视觉完成，P1 内部结构大幅收口；canvas 2D/WebGL 已接真实 context；已统计属性 120/146、事件 44/46 |
 | wx API | 20% | 14% | 2.80 | 70/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar/switchTab/redirectTo/reLaunch/下拉刷新/IntersectionObserver 等已接或桩 |
 | 页面形态 | 12% | 25% | 3.00 | devtool 宿主已实现导航栏/tabBar/页面滚动/触底/tab 页缓存，浏览器宿主已接下拉刷新手势；分享菜单 UI、页面转场、测试/生产宿主页面 chrome 仍缺，评分保守 |
 | 样式/渲染 | 8% | 76% | 6.08 | WXSS/rpx/作用域强；app.wxss tag/class 规则作用到页面与共享组件；canvas 2D/WebGL/RAF 已接，导出 API 仍缺 |
 | 宿主/平台 | 8% | 15% | 1.20 | 仅浏览器宿主；无原生/网络/登录/支付/分享 |
 | 开发工具 | 4% | 45% | 1.80 | 应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar、移动端访问提示；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 56% | 1.68 | 221 单测 + 52 步浏览器验收；新增 tabBar/视觉结构、应用列表/LRU/页面栈上限、移动端提示页断言；无性能/安全/原生测试 |
+| 质量/验证 | 3% | 56% | 1.68 | 221 单测 + 53 步浏览器验收；新增 tabBar/视觉结构、应用列表/LRU/页面栈上限、移动端提示页断言、swiper radio 点击回归；无性能/安全/原生测试 |
 | **合计** | **100%** | — | **48.90%** | |
 
 ### 条目覆盖率速览
@@ -92,7 +92,7 @@
 | 页面生命周期 | 14 | 14 | 100% |
 | 应用生命周期 | 7 | 7 | 100% |
 | 路由 API | 5 | 5 | 100% |
-| 已统计组件属性 | 146 | 118 | 80.8% |
+| 已统计组件属性 | 146 | 120 | 82.2% |
 | 已统计组件事件 | 46 | 44 | 95.7% |
 | app.json 关键字段 | 20+ | 4 | ≈20% |
 
@@ -133,26 +133,26 @@
 | 组件 | 文档属性 | 已支持 | 文档事件 | 已支持 | 主要缺口 |
 | --- | ---: | ---: | ---: | ---: | --- |
 | button | 22 | 22 | 9 | 9 | open-type 事件以失败回调形式触发；真实平台 API 未接 |
-| canvas | 3 | 3 | 6 | 6 | 触摸/longtap/error 已接；仍为占位画布 |
-| checkbox-group | 0 | 0 | 1 | 1 | 缺公开受控 `value` |
-| checkbox | 4 | 4 | 0 | 0 | 自定义视觉已对齐；tap/group 语义仍差 |
-| icon | 3 | 3 | 0 | 0 | WeUI 字体重写完成；longpress 缺 |
-| image | 6 | 5 | 2 | 2 | 背景图已对齐；longpress/lazy 仍缺 |
-| input | 26 | 17 | 10 | 8 | keyboardheightchange、nicknamereview、placeholder-style |
-| label | 1 | 1 | 0 | 0 | `for` 已绑定；label-target 分发仍依赖原生 label |
+| canvas | 3 | 3 | 6 | 6 | 触摸/longtap/error 已接；selector node 与 legacy 均走 OffscreenCanvas；导出 API 仍缺 |
+| checkbox-group | 0 | 0 | 1 | 1 | 受控 `value` 已接（Tiny 扩展）；组内 tap/aria 仍近似 |
+| checkbox | 4 | 4 | 0 | 0 | 自定义视觉已对齐；受控 group 已接；原生长按/aria 仍近似 |
+| icon | 3 | 3 | 0 | 0 | WeUI 字体重写完成；参考本身没有 longpress 事件，type 默认值与版本声明有差异 |
+| image | 6 | 6 | 2 | 2 | 背景图已对齐；`lazyLoad` 已接；longpress 菜单为 contextmenu 近似 |
+| input | 26 | 18 | 10 | 8 | keyboardheightchange、nicknamereview；placeholder-style 已接 |
+| label | 1 | 1 | 0 | 0 | `for` 已绑定；host tap + label-target 分发，原生 double activation 已移除 |
 | progress | 11 | 10 | 1 | 1 | 少量外观/动画细节 |
-| radio-group | 0 | 0 | 1 | 1 | 缺公开受控 `value` |
-| radio | 4 | 4 | 0 | 0 | 自定义视觉已对齐；tap/group 语义仍差 |
-| scroll-view | 24 | 10 | 10 | 10 | 三层结构/touchtrack 仍是近似 |
+| radio-group | 0 | 0 | 1 | 1 | 受控 `value` 已接（Tiny 扩展）；组内 tap/aria 仍近似 |
+| radio | 4 | 4 | 0 | 0 | 自定义视觉已对齐；label 转发 double-click 已去重；原生长按/取消选择仍近似 |
+| scroll-view | 24 | 10 | 10 | 10 | 三层结构/touchtrack 已接；底层 scroller 仍为 native 近似 |
 | slider | 12 | 12 | 2 | 2 | 自定义 track/thumb；透明 range 交互层 |
-| swiper-item | 2 | 1 | 0 | 0 | skip-hidden-item-layout |
-| swiper | 16 | 15 | 3 | 3 | 仍为 flex track，未改 slide-frame |
-| switch | 4 | 4 | 1 | 1 | 52×32 自定义视觉；type="checkbox" 缺 |
+| swiper-item | 2 | 1 | 0 | 0 | `item-id` 已接；skip-hidden 语义在 swiper 宿主上实现 |
+| swiper | 16 | 15 | 3 | 3 | slide-frame/绝对定位层已接；clip/动画细节仍近似 |
+| switch | 4 | 4 | 1 | 1 | 52×32 自定义视觉；`type="checkbox"` 分支已接 |
 | text | 4 | 3 | 0 | 0 | decode 未真正解码 |
 | view | 4 | 4 | 0 | 0 | hover 默认 none；shared `wx-hover` |
-| **合计（19 个已统计组件）** | **146** | **118（80.8%）** | **46** | **44（95.7%）** | |
+| **合计（18 个已统计组件）** | **146** | **120（82.2%）** | **46** | **44（95.7%）** | |
 
-> `textarea` / `form` / `picker` / `picker-view` / `picker-view-column` 已计入标签数，但属性/事件明细尚未并入上表；因此 146 是这 19 个组件的文档条目之和，不是 23 个组件的全量分母。
+> `textarea` / `form` / `picker` / `picker-view` / `picker-view-column` 已计入标签数，但属性/事件明细尚未并入上表；因此 146 是这 18 个组件的文档条目之和，不是 23 个组件的全量分母。
 >
 > 当前剩余项：`input`/`textarea` 的原生键盘属性、`button` 的 native/open-type、`form` 的真实上报、`picker` 的 region；`scroll-view` 接受 native 滚动近似，不再列为待修复。
 
@@ -164,7 +164,7 @@
 
 ### 4.2 wx API
 
-**70 / 502 ≈ 13.9%；官方 demo 实际用到的 150 个唯一 `wx.*` 中约支持 35 个（~23%）。**
+**70 / 502 ≈ 13.9%；官方 demo 实际用到的 150 个唯一 `wx.*` 中约支持 35–36 个（~23–24%）。**
 
 能力分布：
 
@@ -183,7 +183,7 @@
 | 画布 | 部分 | 浏览器宿主把 selector-query 与 legacy canvas 都 handoff 为 OffscreenCanvas，service 侧保留同步 Canvas API；触摸、RAF、createImage、WebGL 已接，导出 API 仍缺 |
 | 动画 | 部分 | `createAnimation` 只映射最终态 CSS transform/transition，无多 step 时序与回调 |
 | 选择器 | ✅ | service 逻辑树发起 `createSelectorQuery`，render 树按稳定 node id 查询真实 DOM 并返回 rect/dataset/scroll；支持组件作用域、`.in(component)`、scoped class；canvas `.node()` 仍走宿主 handoff |
-| 观测器 | ✅ | 页面/组件级 `createIntersectionObserver` 由 service 逻辑树发起，render 树用原生 IntersectionObserver 回传 entries；支持 thresholds、relativeTo/relativeToViewport、observeAll、disconnect |
+| 观测器 | 部分 | 页面/组件级 `this.createIntersectionObserver` 由 service 逻辑树发起，render 树用原生 IntersectionObserver 回传 entries；支持 thresholds、relativeTo/relativeToViewport、observeAll、disconnect。`wx.createIntersectionObserver(component)` 尚未暴露 |
 | 更新/性能/隐私 | 无/桩 | 无 getUpdateManager；getPerformance 为宿主桩；无隐私授权 |
 
 关键代码入口：
@@ -196,7 +196,7 @@
 
 ### 4.3 生命周期与路由
 
-页面生命周期 **14 / 14**（[service.ts](../packages/runtime/src/service.ts:18)）：
+页面生命周期 **14 / 14**（[service/thread.ts](../packages/runtime/src/service/thread.ts:1)）：
 
 | 生命周期 | 状态 |
 | --- | --- |
@@ -243,7 +243,7 @@
 
 ### 4.5 自定义组件语义
 
-2026-10-24 已完成核心语义（[component-definition.ts](../packages/runtime/src/component-definition.ts:115)）：
+2026-10-24 已完成核心语义（[component/component-definition.ts](../packages/runtime/src/component/component-definition.ts:1)）：
 
 ```text
 properties / data / methods / lifetimes / pageLifetimes / slots
@@ -257,7 +257,7 @@ hasBehavior / export / wx://component-export
 | --- | --- | --- |
 | `behaviors` | ✅ | 嵌套合并、去重、环检测、组件覆盖、生命周期/observers 顺序；`wx://` 内置 behavior 仅支持 `component-export` |
 | `observers` | ✅ | `observers` 块 + 属性级 `observer`；支持多字段、`arr[12]`、`some.field.**`、`**`；本地 `setData` 同步，父级属性变化异步一个 bridge 往返 |
-| `relations` / `getRelationNodes` | ✅ | parent/child/ancestor/descendant；双向声明校验；`linked` / `unlinked` / `linkChanged` / `linkFailed`；按节点树顺序返回 |
+| `relations` / `getRelationNodes` | ✅ | parent/child/ancestor/descendant；双向声明校验；`linked` / `unlinked` / `linkChanged` / `linkFailed`；按节点树顺序返回；page 根节点关系在 render shadow tree 上按 target path 解析 |
 | `externalClasses` | ✅ | 父级 class 可在组件模板内解析，参与样式作用域 |
 | `styleIsolation` / `addGlobalClass` | ✅ | `isolated` / `apply-shared` / `shared`；`shared` 组件样式回写 page scope；`:host` 已接入 low-priority CSS；component-as-page 显式 isolation 生效，普通 Page 根固定 shared；内置组件宿主公开、内部私有 |
 | `selectComponent` / `selectAllComponents` / `selectOwnerComponent` | ✅ | 页面/组件作用域；ID/class/tag、子代/后代/`>>>`/并集；普通选择器不跨组件边界 |
@@ -265,7 +265,7 @@ hasBehavior / export / wx://component-export
 | `wx://component-export` / `export` | ✅ | `selectComponent` 返回 `export()` 结果，异常回退实例 |
 | `generics` | ✅ | `componentGenerics` + `generic:` 已接通；支持默认实现路径与内置组件默认值 |
 | `definitionFilter` | ✅ | Behavior 声明时按引用链执行，`definitionFilterArr` 会补全嵌套过滤器；Component 级写法仍发诊断 |
-| `pureDataPattern` | ✅ | JS RegExp 与组件 JSON 字符串均已映射到 render；属性 observer 不触发 |
+| `pureDataPattern` | ✅ | JS RegExp 与组件 JSON 字符串均已映射到 service 逻辑树；属性 observer 不触发 |
 | `componentPlaceholder` | ❌ | 编译是 eager，异步占位暂不需要；配置会被忽略 |
 | `trait behaviors` / chaining API | ❌ | 未支持 |
 | Component-as-page 全套语义 | ✅ | query→properties、methods 页面生命周期、behaviors/observers/relations/styleIsolation/selectComponent/getRelationNodes/hasBehavior 已接入；generics/definitionFilter/pureDataPattern 与普通组件一致，分享/下拉刷新/退出状态回调随页面生命周期接入 |
@@ -316,12 +316,12 @@ Shadow DOM：
 
 ### 5.1 验收门禁
 
-2026-10-27 本地跑 `pnpm accept:glass-easel`，全部通过：
+2026-10-28 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
 - **221 个单元测试**（runtime 92 个，host-web-components 35 个）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
-- **52 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧，canvas 覆盖 2D/WebGL/legacy/ECharts
+- **53 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent，WeChat demo 覆盖 swiper radio 点击去重，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧，canvas 覆盖 2D/WebGL/legacy/ECharts
 - 门禁覆盖的 5 段流程无 console/page error（117 页探针的 pageerror 见 5.2）
 
 这说明现有能力是**真实可运行**的，不是纸面设计。
@@ -354,7 +354,7 @@ Shadow DOM：
 
 ### 5.3 官方 demo API 覆盖
 
-从 `tests/apps/wechat-demo` 源码中提取到 **150 个唯一 `wx.*` 调用**，引擎约支持 **35 个（~23%）**；服务 API 总面 70/502：
+从 `tests/apps/wechat-demo` 源码中提取到 **150 个唯一 `wx.*` 调用**，引擎约支持 **35–36 个（~23–24%）**；服务 API 总面 70/502：
 
 ```text
 getSystemInfo / getSystemInfoSync / getStorageSync / setStorageSync
@@ -369,17 +369,17 @@ createAnimation / createCanvasContext / createSelectorQuery
 getMenuButtonBoundingClientRect / getPerformance
 ```
 
-其中 `login` 只是宿主 stub code，`openSetting/authorize` 还没有真实权限模型；`createCanvasContext` 已接 OffscreenCanvas handoff；`createSelectorQuery` 只支持 canvas；`createAnimation` 只映射最终态；`getFileSystemManager` 只有 fail stub。真正“能用”的核心 API 约 18–22 个。
+其中 `login` 只是宿主 stub code，`openSetting/authorize` 还没有真实权限模型；`createCanvasContext` 已接 OffscreenCanvas handoff；`createSelectorQuery` 已支持页面/组件作用域、节点 rect/dataset 和 canvas node；`createIntersectionObserver` 仅页面/组件 `this.*` 接通 service→render，`wx.createIntersectionObserver` 仍缺；`createAnimation` 只映射最终态；`getFileSystemManager` 只有 fail stub。真正“能用”的核心 API 约 20–24 个。
 
-### 5.4 为什么“92.3% 启动”和“48.8% 对齐”不矛盾
+### 5.4 为什么“92.3% 启动”和“48.9% 对齐”不矛盾
 
 | 口径 | 回答的问题 | 结果 |
 | --- | --- | --- |
 | 启动率 | 页面能不能挂载？ | 92.3% |
-| 功能对齐 | 页面上的功能是否按微信语义工作？ | ~48.8% |
+| 功能对齐 | 页面上的功能是否按微信语义工作？ | ~48.9% |
 | 生产可替换 | 普通业务小程序能否直接上线？ | < 20% |
 
-启动率高，是因为引擎“尽量不崩”；功能对齐仍只有约 48.8%，是因为 API、页面形态和剩余组件属性/事件仍有大量缺口；组件语义、路由和生命周期补齐只把框架维度的短板抬了一部分。
+启动率高，是因为引擎“尽量不崩”；功能对齐仍只有约 48.9%，是因为 API、页面形态和剩余组件属性/事件仍有大量缺口；组件语义、路由和生命周期补齐只把框架维度的短板抬了一部分。
 
 ---
 
@@ -402,9 +402,11 @@ getMenuButtonBoundingClientRect / getPerformance
 - class/tag 作用域、source map
 - 850 行，行为接近 glass-easel 的 Rust 版 transformer
 
-### 6.3 双线程运行时与 bridge
+### 6.3 双侧树运行时与 bridge
 
-- service iframe / render iframe（devtool 为每页一帧）/ MessageChannel
+- service iframe 运行 glass-easel 逻辑树（数据、属性、observer、relations、生命周期、模板求值）；render iframe 运行宿主 `TreeRenderer`（真实内置组件、slot、样式、布局、DOM）
+- 首屏用 tree.flow（define/create-node/props/children/ready）同步，后续用 tree.patch；事件走 tree.event，selector query 和 IntersectionObserver 走 query.*
+- devtool 为每页创建独立 render 帧；service / render 不直接通信，由 host + MessageChannel 转发
 - 握手、超时、批处理、JSON-safe 校验
 - 结构化诊断：compile / transport / service / render / host
 - 跨线程只走版本化消息，不直接读 iframe 全局
@@ -422,7 +424,8 @@ getMenuButtonBoundingClientRect / getPerformance
 - 路由 `navigateTo` / `navigateBack` / `switchTab` / `redirectTo` / `reLaunch`
 - 页面生命周期 14 项、应用生命周期 7 项
 - Component-as-page：query→properties、`methods` 页面生命周期、behaviors/observers/relations/styleIsolation
-- 组件树按 componentId 唯一，detach/page unload 清理；页面 `onReady` 可见初始组件快照
+- 组件定义/关系/生命周期在 service 逻辑树；render 只按稳定 node id 挂载，不再持有 app data 或执行模板
+- 页面/组件 `this.createSelectorQuery` 与 `this.createIntersectionObserver` 已接入逻辑树；query/intersection 由 render 树解析
 - 子包页面直接启动
 
 ### 6.5 真实兼容证据
@@ -432,6 +435,8 @@ getMenuButtonBoundingClientRect / getPerformance
 - ECharts 通过 service 离屏 canvas → PNG 帧 → render `drawImage` 跑通
 - 内置组件、页面样式、`app.wxss` 作用域在验收中有真实断言
 - P0 新增 5 步组件语义验收：Behavior/observer、styleIsolation 矩阵、externalClasses、relations、selectComponent
+- WeChat demo 新增 swiper radio 点击回归，验证 label 转发 double-click 去重后单选/自动播放
+- 页面/组件级 IntersectionObserver 已有 service→host→render 集成用例
 
 ### 6.6 调试器
 
@@ -450,9 +455,8 @@ getMenuButtonBoundingClientRect / getPerformance
 
 | 缺口 | 影响 | 建议 |
 | --- | --- | --- |
-| `wx.request` / `uploadFile` / `downloadFile` | 无法联网，绝大多数业务小程序不可用 | 先做 request + 拦截器/超时/错误码 |
-| 异步 storage + remove/clear/info/batch | 只能同步、刷新即丢 | 持久化到 localStorage/IndexedDB，补全 API |
-| `showModal` / `showLoading` / `hideLoading` | 常用交互缺失 | 宿主层 UI + API |
+| `wx.uploadFile` / `downloadFile` | `request` 已接 fetch，但上传/下载缺失 | 基于宿主网络桥补 upload/download |
+| storage 持久化 + batch | 异步/remove/clear/info 已接，但只存在宿主内存快照，刷新即丢 | 持久化到 localStorage/IndexedDB，补 batch |
 | `navigator` | 页面内导航高频组件缺失 | 基于现有 5 个路由 API 实现 |
 | 登录/支付/分享 UI | 商业化能力缺失 | P0 末或 P1 初 |
 
@@ -463,6 +467,7 @@ getMenuButtonBoundingClientRect / getPerformance
 | 缺口 | 影响 |
 | --- | --- |
 | `componentPlaceholder` / trait behaviors / chaining API | 异步占位与 Chaining 定义扩展仍不可用 |
+| `wx.createIntersectionObserver(component)` | 页面/组件 `this.*` 已接；页面 API 的 `wx.*` 入口仍缺 |
 | scroll-view/input/swiper/button 属性与事件补全 | 已实现组件“形似神不似” |
 | `canvasToTempFilePath` / `wx.createOffscreenCanvas` / node 事件 | selector-query 2D/WebGL 动画、图片与触摸已可用；导出、独立离屏画布与 node 事件仍缺 |
 | animation 多 step / 回调 | 复杂动画不可用 |
@@ -519,7 +524,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 
 1. **跑门禁**：确认单测/浏览器验收仍通过；记录测试数量与步骤数。
 2. **重数组件与组件语义**：对照[微信组件文档](https://developers.weixin.qq.com/miniprogram/dev/component/)与 [tags.ts](../hosts/web-components/src/tags.ts:1)，更新 23/60、分类表、属性/事件表；同时按第 4.5 节更新 behaviors/observers/relations/styleIsolation/selectComponent 状态。
-3. **重数 API**：对照[微信 API 索引](https://developers.weixin.qq.com/miniprogram/dev/api/)与 [service.ts](../packages/runtime/src/service.ts:320) + [service-thread.ts](../tests/host/src/service-thread.ts:1) 的 `apiExtensions`，更新 70/502、能力表。
+3. **重数 API**：对照[微信 API 索引](https://developers.weixin.qq.com/miniprogram/dev/api/)与 [service/thread.ts](../packages/runtime/src/service/thread.ts:1) + [service-thread.ts](../tests/host/src/service-thread.ts:1) 的 `apiExtensions`，更新 70/502、能力表。
 4. **重数生命周期/路由/配置**：对照第 4.3、4.4 节逐项打勾。
 5. **重跑 117 页探针**：按 5.2 节方法，更新启动率与失败明细；若后续把探针整理为 `scripts/parity-probe.mjs`，改用该脚本并在此处替换命令。
 6. **重算总分**：更新第 3 节表格的完成度/加权分；如果权重调整，在变更记录中说明。
@@ -568,7 +573,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-26 | 第十三次校准：canvas 2D/WebGL 通过 OffscreenCanvas handoff 接入真实同步 context；117 页探针 100→108 启动、104 可见、9 失败；51 步浏览器验收；总分 44.23→44.67 | **44.67%** |
 | 2026-10-27 | 样式边界收口：app 全局规则按应用 marker 锚定，page-scope 模板同步保护 `*`/tag/id/裸伪类；内置组件拆分公开 host 样式与独立 `tiny-builtin-<tag>` 私有样式，降低 app/page/component 规则对内部 DOM 的穿透；`placeholder-class` 改为 external class；P0 增加全局泄漏与受控穿透断言，总分暂未重算 | **44.67%** |
 | 2026-10-27 | 第十四次同步：`generics`（componentGenerics + generic:）、`definitionFilter`、`pureDataPattern` 落地；`redirectTo`/`reLaunch`、下拉刷新、分享/收藏/退出状态回调、`onError`/`onPageNotFound`/`onUnhandledRejection`/`onThemeChange` 接入；页面生命周期 9→14/14、应用生命周期 3→7/7、路由 3→5/5、组件语义 8→11/12；runtime 83 单测，总分 44.67→48.80 | **48.80%** |
-| 2026-10-28 | 第十五次校准：IntersectionObserver 桥接、split-tree 运行路径、Vant/WeUI fixture；221 单测 / 52 步；117 页探针保持 108 启动、104 可见、9 失败；总分 48.80→48.90 | **48.90%** |
+| 2026-10-28 | 第十五次校准：IntersectionObserver 桥接、split-tree 运行路径、Vant/WeUI fixture；修正已实现但未记录的项（group 受控 value、switch type=checkbox、input placeholder-style、image lazyLoad、radio label 点击去重、页面级 query/intersection）；221 单测 / 53 步；117 页探针保持 108 启动、104 可见、9 失败；总分保持 48.90 | **48.90%** |
 ---
 
 ## 附录 A：117 页失败明细

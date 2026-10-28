@@ -228,7 +228,7 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
 | `tree.event` | render → service | 按 pageId 转发 | 事件带上 node id、name、detail、native、touches |
 | `tree.ready` | host → service | 宿主在 render 挂载后发送 | 请求逻辑树发送首屏 flow |
 | `query.select` | service → host → render | 把 call 转给渲染树 | selector query 在真实 DOM 中查节点，返回 rect/dataset/scroll |
-| `query.intersection` | service ↔ render | 转发 observe/unobserve 和 entry | 组件级 IntersectionObserver |
+| `query.intersection` | service ↔ render | 转发 observe/unobserve 和 entry | 页面/组件级 IntersectionObserver |
 | `canvas.measure` | service → render | 把 call 转给宿主 | 测量 canvas 节点 |
 | `canvas` handoff | service ↔ render | 浏览器宿主用 postMessage 中继 OffscreenCanvas | 2D/WebGL/RAF 画布共享，不再走 PNG 帧 |
 | `api.*` | service → host | HostApiRegistry 查 handler | 导航、toast、storage 等由宿主提供语义 |

@@ -3,13 +3,13 @@ title: '用真实小程序验收，'
 highlight: '不只跑单元测试'
 eyebrow: '测试与验收'
 lede: >-
-  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。221 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，52 个浏览器步骤验证端到端行为。
+  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。221 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，53 个浏览器步骤验证端到端行为。
 stats:
   - ['221', '单元测试']
-  - ['52', '浏览器步骤']
+  - ['53', '浏览器步骤']
   - ['5', '浏览器流程']
   - ['7', '测试小程序']
-description: '小程序引擎的验收方式：构建、内核检查、221 个单元测试、52 个浏览器步骤和七套测试小程序。'
+description: '小程序引擎的验收方式：构建、内核检查、221 个单元测试、53 个浏览器步骤和七套测试小程序。'
 name: '测试'
 pageTitle: '测试与验收 · Tiny 小程序引擎'
 order: 8
@@ -37,7 +37,7 @@ pnpm accept:glass-easel 是唯一完整的端到端入口，任何单个包的�
 前四段流程共用 `tests/host/generated`，调试器阶段写入 `apps/devtool/static`。每次编译前都会清空输出，所以不能并行跑两段浏览器验收。最后会重新编译 P0 demo，保证 `pnpm dev:glass-easel` 打开时看到的是默认示例。
 :::
 
-## 52 个步骤怎么分配 {#flows kicker="浏览器流程"}
+## 53 个步骤怎么分配 {#flows kicker="浏览器流程"}
 
 每一步都在真实 Chromium 中执行，会检查页面状态、DOM、像素或 console。
 
@@ -46,7 +46,7 @@ pnpm accept:glass-easel 是唯一完整的端到端入口，任何单个包的�
 | P0 demo | `tests/apps/demo` | 21 | 双线程启动、内置组件、按钮矩阵、样式作用域、事件、导航、storage、canvas 诊断/2D/WebGL/legacy/ECharts、组件语义、零 console error |
 | 现有示例 | `tests/apps/mini` | 10 | 真实 todos、双 add-button 实例、import/include/template、输入、ECharts 柱状图、子包、warning |
 | Taro 3 | `tests/apps/todo` | 6 | Redux todos、输入 + Enter、勾选、筛选、清空、零错误 |
-| WeChat demo | `tests/apps/wechat-demo` | 6 | 组件索引、button 页、storage API 页、零错误 |
+| WeChat demo | `tests/apps/wechat-demo` | 7 | 组件索引、button 页、storage API 页、swiper radio 点击/自动播放、零错误 |
 | 调试器 | `apps/devtool` | 9 | 默认列表和启动、状态投影、元素树、导航/返回、逐个预览测试应用、3 应用 LRU 保活、页面栈上限、Reload/Close app、零错误 |
 
 ::::split

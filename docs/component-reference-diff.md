@@ -8,7 +8,7 @@
 >
 > 历史差异审计、逐组件参考结构和修复方案已归档到 [component-reference-history.md](./archive/component-reference-history.md)。
 >
-> 更新时间：2026-10-26
+> 更新时间：2026-10-28
 >
 > 优先级：**P0** 结构或默认外观明显不一致；**P1** 能用但结构和交互仍是近似；**P2** 结构差异为主、视觉影响较小。
 
@@ -289,14 +289,14 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 
 ### 6.1 门禁
 
-2026-10-26 执行：
+2026-10-28 执行：
 
 ```text
 pnpm accept:glass-easel   # exit 0
 pnpm lint                # 8 files checked, no fixes applied
 ```
 
-门禁包含：build、runtime purity、各包单测、P0 demo、mini、Taro 3、WeChat demo、devtool 五段浏览器流程。
+门禁包含：build、runtime purity、各包单测、P0 demo、mini、Taro 3、WeChat demo、devtool 五段浏览器流程，共 53 步。
 
 ### 6.2 单测
 
@@ -317,7 +317,7 @@ pnpm lint                # 8 files checked, no fixes applied
 | P0 demo | ✅ | 宿主/样式、checkbox/slider/switch、input 逐字符输入、表单、canvas diagnostics |
 | mini | ✅ | 页面渲染、import/include、组件输入、ECharts、子包 |
 | Taro 3 | ✅ | 列表、输入、过滤、清理 |
-| WeChat demo | ✅ | 组件示例页、API 示例页、无 console error |
+| WeChat demo | ✅ | 组件示例页、API 示例页、swiper radio 点击/自动播放、无 console error |
 | devtool | ✅ | launcher、按应用启动、状态投影、页面栈、3 应用 LRU、reload/close/deep link |
 
 ### 6.4 覆盖不到的部分

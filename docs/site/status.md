@@ -35,13 +35,13 @@ order: 9
 | API | :pill[部分]{tone="warn"} | request、异步 storage、5 个路由 API、system、toast/modal、canvas、selector query 已有；媒体、真实文件、账号、位置、WebSocket 还没有。 |
 | 页面能力 | :pill[部分]{tone="warn"} | 14 项页面生命周期、5 个路由 API、内置 tabBar/switchTab、页面滚动/触底/下拉刷新、分享回调和退出状态已经支持；分享菜单 UI、页面转场、页面栈恢复、自定义 tabBar 还缺。 |
 | 组件语义 | :pill[核心可用]{tone="good"} | Behaviors、observers、relations、selectComponent、component-export、component-as-page、generics、definitionFilter、pureDataPattern 已实现，全部运行在 service 逻辑树；componentPlaceholder、trait behaviors 和 chaining API 未实现。 |
-| 样式系统 | :pill[核心可用]{tone="good"} | class/tag 作用域、rpx、@import、styleIsolation/addGlobalClass、externalClasses、shared CSS 已支持；:host 和低优先级输出未启用。 |
+| 样式系统 | :pill[核心可用]{tone="good"} | class/tag 作用域、rpx、@import、styleIsolation/addGlobalClass、externalClasses、shared CSS、`:host` 与 low-priority 输出已支持；内置组件内部样式使用独立宿主 scope。 |
 | Canvas | :pill[部分]{tone="warn"} | selector-query 与 legacy canvas 走 OffscreenCanvas handoff；2D/WebGL/RAF/createImage/touch 已支持；canvasToTempFilePath、createOffscreenCanvas 和 node 事件仍缺。 |
 | 动画 | :pill[部分]{tone="warn"} | animation 数据会编译成最终态 CSS transform/transition；没有多 step 时序和事件回调。 |
 | 诊断 | :pill[可用]{tone="good"} | 编译、transport、service、render、host 五类诊断统一收集；组件语义新增了 observer、relation、behavior 相关诊断。 |
 | Devtool | :pill[运行时级+]{tone="good"} | 应用列表、点击启动、最近 3 个应用保活、返回列表、设备框、宿主导航和 tabBar、每页 render 帧、Console/Lifecycle/Elements、Reload/Close app；页面栈默认上限 10，宿主可配置。它仍不是完整的微信开发者工具。 |
 | 性能与稳定 | :pill[未量化]{tone="warn"} | 启动、首屏、setData、内存和长时运行都没有基准，也没有压力测试。 |
-| 测试 | :pill[核心链路]{tone="good"} | 221 个单元测试、52 个浏览器步骤和 7 个测试小程序；tree flow/patch 有单元和浏览器覆盖，参考协议的细节仍有缺口。 |
+| 测试 | :pill[核心链路]{tone="good"} | 221 个单元测试、53 个浏览器步骤和 7 个测试小程序；tree flow/patch 有单元和浏览器覆盖，参考协议的细节仍有缺口。 |
 
 ## 现在最影响使用的问题 {#gaps kicker="主要缺口"}
 
@@ -49,7 +49,7 @@ order: 9
 
 ::::cards
 :::card{tag="API" tone="warn" title="宿主 API 还不够全"}
-还缺异步 storage 持久化、showModal/showLoading、登录、媒体、文件、位置和 WebSocket；组件级 IntersectionObserver 已接通。
+还缺 storage 持久化/batch、upload/download、登录、媒体、文件、位置和 WebSocket；toast/modal/loading/actionSheet 已有宿主 UI，页面/组件级 `this.createIntersectionObserver` 与 selector query 已接通，`wx.createIntersectionObserver` 入口仍缺。
 
 未实现的 API 会返回 undefined 并产生 UNSUPPORTED_API 警告，不会直接抛错。
 :::
@@ -131,7 +131,7 @@ navigateTo 会创建新的 render root 并触发 tree.ready；navigateBack 依�
 
 ::::stack
 :::card{tag="P0" title="补齐宿主 API"}
-异步 storage 持久化、modal/loading、系统信息异步版；同时把 unsupported API 从“静默返回 undefined”变成可查询的能力清单和明确诊断。
+storage 持久化/batch、upload/download、系统信息异步版；同时把 unsupported API 从“静默返回 undefined”变成可查询的能力清单和明确诊断。
 :::
 
 :::card{tag="P0" title="补常用组件"}
@@ -249,7 +249,7 @@ host-browser、host-web-components、注入能力和接入步骤。
 :::
 
 :::card{tag="测试" title="以测试为准"}
-221 个单元测试和 52 个浏览器步骤。
+221 个单元测试和 53 个浏览器步骤。
 
 [测试与验收 →](#/testing)
 :::
