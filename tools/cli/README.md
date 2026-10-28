@@ -34,8 +34,8 @@ if (result.diagnostics.some((item) => item.severity === 'error')) {
 The compiler writes:
 
 - `manifest.json` — schema-v2 app/page/component/style/template/asset index plus runtime compatibility
-- `service.js` / `render.js` — bundled thread entries
-- `templates.js` — ProcGen group list
+- `service.js` — bundled service-thread entry (the render thread no longer gets a compiler bundle)
+- `templates.js` — ProcGen group list executed by the service logic tree
 - `styles/` — compiled WXSS (+ source maps)
 - `scripts/` — transpiled scripts (+ source maps)
 
@@ -60,7 +60,7 @@ Source layout:
 - `src/compiler/templates.ts` — `TmplGroup` registration and `templates.js` emission
 - `src/compiler/styles.ts` — scoped CSS, rpx, low-priority and page-scope stylesheets
 - `src/compiler/manifest.ts` — schema-v2 manifest and page/component artifacts
-- `src/compiler/output.ts` — asset copy plus `service.js`/`render.js` entries and bundling
+- `src/compiler/output.ts` — asset copy plus the `service.js` entry and bundling
 - `src/compiler/template-source.ts` — WXML pre-passes (image inlining, `animation`, scope markers)
 - `src/compiler/module-specifiers.ts` — extensionless import rewriting for ESM hosts
 - `src/compiler/extensions.ts` — extension matching helpers

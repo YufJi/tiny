@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/YufJi/tiny/actions/workflows/ci.yml/badge.svg?branch=next)](https://github.com/YufJi/tiny/actions/workflows/ci.yml)
 
-基于 [glass-easel](https://github.com/wechat-miniprogram/glass-easel) 的小程序引擎：双线程 host、版本化 bridge 协议、独立编译器，以及浏览器调试器。
+基于 [glass-easel](https://github.com/wechat-miniprogram/glass-easel) 的小程序引擎：双侧树（service 逻辑树 + 宿主渲染树）、版本化 bridge 协议、独立编译器，以及浏览器调试器。
 
 **在线体验**：[Tiny 调试器在线版](https://yufji.github.io/tiny/devtool/index.html)，无需本地构建，可直接选择 `tests/apps` 下的示例应用运行。
 
@@ -12,19 +12,19 @@
 小程序源码 (WXML/WXSS/JS/TS)
         │
         ▼
-tools/cli ──► manifest + templates / service / render / styles
+tools/cli ──► manifest + service.js + templates.js + styles
         │
         ▼
 hosts/browser ──► iframe / MessageChannel / Canvas / devtool overlay
         │
         ▼
-hosts/web-components ──► 内置组件定义与样式，注入 render 线程
+hosts/web-components ──► 宿主渲染树的内置组件实现与样式
         │
         ▼
-packages/runtime : 双线程内核（不依赖 DOM）
-├─ service iframe : App/Page/Component 逻辑与 API
-├─ render  iframe : glass-easel 组件树；devtool 为每个页面创建独立 render 帧
-└─ bridge         : Tiny Runtime Protocol v1
+packages/runtime : 双侧树内核（不依赖 DOM）
+├─ service iframe : App/Page/Component + glass-easel 逻辑树（数据/模板/事件/relations）
+├─ render  iframe : 宿主 TreeRenderer 渲染树（真实内置组件/样式/布局/DOM）
+└─ bridge         : Tiny Runtime Protocol v1 + tree flow/patch/event
         │
         ▼
 apps/devtool (可选) : DevtoolRuntimeClient + React 面板（多 iframe 页面栈 / 生命周期时间线）
@@ -47,7 +47,7 @@ apps/devtool (可选) : DevtoolRuntimeClient + React 面板（多 iframe 页面�
 | `packages/manifest` | 编译产物 / manifest 契约 |
 | `packages/template-compiler` | WXML 解析与 ProcGen |
 | `packages/stylesheet-compiler` | WXSS、rpx、class/tag 作用域 |
-| `packages/runtime` | 双线程 runtime 内核（无宿主依赖） |
+| `packages/runtime` | 双侧树 runtime 内核（service 逻辑树 + render 树协议，无宿主依赖） |
 | `packages/bridge` | 版本化协议、transport、序列化与诊断边界 |
 
 ### 工具与应用
@@ -57,7 +57,7 @@ apps/devtool (可选) : DevtoolRuntimeClient + React 面板（多 iframe 页面�
 | `tools/cli` | 编译器：小程序源码 → glass-easel 产物与 manifest |
 | `apps/devtool` | 浏览器调试器 |
 | `hosts/browser` | 浏览器宿主：iframe、MessageChannel、Canvas、devtool overlay |
-| `hosts/web-components` | 内置组件的 Web/DOM 实现（view/text/input/swiper/canvas 等），注入 render 线程 |
+| `hosts/web-components` | 内置组件的 Web/DOM 实现（view/text/input/swiper/canvas 等），由 Web 渲染树挂载 |
 
 ### 测试
 
@@ -198,8 +198,8 @@ pnpm --filter @tiny/host-web-components test
 ## 致谢
 
 本项目基于微信小程序团队开源的 [glass-easel](https://github.com/wechat-miniprogram/glass-easel) 构建：
-render 线程的组件树、behavior 机制与模板执行均由它承载，`hosts/web-components` 的内置组件也经由
-`packages/runtime` 的适配层接入。
+service 线程的逻辑树承载组件注册、模板求值、behavior、observers、relations 和生命周期；
+render 线程的宿主渲染树复用 glass-easel 的组件树能力，`hosts/web-components` 提供其中的内置组件实现。
 
 ## License
 

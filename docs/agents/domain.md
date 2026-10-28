@@ -19,7 +19,7 @@ The initial map treats each package as its own context:
 - `apps/devtool` — web-based debugger
 - `packages/runtime` — host-independent runtime core
 - `hosts/browser` — browser host adapters (iframes, message ports, DOM canvas, devtool overlay)
-- `hosts/web-components` — web/DOM implementations of the built-in tags, injected into the render thread
+- `hosts/web-components` — web/DOM implementations of the built-in tags, mounted by the web render tree
 - `packages/stylesheet-compiler` — stylesheet compilation
 - `packages/template-compiler` — template compilation
 

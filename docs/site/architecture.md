@@ -119,7 +119,7 @@ glass-easel 不是完整的小程序 SDK。它负责组件、模板、数据绑�
 | WXML 运行时数据绑定与更新 | glass-easel | 编译器把 WXML 编成 ProcGen，运行时只传 groupList/content |
 | 事件捕获与冒泡、slot、shadow 边界 | glass-easel（两侧各自） | 逻辑树分发事件，渲染树处理真实 DOM 事件 |
 | created/attached/ready/moved/detached 生命周期 | glass-easel（service） | 组件实例和 relations 都在逻辑树 |
-| 样式作用域和 render backend | glass-easel + host | 逻辑树计算 scope；渲染树应用样式和 styleIsolation |
+| 样式作用域和渲染树 | glass-easel + host | 逻辑树计算 scope；渲染树应用样式和 styleIsolation |
 | Behaviors / observers / relations / selectComponent | Tiny runtime | component-definition 归一化 + ComponentTree + RelationManager |
 | App 生命周期、页面栈、路由、onLoad/onShow/onReady | Tiny runtime | `packages/runtime/src/service/thread.ts` |
 | 兼容输入配置、内部 Tiny 命名 | Tiny manifest + runtime | tiny.config.json → compatibility / runtimeCompatibility；内部名来自 TINY_ENGINE_NAMING |

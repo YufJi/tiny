@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted
+Accepted — superseded in part by ADR-0006: the compiler no longer emits
+`render.js`; it emits `service.js` + `templates.js`, and the manifest is
+`schemaVersion: 2`.
 
 ## Context
 

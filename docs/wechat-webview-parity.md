@@ -182,8 +182,8 @@
 | 位置/设备 | 部分 | 网络类型、电池、剪贴板、震动已接；无定位/扫码/电话/蓝牙/NFC |
 | 画布 | 部分 | 浏览器宿主把 selector-query 与 legacy canvas 都 handoff 为 OffscreenCanvas，service 侧保留同步 Canvas API；触摸、RAF、createImage、WebGL 已接，导出 API 仍缺 |
 | 动画 | 部分 | `createAnimation` 只映射最终态 CSS transform/transition，无多 step 时序与回调 |
-| 选择器 | ✅ | `createSelectorQuery` 经 render 线程查询真实 DOM，返回 rect/dataset/scroll；支持组件作用域、`.in(component)`、scoped class；canvas `.node()` 仍走宿主 handoff |
-| 观测器 | ✅ | 组件级 `createIntersectionObserver` 在 render 线程使用原生 IntersectionObserver，支持 thresholds、relativeTo/relativeToViewport、observeAll、disconnect |
+| 选择器 | ✅ | service 逻辑树发起 `createSelectorQuery`，render 树按稳定 node id 查询真实 DOM 并返回 rect/dataset/scroll；支持组件作用域、`.in(component)`、scoped class；canvas `.node()` 仍走宿主 handoff |
+| 观测器 | ✅ | 页面/组件级 `createIntersectionObserver` 由 service 逻辑树发起，render 树用原生 IntersectionObserver 回传 entries；支持 thresholds、relativeTo/relativeToViewport、observeAll、disconnect |
 | 更新/性能/隐私 | 无/桩 | 无 getUpdateManager；getPerformance 为宿主桩；无隐私授权 |
 
 关键代码入口：

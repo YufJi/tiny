@@ -228,7 +228,7 @@ OffscreenCanvas handoff、2D/WebGL、RAF、createImage 和 touch 有覆盖；can
 :::
 
 :::card{tag="API" tone="warn" title="API 覆盖有限"}
-网络、媒体、文件、位置、账号和 WebSocket 都没有端到端测试；组件级 selector query 与 IntersectionObserver 已接通 render 线程，尚未加入独立端到端用例。
+网络、媒体、文件、位置、账号和 WebSocket 都没有端到端测试；页面/组件级 selector query 与 IntersectionObserver 已有 service→host→render 的 runtime 集成用例，浏览器验收还没有独立的交互用例。
 :::
 
 :::card{tag="安全" tone="warn" title="缺少安全隔离"}

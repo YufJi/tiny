@@ -50,8 +50,9 @@ export type StyleArtifact = {
   /**
    * Present on the app stylesheet page-scope template. The compiler anchors every
    * selector compound to the placeholder scope and marks class names with
-   * `/*<sign>*\/`; the render thread expands both placeholders before appending
-   * a per-page copy. Such an artifact is not registered as a normal stylesheet.
+   * `/*<sign>*\/`; the service logic tree expands both placeholders before
+   * sending a per-page copy. Such an artifact is not registered as a normal
+   * stylesheet.
    * Consumers must identify it by this field rather than by a source filename or
    * extension.
    */

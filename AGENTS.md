@@ -7,7 +7,7 @@ Guidance for AI agents working in the `tiny` repository.
 A mini-program engine built on glass-easel.
 - **Monorepo**: pnpm workspaces + Turborepo
 - **Language**: TypeScript (core packages and tools), JavaScript/JSX (`apps/devtool`, `website`)
-- **Runtime**: dual-thread host (service + render iframes) over the versioned Tiny bridge protocol
+- **Runtime**: WeChat-style split trees — service logic tree + host render tree — over the versioned Tiny bridge protocol
 - **Compiler**: `tools/cli` produces the runtime manifest and artifacts
 
 The workspace is split by role. Keep dependencies pointing inward: core packages
@@ -53,7 +53,7 @@ must not depend on tools, apps, hosts, or tests.
 | Path | Scope |
 | --- | --- |
 | `hosts/browser` | `@tiny/host-browser`: iframes, message ports, DOM canvas, devtool overlay |
-| `hosts/web-components` | `@tiny/host-web-components`: web/DOM implementations of the built-in tags, injected into the render thread |
+| `hosts/web-components` | `@tiny/host-web-components`: web/DOM implementations of the built-in tags, mounted by the web render tree |
 
 ## Commands
 
@@ -129,13 +129,14 @@ Chrome, or `PLAYWRIGHT_CHROMIUM_PATH`).
   devtool shell; no JSBridge/`executeJavaScript`-based code.
 - `@tiny/runtime` must stay host-independent. Browser modules live in
   `@tiny/host-browser`; built-in tag implementations live in
-  `@tiny/host-web-components` and enter the render thread through
-  `RenderThreadOptions.builtinComponents`. Run `pnpm check:runtime-purity` after
-  touching the core entry.
+  `@tiny/host-web-components` and are mounted by the web render tree
+  (`bootGlassRenderEntry` / `createGlassRenderTree`). Run
+  `pnpm check:runtime-purity` after touching the core entry.
 - Host facts (menu-button geometry, performance, device capabilities) are supplied
   by the host through `ServiceThreadOptions.apiExtensions`; canvas is supplied
-  through `ServiceThreadOptions.canvas` / `RenderThreadOptions.canvas`. Do not
-  hardcode them in `packages/runtime`'s service API host.
+  through `ServiceThreadOptions.canvas` and the render tree's
+  `TreeRenderer.measure` / `measureCanvas` hooks. Do not hardcode them in
+  `packages/runtime`'s service API host.
 - The browser test host and devtool both use `@tiny/host-browser`’s
   `createStandaloneDualThreadHost`;
   devtool adds `DevtoolRuntimeClient` for lifecycle control, state projection, and

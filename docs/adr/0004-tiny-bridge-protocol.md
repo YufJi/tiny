@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted
+Accepted — extended by ADR-0006. Current protocol domains also include `tree`
+and `query`; template updates travel as `tree.flow` / `tree.patch`, not
+`data.setData`. Rendering semantics are split between the service logic tree and
+the host `TreeRenderer`.
 
 ## Context
 

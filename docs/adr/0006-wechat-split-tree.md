@@ -2,8 +2,9 @@
 
 ## Status
 
-Accepted — implementation branch `feat/wechat-split-tree`, based on `next`
-(`feb5f61`). The earlier `feat/service-logic-tree` branch is a reference only.
+Accepted and implemented. Merged into `next` as #27 (`1ac6d3a`), originally on
+`feat/wechat-split-tree` based on `next` (`feb5f61`). The earlier
+`feat/service-logic-tree` branch is a reference only.
 
 ### Implementation status
 

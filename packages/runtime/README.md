@@ -1,15 +1,16 @@
 # @tiny/runtime
 
-Dual-thread mini-program runtime: host orchestration, service/render threads,
-glass-easel adapter, and the devtool client.
+WeChat-style split-tree mini-program runtime: a service-side glass-easel logic
+tree, a host-owned render tree, the tree protocol between them, host
+orchestration, and the devtool client.
 
 ## Entry points
 
 | API | Purpose |
 | --- | --- |
 | `createTinyRuntime` | Host-side protocol bridge over one render transport or a per-page `renderConnector`; `maxPageStack` defaults to 10 |
-| `bootServiceThread` | Service-thread entry: App/Page/Component registry + API host |
-| `bootRenderThread` | Render-thread entry: glass-easel backend + component tree |
+| `bootServiceThread` | Service-thread entry: App/Page/Component registry, glass-easel logic tree, and API host |
+| `bootTreeThread` | Render-thread entry: consumes tree flow/patch/event and drives a host `TreeRenderer` |
 
 The browser host supplies the three HTML documents (`host`, service, render) and
 lives in `@tiny/host-browser`:
@@ -88,8 +89,9 @@ The full end-to-end gate is `pnpm accept:glass-easel`.
 ## Core vs browser entry
 
 `@tiny/runtime` is the host-independent engine entry. It exports the service
-runtime, render runtime, glass-easel adapter, host protocol/orchestration, and
-manifest/runtime types. It must not reference browser globals.
+runtime, the render tree thread and its host-neutral `TreeRenderer` contract,
+the tree protocol, host orchestration, and manifest/runtime types. It must not
+reference browser globals.
 
 `@tiny/host-browser` (workspace: `hosts/browser`) is the browser host adapter:
 
@@ -104,7 +106,7 @@ manifest/runtime types. It must not reference browser globals.
 Canvas is injected at the thread boundary:
 
 - `ServiceThreadOptions.canvas` (`createLegacyCanvasContext`, `acquireCanvasNode`, `releaseCanvasNode`)
-- `RenderThreadOptions.canvas` (`measure`)
+- `TreeRenderer.measure` / `TreeRenderer.measureCanvas` for render-side geometry and canvas hosts
 
 This keeps the service and render thread entries free of `window`, `document`, `Image`,
 and `HTMLCanvasElement`; browser code lives in `@tiny/host-browser`, not in core. `pnpm check:runtime-purity` walks the core entry's import
@@ -113,24 +115,20 @@ import leaks in.
 
 ## Built-in components
 
-The core runtime does not own UI. A host supplies the built-in tag
-implementations through `RenderThreadOptions.builtinComponents`:
+The core runtime does not own UI. The service logic tree only emits semantic
+built-in tags; the host render tree turns them into real components:
 
 ```ts
-import { webBuiltinComponents } from '@tiny/host-web-components'
+import { bootGlassRenderEntry } from '@tiny/host-web-components'
 
-bootRenderThread({ ..., builtinComponents: webBuiltinComponents })
+bootGlassRenderEntry({ transport, container: document.getElementById('app') })
 ```
 
 `@tiny/host-web-components` (`hosts/web-components`) provides the web/DOM
-implementation (`tiny-*` host nodes, behaviors, and CSS). Its
-`BuiltinComponents.styles` array separates public host/base rules (no scope)
-from private per-component implementation rules (an explicit
-`tiny-builtin-<tag>` scope). The factory reuses those scope IDs through
-`registerStyleScope`, so component definitions and their internal templates
-share the same scope without re-registering names. A native host can provide its
-own factory or omit the option; the runtime then registers no built-in
-definitions and unknown tags fall back to native backend elements.
+implementation (`tiny-*` host nodes, behaviors, templates, and CSS) used by
+`createGlassRenderTree`. Built-in CSS stays host-owned. A native host implements
+the same `TreeRenderer` contract with native views and can ignore the web
+package entirely.
 
 ## Host-specific APIs
 
@@ -159,22 +157,25 @@ and bridge calls; it does not invent device or performance results.
 ## Asset URLs
 
 Local mini-program asset paths are relative to the page/component source file or
-app-root absolute. Browser hosts need real URLs, so `bootRenderThread` accepts a
-host resolver:
+app-root absolute. Browser hosts need real URLs, so the web render tree accepts
+a host resolver:
 
 ```ts
-bootRenderThread({
+import { bootTreeThread } from '@tiny/runtime'
+import { createGlassRenderTree } from '@tiny/host-web-components'
+
+bootTreeThread({
   transport,
-  manifest,
-  artifacts: { templates },
-  backend,
-  initialPath,
-  resolveAssetUrl: (assetPath, { sourcePath }) =>
-    `/generated/${assetPath.split('/').map(encodeURIComponent).join('/')}`,
+  renderer: createGlassRenderTree({
+    container: document.getElementById('app')!,
+    resolveAssetUrl: (assetPath, sourcePath) =>
+      `/generated/${assetPath.split('/').map(encodeURIComponent).join('/')}`,
+  }),
 })
 ```
 
-The adapter resolves `<image src>` against the owning page/component path
-(including values produced by `setData`) and rewrites local WXSS `url(...)`
-values before style registration. External URLs, data URIs, fragments, and
-paths escaping the app root are left untouched.
+The web render tree resolves `<image src>` against the owning page/component
+path (including values produced by `setData`); the compiler rewrites local WXSS
+`url(...)` references. `ServiceThreadOptions.resolveAssetUrl` covers
+service-side canvas/selector asset paths. External URLs, data URIs, fragments,
+and paths escaping the app root are left untouched.
