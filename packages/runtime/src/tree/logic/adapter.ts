@@ -704,7 +704,19 @@ export class LogicTreeAdapter {
       }
     }
     try {
-      element.triggerEvent(payload.name, detail, { bubbles: true, composed: true })
+      // WXML/WXS handlers read `event.touches` directly (not `detail.touches`),
+      // so touch payloads ride along as extra event fields.
+      const extraFields = payload.name.startsWith('touch')
+        ? {
+            touches: payload.touches ?? [],
+            changedTouches: payload.changedTouches ?? [],
+          }
+        : undefined
+      element.triggerEvent(payload.name, detail, {
+        bubbles: true,
+        composed: true,
+        ...(extraFields ? { extraFields } : {}),
+      })
     } finally {
       this.activeTouches = undefined
       this.activeChangedTouches = undefined

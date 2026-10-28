@@ -4,19 +4,12 @@ import {
   DIAGNOSTIC_CODES,
   runtimeCompatibilityFromManifest,
   TINY_ENGINE_NAMING,
-  type PageArtifact,
 } from '@tiny/manifest'
-import {
-  buildComponentSchemas,
-  ComponentTree,
-  type ComponentLifecycleName,
-  type NormalizedComponentDefinition,
-} from '../component'
-import { cloneJsonSafe, readDataPath, type DataPatch } from '../data'
+import { buildComponentSchemas, ComponentTree } from '../component'
+import { cloneJsonSafe, type DataPatch } from '../data'
 import type { ServiceThreadOptions } from '../types'
 import type {
   MiniProgramComponentSchema,
-  QueryIntersectionEntry,
   StorageSnapshot,
   SystemInfoSnapshot,
 } from '../types'
@@ -25,10 +18,10 @@ import type { RuntimePageState, RuntimeTabBarState } from '../diagnostics'
 import { MiniProgramPageRegistry } from './page-registry'
 import { MiniProgramPageInstance, type PageLifecycleName } from './page-instance'
 import { createServiceApiHost, installMiniProgramGlobals } from './api-host'
-import { createSelectorQuery } from './selector-query'
+import { installWxsEventHost } from './wxs-host'
 import { LogicTreeAdapter, type ViewEventPayload, type ViewIntersectionEntry } from '../tree/logic'
 import { findPageArtifact, normalizeRoutePath, requireActivePage, resolveComponentReference } from './route'
-import type { MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime, TabBarApi } from './types'
+import type { ServiceApiContext, ServiceThreadRuntime, TabBarApi } from './types'
 
 export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadRuntime {
   const expectedPagePaths = options.manifest.pages
@@ -598,6 +591,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         code: DIAGNOSTIC_CODES.EVENT_HANDLER_ERROR,
         message: description,
         handler: payload.name,
+        stack: error instanceof Error ? error.stack : undefined,
       }, message.pageId)
     }
   })
@@ -690,6 +684,17 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         },
       })
       logicTree.registerComponentSchemas(componentSchemas)
+      // WXS event handlers resolve their `ins` descriptor through this global
+      // hook. Install before the first page mounts so the first event already
+      // has one; a new service thread simply replaces the previous hook.
+      installWxsEventHost({
+        getLogicTree: () => logicTree ?? undefined,
+        getPage: (pageId) => pageInstances.get(pageId),
+        requestRenderUpdate: (pageId) => scheduleTreeUpdate(pageId),
+        onDiagnostic: (pageId, code, message, details) => {
+          connection.sendDiagnostic('warn', { code, message, details }, pageId)
+        },
+      })
       options.onLogicTreeCreated?.(logicTree)
       if (pageStack.length === 0) {
         const pageArtifact = findPageArtifact(options.manifest, currentPath)

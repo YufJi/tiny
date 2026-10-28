@@ -3,10 +3,8 @@ import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import {
   RENDER_FRAGMENT_TAG,
   RENDER_PAGE_TAG,
-  RENDER_TEXT_TAG,
-  RENDER_VIRTUAL_TAG,
 } from '../protocol'
-import type { RenderElement, RenderNode, RenderText } from '../protocol'
+import type { RenderElement, RenderNode } from '../protocol'
 
 type LogicNodeType = 'element' | 'text' | 'component' | 'virtual' | 'fragment' | 'root'
 
@@ -15,17 +13,6 @@ const logicNodesByElement = new WeakMap<object, LogicBackendElement>()
 export function findLogicNodeByElement(element: unknown): LogicBackendElement | undefined {
   if (!element || typeof element !== 'object') return undefined
   return logicNodesByElement.get(element)
-}
-
-function toAttributeString(value: unknown): string {
-  if (value === null || value === undefined) return ''
-  if (typeof value === 'string') return value
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
-  try {
-    return JSON.stringify(value) ?? String(value)
-  } catch {
-    return String(value)
-  }
 }
 
 /**
@@ -58,13 +45,22 @@ export class LogicBackendElement {
   children: LogicBackendElement[] = []
   parentNode: LogicBackendElement | null = null
   shadowRoot: LogicBackendElement | null = null
+  /** Set on shadow-root nodes: the component/page element they belong to. */
+  host: LogicBackendElement | null = null
   readonly listeners: Array<{ type: string; capture: boolean; mutLevel: unknown }> = []
   released = false
   viewId: string | null = null
 
   constructor(nodeType: LogicNodeType) {
     this.nodeType = nodeType
-    if (nodeType === 'component') this.shadowRoot = new LogicBackendShadowRoot()
+    if (nodeType === 'component') {
+      const shadowRoot = new LogicBackendShadowRoot()
+      // Template nodes live in the page/component shadow tree, so an
+      // element-to-element walk needs a way back from the shadow root to the
+      // component that owns it (descriptor roots, selector scopes).
+      shadowRoot.host = this
+      this.shadowRoot = shadowRoot
+    }
   }
 
   release(): void {
@@ -73,6 +69,13 @@ export class LogicBackendElement {
 
   associateValue(value: glassEasel.Element): void {
     this.__wxElement = value
+    // Shadow-mode backends are associated element-to-value (composed backends
+    // get the reversed `context.associateValue(node, value)` call). Register
+    // the reverse lookup so `findLogicNodeByElement` can resolve a glass
+    // element to the node it was recorded as; component-scoped selector
+    // queries, intersection observers, `this.animate` and the WXS `ins`
+    // descriptor all depend on it.
+    logicNodesByElement.set(value as unknown as object, this)
   }
 
   getShadowRoot(): LogicBackendElement | undefined {

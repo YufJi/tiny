@@ -73,6 +73,22 @@ Accepted and implemented. Merged into `next` as #27 (`1ac6d3a`), originally on
   per-page frames; in-memory tests implement the same connector with headless
   tree threads, so unit tests exercise the production topology instead of a
   parallel one.
+- WXS event handlers receive a component descriptor as their second argument
+  (`function (event, ins) {}`), also exposed as `event.instance`. The compiler's
+  `Q.C` listener wrapper only adds it for listeners whose value comes from a WXS
+  module, and otherwise mirrors glass-easel's default wrapper exactly (binding
+  `this` to the host's method caller). The descriptor itself is built in the
+  service (`service/wxs-host.ts`): `selectComponent` / `selectAllComponents` /
+  `getDataset` / `getData` / `setStyle` / `callMethod`. `setStyle` merges into
+  the element's inline style and asks for a page re-diff, so the render thread
+  receives an ordinary `tree.patch`.
+- The logic backend records element-to-node associations (`associateValue`)
+  and gives shadow roots a host pointer, so a glass element can be resolved back
+  to its logic node. Component-scoped selector queries, intersection observers,
+  `this.animate` and the WXS descriptor all depend on that reverse lookup.
+- Touch events carry `touches` / `changedTouches` on the event object itself,
+  with touch members materialised into plain objects (their coordinates are
+  prototype getters, so spreading a `Touch` loses `pageX` / `clientX`).
 - The host keeps no implicit "active page". Page-scoped host calls
   (`inspectTree`, `pullDownRefresh`, `share`, `saveExitState`, `setTheme`) take
   a page id, and routing never falls back to a guessed page. Frame visibility

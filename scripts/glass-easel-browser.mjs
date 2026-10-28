@@ -1020,6 +1020,63 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
       assert.equal(pageErrors.length, 0, `page errors after navigator tap: ${pageErrors.join(' | ')}`)
     })
 
+    await step('drag a view from a WXS handler', async () => {
+      currentStep = 'drag a view from a WXS handler'
+      await page.goto(`${baseUrl}?path=packageAPI/pages/framework/wxs/movable`, {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
+      const render = await activeRender()
+      await render.waitForFunction(
+        () => Boolean(document.querySelector('.movable')),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const position = () => render.evaluate(() => {
+        const element = document.querySelector('.movable')
+        if (!element) return ''
+        const style = getComputedStyle(element)
+        return `${style.left}/${style.top}`
+      })
+      assert.equal(await position(), '50px/50px', 'movable did not start at its WXML position')
+      // The demo binds touch handlers from a WXS module; the handler receives
+      // the component descriptor (`ins`) and moves the node with setStyle.
+      await render.evaluate(() => {
+        const element = document.querySelector('.movable')
+        const touch = (x, y) => new Touch({
+          identifier: 1,
+          target: element,
+          clientX: x,
+          clientY: y,
+          pageX: x,
+          pageY: y,
+        })
+        const fire = (type, x, y) => element.dispatchEvent(new TouchEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          touches: [touch(x, y)],
+          targetTouches: [touch(x, y)],
+          changedTouches: [touch(x, y)],
+        }))
+        fire('touchstart', 100, 100)
+        fire('touchmove', 130, 120)
+        fire('touchend', 130, 120)
+      })
+      await render.waitForFunction(
+        () => getComputedStyle(document.querySelector('.movable')).left === '80px',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      assert.equal(await position(), '80px/70px', 'WXS setStyle did not move the node by the drag delta')
+      const style = await render.evaluate(
+        () => document.querySelector('.movable')?.getAttribute('style') ?? '',
+      )
+      assert.ok(style.includes('position: absolute'), 'WXS setStyle replaced the WXML inline style')
+      assert.equal(pageErrors.length, 0, `WXS drag raised page errors: ${pageErrors.join(' | ')}`)
+    })
+
     await step('run the canvas 2D node example', async () => {
       currentStep = 'run the canvas 2D node example'
       await page.goto(`${baseUrl}?path=packageComponent/pages/canvas/canvas-2d/canvas-2d`, {

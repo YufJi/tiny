@@ -280,6 +280,26 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     return undefined
   }
 
+  // Touch coordinates are prototype getters, so `{ ...touch }` drops them.
+  // Materialise the fields mini programs read into plain objects.
+  const normalizeTouchList = (list: unknown): Array<Record<string, unknown>> | undefined => {
+    if (!list || typeof list !== 'object') return undefined
+    const entries = Array.from(list as ArrayLike<Record<string, unknown>>)
+    if (entries.length === 0) return undefined
+    return entries.map((touch) => ({
+      identifier: touch.identifier,
+      pageX: touch.pageX,
+      pageY: touch.pageY,
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+      screenX: touch.screenX,
+      screenY: touch.screenY,
+      force: touch.force,
+      radiusX: touch.radiusX,
+      radiusY: touch.radiusY,
+    }))
+  }
+
   // A touch object is often shared by `touches`, `changedTouches` and the
   // detail copy; clone each occurrence so the bridge serializer sees a tree,
   // not a repeated reference it reports as circular.
@@ -359,10 +379,19 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         }
         const currentTarget = geometryOf(element, node.id)
         const target = geometryOfTarget(event.target)
+        const touchEvent = event as TouchEvent
+        const touches = binding.name.startsWith('touch')
+          ? normalizeTouchList(touchEvent.touches)
+          : undefined
+        const changedTouches = binding.name.startsWith('touch')
+          ? normalizeTouchList(touchEvent.changedTouches)
+          : undefined
         emit({
           id: node.id,
           name: binding.name,
           native: nativeFields(event),
+          ...(touches ? { touches } : {}),
+          ...(changedTouches ? { changedTouches } : {}),
           ...(currentTarget ? { currentTarget } : {}),
           ...(target ? { target } : {}),
         })
