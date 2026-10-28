@@ -14,7 +14,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prebuild": "rm -rf dist"
   },
   "devDependencies": {
     "typescript": "^5.0.0"
