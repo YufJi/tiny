@@ -220,14 +220,6 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       ...(Array.isArray(payload.properties) ? { properties: payload.properties } : {}),
     })
   })
-  for (const method of ['navigateTo', 'redirectTo', 'reLaunch', 'navigateBack', 'switchTab'] as const) {
-    connection.onControl('page', method, (message) => {
-      const payload = (message.payload ?? {}) as { path?: string; pageId?: string }
-      if (payload.pageId) currentPageId = payload.pageId
-      return { status: 'ready', path: payload.path ?? '', pageId: payload.pageId ?? currentPageId, components: [] }
-    })
-  }
-
   connection.onControl(RUNTIME_CONTROL.domain, RUNTIME_CONTROL.inspectTree, () => options.renderer.inspectTree?.() ?? null)
   connection.onControl(RUNTIME_CONTROL.domain, RUNTIME_CONTROL.measure, (message) => {
     const payload = (message.payload ?? {}) as { ids?: string[] }

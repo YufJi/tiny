@@ -6,7 +6,7 @@ import {
   TINY_ENGINE_NAMING,
 } from '@tiny/manifest'
 import { buildComponentSchemas, ComponentTree } from '../component'
-import { cloneJsonSafe, type DataPatch } from '../data'
+import { cloneJsonSafe } from '../data'
 import type { ServiceThreadOptions } from '../types'
 import type {
   MiniProgramComponentSchema,
@@ -209,42 +209,6 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     if (!logicTree || !payload.observerId || !payload.entries) return
     logicTree.handleViewIntersection(payload.observerId, payload.entries)
   })
-
-  const pendingDataPatches = new Map<string, {
-    kind: 'page' | 'component'
-    id: string
-    pageId: string
-    patch: DataPatch
-  }>()
-  let dataFlushScheduled = false
-  const flushDataPatches = (): void => {
-    dataFlushScheduled = false
-    if (pendingDataPatches.size === 0) return
-    const entries = [...pendingDataPatches.values()]
-    pendingDataPatches.clear()
-    for (const entry of entries) {
-      if (entry.kind === 'page') {
-        connection.sendEvent('data', 'setData', { pageId: entry.id, patch: entry.patch }, { pageId: entry.id })
-      } else {
-        connection.sendEvent('data', 'setData', { componentId: entry.id, patch: entry.patch }, { pageId: entry.pageId })
-      }
-    }
-  }
-  const queueDataPatch = (
-    kind: 'page' | 'component',
-    id: string,
-    pageId: string,
-    patch: DataPatch,
-  ): void => {
-    const key = `${kind}:${id}`
-    const pending = pendingDataPatches.get(key)
-    if (pending) Object.assign(pending.patch, patch)
-    else pendingDataPatches.set(key, { kind, id, pageId, patch: { ...patch } })
-    if (!dataFlushScheduled) {
-      dataFlushScheduled = true
-      queueMicrotask(flushDataPatches)
-    }
-  }
 
   const artifactsReady = options.loadArtifacts?.() ?? Promise.resolve()
   const emitPageLifecycle = (
@@ -493,7 +457,6 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       definition,
       query,
       (id, patch) => {
-        queueDataPatch('page', id, id, patch)
         syncTreePatch(id, patch)
       },
       (code, message, details) => connection.sendDiagnostic('warn', {
@@ -1174,17 +1137,6 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     if (activePage) currentPath = activePage.path
     sendRuntimeState()
     return { status: 'unloaded', pageId: page.pageId }
-  })
-
-  connection.onCall('page', 'getInitialData', async (message) => {
-    const path = (message.payload as { path?: string }).path ?? currentPath
-    const page = findPageArtifact(options.manifest, path)
-    if (!page) throw new Error(`page is not declared: ${path}`)
-    const definition = registry.pages.get(path) ?? registry.normalizedComponents.get(path)
-    return {
-      path,
-      data: definition?.data ?? {},
-    }
   })
 
   return {

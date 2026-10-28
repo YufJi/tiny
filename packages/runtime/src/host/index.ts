@@ -42,6 +42,9 @@ type RenderPageResult = {
   currentPath?: string
 }
 
+/** Page lifecycle facts that only the render document (the page's WebView) can observe. */
+const RENDER_PAGE_EVENTS = ['scroll', 'reachBottom', 'pullDownRefresh'] as const
+
 /**
  * Owns the host side of the bridge.
  *
@@ -165,6 +168,13 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
         pageId: message.pageId ?? pageId,
       })
     })
+    // The render document owns the page's scroll container, so it is the only
+    // thread that can report page scroll, reach-bottom and pull-down gestures.
+    for (const method of RENDER_PAGE_EVENTS) {
+      connection.onEvent('page', method, (message) => {
+        service.sendEvent('page', method, message.payload, { pageId: message.pageId ?? pageId })
+      })
+    }
   }
 
   const closeRenderPage = async (pageId: string) => {

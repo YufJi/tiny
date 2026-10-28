@@ -240,7 +240,7 @@ describe('tiny runtime', () => {
     void service
   })
 
-  test('batches synchronous setData calls into one bridge message', async () => {
+  test('batches synchronous setData calls into one tree.patch', async () => {
     const manifest = createManifest()
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({
@@ -250,11 +250,7 @@ describe('tiny runtime', () => {
     })
     const globalObject = globalThis as unknown as Record<string, unknown>
     ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
-      data: {},
-      onLoad() {
-        this.setData({ first: 1 })
-        this.setData({ second: 2 })
-      },
+      data: { visible: true, message: 'hello', items: [] },
     })
     const renderConnector = createHarnessRenderConnector({
       manifest,
@@ -268,24 +264,29 @@ describe('tiny runtime', () => {
       manifest,
       initialPath: PAGE_PATH,
     })
-    const dataMessages: Array<Record<string, unknown>> = []
+    const patches: Array<Record<string, unknown>> = []
     hostServiceTransport.onFrame((frame) => {
       for (const message of frame.messages) {
-        if (message.kind !== 'event' || message.domain !== 'data' || message.method !== 'setData') continue
-        dataMessages.push(message.payload as Record<string, unknown>)
+        if (message.kind !== 'event' || message.domain !== 'tree' || message.method !== 'patch') continue
+        patches.push(message.payload as Record<string, unknown>)
       }
     })
-    // The render thread is created per page by the connector during bootstrap.
     await host.service.handshake()
     await host.bootstrap()
     await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(dataMessages).toHaveLength(1)
-    expect(dataMessages[0]).toMatchObject({
+    const baseline = patches.length
+
+    service.activePage!.setData({ message: 'first' })
+    service.activePage!.setData({ message: 'second' })
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    // One microtask, one patch: the second setData wins and nothing else ships.
+    expect(patches).toHaveLength(baseline + 1)
+    expect(patches[baseline]).toMatchObject({
       pageId: 'page-1',
-      patch: { first: 1, second: 2 },
+      patches: [{ type: 'text', text: 'second' }],
     })
     await host.close()
-    void service
     void render
   })
 })

@@ -118,6 +118,48 @@ describe('render connector', () => {
     await host.close()
   })
 
+  test('relays page lifecycle events from the render thread', async () => {
+    const manifest = createManifest()
+    const [hostService, serviceTransport] = createInMemoryTransportPair()
+    const service = bootServiceThread({ transport: serviceTransport, manifest, initialPath: PAGE_A })
+    const connector = createHarnessRenderConnector({
+      manifest,
+      artifacts: { templates: createTemplates() },
+      initialPath: PAGE_A,
+    })
+    const host = createTinyRuntime({
+      serviceTransport: hostService,
+      renderConnector: connector,
+      manifest,
+      initialPath: PAGE_A,
+    })
+    const globalObject = globalThis as unknown as Record<string, unknown>
+    const lifecycles: string[] = []
+    ;(globalObject.App as (options: Record<string, unknown>) => unknown)({})
+    ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
+      data: {},
+      onPageScroll(event: { scrollTop: number }) {
+        lifecycles.push(`scroll:${event.scrollTop}`)
+      },
+      onReachBottom() {
+        lifecycles.push('reach-bottom')
+      },
+    })
+    ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({ data: {} })
+    await host.bootstrap()
+
+    // The render document owns the scroll container; the host forwards these
+    // events to the service thread, which owns the page lifecycle.
+    const pageId = service.activePage!.pageId
+    const renderConnection = connector.session(pageId)!.connection
+    renderConnection.sendEvent('page', 'scroll', { scrollTop: 32, scrollLeft: 0 }, { pageId })
+    renderConnection.sendEvent('page', 'reachBottom', { scrollTop: 900 }, { pageId })
+    await tick()
+
+    expect(lifecycles).toEqual(['scroll:32', 'reach-bottom'])
+    await host.close()
+  })
+
   test('parks tree messages for a page that opens later, and reports a message without a page id', async () => {
     const manifest = createManifest()
     const [hostService, serviceTransport] = createInMemoryTransportPair()
