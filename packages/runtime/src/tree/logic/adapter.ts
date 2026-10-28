@@ -358,6 +358,7 @@ export class LogicTreeAdapter {
     const thresholds = Array.isArray(options.thresholds)
       ? options.thresholds.map((value) => Number(value)).filter((value) => Number.isFinite(value))
       : [0]
+    const observeAll = options.observeAll === true
     let relativeTo: { type: 'viewport' | 'selector'; selector?: string; margins?: Record<string, number> } = {
       type: 'viewport',
     }
@@ -365,7 +366,7 @@ export class LogicTreeAdapter {
       const viewIds: string[] = []
       const rootIds = new Map<string, string>()
       for (const [selector] of callbacks) {
-        for (const node of queryLogicNodes(root, selector, true)) {
+        for (const node of queryLogicNodes(root, selector, observeAll)) {
           const viewId = this.backend.ensureViewId(node)
           viewIds.push(viewId)
           rootIds.set(viewId, selector)

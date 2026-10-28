@@ -30,7 +30,7 @@ function createTemplates() {
     templateExtension: '.wxml',
     templateScriptExtension: '.wxs',
   })
-  group.addTmpl(PAGE_PATH, '<view class="target">target</view>')
+  group.addTmpl(PAGE_PATH, '<view class="target">one</view><view class="target">two</view>')
   const groupList = new Function(`return ${group.getTmplGenObjectGroups()}`)() as Record<string, unknown>
   return {
     groupList,
@@ -69,6 +69,7 @@ describe('intersection observers', () => {
       initialPath: PAGE_PATH,
     })
     const rect = () => ({ left: 0, top: 0, right: 100, bottom: 40, width: 100, height: 40 })
+    const observedCounts: number[] = []
     bootSplitTreeHarness({
       transport: renderTransport,
       manifest,
@@ -76,6 +77,7 @@ describe('intersection observers', () => {
       initialPath: PAGE_PATH,
       renderer: {
         observeIntersection: (request, emit) => {
+          observedCounts.push(request.viewIds.length)
           emit(request.viewIds.map((viewId) => ({
             viewId,
             boundingClientRect: rect(),
@@ -98,12 +100,24 @@ describe('intersection observers', () => {
     const globalObject = globalThis as unknown as Record<string, unknown>
     ;(globalObject.App as (options: Record<string, unknown>) => unknown)({})
     ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
-      data: { ratio: null as number | null },
+      data: {
+        ratio: null as number | null,
+        defaultCount: 0,
+        allCount: 0,
+      },
       onReady() {
         this.createIntersectionObserver({ thresholds: [0.5] })
           .relativeToViewport()
           .observe('.target', (entry: { intersectionRatio: number }) => {
-            this.setData({ ratio: entry.intersectionRatio })
+            this.setData({
+              ratio: entry.intersectionRatio,
+              defaultCount: (this.data.defaultCount ?? 0) + 1,
+            })
+          })
+        this.createIntersectionObserver({ thresholds: [0.5], observeAll: true })
+          .relativeToViewport()
+          .observe('.target', () => {
+            this.setData({ allCount: (this.data.allCount ?? 0) + 1 })
           })
       },
     })
