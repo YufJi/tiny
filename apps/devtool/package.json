@@ -1,11 +1,11 @@
 {
   "name": "devtool",
   "version": "0.0.0",
-  "description": "Tiny \u8fd0\u884c\u65f6\u8c03\u8bd5\u5668",
+  "description": "Tiny Web Devtool",
   "private": true,
   "scripts": {
-    "dev": "rspack serve",
-    "build": "rspack build"
+    "dev": "vite",
+    "build": "vite build"
   },
   "dependencies": {
     "@rematch/core": "^2.0.1",
@@ -17,8 +17,7 @@
     "@tiny/host-web-components": "workspace:*"
   },
   "devDependencies": {
-    "@rspack/cli": "^1.7.10",
-    "@rspack/core": "^1.7.10",
-    "html-rspack-plugin": "^6.1.7"
+    "sirv": "^2.0.4",
+    "vite": "^5.4.21"
   }
 }

@@ -286,8 +286,8 @@ class RuntimePanel extends PureComponent {
       const surface = this.createSurface(app.id);
       const client = new DevtoolRuntimeClient({
         manifest,
-        serviceUrl: threadUrl('next-service.html'),
-        renderUrl: threadUrl('next-render.html'),
+        serviceUrl: threadUrl('service.html'),
+        renderUrl: threadUrl('render.html'),
         initialPath,
         container: surface,
         systemInfo: {

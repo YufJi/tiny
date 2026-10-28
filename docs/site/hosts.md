@@ -30,7 +30,7 @@ order: 6
 | 线程启动 | `bootBrowserServiceEntry` / `bootBrowserRenderEntry` + `createGlassRenderEntry` | service 需要 JS 全局；render 需要 `TreeRenderer` | service 加载 templates 并创建逻辑树；render 消费 tree flow/patch；canvas 和资源由宿主注入 |
 | 浏览器适配 | `@tiny/host-browser` | window、iframe、MessageChannel、document | iframe、端口、DOM canvas、资源 URL、DevtoolRuntimeClient |
 | 渲染树 | `@tiny/host-web-components` | DOM 和 CSS | `createGlassRenderTree`、23 个 tiny-* 内置组件、共享 behaviors 和基础 CSS |
-| 应用宿主 | `tests/host` · `apps/devtool` | 静态资源服务器 / rspack | 选择应用、加载 manifest、提供界面或自动化钩子、调用 bootstrap |
+| 应用宿主 | `tests/host` · `apps/devtool` | 静态资源服务器 / Vite | 选择应用、加载 manifest、提供界面或自动化钩子、调用 bootstrap |
 
 ```text
 应用外壳（host.ts / devtool React）
@@ -357,7 +357,7 @@ React/Redux 不直接发送协议消息，只调用 DevtoolRuntimeClient，并�
 ::::
 
 :::callout{title="为什么用 new Function import"}
-devtool 的 service/render 入口用 `new Function('url', 'return import(url)')` 加载生成产物， 避免 rspack 把动态 import 改写成自己的模块系统。这只是打包器适配，不是协议要求。
+devtool 的 service/render 入口用 `new Function('url', 'return import(url)')` 加载生成产物，避免打包器把动态 import 改写成自己的模块系统。这只是打包器适配，不是协议要求。
 :::
 
 ## 几种宿主形态 {#matrix kicker="宿主对比"}
@@ -367,7 +367,7 @@ devtool 的 service/render 入口用 `new Function('url', 'return import(url)')`
 | 宿主 | 线程容器 | 渲染后端 | canvas / 资源 | 控制方式 |
 | --- | --- | --- | --- | --- |
 | tests/host | 1 个 service + 每页 1 个 render iframe（Vite） | `createGlassRenderTree` | OffscreenCanvas handoff + /generated 资源 | URL ?path + window.__tinyRuntime |
-| apps/devtool | 1 个 service + 每页一个 render iframe（rspack） | `createGlassRenderTree` | OffscreenCanvas handoff + 相对 URL | DevtoolRuntimeClient + React/Redux |
+| apps/devtool | 1 个 service + 每页一个 render iframe（Vite） | `createGlassRenderTree` | OffscreenCanvas handoff + 相对 URL | DevtoolRuntimeClient + React/Redux |
 | runtime 单测 | 同进程 | headless TreeRenderer | 无 canvas，manifest 内联 | 直接持有 BridgeConnection |
 | 原生宿主（未实现） | JSCore / 原生容器 + 渲染层 | 实现 `TreeRenderer` | 需要实现 canvas handoff 和资源解析 | 自定义控制界面 |
 

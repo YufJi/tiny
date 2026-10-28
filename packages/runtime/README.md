@@ -152,7 +152,7 @@ bootServiceThread({
 ```
 
 The reference implementation lives in `tests/host/src/service-thread.ts`; the
-debugger host passes the same extensions in `apps/devtool/src/next/runtimeService.js`.
+debugger host passes the same extensions in `apps/devtool/src/runtimeService.js`.
 The engine only exposes mini-program semantics, host snapshots (system/storage),
 and bridge calls; it does not invent device or performance results.
 

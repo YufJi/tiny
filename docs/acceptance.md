@@ -135,7 +135,7 @@ the devtool (`hiddenFromDevtool` in `scripts/devtool-apps.mjs`):
    rendered element tree are projected into Redux and surfaced in the right-bottom
    Console / Lifecycle / Elements panel.
 4. The mini program renders inside the `375 × 812` iPhone X preview. Each page owns one
-   `next-render.html?pageId=<page-id>` iframe; the active frame is visible and hidden
+   `render.html?pageId=<page-id>` iframe; the active frame is visible and hidden
    pages stay mounted behind it. Each page frame registers only its own page WXSS and
    recursive component styles, not the other pages in the manifest. A host status bar and
    navigation bar consume the top `88px` (content stays `375 × 724`, or `375 × 674` on tab
@@ -172,7 +172,7 @@ pnpm dev:devtool
 # deep link: http://localhost:8080/?app=wechat-demo&path=page/component/index
 ```
 
-`dev:devtool` starts one watcher per test app plus the rspack dev server. Editing a
+`dev:devtool` starts one watcher per test app plus the Vite dev server. Editing a
 WXML/WXSS/JS file recompiles within ~250ms; open the app from the list and press `Reload`
 to boot the new artifacts.
 

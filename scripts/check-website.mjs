@@ -152,7 +152,7 @@ if (fs.existsSync(path.join(rootDir, 'sitemap.xml'))) {
   }
 }
 
-for (const file of ['devtool/index.html', 'devtool/next-service.html', 'devtool/next-render.html']) {
+for (const file of ['devtool/index.html', 'devtool/service.html', 'devtool/render.html']) {
   const html = checkRelativeHtml(file)
   if (html && !/name="robots" content="noindex"/.test(html)) {
     problems.push(`${file} is not marked noindex`)
@@ -160,27 +160,29 @@ for (const file of ['devtool/index.html', 'devtool/next-service.html', 'devtool/
 }
 
 // HTML staying relative is not enough: a regression in the JS string
-// constants would still fetch /runtime/... from the domain root. Check the
-// emitted bundles for root-absolute devtool URLs as well.
-function checkBundle(relativePath, forbidden, description) {
-  const filePath = path.join(rootDir, relativePath)
-  if (!fs.existsSync(filePath)) {
-    problems.push(`missing ${relativePath}`)
-    return
-  }
-  const source = fs.readFileSync(filePath, 'utf8')
-  if (forbidden.test(source)) {
-    problems.push(`${description} in ${relativePath}`)
+// constants would still fetch /runtime/... from the domain root. Vite may
+// split shared code into chunks, so every devtool bundle is scanned instead
+// of only the three entry files.
+const forbiddenDevtoolUrl =
+  /["'`]\/(?:runtime\/apps(?:\.json|\/)|service\.html|render\.html)/
+const devtoolDistDir = path.join(rootDir, 'devtool')
+if (fs.existsSync(devtoolDistDir)) {
+  const bundles = walkFiles(devtoolDistDir).filter(
+    (file) =>
+      file.endsWith('.js') &&
+      !path.relative(devtoolDistDir, file).startsWith(`runtime${path.sep}`),
+  )
+  if (bundles.length === 0) problems.push('devtool has no JS bundles')
+  for (const file of bundles) {
+    const source = fs.readFileSync(file, 'utf8')
+    if (forbiddenDevtoolUrl.test(source)) {
+      problems.push(`root-absolute devtool URL in ${path.relative(rootDir, file)}`)
+    }
   }
 }
-
-checkBundle(
-  'devtool/nextHost.js',
-  /["'`]\/(?:runtime\/apps\.json|next-service\.html|next-render\.html)/,
-  'root-absolute devtool URL',
-)
-checkBundle('devtool/nextService.js', /["'`]\/runtime\/apps\//, 'root-absolute runtime URL')
-checkBundle('devtool/nextRender.js', /["'`]\/runtime\/apps\//, 'root-absolute runtime URL')
+for (const file of ['devtool/nextHost.js', 'devtool/nextService.js', 'devtool/nextRender.js']) {
+  if (!fs.existsSync(path.join(rootDir, file))) problems.push(`missing ${file}`)
+}
 
 const registry = readJson('devtool/runtime/apps.json')
 if (registry) {

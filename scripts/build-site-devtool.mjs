@@ -129,12 +129,15 @@ function findRequiredApp(apps, id) {
   return app
 }
 
-// The compiler and host packages are consumed through their built entry points.
-// Build them on a fresh checkout so `pnpm site:build` is self-contained.
+// The fixtures are compiled with the built CLI, and the devtool resolves the
+// runtime/host packages from their source trees, which contain generated
+// artifacts (`hosts/web-components/src/generated`). Build everything on a
+// fresh checkout so `pnpm site:build` is self-contained.
 const requiredBuilds = [
   'tools/cli/dist/index.js',
   'packages/runtime/dist/index.js',
   'hosts/browser/dist/index.js',
+  'hosts/web-components/dist/index.js',
 ]
 if (requiredBuilds.some((relativePath) => !fs.existsSync(path.join(rootDir, relativePath)))) {
   console.log('[site:devtool] workspace packages are not built; running pnpm build:glass-easel')
@@ -192,10 +195,9 @@ console.log(
   `[site:devtool] building devtool (${selectedApps.map((app) => app.id).join(', ')}) ` +
     'with relative production URLs',
 )
-run(pnpm, ['--filter', 'devtool', 'exec', 'rspack', 'build'], {
+run(pnpm, ['--filter', 'devtool', 'exec', 'vite', 'build'], {
   env: {
     ...process.env,
-    NODE_ENV: 'production',
     TINY_DEVTOOL_RUNTIME_ROOT: runtimeDir,
     TINY_DEVTOOL_OUT_DIR: outputDir,
   },
@@ -203,8 +205,8 @@ run(pnpm, ['--filter', 'devtool', 'exec', 'rspack', 'build'], {
 
 const requiredOutputs = [
   'index.html',
-  'next-service.html',
-  'next-render.html',
+  'service.html',
+  'render.html',
   'nextHost.js',
   'runtime/apps.json',
   ...selectedApps.map((app) => `runtime/apps/${app.id}/generated/manifest.json`),

@@ -40,7 +40,7 @@ iframe 里的面板通过 `DevtoolRuntimeClient`（来自 `@tiny/host-browser`�
 | --- | --- | --- | --- |
 | 01 · 测试应用 | tests/apps/* | demo · mini · todo · wechat-demo · echarts · vant · weui | yes |
 | 02 · 编译 | compileMiniProgram | manifest · templates · styles · service | |
-| 03 · 打包 | rspack build | nextHost · nextService · nextRender | |
+| 03 · 打包 | vite build | nextHost · nextService · nextRender | |
 | 04 · 发布 | Vite publicDir | .cache/site-public/devtool → dist/devtool | |
 | 05 · 嵌入 | 网站 iframe | ./devtool/index.html · 同源静态资源 | yes |
 :::
@@ -48,7 +48,7 @@ iframe 里的面板通过 `DevtoolRuntimeClient`（来自 `@tiny/host-browser`�
 :::::split
 ::::stack
 :::card{tag="脚本" title="scripts/build-site-devtool.mjs"}
-扫描测试应用、编译全部应用、写入 `apps.json`、调用 rspack 生产构建，最后把产物复制到 Vite 的 public 目录。默认发布 `tests/apps` 下的全部应用；需要更小的产物时，可以用 `TINY_SITE_DEVTOOL_APPS` 只取一部分。
+扫描测试应用、编译全部应用、写入 `apps.json`、调用 Vite 生产构建，最后把产物复制到 Vite 的 public 目录。默认发布 `tests/apps` 下的全部应用；需要更小的产物时，可以用 `TINY_SITE_DEVTOOL_APPS` 只取一部分。
 :::
 
 :::card{tag="Vite" title="publicDir 指向 .cache"}
@@ -115,8 +115,8 @@ Console 显示结构化诊断（最多保留 500 条），Elements 显示 `runti
 | --- | --- | --- |
 | `runtime/apps.json` | 相对面板文档 fetch | GitHub Pages 会在路径前加 /tiny/ |
 | `runtime/apps/<app>/generated` | `new URL(..., location.href)` | 线程 iframe 的文档目录不同，绝对路径会指到站点根 |
-| `next-service.html` / `next-render.html` | 相对面板文档拼接 | 同一份构建要同时服务 / 和 /devtool/ |
-| `nextHost.js` / CSS | `rspack publicPath: "./"` | 生产产物必须可搬运；dev server 仍使用 "/" |
+| `service.html` / `render.html` | 相对面板文档拼接 | 同一份构建要同时服务 / 和 /devtool/ |
+| `nextHost.js` / CSS | `Vite base: "./"` | 生产产物必须可搬运；dev server 仍使用 "/" |
 
 :::callout{title="iframe 必须同源"}
 网站通过 `<iframe src="./devtool/index.html">` 嵌入调试器。面板和线程页必须同源，才能用 `fetch` 读取生成产物，并用 `postMessage` 转移 MessagePort。因此不要给 iframe 加 sandbox，也不要把调试器拆到独立域名。

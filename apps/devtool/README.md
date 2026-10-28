@@ -14,7 +14,7 @@ TINY_DEVTOOL_PORT=8090 pnpm dev:devtool
 
 `dev:devtool` 会扫描 `tests/apps/*`（要求目录内存在 `app.json`），为每个测试应用启动
 一个 watcher，把产物写到 `apps/devtool/static/runtime/apps/<app>/generated`，再启动
-rspack dev server。首次打开显示测试小程序列表；点击某个应用启动，列表会自动展示已保活/后台
+Vite dev server。首次打开显示测试小程序列表；点击某个应用启动，列表会自动展示已保活/后台
 运行的应用。编译完成后进入应用点 `Reload` 重新加载产物。新增或删除 `tests/apps/*` 后需要
 重启 `dev:devtool`。
 
@@ -76,7 +76,7 @@ pnpm compile:devtool:all
 
 devtool 采用**一页一 iframe** 的 render 方式，而不是所有页面共用一个 render 帧：
 
-- 首个页面启动时创建一个 `next-render.html?pageId=page-1` iframe，service 线程仍只有一个 iframe
+- 首个页面启动时创建一个 `render.html?pageId=page-1` iframe，service 线程仍只有一个 iframe
 - `navigateTo` 为新页面创建独立 iframe，页面拥有自己的 glass-easel 组件树、DOM 和滚动容器
 - 每个页面 iframe 只注册全局 app 样式（如 `app.wxss`）、当前页面样式和递归组件样式，不加载 manifest 中其他页面的样式
 - 旧页面 iframe 不销毁，只隐藏（`data-state="hidden"`）；返回时直接恢复该 iframe，
@@ -108,7 +108,7 @@ devtool 是 `apps/` 下的可运行应用，不是核心包；它与 `tests/host
 ## 结构
 
 ```text
-src/next/
+src/
 ├── main.jsx                 # 入口，挂载 RuntimePanel
 ├── runtimePanel.jsx         # 容器：应用加载、运行时生命周期、布局
 ├── runtimePanel.css         # 根布局、主题变量、右侧面板
@@ -131,10 +131,10 @@ src/next/
 │   ├── DebugPanel.css
 │   └── ElementTree.jsx      # 可展开元素树
 ├── runtimeService.js        # service 线程入口（单例）
-└── runtimeRender.js         # render 线程入口（每个页面一个 iframe）
-src/store/
-├── index.js                 # rematch store
-└── models/runtime.js        # 运行时状态投影
+├── runtimeRender.js         # render 线程入口（每个页面一个 iframe）
+└── store/
+    ├── index.js             # rematch store
+    └── models/runtime.js    # 运行时状态投影
 ```
 
 - 每个应用一个 `DevtoolRuntimeClient`；`RuntimePanel` 管理 LRU 会话池和 DOM surface
@@ -151,12 +151,11 @@ src/store/
 
 面板、线程页和生成产物之间的 URL 都相对当前文档解析，因此同一份构建可以挂在
 `http://localhost:8080/`、`/tiny/devtool/` 或任意静态子目录。生产构建使用
-`publicPath: './'`，`NODE_ENV=production` 时 rspack 会输出相对的脚本与 CSS URL。
+Vite 的 `base: './'`，输出的脚本与 CSS URL 都相对当前文档。
 
 两个可选环境变量用于把站点产物和开发期产物隔离：
 
 ```bash
-NODE_ENV=production \
 TINY_DEVTOOL_RUNTIME_ROOT=/path/to/runtime \
 TINY_DEVTOOL_OUT_DIR=/path/to/dist \
 pnpm --filter devtool build

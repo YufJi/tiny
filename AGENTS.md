@@ -154,7 +154,7 @@ records boot state, visible text, page errors and diagnostics per page into
 
 - 2-space indentation, LF, UTF-8 (`.editorconfig`)
 - No semicolons in `packages/*` and `tools/cli` TypeScript; devtool JS follows its existing style
-- TypeScript ESM in packages/tools; CommonJS only for devtool config files
+- TypeScript ESM in packages/tools; bundler configs are ESM (`apps/devtool/vite.config.mjs`, `website/vite.config.js`)
 - Prefer explicit structured diagnostics over `console.*` in runtime code
 - Chinese comments are fine for project-specific concepts
 

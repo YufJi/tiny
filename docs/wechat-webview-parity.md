@@ -669,10 +669,10 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 单/多 render 帧宿主 | [standalone-host.ts](../hosts/browser/src/standalone-host.ts:1) |
 | 页面滚动生命周期桥 | [page-lifecycle.ts](../hosts/browser/src/page-lifecycle.ts:1) |
 | tabBar 配置与页面栈 | [service.ts](../packages/runtime/src/service.ts:1) |
-| tabBar 宿主 UI | [HostTabBar.jsx](../apps/devtool/src/next/components/HostTabBar.jsx:1) |
+| tabBar 宿主 UI | [HostTabBar.jsx](../apps/devtool/src/components/HostTabBar.jsx:1) |
 | tabBar 验收 | [glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs:1120) |
 | 页面栈上限（默认 10，宿主可配） | [service.ts](../packages/runtime/src/service.ts:1) |
-| Devtool 应用列表 / 3 应用保活 | [runtimePanel.jsx](../apps/devtool/src/next/runtimePanel.jsx:1) |
+| Devtool 应用列表 / 3 应用保活 | [runtimePanel.jsx](../apps/devtool/src/runtimePanel.jsx:1) |
 | 多 iframe 页面栈验收 | [glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs:941) |
 | 官方 demo 子集 | [app.json](../tests/apps/wechat-demo/app.json:1) |
 | 117 页探针 | [parity-probe.mjs](../scripts/parity-probe.mjs:1) |

@@ -117,7 +117,7 @@ iframe at `/devtool/index.html`. `pnpm site:devtool` runs
 
 1. compiles every fixture under `tests/apps` (restrict with
    `TINY_SITE_DEVTOOL_APPS=demo,mini`) into `.cache/site-devtool/runtime`;
-2. builds `apps/devtool` with `NODE_ENV=production`, relative `publicPath`,
+2. builds `apps/devtool` with Vite (`base: './'` for relocatable URLs),
    `TINY_DEVTOOL_RUNTIME_ROOT`, and `TINY_DEVTOOL_OUT_DIR`;
 3. copies the build to `website/.cache/site-public/devtool`, which is Vite's
    `publicDir`.

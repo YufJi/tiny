@@ -1425,7 +1425,7 @@ export async function runDevtoolAcceptance({ baseUrl }) {
     }
     const surfaceSelector = (appId) => `.td-app-surface[data-app-id="${appId}"]`
     const activeRenderFrame = (appId, pageId) => page.frames().find(
-      (frame) => frame.url().includes('next-render.html')
+      (frame) => frame.url().includes('render.html')
         && frame.url().includes(`app=${appId}`)
         && frame.url().includes(`pageId=${pageId}`),
     )
