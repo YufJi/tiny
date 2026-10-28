@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
@@ -12,13 +13,28 @@ const siteBase = rawBase.endsWith('/') ? rawBase : `${rawBase}/`
 // The SSR pass renders markup only; copying the 10 MiB devtool build again
 // would just waste time.
 const isSsrBuild = process.env.TINY_SSR === '1'
+const publicDir = path.resolve(root, '.cache/site-public')
+
+// Brand assets are source files in `assets/` at the repo root. Stage them into
+// the public dir so Vite serves them in dev and emits them as real files under
+// `dist/` on build (no data-URI favicon, and the same base handling as the
+// devtool bundle).
+function stageBrandAssets() {
+  if (isSsrBuild) return
+  fs.mkdirSync(publicDir, { recursive: true })
+  for (const file of ['favicon.svg']) {
+    fs.copyFileSync(path.resolve(root, '../assets', file), path.join(publicDir, file))
+  }
+}
+
+stageBrandAssets()
 
 export default defineConfig({
   base: siteBase,
   // The embedded devtool is a build artifact, not source. `site:devtool`
   // writes it here so Vite serves it in dev and copies it to `dist/devtool/`
   // on build without polluting `website/public/` in git.
-  publicDir: isSsrBuild ? false : '.cache/site-public',
+  publicDir: isSsrBuild ? false : publicDir,
   plugins: [docsPlugin({ root })],
   server: {
     host: '127.0.0.1',

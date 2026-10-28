@@ -129,8 +129,14 @@ for (const name of routeDirectories) {
     problems.push(`missing markdown mirror ${name}.md`)
   }
 }
-for (const file of ['index.md', 'llms.txt', 'llms-full.txt', 'sitemap.xml', 'robots.txt', '404.html']) {
+for (const file of ['index.md', 'llms.txt', 'llms-full.txt', 'sitemap.xml', 'robots.txt', '404.html', 'favicon.svg']) {
   if (!fs.existsSync(path.join(rootDir, file))) problems.push(`missing ${file}`)
+}
+if (fs.existsSync(path.join(rootDir, 'index.html'))) {
+  const home = fs.readFileSync(path.join(rootDir, 'index.html'), 'utf8')
+  if (!home.includes(`href="${siteBase}favicon.svg"`)) {
+    problems.push(`index.html does not link ${siteBase}favicon.svg as a file`)
+  }
 }
 if (fs.existsSync(path.join(rootDir, '404.html'))) {
   const notFound = fs.readFileSync(path.join(rootDir, '404.html'), 'utf8')

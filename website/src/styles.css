@@ -80,16 +80,9 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .brand:hover { text-decoration: none; }
 
 .brand-mark {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 11px;
-  background: linear-gradient(135deg, #a9c9be, var(--violet));
-  color: #161d1a;
-  font-weight: 900;
-  font-size: 20px;
-  box-shadow: 0 8px 22px rgba(159, 195, 184, 0.12);
+  display: block;
+  width: 46px;
+  height: 46px;
 }
 
 .brand-copy { display: flex; flex-direction: column; line-height: 1.15; }

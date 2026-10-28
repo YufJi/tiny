@@ -28,7 +28,13 @@ export default function Layout({ route, children }) {
       <header className="site-header">
         <div className="shell header-inner">
           <a className="brand" href={pageHref(pages[0])}>
-            <span className="brand-mark" aria-hidden="true">T</span>
+            <img
+              className="brand-mark"
+              src={`${import.meta.env.BASE_URL}favicon.svg`}
+              alt=""
+              width="46"
+              height="46"
+            />
             <span className="brand-copy"><strong>Tiny</strong><small>mini-program engine</small></span>
           </a>
           <button

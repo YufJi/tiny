@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" width="112" alt="Tiny logo" />
+</p>
+
 # Tiny - 小程序引擎
 
 [![CI](https://github.com/YufJi/tiny/actions/workflows/ci.yml/badge.svg?branch=next)](https://github.com/YufJi/tiny/actions/workflows/ci.yml)

@@ -14,6 +14,27 @@ const outputDir = process.env.TINY_DEVTOOL_OUT_DIR
 const runtimeDir = process.env.TINY_DEVTOOL_RUNTIME_ROOT
   ? path.resolve(process.env.TINY_DEVTOOL_RUNTIME_ROOT)
   : path.join(root, 'static/runtime');
+// The brand mark lives with the other repo-level assets; the favicon and the
+// toolbar logo both point at the emitted `./favicon.svg` so there is one file
+// to replace.
+const brandAsset = path.join(workspaceRoot, 'assets/favicon.svg');
+
+/** Serve the mark in development, copy it next to the entry documents on build. */
+function brandAssetFile() {
+  return {
+    name: 'devtool:brand-asset',
+    configureServer(server) {
+      server.middlewares.use('/favicon.svg', (req, res) => {
+        res.setHeader('Content-Type', 'image/svg+xml');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.end(fs.readFileSync(brandAsset));
+      });
+    },
+    closeBundle() {
+      fs.copyFileSync(brandAsset, path.join(outputDir, 'favicon.svg'));
+    },
+  };
+}
 
 /**
  * The generated mini-program artifacts are not part of the bundle: they are
@@ -100,7 +121,7 @@ export default defineConfig(({ command, isPreview }) => {
       jsxFactory: 'React.createElement',
       jsxFragment: 'React.Fragment',
     },
-    plugins: [copyRuntimeArtifacts(), serveRuntimeArtifacts()],
+    plugins: [copyRuntimeArtifacts(), serveRuntimeArtifacts(), brandAssetFile()],
     server: {
       port: Number(process.env.TINY_DEVTOOL_PORT || 8080),
       hot: true,

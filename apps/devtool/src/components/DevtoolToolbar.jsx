@@ -28,7 +28,7 @@ function DevtoolToolbar({
   return (
     <div className="td-toolbar td-scroll">
       <div className="td-brand">
-        <div className="td-logo">T</div>
+        <img className="td-logo" src="./favicon.svg" alt="" width="40" height="40" />
         <div>
           <div className="td-brand-title">Tiny Runtime</div>
           <div className="td-brand-sub">Dual-thread debugger</div>
