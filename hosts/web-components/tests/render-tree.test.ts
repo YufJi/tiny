@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import * as glassEasel from 'glass-easel'
-import { createGlassRenderTree } from '../src/render-tree'
+import { applyClassProps, createGlassRenderTree } from '../src/render-tree'
 
 function element(id: string, tag: string, props: Record<string, unknown> = {}, children: any[] = []): any {
   return { type: 'element', id, tag, props, children }
@@ -38,6 +38,26 @@ describe('glass render tree', () => {
       current = current.parentNode
     }
     expect(ancestors.some((tag) => tag.endsWith('checkbox-group'))).toBe(true)
+  })
+
+  test('scopes external classes with both owner and page scopes', () => {
+    let className = ''
+    const element = {
+      setAttribute: (name: string, value: string) => {
+        if (name === 'class') className = value
+      },
+    } as unknown as HTMLElement
+    applyClassProps(
+      element,
+      { class: 'custom-class' },
+      ['owner-scope'],
+      undefined,
+      { 'custom-class': ['demo-home-nav__icon'] },
+      ['page-scope'],
+    )
+    expect(className).toContain('demo-home-nav__icon')
+    expect(className).toContain('owner-scope--demo-home-nav__icon')
+    expect(className).toContain('page-scope--demo-home-nav__icon')
   })
 
   test('keeps custom render containers as parent hosts', () => {

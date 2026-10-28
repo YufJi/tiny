@@ -91,7 +91,7 @@ const propertyName = (name: string): string => (
   name.replace(/-([a-z])/g, (_match, letter: string) => letter.toUpperCase())
 )
 
-function applyClassProps(
+export function applyClassProps(
   element: HTMLElement | null,
   props: Record<string, unknown> | undefined,
   scopes: string[] | undefined,
@@ -120,7 +120,12 @@ function applyClassProps(
     }
     for (const target of externalClasses?.[name] ?? []) {
       classes.push(target)
-      for (const scope of pageScopes) scoped.push(`${scope}--${target}`)
+      // External classes are authored by the parent component, so they need
+      // the parent's style scope as well as the page scope. Using only the
+      // page scope dropped rules like .demo-home-nav__icon from the Vant
+      // parent component's WXSS.
+      const targetScopes = new Set([...(scopes ?? []), ...pageScopes])
+      for (const scope of targetScopes) scoped.push(`${scope}--${target}`)
     }
   }
   if (classes.length > 0 || scoped.length > 0) {
