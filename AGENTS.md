@@ -138,7 +138,7 @@ records boot state, visible text, page errors and diagnostics per page into
 - `@tiny/runtime` must stay host-independent. Browser modules live in
   `@tiny/host-browser`; built-in tag implementations live in
   `@tiny/host-web-components` and are mounted by the web render tree
-  (`bootGlassRenderEntry` / `createGlassRenderTree`). Run
+  (`createGlassRenderEntry` / `createGlassRenderTree`). Run
   `pnpm check:runtime-purity` after touching the core entry.
 - Host facts (menu-button geometry, performance, device capabilities) are supplied
   by the host through `ServiceThreadOptions.apiExtensions`; canvas is supplied

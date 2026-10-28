@@ -27,7 +27,7 @@ order: 6
 | 层 | 入口 | 环境假设 | 职责 |
 | --- | --- | --- | --- |
 | 内核编排 | `createTinyRuntime(options)` | 不假设有 DOM | 两个 BridgeConnection、HostApiRegistry、诊断仓库和启动顺序 |
-| 线程启动 | `bootServiceThread` + `bootTreeThread` / `bootGlassRenderEntry` | service 需要 JS 全局；render 需要 `TreeRenderer` | service 加载 templates 并创建逻辑树；render 消费 tree flow/patch；canvas 和资源由宿主注入 |
+| 线程启动 | `bootBrowserServiceEntry` / `bootBrowserRenderEntry` + `createGlassRenderEntry` | service 需要 JS 全局；render 需要 `TreeRenderer` | service 加载 templates 并创建逻辑树；render 消费 tree flow/patch；canvas 和资源由宿主注入 |
 | 浏览器适配 | `@tiny/host-browser` | window、iframe、MessageChannel、document | iframe、端口、DOM canvas、资源 URL、DevtoolRuntimeClient |
 | 渲染树 | `@tiny/host-web-components` | DOM 和 CSS | `createGlassRenderTree`、23 个 tiny-* 内置组件、共享 behaviors 和基础 CSS |
 | 应用宿主 | `tests/host` · `apps/devtool` | 静态资源服务器 / rspack | 选择应用、加载 manifest、提供界面或自动化钩子、调用 bootstrap |
@@ -38,12 +38,13 @@ order: 6
               v
 @tiny/host-browser                浏览器环境适配
   createStandaloneDualThreadHost
+  bootBrowserServiceEntry / bootBrowserRenderEntry
   canvas handoff / runtime-port
   DevtoolRuntimeClient
 
 @tiny/host-web-components         Web 渲染树
   createGlassRenderTree（tiny-* + 基础 CSS）
-  bootGlassRenderEntry
+  createGlassRenderEntry（渲染树工厂）
               |
               v  createTinyRuntime
 createTinyRuntime                 内核编排
@@ -88,7 +89,7 @@ XMLHttpRequest · WebSocket · fetch · performance
 :::
 
 :::card{tag="组件" tone="violet" title="@tiny/host-web-components"}
-负责 Web 渲染树、`tiny-*` 内置组件、behaviors 和基础 CSS；tests/host 与 devtool 的 render 入口调用 `bootGlassRenderEntry`。
+负责 Web 渲染树、`tiny-*` 内置组件、behaviors 和基础 CSS；tests/host 与 devtool 的 render 入口用 `createGlassRenderEntry` 提供渲染树工厂。
 :::
 
 :::card{tag="结果" title="可移植性"}
@@ -109,7 +110,7 @@ XMLHttpRequest · WebSocket · fetch · performance
 | 等待 service 就绪 | 宿主监听 tiny-runtime-port-ready，只接受目标 iframe 的消息，最多等 15 秒。 | waitForThreadReady(iframe, 'service') |
 | 转移 service 端口并握手 | 宿主把 port2 交给 service，service 安装 Transport 后完成 runtime.hello。 | postMessage({ type: 'tiny-runtime-port' }, '*', [port]) |
 | service bootstrap | 导入 service.js，安装兼容全局，加载 templates/styles，创建 glass-easel 逻辑树和首屏页面，返回 pageId、initialData 和 componentSchemas。 | service.control('runtime', 'bootstrap') |
-| 创建 render root | 宿主为页面创建 render iframe，render 入口用 `bootGlassRenderEntry` 创建 `createGlassRenderTree` 和宿主内置组件。 | bootGlassRenderEntry({ transport, ... }) |
+| 创建 render root | 宿主为页面创建 render iframe，render 入口把 `createGlassRenderEntry` 的工厂交给 `bootBrowserRenderEntry`；端口到达后才创建 `createGlassRenderTree` 和宿主内置组件。 | bootBrowserRenderEntry(createGlassRenderEntry(...)) |
 | render 就绪，发送首屏 flow | render 收到 bootstrap 后返回 ready；宿主发 `tree.ready`，service 用逻辑树快照发送 `tree.flow`，render 挂载页面根。 | tree.ready → tree.flow |
 | 触发 onReady | 宿主发 `page.ready`，service 触发页面 onReady 并广播 RUNTIME_STATE。 | service.control('page', 'ready', { pageId }) |
 :::
@@ -119,7 +120,7 @@ XMLHttpRequest · WebSocket · fetch · performance
 :::card{tag="竞态" title="为什么线程要先装好连接"}
 如果线程在安装 connection 之前就发 ready，宿主会立刻转移端口；端口消息到达时还没有监听器，第一帧就丢了。
 
-因此 render 入口会先导入 templates、拉取 styles，再调用 `listenForRuntimePort`；devtool 的 service 入口也会先取 manifest。
+因此端口监听封装在宿主包里：service 侧等 manifest 和 styles 就绪后才调用 `bootBrowserServiceEntry`；render 侧由 `bootBrowserRenderEntry` 先装 canvas responder，再监听端口。
 :::
 
 :::card{tag="超时" title="15 秒固定超时"}
@@ -156,13 +157,10 @@ bootBrowserServiceEntry({
 })
 
 // render 线程：创建宿主渲染树和内置组件
-listenForRuntimePort('render', (transport) => {
-  bootGlassRenderEntry({
-    transport,
-    container: document.getElementById('app'),
-    resolveAssetUrl: (src, sourcePath) => resolveAssetPath(sourcePath, src),
-  })
-})
+bootBrowserRenderEntry(createGlassRenderEntry({
+  container: document.getElementById('app'),
+  resolveAssetUrl: (src, sourcePath) => resolveAssetPath(sourcePath, src),
+}))
 ```
 :::::
 
@@ -187,10 +185,12 @@ render 线程不再接收 templates、backend 或 builtinComponents；这些都�
 
 | TreeThreadOptions / RenderEntryOptions | 用途 | 是否必需 |
 | --- | --- | --- |
-| `transport` | render 连接 | 是 |
+| `transport` | render 连接 | `bootTreeThread` 必需 |
 | `renderer` | 宿主 `TreeRenderer`：mount / applyPatches / applyStyles / query / measure / inspectTree | `bootTreeThread` 必需 |
+| `prepare` | 在宣告 ready 之前执行，用来装宿主内置样式 | 否 |
+| `createRenderer` | 渲染树工厂，端口到达后才调用；`bootBrowserRenderEntry` 用它创建树 | `bootBrowserRenderEntry` 必需 |
 | `initialPageId` | 这个 render root 对应的页面 | 否 |
-| `container` | Web 渲染树的 DOM 容器 | `bootGlassRenderEntry` 使用 |
+| `container` | Web 渲染树的 DOM 容器 | `createGlassRenderEntry` 使用 |
 | `resolveAssetUrl` | Web 内置组件解析图片等资源 | 使用本地资源时必需 |
 
 ::::split
@@ -202,6 +202,7 @@ render 线程不再接收 templates、backend 或 builtinComponents；这些都�
 :::
 
 :::card{title="render 线程还要做什么"}
+- 在宣告 ready 之前装好宿主内置样式（`prepare`）
 - 实现 TreeRenderer（Web 侧 `createGlassRenderTree`）
 - 创建真实内置组件和页面根容器
 - 接收 `tree.flow` / `tree.patch`，维护 node id 到真实组件的映射
@@ -296,7 +297,7 @@ service 通过 `createLegacyCanvasContext` / `acquireCanvasNode` 拿到 Offscree
 :::card{tag="tests/host" title="无界面单应用宿主"}
 Vite 提供三个入口：`index.html` 宿主、`service.html` 和 `render.html`。宿主把页面挂到 `#app`，并暴露 `window.__tinyRuntime` 给 Playwright。
 
-service 入口使用 `bootBrowserServiceEntry` 加载 templates/styles 和 service bundle；render 入口使用 `bootGlassRenderEntry` 创建 Web 渲染树、内置组件和 OffscreenCanvas responder。
+service 入口使用 `bootBrowserServiceEntry` 加载 templates/styles 和 service bundle；render 入口把 `createGlassRenderEntry` 的工厂交给 `bootBrowserRenderEntry`，由它安装 OffscreenCanvas responder、等端口并创建 Web 渲染树和内置组件。
 :::
 
 :::card{tag="静态资源" title="产物怎么到线程里"}
@@ -317,13 +318,10 @@ service.html
       })
 
 render.html
-  |-- installOffscreenCanvasResponder()
-  |-- listenForRuntimePort('render')
-  +-- bootGlassRenderEntry({
-        transport,
+  +-- bootBrowserRenderEntry(createGlassRenderEntry({
         container: document.getElementById('app'),
         resolveAssetUrl,
-      })
+      }))
 ```
 
 

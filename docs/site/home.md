@@ -59,7 +59,7 @@ Bridge 定义消息信封、帧、调用与回复、事件批处理、超时和 
 :::
 
 :::card{tag="packages/runtime" title="线程启动参数"}
-`bootServiceThread` 接收 transport、manifest、`loadTemplates`、`loadStyle` 和宿主 canvas；render 线程用 `bootTreeThread` + `TreeRenderer`（Web 侧是 `bootGlassRenderEntry`）消费逻辑树发来的 flow 和 patch。内核本身不依赖浏览器。
+`bootServiceThread` 接收 transport、manifest、`loadTemplates`、`loadStyle` 和宿主 canvas；render 线程用 `bootTreeThread` + `TreeRenderer`（Web 侧由 `createGlassRenderEntry` 提供渲染树，浏览器入口是 `bootBrowserRenderEntry`）消费逻辑树发来的 flow 和 patch。内核本身不依赖浏览器。
 
 [看宿主如何启动线程 →](#/hosts)
 :::

@@ -79,7 +79,7 @@ service 通过 `loadTemplates`、`loadStyle`、`canvas`、`resolveAssetUrl` 接�
 :::card{tag="hosts/web-components" tone="violet" title="内置组件实现"}
 `@tiny/host-web-components` 负责 Web 渲染树、`tiny-*` 内置组件、行为和默认 CSS。
 
-它是宿主包，不属于内核。render 入口用 `bootGlassRenderEntry` 创建 `createGlassRenderTree`，原生宿主可以实现同一个 `TreeRenderer` 契约。
+它是宿主包，不属于内核。render 入口把 `createGlassRenderEntry` 的渲染树工厂交给 `bootBrowserRenderEntry`，原生宿主可以实现同一个 `TreeRenderer` 契约。
 :::
 ::::
 :::::
@@ -97,12 +97,14 @@ packages/runtime/src/index.ts
 # hosts/browser
   canvas-bridge.ts       OffscreenCanvas handoff 与 canvas 测量
   runtime-port.ts        iframe 端口握手
+  service-entry.ts       service 线程入口（含端口与 canvas 适配）
+  render-entry.ts        render 线程入口（端口 + 渲染树工厂）
   standalone-host.ts     service + 每页 render 的连接
   devtool-client.ts      调试器控制接口
 
 # hosts/web-components
   createGlassRenderTree  Web 渲染树 + tiny-* 内置组件
-  bootGlassRenderEntry   render 线程入口
+  createGlassRenderEntry 渲染树工厂（样式 + DOM 容器）
 ```
 
 :::callout{title="为什么要守住这条线"}
@@ -181,7 +183,7 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
 | 编译并写出产物 | tools/cli | 读取 app.json，扫描入口，生成 templates.js、styles、scripts 和 service.js，最后写出 schema-v2 manifest.json。诊断信息随 manifest 一起返回。 | compileMiniProgram({ sourceDir, outputDir }) |
 | 创建两条独立通道 | 宿主 | 每个线程各一条 MessageChannel。service 和 render 不共享端口，由宿主分别持有两条 hostTransport。 | createHostMessageChannelPair() × 2 |
 | 创建 iframe，等待线程就绪 | 宿主 | service iframe 被隐藏为 0×0，render iframe 填满容器；每页 render 模式下，每新建一个页面就创建一个 render iframe。宿主等待线程发回 tiny-runtime-port-ready，最多等 15 秒。 | createStandaloneDualThreadHost(...) |
-| 线程装好连接后再通知宿主 | service / render | service 先拿到 manifest、templates 和 styles；render 先创建 TreeRenderer 和内置组件。service bundle 在 bootstrap 时通过 loadArtifacts 导入。线程要等 connection 安装完成，才调用 listenForRuntimePort，避免端口消息到达时丢帧。 | listenForRuntimePort('render', (transport) => ...) |
+| 线程装好连接后再通知宿主 | service / render | service 先拿到 manifest、templates 和 styles；render 先在 `prepare` 里装好内置样式，渲染树本身在端口到达后创建。service bundle 在 bootstrap 时通过 loadArtifacts 导入。线程要等 connection 安装完成，才调用 `listenForRuntimePort`，避免端口消息到达时丢帧。 | bootBrowserServiceEntry(...) / bootBrowserRenderEntry(createGlassRenderEntry(...)) |
 | 把 MessagePort 交给线程 | 宿主 | 宿主把 port2 作为 transferable 发给对应 iframe；线程再用 createMessagePortTransport 包装成 Transport。 | postMessage({ type: 'tiny-runtime-port' }, '*', [port]) |
 | 两条连接分别握手 | bridge | 宿主分别发起 runtime.hello，service/render 回复握手信息并发送 runtime.ready。协议版本不一致时连接会直接关闭。 | host.service.handshake() · host.render.handshake() |
 | service 启动首屏 | 宿主 → service | 导入 service.js，App/Page/Component 在这里注册，App.onLaunch/onShow 也会立即执行。随后安装 runtimeCompatibility 兼容全局，构建组件 schema 和 glass-easel 逻辑树，创建首个页面并触发 onLoad/onShow，返回 pageId、initialData 和 componentSchemas。 | service.control('runtime', 'bootstrap') |

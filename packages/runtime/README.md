@@ -118,9 +118,12 @@ The core runtime does not own UI. The service logic tree only emits semantic
 built-in tags; the host render tree turns them into real components:
 
 ```ts
-import { bootGlassRenderEntry } from '@tiny/host-web-components'
+import { bootTreeThread } from '@tiny/runtime'
+import { createGlassRenderEntry } from '@tiny/host-web-components'
 
-bootGlassRenderEntry({ transport, container: document.getElementById('app') })
+const entry = createGlassRenderEntry({ container: document.getElementById('app') })
+entry.prepare()
+bootTreeThread({ transport, renderer: entry.createRenderer() })
 ```
 
 `@tiny/host-web-components` (`hosts/web-components`) provides the web/DOM

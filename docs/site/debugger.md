@@ -103,7 +103,7 @@ Console 显示结构化诊断（最多保留 500 条），Elements 显示 `runti
 | --- | --- | --- |
 | `DevtoolRuntimeClient` | `@tiny/host-browser` | 创建线程、bootstrap、导航/前后台/Reload/Close、inspectTree，并维护页面栈和生命周期 |
 | `runtimeService.js` | service 线程入口 | 读取 `?app=`，加载 manifest、templates、styles 和 service.js，创建逻辑树 |
-| `runtimeRender.js` | render 线程入口 | 调用 `bootGlassRenderEntry`，创建 Web 渲染树、内置组件和 canvas responder |
+| `runtimeRender.js` | render 线程入口 | 把 `createGlassRenderEntry` 交给 `bootBrowserRenderEntry`，安装 canvas responder 并创建 Web 渲染树和内置组件 |
 | `RuntimePanel` | React/Redux | 应用列表、会话管理、首屏选择、状态订阅和面板组合 |
 | `PreviewStage` | React | 设备框、宿主导航/tabBar、前后台遮罩、加载和错误状态 |
 

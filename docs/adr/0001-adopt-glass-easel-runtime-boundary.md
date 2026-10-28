@@ -34,6 +34,6 @@ The migration starts with a clean runtime boundary and a pluggable render backen
 
 _Update: the built-in component package was renamed to `@tiny/components` (`packages/components`). The boundary decision above is unchanged._
 
-_Update (2026-10-26): the built-in component decision above is superseded. The web/DOM built-in implementations now live in `hosts/web-components` (`@tiny/host-web-components`) and are mounted by the web render tree (`bootGlassRenderEntry` / `createGlassRenderTree`). `packages/runtime` must not depend on them; a non-DOM host supplies its own `TreeRenderer` and views. The rest of the boundary decision is unchanged._
+_Update (2026-10-26): the built-in component decision above is superseded. The web/DOM built-in implementations now live in `hosts/web-components` (`@tiny/host-web-components`) and are mounted by the web render tree (`createGlassRenderEntry` / `createGlassRenderTree`). `packages/runtime` must not depend on them; a non-DOM host supplies its own `TreeRenderer` and views. The rest of the boundary decision is unchanged._
 
 _Update (2026-10-28): ADR-0006 changes the two-tree topology. The service thread now owns the glass-easel logic tree (data, properties, observers, relations, template evaluation); the render thread owns the host render tree through `TreeRenderer`. The runtime boundary and host-independence decision above still hold._
