@@ -26,7 +26,7 @@ import { MiniProgramPageRegistry } from './page-registry'
 import { MiniProgramPageInstance, type PageLifecycleName } from './page-instance'
 import { createServiceApiHost, installMiniProgramGlobals } from './api-host'
 import { createSelectorQuery } from './selector-query'
-import { LogicTreeAdapter, type ViewIntersectionEntry } from '../tree/logic'
+import { LogicTreeAdapter, type ViewEventPayload, type ViewIntersectionEntry } from '../tree/logic'
 import { findPageArtifact, normalizeRoutePath, requireActivePage, resolveComponentReference } from './route'
 import type { MiniProgramApiHost, ServiceApiContext, ServiceThreadRuntime, TabBarApi } from './types'
 
@@ -177,6 +177,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     },
     apiNames: supportedApiNames,
     getCurrentPagePath: () => activePage?.path,
+    getActivePage: () => activePage,
     canvas: options.canvas,
     resolveAssetUrl: options.resolveAssetUrl,
     tabBar: tabBarApi,
@@ -512,6 +513,14 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       (relationKey) => logicTree?.relationNodes(pageId, relationKey) ?? [],
       () => logicTree?.pageSelectorQuery(pageId) ?? {},
       (observerOptions) => logicTree?.pageIntersectionObserver(pageId, observerOptions) ?? {},
+      {
+        animate: (selector, keyframes, duration, animateOptions) => (
+          logicTree?.pageAnimate(pageId, selector, keyframes, duration, animateOptions) ?? false
+        ),
+        clear: (selector, clearOptions, callback) => (
+          logicTree?.pageClearAnimate(pageId, selector, clearOptions, callback) ?? false
+        ),
+      },
     )
     if (componentDefinition) page.triggerComponentLifecycle('created')
     pageInstances.set(page.pageId, page)
@@ -564,6 +573,8 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       native?: Record<string, unknown>
       touches?: unknown[]
       changedTouches?: unknown[]
+      target?: ViewEventPayload['target']
+      currentTarget?: ViewEventPayload['currentTarget']
     }
     if (!payload.id || !payload.name) return
     try {
@@ -575,6 +586,8 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         native: payload.native,
         touches: payload.touches,
         changedTouches: payload.changedTouches,
+        ...(payload.target ? { target: payload.target } : {}),
+        ...(payload.currentTarget ? { currentTarget: payload.currentTarget } : {}),
       })
     } catch (error) {
       const description = error instanceof Error ? error.message : String(error)
@@ -652,6 +665,27 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
               action: 'disconnect',
               observerId,
             }, { pageId }).catch(() => undefined)
+          },
+        },
+        viewAnimation: {
+          // Fire-and-forget: playback is render-owned, the service keeps only
+          // the completion callback it scheduled for the caller.
+          play: (request) => {
+            connection.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.animate, {
+              viewIds: request.viewIds,
+              keyframes: request.keyframes,
+              duration: request.duration,
+              ...(request.delay !== undefined ? { delay: request.delay } : {}),
+              ...(request.easing !== undefined ? { easing: request.easing } : {}),
+              ...(request.iterations !== undefined ? { iterations: request.iterations } : {}),
+              ...(request.fill !== undefined ? { fill: request.fill } : {}),
+            }, { pageId: request.pageId })
+          },
+          clear: (request) => {
+            connection.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.clearAnimate, {
+              viewIds: request.viewIds,
+              ...(request.properties ? { properties: request.properties } : {}),
+            }, { pageId: request.pageId })
           },
         },
       })

@@ -16,6 +16,8 @@ export const TREE_PROTOCOL = Object.freeze({
   ready: 'ready',
   inspectTree: 'inspectTree',
   measure: 'measure',
+  animate: 'animate',
+  clearAnimate: 'clearAnimate',
 } as const)
 
 export const RUNTIME_CONTROL = Object.freeze({
@@ -95,6 +97,39 @@ export type RenderIntersectionEntry = {
   relativeRect: RenderRect
   intersectionRatio: number
   time: number
+}
+
+/**
+ * Layout geometry of the node that produced (or is handling) an event.
+ * WeChat exposes it as `event.target.offsetLeft` / `event.currentTarget.offsetTop`
+ * and drag/gesture libraries read it synchronously inside the handler.
+ */
+export type RenderEventGeometry = {
+  viewId: RenderNodeId
+  offsetLeft: number
+  offsetTop: number
+  offsetWidth: number
+  offsetHeight: number
+}
+
+/**
+ * One-shot animation command (`this.animate`). Frames are already normalized by
+ * `tree/animation` into Web Animations-compatible keyframes, so hosts map them
+ * onto their own timing engine without re-deriving mini-program sugar.
+ */
+export type RenderAnimationRequest = {
+  viewIds: RenderNodeId[]
+  keyframes: Array<Record<string, unknown>>
+  duration: number
+  delay?: number
+  easing?: string
+  iterations?: number
+  fill?: 'none' | 'forwards' | 'backwards' | 'both'
+}
+
+export type RenderClearAnimationRequest = {
+  viewIds: RenderNodeId[]
+  properties?: string[]
 }
 
 export type RenderPatch =

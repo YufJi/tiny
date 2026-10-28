@@ -1,7 +1,10 @@
 import * as glassEasel from 'glass-easel'
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import type {
+  RenderAnimationRequest,
+  RenderClearAnimationRequest,
   RenderElement,
+  RenderEventGeometry,
   RenderIntersectionEntry,
   RenderIntersectionRequest,
   RenderNode,
@@ -21,6 +24,8 @@ export type GlassRenderEvent = {
   native?: Record<string, unknown>
   touches?: unknown[]
   changedTouches?: unknown[]
+  target?: RenderEventGeometry
+  currentTarget?: RenderEventGeometry
 }
 
 export type GlassRenderTreeOptions = {
@@ -52,6 +57,10 @@ export type GlassRenderTree = {
     request: RenderIntersectionRequest,
     emit: (entries: RenderIntersectionEntry[]) => void,
   ) => (() => void) | undefined
+  /** `this.animate`: play normalized keyframes with the Web Animations API. */
+  playAnimation?: (request: RenderAnimationRequest) => void
+  /** `this.clearAnimate`: cancel the animations this tree started. */
+  clearAnimation?: (request: RenderClearAnimationRequest) => void
   setEventSink?: (sink: (event: GlassRenderEvent) => void) => void
   setPagePath?: (pagePath: string) => void
   setDiagnosticSink?: (sink: (diagnostic: {
@@ -240,6 +249,32 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     return native
   }
 
+  const geometryOf = (
+    element: HTMLElement | null,
+    viewId: string,
+  ): RenderEventGeometry | undefined => (
+    element
+      ? {
+          viewId,
+          offsetLeft: element.offsetLeft,
+          offsetTop: element.offsetTop,
+          offsetWidth: element.offsetWidth,
+          offsetHeight: element.offsetHeight,
+        }
+      : undefined
+  )
+
+  /** Nearest render node above a DOM event target (the tapped child, not the binding). */
+  const geometryOfTarget = (target: EventTarget | null): RenderEventGeometry | undefined => {
+    let current = target instanceof Element ? target : null
+    while (current) {
+      const viewId = current.getAttribute(TINY_ENGINE_NAMING.nodeIdAttribute)
+      if (viewId) return geometryOf(current as HTMLElement, viewId)
+      current = current.parentElement
+    }
+    return undefined
+  }
+
   // A touch object is often shared by `touches`, `changedTouches` and the
   // detail copy; clone each occurrence so the bridge serializer sees a tree,
   // not a repeated reference it reports as circular.
@@ -285,9 +320,11 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         // no normalized detail and is handled by the DOM bridge below.
         if (original) return
         const isTouch = binding.name.startsWith('touch')
+        const currentTarget = geometryOf(element, node.id)
         emit({
           id: node.id,
           name: binding.name,
+          ...(currentTarget ? { currentTarget } : {}),
           ...(event.detail !== undefined
             ? { detail: isTouch ? cloneTouchDetail(event.detail) : event.detail }
             : {}),
@@ -315,7 +352,15 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
           if (event.timeStamp === lastPointerStamp) return
           lastPointerStamp = event.timeStamp
         }
-        emit({ id: node.id, name: binding.name, native: nativeFields(event) })
+        const currentTarget = geometryOf(element, node.id)
+        const target = geometryOfTarget(event.target)
+        emit({
+          id: node.id,
+          name: binding.name,
+          native: nativeFields(event),
+          ...(currentTarget ? { currentTarget } : {}),
+          ...(target ? { target } : {}),
+        })
       }
       element.addEventListener(domName, domListener, capture)
       cleanups.push(() => element.removeEventListener(domName, domListener, capture))
@@ -540,6 +585,70 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         replaceNode(patch.id, patch.node)
       }
     }
+    flushPendingAnimations()
+  }
+
+  // `this.animate` runs on the render side: the service resolved the selector
+  // and normalized the keyframes, the DOM owns playback. A page may animate in
+  // `onLoad`, before its first snapshot is mounted, so unresolved nodes are
+  // parked and retried after the next mount/patch.
+  const animationsByElement = new WeakMap<Element, Animation[]>()
+  const pendingAnimations = new Map<string, RenderAnimationRequest>()
+  const PENDING_ANIMATION_LIMIT = 64
+
+  const elementForViewId = (viewId: string): Element | null => (
+    rootElement?.querySelector(`[${TINY_ENGINE_NAMING.nodeIdAttribute}="${viewId}"]`) ?? null
+  )
+
+  const playOn = (element: Element, request: RenderAnimationRequest): void => {
+    const animate = (element as Element & {
+      animate?: (keyframes: Keyframe[], options: KeyframeAnimationOptions) => Animation
+    }).animate
+    if (typeof animate !== 'function') return
+    for (const running of animationsByElement.get(element) ?? []) running.cancel()
+    const animation = animate.call(element, request.keyframes as Keyframe[], {
+      duration: request.duration,
+      ...(request.delay !== undefined ? { delay: request.delay } : {}),
+      ...(request.easing !== undefined ? { easing: request.easing } : {}),
+      ...(request.iterations !== undefined ? { iterations: request.iterations } : {}),
+      fill: request.fill ?? 'both',
+    })
+    animationsByElement.set(element, [animation])
+  }
+
+  const flushPendingAnimations = (): void => {
+    if (pendingAnimations.size === 0) return
+    for (const [viewId, request] of [...pendingAnimations]) {
+      const element = elementForViewId(viewId)
+      if (!element) continue
+      pendingAnimations.delete(viewId)
+      playOn(element, request)
+    }
+  }
+
+  const playAnimation = (request: RenderAnimationRequest): void => {
+    for (const viewId of request.viewIds) {
+      const element = elementForViewId(viewId)
+      if (element) {
+        playOn(element, request)
+        continue
+      }
+      if (!pendingAnimations.has(viewId) && pendingAnimations.size >= PENDING_ANIMATION_LIMIT) {
+        const oldest = pendingAnimations.keys().next().value
+        if (oldest !== undefined) pendingAnimations.delete(oldest)
+      }
+      pendingAnimations.set(viewId, request)
+    }
+  }
+
+  const clearAnimation = (request: RenderClearAnimationRequest): void => {
+    for (const viewId of request.viewIds) {
+      pendingAnimations.delete(viewId)
+      const element = elementForViewId(viewId)
+      if (!element) continue
+      for (const animation of animationsByElement.get(element) ?? []) animation.cancel()
+      animationsByElement.delete(element)
+    }
   }
 
   return {
@@ -548,6 +657,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     setEventSink: (sink) => {
       eventSink = sink
     },
+    playAnimation,
+    clearAnimation,
     setPagePath: (pagePath) => {
       currentPagePath = pagePath
     },
@@ -753,6 +864,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         applyClassProps(rootElement, node.props, node.scopes, node.scopeChain, undefined, pageScopes)
       }
       if (options.attach !== false) glassEasel.Element.pretendAttached(root)
+      flushPendingAnimations()
     },
     applyPatches,
     getNode(id) {

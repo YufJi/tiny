@@ -90,6 +90,22 @@ export type GlassEaselAdapterOptions = {
     component: glassEasel.GeneralComponent,
     options?: Record<string, unknown>,
   ) => unknown
+  /** `this.animate` / `this.clearAnimate` for logic components. */
+  logicAnimationFactory?: {
+    animate: (
+      component: glassEasel.GeneralComponent,
+      selector: string,
+      keyframes: unknown,
+      duration: unknown,
+      options?: unknown,
+    ) => boolean
+    clear: (
+      component: glassEasel.GeneralComponent,
+      selector: string,
+      options?: unknown,
+      callback?: unknown,
+    ) => boolean
+  }
 }
 
 const PAGE_LIFECYCLE_KEYS = new Set([
@@ -165,6 +181,7 @@ export class GlassEaselRuntimeAdapter {
   private constructingPageId: string | null = null
   private readonly logicPropertyValues = new WeakMap<object, Record<string, unknown>>()
   private readonly logicIntersectionFactory?: GlassEaselAdapterOptions['logicIntersectionFactory']
+  private readonly logicAnimationFactory?: GlassEaselAdapterOptions['logicAnimationFactory']
 
   constructor(options: GlassEaselAdapterOptions) {
     this.backend = options.backend
@@ -176,6 +193,7 @@ export class GlassEaselRuntimeAdapter {
     this.onLogicDataChange = options.onLogicDataChange
     this.logicTouchState = options.logicTouchState
     this.logicIntersectionFactory = options.logicIntersectionFactory
+    this.logicAnimationFactory = options.logicAnimationFactory
     const styleScopeManager = new glassEasel.StyleScopeManager()
     this.componentSpace = new glassEasel.ComponentSpace(undefined, undefined, styleScopeManager, true)
     this.componentSpace.updateComponentOptions({
@@ -975,6 +993,29 @@ export class GlassEaselRuntimeAdapter {
             args[0] as Record<string, unknown> | undefined,
           )
         }
+      }
+      if (this.logicAnimationFactory) {
+        methods.animate = function (
+          this: glassEasel.GeneralComponent,
+          ...args: unknown[]
+        ) {
+          return adapter.logicAnimationFactory?.animate(
+            this,
+            String(args[0] ?? ''),
+            args[1],
+            args[2],
+            args[3],
+          )
+        }
+        const clearAnimation = function (
+          this: glassEasel.GeneralComponent,
+          ...args: unknown[]
+        ) {
+          return adapter.logicAnimationFactory?.clear(this, String(args[0] ?? ''), args[1], args[2])
+        }
+        methods.clearAnimate = clearAnimation
+        // WeChat exposes both names; the official demo uses `clearAnimation`.
+        methods.clearAnimation = clearAnimation
       }
       if (Object.keys(methods).length > 0) builder = builder.methods(methods)
       builder = builder.observer('**', function (this: glassEasel.GeneralComponent) {

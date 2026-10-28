@@ -127,4 +127,68 @@ describe('intersection observers', () => {
     expect(service.activePage?.data.ratio).toBe(0.5)
     await host.close()
   })
+
+  test('wx.createIntersectionObserver scopes to the page instance it receives', async () => {
+    const manifest = createManifest()
+    const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
+    const [hostRenderTransport, renderTransport] = createInMemoryTransportPair()
+    const service = bootServiceThread({
+      transport: serviceTransport,
+      manifest,
+      initialPath: PAGE_PATH,
+    })
+    const rect = () => ({ left: 0, top: 0, right: 100, bottom: 40, width: 100, height: 40 })
+    const observedCounts: number[] = []
+    bootSplitTreeHarness({
+      transport: renderTransport,
+      manifest,
+      artifacts: { templates: createTemplates() },
+      initialPath: PAGE_PATH,
+      renderer: {
+        observeIntersection: (request, emit) => {
+          observedCounts.push(request.viewIds.length)
+          emit(request.viewIds.map((viewId) => ({
+            viewId,
+            boundingClientRect: rect(),
+            intersectionRect: rect(),
+            relativeRect: rect(),
+            intersectionRatio: 0.25,
+            time: 1,
+          })))
+          return () => {}
+        },
+      },
+    })
+    const host = createTinyRuntime({
+      serviceTransport: hostServiceTransport,
+      renderTransport: hostRenderTransport,
+      manifest,
+      initialPath: PAGE_PATH,
+    })
+
+    const globalObject = globalThis as unknown as Record<string, unknown>
+    const wx = globalObject.wx as {
+      createIntersectionObserver: (
+        component?: unknown,
+        options?: Record<string, unknown>,
+      ) => { relativeToViewport: (margins?: unknown) => { observe: (selector: string, callback: (entry: { intersectionRatio: number }) => void) => void } }
+    }
+    ;(globalObject.App as (options: Record<string, unknown>) => unknown)({})
+    ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
+      data: { ratio: null as number | null },
+      onReady() {
+        wx.createIntersectionObserver(this, { thresholds: [0.5] })
+          .relativeToViewport()
+          .observe('.target', (entry) => {
+            this.setData({ ratio: entry.intersectionRatio })
+          })
+      },
+    })
+
+    await host.bootstrap()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(observedCounts).toEqual([1])
+    expect(service.activePage?.data.ratio).toBe(0.25)
+    await host.close()
+  })
 })

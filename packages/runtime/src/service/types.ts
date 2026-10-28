@@ -78,6 +78,8 @@ export type ServiceApiContext = {
   setStorageSnapshot: (key: string, value: unknown) => void
   apiNames: Set<string>
   getCurrentPagePath?: () => string | undefined
+  /** Active page instance, for `wx.*` entries that scope to the current page. */
+  getActivePage?: () => unknown
   canvas?: ServiceCanvasAdapter
   /** Host hook mapping app-root asset paths to loadable URLs (canvas images, …). */
   resolveAssetUrl?: AssetUrlResolver

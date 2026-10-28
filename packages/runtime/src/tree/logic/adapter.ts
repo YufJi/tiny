@@ -1,6 +1,13 @@
 import { DIAGNOSTIC_CODES, type Manifest, type PageArtifact } from '@tiny/manifest'
-import type { RenderNode, RenderPatch } from '../protocol'
+import type {
+  RenderAnimationRequest,
+  RenderClearAnimationRequest,
+  RenderEventGeometry,
+  RenderNode,
+  RenderPatch,
+} from '../protocol'
 import { diffRenderTree } from '../diff'
+import { normalizeAnimationFrames, animationTimingOptions } from '../animation'
 import * as glassEasel from 'glass-easel'
 import type { MiniProgramComponentSchema, QueryNodeSnapshot, TemplateRegistry } from '../../types'
 import type { NormalizedComponentDefinition } from '../../component'
@@ -35,6 +42,11 @@ export type LogicTreeAdapterOptions = {
     observe: (request: ViewIntersectionRequest & { pageId: string }) => void
     unobserve: (observerId: string, pageId: string) => void
   }
+  /** Render-thread animation commands issued by `this.animate`/`clearAnimate`. */
+  viewAnimation?: {
+    play: (request: RenderAnimationRequest & { pageId: string }) => void
+    clear: (request: RenderClearAnimationRequest & { pageId: string }) => void
+  }
 }
 
 /**
@@ -63,6 +75,8 @@ export class LogicTreeAdapter {
   private readonly onDiagnostic?: LogicTreeAdapterOptions['onDiagnostic']
   private readonly reportedPages = new Set<string>()
   private readonly viewIntersection?: LogicTreeAdapterOptions['viewIntersection']
+  private readonly viewAnimation?: LogicTreeAdapterOptions['viewAnimation']
+  private readonly reportedAnimationApproximations = new Set<string>()
   private readonly intersectionObservers = new Map<string, {
     callbacks: Map<string, (entry: Record<string, unknown>) => void>
     selectorByViewId: Map<string, string>
@@ -76,6 +90,7 @@ export class LogicTreeAdapter {
     this.loadStyle = options.loadStyle ?? (() => '')
     this.measureView = options.measureView
     this.viewIntersection = options.viewIntersection
+    this.viewAnimation = options.viewAnimation
     this.onDiagnostic = options.onDiagnostic
     this.glass = new GlassEaselRuntimeAdapter({
       backend: this.backend as unknown as glassEasel.GeneralBackendContext,
@@ -89,6 +104,14 @@ export class LogicTreeAdapter {
       logicIntersectionFactory: (component, observerOptions) => (
         this.createIntersectionObserverFor(component, observerOptions)
       ),
+      logicAnimationFactory: {
+        animate: (component, selector, keyframes, duration, options) => (
+          this.animateFor(component, selector, keyframes, duration, options)
+        ),
+        clear: (component, selector, options, callback) => (
+          this.clearAnimateFor(component, selector, options, callback)
+        ),
+      },
     })
     glassEasel.addGlobalErrorListener((error, method, relatedComponent) => {
       const message = error instanceof Error ? error.message : String(error)
@@ -464,11 +487,143 @@ export class LogicTreeAdapter {
     )
   }
 
+  /** Page-level `this.animate(selector, keyframes, duration, options)`. */
+  pageAnimate(
+    pageId: string,
+    selector: string,
+    keyframes: unknown,
+    duration: unknown,
+    options?: unknown,
+  ): boolean {
+    return this.animateFor(this.glass.getMountedComponentByPageId(pageId), selector, keyframes, duration, options)
+  }
+
+  /** Page-level `this.clearAnimate(selector)`. */
+  pageClearAnimate(
+    pageId: string,
+    selector: string,
+    options?: unknown,
+    callback?: unknown,
+  ): boolean {
+    return this.clearAnimateFor(
+      this.glass.getMountedComponentByPageId(pageId),
+      selector,
+      options,
+      callback,
+    )
+  }
+
   createSelectorQueryFor(component: unknown): Record<string, unknown> {
     const node = findLogicNodeByElement(component)
       ?? [...this.pageRoots.values()][0]
       ?? this.backend.getRootNode()
     return createLogicSelectorQuery(this.backend, node, this.measureView)
+  }
+
+  /**
+   * `this.animate(selector, keyframes, duration, options|callback)`.
+   *
+   * The logic tree only resolves the selector and owns the completion
+   * callback; playback belongs to the render thread. Scroll-driven timing
+   * (`scrollSource`/`startScrollOffset`) is approximated as a timed animation
+   * and reported once per selector instead of being silently dropped.
+   */
+  animateFor(
+    component: unknown,
+    selector: string,
+    keyframes: unknown,
+    duration: unknown,
+    options?: unknown,
+  ): boolean {
+    if (typeof selector !== 'string' || selector.length === 0) return false
+    const callback = typeof options === 'function' ? options as () => void : undefined
+    const settings = options && typeof options === 'object'
+      ? options as Record<string, unknown>
+      : {}
+    const frames = normalizeAnimationFrames(keyframes)
+    if (frames.length === 0) return false
+    const pageId = this.animationPageId(component)
+    const target = this.animationTarget(component, selector)
+    if (!pageId || !target) {
+      this.onDiagnostic?.(createRuntimeDiagnostic(
+        'warning',
+        DIAGNOSTIC_CODES.ANIMATION_TARGET_MISSING,
+        `this.animate found no node for selector ${selector}`,
+        'service',
+        pageId ?? '',
+        { selector },
+      ))
+      return false
+    }
+    if (settings.scrollSource !== undefined && !this.reportedAnimationApproximations.has(selector)) {
+      this.reportedAnimationApproximations.add(selector)
+      this.onDiagnostic?.(createRuntimeDiagnostic(
+        'warning',
+        DIAGNOSTIC_CODES.ANIMATION_SCROLL_DRIVEN_APPROXIMATED,
+        `this.animate(${selector}) uses scroll-driven timing; it runs as a timed animation.`,
+        'service',
+        pageId,
+        { selector },
+      ))
+    }
+    const requested = Number(duration)
+    const timing = animationTimingOptions(
+      Number.isFinite(requested) ? requested : 400,
+      settings,
+    )
+    this.viewAnimation?.play({
+      pageId,
+      viewIds: [this.backend.ensureViewId(target)],
+      keyframes: frames as Array<Record<string, unknown>>,
+      ...timing,
+    })
+    if (callback) {
+      const iterations = timing.iterations ?? 1
+      const total = timing.duration * iterations + (timing.delay ?? 0)
+      setTimeout(() => callback(), Math.max(total, 0))
+    }
+    return true
+  }
+
+  /** `this.clearAnimate(selector[, options][, callback])`. */
+  clearAnimateFor(
+    component: unknown,
+    selector: string,
+    options?: unknown,
+    callback?: unknown,
+  ): boolean {
+    if (typeof selector !== 'string' || selector.length === 0) return false
+    const settings = typeof options === 'function' ? undefined : options
+    const done = typeof options === 'function' ? options : callback
+    if (typeof done === 'function') setTimeout(() => done(), 0)
+    const pageId = this.animationPageId(component)
+    const target = this.animationTarget(component, selector)
+    if (!pageId || !target) return false
+    const properties = Object.entries(settings && typeof settings === 'object'
+      ? settings as Record<string, unknown>
+      : {})
+      .filter(([, enabled]) => enabled === true)
+      .map(([name]) => name)
+    this.viewAnimation?.clear({
+      pageId,
+      viewIds: [this.backend.ensureViewId(target)],
+      ...(properties.length > 0 ? { properties } : {}),
+    })
+    return true
+  }
+
+  private animationTarget(component: unknown, selector: string): LogicBackendElement | undefined {
+    const root = findLogicNodeByElement(component)
+      ?? [...this.pageRoots.values()][0]
+      ?? this.backend.getRootNode()
+    const [target] = queryLogicNodes(root, selector, false)
+    return target as LogicBackendElement | undefined
+  }
+
+  private animationPageId(component: unknown): string | undefined {
+    return this.glass.pageIdFor(component)
+      ?? this.activePageId
+      ?? [...this.pageRoots.keys()][0]
   }
 
   query(pageId: string, selector: string, all: boolean): QueryNodeSnapshot[] {
@@ -486,6 +641,11 @@ export class LogicTreeAdapter {
     const node = this.backend.findByViewId(payload.viewId)
     const element = node?.__wxElement
     if (!element) return false
+    // Layout geometry is measured by the render thread; mirror it onto the
+    // logic element so `event.currentTarget.offsetLeft` works synchronously.
+    // Hosts that only measure the event target fall back to that measurement.
+    const geometry = payload.currentTarget ?? payload.target
+    if (geometry) applyEventGeometry(element, geometry)
     const native = payload.native ?? {}
     // Hosts normalize built-in event detail (switch/checkbox-group/slider/...);
     // the service must not re-derive it from tag names. The fallback below only
@@ -551,4 +711,17 @@ export class LogicTreeAdapter {
     }
     return true
   }
+}
+
+/**
+ * WeChat hands handlers a node proxy with `offsetLeft/offsetTop/offsetWidth/
+ * offsetHeight`. glass-easel hands them its element, so the measured values are
+ * written onto it right before dispatch.
+ */
+function applyEventGeometry(element: unknown, geometry: RenderEventGeometry): void {
+  const target = element as Record<string, unknown>
+  target.offsetLeft = geometry.offsetLeft
+  target.offsetTop = geometry.offsetTop
+  target.offsetWidth = geometry.offsetWidth
+  target.offsetHeight = geometry.offsetHeight
 }

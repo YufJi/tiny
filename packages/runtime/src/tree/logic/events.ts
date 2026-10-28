@@ -5,7 +5,7 @@
 
 export type ViewNodeId = string
 
-import type { RenderIntersectionEntry, RenderRect } from '../protocol'
+import type { RenderEventGeometry, RenderIntersectionEntry, RenderRect } from '../protocol'
 
 export type ViewIntersectionEntry = RenderIntersectionEntry
 
@@ -28,4 +28,8 @@ export type ViewEventPayload = {
   changedTouches?: unknown[]
   /** Native fields a host may forward (coordinates, key, input value, ...). */
   native?: Record<string, unknown>
+  /** Layout geometry of the innermost node the host resolved. */
+  target?: RenderEventGeometry
+  /** Layout geometry of the node owning the binding being dispatched. */
+  currentTarget?: RenderEventGeometry
 }

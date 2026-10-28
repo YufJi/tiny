@@ -27,6 +27,17 @@ const LIFECYCLE_METHODS = new Set([
 
 export type PageLifecycleName = RuntimePageLifecyclePhase
 
+/** `this.animate` / `this.clearAnimate` bridge owned by the logic tree. */
+export type PageAnimationHooks = {
+  animate: (
+    selector: string,
+    keyframes: unknown,
+    duration: unknown,
+    options?: unknown,
+  ) => boolean
+  clear: (selector: string, options?: unknown, callback?: unknown) => boolean
+}
+
 export class MiniProgramPageInstance implements ObserverHost {
   readonly pageId: string
   readonly componentId: string
@@ -54,6 +65,7 @@ export class MiniProgramPageInstance implements ObserverHost {
     private readonly logicRelations?: (relationKey: string) => unknown[],
     private readonly logicQuery?: () => Record<string, unknown>,
     private readonly logicIntersection?: (options?: Record<string, unknown>) => Record<string, unknown>,
+    private readonly logicAnimation?: PageAnimationHooks,
   ) {
     this.pageId = pageId
     this.componentId = `page:${pageId}`
@@ -118,6 +130,9 @@ export class MiniProgramPageInstance implements ObserverHost {
       getRelationNodes: this.getRelationNodes.bind(this),
       createSelectorQuery: this.createSelectorQuery.bind(this),
       createIntersectionObserver: this.createIntersectionObserver.bind(this),
+      animate: this.animate.bind(this),
+      clearAnimate: this.clearAnimate.bind(this),
+      clearAnimation: this.clearAnimate.bind(this),
       hasBehavior: this.hasBehavior.bind(this),
       triggerEvent: this.triggerEvent.bind(this),
     })
@@ -207,6 +222,21 @@ export class MiniProgramPageInstance implements ObserverHost {
 
   createIntersectionObserver(options?: Record<string, unknown>): Record<string, unknown> {
     return this.logicIntersection?.(options) ?? {}
+  }
+
+  animate(
+    selector: unknown,
+    keyframes: unknown,
+    duration?: unknown,
+    options?: unknown,
+  ): boolean {
+    if (!this.logicAnimation) return false
+    return this.logicAnimation.animate(String(selector ?? ''), keyframes, duration, options)
+  }
+
+  clearAnimate(selector: unknown, options?: unknown, callback?: unknown): boolean {
+    if (!this.logicAnimation) return false
+    return this.logicAnimation.clear(String(selector ?? ''), options, callback)
   }
 
   hasBehavior(behavior: unknown): boolean {

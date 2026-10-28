@@ -6,7 +6,10 @@ import {
   RUNTIME_CONTROL,
   TREE_PROTOCOL,
   type ComponentFlow,
+  type RenderAnimationRequest,
+  type RenderClearAnimationRequest,
   type RenderElement,
+  type RenderEventGeometry,
   type RenderIntersectionEntry,
   type RenderIntersectionRequest,
   type RenderNode,
@@ -22,6 +25,10 @@ export type TreeEventPayload = {
   native?: Record<string, unknown>
   touches?: unknown[]
   changedTouches?: unknown[]
+  /** Geometry of the innermost node the host resolved for this event. */
+  target?: RenderEventGeometry
+  /** Geometry of the node that owns the binding being dispatched. */
+  currentTarget?: RenderEventGeometry
 }
 
 export type TreeRenderer = {
@@ -49,6 +56,10 @@ export type TreeRenderer = {
     request: RenderIntersectionRequest,
     emit: (entries: RenderIntersectionEntry[]) => void,
   ) => (() => void) | undefined
+  /** `this.animate`: play normalized keyframes on the resolved render nodes. */
+  playAnimation?: (request: RenderAnimationRequest) => void
+  /** `this.clearAnimate`: cancel playback and drop the animated properties. */
+  clearAnimation?: (request: RenderClearAnimationRequest) => void
   dispose?: () => void
 }
 
@@ -175,6 +186,28 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.patch, (message) => {
     const payload = (message.payload ?? {}) as { patches?: RenderPatch[] }
     options.renderer.applyPatches(payload.patches ?? [])
+  })
+  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.animate, (message) => {
+    const payload = (message.payload ?? {}) as Partial<RenderAnimationRequest>
+    if (!Array.isArray(payload.viewIds) || payload.viewIds.length === 0) return
+    if (!Array.isArray(payload.keyframes) || payload.keyframes.length === 0) return
+    options.renderer.playAnimation?.({
+      viewIds: payload.viewIds,
+      keyframes: payload.keyframes,
+      duration: Number(payload.duration) || 0,
+      ...(payload.delay !== undefined ? { delay: payload.delay } : {}),
+      ...(payload.easing !== undefined ? { easing: payload.easing } : {}),
+      ...(payload.iterations !== undefined ? { iterations: payload.iterations } : {}),
+      ...(payload.fill !== undefined ? { fill: payload.fill } : {}),
+    })
+  })
+  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.clearAnimate, (message) => {
+    const payload = (message.payload ?? {}) as Partial<RenderClearAnimationRequest>
+    if (!Array.isArray(payload.viewIds) || payload.viewIds.length === 0) return
+    options.renderer.clearAnimation?.({
+      viewIds: payload.viewIds,
+      ...(Array.isArray(payload.properties) ? { properties: payload.properties } : {}),
+    })
   })
   for (const method of ['navigateTo', 'redirectTo', 'reLaunch', 'navigateBack', 'switchTab'] as const) {
     connection.onControl('page', method, (message) => {
