@@ -16,7 +16,11 @@ Accepted and implemented. Merged into `next` as #27 (`1ac6d3a`), originally on
   directly.
 - Initial page mount is driven by component-flow messages
   (`define` / `create-node` / `props` / `children` / `ready`). Subsequent
-  template updates use virtual-node patches.
+  template updates use virtual-node patches only. The legacy WeChat update
+  messages (`FLOW_UPDATE`, `FLOW_SET_DATA`, `FLOW_DATA_OBSERVER`,
+  `FLOW_APPLY_PROPERTY`, `FLOW_GROUP`, …) are intentionally not implemented:
+  the snapshot diff already carries text, props, insert/remove/reorder and
+  extra-data changes.
 - The runtime exposes a host-neutral native tree adapter
   (`createNativeTreeRenderer`) behind the same `TreeRenderer` contract as the
   web glass tree, with its own smoke tests.
@@ -47,13 +51,6 @@ Accepted and implemented. Merged into `next` as #27 (`1ac6d3a`), originally on
 
 ### Known gaps against the reference protocol
 
-- Component flow currently covers **initial mount** only (`define`,
-  `create-node`, `props`, `children`, `ready`). Updates travel as virtual-node
-  patches, which keeps UI and component state correct; WeChat additionally
-  emits `FLOW_UPDATE`, `FLOW_SET_DATA`, `FLOW_DATA_OBSERVER`,
-  `FLOW_APPLY_PROPERTY`, `FLOW_MINIPULATE_CHILD`, `FLOW_GROUP` /
-  `FLOW_GROUP_END` and callbacks. This is a protocol-surface difference rather
-  than a missing user capability.
 - `tree.event` carries `id` / `name` / `detail` / native fields and touches, but
   not a target geometry object; the service resolves the logic node (dataset and
   ids) when dispatching.
@@ -152,7 +149,7 @@ host-owned.
 | --- | --- |
 | `WxVirtualNode` / `WxVirtualText` | `RenderElement` / `RenderText` with a stable `RenderNodeId` |
 | `PATCH_TYPE` text/vnode/props/reorder/insert/remove/extra | `RenderPatch` text/replace/props/reorder/insert/remove/extra |
-| `COMPONENT_DEF` and `FLOW_*` | component-flow `define` / `create-node` / `props` / `children` / `ready` |
+| `COMPONENT_DEF` and `FLOW_*` | component-flow `define` / `create-node` / `props` / `children` / `ready`; update flows are replaced by `tree.patch` |
 | `WX_EVENT` | `tree.event` (node id, name, detail, native fields) |
 | service has no `wx-*` built-ins | service emits semantic built-in tags |
 | webview exparser built-ins | host render tree creates real built-ins |

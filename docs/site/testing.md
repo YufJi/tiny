@@ -215,8 +215,8 @@ pnpm site:check
 componentPlaceholder、完整内置 behavior 和 open-type 真实能力都没有验收；generics、definitionFilter、pureDataPattern 只在 P0 组件语义用例里覆盖。
 :::
 
-:::card{tag="tree" tone="warn" title="tree 协议细节未覆盖"}
-首屏 flow 和 patch 有测试，但 FLOW_UPDATE、FLOW_SET_DATA、target geometry 等参考协议字段没有端到端用例。
+:::card{tag="tree" tone="warn" title="事件几何仍缺覆盖"}
+首屏 flow 和 patch 有单测和浏览器覆盖；旧 FLOW_UPDATE/FLOW_SET_DATA 不再是覆盖目标，剩余是 tree.event 的 target/currentTarget offset 几何。
 :::
 
 :::card{tag="Canvas" tone="warn" title="Canvas 边缘能力未验收"}

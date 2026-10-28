@@ -3,7 +3,7 @@ title: '核心已经跑通，'
 highlight: '兼容性还在补齐'
 eyebrow: '现状'
 lede: >-
-  内核已经和宿主解耦，双侧树、组件语义、样式隔离、tabBar、多应用调试器都已就位；接下来主要是补 tree 协议细节、宿主 API、组件覆盖、页面形态、原生渲染树和性能基线。下面的判断都按当前代码和测试来，不按计划来。
+  内核已经和宿主解耦，双侧树、组件语义、样式隔离、tabBar、多应用调试器都已就位；接下来主要是补宿主 API、组件覆盖、页面形态、原生渲染树和性能基线。下面的判断都按当前代码和测试来，不按计划来。
 pills:
   - ['内核不依赖宿主', 'good']
   - ['组件语义', 'good']
@@ -62,12 +62,12 @@ order: 9
 下拉刷新和分享回调已接，但分享菜单 UI、页面栈恢复、页面转场和自定义 tabBar 还缺；子包只验证了直接启动，没有按需加载。
 :::
 
-:::card{tag="组件语义" tone="warn" title="高级组件能力缺失"}
-generics、definitionFilter、pureDataPattern 已实现；componentPlaceholder、trait behaviors / chaining API 和大多数微信内置 behavior（例如 `wx://form-field`）仍未实现，目前只支持 component-export。
+:::card{tag="组件语义" tone="warn" title="高级组件能力仍有缺口"}
+generics、definitionFilter、pureDataPattern、`wx://form-field` / `wx://form-field-button` 已实现；componentPlaceholder、trait behaviors / chaining API 和其余内置 behavior 仍未实现。
 :::
 
-:::card{tag="tree" tone="warn" title="component flow 只覆盖首屏"}
-首屏用 define/create-node/props/children/ready 同步，后续更新走 virtual node patch；微信参考协议中的 FLOW_UPDATE、FLOW_SET_DATA、FLOW_DATA_OBSERVER 和 target geometry 还没有对齐。
+:::card{tag="tree" title="增量统一走 patch"}
+首屏用 define/create-node/props/children/ready 对齐组件树；后续更新由 snapshot diff 生成 tree.patch，覆盖文本、属性、插入/删除/重排和 extra data。微信旧的 FLOW_UPDATE、FLOW_SET_DATA、FLOW_DATA_OBSERVER 不需要也不实现。
 :::
 
 :::card{tag="Canvas" tone="warn" title="canvas 边缘能力未覆盖"}
@@ -138,8 +138,8 @@ storage 持久化/batch、upload/download、系统信息异步版；同时把 un
 navigator、video、rich-text、map、movable-view；把已有组件的 open-type、表单、颜色和焦点语义补全，并同步扩展组件测试与 P0 fixture。
 :::
 
-:::card{tag="P0" title="补齐 tree 协议"}
-补 FLOW_UPDATE、FLOW_SET_DATA、FLOW_DATA_OBSERVER、target geometry 等参考协议字段，并给 tree event 补端到端断言。
+:::card{tag="P1" title="补齐事件几何"}
+tree.event 已有 id/name/detail/native/touches；target/currentTarget 的 offset 几何仍未补。增量更新已由 tree.patch 覆盖，不再计划旧 FLOW_* 消息。
 :::
 
 :::card{tag="P0" title="宿主加固"}

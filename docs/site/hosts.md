@@ -431,8 +431,8 @@ service iframe 只是视觉上隐藏，没有 sandbox 属性，仍然可以访�
 `host.close()` 只关闭连接并 reject 等待中的调用。页面 onUnload、iframe 移除和容器清理由调用方负责；standalone 宿主的 `dispose()` 会统一清理。
 :::
 
-:::card{tag="flow" tone="warn" title="component flow 只覆盖首屏"}
-首屏用 define/create-node/props/children/ready 同步；后续更新走 virtual node patch。微信参考协议还有 FLOW_UPDATE、FLOW_SET_DATA、FLOW_DATA_OBSERVER 等，这是协议面差异。
+:::card{tag="flow" title="增量统一走 patch"}
+首屏用 define/create-node/props/children/ready 对齐组件树；后续更新由 snapshot diff 生成 tree.patch，覆盖文本、属性、插入/删除/重排和 extra data。旧 FLOW_UPDATE、FLOW_SET_DATA、FLOW_DATA_OBSERVER 是参考实现细节，不需要兼容。
 :::
 
 :::card{tag="event" tone="warn" title="tree.event 没有 target geometry"}

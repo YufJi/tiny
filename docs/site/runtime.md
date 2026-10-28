@@ -48,7 +48,7 @@ glass-easel ComponentSpace 在 service 中运行，自定义组件是完整实�
 :::callout{title="node id 由 service 分配"}
 service 在创建虚拟节点时分配稳定 id，render 只维护 id 到真实组件的映射。后续 patch、事件、查询和元素树检查都以这个 id 为锚点，而不是从 DOM 反推小程序语义。
 
-当前模板更新走 virtual node patch；component flow 只覆盖首屏挂载（`define`、`create-node`、`props`、`children`、`ready`）。这一点和微信参考协议还有协议面差异，见 [限制](#limits)。
+当前模板更新走 virtual node patch；component flow 只负责首屏挂载（`define`、`create-node`、`props`、`children`、`ready`）。增量不依赖微信旧的 FLOW_UPDATE/FLOW_SET_DATA/FLOW_DATA_OBSERVER，snapshot diff 已经覆盖文本、属性、结构和重排。
 :::
 
 ## service 线程：逻辑树和页面栈 {#service kicker="service 线程"}
@@ -451,9 +451,7 @@ service 把 observe 请求和 view id 发给渲染树；Web 宿主用原生 Inte
 两侧树已经接管默认宿主，但下面这些仍是明确缺口。
 
 ::::cards
-:::card{tag="协议" tone="warn" title="component flow 只覆盖首屏"}
-目前只有 `define`、`create-node`、`props`、`children` 和 `ready`；后续更新走 virtual node patch。微信还会发送 FLOW_UPDATE、FLOW_SET_DATA、FLOW_DATA_OBSERVER 等，这是协议面差异，不影响常规 UI 更新。
-:::
+
 
 :::card{tag="事件" tone="warn" title="tree.event 还没有 target geometry"}
 事件只带 node id、name、detail、native 字段和 touches；目标节点的几何信息由 service 侧逻辑节点补足，和微信协议仍有差别。
