@@ -67,6 +67,24 @@ Accepted and implemented. Merged into `next` as #27 (`1ac6d3a`), originally on
   same navigation handlers as `wx.navigateTo` and friends. This keeps routing,
   the page stack and render-page lifecycle in one place instead of
   synthesising a page event.
+- The host attaches render threads through one seam only: `renderConnector`
+  (`connect` / `activate` / `disconnect` / `setAppVisible`). The original
+  single-connection `renderTransport` mode was removed once every host used
+  per-page frames; in-memory tests implement the same connector with headless
+  tree threads, so unit tests exercise the production topology instead of a
+  parallel one.
+- The host keeps no implicit "active page". Page-scoped host calls
+  (`inspectTree`, `pullDownRefresh`, `share`, `saveExitState`, `setTheme`) take
+  a page id, and routing never falls back to a guessed page. Frame visibility
+  stays host-owned: the browser connector tracks the visible page because that
+  is an iframe concern.
+- Tree messages for a page whose render thread does not exist yet are parked
+  per page and flushed when it opens. This is protocol, not legacy: the service
+  mounts a page and emits its first flow *inside* its bootstrap control, so the
+  message is produced before the host can answer by opening the render thread.
+  The parking lot is bounded (16 pages) and dropped on page close; a page-scoped
+  message without a page id, or one that overflows the bound, reports
+  `RENDER_SESSION_MISSING`.
 
 ### Known gaps against the reference protocol
 

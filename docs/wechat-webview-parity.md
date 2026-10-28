@@ -78,7 +78,7 @@
 | 样式/渲染 | 8% | 76% | 6.08 | WXSS/rpx/作用域强；app.wxss tag/class 规则作用到页面与共享组件；canvas 2D/WebGL/RAF 已接，导出 API 仍缺 |
 | 宿主/平台 | 8% | 15% | 1.20 | 仅浏览器宿主；无原生/网络/登录/支付/分享 |
 | 开发工具 | 4% | 45% | 1.80 | 应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar、移动端访问提示；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 58% | 1.74 | 243 单测 + 54 步浏览器验收 + 117 页探针脚本（`pnpm parity:probe`）；新增 WXS 宽松求值、`this.animate`、事件冒泡/几何回归；无性能/安全/原生测试 |
+| 质量/验证 | 3% | 58% | 1.74 | 245 单测 + 54 步浏览器验收 + 117 页探针脚本（`pnpm parity:probe`）；新增 WXS 宽松求值、`this.animate`、事件冒泡/几何回归；无性能/安全/原生测试 |
 | **合计** | **100%** | — | **49.33%** | |
 
 ### 条目覆盖率速览
@@ -319,7 +319,7 @@ Shadow DOM：
 2026-10-28 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
-- **243 个单元测试**（runtime 107、host-web-components 39、stylesheet-compiler 36、template-compiler 33、cli 18、bridge 10）
+- **245 个单元测试**（runtime 109、host-web-components 39、stylesheet-compiler 36、template-compiler 33、cli 18、bridge 10）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
 - **54 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent，WeChat demo 覆盖 swiper radio 点击去重、navigator 点击跳转，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧，canvas 覆盖 2D/WebGL/legacy/ECharts
 - 门禁覆盖的 5 段流程无 console/page error（117 页探针的 pageerror 见 5.2）
@@ -581,6 +581,8 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-27 | 第十四次同步：`generics`（componentGenerics + generic:）、`definitionFilter`、`pureDataPattern` 落地；`redirectTo`/`reLaunch`、下拉刷新、分享/收藏/退出状态回调、`onError`/`onPageNotFound`/`onUnhandledRejection`/`onThemeChange` 接入；页面生命周期 9→14/14、应用生命周期 3→7/7、路由 3→5/5、组件语义 8→11/12；runtime 83 单测，总分 44.67→48.80 | **48.80%** |
 | 2026-10-28 | 第十五次校准：IntersectionObserver 桥接、split-tree 运行路径、Vant/WeUI fixture；修正已实现但未记录的项（group 受控 value、switch type=checkbox、input placeholder-style、image lazyLoad、radio label 点击去重、页面级 query/intersection）；221 单测 / 53 步；117 页探针保持 108 启动、104 可见、9 失败；总分保持 48.90 | **48.90%** |
 | 2026-10-28 | 阶段 2 起步：`navigator` 落地为真实 `tiny-navigator` 宿主（复用 hover 行为，`hover-class`/`hover-start-time`/`hover-stay-time` 按 WeChat 默认值），点击经新协议 `tree.hostAction` 交给宿主的 5 个路由 API，`target="miniProgram"`/非法 `open-type`/空 `url` 发结构化诊断；内置标签 23→24/60，wechat-demo 验收新增“点击 navigator 跳转”步骤，243 单测 / 54 步；总分 49.16→49.33 | **49.33%** |
+| 2026-10-28 | 宿主去掉隐式“当前页”：`inspectTree` / `pullDownRefresh` / `share` / `saveExitState` / `setTheme` 改为显式 `pageId`，runtime 不再持有 `activePageId` 或猜页；未连接页的 tree 消息仍按页暂存（service 在 bootstrap 内就会发首帧 flow，协议上必须缓冲），打开时投递、关闭时丢弃，超过 16 页上限或无 pageId 的页面级消息报 `RENDER_SESSION_MISSING`；帧可见性仍由宿主 connector 持有 | **49.33%** |
+| 2026-10-28 | 宿主收敛为单一 render 连接方式：删除 `renderTransport` / `primaryRender` 单连接模式，`RuntimeHostOptions` 只接受 `renderConnector`；25 处 runtime 单测改用内存 connector（`connect`/`activate`/`disconnect` 从此进单测，覆盖与浏览器宿主相同拓扑）；同时清掉 render bootstrap 的死 payload（`manifest`/`initialData`/`styleMode`/`componentSchemas`/`pageComponents`）、恒空的 `components` 回传链、`flushRenderEvents` 的 canvas 重复分支与过宽的 `domain` 联合、`getRenderConnection` 的插入序兜底；245 单测 / 54 步 | **49.33%** |
 | 2026-10-28 | 第十六次校准：内核收尾——WXS 改为宽松求值（`Q.S` + `Function`，修掉 ESM 严格模式下的隐式全局 `ReferenceError` 与内联 `<wxs>` 的 `D is not a function`）、`this.animate`/`clearAnimate`、`wx.createIntersectionObserver`、`tree.event` 的 target/currentTarget 几何；117 页探针固化为 `pnpm parity:probe`；117 页 108 启动、108 可见、9 失败（全部平台 API），WXS/animate/intersection 失败清零；237 单测 / 53 步；总分 48.90→49.16 | **49.16%** |
 ---
 
