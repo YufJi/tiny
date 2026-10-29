@@ -13,7 +13,9 @@ Landed so far:
   runtime source;
 - the compiler parses WXS with acorn and rewrites free globals, `getRegExp` /
   `getDate` and `.constructor` before emitting the script;
-- the compiler emits a WXS module table and static WXS event metadata;
+- the compiler emits a WXS module table and dynamic-event syntax metadata;
+- every dynamic event expression is wrapped in `Q.B`, which lets service
+  resolve the current WXS origin without moving WXML evaluation to render;
 - the flow carries the module table to render;
 - render executes native `tap` / `touch*` WXS handlers locally with a partial
   descriptor (`getState`, `setStyle`, class methods, selector queries);
@@ -25,6 +27,9 @@ Landed so far:
   initial set; custom component `change:prop` intentionally keeps the legacy
   service observer path;
 - `callMethod` / `triggerEvent` are forwarded to service over `tree.wxsEffect`;
+- render stores an optional WXS handler descriptor (`moduleId` / `exportPath`);
+  it resolves the handler locally when possible and otherwise sends the event
+  back to service;
 - `getData` is synchronous in render for the page and for custom component
   snapshots; descriptors also expose timers and the list form of
   `getComputedStyle`.
@@ -379,56 +384,41 @@ factory body.
 
 #### Classification
 
-The compiler classifies each WXS usage:
+WXS modules are available to both the service expression runtime and the render
+event runtime, with independent module state. Event-binding classification is
+deliberately **not** done at compile time: the current handler depends on service
+data, so the service resolves it at runtime.
 
-| Usage | Runtime |
-| --- | --- |
-| WXML expression only | service instance |
-| WXS event / `change:prop` only | render instance |
-| both | both instances, independently |
+#### Event binding resolution
 
-The classifier is compiler-side; it must not rely on runtime probing. The
-compiler may emit per-side subsets of the module table, but module code and IDs
-stay identical.
-
-#### Event binding recognition
-
-The compiler already knows which listeners are WXS listeners: it is the same
-lvalue path currently passed to `Q.C`. It uses that information to emit:
-
-- a service event binding for page/component JS handlers;
-- a WXS event binding for render-local handlers;
-- no service listener for the WXS binding.
-
-Static cases:
+The compiler emits syntax metadata for every dynamic event binding and wraps the
+handler value in `Q.B`:
 
 ```html
-<view bindtap="{{utils.tap}}" />
-<view catchtouchmove="{{utils.move}}" />
-<view change:prop="{{utils.observe}}" />
+<view bindtap="{{condition ? wxs.a : serviceB}}" />
 ```
 
-Dynamic cases:
-
-```html
-<view bindtap="{{utils.getHandler()}}" />
-<view bindtap="{{condition ? utils.a : utils.b}}" />
+```js
+R.v(N, 'tap', Q.B(N, 'tap', condition ? wxs.a : serviceB, ...), ...)
 ```
 
-Dynamic cases stay on the service path and produce a diagnostic. The compiler
-must not guess a module/export that it cannot resolve statically.
+`Q.B` returns the value unchanged. It asks the service kernel for
+`originOf(value)`; when the value is a directly exported WXS function, service
+publishes `{ moduleId, exportPath }` to render. Otherwise it publishes a binding
+without a WXS path, or clears a stale path.
 
-`catch`, `capture-bind`, `capture-catch` and `mut-bind` metadata come from the
-same event-binding analysis, not from runtime event-name heuristics.
+Render attaches a dispatcher for every dynamic binding. On an event it:
 
-The render host can therefore execute a static binding directly:
+1. resolves the optional module/export in the render WXS runtime;
+2. if found, invokes it locally with the render descriptor;
+3. if missing, sends `tree.event` to service.
 
-```ts
-wxs.invoke(moduleId, exportPath, event, ownerInstance)
-```
+This removes compile-time branch analysis and the need for an explicit
+local/service mode. Service Q.B is the only resolver; render never evaluates the
+WXML expression.
 
-and only fall back to `tree.event` when a service listener remains on the event
-path.
+`catch`, `capture-bind`, `capture-catch` and `mut-bind` metadata still come from
+the binding syntax.
 
 #### Migration of `Q.S`
 
@@ -444,79 +434,34 @@ can be removed from `templates.js`.
 
 ### 3. Event metadata
 
-`RenderElement.events` grows from a name-only list to a binding list:
+Dynamic bindings carry syntax-only metadata:
 
 ```ts
-type RenderEventBinding =
-  | {
-      name: string
-      capture?: boolean
-      mutated?: boolean
-      kind: 'service'
-    }
-  | {
-      name: string
-      capture?: boolean
-      mutated?: boolean
-      catch?: boolean
-      kind: 'wxs'
-      moduleId: string
-      exportPath: string[]
-    }
-```
-
-The service logic tree only attaches `kind: 'service'` listeners. The render tree
-attaches `kind: 'wxs'` listeners and executes them locally.
-
-`catch` is not inferred from the event name at runtime. It comes from
-`catchtap` / `catchtouchmove` / `capture-catch*` during template compilation and
-is part of the binding metadata. `return false` and `catch` both stop
-propagation; the render host handles both before deciding whether to send the
-event to service.
-
-Example:
-
-```html
-<view bindtap="{{utils.tap}}" catchtouchmove="{{utils.move}}" />
-```
-
-```ts
-events: [
-  { name: 'tap', kind: 'wxs', moduleId: 'utils', exportPath: ['tap'] },
-  {
-    name: 'touchmove',
-    kind: 'wxs',
-    moduleId: 'utils',
-    exportPath: ['move'],
-    catch: true,
-  },
-]
-```
-
-`change:prop` is a separate metadata field, not an event:
-
-```ts
-type RenderPropObserver = {
-  prop: string
-  moduleId: string
-  exportPath: string[]
+type WxsDynamicEvent = {
+  name: string
+  catch?: boolean
+  capture?: boolean
+  mutated?: boolean
 }
 ```
 
-The compiler marks it on the owning element. The service still owns the actual
-property value; the render tree tracks the previous value locally and runs the
-observer after receiving a prop update. The initial property set also invokes
-the observer once, matching the official `change:prop` behavior.
-
-Observer signature:
+Runtime handler resolution is a separate message:
 
 ```ts
-observer(newValue, oldValue, ownerInstance, instance)
+type WxsBindingMessage = {
+  viewId: string
+  event: string
+  moduleId?: string
+  exportPath?: string[]
+  catch?: boolean
+  capture?: boolean
+  mutated?: boolean
+}
 ```
 
-The first implementation covers built-in component properties. Custom component
-property observers remain service-side until the component tree offers a
-render-side property mirror.
+The render tree keeps the latest optional handler descriptor per node/event.
+There is no `kind`/`mode` field: absence of a resolvable module means service
+fallback.
 
 ### 4. Render runtime host
 
@@ -730,10 +675,11 @@ a projection. WXS expressions stay service-side; only event-time WXS moves.
 - emits a factory body and source map that point back to the original WXS;
 - classifies expression-only, handler-only, mixed modules;
 - emits render module table with stable IDs and dependency order;
-- emits `kind: 'wxs'` event metadata and `change:prop` metadata;
+- emits `wx-tiny-wxs-dynamic` syntax metadata for dynamic event bindings;
+- wraps dynamic handler values in `Q.B`;
+- emits `change:prop` metadata for built-in components;
 - records `catch` / `capture` / `mutated` from binding syntax;
-- falls back to service for dynamic WXS bindings;
-- does not emit service listeners for render-local WXS handlers.
+- does not perform static WXS branch analysis.
 
 ### Runtime
 
@@ -747,6 +693,8 @@ a projection. WXS expressions stay service-side; only event-time WXS moves.
 - returning `false` stops propagation and skips service dispatch;
 - service handlers still run after local handlers when not stopped;
 - custom component WXS events fall back with a diagnostic;
+- render resolves an optional WXS descriptor and falls back to service when the
+  module/export is missing;
 - `callMethod` reaches the page/component method;
 - built-in `change:prop` receives `(newValue, oldValue, ownerInstance, instance)`
   and runs once on initial set;
@@ -767,10 +715,6 @@ a projection. WXS expressions stay service-side; only event-time WXS moves.
   against WeChat before calling the split complete.
 - Should the legacy `getData()` descriptor extension stay? The official
   `ComponentDescriptor` table does not list it.
-- Dynamic WXS bindings such as `{{utils.getHandler()}}` or
-  `{{condition ? utils.a : utils.b}}` currently fall back to the service path.
-  Should the compiler attempt deeper static analysis, emit diagnostics, or keep
-  the fallback permanently?
 - Is service fallback for custom component WXS events acceptable, or should
   those bindings be rejected at compile time?
 - Does a same-realm wrapper provide enough isolation for trusted app code, or
