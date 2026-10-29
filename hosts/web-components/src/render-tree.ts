@@ -14,6 +14,7 @@ import type {
   RenderRect,
   RenderText,
   WxsModuleTable,
+  WxsRenderEffect,
 } from '@tiny/runtime'
 import { createBuiltinComponents } from './index'
 import { BUILTIN_COMPONENT_TAGS, type BuiltinComponentTag } from './tags'
@@ -120,6 +121,7 @@ export type GlassRenderTree = {
   setHostActionSink?: (sink: (action: RenderHostAction) => void) => void
   setPagePath?: (pagePath: string) => void
   setWxsModules?: (table: WxsModuleTable) => void
+  setWxsEffectSink?: (sink: (effect: WxsRenderEffect) => void) => void
   setDiagnosticSink?: (sink: (diagnostic: {
     severity: 'warning' | 'error'
     code: string
@@ -282,6 +284,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const eventCleanups = new Map<string, Array<() => void>>()
   let currentRoot: RenderNode | undefined
   let eventSink: ((event: GlassRenderEvent) => void) | undefined
+  let wxsEffectSink: ((effect: WxsRenderEffect) => void) | undefined
   let hostActionSink: ((action: RenderHostAction) => void) | undefined
   const emitServiceEvent = (event: GlassRenderEvent): void => {
     if (eventSink) eventSink(event)
@@ -638,7 +641,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       getData() {
         return {}
       },
-      callMethod() {
+      callMethod(name: string, ...args: unknown[]) {
+        const node = wxsNodeForElement(element)
+        if (node) wxsEffectSink?.({ kind: 'callMethod', viewId: node.id, method: name, args })
         return undefined
       },
       requestAnimationFrame(callback: () => void) {
@@ -650,7 +655,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       getComputedStyle() {
         return getComputedStyle(element)
       },
-      triggerEvent() {
+      triggerEvent(name: string, detail?: unknown, options?: Record<string, unknown>) {
+        const node = wxsNodeForElement(element)
+        if (node) wxsEffectSink?.({ kind: 'triggerEvent', viewId: node.id, name, detail, options })
         return undefined
       },
     }
@@ -1145,6 +1152,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     },
     setWxsModules: (table) => {
       wxsRuntime.load(table)
+    },
+    setWxsEffectSink: (sink) => {
+      wxsEffectSink = sink
     },
     observeIntersection: (request, emit) => {
       if (typeof IntersectionObserver === 'undefined' || !rootElement) return undefined

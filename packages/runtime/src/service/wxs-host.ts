@@ -47,6 +47,7 @@ export type WxsComponentDescriptor = {
   getData: () => Record<string, unknown>
   setStyle: (style: unknown) => void
   callMethod: (name: string, ...args: unknown[]) => unknown
+  triggerEvent: (name: string, detail?: unknown, options?: Record<string, unknown>) => unknown
 }
 
 const camelToKebab = (name: string): string => {
@@ -131,6 +132,41 @@ function createDescriptor(
     callMethod(name: string, ...args: unknown[]) {
       return callOwnerMethod(options, tree, scope, String(name), args)
     },
+    triggerEvent(name: string, detail?: unknown, options?: Record<string, unknown>) {
+      const element = node.__wxElement as unknown as {
+        triggerEvent?: (eventName: string, eventDetail?: unknown, eventOptions?: unknown) => unknown
+      } | undefined
+      return element?.triggerEvent?.(String(name), detail, options)
+    },
+  }
+}
+
+/** Apply a WXS effect forwarded from the render thread. */
+export function dispatchWxsEffect(
+  tree: LogicTreeAdapter,
+  pageId: string,
+  effect: {
+    kind: 'callMethod' | 'triggerEvent'
+    viewId: string
+    method?: string
+    args?: unknown[]
+    name?: string
+    detail?: unknown
+    options?: Record<string, unknown>
+  },
+  options: WxsEventHostOptions,
+): void {
+  const node = tree.findNodeByViewId(effect.viewId)
+  if (!node) return
+  const descriptor = createDescriptor(options, tree, {
+    node,
+    root: ownerRoot(node),
+    pageId,
+  })
+  if (effect.kind === 'callMethod' && effect.method) {
+    descriptor.callMethod(effect.method, ...(effect.args ?? []))
+  } else if (effect.kind === 'triggerEvent' && effect.name) {
+    descriptor.triggerEvent(effect.name, effect.detail, effect.options)
   }
 }
 

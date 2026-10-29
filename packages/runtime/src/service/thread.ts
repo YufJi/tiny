@@ -18,7 +18,7 @@ import type { RuntimePageState, RuntimeTabBarState } from '../diagnostics'
 import { MiniProgramPageRegistry } from './page-registry'
 import { MiniProgramPageInstance, type PageLifecycleName } from './page-instance'
 import { createServiceApiHost, installMiniProgramGlobals } from './api-host'
-import { installWxsEventHost } from './wxs-host'
+import { dispatchWxsEffect, installWxsEventHost, type WxsEventHostOptions } from './wxs-host'
 import { createDefaultWxsCompiler, createWxsRuntime } from '@tiny/wxs-runtime'
 import { LogicTreeAdapter, type ViewEventPayload, type ViewIntersectionEntry } from '../tree/logic'
 import { findPageArtifact, normalizeRoutePath, requireActivePage, resolveComponentReference } from './route'
@@ -59,6 +59,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   let componentSchemas: MiniProgramComponentSchema[] = []
   let logicTree: LogicTreeAdapter | null = null
   let wxsModules: import('@tiny/wxs-runtime').WxsModuleTable | undefined
+  let wxsHostOptions: WxsEventHostOptions | undefined
   const mountedTreePages = new Set<string>()
   const pendingTreePages = new Set<string>()
   let treeUpdateScheduled = false
@@ -568,6 +569,36 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }
   })
 
+  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.wxsEffect, (message) => {
+    if (!logicTree || !wxsHostOptions) return
+    const effect = (message.payload ?? {}) as {
+      kind?: 'callMethod' | 'triggerEvent'
+      viewId?: string
+      method?: string
+      args?: unknown[]
+      name?: string
+      detail?: unknown
+      options?: Record<string, unknown>
+    }
+    if (!effect.kind || !effect.viewId) return
+    try {
+      dispatchWxsEffect(logicTree, message.pageId ?? '', {
+        kind: effect.kind,
+        viewId: effect.viewId,
+        ...(effect.method ? { method: effect.method } : {}),
+        ...(effect.args ? { args: effect.args } : {}),
+        ...(effect.name ? { name: effect.name } : {}),
+        ...(effect.detail !== undefined ? { detail: effect.detail } : {}),
+        ...(effect.options ? { options: effect.options } : {}),
+      }, wxsHostOptions)
+    } catch (error) {
+      connection.sendDiagnostic('warn', {
+        code: DIAGNOSTIC_CODES.EVENT_HANDLER_ERROR,
+        message: error instanceof Error ? error.message : String(error),
+      }, message.pageId)
+    }
+  })
+
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.ready, (message) => {
     if (!logicTree || !message.pageId || !mountedTreePages.has(message.pageId)) return
     sendTreeSnapshot(message.pageId)
@@ -660,14 +691,15 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       // WXS event handlers resolve their `ins` descriptor through this global
       // hook. Install before the first page mounts so the first event already
       // has one; a new service thread simply replaces the previous hook.
-      installWxsEventHost({
+      wxsHostOptions = {
         getLogicTree: () => logicTree ?? undefined,
         getPage: (pageId) => pageInstances.get(pageId),
         requestRenderUpdate: (pageId) => scheduleTreeUpdate(pageId),
         onDiagnostic: (pageId, code, message, details) => {
           connection.sendDiagnostic('warn', { code, message, details }, pageId)
         },
-      })
+      }
+      installWxsEventHost(wxsHostOptions)
       options.onLogicTreeCreated?.(logicTree)
       if (pageStack.length === 0) {
         const pageArtifact = findPageArtifact(options.manifest, currentPath)

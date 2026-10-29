@@ -345,6 +345,11 @@ export class LogicTreeAdapter {
   }
 
   /** Snapshot the logic tree in the host-neutral render-tree protocol. */
+  /** Resolve a render view id back to its logic node. */
+  findNodeByViewId(viewId: string): LogicBackendElement | undefined {
+    return this.backend.findByViewId(viewId)
+  }
+
   snapshotRenderTree(pageId: string): RenderNode | null {
     const page = this.glass.getMountedComponentByPageId(pageId)
     if (!page) throw new Error(`logic page is not mounted: ${pageId}`)

@@ -17,6 +17,7 @@ import {
   type RenderNode,
   type RenderPatch,
   type RenderText,
+  type WxsRenderEffect,
 } from '../protocol'
 
 export type TreeEventPayload = {
@@ -37,6 +38,7 @@ export type TreeRenderer = {
   mount: (root: RenderNode) => void
   applyPatches: (patches: RenderPatch[]) => void
   setEventSink?: (sink: (event: TreeEventPayload) => void) => void
+  setWxsEffectSink?: (sink: (effect: WxsRenderEffect) => void) => void
   /** Built-in components ask the host to act (e.g. `<navigator>` routing). */
   setHostActionSink?: (sink: (action: RenderHostAction) => void) => void
   applyStyles?: (styles: string[]) => void
@@ -107,6 +109,14 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     connection.sendEvent(
       TREE_PROTOCOL.domain, TREE_PROTOCOL.event,
       { ...event, pageId: event.pageId ?? currentPageId },
+      currentPageId ? { pageId: currentPageId } : {},
+    )
+  })
+
+  options.renderer.setWxsEffectSink?.((effect) => {
+    connection.sendEvent(
+      TREE_PROTOCOL.domain, TREE_PROTOCOL.wxsEffect,
+      { ...effect, pageId: currentPageId },
       currentPageId ? { pageId: currentPageId } : {},
     )
   })
