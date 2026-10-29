@@ -33,7 +33,9 @@ Landed so far:
 - `getData` is synchronous in render for the page and for custom component
   snapshots; descriptors also expose timers and the list form of
   `getComputedStyle`;
-- render `setStyle` normalizes `rpx` values against the viewport;
+- `@tiny/css-units` is the single rpx→vw implementation shared by the
+  stylesheet compiler and render `setStyle`; the runtime uses the fixed 750
+  ratio;
 - WXS specialized browser coverage includes catch/return-false, capture,
   service ancestor bubbling, component/page `getData`, `getState`, timers,
   rpx/computed style and render module state across dynamic handler switches.
