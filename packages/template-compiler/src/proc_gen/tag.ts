@@ -362,6 +362,8 @@ function elementToProcGen(
     const slotKind = slotKindNew(kind.common.slot, w, scopes)
     let finalVarSlotNames: string[] | null = null
 
+    const wxsProps: WxsPropMetadata[] = []
+
     const childIdent = w.declareVarOnTopScopeInit((ew, ident) => {
       nodesToProcGenDefineChildren(kind.children, ew, scopes, (args, ew, varSlotMap, innerScopes) => {
         if (varSlotMap) {
@@ -404,7 +406,12 @@ function elementToProcGen(
           staticAttrToProcGenWorklet(attr, w)
         }
         for (const attr of kind.changeAttributes) {
-          attrToProcGenAsChangeProperty(attr, w, scopes, bmc)
+          attrToProcGenAsChangeProperty(attr, w, scopes, bmc, wxsProps)
+        }
+        if (wxsProps.length > 0) {
+          w.exprStmt((ww) => {
+            ww.write(`O(N,'wx-tiny-wxs-props',${genLitStr(JSON.stringify(wxsProps))})`)
+          })
         }
         for (const attr of kind.attributes) {
           normalAttrToProcGenAsNormal(attr, w, scopes, bmc)
@@ -747,7 +754,38 @@ const RENDER_WXS_EVENTS = new Set([
   'touchmove',
   'touchend',
   'touchcancel',
+  'change',
+  'scroll',
+  'confirm',
+  'blur',
+  'focus',
+  'select',
+  'columnchange',
+  'linechange',
+  'scrolltoupper',
+  'scrolltolower',
+  'regionchange',
+  'submit',
+  'reset',
+  'load',
+  'error',
+  'begin',
+  'end',
+  'update',
+  'play',
+  'pause',
+  'timeupdate',
+  'ended',
+  'waiting',
+  'progress',
+  'fullscreenchange',
 ])
+
+type WxsPropMetadata = {
+  prop: string
+  moduleId: string
+  exportPath: string[]
+}
 
 type WxsEventMetadata = {
   name: string
@@ -883,10 +921,19 @@ function attrToProcGenAsChangeProperty(
   w: JsFunctionScopeWriter,
   scopes: ScopeVar[],
   bmc: BindingMapCollector,
+  wxsProps?: WxsPropMetadata[],
 ): void {
   if (!attr.value || attr.value.kind === 'Static') return
   const n = genLitStr(attr.name.name)
   const p = exprToProcGenPrepare(attr.value.expression, w, scopes)
+  const staticWxs = p.getStaticScriptHandler(scopes)
+  if (staticWxs && wxsProps) {
+    wxsProps.push({
+      prop: attr.name.name,
+      moduleId: staticWxs.moduleId,
+      exportPath: staticWxs.exportPath,
+    })
+  }
   w.exprStmt((ww) => {
     ww.write('if(C||K||')
     p.lvalueStateExpr(ww, scopes, false)

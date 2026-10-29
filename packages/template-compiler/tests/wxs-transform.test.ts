@@ -98,3 +98,24 @@ describe('WXS event metadata', () => {
     expect(group.getTmplGenObjectGroups()).not.toContain('wx-tiny-wxs-events')
   })
 })
+
+
+describe('WXS change:prop metadata', () => {
+  test('emits a prop observer descriptor', () => {
+    const group = TmplGroup.new({
+      directivePrefix: 'wx',
+      templateExtension: '.wxml',
+      templateScriptExtension: '.wxs',
+    })
+    group.addScript('wxs/utils.wxs', 'module.exports = { observe: function () {} }')
+    group.addTmpl(
+      'pages/index/index',
+      '<wxs module="utils" src="/wxs/utils.wxs" />'
+        + '<view change:prop="{{utils.observe}}" prop="{{value}}" />',
+    )
+    const output = group.getTmplGenObjectGroups()
+    expect(output).toContain('wx-tiny-wxs-props')
+    expect(output).toContain('\\"prop\\":\\"prop\\"')
+    expect(output).toContain('\\"moduleId\\":\\"wxs/utils.wxs\\"')
+  })
+})
