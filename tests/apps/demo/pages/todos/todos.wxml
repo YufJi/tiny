@@ -7,6 +7,7 @@
     <button bindtap="openAddTodo">Open add todo</button>
     <button bindtap="openSemantics">Semantics</button>
     <button bindtap="openScrollPage">Scroll page</button>
+    <button bindtap="openTouchLock">Touch lock</button>
     <button bindtap="openWxsRuntime">WXS runtime</button>
     <add-button text="Add" bind:custom="onCustom">Custom slot</add-button>
   </view>

@@ -266,15 +266,25 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
     is: BUILTIN_BEHAVIOR_IDS.touchTrack,
     methods: {
       touchtrack(
-        element: unknown,
+        _element: unknown,
         handler: (event: TouchTrackEvent) => boolean | void,
         useCapture = false,
       ): () => void {
-        const target = element as {
-          addEventListener?: (type: string, listener: (event: TouchEvent) => void, capture?: boolean) => void
-          removeEventListener?: (type: string, listener: (event: TouchEvent) => void, capture?: boolean) => void
-        } | null
-        if (!target?.addEventListener) return () => {}
+        // Track through glass events (not DOM listeners) so native touch and a
+        // mouse sequence projected by the event compositor take the same path.
+        const instance = this as unknown as {
+          addListener?: (name: string, listener: (event: unknown) => void, options?: { capture?: boolean }) => void
+          removeListener?: (name: string, listener: (event: unknown) => void, options?: { capture?: boolean }) => void
+        }
+        if (typeof instance.addListener !== 'function') return () => {}
+        type TrackPoint = { clientX: number; clientY: number }
+        const listOf = (event: unknown, key: 'touches' | 'changedTouches'): ArrayLike<TrackPoint> => {
+          const projected = (event as Record<string, ArrayLike<TrackPoint> | undefined>)[key]
+          if (projected) return projected
+          const original = (event as { getOriginalEvent?: () => TouchEvent | undefined })
+            .getOriginalEvent?.()
+          return original?.[key] ?? []
+        }
         let active = false
         let startX = 0
         let startY = 0
@@ -282,14 +292,21 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
         let lastY = 0
         let previousX = 0
         let previousY = 0
-        const emit = (event: TouchEvent, state: TouchTrackEvent['detail']['state'], x: number, y: number) => {
+        const emit = (event: unknown, state: TouchTrackEvent['detail']['state'], x: number, y: number) => {
+          const source = event as {
+            target?: unknown
+            currentTarget?: unknown
+            preventDefault?: () => void
+            stopPropagation?: () => void
+            timeStamp?: number
+          }
           const result = handler({
-            target: event.target,
-            currentTarget: event.currentTarget,
-            preventDefault: () => event.preventDefault(),
-            stopPropagation: () => event.stopPropagation(),
-            touches: Array.from(event.touches ?? []),
-            changedTouches: Array.from(event.changedTouches ?? []),
+            target: source.target,
+            currentTarget: source.currentTarget,
+            preventDefault: () => source.preventDefault?.(),
+            stopPropagation: () => source.stopPropagation?.(),
+            touches: Array.from(listOf(event, 'touches')),
+            changedTouches: Array.from(listOf(event, 'changedTouches')),
             detail: {
               state,
               x,
@@ -298,49 +315,51 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
               dy: y - startY,
               ddx: x - previousX,
               ddy: y - previousY,
-              timeStamp: event.timeStamp,
+              timeStamp: Number(source.timeStamp ?? Date.now()),
             },
           })
           previousX = x
           previousY = y
           return result
         }
-        const onStart = (event: TouchEvent) => {
-          if (event.touches.length !== 1 || active) return
+        const onStart = (event: unknown) => {
+          const touches = listOf(event, 'touches')
+          if (touches.length !== 1 || active) return
           active = true
-          const touch = event.touches[0]!
+          const touch = touches[0]!
           startX = lastX = previousX = touch.clientX
           startY = lastY = previousY = touch.clientY
           emit(event, 'start', startX, startY)
         }
-        const onMove = (event: TouchEvent) => {
-          if (!active || event.touches.length !== 1) return
-          const touch = event.touches[0]!
+        const onMove = (event: unknown) => {
+          const touches = listOf(event, 'touches')
+          if (!active || touches.length !== 1) return
+          const touch = touches[0]!
           lastX = touch.clientX
           lastY = touch.clientY
           emit(event, 'move', lastX, lastY)
         }
-        const onEnd = (event: TouchEvent) => {
-          if (!active || event.touches.length !== 0) return
+        const onEnd = (event: unknown) => {
+          if (!active || listOf(event, 'touches').length !== 0) return
           active = false
-          const touch = event.changedTouches[0]
+          const touch = listOf(event, 'changedTouches')[0]
           emit(event, 'end', touch?.clientX ?? lastX, touch?.clientY ?? lastY)
         }
-        const onCancel = (event: TouchEvent) => {
+        const onCancel = (event: unknown) => {
           if (!active) return
           active = false
-          const touch = event.changedTouches[0]
+          const touch = listOf(event, 'changedTouches')[0]
           emit(event, 'cancel', touch?.clientX ?? lastX, touch?.clientY ?? lastY)
         }
-        target.addEventListener('touchstart', onStart, useCapture)
-        target.addEventListener('touchmove', onMove, useCapture)
-        target.addEventListener('touchend', onEnd, useCapture)
-        target.addEventListener('touchcancel', onCancel, useCapture)
+        instance.addListener('touchstart', onStart, { capture: useCapture })
+        instance.addListener('touchmove', onMove, { capture: useCapture })
+        instance.addListener('touchend', onEnd, { capture: useCapture })
+        instance.addListener('touchcancel', onCancel, { capture: useCapture })
         return () => {
-          target.removeEventListener?.('touchstart', onStart, useCapture)
-          target.removeEventListener?.('touchmove', onMove, useCapture)
-          target.removeEventListener?.('touchend', onEnd, useCapture)
-          target.removeEventListener?.('touchcancel', onCancel, useCapture)
+          instance.removeListener?.('touchstart', onStart, { capture: useCapture })
+          instance.removeListener?.('touchmove', onMove, { capture: useCapture })
+          instance.removeListener?.('touchend', onEnd, { capture: useCapture })
+          instance.removeListener?.('touchcancel', onCancel, { capture: useCapture })
         }
       },
     },

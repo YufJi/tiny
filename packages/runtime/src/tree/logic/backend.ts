@@ -437,6 +437,29 @@ export class LogicBackendContext {
     pageId: string,
     rootElement?: LogicBackendElement,
   ): RenderNode | null {
+    const eventBindingsFor = (
+      listeners: Array<{ type: string; capture: boolean; mutLevel: unknown }>,
+    ): Array<{ name: string; capture?: boolean; catch?: boolean; mutated?: boolean }> => {
+      // glass reports `catch` as the `Final` mutation level and `mutated` as
+      // `Mut`. Both are compile-time WXML semantics the render host needs to
+      // stop propagation / mutate handlers, so carry them across the bridge.
+      const bindings = new Map<
+        string,
+        { name: string; capture?: boolean; catch?: boolean; mutated?: boolean }
+      >()
+      for (const listener of listeners) {
+        const key = `${listener.type}\0${listener.capture ? 'capture' : 'bubble'}`
+        const binding = bindings.get(key) ?? {
+          name: listener.type,
+          ...(listener.capture ? { capture: true } : {}),
+        }
+        const level = Number(listener.mutLevel)
+        if (level === 2) binding.catch = true
+        else if (level === 1) binding.mutated = true
+        bindings.set(key, binding)
+      }
+      return [...bindings.values()]
+    }
     const nextId = (node: LogicBackendElement): string => this.ensureViewId(node)
     const propsFor = (node: LogicBackendElement): Record<string, unknown> => {
       const props = Object.fromEntries(node.attributes)
@@ -522,12 +545,7 @@ export class LogicBackendContext {
         ...(node.scopeNames.length > 0 ? { scopes: [...new Set(node.scopeNames)] } : {}),
         ...(node.scopeChain.length > 0 ? { scopeChain: [...new Set(node.scopeChain)] } : {}),
         ...(node.listeners.length > 0
-          ? {
-              events: node.listeners.map((listener) => ({
-                name: listener.type,
-                capture: listener.capture,
-              })),
-            }
+          ? { events: eventBindingsFor(node.listeners) }
           : {}),
         ...(children.length > 0 ? { children } : {}),
       }

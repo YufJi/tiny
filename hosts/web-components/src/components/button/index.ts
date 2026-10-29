@@ -68,8 +68,11 @@ export function defineButton(ctx: BuiltinContext): BuiltinDefinition {
         // page listeners, so disabled only suppresses form/open-type semantics.
         bindHostListeners(this, {
           tap: (event) => this.handleTap(event),
+          longpress: (event) => this.handleButtonLongPress(event),
+          canceltap: () => {
+            ;(this as unknown as { _longTapFired?: boolean })._longTapFired = true
+          },
           touchstart: (event) => this.handleButtonTouchStart(event),
-          touchmove: (event) => this.handleButtonTouchMove(event),
           touchend: (event) => this.handleButtonTouchEnd(event),
           touchcancel: (event) => this.handleButtonTouchEnd(event),
         })
@@ -102,27 +105,21 @@ export function defineButton(ctx: BuiltinContext): BuiltinDefinition {
         this.clearLongTap()
         instance._longTapStart = this.touchPoint(event)
         instance._longTapFired = false
-        instance._longTapTimer = setTimeout(() => {
-          instance._longTapTimer = undefined
-          instance._longTapFired = true
-          this.triggerEvent('longtap', { ...instance._longTapStart }, { bubbles: true, composed: true })
-        }, 350)
       },
-      handleButtonTouchMove(event: glassEasel.ShadowedEvent<unknown>) {
+      handleButtonLongPress(event: glassEasel.ShadowedEvent<unknown>) {
+        if (this.data.disabled) return
         const instance = this as unknown as {
           _longTapStart?: { x: number; y: number }
           _longTapFired?: boolean
         }
-        const start = instance._longTapStart
-        if (!start) return
-        const point = this.touchPoint(event)
-        if (Math.hypot(point.x - start.x, point.y - start.y) > 10) {
-          this.clearLongTap()
-          if (!instance._longTapFired) {
-            instance._longTapFired = true
-            this.triggerEvent('canceltap', {}, { bubbles: true, composed: true })
-          }
-        }
+        instance._longTapFired = true
+        const detail = (event.detail ?? {}) as { x?: unknown; y?: unknown }
+        // `longpress` is the current WeChat name; `longtap` is kept as the
+        // legacy alias on the same synthetic gesture.
+        this.triggerEvent('longtap', {
+          x: Number(detail.x ?? instance._longTapStart?.x ?? 0),
+          y: Number(detail.y ?? instance._longTapStart?.y ?? 0),
+        }, { bubbles: true, composed: true })
       },
       handleButtonTouchEnd(_event?: unknown) {
         void _event

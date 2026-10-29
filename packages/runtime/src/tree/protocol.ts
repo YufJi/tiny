@@ -91,7 +91,7 @@ export type RenderElement = {
   scopes?: string[]
   scopeChain?: string[]
   externalClasses?: Record<string, string[]>
-  events?: Array<{ name: string; capture?: boolean }>
+  events?: Array<{ name: string; capture?: boolean; catch?: boolean; mutated?: boolean }>
   children?: RenderNode[]
   /** Optional reconciliation key for repeated children. */
   key?: string
@@ -202,7 +202,7 @@ export type ComponentFlow =
     scopes?: string[]
     scopeChain?: string[]
     externalClasses?: Record<string, string[]>
-    events?: Array<{ name: string; capture?: boolean }>
+    events?: Array<{ name: string; capture?: boolean; catch?: boolean; mutated?: boolean }>
     key?: string
   }
   | { type: 'props'; id: RenderNodeId; props: Record<string, unknown> }

@@ -1,13 +1,12 @@
 import type * as glassEasel from 'glass-easel'
 import { DIAGNOSTIC_CODES, TINY_ENGINE_NAMING } from '@tiny/manifest'
+import { touchListFromEvent } from '../../events'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { builtinDefinitionName } from '../../tags'
 
 type CanvasRuntime = {
   __canvasLongTapTimer?: ReturnType<typeof setTimeout>
   __canvasLongTapPayload?: TouchPayload
-  __canvasMousePressed?: boolean
-  __canvasMouseTouch?: Record<string, unknown>
   __canvasLastTouchAt?: number
 }
 
@@ -40,8 +39,6 @@ type CanvasHost = {
 
 // Browsers fire compatibility mouse events after a touch sequence. Ignore
 // those so a tap is not turned into a second synthetic touchstart.
-const MOUSE_AFTER_TOUCH_MS = 600
-
 // Shared with `@tiny/runtime`'s render adapter; the symbol registry keeps the
 // marker stable even when the two packages are bundled separately.
 const HANDLED_NATIVE_EVENT = Symbol.for(TINY_ENGINE_NAMING.handledNativeEventSymbol)
@@ -67,13 +64,6 @@ function canvasOrigin(instance: unknown): TouchOrigin | undefined {
   return { left: rect.left, top: rect.top }
 }
 
-function touchList(value: unknown): TouchSource[] {
-  if (!value || typeof value !== 'object') return []
-  const length = Number((value as { length?: unknown }).length)
-  if (!Number.isFinite(length) || length < 0) return []
-  return Array.from(value as ArrayLike<TouchSource>)
-}
-
 function normalizeTouch(touch: TouchSource, origin?: TouchOrigin): Record<string, unknown> {
   const clientX = Number(touch.clientX ?? 0)
   const clientY = Number(touch.clientY ?? 0)
@@ -96,10 +86,7 @@ function eventTouchSources(
   event: glassEasel.ShadowedEvent<unknown>,
   key: 'touches' | 'changedTouches',
 ): TouchSource[] {
-  const detail = (event.detail ?? {}) as Record<string, unknown>
-  const fromDetail = touchList(detail[key])
-  if (fromDetail.length > 0) return fromDetail
-  return touchList((event as unknown as Record<string, unknown>)[key])
+  return touchListFromEvent(event, key) as TouchSource[]
 }
 
 function touchPayload(instance: unknown, event: glassEasel.ShadowedEvent<unknown>): TouchPayload {
@@ -122,14 +109,6 @@ function touchPayload(instance: unknown, event: glassEasel.ShadowedEvent<unknown
     touches,
     changedTouches,
   }
-}
-
-function mousePayload(instance: unknown, event: glassEasel.ShadowedEvent<unknown>): {
-  touch: Record<string, unknown>
-  detail: Record<string, unknown>
-} {
-  const touch = normalizeTouch((event.detail ?? {}) as TouchSource, canvasOrigin(instance))
-  return { touch, detail: { ...touch } }
 }
 
 function eventOptions(payload: TouchPayload): Record<string, unknown> {
@@ -193,8 +172,6 @@ export function defineCanvas(ctx: BuiltinContext): BuiltinDefinition {
         if (instance.__canvasLongTapTimer) clearTimeout(instance.__canvasLongTapTimer)
         instance.__canvasLongTapTimer = undefined
         instance.__canvasLongTapPayload = undefined
-        instance.__canvasMousePressed = false
-        instance.__canvasMouseTouch = undefined
       },
     },
     methods: {
@@ -231,58 +208,6 @@ export function defineCanvas(ctx: BuiltinContext): BuiltinDefinition {
         instance.__canvasLongTapPayload = undefined
         dispatchTouch(this, 'longtap', payload, event)
       },
-      handleMouseDown(event: glassEasel.ShadowedEvent<unknown>) {
-        const instance = this as unknown as CanvasRuntime
-        if (this.isRecentTouch()) return
-        const payload = mousePayload(this, event)
-        const startPayload = {
-          detail: payload.detail,
-          touches: [payload.touch],
-          changedTouches: [payload.touch],
-        }
-        instance.__canvasMousePressed = true
-        instance.__canvasMouseTouch = payload.touch
-        this.scheduleLongTap(event, startPayload)
-        dispatchTouch(this, 'touchstart', startPayload, event)
-      },
-      handleMouseMove(event: glassEasel.ShadowedEvent<unknown>) {
-        const instance = this as unknown as CanvasRuntime
-        if (!instance.__canvasMousePressed || this.isRecentTouch()) return
-        const payload = mousePayload(this, event)
-        instance.__canvasMouseTouch = payload.touch
-        this.clearLongTap()
-        dispatchTouch(this, 'touchmove', {
-          detail: payload.detail,
-          touches: [payload.touch],
-          changedTouches: [payload.touch],
-        }, event)
-      },
-      handleMouseUp(event: glassEasel.ShadowedEvent<unknown>) {
-        const instance = this as unknown as CanvasRuntime
-        if (!instance.__canvasMousePressed || this.isRecentTouch()) return
-        const payload = mousePayload(this, event)
-        instance.__canvasMousePressed = false
-        instance.__canvasMouseTouch = undefined
-        this.clearLongTap()
-        dispatchTouch(this, 'touchend', {
-          detail: { ...payload.detail, touches: [], changedTouches: [payload.touch] },
-          touches: [],
-          changedTouches: [payload.touch],
-        }, event)
-      },
-      handleMouseLeave(event: glassEasel.ShadowedEvent<unknown>) {
-        const instance = this as unknown as CanvasRuntime
-        if (!instance.__canvasMousePressed || this.isRecentTouch()) return
-        const touch = instance.__canvasMouseTouch ?? mousePayload(this, event).touch
-        instance.__canvasMousePressed = false
-        instance.__canvasMouseTouch = undefined
-        this.clearLongTap()
-        dispatchTouch(this, 'touchend', {
-          detail: { touches: [], changedTouches: [touch] },
-          touches: [],
-          changedTouches: [touch],
-        }, event)
-      },
       handleError(event: glassEasel.ShadowedEvent<unknown>) {
         this.triggerEvent('error', event.detail ?? {}, { bubbles: true, composed: true })
       },
@@ -294,10 +219,6 @@ export function defineCanvas(ctx: BuiltinContext): BuiltinDefinition {
           getOriginalEvent?: () => { preventDefault?: () => void } | undefined
         }).getOriginalEvent?.()
         original?.preventDefault?.()
-      },
-      isRecentTouch(): boolean {
-        const instance = this as unknown as CanvasRuntime
-        return Date.now() - (instance.__canvasLastTouchAt ?? 0) < MOUSE_AFTER_TOUCH_MS
       },
       clearLongTap() {
         const instance = this as unknown as CanvasRuntime

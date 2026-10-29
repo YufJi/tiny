@@ -1,0 +1,45 @@
+.page {
+  padding: 32rpx;
+}
+
+.hero {
+  font-size: 40rpx;
+  font-weight: bold;
+}
+
+.probe {
+  display: block;
+  margin: 16rpx 0 24rpx;
+  color: #94a3b8;
+}
+
+.tall {
+  height: 96rpx;
+  margin-bottom: 16rpx;
+  border: 1px solid #334155;
+  border-radius: 12rpx;
+}
+
+.mask {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.sheet {
+  width: 100%;
+  height: 380px;
+  background: #ffffff;
+}
+
+.inner {
+  height: 300px;
+}
+
+.inner-row {
+  height: 72rpx;
+  padding: 0 24rpx;
+  border-bottom: 1px solid #e2e8f0;
+}

@@ -4,6 +4,7 @@
     "pages/add-todo/add-todo",
     "pages/semantics/semantics",
     "pages/scroll/scroll",
+    "pages/touch-lock/touch-lock",
     "pages/wxs-runtime/wxs-runtime"
   ],
   "window": {

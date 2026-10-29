@@ -1,4 +1,5 @@
 import type * as glassEasel from 'glass-easel'
+import { touchListFromEvent } from '../../events'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { builtinDefinitionName } from '../../tags'
 
@@ -27,8 +28,8 @@ type ScrollRuntime = {
 }
 
 function touchPoint(event: glassEasel.ShadowedEvent<unknown>): { x: number; y: number } {
-  const detail = (event.detail ?? {}) as { touches?: Array<{ clientX?: number; clientY?: number; x?: number; y?: number }>; changedTouches?: Array<{ clientX?: number; clientY?: number; x?: number; y?: number }> }
-  const touch = detail.touches?.[0] ?? detail.changedTouches?.[0] ?? (event as unknown as { touches?: Array<{ clientX?: number; clientY?: number; x?: number; y?: number }> }).touches?.[0]
+  const touch = touchListFromEvent(event, 'touches')[0]
+    ?? touchListFromEvent(event, 'changedTouches')[0]
   return { x: Number(touch?.clientX ?? touch?.x ?? 0), y: Number(touch?.clientY ?? touch?.y ?? 0) }
 }
 

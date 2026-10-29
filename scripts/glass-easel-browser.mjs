@@ -36,7 +36,9 @@ async function launchBrowser() {
 
 export async function runBrowserAcceptance({ baseUrl }) {
   const browser = await launchBrowser()
-  const page = await browser.newPage({ viewport: { width: 1280, height: 720 } })
+  // `hasTouch` lets the gate drive the same touch path a phone uses; the
+  // devtool flows below stay on mouse clicks on purpose.
+  const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, hasTouch: true })
   const pageErrors = []
   const consoleErrors = []
   page.on('pageerror', (error) => pageErrors.push(error.message))
@@ -65,6 +67,30 @@ export async function runBrowserAcceptance({ baseUrl }) {
       return frame
     }
     let render = await activeRender()
+
+    const touchSwipe = async (locator, fromRatio = 0.75, toRatio = 0.35) => {
+      const box = await locator.boundingBox()
+      assert.ok(box, 'swipe target has no bounding box')
+      const x = box.x + box.width / 2
+      const startY = box.y + box.height * fromRatio
+      const endY = box.y + box.height * toRatio
+      const cdp = await page.context().newCDPSession(page)
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchStart',
+        touchPoints: [{ x, y: startY }],
+      })
+      const steps = 6
+      for (let index = 1; index <= steps; index += 1) {
+        const y = startY + ((endY - startY) * index) / steps
+        await cdp.send('Input.dispatchTouchEvent', {
+          type: 'touchMove',
+          touchPoints: [{ x, y }],
+        })
+        await page.waitForTimeout(16)
+      }
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+      await cdp.detach()
+    }
 
     const renderFrameBox = await page.locator('iframe.tiny-runtime-render-frame').boundingBox()
     assert.ok(
@@ -308,7 +334,9 @@ export async function runBrowserAcceptance({ baseUrl }) {
 
     await step('navigate to add-todo and expose page query', async () => {
       currentStep = 'navigate to add-todo and expose page query'
-      await render.getByText('Open add todo', { exact: true }).first().click()
+      // Touch-first: navigation is driven by a real touch sequence, not a
+      // synthetic mouse click.
+      await render.getByText('Open add todo', { exact: true }).first().tap()
       await waitForText('Add todo')
       assert.ok((await text()).includes('from: todos'), `page query was not delivered: ${await text()}`)
       assert.ok(!(await text()).includes('Tiny Glass-easel P0'), 'previous page was not unmounted')
@@ -591,6 +619,38 @@ export async function runBrowserAcceptance({ baseUrl }) {
       await render.locator('#counter').click()
       await waitForText('counter-status: counter:2')
       await render.getByText('Back', { exact: true }).first().click()
+      await waitForText('Tiny Glass-easel P0')
+    })
+
+    await step('lock page scroll under catchtouchmove', async () => {
+      currentStep = 'lock page scroll under catchtouchmove'
+      await render.getByText('Touch lock', { exact: true }).first().click()
+      await waitForText('Touch lock probe')
+      await render.evaluate(() => window.scrollTo(0, 200))
+      await page.waitForTimeout(50)
+      const before = await render.evaluate(() => window.scrollY)
+      // Swipe the bare mask (above the sheet), where no inner scroller exists.
+      await touchSwipe(render.locator('.mask'), 0.25, 0.05)
+      await page.waitForTimeout(150)
+      const after = await render.evaluate(() => window.scrollY)
+      assert.equal(after, before, `page scrolled through catchtouchmove (${before} -> ${after})`)
+
+      // The inner scroll-view must keep scrolling inside the locked mask.
+      await touchSwipe(render.locator('.inner'), 0.8, 0.4)
+      let innerTop = 0
+      const innerDeadline = Date.now() + 2000
+      while (Date.now() < innerDeadline && innerTop === 0) {
+        const current = await text()
+        innerTop = Number(/inner: (\d+)/.exec(current)?.[1] ?? 0)
+        if (innerTop === 0) await page.waitForTimeout(50)
+      }
+      assert.ok(innerTop > 0, 'inner scroll-view did not scroll inside the locked mask')
+
+      // Reload the host to get back to the P0 page; the probe intentionally
+      // keeps the mask up so it does not need an in-app exit.
+      await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
+      await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
+      render = await activeRender()
       await waitForText('Tiny Glass-easel P0')
     })
 
