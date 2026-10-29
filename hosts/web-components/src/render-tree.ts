@@ -276,7 +276,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const idByComponent = new WeakMap<object, string>()
   const pendingClasses = new Map<string, () => boolean>()
   const pendingWxsEvents = new Map<string, () => void>()
-  const pendingWxsProps = new Map<string, { node: RenderElement; component: AnyComponent }>()
   const wxsStates = new WeakMap<Element, Record<string, unknown>>()
   const wxsStatesById = new Map<string, Record<string, unknown>>()
   const dynamicBindingModes = new Map<string, WxsBindingMessage>()
@@ -724,7 +723,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     const bindings = parseWxsProps(node.props)
     if (bindings.length === 0) return
     const element = component.getBackendElement() as unknown as HTMLElement | null
-    if (element) pendingWxsProps.delete(node.id)
     const owner = element ? wxsOwnerElement(element) : rootElement
     const descriptor = wxsDescriptorFor(element, owner, node.id, node)
     const ownerDescriptor = wxsDescriptorFor(owner, owner, node.id)
@@ -908,13 +906,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     }
   }
 
-  const flushPendingWxsProps = (): void => {
-    for (const [id, pending] of pendingWxsProps) {
-      if (!pending.component.getBackendElement()) continue
-      applyWxsProps(pending.node, pending.component, wxsPropSnapshots.get(id))
-    }
-  }
-
   const flushAllWxsProps = (): void => {
     for (const [id, node] of currentTree) {
       if (node.type !== 'element' || parseWxsProps(node.props).length === 0) continue
@@ -1002,7 +993,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       externalByNode.delete(id)
       pendingClasses.delete(id)
       pendingWxsEvents.delete(id)
-      pendingWxsProps.delete(id)
       wxsPropSnapshots.delete(id)
     }
   }
@@ -1158,7 +1148,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     flushPendingAnimations()
     flushPendingClasses()
     flushPendingWxsEvents()
-    flushPendingWxsProps()
     flushAllWxsProps()
   }
 
@@ -1459,7 +1448,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       flushPendingAnimations()
       flushPendingClasses()
       flushPendingWxsEvents()
-      flushPendingWxsProps()
       flushAllWxsProps()
     },
     applyPatches,
@@ -1476,7 +1464,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       externalByNode.clear()
       pendingClasses.clear()
       pendingWxsEvents.clear()
-      pendingWxsProps.clear()
       wxsPropSnapshots.clear()
       for (const timer of wxsTimers) clearTimeout(timer)
       wxsTimers.clear()
