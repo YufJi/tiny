@@ -3,6 +3,7 @@ import type {
   WxsCompile,
   WxsErrorContext,
   WxsExports,
+  WxsFunctionOrigin,
   WxsModuleTable,
   WxsRuntime,
   WxsRuntimeHost,
@@ -55,6 +56,7 @@ const resolveModuleId = (from: string, request: string): string => {
 
 export function createWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
   const records = new Map<string, ModuleRecord>()
+  const functionOrigins = new WeakMap<Function, WxsFunctionOrigin>()
   let disposed = false
 
   const report = (error: unknown, context: WxsErrorContext): void => {
@@ -93,13 +95,49 @@ export function createWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
         throw error
       }
       record.loaded = true
+      indexExports(moduleId, record.module.exports)
       return record.module.exports
     } finally {
       record.loading = false
     }
   }
 
+  const indexExports = (moduleId: string, exportsValue: unknown): void => {
+    const seen = new Set<object>()
+    const visit = (value: unknown, path: string[]): void => {
+      if (typeof value === 'function') {
+        if (!functionOrigins.has(value)) functionOrigins.set(value, { moduleId, exportPath: [...path] })
+        return
+      }
+      if (!value || typeof value !== 'object' || seen.has(value)) return
+      seen.add(value)
+      for (const key of Object.keys(value)) {
+        visit((value as Record<string, unknown>)[key], [...path, key])
+      }
+    }
+    visit(exportsValue, [])
+  }
+
   return {
+    originOf(value: unknown) {
+      return typeof value === 'function' ? functionOrigins.get(value) : undefined
+    },
+
+    resolve(moduleId: string, exportPath: string[]) {
+      try {
+        let target: unknown = require(moduleId)
+        for (const part of exportPath) {
+          if (target === null || target === undefined || typeof target !== 'object') return undefined
+          target = (target as Record<string, unknown>)[part]
+        }
+        return typeof target === 'function'
+          ? target as (...args: unknown[]) => unknown
+          : undefined
+      } catch {
+        return undefined
+      }
+    },
+
     load(table: WxsModuleTable) {
       for (const module of table.modules) {
         const existing = records.get(module.id)

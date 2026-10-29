@@ -4,6 +4,7 @@ export type {
   WxsCompile,
   WxsErrorContext,
   WxsExports,
+  WxsFunctionOrigin,
   WxsModuleFactory,
   WxsModuleTable,
   WxsRuntime,

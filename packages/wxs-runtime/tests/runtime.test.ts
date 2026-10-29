@@ -83,6 +83,20 @@ describe('createWxsRuntime', () => {
     expect(wxs.require('table')).toEqual({ value: 9 })
   })
 
+  test('resolves exported function origins and optional paths', () => {
+    const wxs = runtime()
+    wxs.register('origin', 'module.exports = { tap: function () {}, nested: { move: function () {} } }')
+    const exports = wxs.require('origin') as { tap: Function; nested: { move: Function } }
+    expect(wxs.originOf(exports.tap)).toEqual({ moduleId: 'origin', exportPath: ['tap'] })
+    expect(wxs.originOf(exports.nested.move)).toEqual({
+      moduleId: 'origin',
+      exportPath: ['nested', 'move'],
+    })
+    expect(wxs.resolve('origin', ['nested', 'move'])).toBe(exports.nested.move)
+    expect(wxs.resolve('origin', ['missing'])).toBeUndefined()
+    expect(wxs.resolve('missing', ['tap'])).toBeUndefined()
+  })
+
   test('caches module exports', () => {
     const wxs = runtime()
     let loads = 0

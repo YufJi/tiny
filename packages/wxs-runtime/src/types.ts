@@ -1,5 +1,10 @@
 export type WxsExports = Record<string, unknown>
 
+export type WxsFunctionOrigin = {
+  moduleId: string
+  exportPath: string[]
+}
+
 export type WxsModuleTable = {
   modules: Array<{
     id: string
@@ -41,6 +46,10 @@ export type WxsRuntimeHost = {
 }
 
 export type WxsRuntime = {
+  /** Resolve a function exported by a loaded WXS module. */
+  originOf: (value: unknown) => WxsFunctionOrigin | undefined
+  /** Resolve an export path without throwing when it is unavailable. */
+  resolve: (moduleId: string, exportPath: string[]) => ((...args: unknown[]) => unknown) | undefined
   /** Register a compiler-emitted module table. */
   load: (table: WxsModuleTable) => void
   /** Register source for a module and return the `Q.S`-compatible accessor. */
