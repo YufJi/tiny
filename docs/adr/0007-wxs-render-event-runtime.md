@@ -19,11 +19,12 @@ Landed so far:
   descriptor (`getState`, `setStyle`, class methods, selector queries);
 - local handlers forward events to service only when a matching service
   listener exists on the DOM path;
-- WXS style/class overrides survive later WXML patches.
+- WXS style/class overrides survive later WXML patches;
+- common semantic WXS events execute through render component listeners;
+- `change:prop` observers run in render with old/new values and the initial set.
 
-Still pending: wired source maps, semantic WXS events, full descriptor RPCs
-(`callMethod`, `triggerEvent`), `change:prop`, and the dynamic-binding fallback
-policy.
+Still pending: wired source maps, full descriptor RPCs (`callMethod`,
+`triggerEvent`), and the dynamic-binding fallback policy.
 
 This ADR keeps ADR-0006's split-tree decision and does **not** move WXML
 expression evaluation to render. It proposes one kernel-level WXS runtime that
