@@ -416,7 +416,7 @@ function elementToProcGen(
         for (const attr of kind.attributes) {
           normalAttrToProcGenAsNormal(attr, w, scopes, bmc)
         }
-        commonAttrsToProcGenWithoutSlot(kind.common, w, scopes, bmc, BUILTIN_TAGS.has(kind.tagName.name))
+        commonAttrsToProcGenWithoutSlot(kind.common, w, scopes, bmc)
         // Bug4: update slot binding map when slot name is dynamic with binding map keys
         if (dynamicSlotPg !== null) {
           const slot = kind.common.slot
@@ -696,7 +696,7 @@ function elementToProcGen(
               ww.write(']')
             })
           }
-          commonAttrsToProcGenWithoutSlot(kind.common, fw, scopes, bmc, false)
+          commonAttrsToProcGenWithoutSlot(kind.common, fw, scopes, bmc)
           for (const attr of kind.values) {
             slotValueAttrToProcGen(attr, fw, scopes, bmc)
           }
@@ -777,39 +777,14 @@ const BUILTIN_TAGS = new Set<string>([
   'picker-view-column',
 ])
 
-const RENDER_WXS_EVENTS = new Set([
-  'tap',
-  'click',
-  'touchstart',
-  'touchmove',
-  'touchend',
-  'touchcancel',
-  'change',
-  'scroll',
-  'confirm',
-  'blur',
-  'focus',
-  'select',
-  'columnchange',
-  'linechange',
-  'scrolltoupper',
-  'scrolltolower',
-  'regionchange',
-  'submit',
-  'reset',
-  'load',
-  'error',
-  'begin',
-  'end',
-  'update',
-  'play',
-  'pause',
-  'timeupdate',
-  'ended',
-  'waiting',
-  'progress',
-  'fullscreenchange',
-])
+
+
+type WxsDynamicEventMetadata = {
+  name: string
+  catch: boolean
+  capture: boolean
+  mutated: boolean
+}
 
 type WxsPropMetadata = {
   prop: string
@@ -817,23 +792,15 @@ type WxsPropMetadata = {
   exportPath: string[]
 }
 
-type WxsEventMetadata = {
-  name: string
-  moduleId: string
-  exportPath: string[]
-  catch: boolean
-  capture: boolean
-  mutated: boolean
-}
+
 
 function commonAttrsToProcGenWithoutSlot(
   common: CommonElementAttributes,
   w: JsFunctionScopeWriter,
   scopes: ScopeVar[],
   bmc: BindingMapCollector,
-  allowLocalWxs: boolean,
 ): void {
-  const wxsEvents: WxsEventMetadata[] = []
+  const wxsDynamicEvents: WxsDynamicEventMetadata[] = []
   for (const attr of common.data) {
     const extra = attr.prefixLocation === null ? '!0' : null
     attrToProcGenWithMethod(attr, w, 'R.d', extra, scopes, bmc)
@@ -842,11 +809,11 @@ function commonAttrsToProcGenWithoutSlot(
     attrToProcGenWithMethod(mark, w, 'M', null, scopes, bmc)
   }
   for (const ev of common.eventBindings) {
-    eventBindingToProcGen(ev, w, scopes, bmc, wxsEvents, allowLocalWxs)
+    eventBindingToProcGen(ev, w, scopes, bmc, wxsDynamicEvents)
   }
-  if (wxsEvents.length > 0) {
+  if (wxsDynamicEvents.length > 0) {
     w.exprStmt((ww) => {
-      ww.write(`R.a(N,'wx-tiny-wxs-events',${genLitStr(JSON.stringify(wxsEvents))})`)
+      ww.write(`R.a(N,'wx-tiny-wxs-dynamic',${genLitStr(JSON.stringify(wxsDynamicEvents))})`)
     })
   }
   if (common.id) {
@@ -1003,8 +970,7 @@ function eventBindingToProcGen(
   w: JsFunctionScopeWriter,
   scopes: ScopeVar[],
   bmc: BindingMapCollector,
-  wxsEvents?: WxsEventMetadata[],
-  allowLocalWxs = false,
+  wxsDynamicEvents?: WxsDynamicEventMetadata[],
 ): void {
   const n = genLitStr(ev.name.name)
   const isCatch = ev.isCatch ? '!0' : '!1'
@@ -1016,26 +982,22 @@ function eventBindingToProcGen(
     return
   }
   const p = exprToProcGenPrepare(ev.value.expression, w, scopes)
-  const staticWxs = p.getStaticScriptHandler(scopes)
-  if (staticWxs && wxsEvents && allowLocalWxs) {
-    wxsEvents.push({
+  const dynamicLocal = Boolean(wxsDynamicEvents)
+  if (dynamicLocal) {
+    wxsDynamicEvents!.push({
       name: ev.name.name,
-      moduleId: staticWxs.moduleId,
-      exportPath: staticWxs.exportPath,
       catch: ev.isCatch,
       capture: ev.isCapture,
       mutated: ev.isMut,
     })
-    // Local WXS listeners are executed by the render host. Keeping the
-    // service listener too would run the same handler twice. Events outside
-    // the current render-native set stay on the service path.
-    if (RENDER_WXS_EVENTS.has(ev.name.name)) return
   }
   w.exprStmt((ww) => {
     ww.write('if(C||K||')
     p.lvalueStateExpr(ww, scopes, false)
     ww.write(`)R.v(N,${n},`)
+    if (dynamicLocal) ww.write(`Q.B(N,${n},`)
     p.valueExpr(ww)
+    if (dynamicLocal) ww.write(`,${isCatch},${isCapture},${isMut})`)
     ww.write(`,${isCatch},${isMut},${isCapture},!0`)
     if (p.hasScriptLvaluePath(scopes)) {
       ww.write(',')
@@ -1049,7 +1011,9 @@ function eventBindingToProcGen(
       const p2 = exprToProcGenPrepare(evDyn.expression, fw, scopes)
       fw.exprStmt((ww) => {
         ww.write(`R.v(N,${n},`)
+        if (dynamicLocal) ww.write(`Q.B(N,${n},`)
         p2.valueExpr(ww)
+        if (dynamicLocal) ww.write(`,${isCatch},${isCapture},${isMut})`)
         ww.write(`,${isCatch},${isMut},${isCapture},!0`)
         if (p2.hasScriptLvaluePath(scopes)) {
           ww.write(',')

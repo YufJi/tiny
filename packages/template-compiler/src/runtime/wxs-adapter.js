@@ -14,6 +14,17 @@ Q.S = (filename, code) => __wxsRuntime.register(filename, code)
 // argument, and legacy WXS reads the same object from event.instance. The
 // wrapper only rewrites listeners whose value comes from a WXS module
 // (generalLvaluePath), so plain bindtap bindings stay untouched.
+Q.B = (elem, evName, value, final, mutated, capture) => {
+  const host = typeof globalThis === 'undefined' ? undefined : globalThis.__tinyWxsEventHost
+  if (host && typeof host.registerBinding === 'function') {
+    const origin = typeof __wxsRuntime.originOf === 'function'
+      ? __wxsRuntime.originOf(value)
+      : undefined
+    host.registerBinding(elem, evName, origin, Boolean(final), Boolean(capture), Boolean(mutated))
+  }
+  return value
+}
+
 Q.C = (elem, evName, listener, final, mutated, capture, lvaluePath) => {
   const host = typeof globalThis === 'undefined' ? undefined : globalThis.__tinyWxsEventHost
   const wantsDescriptor = Boolean(lvaluePath) && Boolean(host)
@@ -21,6 +32,7 @@ Q.C = (elem, evName, listener, final, mutated, capture, lvaluePath) => {
   // method caller, and replacing it without doing the same detaches page
   // methods from their component (this.data becoming undefined).
   return function (event) {
+    if (event && event.__tinyWxsHandled) return
     const owner = elem.ownerShadowRoot
     const caller = owner && owner.getHostNode ? owner.getHostNode().getMethodCaller() : undefined
     if (!wantsDescriptor) return listener.call(caller, event)

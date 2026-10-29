@@ -60,6 +60,11 @@ function runtimeFns(w: JsFunctionScopeWriter, needWxsRuntime: boolean): void {
       for (const [k, v] of EVENT_FILTER_RUNTIME_ITEMS) {
         ww.write(`,${k}:${v}`)
       }
+    } else {
+      // Dynamic event bindings call Q.B to let the service resolve the real
+      // handler. Without a WXS runtime the template still needs a pass-through
+      // so plain dynamic page-method bindings keep working.
+      ww.write(',B:function(a,b,c){return c}')
     }
     ww.write('}')
   })

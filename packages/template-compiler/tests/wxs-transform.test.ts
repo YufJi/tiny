@@ -82,20 +82,33 @@ describe('WXS event metadata', () => {
         + '<view bindtap="{{utils.tap}}" catchtouchmove="{{utils.tap}}" />',
     )
     const output = group.getTmplGenObjectGroups()
-    expect(output).toContain('wx-tiny-wxs-events')
-    expect(output).toContain('\\"moduleId\\":\\"wxs/utils.wxs\\"')
-    expect(output).toContain('\\"exportPath\\":[\\"tap\\"]')
+    expect(output).toContain('wx-tiny-wxs-dynamic')
+    expect(output).toContain('Q.B(')
+    expect(output).toContain('R.v(')
+    expect(output).not.toContain('wx-tiny-wxs-events')
     expect(output).toContain('\\"catch\\":true')
   })
 
-  test('does not emit metadata for a dynamic non-WXS binding', () => {
+  test('does not emit render dispatch metadata for a static service binding', () => {
     const group = TmplGroup.new({
       directivePrefix: 'wx',
       templateExtension: '.wxml',
       templateScriptExtension: '.wxs',
     })
     group.addTmpl('pages/index/index', '<view bindtap="onTap" />')
-    expect(group.getTmplGenObjectGroups()).not.toContain('wx-tiny-wxs-events')
+    expect(group.getTmplGenObjectGroups()).not.toContain('wx-tiny-wxs-dynamic')
+  })
+
+  test('emits a runtime dispatch descriptor for a dynamic expression', () => {
+    const group = TmplGroup.new({
+      directivePrefix: 'wx',
+      templateExtension: '.wxml',
+      templateScriptExtension: '.wxs',
+    })
+    group.addTmpl('pages/index/index', '<view bindtap="{{condition ? onA : onB}}" />')
+    const output = group.getTmplGenObjectGroups()
+    expect(output).toContain('wx-tiny-wxs-dynamic')
+    expect(output).toContain('Q.B(')
   })
 })
 
@@ -135,8 +148,10 @@ describe('WXS custom component events', () => {
         + '<my-comp bindtap="{{utils.tap}}" />',
     )
     const output = group.getTmplGenObjectGroups()
-    expect(output).not.toContain('wx-tiny-wxs-events')
+    expect(output).toContain('wx-tiny-wxs-dynamic')
+    expect(output).toContain('Q.B(')
     expect(output).toContain('R.v(')
+    expect(output).not.toContain('wx-tiny-wxs-events')
   })
 })
 
