@@ -32,7 +32,11 @@ Landed so far:
   back to service;
 - `getData` is synchronous in render for the page and for custom component
   snapshots; descriptors also expose timers and the list form of
-  `getComputedStyle`.
+  `getComputedStyle`;
+- render `setStyle` normalizes `rpx` values against the viewport;
+- WXS specialized browser coverage includes catch/return-false, capture,
+  service ancestor bubbling, component/page `getData`, `getState`, timers,
+  rpx/computed style and render module state across dynamic handler switches.
 
 Still pending: wired source maps (intentionally deferred for now; the module
 table carries per-module maps but they are not emitted into a final artifact).
@@ -705,7 +709,10 @@ a projection. WXS expressions stay service-side; only event-time WXS moves.
 - `tests/apps/wechat-demo` `wxs/movable` drag runs without an event message;
 - `change:prop` animation page runs locally;
 - Vant popup (expression WXS) is unchanged;
-- Vant/demo page console stays clean.
+- Vant/demo page console stays clean;
+- WXS browser fixture covers catch/return-false, capture handlers, ancestor
+  service bubbling, `getState`, rpx `setStyle`, computed styles and module state
+  across dynamic handler switches.
 
 ## Open questions
 
