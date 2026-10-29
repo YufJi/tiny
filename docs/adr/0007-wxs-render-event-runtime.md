@@ -21,12 +21,17 @@ Landed so far:
   listener exists on the DOM path;
 - WXS style/class overrides survive later WXML patches;
 - common semantic WXS events execute through render component listeners;
-- `change:prop` observers run in render with old/new values and the initial set;
-- `callMethod` / `triggerEvent` are forwarded to service over `tree.wxsEffect`.
+- built-in `change:prop` observers run in render with old/new values and the
+  initial set; custom component `change:prop` intentionally keeps the legacy
+  service observer path;
+- `callMethod` / `triggerEvent` are forwarded to service over `tree.wxsEffect`;
+- `getData` is synchronous in render for the page and for custom component
+  snapshots; descriptors also expose timers and the list form of
+  `getComputedStyle`.
 
 Still pending: wired source maps (intentionally deferred for now; the module
 table carries per-module maps but they are not emitted into a final artifact),
-component-scoped `getData`, and the dynamic-binding fallback policy.
+and the dynamic-binding fallback policy.
 
 This ADR keeps ADR-0006's split-tree decision and does **not** move WXML
 expression evaluation to render. It proposes one kernel-level WXS runtime that
@@ -550,11 +555,11 @@ The render descriptor implements the methods in the official table.
 | `getState` | render | per component instance; `WeakMap` keyed by owner host |
 | `requestAnimationFrame` | render | runtime scheduler; cancelled on page destroy |
 | `setTimeout` / `clearTimeout` | render | runtime scheduler; cleared on page destroy |
-| `getComputedStyle` | render | `getComputedStyle` on the node |
+| `getComputedStyle` | render | computed style; accepts an array of names |
 | `getBoundingClientRect` | render | synchronous in WebView; Skyline callback form is out of scope |
 | `triggerEvent` | render → service | RPC; service triggers the component event |
 | `callMethod` | render → service | RPC; service invokes page/component method |
-| `getData` | service (legacy extension) | not in the official table; keep behind a compatibility flag |
+| `getData` | render | page snapshot, or component snapshot keyed by view id |
 
 `ownerInstance` is the component/page that owns the binding. `event.instance` is
 the component that contains the event target. For a page-level binding,
@@ -638,8 +643,9 @@ On the web host they cross the postMessage boundary and are asynchronous, so
 handlers must not depend on a return value. Ordering is preserved relative to
 existing page events; they do not block the render frame.
 
-`getData` is not on the local fast path. If the compatibility flag is enabled it
-is an RPC; the preferred APIs are `getDataset()` and `getState()`.
+`getData` is served synchronously from render snapshots: the page snapshot for
+page owners and a view-id keyed component snapshot for custom component owners.
+The service sends both with the initial flow and later patches.
 
 ### 9. Security and sandbox
 
@@ -705,7 +711,8 @@ a projection. WXS expressions stay service-side; only event-time WXS moves.
 | --- | --- | --- |
 | WXS expression (`bem`, `style`) | service | service (unchanged) |
 | WXS `bind*` / `catch*` | service | render local |
-| WXS `change:prop` | service | render local |
+| WXS `change:prop` (built-in) | service | render local |
+| WXS `change:prop` (custom component) | service | service fallback (confirmed) |
 | `getState` | absent | render, per component |
 | `setStyle` / class | logic tree patch | render local + override layer |
 | `selectComponent` | logic tree | render query |
@@ -741,8 +748,10 @@ a projection. WXS expressions stay service-side; only event-time WXS moves.
 - service handlers still run after local handlers when not stopped;
 - custom component WXS events fall back with a diagnostic;
 - `callMethod` reaches the page/component method;
-- `change:prop` receives `(newValue, oldValue, ownerInstance, instance)` and
-  runs once on initial set.
+- built-in `change:prop` receives `(newValue, oldValue, ownerInstance, instance)`
+  and runs once on initial set;
+- custom component `change:prop` keeps the glass `R.p` service observer path and
+  is not routed through the render WXS descriptor.
 
 ### Browser
 
