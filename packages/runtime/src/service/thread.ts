@@ -397,6 +397,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         ...(pageInstances.get(pageId)?.data
           ? { pageData: cloneJsonSafe(pageInstances.get(pageId)!.data) }
           : {}),
+        ...(logicTree ? { componentData: cloneJsonSafe(logicTree.snapshotComponentData(pageId)) } : {}),
         ...treeStyles(pageId),
       },
       { pageId },
@@ -432,6 +433,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
                 ...(pageInstances.get(id)?.data
                   ? { pageData: cloneJsonSafe(pageInstances.get(id)!.data) }
                   : {}),
+                ...(logicTree ? { componentData: cloneJsonSafe(logicTree.snapshotComponentData(id)) } : {}),
               },
               { pageId: id },
             )

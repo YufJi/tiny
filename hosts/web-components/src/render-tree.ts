@@ -123,6 +123,7 @@ export type GlassRenderTree = {
   setWxsModules?: (table: WxsModuleTable) => void
   setWxsEffectSink?: (sink: (effect: WxsRenderEffect) => void) => void
   setPageData?: (data: Record<string, unknown>) => void
+  setComponentData?: (data: Record<string, Record<string, unknown>>) => void
   setDiagnosticSink?: (sink: (diagnostic: {
     severity: 'warning' | 'error'
     code: string
@@ -297,9 +298,13 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const idByComponent = new WeakMap<object, string>()
   const pendingClasses = new Map<string, () => boolean>()
   const pendingWxsEvents = new Map<string, () => void>()
+  const pendingWxsProps = new Map<string, { node: RenderElement; component: AnyComponent }>()
   const wxsStates = new WeakMap<Element, Record<string, unknown>>()
+  const wxsStatesById = new Map<string, Record<string, unknown>>()
+  const wxsTimers = new Set<ReturnType<typeof setTimeout>>()
   const wxsPropSnapshots = new Map<string, Record<string, unknown>>()
   let pageData: Record<string, unknown> = {}
+  let componentData: Record<string, Record<string, unknown>> = {}
   const wxsOverrides = new WeakMap<HTMLElement, {
     style: Map<string, string>
     classes: Set<string>
@@ -577,39 +582,55 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     return rootElement ?? element
   }
 
-  const wxsNodeForElement = (element: HTMLElement): RenderElement | undefined => {
+  const wxsNodeForElement = (element: HTMLElement | null): RenderElement | undefined => {
+    if (!element) return undefined
     const id = element.getAttribute(TINY_ENGINE_NAMING.nodeIdAttribute) ?? ''
     const node = currentTree.get(id)
     return node?.type === 'element' ? node : undefined
   }
 
   const wxsDescriptorFor = (
-    element: HTMLElement,
-    owner: HTMLElement,
+    element: HTMLElement | null,
+    owner: HTMLElement | null,
     fallbackViewId?: string,
+    explicitNode?: RenderElement,
   ) => {
+    const node = explicitNode ?? wxsNodeForElement(element)
+    const viewId = node?.id ?? fallbackViewId
+    const ownerViewId = wxsNodeForElement(owner)?.id ?? fallbackViewId
     const descriptor = {
       selectComponent(selector: string) {
+        if (!owner) return null
         const match = owner.querySelector(selector) as HTMLElement | null
         return match ? wxsDescriptorFor(match, wxsOwnerElement(match)) : null
       },
       selectAllComponents(selector: string) {
+        if (!owner) return []
         return Array.from(owner.querySelectorAll(selector))
           .map((match) => wxsDescriptorFor(match as HTMLElement, wxsOwnerElement(match as HTMLElement)))
       },
       getDataset() {
-        return wxsNodeForElement(element)?.dataset ?? { ...element.dataset }
+        return node?.dataset ?? (element ? { ...element.dataset } : {})
       },
       getState() {
-        let state = wxsStates.get(owner)
+        if (owner) {
+          let state = wxsStates.get(owner)
+          if (!state) {
+            state = {}
+            wxsStates.set(owner, state)
+          }
+          return state
+        }
+        const key = ownerViewId ?? viewId ?? 'anonymous'
+        let state = wxsStatesById.get(key)
         if (!state) {
           state = {}
-          wxsStates.set(owner, state)
+          wxsStatesById.set(key, state)
         }
         return state
       },
       setStyle(style: unknown) {
-        if (!style) return descriptor
+        if (!style || !element) return descriptor
         const overrides = wxsOverridesFor(element)
         if (typeof style === 'string') {
           for (const part of style.split(';')) {
@@ -632,37 +653,65 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         return descriptor
       },
       addClass(name: string) {
+        if (!element) return descriptor
         wxsOverridesFor(element).classes.add(name)
         applyWxsOverrides(element)
         return descriptor
       },
       removeClass(name: string) {
+        if (!element) return descriptor
         wxsOverridesFor(element).classes.delete(name)
         element.classList.remove(name)
         return descriptor
       },
       hasClass(name: string) {
-        return element.classList.contains(name)
+        return element ? element.classList.contains(name) : false
       },
       getData() {
-        return { ...pageData }
+        const data = componentData[viewId ?? ''] ?? componentData[ownerViewId ?? '']
+        return { ...(data ?? pageData) }
       },
       callMethod(name: string, ...args: unknown[]) {
-        const viewId = wxsNodeForElement(element)?.id ?? fallbackViewId
         if (viewId) wxsEffectSink?.({ kind: 'callMethod', viewId, method: name, args })
         return undefined
       },
       requestAnimationFrame(callback: () => void) {
         return requestAnimationFrame(callback)
       },
-      getBoundingClientRect() {
-        return element.getBoundingClientRect()
+      setTimeout(callback: (...args: unknown[]) => void, delay?: number, ...args: unknown[]) {
+        const timer = setTimeout(() => {
+          wxsTimers.delete(timer)
+          callback(...args)
+        }, Number(delay) || 0)
+        wxsTimers.add(timer)
+        return timer
       },
-      getComputedStyle() {
-        return getComputedStyle(element)
+      clearTimeout(timer: ReturnType<typeof setTimeout>) {
+        clearTimeout(timer)
+        wxsTimers.delete(timer)
+      },
+      getBoundingClientRect() {
+        return element?.getBoundingClientRect() ?? {
+          left: 0,
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: 0,
+          height: 0,
+          x: 0,
+          y: 0,
+          toJSON() { return this },
+        }
+      },
+      getComputedStyle(names?: string[]) {
+        if (!element) return {}
+        const computed = getComputedStyle(element)
+        if (Array.isArray(names)) {
+          return Object.fromEntries(names.map((name) => [name, computed.getPropertyValue(name)]))
+        }
+        return computed
       },
       triggerEvent(name: string, detail?: unknown, options?: Record<string, unknown>) {
-        const viewId = wxsNodeForElement(element)?.id ?? fallbackViewId
         if (viewId) wxsEffectSink?.({ kind: 'triggerEvent', viewId, name, detail, options })
         return undefined
       },
@@ -691,9 +740,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     const bindings = parseWxsProps(node.props)
     if (bindings.length === 0) return
     const element = component.getBackendElement() as unknown as HTMLElement | null
-    if (!element) return
-    const owner = wxsOwnerElement(element)
-    const descriptor = wxsDescriptorFor(element, owner)
+    if (element) pendingWxsProps.delete(node.id)
+    const owner = element ? wxsOwnerElement(element) : rootElement
+    const descriptor = wxsDescriptorFor(element, owner, node.id, node)
     const ownerDescriptor = wxsDescriptorFor(owner, owner, node.id)
     for (const binding of bindings) {
       const nextValue = node.props?.[binding.prop]
@@ -745,11 +794,11 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     bindings: WxsEventBinding[],
   ): void => {
     const element = component.getBackendElement() as unknown as HTMLElement | null
+    applyWxsProps(node, component, wxsPropSnapshots.get(node.id))
     if (!element) {
       pendingWxsEvents.set(node.id, () => attachWxsEvents(node, component, bindings))
       return
     }
-    applyWxsProps(node, component, undefined)
     const cleanups = eventCleanups.get(node.id) ?? []
     for (const binding of bindings) {
       if (!LOCAL_WXS_EVENTS.has(binding.name)) continue
@@ -834,13 +883,28 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     if (cleanups.length > 0) eventCleanups.set(node.id, cleanups)
   }
 
+  const flushPendingWxsProps = (): void => {
+    for (const [id, pending] of pendingWxsProps) {
+      if (!pending.component.getBackendElement()) continue
+      applyWxsProps(pending.node, pending.component, wxsPropSnapshots.get(id))
+    }
+  }
+
+  const flushAllWxsProps = (): void => {
+    for (const [id, node] of currentTree) {
+      if (node.type !== 'element' || parseWxsProps(node.props).length === 0) continue
+      const component = nodes.get(id)
+      if (!component || glassEasel.TextNode.isTextNode(component)) continue
+      applyWxsProps(node, component, wxsPropSnapshots.get(id))
+    }
+  }
+
   const flushPendingWxsEvents = (): void => {
     for (const [id, attach] of pendingWxsEvents) {
       const component = nodes.get(id)
       if (!component || glassEasel.TextNode.isTextNode(component)) continue
       if (!component.getBackendElement()) continue
       pendingWxsEvents.delete(id)
-      wxsPropSnapshots.delete(id)
       attach()
     }
   }
@@ -922,6 +986,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       externalByNode.delete(id)
       pendingClasses.delete(id)
       pendingWxsEvents.delete(id)
+      pendingWxsProps.delete(id)
       wxsPropSnapshots.delete(id)
     }
   }
@@ -1077,6 +1142,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     flushPendingAnimations()
     flushPendingClasses()
     flushPendingWxsEvents()
+    flushPendingWxsProps()
+    flushAllWxsProps()
   }
 
   // `this.animate` runs on the render side: the service resolved the selector
@@ -1164,6 +1231,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     },
     setPageData: (data) => {
       pageData = { ...data }
+    },
+    setComponentData: (data) => {
+      componentData = { ...data }
     },
     observeIntersection: (request, emit) => {
       if (typeof IntersectionObserver === 'undefined' || !rootElement) return undefined
@@ -1370,6 +1440,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       flushPendingAnimations()
       flushPendingClasses()
       flushPendingWxsEvents()
+      flushPendingWxsProps()
+      flushAllWxsProps()
     },
     applyPatches,
     getNode(id) {
@@ -1385,7 +1457,10 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       externalByNode.clear()
       pendingClasses.clear()
       pendingWxsEvents.clear()
+      pendingWxsProps.clear()
       wxsPropSnapshots.clear()
+      for (const timer of wxsTimers) clearTimeout(timer)
+      wxsTimers.clear()
       wxsRuntime.dispose()
       ;(root as unknown as { destroy?: () => void }).destroy?.()
     },

@@ -40,6 +40,7 @@ export type TreeRenderer = {
   setEventSink?: (sink: (event: TreeEventPayload) => void) => void
   setWxsEffectSink?: (sink: (effect: WxsRenderEffect) => void) => void
   setPageData?: (data: Record<string, unknown>) => void
+  setComponentData?: (data: Record<string, Record<string, unknown>>) => void
   /** Built-in components ask the host to act (e.g. `<navigator>` routing). */
   setHostActionSink?: (sink: (action: RenderHostAction) => void) => void
   applyStyles?: (styles: string[]) => void
@@ -159,11 +160,13 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       fallbackAppStyles?: string[]
       wxsModules?: WxsModuleTable
       pageData?: Record<string, unknown>
+      componentData?: Record<string, Record<string, unknown>>
     }
     currentPageId = payload.pageId ?? message.pageId ?? currentPageId
     options.renderer.setPagePath?.(payload.pagePath ?? '')
     if (payload.wxsModules) options.renderer.setWxsModules?.(payload.wxsModules)
     if (payload.pageData) options.renderer.setPageData?.(payload.pageData)
+    if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
     const nodes = new Map<string, RenderNode>()
     const roots: RenderNode[] = []
     let pageRoot: RenderNode | undefined
@@ -215,8 +218,10 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     const payload = (message.payload ?? {}) as {
       patches?: RenderPatch[]
       pageData?: Record<string, unknown>
+      componentData?: Record<string, Record<string, unknown>>
     }
     if (payload.pageData) options.renderer.setPageData?.(payload.pageData)
+    if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
     options.renderer.applyPatches(payload.patches ?? [])
   })
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.animate, (message) => {

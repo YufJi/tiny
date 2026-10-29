@@ -350,6 +350,35 @@ export class LogicTreeAdapter {
     return this.backend.findByViewId(viewId)
   }
 
+  /**
+   * Snapshot component data keyed by component host view id. Page data stays
+   * on the separate page-data path; this map lets render-side `ins.getData()`
+   * answer for custom component instances without a bridge round trip.
+   */
+  snapshotComponentData(pageId: string): Record<string, Record<string, unknown>> {
+    const root = this.pageRoots.get(pageId)
+    if (!root) return {}
+    const result: Record<string, Record<string, unknown>> = {}
+    const visit = (node: LogicBackendElement): void => {
+      if (node.nodeType === 'component') {
+        if (node !== root && node.__wxElement) {
+          const element = node.__wxElement as unknown as {
+            asGeneralComponent?: () => Record<string, unknown>
+          }
+          const component = element.asGeneralComponent?.() ?? element as unknown as Record<string, unknown>
+          const data = component.data
+          if (data && typeof data === 'object') {
+            result[this.backend.ensureViewId(node)] = data as Record<string, unknown>
+          }
+        }
+        if (node.shadowRoot) for (const child of node.shadowRoot.children) visit(child)
+      }
+      for (const child of node.children) visit(child)
+    }
+    visit(root)
+    return result
+  }
+
   snapshotRenderTree(pageId: string): RenderNode | null {
     const page = this.glass.getMountedComponentByPageId(pageId)
     if (!page) throw new Error(`logic page is not mounted: ${pageId}`)
