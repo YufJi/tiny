@@ -140,14 +140,16 @@ glass-easel 不是完整的小程序 SDK。它负责组件、模板、数据绑�
 
 | 包或应用 | 依赖 | 作用 |
 | --- | --- | --- |
-| `@tiny/manifest` | 无 | 产物与诊断类型 |
+| `@tiny/manifest` | 无 | 产物、诊断类型和固定引擎命名；ESM/CJS 双入口 |
+| `@tiny/css-units` | 无 | 编译器和 WXS 共用的 rpx→vw 转换 |
+| `@tiny/wxs-runtime` | 无 | WXS 模块加载、transform 和值语义内核 |
 | `@tiny/bridge` | 无 | 协议、transport、批处理和错误 |
-| `@tiny/template-compiler` | 无（纯 TS） | WXML → ProcGen |
-| `@tiny/stylesheet-compiler` | postcss | WXSS → 普通/低优先级 CSS |
+| `@tiny/template-compiler` | manifest · acorn · magic-string | WXML → ProcGen / WXS transform |
+| `@tiny/stylesheet-compiler` | manifest · css-units · postcss | WXSS → 普通/低优先级 CSS |
 | `@tiny/cli` | manifest · template-compiler · stylesheet-compiler · esbuild · typescript | 负责生成全部产物 |
-| `@tiny/runtime` | manifest · bridge · glass-easel · es-toolkit | 双线程运行时内核，不依赖宿主 |
+| `@tiny/runtime` | manifest · bridge · wxs-runtime · glass-easel · es-toolkit | 双线程运行时内核，不依赖宿主 |
 | `@tiny/host-browser` | runtime · bridge | 浏览器宿主：iframe、MessageChannel、Canvas、devtool 覆盖层 |
-| `@tiny/host-web-components` | manifest · runtime · glass-easel；构建期 template-compiler | 24 个内置组件、AOT 模板和默认 CSS（宿主包） |
+| `@tiny/host-web-components` | manifest · css-units · runtime · glass-easel；构建期 template-compiler | 24 个内置组件、AOT 模板和默认 CSS（宿主包） |
 | `devtool` | host-browser · host-web-components · glass-easel · React · Redux/rematch | 调试器宿主和控制面板 |
 | `@tiny/website` | React | 架构站点，不进入引擎链路 |
 

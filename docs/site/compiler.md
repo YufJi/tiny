@@ -178,10 +178,12 @@ export default {
 | --- | --- | --- |
 | WXML 解析 | parse/state.ts · parse/tag.ts · parse/expr.ts | 解析标签、属性、表达式、事件绑定和 meta 标签 |
 | ProcGen | proc_gen/tag.ts · expr.ts · writer.ts | 生成 glass-easel 可执行的创建/更新函数 |
-| WXS / SJS | TmplGroup.addScript + WXS runtime | 模板里可以调用脚本模块，支持相对路径 require |
+| WXS / SJS | TmplGroup.addScript + AST transform + module table | 模板里可以调用脚本模块，支持相对路径 require；事件由 service/render 双 runtime 执行 |
 | 作用域标记 | injectTagClasses() | 给每个元素加上 `<tagClassPrefix><tag>`（固定 `tiny-tag-button`），供 tag 选择器使用 |
 | animation | rewriteAnimationAttributes() | 把 `animation="{{...}}"` 改写成内联 style |
 | 图片内联 | inlineLocalImages() | 小于 200KB 的本地图片转成 data URI，静态宿主不需要额外资源目录 |
+
+WXS 在编译期完成 globals / `getRegExp` / `getDate` / `.constructor` 改写，并生成外部与内联模块表。WXML 表达式仍在 service 求值；WXS 事件尽量在 render 本地执行，无法解析到 WXS handler 时回退 service。具体分工见“运行时”页的 WXS 一节。
 
 ```html
 <!-- 源 WXML（默认微信兼容输入） -->
@@ -202,7 +204,7 @@ service 的逻辑树拿到模板 group，再交给 glass-easel 求值。render �
 
 ## class 和 tag 两套作用域 {#styles kicker="样式编译"}
 
-页面和组件的 WXSS 不会泄漏到全局；app.wxss 继续作为全局样式。rpx 会在编译期换算成 vw。
+页面和组件的 WXSS 不会泄漏到全局；app.wxss 继续作为全局样式。rpx 固定按 750 换算成 vw，WXS `setStyle` 使用同一实现。
 
 :::::split
 ::::stack
