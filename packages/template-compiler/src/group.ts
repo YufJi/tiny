@@ -10,6 +10,7 @@ import { genLitStr } from './escape'
 import { TmplGroupRef, templateToProcGen } from './proc_gen/tag'
 import { stringifyTemplate } from './stringify/stringifier'
 import wxsAdapterSource from './runtime/wxs-adapter.js?raw'
+import { transformWxsSource } from './wxs/transform'
 
 // ---------------------------------------------------------------------------
 // Runtime snippets (mirrors RUNTIME_ITEMS and EXTRA_RUNTIME_ITEMS)
@@ -260,7 +261,7 @@ export class TmplGroup implements TmplGroupRef {
   private writeAllScripts(w: JsFunctionScopeWriter): void {
     for (const [p, script] of this.scripts) {
       const pathLit = genLitStr(p)
-      const scriptLit = genLitStr(script)
+      const scriptLit = genLitStr(transformWxsSource(script, p).code)
       w.exprStmt((ww) => {
         ww.write(`W[${pathLit}]=Q.S(${pathLit},${scriptLit})`)
       })

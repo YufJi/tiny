@@ -16,7 +16,25 @@ type ModuleRecord = {
   loading: boolean
 }
 
-const defaultGlobals: Record<string, unknown> = {}
+const defaultGlobals: Record<string, unknown> = {
+  console,
+  Math,
+  JSON,
+  Number,
+  String,
+  Boolean,
+  Array,
+  Object,
+  Date,
+  RegExp,
+  parseInt,
+  parseFloat,
+  isNaN,
+  isFinite,
+  NaN,
+  Infinity,
+  undefined,
+}
 
 const resolveModuleId = (from: string, request: string): string => {
   if (!request.startsWith('.') && !request.startsWith('/')) return request

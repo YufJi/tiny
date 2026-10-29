@@ -1,4 +1,5 @@
 // proc_gen/tag.ts — mirrors proc_gen/tag.rs
+import { transformWxsSource } from '../wxs/transform'
 // Generates JavaScript code from parsed template ASTs.
 
 import { JsExprWriter, JsFunctionScopeWriter, JsIdent, JsTopScopeWriter, ScopeVar, ScopeVarLvaluePath } from './writer'
@@ -67,8 +68,9 @@ export function templateToProcGen(
           })
           lvaluePath = { kind: 'Script', absPath }
         } else {
-          const moduleLit = genLitStr(tmpl.path + '#' + script.moduleName.name)
-          const contentLit = genLitStr(script.content)
+          const moduleId = tmpl.path + '#' + script.moduleName.name
+          const moduleLit = genLitStr(moduleId)
+          const contentLit = genLitStr(transformWxsSource(script.content, moduleId).code)
           scriptInitializers.push((ww) => {
             ww.write(`${varIdent.name}||(${varIdent.name}=Q.S(${moduleLit},${contentLit})())`)
           })
