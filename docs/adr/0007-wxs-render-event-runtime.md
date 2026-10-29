@@ -78,32 +78,106 @@ The WXS runtime is a host-independent kernel module. Proposed location:
 ```text
 packages/runtime/src/wxs/     # or a dedicated @tiny/wxs-runtime package
   createWxsRuntime(...)
-  module loader
-  globals / constructor semantics
-  host interface
+  module-loader.ts
+  values.ts
+  types.ts
 ```
 
-The public shape is roughly:
+It does not import DOM, iframe, service code, or `@tiny/host-*`.
+
+#### Runtime API
 
 ```ts
+type WxsModuleFactory = (
+  require: (id: string) => Record<string, unknown>,
+  module: { exports: Record<string, unknown> },
+  exports: Record<string, unknown>,
+  runtime: WxsRuntimeValues,
+) => void
+
+type WxsRuntimeValues = {
+  require: (id: string) => Record<string, unknown>
+  globals: Record<string, unknown>
+  ctor: (value: unknown) => string
+  getRegExp: (pattern: string, flags?: string) => RegExp
+  getDate: (...args: unknown[]) => Date
+}
+
 type WxsRuntimeHost = {
-  resolveGlobal(name: string): unknown
-  createDescriptor(owner: WxsNode): WxsComponentDescriptor
-  scheduleFrame(callback: () => void): number
-  scheduleTimeout(callback: () => void, delay: number): number
-  cancelTimeout(id: number): void
+  compile(code: string, moduleId: string): WxsModuleFactory
+  globals: Record<string, unknown>
+  createDescriptor?(owner: unknown): WxsComponentDescriptor
+  onError?(error: unknown, context: WxsErrorContext): void
 }
 
 type WxsRuntime = {
-  registerModule(id: string, factory: WxsModuleFactory): void
-  requireModule(id: string): Record<string, unknown>
-  invoke(moduleId: string, exportName: string, ...args: unknown[]): unknown
+  load(table: WxsModuleTable): void
+  require(moduleId: string): Record<string, unknown>
+  lookup(moduleId: string, exportPath: string[]): unknown
+  invoke(
+    moduleId: string,
+    exportPath: string[],
+    event: unknown,
+    ownerNode: unknown,
+  ): unknown
   dispose(): void
 }
 ```
 
-The runtime does not import DOM, iframe or service code. It receives a host and
-a module table. Service and render bootstrap each create their own instance:
+`compile` is supplied by the host:
+
+- service: normal `Function` with a service sandbox;
+- render: `Function` with a render sandbox;
+- later: QuickJS/WASM behind the same interface.
+
+#### Module format and loader
+
+The compiler emits module factories, not raw user source. Each module is:
+
+```ts
+type WxsModuleRecord = {
+  id: string
+  deps: string[]
+  code: string
+}
+```
+
+`code` is the body of a factory:
+
+```js
+function (require, module, exports, __wxs) {
+  // transformed user code
+}
+```
+
+The loader is lazy:
+
+```ts
+require(id) {
+  const record = records[id]
+  if (!record) throw new Error('no such WXS module: ' + id)
+  if (record.loaded) return record.exports
+
+  record.loaded = true
+  const factory = host.compile(record.code, id)
+  factory(
+    (dep) => require(dep),
+    record.module,
+    record.module.exports,
+    runtimeValues,
+  )
+  return record.module.exports
+}
+```
+
+This gives:
+
+- module isolation for free (each factory has its own closure);
+- cached exports and partial exports for circular dependencies;
+- no compile cost on the event path;
+- one loader shared by service and render.
+
+#### Service and render instances
 
 ```ts
 // service
@@ -112,7 +186,37 @@ const wxs = createWxsRuntime({ host: serviceWxsHost })
 const wxs = createWxsRuntime({ host: renderWxsHost })
 ```
 
-The service instance and render instance share code, not state.
+The service instance and render instance share code, not state. Each instance has
+its own module records, module cache and host.
+
+Service and render hosts differ:
+
+| Host | Service instance | Render instance |
+| --- | --- | --- |
+| `compile` | service sandbox | render sandbox |
+| `globals` | WXS allowlist | WXS allowlist |
+| descriptor | logic-tree descriptor (only for fallback) | DOM/component descriptor |
+| event dispatch | none for local WXS | local event path |
+| timers/RAF | host scheduler | render scheduler |
+
+#### Sloppy mode
+
+WXS is sloppy script. A module body using:
+
+```js
+var a = b = 1
+```
+
+must not silently write into the host global object. The first implementation
+can treat WXS as trusted app code, but the kernel runtime must keep the seam
+open for:
+
+- a `with` + Proxy sandbox;
+- a dedicated realm;
+- QuickJS/WASM.
+
+Prefixing identifiers does not solve dynamic global writes; this is a runtime
+sandbox concern, not a compiler concern.
 
 ### 2. Compiler output
 
@@ -128,14 +232,123 @@ wxs-modules.js      # transformed WXS module factories, consumable by both
 type WxsModuleTable = {
   modules: Array<{
     id: string
-    code: string
     deps: string[]
+    code: string
   }>
 }
 ```
 
 External and inline WXS modules share the same module ID scheme. Module IDs are
 stable and relative to the app root; they are not absolute filesystem paths.
+Inline modules use `${templatePath}#${moduleName}`; external modules use their
+normalized source path.
+
+#### Transform pipeline
+
+The compiler parses WXS once and emits a factory body:
+
+```text
+parse (acorn, script/sloppy)
+  -> scope analysis (eslint-scope or equivalent)
+  -> rewrite require calls to module IDs
+  -> rewrite free globals to __wxs.globals
+  -> rewrite .constructor reads to __wxs.ctor
+  -> wrap in module factory
+  -> emit code + source map
+```
+
+Suggested dependencies: `acorn`, `eslint-scope`, `magic-string`. The transform
+must be AST-based; regex replacement is only acceptable as a temporary
+compatibility fallback, not as the contract.
+
+#### No blanket identifier prefix
+
+Because every module becomes a function factory, top-level names are already
+module-local:
+
+```js
+function (require, module, exports, __wxs) {
+  var count = 0
+  function bump() { count++ }
+  module.exports = { bump }
+}
+```
+
+`count` and `bump` cannot collide with another WXS module. Renaming every
+top-level identifier would make source maps and debugging worse without adding
+isolation.
+
+The compiler should rename only:
+
+- free identifiers that resolve to a WXS global (`Math` -> `__wxs.globals.Math`);
+- `require` calls (`require('./x')` -> `__wxs.require('x')`);
+- `.constructor` reads (`list.constructor` -> `__wxs.ctor(list)`);
+- wrapper-parameter collisions, if the parser allows a top-level `module`,
+  `exports`, `require` or `__wxs` declaration.
+
+If a future runtime evaluates modules in one shared scope instead of a factory,
+full prefixing becomes necessary; the factory design avoids that cost.
+
+#### Factory example
+
+Input:
+
+```js
+var count = 0
+var utils = require('./utils.wxs')
+
+function bump() {
+  count++
+  return utils.format(count)
+}
+
+module.exports = { bump }
+```
+
+Output:
+
+```js
+function (require, module, exports, __wxs) {
+  var count = 0
+  var utils = __wxs.require('utils')
+
+  function bump() {
+    count++
+    return utils.format(count)
+  }
+
+  module.exports = { bump }
+}
+```
+
+Free globals:
+
+```js
+Math.max(a, b)       -> __wxs.globals.Math.max(a, b)
+```
+
+`constructor`:
+
+```js
+list.constructor     -> __wxs.ctor(list)
+```
+
+`require` paths are resolved by the compiler; the runtime does not do relative
+path resolution.
+
+#### Source maps
+
+`magic-string` (or equivalent) should produce a map per module. Emit:
+
+- `sourcesContent` for the original WXS;
+- `//# sourceURL=wxs://<moduleId>` when compiling;
+- source positions for diagnostics.
+
+WXS errors are reported with the original file, line and column. A stack trace
+inside a WXS handler should map back to the WXS source, not to the generated
+factory body.
+
+#### Classification
 
 The compiler classifies each WXS usage:
 
@@ -146,21 +359,8 @@ The compiler classifies each WXS usage:
 | both | both instances, independently |
 
 The classifier is compiler-side; it must not rely on runtime probing. The
-compiler may emit per-side subsets of the module table, but the module code and
-IDs stay identical.
-
-Transformations stay simple and mechanical:
-
-- top-level `var` / function names get a stable module prefix;
-- free identifiers resolve through the WXS global allowlist;
-- `require` becomes a module-ID lookup;
-- strings, comments and object property names are untouched;
-- `constructor` reads keep the existing WXS compatibility helper;
-- source maps remain attached to the original WXS file.
-
-The compiler does not implement module loading, descriptors, timers, DOM access,
-or service RPC; those belong to the injected runtime host. Name prefixing is not
-the sandbox either; the render host wrapper is.
+compiler may emit per-side subsets of the module table, but module code and IDs
+stay identical.
 
 #### Event binding recognition
 
@@ -171,14 +371,47 @@ lvalue path currently passed to `Q.C`. It uses that information to emit:
 - a WXS event binding for render-local handlers;
 - no service listener for the WXS binding.
 
-The render host can therefore execute the binding directly:
+Static cases:
+
+```html
+<view bindtap="{{utils.tap}}" />
+<view catchtouchmove="{{utils.move}}" />
+<view change:prop="{{utils.observe}}" />
+```
+
+Dynamic cases:
+
+```html
+<view bindtap="{{utils.getHandler()}}" />
+<view bindtap="{{condition ? utils.a : utils.b}}" />
+```
+
+Dynamic cases stay on the service path and produce a diagnostic. The compiler
+must not guess a module/export that it cannot resolve statically.
+
+`catch`, `capture-bind`, `capture-catch` and `mut-bind` metadata come from the
+same event-binding analysis, not from runtime event-name heuristics.
+
+The render host can therefore execute a static binding directly:
 
 ```ts
-wxs.invoke(moduleId, exportName, event, ownerInstance)
+wxs.invoke(moduleId, exportPath, event, ownerInstance)
 ```
 
 and only fall back to `tree.event` when a service listener remains on the event
 path.
+
+#### Migration of `Q.S`
+
+During migration, `Q.S` remains a compatibility adapter:
+
+```ts
+Q.S = (moduleId, _code) => () => serviceRuntime.require(moduleId)
+```
+
+The service template receives an injected runtime before evaluation. Once the
+generated templates use module IDs directly, `Q.S` and the inlined runtime source
+can be removed from `templates.js`.
 
 ### 3. Event metadata
 
@@ -186,18 +419,50 @@ path.
 
 ```ts
 type RenderEventBinding =
-  | { name: string; capture?: boolean; kind: 'service' }
   | {
       name: string
       capture?: boolean
+      mutated?: boolean
+      kind: 'service'
+    }
+  | {
+      name: string
+      capture?: boolean
+      mutated?: boolean
+      catch?: boolean
       kind: 'wxs'
       moduleId: string
-      exportName: string
+      exportPath: string[]
     }
 ```
 
 The service logic tree only attaches `kind: 'service'` listeners. The render tree
 attaches `kind: 'wxs'` listeners and executes them locally.
+
+`catch` is not inferred from the event name at runtime. It comes from
+`catchtap` / `catchtouchmove` / `capture-catch*` during template compilation and
+is part of the binding metadata. `return false` and `catch` both stop
+propagation; the render host handles both before deciding whether to send the
+event to service.
+
+Example:
+
+```html
+<view bindtap="{{utils.tap}}" catchtouchmove="{{utils.move}}" />
+```
+
+```ts
+events: [
+  { name: 'tap', kind: 'wxs', moduleId: 'utils', exportPath: ['tap'] },
+  {
+    name: 'touchmove',
+    kind: 'wxs',
+    moduleId: 'utils',
+    exportPath: ['move'],
+    catch: true,
+  },
+]
+```
 
 `change:prop` is a separate metadata field, not an event:
 
@@ -205,23 +470,32 @@ attaches `kind: 'wxs'` listeners and executes them locally.
 type RenderPropObserver = {
   prop: string
   moduleId: string
-  exportName: string
+  exportPath: string[]
 }
 ```
 
 The compiler marks it on the owning element. The service still owns the actual
-property value; the render tree runs the observer after receiving a prop update
-and tracks the previous value locally.
+property value; the render tree tracks the previous value locally and runs the
+observer after receiving a prop update. The initial property set also invokes
+the observer once, matching the official `change:prop` behavior.
+
+Observer signature:
+
+```ts
+observer(newValue, oldValue, ownerInstance, instance)
+```
+
+The first implementation covers built-in component properties. Custom component
+property observers remain service-side until the component tree offers a
+render-side property mirror.
 
 ### 4. Render runtime host
 
 Each render page gets its own kernel runtime instance with a render host:
 
 ```ts
-const wxs = createWxsRuntime({
-  modules: wxsRenderModules,
-  host: createRenderWxsHost({ pageId, document }),
-})
+const wxs = createWxsRuntime({ host: createRenderWxsHost({ pageId, document }) })
+wxs.load(wxsRenderModules)
 ```
 
 The kernel runtime owns module loading and `require` resolution. The render
@@ -348,7 +622,7 @@ is an RPC; the preferred APIs are `getDataset()` and `getState()`.
 The render runtime must not expose `window`, `document`, `wx`, timers, or the
 page's global scope to WXS.
 
-The compiler's identifier prefixing is name isolation, not a sandbox:
+The compiler's free-global rewriting is name isolation, not a sandbox:
 
 ```js
 ({}).constructor.constructor('return this')()
@@ -420,15 +694,24 @@ a projection. WXS expressions stay service-side; only event-time WXS moves.
 
 ### Compiler
 
+- parses WXS and rewrites `require`, free globals and `.constructor` with AST
+  edits, not regexes;
+- emits a factory body and source map that point back to the original WXS;
 - classifies expression-only, handler-only, mixed modules;
 - emits render module table with stable IDs and dependency order;
 - emits `kind: 'wxs'` event metadata and `change:prop` metadata;
+- records `catch` / `capture` / `mutated` from binding syntax;
+- falls back to service for dynamic WXS bindings;
 - does not emit service listeners for render-local WXS handlers.
 
 ### Runtime
 
-- `getState` persists across events on one component and not across instances;
+- module loader is lazy, caches exports and handles circular dependencies;
 - module-level variables do not leak between expression and event runtimes;
+- compile errors and handler errors produce diagnostics without crashing the
+  page;
+- `getState` persists across events on one component and not across instances;
+- `setStyle` / `addClass` survive WXML patches;
 - `setStyle` / `addClass` survive WXML patches;
 - returning `false` stops propagation and skips service dispatch;
 - service handlers still run after local handlers when not stopped;
