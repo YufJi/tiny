@@ -1,8 +1,8 @@
 # 微信 WebView 版功能对齐度分析
 
-> **快照**：2026-10-28（第十七次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
+> **快照**：2026-10-29（第十九次同步） · **基准**：微信小程序 WebView 渲染版（不含 Skyline / XR-FRAME / 扩展组件库）
 >
-> **结论**：加权功能对齐约 **49.3%（47–51%）**；页面启动率 92.3%；生产可替换 < 20%
+> **结论**：加权功能对齐约 **49.9%（48–52%）**；页面启动率 92.3%；生产可替换 < 20%
 >
 > **维护**：功能完成后更新本文的评分表、覆盖表、实测数据和变更记录
 
@@ -10,8 +10,8 @@
 
 ## 1. 结论摘要
 
-- 按微信 WebView 版全量能力计算，当前引擎约完成 **一半**：加权得分 **49.33%**。
-- 能力结构仍然偏科：**编译/渲染约 75%，框架约 86%，内置组件约 55%，平台 API 约 14%，页面形态约 25%**。
+- 按微信 WebView 版全量能力计算，当前引擎约完成 **一半**：加权得分 **49.92%**。
+- 能力结构仍然偏科：**编译/渲染约 76%，框架约 88%，内置组件约 57%，平台 API 约 14%，页面形态约 25%**。
 - 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent`、`generics`、`definitionFilter`、`pureDataPattern` 均已落地，Component-as-page 也接入了同一套核心语义；UI 库的核心语义障碍基本移除，剩余缺口主要是 npm 构建、`componentPlaceholder` 与内置 behaviors。
 - 内置组件已完成宿主迁移、P0 视觉重写和 P1 内部结构收口：24 个标签为真实 `tiny-*` 宿主，采用 Flat DOM + scoped CSS 隔离公开宿主与私有内部实现；checkbox/radio/switch/slider/icon/image/picker/picker-view 已按 2.7.0 参考实现重写；input/textarea/button/form 完成 wrapper/分支/语义补强，scroll-view 接受 native 滚动近似。
 - 仓库内置的微信官方 demo 子集（117 页）中，**108 页能启动（92.3%）**，108 页有可见文本；canvas 2D/WebGL 两页已修复，但启动率仍是“能挂载”，不是“功能对齐”。
@@ -70,16 +70,16 @@
 
 | 维度 | 权重 | 完成度 | 加权 | 关键依据 |
 | --- | ---: | ---: | ---: | --- |
-| 编译/构建 | 10% | 75% | 7.50 | WXML/WXSS/WXS 基本完整；app.wxss 的 tag/class 规则可作用到页面与内置宿主；app.json 只消费少量字段；无 npm 构建、无 TS 类型检查 |
-| 框架运行时 | 18% | 87% | 15.66 | 14/14 页面生命周期、7/7 应用生命周期、5/5 路由；generics/definitionFilter/pureDataPattern 已接；`this.animate`/`clearAnimate`、`wx.createIntersectionObserver`、事件 `target/currentTarget` 几何落地；tab 页缓存、group/label/touchtrack/scroller 基础保持；componentPlaceholder 未接 |
-| 内置组件 | 17% | 56% | 9.52 | 24/60 标签；P0 视觉完成，P1 内部结构大幅收口；`navigator` 走 host action 接入 5 个路由 API；canvas 2D/WebGL 已接真实 context；已统计属性 120/146、事件 44/46 |
+| 编译/构建 | 10% | 76% | 7.60 | WXML/WXSS/WXS 基本完整；共享 WXS runtime 与 AST transform 已接；app.wxss 规则可作用到页面与内置宿主；app.json 只消费少量字段；无 npm 构建、无 TS 类型检查 |
+| 框架运行时 | 18% | 88% | 15.84 | 14/14 页面生命周期、7/7 应用生命周期、5/5 路由；generics/definitionFilter/pureDataPattern 已接；`this.animate`/`clearAnimate`、`wx.createIntersectionObserver`、事件合成层（tap/longpress 触摸优先）与 `target/currentTarget` 几何落地；tab 页缓存、group/label/touchtrack/scroller 基础保持；componentPlaceholder 未接 |
+| 内置组件 | 17% | 57% | 9.69 | 24/60 标签；P0 视觉完成，P1 内部结构大幅收口；事件合成层与 scroll-view 横向/enable-flex 修复落地；`navigator` 走 host action；canvas 2D/WebGL 已接；已统计属性 120/146、事件 44/46 |
 | wx API | 20% | 14.1% | 2.83 | 71/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar/switchTab/redirectTo/reLaunch/下拉刷新/IntersectionObserver（含 `wx.createIntersectionObserver`）等已接或桩 |
 | 页面形态 | 12% | 25% | 3.00 | devtool 宿主已实现导航栏/tabBar/页面滚动/触底/tab 页缓存，浏览器宿主已接下拉刷新手势；分享菜单 UI、页面转场、测试/生产宿主页面 chrome 仍缺，评分保守 |
 | 样式/渲染 | 8% | 76% | 6.08 | WXSS/rpx/作用域强；app.wxss tag/class 规则作用到页面与共享组件；canvas 2D/WebGL/RAF 已接，导出 API 仍缺 |
 | 宿主/平台 | 8% | 15% | 1.20 | 仅浏览器宿主；无原生/网络/登录/支付/分享 |
-| 开发工具 | 4% | 45% | 1.80 | 应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar、移动端访问提示；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 58% | 1.74 | 247 单测 + 56 步浏览器验收 + 117 页探针脚本（`pnpm parity:probe`）；新增 WXS 宽松求值、`this.animate`、事件冒泡/几何回归；无性能/安全/原生测试 |
-| **合计** | **100%** | — | **49.33%** | |
+| 开发工具 | 4% | 47% | 1.88 | Vite 构建、应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar、移动端访问提示；不是完整微信开发者工具 |
+| 质量/验证 | 3% | 60% | 1.80 | 288 单测 + 58 步浏览器验收 + 117 页探针脚本（`pnpm parity:probe`）；新增 WXS 共享 runtime、事件合成、滚动横向回归；无性能/安全/原生测试 |
+| **合计** | **100%** | — | **49.92%** | |
 
 ### 条目覆盖率速览
 
@@ -319,9 +319,9 @@ Shadow DOM：
 2026-10-28 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
-- **247 个单元测试**（runtime 111、host-web-components 39、stylesheet-compiler 36、template-compiler 33、cli 18、bridge 10）
+- **288 个单元测试**（runtime 111、host-web-components 52、template-compiler 44、stylesheet-compiler 36、cli 18、wxs-runtime 13、bridge 10、manifest 2、css-units 2）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
-- **56 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent、真实滚动触发的 onPageScroll，WeChat demo 覆盖 swiper radio 点击去重、navigator 点击跳转、WXS 拖拽，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧，canvas 覆盖 2D/WebGL/legacy/ECharts
+- **58 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent、真实滚动触发的 onPageScroll，WeChat demo 覆盖 swiper radio 点击去重、navigator 点击跳转、WXS 拖拽，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧，canvas 覆盖 2D/WebGL/legacy/ECharts
 - 门禁覆盖的 5 段流程无 console/page error（117 页探针的 pageerror 见 5.2）
 
 这说明现有能力是**真实可运行**的，不是纸面设计。
@@ -587,6 +587,8 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-28 | 第十六次校准：内核收尾——WXS 改为宽松求值（`Q.S` + `Function`，修掉 ESM 严格模式下的隐式全局 `ReferenceError` 与内联 `<wxs>` 的 `D is not a function`）、`this.animate`/`clearAnimate`、`wx.createIntersectionObserver`、`tree.event` 的 target/currentTarget 几何；117 页探针固化为 `pnpm parity:probe`；117 页 108 启动、108 可见、9 失败（全部平台 API），WXS/animate/intersection 失败清零；237 单测 / 53 步；总分 48.90→49.16 | **49.16%** |
 | 2026-10-28 | 第十七次校准：WXS ComponentDescriptor、connector-only render 连接、显式 pageId 宿主动作、死代码清理；117 页探针复跑 108 启动、108 可见、9 失败（全部平台 API）；246 单测 / 55 步；总分保持 49.33 | **49.33%** |
 | 2026-10-28 | 第十八次校准：恢复渲染树到页面生命周期的链路——render 入口重新安装滚动容器桥，宿主把 `page.scroll` / `reachBottom` / `pullDownRefresh` 从 render 连接转发给 service，`onPageScroll` / `onReachBottom` 重新由真实滚动驱动；清掉 `data.setData`、`page.getInitialData` 和 render 侧 `page.*` ack 桩；247 单测 / 56 步；P0 新增滚动页面与 onPageScroll 验收步骤；总分保持 49.33 | **49.33%** |
+| 2026-10-29 | 第十九次校准：WXS 共享 runtime/事件本地执行、事件合成层（tap/longpress 以触摸为主）、scroll-view 横向滚动与 enable-flex、Vant popup external class、devtool 迁移 Vite；288 单测 / 58 步；117 页探针保持 108 启动、108 可见、9 失败（全部平台 API）；总分 49.33→49.92 | **49.92%** |
+
 ---
 
 ## 附录 A：117 页失败明细

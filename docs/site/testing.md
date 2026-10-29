@@ -3,13 +3,13 @@ title: '用真实小程序验收，'
 highlight: '不只跑单元测试'
 eyebrow: '测试与验收'
 lede: >-
-  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。276 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，56 个浏览器步骤验证端到端行为。
+  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。288 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，58 个浏览器步骤验证端到端行为。
 stats:
-  - ['276', '单元测试']
-  - ['56', '浏览器步骤']
+  - ['288', '单元测试']
+  - ['58', '浏览器步骤']
   - ['5', '浏览器流程']
   - ['7', '测试小程序']
-description: '小程序引擎的验收方式：构建、内核检查、276 个单元测试、56 个浏览器步骤和七套测试小程序。'
+description: '小程序引擎的验收方式：构建、内核检查、288 个单元测试、58 个浏览器步骤和七套测试小程序。'
 name: '测试'
 pageTitle: '测试与验收 · Tiny 小程序引擎'
 order: 8
@@ -26,7 +26,7 @@ pnpm accept:glass-easel 是唯一完整的端到端入口，任何单个包的�
 | 检查内核依赖 | 从 packages/runtime/src/index.ts 和 packages/wxs-runtime/src/index.ts 遍历依赖图，禁止浏览器全局，也禁止反向依赖 @tiny/host-* 或 hosts/*；WXS 语言级 require 单独放行。 | `pnpm check:runtime-purity` |
 | 跑 9 个包的单元测试 | manifest、css-units、wxs-runtime、bridge、template-compiler、stylesheet-compiler、cli、host-web-components、runtime。没有全局 runner，按包逐个执行。 | `pnpm --filter <package> test` |
 | 编译 P0 demo | 把 tests/apps/demo 编到 tests/host/generated，然后在 5199 端口启动 Vite 测试宿主。 | `pnpm compile:glass-easel` |
-| P0 demo 流程 | 22 步：启动、渲染、作用域样式、快照、自定义事件、checkbox/slider/switch、导航、输入、storage、toast、组件语义、样式隔离、按钮矩阵、relations、真实滚动触发 `onPageScroll`、canvas 诊断和零 console error；同时覆盖逻辑树的首屏 flow 和 patch 更新。 | `runBrowserAcceptance({ baseUrl })` |
+| P0 demo 流程 | 24 步：启动、渲染、作用域样式、快照、自定义事件、checkbox/slider/switch、导航、输入、storage、toast、组件语义、样式隔离、按钮矩阵、relations、真实滚动触发 `onPageScroll`、canvas 诊断和零 console error；同时覆盖逻辑树的首屏 flow 和 patch 更新。 | `runBrowserAcceptance({ baseUrl })` |
 | mini 流程 | 重新编译 tests/apps/mini 覆盖 generated；10 步：真实 todos、双组件实例、import/include/template、输入、ECharts、子包、warning 和零错误。 | `runMiniProgramAcceptance()` |
 | Taro 3 流程 | 编译 tests/apps/todo 的预构建产物；6 步：Redux todos、Enter 新增、勾选、筛选、清空和零错误。 | `runTaroAcceptance()` |
 | WeChat demo 流程 | 编译官方示例子集；9 步：组件索引、button 页、storage API 页、swiper/navigator/WXS 交互和零错误。WXS 交互包含 drag。 | `runWechatDemoAcceptance()` |
@@ -37,13 +37,13 @@ pnpm accept:glass-easel 是唯一完整的端到端入口，任何单个包的�
 前四段流程共用 `tests/host/generated`，调试器阶段写入 `apps/devtool/static`。每次编译前都会清空输出，所以不能并行跑两段浏览器验收。最后会重新编译 P0 demo，保证 `pnpm dev:glass-easel` 打开时看到的是默认示例。
 :::
 
-## 56 个步骤怎么分配 {#flows kicker="浏览器流程"}
+## 58 个步骤怎么分配 {#flows kicker="浏览器流程"}
 
 每一步都在真实 Chromium 中执行，会检查页面状态、DOM、像素或 console。
 
 | 流程 | 测试小程序 | 步数 | 验证内容 |
 | --- | --- | --- | --- |
-| P0 demo | `tests/apps/demo` | 22 | 双线程启动、内置组件、按钮矩阵、样式作用域、事件、导航、storage、页面滚动 `onPageScroll`、canvas 诊断/2D/WebGL/legacy/ECharts、组件语义、零 console error |
+| P0 demo | `tests/apps/demo` | 24 | 双线程启动、内置组件、按钮矩阵、样式作用域、事件、导航、storage、页面滚动 `onPageScroll`、canvas 诊断/2D/WebGL/legacy/ECharts、组件语义、零 console error |
 | 现有示例 | `tests/apps/mini` | 10 | 真实 todos、双 add-button 实例、import/include/template、输入、ECharts 柱状图、子包、warning |
 | Taro 3 | `tests/apps/todo` | 6 | Redux todos、输入 + Enter、勾选、筛选、清空、零错误 |
 | WeChat demo | `tests/apps/wechat-demo` | 9 | 组件索引、button 页、storage API 页、swiper radio 点击/自动播放、navigator 点击跳转、WXS 拖拽、零错误 |
@@ -65,7 +65,7 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 :::
 ::::
 
-## 276 个单元测试，按包执行 {#units kicker="单元测试"}
+## 288 个单元测试，按包执行 {#units kicker="单元测试"}
 
 没有全局 test runner，每个包单独跑，避免隐式耦合，也方便定位失败。
 
@@ -78,7 +78,7 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 | `@tiny/template-compiler` | 44 | 脚本依赖、WXS transform、模块表、动态事件元数据、change:prop、import/include、模板别名、ProcGen 签名、绑定表复用、事件简写、data-* 绑定、stringify 往返 |
 | `@tiny/stylesheet-compiler` | 36 | class/tag 前缀、rpx/calc、@import 编码和包装、@layer、:host 低优先级、hostAttribute、keyframes、page 根节点 |
 | `@tiny/cli` | 18 | manifest 全产物、兼容输入配置、WXS 双注册、配置合并、service/templates 入口、TS/source map、样式 role、tag marker |
-| `@tiny/host-web-components` | 40 | 24 个 tag 模板、共享 behaviors、button 对齐、label、input、checkbox/slider/switch、progress/swiper/icon、image/icon 渲染 |
+| `@tiny/host-web-components` | 52 | 24 个 tag 模板、共享 behaviors、button 对齐、label、input、checkbox/slider/switch、progress/swiper/icon、image/icon 渲染 |
 | `@tiny/runtime` | 111 | 全局安装和命名、双线程 bootstrap、逻辑树、tree protocol/patch diff、headless renderer、组件 schema、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、API host、诊断、WXS 宽松求值、`this.animate`、事件冒泡/几何 |
 
 :::callout{title="单测也会跑真实连接"}

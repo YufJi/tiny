@@ -37,7 +37,7 @@
 | 交互语义 | ⚠️ 部分 | 触摸/滚动/group/label 仍是近似 |
 | P1 组件内部结构 | ⚠️ 部分 | input/textarea/swiper/form/button；scroll-view 接受 native 近似 |
 | 表单/受控能力 | ⚠️ 部分 | group value、自定义 form-field、reportSubmit |
-| 全项目能力对齐分 | 49.33% | 来自 [wechat-webview-parity.md](./wechat-webview-parity.md)，是整体能力分，不是组件单项分 |
+| 全项目能力对齐分 | 49.92% | 来自 [wechat-webview-parity.md](./wechat-webview-parity.md)，是整体能力分，不是组件单项分 |
 
 一句话：**结构层已经基本对齐，主要差距在交互模型、P1 组件内部结构和表单语义。**
 
@@ -297,19 +297,22 @@ pnpm accept:glass-easel   # exit 0
 pnpm lint                # 8 files checked, no fixes applied
 ```
 
-门禁包含：build、runtime purity、各包单测、P0 demo、mini、Taro 3、WeChat demo、devtool 五段浏览器流程，共 53 步。
+门禁包含：build、runtime purity、各包单测、P0 demo、mini、Taro 3、WeChat demo、devtool 五段浏览器流程，共 58 步。
 
 ### 6.2 单测
 
 | 包 | 数量 |
 | --- | ---: |
 | `@tiny/bridge` | 10 |
-| `@tiny/template-compiler` | 33 |
+| `@tiny/template-compiler` | 44 |
 | `@tiny/stylesheet-compiler` | 36 |
 | `@tiny/cli` | 18 |
-| `@tiny/host-web-components` | 39 |
+| `@tiny/host-web-components` | 52 |
 | `@tiny/runtime` | 111 |
-| **合计** | **247** |
+| `@tiny/manifest` | 2 |
+| `@tiny/css-units` | 2 |
+| `@tiny/wxs-runtime` | 13 |
+| **合计** | **288** |
 
 ### 6.3 浏览器验收
 
@@ -333,4 +336,4 @@ pnpm lint                # 8 files checked, no fixes applied
 
 ### 6.5 全项目分数
 
-`49.33%` 来自 [wechat-webview-parity.md](./wechat-webview-parity.md) 的整体能力校准（24/60 标签、71/502 API、页面生命周期 14/14、路由 5/5 等），**不是**本文 24 个组件的单项得分；组件结构对齐不应直接等同于总分提升。
+`49.92%` 来自 [wechat-webview-parity.md](./wechat-webview-parity.md) 的整体能力校准（24/60 标签、71/502 API、页面生命周期 14/14、路由 5/5 等），**不是**本文 24 个组件的单项得分；组件结构对齐不应直接等同于总分提升。
