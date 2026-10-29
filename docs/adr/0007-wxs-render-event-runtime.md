@@ -24,8 +24,9 @@ Landed so far:
 - `change:prop` observers run in render with old/new values and the initial set;
 - `callMethod` / `triggerEvent` are forwarded to service over `tree.wxsEffect`.
 
-Still pending: wired source maps, `getData` / fuller descriptor parity, and the
-dynamic-binding fallback policy.
+Still pending: wired source maps (intentionally deferred for now; the module
+table carries per-module maps but they are not emitted into a final artifact),
+component-scoped `getData`, and the dynamic-binding fallback policy.
 
 This ADR keeps ADR-0006's split-tree decision and does **not** move WXML
 expression evaluation to render. It proposes one kernel-level WXS runtime that
