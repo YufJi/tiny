@@ -119,3 +119,23 @@ describe('WXS change:prop metadata', () => {
     expect(output).toContain('\\"moduleId\\":\\"wxs/utils.wxs\\"')
   })
 })
+
+
+describe('WXS custom component events', () => {
+  test('keeps custom component WXS events on the service path', () => {
+    const group = TmplGroup.new({
+      directivePrefix: 'wx',
+      templateExtension: '.wxml',
+      templateScriptExtension: '.wxs',
+    })
+    group.addScript('wxs/utils.wxs', 'module.exports = { tap: function () {} }')
+    group.addTmpl(
+      'pages/index/index',
+      '<wxs module="utils" src="/wxs/utils.wxs" />'
+        + '<my-comp bindtap="{{utils.tap}}" />',
+    )
+    const output = group.getTmplGenObjectGroups()
+    expect(output).not.toContain('wx-tiny-wxs-events')
+    expect(output).toContain('R.v(')
+  })
+})

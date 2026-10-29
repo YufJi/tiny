@@ -416,7 +416,7 @@ function elementToProcGen(
         for (const attr of kind.attributes) {
           normalAttrToProcGenAsNormal(attr, w, scopes, bmc)
         }
-        commonAttrsToProcGenWithoutSlot(kind.common, w, scopes, bmc)
+        commonAttrsToProcGenWithoutSlot(kind.common, w, scopes, bmc, BUILTIN_TAGS.has(kind.tagName.name))
         // Bug4: update slot binding map when slot name is dynamic with binding map keys
         if (dynamicSlotPg !== null) {
           const slot = kind.common.slot
@@ -696,7 +696,7 @@ function elementToProcGen(
               ww.write(']')
             })
           }
-          commonAttrsToProcGenWithoutSlot(kind.common, fw, scopes, bmc)
+          commonAttrsToProcGenWithoutSlot(kind.common, fw, scopes, bmc, false)
           for (const attr of kind.values) {
             slotValueAttrToProcGen(attr, fw, scopes, bmc)
           }
@@ -746,6 +746,36 @@ function writeAttributeValue(
     }
   }
 }
+
+// Kept in sync with `@tiny/manifest`'s BUILTIN_COMPONENT_TAGS. The compiler
+// build treats the manifest package as CommonJS, so importing the value here
+// makes Rollup's named-export analysis fail.
+const BUILTIN_TAGS = new Set<string>([
+  'view',
+  'button',
+  'text',
+  'label',
+  'input',
+  'checkbox',
+  'checkbox-group',
+  'radio',
+  'radio-group',
+  'icon',
+  'image',
+  'navigator',
+  'scroll-view',
+  'slider',
+  'progress',
+  'switch',
+  'swiper',
+  'swiper-item',
+  'canvas',
+  'textarea',
+  'form',
+  'picker',
+  'picker-view',
+  'picker-view-column',
+])
 
 const RENDER_WXS_EVENTS = new Set([
   'tap',
@@ -801,6 +831,7 @@ function commonAttrsToProcGenWithoutSlot(
   w: JsFunctionScopeWriter,
   scopes: ScopeVar[],
   bmc: BindingMapCollector,
+  allowLocalWxs: boolean,
 ): void {
   const wxsEvents: WxsEventMetadata[] = []
   for (const attr of common.data) {
@@ -811,7 +842,7 @@ function commonAttrsToProcGenWithoutSlot(
     attrToProcGenWithMethod(mark, w, 'M', null, scopes, bmc)
   }
   for (const ev of common.eventBindings) {
-    eventBindingToProcGen(ev, w, scopes, bmc, wxsEvents)
+    eventBindingToProcGen(ev, w, scopes, bmc, wxsEvents, allowLocalWxs)
   }
   if (wxsEvents.length > 0) {
     w.exprStmt((ww) => {
@@ -968,6 +999,7 @@ function eventBindingToProcGen(
   scopes: ScopeVar[],
   bmc: BindingMapCollector,
   wxsEvents?: WxsEventMetadata[],
+  allowLocalWxs = false,
 ): void {
   const n = genLitStr(ev.name.name)
   const isCatch = ev.isCatch ? '!0' : '!1'
@@ -980,7 +1012,7 @@ function eventBindingToProcGen(
   }
   const p = exprToProcGenPrepare(ev.value.expression, w, scopes)
   const staticWxs = p.getStaticScriptHandler(scopes)
-  if (staticWxs && wxsEvents) {
+  if (staticWxs && wxsEvents && allowLocalWxs) {
     wxsEvents.push({
       name: ev.name.name,
       moduleId: staticWxs.moduleId,
