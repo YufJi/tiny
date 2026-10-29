@@ -9,7 +9,8 @@ import { Template, templateDirectDependencies, templateScriptDependencies } from
 import { genLitStr } from './escape'
 import { TmplGroupRef, templateToProcGen } from './proc_gen/tag'
 import { stringifyTemplate } from './stringify/stringifier'
-import wxsAdapterSource from './runtime/wxs-adapter.js?raw'
+import { TINY_ENGINE_NAMING } from '@tiny/engine-naming'
+import wxsAdapterSourceRaw from './runtime/wxs-adapter.js?raw'
 import { transformWxsSource } from './wxs/transform'
 
 export type WxsModuleTableEntry = {
@@ -69,7 +70,12 @@ function runtimeFns(w: JsFunctionScopeWriter, needWxsRuntime: boolean): void {
     ww.write('}')
   })
   if (needWxsRuntime) {
-    w.customStmtStr(wxsAdapterSource)
+    w.customStmtStr(
+      wxsAdapterSourceRaw
+        .replaceAll('__TINY_WXS_RUNTIME_GLOBAL__', TINY_ENGINE_NAMING.wxsRuntimeGlobal)
+        .replaceAll('__TINY_WXS_EVENT_HOST_GLOBAL__', TINY_ENGINE_NAMING.wxsEventHostGlobal)
+        .replaceAll('__TINY_WXS_HANDLED_FIELD__', TINY_ENGINE_NAMING.wxsHandledField),
+    )
   }
 }
 

@@ -1,4 +1,5 @@
 // proc_gen/tag.ts — mirrors proc_gen/tag.rs
+import { BUILTIN_COMPONENT_TAGS, TINY_ENGINE_NAMING } from '@tiny/engine-naming'
 import { transformWxsSource } from '../wxs/transform'
 // Generates JavaScript code from parsed template ASTs.
 
@@ -410,7 +411,7 @@ function elementToProcGen(
         }
         if (wxsProps.length > 0) {
           w.exprStmt((ww) => {
-            ww.write(`R.a(N,'wx-tiny-wxs-props',${genLitStr(JSON.stringify(wxsProps))})`)
+            ww.write(`R.a(N,${genLitStr(TINY_ENGINE_NAMING.wxsPropsAttribute)},${genLitStr(JSON.stringify(wxsProps))})`)
           })
         }
         for (const attr of kind.attributes) {
@@ -747,37 +748,7 @@ function writeAttributeValue(
   }
 }
 
-// Kept in sync with `@tiny/manifest`'s BUILTIN_COMPONENT_TAGS. The compiler
-// build treats the manifest package as CommonJS, so importing the value here
-// makes Rollup's named-export analysis fail.
-const BUILTIN_TAGS = new Set<string>([
-  'view',
-  'button',
-  'text',
-  'label',
-  'input',
-  'checkbox',
-  'checkbox-group',
-  'radio',
-  'radio-group',
-  'icon',
-  'image',
-  'navigator',
-  'scroll-view',
-  'slider',
-  'progress',
-  'switch',
-  'swiper',
-  'swiper-item',
-  'canvas',
-  'textarea',
-  'form',
-  'picker',
-  'picker-view',
-  'picker-view-column',
-])
-
-
+const BUILTIN_TAGS = new Set<string>(BUILTIN_COMPONENT_TAGS)
 
 type WxsDynamicEventMetadata = {
   name: string
@@ -813,7 +784,7 @@ function commonAttrsToProcGenWithoutSlot(
   }
   if (wxsDynamicEvents.length > 0) {
     w.exprStmt((ww) => {
-      ww.write(`R.a(N,'wx-tiny-wxs-dynamic',${genLitStr(JSON.stringify(wxsDynamicEvents))})`)
+      ww.write(`R.a(N,${genLitStr(TINY_ENGINE_NAMING.wxsDynamicEventAttribute)},${genLitStr(JSON.stringify(wxsDynamicEvents))})`)
     })
   }
   if (common.id) {
