@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import { TmplGroup } from '../src/group'
 import { transformWxsSource } from '../src/wxs/transform'
 
 describe('WXS compiler transform', () => {
@@ -41,5 +42,27 @@ describe('WXS compiler transform', () => {
   test('reports the WXS source in the map', () => {
     const result = transformWxsSource('var value = Math.PI', 'pages/index/utils.wxs')
     expect(result.map).toContain('pages/index/utils.wxs')
+  })
+})
+
+
+describe('WXS module table', () => {
+  test('contains transformed external and inline modules', () => {
+    const group = TmplGroup.new({
+      directivePrefix: 'wx',
+      templateExtension: '.wxml',
+      templateScriptExtension: '.wxs',
+    })
+    group.addScript('wxs/utils.wxs', 'module.exports = { max: Math.max(1, 2) }')
+    group.addTmpl(
+      'pages/index/index',
+      '<wxs module="inline">exports.ctor = [].constructor</wxs><view>{{inline.ctor}}</view>',
+    )
+    const table = group.getWxsModuleTable()
+    const external = table.modules.find((module) => module.id === 'wxs/utils.wxs')
+    const inline = table.modules.find((module) => module.id === 'pages/index/index#inline')
+    expect(external?.code).toContain('__wxs.globals.Math.max')
+    expect(external?.map).toContain('wxs/utils.wxs')
+    expect(inline?.code).toContain('__wxs.ctor([])')
   })
 })

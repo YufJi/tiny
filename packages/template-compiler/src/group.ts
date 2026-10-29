@@ -12,6 +12,16 @@ import { stringifyTemplate } from './stringify/stringifier'
 import wxsAdapterSource from './runtime/wxs-adapter.js?raw'
 import { transformWxsSource } from './wxs/transform'
 
+export type WxsModuleTableEntry = {
+  id: string
+  code: string
+  map: string
+}
+
+export type WxsModuleTable = {
+  modules: WxsModuleTableEntry[]
+}
+
 // ---------------------------------------------------------------------------
 // Runtime snippets (mirrors RUNTIME_ITEMS and EXTRA_RUNTIME_ITEMS)
 // ---------------------------------------------------------------------------
@@ -266,6 +276,29 @@ export class TmplGroup implements TmplGroupRef {
         ww.write(`W[${pathLit}]=Q.S(${pathLit},${scriptLit})`)
       })
     }
+  }
+
+  /** Transformed WXS modules for the render event runtime. */
+  getWxsModuleTable(): WxsModuleTable {
+    const modules = new Map<string, WxsModuleTableEntry>()
+
+    for (const [path, script] of this.scripts) {
+      if (modules.has(path)) continue
+      const transformed = transformWxsSource(script, path)
+      modules.set(path, { id: path, code: transformed.code, map: transformed.map })
+    }
+
+    for (const [path, tree] of this.trees) {
+      for (const script of tree.globals.scripts) {
+        if (script.kind !== 'Inline') continue
+        const id = `${path}#${script.moduleName.name}`
+        if (modules.has(id)) continue
+        const transformed = transformWxsSource(script.content, id)
+        modules.set(id, { id, code: transformed.code, map: transformed.map })
+      }
+    }
+
+    return { modules: [...modules.values()] }
   }
 
   getTmplGenObjectGroups(): string {

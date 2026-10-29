@@ -92,11 +92,15 @@ export async function compileTemplates(
   if (context.diagnostics.some((item) => item.severity === 'error')) return
 
   const generated = group.getTmplGenObjectGroups()
+  const wxsModules = group.getWxsModuleTable()
   const content = [
     'const groupList = ' + generated,
     '',
+    'const wxsModules = ' + JSON.stringify(wxsModules) + '',
+    '',
     'export default {',
     '  groupList,',
+    '  wxsModules,',
     '  content(path, name = "") {',
     '    const group = groupList[path]',
     '    if (!group) throw new Error(`template not found: ${path}`)',
