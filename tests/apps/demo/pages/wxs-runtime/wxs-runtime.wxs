@@ -8,12 +8,17 @@ function changed(event, ins) {
   ins.callMethod('record', 'change:' + event.detail.value)
 }
 
+function dynamicTap(event, ins) {
+  ins.callMethod('recordDynamic', 'wxs:' + ins.getData().value)
+}
+
 function observe(next, previous, ins) {
   ins.callMethod('record', 'observe:' + next + ':' + (previous === undefined ? 'none' : previous))
 }
 
 module.exports = {
   tap: tap,
+  dynamicTap: dynamicTap,
   changed: changed,
   observe: observe,
 }

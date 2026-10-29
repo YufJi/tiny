@@ -11,6 +11,9 @@
     change:prop="{{t.observe}}"
     bindtap="{{t.tap}}"
   ></view>
+  <view id="dynamic" class="dynamic" data-kind="dyn" bindtap="{{useWxs ? t.dynamicTap : 'serviceTap'}}">dynamic</view>
+  <text class="dynamic-status">dynamic-status: {{dynamicStatus}}</text>
+  <button bindtap="toggleUseWxs">Toggle dynamic handler</button>
   <slider value="{{value}}" bindchange="{{t.changed}}" />
   <button bindtap="back">Back</button>
 </view>
