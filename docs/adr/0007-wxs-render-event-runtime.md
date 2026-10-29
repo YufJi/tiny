@@ -2,7 +2,18 @@
 
 ## Status
 
-Proposed. Not implemented.
+Proposed. Partially implemented.
+
+Landed so far:
+
+- `@tiny/wxs-runtime` is a kernel package with module loading, constructor
+  semantics and a host compile seam;
+- the service thread injects one runtime instance before templates load;
+- generated templates use a small `Q.S` adapter instead of carrying the full
+  runtime source.
+
+Still pending: compiler AST transform/module table, WXS event metadata, render
+host, descriptors and `change:prop`.
 
 This ADR keeps ADR-0006's split-tree decision and does **not** move WXML
 expression evaluation to render. It proposes one kernel-level WXS runtime that
@@ -73,14 +84,14 @@ isolation the feature relies on.
 
 ### 1. Kernel runtime
 
-The WXS runtime is a host-independent kernel module. Proposed location:
+The WXS runtime is a host-independent kernel module. Current location:
 
 ```text
-packages/runtime/src/wxs/     # or a dedicated @tiny/wxs-runtime package
-  createWxsRuntime(...)
-  module-loader.ts
-  values.ts
-  types.ts
+packages/wxs-runtime/
+  src/runtime.ts
+  src/transform.ts
+  src/types.ts
+  src/index.ts
 ```
 
 It does not import DOM, iframe, service code, or `@tiny/host-*`.
@@ -743,9 +754,8 @@ a projection. WXS expressions stay service-side; only event-time WXS moves.
 
 ## Rollout
 
-1. **Kernel extraction** — move the WXS language/module runtime out of the
-   template compiler into the kernel package; make the service `Q.S` adapter
-   delegate to an injected runtime. No behavior change.
+1. **Kernel extraction** — done: the runtime lives in `@tiny/wxs-runtime` and
+   the service `Q.S` adapter delegates to an injected instance.
 2. **Compiler transform** — emit `wxs-modules.js` and WXS event metadata behind
    a feature flag. No behavior change.
 3. **Render host skeleton** — load modules, expose `getState`, `setStyle`,
@@ -777,8 +787,8 @@ a projection. WXS expressions stay service-side; only event-time WXS moves.
 - WeChat, WXS 语法参考:
   <https://developers.weixin.qq.com/miniprogram/dev/reference/wxs/>
 - ADR-0006, WeChat-style split trees: `docs/adr/0006-wechat-split-tree.md`
-- Current WXS runtime source: `packages/template-compiler/src/runtime/wxs-runtime.js`
-- Intended kernel location: `packages/runtime/src/wxs/` (or
-  `packages/wxs-runtime/`)
+- Kernel WXS runtime: `packages/wxs-runtime/`
+- Generated template adapter: `packages/template-compiler/src/runtime/wxs-adapter.js`
+- Kernel package: `packages/wxs-runtime/`
 - Current service descriptor: `packages/runtime/src/service/wxs-host.ts`
 - Render tree: `hosts/web-components/src/render-tree.ts`
