@@ -17,6 +17,9 @@
     "typecheck": "tsc --noEmit",
     "prebuild": "rm -rf dist"
   },
+  "dependencies": {
+    "@tiny/engine-naming": "workspace:*"
+  },
   "devDependencies": {
     "typescript": "^5.0.0"
   }
