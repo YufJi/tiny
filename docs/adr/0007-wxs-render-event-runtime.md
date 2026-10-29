@@ -638,6 +638,8 @@ runtime still shadows host globals and exposes only the documented globals:
 - Removing service WXS for expressions.
 - Synchronizing service/render WXS module state.
 - Supporting WXS on custom component events.
+- Localizing custom component `change:prop`; the glass `R.p` service observer
+  path is the intended contract, not a missing capability.
 - Supporting `bindinput` on `input` / `textarea`.
 - Skyline `getBoundingClientRect` callback semantics.
 - Full QuickJS isolation in the first iteration.
@@ -662,7 +664,7 @@ a projection. WXS expressions stay service-side; only event-time WXS moves.
 | WXS expression (`bem`, `style`) | service | service (unchanged) |
 | WXS `bind*` / `catch*` | service | render local |
 | WXS `change:prop` (built-in) | service | render local |
-| WXS `change:prop` (custom component) | service | service fallback (confirmed) |
+| WXS `change:prop` (custom component) | service | expected service path |
 | `getState` | absent | render, per component |
 | `setStyle` / class | logic tree patch | render local + override layer |
 | `selectComponent` | logic tree | render query |
