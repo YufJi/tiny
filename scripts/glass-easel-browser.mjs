@@ -536,6 +536,26 @@ export async function runBrowserAcceptance({ baseUrl }) {
       )
     })
 
+    await step('run WXS local events, change:prop and callMethod', async () => {
+      currentStep = 'run WXS local events, change:prop and callMethod'
+      await render.getByText('WXS runtime', { exact: true }).first().click()
+      await waitForText('WXS runtime')
+      await waitForText('status: observe:2:none')
+      await render.locator('#target').click()
+      await waitForText('status: tap:2:box')
+      const left = await render.locator('#target').evaluate((element) => element.style.left)
+      assert.equal(left, '12px', 'WXS setStyle did not update the local element')
+      const slider = render.locator('tiny-slider input[type="range"]').first()
+      await slider.evaluate((element) => {
+        element.value = '5'
+        element.dispatchEvent(new Event('input', { bubbles: true }))
+        element.dispatchEvent(new Event('change', { bubbles: true }))
+      })
+      await waitForText('status: change:5')
+      await render.getByText('Back', { exact: true }).first().click()
+      await waitForText('Tiny Glass-easel P0')
+    })
+
     await step('deliver onPageScroll from the render scroll container', async () => {
       currentStep = 'deliver onPageScroll from the render scroll container'
       await render.getByText('Scroll page', { exact: true }).first().click()

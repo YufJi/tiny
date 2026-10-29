@@ -3,7 +3,8 @@
     "pages/todos/todos",
     "pages/add-todo/add-todo",
     "pages/semantics/semantics",
-    "pages/scroll/scroll"
+    "pages/scroll/scroll",
+    "pages/wxs-runtime/wxs-runtime"
   ],
   "window": {
     "navigationBarTitleText": "P0 demo"

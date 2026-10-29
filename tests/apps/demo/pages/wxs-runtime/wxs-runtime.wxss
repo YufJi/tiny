@@ -1,0 +1,24 @@
+.page {
+  display: block;
+  padding: 20px;
+}
+
+.title {
+  display: block;
+  font-size: 20px;
+  margin-bottom: 12px;
+}
+
+.status {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.target {
+  position: absolute;
+  left: 0;
+  top: 120px;
+  width: 48px;
+  height: 48px;
+  background: #3cc51f;
+}

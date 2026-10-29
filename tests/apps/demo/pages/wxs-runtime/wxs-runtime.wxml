@@ -1,0 +1,15 @@
+<wxs module="t" src="./wxs-runtime.wxs"></wxs>
+<view class="page">
+  <text class="title">WXS runtime</text>
+  <text class="status">status: {{status}}</text>
+  <view
+    id="target"
+    class="target"
+    data-kind="box"
+    prop="{{value}}"
+    change:prop="{{t.observe}}"
+    bindtap="{{t.tap}}"
+  ></view>
+  <slider value="{{value}}" bindchange="{{t.changed}}" />
+  <button bindtap="back">Back</button>
+</view>
