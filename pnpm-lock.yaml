@@ -125,6 +125,9 @@ importers:
       '@tiny/manifest':
         specifier: workspace:*
         version: link:../manifest
+      '@tiny/wxs-runtime':
+        specifier: workspace:*
+        version: link:../wxs-runtime
       glass-easel:
         specifier: 1.1.0
         version: 1.1.0
@@ -160,6 +163,9 @@ importers:
 
   packages/template-compiler:
     devDependencies:
+      '@tiny/wxs-runtime':
+        specifier: workspace:*
+        version: link:../wxs-runtime
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -178,6 +184,9 @@ importers:
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
+      vite:
+        specifier: ^5.4.21
+        version: 5.4.21(@types/node@22.20.1)(less@3.13.1)
       vitest:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)

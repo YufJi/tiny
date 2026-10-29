@@ -18,6 +18,22 @@ type ModuleRecord = {
 
 const defaultGlobals: Record<string, unknown> = {}
 
+const resolveModuleId = (from: string, request: string): string => {
+  if (!request.startsWith('.') && !request.startsWith('/')) return request
+  const base = request.startsWith('/') ? [] : from.split('/').slice(0, -1)
+  const parts = [...base, ...request.split('/')]
+  const normalized: string[] = []
+  for (const part of parts) {
+    if (part === '' || part === '.') continue
+    if (part === '..') {
+      normalized.pop()
+    } else {
+      normalized.push(part)
+    }
+  }
+  return normalized.join('/')
+}
+
 export function createWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
   const records = new Map<string, ModuleRecord>()
   let disposed = false
@@ -26,8 +42,8 @@ export function createWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
     host.onError?.(error, context)
   }
 
-  const values = (): WxsValues => ({
-    require,
+  const values = (moduleId: string): WxsValues => ({
+    require: (request) => require(resolveModuleId(moduleId, request)),
     globals: host.globals ?? defaultGlobals,
     ctor: wxsCtor,
     getRegExp: (pattern, flags) => new RegExp(pattern, flags),
@@ -51,7 +67,8 @@ export function createWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
         throw error
       }
       try {
-        factory(require, record.module, record.module.exports, values())
+        const moduleRequire = (request: string) => require(resolveModuleId(moduleId, request))
+        factory(moduleRequire, record.module, record.module.exports, values(moduleId))
       } catch (error) {
         report(error, { moduleId, phase: 'load' })
         throw error
@@ -65,8 +82,12 @@ export function createWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
 
   return {
     register(moduleId, source) {
-      if (records.has(moduleId) && records.get(moduleId)?.source !== source) {
-        throw new Error(`WXS module already registered: ${moduleId}`)
+      const existing = records.get(moduleId)
+      if (existing) {
+        if (existing.source !== source) {
+          throw new Error(`WXS module already registered: ${moduleId}`)
+        }
+        return () => require(moduleId)
       }
       records.set(moduleId, {
         source,

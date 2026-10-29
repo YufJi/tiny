@@ -86,6 +86,13 @@ describe('createWxsRuntime', () => {
     expect(loads).toBe(1)
   })
 
+  test('resolves relative requires from the module id', () => {
+    const wxs = runtime()
+    wxs.register('pkg/wxs/utils', 'module.exports = { value: 7 }')
+    wxs.register('pkg/wxs/main', 'module.exports = require("./utils")')
+    expect(wxs.require('pkg/wxs/main')).toEqual({ value: 7 })
+  })
+
   test('supports circular dependencies with partial exports', () => {
     const wxs = runtime()
     wxs.register(

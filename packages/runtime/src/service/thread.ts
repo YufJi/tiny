@@ -19,11 +19,18 @@ import { MiniProgramPageRegistry } from './page-registry'
 import { MiniProgramPageInstance, type PageLifecycleName } from './page-instance'
 import { createServiceApiHost, installMiniProgramGlobals } from './api-host'
 import { installWxsEventHost } from './wxs-host'
+import { createDefaultWxsCompiler, createWxsRuntime } from '@tiny/wxs-runtime'
 import { LogicTreeAdapter, type ViewEventPayload, type ViewIntersectionEntry } from '../tree/logic'
 import { findPageArtifact, normalizeRoutePath, requireActivePage, resolveComponentReference } from './route'
 import type { ServiceApiContext, ServiceThreadRuntime, TabBarApi } from './types'
 
 export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadRuntime {
+  // The generated template bundle resolves WXS modules through the host
+  // runtime. One instance per service thread keeps module state local to the
+  // app while sharing the kernel implementation with the render thread.
+  const wxsRuntime = createWxsRuntime({ compile: createDefaultWxsCompiler() })
+  ;(globalThis as unknown as { __tinyWxsRuntime?: unknown }).__tinyWxsRuntime = wxsRuntime
+
   const expectedPagePaths = options.manifest.pages
     .filter((page) => page.bodyType !== 'component')
     .map((page) => page.path)

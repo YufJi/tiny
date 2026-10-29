@@ -1,5 +1,16 @@
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
+import { createDefaultWxsCompiler, createWxsRuntime } from '@tiny/wxs-runtime'
 import { TmplGroup } from '../src/group'
+
+const runtime = createWxsRuntime({ compile: createDefaultWxsCompiler() })
+const globalObject = globalThis as unknown as { __tinyWxsRuntime?: unknown }
+beforeAll(() => {
+  globalObject.__tinyWxsRuntime = runtime
+})
+afterAll(() => {
+  delete globalObject.__tinyWxsRuntime
+  runtime.dispose()
+})
 
 describe('script dependencies — external script', () => {
   const SRC_A = `<wxs module="modA" src="/script/a" /> <wxs module="modB" src="../script/b" /> {{ modA.a + modB.b }}`
@@ -71,7 +82,7 @@ describe('script — code generation with WXS runtime', () => {
     group.addTmpl('t', SRC)
     const output = group.getTmplGenObjectGroups()
     expect(typeof output).toBe('string')
-    expect(output).toContain('modules')
+    expect(output).toContain('__tinyWxsRuntime')
   })
 })
 

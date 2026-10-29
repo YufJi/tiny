@@ -9,7 +9,7 @@ import { Template, templateDirectDependencies, templateScriptDependencies } from
 import { genLitStr } from './escape'
 import { TmplGroupRef, templateToProcGen } from './proc_gen/tag'
 import { stringifyTemplate } from './stringify/stringifier'
-import wxsRuntimeSource from './runtime/wxs-runtime.js?raw'
+import wxsAdapterSource from './runtime/wxs-adapter.js?raw'
 
 // ---------------------------------------------------------------------------
 // Runtime snippets (mirrors RUNTIME_ITEMS and EXTRA_RUNTIME_ITEMS)
@@ -53,7 +53,7 @@ function runtimeFns(w: JsFunctionScopeWriter, needWxsRuntime: boolean): void {
     ww.write('}')
   })
   if (needWxsRuntime) {
-    w.customStmtStr(wxsRuntimeSource)
+    w.customStmtStr(wxsAdapterSource)
   }
 }
 
