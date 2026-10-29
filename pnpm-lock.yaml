@@ -206,6 +206,9 @@ importers:
         specifier: ^0.21.5
         version: 0.21.5
     devDependencies:
+      '@tiny/wxs-runtime':
+        specifier: workspace:*
+        version: link:../../packages/wxs-runtime
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1
