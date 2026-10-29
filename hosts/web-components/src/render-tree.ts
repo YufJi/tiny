@@ -19,6 +19,7 @@ import type {
   WxsRenderEffect,
 } from '@tiny/runtime'
 import { createBuiltinComponents } from './index'
+import { attachEventCompositor } from './event-compositor'
 import { BUILTIN_COMPONENT_TAGS, type BuiltinComponentTag } from './tags'
 
 type AnyComponent = glassEasel.GeneralComponent
@@ -234,7 +235,22 @@ function applyHostProps(component: AnyComponent, props: Record<string, unknown> 
 export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): GlassRenderTree {
   const backend = options.backend ?? new glassEasel.CurrentWindowBackendContext()
   ;(backend as unknown as { onEvent: (listener: unknown) => void })
-    .onEvent(glassEasel.Event.triggerBackendEvent)
+    .onEvent((
+      element: glassEasel.Element,
+      name: string,
+      detail: unknown,
+      eventOptions: Record<string, unknown> | undefined,
+      target?: unknown,
+    ) => {
+      // The event compositor owns tap/canceltap. Ignore glass's own DOM
+      // synthesis (which carries the raw event) so one finger produces exactly
+      // one tap in the tree.
+      if (
+        (name === 'tap' || name === 'canceltap')
+        && eventOptions?.originalEvent !== undefined
+      ) return
+      return glassEasel.Event.triggerBackendEvent(element, name, detail, eventOptions as never, target as never)
+    })
   const wxsRuntime = createWxsRuntime({ compile: createDefaultWxsCompiler() })
   const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
   space.updateComponentOptions({
@@ -366,6 +382,48 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const rootElement = root.getBackendElement() as unknown as HTMLElement | null
   if (rootElement && options.container) options.container.replaceChildren(rootElement)
 
+  // One compositor per render tree: raw touch (or mouse in the devtool) is
+  // recognized as a gesture here and injected into glass, so page bindings and
+  // built-in components share a single tap/longpress source.
+  const compositorRoot = options.container ?? rootElement
+  const detachCompositor = compositorRoot
+    ? attachEventCompositor({
+        root: compositorRoot,
+        onTouch: (touch, target) => {
+          // Mouse input is projected into the same touch sequence a phone
+          // produces, so hover/touchtrack/template `bindtouch*` stay single-path.
+          glassEasel.Event.triggerEvent(target, touch.name, {}, {
+            bubbles: true,
+            composed: true,
+            capturePhase: true,
+            originalEvent: touch.originalEvent,
+            extraFields: {
+              touches: touch.touches,
+              changedTouches: touch.changedTouches,
+            },
+          })
+        },
+        onGesture: (gesture, target) => {
+          glassEasel.Event.triggerEvent(target, gesture.name, gesture.detail, {
+            bubbles: true,
+            composed: true,
+            // Match glass's own synthesis: a tap runs the capture phase
+            // before the bubble phase so `capture-bind:tap` sees it.
+            capturePhase: true,
+            originalEvent: gesture.originalEvent,
+            extraFields: {
+              native: {
+                clientX: gesture.detail.x,
+                clientY: gesture.detail.y,
+                x: gesture.detail.x,
+                y: gesture.detail.y,
+              },
+            },
+          })
+        },
+      })
+    : () => {}
+
   const appendChild = (parent: AnyComponent, child: AnyComponent | glassEasel.TextNode): void => {
     parent.appendChild(child as never)
   }
@@ -460,18 +518,159 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const cloneTouchList = (value: unknown): unknown[] | undefined => (
     Array.isArray(value) ? value.map(cloneTouch) : undefined
   )
-  const cloneTouchDetail = (detail: unknown): unknown => {
-    if (!detail || typeof detail !== 'object') return detail
-    const copy = { ...(detail as Record<string, unknown>) }
-    for (const key of ['touches', 'changedTouches']) {
-      if (Array.isArray(copy[key])) copy[key] = (copy[key] as unknown[]).map(cloneTouch)
-    }
-    return copy
+
+  const backendElementOf = (target: unknown): HTMLElement | null => {
+    const element = (target as { getBackendElement?: () => unknown })?.getBackendElement?.()
+    // Duck-typed so detached test backends (no DOM/HTMLElement global) work too.
+    if (!element || typeof (element as HTMLElement).getAttribute !== 'function') return null
+    return element as HTMLElement
   }
 
-  // Events the host maps from raw DOM. Everything else is emitted by the
-  // built-in components through glass-easel with a normalized detail payload.
-  const NATIVE_EVENT_NAMES = new Set(['tap', 'click', 'touchstart', 'touchmove', 'touchend', 'touchcancel'])
+  const targetGeometryOf = (target: unknown): RenderEventGeometry | undefined => {
+    const element = backendElementOf(target)
+    return element ? geometryOfTarget(element) : undefined
+  }
+
+  /**
+   * Gestures are injected by the compositor; a raw DOM event on any other name
+   * is glass's native projection and is already covered by a built-in
+   * component's `triggerEvent`. Forward only the projections whose payload the
+   * render host owns (click/touch*), so e.g. `input`/`change` do not fire twice.
+   */
+  const isGestureEvent = (name: string): boolean => (
+    name === 'tap' || name === 'longpress' || name === 'canceltap'
+  )
+  const isNativeProjection = (name: string): boolean => (
+    name === 'click' || name.startsWith('touch')
+  )
+  // DOM events no built-in component re-emits with a normalized detail. Pages
+  // can bind them directly; forwarding the raw projection is the only source.
+  const RAW_PASSTHROUGH_EVENTS = new Set([
+    'transitionend',
+    'animationstart',
+    'animationend',
+    'animationiteration',
+    'wheel',
+    'touchforcechange',
+  ])
+  const shouldForwardGlassEvent = (name: string, original: unknown): boolean => (
+    original === undefined
+    || isGestureEvent(name)
+    || isNativeProjection(name)
+    || RAW_PASSTHROUGH_EVENTS.has(name)
+  )
+
+  /**
+   * Build the service-facing payload from one glass event.
+   *
+   * A touched node is the source of truth for `touches`; synthesized events
+   * (tap/longpress from the compositor) carry their own detail and native
+   * coordinates instead.
+   */
+  const buildRenderEventPayload = (
+    node: RenderElement,
+    element: HTMLElement | null,
+    name: string,
+    event: glassEasel.Event<unknown> & {
+      target?: unknown
+      touches?: unknown
+      changedTouches?: unknown
+      native?: Record<string, unknown>
+    },
+    original: unknown,
+  ): GlassRenderEvent => {
+    const isTouch = name.startsWith('touch')
+    const currentTarget = geometryOf(element, node.id)
+    const payload: GlassRenderEvent = {
+      id: node.id,
+      name,
+      ...(currentTarget ? { currentTarget } : {}),
+    }
+    if (isTouch) {
+      const touchEvent = original as TouchEvent | null
+      const touches = touchEvent?.touches
+        ? normalizeTouchList(touchEvent.touches)
+        : cloneTouchList(event.touches)
+      const changedTouches = touchEvent?.changedTouches
+        ? normalizeTouchList(touchEvent.changedTouches)
+        : cloneTouchList(event.changedTouches)
+      if (touches) payload.touches = touches
+      if (changedTouches) payload.changedTouches = changedTouches
+    } else if (event.detail !== undefined) {
+      payload.detail = event.detail
+    }
+    if (original) payload.native = nativeFields(original as Event)
+    else if (event.native) payload.native = event.native
+    const target = targetGeometryOf(event.target)
+    if (target) payload.target = target
+    return payload
+  }
+
+  /**
+   * `catchtouchmove` must stop the page from scrolling underneath a mask.
+   *
+   * The delegated touchmove listener is passive (scroll performance), so it
+   * cannot preventDefault. Only nodes that actually carry `catchtouchmove`
+   * get a non-passive native listener here; it lets an inner scroll container
+   * keep scrolling until it reaches its edge, then blocks the page.
+   */
+  const attachTouchMoveGuard = (
+    element: HTMLElement | null,
+    cleanups: Array<() => void>,
+  ): void => {
+    if (!element || typeof element.addEventListener !== 'function') return
+    let startX = 0
+    let startY = 0
+    let scrollables: Array<{ element: HTMLElement; vertical: boolean; horizontal: boolean }> = []
+    const collect = (event: TouchEvent): void => {
+      const touch = event.touches[0]
+      startX = touch?.clientX ?? 0
+      startY = touch?.clientY ?? 0
+      scrollables = []
+      const view = element.ownerDocument?.defaultView
+      if (!view || typeof view.getComputedStyle !== 'function') return
+      let node = event.target as Node | null
+      while (node && node !== element) {
+        const candidate = node as HTMLElement
+        if (candidate.nodeType === 1 && typeof candidate.scrollHeight === 'number') {
+          const style = view.getComputedStyle(candidate)
+          const vertical = /(auto|scroll|overlay)/.test(style.overflowY)
+            && candidate.scrollHeight > candidate.clientHeight + 1
+          const horizontal = /(auto|scroll|overlay)/.test(style.overflowX)
+            && candidate.scrollWidth > candidate.clientWidth + 1
+          if (vertical || horizontal) {
+            scrollables.push({ element: candidate, vertical, horizontal })
+          }
+        }
+        node = node.parentNode
+      }
+    }
+    const guard = (event: TouchEvent): void => {
+      if (event.cancelable === false) return
+      const touch = event.touches[0]
+      if (!touch) return
+      const dx = touch.clientX - startX
+      const dy = touch.clientY - startY
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return
+      for (const entry of scrollables) {
+        if (entry.vertical && Math.abs(dy) >= Math.abs(dx)) {
+          const max = entry.element.scrollHeight - entry.element.clientHeight
+          if (dy < 0 ? entry.element.scrollTop < max : entry.element.scrollTop > 0) return
+        }
+        if (entry.horizontal && Math.abs(dx) > Math.abs(dy)) {
+          const max = entry.element.scrollWidth - entry.element.clientWidth
+          if (dx < 0 ? entry.element.scrollLeft < max : entry.element.scrollLeft > 0) return
+        }
+      }
+      event.preventDefault()
+    }
+    element.addEventListener('touchstart', collect, { capture: true, passive: true })
+    element.addEventListener('touchmove', guard, { capture: false, passive: false })
+    cleanups.push(() => {
+      element.removeEventListener('touchstart', collect, { capture: true })
+      element.removeEventListener('touchmove', guard, { capture: false })
+    })
+  }
 
   const attachEvents = (
     node: RenderElement,
@@ -485,71 +684,29 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     for (const binding of events) {
       if (skipDynamic?.has(binding.name)) continue
       const capture = binding.capture === true
-      // Semantic events from host built-ins (change/input/scroll/...) carry
-      // the mini-program detail; forward that instead of re-deriving it.
       const listener = (event: glassEasel.Event<unknown> & {
         touches?: unknown
         changedTouches?: unknown
+        native?: Record<string, unknown>
       }): void => {
         const original = (event as unknown as { getOriginalEvent?: () => unknown })
           .getOriginalEvent?.()
-        // A raw backend event is re-dispatched through the glass tree; it has
-        // no normalized detail and is handled by the DOM bridge below.
-        if (original) return
-        const isTouch = binding.name.startsWith('touch')
-        const currentTarget = geometryOf(element, node.id)
-        emitServiceEvent({
-          id: node.id,
-          name: binding.name,
-          ...(currentTarget ? { currentTarget } : {}),
-          ...(event.detail !== undefined
-            ? { detail: isTouch ? cloneTouchDetail(event.detail) : event.detail }
-            : {}),
-          ...(isTouch && event.touches !== undefined
-            ? { touches: cloneTouchList(event.touches) }
-            : {}),
-          ...(isTouch && event.changedTouches !== undefined
-            ? { changedTouches: cloneTouchList(event.changedTouches) }
-            : {}),
-        })
+        // A built-in component (canvas) re-dispatches a normalized event and
+        // marks the raw one; only forward the normalized copy.
+        // Only raw touch projections are de-duplicated by built-ins (canvas).
+        // Synthesized tap/longpress legitimately carry the same native event.
+        if (original && binding.name.startsWith('touch') && isHandledNativeEvent(original)) return
+        if (!shouldForwardGlassEvent(binding.name, original)) return
+        // `catch` is a compile-time binding; glass owns the bubble path, so
+        // stopping here is what makes `catchtap` block parent handlers.
+        if (binding.catch === true) event.stopPropagation()
+        emitServiceEvent(buildRenderEventPayload(node, element, binding.name, event, original))
       }
       component.addListener(binding.name, listener as never, { capture })
       cleanups.push(() => component.removeListener(binding.name, listener as never, { capture }))
-      if (!NATIVE_EVENT_NAMES.has(binding.name)) continue
-      if (!element || typeof element.addEventListener !== 'function') continue
-      const domName = binding.name === 'tap' ? 'click' : binding.name
-      // A `<label>` around a native checkbox/radio forwards its click to the
-      // input, so one user tap produces two DOM clicks with the same timestamp.
-      // Keep the first one; otherwise toggle handlers run twice and end up
-      // back at the original value.
-      let lastPointerStamp = -1
-      const domListener = (event: Event): void => {
-        if (isHandledNativeEvent(event)) return
-        if (binding.name === 'tap' || binding.name === 'click') {
-          if (event.timeStamp === lastPointerStamp) return
-          lastPointerStamp = event.timeStamp
-        }
-        const currentTarget = geometryOf(element, node.id)
-        const target = geometryOfTarget(event.target)
-        const touchEvent = event as TouchEvent
-        const touches = binding.name.startsWith('touch')
-          ? normalizeTouchList(touchEvent.touches)
-          : undefined
-        const changedTouches = binding.name.startsWith('touch')
-          ? normalizeTouchList(touchEvent.changedTouches)
-          : undefined
-        emitServiceEvent({
-          id: node.id,
-          name: binding.name,
-          native: nativeFields(event),
-          ...(touches ? { touches } : {}),
-          ...(changedTouches ? { changedTouches } : {}),
-          ...(currentTarget ? { currentTarget } : {}),
-          ...(target ? { target } : {}),
-        })
+      if (binding.catch === true && binding.name === 'touchmove') {
+        attachTouchMoveGuard(element, cleanups)
       }
-      element.addEventListener(domName, domListener, capture)
-      cleanups.push(() => element.removeEventListener(domName, domListener, capture))
     }
     if (cleanups.length > 0) eventCleanups.set(node.id, cleanups)
   }
@@ -815,83 +972,56 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     }
 
     for (const binding of bindings) {
-      if (NATIVE_EVENT_NAMES.has(binding.name)) {
-        const domName = binding.name === 'tap' ? 'click' : binding.name
-        let lastPointerStamp = -1
-        const listener = (event: Event): void => {
-          if (isHandledNativeEvent(event)) return
-          if (binding.name === 'tap' || binding.name === 'click') {
-            if (event.timeStamp === lastPointerStamp) return
-            lastPointerStamp = event.timeStamp
-          }
-          const currentTarget = geometryOf(element, node.id)
-          const target = geometryOfTarget(event.target)
-          const touchEvent = event as TouchEvent
-          const isTouch = binding.name.startsWith('touch')
-          const touches = isTouch ? normalizeTouchList(touchEvent.touches) : undefined
-          const changedTouches = isTouch ? normalizeTouchList(touchEvent.changedTouches) : undefined
-          const targetNode = target?.viewId ? currentTree.get(target.viewId) : undefined
-          const payload: Record<string, unknown> = {
-            id: node.id,
-            name: binding.name,
-            native: nativeFields(event),
-            ...(touches ? { touches } : {}),
-            ...(changedTouches ? { changedTouches } : {}),
-            ...(currentTarget ? { currentTarget } : {}),
-            ...(target ? { target } : {}),
-          }
-          if (currentTarget && node.dataset) {
-            payload.currentTarget = { ...currentTarget, dataset: node.dataset }
-          }
-          if (target && targetNode?.type === 'element' && targetNode.dataset) {
-            payload.target = { ...target, dataset: targetNode.dataset }
-          }
-          invoke(binding, payload, () => {
-            event.preventDefault()
-            event.stopPropagation()
-          })
-        }
-        element.addEventListener(domName, listener, binding.capture === true)
-        cleanups.push(() => element.removeEventListener(domName, listener, binding.capture === true))
-        continue
-      }
-
       const listener = (event: glassEasel.Event<unknown> & {
         touches?: unknown
         changedTouches?: unknown
+        native?: Record<string, unknown>
       }): void => {
-        const currentTarget = geometryOf(element, node.id)
-        const isTouch = binding.name.startsWith('touch')
-        const payload: Record<string, unknown> = {
-          id: node.id,
-          name: binding.name,
-          ...(event.detail !== undefined
-            ? { detail: isTouch ? cloneTouchDetail(event.detail) : event.detail }
-            : {}),
-          ...(isTouch && event.touches !== undefined
-            ? { touches: cloneTouchList(event.touches) }
-            : {}),
-          ...(isTouch && event.changedTouches !== undefined
-            ? { changedTouches: cloneTouchList(event.changedTouches) }
-            : {}),
-          ...(currentTarget ? { currentTarget } : {}),
+        const original = (event as unknown as { getOriginalEvent?: () => unknown })
+          .getOriginalEvent?.()
+        // Only raw touch projections are de-duplicated by built-ins (canvas).
+        // Synthesized tap/longpress legitimately carry the same native event.
+        if (original && binding.name.startsWith('touch') && isHandledNativeEvent(original)) return
+        if (!shouldForwardGlassEvent(binding.name, original)) return
+        const payload = buildRenderEventPayload(
+          node,
+          element,
+          binding.name,
+          event,
+          original,
+        ) as unknown as Record<string, unknown>
+        if (payload.currentTarget && node.dataset) {
+          payload.currentTarget = {
+            ...(payload.currentTarget as Record<string, unknown>),
+            dataset: node.dataset,
+          }
         }
-        if (currentTarget && node.dataset) {
-          payload.currentTarget = { ...currentTarget, dataset: node.dataset }
+        const targetNode = payload.target && (payload.target as { viewId?: string }).viewId
+          ? currentTree.get((payload.target as { viewId: string }).viewId)
+          : undefined
+        if (payload.target && targetNode?.type === 'element' && targetNode.dataset) {
+          payload.target = {
+            ...(payload.target as Record<string, unknown>),
+            dataset: targetNode.dataset,
+          }
         }
         invoke(binding, payload, () => {
-          const target = event as unknown as {
-            preventDefault?: () => void
-            stopPropagation?: () => void
+          event.preventDefault()
+          event.stopPropagation()
+          // `catchtouchmove` scroll locking is handled by the node-level
+          // non-passive guard; the delegated listener is passive.
+          if (binding.name !== 'touchmove') {
+            ;(original as { preventDefault?: () => void } | undefined)?.preventDefault?.()
           }
-          target.preventDefault?.()
-          target.stopPropagation?.()
         })
       }
       component.addListener(binding.name, listener as never, { capture: binding.capture === true })
       cleanups.push(() => component.removeListener(binding.name, listener as never, {
         capture: binding.capture === true,
       }))
+      if (binding.catch === true && binding.name === 'touchmove') {
+        attachTouchMoveGuard(element, cleanups)
+      }
     }
     if (cleanups.length > 0) eventCleanups.set(node.id, cleanups)
   }
@@ -1455,6 +1585,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       return nodes.get(id)
     },
     destroy() {
+      detachCompositor()
       for (const cleanups of eventCleanups.values()) {
         for (const cleanup of cleanups) cleanup()
       }

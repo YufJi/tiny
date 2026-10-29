@@ -122,7 +122,7 @@
 - [x] form submit/reset、hover、label 激活入口；
 - [x] `native` 分支已补 cover-view wrapper 结构（浏览器下仍是普通 DOM 容器）；
 - [x] 真实 `open-type` 按决策暂不支持，仍走失败回调；
-- [x] `longtap`/`canceltap` 通过 touch 定时器补上，并抑制长按后的 tap。
+- [x] `longpress` 由宿主事件合成层产生，`longtap` 作为兼容别名；`canceltap` 由合成层在拖拽/多指/`touchcancel` 时派发，长按后不再补 tap。
 
 **input / textarea**
 
@@ -242,7 +242,7 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 
 - `native` 分支已有 cover-view 结构，但没有原生 cover-view 能力；
 - `open-type` 按决策暂不支持，只触发失败回调；
-- `longtap`/`canceltap` 已补，剩余是原生能力分支。
+- `longpress`/`longtap`（别名）/`canceltap` 已统一到宿主事件合成层，剩余是原生能力分支。
 
 ### 4.5 picker 的剩余模式
 

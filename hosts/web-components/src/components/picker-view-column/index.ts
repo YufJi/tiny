@@ -48,11 +48,9 @@ export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
     lifetimes: {
       attached() {
         this.syncColumnIndex()
-        this.bindPointerDrag()
         this.triggerEvent('wxPickerColumnChanged', {}, { bubbles: true, composed: true })
       },
       detached() {
-        ;(this as unknown as { _pointerCleanup?: () => void })._pointerCleanup?.()
         this.triggerEvent('wxPickerColumnChanged', {}, { bubbles: true, composed: true })
       },
       ready() {
@@ -199,39 +197,6 @@ export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
         if (instance._moved) this.emitChange(Number(this.data.column), index)
         this.triggerEvent('columnend', { value: index }, { bubbles: true, composed: true })
         this.triggerEvent('wxPickerColumnValueChangeEnd', { idx: index }, { bubbles: true, composed: true })
-      },
-      bindPointerDrag() {
-        const element = (this as unknown as { getBackendElement?: () => ColumnElement | null })
-          .getBackendElement?.()
-        if (!element?.addEventListener) return
-        const onDown = (event: Record<string, unknown>) => {
-          if (event.pointerType !== 'mouse' || Number(event.button ?? 0) !== 0) return
-          const y = Number(event.clientY)
-          if (!Number.isFinite(y)) return
-          element.setPointerCapture?.(Number(event.pointerId))
-          ;(event.preventDefault as (() => void) | undefined)?.()
-          this.beginDrag(y)
-        }
-        const onMove = (event: Record<string, unknown>) => {
-          if (!this.data.dragging) return
-          const y = Number(event.clientY)
-          if (Number.isFinite(y)) this.moveDrag(y)
-        }
-        const onUp = (event: Record<string, unknown>) => {
-          if (!this.data.dragging) return
-          element.releasePointerCapture?.(Number(event.pointerId))
-          this.endDrag()
-        }
-        element.addEventListener('pointerdown', onDown)
-        element.addEventListener('pointermove', onMove)
-        element.addEventListener('pointerup', onUp)
-        element.addEventListener('pointercancel', onUp)
-        ;(this as unknown as { _pointerCleanup?: () => void })._pointerCleanup = () => {
-          element.removeEventListener?.('pointerdown', onDown)
-          element.removeEventListener?.('pointermove', onMove)
-          element.removeEventListener?.('pointerup', onUp)
-          element.removeEventListener?.('pointercancel', onUp)
-        }
       },
       handleTouchStart(event: glassEasel.ShadowedEvent<unknown>) {
         const y = eventY(event)

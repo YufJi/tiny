@@ -9,10 +9,6 @@
     bindtouchmove="handleTouchMove"
     bindtouchend="handleTouchEnd"
     bindtouchcancel="handleTouchCancel"
-    bindmousedown="handleMouseDown"
-    bindmousemove="handleMouseMove"
-    bindmouseup="handleMouseUp"
-    bindmouseleave="handleMouseLeave"
     binderror="handleError"
   />
 </div>

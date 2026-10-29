@@ -32,6 +32,10 @@ Page({
     wx.navigateTo({ url: '../scroll/scroll' })
   },
 
+  openTouchLock() {
+    wx.navigateTo({ url: '../touch-lock/touch-lock' })
+  },
+
   openWxsRuntime() {
     wx.navigateTo({ url: '../wxs-runtime/wxs-runtime' })
   },

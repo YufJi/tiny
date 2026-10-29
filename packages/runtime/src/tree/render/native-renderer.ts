@@ -16,7 +16,7 @@ export type NativeNodeSpec = {
   scopes?: string[]
   scopeChain?: string[]
   externalClasses?: Record<string, string[]>
-  events?: Array<{ name: string; capture?: boolean }>
+  events?: Array<{ name: string; capture?: boolean; catch?: boolean; mutated?: boolean }>
 }
 
 export type NativeTreeHost = {

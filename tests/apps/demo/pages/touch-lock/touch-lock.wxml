@@ -1,0 +1,12 @@
+<view class="page">
+  <view class="hero">Touch lock probe</view>
+  <text class="probe">inner: {{innerTop}}</text>
+  <view class="tall" wx:for="{{rows}}" wx:key="*this">row {{item}}</view>
+  <view class="mask" catchtouchmove="noop">
+    <view class="sheet">
+      <scroll-view class="inner" scroll-y="true" bindscroll="onInnerScroll">
+        <view class="inner-row" wx:for="{{innerRows}}" wx:key="*this">inner {{item}}</view>
+      </scroll-view>
+    </view>
+  </view>
+</view>

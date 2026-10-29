@@ -179,7 +179,7 @@ describe('P0 built-in components', () => {
   })
 
 
-  test('button emits longtap and canceltap without also emitting tap', async () => {
+  test('button emits longtap and canceltap without also emitting tap', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)
     const events: string[] = []
@@ -194,11 +194,11 @@ describe('P0 built-in components', () => {
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const button = instance.getShadowRoot()?.getElementById('button')?.asGeneralComponent()!
-    button.triggerEvent('touchstart', { touches: [{ clientX: 10, clientY: 20 }] })
-    await new Promise((resolve) => setTimeout(resolve, 370))
+    button.triggerEvent('longpress', { x: 10, y: 20 })
     expect(events).toEqual(['longtap'])
+    // The compositor owns canceltap; the button only tracks the flag.
     button.triggerEvent('touchstart', { touches: [{ clientX: 10, clientY: 20 }] })
-    button.triggerEvent('touchmove', { touches: [{ clientX: 40, clientY: 20 }] })
+    button.triggerEvent('canceltap', {}, { bubbles: true, composed: true })
     expect(events).toEqual(['longtap', 'canceltap'])
   })
 
@@ -740,16 +740,11 @@ describe('P0 built-in components', () => {
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
     const nativeCanvas = host('canvas').getShadowRoot()?.getElementById('native-canvas')!
 
-    // Desktop hosts have no touch hardware; a mouse press is mirrored into the
-    // touch surface WeChat canvas handlers expect.
-    nativeCanvas.triggerEvent('mousedown', { clientX: 10, clientY: 20 })
-    nativeCanvas.triggerEvent('mousemove', { clientX: 12, clientY: 22 })
-    nativeCanvas.triggerEvent('mouseup', { clientX: 12, clientY: 22 })
+    // Mouse input is projected into touch by the event compositor; the canvas
+    // template only owns the touch surface now.
+    nativeCanvas.triggerEvent('touchstart', { touches: [{ clientX: 10, clientY: 20 }] }, { bubbles: true, composed: true })
+    nativeCanvas.triggerEvent('touchend', { changedTouches: [{ clientX: 12, clientY: 22 }] }, { bubbles: true, composed: true })
     expect(touchstarts[0]?.touches).toMatchObject([{ clientX: 10, clientY: 20, x: 10, y: 20 }])
-    expect(events.touchend).toMatchObject({ changedTouches: [{ clientX: 12, clientY: 22, x: 12, y: 22 }] })
-
-    nativeCanvas.triggerEvent('touchstart', { touches: [{ clientX: 1, clientY: 2 }] }, { bubbles: true, composed: true })
-    nativeCanvas.triggerEvent('touchend', { changedTouches: [{ clientX: 3, clientY: 4 }] }, { bubbles: true, composed: true })
     nativeCanvas.triggerEvent('error', { errMsg: 'canvas:fail' })
     // Native touches bubble through the browser event dispatcher; the
     // EmptyBackendContext does not forward them across the built-in host, so
