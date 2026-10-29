@@ -1,4 +1,4 @@
-import { TINY_ENGINE_NAMING } from '@tiny/engine-naming'
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import { DIAGNOSTIC_CODES, type Manifest, type PageArtifact } from '@tiny/manifest'
 import type {
   RenderAnimationRequest,

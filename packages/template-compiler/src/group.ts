@@ -9,7 +9,7 @@ import { Template, templateDirectDependencies, templateScriptDependencies } from
 import { genLitStr } from './escape'
 import { TmplGroupRef, templateToProcGen } from './proc_gen/tag'
 import { stringifyTemplate } from './stringify/stringifier'
-import { TINY_ENGINE_NAMING } from '@tiny/engine-naming'
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import wxsAdapterSourceRaw from './runtime/wxs-adapter.js?raw'
 import { transformWxsSource } from './wxs/transform'
 

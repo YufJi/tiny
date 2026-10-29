@@ -67,9 +67,6 @@ importers:
       '@tiny/css-units':
         specifier: workspace:*
         version: link:../../packages/css-units
-      '@tiny/engine-naming':
-        specifier: workspace:*
-        version: link:../../packages/engine-naming
       '@tiny/manifest':
         specifier: workspace:*
         version: link:../../packages/manifest
@@ -132,7 +129,7 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
 
-  packages/engine-naming:
+  packages/manifest:
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -147,24 +144,11 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
 
-  packages/manifest:
-    dependencies:
-      '@tiny/engine-naming':
-        specifier: workspace:*
-        version: link:../engine-naming
-    devDependencies:
-      typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
-
   packages/runtime:
     dependencies:
       '@tiny/bridge':
         specifier: workspace:*
         version: link:../bridge
-      '@tiny/engine-naming':
-        specifier: workspace:*
-        version: link:../engine-naming
       '@tiny/manifest':
         specifier: workspace:*
         version: link:../manifest
@@ -209,9 +193,9 @@ importers:
 
   packages/template-compiler:
     dependencies:
-      '@tiny/engine-naming':
+      '@tiny/manifest':
         specifier: workspace:*
-        version: link:../engine-naming
+        version: link:../manifest
       acorn:
         specifier: ^8.19.0
         version: 8.19.0

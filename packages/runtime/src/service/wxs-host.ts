@@ -1,4 +1,4 @@
-import { TINY_ENGINE_NAMING } from '@tiny/engine-naming'
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import { BUILTIN_COMPONENT_TAGS, DIAGNOSTIC_CODES } from '@tiny/manifest'
 import { cloneJsonSafe } from '../data'
 import type { WxsBindingMessage } from '../tree/protocol'

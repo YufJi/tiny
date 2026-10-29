@@ -1,5 +1,5 @@
 // proc_gen/tag.ts — mirrors proc_gen/tag.rs
-import { BUILTIN_COMPONENT_TAGS, TINY_ENGINE_NAMING } from '@tiny/engine-naming'
+import { BUILTIN_COMPONENT_TAGS, TINY_ENGINE_NAMING } from '@tiny/manifest'
 import { transformWxsSource } from '../wxs/transform'
 // Generates JavaScript code from parsed template ASTs.
 

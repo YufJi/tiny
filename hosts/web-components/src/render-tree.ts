@@ -1,6 +1,6 @@
 import * as glassEasel from 'glass-easel'
 import { convertRpx } from '@tiny/css-units'
-import { TINY_ENGINE_NAMING } from '@tiny/engine-naming'
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import { createDefaultWxsCompiler, createWxsRuntime } from '@tiny/runtime'
 import type {
   RenderAnimationRequest,

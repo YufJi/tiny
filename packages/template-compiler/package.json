@@ -31,7 +31,7 @@
     "vitest": "^1.6.1"
   },
   "dependencies": {
-    "@tiny/engine-naming": "workspace:*",
+    "@tiny/manifest": "workspace:*",
     "acorn": "^8.19.0",
     "magic-string": "^1.4.5"
   }

@@ -19,7 +19,7 @@ const steps = [
   ['Build active glass-easel packages', ['pnpm', 'build:glass-easel']],
   ['Check runtime core purity', ['node', 'scripts/check-runtime-purity.mjs']],
   ['Run bridge protocol tests', ['pnpm', '--filter', '@tiny/bridge', 'test']],
-  ['Run engine naming tests', ['pnpm', '--filter', '@tiny/engine-naming', 'test']],
+  ['Run manifest tests', ['pnpm', '--filter', '@tiny/manifest', 'test']],
   ['Run CSS unit tests', ['pnpm', '--filter', '@tiny/css-units', 'test']],
   ['Run WXS runtime tests', ['pnpm', '--filter', '@tiny/wxs-runtime', 'test']],
   ['Run template compiler tests', ['pnpm', '--filter', '@tiny/template-compiler', 'test']],

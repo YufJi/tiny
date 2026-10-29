@@ -26,7 +26,6 @@
   },
   "dependencies": {
     "@tiny/css-units": "workspace:*",
-    "@tiny/engine-naming": "workspace:*",
     "@tiny/manifest": "workspace:*",
     "@tiny/runtime": "workspace:*",
     "glass-easel": "1.1.0"
