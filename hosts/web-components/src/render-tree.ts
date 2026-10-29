@@ -224,6 +224,10 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   let currentRoot: RenderNode | undefined
   let eventSink: ((event: GlassRenderEvent) => void) | undefined
   let hostActionSink: ((action: RenderHostAction) => void) | undefined
+  const emitServiceEvent = (event: GlassRenderEvent): void => {
+    if (eventSink) eventSink(event)
+    else options.onEvent?.(event)
+  }
   let styleElement: HTMLStyleElement | undefined
   const currentTree = new Map<string, RenderNode>()
   const externalByNode = new Map<string, Record<string, string[]> | undefined>()
@@ -405,10 +409,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     if (events.length === 0) return
     const element = component.getBackendElement() as unknown as HTMLElement | null
     const cleanups: Array<() => void> = []
-    const emit = (event: GlassRenderEvent): void => {
-      if (eventSink) eventSink(event)
-      else options.onEvent?.(event)
-    }
     for (const binding of events) {
       const capture = binding.capture === true
       // Semantic events from host built-ins (change/input/scroll/...) carry
@@ -424,7 +424,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         if (original) return
         const isTouch = binding.name.startsWith('touch')
         const currentTarget = geometryOf(element, node.id)
-        emit({
+        emitServiceEvent({
           id: node.id,
           name: binding.name,
           ...(currentTarget ? { currentTarget } : {}),
@@ -464,7 +464,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         const changedTouches = binding.name.startsWith('touch')
           ? normalizeTouchList(touchEvent.changedTouches)
           : undefined
-        emit({
+        emitServiceEvent({
           id: node.id,
           name: binding.name,
           native: nativeFields(event),
@@ -568,6 +568,19 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     return descriptor
   }
 
+  const hasServiceListenerInPath = (start: HTMLElement | null, name: string): boolean => {
+    let current = start
+    while (current) {
+      const id = current.getAttribute(TINY_ENGINE_NAMING.nodeIdAttribute) ?? ''
+      const candidate = id ? currentTree.get(id) : undefined
+      if (candidate?.type === 'element' && candidate.events?.some((event) => event.name === name)) {
+        return true
+      }
+      current = current.parentElement
+    }
+    return false
+  }
+
   const attachWxsEvents = (
     node: RenderElement,
     component: AnyComponent,
@@ -627,6 +640,13 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         if (result === false || binding.catch) {
           event.preventDefault()
           event.stopPropagation()
+          return
+        }
+        // A local WXS handler may sit below a page/component service listener.
+        // Only pay for the bridge when such a listener actually exists.
+        if (hasServiceListenerInPath(element.parentElement, binding.name)) {
+          const { instance: _instance, ...servicePayload } = payload
+          emitServiceEvent(servicePayload as GlassRenderEvent)
         }
       }
       element.addEventListener(domName, listener, binding.capture === true)
