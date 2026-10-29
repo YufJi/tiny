@@ -69,7 +69,6 @@ for (const tag of tags) {
     classPrefix: scope,
     tagClassPrefix: `${scope}--${INTERNAL_TAG_MARKER_PREFIX}`,
     scopeMarkerClass: INTERNAL_SCOPE_MARKER,
-    rpxRatio: 750,
   })
   const css = transformer.getContent()
   if (css.trim().length > 0) {

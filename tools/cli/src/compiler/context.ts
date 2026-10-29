@@ -49,7 +49,6 @@ export function createCompilerContext(options: CompileOptions): CompilerContext 
     options: {
       clean: options.clean ?? true,
       dev: options.dev ?? false,
-      rpxRatio: options.rpxRatio ?? 750,
       sourceDir,
       outputDir: path.resolve(options.outputDir),
     },

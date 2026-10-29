@@ -103,19 +103,14 @@ describe('rpx conversion', () => {
     expect(out).not.toContain('rpx')
   })
 
-  test('converts rpx to vw with custom ratio', () => {
-    // 75rpx * 100 / 10 = 750vw — but Rust test uses ratio 750 => 75rpx * 100/750 = 10vw
-    // Rust test: rpx_ratio=750, 75rpx → 10vw
-    const out = transform(
-      `.b { width: 75rpx; }`,
-      { rpxRatio: 750 },
-    )
+  test('always uses the fixed 750 ratio', () => {
+    const out = transform(`.b { width: 75rpx; }`, {})
     expect(out).toContain('10vw')
   })
 
   test('fractional rpx round-trip (1rpx @ ratio 750 → 0.133...vw)', () => {
     // 1 * 100 / 750 ≈ 0.133333
-    const out = transform(`.a { width: 1rpx; }`, { rpxRatio: 750 })
+    const out = transform(`.a { width: 1rpx; }`, {})
     expect(out).toMatch(/0\.13333/)
     expect(out).toContain('vw')
   })
@@ -127,12 +122,12 @@ describe('rpx conversion', () => {
     // which DOES convert rpx. Let's verify the @media case is correct.
     const out = transform(
       `@media (width: 1rpx) { .b { key: 3rpx; } }`,
-      { classPrefix: 'p', rpxRatio: 10 },
+      { classPrefix: 'p' },
     )
-    // 1rpx @ 10 → 10vw in @media params
-    expect(out).toContain('10vw')
-    // 3rpx @ 10 → 30vw in declaration
-    expect(out).toContain('30vw')
+    // 1rpx @ 750 → 0.133333vw in @media params
+    expect(out).toContain('0.133333vw')
+    // 3rpx @ 750 → 0.4vw in declaration
+    expect(out).toContain('0.4vw')
   })
 
   test('@layer dotted name not rewritten as class prefix', () => {
@@ -283,9 +278,8 @@ describe(':host conversion', () => {
 })
 
 describe('constructor — WASM-compatible positional args', () => {
-  test('new StyleSheetTransformer(path, css, classPrefix, rpxRatio, convertHost)', () => {
-    // mirrors: new StyleSheetTransformer(this.resourcePath, src, classPrefix, 750, !disableHostConversion)
-    const t = new StyleSheetTransformer('/foo.wxss', `.a { width: 75rpx; } :host { color: red; }`, 'pfx', 750, true)
+  test('new StyleSheetTransformer(path, css, classPrefix, convertHost)', () => {
+    const t = new StyleSheetTransformer('/foo.wxss', `.a { width: 75rpx; } :host { color: red; }`, 'pfx', true)
     const out = minify(t.getContent())
     expect(out).toContain('.pfx--a')
     expect(out).toContain('10vw')
@@ -305,10 +299,10 @@ describe('calc() whitespace handling', () => {
   test('rpx converted inside calc()', () => {
     const out = transform(
       `.a { padding: calc(10rpx * 2 + 30px); }`,
-      { classPrefix: 'p', rpxRatio: 10 },
+      { classPrefix: 'p' },
     )
-    // 10rpx @ 10 → 100vw
-    expect(out).toContain('100vw')
+    // 10rpx @ 750 → 1.33333vw
+    expect(out).toContain('1.33333vw')
     expect(out).toContain('calc')
   })
 })

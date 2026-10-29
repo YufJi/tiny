@@ -6,7 +6,7 @@ No native binaries or WASM required.
 
 ## Features
 
-- Convert `rpx` units to `vw` (configurable ratio, default 750)
+- Convert `rpx` units to `vw` with the fixed 750 ratio
 - Add class name prefixes for style isolation (e.g. `.foo` → `.prefix--foo`)
 - Rewrite tag selectors to `host-tag:where(.marker)` so tag specificity is preserved
 - Anchor selector-only rules (`*`, `#id`, bare pseudo-classes) with a generic `:where()` scope marker
@@ -35,7 +35,6 @@ const sst = new StyleSheetTransformer(
   '/path/to/file.wxss', // file path (used in source map)
   cssContent,           // CSS source string
   'my-prefix',         // classPrefix (optional)
-  750,                  // rpxRatio   (optional, default 750)
   true,                 // convertHost (optional, default false)
 )
 
@@ -68,7 +67,6 @@ const sst = StyleSheetTransformer.fromCss('/path/to/file.wxss', cssContent, {
   scopeMarkerClass: 'tiny-scope', // generic element scope marker
   scopeHostAttribute: 'wx-host', // include page root in page-scope anchors
   forceScopeAnchor: true,         // anchor class/tag compounds too (app-global CSS)
-  rpxRatio: 750,
   importSign: 'IMPORT',      // replaces @import with /*IMPORT .url-encoded-path*/
   convertHost: true,
   hostIs: 'my-component',    // also emits [is="my-component"] alongside [wx-host="…"]
@@ -87,7 +85,6 @@ const sst = StyleSheetTransformer.fromCss('/path/to/file.wxss', cssContent, {
 | `scopeMarkerClass` | `string` | — | Generic element marker class used to anchor selectors without a class/tag anchor |
 | `scopeHostAttribute` | `string` | — | Host attribute included in scope anchors so the page root is matched; with no `classPrefix`, `scopeMarkerClass` supplies the placeholder value |
 | `forceScopeAnchor` | `boolean` | `false` | Anchor every compound, including class/tag-anchored ones; used for app-global styles |
-| `rpxRatio` | `number` | `750` | Ratio for `rpx` → `vw` conversion: `value * 100 / ratio` |
 | `importSign` | `string` | — | When set, `@import './a'` is replaced with `/*SIGN .%2Fa*/` |
 | `convertHost` | `boolean` | `false` | Convert `:host {}` to `[wx-host="prefix"] {}` in low-priority output |
 | `hostIs` | `string` | — | When `convertHost` is true, also emit `[is="hostIs"]` in the selector |
@@ -135,7 +132,7 @@ interface StyleSheetParseError {
 /* Input */
 .a { width: 75rpx; }
 
-/* Output (rpxRatio: 750) */
+/* Output (rpx always uses ratio 750) */
 .a { width: 10vw; }
 ```
 

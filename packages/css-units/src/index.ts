@@ -10,10 +10,10 @@ const RPX_RE = /(-?\d*\.?\d+)rpx/g
  * render-side WXS `setStyle` descriptor. Keeping both on the same unit (vw)
  * avoids re-measuring the viewport in render and preserves compiler rounding.
  */
-export function convertRpx(input: string, ratio: number = RPX_RATIO): string {
+export function convertRpx(input: string): string {
   return input.replace(RPX_RE, (_match, raw: string) => {
     const value = parseFloat(raw)
-    const vw = (value * 100) / ratio
+    const vw = (value * 100) / RPX_RATIO
     const rounded = parseFloat(vw.toPrecision(6))
     return `${rounded}vw`
   })
