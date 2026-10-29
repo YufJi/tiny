@@ -3,7 +3,10 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const entry = path.join(rootDir, 'packages/runtime/src/index.ts')
+const entries = [
+  path.join(rootDir, 'packages/runtime/src/index.ts'),
+  path.join(rootDir, 'packages/wxs-runtime/src/index.ts'),
+]
 const hostModules = new Set(['browser'])
 const hostGlobals = [
   'window',
@@ -73,7 +76,7 @@ function visit(file) {
   }
 }
 
-visit(entry)
+for (const entry of entries) visit(entry)
 
 const pattern = new RegExp(`\\b(${hostGlobals.join('|')})\\b`)
 // `glassEasel.Element` is a framework type; only a bare DOM `Element` is a
@@ -85,6 +88,9 @@ for (const file of files) {
   for (const [index, line] of source.split('\n').entries()) {
     const match = line.match(pattern)
     if (match) {
+      // WXS modules expose a language-level `require`; this is not Node's
+      // CommonJS loader and is implemented inside the host-independent kernel.
+      if (match[1] === 'require' && file.includes('packages/wxs-runtime/')) continue
       violations.push(`${path.relative(rootDir, file)}:${index + 1}: ${match[1]} -> ${line.trim()}`)
       continue
     }
