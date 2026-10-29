@@ -46,3 +46,18 @@ export { createTinyRuntime } from './host'
 export type { TinyRuntimeHost } from './host'
 
 export { bootServiceThread } from './service'
+
+export {
+  createDefaultWxsCompiler,
+  createWxsRuntime,
+} from '@tiny/wxs-runtime'
+export type {
+  WxsCompile,
+  WxsErrorContext,
+  WxsExports,
+  WxsModuleFactory,
+  WxsModuleTable,
+  WxsRuntime,
+  WxsRuntimeHost,
+  WxsValues,
+} from '@tiny/wxs-runtime'

@@ -44,4 +44,14 @@ export const TINY_ENGINE_NAMING = Object.freeze({
   viewIdPrefix: 'view-',
   componentIdSeparator: ':',
   componentInstanceSeparator: '~',
+  /** WXS runtime/host bridge and synthetic binding metadata names. */
+  wxsRuntimeGlobal: '__tinyWxsRuntime',
+  wxsEventHostGlobal: '__tinyWxsEventHost',
+  wxsHandledField: '__tinyWxsHandled',
+  wxsPropsAttribute: 'wx-tiny-wxs-props',
+  wxsDynamicEventAttribute: 'wx-tiny-wxs-dynamic',
+  /** WXS bindinput is not supported on these built-ins. */
+  wxsServiceOnlyInputEvent: 'input',
+  wxsServiceOnlyInputTags: ['input', 'textarea'],
+
 } as const)

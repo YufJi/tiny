@@ -1,5 +1,6 @@
 import { BridgeConnection } from '@tiny/bridge'
 import type { Transport } from '@tiny/bridge'
+import type { WxsModuleTable } from '@tiny/wxs-runtime'
 import {
   CANVAS_CONTROL,
   QUERY_CONTROL,
@@ -16,6 +17,8 @@ import {
   type RenderNode,
   type RenderPatch,
   type RenderText,
+  type WxsRenderEffect,
+  type WxsBindingMessage,
 } from '../protocol'
 
 export type TreeEventPayload = {
@@ -36,6 +39,10 @@ export type TreeRenderer = {
   mount: (root: RenderNode) => void
   applyPatches: (patches: RenderPatch[]) => void
   setEventSink?: (sink: (event: TreeEventPayload) => void) => void
+  setWxsEffectSink?: (sink: (effect: WxsRenderEffect) => void) => void
+  setPageData?: (data: Record<string, unknown>) => void
+  setComponentData?: (data: Record<string, Record<string, unknown>>) => void
+  setWxsBinding?: (binding: WxsBindingMessage) => void
   /** Built-in components ask the host to act (e.g. `<navigator>` routing). */
   setHostActionSink?: (sink: (action: RenderHostAction) => void) => void
   applyStyles?: (styles: string[]) => void
@@ -53,6 +60,7 @@ export type TreeRenderer = {
     details?: unknown
   }) => void) => void
   inspectTree?: () => unknown
+  setWxsModules?: (table: WxsModuleTable) => void
   measure?: (ids: string[]) => Record<string, unknown>
   query?: (selector: string, all: boolean) => unknown[]
   observeIntersection?: (
@@ -109,6 +117,14 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     )
   })
 
+  options.renderer.setWxsEffectSink?.((effect) => {
+    connection.sendEvent(
+      TREE_PROTOCOL.domain, TREE_PROTOCOL.wxsEffect,
+      { ...effect, pageId: currentPageId },
+      currentPageId ? { pageId: currentPageId } : {},
+    )
+  })
+
   connection.onControl(RUNTIME_CONTROL.domain, RUNTIME_CONTROL.bootstrap, (message) => {
     const payload = (message.payload ?? {}) as {
       initialPath?: string
@@ -144,9 +160,15 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       messages?: ComponentFlow[]
       styles?: string[]
       fallbackAppStyles?: string[]
+      wxsModules?: WxsModuleTable
+      pageData?: Record<string, unknown>
+      componentData?: Record<string, Record<string, unknown>>
     }
     currentPageId = payload.pageId ?? message.pageId ?? currentPageId
     options.renderer.setPagePath?.(payload.pagePath ?? '')
+    if (payload.wxsModules) options.renderer.setWxsModules?.(payload.wxsModules)
+    if (payload.pageData) options.renderer.setPageData?.(payload.pageData)
+    if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
     const nodes = new Map<string, RenderNode>()
     const roots: RenderNode[] = []
     let pageRoot: RenderNode | undefined
@@ -194,8 +216,27 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     const styles = [...(payload.styles ?? []), ...(payload.fallbackAppStyles ?? [])]
     if (styles.length > 0) options.renderer.applyStyles?.(styles)
   })
+  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.wxsBinding, (message) => {
+    const payload = (message.payload ?? {}) as Partial<WxsBindingMessage>
+    if (!payload.viewId || !payload.event) return
+    options.renderer.setWxsBinding?.({
+      viewId: payload.viewId,
+      event: payload.event,
+      ...(payload.moduleId ? { moduleId: payload.moduleId } : {}),
+      ...(payload.exportPath ? { exportPath: payload.exportPath } : {}),
+      ...(payload.catch ? { catch: true } : {}),
+      ...(payload.capture ? { capture: true } : {}),
+      ...(payload.mutated ? { mutated: true } : {}),
+    })
+  })
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.patch, (message) => {
-    const payload = (message.payload ?? {}) as { patches?: RenderPatch[] }
+    const payload = (message.payload ?? {}) as {
+      patches?: RenderPatch[]
+      pageData?: Record<string, unknown>
+      componentData?: Record<string, Record<string, unknown>>
+    }
+    if (payload.pageData) options.renderer.setPageData?.(payload.pageData)
+    if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
     options.renderer.applyPatches(payload.patches ?? [])
   })
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.animate, (message) => {

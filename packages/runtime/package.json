@@ -23,7 +23,8 @@
   "dependencies": {
     "@tiny/bridge": "workspace:*",
     "glass-easel": "1.1.0",
-    "@tiny/manifest": "workspace:*"
+    "@tiny/manifest": "workspace:*",
+    "@tiny/wxs-runtime": "workspace:*"
   },
   "devDependencies": {
     "@tiny/template-compiler": "workspace:^",

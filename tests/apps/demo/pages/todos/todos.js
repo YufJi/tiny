@@ -32,6 +32,10 @@ Page({
     wx.navigateTo({ url: '../scroll/scroll' })
   },
 
+  openWxsRuntime() {
+    wx.navigateTo({ url: '../wxs-runtime/wxs-runtime' })
+  },
+
   onCustom(event) {
     this.setData({ customDetail: event.detail.text })
   },

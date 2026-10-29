@@ -83,13 +83,6 @@ export interface StyleSheetOptions {
   builtinHostTagPrefix?: string | undefined
 
   /**
-   * Ratio used to convert `rpx` units to `vw`.
-   * The formula is `value * 100 / rpxRatio`.
-   * Defaults to `750`.
-   */
-  rpxRatio?: number
-
-  /**
    * When set, `@import` rules are replaced with a comment of the form
    * `/*SIGN url-encoded-path*\/`.
    */

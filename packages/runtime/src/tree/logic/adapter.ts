@@ -1,3 +1,4 @@
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import { DIAGNOSTIC_CODES, type Manifest, type PageArtifact } from '@tiny/manifest'
 import type {
   RenderAnimationRequest,
@@ -345,6 +346,52 @@ export class LogicTreeAdapter {
   }
 
   /** Snapshot the logic tree in the host-neutral render-tree protocol. */
+  /** Resolve a render view id back to its logic node. */
+  findNodeByViewId(viewId: string): LogicBackendElement | undefined {
+    return this.backend.findByViewId(viewId)
+  }
+
+  /** Ensure a logic node has a stable render view id. */
+  ensureViewId(node: LogicBackendElement): string {
+    return this.backend.ensureViewId(node)
+  }
+
+  /** Page id for a glass element, with a fallback while a page is mounting. */
+  pageIdFor(element: unknown): string | undefined {
+    const pageId = this.glass.pageIdFor(element)
+    if (pageId) return pageId
+    return this.activePageId ?? [...this.pageRoots.keys()][0]
+  }
+
+  /**
+   * Snapshot component data keyed by component host view id. Page data stays
+   * on the separate page-data path; this map lets render-side `ins.getData()`
+   * answer for custom component instances without a bridge round trip.
+   */
+  snapshotComponentData(pageId: string): Record<string, Record<string, unknown>> {
+    const root = this.pageRoots.get(pageId)
+    if (!root) return {}
+    const result: Record<string, Record<string, unknown>> = {}
+    const visit = (node: LogicBackendElement): void => {
+      if (node.nodeType === 'component') {
+        if (node !== root && node.__wxElement) {
+          const element = node.__wxElement as unknown as {
+            asGeneralComponent?: () => Record<string, unknown>
+          }
+          const component = element.asGeneralComponent?.() ?? element as unknown as Record<string, unknown>
+          const data = component.data
+          if (data && typeof data === 'object') {
+            result[this.backend.ensureViewId(node)] = data as Record<string, unknown>
+          }
+        }
+        if (node.shadowRoot) for (const child of node.shadowRoot.children) visit(child)
+      }
+      for (const child of node.children) visit(child)
+    }
+    visit(root)
+    return result
+  }
+
   snapshotRenderTree(pageId: string): RenderNode | null {
     const page = this.glass.getMountedComponentByPageId(pageId)
     if (!page) throw new Error(`logic page is not mounted: ${pageId}`)
@@ -706,12 +753,15 @@ export class LogicTreeAdapter {
     try {
       // WXML/WXS handlers read `event.touches` directly (not `detail.touches`),
       // so touch payloads ride along as extra event fields.
-      const extraFields = payload.name.startsWith('touch')
-        ? {
-            touches: payload.touches ?? [],
-            changedTouches: payload.changedTouches ?? [],
-          }
-        : undefined
+      const extraFields = {
+        ...(payload.name.startsWith('touch')
+          ? {
+              touches: payload.touches ?? [],
+              changedTouches: payload.changedTouches ?? [],
+            }
+          : {}),
+        ...(payload.wxsHandled ? { [TINY_ENGINE_NAMING.wxsHandledField]: true } : {}),
+      }
       element.triggerEvent(payload.name, detail, {
         bubbles: true,
         composed: true,

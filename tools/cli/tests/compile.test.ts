@@ -7,6 +7,7 @@ import {
   APP_PAGE_SCOPE_CLASS_SIGN,
   TINY_ENGINE_NAMING,
 } from '@tiny/manifest'
+import { createDefaultWxsCompiler, createWxsRuntime } from '@tiny/wxs-runtime'
 import { compileMiniProgram } from '../src'
 
 const HOST_ATTRIBUTE = TINY_ENGINE_NAMING.hostAttribute
@@ -14,8 +15,11 @@ const fixtureRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fix
 const fixtureDir = path.join(fixtureRoot, 'mini')
 const compatibilityFixtureDir = path.join(fixtureRoot, 'compatibility')
 let outputDir: string
+const wxsRuntime = createWxsRuntime({ compile: createDefaultWxsCompiler() })
+const globals = globalThis as unknown as { __tinyWxsRuntime?: unknown }
 
 beforeAll(async () => {
+  globals.__tinyWxsRuntime = wxsRuntime
   outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cli-'))
   await compileMiniProgram({
     sourceDir: fixtureDir,
@@ -26,6 +30,8 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
+  delete globals.__tinyWxsRuntime
+  wxsRuntime.dispose()
   await fs.rm(outputDir, { recursive: true, force: true })
 })
 
@@ -181,7 +187,7 @@ describe('compileMiniProgram', () => {
 
   test('compiles inline WXS into the shared template group', async () => {
     const templates = await fs.readFile(path.join(outputDir, 'templates.js'), 'utf8')
-    expect(templates).toContain('modules')
+    expect(templates).toContain('__tinyWxsRuntime')
     expect(templates).toContain('pages/index/index')
     expect(templates).toContain('components/badge/badge')
     expect(templates).toContain('R,C,D,U,A')

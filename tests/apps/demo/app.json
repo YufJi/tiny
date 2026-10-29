@@ -3,7 +3,8 @@
     "pages/todos/todos",
     "pages/add-todo/add-todo",
     "pages/semantics/semantics",
-    "pages/scroll/scroll"
+    "pages/scroll/scroll",
+    "pages/wxs-runtime/wxs-runtime"
   ],
   "window": {
     "navigationBarTitleText": "P0 demo"
@@ -17,6 +18,7 @@
     "behavior-box": "./components/behavior-box/behavior-box",
     "semantic-parent": "./components/semantic-parent/semantic-parent",
     "semantic-child": "./components/semantic-child/semantic-child",
-    "nested-style-parent": "./components/nested-style-parent/nested-style-parent"
+    "nested-style-parent": "./components/nested-style-parent/nested-style-parent",
+    "wxs-probe": "./components/wxs-probe/wxs-probe"
   }
 }

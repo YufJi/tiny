@@ -1,0 +1,8 @@
+function tap(event, ins) {
+  var data = ins.getData()
+  ins.callMethod('record', 'probe-tap:' + data.local)
+}
+
+module.exports = {
+  tap: tap,
+}

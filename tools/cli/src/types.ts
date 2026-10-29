@@ -6,7 +6,6 @@ export type CompileOptions = {
   outputDir: string
   clean?: boolean
   dev?: boolean
-  rpxRatio?: number
   /**
    * Mini-program source conventions. Omitted fields use WeChat defaults.
    * Explicit values override `tiny.config.json`.

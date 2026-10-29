@@ -833,6 +833,32 @@ export class ExpressionProcGen {
     return this.pas.kind === 'InPath' && this.pas.path.isLegalLvaluePath(scopes, false)
   }
 
+  /** Resolve a static `{{wxs.handler}}` binding for the render event host. */
+  getStaticScriptHandler(
+    scopes: ScopeVar[],
+  ): { moduleId: string; exportPath: string[] } | null {
+    if (this.pas.kind !== 'InPath' || this.pas.path.slices.length < 2) return null
+    const [first, ...rest] = this.pas.path.slices
+    if (!first || first.kind !== 'ScopeIndex') return null
+    const scope = scopes[first.index]
+    if (!scope) return null
+    const { lvaluePath } = scope
+    let moduleId: string
+    if (lvaluePath.kind === 'Script') {
+      moduleId = lvaluePath.absPath
+    } else if (lvaluePath.kind === 'InlineScript') {
+      moduleId = `${lvaluePath.path}#${lvaluePath.modName}`
+    } else {
+      return null
+    }
+    const exportPath: string[] = []
+    for (const slice of rest) {
+      if (slice.kind !== 'StaticMember') return null
+      exportPath.push(slice.name)
+    }
+    return exportPath.length > 0 ? { moduleId, exportPath } : null
+  }
+
   hasGeneralLvaluePath(scopes: ScopeVar[]): boolean {
     return this.pas.kind === 'InPath' && this.pas.path.isLegalLvaluePath(scopes, null)
   }

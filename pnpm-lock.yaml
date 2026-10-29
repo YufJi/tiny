@@ -64,6 +64,9 @@ importers:
 
   hosts/web-components:
     dependencies:
+      '@tiny/css-units':
+        specifier: workspace:*
+        version: link:../../packages/css-units
       '@tiny/manifest':
         specifier: workspace:*
         version: link:../../packages/manifest
@@ -111,11 +114,35 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
 
-  packages/manifest:
+  packages/css-units:
     devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
+      vite:
+        specifier: ^5.4.21
+        version: 5.4.21(@types/node@22.20.1)(less@3.13.1)
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
+
+  packages/manifest:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vite:
+        specifier: ^5.4.21
+        version: 5.4.21(@types/node@22.20.1)(less@3.13.1)
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
 
   packages/runtime:
     dependencies:
@@ -125,6 +152,9 @@ importers:
       '@tiny/manifest':
         specifier: workspace:*
         version: link:../manifest
+      '@tiny/wxs-runtime':
+        specifier: workspace:*
+        version: link:../wxs-runtime
       glass-easel:
         specifier: 1.1.0
         version: 1.1.0
@@ -144,6 +174,9 @@ importers:
 
   packages/stylesheet-compiler:
     dependencies:
+      '@tiny/css-units':
+        specifier: workspace:*
+        version: link:../css-units
       '@tiny/manifest':
         specifier: workspace:*
         version: link:../manifest
@@ -159,7 +192,20 @@ importers:
         version: 1.6.1(@types/node@25.6.2)(@vitest/ui@1.6.1)(less@3.13.1)
 
   packages/template-compiler:
+    dependencies:
+      '@tiny/manifest':
+        specifier: workspace:*
+        version: link:../manifest
+      acorn:
+        specifier: ^8.19.0
+        version: 8.19.0
+      magic-string:
+        specifier: ^1.4.5
+        version: 1.4.5
     devDependencies:
+      '@tiny/wxs-runtime':
+        specifier: workspace:*
+        version: link:../wxs-runtime
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -169,6 +215,21 @@ importers:
       vitest:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@25.6.2)(@vitest/ui@1.6.1)(less@3.13.1)
+
+  packages/wxs-runtime:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vite:
+        specifier: ^5.4.21
+        version: 5.4.21(@types/node@22.20.1)(less@3.13.1)
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
 
   tools/cli:
     dependencies:
@@ -185,6 +246,9 @@ importers:
         specifier: ^0.21.5
         version: 0.21.5
     devDependencies:
+      '@tiny/wxs-runtime':
+        specifier: workspace:*
+        version: link:../../packages/wxs-runtime
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1
@@ -430,6 +494,9 @@ packages:
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
 
+  '@jridgewell/sourcemap-codec@1.6.0':
+    resolution: {integrity: sha512-T7jf+5zgsZHwNJ4lvQ7/aezbyk0nNX+zJVWpmHA7VYsEx7a7qr5Rg5IbtJFqkgze5Y2sruq1RUY8Q837Od7iFw==}
+
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
     engines: {node: '>= 8'}
@@ -671,8 +738,8 @@ packages:
     resolution: {integrity: sha512-HEHNfbars9v4pgpW6SO1KSPkfoS0xVOM/9UzkJltjlsHZmJasxg8aXkuZa7SMf8vKGIBhpUsPluQSqhJFCqebw==}
     engines: {node: '>=0.4.0'}
 
-  acorn@8.16.0:
-    resolution: {integrity: sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw==}
+  acorn@8.19.0:
+    resolution: {integrity: sha512-oJlA3XiRm7Cyk6qFD2Jn8ak9B7jSy0qy00ADO3+8dpT0LSjFihQYv4C02LFCSYJV3Q37xYwwRy5m+IpIiUzqWw==}
     engines: {node: '>=0.4.0'}
     hasBin: true
 
@@ -895,6 +962,9 @@ packages:
 
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
+
+  magic-string@1.4.5:
+    resolution: {integrity: sha512-oLLC2+YvQUfAa+vxoufE/yc1icb87M9iXIRqAoR/2EhE/8cb3SF/+Gi0c2By1B+5Vz2e2vQtUvHiu1+63Znh+w==}
 
   make-dir@2.1.0:
     resolution: {integrity: sha512-LS9X+dc8KLxXCb8dni79fLIIUA5VyZoyjSMCwTluaXA0o27cCK0bhXkpgw+sTXVpPy/lSO57ilRixqk0vDmtRA==}
@@ -1511,6 +1581,8 @@ snapshots:
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
+  '@jridgewell/sourcemap-codec@1.6.0': {}
+
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
       '@nodelib/fs.stat': 2.0.5
@@ -1713,9 +1785,9 @@ snapshots:
 
   acorn-walk@8.3.5:
     dependencies:
-      acorn: 8.16.0
+      acorn: 8.19.0
 
-  acorn@8.16.0: {}
+  acorn@8.19.0: {}
 
   ansi-styles@5.2.0: {}
 
@@ -1958,6 +2030,10 @@ snapshots:
   magic-string@0.30.21:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
+
+  magic-string@1.4.5:
+    dependencies:
+      '@jridgewell/sourcemap-codec': 1.6.0
 
   make-dir@2.1.0:
     dependencies:
@@ -2311,7 +2387,7 @@ snapshots:
 
   mlly@1.8.2:
     dependencies:
-      acorn: 8.16.0
+      acorn: 8.19.0
       pathe: 2.0.3
       pkg-types: 1.3.1
       ufo: 1.6.4

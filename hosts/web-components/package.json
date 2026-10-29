@@ -25,6 +25,7 @@
     "styles": "node scripts/build-styles.mjs"
   },
   "dependencies": {
+    "@tiny/css-units": "workspace:*",
     "@tiny/manifest": "workspace:*",
     "@tiny/runtime": "workspace:*",
     "glass-easel": "1.1.0"

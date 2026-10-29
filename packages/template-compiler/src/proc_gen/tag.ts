@@ -1,4 +1,6 @@
 // proc_gen/tag.ts — mirrors proc_gen/tag.rs
+import { BUILTIN_COMPONENT_TAGS, TINY_ENGINE_NAMING } from '@tiny/manifest'
+import { transformWxsSource } from '../wxs/transform'
 // Generates JavaScript code from parsed template ASTs.
 
 import { JsExprWriter, JsFunctionScopeWriter, JsIdent, JsTopScopeWriter, ScopeVar, ScopeVarLvaluePath } from './writer'
@@ -67,8 +69,9 @@ export function templateToProcGen(
           })
           lvaluePath = { kind: 'Script', absPath }
         } else {
-          const moduleLit = genLitStr(tmpl.path + '#' + script.moduleName.name)
-          const contentLit = genLitStr(script.content)
+          const moduleId = tmpl.path + '#' + script.moduleName.name
+          const moduleLit = genLitStr(moduleId)
+          const contentLit = genLitStr(transformWxsSource(script.content, moduleId).code)
           scriptInitializers.push((ww) => {
             ww.write(`${varIdent.name}||(${varIdent.name}=Q.S(${moduleLit},${contentLit})())`)
           })
@@ -360,6 +363,8 @@ function elementToProcGen(
     const slotKind = slotKindNew(kind.common.slot, w, scopes)
     let finalVarSlotNames: string[] | null = null
 
+    const wxsProps: WxsPropMetadata[] = []
+
     const childIdent = w.declareVarOnTopScopeInit((ew, ident) => {
       nodesToProcGenDefineChildren(kind.children, ew, scopes, (args, ew, varSlotMap, innerScopes) => {
         if (varSlotMap) {
@@ -402,7 +407,12 @@ function elementToProcGen(
           staticAttrToProcGenWorklet(attr, w)
         }
         for (const attr of kind.changeAttributes) {
-          attrToProcGenAsChangeProperty(attr, w, scopes, bmc)
+          attrToProcGenAsChangeProperty(attr, w, scopes, bmc, wxsProps, BUILTIN_TAGS.has(kind.tagName.name))
+        }
+        if (wxsProps.length > 0) {
+          w.exprStmt((ww) => {
+            ww.write(`R.a(N,${genLitStr(TINY_ENGINE_NAMING.wxsPropsAttribute)},${genLitStr(JSON.stringify(wxsProps))})`)
+          })
         }
         for (const attr of kind.attributes) {
           normalAttrToProcGenAsNormal(attr, w, scopes, bmc)
@@ -738,12 +748,30 @@ function writeAttributeValue(
   }
 }
 
+const BUILTIN_TAGS = new Set<string>(BUILTIN_COMPONENT_TAGS)
+
+type WxsDynamicEventMetadata = {
+  name: string
+  catch: boolean
+  capture: boolean
+  mutated: boolean
+}
+
+type WxsPropMetadata = {
+  prop: string
+  moduleId: string
+  exportPath: string[]
+}
+
+
+
 function commonAttrsToProcGenWithoutSlot(
   common: CommonElementAttributes,
   w: JsFunctionScopeWriter,
   scopes: ScopeVar[],
   bmc: BindingMapCollector,
 ): void {
+  const wxsDynamicEvents: WxsDynamicEventMetadata[] = []
   for (const attr of common.data) {
     const extra = attr.prefixLocation === null ? '!0' : null
     attrToProcGenWithMethod(attr, w, 'R.d', extra, scopes, bmc)
@@ -752,7 +780,12 @@ function commonAttrsToProcGenWithoutSlot(
     attrToProcGenWithMethod(mark, w, 'M', null, scopes, bmc)
   }
   for (const ev of common.eventBindings) {
-    eventBindingToProcGen(ev, w, scopes, bmc)
+    eventBindingToProcGen(ev, w, scopes, bmc, wxsDynamicEvents)
+  }
+  if (wxsDynamicEvents.length > 0) {
+    w.exprStmt((ww) => {
+      ww.write(`R.a(N,${genLitStr(TINY_ENGINE_NAMING.wxsDynamicEventAttribute)},${genLitStr(JSON.stringify(wxsDynamicEvents))})`)
+    })
   }
   if (common.id) {
     writeAttributeValue(w, 'R.i', common.id[1], scopes, bmc)
@@ -857,10 +890,24 @@ function attrToProcGenAsChangeProperty(
   w: JsFunctionScopeWriter,
   scopes: ScopeVar[],
   bmc: BindingMapCollector,
+  wxsProps?: WxsPropMetadata[],
+  allowLocalWxs = false,
 ): void {
   if (!attr.value || attr.value.kind === 'Static') return
   const n = genLitStr(attr.name.name)
   const p = exprToProcGenPrepare(attr.value.expression, w, scopes)
+  const staticWxs = p.getStaticScriptHandler(scopes)
+  if (staticWxs && wxsProps && allowLocalWxs) {
+    wxsProps.push({
+      prop: attr.name.name,
+      moduleId: staticWxs.moduleId,
+      exportPath: staticWxs.exportPath,
+    })
+    // The render host owns the observer now. `R.p` would additionally invoke
+    // the WXS handler service-side with glass element/component arguments
+    // instead of the WXS descriptor and run the observer twice.
+    return
+  }
   w.exprStmt((ww) => {
     ww.write('if(C||K||')
     p.lvalueStateExpr(ww, scopes, false)
@@ -894,6 +941,7 @@ function eventBindingToProcGen(
   w: JsFunctionScopeWriter,
   scopes: ScopeVar[],
   bmc: BindingMapCollector,
+  wxsDynamicEvents?: WxsDynamicEventMetadata[],
 ): void {
   const n = genLitStr(ev.name.name)
   const isCatch = ev.isCatch ? '!0' : '!1'
@@ -905,11 +953,22 @@ function eventBindingToProcGen(
     return
   }
   const p = exprToProcGenPrepare(ev.value.expression, w, scopes)
+  const dynamicLocal = Boolean(wxsDynamicEvents)
+  if (dynamicLocal) {
+    wxsDynamicEvents!.push({
+      name: ev.name.name,
+      catch: ev.isCatch,
+      capture: ev.isCapture,
+      mutated: ev.isMut,
+    })
+  }
   w.exprStmt((ww) => {
     ww.write('if(C||K||')
     p.lvalueStateExpr(ww, scopes, false)
     ww.write(`)R.v(N,${n},`)
+    if (dynamicLocal) ww.write(`Q.B(N,${n},`)
     p.valueExpr(ww)
+    if (dynamicLocal) ww.write(`,${isCatch},${isCapture},${isMut})`)
     ww.write(`,${isCatch},${isMut},${isCapture},!0`)
     if (p.hasScriptLvaluePath(scopes)) {
       ww.write(',')
@@ -923,7 +982,9 @@ function eventBindingToProcGen(
       const p2 = exprToProcGenPrepare(evDyn.expression, fw, scopes)
       fw.exprStmt((ww) => {
         ww.write(`R.v(N,${n},`)
+        if (dynamicLocal) ww.write(`Q.B(N,${n},`)
         p2.valueExpr(ww)
+        if (dynamicLocal) ww.write(`,${isCatch},${isCapture},${isMut})`)
         ww.write(`,${isCatch},${isMut},${isCapture},!0`)
         if (p2.hasScriptLvaluePath(scopes)) {
           ww.write(',')

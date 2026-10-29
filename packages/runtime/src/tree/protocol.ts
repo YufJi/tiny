@@ -19,7 +19,34 @@ export const TREE_PROTOCOL = Object.freeze({
   animate: 'animate',
   clearAnimate: 'clearAnimate',
   hostAction: 'hostAction',
+  wxsEffect: 'wxsEffect',
+  wxsBinding: 'wxsBinding',
 } as const)
+
+export type WxsBindingMessage = {
+  viewId: string
+  event: string
+  moduleId?: string
+  exportPath?: string[]
+  catch?: boolean
+  capture?: boolean
+  mutated?: boolean
+}
+
+export type WxsRenderEffect =
+  | {
+      kind: 'callMethod'
+      viewId: string
+      method: string
+      args: unknown[]
+    }
+  | {
+      kind: 'triggerEvent'
+      viewId: string
+      name: string
+      detail?: unknown
+      options?: Record<string, unknown>
+    }
 
 export const RUNTIME_CONTROL = Object.freeze({
   domain: 'runtime',

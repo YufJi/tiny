@@ -39,9 +39,9 @@ exports.probe = function () {
   globalThis.__tinyWxsObjectCtor = object.constructor;
 }
 </wxs>
-<view class="box" data-role="target" style="position: absolute; top: 5px;" bindtap="{{h.start}}">x</view>
+<view class="box" data-role="target" style="position: absolute; top: 5px;" bindlongpress="{{h.start}}">x</view>
 <view class="plain" bindtap="onPlain">y</view>
-<view class="ctor" bindtap="{{ctor.probe}}">z</view>
+<view class="ctor" bindlongpress="{{ctor.probe}}">z</view>
 `
 
 function createTemplates() {
@@ -132,7 +132,7 @@ describe('WXS event descriptor (ins)', () => {
     const box = tree.query(pageId, '.box', false)[0]!
     host.service.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, {
       id: box.viewId,
-      name: 'tap',
+      name: 'longpress',
     }, { pageId })
     await new Promise((resolve) => setTimeout(resolve, 20))
 
@@ -167,7 +167,7 @@ describe('WXS event descriptor (ins)', () => {
     const ctor = tree.query(pageId, '.ctor', false)[0]!
     host.service.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, {
       id: ctor.viewId,
-      name: 'tap',
+      name: 'longpress',
     }, { pageId })
     await new Promise((resolve) => setTimeout(resolve, 10))
     const globals = globalThis as unknown as Record<string, unknown>

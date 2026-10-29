@@ -1,0 +1,40 @@
+<wxs module="t" src="./wxs-runtime.wxs"></wxs>
+<wxs module="counter" src="./counter.wxs"></wxs>
+<view class="page">
+  <text class="title">WXS runtime</text>
+  <text class="status">status: {{status}}</text>
+  <wxs-probe label="{{value}}" />
+  <view
+    id="target"
+    class="target"
+    data-kind="box"
+    prop="{{value}}"
+    change:prop="{{t.observe}}"
+    bindtap="{{t.tap}}"
+  ></view>
+  <view id="dynamic" class="dynamic" data-kind="dyn" bindtap="{{useWxs ? t.dynamicTap : 'serviceTap'}}">dynamic</view>
+  <text class="dynamic-status">dynamic-status: {{dynamicStatus}}</text>
+  <button bindtap="toggleUseWxs">Toggle dynamic handler</button>
+  <slider value="{{value}}" bindchange="{{t.changed}}" />
+  <view id="bubble-parent" class="event-parent" bindtap="onParentTap">
+    <view id="bubble-child" class="event-child" bindtap="{{t.childTap}}">bubble</view>
+  </view>
+  <text class="child-status">child-status: {{childStatus}}</text>
+  <text class="parent-status">parent-status: {{parentStatus}}</text>
+  <view id="stop-parent" class="event-parent" bindtap="onStopParentTap">
+    <view id="stop-child" class="event-child" catchtap="{{t.stopTap}}">stop</view>
+  </view>
+  <text class="stop-status">stop-status: {{stopStatus}}</text>
+  <text class="stop-parent-status">stop-parent-status: {{stopParentStatus}}</text>
+  <view id="capture-parent" class="event-parent" capture-bind:tap="{{t.captureParent}}">
+    <view id="capture-child" class="event-child" capture-bind:tap="{{t.captureChild}}">capture</view>
+  </view>
+  <text class="capture-status">capture-status: {{captureStatus}}</text>
+  <text class="capture-parent-status">capture-parent-status: {{captureParentStatus}}</text>
+  <view id="counter" class="event-child" bindtap="{{useCounter ? counter.hit : 'serviceCounter'}}">counter</view>
+  <text class="counter-status">counter-status: {{counterStatus}}</text>
+  <text class="state-status">state-status: {{stateStatus}}</text>
+  <text class="computed-status">computed-status: {{computedStatus}}</text>
+  <button bindtap="toggleCounterHandler">Toggle counter handler</button>
+  <button bindtap="back">Back</button>
+</view>

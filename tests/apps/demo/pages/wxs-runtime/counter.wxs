@@ -1,0 +1,10 @@
+var count = 0
+
+function hit(event, ins) {
+  count += 1
+  ins.callMethod('recordCounter', 'counter:' + count)
+}
+
+module.exports = {
+  hit: hit,
+}

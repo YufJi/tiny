@@ -62,7 +62,6 @@ export async function compileStyles(
         builtinHostTagPrefix: TINY_ENGINE_NAMING.hostTagPrefix,
         hostAttribute: TINY_ENGINE_NAMING.hostAttribute,
         convertHost: scope !== undefined,
-        rpxRatio: context.options.rpxRatio,
       })
       const css = transformer.getContent()
       const map = normalizeMap(
@@ -119,7 +118,6 @@ export async function compileStyles(
           componentTags: [...context.customComponentTags],
           builtinHostTagPrefix: TINY_ENGINE_NAMING.hostTagPrefix,
           hostAttribute: TINY_ENGINE_NAMING.hostAttribute,
-          rpxRatio: context.options.rpxRatio,
         })
         const pageScopeCss = pageScopeTransformer.getContent()
         if (pageScopeCss.includes(`.${APP_PAGE_SCOPE_CLASS_SIGN}`)) {

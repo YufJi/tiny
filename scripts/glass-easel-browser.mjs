@@ -536,6 +536,64 @@ export async function runBrowserAcceptance({ baseUrl }) {
       )
     })
 
+    await step('run WXS local events, change:prop and callMethod', async () => {
+      currentStep = 'run WXS local events, change:prop and callMethod'
+      await render.getByText('WXS runtime', { exact: true }).first().click()
+      await waitForText('WXS runtime')
+      await waitForText('status: observe:2:none')
+      await render.locator('tiny-wxs-probe #probe').click()
+      await waitForText('probe-seen: probe-tap:component-data')
+      await render.locator('#target').click()
+      await waitForText('status: tap:2:box')
+      const targetStyle = await render.locator('#target').evaluate((element) => ({
+        left: element.style.left,
+        width: element.style.width,
+      }))
+      assert.equal(targetStyle.left, '12px', 'WXS setStyle did not update the local element')
+      assert.equal(targetStyle.width, '10vw', 'WXS setStyle did not normalize rpx')
+      await waitForText('state-status: state:1')
+      await waitForText('computed-status: computed:128px')
+      await render.locator('#target').click()
+      await waitForText('state-status: state:2')
+      await render.locator('#bubble-child').click()
+      await waitForText('child-status: child')
+      await waitForText('parent-status: parent')
+      await render.locator('#stop-child').click()
+      await waitForText('stop-status: stop')
+      assert.ok(
+        (await render.locator('#app').innerText()).includes('stop-parent-status: idle'),
+        'catch/return false still reached the service parent',
+      )
+      await render.locator('#capture-child').click()
+      await waitForText('capture-status: capture')
+      await waitForText('capture-parent-status: capture-parent')
+      const slider = render.locator('tiny-slider input[type="range"]').first()
+      await slider.evaluate((element) => {
+        element.value = '5'
+        element.dispatchEvent(new Event('input', { bubbles: true }))
+        element.dispatchEvent(new Event('change', { bubbles: true }))
+      })
+      await waitForText('status: change:5')
+      await render.locator('#dynamic').click()
+      await waitForText('dynamic-status: wxs:2')
+      await render.getByText('Toggle dynamic handler', { exact: true }).first().click()
+      await render.locator('#dynamic').click()
+      await waitForText('dynamic-status: service')
+      await render.getByText('Toggle dynamic handler', { exact: true }).first().click()
+      await render.locator('#dynamic').click()
+      await waitForText('dynamic-status: wxs:2')
+      await render.locator('#counter').click()
+      await waitForText('counter-status: counter:1')
+      await render.getByText('Toggle counter handler', { exact: true }).first().click()
+      await render.locator('#counter').click()
+      await waitForText('counter-status: service')
+      await render.getByText('Toggle counter handler', { exact: true }).first().click()
+      await render.locator('#counter').click()
+      await waitForText('counter-status: counter:2')
+      await render.getByText('Back', { exact: true }).first().click()
+      await waitForText('Tiny Glass-easel P0')
+    })
+
     await step('deliver onPageScroll from the render scroll container', async () => {
       currentStep = 'deliver onPageScroll from the render scroll container'
       await render.getByText('Scroll page', { exact: true }).first().click()

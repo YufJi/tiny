@@ -29,6 +29,7 @@
     "prebuild": "rm -rf dist"
   },
   "dependencies": {
+    "@tiny/css-units": "workspace:*",
     "@tiny/manifest": "workspace:*",
     "postcss": "^8.4.38"
   },

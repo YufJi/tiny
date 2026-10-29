@@ -9,7 +9,19 @@ import { Template, templateDirectDependencies, templateScriptDependencies } from
 import { genLitStr } from './escape'
 import { TmplGroupRef, templateToProcGen } from './proc_gen/tag'
 import { stringifyTemplate } from './stringify/stringifier'
-import wxsRuntimeSource from './runtime/wxs-runtime.js?raw'
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
+import wxsAdapterSourceRaw from './runtime/wxs-adapter.js?raw'
+import { transformWxsSource } from './wxs/transform'
+
+export type WxsModuleTableEntry = {
+  id: string
+  code: string
+  map: string
+}
+
+export type WxsModuleTable = {
+  modules: WxsModuleTableEntry[]
+}
 
 // ---------------------------------------------------------------------------
 // Runtime snippets (mirrors RUNTIME_ITEMS and EXTRA_RUNTIME_ITEMS)
@@ -49,11 +61,21 @@ function runtimeFns(w: JsFunctionScopeWriter, needWxsRuntime: boolean): void {
       for (const [k, v] of EVENT_FILTER_RUNTIME_ITEMS) {
         ww.write(`,${k}:${v}`)
       }
+    } else {
+      // Dynamic event bindings call Q.B to let the service resolve the real
+      // handler. Without a WXS runtime the template still needs a pass-through
+      // so plain dynamic page-method bindings keep working.
+      ww.write(',B:function(a,b,c){return c}')
     }
     ww.write('}')
   })
   if (needWxsRuntime) {
-    w.customStmtStr(wxsRuntimeSource)
+    w.customStmtStr(
+      wxsAdapterSourceRaw
+        .replaceAll('__TINY_WXS_RUNTIME_GLOBAL__', TINY_ENGINE_NAMING.wxsRuntimeGlobal)
+        .replaceAll('__TINY_WXS_EVENT_HOST_GLOBAL__', TINY_ENGINE_NAMING.wxsEventHostGlobal)
+        .replaceAll('__TINY_WXS_HANDLED_FIELD__', TINY_ENGINE_NAMING.wxsHandledField),
+    )
   }
 }
 
@@ -260,11 +282,34 @@ export class TmplGroup implements TmplGroupRef {
   private writeAllScripts(w: JsFunctionScopeWriter): void {
     for (const [p, script] of this.scripts) {
       const pathLit = genLitStr(p)
-      const scriptLit = genLitStr(script)
+      const scriptLit = genLitStr(transformWxsSource(script, p).code)
       w.exprStmt((ww) => {
         ww.write(`W[${pathLit}]=Q.S(${pathLit},${scriptLit})`)
       })
     }
+  }
+
+  /** Transformed WXS modules for the render event runtime. */
+  getWxsModuleTable(): WxsModuleTable {
+    const modules = new Map<string, WxsModuleTableEntry>()
+
+    for (const [path, script] of this.scripts) {
+      if (modules.has(path)) continue
+      const transformed = transformWxsSource(script, path)
+      modules.set(path, { id: path, code: transformed.code, map: transformed.map })
+    }
+
+    for (const [path, tree] of this.trees) {
+      for (const script of tree.globals.scripts) {
+        if (script.kind !== 'Inline') continue
+        const id = `${path}#${script.moduleName.name}`
+        if (modules.has(id)) continue
+        const transformed = transformWxsSource(script.content, id)
+        modules.set(id, { id, code: transformed.code, map: transformed.map })
+      }
+    }
+
+    return { modules: [...modules.values()] }
   }
 
   getTmplGenObjectGroups(): string {

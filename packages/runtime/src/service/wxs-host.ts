@@ -1,5 +1,7 @@
-import { DIAGNOSTIC_CODES } from '@tiny/manifest'
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
+import { BUILTIN_COMPONENT_TAGS, DIAGNOSTIC_CODES } from '@tiny/manifest'
 import { cloneJsonSafe } from '../data'
+import type { WxsBindingMessage } from '../tree/protocol'
 import type { LogicBackendElement, LogicTreeAdapter } from '../tree/logic'
 import { findLogicNodeByElement, queryLogicNodes } from '../tree/logic'
 import type { MiniProgramPageInstance } from './page-instance'
@@ -21,13 +23,15 @@ import type { MiniProgramPageInstance } from './page-instance'
  */
 
 /** Global the generated event wrapper reads; one service thread per app. */
-const WXS_EVENT_HOST_KEY = '__tinyWxsEventHost'
+const WXS_EVENT_HOST_KEY = TINY_ENGINE_NAMING.wxsEventHostGlobal
 
 export type WxsEventHostOptions = {
   getLogicTree: () => LogicTreeAdapter | undefined
   getPage: (pageId: string) => MiniProgramPageInstance | undefined
   /** Re-diff the page after a WXS mutation so the render thread picks it up. */
   requestRenderUpdate: (pageId: string) => void
+  /** Publish a dynamic binding decision to render. */
+  onBinding?: (pageId: string, binding: WxsBindingMessage) => void
   onDiagnostic?: (pageId: string, code: string, message: string, details?: unknown) => void
 }
 
@@ -47,6 +51,7 @@ export type WxsComponentDescriptor = {
   getData: () => Record<string, unknown>
   setStyle: (style: unknown) => void
   callMethod: (name: string, ...args: unknown[]) => unknown
+  triggerEvent: (name: string, detail?: unknown, options?: Record<string, unknown>) => unknown
 }
 
 const camelToKebab = (name: string): string => {
@@ -75,6 +80,37 @@ export function installWxsEventHost(options: WxsEventHostOptions): () => void {
   const globalObject = globalThis as unknown as Record<string, unknown>
   const previous = globalObject[WXS_EVENT_HOST_KEY]
   const host = {
+    registerBinding: (
+      element: unknown,
+      event: string,
+      origin: { moduleId: string; exportPath: string[] } | undefined,
+      isCatch: boolean,
+      isCapture: boolean,
+      isMutated: boolean,
+    ): void => {
+      if (!element || typeof element !== 'object') return
+      const tree = options.getLogicTree()
+      const node = findLogicNodeByElement(element)
+      if (!tree || !node) return
+      const pageId = tree.pageIdFor(element)
+      if (!pageId) return
+      const builtin = (BUILTIN_COMPONENT_TAGS as readonly string[]).includes(node.tagName)
+      const unsupportedLocal = !builtin
+        || (
+          event === TINY_ENGINE_NAMING.wxsServiceOnlyInputEvent
+          && (TINY_ENGINE_NAMING.wxsServiceOnlyInputTags as readonly string[]).includes(node.tagName)
+        )
+      const localOrigin = unsupportedLocal ? undefined : origin
+      const binding: WxsBindingMessage = {
+        viewId: tree.ensureViewId(node),
+        event,
+        ...(localOrigin ? { moduleId: localOrigin.moduleId, exportPath: localOrigin.exportPath } : {}),
+        ...(isCatch ? { catch: true } : {}),
+        ...(isCapture ? { capture: true } : {}),
+        ...(isMutated ? { mutated: true } : {}),
+      }
+      options.onBinding?.(pageId, binding)
+    },
     descriptorFor: (element: unknown): WxsComponentDescriptor | undefined => {
       const tree = options.getLogicTree()
       const node = findLogicNodeByElement(element)
@@ -131,6 +167,41 @@ function createDescriptor(
     callMethod(name: string, ...args: unknown[]) {
       return callOwnerMethod(options, tree, scope, String(name), args)
     },
+    triggerEvent(name: string, detail?: unknown, options?: Record<string, unknown>) {
+      const element = node.__wxElement as unknown as {
+        triggerEvent?: (eventName: string, eventDetail?: unknown, eventOptions?: unknown) => unknown
+      } | undefined
+      return element?.triggerEvent?.(String(name), detail, options)
+    },
+  }
+}
+
+/** Apply a WXS effect forwarded from the render thread. */
+export function dispatchWxsEffect(
+  tree: LogicTreeAdapter,
+  pageId: string,
+  effect: {
+    kind: 'callMethod' | 'triggerEvent'
+    viewId: string
+    method?: string
+    args?: unknown[]
+    name?: string
+    detail?: unknown
+    options?: Record<string, unknown>
+  },
+  options: WxsEventHostOptions,
+): void {
+  const node = tree.findNodeByViewId(effect.viewId)
+  if (!node) return
+  const descriptor = createDescriptor(options, tree, {
+    node,
+    root: ownerRoot(node),
+    pageId,
+  })
+  if (effect.kind === 'callMethod' && effect.method) {
+    descriptor.callMethod(effect.method, ...(effect.args ?? []))
+  } else if (effect.kind === 'triggerEvent' && effect.name) {
+    descriptor.triggerEvent(effect.name, effect.detail, effect.options)
   }
 }
 

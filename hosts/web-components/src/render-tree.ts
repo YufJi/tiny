@@ -1,5 +1,7 @@
 import * as glassEasel from 'glass-easel'
+import { convertRpx } from '@tiny/css-units'
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
+import { createDefaultWxsCompiler, createWxsRuntime } from '@tiny/runtime'
 import type {
   RenderAnimationRequest,
   RenderClearAnimationRequest,
@@ -12,6 +14,9 @@ import type {
   RenderPatch,
   RenderRect,
   RenderText,
+  WxsBindingMessage,
+  WxsModuleTable,
+  WxsRenderEffect,
 } from '@tiny/runtime'
 import { createBuiltinComponents } from './index'
 import { BUILTIN_COMPONENT_TAGS, type BuiltinComponentTag } from './tags'
@@ -27,6 +32,66 @@ export type GlassRenderEvent = {
   changedTouches?: unknown[]
   target?: RenderEventGeometry
   currentTarget?: RenderEventGeometry
+  /** Set when a local WXS handler already ran for this render event. */
+  wxsHandled?: boolean
+}
+
+type WxsHandlerBinding = {
+  name: string
+  moduleId: string
+  exportPath: string[]
+  catch?: boolean
+  capture?: boolean
+  mutated?: boolean
+}
+
+type WxsPropBinding = {
+  prop: string
+  moduleId: string
+  exportPath: string[]
+}
+
+type WxsDynamicEventBinding = {
+  name: string
+  catch?: boolean
+  capture?: boolean
+  mutated?: boolean
+}
+
+const parseWxsDynamicEvents = (
+  props: Record<string, unknown> | undefined,
+): WxsDynamicEventBinding[] => {
+  const raw = props?.[WXS_DYNAMIC_PROP]
+  if (typeof raw !== 'string' || raw.length === 0) return []
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((entry): entry is WxsDynamicEventBinding => (
+      Boolean(entry)
+      && typeof entry === 'object'
+      && typeof (entry as WxsDynamicEventBinding).name === 'string'
+    ))
+  } catch {
+    return []
+  }
+}
+
+const parseWxsProps = (props: Record<string, unknown> | undefined): WxsPropBinding[] => {
+  const raw = props?.[WXS_PROPS_PROP]
+  if (typeof raw !== 'string' || raw.length === 0) return []
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((entry): entry is WxsPropBinding => (
+      Boolean(entry)
+      && typeof entry === 'object'
+      && typeof (entry as WxsPropBinding).prop === 'string'
+      && typeof (entry as WxsPropBinding).moduleId === 'string'
+      && Array.isArray((entry as WxsPropBinding).exportPath)
+    ))
+  } catch {
+    return []
+  }
 }
 
 export type GlassRenderTreeOptions = {
@@ -66,6 +131,11 @@ export type GlassRenderTree = {
   /** Built-in components ask the host to act (`<navigator>` routing). */
   setHostActionSink?: (sink: (action: RenderHostAction) => void) => void
   setPagePath?: (pagePath: string) => void
+  setWxsModules?: (table: WxsModuleTable) => void
+  setWxsEffectSink?: (sink: (effect: WxsRenderEffect) => void) => void
+  setWxsBinding?: (binding: WxsBindingMessage) => void
+  setPageData?: (data: Record<string, unknown>) => void
+  setComponentData?: (data: Record<string, Record<string, unknown>>) => void
   setDiagnosticSink?: (sink: (diagnostic: {
     severity: 'warning' | 'error'
     code: string
@@ -79,6 +149,9 @@ export type GlassRenderTree = {
 }
 
 const builtinTags = new Set<string>(BUILTIN_COMPONENT_TAGS)
+
+const WXS_PROPS_PROP = TINY_ENGINE_NAMING.wxsPropsAttribute
+const WXS_DYNAMIC_PROP = TINY_ENGINE_NAMING.wxsDynamicEventAttribute
 
 const HANDLED_NATIVE_EVENT = Symbol.for(TINY_ENGINE_NAMING.handledNativeEventSymbol)
 const isHandledNativeEvent = (event: unknown): boolean => Boolean(
@@ -148,7 +221,7 @@ function applyHostProps(component: AnyComponent, props: Record<string, unknown> 
   } | null
   if (!element?.setAttribute) return
   for (const [name, value] of Object.entries(props ?? {})) {
-    if (value === undefined) continue
+    if (value === undefined || name === WXS_PROPS_PROP || name === WXS_DYNAMIC_PROP) continue
     element.setAttribute(name, String(value))
   }
 }
@@ -162,6 +235,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const backend = options.backend ?? new glassEasel.CurrentWindowBackendContext()
   ;(backend as unknown as { onEvent: (listener: unknown) => void })
     .onEvent(glassEasel.Event.triggerBackendEvent)
+  const wxsRuntime = createWxsRuntime({ compile: createDefaultWxsCompiler() })
   const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
   space.updateComponentOptions({
     hostNodeTagName: TINY_ENGINE_NAMING.hostNodeTagName,
@@ -190,12 +264,45 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const eventCleanups = new Map<string, Array<() => void>>()
   let currentRoot: RenderNode | undefined
   let eventSink: ((event: GlassRenderEvent) => void) | undefined
+  let wxsEffectSink: ((effect: WxsRenderEffect) => void) | undefined
   let hostActionSink: ((action: RenderHostAction) => void) | undefined
+  const emitServiceEvent = (event: GlassRenderEvent): void => {
+    if (eventSink) eventSink(event)
+    else options.onEvent?.(event)
+  }
   let styleElement: HTMLStyleElement | undefined
   const currentTree = new Map<string, RenderNode>()
   const externalByNode = new Map<string, Record<string, string[]> | undefined>()
   const idByComponent = new WeakMap<object, string>()
   const pendingClasses = new Map<string, () => boolean>()
+  const pendingWxsEvents = new Map<string, () => void>()
+  const wxsStates = new WeakMap<Element, Record<string, unknown>>()
+  const wxsStatesById = new Map<string, Record<string, unknown>>()
+  const dynamicBindingModes = new Map<string, WxsBindingMessage>()
+  const wxsTimers = new Set<ReturnType<typeof setTimeout>>()
+  const wxsPropSnapshots = new Map<string, Record<string, unknown>>()
+  let pageData: Record<string, unknown> = {}
+  let componentData: Record<string, Record<string, unknown>> = {}
+  const wxsOverrides = new WeakMap<HTMLElement, {
+    style: Map<string, string>
+    classes: Set<string>
+  }>()
+
+  const wxsOverridesFor = (element: HTMLElement) => {
+    let overrides = wxsOverrides.get(element)
+    if (!overrides) {
+      overrides = { style: new Map(), classes: new Set() }
+      wxsOverrides.set(element, overrides)
+    }
+    return overrides
+  }
+
+  const applyWxsOverrides = (element: HTMLElement): void => {
+    const overrides = wxsOverrides.get(element)
+    if (!overrides) return
+    for (const [name, value] of overrides.style) element.style.setProperty(name, value)
+    for (const name of overrides.classes) element.classList.add(name)
+  }
 
   const applyElementClass = (
     node: RenderElement,
@@ -205,6 +312,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     const element = component.getBackendElement() as unknown as HTMLElement | null
     if (!element?.setAttribute) return false
     applyClassProps(element, node.props, node.scopes, node.scopeChain, external, pageScopes)
+    applyWxsOverrides(element)
     return true
   }
 
@@ -365,16 +473,17 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   // built-in components through glass-easel with a normalized detail payload.
   const NATIVE_EVENT_NAMES = new Set(['tap', 'click', 'touchstart', 'touchmove', 'touchend', 'touchcancel'])
 
-  const attachEvents = (node: RenderElement, component: AnyComponent): void => {
+  const attachEvents = (
+    node: RenderElement,
+    component: AnyComponent,
+    skipDynamic?: Set<string>,
+  ): void => {
     const events = node.events ?? []
     if (events.length === 0) return
     const element = component.getBackendElement() as unknown as HTMLElement | null
     const cleanups: Array<() => void> = []
-    const emit = (event: GlassRenderEvent): void => {
-      if (eventSink) eventSink(event)
-      else options.onEvent?.(event)
-    }
     for (const binding of events) {
+      if (skipDynamic?.has(binding.name)) continue
       const capture = binding.capture === true
       // Semantic events from host built-ins (change/input/scroll/...) carry
       // the mini-program detail; forward that instead of re-deriving it.
@@ -389,7 +498,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         if (original) return
         const isTouch = binding.name.startsWith('touch')
         const currentTarget = geometryOf(element, node.id)
-        emit({
+        emitServiceEvent({
           id: node.id,
           name: binding.name,
           ...(currentTarget ? { currentTarget } : {}),
@@ -429,7 +538,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         const changedTouches = binding.name.startsWith('touch')
           ? normalizeTouchList(touchEvent.changedTouches)
           : undefined
-        emit({
+        emitServiceEvent({
           id: node.id,
           name: binding.name,
           native: nativeFields(event),
@@ -443,6 +552,367 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       cleanups.push(() => element.removeEventListener(domName, domListener, capture))
     }
     if (cleanups.length > 0) eventCleanups.set(node.id, cleanups)
+  }
+
+  const wxsOwnerElement = (element: HTMLElement): HTMLElement => {
+    let current: HTMLElement | null = element
+    while (current) {
+      const host = current.getAttribute(TINY_ENGINE_NAMING.hostAttribute) ?? ''
+      if (host && !host.startsWith(TINY_ENGINE_NAMING.builtinStyleScopePrefix)) return current
+      if (current.tagName.toLowerCase() === TINY_ENGINE_NAMING.pageTag) return current
+      current = current.parentElement
+    }
+    return rootElement ?? element
+  }
+
+  const wxsNodeForElement = (element: HTMLElement | null): RenderElement | undefined => {
+    if (!element) return undefined
+    const id = element.getAttribute(TINY_ENGINE_NAMING.nodeIdAttribute) ?? ''
+    const node = currentTree.get(id)
+    return node?.type === 'element' ? node : undefined
+  }
+
+  const wxsDescriptorFor = (
+    element: HTMLElement | null,
+    owner: HTMLElement | null,
+    fallbackViewId?: string,
+    explicitNode?: RenderElement,
+  ) => {
+    const node = explicitNode ?? wxsNodeForElement(element)
+    const viewId = node?.id ?? fallbackViewId
+    const ownerViewId = wxsNodeForElement(owner)?.id ?? fallbackViewId
+    const descriptor = {
+      selectComponent(selector: string) {
+        if (!owner) return null
+        const match = owner.querySelector(selector) as HTMLElement | null
+        return match ? wxsDescriptorFor(match, wxsOwnerElement(match)) : null
+      },
+      selectAllComponents(selector: string) {
+        if (!owner) return []
+        return Array.from(owner.querySelectorAll(selector))
+          .map((match) => wxsDescriptorFor(match as HTMLElement, wxsOwnerElement(match as HTMLElement)))
+      },
+      getDataset() {
+        return node?.dataset ?? (element ? { ...element.dataset } : {})
+      },
+      getState() {
+        if (owner) {
+          let state = wxsStates.get(owner)
+          if (!state) {
+            state = {}
+            wxsStates.set(owner, state)
+          }
+          return state
+        }
+        const key = ownerViewId ?? viewId ?? 'anonymous'
+        let state = wxsStatesById.get(key)
+        if (!state) {
+          state = {}
+          wxsStatesById.set(key, state)
+        }
+        return state
+      },
+      setStyle(style: unknown) {
+        if (!style || !element) return descriptor
+        const overrides = wxsOverridesFor(element)
+        if (typeof style === 'string') {
+          for (const part of style.split(';')) {
+            const separator = part.indexOf(':')
+            if (separator <= 0) continue
+            const name = part.slice(0, separator).trim()
+            const value = part.slice(separator + 1).trim()
+            if (name && value) overrides.style.set(name, convertRpx(value))
+          }
+        } else if (typeof style === 'object') {
+          for (const [name, value] of Object.entries(style as Record<string, unknown>)) {
+            if (value === undefined || value === null) continue
+            const property = name.startsWith('--')
+              ? name
+              : name.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`)
+            overrides.style.set(property, convertRpx(String(value)))
+          }
+        }
+        applyWxsOverrides(element)
+        return descriptor
+      },
+      addClass(name: string) {
+        if (!element) return descriptor
+        wxsOverridesFor(element).classes.add(name)
+        applyWxsOverrides(element)
+        return descriptor
+      },
+      removeClass(name: string) {
+        if (!element) return descriptor
+        wxsOverridesFor(element).classes.delete(name)
+        element.classList.remove(name)
+        return descriptor
+      },
+      hasClass(name: string) {
+        return element ? element.classList.contains(name) : false
+      },
+      getData() {
+        const data = componentData[viewId ?? ''] ?? componentData[ownerViewId ?? '']
+        return { ...(data ?? pageData) }
+      },
+      callMethod(name: string, ...args: unknown[]) {
+        if (viewId) wxsEffectSink?.({ kind: 'callMethod', viewId, method: name, args })
+        return undefined
+      },
+      requestAnimationFrame(callback: () => void) {
+        return requestAnimationFrame(callback)
+      },
+      setTimeout(callback: (...args: unknown[]) => void, delay?: number, ...args: unknown[]) {
+        const timer = setTimeout(() => {
+          wxsTimers.delete(timer)
+          callback(...args)
+        }, Number(delay) || 0)
+        wxsTimers.add(timer)
+        return timer
+      },
+      clearTimeout(timer: ReturnType<typeof setTimeout>) {
+        clearTimeout(timer)
+        wxsTimers.delete(timer)
+      },
+      getBoundingClientRect() {
+        return element?.getBoundingClientRect() ?? {
+          left: 0,
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: 0,
+          height: 0,
+          x: 0,
+          y: 0,
+          toJSON() { return this },
+        }
+      },
+      getComputedStyle(names?: string[]) {
+        if (!element) return {}
+        const computed = getComputedStyle(element)
+        if (Array.isArray(names)) {
+          return Object.fromEntries(names.map((name) => [name, computed.getPropertyValue(name)]))
+        }
+        return computed
+      },
+      triggerEvent(name: string, detail?: unknown, options?: Record<string, unknown>) {
+        if (viewId) wxsEffectSink?.({ kind: 'triggerEvent', viewId, name, detail, options })
+        return undefined
+      },
+    }
+    return descriptor
+  }
+
+  const hasServiceListenerInPath = (start: HTMLElement | null, name: string): boolean => {
+    let current = start
+    while (current) {
+      const id = current.getAttribute(TINY_ENGINE_NAMING.nodeIdAttribute) ?? ''
+      const candidate = id ? currentTree.get(id) : undefined
+      if (candidate?.type === 'element' && candidate.events?.some((event) => event.name === name)) {
+        return true
+      }
+      current = current.parentElement
+    }
+    return false
+  }
+
+  const applyWxsProps = (
+    node: RenderElement,
+    component: AnyComponent,
+    previous: Record<string, unknown> | undefined,
+  ): void => {
+    const bindings = parseWxsProps(node.props)
+    if (bindings.length === 0) return
+    const element = component.getBackendElement() as unknown as HTMLElement | null
+    const owner = element ? wxsOwnerElement(element) : rootElement
+    const descriptor = wxsDescriptorFor(element, owner, node.id, node)
+    const ownerDescriptor = wxsDescriptorFor(owner, owner, node.id)
+    for (const binding of bindings) {
+      const nextValue = node.props?.[binding.prop]
+      const oldValue = previous?.[binding.prop]
+      if (previous && Object.is(nextValue, oldValue)) continue
+      try {
+        wxsRuntime.invoke(
+          binding.moduleId,
+          binding.exportPath,
+          [nextValue, oldValue, ownerDescriptor, descriptor],
+        )
+      } catch {
+        // A failed prop observer must not break the render tree.
+      }
+    }
+    wxsPropSnapshots.set(node.id, { ...(node.props ?? {}) })
+  }
+
+  const dispatchWxs = (
+    binding: WxsHandlerBinding,
+    node: RenderElement,
+    element: HTMLElement,
+    payload: Record<string, unknown>,
+    stop: () => void,
+  ): void => {
+    const owner = wxsOwnerElement(element)
+    const descriptor = wxsDescriptorFor(element, owner)
+    const ownerDescriptor = wxsDescriptorFor(owner, owner, node.id)
+    payload.instance = descriptor
+    let result: unknown
+    try {
+      result = wxsRuntime.invoke(binding.moduleId, binding.exportPath, [payload, ownerDescriptor])
+    } catch {
+      return
+    }
+    if (result === false || binding.catch) {
+      stop()
+      return
+    }
+    if (hasServiceListenerInPath(element.parentElement, binding.name)) {
+      const { instance: _instance, ...servicePayload } = payload
+      emitServiceEvent({ ...servicePayload, wxsHandled: true } as unknown as GlassRenderEvent)
+    }
+  }
+
+  const attachDynamicWxsEvents = (
+    node: RenderElement,
+    component: AnyComponent,
+    bindings: WxsDynamicEventBinding[],
+  ): void => {
+    if (bindings.length === 0) return
+    const element = component.getBackendElement() as unknown as HTMLElement | null
+    if (!element) {
+      pendingWxsEvents.set(node.id, () => attachDynamicWxsEvents(node, component, bindings))
+      return
+    }
+    const cleanups = eventCleanups.get(node.id) ?? []
+    const invoke = (
+      binding: WxsDynamicEventBinding,
+      payload: Record<string, unknown>,
+      stop: () => void,
+    ): void => {
+      const resolved = dynamicBindingModes.get(`${node.id}\0${binding.name}`)
+      const handler = resolved?.moduleId && resolved.exportPath
+        ? wxsRuntime.resolve(resolved.moduleId, resolved.exportPath)
+        : undefined
+      if (resolved?.moduleId && resolved.exportPath && handler) {
+        dispatchWxs({
+          name: binding.name,
+          moduleId: resolved.moduleId,
+          exportPath: resolved.exportPath,
+          ...(binding.catch ? { catch: true } : {}),
+          ...(binding.capture ? { capture: true } : {}),
+          ...(binding.mutated ? { mutated: true } : {}),
+        }, node, element, payload, stop)
+        return
+      }
+      const servicePayload = { ...payload }
+      if (servicePayload.target && typeof servicePayload.target === 'object') {
+        const { dataset: _targetDataset, ...target } = servicePayload.target as Record<string, unknown>
+        servicePayload.target = target
+      }
+      if (servicePayload.currentTarget && typeof servicePayload.currentTarget === 'object') {
+        const { dataset: _currentDataset, ...currentTarget } = servicePayload.currentTarget as Record<string, unknown>
+        servicePayload.currentTarget = currentTarget
+      }
+      emitServiceEvent(servicePayload as GlassRenderEvent)
+    }
+
+    for (const binding of bindings) {
+      if (NATIVE_EVENT_NAMES.has(binding.name)) {
+        const domName = binding.name === 'tap' ? 'click' : binding.name
+        let lastPointerStamp = -1
+        const listener = (event: Event): void => {
+          if (isHandledNativeEvent(event)) return
+          if (binding.name === 'tap' || binding.name === 'click') {
+            if (event.timeStamp === lastPointerStamp) return
+            lastPointerStamp = event.timeStamp
+          }
+          const currentTarget = geometryOf(element, node.id)
+          const target = geometryOfTarget(event.target)
+          const touchEvent = event as TouchEvent
+          const isTouch = binding.name.startsWith('touch')
+          const touches = isTouch ? normalizeTouchList(touchEvent.touches) : undefined
+          const changedTouches = isTouch ? normalizeTouchList(touchEvent.changedTouches) : undefined
+          const targetNode = target?.viewId ? currentTree.get(target.viewId) : undefined
+          const payload: Record<string, unknown> = {
+            id: node.id,
+            name: binding.name,
+            native: nativeFields(event),
+            ...(touches ? { touches } : {}),
+            ...(changedTouches ? { changedTouches } : {}),
+            ...(currentTarget ? { currentTarget } : {}),
+            ...(target ? { target } : {}),
+          }
+          if (currentTarget && node.dataset) {
+            payload.currentTarget = { ...currentTarget, dataset: node.dataset }
+          }
+          if (target && targetNode?.type === 'element' && targetNode.dataset) {
+            payload.target = { ...target, dataset: targetNode.dataset }
+          }
+          invoke(binding, payload, () => {
+            event.preventDefault()
+            event.stopPropagation()
+          })
+        }
+        element.addEventListener(domName, listener, binding.capture === true)
+        cleanups.push(() => element.removeEventListener(domName, listener, binding.capture === true))
+        continue
+      }
+
+      const listener = (event: glassEasel.Event<unknown> & {
+        touches?: unknown
+        changedTouches?: unknown
+      }): void => {
+        const currentTarget = geometryOf(element, node.id)
+        const isTouch = binding.name.startsWith('touch')
+        const payload: Record<string, unknown> = {
+          id: node.id,
+          name: binding.name,
+          ...(event.detail !== undefined
+            ? { detail: isTouch ? cloneTouchDetail(event.detail) : event.detail }
+            : {}),
+          ...(isTouch && event.touches !== undefined
+            ? { touches: cloneTouchList(event.touches) }
+            : {}),
+          ...(isTouch && event.changedTouches !== undefined
+            ? { changedTouches: cloneTouchList(event.changedTouches) }
+            : {}),
+          ...(currentTarget ? { currentTarget } : {}),
+        }
+        if (currentTarget && node.dataset) {
+          payload.currentTarget = { ...currentTarget, dataset: node.dataset }
+        }
+        invoke(binding, payload, () => {
+          const target = event as unknown as {
+            preventDefault?: () => void
+            stopPropagation?: () => void
+          }
+          target.preventDefault?.()
+          target.stopPropagation?.()
+        })
+      }
+      component.addListener(binding.name, listener as never, { capture: binding.capture === true })
+      cleanups.push(() => component.removeListener(binding.name, listener as never, {
+        capture: binding.capture === true,
+      }))
+    }
+    if (cleanups.length > 0) eventCleanups.set(node.id, cleanups)
+  }
+
+  const flushPendingWxsEvents = (): void => {
+    for (const [id, attach] of pendingWxsEvents) {
+      const component = nodes.get(id)
+      if (!component || glassEasel.TextNode.isTextNode(component)) continue
+      if (!component.getBackendElement()) continue
+      pendingWxsEvents.delete(id)
+      attach()
+    }
+  }
+
+  const flushAllWxsProps = (): void => {
+    for (const [id, node] of currentTree) {
+      if (node.type !== 'element' || parseWxsProps(node.props).length === 0) continue
+      const component = nodes.get(id)
+      if (!component || glassEasel.TextNode.isTextNode(component)) continue
+      applyWxsProps(node, component, wxsPropSnapshots.get(id))
+    }
   }
 
   const createElement = (
@@ -462,7 +932,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     nodes.set(node.id, component)
     idByComponent.set(component, node.id)
     currentTree.set(node.id, node)
-    attachEvents(node, component)
+    const dynamicBindings = parseWxsDynamicEvents(node.props)
+    attachEvents(node, component, new Set(dynamicBindings.map((binding) => binding.name)))
+    attachDynamicWxsEvents(node, component, dynamicBindings)
     if (builtin) {
       const props = node.props ?? {}
       for (const name of ['placeholder-class', 'hover-class']) {
@@ -520,6 +992,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       currentTree.delete(id)
       externalByNode.delete(id)
       pendingClasses.delete(id)
+      pendingWxsEvents.delete(id)
+      wxsPropSnapshots.delete(id)
     }
   }
 
@@ -639,6 +1113,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     const external = node.externalClasses ?? externalByNode.get(node.id)
     externalByNode.set(node.id, external)
     queueElementClass(node, component, external)
+    applyWxsProps(node, component, wxsPropSnapshots.get(node.id))
   }
 
   const applyPatches = (patches: RenderPatch[]): void => {
@@ -672,6 +1147,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     }
     flushPendingAnimations()
     flushPendingClasses()
+    flushPendingWxsEvents()
+    flushAllWxsProps()
   }
 
   // `this.animate` runs on the render side: the service resolved the selector
@@ -750,6 +1227,21 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     clearAnimation,
     setPagePath: (pagePath) => {
       currentPagePath = pagePath
+    },
+    setWxsModules: (table) => {
+      wxsRuntime.load(table)
+    },
+    setWxsEffectSink: (sink) => {
+      wxsEffectSink = sink
+    },
+    setWxsBinding: (binding) => {
+      dynamicBindingModes.set(`${binding.viewId}\0${binding.event}`, binding)
+    },
+    setPageData: (data) => {
+      pageData = { ...data }
+    },
+    setComponentData: (data) => {
+      componentData = { ...data }
     },
     observeIntersection: (request, emit) => {
       if (typeof IntersectionObserver === 'undefined' || !rootElement) return undefined
@@ -955,6 +1447,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       if (options.attach !== false) glassEasel.Element.pretendAttached(root)
       flushPendingAnimations()
       flushPendingClasses()
+      flushPendingWxsEvents()
+      flushAllWxsProps()
     },
     applyPatches,
     getNode(id) {
@@ -969,6 +1463,11 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       currentTree.clear()
       externalByNode.clear()
       pendingClasses.clear()
+      pendingWxsEvents.clear()
+      wxsPropSnapshots.clear()
+      for (const timer of wxsTimers) clearTimeout(timer)
+      wxsTimers.clear()
+      wxsRuntime.dispose()
       ;(root as unknown as { destroy?: () => void }).destroy?.()
     },
   }

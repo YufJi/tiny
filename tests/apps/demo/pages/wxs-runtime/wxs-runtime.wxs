@@ -1,0 +1,50 @@
+function tap(event, ins) {
+  var data = ins.getData()
+  ins.callMethod('record', 'tap:' + data.value + ':' + event.currentTarget.dataset.kind)
+  ins.selectComponent('#target').setStyle({ left: '12px', width: '75rpx' })
+  var state = ins.getState()
+  state.count = (state.count || 0) + 1
+  ins.callMethod('recordState', 'state:' + state.count)
+  var computed = ins.selectComponent('#target').getComputedStyle(['width'])
+  ins.callMethod('recordComputed', 'computed:' + computed.width)
+}
+
+function changed(event, ins) {
+  ins.callMethod('record', 'change:' + event.detail.value)
+}
+
+function dynamicTap(event, ins) {
+  ins.callMethod('recordDynamic', 'wxs:' + ins.getData().value)
+}
+
+function childTap(event, ins) {
+  ins.callMethod('recordChild', 'child')
+}
+
+function stopTap(event, ins) {
+  ins.callMethod('recordStop', 'stop')
+  return false
+}
+
+function captureChild(event, ins) {
+  ins.callMethod('recordCapture', 'capture')
+}
+
+function captureParent(event, ins) {
+  ins.callMethod('recordCaptureParent', 'capture-parent')
+}
+
+function observe(next, previous, ins) {
+  ins.callMethod('record', 'observe:' + next + ':' + (previous === undefined ? 'none' : previous))
+}
+
+module.exports = {
+  tap: tap,
+  dynamicTap: dynamicTap,
+  changed: changed,
+  childTap: childTap,
+  stopTap: stopTap,
+  captureChild: captureChild,
+  captureParent: captureParent,
+  observe: observe,
+}
