@@ -13,7 +13,7 @@ actions:
   - ['GitHub 仓库 ↗', 'https://github.com/YufJi/tiny', 'ghost']
 stats:
   - ['2', '运行时树']
-  - ['10', '工作区包']
+  - ['13', '工作区包']
   - ['288', '单元测试']
   - ['58', '浏览器步骤']
 description: 'Tiny 是一个基于 glass-easel 的小程序引擎：编译 WXML/WXSS/TS，service 与 render 双线程运行，核心小程序内核不依赖宿主。'
@@ -254,10 +254,10 @@ pnpm check:runtime-purity
 
 :::::stack
 ::::card{tag="当前状态" title="核心链路和组件语义已经跑通"}
-双线程、编译、协议、命名配置、组件语义、样式隔离和调试器都已跑通；宿主 API、页面能力、原生宿主和性能基线仍是主要缺口。
+双线程、编译、协议、命名配置、组件语义、样式隔离和调试器都已跑通；宿主 API、页面能力、原生平台 API 和性能基线仍是主要缺口。
 
 :::pill-row
-:pill[核心链路可用]{tone="good"} :pill[内核不依赖宿主]{tone="good"} :pill[组件语义]{tone="good"} :pill[Taro 3 React]{tone="good"} :pill[API 覆盖有限]{tone="warn"} :pill[仅浏览器宿主]{tone="warn"}
+:pill[核心链路可用]{tone="good"} :pill[内核不依赖宿主]{tone="good"} :pill[组件语义]{tone="good"} :pill[Taro 3 React]{tone="good"} :pill[API 覆盖有限]{tone="warn"} :pill[浏览器 + iOS 宿主]{tone="good"}
 :::
 ::::
 

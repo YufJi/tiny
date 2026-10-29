@@ -3,9 +3,9 @@ title: '引擎不依赖环境，'
 highlight: '运行环境由宿主提供'
 eyebrow: '宿主适配'
 lede: >-
-  packages/runtime 是宿主无关的内核：service 跑逻辑树，宿主提供渲染树。@tiny/host-browser 负责浏览器线程、端口、canvas handoff 和调试器客户端，@tiny/host-web-components 提供 Web 渲染树与 23 个内置组件。createTinyRuntime 需要 service transport、render connector、manifest 和初始页面；createStandaloneDualThreadHost 负责创建 iframe、转移端口、等待就绪并完成握手。
+  packages/runtime 是宿主无关的内核：service 跑逻辑树，宿主提供渲染树。@tiny/host-browser 负责浏览器线程、端口、canvas handoff 和调试器客户端，@tiny/host-web-components 提供 Web 渲染树与 23 个内置组件；iOS 侧由 @tiny/host-ios 提供 WKWebView host/render 产物，原生 SwiftUI 壳在 ios/。createTinyRuntime 需要 service transport、render connector、manifest 和初始页面；createStandaloneDualThreadHost 负责创建 iframe、转移端口、等待就绪并完成握手。
 stats:
-  - ['4', '宿主包']
+  - ['3', '宿主包']
   - ['1', 'service iframe']
   - ['每页', 'render iframe']
   - ['5', '注入能力']

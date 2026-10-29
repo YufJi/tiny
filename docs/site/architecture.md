@@ -150,6 +150,7 @@ glass-easel 不是完整的小程序 SDK。它负责组件、模板、数据绑�
 | `@tiny/runtime` | manifest · bridge · wxs-runtime · glass-easel · es-toolkit | 双线程运行时内核，不依赖宿主 |
 | `@tiny/host-browser` | runtime · bridge | 浏览器宿主：iframe、MessageChannel、Canvas、devtool 覆盖层 |
 | `@tiny/host-web-components` | manifest · css-units · runtime · glass-easel；构建期 template-compiler | 24 个内置组件、AOT 模板和默认 CSS（宿主包） |
+| `@tiny/host-ios` | runtime · bridge · host-browser · host-web-components | iOS 宿主前端：JSCore engine 与 WKWebView host/render 产物；原生壳在 `ios/` |
 | `devtool` | host-browser · host-web-components · glass-easel · React · Redux/rematch | 调试器宿主和控制面板 |
 | `@tiny/website` | React | 架构站点，不进入引擎链路 |
 
@@ -162,6 +163,8 @@ core        packages/manifest
 hosts       hosts/browser              -> runtime, bridge   (环境适配)
             hosts/web-components       -> runtime, manifest, glass-easel
                                           (内置组件，注入 render)
+            hosts/ios                  -> runtime, bridge, host-browser
+                                          (JSCore engine + WKWebView host/render)
 tools       tools/cli                  -> manifest, template-compiler, stylesheet-compiler
 apps        apps/devtool               -> host-browser, host-web-components
 tests       tests/host                 -> host-browser, host-web-components
