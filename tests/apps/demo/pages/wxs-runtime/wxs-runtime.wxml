@@ -2,6 +2,7 @@
 <view class="page">
   <text class="title">WXS runtime</text>
   <text class="status">status: {{status}}</text>
+  <wxs-probe label="{{value}}" />
   <view
     id="target"
     class="target"

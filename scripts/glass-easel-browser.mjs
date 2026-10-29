@@ -541,6 +541,8 @@ export async function runBrowserAcceptance({ baseUrl }) {
       await render.getByText('WXS runtime', { exact: true }).first().click()
       await waitForText('WXS runtime')
       await waitForText('status: observe:2:none')
+      await render.locator('tiny-wxs-probe #probe').click()
+      await waitForText('probe-seen: probe-tap:component-data')
       await render.locator('#target').click()
       await waitForText('status: tap:2:box')
       const left = await render.locator('#target').evaluate((element) => element.style.left)
