@@ -10,10 +10,12 @@ Landed so far:
   semantics and a host compile seam;
 - the service thread injects one runtime instance before templates load;
 - generated templates use a small `Q.S` adapter instead of carrying the full
-  runtime source.
+  runtime source;
+- the compiler parses WXS with acorn and rewrites free globals, `getRegExp` /
+  `getDate` and `.constructor` before emitting the script.
 
-Still pending: compiler AST transform/module table, WXS event metadata, render
-host, descriptors and `change:prop`.
+Still pending: module-table/file emission and wired source maps, WXS event
+metadata, render host, descriptors and `change:prop`.
 
 This ADR keeps ADR-0006's split-tree decision and does **not** move WXML
 expression evaluation to render. It proposes one kernel-level WXS runtime that
