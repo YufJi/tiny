@@ -1,0 +1,25 @@
+{
+  "name": "@tiny/host-ios",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "iOS host frontend package: JavaScriptCore service engine and WKWebView host/render bundles",
+  "scripts": {
+    "build": "vite build --mode service && vite build --mode web",
+    "build:service": "vite build --mode service",
+    "build:web": "vite build --mode web",
+    "dev": "vite --mode web",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tiny/bridge": "workspace:*",
+    "@tiny/host-browser": "workspace:*",
+    "@tiny/host-web-components": "workspace:*",
+    "@tiny/runtime": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.4.21"
+  }
+}

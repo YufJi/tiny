@@ -24,7 +24,11 @@
     "compile:wechat-demo": "node scripts/compile-mini.mjs tests/apps/wechat-demo tests/host/generated",
     "parity:probe": "node scripts/parity-probe.mjs",
     "dev:wechat-demo": "pnpm compile:wechat-demo && pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --port 5174",
-    "check:runtime-purity": "node scripts/check-runtime-purity.mjs"
+    "check:runtime-purity": "node scripts/check-runtime-purity.mjs",
+    "ios:assets": "node ios/scripts/build.mjs",
+    "ios:smoke:jsc": "node ios/scripts/smoke-service.mjs demo",
+    "ios:smoke:web": "node ios/scripts/smoke-web.mjs demo",
+    "ios:sim": "node ios/scripts/sim.mjs"
   },
   "author": "YufJi",
   "license": "MIT",

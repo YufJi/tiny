@@ -5,7 +5,7 @@ eyebrow: '宿主适配'
 lede: >-
   packages/runtime 是宿主无关的内核：service 跑逻辑树，宿主提供渲染树。@tiny/host-browser 负责浏览器线程、端口、canvas handoff 和调试器客户端，@tiny/host-web-components 提供 Web 渲染树与 23 个内置组件。createTinyRuntime 需要 service transport、render connector、manifest 和初始页面；createStandaloneDualThreadHost 负责创建 iframe、转移端口、等待就绪并完成握手。
 stats:
-  - ['2', '宿主包']
+  - ['4', '宿主包']
   - ['1', 'service iframe']
   - ['每页', 'render iframe']
   - ['5', '注入能力']
@@ -369,7 +369,7 @@ devtool 的 service/render 入口用 `new Function('url', 'return import(url)')`
 | tests/host | 1 个 service + 每页 1 个 render iframe（Vite） | `createGlassRenderTree` | OffscreenCanvas handoff + /generated 资源 | URL ?path + window.__tinyRuntime |
 | apps/devtool | 1 个 service + 每页一个 render iframe（Vite） | `createGlassRenderTree` | OffscreenCanvas handoff + 相对 URL | DevtoolRuntimeClient + React/Redux |
 | runtime 单测 | 同进程 | headless TreeRenderer | 无 canvas，manifest 内联 | 直接持有 BridgeConnection |
-| 原生宿主（未实现） | JSCore / 原生容器 + 渲染层 | 实现 `TreeRenderer` | 需要实现 canvas handoff 和资源解析 | 自定义控制界面 |
+| iOS 宿主（ios + hosts/ios） | JavaScriptCore service + 1 个 WKWebView（host.html + 每页 render.html iframe） | `createGlassRenderTree`（iframe） | UserDefaults 存储；canvas 暂不支持 | SwiftUI Launcher / 原生导航栏 + tabBar |
 
 ::::split
 :::card{title="共享的部分"}
@@ -408,8 +408,8 @@ devtool 的 service/render 入口用 `new Function('url', 'return import(url)')`
 | 跑内核约束检查 | 确认新宿主没有把浏览器或平台依赖反向塞回 packages/runtime。 | pnpm check:runtime-purity |
 :::
 
-:::callout{title="原生宿主还没有实现" tone="warn"}
-目前没有 native transport、native `TreeRenderer` 实现，也没有非浏览器的 service 运行时。`createNativeTreeRenderer` 只是契约加 headless 测试；原生宿主还需要提供 canvas handoff、查询/相交观测和控制界面，不必模拟浏览器。
+:::callout{title="iOS 宿主已落地，canvas 仍未接入" tone="warn"}
+原生工程在 `ios/`，前端标准包在 `hosts/ios`（`src/service` + `src/web`）；两者已经用 JavaScriptCore + WKWebView 跑通 tests/apps 下全部 7 个 fixture（demo、mini、todo、wechat-demo、echarts、vant、weui）。service 帧经原生中继，render 页在同一个 WKWebView 内按页 iframe 隔离，SwiftUI 提供 Launcher、导航栏和 tabBar。canvas 没有 OffscreenCanvas 可用，会产生 `UNSUPPORTED_CANVAS` 诊断；它也没有采用 `createNativeTreeRenderer`（渲染仍是 WebView），所以 native `TreeRenderer` 仍只有契约。细节见 `ios/README.md`。
 :::
 
 ## 当前宿主实现的已知问题 {#risks kicker="风险"}

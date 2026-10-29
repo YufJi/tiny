@@ -219,7 +219,16 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     logicTree.handleViewIntersection(payload.observerId, payload.entries)
   })
 
-  const artifactsReady = options.loadArtifacts?.() ?? Promise.resolve()
+  // Artifacts are evaluated lazily by bootstrap, after the host state
+  // (systemInfo/storage) has been applied. Top-level app/component code often
+  // reads getSystemInfoSync().SDKVersion or getStorageSync() during evaluation.
+  let artifactsReady: Promise<unknown> | undefined
+  const ensureArtifacts = (): Promise<unknown> => {
+    if (!artifactsReady) {
+      artifactsReady = options.loadArtifacts?.() ?? Promise.resolve()
+    }
+    return artifactsReady
+  }
   const emitPageLifecycle = (
     page: MiniProgramPageInstance,
     phase: string,
@@ -637,7 +646,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       // reads `wx.getSystemInfoSync().SDKVersion` and `getStorageSync`.
       if (payload.systemInfo) systemInfoSnapshot = cloneJsonSafe(payload.systemInfo)
       if (payload.storage) Object.assign(storageSnapshot, cloneJsonSafe(payload.storage))
-      await artifactsReady
+      await ensureArtifacts()
       componentSchemas = buildComponentSchemas(
         options.manifest.components,
         registry.normalizedComponents,

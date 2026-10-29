@@ -62,6 +62,31 @@ importers:
         specifier: ^5.0.0
         version: 5.9.3
 
+  hosts/ios:
+    dependencies:
+      '@tiny/bridge':
+        specifier: workspace:*
+        version: link:../../packages/bridge
+      '@tiny/host-browser':
+        specifier: workspace:*
+        version: link:../browser
+      '@tiny/host-web-components':
+        specifier: workspace:*
+        version: link:../web-components
+      '@tiny/runtime':
+        specifier: workspace:*
+        version: link:../../packages/runtime
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vite:
+        specifier: ^5.4.21
+        version: 5.4.21(@types/node@22.20.1)(less@3.13.1)
+
   hosts/web-components:
     dependencies:
       '@tiny/css-units':

@@ -20,7 +20,8 @@ must not depend on tools, apps, hosts, or tests.
 | Core | `packages/*` | Libraries consumed by runtime/tools/apps |
 | Tools | `tools/*` | Compiler/build tooling |
 | Apps | `apps/*` | Runnable applications (debugger) |
-| Hosts | `hosts/*` | Browser/environment adapters (not core) |
+| iOS | `ios` | Native SwiftUI/WKWebView/JavaScriptCore app, Xcode project, build/sim scripts |
+| Hosts | `hosts/*` | Browser/environment adapters (not core); `hosts/ios` is a standard Vite package |
 | Tests | `tests/*` | Browser host + mini-program fixtures (not workspace packages) |
 | Website | `website` | React + Vite architecture site (workspace app) |
 
@@ -54,12 +55,13 @@ must not depend on tools, apps, hosts, or tests.
 | --- | --- |
 | `hosts/browser` | `@tiny/host-browser`: iframes, message ports, DOM canvas, devtool overlay |
 | `hosts/web-components` | `@tiny/host-web-components`: web/DOM implementations of the built-in tags, mounted by the web render tree |
+| `hosts/ios` | `@tiny/host-ios`: one Vite package; `src/service` builds the JSCore engine, `src/web` builds host/render entries |
 
 ## Commands
 
 ```bash
 pnpm install                 # install workspace dependencies
-pnpm build                   # build all 10 workspace packages
+pnpm build                   # build all workspace packages
 pnpm accept:glass-easel      # full gate: build, unit tests, 5 browser stages
 pnpm dev:glass-easel         # compile tests/apps/demo + host on :5173
 pnpm dev:devtool             # debugger on :8080 (watches every tests/apps fixture)
@@ -69,6 +71,10 @@ pnpm compile:wechat-demo     # compile the WeChat component/API subset
 pnpm parity:probe            # compile tests/apps/wechat-demo and probe every page in headless Chrome
 pnpm dev:wechat-demo         # WeChat demo host on :5174
 pnpm check:runtime-purity    # assert the core runtime has no host globals
+pnpm ios:assets              # build @tiny/host-ios + compile fixtures + assemble ios/Generated
+pnpm ios:sim                 # build and smoke-test TinyHost on an iOS Simulator
+pnpm ios:smoke:jsc           # boot the demo engine + app-data in macOS jsc
+pnpm ios:smoke:web           # host/render smoke in Chrome with a mock native bridge
 pnpm lint                    # Biome (bridge only is configured today)
 pnpm site:dev                # build embedded devtool + preview website on :4173
 pnpm site:devtool            # rebuild only website/.cache/site-public/devtool
@@ -91,6 +97,9 @@ pnpm --filter @tiny/website build
 Vitest is used by `bridge`, `template-compiler`, `stylesheet-compiler`, `cli`,
 `host-web-components`, and `runtime`. There is no global test runner; use
 `pnpm --filter <package> test`.
+
+The iOS host has its own simulator gate, `pnpm ios:sim`; it requires an installed
+iOS Simulator runtime and is not part of `pnpm accept:glass-easel`.
 
 The end-to-end gate is `pnpm accept:glass-easel`:
 
@@ -116,8 +125,9 @@ records boot state, visible text, page errors and diagnostics per page into
 
 ## Repository conventions
 
-- `hosts/web-components/src/generated/`, `tests/host/generated/`, and
-  `apps/devtool/static/` are build output and gitignored.
+- `hosts/web-components/src/generated/`, `tests/host/generated/`,
+  `apps/devtool/static/`, `ios/Generated/`, and `hosts/ios/dist/` are build output
+  and gitignored.
 - `tests/apps/*` are complete mini-program fixtures; `tests/apps/todo` is the Taro 3
   compatibility target. `tests/apps/echarts` is historical reference only.
 - Site page content lives in `docs/site/*.md` (contract:
@@ -134,7 +144,11 @@ records boot state, visible text, page errors and diagnostics per page into
   staged through `website/.cache/site-public/`, and
   `.github/workflows/pages.yml` deploys it.
 - Do not reintroduce the legacy `packages/base`, `packages/compiler`, or the old
-  devtool shell; no JSBridge/`executeJavaScript`-based code.
+  devtool shell; no JSBridge/`executeJavaScript`-based code in the browser host or
+  devtool. The iOS native host under `ios/` is the one exception: JSCore and
+  WKWebView cannot share memory, so it uses `WKScriptMessageHandler` plus
+  `callAsyncJavaScript` for the Bridge/host-control relay. Keep that code in
+  `ios/` and do not copy it into browser paths.
 - `@tiny/runtime` must stay host-independent. Browser modules live in
   `@tiny/host-browser`; built-in tag implementations live in
   `@tiny/host-web-components` and are mounted by the web render tree
