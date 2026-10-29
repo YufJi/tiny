@@ -20,7 +20,18 @@ export const TREE_PROTOCOL = Object.freeze({
   clearAnimate: 'clearAnimate',
   hostAction: 'hostAction',
   wxsEffect: 'wxsEffect',
+  wxsBinding: 'wxsBinding',
 } as const)
+
+export type WxsBindingMessage = {
+  viewId: string
+  event: string
+  moduleId?: string
+  exportPath?: string[]
+  catch?: boolean
+  capture?: boolean
+  mutated?: boolean
+}
 
 export type WxsRenderEffect =
   | {

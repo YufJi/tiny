@@ -350,6 +350,18 @@ export class LogicTreeAdapter {
     return this.backend.findByViewId(viewId)
   }
 
+  /** Ensure a logic node has a stable render view id. */
+  ensureViewId(node: LogicBackendElement): string {
+    return this.backend.ensureViewId(node)
+  }
+
+  /** Page id for a glass element, with a fallback while a page is mounting. */
+  pageIdFor(element: unknown): string | undefined {
+    const pageId = this.glass.pageIdFor(element)
+    if (pageId) return pageId
+    return this.activePageId ?? [...this.pageRoots.keys()][0]
+  }
+
   /**
    * Snapshot component data keyed by component host view id. Page data stays
    * on the separate page-data path; this map lets render-side `ins.getData()`
@@ -740,12 +752,15 @@ export class LogicTreeAdapter {
     try {
       // WXML/WXS handlers read `event.touches` directly (not `detail.touches`),
       // so touch payloads ride along as extra event fields.
-      const extraFields = payload.name.startsWith('touch')
-        ? {
-            touches: payload.touches ?? [],
-            changedTouches: payload.changedTouches ?? [],
-          }
-        : undefined
+      const extraFields = {
+        ...(payload.name.startsWith('touch')
+          ? {
+              touches: payload.touches ?? [],
+              changedTouches: payload.changedTouches ?? [],
+            }
+          : {}),
+        ...(payload.wxsHandled ? { __tinyWxsHandled: true } : {}),
+      }
       element.triggerEvent(payload.name, detail, {
         bubbles: true,
         composed: true,

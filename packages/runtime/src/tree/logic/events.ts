@@ -32,4 +32,6 @@ export type ViewEventPayload = {
   target?: RenderEventGeometry
   /** Layout geometry of the node owning the binding being dispatched. */
   currentTarget?: RenderEventGeometry
+  /** Set when render already ran a local WXS handler for this event. */
+  wxsHandled?: boolean
 }

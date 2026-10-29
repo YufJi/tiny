@@ -552,6 +552,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       changedTouches?: unknown[]
       target?: ViewEventPayload['target']
       currentTarget?: ViewEventPayload['currentTarget']
+      wxsHandled?: boolean
     }
     if (!payload.id || !payload.name) return
     try {
@@ -565,6 +566,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         changedTouches: payload.changedTouches,
         ...(payload.target ? { target: payload.target } : {}),
         ...(payload.currentTarget ? { currentTarget: payload.currentTarget } : {}),
+        ...(payload.wxsHandled ? { wxsHandled: true } : {}),
       })
     } catch (error) {
       const description = error instanceof Error ? error.message : String(error)
@@ -706,6 +708,9 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         getLogicTree: () => logicTree ?? undefined,
         getPage: (pageId) => pageInstances.get(pageId),
         requestRenderUpdate: (pageId) => scheduleTreeUpdate(pageId),
+        onBinding: (pageId, binding) => {
+          connection.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.wxsBinding, binding, { pageId })
+        },
         onDiagnostic: (pageId, code, message, details) => {
           connection.sendDiagnostic('warn', { code, message, details }, pageId)
         },

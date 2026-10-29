@@ -13,6 +13,7 @@ import type {
   RenderPatch,
   RenderRect,
   RenderText,
+  WxsBindingMessage,
   WxsModuleTable,
   WxsRenderEffect,
 } from '@tiny/runtime'
@@ -30,9 +31,11 @@ export type GlassRenderEvent = {
   changedTouches?: unknown[]
   target?: RenderEventGeometry
   currentTarget?: RenderEventGeometry
+  /** Set when a local WXS handler already ran for this render event. */
+  wxsHandled?: boolean
 }
 
-type WxsEventBinding = {
+type WxsHandlerBinding = {
   name: string
   moduleId: string
   exportPath: string[]
@@ -47,18 +50,25 @@ type WxsPropBinding = {
   exportPath: string[]
 }
 
-const parseWxsEvents = (props: Record<string, unknown> | undefined): WxsEventBinding[] => {
-  const raw = props?.[WXS_EVENTS_PROP]
+type WxsDynamicEventBinding = {
+  name: string
+  catch?: boolean
+  capture?: boolean
+  mutated?: boolean
+}
+
+const parseWxsDynamicEvents = (
+  props: Record<string, unknown> | undefined,
+): WxsDynamicEventBinding[] => {
+  const raw = props?.[WXS_DYNAMIC_PROP]
   if (typeof raw !== 'string' || raw.length === 0) return []
   try {
     const parsed = JSON.parse(raw) as unknown
     if (!Array.isArray(parsed)) return []
-    return parsed.filter((entry): entry is WxsEventBinding => (
+    return parsed.filter((entry): entry is WxsDynamicEventBinding => (
       Boolean(entry)
       && typeof entry === 'object'
-      && typeof (entry as WxsEventBinding).name === 'string'
-      && typeof (entry as WxsEventBinding).moduleId === 'string'
-      && Array.isArray((entry as WxsEventBinding).exportPath)
+      && typeof (entry as WxsDynamicEventBinding).name === 'string'
     ))
   } catch {
     return []
@@ -122,6 +132,7 @@ export type GlassRenderTree = {
   setPagePath?: (pagePath: string) => void
   setWxsModules?: (table: WxsModuleTable) => void
   setWxsEffectSink?: (sink: (effect: WxsRenderEffect) => void) => void
+  setWxsBinding?: (binding: WxsBindingMessage) => void
   setPageData?: (data: Record<string, unknown>) => void
   setComponentData?: (data: Record<string, Record<string, unknown>>) => void
   setDiagnosticSink?: (sink: (diagnostic: {
@@ -138,8 +149,8 @@ export type GlassRenderTree = {
 
 const builtinTags = new Set<string>(BUILTIN_COMPONENT_TAGS)
 
-const WXS_EVENTS_PROP = 'wx-tiny-wxs-events'
 const WXS_PROPS_PROP = 'wx-tiny-wxs-props'
+const WXS_DYNAMIC_PROP = 'wx-tiny-wxs-dynamic'
 
 const LOCAL_WXS_EVENTS = new Set([
   'tap',
@@ -243,7 +254,7 @@ function applyHostProps(component: AnyComponent, props: Record<string, unknown> 
   } | null
   if (!element?.setAttribute) return
   for (const [name, value] of Object.entries(props ?? {})) {
-    if (value === undefined || name === WXS_EVENTS_PROP || name === WXS_PROPS_PROP) continue
+    if (value === undefined || name === WXS_PROPS_PROP || name === WXS_DYNAMIC_PROP) continue
     element.setAttribute(name, String(value))
   }
 }
@@ -301,6 +312,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const pendingWxsProps = new Map<string, { node: RenderElement; component: AnyComponent }>()
   const wxsStates = new WeakMap<Element, Record<string, unknown>>()
   const wxsStatesById = new Map<string, Record<string, unknown>>()
+  const dynamicBindingModes = new Map<string, WxsBindingMessage>()
   const wxsTimers = new Set<ReturnType<typeof setTimeout>>()
   const wxsPropSnapshots = new Map<string, Record<string, unknown>>()
   let pageData: Record<string, unknown> = {}
@@ -495,12 +507,17 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   // built-in components through glass-easel with a normalized detail payload.
   const NATIVE_EVENT_NAMES = new Set(['tap', 'click', 'touchstart', 'touchmove', 'touchend', 'touchcancel'])
 
-  const attachEvents = (node: RenderElement, component: AnyComponent): void => {
+  const attachEvents = (
+    node: RenderElement,
+    component: AnyComponent,
+    skipDynamic?: Set<string>,
+  ): void => {
     const events = node.events ?? []
     if (events.length === 0) return
     const element = component.getBackendElement() as unknown as HTMLElement | null
     const cleanups: Array<() => void> = []
     for (const binding of events) {
+      if (skipDynamic?.has(binding.name)) continue
       const capture = binding.capture === true
       // Semantic events from host built-ins (change/input/scroll/...) carry
       // the mini-program detail; forward that instead of re-deriving it.
@@ -762,7 +779,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   }
 
   const dispatchWxs = (
-    binding: WxsEventBinding,
+    binding: WxsHandlerBinding,
     node: RenderElement,
     element: HTMLElement,
     payload: Record<string, unknown>,
@@ -784,103 +801,144 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     }
     if (hasServiceListenerInPath(element.parentElement, binding.name)) {
       const { instance: _instance, ...servicePayload } = payload
-      emitServiceEvent(servicePayload as GlassRenderEvent)
+      emitServiceEvent({ ...servicePayload, wxsHandled: true } as unknown as GlassRenderEvent)
     }
   }
 
-  const attachWxsEvents = (
+  const attachDynamicWxsEvents = (
     node: RenderElement,
     component: AnyComponent,
-    bindings: WxsEventBinding[],
+    bindings: WxsDynamicEventBinding[],
   ): void => {
+    if (bindings.length === 0) return
     const element = component.getBackendElement() as unknown as HTMLElement | null
-    applyWxsProps(node, component, wxsPropSnapshots.get(node.id))
     if (!element) {
-      pendingWxsEvents.set(node.id, () => attachWxsEvents(node, component, bindings))
+      pendingWxsEvents.set(node.id, () => attachDynamicWxsEvents(node, component, bindings))
       return
     }
     const cleanups = eventCleanups.get(node.id) ?? []
+    const invoke = (
+      binding: WxsDynamicEventBinding,
+      payload: Record<string, unknown>,
+      stop: () => void,
+    ): void => {
+      const resolved = dynamicBindingModes.get(`${node.id}\0${binding.name}`)
+      const handler = resolved?.moduleId && resolved.exportPath
+        ? wxsRuntime.resolve(resolved.moduleId, resolved.exportPath)
+        : undefined
+      if (resolved?.moduleId && resolved.exportPath && handler) {
+        dispatchWxs({
+          name: binding.name,
+          moduleId: resolved.moduleId,
+          exportPath: resolved.exportPath,
+          ...(binding.catch ? { catch: true } : {}),
+          ...(binding.capture ? { capture: true } : {}),
+          ...(binding.mutated ? { mutated: true } : {}),
+        }, node, element, payload, stop)
+        return
+      }
+      const servicePayload = { ...payload }
+      if (servicePayload.target && typeof servicePayload.target === 'object') {
+        const { dataset: _targetDataset, ...target } = servicePayload.target as Record<string, unknown>
+        servicePayload.target = target
+      }
+      if (servicePayload.currentTarget && typeof servicePayload.currentTarget === 'object') {
+        const { dataset: _currentDataset, ...currentTarget } = servicePayload.currentTarget as Record<string, unknown>
+        servicePayload.currentTarget = currentTarget
+      }
+      emitServiceEvent(servicePayload as GlassRenderEvent)
+    }
+
     for (const binding of bindings) {
-      if (!LOCAL_WXS_EVENTS.has(binding.name)) continue
-      if (!NATIVE_EVENT_NAMES.has(binding.name)) {
-        const listener = (event: glassEasel.Event<unknown> & {
-          touches?: unknown
-          changedTouches?: unknown
-        }): void => {
+      if (NATIVE_EVENT_NAMES.has(binding.name)) {
+        const domName = binding.name === 'tap' ? 'click' : binding.name
+        let lastPointerStamp = -1
+        const listener = (event: Event): void => {
+          if (isHandledNativeEvent(event)) return
+          if (binding.name === 'tap' || binding.name === 'click') {
+            if (event.timeStamp === lastPointerStamp) return
+            lastPointerStamp = event.timeStamp
+          }
           const currentTarget = geometryOf(element, node.id)
+          const target = geometryOfTarget(event.target)
+          const touchEvent = event as TouchEvent
           const isTouch = binding.name.startsWith('touch')
+          const touches = isTouch ? normalizeTouchList(touchEvent.touches) : undefined
+          const changedTouches = isTouch ? normalizeTouchList(touchEvent.changedTouches) : undefined
+          const targetNode = target?.viewId ? currentTree.get(target.viewId) : undefined
           const payload: Record<string, unknown> = {
             id: node.id,
             name: binding.name,
-            ...(event.detail !== undefined
-              ? { detail: isTouch ? cloneTouchDetail(event.detail) : event.detail }
-              : {}),
-            ...(isTouch && event.touches !== undefined
-              ? { touches: cloneTouchList(event.touches) }
-              : {}),
-            ...(isTouch && event.changedTouches !== undefined
-              ? { changedTouches: cloneTouchList(event.changedTouches) }
-              : {}),
+            native: nativeFields(event),
+            ...(touches ? { touches } : {}),
+            ...(changedTouches ? { changedTouches } : {}),
             ...(currentTarget ? { currentTarget } : {}),
+            ...(target ? { target } : {}),
           }
           if (currentTarget && node.dataset) {
             payload.currentTarget = { ...currentTarget, dataset: node.dataset }
           }
-          dispatchWxs(binding, node, element, payload, () => {
-            const target = event as unknown as { preventDefault?: () => void; stopPropagation?: () => void }
-            target.preventDefault?.()
-            target.stopPropagation?.()
+          if (target && targetNode?.type === 'element' && targetNode.dataset) {
+            payload.target = { ...target, dataset: targetNode.dataset }
+          }
+          invoke(binding, payload, () => {
+            event.preventDefault()
+            event.stopPropagation()
           })
         }
-        component.addListener(binding.name, listener as never, { capture: binding.capture === true })
-        cleanups.push(() => component.removeListener(binding.name, listener as never, {
-          capture: binding.capture === true,
-        }))
+        element.addEventListener(domName, listener, binding.capture === true)
+        cleanups.push(() => element.removeEventListener(domName, listener, binding.capture === true))
         continue
       }
 
-      const domName = binding.name === 'tap' ? 'click' : binding.name
-      let lastPointerStamp = -1
-      const listener = (event: Event): void => {
-        if (isHandledNativeEvent(event)) return
-        if (binding.name === 'tap' || binding.name === 'click') {
-          if (event.timeStamp === lastPointerStamp) return
-          lastPointerStamp = event.timeStamp
-        }
+      const listener = (event: glassEasel.Event<unknown> & {
+        touches?: unknown
+        changedTouches?: unknown
+      }): void => {
         const currentTarget = geometryOf(element, node.id)
-        const target = geometryOfTarget(event.target)
-        const touchEvent = event as TouchEvent
-        const touches = binding.name.startsWith('touch')
-          ? normalizeTouchList(touchEvent.touches)
-          : undefined
-        const changedTouches = binding.name.startsWith('touch')
-          ? normalizeTouchList(touchEvent.changedTouches)
-          : undefined
-        const targetNode = target?.viewId ? currentTree.get(target.viewId) : undefined
+        const isTouch = binding.name.startsWith('touch')
         const payload: Record<string, unknown> = {
           id: node.id,
           name: binding.name,
-          native: nativeFields(event),
-          ...(touches ? { touches } : {}),
-          ...(changedTouches ? { changedTouches } : {}),
+          ...(event.detail !== undefined
+            ? { detail: isTouch ? cloneTouchDetail(event.detail) : event.detail }
+            : {}),
+          ...(isTouch && event.touches !== undefined
+            ? { touches: cloneTouchList(event.touches) }
+            : {}),
+          ...(isTouch && event.changedTouches !== undefined
+            ? { changedTouches: cloneTouchList(event.changedTouches) }
+            : {}),
           ...(currentTarget ? { currentTarget } : {}),
-          ...(target ? { target } : {}),
         }
         if (currentTarget && node.dataset) {
           payload.currentTarget = { ...currentTarget, dataset: node.dataset }
         }
-        if (target && targetNode?.type === 'element' && targetNode.dataset) {
-          payload.target = { ...target, dataset: targetNode.dataset }
-        }
-        dispatchWxs(binding, node, element, payload, () => {
-          event.preventDefault()
-          event.stopPropagation()
+        invoke(binding, payload, () => {
+          const target = event as unknown as {
+            preventDefault?: () => void
+            stopPropagation?: () => void
+          }
+          target.preventDefault?.()
+          target.stopPropagation?.()
         })
       }
-      element.addEventListener(domName, listener, binding.capture === true)
-      cleanups.push(() => element.removeEventListener(domName, listener, binding.capture === true))
+      component.addListener(binding.name, listener as never, { capture: binding.capture === true })
+      cleanups.push(() => component.removeListener(binding.name, listener as never, {
+        capture: binding.capture === true,
+      }))
     }
     if (cleanups.length > 0) eventCleanups.set(node.id, cleanups)
+  }
+
+  const flushPendingWxsEvents = (): void => {
+    for (const [id, attach] of pendingWxsEvents) {
+      const component = nodes.get(id)
+      if (!component || glassEasel.TextNode.isTextNode(component)) continue
+      if (!component.getBackendElement()) continue
+      pendingWxsEvents.delete(id)
+      attach()
+    }
   }
 
   const flushPendingWxsProps = (): void => {
@@ -896,16 +954,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       const component = nodes.get(id)
       if (!component || glassEasel.TextNode.isTextNode(component)) continue
       applyWxsProps(node, component, wxsPropSnapshots.get(id))
-    }
-  }
-
-  const flushPendingWxsEvents = (): void => {
-    for (const [id, attach] of pendingWxsEvents) {
-      const component = nodes.get(id)
-      if (!component || glassEasel.TextNode.isTextNode(component)) continue
-      if (!component.getBackendElement()) continue
-      pendingWxsEvents.delete(id)
-      attach()
     }
   }
 
@@ -926,8 +974,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     nodes.set(node.id, component)
     idByComponent.set(component, node.id)
     currentTree.set(node.id, node)
-    attachEvents(node, component)
-    attachWxsEvents(node, component, parseWxsEvents(node.props))
+    const dynamicBindings = parseWxsDynamicEvents(node.props)
+    attachEvents(node, component, new Set(dynamicBindings.map((binding) => binding.name)))
+    attachDynamicWxsEvents(node, component, dynamicBindings)
     if (builtin) {
       const props = node.props ?? {}
       for (const name of ['placeholder-class', 'hover-class']) {
@@ -1228,6 +1277,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     },
     setWxsEffectSink: (sink) => {
       wxsEffectSink = sink
+    },
+    setWxsBinding: (binding) => {
+      dynamicBindingModes.set(`${binding.viewId}\0${binding.event}`, binding)
     },
     setPageData: (data) => {
       pageData = { ...data }

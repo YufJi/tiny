@@ -18,6 +18,7 @@ import {
   type RenderPatch,
   type RenderText,
   type WxsRenderEffect,
+  type WxsBindingMessage,
 } from '../protocol'
 
 export type TreeEventPayload = {
@@ -41,6 +42,7 @@ export type TreeRenderer = {
   setWxsEffectSink?: (sink: (effect: WxsRenderEffect) => void) => void
   setPageData?: (data: Record<string, unknown>) => void
   setComponentData?: (data: Record<string, Record<string, unknown>>) => void
+  setWxsBinding?: (binding: WxsBindingMessage) => void
   /** Built-in components ask the host to act (e.g. `<navigator>` routing). */
   setHostActionSink?: (sink: (action: RenderHostAction) => void) => void
   applyStyles?: (styles: string[]) => void
@@ -213,6 +215,19 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     }
     const styles = [...(payload.styles ?? []), ...(payload.fallbackAppStyles ?? [])]
     if (styles.length > 0) options.renderer.applyStyles?.(styles)
+  })
+  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.wxsBinding, (message) => {
+    const payload = (message.payload ?? {}) as Partial<WxsBindingMessage>
+    if (!payload.viewId || !payload.event) return
+    options.renderer.setWxsBinding?.({
+      viewId: payload.viewId,
+      event: payload.event,
+      ...(payload.moduleId ? { moduleId: payload.moduleId } : {}),
+      ...(payload.exportPath ? { exportPath: payload.exportPath } : {}),
+      ...(payload.catch ? { catch: true } : {}),
+      ...(payload.capture ? { capture: true } : {}),
+      ...(payload.mutated ? { mutated: true } : {}),
+    })
   })
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.patch, (message) => {
     const payload = (message.payload ?? {}) as {

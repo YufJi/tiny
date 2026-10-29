@@ -377,6 +377,9 @@ export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost 
   service.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.patch, (message) => {
     routeServiceEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.patch, message.payload, message.pageId)
   })
+  service.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.wxsBinding, (message) => {
+    routeServiceEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.wxsBinding, message.payload, message.pageId)
+  })
   service.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.animate, (message) => {
     routeServiceEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.animate, message.payload, message.pageId)
   })
