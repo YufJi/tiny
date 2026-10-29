@@ -740,6 +740,15 @@ function writeAttributeValue(
   }
 }
 
+const RENDER_WXS_EVENTS = new Set([
+  'tap',
+  'click',
+  'touchstart',
+  'touchmove',
+  'touchend',
+  'touchcancel',
+])
+
 type WxsEventMetadata = {
   name: string
   moduleId: string
@@ -933,6 +942,10 @@ function eventBindingToProcGen(
       capture: ev.isCapture,
       mutated: ev.isMut,
     })
+    // Local WXS listeners are executed by the render host. Keeping the
+    // service listener too would run the same handler twice. Events outside
+    // the current render-native set stay on the service path.
+    if (RENDER_WXS_EVENTS.has(ev.name.name)) return
   }
   w.exprStmt((ww) => {
     ww.write('if(C||K||')

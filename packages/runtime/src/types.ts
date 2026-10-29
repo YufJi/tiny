@@ -1,4 +1,5 @@
 import type { Manifest } from '@tiny/manifest'
+import type { WxsModuleTable } from '@tiny/wxs-runtime'
 import type { AssetUrlResolver } from './assets'
 import type { RenderHostAction } from './tree/protocol'
 
@@ -9,6 +10,7 @@ export type TemplateGroupList = Record<string, unknown>
 export type TemplateRegistry = {
   groupList: TemplateGroupList
   content: (path: string, name?: string) => unknown
+  wxsModules?: WxsModuleTable
 }
 
 export type MiniProgramPropertyType = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'function' | 'any'

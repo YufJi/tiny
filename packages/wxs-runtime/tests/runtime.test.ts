@@ -75,6 +75,14 @@ describe('createWxsRuntime', () => {
     expect(exports.date).toBe(2020)
   })
 
+  test('loads a compiler module table', () => {
+    const wxs = runtime()
+    wxs.load({
+      modules: [{ id: 'table', code: 'module.exports = { value: 9 }' }],
+    })
+    expect(wxs.require('table')).toEqual({ value: 9 })
+  })
+
   test('caches module exports', () => {
     const wxs = runtime()
     let loads = 0

@@ -56,6 +56,7 @@ export type {
   WxsErrorContext,
   WxsExports,
   WxsModuleFactory,
+  WxsModuleTable,
   WxsRuntime,
   WxsRuntimeHost,
   WxsValues,

@@ -1,5 +1,13 @@
 export type WxsExports = Record<string, unknown>
 
+export type WxsModuleTable = {
+  modules: Array<{
+    id: string
+    code: string
+    map?: string
+  }>
+}
+
 export type WxsModule = {
   exports: WxsExports
 }
@@ -33,6 +41,8 @@ export type WxsRuntimeHost = {
 }
 
 export type WxsRuntime = {
+  /** Register a compiler-emitted module table. */
+  load: (table: WxsModuleTable) => void
   /** Register source for a module and return the `Q.S`-compatible accessor. */
   register: (moduleId: string, source: string) => () => WxsExports
   require: (moduleId: string) => WxsExports

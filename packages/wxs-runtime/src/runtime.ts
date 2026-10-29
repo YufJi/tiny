@@ -3,6 +3,7 @@ import type {
   WxsCompile,
   WxsErrorContext,
   WxsExports,
+  WxsModuleTable,
   WxsRuntime,
   WxsRuntimeHost,
   WxsValues,
@@ -99,6 +100,24 @@ export function createWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
   }
 
   return {
+    load(table: WxsModuleTable) {
+      for (const module of table.modules) {
+        const existing = records.get(module.id)
+        if (existing && existing.source !== module.code) {
+          throw new Error(`WXS module already registered: ${module.id}`)
+        }
+        if (!existing) {
+          records.set(module.id, {
+            source: module.code,
+            module: { exports: {} },
+            exports: {},
+            loaded: false,
+            loading: false,
+          })
+        }
+      }
+    },
+
     register(moduleId, source) {
       const existing = records.get(moduleId)
       if (existing) {

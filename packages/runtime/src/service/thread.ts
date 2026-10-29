@@ -58,6 +58,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   const pageInstances = new Map<string, MiniProgramPageInstance>()
   let componentSchemas: MiniProgramComponentSchema[] = []
   let logicTree: LogicTreeAdapter | null = null
+  let wxsModules: import('@tiny/wxs-runtime').WxsModuleTable | undefined
   const mountedTreePages = new Set<string>()
   const pendingTreePages = new Set<string>()
   let treeUpdateScheduled = false
@@ -391,6 +392,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         pageId,
         pagePath: logicTree.pagePathFor(pageId),
         messages: cloneJsonSafe(treeFlow(root)),
+        ...(wxsModules ? { wxsModules: cloneJsonSafe(wxsModules) } : {}),
         ...treeStyles(pageId),
       },
       { pageId },
@@ -597,6 +599,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         registry.normalizedComponents,
       )
       const templates = await options.loadTemplates()
+      wxsModules = templates.wxsModules
       logicTree = new LogicTreeAdapter({
         manifest: options.manifest,
         templates,

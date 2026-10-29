@@ -1,5 +1,6 @@
 import { BridgeConnection } from '@tiny/bridge'
 import type { Transport } from '@tiny/bridge'
+import type { WxsModuleTable } from '@tiny/wxs-runtime'
 import {
   CANVAS_CONTROL,
   QUERY_CONTROL,
@@ -53,6 +54,7 @@ export type TreeRenderer = {
     details?: unknown
   }) => void) => void
   inspectTree?: () => unknown
+  setWxsModules?: (table: WxsModuleTable) => void
   measure?: (ids: string[]) => Record<string, unknown>
   query?: (selector: string, all: boolean) => unknown[]
   observeIntersection?: (
@@ -144,9 +146,11 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       messages?: ComponentFlow[]
       styles?: string[]
       fallbackAppStyles?: string[]
+      wxsModules?: WxsModuleTable
     }
     currentPageId = payload.pageId ?? message.pageId ?? currentPageId
     options.renderer.setPagePath?.(payload.pagePath ?? '')
+    if (payload.wxsModules) options.renderer.setWxsModules?.(payload.wxsModules)
     const nodes = new Map<string, RenderNode>()
     const roots: RenderNode[] = []
     let pageRoot: RenderNode | undefined

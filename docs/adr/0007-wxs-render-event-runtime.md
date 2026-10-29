@@ -12,10 +12,16 @@ Landed so far:
 - generated templates use a small `Q.S` adapter instead of carrying the full
   runtime source;
 - the compiler parses WXS with acorn and rewrites free globals, `getRegExp` /
-  `getDate` and `.constructor` before emitting the script.
+  `getDate` and `.constructor` before emitting the script;
+- the compiler emits a WXS module table and static WXS event metadata;
+- the flow carries the module table to render;
+- render executes native `tap` / `touch*` WXS handlers locally with a partial
+  descriptor (`getState`, `setStyle`, class methods, selector queries).
 
-Still pending: module-table/file emission and wired source maps, WXS event
-metadata, render host, descriptors and `change:prop`.
+Still pending: wired source maps, service-event bubbling for local handlers,
+semantic WXS events, full descriptor RPCs (`callMethod`, `triggerEvent`),
+WXS style/class override merging, `change:prop`, and the dynamic-binding
+fallback policy.
 
 This ADR keeps ADR-0006's split-tree decision and does **not** move WXML
 expression evaluation to render. It proposes one kernel-level WXS runtime that
@@ -747,6 +753,10 @@ a projection. WXS expressions stay service-side; only event-time WXS moves.
   against WeChat before calling the split complete.
 - Should the legacy `getData()` descriptor extension stay? The official
   `ComponentDescriptor` table does not list it.
+- Dynamic WXS bindings such as `{{utils.getHandler()}}` or
+  `{{condition ? utils.a : utils.b}}` currently fall back to the service path.
+  Should the compiler attempt deeper static analysis, emit diagnostics, or keep
+  the fallback permanently?
 - Is service fallback for custom component WXS events acceptable, or should
   those bindings be rejected at compile time?
 - Does a same-realm wrapper provide enough isolation for trusted app code, or
