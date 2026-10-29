@@ -1,12 +1,13 @@
-# ADR-0007: WXS render event runtime
+# ADR-0007: Shared WXS runtime and render event execution
 
 ## Status
 
 Proposed. Not implemented.
 
 This ADR keeps ADR-0006's split-tree decision and does **not** move WXML
-expression evaluation to render. It adds a second WXS runtime for events and
-property observers that must run in the view layer.
+expression evaluation to render. It proposes one kernel-level WXS runtime that
+both service and render inject, with separate instances for expression WXS and
+event WXS.
 
 ## Context
 
@@ -47,36 +48,81 @@ Tiny currently runs all WXS in the service logic tree:
 That is correct for expression WXS (and keeps Vant working), but it makes WXS
 events pay the exact round-trip the feature exists to avoid.
 
-### Why two WXS copies are intentional
+### One runtime, two injected instances
 
-WXS event handlers run in the view layer. The design treats their module
-globals as isolated from expression WXS, consistent with that view/service
-separation. It therefore has:
+The WXS runtime itself is a kernel capability, not two implementations:
 
-- a **service expression runtime** for `{{wxs.fn(...)}}`, `class`, `style`,
-  `wx:if`, `wx:for`;
-- a **render event runtime** for `bind*` / `catch*` handlers and `change:prop`.
+- `@tiny/runtime` (or a dedicated `@tiny/wxs-runtime` package) owns the
+  language/runtime core: module loader, globals, `constructor` semantics,
+  source-map handling and the host seam;
+- service and render each call `createWxsRuntime({ host })`;
+- the host supplies environment-specific behavior:
+  - service host: expression evaluation, logic-tree descriptors, `callMethod`;
+  - render host: DOM descriptors, local style/class, RAF/timers, event
+    dispatch.
 
-They are independent module instances. Their module-level variables are **not**
-synchronized. A module used by both kinds of binding is compiled into both
-runtimes and intentionally has two isolated module states.
+The **code** is shared; the **instances** are not. WXS event handlers run in the
+view layer, so their module globals are isolated from expression WXS. A module
+used by both kinds of binding is compiled into both instances and intentionally
+has two isolated module states.
 
 This is not a state-splitting bug. Synchronizing the two would break the
 isolation the feature relies on.
 
 ## Decision
 
-### 1. Compiler output
+### 1. Kernel runtime
 
-The compiler keeps the existing service `templates.js` and adds a render-side
-WXS artifact:
+The WXS runtime is a host-independent kernel module. Proposed location:
 
 ```text
-templates.js          # service WXML evaluation, expression WXS
-wxs-render.js         # render event WXS modules
+packages/runtime/src/wxs/     # or a dedicated @tiny/wxs-runtime package
+  createWxsRuntime(...)
+  module loader
+  globals / constructor semantics
+  host interface
 ```
 
-`wxs-render.js` contains a module table:
+The public shape is roughly:
+
+```ts
+type WxsRuntimeHost = {
+  resolveGlobal(name: string): unknown
+  createDescriptor(owner: WxsNode): WxsComponentDescriptor
+  scheduleFrame(callback: () => void): number
+  scheduleTimeout(callback: () => void, delay: number): number
+  cancelTimeout(id: number): void
+}
+
+type WxsRuntime = {
+  registerModule(id: string, factory: WxsModuleFactory): void
+  requireModule(id: string): Record<string, unknown>
+  invoke(moduleId: string, exportName: string, ...args: unknown[]): unknown
+  dispose(): void
+}
+```
+
+The runtime does not import DOM, iframe or service code. It receives a host and
+a module table. Service and render bootstrap each create their own instance:
+
+```ts
+// service
+const wxs = createWxsRuntime({ host: serviceWxsHost })
+// render
+const wxs = createWxsRuntime({ host: renderWxsHost })
+```
+
+The service instance and render instance share code, not state.
+
+### 2. Compiler output
+
+The compiler no longer owns the runtime implementation. It emits a transformed
+module table plus event metadata:
+
+```text
+templates.js        # service WXML evaluation; Q.S becomes a runtime adapter
+wxs-modules.js      # transformed WXS module factories, consumable by both
+```
 
 ```ts
 type WxsModuleTable = {
@@ -95,24 +141,46 @@ The compiler classifies each WXS usage:
 
 | Usage | Runtime |
 | --- | --- |
-| WXML expression only | service |
-| WXS event / `change:prop` only | render |
-| both | both, independently |
+| WXML expression only | service instance |
+| WXS event / `change:prop` only | render instance |
+| both | both instances, independently |
 
-The classifier is compiler-side; it must not rely on runtime probing.
+The classifier is compiler-side; it must not rely on runtime probing. The
+compiler may emit per-side subsets of the module table, but the module code and
+IDs stay identical.
 
-Prefixing is also compiler-side and AST-based:
+Transformations stay simple and mechanical:
 
 - top-level `var` / function names get a stable module prefix;
-- free identifiers resolve through a WXS global allowlist;
+- free identifiers resolve through the WXS global allowlist;
 - `require` becomes a module-ID lookup;
 - strings, comments and object property names are untouched;
 - `constructor` reads keep the existing WXS compatibility helper;
 - source maps remain attached to the original WXS file.
 
-Name prefixing is not the sandbox; the render runtime's host wrapper is.
+The compiler does not implement module loading, descriptors, timers, DOM access,
+or service RPC; those belong to the injected runtime host. Name prefixing is not
+the sandbox either; the render host wrapper is.
 
-### 2. Event metadata
+#### Event binding recognition
+
+The compiler already knows which listeners are WXS listeners: it is the same
+lvalue path currently passed to `Q.C`. It uses that information to emit:
+
+- a service event binding for page/component JS handlers;
+- a WXS event binding for render-local handlers;
+- no service listener for the WXS binding.
+
+The render host can therefore execute the binding directly:
+
+```ts
+wxs.invoke(moduleId, exportName, event, ownerInstance)
+```
+
+and only fall back to `tree.event` when a service listener remains on the event
+path.
+
+### 3. Event metadata
 
 `RenderElement.events` grows from a name-only list to a binding list:
 
@@ -145,39 +213,33 @@ The compiler marks it on the owning element. The service still owns the actual
 property value; the render tree runs the observer after receiving a prop update
 and tracks the previous value locally.
 
-### 3. Render runtime
+### 4. Render runtime host
 
-Each render page gets one runtime:
+Each render page gets its own kernel runtime instance with a render host:
 
 ```ts
-const wxs = createWxsEventRuntime({
+const wxs = createWxsRuntime({
   modules: wxsRenderModules,
-  pageId,
-  document,
+  host: createRenderWxsHost({ pageId, document }),
 })
 ```
 
-The runtime owns:
+The kernel runtime owns module loading and `require` resolution. The render
+host owns:
 
-- module loading and `require` resolution;
-- per-page event handlers;
+- per-page event handler registration and dispatch;
 - per-component `getState()` maps;
 - WXS style/class overrides;
 - timers and animation-frame callbacks;
-- the descriptor factory.
+- the DOM `ComponentDescriptor` factory.
 
 It does **not** own WXML expression evaluation, component data, or app methods.
 
-The existing `wxs-runtime.js` remains the shared language/module runtime. The
-service template bundle and the render runtime both inline that source, but
-supply different host hooks:
+During migration, the service template's `Q.S` adapter can delegate to a
+service-injected kernel runtime. The render side does not use `Q.C`; the render
+host invokes handlers directly from event metadata.
 
-```text
-service: Q.S + Q.C (existing)
-render:  Q.S + event dispatcher / descriptor
-```
-
-### 4. ComponentDescriptor
+### 5. ComponentDescriptor
 
 The render descriptor implements the methods in the official table.
 
@@ -206,7 +268,7 @@ the component that contains the event target. For a page-level binding,
 - different component instances do not;
 - it does not cross into service.
 
-### 5. Event dispatch
+### 6. Event dispatch
 
 Render owns the event path:
 
@@ -230,7 +292,7 @@ Unsupported cases remain service-dispatched and emit a diagnostic:
 - native component events;
 - `input` / `textarea` `bindinput` (as documented).
 
-### 6. WXS style and class overrides
+### 7. WXS style and class overrides
 
 WXS `setStyle` / `addClass` must survive later WXML patches.
 
@@ -252,7 +314,7 @@ WXML style/class  <  WXS overrides
 This mirrors the reference implementation's separate `wxsStyle` / `wxsClass`
 state and prevents a `setData` patch from wiping an in-progress animation.
 
-### 7. Thread protocol
+### 8. Thread protocol
 
 New messages, only for effects that cannot stay local:
 
@@ -281,7 +343,7 @@ existing page events; they do not block the render frame.
 `getData` is not on the local fast path. If the compatibility flag is enabled it
 is an RPC; the preferred APIs are `getDataset()` and `getState()`.
 
-### 8. Security and sandbox
+### 9. Security and sandbox
 
 The render runtime must not expose `window`, `document`, `wx`, timers, or the
 page's global scope to WXS.
@@ -307,7 +369,7 @@ runtime still shadows host globals and exposes only the documented globals:
 - `getDate`
 - documented timers via the descriptor, not bare globals
 
-### 9. Lifecycle
+### 10. Lifecycle
 
 - One runtime per render page.
 - Module instances are cached per runtime.
@@ -398,15 +460,17 @@ a projection. WXS expressions stay service-side; only event-time WXS moves.
 
 ## Rollout
 
-1. **Compiler artifacts** — emit `wxs-render.js` and event metadata behind a
-   feature flag. No behavior change.
-2. **Render runtime skeleton** — load modules, expose `getState`, `setStyle`,
+1. **Kernel extraction** — move the WXS language/module runtime out of the
+   template compiler into the kernel package; make the service `Q.S` adapter
+   delegate to an injected runtime. No behavior change.
+2. **Compiler transform** — emit `wxs-modules.js` and WXS event metadata behind
+   a feature flag. No behavior change.
+3. **Render host skeleton** — load modules, expose `getState`, `setStyle`,
    `selectComponent`, `getDataset`; no event wiring.
-3. **Event fast path** — local WXS handlers for built-in events, return-false
+4. **Event fast path** — local WXS handlers for built-in events, return-false
    propagation, remove service dispatch for handler-only modules.
-4. **Descriptor completion** — class methods, RAF, timers, computed style,
-   bounding rect, `triggerEvent`.
-5. **`change:prop`** — property observer path and initial invocation.
+5. **Descriptor completion and `change:prop`** — class methods, RAF, timers,
+   computed style, bounding rect, `triggerEvent`, property observers.
 6. **Hardening** — sandbox allowlist, source maps, diagnostics, acceptance
    coverage; remove the old service event path for WXS.
 
@@ -430,6 +494,8 @@ a projection. WXS expressions stay service-side; only event-time WXS moves.
 - WeChat, WXS 语法参考:
   <https://developers.weixin.qq.com/miniprogram/dev/reference/wxs/>
 - ADR-0006, WeChat-style split trees: `docs/adr/0006-wechat-split-tree.md`
-- Current WXS runtime: `packages/template-compiler/src/runtime/wxs-runtime.js`
+- Current WXS runtime source: `packages/template-compiler/src/runtime/wxs-runtime.js`
+- Intended kernel location: `packages/runtime/src/wxs/` (or
+  `packages/wxs-runtime/`)
 - Current service descriptor: `packages/runtime/src/service/wxs-host.ts`
 - Render tree: `hosts/web-components/src/render-tree.ts`
