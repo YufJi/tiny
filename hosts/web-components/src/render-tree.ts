@@ -235,6 +235,26 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const pendingClasses = new Map<string, () => boolean>()
   const pendingWxsEvents = new Map<string, () => void>()
   const wxsStates = new WeakMap<Element, Record<string, unknown>>()
+  const wxsOverrides = new WeakMap<HTMLElement, {
+    style: Map<string, string>
+    classes: Set<string>
+  }>()
+
+  const wxsOverridesFor = (element: HTMLElement) => {
+    let overrides = wxsOverrides.get(element)
+    if (!overrides) {
+      overrides = { style: new Map(), classes: new Set() }
+      wxsOverrides.set(element, overrides)
+    }
+    return overrides
+  }
+
+  const applyWxsOverrides = (element: HTMLElement): void => {
+    const overrides = wxsOverrides.get(element)
+    if (!overrides) return
+    for (const [name, value] of overrides.style) element.style.setProperty(name, value)
+    for (const name of overrides.classes) element.classList.add(name)
+  }
 
   const applyElementClass = (
     node: RenderElement,
@@ -244,6 +264,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     const element = component.getBackendElement() as unknown as HTMLElement | null
     if (!element?.setAttribute) return false
     applyClassProps(element, node.props, node.scopes, node.scopeChain, external, pageScopes)
+    applyWxsOverrides(element)
     return true
   }
 
@@ -520,26 +541,34 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       },
       setStyle(style: unknown) {
         if (!style) return descriptor
+        const overrides = wxsOverridesFor(element)
         if (typeof style === 'string') {
-          element.style.cssText = style
-          return descriptor
-        }
-        if (typeof style === 'object') {
+          for (const part of style.split(';')) {
+            const separator = part.indexOf(':')
+            if (separator <= 0) continue
+            const name = part.slice(0, separator).trim()
+            const value = part.slice(separator + 1).trim()
+            if (name && value) overrides.style.set(name, value)
+          }
+        } else if (typeof style === 'object') {
           for (const [name, value] of Object.entries(style as Record<string, unknown>)) {
             if (value === undefined || value === null) continue
             const property = name.startsWith('--')
               ? name
               : name.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`)
-            element.style.setProperty(property, String(value))
+            overrides.style.set(property, String(value))
           }
         }
+        applyWxsOverrides(element)
         return descriptor
       },
       addClass(name: string) {
-        element.classList.add(name)
+        wxsOverridesFor(element).classes.add(name)
+        applyWxsOverrides(element)
         return descriptor
       },
       removeClass(name: string) {
+        wxsOverridesFor(element).classes.delete(name)
         element.classList.remove(name)
         return descriptor
       },
