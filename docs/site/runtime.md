@@ -254,6 +254,46 @@ button、input、scroll-view、swiper、canvas 等内置组件把原生字段归
 ::::
 :::::
 
+## WXS：表达式在 service，事件尽量在 render {#wxs kicker="WXS"}
+
+微信官方的 WXS 是运行在视图层的脚本语言，支持模块、受限 globals、`getRegExp` / `getDate`、事件处理和 `change:prop`。参考：[WXS 概述](https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxs/)、[WXS 事件](https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxs/06event.html)、[WXS 观察](https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxs/08observation.html)。
+
+Tiny 不把 WXML 求值搬到 render，而是把 WXS 拆成两个独立实例：
+
+| 用途 | 执行侧 | 说明 |
+| --- | --- | --- |
+| WXML 表达式 | service | `{{wxs.fn()}}`、class/style 条件、`wx:if` / `wx:for` 继续由 service 求值 |
+| 静态 WXS 事件 | render | 静态 `{{wxs.tap}}` 通过 `Q.B` 发布 handler 路径，render 本地执行 |
+| 动态 WXS / service 事件 | service 解析，render 优先执行 | `Q.B` + `originOf()` 产出可选 `moduleId/exportPath`；render `resolve()` 失败时回传 `tree.event` |
+| `change:prop`（内置组件） | render | 旧值 / 新值 / ownerInstance / instance |
+| `change:prop`（自定义组件） | service | 使用 glass `R.p` observer，属于预期契约 |
+| WXS module state | 分侧隔离 | service / render 各一份，不跨线程同步 |
+
+WXS 代码在编译期完成：
+
+- `Math` / `JSON` 等 globals 改写；
+- `getRegExp` / `getDate` 映射；
+- `.constructor` 值语义转换；
+- 外部 / 内联模块表生成。
+
+事件执行对齐微信的主要边界：
+
+- 只支持内置组件事件；
+- 自定义组件事件走 service；
+- `input` / `textarea` 的 `bindinput` 走 service；
+- `catch` / `capture-bind` / `capture-catch` / `return false` 生效；
+- 本地 handler 执行后，只有路径上存在 service listener 才回传；
+- `mutated` 元数据会传递，但 `mut-bind` 的本地语义尚未实现。
+
+render 侧 `ComponentDescriptor` 已覆盖 `selectComponent`、`getDataset`、`getData`、`getState`、`setStyle`、class 方法、`getComputedStyle`、`getBoundingClientRect`、timers / RAF、`callMethod`、`triggerEvent`。`getData` 使用上一次 flow/patch 的页面或组件快照；`setStyle` 的 rpx 固定按 750 转成 vw。
+
+当前明确的限制：
+
+- WXS source map 已包含在模块表中，但尚未接进最终模板产物；
+- 自定义组件事件、`input` / `textarea` `bindinput`、自定义组件 `change:prop` 按上面的 service 路径处理；
+- 无法通过 origin 识别的 WXS 函数（例如闭包、`bind()` 后的新函数）安全回退 service；
+- `callMethod` / `triggerEvent` 是跨线程 RPC，返回值不是同步语义。
+
 ## 组件定义、observer、relation 都在逻辑树 {#components kicker="组件语义"}
 
 service 侧维护完整的组件定义、逻辑树和关系图。render 只保留组件容器和真实节点。
