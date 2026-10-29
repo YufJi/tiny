@@ -9,7 +9,7 @@ pills:
   - ['组件语义', 'good']
   - ['双侧树', 'good']
   - ['样式隔离', 'good']
-  - ['仅浏览器宿主', 'warn']
+  - ['浏览器 + iOS 宿主', 'good']
   - ['generics 已接', 'good']
   - ['API 覆盖有限', 'warn']
   - ['性能未量化', 'warn']
@@ -31,7 +31,7 @@ order: 9
 | render tree | :pill[可用]{tone="good"} | 宿主 `TreeRenderer`：真实内置组件、slot、shadow root、样式、布局、DOM、元素树、query、measure、IntersectionObserver；Web 实现是 `createGlassRenderTree`。 |
 | bridge | :pill[可用]{tone="good"} | 9 个消息域，含 tree/query；信封和帧、MessagePort/内存 transport、握手、超时、批处理、JSON 校验；capabilities 还没有用于协商。 |
 | 浏览器宿主 | :pill[可用]{tone="good"} | @tiny/host-browser 支持每页 render 连接、MessageChannel、tabBar 宿主 UI、OffscreenCanvas handoff、resolveAssetUrl 和 DevtoolRuntimeClient；@tiny/host-web-components 提供 Web 渲染树和 23 个内置组件。内核依赖检查通过。 |
-| 原生宿主 | :pill[未实现]{tone="warn"} | 还没有 native transport、native `TreeRenderer` 或非浏览器 service 运行时；`createNativeTreeRenderer` 只有契约和 headless smoke test。 |
+| iOS 宿主 | :pill[可用（MVP）]{tone="good"} | `ios/` 原生工程 + `hosts/ios` Vite 包（`src/service` / `src/web`）：JavaScriptCore 跑 service，一个 WKWebView 跑 host.html 和每页 render.html；SwiftUI Launcher/导航栏/tabBar，UserDefaults 存储，tests/apps 全部 7 个 fixture 已在模拟器 smoke；canvas 未接。 |
 | 内置组件 | :pill[较完整]{tone="good"} | 23 个组件和共享 behaviors；checkbox/radio/switch/slider/icon/image/picker 已按 2.7.0 参考重写；input/textarea/scroll-view/swiper 仍是近似实现；navigator/video/rich-text/map 等还缺。 |
 | API | :pill[部分]{tone="warn"} | request、异步 storage、5 个路由 API、system、toast/modal、canvas、selector query 已有；媒体、真实文件、账号、位置、WebSocket 还没有。 |
 | 页面能力 | :pill[部分]{tone="warn"} | 14 项页面生命周期、5 个路由 API、内置 tabBar/switchTab、页面滚动/触底/下拉刷新、分享回调和退出状态已经支持；分享菜单 UI、页面转场、页面栈恢复、自定义 tabBar 还缺。 |
@@ -80,7 +80,7 @@ OffscreenCanvas handoff、2D/WebGL/RAF/createImage 和 touch 已支持；canvasT
 :::
 
 :::card{tag="原生" tone="warn" title="原生渲染树只有契约"}
-`createNativeTreeRenderer` 有契约和 headless 测试，但没有实际原生宿主；原生 host 还要实现 canvas handoff、query、measure 和 IntersectionObserver。
+`createNativeTreeRenderer` 有契约和 headless 测试；iOS 宿主没有采用它，而是用 WKWebView 渲染。native `TreeRenderer` 仍只有契约，原生渲染后端还要实现 canvas handoff、query、measure 和 IntersectionObserver。
 :::
 
 :::card{tag="性能" tone="warn" title="没有性能基线"}
@@ -90,12 +90,12 @@ OffscreenCanvas handoff、2D/WebGL/RAF/createImage 和 touch 已支持；canvasT
 
 ## 宿主层还缺什么 {#host-gaps kicker="宿主缺口"}
 
-内核已经可以跨宿主，但目前只实现了浏览器形态。
+内核已经可以跨宿主，浏览器和 iOS 两条链路都已跑通；iOS 还缺 canvas、调试面板和更完整的原生 API。
 
 :::::split
 ::::stack
-:::card{tag="原生" tone="warn" title="原生宿主还没有"}
-内核已经不依赖 document，但原生宿主还需要实现 Transport、`TreeRenderer`、canvas handoff、query/measure/IntersectionObserver、resolveAssetUrl 和控制界面。
+:::card{tag="原生" tone="warn" title="iOS 宿主还有缺口"}
+JSCore + WKWebView 的 Transport、页面 iframe、原生 chrome 和 UserDefaults 存储已经跑通；还缺 canvas、vConsole/调试面板、原生网络/媒体 API，以及真机签名和子包按需加载。
 :::
 
 :::card{tag="部署" tone="warn" title="部署假设还没有建模"}
@@ -163,9 +163,15 @@ canvasToTempFilePath、wx.createOffscreenCanvas、canvas node 事件；animation
 启动耗时、首屏、setData 批量和差量、导航耗时、大列表内存、长时运行，把阈值接进验收。
 :::
 
-:::card{tag="P2" title="原生宿主和更多渲染后端"}
-用现有的 Transport、`TreeRenderer`、canvas handoff 和资源注入接口实现原生宿主；再评估多渲染后端。
+:::card{tag="P2" title="更多宿主能力和渲染后端"}
+iOS 宿主补 canvas、原生 API 和真机链路；再评估 native `TreeRenderer` 与更多渲染后端。
 :::
+
+:::card{tag="P2" title="host 编排收敛到 Swift"}
+当前 `createTinyRuntime`、页面栈和 render connector 在 `hosts/ios/src/web/host.ts`。后续计划把这层
+host orchestration 移到原生 Swift，WebView 只保留每页 render；JSCore、Bridge 协议和 render 组件不变。
+:::
+
 ::::
 
 :::callout{title="关于架构演进" tone="warn"}

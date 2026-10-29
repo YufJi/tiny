@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tiny service (browser dev harness)</title>
+    <style>
+      html, body { margin: 0; padding: 0; background: #fff; }
+    </style>
+  </head>
+  <body>
+    <script>
+      (function () {
+        var app = new URLSearchParams(location.search).get('app') || 'demo'
+        var parentWindow = window.parent
+        window.__TINY_IOS__ = {
+          appId: app,
+          system: { pixelRatio: 2, windowWidth: 390, windowHeight: 700, platform: 'ios' },
+          menuButton: { width: 87, height: 32, top: 51, right: 382, bottom: 83, left: 295 }
+        }
+        window.__tinySend = function (frame) {
+          parentWindow.postMessage({ source: 'tiny-service', type: 'frame', frame: frame }, '*')
+        }
+        window.__tinyLog = function (level, message) {
+          parentWindow.postMessage({ source: 'tiny-service', type: 'log', level: level, message: message }, '*')
+        }
+        window.__tinyError = function (message) {
+          parentWindow.postMessage({ source: 'tiny-service', type: 'error', message: message }, '*')
+        }
+        window.__tinyServiceStarted = function () {
+          setTimeout(function () {
+            parentWindow.postMessage({ source: 'tiny-service', type: 'ready' }, '*')
+          }, 0)
+        }
+        window.__tinySchedule = function (id, delay, repeat) {
+          var run = function () { window.__tinyFireTimer && window.__tinyFireTimer(id) }
+          if (repeat) setInterval(run, Math.max(1, delay))
+          else setTimeout(run, Math.max(0, delay))
+        }
+        window.__tinyCancelTimer = function () {}
+        window.addEventListener('message', function (event) {
+          var data = event.data
+          if (!data || data.type !== 'frame') return
+          if (typeof window.__tinyReceiveFrame === 'function') {
+            window.__tinyReceiveFrame(data.frame)
+          }
+        })
+        fetch('/apps/' + encodeURIComponent(app) + '/app-data.json')
+          .then(function (response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status)
+            return response.json()
+          })
+          .then(function (appData) {
+            window.__TINY_IOS_APP__ = appData
+            var script = document.createElement('script')
+            script.src = '/service-engine.js'
+            document.body.appendChild(script)
+          })
+          .catch(function (error) {
+            window.__tinyError('failed to load app data: ' + error.message)
+          })
+      })()
+    </script>
+  </body>
+</html>

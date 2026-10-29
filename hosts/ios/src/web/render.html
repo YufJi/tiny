@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="light" />
+    <link rel="icon" href="data:," />
+    <title>Tiny render thread</title>
+    <style>
+      html {
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+        -webkit-text-size-adjust: 100%;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      body {
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+        overflow-x: hidden;
+      }
+
+      #app {
+        width: 100%;
+        min-height: 100%;
+      }
+
+      /* The page root is a custom element; give it block layout so page
+         background/min-height styles paint the whole viewport. */
+      tiny-page {
+        display: block;
+        min-height: 100vh;
+      }
+
+      ::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="./render.ts"></script>
+  </body>
+</html>
