@@ -740,12 +740,22 @@ function writeAttributeValue(
   }
 }
 
+type WxsEventMetadata = {
+  name: string
+  moduleId: string
+  exportPath: string[]
+  catch: boolean
+  capture: boolean
+  mutated: boolean
+}
+
 function commonAttrsToProcGenWithoutSlot(
   common: CommonElementAttributes,
   w: JsFunctionScopeWriter,
   scopes: ScopeVar[],
   bmc: BindingMapCollector,
 ): void {
+  const wxsEvents: WxsEventMetadata[] = []
   for (const attr of common.data) {
     const extra = attr.prefixLocation === null ? '!0' : null
     attrToProcGenWithMethod(attr, w, 'R.d', extra, scopes, bmc)
@@ -754,7 +764,12 @@ function commonAttrsToProcGenWithoutSlot(
     attrToProcGenWithMethod(mark, w, 'M', null, scopes, bmc)
   }
   for (const ev of common.eventBindings) {
-    eventBindingToProcGen(ev, w, scopes, bmc)
+    eventBindingToProcGen(ev, w, scopes, bmc, wxsEvents)
+  }
+  if (wxsEvents.length > 0) {
+    w.exprStmt((ww) => {
+      ww.write(`O(N,'wx-tiny-wxs-events',${genLitStr(JSON.stringify(wxsEvents))})`)
+    })
   }
   if (common.id) {
     writeAttributeValue(w, 'R.i', common.id[1], scopes, bmc)
@@ -896,6 +911,7 @@ function eventBindingToProcGen(
   w: JsFunctionScopeWriter,
   scopes: ScopeVar[],
   bmc: BindingMapCollector,
+  wxsEvents?: WxsEventMetadata[],
 ): void {
   const n = genLitStr(ev.name.name)
   const isCatch = ev.isCatch ? '!0' : '!1'
@@ -907,6 +923,17 @@ function eventBindingToProcGen(
     return
   }
   const p = exprToProcGenPrepare(ev.value.expression, w, scopes)
+  const staticWxs = p.getStaticScriptHandler(scopes)
+  if (staticWxs && wxsEvents) {
+    wxsEvents.push({
+      name: ev.name.name,
+      moduleId: staticWxs.moduleId,
+      exportPath: staticWxs.exportPath,
+      catch: ev.isCatch,
+      capture: ev.isCapture,
+      mutated: ev.isMut,
+    })
+  }
   w.exprStmt((ww) => {
     ww.write('if(C||K||')
     p.lvalueStateExpr(ww, scopes, false)

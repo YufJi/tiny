@@ -66,3 +66,35 @@ describe('WXS module table', () => {
     expect(inline?.code).toContain('__wxs.ctor([])')
   })
 })
+
+
+describe('WXS event metadata', () => {
+  test('emits a render event descriptor for a static WXS handler', () => {
+    const group = TmplGroup.new({
+      directivePrefix: 'wx',
+      templateExtension: '.wxml',
+      templateScriptExtension: '.wxs',
+    })
+    group.addScript('wxs/utils.wxs', 'module.exports = { tap: function () {} }')
+    group.addTmpl(
+      'pages/index/index',
+      '<wxs module="utils" src="/wxs/utils.wxs" />'
+        + '<view bindtap="{{utils.tap}}" catchtouchmove="{{utils.tap}}" />',
+    )
+    const output = group.getTmplGenObjectGroups()
+    expect(output).toContain('wx-tiny-wxs-events')
+    expect(output).toContain('\\"moduleId\\":\\"wxs/utils.wxs\\"')
+    expect(output).toContain('\\"exportPath\\":[\\"tap\\"]')
+    expect(output).toContain('\\"catch\\":true')
+  })
+
+  test('does not emit metadata for a dynamic non-WXS binding', () => {
+    const group = TmplGroup.new({
+      directivePrefix: 'wx',
+      templateExtension: '.wxml',
+      templateScriptExtension: '.wxs',
+    })
+    group.addTmpl('pages/index/index', '<view bindtap="onTap" />')
+    expect(group.getTmplGenObjectGroups()).not.toContain('wx-tiny-wxs-events')
+  })
+})
