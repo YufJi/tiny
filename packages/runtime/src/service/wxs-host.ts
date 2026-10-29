@@ -1,3 +1,4 @@
+import { TINY_ENGINE_NAMING } from '@tiny/engine-naming'
 import { BUILTIN_COMPONENT_TAGS, DIAGNOSTIC_CODES } from '@tiny/manifest'
 import { cloneJsonSafe } from '../data'
 import type { WxsBindingMessage } from '../tree/protocol'
@@ -22,7 +23,7 @@ import type { MiniProgramPageInstance } from './page-instance'
  */
 
 /** Global the generated event wrapper reads; one service thread per app. */
-const WXS_EVENT_HOST_KEY = '__tinyWxsEventHost'
+const WXS_EVENT_HOST_KEY = TINY_ENGINE_NAMING.wxsEventHostGlobal
 
 export type WxsEventHostOptions = {
   getLogicTree: () => LogicTreeAdapter | undefined
@@ -95,7 +96,10 @@ export function installWxsEventHost(options: WxsEventHostOptions): () => void {
       if (!pageId) return
       const builtin = (BUILTIN_COMPONENT_TAGS as readonly string[]).includes(node.tagName)
       const unsupportedLocal = !builtin
-        || (event === 'input' && (node.tagName === 'input' || node.tagName === 'textarea'))
+        || (
+          event === TINY_ENGINE_NAMING.wxsServiceOnlyInputEvent
+          && (TINY_ENGINE_NAMING.wxsServiceOnlyInputTags as readonly string[]).includes(node.tagName)
+        )
       const localOrigin = unsupportedLocal ? undefined : origin
       const binding: WxsBindingMessage = {
         viewId: tree.ensureViewId(node),

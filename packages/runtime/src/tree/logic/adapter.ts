@@ -1,3 +1,4 @@
+import { TINY_ENGINE_NAMING } from '@tiny/engine-naming'
 import { DIAGNOSTIC_CODES, type Manifest, type PageArtifact } from '@tiny/manifest'
 import type {
   RenderAnimationRequest,
@@ -759,7 +760,7 @@ export class LogicTreeAdapter {
               changedTouches: payload.changedTouches ?? [],
             }
           : {}),
-        ...(payload.wxsHandled ? { __tinyWxsHandled: true } : {}),
+        ...(payload.wxsHandled ? { [TINY_ENGINE_NAMING.wxsHandledField]: true } : {}),
       }
       element.triggerEvent(payload.name, detail, {
         bubbles: true,

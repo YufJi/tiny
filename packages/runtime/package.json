@@ -22,6 +22,7 @@
   "keywords": [],
   "dependencies": {
     "@tiny/bridge": "workspace:*",
+    "@tiny/engine-naming": "workspace:*",
     "glass-easel": "1.1.0",
     "@tiny/manifest": "workspace:*",
     "@tiny/wxs-runtime": "workspace:*"

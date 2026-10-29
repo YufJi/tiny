@@ -1,6 +1,6 @@
 import * as glassEasel from 'glass-easel'
 import { convertRpx } from '@tiny/css-units'
-import { TINY_ENGINE_NAMING } from '@tiny/manifest'
+import { TINY_ENGINE_NAMING } from '@tiny/engine-naming'
 import { createDefaultWxsCompiler, createWxsRuntime } from '@tiny/runtime'
 import type {
   RenderAnimationRequest,
@@ -150,42 +150,10 @@ export type GlassRenderTree = {
 
 const builtinTags = new Set<string>(BUILTIN_COMPONENT_TAGS)
 
-const WXS_PROPS_PROP = 'wx-tiny-wxs-props'
-const WXS_DYNAMIC_PROP = 'wx-tiny-wxs-dynamic'
+const WXS_PROPS_PROP = TINY_ENGINE_NAMING.wxsPropsAttribute
+const WXS_DYNAMIC_PROP = TINY_ENGINE_NAMING.wxsDynamicEventAttribute
 
-const LOCAL_WXS_EVENTS = new Set([
-  'tap',
-  'click',
-  'touchstart',
-  'touchmove',
-  'touchend',
-  'touchcancel',
-  'change',
-  'scroll',
-  'confirm',
-  'blur',
-  'focus',
-  'select',
-  'columnchange',
-  'linechange',
-  'scrolltoupper',
-  'scrolltolower',
-  'regionchange',
-  'submit',
-  'reset',
-  'load',
-  'error',
-  'begin',
-  'end',
-  'update',
-  'play',
-  'pause',
-  'timeupdate',
-  'ended',
-  'waiting',
-  'progress',
-  'fullscreenchange',
-])
+const LOCAL_WXS_EVENTS = new Set<string>(TINY_ENGINE_NAMING.wxsLocalEventNames)
 
 const HANDLED_NATIVE_EVENT = Symbol.for(TINY_ENGINE_NAMING.handledNativeEventSymbol)
 const isHandledNativeEvent = (event: unknown): boolean => Boolean(
@@ -592,8 +560,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const wxsOwnerElement = (element: HTMLElement): HTMLElement => {
     let current: HTMLElement | null = element
     while (current) {
-      const host = current.getAttribute('wx-host') ?? ''
-      if (host && !host.startsWith('tiny-builtin-')) return current
+      const host = current.getAttribute(TINY_ENGINE_NAMING.hostAttribute) ?? ''
+      if (host && !host.startsWith(TINY_ENGINE_NAMING.builtinStyleScopePrefix)) return current
       if (current.tagName.toLowerCase() === TINY_ENGINE_NAMING.pageTag) return current
       current = current.parentElement
     }

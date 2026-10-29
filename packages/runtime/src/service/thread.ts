@@ -3,7 +3,6 @@ import { QUERY_CONTROL, RUNTIME_CONTROL, TREE_PROTOCOL } from '../tree'
 import {
   DIAGNOSTIC_CODES,
   runtimeCompatibilityFromManifest,
-  TINY_ENGINE_NAMING,
 } from '@tiny/manifest'
 import { buildComponentSchemas, ComponentTree } from '../component'
 import { cloneJsonSafe } from '../data'
@@ -19,6 +18,7 @@ import { MiniProgramPageRegistry } from './page-registry'
 import { MiniProgramPageInstance, type PageLifecycleName } from './page-instance'
 import { createServiceApiHost, installMiniProgramGlobals } from './api-host'
 import { dispatchWxsEffect, installWxsEventHost, type WxsEventHostOptions } from './wxs-host'
+import { TINY_ENGINE_NAMING } from '@tiny/engine-naming'
 import { createDefaultWxsCompiler, createWxsRuntime } from '@tiny/wxs-runtime'
 import { LogicTreeAdapter, type ViewEventPayload, type ViewIntersectionEntry } from '../tree/logic'
 import { findPageArtifact, normalizeRoutePath, requireActivePage, resolveComponentReference } from './route'
@@ -29,7 +29,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   // runtime. One instance per service thread keeps module state local to the
   // app while sharing the kernel implementation with the render thread.
   const wxsRuntime = createWxsRuntime({ compile: createDefaultWxsCompiler() })
-  ;(globalThis as unknown as { __tinyWxsRuntime?: unknown }).__tinyWxsRuntime = wxsRuntime
+  ;(globalThis as unknown as Record<string, unknown>)[TINY_ENGINE_NAMING.wxsRuntimeGlobal] = wxsRuntime
 
   const expectedPagePaths = options.manifest.pages
     .filter((page) => page.bodyType !== 'component')
