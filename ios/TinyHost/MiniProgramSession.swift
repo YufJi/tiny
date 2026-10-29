@@ -20,6 +20,7 @@ final class MiniProgramSession: ObservableObject {
   private weak var webView: WKWebView?
   private var hostReady = false
   private var serviceReady = false
+  private var pendingCanvas: [String] = []
   private var notifiedService = false
   private var started = false
   private var closed = false
@@ -63,6 +64,9 @@ final class MiniProgramSession: ObservableObject {
     service.onError = { [weak self] message in
       self?.reportError(message)
     }
+    service.onCanvas = { [weak self] payload in
+      self?.deliverCanvas(payload)
+    }
 
     do {
       try service.start(
@@ -86,6 +90,7 @@ final class MiniProgramSession: ObservableObject {
     case "hostReady":
       HostDebug.log("host shell ready")
       hostReady = true
+      flushCanvas()
       notifyHostIfReady()
     case "runtimeReady":
       HostDebug.log("host runtime ready")
@@ -194,6 +199,42 @@ final class MiniProgramSession: ObservableObject {
     ) { [weak self] result in
       if case .failure(let error) = result {
         self?.reportError("service ready handshake failed: \(error.localizedDescription)")
+      }
+    }
+  }
+
+  private func deliverCanvas(_ payload: String) {
+    guard !closed else { return }
+    guard hostReady, let webView else {
+      pendingCanvas.append(payload)
+      return
+    }
+    webView.callAsyncJavaScript(
+      "window.__tinyCanvasCommand(payload)",
+      arguments: ["payload": payload],
+      in: nil,
+      in: .page
+    ) { [weak self] result in
+      if case .failure(let error) = result {
+        self?.reportError("canvas command failed: \(error.localizedDescription)")
+      }
+    }
+  }
+
+  private func flushCanvas() {
+    guard let webView, !closed else { return }
+    let pending = pendingCanvas
+    pendingCanvas.removeAll()
+    for payload in pending {
+      webView.callAsyncJavaScript(
+        "window.__tinyCanvasCommand(payload)",
+        arguments: ["payload": payload],
+        in: nil,
+        in: .page
+      ) { [weak self] result in
+        if case .failure(let error) = result {
+          self?.reportError("canvas command failed: \(error.localizedDescription)")
+        }
       }
     }
   }

@@ -2,6 +2,7 @@ import { bootServiceThread, resolveAssetPath } from '@tiny/runtime'
 import type { RuntimeManifest, TemplateRegistry } from '@tiny/runtime'
 import type { Transport, TransportFrame } from '@tiny/bridge'
 import { installHostShims } from './shims'
+import { createRemoteCanvasAdapter } from './canvas'
 
 export type TinyIOSApp = {
   appId: string
@@ -146,6 +147,10 @@ export function startTinyService(app: TinyIOSApp): void {
   }
 
   const transport = createNativeTransport()
+  const canvas = createRemoteCanvasAdapter((payload) => {
+    const send = host.__tinyCanvasSend
+    if (typeof send === 'function') send(JSON.stringify(payload))
+  })
   host.__tinyServiceStarted?.(initialPath)
 
   try {
@@ -154,6 +159,7 @@ export function startTinyService(app: TinyIOSApp): void {
       manifest: app.manifest,
       initialPath,
       maxPageStack: 10,
+      canvas,
       loadTemplates,
       loadStyle: (stylePath) => app.styles[stylePath] ?? '',
       loadArtifacts: async () => {

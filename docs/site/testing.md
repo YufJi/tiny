@@ -97,7 +97,7 @@ pnpm ios:smoke:jsc    # 在 macOS jsc 里启动 demo 的 service engine + app-da
 pnpm ios:smoke:web    # 在 Chrome 里用 mock 原生桥验证 host.html + render.html
 ```
 
-`pnpm ios:sim` 默认跑 `Generated/apps.json` 里的全部 7 个 fixture：demo、mini、todo、wechat-demo、echarts、vant、weui。每个 fixture 都会验证首屏、页面导航/tab 切换和原生 Launcher 截图；产物在 `ios/.artifacts/`，不提交。
+`pnpm ios:sim` 默认跑 `Generated/apps.json` 里的全部 7 个 fixture：demo、mini、todo、wechat-demo、echarts、vant、weui。每个 fixture 都会验证首屏、页面导航/tab 切换和原生 Launcher 截图；mini 还会采样真实 canvas 像素，确认 legacy CanvasContext 和 ECharts 柱状图都确实绘制。产物在 `ios/.artifacts/`，不提交。
 
 真机安装需要 Xcode Team 和 `devicectl`；签名构建、安装、首次启动前信任开发者证书是三个独立步骤。真机 smoke 不替代性能、安全或长时运行测试。
 

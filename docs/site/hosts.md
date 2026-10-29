@@ -246,7 +246,7 @@ render 线程的核心注入：mount、applyPatches、applyStyles、query、meas
 :::
 
 :::card{tag="canvas" title="ServiceCanvasAdapter"}
-service 通过 `createLegacyCanvasContext` / `acquireCanvasNode` 拿到 OffscreenCanvas 控制面。浏览器实现会把 render iframe 的 OffscreenCanvas 经 postMessage handoff 给 service。
+service 通过 `createLegacyCanvasContext` / `acquireCanvasNode` 拿到同步 canvas 句柄。浏览器实现把 render iframe 的 OffscreenCanvas 经 postMessage handoff 给 service；iOS 没有 OffscreenCanvas，service 拿到的是命令录制代理，绘制指令经原生命中继回到 render iframe 的真实 `<canvas>`；`measureText` 由原生 CoreText 同步返回。
 :::
 
 :::card{tag="资源" title="resolveAssetUrl"}
@@ -369,7 +369,7 @@ devtool 的 service/render 入口用 `new Function('url', 'return import(url)')`
 | tests/host | 1 个 service + 每页 1 个 render iframe（Vite） | `createGlassRenderTree` | OffscreenCanvas handoff + /generated 资源 | URL ?path + window.__tinyRuntime |
 | apps/devtool | 1 个 service + 每页一个 render iframe（Vite） | `createGlassRenderTree` | OffscreenCanvas handoff + 相对 URL | DevtoolRuntimeClient + React/Redux |
 | runtime 单测 | 同进程 | headless TreeRenderer | 无 canvas，manifest 内联 | 直接持有 BridgeConnection |
-| iOS 宿主（ios + hosts/ios） | JavaScriptCore service + 1 个 WKWebView（host.html + 每页 render.html iframe） | `createGlassRenderTree`（iframe） | UserDefaults 存储；canvas 暂不支持 | SwiftUI Launcher / 原生导航栏 + tabBar |
+| iOS 宿主（ios + hosts/ios） | JavaScriptCore service + 1 个 WKWebView（host.html + 每页 render.html iframe） | `createGlassRenderTree`（iframe） | UserDefaults 存储；Canvas 2D 走 service 录制 + render 回放，WebGL 未接 | SwiftUI Launcher / 原生导航栏 + tabBar |
 
 ::::split
 :::card{title="共享的部分"}
@@ -409,7 +409,7 @@ devtool 的 service/render 入口用 `new Function('url', 'return import(url)')`
 :::
 
 :::callout{title="iOS 宿主已落地，canvas 仍未接入" tone="warn"}
-原生工程在 `ios/`，前端标准包在 `hosts/ios`（`src/service` + `src/web`）；两者已经用 JavaScriptCore + WKWebView 跑通 tests/apps 下全部 7 个 fixture（demo、mini、todo、wechat-demo、echarts、vant、weui）。service 帧经原生中继，render 页在同一个 WKWebView 内按页 iframe 隔离，SwiftUI 提供 Launcher、导航栏和 tabBar。canvas 没有 OffscreenCanvas 可用，会产生 `UNSUPPORTED_CANVAS` 诊断；它也没有采用 `createNativeTreeRenderer`（渲染仍是 WebView），所以 native `TreeRenderer` 仍只有契约。细节见 `ios/README.md`。
+原生工程在 `ios/`，前端标准包在 `hosts/ios`（`src/service` + `src/web`）；两者已经用 JavaScriptCore + WKWebView 跑通 tests/apps 下全部 7 个 fixture（demo、mini、todo、wechat-demo、echarts、vant、weui）。service 帧经原生中继，render 页在同一个 WKWebView 内按页 iframe 隔离，SwiftUI 提供 Launcher、导航栏和 tabBar。Canvas 2D 由 service 侧同步录制、render iframe 回放，`measureText` 走原生 CoreText；WebGL 和同步读回仍未接。它也没有采用 `createNativeTreeRenderer`（渲染仍是 WebView），所以 native `TreeRenderer` 仍只有契约。细节见 `ios/README.md`。
 :::
 
 ## 当前宿主实现的已知问题 {#risks kicker="风险"}

@@ -1,6 +1,7 @@
 import { resolveAssetPath } from '@tiny/runtime'
 import { bootBrowserRenderEntry } from '@tiny/host-browser'
 import { createGlassRenderEntry } from '@tiny/host-web-components'
+import { installRemoteCanvas } from './canvas'
 
 const params = new URLSearchParams(window.location.search)
 const appId = params.get('app') ?? ''
@@ -8,6 +9,8 @@ const assetsBase = new URL(
   `../apps/${encodeURIComponent(appId)}/assets/`,
   window.location.href,
 ).href
+
+installRemoteCanvas()
 
 bootBrowserRenderEntry(createGlassRenderEntry({
   container: document.getElementById('app') ?? document.body,

@@ -486,7 +486,7 @@ export function createServiceApiHost(context: ServiceApiContext): MiniProgramApi
     createSelectorQuery: () => {
       context.connection.sendDiagnostic('log', {
         code: DIAGNOSTIC_CODES.CANVAS_OFFSCREEN,
-        message: 'Canvas is rendered in the service thread and presented by the render thread.',
+        message: 'Canvas drawing is delegated to the host canvas adapter.',
       }, context.pageId)
       return createSelectorQuery(context)
     },

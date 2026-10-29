@@ -1,5 +1,7 @@
 import Foundation
 import JavaScriptCore
+import UIKit
+import CoreText
 
 /// One JavaScriptCore context running the mini-program service thread.
 ///
@@ -16,6 +18,7 @@ final class ServiceEngine {
   var onFrame: ((String) -> Void)?
   var onLog: ((String, String) -> Void)?
   var onError: ((String) -> Void)?
+  var onCanvas: ((String) -> Void)?
 
   func start(appId: String, hostInfo: [String: Any]) throws {
     stop()
@@ -106,6 +109,16 @@ final class ServiceEngine {
       self?.cancelTimer(id: id)
     }
     context.setObject(cancel, forKeyedSubscript: "__tinyCancelTimer" as NSString)
+
+    let canvasSend: @convention(block) (String) -> Void = { [weak self] payload in
+      self?.onCanvas?(payload)
+    }
+    context.setObject(canvasSend, forKeyedSubscript: "__tinyCanvasSend" as NSString)
+
+    let canvasMeasure: @convention(block) (String, String) -> String = { font, text in
+      CanvasTextMetrics.json(font: font, text: text)
+    }
+    context.setObject(canvasMeasure, forKeyedSubscript: "__tinyCanvasMeasureText" as NSString)
   }
 
   private func injectHostInfo(_ info: [String: Any], into context: JSContext) {
@@ -148,6 +161,97 @@ final class ServiceEngine {
       return
     }
     fire.call(withArguments: [id])
+  }
+}
+
+private enum CanvasTextMetrics {
+  static func json(font: String, text: String) -> String {
+    let resolved = resolveFont(font)
+    let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+    var width: CGFloat = 0
+    var ascent: CGFloat = 0
+    var descent: CGFloat = 0
+    var leading: CGFloat = 0
+    var actualAscent: CGFloat = 0
+    var actualDescent: CGFloat = 0
+
+    for line in lines.isEmpty ? [""] : lines {
+      let attributed = NSAttributedString(string: line, attributes: [.font: resolved])
+      let lineRef = CTLineCreateWithAttributedString(attributed)
+      var lineAscent: CGFloat = 0
+      var lineDescent: CGFloat = 0
+      var lineLeading: CGFloat = 0
+      let lineWidth = CGFloat(CTLineGetTypographicBounds(
+        lineRef,
+        &lineAscent,
+        &lineDescent,
+        &lineLeading
+      ))
+      width = max(width, lineWidth)
+      ascent = max(ascent, lineAscent)
+      descent = max(descent, lineDescent)
+      leading = max(leading, lineLeading)
+      let bounds = CTLineGetBoundsWithOptions(lineRef, .useGlyphPathBounds)
+      actualAscent = max(actualAscent, -bounds.minY)
+      actualDescent = max(actualDescent, bounds.maxY)
+    }
+
+    let payload: [String: Any] = [
+      "width": Double(width),
+      "actualBoundingBoxLeft": 0,
+      "actualBoundingBoxRight": Double(width),
+      "actualBoundingBoxAscent": Double(actualAscent),
+      "actualBoundingBoxDescent": Double(actualDescent),
+      "fontBoundingBoxAscent": Double(ascent),
+      "fontBoundingBoxDescent": Double(descent),
+      "emHeightAscent": Double(ascent),
+      "emHeightDescent": Double(descent),
+      "lineHeight": Double(ascent + descent + leading),
+    ]
+    guard
+      let data = try? JSONSerialization.data(withJSONObject: payload),
+      let result = String(data: data, encoding: .utf8)
+    else {
+      return "{\"width\":0}"
+    }
+    return result
+  }
+
+  private static func resolveFont(_ spec: String) -> UIFont {
+    let matched = spec.range(of: #"(\d+(?:\.\d+)?)px"#, options: .regularExpression)
+    let size = matched
+      .flatMap { Double(spec[$0].replacingOccurrences(of: "px", with: "")) }
+      .map { CGFloat(max(1, $0)) } ?? 10
+    let lower = spec.lowercased()
+    let weight: UIFont.Weight = lower.contains("bold") ? .bold : .regular
+    var font = UIFont.systemFont(ofSize: size, weight: weight)
+
+    if let pxRange = matched {
+      let tail = String(spec[pxRange.upperBound...])
+      let family = tail
+        .split(separator: ",")
+        .first?
+        .trimmingCharacters(in: CharacterSet(charactersIn: " \"'"))
+        .lowercased() ?? ""
+      if !family.isEmpty {
+        let mapped: String?
+        switch family {
+        case "sans-serif", "system-ui", "-apple-system": mapped = nil
+        case "serif": mapped = "Times New Roman"
+        case "monospace": mapped = "Menlo"
+        default: mapped = family
+        }
+        if let mapped, let custom = UIFont(name: mapped, size: size) {
+          font = custom
+        }
+      }
+    }
+
+    if lower.contains("italic") || lower.contains("oblique") {
+      let descriptor = font.fontDescriptor.withSymbolicTraits(.traitItalic)
+      font = descriptor.map { UIFont(descriptor: $0, size: size) } ?? font
+    }
+    return font
   }
 }
 

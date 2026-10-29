@@ -25,9 +25,10 @@ hosts/ios/                         iOS 的前端标准包（pnpm workspace）
   vite.config.ts                   一个配置，两种 --mode
   src/
     service/                       JSCore engine、shims、transport
-      entry.ts / start.ts / shims.ts
+      entry.ts / start.ts / shims.ts / canvas.ts
     web/                           host/render entry、state/storage/pages、HTML/CSS
       host.html / render.html      Vite MPA entry
+      canvas.ts                    render 侧 canvas surface / display list 回放
       host.ts / render.ts / ...
   dist/
     service/service-engine.js      vite build --mode service
@@ -250,12 +251,15 @@ fixture 通过 `scripts/devtool-apps.mjs` 的 `discoverTestApps()` 自动发现�
 - `tests/apps` 下 7 个 fixture（demo、mini、todo、wechat-demo、echarts、vant、weui）的启动、首屏、页面导航、tab 切换、返回、原生导航栏/tabBar；
 - 页面 iframe 的隐藏/恢复、滚动容器、页面 WXSS 隔离；
 - 5 个路由 API、`RUNTIME_STATE` 投影、storage、系统信息、toast/modal/loading 等宿主 UI（Web overlay）；
+- **Canvas 2D**：legacy `createCanvasContext` 与 selector-query canvas node 都通过 service 侧录制、
+  render `<canvas>` 回放；`measureText` 走 JSCore → CoreText 同步桥；mini ECharts 柱状图已跑通；
 - 无 DOM 的 service 线程（`pnpm check:runtime-purity` 仍通过）。
 
 明确不支持（第一版）：
 
-- **canvas**：JSCore 没有 OffscreenCanvas，service 侧会收到 `UNSUPPORTED_CANVAS` 诊断；demo/mini 的
-  canvas 页面不会真正绘制。后续可做“JSCore 录制 2D 指令 → WebView 回放”的远程 canvas。
+- **Canvas WebGL**：不做远程 WebGL 代理；WebGL 小程序仍会得到空 context。
+- **Canvas 同步读回**：`getImageData` / `isPointInPath` / `toDataURL` / `canvasToTempFilePath`
+  暂不支持；需要时再补原生 shadow 或异步导出方案。
 - **vConsole / 调试面板**：按要求不做；接 vConsole 时在 `hosts/ios/src/web/host.html` 或
   `hosts/ios/src/web/host.ts` 里同步加载即可，不影响 runtime。
 - **子包按需加载 / 热更新 / 远程下载**：当前全部产物构建时打进 app bundle。要接 dev server，可在
@@ -272,12 +276,19 @@ fixture 通过 `scripts/devtool-apps.mjs` 的 `discoverTestApps()` 自动发现�
 
 ```text
 ✅ demo: P0 demo (pages/todos/todos) navigated=true
-✅ mini: Index (pages/todos/todos) navigated=true (tab 切换并返回)
+✅ mini: 自测小程序 (pages/bar/index) navigated=true (legacy canvas + ECharts)
 ✅ todo: TODO List (pages/index/index) navigated=false (单页)
 ✅ wechat-demo: 小程序官方组件展示 (page/component/index) navigated=true
 ✅ echarts: ECharts 图表示例 (pages/index/index) navigated=true
 ✅ vant: Vant 组件库 (pages/dashboard/index) navigated=true
 ✅ weui: WeUI for 小程序 (example/index) navigated=true
+```
+
+Canvas smoke 额外采样真实 canvas 像素：
+
+```text
+✅ mini pages/todos/todos  canvas=11250 px
+✅ mini pages/bar/index    canvas=576548 px（ECharts 柱状图）
 ```
 
 截图在 `ios/.artifacts/`（不提交）。`pnpm ios:smoke:jsc` 在 macOS 的 `jsc` 里启动真实

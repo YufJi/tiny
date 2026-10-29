@@ -15,5 +15,5 @@ pnpm --filter @tiny/host-ios typecheck
 ```
 
 `ios/scripts/build.mjs` 会把 `dist/service` / `dist/web` 收集进 `ios/Generated/`，并编译
-`tests/apps` 下全部 fixture（demo、mini、todo、wechat-demo、echarts、vant、weui）、写 `apps/<id>/app-data.json`。原生工程在
+`tests/apps` 下全部 fixture（demo、mini、todo、wechat-demo、echarts、vant、weui）、写 `apps/<id>/app-data.json`；Canvas 2D 的 service 录制器在 `src/service/canvas.ts`，render 回放在 `src/web/canvas.ts`。原生工程在
 [`ios/`](../../ios)，完整说明见 [`ios/README.md`](../../ios/README.md)。

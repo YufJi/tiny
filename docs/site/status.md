@@ -31,13 +31,13 @@ order: 9
 | render tree | :pill[可用]{tone="good"} | 宿主 `TreeRenderer`：真实内置组件、slot、shadow root、样式、布局、DOM、元素树、query、measure、IntersectionObserver；Web 实现是 `createGlassRenderTree`。 |
 | bridge | :pill[可用]{tone="good"} | 9 个消息域，含 tree/query；信封和帧、MessagePort/内存 transport、握手、超时、批处理、JSON 校验；capabilities 还没有用于协商。 |
 | 浏览器宿主 | :pill[可用]{tone="good"} | @tiny/host-browser 支持每页 render 连接、MessageChannel、tabBar 宿主 UI、OffscreenCanvas handoff、resolveAssetUrl 和 DevtoolRuntimeClient；@tiny/host-web-components 提供 Web 渲染树和 23 个内置组件。内核依赖检查通过。 |
-| iOS 宿主 | :pill[可用（MVP）]{tone="good"} | `ios/` 原生工程 + `hosts/ios` Vite 包（`src/service` / `src/web`）：JavaScriptCore 跑 service，一个 WKWebView 跑 host.html 和每页 render.html；SwiftUI Launcher/导航栏/tabBar，UserDefaults 存储，tests/apps 全部 7 个 fixture 已在模拟器 smoke；canvas 未接。 |
+| iOS 宿主 | :pill[可用（MVP）]{tone="good"} | `ios/` 原生工程 + `hosts/ios` Vite 包（`src/service` / `src/web`）：JavaScriptCore 跑 service，一个 WKWebView 跑 host.html 和每页 render.html；SwiftUI Launcher/导航栏/tabBar，UserDefaults 存储，tests/apps 全部 7 个 fixture 已在模拟器 smoke；Canvas 2D 已接（service 录制 + render 回放），WebGL/同步读回未接。 |
 | 内置组件 | :pill[较完整]{tone="good"} | 23 个组件和共享 behaviors；checkbox/radio/switch/slider/icon/image/picker 已按 2.7.0 参考重写；input/textarea/scroll-view/swiper 仍是近似实现；navigator/video/rich-text/map 等还缺。 |
 | API | :pill[部分]{tone="warn"} | request、异步 storage、5 个路由 API、system、toast/modal、canvas、selector query 已有；媒体、真实文件、账号、位置、WebSocket 还没有。 |
 | 页面能力 | :pill[部分]{tone="warn"} | 14 项页面生命周期、5 个路由 API、内置 tabBar/switchTab、页面滚动/触底/下拉刷新、分享回调和退出状态已经支持；分享菜单 UI、页面转场、页面栈恢复、自定义 tabBar 还缺。 |
 | 组件语义 | :pill[核心可用]{tone="good"} | Behaviors、observers、relations、selectComponent、component-export、component-as-page、generics、definitionFilter、pureDataPattern 已实现，全部运行在 service 逻辑树；componentPlaceholder、trait behaviors 和 chaining API 未实现。 |
 | 样式系统 | :pill[核心可用]{tone="good"} | class/tag 作用域、rpx、@import、styleIsolation/addGlobalClass、externalClasses、shared CSS、`:host` 与 low-priority 输出已支持；内置组件内部样式使用独立宿主 scope。 |
-| Canvas | :pill[部分]{tone="warn"} | selector-query 与 legacy canvas 走 OffscreenCanvas handoff；2D/WebGL/RAF/createImage/touch 已支持；canvasToTempFilePath、createOffscreenCanvas 和 node 事件仍缺。 |
+| Canvas | :pill[部分]{tone="warn"} | 浏览器走 OffscreenCanvas handoff；iOS 用 service 侧录制 + render `<canvas>` 回放，legacy 与 2D node 都可用，`measureText` 走 CoreText 同步桥；WebGL、`getImageData`、`canvasToTempFilePath` 仍未接。 |
 | 动画 | :pill[部分]{tone="warn"} | animation 数据会编译成最终态 CSS transform/transition；没有多 step 时序和事件回调。 |
 | 诊断 | :pill[可用]{tone="good"} | 编译、transport、service、render、host 五类诊断统一收集；组件语义新增了 observer、relation、behavior 相关诊断。 |
 | Devtool | :pill[运行时级+]{tone="good"} | 应用列表、点击启动、最近 3 个应用保活、返回列表、设备框、宿主导航和 tabBar、每页 render 帧、Console/Lifecycle/Elements、Reload/Close app；页面栈默认上限 10，宿主可配置。它仍不是完整的微信开发者工具。 |
@@ -72,7 +72,7 @@ generics、definitionFilter、pureDataPattern、`wx://form-field` / `wx://form-f
 :::
 
 :::card{tag="Canvas" tone="warn" title="canvas 边缘能力未覆盖"}
-OffscreenCanvas handoff、2D/WebGL/RAF/createImage 和 touch 已支持；canvasToTempFilePath、createOffscreenCanvas 和 node 事件还没有端到端覆盖。
+浏览器有 OffscreenCanvas handoff，iOS 已接 Canvas 2D（legacy + 2D node）并跑通 mini ECharts；WebGL、canvasToTempFilePath、createOffscreenCanvas 和 node 事件还没有端到端覆盖。
 :::
 
 :::card{tag="动画" tone="warn" title="动画只有最终态"}
@@ -90,12 +90,12 @@ OffscreenCanvas handoff、2D/WebGL/RAF/createImage 和 touch 已支持；canvasT
 
 ## 宿主层还缺什么 {#host-gaps kicker="宿主缺口"}
 
-内核已经可以跨宿主，浏览器和 iOS 两条链路都已跑通；iOS 还缺 canvas、调试面板和更完整的原生 API。
+内核已经可以跨宿主，浏览器和 iOS 两条链路都已跑通；iOS 还缺 WebGL、调试面板和更完整的原生 API。
 
 :::::split
 ::::stack
 :::card{tag="原生" tone="warn" title="iOS 宿主还有缺口"}
-JSCore + WKWebView 的 Transport、页面 iframe、原生 chrome 和 UserDefaults 存储已经跑通；还缺 canvas、vConsole/调试面板、原生网络/媒体 API，以及真机签名和子包按需加载。
+JSCore + WKWebView 的 Transport、页面 iframe、原生 chrome、UserDefaults 和 Canvas 2D 已经跑通；还缺 WebGL、vConsole/调试面板、原生网络/媒体 API，以及真机签名和子包按需加载。
 :::
 
 :::card{tag="部署" tone="warn" title="部署假设还没有建模"}
@@ -164,7 +164,7 @@ canvasToTempFilePath、wx.createOffscreenCanvas、canvas node 事件；animation
 :::
 
 :::card{tag="P2" title="更多宿主能力和渲染后端"}
-iOS 宿主补 canvas、原生 API 和真机链路；再评估 native `TreeRenderer` 与更多渲染后端。
+iOS 宿主补 WebGL、原生 API 和真机链路；再评估 native `TreeRenderer` 与更多渲染后端。
 :::
 
 :::card{tag="P2" title="host 编排收敛到 Swift"}

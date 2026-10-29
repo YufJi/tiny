@@ -37,6 +37,7 @@ let meta: AppMeta | undefined
 let currentPageId: string | undefined
 let appVisible = true
 let startPromise: Promise<void> | undefined
+const pendingCanvasCommands: string[] = []
 
 function errorMessage(error: unknown): string {
   if (error instanceof Error) return `${error.name}: ${error.message}\n${error.stack ?? ''}`
@@ -105,6 +106,24 @@ async function disposeRuntime(): Promise<void> {
   if (current) await current.close()
 }
 
+tinyWindow.__tinyCanvasCommand = (payload: string | Record<string, unknown>): void => {
+  const text = typeof payload === 'string' ? payload : JSON.stringify(payload)
+  if (!connector) {
+    pendingCanvasCommands.push(text)
+    if (pendingCanvasCommands.length > 128) pendingCanvasCommands.shift()
+    return
+  }
+  try {
+    const command = JSON.parse(text) as Record<string, unknown>
+    connector.postToPage(
+      typeof command.pageId === 'string' ? command.pageId : undefined,
+      { type: 'tiny-ios-canvas', command },
+    )
+  } catch (error) {
+    console.warn('[tiny ios] invalid canvas command', error)
+  }
+}
+
 tinyWindow.__tinyHostConsole = (level: string, message: string): void => {
   const text = `[service] ${message}`
   if (level === 'error') console.error(text)
@@ -155,6 +174,45 @@ async function loadMeta(id: string): Promise<AppMeta> {
 
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms))
+}
+
+type CanvasProbe = {
+  pageId: string
+  path: string
+  canvasId: string
+  width: number
+  height: number
+  paintedPixels: number
+}
+
+async function probeCanvases(pageId: string, path: string): Promise<CanvasProbe[]> {
+  const frame = connector?.getPageFrame(pageId)
+  const document = frame?.contentDocument
+  if (!document) return []
+  const results: CanvasProbe[] = []
+  for (const canvas of Array.from(document.querySelectorAll('canvas'))) {
+    const context = canvas.getContext('2d')
+    let paintedPixels = 0
+    if (context && canvas.width > 0 && canvas.height > 0) {
+      try {
+        const data = context.getImageData(0, 0, canvas.width, canvas.height).data
+        for (let index = 3; index < data.length; index += 4) {
+          if (data[index] !== 0) paintedPixels += 1
+        }
+      } catch {
+        paintedPixels = -1
+      }
+    }
+    results.push({
+      pageId,
+      path,
+      canvasId: canvas.getAttribute('canvas-id') ?? '',
+      width: canvas.width,
+      height: canvas.height,
+      paintedPixels,
+    })
+  }
+  return results
 }
 
 async function runSmoke(appMeta: AppMeta): Promise<void> {
@@ -211,6 +269,38 @@ async function runSmoke(appMeta: AppMeta): Promise<void> {
       }
     }
 
+    const canvases = await probeCanvases(currentPageId, appMeta.firstPage)
+
+    // Exercise tab pages that may own canvas surfaces. The last probed tab
+    // stays active so the smoke screenshot shows the final canvas surface.
+    const tabList = (appMeta.manifest.app?.configuration?.effective as Record<string, unknown> | undefined)
+      ?.tabBar as { list?: Array<{ pagePath?: string }> } | undefined
+    const tabItems = (tabList?.list ?? [])
+      .map((item) => normalizePath(String(item.pagePath ?? '')))
+      .filter(Boolean)
+    if (tabItems.length > 1) {
+      for (const tabPath of tabItems) {
+        if (tabPath === normalizePath(appMeta.firstPage)) continue
+        const index = (tabList?.list ?? []).findIndex((item) => normalizePath(String(item.pagePath ?? '')) === tabPath)
+        if (index < 0) continue
+        const result = await invoke('navigate.switchTab', { index }) as NavigateResult
+        await wait(900)
+        const pageId = result.pageId
+        if (pageId) canvases.push(...await probeCanvases(pageId, tabPath))
+      }
+    }
+
+    if (appMeta.id === 'mini') {
+      const legacyCanvas = canvases.find((item) => item.canvasId === 'canvas')
+      const chartCanvas = canvases.find((item) => item.canvasId === 'mychart-bar')
+      if (!legacyCanvas || legacyCanvas.paintedPixels <= 0) {
+        throw new Error('mini legacy canvas did not paint any pixels')
+      }
+      if (!chartCanvas || chartCanvas.paintedPixels <= 0) {
+        throw new Error('mini ECharts canvas did not paint any pixels')
+      }
+    }
+
     postControl({
       type: 'smoke',
       ok: true,
@@ -219,6 +309,7 @@ async function runSmoke(appMeta: AppMeta): Promise<void> {
         firstPage: appMeta.firstPage,
         navigated,
         treeLength: firstTree.length,
+        canvases,
       },
     })
   } catch (error) {
@@ -233,6 +324,9 @@ async function start(): Promise<void> {
   if (!container) throw new Error('the host document has no #pages container')
 
   connector = new PageFrameConnector(appId, container)
+  for (const payload of pendingCanvasCommands.splice(0)) {
+    tinyWindow.__tinyCanvasCommand?.(payload)
+  }
   const injectedSystem = injected.system ?? {}
   const systemInfo = {
     ...injectedSystem,

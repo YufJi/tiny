@@ -40,6 +40,7 @@ function waitForThreadReady(
  */
 export class PageFrameConnector implements RenderThreadConnector {
   private readonly frames = new Map<string, HTMLIFrameElement>()
+  private readonly pendingMessages = new Map<string, unknown[]>()
   private activePageId: string | undefined
   private appVisible = true
 
@@ -83,17 +84,45 @@ export class PageFrameConnector implements RenderThreadConnector {
       '*',
       [channel.peerPort as unknown as Transferable],
     )
+    this.flushMessages(pageId)
     return channel.hostTransport
   }
 
   activate(pageId: string): void {
     this.activePageId = pageId
     this.updateVisibility()
+    this.flushMessages(pageId)
+  }
+
+  getPageFrame(pageId: string): HTMLIFrameElement | undefined {
+    return this.frames.get(pageId)
+  }
+
+  /**
+   * Route a host-side message (canvas commands, snapshots) to one page frame.
+   * Commands can arrive while the frame is still booting, so keep a small queue.
+   */
+  postToPage(pageId: string | undefined, message: unknown): void {
+    const targetPageId = pageId || this.activePageId
+    if (!targetPageId) {
+      for (const frame of this.frames.values()) frame.contentWindow?.postMessage(message, '*')
+      return
+    }
+    const frame = this.frames.get(targetPageId)
+    if (frame?.contentWindow) {
+      frame.contentWindow.postMessage(message, '*')
+      return
+    }
+    const queue = this.pendingMessages.get(targetPageId) ?? []
+    queue.push(message)
+    if (queue.length > 256) queue.splice(0, queue.length - 256)
+    this.pendingMessages.set(targetPageId, queue)
   }
 
   disconnect(pageId: string): void {
     const iframe = this.frames.get(pageId)
     this.frames.delete(pageId)
+    this.pendingMessages.delete(pageId)
     iframe?.remove()
     if (this.activePageId === pageId) this.activePageId = undefined
     this.updateVisibility()
@@ -107,7 +136,16 @@ export class PageFrameConnector implements RenderThreadConnector {
   dispose(): void {
     for (const iframe of this.frames.values()) iframe.remove()
     this.frames.clear()
+    this.pendingMessages.clear()
     this.activePageId = undefined
+  }
+
+  private flushMessages(pageId: string): void {
+    const frame = this.frames.get(pageId)
+    const queue = this.pendingMessages.get(pageId)
+    if (!frame?.contentWindow || !queue?.length) return
+    this.pendingMessages.delete(pageId)
+    for (const message of queue) frame.contentWindow.postMessage(message, '*')
   }
 
   private updateVisibility(): void {

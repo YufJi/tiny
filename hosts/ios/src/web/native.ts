@@ -56,6 +56,7 @@ type TinyWindow = Window & {
   __tinyStorageResult?: (requestId: number, result: unknown) => void
   __tinyHostConsole?: (level: string, message: string) => void
   __tinyHostCommand?: (command: Record<string, unknown>) => Promise<unknown>
+  __tinyCanvasCommand?: (payload: string | Record<string, unknown>) => void
 }
 
 const tinyWindow = window as TinyWindow
