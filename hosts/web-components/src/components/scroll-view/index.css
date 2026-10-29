@@ -28,6 +28,18 @@ tiny-scroll-view {
   width: 100%;
 }
 
+/* Horizontal scrolling needs the content to grow past the viewport. */
+.tiny-scroll-view.is-horizontal .tiny-scroll-view-content {
+  width: max-content;
+  min-width: 100%;
+}
+
+/* WeChat's `enable-flex` lays out the scroll-view's direct children as a
+ * flex row; the extra content wrapper must forward that layout. */
+.tiny-scroll-view.is-flex .tiny-scroll-view-content {
+  display: flex;
+}
+
 .tiny-scroll-view.is-hidden-scrollbar {
   scrollbar-width: none;
 }
@@ -42,10 +54,6 @@ tiny-scroll-view {
 
 .tiny-scroll-view.is-anchoring {
   overflow-anchor: auto;
-}
-
-.tiny-scroll-view.is-flex {
-  display: flex;
 }
 
 .tiny-scroll-view.is-paging {
