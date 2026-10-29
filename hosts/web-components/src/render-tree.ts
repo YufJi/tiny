@@ -331,6 +331,14 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     return overrides
   }
 
+  const rpxToPx = (value: string): string => {
+    if (!value.includes('rpx')) return value
+    const viewport = typeof window === 'undefined' ? 750 : window.innerWidth
+    return value.replace(/(-?\d*\.?\d+)rpx/g, (_match, number: string) => {
+      return `${(Number(number) * viewport) / 750}px`
+    })
+  }
+
   const applyWxsOverrides = (element: HTMLElement): void => {
     const overrides = wxsOverrides.get(element)
     if (!overrides) return
@@ -655,7 +663,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
             if (separator <= 0) continue
             const name = part.slice(0, separator).trim()
             const value = part.slice(separator + 1).trim()
-            if (name && value) overrides.style.set(name, value)
+            if (name && value) overrides.style.set(name, rpxToPx(value))
           }
         } else if (typeof style === 'object') {
           for (const [name, value] of Object.entries(style as Record<string, unknown>)) {
@@ -663,7 +671,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
             const property = name.startsWith('--')
               ? name
               : name.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`)
-            overrides.style.set(property, String(value))
+            overrides.style.set(property, rpxToPx(String(value)))
           }
         }
         applyWxsOverrides(element)
