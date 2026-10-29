@@ -394,6 +394,9 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         pagePath: logicTree.pagePathFor(pageId),
         messages: cloneJsonSafe(treeFlow(root)),
         ...(wxsModules ? { wxsModules: cloneJsonSafe(wxsModules) } : {}),
+        ...(pageInstances.get(pageId)?.data
+          ? { pageData: cloneJsonSafe(pageInstances.get(pageId)!.data) }
+          : {}),
         ...treeStyles(pageId),
       },
       { pageId },
@@ -423,7 +426,13 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
           if (patches.length > 0) {
             connection.sendEvent(
               TREE_PROTOCOL.domain, TREE_PROTOCOL.patch,
-              { pageId: id, patches: cloneJsonSafe(patches) },
+              {
+                pageId: id,
+                patches: cloneJsonSafe(patches),
+                ...(pageInstances.get(id)?.data
+                  ? { pageData: cloneJsonSafe(pageInstances.get(id)!.data) }
+                  : {}),
+              },
               { pageId: id },
             )
           }

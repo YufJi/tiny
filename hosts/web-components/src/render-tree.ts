@@ -122,6 +122,7 @@ export type GlassRenderTree = {
   setPagePath?: (pagePath: string) => void
   setWxsModules?: (table: WxsModuleTable) => void
   setWxsEffectSink?: (sink: (effect: WxsRenderEffect) => void) => void
+  setPageData?: (data: Record<string, unknown>) => void
   setDiagnosticSink?: (sink: (diagnostic: {
     severity: 'warning' | 'error'
     code: string
@@ -298,6 +299,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const pendingWxsEvents = new Map<string, () => void>()
   const wxsStates = new WeakMap<Element, Record<string, unknown>>()
   const wxsPropSnapshots = new Map<string, Record<string, unknown>>()
+  let pageData: Record<string, unknown> = {}
   const wxsOverrides = new WeakMap<HTMLElement, {
     style: Map<string, string>
     classes: Set<string>
@@ -581,7 +583,11 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     return node?.type === 'element' ? node : undefined
   }
 
-  const wxsDescriptorFor = (element: HTMLElement, owner: HTMLElement) => {
+  const wxsDescriptorFor = (
+    element: HTMLElement,
+    owner: HTMLElement,
+    fallbackViewId?: string,
+  ) => {
     const descriptor = {
       selectComponent(selector: string) {
         const match = owner.querySelector(selector) as HTMLElement | null
@@ -639,11 +645,11 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         return element.classList.contains(name)
       },
       getData() {
-        return {}
+        return { ...pageData }
       },
       callMethod(name: string, ...args: unknown[]) {
-        const node = wxsNodeForElement(element)
-        if (node) wxsEffectSink?.({ kind: 'callMethod', viewId: node.id, method: name, args })
+        const viewId = wxsNodeForElement(element)?.id ?? fallbackViewId
+        if (viewId) wxsEffectSink?.({ kind: 'callMethod', viewId, method: name, args })
         return undefined
       },
       requestAnimationFrame(callback: () => void) {
@@ -656,8 +662,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         return getComputedStyle(element)
       },
       triggerEvent(name: string, detail?: unknown, options?: Record<string, unknown>) {
-        const node = wxsNodeForElement(element)
-        if (node) wxsEffectSink?.({ kind: 'triggerEvent', viewId: node.id, name, detail, options })
+        const viewId = wxsNodeForElement(element)?.id ?? fallbackViewId
+        if (viewId) wxsEffectSink?.({ kind: 'triggerEvent', viewId, name, detail, options })
         return undefined
       },
     }
@@ -688,7 +694,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     if (!element) return
     const owner = wxsOwnerElement(element)
     const descriptor = wxsDescriptorFor(element, owner)
-    const ownerDescriptor = wxsDescriptorFor(owner, owner)
+    const ownerDescriptor = wxsDescriptorFor(owner, owner, node.id)
     for (const binding of bindings) {
       const nextValue = node.props?.[binding.prop]
       const oldValue = previous?.[binding.prop]
@@ -715,7 +721,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   ): void => {
     const owner = wxsOwnerElement(element)
     const descriptor = wxsDescriptorFor(element, owner)
-    const ownerDescriptor = wxsDescriptorFor(owner, owner)
+    const ownerDescriptor = wxsDescriptorFor(owner, owner, node.id)
     payload.instance = descriptor
     let result: unknown
     try {
@@ -1155,6 +1161,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     },
     setWxsEffectSink: (sink) => {
       wxsEffectSink = sink
+    },
+    setPageData: (data) => {
+      pageData = { ...data }
     },
     observeIntersection: (request, emit) => {
       if (typeof IntersectionObserver === 'undefined' || !rootElement) return undefined
