@@ -12,6 +12,7 @@ import postcss, {
   type Root,
   type Rule,
 } from 'postcss'
+import { convertRpx } from '@tiny/css-units'
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import {
   DEFAULT_HOST_ATTRIBUTE,
@@ -34,30 +35,6 @@ interface InternalError {
   kind: ParseErrorKind
   start: Position
   end: Position
-}
-
-// ---------------------------------------------------------------------------
-// RPX → VW conversion
-// ---------------------------------------------------------------------------
-
-const RPX_RE = /(-?\d*\.?\d+)rpx/g
-
-/**
- * Convert all `rpx` dimension values in a string to `vw`.
- * `value * 100 / ratio`, formatted to avoid scientific notation.
- */
-function convertRpxInString(s: string, ratio: number): string {
-  return s.replace(RPX_RE, (_, raw: string) => {
-    const value = parseFloat(raw)
-    const vw = (value * 100) / ratio
-    // Rust uses up to 6 significant digits (f32 precision). We cap at 6 fractional digits.
-    const rounded = parseFloat(vw.toPrecision(6))
-    // If it's an integer, emit without decimal point
-    if (Number.isInteger(rounded)) {
-      return `${rounded}vw`
-    }
-    return `${rounded}vw`
-  })
 }
 
 // ---------------------------------------------------------------------------
@@ -514,7 +491,7 @@ export class StyleSheetTransformer {
     if (keyword === 'media' || keyword === 'supports' || keyword === 'document') {
       const transformed = this._cloneAtRuleShell(node)
       // Transform rpx in the at-rule parameters
-      transformed.params = convertRpxInString(node.params, this._opts.rpxRatio)
+      transformed.params = convertRpx(node.params, this._opts.rpxRatio)
       normalDest.append(transformed)
 
       // Build low-priority counterpart
@@ -534,7 +511,7 @@ export class StyleSheetTransformer {
 
     if (node.nodes) {
       // Has a block — treat content as declarations / values (rpx only)
-      transformed.params = convertRpxInString(node.params, this._opts.rpxRatio)
+      transformed.params = convertRpx(node.params, this._opts.rpxRatio)
       normalDest.append(transformed)
       node.nodes.forEach((child: ChildNode) => {
         if (child.type === 'decl') {
@@ -542,7 +519,7 @@ export class StyleSheetTransformer {
         } else if (child.type === 'rule') {
           // embedded rules inside non-media at-rules (e.g. @keyframes)
           const r = child.clone() as Rule
-          r.selector = convertRpxInString(r.selector, this._opts.rpxRatio)
+          r.selector = convertRpx(r.selector, this._opts.rpxRatio)
           r.each((n: ChildNode) => {
             if (n.type === 'decl') {
               const td = this._transformDecl(n as Declaration)
@@ -552,7 +529,7 @@ export class StyleSheetTransformer {
           transformed.append(r)
         } else if (child.type === 'atrule') {
           const inner = child.clone() as AtRule
-          inner.params = convertRpxInString(inner.params, this._opts.rpxRatio)
+          inner.params = convertRpx(inner.params, this._opts.rpxRatio)
           inner.each((n: ChildNode) => {
             if (n.type === 'decl') {
               const td = this._transformDecl(n as Declaration)
@@ -570,7 +547,7 @@ export class StyleSheetTransformer {
       // `@layer theme.base` → `@layer theme.prefix--base`.
       // We conservatively apply only rpx conversion (matching the majority of
       // real-world cases; pure top-level rpx like `@a 75rpx` is not valid CSS).
-      transformed.params = convertRpxInString(node.params, this._opts.rpxRatio)
+      transformed.params = convertRpx(node.params, this._opts.rpxRatio)
       normalDest.append(transformed)
     }
 
@@ -799,7 +776,7 @@ export class StyleSheetTransformer {
 
   private _transformDecl(decl: Declaration): Declaration {
     const cloned = decl.clone()
-    cloned.value = convertRpxInString(decl.value, this._opts.rpxRatio)
+    cloned.value = convertRpx(decl.value, this._opts.rpxRatio)
     cloned.raws.before = decl.raws.before ?? ''
     return cloned
   }

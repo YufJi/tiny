@@ -64,6 +64,9 @@ importers:
 
   hosts/web-components:
     dependencies:
+      '@tiny/css-units':
+        specifier: workspace:*
+        version: link:../../packages/css-units
       '@tiny/manifest':
         specifier: workspace:*
         version: link:../../packages/manifest
@@ -97,6 +100,21 @@ importers:
         version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
 
   packages/bridge:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vite:
+        specifier: ^5.4.21
+        version: 5.4.21(@types/node@22.20.1)(less@3.13.1)
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
+
+  packages/css-units:
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -147,6 +165,9 @@ importers:
 
   packages/stylesheet-compiler:
     dependencies:
+      '@tiny/css-units':
+        specifier: workspace:*
+        version: link:../css-units
       '@tiny/manifest':
         specifier: workspace:*
         version: link:../manifest
@@ -1740,7 +1761,7 @@ snapshots:
       pathe: 1.1.2
       picocolors: 1.1.1
       sirv: 2.0.4
-      vitest: 1.6.1(@types/node@25.6.2)(@vitest/ui@1.6.1)(less@3.13.1)
+      vitest: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
     optional: true
 
   '@vitest/utils@1.6.1':

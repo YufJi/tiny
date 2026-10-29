@@ -550,7 +550,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
         width: element.style.width,
       }))
       assert.equal(targetStyle.left, '12px', 'WXS setStyle did not update the local element')
-      assert.equal(targetStyle.width, '128px', 'WXS setStyle did not normalize rpx')
+      assert.equal(targetStyle.width, '10vw', 'WXS setStyle did not normalize rpx')
       await waitForText('state-status: state:1')
       await waitForText('computed-status: computed:128px')
       await render.locator('#target').click()
