@@ -406,11 +406,11 @@ function elementToProcGen(
           staticAttrToProcGenWorklet(attr, w)
         }
         for (const attr of kind.changeAttributes) {
-          attrToProcGenAsChangeProperty(attr, w, scopes, bmc, wxsProps)
+          attrToProcGenAsChangeProperty(attr, w, scopes, bmc, wxsProps, BUILTIN_TAGS.has(kind.tagName.name))
         }
         if (wxsProps.length > 0) {
           w.exprStmt((ww) => {
-            ww.write(`O(N,'wx-tiny-wxs-props',${genLitStr(JSON.stringify(wxsProps))})`)
+            ww.write(`R.a(N,'wx-tiny-wxs-props',${genLitStr(JSON.stringify(wxsProps))})`)
           })
         }
         for (const attr of kind.attributes) {
@@ -846,7 +846,7 @@ function commonAttrsToProcGenWithoutSlot(
   }
   if (wxsEvents.length > 0) {
     w.exprStmt((ww) => {
-      ww.write(`O(N,'wx-tiny-wxs-events',${genLitStr(JSON.stringify(wxsEvents))})`)
+      ww.write(`R.a(N,'wx-tiny-wxs-events',${genLitStr(JSON.stringify(wxsEvents))})`)
     })
   }
   if (common.id) {
@@ -953,17 +953,22 @@ function attrToProcGenAsChangeProperty(
   scopes: ScopeVar[],
   bmc: BindingMapCollector,
   wxsProps?: WxsPropMetadata[],
+  allowLocalWxs = false,
 ): void {
   if (!attr.value || attr.value.kind === 'Static') return
   const n = genLitStr(attr.name.name)
   const p = exprToProcGenPrepare(attr.value.expression, w, scopes)
   const staticWxs = p.getStaticScriptHandler(scopes)
-  if (staticWxs && wxsProps) {
+  if (staticWxs && wxsProps && allowLocalWxs) {
     wxsProps.push({
       prop: attr.name.name,
       moduleId: staticWxs.moduleId,
       exportPath: staticWxs.exportPath,
     })
+    // The render host owns the observer now. `R.p` would additionally invoke
+    // the WXS handler service-side with glass element/component arguments
+    // instead of the WXS descriptor and run the observer twice.
+    return
   }
   w.exprStmt((ww) => {
     ww.write('if(C||K||')

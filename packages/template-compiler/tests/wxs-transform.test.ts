@@ -139,3 +139,23 @@ describe('WXS custom component events', () => {
     expect(output).toContain('R.v(')
   })
 })
+
+
+describe('WXS custom component change:prop', () => {
+  test('keeps custom component prop observers on the service path', () => {
+    const group = TmplGroup.new({
+      directivePrefix: 'wx',
+      templateExtension: '.wxml',
+      templateScriptExtension: '.wxs',
+    })
+    group.addScript('wxs/utils.wxs', 'module.exports = { observe: function () {} }')
+    group.addTmpl(
+      'pages/index/index',
+      '<wxs module="utils" src="/wxs/utils.wxs" />'
+        + '<my-comp change:label="{{utils.observe}}" label="{{value}}" />',
+    )
+    const output = group.getTmplGenObjectGroups()
+    expect(output).not.toContain('wx-tiny-wxs-props')
+    expect(output).toContain('R.p(')
+  })
+})
