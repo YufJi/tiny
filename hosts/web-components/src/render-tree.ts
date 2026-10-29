@@ -153,8 +153,6 @@ const builtinTags = new Set<string>(BUILTIN_COMPONENT_TAGS)
 const WXS_PROPS_PROP = TINY_ENGINE_NAMING.wxsPropsAttribute
 const WXS_DYNAMIC_PROP = TINY_ENGINE_NAMING.wxsDynamicEventAttribute
 
-const LOCAL_WXS_EVENTS = new Set<string>(TINY_ENGINE_NAMING.wxsLocalEventNames)
-
 const HANDLED_NATIVE_EVENT = Symbol.for(TINY_ENGINE_NAMING.handledNativeEventSymbol)
 const isHandledNativeEvent = (event: unknown): boolean => Boolean(
   event
