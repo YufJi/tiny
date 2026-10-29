@@ -16,12 +16,14 @@ Landed so far:
 - the compiler emits a WXS module table and static WXS event metadata;
 - the flow carries the module table to render;
 - render executes native `tap` / `touch*` WXS handlers locally with a partial
-  descriptor (`getState`, `setStyle`, class methods, selector queries).
+  descriptor (`getState`, `setStyle`, class methods, selector queries);
+- local handlers forward events to service only when a matching service
+  listener exists on the DOM path;
+- WXS style/class overrides survive later WXML patches.
 
-Still pending: wired source maps, service-event bubbling for local handlers,
-semantic WXS events, full descriptor RPCs (`callMethod`, `triggerEvent`),
-WXS style/class override merging, `change:prop`, and the dynamic-binding
-fallback policy.
+Still pending: wired source maps, semantic WXS events, full descriptor RPCs
+(`callMethod`, `triggerEvent`), `change:prop`, and the dynamic-binding fallback
+policy.
 
 This ADR keeps ADR-0006's split-tree decision and does **not** move WXML
 expression evaluation to render. It proposes one kernel-level WXS runtime that
