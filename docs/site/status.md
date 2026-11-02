@@ -31,7 +31,7 @@ order: 9
 | render tree | :pill[可用]{tone="good"} | 宿主 `TreeRenderer`：真实内置组件、slot、shadow root、样式、布局、DOM、元素树、query、measure、IntersectionObserver；Web 实现是 `createGlassRenderTree`。 |
 | bridge | :pill[可用]{tone="good"} | 9 个消息域，含 tree/query；信封和帧、MessagePort/内存 transport、握手、超时、批处理、JSON 校验；capabilities 还没有用于协商。 |
 | 浏览器宿主 | :pill[可用]{tone="good"} | @tiny/host-browser 支持每页 render 连接、MessageChannel、tabBar 宿主 UI、OffscreenCanvas handoff、resolveAssetUrl 和 DevtoolRuntimeClient；@tiny/host-web-components 提供 Web 渲染树和 23 个内置组件。内核依赖检查通过。 |
-| iOS 宿主 | :pill[可用（MVP）]{tone="good"} | `ios/` 原生工程 + `hosts/ios` Vite 包（`src/service` / `src/web`）：Rust `HostCoreRuntime`（UniFFI）+ JavaScriptCore service + 每页一个 WKWebView；没有 `host.html`、iframe 或 JS host fallback。SwiftUI Launcher/导航栏/tabBar，UserDefaults 存储，全部 7 个 fixture 已在模拟器 smoke，并覆盖 native 导航/tab 切换；Canvas 2D 走 service 录制 + native render 回放，WebGL/同步读回未接。 |
+| iOS 宿主 | :pill[可用（MVP）]{tone="good"} | `ios/` 原生工程 + `hosts/ios` Vite 包（`src/service` / `src/web`）：Rust `HostCoreRuntime`（UniFFI）+ JavaScriptCore service + 每页一个 WKWebView；没有 `host.html`、iframe 或 JS host fallback。SwiftUI Launcher/导航栏/tabBar，UserDefaults 存储，全部 7 个 fixture 已在模拟器 smoke，并覆盖 native 导航/tab 切换；真机 device build/install 也已跑通；Canvas 2D 走 service 录制 + native render 回放，WebGL/同步读回未接。 |
 | 内置组件 | :pill[较完整]{tone="good"} | 23 个组件和共享 behaviors；checkbox/radio/switch/slider/icon/image/picker 已按 2.7.0 参考重写；input/textarea/scroll-view/swiper 仍是近似实现；navigator/video/rich-text/map 等还缺。 |
 | API | :pill[部分]{tone="warn"} | request、异步 storage、5 个路由 API、system、toast/modal、canvas、selector query 已有；媒体、真实文件、账号、位置、WebSocket 还没有。 |
 | 页面能力 | :pill[部分]{tone="warn"} | 14 项页面生命周期、5 个路由 API、内置 tabBar/switchTab、页面滚动/触底/下拉刷新、分享回调和退出状态已经支持；分享菜单 UI、页面转场、页面栈恢复、自定义 tabBar 还缺。 |
@@ -95,7 +95,7 @@ generics、definitionFilter、pureDataPattern、`wx://form-field` / `wx://form-f
 :::::split
 ::::stack
 :::card{tag="原生" tone="warn" title="iOS 宿主还有缺口"}
-JSCore + native WKWebView 的 Transport、页面 surface、原生 chrome、UserDefaults 和 Canvas 2D 已经跑通；还缺 toast/network 等原生 host API、WebGL、调试面板，以及真机签名和子包按需加载。
+JSCore + native WKWebView 的 Transport、页面 surface、原生 chrome、UserDefaults 和 Canvas 2D 已经跑通；还缺 toast/network 等原生 host API、WebGL、调试面板，以及真机自动化 smoke 和子包按需加载。
 :::
 
 :::card{tag="部署" tone="warn" title="部署假设还没有建模"}
@@ -164,7 +164,7 @@ canvasToTempFilePath、wx.createOffscreenCanvas、canvas node 事件；animation
 :::
 
 :::card{tag="P2" title="更多宿主能力和渲染后端"}
-iOS 宿主补 WebGL、原生 API 和真机链路；再评估 native `TreeRenderer` 与更多渲染后端。
+iOS 宿主补 WebGL、原生 API 和真机自动化；再评估 native `TreeRenderer` 与更多渲染后端。
 :::
 
 :::card{tag="已完成" title="host 编排已收敛到 Swift"}

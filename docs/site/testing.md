@@ -98,12 +98,13 @@ iOS 宿主不进入 `pnpm accept:glass-easel`，因为它依赖已安装的 iOS 
 ```bash
 pnpm ios:assets       # 构建 @tiny/host-ios + 编译 tests/apps 全部 fixture
 pnpm ios:sim          # 构建 TinyHost.app，逐个 fixture 在模拟器里 smoke
+pnpm ios:device       # 构建/签名/安装到已连接的物理 iPhone
 pnpm ios:smoke:jsc    # 在 macOS jsc 里启动 demo 的 service engine + app-data
 ```
 
 `pnpm ios:sim` 默认跑 `Generated/apps.json` 里的全部 7 个 fixture：demo、mini、todo、wechat-demo、echarts、vant、weui。每个 fixture 都验证 native HostCore 启动、首屏、页面导航/tab 切换和 Launcher 截图；ECharts 截图确认 Canvas display-list 已到达 render WKWebView。产物在 `ios/.artifacts/`，不提交。
 
-真机安装需要 Xcode Team 和 `devicectl`；签名构建、安装、首次启动前信任开发者证书是三个独立步骤。真机 smoke 不替代性能、安全或长时运行测试。
+真机安装使用 `pnpm ios:device`（Xcode 自动签名 + `devicectl`）；首次启动前仍需在设备上信任开发者证书。真机 smoke 不替代性能、安全或长时运行测试。
 
 ## 测试宿主和调试器不是一回事 {#hosts kicker="两种宿主"}
 

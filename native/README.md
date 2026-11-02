@@ -25,7 +25,10 @@ the devtool and by `tests/host`.
 
 `host-core-ffi` exposes the same machine through UniFFI. Swift bindings are
 generated into `ios/HostCoreGenerated` and linked into `TinyHost.app`; the
-simulator gate runs a native HostCore handshake smoke.
+simulator gate runs a native HostCore handshake smoke. Device builds use
+`aarch64-apple-ios`; `ios/scripts/build-host-core-ffi.mjs` accepts
+`TINY_IOS_RUST_TARGETS` and keeps separate `Vendor/sim` and `Vendor/device`
+static libraries.
 
 ```bash
 cargo test --manifest-path native/Cargo.toml --workspace

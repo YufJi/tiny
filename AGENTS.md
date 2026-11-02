@@ -74,6 +74,7 @@ pnpm dev:wechat-demo         # WeChat demo host on :5174
 pnpm check:runtime-purity    # assert the core runtime has no host globals
 pnpm ios:assets              # build @tiny/host-ios + compile fixtures + assemble ios/Generated
 pnpm ios:sim                 # build and smoke-test TinyHost on an iOS Simulator
+pnpm ios:device              # build, sign, install and launch on a connected iPhone
 pnpm host-core:test          # Rust HostCore protocol/state tests
 pnpm ios:smoke:jsc           # boot the demo engine + app-data in macOS jsc
 pnpm lint                    # Biome (bridge only is configured today)

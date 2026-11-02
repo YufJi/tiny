@@ -115,8 +115,9 @@ ios/Generated/
 The native adapter now has a UniFFI-bound Rust HostCore slice:
 
 ```bash
-pnpm ios:host-core   # build staticlib + generate ios/HostCoreGenerated
+pnpm ios:host-core   # build simulator staticlib + generate ios/HostCoreGenerated
 pnpm ios:sim         # assets + native build + HostCore smoke
+pnpm ios:device      # build simulator/device FFI, sign, install and launch on a connected iPhone
 ```
 
 `HostCoreAdapter.smoke()` creates a `RustHostCore` through the generated Swift
@@ -157,6 +158,7 @@ node ios/scripts/sim.mjs demo           # 只跑一个 fixture
 node ios/scripts/sim.mjs --skip-assets  # 复用已生成的 Generated
 node ios/scripts/sim.mjs --skip-build   # 复用已构建的 app
 TINY_IOS_DEVICE="iPhone 17" pnpm ios:sim
+TINY_IOS_DEVICE="iPhone 14 Pro Max" pnpm ios:device
 ```
 
 也可以不依赖模拟器做 JS 层验证：
@@ -224,8 +226,8 @@ fixture 通过 `scripts/devtool-apps.mjs` 的 `discoverTestApps()` 自动发现�
   - render 端在每页 WKWebView：`send(frame) → tinyRender.postMessage({type:'frame'})`；
     `NativeRenderSurface` 用 `callAsyncJavaScript("window.__tinyRenderReceive(frame)")` 投递。
 - 页面 surface 不再使用 iframe 或 MessagePort；HostCore 直接向对应 page 的 WKWebView 转发帧。
-- 存储：HostCore `platformCall` 的 `storage.*` 由 `HostCoreRuntime` 处理，目前使用内存字典；
-  生产迁移前需要接回 UserDefaults。
+- 存储：HostCore `platformCall` 的 `storage.*` 由 `HostCoreRuntime` 处理，值通过 JSON 写入
+  `UserDefaults`（前缀 `tiny.storage.<appId>.`），启动时恢复快照。
 
 ## 原生 chrome
 
@@ -233,7 +235,7 @@ fixture 通过 `scripts/devtool-apps.mjs` 的 `discoverTestApps()` 自动发现�
 - `navigationStyle: "custom"`：隐藏 nav bar，WebView 延伸到状态栏下方，右上角保留浮动胶囊（关闭）；
   有返回能力时左上角出现浮动返回按钮。
 - 无 tabBar 时 WebView 延伸到屏幕底部，页面背景覆盖 home indicator；有 tabBar 时 tabBar 背景延伸到底部安全区。
-- 关闭：胶囊 → “关闭小程序” → dismiss；`dismantleUIView` 会停止 JSContext、关闭 BridgeConnection、移除 iframe。
+- 关闭：胶囊 → “关闭小程序” → dismiss；`MiniProgramSession.close()` 停止 JSContext、关闭 HostCore 会话并移除所有 native render surface。
 - 不做调试面板；Console/Elements/Lifecycle 需要的话后续在 Web host 层接 vConsole 或另做。
 
 ## 已支持/未支持
@@ -241,8 +243,8 @@ fixture 通过 `scripts/devtool-apps.mjs` 的 `discoverTestApps()` 自动发现�
 已支持：
 
 - `tests/apps` 下 7 个 fixture（demo、mini、todo、wechat-demo、echarts、vant、weui）的启动、首屏、页面导航、tab 切换、返回、原生导航栏/tabBar；
-- 页面 iframe 的隐藏/恢复、滚动容器、页面 WXSS 隔离；
-- 5 个路由 API、`RUNTIME_STATE` 投影、storage、系统信息、toast/modal/loading 等宿主 UI（Web overlay）；
+- 每页 native WKWebView 的隐藏/恢复、滚动容器、页面 WXSS 隔离；
+- 5 个路由 API、`RUNTIME_STATE` 投影、UserDefaults storage、系统信息和 SwiftUI 原生导航/tabBar；
 - **Canvas 2D**：legacy `createCanvasContext` 与 selector-query canvas node 都通过 service 侧录制、
   render `<canvas>` 回放；`measureText` 走 JSCore → CoreText 同步桥；mini ECharts 柱状图已跑通；
 - 无 DOM 的 service 线程（`pnpm check:runtime-purity` 仍通过）。
@@ -252,15 +254,13 @@ fixture 通过 `scripts/devtool-apps.mjs` 的 `discoverTestApps()` 自动发现�
 - **Canvas WebGL**：不做远程 WebGL 代理；WebGL 小程序仍会得到空 context。
 - **Canvas 同步读回**：`getImageData` / `isPointInPath` / `toDataURL` / `canvasToTempFilePath`
   暂不支持；需要时再补原生 shadow 或异步导出方案。
-- **vConsole / 调试面板**：按要求不做；接 vConsole 时在 native render surface 或
-  `hosts/ios/src/web/host.ts` 里同步加载即可，不影响 runtime。
+- **vConsole / 调试面板**：按要求不做；接 vConsole 时在 native render surface 加载即可，不影响 runtime。
 - **子包按需加载 / 热更新 / 远程下载**：当前全部产物构建时打进 app bundle。要接 dev server，可在
   `loadMeta` / `loadArtifacts` 前改成 fetch + 缓存，并处理离线/校验。
-- **原生网络/登录/媒体 API**：`network.request` 仍使用 WKWebView 里的 `fetch`（受 CORS 限制）；
-  要绕开 CORS 或接原生能力，需要把 `apiHandlers` 换成原生桥。
+- **原生网络/登录/媒体 API**：HostCore `platformCall` 目前只完整实现 storage；toast/network/媒体等仍返回占位结果，需要继续补原生 handler。
 - **多 app 同时保活**：一次只保留一个 WKWebView + 一个 JSContext；关闭再开另一个。
 - **自定义 tabBar / 顶部 tabBar 的完整视觉**：顶部位置有布局分支，但内置 fixture 未覆盖自定义 tabBar。
-- **真机签名**：`CODE_SIGNING_ALLOWED=NO` 只用于模拟器；真机需要在 Xcode 里选择自己的 Team。
+- **真机签名**：`CODE_SIGNING_ALLOWED=NO` 只用于模拟器；`pnpm ios:device` 使用 Xcode 自动签名，Team 可用 `TINY_IOS_DEVELOPMENT_TEAM` 覆盖。
 
 ## 验证记录
 
@@ -297,18 +297,10 @@ Host orchestration 已迁到 Swift：
 
 仍需补齐：
 
-- UserDefaults storage parity
-- toast/network/其他 host APIs
-- 更强的 native interaction smoke（导航、tabBar、Canvas）
-- 真机多架构 UniFFI 静态库
-- **搬到 Swift**：host 侧 `BridgeConnection`、页面栈与导航、render 容器/iframe 生命周期、
-  `HostApiRegistry`、storage、`systemInfo`/`resize`、`RUNTIME_STATE` → 原生 chrome 的状态投影。
-- **渲染容器待定**：可以继续用一个 WKWebView + 每页 iframe，由 Swift 通过一个很薄的 JS relay 转发
-  tree/patch/event；也可以改成每页一个 WKWebView，让 Swift 直接做 render connector。后者隔离更强但
-  内存占用更高，需要在实现前用 `ios:sim` 做一次对比。
-- **不能搬**：App/Page/Component、setData、WXML 求值和 glass-easel 逻辑树必须留在 JSCore。
-- **验收**：沿用 `pnpm ios:sim` 的全 fixture smoke，并补一条“Swift host 编排”的页面栈/导航/tab
-  smoke。
+- toast/network/媒体等 native host API（storage 已完成）
+- 更强的 native interaction smoke（tap、scroll、Canvas 操作）
+- 真机自动化 smoke（device build/install 已跑通）
+- 子包按需加载和真机分发签名
 
-这样做的收益是原生层可以直接控制页面生命周期、导航转场、多窗口/多实例和原生渲染容器；
-代价是 Swift 要重新实现一套 host 编排，Web host 层的浏览器 API 也要改为原生实现。
+HostCore 已经负责 Bridge 会话、页面栈、路由和 UIState；App/Page/Component、setData、WXML 求值和
+glass-easel 逻辑树仍留在 JSCore。Swift 只负责页面 surface、宿主 API 和 SwiftUI chrome。
