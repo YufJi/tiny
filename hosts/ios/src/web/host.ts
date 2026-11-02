@@ -8,8 +8,9 @@
  */
 import './host.css'
 
-import { createTinyRuntime } from '@tiny/runtime'
-import type { RuntimeDiagnostic, TinyRuntimeHost } from '@tiny/runtime'
+import { createTinyRuntime } from '@tiny/runtime/host'
+import type { RuntimeDiagnostic } from '@tiny/runtime'
+import type { TinyRuntimeHost } from '@tiny/runtime/host'
 import { createBrowserApiHandlers } from '@tiny/host-browser'
 import {
   getInjectedConfig,

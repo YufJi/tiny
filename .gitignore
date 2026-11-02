@@ -29,3 +29,5 @@ native/host-core-wasm/pkg/*
 !native/host-core-wasm/pkg/tiny_host_core_wasm.d.ts
 !native/host-core-wasm/pkg/tiny_host_core_wasm_bg.wasm
 !native/host-core-wasm/pkg/tiny_host_core_wasm_bg.wasm.d.ts
+ios/HostCoreGenerated/
+ios/Vendor/

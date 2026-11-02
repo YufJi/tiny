@@ -42,9 +42,6 @@ export type {
 
 export * from './tree'
 
-export { createTinyRuntime } from './host'
-export type { TinyRuntimeHost } from './host'
-
 export { bootServiceThread } from './service'
 
 export {

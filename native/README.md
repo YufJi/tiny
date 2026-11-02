@@ -20,8 +20,12 @@ replied back to the service.
 
 `host-core-wasm` exposes the same event/action state machine to JavaScript with
 `WasmHostCore`; `hosts/browser/src/wasm-host.ts` is the browser adapter that owns
-iframes, MessageChannel and OffscreenCanvas handoff. It is exported but not yet
-the default devtool host; the JS host remains the fallback during migration.
+iframes, MessageChannel and OffscreenCanvas handoff. It is the only host used by
+the devtool and by `tests/host`.
+
+`host-core-ffi` exposes the same machine through UniFFI. Swift bindings are
+generated into `ios/HostCoreGenerated` and linked into `TinyHost.app`; the
+simulator gate runs a native HostCore handshake smoke.
 
 ```bash
 cargo test --manifest-path native/Cargo.toml --workspace
@@ -34,7 +38,7 @@ Crate layout:
 ```text
 native/host-core/       # rlib, no WebKit/UIKit/JSCore/Android/browser deps
 native/host-core-wasm/  # wasm-bindgen event/action bridge for the web devtool
-native/host-core-ffi/   # UniFFI for Swift (and future Kotlin) — later
+native/host-core-ffi/   # UniFFI for Swift (and future Kotlin)
 ```
 
 ### Web devtool WASM mode
@@ -54,5 +58,5 @@ normal gate:
 pnpm accept:glass-easel
 ```
 
-The JavaScript host remains available to the standalone browser host and the
-legacy browser acceptance host, but the devtool no longer has a JS-host mode.
+The JavaScript host remains only behind `@tiny/runtime/host` for the paused iOS
+JS shell and runtime unit tests; browser devtool/test hosts have no JS-host mode.

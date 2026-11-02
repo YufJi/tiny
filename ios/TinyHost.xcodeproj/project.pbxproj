@@ -17,6 +17,8 @@
 		A10000000000000000000027 /* FrameRelay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000017 /* FrameRelay.swift */; };
 		A10000000000000000000028 /* HostModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000018 /* HostModels.swift */; };
 		A10000000000000000000029 /* Generated in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000019 /* Generated */; };
+		A1000000000000000000002D /* HostCoreAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002C /* HostCoreAdapter.swift */; };
+		A10000000000000000000031 /* tiny_host_core_ffi.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000030 /* tiny_host_core_ffi.swift */; };
 		A1000000000000000000002B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002A /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -33,6 +35,8 @@
 		A10000000000000000000018 /* HostModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostModels.swift; sourceTree = "<group>"; };
 		A10000000000000000000019 /* Generated */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Generated; sourceTree = "<group>"; };
 		A1000000000000000000002A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A1000000000000000000002C /* HostCoreAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostCoreAdapter.swift; sourceTree = "<group>"; };
+		A10000000000000000000030 /* tiny_host_core_ffi.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = tiny_host_core_ffi.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -50,6 +54,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000004 /* TinyHost */,
+				A10000000000000000000032 /* HostCoreGenerated */,
 				A10000000000000000000019 /* Generated */,
 				A10000000000000000000003 /* Products */,
 			);
@@ -75,9 +80,18 @@
 				A10000000000000000000016 /* ServiceEngine.swift */,
 				A10000000000000000000017 /* FrameRelay.swift */,
 				A10000000000000000000018 /* HostModels.swift */,
+				A1000000000000000000002C /* HostCoreAdapter.swift */,
 				A1000000000000000000002A /* Assets.xcassets */,
 			);
 			path = TinyHost;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000032 /* HostCoreGenerated */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000030 /* tiny_host_core_ffi.swift */,
+			);
+			path = HostCoreGenerated;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -160,6 +174,8 @@
 				A10000000000000000000026 /* ServiceEngine.swift in Sources */,
 				A10000000000000000000027 /* FrameRelay.swift in Sources */,
 				A10000000000000000000028 /* HostModels.swift in Sources */,
+				A1000000000000000000002D /* HostCoreAdapter.swift in Sources */,
+				A10000000000000000000031 /* tiny_host_core_ffi.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -282,6 +298,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/HostCoreGenerated";
+				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/Vendor";
+				OTHER_LDFLAGS = ("$(inherited)", "-ltiny_host_core_ffi");
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/HostCoreGenerated";
 				CODE_SIGN_IDENTITY = "-";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -318,6 +338,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/HostCoreGenerated";
+				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/Vendor";
+				OTHER_LDFLAGS = ("$(inherited)", "-ltiny_host_core_ffi");
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/HostCoreGenerated";
 				CODE_SIGN_IDENTITY = "-";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;

@@ -132,6 +132,23 @@ ios/Generated/
 
 用 Xcode 打开 `ios/TinyHost.xcodeproj`，选择 iPhone 模拟器或真机运行。
 同一个 target 也可以构建 Mac Catalyst 版本，用于在没有模拟器时验证 WKWebView/JSCore 链路。
+## Rust HostCore (UniFFI)
+
+The native adapter now has a UniFFI-bound Rust HostCore slice:
+
+```bash
+pnpm ios:host-core   # build staticlib + generate ios/HostCoreGenerated
+pnpm ios:sim         # assets + native build + HostCore smoke
+```
+
+`HostCoreAdapter.smoke()` creates a `RustHostCore` through the generated Swift
+bindings, starts the host handshake and writes `host-core-smoke.json`. The
+simulator gate validates that file and requires `ok: true`.
+
+The current adapter stage proves the FFI/library integration only. The existing
+`host.html` / `createTinyRuntime` JS shell remains in place while the Swift page
+transport and per-page WKWebView adapter are built.
+
 `ios/Generated/` 是 Xcode 的 folder reference，构建前必须存在。
 
 一条命令验收（推荐）：

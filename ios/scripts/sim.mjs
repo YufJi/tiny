@@ -122,6 +122,7 @@ async function main() {
   run('xcrun', ['simctl', 'install', device.udid, appPath], { stdio: 'inherit' })
 
   const results = []
+  let hostCoreSmoke = null
   for (const appId of apps) {
     const container = run(
       'xcrun',
@@ -181,6 +182,20 @@ async function main() {
       )
     }
 
+    if (!hostCoreSmoke) {
+      const hostCoreFile = path.join(documents, 'host-core-smoke.json')
+      if (fs.existsSync(hostCoreFile)) {
+        hostCoreSmoke = JSON.parse(await fsp.readFile(hostCoreFile, 'utf8'))
+        if (hostCoreSmoke.ok !== true) {
+          throw new Error(`UniFFI HostCore smoke failed: ${JSON.stringify(hostCoreSmoke)}`)
+        }
+        await fsp.copyFile(
+          hostCoreFile,
+          path.join(artifactDir, 'host-core-smoke.json'),
+        )
+      }
+    }
+
     results.push({ appId, smoke, state })
     console.log(
       `  ✅ ${appId}: ${state?.title ?? '?'} (${state?.path ?? '?'}) ` +
@@ -198,6 +213,7 @@ async function main() {
   console.log('\n✅ iOS simulator smoke passed')
   console.log(`   apps: ${results.map((item) => item.appId).join(', ')}`)
   console.log(`   screenshots: ${path.relative(rootDir, artifactDir)}`)
+  console.log(`   UniFFI HostCore smoke: ${hostCoreSmoke ? 'ok' : 'missing'}`)
   console.log(`   launcher: ${path.relative(rootDir, launcherShot)}`)
 }
 

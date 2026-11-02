@@ -2,14 +2,14 @@
 
 ## Status
 
-Accepted. Web devtool migration is implemented and gated; the iOS Swift adapter is paused.
+Accepted. Web devtool migration is implemented and gated; the iOS Swift/UniFFI adapter has started with a simulator-verified FFI/handshake slice.
 
 - First target delivered: the web devtool via WebAssembly, running as the only
   devtool host.
-- The iOS Swift adapter and Android adapter are paused/deferred; the adapter
-  contract remains in this ADR so they can be added without changing HostCore.
-- The JavaScript host (`createTinyRuntime`) remains available for the standalone
-  browser/test host, but the devtool no longer has a JS-host mode.
+- The iOS Swift adapter is in progress; Android remains deferred. The adapter
+  contract remains in this ADR so it can be added without changing HostCore.
+- The JavaScript host (`createTinyRuntime`) remains only in the paused iOS JS
+  shell and runtime unit tests; browser devtool/test hosts have no JS-host mode.
 
 ## Context
 

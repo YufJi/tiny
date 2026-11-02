@@ -1,3 +1,3 @@
 [workspace]
-members = ["host-core", "host-core-wasm"]
+members = ["host-core", "host-core-ffi", "host-core-wasm"]
 resolver = "2"
