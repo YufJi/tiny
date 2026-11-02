@@ -357,7 +357,10 @@ export async function runBrowserAcceptance({ baseUrl }) {
       currentStep = 'propagate input changes to page data'
       const todoInput = render.locator('input[placeholder="Todo name"]')
       await todoInput.click()
-      await todoInput.pressSequentially('Buy milk', { delay: 10 })
+      // Fill once instead of typing key-by-key: the input is controlled by the
+      // service/render patch loop, and per-key delays can race a value patch on
+      // slower CI runners (dropping a character).
+      await todoInput.fill('Buy milk')
       await waitForText('value: Buy milk')
       await todoInput.press('Enter')
       await page.waitForTimeout(50)
