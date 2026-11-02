@@ -8,8 +8,9 @@ core runtime.
 
 - `canvas-bridge`: OffscreenCanvas handoff, legacy CanvasContext, service/render canvas adapters
 - `runtime-port`: iframe `postMessage` handshake and `MessagePort` transfer
-- `standalone-host`: iframe creation, port transfer, canvas relay, bootstrap orchestration
-- `devtool-client`: DOM overlay and debugger panel bridge
+- `wasm-host`: Rust HostCore adapter, iframe creation, per-page render surfaces
+- `canvas-relay`: OffscreenCanvas handoff relay
+- `devtool-client`: debugger panel bridge
 
 ## Canvas injection
 

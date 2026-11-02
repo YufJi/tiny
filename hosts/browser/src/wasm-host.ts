@@ -10,7 +10,7 @@ import type {
 } from '@tiny/runtime'
 import { createBrowserApiHandlers } from './api-handlers'
 import { BROWSER_RUNTIME_NAMES } from './naming'
-import { installCanvasHandoffRelay } from './standalone-host'
+import { installCanvasHandoffRelay } from './canvas-relay'
 
 /**
  * Minimal surface of the wasm-bindgen `WasmHostCore` class.
@@ -81,6 +81,10 @@ export class WasmBrowserHost {
   private readonly serviceQueue: TransportFrame[] = []
   private serviceFlushTimer: ReturnType<typeof setTimeout> | undefined
   private readonly pages = new Map<string, PageSurface>()
+  private readonly storage: StorageSnapshot
+  /** Browser-test compatibility surface; the devtool uses onDiagnostic instead. */
+  readonly diagnostics: RuntimeDiagnostic[] = []
+  readonly apiRegistry: { storage: StorageSnapshot }
   private activePageId: string | undefined
   private appVisible = true
   private removeCanvasRelay: (() => void) | undefined
@@ -113,6 +117,8 @@ export class WasmBrowserHost {
   ) {
     this.options = options
     this.factory = factory
+    this.storage = options.storage ?? {}
+    this.apiRegistry = { storage: this.storage }
     this.ownsContainer = !options.container
     this.container = options.container ?? document.createElement('div')
   }
@@ -163,8 +169,10 @@ export class WasmBrowserHost {
     this.removeCanvasRelay = installCanvasHandoffRelay({
       serviceIframe: iframe,
       getRenderIframe: (pageId) => {
-        if (pageId) return this.pages.get(pageId)?.iframe
-        return this.activePageId ? this.pages.get(this.activePageId)?.iframe : undefined
+        // The service may ask for a canvas while the previous tab page is
+        // still the requested page id; the active surface owns the handoff.
+        if (this.activePageId) return this.pages.get(this.activePageId)?.iframe
+        return pageId ? this.pages.get(pageId)?.iframe : undefined
       },
       isRenderSource: (source) => {
         for (const page of this.pages.values()) {
@@ -182,7 +190,7 @@ export class WasmBrowserHost {
         SDKVersion: '3.0.0',
         ...this.options.systemInfo,
       },
-      storage: this.options.storage ?? {},
+      storage: this.storage,
       maxPageStack: this.options.maxPageStack,
     })
     this.core = await this.factory(config)
@@ -320,6 +328,7 @@ export class WasmBrowserHost {
           break
         case 'updateUIState':
           this.options.onState?.(action.state)
+          this.pushDiagnostic(action.state)
           break
         case 'commandResult':
           this.resolveCommand(action.command, action.result)
@@ -332,12 +341,14 @@ export class WasmBrowserHost {
             source?: RuntimeDiagnostic['source']
             pageId?: string
           }
-          this.options.onDiagnostic?.(normalizeTransportDiagnostic(
+          const diagnostic = normalizeTransportDiagnostic(
             action.payload,
             payload.source ?? 'host',
             payload.pageId,
             action.level as 'log' | 'warn' | 'error' | 'state',
-          ))
+          )
+          this.diagnostics.push(diagnostic)
+          this.options.onDiagnostic?.(diagnostic)
           break
         }
       }
@@ -520,7 +531,7 @@ export class WasmBrowserHost {
     const handlers = {
       ...createBrowserApiHandlers(),
       ...this.options.apiHandlers,
-      ...storageHandlers(this.options.storage ?? {}),
+      ...storageHandlers(this.storage),
     }
     const handler = handlers[action.method]
     if (typeof handler !== 'function') {
@@ -564,6 +575,13 @@ export class WasmBrowserHost {
     for (const waiter of waiters) waiter.resolve(result)
   }
 
+  private pushDiagnostic(value: unknown): void {
+    if (!value || typeof value !== 'object') return
+    const diagnostic = value as RuntimeDiagnostic
+    if (typeof diagnostic.code !== 'string') return
+    this.diagnostics.push(diagnostic)
+  }
+
   private report(level: string, message: string): void {
     this.options.onDiagnostic?.({
       severity: level === 'error' ? 'error' : 'warning',
@@ -585,24 +603,23 @@ function commandName(command: Record<string, unknown>): string | undefined {
 }
 
 function storageHandlers(storage: StorageSnapshot): HostApiHandlers {
-  const values = { ...storage }
   return {
-    'storage.get': (params) => ({ value: values[String(params.key)] }),
+    'storage.get': (params) => ({ value: storage[String(params.key)] }),
     'storage.set': (params) => {
-      values[String(params.key)] = params.value
+      storage[String(params.key)] = params.value
       return { errMsg: 'setStorageSync:ok' }
     },
     'storage.remove': (params) => {
-      delete values[String(params.key)]
+      delete storage[String(params.key)]
       return { errMsg: 'removeStorageSync:ok' }
     },
     'storage.clear': () => {
-      for (const key of Object.keys(values)) delete values[key]
+      for (const key of Object.keys(storage)) delete storage[key]
       return { errMsg: 'clearStorageSync:ok' }
     },
     'storage.info': () => ({
-      keys: Object.keys(values),
-      currentSize: JSON.stringify(values).length,
+      keys: Object.keys(storage),
+      currentSize: JSON.stringify(storage).length,
       limitSize: 10240,
     }),
   }

@@ -17,7 +17,7 @@ pnpm compile:glass-easel     # tests/apps/demo -> tests/host/generated
 pnpm dev:glass-easel         # compile + Vite on :5173
 ```
 
-- `src/host.ts` boots `createStandaloneDualThreadHost` and exposes
+- `src/host.ts` boots `WasmBrowserHost` with `@tiny/host-core-wasm` and exposes
   `window.__tinyRuntime`.
 - `src/service-thread.ts` / `src/render-thread.ts` boot the two threads.
 - `index.html`, `service.html`, `render.html` are the three entry documents.

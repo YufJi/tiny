@@ -162,7 +162,7 @@ records boot state, visible text, page errors and diagnostics per page into
   `TreeRenderer.measure` / `measureCanvas` hooks. Do not hardcode them in
   `packages/runtime`'s service API host.
 - The browser test host and devtool both use `@tiny/host-browser`’s
-  `createStandaloneDualThreadHost`;
+  `WasmBrowserHost` over `@tiny/host-core-wasm`;
   devtool adds `DevtoolRuntimeClient` for lifecycle control, state projection, and
   element-tree inspection. Do not make the test host depend on the devtool app.
 

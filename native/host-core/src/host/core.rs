@@ -61,6 +61,8 @@ pub struct HostCore {
     pending_api_navigation: HashMap<String, ProtocolMessage>,
     pending_api_control: HashMap<String, ProtocolMessage>,
     pending_platform_calls: HashMap<String, ProtocolMessage>,
+    pending_render_calls: HashMap<String, ProtocolMessage>,
+    pending_service_calls: HashMap<String, Vec<ProtocolMessage>>,
     pages: HashMap<String, PageState>,
     pending_pages: HashMap<String, String>,
     pending_initial_data: HashMap<String, Value>,
@@ -87,6 +89,8 @@ impl HostCore {
             pending_api_navigation: HashMap::new(),
             pending_api_control: HashMap::new(),
             pending_platform_calls: HashMap::new(),
+            pending_render_calls: HashMap::new(),
+            pending_service_calls: HashMap::new(),
             pages: HashMap::new(),
             pending_pages: HashMap::new(),
             pending_initial_data: HashMap::new(),
@@ -442,6 +446,7 @@ impl HostCore {
         self.pages.remove(page_id);
         self.pending_pages.remove(page_id);
         self.pending_initial_data.remove(page_id);
+        self.pending_service_calls.remove(page_id);
         self.pending_events.remove(page_id);
         self.page_stack.retain(|id| id != page_id);
         if self.active_page.as_deref() == Some(page_id) {
@@ -628,6 +633,14 @@ impl HostCore {
                             }),
                         });
                     }
+                    if let Some(request) = self.pending_render_calls.remove(&message_id) {
+                        let _ = self.service.reply(
+                            &request,
+                            None,
+                            Some((code.clone(), message.clone())),
+                            now_ms,
+                        );
+                    }
                     self.fail_api_request(&message_id, &code, &message, now_ms, actions);
                     self.diagnostic(
                         "error",
@@ -640,7 +653,7 @@ impl HostCore {
                     if message.domain == ProtocolDomain::Api {
                         self.on_api_call(message, now_ms, actions);
                     } else {
-                        self.unhandled_message("service", &message, actions);
+                        self.forward_service_call(message, now_ms, actions);
                     }
                 }
                 BridgeEvent::Control(message) => {
@@ -811,6 +824,8 @@ impl HostCore {
                             command: "inspectTree".to_string(),
                             result,
                         });
+                    } else if let Some(request) = self.pending_render_calls.remove(&message_id) {
+                        let _ = self.service.reply(&request, Some(result), None, now_ms);
                     }
                 }
                 BridgeEvent::CallFailed {
@@ -828,6 +843,10 @@ impl HostCore {
                 BridgeEvent::Event(message) => {
                     if message.domain == ProtocolDomain::Diagnostic {
                         self.on_diagnostic(&message, actions);
+                    } else if message.domain == ProtocolDomain::Tree
+                        && message.method == "hostAction"
+                    {
+                        self.on_render_host_action(&message, now_ms, actions);
                     } else {
                         self.forward_render_event(message);
                     }
@@ -883,6 +902,22 @@ impl HostCore {
         self.emit_ui_state(actions);
         self.drain_service(actions);
         self.drain_render(page_id, actions);
+        self.forward_pending_service_calls(page_id, now_ms, actions);
+    }
+
+    fn forward_pending_service_calls(
+        &mut self,
+        page_id: &str,
+        now_ms: u64,
+        actions: &mut Vec<HostAction>,
+    ) {
+        let Some(calls) = self.pending_service_calls.remove(page_id) else {
+            return;
+        };
+        for call in calls {
+            self.forward_service_call(call, now_ms, actions);
+        }
+        self.drain_render(page_id, actions);
     }
 
     fn on_diagnostic(&mut self, message: &ProtocolMessage, actions: &mut Vec<HostAction>) {
@@ -903,12 +938,18 @@ impl HostCore {
         let payload = message.payload.unwrap_or(Value::Null);
         // Tree flow events from the service carry their pageId inside the
         // payload, unlike most other events. Accept both shapes.
-        let page_id = message.page_id.clone().or_else(|| {
-            payload
-                .get("pageId")
-                .and_then(Value::as_str)
-                .map(str::to_string)
-        });
+        let page_id = message
+            .page_id
+            .clone()
+            .or_else(|| {
+                payload
+                    .get("pageId")
+                    .and_then(Value::as_str)
+                    .map(str::to_string)
+            })
+            .or_else(|| self.pending_pages.keys().next().cloned())
+            .or_else(|| self.page_stack.last().cloned())
+            .or_else(|| self.active_page.clone());
         let Some(page_id) = page_id else {
             self.diagnostic(
                 "warning",
@@ -939,6 +980,118 @@ impl HostCore {
         if queue.len() > 256 {
             queue.remove(0);
             self.diagnostic("warn", "pending render event queue overflow", None, actions);
+        }
+    }
+
+    fn forward_service_call(
+        &mut self,
+        message: ProtocolMessage,
+        now_ms: u64,
+        actions: &mut Vec<HostAction>,
+    ) {
+        let payload = message.payload.clone().unwrap_or(Value::Null);
+        let page_id = message
+            .page_id
+            .clone()
+            .or_else(|| {
+                payload
+                    .get("pageId")
+                    .and_then(Value::as_str)
+                    .map(str::to_string)
+            })
+            .or_else(|| self.pending_pages.keys().next().cloned())
+            .or_else(|| self.page_stack.last().cloned())
+            .or_else(|| self.active_page.clone());
+        let Some(page_id) = page_id else {
+            self.unhandled_message("service", &message, actions);
+            return;
+        };
+        let render_ready = self
+            .pages
+            .get(&page_id)
+            .is_some_and(|page| page.render_ready && page.bootstrap_id.is_none());
+        if !render_ready {
+            self.pending_service_calls
+                .entry(page_id)
+                .or_default()
+                .push(message);
+            return;
+        }
+        let Some(page) = self.pages.get_mut(&page_id) else {
+            return;
+        };
+        match page.bridge.control(
+            message.domain,
+            &message.method,
+            payload,
+            Some(page_id.clone()),
+            now_ms,
+        ) {
+            Ok(id) => {
+                self.pending_render_calls.insert(id, message);
+            }
+            Err(error) => {
+                self.diagnostic("error", &error.to_string(), Some(&page_id), actions);
+            }
+        }
+    }
+
+    fn on_render_host_action(
+        &mut self,
+        message: &ProtocolMessage,
+        now_ms: u64,
+        actions: &mut Vec<HostAction>,
+    ) {
+        let payload = message.payload.clone().unwrap_or(Value::Null);
+        let action = payload.get("action").and_then(Value::as_str);
+        let command = match action {
+            Some("navigateTo") => Some(HostCommand::NavigateTo {
+                url: payload
+                    .get("url")
+                    .and_then(Value::as_str)
+                    .unwrap_or("")
+                    .to_string(),
+            }),
+            Some("redirectTo") => Some(HostCommand::RedirectTo {
+                url: payload
+                    .get("url")
+                    .and_then(Value::as_str)
+                    .unwrap_or("")
+                    .to_string(),
+            }),
+            Some("switchTab") => Some(HostCommand::SwitchTab {
+                index: None,
+                url: Some(
+                    payload
+                        .get("url")
+                        .and_then(Value::as_str)
+                        .unwrap_or("")
+                        .to_string(),
+                ),
+            }),
+            Some("reLaunch") => Some(HostCommand::Relaunch {
+                url: payload
+                    .get("url")
+                    .and_then(Value::as_str)
+                    .unwrap_or("")
+                    .to_string(),
+            }),
+            Some("navigateBack") => Some(HostCommand::NavigateBack {
+                delta: payload.get("delta").and_then(Value::as_u64).unwrap_or(1) as u32,
+            }),
+            Some("exit") => {
+                self.diagnostic(
+                    "info",
+                    "exitMiniProgram is not supported by this host",
+                    message.page_id.as_deref(),
+                    actions,
+                );
+                return;
+            }
+            _ => None,
+        };
+        if let Some(command) = command {
+            self.on_command(command, now_ms, actions);
         }
     }
 

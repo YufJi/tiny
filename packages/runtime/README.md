@@ -17,11 +17,11 @@ lives in `@tiny/host-browser`:
 
 | API | Purpose |
 | --- | --- |
-| `createStandaloneDualThreadHost` | Creates a service iframe and one render iframe per page from a manifest |
+| `WasmBrowserHost` | Rust HostCore adapter: service iframe and one render iframe per page |
 | `DevtoolRuntimeClient` | Debugger adapter: iframe lifecycle, controls, page/lifecycle projection, element tree |
 
 Both `tests/host` and `apps/devtool` use the browser host's fixed per-page render
-topology through `createStandaloneDualThreadHost` / `DevtoolRuntimeClient`.
+topology through `WasmBrowserHost` / `DevtoolRuntimeClient`.
 
 ## Usage
 
@@ -41,7 +41,7 @@ await host.bootstrap()
 ```
 
 A browser host does not import iframe helpers from this package. Use
-`createStandaloneDualThreadHost` from `@tiny/host-browser` instead.
+`WasmBrowserHost` from `@tiny/host-browser` instead.
 
 ## Modules
 
