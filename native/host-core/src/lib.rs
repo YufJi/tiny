@@ -1,0 +1,12 @@
+//! Platform-neutral host core for the Tiny mini-program engine.
+//!
+//! The crate must stay free of WebKit, UIKit, JSCore, Android and browser
+//! dependencies. Platform adapters execute the actions emitted here and feed
+//! events back in. See `docs/adr/0009-rust-host-core.md`.
+
+pub mod bridge;
+
+pub use bridge::{
+    decode_frame, encode_frame, BridgeError, ProtocolDomain, ProtocolKind, ProtocolMessage,
+    ProtocolRole, TransportFrame, PROTOCOL_VERSION,
+};
