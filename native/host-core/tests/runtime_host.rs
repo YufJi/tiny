@@ -578,3 +578,181 @@ fn inspect_tree_routes_through_the_render_bridge() {
             if command == "inspectTree" && result["tree"] == "ok"
     )));
 }
+
+fn reach_render_bootstrap(host: &mut HostCore, now: u64) -> String {
+    let _ = host.start(now);
+    let ready = service_event_ready();
+    let actions = host.handle_event(HostEvent::ServiceFrame(frame(vec![ready])), now + 10);
+    let bootstrap_id = only_frame_message(&actions, true).message_id.clone();
+    let reply = message(
+        ProtocolKind::Reply,
+        ProtocolDomain::Runtime,
+        "bootstrap",
+        ProtocolRole::Service,
+        ProtocolRole::Host,
+        json!({ "ok": true, "result": { "pageId": "page-1", "currentPath": "pages/index" } }),
+        None,
+        Some(&bootstrap_id),
+    );
+    let _ = host.handle_event(HostEvent::ServiceFrame(frame(vec![reply])), now + 20);
+    let _ = host.handle_event(
+        HostEvent::PageReady {
+            page_id: "page-1".to_string(),
+        },
+        now + 30,
+    );
+    let render_ready = message(
+        ProtocolKind::Control,
+        ProtocolDomain::Runtime,
+        "ready",
+        ProtocolRole::Render,
+        ProtocolRole::Host,
+        json!({}),
+        None,
+        None,
+    );
+    let actions = host.handle_event(
+        HostEvent::RenderFrame {
+            page_id: "page-1".to_string(),
+            frame: frame(vec![render_ready]),
+        },
+        now + 40,
+    );
+    only_frame_message(&actions, false).message_id.clone()
+}
+
+#[test]
+fn queues_service_query_calls_until_render_is_ready() {
+    let mut host = HostCore::new(config());
+    let render_bootstrap_id = reach_render_bootstrap(&mut host, 15_000);
+
+    let query = message(
+        ProtocolKind::Call,
+        ProtocolDomain::Query,
+        "select",
+        ProtocolRole::Service,
+        ProtocolRole::Host,
+        json!({ "pageId": "page-1", "selector": ".chart", "all": false }),
+        Some("page-1"),
+        None,
+    );
+    let query_id = query.message_id.clone();
+    let actions = host.handle_event(HostEvent::ServiceFrame(frame(vec![query])), 15_050);
+    assert!(
+        render_frame(&actions).is_none(),
+        "query must wait for the render bootstrap reply"
+    );
+
+    let render_reply = message(
+        ProtocolKind::Reply,
+        ProtocolDomain::Runtime,
+        "bootstrap",
+        ProtocolRole::Render,
+        ProtocolRole::Host,
+        json!({ "ok": true, "result": {} }),
+        Some("page-1"),
+        Some(&render_bootstrap_id),
+    );
+    let actions = host.handle_event(
+        HostEvent::RenderFrame {
+            page_id: "page-1".to_string(),
+            frame: frame(vec![render_reply]),
+        },
+        15_060,
+    );
+    let query_control =
+        render_frame(&actions).expect("queued query should be forwarded after render bootstrap");
+    assert_eq!(query_control.messages[0].kind, ProtocolKind::Control);
+    assert_eq!(query_control.messages[0].domain, ProtocolDomain::Query);
+    assert_eq!(query_control.messages[0].method, "select");
+    let query_control_id = query_control.messages[0].message_id.clone();
+
+    let query_reply = message(
+        ProtocolKind::Reply,
+        ProtocolDomain::Query,
+        "select",
+        ProtocolRole::Render,
+        ProtocolRole::Host,
+        json!({ "ok": true, "result": { "nodes": [] } }),
+        Some("page-1"),
+        Some(&query_control_id),
+    );
+    let actions = host.handle_event(
+        HostEvent::RenderFrame {
+            page_id: "page-1".to_string(),
+            frame: frame(vec![query_reply]),
+        },
+        15_070,
+    );
+    let replied = actions.iter().any(|action| match action {
+        HostAction::SendServiceFrame { frame } => frame.messages.iter().any(|message| {
+            message.kind == ProtocolKind::Reply && message.reply_to.as_deref() == Some(&query_id)
+        }),
+        _ => false,
+    });
+    assert!(
+        replied,
+        "render query reply was not returned to the service"
+    );
+}
+
+#[test]
+fn render_host_action_runs_navigation() {
+    let mut host = HostCore::new(config());
+    let render_bootstrap_id = reach_render_bootstrap(&mut host, 16_000);
+    let render_reply = message(
+        ProtocolKind::Reply,
+        ProtocolDomain::Runtime,
+        "bootstrap",
+        ProtocolRole::Render,
+        ProtocolRole::Host,
+        json!({ "ok": true, "result": {} }),
+        Some("page-1"),
+        Some(&render_bootstrap_id),
+    );
+    let _ = host.handle_event(
+        HostEvent::RenderFrame {
+            page_id: "page-1".to_string(),
+            frame: frame(vec![render_reply]),
+        },
+        16_050,
+    );
+
+    let host_action = message(
+        ProtocolKind::Event,
+        ProtocolDomain::Tree,
+        "hostAction",
+        ProtocolRole::Render,
+        ProtocolRole::Host,
+        json!({ "action": "navigateTo", "url": "/pages/detail" }),
+        Some("page-1"),
+        None,
+    );
+    let actions = host.handle_event(
+        HostEvent::RenderFrame {
+            page_id: "page-1".to_string(),
+            frame: frame(vec![host_action]),
+        },
+        16_060,
+    );
+    let navigation = only_frame_message(&actions, true);
+    assert_eq!(navigation.domain, ProtocolDomain::Page);
+    assert_eq!(navigation.method, "navigateTo");
+    let navigation_id = navigation.message_id.clone();
+    let reply = message(
+        ProtocolKind::Reply,
+        ProtocolDomain::Page,
+        "navigateTo",
+        ProtocolRole::Service,
+        ProtocolRole::Host,
+        json!({ "ok": true, "result": { "pageId": "page-2", "path": "pages/detail" } }),
+        Some("page-1"),
+        Some(&navigation_id),
+    );
+    let actions = host.handle_event(HostEvent::ServiceFrame(frame(vec![reply])), 16_070);
+    assert!(actions.iter().any(|action| matches!(
+        action,
+        HostAction::CreatePage { page_id, path }
+            if page_id == "page-2" && path == "pages/detail"
+    )));
+}
