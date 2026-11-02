@@ -284,8 +284,13 @@ class RuntimePanel extends PureComponent {
         window.location.href,
       ).href;
       const surface = this.createSurface(app.id);
+      const wasmCoreFactory = new URLSearchParams(window.location.search).get('host') === 'wasm'
+        ? window.__TINY_WASM_HOST_CORE_FACTORY__
+        : undefined;
       const client = new DevtoolRuntimeClient({
+        appId: app.id,
         manifest,
+        ...(typeof wasmCoreFactory === 'function' ? { wasmCoreFactory } : {}),
         serviceUrl: threadUrl('service.html'),
         renderUrl: threadUrl('render.html'),
         initialPath,
