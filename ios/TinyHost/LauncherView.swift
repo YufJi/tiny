@@ -75,6 +75,9 @@ struct LauncherView: View {
     }
     .task {
       model.load()
+      if model.smoke {
+        NativeRenderSurfaceSmoke.run()
+      }
     }
   }
 

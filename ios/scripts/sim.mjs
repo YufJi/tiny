@@ -123,6 +123,7 @@ async function main() {
 
   const results = []
   let hostCoreSmoke = null
+  let nativeRenderSmoke = null
   for (const appId of apps) {
     const container = run(
       'xcrun',
@@ -196,6 +197,20 @@ async function main() {
       }
     }
 
+    if (!nativeRenderSmoke) {
+      const nativeRenderFile = path.join(documents, 'native-render-smoke.json')
+      if (fs.existsSync(nativeRenderFile)) {
+        nativeRenderSmoke = JSON.parse(await fsp.readFile(nativeRenderFile, 'utf8'))
+        if (nativeRenderSmoke.ok !== true) {
+          throw new Error(`native render smoke failed: ${JSON.stringify(nativeRenderSmoke)}`)
+        }
+        await fsp.copyFile(
+          nativeRenderFile,
+          path.join(artifactDir, 'native-render-smoke.json'),
+        )
+      }
+    }
+
     results.push({ appId, smoke, state })
     console.log(
       `  ✅ ${appId}: ${state?.title ?? '?'} (${state?.path ?? '?'}) ` +
@@ -214,6 +229,7 @@ async function main() {
   console.log(`   apps: ${results.map((item) => item.appId).join(', ')}`)
   console.log(`   screenshots: ${path.relative(rootDir, artifactDir)}`)
   console.log(`   UniFFI HostCore smoke: ${hostCoreSmoke ? 'ok' : 'missing'}`)
+  console.log(`   native render smoke: ${nativeRenderSmoke ? 'ok' : 'missing'}`)
   console.log(`   launcher: ${path.relative(rootDir, launcherShot)}`)
 }
 

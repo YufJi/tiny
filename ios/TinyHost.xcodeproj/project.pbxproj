@@ -20,6 +20,8 @@
 		A1000000000000000000002D /* HostCoreAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002C /* HostCoreAdapter.swift */; };
 		A10000000000000000000031 /* tiny_host_core_ffi.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000030 /* tiny_host_core_ffi.swift */; };
 		A10000000000000000000034 /* HostCoreSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000033 /* HostCoreSession.swift */; };
+		A10000000000000000000036 /* NativeRenderSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000035 /* NativeRenderSurface.swift */; };
+		A10000000000000000000038 /* NativeRenderSurfaceSmoke.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000037 /* NativeRenderSurfaceSmoke.swift */; };
 		A1000000000000000000002B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002A /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -39,6 +41,8 @@
 		A1000000000000000000002C /* HostCoreAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostCoreAdapter.swift; sourceTree = "<group>"; };
 		A10000000000000000000030 /* tiny_host_core_ffi.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = tiny_host_core_ffi.swift; sourceTree = "<group>"; };
 		A10000000000000000000033 /* HostCoreSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostCoreSession.swift; sourceTree = "<group>"; };
+		A10000000000000000000035 /* NativeRenderSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeRenderSurface.swift; sourceTree = "<group>"; };
+		A10000000000000000000037 /* NativeRenderSurfaceSmoke.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeRenderSurfaceSmoke.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -84,6 +88,8 @@
 				A10000000000000000000018 /* HostModels.swift */,
 				A1000000000000000000002C /* HostCoreAdapter.swift */,
 				A10000000000000000000033 /* HostCoreSession.swift */,
+				A10000000000000000000035 /* NativeRenderSurface.swift */,
+				A10000000000000000000037 /* NativeRenderSurfaceSmoke.swift */,
 				A1000000000000000000002A /* Assets.xcassets */,
 			);
 			path = TinyHost;
@@ -179,6 +185,8 @@
 				A10000000000000000000028 /* HostModels.swift in Sources */,
 				A1000000000000000000002D /* HostCoreAdapter.swift in Sources */,
 				A10000000000000000000034 /* HostCoreSession.swift in Sources */,
+				A10000000000000000000036 /* NativeRenderSurface.swift in Sources */,
+				A10000000000000000000038 /* NativeRenderSurfaceSmoke.swift in Sources */,
 				A10000000000000000000031 /* tiny_host_core_ffi.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

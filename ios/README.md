@@ -145,9 +145,14 @@ pnpm ios:sim         # assets + native build + HostCore smoke
 bindings, starts the host handshake and writes `host-core-smoke.json`. The
 simulator gate validates that file and requires `ok: true`.
 
-The current adapter stage proves the FFI/library integration only. The existing
-`host.html` / `createTinyRuntime` JS shell remains in place while the Swift page
-transport and per-page WKWebView adapter are built.
+The native adapter now also has:
+
+- `HostCoreSession`: Swift event/action dispatcher around the UniFFI core.
+- `NativeRenderSurface`: one standalone WKWebView per page, `nativeRender` message handler and frame queue.
+- `render.html?native=1`: native render Bridge entry, independent of iframes/MessagePorts.
+
+The existing `host.html` / `createTinyRuntime` JS shell still runs the app while the
+HostCoreSession is wired to the Swift service/page transports.
 
 `ios/Generated/` 是 Xcode 的 folder reference，构建前必须存在。
 
