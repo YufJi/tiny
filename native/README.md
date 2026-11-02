@@ -10,6 +10,10 @@ The protocol layer now includes the host-side `BridgeConnection` state machine
 (handshake, call/control/reply, events and timeouts) plus a golden frame emitted
 by the JavaScript `@tiny/bridge` implementation.
 
+`HostCore` now performs service bootstrap, creates and binds a page render
+connection, sends `page.ready`, and parks/replays page tree events until the
+render surface is ready. Platform adapters receive these as actions.
+
 ```bash
 cargo test --manifest-path native/host-core/Cargo.toml
 ```
