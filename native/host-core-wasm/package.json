@@ -13,8 +13,7 @@
     }
   },
   "scripts": {
-    "build": "node -e \"process.exit(0)\"",
-    "build:bindings": "wasm-pack build . --release --target web --out-dir pkg --no-opt --mode no-install",
-    "build:bindings:dev": "wasm-pack build . --dev --target web --out-dir pkg --no-opt --mode no-install"
+    "build": "wasm-pack build . --release --target web --out-dir pkg --no-opt --mode no-install",
+    "dev": "wasm-pack build . --dev --target web --out-dir pkg --no-opt --mode no-install"
   }
 }
