@@ -31,7 +31,8 @@ simulator gate runs a native HostCore handshake smoke.
 cargo test --manifest-path native/Cargo.toml --workspace
 cargo build --manifest-path native/host-core-wasm/Cargo.toml --target wasm32-unknown-unknown
 pnpm --filter @tiny/host-core-wasm build   # generates committed wasm-bindgen bindings (requires wasm-pack)
-pnpm host-core:wasm:bindings              # alias for the same build
+pnpm host-core:wasm:build                             # root alias
+pnpm host-core:wasm:dev                               # dev bindings
 ```
 
 Crate layout:
@@ -47,13 +48,14 @@ native/host-core-ffi/   # UniFFI for Swift (and future Kotlin)
 Generate the bindings once:
 
 ```bash
-pnpm host-core:wasm:bindings
+pnpm --filter @tiny/host-core-wasm build
 ```
 
 The devtool always loads `@tiny/host-core-wasm`; the generated bindings and
 wasm binary are committed under `native/host-core-wasm/pkg` and bundled by Vite.
-Rebuild them with `pnpm host-core:wasm:bindings` after changing Rust. Run the
-normal gate:
+Rebuild them with `pnpm --filter @tiny/host-core-wasm build` after changing Rust.
+For unoptimized development bindings use `pnpm --filter @tiny/host-core-wasm dev`.
+Run the normal gate:
 
 ```bash
 pnpm accept:glass-easel
