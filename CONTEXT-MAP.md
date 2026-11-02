@@ -17,4 +17,5 @@ Each package is a bounded context. Read only the contexts relevant to the curren
 | Web Components | `hosts/web-components` | Web/DOM implementations of mini-program built-in tags used by the render tree |
 | iOS App | `ios` | SwiftUI/UIKit native app, Xcode project, WKWebView/JSCore bridge, build and simulator scripts |
 | iOS Host Package | `hosts/ios` | One Vite package: `src/service` engine + `src/web` host/render entries |
+| Native HostCore | `native/host-core` | Shared Rust host semantics (ADR-0009): bridge, page stack, routing; Android deferred |
 | Website | `website` | React + Vite site shell; page content lives in `docs/site` |
