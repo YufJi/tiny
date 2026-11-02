@@ -82,7 +82,10 @@ export class WasmBrowserHost {
   private appVisible = true
   private removeCanvasRelay: (() => void) | undefined
   private disposed = false
-  private inspectWaiters = new Map<string, Array<(value: unknown) => void>>()
+  private commandWaiters = new Map<string, Array<{
+    resolve: (value: unknown) => void
+    reject: (reason: unknown) => void
+  }>>()
 
   constructor(
     options: WasmHostOptions,
@@ -165,18 +168,24 @@ export class WasmBrowserHost {
     this.execute(this.core.start(nowMs()))
   }
 
-  async command(command: Record<string, unknown>): Promise<void> {
+  async command(command: Record<string, unknown>): Promise<unknown> {
+    const name = commandName(command)
+    if (!name) {
+      this.execute(this.dispatchEvent({ type: 'command', command }))
+      return undefined
+    }
+    const promise = new Promise<unknown>((resolve, reject) => {
+      const waiters = this.commandWaiters.get(name) ?? []
+      waiters.push({ resolve, reject })
+      this.commandWaiters.set(name, waiters)
+    })
     this.execute(this.dispatchEvent({ type: 'command', command }))
+    return promise
   }
 
   async inspectTree(pageId: string | undefined): Promise<unknown> {
     if (!pageId) return null
-    return new Promise((resolve) => {
-      const waiters = this.inspectWaiters.get(pageId) ?? []
-      waiters.push(resolve)
-      this.inspectWaiters.set(pageId, waiters)
-      void this.command({ type: 'inspectTree', pageId })
-    })
+    return this.command({ type: 'inspectTree', pageId })
   }
 
   async setAppVisible(visible: boolean): Promise<void> {
@@ -202,6 +211,10 @@ export class WasmBrowserHost {
     this.serviceIframe = null
     this.serviceTransport = null
     this.core = null
+    for (const waiters of this.commandWaiters.values()) {
+      for (const waiter of waiters) waiter.reject(new Error('WasmBrowserHost disposed'))
+    }
+    this.commandWaiters.clear()
     if (this.ownsContainer) this.container.remove()
   }
 
@@ -252,7 +265,7 @@ export class WasmBrowserHost {
           this.options.onState?.(action.state)
           break
         case 'commandResult':
-          this.resolveInspect(action.command, action.result)
+          this.resolveCommand(action.command, action.result)
           break
         case 'platformCall':
           void this.runPlatformCall(action)
@@ -404,11 +417,11 @@ export class WasmBrowserHost {
     }))
   }
 
-  private resolveInspect(command: string, result: unknown): void {
-    if (command !== 'inspectTree') return
-    const waiters = this.inspectWaiters.get(this.activePageId ?? '') ?? []
-    this.inspectWaiters.delete(this.activePageId ?? '')
-    for (const resolve of waiters) resolve(result)
+  private resolveCommand(command: string, result: unknown): void {
+    const waiters = this.commandWaiters.get(command)
+    if (!waiters?.length) return
+    this.commandWaiters.delete(command)
+    for (const waiter of waiters) waiter.resolve(result)
   }
 
   private report(level: string, message: string): void {
@@ -420,6 +433,15 @@ export class WasmBrowserHost {
       timestamp: Date.now(),
     })
   }
+}
+
+function commandName(command: Record<string, unknown>): string | undefined {
+  const type = command.type
+  if (typeof type !== 'string') return undefined
+  return type === 'navigateTo' || type === 'navigateBack' || type === 'switchTab'
+    || type === 'redirectTo' || type === 'reLaunch' || type === 'inspectTree'
+    ? type
+    : undefined
 }
 
 function storageHandlers(storage: StorageSnapshot): HostApiHandlers {

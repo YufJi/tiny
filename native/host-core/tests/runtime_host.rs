@@ -317,6 +317,11 @@ fn navigation_updates_the_page_stack_and_emits_surface_actions() {
             if page_id == "page-2" && path == "pages/detail"
     )));
     assert_eq!(host.page_stack(), &["page-1", "page-2"]);
+    assert!(actions.iter().any(|action| matches!(
+        action,
+        HostAction::CommandResult { command, result }
+            if command == "navigateTo" && result["pageId"] == "page-2"
+    )));
 
     let actions = host.handle_event(
         HostEvent::Command(HostCommand::NavigateBack { delta: 1 }),
@@ -350,6 +355,11 @@ fn navigation_updates_the_page_stack_and_emits_surface_actions() {
         HostAction::ActivatePage { page_id } if page_id == "page-1"
     )));
     assert_eq!(host.page_stack(), &["page-1"]);
+    assert!(actions.iter().any(|action| matches!(
+        action,
+        HostAction::CommandResult { command, result }
+            if command == "navigateBack" && result["pageId"] == "page-1"
+    )));
 }
 
 #[test]

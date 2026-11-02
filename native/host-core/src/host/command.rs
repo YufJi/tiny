@@ -32,6 +32,9 @@ pub enum HostCommand {
     SetAppVisible {
         visible: bool,
     },
+    SetPageVisible {
+        visible: bool,
+    },
     Resize {
         width: u32,
         height: u32,

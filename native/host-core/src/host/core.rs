@@ -243,6 +243,20 @@ impl HostCore {
                 self.app_visible = visible;
                 actions.push(HostAction::SetAppVisible { visible });
             }
+            HostCommand::SetPageVisible { visible } => {
+                if let Some(page_id) = self.active_page.clone() {
+                    let method = if visible { "show" } else { "hide" };
+                    let _ = self.service.control(
+                        ProtocolDomain::Page,
+                        method,
+                        json!({}),
+                        Some(page_id),
+                        now_ms,
+                    );
+                }
+                self.app_visible = visible;
+                actions.push(HostAction::SetAppVisible { visible });
+            }
             HostCommand::Resize { width, height } => {
                 let _ = self.service.control(
                     ProtocolDomain::Runtime,
@@ -306,6 +320,7 @@ impl HostCore {
         let Some(command) = self.pending_commands.remove(message_id) else {
             return;
         };
+        let command_name = command_name(&command).to_string();
         if let PendingCommand::InspectTree { page_id } = command {
             if let Some(page) = self.pages.get_mut(&page_id) {
                 page.inspect_id = None;
@@ -391,6 +406,10 @@ impl HostCore {
             }
             PendingCommand::InspectTree { .. } => {}
         }
+        actions.push(HostAction::CommandResult {
+            command: command_name,
+            result: result.clone(),
+        });
         if let Some(request) = self.pending_api_navigation.remove(message_id) {
             let _ = self.service.reply(&request, Some(result), None, now_ms);
         }
@@ -844,12 +863,10 @@ impl HostCore {
             .unwrap_or("log")
             .to_string();
         let payload = message.payload.clone().unwrap_or(Value::Null);
-        actions.push(HostAction::Diagnostic {
-            level,
-            payload: payload.clone(),
-        });
         if message.method == "diagnostic.state" {
             actions.push(HostAction::UpdateUIState { state: payload });
+        } else {
+            actions.push(HostAction::Diagnostic { level, payload });
         }
     }
 
@@ -1077,6 +1094,17 @@ impl HostCore {
 #[allow(dead_code)]
 fn command_matches_relaunch(command: &PendingCommand) -> bool {
     matches!(command, PendingCommand::Relaunch)
+}
+
+fn command_name(command: &PendingCommand) -> &'static str {
+    match command {
+        PendingCommand::NavigateTo => "navigateTo",
+        PendingCommand::NavigateBack => "navigateBack",
+        PendingCommand::RedirectTo => "redirectTo",
+        PendingCommand::Relaunch => "reLaunch",
+        PendingCommand::SwitchTab => "switchTab",
+        PendingCommand::InspectTree { .. } => "inspectTree",
+    }
 }
 
 #[allow(dead_code)]
