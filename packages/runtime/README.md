@@ -24,10 +24,6 @@ topology through `WasmBrowserHost` / `DevtoolRuntimeClient`.
 
 ## Usage
 
-The JavaScript host shell used by the old iOS/browser path lives only in the
-runtime test harness at `tests/support/host`. It is not a package export and no
-production host imports it.
-
 A browser host does not import iframe helpers from this package. Use
 `WasmBrowserHost` from `@tiny/host-browser` instead.
 
@@ -52,7 +48,6 @@ contract.
 
 | Consumer | Entry | Main types |
 | --- | --- | --- |
-| Host shell | test-only `tests/support/host` | `TinyRuntimeHost`, `RuntimeHostOptions`, `RenderThreadConnector`, `HostApiHandler(s)` |
 | Service iframe | `bootServiceThread` | `ServiceThreadOptions`, `ServiceCanvasAdapter`, `CanvasNode*` |
 | Render iframe (web) | `bootTreeThread` | `TreeThreadOptions`, `TreeRenderer`, `TreeEventPayload` |
 | Render host (native) | `createNativeTreeRenderer` | `NativeTreeHost`, `NativeNodeSpec`, `NativeTreeRenderer` |

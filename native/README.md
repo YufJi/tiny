@@ -58,5 +58,5 @@ normal gate:
 pnpm accept:glass-easel
 ```
 
-The JavaScript host remains only as an internal runtime test harness; iOS is
-native-only and browser devtool/test hosts have no JS-host mode.
+There is no JavaScript host left in runtime or any host adapter; iOS, devtool
+and tests/host are native/wasm only.
