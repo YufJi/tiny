@@ -9,7 +9,7 @@ Accepted and implemented for the web devtool and iOS. Android remains deferred.
 - The iOS adapter is native-only: UniFFI `RustHostCore`, JSCore service and one
   render WKWebView per page. `host.html`, iframe hosting and the JS host
   fallback are removed.
-- `createTinyRuntime` and its test harness are deleted from the repository.
+- `createTinyRuntime` is no longer production code. Runtime tests keep a test-only in-memory adapter that is not packaged or exported.
 - Remaining release work is native API parity and real-device packaging; the
   HostCore contract does not need to change for either.
 

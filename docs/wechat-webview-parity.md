@@ -78,7 +78,7 @@
 | 样式/渲染 | 8% | 76% | 6.08 | WXSS/rpx/作用域强；app.wxss tag/class 规则作用到页面与共享组件；canvas 2D/WebGL/RAF 已接，导出 API 仍缺 |
 | 宿主/平台 | 8% | 18% | 1.44 | 浏览器 + iOS 原生宿主（JavaScriptCore service + WKWebView render）；仍无原生网络/登录/支付/分享 |
 | 开发工具 | 4% | 47% | 1.88 | Vite 构建、应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar、移动端访问提示；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 61% | 1.83 | 252 单测 + 58 步浏览器验收 + 117 页探针 + iOS 7 fixture 模拟器 smoke + 真机签名构建/安装；新增 WXS 共享 runtime、事件合成、滚动横向回归；仍无性能/安全测试 |
+| 质量/验证 | 3% | 61% | 1.83 | 288 单测 + 58 步浏览器验收 + 117 页探针 + iOS 7 fixture 模拟器 smoke + 真机签名构建/安装；新增 WXS 共享 runtime、事件合成、滚动横向回归；仍无性能/安全测试 |
 | **合计** | **100%** | — | **50.55%** | |
 
 ### 条目覆盖率速览
@@ -319,7 +319,7 @@ Shadow DOM：
 2026-10-28 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
-- **252 个单元测试**（runtime 75、host-web-components 52、template-compiler 44、stylesheet-compiler 36、cli 18、wxs-runtime 13、bridge 10、manifest 2、css-units 2）
+- **288 个单元测试**（runtime 111、host-web-components 52、template-compiler 44、stylesheet-compiler 36、cli 18、wxs-runtime 13、bridge 10、manifest 2、css-units 2）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
 - **58 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent、真实滚动触发的 onPageScroll，WeChat demo 覆盖 swiper radio 点击去重、navigator 点击跳转、WXS 拖拽，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧，canvas 覆盖 2D/WebGL/legacy/ECharts
 - 门禁覆盖的 5 段流程无 console/page error（117 页探针的 pageerror 见 5.2）

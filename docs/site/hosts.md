@@ -56,7 +56,7 @@ service iframe / render iframe
 ```
 
 :::callout{title="浏览器只是其中一种适配"}
-浏览器验收使用 `WasmBrowserHost`；runtime 单测只覆盖 host-independent core，不再启动 JS host。可替换性由 HostCore + 平台适配器保证。
+浏览器验收使用 `WasmBrowserHost`；runtime 单测通过内存 transport 启动 service/render 线程，并用 `tests/support` 下的 test-only host 驱动。生产宿主由 HostCore + 平台适配器提供。
 :::
 
 ## 内核不引用浏览器 API {#purity kicker="内核约束"}

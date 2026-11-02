@@ -64,5 +64,6 @@ Run the normal gate:
 pnpm accept:glass-easel
 ```
 
-There is no JavaScript host left in runtime or any host adapter; iOS, devtool
-and tests/host are native/wasm only.
+No production JavaScript host remains in runtime or any host adapter; iOS,
+devtool and tests/host are native/wasm only. Runtime unit tests keep a
+test-only in-memory adapter.
