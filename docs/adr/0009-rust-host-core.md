@@ -2,14 +2,14 @@
 
 ## Status
 
-Accepted. Implementation in progress.
+Accepted. Web devtool migration is implemented and gated; the iOS Swift adapter is paused.
 
-- First targets: iOS native host and the web devtool via WebAssembly.
-- Android is deferred, but the adapter contract and build target are part of the
-  decision so a Kotlin adapter can be added without changing HostCore.
-- During migration the current JavaScript host (`createTinyRuntime`) remains
-  available as a reference and feature-flagged fallback. It is removed from the
-  iOS host once the Rust core reaches parity.
+- First target delivered: the web devtool via WebAssembly, running as the only
+  devtool host.
+- The iOS Swift adapter and Android adapter are paused/deferred; the adapter
+  contract remains in this ADR so they can be added without changing HostCore.
+- The JavaScript host (`createTinyRuntime`) remains available for the standalone
+  browser/test host, but the devtool no longer has a JS-host mode.
 
 ## Context
 
