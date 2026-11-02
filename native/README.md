@@ -18,14 +18,18 @@ page stack. Host API calls are dispatched as `PlatformCall` actions and complete
 with `PlatformResult`; `system.info`, storage and navigation API requests are
 replied back to the service.
 
+`host-core-wasm` exposes the same event/action state machine to JavaScript with
+`WasmHostCore`; the browser adapter still owns iframes, MessageChannel and
+OffscreenCanvas handoff.
+
 ```bash
-cargo test --manifest-path native/host-core/Cargo.toml
+cargo test --manifest-path native/Cargo.toml --workspace
 ```
 
 Crate layout:
 
 ```text
 native/host-core/       # rlib, no WebKit/UIKit/JSCore/Android/browser deps
+native/host-core-wasm/  # wasm-bindgen event/action bridge for the web devtool
 native/host-core-ffi/   # UniFFI for Swift (and future Kotlin) — later
-native/host-core-wasm/  # wasm-bindgen for the web devtool — later
 ```

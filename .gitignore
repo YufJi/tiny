@@ -24,3 +24,4 @@ ios/TinyHost.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
 ios/TinyHost.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
 ios/.swiftpm/
 native/target/
+native/host-core-wasm/pkg/
