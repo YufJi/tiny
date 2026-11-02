@@ -2,24 +2,26 @@
 
 ## Status
 
-Accepted. Web devtool migration is implemented and gated; the iOS Swift/UniFFI adapter has started with a simulator-verified FFI/handshake slice.
+Accepted and implemented for the web devtool and iOS. Android remains deferred.
 
-- First target delivered: the web devtool via WebAssembly, running as the only
-  devtool host.
-- The iOS Swift adapter is in progress; Android remains deferred. The adapter
-  contract remains in this ADR so it can be added without changing HostCore.
-- The JavaScript host (`createTinyRuntime`) remains only in the paused iOS JS
-  shell and runtime unit tests; browser devtool/test hosts have no JS-host mode.
+- The web devtool is wasm-only and uses `WasmBrowserHost` over
+  `@tiny/host-core-wasm`.
+- The iOS adapter is native-only: UniFFI `RustHostCore`, JSCore service and one
+  render WKWebView per page. `host.html`, iframe hosting and the JS host
+  fallback are removed.
+- `createTinyRuntime` and its test harness are deleted from the repository.
+- Remaining release work is native API parity and real-device packaging; the
+  HostCore contract does not need to change for either.
 
 ## Context
 
-Host orchestration is currently duplicated by environment:
+At the time of this decision, host orchestration was duplicated by environment:
 
-- The iOS host runs `createTinyRuntime` from `hosts/ios/src/web/host.ts` inside a
+- The iOS host ran `createTinyRuntime` from `hosts/ios/src/web/host.ts` inside a
   `host.html` WKWebView, with one render iframe per page.
-- The web devtool runs `createTinyRuntime` from
-  `hosts/browser/src/wasm-host.ts`, with one service iframe and one render
-  iframe per page; `DevtoolRuntimeClient` exposes it to React.
+- The web devtool ran `createTinyRuntime` from
+  `hosts/browser/src/standalone-host.ts`, with one service iframe and one render
+  iframe per page; `DevtoolRuntimeClient` exposed it to React.
 - The runtime itself (`packages/runtime`) is host-agnostic, but the host side of
   the Bridge (`packages/bridge/src/protocol/connection.ts`), page stack,
   navigation, pending render queues, Host API registry and UI state projection
@@ -29,7 +31,7 @@ Two changes make the current split untenable:
 
 1. The iOS render layer is moving from one WKWebView with iframes to multiple
    WKWebViews, one per page, with no iframe. That removes the host document that
-   currently owns `createTinyRuntime`.
+   used to own `createTinyRuntime`.
 2. The web devtool is a mature host with the strongest automated conformance
    coverage (Playwright acceptance). If its host semantics diverge from iOS, the
    divergence is discovered late and only on device.
@@ -195,20 +197,22 @@ Required conformance assets:
   UI state.
 - Exercise the full host state machine with a fake page/service platform.
 
-### R3 — Web devtool WASM adapter
+### R3 — Web devtool WASM adapter (delivered)
 
-- Add `host-core-wasm`.
-- Implement the browser adapter for service/render iframes, MessageChannel,
+- Added `host-core-wasm` and committed/generated bindings.
+- Implemented the browser adapter for service/render iframes, MessageChannel,
   Canvas handoff and browser Host APIs.
-- Switch `DevtoolRuntimeClient` behind a feature flag.
-- Gate: existing devtool Playwright acceptance.
+- Switched the devtool to `WasmBrowserHost`; the standalone JS host is removed.
+- Gate: existing browser acceptance is green.
 
-### R4 — iOS Swift adapter
+### R4 — iOS Swift adapter (delivered, device packaging pending)
 
-- Add UniFFI bindings and the Swift adapter.
-- Add native per-page render transport and `bootNativeRenderEntry`.
-- Remove `host.html`/`host.ts`/`pages.ts`/iframe page connector from the iOS host.
-- Gate: all seven fixtures, Canvas 2D/ECharts and real-device install.
+- Added UniFFI bindings and the Swift adapter.
+- Added native per-page render transport; the entry is inlined into `render.ts`.
+- Removed `host.html`/`host.ts`/`pages.ts`/iframe page connector and the JS host
+  fallback from the iOS app.
+- Gate: all seven fixtures and Canvas screenshots pass in the simulator.
+  Real-device install and multi-arch packaging remain release tasks.
 
 ### R5 — Android adapter (deferred)
 
@@ -234,7 +238,7 @@ Required conformance assets:
   the build.
 - UniFFI/wasm-bindgen add generated code and binary artifacts; CI must build
   them.
-- HostCore is a real port of `createTinyRuntime`, not a thin shim; protocol
+- HostCore is a real port of the former JS host semantics, not a thin shim; protocol
   parity must be proven with fixtures and scenario tests.
 - The web devtool migration adds WASM startup and a second host path during
   migration.

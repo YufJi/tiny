@@ -3,14 +3,14 @@ title: '用真实小程序验收，'
 highlight: '不只跑单元测试'
 eyebrow: '测试与验收'
 lede: >-
-  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。288 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，58 个浏览器步骤验证端到端行为；iOS 宿主另有 7 个 fixture 的 WKWebView + JSCore smoke。
+  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。252 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，58 个浏览器步骤验证端到端行为；iOS 宿主另有 7 个 fixture 的 WKWebView + JSCore smoke。
 stats:
-  - ['288', '单元测试']
+  - ['252', '单元测试']
   - ['58', '浏览器步骤']
   - ['5', '浏览器流程']
   - ['7', '测试小程序']
   - ['7', 'iOS fixture smoke']
-description: '小程序引擎的验收方式：构建、内核检查、288 个单元测试、58 个浏览器步骤、七套测试小程序和 iOS 宿主 smoke。'
+description: '小程序引擎的验收方式：构建、内核检查、252 个单元测试、58 个浏览器步骤、七套测试小程序和 iOS 宿主 smoke。'
 name: '测试'
 pageTitle: '测试与验收 · Tiny 小程序引擎'
 order: 8
@@ -19,6 +19,11 @@ order: 8
 ## 一条命令跑完构建、单测和浏览器验收 {#gate kicker="验收流程"}
 
 pnpm accept:glass-easel 是唯一完整的端到端入口，任何单个包的测试都不能替代它。
+
+:::callout{title="全新 checkout 先构建 wasm"}
+`native/host-core-wasm/pkg` 是构建产物，不提交。先运行
+`pnpm --filter @tiny/host-core-wasm build`（或 `pnpm build`），浏览器验收才能加载 wasm HostCore。
+:::
 
 :::sequence
 | title | detail | code |
@@ -66,7 +71,7 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 :::
 ::::
 
-## 288 个单元测试，按包执行 {#units kicker="单元测试"}
+## 252 个单元测试，按包执行 {#units kicker="单元测试"}
 
 没有全局 test runner，每个包单独跑，避免隐式耦合，也方便定位失败。
 
@@ -83,7 +88,7 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 | `@tiny/runtime` | 111 | 全局安装和命名、双线程 bootstrap、逻辑树、tree protocol/patch diff、headless renderer、组件 schema、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、API host、诊断、WXS 宽松求值、`this.animate`、事件冒泡/几何 |
 
 :::callout{title="单测也会跑真实连接"}
-Bridge 测试会真的建立两条内存连接并完成握手；runtime 测试会启动 service 逻辑树和 headless render tree、注册 Page、执行 bootstrap 和导航，并验证 tree flow 与 patch。这里没有把整个引擎 mock 掉的做法。
+Bridge 测试会真的建立两条内存连接并完成握手；runtime 单测只覆盖 host-independent core（页面栈、setData、tree 协议等），host 编排行为由 P0/mini/Taro/WeChat 四段浏览器验收覆盖。这里没有把整个引擎 mock 掉的做法。
 :::
 
 ## iOS 宿主单独验收 {#ios kicker="原生宿主"}
@@ -94,10 +99,9 @@ iOS 宿主不进入 `pnpm accept:glass-easel`，因为它依赖已安装的 iOS 
 pnpm ios:assets       # 构建 @tiny/host-ios + 编译 tests/apps 全部 fixture
 pnpm ios:sim          # 构建 TinyHost.app，逐个 fixture 在模拟器里 smoke
 pnpm ios:smoke:jsc    # 在 macOS jsc 里启动 demo 的 service engine + app-data
-pnpm ios:smoke:web    # 在 Chrome 里用 mock 原生桥验证 host.html + render.html
 ```
 
-`pnpm ios:sim` 默认跑 `Generated/apps.json` 里的全部 7 个 fixture：demo、mini、todo、wechat-demo、echarts、vant、weui。每个 fixture 都会验证首屏、页面导航/tab 切换和原生 Launcher 截图；mini 还会采样真实 canvas 像素，确认 legacy CanvasContext 和 ECharts 柱状图都确实绘制。产物在 `ios/.artifacts/`，不提交。
+`pnpm ios:sim` 默认跑 `Generated/apps.json` 里的全部 7 个 fixture：demo、mini、todo、wechat-demo、echarts、vant、weui。每个 fixture 都验证 native HostCore 启动、首屏、页面导航/tab 切换和 Launcher 截图；ECharts 截图确认 Canvas display-list 已到达 render WKWebView。产物在 `ios/.artifacts/`，不提交。
 
 真机安装需要 Xcode Team 和 `devicectl`；签名构建、安装、首次启动前信任开发者证书是三个独立步骤。真机 smoke 不替代性能、安全或长时运行测试。
 

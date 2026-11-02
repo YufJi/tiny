@@ -31,7 +31,7 @@ order: 9
 | render tree | :pill[可用]{tone="good"} | 宿主 `TreeRenderer`：真实内置组件、slot、shadow root、样式、布局、DOM、元素树、query、measure、IntersectionObserver；Web 实现是 `createGlassRenderTree`。 |
 | bridge | :pill[可用]{tone="good"} | 9 个消息域，含 tree/query；信封和帧、MessagePort/内存 transport、握手、超时、批处理、JSON 校验；capabilities 还没有用于协商。 |
 | 浏览器宿主 | :pill[可用]{tone="good"} | @tiny/host-browser 支持每页 render 连接、MessageChannel、tabBar 宿主 UI、OffscreenCanvas handoff、resolveAssetUrl 和 DevtoolRuntimeClient；@tiny/host-web-components 提供 Web 渲染树和 23 个内置组件。内核依赖检查通过。 |
-| iOS 宿主 | :pill[可用（MVP）]{tone="good"} | `ios/` 原生工程 + `hosts/ios` Vite 包（`src/service` / `src/web`）：JavaScriptCore 跑 service，一个 WKWebView 跑 host.html 和每页 render.html；SwiftUI Launcher/导航栏/tabBar，UserDefaults 存储，tests/apps 全部 7 个 fixture 已在模拟器 smoke；Canvas 2D 已接（service 录制 + render 回放），WebGL/同步读回未接。 |
+| iOS 宿主 | :pill[可用（MVP）]{tone="good"} | `ios/` 原生工程 + `hosts/ios` Vite 包（`src/service` / `src/web`）：Rust `HostCoreRuntime`（UniFFI）+ JavaScriptCore service + 每页一个 WKWebView；没有 `host.html`、iframe 或 JS host fallback。SwiftUI Launcher/导航栏/tabBar，UserDefaults 存储，全部 7 个 fixture 已在模拟器 smoke，并覆盖 native 导航/tab 切换；Canvas 2D 走 service 录制 + native render 回放，WebGL/同步读回未接。 |
 | 内置组件 | :pill[较完整]{tone="good"} | 23 个组件和共享 behaviors；checkbox/radio/switch/slider/icon/image/picker 已按 2.7.0 参考重写；input/textarea/scroll-view/swiper 仍是近似实现；navigator/video/rich-text/map 等还缺。 |
 | API | :pill[部分]{tone="warn"} | request、异步 storage、5 个路由 API、system、toast/modal、canvas、selector query 已有；媒体、真实文件、账号、位置、WebSocket 还没有。 |
 | 页面能力 | :pill[部分]{tone="warn"} | 14 项页面生命周期、5 个路由 API、内置 tabBar/switchTab、页面滚动/触底/下拉刷新、分享回调和退出状态已经支持；分享菜单 UI、页面转场、页面栈恢复、自定义 tabBar 还缺。 |
@@ -42,7 +42,7 @@ order: 9
 | 诊断 | :pill[可用]{tone="good"} | 编译、transport、service、render、host 五类诊断统一收集；组件语义新增了 observer、relation、behavior 相关诊断。 |
 | Devtool | :pill[运行时级+]{tone="good"} | 应用列表、点击启动、最近 3 个应用保活、返回列表、设备框、宿主导航和 tabBar、每页 render 帧、Console/Lifecycle/Elements、Reload/Close app；页面栈默认上限 10，宿主可配置。它仍不是完整的微信开发者工具。 |
 | 性能与稳定 | :pill[未量化]{tone="warn"} | 启动、首屏、setData、内存和长时运行都没有基准，也没有压力测试。 |
-| 测试 | :pill[核心链路]{tone="good"} | 288 个单元测试、58 个浏览器步骤、7 个测试小程序，以及 iOS 宿主 7 个 fixture 的模拟器 smoke；tree flow/patch 有单元和浏览器覆盖，参考协议的细节仍有缺口。 |
+| 测试 | :pill[核心链路]{tone="good"} | 252 个单元测试、58 个浏览器步骤、7 个测试小程序，以及 iOS 宿主 7 个 fixture 的模拟器 smoke；tree flow/patch 有单元和浏览器覆盖，参考协议的细节仍有缺口。 |
 
 ## 现在最影响使用的问题 {#gaps kicker="主要缺口"}
 
@@ -95,7 +95,7 @@ generics、definitionFilter、pureDataPattern、`wx://form-field` / `wx://form-f
 :::::split
 ::::stack
 :::card{tag="原生" tone="warn" title="iOS 宿主还有缺口"}
-JSCore + WKWebView 的 Transport、页面 iframe、原生 chrome、UserDefaults 和 Canvas 2D 已经跑通；还缺 WebGL、vConsole/调试面板、原生网络/媒体 API，以及真机签名和子包按需加载。
+JSCore + native WKWebView 的 Transport、页面 surface、原生 chrome、UserDefaults 和 Canvas 2D 已经跑通；还缺 toast/network 等原生 host API、WebGL、调试面板，以及真机签名和子包按需加载。
 :::
 
 :::card{tag="部署" tone="warn" title="部署假设还没有建模"}
@@ -103,7 +103,7 @@ iframe 没有 sandbox；转移端口和发送 ready 时使用 targetOrigin `'*'`
 :::
 
 :::card{tag="关闭" tone="warn" title="关闭连接和卸载页面是两件事"}
-`host.close()` 只关闭连接，不会触发页面 onUnload，也不会移除 iframe；standalone 的 `dispose()` 才会清理 iframe 和容器。
+HostCore 的 `close` 负责关闭 Bridge 连接和页面 surface；页面 onUnload 与 SwiftUI 容器清理仍由适配器显式完成。
 :::
 ::::
 
@@ -167,9 +167,9 @@ canvasToTempFilePath、wx.createOffscreenCanvas、canvas node 事件；animation
 iOS 宿主补 WebGL、原生 API 和真机链路；再评估 native `TreeRenderer` 与更多渲染后端。
 :::
 
-:::card{tag="P2" title="host 编排收敛到 Swift"}
-当前 `createTinyRuntime`、页面栈和 render connector 在 `hosts/ios/src/web/host.ts`。后续计划把这层
-host orchestration 移到原生 Swift，WebView 只保留每页 render；JSCore、Bridge 协议和 render 组件不变。
+:::card{tag="已完成" title="host 编排已收敛到 Swift"}
+`HostCoreRuntime` 通过 UniFFI 驱动 Rust HostCore，页面栈、render surface 和 UIState 都在 Swift 侧；
+每个页面只保留一个 render WKWebView，`host.html`、iframe 和 `createTinyRuntime` 已删除。
 :::
 
 ::::
@@ -256,7 +256,7 @@ host-browser、host-web-components、注入能力和接入步骤。
 :::
 
 :::card{tag="测试" title="以测试为准"}
-288 个单元测试和 58 个浏览器步骤；WXS 专项覆盖事件、descriptor、change:prop 和动态切换。iOS 宿主另有 `pnpm ios:sim`，逐 fixture 跑真实 WKWebView + JSCore。
+252 个单元测试和 58 个浏览器步骤；WXS 专项覆盖事件、descriptor、change:prop 和动态切换。iOS 宿主另有 `pnpm ios:sim`，逐 fixture 跑真实 WKWebView + JSCore。
 
 [测试与验收 →](#/testing)
 :::

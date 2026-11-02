@@ -13,8 +13,8 @@ actions:
   - ['GitHub 仓库 ↗', 'https://github.com/YufJi/tiny', 'ghost']
 stats:
   - ['2', '运行时树']
-  - ['13', '工作区包']
-  - ['288', '单元测试']
+  - ['14', '工作区包']
+  - ['252', '单元测试']
   - ['58', '浏览器步骤']
 description: 'Tiny 是一个基于 glass-easel 的小程序引擎：编译 WXML/WXSS/TS，service 与 render 双线程运行，核心小程序内核不依赖宿主。'
 name: '概览'
@@ -107,7 +107,7 @@ Bridge 定义消息信封、帧、调用与回复、事件批处理、超时和 
 :::
 
 :::card{tag="testing" title="靠真实小程序验证"}
-288 个单元测试、58 个浏览器步骤、七个测试小程序，以及目前还没有覆盖的部分。
+252 个单元测试、58 个浏览器步骤、七个测试小程序，以及目前还没有覆盖的部分。
 
 [进入测试与验收 →](#/testing)
 :::
@@ -161,18 +161,18 @@ service 不创建真实 DOM，也不加载 Web 内置组件；render 不执行�
 
 ## 同一套内核，可以换不同宿主 {kicker="宿主对比"}
 
-浏览器宿主、无界面测试宿主和调试器都复用 createTinyRuntime；单元测试甚至不需要 iframe。
+浏览器宿主、无界面测试宿主和调试器共用 `WasmBrowserHost`（Rust HostCore + wasm）；iOS 通过 UniFFI 驱动同一个 Rust HostCore，每页一个 WKWebView。
 
 | 宿主 | 通信方式 | 渲染后端 | 控制方式 |
 | --- | --- | --- | --- |
-| `@tiny/host-browser` | MessageChannel / iframe | 浏览器线程与 canvas handoff | `WasmBrowserHost`、`DevtoolRuntimeClient` |
+| `@tiny/host-browser` | MessageChannel / iframe | 浏览器线程与 canvas handoff | `WasmBrowserHost`（HostCore）、`DevtoolRuntimeClient` |
 | `tests/host` | service + 每页 render 的 MessageChannel | `createGlassRenderTree` | URL `?path=`、`window.__tinyRuntime` |
 | `apps/devtool` | service + 每页 render 的 MessageChannel | `createGlassRenderTree` | `DevtoolRuntimeClient` + React/Redux |
 | runtime 单测 | `createInMemoryTransportPair()` | 测试 renderer / headless tree | 直接持有 service / render 连接 |
-| 原生宿主（未实现） | 需要实现 `Transport` | `createNativeTreeRenderer` 契约 | 复用宿主 API 注册表和控制消息 |
+| iOS 宿主（`ios/`） | JavaScriptCore + `tinyRender` handler | 每页一个 WKWebView + `createGlassRenderTree` | `HostCoreRuntime` / UniFFI RustHostCore |
 
-:::callout{title="新宿主从 createTinyRuntime 接进来"}
-只要提供 service transport、每页 render 的 connector、manifest 和初始页面，就能启动同一个引擎。`@tiny/host-browser` 的 `WasmBrowserHost` 只是浏览器适配器，不是引擎本身。[看完整接入步骤 →](#/hosts)
+:::callout{title="新宿主从 HostCore 接进来"}
+宿主只需要实现平台适配：service transport、每页 render surface、WebView/JS engine 和 host API。页面栈、路由和 Bridge 会话由 Rust HostCore 负责；浏览器适配器是 `WasmBrowserHost`，iOS 适配器是 `HostCoreRuntime`。[看完整接入步骤 →](#/hosts)
 :::
 
 ## 这些能力都有自动化测试 {kicker="测试覆盖"}

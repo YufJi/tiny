@@ -308,11 +308,11 @@ pnpm lint                # 8 files checked, no fixes applied
 | `@tiny/stylesheet-compiler` | 36 |
 | `@tiny/cli` | 18 |
 | `@tiny/host-web-components` | 52 |
-| `@tiny/runtime` | 111 |
+| `@tiny/runtime` | 75 |
 | `@tiny/manifest` | 2 |
 | `@tiny/css-units` | 2 |
 | `@tiny/wxs-runtime` | 13 |
-| **合计** | **288** |
+| **合计** | **252** |
 
 ### 6.3 浏览器验收
 
