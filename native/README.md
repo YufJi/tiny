@@ -58,5 +58,5 @@ normal gate:
 pnpm accept:glass-easel
 ```
 
-The JavaScript host remains only behind `@tiny/runtime/host` for the paused iOS
-JS shell and runtime unit tests; browser devtool/test hosts have no JS-host mode.
+The JavaScript host remains only as an internal runtime test harness; iOS is
+native-only and browser devtool/test hosts have no JS-host mode.
