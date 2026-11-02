@@ -1,5 +1,4 @@
 import { resolveAssetPath } from '@tiny/runtime'
-import { bootBrowserRenderEntry } from '@tiny/host-browser'
 import { createGlassRenderEntry } from '@tiny/host-web-components'
 import { installRemoteCanvas } from './canvas'
 import { bootNativeRenderEntry } from './render-native'
@@ -22,12 +21,8 @@ const entry = createGlassRenderEntry({
   },
 })
 
-if (params.get('native') === '1') {
-  entry.prepare?.()
-  bootNativeRenderEntry({
-    pageId: params.get('pageId') ?? undefined,
-    renderer: entry.createRenderer(),
-  })
-} else {
-  bootBrowserRenderEntry(entry)
-}
+entry.prepare?.()
+bootNativeRenderEntry({
+  pageId: params.get('pageId') ?? undefined,
+  renderer: entry.createRenderer(),
+})
