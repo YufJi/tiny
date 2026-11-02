@@ -308,7 +308,7 @@ Host orchestration 已迁到 Swift：
   内存占用更高，需要在实现前用 `ios:sim` 做一次对比。
 - **不能搬**：App/Page/Component、setData、WXML 求值和 glass-easel 逻辑树必须留在 JSCore。
 - **验收**：沿用 `pnpm ios:sim` 的全 fixture smoke，并补一条“Swift host 编排”的页面栈/导航/tab
-  smoke；`pnpm ios:smoke:web` 只适合验证 WebView render 层。
+  smoke。
 
 这样做的收益是原生层可以直接控制页面生命周期、导航转场、多窗口/多实例和原生渲染容器；
 代价是 Swift 要重新实现一套 host 编排，Web host 层的浏览器 API 也要改为原生实现。

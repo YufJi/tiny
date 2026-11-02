@@ -76,7 +76,6 @@ pnpm ios:assets              # build @tiny/host-ios + compile fixtures + assembl
 pnpm ios:sim                 # build and smoke-test TinyHost on an iOS Simulator
 pnpm host-core:test          # Rust HostCore protocol/state tests
 pnpm ios:smoke:jsc           # boot the demo engine + app-data in macOS jsc
-pnpm ios:smoke:web           # host/render smoke in Chrome with a mock native bridge
 pnpm lint                    # Biome (bridge only is configured today)
 pnpm site:dev                # build embedded devtool + preview website on :4173
 pnpm site:devtool            # rebuild only website/.cache/site-public/devtool
