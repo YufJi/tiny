@@ -15,6 +15,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   private var core: HostCoreSession?
   private var surfaces: [String: NativeRenderSurface] = [:]
   private var storage: [String: Any] = [:]
+  private let storagePrefix: String
   private var activePageId: String?
   private var finished = false
   private var meta: [String: Any] = [:]
@@ -28,7 +29,34 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     self.app = app
     self.generatedRoot = generatedRoot
     self.container = container
+    self.storagePrefix = "tiny.storage.\(app.id)."
+    self.storage = Self.loadStorage(prefix: "tiny.storage.\(app.id).")
     super.init()
+  }
+
+  private static func loadStorage(prefix: String) -> [String: Any] {
+    var values: [String: Any] = [:]
+    for (key, value) in UserDefaults.standard.dictionaryRepresentation() where key.hasPrefix(prefix) {
+      guard let text = value as? String,
+            let data = text.data(using: .utf8),
+            let decoded = try? JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed])
+      else { continue }
+      values[String(key.dropFirst(prefix.count))] = decoded
+    }
+    return values
+  }
+
+  private func persistStorageValue(_ key: String, _ value: Any?) {
+    let storageKey = storagePrefix + key
+    guard let value else {
+      UserDefaults.standard.removeObject(forKey: storageKey)
+      return
+    }
+    guard JSONSerialization.isValidJSONObject(["value": value]),
+          let data = try? JSONSerialization.data(withJSONObject: value, options: [.fragmentsAllowed]),
+          let text = String(data: data, encoding: .utf8)
+    else { return }
+    UserDefaults.standard.set(text, forKey: storageKey)
   }
 
   func start() throws {
@@ -232,14 +260,27 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
         try core?.platformResult(requestId: requestId, result: ["value": storage[key] ?? NSNull()])
       case "storage.set":
         let key = params["key"] as? String ?? ""
-        storage[key] = params["value"] ?? NSNull()
+        let value = params["value"] ?? NSNull()
+        storage[key] = value
+        persistStorageValue(key, value)
         try core?.platformResult(requestId: requestId, result: ["errMsg": "setStorageSync:ok"])
       case "storage.remove":
-        storage.removeValue(forKey: params["key"] as? String ?? "")
+        let key = params["key"] as? String ?? ""
+        storage.removeValue(forKey: key)
+        UserDefaults.standard.removeObject(forKey: storagePrefix + key)
         try core?.platformResult(requestId: requestId, result: ["errMsg": "removeStorageSync:ok"])
       case "storage.clear":
+        for key in storage.keys {
+          UserDefaults.standard.removeObject(forKey: storagePrefix + key)
+        }
         storage.removeAll()
         try core?.platformResult(requestId: requestId, result: ["errMsg": "clearStorageSync:ok"])
+      case "storage.info":
+        try core?.platformResult(requestId: requestId, result: [
+          "keys": Array(storage.keys),
+          "currentSize": 0,
+          "limitSize": 10240,
+        ])
       default:
         try core?.platformResult(requestId: requestId, result: ["errMsg": "\(method):ok"])
       }

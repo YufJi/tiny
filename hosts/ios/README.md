@@ -5,7 +5,7 @@ iOS 宿主的前端标准包。所有源码都在 `src/`，一个 Vite 配置通
 | 命令 | 入口 | 产物 |
 | --- | --- | --- |
 | `vite build --mode service` | `src/service/entry.ts` | `dist/service/service-engine.js`：通用 JavaScriptCore service engine |
-| `vite build --mode web` | `src/web/host.html`、`src/web/render.html` | `dist/web/host.html`、`dist/web/render.html`、`dist/web/assets/*` |
+| `vite build --mode web` | `src/web/render.html` | `dist/web/render.html`、`dist/web/assets/*`：native HostCore 的每页 WKWebView render entry |
 
 ```bash
 pnpm --filter @tiny/host-ios build          # 两份都构建

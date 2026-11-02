@@ -15,7 +15,6 @@ ios/                               原生 iOS App
   scripts/build.mjs                构建子包 + 编译 fixture + 组装 Generated
   scripts/sim.mjs                  构建、启动模拟器、跑 smoke、截图
   scripts/smoke-service.mjs        macOS jsc 里验证 JSCore engine
-  scripts/smoke-web.mjs            Chrome 里验证 WebView host/render
   test/service.html                浏览器 smoke 用的 dev service harness（不随 iOS app 发布）
   Generated/                       组装产物（gitignored）
 
@@ -26,13 +25,12 @@ hosts/ios/                         iOS 的前端标准包（pnpm workspace）
   src/
     service/                       JSCore engine、shims、transport
       entry.ts / start.ts / shims.ts / canvas.ts
-    web/                           host/render entry、state/storage/pages、HTML/CSS
-      host.html / render.html      Vite MPA entry
-      canvas.ts                    render 侧 canvas surface / display list 回放
-      host.ts / render.ts / ...
+    web/                           每页 native render entry + canvas
+      render.html                  WKWebView render entry
+      render.ts / render-native.ts / canvas.ts
   dist/
     service/service-engine.js      vite build --mode service
-    web/{host.html,render.html,assets}  vite build --mode web
+    web/{render.html,assets}       vite build --mode web
 ```
 
 `hosts/ios` 是一个标准前端包：`pnpm --filter @tiny/host-ios build` 会依次构建 service 和 web 两个产物，
@@ -44,9 +42,9 @@ hosts/ios/                         iOS 的前端标准包（pnpm workspace）
 - 原生 Launcher：自动列出 `tests/apps` 下的全部 fixture（demo、mini、todo、wechat-demo、echarts、vant、weui），点击进入。
 - 原生导航栏和 tabBar：标题、返回、关闭胶囊、tab 图标/选中态/badge/redDot，颜色来自页面和 `RUNTIME_STATE`。
 - 逻辑层真正跑在 `JSContext`：App/Page/Component、glass-easel 逻辑树、WXML 求值、WXS 表达式、observer/relations/页面栈全部在 JSCore。
-- 渲染层跑在 WKWebView：每页一个 render iframe，复用 `createGlassRenderEntry` / `createGlassRenderTree`；
+- 渲染层跑在 WKWebView：每页一个独立 `NativeRenderSurface`，复用 `createGlassRenderEntry` / `createGlassRenderTree`；
   隐藏页保留 DOM、滚动位置、定时器和页级 WXSS。
-- 页面间只走现有 Bridge 协议，没有第二套协议；service 帧经原生中继，render 帧在 WebView 内用 `MessageChannel`。
+- 页面间只走现有 Bridge 协议；service 帧和 render 帧由 Swift `HostCoreSession` 通过原生消息处理器转发。
 - 原生存储：启动时把该 app 的 UserDefaults 快照交给 runtime，运行期 `wx.setStorage*` 经宿主 API 落盘。
 - 原生系统信息/安全区/菜单按钮几何注入，窗口尺寸变化会触发 runtime `resize`。
 - 无调试面板；需要时可在 Web host 层接入 vConsole（见“vConsole”）。
@@ -57,20 +55,13 @@ hosts/ios/                         iOS 的前端标准包（pnpm workspace）
 ┌──────────────────────────── TinyHost.app ─────────────────────────────┐
 │ SwiftUI Launcher / Native chrome (nav bar, tabBar, close capsule)     │
 │                                                                       │
-│  WKWebView  (tinyapp://app/www/host.html?app=demo)                    │
-│  ┌─────────────────────────────────────────────────────────────────┐  │
-│  │ host shell (host.html + Vite bundle)                            │  │
-│  │   createTinyRuntime  ← host orchestration                       │  │
-│  │   ├─ page iframe #1 (render.html)                               │  │
-│  │   │    createGlassRenderEntry → bootTreeThread → tiny-* DOM     │  │
-│  │   ├─ page iframe #2 ...                                         │  │
-│  │   └─ host API handlers (storage/toast/request/...)              │  │
-│  └───────────────┬─────────────────────────────────────────────────┘  │
-│                  │ WKScriptMessageHandler / callAsyncJavaScript        │
-│  ┌───────────────▼─────────────────────────────────────────────────┐  │
-│  │ native FrameRelay + WKURLSchemeHandler + UserDefaults           │  │
-│  └───────────────▲─────────────────────────────────────────────────┘  │
-│                  │ JSON Bridge frames                                   │
+│  MiniProgramSession                                                   │
+│    HostCoreRuntime                                                    │
+│      RustHostCore (UniFFI)  ← host orchestration / page stack        │
+│      ├─ page WKWebView #1  render.html?native=1                       │
+│      ├─ page WKWebView #2  ...                                        │
+│      └─ native Host API handlers (storage, ...)                       │
+│                  ↕ JSON Bridge frames                                 │
 │  JSContext (service thread)                                           │
 │    Generated/service-engine.js  (generic engine)                      │
 │    + __TINY_IOS_APP__: manifest/templates/service/styles              │
@@ -78,32 +69,20 @@ hosts/ios/                         iOS 的前端标准包（pnpm workspace）
 └───────────────────────────────────────────────────────────────────────┘
 ```
 
-**为什么 render 页用 iframe**：一个 WKWebView 里放多个页面，最稳的隔离方式仍然是每页一个 document。
-这样页面 WXSS、滚动容器、`onPageScroll` / `onReachBottom` / 下拉手势和隐藏页状态都跟 devtool 的
-每页 render iframe 一致，同时不需要为每页创建一个 WKWebView（内存代价太高）。
+每页使用一个独立 WKWebView，由 `NativeRenderSurface` 持有。页面 WXSS、滚动容器、
+`onPageScroll` / `onReachBottom` / 下拉手势和隐藏页状态都在该 WebView 内；页面间不共享 DOM。
+Bridge 帧通过 `WKScriptMessageHandler` 和 `callAsyncJavaScript` 在两个隔离进程间转发。
 
-**为什么原生侧有一个 FrameRelay**：JSCore 和 WKWebView 不共享内存，只能把 Bridge 帧序列化成 JSON
-字符串跨边界。render 侧不需要跨原生，所以页面 iframe 之间仍然直接使用 `MessageChannel`。
-
-**为什么 service engine 是通用的**：`hosts/ios` 的 service build 只构建一次运行时引擎（不包含小程序产物）。
-原生在求值 engine 前把 `apps/<id>/app-data.json` 注入 `globalThis.__TINY_IOS_APP__`，engine 再启动
-对应 app。`templates.js` 的 ESM 入口在运行时转成工厂函数求值，不依赖模块加载器。
-
-## 构建与运行
-
-前置：
-
-```bash
-pnpm install
-pnpm build:glass-easel   # 至少要有 packages/*、hosts/*、tools/cli 的 dist
-```
+service engine 只构建一次通用运行时；原生在求值前注入 `apps/<id>/app-data.json` 的
+`globalThis.__TINY_IOS_APP__`，engine 再启动对应 app。`templates.js` 的 ESM 入口在运行时转成
+工厂函数求值，不依赖模块加载器。
 
 单独构建前端子包（标准命令）：
 
 ```bash
 pnpm --filter @tiny/host-ios build          # service + web
 pnpm --filter @tiny/host-ios build:service  # -> hosts/ios/dist/service/service-engine.js
-pnpm --filter @tiny/host-ios build:web      # -> hosts/ios/dist/web/{host.html,render.html,assets}
+pnpm --filter @tiny/host-ios build:web      # -> hosts/ios/dist/web/{render.html,assets}
 ```
 
 组装 iOS 产物：
@@ -120,7 +99,6 @@ pnpm ios:assets
 ios/Generated/
   service-engine.js
   www/
-    host.html
     render.html
     assets/*.js,*.css
   apps/
@@ -153,8 +131,7 @@ The native adapter now also has:
 
 `HostCoreRuntime` now wires the UniFFI HostCore to the JSCore service and
 `NativeRenderSurface` pages. The smoke launches the demo through this native path
-and asserts `native-hostcore-smoke.json`; the existing `host.html` /
-`createTinyRuntime` shell remains the production fallback.
+`HostCoreRuntime` is the production path; there is no JS-host fallback.
 
 `ios/Generated/` 是 Xcode 的 folder reference，构建前必须存在。
 
@@ -186,7 +163,6 @@ TINY_IOS_DEVICE="iPhone 17" pnpm ios:sim
 
 ```bash
 pnpm ios:smoke:jsc    # 在 macOS jsc 里启动 demo 的真实 service engine + app-data
-pnpm ios:smoke:web    # Chrome 里跑 host.html + render.html，原生桥用 mock
 ```
 
 调试启动参数（只影响 debug 流程，不改变 UI）：
@@ -201,19 +177,15 @@ pnpm ios:smoke:web    # Chrome 里跑 host.html + render.html，原生桥用 moc
 ## 启动时序
 
 1. `LauncherView` 读取 `Generated/apps.json`，点击某个 app 后全屏打开 `MiniProgramView`。
-2. `TinyWebView` 创建 WKWebView，注册 `tinyapp://` scheme handler、`tinyControl` / `tinyService` message handler，注入 `window.__TINY_IOS__`（系统信息、安全区、菜单按钮、smoke flag）。
-3. 同时 `ServiceEngine` 创建 `JSContext`，安装 `__tinySend` / `__tinyLog` / `__tinyError` / `__tinySchedule` 等回调；读取 `Generated/apps/<id>/app-data.json` 注入 `__TINY_IOS_APP__`，再求值 `Generated/service-engine.js`。
-4. engine 内 `bootServiceThread` 启动逻辑线程；app 的 `App()` / `Page()` 注册在 service bundle 求值时发生。
-5. Web host 载入后定义 `__tinyHostReceive` / `__tinyServiceReady` / `__tinyHostCommand`，向原生发 `hostReady`；
-   原生在 service 和 host shell 都就绪后调用 `window.__tinyServiceReady()`。
-6. host 创建 `createTinyRuntime`，发 `runtimeReady`，随后 `handshake()` + `bootstrap()`。
-7. `bootstrap()` 创建第一页逻辑树和 render iframe；render entry 用 `MessageChannel` 接过 port，
-   挂载 `createGlassRenderTree`；service 发 `tree.flow`，host 发 `tree.ready` / `page.ready`。
-8. `RUNTIME_STATE` 诊断被 host 投影成 `ui-state`，原生据此更新标题、返回按钮、tabBar 和页面可见性。
-
-`runtimeReady` 是关键门控：service 在 onLaunch 阶段可能已经发出 `api.storage.set` 等帧，host 的
-BridgeConnection 和 transport 还没安装；原生的 FrameRelay 会先排队，等 host 真正创建 runtime
-后再按顺序放行。否则会丢帧或把 message port 的握手顺序打乱。
+2. `NativeHostView` 创建容器；`MiniProgramSession` 创建 `HostCoreRuntime`。
+3. `HostCoreRuntime` 启动 `ServiceEngine`（JavaScriptCore），读取 `apps/<id>/app-data.json`，
+   求值 `service-engine.js`；App/Page/Component 注册在 service bundle 内完成。
+4. UniFFI `RustHostCore` 启动 host handshake，向 JSCore 发送 `runtime.hello`；service 回复 ready。
+5. HostCore bootstrap 创建首屏页面；`createPage` action 创建 `NativeRenderSurface`。
+6. render WKWebView 加载 `render.html?native=1`，通过 `tinyRender` handler 报告 ready；
+   HostCore 发送 render bootstrap 和 `tree.flow`，页面挂载 `GlassRenderTree`。
+7. HostCore 发送 `page.ready`、`tree.ready`，service 触发 onReady，宿主激活 page surface。
+8. `RUNTIME_STATE` 被 HostCore 投影为 `HostUIState`；SwiftUI chrome 更新标题、返回、tabBar。
 
 ## 子包与产物
 
@@ -227,11 +199,11 @@ BridgeConnection 和 transport 还没安装；原生的 FrameRelay 会先排队�
 
 ### `src/web`（`--mode web`）
 
-- Vite MPA，两个 HTML entry：`host.html` 和 `render.html`，共享 `assets/` chunk；输出 `dist/web/`。
-- `host.html`：`createTinyRuntime`、每页 render connector、宿主 API、状态投影。
-- `render.html`：`bootBrowserRenderEntry` + `createGlassRenderEntry`，每页一个 iframe。
-- 输出扁平结构，原生直接加载 `tinyapp://app/www/host.html`，render iframe 加载
-  `tinyapp://app/www/render.html`；不再使用 `host/index.html` 这种只为产物拆的目录。
+- Vite MPA，唯一 HTML entry：`render.html`，输出 `dist/web/`。
+- `render.html?native=1`：`bootNativeRenderEntry` + `createGlassRenderEntry`，每页一个独立 WKWebView。
+- 通过 `window.webkit.messageHandlers.tinyRender` 发送 Bridge frames，通过
+  `window.__tinyRenderReceive` 接收 HostCore frames。
+- render page 不依赖 iframe、MessagePort 或 `host.html`。
 
 ### 组装脚本
 
@@ -247,17 +219,13 @@ fixture 通过 `scripts/devtool-apps.mjs` 的 `discoverTestApps()` 自动发现�
 
 ## Bridge 与存储
 
-- `Transport` 的两端：
-  - service 端在 JSCore：`send(frame) → __tinySend(JSON.stringify(frame))`；原生调用
-    `__tinyReceiveFrame(json)` 进入监听器。
-  - host 端在 WebView：`send(frame) → webkit.messageHandlers.tinyService.postMessage({type:'frame', frame})`；
-    原生用 `callAsyncJavaScript("window.__tinyHostReceive(frame)")` 投递。
-- render 端不经过原生：`PageFrameConnector.connect(pageId)` 创建 iframe，等
-  `tiny-runtime-port-ready` 后用 `MessageChannel` 转移 port。
-- 存储：`storage.get/set/remove/clear/info` 被 host 覆盖为原生 UserDefaults 调用；启动时 `all` 一次
-  拿到快照放进 `createTinyRuntime({ storage })`，保证 `getStorageSync` 首次读取正确。UserDefaults key
-  前缀是 `tiny.storage.<appId>.`。
-- 存储值以 JSON 字符串写入 UserDefaults；`NSNull`、数字、布尔、对象、数组都支持。
+- `Transport` 两端：
+  - service 端在 JSCore：`send(frame) → __tinySend(JSON.stringify(frame))`；Swift `ServiceEngine` 接收。
+  - render 端在每页 WKWebView：`send(frame) → tinyRender.postMessage({type:'frame'})`；
+    `NativeRenderSurface` 用 `callAsyncJavaScript("window.__tinyRenderReceive(frame)")` 投递。
+- 页面 surface 不再使用 iframe 或 MessagePort；HostCore 直接向对应 page 的 WKWebView 转发帧。
+- 存储：HostCore `platformCall` 的 `storage.*` 由 `HostCoreRuntime` 处理，目前使用内存字典；
+  生产迁移前需要接回 UserDefaults。
 
 ## 原生 chrome
 
@@ -284,7 +252,7 @@ fixture 通过 `scripts/devtool-apps.mjs` 的 `discoverTestApps()` 自动发现�
 - **Canvas WebGL**：不做远程 WebGL 代理；WebGL 小程序仍会得到空 context。
 - **Canvas 同步读回**：`getImageData` / `isPointInPath` / `toDataURL` / `canvasToTempFilePath`
   暂不支持；需要时再补原生 shadow 或异步导出方案。
-- **vConsole / 调试面板**：按要求不做；接 vConsole 时在 `hosts/ios/src/web/host.html` 或
+- **vConsole / 调试面板**：按要求不做；接 vConsole 时在 native render surface 或
   `hosts/ios/src/web/host.ts` 里同步加载即可，不影响 runtime。
 - **子包按需加载 / 热更新 / 远程下载**：当前全部产物构建时打进 app bundle。要接 dev server，可在
   `loadMeta` / `loadArtifacts` 前改成 fetch + 缓存，并处理离线/校验。
@@ -315,20 +283,24 @@ Canvas smoke 额外采样真实 canvas 像素：
 ✅ mini pages/bar/index    canvas=576548 px（ECharts 柱状图）
 ```
 
-截图在 `ios/.artifacts/`（不提交）。`pnpm ios:smoke:jsc` 在 macOS 的 `jsc` 里启动真实
-`service-engine.js` + app-data，验证 JSCore 侧的 `runtime.bootstrap`；`pnpm ios:smoke:web` 在 Chrome
-里用 mock 原生桥验证 host.html + render.html + 导航，便于在没有模拟器时排查 Web 层问题。
+截图在 `ios/.artifacts/`（不提交）。`pnpm ios:smoke:jsc` 在 macOS 的 `jsc` 里启动真实 `service-engine.js` + app-data，
+验证 JSCore 侧的 `runtime.bootstrap`。
 
-## 后续：把 host 编排收敛到 Swift（待办）
+## 当前迁移状态
 
-当前 host 编排在 `hosts/ios/src/web/host.ts`：`createTinyRuntime`、页面栈、每页 render connector、
-Host API、storage 和 `RUNTIME_STATE` 投影都在 WebView 里。后续需要把这层**host orchestration**
-搬到 Swift，WebView 只保留页面渲染。
+Host orchestration 已迁到 Swift：
 
-迁移边界：
+- `HostCoreRuntime`：UniFFI HostCore ↔ JSCore service ↔ 每页 `NativeRenderSurface`
+- `NativeRenderSurface`：独立 WKWebView、`tinyRender` handler、frame queue
+- `render.html?native=1`：native render Bridge entry
+- `MiniProgramSession`：native-only；SwiftUI chrome 使用 HostCore UIState
 
-- **保留不动**：Bridge 协议与 `Transport`、JSCore service engine、`@tiny/host-web-components` 的
-  render entry、`render.html` 的页面渲染职责。
+仍需补齐：
+
+- UserDefaults storage parity
+- toast/network/其他 host APIs
+- 更强的 native interaction smoke（导航、tabBar、Canvas）
+- 真机多架构 UniFFI 静态库
 - **搬到 Swift**：host 侧 `BridgeConnection`、页面栈与导航、render 容器/iframe 生命周期、
   `HostApiRegistry`、storage、`systemInfo`/`resize`、`RUNTIME_STATE` → 原生 chrome 的状态投影。
 - **渲染容器待定**：可以继续用一个 WKWebView + 每页 iframe，由 Swift 通过一个很薄的 JS relay 转发
