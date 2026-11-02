@@ -4,7 +4,11 @@ use serde::{Deserialize, Serialize};
 /// platform. The core translates them into service controls and page-surface
 /// actions; it never performs navigation itself.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "camelCase")]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum HostCommand {
     NavigateTo {
         url: String,

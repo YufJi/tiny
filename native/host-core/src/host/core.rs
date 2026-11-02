@@ -612,7 +612,13 @@ impl HostCore {
                 BridgeEvent::Control(message) => {
                     self.unhandled_message("service", &message, actions);
                 }
-                BridgeEvent::Event(message) => self.route_service_event(message, actions),
+                BridgeEvent::Event(message) => {
+                    if message.domain == ProtocolDomain::Diagnostic {
+                        self.on_diagnostic(&message, actions);
+                    } else {
+                        self.route_service_event(message, actions);
+                    }
+                }
                 BridgeEvent::Timeout {
                     message_id,
                     domain,
@@ -778,7 +784,13 @@ impl HostCore {
                         actions,
                     );
                 }
-                BridgeEvent::Event(message) => self.forward_render_event(message),
+                BridgeEvent::Event(message) => {
+                    if message.domain == ProtocolDomain::Diagnostic {
+                        self.on_diagnostic(&message, actions);
+                    } else {
+                        self.forward_render_event(message);
+                    }
+                }
                 BridgeEvent::Call(message) | BridgeEvent::Control(message) => {
                     self.unhandled_message("render", &message, actions);
                 }
@@ -823,6 +835,22 @@ impl HostCore {
         self.emit_ui_state(actions);
         self.drain_service(actions);
         self.drain_render(page_id, actions);
+    }
+
+    fn on_diagnostic(&mut self, message: &ProtocolMessage, actions: &mut Vec<HostAction>) {
+        let level = message
+            .method
+            .strip_prefix("diagnostic.")
+            .unwrap_or("log")
+            .to_string();
+        let payload = message.payload.clone().unwrap_or(Value::Null);
+        actions.push(HostAction::Diagnostic {
+            level,
+            payload: payload.clone(),
+        });
+        if message.method == "diagnostic.state" {
+            actions.push(HostAction::UpdateUIState { state: payload });
+        }
     }
 
     fn route_service_event(&mut self, message: ProtocolMessage, actions: &mut Vec<HostAction>) {

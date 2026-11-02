@@ -19,8 +19,9 @@ with `PlatformResult`; `system.info`, storage and navigation API requests are
 replied back to the service.
 
 `host-core-wasm` exposes the same event/action state machine to JavaScript with
-`WasmHostCore`; the browser adapter still owns iframes, MessageChannel and
-OffscreenCanvas handoff.
+`WasmHostCore`; `hosts/browser/src/wasm-host.ts` is the browser adapter that owns
+iframes, MessageChannel and OffscreenCanvas handoff. It is exported but not yet
+the default devtool host; the JS host remains the fallback during migration.
 
 ```bash
 cargo test --manifest-path native/Cargo.toml --workspace
