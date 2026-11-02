@@ -77,6 +77,9 @@ struct LauncherView: View {
       model.load()
       if model.smoke {
         NativeRenderSurfaceSmoke.run()
+        if ProcessInfo.processInfo.arguments.contains("-TINY_HOSTCORE_SMOKE") {
+          NativeHostCoreSmoke.run()
+        }
       }
     }
   }

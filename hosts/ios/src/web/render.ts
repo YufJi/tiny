@@ -1,7 +1,6 @@
 import { resolveAssetPath } from '@tiny/runtime'
 import { bootBrowserRenderEntry } from '@tiny/host-browser'
 import { createGlassRenderEntry } from '@tiny/host-web-components'
-import type { TreeRenderer } from '@tiny/runtime'
 import { installRemoteCanvas } from './canvas'
 import { bootNativeRenderEntry } from './render-native'
 
@@ -14,20 +13,21 @@ const assetsBase = new URL(
 
 installRemoteCanvas()
 
-const renderer = createGlassRenderEntry({
+const entry = createGlassRenderEntry({
   container: document.getElementById('app') ?? document.body,
   resolveAssetUrl: (src, sourcePath) => {
     const resolved = resolveAssetPath(sourcePath || '', src)
     if (!resolved) return undefined
     return assetsBase + resolved.split('/').map(encodeURIComponent).join('/')
   },
-}) as TreeRenderer
+})
 
 if (params.get('native') === '1') {
+  entry.prepare?.()
   bootNativeRenderEntry({
     pageId: params.get('pageId') ?? undefined,
-    renderer,
+    renderer: entry.createRenderer(),
   })
 } else {
-  bootBrowserRenderEntry(renderer)
+  bootBrowserRenderEntry(entry)
 }

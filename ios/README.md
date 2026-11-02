@@ -151,8 +151,10 @@ The native adapter now also has:
 - `NativeRenderSurface`: one standalone WKWebView per page, `nativeRender` message handler and frame queue.
 - `render.html?native=1`: native render Bridge entry, independent of iframes/MessagePorts.
 
-The existing `host.html` / `createTinyRuntime` JS shell still runs the app while the
-HostCoreSession is wired to the Swift service/page transports.
+`HostCoreRuntime` now wires the UniFFI HostCore to the JSCore service and
+`NativeRenderSurface` pages. The smoke launches the demo through this native path
+and asserts `native-hostcore-smoke.json`; the existing `host.html` /
+`createTinyRuntime` shell remains the production fallback.
 
 `ios/Generated/` 是 Xcode 的 folder reference，构建前必须存在。
 

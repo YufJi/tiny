@@ -124,6 +124,7 @@ async function main() {
   const results = []
   let hostCoreSmoke = null
   let nativeRenderSmoke = null
+  let nativeHostCoreSmoke = null
   for (const appId of apps) {
     const container = run(
       'xcrun',
@@ -138,6 +139,7 @@ async function main() {
       device.udid, bundleId,
       '-TINY_AUTOLAUNCH', appId,
       '-TINY_SMOKE',
+      ...(appId === 'demo' ? ['-TINY_HOSTCORE_SMOKE'] : []),
       '-TINY_RUN_ID', runId,
     ])
 
@@ -211,6 +213,20 @@ async function main() {
       }
     }
 
+    if (!nativeHostCoreSmoke && appId === 'demo') {
+      const nativeHostCoreFile = path.join(documents, 'native-hostcore-smoke.json')
+      if (fs.existsSync(nativeHostCoreFile)) {
+        nativeHostCoreSmoke = JSON.parse(await fsp.readFile(nativeHostCoreFile, 'utf8'))
+        if (nativeHostCoreSmoke.ok !== true) {
+          throw new Error(`native HostCore smoke failed: ${JSON.stringify(nativeHostCoreSmoke)}`)
+        }
+        await fsp.copyFile(
+          nativeHostCoreFile,
+          path.join(artifactDir, 'native-hostcore-smoke.json'),
+        )
+      }
+    }
+
     results.push({ appId, smoke, state })
     console.log(
       `  ✅ ${appId}: ${state?.title ?? '?'} (${state?.path ?? '?'}) ` +
@@ -230,6 +246,7 @@ async function main() {
   console.log(`   screenshots: ${path.relative(rootDir, artifactDir)}`)
   console.log(`   UniFFI HostCore smoke: ${hostCoreSmoke ? 'ok' : 'missing'}`)
   console.log(`   native render smoke: ${nativeRenderSmoke ? 'ok' : 'missing'}`)
+  console.log(`   native HostCore app smoke: ${nativeHostCoreSmoke ? 'ok' : 'missing'}`)
   console.log(`   launcher: ${path.relative(rootDir, launcherShot)}`)
 }
 
