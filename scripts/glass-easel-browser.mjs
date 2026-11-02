@@ -1468,6 +1468,11 @@ export async function runTaroAcceptance({ baseUrl }) {
 export async function runDevtoolAcceptance({ baseUrl }) {
   const browser = await launchBrowser()
   const page = await browser.newPage({ viewport: { width: 1400, height: 900 } })
+  if (process.env.TINY_DEVTOOL_WASM === '1') {
+    await page.addInitScript(() => {
+      try { window.localStorage.setItem('tiny.hostMode', 'wasm') } catch {}
+    })
+  }
   const pageErrors = []
   const consoleErrors = []
   const failureShot = path.join(rootDir, 'tests/host/generated/acceptance-devtool-failure.png')

@@ -63,6 +63,7 @@ pub struct HostCore {
     pending_platform_calls: HashMap<String, ProtocolMessage>,
     pages: HashMap<String, PageState>,
     pending_pages: HashMap<String, String>,
+    pending_initial_data: HashMap<String, Value>,
     pending_events: HashMap<String, Vec<PendingEvent>>,
     page_stack: Vec<String>,
     active_page: Option<String>,
@@ -88,6 +89,7 @@ impl HostCore {
             pending_platform_calls: HashMap::new(),
             pages: HashMap::new(),
             pending_pages: HashMap::new(),
+            pending_initial_data: HashMap::new(),
             pending_events: HashMap::new(),
             page_stack: Vec::new(),
             active_page: None,
@@ -354,6 +356,10 @@ impl HostCore {
         for unloaded in unloaded_page_ids {
             self.destroy_page(&unloaded, actions);
         }
+        if let (Some(page_id), Some(initial_data)) = (page_id.as_ref(), result.get("initialData")) {
+            self.pending_initial_data
+                .insert(page_id.clone(), initial_data.clone());
+        }
 
         match command {
             PendingCommand::NavigateBack => {
@@ -435,6 +441,7 @@ impl HostCore {
     fn destroy_page(&mut self, page_id: &str, actions: &mut Vec<HostAction>) {
         self.pages.remove(page_id);
         self.pending_pages.remove(page_id);
+        self.pending_initial_data.remove(page_id);
         self.pending_events.remove(page_id);
         self.page_stack.retain(|id| id != page_id);
         if self.active_page.as_deref() == Some(page_id) {
@@ -612,7 +619,15 @@ impl HostCore {
                     code,
                     message,
                 } => {
-                    self.pending_commands.remove(&message_id);
+                    if let Some(command) = self.pending_commands.remove(&message_id) {
+                        actions.push(HostAction::CommandResult {
+                            command: command_name(&command).to_string(),
+                            result: json!({
+                                "ok": false,
+                                "error": { "code": code, "message": message },
+                            }),
+                        });
+                    }
                     self.fail_api_request(&message_id, &code, &message, now_ms, actions);
                     self.diagnostic(
                         "error",
@@ -686,6 +701,10 @@ impl HostCore {
             return;
         };
         self.pending_pages.insert(page_id.clone(), path.clone());
+        if let Some(initial_data) = result.get("initialData") {
+            self.pending_initial_data
+                .insert(page_id.clone(), initial_data.clone());
+        }
         self.page_stack.push(page_id.clone());
         actions.push(HostAction::CreatePage {
             page_id: page_id.clone(),
@@ -762,10 +781,13 @@ impl HostCore {
             match event {
                 BridgeEvent::Ready { .. } => {
                     page.render_ready = true;
-                    let payload = json!({
+                    let mut payload = json!({
                         "initialPath": page.path,
                         "pageId": page_id,
                     });
+                    if let Some(initial_data) = self.pending_initial_data.remove(page_id) {
+                        payload["initialData"] = initial_data;
+                    }
                     match page.bridge.control(
                         ProtocolDomain::Runtime,
                         "bootstrap",
@@ -840,6 +862,13 @@ impl HostCore {
 
     fn finish_page(&mut self, page_id: &str, now_ms: u64, actions: &mut Vec<HostAction>) {
         self.flush_pending_events(page_id);
+        let _ = self.service.send_event(
+            ProtocolDomain::Tree,
+            "ready",
+            json!({ "pageId": page_id }),
+            Some(page_id.to_string()),
+            now_ms,
+        );
         let _ = self.service.control(
             ProtocolDomain::Page,
             "ready",
@@ -871,7 +900,16 @@ impl HostCore {
     }
 
     fn route_service_event(&mut self, message: ProtocolMessage, actions: &mut Vec<HostAction>) {
-        let Some(page_id) = message.page_id.clone() else {
+        let payload = message.payload.unwrap_or(Value::Null);
+        // Tree flow events from the service carry their pageId inside the
+        // payload, unlike most other events. Accept both shapes.
+        let page_id = message.page_id.clone().or_else(|| {
+            payload
+                .get("pageId")
+                .and_then(Value::as_str)
+                .map(str::to_string)
+        });
+        let Some(page_id) = page_id else {
             self.diagnostic(
                 "warning",
                 &format!(
@@ -883,7 +921,6 @@ impl HostCore {
             );
             return;
         };
-        let payload = message.payload.unwrap_or(Value::Null);
         if self
             .pages
             .get(&page_id)

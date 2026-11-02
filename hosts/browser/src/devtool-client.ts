@@ -132,6 +132,8 @@ export class DevtoolRuntimeClient {
           onDiagnostic: (diagnostic) => this.record(diagnostic),
         }, this.options.wasmCoreFactory)
         await this.wasmHost.launch()
+        // The service sends the post-ready tree snapshot asynchronously.
+        await new Promise((resolve) => setTimeout(resolve, 300))
         this.update({ status: 'running' })
         await this.inspectTree()
         return
@@ -227,7 +229,7 @@ export class DevtoolRuntimeClient {
     await this.inspectTree(result?.pageId)
   }
 
-  async inspectTree(pageId: string | undefined = this.activePageId): Promise<InspectNode | null> {
+  async inspectTree(pageId: string | undefined = this.activePageId ?? this.wasmHost?.activePage): Promise<InspectNode | null> {
     // Host inspection is page-scoped: no active page means there is nothing to
     // inspect yet (e.g. before the first page is ready).
     if (!pageId) {

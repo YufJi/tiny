@@ -36,3 +36,22 @@ native/host-core/       # rlib, no WebKit/UIKit/JSCore/Android/browser deps
 native/host-core-wasm/  # wasm-bindgen event/action bridge for the web devtool
 native/host-core-ffi/   # UniFFI for Swift (and future Kotlin) — later
 ```
+
+### Web devtool WASM mode
+
+Generate the bindings once:
+
+```bash
+pnpm host-core:wasm:bindings
+```
+
+Then either open the devtool with `?host=wasm` (the dev server injects
+`__TINY_WASM_HOST_CORE_FACTORY_PROMISE__`), or run the debugger flow against the
+Rust host:
+
+```bash
+TINY_DEVTOOL_WASM=1 pnpm accept:glass-easel
+```
+
+The production devtool build still defaults to the JS host; the wasm loader is a
+development-only Vite plugin.

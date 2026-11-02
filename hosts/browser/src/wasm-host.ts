@@ -1,5 +1,6 @@
 import { createHostMessageChannelPair } from '@tiny/bridge'
 import type { Transport, TransportFrame } from '@tiny/bridge'
+import { normalizeTransportDiagnostic } from '@tiny/runtime'
 import type {
   HostApiHandlers,
   RuntimeDiagnostic,
@@ -87,6 +88,12 @@ export class WasmBrowserHost {
   private ready = false
   private readyTimer: ReturnType<typeof setTimeout> | undefined
   private readyWaiters: Array<{
+    resolve: () => void
+    reject: (reason: unknown) => void
+  }> = []
+  private treeReady = false
+  private treeReadyTimer: ReturnType<typeof setTimeout> | undefined
+  private treeReadyWaiters: Array<{
     resolve: () => void
     reject: (reason: unknown) => void
   }> = []
@@ -180,7 +187,14 @@ export class WasmBrowserHost {
     })
     this.core = await this.factory(config)
     this.execute(this.core.start(nowMs()))
-    if (this.options.waitForReady !== false) await this.waitForReady()
+    if (this.options.waitForReady !== false) {
+      await this.waitForReady()
+      await this.waitForTree()
+    }
+  }
+
+  get activePage(): string | undefined {
+    return this.activePageId
   }
 
   async command(command: Record<string, unknown>): Promise<unknown> {
@@ -202,7 +216,8 @@ export class WasmBrowserHost {
   async inspectTree(pageId: string | undefined): Promise<unknown> {
     if (!pageId) return null
     await this.waitForPage(pageId)
-    return this.command({ type: 'inspectTree', pageId })
+    const tree = await this.command({ type: 'inspectTree', pageId })
+    return tree
   }
 
   async setAppVisible(visible: boolean): Promise<void> {
@@ -230,7 +245,12 @@ export class WasmBrowserHost {
     this.core = null
     if (this.readyTimer !== undefined) clearTimeout(this.readyTimer)
     this.readyTimer = undefined
+    if (this.treeReadyTimer !== undefined) clearTimeout(this.treeReadyTimer)
+    this.treeReadyTimer = undefined
     for (const waiter of this.readyWaiters.splice(0)) {
+      waiter.reject(new Error('WasmBrowserHost disposed'))
+    }
+    for (const waiter of this.treeReadyWaiters.splice(0)) {
       waiter.reject(new Error('WasmBrowserHost disposed'))
     }
     for (const waiters of this.commandWaiters.values()) {
@@ -270,6 +290,14 @@ export class WasmBrowserHost {
           this.queueServiceFrame(action.frame)
           break
         case 'sendRenderFrame':
+          if (
+            this.activePageId === action.pageId
+            && action.frame.messages.some((message) => (
+              message.domain === 'tree' && (message.method === 'flow' || message.method === 'snapshot')
+            ))
+          ) {
+            this.markTreeReady()
+          }
           try {
             this.pages.get(action.pageId)?.transport.send(action.frame)
           } catch (error) {
@@ -299,9 +327,19 @@ export class WasmBrowserHost {
         case 'platformCall':
           void this.runPlatformCall(action)
           break
-        case 'diagnostic':
-          this.report(action.level, JSON.stringify(action.payload))
+        case 'diagnostic': {
+          const payload = action.payload as {
+            source?: RuntimeDiagnostic['source']
+            pageId?: string
+          }
+          this.options.onDiagnostic?.(normalizeTransportDiagnostic(
+            action.payload,
+            payload.source ?? 'host',
+            payload.pageId,
+            action.level as 'log' | 'warn' | 'error' | 'state',
+          ))
           break
+        }
       }
     }
   }
@@ -428,6 +466,26 @@ export class WasmBrowserHost {
     })
   }
 
+  private waitForTree(timeoutMs = 15_000): Promise<void> {
+    if (this.treeReady) return Promise.resolve()
+    return new Promise((resolve, reject) => {
+      const waiter = { resolve, reject }
+      this.treeReadyWaiters.push(waiter)
+      this.treeReadyTimer = setTimeout(() => {
+        this.treeReadyWaiters = this.treeReadyWaiters.filter((item) => item !== waiter)
+        reject(new Error(`WasmHostCore did not mount a render tree within ${timeoutMs}ms`))
+      }, timeoutMs)
+    })
+  }
+
+  private markTreeReady(): void {
+    if (this.treeReady) return
+    this.treeReady = true
+    if (this.treeReadyTimer !== undefined) clearTimeout(this.treeReadyTimer)
+    this.treeReadyTimer = undefined
+    for (const waiter of this.treeReadyWaiters.splice(0)) waiter.resolve()
+  }
+
   private markReady(): void {
     if (this.ready) return
     this.ready = true
@@ -496,6 +554,13 @@ export class WasmBrowserHost {
     const waiters = this.commandWaiters.get(command)
     if (!waiters?.length) return
     this.commandWaiters.delete(command)
+    const error = result && typeof result === 'object'
+      ? (result as { error?: { message?: string } }).error
+      : undefined
+    if (error) {
+      for (const waiter of waiters) waiter.reject(new Error(error.message ?? `${command} failed`))
+      return
+    }
     for (const waiter of waiters) waiter.resolve(result)
   }
 

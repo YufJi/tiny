@@ -1,6 +1,6 @@
 export { TINY_ENGINE_NAMING } from '@tiny/manifest'
 
-export { DIAGNOSTIC_CODES } from './diagnostics'
+export { DIAGNOSTIC_CODES, normalizeTransportDiagnostic } from './diagnostics'
 export type {
   RuntimeDiagnostic,
   RuntimeDiagnosticSeverity,

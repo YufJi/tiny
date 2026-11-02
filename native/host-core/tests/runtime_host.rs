@@ -165,7 +165,15 @@ fn bootstraps_service_then_creates_and_binds_one_page() {
         action,
         HostAction::ActivatePage { page_id } if page_id == "page-1"
     )));
-    let page_ready = only_frame_message(&actions, true);
+    let page_ready = actions
+        .iter()
+        .find_map(|action| match action {
+            HostAction::SendServiceFrame { frame } => frame.messages.iter().find(|message| {
+                message.domain == ProtocolDomain::Page && message.method == "ready"
+            }),
+            _ => None,
+        })
+        .expect("page.ready control was not emitted");
     assert_eq!(page_ready.kind, ProtocolKind::Control);
     assert_eq!(page_ready.domain, ProtocolDomain::Page);
     assert_eq!(page_ready.method, "ready");
@@ -202,8 +210,8 @@ fn queues_service_tree_events_until_render_is_ready() {
         "flow",
         ProtocolRole::Service,
         ProtocolRole::Host,
-        json!({ "nodes": [] }),
-        Some("page-1"),
+        json!({ "nodes": [], "pageId": "page-1" }),
+        None,
         None,
     );
     let actions = host.handle_event(HostEvent::ServiceFrame(frame(vec![flow])), 2_030);
