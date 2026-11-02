@@ -24,6 +24,8 @@ OffscreenCanvas handoff.
 
 ```bash
 cargo test --manifest-path native/Cargo.toml --workspace
+cargo build --manifest-path native/host-core-wasm/Cargo.toml --target wasm32-unknown-unknown
+pnpm host-core:wasm:bindings   # generates wasm-bindgen JS bindings (requires wasm-pack)
 ```
 
 Crate layout:

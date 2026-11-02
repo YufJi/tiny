@@ -27,6 +27,7 @@
     "check:runtime-purity": "node scripts/check-runtime-purity.mjs",
     "host-core:test": "cargo test --manifest-path native/Cargo.toml --workspace",
     "host-core:wasm": "cargo build --manifest-path native/host-core-wasm/Cargo.toml --target wasm32-unknown-unknown",
+    "host-core:wasm:bindings": "wasm-pack build native/host-core-wasm --dev --target web --out-dir pkg --no-opt --mode no-install",
     "ios:assets": "node ios/scripts/build.mjs",
     "ios:smoke:jsc": "node ios/scripts/smoke-service.mjs demo",
     "ios:smoke:web": "node ios/scripts/smoke-web.mjs demo",
