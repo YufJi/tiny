@@ -244,6 +244,7 @@ fixture 通过 `scripts/devtool-apps.mjs` 的 `discoverTestApps()` 自动发现�
 
 - `tests/apps` 下 7 个 fixture（demo、mini、todo、wechat-demo、echarts、vant、weui）的启动、首屏、页面导航、tab 切换、返回、原生导航栏/tabBar；
 - 每页 native WKWebView 的隐藏/恢复、滚动容器、页面 WXSS 隔离；
+- `navigateTo` 的 native push 动画、返回的 pop 动画，以及左边缘右滑交互式返回；
 - 5 个路由 API、`RUNTIME_STATE` 投影、UserDefaults storage、系统信息和 SwiftUI 原生导航/tabBar；
 - **Canvas 2D**：legacy `createCanvasContext` 与 selector-query canvas node 都通过 service 侧录制、
   render `<canvas>` 回放；`measureText` 走 JSCore → CoreText 同步桥；mini ECharts 柱状图已跑通；

@@ -20,6 +20,14 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   private var storage: [String: Any] = [:]
   private let storagePrefix: String
   private var activePageId: String?
+  private var displayedStack: [String] = []
+  private var deferredDestroyIds: Set<String> = []
+  private var pendingBackTransition = false
+  private var pendingTabTransition = false
+  private var pageTransitionInProgress = false
+  private var interactiveBackActive = false
+  private var interactiveBackPreviousId: String?
+  private var interactiveBackCurrentId: String?
   private var finished = false
   private var meta: [String: Any] = [:]
   private var manifest: [String: Any] = [:]
@@ -36,6 +44,13 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     self.storagePrefix = "tiny.storage.\(app.id)."
     self.storage = Self.loadStorage(prefix: "tiny.storage.\(app.id).")
     super.init()
+    container.clipsToBounds = true
+    let gesture = UIScreenEdgePanGestureRecognizer(
+      target: self,
+      action: #selector(handleBackEdgePan(_:))
+    )
+    gesture.edges = .left
+    container.addGestureRecognizer(gesture)
   }
 
   private static func loadStorage(prefix: String) -> [String: Any] {
@@ -116,11 +131,17 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   }
 
   func back(delta: Int = 1) {
-    try? core?.command(["type": "navigateBack", "delta": delta])
+    guard let core else { return }
+    pendingBackTransition = true
+    pendingTabTransition = false
+    try? core.command(["type": "navigateBack", "delta": delta])
   }
 
   func switchTab(index: Int) {
-    try? core?.command(["type": "switchTab", "index": index])
+    guard let core else { return }
+    pendingTabTransition = true
+    pendingBackTransition = false
+    try? core.command(["type": "switchTab", "index": index])
   }
 
   func setVisible(_ visible: Bool) {
@@ -132,6 +153,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       surface.destroy()
     }
     surfaces.removeAll()
+    deferredDestroyIds.removeAll()
     core = nil
     service.stop()
   }
@@ -173,6 +195,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     surface.onError = { [weak self] message in
       self?.fail("render page \(pageId) failed: \(message)")
     }
+    deferredDestroyIds.remove(pageId)
     surfaces[pageId] = surface
     container.addSubview(surface.webView)
     surface.setVisible(false)
@@ -180,19 +203,25 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   }
 
   func activatePage(pageId: String) {
-    activePageId = pageId
-    for (id, surface) in surfaces {
-      surface.setVisible(id == pageId)
+    let previousId = activePageId
+    guard let newSurface = surfaces[pageId] else {
+      activePageId = pageId
+      return
     }
+    let newStack = core?.pageStack() ?? []
+
     if initialPageId == nil {
       initialPageId = pageId
+      activePageId = pageId
+      displayedStack = newStack
+      newSurface.setVisible(true)
       if !finished {
         finished = true
         let result: [String: Any] = [
           "ok": true,
           "appId": app.id,
           "pageId": pageId,
-          "pageStack": core?.pageStack() ?? [],
+          "pageStack": newStack,
         ]
         HostDebug.writeResult(result, name: "native-hostcore-smoke.json")
         onReady?(pageId)
@@ -202,9 +231,220 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       }
       return
     }
-    if smokeNavigationStarted, pageId != initialPageId {
-      smokeNavigationStarted = false
-      writeSmokeResult(navigated: true, pageId: pageId)
+
+    if previousId == pageId {
+      newSurface.setVisible(true)
+      return
+    }
+
+    let oldSurface = previousId.flatMap { surfaces[$0] }
+    let kind = transitionKind(
+      previousId: previousId,
+      pageId: pageId,
+      newStack: newStack,
+      interactive: interactiveBackActive && interactiveBackPreviousId == pageId
+    )
+    activePageId = pageId
+    displayedStack = newStack
+    animatePageTransition(
+      from: oldSurface,
+      to: newSurface,
+      kind: kind,
+      interactive: interactiveBackActive && interactiveBackPreviousId == pageId,
+      pageId: pageId
+    )
+  }
+
+  private enum PageTransitionKind {
+    case push
+    case pop
+    case fade
+  }
+
+  private func transitionKind(
+    previousId: String?,
+    pageId: String,
+    newStack: [String],
+    interactive: Bool
+  ) -> PageTransitionKind {
+    if interactive { return .pop }
+    if pendingTabTransition { return .fade }
+    if pendingBackTransition || newStack.count < displayedStack.count { return .pop }
+    if let previousId,
+       let oldIndex = displayedStack.firstIndex(of: previousId),
+       let newIndex = newStack.firstIndex(of: pageId),
+       newIndex > oldIndex {
+      return .push
+    }
+    return .fade
+  }
+
+  private func animatePageTransition(
+    from oldSurface: NativeRenderSurface?,
+    to newSurface: NativeRenderSurface,
+    kind: PageTransitionKind,
+    interactive: Bool,
+    pageId: String
+  ) {
+    pageTransitionInProgress = true
+    let width = max(container.bounds.width, UIScreen.main.bounds.width)
+    newSurface.setVisible(true)
+    newSurface.webView.alpha = 1
+
+    if kind == .fade {
+      newSurface.webView.transform = .identity
+      newSurface.webView.alpha = 0
+      container.bringSubviewToFront(newSurface.webView)
+    } else if kind == .push {
+      newSurface.webView.transform = CGAffineTransform(translationX: width, y: 0)
+      container.bringSubviewToFront(newSurface.webView)
+    } else if let oldSurface {
+      if !interactive {
+        newSurface.webView.transform = CGAffineTransform(translationX: -width * 0.32, y: 0)
+      }
+      container.insertSubview(newSurface.webView, belowSubview: oldSurface.webView)
+    }
+
+    let duration = interactive ? 0.22 : 0.32
+    UIView.animate(
+      withDuration: duration,
+      delay: 0,
+      options: [.curveEaseInOut, .beginFromCurrentState, .allowUserInteraction]
+    ) {
+      newSurface.webView.transform = .identity
+      newSurface.webView.alpha = 1
+      if let oldSurface {
+        switch kind {
+        case .push:
+          oldSurface.webView.transform = CGAffineTransform(translationX: -width, y: 0)
+        case .pop:
+          oldSurface.webView.transform = CGAffineTransform(translationX: width, y: 0)
+        case .fade:
+          oldSurface.webView.alpha = 0
+        }
+      }
+    } completion: { [weak self] _ in
+      guard let self else { return }
+      oldSurface?.setVisible(false)
+      oldSurface?.webView.transform = .identity
+      oldSurface?.webView.alpha = 1
+      newSurface.webView.transform = .identity
+      newSurface.webView.alpha = 1
+      self.container.bringSubviewToFront(newSurface.webView)
+      self.pageTransitionInProgress = false
+      self.interactiveBackActive = false
+      self.interactiveBackPreviousId = nil
+      self.interactiveBackCurrentId = nil
+      self.pendingBackTransition = false
+      self.pendingTabTransition = false
+      self.finishDeferredDestroys(keeping: pageId)
+      self.finishSmokeIfNeeded(pageId: pageId)
+    }
+  }
+
+  private func finishDeferredDestroys(keeping pageId: String) {
+    for id in deferredDestroyIds where id != pageId {
+      surfaces.removeValue(forKey: id)?.destroy()
+    }
+    deferredDestroyIds.removeAll()
+  }
+
+  private func finishSmokeIfNeeded(pageId: String) {
+    guard smokeNavigationStarted, pageId != initialPageId else { return }
+    smokeNavigationStarted = false
+    writeSmokeResult(navigated: true, pageId: pageId)
+  }
+
+  @objc private func handleBackEdgePan(_ gesture: UIScreenEdgePanGestureRecognizer) {
+    let width = max(container.bounds.width, UIScreen.main.bounds.width)
+    let currentId = activePageId
+
+    switch gesture.state {
+    case .began:
+      guard !pageTransitionInProgress,
+            !interactiveBackActive,
+            let currentId,
+            let stack = core?.pageStack(),
+            let currentIndex = stack.firstIndex(of: currentId),
+            currentIndex > 0,
+            let current = surfaces[currentId]
+      else { return }
+      var previousId: String?
+      for index in stride(from: currentIndex - 1, through: 0, by: -1) where surfaces[stack[index]] != nil {
+        previousId = stack[index]
+        break
+      }
+      guard let previousId, let previous = surfaces[previousId] else { return }
+      interactiveBackActive = true
+      interactiveBackCurrentId = currentId
+      interactiveBackPreviousId = previousId
+      pageTransitionInProgress = true
+      previous.setVisible(true)
+      previous.webView.transform = CGAffineTransform(translationX: -width * 0.32, y: 0)
+      container.insertSubview(previous.webView, belowSubview: current.webView)
+
+    case .changed:
+      guard interactiveBackActive,
+            let currentId = interactiveBackCurrentId,
+            let previousId = interactiveBackPreviousId,
+            let current = surfaces[currentId],
+            let previous = surfaces[previousId]
+      else { return }
+      let translation = min(max(gesture.translation(in: container).x, 0), width)
+      let progress = translation / width
+      current.webView.transform = CGAffineTransform(translationX: translation, y: 0)
+      previous.webView.transform = CGAffineTransform(
+        translationX: -width * 0.32 * (1 - progress),
+        y: 0
+      )
+
+    case .ended, .cancelled, .failed:
+      guard interactiveBackActive,
+            let currentId = interactiveBackCurrentId,
+            let previousId = interactiveBackPreviousId,
+            let current = surfaces[currentId],
+            let previous = surfaces[previousId]
+      else { return }
+      let translation = min(max(gesture.translation(in: container).x, 0), width)
+      let progress = translation / width
+      let velocity = gesture.velocity(in: container).x
+      if gesture.state == .ended, progress > 0.32 || velocity > 500 {
+        back()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+          guard let self,
+                self.interactiveBackActive,
+                self.activePageId == currentId
+          else { return }
+          self.cancelInteractiveBack(current: current, previous: previous, width: width)
+        }
+      } else {
+        cancelInteractiveBack(current: current, previous: previous, width: width)
+      }
+
+    default:
+      break
+    }
+  }
+
+  private func cancelInteractiveBack(
+    current: NativeRenderSurface,
+    previous: NativeRenderSurface,
+    width: CGFloat
+  ) {
+    pageTransitionInProgress = true
+    UIView.animate(withDuration: 0.22, delay: 0, options: [.curveEaseOut, .beginFromCurrentState]) {
+      current.webView.transform = .identity
+      previous.webView.transform = CGAffineTransform(translationX: -width * 0.32, y: 0)
+    } completion: { [weak self] _ in
+      guard let self else { return }
+      previous.setVisible(false)
+      previous.webView.transform = .identity
+      current.webView.transform = .identity
+      self.pageTransitionInProgress = false
+      self.interactiveBackActive = false
+      self.interactiveBackPreviousId = nil
+      self.interactiveBackCurrentId = nil
+      self.pendingBackTransition = false
     }
   }
 
@@ -235,6 +475,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     }
     if let target = tabTargets.first(where: { $0.path != app.firstPage }) {
       smokeNavigationStarted = true
+      pendingTabTransition = true
       try? core?.command([
         "type": "switchTab",
         "index": target.index,
@@ -262,6 +503,10 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   }
 
   func destroyPage(pageId: String) {
+    if pageId == activePageId || pageTransitionInProgress {
+      deferredDestroyIds.insert(pageId)
+      return
+    }
     surfaces.removeValue(forKey: pageId)?.destroy()
   }
 

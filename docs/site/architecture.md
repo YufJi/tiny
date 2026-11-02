@@ -306,7 +306,9 @@ SwiftUI MiniProgramSession
 | storage | 浏览器 storage | UserDefaults |
 | canvas | OffscreenCanvas handoff | service display-list + native render 回放 |
 
-`host.html`、`TinyWebView`、`FrameRelay` 和 `createTinyRuntime` 都已从 iOS 路径删除。
+`host.html`、`TinyWebView`、`FrameRelay` 和 `createTinyRuntime` 都已从 iOS 路径删除；
+页面切换由 `HostCoreRuntime` 做 native push/pop 动画，左边缘 `UIScreenEdgePanGestureRecognizer`
+提供交互式右滑返回。
 `RUNTIME_STATE` 仍由 HostCore 投影成 UIState，SwiftUI chrome 只消费投影结果。
 
 ## 状态应该放在哪一层 {#ownership kicker="状态归属"}
