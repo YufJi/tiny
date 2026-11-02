@@ -27,7 +27,7 @@ hosts/ios/                         iOS 的前端标准包（pnpm workspace）
       entry.ts / start.ts / shims.ts / canvas.ts
     web/                           每页 native render entry + canvas
       render.html                  WKWebView render entry
-      render.ts / render-native.ts / canvas.ts
+      render.ts / canvas.ts
   dist/
     service/service-engine.js      vite build --mode service
     web/{render.html,assets}       vite build --mode web
@@ -200,7 +200,7 @@ pnpm ios:smoke:jsc    # 在 macOS jsc 里启动 demo 的真实 service engine + 
 ### `src/web`（`--mode web`）
 
 - Vite MPA，唯一 HTML entry：`render.html`，输出 `dist/web/`。
-- `render.html`：`bootNativeRenderEntry` + `createGlassRenderEntry`，每页一个独立 WKWebView。
+- `render.html`：`render.ts` 内联 native Bridge，配合 `createGlassRenderEntry`，每页一个独立 WKWebView。
 - 通过 `window.webkit.messageHandlers.tinyRender` 发送 Bridge frames，通过
   `window.__tinyRenderReceive` 接收 HostCore frames。
 - render page 不依赖 iframe、MessagePort 或 `host.html`。
