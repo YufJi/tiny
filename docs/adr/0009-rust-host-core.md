@@ -18,7 +18,7 @@ Host orchestration is currently duplicated by environment:
 - The iOS host runs `createTinyRuntime` from `hosts/ios/src/web/host.ts` inside a
   `host.html` WKWebView, with one render iframe per page.
 - The web devtool runs `createTinyRuntime` from
-  `hosts/browser/src/standalone-host.ts`, with one service iframe and one render
+  `hosts/browser/src/wasm-host.ts`, with one service iframe and one render
   iframe per page; `DevtoolRuntimeClient` exposes it to React.
 - The runtime itself (`packages/runtime`) is host-agnostic, but the host side of
   the Bridge (`packages/bridge/src/protocol/connection.ts`), page stack,

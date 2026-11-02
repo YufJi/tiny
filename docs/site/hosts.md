@@ -3,7 +3,7 @@ title: '引擎不依赖环境，'
 highlight: '运行环境由宿主提供'
 eyebrow: '宿主适配'
 lede: >-
-  packages/runtime 是宿主无关的内核：service 跑逻辑树，宿主提供渲染树。@tiny/host-browser 负责浏览器线程、端口、canvas handoff 和调试器客户端，@tiny/host-web-components 提供 Web 渲染树与 23 个内置组件；iOS 侧由 @tiny/host-ios 提供 WKWebView host/render 产物，原生 SwiftUI 壳在 ios/。createTinyRuntime 需要 service transport、render connector、manifest 和初始页面；createStandaloneDualThreadHost 负责创建 iframe、转移端口、等待就绪并完成握手。
+  packages/runtime 是宿主无关的内核：service 跑逻辑树，宿主提供渲染树。@tiny/host-browser 负责浏览器线程、端口、canvas handoff 和调试器客户端，@tiny/host-web-components 提供 Web 渲染树与 23 个内置组件；iOS 侧由 @tiny/host-ios 提供 WKWebView host/render 产物，原生 SwiftUI 壳在 ios/。createTinyRuntime 需要 service transport、render connector、manifest 和初始页面；WasmBrowserHost 负责创建 iframe、转移端口、等待就绪并完成握手。
 stats:
   - ['3', '宿主包']
   - ['1', 'service iframe']
@@ -37,7 +37,7 @@ order: 6
               |
               v
 @tiny/host-browser                浏览器环境适配
-  createStandaloneDualThreadHost
+  WasmBrowserHost
   bootBrowserServiceEntry / bootBrowserRenderEntry
   canvas handoff / runtime-port
   DevtoolRuntimeClient
@@ -130,8 +130,9 @@ iframe 超过 15 秒没有发 ready 会直接 reject，不会重试。产物很�
 
 ```ts
 // 宿主侧（tests/host/src/host.ts）
-const runtime = await createStandaloneDualThreadHost({
+const runtime = new WasmBrowserHost({
   manifest,
+  appId: 'test-host',
   serviceUrl: '/service.html',
   renderUrl: '/render.html',
   initialPath: 'pages/todos/todos',
@@ -141,9 +142,9 @@ const runtime = await createStandaloneDualThreadHost({
     windowWidth: innerWidth,
     windowHeight: innerHeight,
   },
-})
+}, wasmCoreFactory)
 window.__tinyRuntime = runtime
-await runtime.host.bootstrap()
+await runtime.launch()
 
 // service 线程：加载模板并创建逻辑树
 bootBrowserServiceEntry({

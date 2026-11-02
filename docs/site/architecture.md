@@ -99,7 +99,7 @@ packages/runtime/src/index.ts
   runtime-port.ts        iframe 端口握手
   service-entry.ts       service 线程入口（含端口与 canvas 适配）
   render-entry.ts        render 线程入口（端口 + 渲染树工厂）
-  standalone-host.ts     service + 每页 render 的连接
+  wasm-host.ts     service + 每页 render 的连接
   devtool-client.ts      调试器控制接口
 
 # hosts/web-components
@@ -187,7 +187,7 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
 | --- | --- | --- | --- |
 | 编译并写出产物 | tools/cli | 读取 app.json，扫描入口，生成 templates.js、styles、scripts 和 service.js，最后写出 schema-v2 manifest.json。诊断信息随 manifest 一起返回。 | compileMiniProgram({ sourceDir, outputDir }) |
 | 创建两条独立通道 | 宿主 | 每个线程各一条 MessageChannel。service 和 render 不共享端口，由宿主分别持有两条 hostTransport。 | createHostMessageChannelPair() × 2 |
-| 创建 iframe，等待线程就绪 | 宿主 | service iframe 被隐藏为 0×0，render iframe 填满容器；每页 render 模式下，每新建一个页面就创建一个 render iframe。宿主等待线程发回 tiny-runtime-port-ready，最多等 15 秒。 | createStandaloneDualThreadHost(...) |
+| 创建 iframe，等待线程就绪 | 宿主 | service iframe 被隐藏为 0×0，render iframe 填满容器；每页 render 模式下，每新建一个页面就创建一个 render iframe。宿主等待线程发回 tiny-runtime-port-ready，最多等 15 秒。 | WasmBrowserHost(...) |
 | 线程装好连接后再通知宿主 | service / render | service 先拿到 manifest、templates 和 styles；render 先在 `prepare` 里装好内置样式，渲染树本身在端口到达后创建。service bundle 在 bootstrap 时通过 loadArtifacts 导入。线程要等 connection 安装完成，才调用 `listenForRuntimePort`，避免端口消息到达时丢帧。 | bootBrowserServiceEntry(...) / bootBrowserRenderEntry(createGlassRenderEntry(...)) |
 | 把 MessagePort 交给线程 | 宿主 | 宿主把 port2 作为 transferable 发给对应 iframe；线程再用 createMessagePortTransport 包装成 Transport。 | postMessage({ type: 'tiny-runtime-port' }, '*', [port]) |
 | 两条连接分别握手 | bridge | 宿主分别发起 runtime.hello，service/render 回复握手信息并发送 runtime.ready。协议版本不一致时连接会直接关闭。 | host.service.handshake() · host.render.handshake() |
@@ -198,7 +198,7 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
 :::
 
 :::callout{title="bootstrap 要由宿主主动调用"}
-`createStandaloneDualThreadHost` 只负责创建线程、完成握手并返回 host，不会自动调用 bootstrap。测试宿主和调试器都需要自己执行 `host.bootstrap()`，否则页面不会被创建。
+`WasmBrowserHost` 负责创建线程、完成握手并驱动 HostCore action；测试宿主和调试器调用 `launch()`，HostCore 会完成 service/render bootstrap。
 :::
 
 ## service 和 render 没有直连 {#channels kicker="消息转发"}

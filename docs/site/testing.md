@@ -103,7 +103,7 @@ pnpm ios:smoke:web    # 在 Chrome 里用 mock 原生桥验证 host.html + rende
 
 ## 测试宿主和调试器不是一回事 {#hosts kicker="两种宿主"}
 
-两者都通过 @tiny/host-browser 的 createStandaloneDualThreadHost 启动 service 和每页 render 线程，但一个服务自动化，一个服务人。
+两者都通过 @tiny/host-browser 的 WasmBrowserHost 启动 service 和每页 render 线程，但一个服务自动化，一个服务人。
 
 ::::split
 :::card{tag="tests/host" title="无界面单应用宿主"}

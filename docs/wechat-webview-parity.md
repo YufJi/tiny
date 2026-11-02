@@ -669,7 +669,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 内置组件共享 behaviors | [behaviors.ts](../hosts/web-components/src/behaviors.ts:1) |
 | button 组件 | [button/index.ts](../hosts/web-components/src/components/button/index.ts:1) |
 | 页面/子包/app.json 解析 | [project.ts](../tools/cli/src/compiler/project.ts:75) |
-| 单/多 render 帧宿主 | [standalone-host.ts](../hosts/browser/src/standalone-host.ts:1) |
+| 单/多 render 帧宿主 | [wasm-host.ts](../hosts/browser/src/wasm-host.ts:1) |
 | 页面滚动生命周期桥 | [page-lifecycle.ts](../hosts/browser/src/page-lifecycle.ts:1) |
 | tabBar 配置与页面栈 | [service.ts](../packages/runtime/src/service.ts:1) |
 | tabBar 宿主 UI | [HostTabBar.jsx](../apps/devtool/src/components/HostTabBar.jsx:1) |

@@ -165,14 +165,14 @@ service 不创建真实 DOM，也不加载 Web 内置组件；render 不执行�
 
 | 宿主 | 通信方式 | 渲染后端 | 控制方式 |
 | --- | --- | --- | --- |
-| `@tiny/host-browser` | MessageChannel / iframe | 浏览器线程与 canvas handoff | `createStandaloneDualThreadHost`、`DevtoolRuntimeClient` |
+| `@tiny/host-browser` | MessageChannel / iframe | 浏览器线程与 canvas handoff | `WasmBrowserHost`、`DevtoolRuntimeClient` |
 | `tests/host` | service + 每页 render 的 MessageChannel | `createGlassRenderTree` | URL `?path=`、`window.__tinyRuntime` |
 | `apps/devtool` | service + 每页 render 的 MessageChannel | `createGlassRenderTree` | `DevtoolRuntimeClient` + React/Redux |
 | runtime 单测 | `createInMemoryTransportPair()` | 测试 renderer / headless tree | 直接持有 service / render 连接 |
 | 原生宿主（未实现） | 需要实现 `Transport` | `createNativeTreeRenderer` 契约 | 复用宿主 API 注册表和控制消息 |
 
 :::callout{title="新宿主从 createTinyRuntime 接进来"}
-只要提供 service transport、每页 render 的 connector、manifest 和初始页面，就能启动同一个引擎。`@tiny/host-browser` 的 `createStandaloneDualThreadHost` 只是浏览器适配器，不是引擎本身。[看完整接入步骤 →](#/hosts)
+只要提供 service transport、每页 render 的 connector、manifest 和初始页面，就能启动同一个引擎。`@tiny/host-browser` 的 `WasmBrowserHost` 只是浏览器适配器，不是引擎本身。[看完整接入步骤 →](#/hosts)
 :::
 
 ## 这些能力都有自动化测试 {kicker="测试覆盖"}

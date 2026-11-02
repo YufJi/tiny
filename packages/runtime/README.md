@@ -98,7 +98,7 @@ reference browser globals.
 | --- | --- |
 | `canvas-bridge` | Canvas 2D/WebGL OffscreenCanvas handoff, legacy CanvasContext |
 | `runtime-port` | `window.postMessage` / iframe port handshake |
-| `standalone-host` | iframe creation, per-page render stacks, page visibility |
+| `wasm-host` | iframe creation, per-page render stacks, page visibility |
 | `page-lifecycle` | Render-frame scroll → page `onPageScroll` / `onReachBottom` bridge |
 | `devtool-client` | Debugger controls, page frames, tabBar state, lifecycle timeline, element tree |
 
