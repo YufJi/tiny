@@ -3,9 +3,8 @@ import UIKit
 
 /// Native iOS host runtime: Rust HostCore + JSCore service + one WKWebView per page.
 ///
-/// This is the migration target for `host.html + createTinyRuntime`. It is
-/// currently exercised by the smoke path; the existing JS shell remains the
-/// production fallback until parity is complete.
+/// This is the native replacement for the removed `host.html +
+/// createTinyRuntime` shell.
 @MainActor
 final class HostCoreRuntime: NSObject, HostCoreActionSink {
   let app: AppInfo
@@ -18,8 +17,11 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   private var storage: [String: Any] = [:]
   private var activePageId: String?
   private var finished = false
+  private var meta: [String: Any] = [:]
+  private var manifest: [String: Any] = [:]
 
   var onReady: ((String) -> Void)?
+  var onUIState: ((HostUIState) -> Void)?
   var onError: ((String) -> Void)?
 
   init(app: AppInfo, generatedRoot: URL, container: UIView) {
@@ -36,6 +38,8 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     guard let manifest = meta["manifest"] as? [String: Any] else {
       throw RuntimeError.missingManifest
     }
+    self.meta = meta
+    self.manifest = manifest
     let systemInfo = HostSystemInfo.current().system
 
     service.onFrame = { [weak self] frame in
@@ -51,6 +55,14 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     }
     service.onLog = { level, message in
       HostDebug.log("native service [\(level)] \(message)")
+    }
+    service.onCanvas = { [weak self] payload in
+      guard let self else { return }
+      let pageId = (try? JSONSerialization.jsonObject(with: Data(payload.utf8)) as? [String: Any])?["pageId"] as? String
+      let target = pageId ?? self.activePageId
+      if let target, let surface = self.surfaces[target] {
+        surface.receiveCanvas(payload: payload)
+      }
     }
 
     try service.start(
@@ -69,6 +81,18 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     let core = try HostCoreSession(config: config, sink: self)
     self.core = core
     try core.start()
+  }
+
+  func back(delta: Int = 1) {
+    try? core?.command(["type": "navigateBack", "delta": delta])
+  }
+
+  func switchTab(index: Int) {
+    try? core?.command(["type": "switchTab", "index": index])
+  }
+
+  func setVisible(_ visible: Bool) {
+    try? core?.command(["type": "setPageVisible", "visible": visible])
   }
 
   func close() {
@@ -150,7 +174,49 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   }
 
   func updateUIState(_ state: [String: Any]) {
-    HostDebug.log("native HostCore state \(state)")
+    guard let details = state["details"] as? [String: Any] else {
+      HostDebug.log("native UIState missing details: \(state)")
+      return
+    }
+    if let uiState = buildUIState(details) {
+      HostDebug.log("native UIState built \(uiState.path) \(uiState.title)")
+      onUIState?(uiState)
+    } else {
+      HostDebug.log("native UIState decode failed: \(details)")
+    }
+  }
+
+  private func buildUIState(_ details: [String: Any]) -> HostUIState? {
+    let stack = details["pageStack"] as? [String] ?? []
+    let currentPath = details["currentPage"] as? String ?? ""
+    let pages = manifest["pages"] as? [[String: Any]] ?? []
+    let page = pages.first { ($0["path"] as? String) == currentPath }
+    let appWindow = ((manifest["app"] as? [String: Any])?["configuration"] as? [String: Any])
+      .flatMap { $0["effective"] as? [String: Any] } ?? [:]
+    let pageConfig = ((page?["configuration"] as? [String: Any])?["effective"] as? [String: Any]) ?? [:]
+    let merged = appWindow.merging(pageConfig) { _, new in new }
+    let title = (merged["navigationBarTitleText"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+      ?? app.title
+    let nav = NavState(
+      custom: (merged["navigationStyle"] as? String) == "custom",
+      backgroundColor: (merged["navigationBarBackgroundColor"] as? String) ?? "#ffffff",
+      textStyle: (merged["navigationBarTextStyle"] as? String) == "white" ? "white" : "black"
+    )
+    var tabBar: TabBarState?
+    if let raw = details["tabBar"],
+       JSONSerialization.isValidJSONObject(raw),
+       let data = try? JSONSerialization.data(withJSONObject: raw) {
+      tabBar = try? JSONDecoder().decode(TabBarState.self, from: data)
+    }
+    return HostUIState(
+      appId: app.id,
+      pageId: stack.last,
+      path: currentPath,
+      title: title,
+      canBack: stack.count > 1,
+      nav: nav,
+      tabBar: tabBar
+    )
   }
 
   func platformCall(

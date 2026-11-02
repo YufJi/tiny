@@ -280,4 +280,17 @@ export function installRemoteCanvas(): void {
     if (data?.type !== 'tiny-ios-canvas' || !data.command) return
     enqueue(data.command)
   })
+  const nativeWindow = window as Window & {
+    __tinyNativeCanvasCommand?: (payload: string | Record<string, unknown>) => void
+  }
+  nativeWindow.__tinyNativeCanvasCommand = (payload) => {
+    try {
+      const command = typeof payload === 'string'
+        ? JSON.parse(payload) as CanvasCommand
+        : payload as CanvasCommand
+      enqueue(command)
+    } catch (error) {
+      console.warn('[tiny native canvas] invalid command', error)
+    }
+  }
 }

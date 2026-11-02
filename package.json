@@ -31,7 +31,6 @@
     "ios:assets": "node ios/scripts/build.mjs",
     "ios:host-core": "node ios/scripts/build-host-core-ffi.mjs",
     "ios:smoke:jsc": "node ios/scripts/smoke-service.mjs demo",
-    "ios:smoke:web": "node ios/scripts/smoke-web.mjs demo",
     "ios:sim": "node ios/scripts/sim.mjs"
   },
   "author": "YufJi",

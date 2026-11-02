@@ -87,7 +87,6 @@ async function buildPackages() {
   run('pnpm', ['--filter', '@tiny/host-ios', 'build'])
 
   for (const file of [
-    path.join(webDist, 'host.html'),
     path.join(webDist, 'render.html'),
     path.join(serviceDist, 'service-engine.js'),
   ]) {

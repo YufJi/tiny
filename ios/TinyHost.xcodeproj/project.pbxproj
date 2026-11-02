@@ -11,10 +11,8 @@
 		A10000000000000000000021 /* LauncherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* LauncherView.swift */; };
 		A10000000000000000000022 /* MiniProgramView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* MiniProgramView.swift */; };
 		A10000000000000000000023 /* MiniProgramSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* MiniProgramSession.swift */; };
-		A10000000000000000000024 /* TinyWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* TinyWebView.swift */; };
 		A10000000000000000000025 /* TinySchemeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000015 /* TinySchemeHandler.swift */; };
 		A10000000000000000000026 /* ServiceEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016 /* ServiceEngine.swift */; };
-		A10000000000000000000027 /* FrameRelay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000017 /* FrameRelay.swift */; };
 		A10000000000000000000028 /* HostModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000018 /* HostModels.swift */; };
 		A10000000000000000000029 /* Generated in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000019 /* Generated */; };
 		A1000000000000000000002D /* HostCoreAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002C /* HostCoreAdapter.swift */; };
@@ -23,6 +21,7 @@
 		A10000000000000000000036 /* NativeRenderSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000035 /* NativeRenderSurface.swift */; };
 		A10000000000000000000038 /* NativeRenderSurfaceSmoke.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000037 /* NativeRenderSurfaceSmoke.swift */; };
 		A1000000000000000000003A /* HostCoreRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000039 /* HostCoreRuntime.swift */; };
+		A1000000000000000000003C /* NativeHostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003B /* NativeHostView.swift */; };
 		A1000000000000000000002B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002A /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -32,10 +31,8 @@
 		A10000000000000000000011 /* LauncherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LauncherView.swift; sourceTree = "<group>"; };
 		A10000000000000000000012 /* MiniProgramView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniProgramView.swift; sourceTree = "<group>"; };
 		A10000000000000000000013 /* MiniProgramSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniProgramSession.swift; sourceTree = "<group>"; };
-		A10000000000000000000014 /* TinyWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TinyWebView.swift; sourceTree = "<group>"; };
 		A10000000000000000000015 /* TinySchemeHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TinySchemeHandler.swift; sourceTree = "<group>"; };
 		A10000000000000000000016 /* ServiceEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceEngine.swift; sourceTree = "<group>"; };
-		A10000000000000000000017 /* FrameRelay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameRelay.swift; sourceTree = "<group>"; };
 		A10000000000000000000018 /* HostModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostModels.swift; sourceTree = "<group>"; };
 		A10000000000000000000019 /* Generated */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Generated; sourceTree = "<group>"; };
 		A1000000000000000000002A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -45,6 +42,7 @@
 		A10000000000000000000035 /* NativeRenderSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeRenderSurface.swift; sourceTree = "<group>"; };
 		A10000000000000000000037 /* NativeRenderSurfaceSmoke.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeRenderSurfaceSmoke.swift; sourceTree = "<group>"; };
 		A10000000000000000000039 /* HostCoreRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostCoreRuntime.swift; sourceTree = "<group>"; };
+		A1000000000000000000003B /* NativeHostView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeHostView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,16 +81,15 @@
 				A10000000000000000000011 /* LauncherView.swift */,
 				A10000000000000000000012 /* MiniProgramView.swift */,
 				A10000000000000000000013 /* MiniProgramSession.swift */,
-				A10000000000000000000014 /* TinyWebView.swift */,
 				A10000000000000000000015 /* TinySchemeHandler.swift */,
 				A10000000000000000000016 /* ServiceEngine.swift */,
-				A10000000000000000000017 /* FrameRelay.swift */,
 				A10000000000000000000018 /* HostModels.swift */,
 				A1000000000000000000002C /* HostCoreAdapter.swift */,
 				A10000000000000000000033 /* HostCoreSession.swift */,
 				A10000000000000000000035 /* NativeRenderSurface.swift */,
 				A10000000000000000000037 /* NativeRenderSurfaceSmoke.swift */,
 				A10000000000000000000039 /* HostCoreRuntime.swift */,
+				A1000000000000000000003B /* NativeHostView.swift */,
 				A1000000000000000000002A /* Assets.xcassets */,
 			);
 			path = TinyHost;
@@ -181,16 +178,15 @@
 				A10000000000000000000021 /* LauncherView.swift in Sources */,
 				A10000000000000000000022 /* MiniProgramView.swift in Sources */,
 				A10000000000000000000023 /* MiniProgramSession.swift in Sources */,
-				A10000000000000000000024 /* TinyWebView.swift in Sources */,
 				A10000000000000000000025 /* TinySchemeHandler.swift in Sources */,
 				A10000000000000000000026 /* ServiceEngine.swift in Sources */,
-				A10000000000000000000027 /* FrameRelay.swift in Sources */,
 				A10000000000000000000028 /* HostModels.swift in Sources */,
 				A1000000000000000000002D /* HostCoreAdapter.swift in Sources */,
 				A10000000000000000000034 /* HostCoreSession.swift in Sources */,
 				A10000000000000000000036 /* NativeRenderSurface.swift in Sources */,
 				A10000000000000000000038 /* NativeRenderSurfaceSmoke.swift in Sources */,
 				A1000000000000000000003A /* HostCoreRuntime.swift in Sources */,
+				A1000000000000000000003C /* NativeHostView.swift in Sources */,
 				A10000000000000000000031 /* tiny_host_core_ffi.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

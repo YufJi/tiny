@@ -88,6 +88,19 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
     }
   }
 
+  func receiveCanvas(payload: String) {
+    webView.callAsyncJavaScript(
+      "window.__tinyNativeCanvasCommand(payload)",
+      arguments: ["payload": payload],
+      in: nil,
+      in: .page
+    ) { result in
+      if case .failure(let error) = result {
+        print("[tiny native canvas] command delivery failed: \(error.localizedDescription)")
+      }
+    }
+  }
+
   func setVisible(_ visible: Bool) {
     webView.isHidden = !visible
     webView.alpha = visible ? 1 : 0

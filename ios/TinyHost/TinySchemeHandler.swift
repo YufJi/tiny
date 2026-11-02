@@ -32,7 +32,7 @@ final class TinySchemeHandler: NSObject, WKURLSchemeHandler {
       relative.removeFirst()
     }
     if relative.isEmpty {
-      relative = "www/host.html"
+      relative = "www/render.html"
     }
     if relative.hasSuffix("/") {
       relative += "index.html"
