@@ -76,7 +76,7 @@ apps/devtool (可选) : DevtoolRuntimeClient + React 面板（多 iframe 页面�
 | `tests/apps/vant` | Vant Weapp 组件库示例（`miniprogram_npm` 预构建包） |
 | `tests/apps/weui` | WeUI 官方样式库示例（54 个页面，无自定义组件） |
 
-`tests/host` 与 `apps/devtool` 都基于 `@tiny/host-browser` 的 `createStandaloneDualThreadHost`，浏览器宿主固定为每页一个 render iframe。前者是无 UI 的单应用测试宿主；后者通过 `DevtoolRuntimeClient` 提供测试应用列表、最近 3 个应用保活/LRU、面板、诊断、生命周期时间线、元素树和内置 tabBar。每个应用页面栈默认最多 10 层，宿主可通过 `maxPageStack` 配置。
+`tests/host` 与 `apps/devtool` 都基于 `@tiny/host-browser` 的 `WasmBrowserHost`（Rust HostCore + wasm），浏览器宿主固定为每页一个 render iframe。前者是无 UI 的单应用测试宿主；后者通过 `DevtoolRuntimeClient` 提供测试应用列表、最近 3 个应用保活/LRU、面板、诊断、生命周期时间线、元素树和内置 tabBar。每个应用页面栈默认最多 10 层，宿主可通过 `maxPageStack` 配置。
 
 ## 快速开始
 

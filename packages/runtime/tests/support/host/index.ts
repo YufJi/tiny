@@ -1,14 +1,14 @@
 import { BridgeConnection } from '@tiny/bridge'
 import { DIAGNOSTIC_CODES } from '@tiny/manifest'
-import { CANVAS_CONTROL, QUERY_CONTROL, RUNTIME_CONTROL, TREE_PROTOCOL } from '../tree/protocol'
-import type { RuntimeHostOptions } from '../types'
+import { CANVAS_CONTROL, QUERY_CONTROL, RUNTIME_CONTROL, TREE_PROTOCOL } from '../../../src/tree/protocol'
+import type { RuntimeHostOptions } from '../../../src/types'
 import { createHostApiRegistry, registerHostApiHandlers } from './api'
 import type { HostApiRegistry } from './api'
 import { createHostDiagnosticStore, registerHostDiagnosticHandlers } from './diagnostics'
-import type { RuntimeDiagnostic } from '../diagnostics'
-import type { RenderHostAction } from '../tree/protocol'
+import type { RuntimeDiagnostic } from '../../../src/diagnostics'
+import type { RenderHostAction } from '../../../src/tree/protocol'
 
-export type TinyRuntimeHost = {
+export type TestRuntimeHost = {
   service: BridgeConnection
   bootstrap(): Promise<{ service: unknown; render: unknown }>
   close(): Promise<void>
@@ -63,7 +63,14 @@ const RENDER_PAGE_EVENTS = ['scroll', 'reachBottom', 'pullDownRefresh'] as const
  * WebView stack. All page-scoped messages are routed through the page ID; there
  * is no second "single render connection" mode.
  */
-export function createTinyRuntime(options: RuntimeHostOptions): TinyRuntimeHost {
+/**
+ * Test-only in-memory host adapter.
+ *
+ * Production hosts use Rust HostCore (`WasmBrowserHost` / iOS
+ * `HostCoreRuntime`). This adapter is not exported by @tiny/runtime and must
+ * never be used by a shipped host.
+ */
+export function createTestHost(options: RuntimeHostOptions): TestRuntimeHost {
   const service = new BridgeConnection({
     localRole: 'host',
     peerRole: 'service',

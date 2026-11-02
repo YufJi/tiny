@@ -8,7 +8,6 @@ orchestration, and the devtool client.
 
 | API | Purpose |
 | --- | --- |
-| `createTinyRuntime` | Host-side protocol bridge over one render transport or a per-page `renderConnector`; `maxPageStack` defaults to 10 |
 | `bootServiceThread` | Service-thread entry: App/Page/Component registry, glass-easel logic tree, and API host |
 | `bootTreeThread` | Render-thread entry: consumes tree flow/patch/event and drives a host `TreeRenderer` |
 
@@ -17,31 +16,16 @@ lives in `@tiny/host-browser`:
 
 | API | Purpose |
 | --- | --- |
-| `createStandaloneDualThreadHost` | Creates a service iframe and one render iframe per page from a manifest |
+| `WasmBrowserHost` | Rust HostCore adapter: service iframe and one render iframe per page |
 | `DevtoolRuntimeClient` | Debugger adapter: iframe lifecycle, controls, page/lifecycle projection, element tree |
 
 Both `tests/host` and `apps/devtool` use the browser host's fixed per-page render
-topology through `createStandaloneDualThreadHost` / `DevtoolRuntimeClient`.
+topology through `WasmBrowserHost` / `DevtoolRuntimeClient`.
 
 ## Usage
 
-```ts
-import { createTinyRuntime } from '@tiny/runtime'
-
-const host = createTinyRuntime({
-  serviceTransport,
-  // One render thread per page, created by the host. The browser host passes
-  // iframe frames; in-memory tests pass a connector that boots a headless tree.
-  renderConnector: { connect, activate, disconnect, setAppVisible },
-  manifest,
-  initialPath: 'pages/todos/todos',
-})
-
-await host.bootstrap()
-```
-
 A browser host does not import iframe helpers from this package. Use
-`createStandaloneDualThreadHost` from `@tiny/host-browser` instead.
+`WasmBrowserHost` from `@tiny/host-browser` instead.
 
 ## Modules
 
@@ -64,7 +48,6 @@ contract.
 
 | Consumer | Entry | Main types |
 | --- | --- | --- |
-| Host shell | `createTinyRuntime` | `TinyRuntimeHost`, `RuntimeHostOptions`, `RenderThreadConnector`, `HostApiHandler(s)` |
 | Service iframe | `bootServiceThread` | `ServiceThreadOptions`, `ServiceCanvasAdapter`, `CanvasNode*` |
 | Render iframe (web) | `bootTreeThread` | `TreeThreadOptions`, `TreeRenderer`, `TreeEventPayload` |
 | Render host (native) | `createNativeTreeRenderer` | `NativeTreeHost`, `NativeNodeSpec`, `NativeTreeRenderer` |
@@ -98,7 +81,7 @@ reference browser globals.
 | --- | --- |
 | `canvas-bridge` | Canvas 2D/WebGL OffscreenCanvas handoff, legacy CanvasContext |
 | `runtime-port` | `window.postMessage` / iframe port handshake |
-| `standalone-host` | iframe creation, per-page render stacks, page visibility |
+| `wasm-host` | iframe creation, per-page render stacks, page visibility |
 | `page-lifecycle` | Render-frame scroll → page `onPageScroll` / `onReachBottom` bridge |
 | `devtool-client` | Debugger controls, page frames, tabBar state, lifecycle timeline, element tree |
 

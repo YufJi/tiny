@@ -335,7 +335,7 @@ call/control 用 onCall/onControl，事件用 onEvent + sendEvent。缺少 handl
 :::
 
 :::card{tag="03" title="需要转发就改宿主"}
-service 和 render 不直连。任何跨线程消息都必须在 `createTinyRuntime` 里显式转发。
+service 和 render 不直连。任何跨线程消息都必须由 HostCore 显式路由和转发。
 :::
 
 :::card{tag="04" title="补协议测试"}

@@ -1,6 +1,6 @@
 export { TINY_ENGINE_NAMING } from '@tiny/manifest'
 
-export { DIAGNOSTIC_CODES } from './diagnostics'
+export { DIAGNOSTIC_CODES, normalizeTransportDiagnostic } from './diagnostics'
 export type {
   RuntimeDiagnostic,
   RuntimeDiagnosticSeverity,
@@ -41,9 +41,6 @@ export type {
 } from './types'
 
 export * from './tree'
-
-export { createTinyRuntime } from './host'
-export type { TinyRuntimeHost } from './host'
 
 export { bootServiceThread } from './service'
 

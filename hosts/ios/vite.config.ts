@@ -48,7 +48,6 @@ export default defineConfig(({ mode }) => {
       sourcemap: false,
       rollupOptions: {
         input: {
-          host: path.join(packageRoot, 'src/web/host.html'),
           render: path.join(packageRoot, 'src/web/render.html'),
         },
       },

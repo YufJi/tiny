@@ -1,6 +1,7 @@
 import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
 import { DevtoolRuntimeClient } from '@tiny/host-browser';
+import { createWasmHostCoreFactory } from './wasmHostCore';
 import './runtimePanel.css';
 import {
   APPS_REGISTRY_URL,
@@ -284,8 +285,11 @@ class RuntimePanel extends PureComponent {
         window.location.href,
       ).href;
       const surface = this.createSurface(app.id);
+      const wasmCoreFactory = await createWasmHostCoreFactory();
       const client = new DevtoolRuntimeClient({
+        appId: app.id,
         manifest,
+        wasmCoreFactory,
         serviceUrl: threadUrl('service.html'),
         renderUrl: threadUrl('render.html'),
         initialPath,

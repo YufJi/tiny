@@ -2,7 +2,7 @@ import { afterAll, describe, expect, test } from 'vitest'
 import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
-import { createTinyRuntime } from '../src/host'
+import { createTestHost } from './support/host'
 import { TREE_PROTOCOL } from '../src/tree/protocol'
 import { createHarnessRenderConnector } from './helpers/render-connector'
 import { bootServiceThread, lastLogicTree } from './helpers/split-service'
@@ -105,7 +105,7 @@ describe('WXS event descriptor (ins)', () => {
       artifacts: { templates: createTemplates() },
       initialPath: PAGE_PATH,
     })
-    const host = createTinyRuntime({
+    const host = createTestHost({
       serviceTransport: hostService,
       renderConnector: connector,
       manifest,

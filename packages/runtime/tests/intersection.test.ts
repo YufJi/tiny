@@ -6,7 +6,7 @@ import {
   type PageArtifact,
 } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
-import { createTinyRuntime } from '../src/host'
+import { createTestHost } from './support/host'
 import { createHarnessRenderConnector } from './helpers/render-connector'
 import { bootServiceThread } from './helpers/split-service'
 
@@ -88,7 +88,7 @@ describe('intersection observers', () => {
         },
       },
     })
-    const host = createTinyRuntime({
+    const host = createTestHost({
       serviceTransport: hostServiceTransport,
       renderConnector,
       manifest,
@@ -155,7 +155,7 @@ describe('intersection observers', () => {
         },
       },
     })
-    const host = createTinyRuntime({
+    const host = createTestHost({
       serviceTransport: hostServiceTransport,
       renderConnector,
       manifest,

@@ -1,0 +1,19 @@
+{
+  "name": "@tiny/host-core-wasm",
+  "version": "0.1.0",
+  "private": true,
+  "description": "WebAssembly bindings for the shared Tiny HostCore",
+  "main": "./pkg/tiny_host_core_wasm.js",
+  "types": "./pkg/tiny_host_core_wasm.d.ts",
+  "exports": {
+    ".": {
+      "types": "./pkg/tiny_host_core_wasm.d.ts",
+      "import": "./pkg/tiny_host_core_wasm.js",
+      "default": "./pkg/tiny_host_core_wasm.js"
+    }
+  },
+  "scripts": {
+    "build": "wasm-pack build . --release --target web --out-dir pkg --no-opt --mode no-install",
+    "dev": "wasm-pack build . --dev --target web --out-dir pkg --no-opt --mode no-install"
+  }
+}

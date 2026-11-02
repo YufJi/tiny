@@ -4,7 +4,7 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { TREE_PROTOCOL } from '../src/tree/protocol'
-import { createTinyRuntime } from '../src/host'
+import { createTestHost } from './support/host'
 import { createHarnessRenderConnector } from './helpers/render-connector'
 import { bootServiceThread, lastLogicTree } from './helpers/split-service'
 
@@ -70,7 +70,7 @@ describe('page and app lifecycle hooks', () => {
       artifacts: { templates: createTemplateRegistry() },
       initialPath: PAGE_PATH,
     })
-    const host = createTinyRuntime({
+    const host = createTestHost({
       serviceTransport: hostServiceTransport,
       renderConnector,
       manifest,

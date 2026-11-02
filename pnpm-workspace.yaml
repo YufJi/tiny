@@ -4,3 +4,4 @@ packages:
   - 'tools/*'
   - 'hosts/*'
   - 'website'
+  - 'native/host-core-wasm'

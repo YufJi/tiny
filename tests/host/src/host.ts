@@ -1,10 +1,13 @@
-import { createStandaloneDualThreadHost } from '@tiny/host-browser'
+import init, { WasmHostCore } from '@tiny/host-core-wasm'
+import { WasmBrowserHost } from '@tiny/host-browser'
 import manifest from '../generated/manifest.json'
 
 const search = new URLSearchParams(window.location.search)
 const initialPath = search.get('path') || manifest.pages[0]?.path || ''
 
-const runtime = await createStandaloneDualThreadHost({
+await init()
+const wasmHost = new WasmBrowserHost({
+  appId: 'test-host',
   manifest,
   serviceUrl: '/service.html',
   renderUrl: '/render.html',
@@ -15,8 +18,18 @@ const runtime = await createStandaloneDualThreadHost({
     windowWidth: window.innerWidth,
     windowHeight: window.innerHeight,
   },
+}, async (config) => {
+  const core = new WasmHostCore(config)
+  return {
+    start: (now) => core.start(now),
+    handle_event: (event, now) => core.handle_event(event, now),
+    set_app_visible: (visible) => core.set_app_visible(visible),
+    page_stack_json: () => core.page_stack_json(),
+    diagnostics_json: () => core.diagnostics_json(),
+  }
 })
 
-;(window as unknown as Record<string, unknown>).__tinyRuntime = runtime
-
-await runtime.host.bootstrap()
+await wasmHost.launch()
+;(window as unknown as Record<string, unknown>).__tinyRuntime = {
+  host: wasmHost,
+}

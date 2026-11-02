@@ -36,7 +36,7 @@ struct MiniProgramView: View {
         if let tabBar = session.uiState?.tabBar, tabBar.position == "top" {
           tabBarView(tabBar)
         }
-        TinyWebView(session: session)
+        NativeHostView(session: session)
         if let tabBar = session.uiState?.tabBar, tabBar.position != "top" {
           tabBarView(tabBar)
         }

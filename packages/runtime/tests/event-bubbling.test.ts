@@ -2,7 +2,7 @@ import { afterAll, describe, expect, test } from 'vitest'
 import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
-import { createTinyRuntime } from '../src/host'
+import { createTestHost } from './support/host'
 import { TREE_PROTOCOL, type RenderEventGeometry } from '../src/tree/protocol'
 import { createHarnessRenderConnector } from './helpers/render-connector'
 import { bootServiceThread, lastLogicTree } from './helpers/split-service'
@@ -64,7 +64,7 @@ async function boot(body: string, pageOptions: Record<string, unknown>) {
     artifacts: { templates: createTemplates(body) },
     initialPath: PAGE_PATH,
   })
-  const host = createTinyRuntime({
+  const host = createTestHost({
     serviceTransport: hostService,
     renderConnector,
     manifest,

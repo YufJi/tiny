@@ -3,11 +3,11 @@ title: '引擎不依赖环境，'
 highlight: '运行环境由宿主提供'
 eyebrow: '宿主适配'
 lede: >-
-  packages/runtime 是宿主无关的内核：service 跑逻辑树，宿主提供渲染树。@tiny/host-browser 负责浏览器线程、端口、canvas handoff 和调试器客户端，@tiny/host-web-components 提供 Web 渲染树与 23 个内置组件；iOS 侧由 @tiny/host-ios 提供 WKWebView host/render 产物，原生 SwiftUI 壳在 ios/。createTinyRuntime 需要 service transport、render connector、manifest 和初始页面；createStandaloneDualThreadHost 负责创建 iframe、转移端口、等待就绪并完成握手。
+  packages/runtime 是宿主无关的内核：service 跑逻辑树，宿主提供渲染树。@tiny/host-browser 负责浏览器线程、端口、canvas handoff 和调试器客户端，@tiny/host-web-components 提供 Web 渲染树与 23 个内置组件；iOS 侧由 @tiny/host-ios 提供 JSCore engine 与每页 native WKWebView render 产物，HostCoreRuntime/SwiftUI 壳在 ios/。浏览器侧由 WasmBrowserHost 创建 iframe、转移端口并驱动 Rust HostCore；iOS 侧由 HostCoreRuntime 经 UniFFI 驱动同一个 HostCore，每页一个 WKWebView。
 stats:
   - ['3', '宿主包']
   - ['1', 'service iframe']
-  - ['每页', 'render iframe']
+  - ['每页', 'render surface']
   - ['5', '注入能力']
 pills:
   - ['内核不依赖宿主', 'good']
@@ -26,7 +26,7 @@ order: 6
 
 | 层 | 入口 | 环境假设 | 职责 |
 | --- | --- | --- | --- |
-| 内核编排 | `createTinyRuntime(options)` | 不假设有 DOM | 两个 BridgeConnection、HostApiRegistry、诊断仓库和启动顺序 |
+| 内核编排 | `WasmBrowserHost` / `HostCoreRuntime` | 适配器持有 WebView/iframe；HostCore 不依赖 DOM | 两个 BridgeConnection、HostApiRegistry、诊断仓库和启动顺序 |
 | 线程启动 | `bootBrowserServiceEntry` / `bootBrowserRenderEntry` + `createGlassRenderEntry` | service 需要 JS 全局；render 需要 `TreeRenderer` | service 加载 templates 并创建逻辑树；render 消费 tree flow/patch；canvas 和资源由宿主注入 |
 | 浏览器适配 | `@tiny/host-browser` | window、iframe、MessageChannel、document | iframe、端口、DOM canvas、资源 URL、DevtoolRuntimeClient |
 | 渲染树 | `@tiny/host-web-components` | DOM 和 CSS | `createGlassRenderTree`、23 个 tiny-* 内置组件、共享 behaviors 和基础 CSS |
@@ -37,7 +37,7 @@ order: 6
               |
               v
 @tiny/host-browser                浏览器环境适配
-  createStandaloneDualThreadHost
+  WasmBrowserHost
   bootBrowserServiceEntry / bootBrowserRenderEntry
   canvas handoff / runtime-port
   DevtoolRuntimeClient
@@ -46,8 +46,8 @@ order: 6
   createGlassRenderTree（tiny-* + 基础 CSS）
   createGlassRenderEntry（渲染树工厂）
               |
-              v  createTinyRuntime
-createTinyRuntime                 内核编排
+              v  WasmBrowserHost / HostCore
+Rust HostCore + platform adapter  内核编排
               |
               v  boot*Thread(transport, manifest, canvas, ...)
 service iframe / render iframe
@@ -55,8 +55,8 @@ service iframe / render iframe
 原生宿主替换的是浏览器适配层，不是 runtime 语义。
 ```
 
-:::callout{title="standalone 只是其中一种入口"}
-runtime 单测不使用 iframe：它通过 `createInMemoryTransportPair()` 启动两个线程，再用 `createTinyRuntime` 组装宿主。 可替换性不是口号，现有测试一直在这么做。
+:::callout{title="浏览器只是其中一种适配"}
+浏览器验收使用 `WasmBrowserHost`；runtime 单测通过内存 transport 启动 service/render 线程，并用 `tests/support` 下的 test-only host 驱动。生产宿主由 HostCore + 平台适配器提供。
 :::
 
 ## 内核不引用浏览器 API {#purity kicker="内核约束"}
@@ -130,8 +130,9 @@ iframe 超过 15 秒没有发 ready 会直接 reject，不会重试。产物很�
 
 ```ts
 // 宿主侧（tests/host/src/host.ts）
-const runtime = await createStandaloneDualThreadHost({
+const runtime = new WasmBrowserHost({
   manifest,
+  appId: 'test-host',
   serviceUrl: '/service.html',
   renderUrl: '/render.html',
   initialPath: 'pages/todos/todos',
@@ -141,9 +142,9 @@ const runtime = await createStandaloneDualThreadHost({
     windowWidth: innerWidth,
     windowHeight: innerHeight,
   },
-})
+}, wasmCoreFactory)
 window.__tinyRuntime = runtime
-await runtime.host.bootstrap()
+await runtime.launch()
 
 // service 线程：加载模板并创建逻辑树
 bootBrowserServiceEntry({
@@ -278,7 +279,7 @@ service 通过 `createLegacyCanvasContext` / `acquireCanvasNode` 拿到同步 ca
 - 创建 MessageChannel 和 iframe
 - service iframe 隐藏，render iframe 可见
 - 等待 ready 消息，最多 15 秒
-- 转移 port2，创建 createTinyRuntime
+- 转移 port2，驱动 WasmBrowserHost / HostCore
 - 完成两条连接的握手
 - 提供 canvas、资源和 devtool client 适配器
 - 返回 host 和 iframe 句柄，并提供清理方法
@@ -369,7 +370,7 @@ devtool 的 service/render 入口用 `new Function('url', 'return import(url)')`
 | tests/host | 1 个 service + 每页 1 个 render iframe（Vite） | `createGlassRenderTree` | OffscreenCanvas handoff + /generated 资源 | URL ?path + window.__tinyRuntime |
 | apps/devtool | 1 个 service + 每页一个 render iframe（Vite） | `createGlassRenderTree` | OffscreenCanvas handoff + 相对 URL | DevtoolRuntimeClient + React/Redux |
 | runtime 单测 | 同进程 | headless TreeRenderer | 无 canvas，manifest 内联 | 直接持有 BridgeConnection |
-| iOS 宿主（ios + hosts/ios） | JavaScriptCore service + 1 个 WKWebView（host.html + 每页 render.html iframe） | `createGlassRenderTree`（iframe） | UserDefaults 存储；Canvas 2D 走 service 录制 + render 回放，WebGL 未接 | SwiftUI Launcher / 原生导航栏 + tabBar |
+| iOS 宿主（ios + hosts/ios） | JavaScriptCore service + 每页一个 WKWebView（`render.html`，无 iframe） | `createGlassRenderTree`（native surface） | UserDefaults 存储；Canvas 2D 走 service 录制 + native render 回放，WebGL 未接 | SwiftUI Launcher / 原生导航栏 + tabBar / UniFFI HostCore |
 
 ::::split
 :::card{title="共享的部分"}
@@ -403,13 +404,13 @@ devtool 的 service/render 入口用 `new Function('url', 'return import(url)')`
 | 提供宿主信息 | systemInfo、storage 初始快照；设备相关的同步 API 走 apiExtensions，网络和文件等跨线程 API 走 apiHandlers。 | |
 | 实现导航和 tree.ready | navigate.to/back/switchTab 必须由宿主先调用 service、再创建/激活 render root；render 挂载后发 tree.ready，service 发送 tree.flow，最后 page.ready。 | |
 | 接入诊断和控制 | 收集 diagnostic.*；按需暴露 inspectTree、page.show/hide 和关闭方法。 | |
-| 定义关闭语义 | 关闭两条连接、释放线程、卸载页面。当前 host.close 只关连接，不自动移除 iframe；standalone 的 dispose 会负责清理。 | |
+| 定义关闭语义 | 关闭两条连接、释放线程、卸载页面。HostCore 负责 Bridge 会话，页面 WebView/iframe 和容器由平台适配器清理。 | |
 | 跑真实测试小程序 | 至少覆盖 demo、mini、Taro 3 中的一条；否则只能证明“能启动”，不能证明“能跑应用”。 | |
 | 跑内核约束检查 | 确认新宿主没有把浏览器或平台依赖反向塞回 packages/runtime。 | pnpm check:runtime-purity |
 :::
 
 :::callout{title="iOS 宿主已落地，canvas 仍未接入" tone="warn"}
-原生工程在 `ios/`，前端标准包在 `hosts/ios`（`src/service` + `src/web`）；两者已经用 JavaScriptCore + WKWebView 跑通 tests/apps 下全部 7 个 fixture（demo、mini、todo、wechat-demo、echarts、vant、weui）。service 帧经原生中继，render 页在同一个 WKWebView 内按页 iframe 隔离，SwiftUI 提供 Launcher、导航栏和 tabBar。Canvas 2D 由 service 侧同步录制、render iframe 回放，`measureText` 走原生 CoreText；WebGL 和同步读回仍未接。它也没有采用 `createNativeTreeRenderer`（渲染仍是 WebView），所以 native `TreeRenderer` 仍只有契约。细节见 `ios/README.md`。
+原生工程在 `ios/`，前端标准包在 `hosts/ios`（`src/service` + `src/web`）；`HostCoreRuntime` 通过 UniFFI 驱动 Rust HostCore，JSCore 跑 service，每页一个独立 render WKWebView，没有 host.html/iframe/JS fallback。全部 7 个 fixture 已在模拟器 smoke，并覆盖 native 导航/tab 切换。Canvas 2D 由 service 侧录制、native render 回放，`measureText` 走原生 CoreText；WebGL 和同步读回仍未接。它没有采用 `createNativeTreeRenderer`，所以 native `TreeRenderer` 仍只有契约。细节见 `ios/README.md`。
 :::
 
 ## 当前宿主实现的已知问题 {#risks kicker="风险"}
@@ -426,7 +427,7 @@ service iframe 只是视觉上隐藏，没有 sandbox 属性，仍然可以访�
 :::
 
 :::card{tag="close" tone="warn" title="关闭连接不等于卸载页面"}
-`host.close()` 只关闭连接并 reject 等待中的调用。页面 onUnload、iframe 移除和容器清理由调用方负责；standalone 宿主的 `dispose()` 会统一清理。
+`HostCore.close()` 关闭 Bridge 会话并拒绝等待中的调用；页面 onUnload、WebView/iframe 移除和容器清理由平台适配器显式完成。
 :::
 
 :::card{tag="flow" title="增量统一走 patch"}

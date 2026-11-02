@@ -3,7 +3,7 @@ import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
-import { createTinyRuntime } from '../src/host'
+import { createTestHost } from './support/host'
 import { createHarnessRenderConnector, harnessRenderView } from './helpers/render-connector'
 import { bootServiceThread } from './helpers/split-service'
 
@@ -99,7 +99,7 @@ describe('mini-program custom components', () => {
       initialPath: PAGE_PATH,
     })
     const render = harnessRenderView(renderConnector)
-    const host = createTinyRuntime({
+    const host = createTestHost({
       serviceTransport: hostServiceTransport,
       renderConnector,
       manifest,

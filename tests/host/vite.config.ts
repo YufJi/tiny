@@ -8,6 +8,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@tiny/host-browser': path.resolve(__dirname, '../../hosts/browser/src/index.ts'),
+      '@tiny/host-core-wasm': path.resolve(__dirname, '../../native/host-core-wasm/pkg/tiny_host_core_wasm.js'),
       '@tiny/host-web-components': path.resolve(__dirname, '../../hosts/web-components/src/index.ts'),
       '@tiny/runtime': path.resolve(runtimeRoot, 'src/index.ts'),
       // The runtime imports naming helpers as values; resolve them from source
@@ -18,7 +19,7 @@ export default defineConfig({
   },
   server: {
     fs: {
-      allow: ['.', '../../packages', '../../hosts'],
+      allow: ['.', '../../packages', '../../hosts', '../../native'],
     },
   },
 })

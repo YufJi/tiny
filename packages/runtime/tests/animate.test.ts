@@ -6,7 +6,7 @@ import {
   type PageArtifact,
 } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
-import { createTinyRuntime } from '../src/host'
+import { createTestHost } from './support/host'
 import type { RenderAnimationRequest, RenderClearAnimationRequest } from '../src/tree/protocol'
 import { createHarnessRenderConnector } from './helpers/render-connector'
 import { bootServiceThread } from './helpers/split-service'
@@ -80,7 +80,7 @@ async function boot(options: {
       clearAnimation: (request) => options.clears.push(request),
     },
   })
-  const host = createTinyRuntime({
+  const host = createTestHost({
     serviceTransport: hostServiceTransport,
     renderConnector,
     manifest,

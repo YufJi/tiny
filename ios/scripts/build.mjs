@@ -77,12 +77,16 @@ function run(command, args) {
   }
 }
 
+async function buildHostCoreFfi() {
+  console.log('Building UniFFI HostCore for the iOS simulator...')
+  run('node', [path.join(iosDir, 'scripts/build-host-core-ffi.mjs')])
+}
+
 async function buildPackages() {
   console.log('Building @tiny/host-ios (service engine + WebView entries)...')
   run('pnpm', ['--filter', '@tiny/host-ios', 'build'])
 
   for (const file of [
-    path.join(webDist, 'host.html'),
     path.join(webDist, 'render.html'),
     path.join(serviceDist, 'service-engine.js'),
   ]) {
@@ -189,6 +193,7 @@ async function buildApp(appDef) {
 console.log('Assembling iOS host artifacts...')
 if (!skipPackages) {
   await buildPackages()
+  await buildHostCoreFfi()
 } else {
   console.log('  reusing package dist outputs')
 }

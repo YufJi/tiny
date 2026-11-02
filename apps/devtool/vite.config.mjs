@@ -124,6 +124,7 @@ export default defineConfig(({ command, isPreview }) => {
     plugins: [copyRuntimeArtifacts(), serveRuntimeArtifacts(), brandAssetFile()],
     server: {
       port: Number(process.env.TINY_DEVTOOL_PORT || 8080),
+      fs: { allow: [workspaceRoot] },
       hot: true,
       // `scripts/dev-devtool.mjs` rewrites the compiled fixtures on every
       // source edit. They are served on demand, so watching them would only

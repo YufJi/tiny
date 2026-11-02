@@ -25,7 +25,7 @@ order: 2
 | manifest | 定义产物类型、schemaVersion 和解析后的命名配置 | 具体实现 | `packages/manifest` |
 | runtime | App/Page/Component 语义、页面栈、setData、observer、relations、逻辑树、virtual node diff、tree 协议和 canvas 协议 | 真实 DOM、宿主内置组件实现、宿主 API、界面 | `packages/runtime` |
 | bridge | 消息信封和帧、transport、调用与回复、批处理、超时和 JSON 校验 | wx API 语义、渲染指令、页面状态 | `packages/bridge` |
-| host | 线程和 transport、启动流程、宿主 API、渲染树、内置组件、canvas、资源 URL、诊断收集 | 页面栈、业务 data、observer、relations 和事件回调 | `hosts/browser` · `hosts/web-components` · `apps/devtool` · `tests/host` · 未来原生宿主 |
+| host | 线程和 transport、启动流程、宿主 API、渲染树、内置组件、canvas、资源 URL、诊断收集 | 页面栈、业务 data、observer、relations 和事件回调 | `hosts/browser` · `hosts/web-components` · `apps/devtool` · `tests/host` · `ios/` native adapter |
 
 :::callout{title="页面状态只在 service"}
 页面栈、页面 data、组件实例、observer 和 relations 都归 service 线程管；render 线程只有宿主渲染树、DOM 和稳定 node id 的镜像。两棵树没有共享内存，所有同步都经过宿主转发的 tree 协议。
@@ -64,7 +64,7 @@ service thread                              render thread (one root per page)
 
 :::::split
 :::card{tag="packages/runtime" title="不依赖宿主的内核"}
-只依赖 manifest、bridge、glass-easel 和通用工具；入口暴露 host shell、service 线程、tree 协议/渲染器接口和宿主适配类型，不导出浏览器实现。
+只依赖 manifest、bridge、glass-easel 和通用工具；入口暴露 service 线程、tree 协议/渲染器接口和宿主适配类型，不导出浏览器实现。
 
 service 通过 `loadTemplates`、`loadStyle`、`canvas`、`resolveAssetUrl` 接收宿主能力；render 通过 `TreeRenderer` 接收渲染实现，Web 侧由 `@tiny/host-web-components` 提供。
 :::
@@ -99,7 +99,7 @@ packages/runtime/src/index.ts
   runtime-port.ts        iframe 端口握手
   service-entry.ts       service 线程入口（含端口与 canvas 适配）
   render-entry.ts        render 线程入口（端口 + 渲染树工厂）
-  standalone-host.ts     service + 每页 render 的连接
+  wasm-host.ts     service + 每页 render 的连接
   devtool-client.ts      调试器控制接口
 
 # hosts/web-components
@@ -148,9 +148,11 @@ glass-easel 不是完整的小程序 SDK。它负责组件、模板、数据绑�
 | `@tiny/stylesheet-compiler` | manifest · css-units · postcss | WXSS → 普通/低优先级 CSS |
 | `@tiny/cli` | manifest · template-compiler · stylesheet-compiler · esbuild · typescript | 负责生成全部产物 |
 | `@tiny/runtime` | manifest · bridge · wxs-runtime · glass-easel · es-toolkit | 双线程运行时内核，不依赖宿主 |
-| `@tiny/host-browser` | runtime · bridge | 浏览器宿主：iframe、MessageChannel、Canvas、devtool 覆盖层 |
+| `@tiny/host-browser` | runtime · bridge | 浏览器宿主：iframe、MessageChannel、Canvas、devtool 覆盖层；wasm HostCore 适配 |
+| `@tiny/host-core-wasm` | Rust `host-core` · wasm-bindgen | 浏览器 HostCore wasm 绑定，devtool/test host 共用 |
+| `@tiny/host-core-ffi` | Rust `host-core` · UniFFI | iOS Swift HostCore 绑定 |
 | `@tiny/host-web-components` | manifest · css-units · runtime · glass-easel；构建期 template-compiler | 24 个内置组件、AOT 模板和默认 CSS（宿主包） |
-| `@tiny/host-ios` | runtime · bridge · host-browser · host-web-components | iOS 宿主前端：JSCore engine 与 WKWebView host/render 产物；原生壳在 `ios/` |
+| `@tiny/host-ios` | runtime · bridge · host-browser · host-web-components | iOS 宿主前端：JSCore engine 与每页 native render 产物；状态机由 `ios/` 的 UniFFI HostCore 驱动 |
 | `devtool` | host-browser · host-web-components · glass-easel · React · Redux/rematch | 调试器宿主和控制面板 |
 | `@tiny/website` | React | 架构站点，不进入引擎链路 |
 
@@ -164,7 +166,7 @@ hosts       hosts/browser              -> runtime, bridge   (环境适配)
             hosts/web-components       -> runtime, manifest, glass-easel
                                           (内置组件，注入 render)
             hosts/ios                  -> runtime, bridge, host-browser
-                                          (JSCore engine + WKWebView host/render)
+                                          (JSCore engine + native WKWebView render)
 tools       tools/cli                  -> manifest, template-compiler, stylesheet-compiler
 apps        apps/devtool               -> host-browser, host-web-components
 tests       tests/host                 -> host-browser, host-web-components
@@ -180,14 +182,14 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
 
 ## 一次启动要经过哪些步骤 {#boot kicker="启动流程"}
 
-从编译产物到页面可交互，要经过 iframe、两次握手、两次 bootstrap 和一次 page.ready。render 可以共享，也可以每页一个 iframe。
+浏览器路径从编译产物到页面可交互，要经过 iframe、两次握手、两次 bootstrap 和一次 page.ready；iOS 路径把 iframe 换成每页一个 WKWebView，但 Bridge 握手、bootstrap 和 page.ready 的语义相同。
 
 :::sequence
 | title | actor | detail | code |
 | --- | --- | --- | --- |
 | 编译并写出产物 | tools/cli | 读取 app.json，扫描入口，生成 templates.js、styles、scripts 和 service.js，最后写出 schema-v2 manifest.json。诊断信息随 manifest 一起返回。 | compileMiniProgram({ sourceDir, outputDir }) |
 | 创建两条独立通道 | 宿主 | 每个线程各一条 MessageChannel。service 和 render 不共享端口，由宿主分别持有两条 hostTransport。 | createHostMessageChannelPair() × 2 |
-| 创建 iframe，等待线程就绪 | 宿主 | service iframe 被隐藏为 0×0，render iframe 填满容器；每页 render 模式下，每新建一个页面就创建一个 render iframe。宿主等待线程发回 tiny-runtime-port-ready，最多等 15 秒。 | createStandaloneDualThreadHost(...) |
+| 创建 iframe，等待线程就绪 | 宿主 | service iframe 被隐藏为 0×0，render iframe 填满容器；每页 render 模式下，每新建一个页面就创建一个 render iframe。宿主等待线程发回 tiny-runtime-port-ready，最多等 15 秒。 | WasmBrowserHost(...) |
 | 线程装好连接后再通知宿主 | service / render | service 先拿到 manifest、templates 和 styles；render 先在 `prepare` 里装好内置样式，渲染树本身在端口到达后创建。service bundle 在 bootstrap 时通过 loadArtifacts 导入。线程要等 connection 安装完成，才调用 `listenForRuntimePort`，避免端口消息到达时丢帧。 | bootBrowserServiceEntry(...) / bootBrowserRenderEntry(createGlassRenderEntry(...)) |
 | 把 MessagePort 交给线程 | 宿主 | 宿主把 port2 作为 transferable 发给对应 iframe；线程再用 createMessagePortTransport 包装成 Transport。 | postMessage({ type: 'tiny-runtime-port' }, '*', [port]) |
 | 两条连接分别握手 | bridge | 宿主分别发起 runtime.hello，service/render 回复握手信息并发送 runtime.ready。协议版本不一致时连接会直接关闭。 | host.service.handshake() · host.render.handshake() |
@@ -198,7 +200,7 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
 :::
 
 :::callout{title="bootstrap 要由宿主主动调用"}
-`createStandaloneDualThreadHost` 只负责创建线程、完成握手并返回 host，不会自动调用 bootstrap。测试宿主和调试器都需要自己执行 `host.bootstrap()`，否则页面不会被创建。
+`WasmBrowserHost` 负责创建线程、完成握手并驱动 HostCore action；测试宿主和调试器调用 `launch()`，HostCore 会完成 service/render bootstrap。
 :::
 
 ## service 和 render 没有直连 {#channels kicker="消息转发"}
@@ -207,7 +209,8 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
 
 ```text
                      +------------------- host --------------------+
-                     | createTinyRuntime(options)                  |
+                     | WasmBrowserHost(options)                   |
+                     |   Rust HostCore (wasm)                     |
                      |                                             |
                      |  BridgeConnection(host <-> service)         |
                      |  BridgeConnection(host <-> render) × 每页    |
@@ -280,6 +283,33 @@ service 只知道页面栈，render 只知道组件树。一次 `navigateTo` 必
 :::callout{title="canvas 不是第二条通道"}
 唯一的“点对点”是 `OffscreenCanvas` 对象移交：render 在 iframe 内执行 `transferControlToOffscreen()`，宿主把它作为 transferable 转给 service。移交完成后 service 直接持有控制面，绘制不再产生任何跨线程消息——这也是它和普通消息链路的区别。
 :::
+
+## iOS 使用同一个 HostCore，但没有 iframe {#ios-native kicker="原生适配"}
+
+iOS 不是另一套 host 语义，而是同一个 Rust HostCore 的 Swift 适配器：
+
+```text
+SwiftUI MiniProgramSession
+  -> HostCoreRuntime
+      -> RustHostCore (UniFFI)
+      -> ServiceEngine (JavaScriptCore)
+      -> NativeRenderSurface (one WKWebView per page)
+```
+
+| 层 | 浏览器宿主 | iOS 宿主 |
+| --- | --- | --- |
+| Host 编排 | `WasmBrowserHost` + wasm HostCore | `HostCoreRuntime` + UniFFI HostCore |
+| service 容器 | service iframe | `JSContext` |
+| render 容器 | 每页 render iframe | 每页独立 WKWebView |
+| service/render 传输 | MessageChannel | `tinyRender` message handler / `__tinyRenderReceive` |
+| host UI | devtool React 面板 | SwiftUI nav bar / tabBar |
+| storage | 浏览器 storage | UserDefaults |
+| canvas | OffscreenCanvas handoff | service display-list + native render 回放 |
+
+`host.html`、`TinyWebView`、`FrameRelay` 和 `createTinyRuntime` 都已从 iOS 路径删除；
+页面切换由 `HostCoreRuntime` 做 native push/pop 动画，左边缘 `UIScreenEdgePanGestureRecognizer`
+提供交互式右滑返回。
+`RUNTIME_STATE` 仍由 HostCore 投影成 UIState，SwiftUI chrome 只消费投影结果。
 
 ## 状态应该放在哪一层 {#ownership kicker="状态归属"}
 

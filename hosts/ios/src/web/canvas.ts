@@ -3,7 +3,7 @@
  *
  * The service thread records Canvas 2D calls and sends compact display lists
  * through the native relay. This module finds the real <canvas> in the page
- * iframe and replays those calls with the WebKit 2D context.
+ * WKWebView and replays those calls with the WebKit 2D context.
  */
 
 type CanvasCommand = {
@@ -274,10 +274,17 @@ function enqueue(command: CanvasCommand): void {
 export function installRemoteCanvas(): void {
   if (installed) return
   installed = true
-  window.addEventListener('message', (event) => {
-    if (event.source !== window.parent) return
-    const data = event.data as { type?: string; command?: CanvasCommand } | undefined
-    if (data?.type !== 'tiny-ios-canvas' || !data.command) return
-    enqueue(data.command)
-  })
+  const nativeWindow = window as Window & {
+    __tinyNativeCanvasCommand?: (payload: string | Record<string, unknown>) => void
+  }
+  nativeWindow.__tinyNativeCanvasCommand = (payload) => {
+    try {
+      const command = typeof payload === 'string'
+        ? JSON.parse(payload) as CanvasCommand
+        : payload as CanvasCommand
+      enqueue(command)
+    } catch (error) {
+      console.warn('[tiny native canvas] invalid command', error)
+    }
+  }
 }

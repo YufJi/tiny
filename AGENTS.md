@@ -22,6 +22,7 @@ must not depend on tools, apps, hosts, or tests.
 | Apps | `apps/*` | Runnable applications (debugger) |
 | iOS | `ios` | Native SwiftUI/WKWebView/JavaScriptCore app, Xcode project, build/sim scripts |
 | Hosts | `hosts/*` | Browser/environment adapters (not core); `hosts/ios` is a standard Vite package |
+| Native | `native/*` | Shared Rust core (ADR-0009); platform adapters own WebView/JS engine/UI |
 | Tests | `tests/*` | Browser host + mini-program fixtures (not workspace packages) |
 | Website | `website` | React + Vite architecture site (workspace app) |
 
@@ -73,8 +74,9 @@ pnpm dev:wechat-demo         # WeChat demo host on :5174
 pnpm check:runtime-purity    # assert the core runtime has no host globals
 pnpm ios:assets              # build @tiny/host-ios + compile fixtures + assemble ios/Generated
 pnpm ios:sim                 # build and smoke-test TinyHost on an iOS Simulator
+pnpm ios:device              # build, sign, install and launch on a connected iPhone
+pnpm host-core:test          # Rust HostCore protocol/state tests
 pnpm ios:smoke:jsc           # boot the demo engine + app-data in macOS jsc
-pnpm ios:smoke:web           # host/render smoke in Chrome with a mock native bridge
 pnpm lint                    # Biome (bridge only is configured today)
 pnpm site:dev                # build embedded devtool + preview website on :4173
 pnpm site:devtool            # rebuild only website/.cache/site-public/devtool
@@ -160,7 +162,7 @@ records boot state, visible text, page errors and diagnostics per page into
   `TreeRenderer.measure` / `measureCanvas` hooks. Do not hardcode them in
   `packages/runtime`'s service API host.
 - The browser test host and devtool both use `@tiny/host-browser`’s
-  `createStandaloneDualThreadHost`;
+  `WasmBrowserHost` over `@tiny/host-core-wasm`;
   devtool adds `DevtoolRuntimeClient` for lifecycle control, state projection, and
   element-tree inspection. Do not make the test host depend on the devtool app.
 

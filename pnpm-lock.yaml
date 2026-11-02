@@ -26,6 +26,9 @@ importers:
       '@tiny/host-browser':
         specifier: workspace:*
         version: link:../../hosts/browser
+      '@tiny/host-core-wasm':
+        specifier: workspace:*
+        version: link:../../native/host-core-wasm
       '@tiny/host-web-components':
         specifier: workspace:*
         version: link:../../hosts/web-components
@@ -123,6 +126,8 @@ importers:
       vitest:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
+
+  native/host-core-wasm: {}
 
   packages/bridge:
     devDependencies:
