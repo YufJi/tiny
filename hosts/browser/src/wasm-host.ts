@@ -41,6 +41,8 @@ export type WasmHostOptions = {
   apiHandlers?: HostApiHandlers
   onState?: (state: unknown) => void
   onDiagnostic?: (diagnostic: RuntimeDiagnostic) => void
+  /** Wait for the first page to be activated before launch resolves. */
+  waitForReady?: boolean
 }
 
 type CoreAction =
@@ -82,6 +84,12 @@ export class WasmBrowserHost {
   private appVisible = true
   private removeCanvasRelay: (() => void) | undefined
   private disposed = false
+  private ready = false
+  private readyTimer: ReturnType<typeof setTimeout> | undefined
+  private readyWaiters: Array<{
+    resolve: () => void
+    reject: (reason: unknown) => void
+  }> = []
   private commandWaiters = new Map<string, Array<{
     resolve: (value: unknown) => void
     reject: (reason: unknown) => void
@@ -137,7 +145,8 @@ export class WasmBrowserHost {
       [channel.peerPort as unknown as Transferable],
     )
     this.serviceTransport.onFrame((frame) => {
-      this.execute(this.dispatch({ type: 'serviceFrame', frame: JSON.stringify(frame) }))
+      const actions = this.dispatch({ type: 'serviceFrame', frame: JSON.stringify(frame) })
+      this.execute(actions)
     })
     this.removeCanvasRelay = installCanvasHandoffRelay({
       serviceIframe: iframe,
@@ -166,6 +175,7 @@ export class WasmBrowserHost {
     })
     this.core = await this.factory(config)
     this.execute(this.core.start(nowMs()))
+    if (this.options.waitForReady !== false) await this.waitForReady()
   }
 
   async command(command: Record<string, unknown>): Promise<unknown> {
@@ -211,6 +221,11 @@ export class WasmBrowserHost {
     this.serviceIframe = null
     this.serviceTransport = null
     this.core = null
+    if (this.readyTimer !== undefined) clearTimeout(this.readyTimer)
+    this.readyTimer = undefined
+    for (const waiter of this.readyWaiters.splice(0)) {
+      waiter.reject(new Error('WasmBrowserHost disposed'))
+    }
     for (const waiters of this.commandWaiters.values()) {
       for (const waiter of waiters) waiter.reject(new Error('WasmBrowserHost disposed'))
     }
@@ -253,6 +268,7 @@ export class WasmBrowserHost {
           break
         case 'activatePage':
           this.activatePage(action.pageId)
+          this.markReady()
           break
         case 'destroyPage':
           this.destroyPage(action.pageId)
@@ -263,6 +279,7 @@ export class WasmBrowserHost {
           break
         case 'updateUIState':
           this.options.onState?.(action.state)
+          this.markReadyIfStateHasPages(action.state)
           break
         case 'commandResult':
           this.resolveCommand(action.command, action.result)
@@ -359,6 +376,32 @@ export class WasmBrowserHost {
   private activatePage(pageId: string): void {
     this.activePageId = pageId
     this.updateVisibility()
+  }
+
+  private waitForReady(timeoutMs = 15_000): Promise<void> {
+    if (this.ready) return Promise.resolve()
+    return new Promise((resolve, reject) => {
+      const waiter = { resolve, reject }
+      this.readyWaiters.push(waiter)
+      this.readyTimer = setTimeout(() => {
+        this.readyWaiters = this.readyWaiters.filter((item) => item !== waiter)
+        reject(new Error(`WasmHostCore did not activate a page within ${timeoutMs}ms`))
+      }, timeoutMs)
+    })
+  }
+
+  private markReady(): void {
+    if (this.ready) return
+    this.ready = true
+    if (this.readyTimer !== undefined) clearTimeout(this.readyTimer)
+    this.readyTimer = undefined
+    for (const waiter of this.readyWaiters.splice(0)) waiter.resolve()
+  }
+
+  private markReadyIfStateHasPages(state: unknown): void {
+    if (!state || typeof state !== 'object') return
+    const details = (state as { details?: { pageStack?: unknown } }).details
+    if (Array.isArray(details?.pageStack) && details.pageStack.length > 0) this.markReady()
   }
 
   private destroyPage(pageId: string): void {
