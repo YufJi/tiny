@@ -351,3 +351,115 @@ fn navigation_updates_the_page_stack_and_emits_surface_actions() {
     )));
     assert_eq!(host.page_stack(), &["page-1"]);
 }
+
+#[test]
+fn system_info_api_is_answered_by_the_host_core() {
+    let mut host = HostCore::new(config());
+    let _ = host.start(10_000);
+    let call = message(
+        ProtocolKind::Call,
+        ProtocolDomain::Api,
+        "system.info",
+        ProtocolRole::Service,
+        ProtocolRole::Host,
+        json!({}),
+        Some("page-1"),
+        None,
+    );
+    let actions = host.handle_event(HostEvent::ServiceFrame(frame(vec![call])), 10_010);
+    let reply = only_frame_message(&actions, true);
+    assert_eq!(reply.kind, ProtocolKind::Reply);
+    assert_eq!(reply.method, "system.info");
+    assert_eq!(reply.payload.as_ref().unwrap()["ok"], true);
+    assert_eq!(reply.payload.as_ref().unwrap()["result"]["pixelRatio"], 2);
+}
+
+#[test]
+fn platform_api_results_are_replied_to_the_service() {
+    let mut host = HostCore::new(config());
+    let _ = host.start(11_000);
+    let call = message(
+        ProtocolKind::Call,
+        ProtocolDomain::Api,
+        "storage.get",
+        ProtocolRole::Service,
+        ProtocolRole::Host,
+        json!({ "key": "name" }),
+        Some("page-1"),
+        None,
+    );
+    let request_id = call.message_id.clone();
+    let actions = host.handle_event(HostEvent::ServiceFrame(frame(vec![call])), 11_010);
+    assert!(actions.iter().any(|action| matches!(
+        action,
+        HostAction::PlatformCall { request_id: id, method, .. }
+            if id == &request_id && method == "storage.get"
+    )));
+
+    let actions = host.handle_event(
+        HostEvent::PlatformResult {
+            request_id,
+            result: Ok(json!({ "value": "Tiny" })),
+        },
+        11_020,
+    );
+    let reply = only_frame_message(&actions, true);
+    assert_eq!(reply.kind, ProtocolKind::Reply);
+    assert_eq!(reply.method, "storage.get");
+    assert_eq!(reply.payload.as_ref().unwrap()["result"]["value"], "Tiny");
+}
+
+#[test]
+fn navigation_api_controls_are_replied_after_the_page_result() {
+    let mut host = HostCore::new(config());
+    let _ = host.start(12_000);
+    let ready = service_event_ready();
+    let _ = host.handle_event(HostEvent::ServiceFrame(frame(vec![ready])), 12_010);
+
+    let call = message(
+        ProtocolKind::Call,
+        ProtocolDomain::Api,
+        "navigate.to",
+        ProtocolRole::Service,
+        ProtocolRole::Host,
+        json!({ "url": "/pages/detail" }),
+        Some("page-1"),
+        None,
+    );
+    let actions = host.handle_event(HostEvent::ServiceFrame(frame(vec![call])), 12_020);
+    let control = only_frame_message(&actions, true);
+    assert_eq!(control.domain, ProtocolDomain::Page);
+    assert_eq!(control.method, "navigateTo");
+    let control_id = control.message_id.clone();
+
+    let reply = message(
+        ProtocolKind::Reply,
+        ProtocolDomain::Page,
+        "navigateTo",
+        ProtocolRole::Service,
+        ProtocolRole::Host,
+        json!({
+            "ok": true,
+            "result": { "pageId": "page-2", "path": "pages/detail" }
+        }),
+        Some("page-1"),
+        Some(&control_id),
+    );
+    let actions = host.handle_event(HostEvent::ServiceFrame(frame(vec![reply])), 12_030);
+    assert!(actions.iter().any(|action| matches!(
+        action,
+        HostAction::CreatePage { page_id, .. } if page_id == "page-2"
+    )));
+    let api_reply = actions.iter().find_map(|action| match action {
+        HostAction::SendServiceFrame { frame } => frame
+            .messages
+            .iter()
+            .find(|message| message.kind == ProtocolKind::Reply && message.method == "navigate.to"),
+        _ => None,
+    });
+    let api_reply = api_reply.expect("navigation API reply");
+    assert_eq!(
+        api_reply.payload.as_ref().unwrap()["result"]["pageId"],
+        "page-2"
+    );
+}

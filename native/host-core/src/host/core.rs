@@ -58,6 +58,9 @@ pub struct HostCore {
     service_ready: bool,
     bootstrap_id: Option<String>,
     pending_commands: HashMap<String, PendingCommand>,
+    pending_api_navigation: HashMap<String, ProtocolMessage>,
+    pending_api_control: HashMap<String, ProtocolMessage>,
+    pending_platform_calls: HashMap<String, ProtocolMessage>,
     pages: HashMap<String, PageState>,
     pending_pages: HashMap<String, String>,
     pending_events: HashMap<String, Vec<PendingEvent>>,
@@ -80,6 +83,9 @@ impl HostCore {
             service_ready: false,
             bootstrap_id: None,
             pending_commands: HashMap::new(),
+            pending_api_navigation: HashMap::new(),
+            pending_api_control: HashMap::new(),
+            pending_platform_calls: HashMap::new(),
             pages: HashMap::new(),
             pending_pages: HashMap::new(),
             pending_events: HashMap::new(),
@@ -115,8 +121,8 @@ impl HostCore {
                     &mut actions,
                 );
             }
-            HostEvent::PlatformResult { .. } => {
-                // Platform API dispatch lands in R3; keep the event contract stable.
+            HostEvent::PlatformResult { request_id, result } => {
+                self.on_platform_result(&request_id, result, now_ms, &mut actions)
             }
             HostEvent::Command(command) => self.on_command(command, now_ms, &mut actions),
             HostEvent::Tick { now_ms } => self.on_tick(now_ms, &mut actions),
@@ -158,6 +164,7 @@ impl HostCore {
                     "navigateTo",
                     json!({ "url": url }),
                     now_ms,
+                    None,
                     actions,
                 );
             }
@@ -167,6 +174,7 @@ impl HostCore {
                     "navigateBack",
                     json!({ "delta": delta.max(1) }),
                     now_ms,
+                    None,
                     actions,
                 );
             }
@@ -176,6 +184,7 @@ impl HostCore {
                     "switchTab",
                     json!({ "index": index, "url": url }),
                     now_ms,
+                    None,
                     actions,
                 );
             }
@@ -185,6 +194,7 @@ impl HostCore {
                     "redirectTo",
                     json!({ "url": url }),
                     now_ms,
+                    None,
                     actions,
                 );
             }
@@ -194,6 +204,7 @@ impl HostCore {
                     "reLaunch",
                     json!({ "url": url }),
                     now_ms,
+                    None,
                     actions,
                 );
             }
@@ -257,6 +268,7 @@ impl HostCore {
         method: &str,
         payload: Value,
         now_ms: u64,
+        api_request: Option<ProtocolMessage>,
         actions: &mut Vec<HostAction>,
     ) {
         let page_id = self.active_page.clone();
@@ -265,13 +277,32 @@ impl HostCore {
             .control(ProtocolDomain::Page, method, payload, page_id, now_ms)
         {
             Ok(id) => {
-                self.pending_commands.insert(id, pending);
+                self.pending_commands.insert(id.clone(), pending);
+                if let Some(request) = api_request {
+                    self.pending_api_navigation.insert(id, request);
+                }
             }
-            Err(error) => self.diagnostic("error", &error.to_string(), None, actions),
+            Err(error) => {
+                self.diagnostic("error", &error.to_string(), None, actions);
+                if let Some(request) = api_request {
+                    let _ = self.service.reply(
+                        &request,
+                        None,
+                        Some(("HANDLER_ERROR".to_string(), error.to_string())),
+                        now_ms,
+                    );
+                }
+            }
         }
     }
 
-    fn on_command_reply(&mut self, message_id: &str, result: Value, actions: &mut Vec<HostAction>) {
+    fn on_command_reply(
+        &mut self,
+        message_id: &str,
+        result: Value,
+        now_ms: u64,
+        actions: &mut Vec<HostAction>,
+    ) {
         let Some(command) = self.pending_commands.remove(message_id) else {
             return;
         };
@@ -360,6 +391,9 @@ impl HostCore {
             }
             PendingCommand::InspectTree { .. } => {}
         }
+        if let Some(request) = self.pending_api_navigation.remove(message_id) {
+            let _ = self.service.reply(&request, Some(result), None, now_ms);
+        }
         self.emit_ui_state(actions);
     }
 
@@ -392,6 +426,144 @@ impl HostCore {
         });
     }
 
+    fn on_api_call(
+        &mut self,
+        request: ProtocolMessage,
+        now_ms: u64,
+        actions: &mut Vec<HostAction>,
+    ) {
+        let method = request.method.clone();
+        let params = request.payload.clone().unwrap_or_else(|| json!({}));
+        let navigation = match method.as_str() {
+            "navigate.to" => Some(("navigateTo", PendingCommand::NavigateTo)),
+            "navigate.back" => Some(("navigateBack", PendingCommand::NavigateBack)),
+            "navigate.switchTab" => Some(("switchTab", PendingCommand::SwitchTab)),
+            "navigate.redirectTo" => Some(("redirectTo", PendingCommand::RedirectTo)),
+            "navigate.reLaunch" => Some(("reLaunch", PendingCommand::Relaunch)),
+            _ => None,
+        };
+        if let Some((control_method, pending)) = navigation {
+            self.send_navigation(
+                pending,
+                control_method,
+                params,
+                now_ms,
+                Some(request),
+                actions,
+            );
+            return;
+        }
+        if method == "system.info" {
+            let _ = self.service.reply(
+                &request,
+                Some(self.config.system_info.clone()),
+                None,
+                now_ms,
+            );
+            return;
+        }
+        if method == "page.pullDownRefresh" {
+            let page_id = request.page_id.clone();
+            match self.service.control(
+                ProtocolDomain::Page,
+                "pullDownRefresh",
+                json!({}),
+                page_id,
+                now_ms,
+            ) {
+                Ok(id) => {
+                    self.pending_api_control.insert(id, request);
+                }
+                Err(error) => {
+                    let _ = self.service.reply(
+                        &request,
+                        None,
+                        Some(("HANDLER_ERROR".to_string(), error.to_string())),
+                        now_ms,
+                    );
+                }
+            }
+            return;
+        }
+        if method == "page.stopPullDownRefresh" {
+            let _ =
+                self.service
+                    .reply(&request, Some(json!({ "status": "stopped" })), None, now_ms);
+            return;
+        }
+
+        let request_id = request.message_id.clone();
+        let page_id = request.page_id.clone();
+        self.pending_platform_calls
+            .insert(request_id.clone(), request);
+        actions.push(HostAction::PlatformCall {
+            request_id,
+            method,
+            params,
+            page_id,
+        });
+    }
+
+    fn on_platform_result(
+        &mut self,
+        request_id: &str,
+        result: Result<Value, String>,
+        now_ms: u64,
+        actions: &mut Vec<HostAction>,
+    ) {
+        let Some(request) = self.pending_platform_calls.remove(request_id) else {
+            return;
+        };
+        match result {
+            Ok(value) => {
+                let _ = self.service.reply(&request, Some(value), None, now_ms);
+            }
+            Err(error) => {
+                let _ = self.service.reply(
+                    &request,
+                    None,
+                    Some(("HANDLER_ERROR".to_string(), error)),
+                    now_ms,
+                );
+            }
+        }
+        self.drain_service(actions);
+    }
+
+    fn fail_api_request(
+        &mut self,
+        message_id: &str,
+        code: &str,
+        message: &str,
+        now_ms: u64,
+        _actions: &mut Vec<HostAction>,
+    ) {
+        if let Some(request) = self.pending_api_navigation.remove(message_id) {
+            let _ = self.service.reply(
+                &request,
+                None,
+                Some((code.to_string(), message.to_string())),
+                now_ms,
+            );
+        }
+        if let Some(request) = self.pending_api_control.remove(message_id) {
+            let _ = self.service.reply(
+                &request,
+                None,
+                Some((code.to_string(), message.to_string())),
+                now_ms,
+            );
+        }
+        if let Some(request) = self.pending_platform_calls.remove(message_id) {
+            let _ = self.service.reply(
+                &request,
+                None,
+                Some((code.to_string(), message.to_string())),
+                now_ms,
+            );
+        }
+    }
+
     fn on_service_frame(&mut self, raw: &str, now_ms: u64, actions: &mut Vec<HostAction>) {
         let frame = match decode_frame(raw) {
             Ok(frame) => frame,
@@ -411,7 +583,9 @@ impl HostCore {
                         self.bootstrap_id = None;
                         self.on_bootstrap_reply(result, actions);
                     } else if self.pending_commands.contains_key(&message_id) {
-                        self.on_command_reply(&message_id, result, actions);
+                        self.on_command_reply(&message_id, result, now_ms, actions);
+                    } else if let Some(request) = self.pending_api_control.remove(&message_id) {
+                        let _ = self.service.reply(&request, Some(result), None, now_ms);
                     }
                 }
                 BridgeEvent::CallFailed {
@@ -420,6 +594,7 @@ impl HostCore {
                     message,
                 } => {
                     self.pending_commands.remove(&message_id);
+                    self.fail_api_request(&message_id, &code, &message, now_ms, actions);
                     self.diagnostic(
                         "error",
                         &format!("bridge call {message_id} failed: {code}: {message}"),
@@ -427,7 +602,14 @@ impl HostCore {
                         actions,
                     );
                 }
-                BridgeEvent::Call(message) | BridgeEvent::Control(message) => {
+                BridgeEvent::Call(message) => {
+                    if message.domain == ProtocolDomain::Api {
+                        self.on_api_call(message, now_ms, actions);
+                    } else {
+                        self.unhandled_message("service", &message, actions);
+                    }
+                }
+                BridgeEvent::Control(message) => {
                     self.unhandled_message("service", &message, actions);
                 }
                 BridgeEvent::Event(message) => self.route_service_event(message, actions),
@@ -437,6 +619,13 @@ impl HostCore {
                     method,
                 } => {
                     self.pending_commands.remove(&message_id);
+                    self.fail_api_request(
+                        &message_id,
+                        "TIMEOUT",
+                        &format!("{domain:?}.{method} timed out"),
+                        now_ms,
+                        actions,
+                    );
                     self.diagnostic(
                         "error",
                         &format!("{domain:?}.{method} timed out ({message_id})"),

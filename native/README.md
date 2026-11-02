@@ -14,7 +14,9 @@ by the JavaScript `@tiny/bridge` implementation.
 connection, sends `page.ready`, and parks/replays page tree events until the
 render surface is ready. Platform adapters receive these as actions. Navigation
 commands drive page creation, activation and destroy actions through the service
-page stack.
+page stack. Host API calls are dispatched as `PlatformCall` actions and completed
+with `PlatformResult`; `system.info`, storage and navigation API requests are
+replied back to the service.
 
 ```bash
 cargo test --manifest-path native/host-core/Cargo.toml

@@ -40,6 +40,12 @@ pub enum HostAction {
         command: String,
         result: Value,
     },
+    PlatformCall {
+        request_id: String,
+        method: String,
+        params: Value,
+        page_id: Option<String>,
+    },
     Diagnostic {
         level: String,
         payload: Value,
