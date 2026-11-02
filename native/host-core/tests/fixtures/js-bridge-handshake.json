@@ -1,0 +1,54 @@
+{
+  "protocolVersion": 1,
+  "messages": [
+    {
+      "kind": "call",
+      "domain": "runtime",
+      "method": "hello",
+      "source": "host",
+      "target": "service",
+      "payload": {
+        "protocolVersion": 1,
+        "role": "host",
+        "capabilities": {}
+      },
+      "protocolVersion": 1,
+      "messageId": "msg-mvz12opy-1-8ac46f49",
+      "timestamp": 1793609983654
+    },
+    {
+      "kind": "control",
+      "domain": "runtime",
+      "method": "ready",
+      "source": "service",
+      "target": "host",
+      "payload": {
+        "protocolVersion": 1,
+        "role": "service",
+        "capabilities": {}
+      },
+      "protocolVersion": 1,
+      "messageId": "msg-mvz12opy-2-64e03b8c",
+      "timestamp": 1793609983654
+    },
+    {
+      "kind": "reply",
+      "domain": "runtime",
+      "method": "hello",
+      "source": "service",
+      "target": "host",
+      "payload": {
+        "ok": true,
+        "result": {
+          "protocolVersion": 1,
+          "role": "service",
+          "capabilities": {}
+        }
+      },
+      "replyTo": "msg-mvz12opy-1-8ac46f49",
+      "protocolVersion": 1,
+      "messageId": "msg-mvz12opy-3-b391b57e",
+      "timestamp": 1793609983654
+    }
+  ]
+}

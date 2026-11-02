@@ -7,6 +7,6 @@
 pub mod bridge;
 
 pub use bridge::{
-    decode_frame, encode_frame, BridgeError, ProtocolDomain, ProtocolKind, ProtocolMessage,
-    ProtocolRole, TransportFrame, PROTOCOL_VERSION,
+    decode_frame, encode_frame, now_ms, BridgeConnection, BridgeError, BridgeEvent, ProtocolDomain,
+    ProtocolKind, ProtocolMessage, ProtocolRole, TransportFrame, PROTOCOL_VERSION,
 };

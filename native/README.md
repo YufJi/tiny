@@ -6,6 +6,10 @@ is recorded in [`docs/adr/0009-rust-host-core.md`](../docs/adr/0009-rust-host-co
 The first target is the shared Bridge protocol used by the iOS host and the web
 devtool. Android is deferred; its adapter will use the same FFI contract.
 
+The protocol layer now includes the host-side `BridgeConnection` state machine
+(handshake, call/control/reply, events and timeouts) plus a golden frame emitted
+by the JavaScript `@tiny/bridge` implementation.
+
 ```bash
 cargo test --manifest-path native/host-core/Cargo.toml
 ```
