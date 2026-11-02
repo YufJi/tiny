@@ -473,3 +473,100 @@ fn navigation_api_controls_are_replied_after_the_page_result() {
         "page-2"
     );
 }
+
+#[test]
+fn inspect_tree_routes_through_the_render_bridge() {
+    let mut host = HostCore::new(config());
+    let _ = host.start(13_000);
+    let ready = service_event_ready();
+    let actions = host.handle_event(HostEvent::ServiceFrame(frame(vec![ready])), 13_010);
+    let bootstrap_id = only_frame_message(&actions, true).message_id.clone();
+    let bootstrap_reply = message(
+        ProtocolKind::Reply,
+        ProtocolDomain::Runtime,
+        "bootstrap",
+        ProtocolRole::Service,
+        ProtocolRole::Host,
+        json!({ "ok": true, "result": { "pageId": "page-1", "currentPath": "pages/index" } }),
+        None,
+        Some(&bootstrap_id),
+    );
+    let _ = host.handle_event(
+        HostEvent::ServiceFrame(frame(vec![bootstrap_reply])),
+        13_020,
+    );
+    let _ = host.handle_event(
+        HostEvent::PageReady {
+            page_id: "page-1".to_string(),
+        },
+        13_030,
+    );
+    let render_ready = message(
+        ProtocolKind::Control,
+        ProtocolDomain::Runtime,
+        "ready",
+        ProtocolRole::Render,
+        ProtocolRole::Host,
+        json!({}),
+        None,
+        None,
+    );
+    let actions = host.handle_event(
+        HostEvent::RenderFrame {
+            page_id: "page-1".to_string(),
+            frame: frame(vec![render_ready]),
+        },
+        13_040,
+    );
+    let render_bootstrap_id = only_frame_message(&actions, false).message_id.clone();
+    let render_reply = message(
+        ProtocolKind::Reply,
+        ProtocolDomain::Runtime,
+        "bootstrap",
+        ProtocolRole::Render,
+        ProtocolRole::Host,
+        json!({ "ok": true, "result": {} }),
+        Some("page-1"),
+        Some(&render_bootstrap_id),
+    );
+    let _ = host.handle_event(
+        HostEvent::RenderFrame {
+            page_id: "page-1".to_string(),
+            frame: frame(vec![render_reply]),
+        },
+        13_050,
+    );
+
+    let actions = host.handle_event(
+        HostEvent::Command(HostCommand::InspectTree {
+            page_id: Some("page-1".to_string()),
+        }),
+        13_060,
+    );
+    let inspect = only_frame_message(&actions, false);
+    assert_eq!(inspect.domain, ProtocolDomain::Runtime);
+    assert_eq!(inspect.method, "inspectTree");
+    let inspect_id = inspect.message_id.clone();
+    let inspect_reply = message(
+        ProtocolKind::Reply,
+        ProtocolDomain::Runtime,
+        "inspectTree",
+        ProtocolRole::Render,
+        ProtocolRole::Host,
+        json!({ "ok": true, "result": { "tree": "ok" } }),
+        Some("page-1"),
+        Some(&inspect_id),
+    );
+    let actions = host.handle_event(
+        HostEvent::RenderFrame {
+            page_id: "page-1".to_string(),
+            frame: frame(vec![inspect_reply]),
+        },
+        13_070,
+    );
+    assert!(actions.iter().any(|action| matches!(
+        action,
+        HostAction::CommandResult { command, result }
+            if command == "inspectTree" && result["tree"] == "ok"
+    )));
+}

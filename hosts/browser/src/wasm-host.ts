@@ -94,6 +94,11 @@ export class WasmBrowserHost {
     resolve: (value: unknown) => void
     reject: (reason: unknown) => void
   }>>()
+  private pageWaiters = new Map<string, Array<{
+    resolve: () => void
+    reject: (reason: unknown) => void
+  }>>()
+  private pageTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
   constructor(
     options: WasmHostOptions,
@@ -189,12 +194,14 @@ export class WasmBrowserHost {
       waiters.push({ resolve, reject })
       this.commandWaiters.set(name, waiters)
     })
-    this.execute(this.dispatchEvent({ type: 'command', command }))
+    const raw = this.dispatchEvent({ type: 'command', command })
+    this.execute(raw)
     return promise
   }
 
   async inspectTree(pageId: string | undefined): Promise<unknown> {
     if (!pageId) return null
+    await this.waitForPage(pageId)
     return this.command({ type: 'inspectTree', pageId })
   }
 
@@ -230,6 +237,12 @@ export class WasmBrowserHost {
       for (const waiter of waiters) waiter.reject(new Error('WasmBrowserHost disposed'))
     }
     this.commandWaiters.clear()
+    for (const waiters of this.pageWaiters.values()) {
+      for (const waiter of waiters) waiter.reject(new Error('WasmBrowserHost disposed'))
+    }
+    this.pageWaiters.clear()
+    for (const timer of this.pageTimers.values()) clearTimeout(timer)
+    this.pageTimers.clear()
     if (this.ownsContainer) this.container.remove()
   }
 
@@ -279,7 +292,6 @@ export class WasmBrowserHost {
           break
         case 'updateUIState':
           this.options.onState?.(action.state)
-          this.markReadyIfStateHasPages(action.state)
           break
         case 'commandResult':
           this.resolveCommand(action.command, action.result)
@@ -376,6 +388,32 @@ export class WasmBrowserHost {
   private activatePage(pageId: string): void {
     this.activePageId = pageId
     this.updateVisibility()
+    this.resolvePage(pageId)
+  }
+
+  private waitForPage(pageId: string, timeoutMs = 10_000): Promise<void> {
+    if (this.activePageId === pageId) return Promise.resolve()
+    return new Promise((resolve, reject) => {
+      const waiter = { resolve, reject }
+      const waiters = this.pageWaiters.get(pageId) ?? []
+      waiters.push(waiter)
+      this.pageWaiters.set(pageId, waiters)
+      this.pageTimers.set(pageId, setTimeout(() => {
+        this.pageTimers.delete(pageId)
+        const pending = this.pageWaiters.get(pageId) ?? []
+        this.pageWaiters.set(pageId, pending.filter((item) => item !== waiter))
+        reject(new Error(`page did not become active within ${timeoutMs}ms: ${pageId}`))
+      }, timeoutMs))
+    })
+  }
+
+  private resolvePage(pageId: string): void {
+    const timer = this.pageTimers.get(pageId)
+    if (timer) clearTimeout(timer)
+    this.pageTimers.delete(pageId)
+    const waiters = this.pageWaiters.get(pageId)
+    this.pageWaiters.delete(pageId)
+    for (const waiter of waiters ?? []) waiter.resolve()
   }
 
   private waitForReady(timeoutMs = 15_000): Promise<void> {
@@ -396,12 +434,6 @@ export class WasmBrowserHost {
     if (this.readyTimer !== undefined) clearTimeout(this.readyTimer)
     this.readyTimer = undefined
     for (const waiter of this.readyWaiters.splice(0)) waiter.resolve()
-  }
-
-  private markReadyIfStateHasPages(state: unknown): void {
-    if (!state || typeof state !== 'object') return
-    const details = (state as { details?: { pageStack?: unknown } }).details
-    if (Array.isArray(details?.pageStack) && details.pageStack.length > 0) this.markReady()
   }
 
   private destroyPage(pageId: string): void {
