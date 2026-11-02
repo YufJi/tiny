@@ -5,7 +5,7 @@ import WebKit
 /// One native render surface: a standalone WKWebView for a single page.
 ///
 /// The Rust HostCore owns the render Bridge; this class only transfers frames
-/// between the HostCore and `render.html?native=1`.
+/// between the HostCore and `render.html`.
 @MainActor
 final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
   let pageId: String
@@ -63,7 +63,6 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
     components.queryItems = [
       URLQueryItem(name: "app", value: appId),
       URLQueryItem(name: "pageId", value: pageId),
-      URLQueryItem(name: "native", value: "1"),
     ]
     if let url = components.url {
       HostDebug.log("native render load \(url.absoluteString)")

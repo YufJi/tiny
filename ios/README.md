@@ -58,7 +58,7 @@ hosts/ios/                         iOS 的前端标准包（pnpm workspace）
 │  MiniProgramSession                                                   │
 │    HostCoreRuntime                                                    │
 │      RustHostCore (UniFFI)  ← host orchestration / page stack        │
-│      ├─ page WKWebView #1  render.html?native=1                       │
+│      ├─ page WKWebView #1  render.html                       │
 │      ├─ page WKWebView #2  ...                                        │
 │      └─ native Host API handlers (storage, ...)                       │
 │                  ↕ JSON Bridge frames                                 │
@@ -127,7 +127,7 @@ The native adapter now also has:
 
 - `HostCoreSession`: Swift event/action dispatcher around the UniFFI core.
 - `NativeRenderSurface`: one standalone WKWebView per page, `nativeRender` message handler and frame queue.
-- `render.html?native=1`: native render Bridge entry, independent of iframes/MessagePorts.
+- `render.html`: native render Bridge entry, independent of iframes/MessagePorts.
 
 `HostCoreRuntime` now wires the UniFFI HostCore to the JSCore service and
 `NativeRenderSurface` pages. The smoke launches the demo through this native path
@@ -182,7 +182,7 @@ pnpm ios:smoke:jsc    # 在 macOS jsc 里启动 demo 的真实 service engine + 
    求值 `service-engine.js`；App/Page/Component 注册在 service bundle 内完成。
 4. UniFFI `RustHostCore` 启动 host handshake，向 JSCore 发送 `runtime.hello`；service 回复 ready。
 5. HostCore bootstrap 创建首屏页面；`createPage` action 创建 `NativeRenderSurface`。
-6. render WKWebView 加载 `render.html?native=1`，通过 `tinyRender` handler 报告 ready；
+6. render WKWebView 加载 `render.html`，通过 `tinyRender` handler 报告 ready；
    HostCore 发送 render bootstrap 和 `tree.flow`，页面挂载 `GlassRenderTree`。
 7. HostCore 发送 `page.ready`、`tree.ready`，service 触发 onReady，宿主激活 page surface。
 8. `RUNTIME_STATE` 被 HostCore 投影为 `HostUIState`；SwiftUI chrome 更新标题、返回、tabBar。
@@ -200,7 +200,7 @@ pnpm ios:smoke:jsc    # 在 macOS jsc 里启动 demo 的真实 service engine + 
 ### `src/web`（`--mode web`）
 
 - Vite MPA，唯一 HTML entry：`render.html`，输出 `dist/web/`。
-- `render.html?native=1`：`bootNativeRenderEntry` + `createGlassRenderEntry`，每页一个独立 WKWebView。
+- `render.html`：`bootNativeRenderEntry` + `createGlassRenderEntry`，每页一个独立 WKWebView。
 - 通过 `window.webkit.messageHandlers.tinyRender` 发送 Bridge frames，通过
   `window.__tinyRenderReceive` 接收 HostCore frames。
 - render page 不依赖 iframe、MessagePort 或 `host.html`。
@@ -292,7 +292,7 @@ Host orchestration 已迁到 Swift：
 
 - `HostCoreRuntime`：UniFFI HostCore ↔ JSCore service ↔ 每页 `NativeRenderSurface`
 - `NativeRenderSurface`：独立 WKWebView、`tinyRender` handler、frame queue
-- `render.html?native=1`：native render Bridge entry
+- `render.html`：native render Bridge entry
 - `MiniProgramSession`：native-only；SwiftUI chrome 使用 HostCore UIState
 
 仍需补齐：
