@@ -1,5 +1,7 @@
 use serde_json::Value;
 
+use super::command::HostCommand;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum HostEvent {
     /// A raw JSON transport frame from the JavaScriptCore/QuickJS service.
@@ -23,6 +25,8 @@ pub enum HostEvent {
         request_id: String,
         result: Result<Value, String>,
     },
+    /// A platform/native-chrome command.
+    Command(HostCommand),
     /// Drive Bridge timeouts and other deadline work.
     Tick {
         now_ms: u64,

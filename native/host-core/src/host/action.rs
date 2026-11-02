@@ -36,6 +36,10 @@ pub enum HostAction {
     UpdateUIState {
         state: Value,
     },
+    CommandResult {
+        command: String,
+        result: Value,
+    },
     Diagnostic {
         level: String,
         payload: Value,

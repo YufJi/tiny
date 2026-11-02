@@ -1,7 +1,7 @@
 use serde_json::{json, Value};
 use tiny_host_core::{
-    encode_frame, HostAction, HostConfig, HostCore, HostEvent, ProtocolDomain, ProtocolKind,
-    ProtocolMessage, ProtocolRole, TransportFrame, PROTOCOL_VERSION,
+    encode_frame, HostAction, HostCommand, HostConfig, HostCore, HostEvent, ProtocolDomain,
+    ProtocolKind, ProtocolMessage, ProtocolRole, TransportFrame, PROTOCOL_VERSION,
 };
 
 fn config() -> HostConfig {
@@ -266,4 +266,88 @@ fn service_event_ready() -> ProtocolMessage {
         None,
         None,
     )
+}
+
+#[test]
+fn navigation_updates_the_page_stack_and_emits_surface_actions() {
+    let mut host = HostCore::new(config());
+    let actions = host.start(9_000);
+    let hello = only_frame_message(&actions, true);
+    assert_eq!(hello.method, "hello");
+    let ready = service_event_ready();
+    let actions = host.handle_event(HostEvent::ServiceFrame(frame(vec![ready])), 9_010);
+    let bootstrap_id = only_frame_message(&actions, true).message_id.clone();
+    let bootstrap_reply = message(
+        ProtocolKind::Reply,
+        ProtocolDomain::Runtime,
+        "bootstrap",
+        ProtocolRole::Service,
+        ProtocolRole::Host,
+        json!({ "ok": true, "result": { "pageId": "page-1", "currentPath": "pages/index" } }),
+        None,
+        Some(&bootstrap_id),
+    );
+    let _ = host.handle_event(HostEvent::ServiceFrame(frame(vec![bootstrap_reply])), 9_020);
+    assert_eq!(host.page_stack(), &["page-1"]);
+
+    let actions = host.handle_event(
+        HostEvent::Command(HostCommand::NavigateTo {
+            url: "/pages/detail".to_string(),
+        }),
+        9_030,
+    );
+    let navigate_id = only_frame_message(&actions, true).message_id.clone();
+    let navigate_reply = message(
+        ProtocolKind::Reply,
+        ProtocolDomain::Page,
+        "navigateTo",
+        ProtocolRole::Service,
+        ProtocolRole::Host,
+        json!({
+            "ok": true,
+            "result": { "pageId": "page-2", "path": "pages/detail" }
+        }),
+        Some("page-1"),
+        Some(&navigate_id),
+    );
+    let actions = host.handle_event(HostEvent::ServiceFrame(frame(vec![navigate_reply])), 9_040);
+    assert!(actions.iter().any(|action| matches!(
+        action,
+        HostAction::CreatePage { page_id, path }
+            if page_id == "page-2" && path == "pages/detail"
+    )));
+    assert_eq!(host.page_stack(), &["page-1", "page-2"]);
+
+    let actions = host.handle_event(
+        HostEvent::Command(HostCommand::NavigateBack { delta: 1 }),
+        9_050,
+    );
+    let back_id = only_frame_message(&actions, true).message_id.clone();
+    let back_reply = message(
+        ProtocolKind::Reply,
+        ProtocolDomain::Page,
+        "navigateBack",
+        ProtocolRole::Service,
+        ProtocolRole::Host,
+        json!({
+            "ok": true,
+            "result": {
+                "pageId": "page-1",
+                "path": "pages/index",
+                "unloadedPageIds": ["page-2"]
+            }
+        }),
+        Some("page-2"),
+        Some(&back_id),
+    );
+    let actions = host.handle_event(HostEvent::ServiceFrame(frame(vec![back_reply])), 9_060);
+    assert!(actions.iter().any(|action| matches!(
+        action,
+        HostAction::DestroyPage { page_id } if page_id == "page-2"
+    )));
+    assert!(actions.iter().any(|action| matches!(
+        action,
+        HostAction::ActivatePage { page_id } if page_id == "page-1"
+    )));
+    assert_eq!(host.page_stack(), &["page-1"]);
 }
