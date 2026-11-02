@@ -8,7 +8,6 @@ orchestration, and the devtool client.
 
 | API | Purpose |
 | --- | --- |
-| `createTinyRuntime` | Host-side protocol bridge over one render transport or a per-page `renderConnector`; `maxPageStack` defaults to 10 |
 | `bootServiceThread` | Service-thread entry: App/Page/Component registry, glass-easel logic tree, and API host |
 | `bootTreeThread` | Render-thread entry: consumes tree flow/patch/event and drives a host `TreeRenderer` |
 
@@ -25,20 +24,9 @@ topology through `WasmBrowserHost` / `DevtoolRuntimeClient`.
 
 ## Usage
 
-```ts
-import { createTinyRuntime } from '@tiny/runtime'
-
-const host = createTinyRuntime({
-  serviceTransport,
-  // One render thread per page, created by the host. The browser host passes
-  // iframe frames; in-memory tests pass a connector that boots a headless tree.
-  renderConnector: { connect, activate, disconnect, setAppVisible },
-  manifest,
-  initialPath: 'pages/todos/todos',
-})
-
-await host.bootstrap()
-```
+The JavaScript host shell used by the old iOS/browser path lives only in the
+runtime test harness at `tests/support/host`. It is not a package export and no
+production host imports it.
 
 A browser host does not import iframe helpers from this package. Use
 `WasmBrowserHost` from `@tiny/host-browser` instead.
@@ -64,7 +52,7 @@ contract.
 
 | Consumer | Entry | Main types |
 | --- | --- | --- |
-| Host shell | `createTinyRuntime` | `TinyRuntimeHost`, `RuntimeHostOptions`, `RenderThreadConnector`, `HostApiHandler(s)` |
+| Host shell | test-only `tests/support/host` | `TinyRuntimeHost`, `RuntimeHostOptions`, `RenderThreadConnector`, `HostApiHandler(s)` |
 | Service iframe | `bootServiceThread` | `ServiceThreadOptions`, `ServiceCanvasAdapter`, `CanvasNode*` |
 | Render iframe (web) | `bootTreeThread` | `TreeThreadOptions`, `TreeRenderer`, `TreeEventPayload` |
 | Render host (native) | `createNativeTreeRenderer` | `NativeTreeHost`, `NativeNodeSpec`, `NativeTreeRenderer` |

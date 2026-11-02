@@ -1,5 +1,5 @@
 import type { BridgeConnection } from '@tiny/bridge'
-import { cloneJsonSafe } from '../data'
+import { cloneJsonSafe } from '../../../src/data'
 import type {
   HostApiHandler,
   HostApiHandlers,
@@ -7,7 +7,7 @@ import type {
   RuntimeHostOptions,
   StorageSnapshot,
   SystemInfoSnapshot,
-} from '../types'
+} from '../../../src/types'
 
 export type HostApiRegistry = {
   systemInfo: SystemInfoSnapshot

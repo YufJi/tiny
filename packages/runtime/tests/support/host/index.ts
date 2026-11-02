@@ -1,12 +1,12 @@
 import { BridgeConnection } from '@tiny/bridge'
 import { DIAGNOSTIC_CODES } from '@tiny/manifest'
-import { CANVAS_CONTROL, QUERY_CONTROL, RUNTIME_CONTROL, TREE_PROTOCOL } from '../tree/protocol'
-import type { RuntimeHostOptions } from '../types'
+import { CANVAS_CONTROL, QUERY_CONTROL, RUNTIME_CONTROL, TREE_PROTOCOL } from '../../../src/tree/protocol'
+import type { RuntimeHostOptions } from '../../../src/types'
 import { createHostApiRegistry, registerHostApiHandlers } from './api'
 import type { HostApiRegistry } from './api'
 import { createHostDiagnosticStore, registerHostDiagnosticHandlers } from './diagnostics'
-import type { RuntimeDiagnostic } from '../diagnostics'
-import type { RenderHostAction } from '../tree/protocol'
+import type { RuntimeDiagnostic } from '../../../src/diagnostics'
+import type { RenderHostAction } from '../../../src/tree/protocol'
 
 export type TinyRuntimeHost = {
   service: BridgeConnection

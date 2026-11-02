@@ -27,7 +27,7 @@
 - **Browser host**: `@tiny/host-browser` (`hosts/browser`), which owns iframes,
   message ports, DOM canvas, page visibility, and the devtool overlay.
 - **Render thread connector**: `RenderThreadConnector` lets a host create one
-  render transport per page. `createTinyRuntime` routes page-scoped messages by
+  render transport per page. The test-only harness under `tests/support/host` routes page-scoped messages by
   page ID, bootstraps each render tree with that page's flow, and tears the
   connection down on `onUnload`. Without a connector, a single render transport
   serves the whole stack (tests and simple hosts).
