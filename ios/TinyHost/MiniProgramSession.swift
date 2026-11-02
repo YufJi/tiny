@@ -43,7 +43,8 @@ final class MiniProgramSession: ObservableObject {
     let runtime = HostCoreRuntime(
       app: app,
       generatedRoot: generatedRoot,
-      container: container
+      container: container,
+      smoke: smoke
     )
     nativeRuntime = runtime
     runtime.onUIState = { [weak self] state in
@@ -62,18 +63,6 @@ final class MiniProgramSession: ObservableObject {
     runtime.onReady = { [weak self] _ in
       guard let self else { return }
       self.loading = false
-      HostDebug.writeResult([
-        "appId": self.app.id,
-        "runId": HostDebug.runId,
-        "ok": true,
-        "type": "smoke",
-        "details": [
-          "appId": self.app.id,
-          "firstPage": self.app.firstPage,
-          "navigated": false,
-          "native": true,
-        ],
-      ], name: "smoke-result.json")
     }
     runtime.onError = { [weak self] message in
       self?.reportError(message)

@@ -12,7 +12,10 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   let container: UIView
 
   private let service = ServiceEngine()
+  private let smoke: Bool
   private var core: HostCoreSession?
+  private var initialPageId: String?
+  private var smokeNavigationStarted = false
   private var surfaces: [String: NativeRenderSurface] = [:]
   private var storage: [String: Any] = [:]
   private let storagePrefix: String
@@ -25,10 +28,11 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   var onUIState: ((HostUIState) -> Void)?
   var onError: ((String) -> Void)?
 
-  init(app: AppInfo, generatedRoot: URL, container: UIView) {
+  init(app: AppInfo, generatedRoot: URL, container: UIView, smoke: Bool = false) {
     self.app = app
     self.generatedRoot = generatedRoot
     self.container = container
+    self.smoke = smoke
     self.storagePrefix = "tiny.storage.\(app.id)."
     self.storage = Self.loadStorage(prefix: "tiny.storage.\(app.id).")
     super.init()
@@ -180,17 +184,81 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     for (id, surface) in surfaces {
       surface.setVisible(id == pageId)
     }
-    if !finished {
-      finished = true
-      let result: [String: Any] = [
-        "ok": true,
-        "appId": app.id,
-        "pageId": pageId,
-        "pageStack": core?.pageStack() ?? [],
-      ]
-      HostDebug.writeResult(result, name: "native-hostcore-smoke.json")
-      onReady?(pageId)
+    if initialPageId == nil {
+      initialPageId = pageId
+      if !finished {
+        finished = true
+        let result: [String: Any] = [
+          "ok": true,
+          "appId": app.id,
+          "pageId": pageId,
+          "pageStack": core?.pageStack() ?? [],
+        ]
+        HostDebug.writeResult(result, name: "native-hostcore-smoke.json")
+        onReady?(pageId)
+      }
+      if smoke {
+        runSmokeNavigation()
+      }
+      return
     }
+    if smokeNavigationStarted, pageId != initialPageId {
+      smokeNavigationStarted = false
+      writeSmokeResult(navigated: true, pageId: pageId)
+    }
+  }
+
+  private func runSmokeNavigation() {
+    let pages = manifest["pages"] as? [[String: Any]] ?? []
+    var tabPages = Set<String>()
+    var tabTargets: [(path: String, index: Int)] = []
+    if let app = manifest["app"] as? [String: Any],
+       let configuration = app["configuration"] as? [String: Any],
+       let effective = configuration["effective"] as? [String: Any],
+       let tabBar = effective["tabBar"] as? [String: Any],
+       let list = tabBar["list"] as? [[String: Any]] {
+      for (index, item) in list.enumerated() {
+        guard var path = item["pagePath"] as? String else { continue }
+        if path.hasPrefix("/") { path.removeFirst() }
+        tabPages.insert(path)
+        tabTargets.append((path, index))
+      }
+    }
+    let next = pages.first {
+      guard let path = $0["path"] as? String else { return false }
+      return path != app.firstPage && ($0["bodyType"] as? String) != "component" && !tabPages.contains(path)
+    }
+    if let path = next?["path"] as? String {
+      smokeNavigationStarted = true
+      try? core?.command(["type": "navigateTo", "url": "/\(path)"])
+      return
+    }
+    if let target = tabTargets.first(where: { $0.path != app.firstPage }) {
+      smokeNavigationStarted = true
+      try? core?.command([
+        "type": "switchTab",
+        "index": target.index,
+        "url": "/\(target.path)",
+      ])
+      return
+    }
+    writeSmokeResult(navigated: false, pageId: initialPageId)
+  }
+
+  private func writeSmokeResult(navigated: Bool, pageId: String?) {
+    HostDebug.writeResult([
+      "appId": app.id,
+      "runId": HostDebug.runId,
+      "ok": true,
+      "type": "smoke",
+      "details": [
+        "appId": app.id,
+        "firstPage": app.firstPage,
+        "navigated": navigated,
+        "native": true,
+        "pageId": pageId ?? "",
+      ],
+    ], name: "smoke-result.json")
   }
 
   func destroyPage(pageId: String) {
