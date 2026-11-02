@@ -2,7 +2,7 @@ import Foundation
 import WebKit
 
 /// Serves the generated host, render and asset files from the app bundle over
-/// `tinyapp://app/...`. WKWebView cannot use `file://` iframes reliably, and a
+/// `tinyapp://app/...`. WKWebView cannot use `file://` page documents reliably, and a
 /// custom scheme gives every page frame one stable origin.
 final class TinySchemeHandler: NSObject, WKURLSchemeHandler {
   private let root: URL

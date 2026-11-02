@@ -175,7 +175,7 @@ struct LauncherView: View {
       Text("Tiny 引擎")
         .font(.system(size: 12, weight: .semibold))
         .foregroundColor(.secondary)
-      Text("渲染层 WKWebView · 逻辑层 JavaScriptCore · 页面按 iframe 隔离")
+      Text("渲染层 WKWebView · 逻辑层 JavaScriptCore · 页面按 WKWebView 隔离")
         .font(.system(size: 11))
         .foregroundColor(Color.secondary.opacity(0.75))
     }

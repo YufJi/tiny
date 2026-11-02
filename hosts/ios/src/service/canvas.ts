@@ -9,7 +9,7 @@ import type {
  *
  * JavaScriptCore has no DOM or OffscreenCanvas, so the service thread keeps a
  * synchronous recorder. Draw calls are batched into a compact display list and
- * replayed against the real <canvas> inside the page render iframe.
+ * replayed against the real <canvas> inside the page WKWebView.
  *
  * `measureText` is the one API that cannot be replayed asynchronously: ECharts
  * uses it during layout. It is served by a synchronous CoreText callback that
