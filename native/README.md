@@ -45,13 +45,14 @@ Generate the bindings once:
 pnpm host-core:wasm:bindings
 ```
 
-Then either open the devtool with `?host=wasm` (the dev server injects
-`__TINY_WASM_HOST_CORE_FACTORY_PROMISE__`), or run the debugger flow against the
-Rust host:
+The devtool always loads `@tiny/host-core-wasm`; the generated bindings and
+wasm binary are committed under `native/host-core-wasm/pkg` and bundled by Vite.
+Rebuild them with `pnpm host-core:wasm:bindings` after changing Rust. Run the
+normal gate:
 
 ```bash
-TINY_DEVTOOL_WASM=1 pnpm accept:glass-easel
+pnpm accept:glass-easel
 ```
 
-The production devtool build still defaults to the JS host; the wasm loader is a
-development-only Vite plugin.
+The JavaScript host remains available to the standalone browser host and the
+legacy browser acceptance host, but the devtool no longer has a JS-host mode.

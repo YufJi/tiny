@@ -16,6 +16,9 @@
     },
     "lint": {
       "outputs": []
+    },
+    "@tiny/host-core-wasm#build": {
+      "outputs": []
     }
   }
 }

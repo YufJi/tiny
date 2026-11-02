@@ -1,7 +1,6 @@
 import type { RuntimeDiagnostic, RuntimePageState, RuntimeTabBarState } from '@tiny/runtime'
 import type { InspectNode } from '@tiny/runtime'
-import type { HostApiHandler, RuntimeManifest, StorageSnapshot, SystemInfoSnapshot } from '@tiny/runtime'
-import { createStandaloneDualThreadHost, type StandaloneHost } from './standalone-host'
+import type { RuntimeManifest, StorageSnapshot, SystemInfoSnapshot } from '@tiny/runtime'
 import { WasmBrowserHost, type WasmHostCoreFactory } from './wasm-host'
 
 export type DevtoolRuntimeStatus = 'idle' | 'connecting' | 'running' | 'terminated' | 'error'
@@ -44,11 +43,8 @@ export type DevtoolRuntimeOptions = {
   lifecycleLimit?: number
   /** Maximum pages per mini program. Defaults to 10. */
   maxPageStack?: number
-  /**
-   * Opt-in Rust HostCore mode. The generated wasm module is injected so the
-   * devtool bundle can load it lazily and tests can use a fake core.
-   */
-  wasmCoreFactory?: WasmHostCoreFactory
+  /** Rust HostCore factory; the devtool loads the generated wasm module once. */
+  wasmCoreFactory: WasmHostCoreFactory
 }
 
 export type DevtoolRuntimeListener = (state: DevtoolRuntimeState) => void
@@ -60,7 +56,6 @@ export type DevtoolRuntimeListener = (state: DevtoolRuntimeState) => void
 export class DevtoolRuntimeClient {
   private readonly options: DevtoolRuntimeOptions
   private readonly listeners = new Set<DevtoolRuntimeListener>()
-  private host: StandaloneHost | null = null
   private wasmHost: WasmBrowserHost | null = null
   private container: HTMLElement | null = null
   private ownsContainer = false
@@ -89,7 +84,7 @@ export class DevtoolRuntimeClient {
   }
 
   get renderFrameCount(): number {
-    return this.wasmHost?.renderFrameCount ?? this.host?.renderIframes.size ?? 0
+    return this.wasmHost?.renderFrameCount ?? 0
   }
 
   async launch(): Promise<void> {
@@ -115,30 +110,8 @@ export class DevtoolRuntimeClient {
     }
     this.container = container
     try {
-      if (this.options.wasmCoreFactory) {
-        this.wasmHost = new WasmBrowserHost({
-          appId: this.options.appId ?? 'devtool',
-          manifest: this.options.manifest,
-          serviceUrl: this.options.serviceUrl,
-          renderUrl: this.options.renderUrl,
-          initialPath: this.options.initialPath,
-          systemInfo: this.options.systemInfo,
-          storage: this.options.storage,
-          container,
-          maxPageStack: this.options.maxPageStack,
-          onState: (state) => {
-            if (state && typeof state === 'object') this.record(state as RuntimeDiagnostic)
-          },
-          onDiagnostic: (diagnostic) => this.record(diagnostic),
-        }, this.options.wasmCoreFactory)
-        await this.wasmHost.launch()
-        // The service sends the post-ready tree snapshot asynchronously.
-        await new Promise((resolve) => setTimeout(resolve, 300))
-        this.update({ status: 'running' })
-        await this.inspectTree()
-        return
-      }
-      this.host = await createStandaloneDualThreadHost({
+      this.wasmHost = new WasmBrowserHost({
+        appId: this.options.appId ?? 'devtool',
         manifest: this.options.manifest,
         serviceUrl: this.options.serviceUrl,
         renderUrl: this.options.renderUrl,
@@ -147,18 +120,20 @@ export class DevtoolRuntimeClient {
         storage: this.options.storage,
         container,
         maxPageStack: this.options.maxPageStack,
+        onState: (state) => {
+          if (state && typeof state === 'object') this.record(state as RuntimeDiagnostic)
+        },
         onDiagnostic: (diagnostic) => this.record(diagnostic),
-      })
-      await this.host.host.bootstrap()
+      }, this.options.wasmCoreFactory)
+      await this.wasmHost.launch()
+      // The service sends the post-ready tree snapshot asynchronously.
+      await new Promise((resolve) => setTimeout(resolve, 300))
       this.update({ status: 'running' })
       await this.inspectTree()
     } catch (error) {
-      const failedHost = this.host
       const failedWasmHost = this.wasmHost
-      this.host = null
       this.wasmHost = null
-      if (failedHost) await failedHost.dispose().catch(() => {})
-      if (failedWasmHost) failedWasmHost.dispose()
+      failedWasmHost?.dispose()
       const message = error instanceof Error ? error.message : String(error)
       this.update({ status: 'error', error: message })
       throw error
@@ -166,16 +141,11 @@ export class DevtoolRuntimeClient {
   }
 
   async terminate(): Promise<void> {
-    const host = this.host
     const wasmHost = this.wasmHost
-    this.host = null
     this.wasmHost = null
     if (wasmHost) {
       await wasmHost.command({ type: 'close' }).catch(() => undefined)
       wasmHost.dispose()
-    }
-    if (host) {
-      await host.dispose()
     }
     if (this.container && this.ownsContainer) {
       this.container.remove()
@@ -199,16 +169,18 @@ export class DevtoolRuntimeClient {
   }
 
   async navigate(url: string): Promise<void> {
-    const result = this.wasmHost
-      ? await this.wasmHost.command({ type: 'navigateTo', url }) as { pageId?: string } | undefined
-      : await this.requireHandler('navigate.to')({ url }, { pageId: this.activePageId }) as { pageId?: string } | undefined
+    const result = await this.requireWasmHost().command({
+      type: 'navigateTo',
+      url,
+    }) as { pageId?: string } | undefined
     await this.inspectTree(result?.pageId)
   }
 
   async back(delta = 1): Promise<void> {
-    const result = this.wasmHost
-      ? await this.wasmHost.command({ type: 'navigateBack', delta }) as { pageId?: string } | undefined
-      : await this.requireHandler('navigate.back')({ delta }, { pageId: this.activePageId }) as { pageId?: string } | undefined
+    const result = await this.requireWasmHost().command({
+      type: 'navigateBack',
+      delta,
+    }) as { pageId?: string } | undefined
     await this.inspectTree(result?.pageId)
   }
 
@@ -216,16 +188,11 @@ export class DevtoolRuntimeClient {
   async tapTab(index: number): Promise<void> {
     const item = this.state.tabBar?.items[index]
     if (!item) throw new Error(`tabBar item ${index} is not available`)
-    const result = this.wasmHost
-      ? await this.wasmHost.command({
-        type: 'switchTab',
-        url: item.pagePath,
-        index,
-      }) as { pageId?: string } | undefined
-      : await this.requireHandler('navigate.switchTab')(
-        { url: item.pagePath, index },
-        { pageId: this.activePageId },
-      ) as { pageId?: string } | undefined
+    const result = await this.requireWasmHost().command({
+      type: 'switchTab',
+      url: item.pagePath,
+      index,
+    }) as { pageId?: string } | undefined
     await this.inspectTree(result?.pageId)
   }
 
@@ -236,58 +203,33 @@ export class DevtoolRuntimeClient {
       this.update({ tree: null })
       return null
     }
-    const tree = this.wasmHost
-      ? await this.wasmHost.inspectTree(pageId) as InspectNode | null
-      : await this.requireHost().host.inspectTree(pageId) as InspectNode | null
+    const tree = await this.requireWasmHost().inspectTree(pageId) as InspectNode | null
     this.update({ tree })
     return tree
   }
 
   async foreground(): Promise<void> {
-    if (this.wasmHost) {
-      await this.wasmHost.command({ type: 'setPageVisible', visible: true })
-      return
-    }
-    const host = this.requireHost()
-    await host.host.service.control('page', 'show', {}, { pageId: this.activePageId })
-    host.host.setAppVisible(true)
+    await this.requireWasmHost().command({ type: 'setPageVisible', visible: true })
   }
 
   async background(): Promise<void> {
-    if (this.wasmHost) {
-      await this.wasmHost.command({ type: 'setPageVisible', visible: false })
-      return
-    }
-    const host = this.requireHost()
-    await host.host.service.control('page', 'hide', {}, { pageId: this.activePageId })
-    host.host.setAppVisible(false)
+    await this.requireWasmHost().command({ type: 'setPageVisible', visible: false })
   }
 
   /** Keep the configured system-info API and `onResize` in sync with host chrome. */
   async resize(width: number, height: number): Promise<void> {
-    if (this.wasmHost) {
-      await this.wasmHost.command({ type: 'resize', width, height })
-      return
-    }
-    const host = this.requireHost()
-    await host.host.setWindowSize(width, height)
+    await this.requireWasmHost().command({ type: 'resize', width, height })
   }
 
   private get activePageId(): string | undefined {
     return this.state.pageStack.at(-1)
   }
 
-  private requireHost(): StandaloneHost {
-    if (!this.host || this.state.status !== 'running') {
+  private requireWasmHost(): WasmBrowserHost {
+    if (!this.wasmHost || this.state.status !== 'running') {
       throw new Error('runtime is not running')
     }
-    return this.host
-  }
-
-  private requireHandler(method: string): HostApiHandler {
-    const handler = this.requireHost().host.apiRegistry.handlers[method]
-    if (typeof handler !== 'function') throw new Error(`missing host handler: ${method}`)
-    return handler
+    return this.wasmHost
   }
 
   private record(diagnostic: RuntimeDiagnostic): void {
