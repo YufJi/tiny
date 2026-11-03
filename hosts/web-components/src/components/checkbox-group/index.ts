@@ -31,15 +31,10 @@ export function defineCheckboxGroup(ctx: BuiltinContext): BuiltinDefinition {
         ;(this as unknown as CheckboxGroupRuntime)._value = []
       },
       attached() {
-        const element = (this as unknown as {
-          getBackendElement?: () => { setAttribute?: (name: string, value: string) => void } | null
-        }).getBackendElement?.()
-        element?.setAttribute?.('role', 'group')
-        element?.setAttribute?.('aria-label', '复选区')
         ;(this as unknown as CheckboxGroupRuntime & { publish: () => void }).publish()
       },
     },
-    options: ctx.hostOptions('checkbox-group', { multipleSlots: true }),
+    options: ctx.hostOptions('checkbox-group'),
     methods: {
       publish() {
         const runtime = this as unknown as CheckboxGroupRuntime

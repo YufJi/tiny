@@ -2,54 +2,43 @@ tiny-checkbox {
   -webkit-tap-highlight-color: transparent;
   display: inline-block;
 }
-
+tiny-checkbox[hidden] {
+  display: none;
+}
 .tiny-checkbox-wrapper {
-  position: relative;
-  display: inline-flex;
   align-items: center;
+  display: inline-flex;
   vertical-align: middle;
 }
-
-.tiny-checkbox-native {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  border: 0;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  overflow: hidden;
-  white-space: nowrap;
-}
-
 .tiny-checkbox-input {
-  position: relative;
-  flex: none;
-  width: 22px;
-  height: 22px;
-  margin-right: 5px;
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: #fff;
   border: 1px solid #d1d1d1;
   border-radius: 3px;
-  background-color: #ffffff;
-  box-sizing: border-box;
+  height: 22px;
+  margin-right: 5px;
+  outline: 0;
+  position: relative;
+  text-indent: 0;
+  width: 22px;
 }
-
-.tiny-checkbox-input.is-checked::before {
-  font: normal normal normal 14px/1 "weui";
+.tiny-checkbox-input.tiny-checkbox-input-checked {
+  color: #09bb07;
+}
+.tiny-checkbox-input.tiny-checkbox-input-checked::before {
   content: "\EA08";
+  font: normal normal normal 14px/1 weui;
   font-size: 22px;
+  left: 50%;
   position: absolute;
   top: 50%;
-  left: 50%;
   transform: translate(-50%, -48%) scale(0.73);
   -webkit-transform: translate(-50%, -48%) scale(0.73);
 }
-
-.tiny-checkbox-input.is-disabled {
+.tiny-checkbox-input.tiny-checkbox-input-disabled {
   background-color: #e1e1e1;
 }
-
-.tiny-checkbox-input.is-disabled::before {
+.tiny-checkbox-input.tiny-checkbox-input-disabled::before {
   color: #adadad;
 }

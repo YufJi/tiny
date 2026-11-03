@@ -225,7 +225,10 @@ export async function runBrowserAcceptance({ baseUrl }) {
       )
       assert.ok((await text()).includes('Learn glass-easel'), 'todos list did not render')
       assert.ok((await text()).includes('Run P0 acceptance'), 'todos list did not render')
-      assert.equal(await render.locator('input[type="checkbox"]').first().isChecked(), true)
+      assert.ok(
+        (await render.locator('tiny-checkbox [class*="tiny-checkbox-input-checked"]').count()) > 0,
+        'checked checkbox should render the checked marker class',
+      )
     })
 
     await step('apply scoped styles and built-in base layout', async () => {
@@ -1576,7 +1579,7 @@ export async function runTaroAcceptance({ baseUrl }) {
       // completed item must still render as checked.
       const checkedCompleted = await render.evaluate(() =>
         [...document.querySelectorAll('tiny-checkbox')]
-          .filter((box) => box.querySelector('[class*="checkbox-input"]')?.className.includes('is-checked')).length,
+          .filter((box) => box.querySelector('[class*="checkbox-input"]')?.className.includes('tiny-checkbox-input-checked')).length,
       )
       assert.equal(checkedCompleted, 1, 'completed Taro todo lost its checked state after switching tabs')
     })

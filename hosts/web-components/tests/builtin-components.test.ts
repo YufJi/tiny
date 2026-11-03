@@ -388,7 +388,7 @@ describe('P0 built-in components', () => {
     expect(inputHost?.data.value).toBe('typed')
   })
 
-  test('checkbox, slider, and switch normalize control values', () => {
+  test('checkbox toggles on tap and slider/switch normalize control values', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)
     const events: Record<string, unknown> = {}
@@ -400,12 +400,9 @@ describe('P0 built-in components', () => {
         switch: builtins.switch,
       },
       template: compilePage(
-        '<checkbox id="checkbox" value="one" bindchange="onCheckbox" /><slider id="slider" value="10" bindchange="onSlider" /><switch id="switch" checked="{{true}}" bindchange="onSwitch" />',
+        '<checkbox id="checkbox" value="one" /><slider id="slider" value="10" bindchange="onSlider" /><switch id="switch" checked="{{true}}" bindchange="onSwitch" />',
       ),
       methods: {
-        onCheckbox(event: glassEasel.ShadowedEvent<unknown>) {
-          events.checkbox = event.detail
-        },
         onSlider(event: glassEasel.ShadowedEvent<unknown>) {
           events.slider = event.detail
         },
@@ -416,11 +413,11 @@ describe('P0 built-in components', () => {
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()
+    host('checkbox')?.triggerEvent('tap', {})
+    expect(host('checkbox')?.data.checked).toBe(true)
     const native = (id: string) => host(id)?.getShadowRoot()?.getElementById('native-input')
-    native('checkbox')?.triggerEvent('change', { value: 'one', checked: true })
     native('slider')?.triggerEvent('change', { value: 42 })
     native('switch')?.triggerEvent('change', { value: true })
-    expect(events.checkbox).toEqual({ value: 'one', checked: true })
     expect(events.slider).toEqual({ value: 42 })
     expect(events.switch).toEqual({ value: true })
   })
@@ -535,15 +532,15 @@ describe('P0 built-in components', () => {
     attach(instance)
     await flush()
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
-    const toggle = (id: string, checked: boolean) => {
-      host(id).getShadowRoot()?.getElementById('native-input')?.triggerEvent('change', { value: checked })
+    const toggle = (id: string) => {
+      host(id).triggerEvent('tap', {})
     }
-    toggle('a', true)
-    toggle('b', true)
+    toggle('a')
+    toggle('b')
     expect(host('group').data.value).toEqual(['', ''])
-    toggle('c', true)
+    toggle('c')
     expect(host('group').data.value).toEqual(['', '', 'c'])
-    toggle('a', false)
+    toggle('a')
     expect(host('group').data.value).toEqual(['', 'c'])
   })
 
@@ -569,8 +566,8 @@ describe('P0 built-in components', () => {
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
     host('a').setData({ checked: true })
     expect(changes).toEqual([])
-    host('a').getShadowRoot()?.getElementById('native-input')?.triggerEvent('change', { value: false })
-    host('a').getShadowRoot()?.getElementById('native-input')?.triggerEvent('change', { value: true })
+    host('a').triggerEvent('tap', {})
+    host('a').triggerEvent('tap', {})
     expect(changes).toEqual([{ value: [] }, { value: ['a'] }])
   })
 
@@ -592,7 +589,7 @@ describe('P0 built-in components', () => {
     await flush()
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
     const toggle = (id: string) => {
-      host(id).getShadowRoot()?.getElementById('native-input')?.triggerEvent('change', { value: true })
+      host(id).triggerEvent('tap', {})
     }
     toggle('a')
     toggle('b')
@@ -850,8 +847,10 @@ describe('P0 built-in components', () => {
     expect(image2Html).toContain('background-position: top left')
     expect(imageHtml).toContain('loading="lazy"')
 
+    host('checkbox')!.setData({ checked: true })
     const checkboxHtml = glassEasel.dumpElementToString(host('checkbox')!, true)
     expect(checkboxHtml).toContain('tiny-checkbox-input')
+    expect(checkboxHtml).toContain('tiny-checkbox-input-checked')
     expect(checkboxHtml).toContain('color: #ff0000')
     const radioHtml = glassEasel.dumpElementToString(host('radio')!, true)
     expect(radioHtml).toContain('tiny-radio-input')
@@ -1023,7 +1022,7 @@ describe('P0 built-in components', () => {
     expect(host('hidden').data.dots.map((dot: { index: number }) => dot.index)).toEqual([0, 1])
   })
 
-  test('form controls reuse tiny-disabled, tiny-data-component, tiny-label-target and group/item behaviors', () => {
+  test('form controls reuse tiny-disabled, tiny-label-target and group/item behaviors', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)
     const page = space.defineComponent({
@@ -1038,12 +1037,10 @@ describe('P0 built-in components', () => {
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
     expect(host('checkbox').hasBehavior('tiny-disabled')).toBe(true)
-    expect(host('checkbox').hasBehavior('tiny-data-component')).toBe(true)
     expect(host('checkbox').hasBehavior('tiny-label-target')).toBe(true)
     expect(host('checkbox').hasBehavior('tiny-item')).toBe(true)
     expect(host('group').hasBehavior('tiny-group')).toBe(true)
     expect(host('input').hasBehavior('tiny-data-component')).toBe(true)
-    expect((host('checkbox') as unknown as { getFormData: () => unknown }).getFormData()).toBe('a')
   })
 
 

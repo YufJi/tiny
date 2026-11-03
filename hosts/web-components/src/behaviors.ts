@@ -75,6 +75,15 @@ type ReloadState = Record<string, unknown> & {
   wxComponents?: Record<string, unknown> & { _custom?: Record<string, unknown> }
 }
 
+type LabelAriaRuntime = {
+  data: Record<string, unknown>
+  is?: string
+  getBackendElement?: () => { setAttribute?: (name: string, value: string) => void } | null
+  setAriaRoleDefault?: (role: string) => void
+  hasBehavior?: (name: string) => boolean
+  _relatedLabel?: LabelAriaRuntime
+}
+
 type LabelTargetRuntime = {
   _labelTapListener?: (event: HostEvent) => void
   addListener?: (name: string, listener: (event: HostEvent) => void) => void
@@ -191,6 +200,7 @@ export const BUILTIN_BEHAVIOR_IDS = Object.freeze({
   group: `${TINY_ENGINE_NAMING.behaviorPrefix}group`,
   item: `${TINY_ENGINE_NAMING.behaviorPrefix}item`,
   labelTarget: `${TINY_ENGINE_NAMING.behaviorPrefix}label-target`,
+  labelAria: `${TINY_ENGINE_NAMING.behaviorPrefix}label-aria`,
 } as const)
 
 /**
@@ -702,7 +712,14 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
   const disabled = space.defineBehavior({
     is: BUILTIN_BEHAVIOR_IDS.disabled,
     properties: {
-      disabled: { type: Boolean, value: false },
+      disabled: { type: Boolean, value: false, observer: 'disabledChanged' },
+    },
+    methods: {
+      disabledChanged(next: boolean): void {
+        const runtime = this as unknown as LabelAriaRuntime
+        runtime.getBackendElement?.()?.setAttribute?.('aria-disabled', String(Boolean(next)))
+        ;(this as unknown as { _setRelatedLabelAria?: () => void })._setRelatedLabelAria?.()
+      },
     },
   })
 
@@ -780,6 +797,14 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
         group?.renameItem?.(this, String(next ?? ''), String(previous ?? ''))
       },
       checkedChange(next: unknown, previous: unknown): void {
+        const runtime = this as unknown as ItemRuntime & {
+          getBackendElement?: () => {
+            setAttribute?: (name: string, value: string) => void
+          } | null
+          _setRelatedLabelAria?: () => void
+        }
+        runtime.getBackendElement?.()?.setAttribute?.('aria-checked', String(Boolean(next)))
+        runtime._setRelatedLabelAria?.()
         if (next === previous) return
         const group = (this as unknown as ItemRuntime)._relatedGroup
         group?.changed?.(this)
@@ -790,6 +815,33 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
       },
       resetFormData(): void {
         ;(this as unknown as ItemRuntime).setData({ checked: false })
+      },
+    },
+  })
+
+  const labelAria = space.defineBehavior({
+    is: BUILTIN_BEHAVIOR_IDS.labelAria,
+    methods: {
+      _setAria(role: string): void {
+        const runtime = this as unknown as LabelAriaRuntime
+        runtime.setAriaRoleDefault?.(role)
+        const element = runtime.getBackendElement?.()
+        element?.setAttribute?.('aria-disabled', String(Boolean(runtime.data.disabled)))
+        if (!isButtonComponent(runtime.is)) {
+          element?.setAttribute?.('aria-checked', String(Boolean(runtime.data.checked)))
+        }
+      },
+      _setRelatedLabelAria(role?: string): void {
+        const runtime = this as unknown as LabelAriaRuntime
+        const label = runtime._relatedLabel
+        if (!label) return
+        const resolved = role ?? relatedRole(runtime.is)
+        if (resolved) label.setAriaRoleDefault?.(resolved)
+        const element = label.getBackendElement?.()
+        element?.setAttribute?.('aria-disabled', String(Boolean(runtime.data.disabled)))
+        if (!isButtonComponent(runtime.is)) {
+          element?.setAttribute?.('aria-checked', String(Boolean(runtime.data.checked)))
+        }
       },
     },
   })
@@ -817,10 +869,24 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
     },
   })
 
-  return { base, hover, reload, labelTarget, disabled, dataComponent, group, item, sizeNormalizer, classPrefix, touchTrack, scroller }
+  return { base, hover, reload, labelAria, labelTarget, disabled, dataComponent, group, item, sizeNormalizer, classPrefix, touchTrack, scroller }
 }
 
 export type BuiltinBehaviors = ReturnType<typeof createBuiltinBehaviors>
+
+
+function isButtonComponent(is: string | undefined): boolean {
+  return /:button$/.test(String(is ?? ''))
+}
+
+function relatedRole(is: string | undefined): string | undefined {
+  const value = String(is ?? '')
+  if (/:radio$/.test(value)) return 'radio'
+  if (/:switch$/.test(value)) return 'checkbox'
+  if (/:checkbox$/.test(value)) return 'checkbox'
+  if (/:button$/.test(value)) return 'button'
+  return undefined
+}
 
 function clearHoverTimers(instance: HoverRuntime): void {
   for (const key of ['_hoverStartTimer', '_hoverStayTimer', '_hoverStyleTimeId', '_hoverStayTimeId'] as const) {

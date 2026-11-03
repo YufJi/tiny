@@ -1,4 +1,6 @@
 tiny-checkbox-group {
   display: block;
-  box-sizing: border-box;
+}
+tiny-checkbox-group[hidden] {
+  display: none;
 }
