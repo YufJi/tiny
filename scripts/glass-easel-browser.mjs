@@ -934,7 +934,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       await swiper.locator('.tiny-builtin-swiper--tiny-swiper-dot').nth(1).click()
       await render.waitForFunction(
         () => document.querySelector('.tiny-builtin-swiper--tiny-swiper-slide-frame')
-          ?.getAttribute('style')?.includes('translateX(-100%)'),
+          ?.getAttribute('style')?.includes('translate(-100%, 0'),
         null,
         { timeout: STEP_TIMEOUT },
       )

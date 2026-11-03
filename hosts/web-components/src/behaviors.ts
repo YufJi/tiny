@@ -641,11 +641,89 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
         instance.addListener('touchmove', onMove, { capture: useCapture })
         instance.addListener('touchend', onEnd, { capture: useCapture })
         instance.addListener('touchcancel', onCancel, { capture: useCapture })
+
+        // Native touch does not reach glass `addListener` callbacks in the web
+        // render tree (only projected mouse gestures do), so attach the same
+        // state machine to the backend element as well. The glass listeners
+        // keep devtool mouse drags working; native touch goes through the DOM.
+        const target = (
+          (_element as { addEventListener?: unknown } | null | undefined)?.addEventListener
+            ? _element
+            : (this as unknown as { getBackendElement?: () => unknown }).getBackendElement?.()
+        ) as {
+          addEventListener?: (name: string, listener: (event: TouchEvent) => void, options?: AddEventListenerOptions) => void
+          removeEventListener?: (name: string, listener: (event: TouchEvent) => void, options?: AddEventListenerOptions) => void
+        } | null | undefined
+        let domActive = false
+        let domStartX = 0
+        let domStartY = 0
+        let domLastX = 0
+        let domLastY = 0
+        let domPreviousX = 0
+        let domPreviousY = 0
+        const domEmit = (event: TouchEvent, state: 'start' | 'move' | 'end' | 'cancel', x: number, y: number) => {
+          const result = handler({
+            target: event.target,
+            currentTarget: event.currentTarget,
+            preventDefault: () => event.preventDefault(),
+            stopPropagation: () => event.stopPropagation(),
+            touches: Array.from(event.touches),
+            changedTouches: Array.from(event.changedTouches),
+            detail: {
+              state,
+              x,
+              y,
+              dx: x - domStartX,
+              dy: y - domStartY,
+              ddx: x - domPreviousX,
+              ddy: y - domPreviousY,
+              timeStamp: Number(event.timeStamp || Date.now()),
+            },
+          })
+          if (result === false && event.cancelable) event.preventDefault()
+          domPreviousX = x
+          domPreviousY = y
+        }
+        const domStart = (event: TouchEvent) => {
+          if (event.touches.length !== 1 || domActive) return
+          domActive = true
+          const touch = event.touches[0]!
+          domStartX = domLastX = domPreviousX = touch.clientX
+          domStartY = domLastY = domPreviousY = touch.clientY
+          domEmit(event, 'start', domStartX, domStartY)
+        }
+        const domMove = (event: TouchEvent) => {
+          if (!domActive || event.touches.length !== 1) return
+          const touch = event.touches[0]!
+          domLastX = touch.clientX
+          domLastY = touch.clientY
+          domEmit(event, 'move', domLastX, domLastY)
+        }
+        const domEnd = (event: TouchEvent) => {
+          if (!domActive || event.touches.length !== 0) return
+          domActive = false
+          const touch = event.changedTouches[0]
+          domEmit(event, 'end', touch?.clientX ?? domLastX, touch?.clientY ?? domLastY)
+        }
+        const domCancel = (event: TouchEvent) => {
+          if (!domActive) return
+          domActive = false
+          const touch = event.changedTouches[0]
+          domEmit(event, 'cancel', touch?.clientX ?? domLastX, touch?.clientY ?? domLastY)
+        }
+        target?.addEventListener?.('touchstart', domStart, { capture: true })
+        target?.addEventListener?.('touchmove', domMove, { capture: true })
+        target?.addEventListener?.('touchend', domEnd, { capture: true })
+        target?.addEventListener?.('touchcancel', domCancel, { capture: true })
         return () => {
           instance.removeListener?.('touchstart', onStart, { capture: useCapture })
           instance.removeListener?.('touchmove', onMove, { capture: useCapture })
           instance.removeListener?.('touchend', onEnd, { capture: useCapture })
           instance.removeListener?.('touchcancel', onCancel, { capture: useCapture })
+          target?.removeEventListener?.('touchstart', domStart, { capture: true })
+          target?.removeEventListener?.('touchmove', domMove, { capture: true })
+          target?.removeEventListener?.('touchend', domEnd, { capture: true })
+          target?.removeEventListener?.('touchcancel', domCancel, { capture: true })
         }
       },
     },

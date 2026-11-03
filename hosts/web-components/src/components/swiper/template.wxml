@@ -1,21 +1,20 @@
 <div
   id="slidesWrapper"
   class="tiny-swiper-wrapper"
-  role="listbox"
-  aria-label="{{ariaLabel}}"
+  aria-label="{{ariaLabel || scrollLabel}}"
 >
-  <div id="slides" class="tiny-swiper-slides" style="{{slidesStyle}}">
-    <div id="slideFrame" class="tiny-swiper-slide-frame" style="{{trackStyle}}"><slot /></div>
+  <div id="slides" class="tiny-swiper-slides">
+    <div id="slideFrame" class="tiny-swiper-slide-frame"><slot /></div>
   </div>
   <div
     id="slidesDots"
-    class="tiny-swiper-dots {{vertical ? 'is-vertical' : 'is-horizontal'}}"
+    class="tiny-swiper-dots {{vertical ? 'tiny-swiper-dots-vertical' : 'tiny-swiper-dots-horizontal'}}"
     hidden="{{!indicatorDots}}"
   >
     <div
       wx:for="{{dots}}"
       wx:key="index"
-      class="tiny-swiper-dot {{item.active ? 'is-active' : ''}}"
+      class="tiny-swiper-dot {{item.active ? 'tiny-swiper-dot-active' : ''}}"
       style="background-color: {{item.active ? (indicatorActiveColor || '') : (indicatorColor || '')}};"
       catchtap="handleDotTap"
       data-index="{{item.index}}"

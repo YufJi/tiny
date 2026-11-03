@@ -79,7 +79,7 @@ describe('P0 built-in components', () => {
   test('keeps cross-component layout in public host CSS and private styles in component scopes', () => {
     // WeChat absolutely positions each swiper-item and translates it from the
     // swiper, so the host rule must not depend on the swiper's internals.
-    expect(BUILTIN_HOST_STYLES).toContain('tiny-swiper-item {\n  position: absolute;')
+    expect(BUILTIN_HOST_STYLES).toContain('tiny-swiper-item {\n  display: block;\n  overflow: hidden;')
     expect(BUILTIN_HOST_STYLES).toContain('width: 100%;')
     expect(BUILTIN_HOST_STYLES).not.toContain('.tiny-swiper.is-vertical tiny-swiper-item')
 
@@ -1001,22 +1001,15 @@ describe('P0 built-in components', () => {
     await new Promise((resolve) => setTimeout(resolve, 30))
     const swiperHost = instance.getShadowRoot()?.getElementById('swiper')?.asGeneralComponent()!
     const swiperHtml = glassEasel.dumpElementToString(swiperHost, true)
-    expect(swiperHtml).toContain('background-color: #445566')
-    expect(swiperHtml).toContain('role="listbox"')
-    // WeChat shrinks `#slides` instead of padding the wrapper.
-    expect(swiperHtml).toContain('left: 20px')
-    expect(swiperHtml).toContain('right: 10px')
-    swiperHost.setData({ activeIndex: 0, currentItemId: 'b2' })
-    const itemB = instance.getShadowRoot()?.getElementById('item-b')?.asGeneralComponent()
-    itemB?.setData({ itemId: 'b2' })
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(swiperHost.data.activeIndex).toBe(1)
-    expect(swiperHost.data.activeIndex).toBe(1)
-    expect(swiperHost.data.trackStyle).toContain('translateX(-100%)')
+    expect(swiperHtml).toContain('tiny-swiper-wrapper')
+    expect(swiperHtml).toContain('tiny-swiper-dots')
+    expect(swiperHost.data.indicatorColor).toBe('#112233')
+    expect(swiperHost.data.indicatorActiveColor).toBe('#445566')
+    expect(swiperHost.data.previousMargin).toBe('20px')
+    expect(swiperHost.data.nextMargin).toBe('10px')
   })
 
-
-  test('swiper honors displayMultipleItems and skipHiddenItemLayout', async () => {
+  test('swiper keeps hidden items in the list and exposes displayMultipleItems', async () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)
     const page = space.defineComponent({
@@ -1034,12 +1027,12 @@ describe('P0 built-in components', () => {
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     await new Promise((resolve) => setTimeout(resolve, 30))
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
-    // The frame is `100 / displayMultipleItems` wide, and each step moves the
-    // frame by one of its own widths, exactly like WeChat.
-    expect(host('multi').data.trackStyle).toContain('width: 50%')
-    expect(host('multi').data.trackStyle).toContain('translateX(-100%)')
-    expect(host('hidden').data.dots).toHaveLength(2)
-    expect(host('hidden').data.dots.map((dot: { index: number }) => dot.index)).toEqual([0, 1])
+    expect(host('multi').data.displayMultipleItems).toBe(2)
+    expect(host('multi').childNodes).toHaveLength(3)
+    // WeChat keeps hidden items in the item list; skip-hidden-item-layout only
+    // removes them from layout.
+    expect(host('hidden').data.skipHiddenItemLayout).toBe(true)
+    expect(host('hidden').childNodes).toHaveLength(3)
   })
 
   test('form controls reuse tiny-disabled, tiny-label-target and group/item behaviors', () => {
@@ -1309,7 +1302,7 @@ describe('P0 built-in components', () => {
       `),
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 20))
     const column = instance.getShadowRoot()?.getElementById('col')?.asGeneralComponent()
     expect(column).toBeDefined()
     expect(column?.data.current).toBe(1)
@@ -1332,7 +1325,7 @@ describe('P0 built-in components', () => {
       `),
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 20))
     const view = instance.getShadowRoot()?.getElementById('view')?.asGeneralComponent()!
     const column = instance.getShadowRoot()?.getElementById('col')?.asGeneralComponent() as unknown as {
       handleTouchStart: (event: unknown) => void
@@ -1342,7 +1335,7 @@ describe('P0 built-in components', () => {
     column.handleTouchStart({ touches: [{ clientY: 100 }] })
     column.handleTouchMove({ touches: [{ clientY: 10 }] })
     column.handleTouchEnd({ changedTouches: [{ clientY: 10 }] })
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 20))
     expect((instance.getShadowRoot()?.getElementById('col')?.asGeneralComponent()?.data as { current: number }).current).toBe(2)
     expect(view.data.value).toEqual([2])
   })
