@@ -1,17 +1,7 @@
-<label class="tiny-radio-wrapper">
-  <input
-    id="native-input"
-    class="tiny-radio-native"
-    aria-label="{{ariaLabel}}"
-    type="radio"
-    value="{{value}}"
-    checked="{{checked}}"
-    disabled="{{disabled}}"
-    catchchange="handleChange"
-  />
+<div class="tiny-radio-wrapper">
   <div
-    class="tiny-radio-input {{checked ? 'is-checked' : ''}} {{disabled ? 'is-disabled' : ''}}"
-    style="--tiny-radio-color: {{color}};"
+    class="tiny-radio-input {{checked ? 'tiny-radio-input-checked' : ''}} {{disabled ? 'tiny-radio-input-disabled' : ''}}"
+    style="background-color: {{activeColor}}; border-color: {{activeColor}};"
   ></div>
   <slot />
-</label>
+</div>

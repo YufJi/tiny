@@ -34,15 +34,12 @@ export function defineRadioGroup(ctx: BuiltinContext): BuiltinDefinition {
         runtime._selectedItem = null
       },
       attached() {
-        const element = (this as unknown as {
-          getBackendElement?: () => { setAttribute?: (name: string, value: string) => void } | null
-        }).getBackendElement?.()
-        element?.setAttribute?.('role', 'radiogroup')
-        element?.setAttribute?.('aria-label', '单选区')
+        ;(this as unknown as { setAriaRoleDefault?: (role: string) => void })
+          .setAriaRoleDefault?.('radiogroup')
         ;(this as unknown as RadioGroupRuntime & { publish: () => void }).publish()
       },
     },
-    options: ctx.hostOptions('radio-group', { multipleSlots: true }),
+    options: ctx.hostOptions('radio-group'),
     methods: {
       publish() {
         const runtime = this as unknown as RadioGroupRuntime

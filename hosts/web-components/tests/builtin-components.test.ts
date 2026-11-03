@@ -470,13 +470,12 @@ describe('P0 built-in components', () => {
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     attach(instance)
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
-    host('b').getShadowRoot()?.getElementById('native-input')?.triggerEvent('change', { value: 'b', checked: true })
+    host('b').triggerEvent('tap', {})
     expect(changes).toEqual([{ value: 'b' }])
     expect(host('a').data.checked).toBe(false)
     expect(host('b').data.checked).toBe(true)
-    expect(host('b').getShadowRoot()?.getElementById('native-input')).toBeDefined()
     const html = glassEasel.dumpElementToString(host('b'), true)
-    expect(html).toContain('tiny-radio-input is-checked')
+    expect(html).toContain('tiny-radio-input-checked')
   })
 
 
@@ -623,7 +622,7 @@ describe('P0 built-in components', () => {
     await flush()
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
     const tap = (id: string) => {
-      host(id).getShadowRoot()?.getElementById('native-input')?.triggerEvent('change', { value: true })
+      host(id).triggerEvent('tap', {})
     }
     // The last checked item attached wins, like WeChat's `addItem`.
     expect(host('a').data.checked).toBe(false)
@@ -852,9 +851,10 @@ describe('P0 built-in components', () => {
     expect(checkboxHtml).toContain('tiny-checkbox-input')
     expect(checkboxHtml).toContain('tiny-checkbox-input-checked')
     expect(checkboxHtml).toContain('color: #ff0000')
+    host('radio')!.setData({ checked: true })
     const radioHtml = glassEasel.dumpElementToString(host('radio')!, true)
     expect(radioHtml).toContain('tiny-radio-input')
-    expect(radioHtml).toContain('--tiny-radio-color: #00ff00')
+    expect(radioHtml).toContain('background-color: #00ff00')
     const switchHtml = glassEasel.dumpElementToString(host('switch')!, true)
     expect(switchHtml).toContain('tiny-switch-input')
     expect(switchHtml).toContain('--tiny-switch-color: #0000ff')

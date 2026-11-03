@@ -896,7 +896,10 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
         { timeout: STEP_TIMEOUT },
       )
 
-      assert.equal(await render.locator('tiny-radio input[type="radio"]').isChecked(), true, 'radio is not checked')
+      assert.ok(
+        (await render.locator('tiny-radio [class*="tiny-radio-input-checked"]').count()) > 0,
+        'radio is not checked',
+      )
       assert.ok(
         (await render.locator('.tiny-builtin-icon--tiny-icon-success_no_circle').count()) > 0,
         'icon type was not applied',
@@ -1234,10 +1237,15 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
         { timeout: STEP_TIMEOUT },
       )
       const autoplay = render.locator('tiny-radio').nth(1)
-      assert.equal(await autoplay.locator('input[type="radio"]').isChecked(), false, 'autoplay radio should start unchecked')
+      assert.equal(
+        await autoplay.locator('[class*="tiny-radio-input-checked"]').count(),
+        0,
+        'autoplay radio should start unchecked',
+      )
       await autoplay.click()
       await render.waitForFunction(
-        () => document.querySelectorAll('tiny-radio')[1]?.getAttribute('checked') === 'true',
+        () => document.querySelectorAll('tiny-radio')[1]
+          ?.querySelector('[class*="tiny-radio-input-checked"]') != null,
         null,
         { timeout: STEP_TIMEOUT },
       )
