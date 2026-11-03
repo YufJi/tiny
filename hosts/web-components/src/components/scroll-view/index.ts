@@ -10,7 +10,14 @@ type ScrollBackend = {
   scrollWidth?: number
   clientHeight?: number
   clientWidth?: number
-  style?: { scrollBehavior?: string; overflowX?: string; overflowY?: string }
+  style?: {
+    scrollBehavior?: string
+    overflowX?: string
+    overflowY?: string
+    transition?: string
+    transform?: string
+    [key: string]: string | undefined
+  }
   querySelector?: (selector: string) => { scrollIntoView?: (options?: unknown) => void } | null
 }
 
@@ -25,6 +32,8 @@ type ScrollRuntime = {
   __dragStart?: { x: number; y: number; scrollTop: number }
   __dragging?: boolean
   __pullDistance?: number
+  __refresherOffset?: number
+  __refreshing?: boolean
 }
 
 function touchPoint(event: glassEasel.ShadowedEvent<unknown>): { x: number; y: number } {
@@ -65,12 +74,19 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
       pagingEnabled: { type: Boolean, value: false },
       usingSticky: { type: Boolean, value: false },
     },
+    data: {
+      refresherText: '下拉刷新',
+    },
     options: ctx.hostOptions('scroll-view', { multipleSlots: true }),
     lifetimes: {
       attached() {
         ;(this as unknown as { initScroller: (element: unknown) => void }).initScroller(this.backend())
         this.applyOverflow()
         this.applyScrollAnimation()
+        ;(this as unknown as { setRefresherOffset: (offset: number, animate: boolean) => void })
+          .setRefresherOffset(0, false)
+        ;(this as unknown as { relocateCustomRefresher: (attempt: number) => void })
+          .relocateCustomRefresher(0)
         this.applyScrollPosition('scrollTop')
         this.applyScrollPosition('scrollLeft')
         this.applyScrollPosition('scrollIntoView')
@@ -106,7 +122,31 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         this.applyOverflow()
       },
       refresherTriggered(value: boolean) {
+        const instance = this as unknown as ScrollRuntime
+        const threshold = Number(this.data.refresherThreshold ?? 45)
+        if (value) {
+          instance.__refreshing = true
+          ;(this as unknown as { setRefresherOffset: (offset: number, animate: boolean) => void })
+            .setRefresherOffset(threshold, true)
+          this.setData({ refresherText: '正在刷新...' })
+        } else {
+          const wasRefreshing = Boolean(instance.__refreshing)
+          instance.__refreshing = false
+          ;(this as unknown as { setRefresherOffset: (offset: number, animate: boolean) => void })
+            .setRefresherOffset(0, true)
+          this.setData({ refresherText: '下拉刷新' })
+          if (wasRefreshing) {
+            this.triggerEvent('refresherrestore', {}, { bubbles: true, composed: true })
+          }
+        }
         this.triggerEvent('refresherstatuschange', { status: value ? 'refreshing' : 'complete' }, { bubbles: true, composed: true })
+      },
+      refresherEnabled(value: boolean) {
+        if (!value) {
+          ;(this as unknown as { setRefresherOffset: (offset: number, animate: boolean) => void })
+            .setRefresherOffset(0, true)
+          this.setData({ refresherText: '下拉刷新' })
+        }
       },
     },
     methods: {
@@ -115,6 +155,33 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
           getElementById?: (id: string) => { getBackendElement?: () => ScrollBackend | null } | null
         } | null)?.getElementById?.('main')?.getBackendElement?.()
         return element ?? (this as unknown as { getBackendElement?: () => ScrollBackend | null }).getBackendElement?.() ?? null
+      },
+      relocateCustomRefresher(attempt: number) {
+        // Named slots on native children are not materialized by the current
+        // glass proc-gen path, so the page's slot="refresher" node lands in the
+        // default content slot. With refresher-default-style="none" that first
+        // content child is the custom refresher: move its backend node into the
+        // refresher overlay so it no longer occupies scroll layout.
+        if (!this.data.refresherEnabled || this.data.refresherDefaultStyle !== 'none') return
+        const content = (this.getShadowRoot?.() as {
+          getElementById?: (id: string) => { getBackendElement?: () => { children?: ArrayLike<{ parentNode?: unknown }>; removeChild?: (node: unknown) => void } | null } | null
+        } | null)?.getElementById?.('content')?.getBackendElement?.()
+        const host = (this.getShadowRoot?.() as {
+          getElementById?: (id: string) => { getBackendElement?: () => { querySelector?: (selector: string) => { appendChild?: (node: unknown) => void } | null } | null } | null
+        } | null)?.getElementById?.('refresher')?.getBackendElement?.()
+        const slot = host?.querySelector?.('[class*="refresher-slot"]')
+        const first = content?.children?.[0]
+        if (content && slot?.appendChild && first) {
+          content.removeChild?.(first)
+          slot.appendChild(first)
+          return
+        }
+        if (attempt < 5 && typeof setTimeout !== 'undefined') {
+          setTimeout(() => {
+            ;(this as unknown as { relocateCustomRefresher: (attempt: number) => void })
+              .relocateCustomRefresher(attempt + 1)
+          }, 16)
+        }
       },
       applyOverflow() {
         const element = this.backend()
@@ -177,11 +244,24 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         }
         if (attempt < 5) setTimeout(() => this.scrollToElement(id, attempt + 1), 16)
       },
+      setRefresherOffset(offset: number, animate: boolean) {
+        const instance = this as unknown as ScrollRuntime
+        instance.__refresherOffset = offset
+        const element = this.backend()
+        if (element?.style) {
+          element.style.transition = animate ? 'transform 0.3s ease' : 'none'
+          element.style.transform = offset === 0 ? '' : `translateY(${offset}px)`
+          element.style['-webkit-transition'] = animate ? 'transform 0.3s ease' : 'none'
+          element.style['-webkit-transform'] = offset === 0 ? '' : `translateY(${offset}px)`
+        }
+      },
       cancelRefresher() {
         const instance = this as unknown as ScrollRuntime
         if (instance.__refresherTimer) clearTimeout(instance.__refresherTimer)
         instance.__refresherTimer = undefined
-        if (this.data.refresherTriggered) this.setData({ refresherTriggered: false })
+        instance.__refreshing = false
+        this.setRefresherOffset(0, true)
+        this.setData({ refresherTriggered: false, refresherText: '下拉刷新' })
       },
       handleTouchStart(event: glassEasel.ShadowedEvent<unknown>) {
         const instance = this as unknown as ScrollRuntime
@@ -189,6 +269,7 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         instance.__dragStart = { ...point, scrollTop: Number(this.backend()?.scrollTop ?? 0) }
         instance.__dragging = false
         instance.__pullDistance = 0
+        instance.__refresherOffset = instance.__refresherOffset ?? 0
       },
       handleTouchMove(event: glassEasel.ShadowedEvent<unknown>) {
         const instance = this as unknown as ScrollRuntime
@@ -197,9 +278,16 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         const point = touchPoint(event)
         const deltaX = point.x - start.x
         const deltaY = point.y - start.y
-        if (this.data.refresherEnabled && start.scrollTop <= 0 && deltaY > 0) {
-          instance.__pullDistance = deltaY
-          this.triggerEvent('refresherpulling', { deltaY }, { bubbles: true, composed: true })
+        if (this.data.refresherEnabled && start.scrollTop <= 0 && deltaY > 0 && !instance.__refreshing) {
+          event.preventDefault?.()
+          const threshold = Number(this.data.refresherThreshold ?? 45)
+          const offset = Math.min(threshold * 1.2, deltaY * 0.5)
+          instance.__pullDistance = offset
+          this.setRefresherOffset(offset, false)
+          this.setData({
+            refresherText: offset >= threshold ? '释放刷新' : '下拉刷新',
+          })
+          this.triggerEvent('refresherpulling', { dy: offset }, { bubbles: true, composed: true })
           return
         }
         const distance = Math.hypot(deltaX, deltaY)
@@ -217,20 +305,22 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
           this.triggerEvent('dragend', { scrollTop: Number(this.backend()?.scrollTop ?? 0), scrollLeft: Number(this.backend()?.scrollLeft ?? 0) }, { bubbles: true, composed: true })
         }
         const pullDistance = Number(instance.__pullDistance ?? 0)
+        const threshold = Number(this.data.refresherThreshold ?? 45)
         instance.__dragStart = undefined
         instance.__dragging = false
         instance.__pullDistance = 0
-        if (this.data.refresherEnabled && pullDistance > Number(this.data.refresherThreshold ?? 45)) {
-          this.triggerEvent('refresherwillrefresh', {}, { bubbles: true, composed: true })
-          this.triggerEvent('refresherwillRefresh', {}, { bubbles: true, composed: true })
-          this.setData({ refresherTriggered: true })
-          this.triggerEvent('refresherrefresh', { dy: pullDistance }, { bubbles: true, composed: true })
-          if (instance.__refresherTimer) clearTimeout(instance.__refresherTimer)
-          instance.__refresherTimer = setTimeout(() => {
-            instance.__refresherTimer = undefined
-            this.setData({ refresherTriggered: false })
-            this.triggerEvent('refresherrestore', {}, { bubbles: true, composed: true })
-          }, 300)
+        if (this.data.refresherEnabled && pullDistance > 0) {
+          if (pullDistance >= threshold) {
+            this.setRefresherOffset(threshold, true)
+            if (!this.data.refresherTriggered) this.setData({ refresherTriggered: true })
+            this.setData({ refresherText: '正在刷新...' })
+            instance.__refreshing = true
+            this.triggerEvent('refresherrefresh', { dy: pullDistance }, { bubbles: true, composed: true })
+          } else {
+            this.setRefresherOffset(0, true)
+            this.setData({ refresherText: '下拉刷新' })
+            this.triggerEvent('refresherabort', {}, { bubbles: true, composed: true })
+          }
         }
       },
       handleTouchCancel() {
@@ -241,7 +331,11 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         instance.__dragStart = undefined
         instance.__dragging = false
         instance.__pullDistance = 0
-        if (this.data.refresherEnabled) this.triggerEvent('refresherabort', {}, { bubbles: true, composed: true })
+        if (this.data.refresherEnabled) {
+          this.setRefresherOffset(0, true)
+          this.setData({ refresherText: '下拉刷新' })
+          this.triggerEvent('refresherabort', {}, { bubbles: true, composed: true })
+        }
       },
       handleTap() {
         if (!this.data.enableBackToTop) return

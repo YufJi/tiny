@@ -11,6 +11,7 @@ tiny-scroll-view[hidden] {
   max-height: inherit;
   position: relative;
   width: 100%;
+  overscroll-behavior: contain;
 }
 .tiny-scroll-view-flex,
 .tiny-scroll-view-flex > div {
@@ -63,4 +64,62 @@ tiny-scroll-view[hidden] {
   border-radius: 4px;
   height: 6px;
   position: relative;
+}
+.tiny-scroll-view-refresher {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  left: 0;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  width: 100%;
+  z-index: 0;
+}
+.tiny-scroll-view-refresher.is-white {
+  color: #000;
+}
+.tiny-scroll-view-refresher.is-black {
+  color: #fff;
+}
+.tiny-scroll-view-refresher-default {
+  align-items: center;
+  bottom: 0;
+  display: flex;
+  font-size: 14px;
+  gap: 8px;
+  justify-content: center;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+.tiny-scroll-view-refresher-text {
+  white-space: nowrap;
+}
+.tiny-scroll-view-refresher-spinner {
+  animation: tiny-scroll-view-spin 0.8s linear infinite;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  height: 16px;
+  width: 16px;
+}
+@keyframes tiny-scroll-view-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.tiny-scroll-view-refresher.is-custom .tiny-scroll-view-refresher-default {
+  display: none;
+}
+.tiny-scroll-view-refresher-slot {
+  align-items: center;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
 }
