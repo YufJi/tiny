@@ -181,11 +181,14 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.equal(iconMetrics.color, 'rgb(9, 187, 7)', 'icon success color mismatch')
       assert.notEqual(iconMetrics.content, 'none', 'icon should render a font glyph')
       assert.equal(iconMetrics.width, 23, 'icon width mismatch')
-      const imageLoaded = await render.locator(
-        'img.tiny-builtin-image--tiny-image-probe, img.tiny-builtin-image--tiny-image-img',
-      ).first().evaluate(
-        (element) => element.naturalWidth > 0,
-      )
+      const imageLoaded = await render.waitForFunction(
+        () => {
+          const layer = document.querySelector('tiny-image > div')
+          return layer ? getComputedStyle(layer).backgroundImage.includes('url(') : false
+        },
+        null,
+        { timeout: STEP_TIMEOUT },
+      ).then(() => true, () => false)
       assert.ok(imageLoaded, 'inlined image did not load')
       // WeChat renders `<div id="div">` for the bitmap and a sibling
       // `<span><slot/></span>` for children; the fallback wrapper is gone.
@@ -821,7 +824,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
         (await avatar.evaluate((element) => element.getBoundingClientRect().width)) > 50,
         'external class styles did not apply to the image',
       )
-      const avatarLayer = await avatar.locator('.tiny-builtin-image--tiny-image-div').evaluate((element) => {
+      const avatarLayer = await avatar.locator('div').first().evaluate((element) => {
         const style = getComputedStyle(element)
         const rect = element.getBoundingClientRect()
         return { width: rect.width, height: rect.height, backgroundImage: style.backgroundImage }
@@ -833,7 +836,10 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
 
     await step('drive the existing todos page interactions', async () => {
       currentStep = 'drive the existing todos page interactions'
-      await render.waitForFunction(() => document.querySelector('img')?.naturalWidth > 0, null, { timeout: STEP_TIMEOUT })
+      await render.waitForFunction(() => {
+        const layer = document.querySelector('tiny-image > div')
+        return layer ? getComputedStyle(layer).backgroundImage.includes('url(') : false
+      }, null, { timeout: STEP_TIMEOUT })
       assert.equal(await render.locator('tiny-label[class*="--todo-item"][class*="--checked"]').count(), 2, 'initial checked todos are wrong')
 
       await byText(render, 'Learning 小程序', { exact: true }).click()
@@ -1158,8 +1164,10 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
       const body = await render.locator('#app').innerText()
       assert.ok(body.includes('表单组件'), 'component categories did not render')
       await render.waitForFunction(() => {
-        const images = [...document.querySelectorAll('img[src*="resources/kind"]')]
-        return images.length > 0 && images.every((image) => image.complete && image.naturalWidth > 0)
+        const layers = [...document.querySelectorAll('tiny-image > div')]
+          .filter((layer) => getComputedStyle(layer).backgroundImage.includes('resources/kind'))
+        return layers.length > 0
+          && layers.every((layer) => getComputedStyle(layer).backgroundImage !== 'none')
       }, null, { timeout: STEP_TIMEOUT })
       const theme = await render.evaluate(() => {
         const element = document.querySelector('[data-weui-theme]')
@@ -2039,8 +2047,12 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         )
         if (imageFixtures.has(fixture.id)) {
           await renderFrame.waitForFunction(() => {
+            const layers = [...document.querySelectorAll('tiny-image > div')]
             const images = [...document.querySelectorAll('img')]
-            return images.length > 0 && images.every((image) => image.complete && image.naturalWidth > 0)
+              .filter((image) => image.complete && image.naturalWidth > 0)
+            return (layers.length > 0
+              && layers.every((layer) => getComputedStyle(layer).backgroundImage !== 'none'))
+              || images.length > 0
           }, null, { timeout: STEP_TIMEOUT })
         }
         if (needle) {

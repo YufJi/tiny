@@ -1,32 +1,25 @@
 tiny-image {
-  position: relative;
   display: inline-block;
-  width: 320px;
   height: 240px;
   overflow: hidden;
-  box-sizing: border-box;
+  width: 320px;
 }
-tiny-image[mode=widthFix] {
-  height: auto;
+tiny-image[hidden] {
+  display: none;
 }
-tiny-image[mode=heightFix] {
-  width: auto;
-}
-.tiny-image-div {
-  width: 100%;
+tiny-image > div {
   height: 100%;
-}
-.tiny-image-div > img {
-  display: block;
   width: 100%;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
 }
-.tiny-image-probe {
-  position: absolute;
-  width: 0;
-  height: 0;
-  opacity: 0;
-  pointer-events: none;
+tiny-image > div > img {
+  width: 100%;
+}
+tiny-image > img {
+  -webkit-touch-callout: none;
+  display: block;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+}
+tiny-image.tiny-image-will-change {
+  will-change: transform;
 }

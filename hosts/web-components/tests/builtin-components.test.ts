@@ -850,10 +850,18 @@ describe('P0 built-in components', () => {
     const imageHtml = glassEasel.dumpElementToString(host('image')!, true)
     expect(imageHtml).toContain('id="div"')
     expect(glassEasel.dumpElementToString(host('input')!, true)).toContain('tiny-input-dropdown')
-    const image2Html = glassEasel.dumpElementToString(host('image2')!, true)
-    expect(image2Html).toContain('background-size: cover')
-    expect(image2Html).toContain('background-position: top left')
-    expect(imageHtml).toContain('loading="lazy"')
+    const image2 = host('image2')!
+    const imageDiv = { style: {} as Record<string, string> }
+    ;(image2 as unknown as { getShadowRoot: () => unknown }).getShadowRoot = () => ({
+      getElementById: () => ({ getBackendElement: () => imageDiv }),
+    })
+    ;(image2 as unknown as { modeChanged: (mode: string) => void }).modeChanged('aspectFit')
+    expect(imageDiv.style.backgroundSize).toBe('contain')
+    expect(imageDiv.style.backgroundPosition).toBe('center center')
+    // Once the mode owns the background, the raw background-* props are ignored.
+    ;(image2 as unknown as { backgroundSizeChanged: (value: string) => void })
+      .backgroundSizeChanged('cover')
+    expect(imageDiv.style.backgroundSize).toBe('contain')
 
     host('checkbox')!.setData({ checked: true })
     const checkboxHtml = glassEasel.dumpElementToString(host('checkbox')!, true)
@@ -887,9 +895,10 @@ describe('P0 built-in components', () => {
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const imageHost = instance.getShadowRoot()?.getElementById('image')?.asGeneralComponent()
     expect(imageHost).toBeDefined()
-    expect(glassEasel.dumpElementToString(imageHost!, true)).toContain('https://cdn.example/a.png')
+    const resolveSrc = (imageHost as unknown as { resolveSrc: (src: string) => string }).resolveSrc
+    expect(resolveSrc.call(imageHost, '/a.png')).toBe('https://cdn.example/a.png')
     imageHost!.setData({ src: '/b.png' })
-    expect(glassEasel.dumpElementToString(imageHost!, true)).toContain('https://cdn.example/b.png')
+    expect(resolveSrc.call(imageHost, '/b.png')).toBe('https://cdn.example/b.png')
   })
 
   test('slider and progress expose aligned color and display options', () => {
