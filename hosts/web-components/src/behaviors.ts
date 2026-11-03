@@ -74,6 +74,13 @@ type ReloadState = Record<string, unknown> & {
   wxComponents?: Record<string, unknown> & { _custom?: Record<string, unknown> }
 }
 
+type LabelTargetRuntime = {
+  _labelTapListener?: (event: HostEvent) => void
+  addListener?: (name: string, listener: (event: HostEvent) => void) => void
+  removeListener?: (name: string, listener: (event: HostEvent) => void) => void
+  handleLabelTap?: (event: HostEvent) => void
+}
+
 /** The group surface an item reports to (implemented by checkbox/radio group). */
 type GroupHandler = {
   addItem?: (item: unknown) => void
@@ -779,6 +786,20 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
 
   const labelTarget = space.defineBehavior({
     is: BUILTIN_BEHAVIOR_IDS.labelTarget,
+    lifetimes: {
+      created() {
+        const instance = this as unknown as LabelTargetRuntime
+        instance._labelTapListener = (event) => instance.handleLabelTap?.(event)
+        instance.addListener?.('labelTap', instance._labelTapListener)
+      },
+      detached() {
+        const instance = this as unknown as LabelTargetRuntime
+        if (instance._labelTapListener) {
+          instance.removeListener?.('labelTap', instance._labelTapListener)
+        }
+        instance._labelTapListener = undefined
+      },
+    },
     methods: {
       handleLabelTap() {
         // Label activation is dispatched by the label component.

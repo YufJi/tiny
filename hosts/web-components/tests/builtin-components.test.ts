@@ -52,7 +52,7 @@ describe('P0 built-in components', () => {
 
   // `text` has no author display rule, so the UA `[hidden]` rule applies;
   // WeChat also declares no `wx-text[hidden]`.
-  const TAGS_WITHOUT_AUTHOR_HIDDEN = new Set<string>(['text'])
+  const TAGS_WITHOUT_AUTHOR_HIDDEN = new Set<string>(['label', 'text'])
 
   test('hides every built-in host tag with an author [hidden] rule or the UA default', () => {
     for (const tag of BUILTIN_COMPONENT_TAGS) {
@@ -706,10 +706,13 @@ describe('P0 built-in components', () => {
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
     const tap = (id: string) => {
-      const label = host(id) as unknown as { handleTap: (event: unknown) => void }
-      label.handleTap({ target: host(id), detail: {} })
+      const label = host(id) as unknown as { onTap: (event: unknown) => void }
+      label.onTap({ target: host(id), detail: {} })
     }
     attach(instance)
+    expect((host('checkbox') as unknown as { _relatedLabel?: unknown })._relatedLabel).toBe(host('wrap'))
+    expect((host('radio') as unknown as { _relatedLabel?: unknown })._relatedLabel).toBe(host('for-label'))
+    expect((host('switch') as unknown as { _relatedLabel?: unknown })._relatedLabel).toBe(host('switch-label'))
     tap('wrap')
     expect(host('checkbox').data.checked).toBe(true)
     expect(host('group').data.value).toEqual(['a'])
