@@ -329,7 +329,10 @@ export class GlassEaselRuntimeAdapter {
         extraStyleScope: glassEasel.StyleScopeManager.globalScope(),
       })
       .methodCallerInit(function (this: glassEasel.GeneralComponent) {
-        return adapter.createEventMethodCaller(this)
+        // WeChat copies the page's non-lifecycle instance fields (`extraLine`,
+        // custom counters, ...) onto the page instance; methods close over
+        // `this.<field>` and would otherwise hit `undefined`.
+        return adapter.createEventMethodCaller(this, adapter.logicPageFields(page.path))
       })
       .observer('**', function (this: glassEasel.GeneralComponent) {
         adapter.notifyLogicDataChange(adapter.resolveMethodCaller(this) ?? this)
@@ -1170,6 +1173,20 @@ export class GlassEaselRuntimeAdapter {
     return output.join('/')
   }
 
+  /** Page options minus lifecycle/data/methods: WeChat copies them to the instance. */
+  private logicPageFields(path: string): Record<string, unknown> {
+    const options = this.logicPageOptions?.get(path) as Record<string, unknown> | undefined
+    if (!options) return {}
+    const fields: Record<string, unknown> = {}
+    for (const [name, value] of Object.entries(options)) {
+      if (typeof value === 'function') continue
+      if (name === 'data' || name === 'methods' || name === 'options' || name === 'behaviors') continue
+      if (PAGE_LIFECYCLE_KEYS.has(name)) continue
+      fields[name] = value
+    }
+    return fields
+  }
+
   private logicPageMethods(path: string): Record<string, (...args: unknown[]) => unknown> {
     const methods: Record<string, (...args: unknown[]) => unknown> = {}
     const options = this.logicPageOptions?.get(path)
@@ -1238,9 +1255,12 @@ export class GlassEaselRuntimeAdapter {
     return undefined
   }
 
-  private createEventMethodCaller(component?: glassEasel.GeneralComponent): unknown {
+  private createEventMethodCaller(
+    component?: glassEasel.GeneralComponent,
+    initialFields?: Record<string, unknown>,
+  ): unknown {
     const logicMode = Boolean(this.logicComponentDefinitions)
-    const instanceFields: Record<string, unknown> = {}
+    const instanceFields: Record<string, unknown> = { ...(initialFields ?? {}) }
     return new Proxy(instanceFields, {
       has() {
         return true
