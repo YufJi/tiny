@@ -14,6 +14,24 @@ const STEP_TIMEOUT = 15_000
 /** `text` keeps the hidden source node, so text locators only match visible nodes. */
 const byText = (frame, text, options) => frame.getByText(text, options).filter({ visible: true })
 
+/** Click a slider track at the position for `value` (ranges come from the host attrs). */
+async function setSliderValue(slider, value) {
+  const range = await slider.evaluate((element) => ({
+    min: Number(element.getAttribute('min') ?? 0),
+    max: Number(element.getAttribute('max') ?? 100),
+  }))
+  const track = slider.locator('[class*="slider-handle-wrapper"]')
+  const box = await track.boundingBox()
+  if (!box) throw new Error('slider track has no bounding box')
+  const ratio = Math.min(1, Math.max(0, (value - range.min) / (range.max - range.min)))
+  await track.click({
+    position: {
+      x: Math.min(box.width - 1, Math.max(1, box.width * ratio)),
+      y: box.height / 2,
+    },
+  })
+}
+
 async function launchBrowser() {
   const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH
   const attempts = executablePath
@@ -142,7 +160,10 @@ export async function runBrowserAcceptance({ baseUrl }) {
         assert.ok((await render.locator(selector).count()) > 0, `missing rendered element: ${selector}`)
       }
       assert.equal(await render.locator('tiny-swiper-item').count(), 2, 'swiper should render two items')
-      assert.equal(await render.locator('input.tiny-builtin-slider--tiny-slider').inputValue(), '20')
+      assert.equal(
+        await render.locator('tiny-slider').first().locator('[class*="slider-track"]').evaluate((element) => element.style.width),
+        '20%',
+      )
       assert.match(await render.locator('.tiny-builtin-progress--tiny-progress-info').innerText(), /^20%$/)
       const iconMetrics = await render.locator('tiny-icon i').first().evaluate((element) => {
         const style = getComputedStyle(element)
@@ -330,10 +351,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
 
     await step('update progress and data from a slider change', async () => {
       currentStep = 'update progress and data from a slider change'
-      await render.locator('input.tiny-builtin-slider--tiny-slider').evaluate((element) => {
-        element.value = '65'
-        element.dispatchEvent(new Event('change', { bubbles: true }))
-      })
+      await setSliderValue(render.locator('tiny-slider').first(), 65)
       await waitForText('slider: 65')
       await render.waitForFunction(
         () => document.querySelector('.tiny-builtin-progress--tiny-progress-info')?.textContent?.trim() === '65%',
@@ -614,12 +632,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
       await render.locator('#capture-child').click()
       await waitForText('capture-status: capture')
       await waitForText('capture-parent-status: capture-parent')
-      const slider = render.locator('tiny-slider input[type="range"]').first()
-      await slider.evaluate((element) => {
-        element.value = '5'
-        element.dispatchEvent(new Event('input', { bubbles: true }))
-        element.dispatchEvent(new Event('change', { bubbles: true }))
-      })
+      await setSliderValue(render.locator('tiny-slider').first(), 5)
       await waitForText('status: change:5')
       await render.locator('#dynamic').click()
       await waitForText('dynamic-status: wxs:2')
@@ -884,17 +897,15 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       assert.equal(switchCheckbox.fontSize, '22px', 'switch checkbox mark size mismatch')
       assert.notEqual(switchCheckbox.content, 'none', 'checked switch checkbox should draw its check glyph')
 
-      await render.locator('input.tiny-builtin-slider--tiny-slider').nth(1).evaluate((element) => {
-        element.value = '1500'
-        element.dispatchEvent(new Event('change', { bubbles: true }))
-      })
-      await render.locator('input.tiny-builtin-slider--tiny-slider').nth(2).evaluate((element) => {
-        element.value = '7000'
-        element.dispatchEvent(new Event('change', { bubbles: true }))
-      })
+      await setSliderValue(render.locator('tiny-slider').nth(1), 1500)
+      await setSliderValue(render.locator('tiny-slider').nth(2), 7000)
+      // Touch coordinates quantize to about one CSS pixel, so these wide
+      // ranges land within a few units of the requested value.
       await render.waitForFunction(
-        () => [...document.querySelectorAll('[class*="--info"]')].map((element) => element.innerText?.trim()).includes('1500')
-          && [...document.querySelectorAll('[class*="--info"]')].map((element) => element.innerText?.trim()).includes('7000'),
+        () => {
+          const values = [...document.querySelectorAll('tiny-slider')].map((element) => Number(element.getAttribute('value')))
+          return Math.abs(values[1] - 1500) <= 5 && Math.abs(values[2] - 7000) <= 10
+        },
         null,
         { timeout: STEP_TIMEOUT },
       )

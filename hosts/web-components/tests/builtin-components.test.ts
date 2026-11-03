@@ -415,8 +415,16 @@ describe('P0 built-in components', () => {
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()
     host('checkbox')?.triggerEvent('tap', {})
     expect(host('checkbox')?.data.checked).toBe(true)
-    const native = (id: string) => host(id)?.getShadowRoot()?.getElementById('native-input')
-    native('slider')?.triggerEvent('change', { value: 42 })
+    const slider = host('slider')!
+    ;(slider as unknown as { getShadowRoot: () => unknown }).getShadowRoot = () => ({
+      getElementById: () => ({
+        getBackendElement: () => ({
+          offsetWidth: 100,
+          getBoundingClientRect: () => ({ left: 0 }),
+        }),
+      }),
+    })
+    ;(slider as unknown as { _onTap: (event: unknown) => void })._onTap({ detail: { x: 42 } })
     expect(events.slider).toEqual({ value: 42 })
     host('switch')?.triggerEvent('tap', {})
     expect(events.switch).toEqual({ value: false })
@@ -900,9 +908,10 @@ describe('P0 built-in components', () => {
     const sliderHtml = glassEasel.dumpElementToString(host('slider')!, true)
     expect(sliderHtml).toContain('tiny-slider-value')
     expect(sliderHtml).toContain('width: 42%')
+    expect(sliderHtml).toContain('background-color: #eeeeee')
     expect(sliderHtml).toContain('background-color: #112233')
-    expect(sliderHtml).toContain('width: 32px')
-    expect(sliderHtml).toContain('margin-left: -16px')
+    expect(sliderHtml).toContain('width: 28px')
+    expect(sliderHtml).toContain('margin-left: -14px')
     const progressHtml = glassEasel.dumpElementToString(host('progress')!, true)
     expect(progressHtml).toContain('height: 10px')
     expect(progressHtml).toContain('background-color: #445566')

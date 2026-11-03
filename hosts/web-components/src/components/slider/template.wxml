@@ -1,41 +1,22 @@
-<div
-  class="tiny-slider-wrapper {{disabled ? 'is-disabled' : ''}}"
-  role="slider"
-  aria-label="{{ariaLabel}}"
-  aria-valuemin="{{min}}"
-  aria-valuemax="{{max}}"
-  aria-valuenow="{{displayValue}}"
-  aria-disabled="{{disabled}}"
->
-  <div class="tiny-slider-tap-area">
+<div class="tiny-slider-wrapper {{disabled ? 'tiny-slider-disabled' : ''}}">
+  <div id="wrapper" class="tiny-slider-tap-area">
     <div
       class="tiny-slider-handle-wrapper"
-      style="background-color: {{backgroundColor || color}};"
+      style="background-color: {{backgroundValue}};"
     >
-      <div class="tiny-slider-handle" style="left: {{percent}}%;"></div>
+      <div id="handle" class="tiny-slider-handle" style="left: {{valuePercent}};"></div>
       <div
         class="tiny-slider-thumb"
-        style="left: {{percent}}%; width: {{blockSize}}px; height: {{blockSize}}px; margin-left: {{blockOffset}}px; margin-top: {{blockOffset}}px; background-color: {{blockColor}};"
+        style="left: {{valuePercent}}; width: {{thumbSize}}px; height: {{thumbSize}}px; margin-left: {{thumbOffset}}px; margin-top: {{thumbOffset}}px; background-color: {{blockColor}};"
       ></div>
       <div
         class="tiny-slider-track"
-        style="width: {{percent}}%; background-color: {{activeColor || selectedColor}};"
+        style="width: {{valuePercent}}; background-color: {{activeValue}};"
       ></div>
-      <div class="tiny-slider-step"></div>
-      <input
-        id="native-input"
-        class="tiny-slider"
-        aria-label="{{ariaLabel}}"
-        type="range"
-        min="{{min}}"
-        max="{{max}}"
-        step="{{step}}"
-        value="{{displayValue}}"
-        disabled="{{disabled}}"
-        catchinput="handleChanging"
-        catchchange="handleChange"
-      />
+      <div id="step" class="tiny-slider-step"></div>
     </div>
   </div>
-  <span class="tiny-slider-value" hidden="{{!showValue}}"><p>{{displayValue}}</p></span>
+  <span class="tiny-slider-value" hidden="{{!showValue}}">
+    <p style="width: {{valueTextWidth}};">{{filteredValue}}</p>
+  </span>
 </div>
