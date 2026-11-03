@@ -192,6 +192,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
               type: 'element',
               id: entry.id,
               tag: entry.tag,
+              ...(entry.slot ? { slot: entry.slot } : {}),
               ...(entry.props ? { props: entry.props } : {}),
               ...(entry.dataset ? { dataset: entry.dataset } : {}),
               ...(entry.scopes ? { scopes: entry.scopes } : {}),

@@ -86,6 +86,8 @@ export type RenderElement = {
   type: 'element'
   id: RenderNodeId
   tag: string
+  /** Named-slot assignment for this node (from `slot="..."` in WXML). */
+  slot?: string
   props?: Record<string, unknown>
   dataset?: Record<string, unknown>
   scopes?: string[]
@@ -196,6 +198,8 @@ export type ComponentFlow =
     path?: string
     parentId?: RenderNodeId
     index?: number
+    /** Named-slot assignment carried from the logic tree. */
+    slot?: string
     text?: string
     props?: Record<string, unknown>
     dataset?: Record<string, unknown>

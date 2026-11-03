@@ -368,6 +368,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         tag: node.tag,
         parentId,
         index,
+        slot: node.slot,
         dataset: node.dataset,
         scopes: node.scopes,
         scopeChain: node.scopeChain,

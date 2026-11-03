@@ -16,7 +16,7 @@ const PAGE_PATH = 'pages/index/index'
 const CHILD_PATH = 'components/child/index'
 const PAGE_WXML = [
   '<child id="child" container="{{ container }}" data-date="{{ date }}" data-count="{{ count }}"><text>slotted</text></child>',
-  '<view class="after" style="color: red">{{ label }}</view>',
+  '<view class="after" slot="refresher" style="color: red">{{ label }}</view>',
   '<image id="pic" src="/a.png" mode="aspectFit" />',
 ].join('')
 const CHILD_WXML = '<view class="child">{{ label }}<slot /></view>'
@@ -110,6 +110,7 @@ describe('logic backend', () => {
 
     const after = elements[1]
     expect(after?.type === 'element' ? after.props?.class : undefined).toContain('after')
+    expect(after?.type === 'element' ? after.slot : undefined).toBe('refresher')
     expect(after?.type === 'element' ? after.props?.style : undefined).toBe('color: red')
     expect(after?.type === 'element' ? after.scopes : undefined).toContain('page-pages-index-index')
     expect(after?.type === 'element' ? after.children?.[0] : undefined).toMatchObject({

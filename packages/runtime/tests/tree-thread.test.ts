@@ -37,7 +37,7 @@ describe('tree thread', () => {
         { type: 'create-node', id: 'page', tag: 'page', index: 0 },
         { type: 'create-node', id: 'view', tag: 'view', parentId: 'page', index: 0 },
         { type: 'create-node', id: 'text', tag: '#text', parentId: 'view', index: 0, text: 'flow' },
-        { type: 'create-node', id: 'card', tag: 'card', parentId: 'view', index: 1 },
+        { type: 'create-node', id: 'card', tag: 'card', parentId: 'view', index: 1, slot: 'refresher' },
         { type: 'props', id: 'card', props: { label: 'flow' } },
         { type: 'children', id: 'view', inserts: ['text', 'card'] },
         { type: 'ready' },
@@ -53,7 +53,7 @@ describe('tree thread', () => {
         id: 'view',
         children: [
           { type: 'text', id: 'text', text: 'flow' },
-          { type: 'element', id: 'card', tag: 'card', props: { label: 'flow' } },
+          { type: 'element', id: 'card', tag: 'card', slot: 'refresher', props: { label: 'flow' } },
         ],
       }],
     })

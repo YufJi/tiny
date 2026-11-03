@@ -1068,6 +1068,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       builtin ? node.tag : `${TINY_ENGINE_NAMING.hostTagPrefix}${node.tag}`,
       definition,
     )
+    if (node.slot) {
+      ;(component as unknown as { slot: string }).slot = node.slot
+    }
     nodes.set(node.id, component)
     idByComponent.set(component, node.id)
     currentTree.set(node.id, node)

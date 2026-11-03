@@ -87,8 +87,6 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         this.applyScrollAnimation()
         ;(this as unknown as { setRefresherOffset: (offset: number, animate: boolean) => void })
           .setRefresherOffset(0, false)
-        ;(this as unknown as { relocateCustomRefresher: (attempt: number) => void })
-          .relocateCustomRefresher(0)
         const main = this.backend() as { addEventListener?: (type: string, listener: (event: TouchEvent) => void, options?: AddEventListenerOptions) => void } | null
         if (main?.addEventListener) {
           const runtime = this as unknown as ScrollRuntime
@@ -167,33 +165,6 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
           getElementById?: (id: string) => { getBackendElement?: () => ScrollBackend | null } | null
         } | null)?.getElementById?.('main')?.getBackendElement?.()
         return element ?? (this as unknown as { getBackendElement?: () => ScrollBackend | null }).getBackendElement?.() ?? null
-      },
-      relocateCustomRefresher(attempt: number) {
-        // Named slots on native children are not materialized by the current
-        // glass proc-gen path, so the page's slot="refresher" node lands in the
-        // default content slot. With refresher-default-style="none" that first
-        // content child is the custom refresher: move its backend node into the
-        // refresher overlay so it no longer occupies scroll layout.
-        if (!this.data.refresherEnabled || this.data.refresherDefaultStyle !== 'none') return
-        const content = (this.getShadowRoot?.() as {
-          getElementById?: (id: string) => { getBackendElement?: () => { children?: ArrayLike<{ parentNode?: unknown }>; removeChild?: (node: unknown) => void } | null } | null
-        } | null)?.getElementById?.('content')?.getBackendElement?.()
-        const host = (this.getShadowRoot?.() as {
-          getElementById?: (id: string) => { getBackendElement?: () => { querySelector?: (selector: string) => { appendChild?: (node: unknown) => void } | null } | null } | null
-        } | null)?.getElementById?.('refresher')?.getBackendElement?.()
-        const slot = host?.querySelector?.('[class*="refresher-slot"]')
-        const first = content?.children?.[0]
-        if (content && slot?.appendChild && first) {
-          content.removeChild?.(first)
-          slot.appendChild(first)
-          return
-        }
-        if (attempt < 5 && typeof setTimeout !== 'undefined') {
-          setTimeout(() => {
-            ;(this as unknown as { relocateCustomRefresher: (attempt: number) => void })
-              .relocateCustomRefresher(attempt + 1)
-          }, 16)
-        }
       },
       applyOverflow() {
         const element = this.backend()

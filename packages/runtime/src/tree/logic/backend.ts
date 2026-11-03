@@ -539,6 +539,7 @@ export class LogicBackendContext {
         type: 'element',
         id: nextId(node),
         tag: node === rootElement ? RENDER_PAGE_TAG : node.tagName,
+        ...(node.slot ? { slot: node.slot } : {}),
         props: propsFor(node),
         ...(external && Object.keys(external).length > 0 ? { externalClasses: external } : {}),
         ...(datasetFor(node) ? { dataset: datasetFor(node) } : {}),
