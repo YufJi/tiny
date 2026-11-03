@@ -1,80 +1,73 @@
 tiny-picker-view-column {
   flex: 1;
+  height: 100%;
+  overflow: hidden;
   position: relative;
   z-index: 0;
-  height: 100%;
-  overflow: hidden;
 }
-
-.tiny-picker__group {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
 .tiny-picker__mask {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.6)),
-    linear-gradient(0deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.6));
+    linear-gradient(180deg, hsla(0, 0%, 100%, 0.95), hsla(0, 0%, 100%, 0.6)),
+    linear-gradient(0deg, hsla(0, 0%, 100%, 0.95), hsla(0, 0%, 100%, 0.6));
   background-position: top, bottom;
-  background-size: 100% calc(50% - var(--picker-indicator-offset));
   background-repeat: no-repeat;
-}
-
-.tiny-picker__indicator {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(50% - var(--picker-indicator-offset));
-  height: var(--picker-item-height);
-  z-index: 3;
-  pointer-events: none;
-}
-
-.tiny-picker__indicator::before,
-.tiny-picker__indicator::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background-color: #e5e5e5;
-}
-
-.tiny-picker__indicator::before {
+  background-size: 100% 102px;
+  height: 100%;
+  margin: 0 auto;
   top: 0;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
-
-.tiny-picker__indicator::after {
-  bottom: 0;
+.tiny-picker__indicator {
+  height: 34px;
+  top: 102px;
 }
-
-.tiny-picker__content {
-  position: absolute;
-  top: 50%;
+.tiny-picker__indicator,
+.tiny-picker__mask {
   left: 0;
+  pointer-events: none;
+  position: absolute;
   width: 100%;
-  margin-top: calc(-1 * var(--picker-indicator-offset));
-  box-sizing: border-box;
-  transition: transform 0.3s ease;
-  will-change: transform;
+  z-index: 3;
 }
-
+.tiny-picker__content {
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+  will-change: transform;
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  -webkit-transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
 .tiny-picker__content.is-dragging {
   transition: none;
+  -webkit-transition: none;
 }
-
-.tiny-picker__content > * {
-  display: block;
-  height: var(--picker-item-height);
-  line-height: var(--picker-item-height);
-  text-align: center;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+.tiny-picker__indicator::after,
+.tiny-picker__indicator::before {
+  color: #e5e5e5;
+  content: " ";
+  height: 1px;
+  left: 0;
+  position: absolute;
+  right: 0;
+}
+.tiny-picker__indicator::before {
+  border-top: 1px solid #e5e5e5;
+  top: 0;
+  transform: scaleY(0.5);
+  -webkit-transform: scaleY(0.5);
+  transform-origin: 0 0;
+  -webkit-transform-origin: 0 0;
+}
+.tiny-picker__indicator::after {
+  border-bottom: 1px solid #e5e5e5;
+  bottom: 0;
+  transform: scaleY(0.5);
+  -webkit-transform: scaleY(0.5);
+  transform-origin: 0 100%;
+  -webkit-transform-origin: 0 100%;
+}
+tiny-picker-view-column[hidden] {
+  display: none;
 }
