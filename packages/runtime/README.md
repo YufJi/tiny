@@ -1,8 +1,8 @@
 # @tiny/runtime
 
 WeChat-style split-tree mini-program runtime: a service-side glass-easel logic
-tree, a host-owned render tree, the tree protocol between them, host
-orchestration, and the devtool client.
+tree, a host-owned render tree, the tree protocol between them, and host
+orchestration.
 
 ## Entry points
 
@@ -17,10 +17,10 @@ lives in `@tiny/host-browser`:
 | API | Purpose |
 | --- | --- |
 | `WasmBrowserHost` | Rust HostCore adapter: service iframe and one render iframe per page |
-| `DevtoolRuntimeClient` | Debugger adapter: iframe lifecycle, controls, page/lifecycle projection, element tree |
 
 Both `tests/host` and `apps/devtool` use the browser host's fixed per-page render
-topology through `WasmBrowserHost` / `DevtoolRuntimeClient`.
+topology through `WasmBrowserHost`. The devtool's debugger client
+(`DevtoolRuntimeClient`) is app-level and lives in `apps/devtool/src/runtimeClient.ts`.
 
 ## Usage
 
@@ -83,7 +83,6 @@ reference browser globals.
 | `runtime-port` | `window.postMessage` / iframe port handshake |
 | `wasm-host` | iframe creation, per-page render stacks, page visibility |
 | `page-lifecycle` | Render-frame scroll → page `onPageScroll` / `onReachBottom` bridge |
-| `devtool-client` | Debugger controls, page frames, tabBar state, lifecycle timeline, element tree |
 
 Canvas is injected at the thread boundary:
 

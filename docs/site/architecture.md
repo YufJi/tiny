@@ -144,7 +144,7 @@ glass-easel 不是完整的小程序 SDK。它负责组件、模板、数据绑�
 | `@tiny/stylesheet-compiler` | manifest · css-units · postcss | WXSS → 普通/低优先级 CSS |
 | `@tiny/cli` | manifest · template-compiler · stylesheet-compiler · esbuild · typescript | 负责生成全部产物 |
 | `@tiny/runtime` | manifest · bridge · wxs-runtime · glass-easel · es-toolkit | 双线程运行时内核，不依赖宿主 |
-| `@tiny/host-browser` | runtime · bridge | 浏览器宿主：iframe、MessageChannel、Canvas、devtool 覆盖层；wasm HostCore 适配 |
+| `@tiny/host-browser` | runtime · bridge | 浏览器宿主：iframe、MessageChannel、Canvas、宿主 API 覆盖层；wasm HostCore 适配 |
 | `@tiny/host-core-wasm` | Rust `host-core` · wasm-bindgen | 浏览器 HostCore wasm 绑定，devtool/test host 共用 |
 | `@tiny/host-core-ffi` | Rust `host-core` · UniFFI | iOS Swift HostCore 绑定 |
 | `@tiny/host-web-components` | manifest · css-units · runtime · glass-easel；构建期 template-compiler | 24 个内置组件、AOT 模板和默认 CSS（宿主包） |

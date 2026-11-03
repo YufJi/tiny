@@ -13,7 +13,9 @@ import { BROWSER_RUNTIME_NAMES } from './naming'
 import { installCanvasHandoffRelay } from './canvas-relay'
 
 /**
- * Minimal surface of the wasm-bindgen `WasmHostCore` class.
+ * Minimal surface of the wasm-bindgen `WasmHostCore` class: only the two calls
+ * the browser adapter drives. Page stack, app visibility and diagnostics arrive
+ * as `HostAction`s from `handle_event`, so they need no extra methods.
  *
  * The browser adapter deliberately does not import the generated wasm module:
  * the devtool passes a factory so the bundle can load/instantiate wasm lazily
@@ -22,9 +24,6 @@ import { installCanvasHandoffRelay } from './canvas-relay'
 export interface WasmHostCoreLike {
   start(nowMs: number): string
   handle_event(eventJson: string, nowMs: number): string
-  set_app_visible(visible: boolean): string
-  page_stack_json(): string
-  diagnostics_json(): string
 }
 
 export type WasmHostCoreFactory = (configJson: string) => Promise<WasmHostCoreLike>
@@ -69,6 +68,9 @@ type PageSurface = {
  * The class owns the browser-only pieces: service iframe, per-page render
  * iframes, MessageChannel transfers and Canvas handoff. All Bridge, page-stack,
  * navigation and Host API decisions live in `WasmHostCore`.
+ *
+ * It reports rather than retains: runtime state and diagnostics leave through
+ * `onState` / `onDiagnostic`, and the caller decides whether to keep a history.
  */
 export class WasmBrowserHost {
   private readonly options: WasmHostOptions
@@ -82,9 +84,6 @@ export class WasmBrowserHost {
   private serviceFlushTimer: ReturnType<typeof setTimeout> | undefined
   private readonly pages = new Map<string, PageSurface>()
   private readonly storage: StorageSnapshot
-  /** Browser-test compatibility surface; the devtool uses onDiagnostic instead. */
-  readonly diagnostics: RuntimeDiagnostic[] = []
-  readonly apiRegistry: { storage: StorageSnapshot }
   private activePageId: string | undefined
   private appVisible = true
   private removeCanvasRelay: (() => void) | undefined
@@ -118,19 +117,8 @@ export class WasmBrowserHost {
     this.options = options
     this.factory = factory
     this.storage = options.storage ?? {}
-    this.apiRegistry = { storage: this.storage }
     this.ownsContainer = !options.container
     this.container = options.container ?? document.createElement('div')
-  }
-
-  get renderFrameCount(): number {
-    return this.pages.size
-  }
-
-  get renderIframes(): ReadonlyMap<string, HTMLIFrameElement> {
-    const result = new Map<string, HTMLIFrameElement>()
-    for (const [pageId, page] of this.pages) result.set(pageId, page.iframe)
-    return result
   }
 
   async launch(): Promise<void> {
@@ -228,12 +216,6 @@ export class WasmBrowserHost {
     return tree
   }
 
-  async setAppVisible(visible: boolean): Promise<void> {
-    this.appVisible = visible
-    if (!this.core) return
-    this.execute(this.core.set_app_visible(visible))
-  }
-
   dispose(): void {
     if (this.disposed) return
     this.disposed = true
@@ -328,7 +310,6 @@ export class WasmBrowserHost {
           break
         case 'updateUIState':
           this.options.onState?.(action.state)
-          this.pushDiagnostic(action.state)
           break
         case 'commandResult':
           this.resolveCommand(action.command, action.result)
@@ -347,7 +328,6 @@ export class WasmBrowserHost {
             payload.pageId,
             action.level as 'log' | 'warn' | 'error' | 'state',
           )
-          this.diagnostics.push(diagnostic)
           this.options.onDiagnostic?.(diagnostic)
           break
         }
@@ -573,13 +553,6 @@ export class WasmBrowserHost {
       return
     }
     for (const waiter of waiters) waiter.resolve(result)
-  }
-
-  private pushDiagnostic(value: unknown): void {
-    if (!value || typeof value !== 'object') return
-    const diagnostic = value as RuntimeDiagnostic
-    if (typeof diagnostic.code !== 'string') return
-    this.diagnostics.push(diagnostic)
   }
 
   private report(level: string, message: string): void {

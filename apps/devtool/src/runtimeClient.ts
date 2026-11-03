@@ -1,7 +1,15 @@
+/**
+ * Debugger session client.
+ *
+ * This is app-level policy: how much history the panel keeps, how a runtime
+ * state snapshot becomes the panel's view model, and when a launch counts as
+ * inspectable. The platform glue it drives (iframes, message ports, canvas
+ * handoff, HostCore commands) lives in `@tiny/host-browser`.
+ */
 import type { RuntimeDiagnostic, RuntimePageState, RuntimeTabBarState } from '@tiny/runtime'
 import type { InspectNode } from '@tiny/runtime'
 import type { RuntimeManifest, StorageSnapshot, SystemInfoSnapshot } from '@tiny/runtime'
-import { WasmBrowserHost, type WasmHostCoreFactory } from './wasm-host'
+import { WasmBrowserHost, type WasmHostCoreFactory } from '@tiny/host-browser'
 
 export type DevtoolRuntimeStatus = 'idle' | 'connecting' | 'running' | 'terminated' | 'error'
 
@@ -50,8 +58,8 @@ export type DevtoolRuntimeOptions = {
 export type DevtoolRuntimeListener = (state: DevtoolRuntimeState) => void
 
 /**
- * Host adapter for the debugger. React and Redux only talk to this client;
- * it owns the iframe host, protocol messages, and state projection.
+ * One mini program as the debugger sees it. React and Redux only talk to this
+ * client; it drives the host and projects its events into debugger state.
  */
 export class DevtoolRuntimeClient {
   private readonly options: DevtoolRuntimeOptions
@@ -81,10 +89,6 @@ export class DevtoolRuntimeClient {
     return () => {
       this.listeners.delete(listener)
     }
-  }
-
-  get renderFrameCount(): number {
-    return this.wasmHost?.renderFrameCount ?? 0
   }
 
   async launch(): Promise<void> {

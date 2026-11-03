@@ -116,6 +116,7 @@ pnpm ios:smoke:jsc    # 在 macOS jsc 里启动 demo 的 service engine + app-da
 - 静态导入 `generated/manifest.json`
 - 启动 service 逻辑树和 render 树，把页面挂到 `#app`
 - 暴露 `window.__tinyRuntime` 给 Playwright
+- 用 `TestBrowserHost`（`tests/host/src/test-host.ts`）保留诊断历史和 storage 供断言
 - P0、mini、Taro、WeChat 四段流程都用它
 - 不依赖 devtool 应用
 :::
@@ -132,7 +133,7 @@ pnpm ios:smoke:jsc    # 在 macOS jsc 里启动 demo 的 service engine + app-da
 ::::
 
 :::callout{title="共用内核，控制方式不同"}
-测试宿主只调用 `host.bootstrap()`，然后用 Playwright 操作页面；devtool 通过 client 做导航、前后台、重载和元素树检查。两者都不直接读取 iframe 全局变量。更多差异见 [宿主适配](#/hosts)。
+测试宿主只调用 `host.launch()`，然后用 Playwright 操作页面并读取 `host.diagnostics` / `host.apiRegistry.storage`；devtool 通过 client 做导航、前后台、重载和元素树检查。两者都不直接读取 iframe 全局变量。更多差异见 [宿主适配](#/hosts)。
 :::
 
 ## 七个测试小程序，覆盖不同产物 {#fixtures kicker="测试小程序"}
