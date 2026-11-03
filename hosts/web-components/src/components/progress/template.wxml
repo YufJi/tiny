@@ -1,18 +1,10 @@
 <div
   class="tiny-progress-bar"
-  role="progressbar"
-  aria-label="{{ariaLabel}}"
-  aria-valuenow="{{curPercent}}%"
-  style="height: {{strokeWidth}}px; background-color: {{backgroundColor}}; border-radius: {{borderRadius}}px;"
+  style="height: {{barHeight}}; background-color: {{backgroundColor}}; border-radius: {{barRadius}};"
 >
   <div
-    class="tiny-progress-inner-bar {{active ? 'is-active' : ''}}"
-    style="width: {{curPercent}}%; background-color: {{activeColor || color}}; border-radius: {{borderRadius}}px;"
-    bindtransitionend="handleActiveEnd"
+    class="tiny-progress-inner-bar"
+    style="width: {{curPercent}}%; background-color: {{activeBarColor}};"
   />
 </div>
-<p
-  class="tiny-progress-info"
-  hidden="{{!showInfo}}"
-  style="font-size: {{fontSize}}px; color: {{color}};"
->{{curPercent}}%</p>
+<p class="tiny-progress-info" hidden="{{!showInfo}}" style="font-size: {{infoFontSize}};">{{curPercent}}%</p>

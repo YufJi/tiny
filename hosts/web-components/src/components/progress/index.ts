@@ -1,86 +1,145 @@
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { builtinDefinitionName } from '../../tags'
 
+const DEFAULT_ACTIVE_COLOR = '#09BB07'
+
+type ProgressRuntime = {
+  __timerId?: ReturnType<typeof setInterval>
+  _lastPercent?: number
+  getBackendElement?: () => { setAttribute?: (name: string, value: string) => void } | null
+  normalizeSizeStr?: (value: unknown) => string
+  setAriaRoleDefault?: (role: string) => void
+}
+
+function clampPercent(value: unknown): number {
+  return Math.max(0, Math.min(100, Number(value) || 0))
+}
+
+/**
+ * `<progress>` mirrors `wx-progress`: inline height/background/border-radius on
+ * the bar, inline width/active color on the inner bar, and the percentage text
+ * in `.tiny-progress-info`. The active loop advances one percent per `duration`
+ * milliseconds and emits `activeend`.
+ */
 export function defineProgress(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: builtinDefinitionName('progress'),
     template: ctx.template('progress'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.sizeNormalizer],
     properties: {
-      percent: { type: Number, value: 0 },
+      percent: { type: Number, value: 0, observer: 'percentChange' },
+      curPercent: { type: Number, value: 0, observer: 'curPercentChange' },
       showInfo: { type: Boolean, value: false },
-      active: { type: Boolean, value: false },
+      strokeWidth: { type: String, optionalTypes: [Number], value: 6, observer: 'syncSizes' },
+      active: { type: Boolean, value: false, observer: 'activeAnimation' },
+      activeColor: { type: String, value: DEFAULT_ACTIVE_COLOR, observer: 'syncActiveColor' },
       activeMode: { type: String, value: 'backwards' },
-      activeColor: { type: String, value: '#09BB07' },
       backgroundColor: { type: String, value: '#EBEBEB' },
-      color: { type: String, value: '#09BB07' },
-      borderRadius: { type: String, optionalTypes: [Number], value: 0 },
-      fontSize: { type: String, optionalTypes: [Number], value: 16 },
-      strokeWidth: { type: String, optionalTypes: [Number], value: 6 },
+      color: { type: String, value: DEFAULT_ACTIVE_COLOR, observer: 'syncActiveColor' },
+      borderRadius: { type: String, optionalTypes: [Number], value: 0, observer: 'syncSizes' },
+      fontSize: { type: String, optionalTypes: [Number], value: 16, observer: 'syncSizes' },
+      duration: { type: Number, value: 30 },
     },
     data: {
       curPercent: 0,
-    },
-    observers: {
-      percent(value: number) {
-        const percent = Math.max(0, Math.min(100, Number(value) || 0))
-        if (percent !== Number(value)) {
-          this.setData({ percent })
-          return
-        }
-        ;(this as unknown as { _lastPercent?: number })._lastPercent = Number(this.data.curPercent ?? 0)
-        this.activeAnimation(Boolean(this.data.active))
-      },
-      active(value: boolean) {
-        this.activeAnimation(Boolean(value))
-      },
+      barHeight: '6px',
+      barRadius: '0px',
+      infoFontSize: '16px',
+      activeBarColor: DEFAULT_ACTIVE_COLOR,
     },
     lifetimes: {
       created() {
-        ;(this as unknown as { _lastPercent?: number })._lastPercent = Number(this.data.percent) || 0
-        if (!this.data.active) this.setData({ curPercent: Number(this.data.percent) || 0 })
+        ;(this as unknown as ProgressRuntime)._lastPercent = Number(this.data.percent) || 0
+        ;(this as unknown as { syncSizes: () => void }).syncSizes()
+        ;(this as unknown as { syncActiveColor: () => void }).syncActiveColor()
+        if (!this.data.active) {
+          this.setData({ curPercent: clampPercent(this.data.percent) })
+        }
+      },
+      attached() {
+        ;(this as unknown as ProgressRuntime).setAriaRoleDefault?.('progressbar')
+        const element = (this as unknown as ProgressRuntime).getBackendElement?.()
+        element?.setAttribute?.('aria-valuemin', '0')
+        element?.setAttribute?.('aria-valuemax', '100')
+        element?.setAttribute?.('aria-valuenow', String(clampPercent(this.data.percent)))
       },
       detached() {
-        this.stopActiveAnimation()
+        ;(this as unknown as { stopTimer: () => void }).stopTimer()
       },
     },
     options: ctx.hostOptions('progress'),
     methods: {
-      stopActiveAnimation() {
-        const instance = this as unknown as { __activeTimer?: ReturnType<typeof setInterval> }
-        if (instance.__activeTimer) clearInterval(instance.__activeTimer)
-        instance.__activeTimer = undefined
+      _getActiveColor(color: unknown, activeColor: unknown): string {
+        const active = String(activeColor ?? '')
+        const base = String(color ?? '')
+        if (active !== DEFAULT_ACTIVE_COLOR) return active
+        if (base !== DEFAULT_ACTIVE_COLOR) return base
+        return DEFAULT_ACTIVE_COLOR
       },
-      activeAnimation(active: boolean) {
-        this.stopActiveAnimation()
-        const percent = Math.max(0, Math.min(100, Number(this.data.percent) || 0))
-        if (!active) {
-          this.setData({ curPercent: percent })
+      syncSizes() {
+        const normalize = (this as unknown as ProgressRuntime).normalizeSizeStr
+        if (!normalize) return
+        this.setData({
+          barHeight: normalize.call(this, this.data.strokeWidth),
+          barRadius: normalize.call(this, this.data.borderRadius),
+          infoFontSize: normalize.call(this, this.data.fontSize),
+        })
+      },
+      syncActiveColor() {
+        this.setData({
+          activeBarColor: (this as unknown as {
+            _getActiveColor: (color: unknown, activeColor: unknown) => string
+          })._getActiveColor(this.data.color, this.data.activeColor),
+        })
+      },
+      curPercentChange(value: number) {
+        const element = (this as unknown as ProgressRuntime).getBackendElement?.()
+        element?.setAttribute?.('aria-valuenow', String(value))
+      },
+      percentChange(value: number, previous: number) {
+        const clamped = clampPercent(value)
+        if (clamped !== Number(value)) {
+          this.setData({ percent: clamped })
           return
         }
-        const instance = this as unknown as {
-          __activeTimer?: ReturnType<typeof setInterval>
-          _lastPercent?: number
+        ;(this as unknown as { stopTimer: () => void }).stopTimer()
+        ;(this as unknown as ProgressRuntime)._lastPercent = Number(previous) || 0
+        ;(this as unknown as { activeAnimation: (active: boolean) => void })
+          .activeAnimation(Boolean(this.data.active))
+      },
+      activeAnimation(active: boolean) {
+        if (!Number.isFinite(Number(this.data.percent))) return
+        ;(this as unknown as { stopTimer: () => void }).stopTimer()
+        if (!active) {
+          this.setData({ curPercent: Number(this.data.percent) })
+          return
         }
-        let current = this.data.activeMode === 'forwards' ? Number(instance._lastPercent ?? 0) : 0
+        const runtime = this as unknown as ProgressRuntime
+        const current = this.data.activeMode === 'forwards'
+          ? Number(runtime._lastPercent ?? 0)
+          : 0
         this.setData({ curPercent: current })
-        const step = () => {
-          if (this.data.percent <= current + 1) {
-            current = percent
-            this.setData({ curPercent: current })
-            this.stopActiveAnimation()
-            this.triggerEvent('activeend', { curPercent: current }, { bubbles: true, composed: true })
+        const step = (): void => {
+          const percent = Number(this.data.percent)
+          if (percent <= Number(this.data.curPercent) + 1) {
+            this.setData({ curPercent: percent })
+            ;(this as unknown as { stopTimer: () => void }).stopTimer()
+            this.triggerEvent(
+              'activeend',
+              { curPercent: percent },
+              { bubbles: true, composed: true },
+            )
             return
           }
-          current += 1
-          this.setData({ curPercent: current })
+          this.setData({ curPercent: Number(this.data.curPercent) + 1 })
         }
-        instance.__activeTimer = setInterval(step, 30)
+        runtime.__timerId = setInterval(step, Number(this.data.duration) || 30)
         step()
       },
-      handleActiveEnd() {
-        // Kept for callers that bind transitionend; activeend is emitted by
-        // activeAnimation when the frame loop reaches the target.
+      stopTimer() {
+        const runtime = this as unknown as ProgressRuntime
+        if (runtime.__timerId) clearInterval(runtime.__timerId)
+        runtime.__timerId = undefined
       },
     },
   }).general()

@@ -907,8 +907,27 @@ describe('P0 built-in components', () => {
     expect(progressHtml).toContain('background-color: #445566')
     expect(progressHtml).toContain('font-size: 20px')
     expect(progressHtml).toContain('42%')
-    expect(progressHtml).toContain('role="progressbar"')
-    expect(progressHtml).toContain('aria-valuenow="42%"')
+  })
+
+  test('progress exposes progressbar aria on the host', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { progress: builtins.progress },
+      template: compilePage('<progress id="progress" percent="42" />'),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const progress = instance.getShadowRoot()?.getElementById('progress')?.asGeneralComponent()!
+    const attributes = new Map<string, string>()
+    ;(progress as unknown as { getBackendElement: () => unknown }).getBackendElement = () => ({
+      setAttribute: (name: string, value: string) => attributes.set(name, String(value)),
+    })
+    attach(progress)
+    expect(attributes.get('role')).toBe('progressbar')
+    expect(attributes.get('aria-valuemin')).toBe('0')
+    expect(attributes.get('aria-valuemax')).toBe('100')
+    expect(attributes.get('aria-valuenow')).toBe('42')
   })
 
 
