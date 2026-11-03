@@ -63,10 +63,12 @@
   compiler rewrites local WXSS `url(...)` references. External/data URLs and
   paths escaping the app root stay unchanged.
 - **Style scope**: the compiler emits scoped CSS plus explicit roles
-  (app/page/component/page-scope/builtin). The service logic tree registers the
-  sheets before registering component definitions, then sends the selected
-  page's role-filtered style text with its tree flow; the render tree only
-  applies that text. Page roots are `shared` by default; component-as-page roots
+  (builtin/low-priority/app/page/component/page-scope/shared). The service logic
+  tree registers the sheets before registering component definitions, then sends
+  the selected page's role-filtered style text with its tree flow; the render
+  tree only applies that text. `:host` rules travel in the low-priority sheet,
+  which is appended before app/page/component styles. Page roots are `shared` by
+  default; component-as-page roots
   read an explicit `styleIsolation` and otherwise also default to `shared`.
   Page/component tag selectors are rewritten to
   `tiny-<tag>:where(.tiny-tag-<tag>)`, preserving tag specificity while

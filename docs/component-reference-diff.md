@@ -244,6 +244,7 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 ### 4.4 button 的 native/open-type
 
 - `native` 分支已有 cover-view 结构，但没有原生 cover-view 能力；
+- `native` 分支的内部 padding / 继承边框规则当前不命中（选择器作用域问题），见 [known-issues/builtin-style-selectors.md](known-issues/builtin-style-selectors.md)；
 - `open-type` 按决策暂不支持，只触发失败回调；
 - `longpress`/`longtap`（别名）/`canceltap` 已统一到宿主事件合成层，剩余是原生能力分支。
 

@@ -431,7 +431,7 @@ navigator、video、rich-text、map、movable-view 等还没有实现；已有�
 
 ## 样式：service 算 scope，render 应用 {#styles kicker="样式隔离"}
 
-样式表按 cascade role 分类（builtin / app / page / component / page-scope / shared）。service 过滤并计算 scope，渲染树把样式应用到真实组件树；内置 CSS 始终归宿主。
+样式表按 cascade role 分类（builtin / low-priority / app / page / component / page-scope / shared）。service 过滤并计算 scope，渲染树把样式应用到真实组件树；内置 CSS 始终归宿主。
 
 | 配置 | 生效范围 | 行为 |
 | --- | --- | --- |
@@ -456,8 +456,8 @@ navigator、video、rich-text、map、movable-view 等还没有实现；已有�
 :::
 ::::
 
-:::callout{title="低优先级 CSS 还没有启用"}
-CLI 仍会写 `*.low.css`，但目前没有启用 `convertHost`，runtime 也不会加载它。`:host` 组合和优先级还没有系统整理。
+:::callout{title="低优先级 CSS 先于页面样式" tone="good"}
+页面/组件的 `:host` 规则编译进 `*.low.css`，runtime 按 role 先追加 low-priority，再追加 app、page-scope 和 page/component，宿主默认样式因此总可以被覆盖。app 样式没有 scope，不产生低优先级表。
 :::
 
 ## Canvas、查询和相交观测 {#canvas kicker="Canvas 与查询"}

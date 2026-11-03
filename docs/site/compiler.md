@@ -219,7 +219,7 @@ app 样式没有 scope，按全局样式注册。
 - tag：`button` → `tiny-button:where(.tiny-pages-todos-todos--tiny-tag-button)`
 - `page` 重写为 `tiny-page`；自定义组件 `badge` 重写为 `tiny-badge`
 - `@keyframes` 内部不做 tag 改写
-- `:host` 当前使用同步 glass-easel 的 `wx-host`
+- `:host { }` → `[wx-host="<scope>"] { }`（仅页面/组件样式），写入低优先级 `*.low.css`
 :::
 
 :::card{tag="rpx" title="以 750 为基准换算 vw"}
@@ -238,8 +238,8 @@ page { background: #f5f5f5; }
 button { height: 88rpx; }            /* -> tiny-button:where(.tiny-pages-todos-todos--tiny-tag-button) */
 ```
 
-:::callout{title="低优先级 CSS 目前还是空的" tone="warn"}
-CLI 会同时写出 `*.low.css`，但目前没有启用 `convertHost`，所以低优先级输出为空；runtime 也只加载普通 CSS。这条通道是留给以后的 style isolation 和 `:host` 语义的。
+:::callout{title="低优先级 CSS 承载 :host" tone="good"}
+页面/组件样式会同时写出 `*.low.css`：`:host { }` 被改写成 `[wx-host="<scope>"] { }` 放在这里，runtime 先追加低优先级表，再追加 app、page-scope 和 page/component，宿主默认样式因此总可以被覆盖。app 样式没有 scope，不产生低优先级输出。
 :::
 ::::
 :::::
@@ -353,8 +353,9 @@ generated/
 |   +-- pages/todos/todos.js
 |-- styles/
 |   |-- app.wxss.css         # 全局
+|   |-- app.wxss.page-scope.css         # app 的 page-scope 模板（按需）
 |   |-- pages/todos/todos.wxss.css
-|   |-- pages/todos/todos.wxss.low.css   # 目前为空
+|   |-- pages/todos/todos.wxss.low.css   # :host 低优先级输出
 |   +-- **.map
 |-- logo.svg                 # 资源按原路径复制
 +-- assets/**
@@ -412,7 +413,7 @@ devtool 的监听是外部脚本在 250ms 防抖后重新全量构建。
 :::
 
 :::card{tag="样式" tone="warn" title="编译期只处理作用域"}
-编译器生成 class/tag 作用域、cascade role 和 `hostAttribute`；`styleIsolation`、`addGlobalClass` 和 `shared` 的样式组合发生在逻辑树和渲染树的样式应用阶段。`:host` 的低优先级输出目前也还没有启用。
+编译器生成 class/tag 作用域、cascade role 和 `hostAttribute`，并把 `:host` 转成低优先级 `[wx-host]` 规则；`styleIsolation`、`addGlobalClass` 和 `shared` 的样式组合发生在逻辑树和渲染树的样式应用阶段。
 :::
 
 :::card{tag="运行环境" tone="warn" title="依赖 Node 工具链"}
