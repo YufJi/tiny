@@ -165,9 +165,9 @@ service 不创建真实 DOM，也不加载 Web 内置组件；render 不执行�
 
 | 宿主 | 通信方式 | 渲染后端 | 控制方式 |
 | --- | --- | --- | --- |
-| `@tiny/host-browser` | MessageChannel / iframe | 浏览器线程与 canvas handoff | `WasmBrowserHost`（HostCore）、`DevtoolRuntimeClient` |
+| `@tiny/host-browser` | MessageChannel / iframe | 浏览器线程与 canvas handoff | `WasmBrowserHost`（HostCore）、`bootBrowserServiceEntry` / `bootBrowserRenderEntry` |
 | `tests/host` | service + 每页 render 的 MessageChannel | `createGlassRenderTree` | URL `?path=`、`window.__tinyRuntime` |
-| `apps/devtool` | service + 每页 render 的 MessageChannel | `createGlassRenderTree` | `DevtoolRuntimeClient` + React/Redux |
+| `apps/devtool` | service + 每页 render 的 MessageChannel | `createGlassRenderTree` | app 内 `DevtoolRuntimeClient` + React/Redux |
 | runtime 单测 | `createInMemoryTransportPair()` | 测试 renderer / headless tree | 直接持有 service / render 连接 |
 | iOS 宿主（`ios/`） | JavaScriptCore + `tinyRender` handler | 每页一个 WKWebView + `createGlassRenderTree` | `HostCoreRuntime` / UniFFI RustHostCore |
 

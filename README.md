@@ -65,7 +65,7 @@
 | --- | --- |
 | `tools/cli` | 编译器：小程序源码 → glass-easel 产物与 manifest |
 | `apps/devtool` | 浏览器调试器 |
-| `hosts/browser` | 浏览器宿主：iframe、MessageChannel、Canvas、devtool overlay |
+| `hosts/browser` | 浏览器宿主：iframe、MessageChannel、Canvas、宿主 API 覆盖层 |
 | `hosts/web-components` | 内置组件的 Web/DOM 实现（view/text/input/swiper/canvas 等），由 Web 渲染树挂载 |
 
 ### 测试

@@ -1,12 +1,12 @@
 import init, { WasmHostCore } from '@tiny/host-core-wasm'
-import { WasmBrowserHost } from '@tiny/host-browser'
+import { TestBrowserHost } from './test-host'
 import manifest from '../generated/manifest.json'
 
 const search = new URLSearchParams(window.location.search)
 const initialPath = search.get('path') || manifest.pages[0]?.path || ''
 
 await init()
-const wasmHost = new WasmBrowserHost({
+const wasmHost = new TestBrowserHost({
   appId: 'test-host',
   manifest,
   serviceUrl: '/service.html',
@@ -23,9 +23,6 @@ const wasmHost = new WasmBrowserHost({
   return {
     start: (now) => core.start(now),
     handle_event: (event, now) => core.handle_event(event, now),
-    set_app_visible: (visible) => core.set_app_visible(visible),
-    page_stack_json: () => core.page_stack_json(),
-    diagnostics_json: () => core.diagnostics_json(),
   }
 })
 

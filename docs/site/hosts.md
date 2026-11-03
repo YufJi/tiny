@@ -3,7 +3,7 @@ title: '引擎不依赖环境，'
 highlight: '运行环境由宿主提供'
 eyebrow: '宿主适配'
 lede: >-
-  packages/runtime 是宿主无关的内核：service 跑逻辑树，宿主提供渲染树。@tiny/host-browser 负责浏览器线程、端口、canvas handoff 和调试器客户端，@tiny/host-web-components 提供 Web 渲染树与 23 个内置组件；iOS 侧由 @tiny/host-ios 提供 JSCore engine 与每页 native WKWebView render 产物，HostCoreRuntime/SwiftUI 壳在 ios/。浏览器侧由 WasmBrowserHost 创建 iframe、转移端口并驱动 Rust HostCore；iOS 侧由 HostCoreRuntime 经 UniFFI 驱动同一个 HostCore，每页一个 WKWebView。
+  packages/runtime 是宿主无关的内核：service 跑逻辑树，宿主提供渲染树。@tiny/host-browser 负责浏览器线程、端口和 canvas handoff，@tiny/host-web-components 提供 Web 渲染树与 23 个内置组件；iOS 侧由 @tiny/host-ios 提供 JSCore engine 与每页 native WKWebView render 产物，HostCoreRuntime/SwiftUI 壳在 ios/。浏览器侧由 WasmBrowserHost 创建 iframe、转移端口并驱动 Rust HostCore；iOS 侧由 HostCoreRuntime 经 UniFFI 驱动同一个 HostCore，每页一个 WKWebView。调试器的会话客户端属于 devtool 应用本身（apps/devtool/src/runtimeClient.ts），不在宿主包里。
 stats:
   - ['3', '宿主包']
   - ['1', 'service iframe']
@@ -28,7 +28,7 @@ order: 6
 | --- | --- | --- | --- |
 | 内核编排 | `WasmBrowserHost` / `HostCoreRuntime` | 适配器持有 WebView/iframe；HostCore 不依赖 DOM | 两个 BridgeConnection、HostApiRegistry、诊断仓库和启动顺序 |
 | 线程启动 | `bootBrowserServiceEntry` / `bootBrowserRenderEntry` + `createGlassRenderEntry` | service 需要 JS 全局；render 需要 `TreeRenderer` | service 加载 templates 并创建逻辑树；render 消费 tree flow/patch；canvas 和资源由宿主注入 |
-| 浏览器适配 | `@tiny/host-browser` | window、iframe、MessageChannel、document | iframe、端口、DOM canvas、资源 URL、DevtoolRuntimeClient |
+| 浏览器适配 | `@tiny/host-browser` | window、iframe、MessageChannel、document | iframe、端口、DOM canvas、资源 URL、宿主 API 覆盖层 |
 | 渲染树 | `@tiny/host-web-components` | DOM 和 CSS | `createGlassRenderTree`、23 个 tiny-* 内置组件、共享 behaviors 和基础 CSS |
 | 应用宿主 | `tests/host` · `apps/devtool` | 静态资源服务器 / Vite | 选择应用、加载 manifest、提供界面或自动化钩子、调用 bootstrap |
 
@@ -40,7 +40,6 @@ order: 6
   WasmBrowserHost
   bootBrowserServiceEntry / bootBrowserRenderEntry
   canvas handoff / runtime-port
-  DevtoolRuntimeClient
 
 @tiny/host-web-components         Web 渲染树
   createGlassRenderTree（tiny-* + 基础 CSS）
@@ -85,7 +84,7 @@ XMLHttpRequest · WebSocket · fetch · performance
 :::
 
 :::card{tag="宿主" tone="violet" title="@tiny/host-browser"}
-负责 iframe、MessageChannel、OffscreenCanvas handoff、资源 URL 规则和 `DevtoolRuntimeClient`；tests/host 和 devtool 都从这里导入。
+负责 iframe、MessageChannel、OffscreenCanvas handoff、资源 URL 规则和宿主 API 覆盖层；tests/host 和 devtool 都从这里导入。调试器自己的会话与视图模型不在这个包里。
 :::
 
 :::card{tag="组件" tone="violet" title="@tiny/host-web-components"}
@@ -271,7 +270,7 @@ service 通过 `createLegacyCanvasContext` / `acquireCanvasNode` 拿到同步 ca
 
 ## @tiny/host-browser 负责什么 {#browser kicker="浏览器宿主"}
 
-它把 iframe 生命周期、端口转移、DOM canvas、资源 URL 和调试器客户端收在一个包里。
+它把 iframe 生命周期、端口转移、DOM canvas、资源 URL 和宿主 API 覆盖层收在一个包里。
 
 :::::split
 ::::stack
@@ -281,8 +280,8 @@ service 通过 `createLegacyCanvasContext` / `acquireCanvasNode` 拿到同步 ca
 - 等待 ready 消息，最多 15 秒
 - 转移 port2，驱动 WasmBrowserHost / HostCore
 - 完成两条连接的握手
-- 提供 canvas、资源和 devtool client 适配器
-- 返回 host 和 iframe 句柄，并提供清理方法
+- 提供 canvas 和资源 URL 的适配器
+- 暴露当前页（`activePage`）、命令入口和 `dispose` 清理
 :::
 
 :::card{title="它不负责" tone="warn"}
@@ -328,7 +327,7 @@ render.html
 
 ## devtool 在宿主之上加了控制界面 {#devtool kicker="调试器宿主"}
 
-React/Redux 不直接发送协议消息，只调用 DevtoolRuntimeClient，并订阅它投影出来的状态。
+React/Redux 不直接发送协议消息，只调用 devtool 应用自己的 `DevtoolRuntimeClient`（`apps/devtool/src/runtimeClient.ts`），并订阅它投影出来的状态；它驱动的是 `@tiny/host-browser` 提供的宿主。
 
 | DevtoolRuntimeClient 方法 | 底层动作 | 状态变化 |
 | --- | --- | --- |

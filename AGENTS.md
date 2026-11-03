@@ -54,7 +54,7 @@ must not depend on tools, apps, hosts, or tests.
 
 | Path | Scope |
 | --- | --- |
-| `hosts/browser` | `@tiny/host-browser`: iframes, message ports, DOM canvas, devtool overlay |
+| `hosts/browser` | `@tiny/host-browser`: iframes, message ports, DOM canvas, host API overlays |
 | `hosts/web-components` | `@tiny/host-web-components`: web/DOM implementations of the built-in tags, mounted by the web render tree |
 | `hosts/ios` | `@tiny/host-ios`: one Vite package; `src/service` builds the JSCore engine, `src/web` builds host/render entries |
 
@@ -163,8 +163,13 @@ records boot state, visible text, page errors and diagnostics per page into
   `packages/runtime`'s service API host.
 - The browser test host and devtool both use `@tiny/host-browser`’s
   `WasmBrowserHost` over `@tiny/host-core-wasm`;
-  devtool adds `DevtoolRuntimeClient` for lifecycle control, state projection, and
-  element-tree inspection. Do not make the test host depend on the devtool app.
+  devtool adds its own `DevtoolRuntimeClient` (`apps/devtool/src/runtimeClient.ts`)
+  for lifecycle control, state projection, and element-tree inspection. Host
+  packages stay platform glue: debugger session policy belongs to the app that
+  owns the panel, and the host reports state/diagnostics through `onState` /
+  `onDiagnostic` instead of retaining collections. Test-only history lives in
+  `tests/host/src/test-host.ts`. Do not make the test host depend on the devtool
+  app.
 
 ## Code Style
 

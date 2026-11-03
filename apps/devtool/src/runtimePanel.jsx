@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
-import { DevtoolRuntimeClient } from '@tiny/host-browser';
+import { DevtoolRuntimeClient } from './runtimeClient';
 import { createWasmHostCoreFactory } from './wasmHostCore';
 import './runtimePanel.css';
 import {

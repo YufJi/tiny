@@ -1,7 +1,7 @@
 {
   "name": "@tiny/host-browser",
   "version": "1.0.0",
-  "description": "Browser host adapters (iframes, message ports, canvas, devtool overlay)",
+  "description": "Browser host adapters (iframes, message ports, canvas, host API overlays)",
   "private": true,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

@@ -10,7 +10,21 @@ core runtime.
 - `runtime-port`: iframe `postMessage` handshake and `MessagePort` transfer
 - `wasm-host`: Rust HostCore adapter, iframe creation, per-page render surfaces
 - `canvas-relay`: OffscreenCanvas handoff relay
-- `devtool-client`: debugger panel bridge
+
+This package is the browser platform glue, on the same footing as `hosts/ios`:
+it knows iframes, ports, canvas and host APIs, and nothing about a debugger
+session. The devtool's own session client (`launch`/`terminate`, state
+projection, panel history limits) lives with its only consumer in
+`apps/devtool/src/runtimeClient.ts`.
+
+## Observability
+
+`WasmBrowserHost` reports and does not retain: runtime state arrives through
+`onState`, diagnostics through `onDiagnostic`, and neither is stored on the
+host. A caller that needs history owns the collection — `apps/devtool` keeps
+500 diagnostics and a 300-event lifecycle timeline, while the acceptance harness
+uses `TestBrowserHost` in `tests/host/src/test-host.ts` so Playwright can read
+`window.__tinyRuntime.host.diagnostics` and the live storage object.
 
 ## Canvas injection
 

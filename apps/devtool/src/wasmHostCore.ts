@@ -17,9 +17,6 @@ export function createWasmHostCoreFactory(): Promise<WasmHostCoreFactory> {
         return {
           start: (now) => core.start(now),
           handle_event: (event, now) => core.handle_event(event, now),
-          set_app_visible: (visible) => core.set_app_visible(visible),
-          page_stack_json: () => core.page_stack_json(),
-          diagnostics_json: () => core.diagnostics_json(),
         }
       }
     })()

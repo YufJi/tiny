@@ -28,7 +28,7 @@ order: 7
 :::
 
 :::callout{title="这里跑的是真实运行时"}
-iframe 里的面板通过 `DevtoolRuntimeClient`（来自 `@tiny/host-browser`）启动 service 和 render 线程，读取 `runtime/apps/<app>/generated` 下的 manifest、templates、styles 和 service.js。Console 里的诊断、Elements 里的元素树、Lifecycle 里的时间线，都来自当前这次会话。
+iframe 里的面板通过 devtool 应用自己的 `DevtoolRuntimeClient`（`apps/devtool/src/runtimeClient.ts`）驱动 `@tiny/host-browser`，启动 service 和 render 线程，读取 `runtime/apps/<app>/generated` 下的 manifest、templates、styles 和 service.js。Console 里的诊断、Elements 里的元素树、Lifecycle 里的时间线，都来自当前这次会话。
 :::
 
 ## 调试器是网站构建的一部分 {#pipeline kicker="构建流程"}
@@ -73,7 +73,7 @@ TINY_SITE_DEVTOOL_APPS=demo,mini pnpm site:build
 
 ## 面板只是 DevtoolRuntimeClient 的界面 {#host kicker="调试器宿主"}
 
-React 不直接发送协议消息。它订阅 host-browser 投影出来的状态，再把用户操作变成 client 方法。
+React 不直接发送协议消息。它订阅 `DevtoolRuntimeClient` 投影出来的状态，再把用户操作变成 client 方法；client 自己只调用 `@tiny/host-browser` 的宿主能力。
 
 :::::split
 ::::stack
@@ -101,7 +101,7 @@ Console 显示结构化诊断（最多保留 500 条），Elements 显示 `runti
 
 | 层 | 实现 | 职责 |
 | --- | --- | --- |
-| `DevtoolRuntimeClient` | `@tiny/host-browser` | 创建线程、bootstrap、导航/前后台/Reload/Close、inspectTree，并维护页面栈和生命周期 |
+| `DevtoolRuntimeClient` | `apps/devtool/src/runtimeClient.ts` | 创建线程、bootstrap、导航/前后台/Reload/Close、inspectTree，并维护页面栈和生命周期 |
 | `runtimeService.js` | service 线程入口 | 读取 `?app=`，加载 manifest、templates、styles 和 service.js，创建逻辑树 |
 | `runtimeRender.js` | render 线程入口 | 把 `createGlassRenderEntry` 交给 `bootBrowserRenderEntry`，安装 canvas responder 并创建 Web 渲染树和内置组件 |
 | `RuntimePanel` | React/Redux | 应用列表、会话管理、首屏选择、状态订阅和面板组合 |
