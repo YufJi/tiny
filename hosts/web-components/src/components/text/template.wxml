@@ -1,2 +1,2 @@
-<span id="raw" class="tiny-text-raw" style="display: none;"><slot /></span>
-<span id="main" class="tiny-text-main"></span>
+<span id="raw" style="display: none;"><slot /></span>
+<span id="main"></span>

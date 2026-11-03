@@ -1,17 +1,9 @@
 tiny-text {
-  display: inline;
+  cursor: text;
 }
-
-tiny-text[selectable="true"] {
+tiny-text[selectable],
+tiny-text[user-select] {
   cursor: auto;
   user-select: text;
   -webkit-user-select: text;
-}
-
-tiny-text > span {
-  display: inline;
-}
-
-.tiny-text-raw {
-  display: none;
 }

@@ -50,9 +50,18 @@ describe('P0 built-in components', () => {
     expect(Object.keys(definitions)).toEqual(expect.arrayContaining([...BUILTIN_COMPONENT_TAGS]))
   })
 
-  test('hides every built-in host tag with the shared [hidden] rule', () => {
+  // `text` has no author display rule, so the UA `[hidden]` rule applies;
+  // WeChat also declares no `wx-text[hidden]`.
+  const TAGS_WITHOUT_AUTHOR_HIDDEN = new Set<string>(['text'])
+
+  test('hides every built-in host tag with an author [hidden] rule or the UA default', () => {
     for (const tag of BUILTIN_COMPONENT_TAGS) {
-      expect(BUILTIN_HOST_STYLES).toContain(`${TINY_ENGINE_NAMING.hostTagPrefix}${tag}[hidden]`)
+      const selector = `${TINY_ENGINE_NAMING.hostTagPrefix}${tag}[hidden]`
+      if (TAGS_WITHOUT_AUTHOR_HIDDEN.has(tag)) {
+        expect(BUILTIN_HOST_STYLES).not.toContain(selector)
+        continue
+      }
+      expect(BUILTIN_HOST_STYLES).toContain(selector)
     }
   })
 
@@ -718,6 +727,60 @@ describe('P0 built-in components', () => {
     expect(transformTextContent('&lt;b&gt; &amp; &quot;q&quot; &apos;s&apos; &nbsp;', { decode: true }))
       .toBe('<b> & "q" \'s\'  ')
     expect(transformTextContent('&amp;', { decode: false })).toBe('&amp;')
+  })
+
+  test('text follows wx-text selectable/user-select CSS semantics', () => {
+    expect(BUILTIN_HOST_STYLES).toContain('tiny-text {\n  cursor: text;')
+    expect(BUILTIN_HOST_STYLES).toContain('tiny-text[selectable], tiny-text[user-select] {')
+    expect(BUILTIN_HOST_STYLES).not.toContain('tiny-text[selectable="true"]')
+  })
+
+  test('text user-select toggles the selectable region on #main', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { text: builtins.text },
+      template: compilePage('<text id="text" user-select>hello</text>'),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const textHost = instance.getShadowRoot()?.getElementById('text')?.asGeneralComponent()!
+    const added: string[] = []
+    const removed: string[] = []
+    const main = {
+      style: {} as Record<string, string>,
+      classList: {
+        add: (name: string) => added.push(name),
+        remove: (name: string) => removed.push(name),
+      },
+    }
+    ;(textHost as unknown as { _textMain: unknown })._textMain = main
+    ;(textHost as unknown as { userSelectChanged: (next: boolean) => void }).userSelectChanged(true)
+    expect(main.style.display).toBe('inline-block')
+    expect(main.style.willChange).toBe('transform')
+    expect(added).toContain('__wa_selectable_region')
+
+    ;(textHost as unknown as { userSelectChanged: (next: boolean) => void }).userSelectChanged(false)
+    expect(main.style.display).toBe('inline')
+    expect(main.style.willChange).toBe('unset')
+    expect(removed).toContain('__wa_selectable_region')
+  })
+
+  test('text selectable emits the 2.30.1 deprecation diagnostic', () => {
+    const diagnostics: Array<{ code?: string }> = []
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space, {
+      onDiagnostic: (diagnostic) => diagnostics.push(diagnostic as { code?: string }),
+    })
+    const page = space.defineComponent({
+      is: 'page',
+      using: { text: builtins.text },
+      template: compilePage('<text id="text" selectable>hello</text>'),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const textHost = instance.getShadowRoot()?.getElementById('text')?.asGeneralComponent()!
+    attach(textHost)
+    expect(diagnostics.map((item) => item.code)).toContain('DEPRECATED_TEXT_SELECTABLE')
   })
 
   test('text, icon, image and form controls expose aligned properties', () => {

@@ -4,20 +4,22 @@ import { transformTextContent } from './content'
 
 type TextRuntime = {
   _textObserver?: MutationObserver
-  _textRaw?: Element | null
-  _textMain?: Element | null
+  _textRaw?: HTMLElement | null
+  _textMain?: HTMLElement | null
 }
 
-type TextHost = {
-  getBackendElement?: () => Element | null
+type TextBackendNode = {
+  getBackendElement?: () => HTMLElement | null
 }
 
 const TEXT_NODE = 3
 const ELEMENT_NODE = 1
+const SELECTABLE_REGION_CLASS = '__wa_selectable_region'
 
 /**
  * Mirrors WeChat's `wx-text`: the slotted content lives in a hidden `#raw`
  * node, and `#main` is rebuilt with decoded text and `<br>` line breaks.
+ * `user-select` (2.30.1) turns `#main` into the selectable region.
  */
 export function defineText(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
@@ -26,26 +28,28 @@ export function defineText(ctx: BuiltinContext): BuiltinDefinition {
     behaviors: [ctx.behaviors.base],
     properties: {
       selectable: { type: Boolean, value: false },
-      decode: { type: Boolean, value: false },
-      space: { type: String, value: '' },
-    },
-    observers: {
-      decode() {
-        ;(this as unknown as { updateTextContent: () => void }).updateTextContent()
-      },
-      space() {
-        ;(this as unknown as { updateTextContent: () => void }).updateTextContent()
-      },
+      userSelect: { type: Boolean, value: false, observer: 'userSelectChanged' },
+      decode: { type: Boolean, value: false, observer: '_update' },
+      space: { type: String, value: '', observer: '_update' },
     },
     options: ctx.hostOptions('text'),
     lifetimes: {
       attached() {
+        if (this.data.selectable) {
+          // 2.30.1 deprecates `selectable` in favour of `user-select`.
+          ctx.options.onDiagnostic?.({
+            severity: 'warning',
+            code: 'DEPRECATED_TEXT_SELECTABLE',
+            message: '<text selectable> is deprecated; use user-select instead.',
+            details: {},
+          })
+        }
         const runtime = this as unknown as TextRuntime
         const shadowRoot = (this as unknown as {
           getShadowRoot?: () => { getElementById?: (id: string) => unknown } | null
         }).getShadowRoot?.()
-        const backendOf = (id: string): Element | null => {
-          const node = shadowRoot?.getElementById?.(id) as { getBackendElement?: () => Element | null } | null
+        const backendOf = (id: string): HTMLElement | null => {
+          const node = shadowRoot?.getElementById?.(id) as TextBackendNode | null
           return node?.getBackendElement?.() ?? null
         }
         const raw = backendOf('raw')
@@ -55,7 +59,7 @@ export function defineText(ctx: BuiltinContext): BuiltinDefinition {
         runtime._textMain = main
         if (typeof MutationObserver !== 'undefined') {
           runtime._textObserver = new MutationObserver(() => {
-            ;(this as unknown as { updateTextContent: () => void }).updateTextContent()
+            ;(this as unknown as { _update: () => void })._update()
           })
           runtime._textObserver.observe(raw, {
             childList: true,
@@ -63,7 +67,9 @@ export function defineText(ctx: BuiltinContext): BuiltinDefinition {
             characterData: true,
           })
         }
-        ;(this as unknown as { updateTextContent: () => void }).updateTextContent()
+        ;(this as unknown as { _update: () => void })._update()
+        ;(this as unknown as { userSelectChanged: (next: boolean) => void })
+          .userSelectChanged(Boolean(this.data.userSelect))
       },
       detached() {
         const runtime = this as unknown as TextRuntime
@@ -74,13 +80,13 @@ export function defineText(ctx: BuiltinContext): BuiltinDefinition {
       },
     },
     methods: {
-      updateTextContent() {
+      _update() {
         const runtime = this as unknown as TextRuntime
         const raw = runtime._textRaw
         const main = runtime._textMain
         if (!raw || !main) return
         const doc = main.ownerDocument
-        if (!doc) return
+        if (!doc || typeof main.replaceChildren !== 'function') return
         const fragment = doc.createDocumentFragment()
         for (const node of Array.from(raw.childNodes)) {
           if (node.nodeType === TEXT_NODE) {
@@ -97,6 +103,19 @@ export function defineText(ctx: BuiltinContext): BuiltinDefinition {
           }
         }
         main.replaceChildren(fragment)
+      },
+      userSelectChanged(next: boolean) {
+        const main = (this as unknown as TextRuntime)._textMain
+        if (!main?.style || !main.classList) return
+        if (next) {
+          main.style.display = 'inline-block'
+          main.style.willChange = 'transform'
+          main.classList.add(SELECTABLE_REGION_CLASS)
+        } else {
+          main.style.display = 'inline'
+          main.style.willChange = 'unset'
+          main.classList.remove(SELECTABLE_REGION_CLASS)
+        }
       },
     },
   }).general()

@@ -263,7 +263,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
         'dotted',
         'app universal selector did not match the page root marker',
       )
-      const internalTextOutline = await render.locator('tiny-text [class*="tiny-text-main"]').first().evaluate(
+      const internalTextOutline = await render.locator('tiny-text span:last-child').first().evaluate(
         (element) => getComputedStyle(element).outlineStyle,
       )
       assert.equal(internalTextOutline, 'none', 'app global selectors leaked into built-in component internals')
@@ -293,7 +293,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.ok(scrollPadding > 0, 'scoped page padding did not apply')
 
       const hasInlineText = await render.evaluate(() =>
-        [...document.querySelectorAll('tiny-text [class*="tiny-text-main"]')].some(
+        [...document.querySelectorAll('tiny-text span:last-child')].some(
           (element) => getComputedStyle(element).display === 'inline',
         ),
       )
@@ -450,7 +450,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
         'app universal selector did not reach page-scoped component nodes',
       )
       assert.equal(
-        await render.locator('tiny-apply-shared-box tiny-text [class*="tiny-text-main"]').first().evaluate(
+        await render.locator('tiny-apply-shared-box tiny-text span:last-child').first().evaluate(
           (element) => getComputedStyle(element).outlineStyle,
         ),
         'none',
