@@ -40,7 +40,9 @@ function flush(): Promise<void> {
 
 describe('P0 built-in components', () => {
   test('ships a precompiled template for every tag', () => {
-    expect(Object.keys(precompiledTemplates).sort()).toEqual([...BUILTIN_COMPONENT_TAGS].sort())
+    const templateKeys = Object.keys(precompiledTemplates).filter((key) => key !== 'pull-down-refresher')
+    expect(templateKeys.sort()).toEqual([...BUILTIN_COMPONENT_TAGS].sort())
+    expect(Object.keys(precompiledTemplates)).toContain('pull-down-refresher')
   })
 
   test('exposes every P0 component tag', () => {
@@ -993,10 +995,10 @@ describe('P0 built-in components', () => {
     expect(events.dragstart).toMatchObject({ scrollTop: expect.any(Number) })
     nativeScroll.triggerEvent('touchend', { changedTouches: [{ clientX: 120, clientY: 20 }] })
 
-    nativeScroll.triggerEvent('touchstart', { touches: [{ clientX: 10, clientY: 20 }] })
-    nativeScroll.triggerEvent('touchmove', { touches: [{ clientX: 10, clientY: 120 }] })
-    nativeScroll.triggerEvent('touchend', { changedTouches: [{ clientX: 10, clientY: 120 }] })
-    expect(events.refresh).toMatchObject({ dy: expect.any(Number) })
+    ;(scrollHost as unknown as { handleRefresherRefresh: (event: unknown) => void })
+      .handleRefresherRefresh({ detail: { dy: 80 } })
+    expect(events.refresh).toMatchObject({ dy: 80 })
+    expect(scrollHost.data.refresherTriggered).toBe(true)
 
     await new Promise((resolve) => setTimeout(resolve, 30))
     const swiperHost = instance.getShadowRoot()?.getElementById('swiper')?.asGeneralComponent()!

@@ -1,0 +1,14 @@
+<div id="container" class="tiny-refresher-container" style="height: {{threshold}}px; background: {{background}};">
+  <block wx:if="{{normalizedStyle}}">
+    <div class="tiny-refresher-default-wrap">
+      <div class="tiny-refresher-default-inner" style="max-height: {{maxHeight}}px;">
+        <div id="dot1" class="tiny-refresher-dot {{normalizedStyle === 'white' ? 'tiny-refresher-white' : ''}} {{dot1Class}}"></div>
+        <div id="dot2" class="tiny-refresher-dot {{normalizedStyle === 'white' ? 'tiny-refresher-white' : ''}} {{dot2Class}}"></div>
+        <div id="dot3" class="tiny-refresher-dot {{normalizedStyle === 'white' ? 'tiny-refresher-white' : ''}} {{dot3Class}}"></div>
+      </div>
+    </div>
+  </block>
+  <block wx:else>
+    <div class="tiny-refresher-custom"><slot /></div>
+  </block>
+</div>

@@ -48,7 +48,19 @@ function injectInternalScopeClasses(source) {
   )
 }
 
+const internalTemplates = [
+  ['pull-down-refresher', path.join(componentsRoot, 'scroll-view', 'refresher.wxml')],
+]
+
 const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
+for (const [name, templatePath] of internalTemplates) {
+  const source = injectInternalScopeClasses(fs.readFileSync(templatePath, 'utf8'))
+  const warnings = group.addTmpl(name, source)
+  if (warnings.length > 0) {
+    const messages = warnings.map((warning) => `${warning.kind} at ${JSON.stringify(warning.start)}`)
+    throw new Error(`Template warnings for ${name}: ${messages.join(', ')}`)
+  }
+}
 for (const tag of tags) {
   const templatePath = path.join(componentsRoot, tag, 'template.wxml')
   if (!fs.existsSync(templatePath)) {
@@ -85,4 +97,4 @@ fs.writeFileSync(
     '',
   ].join('\n'),
 )
-console.log(`[components] precompiled ${tags.length} templates`)
+console.log(`[components] precompiled ${tags.length} templates and ${internalTemplates.length} internal template`)

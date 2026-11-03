@@ -16,3 +16,13 @@ export function builtinTemplate(tag: BuiltinComponentTag): glassEasel.template.C
     content: () => select('') as ProcGen,
   }
 }
+
+/** Resolve a template for a private implementation component. */
+export function internalTemplate(name: string): glassEasel.template.ComponentTemplate {
+  const select = groups[name]
+  if (!select) throw new Error(`Internal template not found: ${name}`)
+  return {
+    groupList: groups as unknown as glassEasel.template.ComponentTemplate['groupList'],
+    content: () => select('') as ProcGen,
+  }
+}

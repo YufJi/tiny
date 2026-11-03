@@ -1,16 +1,17 @@
 <div id="wrap" class="tiny-scroll-view {{enableFlex ? 'tiny-scroll-view-flex' : ''}}">
-  <div
+  <refresher-impl
+    wx:if="{{refresherEnabled}}"
     id="refresher"
-    hidden="{{!refresherEnabled}}"
-    class="tiny-scroll-view-refresher {{refresherDefaultStyle === 'white' ? 'is-white' : refresherDefaultStyle === 'black' ? 'is-black' : 'is-custom'}}"
-    style="height: {{refresherThreshold}}px; background-color: {{refresherBackground}};"
-  >
-    <div wx:if="{{refresherDefaultStyle === 'none'}}" class="tiny-scroll-view-refresher-slot"><slot name="refresher" /></div>
-    <div wx:else class="tiny-scroll-view-refresher-default">
-      <div class="tiny-scroll-view-refresher-spinner"></div>
-      <span class="tiny-scroll-view-refresher-text">{{refresherText}}</span>
-    </div>
-  </div>
+    default-style="{{refresherDefaultStyle}}"
+    threshold="{{refresherThreshold}}"
+    background="{{refresherBackground}}"
+    triggered="{{refresherTriggered}}"
+    enable-passive="{{enablePassive}}"
+    bindpulling="handleRefresherPulling"
+    bindrefresh="handleRefresherRefresh"
+    bindrestore="handleRefresherRestore"
+    bindabort="handleRefresherAbort"
+  ><slot name="refresher" /></refresher-impl>
   <div
     id="main"
     style="position: relative; z-index: 1;"

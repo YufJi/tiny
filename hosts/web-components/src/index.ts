@@ -2,7 +2,7 @@ import type * as glassEasel from 'glass-easel'
 import type { BuiltinComponents } from '@tiny/runtime'
 import { BUILTIN_COMPONENT_TAGS, BUILTIN_HOST_TAG_PREFIX, type BuiltinComponentTag } from './tags'
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
-import { builtinTemplate } from './templates'
+import { builtinTemplate, internalTemplate } from './templates'
 import { createBuiltinBehaviors } from './behaviors'
 import {
   BUILTIN_BASE_STYLES,
@@ -94,6 +94,7 @@ export function createBuiltinComponents(
     space,
     options,
     template: builtinTemplate,
+    internalTemplate,
     behaviors: createBuiltinBehaviors(space),
     getBuiltin: (tag) => definitions[tag],
     hostOptions: (tag, extra = {}) => ({
