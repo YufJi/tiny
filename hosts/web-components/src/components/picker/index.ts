@@ -47,7 +47,6 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
     },
     behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent],
     properties: {
-      ariaLabel: { type: String, value: '' },
       mode: { type: String, value: 'selector' },
       range: { type: Array, value: [] },
       rangeKey: { type: String, value: '' },

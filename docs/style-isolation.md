@@ -120,6 +120,8 @@ service 把当前页的 `styles`（已按 role 过滤）和可选的 `fallbackAp
 
 ### 4.1 构建期拆成两份
 
+内置样式按微信 WebView 2.30.1 的 `WAWebview.css` / `WAWebview.js` 重构，`wx-*` 选择器按引擎命名规则机械替换为 `tiny-*`。公共基线（文档 `html`/`body`/`:root`、`* { margin: 0 }`、weui `@font-face`）已迁移到 [hosts/web-components/src/styles/index.css](../hosts/web-components/src/styles/index.css)；组件级样式在各 `src/components/<tag>/index.css`，按组件逐个替换。
+
 [hosts/web-components/scripts/build-styles.mjs:28](../hosts/web-components/scripts/build-styles.mjs#L28) 按选择器是否以 `tiny-<tag>` 开头分流（这个前缀判据本身有已知缺陷，见 [known-issues/builtin-style-selectors.md](known-issues/builtin-style-selectors.md)）：
 
 - **公开宿主样式** → 全局 `BUILTIN_HOST_STYLES`：`tiny-*` 的默认外观、`tiny-*[hidden]`（[hosts/web-components/src/styles/index.css:1](../hosts/web-components/src/styles/index.css#L1)）、weui `@font-face`。app/page/component 规则可以正常定制宿主。

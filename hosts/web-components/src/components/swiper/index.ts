@@ -38,7 +38,6 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
     template: ctx.template('swiper'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.touchTrack],
     properties: {
-      ariaLabel: { type: String, value: '' },
       current: { type: Number, value: 0 },
       currentItemId: { type: String, value: '' },
       indicatorDots: { type: Boolean, value: false },

@@ -9,7 +9,6 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
     template: ctx.template('input'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent, ctx.behaviors.classPrefix],
     properties: {
-      ariaLabel: { type: String, value: '' },
       value: { type: String, value: '' },
       type: { type: String, value: 'text' },
       password: { type: Boolean, value: false },

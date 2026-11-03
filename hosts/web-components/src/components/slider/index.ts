@@ -9,7 +9,6 @@ export function defineSlider(ctx: BuiltinContext): BuiltinDefinition {
     template: ctx.template('slider'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.disabled, ctx.behaviors.dataComponent],
     properties: {
-      ariaLabel: { type: String, value: '' },
       value: { type: Number, value: 0 },
       min: { type: Number, value: 0 },
       max: { type: Number, value: 100 },

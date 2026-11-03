@@ -7,7 +7,6 @@ export function defineProgress(ctx: BuiltinContext): BuiltinDefinition {
     template: ctx.template('progress'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.sizeNormalizer],
     properties: {
-      ariaLabel: { type: String, value: '' },
       percent: { type: Number, value: 0 },
       showInfo: { type: Boolean, value: false },
       active: { type: Boolean, value: false },

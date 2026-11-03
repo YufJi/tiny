@@ -9,7 +9,6 @@ export function defineIcon(ctx: BuiltinContext): BuiltinDefinition {
     template: ctx.template('icon'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.sizeNormalizer],
     properties: {
-      ariaLabel: { type: String, value: '' },
       type: { type: String, value: 'success' },
       size: { type: String, optionalTypes: [Number], value: DEFAULT_ICON_SIZE },
       color: { type: String, value: '' },

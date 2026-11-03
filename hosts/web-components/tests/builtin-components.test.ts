@@ -56,6 +56,17 @@ describe('P0 built-in components', () => {
     }
   })
 
+  test('ships the WeChat 2.30.1 document base and universal margin reset', () => {
+    // WeChat's page WebView starts with these document rules; app WXSS written
+    // for WeChat assumes the `* { margin: 0 }` reset is already in place.
+    expect(BUILTIN_HOST_STYLES).toContain('body,\nhtml {\n  -webkit-touch-callout: none;')
+    expect(BUILTIN_HOST_STYLES).toContain('body {\n  -webkit-text-size-adjust: none;')
+    expect(BUILTIN_HOST_STYLES).toContain('* {\n  margin: 0;')
+    expect(BUILTIN_HOST_STYLES).toContain('--safe-area-inset-top: env(safe-area-inset-top);')
+    expect(BUILTIN_HOST_STYLES).toContain('@font-face')
+    expect(BUILTIN_HOST_STYLES).toContain('font-family: weui;')
+  })
+
   test('keeps cross-component layout in public host CSS and private styles in component scopes', () => {
     // WeChat absolutely positions each swiper-item and translates it from the
     // swiper, so the host rule must not depend on the swiper's internals.
@@ -139,6 +150,7 @@ describe('P0 built-in components', () => {
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const buttonHost = instance.getShadowRoot()?.getElementById('button')?.asGeneralComponent()!
+    attach(buttonHost)
     buttonHost.triggerEvent('touchstart', { touches: [{}] })
     await new Promise((resolve) => setTimeout(resolve, 40))
     expect(buttonHost.data.hovering).toBe(true)
@@ -245,6 +257,7 @@ describe('P0 built-in components', () => {
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const viewHost = instance.getShadowRoot()?.getElementById('box')?.asGeneralComponent()!
+    attach(viewHost)
     viewHost.setData({ hidden: true })
     expect(viewHost.data.hidden).toBe(true)
     expect(viewHost.class).not.toContain('hovered')
@@ -258,6 +271,85 @@ describe('P0 built-in components', () => {
     await new Promise((resolve) => setTimeout(resolve, 450))
     expect(viewHost.data.hovering).toBe(false)
     expect(viewHost.class).not.toContain('hovered')
+  })
+
+  test('view inherits the wx-base aria surface and maps ariaRole to role', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { view: builtins.view },
+      template: compilePage(
+        '<view id="box" aria-role="button" aria-label="hello" aria-valuenow="3" tabindex="2">content</view>',
+      ),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const viewHost = instance.getShadowRoot()?.getElementById('box')?.asGeneralComponent()!
+    expect(viewHost.data.ariaRole).toBe('button')
+    expect(viewHost.data.ariaLabel).toBe('hello')
+    expect(viewHost.data.ariaValuenow).toBe(3)
+    expect(viewHost.data.tabindex).toBe(2)
+
+    const attributes = new Map<string, string>()
+    ;(viewHost as unknown as { getBackendElement: () => unknown }).getBackendElement = () => ({
+      setAttribute: (name: string, value: string) => attributes.set(name, String(value)),
+      removeAttribute: (name: string) => attributes.delete(name),
+    })
+    viewHost.setData({ ariaRole: 'link' })
+    expect(attributes.get('role')).toBe('link')
+    ;(viewHost as unknown as { setAriaRoleDefault: (role: string) => void }).setAriaRoleDefault('img')
+    viewHost.setData({ ariaRole: '' })
+    expect(attributes.get('role')).toBe('img')
+  })
+
+  test('view saves and restores scroll state through the reload behavior', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { view: builtins.view },
+      template: compilePage('<view id="box">content</view>'),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const viewHost = instance.getShadowRoot()?.getElementById('box')?.asGeneralComponent()!
+    attach(viewHost)
+    ;(viewHost as unknown as { getBackendElement: () => unknown }).getBackendElement = () => ({
+      scrollTop: 120,
+      scrollLeft: 7,
+    })
+    const state: Record<string, unknown> = {}
+    ;(viewHost as unknown as {
+      saved: (state: Record<string, unknown>) => void
+    }).saved(state)
+    const runtime = viewHost as unknown as { _scrollTop: number; _scrollLeft: number }
+    expect(runtime._scrollTop).toBe(120)
+    expect(runtime._scrollLeft).toBe(7)
+
+    runtime._scrollTop = 0
+    runtime._scrollLeft = 0
+    ;(viewHost as unknown as {
+      restored: (state: Record<string, unknown>) => void
+    }).restored(state)
+    expect(runtime._scrollTop).toBe(120)
+    expect(runtime._scrollLeft).toBe(7)
+  })
+
+  test('canceltap clears a pending hover immediately', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { button: builtins.button },
+      template: compilePage('<button id="button">Tap</button>'),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const buttonHost = instance.getShadowRoot()?.getElementById('button')?.asGeneralComponent()!
+    attach(buttonHost)
+    buttonHost.triggerEvent('touchstart', { touches: [{}] })
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    expect(buttonHost.data.hovering).toBe(true)
+    buttonHost.triggerEvent('canceltap', {}, { bubbles: true, composed: true })
+    expect(buttonHost.data.hovering).toBe(false)
   })
 
 

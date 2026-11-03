@@ -9,7 +9,6 @@ export function defineSwitch(ctx: BuiltinContext): BuiltinDefinition {
     template: ctx.template('switch'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.disabled, ctx.behaviors.dataComponent, ctx.behaviors.labelTarget],
     properties: {
-      ariaLabel: { type: String, value: '' },
       checked: { type: Boolean, value: false },
       disabled: { type: Boolean, value: false },
       type: { type: String, value: 'switch' },

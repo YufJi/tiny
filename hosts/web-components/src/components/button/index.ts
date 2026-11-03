@@ -28,7 +28,6 @@ export function defineButton(ctx: BuiltinContext): BuiltinDefinition {
     template: ctx.template('button'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.hover, ctx.behaviors.labelTarget],
     properties: {
-      ariaLabel: { type: String, value: '' },
       type: { type: String, value: 'default' },
       size: { type: String, value: 'default' },
       disabled: { type: Boolean, value: false },

@@ -9,7 +9,6 @@ export function defineRadio(ctx: BuiltinContext): BuiltinDefinition {
     template: ctx.template('radio'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.disabled, ctx.behaviors.dataComponent, ctx.behaviors.labelTarget, ctx.behaviors.item],
     properties: {
-      ariaLabel: { type: String, value: '' },
       disabled: { type: Boolean, value: false },
       color: { type: String, value: '#09BB07' },
     },

@@ -31,7 +31,6 @@ export function definePickerViewColumn(ctx: BuiltinContext): BuiltinDefinition {
     template: ctx.template('picker-view-column'),
     behaviors: [ctx.behaviors.base],
     properties: {
-      ariaLabel: { type: String, value: '' },
     },
     data: {
       column: 0,

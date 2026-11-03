@@ -9,7 +9,6 @@ export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
     template: ctx.template('textarea'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent, ctx.behaviors.classPrefix],
     properties: {
-      ariaLabel: { type: String, value: '' },
       value: { type: String, value: '' },
       placeholder: { type: String, value: '' },
       placeholderStyle: { type: String, value: '' },

@@ -1,7 +1,6 @@
 tiny-view {
   display: block;
-  box-sizing: border-box;
 }
-tiny-view[inline] {
-  display: inline-block;
+tiny-view[hidden] {
+  display: none;
 }

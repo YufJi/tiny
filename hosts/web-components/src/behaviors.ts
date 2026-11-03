@@ -11,7 +11,14 @@ type HostListenable = {
 }
 
 type HostClassElement = {
-  classList?: { add?: (name: string) => void; remove?: (name: string) => void }
+  classList?: {
+    add?: (name: string) => void
+    remove?: (name: string) => void
+    contains?: (name: string) => boolean
+    toggle?: (name: string, force?: boolean) => boolean
+  }
+  setAttribute?: (name: string, value: string) => void
+  removeAttribute?: (name: string) => void
 }
 
 type TouchTrackEvent = {
@@ -36,11 +43,35 @@ type TouchTrackEvent = {
 type HoverRuntime = {
   _hoverStartTimer?: HoverTimer
   _hoverStayTimer?: HoverTimer
+  _hoverStyleTimeId?: HoverTimer
+  _hoverStayTimeId?: HoverTimer
   _hostListeners?: Array<{ name: string; listener: (event: HostEvent) => void }>
+  _hoverListeners?: Array<{ name: string; listener: (event: HostEvent) => void }>
+  _hoverBound?: boolean
+  _hovering?: boolean
+  _hoverTouch?: boolean
+  _defaultHoverClass?: string
+  _hoverClass?: string[]
   _hoverClasses?: string[]
   __debouncers?: Record<string, HoverTimer | undefined>
+  data: Record<string, unknown>
+  setData: (data: Record<string, unknown>) => void
   classList?: { toggle(name: string, force?: boolean): boolean } | null
   getBackendElement?: () => HostClassElement | null
+  parentNode?: unknown
+  addListener?: (name: string, listener: (event: HostEvent) => void) => void
+  removeListener?: (name: string, listener: (event: HostEvent) => void) => void
+}
+
+type AriaRuntime = {
+  _ariaRoleDefault?: string
+  _ariaRoleApplied?: boolean
+  getBackendElement?: () => HostClassElement | null
+}
+
+type ReloadState = Record<string, unknown> & {
+  _compVarList?: string[]
+  wxComponents?: Record<string, unknown> & { _custom?: Record<string, unknown> }
 }
 
 /** The group surface an item reports to (implemented by checkbox/radio group). */
@@ -90,19 +121,22 @@ export function unbindHostListeners(instance: unknown): void {
   target._hostListeners = []
 }
 
-function hoverClassNames(data: Record<string, unknown>): string[] {
-  const hoverClass = String(data.hoverClass ?? '').trim()
+function hoverClassNames(instance: HoverRuntime): string[] {
+  const hoverClass = String(instance.data.hoverClass ?? '').trim()
   if (hoverClass === '' || hoverClass === 'none') return []
   return hoverClass.split(/\s+/).filter(Boolean)
 }
 
-function applyHoverClass(instance: HoverRuntime & { data: Record<string, unknown> }, active: boolean): void {
+function applyHoverClasses(
+  instance: HoverRuntime,
+  names: string[],
+  active: boolean,
+): void {
   const classList = instance.classList
   const rawClassList = instance.getBackendElement?.()?.classList
   if (!classList && !rawClassList) return
   if (active) {
-    const names = hoverClassNames(instance.data)
-    instance._hoverClasses = names
+    instance._hoverClasses = [...names]
     for (const name of names) {
       // Scoped form matches page/component WXSS hover classes.
       classList?.toggle(name, true)
@@ -139,6 +173,7 @@ export function findAncestorWithBehavior(instance: unknown, behavior: string): u
 export const BUILTIN_BEHAVIOR_IDS = Object.freeze({
   base: `${TINY_ENGINE_NAMING.behaviorPrefix}base`,
   hover: `${TINY_ENGINE_NAMING.behaviorPrefix}hover`,
+  reload: `${TINY_ENGINE_NAMING.behaviorPrefix}reload`,
   touchTrack: `${TINY_ENGINE_NAMING.behaviorPrefix}touchtrack`,
   scroller: `${TINY_ENGINE_NAMING.behaviorPrefix}scroller`,
   sizeNormalizer: `${TINY_ENGINE_NAMING.behaviorPrefix}size-normalizer`,
@@ -163,8 +198,90 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
     is: BUILTIN_BEHAVIOR_IDS.base,
     properties: {
       hidden: { type: Boolean, value: false },
+      // WeChat's wx-base declares the full aria surface; exparser reflects each
+      // camelCase name to its kebab-case attribute. ID references use
+      // `reflectIdPrefix` so scoped ids stay addressable.
+      ariaActivedescendant: { type: String, value: '', reflectIdPrefix: true },
+      ariaAtomic: { type: String, value: '' },
+      ariaAutocomplete: { type: String, value: '' },
+      ariaBusy: { type: String, value: '' },
+      ariaChecked: { type: String, value: '' },
+      ariaColcount: { type: Number, value: 0 },
+      ariaColindex: { type: Number, value: 0 },
+      ariaColspan: { type: Number, value: 0 },
+      ariaControls: { type: String, value: '', reflectIdPrefix: true },
+      ariaCurrent: { type: String, value: '' },
+      ariaDescribedby: { type: String, value: '', reflectIdPrefix: true },
+      ariaDetails: { type: String, value: '', reflectIdPrefix: true },
+      ariaDisabled: { type: String, value: '' },
+      ariaDropeffect: { type: String, value: '' },
+      ariaErrormessage: { type: String, value: '', reflectIdPrefix: true },
+      ariaExpanded: { type: String, value: '' },
+      ariaFlowto: { type: String, value: '', reflectIdPrefix: true },
+      ariaGrabbed: { type: String, value: '' },
+      ariaHaspopup: { type: String, value: '' },
+      ariaHidden: { type: String, value: '' },
+      ariaInvalid: { type: String, value: '' },
+      ariaKeyshortcuts: { type: String, value: '' },
+      ariaLabel: { type: String, value: '' },
+      ariaLabelledby: { type: String, value: '', reflectIdPrefix: true },
+      ariaLevel: { type: Number, value: 0 },
+      ariaLive: { type: String, value: '' },
+      ariaModal: { type: String, value: '' },
+      ariaMultiline: { type: String, value: '' },
+      ariaMultiselectable: { type: String, value: '' },
+      ariaOrientation: { type: String, value: '' },
+      ariaOwns: { type: String, value: '', reflectIdPrefix: true },
+      ariaPlaceholder: { type: String, value: '' },
+      ariaPosinset: { type: Number, value: 0 },
+      ariaPressed: { type: String, value: '' },
+      ariaReadonly: { type: String, value: '' },
+      ariaRelevant: { type: String, value: '' },
+      ariaRequired: { type: String, value: '' },
+      ariaRole: { type: String, value: '', observer: 'ariaRoleChanged' },
+      ariaRoledescription: { type: String, value: '' },
+      ariaRowcount: { type: Number, value: 0 },
+      ariaRowindex: { type: Number, value: 0 },
+      ariaRowspan: { type: Number, value: 0 },
+      ariaSelected: { type: String, value: '' },
+      ariaSetsize: { type: Number, value: 0 },
+      ariaSort: { type: String, value: '' },
+      ariaValuemax: { type: Number, value: 0 },
+      ariaValuemin: { type: Number, value: 0 },
+      ariaValuenow: { type: Number, value: 0 },
+      ariaValuetext: { type: String, value: '' },
+      tabindex: { type: Number, value: 0 },
+      enableSelection: { type: Boolean, value: false },
+      disableSelection: { type: Boolean, value: false },
+    },
+    lifetimes: {
+      attached() {
+        (this as unknown as { applyAriaRole?: () => void }).applyAriaRole?.()
+      },
     },
     methods: {
+      applyAriaRole(): void {
+        const runtime = this as unknown as AriaRuntime
+        const element = runtime.getBackendElement?.()
+        if (!element) return
+        const value = String((this as unknown as { data: Record<string, unknown> }).data.ariaRole ?? '')
+        const role = value || runtime._ariaRoleDefault || ''
+        if (role) {
+          element.setAttribute?.('role', role)
+          runtime._ariaRoleApplied = true
+        } else if (runtime._ariaRoleApplied) {
+          element.removeAttribute?.('role')
+          runtime._ariaRoleApplied = false
+        }
+      },
+      ariaRoleChanged(): void {
+        (this as unknown as { applyAriaRole: () => void }).applyAriaRole()
+      },
+      setAriaRoleDefault(role: string): void {
+        const runtime = this as unknown as AriaRuntime
+        runtime._ariaRoleDefault = role
+        ;(this as unknown as { applyAriaRole: () => void }).applyAriaRole()
+      },
       getNodeId(): string {
         const element = (this as unknown as {
           getBackendElement?: () => { id?: string } | null
@@ -193,10 +310,11 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
   const hover = space.defineBehavior({
     is: BUILTIN_BEHAVIOR_IDS.hover,
     properties: {
-      hoverClass: { type: String, value: '' },
       hoverStartTime: { type: Number, value: 50 },
       hoverStayTime: { type: Number, value: 400 },
-      hoverStopPropagation: { type: Boolean, value: false },
+      hoverClass: { type: String, value: '', observer: 'hoverClassChange' },
+      hoverStopPropagation: { type: Boolean, value: false, observer: 'hoverStopChange' },
+      hover: { type: Boolean, value: false, observer: 'hoverChanged' },
     },
     data: {
       hovering: false,
@@ -205,77 +323,212 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
       created() {
         const instance = this as unknown as HoverRuntime
         clearHoverTimers(instance)
+        instance._defaultHoverClass = ''
+        instance._hoverClass = []
         instance._hoverClasses = []
-        bindHostListeners(this, {
-          touchstart: (event) => (this as unknown as { handleTouchStart: (e: HostEvent) => void }).handleTouchStart(event),
-          touchend: (event) => (this as unknown as { handleTouchEnd: (e: HostEvent) => void }).handleTouchEnd(event),
-          touchcancel: (event) => (this as unknown as { handleTouchCancel: (e: HostEvent) => void }).handleTouchCancel(event),
-        })
+        instance._hoverBound = false
+        instance._hoverTouch = false
+        instance._hovering = false
+      },
+      attached() {
+        const instance = this as unknown as HoverRuntime
+        const hoverClass = String(instance.data.hoverClass ?? '')
+        const defaultClass = instance._defaultHoverClass ?? ''
+        if ((hoverClass || defaultClass) && hoverClass !== 'none') {
+          (this as unknown as { hoverClassChange: () => void }).hoverClassChange()
+        }
       },
       detached() {
-        clearHoverTimers(this as unknown as HoverRuntime)
-        unbindHostListeners(this)
-        applyHoverClass(
-          this as unknown as HoverRuntime & { data: Record<string, unknown> },
-          false,
-        )
+        (this as unknown as { unbindHover: () => void }).unbindHover()
+        const instance = this as unknown as HoverRuntime
+        instance._hoverClass = []
+        applyHoverClasses(instance, [], false)
       },
     },
     methods: {
-      handleTouchStart(event: glassEasel.ShadowedEvent<unknown>) {
+      isScrolling(): boolean {
+        let node = (this as unknown as { parentNode?: unknown }).parentNode
+        for (let depth = 0; node && depth < 100; depth += 1) {
+          const target = (node as { __wxElem?: unknown; __wxScrolling?: number; __scrollingUntil?: number })
+          const scrollingTarget = (target.__wxElem ?? node) as {
+            __wxScrolling?: number
+            __scrollingUntil?: number
+          }
+          const stamped = Number(scrollingTarget.__wxScrolling ?? target.__wxScrolling ?? 0)
+          if (stamped > 0 && Date.now() - stamped < 50) return true
+          const until = Number(scrollingTarget.__scrollingUntil ?? target.__scrollingUntil ?? 0)
+          if (until > Date.now()) return true
+          node = (node as { parentNode?: unknown }).parentNode
+        }
+        return false
+      },
+      hoverChanged(next: boolean): void {
+        if (next) (this as unknown as { bindHover: () => void }).bindHover()
+        else (this as unknown as { unbindHover: () => void }).unbindHover()
+      },
+      hoverClassChange(): void {
         const instance = this as unknown as HoverRuntime
-        if ((this.data as { disabled?: boolean }).disabled) return
-        const hoverClass = String(this.data.hoverClass ?? '')
-        if (hoverClass === 'none') return
+        const raw = String(instance.data.hoverClass ?? '')
+        if (raw) instance._defaultHoverClass = ''
+        instance._hoverClass = raw.split(/\s+/).filter(Boolean)
+        if (raw !== 'none' || instance.data.hoverStopPropagation) {
+          (this as unknown as { bindHover: () => void }).bindHover()
+        } else {
+          (this as unknown as { unbindHover: () => void }).unbindHover()
+        }
+      },
+      hoverStopChange(): void {
+        // WeChat binds here regardless of the new boolean; keep the same
+        // observable behavior instead of reading it as a boolean toggle.
+        ;(this as unknown as { bindHover: () => void }).bindHover()
+      },
+      bindHover(): void {
+        const instance = this as unknown as HoverRuntime
+        if (instance._hoverBound) return
+        if (typeof instance.addListener !== 'function') return
+        instance._hoverBound = true
+        instance._hoverListeners = []
+        const bind = (name: string, handler: (event: HostEvent) => void): void => {
+          const listener = (event: HostEvent) => handler(event)
+          instance.addListener?.(name, listener)
+          instance._hoverListeners!.push({ name, listener })
+        }
+        bind('touchstart', (event) => (this as unknown as {
+          hoverTouchStart: (e: HostEvent) => void
+        }).hoverTouchStart(event))
+        bind('canceltap', () => (this as unknown as { hoverCancel: () => void }).hoverCancel())
+        bind('touchcancel', () => (this as unknown as { hoverCancel: () => void }).hoverCancel())
+        bind('touchend', () => (this as unknown as { hoverTouchEnd: () => void }).hoverTouchEnd())
+      },
+      unbindHover(): void {
+        const instance = this as unknown as HoverRuntime
+        if (!instance._hoverBound) return
+        instance._hoverBound = false
+        for (const { name, listener } of instance._hoverListeners ?? []) {
+          instance.removeListener?.(name, listener)
+        }
+        instance._hoverListeners = []
+        clearHoverTimers(instance)
+      },
+      hoverTouchMove(): void {
+        (this as unknown as { hoverCancel: () => void }).hoverCancel()
+      },
+      hoverTouchStart(event: HostEvent): void {
+        const instance = this as unknown as HoverRuntime
+        if ((this as unknown as { isScrolling: () => boolean }).isScrolling()) return
+        if ((event as unknown as { _hoverPropagationStopped?: boolean })._hoverPropagationStopped) return
+        if (instance.data.hoverStopPropagation) {
+          ;(event as unknown as { _hoverPropagationStopped?: boolean })._hoverPropagationStopped = true
+        }
+        instance._hoverTouch = true
+        const data = instance.data
+        const hoverClass = String(data.hoverClass ?? '')
+        if (hoverClass === 'none' || data.disabled) return
         const touches = (event as unknown as { touches?: unknown[] }).touches
         if (Array.isArray(touches) && touches.length > 1) return
-        if (this.data.hoverStopPropagation) {
-          (event as unknown as { stopPropagation?: () => void }).stopPropagation?.()
-        }
         clearHoverTimers(instance)
-        const hoverStartTime = Number(this.data.hoverStartTime ?? 50)
-        instance._hoverStartTimer = setTimeout(() => {
-          instance._hoverStartTimer = undefined
-          if (!(this.data as { disabled?: boolean }).disabled) {
-            this.setData({ hovering: true })
-            applyHoverClass(
-              this as unknown as HoverRuntime & { data: Record<string, unknown> },
-              true,
-            )
+        const startTime = Number(data.hoverStartTime ?? 50)
+        instance._hoverStyleTimeId = setTimeout(() => {
+          instance._hoverStyleTimeId = undefined
+          if (instance.data.disabled) return
+          instance._hovering = true
+          instance.setData({ hovering: true })
+          const defaultClass = instance._defaultHoverClass ?? ''
+          const names = defaultClass ? [defaultClass] : (instance._hoverClass ?? hoverClassNames(instance))
+          applyHoverClasses(instance, names, true)
+          ;(this as unknown as { _updateNativeCoverHover?: () => void })._updateNativeCoverHover?.()
+          if (!instance._hoverTouch) {
+            ;(this as unknown as { scheduleHoverReset: () => void }).scheduleHoverReset()
           }
-        }, Number.isFinite(hoverStartTime) ? Math.max(0, hoverStartTime) : 50)
+        }, Number.isFinite(startTime) ? Math.max(0, startTime) : 50)
       },
-      handleTouchEnd() {
+      hoverTouchEnd(): void {
         const instance = this as unknown as HoverRuntime
-        if (instance._hoverStartTimer) {
-          clearTimeout(instance._hoverStartTimer)
-          instance._hoverStartTimer = undefined
-        }
-        if (!this.data.hovering) return
-        const hoverStayTime = Number(this.data.hoverStayTime ?? 400)
-        instance._hoverStayTimer = setTimeout(() => {
-          instance._hoverStayTimer = undefined
-          this.setData({ hovering: false })
-          applyHoverClass(
-            this as unknown as HoverRuntime & { data: Record<string, unknown> },
-            false,
-          )
-        }, Number.isFinite(hoverStayTime) ? Math.max(0, hoverStayTime) : 400)
+        instance._hoverTouch = false
+        if (!instance._hovering) return
+        ;(this as unknown as { scheduleHoverReset: () => void }).scheduleHoverReset()
       },
-      handleTouchCancel() {
-        clearHoverTimers(this as unknown as HoverRuntime)
-        if (this.data.hovering) {
-          this.setData({ hovering: false })
-          applyHoverClass(
-            this as unknown as HoverRuntime & { data: Record<string, unknown> },
-            false,
-          )
+      hoverCancel(): void {
+        const instance = this as unknown as HoverRuntime
+        instance._hoverTouch = false
+        if (instance._hoverStyleTimeId) {
+          clearTimeout(instance._hoverStyleTimeId)
+          instance._hoverStyleTimeId = undefined
         }
+        ;(this as unknown as { hoverReset: () => void }).hoverReset()
+      },
+      scheduleHoverReset(): void {
+        const instance = this as unknown as HoverRuntime
+        const run = (): void => {
+          const stayTime = Number(instance.data.hoverStayTime ?? 400)
+          instance._hoverStayTimeId = setTimeout(() => {
+            instance._hoverStayTimeId = undefined
+            ;(this as unknown as { hoverReset: () => void }).hoverReset()
+          }, Number.isFinite(stayTime) ? Math.max(0, stayTime) : 400)
+        }
+        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run)
+        else setTimeout(run, 0)
+      },
+      hoverReset(): void {
+        const instance = this as unknown as HoverRuntime
+        if (!instance._hovering) return
+        instance._hovering = false
+        instance.setData({ hovering: false })
+        applyHoverClasses(instance, [], false)
+        ;(this as unknown as { _updateNativeCoverHover?: () => void })._updateNativeCoverHover?.()
       },
     },
   })
 
 
+
+  const reload = space.defineBehavior({
+    is: BUILTIN_BEHAVIOR_IDS.reload,
+    methods: {
+      saveCompVar(state: ReloadState, fields: string[]): void {
+        const list = state._compVarList ?? []
+        for (let i = list.length - 1; i > 0; i -= 1) {
+          for (let j = i - 1; j >= 0; j -= 1) {
+            if (list[j] === list[i]) {
+              list.splice(i, 1)
+              break
+            }
+          }
+        }
+        state._compVarList = list.concat(fields)
+        fields.forEach((field) => {
+          state[field] = (this as unknown as Record<string, unknown>)[field]
+        })
+      },
+      restoreCompVar(state: ReloadState): void {
+        ;(state._compVarList ?? []).forEach((field) => {
+          ;(this as unknown as Record<string, unknown>)[field] = state[field]
+        })
+      },
+      saveState(target: ReloadState, state: ReloadState): void {
+        target.wxComponents ??= {}
+        let store = target.wxComponents as Record<string, unknown>
+        if ((this as unknown as { ownerShadowRoot?: unknown }).ownerShadowRoot) {
+          store._custom ??= {}
+          store = store._custom as Record<string, unknown>
+        }
+        const is = String((this as unknown as { is: string }).is)
+        store[is] ??= []
+        ;(store[is] as ReloadState[]).push(state)
+      },
+      restoreState(target: ReloadState): ReloadState | undefined {
+        target.wxComponents ??= {}
+        let store = target.wxComponents as Record<string, unknown>
+        if ((this as unknown as { ownerShadowRoot?: unknown }).ownerShadowRoot) {
+          store._custom ??= {}
+          store = store._custom as Record<string, unknown>
+        }
+        const is = String((this as unknown as { is: string }).is)
+        store[is] ??= []
+        return (store[is] as ReloadState[]).shift()
+      },
+    },
+  })
 
   const touchTrack = space.defineBehavior({
     is: BUILTIN_BEHAVIOR_IDS.touchTrack,
@@ -533,18 +786,17 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
     },
   })
 
-  return { base, hover, labelTarget, disabled, dataComponent, group, item, sizeNormalizer, classPrefix, touchTrack, scroller }
+  return { base, hover, reload, labelTarget, disabled, dataComponent, group, item, sizeNormalizer, classPrefix, touchTrack, scroller }
 }
 
 export type BuiltinBehaviors = ReturnType<typeof createBuiltinBehaviors>
 
 function clearHoverTimers(instance: HoverRuntime): void {
-  if (instance._hoverStartTimer) {
-    clearTimeout(instance._hoverStartTimer)
-    instance._hoverStartTimer = undefined
-  }
-  if (instance._hoverStayTimer) {
-    clearTimeout(instance._hoverStayTimer)
-    instance._hoverStayTimer = undefined
+  for (const key of ['_hoverStartTimer', '_hoverStayTimer', '_hoverStyleTimeId', '_hoverStayTimeId'] as const) {
+    const timer = instance[key]
+    if (timer) {
+      clearTimeout(timer)
+      instance[key] = undefined
+    }
   }
 }

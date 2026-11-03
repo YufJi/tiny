@@ -20,7 +20,6 @@ export function definePickerView(ctx: BuiltinContext): BuiltinDefinition {
     template: ctx.template('picker-view'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent],
     properties: {
-      ariaLabel: { type: String, value: '' },
       value: { type: Array, value: [] },
       indicatorStyle: { type: String, value: '' },
       indicatorClass: { type: String, value: '' },

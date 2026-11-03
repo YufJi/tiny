@@ -9,7 +9,6 @@ export function defineCheckbox(ctx: BuiltinContext): BuiltinDefinition {
     template: ctx.template('checkbox'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.disabled, ctx.behaviors.dataComponent, ctx.behaviors.labelTarget, ctx.behaviors.item],
     properties: {
-      ariaLabel: { type: String, value: '' },
       disabled: { type: Boolean, value: false },
       color: { type: String, value: '#09BB07' },
     },

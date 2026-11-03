@@ -40,7 +40,6 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
     template: ctx.template('image'),
     behaviors: [ctx.behaviors.base],
     properties: {
-      ariaLabel: { type: String, value: '' },
       src: { type: String, value: '' },
       mode: { type: String, value: 'scaleToFill' },
       lazyLoad: { type: Boolean, value: false },
