@@ -1,19 +1,17 @@
 tiny-text {
   display: inline;
 }
-.tiny-text {
-  display: inline;
-}
-.tiny-text-selectable {
+
+tiny-text[selectable="true"] {
+  cursor: auto;
   user-select: text;
   -webkit-user-select: text;
 }
-.tiny-text-space-en {
-  white-space: pre-wrap;
+
+tiny-text > span {
+  display: inline;
 }
-.tiny-text-space-em {
-  white-space: pre-wrap;
-}
-.tiny-text-space-nbsp {
-  white-space: pre-wrap;
+
+.tiny-text-raw {
+  display: none;
 }

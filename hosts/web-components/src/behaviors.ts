@@ -43,6 +43,21 @@ type HoverRuntime = {
   getBackendElement?: () => HostClassElement | null
 }
 
+/** The group surface an item reports to (implemented by checkbox/radio group). */
+type GroupHandler = {
+  addItem?: (item: unknown) => void
+  removeItem?: (item: unknown) => void
+  renameItem?: (item: unknown, next: string, previous: string) => void
+  changed?: (item: unknown) => void
+  changedByTap?: () => void
+}
+
+type ItemRuntime = {
+  _relatedGroup?: GroupHandler | null
+  data: Record<string, unknown>
+  setData: (data: Record<string, unknown>) => void
+}
+
 /**
  * Attach glass-easel event listeners to the component host node.
  *
@@ -429,8 +444,7 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
     },
     methods: {
       getFormData(): unknown {
-        const data = this.data as { value?: unknown; selected?: unknown }
-        return data.value ?? data.selected ?? ''
+        return (this.data as { value?: unknown }).value ?? ''
       },
       resetFormData(): void {
         if ('value' in this.data) this.setData({ value: '' })
@@ -438,102 +452,74 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
     },
   })
 
+  /**
+   * The group owns only derived state: child items report membership and
+   * selection changes, and the group mirrors them into its output `value`.
+   * Nothing here writes back to the items' `checked` — that mirrors WeChat's
+   * `wx-group` / `wx-item` split and keeps `checked` owned by the item.
+   */
   const group = space.defineBehavior({
     is: BUILTIN_BEHAVIOR_IDS.group,
     methods: {
-      groupItem(item: unknown): { value: string; checked: boolean } {
-        const data = (item as { data?: { value?: unknown; checked?: unknown } } | null)?.data
-        return { value: String(data?.value ?? ''), checked: Boolean(data?.checked) }
+      addItem(_item: unknown): void {},
+      removeItem(_item: unknown): void {},
+      renameItem(_item: unknown, _newValue: string, _oldValue: string): void {},
+      changed(_item: unknown): void {},
+      changedByTap(): void {
+        const value = (this as unknown as { _value?: unknown })._value
+        this.triggerEvent(
+          'change',
+          { value: Array.isArray(value) ? [...value] : value },
+          { bubbles: true, composed: true },
+        )
       },
-      addItem(item: unknown): void {
-        if (this.groupItem(item).checked) this.changed(item)
-      },
-      removeItem(item: unknown): void {
-        const { value } = this.groupItem(item)
-        const current = (this.data as { value?: unknown; selected?: unknown }).value
-        if (Array.isArray(current)) {
-          this.setData({ value: current.filter((item) => String(item) !== value) })
-        } else if (typeof current === 'string' && current === value) {
-          this.setData({ value: '' })
-        }
-        const selected = (this.data as { selected?: unknown }).selected
-        if (Array.isArray(selected)) {
-          this.setData({ selected: selected.filter((item) => String(item) !== value) })
-        } else if (typeof selected === 'string' && selected === value) {
-          this.setData({ selected: '' })
-        }
-      },
-      renameItem(item: unknown, newVal: string, oldVal: string): void {
-        if (!this.groupItem(item).checked) return
-        const current = (this.data as { value?: unknown }).value
-        if (Array.isArray(current)) {
-          const index = current.findIndex((entry) => String(entry) === oldVal)
-          if (index >= 0) {
-            const next = [...current]
-            next[index] = newVal
-            this.setData({ value: next })
-          }
-        } else if (typeof current === 'string' && current === oldVal) {
-          this.setData({ value: newVal })
-        }
-        const selected = (this.data as { selected?: unknown }).selected
-        if (Array.isArray(selected)) {
-          const index = selected.findIndex((entry) => String(entry) === oldVal)
-          if (index >= 0) {
-            const next = [...selected]
-            next[index] = newVal
-            this.setData({ selected: next })
-          }
-        } else if (typeof selected === 'string' && selected === oldVal) {
-          this.setData({ selected: newVal })
-        }
-      },
-      changed(item: unknown): void {
-        const { value, checked } = this.groupItem(item)
-        if (!value) return
-        const current = (this.data as { value?: unknown; selected?: unknown }).value
-        if (Array.isArray(current)) {
-          const set = new Set(current.map((entry) => String(entry)))
-          if (checked) set.add(value)
-          else set.delete(value)
-          this.setData({ value: [...set] })
-        } else if (checked) {
-          this.setData({ value })
-        }
-        const selected = (this.data as { selected?: unknown }).selected
-        if (Array.isArray(selected)) {
-          const set = new Set(selected.map((entry) => String(entry)))
-          if (checked) set.add(value)
-          else set.delete(value)
-          this.setData({ selected: [...set] })
-        } else if (checked) {
-          this.setData({ selected: value })
-        }
-      },
-      applyItemChange(detail: { value?: unknown; checked?: unknown }): string[] {
-        const value = String(detail.value ?? '')
-        const selected = new Set<string>(((this.data as { selected?: string[] }).selected ?? []))
-        if (detail.checked) selected.add(value)
-        else selected.delete(value)
-        this.setData({ selected: [...selected] })
-        return [...selected]
-      },
-      resetFormData(): void {
-        const current = (this.data as { value?: unknown }).value
-        this.setData({
-          selected: [],
-          ...(Array.isArray(current) ? { value: [] } : typeof current === 'string' ? { value: '' } : {}),
-        })
-      },
+      resetFormData(): void {},
     },
   })
 
   const item = space.defineBehavior({
     is: BUILTIN_BEHAVIOR_IDS.item,
+    properties: {
+      value: { type: String, value: '', observer: 'valueChange' },
+      checked: { type: Boolean, value: false, observer: 'checkedChange' },
+    },
+    lifetimes: {
+      attached() {
+        const runtime = this as unknown as ItemRuntime
+        const group = findAncestorWithBehavior(this, BUILTIN_BEHAVIOR_IDS.group) as GroupHandler | null
+        runtime._relatedGroup = group
+        group?.addItem?.(this)
+      },
+      moved() {
+        const runtime = this as unknown as ItemRuntime
+        runtime._relatedGroup?.removeItem?.(this)
+        const group = findAncestorWithBehavior(this, BUILTIN_BEHAVIOR_IDS.group) as GroupHandler | null
+        runtime._relatedGroup = group
+        group?.addItem?.(this)
+      },
+      detached() {
+        const runtime = this as unknown as ItemRuntime
+        runtime._relatedGroup?.removeItem?.(this)
+        runtime._relatedGroup = null
+      },
+    },
     methods: {
-      changedByTap(): void {},
+      valueChange(next: unknown, previous: unknown): void {
+        if (next === previous) return
+        const group = (this as unknown as ItemRuntime)._relatedGroup
+        group?.renameItem?.(this, String(next ?? ''), String(previous ?? ''))
+      },
+      checkedChange(next: unknown, previous: unknown): void {
+        if (next === previous) return
+        const group = (this as unknown as ItemRuntime)._relatedGroup
+        group?.changed?.(this)
+      },
+      changedByTap(): void {
+        const group = (this as unknown as ItemRuntime)._relatedGroup
+        group?.changedByTap?.()
+      },
       resetFormData(): void {
-        if ('checked' in this.data) this.setData({ checked: false })
+        ;(this as unknown as ItemRuntime).setData({ checked: false })
       },
     },
   })

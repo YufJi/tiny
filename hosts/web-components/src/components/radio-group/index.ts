@@ -1,27 +1,37 @@
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { builtinDefinitionName } from '../../tags'
-import { BUILTIN_BEHAVIOR_IDS } from '../../behaviors'
 
+type GroupItem = {
+  data?: { value?: unknown; checked?: unknown }
+  setData?: (data: Record<string, unknown>) => void
+}
+
+type RadioGroupRuntime = {
+  _value: string
+  _selectedItem: GroupItem | null
+  setData: (data: Record<string, unknown>) => void
+}
+
+const itemValue = (item: unknown): string => String((item as GroupItem).data?.value ?? '')
+
+/**
+ * `radio-group` mirrors WeChat: the newest checked item wins, the group
+ * unchecks the previously selected item, and `value` is only derived state
+ * (never an input that is written back to the items).
+ */
 export function defineRadioGroup(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: builtinDefinitionName('radio-group'),
     template: ctx.template('radio-group'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent, ctx.behaviors.group],
-    properties: {
-      value: { type: String, value: '' },
-    },
     data: {
-      selected: '',
-    },
-    observers: {
-      value(next: unknown) {
-        if (!(this as unknown as { _groupReady?: boolean })._groupReady) return
-        this.applyValue((this as unknown as { childNodes?: unknown[] }).childNodes, String(next ?? ''))
-      },
+      value: '',
     },
     lifetimes: {
       created() {
-        setTimeout(() => this.initializeGroup(), 0)
+        const runtime = this as unknown as RadioGroupRuntime
+        runtime._value = ''
+        runtime._selectedItem = null
       },
       attached() {
         const element = (this as unknown as {
@@ -29,74 +39,54 @@ export function defineRadioGroup(ctx: BuiltinContext): BuiltinDefinition {
         }).getBackendElement?.()
         element?.setAttribute?.('role', 'radiogroup')
         element?.setAttribute?.('aria-label', '单选区')
-        this.initializeGroup()
-      },
-      ready() {
-        this.initializeGroup()
+        ;(this as unknown as RadioGroupRuntime & { publish: () => void }).publish()
       },
     },
     options: ctx.hostOptions('radio-group', { multipleSlots: true }),
     methods: {
-      initializeGroup() {
-        if (!this.hasItems((this as unknown as { childNodes?: unknown[] }).childNodes)) return
-        const provided = String(this.data.value ?? '')
-        if (provided) this.applyValue((this as unknown as { childNodes?: unknown[] }).childNodes, provided)
-        const value = this.syncValue()
-        this.setData({ value, selected: value })
-        ;(this as unknown as { _groupReady?: boolean })._groupReady = true
+      publish() {
+        const runtime = this as unknown as RadioGroupRuntime
+        runtime.setData({ value: runtime._value })
       },
-      hasItems(nodes: unknown[] | undefined): boolean {
-        for (const node of nodes ?? []) {
-          const item = node as {
-            hasBehavior?: (behavior: string) => boolean
-            childNodes?: unknown[]
-          }
-          if (item.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.item)) return true
-          if (this.hasItems(item.childNodes)) return true
+      addItem(item: unknown) {
+        const runtime = this as unknown as RadioGroupRuntime
+        if (!(item as GroupItem).data?.checked) return
+        const previous = runtime._selectedItem
+        if (previous && previous !== item) previous.setData?.({ checked: false })
+        runtime._value = itemValue(item)
+        runtime._selectedItem = item as GroupItem
+        ;(this as unknown as { publish: () => void }).publish()
+      },
+      removeItem(item: unknown) {
+        const runtime = this as unknown as RadioGroupRuntime
+        if (runtime._selectedItem !== item) return
+        runtime._value = ''
+        runtime._selectedItem = null
+        ;(this as unknown as { publish: () => void }).publish()
+      },
+      renameItem(item: unknown, next: string) {
+        const runtime = this as unknown as RadioGroupRuntime
+        if (runtime._selectedItem !== item) return
+        runtime._value = next
+        ;(this as unknown as { publish: () => void }).publish()
+      },
+      changed(item: unknown) {
+        const runtime = this as unknown as RadioGroupRuntime
+        const group = this as unknown as {
+          addItem: (item: unknown) => void
+          removeItem: (item: unknown) => void
         }
-        return false
+        if (runtime._selectedItem === item) group.removeItem(item)
+        else group.addItem(item)
       },
-      collectChecked(nodes: unknown[] | undefined): string | undefined {
-        for (const node of nodes ?? []) {
-          const item = node as {
-            hasBehavior?: (behavior: string) => boolean
-            data?: Record<string, unknown>
-            childNodes?: unknown[]
-          }
-          if (item.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.item) && item.data?.checked) {
-            return String(item.data.value ?? '')
-          }
-          const nested = this.collectChecked(item.childNodes)
-          if (nested !== undefined) return nested
-        }
-        return undefined
+      getFormData(): string {
+        return (this as unknown as RadioGroupRuntime)._value
       },
-      syncValue(): string {
-        return this.collectChecked(
-          (this as unknown as { childNodes?: unknown[] }).childNodes,
-        ) ?? String(this.data.value ?? '')
-      },
-      applyValue(nodes: unknown[] | undefined, value: string): void {
-        for (const node of nodes ?? []) {
-          const item = node as {
-            hasBehavior?: (behavior: string) => boolean
-            data?: Record<string, unknown>
-            childNodes?: unknown[]
-            setData?: (data: Record<string, unknown>) => void
-          }
-          if (item.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.item) && item.data && 'checked' in item.data) {
-            const should = String(item.data.value ?? '') === value
-            if (Boolean(item.data.checked) !== should) item.setData?.({ checked: should })
-          }
-          this.applyValue(item.childNodes, value)
-        }
-      },
-      handleItemChange(detail: { value?: unknown; checked?: unknown }) {
-        if (detail.checked === false) return
-        const value = String(detail.value ?? '')
-        this.setData({ value, selected: value })
-        this.applyValue((this as unknown as { childNodes?: unknown[] }).childNodes, value)
-        this.triggerEvent('change', { value }, { bubbles: true, composed: true })
+      resetFormData() {
+        const runtime = this as unknown as RadioGroupRuntime
+        runtime._value = ''
+        runtime._selectedItem = null
+        ;(this as unknown as { publish: () => void }).publish()
       },
     },
   }).general()

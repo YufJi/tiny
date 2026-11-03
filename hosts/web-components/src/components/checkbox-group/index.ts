@@ -1,31 +1,34 @@
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { builtinDefinitionName } from '../../tags'
-import { BUILTIN_BEHAVIOR_IDS } from '../../behaviors'
 
-function asValues(value: unknown): string[] {
-  return Array.isArray(value) ? value.map((item) => String(item)) : []
+type GroupItem = {
+  data?: { value?: unknown; checked?: unknown }
+  setData?: (data: Record<string, unknown>) => void
 }
 
+type CheckboxGroupRuntime = {
+  _value: string[]
+  setData: (data: Record<string, unknown>) => void
+}
+
+const itemValue = (item: unknown): string => String((item as GroupItem).data?.value ?? '')
+
+/**
+ * `checkbox-group` mirrors WeChat: the group owns only the derived `value`,
+ * which is maintained from item notifications. It never writes `checked`
+ * back to its items.
+ */
 export function defineCheckboxGroup(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: builtinDefinitionName('checkbox-group'),
     template: ctx.template('checkbox-group'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent, ctx.behaviors.group],
-    properties: {
-      value: { type: Array, value: [] as string[] },
-    },
     data: {
-      selected: [] as string[],
-    },
-    observers: {
-      value(next: unknown) {
-        if (!(this as unknown as { _groupReady?: boolean })._groupReady) return
-        this.applySelection(asValues(next))
-      },
+      value: [] as string[],
     },
     lifetimes: {
       created() {
-        setTimeout(() => this.initializeGroup(), 0)
+        ;(this as unknown as CheckboxGroupRuntime)._value = []
       },
       attached() {
         const element = (this as unknown as {
@@ -33,75 +36,52 @@ export function defineCheckboxGroup(ctx: BuiltinContext): BuiltinDefinition {
         }).getBackendElement?.()
         element?.setAttribute?.('role', 'group')
         element?.setAttribute?.('aria-label', '复选区')
-        this.initializeGroup()
-      },
-      ready() {
-        this.initializeGroup()
+        ;(this as unknown as CheckboxGroupRuntime & { publish: () => void }).publish()
       },
     },
     options: ctx.hostOptions('checkbox-group', { multipleSlots: true }),
     methods: {
-      initializeGroup() {
-        if (!this.hasItems((this as unknown as { childNodes?: unknown[] }).childNodes)) return
-        const provided = asValues(this.data.value)
-        if (provided.length > 0) this.applySelection(provided)
-        const selected = this.syncSelected()
-        this.setData({ selected, value: selected })
-        ;(this as unknown as { _groupReady?: boolean })._groupReady = true
+      publish() {
+        const runtime = this as unknown as CheckboxGroupRuntime
+        runtime.setData({ value: [...runtime._value] })
       },
-      hasItems(nodes: unknown[] | undefined): boolean {
-        for (const node of nodes ?? []) {
-          const item = node as {
-            hasBehavior?: (behavior: string) => boolean
-            childNodes?: unknown[]
-          }
-          if (item.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.item)) return true
-          if (this.hasItems(item.childNodes)) return true
+      addItem(item: unknown) {
+        const runtime = this as unknown as CheckboxGroupRuntime
+        if (!(item as GroupItem).data?.checked) return
+        runtime._value.push(itemValue(item))
+        ;(this as unknown as { publish: () => void }).publish()
+      },
+      removeItem(item: unknown) {
+        const runtime = this as unknown as CheckboxGroupRuntime
+        if (!(item as GroupItem).data?.checked) return
+        const index = runtime._value.indexOf(itemValue(item))
+        if (index >= 0) runtime._value.splice(index, 1)
+        ;(this as unknown as { publish: () => void }).publish()
+      },
+      renameItem(item: unknown, next: string, previous: string) {
+        const runtime = this as unknown as CheckboxGroupRuntime
+        if (!(item as GroupItem).data?.checked) return
+        const index = runtime._value.indexOf(previous)
+        if (index >= 0) runtime._value[index] = next
+        ;(this as unknown as { publish: () => void }).publish()
+      },
+      changed(item: unknown) {
+        const runtime = this as unknown as CheckboxGroupRuntime
+        const value = itemValue(item)
+        if ((item as GroupItem).data?.checked) {
+          runtime._value.push(value)
+        } else {
+          const index = runtime._value.indexOf(value)
+          if (index >= 0) runtime._value.splice(index, 1)
         }
-        return false
+        ;(this as unknown as { publish: () => void }).publish()
       },
-      collectChecked(nodes: unknown[] | undefined, out: string[]): void {
-        for (const node of nodes ?? []) {
-          const item = node as {
-            hasBehavior?: (behavior: string) => boolean
-            data?: Record<string, unknown>
-            childNodes?: unknown[]
-          }
-          if (item.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.item) && item.data?.checked) {
-            const value = String(item.data.value ?? '')
-            if (value && !out.includes(value)) out.push(value)
-          }
-          this.collectChecked(item.childNodes, out)
-        }
+      getFormData(): string[] {
+        return [...(this as unknown as CheckboxGroupRuntime)._value]
       },
-      syncSelected(): string[] {
-        const selected: string[] = []
-        this.collectChecked((this as unknown as { childNodes?: unknown[] }).childNodes, selected)
-        return selected
-      },
-      applySelection(selected: string[]): void {
-        const set = new Set(selected)
-        const walk = (nodes: unknown[] | undefined) => {
-          for (const node of nodes ?? []) {
-            const item = node as {
-              hasBehavior?: (behavior: string) => boolean
-              data?: Record<string, unknown>
-              childNodes?: unknown[]
-              setData?: (data: Record<string, unknown>) => void
-            }
-            if (item.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.item) && item.data && 'checked' in item.data) {
-              const should = set.has(String(item.data.value ?? ''))
-              if (Boolean(item.data.checked) !== should) item.setData?.({ checked: should })
-            }
-            walk(item.childNodes)
-          }
-        }
-        walk((this as unknown as { childNodes?: unknown[] }).childNodes)
-      },
-      handleItemChange() {
-        const selected = this.syncSelected()
-        this.setData({ selected, value: selected })
-        this.triggerEvent('change', { value: selected }, { bubbles: true, composed: true })
+      resetFormData() {
+        ;(this as unknown as CheckboxGroupRuntime)._value = []
+        ;(this as unknown as { publish: () => void }).publish()
       },
     },
   }).general()

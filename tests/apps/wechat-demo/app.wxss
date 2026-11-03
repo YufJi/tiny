@@ -1,5 +1,9 @@
 /* reset */
 @import './common/common-skyline.wxss';
+/* The official demo loads WeUI through `useExtendedLib.weui`; inline the
+   bundled copy so pages that only use `weui-*` classes (radio, label, ...)
+   get the same global styles as WeChat. */
+@import './page/common/lib/weui.wxss';
 
 page {
   background-color: #f7f7f7;

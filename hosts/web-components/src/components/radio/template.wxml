@@ -1,4 +1,4 @@
-<label class="tiny-radio-wrapper {{disabled ? 'is-disabled' : ''}}">
+<label class="tiny-radio-wrapper">
   <input
     id="native-input"
     class="tiny-radio-native"
@@ -9,9 +9,9 @@
     disabled="{{disabled}}"
     catchchange="handleChange"
   />
-  <span
+  <div
     class="tiny-radio-input {{checked ? 'is-checked' : ''}} {{disabled ? 'is-disabled' : ''}}"
     style="--tiny-radio-color: {{color}};"
-  ></span>
+  ></div>
   <slot />
 </label>

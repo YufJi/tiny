@@ -1,13 +1,14 @@
-<div
-  id="native-scroll-view"
-  class="tiny-scroll-view {{scrollX ? 'is-horizontal' : ''}} {{scrollY ? 'is-vertical' : ''}} {{showScrollbar ? '' : 'is-hidden-scrollbar'}} {{bounces ? '' : 'is-no-bounce'}} {{pagingEnabled ? 'is-paging' : ''}} {{scrollAnchoring ? 'is-anchoring' : ''}} {{enableFlex ? 'is-flex' : ''}}"
-  role="listbox"
-  bindscroll="handleScroll"
-  bindtap="handleTap"
-  bindtouchstart="handleTouchStart"
-  bindtouchmove="handleTouchMove"
-  bindtouchend="handleTouchEnd"
-  bindtouchcancel="handleTouchCancel"
->
-  <div class="tiny-scroll-view-content"><slot /></div>
+<div id="wrap" class="tiny-scroll-view" role="listbox" aria-label="{{ariaLabel}}">
+  <div
+    id="native-scroll-view"
+    class="tiny-scroll-view-main {{scrollX ? 'is-horizontal' : ''}} {{scrollY ? 'is-vertical' : ''}} {{showScrollbar ? '' : 'is-hidden-scrollbar'}} {{bounces ? '' : 'is-no-bounce'}} {{pagingEnabled ? 'is-paging' : ''}} {{scrollAnchoring ? 'is-anchoring' : ''}} {{enableFlex ? 'is-flex' : ''}}"
+    bindscroll="handleScroll"
+    bindtap="handleTap"
+    bindtouchstart="handleTouchStart"
+    bindtouchmove="handleTouchMove"
+    bindtouchend="handleTouchEnd"
+    bindtouchcancel="handleTouchCancel"
+  >
+    <div class="tiny-scroll-view-content"><slot /></div>
+  </div>
 </div>

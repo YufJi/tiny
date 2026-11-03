@@ -1,14 +1,13 @@
-<div class="tiny-canvas-container">
-  <canvas
-    id="native-canvas"
-    class="tiny-canvas"
-    canvas-id="{{canvasId}}"
-    type="{{type}}"
-    data-placeholder="canvas"
-    bindtouchstart="handleTouchStart"
-    bindtouchmove="handleTouchMove"
-    bindtouchend="handleTouchEnd"
-    bindtouchcancel="handleTouchCancel"
-    binderror="handleError"
-  />
-</div>
+<canvas
+  id="native-canvas"
+  class="tiny-canvas"
+  canvas-id="{{canvasId}}"
+  type="{{type}}"
+  data-placeholder="canvas"
+  bindtouchstart="handleTouchStart"
+  bindtouchmove="handleTouchMove"
+  bindtouchend="handleTouchEnd"
+  bindtouchcancel="handleTouchCancel"
+  binderror="handleError"
+></canvas>
+<div class="tiny-canvas-slot"><slot /></div>

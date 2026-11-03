@@ -12,15 +12,15 @@
       class="tiny-slider-handle-wrapper"
       style="background-color: {{backgroundColor || color}};"
     >
-      <div
-        class="tiny-slider-track"
-        style="width: {{percent}}%; background-color: {{activeColor || selectedColor}};"
-      ></div>
+      <div class="tiny-slider-handle" style="left: {{percent}}%;"></div>
       <div
         class="tiny-slider-thumb"
         style="left: {{percent}}%; width: {{blockSize}}px; height: {{blockSize}}px; margin-left: {{blockOffset}}px; margin-top: {{blockOffset}}px; background-color: {{blockColor}};"
       ></div>
-      <div class="tiny-slider-handle" style="left: {{percent}}%;"></div>
+      <div
+        class="tiny-slider-track"
+        style="width: {{percent}}%; background-color: {{activeColor || selectedColor}};"
+      ></div>
       <div class="tiny-slider-step"></div>
       <input
         id="native-input"
@@ -37,5 +37,5 @@
       />
     </div>
   </div>
-  <span wx:if="{{showValue}}" class="tiny-slider-value">{{displayValue}}</span>
+  <span class="tiny-slider-value" hidden="{{!showValue}}"><p>{{displayValue}}</p></span>
 </div>

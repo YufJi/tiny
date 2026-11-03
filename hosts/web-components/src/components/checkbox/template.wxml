@@ -1,4 +1,4 @@
-<label class="tiny-checkbox-wrapper {{disabled ? 'is-disabled' : ''}}">
+<label class="tiny-checkbox-wrapper">
   <input
     id="native-input"
     class="tiny-checkbox-native"
@@ -9,9 +9,9 @@
     disabled="{{disabled}}"
     catchchange="handleChange"
   />
-  <span
+  <div
     class="tiny-checkbox-input {{checked ? 'is-checked' : ''}} {{disabled ? 'is-disabled' : ''}}"
     style="color: {{color}};"
-  ></span>
+  ></div>
   <slot />
 </label>

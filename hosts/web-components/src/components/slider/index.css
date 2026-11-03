@@ -90,6 +90,14 @@ tiny-slider {
   cursor: default;
 }
 
+.tiny-slider-value[hidden] {
+  display: none;
+}
+
+.tiny-slider-value p {
+  margin: 0;
+}
+
 .tiny-slider-value {
   min-width: 2em;
   margin-left: 1em;

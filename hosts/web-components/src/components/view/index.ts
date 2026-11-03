@@ -15,5 +15,14 @@ export function defineView(ctx: BuiltinContext): BuiltinDefinition {
       ariaLabel: { type: String, value: '' },
     },
     options: ctx.hostOptions('view', { multipleSlots: true }),
+    lifetimes: {
+      attached() {
+        const element = (this as unknown as {
+          getBackendElement?: () => { setAttribute?: (name: string, value: string) => void } | null
+        }).getBackendElement?.()
+        element?.setAttribute?.('role', String(this.data.ariaRole ?? ''))
+        element?.setAttribute?.('aria-label', String(this.data.ariaLabel ?? ''))
+      },
+    },
   }).general()
 }

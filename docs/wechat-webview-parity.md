@@ -134,22 +134,22 @@
 | --- | ---: | ---: | ---: | ---: | --- |
 | button | 22 | 22 | 9 | 9 | open-type 事件以失败回调形式触发；真实平台 API 未接 |
 | canvas | 3 | 3 | 6 | 6 | 触摸/longtap/error 已接；selector node 与 legacy 均走 OffscreenCanvas；导出 API 仍缺 |
-| checkbox-group | 0 | 0 | 1 | 1 | 受控 `value` 已接（Tiny 扩展）；组内 tap/aria 仍近似 |
-| checkbox | 4 | 4 | 0 | 0 | 自定义视觉已对齐；受控 group 已接；原生长按/aria 仍近似 |
+| checkbox-group | 0 | 0 | 1 | 1 | `value` 为只读派生值（`wx-group`/`wx-item` 单向）；组内 tap/aria 仍近似 |
+| checkbox | 4 | 4 | 0 | 0 | 自定义视觉已对齐；group 由 item 事件驱动；原生长按/aria 仍近似 |
 | icon | 3 | 3 | 0 | 0 | WeUI 字体重写完成；参考本身没有 longpress 事件，type 默认值与版本声明有差异 |
-| image | 6 | 6 | 2 | 2 | 背景图已对齐；`lazyLoad` 已接；longpress 菜单为 contextmenu 近似 |
+| image | 6 | 6 | 2 | 2 | `#div` + 兄弟 `span>slot` 结构已对齐；`lazyLoad` 已接；longpress 菜单为 contextmenu 近似 |
 | input | 26 | 18 | 10 | 8 | keyboardheightchange、nicknamereview；placeholder-style 已接 |
 | label | 1 | 1 | 0 | 0 | `for` 已绑定；host tap + label-target 分发，原生 double activation 已移除 |
-| progress | 11 | 10 | 1 | 1 | 少量外观/动画细节 |
-| radio-group | 0 | 0 | 1 | 1 | 受控 `value` 已接（Tiny 扩展）；组内 tap/aria 仍近似 |
+| progress | 11 | 10 | 1 | 1 | info 节点改 `p[hidden]`、aria-valuenow 带 `%`；active 动画近似 |
+| radio-group | 0 | 0 | 1 | 1 | `value` 为只读派生值（last-wins 单选）；组内 tap/aria 仍近似 |
 | radio | 4 | 4 | 0 | 0 | 自定义视觉已对齐；label 转发 double-click 已去重；原生长按/取消选择仍近似 |
-| scroll-view | 24 | 10 | 10 | 10 | 三层结构/touchtrack 已接；底层 scroller 仍为 native 近似 |
-| slider | 12 | 12 | 2 | 2 | 自定义 track/thumb；透明 range 交互层 |
-| swiper-item | 2 | 1 | 0 | 0 | `item-id` 已接；skip-hidden 语义在 swiper 宿主上实现 |
-| swiper | 16 | 15 | 3 | 3 | slide-frame/绝对定位层已接；clip/动画细节仍近似 |
+| scroll-view | 24 | 10 | 10 | 10 | wrap/main/content 三层已对齐；底层 scroller 仍为 native 近似 |
+| slider | 12 | 12 | 2 | 2 | 子节点顺序对齐（handle/thumb/track/step）、值用 `span>p`；透明 range 交互层 |
+| swiper-item | 2 | 2 | 0 | 0 | 绝对定位 + 100% 尺寸由宿主 CSS 给出，位移由 swiper 逐项写入；`item-id` 已接 |
+| swiper | 16 | 15 | 3 | 3 | 层级/逐项位移/`#slides` 边距/多图帧宽已按微信；手势与 circular 仍近似 |
 | switch | 4 | 4 | 1 | 1 | 52×32 自定义视觉；`type="checkbox"` 分支已接 |
-| text | 4 | 3 | 0 | 0 | decode 未真正解码 |
-| view | 4 | 4 | 0 | 0 | hover 默认 none；shared `wx-hover` |
+| text | 4 | 3 | 0 | 0 | raw/main、decode、换行与 space 语义已对齐；`user-select` 仍未单独接 |
+| view | 4 | 4 | 0 | 0 | aria-role/aria-label 已写宿主；scrollTop/Left 保存恢复依赖 reload 机制，暂未接 |
 | **合计（18 个已统计组件）** | **146** | **120（82.2%）** | **46** | **44（95.7%）** | |
 
 > `textarea` / `form` / `picker` / `picker-view` / `picker-view-column` / `navigator` 已计入标签数，但属性/事件明细尚未并入上表；因此 146 是这 18 个组件的文档条目之和，不是 24 个组件的全量分母。

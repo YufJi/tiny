@@ -25,3 +25,7 @@ tiny-progress {
   margin-top: 0;
   margin-bottom: 0;
 }
+
+.tiny-progress-info[hidden] {
+  display: none;
+}

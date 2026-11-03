@@ -20,9 +20,7 @@ describe('glass render tree', () => {
     ]))
 
     const group = tree.getNode('group') as unknown as {
-      hasItems: (nodes: unknown[]) => boolean
-      syncSelected: () => string[]
-      childNodes: unknown[]
+      data: { value: string[] }
     }
     const checkbox = tree.getNode('checked') as unknown as {
       is: string
@@ -30,7 +28,7 @@ describe('glass render tree', () => {
     }
     expect(group).toBeDefined()
     expect(checkbox).toBeDefined()
-    expect(group.hasItems(group.childNodes)).toBe(true)
+    expect(group.data.value).toEqual([])
     const ancestors: string[] = []
     let current: any = checkbox
     while (current) {
@@ -38,6 +36,11 @@ describe('glass render tree', () => {
       current = current.parentNode
     }
     expect(ancestors.some((tag) => tag.endsWith('checkbox-group'))).toBe(true)
+
+    // A page-driven `checked` change flows one way into the group value.
+    tree.applyPatches([{ type: 'props', id: 'checked', props: { value: 'a', checked: true } }])
+    expect(group.data.value).toEqual(['a'])
+    expect((checkbox as unknown as { data: { checked: boolean } }).data.checked).toBe(true)
   })
 
   test('scopes external classes with both owner and page scopes', () => {

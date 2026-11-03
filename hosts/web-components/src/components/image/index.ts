@@ -145,7 +145,7 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
               removeEventListener?: (type: string, listener: (event: Event) => void) => void
             } | null
           } | null
-        } | null)?.getElementById?.('native-image')?.getBackendElement?.()
+        } | null)?.getElementById?.('div')?.getBackendElement?.()
         if (!element?.addEventListener) return
         const instance = this as unknown as { _contextMenuCleanup?: () => void }
         instance._contextMenuCleanup?.()

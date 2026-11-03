@@ -2,6 +2,36 @@ import type * as glassEasel from 'glass-easel'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { builtinDefinitionName } from '../../tags'
 
+type SwiperItemElement = {
+  style?: {
+    transform?: string
+    webkitTransform?: string
+    display?: string
+    setProperty?: (name: string, value: string) => void
+  }
+  /** Layout width, used only for the `previous-margin` move ratio. */
+  offsetWidth?: number
+  hasAttribute?: (name: string) => boolean
+  getAttribute?: (name: string) => string | null
+  hidden?: boolean
+}
+
+type SwiperDot = { index: number; active: boolean }
+
+/** WeChat accepts bare numbers, `px` and `rpx` for the two slide margins. */
+function normalizeMargin(value: string): string {
+  const text = String(value ?? '').trim()
+  if (!text) return ''
+  const match = /^([+-]?\d+(?:\.\d+)?)(px|rpx)?$/i.exec(text)
+  if (!match) return ''
+  const amount = Number(match[1])
+  if ((match[2] ?? '').toLowerCase() === 'rpx') {
+    const width = typeof window === 'undefined' ? 375 : window.innerWidth || 375
+    return `${(amount * width) / 750}px`
+  }
+  return `${amount}px`
+}
+
 export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: builtinDefinitionName('swiper'),
@@ -27,7 +57,8 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
     },
     data: {
       activeIndex: 0,
-      dots: [] as number[],
+      dots: [] as SwiperDot[],
+      slidesStyle: '',
       trackStyle: 'transform: translateX(0%); transition-duration: 500ms;',
     },
     lifetimes: {
@@ -51,6 +82,8 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
             this.handleTouchEnd({ changedTouches } as never)
           }
         })
+        this.layoutItems()
+        this.updateTrackStyle()
       },
       detached() {
         ;(this as unknown as { _swiperTouchCleanup?: () => void })._swiperTouchCleanup?.()
@@ -59,8 +92,8 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
     },
     observers: {
       current(value: number) {
-        const index = Math.max(0, Number(value) || 0)
-        this.setData({ activeIndex: index })
+        this.setData({ activeIndex: Math.max(0, Number(value) || 0) })
+        this.syncDots()
         this.updateTrackStyle()
       },
       duration() {
@@ -80,8 +113,14 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
         this.layoutItems()
         this.updateTrackStyle()
       },
+      'previousMargin, nextMargin'() {
+        this.applyMargins()
+        this.updateTrackStyle()
+      },
       skipHiddenItemLayout() {
         this.syncDots()
+        this.layoutItems()
+        this.updateTrackStyle()
       },
       currentItemId(value: string) {
         if (!value) return
@@ -91,10 +130,12 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
     options: ctx.hostOptions('swiper'),
     methods: {
       bootstrapSwiper(attempt: number) {
+        this.applyMargins()
+        this.layoutItems()
         this.syncDots()
         this.updateTrackStyle()
         this.restartAutoplay()
-        if ((this.data.dots as number[]).length === 0 && attempt < 10) {
+        if ((this.data.dots as SwiperDot[]).length === 0 && attempt < 10) {
           setTimeout(() => this.bootstrapSwiper(attempt + 1), 16)
         }
       },
@@ -104,10 +145,11 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
         if (index < 0) return
         if (String(this.data.currentItemId ?? '') !== itemId) return
         this.setData({ activeIndex: index })
+        this.syncDots()
         this.updateTrackStyle()
       },
       applyCurrentItemId(itemId: string, attempt: number) {
-        const host = (this as unknown as { getBackendElement?: () => { querySelectorAll?: (selector: string) => ArrayLike<Element> } | null }).getBackendElement?.()
+        const host = (this as unknown as { getBackendElement?: () => { querySelectorAll?: (selector: string) => ArrayLike<unknown> } | null }).getBackendElement?.()
         const items = host?.querySelectorAll?.('tiny-swiper-item, .tiny-swiper-item')
         let index = -1
         if (items) {
@@ -128,6 +170,7 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
         }
         if (index >= 0) {
           this.setData({ activeIndex: index })
+          this.syncDots()
           this.updateTrackStyle()
           return
         }
@@ -145,57 +188,123 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
             : []
         if (!this.data.skipHiddenItemLayout) return all
         return all.filter((item) => {
-          const element = item as { hidden?: boolean; hasAttribute?: (name: string) => boolean; data?: { hidden?: boolean } }
+          const element = item as SwiperItemElement & { data?: { hidden?: boolean } }
           if (typeof element.hasAttribute === 'function') return !element.hasAttribute('hidden')
           if (typeof element.hidden === 'boolean') return !element.hidden
           return !element.data?.hidden
         })
       },
+      /** `previous-margin`/`next-margin` shrink `#slides`, like WeChat. */
+      applyMargins() {
+        const previous = normalizeMargin(String(this.data.previousMargin ?? ''))
+        const next = normalizeMargin(String(this.data.nextMargin ?? ''))
+        const edges = this.data.vertical
+          ? { top: previous, bottom: next }
+          : { left: previous, right: next }
+        const style = Object.entries(edges)
+          .filter(([, value]) => value !== '')
+          .map(([name, value]) => `${name}: ${value};`)
+          .join(' ')
+        if (style !== String(this.data.slidesStyle ?? '')) this.setData({ slidesStyle: style })
+      },
+      /** Every item is absolutely positioned and translated by its own width. */
       layoutItems() {
-        const items = this.itemElements() as Array<{
-          style?: { setProperty?: (name: string, value: string) => void }
-        }>
-        const step = 100 / Math.max(1, Number(this.data.displayMultipleItems) || 1)
+        const items = this.itemElements() as SwiperItemElement[]
+        const vertical = Boolean(this.data.vertical)
         items.forEach((item, index) => {
-          const offset = `${index * step}%`
-          item.style?.setProperty?.('--tiny-swiper-offset', offset)
-          item.style?.setProperty?.('--tiny-swiper-item-top', this.data.vertical ? offset : '0')
-          item.style?.setProperty?.('--tiny-swiper-item-left', this.data.vertical ? '0' : offset)
+          if (!item.style) return
+          const offset = 100 * index
+          const transform = vertical
+            ? `translate(0, ${offset}%) translateZ(0)`
+            : `translate(${offset}%, 0) translateZ(0)`
+          item.style.transform = transform
+          item.style.webkitTransform = transform
+        })
+        this.updateHiddenItemDisplay(Number(this.data.activeIndex) || 0)
+      },
+      /** `skip-hidden-item-layout` keeps off-window items out of the layout. */
+      updateHiddenItemDisplay(position: number) {
+        if (!this.data.skipHiddenItemLayout) return
+        const items = this.itemElements() as SwiperItemElement[]
+        const displayMultiple = Math.max(1, Number(this.data.displayMultipleItems) || 1)
+        items.forEach((item, index) => {
+          if (!item.style) return
+          const offscreen = index <= position - 2 || index >= position + displayMultiple + 1
+          item.style.display = offscreen ? 'none' : ''
         })
       },
       syncDots() {
-        const count = this.itemElements().length
-        const dots = Array.from({ length: count }, (_value, index) => index)
-        this.layoutItems()
+        const items = this.itemElements()
+        const total = items.length
+        const position = Number(this.data.activeIndex) || 0
+        const displayMultiple = Math.max(1, Number(this.data.displayMultipleItems) || 1)
+        const dots: SwiperDot[] = Array.from({ length: total }, (_value, index) => {
+          const active = (position <= index && index < position + displayMultiple)
+            || index < position + displayMultiple - total
+          return { index, active }
+        })
         this.setData({ dots })
-        if (count === 0) {
-          setTimeout(() => {
-            const retryCount = this.itemElements().length
-            if (retryCount > 0) {
-              this.layoutItems()
-              this.setData({ dots: Array.from({ length: retryCount }, (_value, index) => index) })
-            }
-          }, 0)
+      },
+      /** WeChat shrinks the frame to `100 / displayMultipleItems` percent. */
+      frameSize(): number {
+        const displayMultiple = Math.max(1, Math.floor(Number(this.data.displayMultipleItems) || 1))
+        return Math.abs(100 / displayMultiple)
+      },
+      /**
+       * `previous-margin` makes one item narrower than the frame, so WeChat
+       * advances by the item width instead of a full frame width.
+       *
+       * The measurement is best-effort: backends without layout (or with a
+       * callback-style `getBoundingClientRect`) fall back to one frame width.
+       */
+      viewportMoveRatio(): number {
+        const displayMultiple = Math.max(1, Math.floor(Number(this.data.displayMultipleItems) || 1))
+        if (displayMultiple !== 1) return 1
+        const widthOf = (element: SwiperItemElement | null | undefined): number => {
+          // `offsetWidth` is synchronous in DOM backends; glass-easel's
+          // `getBoundingClientRect` is callback-based and cannot be probed.
+          const width = Number(element?.offsetWidth ?? 0)
+          return Number.isFinite(width) && width > 0 ? width : 0
         }
+        const items = this.itemElements() as SwiperItemElement[]
+        const frame = (this.getShadowRoot?.() as {
+          getElementById?: (id: string) => { getBackendElement?: () => SwiperItemElement | null } | null
+        } | null)?.getElementById?.('slideFrame')?.getBackendElement?.()
+        const itemWidth = widthOf(items[0])
+        const frameWidth = widthOf(frame)
+        const ratio = frameWidth > 0 ? itemWidth / frameWidth : 1
+        return ratio > 0 && ratio < 1 ? ratio : 1
       },
       updateTrackStyle() {
         const index = Number(this.data.activeIndex) || 0
         const axis = this.data.vertical ? 'Y' : 'X'
-        const step = 100 / Math.max(1, Number(this.data.displayMultipleItems) || 1)
         const duration = Number(this.data.duration) || 500
-        const easing = this.data.easingFunction === 'ease-in' ? 'ease-in' : this.data.easingFunction === 'ease-out' ? 'ease-out' : this.data.easingFunction === 'ease-in-out' ? 'ease-in-out' : this.data.easingFunction === 'linear' ? 'linear' : 'ease'
+        const easing = this.data.easingFunction === 'ease-in'
+          ? 'ease-in'
+          : this.data.easingFunction === 'ease-out'
+            ? 'ease-out'
+            : this.data.easingFunction === 'ease-in-out'
+              ? 'ease-in-out'
+              : this.data.easingFunction === 'linear'
+                ? 'linear'
+                : 'ease'
+        const distance = 100 * index * this.viewportMoveRatio()
+        const size = this.frameSize()
+        const frameSize = this.data.vertical ? `height: ${size}%;` : `width: ${size}%;`
         this.setData({
-          trackStyle: `transform: translate${axis}(-${index * step}%); transition-duration: ${duration}ms; transition-timing-function: ${easing};`,
+          trackStyle: `${frameSize} transform: translate${axis}(-${distance}%); transition-duration: ${duration}ms; transition-timing-function: ${easing};`,
         })
+        this.updateHiddenItemDisplay(index)
       },
       setActive(index: number, source: string) {
-        const count = (this.data.dots as number[]).length
+        const count = (this.data.dots as SwiperDot[]).length
         let next = index
         if (count > 0) {
           if (this.data.circular) next = (index + count) % count
           else next = Math.max(0, Math.min(count - 1, index))
         }
         this.setData({ activeIndex: next })
+        this.syncDots()
         this.updateTrackStyle()
         this.triggerEvent('change', { current: next, source }, { bubbles: true, composed: true })
         this.triggerEvent('transition', { current: next, source }, { bubbles: true, composed: true })
@@ -215,7 +324,7 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
         if (!this.data.autoplay) return
         const interval = Math.max(100, Number(this.data.interval) || 5000)
         ;(this as unknown as { __swiperTimer?: ReturnType<typeof setInterval> }).__swiperTimer = setInterval(() => {
-          const count = (this.data.dots as number[]).length
+          const count = (this.data.dots as SwiperDot[]).length
           if (count < 2) return
           const next = Number(this.data.activeIndex) + 1
           if (next >= count && !this.data.circular) {
@@ -226,9 +335,9 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
         }, interval)
       },
       handleDotTap(event: glassEasel.ShadowedEvent<unknown>) {
-        const id = String((event.currentTarget as unknown as { id?: string }).id ?? '')
-        const index = Number(id.split('-').pop() ?? 0)
-        this.setActive(index, 'tap')
+        const dataset = (event.currentTarget as unknown as { dataset?: { index?: string | number } }).dataset
+        const index = Number(dataset?.index ?? 0)
+        this.setActive(Number.isFinite(index) ? index : 0, 'tap')
       },
       handleTouchStart(event: glassEasel.ShadowedEvent<unknown>) {
         const touch = (event as unknown as { touches?: { clientX?: number; clientY?: number; x?: number; y?: number }[] }).touches?.[0]

@@ -216,13 +216,22 @@ function glassProps(props: Record<string, unknown> | undefined): Record<string, 
   return result
 }
 
-function applyHostProps(component: AnyComponent, props: Record<string, unknown> | undefined): void {
+export function applyHostProps(component: AnyComponent, props: Record<string, unknown> | undefined): void {
   const element = component.getBackendElement() as unknown as {
     setAttribute?: (name: string, value: string) => void
+    removeAttribute?: (name: string) => void
   } | null
   if (!element?.setAttribute) return
   for (const [name, value] of Object.entries(props ?? {})) {
     if (value === undefined || name === WXS_PROPS_PROP || name === WXS_DYNAMIC_PROP) continue
+    // Boolean props are presence-only host attributes (`disabled`, `hidden`,
+    // `plain`, ...). Writing `"false"` would still match `[disabled]`-style
+    // selectors and make the host look/behave disabled, so clear the attribute.
+    if (typeof value === 'boolean') {
+      if (value) element.setAttribute(name, 'true')
+      else element.removeAttribute?.(name)
+      continue
+    }
     element.setAttribute(name, String(value))
   }
 }

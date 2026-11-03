@@ -171,8 +171,34 @@ tiny-button.button-hover[type=warn][plain] {
 
 
 .tiny-button-cover-view-wrapper,
-.tiny-button-cover-view {
+.tiny-button-cover-view-inner {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+tiny-button[native] {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+tiny-button[native] .tiny-button-cover-view-wrapper {
+  border: inherit;
+  border-color: inherit;
+  border-radius: inherit;
+  background-color: inherit;
+}
+
+tiny-button[native] .tiny-button-cover-view-inner {
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+tiny-button[plain][native] .tiny-button-cover-view-inner {
+  padding: 0;
+}
+
+tiny-button tiny-cover-view {
+  line-height: inherit;
+  white-space: inherit;
 }

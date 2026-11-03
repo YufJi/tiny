@@ -7,6 +7,14 @@ tiny-scroll-view {
 }
 
 .tiny-scroll-view {
+  width: 100%;
+  height: 100%;
+  max-height: inherit;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.tiny-scroll-view-main {
   position: relative;
   width: 100%;
   height: 100%;
@@ -16,11 +24,11 @@ tiny-scroll-view {
   -webkit-overflow-scrolling: touch;
 }
 
-.tiny-scroll-view.is-vertical {
+.tiny-scroll-view-main.is-vertical {
   overflow-y: auto;
 }
 
-.tiny-scroll-view.is-horizontal {
+.tiny-scroll-view-main.is-horizontal {
   overflow-x: auto;
 }
 
@@ -29,41 +37,41 @@ tiny-scroll-view {
 }
 
 /* Horizontal scrolling needs the content to grow past the viewport. */
-.tiny-scroll-view.is-horizontal .tiny-scroll-view-content {
+.tiny-scroll-view-main.is-horizontal .tiny-scroll-view-content {
   width: max-content;
   min-width: 100%;
 }
 
 /* WeChat's `enable-flex` lays out the scroll-view's direct children as a
  * flex row; the extra content wrapper must forward that layout. */
-.tiny-scroll-view.is-flex .tiny-scroll-view-content {
+.tiny-scroll-view-main.is-flex .tiny-scroll-view-content {
   display: flex;
 }
 
-.tiny-scroll-view.is-hidden-scrollbar {
+.tiny-scroll-view-main.is-hidden-scrollbar {
   scrollbar-width: none;
 }
 
-.tiny-scroll-view.is-hidden-scrollbar::-webkit-scrollbar {
+.tiny-scroll-view-main.is-hidden-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
-.tiny-scroll-view.is-no-bounce {
+.tiny-scroll-view-main.is-no-bounce {
   overscroll-behavior: none;
 }
 
-.tiny-scroll-view.is-anchoring {
+.tiny-scroll-view-main.is-anchoring {
   overflow-anchor: auto;
 }
 
-.tiny-scroll-view.is-paging {
+.tiny-scroll-view-main.is-paging {
   scroll-snap-type: y mandatory;
 }
 
-.tiny-scroll-view.is-paging.is-horizontal {
+.tiny-scroll-view-main.is-paging.is-horizontal {
   scroll-snap-type: x mandatory;
 }
 
-.tiny-scroll-view.is-paging .tiny-scroll-view-content > * {
+.tiny-scroll-view-main.is-paging .tiny-scroll-view-content > * {
   scroll-snap-align: start;
 }

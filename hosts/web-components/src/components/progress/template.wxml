@@ -2,9 +2,7 @@
   class="tiny-progress-bar"
   role="progressbar"
   aria-label="{{ariaLabel}}"
-  aria-valuemin="0"
-  aria-valuemax="100"
-  aria-valuenow="{{curPercent}}"
+  aria-valuenow="{{curPercent}}%"
   style="height: {{strokeWidth}}px; background-color: {{backgroundColor}}; border-radius: {{borderRadius}}px;"
 >
   <div
@@ -13,8 +11,8 @@
     bindtransitionend="handleActiveEnd"
   />
 </div>
-<span
-  wx:if="{{showInfo}}"
+<p
   class="tiny-progress-info"
+  hidden="{{!showInfo}}"
   style="font-size: {{fontSize}}px; color: {{color}};"
->{{curPercent}}%</span>
+>{{curPercent}}%</p>

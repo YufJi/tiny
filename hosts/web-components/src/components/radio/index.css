@@ -1,7 +1,6 @@
 tiny-radio {
   -webkit-tap-highlight-color: transparent;
   display: inline-block;
-  vertical-align: middle;
 }
 
 .tiny-radio-wrapper {
@@ -9,11 +8,6 @@ tiny-radio {
   display: inline-flex;
   align-items: center;
   vertical-align: middle;
-  cursor: pointer;
-}
-
-.tiny-radio-wrapper.is-disabled {
-  cursor: default;
 }
 
 .tiny-radio-native {
@@ -47,16 +41,15 @@ tiny-radio {
 }
 
 .tiny-radio-input.is-checked::before {
-  content: "";
+  font: normal normal normal 14px/1 "weui";
+  content: "\EA08";
+  color: #ffffff;
+  font-size: 18px;
   position: absolute;
-  left: 6px;
-  top: 2px;
-  width: 6px;
-  height: 11px;
-  border: solid #ffffff;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-  box-sizing: border-box;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -48%) scale(0.73);
+  -webkit-transform: translate(-50%, -48%) scale(0.73);
 }
 
 .tiny-radio-input.is-disabled {
@@ -64,6 +57,6 @@ tiny-radio {
   border-color: #d1d1d1;
 }
 
-.tiny-radio-input.is-disabled.is-checked::before {
-  border-color: #adadad;
+.tiny-radio-input.is-disabled::before {
+  color: #adadad;
 }

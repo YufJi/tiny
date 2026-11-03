@@ -25,6 +25,10 @@ other advanced demo packages are intentionally omitted.
   tag a flex column like Skyline, so the index pages need those rules
   (`flex-direction: row`, centered logo, absolutely positioned chevrons) to
   render like the official demo.
+- The official app loads WeUI through `useExtendedLib.weui`. The fixture inlines
+  the bundled `page/common/lib/weui.wxss` from `app.wxss` instead, so pages that
+  only use `weui-*` classes (radio, label, input, ...) get the same global
+  styles as WeChat; without it `.weui-cell` is not a flex container.
 - The component/API indexes use `wx.navigateTo` for local example links;
   direct pages can also be booted with the host `?path=` query.
 - Local images referenced through dynamic WXML paths resolve through the host

@@ -1,7 +1,6 @@
 tiny-checkbox {
   -webkit-tap-highlight-color: transparent;
   display: inline-block;
-  vertical-align: middle;
 }
 
 .tiny-checkbox-wrapper {
@@ -9,7 +8,6 @@ tiny-checkbox {
   display: inline-flex;
   align-items: center;
   vertical-align: middle;
-  cursor: pointer;
 }
 
 .tiny-checkbox-native {
@@ -38,26 +36,20 @@ tiny-checkbox {
 }
 
 .tiny-checkbox-input.is-checked::before {
-  content: "";
+  font: normal normal normal 14px/1 "weui";
+  content: "\EA08";
+  font-size: 22px;
   position: absolute;
-  left: 6px;
-  top: 2px;
-  width: 6px;
-  height: 11px;
-  border: solid currentColor;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-  box-sizing: border-box;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -48%) scale(0.73);
+  -webkit-transform: translate(-50%, -48%) scale(0.73);
 }
 
 .tiny-checkbox-input.is-disabled {
   background-color: #e1e1e1;
 }
 
-.tiny-checkbox-input.is-disabled.is-checked::before {
+.tiny-checkbox-input.is-disabled::before {
   color: #adadad;
-}
-
-.tiny-checkbox-wrapper.is-disabled {
-  cursor: default;
 }
