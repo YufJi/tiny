@@ -856,9 +856,12 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       )
 
       await render.locator('tiny-switch').first().click()
-      assert.equal(await render.locator('tiny-switch').first().locator('input[type="checkbox"]').isChecked(), true)
+      assert.ok(
+        (await render.locator('tiny-switch [class*="-input-checked"]').count()) > 0,
+        'switch did not render a checked branch',
+      )
       // `type="checkbox"` switches use the reference checkbox visual.
-      const switchCheckbox = await render.locator('tiny-switch .tiny-builtin-switch--tiny-switch-checkbox').first().evaluate((element) => {
+      const switchCheckbox = await render.locator('tiny-switch .tiny-builtin-switch--tiny-checkbox-input').first().evaluate((element) => {
         const style = getComputedStyle(element)
         const check = getComputedStyle(element, '::before')
         return {

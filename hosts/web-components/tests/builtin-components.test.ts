@@ -417,9 +417,9 @@ describe('P0 built-in components', () => {
     expect(host('checkbox')?.data.checked).toBe(true)
     const native = (id: string) => host(id)?.getShadowRoot()?.getElementById('native-input')
     native('slider')?.triggerEvent('change', { value: 42 })
-    native('switch')?.triggerEvent('change', { value: true })
     expect(events.slider).toEqual({ value: 42 })
-    expect(events.switch).toEqual({ value: true })
+    host('switch')?.triggerEvent('tap', {})
+    expect(events.switch).toEqual({ value: false })
   })
 
 
@@ -438,9 +438,10 @@ describe('P0 built-in components', () => {
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const host = instance.getShadowRoot()?.getElementById('switch')?.asGeneralComponent()!
     const html = glassEasel.dumpElementToString(host, true)
-    expect(html).toContain('tiny-switch-checkbox is-checked')
-    expect(html).not.toContain('tiny-switch-input')
-    host.getShadowRoot()?.getElementById('native-input')?.triggerEvent('change', { value: false })
+    expect(html).toContain('tiny-checkbox-input-checked')
+    expect(html).toContain('tiny-switch-input-checked')
+    expect(html).not.toContain('<input')
+    host.triggerEvent('tap', {})
     expect(host.data.checked).toBe(false)
     expect(events).toEqual([{ value: false }])
   })
@@ -855,9 +856,10 @@ describe('P0 built-in components', () => {
     const radioHtml = glassEasel.dumpElementToString(host('radio')!, true)
     expect(radioHtml).toContain('tiny-radio-input')
     expect(radioHtml).toContain('background-color: #00ff00')
+    host('switch')!.setData({ checked: true })
     const switchHtml = glassEasel.dumpElementToString(host('switch')!, true)
     expect(switchHtml).toContain('tiny-switch-input')
-    expect(switchHtml).toContain('--tiny-switch-color: #0000ff')
+    expect(switchHtml).toContain('background-color: #0000ff')
 
     const inputHtml = glassEasel.dumpElementToString(host('input')!, true)
     expect(inputHtml).toContain('type="password"')

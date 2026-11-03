@@ -1,25 +1,16 @@
-<label
-  class="tiny-switch-wrapper"
-  role="switch"
-  aria-checked="{{checked}}"
->
-  <input
-    id="native-input"
-    class="tiny-switch-native"
-    aria-label="{{ariaLabel}}"
-    type="checkbox"
-    checked="{{checked}}"
-    disabled="{{disabled}}"
-    catchchange="handleChange"
-  />
+<div class="tiny-switch-wrapper">
   <div
-    wx:if="{{type === 'switch'}}"
-    class="tiny-switch-input {{checked ? 'is-checked' : ''}} {{disabled ? 'is-disabled' : ''}}"
-    style="--tiny-switch-color: {{color}};"
+    id="switchInput"
+    class="tiny-switch-input {{checked ? 'tiny-switch-input-checked' : ''}} {{disabled ? 'tiny-switch-input-disabled' : ''}}"
+    type="checkbox"
+    hidden="{{type === 'checkbox'}}"
+    style="background-color: {{switchColor}}; border-color: {{switchColor}};"
   ></div>
   <div
-    wx:else
-    class="tiny-switch-checkbox {{checked ? 'is-checked' : ''}} {{disabled ? 'is-disabled' : ''}}"
+    id="checkboxInput"
+    class="tiny-checkbox-input {{checked ? 'tiny-checkbox-input-checked' : ''}} {{disabled ? 'tiny-checkbox-input-disabled' : ''}}"
+    type="checkbox"
+    hidden="{{type !== 'checkbox'}}"
     style="color: {{color}};"
   ></div>
-</label>
+</div>
