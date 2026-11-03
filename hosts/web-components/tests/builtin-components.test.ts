@@ -732,6 +732,27 @@ describe('P0 built-in components', () => {
     expect(transformTextContent('&amp;', { decode: false })).toBe('&amp;')
   })
 
+  test('icon normalizes size through the shared size-normalizer', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { icon: builtins.icon },
+      template: compilePage('<icon id="icon" type="success" size="46rpx" />'),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const icon = instance.getShadowRoot()?.getElementById('icon')?.asGeneralComponent()!
+    const normalizeSizeStr = (icon as unknown as {
+      normalizeSizeStr: (value: unknown) => string
+    }).normalizeSizeStr
+    expect(normalizeSizeStr.call(icon, 23)).toBe('23px')
+    expect(normalizeSizeStr.call(icon, '23')).toBe('23px')
+    expect(normalizeSizeStr.call(icon, '23px')).toBe('23px')
+    expect(normalizeSizeStr.call(icon, '46rpx')).toBe('6.13333vw')
+    expect(normalizeSizeStr.call(icon, '1.2em')).toBe('1.2em')
+    expect(icon.data.fontSize).toBe('6.13333vw')
+  })
+
   test('text follows wx-text selectable/user-select CSS semantics', () => {
     expect(BUILTIN_HOST_STYLES).toContain('tiny-text {\n  cursor: text;')
     expect(BUILTIN_HOST_STYLES).toContain('tiny-text[selectable], tiny-text[user-select] {')

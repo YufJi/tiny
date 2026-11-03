@@ -2,13 +2,13 @@ tiny-icon {
   display: inline-block;
   font-size: 0;
 }
-
-.tiny-icon {
-  font: normal normal normal 14px/1 "weui";
-  font-style: normal;
+tiny-icon[hidden] {
+  display: none;
 }
-
-.tiny-icon::before {
+i {
+  font: normal normal normal 14px/1 weui;
+}
+i::before {
   margin: 0;
   box-sizing: border-box;
 }

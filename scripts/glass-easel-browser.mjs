@@ -144,7 +144,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.equal(await render.locator('tiny-swiper-item').count(), 2, 'swiper should render two items')
       assert.equal(await render.locator('input.tiny-builtin-slider--tiny-slider').inputValue(), '20')
       assert.match(await render.locator('.tiny-builtin-progress--tiny-progress-info').innerText(), /^20%$/)
-      const iconMetrics = await render.locator('tiny-icon .tiny-builtin-icon--tiny-icon').first().evaluate((element) => {
+      const iconMetrics = await render.locator('tiny-icon i').first().evaluate((element) => {
         const style = getComputedStyle(element)
         const before = getComputedStyle(element, '::before')
         return {

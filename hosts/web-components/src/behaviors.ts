@@ -1,5 +1,6 @@
 import type * as glassEasel from 'glass-easel'
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
+import { convertRpx } from '@tiny/css-units'
 
 type HoverTimer = ReturnType<typeof setTimeout>
 
@@ -676,6 +677,15 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
         const text = String(value ?? '').trim()
         const match = /^(-?\d+(?:\.\d+)?)(?:px)?$/.exec(text)
         return match ? Number(match[1]) : 0
+      },
+      normalizeSizeStr(value: unknown): string {
+        if (typeof value === 'number') return `${value}px`
+        const text = String(value ?? '').trim()
+        if (text !== '' && parseFloat(text).toString() === text) return `${text}px`
+        // WeChat resolves rpx through the WebView width; Tiny uses the shared
+        // 750-ratio `vw` conversion so inline sizes follow app WXSS.
+        if (/\d(?:\.\d+)?rpx/.test(text)) return convertRpx(text)
+        return text
       },
     },
   })

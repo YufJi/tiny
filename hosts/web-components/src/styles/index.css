@@ -103,7 +103,6 @@ tiny-swiper-item[hidden],
 tiny-progress[hidden],
 tiny-image[hidden],
 tiny-navigator[hidden],
-tiny-icon[hidden],
 tiny-canvas[hidden] {
   display: none;
 }
