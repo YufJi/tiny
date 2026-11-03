@@ -10,7 +10,7 @@ type ScrollBackend = {
   scrollWidth?: number
   clientHeight?: number
   clientWidth?: number
-  style?: { scrollBehavior?: string }
+  style?: { scrollBehavior?: string; overflowX?: string; overflowY?: string }
   querySelector?: (selector: string) => { scrollIntoView?: (options?: unknown) => void } | null
 }
 
@@ -48,6 +48,8 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
       scrollIntoView: { type: String, value: '' },
       scrollWithAnimation: { type: Boolean, value: false },
       enableBackToTop: { type: Boolean, value: false },
+      enablePassive: { type: Boolean, value: false },
+      scrollEnabled: { type: Boolean, value: true },
       throttle: { type: Boolean, value: true },
       refresherEnabled: { type: Boolean, value: false },
       refresherTriggered: { type: Boolean, value: false },
@@ -67,6 +69,7 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
     lifetimes: {
       attached() {
         ;(this as unknown as { initScroller: (element: unknown) => void }).initScroller(this.backend())
+        this.applyOverflow()
         this.applyScrollAnimation()
         this.applyScrollPosition('scrollTop')
         this.applyScrollPosition('scrollLeft')
@@ -93,6 +96,15 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
       scrollWithAnimation() {
         this.applyScrollAnimation()
       },
+      scrollX() {
+        this.applyOverflow()
+      },
+      scrollY() {
+        this.applyOverflow()
+      },
+      scrollEnabled() {
+        this.applyOverflow()
+      },
       refresherTriggered(value: boolean) {
         this.triggerEvent('refresherstatuschange', { status: value ? 'refreshing' : 'complete' }, { bubbles: true, composed: true })
       },
@@ -101,12 +113,35 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
       backend(): ScrollBackend | null {
         const element = (this.getShadowRoot?.() as {
           getElementById?: (id: string) => { getBackendElement?: () => ScrollBackend | null } | null
-        } | null)?.getElementById?.('native-scroll-view')?.getBackendElement?.()
+        } | null)?.getElementById?.('main')?.getBackendElement?.()
         return element ?? (this as unknown as { getBackendElement?: () => ScrollBackend | null }).getBackendElement?.() ?? null
+      },
+      applyOverflow() {
+        const element = this.backend()
+        if (!element?.style) return
+        const enabled = Boolean(this.data.scrollEnabled)
+        element.style.overflowX = enabled && this.data.scrollX ? 'auto' : 'hidden'
+        element.style.overflowY = enabled && this.data.scrollY ? 'auto' : 'hidden'
       },
       applyScrollAnimation() {
         const element = this.backend()
         if (element?.style) element.style.scrollBehavior = this.data.scrollWithAnimation ? 'smooth' : 'auto'
+      },
+      updateScrollbar(left: number, width: number, client: number) {
+        if (!this.data.enhanced || !this.data.showScrollbar || !this.data.scrollX) return
+        const wrap = (this.getShadowRoot?.() as { getElementById?: (id: string) => { getBackendElement?: () => { style?: Record<string, string> } | null } | null } | null)
+          ?.getElementById?.('barWrap')?.getBackendElement?.()
+        const bar = (this.getShadowRoot?.() as { getElementById?: (id: string) => { getBackendElement?: () => { style?: Record<string, string> } | null } | null } | null)
+          ?.getElementById?.('scrollbar')?.getBackendElement?.()
+        if (!wrap?.style || !bar?.style) return
+        if (!(width > client) || client <= 0) {
+          wrap.style.display = 'none'
+          return
+        }
+        wrap.style.display = 'block'
+        bar.style.width = `${Math.max(10, (client / width) * 100)}%`
+        const maxLeft = width - client
+        bar.style.left = `${maxLeft > 0 ? (left / maxLeft) * (100 - Number.parseFloat(bar.style.width)) : 0}%`
       },
       applyScrollPosition(field: 'scrollTop' | 'scrollLeft' | 'scrollIntoView') {
         const element = this.backend()
@@ -279,6 +314,8 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
           deltaY: Number(detail.deltaY ?? 0),
         }
         this.emitThrottledScroll(scrollDetail)
+        ;(this as unknown as { updateScrollbar: (left: number, width: number, client: number) => void })
+          .updateScrollbar(scrollLeft, scrollWidth, Number(detail.clientWidth ?? element?.clientWidth ?? 0))
         if (scrollTop <= Number(this.data.upperThreshold ?? 50)) {
           this.triggerEvent('scrolltoupper', { direction: 'top' }, { bubbles: true, composed: true })
         }

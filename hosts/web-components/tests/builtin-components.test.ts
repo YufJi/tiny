@@ -975,7 +975,7 @@ describe('P0 built-in components', () => {
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const scrollHost = instance.getShadowRoot()?.getElementById('scroll')?.asGeneralComponent()!
-    const nativeScroll = scrollHost.getShadowRoot()?.getElementById('native-scroll-view')!
+    const nativeScroll = scrollHost.getShadowRoot()?.getElementById('main')!
     const scrollHtml = glassEasel.dumpElementToString(nativeScroll, true)
     expect(scrollHtml).toContain('is-paging')
     expect(scrollHtml).toContain('is-hidden-scrollbar')

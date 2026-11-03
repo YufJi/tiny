@@ -1,7 +1,7 @@
-<div id="wrap" class="tiny-scroll-view" role="listbox" aria-label="{{ariaLabel}}">
+<div id="wrap" class="tiny-scroll-view {{enableFlex ? 'tiny-scroll-view-flex' : ''}}">
   <div
-    id="native-scroll-view"
-    class="tiny-scroll-view-main {{scrollX ? 'is-horizontal' : ''}} {{scrollY ? 'is-vertical' : ''}} {{showScrollbar ? '' : 'is-hidden-scrollbar'}} {{bounces ? '' : 'is-no-bounce'}} {{pagingEnabled ? 'is-paging' : ''}} {{scrollAnchoring ? 'is-anchoring' : ''}} {{enableFlex ? 'is-flex' : ''}}"
+    id="main"
+    class="tiny-scroll-view {{enableFlex ? 'tiny-scroll-view-flex' : ''}} {{scrollX ? 'is-horizontal' : ''}} {{scrollY ? 'is-vertical' : ''}} {{showScrollbar ? '' : 'is-hidden-scrollbar'}} {{bounces ? '' : 'is-no-bounce'}} {{pagingEnabled ? 'is-paging' : ''}} {{scrollAnchoring ? 'is-anchoring' : ''}}"
     bindscroll="handleScroll"
     bindtap="handleTap"
     bindtouchstart="handleTouchStart"
@@ -9,6 +9,10 @@
     bindtouchend="handleTouchEnd"
     bindtouchcancel="handleTouchCancel"
   >
-    <div class="tiny-scroll-view-content"><slot /></div>
+    <slot name="refresher" />
+    <div id="content" class="tiny-scroll-view-content"><slot /></div>
+  </div>
+  <div id="barWrap" class="tiny-wins-scrollbar" style="display: none;">
+    <div id="scrollbar" class="tiny-wins-scrollbar-bar"></div>
   </div>
 </div>

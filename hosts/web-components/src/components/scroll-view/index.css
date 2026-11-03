@@ -1,77 +1,66 @@
 tiny-scroll-view {
   display: block;
-  box-sizing: border-box;
-  width: 100%;
-  height: 100%;
-  max-height: inherit;
-}
-
-.tiny-scroll-view {
-  width: 100%;
-  height: 100%;
-  max-height: inherit;
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-.tiny-scroll-view-main {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  max-height: inherit;
-  box-sizing: border-box;
-  overflow: hidden;
-  -webkit-overflow-scrolling: touch;
-}
-
-.tiny-scroll-view-main.is-vertical {
-  overflow-y: auto;
-}
-
-.tiny-scroll-view-main.is-horizontal {
-  overflow-x: auto;
-}
-
-.tiny-scroll-view-content {
   width: 100%;
 }
-
-/* Horizontal scrolling needs the content to grow past the viewport. */
-.tiny-scroll-view-main.is-horizontal .tiny-scroll-view-content {
-  width: max-content;
-  min-width: 100%;
-}
-
-/* WeChat's `enable-flex` lays out the scroll-view's direct children as a
- * flex row; the extra content wrapper must forward that layout. */
-.tiny-scroll-view-main.is-flex .tiny-scroll-view-content {
-  display: flex;
-}
-
-.tiny-scroll-view-main.is-hidden-scrollbar {
-  scrollbar-width: none;
-}
-
-.tiny-scroll-view-main.is-hidden-scrollbar::-webkit-scrollbar {
+tiny-scroll-view[hidden] {
   display: none;
 }
-
-.tiny-scroll-view-main.is-no-bounce {
-  overscroll-behavior: none;
+.tiny-scroll-view {
+  -webkit-overflow-scrolling: touch;
+  height: 100%;
+  max-height: inherit;
+  position: relative;
+  width: 100%;
 }
-
-.tiny-scroll-view-main.is-anchoring {
-  overflow-anchor: auto;
+.tiny-scroll-view-flex,
+.tiny-scroll-view-flex > div {
+  align-items: inherit;
+  display: inherit;
+  flex-direction: inherit;
+  flex-wrap: inherit;
+  justify-content: inherit;
 }
-
-.tiny-scroll-view-main.is-paging {
+.tiny-scroll-view-flex > div {
+  width: 100%;
+}
+.tiny-scroll-view-hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.tiny-scroll-view.is-vertical {
+  overflow-y: auto;
+}
+.tiny-scroll-view.is-horizontal {
+  overflow-x: auto;
+}
+.tiny-scroll-view.is-paging {
   scroll-snap-type: y mandatory;
 }
-
-.tiny-scroll-view-main.is-paging.is-horizontal {
+.tiny-scroll-view.is-paging.is-horizontal {
   scroll-snap-type: x mandatory;
 }
-
-.tiny-scroll-view-main.is-paging .tiny-scroll-view-content > * {
+.tiny-scroll-view.is-paging .tiny-scroll-view-content > * {
   scroll-snap-align: start;
+}
+.tiny-scroll-view.is-hidden-scrollbar {
+  scrollbar-width: none;
+}
+.tiny-scroll-view.is-hidden-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.tiny-scroll-view.is-no-bounce {
+  overscroll-behavior: none;
+}
+.tiny-scroll-view.is-anchoring {
+  overflow-anchor: auto;
+}
+.tiny-wins-scrollbar {
+  bottom: 2px;
+  position: absolute;
+  width: 100%;
+}
+.tiny-wins-scrollbar-bar {
+  background-color: #e1e1e1;
+  border-radius: 4px;
+  height: 6px;
+  position: relative;
 }
