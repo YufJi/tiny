@@ -1,0 +1,5 @@
+# Mini-program fixtures under tests/apps are sample apps, not repo source.
+# Keep them out of GitHub's language statistics so the language bar reflects
+# the engine itself (packages/, tools/, hosts/, apps/, ios/, native/).
+# https://github.com/github-linguist/linguist/blob/main/docs/overrides.md
+tests/apps/** linguist-detectable=false
