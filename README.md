@@ -12,27 +12,32 @@
 
 ## 架构
 
+内核绝对纯粹：`packages/runtime` 不依赖任何宿主，浏览器、iOS 和测试宿主共享同一份内核，环境能力全部从边界注入。
+
 ```text
-小程序源码 (WXML/WXSS/JS/TS)
+  源码 (WXML / WXSS / JS / TS)
         │
         ▼
-tools/cli ──► manifest + service.js + templates.js + styles
+  tools/cli ──► manifest + service.js + templates.js + styles
         │
-        ▼
-hosts/browser ──► iframe / MessageChannel / Canvas / devtool overlay
-        │
-        ▼
-hosts/web-components ──► 宿主渲染树的内置组件实现与样式
-        │
-        ▼
-packages/runtime : 双侧树内核（不依赖 DOM）
-├─ service iframe : App/Page/Component + glass-easel 逻辑树（数据/模板/事件/relations）
-├─ render  iframe : 宿主 TreeRenderer 渲染树（真实内置组件/样式/布局/DOM）
-└─ bridge         : Tiny Runtime Protocol v1 + tree flow/patch/event
-        │
-        ▼
-apps/devtool (可选) : DevtoolRuntimeClient + React 面板（多 iframe 页面栈 / 生命周期时间线）
+        ├───────────────────┬───────────────────┐
+        ▼                   ▼                   ▼
+  browser host          iOS host            test host
+  iframe / port    JSCore / WKWebView  in-memory transport
+        └───────────────────┼───────────────────┘
+                            │ 注入：transport / canvas / renderer / API / 资源
+  ==========================+==================================================
+                            ▼
+  packages/runtime（纯内核，无宿主全局）
+  ├─ service 线程：App / Page / Component + glass-easel 逻辑树
+  ├─ tree 协议：component flow / virtual node patch / tree event
+  └─ render 线程：TreeRenderer 契约，渲染实现由宿主注入
+                            │ 只依赖
+                            ▼
+  @tiny/manifest / @tiny/bridge / @tiny/wxs-runtime / glass-easel
 ```
+
+`pnpm check:runtime-purity` 从内核入口遍历依赖图，出现 window、document、fetch、MessageChannel 或 `@tiny/host-*` 导入就失败。`apps/devtool` 和 `tests/host` 是这套内核的消费者：它们通过 `DevtoolRuntimeClient` / `WasmBrowserHost` 控制线程、读取诊断和元素树，不进入内核。
 
 ## 工作区分层
 

@@ -1,19 +1,63 @@
 ---
-title: '两棵树，两个线程，'
-highlight: '一份 manifest'
+title: '一个纯内核，'
+highlight: '两棵树，任意宿主'
 eyebrow: '架构'
 lede: >-
-  Tiny 采用微信式的双侧树：service 线程运行 glass-easel 逻辑树，宿主 render 线程维护真实渲染树，两者通过 component flow、虚拟节点 patch 和 tree 事件同步。编译器和 Bridge 只提供产物与传输，runtime 不依赖浏览器，devtool 负责观察和控制。
+  Tiny 的内核只有一份：runtime 不依赖任何宿主，浏览器、iOS 和测试宿主共享同一份内核，环境能力全部从边界注入。service 线程运行 glass-easel 逻辑树，宿主 render 线程维护真实渲染树，两者通过 component flow、虚拟节点 patch 和 tree 事件同步；编译器和 Bridge 只提供产物与传输，devtool 负责观察和控制。
 stats:
   - ['2', '运行时树']
   - ['2', 'manifest schema']
   - ['9', '消息域']
   - ['0', '内核中的浏览器全局']
-description: 'Tiny 小程序引擎的架构：双侧树、模块职责、内核约束、依赖方向、启动握手、消息转发和状态归属。'
+description: 'Tiny 小程序引擎的架构：内核绝对纯粹、与宿主无关，双侧树、模块职责、依赖方向、启动握手和状态归属。'
 name: '架构'
 pageTitle: '架构 · Tiny 小程序引擎'
 order: 2
 ---
+
+## 内核绝对纯粹 {#purity kicker="内核约束"}
+
+Tiny 只守住一条线：`packages/runtime` 是唯一的内核，它不引用 window、document、fetch 或 MessageChannel，也不 import 任何 `@tiny/host-*`。宿主可以有很多个，内核永远只有一份；环境能力从边界注入，内核只定义语义。这条线一旦破掉，换宿主就会变成重写内核。
+
+```text
+  HOST SIDE - replaceable; owns the environment
+  +-----------------------+  +-----------------------+  +-----------------------+
+  | browser host          |  | iOS host              |  | test host             |
+  | iframe / port / DOM   |  | JSCore / WKWebView    |  | in-memory transport   |
+  +-----------------------+  +-----------------------+  +-----------------------+
+
+              inject: transport / canvas / renderer / API / assets
+              |                          |                          |
+  ============+==========================+==========================+============
+              v                          v                          v
+  host boundary - only explicit ports cross; dependencies point inward
+
+  +-----------------------------------------------------------------------------+
+  | packages/runtime - PURE KERNEL                                              |
+  |                                                                             |
+  | service thread              tree protocol              render thread        |
+  | App / Page / Component      flow / patch / event       TreeRenderer         |
+  | logic tree / page stack     node id / diff             host-neutral API     |
+  +-----------------------------------------------------------------------------+
+                                         | imports
+                                         v
+  @tiny/manifest / @tiny/bridge / @tiny/wxs-runtime / glass-easel
+```
+
+宿主不是内核的上层，而是内核的调用方。浏览器、iOS 和测试宿主都依赖同一个内核，区别只在注入的实现：`transport` 决定消息怎么走，`TreeRenderer` 决定怎么画，`canvas`、`apiExtensions` 和 `resolveAssetUrl` 决定环境事实。
+
+| 注入点 | 宿主提供 | 内核拿到什么 | 浏览器宿主 | iOS 宿主 |
+| --- | --- | --- | --- | --- |
+| `transport` | 线程间通道 | `Transport` | MessageChannel | JSCore message handler |
+| `manifest` 与 loader | 产物与加载方式 | 只读 manifest、templates、styles | 静态资源 | 打包产物 |
+| `TreeRenderer` | 真实组件树 | 渲染契约 | `createGlassRenderTree` | 每页 WKWebView |
+| `canvas` | 画布控制面 | `ServiceCanvasAdapter` | OffscreenCanvas | display-list 回放 |
+| `apiExtensions` | 设备与平台事实 | 只读 API 扩展 | 窗口与设备信息 | 菜单按钮、性能 |
+| `resolveAssetUrl` | 资源地址规则 | URL 映射函数 | 站点路径 | bundle 路径 |
+
+:::callout{title="这条线由脚本守着"}
+`pnpm check:runtime-purity` 从 `packages/runtime/src/index.ts` 遍历依赖图，出现 window、document、fetch、MessageChannel 或 `@tiny/host-*` 就失败。它验证的不是“当前浏览器能跑”，而是“同一个内核还能装进下一个宿主”。实现细节见[宿主适配](#/hosts)。
+:::
 
 ## 每一层各自负责什么 {#boundaries kicker="职责边界"}
 
@@ -42,73 +86,25 @@ order: 2
 | 同步协议 | 两棵树之间 | component flow 首屏同步、virtual node patch 增量更新、tree 事件、query/canvas 控制 | 业务语义 |
 
 ```text
-service thread                              render thread (one root per page)
-+-------------------------------+           +-------------------------------+
-| App / Page / Component        |           | host TreeRenderer             |
-| glass-easel logic ComponentSpace |  tree  | real built-in components      |
-| template -> virtual RenderNode | <------> | glass-easel render ComponentSpace |
-| data / observers / relations  |  flow    | DOM / layout / styles          |
-| node ids + patches            |  patch   | no app methods                 |
-+-------------------------------+           +-------------------------------+
+  SERVICE THREAD (kernel)                          RENDER THREAD (host renderer)
+  +------------------------------+             +------------------------------+
+  | service thread               |             | render thread                |
+  | App / Page / Component       |             | host TreeRenderer            |
+  | glass-easel logic tree       |             | glass-easel render tree      |
+  | data / observers / relations |             | DOM / layout / styles        |
+  | virtual node / node id       |             | slot / shadow root           |
+  | page stack / no DOM          |             | no app methods               |
+  +---------------+--------------+             +---------------+--------------+
+                  |                                            ^
+                  |   tree.flow / tree.patch / tree.animate    |
+                  +--------------------------------------------+
+                          tree.event / query.* return through the same link
 ```
 
 首屏由 `tree.flow` 发送一组 component flow：`define`、`create-node`、`props`、`children`、`ready`。后续模板变化由 `tree.patch` 发送 `text`、`replace`、`props`、`insert`、`remove`、`reorder`、`extra`，宿主只负责应用 patch。
 
 :::callout{title="为什么要拆成两棵树"}
 如果让 render 负责模板求值、属性和 dataset，dataset 会经过 DOM 丢失类型，函数属性也无法跨线程；原生宿主还得重新实现一遍小程序语义。拆开之后，类型和语义留在 service，render 只负责“怎么画”，同一套 tree 协议可以接 Web、原生或测试渲染器。
-:::
-
-## 内核不依赖浏览器 {#purity kicker="内核约束"}
-
-浏览器相关代码和内置组件实现都已经移到 hosts/ 下，并通过脚本检查依赖方向。
-
-:::::split
-:::card{tag="packages/runtime" title="不依赖宿主的内核"}
-只依赖 manifest、bridge、glass-easel 和通用工具；入口暴露 service 线程、tree 协议/渲染器接口和宿主适配类型，不导出浏览器实现。
-
-service 通过 `loadTemplates`、`loadStyle`、`canvas`、`resolveAssetUrl` 接收宿主能力；render 通过 `TreeRenderer` 接收渲染实现，Web 侧由 `@tiny/host-web-components` 提供。
-:::
-
-::::stack
-:::card{tag="hosts/browser" tone="violet" title="浏览器适配"}
-`@tiny/host-browser` 负责 iframe、MessageChannel、DOM canvas handoff、资源 URL 和 `DevtoolRuntimeClient`。
-
-它依赖 runtime 和 bridge，但 runtime 不会反向依赖它。`tests/host` 和 devtool 都从这里拿浏览器线程与 canvas 能力。
-:::
-
-:::card{tag="hosts/web-components" tone="violet" title="内置组件实现"}
-`@tiny/host-web-components` 负责 Web 渲染树、`tiny-*` 内置组件、行为和默认 CSS。
-
-它是宿主包，不属于内核。render 入口把 `createGlassRenderEntry` 的渲染树工厂交给 `bootBrowserRenderEntry`，原生宿主可以实现同一个 `TreeRenderer` 契约。
-:::
-::::
-:::::
-
-```text
-# pnpm check:runtime-purity
-packages/runtime/src/index.ts
-  -> component / service / tree (logic + render) / host / diagnostics
-
-不允许出现在依赖图里的内容：
-  window · document · navigator · localStorage · MessageChannel
-  HTMLCanvasElement · Image · requestAnimationFrame · fetch · performance
-  名字里带 "browser" 的模块 · @tiny/host-* 导入
-
-# hosts/browser
-  canvas-bridge.ts       OffscreenCanvas handoff 与 canvas 测量
-  runtime-port.ts        iframe 端口握手
-  service-entry.ts       service 线程入口（含端口与 canvas 适配）
-  render-entry.ts        render 线程入口（端口 + 渲染树工厂）
-  wasm-host.ts     service + 每页 render 的连接
-  devtool-client.ts      调试器控制接口
-
-# hosts/web-components
-  createGlassRenderTree  Web 渲染树 + tiny-* 内置组件
-  createGlassRenderEntry 渲染树工厂（样式 + DOM 容器）
-```
-
-:::callout{title="为什么要守住这条线"}
-原生宿主不需要模拟浏览器，只要实现 `TreeRenderer`、Transport、canvas handoff 和资源解析。有了这项检查，内核里如果误用了 `document`，CI 会直接失败，而不是等到换宿主时才发现。
 :::
 
 ## glass-easel 提供组件框架，Tiny 补齐应用层 {#glass-easel kicker="运行时内核" nav="与 glass-easel 的分工"}
@@ -208,28 +204,23 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
 所有跨线程消息都经过宿主的两条 BridgeConnection。宿主不是透明管道：它按 pageId 路由、在页面还没打开时排队、把请求代理到渲染树，还自己处理宿主 API 和诊断。
 
 ```text
-                     +------------------- host --------------------+
-                     | WasmBrowserHost(options)                   |
-                     |   Rust HostCore (wasm)                     |
-                     |                                             |
-                     |  BridgeConnection(host <-> service)         |
-                     |  BridgeConnection(host <-> render) × 每页    |
-                     |  pageId → render 连接 + 待发队列              |
-                     |  HostApiRegistry / HostDiagnosticStore     |
-                     +------+--------------------------+----------+
-                            |                          |
-                     MessageChannel             MessageChannel
-                            |                          |
-                  +---------v---------+      +---------v---------+
-                  |   service iframe  |      |   render iframe   |
-                  | 逻辑树 / 页面栈     |      |  渲染树 / DOM      |
-                  +---------+---------+      +---------+---------+
-                            ^                          ^
-                            |   window.postMessage     |
-                            +--- 端口交接 / canvas transferable ---+
-                                     （不承载业务协议）
+            +----------------------------------------------+
+            | WasmBrowserHost / HostCoreRuntime            |
+            |                                              |
+            | BridgeConnection(host <-> service)           |
+            | BridgeConnection(host <-> render) x page     |
+            | pageId -> render connection + queue          |
+            | HostApiRegistry / HostDiagnosticStore        |
+            +-----+-----------------------------------+----+
+                  |                                   |
+           MessageChannel                            MessageChannel
+                  |                                   |
+  +---------------+---------------+   +---------------+---------------+
+  | service iframe                |   | render iframe                 |
+  | logic tree / page stack       |   | render tree / DOM             |
+  +-------------------------------+   +-------------------------------+
 
-                        service 和 render 之间没有直连通道
+  service and render never connect directly; the host owns both links.
 ```
 
 ### 转发、代理、终结、发起
