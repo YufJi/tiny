@@ -33,7 +33,9 @@ type ScrollRuntime = {
   __dragging?: boolean
   __pullDistance?: number
   __refresherOffset?: number
+  __refresherStartOffset?: number
   __refreshing?: boolean
+  __preventRefreshScroll?: (event: TouchEvent) => void
 }
 
 function touchPoint(event: glassEasel.ShadowedEvent<unknown>): { x: number; y: number } {
@@ -87,6 +89,14 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
           .setRefresherOffset(0, false)
         ;(this as unknown as { relocateCustomRefresher: (attempt: number) => void })
           .relocateCustomRefresher(0)
+        const main = this.backend() as { addEventListener?: (type: string, listener: (event: TouchEvent) => void, options?: AddEventListenerOptions) => void } | null
+        if (main?.addEventListener) {
+          const runtime = this as unknown as ScrollRuntime
+          runtime.__preventRefreshScroll = (event: TouchEvent) => {
+            if (Number(runtime.__refresherOffset ?? 0) > 0 && event.cancelable) event.preventDefault()
+          }
+          main.addEventListener('touchmove', runtime.__preventRefreshScroll, { passive: false })
+        }
         this.applyScrollPosition('scrollTop')
         this.applyScrollPosition('scrollLeft')
         this.applyScrollPosition('scrollIntoView')
@@ -97,6 +107,8 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         if (instance.__scrollEndTimer) clearTimeout(instance.__scrollEndTimer)
         if (instance.__scrollThrottleTimer) clearTimeout(instance.__scrollThrottleTimer)
         if (instance.__refresherTimer) clearTimeout(instance.__refresherTimer)
+        const main = this.backend() as { removeEventListener?: (type: string, listener: (event: TouchEvent) => void) => void } | null
+        if (instance.__preventRefreshScroll) main?.removeEventListener?.('touchmove', instance.__preventRefreshScroll)
       },
     },
     observers: {
@@ -270,6 +282,7 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         instance.__dragging = false
         instance.__pullDistance = 0
         instance.__refresherOffset = instance.__refresherOffset ?? 0
+        instance.__refresherStartOffset = instance.__refresherOffset
       },
       handleTouchMove(event: glassEasel.ShadowedEvent<unknown>) {
         const instance = this as unknown as ScrollRuntime
@@ -278,14 +291,20 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         const point = touchPoint(event)
         const deltaX = point.x - start.x
         const deltaY = point.y - start.y
-        if (this.data.refresherEnabled && start.scrollTop <= 0 && deltaY > 0 && !instance.__refreshing) {
+        const refresherOffset = Number(instance.__refresherOffset ?? 0)
+        const threshold = Number(this.data.refresherThreshold ?? 45)
+        if (this.data.refresherEnabled && (refresherOffset > 0 || (start.scrollTop <= 0 && deltaY > 0))) {
           event.preventDefault?.()
-          const threshold = Number(this.data.refresherThreshold ?? 45)
-          const offset = Math.min(threshold * 1.2, deltaY * 0.5)
+          const startOffset = Number(instance.__refresherStartOffset ?? 0)
+          const offset = instance.__refreshing
+            ? Math.max(0, Math.min(threshold, startOffset + deltaY))
+            : Math.max(0, Math.min(threshold * 1.2, deltaY * 0.5))
           instance.__pullDistance = offset
           this.setRefresherOffset(offset, false)
           this.setData({
-            refresherText: offset >= threshold ? '释放刷新' : '下拉刷新',
+            refresherText: instance.__refreshing
+              ? '正在刷新...'
+              : offset >= threshold ? '释放刷新' : '下拉刷新',
           })
           this.triggerEvent('refresherpulling', { dy: offset }, { bubbles: true, composed: true })
           return
@@ -309,6 +328,17 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         instance.__dragStart = undefined
         instance.__dragging = false
         instance.__pullDistance = 0
+        if (this.data.refresherEnabled && instance.__refreshing) {
+          if (Number(instance.__refresherOffset ?? 0) < threshold / 2) {
+            instance.__refreshing = false
+            this.setRefresherOffset(0, true)
+            this.setData({ refresherTriggered: false, refresherText: '下拉刷新' })
+            this.triggerEvent('refresherabort', {}, { bubbles: true, composed: true })
+          } else {
+            this.setRefresherOffset(threshold, true)
+          }
+          return
+        }
         if (this.data.refresherEnabled && pullDistance > 0) {
           if (pullDistance >= threshold) {
             this.setRefresherOffset(threshold, true)
