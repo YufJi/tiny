@@ -11,6 +11,8 @@ tiny-scroll-view[hidden] {
   max-height: inherit;
   position: relative;
   width: 100%;
+  /* Browser-only guard against scroll chaining; WeChat's native scroll view
+     does the same containment outside CSS. */
   overscroll-behavior: contain;
 }
 .tiny-scroll-view-flex,
@@ -24,19 +26,10 @@ tiny-scroll-view[hidden] {
 .tiny-scroll-view-flex > div {
   width: 100%;
 }
-/* Horizontal flex content uses the reference content box's intrinsic width;
-   otherwise a 100% box shrinks fixed-width children inside the scroll row. */
+/* Horizontal flex content keeps its intrinsic width, mirroring the
+   width:auto content box used by the WeChat demo. */
 .tiny-scroll-view-flex.is-horizontal > .tiny-scroll-view-content {
   width: auto;
-}
-.tiny-scroll-view-hide-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.tiny-scroll-view.is-vertical {
-  overflow-y: auto;
-}
-.tiny-scroll-view.is-horizontal {
-  overflow-x: auto;
 }
 .tiny-scroll-view.is-paging {
   scroll-snap-type: y mandatory;
@@ -52,12 +45,6 @@ tiny-scroll-view[hidden] {
 }
 .tiny-scroll-view.is-hidden-scrollbar::-webkit-scrollbar {
   display: none;
-}
-.tiny-scroll-view.is-no-bounce {
-  overscroll-behavior: none;
-}
-.tiny-scroll-view.is-anchoring {
-  overflow-anchor: auto;
 }
 .tiny-wins-scrollbar {
   bottom: 2px;
