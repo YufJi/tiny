@@ -6,6 +6,9 @@ import { createDataComponentBehavior } from './dataComponent'
 import { createDisabledBehavior } from './disabled'
 import { createGroupBehavior } from './group'
 import { createHoverBehavior } from './hover'
+import { createNativeBehavior } from './native'
+import { createNativeCoverBehavior } from './nativeCover'
+import { createNativeHoverBehavior } from './nativeHover'
 import { createPositioningContainerBehavior } from './positioningContainer'
 import { createPositioningTargetBehavior } from './positioningTarget'
 import { createItemBehavior } from './item'
@@ -57,6 +60,9 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
     touchTrack: createTouchTrackBehavior(space),
     positioningTarget: createPositioningTargetBehavior(space),
     positioningContainer: createPositioningContainerBehavior(space),
+    native: createNativeBehavior(space),
+    nativeCover: createNativeCoverBehavior(space),
+    nativeHover: createNativeHoverBehavior(space),
     scroller: createScrollerBehavior(space),
   }
 }

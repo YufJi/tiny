@@ -1,1 +1,8 @@
-<slot />
+<div
+  id="container"
+  class="wx-cover-view"
+  style="display: none;"
+  role="{{ariaRole}}"
+  aria-label="{{ariaLabel}}"
+></div>
+<div id="content" class="wx-cover-view" style="display: inherit;"><slot /></div>

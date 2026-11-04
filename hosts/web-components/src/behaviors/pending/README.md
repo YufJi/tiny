@@ -13,9 +13,6 @@ behavior 占位。每个目录只有一个 `PLACEHOLDER.md`，不会被 `src/ind
 | `wx-image-route` | 共享 | map | [image-route](./image-route/PLACEHOLDER.md) |
 | `wx-keyboard-accessory-host` | 共享 | input, textarea | [keyboard-accessory-host](./keyboard-accessory-host/PLACEHOLDER.md) |
 | `wx-mask-behavior` | 共享 | toast, action-sheet, modal | [mask-behavior](./mask-behavior/PLACEHOLDER.md) |
-| `wx-native` | 共享 | camera, canvas, cover-view, cover-image, input, keyboard-accessory, live-player, live-pusher, map, textarea, video, voip-room, web-view | [native](./native/PLACEHOLDER.md) |
-| `wx-native-cover` | 共享 | cover-view, cover-image | [native-cover](./native-cover/PLACEHOLDER.md) |
-| `wx-native-hover` | 共享 | cover-view | [native-hover](./native-hover/PLACEHOLDER.md) |
 | `wx-player` | 媒体 | audio, live-player, video | [player](./player/PLACEHOLDER.md) |
 | `wx-quill-core` | 共享 | editor | [quill-core](./quill-core/PLACEHOLDER.md) |
 | `wx-request` | 平台 | ad, ad-custom, official-account, video | [request](./request/PLACEHOLDER.md) |
@@ -30,5 +27,6 @@ behavior 占位。每个目录只有一个 `PLACEHOLDER.md`，不会被 `src/ind
 - 参考 id 是 `wx-...`；Tiny 宿主 behavior id 统一用 `tiny-...`（见 `src/behaviors/ids.ts`）。
 - 行为实现后，把目录内容提升为 `src/behaviors/<camelCase>.ts`，接入
   `src/behaviors/index.ts`，再删除对应 `PLACEHOLDER.md`。
-- `wx-native*`、`wx-player` 依赖原生/宿主能力，不要在纯 DOM 里伪装成功。
+- `wx-native`、`wx-native-cover`、`wx-native-hover` 已提供 web 兼容实现（native 调用改为状态+成功回调），见 `src/behaviors/native*.ts`。
+- `wx-player` 依赖原生/宿主媒体能力，仍需保留缺口。
 - `wx-positioning-container` / `wx-positioning-target` 已按 web 语义实现，见 `src/behaviors/positioningContainer.ts`、`positioningTarget.ts`。

@@ -9,11 +9,11 @@
 | 维度 | 参考总数 | 已实现 | 缺口 | 缺口分布 |
 | --- | ---: | ---: | ---: | --- |
 | 内置组件 | 60 项（59 标签 + 1 文档页） | 59 | **0** | 全部 59 个真实标签已注册；10 个开放能力是宿主 stub/诊断；`aria-component` 是文档页，不是标签 |
-| 内置 behaviors | 42 | 23 | **17** | 全部是宿主 `@tiny/host-web-components` 的 behavior；7 个 runtime `wx://` behavior 已实现；2 个按基线不做 |
+| 内置 behaviors | 42 | 26 | **14** | 全部是宿主 `@tiny/host-web-components` 的 behavior；7 个 runtime `wx://` behavior 已实现；2 个按基线不做 |
 
 - 组件缺口已清零：DOM/CSS、原生/媒体、开放能力标签都已落地；媒体/开放能力是浏览器近似或宿主 stub。
-- behaviors 缺口按类别：共享/DOM 9 个、媒体/原生 6 个、宿主平台 2 个。`wx://request-filter` / `wx://request-sender` 按基线不做，声明时回落到 `UNSUPPORTED_BEHAVIOR`。
-- 组件占位目录已全部删除；17 个缺失宿主 behavior 占位保留，每个目录只有 `PLACEHOLDER.md`。含该标记的组件目录会被 `build-templates.mjs` / `build-styles.mjs` 跳过，不会被注册成空壳组件。
+- behaviors 缺口按类别：共享/DOM 6 个、媒体/原生 6 个、宿主平台 2 个。`wx://request-filter` / `wx://request-sender` 按基线不做，声明时回落到 `UNSUPPORTED_BEHAVIOR`。
+- 组件占位目录已全部删除；14 个缺失宿主 behavior 占位保留，每个目录只有 `PLACEHOLDER.md`。含该标记的组件目录会被 `build-templates.mjs` / `build-styles.mjs` 跳过，不会被注册成空壳组件。
 - 7 个 runtime `wx://` 内置 behavior 已在 [packages/runtime/src/component/behaviors](../packages/runtime/src/component/behaviors/index.ts:1) 实现，**不在内核里放占位**。
 
 ## 2. 口径
@@ -30,9 +30,9 @@
 ### 2.2 behaviors
 
 - 从 2.30.1 的 `registerBehavior({ is: "..." })` 提取到 **42** 个内置 behavior。
-- **已实现 23** = `src/behaviors` 的 16 个宿主 behavior + `packages/runtime/src/component/behaviors` 的 7 个 `wx://` behavior。
+- **已实现 26** = `src/behaviors` 的 19 个宿主 behavior + `packages/runtime/src/component/behaviors` 的 7 个 `wx://` behavior。
 - **明确不做 2** = `wx://request-filter` / `wx://request-sender`；它们只服务微信原生媒体 URL 过滤，Tiny 不模拟该管线。
-- **缺口 17** = 全部是宿主 behavior；未识别的 `wx://` behavior（包括上面两个）仍会发 `UNSUPPORTED_BEHAVIOR` 诊断。
+- **缺口 14** = 全部是宿主 behavior；未识别的 `wx://` behavior（包括上面两个）仍会发 `UNSUPPORTED_BEHAVIOR` 诊断。
 
 ## 3. 组件缺口（0）
 
@@ -128,7 +128,7 @@
 
 ```text
 hosts/web-components/src/components/<tag>/PLACEHOLDER.md          # 组件占位已全部删除（0）
-hosts/web-components/src/behaviors/pending/<name>/PLACEHOLDER.md  # 17 个宿主 behavior 占位
+hosts/web-components/src/behaviors/pending/<name>/PLACEHOLDER.md  # 14 个宿主 behavior 占位
 ```
 
 7 个 runtime/插件 behavior 已落成 `packages/runtime/src/component/behaviors/` 下的独立模块；`wx://request-filter` / `wx://request-sender` 按基线不做。

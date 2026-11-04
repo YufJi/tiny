@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { BUILTIN_COMPONENT_TAGS } from '@tiny/manifest'
+import { BUILTIN_COMPONENT_STYLES } from '../src'
 import {
   decodeRichTextSpace,
   isAllowedRichTextTag,
@@ -13,6 +14,13 @@ describe('batch 1 built-ins', () => {
     for (const tag of ['rich-text', 'match-media', 'cover-view', 'cover-image']) {
       expect(BUILTIN_COMPONENT_TAGS).toContain(tag)
     }
+  })
+
+  test('cover-view keeps the reference internal class rules', () => {
+    const style = BUILTIN_COMPONENT_STYLES.find((entry) => entry.tag === 'cover-view')?.content ?? ''
+    expect(style).toContain('.tiny-builtin-cover-view--wx-cover-view')
+    expect(style).toContain('height: 100%')
+    expect(style).not.toContain('tiny-button:where')
   })
 
   test('rich-text keeps the documented tag subset and space modes', () => {

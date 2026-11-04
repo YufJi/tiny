@@ -42,6 +42,9 @@ describe('batch 2 built-ins', () => {
   test('movable components share the positioning behaviors', () => {
     expect(BUILTIN_BEHAVIOR_IDS.positioningTarget).toBe('tiny-positioning-target')
     expect(BUILTIN_BEHAVIOR_IDS.positioningContainer).toBe('tiny-positioning-container')
+    expect(BUILTIN_BEHAVIOR_IDS.native).toBe('tiny-native')
+    expect(BUILTIN_BEHAVIOR_IDS.nativeCover).toBe('tiny-native-cover')
+    expect(BUILTIN_BEHAVIOR_IDS.nativeHover).toBe('tiny-native-hover')
   })
 
   test('movable and keyboard tags expose their default boxes', () => {

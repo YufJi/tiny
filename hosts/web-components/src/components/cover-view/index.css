@@ -10,3 +10,18 @@ tiny-cover-view {
 tiny-cover-view[hidden] {
   display: none;
 }
+
+.wx-cover-view {
+  align-items: inherit;
+  flex-direction: inherit;
+  flex-wrap: inherit;
+  height: 100%;
+  justify-content: inherit;
+  line-height: inherit;
+  overflow: hidden;
+  position: static;
+  text-align: inherit;
+  text-overflow: inherit;
+  white-space: inherit;
+  width: 100%;
+}
