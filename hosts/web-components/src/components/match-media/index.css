@@ -1,7 +1,4 @@
-tiny-match-media {
-  display: block;
-}
-
-tiny-match-media[hidden] {
-  display: none;
-}
+/*
+ * WeChat 2.30.1 declares no author CSS for `wx-match-media`; the component
+ * toggles only its internal display style when the media query changes.
+ */

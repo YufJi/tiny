@@ -6,7 +6,7 @@ import {
   isDroppedRichTextTag,
   RICH_TEXT_TAGS,
 } from '../src/components/rich-text/content'
-import { matchesMediaQuery } from '../src/components/match-media'
+import { buildMediaQuery, matchesMediaQuery } from '../src/components/match-media'
 
 describe('batch 1 built-ins', () => {
   test('registers rich-text, match-media, cover-view and cover-image', () => {
@@ -48,5 +48,17 @@ describe('batch 1 built-ins', () => {
     expect(matchesMediaQuery({ width: 812, height: 375 }, { orientation: 'landscape' })).toBe(true)
     expect(matchesMediaQuery({ width: 375, height: 375 }, { orientation: 'portrait' })).toBe(true)
     expect(matchesMediaQuery({ width: 375, height: 375 }, { orientation: 'landscape' })).toBe(false)
+  })
+
+  test('match-media builds the reference media query and omits unset values', () => {
+    expect(buildMediaQuery({})).toBe('')
+    expect(buildMediaQuery({ width: 0, minWidth: 0, maxWidth: 0 })).toBe('')
+    expect(buildMediaQuery({ minWidth: 200, maxWidth: 600 }))
+      .toBe('(min-width: 200px) and (max-width: 600px)')
+    expect(buildMediaQuery({ width: 375, height: 812, orientation: 'portrait' }))
+      .toBe('(width: 375px) and (height: 812px) and (orientation: portrait)')
+    expect(buildMediaQuery({ minHeight: 150, orientation: 'landscape' }))
+      .toBe('(min-height: 150px) and (orientation: landscape)')
+    expect(buildMediaQuery({ orientation: 'diagonal' })).toBe('')
   })
 })
