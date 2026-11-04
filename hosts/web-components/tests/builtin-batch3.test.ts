@@ -21,9 +21,10 @@ describe('batch 3 built-ins', () => {
   })
 
   test('config nodes do not create a visible box', () => {
-    expect(BUILTIN_HOST_STYLES).toContain('tiny-page-meta {\n  display: contents;')
+    // 2.33.0 declares no author CSS for page-meta.
+    expect(BUILTIN_HOST_STYLES).not.toContain('tiny-page-meta {')
     expect(BUILTIN_HOST_STYLES).toContain('tiny-navigation-bar {\n  display: contents;')
-    expect(BUILTIN_HOST_STYLES).toContain('tiny-page-meta[hidden]')
+    expect(BUILTIN_HOST_STYLES).not.toContain('tiny-page-meta[hidden]')
     expect(BUILTIN_HOST_STYLES).toContain('tiny-navigation-bar[hidden]')
   })
 

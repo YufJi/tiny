@@ -1,7 +1,4 @@
-tiny-page-meta {
-  display: contents;
-}
-
-tiny-page-meta[hidden] {
-  display: none;
-}
+/*
+ * WeChat 2.33.0 declares no author CSS for `wx-page-meta`; it is a page-level
+ * configuration node with a slot and no visual box.
+ */
