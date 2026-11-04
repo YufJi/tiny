@@ -178,6 +178,6 @@ body {
 /* Internal scoped styles cannot select slotted children. Horizontal
    scroll-view children keep their intrinsic width like WeChat's native
    scroll view instead of the browser's default flex shrink. */
-tiny-scroll-view[enable-flex][scroll-x] > div > div > * {
+tiny-scroll-view[enable-flex][scroll-x] [data-tiny-scroll-view-main] > * {
   flex-shrink: 0;
 }

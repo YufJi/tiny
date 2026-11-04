@@ -14,6 +14,7 @@
   ><slot name="refresher" /></refresher-impl>
   <div
     id="main"
+    data-tiny-scroll-view-main=""
     style="position: relative; z-index: 1;"
     class="tiny-scroll-view {{enableFlex ? 'tiny-scroll-view-flex' : ''}} {{scrollX ? 'is-horizontal' : ''}} {{scrollY ? 'is-vertical' : ''}} {{showScrollbar ? '' : 'is-hidden-scrollbar'}} {{bounces ? '' : 'is-no-bounce'}} {{pagingEnabled ? 'is-paging' : ''}} {{scrollAnchoring ? 'is-anchoring' : ''}}"
     bindscroll="handleScroll"
