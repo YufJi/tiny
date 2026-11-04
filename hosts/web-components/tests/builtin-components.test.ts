@@ -54,7 +54,7 @@ describe('P0 built-in components', () => {
 
   // `text` has no author display rule, so the UA `[hidden]` rule applies;
   // WeChat also declares no `wx-text[hidden]`.
-  const TAGS_WITHOUT_AUTHOR_HIDDEN = new Set<string>(['label', 'text', 'root-portal'])
+  const TAGS_WITHOUT_AUTHOR_HIDDEN = new Set<string>(['label', 'text', 'root-portal', 'page-container'])
 
   test('hides every built-in host tag with an author [hidden] rule or the UA default', () => {
     for (const tag of BUILTIN_COMPONENT_TAGS) {

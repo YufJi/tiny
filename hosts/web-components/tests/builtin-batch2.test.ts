@@ -4,10 +4,7 @@ import {
   BUILTIN_COMPONENT_STYLES,
   BUILTIN_HOST_STYLES,
 } from '../src'
-import {
-  normalizePageContainerPosition,
-  pageContainerStartTransform,
-} from '../src/components/page-container'
+import { computePageContainerClass } from '../src/components/page-container'
 
 function componentStyle(tag: string): string {
   return BUILTIN_COMPONENT_STYLES.find((entry) => entry.tag === tag)?.content ?? ''
@@ -25,18 +22,15 @@ describe('batch 2 built-ins', () => {
     expect(BUILTIN_COMPONENT_TAGS).not.toContain('aria-component')
   })
 
-  test('page-container normalizes positions and hides the host', () => {
-    expect(normalizePageContainerPosition('top')).toBe('top')
-    expect(normalizePageContainerPosition('right')).toBe('right')
-    expect(normalizePageContainerPosition('nope')).toBe('bottom')
-    expect(normalizePageContainerPosition(undefined)).toBe('bottom')
-    expect(pageContainerStartTransform('bottom')).toBe('translate3d(0, 100%, 0)')
-    expect(pageContainerStartTransform('top')).toBe('translate3d(0, -100%, 0)')
-    expect(pageContainerStartTransform('right')).toBe('translate3d(100%, 0, 0)')
-    expect(pageContainerStartTransform('center')).toBe('scale(0.7)')
+  test('page-container builds the reference popup classes and styles', () => {
+    expect(computePageContainerClass('popup', ['bottom', { round: true }]).trim())
+      .toBe('weui-popup--bottom weui-popup--round')
+    expect(computePageContainerClass('popup', ['top', { round: false }]).trim())
+      .toBe('weui-popup--top')
     expect(componentStyle('page-container')).toContain('weui-popup--bottom')
     expect(componentStyle('page-container')).toContain('weui-overlay')
-    expect(BUILTIN_HOST_STYLES).toContain('tiny-page-container[hidden]')
+    // WeChat 2.30.1 declares no author host/hidden rule for page-container.
+    expect(BUILTIN_HOST_STYLES).not.toContain('tiny-page-container[hidden]')
   })
 
   test('movable and keyboard tags expose their default boxes', () => {
