@@ -50,6 +50,13 @@ pub enum HostAction {
         params: Value,
         page_id: Option<String>,
     },
+    /// A render surface asked the host for a value (picker, native dialog, …).
+    RenderHostRequest {
+        request_id: String,
+        page_id: String,
+        method: String,
+        payload: Value,
+    },
     Diagnostic {
         level: String,
         payload: Value,

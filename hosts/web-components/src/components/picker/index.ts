@@ -2,7 +2,11 @@ import type * as glassEasel from 'glass-easel'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { builtinDefinitionName } from '../../tags'
 import { bindHostListeners, unbindHostListeners } from '../../behaviors'
-import type { WebPickerResult } from '../../picker-host'
+
+type PickerResult =
+  | { status: 'ok'; value: unknown }
+  | { status: 'cancel' }
+  | { status: 'error'; errMsg: string }
 
 type PickerRuntime = {
   __pickerShow?: boolean
@@ -82,7 +86,7 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
           level: String(this.data.level ?? ''),
           style: this.wrapperStyle(),
         }).then((raw) => {
-          const value = raw as WebPickerResult
+          const value = raw as PickerResult
           runtime.__pickerShow = false
           if (value.status === 'ok') {
             this.setData({ value: value.value })

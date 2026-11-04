@@ -20,7 +20,6 @@ import type {
 } from '@tiny/runtime'
 import { createBuiltinComponents } from './index'
 import { attachEventCompositor } from './event-compositor'
-import { showWebPicker, type WebPickerRequest } from './picker-host'
 import { BUILTIN_COMPONENT_TAGS, type BuiltinComponentTag } from './tags'
 
 type AnyComponent = glassEasel.GeneralComponent
@@ -106,7 +105,7 @@ export type GlassRenderTreeOptions = {
   attach?: boolean
   /** Forward host events from render nodes back to the logic layer. */
   onEvent?: (event: GlassRenderEvent) => void
-  /** Override host request/response capabilities (web picker, native pickers, …). */
+  /** Local override for host request/response capabilities. */
   hostRequest?: (method: string, payload: unknown) => Promise<unknown>
 }
 
@@ -134,6 +133,7 @@ export type GlassRenderTree = {
   setEventSink?: (sink: (event: GlassRenderEvent) => void) => void
   /** Built-in components ask the host to act (`<navigator>` routing). */
   setHostActionSink?: (sink: (action: RenderHostAction) => void) => void
+  setHostRequestSink?: (sink: (method: string, payload: unknown) => Promise<unknown>) => void
   setPagePath?: (pagePath: string) => void
   setWxsModules?: (table: WxsModuleTable) => void
   setWxsEffectSink?: (sink: (effect: WxsRenderEffect) => void) => void
@@ -285,10 +285,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     hostAction: (action) => hostActionSink?.(action),
     hostRequest: (method, payload) => {
       if (options.hostRequest) return options.hostRequest(method, payload)
-      if (method === 'showPicker') {
-        return showWebPicker(payload as WebPickerRequest, options.container?.ownerDocument ?? document)
-      }
-      return Promise.reject(new Error(`unsupported host request: ${method}`))
+      if (hostRequestSink) return hostRequestSink(method, payload)
+      return Promise.reject(new Error(`host request is unavailable: ${method}`))
     },
   })
   for (const [tag, definition] of Object.entries(definitions)) {
@@ -301,6 +299,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   let eventSink: ((event: GlassRenderEvent) => void) | undefined
   let wxsEffectSink: ((effect: WxsRenderEffect) => void) | undefined
   let hostActionSink: ((action: RenderHostAction) => void) | undefined
+  let hostRequestSink: ((method: string, payload: unknown) => Promise<unknown>) | undefined
   const emitServiceEvent = (event: GlassRenderEvent): void => {
     if (eventSink) eventSink(event)
     else options.onEvent?.(event)
@@ -1374,6 +1373,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     },
     setHostActionSink: (sink) => {
       hostActionSink = sink
+    },
+    setHostRequestSink: (sink) => {
+      hostRequestSink = sink
     },
     playAnimation,
     clearAnimation,

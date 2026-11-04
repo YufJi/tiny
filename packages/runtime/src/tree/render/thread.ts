@@ -45,6 +45,8 @@ export type TreeRenderer = {
   setWxsBinding?: (binding: WxsBindingMessage) => void
   /** Built-in components ask the host to act (e.g. `<navigator>` routing). */
   setHostActionSink?: (sink: (action: RenderHostAction) => void) => void
+  /** Built-in components ask the host for a value (e.g. `<picker>`). */
+  setHostRequestSink?: (sink: (method: string, payload: unknown) => Promise<unknown>) => void
   applyStyles?: (styles: string[]) => void
   setPagePath?: (pagePath: string) => void
   measureCanvas?: (selector: string, canvasId: string) => {
@@ -108,6 +110,15 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       currentPageId ? { pageId: currentPageId } : {},
     )
   })
+
+  options.renderer.setHostRequestSink?.((method, payload) => (
+    connection.call(
+      TREE_PROTOCOL.domain,
+      TREE_PROTOCOL.hostRequest,
+      { method, payload },
+      { ...(currentPageId ? { pageId: currentPageId } : {}), timeoutMs: 0 },
+    )
+  ))
 
   options.renderer.setEventSink?.((event) => {
     connection.sendEvent(

@@ -51,6 +51,13 @@ enum WasmEvent {
         #[serde(default)]
         error: Option<String>,
     },
+    RenderHostResult {
+        request_id: String,
+        #[serde(default)]
+        result: Option<Value>,
+        #[serde(default)]
+        error: Option<String>,
+    },
     Command {
         command: HostCommand,
     },
@@ -71,6 +78,17 @@ impl From<WasmEvent> for HostEvent {
                 result,
                 error,
             } => HostEvent::PlatformResult {
+                request_id,
+                result: match error {
+                    Some(error) => Err(error),
+                    None => Ok(result.unwrap_or(Value::Null)),
+                },
+            },
+            WasmEvent::RenderHostResult {
+                request_id,
+                result,
+                error,
+            } => HostEvent::RenderHostResult {
                 request_id,
                 result: match error {
                     Some(error) => Err(error),

@@ -19,6 +19,7 @@ export const TREE_PROTOCOL = Object.freeze({
   animate: 'animate',
   clearAnimate: 'clearAnimate',
   hostAction: 'hostAction',
+  hostRequest: 'hostRequest',
   wxsEffect: 'wxsEffect',
   wxsBinding: 'wxsBinding',
 } as const)
