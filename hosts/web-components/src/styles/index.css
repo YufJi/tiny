@@ -90,7 +90,6 @@ tiny-textarea[hidden],
 tiny-form[hidden],
 tiny-picker[hidden],
 tiny-scroll-view[hidden],
-tiny-navigator[hidden],
 tiny-canvas[hidden] {
   display: none;
 }

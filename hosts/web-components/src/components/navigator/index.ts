@@ -17,34 +17,37 @@ const OPEN_TYPE_ACTIONS = {
  * (`tree.hostAction`) instead of synthesising a page event.
  */
 export function defineNavigator(ctx: BuiltinContext): BuiltinDefinition {
-  const report = (code: string, message: string, details?: unknown): void => {
-    ctx.options.onDiagnostic?.({ severity: 'warning', code, message, details })
-  }
-
   return ctx.space.defineComponent({
     is: builtinDefinitionName('navigator'),
     template: ctx.template('navigator'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.hover],
     properties: {
-      target: { type: String, value: 'self' },
       url: { type: String, value: '' },
-      openType: { type: String, value: 'navigate' },
       delta: { type: Number, value: 1 },
+      redirect: { type: Boolean, value: false },
+      target: { type: String, value: 'self' },
+      openType: { type: String, value: 'navigate' },
+      hoverClass: { type: String, value: '' },
+      hover: { type: Boolean, value: true },
+      hoverStayTime: { type: Number, value: 600 },
       appId: { type: String, value: '' },
-      version: { type: String, value: '' },
-      extraData: { type: Object, value: {} },
-      // WeChat's navigator hovers later and shorter than a button.
-      hoverClass: { type: String, value: 'navigator-hover' },
-      hoverStartTime: { type: Number, value: 400 },
-      hoverStayTime: { type: Number, value: 50 },
-      hoverStopPropagation: { type: Boolean, value: false },
+      path: { type: String, value: '' },
+      shortLink: { type: String, value: '' },
+      extraData: { type: Object, value: '' },
+      version: { type: String, value: 'release' },
+      scene: { type: Number, value: 1037 },
+      sceneNote: { type: String, value: '' },
     },
     options: ctx.hostOptions('navigator'),
     lifetimes: {
       created() {
+        ;(this as unknown as { _defaultHoverClass: string })._defaultHoverClass = 'navigator-hover'
         bindHostListeners(this, {
           tap: () => this.handleNavigate(),
         })
+      },
+      attached() {
+        ;(this as unknown as { setAriaRoleDefault: (role: string) => void }).setAriaRoleDefault('link')
       },
       detached() {
         unbindHostListeners(this)
@@ -56,36 +59,46 @@ export function defineNavigator(ctx: BuiltinContext): BuiltinDefinition {
         const target = String(data.target ?? 'self')
         const openType = String(data.openType || 'navigate')
         const url = String(data.url ?? '').trim()
-        if (target !== 'self') {
+        if (target === 'miniProgram') {
+          if (openType === 'navigate' && !this.data.appId && !this.data.shortLink) {
+            this.reportFailure(
+              DIAGNOSTIC_CODES.INVALID_NAVIGATOR_URL,
+              '<navigator/> should have app-id or short-link attribute when using navigate with miniProgram target',
+              { openType },
+            )
+            return
+          }
           // Opening another mini program needs a native host; a browser cannot.
-          report(
+          this.reportFailure(
             DIAGNOSTIC_CODES.UNSUPPORTED_NAVIGATOR_TARGET,
             `<navigator target="${target}"> needs a native host; only target="self" navigates.`,
             { target },
           )
           return
         }
-        const action = OPEN_TYPE_ACTIONS[openType as keyof typeof OPEN_TYPE_ACTIONS]
+        const action = this.data.redirect
+          ? 'redirectTo'
+          : OPEN_TYPE_ACTIONS[openType as keyof typeof OPEN_TYPE_ACTIONS]
         const needsUrl = action !== undefined
         if (!needsUrl && openType !== 'navigateBack' && openType !== 'exit') {
-          report(
+          this.reportFailure(
             DIAGNOSTIC_CODES.INVALID_NAVIGATOR_OPEN_TYPE,
-            `<navigator open-type="${openType}"> is not a valid open-type.`,
+            `<navigator/> with invalid openType ${openType}`,
             { openType },
           )
           return
         }
         if (needsUrl && url === '') {
-          report(
+          this.reportFailure(
             DIAGNOSTIC_CODES.INVALID_NAVIGATOR_URL,
-            `<navigator open-type="${openType}"> needs a non-empty url.`,
+            '<navigator/> should have url attribute when using navigateTo, redirectTo or switchTab',
             { openType },
           )
           return
         }
         const hostAction = ctx.options.hostAction
         if (!hostAction) {
-          report(
+          this.reportFailure(
             DIAGNOSTIC_CODES.UNSUPPORTED_NAVIGATOR_TARGET,
             '<navigator> has no host routing channel; the host does not expose hostAction.',
             { openType },
@@ -94,6 +107,8 @@ export function defineNavigator(ctx: BuiltinContext): BuiltinDefinition {
         }
         if (action) {
           hostAction({ action, url })
+          this.triggerEvent('success', {})
+          this.triggerEvent('complete', {})
           return
         }
         if (openType === 'navigateBack') {
@@ -102,6 +117,13 @@ export function defineNavigator(ctx: BuiltinContext): BuiltinDefinition {
           return
         }
         hostAction({ action: 'exit' })
+        this.triggerEvent('success', {})
+        this.triggerEvent('complete', {})
+      },
+      reportFailure(code: string, errMsg: string, details: Record<string, unknown>) {
+        ctx.options.onDiagnostic?.({ severity: 'warning', code, message: errMsg, details })
+        this.triggerEvent('fail', { errMsg })
+        this.triggerEvent('complete', { errMsg })
       },
     },
   }).general()

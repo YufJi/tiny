@@ -1399,6 +1399,7 @@ describe('navigator', () => {
     const cases: Array<[string, Record<string, unknown>]> = [
       ['url="/pages/a/a"', { action: 'navigateTo', url: '/pages/a/a' }],
       ['open-type="redirect" url="/pages/a/a"', { action: 'redirectTo', url: '/pages/a/a' }],
+      ['redirect url="/pages/a/a"', { action: 'redirectTo', url: '/pages/a/a' }],
       ['open-type="switchTab" url="/pages/b/b"', { action: 'switchTab', url: '/pages/b/b' }],
       ['open-type="reLaunch" url="/pages/c/c"', { action: 'reLaunch', url: '/pages/c/c' }],
       ['open-type="navigateBack" delta="2"', { action: 'navigateBack', delta: 2 }],
@@ -1439,12 +1440,14 @@ describe('navigator', () => {
     ])
   })
 
-  test('hover-class defaults to navigator-hover without touching data', () => {
+  test('uses the navigator-hover default class without overriding hover-class', () => {
     const navigator = mountNavigator('url="/pages/a/a"', [], []) as unknown as {
       data: Record<string, unknown>
+      _defaultHoverClass: string
     }
-    expect(navigator.data.hoverClass).toBe('navigator-hover')
-    expect(navigator.data.hoverStartTime).toBe(400)
-    expect(navigator.data.hoverStayTime).toBe(50)
+    expect(navigator.data.hoverClass).toBe('')
+    expect(navigator._defaultHoverClass).toBe('navigator-hover')
+    expect(navigator.data.hoverStartTime).toBe(50)
+    expect(navigator.data.hoverStayTime).toBe(600)
   })
 })
