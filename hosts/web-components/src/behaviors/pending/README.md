@@ -17,8 +17,6 @@ behavior 占位。每个目录只有一个 `PLACEHOLDER.md`，不会被 `src/ind
 | `wx-native-cover` | 共享 | cover-view, cover-image | [native-cover](./native-cover/PLACEHOLDER.md) |
 | `wx-native-hover` | 共享 | cover-view | [native-hover](./native-hover/PLACEHOLDER.md) |
 | `wx-player` | 媒体 | audio, live-player, video | [player](./player/PLACEHOLDER.md) |
-| `wx-positioning-container` | 共享 | movable-area, movable-view | [positioning-container](./positioning-container/PLACEHOLDER.md) |
-| `wx-positioning-target` | 共享 | camera, canvas, cover-view, cover-image, input, live-player, live-pusher, map, textarea, video, voip-room, web-view | [positioning-target](./positioning-target/PLACEHOLDER.md) |
 | `wx-quill-core` | 共享 | editor | [quill-core](./quill-core/PLACEHOLDER.md) |
 | `wx-request` | 平台 | ad, ad-custom, official-account, video | [request](./request/PLACEHOLDER.md) |
 | `wx-video-ad` | 媒体 | video-ad, video | [video-ad](./video-ad/PLACEHOLDER.md) |
@@ -32,4 +30,5 @@ behavior 占位。每个目录只有一个 `PLACEHOLDER.md`，不会被 `src/ind
 - 参考 id 是 `wx-...`；Tiny 宿主 behavior id 统一用 `tiny-...`（见 `src/behaviors/ids.ts`）。
 - 行为实现后，把目录内容提升为 `src/behaviors/<camelCase>.ts`，接入
   `src/behaviors/index.ts`，再删除对应 `PLACEHOLDER.md`。
-- `wx-native*`、`wx-player`、`wx-positioning-*` 依赖原生/宿主能力，不要在纯 DOM 里伪装成功。
+- `wx-native*`、`wx-player` 依赖原生/宿主能力，不要在纯 DOM 里伪装成功。
+- `wx-positioning-container` / `wx-positioning-target` 已按 web 语义实现，见 `src/behaviors/positioningContainer.ts`、`positioningTarget.ts`。

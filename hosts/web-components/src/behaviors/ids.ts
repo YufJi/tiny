@@ -6,6 +6,8 @@ export const BUILTIN_BEHAVIOR_IDS = Object.freeze({
   hover: `${TINY_ENGINE_NAMING.behaviorPrefix}hover`,
   reload: `${TINY_ENGINE_NAMING.behaviorPrefix}reload`,
   touchTrack: `${TINY_ENGINE_NAMING.behaviorPrefix}touchtrack`,
+  positioningTarget: `${TINY_ENGINE_NAMING.behaviorPrefix}positioning-target`,
+  positioningContainer: `${TINY_ENGINE_NAMING.behaviorPrefix}positioning-container`,
   scroller: `${TINY_ENGINE_NAMING.behaviorPrefix}scroller`,
   sizeNormalizer: `${TINY_ENGINE_NAMING.behaviorPrefix}size-normalizer`,
   classPrefix: `${TINY_ENGINE_NAMING.behaviorPrefix}class-prefix`,

@@ -4,6 +4,7 @@ import {
   BUILTIN_COMPONENT_STYLES,
   BUILTIN_HOST_STYLES,
 } from '../src'
+import { BUILTIN_BEHAVIOR_IDS } from '../src/behaviors'
 import { computePageContainerClass } from '../src/components/page-container'
 
 function componentStyle(tag: string): string {
@@ -38,12 +39,18 @@ describe('batch 2 built-ins', () => {
     expect(BUILTIN_HOST_STYLES).not.toContain('tiny-page-container[hidden]')
   })
 
+  test('movable components share the positioning behaviors', () => {
+    expect(BUILTIN_BEHAVIOR_IDS.positioningTarget).toBe('tiny-positioning-target')
+    expect(BUILTIN_BEHAVIOR_IDS.positioningContainer).toBe('tiny-positioning-container')
+  })
+
   test('movable and keyboard tags expose their default boxes', () => {
     expect(BUILTIN_HOST_STYLES).toContain('tiny-movable-area {\n  display: block;')
     expect(BUILTIN_HOST_STYLES).toContain('tiny-movable-area[hidden]')
     expect(BUILTIN_HOST_STYLES).toContain('tiny-movable-view {\n  display: inline-block;')
     expect(BUILTIN_HOST_STYLES).toContain('tiny-movable-view[hidden]')
-    expect(BUILTIN_HOST_STYLES).toContain('touch-action: none')
+    // WeChat 2.30.1 has no touch-action declaration on movable-view.
+    expect(componentStyle('movable-view')).toBe('')
     expect(BUILTIN_HOST_STYLES).toContain('tiny-keyboard-accessory[hidden]')
     expect(componentStyle('keyboard-accessory')).toContain('position: fixed')
   })

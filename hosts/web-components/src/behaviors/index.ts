@@ -6,6 +6,8 @@ import { createDataComponentBehavior } from './dataComponent'
 import { createDisabledBehavior } from './disabled'
 import { createGroupBehavior } from './group'
 import { createHoverBehavior } from './hover'
+import { createPositioningContainerBehavior } from './positioningContainer'
+import { createPositioningTargetBehavior } from './positioningTarget'
 import { createItemBehavior } from './item'
 import { createLabelAriaBehavior } from './labelAria'
 import { createLabelTargetBehavior } from './labelTarget'
@@ -30,6 +32,7 @@ export type {
   ReloadState,
   TouchTrackEvent,
 } from './types'
+export type { PositionBox, PositioningContainerHost } from './positioningTarget'
 
 /**
  * Internal behaviors shared by the built-in component implementations.
@@ -52,6 +55,8 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
     sizeNormalizer: createSizeNormalizerBehavior(space),
     classPrefix: createClassPrefixBehavior(space),
     touchTrack: createTouchTrackBehavior(space),
+    positioningTarget: createPositioningTargetBehavior(space),
+    positioningContainer: createPositioningContainerBehavior(space),
     scroller: createScrollerBehavior(space),
   }
 }
