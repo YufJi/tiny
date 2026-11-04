@@ -1306,6 +1306,48 @@ describe('P0 built-in components', () => {
     expect(cancels).toEqual([{}])
   })
 
+  test('picker reflects live value changes into an open multi picker', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const requests: Array<Record<string, unknown>> = []
+    let resolvePicker: ((value: unknown) => void) | undefined
+    const builtins = createBuiltinComponents(space, {
+      hostRequest: async (method, payload) => {
+        requests.push({ method, ...(payload as Record<string, unknown>) })
+        if (method === 'showPicker') {
+          return new Promise((resolve) => { resolvePicker = resolve })
+        }
+        return { status: 'ok' }
+      },
+    })
+    const page = space.defineComponent({
+      is: 'page',
+      using: { picker: builtins.picker },
+      template: compilePage(`
+        <picker id="picker" mode="multiSelector" range="{{[['a', 'b'], ['c', 'd']]}}" value="{{[0, 0]}}" />
+      `),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const picker = instance.getShadowRoot()?.getElementById('picker')?.asGeneralComponent()!
+    picker.triggerEvent('tap', {})
+    await flush()
+    expect(requests[0]).toMatchObject({ method: 'showPicker', mode: 'multiSelector' })
+    picker.setData({ value: [1, 0] })
+    await flush()
+    expect(requests.find((request) => request.method === 'updatePicker')).toMatchObject({
+      method: 'updatePicker',
+      mode: 'multiSelector',
+      value: [1, 0],
+    })
+    picker.setData({ range: [['a', 'b', 'c'], ['c', 'd']] })
+    await flush()
+    expect(requests.filter((request) => request.method === 'updatePicker').at(-1)).toMatchObject({
+      method: 'updatePicker',
+      range: [['a', 'b', 'c'], ['c', 'd']],
+    })
+    resolvePicker?.({ status: 'cancel' })
+    await flush()
+  })
+
   test('picker-view receives column changes and updates its value array', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)

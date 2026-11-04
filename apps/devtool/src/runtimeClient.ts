@@ -10,7 +10,7 @@ import type { RuntimeDiagnostic, RuntimePageState, RuntimeTabBarState } from '@t
 import type { InspectNode } from '@tiny/runtime'
 import type { RuntimeManifest, StorageSnapshot, SystemInfoSnapshot } from '@tiny/runtime'
 import { WasmBrowserHost, type WasmHostCoreFactory } from '@tiny/host-browser'
-import { showHostPicker } from './hostPicker'
+import { showHostPicker, updateHostPicker } from './hostPicker'
 
 export type DevtoolRuntimeStatus = 'idle' | 'connecting' | 'running' | 'terminated' | 'error'
 
@@ -129,11 +129,16 @@ export class DevtoolRuntimeClient {
           if (state && typeof state === 'object') this.record(state as RuntimeDiagnostic)
         },
         onDiagnostic: (diagnostic) => this.record(diagnostic),
-        onHostRequest: (method, payload) => (
-          method === 'showPicker'
-            ? showHostPicker(payload as Parameters<typeof showHostPicker>[0], this.container)
-            : Promise.reject(new Error(`unsupported host request: ${method}`))
-        ),
+        onHostRequest: (method, payload) => {
+          if (method === 'showPicker') {
+            return showHostPicker(payload as Parameters<typeof showHostPicker>[0], this.container)
+          }
+          if (method === 'updatePicker') {
+            updateHostPicker(payload as Parameters<typeof updateHostPicker>[0])
+            return Promise.resolve({ status: 'ok' })
+          }
+          return Promise.reject(new Error(`unsupported host request: ${method}`))
+        },
       }, this.options.wasmCoreFactory)
       await this.wasmHost.launch()
       // The service sends the post-ready tree snapshot asynchronously.

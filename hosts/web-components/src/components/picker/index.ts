@@ -10,6 +10,10 @@ type PickerResult =
 
 type PickerRuntime = {
   __pickerShow?: boolean
+  __multi_picker_watching?: boolean
+  __formCallback?: (value: unknown) => void
+  _defaultDateValue?: string
+  _groupID?: number | null
   getBackendElement?: () => { getBoundingClientRect?: () => { width: number; height: number; left: number; top: number } } | null
 }
 
@@ -24,8 +28,8 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
     template: ctx.template('picker'),
     behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent, ctx.behaviors.reload],
     properties: {
-      range: { type: Array, value: [] },
-      value: { value: '' },
+      range: { type: Array, value: [], observer: 'rangeChanged' },
+      value: { value: '', observer: 'valueChanged' },
       mode: { type: String, value: 'selector' },
       fields: { type: String, value: 'day' },
       start: { type: String, value: '' },
@@ -50,6 +54,11 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
           getBackendElement?: () => { setAttribute?: (name: string, value: string) => void } | null
         }).getBackendElement?.()
         element?.setAttribute?.('aria-haspopup', 'true')
+        if (this.data.mode === 'date') {
+          const now = new Date()
+          ;(this as unknown as PickerRuntime)._defaultDateValue =
+            `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`
+        }
       },
       detached() {
         unbindHostListeners(this)
@@ -60,7 +69,12 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
         const element = (this as unknown as PickerRuntime).getBackendElement?.()
         const rect = element?.getBoundingClientRect?.()
         if (!rect) return undefined
-        return { width: rect.width, height: rect.height, left: rect.left, top: rect.top }
+        return {
+          width: rect.width,
+          height: rect.height,
+          left: rect.left + (window.scrollX || 0),
+          top: rect.top + (window.scrollY || 0),
+        }
       },
       showPickerView() {
         if (this.data.disabled) return
@@ -73,11 +87,15 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
         }
         runtime.__pickerShow = true
         const mode = String(this.data.mode || 'selector')
+        if (mode === 'multiSelector') runtime.__multi_picker_watching = true
+        const current = mode === 'date' && !this.data.value
+          ? runtime._defaultDateValue ?? this.data.value
+          : this.data.value
         const result = hostRequest('showPicker', {
           mode,
           range: Array.isArray(this.data.range) ? this.data.range : [],
           rangeKey: String(this.data.rangeKey ?? ''),
-          value: this.data.value,
+          value: current,
           start: String(this.data.start ?? ''),
           end: String(this.data.end ?? ''),
           fields: String(this.data.fields ?? 'day'),
@@ -96,22 +114,87 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
           } else {
             this.triggerEvent('cancel', {})
           }
+          this.formGetDataCallback()
         }, (error: unknown) => {
           runtime.__pickerShow = false
           this.triggerEvent('error', {
             errMsg: error instanceof Error ? error.message : String(error ?? 'showPickerView:fail'),
           })
+          this.formGetDataCallback()
         })
       },
       getFormData(callback?: (value: unknown) => void): unknown {
-        if (typeof callback === 'function') {
-          callback(this.data.value)
+        const runtime = this as unknown as PickerRuntime
+        if (typeof callback !== 'function') {
+          return runtime.__pickerShow ? undefined : this.data.value
+        }
+        if (runtime.__pickerShow) {
+          runtime.__formCallback = callback
           return undefined
         }
-        return this.data.value
+        callback(this.data.value)
+        return undefined
+      },
+      formGetDataCallback() {
+        const runtime = this as unknown as PickerRuntime
+        if (typeof runtime.__formCallback === 'function') {
+          runtime.__formCallback(this.data.value)
+        }
+        runtime.__formCallback = undefined
       },
       resetFormData() {
+        const runtime = this as unknown as PickerRuntime
         this.setData({ value: this.data.mode === 'selector' ? -1 : '' })
+        if (typeof runtime._groupID === 'number') runtime._groupID = null
+      },
+      valueChanged(value: unknown, oldValue: unknown) {
+        const runtime = this as unknown as PickerRuntime
+        if (!runtime.__pickerShow || !runtime.__multi_picker_watching) return
+        if (!Array.isArray(value) || !Array.isArray(oldValue)) return
+        const range: unknown[] = Array.isArray(this.data.range) ? this.data.range as unknown[] : []
+        let changed = false
+        const next: unknown[] = [...value]
+        for (let index = 0; index < range.length; index += 1) {
+          const column: unknown = range[index]
+          if (!Array.isArray(column)) continue
+          if (value[index] !== oldValue[index]) {
+            next[index] = Number(value[index]) >= column.length ? 0 : Number(value[index])
+            changed = true
+          }
+        }
+        if (!changed) return
+        ctx.options.hostRequest?.('updatePicker', {
+          mode: this.data.mode,
+          range,
+          rangeKey: this.data.rangeKey,
+          value: next,
+        }).catch(() => {})
+      },
+      rangeChanged(range: unknown, oldRange: unknown) {
+        const runtime = this as unknown as PickerRuntime
+        if (!runtime.__pickerShow || !runtime.__multi_picker_watching) return
+        if (!Array.isArray(range) || !Array.isArray(oldRange)) return
+        const current = Array.isArray(this.data.value) ? this.data.value : []
+        let changed = false
+        const next: unknown[] = [...current]
+        for (let index = 0; index < range.length; index += 1) {
+          const column = range[index]
+          const previous = oldRange[index]
+          if (!Array.isArray(column) || !Array.isArray(previous)) continue
+          const same = column.length === previous.length
+            && column.every((value, itemIndex) => value === previous[itemIndex])
+          if (!same) {
+            next[index] = Number(current[index]) >= column.length ? 0 : Number(current[index])
+            changed = true
+          }
+        }
+        if (!changed) return
+        ctx.options.hostRequest?.('updatePicker', {
+          mode: this.data.mode,
+          range,
+          rangeKey: this.data.rangeKey,
+          value: next,
+        }).catch(() => {})
       },
       saved(state: Record<string, unknown>) {
         const fields: Record<string, unknown> = {}

@@ -17,6 +17,17 @@ export type HostPickerResult =
   | { status: 'cancel' }
   | { status: 'error'; errMsg: string }
 
+type ActivePicker = {
+  update: (request: Partial<HostPickerRequest>) => void
+}
+
+let activePicker: ActivePicker | null = null
+
+/** Reflect a live value/range change into an open host picker. */
+export function updateHostPicker(request: Partial<HostPickerRequest>): void {
+  activePicker?.update(request)
+}
+
 const ITEM_HEIGHT = 48
 const VISIBLE_ITEMS = 5
 const INDICATOR_TOP = 92
@@ -309,14 +320,18 @@ export function showHostPicker(
 
     const previousOverflow = mount === doc.body ? doc.body.style.overflow : ''
     if (mount === doc.body) doc.body.style.overflow = 'hidden'
+    let picker: ActivePicker | null = null
     const finish = (result: HostPickerResult) => {
       if (mount === doc.body) doc.body.style.overflow = previousOverflow
       overlay.remove()
+      if (picker && activePicker === picker) activePicker = null
       resolve(result)
     }
     const fail = (errMsg: string) => finish({ status: 'error', errMsg })
 
     let resultValue: unknown = request.value
+    let currentRequest = request
+    let renderMulti: (() => void) | null = null
     const mode = String(request.mode || 'selector')
     if (mode === 'selector') {
       const labels = labelsOf(request.range, request.rangeKey)
@@ -332,26 +347,29 @@ export function showHostPicker(
       resultValue = String(current)
       body.appendChild(wheel.element)
     } else if (mode === 'multiSelector') {
-      const columns = Array.isArray(request.range) ? request.range : []
-      if (columns.length === 0) {
-        fail('showMultiPickerView:fail range is empty')
-        return
-      }
-      const raw = Array.isArray(request.value) ? request.value : []
-      const selected: number[] = columns.map((items, index) => {
-        const labels = labelsOf(Array.isArray(items) ? items : [])
-        const current = Number(raw[index] ?? 0)
-        return Number.isFinite(current) && current >= 0 && current < labels.length ? current : 0
-      })
-      columns.forEach((items, index) => {
-        const labels = labelsOf(Array.isArray(items) ? items : [])
-        const wheel = createWheel(doc, labels, selected[index] ?? 0, (value) => {
-          selected[index] = value
-          resultValue = [...selected]
+      renderMulti = () => {
+        const columns = Array.isArray(currentRequest.range) ? currentRequest.range : []
+        if (columns.length === 0) {
+          fail('showMultiPickerView:fail range is empty')
+          return
+        }
+        const raw = Array.isArray(currentRequest.value) ? currentRequest.value : []
+        const selected: number[] = columns.map((items, index) => {
+          const labels = labelsOf(Array.isArray(items) ? items : [])
+          const current = Number(raw[index] ?? 0)
+          return Number.isFinite(current) && current >= 0 && current < labels.length ? current : 0
         })
-        body.appendChild(wheel.element)
-      })
-      resultValue = [...selected]
+        columns.forEach((items, index) => {
+          const labels = labelsOf(Array.isArray(items) ? items : [])
+          const wheel = createWheel(doc, labels, selected[index] ?? 0, (value) => {
+            selected[index] = value
+            resultValue = [...selected]
+          })
+          body.appendChild(wheel.element)
+        })
+        resultValue = [...selected]
+      }
+      renderMulti()
     } else if (mode === 'date') {
       const fields = String(request.fields || 'day')
       const start = parseDate(request.start) ?? { year: 1970, month: 1, day: 1 }
@@ -431,6 +449,16 @@ export function showHostPicker(
       fail(`showPickerView:fail unsupported picker mode ${mode}`)
       return
     }
+
+    picker = {
+      update: (next) => {
+        if (!renderMulti) return
+        currentRequest = { ...currentRequest, ...next }
+        body.replaceChildren()
+        renderMulti()
+      },
+    }
+    activePicker = picker
 
     cancel.addEventListener('click', () => finish({ status: 'cancel' }))
     overlay.addEventListener('click', (event) => {
