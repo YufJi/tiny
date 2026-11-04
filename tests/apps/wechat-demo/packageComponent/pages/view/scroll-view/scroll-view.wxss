@@ -12,4 +12,5 @@
 .scroll-view-item_H{
   width: 200px;
   height: 150px;
+  flex-shrink: 0;
 }
