@@ -1079,15 +1079,17 @@ describe('P0 built-in components', () => {
       is: 'page',
       using: { form: builtins.form, input: builtins.input, button: builtins.button, field },
       template: compilePage(`
-        <form id="form" report-submit bindsubmit="onSubmit" bindbeforereportsubmit="onBefore">
+        <form id="form" report-submit bindsubmit="onSubmit" bindbeforereportsubmit="onBefore" bindreset="onReset">
           <field id="field" name="custom" value="v" />
           <input id="input" name="title" value="hello" />
           <button id="submit" form-type="submit">Submit</button>
+          <button id="reset" form-type="reset">Reset</button>
         </form>
       `),
       methods: {
         onSubmit(event: glassEasel.ShadowedEvent<unknown>) { events.push({ type: 'submit', detail: event.detail }) },
         onBefore(event: glassEasel.ShadowedEvent<unknown>) { events.push({ type: 'before', detail: event.detail }) },
+        onReset(event: glassEasel.ShadowedEvent<unknown>) { events.push({ type: 'reset', detail: event.detail }) },
       },
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
@@ -1097,9 +1099,24 @@ describe('P0 built-in components', () => {
     host('submit').triggerEvent('tap', {})
     expect(events).toEqual([
       { type: 'before', detail: { value: { custom: 'v', title: 'hello' } } },
-      { type: 'submit', detail: { value: { custom: 'v', title: 'hello' }, formId: 'the formId is a mock one' } },
+      {
+        type: 'submit',
+        detail: {
+          value: { custom: 'v', title: 'hello' },
+          target: { id: 'submit', dataset: {}, offsetTop: 0, offsetLeft: 0 },
+          formId: 'the formId is a mock one',
+        },
+      },
     ])
     expect(host('form').data.reportSubmit).toBe(true)
+
+    host('input').setData({ value: 'changed' })
+    host('reset').triggerEvent('tap', {})
+    expect(host('input').data.value).toBe('')
+    expect(events.at(-1)).toEqual({
+      type: 'reset',
+      detail: { target: { id: 'reset', dataset: {}, offsetTop: 0, offsetLeft: 0 } },
+    })
   })
 
   test('textarea renders placeholder/compute layers and auto-height state', () => {
@@ -1217,7 +1234,10 @@ describe('P0 built-in components', () => {
     expect(host('textarea').data.value).toBe('next')
 
     host('submit').triggerEvent('tap', {})
-    expect(events.submit).toEqual({ value: { title: 'hello' }, formId: '' })
+    expect(events.submit).toEqual({
+      value: { title: 'hello' },
+      target: { id: 'submit', dataset: {}, offsetTop: 0, offsetLeft: 0 },
+    })
 
     const picker = host('picker') as unknown as {
       handleOpen: () => void

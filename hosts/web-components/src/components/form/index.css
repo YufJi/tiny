@@ -1,4 +1,3 @@
-tiny-form {
-  display: block;
-  box-sizing: border-box;
+tiny-form[hidden] {
+  display: none;
 }
