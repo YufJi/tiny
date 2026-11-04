@@ -184,9 +184,6 @@
   "sitemapLocation": "sitemap.json",
   "themeLocation": "demo.theme.json",
   "resizable": true,
-  "useExtendedLib": {
-    "weui": "latest"
-  },
   "frameset": true,
   "requiredBackgroundModes": [
     "audio",
@@ -199,6 +196,16 @@
   ],
   "lazyCodeLoading": "requiredComponents",
   "__lazyCodeLoadingChunk": true,
+  "rendererOptions": {
+    "skyline": {
+      "defaultDisplayBlock": true,
+      "defaultContentBox": true,
+      "tagNameStyleIsolation": "legacy",
+      "disableABTest": true,
+      "sdkVersionBegin": "3.0.0",
+      "sdkVersionEnd": "15.255.255"
+    }
+  },
   "componentFramework": "glass-easel",
   "appBar": {},
   "supportedMaterials": [
