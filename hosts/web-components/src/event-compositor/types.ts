@@ -78,8 +78,17 @@ export type TouchProjection = {
 }
 
 export type CompositorOptions = {
-  /** Delegate target; one listener set per render tree. */
+  /**
+   * Input capture target. Use the document element so root-portal content
+   * appended outside the render container is still observed.
+   */
   root: HTMLElement
+  /**
+   * Optional ownership check for the resolved glass element. Required when
+   * `root` is document-level: multiple render trees can share a document, and
+   * only targets belonging to this tree may be injected.
+   */
+  isOwnedTarget?: (element: glassEasel.Element) => boolean
   onGesture: (gesture: GestureEvent, target: glassEasel.Element) => void
   onTouch?: (touch: TouchProjection, target: glassEasel.Element) => void
   tapDistance?: number

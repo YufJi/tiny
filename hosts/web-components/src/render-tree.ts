@@ -403,10 +403,33 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   // One compositor per render tree: raw touch (or mouse in the devtool) is
   // recognized as a gesture here and injected into glass, so page bindings and
   // built-in components share a single tap/longpress source.
-  const compositorRoot = options.container ?? rootElement
+  //
+  // Listen at the document element: root-portal content is appended to
+  // `document.documentElement` (matching WeChat 2.30.1), so a container-scoped
+  // listener would never see it. Ownership is checked against the glass tree,
+  // which keeps two trees in one document from injecting each other's events.
+  const compositorRoot = options.container
+    ? options.container.ownerDocument?.documentElement ?? options.container
+    : rootElement
+  const composedParentOf = (element: glassEasel.Element): glassEasel.Element | null => {
+    const candidate = element as unknown as {
+      getComposedParent?: () => glassEasel.Element | null
+      parentNode?: glassEasel.Element | null
+    }
+    return candidate.getComposedParent?.() ?? candidate.parentNode ?? null
+  }
+  const isOwnedTarget = (element: glassEasel.Element): boolean => {
+    let current: glassEasel.Element | null = element
+    while (current) {
+      if (current === root) return true
+      current = composedParentOf(current)
+    }
+    return false
+  }
   const detachCompositor = compositorRoot
     ? attachEventCompositor({
         root: compositorRoot,
+        isOwnedTarget,
         onTouch: (touch, target) => {
           // Mouse input is projected into the same touch sequence a phone
           // produces, so hover/touchtrack/template `bindtouch*` stay single-path.
