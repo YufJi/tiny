@@ -1,4 +1,4 @@
-import {compareVersion} from '../../../../util/util'
+import { compareVersion } from '../../../../util/util'
 
 // WebGL
 const vs = `
@@ -41,6 +41,14 @@ Page({
     canIUse: true,
   },
   onReady() {
+    // 解决基础库小于 2.7.0 的兼容问题
+    const { SDKVersion } = wx.getSystemInfoSync()
+    if (compareVersion(SDKVersion, '2.7.0') < 0) {
+      console.log('123')
+      this.setData({
+        canIUse: false,
+      })
+    } else {
     // WebGL
       wx.createSelectorQuery()
         .select('#canvasWebGL')
@@ -49,6 +57,7 @@ Page({
           const canvas = res[0].node
           this.renderWebGL(canvas)
         })
+    }
   },
 
   renderWebGL(canvas) {
@@ -120,12 +129,12 @@ Page({
   },
   onLoad() {
     this.setData({
-      theme: wx.getSystemInfoSync().theme || 'light'
+      theme: getApp().globalData.theme || 'light'
     })
 
     if (wx.onThemeChange) {
-      wx.onThemeChange(({theme}) => {
-        this.setData({theme})
+      wx.onThemeChange(({ theme }) => {
+        this.setData({ theme })
       })
     }
   }

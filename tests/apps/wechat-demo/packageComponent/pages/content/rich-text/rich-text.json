@@ -1,3 +1,6 @@
 {
-  "navigationBarTitleText": "rich-text"
+  "navigationBarTitleText": "rich-text",
+  "componentFramework": "glass-easel",
+  "renderer": "skyline",
+  "navigationStyle": "custom"
 }

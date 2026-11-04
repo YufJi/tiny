@@ -1,0 +1,45 @@
+<view class="page" data-weui-theme="{{theme}}">
+    <mp-navigation-bar title="小程序扩展能力展示" back="{{false}}" />
+    <scroll-view type="list" scroll-y class="page-height">
+        <view class="page__hd">
+            <view class="page__desc">以下是对小程序内置组件能力的补充，包括 WeUI 组件库和一些常见的功能组件</view>
+        </view>
+        <view class="page__bd page__bd_spacing">
+            <view class="kind-list" role="menubar">
+                <block wx:for="{{list}}" wx:key="id">
+                    <view class="kind-list__item">
+                        <view
+                            id="{{item.id}}"
+                            class="weui-flex kind-list__item-hd {{item.open ? 'kind-list__item-hd_show' : ''}}"
+                            bind:tap="kindToggle"
+                            aria-role="button"
+                            aria-haspopup
+                            aria-expanded="{{item.open}}"
+                        >
+                            <view class="weui-flex__item">{{item.name}}</view>
+                            <image class="kind-list__img" src="images/icon_nav_{{item.id}}.png"></image>
+                        </view>
+                        <view
+                            class="kind-list__item-bd {{item.open ? 'kind-list__item-bd_show' : ''}}"
+                            aria-role="menu"
+                            aria-hidden="{{!item.open}}"
+                        >
+                            <view class="weui-cells {{item.open ? 'weui-cells_show' : ''}}" tabindex="0">
+                                <block wx:for="{{item.pages}}" wx:for-item="page" wx:key="*this">
+                                    <view aria-role="menuitem" bind:tap="openPage" data-url="{{page.url}}" data-father="{{item.father}}" data-page="{{page}}">
+                                        <mp-cell link aria-role="link">{{page.zh || page}}</mp-cell>
+                                    </view>
+                                </block>
+                            </view>
+                        </view>
+                    </view>
+                </block>
+            </view>
+        </view>
+        <view class="page__ft">
+            <view class="ft-img-cnt" bind:tap="themeToggle">
+                <image src="images/icon_footer.png" style="width: 84px; height: 19px;"></image>
+            </view>
+        </view>
+    </scroll-view>
+</view>

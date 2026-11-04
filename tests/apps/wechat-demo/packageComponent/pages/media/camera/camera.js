@@ -111,13 +111,10 @@ function createRenderer(canvas, width, height) {
 
   return (arrayBuffer, width, height) => {
     gl.bindTexture(gl.TEXTURE_2D, texture)
-    gl.texImage2D(
-      gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, arrayBuffer
-    )
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, arrayBuffer)
     gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0)
   }
 }
-
 
 Page({
   onShareAppMessage() {
@@ -220,6 +217,8 @@ Page({
         selector.select('#webgl')
           .node(this.init)
           .exec()
+      } else if (this.listener) {
+        this.listener.stop()
       }
     })
   },
@@ -230,12 +229,12 @@ Page({
   },
   onLoad() {
     this.setData({
-      theme: wx.getSystemInfoSync().theme || 'light'
+      theme: getApp().globalData.theme || 'light'
     })
 
     if (wx.onThemeChange) {
-      wx.onThemeChange(({theme}) => {
-        this.setData({theme})
+      wx.onThemeChange(({ theme }) => {
+        this.setData({ theme })
       })
     }
   }

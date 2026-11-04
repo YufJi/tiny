@@ -1,4 +1,3 @@
-
 Page({
   onShareAppMessage() {
     return {
@@ -13,18 +12,32 @@ Page({
   },
   onLoad() {
     this.setData({
-      theme: wx.getSystemInfoSync().theme || 'light'
+      theme: getApp().globalData.theme || 'light'
     })
 
     if (wx.onThemeChange) {
-      wx.onThemeChange(({theme}) => {
-        this.setData({theme})
+      wx.onThemeChange(({ theme }) => {
+        this.setData({ theme })
       })
     }
+    wx.cloud.getTempFileURL({
+      fileList: [{
+        fileID: 'cloud://release-b86096.7265-release-b86096-1258211818/开发者社区.webp',
+        maxAge: 60 * 60,
+      }]
+    }).then(res => {
+      console.log(res)
+      this.setData({
+        webpImageUrl: res.fileList[0].tempFileURL
+      })
+      return res
+    }).catch(error => {
+      console.log('CLOUD：image 临时链接获取失败', error)
+    })
   },
   data: {
     theme: 'light',
     imageUrl: 'cloud://release-b86096.7265-release-b86096-1258211818/demo.jpg',
-    webpImageUrl: 'https://res.wx.qq.com/wxdoc/dist/assets/img/0.4cb08bb4.jpg',
+    webpImageURL: '',
   }
 })

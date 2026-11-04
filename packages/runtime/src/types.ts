@@ -70,6 +70,11 @@ export type SystemInfoSnapshot = {
   language?: string
   platform?: string
   SDKVersion?: string
+  /** Host-reported device identity, forwarded to `wx.getSystemInfo` as-is. */
+  system?: string
+  model?: string
+  brand?: string
+  statusBarHeight?: number
 }
 
 /** One DOM node resolved by a component/page selector query. */

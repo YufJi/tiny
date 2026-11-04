@@ -19,7 +19,7 @@
             <view class="navigator-box {{item.open ? 'navigator-box-show' : ''}}">
               <block wx:for="{{item.pages}}" wx:for-item="page" wx:key="*item">
                 <view wx:if="{{page.url !== '@set-tab-bar'}}">
-                  <view bindtap="navigateTo" data-url="../../packageAPI/pages/{{item.id}}/{{page.url}}" class="navigator {{index + 1 === item.pages.length ? '' : 'navigator-bottom-line'}}">{{page.zh}}</view>
+                  <navigator url="../../packageAPI/pages/{{item.id}}/{{page.url}}" class="navigator {{index + 1 === item.pages.length ? '' : 'navigator-bottom-line'}}">{{page.zh}}</navigator>
                   <view class="navigator-arrow"></view>
                 </view>
                 <view wx:else bindtap="enterSetTabBarPage">

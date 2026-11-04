@@ -1,3 +1,7 @@
 {
-  "navigationBarTitleText": "checkbox"
+    "navigationBarTitleText": "checkbox",
+    "componentFramework": "glass-easel",
+    "renderer": "skyline",
+    "disableScroll": true,
+    "navigationStyle": "custom"
 }

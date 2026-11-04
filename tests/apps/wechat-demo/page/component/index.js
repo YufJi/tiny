@@ -1,6 +1,50 @@
 Page({
+  onLoad() {
+    console.log('renderer', this.renderer)
+
+    this.setData({
+      theme: wx.getSystemInfoSync().theme || 'light'
+    })
+
+    if (wx.onThemeChange) {
+      wx.onThemeChange(({ theme }) => {
+        this.setData({ theme })
+      })
+    }
+  },
   onShow() {
+    // 仅在 app-bar demo 页面展示
+    if (typeof this.getAppBar === 'function') {
+      const appBarComp = this.getAppBar()
+      // component.getAppBar 在 Skyline 中返回 appBar 组件实例，在 webview 中返回 null
+      if (appBarComp !== null) {
+        appBarComp.setData({
+          showAppbar: false
+        })
+      }
+    }
+
     wx.reportAnalytics('enter_home_programmatically', {})
+
+    if (wx.canIUse('getExptInfoSync')) {
+      console.log('getExptInfoSync expt_args_1', wx.getExptInfoSync(['expt_args_1']))
+      console.log('getExptInfoSync expt_args_2', wx.getExptInfoSync(['expt_args_2']))
+      console.log('getExptInfoSync expt_args_3', wx.getExptInfoSync(['expt_args_3']))
+    }
+    if (wx.canIUse('reportEvent')) {
+      wx.reportEvent('expt_event_1', { expt_data: 1 })
+      wx.reportEvent('expt_event_2', { expt_data: 5 })
+      wx.reportEvent('expt_event_3', { expt_data: 9 })
+      wx.reportEvent('expt_event_4', { expt_data: 200 })
+
+      wx.reportEvent('weexpt_event_key_1', { option_1: 1, option_2: 10, option_str_1: 'abc' })
+      wx.reportEvent('weexpt_event_key_1', { option_1: 'abc', option_2: '1000', option_str_1: '1' })
+    }
+  },
+  onUnload() {
+    if (wx.offThemeChange) {
+      wx.offThemeChange()
+    }
   },
   onShareAppMessage() {
     return {
@@ -18,12 +62,12 @@ Page({
         id: 'view',
         name: '视图容器',
         open: false,
-        pages: ['view', 'scroll-view', 'swiper', 'movable-view', 'cover-view']
+        pages: ['view', 'swiper', 'scroll-view', 'root-portal', 'page-container', 'match-media', 'movable-view', 'cover-view', 'grid-view', 'sticky']
       }, {
         id: 'content',
         name: '基础内容',
         open: false,
-        pages: ['text', 'icon', 'progress', 'rich-text']
+        pages: ['text', 'icon', 'progress', 'rich-text', 'selection']
       }, {
         id: 'form',
         name: '表单组件',
@@ -38,12 +82,12 @@ Page({
         id: 'media',
         name: '媒体组件',
         open: false,
-        pages: ['image', 'video', 'camera', 'live-pusher', 'live-player']
+        pages: ['image', 'video', 'camera', 'live-pusher', 'live-player', 'channel-live', 'channel-video']
       }, {
         id: 'map',
         name: '地图',
         open: false,
-        pages: ['map', { appid: 'wxe3f314db2e921db0', name: '腾讯位置服务示例中心'}]
+        pages: ['map', { appid: 'wxe3f314db2e921db0', name: '腾讯位置服务示例中心' }]
       }, {
         id: 'canvas',
         name: '画布',
@@ -60,50 +104,8 @@ Page({
         open: false,
         pages: ['aria-component']
       }
-      // 迁移到交互动画tab（第二个）
-      // , {
-      //   id: 'Skyline',
-      //   name: 'Skyline 渲染引擎',
-      //   open: false,
-      //   pages: [
-      //     { url: 'worklet/animation/index', name: 'worklet 动画'},
-      //     { url: 'worklet/gesture/index', name: '手势系统'},
-      //     { url: 'share-element/list/index', name: '共享元素动画'},
-      //     { url: 'worklet/bottom-sheet/index', name: '手势协商'},
-      //     { key: 'custom-route', url: 'half-page/scale-page/index', name: '自定义路由' },
-      //     { url: 'address-book/index', name: '类通讯录'},
-      //     { url: 'half-screen/index', name: '半屏'},
-      //     { url: 'tabs/index', name: 'tabs'},
-      //     { key: 'custom-route', url: 'album/index', name: '相册'},
-      //     { key: 'custom-route', url: 'custom-route/index', name: '星巴克自定义路由'},
-      //   ]
-      // }, {
-      //   id: 'XRFrame',
-      //   name: 'XRFrame 高性能XR解决方案',
-      //   open: false,
-      //   pages: [
-      //     { url: 'pages/index/index', name: '总览'}
-      //   ]
-      // }
     ],
     theme: 'light'
-  },
-
-  onUnload() {
-    if (wx.offThemeChange) {
-      wx.offThemeChange()
-    }
-  },
-  onLoad() {
-    this.setData({
-      theme: wx.getSystemInfoSync().theme || 'light'
-    })
-
-    if (wx.onThemeChange) {
-      wx.onThemeChange(({theme}) => {
-        this.setData({theme})
-      })
-    }
   },
 
   kindToggle(e) {
@@ -127,8 +129,12 @@ Page({
       url: '/packageComponent/pages/doc-web-view/doc-web-view',
     })
   },
-  navigateTo(e) {
-    const url = e.currentTarget.dataset.url
-    if (url) wx.navigateTo({ url })
+  // 打开自定义路由页面
+  goToCustomRoute: function goToCustomRoute(evt) {
+    const { url } = evt.currentTarget.dataset
+    wx.navigateTo({
+      routeType: 'ScaleTransition',
+      url: `/packageSkyline/pages/${url}`
+    })
   },
 })

@@ -17,6 +17,12 @@ const wasmHost = new TestBrowserHost({
     pixelRatio: window.devicePixelRatio,
     windowWidth: window.innerWidth,
     windowHeight: window.innerHeight,
+    // WeChat always reports these; WeUI components read `system` directly.
+    system: 'iOS 16.0',
+    model: 'iPhone 13',
+    brand: 'devtools',
+    platform: 'devtools',
+    statusBarHeight: 20,
   },
 }, async (config) => {
   const core = new WasmHostCore(config)

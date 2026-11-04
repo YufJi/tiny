@@ -1254,20 +1254,20 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
       await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
       const render = await activeRender()
       await render.waitForFunction(
-        () => document.querySelectorAll('tiny-switch').length >= 2,
+        () => document.querySelectorAll('tiny-radio').length >= 2,
         null,
         { timeout: STEP_TIMEOUT },
       )
-      const autoplay = render.locator('tiny-switch').nth(1)
+      const autoplay = render.locator('tiny-radio').nth(1)
       assert.equal(
-        await autoplay.locator('[class*="tiny-switch-input-checked"]').count(),
+        await autoplay.locator('[class*="tiny-radio-input-checked"]').count(),
         0,
-        'autoplay switch should start unchecked',
+        'autoplay radio should start unchecked',
       )
       await autoplay.click()
       await render.waitForFunction(
-        () => document.querySelectorAll('tiny-switch')[1]
-          ?.querySelector('[class*="tiny-switch-input-checked"]') != null,
+        () => document.querySelectorAll('tiny-radio')[1]
+          ?.querySelector('[class*="tiny-radio-input-checked"]') != null,
         null,
         { timeout: STEP_TIMEOUT },
       )
