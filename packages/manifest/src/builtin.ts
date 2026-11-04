@@ -43,8 +43,6 @@ export const BUILTIN_COMPONENT_TAGS = [
   'canvas',
   'textarea',
   'keyboard-accessory',
-  'editor',
-  'editor-portal',
   'form',
   'picker',
   'picker-view',

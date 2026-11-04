@@ -52,8 +52,6 @@ import { defineMatchMedia } from './components/match-media'
 import { defineCanvas } from './components/canvas'
 import { defineTextarea } from './components/textarea'
 import { defineKeyboardAccessory } from './components/keyboard-accessory'
-import { defineEditor } from './components/editor'
-import { defineEditorPortal } from './components/editor-portal'
 import { defineForm } from './components/form'
 import { definePicker } from './components/picker'
 import { definePickerView } from './components/picker-view'
@@ -125,8 +123,6 @@ const DEFINITION_FACTORIES: Record<BuiltinComponentTag, DefinitionFactory> = {
   canvas: defineCanvas,
   textarea: defineTextarea,
   'keyboard-accessory': defineKeyboardAccessory,
-  editor: defineEditor,
-  'editor-portal': defineEditorPortal,
   form: defineForm,
   picker: definePicker,
   'picker-view': definePickerView,

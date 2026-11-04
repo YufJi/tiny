@@ -4,7 +4,7 @@
 >
 > 对照实现：[hosts/web-components/src/components](../hosts/web-components/src/components)
 >
-> 范围：当前已接入的 59 个内置标签；剩余 0 个标签不在本文逐项展开，缺口清单和占位目录见 [builtin-inventory-2.33.0.md](./builtin-inventory-2.33.0.md)。
+> 范围：当前已接入的 57 个内置标签；剩余 0 个标签不在本文逐项展开，缺口清单和占位目录见 [builtin-inventory-2.33.0.md](./builtin-inventory-2.33.0.md)。
 >
 > 历史差异审计、逐组件参考结构和修复方案已归档到 [component-reference-history.md](./archive/component-reference-history.md)。
 >

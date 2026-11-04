@@ -13,10 +13,12 @@ describe('batch 5 open-capability built-ins', () => {
     }
   })
 
-  test('all 59 real tags are registered', () => {
-    expect(BUILTIN_COMPONENT_TAGS).toHaveLength(59)
+  test('all 57 real tags are registered', () => {
+    expect(BUILTIN_COMPONENT_TAGS).toHaveLength(57)
     expect(BUILTIN_COMPONENT_TAGS).not.toContain('aria-component')
     expect(BUILTIN_COMPONENT_TAGS).not.toContain('selection')
+    expect(BUILTIN_COMPONENT_TAGS).not.toContain('editor')
+    expect(BUILTIN_COMPONENT_TAGS).not.toContain('editor-portal')
     expect(BUILTIN_COMPONENT_TAGS).toContain('grid-view')
   })
 

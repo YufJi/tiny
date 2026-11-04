@@ -112,7 +112,7 @@
 | --- | ---: | ---: | --- |
 | 视图容器 | 11 | 4 | movable-area、movable-view、cover-view、cover-image、match-media、page-container、root-portal |
 | 基础内容 | 4 | 4 | — |
-| 表单 | 17 | 14 | editor、editor-portal、keyboard-accessory |
+| 表单 | 15 | 14 | keyboard-accessory |
 | 导航 | 2 | 1 | functional-page-navigator |
 | 媒体 | 9 | 1 | audio、video、camera、live-player、live-pusher、voip-room、channel-live、channel-video |
 | 地图 | 1 | 0 | map |
@@ -615,15 +615,15 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 
 ---
 
-## 附录 B：WebView 组件清单（60）
+## 附录 B：WebView 组件清单（58）
 
-> 组件清单已更新到 **59/59 个标签**（2026-11-04：参考切换到 2.33.0，新增 grid-view；selection 不属于该版本；媒体/开放能力为浏览器近似或宿主 stub；`aria-component` 是文档页不是标签）；第 3 节的评分快照尚未重算。
+> 组件清单已更新到 **57/57 个标签**（2026-11-04：参考切换到 2.33.0，新增 grid-view；selection 不属于该版本；editor/editor-portal 暂不支持；媒体/开放能力为浏览器近似或宿主 stub；`aria-component` 是文档页不是标签）；第 3 节的评分快照尚未重算。
 
 | 分类 | 组件（✅ 已实现 / ❌ 未实现） |
 | --- | --- |
 | 视图容器（12） | ✅ view、grid-view、scroll-view、swiper、swiper-item、cover-view、cover-image、match-media、page-container、root-portal、movable-area、movable-view |
 | 基础内容（4） | ✅ icon、text、progress、rich-text |
-| 表单（17） | ✅ button、checkbox、checkbox-group、radio、radio-group、slider、switch、input、label、picker、picker-view、picker-view-column、form、textarea、keyboard-accessory、editor、editor-portal |
+| 表单（15） | ✅ button、checkbox、checkbox-group、radio、radio-group、slider、switch、input、label、picker、picker-view、picker-view-column、form、textarea、keyboard-accessory |
 | 导航（2） | ✅ navigator、functional-page-navigator |
 | 媒体（9） | ✅ image、video、audio、camera、live-player、live-pusher、voip-room、channel-live、channel-video（均为浏览器近似） |
 | 地图（1） | ✅ map |
