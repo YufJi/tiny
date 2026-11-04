@@ -5,6 +5,9 @@ type EditorRuntime = {
   _inputListener?: () => void
   _focusListener?: () => void
   _blurListener?: () => void
+  _selectionListener?: () => void
+  _tapListener?: () => void
+  _lastFormats?: Record<string, unknown>
   getShadowRoot?: () => {
     getElementById?: (id: string) => {
       getBackendElement?: () => HTMLElement | null
@@ -76,6 +79,31 @@ function buildDelta(editor: HTMLElement): { ops: DeltaOp[] } {
   return { ops }
 }
 
+function activeFormats(node: Node | null): Record<string, unknown> {
+  const formats: Record<string, unknown> = {}
+  let current: Node | null = node?.nodeType === 3 ? node.parentNode : node
+  while (current && current.nodeType === 1) {
+    const element = current as HTMLElement
+    const tag = element.tagName.toLowerCase()
+    if (tag === 'strong' || tag === 'b') formats.bold = true
+    if (tag === 'em' || tag === 'i') formats.italic = true
+    if (tag === 'u') formats.underline = true
+    if (tag === 's' || tag === 'del') formats.strike = true
+    if (tag === 'code') formats.code = true
+    if (tag === 'a') {
+      const href = element.getAttribute('href')
+      if (href) formats.link = href
+    }
+    const align = element.getAttribute('align') ?? element.style?.textAlign
+    if (align) formats.align = align
+    const listParent = element.closest('ol, ul')
+    if (listParent) formats.list = listParent.tagName.toLowerCase() === 'ol' ? 'ordered' : 'bullet'
+    if (/^h[1-6]$/.test(tag)) formats.header = Number(tag.slice(1))
+    current = element.parentElement
+  }
+  return formats
+}
+
 /**
  * Mirrors the first version of `wx-editor`: a contenteditable rich-text host
  * with the documented attributes and `ready`/`focus`/`blur`/`input` events.
@@ -85,7 +113,11 @@ export function defineEditor(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: builtinDefinitionName('editor'),
     template: ctx.template('editor'),
-    behaviors: [ctx.behaviors.base],
+    behaviors: [
+      ctx.behaviors.base,
+      ctx.behaviors.quillCore,
+      ctx.behaviors.htmlParse,
+    ],
     properties: {
       readOnly: { type: Boolean, value: false, observer: 'readOnlyChanged' },
       placeholder: { type: String, value: '', observer: 'placeholderChanged' },
@@ -123,9 +155,19 @@ export function defineEditor(ctx: BuiltinContext): BuiltinDefinition {
           ;(this as unknown as { notifyChange: (name: string) => void })
             .notifyChange('blur')
         }
+        runtime._selectionListener = () => {
+          ;(this as unknown as { updateStatus: () => void }).updateStatus()
+        }
+        runtime._tapListener = () => {
+          this.triggerEvent('tap', {})
+        }
         editor.addEventListener('input', runtime._inputListener)
         editor.addEventListener('focus', runtime._focusListener)
         editor.addEventListener('blur', runtime._blurListener)
+        editor.addEventListener('click', runtime._tapListener)
+        if (typeof document !== 'undefined') {
+          document.addEventListener('selectionchange', runtime._selectionListener)
+        }
         this.triggerEvent('ready', {})
       },
       detached() {
@@ -137,6 +179,12 @@ export function defineEditor(ctx: BuiltinContext): BuiltinDefinition {
         if (runtime._inputListener) editor.removeEventListener('input', runtime._inputListener)
         if (runtime._focusListener) editor.removeEventListener('focus', runtime._focusListener)
         if (runtime._blurListener) editor.removeEventListener('blur', runtime._blurListener)
+        if (runtime._tapListener) editor.removeEventListener('click', runtime._tapListener)
+        if (runtime._selectionListener && typeof document !== 'undefined') {
+          document.removeEventListener('selectionchange', runtime._selectionListener)
+        }
+        runtime._selectionListener = undefined
+        runtime._tapListener = undefined
       },
     },
     methods: {
@@ -178,7 +226,22 @@ export function defineEditor(ctx: BuiltinContext): BuiltinDefinition {
         }
       },
       notifyChange(name: string) {
+        if (name === 'input') {
+          ;(this as unknown as { updateStatus: () => void }).updateStatus()
+        }
         this.triggerEvent(name, (this as unknown as { detail: () => unknown }).detail())
+      },
+      updateStatus() {
+        const editor = (this as unknown as { editorElement: () => HTMLElement | null })
+          .editorElement()
+        if (!editor || typeof document === 'undefined') return
+        const selection = document.getSelection()
+        if (!selection?.anchorNode || !editor.contains(selection.anchorNode)) return
+        const runtime = this as unknown as EditorRuntime
+        const formats = activeFormats(selection.anchorNode)
+        if (JSON.stringify(formats) === JSON.stringify(runtime._lastFormats ?? {})) return
+        runtime._lastFormats = formats
+        this.triggerEvent('statuschange', formats)
       },
     },
   }).general()

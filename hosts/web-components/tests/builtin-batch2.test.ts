@@ -46,6 +46,8 @@ describe('batch 2 built-ins', () => {
     expect(BUILTIN_BEHAVIOR_IDS.nativeCover).toBe('tiny-native-cover')
     expect(BUILTIN_BEHAVIOR_IDS.nativeHover).toBe('tiny-native-hover')
     expect(BUILTIN_BEHAVIOR_IDS.htmlParse).toBe('tiny-html-parse')
+    expect(BUILTIN_BEHAVIOR_IDS).not.toHaveProperty('cloud')
+    expect(BUILTIN_BEHAVIOR_IDS.quillCore).toBe('tiny-quill-core')
   })
 
   test('movable and keyboard tags expose their default boxes', () => {

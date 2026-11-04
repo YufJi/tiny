@@ -12,6 +12,7 @@ export const BUILTIN_BEHAVIOR_IDS = Object.freeze({
   nativeCover: `${TINY_ENGINE_NAMING.behaviorPrefix}native-cover`,
   nativeHover: `${TINY_ENGINE_NAMING.behaviorPrefix}native-hover`,
   htmlParse: `${TINY_ENGINE_NAMING.behaviorPrefix}html-parse`,
+  quillCore: `${TINY_ENGINE_NAMING.behaviorPrefix}quill-core`,
   scroller: `${TINY_ENGINE_NAMING.behaviorPrefix}scroller`,
   sizeNormalizer: `${TINY_ENGINE_NAMING.behaviorPrefix}size-normalizer`,
   classPrefix: `${TINY_ENGINE_NAMING.behaviorPrefix}class-prefix`,

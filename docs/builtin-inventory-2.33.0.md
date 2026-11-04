@@ -9,11 +9,11 @@
 | 维度 | 参考总数 | 已实现 | 缺口 | 缺口分布 |
 | --- | ---: | ---: | ---: | --- |
 | 内置组件 | 60 项（59 标签 + 1 文档页） | 59 | **0** | 全部 59 个真实标签已注册（含 2.33.0 新增的 grid-view）；10 个开放能力是宿主 stub/诊断；`aria-component` 是文档页，不是标签 |
-| 内置 behaviors | 42 | 27 | **13** | 全部是宿主 `@tiny/host-web-components` 的 behavior；7 个 runtime `wx://` behavior 已实现；2 个按基线不做 |
+| 内置 behaviors | 42 | 28 | **11** | 全部是宿主 `@tiny/host-web-components` 的 behavior；7 个 runtime `wx://` behavior 已实现；3 个按基线不做 |
 
 - 组件缺口已清零：DOM/CSS、原生/媒体、开放能力标签都已落地；媒体/开放能力是浏览器近似或宿主 stub。
-- behaviors 缺口按类别：共享/DOM 5 个、媒体/原生 6 个、宿主平台 2 个。`wx://request-filter` / `wx://request-sender` 按基线不做，声明时回落到 `UNSUPPORTED_BEHAVIOR`。
-- 组件占位目录已全部删除；13 个缺失宿主 behavior 占位保留，每个目录只有 `PLACEHOLDER.md`。含该标记的组件目录会被 `build-templates.mjs` / `build-styles.mjs` 跳过，不会被注册成空壳组件。
+- behaviors 缺口按类别：共享/DOM 4 个、媒体/原生 6 个、宿主平台 1 个。`wx://request-filter` / `wx://request-sender` 按基线不做，声明时回落到 `UNSUPPORTED_BEHAVIOR`。
+- 组件占位目录已全部删除；11 个缺失宿主 behavior 占位保留，每个目录只有 `PLACEHOLDER.md`。含该标记的组件目录会被 `build-templates.mjs` / `build-styles.mjs` 跳过，不会被注册成空壳组件。
 - 7 个 runtime `wx://` 内置 behavior 已在 [packages/runtime/src/component/behaviors](../packages/runtime/src/component/behaviors/index.ts:1) 实现，**不在内核里放占位**。
 
 ## 2. 口径
@@ -30,9 +30,9 @@
 ### 2.2 behaviors
 
 - 从 2.33.0 的 `registerBehavior({ is: "..." })` 提取到 **42** 个内置 behavior。
-- **已实现 27** = `src/behaviors` 的 20 个宿主 behavior + `packages/runtime/src/component/behaviors` 的 7 个 `wx://` behavior。
-- **明确不做 2** = `wx://request-filter` / `wx://request-sender`；它们只服务微信原生媒体 URL 过滤，Tiny 不模拟该管线。
-- **缺口 13** = 全部是宿主 behavior；未识别的 `wx://` behavior（包括上面两个）仍会发 `UNSUPPORTED_BEHAVIOR` 诊断。
+- **已实现 28** = `src/behaviors` 的 21 个宿主 behavior + `packages/runtime/src/component/behaviors` 的 7 个 `wx://` behavior。
+- **明确不做 3** = `wx://request-filter` / `wx://request-sender` / `wx-cloud`；前两者只服务微信原生媒体 URL 过滤，`wx-cloud` 依赖微信云开发，Tiny 不模拟这些管线。
+- **缺口 11** = 全部是宿主 behavior；未识别的 `wx://` behavior（包括上面两个）仍会发 `UNSUPPORTED_BEHAVIOR` 诊断。`wx-cloud` 按基线不做，不会出现在缺口里。
 
 ## 3. 组件缺口（0）
 
@@ -82,7 +82,6 @@
 | 参考 behavior | 类别 | 参考使用方 |
 | --- | --- | --- |
 | [`wx-autofill-provider`](../hosts/web-components/src/behaviors/pending/autofill-provider/PLACEHOLDER.md) | 共享/DOM | form |
-| [`wx-cloud`](../hosts/web-components/src/behaviors/pending/cloud/PLACEHOLDER.md) | 宿主平台 | cover-image, editor, image, live-player, map, video |
 | [`wx-image-route`](../hosts/web-components/src/behaviors/pending/image-route/PLACEHOLDER.md) | 共享/DOM | map |
 | [`wx-keyboard-accessory-host`](../hosts/web-components/src/behaviors/pending/keyboard-accessory-host/PLACEHOLDER.md) | 共享/DOM | input, textarea |
 | [`wx-mask-behavior`](../hosts/web-components/src/behaviors/pending/mask-behavior/PLACEHOLDER.md) | 共享/DOM | toast, action-sheet, modal |
@@ -90,7 +89,6 @@
 | [`wx-native-cover`](../hosts/web-components/src/behaviors/pending/native-cover/PLACEHOLDER.md) | 共享/DOM | cover-view, cover-image |
 | [`wx-native-hover`](../hosts/web-components/src/behaviors/pending/native-hover/PLACEHOLDER.md) | 共享/DOM | cover-view |
 | [`wx-player`](../hosts/web-components/src/behaviors/pending/player/PLACEHOLDER.md) | 媒体/原生 | audio, live-player, video |
-| [`wx-quill-core`](../hosts/web-components/src/behaviors/pending/quill-core/PLACEHOLDER.md) | 共享/DOM | editor |
 | [`wx-request`](../hosts/web-components/src/behaviors/pending/request/PLACEHOLDER.md) | 宿主平台 | ad, ad-custom, official-account, video |
 | [`wx-video-ad`](../hosts/web-components/src/behaviors/pending/video-ad/PLACEHOLDER.md) | 媒体/原生 | video-ad, video |
 | [`wx-video-android`](../hosts/web-components/src/behaviors/pending/video-android/PLACEHOLDER.md) | 媒体/原生 | video |
@@ -127,7 +125,7 @@
 
 ```text
 hosts/web-components/src/components/<tag>/PLACEHOLDER.md          # 组件占位已全部删除（0）
-hosts/web-components/src/behaviors/pending/<name>/PLACEHOLDER.md  # 13 个宿主 behavior 占位
+hosts/web-components/src/behaviors/pending/<name>/PLACEHOLDER.md  # 11 个宿主 behavior 占位
 ```
 
 7 个 runtime/插件 behavior 已落成 `packages/runtime/src/component/behaviors/` 下的独立模块；`wx://request-filter` / `wx://request-sender` 按基线不做。

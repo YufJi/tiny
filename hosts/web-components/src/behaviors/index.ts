@@ -11,6 +11,7 @@ import { createNativeBehavior } from './native'
 import { createNativeCoverBehavior } from './nativeCover'
 import { createNativeHoverBehavior } from './nativeHover'
 import { createPositioningContainerBehavior } from './positioningContainer'
+import { createQuillCoreBehavior } from './quillCore'
 import { createPositioningTargetBehavior } from './positioningTarget'
 import { createItemBehavior } from './item'
 import { createLabelAriaBehavior } from './labelAria'
@@ -65,6 +66,7 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
     nativeCover: createNativeCoverBehavior(space),
     nativeHover: createNativeHoverBehavior(space),
     htmlParse: createHtmlParseBehavior(space),
+    quillCore: createQuillCoreBehavior(space),
     scroller: createScrollerBehavior(space),
   }
 }
