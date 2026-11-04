@@ -11,6 +11,8 @@ type PickerResult =
 type PickerRuntime = {
   __pickerShow?: boolean
   __multi_picker_watching?: boolean
+  __pickerSession?: string
+  __pickerPoll?: ReturnType<typeof setTimeout>
   __formCallback?: (value: unknown) => void
   _defaultDateValue?: string
   _groupID?: number | null
@@ -22,6 +24,8 @@ type PickerRuntime = {
  * is a host call (WeChat uses WeixinJSBridge showPickerView/showDatePickerView),
  * and the host resolves the selected value.
  */
+let pickerSessionSeed = 0
+
 export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: builtinDefinitionName('picker'),
@@ -61,6 +65,9 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
         }
       },
       detached() {
+        const runtime = this as unknown as PickerRuntime
+        if (runtime.__pickerPoll) clearTimeout(runtime.__pickerPoll)
+        runtime.__pickerPoll = undefined
         unbindHostListeners(this)
       },
     },
@@ -87,12 +94,37 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
         }
         runtime.__pickerShow = true
         const mode = String(this.data.mode || 'selector')
+        const sessionId = String(++pickerSessionSeed)
+        runtime.__pickerSession = sessionId
         if (mode === 'multiSelector') runtime.__multi_picker_watching = true
         const current = mode === 'date' && !this.data.value
           ? runtime._defaultDateValue ?? this.data.value
           : this.data.value
+        const stopPolling = () => {
+          if (runtime.__pickerPoll) clearTimeout(runtime.__pickerPoll)
+          runtime.__pickerPoll = undefined
+        }
+        const pollColumns = () => {
+          if (!runtime.__pickerShow || !runtime.__multi_picker_watching) return
+          hostRequest('pollPicker', { sessionId }).then((raw) => {
+            if (!runtime.__pickerShow) return
+            const events = (raw as { events?: Array<{ column?: number; value?: number }> } | null)?.events ?? []
+            for (const event of events) {
+              if (typeof event.column !== 'number' || typeof event.value !== 'number') continue
+              const next = Array.isArray(this.data.value) ? [...this.data.value] : []
+              next[event.column] = event.value
+              this.setData({ value: next })
+              this.triggerEvent('columnchange', { column: event.column, value: event.value })
+            }
+            runtime.__pickerPoll = setTimeout(pollColumns, 40)
+          }, () => {
+            if (runtime.__pickerShow) runtime.__pickerPoll = setTimeout(pollColumns, 200)
+          })
+        }
+        if (mode === 'multiSelector') runtime.__pickerPoll = setTimeout(pollColumns, 0)
         const result = hostRequest('showPicker', {
           mode,
+          sessionId,
           range: Array.isArray(this.data.range) ? this.data.range : [],
           rangeKey: String(this.data.rangeKey ?? ''),
           value: current,
@@ -105,6 +137,7 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
           style: this.wrapperStyle(),
         }).then((raw) => {
           const value = raw as PickerResult
+          stopPolling()
           runtime.__pickerShow = false
           if (value.status === 'ok') {
             this.setData({ value: value.value })
@@ -116,6 +149,7 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
           }
           this.formGetDataCallback()
         }, (error: unknown) => {
+          stopPolling()
           runtime.__pickerShow = false
           this.triggerEvent('error', {
             errMsg: error instanceof Error ? error.message : String(error ?? 'showPickerView:fail'),
@@ -134,6 +168,55 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
         }
         callback(this.data.value)
         return undefined
+      },
+      autofillGetValue(): unknown {
+        const mode = String(this.data.mode || 'selector')
+        const value = this.data.value
+        if (mode === 'region') return Array.isArray(value) ? value : []
+        if (mode === 'selector') {
+          const range = Array.isArray(this.data.range) ? this.data.range : []
+          const index = Number(value)
+          const item = Number.isInteger(index) ? range[index] : undefined
+          if (this.data.rangeKey && item && typeof item === 'object') {
+            return (item as Record<string, unknown>)[String(this.data.rangeKey)]
+          }
+          return item
+        }
+        return value
+      },
+      autofillSetValue(value: unknown): void {
+        const mode = String(this.data.mode || 'selector')
+        let next: unknown
+        if (mode === 'date') {
+          if (Array.isArray(value)) {
+            const [year, month, day] = value
+            if (!year) return
+            next = [year, month && String(month).padStart(2, '0'), day && String(day).padStart(2, '0')]
+              .filter((part) => part !== '' && part !== undefined)
+              .join('-')
+          } else if (typeof value === 'string') {
+            next = value
+          }
+        } else if (mode === 'time') {
+          if (typeof value === 'string') next = value
+        } else if (mode === 'selector') {
+          const range = Array.isArray(this.data.range) ? this.data.range : []
+          for (let index = 0; index < range.length; index += 1) {
+            const item = range[index]
+            const matches = this.data.rangeKey && item && typeof item === 'object'
+              ? (item as Record<string, unknown>)[String(this.data.rangeKey)] === value
+              : item === value
+            if (matches) {
+              next = index
+              break
+            }
+          }
+        } else if (mode === 'region' && Array.isArray(value)) {
+          next = value
+        }
+        if (next === undefined) return
+        this.setData({ value: next })
+        this.triggerEvent('change', { value: next })
       },
       formGetDataCallback() {
         const runtime = this as unknown as PickerRuntime

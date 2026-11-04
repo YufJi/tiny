@@ -1,5 +1,6 @@
 export type HostPickerRequest = {
   mode: string
+  sessionId?: string
   range: unknown[]
   rangeKey?: string
   value: unknown
@@ -17,8 +18,11 @@ export type HostPickerResult =
   | { status: 'cancel' }
   | { status: 'error'; errMsg: string }
 
+type PickerColumnEvent = { column: number; value: number }
+
 type ActivePicker = {
   update: (request: Partial<HostPickerRequest>) => void
+  poll: (sessionId: string) => PickerColumnEvent[]
 }
 
 let activePicker: ActivePicker | null = null
@@ -26,6 +30,11 @@ let activePicker: ActivePicker | null = null
 /** Reflect a live value/range change into an open host picker. */
 export function updateHostPicker(request: Partial<HostPickerRequest>): void {
   activePicker?.update(request)
+}
+
+/** Drain intermediate multi-column changes for the open host picker. */
+export function pollHostPicker(sessionId: string): { events: PickerColumnEvent[] } {
+  return { events: activePicker?.poll(sessionId) ?? [] }
 }
 
 const ITEM_HEIGHT = 48
@@ -332,6 +341,7 @@ export function showHostPicker(
     let resultValue: unknown = request.value
     let currentRequest = request
     let renderMulti: (() => void) | null = null
+    const pendingColumns: PickerColumnEvent[] = []
     const mode = String(request.mode || 'selector')
     if (mode === 'selector') {
       const labels = labelsOf(request.range, request.rangeKey)
@@ -364,6 +374,7 @@ export function showHostPicker(
           const wheel = createWheel(doc, labels, selected[index] ?? 0, (value) => {
             selected[index] = value
             resultValue = [...selected]
+            pendingColumns.push({ column: index, value })
           })
           body.appendChild(wheel.element)
         })
@@ -456,6 +467,10 @@ export function showHostPicker(
         currentRequest = { ...currentRequest, ...next }
         body.replaceChildren()
         renderMulti()
+      },
+      poll: (sessionId) => {
+        if (!currentRequest.sessionId || currentRequest.sessionId !== sessionId) return []
+        return pendingColumns.splice(0)
       },
     }
     activePicker = picker

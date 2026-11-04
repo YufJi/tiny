@@ -4,9 +4,11 @@ import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { builtinDefinitionName } from '../../tags'
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 
+const BUILTIN_TINY_FORM_FIELD_BEHAVIOR = TINY_ENGINE_NAMING.formFieldBehaviorId
+
 type FormControl = {
   hasBehavior?: (behavior: string) => boolean
-  getFormData?: () => unknown
+  getFormData?: (callback?: (value: unknown) => void) => unknown
   resetFormData?: () => void
   data?: Record<string, unknown>
   childNodes?: unknown[]
@@ -38,18 +40,49 @@ export function defineForm(ctx: BuiltinContext): BuiltinDefinition {
         const direct = (control as unknown as { name?: unknown }).name
         return String(direct ?? control.data?.name ?? '')
       },
-      collectControls(nodes: unknown[] | undefined, value: Record<string, unknown>): void {
-        for (const node of nodes ?? []) {
-          const control = node as FormControl
-          if (control.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.dataComponent)) {
-            const name = this.controlName(control)
-            if (name) value[name] = control.getFormData?.()
-          } else if (control.hasBehavior?.(TINY_ENGINE_NAMING.formFieldBehaviorId)) {
+      collectControls(
+        nodes: unknown[] | undefined,
+        value: Record<string, unknown>,
+        done: () => void,
+      ): void {
+        const list = nodes ?? []
+        let index = 0
+        const next = () => {
+          if (index >= list.length) {
+            done()
+            return
+          }
+          const control = list[index] as FormControl
+          index += 1
+          const descend = () => this.collectControls(control.childNodes, value, next)
+          if (control.hasBehavior?.(BUILTIN_TINY_FORM_FIELD_BEHAVIOR)) {
             const name = this.controlName(control)
             if (name) value[name] = control.data?.value
+            descend()
+            return
           }
-          this.collectControls(control.childNodes, value)
+          if (!control.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.dataComponent) || !control.getFormData) {
+            descend()
+            return
+          }
+          const name = this.controlName(control)
+          let settled = false
+          const finish = (data: unknown) => {
+            if (settled) return
+            settled = true
+            if (name) value[name] = data
+            descend()
+          }
+          let returned: unknown
+          try {
+            returned = control.getFormData(finish)
+          } catch {
+            finish(undefined)
+            return
+          }
+          if (returned !== undefined) finish(returned)
         }
+        next()
       },
       resetControls(nodes: unknown[] | undefined): void {
         for (const node of nodes ?? []) {
@@ -80,18 +113,23 @@ export function defineForm(ctx: BuiltinContext): BuiltinDefinition {
       handleSubmit(event: glassEasel.ShadowedEvent<unknown>) {
         event.stopPropagation()
         const value: Record<string, unknown> = {}
-        this.collectControls((this as unknown as { childNodes?: unknown[] }).childNodes, value)
         const target = this.formTarget(event)
         const detail = event.detail as { formId?: string } | undefined
-        const report = Boolean(this.data.reportSubmit) || Number(this.data.reportSubmitTimeout) > 0
-        if (report) {
-          this.triggerEvent('beforereportsubmit', { value }, { bubbles: true, composed: true })
-        }
-        const payload: Record<string, unknown> = { value, target }
-        if (this.data.reportSubmit) {
-          payload.formId = detail?.formId || 'the formId is a mock one'
-        }
-        this.triggerEvent('submit', payload, { bubbles: true, composed: true })
+        this.collectControls(
+          (this as unknown as { childNodes?: unknown[] }).childNodes,
+          value,
+          () => {
+            const report = Boolean(this.data.reportSubmit) || Number(this.data.reportSubmitTimeout) > 0
+            if (report) {
+              this.triggerEvent('beforereportsubmit', { value }, { bubbles: true, composed: true })
+            }
+            const payload: Record<string, unknown> = { value, target }
+            if (this.data.reportSubmit) {
+              payload.formId = detail?.formId || 'the formId is a mock one'
+            }
+            this.triggerEvent('submit', payload, { bubbles: true, composed: true })
+          },
+        )
       },
       handleReset(event: glassEasel.ShadowedEvent<unknown>) {
         event.stopPropagation()

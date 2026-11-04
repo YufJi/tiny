@@ -665,6 +665,45 @@ describe('P0 built-in components', () => {
     expect(changes).toEqual([{ value: 'c' }, { value: 'a' }])
   })
 
+  test('form waits for an open picker before submitting', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    let resolvePicker: ((value: unknown) => void) | undefined
+    const builtins = createBuiltinComponents(space, {
+      hostRequest: async (method) => {
+        if (method === 'showPicker') {
+          return new Promise((resolve) => { resolvePicker = resolve })
+        }
+        return { events: [] }
+      },
+    })
+    const submits: unknown[] = []
+    const page = space.defineComponent({
+      is: 'page',
+      using: { form: builtins.form, picker: builtins.picker, button: builtins.button },
+      template: compilePage(`
+        <form id="form" bindsubmit="onSubmit">
+          <picker id="picker" name="choice" range="{{['a', 'b']}}" />
+          <button id="submit" form-type="submit">Submit</button>
+        </form>
+      `),
+      methods: {
+        onSubmit(event: glassEasel.ShadowedEvent<unknown>) { submits.push(event.detail) },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    host('picker').triggerEvent('tap', {})
+    await flush()
+    host('submit').triggerEvent('tap', {})
+    expect(submits).toEqual([])
+    resolvePicker?.({ status: 'ok', value: '1' })
+    await flush()
+    expect(submits).toEqual([{
+      value: { choice: '1' },
+      target: { id: 'submit', dataset: {}, offsetTop: 0, offsetLeft: 0 },
+    }])
+  })
+
   test('form reads and resets the derived group value', async () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)
@@ -1306,6 +1345,38 @@ describe('P0 built-in components', () => {
     expect(cancels).toEqual([{}])
   })
 
+  test('picker exposes wx-autofill get/set values', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const changes: unknown[] = []
+    const page = space.defineComponent({
+      is: 'page',
+      using: { picker: builtins.picker },
+      template: compilePage(`
+        <picker id="select" mode="selector" range="{{[{label: 'A'}, {label: 'B'}]}}" range-key="label" value="{{0}}" bindchange="onChange" />
+        <picker id="date" mode="date" bindchange="onChange" />
+      `),
+      methods: {
+        onChange(event: glassEasel.ShadowedEvent<unknown>) { changes.push(event.detail) },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    const select = host('select') as unknown as {
+      autofillGetValue: () => unknown
+      autofillSetValue: (value: unknown) => void
+    }
+    expect(select.autofillGetValue()).toBe('A')
+    select.autofillSetValue('B')
+    expect(host('select').data.value).toBe(1)
+    const date = host('date') as unknown as {
+      autofillSetValue: (value: unknown) => void
+    }
+    date.autofillSetValue([2020, 1, 2])
+    expect(host('date').data.value).toBe('2020-01-02')
+    expect(changes).toEqual([{ value: 1 }, { value: '2020-01-02' }])
+  })
+
   test('picker reflects live value changes into an open multi picker', async () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const requests: Array<Record<string, unknown>> = []
@@ -1344,6 +1415,43 @@ describe('P0 built-in components', () => {
       method: 'updatePicker',
       range: [['a', 'b', 'c'], ['c', 'd']],
     })
+    resolvePicker?.({ status: 'cancel' })
+    await flush()
+  })
+
+  test('picker polls multi column changes into columnchange events', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    let delivered = false
+    let resolvePicker: ((value: unknown) => void) | undefined
+    const changes: unknown[] = []
+    const builtins = createBuiltinComponents(space, {
+      hostRequest: async (method) => {
+        if (method === 'showPicker') {
+          return new Promise((resolve) => { resolvePicker = resolve })
+        }
+        if (method === 'pollPicker' && !delivered) {
+          delivered = true
+          return { events: [{ column: 1, value: 1 }] }
+        }
+        return { events: [] }
+      },
+    })
+    const page = space.defineComponent({
+      is: 'page',
+      using: { picker: builtins.picker },
+      template: compilePage(`
+        <picker id="picker" mode="multiSelector" range="{{[['a', 'b'], ['c', 'd']]}}" value="{{[0, 0]}}" bindcolumnchange="onColumn" />
+      `),
+      methods: {
+        onColumn(event: glassEasel.ShadowedEvent<unknown>) { changes.push(event.detail) },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const picker = instance.getShadowRoot()?.getElementById('picker')?.asGeneralComponent()!
+    picker.triggerEvent('tap', {})
+    await new Promise((resolve) => setTimeout(resolve, 60))
+    expect(changes).toEqual([{ column: 1, value: 1 }])
+    expect(picker.data.value).toEqual([0, 1])
     resolvePicker?.({ status: 'cancel' })
     await flush()
   })
