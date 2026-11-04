@@ -9,6 +9,24 @@
     "navigationBarTextStyle": "black",
     "backgroundColor": "#eeeeee"
   },
+  "tabBar": {
+    "color": "#333333",
+    "selectedColor": "#51A937",
+    "list": [
+      {
+        "pagePath": "page/component/index",
+        "iconPath": "image/icon_component.png",
+        "selectedIconPath": "image/icon_component_HL.png",
+        "text": "组件"
+      },
+      {
+        "pagePath": "page/API/index",
+        "iconPath": "image/icon_API.png",
+        "selectedIconPath": "image/icon_API_HL.png",
+        "text": "接口"
+      }
+    ]
+  },
   "usingComponents": {
     "mp-navigation-bar": "/component/navigation-bar/navigation-bar"
   },
