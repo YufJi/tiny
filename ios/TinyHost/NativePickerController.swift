@@ -6,7 +6,7 @@ import UIKit
 final class NativePickerController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate {
   typealias Completion = ([String: Any]) -> Void
 
-  private let payload: [String: Any]
+  private var payload: [String: Any]
   private let completion: Completion
   private let mode: String
   private let rangeKey: String?
@@ -136,6 +136,26 @@ final class NativePickerController: UIViewController, UIPickerViewDataSource, UI
         picker.heightAnchor.constraint(equalToConstant: 216),
         picker.bottomAnchor.constraint(equalTo: panel.safeAreaLayoutGuide.bottomAnchor, constant: -8),
       ])
+    }
+  }
+
+  /// Apply a live value/range update while this picker is open. The component
+  /// sends this only for multiSelector today, but selector/date/time are kept
+  /// consistent as well.
+  func applyUpdate(_ update: [String: Any]) {
+    if let nextMode = update["mode"] as? String, nextMode != mode { return }
+    for (key, value) in update where key != "mode" {
+      payload[key] = value
+    }
+    if let datePicker {
+      applyDateValue(datePicker)
+      return
+    }
+    buildColumns()
+    pickerView?.reloadAllComponents()
+    guard let pickerView else { return }
+    for (component, row) in selected.enumerated() where component < pickerView.numberOfComponents {
+      pickerView.selectRow(row, inComponent: component, animated: true)
     }
   }
 

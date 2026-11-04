@@ -579,8 +579,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       return
     }
     if method == "updatePicker" {
-      // Native picker keeps the selected rows; a live value/range rewrite is
-      // accepted but does not rebuild an open UIKit picker.
+      nativePicker?.applyUpdate(payload)
       try? core?.renderHostResult(requestId: requestId, result: ["status": "ok"])
       return
     }
