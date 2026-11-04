@@ -7,7 +7,7 @@ export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: builtinDefinitionName('textarea'),
     template: ctx.template('textarea'),
-    behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent, ctx.behaviors.classPrefix],
+    behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent, ctx.behaviors.classPrefix, ctx.behaviors.autofill],
     properties: {
       value: { type: String, value: '' },
       placeholder: { type: String, value: '' },

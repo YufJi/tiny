@@ -1366,6 +1366,13 @@ describe('P0 built-in components', () => {
       autofillGetValue: () => unknown
       autofillSetValue: (value: unknown) => void
     }
+    expect(host('select').hasBehavior('tiny-autofill')).toBe(true)
+    host('select').setData({ autoFill: 'foo.phone' })
+    expect(select).toMatchObject({
+      _autofillGroupKey: 'phone_info',
+      _autofillFieldName: 'phone',
+      _autofill: 'phone_info.phone',
+    })
     expect(select.autofillGetValue()).toBe('A')
     select.autofillSetValue('B')
     expect(host('select').data.value).toBe(1)

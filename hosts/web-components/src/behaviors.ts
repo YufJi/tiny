@@ -197,6 +197,7 @@ export const BUILTIN_BEHAVIOR_IDS = Object.freeze({
   classPrefix: `${TINY_ENGINE_NAMING.behaviorPrefix}class-prefix`,
   disabled: `${TINY_ENGINE_NAMING.behaviorPrefix}disabled`,
   dataComponent: `${TINY_ENGINE_NAMING.behaviorPrefix}data-component`,
+  autofill: `${TINY_ENGINE_NAMING.behaviorPrefix}autofill`,
   group: `${TINY_ENGINE_NAMING.behaviorPrefix}group`,
   item: `${TINY_ENGINE_NAMING.behaviorPrefix}item`,
   labelTarget: `${TINY_ENGINE_NAMING.behaviorPrefix}label-target`,
@@ -805,7 +806,6 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
     is: BUILTIN_BEHAVIOR_IDS.dataComponent,
     properties: {
       name: { type: String, value: '' },
-      autoFill: { type: String, value: '' },
     },
     methods: {
       getFormData(): unknown {
@@ -814,6 +814,52 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
       resetFormData(): void {
         if ('value' in this.data) this.setData({ value: '' })
       },
+    },
+  })
+
+  /**
+   * Shared `wx-autofill` plumbing. The reference behavior owns the `auto-fill`
+   * property and parses its `group.field` aliases; components still implement
+   * their own `autofillGetValue` / `autofillSetValue` because a picker, input
+   * and textarea represent values differently.
+   */
+  const autofill = space.defineBehavior({
+    is: BUILTIN_BEHAVIOR_IDS.autofill,
+    properties: {
+      autoFill: { type: String, value: '', observer: '_onAutoFillChange' },
+    },
+    lifetimes: {
+      attached() {
+        const runtime = this as unknown as Record<string, unknown>
+        runtime._autofillDropdownOptions = []
+        runtime.autofillDropdownVisible = false
+        runtime._autofillDropdownRect = {}
+        runtime._autofillDropdownTargetElemId = ''
+        runtime._autofillSelected = undefined
+      },
+    },
+    methods: {
+      _onAutoFillChange(value: string) {
+        let key = String(value ?? '')
+        if (/^[^.]+\.phone$/.test(key)) key = 'phone_info.phone'
+        else if (/^[^.]+\.email$/.test(key)) key = 'email_info.email'
+        else if (/^[^.]+\.name$/.test(key)) key = 'base_info.name'
+        else if (/^[^.]+\.id_card_num$/.test(key)) key = 'base_info.id_card_num'
+        const parts = key.split('.')
+        const runtime = this as unknown as Record<string, unknown>
+        runtime._autofillGroupKey = parts.length === 2 ? parts[0] : null
+        runtime._autofillFieldName = parts.length === 2 ? parts[1] : null
+        runtime._autofill = parts.length === 2 ? key : null
+      },
+      _autofillRequestPreAuth(): Promise<void> {
+        return Promise.resolve()
+      },
+      _autofillGetDropdownOptions(): unknown[] {
+        return []
+      },
+      autofillValueChangeHandler(): void {},
+      autofillShowDropdown(): void {},
+      autofillHideDropdown(): void {},
     },
   })
 
@@ -947,7 +993,7 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
     },
   })
 
-  return { base, hover, reload, labelAria, labelTarget, disabled, dataComponent, group, item, sizeNormalizer, classPrefix, touchTrack, scroller }
+  return { base, hover, reload, autofill, labelAria, labelTarget, disabled, dataComponent, group, item, sizeNormalizer, classPrefix, touchTrack, scroller }
 }
 
 export type BuiltinBehaviors = ReturnType<typeof createBuiltinBehaviors>

@@ -30,7 +30,7 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: builtinDefinitionName('picker'),
     template: ctx.template('picker'),
-    behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent, ctx.behaviors.reload],
+    behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent, ctx.behaviors.reload, ctx.behaviors.autofill],
     properties: {
       range: { type: Array, value: [], observer: 'rangeChanged' },
       value: { value: '', observer: 'valueChanged' },
