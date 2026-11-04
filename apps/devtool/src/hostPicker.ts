@@ -273,12 +273,16 @@ function daysInMonth(year: number, month: number): number {
  */
 export function showHostPicker(
   request: HostPickerRequest,
-  doc: Document = document,
+  container?: HTMLElement | null,
 ): Promise<HostPickerResult> {
   return new Promise((resolve) => {
+    const doc = container?.ownerDocument ?? document
+    const mount = container ?? doc.body
     const overlay = doc.createElement('div')
     overlay.className = 'tiny-picker-host-overlay'
-    overlay.style.cssText = OVERLAY_STYLE
+    overlay.style.cssText = container
+      ? OVERLAY_STYLE.replace('position:fixed', 'position:absolute')
+      : OVERLAY_STYLE
     const panel = doc.createElement('div')
     panel.className = 'tiny-picker-host-panel'
     panel.style.cssText = PANEL_STYLE
@@ -303,10 +307,10 @@ export function showHostPicker(
     panel.append(header, body)
     overlay.appendChild(panel)
 
-    const previousOverflow = doc.body?.style.overflow
-    if (doc.body) doc.body.style.overflow = 'hidden'
+    const previousOverflow = mount === doc.body ? doc.body.style.overflow : ''
+    if (mount === doc.body) doc.body.style.overflow = 'hidden'
     const finish = (result: HostPickerResult) => {
-      if (doc.body) doc.body.style.overflow = previousOverflow ?? ''
+      if (mount === doc.body) doc.body.style.overflow = previousOverflow
       overlay.remove()
       resolve(result)
     }
@@ -433,6 +437,6 @@ export function showHostPicker(
       if (event.target === overlay) finish({ status: 'cancel' })
     })
     confirm.addEventListener('click', () => finish({ status: 'ok', value: resultValue }))
-    doc.body?.appendChild(overlay)
+    mount.appendChild(overlay)
   })
 }

@@ -131,7 +131,7 @@ export class DevtoolRuntimeClient {
         onDiagnostic: (diagnostic) => this.record(diagnostic),
         onHostRequest: (method, payload) => (
           method === 'showPicker'
-            ? showHostPicker(payload as Parameters<typeof showHostPicker>[0])
+            ? showHostPicker(payload as Parameters<typeof showHostPicker>[0], this.container)
             : Promise.reject(new Error(`unsupported host request: ${method}`))
         ),
       }, this.options.wasmCoreFactory)
