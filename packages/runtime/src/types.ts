@@ -197,6 +197,11 @@ export type BuiltinComponentFactoryContext = {
    * (`<navigator>`); the render tree forwards it as `tree.hostAction`.
    */
   hostAction?: (action: RenderHostAction) => void
+  /**
+   * Ask the host for a request/response capability. Component-specific payloads
+   * stay in the host package; the runtime only owns the generic channel.
+   */
+  hostRequest?: (method: string, payload: unknown) => Promise<unknown>
 }
 
 export type BuiltinComponentFactory = (

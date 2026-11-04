@@ -105,14 +105,8 @@ export function createBuiltinComponents(
       ...extra,
     }),
   }
-  // picker embeds picker-view/picker-view-column in its overlay, so create
-  // it after the components it uses.
-  const deferred = new Set<BuiltinComponentTag>(['picker'])
   for (const tag of BUILTIN_COMPONENT_TAGS) {
-    if (!deferred.has(tag)) definitions[tag] = DEFINITION_FACTORIES[tag](context)
-  }
-  for (const tag of BUILTIN_COMPONENT_TAGS) {
-    if (deferred.has(tag)) definitions[tag] = DEFINITION_FACTORIES[tag](context)
+    definitions[tag] = DEFINITION_FACTORIES[tag](context)
   }
   return definitions
 }

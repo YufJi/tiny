@@ -1208,9 +1208,11 @@ describe('P0 built-in components', () => {
   })
 
 
-  test('textarea, form and picker expose the new built-in surfaces', () => {
+  test('textarea, form and picker expose the new built-in surfaces', async () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
-    const builtins = createBuiltinComponents(space)
+    const builtins = createBuiltinComponents(space, {
+      hostRequest: async () => ({ status: 'ok', value: '1' }),
+    })
     const events: Record<string, unknown> = {}
     const page = space.defineComponent({
       is: 'page',
@@ -1239,22 +1241,22 @@ describe('P0 built-in components', () => {
       target: { id: 'submit', dataset: {}, offsetTop: 0, offsetLeft: 0 },
     })
 
-    const picker = host('picker') as unknown as {
-      handleOpen: () => void
-      handleOverlayChange: (event: unknown) => void
-      handleConfirm: () => void
-    }
-    picker.handleOpen()
-    picker.handleOverlayChange({ detail: { value: [1] } })
-    picker.handleConfirm()
-    expect(events.picker).toEqual({ value: 1 })
-    expect(host('picker').data.value).toBe(1)
+    host('picker').triggerEvent('tap', {})
+    await flush()
+    expect(events.picker).toEqual({ value: '1' })
+    expect(host('picker').data.value).toBe('1')
   })
 
 
-  test('picker overlay builds date columns and confirms the formatted value', () => {
+  test('picker delegates opening to the host and applies the selected value', async () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
-    const builtins = createBuiltinComponents(space)
+    const requests: Array<Record<string, unknown>> = []
+    const builtins = createBuiltinComponents(space, {
+      hostRequest: async (method, request) => {
+        requests.push({ method, ...(request as Record<string, unknown>) })
+        return { status: 'ok', value: '2017-12-31' }
+      },
+    })
     const changes: unknown[] = []
     const page = space.defineComponent({
       is: 'page',
@@ -1267,18 +1269,41 @@ describe('P0 built-in components', () => {
       },
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
-    const picker = instance.getShadowRoot()?.getElementById('picker')?.asGeneralComponent() as unknown as {
-      handleOpen: () => void
-      handleOverlayChange: (event: unknown) => void
-      handleConfirm: () => void
-    } & { data: { overlayColumns: Array<Array<{ label: string }>>; draftValue: number[] } }
-    picker.handleOpen()
-    expect(picker.data.overlayColumns).toHaveLength(3)
-    expect(picker.data.overlayColumns[0]?.[0]?.label).toBe('2015年')
-    expect(picker.data.draftValue).toEqual([1, 8, 0])
-    picker.handleOverlayChange({ detail: { value: [2, 11, 30] } })
-    picker.handleConfirm()
+    const picker = instance.getShadowRoot()?.getElementById('picker')?.asGeneralComponent()!
+    picker.triggerEvent('tap', {})
+    await flush()
+    expect(requests[0]).toMatchObject({
+      method: 'showPicker',
+      mode: 'date',
+      value: '2016-09-01',
+      start: '2015-09-01',
+      end: '2017-09-01',
+      fields: 'day',
+    })
+    expect(picker.data.value).toBe('2017-12-31')
     expect(changes).toEqual([{ value: '2017-12-31' }])
+  })
+
+  test('picker forwards selector cancellation to the cancel event', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space, {
+      hostRequest: async () => ({ status: 'cancel' }),
+    })
+    const cancels: unknown[] = []
+    const page = space.defineComponent({
+      is: 'page',
+      using: { picker: builtins.picker },
+      data: { range: ['a', 'b'] },
+      template: compilePage('<picker id="picker" range="{{range}}" bindcancel="onCancel" />'),
+      methods: {
+        onCancel(event: glassEasel.ShadowedEvent<unknown>) { cancels.push(event.detail) },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const picker = instance.getShadowRoot()?.getElementById('picker')?.asGeneralComponent()!
+    picker.triggerEvent('tap', {})
+    await flush()
+    expect(cancels).toEqual([{}])
   })
 
   test('picker-view receives column changes and updates its value array', () => {
