@@ -1245,9 +1245,43 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
       )
     })
 
-    await step('toggle a radio in the swiper demo', async () => {
-      currentStep = 'toggle a radio in the swiper demo'
+    await step('toggle autoplay in the swiper demo', async () => {
+      currentStep = 'toggle autoplay in the swiper demo'
       await page.goto(`${baseUrl}?path=packageComponent/pages/view/swiper/swiper`, {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
+      const render = await activeRender()
+      await render.waitForFunction(
+        () => document.querySelectorAll('tiny-switch').length >= 2,
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const autoplay = render.locator('tiny-switch').nth(1)
+      assert.equal(
+        await autoplay.locator('[class*="tiny-switch-input-checked"]').count(),
+        0,
+        'autoplay switch should start unchecked',
+      )
+      await autoplay.click()
+      await render.waitForFunction(
+        () => document.querySelectorAll('tiny-switch')[1]
+          ?.querySelector('[class*="tiny-switch-input-checked"]') != null,
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      await page.waitForTimeout(2300)
+      const activeDot = await render.evaluate(() => {
+        const dots = [...document.querySelectorAll('.tiny-builtin-swiper--tiny-swiper-dot')]
+        return dots.findIndex((dot) => getComputedStyle(dot).backgroundColor === 'rgb(0, 0, 0)')
+      })
+      assert.notEqual(activeDot, 0, 'swiper autoplay did not advance after enabling it')
+    })
+
+    await step('render the radio demo', async () => {
+      currentStep = 'render the radio demo'
+      await page.goto(`${baseUrl}?path=packageComponent/pages/form/radio/radio`, {
         waitUntil: 'domcontentloaded',
         timeout: STEP_TIMEOUT,
       })
@@ -1258,13 +1292,13 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
         null,
         { timeout: STEP_TIMEOUT },
       )
-      const autoplay = render.locator('tiny-radio').nth(1)
+      const radio = render.locator('tiny-radio').nth(1)
       assert.equal(
-        await autoplay.locator('[class*="tiny-radio-input-checked"]').count(),
+        await radio.locator('[class*="tiny-radio-input-checked"]').count(),
         0,
-        'autoplay radio should start unchecked',
+        'second radio should start unchecked',
       )
-      await autoplay.click()
+      await radio.click()
       await render.waitForFunction(
         () => document.querySelectorAll('tiny-radio')[1]
           ?.querySelector('[class*="tiny-radio-input-checked"]') != null,
@@ -1296,12 +1330,6 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
       assert.ok(radioVisual?.fontFamily.includes('weui'), 'radio check glyph should use the weui font')
       assert.equal(radioVisual?.fontSize, '18px', 'radio check glyph size mismatch')
       assert.notEqual(radioVisual?.content, 'none', 'checked radio should draw its check glyph')
-      await page.waitForTimeout(2300)
-      const activeDot = await render.evaluate(() => {
-        const dots = [...document.querySelectorAll('.tiny-builtin-swiper--tiny-swiper-dot')]
-        return dots.findIndex((dot) => getComputedStyle(dot).backgroundColor === 'rgb(0, 0, 0)')
-      })
-      assert.notEqual(activeDot, 0, 'swiper autoplay did not advance after enabling it')
     })
 
     await step('render an API example page', async () => {

@@ -1,7 +1,5 @@
 {
   "navigationBarTitleText": "小程序官方组件展示",
-  "componentFramework": "glass-easel",
   "disableScroll": true,
-  "navigationStyle": "custom",
-  "usingComponents": {}
+  "navigationStyle": "custom"
 }

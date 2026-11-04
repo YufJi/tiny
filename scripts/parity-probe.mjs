@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 117-page WeChat demo probe (`tests/apps/wechat-demo`).
+ * 111-page WeChat demo probe (`tests/apps/wechat-demo`).
  *
  * Compiles the fixture, serves `tests/host`, opens every page with `?path=`,
  * and records boot state, visible text, page errors and runtime diagnostics.

@@ -1,3 +1,4 @@
+
 const app = getApp()
 
 Page({
@@ -15,12 +16,12 @@ Page({
   },
   onLoad() {
     this.setData({
-      theme: getApp().globalData.theme || 'light'
+      theme: wx.getSystemInfoSync().theme || 'light'
     })
 
     if (wx.onThemeChange) {
-      wx.onThemeChange(({ theme }) => {
-        this.setData({ theme })
+      wx.onThemeChange(({theme}) => {
+        this.setData({theme})
       })
     }
   },
@@ -39,7 +40,7 @@ Page({
         wx.cloud.callFunction({
           name: 'pay',
           data: {
-            theme: 'light',
+    theme: 'light',
             action: 'unifiedorder',
             userInfo: {
               openId: openid
@@ -56,7 +57,7 @@ Page({
               signType: 'MD5',
               paySign: data.sign,
               success: () => {
-                wx.showToast({ title: '支付成功' })
+                wx.showToast({title: '支付成功'})
               },
               fail(err) {
                 self.setData({

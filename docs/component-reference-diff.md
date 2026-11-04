@@ -301,7 +301,7 @@ pnpm accept:glass-easel   # exit 0
 pnpm lint                # 8 files checked, no fixes applied
 ```
 
-门禁包含：build、runtime purity、各包单测、P0 demo、mini、Taro 3、WeChat demo、devtool 五段浏览器流程，共 58 步。
+门禁包含：build、runtime purity、各包单测、P0 demo、mini、Taro 3、WeChat demo、devtool 五段浏览器流程，共 61 步。
 
 ### 6.2 单测
 

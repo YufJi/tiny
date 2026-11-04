@@ -30,7 +30,7 @@ Page({
     wx.cloud.callFunction({
       name: 'openapi',
       data: {
-        theme: 'light',
+    theme: 'light',
         action: 'sendSubscribeMessage'
       },
       success: res => {
@@ -54,16 +54,22 @@ Page({
   /**
    * 生命周期函数--监听页面加载
    */
+  onUnload() {
+    if (wx.offThemeChange) {
+      wx.offThemeChange()
+    }
+  },
   onLoad() {
     this.setData({
-      theme: getApp().globalData.theme || 'light'
+      theme: wx.getSystemInfoSync().theme || 'light'
     })
 
     if (wx.onThemeChange) {
-      wx.onThemeChange(({ theme }) => {
-        this.setData({ theme })
+      wx.onThemeChange(({theme}) => {
+        this.setData({theme})
       })
     }
+
   },
 
   /**
@@ -91,9 +97,7 @@ Page({
    * 生命周期函数--监听页面卸载
    */
   onUnload() {
-    if (wx.offThemeChange) {
-      wx.offThemeChange()
-    }
+
   },
 
   /**

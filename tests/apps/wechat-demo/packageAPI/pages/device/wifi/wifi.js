@@ -11,6 +11,10 @@ Page({
     wifiList: []
   },
 
+  onUnload() {
+    this.stopSearch()
+  },
+
   startSearch() {
     const getWifiList = () => {
       wx.getWifiList({
@@ -20,7 +24,7 @@ Page({
               .sort((a, b) => b.signalStrength - a.signalStrength)
               .map(wifi => {
                 const strength = Math.ceil(wifi.signalStrength * 4)
-                return Object.assign(wifi, { strength })
+                return Object.assign(wifi, {strength})
               })
             this.setData({
               wifiList
@@ -72,19 +76,18 @@ Page({
     })
   },
   onUnload() {
-    this.stopSearch()
     if (wx.offThemeChange) {
       wx.offThemeChange()
     }
   },
   onLoad() {
     this.setData({
-      theme: getApp().globalData.theme || 'light'
+      theme: wx.getSystemInfoSync().theme || 'light'
     })
 
     if (wx.onThemeChange) {
-      wx.onThemeChange(({ theme }) => {
-        this.setData({ theme })
+      wx.onThemeChange(({theme}) => {
+        this.setData({theme})
       })
     }
   }

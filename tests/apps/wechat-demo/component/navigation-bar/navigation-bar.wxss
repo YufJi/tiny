@@ -1,5 +1,4 @@
 .weui-navigation-bar {
-  display: flex;
   overflow: hidden;
   color: rgba(0, 0, 0, .9);
   width: 100vw;
@@ -38,6 +37,7 @@
   width: 12px;
   height: 24px;
   background: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='24' viewBox='0 0 12 24'%3E %3Cpath fill-opacity='.9' fill-rule='evenodd' d='M10 19.438L8.955 20.5l-7.666-7.79a1.02 1.02 0 0 1 0-1.42L8.955 3.5 10 4.563 2.682 12 10 19.438z'/%3E%3C/svg%3E") no-repeat 50% 50%;
+  background-color: currentColor;
   background-size: cover;
 }
 
@@ -46,11 +46,10 @@
   text-align: center;
   position: relative;
   flex: 1;
-  display: flex; 
+  display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  white-space: nowrap;
 }
 
 [data-weui-theme=dark].weui-navigation-bar {

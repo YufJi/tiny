@@ -1,4 +1,4 @@
-import { compareVersion } from '../../../../util/util'
+import {compareVersion} from '../../../../util/util'
 
 Page({
   onShareAppMessage() {
@@ -32,7 +32,6 @@ Page({
           size: true,
         })
         .exec(this.init.bind(this))
-    
   },
 
   init(res) {
@@ -126,12 +125,12 @@ Page({
   },
   onLoad() {
     this.setData({
-      theme: getApp().globalData.theme || 'light'
+      theme: wx.getSystemInfoSync().theme || 'light'
     })
 
     if (wx.onThemeChange) {
-      wx.onThemeChange(({ theme }) => {
-        this.setData({ theme })
+      wx.onThemeChange(({theme}) => {
+        this.setData({theme})
       })
     }
   }

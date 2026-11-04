@@ -32,6 +32,9 @@ Page({
     connected: false,
     chs: [],
   },
+  onUnload() {
+    this.closeBluetoothAdapter()
+  },
   openBluetoothAdapter() {
     const that = this
     wx.openBluetoothAdapter({
@@ -249,16 +252,15 @@ Page({
     if (wx.offThemeChange) {
       wx.offThemeChange()
     }
-    this.closeBluetoothAdapter()
   },
   onLoad() {
     this.setData({
-      theme: getApp().globalData.theme || 'light'
+      theme: wx.getSystemInfoSync().theme || 'light'
     })
 
     if (wx.onThemeChange) {
-      wx.onThemeChange(({ theme }) => {
-        this.setData({ theme })
+      wx.onThemeChange(({theme}) => {
+        this.setData({theme})
       })
     }
   }

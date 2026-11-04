@@ -2,24 +2,28 @@
 
 Test fixture derived from
 [wechat-miniprogram/miniprogram-demo](https://github.com/wechat-miniprogram/miniprogram-demo)
-at commit `0fe5c7df8e90582dd0b89e283df7fe32e04413f9` (MIT).
+at commit `7189b9cdb2544df47769f62b356b04fdbcab2f55` (MIT).
 
 ## Scope
 
 Only the **basic component** (`packageComponent`) and **API** (`packageAPI`)
-example pages are included. Cloud, extend, Skyline, XR, chat tools, ads, and
-other advanced demo packages are intentionally omitted.
+example pages are included, 111 registered pages in total. Cloud, extend,
+Skyline, XR, chat tools, ads, and other advanced demo packages are intentionally
+omitted.
 
 ## Adaptations for Tiny
 
 - `app.json` lists only the component/API index pages + the two subpackages;
-  AR pages (`packageAPI/pages/ar`) and chat-tool pages are excluded because
-  they require unavailable native/npm dependencies.
-- `app.js` is reduced to the theme/global-data surface used by these pages.
+  AR pages (`packageAPI/pages/ar`) and the AR category in the API index are
+  excluded because they require unavailable native/npm dependencies. Chat-tool
+  pages are not part of this upstream revision.
+- `app.js` is reduced to the theme/global-data surface used by these pages; the
+  cloud init, background-fetch bootstrap, and Skyline custom-route install are
+  removed.
 - `util/util.js` exports its legacy CommonJS object as ESM names so the service
   bundle can resolve `compareVersion`.
-- Skyline-only pages (grid-view/sticky/page-container/match-media/root-portal),
-  `renderer: skyline` config, and the Skyline course bar were removed.
+- `renderer` keys and the Skyline/XRFrame/custom-route branches in the index
+  pages are removed; the two index pages keep their original layout.
 - The Skyline-era layout WXSS (`common/common-skyline.wxss` and
   `page/common/index-skyline.wxss`) is kept: `common/reset.wxss` makes every
   tag a flex column like Skyline, so the index pages need those rules
@@ -31,6 +35,15 @@ other advanced demo packages are intentionally omitted.
   styles as WeChat; without it `.weui-cell` is not a flex container.
 - The component/API indexes use `wx.navigateTo` for local example links;
   direct pages can also be booted with the host `?path=` query.
+- The upstream "分包改造" commit moved the API pages one directory deeper but
+  left the shared `common/head.wxml` / `common/foot.wxml` imports one level
+  short; the 88 affected pages point back at the root `common/` templates.
+- `component/navigation-bar` tolerates `wx.getSystemInfo` results without a
+  `system` field (Tiny's host snapshot has no `system`, so it renders the
+  non-iOS branch).
+- The canvas examples drop the `SDKVersion < 2.7.0` fallback (the Tiny runtime
+  always takes the canvas node path), and the image example no longer resolves
+  its WebP URL through cloud storage.
 - Local images referenced through dynamic WXML paths resolve through the host
   `resolveAssetUrl` render hook, including the `resources/kind/{{id}}.png` icons.
 

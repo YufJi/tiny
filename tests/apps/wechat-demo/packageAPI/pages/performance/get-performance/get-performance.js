@@ -5,6 +5,7 @@ const util = require('./util')
 const performance = wx.getPerformance ? wx.getPerformance() : {}
 const performanceObserver = performance.createObserver ? performance.createObserver() : null
 
+
 Page({
   onShareAppMessage() {
     return {
@@ -24,12 +25,12 @@ Page({
   },
   onLoad() {
     this.setData({
-      theme: getApp().globalData.theme || 'light'
+      theme: wx.getSystemInfoSync().theme || 'light'
     })
 
     if (wx.onThemeChange) {
-      wx.onThemeChange(({ theme }) => {
-        this.setData({ theme })
+      wx.onThemeChange(({theme}) => {
+        this.setData({theme})
       })
     }
     console.log('canIUse:getPerformance:', wx.canIUse('getPerformance'))
@@ -59,7 +60,7 @@ Page({
 
   startObserver() {
     // 监听需要的性能指标
-    performanceObserver.observe({ entryTypes: ['render', 'script', 'navigation'] })
+    performanceObserver.observe({entryTypes: ['render', 'script', 'navigation']})
   },
 
   stopObserver() {

@@ -1,6 +1,5 @@
 {
   "navigationBarTitleText": "canvas 2d",
-  "componentFramework": "glass-easel",
   "disableScroll": true,
   "navigationStyle": "custom"
 }

@@ -2,6 +2,5 @@
   "navigationBarTitleText": "scroll-view",
   "pageOrientation": "auto",
   "disableScroll": true,
-  "navigationStyle": "custom",
-  "componentFramework": "glass-easel"
+  "navigationStyle": "custom"
 }

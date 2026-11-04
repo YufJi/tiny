@@ -1,6 +1,5 @@
 {
   "navigationBarTitleText": "video",
-  "componentFramework": "glass-easel",
   "disableScroll": true,
   "navigationStyle": "custom"
 }

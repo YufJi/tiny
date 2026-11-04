@@ -3,7 +3,6 @@
   "usingComponents": {
     "set-tab-bar": "components/set-tab-bar/set-tab-bar"
   },
-  "componentFramework": "glass-easel",
   "disableScroll": true,
   "navigationStyle": "custom"
 }

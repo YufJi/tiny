@@ -25,7 +25,6 @@
         "pages/content/icon/icon",
         "pages/content/progress/progress",
         "pages/content/rich-text/rich-text",
-        "pages/content/selection/selection",
         "pages/form/button/button",
         "pages/form/checkbox/checkbox",
         "pages/form/form/form",
@@ -44,11 +43,8 @@
         "pages/media/image/image",
         "pages/media/video/video",
         "pages/media/camera/camera",
-        "pages/media/camera-scan-code/camera-scan-code",
         "pages/media/live-pusher/live-pusher",
         "pages/media/live-player/live-player",
-        "pages/media/channel-video/channel-video",
-        "pages/media/channel-live/channel-live",
         "pages/map/map/map",
         "pages/canvas/canvas-2d/canvas-2d",
         "pages/canvas/webgl/webgl",
@@ -66,7 +62,6 @@
         "pages/api/get-user-info/get-user-info",
         "pages/api/request-payment/request-payment",
         "pages/api/jump/jump",
-        "pages/api/official-account/official-account",
         "pages/api/share/share",
         "pages/api/share-button/share-button",
         "pages/api/custom-message/custom-message",
@@ -134,8 +129,7 @@
         "pages/framework/wxs/stick-top",
         "pages/framework/wxs/nearby",
         "pages/ai/mobilenet/index",
-        "pages/ai/style-trans/index",
-        "pages/ai/mobilenet_int8/index"
+        "pages/ai/style-trans/index"
       ]
     }
   ],

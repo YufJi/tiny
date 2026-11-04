@@ -1,4 +1,4 @@
-import { compareVersion } from '../../../../util/util'
+import {compareVersion} from '../../../../util/util'
 
 // WebGL
 const vs = `
@@ -49,7 +49,6 @@ Page({
           const canvas = res[0].node
           this.renderWebGL(canvas)
         })
-    
   },
 
   renderWebGL(canvas) {
@@ -121,12 +120,12 @@ Page({
   },
   onLoad() {
     this.setData({
-      theme: getApp().globalData.theme || 'light'
+      theme: wx.getSystemInfoSync().theme || 'light'
     })
 
     if (wx.onThemeChange) {
-      wx.onThemeChange(({ theme }) => {
-        this.setData({ theme })
+      wx.onThemeChange(({theme}) => {
+        this.setData({theme})
       })
     }
   }

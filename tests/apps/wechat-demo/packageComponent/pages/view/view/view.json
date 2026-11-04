@@ -1,6 +1,5 @@
 {
   "navigationBarTitleText": "view",
-  "componentFramework": "glass-easel",
   "disableScroll": true,
   "navigationStyle": "custom"
 }

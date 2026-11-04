@@ -1,9 +1,9 @@
 // const app = getApp()
 const util = require('../../../../util/util.js')
 
+
 const backgroundAudioManager = wx.getBackgroundAudioManager()
 let updateInterval
-let draging
 
 Page({
   onShareAppMessage() {
@@ -19,7 +19,9 @@ Page({
         playing: true
       })
     }
+    
   },
+
 
   data: {
     theme: 'light',
@@ -51,10 +53,6 @@ Page({
     }
   },
 
-  drag(e) {
-    draging = true
-  },
-
   seek(e) {
     backgroundAudioManager.seek(e.detail.value)
   },
@@ -62,6 +60,7 @@ Page({
   pause() {
     clearInterval(updateInterval)
     backgroundAudioManager.pause()
+
   },
 
   stop() {
@@ -72,31 +71,31 @@ Page({
   _enableInterval() {
     const that = this
     function update() {
-      if (!draging) {
-        that.setData({
-          playTime: backgroundAudioManager.currentTime + 1,
-          formatedPlayTime: util.formatTime(backgroundAudioManager.currentTime + 1)
-        })
-      }
+      that.setData({
+        playTime: backgroundAudioManager.currentTime + 1,
+        formatedPlayTime: util.formatTime(backgroundAudioManager.currentTime + 1)
+      })
     }
     updateInterval = setInterval(update, 1000)
+  },
+
+  onUnload() {
+    clearInterval(updateInterval)
   },
 
   onUnload() {
     if (wx.offThemeChange) {
       wx.offThemeChange()
     }
-    clearInterval(updateInterval)
   },
-
   onLoad() {
     this.setData({
-      theme: getApp().globalData.theme || 'light'
+      theme: wx.getSystemInfoSync().theme || 'light'
     })
 
     if (wx.onThemeChange) {
-      wx.onThemeChange(({ theme }) => {
-        this.setData({ theme })
+      wx.onThemeChange(({theme}) => {
+        this.setData({theme})
       })
     }
     const that = this
@@ -116,11 +115,6 @@ Page({
         playing: false,
         pause: true,
       })
-    })
-
-    // 拖动到指定位置结束，恢复slider滚动
-    backgroundAudioManager.onSeeked((res) => {
-      draging = false
     })
 
     backgroundAudioManager.onEnded(() => {
