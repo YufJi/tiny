@@ -1297,6 +1297,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       }
     }
     flushPendingAnimations()
+    replayReplacedAnimations()
     flushPendingClasses()
     flushPendingWxsEvents()
     flushAllWxsProps()
@@ -1307,12 +1308,34 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   // `onLoad`, before its first snapshot is mounted, so unresolved nodes are
   // parked and retried after the next mount/patch.
   const animationsByElement = new WeakMap<Element, Animation[]>()
+  const scrollAnimationCleanups = new Map<Element, () => void>()
   const pendingAnimations = new Map<string, RenderAnimationRequest>()
+  const activeAnimationRequests = new Map<string, RenderAnimationRequest>()
+  const animatedElementById = new Map<string, Element>()
   const PENDING_ANIMATION_LIMIT = 64
 
   const elementForViewId = (viewId: string): Element | null => (
     rootElement?.querySelector(`[${TINY_ENGINE_NAMING.nodeIdAttribute}="${viewId}"]`) ?? null
   )
+
+  const findScrollContainer = (host: Element): HTMLElement | null => {
+    const isScrollable = (candidate: Element): boolean => {
+      const view = candidate.ownerDocument.defaultView
+      if (!view) return false
+      const style = view.getComputedStyle(candidate)
+      return /(auto|scroll)/.test(`${style.overflowX} ${style.overflowY}`)
+    }
+    if (isScrollable(host)) return host as HTMLElement
+    for (const candidate of Array.from(host.querySelectorAll('*'))) {
+      if (isScrollable(candidate)) return candidate as HTMLElement
+    }
+    return host as HTMLElement
+  }
+
+  const stopScrollAnimation = (element: Element): void => {
+    scrollAnimationCleanups.get(element)?.()
+    scrollAnimationCleanups.delete(element)
+  }
 
   const playOn = (element: Element, request: RenderAnimationRequest): void => {
     const animate = (element as Element & {
@@ -1320,6 +1343,38 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     }).animate
     if (typeof animate !== 'function') return
     for (const running of animationsByElement.get(element) ?? []) running.cancel()
+    stopScrollAnimation(element)
+    if (request.scroll) {
+      const sourceHost = elementForViewId(request.scroll.sourceViewId)
+      const source = sourceHost ? findScrollContainer(sourceHost) : null
+      if (source) {
+        const timeRange = request.scroll.timeRange ?? request.duration
+        const animation = animate.call(element, request.keyframes as Keyframe[], {
+          duration: timeRange,
+          ...(request.easing !== undefined ? { easing: request.easing } : {}),
+          iterations: 1,
+          fill: request.fill ?? 'both',
+        })
+        animation.pause()
+        const update = () => {
+          const horizontal = source.scrollWidth > source.clientWidth + 1
+          const offset = horizontal ? source.scrollLeft : source.scrollTop
+          const span = request.scroll!.endOffset - request.scroll!.startOffset
+          const progress = span > 0
+            ? Math.min(1, Math.max(0, (offset - request.scroll!.startOffset) / span))
+            : 1
+          animation.currentTime = progress * timeRange
+        }
+        update()
+        source.addEventListener('scroll', update, { passive: true })
+        scrollAnimationCleanups.set(element, () => {
+          source.removeEventListener('scroll', update)
+          animation.cancel()
+        })
+        animationsByElement.set(element, [animation])
+        return
+      }
+    }
     const animation = animate.call(element, request.keyframes as Keyframe[], {
       duration: request.duration,
       ...(request.delay !== undefined ? { delay: request.delay } : {}),
@@ -1336,17 +1391,36 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       const element = elementForViewId(viewId)
       if (!element) continue
       pendingAnimations.delete(viewId)
+      animatedElementById.set(viewId, element)
+      playOn(element, request)
+    }
+  }
+
+  const replayReplacedAnimations = (): void => {
+    for (const [viewId, request] of activeAnimationRequests) {
+      const element = elementForViewId(viewId)
+      if (!element) continue
+      const previous = animatedElementById.get(viewId)
+      if (previous === element) continue
+      if (previous) {
+        stopScrollAnimation(previous)
+        for (const animation of animationsByElement.get(previous) ?? []) animation.cancel()
+      }
+      animatedElementById.set(viewId, element)
       playOn(element, request)
     }
   }
 
   const playAnimation = (request: RenderAnimationRequest): void => {
     for (const viewId of request.viewIds) {
+      activeAnimationRequests.set(viewId, request)
       const element = elementForViewId(viewId)
       if (element) {
+        animatedElementById.set(viewId, element)
         playOn(element, request)
         continue
       }
+      animatedElementById.delete(viewId)
       if (!pendingAnimations.has(viewId) && pendingAnimations.size >= PENDING_ANIMATION_LIMIT) {
         const oldest = pendingAnimations.keys().next().value
         if (oldest !== undefined) pendingAnimations.delete(oldest)
@@ -1358,10 +1432,13 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const clearAnimation = (request: RenderClearAnimationRequest): void => {
     for (const viewId of request.viewIds) {
       pendingAnimations.delete(viewId)
+      activeAnimationRequests.delete(viewId)
+      animatedElementById.delete(viewId)
       const element = elementForViewId(viewId)
       if (!element) continue
       for (const animation of animationsByElement.get(element) ?? []) animation.cancel()
       animationsByElement.delete(element)
+      stopScrollAnimation(element)
     }
   }
 
@@ -1600,6 +1677,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       }
       if (options.attach !== false) glassEasel.Element.pretendAttached(root)
       flushPendingAnimations()
+      replayReplacedAnimations()
       flushPendingClasses()
       flushPendingWxsEvents()
       flushAllWxsProps()

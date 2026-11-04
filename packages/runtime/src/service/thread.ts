@@ -700,6 +700,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
               ...(request.easing !== undefined ? { easing: request.easing } : {}),
               ...(request.iterations !== undefined ? { iterations: request.iterations } : {}),
               ...(request.fill !== undefined ? { fill: request.fill } : {}),
+              ...(request.scroll !== undefined ? { scroll: request.scroll } : {}),
             }, { pageId: request.pageId })
           },
           clear: (request) => {

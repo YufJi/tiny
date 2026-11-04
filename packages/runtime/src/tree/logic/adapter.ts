@@ -77,7 +77,6 @@ export class LogicTreeAdapter {
   private readonly reportedPages = new Set<string>()
   private readonly viewIntersection?: LogicTreeAdapterOptions['viewIntersection']
   private readonly viewAnimation?: LogicTreeAdapterOptions['viewAnimation']
-  private readonly reportedAnimationApproximations = new Set<string>()
   private readonly intersectionObservers = new Map<string, {
     callbacks: Map<string, (entry: Record<string, unknown>) => void>
     selectorByViewId: Map<string, string>
@@ -570,10 +569,8 @@ export class LogicTreeAdapter {
   /**
    * `this.animate(selector, keyframes, duration, options|callback)`.
    *
-   * The logic tree only resolves the selector and owns the completion
-   * callback; playback belongs to the render thread. Scroll-driven timing
-   * (`scrollSource`/`startScrollOffset`) is approximated as a timed animation
-   * and reported once per selector instead of being silently dropped.
+   * The logic tree resolves both the target and the optional scroll source;
+   * playback and scroll-to-time mapping belong to the render thread.
    */
   animateFor(
     component: unknown,
@@ -602,29 +599,34 @@ export class LogicTreeAdapter {
       ))
       return false
     }
-    if (settings.scrollSource !== undefined && !this.reportedAnimationApproximations.has(selector)) {
-      this.reportedAnimationApproximations.add(selector)
-      this.onDiagnostic?.(createRuntimeDiagnostic(
-        'warning',
-        DIAGNOSTIC_CODES.ANIMATION_SCROLL_DRIVEN_APPROXIMATED,
-        `this.animate(${selector}) uses scroll-driven timing; it runs as a timed animation.`,
-        'service',
-        pageId,
-        { selector },
-      ))
-    }
     const requested = Number(duration)
     const timing = animationTimingOptions(
       Number.isFinite(requested) ? requested : 400,
       settings,
     )
+    let scroll: RenderAnimationRequest['scroll']
+    if (typeof settings.scrollSource === 'string' && settings.scrollSource) {
+      const source = this.animationTarget(component, settings.scrollSource)
+      if (source) {
+        const startOffset = Number(settings.startScrollOffset)
+        const endOffset = Number(settings.endScrollOffset)
+        const timeRange = Number(settings.timeRange)
+        scroll = {
+          sourceViewId: this.backend.ensureViewId(source),
+          startOffset: Number.isFinite(startOffset) ? startOffset : 0,
+          endOffset: Number.isFinite(endOffset) ? endOffset : 0,
+          ...(Number.isFinite(timeRange) && timeRange > 0 ? { timeRange } : {}),
+        }
+      }
+    }
     this.viewAnimation?.play({
       pageId,
       viewIds: [this.backend.ensureViewId(target)],
       keyframes: frames as Array<Record<string, unknown>>,
       ...timing,
+      ...(scroll ? { scroll } : {}),
     })
-    if (callback) {
+    if (callback && !scroll) {
       const iterations = timing.iterations ?? 1
       const total = timing.duration * iterations + (timing.delay ?? 0)
       setTimeout(() => callback(), Math.max(total, 0))

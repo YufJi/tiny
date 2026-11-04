@@ -154,6 +154,13 @@ export type RenderAnimationRequest = {
   easing?: string
   iterations?: number
   fill?: 'none' | 'forwards' | 'backwards' | 'both'
+  /** Scroll-driven timing (`scrollSource` + offsets). */
+  scroll?: {
+    sourceViewId: RenderNodeId
+    startOffset: number
+    endOffset: number
+    timeRange?: number
+  }
 }
 
 /**

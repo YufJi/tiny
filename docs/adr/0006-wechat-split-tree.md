@@ -52,8 +52,9 @@ Accepted and implemented. Merged into `next` as #27 (`1ac6d3a`), originally on
 - `this.animate` / `this.clearAnimate` (alias `clearAnimation`) resolve the
   selector in the logic tree and send normalized keyframes over
   `tree.animate`; web hosts play them with the Web Animations API. Scroll-driven
-  timing (`scrollSource`) runs as a timed animation and reports
-  `ANIMATION_SCROLL_DRIVEN_APPROXIMATED`.
+  timing (`scrollSource` / `startScrollOffset` / `endScrollOffset`) is sent as
+  a scroll timeline: the render side pauses the animation and maps the scroll
+  source's offset to `Animation.currentTime`.
 - WXS modules run as sloppy script: the template bundle is an ES module (always
   strict), so the compiler emits module bodies as strings and evaluates them
   through `Q.S` (`Function`-compiled) instead of inlining arrow functions. This

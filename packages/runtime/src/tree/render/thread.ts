@@ -263,6 +263,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       ...(payload.easing !== undefined ? { easing: payload.easing } : {}),
       ...(payload.iterations !== undefined ? { iterations: payload.iterations } : {}),
       ...(payload.fill !== undefined ? { fill: payload.fill } : {}),
+      ...(payload.scroll !== undefined ? { scroll: payload.scroll } : {}),
     })
   })
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.clearAnimate, (message) => {
