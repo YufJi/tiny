@@ -1,11 +1,3 @@
-tiny-rich-text {
-  display: block;
-}
-
-tiny-rich-text[hidden] {
-  display: none;
-}
-
 tiny-rich-text[user-select] {
   cursor: auto;
   user-select: text;

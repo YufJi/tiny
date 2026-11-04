@@ -6,6 +6,7 @@ import { createDataComponentBehavior } from './dataComponent'
 import { createDisabledBehavior } from './disabled'
 import { createGroupBehavior } from './group'
 import { createHoverBehavior } from './hover'
+import { createHtmlParseBehavior } from './htmlParse'
 import { createNativeBehavior } from './native'
 import { createNativeCoverBehavior } from './nativeCover'
 import { createNativeHoverBehavior } from './nativeHover'
@@ -63,6 +64,7 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
     native: createNativeBehavior(space),
     nativeCover: createNativeCoverBehavior(space),
     nativeHover: createNativeHoverBehavior(space),
+    htmlParse: createHtmlParseBehavior(space),
     scroller: createScrollerBehavior(space),
   }
 }

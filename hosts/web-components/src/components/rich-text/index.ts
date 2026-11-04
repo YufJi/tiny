@@ -1,6 +1,5 @@
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { builtinDefinitionName } from '../../tags'
-import { createRichTextFragment } from './content'
 
 type RichTextRuntime = {
   _ready?: boolean
@@ -11,22 +10,39 @@ type RichTextRuntime = {
       getBackendElement?: () => HTMLElement | null
     } | null
   } | null
+  getHtmlLLParser?: () => { parse: (html: string) => string }
+  getFilter?: () => {
+    parse: (
+      nodes: unknown,
+      target: DocumentFragment,
+      transformClass: (value: string) => string,
+      decodeSpace: (text: string) => string,
+    ) => DocumentFragment
+  }
+  _createSpaceDecode?: (value: unknown) => (text: string) => string
+  convertClassWithPrefix?: (value: string) => string
 }
 
 /**
- * Mirrors `wx-rich-text`: a single `#rich-text` container receives the parsed
- * `nodes` content. The reference also applies class prefixes to content; Tiny
- * keeps author classes and relies on the host style boundary instead.
+ * Mirrors `wx-rich-text` in WeChat WebView 2.30.1.
+ *
+ * Behaviors: `wx-base` + `wx-class-prefix` + `wx-html-parse`. Parsing and
+ * sanitizing are provided by the html-parse behavior; this component only
+ * caches the observer value until attach and owns the `user-select` DOM state.
  */
 export function defineRichText(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: builtinDefinitionName('rich-text'),
     template: ctx.template('rich-text'),
-    behaviors: [ctx.behaviors.base],
+    behaviors: [ctx.behaviors.base, ctx.behaviors.classPrefix, ctx.behaviors.htmlParse],
     properties: {
-      nodes: { value: [], observer: '_nodesObserver' },
       space: { type: String, value: '' },
-      userSelect: { type: Boolean, value: false },
+      nodes: { value: [], observer: '_nodesObserver' },
+      userSelect: {
+        type: Boolean,
+        value: false,
+        observer: 'userSelectChanged',
+      },
     },
     options: ctx.hostOptions('rich-text'),
     lifetimes: {
@@ -42,45 +58,68 @@ export function defineRichText(ctx: BuiltinContext): BuiltinDefinition {
           const nodes = runtime._cachedNodes
           runtime._hasCached = false
           runtime._cachedNodes = undefined
-          ;(this as unknown as { _render: (value: unknown) => void })._render(nodes)
+          ;(this as unknown as { _nodesObserver: (value: unknown) => void })
+            ._nodesObserver(nodes)
         }
+        ;(this as unknown as { userSelectChanged: (value: unknown) => void })
+          .userSelectChanged(this.data.userSelect)
       },
       detached() {
-        const runtime = this as unknown as RichTextRuntime
-        runtime._ready = false
+        ;(this as unknown as RichTextRuntime)._ready = false
       },
     },
     methods: {
-      _nodesObserver(next: unknown) {
+      contentElement(): HTMLElement | null {
+        const runtime = this as unknown as RichTextRuntime
+        return runtime.getShadowRoot?.()?.getElementById?.('rich-text')
+          ?.getBackendElement?.() ?? null
+      },
+      _nodesObserver(nodes: unknown) {
         const runtime = this as unknown as RichTextRuntime
         if (!runtime._ready) {
-          runtime._cachedNodes = next
+          runtime._cachedNodes = nodes
           runtime._hasCached = true
           return
         }
-        ;(this as unknown as { _render: (value: unknown) => void })._render(next)
-      },
-      _render(nodes: unknown) {
-        const runtime = this as unknown as RichTextRuntime
-        const container = runtime.getShadowRoot?.()?.getElementById?.('rich-text')
-          ?.getBackendElement?.()
+        const container = (this as unknown as {
+          contentElement: () => HTMLElement | null
+        }).contentElement()
         if (!container) return
-        try {
-          const fragment = createRichTextFragment(
-            nodes,
-            String(this.data.space ?? ''),
-            document,
-          )
-          if (!fragment) {
+        let value = nodes
+        if (typeof value === 'string') {
+          try {
+            value = runtime.getHtmlLLParser?.().parse(value) ?? value
+          } catch (error) {
             ctx.options.onDiagnostic?.({
-              severity: 'warning',
-              code: 'RICH_TEXT_INVALID_NODES',
-              message: '<rich-text nodes> expects a string or an array.',
-              details: { type: typeof nodes },
+              severity: 'error',
+              code: 'RICH_TEXT_PARSE_ERROR',
+              message: 'Failed to parse <rich-text nodes>.',
+              details: { error: error instanceof Error ? error.message : String(error) },
             })
             return
           }
-          container.replaceChildren(fragment)
+        }
+        if (typeof value !== 'string' && !Array.isArray(value)) {
+          ctx.options.onDiagnostic?.({
+            severity: 'warning',
+            code: 'RICH_TEXT_INVALID_NODES',
+            message: '<rich-text nodes> expects a string or an array.',
+            details: { type: typeof value },
+          })
+          return
+        }
+        const filter = runtime.getFilter?.()
+        if (!filter) return
+        try {
+          const target = document.createDocumentFragment()
+          filter.parse(
+            value,
+            target,
+            (className) => runtime.convertClassWithPrefix?.(className) ?? className,
+            runtime._createSpaceDecode?.(this.data.space)
+              ?? ((text: string) => text),
+          )
+          container.replaceChildren(target)
         } catch (error) {
           ctx.options.onDiagnostic?.({
             severity: 'error',
@@ -88,6 +127,20 @@ export function defineRichText(ctx: BuiltinContext): BuiltinDefinition {
             message: 'Failed to parse <rich-text nodes>.',
             details: { error: error instanceof Error ? error.message : String(error) },
           })
+        }
+      },
+      userSelectChanged(value: unknown) {
+        const container = (this as unknown as {
+          contentElement: () => HTMLElement | null
+        }).contentElement()
+        if (!container) return
+        if (value) {
+          container.style.display = 'block'
+          container.style.willChange = 'transform'
+          container.classList.add('__wa_selectable_region')
+        } else {
+          container.style.willChange = 'unset'
+          container.classList.remove('__wa_selectable_region')
         }
       },
     },

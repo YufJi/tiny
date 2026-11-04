@@ -28,6 +28,11 @@ const DROPPED_TAGS = new Set([
   'option', 'script', 'select', 'style', 'textarea',
 ])
 
+export type RichTextOptions = {
+  decodeSpace?: (text: string) => string
+  transformClass?: (value: string) => string
+}
+
 export type RichTextNode = {
   type?: string
   name?: string
@@ -41,6 +46,15 @@ export function decodeRichTextSpace(text: string, space: string): string {
   if (space === 'ensp') return text.replace(/ /g, '\u2002')
   if (space === 'emsp') return text.replace(/ /g, '\u2003')
   return text
+}
+
+function decodeText(text: string, space: string, options: RichTextOptions): string {
+  return options.decodeSpace?.(text) ?? decodeRichTextSpace(text, space)
+}
+
+function transformClassValue(value: string, options: RichTextOptions): string {
+  if (!options.transformClass) return value
+  return value.split(/\s+/).filter(Boolean).map(options.transformClass).join(' ')
 }
 
 export function isAllowedRichTextTag(tag: string): boolean {
@@ -69,9 +83,14 @@ function isAllowedAttribute(tag: string, name: string, value: string): boolean {
   return true
 }
 
-function cleanNode(node: Node, space: string, document: Document): Node | null {
+function cleanNode(
+  node: Node,
+  space: string,
+  document: Document,
+  options: RichTextOptions,
+): Node | null {
   if (node.nodeType === 3) {
-    return document.createTextNode(decodeRichTextSpace(node.textContent ?? '', space))
+    return document.createTextNode(decodeText(node.textContent ?? '', space, options))
   }
   if (node.nodeType !== 1) return null
   const element = node as Element
@@ -82,19 +101,21 @@ function cleanNode(node: Node, space: string, document: Document): Node | null {
     // the whole subtree; WeChat's filter behaves the same way for unknown tags.
     const fragment = document.createDocumentFragment()
     for (const child of Array.from(element.childNodes)) {
-      const cleaned = cleanNode(child, space, document)
+      const cleaned = cleanNode(child, space, document, options)
       if (cleaned) fragment.appendChild(cleaned)
     }
     return fragment
   }
   const next = document.createElement(tag)
   for (const attribute of Array.from(element.attributes)) {
-    if (isAllowedAttribute(tag, attribute.name, attribute.value)) {
-      next.setAttribute(attribute.name, attribute.value)
-    }
+    if (!isAllowedAttribute(tag, attribute.name, attribute.value)) continue
+    const value = attribute.name.toLowerCase() === 'class'
+      ? transformClassValue(attribute.value, options)
+      : attribute.value
+    next.setAttribute(attribute.name, value)
   }
   for (const child of Array.from(element.childNodes)) {
-    const cleaned = cleanNode(child, space, document)
+    const cleaned = cleanNode(child, space, document, options)
     if (cleaned) next.appendChild(cleaned)
   }
   return next
@@ -105,28 +126,33 @@ function appendRichTextNode(
   raw: unknown,
   space: string,
   document: Document,
+  options: RichTextOptions,
 ): void {
   if (!raw || typeof raw !== 'object') return
   const node = raw as RichTextNode
   if (node.type === 'text' || (node.text !== undefined && !node.name)) {
-    parent.appendChild(document.createTextNode(decodeRichTextSpace(String(node.text ?? ''), space)))
+    parent.appendChild(document.createTextNode(decodeText(String(node.text ?? ''), space, options)))
     return
   }
   const tag = String(node.name ?? '').toLowerCase()
   if (!tag) return
   if (!isAllowedRichTextTag(tag)) {
     if (isDroppedRichTextTag(tag)) return
-    for (const child of node.children ?? []) appendRichTextNode(parent, child, space, document)
+    for (const child of node.children ?? []) appendRichTextNode(parent, child, space, document, options)
     return
   }
   const element = document.createElement(tag)
   for (const [name, value] of Object.entries(node.attrs ?? {})) {
     if (value === undefined || value === null) continue
     const text = String(value)
-    if (isAllowedAttribute(tag, name, text)) element.setAttribute(name, text)
+    if (!isAllowedAttribute(tag, name, text)) continue
+    element.setAttribute(
+      name,
+      name.toLowerCase() === 'class' ? transformClassValue(text, options) : text,
+    )
   }
   if (!VOID_TAGS.has(tag)) {
-    for (const child of node.children ?? []) appendRichTextNode(element, child, space, document)
+    for (const child of node.children ?? []) appendRichTextNode(element, child, space, document, options)
   }
   parent.appendChild(element)
 }
@@ -139,20 +165,21 @@ export function createRichTextFragment(
   nodes: unknown,
   space: string,
   document: Document,
+  options: RichTextOptions = {},
 ): DocumentFragment | null {
   if (typeof nodes === 'string') {
     const template = document.createElement('template')
     template.innerHTML = nodes
     const fragment = document.createDocumentFragment()
     for (const child of Array.from(template.content.childNodes)) {
-      const cleaned = cleanNode(child, space, document)
+      const cleaned = cleanNode(child, space, document, options)
       if (cleaned) fragment.appendChild(cleaned)
     }
     return fragment
   }
   if (Array.isArray(nodes)) {
     const fragment = document.createDocumentFragment()
-    for (const node of nodes) appendRichTextNode(fragment, node, space, document)
+    for (const node of nodes) appendRichTextNode(fragment, node, space, document, options)
     return fragment
   }
   return null

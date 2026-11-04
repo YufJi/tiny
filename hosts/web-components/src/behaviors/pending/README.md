@@ -9,7 +9,6 @@ behavior 占位。每个目录只有一个 `PLACEHOLDER.md`，不会被 `src/ind
 | --- | --- | --- | --- |
 | `wx-autofill-provider` | 共享 | form | [autofill-provider](./autofill-provider/PLACEHOLDER.md) |
 | `wx-cloud` | 平台 | cover-image, editor, image, live-player, map, video | [cloud](./cloud/PLACEHOLDER.md) |
-| `wx-html-parse` | 共享 | editor, rich-text | [html-parse](./html-parse/PLACEHOLDER.md) |
 | `wx-image-route` | 共享 | map | [image-route](./image-route/PLACEHOLDER.md) |
 | `wx-keyboard-accessory-host` | 共享 | input, textarea | [keyboard-accessory-host](./keyboard-accessory-host/PLACEHOLDER.md) |
 | `wx-mask-behavior` | 共享 | toast, action-sheet, modal | [mask-behavior](./mask-behavior/PLACEHOLDER.md) |
@@ -28,5 +27,6 @@ behavior 占位。每个目录只有一个 `PLACEHOLDER.md`，不会被 `src/ind
 - 行为实现后，把目录内容提升为 `src/behaviors/<camelCase>.ts`，接入
   `src/behaviors/index.ts`，再删除对应 `PLACEHOLDER.md`。
 - `wx-native`、`wx-native-cover`、`wx-native-hover` 已提供 web 兼容实现（native 调用改为状态+成功回调），见 `src/behaviors/native*.ts`。
+- `wx-html-parse` 已实现，见 `src/behaviors/htmlParse.ts`，rich-text 使用它解析/过滤 nodes。
 - `wx-player` 依赖原生/宿主媒体能力，仍需保留缺口。
 - `wx-positioning-container` / `wx-positioning-target` 已按 web 语义实现，见 `src/behaviors/positioningContainer.ts`、`positioningTarget.ts`。
