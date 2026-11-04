@@ -8,8 +8,3 @@ tiny-web-view[hidden] {
   display: none;
 }
 
-#frame {
-  border: 0;
-  height: 100%;
-  width: 100%;
-}

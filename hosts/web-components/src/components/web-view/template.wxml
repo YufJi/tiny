@@ -1,1 +1,1 @@
-<iframe id="frame" allow="camera; microphone; autoplay; fullscreen"></iframe>
+<div role="link" aria-label="{{ariaLabel}}"></div>

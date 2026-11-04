@@ -35,7 +35,6 @@ describe('batch 4 media built-ins', () => {
     expect(BUILTIN_HOST_STYLES).toContain('tiny-voip-room {')
     expect(BUILTIN_HOST_STYLES).toContain('tiny-channel-video {')
     expect(BUILTIN_HOST_STYLES).toContain('tiny-web-view {')
-    expect(componentStyle('web-view')).toContain('#frame')
   })
 
   test('map uses the default box and a marker layer', () => {
