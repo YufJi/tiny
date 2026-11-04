@@ -24,6 +24,11 @@ tiny-scroll-view[hidden] {
 .tiny-scroll-view-flex > div {
   width: 100%;
 }
+/* Mirrors the demo reset's `.wx-scroll-view-flex div { width:auto }` for the
+   content box; otherwise horizontal children shrink inside a 100% wrapper. */
+.tiny-scroll-view-flex.is-horizontal > .tiny-scroll-view-content {
+  width: auto;
+}
 .tiny-scroll-view-hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -39,7 +44,7 @@ tiny-scroll-view[hidden] {
 .tiny-scroll-view.is-paging.is-horizontal {
   scroll-snap-type: x mandatory;
 }
-.tiny-scroll-view.is-paging > * {
+.tiny-scroll-view.is-paging .tiny-scroll-view-content > * {
   scroll-snap-align: start;
 }
 .tiny-scroll-view.is-hidden-scrollbar {
