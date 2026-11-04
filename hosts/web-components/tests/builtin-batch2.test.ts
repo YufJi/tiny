@@ -50,8 +50,9 @@ describe('batch 2 built-ins', () => {
   })
 
   test('root-portal and selection expose their host rules', () => {
-    expect(BUILTIN_HOST_STYLES).toContain('tiny-root-portal {\n  display: contents;')
-    expect(BUILTIN_HOST_STYLES).toContain('tiny-root-portal[hidden]')
+    // WeChat 2.30.1 declares no author styles for root-portal/content.
+    expect(BUILTIN_HOST_STYLES).not.toContain('tiny-root-portal {')
+    expect(BUILTIN_HOST_STYLES).not.toContain('tiny-root-portal[hidden]')
     expect(BUILTIN_HOST_STYLES).toContain('tiny-selection {\n  display: block;\n  user-select: text;')
     expect(BUILTIN_HOST_STYLES).toContain('tiny-selection[disable-context-menu]')
   })

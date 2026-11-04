@@ -1267,6 +1267,13 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     applyWxsProps(node, component, wxsPropSnapshots.get(node.id))
   }
 
+  const emitPageReRender = (): void => {
+    // WeChat dispatches `pageReRender` after a page re-render; root-portal and
+    // built-in views listen to it to re-evaluate relocated content.
+    if (typeof document === 'undefined' || typeof CustomEvent === 'undefined') return
+    document.dispatchEvent(new CustomEvent('pageReRender'))
+  }
+
   const applyPatches = (patches: RenderPatch[]): void => {
     for (const patch of patches) {
       if (patch.type === 'text') {
@@ -1301,6 +1308,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     flushPendingClasses()
     flushPendingWxsEvents()
     flushAllWxsProps()
+    emitPageReRender()
   }
 
   // `this.animate` runs on the render side: the service resolved the selector
@@ -1681,6 +1689,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       flushPendingClasses()
       flushPendingWxsEvents()
       flushAllWxsProps()
+      emitPageReRender()
     },
     applyPatches,
     getNode(id) {
