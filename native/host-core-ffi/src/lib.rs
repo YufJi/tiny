@@ -63,6 +63,13 @@ enum FfiEvent {
         #[serde(default)]
         error: Option<String>,
     },
+    RenderHostResult {
+        request_id: String,
+        #[serde(default)]
+        result: Option<Value>,
+        #[serde(default)]
+        error: Option<String>,
+    },
     Command {
         command: HostCommand,
     },
@@ -112,6 +119,18 @@ impl RustHostCore {
                 result,
                 error,
             } => HostEvent::PlatformResult {
+                request_id,
+                result: match (result, error) {
+                    (_, Some(error)) => Err(error),
+                    (Some(result), None) => Ok(result),
+                    (None, None) => Ok(Value::Null),
+                },
+            },
+            FfiEvent::RenderHostResult {
+                request_id,
+                result,
+                error,
+            } => HostEvent::RenderHostResult {
                 request_id,
                 result: match (result, error) {
                     (_, Some(error)) => Err(error),

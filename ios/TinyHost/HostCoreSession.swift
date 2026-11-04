@@ -12,6 +12,7 @@ protocol HostCoreActionSink: AnyObject {
   func setAppVisible(_ visible: Bool)
   func updateUIState(_ state: [String: Any])
   func platformCall(requestId: String, method: String, params: [String: Any], pageId: String?)
+  func renderHostRequest(requestId: String, pageId: String, method: String, payload: [String: Any])
   func commandResult(command: String, result: Any?)
   func hostDiagnostic(level: String, payload: [String: Any])
 }
@@ -82,6 +83,25 @@ final class HostCoreSession {
     return try dispatch(core.handleEvent(
       eventJson: try eventJSON({
         var event: [String: Any] = ["type": "platformResult"]
+        event.merge(payload) { _, new in new }
+        return event
+      }()),
+      nowMs: nowMs
+    ))
+  }
+
+  func renderHostResult(
+    requestId: String,
+    result: Any? = nil,
+    error: String? = nil,
+    nowMs: UInt64 = hostCoreNowMs()
+  ) throws -> Int {
+    var payload: [String: Any] = ["requestId": requestId]
+    if let result { payload["result"] = result }
+    if let error { payload["error"] = error }
+    return try dispatch(core.handleEvent(
+      eventJson: try eventJSON({
+        var event: [String: Any] = ["type": "renderHostResult"]
         event.merge(payload) { _, new in new }
         return event
       }()),
@@ -167,6 +187,16 @@ final class HostCoreSession {
             method: method,
             params: action["params"] as? [String: Any] ?? [:],
             pageId: action["pageId"] as? String
+          )
+        }
+      case "renderHostRequest":
+        if let requestId = action["requestId"] as? String,
+           let method = action["method"] as? String {
+          sink?.renderHostRequest(
+            requestId: requestId,
+            pageId: action["pageId"] as? String ?? "",
+            method: method,
+            payload: action["payload"] as? [String: Any] ?? [:]
           )
         }
       case "commandResult":
