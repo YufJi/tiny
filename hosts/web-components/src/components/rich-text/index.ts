@@ -24,7 +24,7 @@ type RichTextRuntime = {
 }
 
 /**
- * Mirrors `wx-rich-text` in WeChat WebView 2.30.1.
+ * Mirrors `wx-rich-text` in WeChat WebView 2.33.0.
  *
  * Behaviors: `wx-base` + `wx-class-prefix` + `wx-html-parse`. Parsing and
  * sanitizing are provided by the html-parse behavior; this component only

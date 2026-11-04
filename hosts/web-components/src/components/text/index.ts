@@ -19,7 +19,7 @@ const SELECTABLE_REGION_CLASS = '__wa_selectable_region'
 /**
  * Mirrors WeChat's `wx-text`: the slotted content lives in a hidden `#raw`
  * node, and `#main` is rebuilt with decoded text and `<br>` line breaks.
- * `user-select` (2.30.1) turns `#main` into the selectable region.
+ * `user-select` (2.33.0) turns `#main` into the selectable region.
  */
 export function defineText(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
@@ -36,7 +36,7 @@ export function defineText(ctx: BuiltinContext): BuiltinDefinition {
     lifetimes: {
       attached() {
         if (this.data.selectable) {
-          // 2.30.1 deprecates `selectable` in favour of `user-select`.
+          // 2.33.0 deprecates `selectable` in favour of `user-select`.
           ctx.options.onDiagnostic?.({
             severity: 'warning',
             code: 'DEPRECATED_TEXT_SELECTABLE',

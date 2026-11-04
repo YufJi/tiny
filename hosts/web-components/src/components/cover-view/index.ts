@@ -14,7 +14,7 @@ type CoverViewRuntime = {
 }
 
 /**
- * Mirrors the DOM-observable part of `wx-cover-view` in WeChat WebView 2.30.1.
+ * Mirrors the DOM-observable part of `wx-cover-view` in WeChat WebView 2.33.0.
  *
  * Reference structure: a native placeholder `#container.wx-cover-view` plus a
  * slotted `#content.wx-cover-view`; the host block rules and scroll

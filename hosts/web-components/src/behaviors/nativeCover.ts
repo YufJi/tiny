@@ -18,7 +18,7 @@ type CoverRuntime = {
 }
 
 /**
- * Web port of `wx-native-cover` (WeChat 2.30.1).
+ * Web port of `wx-native-cover` (WeChat 2.33.0).
  *
  * The reference owns native text/scroll views and forwards touch events to
  * them. The browser host keeps the same method surface and bookkeeping

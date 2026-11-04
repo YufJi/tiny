@@ -1,4 +1,4 @@
 /*
- * WeChat 2.30.1 declares no `wx-root-portal` / `wx-root-portal-content` CSS.
+ * WeChat 2.33.0 declares no `wx-root-portal` / `wx-root-portal-content` CSS.
  * The content element only gets an inline `top: 0` from the template engine.
  */

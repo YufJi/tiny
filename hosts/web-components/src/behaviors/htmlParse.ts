@@ -19,7 +19,7 @@ type HtmlParser = {
 }
 
 /**
- * Web port of `wx-html-parse` (WeChat 2.30.1).
+ * Web port of `wx-html-parse` (WeChat 2.33.0).
  *
  * The reference wiring exposes the exparser HTML parser/filter and a space
  * decoder to components such as rich-text and editor. The browser host keeps

@@ -405,7 +405,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   // built-in components share a single tap/longpress source.
   //
   // Listen at the document element: root-portal content is appended to
-  // `document.documentElement` (matching WeChat 2.30.1), so a container-scoped
+  // `document.documentElement` (matching WeChat 2.33.0), so a container-scoped
   // listener would never see it. Ownership is checked against the glass tree,
   // which keeps two trees in one document from injecting each other's events.
   const compositorRoot = options.container

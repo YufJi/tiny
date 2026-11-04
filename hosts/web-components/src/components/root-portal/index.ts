@@ -14,7 +14,7 @@ type RootPortalRuntime = {
 }
 
 /**
- * Mirrors `wx-root-portal` in WeChat WebView 2.30.1.
+ * Mirrors `wx-root-portal` in WeChat WebView 2.33.0.
  *
  * Reference template engine creates a `wx-root-portal-content` slot host,
  * assigns `style.top = 0`, and the behavior relocates that content node:

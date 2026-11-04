@@ -75,7 +75,7 @@ function roundScale(value: number): number {
 
 
 /**
- * Mirrors `wx-movable-view` in WeChat WebView 2.30.1.
+ * Mirrors `wx-movable-view` in WeChat WebView 2.33.0.
  *
  * Behavior mapping:
  * - `wx-base`            -> `ctx.behaviors.base`

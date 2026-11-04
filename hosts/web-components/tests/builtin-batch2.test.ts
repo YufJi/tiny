@@ -12,9 +12,9 @@ function componentStyle(tag: string): string {
 }
 
 describe('batch 2 built-ins', () => {
-  test('registers page-container, root-portal and movable/keyboard tags', () => {
+  test('registers page-container, root-portal, grid-view and movable/keyboard tags', () => {
     for (const tag of [
-      'page-container', 'root-portal',
+      'page-container', 'root-portal', 'grid-view',
       'movable-area', 'movable-view', 'keyboard-accessory',
     ]) {
       expect(BUILTIN_COMPONENT_TAGS).toContain(tag)
@@ -63,5 +63,6 @@ describe('batch 2 built-ins', () => {
     // WeChat 2.30.1 declares no author styles for root-portal/content.
     expect(BUILTIN_HOST_STYLES).not.toContain('tiny-root-portal {')
     expect(BUILTIN_HOST_STYLES).not.toContain('tiny-root-portal[hidden]')
+    expect(componentStyle('grid-view')).toContain('.tiny-builtin-grid-view--wx-grid-view')
   })
 })

@@ -1,9 +1,9 @@
 # 待实现的宿主 behaviors
 
-这里放 `@tiny/host-web-components` 还未实现、但 WAWebview 2.30.1 和后续组件会用到的
+这里放 `@tiny/host-web-components` 还未实现、但 WAWebview 2.33.0 和后续组件会用到的
 behavior 占位。每个目录只有一个 `PLACEHOLDER.md`，不会被 `src/index.ts` 或构建脚本加载。
 
-完整口径、计数见 [内置组件与 behaviors 缺口清单](../../../../../docs/builtin-inventory-2.30.1.md)。
+完整口径、计数见 [内置组件与 behaviors 缺口清单](../../../../../docs/builtin-inventory-2.33.0.md)。
 
 | 参考 behavior | 类别 | 参考使用方 | 占位 |
 | --- | --- | --- | --- |

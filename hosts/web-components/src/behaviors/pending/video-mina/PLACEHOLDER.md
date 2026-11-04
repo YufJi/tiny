@@ -1,6 +1,6 @@
 # `wx-video-mina` 占位
 
-> 未实现。本目录由 [内置组件与 behaviors 缺口清单](../../../../../../docs/builtin-inventory-2.30.1.md) 生成。
+> 未实现。本目录由 [内置组件与 behaviors 缺口清单](../../../../../../docs/builtin-inventory-2.33.0.md) 生成。
 
 | 项 | 值 |
 | --- | --- |

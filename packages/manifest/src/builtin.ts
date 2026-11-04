@@ -2,6 +2,7 @@ import { TINY_ENGINE_NAMING } from './engine-naming'
 
 export const BUILTIN_COMPONENT_TAGS = [
   'view',
+  'grid-view',
   'cover-view',
   'cover-image',
   'root-portal',

@@ -1,5 +1,5 @@
 /*
- * Document base and shared font, ported from WeChat WebView 2.30.1
+ * Document base and shared font, ported from WeChat WebView 2.33.0
  * (WAWebview.css: html/body/:root base rules and the weui @font-face).
  *
  * `[hidden]` is transitional: WeChat declares it per component. Keep this

@@ -42,7 +42,7 @@ function backendOf(instance: unknown): HTMLElement | null {
 }
 
 /**
- * Web port of `wx-positioning-container` (WeChat 2.30.1).
+ * Web port of `wx-positioning-container` (WeChat 2.33.0).
  *
  * The reference registers a native container via
  * `wx.invoke("insertPositioningContainer", …)` and coordinates it with

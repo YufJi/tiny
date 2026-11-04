@@ -60,7 +60,7 @@ Unimplemented components and behaviors have `PLACEHOLDER.md` scaffolding:
 scripts skip component folders carrying the marker, so a placeholder is never
 registered as an empty built-in. Remove the marker when implementation starts.
 The current gap list and counts live in
-[docs/builtin-inventory-2.30.1.md](../../docs/builtin-inventory-2.30.1.md).
+[docs/builtin-inventory-2.33.0.md](../../docs/builtin-inventory-2.33.0.md).
 
 ## Style boundary
 

@@ -56,7 +56,7 @@ function elementOf(instance: unknown): HTMLElement | null {
 }
 
 /**
- * Web port of `wx-positioning-target` (WeChat 2.30.1).
+ * Web port of `wx-positioning-target` (WeChat 2.33.0).
  *
  * The reference tracks a positioned node inside a parent
  * `wx-positioning-container`. Native hosts register the container through

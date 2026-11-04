@@ -43,7 +43,7 @@ function touchDistance(touches: TouchList): number {
 
 
 /**
- * Mirrors `wx-movable-area` in WeChat WebView 2.30.1.
+ * Mirrors `wx-movable-area` in WeChat WebView 2.33.0.
  *
  * Behavior mapping:
  * - `wx-base`                  -> `ctx.behaviors.base`

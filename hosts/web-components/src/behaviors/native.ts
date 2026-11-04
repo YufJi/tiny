@@ -21,7 +21,7 @@ type NativeRuntime = {
 let nextContainerId = 1
 
 /**
- * Web port of `wx-native` (WeChat 2.30.1).
+ * Web port of `wx-native` (WeChat 2.33.0).
  *
  * The reference talks to the native view layer through `wx.invoke`. The browser
  * host has no native layer, so the same API surface is kept as a stateful

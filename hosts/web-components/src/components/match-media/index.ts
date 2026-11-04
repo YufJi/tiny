@@ -106,7 +106,7 @@ function clearObserver(runtime: MatchMediaRuntime): void {
 }
 
 /**
- * Mirrors `wx-match-media` in WeChat WebView 2.30.1:
+ * Mirrors `wx-match-media` in WeChat WebView 2.33.0:
  * the host stays in the tree and only the internal display style is toggled;
  * the slotted content is never unmounted. The reference observes viewport
  * media queries, so the browser host uses `matchMedia` instead of resize-polling.

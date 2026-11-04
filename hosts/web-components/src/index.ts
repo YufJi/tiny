@@ -11,6 +11,7 @@ import {
 } from './styles'
 import type { BuiltinContext, BuiltinComponentFactoryOptions } from './types'
 import { defineView } from './components/view'
+import { defineGridView } from './components/grid-view'
 import { defineCoverView } from './components/cover-view'
 import { defineCoverImage } from './components/cover-image'
 import { defineRootPortal } from './components/root-portal'
@@ -83,6 +84,7 @@ type DefinitionFactory = (ctx: BuiltinContext) => glassEasel.GeneralComponentDef
 
 const DEFINITION_FACTORIES: Record<BuiltinComponentTag, DefinitionFactory> = {
   view: defineView,
+  'grid-view': defineGridView,
   'cover-view': defineCoverView,
   'cover-image': defineCoverImage,
   'root-portal': defineRootPortal,

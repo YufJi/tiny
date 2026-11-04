@@ -49,7 +49,7 @@ function popupClassModifiers(position: unknown, round: unknown): string {
 }
 
 /**
- * Mirrors `wx-page-container` in WeChat WebView 2.30.1:
+ * Mirrors `wx-page-container` in WeChat WebView 2.33.0:
  * data-driven `inited`/`display`/`overlayClass`/`popupClass`, `computeClass`
  * position modifiers, `transitionend` + duration fallback, singleton instance,
  * body scroll lock and slide-down-to-close.
