@@ -388,6 +388,16 @@ describe('P0 built-in components', () => {
     nativeInput?.triggerEvent('input', { value: 'typed' })
     expect(changes).toEqual([{ value: 'typed', cursor: -1, keyCode: 0 }])
     expect(inputHost?.data.value).toBe('typed')
+
+    inputHost?.setData({ maxlength: 3, value: 'abcdef' })
+    expect(inputHost?.data.value).toBe('abc')
+    const inputRuntime = inputHost as unknown as {
+      autofillGetValue: () => unknown
+      autofillSetValue: (value: unknown) => void
+    }
+    inputRuntime.autofillSetValue('autofilled')
+    expect(inputRuntime.autofillGetValue()).toBe('autofilled')
+    expect(inputHost?.data.value).toBe('autofilled')
   })
 
   test('checkbox toggles on tap and slider/switch normalize control values', () => {
@@ -1156,6 +1166,31 @@ describe('P0 built-in components', () => {
       type: 'reset',
       detail: { target: { id: 'reset', dataset: {}, offsetTop: 0, offsetLeft: 0 } },
     })
+  })
+
+  test('textarea normalizes maxlength and autofill values', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const changes: unknown[] = []
+    const page = space.defineComponent({
+      is: 'page',
+      using: { textarea: builtins.textarea },
+      template: compilePage('<textarea id="textarea" maxlength="{{3}}" value="abcdef" bindchange="onInput" />'),
+      methods: {
+        onInput(event: glassEasel.ShadowedEvent<unknown>) { changes.push(event.detail) },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = instance.getShadowRoot()?.getElementById('textarea')?.asGeneralComponent()!
+    expect(host.data.value).toBe('abc')
+    const runtime = host as unknown as {
+      autofillGetValue: () => unknown
+      autofillSetValue: (value: unknown) => void
+    }
+    runtime.autofillSetValue('hello')
+    expect(runtime.autofillGetValue()).toBe('hello')
+    expect(host.data.value).toBe('hello')
+    expect(changes).toEqual([{ value: 'hello' }])
   })
 
   test('textarea renders placeholder/compute layers and auto-height state', () => {

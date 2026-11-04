@@ -7,7 +7,13 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: builtinDefinitionName('input'),
     template: ctx.template('input'),
-    behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent, ctx.behaviors.classPrefix],
+    behaviors: [
+      ctx.behaviors.base,
+      ctx.behaviors.dataComponent,
+      ctx.behaviors.classPrefix,
+      ctx.behaviors.autofill,
+      ctx.behaviors.labelTarget,
+    ],
     properties: {
       value: { type: String, value: '' },
       type: { type: String, value: 'text' },
@@ -16,7 +22,7 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
       placeholderStyle: { type: String, value: '' },
       dropdownStyle: { type: Object, value: {} },
       disabled: { type: Boolean, value: false },
-      maxlength: { type: Number, value: 140 },
+      maxlength: { type: Number, value: 140, observer: 'maxlengthChanged' },
       focus: { type: Boolean, value: false },
       autoFocus: { type: Boolean, value: false },
       confirmType: { type: String, value: 'done' },
@@ -129,10 +135,36 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
         const clamp = (position: number) => Math.max(0, Math.min(max, Number.isFinite(position) ? position : 0))
         element.setSelectionRange(clamp(start), clamp(end))
       },
+      maxlengthChanged(next: number): void {
+        if (!(next > 0)) return
+        const value = String(this.data.value ?? '')
+        if (value.length > next) this.setData({ value: value.slice(0, next) })
+      },
+      getFormData(callback?: (value: unknown) => void): unknown {
+        if (typeof callback === 'function') {
+          callback(this.data.value)
+          return undefined
+        }
+        return this.data.value
+      },
+      resetFormData(): void {
+        this.setData({ value: '' })
+      },
+      autofillGetValue(): unknown {
+        return this.data.value
+      },
+      autofillSetValue(value: unknown): void {
+        const next = String(value ?? '')
+        this.setData({ value: next })
+        this.triggerEvent('change', { value: next })
+      },
+      handleLabelTap(): void {
+        this.focusNative()
+      },
       handleInput(event: glassEasel.ShadowedEvent<unknown>) {
         const detail = (event.detail ?? {}) as { value?: unknown; cursor?: unknown; keyCode?: unknown }
         const value = valueFromEvent(event)
-        const cursor = Number(detail.cursor ?? -1)
+        const cursor = Number(detail.cursor ?? this.nativeInput()?.selectionEnd ?? -1)
         const keyCode = Number(detail.keyCode ?? 0)
         this.rememberSelection()
         this.setData({ value })
@@ -153,11 +185,11 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
         this.triggerEvent('focus', { value, height }, { bubbles: true, composed: true })
       },
       handleBlur(event: glassEasel.ShadowedEvent<unknown>) {
-        const detail = (event.detail ?? {}) as { value?: unknown; height?: unknown }
+        const detail = (event.detail ?? {}) as { value?: unknown }
         const value = detail.value ?? this.data.value
-        const height = Number(detail.height ?? 0)
         if (value !== this.data.value) this.setData({ value })
-        this.triggerEvent('blur', { value, height }, { bubbles: true, composed: true })
+        const cursor = Number(this.nativeInput()?.selectionEnd ?? -1)
+        this.triggerEvent('blur', { value, cursor }, { bubbles: true, composed: true })
       },
       handleCompositionStart(event: glassEasel.ShadowedEvent<unknown>) {
         this.triggerEvent('keyboardcompositionstart', { value: valueFromEvent(event) }, { bubbles: true, composed: true })

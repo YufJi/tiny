@@ -10,7 +10,7 @@
     class="tiny-textarea {{autoHeight ? 'is-auto-height' : ''}} {{disableDefaultPadding ? 'is-no-default-padding' : ''}}"
     value="{{value}}"
     disabled="{{disabled}}"
-    maxlength="{{maxlength}}"
+    maxlength="{{maxlength > 0 ? maxlength : -1}}"
     autofocus="{{autoFocus || focus}}"
     confirm-type="{{confirmType}}"
     enterkeyhint="{{confirmType}}"

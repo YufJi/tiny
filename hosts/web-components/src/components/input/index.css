@@ -1,5 +1,7 @@
 tiny-input {
   display: block;
+  cursor: auto;
+  font-family: UICTFontTextStyleBody;
   position: relative;
   box-sizing: border-box;
   width: 100%;
@@ -10,6 +12,10 @@ tiny-input {
   white-space: nowrap;
 }
 
+tiny-input[hidden] {
+  display: none;
+}
+
 .tiny-input-wrapper {
   position: relative;
   width: 100%;
@@ -18,6 +24,8 @@ tiny-input {
 
 .tiny-input {
   display: block;
+  cursor: auto;
+  font-family: UICTFontTextStyleBody;
   position: absolute;
   inset: 0;
   width: 100%;

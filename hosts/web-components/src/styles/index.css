@@ -85,8 +85,6 @@ body {
 }
 
 tiny-button[hidden],
-tiny-input[hidden],
-tiny-textarea[hidden],
 tiny-scroll-view[hidden],
 tiny-canvas[hidden] {
   display: none;
