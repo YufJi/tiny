@@ -21,7 +21,7 @@ function createTemplates() {
     templateScriptExtension: '.wxs',
   })
   group.addTmpl(PAGE_PATH, '<parent id="parent" />')
-  group.addTmpl(PARENT_PATH, '<view id="probe" class="probe" data-count="{{ count }}" data-date="{{ date }}" bindtap="onTap">{{ seen }}</view><switch id="sw" bindchange="onSwitch" /><checkbox-group id="group" bindchange="onGroupChange" /><child id="child" fn="{{ fn }}" bind:custom="onCustom" />')
+  group.addTmpl(PARENT_PATH, '<view id="probe" class="probe" data-count="{{ count }}" data-date="{{ date }}" bindtap="onTap">{{ seen }}</view><view id="cb" bindtap="onCallbackTap">{{ callbackSeen }}</view><switch id="sw" bindchange="onSwitch" /><checkbox-group id="group" bindchange="onGroupChange" /><child id="child" fn="{{ fn }}" bind:custom="onCustom" />')
   group.addTmpl(CHILD_PATH, '<view id="fire" bindtap="fire">fire</view><view>{{ seen }}</view>')
   const groupList = new Function(`return ${group.getTmplGenObjectGroups()}`)() as Record<string, unknown>
   return {
@@ -70,11 +70,19 @@ describe('logic tree runtime options', () => {
   test('runs component lifetimes and methods so function properties propagate', async () => {
     const manifest = createManifest()
     const parentDefinition = normalizeComponentDefinition({
-      data: { fn: null, seen: 'none', count: 3, custom: null, switchValue: false, groupValue: null, date: new Date('2012-02-01T00:00:00.000Z') },
+      data: { fn: null, seen: 'none', callbackSeen: 'none', count: 3, custom: null, switchValue: false, groupValue: null, date: new Date('2012-02-01T00:00:00.000Z') },
       methods: {
         onTap() {
           ;(this as unknown as { setData: (patch: Record<string, unknown>) => void })
             .setData({ seen: 'tapped' })
+        },
+        onCallbackTap() {
+          ;(this as unknown as {
+            setData: (patch: Record<string, unknown>, callback?: () => void) => void
+          }).setData({ callbackSeen: 'first' }, () => {
+            ;(this as unknown as { setData: (patch: Record<string, unknown>) => void })
+              .setData({ callbackSeen: 'second' })
+          })
         },
         onCustom(event: { detail: { text: string } }) {
           ;(this as unknown as { setData: (patch: Record<string, unknown>) => void })
@@ -256,6 +264,12 @@ describe('logic tree runtime options', () => {
     })).toBe(true)
     expect((parent as unknown as { data: { groupValue?: string[] } }).data.groupValue).toEqual(['a', 'b'])
     expect((parent as unknown as { data: { seen?: string } }).data.seen).toBe('tapped')
+    const cb = findById(snapshot, 'cb')
+    expect(cb).toBeDefined()
+    expect(tree.dispatchViewEvent({ viewId: cb!.id, name: 'tap', native: {} })).toBe(true)
+    // Event handlers receive a glass method caller; setData's completion
+    // callback must still run so nested updates like `doPopup` work.
+    expect((parent as unknown as { data: { callbackSeen?: string } }).data.callbackSeen).toBe('second')
     const { patches } = tree.updateRenderTree('page-1')
     expect(patches.some((patch) => patch.type === 'text' && patch.text === 'tapped')).toBe(true)
 

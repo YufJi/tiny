@@ -152,6 +152,7 @@ export class GlassEaselRuntimeAdapter {
   private readonly componentPaths = new WeakMap<object, string>()
   private readonly componentUsageCounters = new Map<string, number>()
   private readonly methodCallerComponents = new WeakMap<object, glassEasel.GeneralComponent>()
+  private readonly setDataCallbackComponents = new WeakSet<object>()
   private readonly onDiagnostic?: (diagnostic: import('../../diagnostics').RuntimeDiagnostic) => void
   private readonly logicPageOptions?: GlassEaselAdapterOptions['logicPageOptions']
   private readonly logicComponentDefinitions?: GlassEaselAdapterOptions['logicComponentDefinitions']
@@ -1280,12 +1281,32 @@ export class GlassEaselRuntimeAdapter {
     return undefined
   }
 
+  /**
+   * Mini-program event handlers run with a glass method caller as `this`.
+   * glass's `setData` only accepts the patch, while pages commonly pass a
+   * completion callback (`setData(patch, cb)`); preserve the callback on the
+   * component instance so nested page methods also see it.
+   */
+  private ensureSetDataCallback(component: glassEasel.GeneralComponent): void {
+    if (this.setDataCallbackComponents.has(component)) return
+    this.setDataCallbackComponents.add(component)
+    const target = component as unknown as {
+      setData: (data: never, callback?: () => void) => void
+    }
+    const original = target.setData.bind(component)
+    target.setData = (data: never, callback?: () => void): void => {
+      original(data)
+      callback?.()
+    }
+  }
+
   private createEventMethodCaller(
     component?: glassEasel.GeneralComponent,
     initialFields?: Record<string, unknown>,
   ): unknown {
     const logicMode = Boolean(this.logicComponentDefinitions)
     const instanceFields: Record<string, unknown> = { ...(initialFields ?? {}) }
+    if (logicMode && component) this.ensureSetDataCallback(component)
     return new Proxy(instanceFields, {
       has() {
         return true
