@@ -13,7 +13,6 @@ export const BUILTIN_COMPONENT_TAGS = [
   'button',
   'text',
   'rich-text',
-  'selection',
   'label',
   'input',
   'checkbox',

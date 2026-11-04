@@ -12,9 +12,9 @@ function componentStyle(tag: string): string {
 }
 
 describe('batch 2 built-ins', () => {
-  test('registers page-container, root-portal, selection and movable/keyboard tags', () => {
+  test('registers page-container, root-portal and movable/keyboard tags', () => {
     for (const tag of [
-      'page-container', 'root-portal', 'selection',
+      'page-container', 'root-portal',
       'movable-area', 'movable-view', 'keyboard-accessory',
     ]) {
       expect(BUILTIN_COMPONENT_TAGS).toContain(tag)
@@ -59,11 +59,9 @@ describe('batch 2 built-ins', () => {
     expect(componentStyle('keyboard-accessory')).toContain('position: fixed')
   })
 
-  test('root-portal and selection expose their host rules', () => {
+  test('root-portal exposes its host rules', () => {
     // WeChat 2.30.1 declares no author styles for root-portal/content.
     expect(BUILTIN_HOST_STYLES).not.toContain('tiny-root-portal {')
     expect(BUILTIN_HOST_STYLES).not.toContain('tiny-root-portal[hidden]')
-    expect(BUILTIN_HOST_STYLES).toContain('tiny-selection {\n  display: block;\n  user-select: text;')
-    expect(BUILTIN_HOST_STYLES).toContain('tiny-selection[disable-context-menu]')
   })
 })

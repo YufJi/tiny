@@ -14,8 +14,9 @@ describe('batch 5 open-capability built-ins', () => {
   })
 
   test('all 59 real tags are registered', () => {
-    expect(BUILTIN_COMPONENT_TAGS).toHaveLength(59)
+    expect(BUILTIN_COMPONENT_TAGS).toHaveLength(58)
     expect(BUILTIN_COMPONENT_TAGS).not.toContain('aria-component')
+    expect(BUILTIN_COMPONENT_TAGS).not.toContain('selection')
   })
 
   test('open-capability hosts keep stable placeholder boxes', () => {

@@ -23,7 +23,6 @@ import { defineFunctionalPageNavigator } from './components/functional-page-navi
 import { defineButton } from './components/button'
 import { defineText } from './components/text'
 import { defineRichText } from './components/rich-text'
-import { defineSelection } from './components/selection'
 import { defineLabel } from './components/label'
 import { defineInput } from './components/input'
 import { defineCheckbox } from './components/checkbox'
@@ -95,7 +94,6 @@ const DEFINITION_FACTORIES: Record<BuiltinComponentTag, DefinitionFactory> = {
   button: defineButton,
   text: defineText,
   'rich-text': defineRichText,
-  selection: defineSelection,
   label: defineLabel,
   input: defineInput,
   checkbox: defineCheckbox,
