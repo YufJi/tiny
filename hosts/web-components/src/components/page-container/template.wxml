@@ -1,0 +1,6 @@
+<div id="container">
+  <div id="overlay" class="weui-overlay"></div>
+  <div id="content" class="weui-popup">
+    <slot />
+  </div>
+</div>

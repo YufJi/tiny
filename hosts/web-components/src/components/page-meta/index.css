@@ -1,0 +1,7 @@
+tiny-page-meta {
+  display: contents;
+}
+
+tiny-page-meta[hidden] {
+  display: none;
+}

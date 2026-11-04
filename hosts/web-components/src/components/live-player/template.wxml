@@ -1,0 +1,2 @@
+<video id="player" playsinline></video>
+<div id="slot"><slot /></div>

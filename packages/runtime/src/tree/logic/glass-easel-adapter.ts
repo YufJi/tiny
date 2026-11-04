@@ -128,6 +128,10 @@ export class GlassEaselRuntimeAdapter {
   readonly componentSpace: glassEasel.ComponentSpace
   /** Internal marker behavior for custom form-field components. */
   private readonly formFieldBehavior: glassEasel.GeneralBehavior
+  /** Marker for wrapper components whose shadow tree contains form fields. */
+  private readonly formFieldGroupBehavior: glassEasel.GeneralBehavior
+  /** `wx://label-target`: receives `labelTap` from the built-in `<label>`. */
+  private readonly labelTargetBehavior: glassEasel.GeneralBehavior
   private readonly templates: TemplateRegistry
   private readonly styleScopeIds = new Map<string, number>()
   private readonly scopeIdsByName = new Map<string, number>()
@@ -191,6 +195,22 @@ export class GlassEaselRuntimeAdapter {
     this.formFieldBehavior = this.componentSpace.defineBehavior({
       is: TINY_ENGINE_NAMING.formFieldBehaviorId,
     })
+    this.formFieldGroupBehavior = this.componentSpace.defineBehavior({
+      is: `${TINY_ENGINE_NAMING.behaviorPrefix}form-field-group`,
+    })
+    this.labelTargetBehavior = this.componentSpace.defineBehavior({
+      is: `${TINY_ENGINE_NAMING.behaviorPrefix}label-target`,
+      listeners: {
+        labelTap(this: { handleLabelTap?: (event: unknown) => void }, event: unknown) {
+          this.handleLabelTap?.(event)
+        },
+      },
+      methods: {
+        handleLabelTap() {
+          // Activation is dispatched by the built-in <label>.
+        },
+      },
+    } as never)
     this.onDiagnostic = options.onDiagnostic
   }
 
@@ -899,12 +919,18 @@ export class GlassEaselRuntimeAdapter {
     const reservedData = Object.fromEntries(
       [...reservedNames].map((name) => [name, schema.properties[name]?.value]),
     )
+    const logicDefinition = this.logicComponentDefinitions?.get(schema.path)
+    const builtinBehaviors: glassEasel.GeneralBehavior[] = []
+    if (schema.formField) builtinBehaviors.push(this.formFieldBehavior)
+    if (schema.formFieldGroup) builtinBehaviors.push(this.formFieldGroupBehavior)
+    if (schema.labelTarget) builtinBehaviors.push(this.labelTargetBehavior)
     let builder: any = this.componentSpace
       .defineWithMethodCaller(schema.path)
       .definition({
         properties: declaredProperties as never,
         externalClasses: schema.externalClasses,
-        behaviors: schema.formField ? [this.formFieldBehavior] : undefined,
+        behaviors: builtinBehaviors.length > 0 ? builtinBehaviors : undefined,
+        listeners: logicDefinition?.listeners as never,
       })
       .template({
         groupList: this.templates.groupList,
@@ -943,7 +969,6 @@ export class GlassEaselRuntimeAdapter {
         adapter.methodCallerComponents.set(methodCaller as object, this)
         return methodCaller
       })
-    const logicDefinition = this.logicComponentDefinitions?.get(schema.path)
     if (logicDefinition) {
       const methods = Object.fromEntries(
         [...logicDefinition.methods].map(([name, method]) => [

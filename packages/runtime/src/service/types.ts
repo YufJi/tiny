@@ -34,6 +34,7 @@ export type MiniProgramComponentOptions = {
   behaviors?: Array<MiniProgramComponentOptions | string>
   observers?: Record<string, unknown> | Array<unknown>
   relations?: Record<string, unknown>
+  listeners?: Record<string, ((...args: unknown[]) => unknown) | string>
   externalClasses?: string[]
   options?: Record<string, unknown>
   export?: (...args: unknown[]) => unknown

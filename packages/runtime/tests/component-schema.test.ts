@@ -74,6 +74,18 @@ describe('buildComponentSchemas', () => {
     expect(schemas[0]!.properties.value).toBeDefined()
   })
 
+  test('marks form-field-group and label-target marker behaviors in the schema', () => {
+    const definitions = new Map([
+      ['components/a', normalizeComponentDefinition({
+        behaviors: ['wx://form-field-group', 'wx://label-target'],
+      }, 'components/a')],
+    ])
+    const schemas = buildComponentSchemas([artifact('components/a')], definitions)
+    expect(schemas[0]!.formFieldGroup).toBe(true)
+    expect(schemas[0]!.labelTarget).toBe(true)
+    expect(schemas[0]!.formField).toBe(false)
+  })
+
   test('serializes componentGenerics and pureDataPattern', () => {
     const definitions = new Map([
       ['components/a', normalizeComponentDefinition({}, 'components/a')],

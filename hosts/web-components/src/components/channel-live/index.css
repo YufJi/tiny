@@ -1,0 +1,17 @@
+tiny-channel-live {
+  background: #000;
+  display: block;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+tiny-channel-live[hidden] {
+  display: none;
+}
+
+#container {
+  height: 100%;
+  width: 100%;
+}

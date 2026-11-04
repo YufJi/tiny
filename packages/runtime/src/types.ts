@@ -33,6 +33,8 @@ export type MiniProgramComponentSchema = {
   pureDataPattern?: string
   externalClasses?: string[]
   formField?: boolean
+  formFieldGroup?: boolean
+  labelTarget?: boolean
   observers?: Array<{ key: string; paths: string[] }>
   relations?: Array<{
     key: string

@@ -4,7 +4,7 @@ import {
   type RuntimeCompatibilityConfig,
 } from '@tiny/manifest'
 import { cloneDataValue } from '../data'
-import { componentExportBehavior, formFieldBehavior, isBuiltinBehavior } from './behaviors'
+import { isBuiltinBehavior, resolveBuiltinBehavior } from './behaviors'
 import type { MiniProgramComponentOptions } from '../service'
 import type { MiniProgramPropertyDefinition, MiniProgramPropertyType } from '../types'
 
@@ -58,10 +58,15 @@ export type NormalizedComponentDefinition = {
   observers: NormalizedObserver[]
   relations: NormalizedRelation[]
   externalClasses: string[]
+  listeners: Record<string, Function | string>
   options: NormalizedComponentOptions
   behaviors: Set<object | string>
   componentExport: boolean
   formField: boolean
+  formFieldButton: boolean
+  formFieldGroup: boolean
+  functionalPage: boolean
+  labelTarget: boolean
   export?: Function
   diagnostics: DefinitionDiagnostic[]
 }
@@ -84,6 +89,7 @@ const RESERVED_OPTION_KEYS = new Set([
   'observers',
   'relations',
   'externalClasses',
+  'listeners',
   'options',
   'export',
   'definitionFilter',
@@ -111,10 +117,15 @@ type Collector = {
   observers: NormalizedObserver[]
   relations: Map<string, NormalizedRelation>
   externalClasses: string[]
+  listeners: Record<string, Function | string>
   options: NormalizedComponentOptions
   behaviors: Set<object | string>
   componentExport: boolean
   formField: boolean
+  formFieldButton: boolean
+  formFieldGroup: boolean
+  functionalPage: boolean
+  labelTarget: boolean
   export?: Function
   diagnostics: DefinitionDiagnostic[]
   observerIndex: number
@@ -129,8 +140,7 @@ export function normalizeComponentDefinition(
 ): NormalizedComponentDefinition {
   const collector = createCollector()
   const visited = new Set<object>()
-  const exportBehavior = componentExportBehavior(compatibility)
-  const formField = formFieldBehavior(compatibility)
+  const visitedBuiltins = new Set<string>()
   const configuredPureDataPattern = parsePureDataPattern(configuration?.pureDataPattern)
   if (configuredPureDataPattern) collector.options.pureDataPattern = configuredPureDataPattern
   if (typeof options.definitionFilter === 'function') {
@@ -143,20 +153,20 @@ export function normalizeComponentDefinition(
   const visit = (source: unknown): void => {
     if (typeof source === 'string') {
       collector.behaviors.add(source)
-      if (source === exportBehavior) {
-        collector.componentExport = true
-      } else if (source === formField || source === `${formField}-button`) {
-        // `wx://form-field-button` is the built-in button variant of a form
-        // field; Vant declares it on `van-button`.
-        collector.formField = true
-        // Custom form fields contribute `name`/`value` to the enclosing form.
-        if (!collector.properties.name) {
-          collector.properties.name = { type: 'string', value: '' }
-        }
-        if (!collector.properties.value) {
-          collector.properties.value = { value: '' }
-        }
-      } else if (isBuiltinBehavior(source)) {
+      const builtin = resolveBuiltinBehavior(source, compatibility)
+      if (builtin) {
+        if (visitedBuiltins.has(builtin.id)) return
+        visitedBuiltins.add(builtin.id)
+        collector.componentExport ||= builtin.markers.componentExport === true
+        collector.formField ||= builtin.markers.formField === true
+        collector.formFieldButton ||= builtin.markers.formFieldButton === true
+        collector.formFieldGroup ||= builtin.markers.formFieldGroup === true
+        collector.functionalPage ||= builtin.markers.functionalPage === true
+        collector.labelTarget ||= builtin.markers.labelTarget === true
+        visit(builtin.options)
+        return
+      }
+      if (isBuiltinBehavior(source)) {
         collector.diagnostics.push({
           code: DIAGNOSTIC_CODES.UNSUPPORTED_BEHAVIOR,
           message: `Built-in behavior "${source}" is not supported.`,
@@ -211,10 +221,15 @@ export function normalizeComponentDefinition(
     observers,
     relations,
     externalClasses: collector.externalClasses,
+    listeners: collector.listeners,
     options: collector.options,
     behaviors: collector.behaviors,
     componentExport: collector.componentExport,
     formField: collector.formField,
+    formFieldButton: collector.formFieldButton,
+    formFieldGroup: collector.formFieldGroup,
+    functionalPage: collector.functionalPage,
+    labelTarget: collector.labelTarget,
     export: collector.export,
     diagnostics: collector.diagnostics,
   }
@@ -237,6 +252,7 @@ function createCollector(): Collector {
     observers: [],
     relations: new Map(),
     externalClasses: [],
+    listeners: {},
     options: {
       multipleSlots: false,
       virtualHost: false,
@@ -247,6 +263,10 @@ function createCollector(): Collector {
     behaviors: new Set(),
     componentExport: false,
     formField: false,
+    formFieldButton: false,
+    formFieldGroup: false,
+    functionalPage: false,
+    labelTarget: false,
     diagnostics: [],
     observerIndex: 0,
     propertyObserverIndex: 0,
@@ -281,6 +301,15 @@ function mergeSource(
   if (isPlainObject(methods)) {
     for (const [name, method] of Object.entries(methods)) {
       if (typeof method === 'function') collector.methods.set(name, method)
+    }
+  }
+
+  const listeners = source.listeners
+  if (isPlainObject(listeners)) {
+    for (const [name, listener] of Object.entries(listeners)) {
+      if (typeof listener === 'function' || typeof listener === 'string') {
+        collector.listeners[name] = listener as Function | string
+      }
     }
   }
 

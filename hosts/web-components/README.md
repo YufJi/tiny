@@ -52,6 +52,16 @@ Each component owns its folder with `template.wxml` and `index.ts`. The
 definition file receives a `BuiltinContext` and only declares properties,
 lifetimes, observers, and methods; it never parses WXML.
 
+### Placeholders
+
+Unimplemented components and behaviors have `PLACEHOLDER.md` scaffolding:
+`src/components/<tag>/PLACEHOLDER.md` and
+`src/behaviors/pending/<behavior>/PLACEHOLDER.md`. The template/style build
+scripts skip component folders carrying the marker, so a placeholder is never
+registered as an empty built-in. Remove the marker when implementation starts.
+The current gap list and counts live in
+[docs/builtin-inventory-2.30.1.md](../../docs/builtin-inventory-2.30.1.md).
+
 ## Style boundary
 
 The web host uses flat DOM plus scoped CSS rather than Shadow DOM. The full

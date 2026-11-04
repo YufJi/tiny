@@ -1,0 +1,12 @@
+tiny-cover-view {
+  display: block;
+  font-family: -apple-system;
+  line-height: 1.2;
+  overflow: hidden;
+  pointer-events: auto;
+  white-space: nowrap;
+}
+
+tiny-cover-view[hidden] {
+  display: none;
+}

@@ -1,0 +1,49 @@
+tiny-video {
+  background: #000;
+  display: inline-block;
+  height: 225px;
+  line-height: 0;
+  overflow: hidden;
+  position: relative;
+  width: 300px;
+  z-index: 0;
+}
+
+tiny-video[hidden] {
+  display: none;
+}
+
+#video {
+  display: block;
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
+}
+
+.wx-video-slot {
+  height: 100%;
+  left: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 100%;
+  z-index: 5;
+}
+
+.wx-video-slot * {
+  pointer-events: auto;
+}
+
+.wx-video-center-play {
+  border-bottom: 18px solid transparent;
+  border-left: 30px solid rgba(255, 255, 255, 0.85);
+  border-top: 18px solid transparent;
+  display: none;
+  left: 50%;
+  margin-left: -12px;
+  margin-top: -18px;
+  position: absolute;
+  top: 50%;
+  z-index: 6;
+}

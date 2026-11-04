@@ -1,0 +1,17 @@
+tiny-voip-room {
+  background-color: #ccc;
+  display: block;
+  height: 200px;
+  overflow: hidden;
+  position: relative;
+  width: 33%;
+}
+
+tiny-voip-room[hidden] {
+  display: none;
+}
+
+#room {
+  height: 100%;
+  width: 100%;
+}

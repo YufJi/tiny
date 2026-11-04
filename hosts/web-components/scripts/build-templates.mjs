@@ -16,10 +16,17 @@ const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const componentsRoot = path.join(packageRoot, 'src/components')
 const outputDir = path.join(packageRoot, 'src/generated')
 
-const tags = fs.readdirSync(componentsRoot, { withFileTypes: true })
+// Unimplemented components keep a PLACEHOLDER.md instead of template/css/ts.
+// Skip them here so scaffolding does not become a registered empty component.
+const PLACEHOLDER_MARKER = 'PLACEHOLDER.md'
+
+const componentDirs = fs.readdirSync(componentsRoot, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
   .map((entry) => entry.name)
   .sort()
+const tags = componentDirs
+  .filter((tag) => !fs.existsSync(path.join(componentsRoot, tag, PLACEHOLDER_MARKER)))
+const placeholderCount = componentDirs.length - tags.length
 const tagSet = new Set(tags)
 
 function injectInternalScopeClasses(source) {
@@ -97,4 +104,7 @@ fs.writeFileSync(
     '',
   ].join('\n'),
 )
-console.log(`[components] precompiled ${tags.length} templates and ${internalTemplates.length} internal template`)
+console.log(
+  `[components] precompiled ${tags.length} templates and ${internalTemplates.length} internal template`
+    + ` (${placeholderCount} placeholder components skipped)`,
+)

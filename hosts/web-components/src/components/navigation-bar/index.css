@@ -1,0 +1,7 @@
+tiny-navigation-bar {
+  display: contents;
+}
+
+tiny-navigation-bar[hidden] {
+  display: none;
+}

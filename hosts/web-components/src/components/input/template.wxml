@@ -29,3 +29,4 @@
   />
   <ul id="dropdown" class="tiny-input-dropdown" style="display: none;"></ul>
 </div>
+<slot />

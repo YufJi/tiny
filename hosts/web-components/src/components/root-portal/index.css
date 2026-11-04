@@ -1,0 +1,7 @@
+tiny-root-portal {
+  display: contents;
+}
+
+tiny-root-portal[hidden] {
+  display: none;
+}

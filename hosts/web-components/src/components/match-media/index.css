@@ -1,0 +1,7 @@
+tiny-match-media {
+  display: block;
+}
+
+tiny-match-media[hidden] {
+  display: none;
+}

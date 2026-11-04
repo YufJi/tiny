@@ -1,0 +1,13 @@
+tiny-selection {
+  display: block;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+tiny-selection[hidden] {
+  display: none;
+}
+
+tiny-selection[disable-context-menu] {
+  -webkit-touch-callout: none;
+}

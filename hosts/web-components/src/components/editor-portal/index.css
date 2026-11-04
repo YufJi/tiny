@@ -1,0 +1,7 @@
+tiny-editor-portal {
+  display: contents;
+}
+
+tiny-editor-portal[hidden] {
+  display: none;
+}

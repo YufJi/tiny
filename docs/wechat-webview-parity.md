@@ -12,7 +12,7 @@
 
 - 按微信 WebView 版全量能力计算，当前引擎约完成 **一半**：加权得分 **50.55%**。
 - 能力结构仍然偏科：**编译/渲染约 76%，框架约 88%，内置组件约 57%，平台 API 约 14%，页面形态约 28%**。
-- 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent`、`generics`、`definitionFilter`、`pureDataPattern` 均已落地，Component-as-page 也接入了同一套核心语义；UI 库的核心语义障碍基本移除，剩余缺口主要是 npm 构建、`componentPlaceholder` 与内置 behaviors。
+- 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent`、`generics`、`definitionFilter`、`pureDataPattern` 均已落地，Component-as-page 也接入了同一套核心语义；UI 库的核心语义障碍基本移除，剩余缺口主要是 npm 构建、`componentPlaceholder` 与宿主侧内置 behaviors。
 - 内置组件已完成宿主迁移、P0 视觉重写和 P1 内部结构收口：24 个标签为真实 `tiny-*` 宿主，采用 Flat DOM + scoped CSS 隔离公开宿主与私有内部实现；checkbox/radio/switch/slider/icon/image/picker/picker-view 已按 2.7.0 参考实现重写；input/textarea/button/form 完成 wrapper/分支/语义补强，scroll-view 接受 native 滚动近似。
 - 仓库内置的微信官方 demo 子集（2023-02 基线，111 页）中，**107 页能启动（96.4%）**，102 页有可见文本；canvas 2D/WebGL 两页已修复，但启动率仍是“能挂载”，不是“功能对齐”。
 - 路由补齐 `redirectTo` / `reLaunch`，页面生命周期补齐下拉刷新、分享和 `onSaveExitState`，应用生命周期补齐 `onError` / `onPageNotFound` / `onUnhandledRejection` / `onThemeChange`。
@@ -255,7 +255,7 @@ hasBehavior / export / wx://component-export
 
 | 能力 | 状态 | 说明 |
 | --- | --- | --- |
-| `behaviors` | ✅ | 嵌套合并、去重、环检测、组件覆盖、生命周期/observers 顺序；`wx://` 内置 behavior 仅支持 `component-export` |
+| `behaviors` | ✅ | 嵌套合并、去重、环检测、组件覆盖、生命周期/observers 顺序；`wx://` 内置 behavior 支持 7 个（component-export / form-field / form-field-button / form-field-group / functional-page-behavior / label-target / style-filter）；`request-filter` / `request-sender` 按基线不做 |
 | `observers` | ✅ | `observers` 块 + 属性级 `observer`；支持多字段、`arr[12]`、`some.field.**`、`**`；本地 `setData` 同步，父级属性变化异步一个 bridge 往返 |
 | `relations` / `getRelationNodes` | ✅ | parent/child/ancestor/descendant；双向声明校验；`linked` / `unlinked` / `linkChanged` / `linkFailed`；按节点树顺序返回；page 根节点关系在 render shadow tree 上按 target path 解析 |
 | `externalClasses` | ✅ | 父级 class 可在组件模板内解析，参与样式作用域 |
@@ -269,9 +269,9 @@ hasBehavior / export / wx://component-export
 | `componentPlaceholder` | ❌ | 编译是 eager，异步占位暂不需要；配置会被忽略 |
 | `trait behaviors` / chaining API | ❌ | 未支持 |
 | Component-as-page 全套语义 | ✅ | query→properties、methods 页面生命周期、behaviors/observers/relations/styleIsolation/selectComponent/getRelationNodes/hasBehavior 已接入；generics/definitionFilter/pureDataPattern 与普通组件一致，分享/下拉刷新/退出状态回调随页面生命周期接入 |
-| `wx://form-field` / `wx://form-field-button` | ✅ | 映射到表单字段语义；其他内置 behaviors 仍发 `UNSUPPORTED_BEHAVIOR` 诊断 |
+| `wx://form-field` / `wx://form-field-group` / `wx://form-field-button` | ✅ | 表单字段/分组/按钮语义与 WeChat 对齐；按钮变体重新派发 formSubmit/formReset |
 
-> 这使 Vant Weapp、TDesign 等组件库的**核心语义障碍**基本移除；`tests/apps/vant` 与 `tests/apps/weui` 作为回归样例。剩余限制主要是 npm 安装/构建、未覆盖的内置 behaviors 和异步占位组件。
+> 这使 Vant Weapp、TDesign 等组件库的**核心语义障碍**基本移除；`tests/apps/vant` 与 `tests/apps/weui` 作为回归样例。剩余限制主要是 npm 安装/构建、宿主侧 `wx-*` 内置 behaviors 和异步占位组件。
 
 ### 4.6 样式作用域与内置组件边界
 
@@ -617,19 +617,21 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 
 ## 附录 B：WebView 组件清单（60）
 
+> 组件清单已更新到 **59/59 个标签**（2026-11-04：全量标签注册；媒体/开放能力为浏览器近似或宿主 stub；`aria-component` 是文档页不是标签）；第 3 节的评分快照尚未重算。
+
 | 分类 | 组件（✅ 已实现 / ❌ 未实现） |
 | --- | --- |
-| 视图容器（11） | ✅ view、scroll-view、swiper、swiper-item；❌ movable-area、movable-view、cover-view、cover-image、match-media、page-container、root-portal |
-| 基础内容（5） | ✅ icon、text、progress；❌ rich-text、selection |
-| 表单（17） | ✅ button、checkbox、checkbox-group、radio、radio-group、slider、switch、input、label、picker、picker-view、picker-view-column、form、textarea；❌ editor、editor-portal、keyboard-accessory |
-| 导航（2） | ✅ navigator；❌ functional-page-navigator |
-| 媒体（9） | ✅ image；❌ audio、video、camera、live-player、live-pusher、voip-room、channel-live、channel-video |
-| 地图（1） | ❌ map |
+| 视图容器（11） | ✅ view、scroll-view、swiper、swiper-item、cover-view、cover-image、match-media、page-container、root-portal、movable-area、movable-view |
+| 基础内容（5） | ✅ icon、text、progress、rich-text、selection |
+| 表单（17） | ✅ button、checkbox、checkbox-group、radio、radio-group、slider、switch、input、label、picker、picker-view、picker-view-column、form、textarea、keyboard-accessory、editor、editor-portal |
+| 导航（2） | ✅ navigator、functional-page-navigator |
+| 媒体（9） | ✅ image、video、audio、camera、live-player、live-pusher、voip-room、channel-live、channel-video（均为浏览器近似） |
+| 地图（1） | ✅ map |
 | 画布（1） | ✅ canvas（部分） |
-| 开放能力（11） | ❌ web-view、ad、ad-custom、official-account、official-account-publish、open-data、reward、store-coupon、store-gift、store-home、store-product |
-| 无障碍（1） | ❌ aria-component |
-| 导航栏（1） | ❌ navigation-bar |
-| 页面属性（1） | ❌ page-meta |
+| 开放能力（11） | ✅ web-view、ad、ad-custom、official-account、official-account-publish、open-data、reward、store-coupon、store-gift、store-home、store-product（除 web-view/open-data 外均为宿主 stub） |
+| 无障碍 | `aria-component` 是文档页，不是标签；aria-* 由 base behavior 覆盖 |
+| 导航栏（1） | ✅ navigation-bar |
+| 页面属性（1） | ✅ page-meta |
 
 > 统计口径：WebView 文档中除 Skyline 专属、XR-FRAME 与 `native-component` 说明页之外的组件。`canvas` 计入已实现；selector-query 2D node 与 legacy CanvasContext 都通过 OffscreenCanvas handoff 使用真实同步 context。RAF、createImage 与 WebGL 已接，导出 API 仍不完整。
 
@@ -659,7 +661,8 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 组件语义验收 fixture | [semantics.js](../tests/apps/demo/pages/semantics/semantics.js:1) |
 | Component-as-page 实例 | [service/page-instance.ts](../packages/runtime/src/service/page-instance.ts:1) |
 | Component-as-page 测试 | [component-page.test.ts](../packages/runtime/tests/component-page.test.ts:1) |
-| 内置组件共享 behaviors | [behaviors.ts](../hosts/web-components/src/behaviors.ts:1) |
+| 内置组件共享 behaviors | [behaviors/](../hosts/web-components/src/behaviors/index.ts:1) |
+| runtime 内置 behaviors | [behaviors/](../packages/runtime/src/component/behaviors/index.ts:1) |
 | button 组件 | [button/index.ts](../hosts/web-components/src/components/button/index.ts:1) |
 | 页面/子包/app.json 解析 | [project.ts](../tools/cli/src/compiler/project.ts:75) |
 | 单/多 render 帧宿主 | [wasm-host.ts](../hosts/browser/src/wasm-host.ts:1) |

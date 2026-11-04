@@ -1,0 +1,4 @@
+<div id="map">
+  <div id="markers"></div>
+  <div id="slot"><slot /></div>
+</div>

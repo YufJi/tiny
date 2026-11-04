@@ -1,0 +1,19 @@
+tiny-channel-video {
+  background: #000;
+  display: inline-block;
+  height: 225px;
+  line-height: 0;
+  overflow: hidden;
+  position: relative;
+  width: 300px;
+  z-index: 0;
+}
+
+tiny-channel-video[hidden] {
+  display: none;
+}
+
+#container {
+  height: 100%;
+  width: 100%;
+}

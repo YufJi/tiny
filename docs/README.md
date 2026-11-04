@@ -10,6 +10,7 @@
 | `style-isolation.md` | 样式隔离与内置组件样式的完整模型、编译/运行时分界、已知边界 | 改 WXSS 编译、scope、内置样式之前 |
 | `acceptance.md` | 验收门禁、浏览器阶段、fixture 说明 | 跑 `pnpm accept:glass-easel` 前 |
 | `wechat-webview-parity.md` | 微信 WebView 能力对齐分与缺口 | 评估兼容性、排优先级 |
+| `builtin-inventory-2.30.1.md` | 内置组件/behaviors 缺口清单、占位目录与 2.30.1 参考口径 | 补内置组件或 behavior 前 |
 | `component-reference-diff.md` | 24 个内置组件的当前对齐状态与剩余问题 | 改内置组件 |
 | `known-issues/` | 已知问题与临时处理 | 遇到相关症状时 |
 | `agents/` | 给 agent 的操作手册（上下文布局、issue 流程、标签） | 开始任务前 |

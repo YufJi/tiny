@@ -27,6 +27,8 @@ export function buildComponentSchemas(
       ...(pureDataPattern ? { pureDataPattern: pureDataPattern.source } : {}),
       externalClasses: definition.externalClasses,
       formField: definition.formField,
+      formFieldGroup: definition.formFieldGroup,
+      labelTarget: definition.labelTarget,
       observers: definition.observers.map((observer) => ({
         key: observer.key,
         paths: observer.paths,

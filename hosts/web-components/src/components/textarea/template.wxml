@@ -28,3 +28,4 @@
     aria-hidden="true"
   >{{placeholder}}</div>
 </div>
+<slot />

@@ -1,0 +1,7 @@
+tiny-official-account-publish {
+  display: contents;
+}
+
+tiny-official-account-publish[hidden] {
+  display: none;
+}

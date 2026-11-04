@@ -1,0 +1,72 @@
+tiny-page-container {
+  display: block;
+}
+
+tiny-page-container[hidden] {
+  display: none;
+}
+
+#container {
+  display: block;
+}
+
+.weui-overlay {
+  background-color: rgba(0, 0, 0, 0.7);
+  height: 100%;
+  left: 0;
+  position: fixed;
+  top: 0;
+  transition-property: opacity;
+  transition-timing-function: ease;
+  width: 100%;
+}
+
+.weui-popup {
+  -webkit-overflow-scrolling: touch;
+  background-color: #fff;
+  box-sizing: border-box;
+  max-height: 100%;
+  overflow: hidden;
+  position: fixed;
+  transition-property: opacity, transform;
+  transition-timing-function: ease;
+  will-change: opacity, transform;
+}
+
+.weui-popup--bottom {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+
+.weui-popup--bottom.weui-popup--round {
+  border-radius: 20px 20px 0 0;
+}
+
+.weui-popup--top {
+  left: 0;
+  top: 0;
+  width: 100%;
+}
+
+.weui-popup--top.weui-popup--round {
+  border-radius: 0 0 20px 20px;
+}
+
+.weui-popup--center {
+  height: 100%;
+  left: 0;
+  top: 0;
+  width: 100%;
+}
+
+.weui-popup--right {
+  height: 100%;
+  right: 0;
+  top: 0;
+  width: 100%;
+}
+
+.weui-popup--right.weui-popup--round {
+  border-radius: 20px 0 0 20px;
+}

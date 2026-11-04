@@ -1,0 +1,17 @@
+tiny-live-pusher {
+  background-color: #000;
+  display: block;
+  height: 225px;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+tiny-live-pusher[hidden] {
+  display: none;
+}
+
+#preview {
+  height: 100%;
+  width: 100%;
+}
