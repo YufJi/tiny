@@ -39,7 +39,7 @@ tiny-scroll-view[hidden] {
 .tiny-scroll-view.is-paging.is-horizontal {
   scroll-snap-type: x mandatory;
 }
-.tiny-scroll-view.is-paging .tiny-scroll-view-content > * {
+.tiny-scroll-view.is-paging > * {
   scroll-snap-align: start;
 }
 .tiny-scroll-view.is-hidden-scrollbar {

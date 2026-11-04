@@ -15,7 +15,6 @@ type ScrollBackend = {
 
 type RefresherRuntime = {
   _main?: ScrollBackend | null
-  _content?: { classList?: { add?: (name: string) => void; remove?: (name: string) => void } } | null
   _active?: boolean
   _refreshing?: boolean
   _cancelling?: boolean
@@ -80,8 +79,6 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
         } | null)?.getShadowRoot?.()
         const shadow = ownerShadow ?? parentShadow
         runtime._main = shadow?.getElementById?.('main')?.getBackendElement?.() ?? null
-        runtime._content = (shadow?.getElementById?.('content')?.getBackendElement?.() ?? null) as RefresherRuntime['_content']
-        runtime._content?.classList?.add?.('tiny-refresher-content')
         const main = runtime._main
         if (!main?.addEventListener) return
         const start = (event: TouchEvent) => this.handleStart(event)
@@ -105,7 +102,6 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
         const runtime = this as unknown as RefresherRuntime
         for (const cleanup of runtime._touchCleanup ?? []) cleanup()
         runtime._touchCleanup = []
-        runtime._content?.classList?.remove?.('tiny-refresher-content')
         this.applyOffset(0, false)
       },
     },

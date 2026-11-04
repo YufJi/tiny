@@ -23,7 +23,7 @@
     bindtouchend="handleTouchEnd"
     bindtouchcancel="handleTouchCancel"
   >
-    <div id="content" class="tiny-scroll-view-content"><slot /></div>
+    <slot />
   </div>
   <div id="barWrap" class="tiny-wins-scrollbar" style="display: none;">
     <div id="scrollbar" class="tiny-wins-scrollbar-bar"></div>

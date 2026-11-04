@@ -174,3 +174,10 @@ body {
   position: absolute;
   width: 100%;
 }
+
+/* Internal scoped styles cannot select slotted children. Horizontal
+   scroll-view children keep their intrinsic width like WeChat's native
+   scroll view instead of the browser's default flex shrink. */
+tiny-scroll-view[enable-flex][scroll-x] > div > div > * {
+  flex-shrink: 0;
+}
