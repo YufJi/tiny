@@ -27,8 +27,13 @@ describe('batch 2 built-ins', () => {
       .toBe('weui-popup--bottom weui-popup--round')
     expect(computePageContainerClass('popup', ['top', { round: false }]).trim())
       .toBe('weui-popup--top')
-    expect(componentStyle('page-container')).toContain('weui-popup--bottom')
-    expect(componentStyle('page-container')).toContain('weui-overlay')
+    const pageContainerStyle = componentStyle('page-container')
+    expect(pageContainerStyle).toContain('weui-popup--bottom')
+    expect(pageContainerStyle).toContain('weui-overlay')
+    // Scoped internal selectors must match the prefixed runtime classes; a
+    // host-tag ancestor here would never carry the builtin scope marker.
+    expect(pageContainerStyle).toContain('.tiny-builtin-page-container--weui-popup')
+    expect(pageContainerStyle).not.toContain('tiny-page-container:where')
     // WeChat 2.30.1 declares no author host/hidden rule for page-container.
     expect(BUILTIN_HOST_STYLES).not.toContain('tiny-page-container[hidden]')
   })

@@ -1,4 +1,4 @@
-tiny-page-container .weui-overlay {
+.weui-overlay {
   background-color: rgba(0, 0, 0, 0.7);
   height: 100%;
   left: 0;
@@ -8,7 +8,7 @@ tiny-page-container .weui-overlay {
   width: 100%;
 }
 
-tiny-page-container .weui-popup {
+.weui-popup {
   -webkit-overflow-scrolling: touch;
   background-color: #fff;
   box-sizing: border-box;
@@ -17,42 +17,42 @@ tiny-page-container .weui-popup {
   position: fixed;
 }
 
-tiny-page-container .weui-popup--center {
+.weui-popup--center {
   height: 100%;
   left: 0;
   top: 0;
   width: 100%;
 }
 
-tiny-page-container .weui-popup--top {
+.weui-popup--top {
   left: 0;
   top: 0;
   width: 100%;
 }
 
-tiny-page-container .weui-popup--top.weui-popup--round {
+.weui-popup--top.weui-popup--round {
   border-radius: 0 0 20px 20px;
 }
 
-tiny-page-container .weui-popup--right {
+.weui-popup--right {
   height: 100%;
   left: 0;
   top: 0;
   width: 100%;
 }
 
-tiny-page-container .weui-popup--bottom {
+.weui-popup--bottom {
   bottom: 0;
   left: 0;
   width: 100%;
 }
 
-tiny-page-container .weui-popup--bottom.weui-popup--round {
+.weui-popup--bottom.weui-popup--round {
   border-radius: 20px 20px 0 0;
 }
 
-tiny-page-container .weui-scale-enter-active,
-tiny-page-container .weui-scale-leave-active {
+.weui-scale-enter-active,
+.weui-scale-leave-active {
   transition-property:
     opacity,
     -webkit-transform;
@@ -63,39 +63,39 @@ tiny-page-container .weui-scale-leave-active {
     -webkit-transform;
 }
 
-tiny-page-container .weui-scale-enter,
-tiny-page-container .weui-scale-leave-to {
+.weui-scale-enter,
+.weui-scale-leave-to {
   opacity: 0;
   -webkit-transform: translate3d(-50%, -50%, 0) scale(0.7);
   transform: translate3d(-50%, -50%, 0) scale(0.7);
 }
 
-tiny-page-container .weui-fade-enter-active,
-tiny-page-container .weui-fade-leave-active {
+.weui-fade-enter-active,
+.weui-fade-leave-active {
   transition-property: opacity;
 }
 
-tiny-page-container .weui-fade-enter,
-tiny-page-container .weui-fade-leave-to {
+.weui-fade-enter,
+.weui-fade-leave-to {
   opacity: 0;
 }
 
-tiny-page-container .weui-center-enter-active,
-tiny-page-container .weui-center-leave-active {
+.weui-center-enter-active,
+.weui-center-leave-active {
   transition-property: opacity;
 }
 
-tiny-page-container .weui-center-enter,
-tiny-page-container .weui-center-leave-to {
+.weui-center-enter,
+.weui-center-leave-to {
   opacity: 0;
 }
 
-tiny-page-container .weui-bottom-enter-active,
-tiny-page-container .weui-bottom-leave-active,
-tiny-page-container .weui-right-enter-active,
-tiny-page-container .weui-right-leave-active,
-tiny-page-container .weui-top-enter-active,
-tiny-page-container .weui-top-leave-active {
+.weui-bottom-enter-active,
+.weui-bottom-leave-active,
+.weui-right-enter-active,
+.weui-right-leave-active,
+.weui-top-enter-active,
+.weui-top-leave-active {
   transition-property: -webkit-transform;
   transition-property: transform;
   transition-property:
@@ -103,20 +103,20 @@ tiny-page-container .weui-top-leave-active {
     -webkit-transform;
 }
 
-tiny-page-container .weui-bottom-enter,
-tiny-page-container .weui-bottom-leave-to {
+.weui-bottom-enter,
+.weui-bottom-leave-to {
   -webkit-transform: translate3d(0, 100%, 0);
   transform: translate3d(0, 100%, 0);
 }
 
-tiny-page-container .weui-top-enter,
-tiny-page-container .weui-top-leave-to {
+.weui-top-enter,
+.weui-top-leave-to {
   -webkit-transform: translate3d(0, -100%, 0);
   transform: translate3d(0, -100%, 0);
 }
 
-tiny-page-container .weui-right-enter,
-tiny-page-container .weui-right-leave-to {
+.weui-right-enter,
+.weui-right-leave-to {
   -webkit-transform: translate3d(100%, 0, 0);
   transform: translate3d(100%, 0, 0);
 }
