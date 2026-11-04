@@ -188,9 +188,9 @@
 
 关键代码入口：
 
-- 服务 API：[service/api-host.ts](../packages/runtime/src/service/api-host.ts:1)
+- 服务 API：[api/index.ts](../packages/api/src/index.ts:1)（按 domain 分文件）
 - 宿主 API：[host/api.ts](../packages/runtime/src/host/api.ts:1)、[hosts/browser/api-handlers.ts](../hosts/browser/src/api-handlers.ts:1)
-- 不支持 API 的降级：`wx` Proxy 返回 `undefined` + `UNSUPPORTED_API` warning（[service/api-host.ts](../packages/runtime/src/service/api-host.ts:1)）
+- 不支持 API 的降级：`wx` Proxy 返回 `undefined` + `UNSUPPORTED_API` warning（[service/api-globals.ts](../packages/runtime/src/service/api-globals.ts:1)）
 
 > 降级策略是“静默 undefined”，不是抛错。页面不会立刻崩，但失败会推迟到调用方 `.then`/属性访问时才暴露，排查成本高。
 
@@ -529,7 +529,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 
 1. **跑门禁**：确认单测/浏览器验收仍通过；记录测试数量与步骤数。
 2. **重数组件与组件语义**：对照[微信组件文档](https://developers.weixin.qq.com/miniprogram/dev/component/)与 [tags.ts](../hosts/web-components/src/tags.ts:1)，更新 24/60、分类表、属性/事件表；同时按第 4.5 节更新 behaviors/observers/relations/styleIsolation/selectComponent 状态。
-3. **重数 API**：对照[微信 API 索引](https://developers.weixin.qq.com/miniprogram/dev/api/)与 [service/thread.ts](../packages/runtime/src/service/thread.ts:1) + [service-thread.ts](../tests/host/src/service-thread.ts:1) 的 `apiExtensions`，更新 71/502、能力表。
+3. **重数 API**：对照[微信 API 索引](https://developers.weixin.qq.com/miniprogram/dev/api/)与 [api](../packages/api/src/index.ts:1) + [service-thread.ts](../tests/host/src/service-thread.ts:1) 的 `apiExtensions`，更新 71/502、能力表。
 4. **重数生命周期/路由/配置**：对照第 4.3、4.4 节逐项打勾。
 5. **重跑 111 页探针**：`pnpm parity:probe`，按 `tests/host/generated/parity-report.json` 更新启动率、可见文本与失败明细。
 6. **重算总分**：更新第 3 节表格的完成度/加权分；如果权重调整，在变更记录中说明。
@@ -643,8 +643,8 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | --- | --- |
 | 内置组件标签清单 | [tags.ts](../hosts/web-components/src/tags.ts:1) |
 | 内置组件默认样式 | [styles/index.css](../hosts/web-components/src/styles/index.css:1) |
-| service API 宿主 | [service/api-host.ts](../packages/runtime/src/service/api-host.ts:1) |
-| 不支持 API 的降级 | [service/api-host.ts](../packages/runtime/src/service/api-host.ts:1) |
+| service API 宿主 | [api/index.ts](../packages/api/src/index.ts:1) |
+| 不支持 API 的降级 | [service/api-globals.ts](../packages/runtime/src/service/api-globals.ts:1) |
 | 宿主 API（toast/storage/navigate） | [host/api.ts](../packages/runtime/src/host/api.ts:1)、[browser api-handlers.ts](../hosts/browser/src/api-handlers.ts:1) |
 | 组件 schema（data/properties/using + semantics metadata） | [component-schema.ts](../packages/runtime/src/component-schema.ts:5) |
 | Behavior 合并 / 组件定义规范化 | [component-definition.ts](../packages/runtime/src/component-definition.ts:115) |
@@ -679,4 +679,4 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | `this.animate` keyframes 归一化 | [animation.ts](../packages/runtime/src/tree/animation.ts:1) |
 | 动画下载/播放（WAAPI） | [render-tree.ts](../hosts/web-components/src/render-tree.ts:629) |
 | 事件 target/currentTarget 几何 | [render-tree.ts](../hosts/web-components/src/render-tree.ts:252) |
-| `wx.createIntersectionObserver` | [api-host.ts](../packages/runtime/src/service/api-host.ts:501) |
+| `wx.createIntersectionObserver` | [api/query.ts](../packages/api/src/query.ts:1) |

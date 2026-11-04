@@ -14,7 +14,7 @@ actions:
 stats:
   - ['2', '运行时树']
   - ['14', '工作区包']
-  - ['288', '单元测试']
+  - ['340', '单元测试']
   - ['58', '浏览器步骤']
 description: 'Tiny 是一个基于 glass-easel 的小程序引擎：编译 WXML/WXSS/TS，service 与 render 双线程运行，核心小程序内核不依赖宿主。'
 name: '概览'
@@ -65,7 +65,7 @@ Bridge 定义消息信封、帧、调用与回复、事件批处理、超时和 
 :::
 
 :::card{tag="hosts/browser" tone="violet" title="宿主注入的能力"}
-`apiHandlers` 处理需要跨线程的 API，`apiExtensions` 补充设备信息；canvas、资源 URL 和内置组件分别由宿主提供。
+`apiHost` 提供 API 表（标准集来自 `@tiny/api`），`apiExtensions` 补充设备信息，`apiHandlers` 处理需要跨线程的 API；canvas、资源 URL 和内置组件分别由宿主提供。
 
 [看宿主注入方式 →](#/hosts)
 :::
@@ -107,7 +107,7 @@ Bridge 定义消息信封、帧、调用与回复、事件批处理、超时和 
 :::
 
 :::card{tag="testing" title="靠真实小程序验证"}
-288 个单元测试、58 个浏览器步骤、七个测试小程序，以及目前还没有覆盖的部分。
+340 个单元测试、58 个浏览器步骤、七个测试小程序，以及目前还没有覆盖的部分。
 
 [进入测试与验收 →](#/testing)
 :::

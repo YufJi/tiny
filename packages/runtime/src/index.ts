@@ -28,6 +28,7 @@ export type {
   HostApiParams,
   InspectNode,
   LegacyCanvasRequest,
+  QueryNodeSnapshot,
   RenderThreadConnector,
   RuntimeHostOptions,
   RuntimeManifest,
@@ -43,6 +44,12 @@ export type {
 export * from './tree'
 
 export { bootServiceThread } from './service'
+export type {
+  MiniProgramApiHost,
+  ServiceApiContext,
+  ServiceApiFactory,
+  TabBarApi,
+} from './service'
 
 export {
   createDefaultWxsCompiler,

@@ -1,4 +1,10 @@
-import { bootServiceThread, type ServiceThreadOptions } from '@tiny/runtime'
+import { createApiHost } from '@tiny/api'
+import {
+  bootServiceThread,
+  type MiniProgramApiHost,
+  type ServiceApiFactory,
+  type ServiceThreadOptions,
+} from '@tiny/runtime'
 import { createBrowserCanvasAdapter, installBrowserCanvasCompat } from './canvas-bridge'
 import { listenForRuntimePort } from './runtime-port'
 
@@ -9,7 +15,13 @@ export type BrowserServiceEntryOptions = {
   loadArtifacts: NonNullable<ServiceThreadOptions['loadArtifacts']>
   loadStyle?: ServiceThreadOptions['loadStyle']
   resolveAssetUrl: NonNullable<ServiceThreadOptions['resolveAssetUrl']>
-  apiExtensions?: ServiceThreadOptions['apiExtensions']
+  /**
+   * Full mini-program API table factory. Defaults to the WeChat-compatible set
+   * composed with `apiExtensions`; pass this to replace it entirely.
+   */
+  apiHost?: ServiceApiFactory
+  /** Host-specific APIs merged over the default WeChat-compatible set. */
+  apiExtensions?: MiniProgramApiHost
 }
 
 /**
@@ -29,7 +41,12 @@ export function bootBrowserServiceEntry(options: BrowserServiceEntryOptions): vo
       ...(options.loadStyle ? { loadStyle: options.loadStyle } : {}),
       resolveAssetUrl: options.resolveAssetUrl,
       canvas: createBrowserCanvasAdapter(),
-      ...(options.apiExtensions ? { apiExtensions: options.apiExtensions } : {}),
+      // The kernel owns no API table of its own: this host ships the standard
+      // WeChat-compatible surface and lets entries overlay device facts.
+      apiHost: options.apiHost ?? ((context) => ({
+        ...createApiHost(context),
+        ...(options.apiExtensions ?? {}),
+      })),
     })
   })
 }

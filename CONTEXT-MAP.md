@@ -9,6 +9,7 @@ Each package is a bounded context. Read only the contexts relevant to the curren
 | Manifest | `packages/manifest` | Artifact/manifest contract shared by compiler and runtime |
 | Devtool | `apps/devtool` | Runtime debugger UI and host orchestration |
 | Runtime | `packages/runtime` | Host-independent runtime core: service logic tree, render tree protocol, host orchestration |
+| WeChat API Table | `packages/api` | WeChat-compatible `wx.*` implementation over the runtime's `ServiceApiContext`; injected by hosts |
 | Stylesheet Compiler | `packages/stylesheet-compiler` | Stylesheet compilation and scoping |
 | Template Compiler | `packages/template-compiler` | Template compilation |
 | Test Host | `tests/host` | Standalone Vite host for test apps and acceptance |

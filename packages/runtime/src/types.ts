@@ -2,6 +2,7 @@ import type { Manifest } from '@tiny/manifest'
 import type { WxsModuleTable } from '@tiny/wxs-runtime'
 import type { AssetUrlResolver } from './assets'
 import type { RenderHostAction } from './tree/protocol'
+import type { ServiceApiFactory } from './service/types'
 
 export type RuntimeManifest = Manifest
 
@@ -245,8 +246,13 @@ export type ServiceThreadOptions = {
   initialPath: string
   capabilities?: Record<string, unknown>
   loadArtifacts?: () => Promise<unknown>
-  /** Host-specific APIs (device geometry, performance, etc.) merged into the API host. */
-  apiExtensions?: Record<string, (...args: unknown[]) => unknown>
+  /**
+   * Mini-program API table factory. Required: the service thread installs
+   * exactly what this returns and reports every other `wx.*` name as
+   * unsupported. Hosts compose the standard set (`@tiny/api`) with
+   * their own device facts.
+   */
+  apiHost: ServiceApiFactory
   /** Host canvas implementation for legacy canvas APIs/selector nodes. */
   canvas?: ServiceCanvasAdapter
   /** Host hook mapping app-root asset paths to loadable URLs (canvas images, …). */

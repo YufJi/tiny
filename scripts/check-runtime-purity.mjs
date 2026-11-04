@@ -5,6 +5,9 @@ import { fileURLToPath } from 'node:url'
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const entries = [
   path.join(rootDir, 'packages/runtime/src/index.ts'),
+  // The API table is an adapter over kernel capabilities, not a host entry:
+  // keep it free of browser globals too.
+  path.join(rootDir, 'packages/api/src/index.ts'),
   path.join(rootDir, 'packages/wxs-runtime/src/index.ts'),
 ]
 const hostModules = new Set(['browser'])

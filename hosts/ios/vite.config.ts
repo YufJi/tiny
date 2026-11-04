@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
         emptyOutDir: true,
         target: 'es2019',
         commonjsOptions: {
-          include: [/node_modules/, /packages[\\/]runtime/, /hosts[\\/]browser/],
+          include: [/node_modules/, /packages[\\/]runtime/, /packages[\\/]api/, /hosts[\\/]browser/],
         },
         minify: false,
         sourcemap: false,
@@ -42,7 +42,7 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       target: 'safari16',
       commonjsOptions: {
-        include: [/node_modules/, /packages[\\/]runtime/, /hosts[\\/]browser/],
+        include: [/node_modules/, /packages[\\/]runtime/, /packages[\\/]api/, /hosts[\\/]browser/],
       },
       minify: false,
       sourcemap: false,

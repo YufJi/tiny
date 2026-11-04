@@ -34,6 +34,7 @@ must not depend on tools, apps, hosts, or tests.
 | `packages/template-compiler` | WXML parsing and ProcGen |
 | `packages/stylesheet-compiler` | WXSS, rpx, class/tag scoping |
 | `packages/runtime` | Host-independent runtime core |
+| `packages/api` | `@tiny/api`: the WeChat-compatible `wx.*` table, injected into a service thread by hosts |
 | `packages/bridge` | Protocol, transport, batching, diagnostics |
 
 ### Tools and apps
@@ -97,7 +98,7 @@ pnpm --filter @tiny/website build
 ## Testing
 
 Vitest is used by `bridge`, `template-compiler`, `stylesheet-compiler`, `cli`,
-`host-web-components`, and `runtime`. There is no global test runner; use
+`host-web-components`, `runtime`, and `api`. There is no global test runner; use
 `pnpm --filter <package> test`.
 
 The iOS host has its own simulator gate, `pnpm ios:sim`; it requires an installed
@@ -105,7 +106,7 @@ iOS Simulator runtime and is not part of `pnpm accept:glass-easel`.
 
 The end-to-end gate is `pnpm accept:glass-easel`:
 
-1. build of the 8 compiler/runtime/host targets in `build:glass-easel`
+1. build of the compiler/runtime/host targets in `build:glass-easel`
 2. core runtime purity check
 3. unit tests for all packages
 4. P0 demo browser flow (`tests/apps/demo`)
@@ -156,11 +157,15 @@ records boot state, visible text, page errors and diagnostics per page into
   `@tiny/host-web-components` and are mounted by the web render tree
   (`createGlassRenderEntry` / `createGlassRenderTree`). Run
   `pnpm check:runtime-purity` after touching the core entry.
-- Host facts (menu-button geometry, performance, device capabilities) are supplied
-  by the host through `ServiceThreadOptions.apiExtensions`; canvas is supplied
-  through `ServiceThreadOptions.canvas` and the render tree's
-  `TreeRenderer.measure` / `measureCanvas` hooks. Do not hardcode them in
-  `packages/runtime`'s service API host.
+- The mini-program API set does not live in `packages/runtime`. The kernel owns
+  the global namespace, the unsupported-API fallback and a stable
+  `ServiceApiContext`; hosts pass `ServiceThreadOptions.apiHost` (normally
+  `createWeixinApiHost` from `@tiny/api`) composed with their own device
+  facts. Adding a `wx.*` API touches `packages/api`, never the kernel.
+- Host facts (menu-button geometry, performance, device capabilities) stay in
+  the host's `apiHost` composition; canvas is supplied through
+  `ServiceThreadOptions.canvas` and the render tree's `TreeRenderer.measure` /
+  `measureCanvas` hooks. Do not hardcode them in `packages/runtime`.
 - The browser test host and devtool both use `@tiny/host-browser`’s
   `WasmBrowserHost` over `@tiny/host-core-wasm`;
   devtool adds its own `DevtoolRuntimeClient` (`apps/devtool/src/runtimeClient.ts`)

@@ -1,6 +1,5 @@
-import { resolveAssetPath } from '../assets'
-import type { QueryNodeSnapshot } from '../types'
-import type { ServiceApiContext } from './types'
+import { resolveAssetPath } from '@tiny/runtime'
+import type { QueryNodeSnapshot, ServiceApiContext } from '@tiny/runtime'
 
 type SelectorQuerySelection = {
   selector?: string

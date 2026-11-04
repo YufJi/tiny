@@ -11,6 +11,7 @@ export default defineConfig({
       '@tiny/host-core-wasm': path.resolve(__dirname, '../../native/host-core-wasm/pkg/tiny_host_core_wasm.js'),
       '@tiny/host-web-components': path.resolve(__dirname, '../../hosts/web-components/src/index.ts'),
       '@tiny/runtime': path.resolve(runtimeRoot, 'src/index.ts'),
+      '@tiny/api': path.resolve(__dirname, '../../packages/api/src/index.ts'),
       // The runtime imports naming helpers as values; resolve them from source
       // so the dev host does not mix ESM sources with the CommonJS manifest build.
       '@tiny/manifest': path.resolve(__dirname, '../../packages/manifest/src/index.ts'),

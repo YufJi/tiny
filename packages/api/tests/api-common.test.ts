@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
-import { createServiceApiHost } from '../src/service/api-host'
-import type { ServiceApiContext } from '../src/service/types'
+import type { ServiceApiContext } from '@tiny/runtime'
+import { createApiHost } from '../src'
 
 function createContext() {
   const storage: Record<string, unknown> = {}
@@ -56,7 +56,7 @@ function createContext() {
 describe('common host APIs', () => {
   test('storage async/sync and storage info', async () => {
     const { context, calls } = createContext()
-    const host = createServiceApiHost(context) as Record<string, (...args: unknown[]) => unknown>
+    const host = createApiHost(context) as Record<string, (...args: unknown[]) => unknown>
     await host.setStorage({ key: 'token', value: 'abc' })
     expect(host.getStorageSync('token')).toBe('abc')
     await host.getStorage({ key: 'token', success: (value: unknown) => {
@@ -71,7 +71,7 @@ describe('common host APIs', () => {
 
   test('request and simple device/UI APIs use host handlers', async () => {
     const { context, calls } = createContext()
-    const host = createServiceApiHost(context) as Record<string, (...args: unknown[]) => unknown>
+    const host = createApiHost(context) as Record<string, (...args: unknown[]) => unknown>
     const request = host.request({ url: 'https://example.test/api', method: 'POST', data: { a: 1 } })
     expect(typeof (request as { abort?: unknown }).abort).toBe('function')
     await new Promise((resolve) => setTimeout(resolve, 0))

@@ -176,7 +176,7 @@ service 和 render 都不读取 URL，也不读取全局 manifest；所有输入
 | `loadArtifacts` | 在 bootstrap 时导入 service.js，保证 App/Page 已注册 | 实际必需 |
 | `loadTemplates` | 加载 templates.js，供 service 逻辑树求值 | 是 |
 | `loadStyle` | 按 outputPath 返回样式文本，供逻辑树计算样式作用域 | 使用样式时必需 |
-| `apiExtensions` | 注入设备信息和额外的同步 API | 否 |
+| `apiHost` | API 表工厂，宿主组装标准集与设备事实 | 是（`bootBrowserServiceEntry` 默认注入） |
 | `canvas` | 宿主 canvas handoff 与节点获取 | 使用 canvas 时必需 |
 | `resolveAssetUrl` | 把 app-root 资源路径映射成 URL（canvas image 等） | 否 |
 | `maxPageStack` | 页面栈上限，默认 10 | 否 |
@@ -229,14 +229,14 @@ service bootstrap 只创建逻辑树并返回 pageId 和 componentSchemas；rend
 - 文件、网络、设备等自定义 handler
 :::
 
-:::card{tag="service" tone="violet" title="apiExtensions：同步宿主信息"}
-直接合并进 service 的 API host，在 service 线程执行。
+:::card{tag="service" tone="violet" title="apiHost：宿主编排 API 表"}
+内核不内置任何 `wx.*`。宿主传入 `apiHost: (context) => MiniProgramApiHost`，通常用 `@tiny/api` 的 `createWeixinApiHost(context)` 拿标准表，再用 `apiExtensions` 叠加设备事实：
 
 - `getMenuButtonBoundingClientRect`
 - `getPerformance`（now/mark/measure/observer）
 - 其他依赖设备或宿主壳的同步 API
 
-测试宿主和 devtool 各有一份实现；核心 runtime 不写死这些值。
+测试宿主和 devtool 各有一份 `apiExtensions`，`bootBrowserServiceEntry` 负责把它们合并到默认表之上；iOS 在 `bootServiceThread` 里直接组装。
 :::
 ::::
 
@@ -256,7 +256,7 @@ service 通过 `createLegacyCanvasContext` / `acquireCanvasNode` 拿到同步 ca
 
 | 问题 | 应该放在哪里 | 原因 |
 | --- | --- | --- |
-| 菜单按钮位置随设备变化 | `apiExtensions` | service 需要同步调用，属于宿主信息 |
+| 菜单按钮位置随设备变化 | `apiHost` 里的 `apiExtensions` | service 需要同步调用，属于宿主信息 |
 | 页面跳转要同时改两个线程 | `apiHandlers` | 只有宿主同时持有两侧连接 |
 | storage 需要持久化 | `apiHandlers` | 真实存储由宿主管理 |
 | canvas 2D / WebGL / RAF | ServiceCanvasAdapter + OffscreenCanvas handoff | 内核不能依赖 document / Image |
@@ -265,7 +265,7 @@ service 通过 `createLegacyCanvasContext` / `acquireCanvasNode` 拿到同步 ca
 | 本地图片和 CSS 背景图 | `resolveAssetUrl` | 只有宿主知道静态资源的 URL 规则 |
 
 :::callout{title="仓库里已经定下的规则"}
-宿主信息通过 `ServiceThreadOptions.apiExtensions` 注入，canvas 通过 `ServiceThreadOptions.canvas` 注入，渲染树通过 `TreeRenderer` 注入。不要再把这些能力放回 `packages/runtime`。
+API 表通过 `ServiceThreadOptions.apiHost` 注入（标准集在 `@tiny/api`），宿主事实作为它的覆盖层，canvas 通过 `ServiceThreadOptions.canvas` 注入，渲染树通过 `TreeRenderer` 注入。不要再把这些能力放回 `packages/runtime`。
 :::
 
 ## @tiny/host-browser 负责什么 {#browser kicker="浏览器宿主"}
@@ -288,7 +288,7 @@ service 通过 `createLegacyCanvasContext` / `acquireCanvasNode` 拿到同步 ca
 - 加载 manifest 或编译产物
 - 调用 bootstrap
 - 提供业务渲染后端或挂载点
-- 注入 systemInfo、storage 或 apiExtensions
+- 注入 systemInfo、storage 或 API 表
 - 管理多应用、诊断展示或界面
 :::
 ::::
@@ -400,7 +400,7 @@ devtool 的 service/render 入口用 `new Function('url', 'return import(url)')`
 | 创建两条 Transport | service 和 render 各一条；帧边界、非空 messages 和 JSON 安全由 Bridge 兜底，但传输必须保序。 | |
 | 实现渲染树 | 实现 `TreeRenderer`：mount、applyPatches、applyStyles、query、measure、inspectTree、observeIntersection；Web 侧可直接用 `createGlassRenderTree`。 | |
 | 启动线程并等待连接装好 | service 安装兼容全局、loadTemplates 和 loadArtifacts；render 创建 TreeRenderer；等 transport 接收端就绪后再握手，用 ready 或同步点避免丢帧。 | |
-| 提供宿主信息 | systemInfo、storage 初始快照；设备相关的同步 API 走 apiExtensions，网络和文件等跨线程 API 走 apiHandlers。 | |
+| 提供宿主信息 | systemInfo、storage 初始快照；API 表通过 apiHost 注入（默认 `@tiny/api`），设备事实用 apiExtensions 覆盖，网络和文件等跨线程 API 走 apiHandlers。 | |
 | 实现导航和 tree.ready | navigate.to/back/switchTab 必须由宿主先调用 service、再创建/激活 render root；render 挂载后发 tree.ready，service 发送 tree.flow，最后 page.ready。 | |
 | 接入诊断和控制 | 收集 diagnostic.*；按需暴露 inspectTree、page.show/hide 和关闭方法。 | |
 | 定义关闭语义 | 关闭两条连接、释放线程、卸载页面。HostCore 负责 Bridge 会话，页面 WebView/iframe 和容器由平台适配器清理。 | |

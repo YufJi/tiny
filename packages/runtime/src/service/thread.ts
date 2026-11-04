@@ -16,7 +16,7 @@ import { createRuntimeStateDiagnostic } from '../diagnostics'
 import type { RuntimePageState, RuntimeTabBarState } from '../diagnostics'
 import { MiniProgramPageRegistry } from './page-registry'
 import { MiniProgramPageInstance, type PageLifecycleName } from './page-instance'
-import { createServiceApiHost, installMiniProgramGlobals } from './api-host'
+import { installMiniProgramGlobals } from './api-globals'
 import { dispatchWxsEffect, installWxsEventHost, type WxsEventHostOptions } from './wxs-host'
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import { createDefaultWxsCompiler, createWxsRuntime } from '@tiny/wxs-runtime'
@@ -195,10 +195,10 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     capabilities: { role: 'service' },
   })
   apiContext.connection = connection
-  const apiHost = {
-    ...createServiceApiHost(apiContext),
-    ...(options.apiExtensions ?? {}),
-  }
+  // The kernel does not own the mini-program API set: the host injects a
+  // factory and the runtime only installs what it returns. Names the factory
+  // omits fall through to the unsupported-API diagnostic.
+  const apiHost = options.apiHost(apiContext)
   for (const name of Object.keys(apiHost)) supportedApiNames.add(name)
   installMiniProgramGlobals(
     registry,

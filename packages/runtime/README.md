@@ -114,29 +114,35 @@ implementation (`tiny-*` host nodes, behaviors, templates, and CSS) used by
 the same `TreeRenderer` contract with native views and can ignore the web
 package entirely.
 
-## Host-specific APIs
+## Mini-program APIs
 
-Platform facts and host capabilities belong to the host, not the engine core.
-`bootServiceThread` accepts `apiExtensions` for APIs such as menu-button geometry
-or performance observers:
+The kernel owns the global namespace (`wx`, `App`, `Page`, `Component`,
+`Behavior`), the unsupported-API fallback and the `ServiceApiContext` capability
+contract — not the API table. `bootServiceThread` requires an `apiHost` factory,
+so the set of `wx.*` names is the host's decision:
 
 ```ts
+import { createWeixinApiHost } from '@tiny/api'
+
 bootServiceThread({
   transport,
   manifest,
   initialPath,
-  apiExtensions: {
+  apiHost: (context) => ({
+    ...createWeixinApiHost(context),
     getMenuButtonBoundingClientRect: () => hostChrome.menuButtonRect,
     getPerformance: () => hostChrome.performance,
-  },
+  }),
   loadArtifacts,
 })
 ```
 
-The reference implementation lives in `tests/host/src/service-thread.ts`; the
-debugger host passes the same extensions in `apps/devtool/src/runtimeService.js`.
-The engine only exposes mini-program semantics, host snapshots (system/storage),
-and bridge calls; it does not invent device or performance results.
+`@tiny/api` is the standard WeChat-compatible table (one module per
+domain); hosts compose their own device facts on top. The browser host's
+`bootBrowserServiceEntry` already defaults to that composition plus
+`apiExtensions`. The engine only exposes mini-program semantics, host snapshots
+(system/storage), and bridge calls; it does not invent device or performance
+results.
 
 ## Asset URLs
 

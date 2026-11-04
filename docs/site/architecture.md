@@ -44,7 +44,7 @@ Tiny 只守住一条线：`packages/runtime` 是唯一的内核，它不引用 w
   @tiny/manifest / @tiny/bridge / @tiny/wxs-runtime / glass-easel
 ```
 
-宿主不是内核的上层，而是内核的调用方。浏览器、iOS 和测试宿主都依赖同一个内核，区别只在注入的实现：`transport` 决定消息怎么走，`TreeRenderer` 决定怎么画，`canvas`、`apiExtensions` 和 `resolveAssetUrl` 决定环境事实。
+宿主不是内核的上层，而是内核的调用方。浏览器、iOS 和测试宿主都依赖同一个内核，区别只在注入的实现：`transport` 决定消息怎么走，`TreeRenderer` 决定怎么画，`apiHost`、`canvas` 和 `resolveAssetUrl` 决定环境事实。
 
 | 注入点 | 宿主提供 | 内核拿到什么 | 浏览器宿主 | iOS 宿主 |
 | --- | --- | --- | --- | --- |
@@ -52,8 +52,10 @@ Tiny 只守住一条线：`packages/runtime` 是唯一的内核，它不引用 w
 | `manifest` 与 loader | 产物与加载方式 | 只读 manifest、templates、styles | 静态资源 | 打包产物 |
 | `TreeRenderer` | 真实组件树 | 渲染契约 | `createGlassRenderTree` | 每页 WKWebView |
 | `canvas` | 画布控制面 | `ServiceCanvasAdapter` | OffscreenCanvas | display-list 回放 |
-| `apiExtensions` | 设备与平台事实 | 只读 API 扩展 | 窗口与设备信息 | 菜单按钮、性能 |
+| `apiHost` | API 表工厂 | `ServiceApiFactory` | `@tiny/api` + 窗口设备信息 | `@tiny/api` + 菜单按钮、性能 |
 | `resolveAssetUrl` | 资源地址规则 | URL 映射函数 | 站点路径 | bundle 路径 |
+
+`apiHost` 是唯一会随时间增长的注入点，而且它增长在宿主侧：内核只安装工厂返回的表，缺的名字落到 `UNSUPPORTED_API`；标准微信兼容表在 `@tiny/api`，宿主再用 `apiExtensions` 叠加设备事实。
 
 :::callout{title="这条线由脚本守着"}
 `pnpm check:runtime-purity` 从 `packages/runtime/src/index.ts` 遍历依赖图，出现 window、document、fetch、MessageChannel 或 `@tiny/host-*` 就失败。它验证的不是“当前浏览器能跑”，而是“同一个内核还能装进下一个宿主”。实现细节见[宿主适配](#/hosts)。
@@ -318,7 +320,7 @@ SwiftUI MiniProgramSession
 | canvas 实现 | 宿主 canvas handoff | service 持有 OffscreenCanvas 控制面 | ServiceCanvasAdapter / 浏览器 OffscreenCanvas relay |
 | DOM 查询 | 宿主渲染树 | selector query / IntersectionObserver | query.select / query.intersection |
 | 资源 URL | 宿主 resolveAssetUrl | render 重写后的 img/src 和 CSS url() | 渲染树在应用 flow 时解析 |
-| 宿主 transport / API 语义 | 宿主 | service 侧 API 快照 | api.* 调用 / systemInfo / storage / apiExtensions |
+| 宿主 transport / API 语义 | 宿主 | service 侧 API 快照 | api.* 调用 / systemInfo / storage / apiHost |
 | 诊断 | 宿主诊断仓库 | devtool diagnostics | diagnostic.* 事件 |
 
 :::callout{title="一个常见错误" tone="warn"}
@@ -347,7 +349,7 @@ Date、Map、Set、函数、undefined 和循环引用都会被 Bridge 拒绝。�
 :::
 
 :::card{title="环境能力由宿主注入"}
-设备信息走 `apiExtensions`，canvas 走 `ServiceCanvasAdapter` / `RenderCanvasAdapter`，DOM 查询与相交观测走 `RenderQueryAdapter`，资源走 `resolveAssetUrl`，渲染后端和挂载点也由宿主提供。
+API 表走 `apiHost`（标准集来自 `@tiny/api`，设备事实用 `apiExtensions` 叠加），canvas 走 `ServiceCanvasAdapter` / `RenderCanvasAdapter`，DOM 查询与相交观测走 `RenderQueryAdapter`，资源走 `resolveAssetUrl`，渲染后端和挂载点也由宿主提供。
 :::
 
 :::card{title="命名配置只有一个来源"}

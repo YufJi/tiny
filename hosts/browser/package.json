@@ -20,7 +20,8 @@
   },
   "dependencies": {
     "@tiny/bridge": "workspace:*",
-    "@tiny/runtime": "workspace:*"
+    "@tiny/runtime": "workspace:*",
+    "@tiny/api": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.0.0"
