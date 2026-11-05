@@ -1,6 +1,6 @@
 # 内置组件与 behaviors 缺口清单（WAWebview 2.33.0）
 
-> **快照**：2026-11-04 · **参考实现**：`~/Downloads/wechat-miniprogram/2.33.0/WAWebview.js`、`WAWebview.css` · **组件目标**：沿用 [wechat-webview-parity.md 附录 B](./wechat-webview-parity.md#附录-bwebview-组件清单40) 的 40 个 WebView 公共组件
+> **快照**：2026-11-05 · **参考实现**：`~/Downloads/wechat-miniprogram/2.33.0/WAWebview.js`、`WAWebview.css` · **组件目标**：沿用 [wechat-webview-parity.md 附录 B](./wechat-webview-parity.md#附录-bwebview-组件清单40) 的 40 个 WebView 公共组件
 >
 > 本文只回答“还差哪些、占位在哪”，不重复各组件的对齐细节；已实现组件的状态看 [component-reference-diff.md](./component-reference-diff.md)。
 
@@ -9,12 +9,12 @@
 | 维度 | 参考总数 | 已实现 | 缺口 | 缺口分布 |
 | --- | ---: | ---: | ---: | --- |
 | 内置组件 | 40 项（39 标签 + 1 文档页） | 39 | **0** | 全部 39 个真实标签已注册（含 2.33.0 新增的 grid-view）；20 个组件暂不支持；`aria-component` 是文档页，不是标签 |
-| 内置 behaviors | 42 | 28 | **11** | 全部是宿主 `@tiny/host-web-components` 的 behavior；7 个 runtime `wx://` behavior 已实现；3 个按基线不做 |
+| 内置 behaviors | 42 | 27 | **11** | 全部是宿主 `@tiny/host-web-components` 的 behavior；6 个 runtime `wx://` behavior 已实现；4 个按基线不做 |
 
 - 组件缺口已清零：剩余 DOM/CSS、音视频与 web-view 标签均已落地；video/audio/web-view 是浏览器近似实现。
 - behaviors 缺口按类别：共享/DOM 4 个、媒体/原生 6 个、宿主平台 1 个。`wx://request-filter` / `wx://request-sender` 按基线不做，声明时回落到 `UNSUPPORTED_BEHAVIOR`。
 - 组件占位目录已全部删除；11 个缺失宿主 behavior 占位保留，每个目录只有 `PLACEHOLDER.md`。含该标记的组件目录会被 `build-templates.mjs` / `build-styles.mjs` 跳过，不会被注册成空壳组件。
-- 7 个 runtime `wx://` 内置 behavior 已在 [packages/runtime/src/component/behaviors](../packages/runtime/src/component/behaviors/index.ts:1) 实现，**不在内核里放占位**。
+- 6 个 runtime `wx://` 内置 behavior 已在 [packages/runtime/src/component/behaviors](../packages/runtime/src/component/behaviors/index.ts:1) 实现，**不在内核里放占位**（service 侧是 marker，可观察语义在渲染侧或框架里）；`functional-page-behavior` 按基线不做。
 
 ## 2. 口径
 
@@ -32,8 +32,8 @@
 ### 2.2 behaviors
 
 - 从 2.33.0 的 `registerBehavior({ is: "..." })` 提取到 **42** 个内置 behavior。
-- **已实现 28** = `src/behaviors` 的 21 个宿主 behavior + `packages/runtime/src/component/behaviors` 的 7 个 `wx://` behavior。
-- **明确不做 3** = `wx://request-filter` / `wx://request-sender` / `wx-cloud`；前两者只服务微信原生媒体 URL 过滤，`wx-cloud` 依赖微信云开发，Tiny 不模拟这些管线。
+- **已实现 27** = `src/behaviors` 的 21 个宿主 behavior + `packages/runtime/src/component/behaviors` 的 6 个 `wx://` behavior。
+- **明确不做 4** = `wx://functional-page-behavior` / `wx://request-filter` / `wx://request-sender` / `wx-cloud`；前两者服务微信原生媒体 URL 过滤，`functional-page-behavior` 属于插件/功能页导航，`wx-cloud` 依赖微信云开发，Tiny 不模拟这些管线。
 - **缺口 11** = 全部是宿主 behavior；未识别的 `wx://` behavior（包括上面两个）仍会发 `UNSUPPORTED_BEHAVIOR` 诊断。`wx-cloud` 按基线不做，不会出现在缺口里。
 
 ## 3. 组件缺口（0）
@@ -108,13 +108,14 @@
 | `wx://label-target` | [label-target.ts](../packages/runtime/src/component/behaviors/label-target.ts) |
 | `wx://style-filter` | [style-filter.ts](../packages/runtime/src/component/behaviors/style-filter.ts) |
 
-### 4.4 明确不做（3）
+### 4.4 明确不做（4）
 
 | 参考 behavior | 原因 |
 | --- | --- |
 | `wx://functional-page-behavior` | 属于插件/功能页导航器（`functional-page-navigator`），Tiny 不实现该能力；声明时按未识别 `wx://` behavior 发 `UNSUPPORTED_BEHAVIOR` |
 | `wx://request-filter` | 只用于微信原生媒体/`open-data` 的 URL 过滤；Tiny 不模拟该原生管线 |
 | `wx://request-sender` | 与 `request-filter` 成对的消费端；声明时按未识别 `wx://` behavior 发 `UNSUPPORTED_BEHAVIOR` |
+| `wx-cloud` | 依赖微信云开发管线；Tiny 不模拟，声明时按未识别 behavior 处理 |
 
 > 参考事实：2.33.0 里直接使用 `wx://request-filter` 的只有 `open-data`；直接使用 `wx://request-sender` 的有 `audio`、`image`、`video`、`web-view`、`video-ad` 共 7 个标签（`video` 有两套平台定义，`video-ad` 是内部组件）。这些组件的占位不再把这两个 behavior 列为 Tiny 目标。
 

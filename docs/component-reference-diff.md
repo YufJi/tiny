@@ -1,6 +1,8 @@
-# 内置组件与微信 2.7.0 对齐状态
+# 内置组件对齐状态（2.7.0 逐项审计，2.33.0 口径）
 
 > 参考实现：`~/Downloads/微信小程序.js`、`微信小程序.css`（微信 WebView，`__libVersionInfo__ = 2.7.0`）
+>
+> 2.33.0 口径：39 个 WebView 目标标签已全部接入，行为/组件缺口以 [builtin-inventory-2.33.0.md](./builtin-inventory-2.33.0.md) 为准；本文保留 2.7.0 的逐组件结构审计，未逐项重做 2.33.0 差异。
 >
 > 对照实现：[hosts/web-components/src/components](../hosts/web-components/src/components)
 >
@@ -23,7 +25,7 @@
 
 ## 1. 当前整体结论
 
-24 个内置标签的**宿主结构和 P0 默认视觉已经完成一轮重写**，当前没有 P0 级“结构或默认外观明显不一致”的标签。剩余问题集中在三类：
+39 个内置标签的**宿主结构和 P0 默认视觉已经完成一轮重写**，当前没有 P0 级“结构或默认外观明显不一致”的标签。剩余问题集中在三类：
 
 1. **交互语义**：`tiny-touchtrack`/`tiny-scroller` 尚未抽象；group 受控值和 label 激活已补，picker region 按决策暂不支持；
 2. **P1 组件的内部结构**：`input`、`textarea`、`swiper`、`form`、`button` 仍是“能用但近似”；`scroll-view` 已按决策接受 native 滚动近似。
@@ -31,13 +33,13 @@
 
 | 维度 | 状态 | 说明 |
 | --- | --- | --- |
-| 宿主模型 | ✅ 完成 | 24 个组件全部使用 `virtualHost: false` + `tiny-*` 真宿主 |
+| 宿主模型 | ✅ 完成 | 39 个组件全部使用 `virtualHost: false` + `tiny-*` 真宿主 |
 | P0 视觉结构 | ✅ 完成 | checkbox/radio/switch/slider/icon/image/picker/picker-view/column |
 | 基础样式/属性转发 | ✅ 完成 | class/style/id/data-*/hidden 直接落在宿主 |
 | 交互语义 | ⚠️ 部分 | 触摸/滚动/group/label 仍是近似 |
 | P1 组件内部结构 | ⚠️ 部分 | input/textarea/swiper/form/button；scroll-view 接受 native 近似 |
 | 表单/受控能力 | ⚠️ 部分 | group 派生 value、自定义 form-field、reportSubmit |
-| 全项目能力对齐分 | 50.55% | 来自 [wechat-webview-parity.md](./wechat-webview-parity.md)，是整体能力分，不是组件单项分 |
+| 全项目能力对齐分 | 52.30% | 来自 [wechat-webview-parity.md](./wechat-webview-parity.md)，是整体能力分，不是组件单项分 |
 
 一句话：**结构层已经基本对齐，主要差距在交互模型、P1 组件内部结构和表单语义。**
 
@@ -49,7 +51,7 @@
 
 - [x] `virtualHost: true` + 内层根导致宿主不可选、`class`/`style`/`id`/`data-*` 需要逐项转发；
 - [x] 内置组件宿主标签从占位元素迁移为 `tiny-*` 真宿主，并使用 `reflectToAttributes` 反射属性；
-- [x] `hidden` 在 24 个宿主上的默认样式重置；
+- [x] `hidden` 在 39 个宿主上的默认样式重置；
 - [x] `class`/`style`/`id`/`data-*`/`hidden` 直接落在宿主，删除 `externalClasses`/`style` 属性和 `scheduleDataAttributeSync` 等 shim；
 - [x] 参考 CSS 的 `wx-*` 宿主选择器机械替换为 `tiny-*`；
 - [x] 全局 `app.wxss` 的 tag 选择器在编译时映射到宿主（`button {}` → `tiny-button {}`）；
@@ -186,7 +188,7 @@
 
 ## 3. 已解决项（[x] 汇总）
 
-- **宿主/样式**：24 个 `tiny-*` 真宿主、属性反射、hidden reset、全局 tag 映射、scoped tag 重写、内部 `div`/`span`。
+- **宿主/样式**：39 个 `tiny-*` 真宿主、属性反射、hidden reset、全局 tag 映射、scoped tag 重写、内部 `div`/`span`。
 - **P0 视觉**：checkbox、radio、switch、slider、icon、image、picker、picker-view、picker-view-column 共 9 个标签完成结构/默认外观重写。
 - **picker 交互**：selector/multiSelector/date/time 的浮层、确认/取消/columnchange、列值同步。
 - **picker-view 交互**：mask/indicator/content、transform 吸附、tap 定位、触摸/鼠标拖动、pickstart/pickend。
@@ -330,7 +332,7 @@ pnpm lint                # 8 files checked, no fixes applied
 
 ### 6.4 覆盖不到的部分
 
-自动化门禁**没有逐页覆盖全部 24 个组件**，以下主要依赖单测/手工验证，后续补浏览器用例时优先补：
+自动化门禁**没有逐页覆盖全部 39 个组件**，以下主要依赖单测/手工验证，后续补浏览器用例时优先补：
 
 - picker 浮层的 selector/multiSelector/date/time；
 - picker-view 的拖动/吸附/初始 value；
@@ -340,4 +342,4 @@ pnpm lint                # 8 files checked, no fixes applied
 
 ### 6.5 全项目分数
 
-`50.55%` 来自 [wechat-webview-parity.md](./wechat-webview-parity.md) 的整体能力校准（24/60 标签、71/502 API、页面生命周期 14/14、路由 5/5、浏览器 + iOS 宿主等），**不是**本文 24 个组件的单项得分；组件结构对齐不应直接等同于总分提升。
+`52.30%` 来自 [wechat-webview-parity.md](./wechat-webview-parity.md) 的整体能力校准（39/60 标签、71/502 API、页面生命周期 14/14、路由 5/5、浏览器 + iOS 宿主等），**不是**本文逐组件审计的单项得分；本文详细审计以早期 24 个标签为主，新增标签见 [builtin-inventory-2.33.0.md](./builtin-inventory-2.33.0.md)，组件结构对齐不应直接等同于总分提升。
