@@ -86,13 +86,13 @@ export function installWxsEventHost(options: WxsEventHostOptions): () => void {
       isCatch: boolean,
       isCapture: boolean,
       isMutated: boolean,
-    ): void => {
-      if (!element || typeof element !== 'object') return
+    ): boolean => {
+      if (!element || typeof element !== 'object') return false
       const tree = options.getLogicTree()
       const node = findLogicNodeByElement(element)
-      if (!tree || !node) return
+      if (!tree || !node) return false
       const pageId = tree.pageIdFor(element)
-      if (!pageId) return
+      if (!pageId) return false
       // Event handlers on custom components are WXS too: they run in the
       // render tree, like the built-in ones. Only the built-in `input` events
       // that glass forwards through the service keep the service path.
@@ -108,6 +108,10 @@ export function installWxsEventHost(options: WxsEventHostOptions): () => void {
         ...(isMutated ? { mutated: true } : {}),
       }
       options.onBinding?.(pageId, binding)
+      // `true` means the render tree owns the handler: `Q.B` must not attach
+      // the WXS function in the logic tree. Service-only events (`bindinput`
+      // on input/textarea) keep the function here.
+      return Boolean(localOrigin)
     },
     descriptorFor: (element: unknown): WxsComponentDescriptor | undefined => {
       const tree = options.getLogicTree()

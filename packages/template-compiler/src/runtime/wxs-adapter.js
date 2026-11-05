@@ -23,11 +23,12 @@ Q.B = (elem, evName, value, final, mutated, capture) => {
   // WXS binding and ships it to the render tree. The render-side host has no
   // `registerBinding`, so component templates keep the real WXS function.
   if (host && typeof host.registerBinding === 'function') {
-    host.registerBinding(elem, evName, origin, Boolean(final), Boolean(capture), Boolean(mutated))
+    const local = host.registerBinding(elem, evName, origin, Boolean(final), Boolean(capture), Boolean(mutated))
     // WXS handlers run in the render tree; keep the listener option (`catch` /
     // `capture` still shape service-side bubbling) but never execute the WXS
-    // function in the logic tree. Plain dynamic handlers keep their function.
-    return origin ? () => {} : value
+    // function in the logic tree. Service-only events return `false` here and
+    // keep the function, and plain dynamic handlers are never placeholder'd.
+    return local && origin ? () => {} : value
   }
   return value
 }
