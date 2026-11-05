@@ -90,19 +90,16 @@ function eventTouchSources(
 }
 
 function touchPayload(instance: unknown, event: glassEasel.ShadowedEvent<unknown>): TouchPayload {
-  const detail = { ...((event.detail ?? {}) as Record<string, unknown>) }
-  // DOM event details include circular node references; the runtime only
-  // forwards JSON-safe fields and re-creates target/currentTarget itself.
-  delete detail.target
-  delete detail.currentTarget
-  delete detail.srcElement
+  // Glass derives a native event's detail from the DOM event itself, so it
+  // carries live `Touch`/`TouchList` objects (`touches`, `targetTouches`, ...)
+  // that cannot cross the bridge. WeChat's canvas detail only exposes the
+  // normalized touch lists, which this built-in re-creates below.
   const origin = canvasOrigin(instance)
   const touches = eventTouchSources(event, 'touches').map((touch) => normalizeTouch(touch, origin))
   const changedTouches = eventTouchSources(event, 'changedTouches')
     .map((touch) => normalizeTouch(touch, origin))
   return {
     detail: {
-      ...detail,
       touches,
       changedTouches,
     },
@@ -115,6 +112,9 @@ function eventOptions(payload: TouchPayload): Record<string, unknown> {
   return {
     bubbles: true,
     composed: true,
+    // The raw event this replaces runs glass's capture phase first, so capture
+    // bindings on ancestors must see the normalized event too.
+    capturePhase: true,
     // Canvas touch handlers in WeChat read `event.touches` and
     // `event.changedTouches` directly instead of looking inside `detail`.
     extraFields: {

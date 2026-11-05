@@ -272,6 +272,87 @@ describe('glass render tree', () => {
       touches: [{ identifier: 0, clientX: 5, clientY: 6 }],
     })
   })
+
+  test('removes non-JSON values from forwarded event details', () => {
+    const templates = templatesFor(
+      'components/card/card',
+      '<view id="inner" bindtap="onTap">hi</view>',
+    )
+    const events: Array<Record<string, unknown>> = []
+    const tree = createGlassRenderTree({
+      backend: new glassEasel.EmptyBackendContext(),
+      templates,
+      componentDefinitions: {
+        'components/card/card': { path: 'components/card/card', methods: ['onTap'] },
+      },
+    })
+    tree.setTemplateEventSink?.((event) => events.push(event as never))
+    tree.mount(element('root', 'view', {}, [{
+      type: 'element',
+      id: 'card',
+      tag: 'card',
+      component: true,
+      componentPath: 'components/card/card',
+    }]))
+
+    const card = tree.getNode('card') as unknown as {
+      getShadowRoot: () => { getElementById: (id: string) => unknown } | null
+    }
+    const inner = card.getShadowRoot()?.getElementById('inner')
+    // Glass copies a DOM event into the detail; `touches`/`targetTouches` stay
+    // live `TouchList` instances there and the bridge rejects them.
+    class TouchListLike { length = 1 }
+    glassEasel.triggerEvent(inner as never, 'tap', {
+      clientX: 1,
+      touches: new TouchListLike(),
+      handler: () => undefined,
+    })
+
+    expect(events[0]?.detail).toEqual({ clientX: 1 })
+  })
+
+  test('forwards a normalized touch projection only once', () => {
+    const templates = templatesFor(
+      'components/card/card',
+      '<view id="inner" bindtouchstart="onTouch">hi</view>',
+    )
+    const events: Array<Record<string, unknown>> = []
+    const tree = createGlassRenderTree({
+      backend: new glassEasel.EmptyBackendContext(),
+      templates,
+      componentDefinitions: {
+        'components/card/card': { path: 'components/card/card', methods: ['onTouch'] },
+      },
+    })
+    tree.setTemplateEventSink?.((event) => events.push(event as never))
+    tree.mount(element('root', 'view', {}, [{
+      type: 'element',
+      id: 'card',
+      tag: 'card',
+      component: true,
+      componentPath: 'components/card/card',
+    }]))
+
+    const card = tree.getNode('card') as unknown as {
+      getShadowRoot: () => { getElementById: (id: string) => unknown } | null
+    }
+    const inner = card.getShadowRoot()?.getElementById('inner')
+    const rawTouch = { [Symbol.for('tiny.handledNativeEvent')]: true }
+    const touch = { identifier: 0, clientX: 5, clientY: 6, x: 5, y: 6 }
+    // The raw DOM projection the canvas built-in already re-emitted.
+    glassEasel.triggerEvent(inner as never, 'touchstart', {}, {
+      originalEvent: rawTouch,
+      extraFields: { touches: [touch], changedTouches: [touch] },
+    } as never)
+    expect(events).toHaveLength(0)
+
+    // The built-in's normalized event has no original event and is forwarded.
+    glassEasel.triggerEvent(inner as never, 'touchstart', {}, {
+      extraFields: { touches: [touch], changedTouches: [touch] },
+    } as never)
+    expect(events).toHaveLength(1)
+    expect(events[0]).toMatchObject({ handler: 'onTouch', name: 'touchstart', touches: [touch] })
+  })
   test('matches created component instances positionally by path', () => {
     const result = matchComponentInstances(
       ['components/card/card', 'components/card/card'],

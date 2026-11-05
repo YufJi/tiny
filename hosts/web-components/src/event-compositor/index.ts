@@ -26,6 +26,49 @@ const glassElementOf = (node: unknown): glassEasel.Element | null => {
   return null
 }
 
+const projectionName = (phase: InputPhase): TouchProjectionName => (
+  phase === 'start' ? 'touchstart'
+    : phase === 'move' ? 'touchmove'
+      : phase === 'end' ? 'touchend' : 'touchcancel'
+)
+
+const projectionPoint = (
+  point: InputPoint,
+  origin?: { left: number; top: number },
+): TouchProjectionPoint => ({
+  identifier: point.id < 0 ? 0 : point.id,
+  pageX: point.x,
+  pageY: point.y,
+  clientX: point.x,
+  clientY: point.y,
+  screenX: point.x,
+  screenY: point.y,
+  // Canvas-relative coordinates (`touch.x`/`touch.y` in a mini program).
+  x: point.x - (origin?.left ?? 0),
+  y: point.y - (origin?.top ?? 0),
+  force: 1,
+  radiusX: 0,
+  radiusY: 0,
+})
+
+/**
+ * Touch devices already get native touch events through glass. Mouse input
+ * (the devtool) has none, so project it into the same touch sequence before
+ * gesture recognition runs. `origin` is the element the press started on; the
+ * canvas needs it to report canvas-relative `x`/`y`.
+ */
+export const projectTouch = (
+  event: InputEvent,
+  origin?: { left: number; top: number },
+): TouchProjection => ({
+  name: projectionName(event.phase),
+  touches: event.phase === 'end' || event.phase === 'cancel'
+    ? []
+    : event.points.map((point) => projectionPoint(point, origin)),
+  changedTouches: event.changedPoints.map((point) => projectionPoint(point, origin)),
+  originalEvent: event.originalEvent,
+})
+
 /**
  * One event entry point per render tree.
  *
@@ -43,6 +86,7 @@ export function attachEventCompositor(options: CompositorOptions): () => void {
   }
   let lastTouchAt = 0
   let lastTarget: EventTarget | null = null
+  let projectionOrigin: { left: number; top: number } | undefined
 
   const shouldIgnoreMouse = (): boolean => Date.now() - lastTouchAt < MOUSE_AFTER_TOUCH_MS
 
@@ -80,45 +124,30 @@ export function attachEventCompositor(options: CompositorOptions): () => void {
     },
   })
 
-  const projectionName = (phase: InputPhase): TouchProjectionName => (
-    phase === 'start' ? 'touchstart'
-      : phase === 'move' ? 'touchmove'
-        : phase === 'end' ? 'touchend' : 'touchcancel'
-  )
-
-  const projectionPoint = (point: InputPoint): TouchProjectionPoint => ({
-    identifier: point.id < 0 ? 0 : point.id,
-    pageX: point.x,
-    pageY: point.y,
-    clientX: point.x,
-    clientY: point.y,
-    screenX: point.x,
-    screenY: point.y,
-    force: 1,
-    radiusX: 0,
-    radiusY: 0,
-  })
-
   /**
-   * Touch devices already get native touch events through glass. Mouse input
-   * (the devtool) has none, so project it into the same touch sequence before
-   * gesture recognition runs.
+   * `touch.x`/`touch.y` are canvas-relative coordinates. Native touches get
+   * them from the canvas built-in, so the mouse projection derives them from
+   * the element the devtool pressed on.
    */
-  const projectTouch = (event: InputEvent): TouchProjection => ({
-    name: projectionName(event.phase),
-    touches: event.phase === 'end' || event.phase === 'cancel'
-      ? []
-      : event.points.map(projectionPoint),
-    changedTouches: event.changedPoints.map(projectionPoint),
-    originalEvent: event.originalEvent,
-  })
+  const projectionOriginOf = (target: EventTarget | null): { left: number; top: number } | undefined => {
+    const element = target as Element | null
+    if (!element || typeof element.getBoundingClientRect !== 'function') return undefined
+    const rect = element.getBoundingClientRect()
+    return { left: rect.left, top: rect.top }
+  }
 
   const feed = (event: InputEvent): void => {
-    if (event.phase === 'start') lastTarget = event.originalEvent.target
     const fromMouse = event.points.some((point) => point.source === 'mouse')
+    let origin = projectionOrigin
+    if (event.phase === 'start') {
+      lastTarget = event.originalEvent.target
+      // A drag must keep the coordinates of the element it started on.
+      origin = fromMouse ? projectionOriginOf(event.originalEvent.target) : undefined
+      projectionOrigin = origin
+    }
     if (fromMouse) {
       const target = resolveTarget(event.originalEvent)
-      if (target) options.onTouch?.(projectTouch(event), target)
+      if (target) options.onTouch?.(projectTouch(event, origin), target)
     } else {
       lastTouchAt = Date.now()
     }

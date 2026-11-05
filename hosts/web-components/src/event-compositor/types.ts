@@ -60,6 +60,9 @@ export type TouchProjectionPoint = {
   clientY: number
   screenX: number
   screenY: number
+  /** Canvas-relative coordinates (`touch.x`/`touch.y` in a mini program). */
+  x: number
+  y: number
   force: number
   radiusX: number
   radiusY: number

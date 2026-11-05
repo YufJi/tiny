@@ -1691,7 +1691,9 @@ export async function runTaroAcceptance({ baseUrl }) {
 
 export async function runDevtoolAcceptance({ baseUrl }) {
   const browser = await launchBrowser()
-  const page = await browser.newPage({ viewport: { width: 1400, height: 900 } })
+  // `hasTouch` lets the echarts canvas step drive a real touch sequence; the
+  // mobile gate still keys off the user agent only.
+  const page = await browser.newPage({ viewport: { width: 1400, height: 900 }, hasTouch: true })
   const pageErrors = []
   const consoleErrors = []
   const failureShot = path.join(rootDir, 'tests/host/generated/acceptance-devtool-failure.png')
@@ -2169,6 +2171,94 @@ export async function runDevtoolAcceptance({ baseUrl }) {
             Math.abs(logoBox.width - 84) < 1 && Math.abs(logoBox.height - 19) < 1,
             `weui footer image lost its inline size: ${logoBox.width}x${logoBox.height}`,
           )
+        }
+
+        if (fixture.id === 'echarts') {
+          // The legend lives on a `<canvas>`, so toggling it is the only
+          // acceptance path that sends a built-in touch event over the bridge.
+          // It regressed twice: live `TouchList` values in the detail made the
+          // bridge drop the handler call, and the mouse projection lost the
+          // canvas-relative coordinates the chart needs.
+          currentStep = 'preview echarts: toggle the canvas legend'
+          await page.locator('input[placeholder="pages/..."]').fill('/pages/bar/index')
+          await page.getByText('Navigate', { exact: true }).click()
+          await page.waitForFunction(
+            () => window.__tinyDevtool?.getState().currentPage === 'pages/bar/index',
+            null,
+            { timeout: STEP_TIMEOUT },
+          )
+          const barPageId = (await state()).pageStack.at(-1)
+          const barFrame = await waitForActiveRenderFrame(fixture.id, barPageId)
+          assert.ok(barFrame, 'echarts bar page did not create a render frame')
+          await barFrame.waitForSelector('canvas', { timeout: STEP_TIMEOUT })
+
+          const serviceFrame = page.frames().find((frame) => (
+            frame.url().includes('service.html') && frame.url().includes(`app=${fixture.id}`)
+          ))
+          assert.ok(serviceFrame, 'echarts service frame is missing')
+          const legendSelected = () => serviceFrame.evaluate(() => {
+            const pages = globalThis.getCurrentPages?.() ?? []
+            const chart = pages[pages.length - 1]?.selectComponent?.('#mychart-dom-bar')?.chart
+            return chart?.getOption().legend?.[0]?.selected ?? null
+          })
+          const legendPoint = (label) => serviceFrame.evaluate((name) => {
+            const pages = globalThis.getCurrentPages?.() ?? []
+            const chart = pages[pages.length - 1]?.selectComponent?.('#mychart-dom-bar')?.chart
+            const text = (chart?.getZr?.().storage.getDisplayList() ?? [])
+              .find((element) => element.style?.text === name)
+            if (!text) return null
+            const rect = text.getBoundingRect()
+            const transform = text.getComputedTransform?.() ?? [1, 0, 0, 1, 0, 0]
+            const localX = rect.x + rect.width / 2
+            const localY = rect.y + rect.height / 2
+            return {
+              x: localX * transform[0] + localY * transform[2] + transform[4],
+              y: localX * transform[1] + localY * transform[3] + transform[5],
+            }
+          }, label)
+          const waitForLegendToggle = (label) => serviceFrame.waitForFunction((name) => {
+            const pages = globalThis.getCurrentPages?.() ?? []
+            const chart = pages[pages.length - 1]?.selectComponent?.('#mychart-dom-bar')?.chart
+            return chart?.getOption().legend?.[0]?.selected?.[name] === false
+          }, label, { timeout: STEP_TIMEOUT })
+
+          await serviceFrame.waitForFunction(() => {
+            const pages = globalThis.getCurrentPages?.() ?? []
+            const chart = pages[pages.length - 1]?.selectComponent?.('#mychart-dom-bar')?.chart
+            const list = chart?.getZr?.().storage.getDisplayList() ?? []
+            return list.some((element) => element.style?.text === '热度')
+          }, null, { timeout: STEP_TIMEOUT })
+          assert.deepEqual(await legendSelected(), {}, 'echarts legend did not start fully selected')
+
+          const hotPoint = await legendPoint('热度')
+          const positivePoint = await legendPoint('正面')
+          assert.ok(hotPoint && positivePoint, 'echarts legend items were not rendered')
+          const frameBox = await page.locator(`${surface} iframe[data-page-id="${barPageId}"]`).boundingBox()
+          assert.ok(frameBox, 'echarts render frame has no bounding box')
+
+          // PC mode: the devtool projects mouse input into the touch sequence.
+          await page.mouse.click(frameBox.x + hotPoint.x, frameBox.y + hotPoint.y)
+          await waitForLegendToggle('热度')
+          assert.equal(
+            consoleErrors.length,
+            0,
+            `echarts mouse legend toggle reported: ${consoleErrors.join(' | ')}`,
+          )
+
+          // Mobile mode: a real touch must deliver the handler once. A double
+          // dispatch (raw DOM projection plus the built-in's normalized event)
+          // would toggle the item back on and time out above.
+          await page.touchscreen.tap(frameBox.x + positivePoint.x, frameBox.y + positivePoint.y)
+          await waitForLegendToggle('正面')
+          assert.equal(
+            consoleErrors.length,
+            0,
+            `echarts touch legend toggle reported: ${consoleErrors.join(' | ')}`,
+          )
+          const selected = await legendSelected()
+          assert.equal(selected?.['热度'], false, 'echarts mouse toggle did not stick')
+          assert.equal(selected?.['正面'], false, 'echarts touch toggle did not stick')
+          assert.notEqual(selected?.['负面'], false, 'echarts toggled an untouched series')
         }
 
         if (fixture.id === 'mini') {

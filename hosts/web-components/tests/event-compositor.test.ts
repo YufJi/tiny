@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { createGestureRecognizer } from '../src/event-compositor'
+import { createGestureRecognizer, projectTouch } from '../src/event-compositor'
 import type { InputEvent, InputPoint } from '../src/event-compositor'
 
 const point = (x: number, y: number, id = 1, source: 'touch' | 'mouse' = 'touch'): InputPoint => ({
@@ -93,5 +93,29 @@ describe('gesture recognizer', () => {
     feed(input('cancel', [], [point(10, 10)]))
     feed(input('end', [], [point(10, 10)]))
     expect(gestures.map((gesture) => gesture.name)).toEqual(['canceltap'])
+  })
+})
+
+describe('mouse touch projection', () => {
+  test('carries canvas-relative coordinates for the pressed element', () => {
+    const projection = projectTouch(
+      input('start', [point(30, 42, -1, 'mouse')]),
+      { left: 10, top: 20 },
+    )
+    expect(projection.name).toBe('touchstart')
+    expect(projection.touches).toHaveLength(1)
+    expect(projection.touches[0]).toMatchObject({ clientX: 30, clientY: 42, x: 20, y: 22 })
+  })
+
+  test('keeps the origin for the whole gesture and lifts all touches on end', () => {
+    const origin = { left: 10, top: 20 }
+    const move = projectTouch(input('move', [point(50, 60, -1, 'mouse')]), origin)
+    expect(move.name).toBe('touchmove')
+    expect(move.touches[0]).toMatchObject({ x: 40, y: 40 })
+
+    const end = projectTouch(input('end', [], [point(50, 60, -1, 'mouse')]), origin)
+    expect(end.name).toBe('touchend')
+    expect(end.touches).toEqual([])
+    expect(end.changedTouches[0]).toMatchObject({ x: 40, y: 40 })
   })
 })

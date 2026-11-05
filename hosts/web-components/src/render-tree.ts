@@ -200,6 +200,52 @@ const isHandledNativeEvent = (event: unknown): boolean => Boolean(
   && (event as Record<PropertyKey, unknown>)[HANDLED_NATIVE_EVENT],
 )
 
+/** Guard against pathological host objects; event details are shallow in practice. */
+const EVENT_DETAIL_MAX_DEPTH = 8
+
+const eventDetailValue = (
+  value: unknown,
+  depth: number,
+  seen: WeakSet<object>,
+): unknown => {
+  if (value === null) return null
+  const valueType = typeof value
+  if (valueType === 'string' || valueType === 'boolean') return value
+  if (valueType === 'number') return Number.isFinite(value) ? value : 0
+  if (valueType !== 'object' || depth >= EVENT_DETAIL_MAX_DEPTH) return undefined
+  const objectValue = value as object
+  if (seen.has(objectValue)) return undefined
+  if (Array.isArray(value)) {
+    seen.add(objectValue)
+    const list = value.map((item) => eventDetailValue(item, depth + 1, seen))
+    seen.delete(objectValue)
+    // Arrays may not hold `undefined`; keep the index with `null` instead.
+    return list.map((item) => (item === undefined ? null : item))
+  }
+  const prototype = Object.getPrototypeOf(value)
+  // Touch/TouchList, DOM nodes, Dates, Maps, class instances: not bridge data.
+  if (prototype !== Object.prototype && prototype !== null) return undefined
+  seen.add(objectValue)
+  const record: Record<string, unknown> = {}
+  for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+    const plain = eventDetailValue(item, depth + 1, seen)
+    if (plain !== undefined) record[key] = plain
+  }
+  seen.delete(objectValue)
+  return record
+}
+
+/**
+ * Copy an event detail into the JSON-safe shape the bridge accepts.
+ *
+ * Native events carry live platform objects (`Touch`/`TouchList`, DOM nodes)
+ * in their detail; the bridge rejects those, which would suppress the whole
+ * event. Keep the values a mini program can read and drop the rest.
+ */
+const plainEventDetail = (detail: unknown): unknown => (
+  detail === undefined ? undefined : eventDetailValue(detail, 0, new WeakSet())
+)
+
 const propertyName = (name: string): string => (
   name.replace(/-([a-z])/g, (_match, letter: string) => letter.toUpperCase())
 )
@@ -435,6 +481,15 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       changedTouches?: unknown[]
       currentTarget?: unknown
     }
+    const name = String(source.type ?? '')
+    // A raw DOM touch projection also reaches this binding. The built-in
+    // component that owned the native listener already re-emitted a
+    // normalized event for the same finger, so forward only that one.
+    if (
+      name.startsWith('touch')
+      && isHandledNativeEvent((event as { getOriginalEvent?: () => unknown }).getOriginalEvent?.())
+    ) return
+    const detail = plainEventDetail(source.detail)
     const self = this as {
       __tinyNodeId?: string
       getBackendElement?: () => { getAttribute?: (name: string) => string | null } | null
@@ -464,8 +519,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     sink({
       componentId,
       handler,
-      name: String(source.type ?? ''),
-      ...(source.detail !== undefined ? { detail: source.detail } : {}),
+      name,
+      ...(detail !== undefined ? { detail } : {}),
       // Glass/projection touches are plain arrays; clone them instead of
       // normalizing so absent fields (radiusX, force, ...) are not turned into
       // `undefined`, which the bridge serializer rejects.
@@ -1155,7 +1210,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       if (touches) payload.touches = touches
       if (changedTouches) payload.changedTouches = changedTouches
     } else if (event.detail !== undefined) {
-      payload.detail = event.detail
+      const detail = plainEventDetail(event.detail)
+      if (detail !== undefined) payload.detail = detail
     }
     if (original) payload.native = nativeFields(original as Event)
     else if (event.native) payload.native = event.native
