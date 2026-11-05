@@ -72,6 +72,11 @@ Page({
     this.setData({ computedStatus: String(value) })
   },
 
+  bumpValue() {
+    this.setData({ value: this.data.value + 1 })
+  },
+
+
   toggleUseWxs() {
     this.setData({ useWxs: !this.data.useWxs })
   },

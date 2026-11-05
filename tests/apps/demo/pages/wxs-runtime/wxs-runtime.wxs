@@ -38,6 +38,19 @@ function observe(next, previous, ins) {
   ins.callMethod('record', 'observe:' + next + ':' + (previous === undefined ? 'none' : previous))
 }
 
+function observeProbe(next, previous, ins) {
+  // `getState` only exists on the view-side descriptor. A service-side
+  // observer would throw here instead of recording.
+  var state = ins.getState()
+  state.observed = (state.observed || 0) + 1
+  ins.callMethod('record', 'observe-probe:' + next + ':' + (previous === undefined ? 'none' : previous) + ':' + state.observed)
+}
+
+function onProbe(event, ins) {
+  var state = ins.getState()
+  ins.callMethod('record', 'probe-event:' + event.detail.value + ':' + (state.observed || 0))
+}
+
 module.exports = {
   tap: tap,
   dynamicTap: dynamicTap,
@@ -47,4 +60,6 @@ module.exports = {
   captureChild: captureChild,
   captureParent: captureParent,
   observe: observe,
+  observeProbe: observeProbe,
+  onProbe: onProbe,
 }

@@ -1,5 +1,4 @@
-import { TINY_ENGINE_NAMING } from '@tiny/manifest'
-import { BUILTIN_COMPONENT_TAGS, DIAGNOSTIC_CODES } from '@tiny/manifest'
+import { DIAGNOSTIC_CODES, TINY_ENGINE_NAMING } from '@tiny/manifest'
 import { cloneJsonSafe } from '../data'
 import type { WxsBindingMessage } from '../tree/protocol'
 import type { LogicBackendElement, LogicTreeAdapter } from '../tree/logic'
@@ -94,12 +93,11 @@ export function installWxsEventHost(options: WxsEventHostOptions): () => void {
       if (!tree || !node) return
       const pageId = tree.pageIdFor(element)
       if (!pageId) return
-      const builtin = (BUILTIN_COMPONENT_TAGS as readonly string[]).includes(node.tagName)
-      const unsupportedLocal = !builtin
-        || (
-          event === TINY_ENGINE_NAMING.wxsServiceOnlyInputEvent
-          && (TINY_ENGINE_NAMING.wxsServiceOnlyInputTags as readonly string[]).includes(node.tagName)
-        )
+      // Event handlers on custom components are WXS too: they run in the
+      // render tree, like the built-in ones. Only the built-in `input` events
+      // that glass forwards through the service keep the service path.
+      const unsupportedLocal = event === TINY_ENGINE_NAMING.wxsServiceOnlyInputEvent
+        && (TINY_ENGINE_NAMING.wxsServiceOnlyInputTags as readonly string[]).includes(node.tagName)
       const localOrigin = unsupportedLocal ? undefined : origin
       const binding: WxsBindingMessage = {
         viewId: tree.ensureViewId(node),

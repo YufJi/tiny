@@ -12,6 +12,7 @@ import {
 } from '@tiny/runtime'
 import type {
   ComponentDefinitionPayload,
+  CustomEventMessage,
   RenderAnimationRequest,
   RenderClearAnimationRequest,
   RenderElement,
@@ -159,6 +160,8 @@ export type GlassRenderTree = {
   setWxsModules?: (table: WxsModuleTable) => void
   setWxsEffectSink?: (sink: (effect: WxsRenderEffect) => void) => void
   setWxsBinding?: (binding: WxsBindingMessage) => void
+  /** Dispatch a service-triggered custom event so WXS handlers can run. */
+  dispatchCustomEvent?: (request: CustomEventMessage) => void
   setPageData?: (data: Record<string, unknown>) => void
   setComponentData?: (data: Record<string, Record<string, unknown>>) => void
   setDiagnosticSink?: (sink: (diagnostic: {
@@ -480,6 +483,12 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const nodes = new Map<string, AnyComponent | glassEasel.TextNode>()
   const eventCleanups = new Map<string, Array<() => void>>()
   let eventSink: ((event: GlassRenderEvent) => void) | undefined
+  /**
+   * Depth of a service-triggered custom event being dispatched in the render
+   * tree. JS listeners already ran in the logic tree; only WXS handlers run
+   * here and nothing may be forwarded back to the service.
+   */
+  let serviceEventDepth = 0
   let wxsEffectSink: ((effect: WxsRenderEffect) => void) | undefined
   let hostActionSink: ((action: RenderHostAction) => void) | undefined
   let hostRequestSink: ((method: string, payload: unknown) => Promise<unknown>) | undefined
@@ -584,8 +593,15 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     for (const [id, patch] of Object.entries(data)) {
       const component = nodes.get(id) as unknown as {
         setData?: (next: Record<string, unknown>) => void
+        data?: Record<string, unknown>
       } | undefined
       component?.setData?.(patch)
+      // A custom component's WXS prop observers read the component's data, not
+      // the node attributes: drive them from the same patch the template sees.
+      const node = currentTree.get(id)
+      if (node?.type === 'element' && node.component === true && component) {
+        applyWxsProps(node, component as never, wxsPropSnapshots.get(id), component.data)
+      }
     }
   }
   const wxsOverrides = new WeakMap<HTMLElement, {
@@ -1231,6 +1247,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         changedTouches?: unknown
         native?: Record<string, unknown>
       }): void => {
+        // A service-triggered custom event already ran its JS listeners; the
+        // render tree only dispatches WXS handlers for it.
+        if (serviceEventDepth > 0) return
         const original = (event as unknown as { getOriginalEvent?: () => unknown })
           .getOriginalEvent?.()
         // A built-in component (canvas) re-dispatches a normalized event and
@@ -1256,16 +1275,19 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const wxsOwnerElement = (element: HTMLElement): HTMLElement => {
     let current: HTMLElement | null = element
     while (current) {
-      const host = current.getAttribute(TINY_ENGINE_NAMING.hostAttribute) ?? ''
+      const host = typeof current.getAttribute === 'function'
+        ? current.getAttribute(TINY_ENGINE_NAMING.hostAttribute) ?? ''
+        : ''
       if (host && !host.startsWith(TINY_ENGINE_NAMING.builtinStyleScopePrefix)) return current
-      if (current.tagName.toLowerCase() === TINY_ENGINE_NAMING.pageTag) return current
+      if (typeof current.tagName === 'string'
+        && current.tagName.toLowerCase() === TINY_ENGINE_NAMING.pageTag) return current
       current = current.parentElement
     }
     return rootElement ?? element
   }
 
   const wxsNodeForElement = (element: HTMLElement | null): RenderElement | undefined => {
-    if (!element) return undefined
+    if (!element || typeof element.getAttribute !== 'function') return undefined
     const id = element.getAttribute(TINY_ENGINE_NAMING.nodeIdAttribute) ?? ''
     const node = currentTree.get(id)
     return node?.type === 'element' ? node : undefined
@@ -1295,6 +1317,18 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         return node?.dataset ?? (element ? { ...element.dataset } : {})
       },
       getState() {
+        // Key by the owner node's shared id, not the element instance: an
+        // observer may run before the element is attached, and the handler
+        // that fires later must see the same state object.
+        const key = ownerViewId ?? viewId
+        if (key) {
+          let state = wxsStatesById.get(key)
+          if (!state) {
+            state = {}
+            wxsStatesById.set(key, state)
+          }
+          return state
+        }
         if (owner) {
           let state = wxsStates.get(owner)
           if (!state) {
@@ -1303,13 +1337,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
           }
           return state
         }
-        const key = ownerViewId ?? viewId ?? 'anonymous'
-        let state = wxsStatesById.get(key)
-        if (!state) {
-          state = {}
-          wxsStatesById.set(key, state)
-        }
-        return state
+        return {}
       },
       setStyle(style: unknown) {
         if (!style || !element) return descriptor
@@ -1454,7 +1482,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     }
 
     const host = {
-      registerBinding(): void {},
       descriptorFor(element: unknown) {
         // The template wrapper passes the glass node, not its backend element.
         const raw = element as { getBackendElement?: () => unknown } | null
@@ -1492,6 +1519,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     node: RenderElement,
     component: AnyComponent,
     previous: Record<string, unknown> | undefined,
+    values?: Record<string, unknown>,
   ): void => {
     const bindings = parseWxsProps(node.props)
     if (bindings.length === 0) return
@@ -1499,8 +1527,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     const owner = element ? wxsOwnerElement(element) : rootElement
     const descriptor = wxsDescriptorFor(element, owner, node.id, node)
     const ownerDescriptor = wxsDescriptorFor(owner, owner, node.id)
+    const nextValues = values ?? node.props ?? {}
     for (const binding of bindings) {
-      const nextValue = node.props?.[binding.prop]
+      const nextValue = nextValues[binding.prop]
       const oldValue = previous?.[binding.prop]
       if (previous && Object.is(nextValue, oldValue)) continue
       try {
@@ -1513,7 +1542,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         // A failed prop observer must not break the render tree.
       }
     }
-    wxsPropSnapshots.set(node.id!, { ...(node.props ?? {}) })
+    wxsPropSnapshots.set(node.id!, { ...nextValues })
   }
 
   const dispatchWxs = (
@@ -1537,7 +1566,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       stop()
       return
     }
-    if (hasServiceListenerInPath(element.parentElement, binding.name)) {
+    if (serviceEventDepth === 0 && hasServiceListenerInPath(element.parentElement, binding.name)) {
       const { instance: _instance, ...servicePayload } = payload
       emitServiceEvent({ ...servicePayload, wxsHandled: true } as unknown as GlassRenderEvent)
     }
@@ -1578,6 +1607,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         }, node, element, payload, stop)
         return
       }
+      if (serviceEventDepth > 0) return
       const servicePayload = { ...payload }
       if (servicePayload.target && typeof servicePayload.target === 'object') {
         const { dataset: _targetDataset, ...target } = servicePayload.target as Record<string, unknown>
@@ -1598,10 +1628,14 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       }): void => {
         const original = (event as unknown as { getOriginalEvent?: () => unknown })
           .getOriginalEvent?.()
-        // Only raw touch projections are de-duplicated by built-ins (canvas).
-        // Synthesized tap/longpress legitimately carry the same native event.
-        if (original && binding.name.startsWith('touch') && isHandledNativeEvent(original)) return
-        if (!shouldForwardGlassEvent(binding.name, original)) return
+        // A service-triggered custom event already ran its JS listeners; only
+        // the WXS handler may run here.
+        if (serviceEventDepth === 0) {
+          // Only raw touch projections are de-duplicated by built-ins (canvas).
+          // Synthesized tap/longpress legitimately carry the same native event.
+          if (original && binding.name.startsWith('touch') && isHandledNativeEvent(original)) return
+          if (!shouldForwardGlassEvent(binding.name, original)) return
+        }
         const payload = buildRenderEventPayload(
           node,
           element,
@@ -1657,7 +1691,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
 
   const flushAllWxsProps = (): void => {
     for (const [id, node] of currentTree) {
-      if (node.type !== 'element' || parseWxsProps(node.props).length === 0) continue
+      if (node.type !== 'element' || node.component === true || parseWxsProps(node.props).length === 0) continue
       const component = nodes.get(id)
       if (!component || glassEasel.TextNode.isTextNode(component)) continue
       applyWxsProps(node, component, wxsPropSnapshots.get(id))
@@ -2283,6 +2317,19 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     },
     setWxsEffectSink: (sink) => {
       wxsEffectSink = sink
+    },
+    dispatchCustomEvent: (request) => {
+      const component = nodes.get(request.componentId)
+      if (!component || glassEasel.TextNode.isTextNode(component)) return
+      serviceEventDepth += 1
+      try {
+        glassEasel.Event.triggerEvent(component as never, request.name, request.detail ?? {}, {
+          bubbles: request.options?.bubbles === true,
+          composed: request.options?.composed === true,
+        })
+      } finally {
+        serviceEventDepth -= 1
+      }
     },
     setWxsBinding: (binding) => {
       dynamicBindingModes.set(wxsBindingKey(binding.viewId, binding.event), binding)

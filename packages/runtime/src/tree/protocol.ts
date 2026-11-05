@@ -23,7 +23,22 @@ export const TREE_PROTOCOL = Object.freeze({
   hostRequest: 'hostRequest',
   wxsEffect: 'wxsEffect',
   wxsBinding: 'wxsBinding',
+  customEvent: 'customEvent',
 } as const)
+
+/**
+ * A custom component event (`this.triggerEvent`) forwarded to the render
+ * tree so WXS handlers execute where WeChat runs them. JS listeners already
+ * ran in the logic tree; the render side only dispatches marked events.
+ */
+export type CustomEventMessage = {
+  pageId?: string
+  /** Shared id of the component that called `triggerEvent`. */
+  componentId: string
+  name: string
+  detail?: unknown
+  options?: { bubbles?: boolean; composed?: boolean }
+}
 
 /**
  * Stable key for a WXS event binding. The service registers it, the render

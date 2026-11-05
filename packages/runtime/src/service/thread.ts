@@ -699,6 +699,21 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         pageOptions: registry.pages,
         componentDefinitions: registry.normalizedComponents,
         onDataChange: scheduleTreeUpdate,
+        onCustomEvent: (pageId, componentId, name, detail, eventOptions) => {
+          // JS listeners already ran in the logic tree. Only forward events
+          // that actually have a WXS binding on this page: forwarding every
+          // `triggerEvent` would replay unrelated custom events in the render
+          // tree (and cost a bridge message per event).
+          const bindings = wxsBindingsByPage.get(pageId)
+          if (!bindings || ![...bindings.values()].some((binding) => binding.event === name)) return
+          connection.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.customEvent, {
+            pageId,
+            componentId,
+            name,
+            detail: cloneJsonSafe(detail),
+            ...(eventOptions ? { options: cloneJsonSafe(eventOptions) } : {}),
+          }, { pageId })
+        },
         onDiagnostic: (diagnostic) => connection.sendDiagnostic('warn', diagnostic),
         onError: (pageId, message, details) => {
           registry.reportError(message)

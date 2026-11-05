@@ -157,7 +157,7 @@ describe('WXS custom component events', () => {
 
 
 describe('WXS custom component change:prop', () => {
-  test('keeps custom component prop observers on the service path', () => {
+  test('emits the render-side observer descriptor for custom components too', () => {
     const group = TmplGroup.new({
       directivePrefix: 'wx',
       templateExtension: '.wxml',
@@ -170,7 +170,10 @@ describe('WXS custom component change:prop', () => {
         + '<my-comp change:label="{{utils.observe}}" label="{{value}}" />',
     )
     const output = group.getTmplGenObjectGroups()
-    expect(output).not.toContain('wx-tiny-wxs-props')
-    expect(output).toContain('R.p(')
+    // The render host owns the observer for every tag; the service must not
+    // invoke it a second time through `R.p`.
+    expect(output).toContain('wx-tiny-wxs-props')
+    expect(output).toContain('\\"prop\\":\\"label\\"')
+    expect(output).not.toContain('R.p(')
   })
 })

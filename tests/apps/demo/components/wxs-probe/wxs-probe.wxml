@@ -3,3 +3,4 @@
   <text>component-data: {{local}}</text>
   <text>probe-seen: {{seen}}</text>
 </view>
+<button id="fire" bindtap="fire">fire-probe</button>

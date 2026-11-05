@@ -407,7 +407,7 @@ function elementToProcGen(
           staticAttrToProcGenWorklet(attr, w)
         }
         for (const attr of kind.changeAttributes) {
-          attrToProcGenAsChangeProperty(attr, w, scopes, bmc, wxsProps, BUILTIN_TAGS.has(kind.tagName.name))
+          attrToProcGenAsChangeProperty(attr, w, scopes, bmc, wxsProps)
         }
         if (wxsProps.length > 0) {
           w.exprStmt((ww) => {
@@ -891,7 +891,7 @@ function attrToProcGenAsChangeProperty(
   scopes: ScopeVar[],
   bmc: BindingMapCollector,
   wxsProps?: WxsPropMetadata[],
-  allowLocalWxs = false,
+  allowLocalWxs = true,
 ): void {
   if (!attr.value || attr.value.kind === 'Static') return
   const n = genLitStr(attr.name.name)

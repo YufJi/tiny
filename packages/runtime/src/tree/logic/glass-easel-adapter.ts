@@ -80,6 +80,14 @@ export type GlassEaselAdapterOptions = {
     component: glassEasel.GeneralComponent,
     options?: Record<string, unknown>,
   ) => unknown
+  /** A component `triggerEvent` reached the logic tree; forward it to render. */
+  onCustomEvent?: (
+    pageId: string,
+    component: glassEasel.GeneralComponent,
+    name: string,
+    detail: unknown,
+    options?: { bubbles?: boolean; composed?: boolean },
+  ) => void
   /** `this.animate` / `this.clearAnimate` for logic components. */
   logicAnimationFactory?: {
     animate: (
@@ -177,6 +185,8 @@ export class GlassEaselRuntimeAdapter {
   private readonly logicPropertyValues = new WeakMap<object, Record<string, unknown>>()
   private readonly logicIntersectionFactory?: GlassEaselAdapterOptions['logicIntersectionFactory']
   private readonly logicAnimationFactory?: GlassEaselAdapterOptions['logicAnimationFactory']
+  private readonly onCustomEvent?: GlassEaselAdapterOptions['onCustomEvent']
+  private readonly customEventComponents = new WeakSet<object>()
 
   constructor(options: GlassEaselAdapterOptions) {
     this.manifest = options.manifest
@@ -190,6 +200,7 @@ export class GlassEaselRuntimeAdapter {
     this.logicTouchState = options.logicTouchState
     this.logicIntersectionFactory = options.logicIntersectionFactory
     this.logicAnimationFactory = options.logicAnimationFactory
+    this.onCustomEvent = options.onCustomEvent
     const styleScopeManager = new glassEasel.StyleScopeManager()
     this.componentSpace = new glassEasel.ComponentSpace(undefined, undefined, styleScopeManager, true)
     this.componentSpace.updateComponentOptions({
@@ -1323,13 +1334,39 @@ export class GlassEaselRuntimeAdapter {
     }
   }
 
+  /**
+   * `this.triggerEvent` dispatches in the logic tree. JS listeners run here
+   * (as before); the render tree additionally receives the event so WXS
+   * handlers execute where WeChat runs them.
+   */
+  private ensureCustomEventForwarding(component: glassEasel.GeneralComponent): void {
+    const forward = this.onCustomEvent
+    if (!forward || this.customEventComponents.has(component)) return
+    this.customEventComponents.add(component)
+    const target = component as unknown as {
+      triggerEvent: (name: string, detail?: unknown, options?: Record<string, unknown>) => void
+    }
+    const original = target.triggerEvent.bind(component)
+    target.triggerEvent = (name: string, detail?: unknown, options?: Record<string, unknown>): void => {
+      original(name, detail, options)
+      const pageId = this.pageIdFor(component)
+      if (!pageId) return
+      forward(pageId, component, String(name), detail, options as
+        | { bubbles?: boolean; composed?: boolean }
+        | undefined)
+    }
+  }
+
   private createEventMethodCaller(
     component?: glassEasel.GeneralComponent,
     initialFields?: Record<string, unknown>,
   ): unknown {
     const logicMode = Boolean(this.logicComponentDefinitions)
     const instanceFields: Record<string, unknown> = { ...(initialFields ?? {}) }
-    if (logicMode && component) this.ensureSetDataCallback(component)
+    if (logicMode && component) {
+      this.ensureSetDataCallback(component)
+      this.ensureCustomEventForwarding(component)
+    }
     return new Proxy(instanceFields, {
       has() {
         return true
