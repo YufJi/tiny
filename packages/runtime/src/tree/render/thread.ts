@@ -9,6 +9,7 @@ import {
   TREE_PROTOCOL,
   type ComponentDefinitionPayload,
   type ComponentFlow,
+  type CustomEventMessage,
   type RenderAnimationRequest,
   type RenderClearAnimationRequest,
   type RenderEventGeometry,
@@ -86,6 +87,8 @@ export type TreeRenderer = {
   measure?: (ids: string[]) => Record<string, unknown>
   /** Geometry of elements addressed by component-scoped locators. */
   measureLocators?: (locators: string[]) => Record<string, unknown>
+  /** Dispatch a service-triggered custom event so WXS handlers can run. */
+  dispatchCustomEvent?: (request: CustomEventMessage) => void
   query?: (selector: string, all: boolean, scopeId?: string) => unknown[]
   observeIntersection?: (
     request: RenderIntersectionRequest,
@@ -272,6 +275,11 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       return
     }
     handleFlow(message)
+  })
+  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.customEvent, (message) => {
+    const payload = (message.payload ?? {}) as Partial<CustomEventMessage>
+    if (!payload.componentId || !payload.name) return
+    options.renderer.dispatchCustomEvent?.(payload as CustomEventMessage)
   })
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.wxsBinding, (message) => {
     const payload = (message.payload ?? {}) as Partial<WxsBindingMessage>

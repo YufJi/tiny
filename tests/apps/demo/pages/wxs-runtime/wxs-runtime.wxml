@@ -3,7 +3,15 @@
 <view class="page">
   <text class="title">WXS runtime</text>
   <text class="status">status: {{status}}</text>
-  <wxs-probe label="{{value}}" />
+  <view class="probe-wrap" bind:probe="onProbeJs">
+    <wxs-probe
+      id="probe"
+      label="{{value}}"
+      change:label="{{t.observeProbe}}"
+      bind:probe="{{t.onProbe}}"
+    />
+  </view>
+  <text class="probe-js-count">probe-js-count: {{probeJsCount}}</text>
   <view
     id="target"
     class="target"
@@ -15,6 +23,7 @@
   <view id="dynamic" class="dynamic" data-kind="dyn" bindtap="{{useWxs ? t.dynamicTap : 'serviceTap'}}">dynamic</view>
   <text class="dynamic-status">dynamic-status: {{dynamicStatus}}</text>
   <button bindtap="toggleUseWxs">Toggle dynamic handler</button>
+  <button bindtap="bumpValue">Bump value</button>
   <slider value="{{value}}" bindchange="{{t.changed}}" />
   <view id="bubble-parent" class="event-parent" bindtap="onParentTap">
     <view id="bubble-child" class="event-child" bindtap="{{t.childTap}}">bubble</view>

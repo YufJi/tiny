@@ -274,7 +274,9 @@ everything else is render-local or positional:
   through `LogicBackendContext`'s locator map (`findByViewId` accepts both).
   WXS dynamic bindings are registered with the logic id, then flushed after
   each tree update with the node's *current* render identity, so a structural
-  change never leaves a stale key.
+  change never leaves a stale key. Custom component events are forwarded to the
+  render tree (`tree.customEvent`) only when the page has a WXS binding for that
+  event name; the logic tree's WXS listener is a no-op placeholder.
 - **Queries**: selector queries measure page-level elements by locator
   (`measureLocators`); elements inside evaluated shadow trees keep the scoped
   render query because their service structure is not mirrored. Intersection

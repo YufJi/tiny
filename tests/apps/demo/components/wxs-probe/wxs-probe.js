@@ -15,5 +15,9 @@ Component({
     record(value) {
       this.setData({ seen: String(value) })
     },
+
+    fire() {
+      this.triggerEvent('probe', { value: this.data.label }, { bubbles: true, composed: true })
+    },
   },
 })

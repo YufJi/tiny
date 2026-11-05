@@ -14,8 +14,6 @@ const originals = new Map<string, unknown>()
 for (const key of globalKeys) originals.set(key, (globalThis as unknown as Record<string, unknown>)[key])
 afterAll(() => {
   for (const [key, value] of originals) (globalThis as unknown as Record<string, unknown>)[key] = value
-  delete (globalThis as unknown as Record<string, unknown>).__tinyWxsArrayCtor
-  delete (globalThis as unknown as Record<string, unknown>).__tinyWxsObjectCtor
 })
 
 const TEMPLATE = `
@@ -31,17 +29,8 @@ exports.plain = function () {
   exports.plainCalls = (exports.plainCalls || 0) + 1
 }
 </wxs>
-<wxs module="ctor">
-exports.probe = function () {
-  var list = [];
-  var object = {};
-  globalThis.__tinyWxsArrayCtor = list.constructor;
-  globalThis.__tinyWxsObjectCtor = object.constructor;
-}
-</wxs>
 <view class="box" data-role="target" style="position: absolute; top: 5px;" bindlongpress="{{h.start}}">x</view>
 <view class="plain" bindtap="onPlain">y</view>
-<view class="ctor" bindlongpress="{{ctor.probe}}">z</view>
 `
 
 function createTemplates() {
@@ -78,24 +67,8 @@ function createManifest(): Manifest {
   }
 }
 
-type RenderStyleNode = {
-  tag: string
-  props?: Record<string, unknown>
-  children?: RenderStyleNode[]
-}
-
-function findNodeByClass(node: RenderStyleNode, className: string): RenderStyleNode | undefined {
-  const classes = String(node.props?.class ?? '').split(/\s+/)
-  if (classes.includes(className)) return node
-  for (const child of node.children ?? []) {
-    const match = findNodeByClass(child, className)
-    if (match) return match
-  }
-  return undefined
-}
-
-describe('WXS event descriptor (ins)', () => {
-  test('hands the handler an ins descriptor and merges setStyle into the render tree', async () => {
+describe('WXS event dispatch side', () => {
+  test('does not run WXS handlers in the logic tree', async () => {
     const manifest = createManifest()
     const records: Array<[string, unknown]> = []
     const [hostService, serviceTransport] = createInMemoryTransportPair()
@@ -126,34 +99,20 @@ describe('WXS event descriptor (ins)', () => {
     const pageId = service.activePage!.pageId
     const tree = lastLogicTree() as unknown as {
       query: (pageId: string, selector: string, all: boolean) => Array<{ viewId: string }>
-      snapshotRenderTree: (pageId: string) => RenderStyleNode | null
     }
 
+    // A WXS-bound event dispatched in the logic tree must not invoke the WXS
+    // handler there: WeChat runs it in the view, and the logic-tree listener is
+    // a placeholder (`Q.B`) so `catch` still shapes service-side bubbling.
     const box = tree.query(pageId, '.box', false)[0]!
     host.service.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, {
       id: box.viewId,
       name: 'longpress',
     }, { pageId })
     await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(records).toEqual([])
 
-    expect(records).toEqual([
-      ['ins', 'object'],
-      ['instance', true],
-      ['data', 'page-data'],
-      ['dataset', 'target'],
-    ])
-
-    const rendered = tree.snapshotRenderTree(pageId)!
-    const styled = findNodeByClass(rendered, 'box')!
-    const style = String(styled.props?.style ?? '')
-    expect(style).toContain('left: 42px')
-    expect(style).toContain('background-color: #00ff00')
-    // The WXML inline style survives: setStyle merges, it does not replace.
-    expect(style).toContain('position: absolute')
-    expect(style).toContain('top: 5px')
-
-    // A plain `bindtap="method"` binding must not be wrapped: it still gets the
-    // page method, and the WXS handler is only invoked through its own binding.
+    // Plain method bindings keep their service-side dispatch.
     const plain = tree.query(pageId, '.plain', false)[0]!
     host.service.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, {
       id: plain.viewId,
@@ -161,19 +120,6 @@ describe('WXS event descriptor (ins)', () => {
     }, { pageId })
     await new Promise((resolve) => setTimeout(resolve, 10))
     expect(records.at(-1)).toEqual(['plain', true])
-
-    // WXS sees type names through .constructor, while host JS keeps the real
-    // intrinsic constructor.
-    const ctor = tree.query(pageId, '.ctor', false)[0]!
-    host.service.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, {
-      id: ctor.viewId,
-      name: 'longpress',
-    }, { pageId })
-    await new Promise((resolve) => setTimeout(resolve, 10))
-    const globals = globalThis as unknown as Record<string, unknown>
-    expect(globals.__tinyWxsArrayCtor).toBe('Array')
-    expect(globals.__tinyWxsObjectCtor).toBe('Object')
-    expect([].constructor).toBe(Array)
     await host.close()
   })
 })

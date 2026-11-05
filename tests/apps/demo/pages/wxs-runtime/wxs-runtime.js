@@ -14,6 +14,7 @@ Page({
     stateStatus: 'idle',
     computedStatus: 'idle',
     useCounter: true,
+    probeJsCount: 0,
   },
 
   record(value) {
@@ -71,6 +72,15 @@ Page({
   recordComputed(value) {
     this.setData({ computedStatus: String(value) })
   },
+
+  bumpValue() {
+    this.setData({ value: this.data.value + 1 })
+  },
+
+  onProbeJs() {
+    this.setData({ probeJsCount: this.data.probeJsCount + 1 })
+  },
+
 
   toggleUseWxs() {
     this.setData({ useWxs: !this.data.useWxs })

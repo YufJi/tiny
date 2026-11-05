@@ -54,6 +54,18 @@ export type LogicTreeAdapterOptions = {
     observe: (request: ViewIntersectionRequest & { pageId: string }) => void
     unobserve: (observerId: string, pageId: string) => void
   }
+  /**
+   * A component `triggerEvent` was dispatched in the logic tree. The service
+   * forwards it to the render tree so WXS handlers run there (WeChat's view
+   * side); JS listeners have already run here.
+   */
+  onCustomEvent?: (
+    pageId: string,
+    componentId: string,
+    name: string,
+    detail: unknown,
+    options?: { bubbles?: boolean; composed?: boolean },
+  ) => void
   /** Render-thread animation commands issued by `this.animate`/`clearAnimate`. */
   viewAnimation?: {
     play: (request: RenderAnimationRequest & { pageId: string }) => void
@@ -133,6 +145,11 @@ export class LogicTreeAdapter {
         clear: (component, selector, options, callback) => (
           this.clearAnimateFor(component, selector, options, callback)
         ),
+      },
+      onCustomEvent: (pageId, component, name, detail, eventOptions) => {
+        const node = findLogicNodeByElement(component)
+        if (!node) return
+        options.onCustomEvent?.(pageId, this.backend.ensureViewId(node), name, detail, eventOptions)
       },
     })
     glassEasel.addGlobalErrorListener((error, method, relatedComponent) => {

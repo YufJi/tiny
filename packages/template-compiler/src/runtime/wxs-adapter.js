@@ -16,11 +16,19 @@ Q.S = (filename, code) => __wxsRuntime.register(filename, code)
 // (generalLvaluePath), so plain bindtap bindings stay untouched.
 Q.B = (elem, evName, value, final, mutated, capture) => {
   const host = typeof globalThis === 'undefined' ? undefined : globalThis.__TINY_WXS_EVENT_HOST_GLOBAL__
+  const origin = typeof __wxsRuntime.originOf === 'function'
+    ? __wxsRuntime.originOf(value)
+    : undefined
+  // Only the service host owns `registerBinding`: the logic tree registers the
+  // WXS binding and ships it to the render tree. The render-side host has no
+  // `registerBinding`, so component templates keep the real WXS function.
   if (host && typeof host.registerBinding === 'function') {
-    const origin = typeof __wxsRuntime.originOf === 'function'
-      ? __wxsRuntime.originOf(value)
-      : undefined
-    host.registerBinding(elem, evName, origin, Boolean(final), Boolean(capture), Boolean(mutated))
+    const local = host.registerBinding(elem, evName, origin, Boolean(final), Boolean(capture), Boolean(mutated))
+    // WXS handlers run in the render tree; keep the listener option (`catch` /
+    // `capture` still shape service-side bubbling) but never execute the WXS
+    // function in the logic tree. Service-only events return `false` here and
+    // keep the function, and plain dynamic handlers are never placeholder'd.
+    return local && origin ? () => {} : value
   }
   return value
 }
