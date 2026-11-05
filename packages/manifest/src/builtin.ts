@@ -26,7 +26,6 @@ export const BUILTIN_COMPONENT_TAGS = [
   'video',
   'map',
   'navigator',
-  'functional-page-navigator',
   'scroll-view',
   'slider',
   'progress',

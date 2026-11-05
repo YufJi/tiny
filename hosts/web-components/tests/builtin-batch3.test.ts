@@ -3,8 +3,8 @@ import { BUILTIN_COMPONENT_TAGS } from '@tiny/manifest'
 import { BUILTIN_HOST_STYLES } from '../src'
 
 describe('batch 3 built-ins', () => {
-  test('registers page-meta, navigation-bar and functional-page-navigator', () => {
-    for (const tag of ['page-meta', 'navigation-bar', 'functional-page-navigator']) {
+  test('registers page-meta and navigation-bar', () => {
+    for (const tag of ['page-meta', 'navigation-bar']) {
       expect(BUILTIN_COMPONENT_TAGS).toContain(tag)
     }
   })
@@ -17,10 +17,4 @@ describe('batch 3 built-ins', () => {
     expect(BUILTIN_HOST_STYLES).toContain('tiny-navigation-bar[hidden]')
   })
 
-  test('functional-page-navigator is a hoverable block link', () => {
-    expect(BUILTIN_HOST_STYLES).toContain('tiny-functional-page-navigator {\n  display: block;')
-    expect(BUILTIN_HOST_STYLES).toContain(
-      'tiny-functional-page-navigator.functional-page-navigator-hover',
-    )
-  })
 })

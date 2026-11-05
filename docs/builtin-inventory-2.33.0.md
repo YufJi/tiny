@@ -1,6 +1,6 @@
 # 内置组件与 behaviors 缺口清单（WAWebview 2.33.0）
 
-> **快照**：2026-11-04 · **参考实现**：`~/Downloads/wechat-miniprogram/2.33.0/WAWebview.js`、`WAWebview.css` · **组件目标**：沿用 [wechat-webview-parity.md 附录 B](./wechat-webview-parity.md#附录-bwebview-组件清单41) 的 41 个 WebView 公共组件
+> **快照**：2026-11-04 · **参考实现**：`~/Downloads/wechat-miniprogram/2.33.0/WAWebview.js`、`WAWebview.css` · **组件目标**：沿用 [wechat-webview-parity.md 附录 B](./wechat-webview-parity.md#附录-bwebview-组件清单40) 的 40 个 WebView 公共组件
 >
 > 本文只回答“还差哪些、占位在哪”，不重复各组件的对齐细节；已实现组件的状态看 [component-reference-diff.md](./component-reference-diff.md)。
 
@@ -8,10 +8,10 @@
 
 | 维度 | 参考总数 | 已实现 | 缺口 | 缺口分布 |
 | --- | ---: | ---: | ---: | --- |
-| 内置组件 | 41 项（40 标签 + 1 文档页） | 40 | **0** | 全部 40 个真实标签已注册（含 2.33.0 新增的 grid-view）；17 个组件暂不支持；`aria-component` 是文档页，不是标签 |
+| 内置组件 | 40 项（39 标签 + 1 文档页） | 39 | **0** | 全部 39 个真实标签已注册（含 2.33.0 新增的 grid-view）；20 个组件暂不支持；`aria-component` 是文档页，不是标签 |
 | 内置 behaviors | 42 | 28 | **11** | 全部是宿主 `@tiny/host-web-components` 的 behavior；7 个 runtime `wx://` behavior 已实现；3 个按基线不做 |
 
-- 组件缺口已清零：DOM/CSS、原生/媒体、开放能力标签都已落地；媒体/开放能力是浏览器近似或宿主 stub。
+- 组件缺口已清零：剩余 DOM/CSS、音视频与 web-view 标签均已落地；video/audio/web-view 是浏览器近似实现。
 - behaviors 缺口按类别：共享/DOM 4 个、媒体/原生 6 个、宿主平台 1 个。`wx://request-filter` / `wx://request-sender` 按基线不做，声明时回落到 `UNSUPPORTED_BEHAVIOR`。
 - 组件占位目录已全部删除；11 个缺失宿主 behavior 占位保留，每个目录只有 `PLACEHOLDER.md`。含该标记的组件目录会被 `build-templates.mjs` / `build-styles.mjs` 跳过，不会被注册成空壳组件。
 - 7 个 runtime `wx://` 内置 behavior 已在 [packages/runtime/src/component/behaviors](../packages/runtime/src/component/behaviors/index.ts:1) 实现，**不在内核里放占位**。
@@ -20,12 +20,12 @@
 
 ### 2.1 组件
 
-- **目标 41**：与 [wechat-webview-parity.md 附录 B](./wechat-webview-parity.md#附录-bwebview-组件清单41) 一致。剔除 Skyline 专属、XR-FRAME、`native-component` 说明页，以及 `share-element`（当前文档归在 Skyline）。
+- **目标 40**：与 [wechat-webview-parity.md 附录 B](./wechat-webview-parity.md#附录-bwebview-组件清单40) 一致。剔除 Skyline 专属、XR-FRAME、`native-component` 说明页，以及 `share-element`（当前文档归在 Skyline）。
 - **2.33.0 包内**：`WAWebview.js` 的 `is: "wx-<tag>"` 元素、webview 启用表（`b`，61 个 `wx-*` 标签，含内部 `wx-refresher`）和 `WAWebview.css` 的 `wx-*` 宿主规则。
 - **新增组件**：无；`reward` 也已按暂不支持移除。
 - **文档页**：`aria-component` 不是自定义元素，而是“无障碍访问”的文档页；ARIA 属性由所有组件的 `base` behavior 提供，不建标签、不建占位。`selection` 是 3.6.4 新增、不在 2.33.0 范围内；2.33.0 新增 `grid-view`，已实现。
 
-> 暂不支持（移除标签，不计缺口）：`editor`、`editor-portal`。
+> 暂不支持（移除标签，不计缺口）：`editor`、`editor-portal`、`ad`、`ad-custom`、`camera`、`channel-live`、`channel-video`、`keyboard-accessory`、`live-player`、`live-pusher`、`official-account`、`official-account-publish`、`open-data`、`store-coupon`、`store-gift`、`store-home`、`store-product`、`voip-room`、`reward`、`functional-page-navigator`。
 >
 > 2.33.0 还有 13 个平台内部 UI 元素（`action-sheet`、`modal`、`toast`、`loading`、`mask`、`video-ad`、`entry-banner`、`refresher`、`trade-service`、`wecom-user-profile`、`cloud-storage-simple-component` 等）和 4 个不在 WebView 目标内的标签（`share-element`、`share-button`、`contact-button`、`xr-frame`）。这些不建组件占位，原因见第 6 节。
 
@@ -45,7 +45,7 @@
 | 视图容器 | 12 | 12 | 0 |
 | 基础内容 | 4 | 4 | 0 |
 | 表单 | 14 | 14 | 0 |
-| 导航 | 2 | 2 | 0 |
+| 导航 | 1 | 1 | 0 |
 | 媒体 | 3 | 3 | 0 |
 | 地图 | 1 | 1 | 0 |
 | 画布 | 1 | 1 | 0 |
@@ -53,7 +53,7 @@
 | 无障碍（文档页） | 1 | — | — |
 | 导航栏 | 1 | 1 | 0 |
 | 页面属性 | 1 | 1 | 0 |
-| **合计（40 标签 + 1 文档页）** | **40** | **40** | **0** |
+| **合计（39 标签 + 1 文档页）** | **39** | **39** | **0** |
 
 ### 3.2 缺失明细
 
@@ -62,9 +62,9 @@
 | 组件 | 分类 | 2.33.0 | 形态 | 参考 behaviors |
 | --- | --- | --- | --- | --- |
 
-### 3.3 已实现（40）
+### 3.3 已实现（39）
 
-`view`、`grid-view`、`cover-view`、`cover-image`、`root-portal`、`page-container`、`movable-area`、`movable-view`、`scroll-view`、`swiper`、`swiper-item`、`match-media`、`icon`、`text`、`rich-text`、`progress`、`button`、`checkbox`、`checkbox-group`、`radio`、`radio-group`、`slider`、`switch`、`input`、`label`、`picker`、`picker-view`、`picker-view-column`、`form`、`textarea`、`navigator`、`functional-page-navigator`、`page-meta`、`navigation-bar`、`image`、`audio`、`video`、`map`、`web-view`、`canvas`。
+`view`、`grid-view`、`cover-view`、`cover-image`、`root-portal`、`page-container`、`movable-area`、`movable-view`、`scroll-view`、`swiper`、`swiper-item`、`match-media`、`icon`、`text`、`rich-text`、`progress`、`button`、`checkbox`、`checkbox-group`、`radio`、`radio-group`、`slider`、`switch`、`input`、`label`、`picker`、`picker-view`、`picker-view-column`、`form`、`textarea`、`navigator`、`page-meta`、`navigation-bar`、`image`、`audio`、`video`、`map`、`web-view`、`canvas`。
 
 实现入口：[components/](../hosts/web-components/src/components)、标签清单 [builtin.ts](../packages/manifest/src/builtin.ts:3)、定义注册 [index.ts](../hosts/web-components/src/index.ts:50)。
 
@@ -77,7 +77,7 @@
 | `wx-base` / `wx-hover` / `wx-reload` / `wx-disabled` / `wx-group` / `wx-item` / `wx-data-component` / `wx-size-normalizer` / `wx-class-prefix` / `wx-autofill` / `wx-label-aria` / `wx-label-target` / `wx-touchtrack` / `wx-scroller` | [behaviors/](../hosts/web-components/src/behaviors/index.ts:40) 的 14 个工厂 |
 | `wx://component-export` / `wx://form-field` / `wx://form-field-button` / `wx://form-field-group` / `wx://functional-page-behavior` / `wx://label-target` / `wx://style-filter` | [packages/runtime/src/component/behaviors/](../packages/runtime/src/component/behaviors/index.ts:1) 的 7 个独立模块 |
 
-### 4.2 宿主 behaviors 缺口（19）
+### 4.2 宿主 behaviors 缺口（11）
 
 占位目录：[hosts/web-components/src/behaviors/pending/](../hosts/web-components/src/behaviors/pending/README.md)。
 
@@ -87,12 +87,9 @@
 | [`wx-image-route`](../hosts/web-components/src/behaviors/pending/image-route/PLACEHOLDER.md) | 共享/DOM | map |
 | [`wx-keyboard-accessory-host`](../hosts/web-components/src/behaviors/pending/keyboard-accessory-host/PLACEHOLDER.md) | 共享/DOM | input, textarea |
 | [`wx-mask-behavior`](../hosts/web-components/src/behaviors/pending/mask-behavior/PLACEHOLDER.md) | 共享/DOM | toast, action-sheet, modal |
-| [`wx-native`](../hosts/web-components/src/behaviors/pending/native/PLACEHOLDER.md) | 共享/DOM | camera, canvas, cover-view, cover-image, input, keyboard-accessory, live-player, live-pusher, map, textarea, video, voip-room, web-view |
-| [`wx-native-cover`](../hosts/web-components/src/behaviors/pending/native-cover/PLACEHOLDER.md) | 共享/DOM | cover-view, cover-image |
-| [`wx-native-hover`](../hosts/web-components/src/behaviors/pending/native-hover/PLACEHOLDER.md) | 共享/DOM | cover-view |
-| [`wx-player`](../hosts/web-components/src/behaviors/pending/player/PLACEHOLDER.md) | 媒体/原生 | audio, live-player, video |
-| [`wx-request`](../hosts/web-components/src/behaviors/pending/request/PLACEHOLDER.md) | 宿主平台 | ad, ad-custom, official-account, video |
-| [`wx-video-ad`](../hosts/web-components/src/behaviors/pending/video-ad/PLACEHOLDER.md) | 媒体/原生 | video-ad, video |
+| [`wx-player`](../hosts/web-components/src/behaviors/pending/player/PLACEHOLDER.md) | 媒体/原生 | audio, video |
+| [`wx-request`](../hosts/web-components/src/behaviors/pending/request/PLACEHOLDER.md) | 宿主平台 | video |
+| [`wx-video-ad`](../hosts/web-components/src/behaviors/pending/video-ad/PLACEHOLDER.md) | 媒体/原生 | video |
 | [`wx-video-android`](../hosts/web-components/src/behaviors/pending/video-android/PLACEHOLDER.md) | 媒体/原生 | video |
 | [`wx-video-devtools`](../hosts/web-components/src/behaviors/pending/video-devtools/PLACEHOLDER.md) | 媒体/原生 | video |
 | [`wx-video-ios`](../hosts/web-components/src/behaviors/pending/video-ios/PLACEHOLDER.md) | 媒体/原生 | video |
@@ -164,14 +161,14 @@ hosts/web-components/src/behaviors/pending/<name>/PLACEHOLDER.md  # 11 个宿主
 | `modal` / `toast` / `loading` / `mask` | 同上，走 `wx.showModal` / `showToast` / `showLoading` 的宿主 overlay |
 | `video-ad` / `entry-banner` / `refresher` | 平台内部组件：广告、入口 banner、下拉刷新私有实现 |
 | `trade-service` / `wecom-user-profile` / `cloud-storage-simple-component` | 交易、企业微信、云存储的开放能力内部组件 |
-| `share-element` | 当前文档归入 Skyline，不在 WebView 41 目标内 |
+| `share-element` | 当前文档归入 Skyline，不在 WebView 40 目标内 |
 | `share-button` / `contact-button` | 旧版开放能力标签，当前文档已不再作为 WebView 组件列出 |
 | `xr-frame` | XR-FRAME 独立运行时，不在本仓库的 WebView 对齐范围 |
 
 ## 7. 维护
 
 - 完成一个组件/behavior 后，先删占位标记，再更新本表；计数以第 1 节和第 3.1 节为准。
-- 本表的 41 组件口径与 [wechat-webview-parity.md](./wechat-webview-parity.md) 附录 B 一致；如果目标版本升级，先改附录 B，再回来重算缺口。
+- 本表的 40 组件口径与 [wechat-webview-parity.md](./wechat-webview-parity.md) 附录 B 一致；如果目标版本升级，先改附录 B，再回来重算缺口。
 - 重新提取参考数据（2.33.0）：在包目录里检索 `WAWebview.js` 的 `registerBehavior`、`is: "wx-..."` 和 webview 启用表；属性白名单在同一个文件的 `S = { ... }` 对象里。
 
 ## 8. 实施顺序
@@ -183,7 +180,7 @@ hosts/web-components/src/behaviors/pending/<name>/PLACEHOLDER.md  # 11 个宿主
 | 1 | P0 基础内容/轻容器 | `rich-text`、`match-media`、`cover-view`、`cover-image` | ✅ 已完成 |
 | 2 | P0 布局与浮层 | `page-container`、`root-portal`；`aria-component` 按文档页处理 | ✅ 已完成 |
 | 2b | P1 手势/表单附件 | `movable-area`、`movable-view` | ✅ 已完成 |
-| 3 | P1 页面与编辑 | `page-meta`、`navigation-bar`、`functional-page-navigator` | ✅ 已完成 |
+| 3 | P1 页面与编辑 | `page-meta`、`navigation-bar` | ✅ 已完成 |
 | 4 | P2 布局补充 | `grid-view`（2.33.0 新增，aligned + masonry） | ✅ 已完成 |
 | 5 | P2 媒体/原生 | `video`、`map`、`audio`、`web-view` | ✅ 已完成（媒体为浏览器近似） |
 

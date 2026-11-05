@@ -20,7 +20,6 @@ import { defineMovableArea } from './components/movable-area'
 import { defineMovableView } from './components/movable-view'
 import { definePageMeta } from './components/page-meta'
 import { defineNavigationBar } from './components/navigation-bar'
-import { defineFunctionalPageNavigator } from './components/functional-page-navigator'
 import { defineButton } from './components/button'
 import { defineText } from './components/text'
 import { defineRichText } from './components/rich-text'
@@ -89,7 +88,6 @@ const DEFINITION_FACTORIES: Record<BuiltinComponentTag, DefinitionFactory> = {
   video: defineVideo,
   map: defineMap,
   navigator: defineNavigator,
-  'functional-page-navigator': defineFunctionalPageNavigator,
   'scroll-view': defineScrollView,
   slider: defineSlider,
   progress: defineProgress,

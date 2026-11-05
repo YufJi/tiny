@@ -11,9 +11,9 @@ behavior 占位。每个目录只有一个 `PLACEHOLDER.md`，不会被 `src/ind
 | `wx-image-route` | 共享 | map | [image-route](./image-route/PLACEHOLDER.md) |
 | `wx-keyboard-accessory-host` | 共享 | input, textarea | [keyboard-accessory-host](./keyboard-accessory-host/PLACEHOLDER.md) |
 | `wx-mask-behavior` | 共享 | toast, action-sheet, modal | [mask-behavior](./mask-behavior/PLACEHOLDER.md) |
-| `wx-player` | 媒体 | audio, live-player, video | [player](./player/PLACEHOLDER.md) |
-| `wx-request` | 平台 | ad, ad-custom, official-account, video | [request](./request/PLACEHOLDER.md) |
-| `wx-video-ad` | 媒体 | video-ad, video | [video-ad](./video-ad/PLACEHOLDER.md) |
+| `wx-player` | 媒体 | audio, video | [player](./player/PLACEHOLDER.md) |
+| `wx-request` | 平台 | video | [request](./request/PLACEHOLDER.md) |
+| `wx-video-ad` | 媒体 | video | [video-ad](./video-ad/PLACEHOLDER.md) |
 | `wx-video-android` | 媒体 | video | [video-android](./video-android/PLACEHOLDER.md) |
 | `wx-video-devtools` | 媒体 | video | [video-devtools](./video-devtools/PLACEHOLDER.md) |
 | `wx-video-ios` | 媒体 | video | [video-ios](./video-ios/PLACEHOLDER.md) |
