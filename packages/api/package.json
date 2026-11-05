@@ -1,0 +1,32 @@
+{
+  "name": "@tiny/api",
+  "version": "1.0.0",
+  "description": "WeChat-compatible mini-program API table for @tiny/runtime service threads",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prebuild": "rm -rf dist"
+  },
+  "keywords": [],
+  "dependencies": {
+    "@tiny/manifest": "workspace:*",
+    "@tiny/runtime": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.6.1"
+  }
+}

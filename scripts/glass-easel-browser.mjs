@@ -11,6 +11,27 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const failureShot = path.join(rootDir, 'tests/host/generated/acceptance-failure.png')
 const STEP_TIMEOUT = 15_000
 
+/** `text` keeps the hidden source node, so text locators only match visible nodes. */
+const byText = (frame, text, options) => frame.getByText(text, options).filter({ visible: true })
+
+/** Click a slider track at the position for `value` (ranges come from the host attrs). */
+async function setSliderValue(slider, value) {
+  const range = await slider.evaluate((element) => ({
+    min: Number(element.getAttribute('min') ?? 0),
+    max: Number(element.getAttribute('max') ?? 100),
+  }))
+  const track = slider.locator('[class*="slider-handle-wrapper"]')
+  const box = await track.boundingBox()
+  if (!box) throw new Error('slider track has no bounding box')
+  const ratio = Math.min(1, Math.max(0, (value - range.min) / (range.max - range.min)))
+  await track.click({
+    position: {
+      x: Math.min(box.width - 1, Math.max(1, box.width * ratio)),
+      y: box.height / 2,
+    },
+  })
+}
+
 async function launchBrowser() {
   const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH
   const attempts = executablePath
@@ -139,9 +160,12 @@ export async function runBrowserAcceptance({ baseUrl }) {
         assert.ok((await render.locator(selector).count()) > 0, `missing rendered element: ${selector}`)
       }
       assert.equal(await render.locator('tiny-swiper-item').count(), 2, 'swiper should render two items')
-      assert.equal(await render.locator('input.tiny-builtin-slider--tiny-slider').inputValue(), '20')
+      assert.equal(
+        await render.locator('tiny-slider').first().locator('[class*="slider-track"]').evaluate((element) => element.style.width),
+        '20%',
+      )
       assert.match(await render.locator('.tiny-builtin-progress--tiny-progress-info').innerText(), /^20%$/)
-      const iconMetrics = await render.locator('tiny-icon .tiny-builtin-icon--tiny-icon').first().evaluate((element) => {
+      const iconMetrics = await render.locator('tiny-icon i').first().evaluate((element) => {
         const style = getComputedStyle(element)
         const before = getComputedStyle(element, '::before')
         return {
@@ -157,12 +181,21 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.equal(iconMetrics.color, 'rgb(9, 187, 7)', 'icon success color mismatch')
       assert.notEqual(iconMetrics.content, 'none', 'icon should render a font glyph')
       assert.equal(iconMetrics.width, 23, 'icon width mismatch')
-      const imageLoaded = await render.locator(
-        'img.tiny-builtin-image--tiny-image-probe, img.tiny-builtin-image--tiny-image-img',
-      ).first().evaluate(
-        (element) => element.naturalWidth > 0,
-      )
+      const imageLoaded = await render.waitForFunction(
+        () => {
+          const layer = document.querySelector('tiny-image > div')
+          return layer ? getComputedStyle(layer).backgroundImage.includes('url(') : false
+        },
+        null,
+        { timeout: STEP_TIMEOUT },
+      ).then(() => true, () => false)
       assert.ok(imageLoaded, 'inlined image did not load')
+      // WeChat renders `<div id="div">` for the bitmap and a sibling
+      // `<span><slot/></span>` for children; the fallback wrapper is gone.
+      const imageShape = await render.locator('tiny-image').first().evaluate((element) => ({
+        children: [...element.children].map((child) => child.tagName.toLowerCase()),
+      }))
+      assert.deepEqual(imageShape.children.slice(0, 2), ['div', 'span'], 'image structure does not match WeChat')
 
       const checkboxMetrics = await render.locator(
         'tiny-checkbox .tiny-builtin-checkbox--tiny-checkbox-input',
@@ -174,6 +207,8 @@ export async function runBrowserAcceptance({ baseUrl }) {
           height: style.height,
           borderWidth: style.borderTopWidth,
           checkContent: check.content,
+          checkFont: check.fontFamily,
+          checkSize: check.fontSize,
         }
       })
       assert.deepEqual(
@@ -181,6 +216,8 @@ export async function runBrowserAcceptance({ baseUrl }) {
         ['22px', '22px', '1px'],
         'checkbox visual structure does not match WeChat',
       )
+      assert.ok(checkboxMetrics.checkFont.includes('weui'), 'checkbox check mark should use the weui font')
+      assert.equal(checkboxMetrics.checkSize, '22px', 'checkbox check mark size mismatch')
       assert.notEqual(checkboxMetrics.checkContent, 'none', 'checked checkbox should draw a check mark')
 
       const switchMetrics = await render.locator(
@@ -212,7 +249,10 @@ export async function runBrowserAcceptance({ baseUrl }) {
       )
       assert.ok((await text()).includes('Learn glass-easel'), 'todos list did not render')
       assert.ok((await text()).includes('Run P0 acceptance'), 'todos list did not render')
-      assert.equal(await render.locator('input[type="checkbox"]').first().isChecked(), true)
+      assert.ok(
+        (await render.locator('tiny-checkbox [class*="tiny-checkbox-input-checked"]').count()) > 0,
+        'checked checkbox should render the checked marker class',
+      )
     })
 
     await step('apply scoped styles and built-in base layout', async () => {
@@ -250,7 +290,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
         'dotted',
         'app universal selector did not match the page root marker',
       )
-      const internalTextOutline = await render.locator('tiny-text span').first().evaluate(
+      const internalTextOutline = await render.locator('tiny-text span:last-child').first().evaluate(
         (element) => getComputedStyle(element).outlineStyle,
       )
       assert.equal(internalTextOutline, 'none', 'app global selectors leaked into built-in component internals')
@@ -280,7 +320,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.ok(scrollPadding > 0, 'scoped page padding did not apply')
 
       const hasInlineText = await render.evaluate(() =>
-        [...document.querySelectorAll('tiny-text span')].some(
+        [...document.querySelectorAll('tiny-text span:last-child')].some(
           (element) => getComputedStyle(element).display === 'inline',
         ),
       )
@@ -304,7 +344,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
 
     await step('update page data from a checkbox change', async () => {
       currentStep = 'update page data from a checkbox change'
-      await render.getByText('Run P0 acceptance', { exact: true }).first().click()
+      await byText(render, 'Run P0 acceptance', { exact: true }).first().click()
       await render.waitForFunction(() => {
         const body = document.querySelector('#app')?.innerText ?? ''
         const index = body.indexOf('checked:')
@@ -314,10 +354,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
 
     await step('update progress and data from a slider change', async () => {
       currentStep = 'update progress and data from a slider change'
-      await render.locator('input.tiny-builtin-slider--tiny-slider').evaluate((element) => {
-        element.value = '65'
-        element.dispatchEvent(new Event('change', { bubbles: true }))
-      })
+      await setSliderValue(render.locator('tiny-slider').first(), 65)
       await waitForText('slider: 65')
       await render.waitForFunction(
         () => document.querySelector('.tiny-builtin-progress--tiny-progress-info')?.textContent?.trim() === '65%',
@@ -336,7 +373,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
       currentStep = 'navigate to add-todo and expose page query'
       // Touch-first: navigation is driven by a real touch sequence, not a
       // synthetic mouse click.
-      await render.getByText('Open add todo', { exact: true }).first().tap()
+      await byText(render, 'Open add todo', { exact: true }).first().tap()
       await waitForText('Add todo')
       assert.ok((await text()).includes('from: todos'), `page query was not delivered: ${await text()}`)
       assert.ok(!(await text()).includes('Tiny Glass-easel P0'), 'previous page was not unmounted')
@@ -376,7 +413,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
 
     await step('save, navigate back, and preserve storage state', async () => {
       currentStep = 'save, navigate back, and preserve storage state'
-      await render.getByText('Save and back', { exact: true }).first().click()
+      await byText(render, 'Save and back', { exact: true }).first().click()
       await waitForText('marker: Buy milk')
       assert.ok(!(await text()).includes('Save and back'), 'add-todo page was not unmounted')
       assert.equal(await render.locator('tiny-page[wx-host]').count(), 1, 'previous pages were not released')
@@ -386,7 +423,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
 
     await step('resolve the toast API without fatal errors', async () => {
       currentStep = 'resolve the toast API without fatal errors'
-      await render.getByText('Show toast', { exact: true }).first().click()
+      await byText(render, 'Show toast', { exact: true }).first().click()
       await page.waitForTimeout(300)
       const diagnostics = await page.evaluate(() => window.__tinyRuntime.host.diagnostics)
       assert.equal(
@@ -400,7 +437,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
       currentStep = 'mutate the first page after navigating back'
       // The hidden page stays mounted on the service side; a data change raised
       // after navigateBack must patch that page, not the most recently mounted one.
-      await render.getByText('Run P0 acceptance', { exact: true }).first().click()
+      await byText(render, 'Run P0 acceptance', { exact: true }).first().click()
       await render.waitForFunction(() => {
         const body = document.querySelector('#app')?.innerText ?? ''
         const index = body.indexOf('checked:')
@@ -410,13 +447,13 @@ export async function runBrowserAcceptance({ baseUrl }) {
 
     await step('open the component semantics page', async () => {
       currentStep = 'open the component semantics page'
-      await render.getByText('Semantics', { exact: true }).first().click()
+      await byText(render, 'Semantics', { exact: true }).first().click()
       await waitForText('Component semantics')
     })
 
     await step('apply component style isolation and external classes', async () => {
       currentStep = 'apply component style isolation and external classes'
-      const colorOf = (label) => render.getByText(label, { exact: true }).first().evaluate(
+      const colorOf = (label) => byText(render, label, { exact: true }).first().evaluate(
         (element) => getComputedStyle(element).color,
       )
       assert.equal(await colorOf('page color'), 'rgb(255, 0, 0)', 'page style did not apply')
@@ -437,7 +474,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
         'app universal selector did not reach page-scoped component nodes',
       )
       assert.equal(
-        await render.locator('tiny-apply-shared-box tiny-text span').first().evaluate(
+        await render.locator('tiny-apply-shared-box tiny-text span:last-child').first().evaluate(
           (element) => getComputedStyle(element).outlineStyle,
         ),
         'none',
@@ -458,7 +495,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
         (element) => getComputedStyle(element).borderLeftWidth,
       )
       assert.equal(isolatedHostBorder, '3px', ':host styles did not apply to the component host')
-      const isolatedOutline = await render.getByText('isolated color', { exact: true }).first().evaluate(
+      const isolatedOutline = await byText(render, 'isolated color', { exact: true }).first().evaluate(
         (element) => getComputedStyle(element).outlineColor,
       )
       assert.notEqual(isolatedOutline, 'rgb(9, 8, 7)', 'page universal selector leaked into an isolated component')
@@ -527,7 +564,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
       await waitForText('behavior-obs:first')
       await waitForText('box-obs:first')
       await waitForText('probe:probe-ok')
-      await render.getByText('Change value', { exact: true }).first().click()
+      await byText(render, 'Change value', { exact: true }).first().click()
       await waitForText('behavior-obs:second')
       await waitForText('box-obs:second')
       await waitForText('second:first')
@@ -537,14 +574,14 @@ export async function runBrowserAcceptance({ baseUrl }) {
       currentStep = 'link and unlink component relations'
       await waitForText('parent-linked:1')
       await waitForText('child-linked:1')
-      await render.getByText('Toggle child', { exact: true }).first().click()
+      await byText(render, 'Toggle child', { exact: true }).first().click()
       await waitForText('parent-linked:0')
       assert.ok(!(await text()).includes('child-linked'), 'child relation was not unlinked')
     })
 
     await step('return to the P0 page', async () => {
       currentStep = 'return to the P0 page'
-      await render.getByText('Back', { exact: true }).first().click()
+      await byText(render, 'Back', { exact: true }).first().click()
       await waitForText('Open add todo')
     })
 
@@ -569,7 +606,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
 
     await step('run WXS local events, change:prop and callMethod', async () => {
       currentStep = 'run WXS local events, change:prop and callMethod'
-      await render.getByText('WXS runtime', { exact: true }).first().click()
+      await byText(render, 'WXS runtime', { exact: true }).first().click()
       await waitForText('WXS runtime')
       await waitForText('status: observe:2:none')
       await render.locator('tiny-wxs-probe #probe').click()
@@ -598,36 +635,31 @@ export async function runBrowserAcceptance({ baseUrl }) {
       await render.locator('#capture-child').click()
       await waitForText('capture-status: capture')
       await waitForText('capture-parent-status: capture-parent')
-      const slider = render.locator('tiny-slider input[type="range"]').first()
-      await slider.evaluate((element) => {
-        element.value = '5'
-        element.dispatchEvent(new Event('input', { bubbles: true }))
-        element.dispatchEvent(new Event('change', { bubbles: true }))
-      })
+      await setSliderValue(render.locator('tiny-slider').first(), 5)
       await waitForText('status: change:5')
       await render.locator('#dynamic').click()
       await waitForText('dynamic-status: wxs:2')
-      await render.getByText('Toggle dynamic handler', { exact: true }).first().click()
+      await byText(render, 'Toggle dynamic handler', { exact: true }).first().click()
       await render.locator('#dynamic').click()
       await waitForText('dynamic-status: service')
-      await render.getByText('Toggle dynamic handler', { exact: true }).first().click()
+      await byText(render, 'Toggle dynamic handler', { exact: true }).first().click()
       await render.locator('#dynamic').click()
       await waitForText('dynamic-status: wxs:2')
       await render.locator('#counter').click()
       await waitForText('counter-status: counter:1')
-      await render.getByText('Toggle counter handler', { exact: true }).first().click()
+      await byText(render, 'Toggle counter handler', { exact: true }).first().click()
       await render.locator('#counter').click()
       await waitForText('counter-status: service')
-      await render.getByText('Toggle counter handler', { exact: true }).first().click()
+      await byText(render, 'Toggle counter handler', { exact: true }).first().click()
       await render.locator('#counter').click()
       await waitForText('counter-status: counter:2')
-      await render.getByText('Back', { exact: true }).first().click()
+      await byText(render, 'Back', { exact: true }).first().click()
       await waitForText('Tiny Glass-easel P0')
     })
 
     await step('lock page scroll under catchtouchmove', async () => {
       currentStep = 'lock page scroll under catchtouchmove'
-      await render.getByText('Touch lock', { exact: true }).first().click()
+      await byText(render, 'Touch lock', { exact: true }).first().click()
       await waitForText('Touch lock probe')
       await render.evaluate(() => window.scrollTo(0, 200))
       await page.waitForTimeout(50)
@@ -659,7 +691,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
 
     await step('deliver onPageScroll from the render scroll container', async () => {
       currentStep = 'deliver onPageScroll from the render scroll container'
-      await render.getByText('Scroll page', { exact: true }).first().click()
+      await byText(render, 'Scroll page', { exact: true }).first().click()
       await waitForText('Scroll probe')
       const metrics = await render.evaluate(() => ({
         scrollHeight: document.documentElement.scrollHeight,
@@ -792,7 +824,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
         (await avatar.evaluate((element) => element.getBoundingClientRect().width)) > 50,
         'external class styles did not apply to the image',
       )
-      const avatarLayer = await avatar.locator('.tiny-builtin-image--tiny-image-div').evaluate((element) => {
+      const avatarLayer = await avatar.locator('div').first().evaluate((element) => {
         const style = getComputedStyle(element)
         const rect = element.getBoundingClientRect()
         return { width: rect.width, height: rect.height, backgroundImage: style.backgroundImage }
@@ -804,10 +836,13 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
 
     await step('drive the existing todos page interactions', async () => {
       currentStep = 'drive the existing todos page interactions'
-      await render.waitForFunction(() => document.querySelector('img')?.naturalWidth > 0, null, { timeout: STEP_TIMEOUT })
+      await render.waitForFunction(() => {
+        const layer = document.querySelector('tiny-image > div')
+        return layer ? getComputedStyle(layer).backgroundImage.includes('url(') : false
+      }, null, { timeout: STEP_TIMEOUT })
       assert.equal(await render.locator('tiny-label[class*="--todo-item"][class*="--checked"]').count(), 2, 'initial checked todos are wrong')
 
-      await render.getByText('Learning 小程序', { exact: true }).click()
+      await byText(render, 'Learning 小程序', { exact: true }).click()
       await render.waitForFunction(
         () => document.querySelectorAll('tiny-label[class*="--todo-item"][class*="--checked"]').length === 3,
         null,
@@ -840,30 +875,57 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       )
 
       await render.locator('tiny-switch').first().click()
-      assert.equal(await render.locator('tiny-switch').first().locator('input[type="checkbox"]').isChecked(), true)
+      assert.ok(
+        (await render.locator('tiny-switch [class*="-input-checked"]').count()) > 0,
+        'switch did not render a checked branch',
+      )
+      // `type="checkbox"` switches use the reference checkbox visual.
+      const switchCheckbox = await render.locator('tiny-switch .tiny-builtin-switch--tiny-checkbox-input').first().evaluate((element) => {
+        const style = getComputedStyle(element)
+        const check = getComputedStyle(element, '::before')
+        return {
+          tag: element.tagName.toLowerCase(),
+          width: style.width,
+          height: style.height,
+          radius: style.borderTopLeftRadius,
+          background: style.backgroundColor,
+          fontFamily: check.fontFamily,
+          fontSize: check.fontSize,
+          content: check.content,
+        }
+      })
+      assert.deepEqual(
+        [switchCheckbox.tag, switchCheckbox.width, switchCheckbox.height, switchCheckbox.radius, switchCheckbox.background],
+        ['div', '22px', '22px', '3px', 'rgb(255, 255, 255)'],
+        'switch type=checkbox visual structure does not match WeChat',
+      )
+      assert.ok(switchCheckbox.fontFamily.includes('weui'), 'switch checkbox mark should use the weui font')
+      assert.equal(switchCheckbox.fontSize, '22px', 'switch checkbox mark size mismatch')
+      assert.notEqual(switchCheckbox.content, 'none', 'checked switch checkbox should draw its check glyph')
 
-      await render.locator('input.tiny-builtin-slider--tiny-slider').nth(1).evaluate((element) => {
-        element.value = '1500'
-        element.dispatchEvent(new Event('change', { bubbles: true }))
-      })
-      await render.locator('input.tiny-builtin-slider--tiny-slider').nth(2).evaluate((element) => {
-        element.value = '7000'
-        element.dispatchEvent(new Event('change', { bubbles: true }))
-      })
+      await setSliderValue(render.locator('tiny-slider').nth(1), 1500)
+      await setSliderValue(render.locator('tiny-slider').nth(2), 7000)
+      // Touch coordinates quantize to about one CSS pixel, so these wide
+      // ranges land within a few units of the requested value.
       await render.waitForFunction(
-        () => [...document.querySelectorAll('[class*="--info"]')].map((element) => element.textContent?.trim()).includes('1500')
-          && [...document.querySelectorAll('[class*="--info"]')].map((element) => element.textContent?.trim()).includes('7000'),
+        () => {
+          const values = [...document.querySelectorAll('tiny-slider')].map((element) => Number(element.getAttribute('value')))
+          return Math.abs(values[1] - 1500) <= 5 && Math.abs(values[2] - 7000) <= 10
+        },
         null,
         { timeout: STEP_TIMEOUT },
       )
 
-      assert.equal(await render.locator('tiny-radio input[type="radio"]').isChecked(), true, 'radio is not checked')
+      assert.ok(
+        (await render.locator('tiny-radio [class*="tiny-radio-input-checked"]').count()) > 0,
+        'radio is not checked',
+      )
       assert.ok(
         (await render.locator('.tiny-builtin-icon--tiny-icon-success_no_circle').count()) > 0,
         'icon type was not applied',
       )
 
-      const swiper = render.locator('.tiny-builtin-swiper--tiny-swiper')
+      const swiper = render.locator('tiny-swiper')
       assert.equal(
         await swiper.locator('.tiny-builtin-swiper--tiny-swiper-dot').count(),
         3,
@@ -871,10 +933,43 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       )
       await swiper.locator('.tiny-builtin-swiper--tiny-swiper-dot').nth(1).click()
       await render.waitForFunction(
-        () => document.querySelector('.tiny-builtin-swiper--tiny-swiper-track')
-          ?.getAttribute('style')?.includes('translateX(-100%)'),
+        () => document.querySelector('.tiny-builtin-swiper--tiny-swiper-slide-frame')
+          ?.getAttribute('style')?.includes('translate(-100%, 0'),
         null,
         { timeout: STEP_TIMEOUT },
+      )
+      // WeChat translates each swiper-item by its own index and keeps the
+      // frame in place, so items must be absolutely positioned siblings.
+      const swiperLayout = await swiper.evaluate((element) => {
+        const wrapper = element.firstElementChild
+        const slides = wrapper?.children[0]
+        const frame = slides?.children[0]
+        const items = [...element.querySelectorAll('tiny-swiper-item')]
+        return {
+          tree: [wrapper?.tagName.toLowerCase(), slides?.tagName.toLowerCase(), frame?.tagName.toLowerCase()],
+          frameWidth: Math.round(frame?.getBoundingClientRect().width ?? 0),
+          wrapperWidth: Math.round(wrapper?.getBoundingClientRect().width ?? 0),
+          items: items.slice(0, 3).map((item) => ({
+            transform: item.style.transform,
+            position: getComputedStyle(item).position,
+            width: Math.round(item.getBoundingClientRect().width),
+          })),
+        }
+      })
+      assert.deepEqual(swiperLayout.tree, ['div', 'div', 'div'], 'swiper structure does not match WeChat')
+      assert.equal(swiperLayout.frameWidth, swiperLayout.wrapperWidth, 'swiper frame should fill the wrapper')
+      assert.deepEqual(
+        swiperLayout.items.map((item) => item.position),
+        ['absolute', 'absolute', 'absolute'],
+        'swiper items should be absolutely positioned like WeChat',
+      )
+      assert.ok(
+        swiperLayout.items.every((item) => item.width === swiperLayout.frameWidth),
+        'swiper items should fill the frame',
+      )
+      assert.ok(
+        swiperLayout.items[1]?.transform.includes('100%'),
+        'swiper items should be translated by their own index',
       )
 
       const animated = await render.evaluate(() => [...document.querySelectorAll('tiny-view, view')].some((element) => {
@@ -908,7 +1003,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
     await step('render the ECharts page through the canvas bridge', async () => {
       currentStep = 'render the ECharts page through the canvas bridge'
       const previousRenderUrl = render.url()
-      await render.getByText('nav', { exact: true }).first().click()
+      await byText(render, 'nav', { exact: true }).first().click()
       await page.waitForFunction(
         () => window.__tinyRuntime.host.diagnostics.some(
           (item) => item.code === 'RUNTIME_STATE' && item.details?.currentPage === 'pages/bar/index',
@@ -1069,8 +1164,10 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
       const body = await render.locator('#app').innerText()
       assert.ok(body.includes('表单组件'), 'component categories did not render')
       await render.waitForFunction(() => {
-        const images = [...document.querySelectorAll('img[src*="resources/kind"]')]
-        return images.length > 0 && images.every((image) => image.complete && image.naturalWidth > 0)
+        const layers = [...document.querySelectorAll('tiny-image > div')]
+          .filter((layer) => getComputedStyle(layer).backgroundImage.includes('resources/kind'))
+        return layers.length > 0
+          && layers.every((layer) => getComputedStyle(layer).backgroundImage !== 'none')
       }, null, { timeout: STEP_TIMEOUT })
       const theme = await render.evaluate(() => {
         const element = document.querySelector('[data-weui-theme]')
@@ -1101,8 +1198,55 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
       assert.ok((await render.locator('tiny-button').count()) > 0, 'component buttons did not render')
     })
 
-    await step('toggle a radio in the swiper demo', async () => {
-      currentStep = 'toggle a radio in the swiper demo'
+    await step('expose view aria roles', async () => {
+      currentStep = 'expose view aria roles'
+      await page.goto(`${baseUrl}?path=packageComponent/pages/obstacle-free/aria-component/aria-component`, {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
+      const render = await activeRender()
+      await render.waitForFunction(
+        () => document.querySelector('tiny-view[aria-role="button"]')?.getAttribute('role') === 'button',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const view = render.locator('tiny-view[aria-role="button"]').first()
+      assert.equal(await view.getAttribute('role'), 'button', 'view aria-role was not forwarded')
+      assert.equal(await view.getAttribute('aria-label'), '提交表单', 'view aria-label was not forwarded')
+    })
+
+    await step('extend the text example', async () => {
+      currentStep = 'extend the text example'
+      await page.goto(`${baseUrl}?path=packageComponent/pages/content/text/text`, {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
+      const render = await activeRender()
+      await render.waitForFunction(
+        () => (document.querySelector('#app')?.innerText ?? '').includes('add line'),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      await byText(render, 'add line', { exact: true }).click()
+      await render.waitForFunction(
+        () => (document.querySelector('#app')?.innerText ?? '').includes('2011年1月，微信1.0发布'),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const textBody = await render.locator('#app').innerText()
+      assert.ok(textBody.includes('微信1.0发布'), 'added text line did not render')
+      await byText(render, 'remove line', { exact: true }).click()
+      await render.waitForFunction(
+        () => !(document.querySelector('#app')?.innerText ?? '').includes('2011年1月，微信1.0发布'),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+    })
+
+    await step('toggle autoplay in the swiper demo', async () => {
+      currentStep = 'toggle autoplay in the swiper demo'
       await page.goto(`${baseUrl}?path=packageComponent/pages/view/swiper/swiper`, {
         waitUntil: 'domcontentloaded',
         timeout: STEP_TIMEOUT,
@@ -1115,10 +1259,15 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
         { timeout: STEP_TIMEOUT },
       )
       const autoplay = render.locator('tiny-radio').nth(1)
-      assert.equal(await autoplay.getAttribute('checked'), 'false', 'autoplay radio should start unchecked')
+      assert.equal(
+        await autoplay.locator('[class*="tiny-radio-input-checked"]').count(),
+        0,
+        'autoplay radio should start unchecked',
+      )
       await autoplay.click()
       await render.waitForFunction(
-        () => document.querySelectorAll('tiny-radio')[1]?.getAttribute('checked') === 'true',
+        () => document.querySelectorAll('tiny-radio')[1]
+          ?.querySelector('[class*="tiny-radio-input-checked"]') != null,
         null,
         { timeout: STEP_TIMEOUT },
       )
@@ -1128,6 +1277,59 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
         return dots.findIndex((dot) => getComputedStyle(dot).backgroundColor === 'rgb(0, 0, 0)')
       })
       assert.notEqual(activeDot, 0, 'swiper autoplay did not advance after enabling it')
+    })
+
+    await step('render the radio demo', async () => {
+      currentStep = 'render the radio demo'
+      await page.goto(`${baseUrl}?path=packageComponent/pages/form/radio/radio`, {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
+      const render = await activeRender()
+      await render.waitForFunction(
+        () => document.querySelectorAll('tiny-radio').length >= 2,
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const radio = render.locator('tiny-radio').nth(1)
+      assert.equal(
+        await radio.locator('[class*="tiny-radio-input-checked"]').count(),
+        0,
+        'second radio should start unchecked',
+      )
+      await radio.click()
+      await render.waitForFunction(
+        () => document.querySelectorAll('tiny-radio')[1]
+          ?.querySelector('[class*="tiny-radio-input-checked"]') != null,
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      // The checked radio uses the reference structure and WeUI check glyph.
+      const radioVisual = await render.evaluate(() => {
+        const radio = document.querySelectorAll('tiny-radio')[1]
+        const visual = radio?.querySelector('[class*="radio-input"]')
+        if (!visual) return null
+        const style = getComputedStyle(visual)
+        const check = getComputedStyle(visual, '::before')
+        return {
+          tag: visual.tagName.toLowerCase(),
+          width: style.width,
+          radius: style.borderTopLeftRadius,
+          background: style.backgroundColor,
+          fontFamily: check.fontFamily,
+          fontSize: check.fontSize,
+          content: check.content,
+        }
+      })
+      assert.deepEqual(
+        [radioVisual?.tag, radioVisual?.width, radioVisual?.radius, radioVisual?.background],
+        ['div', '22px', '50%', 'rgb(9, 187, 7)'],
+        'radio visual structure does not match WeChat',
+      )
+      assert.ok(radioVisual?.fontFamily.includes('weui'), 'radio check glyph should use the weui font')
+      assert.equal(radioVisual?.fontSize, '18px', 'radio check glyph size mismatch')
+      assert.notEqual(radioVisual?.content, 'none', 'checked radio should draw its check glyph')
     })
 
     await step('render an API example page', async () => {
@@ -1427,16 +1629,23 @@ export async function runTaroAcceptance({ baseUrl }) {
       currentStep = 'toggle and filter Taro todos'
       await render.locator('tiny-checkbox').first().click()
       await waitForText('1 item left')
-      await render.getByText('Active', { exact: true }).click()
+      await byText(render, 'Active', { exact: true }).click()
       await waitForText('Taro item')
-      await render.getByText('Completed', { exact: true }).click()
+      await byText(render, 'Completed', { exact: true }).click()
       await waitForText('Use Redux')
+      // Rebuilding the filtered list recreates the checkbox nodes; the
+      // completed item must still render as checked.
+      const checkedCompleted = await render.evaluate(() =>
+        [...document.querySelectorAll('tiny-checkbox')]
+          .filter((box) => box.querySelector('[class*="checkbox-input"]')?.className.includes('tiny-checkbox-input-checked')).length,
+      )
+      assert.equal(checkedCompleted, 1, 'completed Taro todo lost its checked state after switching tabs')
     })
 
     await step('clear completed Taro todos', async () => {
       currentStep = 'clear completed Taro todos'
-      await render.getByText('Clear completed', { exact: true }).click()
-      await render.getByText('All', { exact: true }).click()
+      await byText(render, 'Clear completed', { exact: true }).click()
+      await byText(render, 'All', { exact: true }).click()
       await waitForText('Taro item')
       const remaining = await text()
       assert.ok(!remaining.includes('Use Redux'), 'completed todo was not removed')
@@ -1795,7 +2004,7 @@ export async function runDevtoolAcceptance({ baseUrl }) {
       assert.ok(restoredFrame, 'restored page render frame was not found')
       const checkedLabels = 'tiny-label[class*="--todo-item"][class*="--checked"]'
       assert.equal(await restoredFrame.locator(checkedLabels).count(), 2, 'restored page lost its initial state')
-      await restoredFrame.getByText('Learning 小程序', { exact: true }).click()
+      await byText(restoredFrame, 'Learning 小程序', { exact: true }).click()
       await restoredFrame.waitForFunction(
         (selector) => document.querySelectorAll(selector).length === 3,
         checkedLabels,
@@ -1866,8 +2075,12 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         )
         if (imageFixtures.has(fixture.id)) {
           await renderFrame.waitForFunction(() => {
+            const layers = [...document.querySelectorAll('tiny-image > div')]
             const images = [...document.querySelectorAll('img')]
-            return images.length > 0 && images.every((image) => image.complete && image.naturalWidth > 0)
+              .filter((image) => image.complete && image.naturalWidth > 0)
+            return (layers.length > 0
+              && layers.every((layer) => getComputedStyle(layer).backgroundImage !== 'none'))
+              || images.length > 0
           }, null, { timeout: STEP_TIMEOUT })
         }
         if (needle) {

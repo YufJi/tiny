@@ -1,27 +1,22 @@
 tiny-progress {
   display: flex;
   align-items: center;
-  box-sizing: border-box;
 }
-
+tiny-progress[hidden] {
+  display: none;
+}
 .tiny-progress-bar {
   flex: 1;
-  height: 6px;
-  background-color: #ebebeb;
-  border-radius: 3px;
   overflow: hidden;
 }
-
 .tiny-progress-inner-bar {
-  width: 0;
   height: 100%;
-  background-color: #09bb07;
-  transition: width 0.3s ease;
+  width: 0;
 }
-
 .tiny-progress-info {
-  margin-left: 15px;
-  min-width: 2em;
-  margin-top: 0;
+  font-size: 16px;
   margin-bottom: 0;
+  margin-left: 15px;
+  margin-top: 0;
+  min-width: 2em;
 }

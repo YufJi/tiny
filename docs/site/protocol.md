@@ -221,44 +221,48 @@ Bridge 的 `assertJsonSafe` 做严格校验；runtime 的 `toJsonSafe` 会主动
 
 ## tree 域：两棵树之间的同步 {#tree-protocol kicker="tree 协议"}
 
-双侧树不共享内存。service 逻辑树生成 component flow 和 virtual node patch，render 渲染树应用它们；事件、查询和相交观测再按 node id 回到 service。
+双侧树不共享内存。service 逻辑树生成 component flow 和 virtual node patch，render 渲染树应用它们，并按组件定义求值 shadow tree；事件、查询和相交观测再按组件 id 或元素 locator 回到 service。
 
 | 消息 | 方向 | 内容 |
 | --- | --- | --- |
-| `tree.flow` | service → render | 首屏 component flow：`define`、`create-node`、`props`、`children`、`ready`；带页面样式和 fallback app 样式 |
+| `tree.flow` | service → render | 首屏 flow：`define`（组件定义）、`tree`（整棵渲染快照）、`ready`；带页面样式、fallback app 样式、`pageUsing` 和 `behaviorScheme` |
 | `tree.snapshot` | service → render | 完整虚拟节点快照；渲染树保留该入口 |
-| `tree.patch` | service → render | `text`、`replace`、`props`、`insert`、`remove`、`reorder`、`extra` |
-| `tree.event` | render → service | node id、name、detail、native 字段、touches；service 负责找到逻辑节点并分发 |
+| `tree.patch` | service → render | `text`、`replace`、`props`、`insert`、`remove`、`reorder`、`extra`；组件用共享 id、元素用 `owner#index.path` locator 寻址 |
+| `tree.event` | render → service | 组件 id 或元素 locator、name、detail、native 字段、touches；service 负责找到逻辑节点并分发 |
 | `tree.ready` | host → service | render 根挂载完成后请求逻辑树发送首屏 flow |
 | `tree.inspectTree` | host → render | 从渲染树导出 InspectNode |
-| `tree.measure` | service/host → render | 按 node id 读取 layout 矩形 |
+| `tree.measure` | service/host → render | 按组件 id 或元素 locator 读取 layout 矩形 |
 | `query.select` | service → host → render | selector query 在真实 DOM 中查节点，返回 rect/dataset/scroll |
 | `query.intersection` | service → render / render → service | 创建、更新、断开 IntersectionObserver；entry 回到逻辑树 |
 | `canvas.measure` | service → render | 测量 canvas 节点 |
 
-首屏 flow 的核心是稳定 node id：
+首屏 flow 只发组件定义和一棵嵌套快照，元素 id 不上 wire：
 
 ```js
 [
   { type: 'define', path: 'pages/index/index', definition: { ... } },
-  { type: 'create-node', id: 'node-1', tag: 'view', parentId: undefined, index: 0 },
-  { type: 'props', id: 'node-1', props: { class: 'card' } },
-  { type: 'children', id: 'node-1', inserts: ['node-2'] },
+  { type: 'tree', root: {
+      type: 'element', id: 'page-1', tag: 'page',
+      children: [
+        { type: 'element', tag: 'view', props: { class: 'card' }, children: [ ... ] },
+        { type: 'element', id: 'card-1', tag: 'card', component: true, componentPath: 'components/card/card' },
+      ],
+  } },
   { type: 'ready' },
 ]
 ```
 
-后续更新只发送 patch：
+后续更新只发送 patch：组件按共享 id 寻址，元素按 locator（`owner#index.path`）寻址：
 
 ```js
 [
-  { type: 'props', id: 'node-2', props: { class: 'card active' } },
-  { type: 'text', id: 'node-3', text: '新的标题' },
+  { type: 'props', target: 'page-1#0', props: { class: 'card active' } },
+  { type: 'text', target: 'page-1#0.1', text: '新的标题' },
 ]
 ```
 
 :::callout{title="patch 按页面合批"}
-service 在一个 microtask 内合并同一页面的模板更新，再发一条 `tree.patch`；渲染树按顺序应用 patch，不重新求值模板。component flow 目前只覆盖首屏挂载，后续更新统一走 patch，这是和微信参考协议的已知差异。
+service 在一个 microtask 内合并同一页面的模板更新，再发一条 `tree.patch`；渲染树按顺序应用 patch，组件定义只在首屏或新增组件时注册并用同一份模板求值 shadow tree。component flow 目前只覆盖首屏挂载，后续更新统一走 patch，这是和微信参考协议的已知差异。
 :::
 
 ## v1 现在有哪些消息 {#catalog kicker="消息列表"}
@@ -282,7 +286,7 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | page | `show` / `hide` | control | host → service | 应用和页面前后台生命周期 |
 | page | `scroll` / `reachBottom` / `pullDownRefresh` | event | render → service | 页面滚动、触底和下拉手势 |
 | page | `share` / `saveExitState` / `pullDownRefresh` | control | host → service | 页面分享、退出状态和下拉刷新 API |
-| tree | `flow` | event | service → render | 首屏 component flow |
+| tree | `flow` | event | service → render | 首屏 flow：组件定义 + 嵌套快照 + 页面 using/behavior scheme |
 | tree | `snapshot` | event | service → render | 完整虚拟节点快照 |
 | tree | `patch` | event | service → render | 虚拟节点增量 patch |
 | tree | `animate` / `clearAnimate` | event | service → render | `this.animate` 关键帧与取消 |
@@ -290,7 +294,7 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | tree | `hostAction` | event | render → host | 内置组件主动导航（navigator） |
 | tree | `ready` | event | host → service | 请求首屏 flow |
 | tree | `inspectTree` | control | host/devtool → render | 导出渲染树元素树 |
-| tree | `measure` | control | service → render | 按 node id 测量矩形 |
+| tree | `measure` | control | service → render | 按组件 id / 元素 locator 测量矩形 |
 | query | `select` | call/control | service → host → render | 在渲染树中查 selector，返回 rect/dataset/scroll |
 | query | `intersection` | control/event | service ↔ render | observe/unobserve 与 IntersectionObserver entry |
 | canvas | `measure` | call/control | service → host → render | 测量 canvas 节点 |

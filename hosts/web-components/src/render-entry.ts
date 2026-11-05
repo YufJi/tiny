@@ -1,4 +1,4 @@
-import type { TreeRenderer } from '@tiny/runtime'
+import type { TemplateRegistry, TreeRenderer } from '@tiny/runtime'
 import { createGlassRenderTree } from './render-tree'
 import {
   BUILTIN_BASE_STYLES,
@@ -15,6 +15,11 @@ export type RenderEntryOptions = {
   pageId?: string
   /** Document used to install built-in styles; defaults to the current one. */
   document?: Document
+  /**
+   * Compiled template groups. The render thread installs them through
+   * `setTemplates` before the first mount.
+   */
+  loadTemplates?: () => Promise<TemplateRegistry> | TemplateRegistry
 }
 
 /** Renderer factory a host can boot over any transport. */
@@ -23,6 +28,8 @@ export type GlassRenderEntry = {
   prepare: () => void
   createRenderer: () => TreeRenderer
   pageId?: string
+  /** Forwarded to `bootTreeThread`, which parks flows until templates load. */
+  loadTemplates?: () => Promise<TemplateRegistry> | TemplateRegistry
 }
 
 /**
@@ -57,5 +64,6 @@ export function createGlassRenderEntry(options: RenderEntryOptions = {}): GlassR
       ...(options.resolveAssetUrl ? { resolveAssetUrl: options.resolveAssetUrl } : {}),
     }),
     ...(options.pageId ? { pageId: options.pageId } : {}),
+    ...(options.loadTemplates ? { loadTemplates: options.loadTemplates } : {}),
   }
 }

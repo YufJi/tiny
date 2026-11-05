@@ -1,0 +1,10 @@
+tiny-web-view {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+tiny-web-view[hidden] {
+  display: none;
+}
+

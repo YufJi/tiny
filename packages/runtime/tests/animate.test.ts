@@ -31,7 +31,7 @@ function createTemplates() {
     templateExtension: '.wxml',
     templateScriptExtension: '.wxs',
   })
-  group.addTmpl(PAGE_PATH, '<view class="target" id="target">one</view>')
+  group.addTmpl(PAGE_PATH, '<view id="scroll" class="source"><view class="target" id="target">one</view></view>')
   const groupList = new Function(`return ${group.getTmplGenObjectGroups()}`)() as Record<string, unknown>
   return {
     groupList,
@@ -159,6 +159,37 @@ describe('this.animate', () => {
     expect(clears).toHaveLength(0)
     const codes = (host.diagnostics ?? []).map((diagnostic) => diagnostic.code)
     expect(codes.filter((code) => code === 'ANIMATION_TARGET_MISSING')).toHaveLength(1)
+    await host.close()
+  })
+
+  test('forwards scrollSource and offsets as a scroll-driven animation', async () => {
+    const plays: RenderAnimationRequest[] = []
+    const clears: RenderClearAnimationRequest[] = []
+    const { host } = await boot({
+      plays,
+      clears,
+      pageOptions: {
+        onReady(this: {
+          animate: (selector: string, keyframes: unknown[], duration: number, options: Record<string, unknown>) => boolean
+        }) {
+          this.animate('#target', [{ borderRadius: '50%' }], 2000, {
+            scrollSource: '.source',
+            timeRange: 2000,
+            startScrollOffset: 10,
+            endScrollOffset: 110,
+          })
+        },
+      },
+    })
+
+    await new Promise((resolve) => setTimeout(resolve, 120))
+    const scrollPlay = plays.find((play) => play.scroll)
+    expect(scrollPlay?.scroll).toMatchObject({
+      startOffset: 10,
+      endOffset: 110,
+      timeRange: 2000,
+    })
+    expect(scrollPlay?.scroll?.sourceViewId).toBeTruthy()
     await host.close()
   })
 

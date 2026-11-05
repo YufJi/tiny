@@ -180,5 +180,4 @@ export {
   getStatusBarHeight,
   getFrameSliceOptions,
   getRandomInt,
-  generateGridList
 }

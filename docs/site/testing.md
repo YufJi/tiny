@@ -3,14 +3,14 @@ title: '用真实小程序验收，'
 highlight: '不只跑单元测试'
 eyebrow: '测试与验收'
 lede: >-
-  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。288 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，58 个浏览器步骤验证端到端行为；iOS 宿主另有 7 个 fixture 的 WKWebView + JSCore smoke。
+  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。388 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，61 个浏览器步骤验证端到端行为；iOS 宿主另有 7 个 fixture 的 WKWebView + JSCore smoke。
 stats:
-  - ['288', '单元测试']
+  - ['340', '单元测试']
   - ['58', '浏览器步骤']
   - ['5', '浏览器流程']
   - ['7', '测试小程序']
   - ['7', 'iOS fixture smoke']
-description: '小程序引擎的验收方式：构建、内核检查、288 个单元测试、58 个浏览器步骤、七套测试小程序和 iOS 宿主 smoke。'
+description: '小程序引擎的验收方式：构建、内核检查、388 个单元测试、61 个浏览器步骤、七套测试小程序和 iOS 宿主 smoke。'
 name: '测试'
 pageTitle: '测试与验收 · Tiny 小程序引擎'
 order: 8
@@ -71,7 +71,7 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 :::
 ::::
 
-## 288 个单元测试，按包执行 {#units kicker="单元测试"}
+## 388 个单元测试，按包执行 {#units kicker="单元测试"}
 
 没有全局 test runner，每个包单独跑，避免隐式耦合，也方便定位失败。
 
@@ -84,11 +84,12 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 | `@tiny/template-compiler` | 44 | 脚本依赖、WXS transform、模块表、动态事件元数据、change:prop、import/include、模板别名、ProcGen 签名、绑定表复用、事件简写、data-* 绑定、stringify 往返 |
 | `@tiny/stylesheet-compiler` | 36 | class/tag 前缀、rpx/calc、@import 编码和包装、@layer、:host 低优先级、hostAttribute、keyframes、page 根节点 |
 | `@tiny/cli` | 18 | manifest 全产物、兼容输入配置、WXS 双注册、配置合并、service/templates 入口、TS/source map、样式 role、tag marker |
-| `@tiny/host-web-components` | 52 | 24 个 tag 模板、共享 behaviors、button 对齐、label、input、checkbox/slider/switch、progress/swiper/icon、image/icon 渲染 |
-| `@tiny/runtime` | 111 | 全局安装和命名、双线程 bootstrap、逻辑树、tree protocol/patch diff、headless renderer、组件 schema、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、API host、诊断、WXS 宽松求值、`this.animate`、事件冒泡/几何 |
+| `@tiny/host-web-components` | 116 | 39 个 tag 模板、共享 behaviors、button 对齐、label、input、checkbox/slider/switch、progress/swiper/icon、image/icon 渲染、表单节点 props 收集 |
+| `@tiny/runtime` | 143 | 全局安装和命名、双线程 bootstrap、逻辑树、tree protocol/patch diff、两次求值与 locator 寻址、headless renderer、组件 schema、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、API 注入缝、诊断、WXS 宽松求值、`this.animate`、事件冒泡/几何 |
+| `@tiny/api` | 4 | 微信兼容 API 表：storage 同步/异步、request 回调、canIUse、动画与 canvas stub |
 
 :::callout{title="单测也会跑真实连接"}
-Bridge 测试会真的建立两条内存连接并完成握手；Bridge 测试会真的建立两条内存连接并完成握手；runtime 测试会启动 service 逻辑树和 headless render tree、注册 Page、执行 bootstrap 和导航，并验证 tree flow 与 patch。这里没有把整个引擎 mock 掉的做法。这里没有把整个引擎 mock 掉的做法。
+Bridge 测试会真的建立两条内存连接并完成握手；runtime 测试会启动 service 逻辑树和 headless render tree、注册 Page、执行 bootstrap 和导航，并验证 tree flow 与 patch。这里没有把整个引擎 mock 掉的做法。
 :::
 
 ## iOS 宿主单独验收 {#ios kicker="原生宿主"}

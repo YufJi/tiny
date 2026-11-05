@@ -1,5 +1,6 @@
+import { createApiHost } from '@tiny/api'
 import { bootServiceThread, resolveAssetPath } from '@tiny/runtime'
-import type { RuntimeManifest, TemplateRegistry } from '@tiny/runtime'
+import type { MiniProgramApiHost, RuntimeManifest, TemplateRegistry } from '@tiny/runtime'
 import type { Transport, TransportFrame } from '@tiny/bridge'
 import { installHostShims } from './shims'
 import { createRemoteCanvasAdapter } from './canvas'
@@ -106,6 +107,25 @@ function performanceExtension(): Record<string, unknown> {
 }
 
 /**
+ * Device facts the JSCore engine cannot observe from inside the service
+ * context: the menu-button geometry comes from the native chrome, performance
+ * from the engine's own clock.
+ */
+function createIOSApiExtensions(iosHost: HostGlobal): MiniProgramApiHost {
+  return {
+    getMenuButtonBoundingClientRect: () => iosHost.menuButton ?? {
+      width: 87,
+      height: 32,
+      top: 48,
+      right: 365,
+      bottom: 80,
+      left: 278,
+    },
+    getPerformance: performanceExtension,
+  }
+}
+
+/**
  * Boot one mini-program service thread inside a JavaScriptCore context.
  *
  * The native host evaluates the generic engine after installing `__tinySend`,
@@ -172,17 +192,10 @@ export function startTinyService(app: TinyIOSApp): void {
         if (!resolved) return undefined
         return app.assetsBase + resolved.split('/').map(encodeURIComponent).join('/')
       },
-      apiExtensions: {
-        getMenuButtonBoundingClientRect: () => iosHost.menuButton ?? {
-          width: 87,
-          height: 32,
-          top: 48,
-          right: 365,
-          bottom: 80,
-          left: 278,
-        },
-        getPerformance: performanceExtension,
-      },
+      apiHost: (context) => ({
+        ...createApiHost(context),
+        ...createIOSApiExtensions(iosHost),
+      }),
     })
   } catch (error) {
     reportError(`service bootstrap: ${errorText(error)}`)

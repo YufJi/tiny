@@ -7,14 +7,14 @@ export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: builtinDefinitionName('textarea'),
     template: ctx.template('textarea'),
-    behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent, ctx.behaviors.classPrefix],
+    behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent, ctx.behaviors.classPrefix, ctx.behaviors.autofill],
     properties: {
-      ariaLabel: { type: String, value: '' },
       value: { type: String, value: '' },
       placeholder: { type: String, value: '' },
       placeholderStyle: { type: String, value: '' },
       disabled: { type: Boolean, value: false },
-      maxlength: { type: Number, value: 140 },
+      maxlength: { type: Number, value: 140, observer: 'maxlengthChanged' },
+      adjustKeyboardTo: { type: String, value: 'cursor' },
       autoFocus: { type: Boolean, value: false },
       focus: { type: Number, value: 0 },
       autoHeight: { type: Boolean, value: false },
@@ -98,20 +98,64 @@ export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
         const height = Number(element.scrollHeight ?? 0)
         if (height > 0) element.style.height = `${height}px`
       },
+      maxlengthChanged(next: unknown): void {
+        const max = Number(next)
+        if (!(max > 0)) return
+        const value = String(this.data.value ?? '')
+        if (value.length > max) this.setData({ value: value.slice(0, max) })
+      },
+      getFormData(callback?: (value: unknown) => void): unknown {
+        if (typeof callback === 'function') {
+          callback(this.data.value)
+          return undefined
+        }
+        return this.data.value
+      },
+      resetFormData(): void {
+        this.setData({ value: '' })
+      },
+      autofillGetValue(): unknown {
+        return this.data.value
+      },
+      autofillSetValue(value: unknown): void {
+        const next = String(value ?? '')
+        this.setData({ value: next })
+        this.triggerEvent('change', { value: next })
+      },
       handleInput(event: glassEasel.ShadowedEvent<unknown>) {
         const value = valueFromEvent(event)
         this.setData({ value })
+        const text = String(value)
+        const lineCount = text.split('\n').length
+        const element = this.textareaElement() as unknown as {
+          scrollHeight?: number
+          style?: { height?: string }
+        } | null
+        const lineHeight = 1.2 * 16
+        const height = Math.max(Number(element?.scrollHeight ?? 0), lineHeight)
+        const scale = typeof window !== 'undefined' && window.innerWidth > 0
+          ? 750 / window.innerWidth
+          : 1
         this.triggerEvent('input', { value }, { bubbles: true, composed: true })
-        this.triggerEvent('linechange', { value, lineCount: String(value).split('\n').length }, { bubbles: true, composed: true })
+        this.triggerEvent(
+          'linechange',
+          { height, heightRpx: Math.round(scale * height), lineHeight, lineCount },
+          { bubbles: true, composed: true },
+        )
         this.scheduleAutoHeight()
       },
       handleFocus(event: glassEasel.ShadowedEvent<unknown>) {
-        this.triggerEvent('focus', { value: valueFromEvent(event) ?? this.data.value }, { bubbles: true, composed: true })
+        this.triggerEvent(
+          'focus',
+          { value: valueFromEvent(event) ?? this.data.value, height: 0 },
+          { bubbles: true, composed: true },
+        )
       },
       handleBlur(event: glassEasel.ShadowedEvent<unknown>) {
         const value = valueFromEvent(event) ?? this.data.value
         this.setData({ value })
-        this.triggerEvent('blur', { value }, { bubbles: true, composed: true })
+        const cursor = Number((event.detail as { cursor?: unknown } | undefined)?.cursor ?? -1)
+        this.triggerEvent('blur', { value, cursor }, { bubbles: true, composed: true })
       },
       handleConfirm(event: glassEasel.ShadowedEvent<unknown>) {
         this.triggerEvent('confirm', { value: valueFromEvent(event) ?? this.data.value }, { bubbles: true, composed: true })

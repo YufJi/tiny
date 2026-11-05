@@ -54,6 +54,9 @@ importers:
 
   hosts/browser:
     dependencies:
+      '@tiny/api':
+        specifier: workspace:*
+        version: link:../../packages/api
       '@tiny/bridge':
         specifier: workspace:*
         version: link:../../packages/bridge
@@ -67,6 +70,9 @@ importers:
 
   hosts/ios:
     dependencies:
+      '@tiny/api':
+        specifier: workspace:*
+        version: link:../../packages/api
       '@tiny/bridge':
         specifier: workspace:*
         version: link:../../packages/bridge
@@ -128,6 +134,25 @@ importers:
         version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
 
   native/host-core-wasm: {}
+
+  packages/api:
+    dependencies:
+      '@tiny/manifest':
+        specifier: workspace:*
+        version: link:../manifest
+      '@tiny/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
 
   packages/bridge:
     devDependencies:
@@ -520,9 +545,6 @@ packages:
   '@jest/schemas@29.6.3':
     resolution: {integrity: sha512-mo5j5X+jIZmJQveBKeS/clAueipV7KgiX1vMgCxam1RNYiqE1w62n0/tJJnHtjW8ZHcQco5gY85jA3mi0L+nSA==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
-
-  '@jridgewell/sourcemap-codec@1.5.5':
-    resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
 
   '@jridgewell/sourcemap-codec@1.6.0':
     resolution: {integrity: sha512-T7jf+5zgsZHwNJ4lvQ7/aezbyk0nNX+zJVWpmHA7VYsEx7a7qr5Rg5IbtJFqkgze5Y2sruq1RUY8Q837Od7iFw==}
@@ -1609,8 +1631,6 @@ snapshots:
     dependencies:
       '@sinclair/typebox': 0.27.10
 
-  '@jridgewell/sourcemap-codec@1.5.5': {}
-
   '@jridgewell/sourcemap-codec@1.6.0': {}
 
   '@nodelib/fs.scandir@2.1.5':
@@ -2059,7 +2079,7 @@ snapshots:
 
   magic-string@0.30.21:
     dependencies:
-      '@jridgewell/sourcemap-codec': 1.5.5
+      '@jridgewell/sourcemap-codec': 1.6.0
 
   magic-string@1.4.5:
     dependencies:

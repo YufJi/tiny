@@ -13,6 +13,10 @@ export type {
 export type { AssetUrlResolver } from './assets'
 export { resolveAssetPath } from './assets'
 
+// The `wx://` behavior contract shared by both threads. Hosts build their
+// render-side registry from this list so it cannot drift from the kernel.
+export { BUILTIN_BEHAVIOR_NAMES, type BuiltinBehaviorName } from './component/behaviors'
+
 export type {
   BuiltinComponentDefinitions,
   BuiltinComponentFactory,
@@ -28,6 +32,7 @@ export type {
   HostApiParams,
   InspectNode,
   LegacyCanvasRequest,
+  QueryNodeSnapshot,
   RenderThreadConnector,
   RuntimeHostOptions,
   RuntimeManifest,
@@ -43,6 +48,12 @@ export type {
 export * from './tree'
 
 export { bootServiceThread } from './service'
+export type {
+  MiniProgramApiHost,
+  ServiceApiContext,
+  ServiceApiFactory,
+  TabBarApi,
+} from './service'
 
 export {
   createDefaultWxsCompiler,

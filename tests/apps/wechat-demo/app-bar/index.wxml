@@ -1,0 +1,3 @@
+<view wx:if="{{showAppbar}}">
+	<app-bar-course></app-bar-course>
+</view>

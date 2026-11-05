@@ -25,9 +25,10 @@ describe('render tree diff', () => {
       element('b', 'button', { props: { type: 'primary' } }),
     ]
     const patches = diffRenderTree(tree(), next)
-    expect(patches).toContainEqual({ type: 'props', id: 'a', props: { hidden: true }, removed: [] })
-    expect(patches).toContainEqual({ type: 'text', id: 'label', text: 'hi' })
-    expect(patches.some((patch) => patch.type === 'insert' && patch.parentId === 'root')).toBe(true)
+    // Elements are addressed by a component-scoped locator; the root keeps its id.
+    expect(patches).toContainEqual({ type: 'props', target: 'root#0', props: { hidden: true }, removed: [] })
+    expect(patches).toContainEqual({ type: 'text', target: 'root#1', text: 'hi' })
+    expect(patches.some((patch) => patch.type === 'insert' && patch.parent === 'root')).toBe(true)
   })
 
   test('removes children back-to-front and reorders stable keyed children', () => {
@@ -46,7 +47,7 @@ describe('render tree diff', () => {
     })
     const patches = diffRenderTree(previous, next)
     expect(patches.find((patch) => patch.type === 'remove')).toMatchObject({
-      parentId: 'list',
+      parent: 'list',
       index: 1,
       count: 1,
     })

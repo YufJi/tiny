@@ -2,8 +2,18 @@ import { TINY_ENGINE_NAMING } from './engine-naming'
 
 export const BUILTIN_COMPONENT_TAGS = [
   'view',
+  'grid-view',
+  'cover-view',
+  'cover-image',
+  'root-portal',
+  'page-container',
+  'movable-area',
+  'movable-view',
+  'page-meta',
+  'navigation-bar',
   'button',
   'text',
+  'rich-text',
   'label',
   'input',
   'checkbox',
@@ -12,6 +22,9 @@ export const BUILTIN_COMPONENT_TAGS = [
   'radio-group',
   'icon',
   'image',
+  'audio',
+  'video',
+  'map',
   'navigator',
   'scroll-view',
   'slider',
@@ -19,12 +32,14 @@ export const BUILTIN_COMPONENT_TAGS = [
   'switch',
   'swiper',
   'swiper-item',
+  'match-media',
   'canvas',
   'textarea',
   'form',
   'picker',
   'picker-view',
   'picker-view-column',
+  'web-view',
 ] as const
 
 export type BuiltinComponentTag = (typeof BUILTIN_COMPONENT_TAGS)[number]

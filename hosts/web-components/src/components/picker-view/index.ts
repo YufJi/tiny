@@ -1,55 +1,79 @@
-import type * as glassEasel from 'glass-easel'
+import { bindHostListeners, unbindHostListeners } from '../../behaviors'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { builtinDefinitionName } from '../../tags'
 
 type PickerColumn = {
   is?: string
-  applyOptions?: (options: {
-    indicatorStyle?: string
-    indicatorClass?: string
-    maskStyle?: string
-    maskClass?: string
-  }) => void
-  setCurrent?: (index: number) => number
-  setColumnIndex?: (index: number) => void
+  data?: Record<string, unknown>
+  setData?: (data: Record<string, unknown>) => void
+  _setCurrent?: (index: number) => void
+  _getCurrent?: () => number
+  _setMaskStyle?: (className: string, style: string) => void
+  _setIndicatorStyle?: (className: string, style: string) => void
+  _getIndicatorHeight?: () => number
+  _setHeight?: (height: number, itemHeight: number) => void
+  _init?: () => void
+  _update?: () => void
 }
 
+type PickerViewRuntime = {
+  _columns?: PickerColumn[] | null
+  _columnsDirty?: boolean
+  _savedValue?: number[] | null
+  _pickerHeight?: number | null
+  getBackendElement?: () => { offsetHeight?: number } | null
+  getShadowRoot?: () => {
+    getElementById?: (id: string) => unknown
+  } | null
+}
+
+/**
+ * Mirrors `wx-picker-view`: the host is only the flex wrapper; every column
+ * owns its mask/indicator/content, and the parent forwards value updates,
+ * style options and immediateChange, then rebuilds the value array from the
+ * column currents on wxPickerColumn* events.
+ */
 export function definePickerView(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: builtinDefinitionName('picker-view'),
     template: ctx.template('picker-view'),
-    behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent],
+    behaviors: [ctx.behaviors.base, ctx.behaviors.dataComponent, ctx.behaviors.reload],
     properties: {
-      ariaLabel: { type: String, value: '' },
-      value: { type: Array, value: [] },
+      value: { type: Array, value: [], observer: '_valueChanged' },
       indicatorStyle: { type: String, value: '' },
       indicatorClass: { type: String, value: '' },
       maskStyle: { type: String, value: '' },
       maskClass: { type: String, value: '' },
-    },
-    observers: {
-      value() {
-        this.syncColumnValues()
-      },
-      'indicatorStyle, indicatorClass, maskStyle, maskClass'() {
-        this.syncColumnOptions()
-      },
+      immediateChange: { type: Boolean, value: false, observer: '_immediateChangeChanged' },
     },
     lifetimes: {
       created() {
-        // Children are not instantiated yet when `created` runs.
+        const runtime = this as unknown as PickerViewRuntime
+        runtime._columns = null
+        runtime._columnsDirty = false
+        runtime._pickerHeight = null
+        bindHostListeners(this, {
+          wxPickerColumnValueChanged: () => {
+            ;(this as unknown as { handleColumnValueChanged: () => void }).handleColumnValueChanged()
+          },
+          wxPickerColumnValueChangeStart: () => {
+            this.triggerEvent('pickstart', {})
+          },
+          wxPickerColumnValueChangeEnd: () => {
+            this.triggerEvent('pickend', {})
+          },
+        })
+        // EmptyBackend tests do not run `attached`; columns are still being
+        // created during `created`, so initialize on the next task.
         setTimeout(() => {
-          this.syncColumnOptions()
-          this.syncColumnValues()
+          ;(this as unknown as { _initColumns: () => void })._initColumns()
         }, 0)
       },
       attached() {
-        this.syncColumnOptions()
-        this.syncColumnValues()
+        ;(this as unknown as { _initColumns: () => void })._initColumns()
       },
-      ready() {
-        this.syncColumnOptions()
-        this.syncColumnValues()
+      detached() {
+        unbindHostListeners(this)
       },
     },
     options: ctx.hostOptions('picker-view', { multipleSlots: true }),
@@ -65,46 +89,115 @@ export function definePickerView(ctx: BuiltinContext): BuiltinDefinition {
           if (children) this.collectColumns(children, out)
         }
       },
-      getColumns(): PickerColumn[] {
-        const columns: PickerColumn[] = []
-        this.collectColumns(
-          (this as unknown as { childNodes?: unknown[] }).childNodes,
-          columns,
+      _getColumns(): PickerColumn[] {
+        const runtime = this as unknown as PickerViewRuntime
+        if (runtime._columnsDirty || !runtime._columns) {
+          const columns: PickerColumn[] = []
+          this.collectColumns((this as unknown as { childNodes?: unknown[] }).childNodes, columns)
+          runtime._columns = columns
+          runtime._columnsDirty = false
+        }
+        return runtime._columns ?? []
+      },
+      _getPickerHeight(): number {
+        const runtime = this as unknown as PickerViewRuntime
+        if (runtime._pickerHeight === null || runtime._pickerHeight === undefined) {
+          runtime._pickerHeight = Number(runtime.getBackendElement?.()?.offsetHeight ?? 0)
+        }
+        return runtime._pickerHeight
+      },
+      _getIndicatorHeight(): number {
+        const column = this._getColumns()[0]
+        if (!column) return 34
+        column._setIndicatorStyle?.(
+          String(this.data.indicatorClass ?? ''),
+          String(this.data.indicatorStyle ?? ''),
         )
-        return columns
+        return Number(column._getIndicatorHeight?.() ?? 34)
       },
-      syncColumnOptions(): void {
-        this.getColumns().forEach((column, index) => {
-          column.setColumnIndex?.(index)
-          column.applyOptions?.({
-            indicatorStyle: String(this.data.indicatorStyle ?? ''),
-            indicatorClass: String(this.data.indicatorClass ?? ''),
-            maskStyle: String(this.data.maskStyle ?? ''),
-            maskClass: String(this.data.maskClass ?? ''),
-          })
-        })
+      _setColumnStyles(column: PickerColumn, height: number, indicatorHeight: number) {
+        column._setMaskStyle?.(
+          String(this.data.maskClass ?? ''),
+          String(this.data.maskStyle ?? ''),
+        )
+        column._setIndicatorStyle?.(
+          String(this.data.indicatorClass ?? ''),
+          String(this.data.indicatorStyle ?? ''),
+        )
+        column._setHeight?.(height, indicatorHeight)
       },
-      syncColumnValues(): void {
+      _initColumns(attempt = 0) {
+        const runtime = this as unknown as PickerViewRuntime
+        runtime._columnsDirty = true
+        const columns = this._getColumns()
+        if (!columns.length) {
+          if (attempt < 10) setTimeout(() => this._initColumns(attempt + 1), 0)
+          return
+        }
         const values = Array.isArray(this.data.value) ? this.data.value : []
-        this.getColumns().forEach((column, index) => {
-          column.setColumnIndex?.(index)
-          column.setCurrent?.(Number(values[index] ?? 0))
+        const height = this._getPickerHeight()
+        const indicatorHeight = this._getIndicatorHeight()
+        columns.forEach((column, index) => {
+          this._setColumnStyles(column, height, indicatorHeight)
+          column._setCurrent?.(Number(values[index] ?? 0))
+          column.setData?.({ immediateChange: Boolean(this.data.immediateChange) })
+          column._init?.()
+        })
+        this._valueChanged(this.data.value)
+      },
+      _valueChanged(value: unknown) {
+        const values = Array.isArray(value) ? value : []
+        const columns = this._getColumns()
+        columns.forEach((column, index) => {
+          column._setCurrent?.(Number(values[index] ?? 0))
+          column._update?.()
         })
       },
-      handleColumnChange(event: glassEasel.ShadowedEvent<unknown>) {
-        const detail = (event.detail ?? {}) as { column?: unknown; value?: unknown }
-        const column = Number(detail.column ?? -1)
+      _immediateChangeChanged(next: boolean) {
+        for (const column of this._getColumns()) {
+          column.setData?.({ immediateChange: Boolean(next) })
+        }
+      },
+      handleColumnValueChanged() {
+        const columns = this._getColumns()
+        if (!columns.length) return
+        const value = columns.map((column) => Number(column._getCurrent?.() ?? 0))
+        this.setData({ value })
+        this.triggerEvent('change', { value })
+      },
+      /** Kept for the existing unit harness and simple hosts. */
+      handleColumnChange(event: { detail?: { column?: unknown; value?: unknown } }) {
+        const column = Number(event.detail?.column ?? -1)
         if (column < 0) return
         const value: unknown[] = Array.isArray(this.data.value) ? [...this.data.value] : []
-        value[column] = Number(detail.value ?? 0)
+        value[column] = Number(event.detail?.value ?? 0)
         this.setData({ value })
-        this.triggerEvent('change', { value }, { bubbles: true, composed: true })
+        this.triggerEvent('change', { value })
       },
-      handleColumnStart() {
-        this.triggerEvent('pickstart', {}, { bubbles: true, composed: true })
+      saved(state: Record<string, unknown>) {
+        const runtime = this as unknown as PickerViewRuntime
+        const savedValue = this._getColumns().map((column) => Number(column._getCurrent?.() ?? 0))
+        runtime._savedValue = savedValue
+        const fields: Record<string, unknown> = {}
+        ;(this as unknown as {
+          saveCompVar: (state: Record<string, unknown>, fields: string[]) => void
+        }).saveCompVar(fields, ['_savedValue'])
+        ;(this as unknown as {
+          saveState: (target: Record<string, unknown>, state: Record<string, unknown>) => void
+        }).saveState(state, fields)
       },
-      handleColumnEnd() {
-        this.triggerEvent('pickend', {}, { bubbles: true, composed: true })
+      restored(state: Record<string, unknown>) {
+        const restored = (this as unknown as {
+          restoreState: (target: Record<string, unknown>) => Record<string, unknown> | undefined
+        }).restoreState(state)
+        if (!restored) return
+        ;(this as unknown as {
+          restoreCompVar: (state: Record<string, unknown>) => void
+        }).restoreCompVar(restored)
+        const runtime = this as unknown as PickerViewRuntime
+        const saved = runtime._savedValue
+        runtime._savedValue = null
+        if (Array.isArray(saved)) this.setData({ value: saved })
       },
     },
   }).general()

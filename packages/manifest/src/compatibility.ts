@@ -86,6 +86,9 @@ export type RuntimeCompatibilityConfig = Pick<
   'api' | 'globals' | 'behaviorScheme' | 'opaqueGlobals'
 >
 
+/** Scheme of the public built-in behaviors when no config overrides it. */
+export const DEFAULT_BEHAVIOR_SCHEME = 'wx://'
+
 export const WECHAT_COMPATIBILITY: ResolvedCompatibilityConfig = Object.freeze({
   preset: 'wechat',
   extensions: Object.freeze({
@@ -112,7 +115,7 @@ export const WECHAT_COMPATIBILITY: ResolvedCompatibilityConfig = Object.freeze({
     getApp: 'getApp',
     getCurrentPages: 'getCurrentPages',
   }),
-  behaviorScheme: 'wx://',
+  behaviorScheme: DEFAULT_BEHAVIOR_SCHEME,
   opaqueGlobals: Object.freeze([
     'webpackJsonp',
     'cloud',

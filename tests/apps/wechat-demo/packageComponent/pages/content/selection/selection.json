@@ -1,3 +1,4 @@
 {
-  "navigationBarTitleText": "selection"
+    "navigationBarTitleText": "selection",
+    "renderer": "webview"
 }

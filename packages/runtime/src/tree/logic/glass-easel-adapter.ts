@@ -124,10 +124,15 @@ export type StyleRegistrationOptions = {
 }
 
 export class GlassEaselRuntimeAdapter {
+  private readonly manifest: Manifest
   readonly backend: glassEasel.GeneralBackendContext
   readonly componentSpace: glassEasel.ComponentSpace
   /** Internal marker behavior for custom form-field components. */
   private readonly formFieldBehavior: glassEasel.GeneralBehavior
+  /** Marker for wrapper components whose shadow tree contains form fields. */
+  private readonly formFieldGroupBehavior: glassEasel.GeneralBehavior
+  /** `wx://label-target`: receives `labelTap` from the built-in `<label>`. */
+  private readonly labelTargetBehavior: glassEasel.GeneralBehavior
   private readonly templates: TemplateRegistry
   private readonly styleScopeIds = new Map<string, number>()
   private readonly scopeIdsByName = new Map<string, number>()
@@ -148,6 +153,7 @@ export class GlassEaselRuntimeAdapter {
   private readonly componentPaths = new WeakMap<object, string>()
   private readonly componentUsageCounters = new Map<string, number>()
   private readonly methodCallerComponents = new WeakMap<object, glassEasel.GeneralComponent>()
+  private readonly setDataCallbackComponents = new WeakSet<object>()
   private readonly onDiagnostic?: (diagnostic: import('../../diagnostics').RuntimeDiagnostic) => void
   private readonly logicPageOptions?: GlassEaselAdapterOptions['logicPageOptions']
   private readonly logicComponentDefinitions?: GlassEaselAdapterOptions['logicComponentDefinitions']
@@ -173,6 +179,8 @@ export class GlassEaselRuntimeAdapter {
   private readonly logicAnimationFactory?: GlassEaselAdapterOptions['logicAnimationFactory']
 
   constructor(options: GlassEaselAdapterOptions) {
+    this.manifest = options.manifest
+    this.manifest = options.manifest
     this.backend = options.backend
     this.templates = options.templates
     this.logicPageOptions = options.logicPageOptions
@@ -190,6 +198,14 @@ export class GlassEaselRuntimeAdapter {
     })
     this.formFieldBehavior = this.componentSpace.defineBehavior({
       is: TINY_ENGINE_NAMING.formFieldBehaviorId,
+    })
+    this.formFieldGroupBehavior = this.componentSpace.defineBehavior({
+      is: `${TINY_ENGINE_NAMING.behaviorPrefix}form-field-group`,
+    })
+    // Marker only: label activation is dispatched render-side (`labelTap` ->
+    // `handleLabelTap` in `hosts/web-components/src/behaviors/labelTarget.ts`).
+    this.labelTargetBehavior = this.componentSpace.defineBehavior({
+      is: `${TINY_ENGINE_NAMING.behaviorPrefix}label-target`,
     })
     this.onDiagnostic = options.onDiagnostic
   }
@@ -329,7 +345,10 @@ export class GlassEaselRuntimeAdapter {
         extraStyleScope: glassEasel.StyleScopeManager.globalScope(),
       })
       .methodCallerInit(function (this: glassEasel.GeneralComponent) {
-        return adapter.createEventMethodCaller(this)
+        // WeChat copies the page's non-lifecycle instance fields (`extraLine`,
+        // custom counters, ...) onto the page instance; methods close over
+        // `this.<field>` and would otherwise hit `undefined`.
+        return adapter.createEventMethodCaller(this, adapter.logicPageFields(page.path))
       })
       .observer('**', function (this: glassEasel.GeneralComponent) {
         adapter.notifyLogicDataChange(adapter.resolveMethodCaller(this) ?? this)
@@ -382,6 +401,13 @@ export class GlassEaselRuntimeAdapter {
     const scopeId = this.componentSpace.styleScopeManager.register(name)
     this.scopeIdsByName.set(name, scopeId)
     return scopeId
+  }
+
+  /** Compiler-assigned style scope of a mounted page, if it has one. */
+  pageScopeName(pagePath: string): string | undefined {
+    const scopeId = this.pageStyleScopes.get(pagePath)
+    if (scopeId === undefined) return undefined
+    return this.componentSpace.styleScopeManager.queryName(scopeId)
   }
 
   private ensurePageScope(page: PageArtifact): number {
@@ -896,12 +922,18 @@ export class GlassEaselRuntimeAdapter {
     const reservedData = Object.fromEntries(
       [...reservedNames].map((name) => [name, schema.properties[name]?.value]),
     )
+    const logicDefinition = this.logicComponentDefinitions?.get(schema.path)
+    const builtinBehaviors: glassEasel.GeneralBehavior[] = []
+    if (schema.formField) builtinBehaviors.push(this.formFieldBehavior)
+    if (schema.formFieldGroup) builtinBehaviors.push(this.formFieldGroupBehavior)
+    if (schema.labelTarget) builtinBehaviors.push(this.labelTargetBehavior)
     let builder: any = this.componentSpace
       .defineWithMethodCaller(schema.path)
       .definition({
         properties: declaredProperties as never,
         externalClasses: schema.externalClasses,
-        behaviors: schema.formField ? [this.formFieldBehavior] : undefined,
+        behaviors: builtinBehaviors.length > 0 ? builtinBehaviors : undefined,
+        listeners: logicDefinition?.listeners as never,
       })
       .template({
         groupList: this.templates.groupList,
@@ -940,7 +972,6 @@ export class GlassEaselRuntimeAdapter {
         adapter.methodCallerComponents.set(methodCaller as object, this)
         return methodCaller
       })
-    const logicDefinition = this.logicComponentDefinitions?.get(schema.path)
     if (logicDefinition) {
       const methods = Object.fromEntries(
         [...logicDefinition.methods].map(([name, method]) => [
@@ -1095,6 +1126,27 @@ export class GlassEaselRuntimeAdapter {
     return result
   }
 
+  /**
+   * Absolute paths of the page's `usingComponents` table.
+   *
+   * The render side needs the *tag -> path* map to resolve `generic:alias`
+   * targets declared on page-level components (their owner is the page root).
+   */
+  pageUsingComponents(pagePath: string): Record<string, string> {
+    const page = this.manifest.pages.find((candidate: PageArtifact) => candidate.path === pagePath)
+    const config = page?.configuration as Record<string, any> | undefined
+    const usingComponents = config?.effective?.usingComponents
+    if (!usingComponents || typeof usingComponents !== 'object') return {}
+    const sources = (config?.usingComponentsSource ?? {}) as Record<string, string>
+    const result: Record<string, string> = {}
+    for (const [tag, reference] of Object.entries(usingComponents as Record<string, unknown>)) {
+      if (typeof reference !== 'string' || reference.length === 0) continue
+      const sourcePath = sources[tag] === 'global' ? '' : pagePath
+      result[tag] = this.resolveComponentReference(sourcePath, reference)
+    }
+    return result
+  }
+
   private resolveComponentUsing(
     path: string,
     config?: Record<string, any>,
@@ -1170,6 +1222,20 @@ export class GlassEaselRuntimeAdapter {
     return output.join('/')
   }
 
+  /** Page options minus lifecycle/data/methods: WeChat copies them to the instance. */
+  private logicPageFields(path: string): Record<string, unknown> {
+    const options = this.logicPageOptions?.get(path) as Record<string, unknown> | undefined
+    if (!options) return {}
+    const fields: Record<string, unknown> = {}
+    for (const [name, value] of Object.entries(options)) {
+      if (typeof value === 'function') continue
+      if (name === 'data' || name === 'methods' || name === 'options' || name === 'behaviors') continue
+      if (PAGE_LIFECYCLE_KEYS.has(name)) continue
+      fields[name] = value
+    }
+    return fields
+  }
+
   private logicPageMethods(path: string): Record<string, (...args: unknown[]) => unknown> {
     const methods: Record<string, (...args: unknown[]) => unknown> = {}
     const options = this.logicPageOptions?.get(path)
@@ -1238,9 +1304,32 @@ export class GlassEaselRuntimeAdapter {
     return undefined
   }
 
-  private createEventMethodCaller(component?: glassEasel.GeneralComponent): unknown {
+  /**
+   * Mini-program event handlers run with a glass method caller as `this`.
+   * glass's `setData` only accepts the patch, while pages commonly pass a
+   * completion callback (`setData(patch, cb)`); preserve the callback on the
+   * component instance so nested page methods also see it.
+   */
+  private ensureSetDataCallback(component: glassEasel.GeneralComponent): void {
+    if (this.setDataCallbackComponents.has(component)) return
+    this.setDataCallbackComponents.add(component)
+    const target = component as unknown as {
+      setData: (data: never, callback?: () => void) => void
+    }
+    const original = target.setData.bind(component)
+    target.setData = (data: never, callback?: () => void): void => {
+      original(data)
+      callback?.()
+    }
+  }
+
+  private createEventMethodCaller(
+    component?: glassEasel.GeneralComponent,
+    initialFields?: Record<string, unknown>,
+  ): unknown {
     const logicMode = Boolean(this.logicComponentDefinitions)
-    const instanceFields: Record<string, unknown> = {}
+    const instanceFields: Record<string, unknown> = { ...(initialFields ?? {}) }
+    if (logicMode && component) this.ensureSetDataCallback(component)
     return new Proxy(instanceFields, {
       has() {
         return true

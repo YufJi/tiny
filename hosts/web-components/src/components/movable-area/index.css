@@ -1,0 +1,10 @@
+tiny-movable-area {
+  display: block;
+  height: 10px;
+  position: relative;
+  width: 10px;
+}
+
+tiny-movable-area[hidden] {
+  display: none;
+}

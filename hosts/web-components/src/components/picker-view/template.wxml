@@ -1,8 +1,1 @@
-<div
-  class="tiny-picker-view-wrapper"
-  role="group"
-  aria-label="{{ariaLabel}}"
-  bind:columnchange="handleColumnChange"
-  bind:columnstart="handleColumnStart"
-  bind:columnend="handleColumnEnd"
-><slot /></div>
+<div id="wrapper" class="tiny-picker-view-wrapper"><slot /></div>

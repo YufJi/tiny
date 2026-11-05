@@ -1,4 +1,4 @@
-import { bootTreeThread, type TreeRenderer } from '@tiny/runtime'
+import { bootTreeThread, type TemplateRegistry, type TreeRenderer } from '@tiny/runtime'
 import { installOffscreenCanvasResponder } from './canvas-bridge'
 import { installPageLifecycleBridge } from './page-lifecycle'
 import { listenForRuntimePort } from './runtime-port'
@@ -11,6 +11,11 @@ export type BrowserRenderEntryOptions = {
   prepare?: () => void
   /** Build the render tree for this render thread (one per page). */
   createRenderer: () => TreeRenderer
+  /**
+   * Template groups for render-time evaluation. Passed to the tree thread,
+   * which parks flows until they are installed.
+   */
+  loadTemplates?: () => Promise<TemplateRegistry> | TemplateRegistry
   /** Page id when the render document was created for a specific page. */
   pageId?: string
 }
@@ -37,6 +42,7 @@ export function bootBrowserRenderEntry(options: BrowserRenderEntryOptions): void
       transport,
       renderer: options.createRenderer(),
       ...(options.pageId ? { initialPageId: options.pageId } : {}),
+      ...(options.loadTemplates ? { loadTemplates: options.loadTemplates } : {}),
     })
     // A host may hand this document a second port when it re-boots the thread.
     // Drop the previous listeners first, otherwise every scroll or pull-down

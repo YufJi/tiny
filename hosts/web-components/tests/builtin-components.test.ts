@@ -9,6 +9,9 @@ import {
   createBuiltinComponents,
 } from '../src'
 import precompiledTemplates from '../src/generated/templates'
+import { applyHostProps } from '../src/render-tree'
+import { getPublicBuiltinBehaviors } from '../src/behaviors'
+import { transformTextContent } from '../src/components/text/content'
 
 function compilePage(source: string): glassEasel.template.ComponentTemplate {
   const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
@@ -26,9 +29,21 @@ function compilePage(source: string): glassEasel.template.ComponentTemplate {
   }
 }
 
+// The template-driven tests build a detached tree; the render tree attaches
+// pages with `pretendAttached`, so group/item registration needs the same.
+function attach(instance: unknown): void {
+  glassEasel.Element.pretendAttached(instance as glassEasel.Element)
+}
+
+function flush(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0))
+}
+
 describe('P0 built-in components', () => {
   test('ships a precompiled template for every tag', () => {
-    expect(Object.keys(precompiledTemplates).sort()).toEqual([...BUILTIN_COMPONENT_TAGS].sort())
+    const templateKeys = Object.keys(precompiledTemplates).filter((key) => key !== 'pull-down-refresher')
+    expect(templateKeys.sort()).toEqual([...BUILTIN_COMPONENT_TAGS].sort())
+    expect(Object.keys(precompiledTemplates)).toContain('pull-down-refresher')
   })
 
   test('exposes every P0 component tag', () => {
@@ -38,20 +53,61 @@ describe('P0 built-in components', () => {
     expect(Object.keys(definitions)).toEqual(expect.arrayContaining([...BUILTIN_COMPONENT_TAGS]))
   })
 
-  test('hides every built-in host tag with the shared [hidden] rule', () => {
+  // `text` has no author display rule, so the UA `[hidden]` rule applies;
+  // WeChat also declares no `wx-text[hidden]`.
+  const TAGS_WITHOUT_AUTHOR_HIDDEN = new Set<string>(['label', 'text', 'root-portal', 'page-container', 'match-media', 'rich-text', 'grid-view', 'page-meta', 'navigation-bar'])
+
+  test('hides every built-in host tag with an author [hidden] rule or the UA default', () => {
     for (const tag of BUILTIN_COMPONENT_TAGS) {
-      expect(BUILTIN_HOST_STYLES).toContain(`${TINY_ENGINE_NAMING.hostTagPrefix}${tag}[hidden]`)
+      const selector = `${TINY_ENGINE_NAMING.hostTagPrefix}${tag}[hidden]`
+      if (TAGS_WITHOUT_AUTHOR_HIDDEN.has(tag)) {
+        expect(BUILTIN_HOST_STYLES).not.toContain(selector)
+        continue
+      }
+      expect(BUILTIN_HOST_STYLES).toContain(selector)
     }
   })
 
+  test('ships the WeChat 2.30.1 document base and universal margin reset', () => {
+    // WeChat's page WebView starts with these document rules; app WXSS written
+    // for WeChat assumes the `* { margin: 0 }` reset is already in place.
+    expect(BUILTIN_HOST_STYLES).toContain('body,\nhtml {\n  -webkit-touch-callout: none;')
+    expect(BUILTIN_HOST_STYLES).toContain('body {\n  -webkit-text-size-adjust: none;')
+    expect(BUILTIN_HOST_STYLES).toContain('* {\n  margin: 0;')
+    expect(BUILTIN_HOST_STYLES).toContain('--safe-area-inset-top: env(safe-area-inset-top);')
+    expect(BUILTIN_HOST_STYLES).toContain('@font-face')
+    expect(BUILTIN_HOST_STYLES).toContain('font-family: weui;')
+  })
+
   test('keeps cross-component layout in public host CSS and private styles in component scopes', () => {
-    expect(BUILTIN_HOST_STYLES).toContain('top: var(--tiny-swiper-item-top, 0)')
-    expect(BUILTIN_HOST_STYLES).toContain('left: var(--tiny-swiper-item-left, 0)')
+    // WeChat absolutely positions each swiper-item and translates it from the
+    // swiper, so the host rule must not depend on the swiper's internals.
+    expect(BUILTIN_HOST_STYLES).toContain('tiny-swiper-item {\n  display: block;\n  overflow: hidden;')
+    expect(BUILTIN_HOST_STYLES).toContain('width: 100%;')
     expect(BUILTIN_HOST_STYLES).not.toContain('.tiny-swiper.is-vertical tiny-swiper-item')
 
     const swiperStyles = BUILTIN_COMPONENT_STYLES.find((style) => style.tag === 'swiper')
     expect(swiperStyles?.scope).toBe('tiny-builtin-swiper')
     expect(swiperStyles?.content).not.toContain(' tiny-swiper-item')
+  })
+
+  test('boolean host props are presence-only attributes', () => {
+    const attributes = new Map<string, string>()
+    const element = {
+      setAttribute: (name: string, value: string) => attributes.set(name, value),
+      removeAttribute: (name: string) => attributes.delete(name),
+    }
+    const component = { getBackendElement: () => element } as unknown as Parameters<typeof applyHostProps>[0]
+    // `disabled="false"` would still match `[disabled]` selectors, so a false
+    // boolean must clear the attribute instead of writing the string.
+    applyHostProps(component, { disabled: true, plain: false, 'data-id': 'x', count: 0 })
+    expect(attributes.get('disabled')).toBe('true')
+    expect(attributes.has('plain')).toBe(false)
+    expect(attributes.get('data-id')).toBe('x')
+    expect(attributes.get('count')).toBe('0')
+    attributes.set('plain', 'false')
+    applyHostProps(component, { plain: false })
+    expect(attributes.has('plain')).toBe(false)
   })
 
   test('button catches native taps and emits a mini-program tap event', () => {
@@ -106,6 +162,7 @@ describe('P0 built-in components', () => {
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const buttonHost = instance.getShadowRoot()?.getElementById('button')?.asGeneralComponent()!
+    attach(buttonHost)
     buttonHost.triggerEvent('touchstart', { touches: [{}] })
     await new Promise((resolve) => setTimeout(resolve, 40))
     expect(buttonHost.data.hovering).toBe(true)
@@ -212,6 +269,7 @@ describe('P0 built-in components', () => {
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const viewHost = instance.getShadowRoot()?.getElementById('box')?.asGeneralComponent()!
+    attach(viewHost)
     viewHost.setData({ hidden: true })
     expect(viewHost.data.hidden).toBe(true)
     expect(viewHost.class).not.toContain('hovered')
@@ -225,6 +283,85 @@ describe('P0 built-in components', () => {
     await new Promise((resolve) => setTimeout(resolve, 450))
     expect(viewHost.data.hovering).toBe(false)
     expect(viewHost.class).not.toContain('hovered')
+  })
+
+  test('view inherits the wx-base aria surface and maps ariaRole to role', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { view: builtins.view },
+      template: compilePage(
+        '<view id="box" aria-role="button" aria-label="hello" aria-valuenow="3" tabindex="2">content</view>',
+      ),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const viewHost = instance.getShadowRoot()?.getElementById('box')?.asGeneralComponent()!
+    expect(viewHost.data.ariaRole).toBe('button')
+    expect(viewHost.data.ariaLabel).toBe('hello')
+    expect(viewHost.data.ariaValuenow).toBe(3)
+    expect(viewHost.data.tabindex).toBe(2)
+
+    const attributes = new Map<string, string>()
+    ;(viewHost as unknown as { getBackendElement: () => unknown }).getBackendElement = () => ({
+      setAttribute: (name: string, value: string) => attributes.set(name, String(value)),
+      removeAttribute: (name: string) => attributes.delete(name),
+    })
+    viewHost.setData({ ariaRole: 'link' })
+    expect(attributes.get('role')).toBe('link')
+    ;(viewHost as unknown as { setAriaRoleDefault: (role: string) => void }).setAriaRoleDefault('img')
+    viewHost.setData({ ariaRole: '' })
+    expect(attributes.get('role')).toBe('img')
+  })
+
+  test('view saves and restores scroll state through the reload behavior', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { view: builtins.view },
+      template: compilePage('<view id="box">content</view>'),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const viewHost = instance.getShadowRoot()?.getElementById('box')?.asGeneralComponent()!
+    attach(viewHost)
+    ;(viewHost as unknown as { getBackendElement: () => unknown }).getBackendElement = () => ({
+      scrollTop: 120,
+      scrollLeft: 7,
+    })
+    const state: Record<string, unknown> = {}
+    ;(viewHost as unknown as {
+      saved: (state: Record<string, unknown>) => void
+    }).saved(state)
+    const runtime = viewHost as unknown as { _scrollTop: number; _scrollLeft: number }
+    expect(runtime._scrollTop).toBe(120)
+    expect(runtime._scrollLeft).toBe(7)
+
+    runtime._scrollTop = 0
+    runtime._scrollLeft = 0
+    ;(viewHost as unknown as {
+      restored: (state: Record<string, unknown>) => void
+    }).restored(state)
+    expect(runtime._scrollTop).toBe(120)
+    expect(runtime._scrollLeft).toBe(7)
+  })
+
+  test('canceltap clears a pending hover immediately', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { button: builtins.button },
+      template: compilePage('<button id="button">Tap</button>'),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const buttonHost = instance.getShadowRoot()?.getElementById('button')?.asGeneralComponent()!
+    attach(buttonHost)
+    buttonHost.triggerEvent('touchstart', { touches: [{}] })
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    expect(buttonHost.data.hovering).toBe(true)
+    buttonHost.triggerEvent('canceltap', {}, { bubbles: true, composed: true })
+    expect(buttonHost.data.hovering).toBe(false)
   })
 
 
@@ -252,9 +389,19 @@ describe('P0 built-in components', () => {
     nativeInput?.triggerEvent('input', { value: 'typed' })
     expect(changes).toEqual([{ value: 'typed', cursor: -1, keyCode: 0 }])
     expect(inputHost?.data.value).toBe('typed')
+
+    inputHost?.setData({ maxlength: 3, value: 'abcdef' })
+    expect(inputHost?.data.value).toBe('abc')
+    const inputRuntime = inputHost as unknown as {
+      autofillGetValue: () => unknown
+      autofillSetValue: (value: unknown) => void
+    }
+    inputRuntime.autofillSetValue('autofilled')
+    expect(inputRuntime.autofillGetValue()).toBe('autofilled')
+    expect(inputHost?.data.value).toBe('autofilled')
   })
 
-  test('checkbox, slider, and switch normalize control values', () => {
+  test('checkbox toggles on tap and slider/switch normalize control values', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)
     const events: Record<string, unknown> = {}
@@ -266,12 +413,9 @@ describe('P0 built-in components', () => {
         switch: builtins.switch,
       },
       template: compilePage(
-        '<checkbox id="checkbox" value="one" bindchange="onCheckbox" /><slider id="slider" value="10" bindchange="onSlider" /><switch id="switch" checked="{{true}}" bindchange="onSwitch" />',
+        '<checkbox id="checkbox" value="one" /><slider id="slider" value="10" bindchange="onSlider" /><switch id="switch" checked="{{true}}" bindchange="onSwitch" />',
       ),
       methods: {
-        onCheckbox(event: glassEasel.ShadowedEvent<unknown>) {
-          events.checkbox = event.detail
-        },
         onSlider(event: glassEasel.ShadowedEvent<unknown>) {
           events.slider = event.detail
         },
@@ -282,13 +426,21 @@ describe('P0 built-in components', () => {
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()
-    const native = (id: string) => host(id)?.getShadowRoot()?.getElementById('native-input')
-    native('checkbox')?.triggerEvent('change', { value: 'one', checked: true })
-    native('slider')?.triggerEvent('change', { value: 42 })
-    native('switch')?.triggerEvent('change', { value: true })
-    expect(events.checkbox).toEqual({ value: 'one', checked: true })
+    host('checkbox')?.triggerEvent('tap', {})
+    expect(host('checkbox')?.data.checked).toBe(true)
+    const slider = host('slider')!
+    ;(slider as unknown as { getShadowRoot: () => unknown }).getShadowRoot = () => ({
+      getElementById: () => ({
+        getBackendElement: () => ({
+          offsetWidth: 100,
+          getBoundingClientRect: () => ({ left: 0 }),
+        }),
+      }),
+    })
+    ;(slider as unknown as { _onTap: (event: unknown) => void })._onTap({ detail: { x: 42 } })
     expect(events.slider).toEqual({ value: 42 })
-    expect(events.switch).toEqual({ value: true })
+    host('switch')?.triggerEvent('tap', {})
+    expect(events.switch).toEqual({ value: false })
   })
 
 
@@ -307,9 +459,10 @@ describe('P0 built-in components', () => {
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const host = instance.getShadowRoot()?.getElementById('switch')?.asGeneralComponent()!
     const html = glassEasel.dumpElementToString(host, true)
-    expect(html).toContain('tiny-switch-checkbox is-checked')
-    expect(html).not.toContain('tiny-switch-input')
-    host.getShadowRoot()?.getElementById('native-input')?.triggerEvent('change', { value: false })
+    expect(html).toContain('tiny-checkbox-input-checked')
+    expect(html).toContain('tiny-switch-input-checked')
+    expect(html).not.toContain('<input')
+    host.triggerEvent('tap', {})
     expect(host.data.checked).toBe(false)
     expect(events).toEqual([{ value: false }])
   })
@@ -337,62 +490,254 @@ describe('P0 built-in components', () => {
       },
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    attach(instance)
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
-    host('b').getShadowRoot()?.getElementById('native-input')?.triggerEvent('change', { value: 'b', checked: true })
+    host('b').triggerEvent('tap', {})
     expect(changes).toEqual([{ value: 'b' }])
     expect(host('a').data.checked).toBe(false)
     expect(host('b').data.checked).toBe(true)
-    expect(host('b').getShadowRoot()?.getElementById('native-input')).toBeDefined()
     const html = glassEasel.dumpElementToString(host('b'), true)
-    expect(html).toContain('tiny-radio-input is-checked')
+    expect(html).toContain('tiny-radio-input-checked')
   })
 
 
-  test('checkbox-group and radio-group apply controlled values', async () => {
+  test('checkbox-group derives value from items and never writes them back', async () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)
     const page = space.defineComponent({
       is: 'page',
-      using: {
-        'checkbox-group': builtins['checkbox-group'],
-        checkbox: builtins.checkbox,
-        'radio-group': builtins['radio-group'],
-        radio: builtins.radio,
-      },
+      using: { 'checkbox-group': builtins['checkbox-group'], checkbox: builtins.checkbox },
       template: compilePage(`
-        <checkbox-group id="cg" value="{{['b']}}">
-          <checkbox id="ca" value="a" />
-          <checkbox id="cb" value="b" />
+        <checkbox-group id="group">
+          <checkbox id="a" value="a" />
+          <checkbox id="b" value="b" checked="{{true}}" />
         </checkbox-group>
-        <radio-group id="rg" value="b">
-          <radio id="ra" value="a" />
-          <radio id="rb" value="b" />
-        </radio-group>
       `),
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    attach(instance)
+    await flush()
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
-    expect(host('ca').data.checked).toBe(false)
-    expect(host('cb').data.checked).toBe(true)
-    expect(host('cg').data.value).toEqual(['b'])
-    expect(host('ra').data.checked).toBe(false)
-    expect(host('rb').data.checked).toBe(true)
-    expect(host('rg').data.value).toBe('b')
-    ;(host('cg') as unknown as { renameItem: (item: unknown, next: string, prev: string) => void })
-      .renameItem(host('cb'), 'c', 'b')
-    expect(host('cg').data.value).toEqual(['c'])
-    ;(host('rg') as unknown as { renameItem: (item: unknown, next: string, prev: string) => void })
-      .renameItem(host('rb'), 'b2', 'b')
-    expect(host('rg').data.value).toBe('b2')
+    expect(host('b').data.checked).toBe(true)
+    expect(host('group').data.value).toEqual(['b'])
 
-    host('cg').setData({ value: ['a'] })
-    host('rg').setData({ value: 'a' })
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(host('ca').data.checked).toBe(true)
-    expect(host('cb').data.checked).toBe(false)
-    expect(host('ra').data.checked).toBe(true)
-    expect(host('rb').data.checked).toBe(false)
+    // Page-driven `checked` changes flow into the derived value.
+    host('a').setData({ checked: true })
+    expect(host('group').data.value).toEqual(['b', 'a'])
+
+    // Unsupported value writes are ignored and never touch the items.
+    host('group').setData({ value: ['z'] })
+    expect(host('a').data.checked).toBe(true)
+    expect(host('b').data.checked).toBe(true)
+
+    // The next item change republishes the value derived from the items.
+    host('b').setData({ checked: false })
+    expect(host('group').data.value).toEqual(['a'])
+  })
+
+  test('checkbox-group keeps empty and duplicate values like WeChat', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { 'checkbox-group': builtins['checkbox-group'], checkbox: builtins.checkbox },
+      template: compilePage(`
+        <checkbox-group id="group">
+          <checkbox id="a" value="" />
+          <checkbox id="b" value="" />
+          <checkbox id="c" value="c" />
+        </checkbox-group>
+      `),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    attach(instance)
+    await flush()
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    const toggle = (id: string) => {
+      host(id).triggerEvent('tap', {})
+    }
+    toggle('a')
+    toggle('b')
+    expect(host('group').data.value).toEqual(['', ''])
+    toggle('c')
+    expect(host('group').data.value).toEqual(['', '', 'c'])
+    toggle('a')
+    expect(host('group').data.value).toEqual(['', 'c'])
+  })
+
+  test('checkbox-group emits change only for user taps', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const changes: unknown[] = []
+    const page = space.defineComponent({
+      is: 'page',
+      using: { 'checkbox-group': builtins['checkbox-group'], checkbox: builtins.checkbox },
+      template: compilePage(`
+        <checkbox-group id="group" bindchange="onChange">
+          <checkbox id="a" value="a" />
+        </checkbox-group>
+      `),
+      methods: {
+        onChange(event: glassEasel.ShadowedEvent<unknown>) { changes.push(event.detail) },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    attach(instance)
+    await flush()
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    host('a').setData({ checked: true })
+    expect(changes).toEqual([])
+    host('a').triggerEvent('tap', {})
+    host('a').triggerEvent('tap', {})
+    expect(changes).toEqual([{ value: [] }, { value: ['a'] }])
+  })
+
+  test('checkbox-group never clears checked items', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { 'checkbox-group': builtins['checkbox-group'], checkbox: builtins.checkbox },
+      template: compilePage(`
+        <checkbox-group id="group">
+          <checkbox id="a" value="" />
+          <checkbox id="b" value="" />
+        </checkbox-group>
+      `),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    attach(instance)
+    await flush()
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    const toggle = (id: string) => {
+      host(id).triggerEvent('tap', {})
+    }
+    toggle('a')
+    toggle('b')
+    expect(host('group').data.value).toEqual(['', ''])
+    // Any late value write must not be written back to the items.
+    host('group').setData({ value: [] })
+    expect(host('a').data.checked).toBe(true)
+    expect(host('b').data.checked).toBe(true)
+  })
+
+  test('radio-group keeps the newest checked item and ignores output writes', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const changes: unknown[] = []
+    const page = space.defineComponent({
+      is: 'page',
+      using: { 'radio-group': builtins['radio-group'], radio: builtins.radio },
+      template: compilePage(`
+        <radio-group id="group" bindchange="onChange">
+          <radio id="a" value="a" checked="{{true}}" />
+          <radio id="b" value="b" checked="{{true}}" />
+          <radio id="c" value="c" />
+        </radio-group>
+      `),
+      methods: {
+        onChange(event: glassEasel.ShadowedEvent<unknown>) { changes.push(event.detail) },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    attach(instance)
+    await flush()
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    const tap = (id: string) => {
+      host(id).triggerEvent('tap', {})
+    }
+    // The last checked item attached wins, like WeChat's `addItem`.
+    expect(host('a').data.checked).toBe(false)
+    expect(host('b').data.checked).toBe(true)
+    expect(host('group').data.value).toBe('b')
+
+    tap('c')
+    expect(host('c').data.checked).toBe(true)
+    expect(host('b').data.checked).toBe(false)
+    expect(host('group').data.value).toBe('c')
+    expect(changes).toEqual([{ value: 'c' }])
+
+    // Tapping the selected radio again is a no-op.
+    tap('c')
+    expect(changes).toEqual([{ value: 'c' }])
+
+    // Page-driven `checked` changes update the value without a change event.
+    host('b').setData({ checked: true })
+    expect(host('b').data.checked).toBe(true)
+    expect(host('c').data.checked).toBe(false)
+    expect(host('group').data.value).toBe('b')
+    expect(changes).toEqual([{ value: 'c' }])
+
+    // Unsupported value writes never select an item.
+    host('group').setData({ value: 'z' })
+    expect(host('b').data.checked).toBe(true)
+    tap('a')
+    expect(host('group').data.value).toBe('a')
+    expect(changes).toEqual([{ value: 'c' }, { value: 'a' }])
+  })
+
+  test('form waits for an open picker before submitting', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    let resolvePicker: ((value: unknown) => void) | undefined
+    const builtins = createBuiltinComponents(space, {
+      hostRequest: async (method) => {
+        if (method === 'showPicker') {
+          return new Promise((resolve) => { resolvePicker = resolve })
+        }
+        return { events: [] }
+      },
+    })
+    const submits: unknown[] = []
+    const page = space.defineComponent({
+      is: 'page',
+      using: { form: builtins.form, picker: builtins.picker, button: builtins.button },
+      template: compilePage(`
+        <form id="form" bindsubmit="onSubmit">
+          <picker id="picker" name="choice" range="{{['a', 'b']}}" />
+          <button id="submit" form-type="submit">Submit</button>
+        </form>
+      `),
+      methods: {
+        onSubmit(event: glassEasel.ShadowedEvent<unknown>) { submits.push(event.detail) },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    host('picker').triggerEvent('tap', {})
+    await flush()
+    host('submit').triggerEvent('tap', {})
+    expect(submits).toEqual([])
+    resolvePicker?.({ status: 'ok', value: '1' })
+    await flush()
+    expect(submits).toEqual([{
+      value: { choice: '1' },
+      target: { id: 'submit', dataset: {}, offsetTop: 0, offsetLeft: 0 },
+    }])
+  })
+
+  test('form reads and resets the derived group value', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { form: builtins.form, 'checkbox-group': builtins['checkbox-group'], checkbox: builtins.checkbox },
+      template: compilePage(`
+        <form id="form">
+          <checkbox-group id="group" name="tags">
+            <checkbox id="a" value="a" checked="{{true}}" />
+            <checkbox id="b" value="b" />
+          </checkbox-group>
+        </form>
+      `),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    attach(instance)
+    await flush()
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    expect((host('group') as unknown as { getFormData: () => unknown }).getFormData()).toEqual(['a'])
+    ;(host('group') as unknown as { resetFormData: () => void }).resetFormData()
+    expect(host('group').data.value).toEqual([])
+    expect((host('group') as unknown as { getFormData: () => unknown }).getFormData()).toEqual([])
   })
 
   test('label dispatches label-target taps by wrapping and for id', async () => {
@@ -418,9 +763,13 @@ describe('P0 built-in components', () => {
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
     const tap = (id: string) => {
-      const label = host(id) as unknown as { handleTap: (event: unknown) => void }
-      label.handleTap({ target: host(id), detail: {} })
+      const label = host(id) as unknown as { onTap: (event: unknown) => void }
+      label.onTap({ target: host(id), detail: {} })
     }
+    attach(instance)
+    expect((host('checkbox') as unknown as { _relatedLabel?: unknown })._relatedLabel).toBe(host('wrap'))
+    expect((host('radio') as unknown as { _relatedLabel?: unknown })._relatedLabel).toBe(host('for-label'))
+    expect((host('switch') as unknown as { _relatedLabel?: unknown })._relatedLabel).toBe(host('switch-label'))
     tap('wrap')
     expect(host('checkbox').data.checked).toBe(true)
     expect(host('group').data.value).toEqual(['a'])
@@ -428,6 +777,121 @@ describe('P0 built-in components', () => {
     expect(host('radio').data.checked).toBe(true)
     tap('switch-label')
     expect(host('switch').data.checked).toBe(true)
+  })
+
+
+  test('a custom component with wx://label-target receives label taps', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const labelTarget = getPublicBuiltinBehaviors(space)!['wx://label-target']
+    const field = space.defineComponent({
+      is: 'field',
+      behaviors: [labelTarget],
+      template: compilePage('<slot />'),
+      data: { taps: 0 },
+      methods: {
+        handleLabelTap() {
+          this.setData({ taps: this.data.taps + 1 })
+        },
+      },
+    })
+    const page = space.defineComponent({
+      is: 'page',
+      using: { label: builtins.label, field },
+      template: compilePage('<label id="for-field" for="field">tap</label><field id="field" />'),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    attach(instance)
+
+    const label = host('for-field') as unknown as { onTap: (event: unknown) => void }
+    label.onTap({ target: host('for-field'), detail: {} })
+    expect(host('field').data.taps).toBe(1)
+  })
+
+  test('text applies WeChat space and decode semantics', () => {
+    expect(transformTextContent('a b c', { space: 'nbsp' })).toBe('a\u00A0b\u00A0c')
+    expect(transformTextContent('a b', { space: 'ensp' })).toBe('a\u2002b')
+    expect(transformTextContent('a b', { space: 'emsp' })).toBe('a\u2003b')
+    expect(transformTextContent('a b', { space: 'other' })).toBe('a b')
+    expect(transformTextContent('&lt;b&gt; &amp; &quot;q&quot; &apos;s&apos; &nbsp;', { decode: true }))
+      .toBe('<b> & "q" \'s\'  ')
+    expect(transformTextContent('&amp;', { decode: false })).toBe('&amp;')
+  })
+
+  test('icon normalizes size through the shared size-normalizer', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { icon: builtins.icon },
+      template: compilePage('<icon id="icon" type="success" size="46rpx" />'),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const icon = instance.getShadowRoot()?.getElementById('icon')?.asGeneralComponent()!
+    const normalizeSizeStr = (icon as unknown as {
+      normalizeSizeStr: (value: unknown) => string
+    }).normalizeSizeStr
+    expect(normalizeSizeStr.call(icon, 23)).toBe('23px')
+    expect(normalizeSizeStr.call(icon, '23')).toBe('23px')
+    expect(normalizeSizeStr.call(icon, '23px')).toBe('23px')
+    expect(normalizeSizeStr.call(icon, '46rpx')).toBe('6.13333vw')
+    expect(normalizeSizeStr.call(icon, '1.2em')).toBe('1.2em')
+    expect(icon.data.fontSize).toBe('6.13333vw')
+  })
+
+  test('text follows wx-text selectable/user-select CSS semantics', () => {
+    expect(BUILTIN_HOST_STYLES).toContain('tiny-text {\n  cursor: text;')
+    expect(BUILTIN_HOST_STYLES).toContain('tiny-text[selectable], tiny-text[user-select] {')
+    expect(BUILTIN_HOST_STYLES).not.toContain('tiny-text[selectable="true"]')
+  })
+
+  test('text user-select toggles the selectable region on #main', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { text: builtins.text },
+      template: compilePage('<text id="text" user-select>hello</text>'),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const textHost = instance.getShadowRoot()?.getElementById('text')?.asGeneralComponent()!
+    const added: string[] = []
+    const removed: string[] = []
+    const main = {
+      style: {} as Record<string, string>,
+      classList: {
+        add: (name: string) => added.push(name),
+        remove: (name: string) => removed.push(name),
+      },
+    }
+    ;(textHost as unknown as { _textMain: unknown })._textMain = main
+    ;(textHost as unknown as { userSelectChanged: (next: boolean) => void }).userSelectChanged(true)
+    expect(main.style.display).toBe('inline-block')
+    expect(main.style.willChange).toBe('transform')
+    expect(added).toContain('__wa_selectable_region')
+
+    ;(textHost as unknown as { userSelectChanged: (next: boolean) => void }).userSelectChanged(false)
+    expect(main.style.display).toBe('inline')
+    expect(main.style.willChange).toBe('unset')
+    expect(removed).toContain('__wa_selectable_region')
+  })
+
+  test('text selectable emits the 2.30.1 deprecation diagnostic', () => {
+    const diagnostics: Array<{ code?: string }> = []
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space, {
+      onDiagnostic: (diagnostic) => diagnostics.push(diagnostic as { code?: string }),
+    })
+    const page = space.defineComponent({
+      is: 'page',
+      using: { text: builtins.text },
+      template: compilePage('<text id="text" selectable>hello</text>'),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const textHost = instance.getShadowRoot()?.getElementById('text')?.asGeneralComponent()!
+    attach(textHost)
+    expect(diagnostics.map((item) => item.code)).toContain('DEPRECATED_TEXT_SELECTABLE')
   })
 
   test('text, icon, image and form controls expose aligned properties', () => {
@@ -458,30 +922,42 @@ describe('P0 built-in components', () => {
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()
     const textHtml = glassEasel.dumpElementToString(host('text')!, true)
-    expect(textHtml).toContain('tiny-text-selectable')
-    expect(textHtml).toContain('tiny-text-space-nbsp')
+    expect(textHtml).toContain('id="raw"')
+    expect(textHtml).toContain('id="main"')
 
     const iconHtml = glassEasel.dumpElementToString(host('icon')!, true)
     expect(iconHtml).toContain('font-size: 32px')
     expect(iconHtml).toContain('color: #ff0000')
 
     const imageHtml = glassEasel.dumpElementToString(host('image')!, true)
-    expect(imageHtml).toContain('tiny-image-mode-aspectFit')
+    expect(imageHtml).toContain('id="div"')
     expect(glassEasel.dumpElementToString(host('input')!, true)).toContain('tiny-input-dropdown')
-    const image2Html = glassEasel.dumpElementToString(host('image2')!, true)
-    expect(image2Html).toContain('background-size: cover')
-    expect(image2Html).toContain('background-position: top left')
-    expect(imageHtml).toContain('loading="lazy"')
+    const image2 = host('image2')!
+    const imageDiv = { style: {} as Record<string, string> }
+    ;(image2 as unknown as { getShadowRoot: () => unknown }).getShadowRoot = () => ({
+      getElementById: () => ({ getBackendElement: () => imageDiv }),
+    })
+    ;(image2 as unknown as { modeChanged: (mode: string) => void }).modeChanged('aspectFit')
+    expect(imageDiv.style.backgroundSize).toBe('contain')
+    expect(imageDiv.style.backgroundPosition).toBe('center center')
+    // Once the mode owns the background, the raw background-* props are ignored.
+    ;(image2 as unknown as { backgroundSizeChanged: (value: string) => void })
+      .backgroundSizeChanged('cover')
+    expect(imageDiv.style.backgroundSize).toBe('contain')
 
+    host('checkbox')!.setData({ checked: true })
     const checkboxHtml = glassEasel.dumpElementToString(host('checkbox')!, true)
     expect(checkboxHtml).toContain('tiny-checkbox-input')
+    expect(checkboxHtml).toContain('tiny-checkbox-input-checked')
     expect(checkboxHtml).toContain('color: #ff0000')
+    host('radio')!.setData({ checked: true })
     const radioHtml = glassEasel.dumpElementToString(host('radio')!, true)
     expect(radioHtml).toContain('tiny-radio-input')
-    expect(radioHtml).toContain('--tiny-radio-color: #00ff00')
+    expect(radioHtml).toContain('background-color: #00ff00')
+    host('switch')!.setData({ checked: true })
     const switchHtml = glassEasel.dumpElementToString(host('switch')!, true)
     expect(switchHtml).toContain('tiny-switch-input')
-    expect(switchHtml).toContain('--tiny-switch-color: #0000ff')
+    expect(switchHtml).toContain('background-color: #0000ff')
 
     const inputHtml = glassEasel.dumpElementToString(host('input')!, true)
     expect(inputHtml).toContain('type="password"')
@@ -501,9 +977,10 @@ describe('P0 built-in components', () => {
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const imageHost = instance.getShadowRoot()?.getElementById('image')?.asGeneralComponent()
     expect(imageHost).toBeDefined()
-    expect(glassEasel.dumpElementToString(imageHost!, true)).toContain('https://cdn.example/a.png')
+    const resolveSrc = (imageHost as unknown as { resolveSrc: (src: string) => string }).resolveSrc
+    expect(resolveSrc.call(imageHost, '/a.png')).toBe('https://cdn.example/a.png')
     imageHost!.setData({ src: '/b.png' })
-    expect(glassEasel.dumpElementToString(imageHost!, true)).toContain('https://cdn.example/b.png')
+    expect(resolveSrc.call(imageHost, '/b.png')).toBe('https://cdn.example/b.png')
   })
 
   test('slider and progress expose aligned color and display options', () => {
@@ -522,16 +999,36 @@ describe('P0 built-in components', () => {
     const sliderHtml = glassEasel.dumpElementToString(host('slider')!, true)
     expect(sliderHtml).toContain('tiny-slider-value')
     expect(sliderHtml).toContain('width: 42%')
+    expect(sliderHtml).toContain('background-color: #eeeeee')
     expect(sliderHtml).toContain('background-color: #112233')
-    expect(sliderHtml).toContain('width: 32px')
-    expect(sliderHtml).toContain('margin-left: -16px')
+    expect(sliderHtml).toContain('width: 28px')
+    expect(sliderHtml).toContain('margin-left: -14px')
     const progressHtml = glassEasel.dumpElementToString(host('progress')!, true)
     expect(progressHtml).toContain('height: 10px')
     expect(progressHtml).toContain('background-color: #445566')
     expect(progressHtml).toContain('font-size: 20px')
     expect(progressHtml).toContain('42%')
-    expect(progressHtml).toContain('role="progressbar"')
-    expect(progressHtml).toContain('aria-valuenow="42"')
+  })
+
+  test('progress exposes progressbar aria on the host', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { progress: builtins.progress },
+      template: compilePage('<progress id="progress" percent="42" />'),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const progress = instance.getShadowRoot()?.getElementById('progress')?.asGeneralComponent()!
+    const attributes = new Map<string, string>()
+    ;(progress as unknown as { getBackendElement: () => unknown }).getBackendElement = () => ({
+      setAttribute: (name: string, value: string) => attributes.set(name, String(value)),
+    })
+    attach(progress)
+    expect(attributes.get('role')).toBe('progressbar')
+    expect(attributes.get('aria-valuemin')).toBe('0')
+    expect(attributes.get('aria-valuemax')).toBe('100')
+    expect(attributes.get('aria-valuenow')).toBe('42')
   })
 
 
@@ -560,7 +1057,7 @@ describe('P0 built-in components', () => {
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const scrollHost = instance.getShadowRoot()?.getElementById('scroll')?.asGeneralComponent()!
-    const nativeScroll = scrollHost.getShadowRoot()?.getElementById('native-scroll-view')!
+    const nativeScroll = scrollHost.getShadowRoot()?.getElementById('main')!
     const scrollHtml = glassEasel.dumpElementToString(nativeScroll, true)
     expect(scrollHtml).toContain('is-paging')
     expect(scrollHtml).toContain('is-hidden-scrollbar')
@@ -578,29 +1075,23 @@ describe('P0 built-in components', () => {
     expect(events.dragstart).toMatchObject({ scrollTop: expect.any(Number) })
     nativeScroll.triggerEvent('touchend', { changedTouches: [{ clientX: 120, clientY: 20 }] })
 
-    nativeScroll.triggerEvent('touchstart', { touches: [{ clientX: 10, clientY: 20 }] })
-    nativeScroll.triggerEvent('touchmove', { touches: [{ clientX: 10, clientY: 120 }] })
-    nativeScroll.triggerEvent('touchend', { changedTouches: [{ clientX: 10, clientY: 120 }] })
-    expect(events.refresh).toMatchObject({ dy: expect.any(Number) })
+    ;(scrollHost as unknown as { handleRefresherRefresh: (event: unknown) => void })
+      .handleRefresherRefresh({ detail: { dy: 80 } })
+    expect(events.refresh).toMatchObject({ dy: 80 })
+    expect(scrollHost.data.refresherTriggered).toBe(true)
 
     await new Promise((resolve) => setTimeout(resolve, 30))
     const swiperHost = instance.getShadowRoot()?.getElementById('swiper')?.asGeneralComponent()!
     const swiperHtml = glassEasel.dumpElementToString(swiperHost, true)
-    expect(swiperHtml).toContain('background-color: #445566')
-    expect(swiperHtml).toContain('role="listbox"')
-    expect(swiperHtml).toContain('padding-left: 20px')
-    expect(swiperHtml).toContain('padding-right: 10px')
-    swiperHost.setData({ activeIndex: 0, currentItemId: 'b2' })
-    const itemB = instance.getShadowRoot()?.getElementById('item-b')?.asGeneralComponent()
-    itemB?.setData({ itemId: 'b2' })
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(swiperHost.data.activeIndex).toBe(1)
-    expect(swiperHost.data.activeIndex).toBe(1)
-    expect(swiperHost.data.trackStyle).toContain('translateX(-100%)')
+    expect(swiperHtml).toContain('tiny-swiper-wrapper')
+    expect(swiperHtml).toContain('tiny-swiper-dots')
+    expect(swiperHost.data.indicatorColor).toBe('#112233')
+    expect(swiperHost.data.indicatorActiveColor).toBe('#445566')
+    expect(swiperHost.data.previousMargin).toBe('20px')
+    expect(swiperHost.data.nextMargin).toBe('10px')
   })
 
-
-  test('swiper honors displayMultipleItems and skipHiddenItemLayout', async () => {
+  test('swiper keeps hidden items in the list and exposes displayMultipleItems', async () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)
     const page = space.defineComponent({
@@ -618,11 +1109,15 @@ describe('P0 built-in components', () => {
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     await new Promise((resolve) => setTimeout(resolve, 30))
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
-    expect(host('multi').data.trackStyle).toContain('translateX(-50%)')
-    expect(host('hidden').data.dots).toHaveLength(2)
+    expect(host('multi').data.displayMultipleItems).toBe(2)
+    expect(host('multi').childNodes).toHaveLength(3)
+    // WeChat keeps hidden items in the item list; skip-hidden-item-layout only
+    // removes them from layout.
+    expect(host('hidden').data.skipHiddenItemLayout).toBe(true)
+    expect(host('hidden').childNodes).toHaveLength(3)
   })
 
-  test('form controls reuse tiny-disabled, tiny-data-component, tiny-label-target and group/item behaviors', () => {
+  test('form controls reuse tiny-disabled, tiny-label-target and group/item behaviors', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)
     const page = space.defineComponent({
@@ -637,28 +1132,25 @@ describe('P0 built-in components', () => {
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
     expect(host('checkbox').hasBehavior('tiny-disabled')).toBe(true)
-    expect(host('checkbox').hasBehavior('tiny-data-component')).toBe(true)
     expect(host('checkbox').hasBehavior('tiny-label-target')).toBe(true)
     expect(host('checkbox').hasBehavior('tiny-item')).toBe(true)
     expect(host('group').hasBehavior('tiny-group')).toBe(true)
     expect(host('input').hasBehavior('tiny-data-component')).toBe(true)
-    expect((host('checkbox') as unknown as { getFormData: () => unknown }).getFormData()).toBe('a')
   })
 
 
   test('form collects custom wx://form-field components and mocks reportSubmit', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)
-    const formField = space.defineBehavior({
-      is: 'tiny-form-field',
-      properties: {
-        name: { type: String, value: '' },
-        value: { type: String, value: '' },
-      },
-    })
+    // The real pipeline resolves `wx://form-field` against the render-side
+    // registry, which aliases the internal `tiny-form-field` marker.
+    const formField = getPublicBuiltinBehaviors(space)!['wx://form-field']
     const field = space.defineComponent({
       is: 'field',
       behaviors: [formField],
+      // A manually built definition has no render-tree prop capture, so the
+      // field declares the two properties like a real WeChat component would.
+      properties: { name: { type: String, value: '' }, value: { value: '' } },
       template: compilePage('<slot />'),
     })
     const events: unknown[] = []
@@ -666,15 +1158,17 @@ describe('P0 built-in components', () => {
       is: 'page',
       using: { form: builtins.form, input: builtins.input, button: builtins.button, field },
       template: compilePage(`
-        <form id="form" report-submit bindsubmit="onSubmit" bindbeforereportsubmit="onBefore">
+        <form id="form" report-submit bindsubmit="onSubmit" bindbeforereportsubmit="onBefore" bindreset="onReset">
           <field id="field" name="custom" value="v" />
           <input id="input" name="title" value="hello" />
           <button id="submit" form-type="submit">Submit</button>
+          <button id="reset" form-type="reset">Reset</button>
         </form>
       `),
       methods: {
         onSubmit(event: glassEasel.ShadowedEvent<unknown>) { events.push({ type: 'submit', detail: event.detail }) },
         onBefore(event: glassEasel.ShadowedEvent<unknown>) { events.push({ type: 'before', detail: event.detail }) },
+        onReset(event: glassEasel.ShadowedEvent<unknown>) { events.push({ type: 'reset', detail: event.detail }) },
       },
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
@@ -684,9 +1178,49 @@ describe('P0 built-in components', () => {
     host('submit').triggerEvent('tap', {})
     expect(events).toEqual([
       { type: 'before', detail: { value: { custom: 'v', title: 'hello' } } },
-      { type: 'submit', detail: { value: { custom: 'v', title: 'hello' }, formId: 'the formId is a mock one' } },
+      {
+        type: 'submit',
+        detail: {
+          value: { custom: 'v', title: 'hello' },
+          target: { id: 'submit', dataset: {}, offsetTop: 0, offsetLeft: 0 },
+          formId: 'the formId is a mock one',
+        },
+      },
     ])
     expect(host('form').data.reportSubmit).toBe(true)
+
+    host('input').setData({ value: 'changed' })
+    host('reset').triggerEvent('tap', {})
+    expect(host('input').data.value).toBe('')
+    expect(events.at(-1)).toEqual({
+      type: 'reset',
+      detail: { target: { id: 'reset', dataset: {}, offsetTop: 0, offsetLeft: 0 } },
+    })
+  })
+
+  test('textarea normalizes maxlength and autofill values', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const changes: unknown[] = []
+    const page = space.defineComponent({
+      is: 'page',
+      using: { textarea: builtins.textarea },
+      template: compilePage('<textarea id="textarea" maxlength="{{3}}" value="abcdef" bindchange="onInput" />'),
+      methods: {
+        onInput(event: glassEasel.ShadowedEvent<unknown>) { changes.push(event.detail) },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = instance.getShadowRoot()?.getElementById('textarea')?.asGeneralComponent()!
+    expect(host.data.value).toBe('abc')
+    const runtime = host as unknown as {
+      autofillGetValue: () => unknown
+      autofillSetValue: (value: unknown) => void
+    }
+    runtime.autofillSetValue('hello')
+    expect(runtime.autofillGetValue()).toBe('hello')
+    expect(host.data.value).toBe('hello')
+    expect(changes).toEqual([{ value: 'hello' }])
   })
 
   test('textarea renders placeholder/compute layers and auto-height state', () => {
@@ -778,9 +1312,11 @@ describe('P0 built-in components', () => {
   })
 
 
-  test('textarea, form and picker expose the new built-in surfaces', () => {
+  test('textarea, form and picker expose the new built-in surfaces', async () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
-    const builtins = createBuiltinComponents(space)
+    const builtins = createBuiltinComponents(space, {
+      hostRequest: async () => ({ status: 'ok', value: '1' }),
+    })
     const events: Record<string, unknown> = {}
     const page = space.defineComponent({
       is: 'page',
@@ -804,24 +1340,27 @@ describe('P0 built-in components', () => {
     expect(host('textarea').data.value).toBe('next')
 
     host('submit').triggerEvent('tap', {})
-    expect(events.submit).toEqual({ value: { title: 'hello' }, formId: '' })
+    expect(events.submit).toEqual({
+      value: { title: 'hello' },
+      target: { id: 'submit', dataset: {}, offsetTop: 0, offsetLeft: 0 },
+    })
 
-    const picker = host('picker') as unknown as {
-      handleOpen: () => void
-      handleOverlayChange: (event: unknown) => void
-      handleConfirm: () => void
-    }
-    picker.handleOpen()
-    picker.handleOverlayChange({ detail: { value: [1] } })
-    picker.handleConfirm()
-    expect(events.picker).toEqual({ value: 1 })
-    expect(host('picker').data.value).toBe(1)
+    host('picker').triggerEvent('tap', {})
+    await flush()
+    expect(events.picker).toEqual({ value: '1' })
+    expect(host('picker').data.value).toBe('1')
   })
 
 
-  test('picker overlay builds date columns and confirms the formatted value', () => {
+  test('picker delegates opening to the host and applies the selected value', async () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
-    const builtins = createBuiltinComponents(space)
+    const requests: Array<Record<string, unknown>> = []
+    const builtins = createBuiltinComponents(space, {
+      hostRequest: async (method, request) => {
+        requests.push({ method, ...(request as Record<string, unknown>) })
+        return { status: 'ok', value: '2017-12-31' }
+      },
+    })
     const changes: unknown[] = []
     const page = space.defineComponent({
       is: 'page',
@@ -834,18 +1373,159 @@ describe('P0 built-in components', () => {
       },
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
-    const picker = instance.getShadowRoot()?.getElementById('picker')?.asGeneralComponent() as unknown as {
-      handleOpen: () => void
-      handleOverlayChange: (event: unknown) => void
-      handleConfirm: () => void
-    } & { data: { overlayColumns: Array<Array<{ label: string }>>; draftValue: number[] } }
-    picker.handleOpen()
-    expect(picker.data.overlayColumns).toHaveLength(3)
-    expect(picker.data.overlayColumns[0]?.[0]?.label).toBe('2015年')
-    expect(picker.data.draftValue).toEqual([1, 8, 0])
-    picker.handleOverlayChange({ detail: { value: [2, 11, 30] } })
-    picker.handleConfirm()
+    const picker = instance.getShadowRoot()?.getElementById('picker')?.asGeneralComponent()!
+    picker.triggerEvent('tap', {})
+    await flush()
+    expect(requests[0]).toMatchObject({
+      method: 'showPicker',
+      mode: 'date',
+      value: '2016-09-01',
+      start: '2015-09-01',
+      end: '2017-09-01',
+      fields: 'day',
+    })
+    expect(picker.data.value).toBe('2017-12-31')
     expect(changes).toEqual([{ value: '2017-12-31' }])
+  })
+
+  test('picker forwards selector cancellation to the cancel event', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space, {
+      hostRequest: async () => ({ status: 'cancel' }),
+    })
+    const cancels: unknown[] = []
+    const page = space.defineComponent({
+      is: 'page',
+      using: { picker: builtins.picker },
+      data: { range: ['a', 'b'] },
+      template: compilePage('<picker id="picker" range="{{range}}" bindcancel="onCancel" />'),
+      methods: {
+        onCancel(event: glassEasel.ShadowedEvent<unknown>) { cancels.push(event.detail) },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const picker = instance.getShadowRoot()?.getElementById('picker')?.asGeneralComponent()!
+    picker.triggerEvent('tap', {})
+    await flush()
+    expect(cancels).toEqual([{}])
+  })
+
+  test('picker exposes wx-autofill get/set values', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const changes: unknown[] = []
+    const page = space.defineComponent({
+      is: 'page',
+      using: { picker: builtins.picker },
+      template: compilePage(`
+        <picker id="select" mode="selector" range="{{[{label: 'A'}, {label: 'B'}]}}" range-key="label" value="{{0}}" bindchange="onChange" />
+        <picker id="date" mode="date" bindchange="onChange" />
+      `),
+      methods: {
+        onChange(event: glassEasel.ShadowedEvent<unknown>) { changes.push(event.detail) },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    const select = host('select') as unknown as {
+      autofillGetValue: () => unknown
+      autofillSetValue: (value: unknown) => void
+    }
+    expect(host('select').hasBehavior('tiny-autofill')).toBe(true)
+    host('select').setData({ autoFill: 'foo.phone' })
+    expect(select).toMatchObject({
+      _autofillGroupKey: 'phone_info',
+      _autofillFieldName: 'phone',
+      _autofill: 'phone_info.phone',
+    })
+    expect(select.autofillGetValue()).toBe('A')
+    select.autofillSetValue('B')
+    expect(host('select').data.value).toBe(1)
+    const date = host('date') as unknown as {
+      autofillSetValue: (value: unknown) => void
+    }
+    date.autofillSetValue([2020, 1, 2])
+    expect(host('date').data.value).toBe('2020-01-02')
+    expect(changes).toEqual([{ value: 1 }, { value: '2020-01-02' }])
+  })
+
+  test('picker reflects live value changes into an open multi picker', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const requests: Array<Record<string, unknown>> = []
+    let resolvePicker: ((value: unknown) => void) | undefined
+    const builtins = createBuiltinComponents(space, {
+      hostRequest: async (method, payload) => {
+        requests.push({ method, ...(payload as Record<string, unknown>) })
+        if (method === 'showPicker') {
+          return new Promise((resolve) => { resolvePicker = resolve })
+        }
+        return { status: 'ok' }
+      },
+    })
+    const page = space.defineComponent({
+      is: 'page',
+      using: { picker: builtins.picker },
+      template: compilePage(`
+        <picker id="picker" mode="multiSelector" range="{{[['a', 'b'], ['c', 'd']]}}" value="{{[0, 0]}}" />
+      `),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const picker = instance.getShadowRoot()?.getElementById('picker')?.asGeneralComponent()!
+    picker.triggerEvent('tap', {})
+    await flush()
+    expect(requests[0]).toMatchObject({ method: 'showPicker', mode: 'multiSelector' })
+    picker.setData({ value: [1, 0] })
+    await flush()
+    expect(requests.find((request) => request.method === 'updatePicker')).toMatchObject({
+      method: 'updatePicker',
+      mode: 'multiSelector',
+      value: [1, 0],
+    })
+    picker.setData({ range: [['a', 'b', 'c'], ['c', 'd']] })
+    await flush()
+    expect(requests.filter((request) => request.method === 'updatePicker').at(-1)).toMatchObject({
+      method: 'updatePicker',
+      range: [['a', 'b', 'c'], ['c', 'd']],
+    })
+    resolvePicker?.({ status: 'cancel' })
+    await flush()
+  })
+
+  test('picker polls multi column changes into columnchange events', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    let delivered = false
+    let resolvePicker: ((value: unknown) => void) | undefined
+    const changes: unknown[] = []
+    const builtins = createBuiltinComponents(space, {
+      hostRequest: async (method) => {
+        if (method === 'showPicker') {
+          return new Promise((resolve) => { resolvePicker = resolve })
+        }
+        if (method === 'pollPicker' && !delivered) {
+          delivered = true
+          return { events: [{ column: 1, value: 1 }] }
+        }
+        return { events: [] }
+      },
+    })
+    const page = space.defineComponent({
+      is: 'page',
+      using: { picker: builtins.picker },
+      template: compilePage(`
+        <picker id="picker" mode="multiSelector" range="{{[['a', 'b'], ['c', 'd']]}}" value="{{[0, 0]}}" bindcolumnchange="onColumn" />
+      `),
+      methods: {
+        onColumn(event: glassEasel.ShadowedEvent<unknown>) { changes.push(event.detail) },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const picker = instance.getShadowRoot()?.getElementById('picker')?.asGeneralComponent()!
+    picker.triggerEvent('tap', {})
+    await new Promise((resolve) => setTimeout(resolve, 60))
+    expect(changes).toEqual([{ column: 1, value: 1 }])
+    expect(picker.data.value).toEqual([0, 1])
+    resolvePicker?.({ status: 'cancel' })
+    await flush()
   })
 
   test('picker-view receives column changes and updates its value array', () => {
@@ -891,7 +1571,7 @@ describe('P0 built-in components', () => {
       `),
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 20))
     const column = instance.getShadowRoot()?.getElementById('col')?.asGeneralComponent()
     expect(column).toBeDefined()
     expect(column?.data.current).toBe(1)
@@ -914,7 +1594,7 @@ describe('P0 built-in components', () => {
       `),
     })
     const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 20))
     const view = instance.getShadowRoot()?.getElementById('view')?.asGeneralComponent()!
     const column = instance.getShadowRoot()?.getElementById('col')?.asGeneralComponent() as unknown as {
       handleTouchStart: (event: unknown) => void
@@ -924,7 +1604,7 @@ describe('P0 built-in components', () => {
     column.handleTouchStart({ touches: [{ clientY: 100 }] })
     column.handleTouchMove({ touches: [{ clientY: 10 }] })
     column.handleTouchEnd({ changedTouches: [{ clientY: 10 }] })
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 20))
     expect((instance.getShadowRoot()?.getElementById('col')?.asGeneralComponent()?.data as { current: number }).current).toBe(2)
     expect(view.data.value).toEqual([2])
   })
@@ -950,6 +1630,38 @@ describe('P0 built-in components', () => {
     expect(html).toContain('first')
     expect(html).toContain('second')
     expect(html).toContain('tiny-icon-success')
+  })
+
+  test('form sees a submit button declared inside a custom component', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const formFieldButton = getPublicBuiltinBehaviors(space)!['wx://form-field-button']
+    const wrapper = space.defineComponent({
+      is: 'wrapper',
+      behaviors: [formFieldButton],
+      using: { button: builtins.button },
+      template: compilePage('<button id="inner" form-type="submit">Go</button>'),
+    })
+    const events: unknown[] = []
+    const page = space.defineComponent({
+      is: 'page',
+      using: { form: builtins.form, input: builtins.input, wrapper },
+      template: compilePage(`
+        <form id="form" bindsubmit="onSubmit">
+          <input id="input" name="title" value="hello" />
+          <wrapper id="wrapper" />
+        </form>
+      `),
+      methods: {
+        onSubmit(event: glassEasel.ShadowedEvent<unknown>) { events.push(event.detail) },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    const inner = (host('wrapper').getShadowRoot()?.getElementById('inner') as glassEasel.Element)
+      .asGeneralComponent()!
+    inner.triggerEvent('tap', {})
+    expect(events).toEqual([expect.objectContaining({ value: { title: 'hello' } })])
   })
 })
 
@@ -986,6 +1698,7 @@ describe('navigator', () => {
     const cases: Array<[string, Record<string, unknown>]> = [
       ['url="/pages/a/a"', { action: 'navigateTo', url: '/pages/a/a' }],
       ['open-type="redirect" url="/pages/a/a"', { action: 'redirectTo', url: '/pages/a/a' }],
+      ['redirect url="/pages/a/a"', { action: 'redirectTo', url: '/pages/a/a' }],
       ['open-type="switchTab" url="/pages/b/b"', { action: 'switchTab', url: '/pages/b/b' }],
       ['open-type="reLaunch" url="/pages/c/c"', { action: 'reLaunch', url: '/pages/c/c' }],
       ['open-type="navigateBack" delta="2"', { action: 'navigateBack', delta: 2 }],
@@ -1026,12 +1739,13 @@ describe('navigator', () => {
     ])
   })
 
-  test('hover-class defaults to navigator-hover without touching data', () => {
+  test('uses the navigator-hover default class without overriding hover-class', () => {
     const navigator = mountNavigator('url="/pages/a/a"', [], []) as unknown as {
       data: Record<string, unknown>
+      _defaultHoverClass: string
     }
-    expect(navigator.data.hoverClass).toBe('navigator-hover')
-    expect(navigator.data.hoverStartTime).toBe(400)
-    expect(navigator.data.hoverStayTime).toBe(50)
-  })
-})
+    expect(navigator.data.hoverClass).toBe('')
+    expect(navigator._defaultHoverClass).toBe('navigator-hover')
+    expect(navigator.data.hoverStartTime).toBe(50)
+    expect(navigator.data.hoverStayTime).toBe(600)
+  })})

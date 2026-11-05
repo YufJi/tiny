@@ -34,6 +34,7 @@ export type MiniProgramComponentOptions = {
   behaviors?: Array<MiniProgramComponentOptions | string>
   observers?: Record<string, unknown> | Array<unknown>
   relations?: Record<string, unknown>
+  listeners?: Record<string, ((...args: unknown[]) => unknown) | string>
   externalClasses?: string[]
   options?: Record<string, unknown>
   export?: (...args: unknown[]) => unknown
@@ -56,6 +57,16 @@ export type MiniProgramAppOptions = {
 
 export type MiniProgramApiHost = Record<string, (...args: unknown[]) => unknown>
 
+/**
+ * Build the mini-program API table for one service thread.
+ *
+ * The kernel owns the global namespace, the unsupported-API fallback and the
+ * capability context below; it does not own the API set. Hosts pass the
+ * standard WeChat-compatible factory (`@tiny/api`) plus their own device
+ * facts, so growing the API surface never touches the kernel.
+ */
+export type ServiceApiFactory = (context: ServiceApiContext) => MiniProgramApiHost
+
 export type TabBarApi = {
   setStyle(params: Record<string, unknown>): void
   setItem(params: Record<string, unknown>): void
@@ -66,6 +77,13 @@ export type TabBarApi = {
   setVisible(visible: boolean): void
 }
 
+/**
+ * Kernel capabilities handed to an injected API factory.
+ *
+ * This is a public contract: `@tiny/api` implements `wx.*` against it
+ * without importing runtime internals. Keep it additive — a field removed or
+ * reshaped here breaks every host-provided API set.
+ */
 export type ServiceApiContext = {
   connection: BridgeConnection
   /** API global name used in diagnostics. */
@@ -75,6 +93,7 @@ export type ServiceApiContext = {
   getSystemInfoSnapshot: () => SystemInfoSnapshot
   getStorageSnapshot: () => StorageSnapshot
   setStorageSnapshot: (key: string, value: unknown) => void
+  /** Filled by the kernel with the names the injected factory returned. */
   apiNames: Set<string>
   getCurrentPagePath?: () => string | undefined
   /** Active page instance, for `wx.*` entries that scope to the current page. */

@@ -25,6 +25,11 @@ pub enum HostEvent {
         request_id: String,
         result: Result<Value, String>,
     },
+    /// The platform finished a render-surface host request.
+    RenderHostResult {
+        request_id: String,
+        result: Result<Value, String>,
+    },
     /// A platform/native-chrome command.
     Command(HostCommand),
     /// Drive Bridge timeouts and other deadline work.

@@ -1,6 +1,4 @@
 <i
-  class="tiny-icon tiny-icon-{{type}}"
-  role="img"
-  aria-label="{{ariaLabel}}"
-  style="color: {{color}}; font-size: {{fontSize}}px;"
+  class="tiny-icon-{{type}}"
+  style="color: {{color}}; font-size: {{fontSize}};"
 ></i>

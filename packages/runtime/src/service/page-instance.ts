@@ -102,9 +102,18 @@ export class MiniProgramPageInstance implements ObserverHost {
   }
 
   private bindLegacyPageOptions(options: MiniProgramPageOptions): void {
+    const reserved = new Set(['data', 'methods', 'options', 'behaviors', 'lifetimes'])
     for (const [name, value] of Object.entries(options)) {
-      if (typeof value !== 'function' || LIFECYCLE_METHODS.has(name)) continue
-      this.methods.set(name, value.bind(this))
+      if (typeof value === 'function') {
+        if (LIFECYCLE_METHODS.has(name)) continue
+        this.methods.set(name, value.bind(this))
+        continue
+      }
+      // WeChat copies plain page fields (`extraLine: []`, counters, ...) onto
+      // the page instance; methods close over `this.<field>` and would hit
+      // `undefined` otherwise.
+      if (reserved.has(name) || LIFECYCLE_METHODS.has(name)) continue
+      ;(this as unknown as Record<string, unknown>)[name] = value
     }
     for (const [name, method] of Object.entries(options.methods ?? {})) {
       if (typeof method === 'function') this.methods.set(name, method.bind(this))

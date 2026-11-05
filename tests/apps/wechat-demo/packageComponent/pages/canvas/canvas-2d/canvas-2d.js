@@ -17,6 +17,15 @@ Page({
     }, 200)
   },
   _onReady() {
+    // 解决基础库小于 2.7.0 的兼容问题
+    const { SDKVersion } = wx.getSystemInfoSync()
+    console.log(SDKVersion)
+    if (compareVersion(SDKVersion, '2.7.0') < 0) {
+      console.log('123')
+      this.setData({
+        canIUse: false,
+      })
+    } else {
       // canvas2D
       this.position2D = {
         x: 150,
@@ -32,7 +41,7 @@ Page({
           size: true,
         })
         .exec(this.init.bind(this))
-    
+    }
   },
 
   init(res) {

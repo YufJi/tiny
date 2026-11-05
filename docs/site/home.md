@@ -14,7 +14,7 @@ actions:
 stats:
   - ['2', '运行时树']
   - ['14', '工作区包']
-  - ['288', '单元测试']
+  - ['340', '单元测试']
   - ['58', '浏览器步骤']
 description: 'Tiny 是一个基于 glass-easel 的小程序引擎：编译 WXML/WXSS/TS，service 与 render 双线程运行，核心小程序内核不依赖宿主。'
 name: '概览'
@@ -38,7 +38,7 @@ order: 1
 :::
 
 :::callout{title="各层分工"}
-service 在逻辑树里执行模板、组件语义、observer、relations 和事件回调；render 在宿主渲染树里创建真实内置组件、处理布局、样式和 DOM。iframe、MessagePort、DOM canvas、资源 URL 和调试器界面都属于宿主适配层。
+service 在逻辑树里执行模板、组件语义、observer、relations 和事件回调；render 在宿主渲染树里用同一份模板求值组件 shadow tree，创建真实内置组件、处理布局、样式和 DOM。iframe、MessagePort、DOM canvas、资源 URL 和调试器界面都属于宿主适配层。
 :::
 
 ## 四类接口，连接编译、运行和调试 {kicker="接口约定"}
@@ -65,7 +65,7 @@ Bridge 定义消息信封、帧、调用与回复、事件批处理、超时和 
 :::
 
 :::card{tag="hosts/browser" tone="violet" title="宿主注入的能力"}
-`apiHandlers` 处理需要跨线程的 API，`apiExtensions` 补充设备信息；canvas、资源 URL 和内置组件分别由宿主提供。
+`apiHost` 提供 API 表（标准集来自 `@tiny/api`），`apiExtensions` 补充设备信息，`apiHandlers` 处理需要跨线程的 API；canvas、资源 URL 和内置组件分别由宿主提供。
 
 [看宿主注入方式 →](#/hosts)
 :::
@@ -107,7 +107,7 @@ Bridge 定义消息信封、帧、调用与回复、事件批处理、超时和 
 :::
 
 :::card{tag="testing" title="靠真实小程序验证"}
-288 个单元测试、58 个浏览器步骤、七个测试小程序，以及目前还没有覆盖的部分。
+388 个单元测试、61 个浏览器步骤、七个测试小程序，以及目前还没有覆盖的部分。
 
 [进入测试与验收 →](#/testing)
 :::
@@ -139,24 +139,24 @@ service 执行小程序逻辑并维护逻辑树，render 线程由宿主持有�
 :::card{tag="service 线程" title="小程序逻辑和平台 API"}
 - App / Page / Component / Behavior 注册，按 manifest 顺序绑定路径
 - 页面栈、路由和 onLoad → onShow → onReady
-- glass-easel 逻辑树、模板求值、virtual node diff
+- glass-easel 逻辑树、逻辑树模板求值、virtual node diff
 - Behaviors、observers、relations、selectComponent 等组件语义
-- 事件按 node id 回到逻辑树，用带类型的 dataset 分发
+- 事件按组件 id / 元素 locator 回到逻辑树，用带类型的 dataset 分发
 - 通过宿主 canvas 适配器使用 2D/WebGL 和 selector query
 :::
 
 :::card{tag="render 线程" tone="violet" title="宿主渲染树和 DOM"}
 - 每页一个 render root；Web 侧由 `createGlassRenderTree` 创建
-- 真实 `tiny-*` 内置组件、slot、shadow root 和布局
-- 应用 flow 和 patch，不执行 app methods / observers / relations
-- 事件带上 node id、name、detail 和 native 字段回传
+- 真实 `tiny-*` 内置组件、组件模板求值、slot、shadow root 和布局
+- 应用 flow 和 patch，按组件定义求值 shadow tree，不执行 app methods / observers / relations
+- 事件带上组件 id / 元素 locator、name、detail 和 native 字段回传
 - 元素树导出、canvas 测量、DOM 查询和 IntersectionObserver
 - 内置组件和基础 CSS 由 `@tiny/host-web-components` 提供
 :::
 ::::
 
 :::callout{title="两棵树各做各的事"}
-service 不创建真实 DOM，也不加载 Web 内置组件；render 不执行小程序方法、observer 或 relations。service 分配稳定的 node id，render 只负责把这些 id 映射到真实组件和节点。这样才能在 Web 和原生宿主之间复用同一套语义。
+service 不创建真实 DOM，也不加载 Web 内置组件；render 不执行小程序方法、observer 或 relations。组件 id 由 service 分配，元素 id 由渲染侧本地分配，跨线程寻址用 locator。这样才能在 Web 和原生宿主之间复用同一套语义。
 :::
 
 ## 同一套内核，可以换不同宿主 {kicker="宿主对比"}
@@ -177,7 +177,7 @@ service 不创建真实 DOM，也不加载 Web 内置组件；render 不执行�
 
 ## 这些能力都有自动化测试 {kicker="测试覆盖"}
 
-下面这些行为都在 58 个浏览器步骤里实际点击、输入和断言过，覆盖逻辑树与渲染树的同步。
+下面这些行为都在 61 个浏览器步骤里实际点击、输入和断言过，覆盖逻辑树与渲染树的同步。
 
 ::::cards{layout="three"}
 :::card{title="真实示例小程序"}

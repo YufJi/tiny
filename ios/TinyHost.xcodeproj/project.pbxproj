@@ -22,6 +22,7 @@
 		A10000000000000000000038 /* NativeRenderSurfaceSmoke.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000037 /* NativeRenderSurfaceSmoke.swift */; };
 		A1000000000000000000003A /* HostCoreRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000039 /* HostCoreRuntime.swift */; };
 		A1000000000000000000003C /* NativeHostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003B /* NativeHostView.swift */; };
+		A1000000000000000000003E /* NativePickerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003D /* NativePickerController.swift */; };
 		A1000000000000000000002B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002A /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -43,6 +44,7 @@
 		A10000000000000000000037 /* NativeRenderSurfaceSmoke.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeRenderSurfaceSmoke.swift; sourceTree = "<group>"; };
 		A10000000000000000000039 /* HostCoreRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostCoreRuntime.swift; sourceTree = "<group>"; };
 		A1000000000000000000003B /* NativeHostView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeHostView.swift; sourceTree = "<group>"; };
+		A1000000000000000000003D /* NativePickerController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativePickerController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -90,6 +92,7 @@
 				A10000000000000000000037 /* NativeRenderSurfaceSmoke.swift */,
 				A10000000000000000000039 /* HostCoreRuntime.swift */,
 				A1000000000000000000003B /* NativeHostView.swift */,
+				A1000000000000000000003D /* NativePickerController.swift */,
 				A1000000000000000000002A /* Assets.xcassets */,
 			);
 			path = TinyHost;
@@ -187,6 +190,7 @@
 				A10000000000000000000038 /* NativeRenderSurfaceSmoke.swift in Sources */,
 				A1000000000000000000003A /* HostCoreRuntime.swift in Sources */,
 				A1000000000000000000003C /* NativeHostView.swift in Sources */,
+				A1000000000000000000003E /* NativePickerController.swift in Sources */,
 				A10000000000000000000031 /* tiny_host_core_ffi.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -2,5 +2,6 @@
   "usingComponents": {},
   "navigationBarTitleText": "channel-video",
   "componentFramework": "glass-easel",
+  "renderer": "skyline",
   "navigationStyle": "custom"
 }

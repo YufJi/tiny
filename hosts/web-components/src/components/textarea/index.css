@@ -1,9 +1,14 @@
 tiny-textarea {
   display: block;
+  cursor: auto;
   position: relative;
   box-sizing: border-box;
   width: 300px;
   height: 150px;
+}
+
+tiny-textarea[hidden] {
+  display: none;
 }
 
 tiny-textarea[auto-height] {
@@ -18,7 +23,8 @@ tiny-textarea[auto-height] {
 
 .tiny-textarea {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
   display: block;
   width: 100%;
   height: 100%;

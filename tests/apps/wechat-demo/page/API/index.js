@@ -8,14 +8,6 @@ Page({
 
   data: {
     list: [{
-      id: 'chattool',
-      name: '聊天工具',
-      open: false,
-      pages: [{
-        zh: '活动签到',
-        url: 'activity_assist/activity_assist'
-      }]
-    }, {
       id: 'api',
       name: '开放接口',
       open: false,
@@ -461,10 +453,5 @@ Page({
     this.setData({
       isSetTabBarPage: false
     })
-  },
-
-  navigateTo(e) {
-    const url = e.currentTarget.dataset.url
-    if (url) wx.navigateTo({ url })
   },
 })

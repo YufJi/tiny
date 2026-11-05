@@ -697,6 +697,86 @@ fn queues_service_query_calls_until_render_is_ready() {
 }
 
 #[test]
+fn render_host_request_round_trips() {
+    let mut host = HostCore::new(config());
+    let render_bootstrap_id = reach_render_bootstrap(&mut host, 17_000);
+    let render_reply = message(
+        ProtocolKind::Reply,
+        ProtocolDomain::Runtime,
+        "bootstrap",
+        ProtocolRole::Render,
+        ProtocolRole::Host,
+        json!({ "ok": true, "result": {} }),
+        Some("page-1"),
+        Some(&render_bootstrap_id),
+    );
+    let _ = host.handle_event(
+        HostEvent::RenderFrame {
+            page_id: "page-1".to_string(),
+            frame: frame(vec![render_reply]),
+        },
+        17_050,
+    );
+
+    let request = message(
+        ProtocolKind::Call,
+        ProtocolDomain::Tree,
+        "hostRequest",
+        ProtocolRole::Render,
+        ProtocolRole::Host,
+        json!({ "method": "showPicker", "payload": { "mode": "selector" } }),
+        Some("page-1"),
+        None,
+    );
+    let request_id = request.message_id.clone();
+    let actions = host.handle_event(
+        HostEvent::RenderFrame {
+            page_id: "page-1".to_string(),
+            frame: frame(vec![request]),
+        },
+        17_060,
+    );
+    let host_request = actions.iter().find_map(|action| match action {
+        HostAction::RenderHostRequest {
+            request_id,
+            page_id,
+            method,
+            payload,
+        } => Some((request_id, page_id, method, payload)),
+        _ => None,
+    });
+    let (action_request_id, page_id, method, payload) =
+        host_request.expect("render host request action");
+    assert_eq!(action_request_id, &request_id);
+    assert_eq!(page_id, "page-1");
+    assert_eq!(method, "showPicker");
+    assert_eq!(payload["mode"], "selector");
+
+    let result = json!({ "status": "ok", "value": "1" });
+    let actions = host.handle_event(
+        HostEvent::RenderHostResult {
+            request_id: request_id.clone(),
+            result: Ok(result.clone()),
+        },
+        17_070,
+    );
+    let reply = actions.iter().find_map(|action| match action {
+        HostAction::SendRenderFrame { page_id, frame } => frame
+            .messages
+            .iter()
+            .find(|message| {
+                message.kind == ProtocolKind::Reply
+                    && message.reply_to.as_deref() == Some(&request_id)
+            })
+            .map(|message| (page_id, message)),
+        _ => None,
+    });
+    let (page_id, reply) = reply.expect("render host request reply");
+    assert_eq!(page_id, "page-1");
+    assert_eq!(reply.payload.as_ref().and_then(|value| value.get("result")), Some(&result));
+}
+
+#[test]
 fn render_host_action_runs_navigation() {
     let mut host = HostCore::new(config());
     let render_bootstrap_id = reach_render_bootstrap(&mut host, 16_000);

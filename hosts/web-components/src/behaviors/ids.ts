@@ -1,0 +1,36 @@
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
+
+/**
+ * Fixed internal (`tiny-*`) ids for behaviors shared by built-in components.
+ * These are not the public `wx://` ids users declare; see `builtin.ts`.
+ */
+export const BUILTIN_BEHAVIOR_IDS = Object.freeze({
+  base: `${TINY_ENGINE_NAMING.behaviorPrefix}base`,
+  hover: `${TINY_ENGINE_NAMING.behaviorPrefix}hover`,
+  reload: `${TINY_ENGINE_NAMING.behaviorPrefix}reload`,
+  touchTrack: `${TINY_ENGINE_NAMING.behaviorPrefix}touchtrack`,
+  positioningTarget: `${TINY_ENGINE_NAMING.behaviorPrefix}positioning-target`,
+  positioningContainer: `${TINY_ENGINE_NAMING.behaviorPrefix}positioning-container`,
+  native: `${TINY_ENGINE_NAMING.behaviorPrefix}native`,
+  nativeCover: `${TINY_ENGINE_NAMING.behaviorPrefix}native-cover`,
+  nativeHover: `${TINY_ENGINE_NAMING.behaviorPrefix}native-hover`,
+  htmlParse: `${TINY_ENGINE_NAMING.behaviorPrefix}html-parse`,
+  quillCore: `${TINY_ENGINE_NAMING.behaviorPrefix}quill-core`,
+  scroller: `${TINY_ENGINE_NAMING.behaviorPrefix}scroller`,
+  sizeNormalizer: `${TINY_ENGINE_NAMING.behaviorPrefix}size-normalizer`,
+  classPrefix: `${TINY_ENGINE_NAMING.behaviorPrefix}class-prefix`,
+  disabled: `${TINY_ENGINE_NAMING.behaviorPrefix}disabled`,
+  dataComponent: `${TINY_ENGINE_NAMING.behaviorPrefix}data-component`,
+  autofill: `${TINY_ENGINE_NAMING.behaviorPrefix}autofill`,
+  group: `${TINY_ENGINE_NAMING.behaviorPrefix}group`,
+  item: `${TINY_ENGINE_NAMING.behaviorPrefix}item`,
+  labelTarget: `${TINY_ENGINE_NAMING.behaviorPrefix}label-target`,
+  labelAria: `${TINY_ENGINE_NAMING.behaviorPrefix}label-aria`,
+  /**
+   * Marker behaviors behind the public `wx://` ids. Built-in components test
+   * these stable ids; user code only ever declares the `wx://` alias.
+   */
+  formField: `${TINY_ENGINE_NAMING.behaviorPrefix}form-field`,
+  formFieldGroup: `${TINY_ENGINE_NAMING.behaviorPrefix}form-field-group`,
+  formFieldButton: `${TINY_ENGINE_NAMING.behaviorPrefix}form-field-button`,
+} as const)

@@ -1,12 +1,11 @@
 tiny-picker-view {
   display: block;
-  height: 238px;
-  box-sizing: border-box;
 }
-
 .tiny-picker-view-wrapper {
   display: flex;
-  position: relative;
-  height: 100%;
   overflow: hidden;
+  position: relative;
+}
+tiny-picker-view[hidden] {
+  display: none;
 }

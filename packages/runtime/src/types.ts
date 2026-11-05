@@ -2,6 +2,7 @@ import type { Manifest } from '@tiny/manifest'
 import type { WxsModuleTable } from '@tiny/wxs-runtime'
 import type { AssetUrlResolver } from './assets'
 import type { RenderHostAction } from './tree/protocol'
+import type { ServiceApiFactory } from './service/types'
 
 export type RuntimeManifest = Manifest
 
@@ -33,6 +34,8 @@ export type MiniProgramComponentSchema = {
   pureDataPattern?: string
   externalClasses?: string[]
   formField?: boolean
+  formFieldGroup?: boolean
+  labelTarget?: boolean
   observers?: Array<{ key: string; paths: string[] }>
   relations?: Array<{
     key: string
@@ -68,12 +71,19 @@ export type SystemInfoSnapshot = {
   language?: string
   platform?: string
   SDKVersion?: string
+  /** Host-reported device identity, forwarded to `wx.getSystemInfo` as-is. */
+  system?: string
+  model?: string
+  brand?: string
+  statusBarHeight?: number
 }
 
 /** One DOM node resolved by a component/page selector query. */
 export type QueryNodeSnapshot = {
   /** Logic-layer node identity, present for service-side query results. */
   viewId?: string
+  /** Component-scoped locator of an element (render-side addressing). */
+  locator?: string
   id: string
   dataset: Record<string, unknown>
   left: number
@@ -193,10 +203,23 @@ export type BuiltinComponentFactoryContext = {
   /** Resolve a mini-program asset path for the component instance that owns it. */
   resolveAssetUrl?: (src: string, component: unknown) => string
   /**
+   * Props of the render snapshot node that owns a component instance.
+   *
+   * `<form>`/`<label>` read values the way WeChat does: from the node props,
+   * not only from the instance data (a page-level component gets its props as
+   * attributes and they are not projected into data unless declared).
+   */
+  lookupNodeProps?: (component: unknown) => Record<string, unknown> | undefined
+  /**
    * Ask the host to run a navigation the page does not bind itself
    * (`<navigator>`); the render tree forwards it as `tree.hostAction`.
    */
   hostAction?: (action: RenderHostAction) => void
+  /**
+   * Ask the host for a request/response capability. Component-specific payloads
+   * stay in the host package; the runtime only owns the generic channel.
+   */
+  hostRequest?: (method: string, payload: unknown) => Promise<unknown>
 }
 
 export type BuiltinComponentFactory = (
@@ -233,8 +256,13 @@ export type ServiceThreadOptions = {
   initialPath: string
   capabilities?: Record<string, unknown>
   loadArtifacts?: () => Promise<unknown>
-  /** Host-specific APIs (device geometry, performance, etc.) merged into the API host. */
-  apiExtensions?: Record<string, (...args: unknown[]) => unknown>
+  /**
+   * Mini-program API table factory. Required: the service thread installs
+   * exactly what this returns and reports every other `wx.*` name as
+   * unsupported. Hosts compose the standard set (`@tiny/api`) with
+   * their own device facts.
+   */
+  apiHost: ServiceApiFactory
   /** Host canvas implementation for legacy canvas APIs/selector nodes. */
   canvas?: ServiceCanvasAdapter
   /** Host hook mapping app-root asset paths to loadable URLs (canvas images, …). */

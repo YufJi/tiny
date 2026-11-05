@@ -1,6 +1,1 @@
-tiny-label {
-  display: inline;
-}
-.tiny-label {
-  display: inline-block;
-}
+/* WeChat 2.33.0 ships no wx-label rules: the host stays inline and UA [hidden] applies. */

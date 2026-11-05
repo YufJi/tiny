@@ -1,0 +1,74 @@
+tiny-map {
+  display: block;
+  height: 150px;
+  position: relative;
+  width: 300px;
+}
+
+tiny-map[hidden] {
+  display: none;
+}
+
+#map {
+  background-color: #e5e3df;
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+#markers {
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+#slot {
+  height: 100%;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 100%;
+  z-index: 2;
+}
+
+#slot * {
+  pointer-events: auto;
+}
+
+.wx-map-marker {
+  background: #e64340;
+  border: 2px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  height: 14px;
+  position: absolute;
+  transform: rotate(-45deg);
+  width: 14px;
+}
+
+.wx-map-marker img {
+  height: 100%;
+  transform: rotate(45deg);
+  width: 100%;
+}
+
+.wx-map-location {
+  background: #1a73e8;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 8px rgba(26, 115, 232, 0.2);
+  height: 10px;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+}

@@ -3,10 +3,10 @@ title: 'service 跑逻辑树，'
 highlight: '宿主跑渲染树'
 eyebrow: '运行时'
 lede: >-
-  packages/runtime 是 Tiny 的小程序内核，不引用 window、document 或 iframe。service 线程用 glass-easel 维护逻辑树，负责 App/Page/Component、页面栈、setData、observer、relations 和模板求值；render 线程由宿主持有真实渲染树，只负责内置组件、样式、布局和 DOM。两棵树通过 tree.flow、tree.patch 和 tree.event 同步。
+  packages/runtime 是 Tiny 的小程序内核，不引用 window、document 或 iframe。service 线程用 glass-easel 维护逻辑树，负责 App/Page/Component、页面栈、setData、observer、relations 和逻辑树模板求值；render 线程由宿主持有真实渲染树，用同一份模板求值组件 shadow tree，负责内置组件、样式、布局和 DOM。两棵树通过 tree.flow、tree.patch 和 tree.event 同步。
 stats:
   - ['2', '运行时树']
-  - ['23', '内置组件']
+  - ['39', '内置组件']
   - ['9', '消息域']
   - ['5', '组件生命周期']
 pills:
@@ -22,33 +22,33 @@ order: 4
 
 ## 两棵树，各管各的 {#overview kicker="总览"}
 
-service 执行小程序逻辑并维护 glass-easel 逻辑树；render 线程由宿主持有真实组件树。两棵树不共享内存，靠稳定的 node id、component flow 和 virtual node patch 对齐。
+service 执行小程序逻辑并维护 glass-easel 逻辑树；render 线程由宿主持有真实组件树，并按同一份编译模板求值组件 shadow tree（two-evaluation）。两棵树不共享内存，靠组件的共享 id、元素 locator、component flow 和 virtual node patch 对齐。
 
 ```text
 service thread                              render thread (one root per page)
 +-------------------------------+           +-------------------------------+
 | App / Page / Component        |           | host TreeRenderer             |
 | glass-easel logic ComponentSpace |  tree  | real built-in components      |
-| template -> virtual RenderNode | <------> | glass-easel render tree       |
+| template eval -> RenderNode   | <------> | template eval + render tree   |
 | data / observers / relations  |  flow    | DOM / layout / styles         |
-| node ids + patches            |  patch   | no app methods                |
+| component ids / locators      |  patch   | no app methods                |
 +-------------------------------+           +-------------------------------+
 ```
 
 ::::split
 :::card{tag="service" title="逻辑树和业务状态"}
-glass-easel ComponentSpace 在 service 中运行，自定义组件是完整实例，拥有 data、properties、observers、relations、lifetimes、事件回调、带类型的 dataset 和 node id。模板也在 service 求值，输出 `RenderNode` 虚拟树。
+glass-easel ComponentSpace 在 service 中运行，自定义组件是完整实例，拥有 data、properties、observers、relations、lifetimes、事件回调、带类型的 dataset 和组件共享 id。模板在 service 求值，输出 `RenderNode` 虚拟树；同一个组件模板也会在 render 侧被求值一次。
 :::
 
 :::card{tag="render" tone="violet" title="真实组件和 DOM"}
-每个页面有一个 render root。宿主的 `TreeRenderer` 创建真实内置组件、自定义组件容器、slot、shadow root、样式和布局。render 不执行 app methods、observer 或 relations。
+每个页面有一个 render root。宿主的 `TreeRenderer` 创建真实内置组件、自定义组件容器、slot、shadow root、样式和布局，并按组件定义求值 shadow tree。render 不执行 app methods、observer 或 relations；元素只持有渲染侧本地 id。
 :::
 ::::
 
-:::callout{title="node id 由 service 分配"}
-service 在创建虚拟节点时分配稳定 id，render 只维护 id 到真实组件的映射。后续 patch、事件、查询和元素树检查都以这个 id 为锚点，而不是从 DOM 反推小程序语义。
+:::callout{title="只有组件共享 id，元素用 locator"}
+service 给组件（和页面根）分配稳定 id，render 按这个 id 维护组件实例；元素不带跨线程 id，渲染侧分配本地 id，补丁、事件、查询和元素树检查都用 `owner#index.path` 形式的 locator 寻址。
 
-当前模板更新走 virtual node patch；component flow 只负责首屏挂载（`define`、`create-node`、`props`、`children`、`ready`）。增量不依赖微信旧的 FLOW_UPDATE/FLOW_SET_DATA/FLOW_DATA_OBSERVER，snapshot diff 已经覆盖文本、属性、结构和重排。
+当前模板更新走 virtual node patch；component flow 只负责首屏挂载（`define`、`tree`、`ready`），快照作为嵌套树传输，组件模板由 render 按 `templates.js` 求值。增量不依赖微信旧的 FLOW_UPDATE/FLOW_SET_DATA/FLOW_DATA_OBSERVER，snapshot diff 已经覆盖文本、属性、结构和重排。
 :::
 
 ## service 线程：逻辑树和页面栈 {#service kicker="service 线程"}
@@ -201,7 +201,7 @@ Component({
 :::
 
 :::card{title="observer 只在 service 执行"}
-render 发现 DOM 事件后把 node id 和 native 字段发回 service；事件处理、setData、observer 和模板求值都在逻辑树完成。
+render 发现 DOM 事件后把组件 id 或元素 locator 和 native 字段发回 service；事件处理、setData、observer 和逻辑树模板求值都在 service 完成。
 :::
 
 :::card{title="递归和异常都有诊断" tone="warn"}
@@ -212,14 +212,14 @@ observer 递归深度上限是 20，超过会产生 `OBSERVER_RECURSION_LIMIT`�
 
 ## 事件从渲染树回到逻辑树 {#events kicker="事件"}
 
-渲染树只负责把真实 DOM 事件转成 `tree.event`：带 node id、事件名、detail、native 字段和 touch 列表。service 用 node id 找到逻辑节点，取出带类型的 dataset，再走 glass-easel 的捕获/冒泡。
+渲染树只负责把真实 DOM 事件转成 `tree.event`：带组件 id 或元素 locator、事件名、detail、native 字段和 touch 列表。service 解析到逻辑节点，取出带类型的 dataset，再走 glass-easel 的捕获/冒泡。
 
 :::sequence
 | title | detail | code |
 | --- | --- | --- |
 | 渲染树收到原生事件 | 宿主内置组件和 DOM 监听器先处理点击、输入、滚动、触摸等原生事件，并归一化 detail。 | host event listener |
-| 发送 tree.event | 渲染树按稳定 node id 发出事件；不再传 componentData，也不要求 service 根据 tag 猜事件语义。 | sendEvent('tree', 'event', payload) |
-| service 找到逻辑节点 | 逻辑树按 node id 找到绑定监听器的元素，读取 typed dataset 和 id，执行 capture/bubble。 | logicTree.dispatchViewEvent(payload) |
+| 发送 tree.event | 渲染树按组件 id 或元素 locator 发出事件；不再传 componentData，也不要求 service 根据 tag 猜事件语义。 | sendEvent('tree', 'event', payload) |
+| service 找到逻辑节点 | 逻辑树按组件 id / locator 找到绑定监听器的元素，读取 typed dataset 和 id，执行 capture/bubble。 | logicTree.dispatchViewEvent(payload) |
 | 调用页面或组件方法 | 逻辑树调用对应的方法；抛错会转成 EVENT_HANDLER_ERROR 诊断。 | page.invokeMethod(handler, [event]) |
 :::
 
@@ -323,14 +323,14 @@ attached 触发 linked，detached 触发 unlinked，移动时触发 linkChanged�
 ::::
 
 ::::stack
-:::card{tag="tree" title="逻辑树和渲染树只共享 node id"}
-逻辑树保存 pageId、path、tag、id、class、parent、顺序和虚拟节点；渲染树只保存 node id 到真实组件的映射，不保存组件 data 或 observer。
+:::card{tag="tree" title="逻辑树和渲染树只共享组件 id"}
+逻辑树保存 pageId、path、tag、id、class、parent、顺序和虚拟节点；渲染树只保存组件 id 到真实组件的映射、元素本地 id 和 locator，不保存组件 data 或 observer。
 :::
 
 :::card{tag="页面生命周期" tone="warn" title="按实例分发"}
 page.show/hide 会遍历 service 里的所有组件实例，逐个调用 pageLifetimes。render 没有 componentPageLifetime 回路，避免重复执行。
 
-generics、definitionFilter 和 pureDataPattern 已接入；componentPlaceholder 仍未实现。
+generics（含页面级 `generic:x` 覆盖）、definitionFilter 和 pureDataPattern 已接入；componentPlaceholder 仍未实现。
 :::
 
 :::card{tag="样式" title="组件配置进入 flow"}
@@ -368,14 +368,14 @@ export type TreeRenderer = {
 :::
 
 :::card{tag="Test" title="headless renderer"}
-runtime 单测用 headless renderer 验证整棵树、patch 顺序、node id 和事件回传，不需要 iframe 或 DOM。
+runtime 单测用 headless renderer 验证整棵树、patch 顺序、组件 id / 元素 locator 和事件回传，不需要 iframe 或 DOM。
 :::
 ::::
 
 :::::split
 ::::stack
 :::card{title="首屏：tree.flow"}
-service 把组件定义、create-node、props、children 和 ready 编成 component flow，渲染树按顺序创建真实节点，最后把页面根挂到容器。
+service 把组件定义和整棵渲染快照编成 component flow（define/tree/ready），渲染树先注册组件定义，再创建真实节点，最后把页面根挂到容器。
 :::
 
 :::card{title="更新：tree.patch"}
@@ -393,16 +393,16 @@ service 对虚拟树做 diff，渲染树只应用 text、replace、props、inser
 :::::
 
 :::callout{title="render 不负责业务路由"}
-渲染树不保存页面栈，也不决定页面切换。它只响应宿主转发的 tree flow/patch、query/canvas 控制和 inspectTree，并把事件按 node id 回传 service。
+渲染树不保存页面栈，也不决定页面切换。它只响应宿主转发的 tree flow/patch、query/canvas 控制和 inspectTree，并把事件按组件 id / 元素 locator 回传 service。
 :::
 
-## 23 个内置组件由宿主提供 {#builtins kicker="内置组件"}
+## 39 个内置组件由宿主提供 {#builtins kicker="内置组件"}
 
 内置组件不再是 service 里的玻璃组件，也不是 render 里重新求值的 WXML；service 只输出语义 tag，宿主把它们映射成真实内置组件。
 
 ::::cards{layout="three"}
 :::card{tag="AOT" title="模板和样式"}
-`build-templates.mjs` 把 23 个 `template.wxml` 编成一个模板 group；`build-styles.mjs` 合成基础样式加 23 份组件样式。
+`build-templates.mjs` 把 39 个 `template.wxml` 编成一个模板 group；`build-styles.mjs` 合成基础样式加 39 份组件样式。
 
 生成物在 `hosts/web-components/src/generated`，不提交到仓库。
 :::
@@ -425,13 +425,13 @@ service 对虚拟树做 diff，渲染树只应用 text、replace、props、inser
 | scroll-view / swiper | scrollX/Y、scrollTop/Left、refresher、drag/scroll；swiper change/transition | CSS overflow / transform + touch/scroll 监听 |
 | progress / canvas | percent/showInfo/active；canvas-id、2D/WebGL、rAF、createImage、touch | tiny-progress；canvas surface + OffscreenCanvas handoff |
 
-:::callout{title="仍然不是完整组件库" tone="warn"}
-navigator、video、rich-text、map、movable-view 等还没有实现；已有组件的 open-type、表单提交、无障碍和 Skyline 语义也不完整。
+:::callout{title="不是完整微信组件库" tone="warn"}
+2.33.0 的 39 个 WebView 目标标签都已落地，但 video/audio/web-view 是浏览器近似；open-type 的真实平台能力、表单上报、无障碍细节和 Skyline 语义仍不完整。
 :::
 
 ## 样式：service 算 scope，render 应用 {#styles kicker="样式隔离"}
 
-样式表按 cascade role 分类（builtin / app / page / component / page-scope / shared）。service 过滤并计算 scope，渲染树把样式应用到真实组件树；内置 CSS 始终归宿主。
+样式表按 cascade role 分类（builtin / low-priority / app / page / component / page-scope / shared）。service 过滤并计算 scope，渲染树把样式应用到真实组件树；内置 CSS 始终归宿主。
 
 | 配置 | 生效范围 | 行为 |
 | --- | --- | --- |
@@ -456,8 +456,8 @@ navigator、video、rich-text、map、movable-view 等还没有实现；已有�
 :::
 ::::
 
-:::callout{title="低优先级 CSS 还没有启用"}
-CLI 仍会写 `*.low.css`，但目前没有启用 `convertHost`，runtime 也不会加载它。`:host` 组合和优先级还没有系统整理。
+:::callout{title="低优先级 CSS 先于页面样式" tone="good"}
+页面/组件的 `:host` 规则编译进 `*.low.css`，runtime 按 role 先追加 low-priority，再追加 app、page-scope 和 page/component，宿主默认样式因此总可以被覆盖。app 样式没有 scope，不产生低优先级表。
 :::
 
 ## Canvas、查询和相交观测 {#canvas kicker="Canvas 与查询"}
@@ -494,7 +494,7 @@ service 把 observe 请求和 view id 发给渲染树；Web 宿主用原生 Inte
 
 
 :::card{tag="事件" tone="warn" title="tree.event 还没有 target geometry"}
-事件只带 node id、name、detail、native 字段和 touches；目标节点的几何信息由 service 侧逻辑节点补足，和微信协议仍有差别。
+事件只带组件 id / 元素 locator、name、detail、native 字段和 touches；目标节点的几何信息由 service 侧逻辑节点补足，和微信协议仍有差别。
 :::
 
 :::card{tag="原生" tone="warn" title="原生渲染器只有契约"}

@@ -48,15 +48,21 @@ export function attachEventCompositor(options: CompositorOptions): () => void {
 
   // Only gestures whose DOM target belongs to this tree are dispatched. A
   // nested or shared container would otherwise let two compositors inject the
-  // same tap into the same glass element.
+  // same tap into the same glass element. With a document-level root the
+  // ownership predicate also covers portal content moved outside the container.
   const elementInRoot = (candidate: EventTarget | null): glassEasel.Element | null => {
     if (!candidate) return null
+    const element = glassElementOf(candidate)
+    if (!element) return null
+    if (options.isOwnedTarget) {
+      return options.isOwnedTarget(element) ? element : null
+    }
     try {
       if (!root.contains(candidate as Node)) return null
     } catch {
       return null
     }
-    return glassElementOf(candidate)
+    return element
   }
 
   const resolveTarget = (event: Event): glassEasel.Element | null => (

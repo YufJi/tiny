@@ -1,0 +1,4 @@
+/*
+ * WeChat 2.33.0 declares no author CSS for `wx-match-media`; the component
+ * toggles only its internal display style when the media query changes.
+ */

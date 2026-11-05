@@ -1,0 +1,21 @@
+<block wx:if="{{inited}}">
+  <div style="{{display ? '' : 'display: none;'}}">
+    <block wx:if="{{overlay}}">
+      <div
+        class="weui-overlay {{overlayClass}}"
+        style="-webkit-transition-duration: {{duration}}ms; transition-duration: {{duration}}ms; z-index: {{zIndex}}; {{overlayStyle}}"
+        bind:tap="onClickOverlay"
+      ></div>
+    </block>
+    <div
+      id="content"
+      class="weui-popup {{popupClass}} {{popupClassModifiers}}"
+      style="-webkit-transition-duration: {{duration}}ms; transition-duration: {{duration}}ms; z-index: {{zIndex}}; {{customStyle}};"
+      bind:transitionend="onTransitionEnd"
+      bind:touchstart="onTouchStart"
+      bind:touchmove="onTouchMove"
+    >
+      <slot />
+    </div>
+  </div>
+</block>

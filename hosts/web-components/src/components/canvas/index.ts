@@ -152,11 +152,13 @@ export function defineCanvas(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: builtinDefinitionName('canvas'),
     template: ctx.template('canvas'),
-    behaviors: [ctx.behaviors.base],
+    behaviors: [ctx.behaviors.base, ctx.behaviors.reload],
     properties: {
       canvasId: { type: String, value: '' },
       type: { type: String, value: '' },
-      disableScroll: { type: Boolean, value: false },
+      disableScroll: { type: Boolean, value: false, observer: 'disableScrollChanged' },
+      renderWidth: { type: Number, value: 300, observer: 'renderSizeChanged' },
+      renderHeight: { type: Number, value: 150, observer: 'renderSizeChanged' },
     },
     lifetimes: {
       created() {
@@ -167,6 +169,9 @@ export function defineCanvas(ctx: BuiltinContext): BuiltinDefinition {
           details: { canvasId: this.data.canvasId, type: this.data.type },
         })
       },
+      attached() {
+        ;(this as unknown as { renderSizeChanged: () => void }).renderSizeChanged()
+      },
       detached() {
         const instance = this as unknown as CanvasRuntime
         if (instance.__canvasLongTapTimer) clearTimeout(instance.__canvasLongTapTimer)
@@ -175,6 +180,15 @@ export function defineCanvas(ctx: BuiltinContext): BuiltinDefinition {
       },
     },
     methods: {
+      disableScrollChanged(): void {},
+      renderSizeChanged(): void {
+        const element = canvasElement(this) as HTMLCanvasElement | null
+        if (!element) return
+        const width = Number(this.data.renderWidth)
+        const height = Number(this.data.renderHeight)
+        if (Number.isFinite(width) && width > 0) element.width = width
+        if (Number.isFinite(height) && height > 0) element.height = height
+      },
       handleTouchStart(event: glassEasel.ShadowedEvent<unknown>) {
         const instance = this as unknown as CanvasRuntime
         instance.__canvasLastTouchAt = Date.now()

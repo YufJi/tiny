@@ -398,7 +398,7 @@ class RemoteCanvas2D {
     if (!imageId) return
     this.push('drawImage', imageId, ...args)
   }
-  getImageData(x: number, y: number, width: number, height: number): Record<string, unknown> {
+  getImageData(_x: number, _y: number, width: number, height: number): Record<string, unknown> {
     if (!warnedReadback) {
       warnedReadback = true
       host.__tinyLog?.('warn', 'canvas.getImageData is not available on the iOS host yet')

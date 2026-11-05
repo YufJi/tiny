@@ -1,4 +1,5 @@
 {
-  "navigationBarTitleText": "progress",
-  "navigationStyle": "default"
+    "navigationBarTitleText": "progress",
+    "navigationStyle": "default",
+    "renderer": "webview"
 }

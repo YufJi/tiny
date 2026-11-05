@@ -43,30 +43,30 @@ describe('projected render tree in glass', () => {
     render.mount(root)
 
     const group = render.getNode('group') as unknown as {
-      hasItems: (nodes: unknown[]) => boolean
-      childNodes: unknown[]
+      data: { value: string[] }
     }
     const checkbox = render.getNode('check') as unknown as { is: string; data: { checked: boolean } }
     const footer = render.getNode('footer') as unknown as { textContent: string }
     expect(group).toBeDefined()
     expect(checkbox).toBeDefined()
-    expect(group.hasItems(group.childNodes)).toBe(true)
+    expect(group.data.value).toEqual([])
     expect(checkbox.is).toContain('checkbox')
     expect(footer.textContent).toBe('hello hello')
 
     render.applyPatches([
-      { type: 'props', id: 'check', props: { value: 'a', checked: true } },
-      { type: 'text', id: 'footer', text: 'hello bye' },
+      { type: 'props', target: 'page#0.0.0', props: { value: 'a', checked: true } },
+      { type: 'text', target: 'page#1.0', text: 'hello bye' },
     ])
     expect((render.getNode('check') as unknown as { data: { checked: boolean } }).data.checked).toBe(true)
+    expect(group.data.value).toEqual(['a'])
     expect((render.getNode('footer') as unknown as { textContent: string }).textContent).toBe('hello bye')
 
-    render.applyPatches([{ type: 'remove', parentId: 'page', index: 1, count: 1 }])
+    render.applyPatches([{ type: 'remove', parent: 'page', index: 1, count: 1 }])
     expect(render.getNode('footer')).toBeUndefined()
 
     render.applyPatches([{
       type: 'insert',
-      parentId: 'page',
+      parent: 'page',
       index: 1,
       node: {
         type: 'element',

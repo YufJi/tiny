@@ -1,3 +1,2 @@
-<span
-  class="tiny-text {{selectable ? 'tiny-text-selectable' : ''}} {{space ? 'tiny-text-space-' + space : ''}}"
-><slot /></span>
+<span id="raw" style="display: none;"><slot /></span>
+<span id="main"></span>

@@ -1,4 +1,6 @@
 tiny-radio-group {
   display: block;
-  box-sizing: border-box;
+}
+tiny-radio-group[hidden] {
+  display: none;
 }

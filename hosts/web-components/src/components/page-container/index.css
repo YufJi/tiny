@@ -1,0 +1,122 @@
+.weui-overlay {
+  background-color: rgba(0, 0, 0, 0.7);
+  height: 100%;
+  left: 0;
+  position: fixed;
+  top: 0;
+  transition-timing-function: ease;
+  width: 100%;
+}
+
+.weui-popup {
+  -webkit-overflow-scrolling: touch;
+  background-color: #fff;
+  box-sizing: border-box;
+  max-height: 100%;
+  overflow: hidden;
+  position: fixed;
+}
+
+.weui-popup--center {
+  height: 100%;
+  left: 0;
+  top: 0;
+  width: 100%;
+}
+
+.weui-popup--top {
+  left: 0;
+  top: 0;
+  width: 100%;
+}
+
+.weui-popup--top.weui-popup--round {
+  border-radius: 0 0 20px 20px;
+}
+
+.weui-popup--right {
+  height: 100%;
+  left: 0;
+  top: 0;
+  width: 100%;
+}
+
+.weui-popup--bottom {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+
+.weui-popup--bottom.weui-popup--round {
+  border-radius: 20px 20px 0 0;
+}
+
+.weui-scale-enter-active,
+.weui-scale-leave-active {
+  transition-property:
+    opacity,
+    -webkit-transform;
+  transition-property: opacity, transform;
+  transition-property:
+    opacity,
+    transform,
+    -webkit-transform;
+}
+
+.weui-scale-enter,
+.weui-scale-leave-to {
+  opacity: 0;
+  -webkit-transform: translate3d(-50%, -50%, 0) scale(0.7);
+  transform: translate3d(-50%, -50%, 0) scale(0.7);
+}
+
+.weui-fade-enter-active,
+.weui-fade-leave-active {
+  transition-property: opacity;
+}
+
+.weui-fade-enter,
+.weui-fade-leave-to {
+  opacity: 0;
+}
+
+.weui-center-enter-active,
+.weui-center-leave-active {
+  transition-property: opacity;
+}
+
+.weui-center-enter,
+.weui-center-leave-to {
+  opacity: 0;
+}
+
+.weui-bottom-enter-active,
+.weui-bottom-leave-active,
+.weui-right-enter-active,
+.weui-right-leave-active,
+.weui-top-enter-active,
+.weui-top-leave-active {
+  transition-property: -webkit-transform;
+  transition-property: transform;
+  transition-property:
+    transform,
+    -webkit-transform;
+}
+
+.weui-bottom-enter,
+.weui-bottom-leave-to {
+  -webkit-transform: translate3d(0, 100%, 0);
+  transform: translate3d(0, 100%, 0);
+}
+
+.weui-top-enter,
+.weui-top-leave-to {
+  -webkit-transform: translate3d(0, -100%, 0);
+  transform: translate3d(0, -100%, 0);
+}
+
+.weui-right-enter,
+.weui-right-leave-to {
+  -webkit-transform: translate3d(100%, 0, 0);
+  transform: translate3d(100%, 0, 0);
+}

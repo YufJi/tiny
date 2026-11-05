@@ -40,6 +40,7 @@ const APP_DEFS = discoverTestApps().map((app) => {
 const requiredBuilds = [
   'packages/manifest/dist/index.js',
   'packages/runtime/dist/index.js',
+  'packages/api/dist/index.js',
   'packages/bridge/dist/index.js',
   'hosts/browser/dist/index.js',
   'hosts/web-components/dist/index.js',
@@ -162,6 +163,13 @@ async function buildApp(appDef) {
   )
 
   await copyAssets(manifest, compiledDir, appOutputDir)
+  // The render WebView evaluates component templates itself, so it needs the
+  // same compiled template bundle the service evaluates from app-data.json.
+  await fsp.mkdir(path.join(appOutputDir, 'assets'), { recursive: true })
+  await fsp.copyFile(
+    path.join(compiledDir, 'templates.js'),
+    path.join(appOutputDir, 'assets', 'templates.js'),
+  )
 
   const meta = {
     id: appDef.id,

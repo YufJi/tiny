@@ -41,6 +41,12 @@ export type WasmHostOptions = {
   apiHandlers?: HostApiHandlers
   onState?: (state: unknown) => void
   onDiagnostic?: (diagnostic: RuntimeDiagnostic) => void
+  /** Host-side request/response capabilities (e.g. the `<picker>` popover). */
+  onHostRequest?: (
+    method: string,
+    payload: unknown,
+    context: { pageId?: string },
+  ) => Promise<unknown>
   /** Wait for the first page to be activated before launch resolves. */
   waitForReady?: boolean
 }
@@ -55,6 +61,7 @@ type CoreAction =
   | { type: 'updateUIState'; state: unknown }
   | { type: 'commandResult'; command: string; result: unknown }
   | { type: 'platformCall'; requestId: string; method: string; params: unknown; pageId?: string }
+  | { type: 'renderHostRequest'; requestId: string; pageId: string; method: string; payload: unknown }
   | { type: 'diagnostic'; level: string; payload: Record<string, unknown> }
 
 type PageSurface = {
@@ -317,6 +324,9 @@ export class WasmBrowserHost {
         case 'platformCall':
           void this.runPlatformCall(action)
           break
+        case 'renderHostRequest':
+          void this.runHostRequest(action)
+          break
         case 'diagnostic': {
           const payload = action.payload as {
             source?: RuntimeDiagnostic['source']
@@ -531,6 +541,31 @@ export class WasmBrowserHost {
         error instanceof Error ? error.message : String(error),
       )
     }
+  }
+
+  private async runHostRequest(action: Extract<CoreAction, { type: 'renderHostRequest' }>): Promise<void> {
+    try {
+      let result: unknown
+      if (!this.options.onHostRequest) {
+        throw new Error(`unsupported host request: ${action.method}`)
+      }
+      result = await this.options.onHostRequest(action.method, action.payload, { pageId: action.pageId })
+      this.finishRenderHostRequest(action.requestId, result)
+    } catch (error) {
+      this.finishRenderHostRequest(
+        action.requestId,
+        undefined,
+        error instanceof Error ? error.message : String(error),
+      )
+    }
+  }
+
+  private finishRenderHostRequest(requestId: string, result?: unknown, error?: string): void {
+    this.execute(this.dispatchEvent({
+      type: 'renderHostResult',
+      requestId,
+      ...(error ? { error } : { result }),
+    }))
   }
 
   private finishPlatformCall(requestId: string, result?: unknown, error?: string): void {

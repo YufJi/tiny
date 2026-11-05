@@ -52,9 +52,22 @@ Each component owns its folder with `template.wxml` and `index.ts`. The
 definition file receives a `BuiltinContext` and only declares properties,
 lifetimes, observers, and methods; it never parses WXML.
 
+### Placeholders
+
+Unimplemented components and behaviors have `PLACEHOLDER.md` scaffolding:
+`src/components/<tag>/PLACEHOLDER.md` and
+`src/behaviors/pending/<behavior>/PLACEHOLDER.md`. The template/style build
+scripts skip component folders carrying the marker, so a placeholder is never
+registered as an empty built-in. Remove the marker when implementation starts.
+The current gap list and counts live in
+[docs/builtin-inventory-2.33.0.md](../../docs/builtin-inventory-2.33.0.md).
+
 ## Style boundary
 
-The web host uses flat DOM plus scoped CSS rather than Shadow DOM.
+The web host uses flat DOM plus scoped CSS rather than Shadow DOM. The full
+model is documented in [docs/style-isolation.md](../../docs/style-isolation.md);
+known selector pitfalls are tracked in
+[docs/known-issues/builtin-style-selectors.md](../../docs/known-issues/builtin-style-selectors.md).
 
 - `src/styles/index.css` contains public host/base rules. It is registered in
   the global scope, so `app.wxss`, page WXSS, and component WXSS can customize
@@ -91,4 +104,5 @@ templates` to refresh it manually after editing a `template.wxml`.
 3. Run `pnpm --filter @tiny/host-web-components build` to regenerate templates
    and styles.
 4. Update the host wiring only if the new tag needs host-specific behavior;
-   the browser host already injects `webBuiltinComponents`.
+   the web render tree already creates the built-in definitions and installs
+   their styles (see `src/render-tree.ts` and `src/render-entry.ts`).

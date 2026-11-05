@@ -18,7 +18,12 @@
       "outputs": []
     },
     "@tiny/host-core-wasm#build": {
+      "dependsOn": ["^build"],
       "outputs": ["pkg/**"]
+    },
+    "@tiny/host-web-components#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "src/generated/**"]
     }
   }
 }

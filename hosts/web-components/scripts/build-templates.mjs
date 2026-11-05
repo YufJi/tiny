@@ -16,10 +16,17 @@ const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const componentsRoot = path.join(packageRoot, 'src/components')
 const outputDir = path.join(packageRoot, 'src/generated')
 
-const tags = fs.readdirSync(componentsRoot, { withFileTypes: true })
+// Unimplemented components keep a PLACEHOLDER.md instead of template/css/ts.
+// Skip them here so scaffolding does not become a registered empty component.
+const PLACEHOLDER_MARKER = 'PLACEHOLDER.md'
+
+const componentDirs = fs.readdirSync(componentsRoot, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
   .map((entry) => entry.name)
   .sort()
+const tags = componentDirs
+  .filter((tag) => !fs.existsSync(path.join(componentsRoot, tag, PLACEHOLDER_MARKER)))
+const placeholderCount = componentDirs.length - tags.length
 const tagSet = new Set(tags)
 
 function injectInternalScopeClasses(source) {
@@ -48,7 +55,19 @@ function injectInternalScopeClasses(source) {
   )
 }
 
+const internalTemplates = [
+  ['pull-down-refresher', path.join(componentsRoot, 'scroll-view', 'refresher.wxml')],
+]
+
 const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
+for (const [name, templatePath] of internalTemplates) {
+  const source = injectInternalScopeClasses(fs.readFileSync(templatePath, 'utf8'))
+  const warnings = group.addTmpl(name, source)
+  if (warnings.length > 0) {
+    const messages = warnings.map((warning) => `${warning.kind} at ${JSON.stringify(warning.start)}`)
+    throw new Error(`Template warnings for ${name}: ${messages.join(', ')}`)
+  }
+}
 for (const tag of tags) {
   const templatePath = path.join(componentsRoot, tag, 'template.wxml')
   if (!fs.existsSync(templatePath)) {
@@ -85,4 +104,7 @@ fs.writeFileSync(
     '',
   ].join('\n'),
 )
-console.log(`[components] precompiled ${tags.length} templates`)
+console.log(
+  `[components] precompiled ${tags.length} templates and ${internalTemplates.length} internal template`
+    + ` (${placeholderCount} placeholder components skipped)`,
+)

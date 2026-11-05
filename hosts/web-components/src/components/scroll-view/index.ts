@@ -2,6 +2,7 @@ import type * as glassEasel from 'glass-easel'
 import { touchListFromEvent } from '../../events'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { builtinDefinitionName } from '../../tags'
+import { definePullDownRefresher } from './refresher'
 
 type ScrollBackend = {
   scrollTop?: number
@@ -10,7 +11,14 @@ type ScrollBackend = {
   scrollWidth?: number
   clientHeight?: number
   clientWidth?: number
-  style?: { scrollBehavior?: string }
+  style?: {
+    scrollBehavior?: string
+    overflowX?: string
+    overflowY?: string
+    transition?: string
+    transform?: string
+    [key: string]: string | undefined
+  }
   querySelector?: (selector: string) => { scrollIntoView?: (options?: unknown) => void } | null
 }
 
@@ -21,10 +29,8 @@ type ScrollRuntime = {
   __scrollPendingDetail?: Record<string, unknown>
   __lastScrollEmit?: number
   __scrollingUntil?: number
-  __refresherTimer?: ReturnType<typeof setTimeout>
   __dragStart?: { x: number; y: number; scrollTop: number }
   __dragging?: boolean
-  __pullDistance?: number
 }
 
 function touchPoint(event: glassEasel.ShadowedEvent<unknown>): { x: number; y: number } {
@@ -34,9 +40,11 @@ function touchPoint(event: glassEasel.ShadowedEvent<unknown>): { x: number; y: n
 }
 
 export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
+  const refresher = definePullDownRefresher(ctx)
   return ctx.space.defineComponent({
     is: builtinDefinitionName('scroll-view'),
     template: ctx.template('scroll-view'),
+    using: { 'refresher-impl': refresher },
     behaviors: [ctx.behaviors.base, ctx.behaviors.scroller],
     properties: {
       scrollX: { type: Boolean, value: false },
@@ -48,6 +56,8 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
       scrollIntoView: { type: String, value: '' },
       scrollWithAnimation: { type: Boolean, value: false },
       enableBackToTop: { type: Boolean, value: false },
+      enablePassive: { type: Boolean, value: false },
+      scrollEnabled: { type: Boolean, value: true },
       throttle: { type: Boolean, value: true },
       refresherEnabled: { type: Boolean, value: false },
       refresherTriggered: { type: Boolean, value: false },
@@ -67,6 +77,7 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
     lifetimes: {
       attached() {
         ;(this as unknown as { initScroller: (element: unknown) => void }).initScroller(this.backend())
+        this.applyOverflow()
         this.applyScrollAnimation()
         this.applyScrollPosition('scrollTop')
         this.applyScrollPosition('scrollLeft')
@@ -77,7 +88,6 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         if (instance.__scrollStartTimer) clearTimeout(instance.__scrollStartTimer)
         if (instance.__scrollEndTimer) clearTimeout(instance.__scrollEndTimer)
         if (instance.__scrollThrottleTimer) clearTimeout(instance.__scrollThrottleTimer)
-        if (instance.__refresherTimer) clearTimeout(instance.__refresherTimer)
       },
     },
     observers: {
@@ -93,6 +103,15 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
       scrollWithAnimation() {
         this.applyScrollAnimation()
       },
+      scrollX() {
+        this.applyOverflow()
+      },
+      scrollY() {
+        this.applyOverflow()
+      },
+      scrollEnabled() {
+        this.applyOverflow()
+      },
       refresherTriggered(value: boolean) {
         this.triggerEvent('refresherstatuschange', { status: value ? 'refreshing' : 'complete' }, { bubbles: true, composed: true })
       },
@@ -101,12 +120,35 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
       backend(): ScrollBackend | null {
         const element = (this.getShadowRoot?.() as {
           getElementById?: (id: string) => { getBackendElement?: () => ScrollBackend | null } | null
-        } | null)?.getElementById?.('native-scroll-view')?.getBackendElement?.()
+        } | null)?.getElementById?.('main')?.getBackendElement?.()
         return element ?? (this as unknown as { getBackendElement?: () => ScrollBackend | null }).getBackendElement?.() ?? null
+      },
+      applyOverflow() {
+        const element = this.backend()
+        if (!element?.style) return
+        const enabled = Boolean(this.data.scrollEnabled)
+        element.style.overflowX = enabled && this.data.scrollX ? 'auto' : 'hidden'
+        element.style.overflowY = enabled && this.data.scrollY ? 'auto' : 'hidden'
       },
       applyScrollAnimation() {
         const element = this.backend()
         if (element?.style) element.style.scrollBehavior = this.data.scrollWithAnimation ? 'smooth' : 'auto'
+      },
+      updateScrollbar(left: number, width: number, client: number) {
+        if (!this.data.enhanced || !this.data.showScrollbar || !this.data.scrollX) return
+        const wrap = (this.getShadowRoot?.() as { getElementById?: (id: string) => { getBackendElement?: () => { style?: Record<string, string> } | null } | null } | null)
+          ?.getElementById?.('barWrap')?.getBackendElement?.()
+        const bar = (this.getShadowRoot?.() as { getElementById?: (id: string) => { getBackendElement?: () => { style?: Record<string, string> } | null } | null } | null)
+          ?.getElementById?.('scrollbar')?.getBackendElement?.()
+        if (!wrap?.style || !bar?.style) return
+        if (!(width > client) || client <= 0) {
+          wrap.style.display = 'none'
+          return
+        }
+        wrap.style.display = 'block'
+        bar.style.width = `${Math.max(10, (client / width) * 100)}%`
+        const maxLeft = width - client
+        bar.style.left = `${maxLeft > 0 ? (left / maxLeft) * (100 - Number.parseFloat(bar.style.width)) : 0}%`
       },
       applyScrollPosition(field: 'scrollTop' | 'scrollLeft' | 'scrollIntoView') {
         const element = this.backend()
@@ -142,18 +184,11 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         }
         if (attempt < 5) setTimeout(() => this.scrollToElement(id, attempt + 1), 16)
       },
-      cancelRefresher() {
-        const instance = this as unknown as ScrollRuntime
-        if (instance.__refresherTimer) clearTimeout(instance.__refresherTimer)
-        instance.__refresherTimer = undefined
-        if (this.data.refresherTriggered) this.setData({ refresherTriggered: false })
-      },
       handleTouchStart(event: glassEasel.ShadowedEvent<unknown>) {
         const instance = this as unknown as ScrollRuntime
         const point = touchPoint(event)
         instance.__dragStart = { ...point, scrollTop: Number(this.backend()?.scrollTop ?? 0) }
         instance.__dragging = false
-        instance.__pullDistance = 0
       },
       handleTouchMove(event: glassEasel.ShadowedEvent<unknown>) {
         const instance = this as unknown as ScrollRuntime
@@ -162,11 +197,6 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         const point = touchPoint(event)
         const deltaX = point.x - start.x
         const deltaY = point.y - start.y
-        if (this.data.refresherEnabled && start.scrollTop <= 0 && deltaY > 0) {
-          instance.__pullDistance = deltaY
-          this.triggerEvent('refresherpulling', { deltaY }, { bubbles: true, composed: true })
-          return
-        }
         const distance = Math.hypot(deltaX, deltaY)
         if (!instance.__dragging && distance > 5) {
           instance.__dragging = true
@@ -181,32 +211,30 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         if (instance.__dragging) {
           this.triggerEvent('dragend', { scrollTop: Number(this.backend()?.scrollTop ?? 0), scrollLeft: Number(this.backend()?.scrollLeft ?? 0) }, { bubbles: true, composed: true })
         }
-        const pullDistance = Number(instance.__pullDistance ?? 0)
         instance.__dragStart = undefined
         instance.__dragging = false
-        instance.__pullDistance = 0
-        if (this.data.refresherEnabled && pullDistance > Number(this.data.refresherThreshold ?? 45)) {
-          this.triggerEvent('refresherwillrefresh', {}, { bubbles: true, composed: true })
-          this.triggerEvent('refresherwillRefresh', {}, { bubbles: true, composed: true })
-          this.setData({ refresherTriggered: true })
-          this.triggerEvent('refresherrefresh', { dy: pullDistance }, { bubbles: true, composed: true })
-          if (instance.__refresherTimer) clearTimeout(instance.__refresherTimer)
-          instance.__refresherTimer = setTimeout(() => {
-            instance.__refresherTimer = undefined
-            this.setData({ refresherTriggered: false })
-            this.triggerEvent('refresherrestore', {}, { bubbles: true, composed: true })
-          }, 300)
-        }
       },
       handleTouchCancel() {
         const instance = this as unknown as ScrollRuntime
-        if (instance.__dragging) {
-          this.triggerEvent('dragend', {}, { bubbles: true, composed: true })
-        }
+        if (instance.__dragging) this.triggerEvent('dragend', {}, { bubbles: true, composed: true })
         instance.__dragStart = undefined
         instance.__dragging = false
-        instance.__pullDistance = 0
-        if (this.data.refresherEnabled) this.triggerEvent('refresherabort', {}, { bubbles: true, composed: true })
+      },
+      handleRefresherPulling(event: glassEasel.ShadowedEvent<unknown>) {
+        const detail = (event.detail ?? {}) as { dy?: number }
+        this.triggerEvent('refresherpulling', { dy: Number(detail.dy ?? 0) }, { bubbles: true, composed: true })
+      },
+      handleRefresherRefresh(event: glassEasel.ShadowedEvent<unknown>) {
+        const detail = (event.detail ?? {}) as { dy?: number }
+        if (!this.data.refresherTriggered) this.setData({ refresherTriggered: true })
+        this.triggerEvent('refresherrefresh', { dy: Number(detail.dy ?? 0) }, { bubbles: true, composed: true })
+      },
+      handleRefresherRestore() {
+        this.triggerEvent('refresherrestore', {}, { bubbles: true, composed: true })
+      },
+      handleRefresherAbort() {
+        if (this.data.refresherTriggered) this.setData({ refresherTriggered: false })
+        this.triggerEvent('refresherabort', {}, { bubbles: true, composed: true })
       },
       handleTap() {
         if (!this.data.enableBackToTop) return
@@ -279,6 +307,8 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
           deltaY: Number(detail.deltaY ?? 0),
         }
         this.emitThrottledScroll(scrollDetail)
+        ;(this as unknown as { updateScrollbar: (left: number, width: number, client: number) => void })
+          .updateScrollbar(scrollLeft, scrollWidth, Number(detail.clientWidth ?? element?.clientWidth ?? 0))
         if (scrollTop <= Number(this.data.upperThreshold ?? 50)) {
           this.triggerEvent('scrolltoupper', { direction: 'top' }, { bubbles: true, composed: true })
         }

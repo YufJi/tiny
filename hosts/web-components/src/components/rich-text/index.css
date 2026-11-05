@@ -1,0 +1,5 @@
+tiny-rich-text[user-select] {
+  cursor: auto;
+  user-select: text;
+  -webkit-user-select: text;
+}

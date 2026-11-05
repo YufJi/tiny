@@ -3,7 +3,6 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 
 const packageRoot = path.dirname(fileURLToPath(import.meta.url))
-const workspace = path.resolve(packageRoot, '../..')
 
 export default defineConfig(({ mode }) => {
   if (mode === 'service') {
@@ -20,7 +19,7 @@ export default defineConfig(({ mode }) => {
         emptyOutDir: true,
         target: 'es2019',
         commonjsOptions: {
-          include: [/node_modules/, /packages[\\/]runtime/, /hosts[\\/]browser/],
+          include: [/node_modules/, /packages[\\/]runtime/, /packages[\\/]api/, /hosts[\\/]browser/],
         },
         minify: false,
         sourcemap: false,
@@ -42,7 +41,7 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       target: 'safari16',
       commonjsOptions: {
-        include: [/node_modules/, /packages[\\/]runtime/, /hosts[\\/]browser/],
+        include: [/node_modules/, /packages[\\/]runtime/, /packages[\\/]api/, /hosts[\\/]browser/],
       },
       minify: false,
       sourcemap: false,

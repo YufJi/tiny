@@ -2,7 +2,7 @@ import type * as glassEasel from 'glass-easel'
 import type { BuiltinComponents } from '@tiny/runtime'
 import { BUILTIN_COMPONENT_TAGS, BUILTIN_HOST_TAG_PREFIX, type BuiltinComponentTag } from './tags'
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
-import { builtinTemplate } from './templates'
+import { builtinTemplate, internalTemplate } from './templates'
 import { createBuiltinBehaviors } from './behaviors'
 import {
   BUILTIN_BASE_STYLES,
@@ -11,8 +11,18 @@ import {
 } from './styles'
 import type { BuiltinContext, BuiltinComponentFactoryOptions } from './types'
 import { defineView } from './components/view'
+import { defineGridView } from './components/grid-view'
+import { defineCoverView } from './components/cover-view'
+import { defineCoverImage } from './components/cover-image'
+import { defineRootPortal } from './components/root-portal'
+import { definePageContainer } from './components/page-container'
+import { defineMovableArea } from './components/movable-area'
+import { defineMovableView } from './components/movable-view'
+import { definePageMeta } from './components/page-meta'
+import { defineNavigationBar } from './components/navigation-bar'
 import { defineButton } from './components/button'
 import { defineText } from './components/text'
+import { defineRichText } from './components/rich-text'
 import { defineLabel } from './components/label'
 import { defineInput } from './components/input'
 import { defineCheckbox } from './components/checkbox'
@@ -21,6 +31,9 @@ import { defineRadio } from './components/radio'
 import { defineRadioGroup } from './components/radio-group'
 import { defineIcon } from './components/icon'
 import { defineImage } from './components/image'
+import { defineAudio } from './components/audio'
+import { defineVideo } from './components/video'
+import { defineMap } from './components/map'
 import { defineNavigator } from './components/navigator'
 import { defineScrollView } from './components/scroll-view'
 import { defineSlider } from './components/slider'
@@ -28,12 +41,14 @@ import { defineProgress } from './components/progress'
 import { defineSwitch } from './components/switch'
 import { defineSwiper } from './components/swiper'
 import { defineSwiperItem } from './components/swiper-item'
+import { defineMatchMedia } from './components/match-media'
 import { defineCanvas } from './components/canvas'
 import { defineTextarea } from './components/textarea'
 import { defineForm } from './components/form'
 import { definePicker } from './components/picker'
 import { definePickerView } from './components/picker-view'
 import { definePickerViewColumn } from './components/picker-view-column'
+import { defineWebView } from './components/web-view'
 
 export { BUILTIN_COMPONENT_TAGS }
 export { BUILTIN_BASE_STYLES, BUILTIN_COMPONENT_STYLES, BUILTIN_HOST_STYLES }
@@ -49,8 +64,18 @@ type DefinitionFactory = (ctx: BuiltinContext) => glassEasel.GeneralComponentDef
 
 const DEFINITION_FACTORIES: Record<BuiltinComponentTag, DefinitionFactory> = {
   view: defineView,
+  'grid-view': defineGridView,
+  'cover-view': defineCoverView,
+  'cover-image': defineCoverImage,
+  'root-portal': defineRootPortal,
+  'page-container': definePageContainer,
+  'movable-area': defineMovableArea,
+  'movable-view': defineMovableView,
+  'page-meta': definePageMeta,
+  'navigation-bar': defineNavigationBar,
   button: defineButton,
   text: defineText,
+  'rich-text': defineRichText,
   label: defineLabel,
   input: defineInput,
   checkbox: defineCheckbox,
@@ -59,6 +84,9 @@ const DEFINITION_FACTORIES: Record<BuiltinComponentTag, DefinitionFactory> = {
   'radio-group': defineRadioGroup,
   icon: defineIcon,
   image: defineImage,
+  audio: defineAudio,
+  video: defineVideo,
+  map: defineMap,
   navigator: defineNavigator,
   'scroll-view': defineScrollView,
   slider: defineSlider,
@@ -66,12 +94,14 @@ const DEFINITION_FACTORIES: Record<BuiltinComponentTag, DefinitionFactory> = {
   switch: defineSwitch,
   swiper: defineSwiper,
   'swiper-item': defineSwiperItem,
+  'match-media': defineMatchMedia,
   canvas: defineCanvas,
   textarea: defineTextarea,
   form: defineForm,
   picker: definePicker,
   'picker-view': definePickerView,
   'picker-view-column': definePickerViewColumn,
+  'web-view': defineWebView,
 }
 
 export function createBuiltinComponents(
@@ -94,6 +124,7 @@ export function createBuiltinComponents(
     space,
     options,
     template: builtinTemplate,
+    internalTemplate,
     behaviors: createBuiltinBehaviors(space),
     getBuiltin: (tag) => definitions[tag],
     hostOptions: (tag, extra = {}) => ({
@@ -104,14 +135,8 @@ export function createBuiltinComponents(
       ...extra,
     }),
   }
-  // picker embeds picker-view/picker-view-column in its overlay, so create
-  // it after the components it uses.
-  const deferred = new Set<BuiltinComponentTag>(['picker'])
   for (const tag of BUILTIN_COMPONENT_TAGS) {
-    if (!deferred.has(tag)) definitions[tag] = DEFINITION_FACTORIES[tag](context)
-  }
-  for (const tag of BUILTIN_COMPONENT_TAGS) {
-    if (deferred.has(tag)) definitions[tag] = DEFINITION_FACTORIES[tag](context)
+    definitions[tag] = DEFINITION_FACTORIES[tag](context)
   }
   return definitions
 }

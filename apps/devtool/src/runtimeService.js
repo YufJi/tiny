@@ -10,11 +10,46 @@ const resolveAssetUrl = (assetPath) => (
 // The preview is an iPhone X. The service iframe is 0x0, so window.innerWidth
 // cannot provide the host geometry; mirror the capsule used by the panel.
 const PREVIEW_WIDTH = 375;
+const PREVIEW_HEIGHT = 812;
+// Host facts the preview reports to the mini program (WeChat always has them).
+const DEVICE_INFO = {
+  SDKVersion: '3.0.0',
+  brand: 'devtools',
+  model: 'iPhone X',
+  system: 'iOS 16.0',
+  platform: 'devtools',
+  statusBarHeight: 44,
+};
 const manifestPromise = fetch(`${generatedBase}/manifest.json`, { cache: 'no-store' })
   .then((response) => response.json());
 const importGenerated = (url) => new Function('url', 'return import(url)')(url);
 
 const createHostApiExtensions = () => ({
+  getDeviceInfo: () => ({ ...DEVICE_INFO }),
+  getWindowInfo: () => ({
+    ...DEVICE_INFO,
+    pixelRatio: 2,
+    screenWidth: PREVIEW_WIDTH,
+    screenHeight: PREVIEW_HEIGHT,
+    windowWidth: PREVIEW_WIDTH,
+    windowHeight: PREVIEW_HEIGHT,
+    safeArea: {
+      top: DEVICE_INFO.statusBarHeight,
+      bottom: PREVIEW_HEIGHT,
+      left: 0,
+      right: PREVIEW_WIDTH,
+      width: PREVIEW_WIDTH,
+      height: PREVIEW_HEIGHT - DEVICE_INFO.statusBarHeight,
+    },
+  }),
+  getAppBaseInfo: () => ({
+    SDKVersion: DEVICE_INFO.SDKVersion,
+    language: 'zh_CN',
+    version: '8.0.0',
+    theme: 'light',
+    host: 'WeChat',
+    enableDebug: false,
+  }),
   getMenuButtonBoundingClientRect: () => ({
     width: 87,
     height: 32,

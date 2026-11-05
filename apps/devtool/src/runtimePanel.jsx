@@ -298,6 +298,12 @@ class RuntimePanel extends PureComponent {
           pixelRatio: window.devicePixelRatio || 1,
           windowWidth: DEVICE_SCREEN_WIDTH,
           windowHeight: contentHeight,
+          // WeChat always reports these; WeUI components read `system` directly.
+          system: 'iOS 16.0',
+          model: 'iPhone X',
+          brand: 'devtools',
+          platform: 'devtools',
+          statusBarHeight: 44,
         },
         maxPageStack: this.maxPageStack,
       });

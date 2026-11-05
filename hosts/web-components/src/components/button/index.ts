@@ -26,23 +26,28 @@ export function defineButton(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
     is: builtinDefinitionName('button'),
     template: ctx.template('button'),
-    behaviors: [ctx.behaviors.base, ctx.behaviors.hover, ctx.behaviors.labelTarget],
+    behaviors: [
+      ctx.behaviors.base,
+      ctx.behaviors.hover,
+      ctx.behaviors.labelTarget,
+      ctx.behaviors.labelAria,
+      ctx.behaviors.disabled,
+    ],
     properties: {
-      ariaLabel: { type: String, value: '' },
       type: { type: String, value: 'default' },
       size: { type: String, value: 'default' },
-      disabled: { type: Boolean, value: false },
       plain: { type: Boolean, value: false },
       loading: { type: Boolean, value: false },
       formType: { type: String, value: '' },
       openType: { type: String, value: '' },
       appParameter: { type: String, value: '' },
+      launchAppid: { type: String, value: '' },
       withCredentials: { type: Boolean, value: true },
       lang: { type: String, value: 'en' },
       hoverStartTime: { type: Number, value: 20 },
       hoverStayTime: { type: Number, value: 70 },
       hoverStopPropagation: { type: Boolean, value: false },
-      hoverClass: { type: String, value: DEFAULT_HOVER_CLASS },
+      hoverClass: { type: String, value: '' },
       sessionFrom: { type: String, value: 'wxapp' },
       businessId: { type: String, value: '' },
       sendMessageTitle: { type: String, value: '' },
@@ -56,25 +61,22 @@ export function defineButton(ctx: BuiltinContext): BuiltinDefinition {
     options: ctx.hostOptions('button'),
     lifetimes: {
       attached() {
-        const element = (this as unknown as {
-          getBackendElement?: () => { setAttribute?: (name: string, value: string) => void } | null
-        }).getBackendElement?.()
-        element?.setAttribute?.('role', 'button')
-        element?.setAttribute?.('aria-label', String(this.data.ariaLabel ?? ''))
+        ;(this as unknown as { _setAria: (role: string) => void })._setAria('button')
       },
       created() {
-        // The host is the button in WeChat. `[disabled] { pointer-events:none }`
-        // blocks real taps; programmatic triggerEvent still reaches same-node
-        // page listeners, so disabled only suppresses form/open-type semantics.
+        ;(this as unknown as { _defaultHoverClass: string })._defaultHoverClass = DEFAULT_HOVER_CLASS
         bindHostListeners(this, {
-          tap: (event) => this.handleTap(event),
+          tap: (event) => {
+            if (this.data.disabled) {
+              event.stopPropagation()
+              return
+            }
+            ;(this as unknown as { handleTap: (event: unknown) => void }).handleTap(event)
+          },
           longpress: (event) => this.handleButtonLongPress(event),
           canceltap: () => {
             ;(this as unknown as { _longTapFired?: boolean })._longTapFired = true
           },
-          touchstart: (event) => this.handleButtonTouchStart(event),
-          touchend: (event) => this.handleButtonTouchEnd(event),
-          touchcancel: (event) => this.handleButtonTouchEnd(event),
         })
       },
       detached() {
@@ -82,30 +84,6 @@ export function defineButton(ctx: BuiltinContext): BuiltinDefinition {
       },
     },
     methods: {
-      touchPoint(event: glassEasel.ShadowedEvent<unknown>): { x: number; y: number } {
-        const detail = (event.detail ?? {}) as {
-          touches?: Array<{ clientX?: number; clientY?: number }>
-          changedTouches?: Array<{ clientX?: number; clientY?: number }>
-        }
-        const touch = detail.touches?.[0] ?? detail.changedTouches?.[0]
-        return { x: Number(touch?.clientX ?? 0), y: Number(touch?.clientY ?? 0) }
-      },
-      clearLongTap() {
-        const instance = this as unknown as { _longTapTimer?: ReturnType<typeof setTimeout> }
-        if (instance._longTapTimer) clearTimeout(instance._longTapTimer)
-        instance._longTapTimer = undefined
-      },
-      handleButtonTouchStart(event: glassEasel.ShadowedEvent<unknown>) {
-        if (this.data.disabled) return
-        const instance = this as unknown as {
-          _longTapTimer?: ReturnType<typeof setTimeout>
-          _longTapStart?: { x: number; y: number }
-          _longTapFired?: boolean
-        }
-        this.clearLongTap()
-        instance._longTapStart = this.touchPoint(event)
-        instance._longTapFired = false
-      },
       handleButtonLongPress(event: glassEasel.ShadowedEvent<unknown>) {
         if (this.data.disabled) return
         const instance = this as unknown as {
@@ -114,16 +92,12 @@ export function defineButton(ctx: BuiltinContext): BuiltinDefinition {
         }
         instance._longTapFired = true
         const detail = (event.detail ?? {}) as { x?: unknown; y?: unknown }
-        // `longpress` is the current WeChat name; `longtap` is kept as the
-        // legacy alias on the same synthetic gesture.
+        // The event compositor reports the gesture as `longpress`; WeChat's
+        // legacy page binding is `longtap`, so expose that name here.
         this.triggerEvent('longtap', {
-          x: Number(detail.x ?? instance._longTapStart?.x ?? 0),
-          y: Number(detail.y ?? instance._longTapStart?.y ?? 0),
+          x: Number(detail.x ?? 0),
+          y: Number(detail.y ?? 0),
         }, { bubbles: true, composed: true })
-      },
-      handleButtonTouchEnd(_event?: unknown) {
-        void _event
-        this.clearLongTap()
       },
       handleLabelTap(event: glassEasel.ShadowedEvent<unknown>) {
         this.handleTap(event)
@@ -140,9 +114,9 @@ export function defineButton(ctx: BuiltinContext): BuiltinDefinition {
         }
         const formType = String(this.data.formType ?? '')
         if (formType === 'submit') {
-          this.triggerEvent('formSubmit', { formId: '', formPluginId: '' }, { bubbles: true, composed: true })
+          this.triggerEvent('formSubmit', { formId: '', formPluginId: '' }, { bubbles: true })
         } else if (formType === 'reset') {
-          this.triggerEvent('formReset', undefined, { bubbles: true, composed: true })
+          this.triggerEvent('formReset', undefined, { bubbles: true })
         }
         const openType = String(this.data.openType ?? '')
         if (openType !== '') {

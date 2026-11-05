@@ -17,10 +17,15 @@ const outputDir = path.join(srcRoot, 'generated')
 const basePath = path.join(srcRoot, 'styles/index.css')
 if (!fs.existsSync(basePath)) throw new Error(`Missing base stylesheet: ${basePath}`)
 
-const tags = fs.readdirSync(componentsRoot, { withFileTypes: true })
+// `src/components/<tag>/PLACEHOLDER.md` marks an unimplemented component; skip
+// it so scaffolding never ships an empty stylesheet or host selector.
+const componentDirs = fs.readdirSync(componentsRoot, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
   .map((entry) => entry.name)
   .sort()
+const tags = componentDirs
+  .filter((tag) => !fs.existsSync(path.join(componentsRoot, tag, 'PLACEHOLDER.md')))
+const placeholderCount = componentDirs.length - tags.length
 
 const hostRoot = postcss.parse(fs.readFileSync(basePath, 'utf8'), { from: basePath })
 const componentStyles = []
@@ -94,4 +99,7 @@ fs.writeFileSync(
     '',
   ].join('\n'),
 )
-console.log(`[components] composed global host styles and ${componentStyles.length} scoped internal stylesheets`)
+console.log(
+  `[components] composed global host styles and ${componentStyles.length} scoped internal stylesheets`
+    + ` (${placeholderCount} placeholder components skipped)`,
+)

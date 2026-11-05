@@ -51,7 +51,7 @@ describe('render tree event forwarding', () => {
   test('a child tap bubbles to ancestor bindings', () => {
     const { tree, events } = mountTree()
     fire(tree, 'child', 'tap', { x: 1, y: 2 })
-    expect(events.map((event) => event.id)).toEqual(['child', 'parent'])
+    expect(events.map((event) => event.id)).toEqual(['root#0.0', 'root#0'])
     expect(events[0]?.detail).toEqual({ x: 1, y: 2 })
   })
 
@@ -68,14 +68,14 @@ describe('render tree event forwarding', () => {
       ]),
     ]) as never)
     fire(caughtTree, 'child', 'tap', { x: 3, y: 4 })
-    expect(caught.map((event) => event.id)).toEqual(['child'])
+    expect(caught.map((event) => event.id)).toEqual(['root#0.0'])
   })
 
   test('longpress reaches page bindings', () => {
     const { tree, events } = mountTree()
     fire(tree, 'child', 'longpress', { x: 5, y: 6 })
     expect(events.map((event) => event.name)).toEqual(['longpress'])
-    expect(events[0]?.id).toBe('child')
+    expect(events[0]?.id).toBe('root#0.0')
   })
 
   test('raw transitionend reaches page bindings', () => {

@@ -15,7 +15,8 @@
     "@tiny/bridge": "workspace:*",
     "@tiny/host-browser": "workspace:*",
     "@tiny/host-web-components": "workspace:*",
-    "@tiny/runtime": "workspace:*"
+    "@tiny/runtime": "workspace:*",
+    "@tiny/api": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

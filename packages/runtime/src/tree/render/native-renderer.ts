@@ -4,6 +4,7 @@
  * node ids and patch semantics identical to the web glass render tree.
  */
 import { RENDER_TEXT_TAG } from '../protocol'
+import { RENDER_LOCAL_ID_PREFIX, isLocator, parseLocator } from '../locator'
 import type { RenderElement, RenderNode, RenderPatch } from '../protocol'
 import type { TreeEventPayload, TreeRenderer } from './thread'
 
@@ -39,9 +40,9 @@ export type NativeTreeRenderer = TreeRenderer & {
 
 const specOf = (node: RenderNode): NativeNodeSpec => (
   node.type === 'text'
-    ? { id: node.id, tag: RENDER_TEXT_TAG, text: node.text }
+    ? { id: node.id ?? '', tag: RENDER_TEXT_TAG, text: node.text }
     : {
-        id: node.id,
+        id: node.id ?? '',
         tag: node.tag,
         ...(node.props ? { props: node.props } : {}),
         ...(node.dataset ? { dataset: node.dataset } : {}),
@@ -55,9 +56,20 @@ const specOf = (node: RenderNode): NativeNodeSpec => (
 export function createNativeTreeRenderer(host: NativeTreeHost): NativeTreeRenderer {
   const nodes = new Map<string, RenderNode>()
   let eventSink: ((event: TreeEventPayload) => void) | undefined
+  let localIdCounter = 0
+
+  /** Elements carry no service id; the renderer owns their identity. */
+  const ensureId = (node: RenderNode): string => {
+    if (!node.id) {
+      localIdCounter += 1
+      node.id = `${RENDER_LOCAL_ID_PREFIX}${localIdCounter}`
+    }
+    return node.id
+  }
 
   const create = (node: RenderNode): void => {
-    nodes.set(node.id, node)
+    ensureId(node)
+    nodes.set(node.id!, node)
     host.createNode(specOf(node))
   }
 
@@ -66,7 +78,7 @@ export function createNativeTreeRenderer(host: NativeTreeHost): NativeTreeRender
     for (const [index, child] of (node.children ?? []).entries()) {
       if (child.type === 'element') build(child)
       else create(child)
-      host.insert(node.id, index, child.id)
+      host.insert(ensureId(node), index, ensureId(child))
     }
   }
 
@@ -80,61 +92,82 @@ export function createNativeTreeRenderer(host: NativeTreeHost): NativeTreeRender
     build(root)
   }
 
+  /** Resolve a patch target: shared id or a component-scoped locator. */
+  const resolveTarget = (target: string): string | null => {
+    if (!isLocator(target)) return nodes.has(target) ? target : null
+    const locator = parseLocator(target)
+    if (!locator) return null
+    let node = nodes.get(locator.owner)
+    for (const index of locator.path) {
+      if (node?.type !== 'element') return null
+      node = node.children?.[index]
+    }
+    return node ? node.id ?? null : null
+  }
+
   const applyPatches = (patches: RenderPatch[]): void => {
     for (const patch of patches) {
       if (patch.type === 'text') {
-        const node = nodes.get(patch.id)
-        if (node?.type === 'text') {
-          node.text = patch.text
-          host.setText(patch.id, patch.text)
-        }
+        const id = resolveTarget(patch.target)
+        const node = id ? nodes.get(id) : undefined
+        if (!id || node?.type !== 'text') continue
+        node.text = patch.text
+        host.setText(id, patch.text)
         continue
       }
       if (patch.type === 'props') {
-        const node = nodes.get(patch.id)
-        if (node?.type !== 'element') continue
+        const id = resolveTarget(patch.target)
+        const node = id ? nodes.get(id) : undefined
+        if (!id || node?.type !== 'element') continue
         const props = { ...(node.props ?? {}), ...patch.props }
         for (const name of patch.removed ?? []) delete props[name]
         node.props = props
-        host.setProps(patch.id, props, patch.removed)
+        host.setProps(id, props, patch.removed)
         continue
       }
       if (patch.type === 'insert') {
-        const parent = nodes.get(patch.parentId)
-        if (parent?.type !== 'element') continue
+        const parentId = resolveTarget(patch.parent)
+        const parent = parentId ? nodes.get(parentId) : undefined
+        if (!parentId || parent?.type !== 'element') continue
         const node = patch.node
-        nodes.set(node.id, node)
+        ensureId(node)
+        nodes.set(node.id!, node)
         host.createNode(specOf(node))
         parent.children ??= []
         parent.children.splice(patch.index, 0, node)
-        host.insert(patch.parentId, patch.index, node.id)
+        host.insert(parentId, patch.index, node.id!)
         continue
       }
       if (patch.type === 'remove') {
-        const parent = nodes.get(patch.parentId)
-        if (parent?.type !== 'element') continue
+        const parentId = resolveTarget(patch.parent)
+        const parent = parentId ? nodes.get(parentId) : undefined
+        if (!parentId || parent?.type !== 'element') continue
         for (const child of (parent.children ?? []).splice(patch.index, patch.count)) {
-          nodes.delete(child.id)
+          nodes.delete(ensureId(child))
         }
-        host.remove(patch.parentId, patch.index, patch.count)
+        host.remove(parentId, patch.index, patch.count)
         continue
       }
       if (patch.type === 'reorder') {
-        const parent = nodes.get(patch.parentId)
-        if (parent?.type !== 'element') continue
+        const parentId = resolveTarget(patch.parent)
+        const parent = parentId ? nodes.get(parentId) : undefined
+        if (!parentId || parent?.type !== 'element') continue
         for (const move of patch.moves) {
           const children = parent.children ?? []
           if (move.from < 0 || move.from >= children.length) continue
           const [child] = children.splice(move.from, 1)
           if (child) children.splice(move.to, 0, child)
         }
-        host.reorder(patch.parentId, patch.moves)
+        host.reorder(parentId, patch.moves)
         continue
       }
       if (patch.type === 'replace') {
+        const id = resolveTarget(patch.target)
+        if (!id) continue
         const node = patch.node
-        nodes.set(patch.id, node)
-        host.replace(patch.id, specOf(node))
+        ensureId(node)
+        nodes.set(id, node)
+        host.replace(id, specOf(node))
       }
     }
   }

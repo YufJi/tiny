@@ -50,6 +50,17 @@
   `RUNTIME_STATE.maxPageStack`.
 - **Bridge**: the transport-only boundary for serialization, batching, timeouts,
   and errors. It does not define API or rendering behavior.
+- **Service API table**: the `wx.*` functions installed on the global API object.
+  It is not kernel code: `bootServiceThread` requires an injected
+  `apiHost` factory, and the standard WeChat-compatible table ships in
+  `@tiny/api`. The kernel owns only the global namespace, the
+  unsupported-API fallback, and the capability context handed to the factory, so
+  adding an API never changes runtime semantics.
+- **Service API context**: the capability contract a host's API factory receives
+  — bridge connection, page identity and stack, system-info/storage snapshots,
+  tabBar, canvas, asset resolution, and diagnostics. Treat it as additive public
+  API: `@tiny/api` implements `wx.*` against it and must not deep-import
+  runtime internals.
 - **Built-in components**: host-owned render components for mini-program tags
   such as `view`, `text`, `image`, `button`, and `input`. The service logic tree
   emits only semantic tags; the web host supplies `tiny-*` implementations and
@@ -63,10 +74,12 @@
   compiler rewrites local WXSS `url(...)` references. External/data URLs and
   paths escaping the app root stay unchanged.
 - **Style scope**: the compiler emits scoped CSS plus explicit roles
-  (app/page/component/page-scope/builtin). The service logic tree registers the
-  sheets before registering component definitions, then sends the selected
-  page's role-filtered style text with its tree flow; the render tree only
-  applies that text. Page roots are `shared` by default; component-as-page roots
+  (builtin/low-priority/app/page/component/page-scope/shared). The service logic
+  tree registers the sheets before registering component definitions, then sends
+  the selected page's role-filtered style text with its tree flow; the render
+  tree only applies that text. `:host` rules travel in the low-priority sheet,
+  which is appended before app/page/component styles. Page roots are `shared` by
+  default; component-as-page roots
   read an explicit `styleIsolation` and otherwise also default to `shared`.
   Page/component tag selectors are rewritten to
   `tiny-<tag>:where(.tiny-tag-<tag>)`, preserving tag specificity while

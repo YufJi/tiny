@@ -1,18 +1,8 @@
 tiny-swiper-item {
-  position: absolute;
-  top: var(--tiny-swiper-item-top, 0);
-  left: var(--tiny-swiper-item-left, 0);
   display: block;
-  box-sizing: border-box;
-  width: calc(100% / var(--tiny-swiper-items, 1));
-  height: 100%;
-}
-
-tiny-swiper-item[hidden] {
-  display: none;
-}
-
-tiny-swiper-item {
   overflow: hidden;
   will-change: transform;
+}
+tiny-swiper-item[hidden] {
+  display: none;
 }

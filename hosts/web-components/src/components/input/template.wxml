@@ -1,6 +1,6 @@
 <!-- Use bind: for keydown/composition/select: catch: marks listeners as
      final in glass-easel and calls preventDefault, which blocks text input. -->
-<div class="tiny-input-wrapper">
+<div id="wrapper" class="tiny-input-wrapper" role="textbox">
   <div
     wx:if="{{placeholder && !value}}"
     class="tiny-input-placeholder placeholder-class"
@@ -12,8 +12,8 @@
     value="{{value}}"
     placeholder="{{placeholder}}"
     disabled="{{disabled}}"
-    type="{{password ? 'password' : type}}"
-    maxlength="{{maxlength}}"
+    type="{{password || type === 'password' ? 'password' : 'text'}}"
+    maxlength="{{maxlength > 0 ? maxlength : -1}}"
     autofocus="{{autoFocus || focus}}"
     enterkeyhint="{{confirmType}}"
     aria-label="{{ariaLabel}}"
@@ -29,3 +29,4 @@
   />
   <ul id="dropdown" class="tiny-input-dropdown" style="display: none;"></ul>
 </div>
+<slot />

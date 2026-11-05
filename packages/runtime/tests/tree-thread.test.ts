@@ -34,12 +34,23 @@ describe('tree thread', () => {
       styles: [],
       messages: [
         { type: 'define', path: 'components/card/card', definition: {} },
-        { type: 'create-node', id: 'page', tag: 'page', index: 0 },
-        { type: 'create-node', id: 'view', tag: 'view', parentId: 'page', index: 0 },
-        { type: 'create-node', id: 'text', tag: '#text', parentId: 'view', index: 0, text: 'flow' },
-        { type: 'create-node', id: 'card', tag: 'card', parentId: 'view', index: 1 },
-        { type: 'props', id: 'card', props: { label: 'flow' } },
-        { type: 'children', id: 'view', inserts: ['text', 'card'] },
+        {
+          type: 'tree',
+          root: {
+            type: 'element',
+            id: 'page',
+            tag: 'page',
+            children: [{
+              type: 'element',
+              id: 'view',
+              tag: 'view',
+              children: [
+                { type: 'text', text: 'flow' },
+                { type: 'element', tag: 'card', slot: 'refresher', props: { label: 'flow' } },
+              ],
+            }],
+          },
+        },
         { type: 'ready' },
       ],
     }, { pageId: 'page-1' })
@@ -52,8 +63,8 @@ describe('tree thread', () => {
         type: 'element',
         id: 'view',
         children: [
-          { type: 'text', id: 'text', text: 'flow' },
-          { type: 'element', id: 'card', tag: 'card', props: { label: 'flow' } },
+          { type: 'text', text: 'flow' },
+          { type: 'element', tag: 'card', slot: 'refresher', props: { label: 'flow' } },
         ],
       }],
     })
@@ -88,13 +99,13 @@ describe('tree thread', () => {
 
     host.sendEvent('tree', 'snapshot', { root: tree }, { pageId: 'page-1' })
     host.sendEvent('tree', 'patch', {
-      patches: [{ type: 'text', id: 'text', text: 'bye' }],
+      patches: [{ type: 'text', target: 'text', text: 'bye' }],
     }, { pageId: 'page-1' })
     emit?.({ id: 'button', name: 'tap', native: { clientX: 1 } })
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(mounted).toHaveLength(1)
-    expect(patches[0]).toEqual([{ type: 'text', id: 'text', text: 'bye' }])
+    expect(patches[0]).toEqual([{ type: 'text', target: 'text', text: 'bye' }])
     expect(events[0]).toMatchObject({
       id: 'button',
       name: 'tap',
@@ -160,5 +171,45 @@ describe('tree thread', () => {
       observerId: 'observer-1',
     }, { pageId: 'page-1' })
     expect(cleaned).toBe(true)
+  })
+
+  test('parks flows until templates are installed', async () => {
+    const [hostTransport, renderTransport] = createInMemoryTransportPair()
+    const order: string[] = []
+    let release!: (templates: unknown) => void
+    const templatesReady = new Promise((resolve) => { release = resolve })
+    bootTreeThread({
+      transport: renderTransport,
+      loadTemplates: () => templatesReady as never,
+      renderer: {
+        mount: () => order.push('mount'),
+        applyPatches: () => {},
+        setTemplates: () => order.push('templates'),
+      },
+    })
+    const host = new BridgeConnection({
+      localRole: 'host',
+      peerRole: 'render',
+      transport: hostTransport,
+      respondToHello: false,
+    })
+    await host.handshake()
+    host.sendEvent('tree', 'flow', {
+      pageId: 'page-1',
+      pagePath: 'pages/index/index',
+      styles: [],
+      messages: [
+        { type: 'tree', root: { type: 'element', id: 'page', tag: 'page' } },
+        { type: 'ready' },
+      ],
+    }, { pageId: 'page-1' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    // Nothing may mount before the template groups exist.
+    expect(order).toEqual([])
+
+    release({ groupList: {}, content: () => ({}) })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(order).toEqual(['templates', 'mount'])
   })
 })

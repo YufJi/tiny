@@ -1,22 +1,16 @@
-<div class="tiny-textarea-wrapper">
+<div id="wrapped" class="tiny-textarea-wrapper">
   <div
+    id="placeholder"
     wx:if="{{placeholder && !value}}"
     class="tiny-textarea-placeholder placeholder-class"
     style="{{placeholderStyle}}"
-  >{{placeholder}}</div>
-  <div id="compute" class="tiny-textarea-compute" aria-hidden="true">{{value}}</div>
-  <div
-    id="stylecompute"
-    class="tiny-textarea-stylecompute placeholder-class"
-    style="{{placeholderStyle}}"
-    aria-hidden="true"
   >{{placeholder}}</div>
   <textarea
     id="native-textarea"
     class="tiny-textarea {{autoHeight ? 'is-auto-height' : ''}} {{disableDefaultPadding ? 'is-no-default-padding' : ''}}"
     value="{{value}}"
     disabled="{{disabled}}"
-    maxlength="{{maxlength}}"
+    maxlength="{{maxlength > 0 ? maxlength : -1}}"
     autofocus="{{autoFocus || focus}}"
     confirm-type="{{confirmType}}"
     enterkeyhint="{{confirmType}}"
@@ -26,4 +20,12 @@
     catchblur="handleBlur"
     catchconfirm="handleConfirm"
   ></textarea>
+  <div id="compute" class="tiny-textarea-compute" aria-hidden="true">{{value}}</div>
+  <div
+    id="stylecompute"
+    class="tiny-textarea-stylecompute placeholder-class"
+    style="{{placeholderStyle}}"
+    aria-hidden="true"
+  >{{placeholder}}</div>
 </div>
+<slot />

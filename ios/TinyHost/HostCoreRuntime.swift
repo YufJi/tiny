@@ -31,6 +31,9 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   private var finished = false
   private var meta: [String: Any] = [:]
   private var manifest: [String: Any] = [:]
+  private var nativePicker: NativePickerController?
+  private var pickerSessionId: String?
+  private var pickerColumns: [[String: Any]] = []
 
   var onReady: ((String) -> Void)?
   var onUIState: ((HostUIState) -> Void)?
@@ -149,6 +152,8 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   }
 
   func close() {
+    nativePicker?.dismiss(animated: false)
+    nativePicker = nil
     for surface in surfaces.values {
       surface.destroy()
     }
@@ -558,6 +563,89 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       nav: nav,
       tabBar: tabBar
     )
+  }
+
+  func renderHostRequest(
+    requestId: String,
+    pageId: String,
+    method: String,
+    payload: [String: Any]
+  ) {
+    if method == "pollPicker" {
+      let sessionId = payload["sessionId"] as? String ?? ""
+      let events = sessionId == pickerSessionId ? pickerColumns : []
+      pickerColumns = []
+      try? core?.renderHostResult(requestId: requestId, result: ["events": events])
+      return
+    }
+    if method == "updatePicker" {
+      nativePicker?.applyUpdate(payload)
+      try? core?.renderHostResult(requestId: requestId, result: ["status": "ok"])
+      return
+    }
+    guard method == "showPicker" else {
+      try? core?.renderHostResult(
+        requestId: requestId,
+        result: ["status": "error", "errMsg": "unsupported host request: \(method)"]
+      )
+      return
+    }
+    guard nativePicker == nil else {
+      try? core?.renderHostResult(
+        requestId: requestId,
+        result: ["status": "error", "errMsg": "showPickerView:fail another picker is open"]
+      )
+      return
+    }
+    let mode = payload["mode"] as? String ?? "selector"
+    let range = payload["range"] as? [Any] ?? []
+    if (mode == "selector" || mode == "multiSelector") && range.isEmpty {
+      try? core?.renderHostResult(
+        requestId: requestId,
+        result: ["status": "error", "errMsg": "showPickerView:fail range is empty"]
+      )
+      return
+    }
+    guard let presenter = topViewController() else {
+      try? core?.renderHostResult(
+        requestId: requestId,
+        result: ["status": "error", "errMsg": "showPickerView:fail no host view controller"]
+      )
+      return
+    }
+    pickerSessionId = payload["sessionId"] as? String
+    pickerColumns = []
+    let picker = NativePickerController(payload: payload) { [weak self] result in
+      guard let self else { return }
+      self.nativePicker = nil
+      self.pickerSessionId = nil
+      self.pickerColumns = []
+      do {
+        try self.core?.renderHostResult(requestId: requestId, result: result)
+      } catch {
+        self.fail("HostCore render host result failed: \(error)")
+      }
+    }
+    picker.onColumnChange = { [weak self] column, row in
+      self?.pickerColumns.append(["column": column, "value": row])
+    }
+    nativePicker = picker
+    presenter.present(picker, animated: true)
+    _ = pageId
+  }
+
+  private func topViewController() -> UIViewController? {
+    let root = container.window?.rootViewController
+      ?? UIApplication.shared.connectedScenes
+        .compactMap { $0 as? UIWindowScene }
+        .flatMap { $0.windows }
+        .first(where: { $0.isKeyWindow })?
+        .rootViewController
+    var top = root
+    while let presented = top?.presentedViewController {
+      top = presented
+    }
+    return top
   }
 
   func platformCall(

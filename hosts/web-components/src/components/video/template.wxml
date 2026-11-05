@@ -1,0 +1,3 @@
+<video id="video" playsinline></video>
+<div id="center-play" class="wx-video-center-play"></div>
+<div id="slot" class="wx-video-slot"><slot /></div>

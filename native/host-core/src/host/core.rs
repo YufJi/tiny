@@ -62,6 +62,7 @@ pub struct HostCore {
     pending_api_control: HashMap<String, ProtocolMessage>,
     pending_platform_calls: HashMap<String, ProtocolMessage>,
     pending_render_calls: HashMap<String, ProtocolMessage>,
+    pending_render_host_requests: HashMap<String, ProtocolMessage>,
     pending_service_calls: HashMap<String, Vec<ProtocolMessage>>,
     pages: HashMap<String, PageState>,
     pending_pages: HashMap<String, String>,
@@ -90,6 +91,7 @@ impl HostCore {
             pending_api_control: HashMap::new(),
             pending_platform_calls: HashMap::new(),
             pending_render_calls: HashMap::new(),
+            pending_render_host_requests: HashMap::new(),
             pending_service_calls: HashMap::new(),
             pages: HashMap::new(),
             pending_pages: HashMap::new(),
@@ -129,6 +131,9 @@ impl HostCore {
             }
             HostEvent::PlatformResult { request_id, result } => {
                 self.on_platform_result(&request_id, result, now_ms, &mut actions)
+            }
+            HostEvent::RenderHostResult { request_id, result } => {
+                self.on_render_host_result(&request_id, result, now_ms, &mut actions)
             }
             HostEvent::Command(command) => self.on_command(command, now_ms, &mut actions),
             HostEvent::Tick { now_ms } => self.on_tick(now_ms, &mut actions),
@@ -448,6 +453,8 @@ impl HostCore {
         self.pending_initial_data.remove(page_id);
         self.pending_service_calls.remove(page_id);
         self.pending_events.remove(page_id);
+        self.pending_render_host_requests
+            .retain(|_, request| request.page_id.as_deref() != Some(page_id));
         self.page_stack.retain(|id| id != page_id);
         if self.active_page.as_deref() == Some(page_id) {
             self.active_page = self.page_stack.last().cloned();
@@ -851,7 +858,14 @@ impl HostCore {
                         self.forward_render_event(message);
                     }
                 }
-                BridgeEvent::Call(message) | BridgeEvent::Control(message) => {
+                BridgeEvent::Call(message) => {
+                    if message.domain == ProtocolDomain::Tree && message.method == "hostRequest" {
+                        self.on_render_host_request(&message, now_ms, actions);
+                    } else {
+                        self.unhandled_message("render", &message, actions);
+                    }
+                }
+                BridgeEvent::Control(message) => {
                     self.unhandled_message("render", &message, actions);
                 }
                 BridgeEvent::Timeout {
@@ -1033,6 +1047,85 @@ impl HostCore {
             Err(error) => {
                 self.diagnostic("error", &error.to_string(), Some(&page_id), actions);
             }
+        }
+    }
+
+    fn on_render_host_request(
+        &mut self,
+        message: &ProtocolMessage,
+        now_ms: u64,
+        actions: &mut Vec<HostAction>,
+    ) {
+        let payload = message.payload.clone().unwrap_or(Value::Null);
+        let method = payload
+            .get("method")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_string();
+        let params = payload.get("payload").cloned().unwrap_or(Value::Null);
+        if method.is_empty() {
+            if let Some(page) = self
+                .pages
+                .get_mut(message.page_id.as_deref().unwrap_or(""))
+            {
+                let _ = page.bridge.reply(
+                    message,
+                    None,
+                    Some((
+                        "HANDLER_ERROR".to_string(),
+                        "missing host request method".to_string(),
+                    )),
+                    now_ms,
+                );
+            }
+            return;
+        }
+        self.pending_render_host_requests
+            .insert(message.message_id.clone(), message.clone());
+        actions.push(HostAction::RenderHostRequest {
+            request_id: message.message_id.clone(),
+            page_id: message.page_id.clone().unwrap_or_default(),
+            method,
+            payload: params,
+        });
+    }
+
+    fn on_render_host_result(
+        &mut self,
+        request_id: &str,
+        result: Result<Value, String>,
+        now_ms: u64,
+        actions: &mut Vec<HostAction>,
+    ) {
+        let Some(request) = self.pending_render_host_requests.remove(request_id) else {
+            return;
+        };
+        let Some(page_id) = request.page_id.clone() else {
+            return;
+        };
+        let Some(page) = self.pages.get_mut(&page_id) else {
+            self.diagnostic(
+                "error",
+                &format!("render host request page {page_id} is gone"),
+                Some(&page_id),
+                actions,
+            );
+            return;
+        };
+        let (value, error) = match result {
+            Ok(value) => (Some(value), None),
+            Err(error) => (
+                None,
+                Some(("HANDLER_ERROR".to_string(), error)),
+            ),
+        };
+        if let Err(error) = page.bridge.reply(&request, value, error, now_ms) {
+            self.diagnostic(
+                "error",
+                &format!("render host reply failed: {error}"),
+                Some(&page_id),
+                actions,
+            );
         }
     }
 

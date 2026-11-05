@@ -23,7 +23,6 @@ Page({
   },
   data: {
     theme: 'light',
-    imageUrl: 'cloud://release-b86096.7265-release-b86096-1258211818/demo.jpg',
     webpImageUrl: 'https://res.wx.qq.com/wxdoc/dist/assets/img/0.4cb08bb4.jpg',
   }
 })

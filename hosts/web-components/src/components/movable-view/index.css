@@ -1,0 +1,12 @@
+tiny-movable-view {
+  display: inline-block;
+  height: 10px;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 10px;
+}
+
+tiny-movable-view[hidden] {
+  display: none;
+}

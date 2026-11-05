@@ -1,0 +1,13 @@
+tiny-audio {
+  display: inline-block;
+  line-height: 0;
+}
+
+tiny-audio[hidden] {
+  display: none;
+}
+
+#player {
+  max-width: 100%;
+  width: 300px;
+}

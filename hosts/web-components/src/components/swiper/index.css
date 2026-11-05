@@ -1,71 +1,75 @@
 tiny-swiper {
   display: block;
-  box-sizing: border-box;
   height: 150px;
 }
-.tiny-swiper {
-  position: relative;
-  overflow: hidden;
-  height: 100%;
+tiny-swiper[hidden] {
+  display: none;
 }
-.tiny-swiper-track {
-  display: block;
+.tiny-swiper-wrapper {
   height: 100%;
-  transition-property: transform;
-  transition-timing-function: ease;
+  overflow: hidden;
+  position: relative;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  width: 100%;
+}
+.tiny-swiper-slides {
+  bottom: 0;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+.tiny-swiper-slide-frame {
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+  will-change: transform;
 }
 .tiny-swiper-dots {
+  font-size: 0;
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 10px;
-  display: flex;
-  justify-content: center;
-  gap: 8px;
+  will-change: transform;
 }
-.tiny-swiper.is-vertical .tiny-swiper-dots {
-  left: auto;
-  right: 8px;
-  top: 0;
-  bottom: 0;
-  flex-direction: column;
-  justify-content: center;
+.tiny-swiper-dots-horizontal {
+  bottom: 10px;
+  left: 50%;
+  text-align: center;
+  transform: translate(-50%);
+  -webkit-transform: translate(-50%);
+  white-space: nowrap;
+}
+.tiny-swiper-dots-horizontal .tiny-swiper-dot {
+  margin-right: 8px;
+}
+.tiny-swiper-dots-horizontal .tiny-swiper-dot:last-child {
+  margin-right: 0;
+}
+.tiny-swiper-dots-vertical {
+  right: 10px;
+  text-align: right;
+  top: 50%;
+  transform: translateY(-50%);
+  -webkit-transform: translateY(-50%);
+}
+.tiny-swiper-dots-vertical .tiny-swiper-dot {
+  display: block;
+  margin-bottom: 9px;
+}
+.tiny-swiper-dots-vertical .tiny-swiper-dot:last-child {
+  margin-bottom: 0;
 }
 .tiny-swiper-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
   background: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  display: inline-block;
+  height: 8px;
+  transition-property: background-color;
+  transition-timing-function: ease;
+  width: 8px;
 }
-.tiny-swiper-dot.is-active {
-  background: #000000;
-}
-.tiny-swiper {
-  --tiny-swiper-items: 1;
-}
-
-.tiny-swiper-wrapper {
-  position: relative;
-  box-sizing: border-box;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.tiny-swiper-slides {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-}
-
-.tiny-swiper-slide-frame {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: flex;
-  width: 100%;
-  height: 100%;
-  will-change: transform;
+.tiny-swiper-dot-active {
+  background-color: #000;
 }
