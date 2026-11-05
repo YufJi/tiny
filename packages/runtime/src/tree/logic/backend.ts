@@ -319,6 +319,12 @@ export class LogicBackendContext {
   /** `id -> component-scoped locator` for the latest render snapshot. */
   private renderLocators = new Map<string, string>()
   private locatorNodes = new Map<string, LogicBackendElement>()
+  /**
+   * Locator entries of the last snapshot per page. Every page keeps its own
+   * locators so mounting another page cannot wipe the mappings the previous
+   * page needs for its events.
+   */
+  private pageLocatorEntries = new Map<string, { viewIds: string[]; locators: string[] }>()
 
   /** Component-scoped locator of a node in the latest render snapshot. */
   locatorOf(node: LogicBackendElement): string | undefined {
@@ -660,8 +666,17 @@ export class LogicBackendContext {
     }
     const rootViewId = nodeToViewId.get(root) ?? root.id ?? ''
     walk(root, rootViewId, [])
-    this.renderLocators = locators
-    this.locatorNodes = nodesByLocator
+    const previous = this.pageLocatorEntries.get(pageId)
+    if (previous) {
+      for (const viewId of previous.viewIds) this.renderLocators.delete(viewId)
+      for (const locator of previous.locators) this.locatorNodes.delete(locator)
+    }
+    for (const [viewId, locator] of locators) this.renderLocators.set(viewId, locator)
+    for (const [locator, node] of nodesByLocator) this.locatorNodes.set(locator, node)
+    this.pageLocatorEntries.set(pageId, {
+      viewIds: [...locators.keys()],
+      locators: [...nodesByLocator.keys()],
+    })
     return root
   }
 
