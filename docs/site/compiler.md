@@ -22,10 +22,10 @@ compileMiniProgram 会按顺序执行这些阶段。每个阶段只生成产物�
 :::sequence
 | title | actor | detail | code |
 | --- | --- | --- | --- |
-| 解析项目根目录 |  | 读取 compatibility.files.projectConfig 指向的项目配置及其 miniprogramRoot；没有该文件时把 sourceDir 当作小程序根目录。 | resolveRoot() |
+| 解析兼容输入 |  | 读取 sourceDir/tiny.config.json 的 compatibility；CompileOptions.compatibility 显式覆盖。缺省字段回退到微信规则。 | resolveCompatibilityInput() |
+| 准备输出并解析项目根 |  | 按 clean 清空输出目录；读取 compatibility.files.projectConfig 指向的项目配置及其 miniprogramRoot，没有该文件时把 sourceDir 当作小程序根目录。 | prepareOutputDir() · resolveRoot() |
 | 扫描源文件 |  | 按 compatibility.extensions 递归收集脚本、模板、样式、模板脚本和配置文件，跳过 .git、.cache 和 node_modules。 | collectFiles(root, extensions) |
 | 读取小程序配置 |  | 读取 compatibility.files.appConfig 指向的配置，解析 pages 和 subPackages/subpackages。至少要有一个页面，否则记一条 APP_PAGES_REQUIRED 诊断。 | readAppConfig() · resolvePagePaths() |
-| 解析兼容输入 |  | 读取 sourceDir/tiny.config.json 的 compatibility；CompileOptions.compatibility 显式覆盖。缺省字段回退到微信规则。 | readProjectCompatibility() · resolveCompatibility() |
 | 解析入口 |  | 每个路径同时尝试 foo.* 和 foo/index.*，按兼容配置中的扩展名查找 script、template、style 和 config。 | resolveEntry(root, byRelative, path) |
 | 查找组件 |  | 从 app 配置和每个页面、组件的 usingComponents 递归查找，记录全局/局部来源，并检查缺失。 | resolveComponentEntries() |
 | 编译脚本 |  | 从入口沿 import/require 收集可达脚本，转译 TypeScript，补全无扩展名的模块路径，并输出 source map。 | compileScripts() |
@@ -153,7 +153,7 @@ schema-v2 manifest 使用 `runtimeCompatibility` 保存 API、注册全局、beh
 :::
 
 :::card{tag="产物" tone="violet" title="templates.js"}
-产物不是字符串模板，而是一段可以直接执行的 JavaScript 表达式：
+产物不是字符串模板，而是一段可以直接执行的 JavaScript 表达式，service 和 render 各求值一次：
 
 ```js
 const groupList = (() => {
@@ -162,8 +162,11 @@ const groupList = (() => {
   return G
 })()
 
+const wxsModules = { modules: [ ... ] }
+
 export default {
   groupList,
+  wxsModules,
   content(path, name = "") {
     const group = groupList[path]
     if (!group) throw new Error(`template not found: ${path}`)
@@ -179,11 +182,11 @@ export default {
 | WXML 解析 | parse/state.ts · parse/tag.ts · parse/expr.ts | 解析标签、属性、表达式、事件绑定和 meta 标签 |
 | ProcGen | proc_gen/tag.ts · expr.ts · writer.ts | 生成 glass-easel 可执行的创建/更新函数 |
 | WXS / SJS | TmplGroup.addScript + AST transform + module table | 模板里可以调用脚本模块，支持相对路径 require；事件由 service/render 双 runtime 执行 |
-| 作用域标记 | injectTagClasses() | 给每个元素加上 `<tagClassPrefix><tag>`（固定 `tiny-tag-button`），供 tag 选择器使用 |
+| 作用域标记 | injectScopeClasses() | 给每个元素加上 `<tagClassPrefix><tag>`（固定 `tiny-tag-button`），供 tag 选择器使用 |
 | animation | rewriteAnimationAttributes() | 把 `animation="{{...}}"` 改写成内联 style |
 | 图片内联 | inlineLocalImages() | 小于 200KB 的本地图片转成 data URI，静态宿主不需要额外资源目录 |
 
-WXS 在编译期完成 globals / `getRegExp` / `getDate` / `.constructor` 改写，并生成外部与内联模块表。WXML 表达式仍在 service 求值；WXS 事件尽量在 render 本地执行，无法解析到 WXS handler 时回退 service。具体分工见“运行时”页的 WXS 一节。
+WXS 在编译期完成 globals / `getRegExp` / `getDate` / `.constructor` 改写，并生成外部与内联模块表。WXML 表达式按模板归属求值：页面模板在 service；组件模板由 service 求值用于 diff/查询，render 再求值一次生成 shadow tree。WXS 事件尽量在 render 本地执行，无法解析到 WXS handler 时回退 service。具体分工见“运行时”页的 WXS 一节。
 
 ```html
 <!-- 源 WXML（默认微信兼容输入） -->
@@ -199,7 +202,7 @@ WXS 在编译期完成 globals / `getRegExp` / `getDate` / `.constructor` 改写
 ```
 
 :::callout{title="运行时不需要解析 WXML"}
-service 的逻辑树拿到模板 group，再交给 glass-easel 求值。render 树不读取模板，也不执行 WXML 表达式；它只接收逻辑树生成的 component flow 和 patch。这样模板错误会在构建期暴露，类型和语义也不会因为跨 DOM 而丢失。
+service 和 render 都直接取编译好的模板 group 交给 glass-easel 求值。service 得到用于 diff/查询的虚拟树，render 得到真实组件 shadow tree；两边消费同一份 `templates.js`，所以构建期错误会在两侧一致暴露。
 :::
 
 ## class 和 tag 两套作用域 {#styles kicker="样式编译"}
@@ -239,7 +242,7 @@ button { height: 88rpx; }            /* -> tiny-button:where(.tiny-pages-todos-t
 ```
 
 :::callout{title="低优先级 CSS 承载 :host" tone="good"}
-页面/组件样式会同时写出 `*.low.css`：`:host { }` 被改写成 `[wx-host="<scope>"] { }` 放在这里，runtime 先追加低优先级表，再追加 app、page-scope 和 page/component，宿主默认样式因此总可以被覆盖。app 样式没有 scope，不产生低优先级输出。
+页面/组件样式会同时写出 `*.low.css`：`:host { }` 被改写成 `[wx-host="<scope>"] { }` 放在这里，runtime 先追加低优先级表，再追加 app、page-scope 和 page/component，宿主默认样式因此总可以被覆盖。app 样式没有 scope，它的 low-priority 输出通常为空。
 :::
 ::::
 :::::
@@ -285,7 +288,7 @@ button { height: 88rpx; }            /* -> tiny-button:where(.tiny-pages-todos-t
       "getCurrentPages": "getCurrentPages"
     },
     "behaviorScheme": "wx://",
-    "opaqueGlobals": ["webpackJsonp", "cloud", "env"]
+    "opaqueGlobals": ["webpackJsonp", "cloud", "env", "__wxConfig", "__wxAppCode__", "__wxAppData"]
   },
   "entries": {
     "service": "service.js",
@@ -346,13 +349,14 @@ generated/
 |-- manifest.json            # 唯一索引
 |-- service.js               # esbuild 打包后的服务线程入口
 |-- service.js.map
-|-- templates.js             # groupList + content(path, name)
+|-- templates.js             # groupList + wxsModules + content(path, name)
 |-- scripts/
 |   |-- app.js
 |   |-- components/add-button/add-button.js
 |   +-- pages/todos/todos.js
 |-- styles/
 |   |-- app.wxss.css         # 全局
+|   |-- app.wxss.low.css                # app 的低优先级输出（通常为空）
 |   |-- app.wxss.page-scope.css         # app 的 page-scope 模板（按需）
 |   |-- pages/todos/todos.wxss.css
 |   |-- pages/todos/todos.wxss.low.css   # :host 低优先级输出
@@ -363,7 +367,7 @@ generated/
 
 ::::split
 :::card{tag="source map" title="脚本和样式都有 source map"}
-TypeScript 转译和 PostCSS 都会输出 source map，并写入 `sourcesContent`。浏览器 DevTools 可以直接定位回 WXML/WXSS/TS。
+TypeScript 转译和 PostCSS 都会输出 source map，并写入 `sourcesContent`。浏览器 DevTools 可以把脚本和样式定位回 TS/WXSS；模板产物本身没有单独的 source map。
 :::
 
 :::card{tag="不压缩" title="产物保持可读"}
@@ -384,13 +388,14 @@ TypeScript 转译和 PostCSS 都会输出 source map，并写入 `sourcesContent
 | `SCRIPT_TRANSPILE_ERROR` | error | TypeScript 语法或转译失败 | 保留输出并继续 |
 | `SCRIPT_IMPORT_NOT_FOUND` | warning | 相对 import 找不到文件 | 不进入可达脚本图 |
 | `TEMPLATE_COMPILE_ERROR` | error | WXML 解析失败 | 跳过模板 group 生成 |
-| `TINY_CONFIG_INVALID` | warning | tiny.config.json 无法解析 | 回退到默认命名 |
+| `TINY_CONFIG_INVALID` | warning | tiny.config.json 无法解析 | 回退到默认兼容规则 |
+| `TINY_CONFIG_NAMING_REMOVED` | warning | 仍使用已删除的 `naming` 配置 | 忽略 `naming`，只读 `compatibility` |
 | `STYLE_IMPORT_NOT_FOUND` | warning | @import 找不到目标 | 内联为空字符串 |
 | `STYLE_COMPILE_ERROR` | error | PostCSS 解析或转换失败 | 跳过这份样式 |
 | `SCRIPT_BUNDLE_ERROR` | warning | esbuild 打包失败 | manifest 仍生成，启动时暴露 |
 
 :::callout{title="编译诊断会进入 runtime"}
-宿主创建 `HostDiagnosticStore` 时会把 `manifest.diagnostics` 转成 `RuntimeDiagnostic`，所以 devtool 能同时看到编译错误和运行时错误，不需要另开一个构建日志面板。
+宿主会把 `manifest.diagnostics` 和运行时诊断放进同一条诊断通道，所以 devtool 能同时看到编译错误和运行时错误，不需要另开一个构建日志面板。
 :::
 
 ## 当前编译器还有这些限制 {#limits kicker="限制"}
@@ -421,7 +426,7 @@ devtool 的监听是外部脚本在 250ms 防抖后重新全量构建。
 :::
 
 :::card{tag="资源" tone="warn" title="资源分两段处理"}
-编译器按原路径复制图片和字体，并把 WXML 里小于 200KB 的本地图片内联成 data URI。更大的资源、以及 CSS 里的 `url()`，由宿主的 `resolveAssetUrl` 在渲染树应用 flow 时解析。
+编译器按原路径复制图片和字体，并把 WXML 里小于 200KB 的本地图片内联成 data URI。更大的 WXML 图片由宿主 `resolveAssetUrl` 解析；WXSS 里的 `url()` 目前原样保留，由 render 文档的相对路径规则决定。
 :::
 ::::
 

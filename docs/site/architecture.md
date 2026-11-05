@@ -7,7 +7,7 @@ lede: >-
 stats:
   - ['2', '运行时树']
   - ['2', 'manifest schema']
-  - ['9', '消息域']
+  - ['7', '消息域']
   - ['0', '内核中的浏览器全局']
 description: 'Tiny 小程序引擎的架构：内核绝对纯粹、与宿主无关，双侧树、模块职责、依赖方向、启动握手和状态归属。'
 name: '架构'
@@ -120,10 +120,10 @@ glass-easel 不是完整的小程序 SDK。它负责组件、模板、数据绑�
 | 事件捕获与冒泡、slot、shadow 边界 | glass-easel（两侧各自） | 逻辑树分发事件，渲染树处理真实 DOM 事件 |
 | created/attached/ready/moved/detached 生命周期 | glass-easel（service） | 组件实例和 relations 都在逻辑树 |
 | 样式作用域和渲染树 | glass-easel + host | 逻辑树计算 scope；渲染树应用样式和 styleIsolation |
-| Behaviors / observers / relations / selectComponent | Tiny runtime | component-definition 归一化 + ComponentTree + RelationManager |
+| Behaviors / observers / relations / selectComponent | Tiny runtime | component-definition 归一化 + ComponentTree + glass-easel relation builder |
 | App 生命周期、页面栈、路由、onLoad/onShow/onReady | Tiny runtime | `packages/runtime/src/service/thread.ts` |
 | 兼容输入配置、内部 Tiny 命名 | Tiny manifest + runtime | tiny.config.json → compatibility / runtimeCompatibility；内部名来自 TINY_ENGINE_NAMING |
-| wx API、storage、system info、animation | Tiny runtime + host | service 侧 API host；设备信息由 extensions 注入 |
+| wx API、storage、system info、animation | Tiny runtime + `@tiny/api` + host | 内核只安装宿主注入的 API 表；标准微信兼容集在 `@tiny/api`，设备信息由 extensions 叠加 |
 | canvas、资源 URL、DOM 节点 | 宿主 | canvas handoff / resolveAssetUrl / TreeRenderer |
 | 跨线程模板更新、事件、页面切换 | Tiny runtime + bridge + host | tree.flow / tree.patch / tree.event / page.navigateTo |
 | 元素树检查、生命周期控制、诊断投影 | Tiny runtime + devtool | `DevtoolRuntimeClient` + 渲染树 `inspectTree` |
@@ -142,31 +142,34 @@ glass-easel 不是完整的小程序 SDK。它负责组件、模板、数据绑�
 | `@tiny/css-units` | 无 | 编译器和 WXS 共用的 rpx→vw 转换 |
 | `@tiny/wxs-runtime` | 无 | WXS 模块加载、transform 和值语义内核 |
 | `@tiny/bridge` | 无 | 协议、transport、批处理和错误 |
+| `@tiny/api` | manifest · runtime | 微信兼容 `wx.*` 表，内核和宿主之间的 API 适配层 |
 | `@tiny/template-compiler` | manifest · acorn · magic-string | WXML → ProcGen / WXS transform |
 | `@tiny/stylesheet-compiler` | manifest · css-units · postcss | WXSS → 普通/低优先级 CSS |
 | `@tiny/cli` | manifest · template-compiler · stylesheet-compiler · esbuild · typescript | 负责生成全部产物 |
-| `@tiny/runtime` | manifest · bridge · wxs-runtime · glass-easel · es-toolkit | 双线程运行时内核，不依赖宿主 |
-| `@tiny/host-browser` | runtime · bridge | 浏览器宿主：iframe、MessageChannel、Canvas、宿主 API 覆盖层；wasm HostCore 适配 |
+| `@tiny/runtime` | manifest · bridge · wxs-runtime · glass-easel | 双线程运行时内核，不依赖宿主 |
+| `@tiny/host-browser` | runtime · bridge · api | 浏览器宿主：iframe、MessageChannel、Canvas、宿主 API 覆盖层；Rust HostCore 的 wasm 适配 |
 | `@tiny/host-core-wasm` | Rust `host-core` · wasm-bindgen | 浏览器 HostCore wasm 绑定，devtool/test host 共用 |
 | `@tiny/host-core-ffi` | Rust `host-core` · UniFFI | iOS Swift HostCore 绑定 |
 | `@tiny/host-web-components` | manifest · css-units · runtime · glass-easel；构建期 template-compiler | 39 个内置组件、AOT 模板和默认 CSS（宿主包） |
-| `@tiny/host-ios` | runtime · bridge · host-browser · host-web-components | iOS 宿主前端：JSCore engine 与每页 native render 产物；状态机由 `ios/` 的 UniFFI HostCore 驱动 |
-| `devtool` | host-browser · host-web-components · glass-easel · React · Redux/rematch | 调试器宿主和控制面板 |
+| `@tiny/host-ios` | runtime · bridge · api · host-browser · host-web-components | iOS 宿主前端：JSCore engine 与每页 native render 产物；状态机由 `ios/` 的 UniFFI HostCore 驱动 |
+| `devtool` | host-browser · host-web-components · host-core-wasm · glass-easel · React · Redux/rematch | 调试器宿主和控制面板 |
 | `@tiny/website` | React | 架构站点，不进入引擎链路 |
 
 ```text
 core        packages/manifest
             packages/bridge
+            packages/wxs-runtime
+            packages/api                -> manifest, runtime
             packages/template-compiler
             packages/stylesheet-compiler
-            packages/runtime           -> manifest, bridge, glass-easel
-hosts       hosts/browser              -> runtime, bridge   (环境适配)
-            hosts/web-components       -> runtime, manifest, glass-easel
-                                          (内置组件，注入 render)
-            hosts/ios                  -> runtime, bridge, host-browser
-                                          (JSCore engine + native WKWebView render)
+            packages/runtime            -> manifest, bridge, wxs-runtime, glass-easel
 tools       tools/cli                  -> manifest, template-compiler, stylesheet-compiler
-apps        apps/devtool               -> host-browser, host-web-components
+hosts       hosts/browser              -> runtime, bridge, api   (环境适配)
+            hosts/web-components       -> runtime, manifest, css-units, glass-easel
+                                          (内置组件，注入 render)
+            hosts/ios                  -> runtime, bridge, api, host-browser, host-web-components
+                                          (JSCore engine + native WKWebView render)
+apps        apps/devtool               -> host-browser, host-web-components, host-core-wasm
 tests       tests/host                 -> host-browser, host-web-components
                                           (不是 workspace 包)
 fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
@@ -186,14 +189,14 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
 | title | actor | detail | code |
 | --- | --- | --- | --- |
 | 编译并写出产物 | tools/cli | 读取 app.json，扫描入口，生成 templates.js、styles、scripts 和 service.js，最后写出 schema-v2 manifest.json。诊断信息随 manifest 一起返回。 | compileMiniProgram({ sourceDir, outputDir }) |
-| 创建两条独立通道 | 宿主 | 每个线程各一条 MessageChannel。service 和 render 不共享端口，由宿主分别持有两条 hostTransport。 | createHostMessageChannelPair() × 2 |
-| 创建 iframe，等待线程就绪 | 宿主 | service iframe 被隐藏为 0×0，render iframe 填满容器；每页 render 模式下，每新建一个页面就创建一个 render iframe。宿主等待线程发回 tiny-runtime-port-ready，最多等 15 秒。 | WasmBrowserHost(...) |
-| 线程装好连接后再通知宿主 | service / render | service 先拿到 manifest、templates 和 styles；render 先在 `prepare` 里装好内置样式，渲染树本身在端口到达后创建。service bundle 在 bootstrap 时通过 loadArtifacts 导入。线程要等 connection 安装完成，才调用 `listenForRuntimePort`，避免端口消息到达时丢帧。 | bootBrowserServiceEntry(...) / bootBrowserRenderEntry(createGlassRenderEntry(...)) |
+| 创建 service 通道 | 宿主 | service 先建立一条 MessageChannel；render 连接不预先创建，而是每新建一个页面时随 render root 建立一条。 | createHostMessageChannelPair() |
+| 创建 iframe，等待线程就绪 | 宿主 | service iframe 被隐藏为 0×0，render iframe 填满容器；每新建一个页面就创建一个 render iframe。宿主等待线程发回 tiny-runtime-port-ready，最多等 15 秒。 | WasmBrowserHost(...) |
+| 线程装好连接后再通知宿主 | service / render | service 先拿到 manifest，再在 bootstrap 里加载 templates 和 styles；render 先在 `prepare` 里装好内置样式，渲染树本身在端口到达后创建。线程要等 connection 安装完成，才调用 `listenForRuntimePort`，避免端口消息到达时丢帧。 | bootBrowserServiceEntry(...) / bootBrowserRenderEntry(createGlassRenderEntry(...)) |
 | 把 MessagePort 交给线程 | 宿主 | 宿主把 port2 作为 transferable 发给对应 iframe；线程再用 createMessagePortTransport 包装成 Transport。 | postMessage({ type: 'tiny-runtime-port' }, '*', [port]) |
 | 两条连接分别握手 | bridge | 宿主分别发起 runtime.hello，service/render 回复握手信息并发送 runtime.ready。协议版本不一致时连接会直接关闭。 | host.service.handshake() · host.render.handshake() |
-| service 启动首屏 | 宿主 → service | 导入 service.js，App/Page/Component 在这里注册，App.onLaunch/onShow 也会立即执行。随后安装 runtimeCompatibility 兼容全局，构建组件 schema 和 glass-easel 逻辑树，创建首个页面并触发 onLoad/onShow，返回 pageId、initialData 和 componentSchemas。 | service.control('runtime', 'bootstrap') |
-| render 建好渲染树 | 宿主 → render | render 创建 `TreeRenderer`（Web 侧 `createGlassRenderTree`），安装宿主内置组件，等待 service 发来的 `tree.flow`。首屏 flow 包含 define/tree/ready：render 先装组件定义，再把快照挂到页面根，并为组件模板求值出 shadow tree。 | render.control('runtime', 'bootstrap') |
-| 同步首屏并触发 onReady | 宿主 → service | render 挂载完成后宿主发送 `tree.ready`，service 用逻辑树快照发送 `tree.flow`；随后宿主发 `page.ready`，service 触发 onReady。此时逻辑树、组件实例和 relations 已经可用。 | service.control('page', 'ready', { pageId }) |
+| service 启动首屏 | 宿主 → service | 导入 service.js，App/Page/Component 在这里注册，App.onLaunch/onShow 也会立即执行。随后安装 runtimeCompatibility 兼容全局，构建组件 schema 和 glass-easel 逻辑树，创建首个页面并触发 onLoad/onShow；逻辑树挂载后立即生成首屏 tree.flow，返回 pageId、initialData 和 componentSchemas。 | service.control('runtime', 'bootstrap') |
+| render 建好渲染树 | 宿主 → render | render 创建 `TreeRenderer`（Web 侧 `createGlassRenderTree`），安装宿主内置组件和编译模板，等待 service 发来的 `tree.flow`。首屏 flow 包含 define/tree/ready：render 先装组件定义，再把快照挂到页面根，并为组件模板求值出 shadow tree。 | render.control('runtime', 'bootstrap') |
+| 同步首屏并触发 onReady | 宿主 → service | render bootstrap 完成后，宿主发送 `tree.ready`，service 用逻辑树快照再次发送 `tree.flow`；宿主随后发 `page.ready`，service 触发 onReady。此时逻辑树、组件实例和 relations 已经可用。 | service.control('page', 'ready', { pageId }) |
 | 广播状态，页面可交互 | service | service 发送 RUNTIME_STATE，包含 pageStack、currentPage 和 transport 状态；宿主诊断仓库和 devtool 据此更新界面。 | sendDiagnostic('state', { code: 'RUNTIME_STATE' }) |
 :::
 
@@ -212,7 +215,7 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
             | BridgeConnection(host <-> service)           |
             | BridgeConnection(host <-> render) x page     |
             | pageId -> render connection + queue          |
-            | HostApiRegistry / HostDiagnosticStore        |
+            | HostCore + platform handlers + diagnostics   |
             +-----+-----------------------------------+----+
                   |                                   |
            MessageChannel                            MessageChannel
@@ -231,18 +234,18 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
 
 ```text
 转发（event，host 重新封装后立即发给另一侧）
-  service ── tree.flow / tree.snapshot / tree.patch / tree.animate ──► host ──► render
-  service ◄── tree.event ───────────────────────────────────────────── host ◄── render
+  service ── tree.flow / tree.patch / tree.animate ────────────────► host ──► render
+  service ◄── tree.event / tree.templateEvent / tree.wxsEffect ────── host ◄── render
   service ◄── page.scroll / reachBottom / pullDownRefresh ──────────── host ◄── render
 
 代理（call/control，host 等渲染树回包后再回 service）
-  service ── query.select / query.intersection / canvas.measure ──► host ──► render
+  service ── query.select / query.intersection ───────────────────► host ──► render
   service ◄──────────────── reply ───────────────────────────────── host ◄── reply
 
 终结（host 自己处理，不再转发）
-  service ── api.* ─────────────────────────────────► HostApiRegistry
+  service ── api.* ─────────────────────────────────► HostCore / platform handlers
   render  ── tree.hostAction ───────────────────────► navigate.* handler
-  service/render ── diagnostic.* ───────────────────► HostDiagnosticStore
+  service/render ── diagnostic.* ───────────────────► host diagnostic callback
 
 发起（host 主动驱动两侧）
   host ── runtime.bootstrap / page.ready / page.navigateTo ──► service
@@ -251,22 +254,26 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
 
 | 消息 | 路径 | 宿主处理 | 用途 |
 | --- | --- | --- | --- |
-| `tree.flow` · `tree.snapshot` · `tree.patch` | service → host → render | 按 pageId 转发；目标页还没打开时先入队 | 首屏 component flow、完整快照、虚拟节点 patch |
+| `tree.flow` · `tree.patch` | service → host → render | 按 pageId 转发；目标页还没打开时先入队 | 首屏 component flow、虚拟节点 patch |
+| `tree.snapshot` | service → host → render | 保留入口，当前 service 不发送 | 旧版完整快照 |
 | `tree.animate` · `tree.clearAnimate` | service → host → render | 按 pageId 转发 | `this.animate` / `clearAnimate` 的关键帧 |
-| `tree.event` | render → host → service | 按 pageId 转发 | 事件带组件 id 或元素 locator、name、detail、native、touches |
-| `tree.ready` | host → service | render bootstrap 完成后由宿主发送 | 请求逻辑树发送首屏 flow |
+| `tree.wxsBinding` | service → host → render | 按 pageId 转发 | 动态 WXS 事件绑定决策 |
+| `tree.event` | render → host → service | 按 pageId 转发 | 事件带组件 id 或元素 locator、name、detail、native、touches 和 target/currentTarget 几何 |
+| `tree.templateEvent` | render → host → service | 按 pageId 转发 | render 求值的组件模板把方法调用交回 service |
+| `tree.wxsEffect` | render → host → service | 按 pageId 转发 | WXS `callMethod` / `triggerEvent` 的跨线程副作用 |
+| `tree.hostAction` · `tree.hostRequest` | render → host | 宿主直接处理 | 内置组件的导航、picker 等宿主动作 |
+| `tree.ready` | host → service | render bootstrap 完成后由宿主发送 | 请求逻辑树重发首屏 flow |
 | `query.select` | service → host → render → host → service | 两次 RPC | selector query 在真实 DOM 中查节点，返回 rect/dataset/scroll |
-| `query.intersection` | service → host → render；entry 反向 render → host → service | 代理 observe/unobserve，再转发回调 | 页面/组件级 IntersectionObserver |
-| `canvas.measure` | service → host → render → host → service | 把 call 转给渲染树 | 测量 canvas 节点 |
+| `query.intersection` | service → host → render；entry 反向 render → host → service | 代理 observe/disconnect，再转发回调 | 页面/组件级 IntersectionObserver |
 | `canvas` handoff | service → host → render → host → service | 只中继 transferable，不解析 | 把 OffscreenCanvas 交给 service；之后直接绘制 |
-| `api.*` | service → host | `HostApiRegistry` 查 handler；`navigate.*` 会再 control service | 导航、toast、storage、request 等宿主语义 |
+| `api.*` | service → host | HostCore / 平台 handler 查表；`navigate.*` 会再 control service | 导航、toast、storage、request 等宿主语义 |
 | `page.scroll` · `page.reachBottom` · `page.pullDownRefresh` | render → host → service | 按 pageId 转发 | 页面滚动、触底和下拉手势——render 文档才是页面的滚动容器 |
-| `page.ready` · `page.navigateTo` · `page.navigateBack` · `page.switchTab` · `page.redirectTo` · `page.reLaunch` · `page.pullDownRefresh` · `page.share` · `page.saveExitState` · `page.hide` · `page.show` | host → service | 宿主发起 | 页面栈和生命周期由 service 执行，宿主负责开/关 render 页面 |
+| `page.ready` · `page.navigateTo` · `page.navigateBack` · `page.switchTab` · `page.redirectTo` · `page.reLaunch` · `page.pullDownRefresh` · `page.share` · `page.saveExitState` · `page.hide` · `page.show` · `page.unload` | host → service | 宿主发起 | 页面栈和生命周期由 service 执行，宿主负责开/关 render 页面 |
 | `runtime.bootstrap` · `runtime.resize` · `runtime.themeChange` | host → service | 宿主发起 | 启动、窗口尺寸、主题 |
-| `diagnostic.*` | service/render → host | 写入 `HostDiagnosticStore` | 不回传另一侧，devtool 从宿主读取 |
+| `diagnostic.*` | service/render → host | 写入宿主诊断通道，devtool 通过回调读取 | 不回传另一侧 |
 
 :::callout{title="首屏 flow 会先于 render 到达"}
-service 在 `runtime.bootstrap` 里就发出首屏 `tree.flow`，而 render 页面要等 bootstrap 返回 pageId 之后才会被宿主创建。宿主把这段窗口期的消息放进待发队列（最多 16 页），页面打开后按顺序 flush；没有 pageId 或队列溢出会记 `RENDER_SESSION_MISSING`，而不是静默丢弃。
+service 在 bootstrap 里就会为首屏生成一次 `tree.flow`，而这时宿主还没创建 render root。HostCore 按 pageId 把页面级事件暂存（每页最多 256 条），页面连上后按顺序投递；没有 pageId 或队列溢出只会产生 warning 诊断，不会静默丢消息。
 :::
 
 :::callout{title="导航为什么要经过宿主"}
@@ -299,9 +306,7 @@ SwiftUI MiniProgramSession
 | storage | 浏览器 storage | UserDefaults |
 | canvas | OffscreenCanvas handoff | service display-list + native render 回放 |
 
-`host.html`、`TinyWebView`、`FrameRelay` 和 `createTinyRuntime` 都已从 iOS 路径删除；
-页面切换由 `HostCoreRuntime` 做 native push/pop 动画，左边缘 `UIScreenEdgePanGestureRecognizer`
-提供交互式右滑返回。
+iOS 路径不使用 iframe 或 `host.html`；页面切换由 `HostCoreRuntime` 做 native push/pop 动画，左边缘 `UIScreenEdgePanGestureRecognizer` 提供交互式右滑返回。
 `RUNTIME_STATE` 仍由 HostCore 投影成 UIState，SwiftUI chrome 只消费投影结果。
 
 ## 状态应该放在哪一层 {#ownership kicker="状态归属"}
@@ -317,9 +322,9 @@ SwiftUI MiniProgramSession
 | 虚拟节点树和组件 id | service 逻辑树 | render 的节点映射 | 组件 id 由 service 分配；元素 id 渲染侧本地，事件/补丁用 locator；tree.flow / tree.patch 同步 |
 | 真实组件树 / DOM / 布局 | render 渲染树 | devtool 的 InspectNode | 渲染树 `inspectTree` |
 | 样式和 scope id | service 计算 scope，render 应用 | 无 | 逻辑树生成带 role 的样式，flow 下发 |
-| canvas 实现 | 宿主 canvas handoff | service 持有 OffscreenCanvas 控制面 | ServiceCanvasAdapter / 浏览器 OffscreenCanvas relay |
+| canvas 实现 | 宿主 canvas 适配器 | 浏览器由 service 持有 OffscreenCanvas 控制面；iOS 由 service 录制 display-list、render WKWebView 回放 | ServiceCanvasAdapter / 宿主 canvas relay |
 | DOM 查询 | 宿主渲染树 | selector query / IntersectionObserver | query.select / query.intersection |
-| 资源 URL | 宿主 resolveAssetUrl | render 重写后的 img/src 和 CSS url() | 渲染树在应用 flow 时解析 |
+| 资源 URL | 宿主 resolveAssetUrl | render 内置组件的 img/src；CSS url() 原样保留 | 渲染树解析内置组件资源，样式按文档相对路径解析 |
 | 宿主 transport / API 语义 | 宿主 | service 侧 API 快照 | api.* 调用 / systemInfo / storage / apiHost |
 | 诊断 | 宿主诊断仓库 | devtool diagnostics | diagnostic.* 事件 |
 
@@ -337,7 +342,7 @@ SwiftUI MiniProgramSession
 :::
 
 :::card{title="跨线程只传 JSON 安全的数据"}
-Date、Map、Set、函数、undefined 和循环引用都会被 Bridge 拒绝。需要传递时，请先转成字符串或普通对象。
+调用和回复必须能通过 Bridge 的严格 JSON 校验；事件路径会先经 runtime 的 `toJsonSafe` 清洗。函数、undefined、类实例和循环引用不会原样跨线程，需要传递时先转成普通对象或字符串。
 :::
 
 :::card{title="依赖只能向内"}
@@ -349,7 +354,7 @@ Date、Map、Set、函数、undefined 和循环引用都会被 Bridge 拒绝。�
 :::
 
 :::card{title="环境能力由宿主注入"}
-API 表走 `apiHost`（标准集来自 `@tiny/api`，设备事实用 `apiExtensions` 叠加），canvas 走 `ServiceCanvasAdapter` / `RenderCanvasAdapter`，DOM 查询与相交观测走 `RenderQueryAdapter`，资源走 `resolveAssetUrl`，渲染后端和挂载点也由宿主提供。
+API 表走 `apiHost`（标准集来自 `@tiny/api`，设备事实用 `apiExtensions` 叠加），canvas 走 `ServiceCanvasAdapter` 和渲染树的 `measureCanvas`，DOM 查询与相交观测走 `TreeRenderer.query` / `observeIntersection`，资源走 `resolveAssetUrl`，渲染后端和挂载点也由宿主提供。
 :::
 
 :::card{title="命名配置只有一个来源"}

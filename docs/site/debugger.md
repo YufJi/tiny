@@ -128,7 +128,7 @@ Console 显示结构化诊断（最多保留 500 条），Elements 显示 `runti
 
 ::::cards{layout="three"}
 :::card{title="全部测试应用"}
-默认发布 `tests/apps` 下全部 7 个应用，和本地 `pnpm dev:devtool` 的选择器一致；产物约 13 MiB，已移除 source map。
+默认发布 `tests/apps` 下全部 7 个应用，和本地 `pnpm dev:devtool` 的选择器一致；产物约 20 MiB，已移除 source map。
 :::
 
 :::card{title="纯静态"}

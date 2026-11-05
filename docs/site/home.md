@@ -13,9 +13,9 @@ actions:
   - ['GitHub 仓库 ↗', 'https://github.com/YufJi/tiny', 'ghost']
 stats:
   - ['2', '运行时树']
-  - ['14', '工作区包']
-  - ['340', '单元测试']
-  - ['58', '浏览器步骤']
+  - ['15', '工作区包']
+  - ['388', '单元测试']
+  - ['61', '浏览器步骤']
 description: 'Tiny 是一个基于 glass-easel 的小程序引擎：编译 WXML/WXSS/TS，service 与 render 双线程运行，核心小程序内核不依赖宿主。'
 name: '概览'
 pageTitle: 'Tiny 小程序引擎：编译、双线程运行时与宿主适配'
@@ -205,7 +205,7 @@ Vant 的 dashboard、button、calendar、cascader 等页面和 WeUI 的表单/�
 :::
 
 :::card{title="Canvas handoff"}
-宿主把 render iframe 的 OffscreenCanvas 交给 service，支持 2D/WebGL/RAF/createImage；ECharts 会检查非空像素，不再走 PNG 镜像。
+宿主把 render iframe 的 OffscreenCanvas 交给 service，支持 2D/WebGL/RAF/createImage；ECharts 用例会检查 canvas 上的非空像素。
 :::
 
 :::card{title="兼容输入与内部命名"}

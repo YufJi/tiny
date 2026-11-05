@@ -38,13 +38,13 @@ test('protocol page keeps its structure', async () => {
   )
   assert.equal(doc.meta.nav.length, 11)
   assert.deepEqual(doc.meta.nav[0], ['role', '职责'])
-  assert.deepEqual(doc.meta.stats, [['1', '协议版本'], ['4', '消息类型'], ['9', '消息域'], ['30s', '默认调用超时']])
+  assert.deepEqual(doc.meta.stats, [['1', '协议版本'], ['4', '消息类型'], ['7', '在用消息域'], ['30s', '默认调用超时']])
 
   const children = doc.blocks.flatMap((block) => block.children)
   const tables = children.filter((child) => child.type === 'table')
   assert.equal(tables.length, 6)
   const catalog = tables.find((table) => table.head[0][0]?.value === 'Domain')
-  assert.equal(catalog.rows.length, 33)
+  assert.equal(catalog.rows.length, 39)
 
   const sequence = children.find((child) => child.type === 'sequence')
   assert.equal(sequence.steps.length, 5)
