@@ -132,15 +132,15 @@ the devtool (`hiddenFromDevtool` in `scripts/devtool-apps.mjs`):
 2. Clicking `mini` creates that app's service/render iframes, updates the URL to
    `?app=mini`, and `DevtoolRuntimeClient` reports `running`.
 3. Page stack, current page, per-page render frames, structured diagnostics, and the
-   rendered element tree are projected into Redux and surfaced in the right-bottom
+   rendered component tree are projected into Redux and surfaced in the right-bottom
    Console / Lifecycle / Elements panel.
 4. The mini program renders inside the `375 × 812` iPhone X preview. Each page owns one
    `render.html?pageId=<page-id>` iframe; the active frame is visible and hidden
    pages stay mounted behind it. Each page frame registers only its own page WXSS and
    recursive component styles, not the other pages in the manifest. A host status bar and
    navigation bar consume the top `88px` (content stays `375 × 724`, or `375 × 674` on tab
-   pages with a `50px` tabBar); the Elements tab shows `page`, built-in tags, classes,
-   attributes, and text.
+   pages with a `50px` tabBar); the Elements tab shows the page root, built-in tags,
+   classes, attributes, and text, with host DOM wrapper nodes collapsed away.
 5. The host navigation bar projects the **active page** title and exposes back;
    `navigate.back` is disabled on the first page and drives the runtime after a
    navigation. The page stack chips show page paths, visibility, and `n / maxPageStack`.

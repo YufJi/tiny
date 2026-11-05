@@ -28,6 +28,7 @@ const steps = [
   ['Run web built-in component tests', ['pnpm', '--filter', '@tiny/host-web-components', 'test']],
   ['Run WeChat API table tests', ['pnpm', '--filter', '@tiny/api', 'test']],
   ['Run runtime tests', ['pnpm', '--filter', '@tiny/runtime', 'test']],
+  ['Run devtool tests', ['pnpm', '--filter', 'devtool', 'test']],
   ['Compile P0 example', ['pnpm', 'compile:glass-easel']],
 ]
 

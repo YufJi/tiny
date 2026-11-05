@@ -287,6 +287,19 @@
   background: rgba(154, 167, 186, 0.06);
 }
 
+/* Leaf components keep the tag indent but have nothing to expand. */
+.td-tree-node--leaf > summary {
+  cursor: default;
+}
+
+.td-tree-node--leaf > summary::before {
+  visibility: hidden;
+}
+
+.td-tree-node--leaf > summary:hover {
+  background: transparent;
+}
+
 .td-tree-tag {
   flex: none;
   color: #a7c4d2;

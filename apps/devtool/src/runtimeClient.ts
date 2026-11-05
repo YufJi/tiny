@@ -10,6 +10,7 @@ import type { RuntimeDiagnostic, RuntimePageState, RuntimeTabBarState } from '@t
 import type { InspectNode } from '@tiny/runtime'
 import type { RuntimeManifest, StorageSnapshot, SystemInfoSnapshot } from '@tiny/runtime'
 import { WasmBrowserHost, type WasmHostCoreFactory } from '@tiny/host-browser'
+import { projectComponentTree } from './componentTree'
 import { pollHostPicker, showHostPicker, updateHostPicker } from './hostPicker'
 
 export type DevtoolRuntimeStatus = 'idle' | 'connecting' | 'running' | 'terminated' | 'error'
@@ -35,6 +36,7 @@ export type DevtoolRuntimeState = {
   /** Native tab bar state for the active tab page, when the app declares one. */
   tabBar?: RuntimeTabBarState
   diagnostics: RuntimeDiagnostic[]
+  /** Component-level projection of the active page's render tree. */
   tree?: InspectNode | null
   error?: string
 }
@@ -223,8 +225,11 @@ export class DevtoolRuntimeClient {
       return null
     }
     const tree = await this.requireWasmHost().inspectTree(pageId) as InspectNode | null
-    this.update({ tree })
-    return tree
+    // The host reports the live render DOM; the panel only wants the
+    // mini-program component levels (see `componentTree.ts`).
+    const componentTree = projectComponentTree(tree)
+    this.update({ tree: componentTree })
+    return componentTree
   }
 
   async foreground(): Promise<void> {

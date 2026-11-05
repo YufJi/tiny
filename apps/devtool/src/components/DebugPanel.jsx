@@ -183,9 +183,9 @@ function DebugPanel({
           ) : (
             <div className="td-empty-state">
               <div className="td-empty-glyph">◇</div>
-              <div className="td-empty-title">No element tree</div>
+              <div className="td-empty-title">No component tree</div>
               <div className="td-empty-hint">
-                Launch or inspect the app to project its page tree.
+                Launch or inspect the app to project its page component tree.
               </div>
             </div>
           )}

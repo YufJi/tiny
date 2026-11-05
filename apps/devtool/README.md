@@ -55,7 +55,7 @@ pnpm compile:devtool:all
   并回到列表页
 - tab 页底部/顶部显示内置 tabBar（图标、文字、选中色、badge、红点）；点击调用 `switchTab`
 - 右上：当前应用、运行状态、页面栈深度（`n / maxPageStack`）、Runtime / Navigation 控制
-- 右下：Console / Lifecycle / Elements 调试栏，分别展示结构化诊断、页面生命周期时间线和可展开的元素树
+- 右下：Console / Lifecycle / Elements 调试栏，分别展示结构化诊断、页面生命周期时间线和可展开的组件树（只保留页面 / 用户组件 / 内置组件这些 glass 组件层级，宿主 DOM 包装节点会被折叠）
 
 预览内容区按当前页面是否使用 `navigationStyle: "custom"`、当前 tab 页是否显示 tabBar
 动态扣除 `88px` 导航栏 / `50px` tabBar，并通过 `runtime.resize` 同步给
@@ -129,7 +129,8 @@ src/
 │   ├── HostTabBar.css
 │   ├── DebugPanel.jsx       # Console / Lifecycle / Elements 调试栏
 │   ├── DebugPanel.css
-│   └── ElementTree.jsx      # 可展开元素树
+│   └── ElementTree.jsx      # 可展开组件树（页面 / 用户组件 / 内置组件）
+├── componentTree.ts         # Elements 组件级投影：折叠宿主 DOM 包装节点
 ├── runtimeClient.ts         # DevtoolRuntimeClient：会话、导航、状态投影
 ├── runtimeService.js        # service 线程入口（单例）
 ├── runtimeRender.js         # render 线程入口（每个页面一个 iframe）
@@ -169,6 +170,16 @@ website 的接入由 `pnpm site:devtool` 完成：它编译 `tests/apps` 下全�
 站点用同源 iframe `./devtool/index.html` 嵌入，应用列表与本地 devtool 一致。
 站点构建会移除生成产物的 source map，避免把十几 MiB 的 `.map` 发布到 Pages。
 详见 `website/README.md`。
+
+## 测试
+
+```bash
+pnpm --filter devtool test
+```
+
+Vitest 覆盖 Elements 的组件级投影：页面根节点保留、宿主 DOM 包装节点折叠、
+隐藏 slot 文本不重复、引擎 scope class / 属性隐藏。该步骤已并入
+`pnpm accept:glass-easel`。
 
 ## 验收
 
