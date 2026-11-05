@@ -851,9 +851,15 @@ export class GlassEaselRuntimeAdapter {
       // glass-easel only fires `attached` automatically; the mini-program
       // `ready` lifetime is triggered by the runtime after the tree is stable.
       // Children first, so parent ready handlers observe settled children.
+      // Only the freshly mounted page may run `ready`: older pages stay mounted
+      // in the logic tree, and re-running their handlers would re-initialize
+      // their state against the new page (for example a canvas selector query
+      // resolving to the active page).
       for (const instance of [...this.componentInstances.values()].reverse()) {
         const path = this.componentPaths.get(instance as unknown as object)
-        if (path && this.logicComponentDefinitions.has(path)) instance.triggerLifetime('ready', [])
+        if (!path || !this.logicComponentDefinitions.has(path)) continue
+        if (pageId && this.pageIdOf(instance) !== pageId) continue
+        instance.triggerLifetime('ready', [])
       }
     }
     return component

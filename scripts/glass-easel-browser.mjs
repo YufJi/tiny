@@ -2259,6 +2259,57 @@ export async function runDevtoolAcceptance({ baseUrl }) {
           assert.equal(selected?.['热度'], false, 'echarts mouse toggle did not stick')
           assert.equal(selected?.['正面'], false, 'echarts touch toggle did not stick')
           assert.notEqual(selected?.['负面'], false, 'echarts toggled an untouched series')
+
+          // Chart pages share the canvas template. Mounting a second chart page
+          // must not re-run the previous page's component `ready` (which would
+          // repaint that chart into the new page's canvas).
+          const canvasImage = (selector) => serviceFrame.evaluate((sel) => {
+            const pages = globalThis.getCurrentPages?.() ?? []
+            return pages[pages.length - 1]?.selectComponent?.(sel)?.canvasNode?.toDataURL?.() ?? null
+          }, selector)
+          const openChartPage = async (label, route, type, selector) => {
+            const stack = (await state()).pageStack
+            const indexFrame = await waitForActiveRenderFrame(fixture.id, stack.at(-1))
+            assert.ok(indexFrame, 'echarts index page frame is missing')
+            await indexFrame.locator('.chart-with-img', { hasText: label }).locator('tiny-image').click()
+            await page.waitForFunction(
+              (expected) => window.__tinyDevtool?.getState().currentPage === expected,
+              `pages/${route}/index`,
+              { timeout: STEP_TIMEOUT },
+            )
+            await serviceFrame.waitForFunction(({ selector: sel, expectedType }) => {
+              const pages = globalThis.getCurrentPages?.() ?? []
+              const chart = pages[pages.length - 1]?.selectComponent?.(sel)?.chart
+              return chart?.getOption?.().series?.[0]?.type === expectedType
+            }, { selector, expectedType: type }, { timeout: STEP_TIMEOUT })
+            // Let the entry animation settle so the snapshot is stable.
+            await page.waitForTimeout(1500)
+            return canvasImage(selector)
+          }
+          const backToIndex = async () => {
+            await page.getByRole('button', { name: 'Back in preview' }).click()
+            await page.waitForFunction(
+              () => window.__tinyDevtool?.getState().currentPage === 'pages/index/index',
+              null,
+              { timeout: STEP_TIMEOUT },
+            )
+          }
+
+          await backToIndex()
+          const boxplotImage = await openChartPage('箱型图', 'boxplot', 'boxplot', '#mychart-dom-pie')
+          await backToIndex()
+          const sankeyImage = await openChartPage('桑基图', 'sankey', 'sankey', '#mychart-dom-sankey')
+          assert.equal(
+            pageErrors.length,
+            0,
+            `echarts chart pages reported: ${pageErrors.join(' | ')}`,
+          )
+          assert.ok(boxplotImage && sankeyImage, 'echarts chart pages did not paint their canvas')
+          assert.notEqual(
+            sankeyImage,
+            boxplotImage,
+            'echarts replayed the previous page chart into the new canvas',
+          )
         }
 
         if (fixture.id === 'mini') {

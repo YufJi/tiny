@@ -77,6 +77,7 @@ function setData(target: unknown, patch: Record<string, unknown>): void {
 function createTree(
   onDataChange: (pageId: string) => void,
   pageOptions: ReadonlyMap<string, { methods?: Record<string, (...args: unknown[]) => unknown> }>,
+  options: { onCardReady?: () => void } = {},
 ) {
   const manifest = createManifest()
   const cardDefinition = normalizeComponentDefinition({
@@ -86,6 +87,7 @@ function createTree(
         setData(this, { value: 'card-tapped' })
       },
     },
+    ...(options.onCardReady ? { ready: options.onCardReady } : {}),
   }, CARD_PATH)
   const definitions = new Map([[CARD_PATH, cardDefinition]])
   const tree = new LogicTreeAdapter({
@@ -127,6 +129,23 @@ function findById(node: RenderView | null | undefined, id: string): RenderView |
 }
 
 describe('logic tree with multiple mounted pages', () => {
+  test('runs a component ready handler only for the page being mounted', async () => {
+    let readyCount = 0
+    const tree = createTree(() => undefined, PAGE_OPTIONS, {
+      onCardReady: () => { readyCount += 1 },
+    })
+    tree.mountPage(FIRST_PAGE, { value: 'first' }, 'page-1')
+    await tree.glass.whenRendered()
+    expect(readyCount).toBe(1)
+
+    // Mounting another page must not re-run the ready of components that stay
+    // mounted on the hidden page (their selectors would resolve against the
+    // active page).
+    tree.mountPage(SECOND_PAGE, { value: 'second' }, 'page-2')
+    await tree.glass.whenRendered()
+    expect(readyCount).toBe(1)
+  })
+
   test('routes page event data changes back to the page that owns the event', async () => {
     const changes: string[] = []
     const tree = createTree((pageId) => changes.push(pageId), PAGE_OPTIONS)
