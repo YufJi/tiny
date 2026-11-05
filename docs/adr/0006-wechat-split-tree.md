@@ -81,7 +81,10 @@ Accepted and implemented. Merged into `next` as #27 (`1ac6d3a`), originally on
   returns a no-op for WXS values, and `this.triggerEvent` forwards the event
   (`tree.customEvent`) after the service JS listeners ran. Page-template WXS
   expressions still follow template evaluation (service for page templates,
-  render for component templates).
+  render for component templates). `input`/`textarea` `bindinput` stays in the
+  service: WeChat's input component publishes `PAGE_EVENT` to the service
+  instead of dispatching a view event, so its WXS handler is service-side by
+  parity.
 - WXS event handlers receive a component descriptor as their second argument
   (`function (event, ins) {}`), also exposed as `event.instance`. The compiler's
   `Q.C` listener wrapper only adds it for listeners whose value comes from a WXS

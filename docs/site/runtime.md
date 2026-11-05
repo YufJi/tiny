@@ -281,9 +281,9 @@ WXS 代码在编译期完成：
 
 事件执行对齐微信的主要边界：
 
-- WXS handler / `change:prop` 对内置组件和自定义组件都在 render 执行；
+- WXS handler / `change:prop` 对内置组件和自定义组件都在 render 执行（`input` / `textarea` 的 `bindinput` 除外）；
 - 自定义组件事件先由 service 分发 JS listener，再转发 render 派发 WXS handler；WXS `catch` 只影响 render 侧冒泡；
-- `input` / `textarea` 的 `bindinput` 走 service；
+- `input` / `textarea` 的 `bindinput` 走 service：微信的 input 组件把 `bindinput` 作为 String 属性，视图层不 dispatch 普通事件，而是 `wx.publishPageEvent(this.bindinput, ...)` 发 `PAGE_EVENT` 给 service 派发；因此 WXS `bindinput` 也只能在 service 执行（使用 service descriptor，没有 `getState` / `getComputedStyle`），Tiny 保持同一执行侧；
 - `catch` / `capture-bind` / `capture-catch` / `return false` 生效；
 - 本地 handler 执行后，只有路径上存在 service listener 才回传；
 - `mutated` 元数据会传递，但 `mut-bind` 的本地语义尚未实现。
@@ -293,7 +293,7 @@ render 侧 `ComponentDescriptor` 已覆盖 `selectComponent`、`getDataset`、`g
 当前明确的限制：
 
 - WXS source map 已包含在模块表中，但尚未接进最终模板产物；
-- `input` / `textarea` `bindinput` 按上面的 service 路径处理；
+- `input` / `textarea` 的 `bindinput` 是唯一 service-side 的 WXS 事件（微信 `PAGE_EVENT` 语义），没有 view 侧 `getState` / `getComputedStyle`；
 - 无法通过 origin 识别的 WXS 函数（例如闭包、`bind()` 后的新函数）不注册 handler，需用模块导出形式；
 - `callMethod` / `triggerEvent` 是跨线程 RPC，返回值不是同步语义。
 

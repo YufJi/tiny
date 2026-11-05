@@ -71,7 +71,7 @@
 
 | 维度 | 权重 | 完成度 | 加权 | 关键依据 |
 | --- | ---: | ---: | ---: | --- |
-| 编译/构建 | 10% | 76% | 7.60 | WXML/WXSS/WXS 基本完整；共享 WXS runtime 与 AST transform 已接，WXS handler/`change:prop` 在 render 侧执行（自定义组件事件经 `tree.customEvent` 转发）；app.wxss 规则可作用到页面与内置宿主；app.json 只消费少量字段；无 npm 构建、无 TS 类型检查 |
+| 编译/构建 | 10% | 76% | 7.60 | WXML/WXSS/WXS 基本完整；共享 WXS runtime 与 AST transform 已接，WXS handler/`change:prop` 在 render 侧执行（自定义组件事件经 `tree.customEvent` 转发；`input`/`textarea` 的 `bindinput` 按微信 `PAGE_EVENT` 语义留在 service）；app.wxss 规则可作用到页面与内置宿主；app.json 只消费少量字段；无 npm 构建、无 TS 类型检查 |
 | 框架运行时 | 18% | 90% | 16.20 | 14/14 页面生命周期、7/7 应用生命周期、5/5 路由；两次求值的渲染树、元素 locator 寻址、页面级 `generic:x`、6 个 `wx://` behavior 占位对齐；`this.animate`/`clearAnimate`、`wx.createIntersectionObserver`、事件合成层与 `target/currentTarget` 几何落地；tab 页缓存、group/label/touchtrack/scroller 基础保持；componentPlaceholder 未接 |
 | 内置组件 | 17% | 65% | 11.05 | 39/60 标签（2.33.0 目标的 39 个标签全部落地，20 个平台/开放能力组件按基线不做）；P0 视觉完成，P1 内部结构大幅收口；事件合成层与 scroll-view 横向/enable-flex 修复落地；`navigator` 走 host action；canvas 2D/WebGL 已接；已统计属性 120/146、事件 44/46 |
 | wx API | 20% | 14.1% | 2.83 | 71/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar/switchTab/redirectTo/reLaunch/下拉刷新/IntersectionObserver（含 `wx.createIntersectionObserver`）等已接或桩 |
