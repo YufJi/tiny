@@ -1,20 +1,27 @@
 import type * as glassEasel from 'glass-easel'
 import { bindHostListeners, unbindHostListeners, BUILTIN_BEHAVIOR_IDS } from '../../behaviors'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
-import { builtinDefinitionName } from '../../tags'
-import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 
-const BUILTIN_TINY_FORM_FIELD_BEHAVIOR = TINY_ENGINE_NAMING.formFieldBehaviorId
+import { builtinDefinitionName } from '../../tags'
 
 type FormControl = {
-  hasBehavior?: (behavior: string) => boolean
+  /**
+   * glass-easel resolves behavior strings by URL, so a custom component (whose
+   * `is` is an artifact path) can only be matched by behavior object identity.
+   */
+  hasBehavior?: (behavior: unknown) => boolean
   getFormData?: (callback?: (value: unknown) => void) => unknown
   resetFormData?: () => void
   data?: Record<string, unknown>
   childNodes?: unknown[]
+  shadowRoot?: { childNodes?: unknown[] }
 }
 
 export function defineForm(ctx: BuiltinContext): BuiltinDefinition {
+  const nodeProps = (control: FormControl): Record<string, unknown> | undefined => (
+    ctx.options.lookupNodeProps?.(control)
+  )
+
   return ctx.space.defineComponent({
     is: builtinDefinitionName('form'),
     template: ctx.template('form'),
@@ -38,7 +45,25 @@ export function defineForm(ctx: BuiltinContext): BuiltinDefinition {
     methods: {
       controlName(control: FormControl): string {
         const direct = (control as unknown as { name?: unknown }).name
-        return String(direct ?? control.data?.name ?? '')
+        // WeChat's form reads node props. Tiny keeps them for both creation
+        // paths (snapshot props for page-level nodes, captured template props
+        // for render-created components) and falls back to declared data.
+        const candidates = [direct, nodeProps(control)?.name, control.data?.name]
+        for (const candidate of candidates) {
+          if (candidate !== undefined && candidate !== null && String(candidate) !== '') {
+            return String(candidate)
+          }
+        }
+        return ''
+      },
+      controlValue(control: FormControl): unknown {
+        // A component-updated value wins; otherwise fall back to the node prop.
+        if (control.data && control.data.value !== '' && control.data.value !== undefined) {
+          return control.data.value
+        }
+        const props = nodeProps(control)
+        if (props && Object.hasOwn(props, 'value')) return props.value
+        return control.data?.value
       },
       collectControls(
         nodes: unknown[] | undefined,
@@ -54,10 +79,21 @@ export function defineForm(ctx: BuiltinContext): BuiltinDefinition {
           }
           const control = list[index] as FormControl
           index += 1
-          const descend = () => this.collectControls(control.childNodes, value, next)
-          if (control.hasBehavior?.(BUILTIN_TINY_FORM_FIELD_BEHAVIOR)) {
+          // A `wx://form-field-group` wrapper is traversed through its shadow
+          // tree, exactly like WeChat's form walks into the group component.
+          const descend = () => {
+            const shadow = control.hasBehavior?.(ctx.behaviors.formFieldGroup)
+              ? control.shadowRoot?.childNodes ?? []
+              : []
+            this.collectControls(
+              [...(control.childNodes ?? []), ...shadow],
+              value,
+              next,
+            )
+          }
+          if (control.hasBehavior?.(ctx.behaviors.formField)) {
             const name = this.controlName(control)
-            if (name) value[name] = control.data?.value
+            if (name) value[name] = this.controlValue(control)
             descend()
             return
           }

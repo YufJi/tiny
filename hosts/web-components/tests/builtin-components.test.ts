@@ -10,6 +10,7 @@ import {
 } from '../src'
 import precompiledTemplates from '../src/generated/templates'
 import { applyHostProps } from '../src/render-tree'
+import { getPublicBuiltinBehaviors } from '../src/behaviors'
 import { transformTextContent } from '../src/components/text/content'
 
 function compilePage(source: string): glassEasel.template.ComponentTemplate {
@@ -778,6 +779,36 @@ describe('P0 built-in components', () => {
     expect(host('switch').data.checked).toBe(true)
   })
 
+
+  test('a custom component with wx://label-target receives label taps', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const labelTarget = getPublicBuiltinBehaviors(space)!['wx://label-target']
+    const field = space.defineComponent({
+      is: 'field',
+      behaviors: [labelTarget],
+      template: compilePage('<slot />'),
+      data: { taps: 0 },
+      methods: {
+        handleLabelTap() {
+          this.setData({ taps: this.data.taps + 1 })
+        },
+      },
+    })
+    const page = space.defineComponent({
+      is: 'page',
+      using: { label: builtins.label, field },
+      template: compilePage('<label id="for-field" for="field">tap</label><field id="field" />'),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    attach(instance)
+
+    const label = host('for-field') as unknown as { onTap: (event: unknown) => void }
+    label.onTap({ target: host('for-field'), detail: {} })
+    expect(host('field').data.taps).toBe(1)
+  })
+
   test('text applies WeChat space and decode semantics', () => {
     expect(transformTextContent('a b c', { space: 'nbsp' })).toBe('a\u00A0b\u00A0c')
     expect(transformTextContent('a b', { space: 'ensp' })).toBe('a\u2002b')
@@ -1111,16 +1142,15 @@ describe('P0 built-in components', () => {
   test('form collects custom wx://form-field components and mocks reportSubmit', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)
-    const formField = space.defineBehavior({
-      is: 'tiny-form-field',
-      properties: {
-        name: { type: String, value: '' },
-        value: { type: String, value: '' },
-      },
-    })
+    // The real pipeline resolves `wx://form-field` against the render-side
+    // registry, which aliases the internal `tiny-form-field` marker.
+    const formField = getPublicBuiltinBehaviors(space)!['wx://form-field']
     const field = space.defineComponent({
       is: 'field',
       behaviors: [formField],
+      // A manually built definition has no render-tree prop capture, so the
+      // field declares the two properties like a real WeChat component would.
+      properties: { name: { type: String, value: '' }, value: { value: '' } },
       template: compilePage('<slot />'),
     })
     const events: unknown[] = []
@@ -1601,6 +1631,38 @@ describe('P0 built-in components', () => {
     expect(html).toContain('second')
     expect(html).toContain('tiny-icon-success')
   })
+
+  test('form sees a submit button declared inside a custom component', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const formFieldButton = getPublicBuiltinBehaviors(space)!['wx://form-field-button']
+    const wrapper = space.defineComponent({
+      is: 'wrapper',
+      behaviors: [formFieldButton],
+      using: { button: builtins.button },
+      template: compilePage('<button id="inner" form-type="submit">Go</button>'),
+    })
+    const events: unknown[] = []
+    const page = space.defineComponent({
+      is: 'page',
+      using: { form: builtins.form, input: builtins.input, wrapper },
+      template: compilePage(`
+        <form id="form" bindsubmit="onSubmit">
+          <input id="input" name="title" value="hello" />
+          <wrapper id="wrapper" />
+        </form>
+      `),
+      methods: {
+        onSubmit(event: glassEasel.ShadowedEvent<unknown>) { events.push(event.detail) },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    const inner = (host('wrapper').getShadowRoot()?.getElementById('inner') as glassEasel.Element)
+      .asGeneralComponent()!
+    inner.triggerEvent('tap', {})
+    expect(events).toEqual([expect.objectContaining({ value: { title: 'hello' } })])
+  })
 })
 
 describe('navigator', () => {
@@ -1686,5 +1748,4 @@ describe('navigator', () => {
     expect(navigator._defaultHoverClass).toBe('navigator-hover')
     expect(navigator.data.hoverStartTime).toBe(50)
     expect(navigator.data.hoverStayTime).toBe(600)
-  })
-})
+  })})

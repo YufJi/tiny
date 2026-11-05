@@ -1,6 +1,6 @@
 import type { Transport, TransportFrame } from '@tiny/bridge'
 import { bootTreeThread, resolveAssetPath } from '@tiny/runtime'
-import type { TreeRenderer } from '@tiny/runtime'
+import type { TemplateRegistry, TreeRenderer } from '@tiny/runtime'
 import { installPageLifecycleBridge } from '@tiny/host-browser'
 import { createGlassRenderEntry } from '@tiny/host-web-components'
 import { installRemoteCanvas } from './canvas'
@@ -93,6 +93,24 @@ const assetsBase = new URL(
 
 installRemoteCanvas()
 
+/**
+ * The render WebView evaluates component templates itself, so it loads the
+ * same compiled bundle the service evaluates. `templates.js` is the compiler's
+ * ESM entry; JSCore-side entries rewrite its `export default` the same way.
+ */
+async function loadRenderTemplates(): Promise<TemplateRegistry | undefined> {
+  try {
+    const response = await fetch(`${assetsBase}templates.js`)
+    if (!response.ok) return undefined
+    const source = await response.text()
+    const transformed = source.replace(/\bexport\s+default\s+/, 'return ')
+    if (transformed === source) return undefined
+    return new Function(transformed)() as TemplateRegistry
+  } catch {
+    return undefined
+  }
+}
+
 const entry = createGlassRenderEntry({
   container: document.getElementById('app') ?? document.body,
   resolveAssetUrl: (src, sourcePath) => {
@@ -103,7 +121,15 @@ const entry = createGlassRenderEntry({
 })
 
 entry.prepare?.()
-bootNativeRenderEntry({
-  pageId: params.get('pageId') ?? undefined,
-  renderer: entry.createRenderer(),
-})
+void (async () => {
+  const templates = await loadRenderTemplates()
+  if (!templates) {
+    console.error('[tiny native render] templates.js is missing; component shadow trees cannot be evaluated')
+  }
+  const renderer = entry.createRenderer()
+  if (templates) renderer.setTemplates?.(templates)
+  bootNativeRenderEntry({
+    pageId: params.get('pageId') ?? undefined,
+    renderer,
+  })
+})()

@@ -1,5 +1,6 @@
 export * from './behaviors'
 export * from './component-definition'
+export * from './component-payload'
 export * from './component-schema'
 export * from './component-tree'
 export * from './observers'

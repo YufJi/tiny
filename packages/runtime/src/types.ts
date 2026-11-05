@@ -82,6 +82,8 @@ export type SystemInfoSnapshot = {
 export type QueryNodeSnapshot = {
   /** Logic-layer node identity, present for service-side query results. */
   viewId?: string
+  /** Component-scoped locator of an element (render-side addressing). */
+  locator?: string
   id: string
   dataset: Record<string, unknown>
   left: number
@@ -200,6 +202,14 @@ export type BuiltinComponentFactoryContext = {
   }) => void
   /** Resolve a mini-program asset path for the component instance that owns it. */
   resolveAssetUrl?: (src: string, component: unknown) => string
+  /**
+   * Props of the render snapshot node that owns a component instance.
+   *
+   * `<form>`/`<label>` read values the way WeChat does: from the node props,
+   * not only from the instance data (a page-level component gets its props as
+   * attributes and they are not projected into data unless declared).
+   */
+  lookupNodeProps?: (component: unknown) => Record<string, unknown> | undefined
   /**
    * Ask the host to run a navigation the page does not bind itself
    * (`<navigator>`); the render tree forwards it as `tree.hostAction`.

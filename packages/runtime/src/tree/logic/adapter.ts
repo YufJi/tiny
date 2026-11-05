@@ -8,6 +8,7 @@ import type {
   RenderPatch,
 } from '../protocol'
 import { diffRenderTree } from '../diff'
+import { cloneDataValue } from '../../data'
 import { normalizeAnimationFrames, animationTimingOptions } from '../animation'
 import * as glassEasel from 'glass-easel'
 import type { MiniProgramComponentSchema, QueryNodeSnapshot, TemplateRegistry } from '../../types'
@@ -20,7 +21,13 @@ import {
   type LogicStyleSheetRole,
 } from './backend'
 import { createRuntimeDiagnostic } from '../../diagnostics'
-import { createLogicSelectorQuery, queryLogicNodes, snapshotLogicNode } from './query'
+import {
+  createLogicSelectorQuery,
+  queryLogicNodes,
+  snapshotLogicNode,
+  type QueryViewRequest,
+  type QueryViewResult,
+} from './query'
 import type {
   ViewEventPayload,
   ViewIntersectionEntry,
@@ -34,6 +41,10 @@ export type LogicTreeAdapterOptions = {
   pageOptions?: ReadonlyMap<string, { methods?: Record<string, (...args: unknown[]) => unknown> }>
   componentDefinitions?: ReadonlyMap<string, NormalizedComponentDefinition>
   measureView?: (viewIds: string[]) => Promise<Record<string, ViewRect>>
+  /** Geometry of elements addressed by component-scoped locators. */
+  measureLocators?: (locators: string[]) => Promise<Record<string, ViewRect>>
+  /** Scoped render query for nodes that have no render-side node id. */
+  queryView?: (request: QueryViewRequest & { pageId?: string }) => Promise<QueryViewResult>
   loadStyle?: (outputPath: string) => string
   onDataChange?: (pageId: string) => void
   onDiagnostic?: (diagnostic: import('../../diagnostics').RuntimeDiagnostic) => void
@@ -71,8 +82,16 @@ export class LogicTreeAdapter {
   private readonly manifest: Manifest
   private readonly loadStyle: (outputPath: string) => string
   private componentSchemas: MiniProgramComponentSchema[] = []
+  private componentDefinitions?: ReadonlyMap<string, NormalizedComponentDefinition>
+  /** Last component data sent to the render tree, keyed by page id. */
+  private readonly componentDataSnapshots = new Map<
+    string,
+    Record<string, Record<string, unknown>>
+  >()
   private readonly styledPages = new Set<string>()
   private readonly measureView?: (viewIds: string[]) => Promise<Record<string, ViewRect>>
+  private readonly measureLocators?: (locators: string[]) => Promise<Record<string, ViewRect>>
+  private readonly queryView?: (request: QueryViewRequest & { pageId?: string }) => Promise<QueryViewResult>
   private readonly onDiagnostic?: LogicTreeAdapterOptions['onDiagnostic']
   private readonly reportedPages = new Set<string>()
   private readonly viewIntersection?: LogicTreeAdapterOptions['viewIntersection']
@@ -86,9 +105,12 @@ export class LogicTreeAdapter {
 
   constructor(options: LogicTreeAdapterOptions) {
     this.backend = new LogicBackendContext()
+    this.componentDefinitions = options.componentDefinitions
     this.manifest = options.manifest
     this.loadStyle = options.loadStyle ?? (() => '')
     this.measureView = options.measureView
+    this.measureLocators = options.measureLocators
+    this.queryView = options.queryView
     this.viewIntersection = options.viewIntersection
     this.viewAnimation = options.viewAnimation
     this.onDiagnostic = options.onDiagnostic
@@ -176,6 +198,7 @@ export class LogicTreeAdapter {
 
   /** Tear down a page root and its render/relation state. */
   unmountPage(pageId: string): void {
+    this.componentDataSnapshots.delete(pageId)
     this.glass.unmountPage(pageId)
     this.pageRoots.delete(pageId)
     this.pagePaths.delete(pageId)
@@ -196,6 +219,18 @@ export class LogicTreeAdapter {
   }
 
   /** Runtime-registered stylesheets (shared/page scopes) for the render tree. */
+  /** Compiler-assigned style scope of the mounted page. */
+  pageScopeName(pageId: string): string | undefined {
+    const path = this.pagePaths.get(pageId)
+    return path ? this.glass.pageScopeName(path) : undefined
+  }
+
+  /** Absolute `usingComponents` paths of the mounted page. */
+  pageUsingComponents(pageId: string): Record<string, string> {
+    const path = this.pagePaths.get(pageId)
+    return path ? this.glass.pageUsingComponents(path) : {}
+  }
+
   pagePathFor(pageId: string): string {
     return this.pagePaths.get(pageId) ?? ''
   }
@@ -271,6 +306,10 @@ export class LogicTreeAdapter {
 
   private componentHandle(component: unknown, pageId: string): unknown {
     const target = component as Record<string, unknown>
+    // WeChat returns the `export()` result for a component that declared
+    // `wx://component-export`; `undefined` falls back to the instance proxy.
+    const exported = this.resolveComponentExport(component)
+    if (exported !== undefined) return exported
     const element = (target as { getBackendElement?: () => unknown }).getBackendElement?.()
     const select = (selector: string, all: boolean): unknown[] => {
       if (!element) return []
@@ -301,6 +340,21 @@ export class LogicTreeAdapter {
         return typeof value === 'function' ? value.bind(source) : value
       },
     })
+  }
+
+  /** Run `methods.__export__` contributed by `wx://component-export`. */
+  private resolveComponentExport(component: unknown): unknown {
+    const path = (component as { is?: unknown }).is
+    if (typeof path !== 'string') return undefined
+    const exporter = this.componentDefinitions?.get(path)?.methods.get('__export__')
+    if (typeof exporter !== 'function') return undefined
+    const caller = (component as { getMethodCaller?: () => unknown }).getMethodCaller?.()
+      ?? component
+    try {
+      return exporter.call(caller)
+    } catch {
+      return undefined
+    }
   }
 
   getMountedComponent(path: string): unknown {
@@ -350,6 +404,15 @@ export class LogicTreeAdapter {
     return this.backend.findByViewId(viewId)
   }
 
+  /**
+   * Render-facing identity: components keep their shared view id, elements are
+   * addressed by a component-scoped locator.
+   */
+  renderIdentity(node: LogicBackendElement): string {
+    if (node.nodeType === 'component') return this.backend.ensureViewId(node)
+    return this.backend.locatorOf(node) ?? this.backend.ensureViewId(node)
+  }
+
   /** Ensure a logic node has a stable render view id. */
   ensureViewId(node: LogicBackendElement): string {
     return this.backend.ensureViewId(node)
@@ -389,6 +452,37 @@ export class LogicTreeAdapter {
     }
     visit(root)
     return result
+  }
+
+  /**
+   * Record the component data already sent to the render tree, so the next
+   * update only carries components whose data changed.
+   */
+  seedComponentData(pageId: string): void {
+    this.componentDataSnapshots.set(
+      pageId,
+      cloneDataValue(this.snapshotComponentData(pageId)),
+    )
+  }
+
+  /**
+   * Component-scoped data patch.
+   *
+   * WeChat ships `setData` as a per-component patch; sending the whole component
+   * data map on every structural diff would make each keystroke cross the
+   * bridge with every component's data.
+   */
+  updateComponentData(pageId: string): Record<string, Record<string, unknown>> {
+    const current = this.snapshotComponentData(pageId)
+    const previous = this.componentDataSnapshots.get(pageId) ?? {}
+    const patch: Record<string, Record<string, unknown>> = {}
+    for (const [id, data] of Object.entries(current)) {
+      if (!sameComponentData(previous[id], data)) patch[id] = data
+    }
+    // Snapshot by value: `component.data` is mutated in place by setData, so a
+    // stored reference would always compare equal.
+    this.componentDataSnapshots.set(pageId, cloneDataValue(current))
+    return patch
   }
 
   snapshotRenderTree(pageId: string): RenderNode | null {
@@ -436,7 +530,7 @@ export class LogicTreeAdapter {
       const rootIds = new Map<string, string>()
       for (const [selector] of callbacks) {
         for (const node of queryLogicNodes(root, selector, observeAll)) {
-          const viewId = this.backend.ensureViewId(node)
+          const viewId = this.renderIdentity(node)
           viewIds.push(viewId)
           rootIds.set(viewId, selector)
         }
@@ -448,7 +542,7 @@ export class LogicTreeAdapter {
       let rootViewId: string | undefined
       if (relativeTo.type === 'selector' && relativeTo.selector) {
         const [relative] = queryLogicNodes(root, relativeTo.selector, false)
-        if (relative) rootViewId = this.backend.ensureViewId(relative)
+        if (relative) rootViewId = this.renderIdentity(relative)
       }
       this.viewIntersection?.observe({
         observerId,
@@ -563,7 +657,16 @@ export class LogicTreeAdapter {
     const node = findLogicNodeByElement(component)
       ?? [...this.pageRoots.values()][0]
       ?? this.backend.getRootNode()
-    return createLogicSelectorQuery(this.backend, node, this.measureView)
+    const pageId = this.pageIdFor(node)
+    return createLogicSelectorQuery(
+      this.backend,
+      node,
+      this.measureView,
+      this.queryView
+        ? (request) => this.queryView!({ ...request, ...(pageId ? { pageId } : {}) })
+        : undefined,
+      this.measureLocators,
+    )
   }
 
   /**
@@ -612,7 +715,7 @@ export class LogicTreeAdapter {
         const endOffset = Number(settings.endScrollOffset)
         const timeRange = Number(settings.timeRange)
         scroll = {
-          sourceViewId: this.backend.ensureViewId(source),
+          sourceViewId: this.renderIdentity(source),
           startOffset: Number.isFinite(startOffset) ? startOffset : 0,
           endOffset: Number.isFinite(endOffset) ? endOffset : 0,
           ...(Number.isFinite(timeRange) && timeRange > 0 ? { timeRange } : {}),
@@ -621,10 +724,14 @@ export class LogicTreeAdapter {
     }
     this.viewAnimation?.play({
       pageId,
-      viewIds: [this.backend.ensureViewId(target)],
+      viewIds: [this.renderIdentity(target)],
       keyframes: frames as Array<Record<string, unknown>>,
       ...timing,
       ...(scroll ? { scroll } : {}),
+      // Fallback for targets inside an evaluated shadow tree: the id above is
+      // logic-only there, so the render tree resolves the selector in scope.
+      selector,
+      scopeId: this.animationScopeId(component),
     })
     if (callback && !scroll) {
       const iterations = timing.iterations ?? 1
@@ -655,10 +762,19 @@ export class LogicTreeAdapter {
       .map(([name]) => name)
     this.viewAnimation?.clear({
       pageId,
-      viewIds: [this.backend.ensureViewId(target)],
+      viewIds: [this.renderIdentity(target)],
       ...(properties.length > 0 ? { properties } : {}),
+      selector,
+      scopeId: this.animationScopeId(component),
     })
     return true
+  }
+
+  private animationScopeId(component: unknown): string {
+    const scope = findLogicNodeByElement(component)
+      ?? [...this.pageRoots.values()][0]
+      ?? this.backend.getRootNode()
+    return this.backend.ensureViewId(scope)
   }
 
   private animationTarget(component: unknown, selector: string): LogicBackendElement | undefined {
@@ -682,6 +798,60 @@ export class LogicTreeAdapter {
   }
 
   /** Dispatch a projected DOM event through the glass-easel logic tree. */
+  /**
+   * Run a template handler reported by the render thread.
+   *
+   * The component's shadow tree was evaluated in the render thread, so its DOM
+   * listeners have no method table there. The render side reports the handler
+   * name and this adapter runs the real method from the normalized definition.
+   */
+  dispatchTemplateHandler(payload: {
+    pageId?: string
+    componentId: string
+    handler: string
+    name: string
+    detail?: unknown
+    touches?: unknown[]
+    changedTouches?: unknown[]
+    id?: string
+    dataset?: Record<string, unknown>
+    currentTarget?: { offsetLeft?: number; offsetTop?: number; offsetWidth?: number; offsetHeight?: number }
+  }): boolean {
+    const node = this.backend.findByViewId(payload.componentId)
+    const element = node?.__wxElement
+    if (!element) return false
+    const component = (element as unknown as {
+      asGeneralComponent?: () => unknown
+    }).asGeneralComponent?.() ?? element
+    const path = (component as { is?: unknown }).is
+    const method = typeof path === 'string'
+      ? this.componentDefinitions?.get(path)?.methods.get(payload.handler)
+      : undefined
+    if (typeof method !== 'function') return false
+    const geometry = payload.currentTarget
+    const shape = {
+      id: payload.id ?? '',
+      dataset: payload.dataset ?? {},
+      offsetLeft: geometry?.offsetLeft ?? 0,
+      offsetTop: geometry?.offsetTop ?? 0,
+      offsetWidth: geometry?.offsetWidth ?? 0,
+      offsetHeight: geometry?.offsetHeight ?? 0,
+    }
+    const event = {
+      type: payload.name,
+      timeStamp: Date.now(),
+      detail: payload.detail ?? {},
+      target: shape,
+      currentTarget: shape,
+      touches: payload.touches ?? [],
+      changedTouches: payload.changedTouches ?? [],
+    }
+    const caller = (component as { getMethodCaller?: () => unknown }).getMethodCaller?.()
+      ?? component
+    method.call(caller, event)
+    return true
+  }
+
   dispatchViewEvent(payload: ViewEventPayload): boolean {
     if (payload.touches || payload.changedTouches) {
       this.activeTouches = payload.touches
@@ -788,4 +958,21 @@ function applyEventGeometry(element: unknown, geometry: RenderEventGeometry): vo
   target.offsetTop = geometry.offsetTop
   target.offsetWidth = geometry.offsetWidth
   target.offsetHeight = geometry.offsetHeight
+}
+
+/**
+ * Component data is plain JSON in the mini-program model; a stable stringify is
+ * enough to decide whether a component needs a patch. Values that cannot be
+ * serialized (or circular structures) conservatively count as changed.
+ */
+function sameComponentData(
+  previous: Record<string, unknown> | undefined,
+  next: Record<string, unknown>,
+): boolean {
+  if (!previous) return false
+  try {
+    return JSON.stringify(previous) === JSON.stringify(next)
+  } catch {
+    return false
+  }
 }

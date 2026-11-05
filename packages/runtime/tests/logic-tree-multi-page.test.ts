@@ -137,10 +137,13 @@ describe('logic tree with multiple mounted pages', () => {
     const first = tree.snapshotRenderTree('page-1') as unknown as RenderView | null
     const probe = findById(first, 'probe')
     expect(probe).toBeDefined()
+    // Elements are addressed by a component-scoped locator; `probe` is the
+    // page root's first child.
+    const locator = `${first!.id}#0`
 
     changes.length = 0
     expect(tree.dispatchViewEvent({
-      viewId: probe!.id,
+      viewId: locator,
       name: 'tap',
       pageId: 'page-1',
       native: { clientX: 1, clientY: 1 },

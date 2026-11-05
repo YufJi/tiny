@@ -9,6 +9,7 @@ import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 /** Bridge domains/methods used by the split-tree protocol. */
 export const TREE_PROTOCOL = Object.freeze({
   domain: 'tree',
+  templateEvent: 'templateEvent',
   flow: 'flow',
   snapshot: 'snapshot',
   patch: 'patch',
@@ -79,13 +80,15 @@ export const RENDER_FRAGMENT_TAG = TINY_ENGINE_NAMING.fragmentTag
 
 export type RenderText = {
   type: 'text'
-  id: RenderNodeId
+  /** Render-local id (components keep the shared id). */
+  id?: RenderNodeId
   text: string
 }
 
 export type RenderElement = {
   type: 'element'
-  id: RenderNodeId
+  /** Shared id for components and the page root; render-local for elements. */
+  id?: RenderNodeId
   tag: string
   /** Named-slot assignment for this node (from `slot="..."` in WXML). */
   slot?: string
@@ -98,9 +101,64 @@ export type RenderElement = {
   children?: RenderNode[]
   /** Optional reconciliation key for repeated children. */
   key?: string
+  /**
+   * Set when this node is a custom-component instance rather than a built-in
+   * tag. The flag keeps the component boundary in the protocol so the render
+   * tree can own a real component node instead of a generic container.
+   */
+  component?: true
+  /** Component path of a `component` node; resolves a `define` flow message. */
+  componentPath?: string
+  /**
+   * Component instances the render thread will create while evaluating this
+   * component's template, in document order. Their view ids are shared with the
+   * logic tree so per-instance data (lifetimes, observers, parents) can cross
+   * the bridge even though the shadow tree itself is built on the render side.
+   */
+  componentInstances?: Array<{ id: RenderNodeId; path: string }>
 }
 
 export type RenderNode = RenderText | RenderElement
+
+/** Template entry the render tree evaluates to build a shadow tree. */
+export type ComponentTemplateRef = {
+  /** Artifact path, normally `<componentPath>.wxml`. */
+  path: string
+}
+
+/**
+ * Serialized component definition shipped to the render tree.
+ *
+ * Mirrors the WeChat view-thread registration payload: the render side needs
+ * the template reference, the public property table, the behavior ids (as
+ * strings, resolved against its own registry) and the component options. It
+ * must never carry functions, methods or lifetimes — those stay in the service.
+ */
+export type ComponentDefinitionPayload = {
+  path: string
+  template?: ComponentTemplateRef
+  properties?: Record<string, unknown>
+  /** Property defaults the render template starts from. */
+  data?: Record<string, unknown>
+  /** Behavior ids declared by the component, in declaration order. */
+  behaviors?: string[]
+  /**
+   * User method names. The render thread installs forwarding stubs so a
+   * template handler (`bindtap="onTap"`) reaches the service, which owns the
+   * only real method table.
+   */
+  methods?: string[]
+  externalClasses?: string[]
+  /** `usingComponents` resolved to artifact paths (tag -> component path). */
+  using?: Record<string, string>
+  /**
+   * Compiler-assigned style scope name. Both threads register the same name so
+   * render-created nodes carry exactly the classes the CSS was compiled for.
+   */
+  styleScope?: string
+  generics?: Record<string, { default?: string } | true>
+  options?: Record<string, unknown>
+}
 
 export type RenderRect = {
   left: number
@@ -133,6 +191,27 @@ export type RenderIntersectionEntry = {
  * WeChat exposes it as `event.target.offsetLeft` / `event.currentTarget.offsetTop`
  * and drag/gesture libraries read it synchronously inside the handler.
  */
+/**
+ * Event forwarded from a template-declared handler inside a component whose
+ * shadow tree was evaluated by the render thread. The service owns the method
+ * table, so the render side only reports who fired and what the payload was.
+ */
+export type RenderTemplateEvent = {
+  /** Service node id of the owning component instance. */
+  componentId: string
+  /** Method name the template bound (`bindtap="onTap"` -> `onTap`). */
+  handler: string
+  /** DOM event type (`tap`, `touchstart`, ...). */
+  name: string
+  detail?: unknown
+  touches?: unknown[]
+  changedTouches?: unknown[]
+  id?: string
+  dataset?: Record<string, unknown>
+  currentTarget?: RenderEventGeometry
+  target?: RenderEventGeometry
+}
+
 export type RenderEventGeometry = {
   viewId: RenderNodeId
   offsetLeft: number
@@ -154,6 +233,12 @@ export type RenderAnimationRequest = {
   easing?: string
   iterations?: number
   fill?: 'none' | 'forwards' | 'backwards' | 'both'
+  /**
+   * Selector fallback for targets that only exist in the render tree (inside
+   * an evaluated component shadow tree): resolved within `scopeId`.
+   */
+  selector?: string
+  scopeId?: RenderNodeId
   /** Scroll-driven timing (`scrollSource` + offsets). */
   scroll?: {
     sourceViewId: RenderNodeId
@@ -176,16 +261,24 @@ export type RenderHostAction =
 export type RenderClearAnimationRequest = {
   viewIds: RenderNodeId[]
   properties?: string[]
+  selector?: string
+  scopeId?: RenderNodeId
 }
 
+/**
+ * Patch target: a shared node id for components and the page root, or a
+ * component-scoped locator (`owner#index.path`) for elements and text.
+ */
+export type RenderTarget = string
+
 export type RenderPatch =
-  | { type: 'text'; id: RenderNodeId; text: string }
-  | { type: 'replace'; id: RenderNodeId; node: RenderNode }
-  | { type: 'props'; id: RenderNodeId; props: Record<string, unknown>; removed?: string[] }
-  | { type: 'insert'; parentId: RenderNodeId; index: number; node: RenderNode }
-  | { type: 'remove'; parentId: RenderNodeId; index: number; count: number }
-  | { type: 'reorder'; parentId: RenderNodeId; moves: Array<{ from: number; to: number }> }
-  | { type: 'extra'; id: RenderNodeId; data: Record<string, unknown> }
+  | { type: 'text'; target: RenderTarget; text: string }
+  | { type: 'replace'; target: RenderTarget; node: RenderNode }
+  | { type: 'props'; target: RenderTarget; props: Record<string, unknown>; removed?: string[] }
+  | { type: 'insert'; parent: RenderTarget; index: number; node: RenderNode }
+  | { type: 'remove'; parent: RenderTarget; index: number; count: number }
+  | { type: 'reorder'; parent: RenderTarget; moves: Array<{ from: number; to: number }> }
+  | { type: 'extra'; target: RenderTarget; data: Record<string, unknown> }
 
 /**
  * Render-side component flow. Virtual patches describe template output;
@@ -197,30 +290,11 @@ export type ComponentFlow =
     type: 'define'
     path: string
     /** Host-independent component metadata (properties/options/template id). */
-    definition: Record<string, unknown>
+    definition: ComponentDefinitionPayload
   }
-  | {
-    type: 'create-node'
-    id: RenderNodeId
-    tag: string
-    path?: string
-    parentId?: RenderNodeId
-    index?: number
-    /** Named-slot assignment carried from the logic tree. */
-    slot?: string
-    text?: string
-    props?: Record<string, unknown>
-    dataset?: Record<string, unknown>
-    scopes?: string[]
-    scopeChain?: string[]
-    externalClasses?: Record<string, string[]>
-    events?: Array<{ name: string; capture?: boolean; catch?: boolean; mutated?: boolean }>
-    key?: string
-  }
-  | { type: 'props'; id: RenderNodeId; props: Record<string, unknown> }
-  | { type: 'data'; id: RenderNodeId; patch: Record<string, unknown> }
-  | { type: 'children'; id: RenderNodeId; removes?: number[]; inserts?: RenderNodeId[] }
-  | { type: 'group'; depth: number }
-  | { type: 'group-end' }
+  /**
+   * The service render snapshot, carried as a nested tree: elements no longer
+   * need shared ids in the flow, and the render tree assigns its own local ids.
+   */
+  | { type: 'tree'; root: RenderNode }
   | { type: 'ready' }
-

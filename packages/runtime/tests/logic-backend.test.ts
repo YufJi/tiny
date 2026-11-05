@@ -104,6 +104,13 @@ describe('logic backend', () => {
 
     const child = elements[0]
     expect(child?.type === 'element' ? child.dataset : undefined).toMatchObject({ count: 3 })
+    // A custom component keeps its boundary: the render thread resolves the
+    // definition through `componentPath` instead of treating it as a built-in.
+    expect(child?.type === 'element' ? child.component : undefined).toBe(true)
+    expect(child?.type === 'element' ? child.componentPath : undefined).toBe(CHILD_PATH)
+    // Built-in tags and the page root never carry the component marker.
+    expect(elements[1]?.type === 'element' ? elements[1].component : undefined).toBeUndefined()
+    expect(renderTree?.type === 'element' ? renderTree.component : undefined).toBeUndefined()
     const childDate = child?.type === 'element' ? child.dataset?.date : undefined
     expect(childDate).toBeInstanceOf(Date)
     expect((childDate as Date).toISOString()).toBe(date.toISOString())
@@ -130,5 +137,102 @@ describe('logic backend', () => {
     const page = tree.glass.getMountedComponentByPageId('page-1')
     const childLogic = page?.shadowRoot?.getElementById('child')?.asGeneralComponent()
     expect(childLogic?.data.container).toBe(container)
+  })
+
+  test('keeps custom-component light children in the snapshot', async () => {
+    const manifest = createManifest()
+    const tree = new LogicTreeAdapter({
+      manifest,
+      templates: createTemplates(),
+    })
+    tree.registerComponentSchemas(createSchemas(manifest))
+
+    const renderTree = tree.mountPage(PAGE_PATH, { label: 'page' }, 'page-2')
+    await tree.glass.whenRendered()
+
+    const children = renderTree && 'children' in renderTree ? renderTree.children ?? [] : []
+    const child = children.find((node) => node.type === 'element' && node.tag === 'child')
+    expect(child?.type === 'element' ? child.component : undefined).toBe(true)
+    // The render thread evaluates the shadow tree, so the snapshot only keeps
+    // the WXML-provided (`<text>slotted</text>`) light children.
+    const light = child?.type === 'element' ? child.children ?? [] : []
+    expect(light.map((node) => (node.type === 'text' ? '#text' : node.tag))).toEqual(['text'])
+    expect(light[0]?.type === 'element' ? light[0].children?.[0] : undefined)
+      .toMatchObject({ type: 'text', text: 'slotted' })
+  })
+  test('lists nested component instances in document order', async () => {
+    const PAGE = 'pages/nested/nested'
+    const OUTER = 'components/outer/outer'
+    const INNER = 'components/inner/inner'
+    const group = TmplGroup.newDev({
+      directivePrefix: 'wx',
+      templateExtension: '.wxml',
+      templateScriptExtension: '.wxs',
+    })
+    group.addTmpl(PAGE, '<outer /><view class="after" />')
+    group.addTmpl(OUTER, '<view><inner /><inner /></view>')
+    group.addTmpl(INNER, '<text>inner</text>')
+    const groupList = new Function(`return ${group.getTmplGenObjectGroups()}`)() as Record<string, unknown>
+    const templates = {
+      groupList,
+      content(path: string, name = '') {
+        const entry = groupList[path]
+        if (!entry) throw new Error(`template not found: ${path}`)
+        return (entry as (name?: string) => unknown)(name)
+      },
+    }
+    const artifact = (path: string, using: Record<string, string>) => ({
+      path,
+      template: { path, outputPath: 'templates.js', sourcePath: `${path}.wxml` },
+      configuration: {
+        path,
+        sourcePath: `${path}.json`,
+        effective: { component: true, usingComponents: using },
+      },
+    })
+    const manifest: Manifest = {
+      schemaVersion: 2,
+      runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
+      entries: { service: 'service.js', templates: 'templates.js' },
+      pages: [{
+        path: PAGE,
+        template: { path: PAGE, outputPath: 'templates.js', sourcePath: `${PAGE}.wxml` },
+        configuration: {
+          path: PAGE,
+          sourcePath: `${PAGE}.json`,
+          effective: { usingComponents: { outer: `/${OUTER}` } },
+        },
+      }],
+      components: [artifact(OUTER, { inner: `/${INNER}` }), artifact(INNER, {})],
+      styles: [],
+      assets: [],
+    }
+    const tree = new LogicTreeAdapter({ manifest, templates })
+    tree.registerComponentSchemas(buildComponentSchemas(manifest.components, new Map([
+      [OUTER, normalizeComponentDefinition({}, OUTER)],
+      [INNER, normalizeComponentDefinition({}, INNER)],
+    ])))
+    const renderTree = tree.mountPage(PAGE, {}, 'page-nested')
+    await tree.glass.whenRendered()
+
+    const after = tree.snapshotRenderTree('page-nested')
+    const children = after && 'children' in after ? after.children ?? [] : []
+    const outer = children.find((node) => node.type === 'element' && node.tag === 'outer')
+    const instances = outer?.type === 'element' ? outer.componentInstances ?? [] : []
+    expect(instances.map((entry) => entry.path)).toEqual([INNER, INNER])
+    expect(new Set(instances.map((entry) => entry.id)).size).toBe(2)
+    // The instances are addressable: the ids resolve back to logic nodes.
+    for (const entry of instances) {
+      expect(tree.findNodeByViewId(entry.id)).toBeDefined()
+    }
+  })
+  test('exposes the page usingComponents map for the render tree', async () => {
+    const manifest = createManifest()
+    const tree = new LogicTreeAdapter({ manifest, templates: createTemplates() })
+    tree.registerComponentSchemas(createSchemas(manifest))
+    tree.mountPage(PAGE_PATH, {}, 'page-using')
+    await tree.glass.whenRendered()
+    expect(tree.pageUsingComponents('page-using')).toEqual({ child: 'components/child/index' })
+    expect(tree.pageUsingComponents('missing-page')).toEqual({})
   })
 })

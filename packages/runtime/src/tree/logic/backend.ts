@@ -16,6 +16,18 @@ export function findLogicNodeByElement(element: unknown): LogicBackendElement | 
 }
 
 /**
+ * Resolve the definition path of a recorded component node.
+ *
+ * glass-easel registers each mini-program component under its artifact path
+ * (`defineWithMethodCaller(schema.path)`), so the instance `is` is the path the
+ * render tree resolves against `define` flow messages.
+ */
+function componentPathOf(node: LogicBackendElement): string {
+  const element = node.__wxElement as unknown as { is?: unknown } | undefined
+  return typeof element?.is === 'string' && element.is.length > 0 ? element.is : ''
+}
+
+/**
  * A host-independent backend that records the tree glass-easel produces.
  *
  * It is the service-side counterpart of `CurrentWindowBackendContext`: it has
@@ -303,6 +315,14 @@ type AppendedStyleSheet = {
 
 export class LogicBackendContext {
   mode = glassEasel.BackendMode.Shadow
+  /** `id -> component-scoped locator` for the latest render snapshot. */
+  private renderLocators = new Map<string, string>()
+  private locatorNodes = new Map<string, LogicBackendElement>()
+
+  /** Component-scoped locator of a node in the latest render snapshot. */
+  locatorOf(node: LogicBackendElement): string | undefined {
+    return this.renderLocators.get(this.ensureViewId(node))
+  }
   private readonly root: LogicBackendShadowRoot = new LogicBackendShadowRoot()
   private readonly nodesByViewId = new Map<string, LogicBackendElement>()
   private viewIdCounter = 0
@@ -415,7 +435,7 @@ export class LogicBackendContext {
   }
 
   findByViewId(viewId: string): LogicBackendElement | undefined {
-    return this.nodesByViewId.get(viewId)
+    return this.nodesByViewId.get(viewId) ?? this.locatorNodes.get(viewId)
   }
 
   ensureViewId(node: LogicBackendElement): string {
@@ -489,43 +509,91 @@ export class LogicBackendContext {
       }
       return result
     }
+    /**
+     * Every component instance inside a component's shadow tree, in document
+     * order. The render thread evaluates the same template and matches these by
+     * path, so both sides agree on a view id without shipping the tree.
+     */
+    const componentInstancesOf = (
+      node: LogicBackendElement,
+    ): Array<{ id: string; path: string }> => {
+      const instances: Array<{ id: string; path: string }> = []
+      const walk = (children: LogicBackendElement[]): void => {
+        for (const child of children) {
+          if (child.nodeType === 'component') {
+            const path = componentPathOf(child)
+            if (path) instances.push({ id: nextId(child), path })
+            if (child.shadowRoot) walk(child.shadowRoot.children)
+            continue
+          }
+          if (child.shadowRoot) {
+            walk(child.shadowRoot.children)
+            continue
+          }
+          walk(child.children)
+        }
+      }
+      if (node.shadowRoot) walk(node.shadowRoot.children)
+      return instances
+    }
+    const nodeToViewId = new WeakMap<object, string>()
+    const nodeToLogic = new WeakMap<object, LogicBackendElement>()
     const convert = (
       node: LogicBackendElement,
       slotContent?: LogicBackendElement[],
     ): RenderNode | null => {
       if (node.nodeType === 'text') {
-        return { type: 'text', id: nextId(node), text: node.text }
+        const viewId = nextId(node)
+        const text = { type: 'text' as const, text: node.text }
+        nodeToViewId.set(text, viewId)
+        nodeToLogic.set(text, node)
+        return text
       }
       if (node.nodeType === 'fragment') {
-        return {
+        const fragment: RenderElement = {
           type: 'element',
           id: nextId(node),
           tag: RENDER_FRAGMENT_TAG,
           children: convertChildren(node.children),
         }
+        nodeToViewId.set(fragment, nextId(node))
+        nodeToLogic.set(fragment, node)
+        return fragment
       }
       if (node.nodeType === 'virtual') {
         if (node.virtualName === 'slot' || node.tagName === 'slot') {
           const slotName = node.slotName ?? ''
           const matched = slotContent?.filter((child) => (child.slot || '') === slotName) ?? []
           const content = matched.length > 0 ? matched : node.children
-          return {
+          const slotFragment: RenderElement = {
             type: 'element',
             id: nextId(node),
             tag: RENDER_FRAGMENT_TAG,
             children: convertChildren(content),
           }
+          nodeToViewId.set(slotFragment, nextId(node))
+          nodeToLogic.set(slotFragment, node)
+          return slotFragment
         }
-        return {
+        const virtualFragment: RenderElement = {
           type: 'element',
           id: nextId(node),
           tag: RENDER_FRAGMENT_TAG,
           children: convertChildren(node.children, slotContent),
         }
+        nodeToViewId.set(virtualFragment, nextId(node))
+        nodeToLogic.set(virtualFragment, node)
+        return virtualFragment
       }
-      const children = node.nodeType === 'component' && node.shadowRoot
-        ? convertChildren(node.shadowRoot.children, node.children)
-        : convertChildren(node.children, slotContent)
+      // Custom components keep only their light children: the render thread
+      // evaluates the component template and owns the shadow tree. The page
+      // root's shadow tree *is* the page template, so it is flattened here.
+      const customComponent = node.nodeType === 'component' && node !== rootElement
+      const children = customComponent
+        ? convertChildren(node.children, slotContent)
+        : node.shadowRoot
+          ? convertChildren(node.shadowRoot.children, node.children)
+          : convertChildren(node.children, slotContent)
       const externalClasses = (node.__wxElement as unknown as {
         getExternalClasses?: () => Record<string, string[] | undefined>
       } | undefined)?.getExternalClasses?.()
@@ -535,10 +603,22 @@ export class LogicBackendContext {
               .filter((entry): entry is [string, string[]] => Array.isArray(entry[1]) && entry[1].length > 0),
           )
         : undefined
+      // Custom components are the only nodes that carry a component boundary in
+      // the render protocol. The page root is emitted as the page tag and never
+      // marked, because it is not addressable via `usingComponents`.
+      const componentPath = node !== rootElement && node.nodeType === 'component'
+        ? componentPathOf(node)
+        : ''
+      // Component instances the render side will create while evaluating this
+      // template: share their view ids so per-instance data can be routed.
+      const componentInstances = componentPath ? componentInstancesOf(node) : []
+      const viewId = nextId(node)
       const element: RenderElement = {
         type: 'element',
-        id: nextId(node),
+        ...(node === rootElement || componentPath ? { id: viewId } : {}),
         tag: node === rootElement ? RENDER_PAGE_TAG : node.tagName,
+        ...(componentPath ? { component: true as const, componentPath } : {}),
+        ...(componentInstances.length > 0 ? { componentInstances } : {}),
         ...(node.slot ? { slot: node.slot } : {}),
         props: propsFor(node),
         ...(external && Object.keys(external).length > 0 ? { externalClasses: external } : {}),
@@ -550,10 +630,38 @@ export class LogicBackendContext {
           : {}),
         ...(children.length > 0 ? { children } : {}),
       }
+      nodeToViewId.set(element, viewId)
+      nodeToLogic.set(element, node)
       return element
     }
     if (!rootElement) return null
-    return convert(rootElement)
+    const root = convert(rootElement)
+    if (!root) return null
+    // Component-scoped locators: elements are addressed by `owner#index.path`
+    // (owner is the nearest component, or the page root) once their shared ids
+    // are demoted. Components keep their own view id.
+    const locators = new Map<string, string>()
+    const nodesByLocator = new Map<string, LogicBackendElement>()
+    const walk = (node: RenderNode, owner: string, path: number[]): void => {
+      const locator = `${owner}#${path.join('.')}`
+      if (path.length > 0) {
+        const viewId = nodeToViewId.get(node)
+        if (viewId) locators.set(viewId, locator)
+        const logic = nodeToLogic.get(node)
+        if (logic) nodesByLocator.set(locator, logic)
+      }
+      if (node.type !== 'element') return
+      const boundary = node.component === true && node.componentPath && node.id ? node.id : owner
+      const base = boundary === owner ? path : []
+      ;(node.children ?? []).forEach((child, index) => {
+        walk(child, boundary, [...base, index])
+      })
+    }
+    const rootViewId = nodeToViewId.get(root) ?? root.id ?? ''
+    walk(root, rootViewId, [])
+    this.renderLocators = locators
+    this.locatorNodes = nodesByLocator
+    return root
   }
 
 

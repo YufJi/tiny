@@ -124,6 +124,7 @@ export type StyleRegistrationOptions = {
 }
 
 export class GlassEaselRuntimeAdapter {
+  private readonly manifest: Manifest
   readonly backend: glassEasel.GeneralBackendContext
   readonly componentSpace: glassEasel.ComponentSpace
   /** Internal marker behavior for custom form-field components. */
@@ -178,6 +179,8 @@ export class GlassEaselRuntimeAdapter {
   private readonly logicAnimationFactory?: GlassEaselAdapterOptions['logicAnimationFactory']
 
   constructor(options: GlassEaselAdapterOptions) {
+    this.manifest = options.manifest
+    this.manifest = options.manifest
     this.backend = options.backend
     this.templates = options.templates
     this.logicPageOptions = options.logicPageOptions
@@ -199,19 +202,11 @@ export class GlassEaselRuntimeAdapter {
     this.formFieldGroupBehavior = this.componentSpace.defineBehavior({
       is: `${TINY_ENGINE_NAMING.behaviorPrefix}form-field-group`,
     })
+    // Marker only: label activation is dispatched render-side (`labelTap` ->
+    // `handleLabelTap` in `hosts/web-components/src/behaviors/labelTarget.ts`).
     this.labelTargetBehavior = this.componentSpace.defineBehavior({
       is: `${TINY_ENGINE_NAMING.behaviorPrefix}label-target`,
-      listeners: {
-        labelTap(this: { handleLabelTap?: (event: unknown) => void }, event: unknown) {
-          this.handleLabelTap?.(event)
-        },
-      },
-      methods: {
-        handleLabelTap() {
-          // Activation is dispatched by the built-in <label>.
-        },
-      },
-    } as never)
+    })
     this.onDiagnostic = options.onDiagnostic
   }
 
@@ -406,6 +401,13 @@ export class GlassEaselRuntimeAdapter {
     const scopeId = this.componentSpace.styleScopeManager.register(name)
     this.scopeIdsByName.set(name, scopeId)
     return scopeId
+  }
+
+  /** Compiler-assigned style scope of a mounted page, if it has one. */
+  pageScopeName(pagePath: string): string | undefined {
+    const scopeId = this.pageStyleScopes.get(pagePath)
+    if (scopeId === undefined) return undefined
+    return this.componentSpace.styleScopeManager.queryName(scopeId)
   }
 
   private ensurePageScope(page: PageArtifact): number {
@@ -1120,6 +1122,27 @@ export class GlassEaselRuntimeAdapter {
         continue
       }
       result[alias] = { default: `/${this.resolveComponentReference(path, value.default)}` }
+    }
+    return result
+  }
+
+  /**
+   * Absolute paths of the page's `usingComponents` table.
+   *
+   * The render side needs the *tag -> path* map to resolve `generic:alias`
+   * targets declared on page-level components (their owner is the page root).
+   */
+  pageUsingComponents(pagePath: string): Record<string, string> {
+    const page = this.manifest.pages.find((candidate: PageArtifact) => candidate.path === pagePath)
+    const config = page?.configuration as Record<string, any> | undefined
+    const usingComponents = config?.effective?.usingComponents
+    if (!usingComponents || typeof usingComponents !== 'object') return {}
+    const sources = (config?.usingComponentsSource ?? {}) as Record<string, string>
+    const result: Record<string, string> = {}
+    for (const [tag, reference] of Object.entries(usingComponents as Record<string, unknown>)) {
+      if (typeof reference !== 'string' || reference.length === 0) continue
+      const sourcePath = sources[tag] === 'global' ? '' : pagePath
+      result[tag] = this.resolveComponentReference(sourcePath, reference)
     }
     return result
   }

@@ -163,6 +163,13 @@ async function buildApp(appDef) {
   )
 
   await copyAssets(manifest, compiledDir, appOutputDir)
+  // The render WebView evaluates component templates itself, so it needs the
+  // same compiled template bundle the service evaluates from app-data.json.
+  await fsp.mkdir(path.join(appOutputDir, 'assets'), { recursive: true })
+  await fsp.copyFile(
+    path.join(compiledDir, 'templates.js'),
+    path.join(appOutputDir, 'assets', 'templates.js'),
+  )
 
   const meta = {
     id: appDef.id,

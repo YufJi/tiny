@@ -87,6 +87,7 @@ export function snapshotLogicNode(
   for (const [key, value] of node.dataset) dataset[key] = value
   return {
     viewId: backend.ensureViewId(node),
+    ...(backend.locatorOf(node) ? { locator: backend.locatorOf(node) } : {}),
     id: node.id,
     dataset,
     left: 0,
@@ -108,15 +109,30 @@ type Selection = {
   nodeCallback?: (value: unknown) => void
 }
 
+/** Render-side selector query, scoped to the component that owns the nodes. */
+export type QueryViewRequest = {
+  scopeId?: string
+  selector: string
+  all: boolean
+}
+
+export type QueryViewResult = Array<Partial<ViewRect>>
+
 /**
  * Selector-query shape backed by the logic tree. Geometry is not available in
  * the logic layer (the view owns layout), but node identity and typed dataset
  * are exact.
+ *
+ * Nodes inside an evaluated component shadow tree have no render-side node id,
+ * so `measure` cannot resolve them. Those fall back to a scoped render query
+ * (`queryView`), matched to the logic nodes by position.
  */
 export function createLogicSelectorQuery(
   backend: LogicBackendContext,
   root: LogicBackendElement,
   measure?: (viewIds: string[]) => Promise<Record<string, ViewRect>>,
+  queryView?: (request: QueryViewRequest) => Promise<QueryViewResult>,
+  measureLocators?: (locators: string[]) => Promise<Record<string, ViewRect>>,
 ): Record<string, unknown> {
   const selections: Selection[] = []
   let execCallback: ((results: unknown[]) => void) | undefined
@@ -131,12 +147,27 @@ export function createLogicSelectorQuery(
       const viewIds = [...new Set(perSelection.flatMap(({ nodes }) => (
         nodes.map((node) => node.viewId).filter((value): value is string => Boolean(value))
       )))]
+      const locators = [...new Set(perSelection.flatMap(({ nodes }) => (
+        nodes.map((node) => node.locator).filter((value): value is string => Boolean(value))
+      )))]
       const rects = measure && viewIds.length > 0 ? await measure(viewIds) : {}
+      const locatorRects = measureLocators && locators.length > 0
+        ? await measureLocators(locators)
+        : {}
+      const scopeId = queryView ? backend.ensureViewId(root) : undefined
       const results: unknown[] = []
       for (const { selection, nodes } of perSelection) {
-        const withRects = nodes.map((node) => {
-          const rect = node.viewId ? rects[node.viewId] : undefined
-          return rect ? { ...node, ...rect } : node
+        const needsFallback = queryView && nodes.some((node) => !node.viewId || !rects[node.viewId])
+        const scoped = needsFallback
+          ? await queryView({ selector: selection.selector, all: selection.all, scopeId })
+            .catch(() => [] as QueryViewResult)
+          : []
+        const withRects = nodes.map((node, index) => {
+          const rect = (node.viewId ? rects[node.viewId] : undefined)
+            ?? (node.locator ? locatorRects[node.locator] : undefined)
+          if (rect) return { ...node, ...rect }
+          const fallback = scoped[index]
+          return fallback ? { ...node, ...fallback } : node
         })
         const value = selection.all ? withRects : (withRects[0] ?? null)
         selection.rectCallback?.(value)

@@ -52,10 +52,10 @@ describe('native tree renderer', () => {
     ])
 
     renderer.applyPatches([
-      { type: 'text', id: 'text', text: 'bye' },
-      { type: 'props', id: 'view', props: { hidden: true } },
-      { type: 'insert', parentId: 'view', index: 0, node: { type: 'element', id: 'icon', tag: 'icon' } },
-      { type: 'remove', parentId: 'page', index: 0, count: 1 },
+      { type: 'text', target: 'text', text: 'bye' },
+      { type: 'props', target: 'view', props: { hidden: true } },
+      { type: 'insert', parent: 'view', index: 0, node: { type: 'element', id: 'icon', tag: 'icon' } },
+      { type: 'remove', parent: 'page', index: 0, count: 1 },
     ])
     expect(operations).toContain('text:text:bye')
     expect(props.get('view')).toMatchObject({ hidden: true })

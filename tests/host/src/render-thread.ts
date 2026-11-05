@@ -6,6 +6,7 @@ const initialPageId = new URLSearchParams(window.location.search).get('pageId') 
 
 bootBrowserRenderEntry(createGlassRenderEntry({
   pageId: initialPageId,
+  loadTemplates: async () => (await import('../generated/templates.js')).default,
   resolveAssetUrl: (src, sourcePath) => {
     const resolved = resolveAssetPath(sourcePath || '', src)
     return resolved ? `/generated/${resolved}` : undefined

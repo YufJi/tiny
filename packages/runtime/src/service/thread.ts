@@ -1,10 +1,14 @@
 import { BridgeConnection } from '@tiny/bridge'
 import { QUERY_CONTROL, RUNTIME_CONTROL, TREE_PROTOCOL } from '../tree'
+import type { QueryViewResult } from '../tree/logic/query'
+import type { ViewRect } from '../tree/logic/events'
+import type { WxsBindingMessage } from '../tree/protocol'
 import {
   DIAGNOSTIC_CODES,
   runtimeCompatibilityFromManifest,
 } from '@tiny/manifest'
-import { buildComponentSchemas, ComponentTree } from '../component'
+import { buildComponentDefinitions, buildComponentSchemas, ComponentTree } from '../component'
+import { buildComponentFlow } from '../tree/flow'
 import { cloneJsonSafe } from '../data'
 import type { ServiceThreadOptions } from '../types'
 import type {
@@ -336,61 +340,42 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }
   }
 
-  const treeFlow = (root: import('../tree/protocol').RenderNode): import('../tree/protocol').ComponentFlow[] => {
-    const messages: import('../tree/protocol').ComponentFlow[] = componentSchemas.map((schema) => ({
-      type: 'define' as const,
-      path: schema.path,
-      definition: {
-        componentId: schema.componentId,
-        options: schema.options,
-        properties: schema.properties,
-      },
-    }))
-    const visit = (
-      node: import('../tree/protocol').RenderNode,
-      parentId: string | undefined,
-      index: number,
-    ): void => {
-      if (node.type === 'text') {
-        messages.push({
-          type: 'create-node',
-          id: node.id,
-          tag: '#text',
-          parentId,
-          index,
-          text: node.text,
-        })
-        return
-      }
-      messages.push({
-        type: 'create-node',
-        id: node.id,
-        tag: node.tag,
-        parentId,
-        index,
-        slot: node.slot,
-        dataset: node.dataset,
-        scopes: node.scopes,
-        scopeChain: node.scopeChain,
-        externalClasses: node.externalClasses,
-        events: node.events,
-        key: node.key,
-      })
-      if (node.props && Object.keys(node.props).length > 0) {
-        messages.push({ type: 'props', id: node.id, props: node.props })
-      }
-      const childIds: string[] = []
-      for (const [childIndex, child] of (node.children ?? []).entries()) {
-        childIds.push(child.id)
-        visit(child, node.id, childIndex)
-      }
-      if (childIds.length > 0) {
-        messages.push({ type: 'children', id: node.id, inserts: childIds })
-      }
+  /**
+   * Serializable definitions for every compiled component, built once per
+   * bootstrap. The render thread resolves `component` nodes against this table.
+   */
+  let componentDefinitionPayloads: Map<
+    string,
+    import('../tree/protocol').ComponentDefinitionPayload
+  > | null = null
+  const treeDefinitions = () => {
+    componentDefinitionPayloads ??= buildComponentDefinitions(
+      componentSchemas,
+      registry.normalizedComponents,
+      options.manifest.styles,
+    )
+    return componentDefinitionPayloads
+  }
+
+  const treeFlow = (
+    root: import('../tree/protocol').RenderNode,
+  ): import('../tree/protocol').ComponentFlow[] => buildComponentFlow(root, treeDefinitions())
+
+  /** WXS bindings by page; flushed after each tree update with fresh locators. */
+  const wxsBindingsByPage = new Map<string, Map<string, WxsBindingMessage>>()
+
+  const flushWxsBindings = (pageId: string): void => {
+    if (!logicTree) return
+    const bindings = wxsBindingsByPage.get(pageId)
+    if (!bindings) return
+    for (const binding of bindings.values()) {
+      const node = logicTree.findNodeByViewId(binding.viewId)
+      if (!node) continue
+      connection.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.wxsBinding, {
+        ...binding,
+        viewId: logicTree.renderIdentity(node),
+      }, { pageId })
     }
-    visit(root, undefined, 0)
-    messages.push({ type: 'ready' })
-    return messages
   }
 
   const sendTreeSnapshot = (pageId: string): void => {
@@ -402,6 +387,12 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       {
         pageId,
         pagePath: logicTree.pagePathFor(pageId),
+        ...(logicTree.pageScopeName(pageId)
+          ? { pageScope: logicTree.pageScopeName(pageId) }
+          : {}),
+        ...(Object.keys(logicTree.pageUsingComponents(pageId)).length > 0
+          ? { pageUsing: logicTree.pageUsingComponents(pageId) }
+          : {}),
         messages: cloneJsonSafe(treeFlow(root)),
         ...(wxsModules ? { wxsModules: cloneJsonSafe(wxsModules) } : {}),
         ...(pageInstances.get(pageId)?.data
@@ -412,6 +403,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       },
       { pageId },
     )
+    flushWxsBindings(pageId)
   }
 
   const mountTreePage = (page: MiniProgramPageInstance): void => {
@@ -419,6 +411,8 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     logicTree.mountPage(page.path, page.data, page.pageId)
     mountedTreePages.add(page.pageId)
     sendTreeSnapshot(page.pageId)
+    // The first snapshot carries the full map; later updates only send changes.
+    logicTree.seedComponentData(page.pageId)
   }
 
   const scheduleTreeUpdate = (pageId: string): void => {
@@ -434,7 +428,11 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         if (!logicTree || !mountedTreePages.has(id)) continue
         try {
           const { patches } = logicTree.updateRenderTree(id)
-          if (patches.length > 0) {
+          // Component data is a per-instance patch; a data-only update must
+          // still cross the bridge even when the structure did not change.
+          const componentData = logicTree.updateComponentData(id)
+          const hasComponentData = Object.keys(componentData).length > 0
+          if (patches.length > 0 || hasComponentData) {
             connection.sendEvent(
               TREE_PROTOCOL.domain, TREE_PROTOCOL.patch,
               {
@@ -443,11 +441,12 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
                 ...(pageInstances.get(id)?.data
                   ? { pageData: cloneJsonSafe(pageInstances.get(id)!.data) }
                   : {}),
-                ...(logicTree ? { componentData: cloneJsonSafe(logicTree.snapshotComponentData(id)) } : {}),
+                ...(hasComponentData ? { componentData: cloneJsonSafe(componentData) } : {}),
               },
               { pageId: id },
             )
           }
+          flushWxsBindings(id)
         } catch (error) {
           connection.sendDiagnostic('warn', {
             code: DIAGNOSTIC_CODES.LOGIC_TREE_ERROR,
@@ -550,6 +549,43 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     const query = Object.fromEntries(new URLSearchParams(queryString ?? ''))
     return { path, query }
   }
+
+  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.templateEvent, (message) => {
+    if (!logicTree) return
+    const payload = (message.payload ?? {}) as {
+      pageId?: string
+      componentId?: string
+      handler?: string
+      name?: string
+      detail?: unknown
+      touches?: unknown[]
+      changedTouches?: unknown[]
+      id?: string
+      dataset?: Record<string, unknown>
+      currentTarget?: { offsetLeft?: number; offsetTop?: number; offsetWidth?: number; offsetHeight?: number }
+    }
+    if (!payload.componentId || !payload.handler) return
+    try {
+      logicTree.dispatchTemplateHandler({
+        pageId: message.pageId ?? payload.pageId,
+        componentId: payload.componentId,
+        handler: payload.handler,
+        name: payload.name ?? '',
+        ...(payload.detail !== undefined ? { detail: payload.detail } : {}),
+        ...(payload.touches ? { touches: payload.touches } : {}),
+        ...(payload.changedTouches ? { changedTouches: payload.changedTouches } : {}),
+        ...(payload.id ? { id: payload.id } : {}),
+        ...(payload.dataset ? { dataset: payload.dataset } : {}),
+        ...(payload.currentTarget ? { currentTarget: payload.currentTarget } : {}),
+      })
+    } catch (error) {
+      connection.sendDiagnostic('warn', {
+        code: DIAGNOSTIC_CODES.EVENT_HANDLER_ERROR,
+        message: error instanceof Error ? error.message : String(error),
+        details: { handler: payload.handler, componentId: payload.componentId },
+      }, message.pageId)
+    }
+  })
 
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, (message) => {
     if (!logicTree) return
@@ -670,6 +706,52 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
             details,
           }, pageId)
         },
+        // Render-side geometry: `measure` addresses nodes by their shared id;
+        // `queryView` covers nodes inside an evaluated component shadow tree,
+        // which only exist in the render DOM.
+        measureView: async (viewIds) => {
+          if (viewIds.length === 0) return {}
+          try {
+            const result = await connection.call(
+              TREE_PROTOCOL.domain,
+              TREE_PROTOCOL.measure,
+              { ids: viewIds },
+            )
+            return (result ?? {}) as Record<string, ViewRect>
+          } catch {
+            return {}
+          }
+        },
+        measureLocators: async (locators) => {
+          if (locators.length === 0) return {}
+          try {
+            const result = await connection.call(
+              TREE_PROTOCOL.domain,
+              TREE_PROTOCOL.measure,
+              { locators },
+            )
+            return (result ?? {}) as Record<string, ViewRect>
+          } catch {
+            return {}
+          }
+        },
+        queryView: async (request) => {
+          try {
+            const result = await connection.call(
+              QUERY_CONTROL.domain,
+              QUERY_CONTROL.select,
+              {
+                selector: request.selector,
+                all: request.all,
+                ...(request.scopeId ? { scopeId: request.scopeId } : {}),
+              },
+              request.pageId ? { pageId: request.pageId } : undefined,
+            )
+            return ((result ?? {}) as { nodes?: QueryViewResult }).nodes ?? []
+          } catch {
+            return []
+          }
+        },
         viewIntersection: {
           observe: (request) => {
             void connection.call(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, {
@@ -701,12 +783,16 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
               ...(request.iterations !== undefined ? { iterations: request.iterations } : {}),
               ...(request.fill !== undefined ? { fill: request.fill } : {}),
               ...(request.scroll !== undefined ? { scroll: request.scroll } : {}),
+              ...(request.selector !== undefined ? { selector: request.selector } : {}),
+              ...(request.scopeId !== undefined ? { scopeId: request.scopeId } : {}),
             }, { pageId: request.pageId })
           },
           clear: (request) => {
             connection.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.clearAnimate, {
               viewIds: request.viewIds,
               ...(request.properties ? { properties: request.properties } : {}),
+              ...(request.selector !== undefined ? { selector: request.selector } : {}),
+              ...(request.scopeId !== undefined ? { scopeId: request.scopeId } : {}),
             }, { pageId: request.pageId })
           },
         },
@@ -720,7 +806,15 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         getPage: (pageId) => pageInstances.get(pageId),
         requestRenderUpdate: (pageId) => scheduleTreeUpdate(pageId),
         onBinding: (pageId, binding) => {
-          connection.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.wxsBinding, binding, { pageId })
+          let bindings = wxsBindingsByPage.get(pageId)
+          if (!bindings) {
+            bindings = new Map()
+            wxsBindingsByPage.set(pageId, bindings)
+          }
+          // Registered with the logic view id; the flush below swaps in the
+          // node's current render identity (locator for elements).
+          bindings.set(`${binding.viewId}\0${binding.event}`, binding)
+          flushWxsBindings(pageId)
         },
         onDiagnostic: (pageId, code, message, details) => {
           connection.sendDiagnostic('warn', { code, message, details }, pageId)

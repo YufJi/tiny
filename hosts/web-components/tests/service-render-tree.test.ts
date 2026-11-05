@@ -54,19 +54,19 @@ describe('projected render tree in glass', () => {
     expect(footer.textContent).toBe('hello hello')
 
     render.applyPatches([
-      { type: 'props', id: 'check', props: { value: 'a', checked: true } },
-      { type: 'text', id: 'footer', text: 'hello bye' },
+      { type: 'props', target: 'page#0.0.0', props: { value: 'a', checked: true } },
+      { type: 'text', target: 'page#1.0', text: 'hello bye' },
     ])
     expect((render.getNode('check') as unknown as { data: { checked: boolean } }).data.checked).toBe(true)
     expect(group.data.value).toEqual(['a'])
     expect((render.getNode('footer') as unknown as { textContent: string }).textContent).toBe('hello bye')
 
-    render.applyPatches([{ type: 'remove', parentId: 'page', index: 1, count: 1 }])
+    render.applyPatches([{ type: 'remove', parent: 'page', index: 1, count: 1 }])
     expect(render.getNode('footer')).toBeUndefined()
 
     render.applyPatches([{
       type: 'insert',
-      parentId: 'page',
+      parent: 'page',
       index: 1,
       node: {
         type: 'element',
