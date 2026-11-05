@@ -407,7 +407,7 @@ getMenuButtonBoundingClientRect / getPerformance
 ### 6.3 双侧树运行时与 bridge
 
 - service iframe 运行 glass-easel 逻辑树（数据、属性、observer、relations、生命周期、模板求值）；render iframe 运行宿主 `TreeRenderer`（真实内置组件、slot、样式、布局、DOM）
-- 首屏用 tree.flow（define/create-node/props/children/ready）同步，后续用 tree.patch；事件走 tree.event，selector query 和 IntersectionObserver 走 query.*
+- 首屏用 tree.flow（define/tree/ready，快照作为一棵嵌套树传输）同步，后续用 tree.patch；事件走 tree.event，selector query 和 IntersectionObserver 走 query.*
 - devtool 为每页创建独立 render 帧；service / render 不直接通信，由 host + MessageChannel 转发
 - 握手、超时、批处理、JSON-safe 校验
 - 结构化诊断：compile / transport / service / render / host

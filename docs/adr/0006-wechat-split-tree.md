@@ -15,7 +15,7 @@ Accepted and implemented. Merged into `next` as #27 (`1ac6d3a`), originally on
   deleted. The compiler no longer emits `render.js`; hosts load `templates.js`
   directly.
 - Initial page mount is driven by component-flow messages
-  (`define` / `create-node` / `props` / `children` / `ready`). Subsequent
+  (`define` / `tree` / `ready`; the snapshot travels as a nested tree). Subsequent
   template updates use virtual-node patches only. The legacy WeChat update
   messages (`FLOW_UPDATE`, `FLOW_SET_DATA`, `FLOW_DATA_OBSERVER`,
   `FLOW_APPLY_PROPERTY`, `FLOW_GROUP`, …) are intentionally not implemented:
@@ -205,7 +205,7 @@ host-owned.
 | --- | --- |
 | `WxVirtualNode` / `WxVirtualText` | `RenderElement` / `RenderText` with a stable `RenderNodeId` |
 | `PATCH_TYPE` text/vnode/props/reorder/insert/remove/extra | `RenderPatch` text/replace/props/reorder/insert/remove/extra |
-| `COMPONENT_DEF` and `FLOW_*` | component-flow `define` / `create-node` / `props` / `children` / `ready`; update flows are replaced by `tree.patch` |
+| `COMPONENT_DEF` and `FLOW_*` | component-flow `define` / `tree` / `ready`; update flows are replaced by `tree.patch` |
 | `WX_EVENT` | `tree.event` (node id, name, detail, native fields) |
 | service has no `wx-*` built-ins | service emits semantic built-in tags |
 | webview exparser built-ins | host render tree creates real built-ins |
