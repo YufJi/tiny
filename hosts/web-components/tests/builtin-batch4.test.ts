@@ -22,18 +22,10 @@ describe('batch 4 media built-ins', () => {
   })
 
   test('registers the remaining media and web-view tags', () => {
-    for (const tag of [
-      'audio', 'camera', 'live-player', 'live-pusher', 'voip-room',
-      'channel-live', 'channel-video', 'web-view',
-    ]) {
+    for (const tag of ['audio', 'web-view']) {
       expect(BUILTIN_COMPONENT_TAGS).toContain(tag)
     }
     expect(BUILTIN_HOST_STYLES).toContain('tiny-audio {')
-    expect(BUILTIN_HOST_STYLES).toContain('tiny-camera {')
-    expect(BUILTIN_HOST_STYLES).toContain('tiny-live-player {')
-    expect(BUILTIN_HOST_STYLES).toContain('tiny-live-pusher {')
-    expect(BUILTIN_HOST_STYLES).toContain('tiny-voip-room {')
-    expect(BUILTIN_HOST_STYLES).toContain('tiny-channel-video {')
     expect(BUILTIN_HOST_STYLES).toContain('tiny-web-view {')
   })
 

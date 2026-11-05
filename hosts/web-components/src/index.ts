@@ -34,12 +34,6 @@ import { defineIcon } from './components/icon'
 import { defineImage } from './components/image'
 import { defineAudio } from './components/audio'
 import { defineVideo } from './components/video'
-import { defineCamera } from './components/camera'
-import { defineLivePlayer } from './components/live-player'
-import { defineLivePusher } from './components/live-pusher'
-import { defineVoipRoom } from './components/voip-room'
-import { defineChannelLive } from './components/channel-live'
-import { defineChannelVideo } from './components/channel-video'
 import { defineMap } from './components/map'
 import { defineNavigator } from './components/navigator'
 import { defineScrollView } from './components/scroll-view'
@@ -51,21 +45,10 @@ import { defineSwiperItem } from './components/swiper-item'
 import { defineMatchMedia } from './components/match-media'
 import { defineCanvas } from './components/canvas'
 import { defineTextarea } from './components/textarea'
-import { defineKeyboardAccessory } from './components/keyboard-accessory'
 import { defineForm } from './components/form'
 import { definePicker } from './components/picker'
 import { definePickerView } from './components/picker-view'
 import { definePickerViewColumn } from './components/picker-view-column'
-import { defineAd } from './components/ad'
-import { defineAdCustom } from './components/ad-custom'
-import { defineOfficialAccount } from './components/official-account'
-import { defineOfficialAccountPublish } from './components/official-account-publish'
-import { defineOpenData } from './components/open-data'
-import { defineReward } from './components/reward'
-import { defineStoreCoupon } from './components/store-coupon'
-import { defineStoreGift } from './components/store-gift'
-import { defineStoreHome } from './components/store-home'
-import { defineStoreProduct } from './components/store-product'
 import { defineWebView } from './components/web-view'
 
 export { BUILTIN_COMPONENT_TAGS }
@@ -104,12 +87,6 @@ const DEFINITION_FACTORIES: Record<BuiltinComponentTag, DefinitionFactory> = {
   image: defineImage,
   audio: defineAudio,
   video: defineVideo,
-  camera: defineCamera,
-  'live-player': defineLivePlayer,
-  'live-pusher': defineLivePusher,
-  'voip-room': defineVoipRoom,
-  'channel-live': defineChannelLive,
-  'channel-video': defineChannelVideo,
   map: defineMap,
   navigator: defineNavigator,
   'functional-page-navigator': defineFunctionalPageNavigator,
@@ -122,21 +99,10 @@ const DEFINITION_FACTORIES: Record<BuiltinComponentTag, DefinitionFactory> = {
   'match-media': defineMatchMedia,
   canvas: defineCanvas,
   textarea: defineTextarea,
-  'keyboard-accessory': defineKeyboardAccessory,
   form: defineForm,
   picker: definePicker,
   'picker-view': definePickerView,
   'picker-view-column': definePickerViewColumn,
-  ad: defineAd,
-  'ad-custom': defineAdCustom,
-  'official-account': defineOfficialAccount,
-  'official-account-publish': defineOfficialAccountPublish,
-  'open-data': defineOpenData,
-  reward: defineReward,
-  'store-coupon': defineStoreCoupon,
-  'store-gift': defineStoreGift,
-  'store-home': defineStoreHome,
-  'store-product': defineStoreProduct,
   'web-view': defineWebView,
 }
 
