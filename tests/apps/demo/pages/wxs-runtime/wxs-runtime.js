@@ -14,6 +14,7 @@ Page({
     stateStatus: 'idle',
     computedStatus: 'idle',
     useCounter: true,
+    probeJsCount: 0,
   },
 
   record(value) {
@@ -74,6 +75,10 @@ Page({
 
   bumpValue() {
     this.setData({ value: this.data.value + 1 })
+  },
+
+  onProbeJs() {
+    this.setData({ probeJsCount: this.data.probeJsCount + 1 })
   },
 
 

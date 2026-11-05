@@ -3,12 +3,15 @@
 <view class="page">
   <text class="title">WXS runtime</text>
   <text class="status">status: {{status}}</text>
-  <wxs-probe
-    id="probe"
-    label="{{value}}"
-    change:label="{{t.observeProbe}}"
-    bind:probe="{{t.onProbe}}"
-  />
+  <view class="probe-wrap" bind:probe="onProbeJs">
+    <wxs-probe
+      id="probe"
+      label="{{value}}"
+      change:label="{{t.observeProbe}}"
+      bind:probe="{{t.onProbe}}"
+    />
+  </view>
+  <text class="probe-js-count">probe-js-count: {{probeJsCount}}</text>
   <view
     id="target"
     class="target"

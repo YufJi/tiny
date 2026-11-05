@@ -608,10 +608,17 @@ export async function runBrowserAcceptance({ baseUrl }) {
       currentStep = 'run WXS local events, change:prop and callMethod'
       await byText(render, 'WXS runtime', { exact: true }).first().click()
       await waitForText('WXS runtime')
-      await waitForText('status: observe:2:none')
-      await waitForText('probe-seen: observe-probe:2:none:1')
+      await waitForText('status: observe:2:none:state=object')
+      await waitForText('probe-seen: observe-probe:2:none:1:computed=string')
       await render.locator('tiny-wxs-probe #fire').click()
-      await waitForText('probe-seen: probe-event:2:1')
+      await waitForText('probe-seen: probe-event:2:1:call=1')
+      // The service JS listener runs once; the render WXS dispatch must not
+      // replay the event into the service.
+      await waitForText('probe-js-count: 1')
+      const probeWidth = await render.locator('tiny-wxs-probe #probe').evaluate(
+        (element) => element.style.width,
+      )
+      assert.equal(probeWidth, '123px', 'WXS custom-event setStyle did not update the target')
       await render.locator('tiny-wxs-probe #probe').click()
       await waitForText('probe-seen: probe-tap:component-data')
       await render.locator('#target').click()
@@ -657,7 +664,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
       await render.locator('#counter').click()
       await waitForText('counter-status: counter:2')
       await byText(render, 'Bump value', { exact: true }).first().click()
-      await waitForText('probe-seen: observe-probe:3:2:2')
+      await waitForText('probe-seen: observe-probe:3:2:2:computed=string')
       await byText(render, 'Back', { exact: true }).first().click()
       await waitForText('Tiny Glass-easel P0')
     })

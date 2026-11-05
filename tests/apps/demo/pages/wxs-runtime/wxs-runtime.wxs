@@ -35,7 +35,9 @@ function captureParent(event, ins) {
 }
 
 function observe(next, previous, ins) {
-  ins.callMethod('record', 'observe:' + next + ':' + (previous === undefined ? 'none' : previous))
+  var state = ins.getState()
+  state.builtinObserved = true
+  ins.callMethod('record', 'observe:' + next + ':' + (previous === undefined ? 'none' : previous) + ':state=' + typeof state)
 }
 
 function observeProbe(next, previous, ins) {
@@ -43,12 +45,16 @@ function observeProbe(next, previous, ins) {
   // observer would throw here instead of recording.
   var state = ins.getState()
   state.observed = (state.observed || 0) + 1
-  ins.callMethod('record', 'observe-probe:' + next + ':' + (previous === undefined ? 'none' : previous) + ':' + state.observed)
+  var computed = ins.getComputedStyle(['width'])
+  ins.callMethod('record', 'observe-probe:' + next + ':' + (previous === undefined ? 'none' : previous) + ':' + state.observed + ':computed=' + (computed && typeof computed.width))
 }
 
 function onProbe(event, ins) {
   var state = ins.getState()
-  ins.callMethod('record', 'probe-event:' + event.detail.value + ':' + (state.observed || 0))
+  state.probeCalls = (state.probeCalls || 0) + 1
+  var target = ins.selectComponent('#probe')
+  if (target) target.setStyle({ width: '123px' })
+  ins.callMethod('record', 'probe-event:' + event.detail.value + ':' + (state.observed || 0) + ':call=' + state.probeCalls)
 }
 
 module.exports = {

@@ -71,7 +71,7 @@
 
 | 维度 | 权重 | 完成度 | 加权 | 关键依据 |
 | --- | ---: | ---: | ---: | --- |
-| 编译/构建 | 10% | 76% | 7.60 | WXML/WXSS/WXS 基本完整；共享 WXS runtime 与 AST transform 已接；app.wxss 规则可作用到页面与内置宿主；app.json 只消费少量字段；无 npm 构建、无 TS 类型检查 |
+| 编译/构建 | 10% | 76% | 7.60 | WXML/WXSS/WXS 基本完整；共享 WXS runtime 与 AST transform 已接，WXS handler/`change:prop` 在 render 侧执行（自定义组件事件经 `tree.customEvent` 转发）；app.wxss 规则可作用到页面与内置宿主；app.json 只消费少量字段；无 npm 构建、无 TS 类型检查 |
 | 框架运行时 | 18% | 90% | 16.20 | 14/14 页面生命周期、7/7 应用生命周期、5/5 路由；两次求值的渲染树、元素 locator 寻址、页面级 `generic:x`、6 个 `wx://` behavior 占位对齐；`this.animate`/`clearAnimate`、`wx.createIntersectionObserver`、事件合成层与 `target/currentTarget` 几何落地；tab 页缓存、group/label/touchtrack/scroller 基础保持；componentPlaceholder 未接 |
 | 内置组件 | 17% | 65% | 11.05 | 39/60 标签（2.33.0 目标的 39 个标签全部落地，20 个平台/开放能力组件按基线不做）；P0 视觉完成，P1 内部结构大幅收口；事件合成层与 scroll-view 横向/enable-flex 修复落地；`navigator` 走 host action；canvas 2D/WebGL 已接；已统计属性 120/146、事件 44/46 |
 | wx API | 20% | 14.1% | 2.83 | 71/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar/switchTab/redirectTo/reLaunch/下拉刷新/IntersectionObserver（含 `wx.createIntersectionObserver`）等已接或桩 |
@@ -79,7 +79,7 @@
 | 样式/渲染 | 8% | 76% | 6.08 | WXSS/rpx/作用域强；app.wxss tag/class 规则作用到页面与共享组件；canvas 2D/WebGL/RAF 已接，导出 API 仍缺 |
 | 宿主/平台 | 8% | 18% | 1.44 | 浏览器 + iOS 原生宿主（JavaScriptCore service + WKWebView render）；仍无原生网络/登录/支付/分享 |
 | 开发工具 | 4% | 47% | 1.88 | Vite 构建、应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar、移动端访问提示；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 62% | 1.86 | 388 单测 + 61 步浏览器验收 + 125 页探针（121 启动 / 116 可见文本）+ iOS 7 fixture 模拟器 smoke + 真机签名构建/安装；新增两次求值、locator 寻址、WXS 共享 runtime、事件合成、滚动横向回归；仍无性能/安全测试 |
+| 质量/验证 | 3% | 62% | 1.86 | 394 单测 + 61 步浏览器验收 + 125 页探针（121 启动 / 116 可见文本）+ iOS 7 fixture 模拟器 smoke + 真机签名构建/安装；新增两次求值、locator 寻址、WXS 共享 runtime、事件合成、滚动横向回归；仍无性能/安全测试 |
 | **合计** | **100%** | — | **52.30%** | |
 
 ### 条目覆盖率速览
@@ -322,7 +322,7 @@ Shadow DOM：
 2026-11-05 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
-- **388 个单元测试**（runtime 143、host-web-components 116、template-compiler 44、stylesheet-compiler 36、cli 18、wxs-runtime 13、bridge 10、api 4、manifest 2、css-units 2）
+- **394 个单元测试**（runtime 143、host-web-components 119、template-compiler 47、stylesheet-compiler 36、cli 18、wxs-runtime 13、bridge 10、api 4、manifest 2、css-units 2）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
 - **61 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent、真实滚动触发的 onPageScroll，WeChat demo 覆盖 swiper autoplay 开关、radio 点击与 WeUI 勾选结构、navigator 点击跳转、WXS 拖拽，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧，canvas 覆盖 2D/WebGL/legacy/ECharts
 - 门禁覆盖的 5 段流程无 console/page error（125 页探针的 pageerror 见 5.2）

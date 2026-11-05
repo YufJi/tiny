@@ -59,6 +59,39 @@ describe('WXS render-side dispatch', () => {
     expect(observations).toEqual([['2', undefined], ['5', '2']])
   })
 
+  test('drives built-in change:prop observers from node props with shared getState', () => {
+    const observations: unknown[] = []
+    ;(globalThis as unknown as Record<string, unknown>).__tinyWxsObservations = observations
+    const tree = createGlassRenderTree({ backend: new glassEasel.EmptyBackendContext() })
+    tree.setWxsModules?.({
+      modules: [{
+        id: 'pages/index/index.wxs',
+        code: 'module.exports = { observe: function (next, previous, ins) { var state = ins.getState(); state.calls = (state.calls || 0) + 1; globalThis.__tinyWxsObservations.push([next, previous, state.calls]) } }',
+      }],
+    })
+    tree.mount({
+      type: 'element',
+      id: 'root',
+      tag: 'view',
+      children: [{
+        type: 'element',
+        id: 'target',
+        tag: 'view',
+        props: {
+          prop: 1,
+          [TINY_ENGINE_NAMING.wxsPropsAttribute]: JSON.stringify([
+            { prop: 'prop', moduleId: 'pages/index/index.wxs', exportPath: ['observe'] },
+          ]),
+        },
+      }],
+    })
+    tree.applyPatches([{ type: 'props', target: 'target', props: { prop: 2 } }])
+
+    // Initial call with no previous value, then the changed value; getState
+    // persists across both calls.
+    expect(observations).toEqual([[1, undefined, 1], [2, 1, 2]])
+  })
+
   test('does not forward a service-triggered custom event back to the service', () => {
     const events: unknown[] = []
     const tree = createGlassRenderTree({ backend: new glassEasel.EmptyBackendContext() })
