@@ -3,7 +3,7 @@ title: '引擎不依赖环境，'
 highlight: '运行环境由宿主提供'
 eyebrow: '宿主适配'
 lede: >-
-  packages/runtime 是宿主无关的内核：service 跑逻辑树，宿主提供渲染树。@tiny/host-browser 负责浏览器线程、端口和 canvas handoff，@tiny/host-web-components 提供 Web 渲染树与 23 个内置组件；iOS 侧由 @tiny/host-ios 提供 JSCore engine 与每页 native WKWebView render 产物，HostCoreRuntime/SwiftUI 壳在 ios/。浏览器侧由 WasmBrowserHost 创建 iframe、转移端口并驱动 Rust HostCore；iOS 侧由 HostCoreRuntime 经 UniFFI 驱动同一个 HostCore，每页一个 WKWebView。调试器的会话客户端属于 devtool 应用本身（apps/devtool/src/runtimeClient.ts），不在宿主包里。
+  packages/runtime 是宿主无关的内核：service 跑逻辑树，宿主提供渲染树。@tiny/host-browser 负责浏览器线程、端口和 canvas handoff，@tiny/host-web-components 提供 Web 渲染树与 39 个内置组件；iOS 侧由 @tiny/host-ios 提供 JSCore engine 与每页 native WKWebView render 产物，HostCoreRuntime/SwiftUI 壳在 ios/。浏览器侧由 WasmBrowserHost 创建 iframe、转移端口并驱动 Rust HostCore；iOS 侧由 HostCoreRuntime 经 UniFFI 驱动同一个 HostCore，每页一个 WKWebView。调试器的会话客户端属于 devtool 应用本身（apps/devtool/src/runtimeClient.ts），不在宿主包里。
 stats:
   - ['3', '宿主包']
   - ['1', 'service iframe']
@@ -29,7 +29,7 @@ order: 6
 | 内核编排 | `WasmBrowserHost` / `HostCoreRuntime` | 适配器持有 WebView/iframe；HostCore 不依赖 DOM | 两个 BridgeConnection、HostApiRegistry、诊断仓库和启动顺序 |
 | 线程启动 | `bootBrowserServiceEntry` / `bootBrowserRenderEntry` + `createGlassRenderEntry` | service 需要 JS 全局；render 需要 `TreeRenderer` | service 加载 templates 并创建逻辑树；render 消费 tree flow/patch；canvas 和资源由宿主注入 |
 | 浏览器适配 | `@tiny/host-browser` | window、iframe、MessageChannel、document | iframe、端口、DOM canvas、资源 URL、宿主 API 覆盖层 |
-| 渲染树 | `@tiny/host-web-components` | DOM 和 CSS | `createGlassRenderTree`、23 个 tiny-* 内置组件、共享 behaviors 和基础 CSS |
+| 渲染树 | `@tiny/host-web-components` | DOM 和 CSS | `createGlassRenderTree`、39 个 tiny-* 内置组件、共享 behaviors 和基础 CSS |
 | 应用宿主 | `tests/host` · `apps/devtool` | 静态资源服务器 / Vite | 选择应用、加载 manifest、提供界面或自动化钩子、调用 bootstrap |
 
 ```text
@@ -205,7 +205,8 @@ render 线程不再接收 templates、backend 或 builtinComponents；这些都�
 - 在宣告 ready 之前装好宿主内置样式（`prepare`）
 - 实现 TreeRenderer（Web 侧 `createGlassRenderTree`）
 - 创建真实内置组件和页面根容器
-- 接收 `tree.flow` / `tree.patch`，维护 node id 到真实组件的映射
+- 接收 `tree.flow` / `tree.patch`，维护组件 id 到真实组件的映射；元素用渲染侧本地 id 和 locator
+- 按 `templates.js` 求值组件 shadow tree（`loadTemplates` 在首屏 flow 之前装好模板组）
 - 提供 query、measure、inspectTree 和 IntersectionObserver
 :::
 ::::
@@ -430,11 +431,11 @@ service iframe 只是视觉上隐藏，没有 sandbox 属性，仍然可以访�
 :::
 
 :::card{tag="flow" title="增量统一走 patch"}
-首屏用 define/create-node/props/children/ready 对齐组件树；后续更新由 snapshot diff 生成 tree.patch，覆盖文本、属性、插入/删除/重排和 extra data。旧 FLOW_UPDATE、FLOW_SET_DATA、FLOW_DATA_OBSERVER 是参考实现细节，不需要兼容。
+首屏用 define/tree/ready 对齐组件树（快照作为嵌套树发送，元素不带 id）；后续更新由 snapshot diff 生成 tree.patch，组件按共享 id、元素按 `owner#index.path` locator 寻址，覆盖文本、属性、插入/删除/重排和 extra data。旧 FLOW_UPDATE、FLOW_SET_DATA、FLOW_DATA_OBSERVER 是参考实现细节，不需要兼容。
 :::
 
 :::card{tag="event" tone="warn" title="tree.event 没有 target geometry"}
-tree.event 只带 node id、name、detail、native 和 touches；目标几何信息由 service 侧逻辑节点补足，和微信协议仍有差别。
+tree.event 只带组件 id 或元素 locator、name、detail、native 和 touches；目标几何信息由 service 侧逻辑节点补足，和微信协议仍有差别。
 :::
 
 :::card{tag="capability" tone="warn" title="没有能力协商"}
