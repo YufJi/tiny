@@ -5,11 +5,11 @@ import type { BuiltinBehaviorSpec } from './types'
 /**
  * `wx://label-target`
  *
- * WeChat's built-in behavior is literally `behaviors: ['wx-label-target']`.
- * The host package owns the `wx-label-target` implementation; the runtime only
- * carries the marker so the render-side adapter can attach the matching
- * glass-easel marker behavior (which listens for `labelTap` and calls
- * `handleLabelTap`). User components may override `handleLabelTap`.
+ * Marker only: WeChat's service-side behavior is an empty `Behavior`. The
+ * `wx-label-target` implementation lives in the host package
+ * (`hosts/web-components/src/behaviors/labelTarget.ts`), which listens for the
+ * composed `labelTap` event and calls `handleLabelTap`; user components may
+ * override that method render-side.
  */
 export function createBuiltinLabelTargetBehavior(
   compatibility: RuntimeCompatibilityConfig,
@@ -19,11 +19,6 @@ export function createBuiltinLabelTargetBehavior(
     markers: { labelTarget: true },
     options: {
       is: builtinBehaviorId(compatibility, 'label-target'),
-      methods: {
-        handleLabelTap() {
-          // Activation is dispatched by the `<label>` implementation.
-        },
-      },
     },
   }
 }

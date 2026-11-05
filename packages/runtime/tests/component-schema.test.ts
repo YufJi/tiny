@@ -70,8 +70,8 @@ describe('buildComponentSchemas', () => {
     ])
     const schemas = buildComponentSchemas([artifact('components/a')], definitions)
     expect(schemas[0]!.formField).toBe(true)
-    expect(schemas[0]!.properties.name).toBeDefined()
-    expect(schemas[0]!.properties.value).toBeDefined()
+    expect(schemas[0]!.properties.name).toBeUndefined()
+    expect(schemas[0]!.properties.value).toBeUndefined()
   })
 
   test('marks form-field-group and label-target marker behaviors in the schema', () => {

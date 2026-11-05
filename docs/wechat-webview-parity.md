@@ -255,7 +255,7 @@ hasBehavior / export / wx://component-export
 
 | 能力 | 状态 | 说明 |
 | --- | --- | --- |
-| `behaviors` | ✅ | 嵌套合并、去重、环检测、组件覆盖、生命周期/observers 顺序；`wx://` 内置 behavior 支持 7 个（component-export / form-field / form-field-button / form-field-group / functional-page-behavior / label-target / style-filter）；`request-filter` / `request-sender` 按基线不做 |
+| `behaviors` | ✅ | 嵌套合并、去重、环检测、组件覆盖、生命周期/observers 顺序；`wx://` 内置 behavior 支持 6 个（component-export / form-field / form-field-button / form-field-group / label-target / style-filter）；`functional-page-behavior` / `request-filter` / `request-sender` 按基线不做 |
 | `observers` | ✅ | `observers` 块 + 属性级 `observer`；支持多字段、`arr[12]`、`some.field.**`、`**`；本地 `setData` 同步，父级属性变化异步一个 bridge 往返 |
 | `relations` / `getRelationNodes` | ✅ | parent/child/ancestor/descendant；双向声明校验；`linked` / `unlinked` / `linkChanged` / `linkFailed`；按节点树顺序返回；page 根节点关系在 render shadow tree 上按 target path 解析 |
 | `externalClasses` | ✅ | 父级 class 可在组件模板内解析，参与样式作用域 |
@@ -269,7 +269,7 @@ hasBehavior / export / wx://component-export
 | `componentPlaceholder` | ❌ | 编译是 eager，异步占位暂不需要；配置会被忽略 |
 | `trait behaviors` / chaining API | ❌ | 未支持 |
 | Component-as-page 全套语义 | ✅ | query→properties、methods 页面生命周期、behaviors/observers/relations/styleIsolation/selectComponent/getRelationNodes/hasBehavior 已接入；generics/definitionFilter/pureDataPattern 与普通组件一致，分享/下拉刷新/退出状态回调随页面生命周期接入 |
-| `wx://form-field` / `wx://form-field-group` / `wx://form-field-button` | ✅ | 表单字段/分组/按钮语义与 WeChat 对齐；按钮变体重新派发 formSubmit/formReset |
+| `wx://form-field` / `wx://form-field-group` / `wx://form-field-button` | ✅ | 表单字段/分组/按钮语义与 WeChat 对齐；service 侧 behavior 为占位 marker，按钮变体的 formSubmit/formReset 重发在渲染侧 behavior |
 
 > 这使 Vant Weapp、TDesign 等组件库的**核心语义障碍**基本移除；`tests/apps/vant` 与 `tests/apps/weui` 作为回归样例。剩余限制主要是 npm 安装/构建、宿主侧 `wx-*` 内置 behaviors 和异步占位组件。
 

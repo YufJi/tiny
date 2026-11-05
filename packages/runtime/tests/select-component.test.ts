@@ -132,4 +132,50 @@ describe('selectComponent', () => {
     expect(result.service.componentSchemas).toHaveLength(2)
     await host.close()
   })
+
+  test('returns the export() result for wx://component-export components', async () => {
+    const manifest = createManifest()
+    const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
+    const service = bootServiceThread({
+      transport: serviceTransport,
+      manifest,
+      initialPath: PAGE_PATH,
+    })
+    const renderConnector = createHarnessRenderConnector({
+      manifest,
+      artifacts: { templates: createTemplateRegistry() },
+      initialPath: PAGE_PATH,
+    })
+    const host = createTestHost({
+      serviceTransport: hostServiceTransport,
+      renderConnector,
+      manifest,
+      initialPath: PAGE_PATH,
+    })
+
+    const globalObject = globalThis as unknown as Record<string, unknown>
+    ;(globalObject.App as (options: Record<string, unknown>) => unknown)({})
+    ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
+      data: { exported: 'missing' },
+      onReady() {
+        const panel = this.selectComponent('#panel') as { tag?: string } | null
+        this.setData({ exported: panel?.tag ?? 'missing' })
+      },
+    })
+    ;(globalObject.Component as (options: Record<string, unknown>) => unknown)({
+      data: { label: 'panel' },
+      behaviors: ['wx://component-export'],
+      export() {
+        return { tag: 'exported-panel' }
+      },
+    })
+    ;(globalObject.Component as (options: Record<string, unknown>) => unknown)({
+      data: { label: 'child' },
+    })
+
+    await host.bootstrap()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(service.activePage?.data.exported).toBe('exported-panel')
+    await host.close()
+  })
 })

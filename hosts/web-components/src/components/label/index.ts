@@ -1,10 +1,10 @@
 import type * as glassEasel from 'glass-easel'
-import { bindHostListeners, unbindHostListeners, BUILTIN_BEHAVIOR_IDS } from '../../behaviors'
+import { bindHostListeners, unbindHostListeners } from '../../behaviors'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { builtinDefinitionName } from '../../tags'
 
 type LabelTarget = {
-  hasBehavior?: (behavior: string) => boolean
+  hasBehavior?: (behavior: unknown) => boolean
   handleLabelTap?: (event: unknown) => void
   _relatedLabel?: unknown
   _setRelatedLabelAria?: () => void
@@ -28,8 +28,12 @@ function asLabelTarget(node: unknown): LabelTarget | null {
     .asGeneralComponent?.() ?? null
 }
 
-function isLabelTarget(node: unknown): boolean {
-  return asLabelTarget(node)?.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.labelTarget) === true
+/**
+ * A label target may be a custom component whose `is` is an artifact path, and
+ * glass-easel resolves behavior strings by URL, so match by object identity.
+ */
+function isLabelTarget(node: unknown, marker: glassEasel.GeneralBehavior): boolean {
+  return asLabelTarget(node)?.hasBehavior?.(marker) === true
 }
 
 function childNodesOf(node: unknown): unknown[] {
@@ -77,14 +81,14 @@ export function defineLabel(ctx: BuiltinContext): BuiltinDefinition {
           target = (this as unknown as { dfs2: (node: unknown) => LabelTarget | null })
             .dfs2(this)
         }
-        if (target?.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.labelTarget)) {
+        if (target?.hasBehavior?.(ctx.behaviors.labelTarget)) {
           target._relatedLabel = this
           target._setRelatedLabelAria?.()
         }
       },
       _handleNode(node: unknown, event: unknown): boolean {
         const target = asLabelTarget(node)
-        if (target?.hasBehavior?.(BUILTIN_BEHAVIOR_IDS.labelTarget)) {
+        if (target?.hasBehavior?.(ctx.behaviors.labelTarget)) {
           const source = event as {
             detail?: unknown
             touches?: unknown
@@ -106,7 +110,7 @@ export function defineLabel(ctx: BuiltinContext): BuiltinDefinition {
         return false
       },
       dfs2(node: unknown): LabelTarget | null {
-        if (isLabelTarget(node)) return asLabelTarget(node)
+        if (isLabelTarget(node, ctx.behaviors.labelTarget)) return asLabelTarget(node)
         for (const child of childNodesOf(node)) {
           const found = (this as unknown as {
             dfs2: (child: unknown) => LabelTarget | null
@@ -132,7 +136,7 @@ export function defineLabel(ctx: BuiltinContext): BuiltinDefinition {
           node && node !== (this as unknown as object);
           node = node.parentNode as { parentNode?: unknown } | null
         ) {
-          if (isLabelTarget(node)) return
+          if (isLabelTarget(node, ctx.behaviors.labelTarget)) return
         }
         const forId = String(this.data.for ?? '')
         if (forId) {

@@ -129,8 +129,8 @@ describe('normalizeComponentDefinition', () => {
     }, 'components/foo/foo')
     expect(definition.behaviors.has('wx://form-field')).toBe(true)
     expect(definition.formField).toBe(true)
-    expect(definition.properties.name).toBeDefined()
-    expect(definition.properties.value).toBeDefined()
+    // The reference behavior is a marker: name/value belong to the component.
+    expect(definition.properties).toEqual({})
     expect(definition.diagnostics.map((item) => item.code)).toEqual(
       expect.arrayContaining(['UNSUPPORTED_BEHAVIOR', 'UNSUPPORTED_COMPONENT_DEFINITION_FILTER']),
     )

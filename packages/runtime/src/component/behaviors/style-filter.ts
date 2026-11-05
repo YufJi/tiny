@@ -5,9 +5,8 @@ import type { BuiltinBehaviorSpec } from './types'
 /**
  * `wx://style-filter`
  *
- * The reference behavior contributes a single `_styleFilter()` hook that
- * returns an empty style string; open-data/native components use it to keep
- * platform-injected styles out of the user style pipeline.
+ * Marker only: WeChat's service-side behavior is an empty `Behavior`, and the
+ * platform-injected style pipeline it belongs to is not modelled here.
  */
 export function createStyleFilterBehavior(
   compatibility: RuntimeCompatibilityConfig,
@@ -18,9 +17,6 @@ export function createStyleFilterBehavior(
     markers: {},
     options: {
       is: id,
-      methods: {
-        _styleFilter: () => '',
-      },
     },
   }
 }

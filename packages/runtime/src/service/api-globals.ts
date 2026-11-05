@@ -35,7 +35,7 @@ export function installMiniProgramGlobals(
     const behavior = registerBehavior(options)
     // Match WeChat's declaration-time filtering: a behavior's own filter chain
     // runs when the behavior is declared, before any component uses it.
-    applyDefinitionFilters(behavior)
+    applyDefinitionFilters(behavior, undefined, registry.compatibility)
     return behavior
   }
   globalObject[globals.getApp] = () => registry.getApp()

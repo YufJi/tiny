@@ -1,6 +1,7 @@
 import type * as glassEasel from 'glass-easel'
 import { createAutofillBehavior } from './autofill'
 import { createBaseBehavior } from './base'
+import { createPublicBuiltinBehaviors } from './builtin'
 import { createClassPrefixBehavior } from './classPrefix'
 import { createDataComponentBehavior } from './dataComponent'
 import { createDisabledBehavior } from './disabled'
@@ -38,6 +39,8 @@ export type {
   TouchTrackEvent,
 } from './types'
 export type { PositionBox, PositioningContainerHost } from './positioningTarget'
+export { createPublicBuiltinBehaviors, getPublicBuiltinBehaviors, PUBLIC_BUILTIN_BEHAVIOR_IDS } from './builtin'
+export type { PublicBuiltinBehaviorRegistry, PublicBuiltinBehaviors } from './builtin'
 
 /**
  * Internal behaviors shared by the built-in component implementations.
@@ -46,7 +49,7 @@ export type { PositionBox, PositioningContainerHost } from './positioningTarget'
  * this factory is the single registry used by built-in definitions.
  */
 export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
-  return {
+  const behaviors = {
     base: createBaseBehavior(space),
     hover: createHoverBehavior(space),
     reload: createReloadBehavior(space),
@@ -68,6 +71,15 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
     htmlParse: createHtmlParseBehavior(space),
     quillCore: createQuillCoreBehavior(space),
     scroller: createScrollerBehavior(space),
+  }
+  // `wx://` ids are a separate (public) registry; built-ins compare the marker
+  // behaviors by identity because glass-easel resolves behavior strings by URL.
+  const publicBehaviors = createPublicBuiltinBehaviors(space, behaviors)
+  return {
+    ...behaviors,
+    formField: publicBehaviors.markers.formField,
+    formFieldGroup: publicBehaviors.markers.formFieldGroup,
+    formFieldButton: publicBehaviors.markers.formFieldButton,
   }
 }
 

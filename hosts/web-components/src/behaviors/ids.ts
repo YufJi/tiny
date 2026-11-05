@@ -23,4 +23,11 @@ export const BUILTIN_BEHAVIOR_IDS = Object.freeze({
   item: `${TINY_ENGINE_NAMING.behaviorPrefix}item`,
   labelTarget: `${TINY_ENGINE_NAMING.behaviorPrefix}label-target`,
   labelAria: `${TINY_ENGINE_NAMING.behaviorPrefix}label-aria`,
+  /**
+   * Marker behaviors behind the public `wx://` ids. Built-in components test
+   * these stable ids; user code only ever declares the `wx://` alias.
+   */
+  formField: `${TINY_ENGINE_NAMING.behaviorPrefix}form-field`,
+  formFieldGroup: `${TINY_ENGINE_NAMING.behaviorPrefix}form-field-group`,
+  formFieldButton: `${TINY_ENGINE_NAMING.behaviorPrefix}form-field-button`,
 } as const)

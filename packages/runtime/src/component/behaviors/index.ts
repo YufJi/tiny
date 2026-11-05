@@ -4,7 +4,6 @@ import { createComponentExportBehavior } from './component-export'
 import { createFormFieldBehavior } from './form-field'
 import { createFormFieldButtonBehavior } from './form-field-button'
 import { createFormFieldGroupBehavior } from './form-field-group'
-import { createFunctionalPageBehavior } from './functional-page-behavior'
 import { createBuiltinLabelTargetBehavior } from './label-target'
 import { createStyleFilterBehavior } from './style-filter'
 import { builtinBehaviorId } from './types'
@@ -26,16 +25,19 @@ export function registerBehavior(options?: MiniProgramComponentOptions): MiniPro
 /**
  * The `wx://` built-in behaviors implemented by Tiny.
  *
- * `wx://request-filter` and `wx://request-sender` are intentionally excluded:
- * they only filter URLs for WeChat's native media pipeline, which Tiny does not
- * model. Declaring them falls back to `UNSUPPORTED_BEHAVIOR`.
+ * `wx://request-filter`, `wx://request-sender` and
+ * `wx://functional-page-behavior` are intentionally excluded:
+ * - request-filter/request-sender only filter URLs for WeChat's native media
+ *   pipeline, which Tiny does not model;
+ * - functional-page-behavior belongs to the plugin/functional-page navigator,
+ *   which Tiny does not support.
+ * Declaring any of them falls back to `UNSUPPORTED_BEHAVIOR`.
  */
 const BUILTIN_BEHAVIOR_FACTORIES: readonly BuiltinBehaviorFactory[] = [
   createComponentExportBehavior,
   createFormFieldBehavior,
   createFormFieldButtonBehavior,
   createFormFieldGroupBehavior,
-  createFunctionalPageBehavior,
   createBuiltinLabelTargetBehavior,
   createStyleFilterBehavior,
 ]
@@ -46,7 +48,6 @@ export const BUILTIN_BEHAVIOR_NAMES = [
   'form-field',
   'form-field-button',
   'form-field-group',
-  'functional-page-behavior',
   'label-target',
   'style-filter',
 ] as const

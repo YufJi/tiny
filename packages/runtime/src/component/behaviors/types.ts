@@ -12,7 +12,6 @@ export type BuiltinBehaviorMarkers = {
   formField?: boolean
   formFieldButton?: boolean
   formFieldGroup?: boolean
-  functionalPage?: boolean
   labelTarget?: boolean
 }
 

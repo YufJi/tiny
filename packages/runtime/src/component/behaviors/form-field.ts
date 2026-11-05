@@ -5,10 +5,10 @@ import type { BuiltinBehaviorSpec } from './types'
 /**
  * `wx://form-field`
  *
- * WeChat declares `name` (String) and `value` (any) on the component and marks
- * it as a form field. The form component reads `value` from the marker; it does
- * not call user code. `form-field-button` deliberately does not get these two
- * properties.
+ * A marker: WeChat's service-side behavior is an empty `Behavior` and the
+ * component author declares `name` / `value` itself. The form component only
+ * needs to recognise the field, which the logic tree tracks through the schema
+ * flag and the render side through its own marker behavior.
  */
 export function createFormFieldBehavior(
   compatibility: RuntimeCompatibilityConfig,
@@ -18,11 +18,6 @@ export function createFormFieldBehavior(
     markers: { formField: true },
     options: {
       is: builtinBehaviorId(compatibility, 'form-field'),
-      properties: {
-        name: { type: String, value: '' },
-        // WeChat uses `type: null`, i.e. an untyped property.
-        value: { value: '' },
-      },
     },
   }
 }

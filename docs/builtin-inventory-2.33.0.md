@@ -75,7 +75,7 @@
 | 参考 behavior | 实现位置 |
 | --- | --- |
 | `wx-base` / `wx-hover` / `wx-reload` / `wx-disabled` / `wx-group` / `wx-item` / `wx-data-component` / `wx-size-normalizer` / `wx-class-prefix` / `wx-autofill` / `wx-label-aria` / `wx-label-target` / `wx-touchtrack` / `wx-scroller` | [behaviors/](../hosts/web-components/src/behaviors/index.ts:40) 的 14 个工厂 |
-| `wx://component-export` / `wx://form-field` / `wx://form-field-button` / `wx://form-field-group` / `wx://functional-page-behavior` / `wx://label-target` / `wx://style-filter` | [packages/runtime/src/component/behaviors/](../packages/runtime/src/component/behaviors/index.ts:1) 的 7 个独立模块 |
+| `wx://component-export` / `wx://form-field` / `wx://form-field-button` / `wx://form-field-group` / `wx://label-target` / `wx://style-filter` | [packages/runtime/src/component/behaviors/](../packages/runtime/src/component/behaviors/index.ts:1) 的 6 个独立模块 |
 
 ### 4.2 宿主 behaviors 缺口（11）
 
@@ -95,9 +95,9 @@
 | [`wx-video-ios`](../hosts/web-components/src/behaviors/pending/video-ios/PLACEHOLDER.md) | 媒体/原生 | video |
 | [`wx-video-mina`](../hosts/web-components/src/behaviors/pending/video-mina/PLACEHOLDER.md) | 媒体/原生 | video |
 
-### 4.3 runtime / 插件 behaviors（7，已实现）
+### 4.3 runtime / 插件 behaviors（6，已实现）
 
-7 个 `wx://` 内置 behavior 在内核里各自独立成文件，通过 `resolveBuiltinBehavior` 合并进组件定义：
+6 个 `wx://` 内置 behavior 在内核里各自独立成文件，通过 `resolveBuiltinBehavior` 合并进组件定义。**service 侧全部是占位**（与微信 2.33.0 一致）：只贡献 marker id，不注入 properties / methods / listeners / data；可观察语义由框架（`export` 改写）或渲染侧 behavior（表单按钮重发、label 激活）承担。渲染侧注册表（`hosts/web-components/src/behaviors/builtin.ts`）的 id 集合与内核 `BUILTIN_BEHAVIOR_NAMES` 有单测对齐；两侧的 `wx://form-field` 都是纯 marker；`<form>` 按微信语义读**节点 props**：页面级组件读渲染快照 props，模板内创建的组件读 `unknownPropertyHandler` 捕获的未声明 props（glass 默认会丢弃并告警），组件自己声明的 `value` 仍以实例 data 为准；声明了 `wx://form-field-group` 的包装组件会穿透 shadow tree 收集：
 
 | 参考 behavior | 实现文件 |
 | --- | --- |
@@ -105,14 +105,14 @@
 | `wx://form-field` | [form-field.ts](../packages/runtime/src/component/behaviors/form-field.ts) |
 | `wx://form-field-button` | [form-field-button.ts](../packages/runtime/src/component/behaviors/form-field-button.ts) |
 | `wx://form-field-group` | [form-field-group.ts](../packages/runtime/src/component/behaviors/form-field-group.ts) |
-| `wx://functional-page-behavior` | [functional-page-behavior.ts](../packages/runtime/src/component/behaviors/functional-page-behavior.ts) |
 | `wx://label-target` | [label-target.ts](../packages/runtime/src/component/behaviors/label-target.ts) |
 | `wx://style-filter` | [style-filter.ts](../packages/runtime/src/component/behaviors/style-filter.ts) |
 
-### 4.4 明确不做（2）
+### 4.4 明确不做（3）
 
 | 参考 behavior | 原因 |
 | --- | --- |
+| `wx://functional-page-behavior` | 属于插件/功能页导航器（`functional-page-navigator`），Tiny 不实现该能力；声明时按未识别 `wx://` behavior 发 `UNSUPPORTED_BEHAVIOR` |
 | `wx://request-filter` | 只用于微信原生媒体/`open-data` 的 URL 过滤；Tiny 不模拟该原生管线 |
 | `wx://request-sender` | 与 `request-filter` 成对的消费端；声明时按未识别 `wx://` behavior 发 `UNSUPPORTED_BEHAVIOR` |
 
@@ -127,7 +127,7 @@ hosts/web-components/src/components/<tag>/PLACEHOLDER.md          # 组件占位
 hosts/web-components/src/behaviors/pending/<name>/PLACEHOLDER.md  # 11 个宿主 behavior 占位
 ```
 
-7 个 runtime/插件 behavior 已落成 `packages/runtime/src/component/behaviors/` 下的独立模块；`wx://request-filter` / `wx://request-sender` 按基线不做。
+6 个 runtime/插件 behavior 已落成 `packages/runtime/src/component/behaviors/` 下的独立模块；`wx://functional-page-behavior`、`wx://request-filter`、`wx://request-sender` 按基线不做。
 
 ### 5.2 构建行为
 

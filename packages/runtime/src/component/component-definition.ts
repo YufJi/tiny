@@ -5,6 +5,7 @@ import {
 } from '@tiny/manifest'
 import { cloneDataValue } from '../data'
 import { isBuiltinBehavior, resolveBuiltinBehavior } from './behaviors'
+import { componentExportDefinitionFilter } from './behaviors/component-export'
 import type { MiniProgramComponentOptions } from '../service'
 import type { MiniProgramPropertyDefinition, MiniProgramPropertyType } from '../types'
 
@@ -65,7 +66,6 @@ export type NormalizedComponentDefinition = {
   formField: boolean
   formFieldButton: boolean
   formFieldGroup: boolean
-  functionalPage: boolean
   labelTarget: boolean
   export?: Function
   diagnostics: DefinitionDiagnostic[]
@@ -124,7 +124,6 @@ type Collector = {
   formField: boolean
   formFieldButton: boolean
   formFieldGroup: boolean
-  functionalPage: boolean
   labelTarget: boolean
   export?: Function
   diagnostics: DefinitionDiagnostic[]
@@ -161,7 +160,6 @@ export function normalizeComponentDefinition(
         collector.formField ||= builtin.markers.formField === true
         collector.formFieldButton ||= builtin.markers.formFieldButton === true
         collector.formFieldGroup ||= builtin.markers.formFieldGroup === true
-        collector.functionalPage ||= builtin.markers.functionalPage === true
         collector.labelTarget ||= builtin.markers.labelTarget === true
         visit(builtin.options)
         return
@@ -191,7 +189,11 @@ export function normalizeComponentDefinition(
     // behavior is declared. Visiting nested behaviors first reproduces that
     // bottom-up order: behavior3 filters behavior2, behavior2 filters
     // behavior1, and behavior1 filters the component.
-    applyDefinitionFilters(behavior, (diagnostic) => collector.diagnostics.push(diagnostic))
+    applyDefinitionFilters(
+      behavior,
+      (diagnostic) => collector.diagnostics.push(diagnostic),
+      compatibility,
+    )
     mergeSource(collector, behavior, componentPath)
   }
 
@@ -228,7 +230,6 @@ export function normalizeComponentDefinition(
     formField: collector.formField,
     formFieldButton: collector.formFieldButton,
     formFieldGroup: collector.formFieldGroup,
-    functionalPage: collector.functionalPage,
     labelTarget: collector.labelTarget,
     export: collector.export,
     diagnostics: collector.diagnostics,
@@ -265,7 +266,6 @@ function createCollector(): Collector {
     formField: false,
     formFieldButton: false,
     formFieldGroup: false,
-    functionalPage: false,
     labelTarget: false,
     diagnostics: [],
     observerIndex: 0,
@@ -525,26 +525,46 @@ const filteredDefinitions = new WeakSet<object>()
  * `source`, matching WeChat's declaration-time filtering. Nested behaviors are
  * visited first by normalizeComponentDefinition, so each filter observes a
  * fully prepared user definition.
+ *
+ * String behaviors are resolved against the built-in registry: WeChat's
+ * `callDefinitionFilter` does the same, which is how `wx://component-export`
+ * rewrites `export` into a method.
  */
 export function applyDefinitionFilters(
   source: Record<string, unknown>,
   onDiagnostic?: (diagnostic: DefinitionDiagnostic) => void,
+  compatibility: RuntimeCompatibilityConfig = WECHAT_RUNTIME_COMPATIBILITY,
 ): void {
   if (filteredDefinitions.has(source)) return
   filteredDefinitions.add(source)
   const behaviors = Array.isArray(source.behaviors) ? source.behaviors : []
   for (const behavior of behaviors) {
-    if (!behavior || typeof behavior !== 'object') continue
-    const filter = (behavior as MiniProgramComponentOptions).definitionFilter
+    let filter: MiniProgramComponentOptions['definitionFilter']
+    let filterOwner: object | string = behavior as object
+    if (typeof behavior === 'string') {
+      if (!isBuiltinBehavior(behavior)) continue
+      const spec = resolveBuiltinBehavior(behavior, compatibility)
+      // `wx://component-export` is a placeholder behavior; its `export` rewrite
+      // is framework logic keyed by the marker.
+      filter = spec?.options.definitionFilter
+        ?? (spec?.markers.componentExport ? componentExportDefinitionFilter : undefined)
+      filterOwner = behavior
+    } else if (behavior && typeof behavior === 'object') {
+      filter = (behavior as MiniProgramComponentOptions).definitionFilter
+    } else {
+      continue
+    }
     if (typeof filter !== 'function') continue
-    const filterArr = collectDirectDefinitionFilters(behavior as MiniProgramComponentOptions)
+    const filterArr = typeof behavior === 'object' && behavior
+      ? collectDirectDefinitionFilters(behavior as MiniProgramComponentOptions)
+      : []
     try {
       filter(source, filterArr)
     } catch (error) {
       onDiagnostic?.({
         code: DIAGNOSTIC_CODES.DEFINITION_FILTER_ERROR,
         message: error instanceof Error ? error.message : String(error),
-        details: { behavior: describeBehavior(behavior) },
+        details: { behavior: describeBehavior(filterOwner) },
       })
     }
   }
@@ -571,7 +591,8 @@ function collectDirectDefinitionFilters(
   return filters
 }
 
-function describeBehavior(behavior: object): string {
+function describeBehavior(behavior: object | string): string {
+  if (typeof behavior === 'string') return behavior
   const is = (behavior as MiniProgramComponentOptions).is
   return typeof is === 'string' ? is : '[object Behavior]'
 }

@@ -2,22 +2,14 @@ import type { RuntimeCompatibilityConfig } from '@tiny/manifest'
 import { builtinBehaviorId } from './types'
 import type { BuiltinBehaviorSpec } from './types'
 
-type FormFieldButtonRuntime = {
-  _tinyFormFieldButtonReemitting?: boolean
-  triggerEvent(
-    name: string,
-    detail?: unknown,
-    options?: { bubbles?: boolean; composed?: boolean },
-  ): void
-}
-
 /**
  * `wx://form-field-button`
  *
- * WeChat re-emits the form's `formSubmit` / `formReset` events from the custom
- * button component so a wrapper (for example Vant's `van-button`) participates
- * in form submission without owning the native `<button>`. It does not add
- * `name` / `value` properties.
+ * Marker only: WeChat's service-side behavior is an empty `Behavior`. The
+ * `formSubmit` / `formReset` re-emit that lets a custom button component (for
+ * example Vant's `van-button`) submit an enclosing `<form>` lives on the
+ * **render** side (`hosts/web-components/src/behaviors/builtin.ts`), where the
+ * form and the button share one tree; the logic tree never needs it.
  */
 export function createFormFieldButtonBehavior(
   compatibility: RuntimeCompatibilityConfig,
@@ -27,28 +19,6 @@ export function createFormFieldButtonBehavior(
     markers: { formFieldButton: true },
     options: {
       is: builtinBehaviorId(compatibility, 'form-field-button'),
-      listeners: {
-        // glass-easel listeners also receive events re-triggered on the same
-        // component, so guard the re-emit to avoid a synchronous loop.
-        formSubmit(this: FormFieldButtonRuntime, event: unknown) {
-          if (this._tinyFormFieldButtonReemitting) return
-          this._tinyFormFieldButtonReemitting = true
-          try {
-            this.triggerEvent('formSubmit', event, { bubbles: true })
-          } finally {
-            this._tinyFormFieldButtonReemitting = false
-          }
-        },
-        formReset(this: FormFieldButtonRuntime, event: unknown) {
-          if (this._tinyFormFieldButtonReemitting) return
-          this._tinyFormFieldButtonReemitting = true
-          try {
-            this.triggerEvent('formReset', event, { bubbles: true })
-          } finally {
-            this._tinyFormFieldButtonReemitting = false
-          }
-        },
-      },
     },
   }
 }

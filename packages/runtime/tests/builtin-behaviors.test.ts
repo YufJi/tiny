@@ -34,65 +34,46 @@ describe('built-in behaviors', () => {
     expect(definition.formField).toBe(true)
     expect(definition.formFieldButton).toBe(true)
     expect(definition.formFieldGroup).toBe(true)
-    expect(definition.functionalPage).toBe(true)
     expect(definition.labelTarget).toBe(true)
 
-    expect(definition.properties.name).toEqual({ type: 'string', value: '' })
-    expect(definition.properties.value).toEqual({ type: 'any', value: '' })
-    expect(definition.properties.accountInfo).toMatchObject({ type: 'object' })
-    expect(definition.properties.pluginInfo).toBeDefined()
-    expect(definition.properties.originAccountInfo).toBeDefined()
-    expect(definition.properties.args).toBeDefined()
-
-    expect(definition.methods.has('handleLabelTap')).toBe(true)
-    expect(definition.methods.has('_styleFilter')).toBe(true)
-    expect(definition.methods.has('waitOnShow')).toBe(true)
-    expect(definition.methods.has('returnSuccess')).toBe(true)
-    expect(definition.methods.has('returnFail')).toBe(true)
-    expect(definition.methods.has('returnCancel')).toBe(true)
-    expect(definition.methods.has('back')).toBe(true)
-
-    expect(Object.keys(definition.listeners)).toEqual(['formSubmit', 'formReset'])
+    // Every service-side built-in behavior is a placeholder: none of them may
+    // inject properties, data, methods or listeners into the user definition.
+    // The real semantics live in the framework (export rewrite) and in the
+    // render-side host behaviors (form button re-emit, label activation).
+    expect(definition.properties).toEqual({})
+    expect(definition.methods.size).toBe(0)
+    expect(definition.data).toEqual({})
+    expect(definition.listeners).toEqual({})
   })
 
-  test('form-field-button only contributes listeners, not field properties', () => {
+  test('form-field-button is a marker without field properties or listeners', () => {
     const definition = normalize(['wx://form-field-button'])
     expect(definition.formField).toBe(false)
     expect(definition.formFieldButton).toBe(true)
-    expect(definition.properties.name).toBeUndefined()
-    expect(definition.properties.value).toBeUndefined()
+    expect(definition.properties).toEqual({})
+    // The formSubmit/formReset re-emit is a render-side behavior
+    // (`hosts/web-components/src/behaviors/builtin.ts`).
+    expect(definition.listeners).toEqual({})
   })
 
-  test('form-field keeps name/value and the form marker', () => {
+  test('form-field is a marker and does not declare name/value', () => {
     const definition = normalize(['wx://form-field'])
     expect(definition.formField).toBe(true)
     expect(definition.formFieldButton).toBe(false)
-    expect(definition.properties.name).toEqual({ type: 'string', value: '' })
-    expect(definition.properties.value).toEqual({ type: 'any', value: '' })
-    // Explicit component properties override the behavior defaults.
-    const overridden = normalizeComponentDefinition({
+    expect(definition.properties).toEqual({})
+    // The author owns the properties, as in WeChat.
+    const declared = normalizeComponentDefinition({
       behaviors: ['wx://form-field'],
-      properties: { name: { type: String, value: 'own' } },
+      properties: { name: { type: String, value: 'own' }, value: { type: String, value: '' } },
     }, 'components/behaviors/own')
-    expect(overridden.properties.name.value).toBe('own')
+    expect(declared.properties.name.value).toBe('own')
+    expect(declared.properties.value).toMatchObject({ type: 'string' })
   })
 
-  test('form-field-button re-emits form events', () => {
-    const definition = normalize(['wx://form-field-button'])
-    const events: Array<{ name: string; detail: unknown; options: unknown }> = []
-    const runtime = {
-      triggerEvent(name: string, detail: unknown, options: unknown) {
-        events.push({ name, detail, options })
-      },
-    }
-    const submit = definition.listeners.formSubmit as (event: unknown) => void
-    const reset = definition.listeners.formReset as (event: unknown) => void
-    submit.call(runtime, { value: 1 })
-    reset.call(runtime, undefined)
-    expect(events).toEqual([
-      { name: 'formSubmit', detail: { value: 1 }, options: { bubbles: true } },
-      { name: 'formReset', detail: undefined, options: { bubbles: true } },
-    ])
+  test('label-target is a marker without the activation method', () => {
+    const definition = normalize(['wx://label-target'])
+    expect(definition.labelTarget).toBe(true)
+    expect(definition.methods.size).toBe(0)
   })
 
   test('request-filter/request-sender are explicitly out of scope', () => {
@@ -107,42 +88,18 @@ describe('built-in behaviors', () => {
     expect(BUILTIN_BEHAVIOR_NAMES).not.toContain('request-sender')
   })
 
-  test('style-filter returns an empty style string', () => {
-    const filter = normalize(['wx://style-filter']).methods.get('_styleFilter')!
-    expect(filter()).toBe('')
+  test('style-filter is a placeholder', () => {
+    const style = normalize(['wx://style-filter'])
+    expect(style.methods.size).toBe(0)
+    expect(style.data).toEqual({})
   })
 
-  test('functional-page exposes event and loading methods', () => {
-    const methods = normalize(['wx://functional-page-behavior']).methods
-    const events: Array<{ name: string; detail: unknown }> = []
-    const data: Record<string, unknown> = {}
-    const runtime = {
-      _enteredForeground: true,
-      _enteredForegroundCb: null as (() => void) | null,
-      data,
-      triggerEvent(name: string, detail: unknown) { events.push({ name, detail }) },
-      setData(patch: Record<string, unknown>) { Object.assign(data, patch) },
-      returnCancel: methods.get('returnCancel')!,
-    }
-    const call = (name: string, ...args: unknown[]) => (
-      methods.get(name) as (...inner: unknown[]) => unknown
-    ).apply(runtime, args)
-
-    call('returnSuccess', { ok: 1 }, 'log')
-    call('returnFail', { err: 1 }, 'log')
-    call('returnCancel', 'cancel')
-    call('back')
-    expect(events.map((item) => item.name)).toEqual(['success', 'fail', 'cancel', 'cancel'])
-    expect(events[0]?.detail).toEqual({ res: { ok: 1 }, logDetail: 'log' })
-
-    call('_showButtonLoading')
-    expect(data).toEqual({ buttonLoading: true })
-    call('_hideButtonLoading')
-    expect(data).toEqual({ buttonLoading: false })
-
-    let shown = 0
-    call('waitOnShow', () => { shown += 1 })
-    expect(shown).toBe(1)
+  test('functional-page-behavior is not supported', () => {
+    const functional = normalize(['wx://functional-page-behavior'])
+    expect(functional.diagnostics.map((item) => item.code)).toEqual(['UNSUPPORTED_BEHAVIOR'])
+    expect(functional.methods.size).toBe(0)
+    expect(functional.data).toEqual({})
+    expect(BUILTIN_BEHAVIOR_NAMES).not.toContain('functional-page-behavior')
   })
 
   test('unknown scheme matches no built-in and still reports a diagnostic', () => {
@@ -152,5 +109,15 @@ describe('built-in behaviors', () => {
     }, 'components/behaviors/custom', custom)
     expect(definition.formField).toBe(true)
     expect(definition.diagnostics.map((item) => item.code)).toEqual(['UNSUPPORTED_BEHAVIOR'])
+  })
+
+  test('component-export marker still rewrites export into methods.__export__', () => {
+    const definition = normalizeComponentDefinition({
+      behaviors: ['wx://component-export'],
+      export() { return { tag: 'exported' } },
+    }, 'components/export/export')
+    const exporter = definition.methods.get('__export__')
+    expect(typeof exporter).toBe('function')
+    expect((exporter as () => unknown)()).toEqual({ tag: 'exported' })
   })
 })
