@@ -1,6 +1,9 @@
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 
-/** Fixed ids for behaviors shared by Tiny's built-in components. */
+/**
+ * Fixed internal (`tiny-*`) ids for behaviors shared by built-in components.
+ * These are not the public `wx://` ids users declare; see `builtin.ts`.
+ */
 export const BUILTIN_BEHAVIOR_IDS = Object.freeze({
   base: `${TINY_ENGINE_NAMING.behaviorPrefix}base`,
   hover: `${TINY_ENGINE_NAMING.behaviorPrefix}hover`,

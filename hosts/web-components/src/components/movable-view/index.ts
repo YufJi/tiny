@@ -202,7 +202,6 @@ export function defineMovableView(ctx: BuiltinContext): BuiltinDefinition {
         ;(this as unknown as {
           restoreCompVar: (target: Record<string, unknown>) => void
         }).restoreCompVar(restored)
-        const runtime = this as unknown as MovableViewRuntime
         const x = numberValue(restored._savedX)
         const y = numberValue(restored._savedY)
         const scale = numberValue(restored._savedScale) || 1

@@ -39,7 +39,11 @@ export type {
   TouchTrackEvent,
 } from './types'
 export type { PositionBox, PositioningContainerHost } from './positioningTarget'
-export { createPublicBuiltinBehaviors, getPublicBuiltinBehaviors, PUBLIC_BUILTIN_BEHAVIOR_IDS } from './builtin'
+export {
+  createPublicBuiltinBehaviors,
+  getPublicBuiltinBehaviors,
+  publicBuiltinBehaviorIds,
+} from './builtin'
 export type { PublicBuiltinBehaviorRegistry, PublicBuiltinBehaviors } from './builtin'
 
 /**

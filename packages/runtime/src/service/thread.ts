@@ -2,6 +2,7 @@ import { BridgeConnection } from '@tiny/bridge'
 import { QUERY_CONTROL, RUNTIME_CONTROL, TREE_PROTOCOL } from '../tree'
 import type { QueryViewResult } from '../tree/logic/query'
 import type { ViewRect } from '../tree/logic/events'
+import { wxsBindingKey } from '../tree/protocol'
 import type { WxsBindingMessage } from '../tree/protocol'
 import {
   DIAGNOSTIC_CODES,
@@ -393,6 +394,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         ...(Object.keys(logicTree.pageUsingComponents(pageId)).length > 0
           ? { pageUsing: logicTree.pageUsingComponents(pageId) }
           : {}),
+        behaviorScheme: compatibility.behaviorScheme,
         messages: cloneJsonSafe(treeFlow(root)),
         ...(wxsModules ? { wxsModules: cloneJsonSafe(wxsModules) } : {}),
         ...(pageInstances.get(pageId)?.data
@@ -813,7 +815,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
           }
           // Registered with the logic view id; the flush below swaps in the
           // node's current render identity (locator for elements).
-          bindings.set(`${binding.viewId}\0${binding.event}`, binding)
+          bindings.set(wxsBindingKey(binding.viewId, binding.event), binding)
           flushWxsBindings(pageId)
         },
         onDiagnostic: (pageId, code, message, details) => {

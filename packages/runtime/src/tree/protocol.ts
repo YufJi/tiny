@@ -25,6 +25,14 @@ export const TREE_PROTOCOL = Object.freeze({
   wxsBinding: 'wxsBinding',
 } as const)
 
+/**
+ * Stable key for a WXS event binding. The service registers it, the render
+ * tree consumes it; both sides must derive the same key.
+ */
+export function wxsBindingKey(viewId: string, event: string): string {
+  return `${viewId}\u0000${event}`
+}
+
 export type WxsBindingMessage = {
   viewId: string
   event: string
@@ -120,23 +128,17 @@ export type RenderElement = {
 
 export type RenderNode = RenderText | RenderElement
 
-/** Template entry the render tree evaluates to build a shadow tree. */
-export type ComponentTemplateRef = {
-  /** Artifact path, normally `<componentPath>.wxml`. */
-  path: string
-}
-
 /**
  * Serialized component definition shipped to the render tree.
  *
  * Mirrors the WeChat view-thread registration payload: the render side needs
- * the template reference, the public property table, the behavior ids (as
- * strings, resolved against its own registry) and the component options. It
- * must never carry functions, methods or lifetimes — those stay in the service.
+ * the public property table, the behavior ids (as strings, resolved against
+ * its own registry) and the component options. It must never carry functions,
+ * methods or lifetimes — those stay in the service. Templates are resolved by
+ * component path in the render side's template registry.
  */
 export type ComponentDefinitionPayload = {
   path: string
-  template?: ComponentTemplateRef
   properties?: Record<string, unknown>
   /** Property defaults the render template starts from. */
   data?: Record<string, unknown>

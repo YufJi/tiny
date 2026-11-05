@@ -4,6 +4,7 @@ import {
   RENDER_FRAGMENT_TAG,
   RENDER_PAGE_TAG,
 } from '../protocol'
+import { formatLocator } from '../locator'
 import type { RenderElement, RenderNode } from '../protocol'
 
 type LogicNodeType = 'element' | 'text' | 'component' | 'virtual' | 'fragment' | 'root'
@@ -643,7 +644,7 @@ export class LogicBackendContext {
     const locators = new Map<string, string>()
     const nodesByLocator = new Map<string, LogicBackendElement>()
     const walk = (node: RenderNode, owner: string, path: number[]): void => {
-      const locator = `${owner}#${path.join('.')}`
+      const locator = formatLocator(owner, path)
       if (path.length > 0) {
         const viewId = nodeToViewId.get(node)
         if (viewId) locators.set(viewId, locator)

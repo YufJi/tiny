@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import {
   buildComponentDefinitions,
-  componentTemplatePath,
   serializeComponentDefinition,
 } from '../src/component/component-payload'
 import { normalizeComponentDefinition } from '../src/component/component-definition'
@@ -14,7 +13,7 @@ function normalize(options: Record<string, unknown> = {}) {
 }
 
 describe('component definition payload', () => {
-  test('carries template, properties, behaviors and markers', () => {
+  test('carries properties, behaviors and markers', () => {
     const definition = normalize({
       behaviors: ['wx://form-field'],
       properties: { label: { type: String, value: 'hello' } },
@@ -24,7 +23,6 @@ describe('component definition payload', () => {
     const payload = serializeComponentDefinition(PATH, definition)
 
     expect(payload.path).toBe(PATH)
-    expect(payload.template).toEqual({ path: componentTemplatePath(PATH) })
     expect(payload.properties?.label).toEqual({ type: 'string', value: 'hello' })
     expect(payload.data).toMatchObject({ label: 'hello', count: 1 })
     expect(payload.behaviors).toEqual(['wx://form-field'])
@@ -93,8 +91,7 @@ describe('component definition payload', () => {
 
     expect([...payloads.keys()]).toEqual([PATH, 'components/empty/empty'])
     expect(payloads.get(PATH)?.data).toMatchObject({ label: 'x' })
-    expect(payloads.get('components/empty/empty')?.template)
-      .toEqual({ path: 'components/empty/empty.wxml' })
+    expect(payloads.get('components/empty/empty')?.path).toBe('components/empty/empty')
   })
 
   test('carries the compiler-assigned style scope', () => {

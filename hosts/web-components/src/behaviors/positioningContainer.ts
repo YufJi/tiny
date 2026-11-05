@@ -2,7 +2,7 @@ import type * as glassEasel from 'glass-easel'
 
 import { bindHostListeners, unbindHostListeners } from './host-listeners'
 import { BUILTIN_BEHAVIOR_IDS } from './ids'
-import type { PositionBox, PositioningContainerHost } from './positioningTarget'
+import type { PositionBox } from './positioningTarget'
 
 type ContainerArgs = {
   canFullScreenByChild: boolean

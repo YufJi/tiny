@@ -1,15 +1,40 @@
 import type * as glassEasel from 'glass-easel'
+import { DEFAULT_BEHAVIOR_SCHEME } from '@tiny/manifest'
 import { BUILTIN_BEHAVIOR_IDS } from './ids'
 
-/** Public `wx://` behavior ids resolved by the render space. */
-export const PUBLIC_BUILTIN_BEHAVIOR_IDS = Object.freeze({
-  componentExport: 'wx://component-export',
-  formField: 'wx://form-field',
-  formFieldButton: 'wx://form-field-button',
-  formFieldGroup: 'wx://form-field-group',
-  labelTarget: 'wx://label-target',
-  styleFilter: 'wx://style-filter',
-} as const)
+export const PUBLIC_BUILTIN_BEHAVIOR_NAMES = [
+  'componentExport',
+  'formField',
+  'formFieldButton',
+  'formFieldGroup',
+  'labelTarget',
+  'styleFilter',
+] as const
+
+export type PublicBuiltinBehaviorName = (typeof PUBLIC_BUILTIN_BEHAVIOR_NAMES)[number]
+
+const PUBLIC_BUILTIN_BEHAVIOR_SUFFIX: Record<PublicBuiltinBehaviorName, string> = {
+  componentExport: 'component-export',
+  formField: 'form-field',
+  formFieldButton: 'form-field-button',
+  formFieldGroup: 'form-field-group',
+  labelTarget: 'label-target',
+  styleFilter: 'style-filter',
+}
+
+/**
+ * Public behavior ids for a compatibility scheme.
+ *
+ * The scheme is part of the runtime compatibility config (`wx://` by default),
+ * so it must come from the service rather than from a literal here.
+ */
+export function publicBuiltinBehaviorIds(
+  scheme: string = DEFAULT_BEHAVIOR_SCHEME,
+): Record<PublicBuiltinBehaviorName, string> {
+  return Object.fromEntries(
+    PUBLIC_BUILTIN_BEHAVIOR_NAMES.map((name) => [name, `${scheme}${PUBLIC_BUILTIN_BEHAVIOR_SUFFIX[name]}`]),
+  ) as Record<PublicBuiltinBehaviorName, string>
+}
 
 export type PublicBuiltinBehaviors = Record<string, glassEasel.GeneralBehavior>
 
@@ -24,13 +49,26 @@ export type PublicBuiltinBehaviorRegistry = {
   }
 }
 
-const registries = new WeakMap<glassEasel.ComponentSpace, PublicBuiltinBehaviorRegistry>()
+const registries = new WeakMap<glassEasel.ComponentSpace, Map<string, PublicBuiltinBehaviorRegistry>>()
+const sources = new WeakMap<glassEasel.ComponentSpace, BuiltinBehaviorSource>()
 
-/** Public behaviors registered in this render space, keyed by id. */
+/**
+ * Public behaviors registered in this render space for a scheme, keyed by id.
+ *
+ * A different scheme (from the service's compatibility config) registers a
+ * second registry in the same space; the default one stays for built-ins.
+ */
 export function getPublicBuiltinBehaviors(
   space: glassEasel.ComponentSpace,
+  scheme: string = DEFAULT_BEHAVIOR_SCHEME,
 ): PublicBuiltinBehaviors | undefined {
-  return registries.get(space)?.behaviors
+  const byScheme = registries.get(space)
+  if (!byScheme) return undefined
+  const existing = byScheme.get(scheme)
+  if (existing) return existing.behaviors
+  const source = sources.get(space)
+  if (!source) return undefined
+  return createPublicBuiltinBehaviors(space, source, scheme).behaviors
 }
 
 type BuiltinBehaviorSource = {
@@ -64,7 +102,9 @@ type FormFieldButtonRuntime = {
 export function createPublicBuiltinBehaviors(
   space: glassEasel.ComponentSpace,
   builtins: BuiltinBehaviorSource,
+  scheme: string = DEFAULT_BEHAVIOR_SCHEME,
 ): PublicBuiltinBehaviorRegistry {
+  const ids = publicBuiltinBehaviorIds(scheme)
   const formField = space.defineBehavior({ is: BUILTIN_BEHAVIOR_IDS.formField })
   const formFieldGroup = space.defineBehavior({ is: BUILTIN_BEHAVIOR_IDS.formFieldGroup })
   const formFieldButton = space.defineBehavior({
@@ -98,29 +138,26 @@ export function createPublicBuiltinBehaviors(
     // Marker only, like the kernel. `<form>` reads the node attributes/props
     // (WeChat's view-side form does the same), so the behavior must not inject
     // `name` / `value` into the component definition.
-    [PUBLIC_BUILTIN_BEHAVIOR_IDS.formField]: space.defineBehavior({
-      is: PUBLIC_BUILTIN_BEHAVIOR_IDS.formField,
+    [ids.formField]: space.defineBehavior({
+      is: ids.formField,
       behaviors: [formField],
     }),
-    [PUBLIC_BUILTIN_BEHAVIOR_IDS.formFieldGroup]: space.defineBehavior({
-      is: PUBLIC_BUILTIN_BEHAVIOR_IDS.formFieldGroup,
+    [ids.formFieldGroup]: space.defineBehavior({
+      is: ids.formFieldGroup,
       behaviors: [formFieldGroup],
     }),
-    [PUBLIC_BUILTIN_BEHAVIOR_IDS.formFieldButton]: space.defineBehavior({
-      is: PUBLIC_BUILTIN_BEHAVIOR_IDS.formFieldButton,
+    [ids.formFieldButton]: space.defineBehavior({
+      is: ids.formFieldButton,
       behaviors: [formFieldButton],
     }),
-    [PUBLIC_BUILTIN_BEHAVIOR_IDS.labelTarget]: space.defineBehavior({
-      is: PUBLIC_BUILTIN_BEHAVIOR_IDS.labelTarget,
+    [ids.labelTarget]: space.defineBehavior({
+      is: ids.labelTarget,
       behaviors: [builtins.labelTarget],
     }),
   }
   // Marker-only ids: the render side attaches them so `hasBehavior` and
   // marker identity work, but they carry no properties/methods.
-  for (const id of [
-    PUBLIC_BUILTIN_BEHAVIOR_IDS.styleFilter,
-    PUBLIC_BUILTIN_BEHAVIOR_IDS.componentExport,
-  ]) {
+  for (const id of [ids.styleFilter, ids.componentExport]) {
     behaviors[id] = space.defineBehavior({ is: id })
   }
 
@@ -128,6 +165,9 @@ export function createPublicBuiltinBehaviors(
     behaviors,
     markers: { formField, formFieldGroup, formFieldButton },
   }
-  registries.set(space, registry)
+  sources.set(space, builtins)
+  const byScheme = registries.get(space) ?? new Map<string, PublicBuiltinBehaviorRegistry>()
+  byScheme.set(scheme, registry)
+  registries.set(space, byScheme)
   return registry
 }

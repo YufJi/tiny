@@ -313,7 +313,7 @@ export function defineSwiper(ctx: BuiltinContext): BuiltinDefinition {
         const runtime = this as unknown as SwiperRuntime
         runtime._itemListDirty = true
       },
-      _itemIdUpdated(item: unknown, next: string, previous: string) {
+      _itemIdUpdated(_item: unknown, next: string, previous: string) {
         if (next === previous) return
         const runtime = this as unknown as SwiperRuntime
         runtime._itemListDirty = true

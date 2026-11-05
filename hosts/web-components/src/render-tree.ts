@@ -1,7 +1,15 @@
 import * as glassEasel from 'glass-easel'
 import { convertRpx } from '@tiny/css-units'
-import { DIAGNOSTIC_CODES, TINY_ENGINE_NAMING } from '@tiny/manifest'
-import { createDefaultWxsCompiler, createWxsRuntime } from '@tiny/runtime'
+import { DEFAULT_BEHAVIOR_SCHEME, DIAGNOSTIC_CODES, TINY_ENGINE_NAMING } from '@tiny/manifest'
+import {
+  RENDER_LOCAL_ID_PREFIX,
+  createDefaultWxsCompiler,
+  createWxsRuntime,
+  formatLocator,
+  isLocator,
+  parseLocator,
+  wxsBindingKey,
+} from '@tiny/runtime'
 import type {
   ComponentDefinitionPayload,
   RenderAnimationRequest,
@@ -169,6 +177,8 @@ export type GlassRenderTree = {
   setPageScope?: (scopeName: string) => void
   /** Page-level `usingComponents`, installed before the first mount. */
   setPageUsing?: (using: Record<string, string>) => void
+  /** Public built-in behavior scheme (`wx://` by default), from the service. */
+  setBehaviorScheme?: (scheme: string) => void
   /** Forwarded template handlers, executed by the service's method table. */
   setTemplateEventSink?: (sink: (event: RenderTemplateEvent) => void) => void
   getNode: (id: string) => AnyComponent | glassEasel.TextNode | undefined
@@ -469,7 +479,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   }
   const nodes = new Map<string, AnyComponent | glassEasel.TextNode>()
   const eventCleanups = new Map<string, Array<() => void>>()
-  let currentRoot: RenderNode | undefined
   let eventSink: ((event: GlassRenderEvent) => void) | undefined
   let wxsEffectSink: ((effect: WxsRenderEffect) => void) | undefined
   let hostActionSink: ((action: RenderHostAction) => void) | undefined
@@ -704,7 +713,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       : undefined
     // glass-easel resolves behavior strings by URL, which cannot match a `wx://`
     // id from a component whose `is` is an artifact path; resolve to objects.
-    const publicBehaviors = getPublicBuiltinBehaviors(space)
+    const publicBehaviors = getPublicBuiltinBehaviors(space, behaviorScheme)
     const behaviors = (payload?.behaviors ?? [])
       .map((id) => publicBehaviors?.[id])
       .filter((behavior): behavior is glassEasel.GeneralBehavior => Boolean(behavior))
@@ -810,6 +819,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   let mounted = false
   let pageScopeName = ''
   let pageUsing: Record<string, string> = {}
+  let behaviorScheme = DEFAULT_BEHAVIOR_SCHEME
   let rootDirty = false
 
   /**
@@ -845,6 +855,11 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     if (!using || mounted) return
     pageUsing = using
     rootDirty = true
+  }
+
+  /** Public behavior scheme from the service's compatibility config. */
+  const setBehaviorScheme = (scheme: string): void => {
+    if (scheme) behaviorScheme = scheme
   }
 
   // One compositor per render tree: raw touch (or mouse in the devtool) is
@@ -940,7 +955,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const ensureNodeId = (node: RenderNode): string => {
     if (!node.id) {
       localIdCounter += 1
-      node.id = `r:${localIdCounter}`
+      node.id = `${RENDER_LOCAL_ID_PREFIX}${localIdCounter}`
     }
     return node.id ?? null
   }
@@ -1081,7 +1096,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     const rootNode = currentTree.get(rootId.value)
     if (!rootNode) return undefined
     const search = (node: RenderNode, owner: string, path: number[]): string | null => {
-      if (node.id === id) return path.length > 0 ? `${owner}#${path.join('.')}` : owner
+      if (node.id === id) return path.length > 0 ? formatLocator(owner, path) : owner
       if (node.type !== 'element') return null
       const boundary = node.component === true && node.id ? node.id : owner
       const base = boundary === owner ? path : []
@@ -1548,7 +1563,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       const bindingTarget = node.type === 'element' && node.component === true
         ? node.id!
         : locatorOfNodeId(node.id!) ?? node.id!
-      const resolved = dynamicBindingModes.get(`${bindingTarget}\0${binding.name}`)
+      const resolved = dynamicBindingModes.get(wxsBindingKey(bindingTarget, binding.name))
       const handler = resolved?.moduleId && resolved.exportPath
         ? wxsRuntime.resolve(resolved.moduleId, resolved.exportPath)
         : undefined
@@ -2068,49 +2083,44 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     return results
   }
 
-  const elementForViewId = (viewId: string): Element | null => (
-    rootElement?.querySelector(`[${TINY_ENGINE_NAMING.nodeIdAttribute}="${viewId}"]`) ?? null
-  )
+  const elementForViewId = (viewId: string): Element | null => {
+    if (typeof rootElement?.querySelector !== 'function') return null
+    return rootElement.querySelector(`[${TINY_ENGINE_NAMING.nodeIdAttribute}="${viewId}"]`)
+  }
+
+  /** Resolve a component-scoped locator to its snapshot node. */
+  const findLocatorNode = (target: string): RenderNode | undefined => {
+    const locator = parseLocator(target)
+    if (!locator) return undefined
+    let node: RenderNode | undefined = currentTree.get(locator.owner)
+    for (const index of locator.path) {
+      if (!node || node.type !== 'element') return undefined
+      node = (node.children ?? [])[index]
+      if (!node) return undefined
+    }
+    return node
+  }
 
   /**
    * Resolve a patch target: a shared id (components / page root) or a
    * component-scoped locator (`owner#index.path`) for elements and text.
    */
   const resolveTargetId = (target: string): string | null => {
-    if (!target.includes('#')) return nodes.has(target) ? target : null
-    const separator = target.indexOf('#')
-    const ownerId = target.slice(0, separator)
-    const segments = target.slice(separator + 1).split('.').filter(Boolean).map(Number)
-    let node: RenderNode | undefined = currentTree.get(ownerId)
-    if (!node || node.type !== 'element') return null
-    for (const index of segments) {
-      if (node.type !== 'element') return null
-      node = (node.children ?? [])[index]
-      if (!node) return null
-    }
-    return node.id ?? null
+    if (!isLocator(target)) return nodes.has(target) ? target : null
+    return findLocatorNode(target)?.id ?? null
   }
 
-  /** Resolve an id-or-locator (components keep ids, elements use locators). */
-  const elementForTarget = (id: string): Element | null => (
-    id.includes('#') ? resolveLocator(id) : elementForViewId(id)
-  )
-
-  /** Resolve a component-scoped locator (`owner#0.2.1`) in the current tree. */
-  const resolveLocator = (locator: string): Element | null => {
-    const separator = locator.indexOf('#')
-    if (separator <= 0) return null
-    const ownerId = locator.slice(0, separator)
-    const segments = locator.slice(separator + 1).split('.').filter(Boolean).map(Number)
-    let node: RenderNode | undefined = currentTree.get(ownerId)
-    if (!node || node.type !== 'element') return null
-    for (const index of segments) {
-      node = (node.children ?? [])[index]
-      if (!node || node.type !== 'element') return null
-    }
-    const component = nodes.get(node.id ?? '')
+  /** Resolve a component-scoped locator to its backend element. */
+  const elementForLocator = (locator: string): Element | null => {
+    const node = findLocatorNode(locator)
+    const component = node?.id ? nodes.get(node.id) : undefined
     return (component?.getBackendElement?.() as Element | null) ?? null
   }
+
+  /** Resolve an id-or-locator to the element the render tree owns. */
+  const elementForTarget = (target: string): Element | null => (
+    isLocator(target) ? elementForLocator(target) : elementForViewId(target)
+  )
 
   const findScrollContainer = (host: Element): HTMLElement | null => {
     const isScrollable = (candidate: Element): boolean => {
@@ -2253,6 +2263,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     },
     setPageScope,
     setPageUsing,
+    setBehaviorScheme,
     setEventSink: (sink) => {
       eventSink = sink
     },
@@ -2274,7 +2285,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       wxsEffectSink = sink
     },
     setWxsBinding: (binding) => {
-      dynamicBindingModes.set(`${binding.viewId}\0${binding.event}`, binding)
+      dynamicBindingModes.set(wxsBindingKey(binding.viewId, binding.event), binding)
     },
     setPageData: (data) => {
       pageData = { ...data }
@@ -2291,9 +2302,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       const rootNode = rootElement
       if (typeof IntersectionObserver === 'undefined' || !rootNode) return undefined
       const elementFor = (id: string): Element | null => (
-        id.includes('#')
-          ? resolveLocator(id)
-          : rootNode.querySelector(`[${TINY_ENGINE_NAMING.nodeIdAttribute}="${id}"]`)
+        elementForTarget(id) ?? rootNode.querySelector(`[${TINY_ENGINE_NAMING.nodeIdAttribute}="${id}"]`)
       )
       const targets = request.viewIds
         .map((id) => elementFor(id))
@@ -2407,7 +2416,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     measureLocators: (locators) => {
       const result: Record<string, unknown> = {}
       for (const locator of locators) {
-        const element = resolveLocator(locator)
+        const element = elementForLocator(locator)
         if (!element) continue
         const rect = element.getBoundingClientRect?.() ?? { left: 0, top: 0, width: 0, height: 0 }
         result[locator] = {
@@ -2503,7 +2512,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     },
     mount(node) {
       rebuildRoot()
-      currentRoot = node
       for (const cleanups of eventCleanups.values()) {
         for (const cleanup of cleanups) cleanup()
       }

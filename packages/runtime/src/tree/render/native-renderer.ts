@@ -4,6 +4,7 @@
  * node ids and patch semantics identical to the web glass render tree.
  */
 import { RENDER_TEXT_TAG } from '../protocol'
+import { RENDER_LOCAL_ID_PREFIX, isLocator, parseLocator } from '../locator'
 import type { RenderElement, RenderNode, RenderPatch } from '../protocol'
 import type { TreeEventPayload, TreeRenderer } from './thread'
 
@@ -61,7 +62,7 @@ export function createNativeTreeRenderer(host: NativeTreeHost): NativeTreeRender
   const ensureId = (node: RenderNode): string => {
     if (!node.id) {
       localIdCounter += 1
-      node.id = `r:${localIdCounter}`
+      node.id = `${RENDER_LOCAL_ID_PREFIX}${localIdCounter}`
     }
     return node.id
   }
@@ -91,14 +92,13 @@ export function createNativeTreeRenderer(host: NativeTreeHost): NativeTreeRender
     build(root)
   }
 
-  /** Resolve a patch target: shared id, or `owner#index.path` locator. */
+  /** Resolve a patch target: shared id or a component-scoped locator. */
   const resolveTarget = (target: string): string | null => {
-    if (!target.includes('#')) return nodes.has(target) ? target : null
-    const separator = target.indexOf('#')
-    const ownerId = target.slice(0, separator)
-    const segments = target.slice(separator + 1).split('.').filter(Boolean).map(Number)
-    let node = nodes.get(ownerId)
-    for (const index of segments) {
+    if (!isLocator(target)) return nodes.has(target) ? target : null
+    const locator = parseLocator(target)
+    if (!locator) return null
+    let node = nodes.get(locator.owner)
+    for (const index of locator.path) {
       if (node?.type !== 'element') return null
       node = node.children?.[index]
     }

@@ -48,7 +48,7 @@ export function installMiniProgramGlobals(
       if (typeof property !== 'string') return Reflect.get(target, property)
       if (property in target) return Reflect.get(target, property)
       if (opaqueProperties.has(property)) return undefined
-      return (...args: unknown[]) => {
+      return () => {
         onUnsupportedApi?.(property)
         return undefined
       }

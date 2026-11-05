@@ -10,16 +10,22 @@ import {
 /**
  * Strip everything the render tree must not receive.
  *
- * WeChat ships the same shape to the view thread: template reference, public
- * properties, behavior ids and component options. Methods, lifetimes, observers
- * and relations stay in the service.
+ * WeChat ships the same shape to the view thread: public properties, behavior
+ * ids and component options. Methods, lifetimes, observers and relations stay
+ * in the service; the render side resolves the template by component path.
  */
 function jsonSafePayload(payload: ComponentDefinitionPayload): ComponentDefinitionPayload {
   return cloneJsonSafe(payload)
 }
 
-export function componentTemplatePath(componentPath: string): string {
-  return `${componentPath}.wxml`
+/**
+ * Strip the trailing extension from a compiler-defined path.
+ *
+ * The mini-program extension is configurable (`extensions.style`); consumers
+ * must not assume `.wxss`.
+ */
+function withoutTrailingExtension(path: string): string {
+  return path.replace(/\.[^./\\]+$/, '')
 }
 
 /**
@@ -49,7 +55,6 @@ export function serializeComponentDefinition(
     .map(([tag, target]) => [tag, resolveComponentReference(componentPath, target)] as const)
   const payload: ComponentDefinitionPayload = {
     path: componentPath,
-    template: { path: componentTemplatePath(componentPath) },
     properties: definition.properties as Record<string, unknown>,
     data: definition.data,
     ...(behaviors.length > 0 ? { behaviors } : {}),
@@ -80,9 +85,9 @@ export function buildComponentDefinitions(
   const scopeByPath = new Map<string, string>()
   for (const style of styles) {
     if (!style.scope) continue
-    // Style artifacts carry the source path (`<component>.wxss`); the schema
-    // and the definition table are keyed by the extension-less component path.
-    scopeByPath.set(style.path.replace(/\.(?:wxss|css)$/i, ''), style.scope)
+    // Style artifacts carry the compiler-defined source path; the schema and
+    // the definition table are keyed by the extension-less component path.
+    scopeByPath.set(withoutTrailingExtension(style.path), style.scope)
     scopeByPath.set(style.path, style.scope)
   }
   const payloads = new Map<string, ComponentDefinitionPayload>()

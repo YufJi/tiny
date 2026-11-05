@@ -3,7 +3,6 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 
 const packageRoot = path.dirname(fileURLToPath(import.meta.url))
-const workspace = path.resolve(packageRoot, '../..')
 
 export default defineConfig(({ mode }) => {
   if (mode === 'service') {

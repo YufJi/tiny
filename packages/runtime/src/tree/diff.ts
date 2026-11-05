@@ -1,3 +1,4 @@
+import { formatLocator } from './locator'
 import type { RenderElement, RenderNode, RenderPatch } from './protocol'
 
 function sameProps(
@@ -84,7 +85,7 @@ function pathOf(mirror: Mirror): number[] {
 function targetOf(mirror: Mirror): string {
   if (isOwner(mirror.node, mirror.parent)) return mirror.node.id ?? ''
   const owner = ownerOf(mirror)
-  return `${owner?.node.id ?? ''}#${pathOf(mirror).join('.')}`
+  return formatLocator(owner?.node.id ?? '', pathOf(mirror))
 }
 
 function diffNode(mirror: Mirror, next: RenderNode, patches: RenderPatch[]): void {

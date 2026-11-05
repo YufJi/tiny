@@ -1,4 +1,3 @@
-import type * as glassEasel from 'glass-easel'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { builtinDefinitionName } from '../../tags'
 import { bindHostListeners, unbindHostListeners } from '../../behaviors'
@@ -122,7 +121,7 @@ export function definePicker(ctx: BuiltinContext): BuiltinDefinition {
           })
         }
         if (mode === 'multiSelector') runtime.__pickerPoll = setTimeout(pollColumns, 0)
-        const result = hostRequest('showPicker', {
+        hostRequest('showPicker', {
           mode,
           sessionId,
           range: Array.isArray(this.data.range) ? this.data.range : [],

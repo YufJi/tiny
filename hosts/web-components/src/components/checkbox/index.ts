@@ -1,16 +1,7 @@
-import type * as glassEasel from 'glass-easel'
 import { bindHostListeners, unbindHostListeners } from '../../behaviors'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { builtinDefinitionName } from '../../tags'
 
-type CheckboxRuntime = {
-  data: Record<string, unknown>
-  getBackendElement?: () => {
-    setAttribute?: (name: string, value: string) => void
-  } | null
-  setAriaRoleDefault?: (role: string) => void
-  hasBehavior?: (name: string) => boolean
-}
 
 /**
  * Mirrors `wx-checkbox`: no native input, a div-based check box with the

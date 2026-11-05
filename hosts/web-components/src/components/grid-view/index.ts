@@ -137,7 +137,7 @@ export function defineGridView(ctx: BuiltinContext): BuiltinDefinition {
       },
     },
     methods: {
-      typeChanged(next: unknown, previous: unknown) {
+      typeChanged(next: unknown, _previous: unknown) {
         const value = next === 'masonry' ? 'masonry' : 'aligned'
         if (value !== next) this.setData({ type: value })
         ;(this as unknown as { updateView: (type?: unknown) => void })

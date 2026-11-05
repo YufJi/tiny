@@ -11,7 +11,6 @@ import {
   type ComponentFlow,
   type RenderAnimationRequest,
   type RenderClearAnimationRequest,
-  type RenderElement,
   type RenderEventGeometry,
   type RenderHostAction,
   type RenderIntersectionEntry,
@@ -19,7 +18,6 @@ import {
   type RenderNode,
   type RenderPatch,
   type RenderTemplateEvent,
-  type RenderText,
   type WxsRenderEffect,
   type WxsBindingMessage,
 } from '../protocol'
@@ -56,6 +54,8 @@ export type TreeRenderer = {
   setPageScope?: (scopeName: string) => void
   /** Page-level `usingComponents`, installed before the first mount. */
   setPageUsing?: (using: Record<string, string>) => void
+  /** Public built-in behavior scheme from the service compatibility config. */
+  setBehaviorScheme?: (scheme: string) => void
   setEventSink?: (sink: (event: TreeEventPayload) => void) => void
   /** Forwarded template handlers (render-evaluated component shadow trees). */
   setTemplateEventSink?: (sink: (event: RenderTemplateEvent) => void) => void
@@ -234,11 +234,13 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       componentData?: Record<string, Record<string, unknown>>
       pageScope?: string
       pageUsing?: Record<string, string>
+      behaviorScheme?: string
     }
     currentPageId = payload.pageId ?? message.pageId ?? currentPageId
     options.renderer.setPagePath?.(payload.pagePath ?? '')
     if (payload.pageScope) options.renderer.setPageScope?.(payload.pageScope)
     if (payload.pageUsing) options.renderer.setPageUsing?.(payload.pageUsing)
+    if (payload.behaviorScheme) options.renderer.setBehaviorScheme?.(payload.behaviorScheme)
     if (payload.wxsModules) options.renderer.setWxsModules?.(payload.wxsModules)
     if (payload.pageData) options.renderer.setPageData?.(payload.pageData)
     if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
