@@ -338,7 +338,7 @@ Shadow DOM：
 | 成功挂载 | **121 / 125（96.8%）** |
 | 有可见文本 | 116 / 125 |
 | 页面级报错/崩溃 | 4 页（全部为平台能力缺口） |
-| console error | 0 |
+| console error | 2（均来自 web-view 嵌入外部文档站点的 `frame-ancestors` CSP 拦截，与运行时无关） |
 
 **探针方法**：`pnpm parity:probe`（已固化为脚本，替代此前的手工步骤）。
 
@@ -594,7 +594,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-29 | 第十九次校准：WXS 共享 runtime/事件本地执行、事件合成层（tap/longpress 以触摸为主）、scroll-view 横向滚动与 enable-flex、Vant popup external class、devtool 迁移 Vite；288 单测 / 58 步；117 页探针保持 108 启动、108 可见、9 失败（全部平台 API）；总分 49.33→49.92 | **49.92%** |
 | 2026-10-29 | 第二十次校准：iOS 宿主 MVP（SwiftUI + WKWebView + JavaScriptCore，全部 7 个 fixture 模拟器 smoke，真机签名构建/安装）；宿主/平台 15→18、页面形态 25→28、质量/验证 60→61；117 页探针保持 108 启动、108 可见、9 失败、0 console error；总分 49.92→50.55 | **50.55%** |
 | 2026-11-04 | 第二十一次校准：微信官方 demo 子集切到 2023-02-23 基线（`7189b9c`，111 页）；修复该基线遗留的 88 页 `common` 模板引用（少一层 `../`）与导航栏 `system` 缺失；WeChat demo 验收改为 swiper autoplay 开关 + radio 视觉两步（61 步）；111 页探针 107 启动、102 可见、4 失败（全部平台能力）、0 console error；加权分保持 50.55 | **50.55%** |
-| 2026-11-05 | 第二十二次校准（2.33.0 口径）：双侧树切到两次求值模型（`define`/`tree`/`ready`，组件模板两侧各自求值），元素 id 下沉为渲染侧本地 id + 组件作用域 locator，`wx://` behaviors 改为 6 个 service 侧占位 marker（functional-page 按基线不做），页面级 `generic:x` 与表单节点 props 收集落地；组件口径按 2.33.0 重算为 39/60（40 个目标全落地）；388 单测 / 61 步；125 页探针 121 启动、116 可见、4 失败（全部平台能力）、0 console error；框架 88→90、内置组件 57→65、质量 61→62，总分 50.55→52.30 | **52.30%** |
+| 2026-11-05 | 第二十二次校准（2.33.0 口径）：双侧树切到两次求值模型（`define`/`tree`/`ready`，组件模板两侧各自求值），元素 id 下沉为渲染侧本地 id + 组件作用域 locator，`wx://` behaviors 改为 6 个 service 侧占位 marker（functional-page 按基线不做），页面级 `generic:x` 与表单节点 props 收集落地；组件口径按 2.33.0 重算为 39/60（40 个目标全落地）；388 单测 / 61 步；125 页探针 121 启动、116 可见、4 失败（全部平台能力）、2 条 console error（web-view 的 CSP frame-ancestors，非运行时错误）；框架 88→90、内置组件 57→65、质量 61→62，总分 50.55→52.30 | **52.30%** |
 
 ---
 
