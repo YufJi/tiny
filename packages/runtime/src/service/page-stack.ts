@@ -15,6 +15,7 @@ import {
   requireActivePage,
   resolveComponentReference,
 } from './route'
+import type { MiniProgramRouter } from './router'
 
 export type ServicePageStackOptions = {
   manifest: Manifest
@@ -24,6 +25,13 @@ export type ServicePageStackOptions = {
   componentTree: ComponentTree
   connection: BridgeConnection
   tabBar: ServiceTabBar
+  /**
+   * Build `this.router` / `this.pageRouter` for one page path. Supplied by the
+   * service thread so every page router shares the installed `wx.*` table.
+   * Direct users of this class (unit tests, embedded stacks) may omit it; the
+   * page then has no router object.
+   */
+  createRouter?: (basePath: string) => MiniProgramRouter
   canvas?: ServiceCanvasAdapter
   maxPageStack?: number
 }
@@ -48,6 +56,12 @@ export class ServicePageStack {
   private lifecycleSequence = 0
   private maxStack: number
   private pageIdCounter = 0
+  /**
+   * Page side of the `EventChannel` from the `wx.navigateTo` in flight. The API
+   * layer binds it right before the host call; the page created for that call
+   * consumes it and exposes it through `this.getOpenerEventChannel()`.
+   */
+  private pendingEventChannel: unknown
 
   constructor(private readonly options: ServicePageStackOptions) {
     this.componentTree = options.componentTree
@@ -111,6 +125,9 @@ export class ServicePageStack {
   }
 
   navigateTo(url: string): Record<string, unknown> {
+    // Consume the EventChannel before any validation: a failed navigation must
+    // not hand the opener's channel to whichever page opens next.
+    const eventChannel = this.takePendingEventChannel()
     const route = this.resolveRoute(url)
     // Resolve the target before hiding the current page: a typo in a URL must
     // not leave the app with an onHide that is never followed by onShow.
@@ -126,7 +143,7 @@ export class ServicePageStack {
     }
     let page: MiniProgramPageInstance
     try {
-      page = this.createPageInstance(route.path, route.query)
+      page = this.createPageInstance(route.path, route.query, eventChannel)
     } catch (error) {
       if (previousPage) {
         this.active = previousPage
@@ -141,6 +158,7 @@ export class ServicePageStack {
     this.sendRuntimeState()
     return {
       status: 'navigated',
+      errMsg: 'navigateTo:ok',
       path: page.path,
       pageId: page.pageId,
       query: page.query,
@@ -318,6 +336,7 @@ export class ServicePageStack {
     this.sendRuntimeState()
     return {
       status: 'navigated-back',
+      errMsg: 'navigateBack:ok',
       path: page.path,
       pageId: page.pageId,
       initialData: cloneJsonSafe(page.data),
@@ -477,7 +496,25 @@ export class ServicePageStack {
     ))
   }
 
-  private createPageInstance(path: string, query: Record<string, string> = {}): MiniProgramPageInstance {
+  /** Bind the page side of the next `navigateTo` EventChannel. */
+  setNextPageEventChannel(channel: unknown): () => void {
+    this.pendingEventChannel = channel
+    return () => {
+      if (this.pendingEventChannel === channel) this.pendingEventChannel = undefined
+    }
+  }
+
+  private takePendingEventChannel(): unknown {
+    const channel = this.pendingEventChannel
+    this.pendingEventChannel = undefined
+    return channel
+  }
+
+  private createPageInstance(
+    path: string,
+    query: Record<string, string> = {},
+    eventChannel?: unknown,
+  ): MiniProgramPageInstance {
     const { registry, render } = this.options
     const pageArtifact = findPageArtifact(this.options.manifest, path)
     const isComponentPage = pageArtifact?.bodyType === 'component'
@@ -489,33 +526,41 @@ export class ServicePageStack {
     this.pageIdCounter += 1
     const pageId = `${TINY_ENGINE_NAMING.pageIdPrefix}${this.pageIdCounter}`
     this.componentTree.ensurePage(pageId, path)
-    const page = new MiniProgramPageInstance(
+    const page = new MiniProgramPageInstance({
       pageId,
       path,
-      definition,
+      options: definition,
       query,
-      (id, patch) => {
+      ...(componentDefinition ? { definition: componentDefinition } : {}),
+      onDataPatch: (id, patch) => {
         render.syncPageData(id, patch)
       },
-      (code, message, details) => this.options.connection.sendDiagnostic('warn', {
+      onDiagnostic: (code, message, details) => this.options.connection.sendDiagnostic('warn', {
         code,
         message,
         details,
       }, pageId),
-      componentDefinition,
-      (selector, all) => render.selectComponents(pageId, selector, all),
-      (relationKey) => render.relationNodes(pageId, relationKey),
-      () => render.pageSelectorQuery(pageId),
-      (observerOptions) => render.pageIntersectionObserver(pageId, observerOptions),
-      {
-        animate: (selector, keyframes, duration, animateOptions) => (
-          render.pageAnimate(pageId, selector, keyframes, duration, animateOptions)
+      logic: {
+        selectComponents: (selector, all) => render.selectComponents(pageId, selector, all),
+        relationNodes: (relationKey) => render.relationNodes(pageId, relationKey),
+        selectorQuery: () => render.pageSelectorQuery(pageId),
+        intersectionObserver: (observerOptions) => (
+          render.pageIntersectionObserver(pageId, observerOptions)
         ),
-        clear: (selector, clearOptions, callback) => (
-          render.pageClearAnimate(pageId, selector, clearOptions, callback)
-        ),
+        animation: {
+          animate: (selector, keyframes, duration, animateOptions) => (
+            render.pageAnimate(pageId, selector, keyframes, duration, animateOptions)
+          ),
+          clear: (selector, clearOptions, callback) => (
+            render.pageClearAnimate(pageId, selector, clearOptions, callback)
+          ),
+        },
       },
-    )
+      runtime: {
+        ...(this.options.createRouter ? { router: this.options.createRouter(path) } : {}),
+        ...(eventChannel !== undefined ? { eventChannel } : {}),
+      },
+    })
     if (componentDefinition) page.triggerComponentLifecycle('created')
     this.pageInstances.set(page.pageId, page)
     this.stack.push(page)

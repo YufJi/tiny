@@ -17,13 +17,16 @@ import type {
  * host through `ServiceThreadOptions.apiHost`; a name the factory did not
  * provide resolves to the unsupported-API fallback instead of `undefined`, so
  * third-party bundles cannot crash on a missing global.
+ *
+ * Returns the installed API table. `this.router` calls it so router methods and
+ * direct `wx.*` calls share callbacks, diagnostics and the fallback.
  */
 export function installMiniProgramGlobals(
   registry: MiniProgramPageRegistry,
   apiHost: MiniProgramApiHost = {},
   onUnsupportedApi?: (name: string) => void,
   getCurrentPages?: () => unknown[],
-): void {
+): MiniProgramApiHost {
   const globalObject = globalThis as unknown as Record<string, unknown>
   const globals = registry.compatibility.globals
   globalObject[globals.app] = (options: MiniProgramAppOptions) => registry.registerApp(options)
@@ -75,4 +78,8 @@ export function installMiniProgramGlobals(
       registry.reportUnhandledRejection(detail?.reason, detail?.promise)
     })
   }
+  // The installed table is also the API surface `this.router` invokes, so a
+  // router call goes through exactly the same callbacks and diagnostics as a
+  // direct `wx.*` call.
+  return apiProxy
 }

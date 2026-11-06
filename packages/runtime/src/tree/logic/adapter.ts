@@ -14,6 +14,7 @@ import * as glassEasel from 'glass-easel'
 import type { MiniProgramComponentSchema, QueryNodeSnapshot, TemplateRegistry } from '../../types'
 import type { NormalizedComponentDefinition } from '../../component'
 import { GlassEaselRuntimeAdapter } from './glass-easel-adapter'
+import type { LogicFrameworkContext } from './glass-easel-adapter'
 import {
   LogicBackendContext,
   LogicBackendElement,
@@ -50,6 +51,8 @@ export type LogicTreeAdapterOptions = {
   onDiagnostic?: (diagnostic: import('../../diagnostics').RuntimeDiagnostic) => void
   /** Report a handler/observer error raised inside glass-easel. */
   onError?: (pageId: string | undefined, message: string, details?: unknown) => void
+  /** Router / opener-channel hooks for page and component instances. */
+  frameworkContext?: LogicFrameworkContext
   viewIntersection?: {
     observe: (request: ViewIntersectionRequest & { pageId: string }) => void
     unobserve: (observerId: string, pageId: string) => void
@@ -132,6 +135,7 @@ export class LogicTreeAdapter {
       templates: options.templates,
       logicPageOptions: options.pageOptions,
       logicComponentDefinitions: options.componentDefinitions,
+      ...(options.frameworkContext ? { frameworkContext: options.frameworkContext } : {}),
       logicQueryFactory: (component) => this.createSelectorQueryFor(component),
       onLogicDataChange: options.onDataChange,
       logicTouchState: () => this.getActiveTouches(),

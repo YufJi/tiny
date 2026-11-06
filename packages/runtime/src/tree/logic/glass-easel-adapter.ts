@@ -62,6 +62,28 @@ export type PageComponentOptions = {
   explicitStyleIsolation?: boolean
 }
 
+/**
+ * Page-scoped framework objects the runtime injects into the logic tree.
+ *
+ * The logic layer never imports the service runtime: it only forwards these
+ * opaque values to `this.router`, `this.pageRouter` and
+ * `this.getOpenerEventChannel()`.
+ */
+export type LogicFrameworkContext = {
+  /** Build a router whose relative routes resolve against `basePath`. */
+  createRouter: (basePath: string) => unknown
+  /**
+   * Facts owned by the page instance for one page id: its router, route query
+   * and opener `EventChannel`.
+   */
+  pageMeta?: (pageId: string) => {
+    route?: string
+    query?: Record<string, string>
+    router?: unknown
+    eventChannel?: unknown
+  } | undefined
+}
+
 export type GlassEaselAdapterOptions = {
   backend: glassEasel.GeneralBackendContext
   manifest: Manifest
@@ -88,6 +110,8 @@ export type GlassEaselAdapterOptions = {
     detail: unknown,
     options?: { bubbles?: boolean; composed?: boolean },
   ) => void
+  /** Router / opener-channel hooks for page and component instances. */
+  frameworkContext?: LogicFrameworkContext
   /** `this.animate` / `this.clearAnimate` for logic components. */
   logicAnimationFactory?: {
     animate: (
@@ -159,6 +183,13 @@ export class GlassEaselRuntimeAdapter {
   private readonly componentInstances = new Map<string, glassEasel.GeneralComponent>()
   private readonly componentIds = new WeakMap<object, string>()
   private readonly componentPaths = new WeakMap<object, string>()
+  /** Mounted page path, for `this.pageRouter` on hidden pages. */
+  private readonly pagePaths = new Map<string, string>()
+  /** Component-relative routers (`this.router` inside a component). */
+  private readonly componentRouters = new WeakMap<object, unknown>()
+  /** Page-relative routers, shared by every component on the same page. */
+  private readonly pageRouters = new Map<string, unknown>()
+  private readonly frameworkProperties = new WeakSet<object>()
   private readonly componentUsageCounters = new Map<string, number>()
   private readonly methodCallerComponents = new WeakMap<object, glassEasel.GeneralComponent>()
   private readonly setDataCallbackComponents = new WeakSet<object>()
@@ -186,6 +217,7 @@ export class GlassEaselRuntimeAdapter {
   private readonly logicIntersectionFactory?: GlassEaselAdapterOptions['logicIntersectionFactory']
   private readonly logicAnimationFactory?: GlassEaselAdapterOptions['logicAnimationFactory']
   private readonly onCustomEvent?: GlassEaselAdapterOptions['onCustomEvent']
+  private readonly frameworkContext?: LogicFrameworkContext
   private readonly customEventComponents = new WeakSet<object>()
 
   constructor(options: GlassEaselAdapterOptions) {
@@ -201,6 +233,7 @@ export class GlassEaselRuntimeAdapter {
     this.logicIntersectionFactory = options.logicIntersectionFactory
     this.logicAnimationFactory = options.logicAnimationFactory
     this.onCustomEvent = options.onCustomEvent
+    this.frameworkContext = options.frameworkContext
     const styleScopeManager = new glassEasel.StyleScopeManager()
     this.componentSpace = new glassEasel.ComponentSpace(undefined, undefined, styleScopeManager, true)
     this.componentSpace.updateComponentOptions({
@@ -359,7 +392,11 @@ export class GlassEaselRuntimeAdapter {
         // WeChat copies the page's non-lifecycle instance fields (`extraLine`,
         // custom counters, ...) onto the page instance; methods close over
         // `this.<field>` and would otherwise hit `undefined`.
-        return adapter.createEventMethodCaller(this, adapter.logicPageFields(page.path))
+        return adapter.createEventMethodCaller(
+          this,
+          adapter.logicPageFields(page.path),
+          { path: page.path, pageRoot: true },
+        )
       })
       .observer('**', function (this: glassEasel.GeneralComponent) {
         adapter.notifyLogicDataChange(adapter.resolveMethodCaller(this) ?? this)
@@ -669,6 +706,12 @@ export class GlassEaselRuntimeAdapter {
   unmountPage(pageId: string): void {
     const component = this.componentsByPageId.get(pageId)
     this.componentsByPageId.delete(pageId)
+    const pagePath = this.pagePaths.get(pageId)
+    this.pagePaths.delete(pageId)
+    if (pagePath) {
+      const stillMounted = [...this.pagePaths.values()].includes(pagePath)
+      if (!stillMounted) this.pageRouters.delete(pagePath)
+    }
     this.pageRelationNodes.delete(pageId)
     this.pageLinkedTargets.delete(pageId)
     if (!component) return
@@ -831,6 +874,7 @@ export class GlassEaselRuntimeAdapter {
     component.classList?.toggle(TINY_ENGINE_NAMING.scopeMarkerClass, true)
     this.mountedComponents.set(path, component)
     if (pageId) {
+      this.pagePaths.set(pageId, path)
       this.componentsByPageId.set(pageId, component)
       // Multiple pages stay mounted in the service logic tree. Data changes
       // raised from an event handler on a non-active page must resolve back to
@@ -985,7 +1029,10 @@ export class GlassEaselRuntimeAdapter {
         // Assigning the id registers the instance in the component tree even
         // though render-mode event dispatch no longer needs it.
         adapter.componentIdFor(schema, this)
-        const methodCaller = adapter.createEventMethodCaller(this)
+        const methodCaller = adapter.createEventMethodCaller(this, undefined, {
+          path: schema.path,
+          pageRoot: false,
+        })
         adapter.methodCallerComponents.set(methodCaller as object, this)
         return methodCaller
       })
@@ -1366,6 +1413,7 @@ export class GlassEaselRuntimeAdapter {
   private createEventMethodCaller(
     component?: glassEasel.GeneralComponent,
     initialFields?: Record<string, unknown>,
+    framework?: { path: string; pageRoot: boolean },
   ): unknown {
     const logicMode = Boolean(this.logicComponentDefinitions)
     const instanceFields: Record<string, unknown> = { ...(initialFields ?? {}) }
@@ -1373,6 +1421,7 @@ export class GlassEaselRuntimeAdapter {
       this.ensureSetDataCallback(component)
       this.ensureCustomEventForwarding(component)
     }
+    if (component && framework) this.installFrameworkProperties(component, framework)
     return new Proxy(instanceFields, {
       has() {
         return true
@@ -1393,6 +1442,98 @@ export class GlassEaselRuntimeAdapter {
         return true
       },
     })
+  }
+
+  /**
+   * Install the framework-owned instance properties WeChat exposes on pages and
+   * components (`router`, `pageRouter`, `getOpenerEventChannel`, and the page's
+   * `route` / `__route__` / `options`).
+   *
+   * They live on the glass component, not on the event method caller, because
+   * glass-easel delivers lifetimes, observers, page lifetimes and relation
+   * handlers with the component as `this` while template events run on the
+   * caller proxy. Defining lazy getters on the component instance covers both.
+   * A page's `this.router` and `this.pageRouter` are the page instance's own
+   * router object, so the two identities match.
+   */
+  private installFrameworkProperties(
+    component: glassEasel.GeneralComponent,
+    framework: { path: string; pageRoot: boolean },
+  ): void {
+    const context = this.frameworkContext
+    if (!context) return
+    const key = component as unknown as object
+    if (this.frameworkProperties.has(key)) return
+    this.frameworkProperties.add(key)
+    const define = (name: string, get: () => unknown): void => {
+      Object.defineProperty(component, name, {
+        configurable: true,
+        enumerable: false,
+        get,
+        // glass writes component fields onto the instance; a declared property
+        // with a framework name must not throw on assignment.
+        set: () => undefined,
+      })
+    }
+    define('router', () => (
+      framework.pageRoot
+        ? this.pageRouterFor(component, framework.path)
+        : this.componentRouterFor(component, framework.path)
+    ))
+    define('pageRouter', () => this.pageRouterFor(
+      component,
+      framework.pageRoot ? framework.path : undefined,
+    ))
+    define('getOpenerEventChannel', () => () => (
+      // WeChat stores `__eventChannel` on the page root only; a custom
+      // component's `getOpenerEventChannel()` returns `undefined`.
+      framework.pageRoot ? this.pageEventChannelFor(component) : undefined
+    ))
+    if (!framework.pageRoot) return
+    define('route', () => framework.path)
+    define('__route__', () => framework.path)
+    define('options', () => {
+      const pageId = this.pageIdOf(component)
+      return pageId ? context.pageMeta?.(pageId)?.query : undefined
+    })
+  }
+
+  /** Router bound to the component's own path (`this.router`). */
+  private componentRouterFor(component: glassEasel.GeneralComponent, path: string): unknown {
+    const cached = this.componentRouters.get(component as unknown as object)
+    if (cached !== undefined) return cached
+    const router = this.frameworkContext?.createRouter(path)
+    if (router !== undefined) this.componentRouters.set(component as unknown as object, router)
+    return router
+  }
+
+  /** Router bound to the owning page's path (`this.pageRouter`). */
+  private pageRouterFor(
+    component: glassEasel.GeneralComponent,
+    pageRootPath?: string,
+  ): unknown {
+    const context = this.frameworkContext
+    if (!context) return undefined
+    const pageId = this.pageIdOf(component)
+    const ownerRouter = pageId ? context.pageMeta?.(pageId)?.router : undefined
+    // A page's `this.router` and `this.pageRouter` are the same object; reuse
+    // the page instance's router so both identities match.
+    if (ownerRouter !== undefined) return ownerRouter
+    // Only a page root knows its path this early; for a component the owning
+    // page's path is the only valid base.
+    const path = pageRootPath ?? (pageId ? this.pagePaths.get(pageId) : undefined)
+    if (!path) return undefined
+    const cached = this.pageRouters.get(path)
+    if (cached !== undefined) return cached
+    const router = context.createRouter(path)
+    if (router !== undefined) this.pageRouters.set(path, router)
+    return router
+  }
+
+  /** `this.getOpenerEventChannel()` of a page root. */
+  private pageEventChannelFor(component: glassEasel.GeneralComponent): unknown {
+    const pageId = this.pageIdOf(component)
+    return pageId ? this.frameworkContext?.pageMeta?.(pageId)?.eventChannel : undefined
   }
 
   private findParentComponentId(component: glassEasel.GeneralComponent): string | null {

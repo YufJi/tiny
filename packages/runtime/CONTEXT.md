@@ -16,7 +16,7 @@ service/thread (assembly) ──► service/render ──► tree/logic ──�
 | Layer | Paths | Owns | Must not import |
 | --- | --- | --- | --- |
 | Shared domain | `component/`, `data.ts`, `diagnostics.ts`, `assets.ts`, `events.ts`, `protocol-controls.ts` | component definitions/behaviors/options/generics, data patching, diagnostics, shared control constants | `service/`, `tree/` |
-| Service runtime | `service/thread.ts` (assembly), `service/page-stack.ts`, `service/page-instance.ts`, `service/page-registry.ts`, `service/component-tree.ts`, `service/route.ts`, `service/tab-bar.ts`, `service/api-globals.ts` | App/Page/Component registration, page stack, routing, component selector tree, tabBar, app visibility, API globals | `tree/` |
+| Service runtime | `service/thread.ts` (assembly), `service/page-stack.ts`, `service/page-instance.ts`, `service/page-registry.ts`, `service/component-tree.ts`, `service/route.ts`, `service/router.ts`, `service/tab-bar.ts`, `service/api-globals.ts` | App/Page/Component registration, page stack, routing, page/component routers, component selector tree, tabBar, app visibility, API globals | `tree/` |
 | Service render | `service/render/` | service-side logic tree, component schemas/definition payloads, initial flow, patch scheduling, WXS bindings, inbound tree events, render RPCs | service runtime modules, `tree/render/` |
 | Tree logic | `tree/logic/` | glass-easel `ComponentSpace`, recording backend, logic selector query, event dispatch | `service/` |
 | Tree protocol | `tree/protocol.ts`, `tree/flow.ts`, `tree/diff.ts`, `tree/locator.ts`, `tree/animation.ts` | host-neutral nodes, patches, flow and locator contract | runtime implementations |
@@ -26,6 +26,26 @@ service/thread (assembly) ──► service/render ──► tree/logic ──�
 (implemented by `ServiceRenderBridge`). This keeps page navigation independent
 of glass-easel and the tree protocol, and keeps all render-message knowledge in
 one layer.
+
+## Router and EventChannel
+
+- `this.router` / `this.pageRouter` are built by `service/router.ts` with one
+  stable base path and then call the installed `wx.*` table, so callbacks,
+  `EventChannel` and diagnostics are identical to a direct API call. The base is
+  the component path for `this.router` and the owning page path for
+  `this.pageRouter`; relative URLs are resolved to absolute routes before the
+  call so the page stack cannot change the base mid-navigation.
+- The logic tree receives `createRouter` / `pageMeta` through
+  `ServiceRenderBridge`'s `frameworkContext`; `tree/logic` only forwards these
+  opaque objects. Glass component instances get lazy getters for `router`,
+  `pageRouter`, `getOpenerEventChannel` (and `route`/`__route__`/`options` on
+  page roots): the adapter resolves lifetimes, observers and relation handlers
+  to the component, while template events keep the caller proxy, so defining the
+  properties on the component instance covers both `this` shapes.
+- `EventChannel` lives in `@tiny/api` (`event-channel.ts`); the kernel only
+  carries the page side through `ServiceApiContext.setNextPageEventChannel` and
+  `ServicePageStack`. It is bound before the host call (the page runs `onLoad`
+  while the call is in flight) and consumed by the next `navigateTo` page.
 
 ## Glossary
 

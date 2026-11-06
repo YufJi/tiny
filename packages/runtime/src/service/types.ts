@@ -97,6 +97,16 @@ export type ServiceApiContext = {
   tabBar?: TabBarApi
   /** Runtime-owned set so a host theme notification can reach `wx.onThemeChange`. */
   themeListeners?: Set<(value: unknown) => void>
+  /**
+   * Bind the page side of an `EventChannel` that `wx.navigateTo` created.
+   *
+   * The channel object stays opaque to the kernel: `@tiny/api` builds both
+   * sides, hands this one over before the navigation starts, and the next page
+   * created by `navigateTo` exposes it through `this.getOpenerEventChannel()`.
+   * The returned function drops the binding again (the API layer calls it in a
+   * `finally`, so a failed navigation cannot leak a channel into a later page).
+   */
+  setNextPageEventChannel?: (channel: unknown) => () => void
   pageId?: string
 }
 

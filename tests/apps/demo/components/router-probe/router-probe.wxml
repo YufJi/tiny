@@ -1,0 +1,4 @@
+<view class="probe">
+  <button bindtap="navigateFromComponent">Component router</button>
+  <button bindtap="navigateFromPageRouter">Component page router</button>
+</view>

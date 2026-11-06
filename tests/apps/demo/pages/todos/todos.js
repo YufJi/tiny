@@ -2,6 +2,7 @@ Page({
   data: {
     marker: 'fresh',
     customDetail: '',
+    savedText: '',
     system: {},
     todos: [
       { text: 'Learn glass-easel', completed: true },
@@ -25,7 +26,23 @@ Page({
   },
 
   openAddTodo() {
-    wx.navigateTo({ url: '../add-todo/add-todo?from=todos' })
+    // `pageRouter` keeps the base at this page; the `events` handler receives
+    // what the opened page emits, and `success` gets the opener channel side.
+    this.pageRouter.navigateTo({
+      url: '../add-todo/add-todo?from=todos',
+      events: {
+        todoSaved: (payload) => {
+          this.setData({ savedText: payload.text })
+        },
+      },
+      success: (result) => {
+        result.eventChannel.emit('fromOpener', { marker: this.data.marker })
+      },
+    })
+  },
+
+  openRouterPage() {
+    this.pageRouter.navigateTo({ url: '../router/router?from=page-router' })
   },
 
   openScrollPage() {

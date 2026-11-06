@@ -3,6 +3,7 @@ import { runObservers, type ObserverHost } from '../component'
 import type { ComponentLifecycleName, NormalizedComponentDefinition } from '../component'
 import type { MiniProgramPropertyType } from '../types'
 import type { RuntimePageLifecyclePhase } from '../diagnostics'
+import type { MiniProgramRouter } from './router'
 import type {
   MiniProgramComponentOptions,
   MiniProgramPageOptions,
@@ -38,6 +39,44 @@ export type PageAnimationHooks = {
   clear: (selector: string, options?: unknown, callback?: unknown) => boolean
 }
 
+/**
+ * Page-scoped framework objects supplied by the service thread.
+ *
+ * `router` is the page router (`this.router === this.pageRouter` on a page);
+ * `eventChannel` is the page side of the channel created by `wx.navigateTo`.
+ */
+export type MiniProgramPageRuntime = {
+  router?: MiniProgramRouter
+  eventChannel?: unknown
+}
+
+/** Logic-tree hooks: selector queries, relations, intersection and animation. */
+export type MiniProgramPageLogicHooks = {
+  selectComponents?: (selector: string, all: boolean) => unknown[]
+  relationNodes?: (relationKey: string) => unknown[]
+  selectorQuery?: () => Record<string, unknown>
+  intersectionObserver?: (options?: Record<string, unknown>) => Record<string, unknown>
+  animation?: PageAnimationHooks
+}
+
+/** Construction contract for a page instance. */
+export type MiniProgramPageInstanceOptions = {
+  pageId: string
+  path: string
+  /** Raw `Page()`/`Component()` options; the route query is `query`. */
+  options: MiniProgramPageOptions
+  query?: Record<string, string>
+  /** Normalized definition when the page body is a component. */
+  definition?: NormalizedComponentDefinition
+  /** Forward `setData` patches to the render side. */
+  onDataPatch?: (pageId: string, patch: DataPatch) => void
+  onDiagnostic?: (code: string, message: string, details?: unknown) => void
+  /** Logic-tree hooks; omitted for an instance without a logic tree. */
+  logic?: MiniProgramPageLogicHooks
+  /** Framework objects (`router`, opener channel) for this page. */
+  runtime?: MiniProgramPageRuntime
+}
+
 export class MiniProgramPageInstance implements ObserverHost {
   readonly pageId: string
   readonly componentId: string
@@ -46,35 +85,46 @@ export class MiniProgramPageInstance implements ObserverHost {
   readonly data: Record<string, unknown>
   readonly properties: Record<string, unknown>
   readonly lifecycleEvents: string[] = []
+  /** Page path as exposed by `this.route` (WeChat page instance property). */
+  readonly route: string
+  /** Legacy alias of {@link route}; several community libraries read it. */
+  readonly __route__: string
+  /** Query string as exposed by `this.options` (WeChat page instance property). */
+  readonly options: Record<string, string>
+  /** `this.router` / `this.pageRouter`: both are the same page-scoped router. */
+  readonly router: MiniProgramRouter | undefined
+  readonly pageRouter: MiniProgramRouter | undefined
+  /** `this.getOpenerEventChannel()`; `{}` when the page has no opener. */
+  readonly eventChannel: unknown
   observerDepth = 0
   savedExitState?: unknown
-  private readonly options: MiniProgramPageOptions
+  /** Raw `Page()`/`Component()` options; `this.options` is the route query. */
+  private readonly pageOptions: MiniProgramPageOptions
   private readonly definition?: NormalizedComponentDefinition
+  private readonly onDataPatch?: (pageId: string, patch: DataPatch) => void
+  private readonly onDiagnostic?: (code: string, message: string, details?: unknown) => void
+  private readonly logic: MiniProgramPageLogicHooks
   private readonly methods = new Map<string, (...args: unknown[]) => unknown>()
   private unloaded = false
 
-  constructor(
-    pageId: string,
-    path: string,
-    options: MiniProgramPageOptions,
-    query: Record<string, string> = {},
-    private readonly onDataPatch?: (pageId: string, patch: DataPatch) => void,
-    private readonly onDiagnostic?: (code: string, message: string, details?: unknown) => void,
-    definition?: NormalizedComponentDefinition,
-    private readonly logicSelection?: (selector: string, all: boolean) => unknown[],
-    private readonly logicRelations?: (relationKey: string) => unknown[],
-    private readonly logicQuery?: () => Record<string, unknown>,
-    private readonly logicIntersection?: (options?: Record<string, unknown>) => Record<string, unknown>,
-    private readonly logicAnimation?: PageAnimationHooks,
-  ) {
-    this.pageId = pageId
-    this.componentId = `page:${pageId}`
-    this.path = path
-    this.options = options
+  constructor(input: MiniProgramPageInstanceOptions) {
+    const query = input.query ?? {}
+    const runtime = input.runtime ?? {}
+    const definition = input.definition
+    this.pageId = input.pageId
+    this.componentId = `page:${input.pageId}`
+    this.path = input.path
+    this.pageOptions = input.options
     this.definition = definition
+    this.onDataPatch = input.onDataPatch
+    this.onDiagnostic = input.onDiagnostic
+    this.logic = input.logic ?? {}
     this.query = cloneJsonSafe(query)
-    this.data = cloneJsonSafe(definition?.data ?? options.data ?? {})
+    this.data = cloneJsonSafe(definition?.data ?? input.options.data ?? {})
     this.properties = {}
+    this.router = runtime.router
+    this.pageRouter = runtime.router
+    this.eventChannel = runtime.eventChannel ?? {}
 
     if (definition) {
       const oldData = cloneJsonSafe(this.data)
@@ -92,12 +142,20 @@ export class MiniProgramPageInstance implements ObserverHost {
         ;(this as unknown as Record<string, unknown>)[name] = bound
       }
       this.bindRuntimeMethods()
+      // Route facts are framework-owned: set them after page-declared fields
+      // were copied so a user field with the same name cannot shadow them.
+      this.route = this.path
+      this.__route__ = this.path
+      this.options = this.query
       if (changedPaths.length > 0) {
         runObservers(this, definition.observers, changedPaths, oldData)
       }
     } else {
-      this.bindLegacyPageOptions(options)
+      this.bindLegacyPageOptions(input.options)
       this.bindRuntimeMethods()
+      this.route = this.path
+      this.__route__ = this.path
+      this.options = this.query
     }
   }
 
@@ -144,6 +202,7 @@ export class MiniProgramPageInstance implements ObserverHost {
       clearAnimation: this.clearAnimate.bind(this),
       hasBehavior: this.hasBehavior.bind(this),
       triggerEvent: this.triggerEvent.bind(this),
+      getOpenerEventChannel: this.getOpenerEventChannel.bind(this),
     })
   }
 
@@ -182,14 +241,14 @@ export class MiniProgramPageInstance implements ObserverHost {
       // WeChat requires page lifecycle methods to live in `methods`.
       result = this.methods.get(name)?.(...args)
       // Keep the engine's legacy compatibility path for lifetimes.onXxx.
-      const legacy = (this.options.lifetimes as Record<string, ((...args: unknown[]) => void) | undefined> | undefined)?.[name]
+      const legacy = (this.pageOptions.lifetimes as Record<string, ((...args: unknown[]) => void) | undefined> | undefined)?.[name]
       if (typeof legacy === 'function') {
         const legacyResult = legacy.apply(this, args)
         if (result === undefined) result = legacyResult
       }
     } else {
-      result = (this.options as MiniProgramComponentOptions).lifetimes?.[name]?.apply(this, args)
-      const legacyMethod = this.options[name] as ((...params: unknown[]) => unknown) | undefined
+      result = (this.pageOptions as MiniProgramComponentOptions).lifetimes?.[name]?.apply(this, args)
+      const legacyMethod = this.pageOptions[name] as ((...params: unknown[]) => unknown) | undefined
       if (typeof legacyMethod === 'function') {
         const legacyResult = legacyMethod.apply(this, args)
         if (result === undefined) result = legacyResult
@@ -200,7 +259,7 @@ export class MiniProgramPageInstance implements ObserverHost {
   }
 
   getComponentOptions(): MiniProgramPageOptions | NormalizedComponentDefinition {
-    return this.definition ?? this.options
+    return this.definition ?? this.pageOptions
   }
 
   getComponentDefinition(): NormalizedComponentDefinition | undefined {
@@ -208,11 +267,11 @@ export class MiniProgramPageInstance implements ObserverHost {
   }
 
   selectComponent(selector: unknown): unknown {
-    return this.logicSelection?.(String(selector ?? ''), false)[0] ?? null
+    return this.logic.selectComponents?.(String(selector ?? ''), false)[0] ?? null
   }
 
   selectAllComponents(selector: unknown): unknown[] {
-    return this.logicSelection?.(String(selector ?? ''), true) ?? []
+    return this.logic.selectComponents?.(String(selector ?? ''), true) ?? []
   }
 
   selectOwnerComponent(): unknown {
@@ -222,15 +281,15 @@ export class MiniProgramPageInstance implements ObserverHost {
   getRelationNodes(relationKey: string): unknown[] {
     // Relations are resolved by the glass-easel logic tree; the page wrapper
     // forwards to it instead of mirroring a second component graph.
-    return this.logicRelations?.(relationKey) ?? []
+    return this.logic.relationNodes?.(relationKey) ?? []
   }
 
   createSelectorQuery(): Record<string, unknown> {
-    return this.logicQuery?.() ?? {}
+    return this.logic.selectorQuery?.() ?? {}
   }
 
   createIntersectionObserver(options?: Record<string, unknown>): Record<string, unknown> {
-    return this.logicIntersection?.(options) ?? {}
+    return this.logic.intersectionObserver?.(options) ?? {}
   }
 
   animate(
@@ -239,13 +298,15 @@ export class MiniProgramPageInstance implements ObserverHost {
     duration?: unknown,
     options?: unknown,
   ): boolean {
-    if (!this.logicAnimation) return false
-    return this.logicAnimation.animate(String(selector ?? ''), keyframes, duration, options)
+    const animation = this.logic.animation
+    if (!animation) return false
+    return animation.animate(String(selector ?? ''), keyframes, duration, options)
   }
 
   clearAnimate(selector: unknown, options?: unknown, callback?: unknown): boolean {
-    if (!this.logicAnimation) return false
-    return this.logicAnimation.clear(String(selector ?? ''), options, callback)
+    const animation = this.logic.animation
+    if (!animation) return false
+    return animation.clear(String(selector ?? ''), options, callback)
   }
 
   hasBehavior(behavior: unknown): boolean {
@@ -256,12 +317,21 @@ export class MiniProgramPageInstance implements ObserverHost {
     // A page root has no parent component to receive an event.
   }
 
+  /**
+   * Page side of the `EventChannel` created by the `wx.navigateTo` that opened
+   * this page. Pages opened by any other route get an empty object, matching
+   * WeChat's "no opener" result.
+   */
+  getOpenerEventChannel(): unknown {
+    return this.eventChannel
+  }
+
   triggerPageLifetime(name: 'show' | 'hide'): void {
     if (this.definition) {
       for (const handler of this.definition.pageLifetimeHandlers[name]) handler.call(this)
       return
     }
-    ;(this.options as MiniProgramComponentOptions).pageLifetimes?.[name]?.call(this)
+    ;(this.pageOptions as MiniProgramComponentOptions).pageLifetimes?.[name]?.call(this)
   }
 
   triggerComponentLifecycle(name: ComponentLifecycleName): void {
@@ -269,7 +339,7 @@ export class MiniProgramPageInstance implements ObserverHost {
       for (const handler of this.definition.lifetimeHandlers[name]) handler.call(this)
       return
     }
-    const componentOptions = this.options as MiniProgramComponentOptions
+    const componentOptions = this.pageOptions as MiniProgramComponentOptions
     componentOptions.lifetimes?.[name]?.call(this);
     (componentOptions[name] as ((...args: unknown[]) => void) | undefined)?.call(this)
   }

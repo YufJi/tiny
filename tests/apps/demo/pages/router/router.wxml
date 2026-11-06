@@ -1,0 +1,10 @@
+<view class="page">
+  <view class="card">
+    <text class="title">Router demo</text>
+    <text class="line">route: {{route}}</text>
+    <text class="line">options: {{options}}</text>
+    <text class="line">same router: {{sameRouter}}</text>
+    <button bindtap="goBack">Router back</button>
+    <router-probe />
+  </view>
+</view>

@@ -300,8 +300,11 @@ describe('tabBar runtime', () => {
     expect(barEvents.filter((event) => event === 'load')).toHaveLength(1)
 
     await expect(barPage.invokeMethod('badNavigate')).rejects.toMatchObject({ code: 'HANDLER_ERROR' })
-    const badSwitch = await barPage.invokeMethod('badSwitch') as { errMsg?: string }
-    expect(badSwitch.errMsg ?? '').toContain('switchTab:fail')
+    // Promise-style navigation rejects on failure (the `fail` callback form
+    // still receives `switchTab:fail ...` instead).
+    await expect(barPage.invokeMethod('badSwitch')).rejects.toMatchObject({
+      code: 'HANDLER_ERROR',
+    })
     expect(service.pageStack.map((page) => page.path)).toEqual([BAR_PATH])
 
     await host.close()

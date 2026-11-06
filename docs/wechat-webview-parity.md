@@ -225,10 +225,19 @@
 
 | API | 状态 |
 | --- | --- |
-| navigateTo / navigateBack | ✅ |
+| navigateTo / navigateBack | ✅ 含 `events`/`success.eventChannel`；Promise 风格失败 reject、回调风格返回 `undefined` |
 | switchTab | ✅ tab 页缓存、tabBar 状态、onTabItemTap |
 | redirectTo | ✅ 替换栈顶页面并清理旧 render 帧 |
 | reLaunch | ✅ 清空页面栈（含缓存的 tab 页）并重建目标页 |
+
+页面路由对象与页面间通信：
+
+| 能力 | 状态 |
+| --- | --- |
+| `this.router` / `this.pageRouter` | ✅ 五个方法；相对路径以组件自身/所属页面为基路径（`service/router.ts`） |
+| `this.route` / `this.__route__` / `this.options` | ✅ 页面实例与页面级 `this` 都可见 |
+| `EventChannel` / `getOpenerEventChannel` | ✅ 双向通道、监听缓存、`on/once/off/emit`；非 `navigateTo` 打开的页面返回空对象 |
+| 自定义路由（Skyline `routeType` / `wx.router.*`） | ❌ 不支持：自定义路由依赖 Skyline 渲染器与 worklet UI 线程动画，tiny 不提供 Skyline，因此不实现也不提供 `wx.router` 壳；`navigateTo` 的 `routeType` 字段被忽略（按普通路由跳转） |
 
 ### 4.4 app.json 配置
 

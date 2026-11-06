@@ -27,30 +27,38 @@ The browser stage verifies:
 4. `add-button` receives properties, renders its slot, and delivers its custom event to
    the page.
 5. Checkbox, slider, and switch interactions update page data.
-6. `todos → add-todo` navigation delivers the page query and releases the previous page.
-7. Input changes reach page data, and `Save and back` persists storage and restores the
-   todos marker.
-8. System info carries a non-zero window size and pixel ratio.
-9. Canvas draws through the service/render bridge without fatal errors; the bridged
-   canvas reports its advanced-API limitation as a structured `UNSUPPORTED_CANVAS` warning.
-10. The component semantics page boots from the todos page and returns to it.
-11. `Behavior` data/methods/lifetimes are merged; property observers and `observers`
+6. `todos → add-todo` navigation delivers the page query and releases the previous page;
+   the `navigateTo` `EventChannel` also works opener → page (`success().eventChannel`
+   emit is read back by `this.getOpenerEventChannel()` in `onLoad`).
+7. Input changes reach page data, `Save and back` persists storage and restores the
+   todos marker, and the page's `emit` reaches the opener's `events` handler (observed
+   as page data and through host storage).
+8. `this.pageRouter` navigates relative to the current page; the router page exposes
+   `this.route`, `this.options`, and `this.router === this.pageRouter`.
+9. A component navigates relative to its own path with `this.router` and relative to its
+   owning page with `this.pageRouter`; the query proves which base each call used, and
+   `this.router.navigateBack()` returns to the P0 page.
+10. System info carries a non-zero window size and pixel ratio.
+11. Canvas draws through the service/render bridge without fatal errors; the bridged
+    canvas reports its advanced-API limitation as a structured `UNSUPPORTED_CANVAS` warning.
+12. The component semantics page boots from the todos page and returns to it.
+13. `Behavior` data/methods/lifetimes are merged; property observers and `observers`
     run on page-driven property changes; `selectComponent` resolves the behavior box
     and returns its `probe()` result.
-12. Parent/child `relations` link on attach and unlink after `wx:if` removes the child.
-13. `externalClasses` resolve the page class inside the component.
-14. `styleIsolation` works for `isolated`, `apply-shared`/`addGlobalClass`, and
+14. Parent/child `relations` link on attach and unlink after `wx:if` removes the child.
+15. `externalClasses` resolve the page class inside the component.
+16. `styleIsolation` works for `isolated`, `apply-shared`/`addGlobalClass`, and
     `shared`: page styles and anchored `app.wxss` rules reach only apply-shared/shared
     components, shared component styles reach the page, and isolated/built-in internal
     DOM stays isolated. `:host`, `^`/`^^` ancestor classes, multi-level component style
     traversal, and external-class entry points such as `placeholder-class` are
     browser-verified. Component-as-page explicit isolation is resolved from the
     component definition, while ordinary Page roots remain shared.
-15. `button` renders WeChat-compatible default/primary/warn-plain/mini/loading/disabled
+17. `button` renders WeChat-compatible default/primary/warn-plain/mini/loading/disabled
     variants; computed colors, background, radius, font size, padding, border and loading
     spinner are asserted.
-16. Runtime state diagnostics observe the todos → add-todo → semantics → todos page
-    transitions.
+18. Runtime state diagnostics observe the todos → add-todo → router → semantics → todos
+    page transitions.
 
 ## Existing test app stage (mini)
 

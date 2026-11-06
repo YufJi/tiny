@@ -13,10 +13,12 @@ import type { MiniProgramPageInstance } from './page-instance'
 import { installMiniProgramGlobals } from './api-globals'
 import { ServiceRenderBridge } from './render'
 import { ServicePageStack } from './page-stack'
+import { createServiceRouter } from './router'
 import { ServiceTabBar } from './tab-bar'
 import { createDefaultWxsCompiler, createWxsRuntime } from '@tiny/wxs-runtime'
 import { findPageArtifact } from './route'
 import type {
+  MiniProgramApiHost,
   ServiceApiContext,
   ServiceThreadOptions,
   ServiceThreadRuntime,
@@ -82,6 +84,11 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   let onTabBarChange: () => void = () => {}
   const tabBar = new ServiceTabBar(options.manifest, () => onTabBarChange())
   let resolvePage: (pageId: string) => MiniProgramPageInstance | undefined = () => undefined
+  // `this.router` keeps a stable base path and then calls the installed `wx.*`
+  // table; that table only exists after the host API factory runs (below), so
+  // the router reads it lazily through this indirection.
+  let apiTable: MiniProgramApiHost = {}
+  const createRouter = (basePath: string) => createServiceRouter(() => apiTable, basePath)
   const render = new ServiceRenderBridge({
     connection,
     manifest: options.manifest,
@@ -91,6 +98,19 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     loadTemplates: options.loadTemplates,
     ...(options.loadStyle ? { loadStyle: options.loadStyle } : {}),
     getPage: (pageId) => resolvePage(pageId),
+    frameworkContext: {
+      createRouter,
+      pageMeta: (pageId) => {
+        const page = resolvePage(pageId)
+        if (!page) return undefined
+        return {
+          route: page.path,
+          query: page.query,
+          router: page.router,
+          eventChannel: page.eventChannel,
+        }
+      },
+    },
     ...(options.onLogicTreeCreated ? { onLogicTreeCreated: options.onLogicTreeCreated } : {}),
     onError: (message) => registry.reportError(message),
   })
@@ -102,6 +122,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     componentTree,
     connection,
     tabBar,
+    createRouter,
     ...(options.canvas ? { canvas: options.canvas } : {}),
     ...(options.maxPageStack !== undefined ? { maxPageStack: options.maxPageStack } : {}),
   })
@@ -124,6 +145,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     resolveAssetUrl: options.resolveAssetUrl,
     tabBar: tabBar.api,
     themeListeners,
+    setNextPageEventChannel: (channel) => pages.setNextPageEventChannel(channel),
     get pageId() {
       return pages.activePage?.pageId
     },
@@ -134,7 +156,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   // omits fall through to the unsupported-API diagnostic.
   const apiHost = options.apiHost(apiContext)
   for (const name of Object.keys(apiHost)) supportedApiNames.add(name)
-  installMiniProgramGlobals(
+  apiTable = installMiniProgramGlobals(
     registry,
     apiHost,
     (name) => connection.sendDiagnostic('warn', {

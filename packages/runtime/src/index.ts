@@ -49,6 +49,7 @@ export * from './tree'
 export { bootServiceThread } from './service'
 export type {
   MiniProgramApiHost,
+  MiniProgramRouter,
   ServiceApiContext,
   ServiceApiFactory,
   ServiceThreadOptions,

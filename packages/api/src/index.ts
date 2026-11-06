@@ -12,6 +12,8 @@ import { createTabBarApi } from './tabbar'
 import { createUiApi } from './ui'
 
 export type { ApiCallbacks } from './run-api'
+export { createEventChannelPair } from './event-channel'
+export type { EventChannel, EventChannelHandler, EventChannelPair } from './event-channel'
 
 /**
  * The WeChat-compatible API table for a `@tiny/runtime` service thread.

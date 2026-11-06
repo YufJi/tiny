@@ -376,6 +376,9 @@ export async function runBrowserAcceptance({ baseUrl }) {
       await byText(render, 'Open add todo', { exact: true }).first().tap()
       await waitForText('Add todo')
       assert.ok((await text()).includes('from: todos'), `page query was not delivered: ${await text()}`)
+      // The opener emitted through `success({ eventChannel })`; the page reads it
+      // back with `this.getOpenerEventChannel()` in `onLoad`.
+      await waitForText('opener: marker:fresh')
       assert.ok(!(await text()).includes('Tiny Glass-easel P0'), 'previous page was not unmounted')
       assert.equal(await render.locator('input[placeholder="Todo name"]').isVisible(), true, 'input is not visible')
       const inputBox = await render.locator('input[placeholder="Todo name"]').evaluate((element) => {
@@ -415,10 +418,78 @@ export async function runBrowserAcceptance({ baseUrl }) {
       currentStep = 'save, navigate back, and preserve storage state'
       await byText(render, 'Save and back', { exact: true }).first().click()
       await waitForText('marker: Buy milk')
+      // The page emitted on save; the opener's `events.todoSaved` handler
+      // updated the (hidden) P0 page data.
+      await waitForText('saved: Buy milk')
       assert.ok(!(await text()).includes('Save and back'), 'add-todo page was not unmounted')
       assert.equal(await render.locator('tiny-page[wx-host]').count(), 1, 'previous pages were not released')
       const storage = await page.evaluate(() => window.__tinyRuntime.host.apiRegistry.storage)
       assert.equal(storage.todoMarker, 'Buy milk', 'host storage did not receive the write')
+    })
+
+    // Router coverage: navigation is driven by touch taps (like the add-todo
+    // step). The render compositor drops mouse events that replay within
+    // 700ms of a touch on the same frame, so `.click()` right after a tap can
+    // be swallowed.
+    await step('navigate with this.pageRouter and expose route/options', async () => {
+      currentStep = 'navigate with this.pageRouter and expose route/options'
+      // `navigateBack` re-activates a page whose render iframe already existed;
+      // refresh the frame reference before driving it.
+      await text()
+      await byText(render, 'Router page', { exact: true }).first().tap()
+      await waitForText('Router demo')
+      const body = await text()
+      assert.ok(
+        body.includes('route: pages/router/router'),
+        `this.route was not exposed on the page: ${body}`,
+      )
+      assert.ok(
+        body.includes('options: {"from":"page-router"}'),
+        `this.options did not carry the route query: ${body}`,
+      )
+      assert.ok(
+        body.includes('same router: true'),
+        'a page must expose the same object for this.router and this.pageRouter',
+      )
+    })
+
+    await step('navigate from a component with this.router', async () => {
+      currentStep = 'navigate from a component with this.router'
+      // components/router-probe -> pages/add-todo via `../../`; the query proves
+      // which base the component router used.
+      await byText(render, 'Component router', { exact: true }).first().tap()
+      await waitForText('from: component-router')
+      // The probe emitted through the opener channel in navigateTo.success.
+      await waitForText('opener: probe:component-router')
+
+      const input = render.locator('input[placeholder="Todo name"]')
+      await input.click()
+      await input.fill('Channel todo')
+      await waitForText('value: Channel todo')
+      await byText(render, 'Save and back', { exact: true }).first().tap()
+      await waitForText('Router demo')
+      const storage = await page.evaluate(() => window.__tinyRuntime.host.apiRegistry.storage)
+      assert.equal(
+        storage.routerProbe,
+        'Channel todo',
+        'the navigateTo events handler did not receive the page emit',
+      )
+    })
+
+    await step('navigate from a component with this.pageRouter', async () => {
+      currentStep = 'navigate from a component with this.pageRouter'
+      // pages/router/router -> pages/add-todo via `../`: a page-relative base, so
+      // the query differs from the component-relative run above.
+      await byText(render, 'Component page router', { exact: true }).first().tap()
+      await waitForText('from: component-page-router')
+      await byText(render, 'Save and back', { exact: true }).first().tap()
+      await waitForText('Router demo')
+    })
+
+    await step('return to the P0 page with this.router.navigateBack', async () => {
+      currentStep = 'return to the P0 page with this.router.navigateBack'
+      await byText(render, 'Router back', { exact: true }).first().tap()
+      await waitForText('Tiny Glass-easel P0')
     })
 
     await step('resolve the toast API without fatal errors', async () => {
@@ -596,6 +667,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
       const paths = stateEvents.map((item) => item.details?.currentPage)
       assert.ok(paths.includes('pages/todos/todos'), 'initial page state was not observed')
       assert.ok(paths.includes('pages/add-todo/add-todo'), 'navigation state was not observed')
+      assert.ok(paths.includes('pages/router/router'), 'router page state was not observed')
       assert.equal(paths.at(-1), 'pages/todos/todos', 'navigation back state was not observed')
       assert.equal(
         diagnostics.filter((item) => item.severity === 'error').length,

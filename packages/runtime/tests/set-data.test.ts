@@ -4,13 +4,12 @@ import { MiniProgramPageInstance } from '../src/service/page-instance'
 
 function createPage(options: Record<string, unknown> = { data: { a: 0 } }) {
   const patches: Array<{ pageId: string; patch: DataPatch }> = []
-  const page = new MiniProgramPageInstance(
-    'page-1',
-    'pages/index/index',
-    options as never,
-    {},
-    (pageId, patch) => patches.push({ pageId, patch }),
-  )
+  const page = new MiniProgramPageInstance({
+    pageId: 'page-1',
+    path: 'pages/index/index',
+    options: options as never,
+    onDataPatch: (pageId, patch) => patches.push({ pageId, patch }),
+  })
   return { page, patches }
 }
 

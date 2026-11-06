@@ -10,7 +10,7 @@ import type {
   TemplateRegistry,
 } from '../../types'
 import { cloneJsonSafe } from '../../data'
-import { LogicTreeAdapter } from '../../tree/logic'
+import { LogicTreeAdapter, type LogicFrameworkContext } from '../../tree/logic'
 import { buildComponentFlow } from '../../tree/flow'
 import {
   TREE_PROTOCOL,
@@ -26,6 +26,9 @@ import { createRenderRpc } from './rpc'
 import type { ServiceRenderPage, ServiceRenderPort } from './port'
 
 export type { ServiceRenderPage, ServiceRenderPort } from './port'
+
+/** Page-scoped framework hooks forwarded to the logic tree. */
+export type ServiceLogicFrameworkContext = LogicFrameworkContext
 
 export type ServicePageComponent = {
   path: string
@@ -44,6 +47,8 @@ export type ServiceRenderBridgeOptions = {
   loadTemplates: () => Promise<TemplateRegistry> | TemplateRegistry
   loadStyle?: StyleLoader
   getPage: (pageId: string) => ServiceRenderPage | undefined
+  /** `this.router` / `this.pageRouter` / opener-channel hooks for the logic tree. */
+  frameworkContext?: ServiceLogicFrameworkContext
   onLogicTreeCreated?: (tree: unknown) => void
   /** Report an error raised by page/component logic (the app `onError` hook). */
   onError: (message: string) => void
@@ -108,6 +113,9 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       ...(this.options.loadStyle ? { loadStyle: this.options.loadStyle } : {}),
       pageOptions: this.options.pageOptions,
       componentDefinitions: this.options.componentDefinitions,
+      ...(this.options.frameworkContext
+        ? { frameworkContext: this.options.frameworkContext }
+        : {}),
       onDataChange: (pageId) => this.scheduleTreeUpdate(pageId),
       onCustomEvent: (pageId, componentId, name, detail, eventOptions) => {
         // JS listeners already ran in the logic tree. Only forward events that
