@@ -57,12 +57,16 @@ describe('common host APIs', () => {
   test('storage async/sync and storage info', async () => {
     const { context, calls } = createContext()
     const host = createApiHost(context) as Record<string, (...args: unknown[]) => unknown>
-    await host.setStorage({ key: 'token', value: 'abc' })
+    await host.setStorage({ key: 'token', data: 'abc' })
     expect(host.getStorageSync('token')).toBe('abc')
     await host.getStorage({ key: 'token', success: (value: unknown) => {
       expect(value).toEqual({ data: 'abc', errMsg: 'getStorage:ok' })
     } })
     expect(host.getStorageInfoSync()).toMatchObject({ keys: ['token'], limitSize: 10240 })
+    // The engine's earlier `value` spelling stays accepted.
+    await host.setStorage({ key: 'legacy', value: 'kept' })
+    expect(host.getStorageSync('legacy')).toBe('kept')
+    await host.removeStorage({ key: 'legacy' })
     await host.removeStorage({ key: 'token' })
     expect(host.getStorageSync('token')).toBeUndefined()
     await host.clearStorage()

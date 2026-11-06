@@ -135,7 +135,7 @@ runtimeCompatibility 只决定应用需要哪些兼容全局和 behavior scheme�
 :::card{tag="service" title="兼容全局与 API"}
 `installMiniProgramGlobals()` 按 runtimeCompatibility 安装配置的 App/Page/Component/Behavior/getApp/getCurrentPages，以及 API namespace 和 aliases。
 
-`canIUse()`、诊断和建议信息也使用同一组 namespace。
+`canIUse()` 以注入的 `wx.*` 表、内置组件清单和能力声明为准（不看 `SDKVersion`）；诊断和建议信息使用同一组 namespace。
 :::
 
 :::card{tag="render" title="Tiny 内部命名"}

@@ -12,6 +12,14 @@ This package owns the shared manifest/codegen contract and the fixed Tiny engine
 - `CompatibilityConfig` / `RuntimeCompatibilityConfig`
 - `TINY_ENGINE_NAMING`
 - `Diagnostic`
+- `BUILTIN_COMPONENT_TAGS` / `BUILTIN_COMPONENT_ATTRIBUTES`
+
+`src/builtin-capabilities.ts` is a **generated** mirror of the WXML attributes
+defined by the built-in component package; `wx.canIUse` reads it to answer
+`component.attribute` probes. Regenerate with
+`UPDATE_BUILTIN_CAPABILITIES=1 pnpm --filter @tiny/host-web-components test`
+after changing a built-in definition (that package's guard test fails on drift),
+then rebuild this package.
 
 Mini-program input conventions such as extensions, directive namespace, API
 globals, and behavior scheme belong to `CompatibilityConfig`. The manifest stores

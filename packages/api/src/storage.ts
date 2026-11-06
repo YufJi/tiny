@@ -43,10 +43,12 @@ export function createStorageApi(context: ServiceApiContext): MiniProgramApiHost
       errMsg: 'getStorage:ok',
     })),
     setStorage: (params: unknown = {}) => {
-      const payload = (params ?? {}) as { key?: unknown; value?: unknown }
+      const payload = (params ?? {}) as { key?: unknown; data?: unknown; value?: unknown }
       return runApi(params, 'setStorage', async () => {
         const key = String(payload.key)
-        const value = cloneJsonSafe(payload.value)
+        // WeChat's parameter is `data`; `value` stays accepted for callers that
+        // used the engine's earlier spelling.
+        const value = cloneJsonSafe(payload.data !== undefined ? payload.data : payload.value)
         context.setStorageSnapshot(key, value)
         await callHost(context, 'storage.set', { key, value })
         return { errMsg: 'setStorage:ok' }
@@ -66,9 +68,11 @@ export function createStorageApi(context: ServiceApiContext): MiniProgramApiHost
       await callHost(context, 'storage.clear')
       return { errMsg: 'clearStorage:ok' }
     }),
-    getStorageInfo: (params: unknown = {}) => runApi(params, 'getStorageInfo', async () => {
+    getStorageInfo: (params: unknown = {}) => runApi(params, 'getStorageInfo', () => {
       const info = storageInfo(context.getStorageSnapshot())
-      await callHost(context, 'storage.info')
+      // The snapshot is authoritative; let the host observe the read without
+      // letting a missing/optional handler fail the API.
+      void callHost(context, 'storage.info').catch(() => undefined)
       return info
     }),
     getStorageInfoSync: () => storageInfo(context.getStorageSnapshot()),

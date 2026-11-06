@@ -81,7 +81,7 @@ export type ServiceApiContext = {
   connection: BridgeConnection
   /** API global name used in diagnostics. */
   apiName: string
-  /** API namespaces accepted by canIUse, including aliases. */
+  /** API globals installed with the table (`wx` plus aliases); `canIUse` accepts them as an optional schema prefix. */
   apiNamespaces: string[]
   getSystemInfoSnapshot: () => SystemInfoSnapshot
   getStorageSnapshot: () => StorageSnapshot

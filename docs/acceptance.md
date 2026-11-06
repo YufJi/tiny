@@ -38,7 +38,9 @@ The browser stage verifies:
 9. A component navigates relative to its own path with `this.router` and relative to its
    owning page with `this.pageRouter`; the query proves which base each call used, and
    `this.router.navigateBack()` returns to the P0 page.
-10. System info carries a non-zero window size and pixel ratio.
+10. System info carries a non-zero window size and pixel ratio; `wx.canIUse` reports
+    engine facts (generated component attribute, unsupported component option, bare API
+    name) from the real service thread.
 11. Canvas draws through the service/render bridge without fatal errors; the bridged
     canvas reports its advanced-API limitation as a structured `UNSUPPORTED_CANVAS` warning.
 12. The component semantics page boots from the todos page and returns to it.

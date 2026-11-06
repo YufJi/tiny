@@ -3,6 +3,7 @@ Page({
     marker: 'fresh',
     customDetail: '',
     savedText: '',
+    canIUseProbe: '',
     system: {},
     todos: [
       { text: 'Learn glass-easel', completed: true },
@@ -17,6 +18,13 @@ Page({
     this.setData({
       marker: wx.getStorageSync('todoMarker'),
       system: wx.getSystemInfoSync(),
+      // Engine facts: a generated component attribute, an unsupported
+      // component option, and a bare API name.
+      canIUseProbe: [
+        wx.canIUse('text.selectable'),
+        wx.canIUse('button.open-type.contact'),
+        wx.canIUse('nextTick'),
+      ].join(','),
     })
   },
 

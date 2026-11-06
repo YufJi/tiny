@@ -1,4 +1,6 @@
 import type { MiniProgramApiHost, ServiceApiContext } from '@tiny/runtime'
+import { CAN_I_USE_CAPABILITIES } from './capabilities'
+import { createCanIUse } from './can-i-use'
 import { cloneJsonSafe } from './json'
 import { runApi } from './run-api'
 
@@ -26,15 +28,7 @@ export function createSystemApi(context: ServiceApiContext): MiniProgramApiHost 
       callbacks.complete?.(info)
       return info
     },
-    canIUse: (name: unknown) => {
-      const key = String(name ?? '')
-      const separator = key.indexOf('.')
-      if (separator <= 0) return false
-      const namespace = key.slice(0, separator)
-      return context.apiNamespaces.includes(namespace)
-        ? context.apiNames.has(key.slice(separator + 1))
-        : false
-    },
+    canIUse: createCanIUse(context, CAN_I_USE_CAPABILITIES),
     nextTick: (callback: unknown) => {
       if (typeof callback === 'function') Promise.resolve().then(() => callback())
     },

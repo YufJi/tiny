@@ -188,6 +188,7 @@
 | 选择器 | ✅ | service 逻辑树发起 `createSelectorQuery`，render 树按组件 id / 元素 locator 查询真实 DOM 并返回 rect/dataset/scroll；支持组件作用域、`.in(component)`、scoped class；canvas `.node()` 仍走宿主 handoff |
 | 观测器 | 部分 | 页面/组件级 `this.createIntersectionObserver` 由 service 逻辑树发起，render 树用原生 IntersectionObserver 回传 entries；支持 thresholds、relativeTo/relativeToViewport、observeAll、disconnect。`wx.createIntersectionObserver(component)` 尚未暴露 |
 | 更新/性能/隐私 | 无/桩 | 无 getUpdateManager；getPerformance 为宿主桩；无隐私授权 |
+| 特性检测 | ✅ | `wx.canIUse` 按微信 schema 解析 `${api}.${method}.${param}.${option}`（method 为 return/success/object/callback）、`${class}.${member}` 与 `${component}.${attribute}`；API 名来自真实注入表，系统信息字段按宿主快照动态判断，组件属性清单由内置定义生成 |
 
 关键代码入口：
 
@@ -196,6 +197,10 @@
 - 不支持 API 的降级：`wx` Proxy 返回 `undefined` + `UNSUPPORTED_API` warning（[service/api-globals.ts](../packages/runtime/src/service/api-globals.ts:1)）
 
 > 降级策略是“静默 undefined”，不是抛错。页面不会立刻崩，但失败会推迟到调用方 `.then`/属性访问时才暴露，排查成本高。
+
+`wx.canIUse` 的判定依据是**引擎实际实现**而不是 `SDKVersion`，且只声明内核自身能保证的部分：裸 API 名（`canIUse('nextTick')`）看注入的 `wx.*` 表；`return`/`success`/`object` 子路径只覆盖内核驱动的回调、内核读取的参数（`navigateTo.object.url`、`getStorage.object.key`）和内核组装的结果（`getStorage.success.data`、`getStorageInfoSync.return.keys`）——宿主返回的字段和宿主参数集**不声明**，因为宿主可能只用 `errMsg` stub 响应（iOS 原生目前只实现 `storage.*`）；`getSystemInfoSync.return.*` / `getSystemInfo.success.*` 直接按宿主快照判断；组件标签与属性来自由内置组件定义生成的清单（[builtin-capabilities.ts](../packages/manifest/src/builtin-capabilities.ts:1)，由 host-web-components 的守卫测试防止漂移），语义是“内置组件定义接受该 WXML 属性”，与微信按组件表回答一致，不承诺逐个属性的视觉完全对齐（那由 component-reference-diff.md 跟踪）；组件属性**选项**（`button.open-type.contact`）暂不跟踪，按保守的 `false` 回答。非字符串 schema 按微信行为抛错。
+
+> 已知边界：`canIUse` 的 API 名来自**注入的 API 表**，宿主若没有实现某个已声明 API 的 host handler（例如 iOS 侧暂无 `request`），canIUse 无法感知；这类差异需要宿主能力上报补齐。
 
 ### 4.3 生命周期与路由
 

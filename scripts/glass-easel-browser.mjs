@@ -330,6 +330,13 @@ export async function runBrowserAcceptance({ baseUrl }) {
     await step('render app, page, and system snapshots', async () => {
       currentStep = 'render app, page, and system snapshots'
       assert.match(await text(), /system: [\d.]+ \/ \d+x\d+/, 'system info was not rendered')
+      // `wx.canIUse` answers from the generated component inventory and the
+      // installed API table: a built-in attribute, an unsupported option of a
+      // supported attribute, and a bare API name.
+      assert.ok(
+        (await text()).includes('canIUse: true,false,true'),
+        `wx.canIUse did not report engine facts: ${await text()}`,
+      )
       const dimensions = /system: [\d.]+ \/ (\d+)x(\d+)/.exec(await text())
       assert.ok(dimensions && Number(dimensions[1]) > 0 && Number(dimensions[2]) > 0, 'system info has no window size')
     })

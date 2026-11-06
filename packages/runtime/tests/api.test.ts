@@ -101,6 +101,67 @@ describe('P0 platform APIs', () => {
     await host.close()
   })
 
+  test('canIUse answers from the installed API table and the host snapshot', async () => {
+    const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
+    const service = bootServiceThread({
+      transport: serviceTransport,
+      manifest: createManifest(),
+      initialPath: PAGE_PATH,
+    })
+    const renderConnector = createHarnessRenderConnector({
+      manifest: createManifest(),
+      artifacts: { templates: createTemplateRegistry() },
+      initialPath: PAGE_PATH,
+    })
+    const host = createTestHost({
+      serviceTransport: hostServiceTransport,
+      renderConnector,
+      manifest: createManifest(),
+      initialPath: PAGE_PATH,
+      systemInfo: { pixelRatio: 3, windowWidth: 390, windowHeight: 844 },
+    })
+
+    const globalObject = globalThis as unknown as Record<string, unknown>
+    ;(globalObject.App as (options: Record<string, unknown>) => unknown)({})
+    ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
+      methods: {
+        probe(): Record<string, boolean> {
+          return {
+            bareApi: wx.canIUse('nextTick'),
+            unknownApi: wx.canIUse('notAnApi'),
+            snapshotField: wx.canIUse('getSystemInfoSync.return.windowWidth'),
+            missingSnapshotField: wx.canIUse('getSystemInfoSync.return.safeArea'),
+            componentTag: wx.canIUse('text'),
+            componentAttribute: wx.canIUse('text.selectable'),
+            unsupportedComponent: wx.canIUse('live-player'),
+            componentOption: wx.canIUse('button.open-type.contact'),
+            classMember: wx.canIUse('SelectorQuery.exec'),
+            engineParam: wx.canIUse('navigateTo.object.url'),
+            engineSuccessField: wx.canIUse('getStorage.success.data'),
+            hostResultField: wx.canIUse('request.success.data'),
+          }
+        },
+      },
+    })
+
+    await host.bootstrap()
+    expect(service.activePage?.invokeMethod('probe')).toEqual({
+      bareApi: true,
+      unknownApi: false,
+      snapshotField: true,
+      missingSnapshotField: false,
+      componentTag: true,
+      componentAttribute: true,
+      unsupportedComponent: false,
+      componentOption: false,
+      classMember: true,
+      engineParam: true,
+      engineSuccessField: true,
+      hostResultField: false,
+    })
+    await host.close()
+  })
+
   test('routes toast and navigation calls to host handlers', async () => {
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({
