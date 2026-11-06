@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import type { WeixinApiContext } from '../src'
+import type { ApiContext } from '../src'
 import { createApiHost } from '../src'
 
 /**
@@ -32,7 +32,7 @@ function createContext(options: { syncHost?: boolean; apiNamespaces?: string[] }
       },
     }),
     pageId: 'page-1',
-  } as unknown as WeixinApiContext
+  } as unknown as ApiContext
   const host = createApiHost(context) as Record<string, (...args: unknown[]) => unknown>
   return { context, host, snapshot }
 }

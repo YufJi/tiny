@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import type { WeixinApiContext } from '../src'
+import type { ApiContext } from '../src'
 import { createApiHost } from '../src'
 
 function createContext(apiNamespaces: string[] = ['wx']) {
@@ -48,7 +48,7 @@ function createContext(apiNamespaces: string[] = ['wx']) {
     syncHost,
     getCurrentPagePath: () => 'pages/index/index',
     pageId: 'page-1',
-  } as unknown as WeixinApiContext
+  } as unknown as ApiContext
   return { context, storage, calls }
 }
 

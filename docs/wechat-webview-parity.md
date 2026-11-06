@@ -10,7 +10,7 @@
 
 ## 1. 结论摘要
 
-- 按微信 WebView 版全量能力计算，当前引擎约完成 **一半略多**：加权得分 **52.30%**。
+- 按微信 WebView 版全量能力计算，当前引擎约完成 **一半略多**：加权得分 **52.38%**。
 - 能力结构仍然偏科：**编译/渲染约 76%，框架约 88%，内置组件约 57%，平台 API 约 14%，页面形态约 28%**。
 - 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent`、`generics`（含页面级 `generic:x`）、`definitionFilter`、`pureDataPattern` 均已落地，Component-as-page 也接入了同一套核心语义；6 个 `wx://` behavior 在 service 侧是占位 marker（与 2.33.0 一致），可观察语义放在渲染侧或框架里。剩余缺口主要是 npm 构建、`componentPlaceholder`、trait/chaining API 和 11 个宿主导向 behavior。
 - 内置组件已完成宿主迁移、P0 视觉重写和 P1 内部结构收口：2.33.0 目标的 **39 个标签全部落地**（含 grid-view；20 个平台/开放能力组件按基线不做），采用 Flat DOM + scoped CSS 隔离公开宿主与私有内部实现；checkbox/radio/switch/slider/icon/image/picker/picker-view 已按 2.33.0 参考实现重写；input/textarea/button/form 完成 wrapper/分支/语义补强，scroll-view 接受 native 滚动近似；video/audio/web-view 是浏览器近似实现。
@@ -74,13 +74,13 @@
 | 编译/构建 | 10% | 76% | 7.60 | WXML/WXSS/WXS 基本完整；共享 WXS runtime 与 AST transform 已接，WXS handler/`change:prop` 在 render 侧执行（自定义组件事件经 `tree.customEvent` 转发；`input`/`textarea` 的 `bindinput` 按微信 `PAGE_EVENT` 语义留在 service）；app.wxss 规则可作用到页面与内置宿主；app.json 只消费少量字段；无 npm 构建、无 TS 类型检查 |
 | 框架运行时 | 18% | 90% | 16.20 | 14/14 页面生命周期、7/7 应用生命周期、5/5 路由；两次求值的渲染树、元素 locator 寻址、页面级 `generic:x`、6 个 `wx://` behavior 占位对齐；`this.animate`/`clearAnimate`、`wx.createIntersectionObserver`、事件合成层与 `target/currentTarget` 几何落地；tab 页缓存、group/label/touchtrack/scroller 基础保持；componentPlaceholder 未接 |
 | 内置组件 | 17% | 65% | 11.05 | 39/60 标签（2.33.0 目标的 39 个标签全部落地，20 个平台/开放能力组件按基线不做）；P0 视觉完成，P1 内部结构大幅收口；事件合成层与 scroll-view 横向/enable-flex 修复落地；`navigator` 走 host action；canvas 2D/WebGL 已接；已统计属性 120/146、事件 44/46 |
-| wx API | 20% | 14.1% | 2.83 | 71/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar/switchTab/redirectTo/reLaunch/下拉刷新/IntersectionObserver（含 `wx.createIntersectionObserver`）等已接或桩 |
+| wx API | 20% | 14.5% | 2.91 | 73/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar/switchTab/redirectTo/reLaunch/下拉刷新/IntersectionObserver（含 `wx.createIntersectionObserver`）等已接或桩 |
 | 页面形态 | 12% | 28% | 3.36 | devtool 宿主已实现导航栏/tabBar/页面滚动/触底/tab 页缓存，浏览器宿主已接下拉刷新手势；iOS 宿主补上原生导航栏/tabBar 和页面 chrome；分享菜单 UI、页面转场、自定义 tabBar 仍缺 |
 | 样式/渲染 | 8% | 76% | 6.08 | WXSS/rpx/作用域强；app.wxss tag/class 规则作用到页面与共享组件；canvas 2D/WebGL/RAF 已接，导出 API 仍缺 |
 | 宿主/平台 | 8% | 18% | 1.44 | 浏览器 + iOS 原生宿主（JavaScriptCore service + WKWebView render）；仍无原生网络/登录/支付/分享 |
 | 开发工具 | 4% | 47% | 1.88 | Vite 构建、应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar、移动端访问提示；不是完整微信开发者工具 |
 | 质量/验证 | 3% | 62% | 1.86 | 394 单测 + 61 步浏览器验收 + 125 页探针（121 启动 / 116 可见文本）+ iOS 7 fixture 模拟器 smoke + 真机签名构建/安装；新增两次求值、locator 寻址、WXS 共享 runtime、事件合成、滚动横向回归；仍无性能/安全测试 |
-| **合计** | **100%** | — | **52.30%** | |
+| **合计** | **100%** | — | **52.38%** | |
 
 ### 条目覆盖率速览
 
@@ -88,7 +88,7 @@
 | --- | ---: | ---: | ---: |
 | 内置组件标签 | 60 | 39 | 65.0% |
 | 核心 UI 组件 | 45 | 39 | 86.7% |
-| wx API 条目 | 502 | 71 | 14.1% |
+| wx API 条目 | 502 | 73 | 14.5% |
 | 官方 demo 实际调用 API | 150 | ~36 | ~24% |
 | 页面生命周期 | 14 | 14 | 100% |
 | 应用生命周期 | 7 | 7 | 100% |
@@ -167,7 +167,7 @@
 
 ### 4.2 wx API
 
-**71 / 502 ≈ 14.1%；官方 demo 实际用到的 150 个唯一 `wx.*` 中约支持 36–37 个（~24–25%）。**
+**73 / 502 ≈ 14.5%；官方 demo 实际用到的 150 个唯一 `wx.*` 中约支持 36–37 个（~24–25%）。**
 
 能力分布：
 
@@ -188,7 +188,8 @@
 | 选择器 | ✅ | service 逻辑树发起 `createSelectorQuery`，render 树按组件 id / 元素 locator 查询真实 DOM 并返回 rect/dataset/scroll；支持组件作用域、`.in(component)`、scoped class；canvas `.node()` 仍走宿主 handoff |
 | 观测器 | 部分 | 页面/组件级 `this.createIntersectionObserver` 由 service 逻辑树发起，render 树用原生 IntersectionObserver 回传 entries；支持 thresholds、relativeTo/relativeToViewport、observeAll、disconnect。`wx.createIntersectionObserver(component)` 尚未暴露 |
 | 更新/性能/隐私 | 无/桩 | 无 getUpdateManager；getPerformance 为宿主桩；无隐私授权 |
-| 特性检测 | ✅ | `wx.canIUse` 按微信 schema 解析 `${api}.${method}.${param}.${option}`（method 为 return/success/object/callback）、`${class}.${member}` 与 `${component}.${attribute}`；API 名来自真实注入表，系统信息字段按宿主快照动态判断，组件属性清单由内置定义生成 |
+| 编码转换 | ✅ | `base64ToArrayBuffer` / `arrayBufferToBase64` 是纯 service 实现，不经过宿主；解码兼容空白与省略 padding，编码输出标准 base64，二进制与 200KB 级缓冲可往返 |
+| 特性检测 | ✅ | `wx.canIUse` 按微信 schema 解析 `${api}.${method}.${param}.${option}`（method 为 return/success/object/callback）、`${class}.${member}` 与 `${component}.${attribute}`；API 名来自真实注入表，系统信息字段通过宿主同步通道读取实时事实，组件属性清单由内置定义生成 |
 
 关键代码入口：
 
@@ -374,7 +375,7 @@ Shadow DOM：
 
 ### 5.3 官方 demo API 覆盖
 
-从 `tests/apps/wechat-demo`（2023-02 基线）源码中提取到 **148 个唯一 `wx.*` 调用**，其中引擎约支持 **37 个（25%）**；服务 API 总面 71/502：
+从 `tests/apps/wechat-demo`（2023-02 基线）源码中提取到 **148 个唯一 `wx.*` 调用**，其中引擎约支持 **37 个（25%）**；服务 API 总面 73/502：
 
 ```text
 getSystemInfo / getSystemInfoSync / getStorageSync / setStorageSync
@@ -548,7 +549,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 
 1. **跑门禁**：确认单测/浏览器验收仍通过；记录测试数量与步骤数。
 2. **重数组件与组件语义**：对照[微信组件文档](https://developers.weixin.qq.com/miniprogram/dev/component/)与 [tags.ts](../hosts/web-components/src/tags.ts:1)，更新 39/60、分类表、属性/事件表；同时按第 4.5 节更新 behaviors/observers/relations/styleIsolation/selectComponent 状态。
-3. **重数 API**：对照[微信 API 索引](https://developers.weixin.qq.com/miniprogram/dev/api/)与 [api](../packages/api/src/index.ts:1) + [service-thread.ts](../tests/host/src/service-thread.ts:1) 的 `apiExtensions`，更新 71/502、能力表。
+3. **重数 API**：对照[微信 API 索引](https://developers.weixin.qq.com/miniprogram/dev/api/)与 [api](../packages/api/src/index.ts:1) + [service-thread.ts](../tests/host/src/service-thread.ts:1) 的 `apiExtensions`，更新 73/502、能力表。
 4. **重数生命周期/路由/配置**：对照第 4.3、4.4 节逐项打勾。
 5. **重跑 125 页探针**：`pnpm parity:probe`，按 `tests/host/generated/parity-report.json` 更新启动率、可见文本与失败明细。
 6. **重算总分**：更新第 3 节表格的完成度/加权分；如果权重调整，在变更记录中说明。
@@ -608,6 +609,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-29 | 第十九次校准：WXS 共享 runtime/事件本地执行、事件合成层（tap/longpress 以触摸为主）、scroll-view 横向滚动与 enable-flex、Vant popup external class、devtool 迁移 Vite；288 单测 / 58 步；117 页探针保持 108 启动、108 可见、9 失败（全部平台 API）；总分 49.33→49.92 | **49.92%** |
 | 2026-10-29 | 第二十次校准：iOS 宿主 MVP（SwiftUI + WKWebView + JavaScriptCore，全部 7 个 fixture 模拟器 smoke，真机签名构建/安装）；宿主/平台 15→18、页面形态 25→28、质量/验证 60→61；117 页探针保持 108 启动、108 可见、9 失败、0 console error；总分 49.92→50.55 | **50.55%** |
 | 2026-11-04 | 第二十一次校准：微信官方 demo 子集切到 2023-02-23 基线（`7189b9c`，111 页）；修复该基线遗留的 88 页 `common` 模板引用（少一层 `../`）与导航栏 `system` 缺失；WeChat demo 验收改为 swiper autoplay 开关 + radio 视觉两步（61 步）；111 页探针 107 启动、102 可见、4 失败（全部平台能力）、0 console error；加权分保持 50.55 | **50.55%** |
+| 2026-11-06 | 新增 `base64ToArrayBuffer` / `arrayBufferToBase64`（纯 service 实现，支持空白/省略 padding、二进制与大缓冲；API 71→73，wx API 14.1%→14.5%，总分 52.30→52.38） | **52.38%** |
 | 2026-11-05 | 第二十二次校准（2.33.0 口径）：双侧树切到两次求值模型（`define`/`tree`/`ready`，组件模板两侧各自求值），元素 id 下沉为渲染侧本地 id + 组件作用域 locator，`wx://` behaviors 改为 6 个 service 侧占位 marker（functional-page 按基线不做），页面级 `generic:x` 与表单节点 props 收集落地；组件口径按 2.33.0 重算为 39/60（40 个目标全落地）；388 单测 / 61 步；125 页探针 121 启动、116 可见、4 失败（全部平台能力）、2 条 console error（web-view 的 CSP frame-ancestors，非运行时错误）；框架 88→90、内置组件 57→65、质量 61→62，总分 50.55→52.30 | **52.30%** |
 
 ---

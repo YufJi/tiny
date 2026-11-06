@@ -532,7 +532,7 @@ componentPlaceholder、trait behaviors / chaining API 和约 20 个微信内置�
 :::
 
 :::card{tag="API" tone="warn" title="API 覆盖有限"}
-已支持 storage、导航、system、网络请求、toast/modal/loading、剪贴板、振动、canvas、selector query 和 IntersectionObserver；媒体、真实文件系统、位置、WebSocket 和真实账号授权还没有。
+已支持 storage、导航、system、网络请求、toast/modal/loading、剪贴板、振动、base64/ArrayBuffer 转换、canvas、selector query 和 IntersectionObserver；媒体、真实文件系统、位置、WebSocket 和真实账号授权还没有。
 :::
 ::::
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import type { WeixinApiContext } from '../src'
+import type { ApiContext } from '../src'
 import { createApiHost } from '../src'
 import type { EventChannel } from '../src/event-channel'
 
@@ -45,7 +45,7 @@ function createContext(options: { failWith?: string } = {}) {
         releases += 1
       }
     },
-  } as unknown as WeixinApiContext
+  } as unknown as ApiContext
   return {
     context,
     calls,
@@ -54,7 +54,7 @@ function createContext(options: { failWith?: string } = {}) {
   }
 }
 
-function api(context: WeixinApiContext) {
+function api(context: ApiContext) {
   return createApiHost(context) as Record<string, (...args: unknown[]) => unknown>
 }
 

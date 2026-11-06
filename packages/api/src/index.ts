@@ -1,6 +1,7 @@
 import type { ApiContext, ApiHost } from './context'
 import { createCanvasApi } from './canvas'
 import { createDeviceApi } from './device'
+import { createEncodingApi } from './encoding'
 import { createFileSystemApi } from './filesystem'
 import { createNavigationApi } from './navigation'
 import { createNetworkApi } from './network'
@@ -66,6 +67,7 @@ export function createApiHost(
     ...createTabBarApi(apiContext),
     ...createNetworkApi(apiContext),
     ...createDeviceApi(apiContext),
+    ...createEncodingApi(apiContext),
     ...createShareApi(apiContext),
     ...createCanvasApi(apiContext),
     ...createQueryApi(apiContext),

@@ -2,8 +2,8 @@ import { createApiHost } from '@tiny/api'
 import type {
   ServiceCanvasAdapter,
   SyncHostChannel,
-  WeixinApiContext,
-  WeixinApiHost,
+  ApiContext,
+  ApiHost,
 } from '@tiny/api'
 import { BridgeConnection } from '@tiny/bridge'
 import { bootServiceThread as bootRealServiceThread } from '../../src/service/thread'
@@ -33,7 +33,7 @@ type ServiceThreadBootOptions = Omit<
   /** Test host side of the service transport. */
   transport: Transport
   /** Defaults to the standard WeChat-compatible API table. */
-  apiHost?: (context: WeixinApiContext) => WeixinApiHost
+  apiHost?: (context: ApiContext) => ApiHost
   /** Host capabilities, composed into the API context. */
   canvas?: ServiceCanvasAdapter
   resolveAssetUrl?: AssetUrlResolver
@@ -86,7 +86,7 @@ export function bootServiceThread(options: ServiceThreadBootOptions): ServiceThr
   })
   const themeListeners = themeListenersOption ?? new Set<(value: unknown) => void>()
   let runtime: ServiceThreadRuntime | undefined
-  const apiContext: WeixinApiContext = {
+  const apiContext: ApiContext = {
     connection,
     apiName: runtimeOptions.manifest.runtimeCompatibility.api.global,
     apiNamespaces: [

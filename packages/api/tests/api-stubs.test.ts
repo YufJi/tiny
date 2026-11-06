@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import type { WeixinApiContext } from '../src'
+import type { ApiContext } from '../src'
 import { createApiHost } from '../src'
 
 function createContext() {
@@ -10,7 +10,7 @@ function createContext() {
       call: () => Promise.resolve(undefined),
     },
     pageId: 'page-1',
-  } as unknown as WeixinApiContext
+  } as unknown as ApiContext
   return { context, diagnostics }
 }
 
