@@ -73,6 +73,7 @@ pnpm compile:wechat-demo     # compile the WeChat component/API subset
 pnpm parity:probe            # compile tests/apps/wechat-demo and probe every page in headless Chrome
 pnpm dev:wechat-demo         # WeChat demo host on :5174
 pnpm check:runtime-purity    # assert the core runtime has no host globals
+pnpm check:runtime-layers    # assert the service/render/tree layer boundaries
 pnpm ios:assets              # build @tiny/host-ios + compile fixtures + assemble ios/Generated
 pnpm ios:sim                 # build and smoke-test TinyHost on an iOS Simulator
 pnpm ios:device              # build, sign, install and launch on a connected iPhone
@@ -107,7 +108,7 @@ iOS Simulator runtime and is not part of `pnpm accept:glass-easel`.
 The end-to-end gate is `pnpm accept:glass-easel`:
 
 1. build of the compiler/runtime/host targets in `build:glass-easel`
-2. core runtime purity check
+2. core runtime purity and service/render/tree layer boundary checks
 3. unit tests for all packages
 4. P0 demo browser flow (`tests/apps/demo`)
 5. `tests/apps/mini` browser flow

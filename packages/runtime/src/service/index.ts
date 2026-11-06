@@ -6,5 +6,6 @@ export type {
   MiniProgramPageOptions,
   ServiceApiContext,
   ServiceApiFactory,
+  ServiceThreadOptions,
   TabBarApi,
 } from './types'

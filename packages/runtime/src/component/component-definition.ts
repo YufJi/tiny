@@ -6,7 +6,7 @@ import {
 import { cloneDataValue } from '../data'
 import { isBuiltinBehavior, resolveBuiltinBehavior } from './behaviors'
 import { componentExportDefinitionFilter } from './behaviors/component-export'
-import type { MiniProgramComponentOptions } from '../service'
+import type { MiniProgramComponentOptions } from './options'
 import type { MiniProgramPropertyDefinition, MiniProgramPropertyType } from '../types'
 
 export type ComponentLifecycleName = 'created' | 'attached' | 'ready' | 'moved' | 'detached'

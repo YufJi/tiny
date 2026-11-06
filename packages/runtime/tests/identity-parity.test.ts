@@ -7,9 +7,9 @@ import {
   type Manifest,
   type PageArtifact,
 } from '@tiny/manifest'
-import { buildComponentSchemas } from '../src/component/component-schema'
+import { buildComponentSchemas } from '../src/service/render/component-schema'
 import { normalizeComponentDefinition } from '../src/component/component-definition'
-import { buildComponentDefinitions } from '../src/component/component-payload'
+import { buildComponentDefinitions } from '../src/service/render/definition-payload'
 import { buildComponentFlow } from '../src/tree/flow'
 import { bootTreeThread } from '../src/tree/render/thread'
 import type { RenderNode } from '../src/tree/protocol'

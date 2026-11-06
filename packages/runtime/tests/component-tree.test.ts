@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { ComponentTree } from '../src/component/component-tree'
+import { ComponentTree } from '../src/service/component-tree'
 
 function createTree() {
   const tree = new ComponentTree()

@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import {
   buildComponentDefinitions,
   serializeComponentDefinition,
-} from '../src/component/component-payload'
+} from '../src/service/render/definition-payload'
 import { normalizeComponentDefinition } from '../src/component/component-definition'
 import type { MiniProgramComponentSchema } from '../src/types'
 

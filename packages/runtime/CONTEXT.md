@@ -1,5 +1,32 @@
 # Runtime Context
 
+## Layer map
+
+Dependencies point inward. `scripts/check-runtime-layers.mjs` enforces the
+arrows below; `pnpm check:runtime-layers` fails on a new cross-layer import.
+
+```text
+host / tree/render  ──►  tree/protocol  ──►  shared primitives
+                              ▲
+service/thread (assembly) ──► service/render ──► tree/logic ──► component
+        │                          │
+        └──► service/page-stack ───┘
+```
+
+| Layer | Paths | Owns | Must not import |
+| --- | --- | --- | --- |
+| Shared domain | `component/`, `data.ts`, `diagnostics.ts`, `assets.ts`, `events.ts`, `protocol-controls.ts` | component definitions/behaviors/options/generics, data patching, diagnostics, shared control constants | `service/`, `tree/` |
+| Service runtime | `service/thread.ts` (assembly), `service/page-stack.ts`, `service/page-instance.ts`, `service/page-registry.ts`, `service/component-tree.ts`, `service/route.ts`, `service/tab-bar.ts`, `service/api-globals.ts` | App/Page/Component registration, page stack, routing, component selector tree, tabBar, app visibility, API globals | `tree/` |
+| Service render | `service/render/` | service-side logic tree, component schemas/definition payloads, initial flow, patch scheduling, WXS bindings, inbound tree events, render RPCs | service runtime modules, `tree/render/` |
+| Tree logic | `tree/logic/` | glass-easel `ComponentSpace`, recording backend, logic selector query, event dispatch | `service/` |
+| Tree protocol | `tree/protocol.ts`, `tree/flow.ts`, `tree/diff.ts`, `tree/locator.ts`, `tree/animation.ts` | host-neutral nodes, patches, flow and locator contract | runtime implementations |
+| Host render | `tree/render/` | render-thread entry, `TreeRenderer` contract, native renderer | `service/`, `component/`, `tree/logic/` |
+
+`ServicePageStack` talks to the render side only through `ServiceRenderPort`
+(implemented by `ServiceRenderBridge`). This keeps page navigation independent
+of glass-easel and the tree protocol, and keeps all render-message knowledge in
+one layer.
+
 ## Glossary
 
 - **Runtime**: the host-independent `@tiny/runtime` core. It owns the two tree
@@ -22,6 +49,13 @@
 - **Glass-easel adapter**: the internal service-side bridge that registers
   pages/components, resolves events and lifetimes, and drives template updates.
   It is not a public dependency for other packages.
+- **Service render bridge**: `ServiceRenderBridge` in `service/render/`, the
+  façade of the only service layer that knows `tree/logic` and `tree/protocol`.
+  It owns the logic tree lifecycle, component schema/definition payloads,
+  initial `tree.flow`, batched `tree.patch` and WXS bindings. Inbound
+  `tree.event` / `tree.templateEvent` / `tree.wxsEffect` / `tree.ready` routing
+  lives in `inbound.ts`; render-side query/animation RPCs live in `rpc.ts`. The
+  page stack sees the bridge only as `ServiceRenderPort`.
 - **Core entry**: `@tiny/runtime`, whose explicit public barrel must remain free
   of browser globals.
 - **Browser host**: `@tiny/host-browser` (`hosts/browser`), which owns iframes,

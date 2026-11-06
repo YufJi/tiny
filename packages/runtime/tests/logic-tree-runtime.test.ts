@@ -6,7 +6,7 @@ import {
   type Manifest,
   type PageArtifact,
 } from '@tiny/manifest'
-import { buildComponentSchemas } from '../src/component/component-schema'
+import { buildComponentSchemas } from '../src/service/render/component-schema'
 import { normalizeComponentDefinition } from '../src/component/component-definition'
 import { LogicTreeAdapter } from '../src/tree/logic/adapter'
 

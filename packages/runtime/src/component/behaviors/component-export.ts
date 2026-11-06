@@ -1,5 +1,5 @@
 import type { RuntimeCompatibilityConfig } from '@tiny/manifest'
-import type { MiniProgramComponentOptions } from '../../service'
+import type { MiniProgramComponentOptions } from '../options'
 import { builtinBehaviorId } from './types'
 import type { BuiltinBehaviorSpec } from './types'
 

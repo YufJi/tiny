@@ -29,19 +29,24 @@ A browser host does not import iframe helpers from this package. Use
 
 ## Modules
 
-- `service/thread.ts` — app/page lifecycle, page stack, tabBar/`switchTab`, `wx` API host
-- `service/` — page/component instances, registry, selector query, route parsing
+- `service/thread.ts` — service entry: compatibility registry, bridge connection, globals and control wiring
+- `service/page-stack.ts` / `service/page-instance.ts` — page stack, navigation, lifecycle and app visibility
+- `service/render/` — **service render layer**: logic tree lifecycle, component schemas/definition payloads, `tree.flow` / `tree.patch`, WXS bindings, inbound tree events and render RPCs
+- `service/tab-bar.ts` / `service/component-tree.ts` / `service/page-registry.ts` / `service/route.ts` — service runtime helpers
 - `tree/logic/` — service-side logic tree (adapter, backend, query, glass-easel bridge)
 - `tree/render/` — render thread entry and native render-tree adapter
-- `tree/protocol.ts` / `tree/diff.ts` — cross-thread tree contract and patches
-- `component/` — component definitions, schemas, tree, behaviors, observers
-- `host/` — host orchestration, page-scoped message routing, per-page render connectors
+- `tree/protocol.ts` / `tree/flow.ts` / `tree/diff.ts` — cross-thread tree contract, flow and patches
+- `component/` — shared component domain: definitions, generics, behaviors, observers, options
+- `protocol-controls.ts` — control domains shared by the service and render entries
 - `assets.ts` / `data.ts` / `events.ts` / `diagnostics.ts` — shared primitives
 - `bridge` comes from `@tiny/bridge`; manifest types from `@tiny/manifest`
 
+Layer boundaries are documented in [`CONTEXT.md`](./CONTEXT.md) and enforced by
+`pnpm check:runtime-layers`.
+
 ## Public API
 
-The package exposes one entry, `src/index.ts`. The layer barrels under `host/`,
+The package exposes one entry, `src/index.ts`. The layer barrels under
 `service/`, `tree/`, `tree/logic/`, `tree/render/` and `component/` are for the
 runtime implementation; only the symbols below are part of the external
 contract.

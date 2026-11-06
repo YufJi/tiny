@@ -1,9 +1,8 @@
 import { DIAGNOSTIC_CODES, TINY_ENGINE_NAMING } from '@tiny/manifest'
-import { cloneJsonSafe } from '../data'
-import type { WxsBindingMessage } from '../tree/protocol'
-import type { LogicBackendElement, LogicTreeAdapter } from '../tree/logic'
-import { findLogicNodeByElement, queryLogicNodes } from '../tree/logic'
-import type { MiniProgramPageInstance } from './page-instance'
+import { cloneJsonSafe } from '../../data'
+import type { WxsBindingMessage } from '../../tree/protocol'
+import type { LogicBackendElement, LogicTreeAdapter } from '../../tree/logic'
+import { findLogicNodeByElement, queryLogicNodes } from '../../tree/logic'
 
 /**
  * WXS event handlers run inside the logic tree and receive a component
@@ -24,9 +23,15 @@ import type { MiniProgramPageInstance } from './page-instance'
 /** Global the generated event wrapper reads; one service thread per app. */
 const WXS_EVENT_HOST_KEY = TINY_ENGINE_NAMING.wxsEventHostGlobal
 
+/** Minimal page surface a WXS descriptor needs; the service page implements it. */
+export type WxsPageHost = {
+  data: Record<string, unknown>
+  invokeMethod(name: string, args?: unknown[]): unknown
+}
+
 export type WxsEventHostOptions = {
   getLogicTree: () => LogicTreeAdapter | undefined
-  getPage: (pageId: string) => MiniProgramPageInstance | undefined
+  getPage: (pageId: string) => WxsPageHost | undefined
   /** Re-diff the page after a WXS mutation so the render thread picks it up. */
   requestRenderUpdate: (pageId: string) => void
   /** Publish a dynamic binding decision to render. */

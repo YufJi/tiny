@@ -1,11 +1,11 @@
-import { cloneJsonSafe } from '../data'
-import type { ComponentDefinitionPayload } from '../tree/protocol'
-import type { MiniProgramComponentSchema } from '../types'
+import { cloneJsonSafe } from '../../data'
+import type { ComponentDefinitionPayload } from '../../tree/protocol'
+import type { MiniProgramComponentSchema } from '../../types'
 import {
   normalizeComponentDefinition,
   resolveComponentReference,
   type NormalizedComponentDefinition,
-} from './component-definition'
+} from '../../component/component-definition'
 
 /**
  * Strip everything the render tree must not receive.

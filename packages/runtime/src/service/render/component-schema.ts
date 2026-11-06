@@ -3,12 +3,13 @@ import {
   normalizeComponentDefinition,
   parsePureDataPattern,
   type NormalizedComponentDefinition,
-} from './component-definition'
-import type { MiniProgramComponentSchema } from '../types'
+} from '../../component/component-definition'
+import { readComponentGenerics } from '../../component/component-generics'
+import type { MiniProgramComponentSchema } from '../../types'
 
 export function buildComponentSchemas(
   artifacts: ComponentArtifact[],
-  definitions: Map<string, NormalizedComponentDefinition>,
+  definitions: ReadonlyMap<string, NormalizedComponentDefinition>,
 ): MiniProgramComponentSchema[] {
   return artifacts.map((artifact, index) => {
     const definition = definitions.get(artifact.path)
@@ -67,27 +68,6 @@ function readStyleIsolation(
   const value = config.styleIsolation
   if (value === 'isolated' || value === 'apply-shared' || value === 'shared') return value
   return undefined
-}
-
-export function readComponentGenerics(
-  config: Record<string, unknown>,
-): Record<string, { default?: string } | true> {
-  const raw = config.componentGenerics
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
-  const result: Record<string, { default?: string } | true> = {}
-  for (const [alias, value] of Object.entries(raw as Record<string, unknown>)) {
-    if (!alias) continue
-    if (value === true) {
-      result[alias] = true
-      continue
-    }
-    if (!value || typeof value !== 'object') continue
-    const defaultPath = (value as Record<string, unknown>).default
-    result[alias] = typeof defaultPath === 'string' && defaultPath.length > 0
-      ? { default: defaultPath }
-      : true
-  }
-  return result
 }
 
 function readUsingComponents(config: unknown): Record<string, string> {

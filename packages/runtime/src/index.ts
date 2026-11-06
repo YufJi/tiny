@@ -37,7 +37,6 @@ export type {
   RuntimeHostOptions,
   RuntimeManifest,
   ServiceCanvasAdapter,
-  ServiceThreadOptions,
   StorageSnapshot,
   StyleLoader,
   SystemInfoSnapshot,
@@ -52,6 +51,7 @@ export type {
   MiniProgramApiHost,
   ServiceApiContext,
   ServiceApiFactory,
+  ServiceThreadOptions,
   TabBarApi,
 } from './service'
 

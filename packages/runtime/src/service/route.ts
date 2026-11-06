@@ -1,5 +1,5 @@
 import type { PageArtifact } from '@tiny/manifest'
-import type { ServiceThreadOptions } from '../types'
+import type { ServiceThreadOptions } from './types'
 import type { MiniProgramPageInstance } from './page-instance'
 
 export function requireActivePage(

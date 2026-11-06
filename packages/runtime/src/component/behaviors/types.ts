@@ -1,5 +1,5 @@
 import type { RuntimeCompatibilityConfig } from '@tiny/manifest'
-import type { MiniProgramComponentOptions } from '../../service'
+import type { MiniProgramComponentOptions } from '../options'
 
 /**
  * Runtime-level effects that a built-in behavior contributes besides its

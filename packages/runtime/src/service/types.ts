@@ -1,9 +1,19 @@
 import type { BridgeConnection } from '@tiny/bridge'
-import type { ServiceThreadOptions, StorageSnapshot, SystemInfoSnapshot, ServiceCanvasAdapter } from '../types'
+import type {
+  RuntimeManifest,
+  ServiceCanvasAdapter,
+  StorageSnapshot,
+  StyleLoader,
+  SystemInfoSnapshot,
+  TemplateRegistry,
+} from '../types'
 import type { AssetUrlResolver } from '../assets'
-import type { ComponentTree } from '../component'
+import type { ComponentTree } from './component-tree'
+import type { MiniProgramComponentOptions } from '../component/options'
 import type { MiniProgramPageRegistry } from './page-registry'
 import type { MiniProgramPageInstance } from './page-instance'
+
+export type { MiniProgramComponentOptions } from '../component/options'
 
 export type MiniProgramPageOptions = {
   data?: Record<string, unknown>
@@ -22,23 +32,6 @@ export type MiniProgramPageOptions = {
   onShareTimeline?: (...args: unknown[]) => unknown
   onAddToFavorites?: (...args: unknown[]) => unknown
   onSaveExitState?: (...args: unknown[]) => unknown
-  [key: string]: unknown
-}
-
-export type MiniProgramComponentOptions = {
-  data?: Record<string, unknown>
-  properties?: Record<string, unknown>
-  methods?: Record<string, (...args: unknown[]) => unknown>
-  lifetimes?: Record<string, (...args: unknown[]) => void>
-  pageLifetimes?: Record<string, (...args: unknown[]) => void>
-  behaviors?: Array<MiniProgramComponentOptions | string>
-  observers?: Record<string, unknown> | Array<unknown>
-  relations?: Record<string, unknown>
-  listeners?: Record<string, ((...args: unknown[]) => unknown) | string>
-  externalClasses?: string[]
-  options?: Record<string, unknown>
-  export?: (...args: unknown[]) => unknown
-  definitionFilter?: (...args: unknown[]) => unknown
   [key: string]: unknown
 }
 
@@ -105,6 +98,40 @@ export type ServiceApiContext = {
   /** Runtime-owned set so a host theme notification can reach `wx.onThemeChange`. */
   themeListeners?: Set<(value: unknown) => void>
   pageId?: string
+}
+
+/**
+ * Boot contract for one service thread.
+ *
+ * This lives in the service layer (not the package-wide `types.ts`) because it
+ * owns the service entry: the host supplies artifacts, API factory, canvas and
+ * asset hooks, and the kernel assembles the page/render runtimes.
+ */
+export type ServiceThreadOptions = {
+  transport: import('@tiny/bridge').Transport
+  manifest: RuntimeManifest
+  initialPath: string
+  capabilities?: Record<string, unknown>
+  loadArtifacts?: () => Promise<unknown>
+  /**
+   * Mini-program API table factory. Required: the service thread installs
+   * exactly what this returns and reports every other `wx.*` name as
+   * unsupported. Hosts compose the standard set (`@tiny/api`) with
+   * their own device facts.
+   */
+  apiHost: ServiceApiFactory
+  /** Host canvas implementation for legacy canvas APIs/selector nodes. */
+  canvas?: ServiceCanvasAdapter
+  /** Host hook mapping app-root asset paths to loadable URLs (canvas images, …). */
+  resolveAssetUrl?: AssetUrlResolver
+  /** Maximum pages in the runtime page stack. Defaults to 10. */
+  maxPageStack?: number
+  /** Templates for the service-side logic tree. */
+  loadTemplates: () => Promise<TemplateRegistry> | TemplateRegistry
+  /** Test/host hook fired when the service logic tree is created. */
+  onLogicTreeCreated?: (tree: unknown) => void
+  /** Stylesheet text for logic-tree style scoping. */
+  loadStyle?: StyleLoader
 }
 
 export type ServiceThreadRuntime = {

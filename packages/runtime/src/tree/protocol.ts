@@ -73,24 +73,9 @@ export type WxsRenderEffect =
       options?: Record<string, unknown>
     }
 
-export const RUNTIME_CONTROL = Object.freeze({
-  domain: 'runtime',
-  bootstrap: 'bootstrap',
-  inspectTree: 'inspectTree',
-  measure: 'measure',
-  resize: 'resize',
-} as const)
-
-export const QUERY_CONTROL = Object.freeze({
-  domain: 'query',
-  select: 'select',
-  intersection: 'intersection',
-} as const)
-
-export const CANVAS_CONTROL = Object.freeze({
-  domain: 'canvas',
-  measure: 'measure',
-} as const)
+// Control domains are shared by the service runtime and the render thread;
+// re-exported here so the public `tree` barrel keeps one entry.
+export { CANVAS_CONTROL, QUERY_CONTROL, RUNTIME_CONTROL } from '../protocol-controls'
 
 export type RenderNodeId = string
 

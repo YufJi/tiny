@@ -18,6 +18,7 @@ const devtoolUrl = `http://127.0.0.1:${devtoolPort}`
 const steps = [
   ['Build active glass-easel packages', ['pnpm', 'build:glass-easel']],
   ['Check runtime core purity', ['node', 'scripts/check-runtime-purity.mjs']],
+  ['Check runtime layer boundaries', ['node', 'scripts/check-runtime-layers.mjs']],
   ['Run bridge protocol tests', ['pnpm', '--filter', '@tiny/bridge', 'test']],
   ['Run manifest tests', ['pnpm', '--filter', '@tiny/manifest', 'test']],
   ['Run CSS unit tests', ['pnpm', '--filter', '@tiny/css-units', 'test']],

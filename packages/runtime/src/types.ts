@@ -2,7 +2,6 @@ import type { Manifest } from '@tiny/manifest'
 import type { WxsModuleTable } from '@tiny/wxs-runtime'
 import type { AssetUrlResolver } from './assets'
 import type { RenderHostAction } from './tree/protocol'
-import type { ServiceApiFactory } from './service/types'
 
 export type RuntimeManifest = Manifest
 
@@ -249,34 +248,6 @@ export type BuiltinComponents = {
   /** Stylesheets registered before app/page/component styles. */
   styles?: BuiltinStyleSheet[]
 }
-
-export type ServiceThreadOptions = {
-  transport: import('@tiny/bridge').Transport
-  manifest: RuntimeManifest
-  initialPath: string
-  capabilities?: Record<string, unknown>
-  loadArtifacts?: () => Promise<unknown>
-  /**
-   * Mini-program API table factory. Required: the service thread installs
-   * exactly what this returns and reports every other `wx.*` name as
-   * unsupported. Hosts compose the standard set (`@tiny/api`) with
-   * their own device facts.
-   */
-  apiHost: ServiceApiFactory
-  /** Host canvas implementation for legacy canvas APIs/selector nodes. */
-  canvas?: ServiceCanvasAdapter
-  /** Host hook mapping app-root asset paths to loadable URLs (canvas images, …). */
-  resolveAssetUrl?: AssetUrlResolver
-  /** Maximum pages in the runtime page stack. Defaults to 10. */
-  maxPageStack?: number
-  /** Templates for the service-side logic tree. */
-  loadTemplates: () => Promise<TemplateRegistry> | TemplateRegistry
-  /** Test/host hook fired when the service logic tree is created. */
-  onLogicTreeCreated?: (tree: unknown) => void
-  /** Stylesheet text for logic-tree style scoping. */
-  loadStyle?: StyleLoader
-}
-
 
 export type RuntimeHostOptions = {
   serviceTransport: import('@tiny/bridge').Transport

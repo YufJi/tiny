@@ -7,7 +7,7 @@ import {
   type PageArtifact,
 } from '@tiny/manifest'
 import { normalizeComponentDefinition } from '../src/component/component-definition'
-import { buildComponentSchemas } from '../src/component/component-schema'
+import { buildComponentSchemas } from '../src/service/render/component-schema'
 import { LogicTreeAdapter } from '../src/tree/logic/adapter'
 
 const PAGE_PATH = 'pages/query/query'
