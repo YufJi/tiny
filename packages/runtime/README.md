@@ -12,7 +12,7 @@ orchestration.
 | `bootTreeThread` | Render-thread entry: consumes tree flow/patch/event and drives a host `TreeRenderer` |
 
 The browser host supplies the three HTML documents (`host`, service, render) and
-lives in `@tiny/host-browser`:
+lives in `@tiny/host-web`:
 
 | API | Purpose |
 | --- | --- |
@@ -25,7 +25,7 @@ topology through `WasmBrowserHost`. The devtool's debugger client
 ## Usage
 
 A browser host does not import iframe helpers from this package. Use
-`WasmBrowserHost` from `@tiny/host-browser` instead.
+`WasmBrowserHost` from `@tiny/host-web` instead.
 
 ## Modules
 
@@ -44,12 +44,28 @@ A browser host does not import iframe helpers from this package. Use
 Layer boundaries are documented in [`CONTEXT.md`](./CONTEXT.md) and enforced by
 `pnpm check:runtime-layers`.
 
+## Glass-easel entry
+
+Host code that needs glass-easel primitives must import them through the runtime
+subpath:
+
+```ts
+import * as glassEasel from '@tiny/runtime/glass-easel'
+```
+
+The subpath re-exports the same module instance the runtime uses. `hosts/web` and
+`hosts/web-components` declare glass-easel as a peer dependency and their Vite
+builds enable `dedupe: ['glass-easel']`, so one host thread does not bundle two
+copies. The service and render threads still have independent glass-easel module
+instances because they run in separate JS realms; never pass glass-easel objects
+between them.
+
 ## Public API
 
-The package exposes one entry, `src/index.ts`. The layer barrels under
-`service/`, `tree/`, `tree/logic/`, `tree/render/` and `component/` are for the
-runtime implementation; only the symbols below are part of the external
-contract.
+The package exposes the root entry (`src/index.ts`) plus the subpath above. The
+layer barrels under `service/`, `tree/`, `tree/logic/`, `tree/render/` and
+`component/` are for the runtime implementation; only the symbols below are part
+of the external contract.
 
 | Consumer | Entry | Main types |
 | --- | --- | --- |
@@ -80,13 +96,14 @@ runtime, the render tree thread and its host-neutral `TreeRenderer` contract,
 the tree protocol, host orchestration, and manifest/runtime types. It must not
 reference browser globals.
 
-`@tiny/host-browser` (workspace: `hosts/browser`) is the browser host adapter:
+`@tiny/host-web` (workspace: `hosts/web`) is the generic web host adapter:
 
 | Module | Host capability |
 | --- | --- |
 | `canvas-bridge` | Canvas 2D/WebGL OffscreenCanvas handoff, legacy CanvasContext |
 | `runtime-port` | `window.postMessage` / iframe port handshake |
 | `wasm-host` | iframe creation, per-page render stacks, page visibility |
+| `render/` | DOM render tree, built-in style install, WebView render entry |
 | `page-lifecycle` | Render-frame scroll → page `onPageScroll` / `onReachBottom` bridge |
 
 Canvas is injected at the thread boundary:
@@ -95,7 +112,7 @@ Canvas is injected at the thread boundary:
 - `TreeRenderer.measure` / `TreeRenderer.measureCanvas` for render-side geometry and canvas hosts
 
 This keeps the service and render thread entries free of `window`, `document`, `Image`,
-and `HTMLCanvasElement`; browser code lives in `@tiny/host-browser`, not in core. `pnpm check:runtime-purity` walks the core entry's import
+and `HTMLCanvasElement`; browser code lives in `@tiny/host-web`, not in core. `pnpm check:runtime-purity` walks the core entry's import
 graph and fails if a browser global, a `browser` import, or an `@tiny/host-*`
 import leaks in.
 
@@ -106,16 +123,16 @@ built-in tags; the host render tree turns them into real components:
 
 ```ts
 import { bootTreeThread } from '@tiny/runtime'
-import { createGlassRenderEntry } from '@tiny/host-web-components'
+import { createGlassRenderEntry } from '@tiny/host-web'
 
 const entry = createGlassRenderEntry({ container: document.getElementById('app') })
 entry.prepare()
 bootTreeThread({ transport, renderer: entry.createRenderer() })
 ```
 
-`@tiny/host-web-components` (`hosts/web-components`) provides the web/DOM
-implementation (`tiny-*` host nodes, behaviors, templates, and CSS) used by
-`createGlassRenderTree`. Built-in CSS stays host-owned. A native host implements
+`@tiny/host-web-components` (`hosts/web-components`) provides the built-in
+definitions (`tiny-*` host nodes, behaviors, templates, and CSS) consumed by
+the web render tree in `@tiny/host-web`. Built-in CSS stays host-owned. A native host implements
 the same `TreeRenderer` contract with native views and can ignore the web
 package entirely.
 
@@ -144,7 +161,7 @@ bootServiceThread({
 
 `@tiny/api` is the standard WeChat-compatible table (one module per
 domain); hosts compose their own device facts on top. The browser host's
-`bootBrowserServiceEntry` already defaults to that composition plus
+`bootServiceEntry` already defaults to that composition plus
 `apiExtensions`. The engine only exposes mini-program semantics, host snapshots
 (system/storage), and bridge calls; it does not invent device or performance
 results.
@@ -157,7 +174,7 @@ a host resolver:
 
 ```ts
 import { bootTreeThread } from '@tiny/runtime'
-import { createGlassRenderTree } from '@tiny/host-web-components'
+import { createGlassRenderTree } from '@tiny/host-web'
 
 bootTreeThread({
   transport,

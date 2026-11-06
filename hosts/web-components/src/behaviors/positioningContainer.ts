@@ -1,4 +1,4 @@
-import type * as glassEasel from 'glass-easel'
+import type * as glassEasel from '@tiny/runtime/glass-easel'
 
 import { bindHostListeners, unbindHostListeners } from './host-listeners'
 import { BUILTIN_BEHAVIOR_IDS } from './ids'

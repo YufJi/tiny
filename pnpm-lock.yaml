@@ -23,21 +23,21 @@ importers:
       '@rematch/core':
         specifier: ^2.0.1
         version: 2.2.0(redux@4.2.1)
-      '@tiny/host-browser':
-        specifier: workspace:*
-        version: link:../../hosts/browser
       '@tiny/host-core-wasm':
         specifier: workspace:*
         version: link:../../native/host-core-wasm
-      '@tiny/host-web-components':
+      '@tiny/host-web':
         specifier: workspace:*
-        version: link:../../hosts/web-components
+        version: link:../../hosts/web
       '@tiny/manifest':
         specifier: workspace:*
         version: link:../../packages/manifest
       '@tiny/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
+      glass-easel:
+        specifier: 1.1.0
+        version: 1.1.0
       react:
         specifier: ^17.0.2
         version: 17.0.2
@@ -58,22 +58,6 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@25.6.2)(@vitest/ui@1.6.1)(less@3.13.1)
 
-  hosts/browser:
-    dependencies:
-      '@tiny/api':
-        specifier: workspace:*
-        version: link:../../packages/api
-      '@tiny/bridge':
-        specifier: workspace:*
-        version: link:../../packages/bridge
-      '@tiny/runtime':
-        specifier: workspace:*
-        version: link:../../packages/runtime
-    devDependencies:
-      typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
-
   hosts/ios:
     dependencies:
       '@tiny/api':
@@ -82,15 +66,15 @@ importers:
       '@tiny/bridge':
         specifier: workspace:*
         version: link:../../packages/bridge
-      '@tiny/host-browser':
+      '@tiny/host-web':
         specifier: workspace:*
-        version: link:../browser
-      '@tiny/host-web-components':
-        specifier: workspace:*
-        version: link:../web-components
+        version: link:../web
       '@tiny/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
+      glass-easel:
+        specifier: 1.1.0
+        version: 1.1.0
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -101,6 +85,40 @@ importers:
       vite:
         specifier: ^5.4.21
         version: 5.4.21(@types/node@22.20.1)(less@3.13.1)
+
+  hosts/web:
+    dependencies:
+      '@tiny/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      '@tiny/bridge':
+        specifier: workspace:*
+        version: link:../../packages/bridge
+      '@tiny/css-units':
+        specifier: workspace:*
+        version: link:../../packages/css-units
+      '@tiny/host-web-components':
+        specifier: workspace:*
+        version: link:../web-components
+      '@tiny/manifest':
+        specifier: workspace:*
+        version: link:../../packages/manifest
+      '@tiny/runtime':
+        specifier: workspace:*
+        version: link:../../packages/runtime
+    devDependencies:
+      '@tiny/template-compiler':
+        specifier: workspace:^
+        version: link:../../packages/template-compiler
+      glass-easel:
+        specifier: 1.1.0
+        version: 1.1.0
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@25.6.2)(@vitest/ui@1.6.1)(less@3.13.1)
 
   hosts/web-components:
     dependencies:
@@ -113,9 +131,6 @@ importers:
       '@tiny/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
-      glass-easel:
-        specifier: 1.1.0
-        version: 1.1.0
     devDependencies:
       '@tiny/stylesheet-compiler':
         specifier: workspace:*
@@ -126,6 +141,9 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1
+      glass-easel:
+        specifier: 1.1.0
+        version: 1.1.0
       postcss:
         specifier: ^8.4.38
         version: 8.5.14

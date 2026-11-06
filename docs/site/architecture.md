@@ -71,7 +71,7 @@ Tiny 只守住一条线：`packages/runtime` 是唯一的内核，它不引用 w
 | manifest | 定义产物类型、schemaVersion 和解析后的命名配置 | 具体实现 | `packages/manifest` |
 | runtime | App/Page/Component 语义、页面栈、setData、observer、relations、逻辑树、virtual node diff、tree 协议和 canvas 协议 | 真实 DOM、宿主内置组件实现、宿主 API、界面 | `packages/runtime` |
 | bridge | 消息信封和帧、transport、调用与回复、批处理、超时和 JSON 校验 | wx API 语义、渲染指令、页面状态 | `packages/bridge` |
-| host | 线程和 transport、启动流程、宿主 API、渲染树、内置组件、canvas、资源 URL、诊断收集 | 页面栈、业务 data、observer、relations 和事件回调 | `hosts/browser` · `hosts/web-components` · `apps/devtool` · `tests/host` · `ios/` native adapter |
+| host | 线程和 transport、启动流程、宿主 API、渲染树、内置组件、canvas、资源 URL、诊断收集 | 页面栈、业务 data、observer、relations 和事件回调 | `hosts/web` · `hosts/web-components` · `apps/devtool` · `tests/host` · `ios/` native adapter |
 
 :::callout{title="页面状态只在 service"}
 页面栈、页面 data、组件实例、observer 和 relations 都归 service 线程管；render 线程持有渲染树、DOM 和组件模板求值结果，只镜像组件的共享 id，元素用自己的本地 id 和组件作用域 locator 寻址。两棵树没有共享内存，所有同步都经过宿主转发的 tree 协议。
@@ -147,12 +147,12 @@ glass-easel 不是完整的小程序 SDK。它负责组件、模板、数据绑�
 | `@tiny/stylesheet-compiler` | manifest · css-units · postcss | WXSS → 普通/低优先级 CSS |
 | `@tiny/cli` | manifest · template-compiler · stylesheet-compiler · esbuild · typescript | 负责生成全部产物 |
 | `@tiny/runtime` | manifest · bridge · wxs-runtime · glass-easel | 双线程运行时内核，不依赖宿主 |
-| `@tiny/host-browser` | runtime · bridge · api | 浏览器宿主：iframe、MessageChannel、Canvas、宿主 API 覆盖层；Rust HostCore 的 wasm 适配 |
+| `@tiny/host-web` | runtime · bridge · api · host-web-components | 通用 Web 宿主：iframe/WebView 线程入口、MessageChannel、DOM 渲染树、Canvas、页面生命周期；Rust HostCore 的 wasm 适配 |
 | `@tiny/host-core-wasm` | Rust `host-core` · wasm-bindgen | 浏览器 HostCore wasm 绑定，devtool/test host 共用 |
 | `@tiny/host-core-ffi` | Rust `host-core` · UniFFI | iOS Swift HostCore 绑定 |
-| `@tiny/host-web-components` | manifest · css-units · runtime · glass-easel；构建期 template-compiler | 39 个内置组件、AOT 模板和默认 CSS（宿主包） |
-| `@tiny/host-ios` | runtime · bridge · api · host-browser · host-web-components | iOS 宿主前端：JSCore engine 与每页 native render 产物；状态机由 `ios/` 的 UniFFI HostCore 驱动 |
-| `devtool` | host-browser · host-web-components · host-core-wasm · glass-easel · React · Redux/rematch | 调试器宿主和控制面板 |
+| `@tiny/host-web-components` | manifest · css-units · runtime · glass-easel；构建期 template-compiler | 39 个内置组件的定义、behaviors、AOT 模板和默认 CSS（不负责 render tree/线程启动） |
+| `@tiny/host-ios` | runtime · bridge · api · host-web | iOS native adapter：JSCore service engine 与每页 WKWebView 的 transport/canvas；render entry 复用 host-web，状态机由 `ios/` 的 UniFFI HostCore 驱动 |
+| `devtool` | host-web · host-core-wasm · glass-easel · React · Redux/rematch | 调试器宿主和控制面板；宿主 API handler 由 app 注入 |
 | `@tiny/website` | React | 架构站点，不进入引擎链路 |
 
 ```text
@@ -164,13 +164,13 @@ core        packages/manifest
             packages/stylesheet-compiler
             packages/runtime            -> manifest, bridge, wxs-runtime, glass-easel
 tools       tools/cli                  -> manifest, template-compiler, stylesheet-compiler
-hosts       hosts/browser              -> runtime, bridge, api   (环境适配)
+hosts       hosts/web              -> runtime, bridge, api, host-web-components   (Web 宿主适配)
             hosts/web-components       -> runtime, manifest, css-units, glass-easel
                                           (内置组件，注入 render)
-            hosts/ios                  -> runtime, bridge, api, host-browser, host-web-components
+            hosts/ios                  -> runtime, bridge, api, host-web
                                           (JSCore engine + native WKWebView render)
-apps        apps/devtool               -> host-browser, host-web-components, host-core-wasm
-tests       tests/host                 -> host-browser, host-web-components
+apps        apps/devtool               -> host-web, host-core-wasm
+tests       tests/host                 -> host-web, host-web-components
                                           (不是 workspace 包)
 fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
 
@@ -191,7 +191,7 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
 | 编译并写出产物 | tools/cli | 读取 app.json，扫描入口，生成 templates.js、styles、scripts 和 service.js，最后写出 schema-v2 manifest.json。诊断信息随 manifest 一起返回。 | compileMiniProgram({ sourceDir, outputDir }) |
 | 创建 service 通道 | 宿主 | service 先建立一条 MessageChannel；render 连接不预先创建，而是每新建一个页面时随 render root 建立一条。 | createHostMessageChannelPair() |
 | 创建 iframe，等待线程就绪 | 宿主 | service iframe 被隐藏为 0×0，render iframe 填满容器；每新建一个页面就创建一个 render iframe。宿主等待线程发回 tiny-runtime-port-ready，最多等 15 秒。 | WasmBrowserHost(...) |
-| 线程装好连接后再通知宿主 | service / render | service 先拿到 manifest，再在 bootstrap 里加载 templates 和 styles；render 先在 `prepare` 里装好内置样式，渲染树本身在端口到达后创建。线程要等 connection 安装完成，才调用 `listenForRuntimePort`，避免端口消息到达时丢帧。 | bootBrowserServiceEntry(...) / bootBrowserRenderEntry(createGlassRenderEntry(...)) |
+| 线程装好连接后再通知宿主 | service / render | service 先拿到 manifest，再在 bootstrap 里加载 templates 和 styles；render 先在 `prepare` 里装好内置样式，渲染树本身在端口到达后创建。线程要等 connection 安装完成，才调用 `listenForRuntimePort`，避免端口消息到达时丢帧。 | bootServiceEntry(...) / bootRenderEntry(...) |
 | 把 MessagePort 交给线程 | 宿主 | 宿主把 port2 作为 transferable 发给对应 iframe；线程再用 createMessagePortTransport 包装成 Transport。 | postMessage({ type: 'tiny-runtime-port' }, '*', [port]) |
 | 两条连接分别握手 | bridge | 宿主分别发起 runtime.hello，service/render 回复握手信息并发送 runtime.ready。协议版本不一致时连接会直接关闭。 | host.service.handshake() · host.render.handshake() |
 | service 启动首屏 | 宿主 → service | 导入 service.js，App/Page/Component 在这里注册，App.onLaunch/onShow 也会立即执行。随后安装 runtimeCompatibility 兼容全局，构建组件 schema 和 glass-easel 逻辑树，创建首个页面并触发 onLoad/onShow；逻辑树挂载后立即生成首屏 tree.flow，返回 pageId、initialData 和 componentSchemas。 | service.control('runtime', 'bootstrap') |
@@ -346,7 +346,11 @@ iOS 路径不使用 iframe 或 `host.html`；页面切换由 `HostCoreRuntime` �
 :::
 
 :::card{title="依赖只能向内"}
-核心包不能依赖 tools、apps、hosts 或 tests；共享类型放在 manifest 里，不要从 CLI 反向导入。浏览器能力只能从 `hosts/browser` 进入宿主，内置组件只能从 `hosts/web-components` 进入宿主。
+核心包不能依赖 tools、apps、hosts 或 tests；共享类型放在 manifest 里，不要从 CLI 反向导入。Web 宿主能力（线程、端口、DOM 渲染树、canvas）从 `hosts/web` 进入宿主，内置组件定义从 `hosts/web-components` 进入宿主；宿主 API handler 由应用注入。
+:::
+
+:::card{title="每个线程一份 glass-easel"}
+宿主代码只从 `@tiny/runtime/glass-easel` 导入 glass-easel；host 包声明 `glass-easel` 为 peer dependency，Vite 配置使用 `dedupe: ['glass-easel']`。service 和 render 是两个 JS realm，各自持有一份 module instance 和 `ComponentSpace`，不能跨线程传递 glass-easel 对象。
 :::
 
 :::card{title="内核不引用浏览器 API"}

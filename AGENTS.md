@@ -55,9 +55,9 @@ must not depend on tools, apps, hosts, or tests.
 
 | Path | Scope |
 | --- | --- |
-| `hosts/browser` | `@tiny/host-browser`: iframes, message ports, DOM canvas, host API overlays |
-| `hosts/web-components` | `@tiny/host-web-components`: web/DOM implementations of the built-in tags, mounted by the web render tree |
-| `hosts/ios` | `@tiny/host-ios`: one Vite package; `src/service` builds the JSCore engine, `src/web` builds host/render entries |
+| `hosts/web` | `@tiny/host-web`: iframes, message ports, DOM canvas, DOM render tree, WebView entries |
+| `hosts/web-components` | `@tiny/host-web-components`: web/DOM implementations of the built-in tags and their default styles |
+| `hosts/ios` | `@tiny/host-ios`: native adapter; `src/service` builds the JSCore engine, `src/web` builds the WKWebView transport/canvas entry on top of `@tiny/host-web` |
 
 ## Commands
 
@@ -99,7 +99,7 @@ pnpm --filter @tiny/website build
 ## Testing
 
 Vitest is used by `bridge`, `template-compiler`, `stylesheet-compiler`, `cli`,
-`host-web-components`, `runtime`, and `api`. There is no global test runner; use
+`host-web`, `host-web-components`, `runtime`, and `api`. There is no global test runner; use
 `pnpm --filter <package> test`.
 
 The iOS host has its own simulator gate, `pnpm ios:sim`; it requires an installed
@@ -153,11 +153,17 @@ records boot state, visible text, page errors and diagnostics per page into
   WKWebView cannot share memory, so it uses `WKScriptMessageHandler` plus
   `callAsyncJavaScript` for the Bridge/host-control relay. Keep that code in
   `ios/` and do not copy it into browser paths.
-- `@tiny/runtime` must stay host-independent. Browser modules live in
-  `@tiny/host-browser`; built-in tag implementations live in
+- `@tiny/runtime` must stay host-independent. Web host modules live in
+  `@tiny/host-web`; built-in tag implementations live in
   `@tiny/host-web-components` and are mounted by the web render tree
   (`createGlassRenderEntry` / `createGlassRenderTree`). Run
   `pnpm check:runtime-purity` after touching the core entry.
+- Host packages must import glass-easel through `@tiny/runtime/glass-easel`, not
+  directly. Keep `glass-easel` as a peer dependency in host packages and
+  `resolve.dedupe: ['glass-easel']` in their Vite/test configs so one JS realm
+  has one glass-easel module instance. Service and render still have separate
+  realms and separate `ComponentSpace`s; never pass glass-easel objects across
+  the tree protocol.
 - The mini-program API set does not live in `packages/runtime`. The kernel owns
   the global namespace, the unsupported-API fallback and a stable
   `ServiceApiContext`; hosts pass `ServiceThreadOptions.apiHost` (normally
@@ -167,7 +173,7 @@ records boot state, visible text, page errors and diagnostics per page into
   the host's `apiHost` composition; canvas is supplied through
   `ServiceThreadOptions.canvas` and the render tree's `TreeRenderer.measure` /
   `measureCanvas` hooks. Do not hardcode them in `packages/runtime`.
-- The browser test host and devtool both use `@tiny/host-browser`’s
+- The browser test host and devtool both use `@tiny/host-web`’s
   `WasmBrowserHost` over `@tiny/host-core-wasm`;
   devtool adds its own `DevtoolRuntimeClient` (`apps/devtool/src/runtimeClient.ts`)
   for lifecycle control, state projection, and element-tree inspection. Host

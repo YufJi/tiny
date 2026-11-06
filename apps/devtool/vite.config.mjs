@@ -109,12 +109,14 @@ export default defineConfig(({ command, isPreview }) => {
         // These workspace packages are linked from the monorepo and some of
         // them only build to CommonJS. Vite loads ESM in the browser, so
         // resolve them from source the same way tests/host does.
+        '@tiny/runtime/glass-easel': path.join(workspaceRoot, 'packages/runtime/src/glass-easel.ts'),
         '@tiny/runtime': path.join(workspaceRoot, 'packages/runtime/src/index.ts'),
         '@tiny/api': path.join(workspaceRoot, 'packages/api/src/index.ts'),
-        '@tiny/host-browser': path.join(workspaceRoot, 'hosts/browser/src/index.ts'),
+        '@tiny/host-web': path.join(workspaceRoot, 'hosts/web/src/index.ts'),
         '@tiny/host-web-components': path.join(workspaceRoot, 'hosts/web-components/src/index.ts'),
         '@tiny/manifest': path.join(workspaceRoot, 'packages/manifest/src/index.ts'),
       },
+      dedupe: ['glass-easel'],
     },
     esbuild: {
       // Keep the classic React 17 transform the rspack build used.

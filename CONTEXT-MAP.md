@@ -14,7 +14,7 @@ Each package is a bounded context. Read only the contexts relevant to the curren
 | Template Compiler | `packages/template-compiler` | Template compilation |
 | Test Host | `tests/host` | Standalone Vite host for test apps and acceptance |
 | Test Apps | `tests/apps` | Mini-program fixtures used by acceptance |
-| Browser Host | `hosts/browser` | iframe/MessageChannel/DOM canvas host adapters |
+| Web Host | `hosts/web` | iframe/MessageChannel/DOM canvas and DOM render tree host adapters |
 | Web Components | `hosts/web-components` | Web/DOM implementations of mini-program built-in tags used by the render tree |
 | iOS App | `ios` | SwiftUI/UIKit native app, Xcode project, WKWebView/JSCore bridge, build and simulator scripts |
 | iOS Host Package | `hosts/ios` | One Vite package: `src/service` engine + `src/web` native render entry |

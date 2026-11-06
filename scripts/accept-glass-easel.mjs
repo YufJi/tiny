@@ -27,6 +27,7 @@ const steps = [
   ['Run stylesheet compiler tests', ['pnpm', '--filter', '@tiny/stylesheet-compiler', 'test']],
   ['Run cli tests', ['pnpm', '--filter', '@tiny/cli', 'test']],
   ['Run web built-in component tests', ['pnpm', '--filter', '@tiny/host-web-components', 'test']],
+  ['Run web host tests', ['pnpm', '--filter', '@tiny/host-web', 'test']],
   ['Run WeChat API table tests', ['pnpm', '--filter', '@tiny/api', 'test']],
   ['Run runtime tests', ['pnpm', '--filter', '@tiny/runtime', 'test']],
   ['Run devtool tests', ['pnpm', '--filter', 'devtool', 'test']],

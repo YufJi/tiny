@@ -1,4 +1,4 @@
-import type * as glassEasel from 'glass-easel'
+import type * as glassEasel from '@tiny/runtime/glass-easel'
 
 /** Input devices the compositor understands. Touch is the primary source. */
 export type PointerSource = 'touch' | 'mouse'

@@ -1,8 +1,8 @@
 # Tiny iOS 宿主
 
 一个可运行的 iOS 小程序宿主：**SwiftUI 原生壳 + 一个 WKWebView 渲染层 + JavaScriptCore 逻辑层**。
-它复用 `@tiny/runtime`、`@tiny/bridge`、`@tiny/host-browser` 的 render entry 和
-`@tiny/host-web-components`，不复制小程序运行时语义。
+它复用 `@tiny/runtime`、`@tiny/bridge`、`@tiny/host-web` 的 render entry；
+`@tiny/host-web-components` 只提供内置组件定义和样式，不复制小程序运行时语义。
 
 当前验证环境：Xcode 27 / iOS 27 Simulator（iPhone 18 Pro）。最低部署版本 iOS 16。
 
@@ -194,7 +194,7 @@ pnpm ios:smoke:jsc    # 在 macOS jsc 里启动 demo 的真实 service engine + 
 ### `src/service`（`--mode service`）
 
 - Vite lib 模式，单个 IIFE 入口 `src/service/entry.ts`，输出 `dist/service/service-engine.js`。
-- 依赖 `@tiny/runtime`、`@tiny/bridge`；`@tiny/runtime` / `@tiny/host-browser` 的 dist 还是 CommonJS，Vite 用 `commonjsOptions` 处理，其他 workspace 包直接走 package exports。
+- 依赖 `@tiny/runtime`、`@tiny/bridge`；`@tiny/runtime` / `@tiny/host-web` 的 dist 还是 CommonJS，Vite 用 `commonjsOptions` 处理，其他 workspace 包直接走 package exports。
 - 提供 JSCore 缺失的 shims：原生定时器、`console`、`queueMicrotask`、`URLSearchParams`、
   `TextEncoder` / `TextDecoder`、`atob` / `btoa`、`structuredClone`、`performance.now`。
 - 不提供 `document` / `window` / `fetch`；网络和文件走 `wx.*` 宿主 API。

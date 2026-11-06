@@ -1,4 +1,4 @@
-import type * as glassEasel from 'glass-easel'
+import type * as glassEasel from '@tiny/runtime/glass-easel'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { valueFromEvent } from '../../events'
 import { builtinDefinitionName } from '../../tags'

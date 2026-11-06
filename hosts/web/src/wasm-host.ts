@@ -8,7 +8,6 @@ import type {
   StorageSnapshot,
   SystemInfoSnapshot,
 } from '@tiny/runtime'
-import { createBrowserApiHandlers } from './api-handlers'
 import { BROWSER_RUNTIME_NAMES } from './naming'
 import { installCanvasHandoffRelay } from './canvas-relay'
 
@@ -38,7 +37,7 @@ export type WasmHostOptions = {
   storage?: StorageSnapshot
   container?: HTMLElement
   maxPageStack?: number
-  apiHandlers?: HostApiHandlers
+  apiHandlers: HostApiHandlers
   onState?: (state: unknown) => void
   onDiagnostic?: (diagnostic: RuntimeDiagnostic) => void
   /** Host-side request/response capabilities (e.g. the `<picker>` popover). */
@@ -518,12 +517,7 @@ export class WasmBrowserHost {
   }
 
   private async runPlatformCall(action: Extract<CoreAction, { type: 'platformCall' }>): Promise<void> {
-    const handlers = {
-      ...createBrowserApiHandlers(),
-      ...this.options.apiHandlers,
-      ...storageHandlers(this.storage),
-    }
-    const handler = handlers[action.method]
+    const handler = this.options.apiHandlers[action.method]
     if (typeof handler !== 'function') {
       this.finishPlatformCall(action.requestId, undefined, `unsupported host API: ${action.method}`)
       return
@@ -608,29 +602,6 @@ function commandName(command: Record<string, unknown>): string | undefined {
     || type === 'redirectTo' || type === 'reLaunch' || type === 'inspectTree'
     ? type
     : undefined
-}
-
-function storageHandlers(storage: StorageSnapshot): HostApiHandlers {
-  return {
-    'storage.get': (params) => ({ value: storage[String(params.key)] }),
-    'storage.set': (params) => {
-      storage[String(params.key)] = params.value
-      return { errMsg: 'setStorageSync:ok' }
-    },
-    'storage.remove': (params) => {
-      delete storage[String(params.key)]
-      return { errMsg: 'removeStorageSync:ok' }
-    },
-    'storage.clear': () => {
-      for (const key of Object.keys(storage)) delete storage[key]
-      return { errMsg: 'clearStorageSync:ok' }
-    },
-    'storage.info': () => ({
-      keys: Object.keys(storage),
-      currentSize: JSON.stringify(storage).length,
-      limitSize: 10240,
-    }),
-  }
 }
 
 function nowMs(): number {

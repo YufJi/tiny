@@ -1,19 +1,18 @@
-import type { HostApiHandlers } from '@tiny/runtime'
-import { BROWSER_RUNTIME_NAMES } from './naming'
+import type { HostApiHandlers, StorageSnapshot } from '@tiny/runtime'
 
-const OVERLAY_ID = BROWSER_RUNTIME_NAMES.apiOverlayId
-const STYLE_ID = BROWSER_RUNTIME_NAMES.apiOverlayStyleId
+const OVERLAY_ID = 'tiny-api-overlay'
+const STYLE_ID = 'tiny-api-overlay-style'
 
 let loadingElement: HTMLElement | null = null
 let toastElement: HTMLElement | null = null
 
 /**
- * Browser implementations for the host-side wx APIs.
+ * App-owned browser implementations for the host-side wx APIs.
  *
  * These run in the host realm (the page that owns the iframes), so DOM,
  * fetch, clipboard and navigator access stay out of the core runtime.
  */
-export function createBrowserApiHandlers(): HostApiHandlers {
+export function createTestHostApiHandlers(storage: StorageSnapshot = {}): HostApiHandlers {
   return {
     'network.request': (params) => request(params),
     'network.type': () => ({ networkType: networkType(), errMsg: 'getNetworkType:ok' }),
@@ -52,6 +51,24 @@ export function createBrowserApiHandlers(): HostApiHandlers {
     'ui.modal': (params) => showModal(params),
     'ui.actionSheet': (params) => showActionSheet(params),
     'share.menu': (params) => ({ errMsg: `${String(params.action ?? 'share')}:ok` }),
+    'storage.get': (params) => ({ value: storage[String(params.key)] }),
+    'storage.set': (params) => {
+      storage[String(params.key)] = params.value
+      return { errMsg: 'setStorageSync:ok' }
+    },
+    'storage.remove': (params) => {
+      delete storage[String(params.key)]
+      return { errMsg: 'removeStorageSync:ok' }
+    },
+    'storage.clear': () => {
+      for (const key of Object.keys(storage)) delete storage[key]
+      return { errMsg: 'clearStorageSync:ok' }
+    },
+    'storage.info': () => ({
+      keys: Object.keys(storage),
+      currentSize: JSON.stringify(storage).length,
+      limitSize: 10240,
+    }),
   }
 }
 

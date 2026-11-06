@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
-import * as glassEasel from 'glass-easel'
+import * as glassEasel from '@tiny/runtime/glass-easel'
 import type { RenderNode } from '@tiny/runtime'
-import { createGlassRenderTree } from '../src/render-tree'
+import { createGlassRenderTree } from '../src/render/tree'
 
 describe('projected render tree in glass', () => {
   test('mounts built-in composition and applies text/props/insert/remove patches', () => {

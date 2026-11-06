@@ -30,10 +30,10 @@ order: 9
 | service runtime | :pill[可用]{tone="good"} | App/Page/Component、页面栈、5 个路由 API、14 项页面生命周期、7 项应用生命周期、setData、兼容全局与 behavior scheme、behaviors/observers/relations/definitionFilter/pureDataPattern、glass-easel 逻辑树、virtual node diff、tree 协议、storage/system/canvas 协议。 |
 | render tree | :pill[可用]{tone="good"} | 宿主 `TreeRenderer`：真实内置组件、组件模板求值（shadow tree）、slot、shadow root、样式、布局、DOM、元素树、query、measure、IntersectionObserver；Web 实现是 `createGlassRenderTree`。元素由渲染侧分配本地 id，组件作用域 locator 负责跨线程寻址。 |
 | bridge | :pill[可用]{tone="good"} | 7 个在用消息域，含 tree/query；信封和帧、MessagePort/内存 transport、握手、超时、批处理、JSON 校验；capabilities 还没有用于协商。 |
-| 浏览器宿主 | :pill[可用]{tone="good"} | @tiny/host-browser 支持每页 render 连接、MessageChannel、tabBar 宿主 UI、OffscreenCanvas handoff、resolveAssetUrl 和宿主 API 覆盖层；@tiny/host-web-components 提供 Web 渲染树和 39 个内置组件；devtool 的会话客户端在应用内（`apps/devtool/src/runtimeClient.ts`）。内核依赖检查通过。 |
+| Web 宿主 | :pill[可用]{tone="good"} | @tiny/host-web 支持每页 render 连接、MessageChannel、DOM 渲染树、WebView render entry、OffscreenCanvas handoff 和 resolveAssetUrl；@tiny/host-web-components 只提供 39 个内置组件定义和默认样式；宿主 API handler 由 tests/host 和 devtool 各自注入；devtool 的会话客户端在应用内（`apps/devtool/src/runtimeClient.ts`）。内核依赖检查通过。 |
 | iOS 宿主 | :pill[可用（MVP）]{tone="good"} | `ios/` 原生工程 + `hosts/ios` Vite 包（`src/service` / `src/web`）：Rust `HostCoreRuntime`（UniFFI）+ JavaScriptCore service + 每页一个 WKWebView；没有 `host.html`、iframe 或 JS host fallback。SwiftUI Launcher/导航栏/tabBar，UserDefaults 存储，全部 7 个 fixture 已在模拟器 smoke，并覆盖 native 导航/tab 切换、push/pop 动画和左边缘右滑返回；真机 device build/install 也已跑通；Canvas 2D 走 service 录制 + native render 回放，WebGL/同步读回未接。 |
 | 内置组件 | :pill[较完整]{tone="good"} | 39 个组件和共享 behaviors；checkbox/radio/switch/slider/icon/image/picker 已按 2.33.0 参考重写；rich-text/match-media/cover-view/cover-image/page-container/root-portal/grid-view 已完成第一版；input/textarea/scroll-view/swiper 仍是近似实现；全部 39 个标签已注册；video/map/audio/web-view 是浏览器近似实现；editor/editor-portal、广告、直播、开放能力等 20 个组件暂不支持。 |
-| API | :pill[部分]{tone="warn"} | request、同步/异步 storage、5 个路由 API、system、toast/modal/loading/actionSheet（浏览器宿主有 overlay）、clipboard/vibrate、network/battery、canvas、selector query 和 IntersectionObserver 已有；媒体、真实文件系统、位置、WebSocket 和真实账号授权还没有。 |
+| API | :pill[部分]{tone="warn"} | request、同步/异步 storage、5 个路由 API、system、toast/modal/loading/actionSheet（由 app 注入的宿主 handler 提供 overlay）、clipboard/vibrate、network/battery、canvas、selector query 和 IntersectionObserver 已有；媒体、真实文件系统、位置、WebSocket 和真实账号授权还没有。 |
 | 页面能力 | :pill[部分]{tone="warn"} | 14 项页面生命周期、5 个路由 API、内置 tabBar/switchTab、页面滚动/触底/下拉刷新、分享回调和退出状态已经支持；Web 端的分享菜单 UI、页面转场、页面栈恢复和自定义 tabBar 还缺。 |
 | 组件语义 | :pill[核心可用]{tone="good"} | Behaviors、observers、relations、selectComponent、component-export、component-as-page、generics（含页面级 `generic:x`）、definitionFilter、pureDataPattern 已实现；语义运行在 service 逻辑树，组件模板在 service 与 render 两侧各自求值。componentPlaceholder、trait behaviors 和 chaining API 未实现。 |
 | 样式系统 | :pill[核心可用]{tone="good"} | class/tag 作用域、rpx、@import、styleIsolation/addGlobalClass、externalClasses、shared CSS、`:host` 与 low-priority 输出已支持；内置组件内部样式使用独立宿主 scope。 |
@@ -42,7 +42,7 @@ order: 9
 | 诊断 | :pill[可用]{tone="good"} | 编译、transport、service、render、host 五类诊断统一收集；组件语义新增了 observer、relation、behavior 相关诊断。 |
 | Devtool | :pill[运行时级+]{tone="good"} | 应用列表、点击启动、最近 3 个应用保活、返回列表、设备框、宿主导航和 tabBar、每页 render 帧、Console/Lifecycle/Elements、Reload/Close app；页面栈默认上限 10，宿主可配置。它仍不是完整的微信开发者工具。 |
 | 性能与稳定 | :pill[未量化]{tone="warn"} | 启动、首屏、setData、内存和长时运行都没有基准，也没有压力测试。 |
-| 测试 | :pill[核心链路]{tone="good"} | 388 个单元测试、61 个浏览器步骤、7 个测试小程序，以及 iOS 宿主 7 个 fixture 的模拟器 smoke；tree flow/patch、两次求值、locator 寻址、WXS 都有单元和浏览器覆盖，参考协议的细节仍有缺口。 |
+| 测试 | :pill[核心链路]{tone="good"} | 408 个单元测试、61 个浏览器步骤、7 个测试小程序，以及 iOS 宿主 7 个 fixture 的模拟器 smoke；tree flow/patch、两次求值、locator 寻址、WXS 都有单元和浏览器覆盖，参考协议的细节仍有缺口。 |
 
 ## 现在最影响使用的问题 {#gaps kicker="主要缺口"}
 
@@ -183,7 +183,7 @@ iOS 宿主补 WebGL、原生 API 和真机自动化；再评估 native `TreeRend
 :::
 
 :::card{title="宿主适配器在核心之外"}
-iframe、DOM canvas 和宿主 API 覆盖层放在 `hosts/browser`，内置组件放在 `hosts/web-components`；调试器的会话与界面属于 `apps/devtool`。核心包不能反向依赖 hosts。
+iframe、DOM canvas、DOM 渲染树和 WebView 线程入口放在 `hosts/web`，内置组件放在 `hosts/web-components`，宿主 API handler 由 `tests/host` / `apps/devtool` 注入；调试器的会话与界面属于 `apps/devtool`。核心包不能反向依赖 hosts。
 :::
 
 :::card{title="所有宿主共用一个 manifest"}
@@ -245,13 +245,13 @@ WXML、WXSS、TS 和命名配置如何变成 manifest。
 :::
 
 :::card{tag="宿主" title="宿主负责接入环境"}
-host-browser、host-web-components、注入能力和接入步骤。
+host-web、host-web-components、注入能力和接入步骤。
 
 [宿主适配 →](#/hosts)
 :::
 
 :::card{tag="测试" title="以测试为准"}
-388 个单元测试和 61 个浏览器步骤；WXS 专项覆盖事件、descriptor、change:prop 和动态切换。iOS 宿主另有 `pnpm ios:sim`，逐 fixture 跑真实 WKWebView + JSCore。
+408 个单元测试和 61 个浏览器步骤；WXS 专项覆盖事件、descriptor、change:prop 和动态切换。iOS 宿主另有 `pnpm ios:sim`，逐 fixture 跑真实 WKWebView + JSCore。
 
 [测试与验收 →](#/testing)
 :::

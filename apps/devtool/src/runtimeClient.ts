@@ -4,12 +4,13 @@
  * This is app-level policy: how much history the panel keeps, how a runtime
  * state snapshot becomes the panel's view model, and when a launch counts as
  * inspectable. The platform glue it drives (iframes, message ports, canvas
- * handoff, HostCore commands) lives in `@tiny/host-browser`.
+ * handoff, HostCore commands) lives in `@tiny/host-web`.
  */
 import type { RuntimeDiagnostic, RuntimePageState, RuntimeTabBarState } from '@tiny/runtime'
 import type { InspectNode } from '@tiny/runtime'
 import type { RuntimeManifest, StorageSnapshot, SystemInfoSnapshot } from '@tiny/runtime'
-import { WasmBrowserHost, type WasmHostCoreFactory } from '@tiny/host-browser'
+import { WasmBrowserHost, type WasmHostCoreFactory } from '@tiny/host-web'
+import { createDevtoolApiHandlers } from './host-api'
 import { projectComponentTree } from './componentTree'
 import { pollHostPicker, showHostPicker, updateHostPicker } from './hostPicker'
 
@@ -116,6 +117,7 @@ export class DevtoolRuntimeClient {
       this.ownsContainer = true
     }
     this.container = container
+    const storage = this.options.storage ?? {}
     try {
       this.wasmHost = new WasmBrowserHost({
         appId: this.options.appId ?? 'devtool',
@@ -124,9 +126,10 @@ export class DevtoolRuntimeClient {
         renderUrl: this.options.renderUrl,
         initialPath: this.options.initialPath,
         systemInfo: this.options.systemInfo,
-        storage: this.options.storage,
+        storage,
         container,
         maxPageStack: this.options.maxPageStack,
+        apiHandlers: createDevtoolApiHandlers(storage),
         onState: (state) => {
           if (state && typeof state === 'object') this.record(state as RuntimeDiagnostic)
         },

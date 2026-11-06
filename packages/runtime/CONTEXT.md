@@ -58,8 +58,9 @@ one layer.
   page stack sees the bridge only as `ServiceRenderPort`.
 - **Core entry**: `@tiny/runtime`, whose explicit public barrel must remain free
   of browser globals.
-- **Browser host**: `@tiny/host-browser` (`hosts/browser`), which owns iframes,
-  message ports, DOM canvas, page visibility, and the devtool overlay.
+- **Web host**: `@tiny/host-web` (`hosts/web`), which owns iframes, message
+  ports, DOM canvas, the DOM render tree / WebView render entry, page
+  visibility, and the devtool overlay.
 - **Render thread connector**: `RenderThreadConnector` lets a host create one
   render transport per page. Host-side orchestration now lives in the platform adapters; runtime keeps only
   page ID, bootstraps each render tree with that page's flow, and tears the

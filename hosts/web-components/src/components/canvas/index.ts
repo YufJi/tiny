@@ -1,4 +1,4 @@
-import type * as glassEasel from 'glass-easel'
+import type * as glassEasel from '@tiny/runtime/glass-easel'
 import { DIAGNOSTIC_CODES, TINY_ENGINE_NAMING } from '@tiny/manifest'
 import { touchListFromEvent } from '../../events'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'

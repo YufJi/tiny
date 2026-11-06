@@ -158,7 +158,7 @@ hosts/web-components/src/behaviors/pending/<name>/PLACEHOLDER.md  # 11 个宿主
 
 | 元素 | 原因 |
 | --- | --- |
-| `action-sheet` / `action-sheet-cancel` / `action-sheet-item` | 平台内部 UI，已有 `wx.showActionSheet` 的宿主 overlay（[api-handlers.ts](../hosts/browser/src/api-handlers.ts:286)），不是用户标签 |
+| `action-sheet` / `action-sheet-cancel` / `action-sheet-item` | 平台内部 UI，已有 `wx.showActionSheet` 的宿主 overlay（[api-handlers.ts](../tests/host/src/host-api.ts:286)），不是用户标签 |
 | `modal` / `toast` / `loading` / `mask` | 同上，走 `wx.showModal` / `showToast` / `showLoading` 的宿主 overlay |
 | `video-ad` / `entry-banner` / `refresher` | 平台内部组件：广告、入口 banner、下拉刷新私有实现 |
 | `trade-service` / `wecom-user-profile` / `cloud-storage-simple-component` | 交易、企业微信、云存储的开放能力内部组件 |

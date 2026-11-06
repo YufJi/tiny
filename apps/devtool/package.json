@@ -16,8 +16,8 @@
     "react-dom": "^17.0.2",
     "react-redux": "^7.2.3",
     "@tiny/host-core-wasm": "workspace:*",
-    "@tiny/host-browser": "workspace:*",
-    "@tiny/host-web-components": "workspace:*"
+    "@tiny/host-web": "workspace:*",
+    "glass-easel": "1.1.0"
   },
   "devDependencies": {
     "sirv": "^2.0.4",

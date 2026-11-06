@@ -65,8 +65,8 @@
 | --- | --- |
 | `tools/cli` | 编译器：小程序源码 → glass-easel 产物与 manifest |
 | `apps/devtool` | 浏览器调试器 |
-| `hosts/browser` | 浏览器宿主：iframe、MessageChannel、Canvas、宿主 API 覆盖层 |
-| `hosts/web-components` | 内置组件的 Web/DOM 实现（view/text/input/swiper/canvas 等），由 Web 渲染树挂载 |
+| `hosts/web` | 通用 Web 宿主：iframe、MessageChannel、DOM 渲染树、Canvas、资源与生命周期桥 |
+| `hosts/web-components` | 内置组件的 Web/DOM 实现（view/text/input/swiper/canvas 等）与默认样式 |
 
 ### 测试
 
@@ -81,7 +81,7 @@
 | `tests/apps/vant` | Vant Weapp 组件库示例（`miniprogram_npm` 预构建包） |
 | `tests/apps/weui` | WeUI 官方样式库示例（54 个页面，无自定义组件） |
 
-`tests/host` 与 `apps/devtool` 都基于 `@tiny/host-browser` 的 `WasmBrowserHost`（Rust HostCore + wasm），浏览器宿主固定为每页一个 render iframe。前者是无 UI 的单应用测试宿主；后者通过 `DevtoolRuntimeClient` 提供测试应用列表、最近 3 个应用保活/LRU、面板、诊断、生命周期时间线、元素树和内置 tabBar。每个应用页面栈默认最多 10 层，宿主可通过 `maxPageStack` 配置。
+`tests/host` 与 `apps/devtool` 都基于 `@tiny/host-web` 的 `WasmBrowserHost`（Rust HostCore + wasm），浏览器宿主固定为每页一个 render iframe。前者是无 UI 的单应用测试宿主；后者通过 `DevtoolRuntimeClient` 提供测试应用列表、最近 3 个应用保活/LRU、面板、诊断、生命周期时间线、元素树和内置 tabBar。每个应用页面栈默认最多 10 层，宿主可通过 `maxPageStack` 配置。network/clipboard/toast/modal 等宿主 API handler 由 `tests/host` 和 `apps/devtool` 各自注入，不在 `host-web` 内实现。
 
 ## 快速开始
 
@@ -187,6 +187,7 @@ pnpm dev:wechat-demo         # 微信示例宿主：http://127.0.0.1:5174/?path=
 pnpm --filter @tiny/runtime test
 pnpm --filter @tiny/cli test
 pnpm --filter @tiny/host-web-components test
+pnpm --filter @tiny/host-web test
 ```
 
 ## 生成物
@@ -209,7 +210,7 @@ pnpm --filter @tiny/host-web-components test
 
 本项目基于微信小程序团队开源的 [glass-easel](https://github.com/wechat-miniprogram/glass-easel) 构建：
 service 线程的逻辑树承载组件注册、模板求值、behavior、observers、relations 和生命周期；
-render 线程的宿主渲染树复用 glass-easel 的组件树能力，`hosts/web-components` 提供其中的内置组件实现。
+render 线程的宿主渲染树复用 glass-easel 的组件树能力：`hosts/web` 提供 DOM 渲染树和线程入口，`hosts/web-components` 提供其中的内置组件实现。
 
 ## License
 

@@ -1,9 +1,9 @@
-import type * as glassEasel from 'glass-easel'
+import type * as glassEasel from '@tiny/runtime/glass-easel'
 import type { BuiltinComponents } from '@tiny/runtime'
 import { BUILTIN_COMPONENT_TAGS, BUILTIN_HOST_TAG_PREFIX, type BuiltinComponentTag } from './tags'
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import { builtinTemplate, internalTemplate } from './templates'
-import { createBuiltinBehaviors } from './behaviors'
+import { createBuiltinBehaviors, getPublicBuiltinBehaviors } from './behaviors'
 import {
   BUILTIN_BASE_STYLES,
   BUILTIN_COMPONENT_STYLES,
@@ -51,6 +51,7 @@ import { definePickerViewColumn } from './components/picker-view-column'
 import { defineWebView } from './components/web-view'
 
 export { BUILTIN_COMPONENT_TAGS }
+export { getPublicBuiltinBehaviors }
 export { BUILTIN_BASE_STYLES, BUILTIN_COMPONENT_STYLES, BUILTIN_HOST_STYLES }
 export type { BuiltinComponentTag }
 export type { BuiltinComponentFactoryOptions, BuiltinContext } from './types'
@@ -142,12 +143,13 @@ export function createBuiltinComponents(
 }
 
 /**
- * Web/DOM implementation of the built-in mini-program tags.
+ * Descriptor for hosts that consume the runtime `BuiltinComponents` seam.
  *
- * Browser hosts inject this object into
- * `bootRenderThread({ builtinComponents: webBuiltinComponents })`. The runtime
- * core never imports this package, so non-DOM hosts can supply their own tags
- * (or none) without pulling in web-specific behavior or CSS.
+ * The DOM render tree in `@tiny/host-web` calls `createBuiltinComponents`
+ * directly; this descriptor remains for hosts that inject their own render
+ * backend. The runtime core never imports this package, so non-DOM hosts can
+ * supply their own tags (or none) without pulling in web-specific behavior or
+ * CSS.
  */
 export const webBuiltinComponents: BuiltinComponents = {
   create: createBuiltinComponents,
@@ -159,12 +161,3 @@ export const webBuiltinComponents: BuiltinComponents = {
     ...BUILTIN_COMPONENT_STYLES.map(({ path, content, scope }) => ({ path, content, scope })),
   ],
 }
-
-export { createGlassRenderTree } from './render-tree'
-export type { GlassRenderTree, GlassRenderTreeOptions } from './render-tree'
-export {
-  createGlassRenderEntry,
-  installBuiltinStyles,
-  type GlassRenderEntry,
-  type RenderEntryOptions,
-} from './render-entry'

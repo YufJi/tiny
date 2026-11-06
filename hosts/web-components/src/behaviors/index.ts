@@ -1,4 +1,4 @@
-import type * as glassEasel from 'glass-easel'
+import type * as glassEasel from '@tiny/runtime/glass-easel'
 import { createAutofillBehavior } from './autofill'
 import { createBaseBehavior } from './base'
 import { createPublicBuiltinBehaviors } from './builtin'

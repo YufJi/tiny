@@ -1,4 +1,4 @@
-import type * as glassEasel from 'glass-easel'
+import type * as glassEasel from '@tiny/runtime/glass-easel'
 
 import { convertRpx } from '@tiny/css-units'
 import { BUILTIN_BEHAVIOR_IDS } from './ids'

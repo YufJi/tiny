@@ -192,7 +192,7 @@
 关键代码入口：
 
 - 服务 API：[api/index.ts](../packages/api/src/index.ts:1)（按 domain 分文件）
-- 宿主 API：[host/api.ts](../packages/runtime/src/host/api.ts:1)、[hosts/browser/api-handlers.ts](../hosts/browser/src/api-handlers.ts:1)
+- 宿主 API：[host/api.ts](../packages/runtime/src/host/api.ts:1)、[tests/host/src/host-api.ts](../tests/host/src/host-api.ts:1)
 - 不支持 API 的降级：`wx` Proxy 返回 `undefined` + `UNSUPPORTED_API` warning（[service/api-globals.ts](../packages/runtime/src/service/api-globals.ts:1)）
 
 > 降级策略是“静默 undefined”，不是抛错。页面不会立刻崩，但失败会推迟到调用方 `.then`/属性访问时才暴露，排查成本高。
@@ -651,7 +651,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 内置组件默认样式 | [styles/index.css](../hosts/web-components/src/styles/index.css:1) |
 | service API 宿主 | [api/index.ts](../packages/api/src/index.ts:1) |
 | 不支持 API 的降级 | [service/api-globals.ts](../packages/runtime/src/service/api-globals.ts:1) |
-| 宿主 API（toast/storage/navigate） | [host/api.ts](../packages/runtime/src/host/api.ts:1)、[browser api-handlers.ts](../hosts/browser/src/api-handlers.ts:1) |
+| 宿主 API（toast/storage/navigate） | [host/api.ts](../packages/runtime/src/host/api.ts:1)、[browser api-handlers.ts](../tests/host/src/host-api.ts:1) |
 | 组件 schema（data/properties/using + semantics metadata） | [component-schema.ts](../packages/runtime/src/component-schema.ts:5) |
 | Behavior 合并 / 组件定义规范化 | [component-definition.ts](../packages/runtime/src/component-definition.ts:115) |
 | 组件树与选择器 | [component-tree.ts](../packages/runtime/src/component-tree.ts:35) |
@@ -662,7 +662,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | componentGenerics / pureDataPattern schema | [component-schema.ts](../packages/runtime/src/component-schema.ts:5) |
 | 路由与页面/应用生命周期 | [service.ts](../packages/runtime/src/service.ts:1) |
 | 分享/下拉刷新/主题宿主通道 | [host.ts](../packages/runtime/src/host.ts:1) |
-| 下拉手势桥 | [page-lifecycle.ts](../hosts/browser/src/page-lifecycle.ts:1) |
+| 下拉手势桥 | [page-lifecycle.ts](../hosts/web/src/page-lifecycle.ts:1) |
 | generics / pure data / 生命周期验收 | [component-generics.test.ts](../packages/runtime/tests/component-generics.test.ts:1)、[pure-data.test.ts](../packages/runtime/tests/pure-data.test.ts:1)、[framework-lifecycle.test.ts](../packages/runtime/tests/framework-lifecycle.test.ts:1) |
 | 组件语义验收 fixture | [semantics.js](../tests/apps/demo/pages/semantics/semantics.js:1) |
 | Component-as-page 实例 | [service/page-instance.ts](../packages/runtime/src/service/page-instance.ts:1) |
@@ -671,8 +671,8 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | runtime 内置 behaviors | [behaviors/](../packages/runtime/src/component/behaviors/index.ts:1) |
 | button 组件 | [button/index.ts](../hosts/web-components/src/components/button/index.ts:1) |
 | 页面/子包/app.json 解析 | [project.ts](../tools/cli/src/compiler/project.ts:75) |
-| 单/多 render 帧宿主 | [wasm-host.ts](../hosts/browser/src/wasm-host.ts:1) |
-| 页面滚动生命周期桥 | [page-lifecycle.ts](../hosts/browser/src/page-lifecycle.ts:1) |
+| 单/多 render 帧宿主 | [wasm-host.ts](../hosts/web/src/wasm-host.ts:1) |
+| 页面滚动生命周期桥 | [page-lifecycle.ts](../hosts/web/src/page-lifecycle.ts:1) |
 | tabBar 配置与页面栈 | [service.ts](../packages/runtime/src/service.ts:1) |
 | tabBar 宿主 UI | [HostTabBar.jsx](../apps/devtool/src/components/HostTabBar.jsx:1) |
 | tabBar 验收 | [glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs:1120) |
@@ -683,6 +683,6 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 125 页探针 | [parity-probe.mjs](../scripts/parity-probe.mjs:1) |
 | WXS 宽松求值（`Q.S`） | [group.ts](../packages/template-compiler/src/group.ts:77) |
 | `this.animate` keyframes 归一化 | [animation.ts](../packages/runtime/src/tree/animation.ts:1) |
-| 动画下载/播放（WAAPI） | [render-tree.ts](../hosts/web-components/src/render-tree.ts:629) |
-| 事件 target/currentTarget 几何 | [render-tree.ts](../hosts/web-components/src/render-tree.ts:252) |
+| 动画下载/播放（WAAPI） | [render-tree.ts](../hosts/web/src/render/tree.ts:629) |
+| 事件 target/currentTarget 几何 | [render-tree.ts](../hosts/web/src/render/tree.ts:252) |
 | `wx.createIntersectionObserver` | [api/query.ts](../packages/api/src/query.ts:1) |

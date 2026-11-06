@@ -140,7 +140,7 @@ src/
 ```
 
 - 每个应用一个 `DevtoolRuntimeClient`；`RuntimePanel` 管理 LRU 会话池和 DOM surface
-- 宿主编排、多 render 帧连接由 `@tiny/host-browser` 的 `WasmBrowserHost` 负责；
+- 宿主编排、多 render 帧连接由 `@tiny/host-web` 的 `WasmBrowserHost` 负责；
   生命周期控制、导航和状态投影在 app 内的 `runtimeClient.ts`
 - 面板只通过 client 订阅状态和发送控制命令
 - 面板先从 `./runtime/apps.json` 读取应用清单，再从

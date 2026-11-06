@@ -1,5 +1,5 @@
 import init, { WasmHostCore } from '@tiny/host-core-wasm'
-import type { WasmHostCoreFactory } from '@tiny/host-browser'
+import type { WasmHostCoreFactory } from '@tiny/host-web'
 
 let factory: Promise<WasmHostCoreFactory> | null = null
 

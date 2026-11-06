@@ -1,12 +1,12 @@
 import type { TemplateRegistry, TreeRenderer } from '@tiny/runtime'
-import { createGlassRenderTree } from './render-tree'
 import {
   BUILTIN_BASE_STYLES,
   BUILTIN_COMPONENT_STYLES,
   BUILTIN_HOST_STYLES,
-} from './generated/styles'
+} from '@tiny/host-web-components'
+import { createGlassRenderTree } from './tree'
 
-export type RenderEntryOptions = {
+export type GlassRenderEntryOptions = {
   /** DOM container for the page root. Defaults to `#app`, then `<body>`. */
   container?: HTMLElement
   /** Host hook mapping app asset paths to loadable URLs. */
@@ -49,13 +49,13 @@ export function installBuiltinStyles(document: Document = globalThis.document): 
 }
 
 /**
- * Bind the Web render tree to a renderer factory. `prepare` installs the
- * built-in styles before the thread announces readiness; the tree itself is
- * only created when the host asks for the renderer, so a browser entry can
- * hand this to `bootBrowserRenderEntry` and keep the port handshake in the
- * host package.
+ * Bind the Web render tree to a renderer factory.
+ *
+ * `bootRenderEntry` composes this internally for iframe/MessageChannel
+ * hosts. Keep this factory public for WebView hosts that provide their own
+ * transport (see `hosts/ios/src/web/render.ts`).
  */
-export function createGlassRenderEntry(options: RenderEntryOptions = {}): GlassRenderEntry {
+export function createGlassRenderEntry(options: GlassRenderEntryOptions = {}): GlassRenderEntry {
   const document = options.document ?? globalThis.document
   return {
     prepare: () => installBuiltinStyles(document),

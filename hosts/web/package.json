@@ -1,0 +1,40 @@
+{
+  "name": "@tiny/host-web",
+  "version": "1.0.0",
+  "description": "Web host adapters for Tiny (browser iframes, WebView entries, canvas, DOM renderer)",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "prebuild": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@tiny/bridge": "workspace:*",
+    "@tiny/runtime": "workspace:*",
+    "@tiny/api": "workspace:*",
+    "@tiny/css-units": "workspace:*",
+    "@tiny/manifest": "workspace:*",
+    "@tiny/host-web-components": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@tiny/template-compiler": "workspace:^",
+    "vitest": "^1.6.1",
+    "glass-easel": "1.1.0"
+  },
+  "peerDependencies": {
+    "glass-easel": "1.1.0"
+  }
+}

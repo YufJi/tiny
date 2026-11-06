@@ -1,4 +1,4 @@
-import { bootBrowserServiceEntry } from '@tiny/host-browser';
+import { bootServiceEntry } from '@tiny/host-web';
 import { generatedBaseFor } from './appRegistry';
 
 const search = new URLSearchParams(window.location.search);
@@ -89,7 +89,7 @@ manifestPromise.then(async (manifest) => {
       return [stylePath, await response.text()];
     }),
   ));
-  bootBrowserServiceEntry({
+  bootServiceEntry({
     manifest,
     initialPath: manifest.pages[0].path,
     apiExtensions: createHostApiExtensions(),

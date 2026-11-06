@@ -3,14 +3,14 @@ title: '用真实小程序验收，'
 highlight: '不只跑单元测试'
 eyebrow: '测试与验收'
 lede: >-
-  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。388 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，61 个浏览器步骤验证端到端行为；iOS 宿主另有 7 个 fixture 的 WKWebView + JSCore smoke。
+  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。408 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，61 个浏览器步骤验证端到端行为；iOS 宿主另有 7 个 fixture 的 WKWebView + JSCore smoke。
 stats:
-  - ['388', '单元测试']
+  - ['408', '单元测试']
   - ['61', '浏览器步骤']
   - ['5', '浏览器流程']
   - ['7', '测试小程序']
   - ['7', 'iOS fixture smoke']
-description: '小程序引擎的验收方式：构建、内核检查、388 个单元测试、61 个浏览器步骤、七套测试小程序和 iOS 宿主 smoke。'
+description: '小程序引擎的验收方式：构建、内核检查、408 个单元测试、61 个浏览器步骤、七套测试小程序和 iOS 宿主 smoke。'
 name: '测试'
 pageTitle: '测试与验收 · Tiny 小程序引擎'
 order: 8
@@ -28,15 +28,15 @@ pnpm accept:glass-easel 是唯一完整的端到端入口，任何单个包的�
 :::sequence
 | title | detail | code |
 | --- | --- | --- |
-| 构建 11 个目标 | 依次构建 css-units、manifest、wxs-runtime、stylesheet-compiler、template-compiler、bridge、cli、runtime、api、host-web-components 和 host-browser，确保后面的测试用的是最新产物。 | `pnpm build:glass-easel` |
+| 构建 11 个目标 | 依次构建 css-units、manifest、wxs-runtime、stylesheet-compiler、template-compiler、bridge、cli、runtime、api、host-web-components 和 host-web，确保后面的测试用的是最新产物。 | `pnpm build:glass-easel` |
 | 检查内核依赖 | 从 packages/runtime/src/index.ts、packages/api/src/index.ts 和 packages/wxs-runtime/src/index.ts 遍历依赖图，禁止浏览器全局，也禁止反向依赖 @tiny/host-* 或 hosts/*；WXS 语言级 require 单独放行。 | `pnpm check:runtime-purity` |
-| 跑 10 个包的单元测试 | manifest、css-units、wxs-runtime、bridge、template-compiler、stylesheet-compiler、cli、api、host-web-components、runtime。没有全局 runner，按包逐个执行。 | `pnpm --filter <package> test` |
+| 跑 11 个包的单元测试 | manifest、css-units、wxs-runtime、bridge、template-compiler、stylesheet-compiler、cli、api、host-web-components、host-web、runtime。没有全局 runner，按包逐个执行。 | `pnpm --filter <package> test` |
 | 编译 P0 demo | 把 tests/apps/demo 编到 tests/host/generated，然后在 5199 端口启动 Vite 测试宿主。 | `pnpm compile:glass-easel` |
 | P0 demo 流程 | 24 步：启动、渲染、作用域样式、快照、自定义事件、checkbox/slider/switch、导航、输入、storage、toast、组件语义、样式隔离、按钮矩阵、relations、WXS 本地事件与 change:prop、catchtouchmove 滚动锁、真实滚动触发 `onPageScroll`、canvas 诊断和零 console error。 | `runBrowserAcceptance({ baseUrl })` |
 | mini 流程 | 重新编译 tests/apps/mini 覆盖 generated；10 步：真实 todos、双组件实例、import/include/template、输入、ECharts、子包、warning 和零错误。 | `runMiniProgramAcceptance()` |
 | Taro 3 流程 | 编译 tests/apps/todo 的预构建产物；6 步：Redux todos、Enter 新增、勾选、筛选、清空和零错误。 | `runTaroAcceptance()` |
 | WeChat demo 流程 | 编译官方示例子集；12 步：组件索引、button 页、aria、swiper、radio、API 页、navigator、WXS 拖拽、Canvas 2D/WebGL 和零错误。 | `runWechatDemoAcceptance()` |
-| 调试器流程 | 把 tests/apps 下的全部应用编到 devtool static，再用 Vite 启动；9 步：默认应用列表、点击启动、状态投影、渲染、导航/返回、逐应用预览与 3 个应用 LRU 保活、回到列表/深链/页面栈上限/Reload/Close app、零错误；渲染树由 `createGlassRenderEntry` 创建。 | `runDevtoolAcceptance()` |
+| 调试器流程 | 把 tests/apps 下的全部应用编到 devtool static，再用 Vite 启动；9 步：默认应用列表、点击启动、状态投影、渲染、导航/返回、逐应用预览与 3 个应用 LRU 保活、回到列表/深链/页面栈上限/Reload/Close app、零错误；渲染树由 `bootRenderEntry` 创建。 | `runDevtoolAcceptance()` |
 :::
 
 :::callout{title="各阶段会覆盖 generated"}
@@ -71,9 +71,9 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 :::
 ::::
 
-## 388 个单元测试，按包执行 {#units kicker="单元测试"}
+## 408 个单元测试，按包执行 {#units kicker="单元测试"}
 
-10 个包没有全局 test runner，每个包单独跑，避免隐式耦合，也方便定位失败。
+11 个包没有全局 test runner，每个包单独跑，避免隐式耦合，也方便定位失败。
 
 | Package | 数量 | 重点 |
 | --- | --- | --- |
@@ -84,8 +84,9 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 | `@tiny/template-compiler` | 44 | 脚本依赖、WXS transform、模块表、动态事件元数据、change:prop、import/include、模板别名、ProcGen 签名、绑定表复用、事件简写、data-* 绑定、stringify 往返 |
 | `@tiny/stylesheet-compiler` | 36 | class/tag 前缀、rpx/calc、@import 编码和包装、@layer、:host 低优先级、hostAttribute、keyframes、page 根节点 |
 | `@tiny/cli` | 18 | manifest 全产物、兼容输入配置、WXS 双注册、配置合并、service/templates 入口、TS/source map、样式 role、tag marker |
-| `@tiny/host-web-components` | 116 | 39 个 tag 模板、共享 behaviors、button 对齐、label、input、checkbox/slider/switch、progress/swiper/icon、image/icon 渲染、表单节点 props 收集 |
-| `@tiny/runtime` | 143 | 全局安装和命名、双线程 bootstrap、逻辑树、tree protocol/patch diff、两次求值与 locator 寻址、headless renderer、组件 schema、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、API 注入缝、诊断、WXS 宽松求值、`this.animate`、事件冒泡/几何 |
+| `@tiny/host-web-components` | 22 | 内置组件 batches、共享 behaviors 和默认样式断言；组件行为细节由 host-web 的 render-tree 测试覆盖 |
+| `@tiny/host-web` | 102 | DOM render tree、built-in composition、事件、WXS dispatch、event compositor、内置组件与渲染树集成 |
+| `@tiny/runtime` | 152 | 全局安装和命名、双线程 bootstrap、逻辑树、tree protocol/patch diff、两次求值与 locator 寻址、headless renderer、组件 schema、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、API 注入缝、诊断、WXS 宽松求值、`this.animate`、事件冒泡/几何 |
 | `@tiny/api` | 4 | 微信兼容 API 表：storage 同步/异步、request 回调、canIUse、动画与 canvas stub |
 
 :::callout{title="单测也会跑真实连接"}
@@ -109,7 +110,7 @@ pnpm ios:smoke:jsc    # 在 macOS jsc 里启动 demo 的 service engine + app-da
 
 ## 测试宿主和调试器不是一回事 {#hosts kicker="两种宿主"}
 
-两者都通过 @tiny/host-browser 的 WasmBrowserHost 启动 service 和每页 render 线程，但一个服务自动化，一个服务人。
+两者都通过 @tiny/host-web 的 WasmBrowserHost 启动 service 和每页 render 线程，但一个服务自动化，一个服务人。
 
 ::::split
 :::card{tag="tests/host" title="无界面单应用宿主"}

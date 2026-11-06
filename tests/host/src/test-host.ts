@@ -1,5 +1,5 @@
-import { WasmBrowserHost } from '@tiny/host-browser'
-import type { WasmHostCoreFactory, WasmHostOptions } from '@tiny/host-browser'
+import { WasmBrowserHost } from '@tiny/host-web'
+import type { WasmHostCoreFactory, WasmHostOptions } from '@tiny/host-web'
 import type { RuntimeDiagnostic, StorageSnapshot } from '@tiny/runtime'
 
 /**

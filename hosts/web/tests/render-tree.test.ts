@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
-import * as glassEasel from 'glass-easel'
+import * as glassEasel from '@tiny/runtime/glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
-import { applyClassProps, createGlassRenderTree, matchComponentInstances } from '../src/render-tree'
+import { applyClassProps, createGlassRenderTree, matchComponentInstances } from '../src/render/tree'
 
 function element(id: string, tag: string, props: Record<string, unknown> = {}, children: any[] = []): any {
   return { type: 'element', id, tag, props, children }

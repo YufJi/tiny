@@ -18,8 +18,8 @@ The initial map treats each package as its own context:
 - `tools/cli` — active glass-easel compiler and runtime manifest producer
 - `apps/devtool` — web-based debugger
 - `packages/runtime` — host-independent runtime core
-- `hosts/browser` — browser host adapters (iframes, message ports, DOM canvas, host API overlays)
-- `hosts/web-components` — web/DOM implementations of the built-in tags, mounted by the web render tree
+- `hosts/web` — generic web host adapters (iframes, message ports, DOM canvas, DOM render tree, WebView entries)
+- `hosts/web-components` — web/DOM implementations and default styles for the built-in tags
 - `packages/stylesheet-compiler` — stylesheet compilation
 - `packages/template-compiler` — template compilation
 

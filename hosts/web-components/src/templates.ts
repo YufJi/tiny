@@ -1,4 +1,4 @@
-import type * as glassEasel from 'glass-easel'
+import type * as glassEasel from '@tiny/runtime/glass-easel'
 import groups from './generated/templates'
 import type { BuiltinComponentTag } from './tags'
 

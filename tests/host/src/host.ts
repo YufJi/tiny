@@ -1,9 +1,11 @@
 import init, { WasmHostCore } from '@tiny/host-core-wasm'
 import { TestBrowserHost } from './test-host'
+import { createTestHostApiHandlers } from './host-api'
 import manifest from '../generated/manifest.json'
 
 const search = new URLSearchParams(window.location.search)
 const initialPath = search.get('path') || manifest.pages[0]?.path || ''
+const storage = {}
 
 await init()
 const wasmHost = new TestBrowserHost({
@@ -13,6 +15,8 @@ const wasmHost = new TestBrowserHost({
   renderUrl: '/render.html',
   initialPath,
   container: document.getElementById('app') ?? document.body,
+  storage,
+  apiHandlers: createTestHostApiHandlers(storage),
   systemInfo: {
     pixelRatio: window.devicePixelRatio,
     windowWidth: window.innerWidth,

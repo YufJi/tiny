@@ -1,4 +1,4 @@
-import { bootBrowserServiceEntry } from '@tiny/host-browser'
+import { bootServiceEntry } from '@tiny/host-web'
 import manifest from '../generated/manifest.json'
 
 // Device identity is a host fact here: the service iframe has no viewport, so
@@ -76,7 +76,7 @@ const styles = Object.fromEntries(
   ),
 )
 
-bootBrowserServiceEntry({
+bootServiceEntry({
   manifest,
   initialPath: manifest.pages[0]?.path ?? '',
   loadTemplates: async () => (await import('../generated/templates.js')).default,

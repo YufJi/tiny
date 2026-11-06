@@ -7,7 +7,8 @@ export default defineConfig({
   root: __dirname,
   resolve: {
     alias: {
-      '@tiny/host-browser': path.resolve(__dirname, '../../hosts/browser/src/index.ts'),
+      '@tiny/runtime/glass-easel': path.resolve(runtimeRoot, 'src/glass-easel.ts'),
+      '@tiny/host-web': path.resolve(__dirname, '../../hosts/web/src/index.ts'),
       '@tiny/host-core-wasm': path.resolve(__dirname, '../../native/host-core-wasm/pkg/tiny_host_core_wasm.js'),
       '@tiny/host-web-components': path.resolve(__dirname, '../../hosts/web-components/src/index.ts'),
       '@tiny/runtime': path.resolve(runtimeRoot, 'src/index.ts'),
@@ -17,6 +18,7 @@ export default defineConfig({
       '@tiny/manifest': path.resolve(__dirname, '../../packages/manifest/src/index.ts'),
       'glass-easel': path.resolve(runtimeRoot, 'node_modules/glass-easel/dist/glass_easel.all.es.js'),
     },
+    dedupe: ['glass-easel'],
   },
   server: {
     fs: {

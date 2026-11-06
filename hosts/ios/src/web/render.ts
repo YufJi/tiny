@@ -1,8 +1,7 @@
 import type { Transport, TransportFrame } from '@tiny/bridge'
 import { bootTreeThread, resolveAssetPath } from '@tiny/runtime'
 import type { TemplateRegistry, TreeRenderer } from '@tiny/runtime'
-import { installPageLifecycleBridge } from '@tiny/host-browser'
-import { createGlassRenderEntry } from '@tiny/host-web-components'
+import { createGlassRenderEntry, installPageLifecycleBridge } from '@tiny/host-web'
 import { installRemoteCanvas } from './canvas'
 
 type NativeRenderWindow = Window & {

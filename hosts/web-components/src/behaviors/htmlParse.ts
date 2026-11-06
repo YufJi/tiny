@@ -1,4 +1,4 @@
-import type * as glassEasel from 'glass-easel'
+import type * as glassEasel from '@tiny/runtime/glass-easel'
 
 import { createRichTextFragment, decodeRichTextSpace } from '../components/rich-text/content'
 import { BUILTIN_BEHAVIOR_IDS } from './ids'

@@ -1,0 +1,49 @@
+import { bootTreeThread } from '@tiny/runtime'
+import { installOffscreenCanvasResponder } from './canvas-bridge'
+import { installPageLifecycleBridge } from './page-lifecycle'
+import { listenForRuntimePort } from './runtime-port'
+import { createGlassRenderEntry, type GlassRenderEntryOptions } from './render/entry'
+
+export type RenderEntryOptions = GlassRenderEntryOptions & {
+  /**
+   * Extra setup to run after the built-in styles are installed and before the
+   * thread announces readiness (fonts or host-owned DOM setup).
+   */
+  prepare?: () => void
+}
+
+/** Cleanup for the window listeners installed by the previous boot. */
+let disposePageLifecycle: (() => void) | undefined
+
+/**
+ * Boot the render thread of a Web host.
+ *
+ * The browser entry owns the MessageChannel handshake, so it also owns the DOM
+ * render tree factory: callers pass the container/templates/asset resolver and
+ * do not compose `createGlassRenderEntry` themselves. `createGlassRenderEntry`
+ * remains public for WebView hosts that provide their own transport (iOS).
+ *
+ * The render document is the page's WebView, so it also owns the scroll
+ * container that drives `onPageScroll`, `onReachBottom` and the pull-down
+ * gesture. Those events travel as `page.*` events and the host relays them to
+ * the service thread.
+ */
+export function bootRenderEntry(options: RenderEntryOptions = {}): void {
+  installOffscreenCanvasResponder()
+  const entry = createGlassRenderEntry(options)
+  entry.prepare()
+  options.prepare?.()
+  listenForRuntimePort('render', (transport) => {
+    const runtime = bootTreeThread({
+      transport,
+      renderer: entry.createRenderer(),
+      ...(entry.pageId ? { initialPageId: entry.pageId } : {}),
+      ...(entry.loadTemplates ? { loadTemplates: entry.loadTemplates } : {}),
+    })
+    // A host may hand this document a second port when it re-boots the thread.
+    // Drop the previous listeners first, otherwise every scroll or pull-down
+    // gesture would be reported once per boot.
+    disposePageLifecycle?.()
+    disposePageLifecycle = installPageLifecycleBridge(runtime.connection)
+  })
+}

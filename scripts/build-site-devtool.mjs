@@ -137,7 +137,7 @@ const requiredBuilds = [
   'tools/cli/dist/index.js',
   'packages/runtime/dist/index.js',
   'packages/api/dist/index.js',
-  'hosts/browser/dist/index.js',
+  'hosts/web/dist/index.js',
   'hosts/web-components/dist/index.js',
 ]
 if (requiredBuilds.some((relativePath) => !fs.existsSync(path.join(rootDir, relativePath)))) {

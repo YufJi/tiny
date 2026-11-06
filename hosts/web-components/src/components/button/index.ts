@@ -1,4 +1,4 @@
-import type * as glassEasel from 'glass-easel'
+import type * as glassEasel from '@tiny/runtime/glass-easel'
 import { DIAGNOSTIC_CODES } from '@tiny/manifest'
 import { bindHostListeners, unbindHostListeners } from '../../behaviors'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'

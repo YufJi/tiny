@@ -10,6 +10,12 @@
       "import": "./dist/index.js",
       "require": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./glass-easel": {
+      "types": "./dist/glass-easel.d.ts",
+      "import": "./dist/glass-easel.js",
+      "require": "./dist/glass-easel.js",
+      "default": "./dist/glass-easel.js"
     }
   },
   "scripts": {
@@ -31,5 +37,12 @@
     "@types/node": "^22.0.0",
     "typescript": "^5.0.0",
     "vitest": "^1.6.1"
+  },
+  "typesVersions": {
+    "*": {
+      "glass-easel": [
+        "dist/glass-easel.d.ts"
+      ]
+    }
   }
 }

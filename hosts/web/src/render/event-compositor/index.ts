@@ -1,4 +1,4 @@
-import type * as glassEasel from 'glass-easel'
+import type * as glassEasel from '@tiny/runtime/glass-easel'
 import { createMouseAdapter, createTouchAdapter } from './adapters'
 import { createGestureRecognizer } from './recognizer'
 import type {

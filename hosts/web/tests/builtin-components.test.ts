@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import * as glassEasel from 'glass-easel'
+import * as glassEasel from '@tiny/runtime/glass-easel'
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import { TmplGroup } from '@tiny/template-compiler'
 import {
@@ -7,11 +7,11 @@ import {
   BUILTIN_COMPONENT_TAGS,
   BUILTIN_HOST_STYLES,
   createBuiltinComponents,
-} from '../src'
-import precompiledTemplates from '../src/generated/templates'
-import { applyHostProps } from '../src/render-tree'
-import { getPublicBuiltinBehaviors } from '../src/behaviors'
-import { transformTextContent } from '../src/components/text/content'
+} from '@tiny/host-web-components'
+import precompiledTemplates from '../../web-components/src/generated/templates'
+import { applyHostProps } from '../src/render/tree'
+import { getPublicBuiltinBehaviors } from '../../web-components/src/behaviors'
+import { transformTextContent } from '../../web-components/src/components/text/content'
 
 function compilePage(source: string): glassEasel.template.ComponentTemplate {
   const group = TmplGroup.newDev({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })

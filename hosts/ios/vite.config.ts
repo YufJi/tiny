@@ -8,6 +8,7 @@ export default defineConfig(({ mode }) => {
   if (mode === 'service') {
     return {
       publicDir: false,
+      resolve: { dedupe: ['glass-easel'] },
       build: {
         lib: {
           entry: path.join(packageRoot, 'src/service/entry.ts'),
@@ -19,7 +20,7 @@ export default defineConfig(({ mode }) => {
         emptyOutDir: true,
         target: 'es2019',
         commonjsOptions: {
-          include: [/node_modules/, /packages[\\/]runtime/, /packages[\\/]api/, /hosts[\\/]browser/],
+          include: [/node_modules/, /packages[\\/]runtime/, /packages[\\/]api/, /hosts[\\/]web/],
         },
         minify: false,
         sourcemap: false,
@@ -36,12 +37,13 @@ export default defineConfig(({ mode }) => {
     root: path.join(packageRoot, 'src/web'),
     base: './',
     publicDir: false,
+    resolve: { dedupe: ['glass-easel'] },
     build: {
       outDir: path.join(packageRoot, 'dist/web'),
       emptyOutDir: true,
       target: 'safari16',
       commonjsOptions: {
-        include: [/node_modules/, /packages[\\/]runtime/, /packages[\\/]api/, /hosts[\\/]browser/],
+        include: [/node_modules/, /packages[\\/]runtime/, /packages[\\/]api/, /hosts[\\/]web/],
       },
       minify: false,
       sourcemap: false,

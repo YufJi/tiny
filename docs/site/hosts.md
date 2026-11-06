@@ -3,7 +3,7 @@ title: '引擎不依赖环境，'
 highlight: '运行环境由宿主提供'
 eyebrow: '宿主适配'
 lede: >-
-  packages/runtime 是宿主无关的内核：service 跑逻辑树，宿主提供渲染树。@tiny/host-browser 负责浏览器线程、端口和 canvas handoff，@tiny/host-web-components 提供 Web 渲染树与 39 个内置组件；iOS 侧由 @tiny/host-ios 提供 JSCore engine 与每页 native WKWebView render 产物，HostCoreRuntime/SwiftUI 壳在 ios/。浏览器侧由 WasmBrowserHost 创建 iframe、转移端口并驱动 Rust HostCore；iOS 侧由 HostCoreRuntime 经 UniFFI 驱动同一个 HostCore，每页一个 WKWebView。调试器的会话客户端属于 devtool 应用本身（apps/devtool/src/runtimeClient.ts），不在宿主包里。
+  packages/runtime 是宿主无关的内核：service 跑逻辑树，宿主提供渲染树。@tiny/host-web 是通用 Web 宿主适配层，负责线程入口、端口、DOM 渲染树和 canvas handoff；@tiny/host-web-components 只提供 39 个内置组件的定义、behaviors 和默认样式；宿主 API 由应用注入。iOS 侧由 @tiny/host-ios 提供 JSCore engine 与每页 native WKWebView 的 transport/canvas 适配，Web render entry 复用 @tiny/host-web；HostCoreRuntime/SwiftUI 壳在 ios/。浏览器侧由 WasmBrowserHost 创建 iframe、转移端口并驱动 Rust HostCore；iOS 侧由 HostCoreRuntime 经 UniFFI 驱动同一个 HostCore。调试器的会话客户端属于 devtool 应用本身（apps/devtool/src/runtimeClient.ts），不在宿主包里。
 stats:
   - ['3', '宿主包']
   - ['1', 'service iframe']
@@ -14,7 +14,7 @@ pills:
   - ['canvas 注入', 'good']
   - ['资源解析', 'good']
   - ['在线调试器', 'good']
-description: '小程序内核如何接入宿主：host-browser、host-web-components、iframe 线程、canvas 与资源注入。'
+description: '小程序内核如何接入宿主：host-web、host-web-components、iframe 线程、DOM 渲染树、canvas 与资源注入。'
 name: '宿主'
 pageTitle: '宿主适配 · Tiny 小程序引擎'
 order: 6
@@ -27,23 +27,24 @@ order: 6
 | 层 | 入口 | 环境假设 | 职责 |
 | --- | --- | --- | --- |
 | 内核编排 | `WasmBrowserHost` / `HostCoreRuntime` | 适配器持有 WebView/iframe；HostCore 不依赖 DOM | 一条 service 连接、每页一条 render 连接、平台 handler、诊断通道和启动顺序 |
-| 线程启动 | `bootBrowserServiceEntry` / `bootBrowserRenderEntry` + `createGlassRenderEntry` | service 需要 JS 全局；render 需要 `TreeRenderer` | service 加载 templates 并创建逻辑树；render 消费 tree flow/patch；canvas 和资源由宿主注入 |
-| 浏览器适配 | `@tiny/host-browser` | window、iframe、MessageChannel、document | iframe、端口、DOM canvas、资源 URL、宿主 API 覆盖层 |
-| 渲染树 | `@tiny/host-web-components` | DOM 和 CSS | `createGlassRenderTree`、39 个 tiny-* 内置组件、共享 behaviors 和基础 CSS |
+| 线程启动 | `bootServiceEntry` / `bootRenderEntry` | service 需要 JS 全局；render 需要 `TreeRenderer` | service 加载 templates 并创建逻辑树；render 消费 tree flow/patch；canvas 和资源由宿主注入 |
+| Web 宿主适配 | `@tiny/host-web` | window、iframe/WebView、MessageChannel、document | iframe/WebView 线程入口、端口、DOM 渲染树、DOM canvas、资源 URL、页面生命周期 |
+| 内置组件 | `@tiny/host-web-components` | DOM 和 CSS | 39 个 tiny-* 定义、共享 behaviors、模板和基础 CSS；不负责线程启动 |
+| 宿主 API | `tests/host` · `apps/devtool` · iOS native | 应用/平台自己的环境 | network、clipboard、toast、modal、storage 等 handler，由应用显式注入 |
 | 应用宿主 | `tests/host` · `apps/devtool` | 静态资源服务器 / Vite | 选择应用、加载 manifest、提供界面或自动化钩子、调用 bootstrap |
 
 ```text
 应用外壳（host.ts / devtool React）
               |
               v
-@tiny/host-browser                浏览器环境适配
+@tiny/host-web                通用 Web 宿主适配
   WasmBrowserHost
-  bootBrowserServiceEntry / bootBrowserRenderEntry
-  canvas handoff / runtime-port
+  bootServiceEntry / bootRenderEntry
+  createGlassRenderTree / createGlassRenderEntry
+  canvas handoff / runtime-port / page-lifecycle
 
-@tiny/host-web-components         Web 渲染树
-  createGlassRenderTree（tiny-* + 基础 CSS）
-  createGlassRenderEntry（渲染树工厂）
+@tiny/host-web-components        内置组件实现
+  39 个 tiny-* definitions / behaviors / 模板 / 基础 CSS
               |
               v  WasmBrowserHost / HostCore
 Rust HostCore + platform adapter  内核编排
@@ -85,12 +86,12 @@ devicePixelRatio · process · Buffer · require
 导出 service/render 线程入口、TreeRenderer 契约、tree protocol、诊断和 API 契约类型。宿主通过 `transport`、`canvas`、`apiHost`、`loadTemplates`、`loadStyle`、`resolveAssetUrl` 注入能力；页面路由和平台调用由 HostCore 承担。
 :::
 
-:::card{tag="宿主" tone="violet" title="@tiny/host-browser"}
-负责 iframe、MessageChannel、OffscreenCanvas handoff、资源 URL 规则和宿主 API 覆盖层；tests/host 和 devtool 都从这里导入。调试器自己的会话与视图模型不在这个包里。
+:::card{tag="宿主" tone="violet" title="@tiny/host-web"}
+负责 iframe/WebView 线程入口、MessageChannel、DOM 渲染树、OffscreenCanvas handoff、资源 URL 规则和页面生命周期桥；tests/host、devtool 和 iOS render 入口都从这里导入。它不是宿主 API 的实现者，调试器自己的会话与视图模型也不在这个包里。
 :::
 
 :::card{tag="组件" tone="violet" title="@tiny/host-web-components"}
-负责 Web 渲染树、`tiny-*` 内置组件、behaviors 和基础 CSS；tests/host 与 devtool 的 render 入口用 `createGlassRenderEntry` 提供渲染树工厂。
+只负责 `tiny-*` 内置组件定义、behaviors、模板和基础 CSS；不提供 render tree、render entry 或线程启动。Web 渲染树在 `@tiny/host-web`。
 :::
 
 :::card{tag="结果" title="可移植性"}
@@ -111,7 +112,7 @@ devicePixelRatio · process · Buffer · require
 | 等待 service 就绪 | 宿主监听 tiny-runtime-port-ready，只接受目标 iframe 的消息，最多等 15 秒。 | waitForThreadReady(iframe, 'service') |
 | 转移 service 端口并握手 | 宿主把 port2 交给 service，service 安装 Transport 后完成 runtime.hello。 | postMessage({ type: 'tiny-runtime-port' }, '*', [port]) |
 | service bootstrap | 导入 service.js，安装兼容全局，加载 templates/styles，创建 glass-easel 逻辑树和首屏页面，返回 pageId、initialData 和 componentSchemas。 | service.control('runtime', 'bootstrap') |
-| 创建 render root | 宿主为页面创建 render iframe，render 入口把 `createGlassRenderEntry` 的工厂交给 `bootBrowserRenderEntry`；端口到达后才创建 `createGlassRenderTree` 和宿主内置组件。 | bootBrowserRenderEntry(createGlassRenderEntry(...)) |
+| 创建 render root | 宿主为页面创建 render iframe，render 入口调用 `bootRenderEntry`；它内部安装内置样式、等待端口并创建 `createGlassRenderTree` 和宿主内置组件。 | bootRenderEntry({ container, loadTemplates, resolveAssetUrl }) |
 | render 就绪，发送首屏 flow | render 收到 bootstrap 后返回 ready；宿主发 `tree.ready`，service 用逻辑树快照重发 `tree.flow`，render 挂载页面根。首屏 flow 在 service bootstrap 内已经发过一次，宿主会先暂存到该页队列。 | tree.ready → tree.flow |
 | 触发 onReady | 宿主发 `page.ready`，service 触发页面 onReady 并广播 RUNTIME_STATE。 | service.control('page', 'ready', { pageId }) |
 :::
@@ -121,7 +122,7 @@ devicePixelRatio · process · Buffer · require
 :::card{tag="竞态" title="为什么线程要先装好连接"}
 如果线程在安装 connection 之前就发 ready，宿主会立刻转移端口；端口消息到达时还没有监听器，第一帧就丢了。
 
-因此端口监听封装在宿主包里：service 侧等 manifest 和 styles 就绪后才调用 `bootBrowserServiceEntry`；render 侧由 `bootBrowserRenderEntry` 先装 canvas responder，再监听端口。
+因此端口监听封装在宿主包里：service 侧等 manifest 和 styles 就绪后才调用 `bootServiceEntry`；render 侧由 `bootRenderEntry` 先装 canvas responder，再监听端口。
 :::
 
 :::card{tag="超时" title="15 秒固定超时"}
@@ -158,7 +159,7 @@ window.__tinyRuntime = { host: runtime }
 await runtime.launch()
 
 // service 线程：加载模板、样式和 service bundle
-bootBrowserServiceEntry({
+bootServiceEntry({
   manifest,
   initialPath,
   loadTemplates: async () => (await import('/generated/templates.js')).default,
@@ -169,11 +170,11 @@ bootBrowserServiceEntry({
 })
 
 // render 线程：创建宿主渲染树，并加载同一份 templates.js
-bootBrowserRenderEntry(createGlassRenderEntry({
+bootRenderEntry({
   container: document.getElementById('app'),
   loadTemplates: async () => (await import('/generated/templates.js')).default,
   resolveAssetUrl: (src, sourcePath) => resolveAssetPath(sourcePath, src),
-}))
+})
 ```
 :::::
 
@@ -189,24 +190,24 @@ service 和 render 都不读取 URL，也不读取全局 manifest；所有输入
 | `loadArtifacts` | 在 bootstrap 时导入 service.js，保证 App/Page 已注册 | 实际必需 |
 | `loadTemplates` | 加载 templates.js，供 service 逻辑树求值 | 是 |
 | `loadStyle` | 按 outputPath 返回样式文本，供逻辑树计算样式作用域 | 使用样式时必需 |
-| `apiHost` | API 表工厂，宿主组装标准集与设备事实 | 是（`bootBrowserServiceEntry` 默认注入） |
+| `apiHost` | API 表工厂，宿主组装标准集与设备事实 | 是（`bootServiceEntry` 默认注入） |
 | `canvas` | 宿主 canvas handoff 与节点获取 | 使用 canvas 时必需 |
 | `resolveAssetUrl` | 把 app-root 资源路径映射成 URL（canvas image 等） | 否 |
 | `maxPageStack` | 页面栈上限，默认 10 | 否 |
 
 render 线程需要拿到编译模板，因为组件 shadow tree 在 render 侧求值；`builtinComponents` 由渲染树工厂（Web 侧 `createGlassRenderTree`）内部创建，不需要线程参数。
 
-| TreeThreadOptions / RenderEntryOptions | 用途 | 是否必需 |
+| `TreeThreadOptions` / `RenderEntryOptions` | 用途 | 是否必需 |
 | --- | --- | --- |
 | `transport` | render 连接 | `bootTreeThread` 必需 |
 | `renderer` | 宿主 `TreeRenderer`：mount / applyPatches / 模板与组件定义 / query / measure / inspectTree | `bootTreeThread` 必需 |
 | `templates` | 已加载的模板组，首屏前直接安装 | 与 `loadTemplates` 二选一 |
 | `loadTemplates` | 异步加载 templates.js；flow 会等它完成后再挂载 | 与 `templates` 二选一 |
-| `prepare` | 在宣告 ready 之前执行，用来装宿主内置样式 | 否 |
-| `createRenderer` | 渲染树工厂，端口到达后才调用；`bootBrowserRenderEntry` 用它创建树 | `bootBrowserRenderEntry` 必需 |
-| `initialPageId` | 这个 render root 对应的页面 | 否 |
-| `container` | Web 渲染树的 DOM 容器 | `createGlassRenderEntry` 使用 |
+| `prepare` | 内置样式安装后、宣告 ready 前执行的额外宿主设置 | 否 |
+| `pageId` | 这个 render root 对应的页面 | 否 |
+| `container` | Web 渲染树的 DOM 容器 | 否；默认 `#app`，再退回 `<body>` |
 | `resolveAssetUrl` | Web 内置组件解析图片等资源 | 使用本地资源时必需 |
+| `document` | 安装内置样式所用的 document | 否；默认当前 document |
 
 ::::split
 :::card{title="service 线程还要做什么"}
@@ -254,7 +255,7 @@ HostCore 把 `api.*` 调用交给平台适配器；浏览器实现集中在 `cre
 - `getPerformance`（now/mark/measure/observer）
 - 其他依赖设备或宿主壳的同步 API
 
-测试宿主和 devtool 各有一份 `apiExtensions`，`bootBrowserServiceEntry` 负责把它们合并到默认表之上；iOS 在 `bootServiceThread` 里直接组装。
+测试宿主和 devtool 各有一份 `apiExtensions`，`bootServiceEntry` 负责把它们合并到默认表之上；iOS 在 `bootServiceThread` 里直接组装。
 :::
 ::::
 
@@ -286,9 +287,9 @@ service 通过 `createLegacyCanvasContext` / `acquireCanvasNode` 拿到同步 ca
 API 表通过 `ServiceThreadOptions.apiHost` 注入（标准集在 `@tiny/api`），宿主事实作为它的覆盖层，canvas 通过 `ServiceThreadOptions.canvas` 注入，渲染树通过 `TreeRenderer` 注入。不要再把这些能力放回 `packages/runtime`。
 :::
 
-## @tiny/host-browser 负责什么 {#browser kicker="浏览器宿主"}
+## @tiny/host-web 负责什么 {#browser kicker="Web 宿主"}
 
-它把 iframe 生命周期、端口转移、DOM canvas、资源 URL 和宿主 API 覆盖层收在一个包里。
+它把 iframe/WebView 线程入口、端口转移、DOM 渲染树、DOM canvas、资源 URL 和页面生命周期桥收在一个包里。宿主 API handler 不在这里。
 
 :::::split
 ::::stack
@@ -298,7 +299,7 @@ API 表通过 `ServiceThreadOptions.apiHost` 注入（标准集在 `@tiny/api`�
 - 等待 ready 消息，最多 15 秒
 - 把 port2 转移给线程，提供 `WasmBrowserHost` 驱动 wasm HostCore
 - 完成 service 和每页 render 连接的握手
-- 提供 canvas 和资源 URL 的适配器
+- 提供 DOM 渲染树、canvas 和资源 URL 的适配器
 - 暴露当前页（`activePage`）、命令入口和 `dispose` 清理
 :::
 
@@ -307,7 +308,7 @@ API 表通过 `ServiceThreadOptions.apiHost` 注入（标准集在 `@tiny/api`�
 - 调用 service/render bootstrap
 - 提供业务渲染后端或挂载点
 - 管理多应用会话、诊断展示或调试界面
-- 替代 `apps/devtool/src/runtimeClient.ts` 的会话策略
+- 实现 network/clipboard/toast/modal 等宿主 API，或替代 `apps/devtool/src/runtimeClient.ts` 的会话策略
 :::
 ::::
 
@@ -315,7 +316,7 @@ API 表通过 `ServiceThreadOptions.apiHost` 注入（标准集在 `@tiny/api`�
 :::card{tag="tests/host" title="无界面单应用宿主"}
 Vite 提供三个入口：`index.html` 宿主、`service.html` 和 `render.html`。宿主把页面挂到 `#app`，并暴露 `window.__tinyRuntime` 给 Playwright。
 
-service 入口使用 `bootBrowserServiceEntry` 加载 templates/styles 和 service bundle；render 入口把 `createGlassRenderEntry` 的工厂交给 `bootBrowserRenderEntry`，由它安装 OffscreenCanvas responder、等端口并创建 Web 渲染树和内置组件。
+service 入口使用 `bootServiceEntry` 加载 templates/styles 和 service bundle；render 入口调用 `bootRenderEntry({ container, loadTemplates, resolveAssetUrl })`，由它安装 OffscreenCanvas responder、内置样式，等端口并创建 Web 渲染树和内置组件。
 :::
 
 :::card{tag="静态资源" title="产物怎么到线程里"}
@@ -328,7 +329,7 @@ manifest 由打包器静态导入；templates.js 和 service.js 由 service 入�
 
 ```text
 service.html
-  |-- bootBrowserServiceEntry({
+  |-- bootServiceEntry({
         manifest, initialPath,
         loadTemplates: () => import('/generated/templates.js'),
         loadArtifacts: () => import('/generated/service.js'),
@@ -336,17 +337,17 @@ service.html
       })
 
 render.html
-  +-- bootBrowserRenderEntry(createGlassRenderEntry({
+  +-- bootRenderEntry({
         container: document.getElementById('app'),
         loadTemplates: () => import('/generated/templates.js'),
         resolveAssetUrl,
-      }))
+      })
 ```
 
 
 ## devtool 在宿主之上加了控制界面 {#devtool kicker="调试器宿主"}
 
-React/Redux 不直接发送协议消息，只调用 devtool 应用自己的 `DevtoolRuntimeClient`（`apps/devtool/src/runtimeClient.ts`），并订阅它投影出来的状态；它驱动的是 `@tiny/host-browser` 提供的宿主。
+React/Redux 不直接发送协议消息，只调用 devtool 应用自己的 `DevtoolRuntimeClient`（`apps/devtool/src/runtimeClient.ts`），并订阅它投影出来的状态；它驱动的是 `@tiny/host-web` 提供的宿主。
 
 | DevtoolRuntimeClient 方法 | 底层动作 | 状态变化 |
 | --- | --- | --- |

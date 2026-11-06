@@ -42,7 +42,7 @@ const requiredBuilds = [
   'packages/runtime/dist/index.js',
   'packages/api/dist/index.js',
   'packages/bridge/dist/index.js',
-  'hosts/browser/dist/index.js',
+  'hosts/web/dist/index.js',
   'hosts/web-components/dist/index.js',
   'tools/cli/dist/index.js',
 ]

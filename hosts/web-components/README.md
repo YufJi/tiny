@@ -7,25 +7,15 @@ mini-program semantics; the built-in component definitions below depend on a
 DOM backend (`tiny-*` host nodes, attribute reflection, `classList`,
 `getBackendElement`) and on web CSS, so they belong to the web host.
 
-`@tiny/runtime` does **not** depend on this package. Browser hosts inject the
-implementation at the render-thread boundary:
+`@tiny/runtime` does **not** depend on this package. The DOM render tree lives
+in `@tiny/host-web` and calls `createBuiltinComponents` from this package; this
+package does not boot a thread, install page styles or own a `TreeRenderer`.
 
-```ts
-import { bootRenderThread } from '@tiny/runtime'
-import { webBuiltinComponents } from '@tiny/host-web-components'
+A native host can ignore this package entirely and provide its own views.
 
-bootRenderThread({
-  transport,
-  manifest,
-  backend,
-  artifacts: { templates },
-  builtinComponents: webBuiltinComponents,
-  initialPath,
-})
-```
-
-A native host can supply its own `BuiltinComponents` factory (or omit the
-option) without pulling in web behavior or CSS.
+Glass-easel primitives are imported through `@tiny/runtime/glass-easel`; this
+package declares `glass-easel` as a peer dependency rather than owning a second
+version.
 
 ## Layout
 
@@ -104,5 +94,5 @@ templates` to refresh it manually after editing a `template.wxml`.
 3. Run `pnpm --filter @tiny/host-web-components build` to regenerate templates
    and styles.
 4. Update the host wiring only if the new tag needs host-specific behavior;
-   the web render tree already creates the built-in definitions and installs
-   their styles (see `src/render-tree.ts` and `src/render-entry.ts`).
+   `@tiny/host-web` owns the render tree and installs the built-in styles it
+   receives from this package.

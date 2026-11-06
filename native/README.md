@@ -19,7 +19,7 @@ with `PlatformResult`; `system.info`, storage and navigation API requests are
 replied back to the service.
 
 `host-core-wasm` exposes the same event/action state machine to JavaScript with
-`WasmHostCore`; `hosts/browser/src/wasm-host.ts` is the browser adapter that owns
+`WasmHostCore`; `hosts/web/src/wasm-host.ts` is the browser adapter that owns
 iframes, MessageChannel and OffscreenCanvas handoff. It is the only host used by
 the devtool and by `tests/host`.
 

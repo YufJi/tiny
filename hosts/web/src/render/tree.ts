@@ -1,4 +1,4 @@
-import * as glassEasel from 'glass-easel'
+import * as glassEasel from '@tiny/runtime/glass-easel'
 import { convertRpx } from '@tiny/css-units'
 import { DEFAULT_BEHAVIOR_SCHEME, DIAGNOSTIC_CODES, TINY_ENGINE_NAMING } from '@tiny/manifest'
 import {
@@ -30,10 +30,13 @@ import type {
   WxsModuleTable,
   WxsRenderEffect,
 } from '@tiny/runtime'
-import { createBuiltinComponents } from './index'
-import { getPublicBuiltinBehaviors } from './behaviors'
+import {
+  BUILTIN_COMPONENT_TAGS,
+  createBuiltinComponents,
+  getPublicBuiltinBehaviors,
+  type BuiltinComponentTag,
+} from '@tiny/host-web-components'
 import { attachEventCompositor } from './event-compositor'
-import { BUILTIN_COMPONENT_TAGS, type BuiltinComponentTag } from './tags'
 
 type AnyComponent = glassEasel.GeneralComponent
 

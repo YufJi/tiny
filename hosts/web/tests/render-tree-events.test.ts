@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
-import * as glassEasel from 'glass-easel'
-import { createGlassRenderTree } from '../src/render-tree'
-import type { GlassRenderEvent } from '../src/render-tree'
+import * as glassEasel from '@tiny/runtime/glass-easel'
+import { createGlassRenderTree } from '../src/render/tree'
+import type { GlassRenderEvent } from '../src/render/tree'
 
 type MockElement = {
   type: 'element'

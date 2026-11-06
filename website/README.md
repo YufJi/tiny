@@ -16,7 +16,7 @@ indexed and fetched by tools that do not run JavaScript.
 | `/compiler/` | [docs/site/compiler.md](../docs/site/compiler.md) | Discovery, naming config, WXML → ProcGen, scoped CSS, scripts, manifest, output tree, diagnostics |
 | `/runtime/` | [docs/site/runtime.md](../docs/site/runtime.md) | Host-independent service thread, naming, setData/observers, events, component semantics, adapter, built-ins, isolation, canvas |
 | `/protocol/` | [docs/site/protocol.md](../docs/site/protocol.md) | Envelope, handshake, transport, batching, errors, JSON-safe rules, message catalog |
-| `/hosts/` | [docs/site/hosts.md](../docs/site/hosts.md) | Runtime purity, host-browser, host-web-components, startup handshake, thread contract, canvas/asset/API injections, devtool/test hosts, checklist |
+| `/hosts/` | [docs/site/hosts.md](../docs/site/hosts.md) | Runtime purity, host-web, host-web-components, startup handshake, thread contract, canvas/asset/API injections, devtool/test hosts, checklist |
 | `/debugger/` | [docs/site/debugger.md](../docs/site/debugger.md) | Embedded live debugger, panel/host architecture, build pipeline, relative-path contract, limits |
 | `/testing/` | [docs/site/testing.md](../docs/site/testing.md) | Gate, browser flows, unit tests, fixtures, Taro compatibility, uncovered areas |
 | `/status/` | [docs/site/status.md](../docs/site/status.md) | Maturity, known gaps, host gaps, roadmap, invariants |
@@ -49,7 +49,7 @@ Adding a page means adding `docs/site/<route>.md` with `name` and `order`
 frontmatter: routes, navigation, titles, sitemap and `llms.txt` all derive from
 it. Nothing in `src/` lists pages by hand.
 
-Content is written from the source of truth in `packages/*`, `hosts/browser`,
+Content is written from the source of truth in `packages/*`, `hosts/web`,
 `hosts/web-components`, `tools/cli`, `tests/host`, and `apps/devtool`. When
 behavior changes, update the relevant page rather than adding a generic
 marketing section.

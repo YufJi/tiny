@@ -107,14 +107,14 @@ service 把当前页的 `styles`（已按 role 过滤）和可选的 `fallbackAp
 
 ### 3.6 渲染树写 class
 
-`applyClassProps`（[hosts/web-components/src/render-tree.ts:168](../hosts/web-components/src/render-tree.ts#L168)）负责把逻辑树快照里的 class 写成真实 DOM：
+`applyClassProps`（[hosts/web/src/render/tree.ts:168](../hosts/web/src/render/tree.ts#L168)）负责把逻辑树快照里的 class 写成真实 DOM：
 
 - 普通 class：写无前缀名 + 每个 scope 的 `<scope>--<class>`；
 - `~class`：只按 page scope 展开（用于从组件内部显式引用页面样式）；
 - `^class` / `^^class`：按 `scopeChain` 向上取父/祖先 scope；
 - `externalClasses`：外部传入的 class 名同时按当前组件 scope 与 page scope 展开。
 
-样式文本统一写进一个 `<style data-tiny-tree-styles wx-style-scope>`（[hosts/web-components/src/render-tree.ts:1543](../hosts/web-components/src/render-tree.ts#L1543)）。
+样式文本统一写进一个 `<style data-tiny-tree-styles wx-style-scope>`（[hosts/web/src/render/tree.ts:1543](../hosts/web/src/render/tree.ts#L1543)）。
 
 ## 4. 内置组件样式
 
@@ -168,7 +168,7 @@ tiny-text:where(.tiny-builtin-text--tiny-builtin-tag-tiny-text) > span:where(.ti
 
 ### 4.4 安装位置
 
-宿主在 render 入口一次性安装，早于线程 ready（[hosts/web-components/src/render-entry.ts:28](../hosts/web-components/src/render-entry.ts#L28)）：
+宿主在 render 入口一次性安装，早于线程 ready（[hosts/web/src/render/entry.ts:28](../hosts/web/src/render/entry.ts#L28)）：
 
 ```ts
 style.textContent = [BUILTIN_BASE_STYLES, BUILTIN_HOST_STYLES,
@@ -179,7 +179,7 @@ style.textContent = [BUILTIN_BASE_STYLES, BUILTIN_HOST_STYLES,
 
 ### 4.5 受控穿透
 
-- `externalClasses`：`input` / `textarea` 的 `placeholder-class`、通用 `hover-class`（[hosts/web-components/src/render-tree.ts:1079](../hosts/web-components/src/render-tree.ts#L1079)）。
+- `externalClasses`：`input` / `textarea` 的 `placeholder-class`、通用 `hover-class`（[hosts/web/src/render/tree.ts:1079](../hosts/web/src/render/tree.ts#L1079)）。
 - 继承属性与 CSS 变量：`--tiny-switch-color`、`--tiny-radio-color`、`--picker-item-height` 等由宿主 `style` 设置、内部消费。
 - 宿主属性反射：`disabled`、`type=primary`、`hidden` 等变体都写在 `tiny-*` 宿主上。
 
@@ -220,6 +220,6 @@ style.textContent = [BUILTIN_BASE_STYLES, BUILTIN_HOST_STYLES,
 | 逻辑树视图描述与 role | [packages/runtime/src/tree/logic/backend.ts](../packages/runtime/src/tree/logic/backend.ts) |
 | 内置样式拆分 | [hosts/web-components/scripts/build-styles.mjs](../hosts/web-components/scripts/build-styles.mjs) |
 | 内置组件 scope 注册 | [hosts/web-components/src/index.ts](../hosts/web-components/src/index.ts) |
-| 内置样式安装 | [hosts/web-components/src/render-entry.ts](../hosts/web-components/src/render-entry.ts) |
-| class 写入与样式注入 | [hosts/web-components/src/render-tree.ts](../hosts/web-components/src/render-tree.ts) |
+| 内置样式安装 | [hosts/web/src/render/entry.ts](../hosts/web/src/render/entry.ts) |
+| class 写入与样式注入 | [hosts/web/src/render/tree.ts](../hosts/web/src/render/tree.ts) |
 | 浏览器验收 | [scripts/glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs) |

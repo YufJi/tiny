@@ -8,7 +8,7 @@ import {
 import { createBrowserCanvasAdapter, installBrowserCanvasCompat } from './canvas-bridge'
 import { listenForRuntimePort } from './runtime-port'
 
-export type BrowserServiceEntryOptions = {
+export type ServiceEntryOptions = {
   manifest: ServiceThreadOptions['manifest']
   initialPath: string
   loadTemplates: ServiceThreadOptions['loadTemplates']
@@ -25,11 +25,11 @@ export type BrowserServiceEntryOptions = {
 }
 
 /**
- * Boot the service thread of a browser host: install the DOM canvas compat
+ * Boot the service thread of a Web host: install the DOM canvas compat
  * layer, wait for the host's message port, and start the runtime with the
  * browser canvas adapter. Entries keep only their artifact/style loading.
  */
-export function bootBrowserServiceEntry(options: BrowserServiceEntryOptions): void {
+export function bootServiceEntry(options: ServiceEntryOptions): void {
   installBrowserCanvasCompat()
   listenForRuntimePort('service', (transport) => {
     bootServiceThread({

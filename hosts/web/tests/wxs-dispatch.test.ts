@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'vitest'
-import * as glassEasel from 'glass-easel'
+import * as glassEasel from '@tiny/runtime/glass-easel'
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
-import { createGlassRenderTree } from '../src/render-tree'
+import { createGlassRenderTree } from '../src/render/tree'
 
 const probeDefinition = {
   'components/probe/probe': {

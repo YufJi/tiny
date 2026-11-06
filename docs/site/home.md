@@ -14,7 +14,7 @@ actions:
 stats:
   - ['2', '运行时树']
   - ['15', '工作区包']
-  - ['388', '单元测试']
+  - ['408', '单元测试']
   - ['61', '浏览器步骤']
 description: 'Tiny 是一个基于 glass-easel 的小程序引擎：编译 WXML/WXSS/TS，service 与 render 双线程运行，核心小程序内核不依赖宿主。'
 name: '概览'
@@ -59,12 +59,12 @@ Bridge 定义消息信封、帧、调用与回复、事件批处理、超时和 
 :::
 
 :::card{tag="packages/runtime" title="线程启动参数"}
-`bootServiceThread` 接收 transport、manifest、`loadTemplates`、`loadStyle` 和宿主 canvas；render 线程用 `bootTreeThread` + `TreeRenderer`（Web 侧由 `createGlassRenderEntry` 提供渲染树，浏览器入口是 `bootBrowserRenderEntry`）消费逻辑树发来的 flow 和 patch。内核本身不依赖浏览器。
+`bootServiceThread` 接收 transport、manifest、`loadTemplates`、`loadStyle` 和宿主 canvas；render 线程用 `bootTreeThread` + `TreeRenderer` 消费逻辑树发来的 flow 和 patch；浏览器入口 `bootRenderEntry` 会自动创建 DOM 渲染树，自带 transport 的宿主可以用 `createGlassRenderEntry` 自行组合。内核本身不依赖浏览器。
 
 [看宿主如何启动线程 →](#/hosts)
 :::
 
-:::card{tag="hosts/browser" tone="violet" title="宿主注入的能力"}
+:::card{tag="hosts/web" tone="violet" title="宿主注入的能力"}
 `apiHost` 提供 API 表（标准集来自 `@tiny/api`），`apiExtensions` 补充设备信息，`apiHandlers` 处理需要跨线程的 API；canvas、资源 URL 和内置组件分别由宿主提供。
 
 [看宿主注入方式 →](#/hosts)
@@ -101,13 +101,13 @@ Bridge 定义消息信封、帧、调用与回复、事件批处理、超时和 
 :::
 
 :::card{tag="hosts" title="如何接入运行环境"}
-内核约束、host-browser、内置组件宿主、canvas 与资源注入、测试宿主和调试器，以及新宿主的接入步骤。
+内核约束、host-web、内置组件宿主、canvas 与资源注入、测试宿主和调试器，以及新宿主的接入步骤。
 
 [进入宿主适配 →](#/hosts)
 :::
 
 :::card{tag="testing" title="靠真实小程序验证"}
-388 个单元测试、61 个浏览器步骤、七个测试小程序，以及目前还没有覆盖的部分。
+408 个单元测试、61 个浏览器步骤、七个测试小程序，以及目前还没有覆盖的部分。
 
 [进入测试与验收 →](#/testing)
 :::
@@ -151,7 +151,7 @@ service 执行小程序逻辑并维护逻辑树，render 线程由宿主持有�
 - 应用 flow 和 patch，按组件定义求值 shadow tree，不执行 app methods / observers / relations
 - 事件带上组件 id / 元素 locator、name、detail 和 native 字段回传
 - 元素树导出、canvas 测量、DOM 查询和 IntersectionObserver
-- 内置组件和基础 CSS 由 `@tiny/host-web-components` 提供
+- DOM 渲染树由 `@tiny/host-web` 提供，内置组件和基础 CSS 由 `@tiny/host-web-components` 提供
 :::
 ::::
 
@@ -165,11 +165,11 @@ service 不创建真实 DOM，也不加载 Web 内置组件；render 不执行�
 
 | 宿主 | 通信方式 | 渲染后端 | 控制方式 |
 | --- | --- | --- | --- |
-| `@tiny/host-browser` | MessageChannel / iframe | 浏览器线程与 canvas handoff | `WasmBrowserHost`（HostCore）、`bootBrowserServiceEntry` / `bootBrowserRenderEntry` |
+| `@tiny/host-web` | MessageChannel / iframe/WebView | DOM 渲染树、线程入口与 canvas handoff | `WasmBrowserHost`（HostCore）、`bootServiceEntry` / `bootRenderEntry` |
 | `tests/host` | service + 每页 render 的 MessageChannel | `createGlassRenderTree` | URL `?path=`、`window.__tinyRuntime` |
 | `apps/devtool` | service + 每页 render 的 MessageChannel | `createGlassRenderTree` | app 内 `DevtoolRuntimeClient` + React/Redux |
 | runtime 单测 | `createInMemoryTransportPair()` | 测试 renderer / headless tree | 直接持有 service / render 连接 |
-| iOS 宿主（`ios/`） | JavaScriptCore + `tinyRender` handler | 每页一个 WKWebView + `createGlassRenderTree` | `HostCoreRuntime` / UniFFI RustHostCore |
+| iOS 宿主（`ios/`） | JavaScriptCore + `tinyRender` handler | 每页一个 WKWebView + `@tiny/host-web` 的 `createGlassRenderTree` | `HostCoreRuntime` / UniFFI RustHostCore |
 
 :::callout{title="新宿主从 HostCore 接进来"}
 宿主只需要实现平台适配：service transport、每页 render surface、WebView/JS engine 和 host API。页面栈、路由和 Bridge 会话由 Rust HostCore 负责；浏览器适配器是 `WasmBrowserHost`，iOS 适配器是 `HostCoreRuntime`。[看完整接入步骤 →](#/hosts)
@@ -201,7 +201,7 @@ Vant 的 dashboard、button、calendar、cascader 等页面和 WeUI 的表单/�
 :::
 
 :::card{title="可替换宿主"}
-内核边界检查；host-browser 注入 service 连接、每页 render root、OffscreenCanvas 和资源 URL；host-web-components 提供 Web 渲染树和内置组件。
+内核边界检查；host-web 注入 service 连接、每页 render root、DOM 渲染树、OffscreenCanvas 和资源 URL；host-web-components 提供内置组件定义和默认样式；宿主 API handler 由 app 注入。
 :::
 
 :::card{title="Canvas handoff"}

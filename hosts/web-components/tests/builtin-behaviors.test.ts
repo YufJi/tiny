@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import * as glassEasel from 'glass-easel'
+import * as glassEasel from '@tiny/runtime/glass-easel'
 import { DEFAULT_BEHAVIOR_SCHEME } from '@tiny/manifest'
 import { BUILTIN_BEHAVIOR_NAMES } from '@tiny/runtime'
 import {

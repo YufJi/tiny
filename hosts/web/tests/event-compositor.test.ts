@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { createGestureRecognizer, projectTouch } from '../src/event-compositor'
-import type { InputEvent, InputPoint } from '../src/event-compositor'
+import { createGestureRecognizer, projectTouch } from '../src/render/event-compositor'
+import type { InputEvent, InputPoint } from '../src/render/event-compositor'
 
 const point = (x: number, y: number, id = 1, source: 'touch' | 'mouse' = 'touch'): InputPoint => ({
   id,

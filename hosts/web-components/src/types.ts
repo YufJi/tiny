@@ -1,4 +1,4 @@
-import type * as glassEasel from 'glass-easel'
+import type * as glassEasel from '@tiny/runtime/glass-easel'
 import type { BuiltinComponentFactoryContext } from '@tiny/runtime'
 import type { BuiltinComponentTag } from './tags'
 import type { BuiltinBehaviors } from './behaviors'

@@ -13,7 +13,7 @@
  * content preserved as leaves.
  *
  * This is debugger presentation policy, so it lives with the panel app rather
- * than in `@tiny/host-web-components` (which stays the render/DOM glue).
+ * than in `@tiny/host-web` (which owns the DOM render tree).
  */
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import type { InspectNode } from '@tiny/runtime'

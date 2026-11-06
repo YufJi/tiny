@@ -380,7 +380,7 @@ export type TreeRenderer = {
 
 ::::cards{layout="three"}
 :::card{tag="Web" title="createGlassRenderTree"}
-`@tiny/host-web-components` 的 Web 渲染树注册真实 `tiny-*` 内置组件，维护 slot、shadow root、class/scope、样式和 DOM；`createGlassRenderEntry` 负责创建它并安装基础 CSS。
+`@tiny/host-web` 的 DOM 渲染树注册真实 `tiny-*` 内置组件，维护 slot、shadow root、class/scope、样式和 DOM；`createGlassRenderTree` 负责创建它，`bootRenderEntry` / `createGlassRenderEntry` 负责安装基础 CSS。内置组件定义和默认样式来自 `@tiny/host-web-components`。
 :::
 
 :::card{tag="Native" title="createNativeTreeRenderer"}

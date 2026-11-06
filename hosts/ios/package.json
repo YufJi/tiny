@@ -13,10 +13,10 @@
   },
   "dependencies": {
     "@tiny/bridge": "workspace:*",
-    "@tiny/host-browser": "workspace:*",
-    "@tiny/host-web-components": "workspace:*",
     "@tiny/runtime": "workspace:*",
-    "@tiny/api": "workspace:*"
+    "@tiny/api": "workspace:*",
+    "@tiny/host-web": "workspace:*",
+    "glass-easel": "1.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
