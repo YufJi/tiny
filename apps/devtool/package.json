@@ -20,6 +20,7 @@
     "glass-easel": "1.1.0"
   },
   "devDependencies": {
+    "@tiny/api": "workspace:*",
     "sirv": "^2.0.4",
     "vite": "^5.4.21",
     "vitest": "^1.6.1"

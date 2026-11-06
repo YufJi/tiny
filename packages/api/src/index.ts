@@ -19,6 +19,7 @@ export type {
   HostApiHandlers,
   HostApiParams,
   StorageValues,
+  SyncApiHandlers,
   SystemInfo,
 } from './host'
 export type { AssetUrlResolver } from '@tiny/manifest'

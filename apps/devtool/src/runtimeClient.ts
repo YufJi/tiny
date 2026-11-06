@@ -11,7 +11,7 @@ import type { InspectNode } from '@tiny/runtime'
 import type { RuntimeManifest } from '@tiny/runtime'
 import type { StorageValues, SystemInfo } from '@tiny/api'
 import { WasmBrowserHost, type WasmHostCoreFactory } from '@tiny/host-web'
-import { createDevtoolApiHandlers } from './host-api'
+import { createDevtoolApiHandlers, createDevtoolSyncApiHandlers } from './host-api'
 import { projectComponentTree } from './componentTree'
 import { pollHostPicker, showHostPicker, updateHostPicker } from './hostPicker'
 
@@ -119,6 +119,19 @@ export class DevtoolRuntimeClient {
     }
     this.container = container
     const storage = this.options.storage ?? {}
+    const getSystemInfo = (): SystemInfo => {
+      const facts = this.options.systemInfo ?? {}
+      const width = this.container?.clientWidth ?? 0
+      const height = this.container?.clientHeight ?? 0
+      return {
+        SDKVersion: '3.0.0',
+        ...facts,
+        pixelRatio: facts.pixelRatio
+          ?? (typeof window === 'undefined' ? 1 : window.devicePixelRatio),
+        windowWidth: width > 0 ? width : Number(facts.windowWidth ?? 0),
+        windowHeight: height > 0 ? height : Number(facts.windowHeight ?? 0),
+      }
+    }
     try {
       this.wasmHost = new WasmBrowserHost({
         appId: this.options.appId ?? 'devtool',
@@ -126,11 +139,10 @@ export class DevtoolRuntimeClient {
         serviceUrl: this.options.serviceUrl,
         renderUrl: this.options.renderUrl,
         initialPath: this.options.initialPath,
-        systemInfo: this.options.systemInfo,
-        storage,
         container,
         maxPageStack: this.options.maxPageStack,
-        apiHandlers: createDevtoolApiHandlers(storage),
+        apiHandlers: createDevtoolApiHandlers(storage, getSystemInfo),
+        syncApiHandlers: createDevtoolSyncApiHandlers(storage, getSystemInfo),
         onState: (state) => {
           if (state && typeof state === 'object') this.record(state as RuntimeDiagnostic)
         },

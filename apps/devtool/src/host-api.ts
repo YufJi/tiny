@@ -1,4 +1,4 @@
-import type { HostApiHandlers, StorageValues } from '@tiny/api'
+import type { HostApiHandlers, StorageValues, SyncApiHandlers, SystemInfo } from '@tiny/api'
 
 const OVERLAY_ID = 'tiny-api-overlay'
 const STYLE_ID = 'tiny-api-overlay-style'
@@ -12,8 +12,12 @@ let toastElement: HTMLElement | null = null
  * These run in the host realm (the page that owns the iframes), so DOM,
  * fetch, clipboard and navigator access stay out of the core runtime.
  */
-export function createDevtoolApiHandlers(storage: StorageValues = {}): HostApiHandlers {
+export function createDevtoolApiHandlers(
+  storage: StorageValues = {},
+  getSystemInfo: () => SystemInfo,
+): HostApiHandlers {
   return {
+    'system.info': () => getSystemInfo(),
     'network.request': (params) => request(params),
     'network.type': () => ({ networkType: networkType(), errMsg: 'getNetworkType:ok' }),
     'battery.get': () => batteryInfo(),
@@ -51,6 +55,37 @@ export function createDevtoolApiHandlers(storage: StorageValues = {}): HostApiHa
     'ui.modal': (params) => showModal(params),
     'ui.actionSheet': (params) => showActionSheet(params),
     'share.menu': (params) => ({ errMsg: `${String(params.action ?? 'share')}:ok` }),
+    'storage.get': (params) => ({ value: storage[String(params.key)] }),
+    'storage.set': (params) => {
+      storage[String(params.key)] = params.value
+      return { errMsg: 'setStorageSync:ok' }
+    },
+    'storage.remove': (params) => {
+      delete storage[String(params.key)]
+      return { errMsg: 'removeStorageSync:ok' }
+    },
+    'storage.clear': () => {
+      for (const key of Object.keys(storage)) delete storage[key]
+      return { errMsg: 'clearStorageSync:ok' }
+    },
+    'storage.info': () => ({
+      keys: Object.keys(storage),
+      currentSize: JSON.stringify(storage).length,
+      limitSize: 10240,
+    }),
+  }
+}
+
+/**
+ * Synchronous counterparts for `*Sync` APIs. The debugger host owns system and
+ * storage facts; the browser adapter only forwards them.
+ */
+export function createDevtoolSyncApiHandlers(
+  storage: StorageValues = {},
+  getSystemInfo: () => SystemInfo,
+): SyncApiHandlers {
+  return {
+    'system.info': () => getSystemInfo(),
     'storage.get': (params) => ({ value: storage[String(params.key)] }),
     'storage.set': (params) => {
       storage[String(params.key)] = params.value

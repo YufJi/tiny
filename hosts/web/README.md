@@ -15,8 +15,9 @@ it contains no host API implementations.
 
 Host API handlers (`network.*`, `clipboard.*`, `toast.*`, `modal.*`, storage,
 etc.) are **not** provided here. The application composes them and passes
-`WasmHostOptions.apiHandlers`; `tests/host` and `apps/devtool` own their own
-implementations.
+`WasmHostOptions.apiHandlers`, plus synchronous `*Sync` implementations through
+`WasmHostOptions.syncApiHandlers`; `tests/host` and `apps/devtool` own their own
+implementations. `WasmBrowserHost` never synthesizes system or storage facts.
 
 ## Public entrypoints
 

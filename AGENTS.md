@@ -172,11 +172,12 @@ records boot state, visible text, page errors and diagnostics per page into
   unsupported-API fallback. `@tiny/api` must not import `@tiny/runtime`.
   Adding a `wx.*` API touches `packages/api`, never the kernel.
 - Host facts (menu-button geometry, performance, device capabilities) stay in
-  the host's API-table composition. Canvas, asset URLs and the synchronous host
-  channel go only into the API context; the runtime receives a
-  `ServiceThreadOptions.onPageRelease` hook for per-page cleanup (canvas nodes,
-  …) and never owns canvas semantics. Do not hardcode them in
-  `packages/runtime`.
+  the host's API-table composition and its synchronous handler map
+  (`WasmHostOptions.syncApiHandlers`); host adapters only forward them. Canvas,
+  asset URLs and the synchronous host channel go only into the API context; the
+  runtime receives a `ServiceThreadOptions.onPageRelease` hook for per-page
+  cleanup (canvas nodes, …) and never owns canvas semantics. Do not hardcode
+  them in `packages/runtime`.
 - The browser test host and devtool both use `@tiny/host-web`’s
   `WasmBrowserHost` over `@tiny/host-core-wasm`;
   devtool adds its own `DevtoolRuntimeClient` (`apps/devtool/src/runtimeClient.ts`)

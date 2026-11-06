@@ -134,8 +134,15 @@ iframe 超过 15 秒没有发 ready 会直接 reject，不会重试。产物很�
 // 宿主侧（tests/host/src/host.ts）
 import init, { WasmHostCore } from '@tiny/host-core-wasm'
 import { TestBrowserHost } from './test-host'
+import { createTestHostApiHandlers, createTestHostSyncApiHandlers } from './host-api'
 
 await init()
+const storage = {}
+const getSystemInfo = () => ({
+  pixelRatio: devicePixelRatio,
+  windowWidth: innerWidth,
+  windowHeight: innerHeight,
+})
 const runtime = new TestBrowserHost({
   manifest,
   appId: 'test-host',
@@ -143,11 +150,9 @@ const runtime = new TestBrowserHost({
   renderUrl: '/render.html',
   initialPath: 'pages/todos/todos',
   container: document.getElementById('app') ?? document.body,
-  systemInfo: {
-    pixelRatio: devicePixelRatio,
-    windowWidth: innerWidth,
-    windowHeight: innerHeight,
-  },
+  storage,
+  apiHandlers: createTestHostApiHandlers(storage, getSystemInfo),
+  syncApiHandlers: createTestHostSyncApiHandlers(storage, getSystemInfo),
 }, async (config) => {
   const core = new WasmHostCore(config)
   return {
@@ -241,7 +246,7 @@ HostCore 把 `api.*` 调用交给平台适配器；浏览器实现集中在 `cre
 
 - `navigate.*` / `page.*`：HostCore 协调 service 和 render
 - `storage.*`：宿主持久化
-- `*Sync` 读取（`system.info`、`storage.*`）：走宿主注入的同步通道（浏览器 `__tinySyncHost`、iOS JSCore block）；没有同步通道时 `*Sync` API 抛错，不回退到快照
+- `*Sync` 读取（`system.info`、`storage.*`）：具体宿主通过 `WasmHostOptions.syncApiHandlers` 提供同步实现；浏览器适配器只安装 `__tinySyncHost` 通道并转发，iOS 走 JSCore block。没有 handler 时 `*Sync` API 抛错，不回退到快照
 - `network.request` / `network.type` / `battery.get`：浏览器 fetch / navigator
 - `toast.show` / `ui.*` / `share.menu`：宿主 overlay 或平台壳
 - `login` / `getUserProfile`：浏览器 stub，不接真实账号体系
@@ -421,7 +426,7 @@ devtool 的 service/render 入口用 `new Function('url', 'return import(url)')`
 | 创建 Transport | service 一条，每页 render 各一条；帧边界、非空 messages 和 JSON 安全由 Bridge 兜底，但传输必须保序。 | |
 | 实现渲染树 | 实现 `TreeRenderer`：mount、applyPatches、模板/组件定义、事件 sink、query、measure、inspectTree、observeIntersection 和动画；Web 侧可直接用 `createGlassRenderTree`。 | |
 | 启动线程并等待连接装好 | service 安装兼容全局、loadTemplates 和 loadArtifacts；render 创建 TreeRenderer 并加载模板；宿主拿到 port 后创建 connection 再握手，用 ready 或同步点避免丢帧。 | |
-| 提供宿主信息 | 宿主入口创建 connection，拼出 `WeixinApiContext`（systemInfo/storage、同步通道、canvas、资源、晚绑定页面访问器），交给 `createApiHost` 组装；`runtime.bootstrap` 不再传快照。设备事实用 apiExtensions 覆盖，网络请求等跨线程 API 走平台 handler。 | |
+| 提供宿主信息 | 具体宿主提供 systemInfo/storage 的异步 handler 与同步 `syncApiHandlers`；入口创建 connection，拼出 `WeixinApiContext`（同步通道、canvas、资源、晚绑定页面访问器），交给 `createApiHost` 组装；`runtime.bootstrap` 不再传快照。设备事实用 apiExtensions 覆盖，网络请求等跨线程 API 走平台 handler。 | |
 | 实现导航和 tree.ready | navigate.to/back/redirectTo/reLaunch/switchTab 必须由宿主先调用 service、再创建/激活 render root；render bootstrap 后发 tree.ready，service 发送 tree.flow，最后 page.ready。 | |
 | 接入诊断和控制 | 收集 diagnostic.*；按需暴露 inspectTree、page.show/hide 和关闭方法。 | |
 | 定义关闭语义 | HostCore `close` 销毁页面 surface 并关闭 Bridge；平台适配器再清理 WebView/iframe、容器和其他资源。 | |

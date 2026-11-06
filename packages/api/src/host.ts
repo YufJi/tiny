@@ -26,6 +26,16 @@ export type StorageValues = Record<string, unknown>
 
 export type HostApiParams = Record<string, unknown>
 
+/**
+ * Synchronous host implementations for WeChat's `*Sync` APIs
+ * (`system.info`, `storage.*`). The bridge is asynchronous, so hosts install a
+ * direct channel; handlers must return a value, never a promise.
+ */
+export type SyncApiHandlers = Record<
+  string,
+  (params: HostApiParams) => unknown
+>
+
 export type HostApiHandler = (
   params: HostApiParams,
   context: { pageId?: string },

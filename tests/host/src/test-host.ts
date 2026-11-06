@@ -12,18 +12,22 @@ import type { StorageValues } from '@tiny/api'
  * package stays platform glue, and a real browser host can decide its own
  * retention policy.
  */
+export type TestBrowserHostOptions = WasmHostOptions & {
+  /** Storage owned by the concrete host; exposed for acceptance assertions. */
+  storage?: StorageValues
+}
+
 export class TestBrowserHost extends WasmBrowserHost {
   /** Diagnostic history, including the `RUNTIME_STATE` snapshots from `onState`. */
   readonly diagnostics: RuntimeDiagnostic[]
   /** The storage object the host mutates, exposed for assertions. */
   readonly apiRegistry: { storage: StorageValues }
 
-  constructor(options: WasmHostOptions, factory: WasmHostCoreFactory) {
+  constructor(options: TestBrowserHostOptions, factory: WasmHostCoreFactory) {
     const diagnostics: RuntimeDiagnostic[] = []
-    const storage: StorageValues = options.storage ?? {}
+    const { storage = {}, ...hostOptions } = options
     super({
-      ...options,
-      storage,
+      ...hostOptions,
       onState: (state) => {
         // RUNTIME_STATE arrives as DiagnosticUpdate UI state, not as a
         // diagnostic action; tests filter it by its diagnostic code.
