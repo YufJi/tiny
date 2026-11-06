@@ -2,7 +2,7 @@ import type {
   CanvasNodeHandle,
   CanvasNodeRequest,
   ServiceCanvasAdapter,
-} from '@tiny/runtime'
+} from '@tiny/api'
 import { BROWSER_RUNTIME_NAMES } from './naming'
 
 type CanvasImageOptions = {

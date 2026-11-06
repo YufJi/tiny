@@ -128,6 +128,32 @@ if (violations.length > 0) {
   process.exit(1)
 }
 
+// The host composes the API table and hands it to the runtime; the API package
+// must never look back into the kernel or import its context.
+const apiSrcDir = path.join(rootDir, 'packages/api/src')
+const apiViolations = []
+for (const file of collectFiles(apiSrcDir)) {
+  const relative = path.relative(apiSrcDir, file).split(path.sep).join('/')
+  for (const specifier of readImports(file)) {
+    if (specifier === '@tiny/runtime' || specifier.startsWith('@tiny/runtime/')) {
+      apiViolations.push(`${relative} imports ${specifier}`)
+    }
+  }
+}
+const apiPackage = JSON.parse(
+  fs.readFileSync(path.join(rootDir, 'packages/api/package.json'), 'utf8'),
+)
+for (const field of ['dependencies', 'devDependencies']) {
+  if (apiPackage[field]?.['@tiny/runtime']) {
+    apiViolations.push(`packages/api/package.json has @tiny/runtime in ${field}`)
+  }
+}
+if (apiViolations.length > 0) {
+  console.error('API boundary is broken (@tiny/api must not depend on @tiny/runtime):')
+  for (const violation of apiViolations) console.error(`  ${violation}`)
+  process.exit(1)
+}
+
 const layers = [
   'service/          application runtime: page stack, routing, tabBar, component tree, API globals',
   'service/render/   service render: logic tree, schemas/definitions, flow/patch, WXS, tree events, RPCs',
@@ -138,3 +164,4 @@ const layers = [
 ]
 console.log('Runtime layer boundaries OK:')
 for (const line of layers) console.log(`  ${line}`)
+console.log('API boundary OK: @tiny/api depends on @tiny/bridge + @tiny/manifest only.')

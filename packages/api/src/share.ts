@@ -1,8 +1,8 @@
-import type { MiniProgramApiHost, ServiceApiContext } from '@tiny/runtime'
+import type { ApiHost, ApiContext } from './context'
 import { callHost, runApi } from './run-api'
 
 /** Share-menu APIs; the host decides whether a native share sheet exists. */
-export function createShareApi(context: ServiceApiContext): MiniProgramApiHost {
+export function createShareApi(context: ApiContext): ApiHost {
   return {
     showShareMenu: (params: unknown = {}) => runApi(
       params,

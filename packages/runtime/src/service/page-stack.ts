@@ -1,6 +1,5 @@
 import { DIAGNOSTIC_CODES, TINY_ENGINE_NAMING, type Manifest } from '@tiny/manifest'
 import type { BridgeConnection } from '@tiny/bridge'
-import type { ServiceCanvasAdapter } from '../types'
 import type { ComponentTree } from './component-tree'
 import { cloneJsonSafe } from '../data'
 import { createRuntimeStateDiagnostic } from '../diagnostics'
@@ -32,7 +31,8 @@ export type ServicePageStackOptions = {
    * page then has no router object.
    */
   createRouter?: (basePath: string) => MiniProgramRouter
-  canvas?: ServiceCanvasAdapter
+  /** Host hook: the page is gone, release per-page resources (canvas nodes, …). */
+  onPageRelease?: (pageId: string) => void
   maxPageStack?: number
 }
 
@@ -587,7 +587,7 @@ export class ServicePageStack {
     this.options.render.triggerPageLifetime(page.pageId, 'hide')
     this.triggerPageLifecycle(page, 'onUnload')
     if (page.getComponentDefinition()) page.triggerComponentLifecycle('detached')
-    this.options.canvas?.releaseCanvasNode?.({ pageId: page.pageId })
+    this.options.onPageRelease?.(page.pageId)
     this.componentTree.removePage(page.pageId)
     this.options.render.unmountPage(page.pageId)
     this.pageInstances.delete(page.pageId)

@@ -1,4 +1,4 @@
-import type { MiniProgramApiHost, ServiceApiContext } from '@tiny/runtime'
+import type { ApiHost, ApiContext } from './context'
 import { callHost, runApi } from './run-api'
 
 /**
@@ -6,7 +6,7 @@ import { callHost, runApi } from './run-api'
  * battery/navigator primitives; the service side keeps only the mini-program
  * call shape (including `request` returning an abort handle).
  */
-export function createNetworkApi(context: ServiceApiContext): MiniProgramApiHost {
+export function createNetworkApi(context: ApiContext): ApiHost {
   return {
     getNetworkType: (params: unknown = {}) => runApi(params, 'getNetworkType', () => callHost(
       context,

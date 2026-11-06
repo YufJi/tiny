@@ -1,13 +1,13 @@
 import { describe, expect, test } from 'vitest'
-import type { ServiceApiContext } from '@tiny/runtime'
+import type { WeixinApiContext } from '../src'
 import { createApiHost } from '../src'
 
 /**
- * A realistic context: the API names are the real table (as the kernel fills
- * them after the factory returns), the snapshot is mutable so host facts can be
- * probed, and the API global keeps its default alias list.
+ * A realistic context: `createApiHost` fills the API-name lookup from the
+ * assembled table, the snapshot is mutable so host facts can be probed, and the
+ * API global keeps its default alias list.
  */
-function createContext() {
+function createContext(options: { syncHost?: boolean; apiNamespaces?: string[] } = {}) {
   const snapshot: Record<string, unknown> = {
     pixelRatio: 2,
     windowWidth: 390,
@@ -21,19 +21,19 @@ function createContext() {
       call: () => Promise.resolve(undefined),
     },
     apiName: 'wx',
-    apiNamespaces: ['wx'],
+    apiNamespaces: options.apiNamespaces ?? ['wx'],
     // The system-info family is answered from live host facts.
-    syncHost: {
-      call: (domain: string, method: string) => {
-        if (domain !== 'api') throw new Error(`unsupported sync host domain: ${domain}`)
-        return method === 'system.info' ? snapshot : undefined
+    ...(options.syncHost === false ? {} : {
+      syncHost: {
+        call: (domain: string, method: string) => {
+          if (domain !== 'api') throw new Error(`unsupported sync host domain: ${domain}`)
+          return method === 'system.info' ? snapshot : undefined
+        },
       },
-    },
-    apiNames: new Set<string>(),
+    }),
     pageId: 'page-1',
-  } as unknown as ServiceApiContext
+  } as unknown as WeixinApiContext
   const host = createApiHost(context) as Record<string, (...args: unknown[]) => unknown>
-  for (const name of Object.keys(host)) context.apiNames.add(name)
   return { context, host, snapshot }
 }
 
@@ -136,25 +136,25 @@ describe('canIUse schema families', () => {
   })
 
   test('accepts an installed API global as an optional prefix', () => {
-    const { host, context } = createContext()
+    const { host } = createContext()
     expect(host.canIUse!('wx.request')).toBe(true)
     expect(host.canIUse!('wx.notAnApi')).toBe(false)
-    context.apiNamespaces = ['my', 'wx']
-    expect(host.canIUse!('my.nextTick')).toBe(true)
-    expect(host.canIUse!('other.nextTick')).toBe(false)
+    const aliased = createContext({ apiNamespaces: ['my', 'wx'] }).host
+    expect(aliased.canIUse!('my.nextTick')).toBe(true)
+    expect(aliased.canIUse!('other.nextTick')).toBe(false)
   })
 
   test('reports sync APIs unavailable when the host has no sync channel', () => {
-    const { host, context } = createContext()
-    expect(host.canIUse!('getStorageSync')).toBe(true)
-    expect(host.canIUse!('getSystemInfoSync')).toBe(true)
-    context.syncHost = undefined
-    expect(host.canIUse!('getStorageSync')).toBe(false)
-    expect(host.canIUse!('getSystemInfoSync')).toBe(false)
-    expect(host.canIUse!('getSystemInfoSync.return.windowWidth')).toBe(false)
+    const withChannel = createContext().host
+    expect(withChannel.canIUse!('getStorageSync')).toBe(true)
+    expect(withChannel.canIUse!('getSystemInfoSync')).toBe(true)
+    const withoutChannel = createContext({ syncHost: false }).host
+    expect(withoutChannel.canIUse!('getStorageSync')).toBe(false)
+    expect(withoutChannel.canIUse!('getSystemInfoSync')).toBe(false)
+    expect(withoutChannel.canIUse!('getSystemInfoSync.return.windowWidth')).toBe(false)
     // Asynchronous variants keep working without a sync channel.
-    expect(host.canIUse!('getStorage')).toBe(true)
-    expect(host.canIUse!('getSystemInfo')).toBe(true)
+    expect(withoutChannel.canIUse!('getStorage')).toBe(true)
+    expect(withoutChannel.canIUse!('getSystemInfo')).toBe(true)
   })
 
   test('rejects malformed schemas without throwing for known-empty forms', () => {

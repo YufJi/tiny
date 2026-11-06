@@ -106,9 +106,11 @@ reference browser globals.
 | `render/` | DOM render tree, built-in style install, WebView render entry |
 | `page-lifecycle` | Render-frame scroll → page `onPageScroll` / `onReachBottom` bridge |
 
-Canvas is injected at the thread boundary:
+Canvas goes into the API context (the host entry passes it to
+`createApiHost`); the runtime only gets `ServiceThreadOptions.onPageRelease` to
+release the page's canvas nodes:
 
-- `ServiceThreadOptions.canvas` (`createLegacyCanvasContext`, `acquireCanvasNode`, `releaseCanvasNode`)
+- api context `canvas` (`createLegacyCanvasContext`, `acquireCanvasNode`, `releaseCanvasNode`)
 - `TreeRenderer.measure` / `TreeRenderer.measureCanvas` for render-side geometry and canvas hosts
 
 This keeps the service and render thread entries free of `window`, `document`, `Image`,
@@ -123,11 +125,18 @@ built-in tags; the host render tree turns them into real components:
 
 ```ts
 import { bootTreeThread } from '@tiny/runtime'
+import { BridgeConnection } from '@tiny/bridge'
 import { createGlassRenderEntry } from '@tiny/host-web'
 
 const entry = createGlassRenderEntry({ container: document.getElementById('app') })
 entry.prepare()
-bootTreeThread({ transport, renderer: entry.createRenderer() })
+const connection = new BridgeConnection({
+  localRole: 'render',
+  peerRole: 'host',
+  transport,
+  capabilities: { role: 'render', mode: 'tree' },
+})
+bootTreeThread({ connection, renderer: entry.createRenderer() })
 ```
 
 `@tiny/host-web-components` (`hosts/web-components`) provides the built-in
@@ -139,22 +148,36 @@ package entirely.
 ## Mini-program APIs
 
 The kernel owns the global namespace (`wx`, `App`, `Page`, `Component`,
-`Behavior`), the unsupported-API fallback and the `ServiceApiContext` capability
-contract — not the API table. `bootServiceThread` requires an `apiHost` factory,
-so the set of `wx.*` names is the host's decision:
+`Behavior`) and the unsupported-API fallback — not the API table. The host entry
+creates the connection, composes `WeixinApiContext` and passes the assembled
+table, so the set of `wx.*` names is the host's decision:
 
 ```ts
-import { createWeixinApiHost } from '@tiny/api'
+import { createApiHost } from '@tiny/api'
+import { BridgeConnection } from '@tiny/bridge'
 
-bootServiceThread({
-  transport,
+const connection = new BridgeConnection({ localRole: 'service', peerRole: 'host', transport })
+const apiHost = createApiHost({
+  connection,
+  apiName: 'wx',
+  apiNamespaces: ['wx'],
+  syncHost,
+  canvas,
+  resolveAssetUrl,
+  themeListeners,
+  getActivePage: () => runtime?.activePage,
+  get pageId() { return runtime?.activePage?.pageId },
+  get tabBar() { return runtime?.tabBar },
+  setNextPageEventChannel: (channel) => runtime?.setNextPageEventChannel(channel),
+})
+
+runtime = bootServiceThread({
+  connection,
+  apiHost,
   manifest,
   initialPath,
-  apiHost: (context) => ({
-    ...createWeixinApiHost(context),
-    getMenuButtonBoundingClientRect: () => hostChrome.menuButtonRect,
-    getPerformance: () => hostChrome.performance,
-  }),
+  themeListeners,
+  onPageRelease: (pageId) => canvas.releaseCanvasNode?.({ pageId }),
   loadArtifacts,
 })
 ```
@@ -167,10 +190,11 @@ table, the synchronous channel for `*Sync` APIs, and bridge calls; it does not
 invent device or performance results.
 
 WeChat's `*Sync` APIs (`getSystemInfoSync`, `getStorageSync`, …) cannot use the
-asynchronous bridge, so `bootServiceThread` takes a `syncHost` channel with the
+asynchronous bridge, so the API context carries a `syncHost` channel with the
 same `api` method names (`system.info`, `storage.get`, …). Browser hosts inject
 one into the service frame; iOS exposes a JavaScriptCore block. A host without a
-channel makes those APIs throw instead of serving a stale snapshot.
+channel makes those APIs throw instead of serving a stale snapshot; the kernel
+never sees the channel.
 
 ## Asset URLs
 
@@ -183,7 +207,12 @@ import { bootTreeThread } from '@tiny/runtime'
 import { createGlassRenderTree } from '@tiny/host-web'
 
 bootTreeThread({
-  transport,
+  connection: new BridgeConnection({
+    localRole: 'render',
+    peerRole: 'host',
+    transport,
+    capabilities: { role: 'render', mode: 'tree' },
+  }),
   renderer: createGlassRenderTree({
     container: document.getElementById('app')!,
     resolveAssetUrl: (assetPath, sourcePath) =>

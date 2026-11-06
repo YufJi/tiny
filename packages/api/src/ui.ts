@@ -1,11 +1,11 @@
-import type { MiniProgramApiHost, ServiceApiContext } from '@tiny/runtime'
+import type { ApiHost, ApiContext } from './context'
 import { callHost, runApi } from './run-api'
 
 /**
  * Toast / modal / loading / action-sheet APIs. Every one is a forward to the
  * host's `ui.*` handlers; the host owns the overlay DOM (or native view).
  */
-export function createUiApi(context: ServiceApiContext): MiniProgramApiHost {
+export function createUiApi(context: ApiContext): ApiHost {
   return {
     showToast: (params: unknown = {}) => runApi(params, 'showToast', () => callHost(
       context,

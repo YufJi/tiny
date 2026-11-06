@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import type { ServiceApiContext } from '@tiny/runtime'
+import type { WeixinApiContext } from '../src'
 import { createApiHost } from '../src'
 
 function createContext() {
@@ -9,11 +9,8 @@ function createContext() {
       sendDiagnostic: (...args: unknown[]) => diagnostics.push(args),
       call: () => Promise.resolve(undefined),
     },
-    getSystemInfoSnapshot: () => ({ pixelRatio: 1, windowWidth: 0, windowHeight: 0 }),
-    getStorageSnapshot: () => ({}),
-    setStorageSnapshot: () => {},
     pageId: 'page-1',
-  } as unknown as ServiceApiContext
+  } as unknown as WeixinApiContext
   return { context, diagnostics }
 }
 

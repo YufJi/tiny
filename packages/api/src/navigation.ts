@@ -1,4 +1,4 @@
-import type { MiniProgramApiHost, ServiceApiContext } from '@tiny/runtime'
+import type { ApiHost, ApiContext } from './context'
 import {
   createEventChannelPair,
   type EventChannelHandler,
@@ -28,7 +28,7 @@ type NavigationParams = Record<string, unknown>
  * Callbacks and `events` handlers are functions and therefore never cross the
  * bridge: they are stripped from the host payload and run in the service realm.
  */
-export function createNavigationApi(context: ServiceApiContext): MiniProgramApiHost {
+export function createNavigationApi(context: ApiContext): ApiHost {
   return {
     navigateTo: (params: unknown = {}) => navigateTo(context, params),
     navigateBack: (params: unknown = {}) => navigate(
@@ -96,7 +96,7 @@ export function createNavigationApi(context: ServiceApiContext): MiniProgramApiH
 }
 
 function navigateTo(
-  context: ServiceApiContext,
+  context: ApiContext,
   params: unknown,
 ): Promise<Record<string, unknown>> | undefined {
   const input = toParams(params)
@@ -115,7 +115,7 @@ function navigateTo(
 }
 
 function navigate(
-  context: ServiceApiContext,
+  context: ApiContext,
   params: unknown,
   apiName: string,
   hostMethod: string,

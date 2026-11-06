@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest'
-import type { ServiceApiContext } from '@tiny/runtime'
+import type { WeixinApiContext } from '../src'
 import { createApiHost } from '../src'
 
-function createContext() {
+function createContext(apiNamespaces: string[] = ['wx']) {
   const storage: Record<string, unknown> = {}
   const calls: Array<{ domain: string; method: string; params: Record<string, unknown> }> = []
   const handlers: Record<string, (params: Record<string, unknown>) => unknown> = {
@@ -33,14 +33,6 @@ function createContext() {
       return Promise.resolve(handlers[method]?.(params))
     },
   }
-  const apiNames = new Set([
-    'getStorage',
-    'setStorage',
-    'request',
-    'getNetworkType',
-    'showModal',
-    'showToast',
-  ])
   const syncHost = {
     call: (domain: string, method: string, params: Record<string, unknown> = {}) => {
       if (domain !== 'api') throw new Error(`unsupported sync host domain: ${domain}`)
@@ -52,12 +44,11 @@ function createContext() {
   const context = {
     connection,
     apiName: 'wx',
-    apiNamespaces: ['wx'],
+    apiNamespaces,
     syncHost,
-    apiNames,
     getCurrentPagePath: () => 'pages/index/index',
     pageId: 'page-1',
-  } as unknown as ServiceApiContext
+  } as unknown as WeixinApiContext
   return { context, storage, calls }
 }
 
@@ -99,10 +90,11 @@ describe('common host APIs', () => {
 
     expect(host.canIUse('wx.request')).toBe(true)
     expect(host.canIUse('wx.notImplemented')).toBe(false)
-    context.apiNamespaces = ['my', 'wx']
-    expect(host.canIUse('my.request')).toBe(true)
-    expect(host.canIUse('my.notImplemented')).toBe(false)
-    expect(host.canIUse('other.request')).toBe(false)
+    const alias = createContext(['my', 'wx'])
+    const aliasHost = createApiHost(alias.context) as Record<string, (...args: unknown[]) => unknown>
+    expect(aliasHost.canIUse('my.request')).toBe(true)
+    expect(aliasHost.canIUse('my.notImplemented')).toBe(false)
+    expect(aliasHost.canIUse('other.request')).toBe(false)
     expect(host.getLaunchOptionsSync()).toMatchObject({ path: 'pages/index/index', scene: 1001 })
   })
 })

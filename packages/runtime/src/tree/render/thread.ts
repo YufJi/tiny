@@ -1,5 +1,4 @@
 import { BridgeConnection } from '@tiny/bridge'
-import type { Transport } from '@tiny/bridge'
 import type { WxsModuleTable } from '@tiny/wxs-runtime'
 import type { TemplateRegistry } from '../../types'
 import {
@@ -102,7 +101,8 @@ export type TreeRenderer = {
 }
 
 export type TreeThreadOptions = {
-  transport: Transport
+  /** Created by the host entry; the render thread never builds its own. */
+  connection: BridgeConnection
   renderer: TreeRenderer
   initialPageId?: string
   /** Already-loaded template groups; installed before any flow is handled. */
@@ -120,12 +120,7 @@ export type TreeThreadRuntime = {
 
 /** Render-side thread for the WeChat-style split-tree protocol. */
 export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
-  const connection = new BridgeConnection({
-    localRole: 'render',
-    peerRole: 'host',
-    transport: options.transport,
-    capabilities: { role: 'render', mode: 'tree' },
-  })
+  const connection = options.connection
   let currentPageId = options.initialPageId
 
   /**

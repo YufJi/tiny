@@ -1,4 +1,3 @@
-import { BridgeConnection } from '@tiny/bridge'
 import {
   DIAGNOSTIC_CODES,
   TINY_ENGINE_NAMING,
@@ -18,7 +17,6 @@ import { createDefaultWxsCompiler, createWxsRuntime } from '@tiny/wxs-runtime'
 import { findPageArtifact } from './route'
 import type {
   MiniProgramApiHost,
-  ServiceApiContext,
   ServiceThreadOptions,
   ServiceThreadRuntime,
 } from './types'
@@ -63,15 +61,12 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     componentConfigurations,
   )
 
-  const themeListeners = new Set<(value: unknown) => void>()
-  const supportedApiNames = new Set<string>()
+  // Shared with the host-composed API table: the runtime only forwards the
+  // host theme control into it.
+  const themeListeners = options.themeListeners ?? new Set<(value: unknown) => void>()
 
-  const connection = new BridgeConnection({
-    localRole: 'service',
-    peerRole: 'host',
-    transport: options.transport,
-    capabilities: { role: 'service' },
-  })
+  // The host entry owns the connection (and the API table built on top of it).
+  const connection = options.connection
 
   const componentTree = new ComponentTree()
   let onTabBarChange: () => void = () => {}
@@ -116,38 +111,18 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     connection,
     tabBar,
     createRouter,
-    ...(options.canvas ? { canvas: options.canvas } : {}),
+    ...(options.onPageRelease ? { onPageRelease: options.onPageRelease } : {}),
     ...(options.maxPageStack !== undefined ? { maxPageStack: options.maxPageStack } : {}),
   })
   resolvePage = (pageId) => pages.pageInstances.get(pageId)
   onTabBarChange = () => pages.sendRuntimeState()
 
-  const apiContext: ServiceApiContext = {
-    connection: null as unknown as BridgeConnection,
-    apiName: compatibility.api.global,
-    apiNamespaces: [compatibility.api.global, ...compatibility.api.aliases],
-    apiNames: supportedApiNames,
-    syncHost: options.syncHost,
-    getCurrentPagePath: () => pages.activePage?.path,
-    getActivePage: () => pages.activePage,
-    canvas: options.canvas,
-    resolveAssetUrl: options.resolveAssetUrl,
-    tabBar: tabBar.api,
-    themeListeners,
-    setNextPageEventChannel: (channel) => pages.setNextPageEventChannel(channel),
-    get pageId() {
-      return pages.activePage?.pageId
-    },
-  }
-  apiContext.connection = connection
-  // The kernel does not own the mini-program API set: the host injects a
-  // factory and the runtime only installs what it returns. Names the factory
-  // omits fall through to the unsupported-API diagnostic.
-  const apiHost = options.apiHost(apiContext)
-  for (const name of Object.keys(apiHost)) supportedApiNames.add(name)
+  // The kernel does not own the mini-program API set: the host entry composes
+  // the table (including host extensions) and the runtime installs it verbatim.
+  // Names it omits fall through to the unsupported-API diagnostic.
   apiTable = installMiniProgramGlobals(
     registry,
-    apiHost,
+    options.apiHost,
     (name) => connection.sendDiagnostic('warn', {
       code: DIAGNOSTIC_CODES.UNSUPPORTED_API,
       message: `${compatibility.api.global}.${name} is not supported in the P0 runtime.`,
@@ -155,9 +130,9 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     () => pages.pageStack,
   )
 
-  // Artifacts are evaluated lazily by bootstrap, after the host state
-  // (systemInfo/storage) has been applied. Top-level app/component code often
-  // reads getSystemInfoSync().SDKVersion or getStorageSync() during evaluation.
+  // Artifacts are evaluated lazily by bootstrap. Top-level app/component code
+  // often reads getSystemInfoSync().SDKVersion or getStorageSync() during
+  // evaluation; those calls reach the host directly (sync channel).
   let artifactsReady: Promise<unknown> | undefined
   const ensureArtifacts = (): Promise<unknown> => {
     if (!artifactsReady) {
@@ -344,6 +319,10 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     },
     pageInstances: pages.pageInstances,
     componentTree,
+    tabBar: tabBar.api,
+    setNextPageEventChannel(channel: unknown) {
+      return pages.setNextPageEventChannel(channel)
+    },
     notifyUnhandledRejection(reason, promise) {
       registry.reportUnhandledRejection(reason, promise)
     },

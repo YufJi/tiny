@@ -26,7 +26,7 @@ Tiny 只守住一条线：`packages/runtime` 是唯一的内核，它不引用 w
   | iframe / port / DOM   |  | JSCore / WKWebView    |  | in-memory transport   |
   +-----------------------+  +-----------------------+  +-----------------------+
 
-              inject: transport / canvas / renderer / API / assets
+        inject: connection / renderer / API table / page-release
               |                          |                          |
   ============+==========================+==========================+============
               v                          v                          v
@@ -44,18 +44,17 @@ Tiny 只守住一条线：`packages/runtime` 是唯一的内核，它不引用 w
   @tiny/manifest / @tiny/bridge / @tiny/wxs-runtime / glass-easel
 ```
 
-宿主不是内核的上层，而是内核的调用方。浏览器、iOS 和测试宿主都依赖同一个内核，区别只在注入的实现：`transport` 决定消息怎么走，`TreeRenderer` 决定怎么画，`apiHost`、`canvas` 和 `resolveAssetUrl` 决定环境事实。
+宿主不是内核的上层，而是内核的调用方。**宿主入口负责组装**：创建 `BridgeConnection`，用宿主事实和晚绑定的 runtime accessor 拼出 `WeixinApiContext`，再把 API 表交给内核安装。`@tiny/api` 只依赖 `@tiny/bridge` 和 `@tiny/manifest`，不 import runtime。
 
 | 注入点 | 宿主提供 | 内核拿到什么 | 浏览器宿主 | iOS 宿主 |
 | --- | --- | --- | --- | --- |
-| `transport` | 线程间通道 | `Transport` | MessageChannel | JSCore message handler |
+| `connection` | 在 transport 上创建的连接 | `BridgeConnection` | MessageChannel | JSCore message handler |
 | `manifest` 与 loader | 产物与加载方式 | 只读 manifest、templates、styles | 静态资源 | 打包产物 |
 | `TreeRenderer` | 真实组件树 | 渲染契约 | `createGlassRenderTree` | 每页 WKWebView |
-| `canvas` | 画布控制面 | `ServiceCanvasAdapter` | OffscreenCanvas | display-list 回放 |
-| `apiHost` | API 表工厂 | `ServiceApiFactory` | `@tiny/api` + 窗口设备信息 | `@tiny/api` + 菜单按钮、性能 |
-| `resolveAssetUrl` | 资源地址规则 | URL 映射函数 | 站点路径 | bundle 路径 |
+| `apiHost` | API 表（含宿主扩展） | `MiniProgramApiHost`（不透明表） | `@tiny/api` + 窗口设备信息 + canvas/asset/sync | `@tiny/api` + 菜单按钮、性能 + canvas/asset/sync |
+| `onPageRelease` | 页面销毁后的资源回收 | `(pageId) => void` | 释放 canvas 节点 | 释放 display list |
 
-`apiHost` 是唯一会随时间增长的注入点，而且它增长在宿主侧：内核只安装工厂返回的表，缺的名字落到 `UNSUPPORTED_API`；标准微信兼容表在 `@tiny/api`，宿主再用 `apiExtensions` 叠加设备事实。
+canvas、`resolveAssetUrl` 和 `syncHost` 只进入 `@tiny/api` 的 context；runtime 不需要它们，只在页面销毁时调用 `onPageRelease`。`themeListeners` 由宿主创建，同时交给 api（`onThemeChange`）和 runtime（转发 `runtime.themeChange`）。
 
 :::callout{title="这条线由脚本守着"}
 `pnpm check:runtime-purity` 从 `packages/runtime/src/index.ts` 遍历依赖图，出现 window、document、fetch、MessageChannel 或 `@tiny/host-*` 就失败。它验证的不是“当前浏览器能跑”，而是“同一个内核还能装进下一个宿主”。实现细节见[宿主适配](#/hosts)。
@@ -159,7 +158,7 @@ glass-easel 不是完整的小程序 SDK。它负责组件、模板、数据绑�
 core        packages/manifest
             packages/bridge
             packages/wxs-runtime
-            packages/api                -> manifest, runtime
+            packages/api                -> bridge, manifest
             packages/template-compiler
             packages/stylesheet-compiler
             packages/runtime            -> manifest, bridge, wxs-runtime, glass-easel
@@ -358,7 +357,7 @@ iOS 路径不使用 iframe 或 `host.html`；页面切换由 `HostCoreRuntime` �
 :::
 
 :::card{title="环境能力由宿主注入"}
-API 表走 `apiHost`（标准集来自 `@tiny/api`，设备事实用 `apiExtensions` 叠加），canvas 走 `ServiceCanvasAdapter` 和渲染树的 `measureCanvas`，DOM 查询与相交观测走 `TreeRenderer.query` / `observeIntersection`，资源走 `resolveAssetUrl`，渲染后端和挂载点也由宿主提供。
+API 表由宿主入口组装（标准集来自 `@tiny/api`，设备事实用扩展叠加），canvas/资源/同步通道只进入 api context；runtime 只接收不透明 API 表和 `onPageRelease` 清理钩子。DOM 查询与相交观测走 `TreeRenderer.query` / `observeIntersection`，渲染后端和挂载点也由宿主提供。
 :::
 
 :::card{title="命名配置只有一个来源"}

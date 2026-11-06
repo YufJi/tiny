@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import type { ServiceApiContext } from '@tiny/runtime'
+import type { WeixinApiContext } from '../src'
 import { createApiHost } from '../src'
 import type { EventChannel } from '../src/event-channel'
 
@@ -38,10 +38,6 @@ function createContext(options: { failWith?: string } = {}) {
     connection,
     apiName: 'wx',
     apiNamespaces: ['wx'],
-    getSystemInfoSnapshot: () => ({ pixelRatio: 1, windowWidth: 0, windowHeight: 0 }),
-    getStorageSnapshot: () => ({}),
-    setStorageSnapshot: () => {},
-    apiNames: new Set<string>(),
     pageId: 'page-1',
     setNextPageEventChannel(channel: unknown) {
       pageChannels.push(channel as EventChannel)
@@ -49,7 +45,7 @@ function createContext(options: { failWith?: string } = {}) {
         releases += 1
       }
     },
-  } as unknown as ServiceApiContext
+  } as unknown as WeixinApiContext
   return {
     context,
     calls,
@@ -58,7 +54,7 @@ function createContext(options: { failWith?: string } = {}) {
   }
 }
 
-function api(context: ServiceApiContext) {
+function api(context: WeixinApiContext) {
   return createApiHost(context) as Record<string, (...args: unknown[]) => unknown>
 }
 

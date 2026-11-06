@@ -1,5 +1,5 @@
 import { createInMemoryTransportPair } from '@tiny/bridge'
-import type { RenderThreadConnector } from '../../src/types'
+import type { RenderThreadConnector } from '../support/host/types'
 import {
   bootSplitTreeHarness,
   logicTreeAdapter,

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { BridgeConnection, createInMemoryTransportPair } from '@tiny/bridge'
 import { bootTreeThread } from '../src/tree/render/thread'
+import { createRenderConnection } from './helpers/render-connection'
 import { QUERY_CONTROL, type RenderNode, type RenderPatch } from '../src/tree/protocol'
 
 const tree: RenderNode = {
@@ -15,7 +16,7 @@ describe('tree thread', () => {
     const [hostTransport, renderTransport] = createInMemoryTransportPair()
     const mounted: RenderNode[] = []
     bootTreeThread({
-      transport: renderTransport,
+      connection: createRenderConnection(renderTransport),
       renderer: {
         mount: (root) => mounted.push(root),
         applyPatches: () => {},
@@ -78,7 +79,7 @@ describe('tree thread', () => {
     let emit: ((event: unknown) => void) | undefined
 
     bootTreeThread({
-      transport: renderTransport,
+      connection: createRenderConnection(renderTransport),
       initialPageId: 'page-1',
       renderer: {
         mount: (root) => mounted.push(root),
@@ -122,7 +123,7 @@ describe('tree thread', () => {
     const rect = () => ({ left: 0, top: 0, right: 120, bottom: 40, width: 120, height: 40 })
 
     bootTreeThread({
-      transport: renderTransport,
+      connection: createRenderConnection(renderTransport),
       initialPageId: 'page-1',
       renderer: {
         mount: () => {},
@@ -179,7 +180,7 @@ describe('tree thread', () => {
     let release!: (templates: unknown) => void
     const templatesReady = new Promise((resolve) => { release = resolve })
     bootTreeThread({
-      transport: renderTransport,
+      connection: createRenderConnection(renderTransport),
       loadTemplates: () => templatesReady as never,
       renderer: {
         mount: () => order.push('mount'),

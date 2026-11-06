@@ -1,5 +1,5 @@
 import { DIAGNOSTIC_CODES } from '@tiny/manifest'
-import type { MiniProgramApiHost, ServiceApiContext } from '@tiny/runtime'
+import type { ApiHost, ApiContext } from './context'
 import { callHost, runApi } from './run-api'
 
 /**
@@ -9,7 +9,7 @@ import { callHost, runApi } from './run-api'
  * checkSession): they keep the call shape and report what actually happened
  * through diagnostics instead of pretending to own an identity system.
  */
-export function createDeviceApi(context: ServiceApiContext): MiniProgramApiHost {
+export function createDeviceApi(context: ApiContext): ApiHost {
   const warnStub = (code: string, message: string) => {
     context.connection.sendDiagnostic('warn', { code, message }, context.pageId)
   }

@@ -1,5 +1,5 @@
 import { BUILTIN_COMPONENT_TAGS } from '@tiny/manifest'
-import type { ServiceApiContext } from '@tiny/runtime'
+import type { ApiContext } from './context'
 
 /**
  * `wx.canIUse` schema resolution.
@@ -45,7 +45,7 @@ const SYNC_APIS = new Set([
 ])
 
 export function createCanIUse(
-  context: ServiceApiContext,
+  context: ApiContext,
   capabilities: CanIUseCapabilities,
 ): (schema?: unknown) => boolean {
   const componentTags = new Set<string>(BUILTIN_COMPONENT_TAGS)
@@ -81,7 +81,7 @@ export function createCanIUse(
       return matchesNode(classFacts, rest)
     }
 
-    if (context.apiNames.has(head)) {
+    if (context.hasApi?.(head) ?? false) {
       if (SYNC_APIS.has(head) && !context.syncHost) return false
       if (rest.length > 0 && !API_METHODS.has(rest[0]!)) return false
       if (isSystemSnapshotApi(head)) {
@@ -105,7 +105,7 @@ function isSystemSnapshotApi(apiName: string): boolean {
   return apiName === 'getSystemInfoSync' || apiName === 'getSystemInfo'
 }
 
-function systemInfoSnapshot(context: ServiceApiContext): Record<string, unknown> | undefined {
+function systemInfoSnapshot(context: ApiContext): Record<string, unknown> | undefined {
   try {
     const snapshot = context.syncHost?.call('api', 'system.info', {})
     return snapshot && typeof snapshot === 'object'

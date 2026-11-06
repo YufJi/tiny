@@ -1,4 +1,4 @@
-import type { MiniProgramApiHost, ServiceApiContext } from '@tiny/runtime'
+import type { ApiContext, ApiHost } from './context'
 import { createCanvasApi } from './canvas'
 import { createDeviceApi } from './device'
 import { createFileSystemApi } from './filesystem'
@@ -14,33 +14,63 @@ import { createUiApi } from './ui'
 export type { ApiCallbacks } from './run-api'
 export { createEventChannelPair } from './event-channel'
 export type { EventChannel, EventChannelHandler, EventChannelPair } from './event-channel'
+export type {
+  HostApiHandler,
+  HostApiHandlers,
+  HostApiParams,
+  StorageValues,
+  SystemInfo,
+} from './host'
+export type { AssetUrlResolver } from '@tiny/manifest'
+export type {
+  CanvasMeasurement,
+  CanvasNodeHandle,
+  CanvasNodeOptions,
+  CanvasNodeRequest,
+  LegacyCanvasRequest,
+  QueryNodeSnapshot,
+  ServiceCanvasAdapter,
+  SyncHostChannel,
+  TabBarApi,
+  ApiContext,
+  ApiHost,
+} from './context'
 
 /**
- * The WeChat-compatible API table for a `@tiny/runtime` service thread.
+ * Build the WeChat-compatible `wx` table for one service thread.
  *
- * The kernel knows nothing about `wx.*`: it installs whatever this factory
- * returns and reports the rest through `UNSUPPORTED_API`. Hosts compose this
- * set with their own device facts:
+ * The host entry owns this call: it creates the bridge connection, composes the
+ * context from host facts and late-bound runtime accessors, and passes the
+ * resulting table to `bootServiceThread`. The runtime installs whatever it
+ * receives and reports unknown `wx.*` names through `UNSUPPORTED_API`.
  *
- * ```ts
- * apiHost: (context) => ({ ...createApiHost(context), ...hostFacts })
- * ```
- *
- * Each domain lives in its own module so growing the surface never touches the
- * runtime; adding one API means adding a property to the matching module.
+ * `extensions` keeps host-specific APIs in the same table so `canIUse` sees
+ * them; each domain lives in its own module so growing the surface never
+ * touches the runtime.
  */
-export function createApiHost(context: ServiceApiContext): MiniProgramApiHost {
-  return {
-    ...createSystemApi(context),
-    ...createStorageApi(context),
-    ...createNavigationApi(context),
-    ...createUiApi(context),
-    ...createTabBarApi(context),
-    ...createNetworkApi(context),
-    ...createDeviceApi(context),
-    ...createShareApi(context),
-    ...createCanvasApi(context),
-    ...createQueryApi(context),
+export function createApiHost(
+  context: ApiContext,
+  extensions: ApiHost = {},
+): ApiHost {
+  const available = new Set<string>()
+  // Inherit (not spread) so late-bound accessors the host defined as getters
+  // (`pageId`, `tabBar`, ...) stay live after the runtime boots.
+  const apiContext: ApiContext = Object.create(context)
+  apiContext.hasApi = (name) => available.has(name)
+  const table: ApiHost = {
+    ...createSystemApi(apiContext),
+    ...createStorageApi(apiContext),
+    ...createNavigationApi(apiContext),
+    ...createUiApi(apiContext),
+    ...createTabBarApi(apiContext),
+    ...createNetworkApi(apiContext),
+    ...createDeviceApi(apiContext),
+    ...createShareApi(apiContext),
+    ...createCanvasApi(apiContext),
+    ...createQueryApi(apiContext),
     ...createFileSystemApi(),
+    ...extensions,
   }
+  for (const name of Object.keys(table)) available.add(name)
+  return table
 }

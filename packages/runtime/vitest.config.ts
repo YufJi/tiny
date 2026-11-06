@@ -5,9 +5,8 @@ export default defineConfig({
   resolve: {
     alias: {
       // The kernel ships no default API table; its integration tests inject the
-      // standard one. Aliasing to source keeps a test-only edge out of the
-      // workspace graph: runtime <- @tiny/api is already a dependency, so a
-      // devDependency back onto it would close a build cycle.
+      // standard one. Alias to source so tests use the api entry without adding
+      // a package edge: @tiny/api no longer depends on the runtime.
       '@tiny/api': fileURLToPath(new URL('../api/src/index.ts', import.meta.url)),
     },
   },

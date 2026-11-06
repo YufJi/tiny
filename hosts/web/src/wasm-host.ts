@@ -2,13 +2,15 @@ import { createHostMessageChannelPair } from '@tiny/bridge'
 import type { Transport, TransportFrame } from '@tiny/bridge'
 import { normalizeTransportDiagnostic } from '@tiny/runtime'
 import type {
-  HostApiHandlers,
   RuntimeDiagnostic,
   RuntimeManifest,
-  StorageSnapshot,
-  SyncHostChannel,
-  SystemInfoSnapshot,
 } from '@tiny/runtime'
+import type {
+  HostApiHandlers,
+  StorageValues,
+  SystemInfo,
+} from '@tiny/api'
+import type { SyncHostChannel } from '@tiny/api'
 import { BROWSER_RUNTIME_NAMES } from './naming'
 import { installCanvasHandoffRelay } from './canvas-relay'
 
@@ -34,8 +36,8 @@ export type WasmHostOptions = {
   serviceUrl: string
   renderUrl: string
   initialPath: string
-  systemInfo?: Partial<SystemInfoSnapshot>
-  storage?: StorageSnapshot
+  systemInfo?: Partial<SystemInfo>
+  storage?: StorageValues
   container?: HTMLElement
   maxPageStack?: number
   apiHandlers: HostApiHandlers
@@ -90,7 +92,7 @@ export class WasmBrowserHost {
   private readonly serviceQueue: TransportFrame[] = []
   private serviceFlushTimer: ReturnType<typeof setTimeout> | undefined
   private readonly pages = new Map<string, PageSurface>()
-  private readonly storage: StorageSnapshot
+  private readonly storage: StorageValues
   private activePageId: string | undefined
   private appVisible = true
   private removeCanvasRelay: (() => void) | undefined

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { BridgeConnection, createInMemoryTransportPair } from '@tiny/bridge'
 import { bootTreeThread } from '../src/tree/render/thread'
+import { createRenderConnection } from './helpers/render-connection'
 import { buildComponentFlow } from '../src/tree/flow'
 import type { ComponentDefinitionPayload, RenderNode } from '../src/tree/protocol'
 
@@ -47,7 +48,7 @@ async function roundTrip(
   const [hostTransport, renderTransport] = createInMemoryTransportPair()
   const mounted: RenderNode[] = []
   bootTreeThread({
-    transport: renderTransport,
+    connection: createRenderConnection(renderTransport),
     renderer: {
       mount: (node) => mounted.push(node),
       applyPatches: () => {},

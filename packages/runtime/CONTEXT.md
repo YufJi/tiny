@@ -42,10 +42,11 @@ one layer.
   page roots): the adapter resolves lifetimes, observers and relation handlers
   to the component, while template events keep the caller proxy, so defining the
   properties on the component instance covers both `this` shapes.
-- `EventChannel` lives in `@tiny/api` (`event-channel.ts`); the kernel only
-  carries the page side through `ServiceApiContext.setNextPageEventChannel` and
-  `ServicePageStack`. It is bound before the host call (the page runs `onLoad`
-  while the call is in flight) and consumed by the next `navigateTo` page.
+- `EventChannel` lives in `@tiny/api` (`event-channel.ts`); the host wires
+  `ServiceThreadRuntime.setNextPageEventChannel` into the API context, and the
+  kernel carries the page side through `ServicePageStack`. It is bound before
+  the host call (the page runs `onLoad` while the call is in flight) and
+  consumed by the next `navigateTo` page.
 
 ## Glossary
 
@@ -106,17 +107,19 @@ one layer.
 - **Bridge**: the transport-only boundary for serialization, batching, timeouts,
   and errors. It does not define API or rendering behavior.
 - **Service API table**: the `wx.*` functions installed on the global API object.
-  It is not kernel code: `bootServiceThread` requires an injected
-  `apiHost` factory, and the standard WeChat-compatible table ships in
-  `@tiny/api`. The kernel owns only the global namespace, the
-  unsupported-API fallback, and the capability context handed to the factory, so
-  adding an API never changes runtime semantics.
-- **Service API context**: the capability contract a host's API factory receives
-  — bridge connection, page identity and stack, the injected API table, the
-  synchronous host channel for `*Sync` APIs, tabBar, canvas, asset resolution,
-  and diagnostics. The runtime stores no system-info or storage snapshot: hosts
-  own those facts. Treat the context as additive public API: `@tiny/api`
-  implements `wx.*` against it and must not deep-import runtime internals.
+  It is not kernel code: the host entry creates the connection, composes the
+  `WeixinApiContext` and passes the assembled table through
+  `ServiceThreadOptions.apiHost`; the standard WeChat-compatible table ships in
+  `@tiny/api`. The kernel owns only the global namespace and the
+  unsupported-API fallback, so adding an API never changes runtime semantics.
+- **API context**: `WeixinApiContext` in `@tiny/api` — bridge connection, page
+  identity, the synchronous host channel, tabBar, canvas, asset resolution and
+  diagnostics. The host entry builds it from host facts plus late-bound runtime
+  accessors (`activePage`, `tabBar`, `setNextPageEventChannel`). `@tiny/api`
+  must not import `@tiny/runtime`; host contracts (`SystemInfo`, `StorageValues`,
+  `HostApiHandlers`) live in `@tiny/api`, and shared pure helpers live in
+  `@tiny/manifest`. The runtime stores no system-info or storage snapshot: hosts
+  own those facts.
 - **Built-in components**: host-owned render components for mini-program tags
   such as `view`, `text`, `image`, `button`, and `input`. The service logic tree
   emits only semantic tags; the web host supplies `tiny-*` implementations and

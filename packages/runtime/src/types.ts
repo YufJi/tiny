@@ -63,20 +63,6 @@ export type InspectNode = {
   children: InspectNode[]
 }
 
-export type SystemInfoSnapshot = {
-  pixelRatio: number
-  windowWidth: number
-  windowHeight: number
-  language?: string
-  platform?: string
-  SDKVersion?: string
-  /** Host-reported device identity, forwarded to `wx.getSystemInfo` as-is. */
-  system?: string
-  model?: string
-  brand?: string
-  statusBarHeight?: number
-}
-
 /** One DOM node resolved by a component/page selector query. */
 export type QueryNodeSnapshot = {
   /** Logic-layer node identity, present for service-side query results. */
@@ -94,98 +80,6 @@ export type QueryNodeSnapshot = {
   scrollLeft: number
   scrollTop: number
 }
-
-export type CanvasMeasurement = {
-  width: number
-  height: number
-  canvasId?: string
-  /** Whether the host found a canvas backing the selector. */
-  hasCanvas?: boolean
-}
-
-/** Options a host uses when acquiring a selector-query canvas node. */
-export type CanvasNodeOptions = {
-  /** Selector used by `createSelectorQuery`, for hosts that hand off a node. */
-  selector?: string
-  /** Page that owns the selector query. */
-  pageId?: string
-  /**
-   * Resolve a mini-program image path (for example `./car.png`) to a loadable
-   * URL for `canvas.createImage()`.
-   */
-  resolveAssetUrl?: (src: string) => string | undefined
-}
-
-/** A synchronous Canvas 2D/WebGL handle owned by the host. */
-export type CanvasNodeHandle = {
-  width: number
-  height: number
-  getContext: (type: string, options?: unknown) => unknown
-  createImage?: () => unknown
-  toDataURL?: (type?: string, quality?: number) => string
-}
-
-/** Request passed to a host when selector-query needs a canvas node. */
-export type CanvasNodeRequest = CanvasNodeOptions & {
-  canvasId: string
-  width: number
-  height: number
-}
-
-/** Request passed to a host when the legacy `createCanvasContext` API runs. */
-export type LegacyCanvasRequest = {
-  pageId?: string
-}
-
-/** Browser/host canvas hooks injected into the service thread. */
-export type ServiceCanvasAdapter = {
-  /** Legacy CanvasContext over the same host-owned canvas surface. */
-  createLegacyCanvasContext: (
-    canvasId: string,
-    request?: LegacyCanvasRequest,
-  ) => unknown | null
-  /**
-   * Acquire the host canvas handle for a selector query. Acquisition may be
-   * asynchronous, but the returned handle must expose synchronous Canvas APIs.
-   */
-  acquireCanvasNode?: (
-    request: CanvasNodeRequest,
-  ) => Promise<CanvasNodeHandle | null> | CanvasNodeHandle | null
-  /** Release every node owned by a page (or one canvas of that page). */
-  releaseCanvasNode?: (request: {
-    pageId?: string
-    canvasId?: string
-  }) => void
-}
-
-export type StorageSnapshot = Record<string, unknown>
-
-/**
- * Host-owned render thread slots.
- *
- * A browser host can give every page its own iframe so hidden pages keep their
- * DOM and scroll position, like real WebViews. The runtime host asks the
- * connector for one transport per page and never shares a render connection
- * between pages.
- */
-export type RenderThreadConnector = {
-  /** Boot a render thread document and return the host side of its transport. */
-  connect(pageId: string): Promise<import('@tiny/bridge').Transport>
-  /** Make this page the visible render thread (hide the other page views). */
-  activate?(pageId: string): void
-  /** Tear down the render thread document for an unloaded page. */
-  disconnect(pageId: string): void | Promise<void>
-  /** Reflect app foreground/background on the whole render frame stack. */
-  setAppVisible?(visible: boolean): void
-}
-
-export type HostApiParams = Record<string, unknown>
-export type HostApiHandler = (
-  params: HostApiParams,
-  context: { pageId?: string },
-) => unknown | Promise<unknown>
-
-export type HostApiHandlers = Record<string, HostApiHandler>
 
 export type StyleLoader = (path: string) => string
 
@@ -247,26 +141,4 @@ export type BuiltinComponents = {
   create: BuiltinComponentFactory
   /** Stylesheets registered before app/page/component styles. */
   styles?: BuiltinStyleSheet[]
-}
-
-export type RuntimeHostOptions = {
-  serviceTransport: import('@tiny/bridge').Transport
-  /**
-   * Per-page render thread connector: the host creates one render connection
-   * for every page in the stack and routes messages by page ID. In-memory tests
-   * use the same seam (see `tests/helpers/render-connector.ts`), so there is no
-   * second "single render connection" mode.
-   */
-  renderConnector: RenderThreadConnector
-  manifest: RuntimeManifest
-  initialPath: string
-  initialData?: Record<string, unknown>
-  serviceCapabilities?: Record<string, unknown>
-  renderCapabilities?: Record<string, unknown>
-  systemInfo?: Partial<SystemInfoSnapshot>
-  storage?: StorageSnapshot
-  apiHandlers?: HostApiHandlers
-  /** Maximum pages in the runtime page stack. Defaults to 10. */
-  maxPageStack?: number
-  onDiagnostic?: (diagnostic: import('./diagnostics').RuntimeDiagnostic) => void
 }

@@ -1,4 +1,4 @@
-import type { MiniProgramApiHost, ServiceApiContext } from '@tiny/runtime'
+import type { ApiHost, ApiContext } from './context'
 import { cloneJsonSafe } from './json'
 import { callHost, callHostSync, runApi } from './run-api'
 
@@ -9,7 +9,7 @@ type StorageInfo = {
   errMsg: string
 }
 
-function readStorageInfo(context: ServiceApiContext): StorageInfo {
+function readStorageInfo(context: ApiContext): StorageInfo {
   const info = callHostSync(context, 'storage.info') as Partial<StorageInfo> | undefined
   return {
     keys: Array.isArray(info?.keys) ? info.keys.map(String) : [],
@@ -19,7 +19,7 @@ function readStorageInfo(context: ServiceApiContext): StorageInfo {
   }
 }
 
-function storageValue(context: ServiceApiContext, key: string): unknown {
+function storageValue(context: ApiContext, key: string): unknown {
   const result = callHostSync(context, 'storage.get', { key }) as { value?: unknown } | undefined
   return cloneJsonSafe(result?.value)
 }
@@ -32,7 +32,7 @@ function storageValue(context: ServiceApiContext, key: string): unknown {
  * The runtime keeps no storage snapshot, so a write from another context is
  * never hidden behind stale state.
  */
-export function createStorageApi(context: ServiceApiContext): MiniProgramApiHost {
+export function createStorageApi(context: ApiContext): ApiHost {
   return {
     getStorageSync: (key: unknown) => storageValue(context, String(key)),
     setStorageSync: (key: unknown, value: unknown) => {

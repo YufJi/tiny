@@ -12,6 +12,7 @@ import { normalizeComponentDefinition } from '../src/component/component-definit
 import { buildComponentDefinitions } from '../src/service/render/definition-payload'
 import { buildComponentFlow } from '../src/tree/flow'
 import { bootTreeThread } from '../src/tree/render/thread'
+import { createRenderConnection } from './helpers/render-connection'
 import type { RenderNode } from '../src/tree/protocol'
 import { LogicTreeAdapter } from '../src/tree/logic/adapter'
 import type { MiniProgramComponentSchema } from '../src/types'
@@ -99,7 +100,7 @@ async function mountThroughThread(root: RenderNode, definitions: ReturnType<type
   const [hostTransport, renderTransport] = createInMemoryTransportPair()
   const mounted: RenderNode[] = []
   bootTreeThread({
-    transport: renderTransport,
+    connection: createRenderConnection(renderTransport),
     renderer: {
       mount: (node) => mounted.push(node),
       applyPatches: () => {},

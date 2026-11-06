@@ -4,26 +4,28 @@ import type {
   HostApiHandler,
   HostApiHandlers,
   HostApiParams,
-  RuntimeHostOptions,
-  StorageSnapshot,
-  SystemInfoSnapshot,
-} from '../../../src/types'
-import type { SyncHostChannel } from '../../../src/service/types'
+  StorageValues,
+  SystemInfo,
+} from '@tiny/api'
+import type { RuntimeHostOptions } from './types'
+export type SyncHostChannel = {
+  call(domain: string, method: string, payload: Record<string, unknown>): unknown
+}
 
 export type HostApiRegistry = {
-  systemInfo: SystemInfoSnapshot
-  storage: StorageSnapshot
+  systemInfo: SystemInfo
+  storage: StorageValues
   handlers: HostApiHandlers
 }
 
 export function createHostApiRegistry(options: RuntimeHostOptions): HostApiRegistry {
-  const systemInfo: SystemInfoSnapshot = {
+  const systemInfo: SystemInfo = {
     pixelRatio: options.systemInfo?.pixelRatio ?? 1,
     windowWidth: options.systemInfo?.windowWidth ?? 0,
     windowHeight: options.systemInfo?.windowHeight ?? 0,
     ...options.systemInfo,
   }
-  const storage: StorageSnapshot = cloneJsonSafe(options.storage ?? {})
+  const storage: StorageValues = cloneJsonSafe(options.storage ?? {})
   const handlers: HostApiHandlers = {
     'system.info': () => cloneJsonSafe(systemInfo),
     'storage.get': (params) => ({

@@ -1,4 +1,4 @@
-import type { MiniProgramApiHost, ServiceApiContext } from '@tiny/runtime'
+import type { ApiHost, ApiContext } from './context'
 import { CAN_I_USE_CAPABILITIES } from './capabilities'
 import { createCanIUse } from './can-i-use'
 import { cloneJsonSafe } from './json'
@@ -12,7 +12,7 @@ import { callHost, callHostSync, runApi } from './run-api'
  * runtime keeps no snapshot, so a host that changes its window facts (rotation,
  * panel resize) is observable immediately.
  */
-export function createSystemApi(context: ServiceApiContext): MiniProgramApiHost {
+export function createSystemApi(context: ApiContext): ApiHost {
   const themeListeners = context.themeListeners ?? new Set<(value: unknown) => void>()
   // No host currently forwards keyboard geometry; keep the registration API
   // functional so apps that subscribe do not crash.

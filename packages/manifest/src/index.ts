@@ -9,6 +9,7 @@ export * from './compatibility'
 export * from './engine-naming'
 export * from './builtin'
 export * from './builtin-capabilities'
+export * from './asset-path'
 export * from './diagnostic-codes'
 
 export type DiagnosticSeverity = 'error' | 'warning' | 'info'

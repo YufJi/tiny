@@ -1,11 +1,9 @@
 import type { BridgeConnection } from '@tiny/bridge'
 import type {
   RuntimeManifest,
-  ServiceCanvasAdapter,
   StyleLoader,
   TemplateRegistry,
 } from '../types'
-import type { AssetUrlResolver } from '../assets'
 import type { ComponentTree } from './component-tree'
 import type { MiniProgramComponentOptions } from '../component/options'
 import type { MiniProgramPageRegistry } from './page-registry'
@@ -48,30 +46,6 @@ export type MiniProgramAppOptions = {
 
 export type MiniProgramApiHost = Record<string, (...args: unknown[]) => unknown>
 
-/**
- * Build the mini-program API table for one service thread.
- *
- * The kernel owns the global namespace, the unsupported-API fallback and the
- * capability context below; it does not own the API set. Hosts pass the
- * standard WeChat-compatible factory (`@tiny/api`) plus their own device
- * facts, so growing the API surface never touches the kernel.
- */
-export type ServiceApiFactory = (context: ServiceApiContext) => MiniProgramApiHost
-
-/**
- * Synchronous host channel for WeChat's `*Sync` APIs.
- *
- * The bridge is asynchronous, so a host that supports synchronous APIs supplies
- * a direct call path: the browser host injects a function into the service
- * frame, and the iOS host exposes a JavaScriptCore block. The method names are
- * the same `api` protocol methods the asynchronous path uses (`system.info`,
- * `storage.get`, ...). Hosts without a channel make `*Sync` APIs throw instead
- * of serving stale state.
- */
-export type SyncHostChannel = {
-  call(domain: string, method: string, payload: Record<string, unknown>): unknown
-}
-
 export type TabBarApi = {
   setStyle(params: Record<string, unknown>): void
   setItem(params: Record<string, unknown>): void
@@ -83,73 +57,21 @@ export type TabBarApi = {
 }
 
 /**
- * Kernel capabilities handed to an injected API factory.
- *
- * This is a public contract: `@tiny/api` implements `wx.*` against it
- * without importing runtime internals. Keep it additive — a field removed or
- * reshaped here breaks every host-provided API set.
- */
-export type ServiceApiContext = {
-  connection: BridgeConnection
-  /** API global name used in diagnostics. */
-  apiName: string
-  /** API globals installed with the table (`wx` plus aliases); `canIUse` accepts them as an optional schema prefix. */
-  apiNamespaces: string[]
-  /** Host-provided synchronous call path for `system.info` / `storage.*`. */
-  syncHost?: SyncHostChannel
-  /** Filled by the kernel with the names the injected factory returned. */
-  apiNames: Set<string>
-  getCurrentPagePath?: () => string | undefined
-  /** Active page instance, for `wx.*` entries that scope to the current page. */
-  getActivePage?: () => unknown
-  canvas?: ServiceCanvasAdapter
-  /** Host hook mapping app-root asset paths to loadable URLs (canvas images, …). */
-  resolveAssetUrl?: AssetUrlResolver
-  tabBar?: TabBarApi
-  /** Runtime-owned set so a host theme notification can reach `wx.onThemeChange`. */
-  themeListeners?: Set<(value: unknown) => void>
-  /**
-   * Bind the page side of an `EventChannel` that `wx.navigateTo` created.
-   *
-   * The channel object stays opaque to the kernel: `@tiny/api` builds both
-   * sides, hands this one over before the navigation starts, and the next page
-   * created by `navigateTo` exposes it through `this.getOpenerEventChannel()`.
-   * The returned function drops the binding again (the API layer calls it in a
-   * `finally`, so a failed navigation cannot leak a channel into a later page).
-   */
-  setNextPageEventChannel?: (channel: unknown) => () => void
-  pageId?: string
-}
-
-/**
  * Boot contract for one service thread.
  *
- * This lives in the service layer (not the package-wide `types.ts`) because it
- * owns the service entry: the host supplies artifacts, API factory, canvas and
- * asset hooks, and the kernel assembles the page/render runtimes.
+ * The host entry creates the connection, composes the API table (it owns the
+ * API context) and passes both in; the runtime only installs the table and
+ * publishes the accessors the host needs for late binding. Host capabilities
+ * such as canvas, asset URLs and the synchronous channel never enter this
+ * contract.
  */
 export type ServiceThreadOptions = {
-  transport: import('@tiny/bridge').Transport
+  connection: BridgeConnection
   manifest: RuntimeManifest
   initialPath: string
-  capabilities?: Record<string, unknown>
+  /** Already-composed `wx` table; the runtime installs it verbatim. */
+  apiHost: MiniProgramApiHost
   loadArtifacts?: () => Promise<unknown>
-  /**
-   * Mini-program API table factory. Required: the service thread installs
-   * exactly what this returns and reports every other `wx.*` name as
-   * unsupported. Hosts compose the standard set (`@tiny/api`) with
-   * their own device facts.
-   */
-  apiHost: ServiceApiFactory
-  /** Host canvas implementation for legacy canvas APIs/selector nodes. */
-  canvas?: ServiceCanvasAdapter
-  /** Host hook mapping app-root asset paths to loadable URLs (canvas images, …). */
-  resolveAssetUrl?: AssetUrlResolver
-  /**
-   * Synchronous host call path for `*Sync` APIs. Required for WeChat's sync
-   * storage/system APIs; without it those APIs throw.
-   */
-  syncHost?: SyncHostChannel
   /** Maximum pages in the runtime page stack. Defaults to 10. */
   maxPageStack?: number
   /** Templates for the service-side logic tree. */
@@ -158,6 +80,17 @@ export type ServiceThreadOptions = {
   onLogicTreeCreated?: (tree: unknown) => void
   /** Stylesheet text for logic-tree style scoping. */
   loadStyle?: StyleLoader
+  /**
+   * Set shared with the host-composed API table: `runtime.themeChange`
+   * notifications reach `wx.onThemeChange` listeners without the runtime
+   * knowing the API module.
+   */
+  themeListeners?: Set<(value: unknown) => void>
+  /**
+   * A page was destroyed. The host releases per-page resources here (canvas
+   * nodes, …); the runtime does not own canvas semantics.
+   */
+  onPageRelease?: (pageId: string) => void
 }
 
 export type ServiceThreadRuntime = {
@@ -169,6 +102,10 @@ export type ServiceThreadRuntime = {
   pageStack: MiniProgramPageInstance[]
   pageInstances: Map<string, MiniProgramPageInstance>
   componentTree: ComponentTree
+  /** Runtime tabBar actions, late-bound into the host-composed API context. */
+  tabBar: TabBarApi
+  /** Late-bound `wx.navigateTo` EventChannel hand-off. */
+  setNextPageEventChannel(channel: unknown): () => void
   /** Report a rejected promise that escaped page/component code. */
   notifyUnhandledRejection(reason: unknown, promise?: unknown): void
 }

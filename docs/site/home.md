@@ -59,13 +59,13 @@ Bridge 定义消息信封、帧、调用与回复、事件批处理、超时和 
 :::
 
 :::card{tag="packages/runtime" title="线程启动参数"}
-`bootServiceThread` 接收 transport、manifest、`loadTemplates`、`loadStyle` 和宿主 canvas；render 线程用 `bootTreeThread` + `TreeRenderer` 消费逻辑树发来的 flow 和 patch；浏览器入口 `bootRenderEntry` 会自动创建 DOM 渲染树，自带 transport 的宿主可以用 `createGlassRenderEntry` 自行组合。内核本身不依赖浏览器。
+`bootServiceThread` 接收宿主创建的 connection、manifest、`loadTemplates`、`loadStyle`、API 表和 `onPageRelease`；render 线程由宿主创建 connection 后交给 `bootTreeThread` + `TreeRenderer`，消费逻辑树发来的 flow 和 patch；浏览器入口 `bootRenderEntry` 会自动创建 DOM 渲染树，自带 transport 的宿主可以用 `createGlassRenderEntry` 自行组合。内核本身不依赖浏览器。
 
 [看宿主如何启动线程 →](#/hosts)
 :::
 
 :::card{tag="hosts/web" tone="violet" title="宿主注入的能力"}
-`apiHost` 提供 API 表（标准集来自 `@tiny/api`），`apiExtensions` 补充设备信息，`apiHandlers` 处理需要跨线程的 API；canvas、资源 URL 和内置组件分别由宿主提供。
+宿主入口创建 connection，拼出 `WeixinApiContext` 后交给 `createApiHost`（标准集来自 `@tiny/api`）；`apiExtensions` 补充设备信息，`apiHandlers` 处理需要跨线程的 API；canvas、资源 URL 和内置组件分别由宿主提供。
 
 [看宿主注入方式 →](#/hosts)
 :::

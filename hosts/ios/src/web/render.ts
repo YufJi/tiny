@@ -1,5 +1,6 @@
 import type { Transport, TransportFrame } from '@tiny/bridge'
 import { bootTreeThread, resolveAssetPath } from '@tiny/runtime'
+import { BridgeConnection } from '@tiny/bridge'
 import type { TemplateRegistry, TreeRenderer } from '@tiny/runtime'
 import { createGlassRenderEntry, installPageLifecycleBridge } from '@tiny/host-web'
 import { installRemoteCanvas } from './canvas'
@@ -71,8 +72,14 @@ function bootNativeRenderEntry(options: {
   }
 
   try {
-    const runtime = bootTreeThread({
+    const connection = new BridgeConnection({
+      localRole: 'render',
+      peerRole: 'host',
       transport,
+      capabilities: { role: 'render', mode: 'tree' },
+    })
+    const runtime = bootTreeThread({
+      connection,
       renderer: options.renderer,
       ...(options.pageId ? { initialPageId: options.pageId } : {}),
     })

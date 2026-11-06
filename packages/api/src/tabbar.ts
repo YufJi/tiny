@@ -1,4 +1,4 @@
-import type { MiniProgramApiHost, ServiceApiContext, TabBarApi } from '@tiny/runtime'
+import type { ApiHost, ApiContext, TabBarApi } from './context'
 import { runApi } from './run-api'
 
 /**
@@ -7,7 +7,7 @@ import { runApi } from './run-api'
  * The kernel owns the tabBar model and projects it to the host through
  * `RUNTIME_STATE`; this layer only maps `wx.*` onto that capability.
  */
-export function createTabBarApi(context: ServiceApiContext): MiniProgramApiHost {
+export function createTabBarApi(context: ApiContext): ApiHost {
   const requireTabBar = (): TabBarApi => {
     if (!context.tabBar) throw new Error('tabBar is not configured')
     return context.tabBar

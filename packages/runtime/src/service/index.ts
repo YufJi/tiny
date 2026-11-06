@@ -5,9 +5,7 @@ export type {
   MiniProgramAppOptions,
   MiniProgramComponentOptions,
   MiniProgramPageOptions,
-  ServiceApiContext,
-  ServiceApiFactory,
   ServiceThreadOptions,
-  SyncHostChannel,
+  ServiceThreadRuntime,
   TabBarApi,
 } from './types'

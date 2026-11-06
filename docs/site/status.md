@@ -109,7 +109,7 @@ HostCore 的 `close` 会销毁页面 surface 并关闭 Bridge，但不会补发�
 
 ::::stack
 :::card{tag="能力" tone="warn" title="没有能力协商"}
-握手会带 capabilities，但宿主没有注入，也没有降级逻辑。不同宿主的能力差异只能靠 apiHost 组装和诊断暴露。
+握手会带 capabilities，但宿主没有注入，也没有降级逻辑。不同宿主的能力差异只能靠 API 表组装和诊断暴露。
 :::
 
 :::card{tag="更新" tone="warn" title="没有热更新"}
@@ -199,7 +199,7 @@ iframe、DOM canvas、DOM 渲染树和 WebView 线程入口放在 `hosts/web`，
 :::
 
 :::card{title="环境能力靠注入"}
-API 表走 apiHost（标准集来自 @tiny/api），设备信息在其上覆盖，canvas 走 canvas 适配器，资源走 resolveAssetUrl，渲染后端和挂载点由宿主提供。
+宿主入口组装 API 表（标准集来自 @tiny/api，设备信息在其上覆盖），canvas、资源 URL 和同步通道进入 api context，渲染后端和挂载点由宿主提供。
 :::
 
 :::card{title="构建产物不入库"}

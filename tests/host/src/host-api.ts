@@ -1,4 +1,4 @@
-import type { HostApiHandlers, StorageSnapshot } from '@tiny/runtime'
+import type { HostApiHandlers, StorageValues } from '@tiny/api'
 
 const OVERLAY_ID = 'tiny-api-overlay'
 const STYLE_ID = 'tiny-api-overlay-style'
@@ -12,7 +12,7 @@ let toastElement: HTMLElement | null = null
  * These run in the host realm (the page that owns the iframes), so DOM,
  * fetch, clipboard and navigator access stay out of the core runtime.
  */
-export function createTestHostApiHandlers(storage: StorageSnapshot = {}): HostApiHandlers {
+export function createTestHostApiHandlers(storage: StorageValues = {}): HostApiHandlers {
   return {
     'network.request': (params) => request(params),
     'network.type': () => ({ networkType: networkType(), errMsg: 'getNetworkType:ok' }),

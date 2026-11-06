@@ -1,4 +1,4 @@
-import type { ServiceApiContext } from '@tiny/runtime'
+import type { ApiContext } from './context'
 
 export type ApiCallbacks = {
   success?: (value: unknown) => void
@@ -40,7 +40,7 @@ export function runApi(
  * protocol method.
  */
 export function callHost(
-  context: ServiceApiContext,
+  context: ApiContext,
   method: string,
   payload: Record<string, unknown> = {},
 ): Promise<unknown> {
@@ -56,7 +56,7 @@ export function callHost(
  * falling back to a cached snapshot — the host is the only source of truth.
  */
 export function callHostSync(
-  context: ServiceApiContext,
+  context: ApiContext,
   method: string,
   payload: Record<string, unknown> = {},
 ): unknown {

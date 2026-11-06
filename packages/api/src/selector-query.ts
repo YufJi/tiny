@@ -1,5 +1,5 @@
-import { resolveAssetPath } from '@tiny/runtime'
-import type { QueryNodeSnapshot, ServiceApiContext } from '@tiny/runtime'
+import { resolveAssetPath } from '@tiny/manifest'
+import type { QueryNodeSnapshot, ApiContext } from './context'
 
 type SelectorQuerySelection = {
   selector?: string
@@ -16,7 +16,7 @@ type SelectorQuerySelection = {
  * page); canvas `.node()` selections keep using the host canvas handoff.
  */
 export function createSelectorQuery(
-  context: ServiceApiContext,
+  context: ApiContext,
   options: { componentId?: string } = {},
 ): Record<string, unknown> {
   const selections: SelectorQuerySelection[] = []
@@ -105,7 +105,7 @@ export function createSelectorQuery(
 }
 
 async function resolveSelection(
-  context: ServiceApiContext,
+  context: ApiContext,
   selection: SelectorQuerySelection,
   component: { data?: Record<string, unknown>; path?: string } | undefined,
   componentId: string | undefined,
@@ -140,7 +140,7 @@ async function resolveSelection(
 }
 
 async function buildSelectorResult(
-  context: ServiceApiContext,
+  context: ApiContext,
   selection: SelectorQuerySelection,
   component?: { data?: Record<string, unknown>; path?: string },
 ): Promise<Record<string, unknown>> {

@@ -1,6 +1,7 @@
 import { WasmBrowserHost } from '@tiny/host-web'
 import type { WasmHostCoreFactory, WasmHostOptions } from '@tiny/host-web'
-import type { RuntimeDiagnostic, StorageSnapshot } from '@tiny/runtime'
+import type { RuntimeDiagnostic } from '@tiny/runtime'
+import type { StorageValues } from '@tiny/api'
 
 /**
  * Playwright-facing host.
@@ -15,11 +16,11 @@ export class TestBrowserHost extends WasmBrowserHost {
   /** Diagnostic history, including the `RUNTIME_STATE` snapshots from `onState`. */
   readonly diagnostics: RuntimeDiagnostic[]
   /** The storage object the host mutates, exposed for assertions. */
-  readonly apiRegistry: { storage: StorageSnapshot }
+  readonly apiRegistry: { storage: StorageValues }
 
   constructor(options: WasmHostOptions, factory: WasmHostCoreFactory) {
     const diagnostics: RuntimeDiagnostic[] = []
-    const storage: StorageSnapshot = options.storage ?? {}
+    const storage: StorageValues = options.storage ?? {}
     super({
       ...options,
       storage,

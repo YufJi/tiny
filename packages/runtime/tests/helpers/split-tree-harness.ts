@@ -2,9 +2,10 @@ import { bootTreeThread, type TreeRenderer, type TreeThreadOptions } from '../..
 import type { Manifest } from '@tiny/manifest'
 import type { StyleLoader, TemplateRegistry } from '../../src/types'
 import { lastLogicTree, provideHarnessConfig } from './split-service'
+import { createRenderConnection } from './render-connection'
 
 export type SplitTreeHarnessOptions = {
-  transport: TreeThreadOptions['transport']
+  transport: import('@tiny/bridge').Transport
   manifest: Manifest
   artifacts: { templates: TemplateRegistry }
   initialPath?: string
@@ -52,7 +53,7 @@ export function bootSplitTreeHarness(options: SplitTreeHarnessOptions): RenderTh
     loadStyle: options.loadStyle ?? (() => ''),
   })
   const runtime = bootTreeThread({
-    transport: options.transport,
+    connection: createRenderConnection(options.transport),
     renderer: { ...noopRenderer, ...options.renderer },
   })
   return {

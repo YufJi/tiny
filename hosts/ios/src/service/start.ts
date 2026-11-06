@@ -1,11 +1,12 @@
 import { createApiHost } from '@tiny/api'
+import type { SyncHostChannel, ApiContext, ApiHost } from '@tiny/api'
 import { bootServiceThread, resolveAssetPath } from '@tiny/runtime'
 import type {
-  MiniProgramApiHost,
   RuntimeManifest,
-  SyncHostChannel,
+  ServiceThreadRuntime,
   TemplateRegistry,
 } from '@tiny/runtime'
+import { BridgeConnection } from '@tiny/bridge'
 import type { Transport, TransportFrame } from '@tiny/bridge'
 import { installHostShims } from './shims'
 import { createRemoteCanvasAdapter } from './canvas'
@@ -116,7 +117,7 @@ function performanceExtension(): Record<string, unknown> {
  * context: the menu-button geometry comes from the native chrome, performance
  * from the engine's own clock.
  */
-function createIOSApiExtensions(iosHost: HostGlobal): MiniProgramApiHost {
+function createIOSApiExtensions(iosHost: HostGlobal): ApiHost {
   return {
     getMenuButtonBoundingClientRect: () => iosHost.menuButton ?? {
       width: 87,
@@ -172,6 +173,12 @@ export function startTinyService(app: TinyIOSApp): void {
   }
 
   const transport = createNativeTransport()
+  const connection = new BridgeConnection({
+    localRole: 'service',
+    peerRole: 'host',
+    transport,
+    capabilities: { role: 'service' },
+  })
   const canvas = createRemoteCanvasAdapter((payload) => {
     const send = host.__tinyCanvasSend
     if (typeof send === 'function') send(JSON.stringify(payload))
@@ -195,16 +202,44 @@ export function startTinyService(app: TinyIOSApp): void {
         },
       }
     : undefined
+
+  const compatibility = app.manifest.runtimeCompatibility
+  const themeListeners = new Set<(value: unknown) => void>()
+  let runtime: ServiceThreadRuntime | undefined
+  const apiContext: ApiContext = {
+    connection,
+    apiName: compatibility.api.global,
+    apiNamespaces: [compatibility.api.global, ...compatibility.api.aliases],
+    ...(syncHost ? { syncHost } : {}),
+    canvas,
+    resolveAssetUrl: (assetPath, context) => {
+      const resolved = resolveAssetPath(context.sourcePath, assetPath)
+      if (!resolved) return undefined
+      return app.assetsBase + resolved.split('/').map(encodeURIComponent).join('/')
+    },
+    themeListeners,
+    getActivePage: () => runtime?.activePage,
+    getCurrentPagePath: () => runtime?.activePage?.path,
+    get pageId() {
+      return runtime?.activePage?.pageId
+    },
+    get tabBar() {
+      return runtime?.tabBar
+    },
+    setNextPageEventChannel: (channel) => (
+      runtime?.setNextPageEventChannel(channel) ?? (() => {})
+    ),
+  }
+  const apiHost = createApiHost(apiContext, createIOSApiExtensions(iosHost))
   host.__tinyServiceStarted?.(initialPath)
 
   try {
-    bootServiceThread({
-      transport,
+    runtime = bootServiceThread({
+      connection,
+      apiHost,
       manifest: app.manifest,
       initialPath,
       maxPageStack: 10,
-      canvas,
-      ...(syncHost ? { syncHost } : {}),
       loadTemplates,
       loadStyle: (stylePath) => app.styles[stylePath] ?? '',
       loadArtifacts: async () => {
@@ -212,15 +247,8 @@ export function startTinyService(app: TinyIOSApp): void {
         serviceEvaluated = true
         evaluate(app.serviceSource, 'service.js')
       },
-      resolveAssetUrl: (assetPath, context) => {
-        const resolved = resolveAssetPath(context.sourcePath, assetPath)
-        if (!resolved) return undefined
-        return app.assetsBase + resolved.split('/').map(encodeURIComponent).join('/')
-      },
-      apiHost: (context) => ({
-        ...createApiHost(context),
-        ...createIOSApiExtensions(iosHost),
-      }),
+      themeListeners,
+      onPageRelease: (pageId) => canvas.releaseCanvasNode?.({ pageId }),
     })
   } catch (error) {
     reportError(`service bootstrap: ${errorText(error)}`)

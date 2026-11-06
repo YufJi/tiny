@@ -161,12 +161,12 @@ importers:
 
   packages/api:
     dependencies:
+      '@tiny/bridge':
+        specifier: workspace:*
+        version: link:../bridge
       '@tiny/manifest':
         specifier: workspace:*
         version: link:../manifest
-      '@tiny/runtime':
-        specifier: workspace:*
-        version: link:../runtime
     devDependencies:
       '@types/node':
         specifier: ^22.0.0

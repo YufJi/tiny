@@ -1,4 +1,4 @@
-import type { MiniProgramApiHost } from '@tiny/runtime'
+import type { ApiHost } from './context'
 
 /**
  * File system manager stub.
@@ -7,7 +7,7 @@ import type { MiniProgramApiHost } from '@tiny/runtime'
  * callback contract instead of silently succeeding. When a host gains real
  * storage this file is the only place that changes.
  */
-export function createFileSystemApi(): MiniProgramApiHost {
+export function createFileSystemApi(): ApiHost {
   return {
     getFileSystemManager: () => createFileSystemManagerStub(),
   }

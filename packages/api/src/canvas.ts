@@ -1,4 +1,4 @@
-import type { MiniProgramApiHost, ServiceApiContext } from '@tiny/runtime'
+import type { ApiHost, ApiContext } from './context'
 import { createAnimationStub } from './animation'
 
 /**
@@ -8,7 +8,7 @@ import { createAnimationStub } from './animation'
  * hosts without one get a callable stub. Keeping both here means the kernel
  * never learns about the canvas API shape.
  */
-export function createCanvasApi(context: ServiceApiContext): MiniProgramApiHost {
+export function createCanvasApi(context: ApiContext): ApiHost {
   return {
     createAnimation: (options: unknown = {}) => createAnimationStub(options),
     createCanvasContext: (canvasId: unknown = 'canvas') => {

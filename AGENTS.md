@@ -34,7 +34,7 @@ must not depend on tools, apps, hosts, or tests.
 | `packages/template-compiler` | WXML parsing and ProcGen |
 | `packages/stylesheet-compiler` | WXSS, rpx, class/tag scoping |
 | `packages/runtime` | Host-independent runtime core |
-| `packages/api` | `@tiny/api`: the WeChat-compatible `wx.*` table, injected into a service thread by hosts |
+| `packages/api` | `@tiny/api`: the WeChat-compatible `wx.*` table and host-facing contracts (`WeixinApiContext`, `HostApiHandlers`, `SystemInfo`, `StorageValues`), composed by hosts |
 | `packages/bridge` | Protocol, transport, batching, diagnostics |
 
 ### Tools and apps
@@ -164,15 +164,19 @@ records boot state, visible text, page errors and diagnostics per page into
   has one glass-easel module instance. Service and render still have separate
   realms and separate `ComponentSpace`s; never pass glass-easel objects across
   the tree protocol.
-- The mini-program API set does not live in `packages/runtime`. The kernel owns
-  the global namespace, the unsupported-API fallback and a stable
-  `ServiceApiContext`; hosts pass `ServiceThreadOptions.apiHost` (normally
-  `createWeixinApiHost` from `@tiny/api`) composed with their own device
-  facts. Adding a `wx.*` API touches `packages/api`, never the kernel.
+- The mini-program API set does not live in `packages/runtime`. `@tiny/api`
+  owns the `WeixinApiContext`; the host entry creates the `BridgeConnection`,
+  composes the context (host facts plus late-bound runtime accessors), builds
+  the table and passes it to `ServiceThreadOptions.apiHost` as a value. The
+  kernel installs the table and reports unknown names through the
+  unsupported-API fallback. `@tiny/api` must not import `@tiny/runtime`.
+  Adding a `wx.*` API touches `packages/api`, never the kernel.
 - Host facts (menu-button geometry, performance, device capabilities) stay in
-  the host's `apiHost` composition; canvas is supplied through
-  `ServiceThreadOptions.canvas` and the render tree's `TreeRenderer.measure` /
-  `measureCanvas` hooks. Do not hardcode them in `packages/runtime`.
+  the host's API-table composition. Canvas, asset URLs and the synchronous host
+  channel go only into the API context; the runtime receives a
+  `ServiceThreadOptions.onPageRelease` hook for per-page cleanup (canvas nodes,
+  …) and never owns canvas semantics. Do not hardcode them in
+  `packages/runtime`.
 - The browser test host and devtool both use `@tiny/host-web`’s
   `WasmBrowserHost` over `@tiny/host-core-wasm`;
   devtool adds its own `DevtoolRuntimeClient` (`apps/devtool/src/runtimeClient.ts`)

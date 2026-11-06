@@ -8,7 +8,8 @@
  */
 import type { RuntimeDiagnostic, RuntimePageState, RuntimeTabBarState } from '@tiny/runtime'
 import type { InspectNode } from '@tiny/runtime'
-import type { RuntimeManifest, StorageSnapshot, SystemInfoSnapshot } from '@tiny/runtime'
+import type { RuntimeManifest } from '@tiny/runtime'
+import type { StorageValues, SystemInfo } from '@tiny/api'
 import { WasmBrowserHost, type WasmHostCoreFactory } from '@tiny/host-web'
 import { createDevtoolApiHandlers } from './host-api'
 import { projectComponentTree } from './componentTree'
@@ -48,8 +49,8 @@ export type DevtoolRuntimeOptions = {
   serviceUrl: string
   renderUrl: string
   initialPath: string
-  systemInfo?: Partial<SystemInfoSnapshot>
-  storage?: StorageSnapshot
+  systemInfo?: Partial<SystemInfo>
+  storage?: StorageValues
   container?: HTMLElement
   diagnosticLimit?: number
   lifecycleLimit?: number

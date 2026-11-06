@@ -21,8 +21,8 @@
   },
   "keywords": [],
   "dependencies": {
-    "@tiny/manifest": "workspace:*",
-    "@tiny/runtime": "workspace:*"
+    "@tiny/bridge": "workspace:*",
+    "@tiny/manifest": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

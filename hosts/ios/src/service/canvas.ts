@@ -2,7 +2,7 @@ import type {
   CanvasNodeHandle,
   CanvasNodeRequest,
   ServiceCanvasAdapter,
-} from '@tiny/runtime'
+} from '@tiny/api'
 
 /**
  * iOS Canvas 2D adapter.

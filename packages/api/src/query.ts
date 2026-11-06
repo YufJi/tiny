@@ -1,9 +1,9 @@
 import { DIAGNOSTIC_CODES } from '@tiny/manifest'
-import type { MiniProgramApiHost, ServiceApiContext } from '@tiny/runtime'
+import type { ApiHost, ApiContext } from './context'
 import { createSelectorQuery } from './selector-query'
 
 /** Selector and intersection queries over the render tree. */
-export function createQueryApi(context: ServiceApiContext): MiniProgramApiHost {
+export function createQueryApi(context: ApiContext): ApiHost {
   return {
     createSelectorQuery: () => {
       context.connection.sendDiagnostic('log', {
