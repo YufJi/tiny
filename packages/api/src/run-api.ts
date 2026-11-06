@@ -46,3 +46,23 @@ export function callHost(
 ): Promise<unknown> {
   return context.connection.call('api', method, payload, { pageId: context.pageId })
 }
+
+/**
+ * Call one host API synchronously, for WeChat's `*Sync` variants.
+ *
+ * The bridge itself is asynchronous; a host that supports synchronous APIs
+ * installs a direct channel (browser: a function injected into the service
+ * frame, iOS: a JavaScriptCore block). Without one the call throws instead of
+ * falling back to a cached snapshot — the host is the only source of truth.
+ */
+export function callHostSync(
+  context: ServiceApiContext,
+  method: string,
+  payload: Record<string, unknown> = {},
+): unknown {
+  const channel = context.syncHost
+  if (!channel) {
+    throw new Error(`the host provides no synchronous channel for ${method}`)
+  }
+  return channel.call('api', method, payload)
+}

@@ -2,9 +2,7 @@ import type { BridgeConnection } from '@tiny/bridge'
 import type {
   RuntimeManifest,
   ServiceCanvasAdapter,
-  StorageSnapshot,
   StyleLoader,
-  SystemInfoSnapshot,
   TemplateRegistry,
 } from '../types'
 import type { AssetUrlResolver } from '../assets'
@@ -60,6 +58,20 @@ export type MiniProgramApiHost = Record<string, (...args: unknown[]) => unknown>
  */
 export type ServiceApiFactory = (context: ServiceApiContext) => MiniProgramApiHost
 
+/**
+ * Synchronous host channel for WeChat's `*Sync` APIs.
+ *
+ * The bridge is asynchronous, so a host that supports synchronous APIs supplies
+ * a direct call path: the browser host injects a function into the service
+ * frame, and the iOS host exposes a JavaScriptCore block. The method names are
+ * the same `api` protocol methods the asynchronous path uses (`system.info`,
+ * `storage.get`, ...). Hosts without a channel make `*Sync` APIs throw instead
+ * of serving stale state.
+ */
+export type SyncHostChannel = {
+  call(domain: string, method: string, payload: Record<string, unknown>): unknown
+}
+
 export type TabBarApi = {
   setStyle(params: Record<string, unknown>): void
   setItem(params: Record<string, unknown>): void
@@ -83,9 +95,8 @@ export type ServiceApiContext = {
   apiName: string
   /** API globals installed with the table (`wx` plus aliases); `canIUse` accepts them as an optional schema prefix. */
   apiNamespaces: string[]
-  getSystemInfoSnapshot: () => SystemInfoSnapshot
-  getStorageSnapshot: () => StorageSnapshot
-  setStorageSnapshot: (key: string, value: unknown) => void
+  /** Host-provided synchronous call path for `system.info` / `storage.*`. */
+  syncHost?: SyncHostChannel
   /** Filled by the kernel with the names the injected factory returned. */
   apiNames: Set<string>
   getCurrentPagePath?: () => string | undefined
@@ -134,6 +145,11 @@ export type ServiceThreadOptions = {
   canvas?: ServiceCanvasAdapter
   /** Host hook mapping app-root asset paths to loadable URLs (canvas images, …). */
   resolveAssetUrl?: AssetUrlResolver
+  /**
+   * Synchronous host call path for `*Sync` APIs. Required for WeChat's sync
+   * storage/system APIs; without it those APIs throw.
+   */
+  syncHost?: SyncHostChannel
   /** Maximum pages in the runtime page stack. Defaults to 10. */
   maxPageStack?: number
   /** Templates for the service-side logic tree. */

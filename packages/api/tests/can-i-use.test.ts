@@ -22,9 +22,13 @@ function createContext() {
     },
     apiName: 'wx',
     apiNamespaces: ['wx'],
-    getSystemInfoSnapshot: () => snapshot,
-    getStorageSnapshot: () => ({}),
-    setStorageSnapshot: () => {},
+    // The system-info family is answered from live host facts.
+    syncHost: {
+      call: (domain: string, method: string) => {
+        if (domain !== 'api') throw new Error(`unsupported sync host domain: ${domain}`)
+        return method === 'system.info' ? snapshot : undefined
+      },
+    },
     apiNames: new Set<string>(),
     pageId: 'page-1',
   } as unknown as ServiceApiContext
@@ -54,11 +58,10 @@ describe('canIUse schema families', () => {
     expect(host.canIUse!('navigateTo.object.url')).toBe(true)
     expect(host.canIUse!('navigateTo.object.events')).toBe(true)
     expect(host.canIUse!('navigateBack.object.delta')).toBe(true)
-    // `success` result shapes composed from the engine snapshot.
-    expect(host.canIUse!('getStorage.success.data')).toBe(true)
-    expect(host.canIUse!('getStorageInfo.success.keys')).toBe(true)
-    // Host-owned shapes are intentionally not promised: a host may answer with
-    // a stub (iOS returns only errMsg for most platform calls).
+    // Host-owned shapes are intentionally not promised: storage and platform
+    // APIs may answer with a stub, so only engine-composed shapes are declared.
+    expect(host.canIUse!('getStorage.success.data')).toBe(false)
+    expect(host.canIUse!('getStorageInfo.success.keys')).toBe(false)
     expect(host.canIUse!('request.object.method.GET')).toBe(false)
     expect(host.canIUse!('request.success.data')).toBe(false)
     expect(host.canIUse!('getNetworkType.success.networkType')).toBe(false)
@@ -67,12 +70,12 @@ describe('canIUse schema families', () => {
     expect(host.canIUse!('onCompassChange.callback.direction')).toBe(false)
   })
 
-  test('answers sync return shapes the API layer composes', () => {
+  test('answers sync return shapes the API layer composes itself', () => {
     const { host } = createContext()
-    expect(host.canIUse!('getStorageInfoSync.return.keys')).toBe(true)
-    expect(host.canIUse!('getStorageInfoSync.return.missing')).toBe(false)
     expect(host.canIUse!('getLaunchOptionsSync.return.path')).toBe(true)
     expect(host.canIUse!('getLaunchOptionsSync.return.scene')).toBe(true)
+    // Storage info comes from the host now, so its fields are host-owned.
+    expect(host.canIUse!('getStorageInfoSync.return.keys')).toBe(false)
   })
 
   test('answers system-info return fields from the live host snapshot', () => {
@@ -139,6 +142,19 @@ describe('canIUse schema families', () => {
     context.apiNamespaces = ['my', 'wx']
     expect(host.canIUse!('my.nextTick')).toBe(true)
     expect(host.canIUse!('other.nextTick')).toBe(false)
+  })
+
+  test('reports sync APIs unavailable when the host has no sync channel', () => {
+    const { host, context } = createContext()
+    expect(host.canIUse!('getStorageSync')).toBe(true)
+    expect(host.canIUse!('getSystemInfoSync')).toBe(true)
+    context.syncHost = undefined
+    expect(host.canIUse!('getStorageSync')).toBe(false)
+    expect(host.canIUse!('getSystemInfoSync')).toBe(false)
+    expect(host.canIUse!('getSystemInfoSync.return.windowWidth')).toBe(false)
+    // Asynchronous variants keep working without a sync channel.
+    expect(host.canIUse!('getStorage')).toBe(true)
+    expect(host.canIUse!('getSystemInfo')).toBe(true)
   })
 
   test('rejects malformed schemas without throwing for known-empty forms', () => {

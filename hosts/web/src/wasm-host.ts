@@ -6,6 +6,7 @@ import type {
   RuntimeDiagnostic,
   RuntimeManifest,
   StorageSnapshot,
+  SyncHostChannel,
   SystemInfoSnapshot,
 } from '@tiny/runtime'
 import { BROWSER_RUNTIME_NAMES } from './naming'
@@ -151,6 +152,7 @@ export class WasmBrowserHost {
       this.serviceTransport = null
       throw error
     }
+    this.installSyncHost(iframe)
     iframe.contentWindow?.postMessage(
       { type: BROWSER_RUNTIME_NAMES.runtimePort, channel: 'service' },
       '*',
@@ -176,15 +178,12 @@ export class WasmBrowserHost {
       },
     })
 
+    // The service reads system/storage facts from the host on demand (sync
+    // channel or api round-trip); the core config carries no snapshot.
     const config = JSON.stringify({
       appId: this.options.appId,
       manifest: this.options.manifest,
       initialPath: this.options.initialPath,
-      systemInfo: {
-        SDKVersion: '3.0.0',
-        ...this.options.systemInfo,
-      },
-      storage: this.storage,
       maxPageStack: this.options.maxPageStack,
     })
     this.core = await this.factory(config)
@@ -516,7 +515,75 @@ export class WasmBrowserHost {
     }
   }
 
+  /**
+   * Install the synchronous channel `*Sync` APIs use. Called after the service
+   * frame reports ready and before its port arrives, so no app code can run
+   * before the channel exists. The channel is a same-origin function reference,
+   * which is why a `MessagePort` (asynchronous) cannot serve this role.
+   */
+  private installSyncHost(iframe: HTMLIFrameElement): void {
+    const target = iframe.contentWindow as (Window & { __tinySyncHost?: SyncHostChannel }) | null
+    if (!target) return
+    const channel: SyncHostChannel = {
+      call: (domain, method, payload) => {
+        if (domain !== 'api') throw new Error(`unsupported sync host domain: ${domain}`)
+        return this.runSyncHostCall(method, payload)
+      },
+    }
+    try {
+      target.__tinySyncHost = channel
+    } catch (error) {
+      this.report('error', `failed to install the synchronous host channel: ${describeError(error)}`)
+    }
+  }
+
+  /** Synchronous host state, mirroring what the asynchronous API handlers use. */
+  private runSyncHostCall(method: string, payload: Record<string, unknown>): unknown {
+    switch (method) {
+      case 'system.info':
+        return this.systemInfoSnapshot()
+      case 'storage.get':
+        return { value: toPlainValue(this.storage[String(payload.key)]) }
+      case 'storage.set':
+        this.storage[String(payload.key)] = toPlainValue(payload.value) as never
+        return { errMsg: 'setStorageSync:ok' }
+      case 'storage.remove':
+        delete this.storage[String(payload.key)]
+        return { errMsg: 'removeStorageSync:ok' }
+      case 'storage.clear':
+        for (const key of Object.keys(this.storage)) delete this.storage[key]
+        return { errMsg: 'clearStorageSync:ok' }
+      case 'storage.info':
+        return {
+          keys: Object.keys(this.storage),
+          currentSize: JSON.stringify(this.storage).length,
+          limitSize: 10240,
+        }
+      default:
+        throw new Error(`unsupported synchronous host API: ${method}`)
+    }
+  }
+
+  /** Live host facts: device identity plus the current runtime surface size. */
+  private systemInfoSnapshot(): Record<string, unknown> {
+    const facts = this.options.systemInfo ?? {}
+    const liveWidth = this.container.clientWidth
+    const liveHeight = this.container.clientHeight
+    return toPlainValue({
+      SDKVersion: '3.0.0',
+      ...facts,
+      pixelRatio: facts.pixelRatio ?? (typeof window === 'undefined' ? 1 : window.devicePixelRatio),
+      windowWidth: liveWidth > 0 ? liveWidth : Number(facts.windowWidth ?? 0),
+      windowHeight: liveHeight > 0 ? liveHeight : Number(facts.windowHeight ?? 0),
+    }) as Record<string, unknown>
+  }
+
   private async runPlatformCall(action: Extract<CoreAction, { type: 'platformCall' }>): Promise<void> {
+    if (action.method === 'system.info') {
+      // Host-owned facts: the same snapshot the synchronous channel serves.
+      this.finishPlatformCall(action.requestId, this.systemInfoSnapshot())
+      return
+    }
     const handler = this.options.apiHandlers[action.method]
     if (typeof handler !== 'function') {
       this.finishPlatformCall(action.requestId, undefined, `unsupported host API: ${action.method}`)
@@ -671,4 +738,14 @@ function waitForThreadReady(
     }
     window.addEventListener('message', onMessage)
   })
+}
+
+/** JSON-round-trip a value so no reference crosses the iframe realm boundary. */
+function toPlainValue<T>(value: T): T {
+  if (value === undefined) return value
+  return JSON.parse(JSON.stringify(value)) as T
+}
+
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
 }

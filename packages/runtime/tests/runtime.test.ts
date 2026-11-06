@@ -85,13 +85,17 @@ describe('tiny runtime', () => {
       transport: serviceTransport,
       manifest,
       initialPath: PAGE_PATH,
+      syncHost: {
+        call: () => ({ pixelRatio: 2, windowWidth: 320, windowHeight: 640 }),
+      },
     })
     const globalObject = globalThis as unknown as Record<string, unknown>
     const pageOptions = { data: { message: 'static' } }
     ;(globalObject.Page as (options: typeof pageOptions) => unknown)(pageOptions)
     expect(service.registry.pages.get(PAGE_PATH)).toBe(pageOptions)
     expect((globalObject.wx as Record<string, () => unknown>).getSystemInfoSync()).toMatchObject({
-      pixelRatio: expect.any(Number),
+      pixelRatio: 2,
+      windowWidth: 320,
     })
     void hostServiceTransport
   })

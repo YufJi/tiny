@@ -16,10 +16,6 @@ struct WasmConfig {
     app_id: String,
     manifest: Value,
     initial_path: String,
-    #[serde(default)]
-    system_info: Value,
-    #[serde(default)]
-    storage: Value,
     max_page_stack: Option<usize>,
 }
 
@@ -117,16 +113,6 @@ impl WasmHostCore {
                 app_id: config.app_id,
                 manifest: config.manifest,
                 initial_path: config.initial_path,
-                system_info: if config.system_info.is_null() {
-                    json!({})
-                } else {
-                    config.system_info
-                },
-                storage: if config.storage.is_null() {
-                    json!({})
-                } else {
-                    config.storage
-                },
                 max_page_stack: config.max_page_stack,
             }),
         })

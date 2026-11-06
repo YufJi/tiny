@@ -8,5 +8,6 @@ export type {
   ServiceApiContext,
   ServiceApiFactory,
   ServiceThreadOptions,
+  SyncHostChannel,
   TabBarApi,
 } from './types'

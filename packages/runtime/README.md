@@ -162,9 +162,15 @@ bootServiceThread({
 `@tiny/api` is the standard WeChat-compatible table (one module per
 domain); hosts compose their own device facts on top. The browser host's
 `bootServiceEntry` already defaults to that composition plus
-`apiExtensions`. The engine only exposes mini-program semantics, host snapshots
-(system/storage), and bridge calls; it does not invent device or performance
-results.
+`apiExtensions`. The engine only exposes mini-program semantics, the host's API
+table, the synchronous channel for `*Sync` APIs, and bridge calls; it does not
+invent device or performance results.
+
+WeChat's `*Sync` APIs (`getSystemInfoSync`, `getStorageSync`, …) cannot use the
+asynchronous bridge, so `bootServiceThread` takes a `syncHost` channel with the
+same `api` method names (`system.info`, `storage.get`, …). Browser hosts inject
+one into the service frame; iOS exposes a JavaScriptCore block. A host without a
+channel makes those APIs throw instead of serving a stale snapshot.
 
 ## Asset URLs
 

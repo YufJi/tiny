@@ -45,6 +45,35 @@ globalThis.__TINY_IOS__ = {
   menuButton: { width: 87, height: 32, top: 48, right: 365, bottom: 80, left: 278 },
   system: { pixelRatio: 2, windowWidth: 375, windowHeight: 712, platform: 'ios' },
 }
+const smokeStorage = {}
+const smokeSystemInfo = {
+  pixelRatio: 2,
+  windowWidth: 375,
+  windowHeight: 712,
+  platform: 'ios',
+  SDKVersion: '3.0.0',
+}
+globalThis.__tinySyncHostCall = (method, payload) => {
+  const params = JSON.parse(payload || '{}')
+  if (method === 'system.info') return JSON.stringify(smokeSystemInfo)
+  if (method === 'storage.get') return JSON.stringify({ value: smokeStorage[params.key] ?? null })
+  if (method === 'storage.set') {
+    smokeStorage[params.key] = params.value
+    return JSON.stringify({ errMsg: 'setStorageSync:ok' })
+  }
+  if (method === 'storage.remove') {
+    delete smokeStorage[params.key]
+    return JSON.stringify({ errMsg: 'removeStorageSync:ok' })
+  }
+  if (method === 'storage.clear') {
+    for (const key of Object.keys(smokeStorage)) delete smokeStorage[key]
+    return JSON.stringify({ errMsg: 'clearStorageSync:ok' })
+  }
+  if (method === 'storage.info') {
+    return JSON.stringify({ keys: Object.keys(smokeStorage), currentSize: 0, limitSize: 10240 })
+  }
+  return JSON.stringify({ error: 'unsupported sync host API: ' + method })
+}
 globalThis.__tinyLog = (level, message) => { if (${verbose}) print('[' + level + '] ' + message) }
 globalThis.__tinyError = (message) => print('SERVICE_ERROR ' + message)
 globalThis.__tinyServiceStarted = (path) => { if (${verbose}) print('SERVICE_STARTED ' + path) }
@@ -83,9 +112,25 @@ const host = new BridgeConnection({
 for (const level of ['log', 'warn', 'error', 'state']) {
   host.onEvent('diagnostic', 'diagnostic.' + level, () => {})
 }
-host.onCall('api', 'storage.set', () => ({ errMsg: 'setStorageSync:ok' }))
-host.onCall('api', 'storage.get', () => ({ value: null }))
-host.onCall('api', 'storage.info', () => ({ keys: [], currentSize: 0, limitSize: 10240 }))
+host.onCall('api', 'system.info', () => smokeSystemInfo)
+host.onCall('api', 'storage.set', (params) => {
+  smokeStorage[String(params?.key)] = params?.value
+  return { errMsg: 'setStorageSync:ok' }
+})
+host.onCall('api', 'storage.get', (params) => ({ value: smokeStorage[String(params?.key)] ?? null }))
+host.onCall('api', 'storage.remove', (params) => {
+  delete smokeStorage[String(params?.key)]
+  return { errMsg: 'removeStorageSync:ok' }
+})
+host.onCall('api', 'storage.clear', () => {
+  for (const key of Object.keys(smokeStorage)) delete smokeStorage[key]
+  return { errMsg: 'clearStorageSync:ok' }
+})
+host.onCall('api', 'storage.info', () => ({
+  keys: Object.keys(smokeStorage),
+  currentSize: 0,
+  limitSize: 10240,
+}))
 for (const method of ['flow', 'snapshot', 'patch', 'animate', 'clearAnimate']) {
   host.onEvent('tree', method, () => {})
 }
@@ -99,8 +144,6 @@ globalThis.__runHostSmoke = async () => {
   const boot = await host.control('runtime', 'bootstrap', {
     manifest,
     initialPath: firstPage,
-    systemInfo: { pixelRatio: 2, windowWidth: 375, windowHeight: 712, platform: 'ios', SDKVersion: '3.0.0' },
-    storage: {},
   })
   print('SMOKE_OK ' + JSON.stringify({
     appId: appData.appId,

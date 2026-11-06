@@ -112,10 +112,11 @@ one layer.
   unsupported-API fallback, and the capability context handed to the factory, so
   adding an API never changes runtime semantics.
 - **Service API context**: the capability contract a host's API factory receives
-  — bridge connection, page identity and stack, system-info/storage snapshots,
-  tabBar, canvas, asset resolution, and diagnostics. Treat it as additive public
-  API: `@tiny/api` implements `wx.*` against it and must not deep-import
-  runtime internals.
+  — bridge connection, page identity and stack, the injected API table, the
+  synchronous host channel for `*Sync` APIs, tabBar, canvas, asset resolution,
+  and diagnostics. The runtime stores no system-info or storage snapshot: hosts
+  own those facts. Treat the context as additive public API: `@tiny/api`
+  implements `wx.*` against it and must not deep-import runtime internals.
 - **Built-in components**: host-owned render components for mini-program tags
   such as `view`, `text`, `image`, `button`, and `input`. The service logic tree
   emits only semantic tags; the web host supplies `tiny-*` implementations and

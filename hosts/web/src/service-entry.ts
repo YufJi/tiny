@@ -4,6 +4,7 @@ import {
   type MiniProgramApiHost,
   type ServiceApiFactory,
   type ServiceThreadOptions,
+  type SyncHostChannel,
 } from '@tiny/runtime'
 import { createBrowserCanvasAdapter, installBrowserCanvasCompat } from './canvas-bridge'
 import { listenForRuntimePort } from './runtime-port'
@@ -22,6 +23,26 @@ export type ServiceEntryOptions = {
   apiHost?: ServiceApiFactory
   /** Host-specific APIs merged over the default WeChat-compatible set. */
   apiExtensions?: MiniProgramApiHost
+  /**
+   * Synchronous host call path for `*Sync` APIs. Defaults to the channel the
+   * browser host injects into this frame as `__tinySyncHost`.
+   */
+  syncHost?: SyncHostChannel
+}
+
+/**
+ * The browser host injects a synchronous channel into the service frame before
+ * bootstrapping it, because the bridge itself is asynchronous. Resolve it
+ * lazily so injection order does not matter.
+ */
+const injectedSyncHost: SyncHostChannel = {
+  call(domain, method, payload) {
+    const bridge = (globalThis as unknown as Record<string, unknown>).__tinySyncHost as
+      | SyncHostChannel
+      | undefined
+    if (!bridge) throw new Error('the browser host did not install a synchronous channel')
+    return bridge.call(domain, method, payload)
+  },
 }
 
 /**
@@ -41,6 +62,7 @@ export function bootServiceEntry(options: ServiceEntryOptions): void {
       ...(options.loadStyle ? { loadStyle: options.loadStyle } : {}),
       resolveAssetUrl: options.resolveAssetUrl,
       canvas: createBrowserCanvasAdapter(),
+      syncHost: options.syncHost ?? injectedSyncHost,
       // The kernel owns no API table of its own: this host ships the standard
       // WeChat-compatible surface and lets entries overlay device facts.
       apiHost: options.apiHost ?? ((context) => ({

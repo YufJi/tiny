@@ -325,7 +325,7 @@ iOS 路径不使用 iframe 或 `host.html`；页面切换由 `HostCoreRuntime` �
 | canvas 实现 | 宿主 canvas 适配器 | 浏览器由 service 持有 OffscreenCanvas 控制面；iOS 由 service 录制 display-list、render WKWebView 回放 | ServiceCanvasAdapter / 宿主 canvas relay |
 | DOM 查询 | 宿主渲染树 | selector query / IntersectionObserver | query.select / query.intersection |
 | 资源 URL | 宿主 resolveAssetUrl | render 内置组件的 img/src；CSS url() 原样保留 | 渲染树解析内置组件资源，样式按文档相对路径解析 |
-| 宿主 transport / API 语义 | 宿主 | service 侧 API 快照 | api.* 调用 / systemInfo / storage / apiHost |
+| 宿主 transport / API 语义 | 宿主（system/storage 事实的唯一来源） | 仅保存注入的 API 表 | api.* 调用 / 同步通道 / apiHost |
 | 诊断 | 宿主诊断仓库 | devtool diagnostics | diagnostic.* 事件 |
 
 :::callout{title="一个常见错误" tone="warn"}

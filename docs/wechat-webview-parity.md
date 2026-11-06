@@ -173,8 +173,8 @@
 
 | 能力 | 状态 | 说明 |
 | --- | --- | --- |
-| 系统信息 | 部分 | `getSystemInfo` / `getSystemInfoSync` 可用；字段仍以宿主快照为准，缺完整设备/安全区信息 |
-| 数据缓存 | 部分 | sync/async、remove/clear/info 已接；仍只有宿主内存快照，刷新即丢，无 batch |
+| 系统信息 | 部分 | `getSystemInfo` / `getSystemInfoSync` 都真实调用宿主（同步变体走同步通道），不再有运行时快照；字段仍以宿主事实为准，缺完整设备/安全区信息 |
+| 数据缓存 | 部分 | sync/async、remove/clear/info 全部真实调用宿主，内核不保存副本；浏览器宿主的存储仍在内存（刷新即丢），持久化由宿主决定；无 batch |
 | 路由 | ✅ | navigateTo/navigateBack/switchTab/redirectTo/reLaunch；页面栈、tab 缓存与 render 帧同步 |
 | 界面交互 | 部分 | toast/loading/modal/actionSheet 有浏览器 overlay；导航栏/tabBar 在 devtool 宿主可用 |
 | 网络 | 部分 | `request` 已接 fetch；upload/download/WebSocket/UDP/TCP 仍无 |
@@ -198,7 +198,7 @@
 
 > 降级策略是“静默 undefined”，不是抛错。页面不会立刻崩，但失败会推迟到调用方 `.then`/属性访问时才暴露，排查成本高。
 
-`wx.canIUse` 的判定依据是**引擎实际实现**而不是 `SDKVersion`，且只声明内核自身能保证的部分：裸 API 名（`canIUse('nextTick')`）看注入的 `wx.*` 表；`return`/`success`/`object` 子路径只覆盖内核驱动的回调、内核读取的参数（`navigateTo.object.url`、`getStorage.object.key`）和内核组装的结果（`getStorage.success.data`、`getStorageInfoSync.return.keys`）——宿主返回的字段和宿主参数集**不声明**，因为宿主可能只用 `errMsg` stub 响应（iOS 原生目前只实现 `storage.*`）；`getSystemInfoSync.return.*` / `getSystemInfo.success.*` 直接按宿主快照判断；组件标签与属性来自由内置组件定义生成的清单（[builtin-capabilities.ts](../packages/manifest/src/builtin-capabilities.ts:1)，由 host-web-components 的守卫测试防止漂移），语义是“内置组件定义接受该 WXML 属性”，与微信按组件表回答一致，不承诺逐个属性的视觉完全对齐（那由 component-reference-diff.md 跟踪）；组件属性**选项**（`button.open-type.contact`）暂不跟踪，按保守的 `false` 回答。非字符串 schema 按微信行为抛错。
+`wx.canIUse` 的判定依据是**引擎实际实现**而不是 `SDKVersion`，且只声明内核自身能保证的部分：裸 API 名（`canIUse('nextTick')`）看注入的 `wx.*` 表；`return`/`success`/`object` 子路径只覆盖内核驱动的回调和内核读取的参数（`navigateTo.object.url`、`getStorage.object.key`）与内核自己组装的返回（`getLaunchOptionsSync.return.path`）——宿主返回的字段和宿主参数集**不声明**，因为宿主可能只用 `errMsg` stub 响应（iOS 原生目前只实现 `storage.*` 与 `system.info`）；`getSystemInfoSync.return.*` / `getSystemInfo.success.*` 通过宿主同步通道读取实时事实；组件标签与属性来自由内置组件定义生成的清单（[builtin-capabilities.ts](../packages/manifest/src/builtin-capabilities.ts:1)，由 host-web-components 的守卫测试防止漂移），语义是“内置组件定义接受该 WXML 属性”，与微信按组件表回答一致，不承诺逐个属性的视觉完全对齐（那由 component-reference-diff.md 跟踪）；组件属性**选项**（`button.open-type.contact`）暂不跟踪，按保守的 `false` 回答。非字符串 schema 按微信行为抛错。
 
 > 已知边界：`canIUse` 的 API 名来自**注入的 API 表**，宿主若没有实现某个已声明 API 的 host handler（例如 iOS 侧暂无 `request`），canIUse 无法感知；这类差异需要宿主能力上报补齐。
 

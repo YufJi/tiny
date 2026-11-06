@@ -9,8 +9,6 @@ fn config() -> HostConfig {
         app_id: "demo".to_string(),
         manifest: json!({ "pages": [{ "path": "pages/index" }] }),
         initial_path: "pages/index".to_string(),
-        system_info: json!({ "pixelRatio": 2 }),
-        storage: json!({}),
         max_page_stack: Some(10),
     }
 }
@@ -371,7 +369,9 @@ fn navigation_updates_the_page_stack_and_emits_surface_actions() {
 }
 
 #[test]
-fn system_info_api_is_answered_by_the_host_core() {
+fn system_info_is_a_platform_call() {
+    // The host owns the facts: system.info goes to the platform instead of a
+    // core-side snapshot, so the service always observes live host state.
     let mut host = HostCore::new(config());
     let _ = host.start(10_000);
     let call = message(
@@ -384,12 +384,13 @@ fn system_info_api_is_answered_by_the_host_core() {
         Some("page-1"),
         None,
     );
+    let request_id = call.message_id.clone();
     let actions = host.handle_event(HostEvent::ServiceFrame(frame(vec![call])), 10_010);
-    let reply = only_frame_message(&actions, true);
-    assert_eq!(reply.kind, ProtocolKind::Reply);
-    assert_eq!(reply.method, "system.info");
-    assert_eq!(reply.payload.as_ref().unwrap()["ok"], true);
-    assert_eq!(reply.payload.as_ref().unwrap()["result"]["pixelRatio"], 2);
+    assert!(actions.iter().any(|action| matches!(
+        action,
+        HostAction::PlatformCall { request_id: id, method, .. }
+            if id == &request_id && method == "system.info"
+    )));
 }
 
 #[test]

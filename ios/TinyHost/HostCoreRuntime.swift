@@ -31,6 +31,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   private var finished = false
   private var meta: [String: Any] = [:]
   private var manifest: [String: Any] = [:]
+  private var systemInfo: [String: Any] = [:]
   private var nativePicker: NativePickerController?
   private var pickerSessionId: String?
   private var pickerColumns: [[String: Any]] = []
@@ -90,7 +91,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     }
     self.meta = meta
     self.manifest = manifest
-    let systemInfo = HostSystemInfo.current().system
+    self.systemInfo = HostSystemInfo.current().system
 
     service.onFrame = { [weak self] frame in
       guard let self, let core = self.core else { return }
@@ -117,15 +118,16 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
 
     try service.start(
       appId: app.id,
-      hostInfo: systemInfo
+      hostInfo: systemInfo,
+      syncHostCall: { [weak self] method, payload in
+        self?.handleSyncHostCall(method: method, payload: payload) ?? "null"
+      }
     )
 
     let config: [String: Any] = [
       "appId": app.id,
       "manifest": manifest,
       "initialPath": app.firstPage,
-      "systemInfo": systemInfo,
-      "storage": storage,
       "maxPageStack": 10,
     ]
     let core = try HostCoreSession(config: config, sink: self)
@@ -648,6 +650,51 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     return top
   }
 
+  /// Synchronous host call for WeChat's `*Sync` APIs (JSCore block).
+  /// Returns a JSON string; `null` means the call failed.
+  private func handleSyncHostCall(method: String, payload: String) -> String {
+    let params = (payload.data(using: .utf8))
+      .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+      ?? [:]
+    let result: [String: Any]
+    switch method {
+    case "system.info":
+      result = systemInfo
+    case "storage.get":
+      let key = params["key"] as? String ?? ""
+      result = ["value": storage[key] ?? NSNull()]
+    case "storage.set":
+      let key = params["key"] as? String ?? ""
+      let value = params["value"] ?? NSNull()
+      storage[key] = value
+      persistStorageValue(key, value)
+      result = ["errMsg": "setStorageSync:ok"]
+    case "storage.remove":
+      let key = params["key"] as? String ?? ""
+      storage.removeValue(forKey: key)
+      UserDefaults.standard.removeObject(forKey: storagePrefix + key)
+      result = ["errMsg": "removeStorageSync:ok"]
+    case "storage.clear":
+      for key in storage.keys {
+        UserDefaults.standard.removeObject(forKey: storagePrefix + key)
+      }
+      storage.removeAll()
+      result = ["errMsg": "clearStorageSync:ok"]
+    case "storage.info":
+      result = [
+        "keys": Array(storage.keys),
+        "currentSize": 0,
+        "limitSize": 10240,
+      ]
+    default:
+      result = ["error": "unsupported synchronous host API: \(method)"]
+    }
+    guard let data = try? JSONSerialization.data(withJSONObject: result),
+          let text = String(data: data, encoding: .utf8)
+    else { return "null" }
+    return text
+  }
+
   func platformCall(
     requestId: String,
     method: String,
@@ -656,6 +703,8 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   ) {
     do {
       switch method {
+      case "system.info":
+        try core?.platformResult(requestId: requestId, result: systemInfo)
       case "storage.get":
         let key = params["key"] as? String ?? ""
         try core?.platformResult(requestId: requestId, result: ["value": storage[key] ?? NSNull()])

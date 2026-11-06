@@ -1,6 +1,11 @@
 import { createApiHost } from '@tiny/api'
 import { bootServiceThread, resolveAssetPath } from '@tiny/runtime'
-import type { MiniProgramApiHost, RuntimeManifest, TemplateRegistry } from '@tiny/runtime'
+import type {
+  MiniProgramApiHost,
+  RuntimeManifest,
+  SyncHostChannel,
+  TemplateRegistry,
+} from '@tiny/runtime'
 import type { Transport, TransportFrame } from '@tiny/bridge'
 import { installHostShims } from './shims'
 import { createRemoteCanvasAdapter } from './canvas'
@@ -171,6 +176,25 @@ export function startTinyService(app: TinyIOSApp): void {
     const send = host.__tinyCanvasSend
     if (typeof send === 'function') send(JSON.stringify(payload))
   })
+  // JSCore blocks are synchronous, so the native host serves `*Sync` APIs
+  // inline. Without the block those APIs throw instead of using cached state.
+  const nativeSyncCall = host.__tinySyncHostCall as
+    | ((method: string, payload: string) => string)
+    | undefined
+  const syncHost: SyncHostChannel | undefined = typeof nativeSyncCall === 'function'
+    ? {
+        call: (domain, method, payload) => {
+          if (domain !== 'api') throw new Error(`unsupported sync host domain: ${domain}`)
+          const result = nativeSyncCall(method, JSON.stringify(payload ?? {}))
+          if (result === undefined || result === null || result === 'null') return undefined
+          const parsed = JSON.parse(result) as Record<string, unknown>
+          if (parsed && typeof parsed === 'object' && 'error' in parsed) {
+            throw new Error(String(parsed.error))
+          }
+          return parsed
+        },
+      }
+    : undefined
   host.__tinyServiceStarted?.(initialPath)
 
   try {
@@ -180,6 +204,7 @@ export function startTinyService(app: TinyIOSApp): void {
       initialPath,
       maxPageStack: 10,
       canvas,
+      ...(syncHost ? { syncHost } : {}),
       loadTemplates,
       loadStyle: (stylePath) => app.styles[stylePath] ?? '',
       loadArtifacts: async () => {

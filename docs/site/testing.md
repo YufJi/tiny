@@ -87,7 +87,7 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 | `@tiny/host-web-components` | 24 | 内置组件 batches、共享 behaviors 和默认样式断言；`canIUse` 用的组件属性清单与真实定义保持一致；组件行为细节由 host-web 的 render-tree 测试覆盖 |
 | `@tiny/host-web` | 102 | DOM render tree、built-in composition、事件、WXS dispatch、event compositor、内置组件与渲染树集成 |
 | `@tiny/runtime` | 158 | 全局安装和命名、双线程 bootstrap、逻辑树、tree protocol/patch diff、两次求值与 locator 寻址、headless renderer、组件 schema、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、API 注入缝、诊断、WXS 宽松求值、`this.animate`、事件冒泡/几何 |
-| `@tiny/api` | 25 | 微信兼容 API 表：storage 同步/异步、request 回调、导航与 EventChannel、`canIUse` schema 解析（API/对象/组件三类）、动画与 canvas stub |
+| `@tiny/api` | 26 | 微信兼容 API 表：storage 同步/异步、request 回调、导航与 EventChannel、`canIUse` schema 解析（API/对象/组件三类）、动画与 canvas stub |
 
 :::callout{title="单测也会跑真实连接"}
 Bridge 测试会真的建立两条内存连接并完成握手；runtime 测试会启动 service 逻辑树和 headless render tree、注册 Page、执行 bootstrap 和导航，并验证 tree flow 与 patch。这里没有把整个引擎 mock 掉的做法。

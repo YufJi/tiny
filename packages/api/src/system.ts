@@ -2,14 +2,15 @@ import type { MiniProgramApiHost, ServiceApiContext } from '@tiny/runtime'
 import { CAN_I_USE_CAPABILITIES } from './capabilities'
 import { createCanIUse } from './can-i-use'
 import { cloneJsonSafe } from './json'
-import { runApi } from './run-api'
+import { callHost, callHostSync, runApi } from './run-api'
 
 /**
  * Device/system facts and feature detection.
  *
- * The snapshot itself is a kernel capability (`getSystemInfoSnapshot`) because
- * the host pushes it into the runtime at boot; the shape handed to app code is
- * the WeChat-compatible API surface and therefore lives here.
+ * The host owns the facts: `getSystemInfoSync` uses the host's synchronous
+ * channel and `getSystemInfo` awaits a real `system.info` round-trip. The
+ * runtime keeps no snapshot, so a host that changes its window facts (rotation,
+ * panel resize) is observable immediately.
  */
 export function createSystemApi(context: ServiceApiContext): MiniProgramApiHost {
   const themeListeners = context.themeListeners ?? new Set<(value: unknown) => void>()
@@ -17,17 +18,12 @@ export function createSystemApi(context: ServiceApiContext): MiniProgramApiHost 
   // functional so apps that subscribe do not crash.
   const keyboardListeners = new Set<(value: unknown) => void>()
   return {
-    getSystemInfoSync: () => cloneJsonSafe(context.getSystemInfoSnapshot()),
-    getSystemInfo: (params?: unknown) => {
-      const info = cloneJsonSafe(context.getSystemInfoSnapshot())
-      const callbacks = (params ?? {}) as {
-        success?: (value: unknown) => void
-        complete?: (value: unknown) => void
-      }
-      callbacks.success?.(info)
-      callbacks.complete?.(info)
-      return info
-    },
+    getSystemInfoSync: () => cloneJsonSafe(callHostSync(context, 'system.info')),
+    getSystemInfo: (params: unknown = {}) => runApi(
+      params,
+      'getSystemInfo',
+      async () => cloneJsonSafe(await callHost(context, 'system.info')),
+    ),
     canIUse: createCanIUse(context, CAN_I_USE_CAPABILITIES),
     nextTick: (callback: unknown) => {
       if (typeof callback === 'function') Promise.resolve().then(() => callback())

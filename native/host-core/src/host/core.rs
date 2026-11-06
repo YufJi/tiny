@@ -16,8 +16,6 @@ pub struct HostConfig {
     pub app_id: String,
     pub manifest: Value,
     pub initial_path: String,
-    pub system_info: Value,
-    pub storage: Value,
     pub max_page_stack: Option<usize>,
 }
 
@@ -488,15 +486,6 @@ impl HostCore {
                 now_ms,
                 Some(request),
                 actions,
-            );
-            return;
-        }
-        if method == "system.info" {
-            let _ = self.service.reply(
-                &request,
-                Some(self.config.system_info.clone()),
-                None,
-                now_ms,
             );
             return;
         }
@@ -1238,8 +1227,6 @@ impl HostCore {
         let payload = json!({
             "manifest": self.config.manifest,
             "initialPath": self.config.initial_path,
-            "systemInfo": self.config.system_info,
-            "storage": self.config.storage,
             "maxPageStack": self.config.max_page_stack.unwrap_or(10),
         });
         match self

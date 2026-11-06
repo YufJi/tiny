@@ -55,13 +55,8 @@ function createTemplateRegistry() {
 }
 
 describe('P0 platform APIs', () => {
-  test('uses host snapshots for sync reads and authoritative storage writes', async () => {
+  test('uses the host for sync reads and authoritative storage writes', async () => {
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-    const service = bootServiceThread({
-      transport: serviceTransport,
-      manifest: createManifest(),
-      initialPath: PAGE_PATH,
-    })
     const renderConnector = createHarnessRenderConnector({
       manifest: createManifest(),
       artifacts: { templates: createTemplateRegistry() },
@@ -74,6 +69,12 @@ describe('P0 platform APIs', () => {
       initialPath: PAGE_PATH,
       systemInfo: { pixelRatio: 3, windowWidth: 390, windowHeight: 844 },
       storage: { token: 'initial' },
+    })
+    const service = bootServiceThread({
+      transport: serviceTransport,
+      manifest: createManifest(),
+      initialPath: PAGE_PATH,
+      syncHost: host.syncHost,
     })
 
     const globalObject = globalThis as unknown as Record<string, unknown>
@@ -101,13 +102,8 @@ describe('P0 platform APIs', () => {
     await host.close()
   })
 
-  test('canIUse answers from the installed API table and the host snapshot', async () => {
+  test('canIUse answers from the installed API table and live host facts', async () => {
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-    const service = bootServiceThread({
-      transport: serviceTransport,
-      manifest: createManifest(),
-      initialPath: PAGE_PATH,
-    })
     const renderConnector = createHarnessRenderConnector({
       manifest: createManifest(),
       artifacts: { templates: createTemplateRegistry() },
@@ -119,6 +115,12 @@ describe('P0 platform APIs', () => {
       manifest: createManifest(),
       initialPath: PAGE_PATH,
       systemInfo: { pixelRatio: 3, windowWidth: 390, windowHeight: 844 },
+    })
+    const service = bootServiceThread({
+      transport: serviceTransport,
+      manifest: createManifest(),
+      initialPath: PAGE_PATH,
+      syncHost: host.syncHost,
     })
 
     const globalObject = globalThis as unknown as Record<string, unknown>
@@ -137,7 +139,7 @@ describe('P0 platform APIs', () => {
             componentOption: wx.canIUse('button.open-type.contact'),
             classMember: wx.canIUse('SelectorQuery.exec'),
             engineParam: wx.canIUse('navigateTo.object.url'),
-            engineSuccessField: wx.canIUse('getStorage.success.data'),
+            engineReturnField: wx.canIUse('getLaunchOptionsSync.return.path'),
             hostResultField: wx.canIUse('request.success.data'),
           }
         },
@@ -156,7 +158,7 @@ describe('P0 platform APIs', () => {
       componentOption: false,
       classMember: true,
       engineParam: true,
-      engineSuccessField: true,
+      engineReturnField: true,
       hostResultField: false,
     })
     await host.close()

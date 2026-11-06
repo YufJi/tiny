@@ -184,11 +184,6 @@ describe('mini-program navigation', () => {
   test('delivers page scroll, reach-bottom, and resize lifecycles', async () => {
     const manifest = createNavigationManifest()
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
-    const service = bootServiceThread({
-      transport: serviceTransport,
-      manifest,
-      initialPath: TODOS_PATH,
-    })
     const renderConnector = createHarnessRenderConnector({
       manifest,
       artifacts: { templates: createTemplateRegistry() },
@@ -199,6 +194,12 @@ describe('mini-program navigation', () => {
       renderConnector,
       manifest,
       initialPath: TODOS_PATH,
+    })
+    const service = bootServiceThread({
+      transport: serviceTransport,
+      manifest,
+      initialPath: TODOS_PATH,
+      syncHost: host.syncHost,
     })
 
     const globalObject = globalThis as unknown as Record<string, unknown>

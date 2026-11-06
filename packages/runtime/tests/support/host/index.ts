@@ -2,10 +2,11 @@ import { BridgeConnection } from '@tiny/bridge'
 import { DIAGNOSTIC_CODES } from '@tiny/manifest'
 import { CANVAS_CONTROL, QUERY_CONTROL, RUNTIME_CONTROL, TREE_PROTOCOL } from '../../../src/tree/protocol'
 import type { RuntimeHostOptions } from '../../../src/types'
-import { createHostApiRegistry, registerHostApiHandlers } from './api'
+import { createHostApiRegistry, createHostSyncChannel, registerHostApiHandlers } from './api'
 import type { HostApiRegistry } from './api'
 import { createHostDiagnosticStore, registerHostDiagnosticHandlers } from './diagnostics'
 import type { RuntimeDiagnostic } from '../../../src/diagnostics'
+import type { SyncHostChannel } from '../../../src/service/types'
 import type { RenderHostAction } from '../../../src/tree/protocol'
 
 export type TestRuntimeHost = {
@@ -27,6 +28,8 @@ export type TestRuntimeHost = {
   /** Deliver a host theme change; the service routes it to `wx.onThemeChange`. */
   setTheme(theme: 'light' | 'dark', pageId: string): Promise<unknown>
   apiRegistry: HostApiRegistry
+  /** Synchronous channel for `*Sync` APIs, backed by the host's handlers. */
+  syncHost: SyncHostChannel
   diagnostics: RuntimeDiagnostic[]
 }
 
@@ -81,6 +84,7 @@ export function createTestHost(options: RuntimeHostOptions): TestRuntimeHost {
   const diagnosticStore = createHostDiagnosticStore(options)
   registerHostDiagnosticHandlers(service, 'service', diagnosticStore)
   const apiRegistry = createHostApiRegistry(options)
+  const syncHost = createHostSyncChannel(apiRegistry)
   const renderSessions = new Map<string, BridgeConnection>()
   /**
    * Tree messages for a page whose render thread does not exist yet. The
@@ -412,6 +416,7 @@ export function createTestHost(options: RuntimeHostOptions): TestRuntimeHost {
   return {
     service,
     apiRegistry,
+    syncHost,
     get diagnostics() {
       return diagnosticStore.diagnostics
     },
@@ -431,8 +436,6 @@ export function createTestHost(options: RuntimeHostOptions): TestRuntimeHost {
       const serviceResult = await service.control<Record<string, unknown>>(RUNTIME_CONTROL.domain, RUNTIME_CONTROL.bootstrap, {
         manifest: options.manifest,
         initialPath: options.initialPath,
-        systemInfo: apiRegistry.systemInfo,
-        storage: apiRegistry.storage,
         ...(options.maxPageStack !== undefined ? { maxPageStack: options.maxPageStack } : {}),
       })
       const initialData = (serviceResult.initialData as Record<string, unknown> | undefined) ?? options.initialData
@@ -451,6 +454,10 @@ export function createTestHost(options: RuntimeHostOptions): TestRuntimeHost {
       return connection.control(RUNTIME_CONTROL.domain, RUNTIME_CONTROL.inspectTree, { pageId })
     },
     async setWindowSize(width: number, height: number) {
+      // The host owns window facts: update the live snapshot before reporting
+      // the resize so sync/async `system.info` calls observe the new size.
+      apiRegistry.systemInfo.windowWidth = width
+      apiRegistry.systemInfo.windowHeight = height
       await service.control(RUNTIME_CONTROL.domain, RUNTIME_CONTROL.resize, {
         windowWidth: width,
         windowHeight: height,

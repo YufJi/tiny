@@ -6,7 +6,6 @@ import {
 } from '@tiny/manifest'
 import { ComponentTree } from './component-tree'
 import { cloneJsonSafe } from '../data'
-import type { StorageSnapshot, SystemInfoSnapshot } from '../types'
 import { RUNTIME_CONTROL } from '../protocol-controls'
 import { MiniProgramPageRegistry } from './page-registry'
 import type { MiniProgramPageInstance } from './page-instance'
@@ -64,12 +63,6 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     componentConfigurations,
   )
 
-  let systemInfoSnapshot: SystemInfoSnapshot = {
-    pixelRatio: 1,
-    windowWidth: 0,
-    windowHeight: 0,
-  }
-  const storageSnapshot: StorageSnapshot = {}
   const themeListeners = new Set<(value: unknown) => void>()
   const supportedApiNames = new Set<string>()
 
@@ -133,12 +126,8 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     connection: null as unknown as BridgeConnection,
     apiName: compatibility.api.global,
     apiNamespaces: [compatibility.api.global, ...compatibility.api.aliases],
-    getSystemInfoSnapshot: () => systemInfoSnapshot,
-    getStorageSnapshot: () => storageSnapshot,
-    setStorageSnapshot: (key, value) => {
-      storageSnapshot[key] = value
-    },
     apiNames: supportedApiNames,
+    syncHost: options.syncHost,
     getCurrentPagePath: () => pages.activePage?.path,
     getActivePage: () => pages.activePage,
     canvas: options.canvas,
@@ -182,18 +171,12 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       const payload = message.payload as {
         manifest?: ServiceThreadOptions['manifest']
         initialPath?: string
-        systemInfo?: SystemInfoSnapshot
-        storage?: StorageSnapshot
         maxPageStack?: number
       }
       pages.setInitialPath(payload.initialPath ?? pages.currentPath)
       if (payload.maxPageStack !== undefined) {
         pages.setMaxPageStack(Number(payload.maxPageStack))
       }
-      // Apply host state before artifacts run: top-level component/app code
-      // reads `wx.getSystemInfoSync().SDKVersion` and `getStorageSync`.
-      if (payload.systemInfo) systemInfoSnapshot = cloneJsonSafe(payload.systemInfo)
-      if (payload.storage) Object.assign(storageSnapshot, cloneJsonSafe(payload.storage))
       await ensureArtifacts()
       const componentSchemas = await render.start()
       pages.start()
@@ -306,16 +289,14 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   ))
 
   connection.onControl(RUNTIME_CONTROL.domain, RUNTIME_CONTROL.resize, async (message) => {
+    // The host owns the size; the runtime only forwards the report to the page.
     const payload = message.payload as { windowWidth?: number; windowHeight?: number }
-    const windowWidth = Number(payload.windowWidth ?? systemInfoSnapshot.windowWidth)
-    const windowHeight = Number(payload.windowHeight ?? systemInfoSnapshot.windowHeight)
-    systemInfoSnapshot = {
-      ...systemInfoSnapshot,
-      windowWidth: Number.isFinite(windowWidth) ? windowWidth : systemInfoSnapshot.windowWidth,
-      windowHeight: Number.isFinite(windowHeight) ? windowHeight : systemInfoSnapshot.windowHeight,
+    const windowWidth = Number(payload.windowWidth)
+    const windowHeight = Number(payload.windowHeight)
+    if (Number.isFinite(windowWidth) && Number.isFinite(windowHeight)) {
+      pages.resize(windowWidth, windowHeight)
     }
-    pages.resize(systemInfoSnapshot.windowWidth, systemInfoSnapshot.windowHeight)
-    return { status: 'resized', ...systemInfoSnapshot }
+    return { status: 'resized', windowWidth, windowHeight }
   })
 
   connection.onControl(RUNTIME_CONTROL.domain, 'themeChange', async (message) => {

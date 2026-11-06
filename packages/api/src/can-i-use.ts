@@ -31,6 +31,19 @@ export type CanIUseCapabilities = {
 /** Valid `${method}` segments in an API schema (WeChat's grammar). */
 const API_METHODS = new Set(['return', 'success', 'object', 'callback'])
 
+/**
+ * APIs that only work through the host's synchronous channel. A host without
+ * the channel cannot serve them at all, so they are unavailable in `canIUse`.
+ */
+const SYNC_APIS = new Set([
+  'getSystemInfoSync',
+  'getStorageSync',
+  'setStorageSync',
+  'removeStorageSync',
+  'clearStorageSync',
+  'getStorageInfoSync',
+])
+
 export function createCanIUse(
   context: ServiceApiContext,
   capabilities: CanIUseCapabilities,
@@ -69,9 +82,10 @@ export function createCanIUse(
     }
 
     if (context.apiNames.has(head)) {
+      if (SYNC_APIS.has(head) && !context.syncHost) return false
       if (rest.length > 0 && !API_METHODS.has(rest[0]!)) return false
       if (isSystemSnapshotApi(head)) {
-        const resolved = snapshotFieldSupported(context.getSystemInfoSnapshot(), head, rest)
+        const resolved = snapshotFieldSupported(systemInfoSnapshot(context), head, rest)
         if (resolved !== undefined) return resolved
       }
       return matchesNode(capabilities.api[head] ?? true, rest)
@@ -82,12 +96,24 @@ export function createCanIUse(
 }
 
 /**
- * The system-info APIs return host-owned snapshots, so their `return`/`success`
- * fields are answered from the live data instead of a hardcoded list: a field
- * the host does not report is not available.
+ * The system-info APIs return host-owned facts, so their `return`/`success`
+ * fields are answered from the live data (through the host's synchronous
+ * channel) instead of a hardcoded list: a field the host does not report is not
+ * available. Without a synchronous channel the check answers false.
  */
 function isSystemSnapshotApi(apiName: string): boolean {
   return apiName === 'getSystemInfoSync' || apiName === 'getSystemInfo'
+}
+
+function systemInfoSnapshot(context: ServiceApiContext): Record<string, unknown> | undefined {
+  try {
+    const snapshot = context.syncHost?.call('api', 'system.info', {})
+    return snapshot && typeof snapshot === 'object'
+      ? snapshot as Record<string, unknown>
+      : undefined
+  } catch {
+    return undefined
+  }
 }
 
 /**
@@ -95,7 +121,7 @@ function isSystemSnapshotApi(apiName: string): boolean {
  * Returns `undefined` when the schema is not a snapshot-field probe.
  */
 function snapshotFieldSupported(
-  snapshot: Record<string, unknown>,
+  snapshot: Record<string, unknown> | undefined,
   apiName: string,
   rest: string[],
 ): boolean | undefined {
@@ -105,6 +131,7 @@ function snapshotFieldSupported(
   if (rest[0] !== expectedMethod) return undefined
   const path = rest.slice(1)
   if (path.length === 0) return true
+  if (!snapshot) return false
   let value: unknown = snapshot
   for (const segment of path) {
     if (!value || typeof value !== 'object' || !(segment in value)) return false

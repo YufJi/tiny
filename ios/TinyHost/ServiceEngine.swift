@@ -20,7 +20,11 @@ final class ServiceEngine {
   var onError: ((String) -> Void)?
   var onCanvas: ((String) -> Void)?
 
-  func start(appId: String, hostInfo: [String: Any]) throws {
+  func start(
+    appId: String,
+    hostInfo: [String: Any],
+    syncHostCall: ((String, String) -> String)? = nil
+  ) throws {
     stop()
     HostDebug.log("service start \(appId)")
 
@@ -49,7 +53,7 @@ final class ServiceEngine {
       self?.onError?("JavaScript exception: \(message)")
     }
 
-    installBridge(in: context)
+    installBridge(in: context, syncHostCall: syncHostCall)
     injectHostInfo(hostInfo, into: context)
     context.setObject(appData, forKeyedSubscript: "__TINY_IOS_APP__" as NSString)
 
@@ -81,7 +85,10 @@ final class ServiceEngine {
     context = nil
   }
 
-  private func installBridge(in context: JSContext) {
+  private func installBridge(
+    in context: JSContext,
+    syncHostCall: ((String, String) -> String)?
+  ) {
     let send: @convention(block) (String) -> Void = { [weak self] frame in
       self?.onFrame?(frame)
     }
@@ -119,6 +126,16 @@ final class ServiceEngine {
       CanvasTextMetrics.json(font: font, text: text)
     }
     context.setObject(canvasMeasure, forKeyedSubscript: "__tinyCanvasMeasureText" as NSString)
+
+    // WeChat's `*Sync` APIs need a real synchronous host call. JSCore blocks are
+    // synchronous, so the native host serves system facts and storage inline
+    // instead of the runtime caching a snapshot.
+    if let syncHostCall {
+      let sync: @convention(block) (String, String) -> String = { method, payload in
+        syncHostCall(method, payload)
+      }
+      context.setObject(sync, forKeyedSubscript: "__tinySyncHostCall" as NSString)
+    }
   }
 
   private func injectHostInfo(_ info: [String: Any], into context: JSContext) {

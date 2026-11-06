@@ -101,16 +101,9 @@ const API_PARAMS: Readonly<Record<string, CanIUseCapabilityNode>> = {
   removeStorage: { key: true },
 }
 
-/** Return shapes this package composes or forwards unchanged. */
+/** Return shapes this package composes itself (independent of the host). */
 const API_RETURNS: Readonly<Record<string, CanIUseCapabilityNode>> = {
-  getStorageInfoSync: { keys: true, currentSize: true, limitSize: true },
   getLaunchOptionsSync: { path: true, query: true, scene: true },
-}
-
-/** `success` result shapes this package composes from the engine snapshot. */
-const API_SUCCESS: Readonly<Record<string, CanIUseCapabilityNode>> = {
-  getStorage: { data: true },
-  getStorageInfo: { keys: true, currentSize: true, limitSize: true },
 }
 
 /** Objects this runtime returns from its APIs (`createXxx` factories). */
@@ -171,7 +164,6 @@ function buildApiCapabilities(): Readonly<Record<string, CanIUseCapabilityNode>>
   for (const name of CALLBACK_APIS) merge(name, { success: true })
   for (const [name, node] of Object.entries(API_PARAMS)) merge(name, { object: node })
   for (const [name, node] of Object.entries(API_RETURNS)) merge(name, { return: node })
-  for (const [name, node] of Object.entries(API_SUCCESS)) merge(name, { success: node })
   return facts
 }
 

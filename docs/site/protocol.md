@@ -289,7 +289,7 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | runtime | `bootstrap` | control | host → service | 创建逻辑树和首屏，返回 pageId/initialData/componentSchemas |
 | runtime | `bootstrap` | control | host → render | 创建 TreeRenderer 并等待 tree.flow |
 | runtime | `inspectTree` | control | host/devtool → render | 返回渲染树 InspectNode |
-| runtime | `resize` | control | host → service | 更新窗口快照并触发页面 resize |
+| runtime | `resize` | control | host → service | 转发窗口尺寸并触发页面 resize（内核不保存尺寸） |
 | runtime | `themeChange` | control | host → service | 转发宿主深浅色主题，触发 `wx.onThemeChange` |
 | page | `ready` | control | host → service | 首屏同步后触发 onReady |
 | page | `navigateTo` | control | host → service | 创建新页逻辑树，返回 pageId/path/initialData |
@@ -317,8 +317,10 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | query | `select` | control | service → host → render | 在渲染树中查 selector，返回 rect/dataset/scroll |
 | query | `intersection` | control/event | service ↔ render | observe/disconnect 与 IntersectionObserver entry |
 | diagnostic | `diagnostic.log/warn/error/state` | event | service/render → host | 统一转成 RuntimeDiagnostic / UIState |
-| api | `system.info` | call | service → host | 获取宿主系统信息快照 |
+| api | `system.info` | call | service → host | 获取宿主系统信息（平台 handler；同步变体走同步通道） |
 | api | `storage.*` | call | service → host | 读写宿主 storage |
+
+`*Sync` API（`getSystemInfoSync`、`getStorageSync` 等）不走这条异步链路：宿主通过同步通道直接返回（见 [ADR-0011](../adr/0011-host-authoritative-state.md)），内核不保存 system/storage 快照。
 | api | `network.*` / `battery.get` | call | service → host | 网络请求、网络类型和电量 |
 | api | `toast.show` / `ui.*` | call | service → host | 宿主 overlay UI |
 | api | `navigate.*` / `page.*` | call | service → host | 宿主协调 service 和 render 完成导航、下拉刷新 |

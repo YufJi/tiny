@@ -6,6 +6,8 @@ function createContext() {
   const storage: Record<string, unknown> = {}
   const calls: Array<{ domain: string; method: string; params: Record<string, unknown> }> = []
   const handlers: Record<string, (params: Record<string, unknown>) => unknown> = {
+    'system.info': () => ({ pixelRatio: 1, windowWidth: 0, windowHeight: 0 }),
+    'storage.get': (params) => ({ value: storage[String(params.key)] }),
     'storage.set': (params) => {
       storage[String(params.key)] = params.value
       return { errMsg: 'setStorageSync:ok' }
@@ -39,13 +41,19 @@ function createContext() {
     'showModal',
     'showToast',
   ])
+  const syncHost = {
+    call: (domain: string, method: string, params: Record<string, unknown> = {}) => {
+      if (domain !== 'api') throw new Error(`unsupported sync host domain: ${domain}`)
+      const handler = handlers[method]
+      if (!handler) throw new Error(`unsupported sync host API: ${method}`)
+      return handler(params)
+    },
+  }
   const context = {
     connection,
     apiName: 'wx',
     apiNamespaces: ['wx'],
-    getSystemInfoSnapshot: () => ({ pixelRatio: 1, windowWidth: 0, windowHeight: 0 }),
-    getStorageSnapshot: () => storage,
-    setStorageSnapshot: (key: string, value: unknown) => { storage[key] = value },
+    syncHost,
     apiNames,
     getCurrentPagePath: () => 'pages/index/index',
     pageId: 'page-1',
