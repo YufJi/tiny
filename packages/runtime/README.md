@@ -130,10 +130,10 @@ import { createGlassRenderEntry } from '@tiny/host-web'
 
 const entry = createGlassRenderEntry({ container: document.getElementById('app') })
 entry.prepare()
-const connection = new BridgeConnection({
+globalThis.__TINY_HOST_BRIDGE__ = hostBridge
+const connection = connectHostBridge({
   localRole: 'render',
   peerRole: 'host',
-  transport,
   capabilities: { role: 'render', mode: 'tree' },
 })
 bootTreeThread({ connection, renderer: entry.createRenderer() })
@@ -154,7 +154,7 @@ table, so the set of `wx.*` names is the host's decision:
 
 ```ts
 import { createApiHost } from '@tiny/api'
-import { BridgeConnection } from '@tiny/bridge'
+import { connectHostBridge } from '@tiny/bridge'
 
 // Host glue installs the communication handle before connecting.
 globalThis.__TINY_HOST_BRIDGE__ = hostBridge
@@ -165,7 +165,7 @@ const apiHost = createApiHost({
   apiNamespaces: ['wx'],
   canvas,
   resolveAssetUrl,
-  themeListeners,
+  events,
   getActivePage: () => runtime?.activePage,
   get pageId() { return runtime?.activePage?.pageId },
   get tabBar() { return runtime?.tabBar },
@@ -177,7 +177,7 @@ runtime = bootServiceThread({
   apiHost,
   manifest,
   initialPath,
-  themeListeners,
+  events,
   onPageRelease: (pageId) => canvas.releaseCanvasNode?.({ pageId }),
   loadArtifacts,
 })
@@ -205,15 +205,17 @@ a host resolver:
 
 ```ts
 import { bootTreeThread } from '@tiny/runtime'
+import { connectHostBridge } from '@tiny/bridge'
 import { createGlassRenderTree } from '@tiny/host-web'
 
+globalThis.__TINY_HOST_BRIDGE__ = hostBridge
+const connection = connectHostBridge({
+  localRole: 'render',
+  peerRole: 'host',
+  capabilities: { role: 'render', mode: 'tree' },
+})
 bootTreeThread({
-  connection: new BridgeConnection({
-    localRole: 'render',
-    peerRole: 'host',
-    transport,
-    capabilities: { role: 'render', mode: 'tree' },
-  }),
+  connection,
   renderer: createGlassRenderTree({
     container: document.getElementById('app')!,
     resolveAssetUrl: (assetPath, sourcePath) =>

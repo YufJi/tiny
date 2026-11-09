@@ -349,7 +349,6 @@ export class ServicePageStack {
     if (!this.visible) return { status: 'hidden', pageId: page.pageId }
     this.visible = false
     this.saveExitState(page)
-    this.options.registry.hideApp()
     this.triggerPageLifecycle(page, 'onHide')
     page.triggerPageLifetime('hide')
     this.options.render.triggerPageLifetime(page.pageId, 'hide')
@@ -361,7 +360,6 @@ export class ServicePageStack {
     const page = requireActivePage(this.pageInstances, pageId, this.active)
     if (this.visible) return { status: 'shown', pageId: page.pageId }
     this.visible = true
-    this.options.registry.showApp()
     this.triggerPageLifecycle(page, 'onShow')
     page.triggerPageLifetime('show')
     this.options.render.triggerPageLifetime(page.pageId, 'show')

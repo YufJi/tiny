@@ -39,5 +39,10 @@ pub enum HostCommand {
         width: u32,
         height: u32,
     },
+    /// Send a global `wx.onXXX` event to the service thread.
+    EmitEvent {
+        name: String,
+        payload: Option<serde_json::Value>,
+    },
     Close,
 }

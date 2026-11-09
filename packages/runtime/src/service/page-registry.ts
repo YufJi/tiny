@@ -52,11 +52,19 @@ export class MiniProgramPageRegistry {
   }
 
   hideApp(): void {
-    this.app?.onHide?.()
+    try {
+      this.app?.onHide?.()
+    } catch {
+      // Host lifecycle notifications must not break the service thread.
+    }
   }
 
   showApp(): void {
-    this.app?.onShow?.()
+    try {
+      this.app?.onShow?.()
+    } catch {
+      // Host lifecycle notifications must not break the service thread.
+    }
   }
 
   reportError(message: string): void {

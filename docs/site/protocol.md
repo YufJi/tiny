@@ -297,7 +297,7 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | page | `navigateBack` | control | host → service | 移除页面，恢复栈顶 |
 | page | `redirectTo` / `reLaunch` | control | host → service | 替换或重置页面栈 |
 | page | `switchTab` | control | host → service | 切换 tabBar 页面并复用缓存 |
-| page | `show` / `hide` | control | host → service | 应用和页面前后台生命周期 |
+| page | `show` / `hide` | control | host → service | 页面显隐；应用前后台由 `event.global` 的 `appShow`/`appHide` 控制 |
 | page | `unload` | control | host/测试 → service | 关闭页面并触发 onUnload；生产宿主当前不主动发送 |
 | page | `scroll` / `reachBottom` / `pullDownRefresh` | event | render → service | 页面滚动、触底和下拉手势 |
 | page | `share` / `saveExitState` | control | host/测试 → service | 分享与退出状态控制入口；生产宿主当前不主动发送 |

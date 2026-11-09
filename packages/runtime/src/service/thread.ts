@@ -71,6 +71,10 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   connection.onEvent('event', 'global', (message) => {
     const payload = (message.payload ?? {}) as { name?: unknown; payload?: unknown }
     if (typeof payload.name !== 'string') return
+    // App foreground/background is host-owned: never infer it from page
+    // navigation. The host sends appShow/appHide as global events.
+    if (payload.name === 'appShow') registry.showApp()
+    else if (payload.name === 'appHide') registry.hideApp()
     events?.emit(payload.name, payload.payload)
   })
 

@@ -176,8 +176,9 @@ records boot state, visible text, page errors and diagnostics per page into
   to both `ApiContext.events` and `ServiceThreadOptions.events`; host platform
   events arrive as `event.global` `{ name, payload }` frames and runtime events
   (theme, resize, errors) go through the same sink. App foreground/background
-  events are host-owned; the page stack still carries the legacy app hooks until
-  the host lifecycle source lands.
+  events are host-owned: the browser reports `visibilitychange` and iOS reports
+  `scenePhase`, both as `appShow`/`appHide`; the page stack no longer calls the
+  app hooks.
 - Host facts (menu-button geometry, performance, device capabilities) stay in
   the host's API-table composition and its synchronous handler map
   (`WasmHostOptions.syncApiHandlers`); host adapters only forward them. Canvas,

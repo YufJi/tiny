@@ -86,6 +86,8 @@ describe('page and app lifecycle hooks', () => {
     const resizeCalls: Array<Record<string, unknown>> = []
     const errorCalls: Array<Record<string, unknown>> = []
     const rejectionCalls: Array<Record<string, unknown>> = []
+    const appShowCalls: unknown[] = []
+    const appHideCalls: unknown[] = []
     ;(globalObject.App as (options: Record<string, unknown>) => unknown)({
       onShow() {
         appEvents.push('show')
@@ -115,6 +117,8 @@ describe('page and app lifecycle hooks', () => {
         wx.onWindowResize((info: Record<string, unknown>) => resizeCalls.push(info))
         wx.onError((info: Record<string, unknown>) => errorCalls.push(info))
         wx.onUnhandledRejection((info: Record<string, unknown>) => rejectionCalls.push(info))
+        wx.onAppShow((info: unknown) => appShowCalls.push(info))
+        wx.onAppHide((info: unknown) => appHideCalls.push(info))
       },
       onPullDownRefresh() {
         appEvents.push('pulled')
@@ -174,6 +178,14 @@ describe('page and app lifecycle hooks', () => {
 
     await host.service.control('page', 'hide', {}, { pageId: page.pageId })
     host.setAppVisible(false)
+    host.service.sendEvent('event', 'global', { name: 'appHide' })
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(appEvents).toContain('hide')
+    expect(appHideCalls).toHaveLength(1)
+    host.service.sendEvent('event', 'global', { name: 'appShow', payload: { scene: 1001 } })
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(appEvents).toContain('show')
+    expect(appShowCalls).toEqual([{ scene: 1001 }])
     expect(appEvents).toContain('save-exit-state')
     await expect(host.saveExitState(page.pageId)).resolves.toMatchObject({
       status: 'saved',
