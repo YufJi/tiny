@@ -3,7 +3,7 @@ import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
-import { TREE_PROTOCOL } from '../src/tree/protocol'
+import { PAGE_CONTROL, RUNTIME_CONTROL, TREE_PROTOCOL } from '../src/tree/protocol'
 import { createTestHost } from './support/host'
 import { createHarnessRenderConnector } from './helpers/render-connector'
 import { bootServiceThread, lastLogicTree } from './helpers/split-service'
@@ -176,7 +176,7 @@ describe('page and app lifecycle hooks', () => {
       { type: 'favorites', webViewUrl: undefined },
     ])
 
-    await host.service.control('page', 'hide', {}, { pageId: page.pageId })
+    await host.service.control(PAGE_CONTROL.domain, PAGE_CONTROL.hide, {}, { pageId: page.pageId })
     host.setAppVisible(false)
     host.service.sendEvent('event', 'global', { name: 'appHide' })
     await new Promise((resolve) => setTimeout(resolve, 10))
@@ -206,7 +206,7 @@ describe('page and app lifecycle hooks', () => {
     await new Promise((resolve) => setTimeout(resolve, 10))
     expect(networkCalls).toEqual([{ isConnected: false, networkType: 'none' }])
 
-    await host.service.control('runtime', 'resize', { windowWidth: 400, windowHeight: 300 }, { pageId: page.pageId })
+    await host.service.control(RUNTIME_CONTROL.domain, RUNTIME_CONTROL.resize, { windowWidth: 400, windowHeight: 300 }, { pageId: page.pageId })
     expect(resizeCalls).toEqual([{ size: { windowWidth: 400, windowHeight: 300 } }])
 
     await expect(page.invokeMethod('missing')).rejects.toMatchObject({ code: 'HANDLER_ERROR' })

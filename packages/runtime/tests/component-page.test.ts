@@ -3,6 +3,7 @@ import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
+import { PAGE_CONTROL } from '../src/tree/protocol'
 import { createTestHost } from './support/host'
 import { createHarnessRenderConnector, harnessRenderView } from './helpers/render-connector'
 import { bootServiceThread } from './helpers/split-service'
@@ -252,12 +253,12 @@ describe('Component-as-page', () => {
     expect(page.data.observed).toBe('5:xyz')
     expect(page.data.behaviorObserved).toBe('b:5')
 
-    await host.service.control('page', 'hide', { pageId: page.pageId })
-    await host.service.control('page', 'show', { pageId: page.pageId })
+    await host.service.control(PAGE_CONTROL.domain, PAGE_CONTROL.hide, { pageId: page.pageId })
+    await host.service.control(PAGE_CONTROL.domain, PAGE_CONTROL.show, { pageId: page.pageId })
     expect(lifecycle).toEqual(expect.arrayContaining(['onHide', 'onShow']))
     expect(pageLifetimes).toEqual(expect.arrayContaining(['show', 'hide', 'behavior-hide']))
 
-    await host.service.control('page', 'navigateBack', { delta: 1 })
+    await host.service.control(PAGE_CONTROL.domain, PAGE_CONTROL.navigateBack, { delta: 1 })
     expect(lifecycle).toEqual(expect.arrayContaining(['onUnload', 'behavior-detached']))
     expect(page.getRelationNodes('/components/child/child')).toHaveLength(0)
 

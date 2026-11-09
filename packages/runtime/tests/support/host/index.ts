@@ -1,6 +1,6 @@
 import { BridgeConnection } from '@tiny/bridge'
 import { DIAGNOSTIC_CODES } from '@tiny/manifest'
-import { CANVAS_CONTROL, QUERY_CONTROL, RUNTIME_CONTROL, TREE_PROTOCOL } from '../../../src/tree/protocol'
+import { CANVAS_CONTROL, PAGE_CONTROL, QUERY_CONTROL, RUNTIME_CONTROL, TREE_PROTOCOL } from '../../../src/tree/protocol'
 import type { RuntimeHostOptions } from './types'
 import { createHostApiRegistry, createHostSyncChannel, registerHostApiHandlers } from './api'
 import type { HostApiRegistry, SyncHostCall } from './api'
@@ -280,10 +280,10 @@ export function createTestHost(options: RuntimeHostOptions): TestRuntimeHost {
           path,
           serviceResult.initialData as Record<string, unknown> | undefined,
         )
-        await service.control('page', 'ready', { pageId })
+        await service.control(PAGE_CONTROL.domain, PAGE_CONTROL.ready, { pageId })
       } catch (error) {
         // Keep the service stack consistent when the new page cannot render.
-        await service.control('page', 'navigateBack', { delta: 1 }).catch(() => {})
+        await service.control(PAGE_CONTROL.domain, PAGE_CONTROL.navigateBack, { delta: 1 }).catch(() => {})
         throw error
       }
       return serviceResult
@@ -312,7 +312,7 @@ export function createTestHost(options: RuntimeHostOptions): TestRuntimeHost {
           path,
           serviceResult.initialData as Record<string, unknown> | undefined,
         )
-        await service.control('page', 'ready', { pageId })
+        await service.control(PAGE_CONTROL.domain, PAGE_CONTROL.ready, { pageId })
         return serviceResult
       }
       // A cached tab page keeps its render thread; only visibility moves.
@@ -347,7 +347,7 @@ export function createTestHost(options: RuntimeHostOptions): TestRuntimeHost {
         path,
         serviceResult.initialData as Record<string, unknown> | undefined,
       )
-      await service.control('page', 'ready', { pageId })
+      await service.control(PAGE_CONTROL.domain, PAGE_CONTROL.ready, { pageId })
       return serviceResult
     }
   }
@@ -366,13 +366,13 @@ export function createTestHost(options: RuntimeHostOptions): TestRuntimeHost {
         path,
         serviceResult.initialData as Record<string, unknown> | undefined,
       )
-      await service.control('page', 'ready', { pageId })
+      await service.control(PAGE_CONTROL.domain, PAGE_CONTROL.ready, { pageId })
       return serviceResult
     }
   }
   if (!options.apiHandlers?.['page.pullDownRefresh']) {
     apiRegistry.handlers['page.pullDownRefresh'] = async (_params, context) => (
-      service.control('page', 'pullDownRefresh', {}, { pageId: context.pageId })
+      service.control(PAGE_CONTROL.domain, PAGE_CONTROL.pullDownRefresh, {}, { pageId: context.pageId })
     )
   }
   if (!options.apiHandlers?.['page.stopPullDownRefresh']) {
@@ -421,16 +421,16 @@ export function createTestHost(options: RuntimeHostOptions): TestRuntimeHost {
       return diagnosticStore.diagnostics
     },
     pullDownRefresh(pageId: string) {
-      return service.control('page', 'pullDownRefresh', {}, { pageId })
+      return service.control(PAGE_CONTROL.domain, PAGE_CONTROL.pullDownRefresh, {}, { pageId })
     },
     share(pageId: string, type: 'appMessage' | 'timeline' | 'favorites' = 'appMessage') {
-      return service.control('page', 'share', { type }, { pageId })
+      return service.control(PAGE_CONTROL.domain, PAGE_CONTROL.share, { type }, { pageId })
     },
     saveExitState(pageId: string) {
-      return service.control('page', 'saveExitState', {}, { pageId })
+      return service.control(PAGE_CONTROL.domain, PAGE_CONTROL.saveExitState, {}, { pageId })
     },
     setTheme(theme: 'light' | 'dark', pageId: string) {
-      return service.control('runtime', 'themeChange', { theme }, { pageId })
+      return service.control(RUNTIME_CONTROL.domain, RUNTIME_CONTROL.themeChange, { theme }, { pageId })
     },
     async bootstrap() {
       const serviceResult = await service.control<Record<string, unknown>>(RUNTIME_CONTROL.domain, RUNTIME_CONTROL.bootstrap, {
@@ -446,7 +446,7 @@ export function createTestHost(options: RuntimeHostOptions): TestRuntimeHost {
         (serviceResult.currentPath as string | undefined) ?? options.initialPath,
         initialData,
       )
-      await service.control('page', 'ready', { pageId })
+      await service.control(PAGE_CONTROL.domain, PAGE_CONTROL.ready, { pageId })
       return { service: serviceResult, render: renderResult }
     },
     async inspectTree(pageId: string) {

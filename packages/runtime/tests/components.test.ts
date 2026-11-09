@@ -3,6 +3,7 @@ import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
+import { PAGE_CONTROL } from '../src/tree/protocol'
 import { createTestHost } from './support/host'
 import { createHarnessRenderConnector, harnessRenderView } from './helpers/render-connector'
 import { bootServiceThread } from './helpers/split-service'
@@ -169,15 +170,15 @@ describe('mini-program custom components', () => {
     expect(glassEasel.dumpElementToString(renderBadge!, true)).toContain('slot content')
     expect(componentEvents).toEqual(expect.arrayContaining(['created', 'attached', 'ready']))
 
-    await host.service.control('page', 'hide', { pageId: result.service.pageId })
-    await host.service.control('page', 'show', { pageId: result.service.pageId })
+    await host.service.control(PAGE_CONTROL.domain, PAGE_CONTROL.hide, { pageId: result.service.pageId })
+    await host.service.control(PAGE_CONTROL.domain, PAGE_CONTROL.show, { pageId: result.service.pageId })
     expect((render.adapter.getComponentSnapshot() as Array<{ componentId: string }>).map((item) => item.componentId)).toEqual(['page-1:component-1'])
 
     service.activePage?.setData({ showBadge: false })
     await new Promise((resolve) => setTimeout(resolve, 10))
     expect(render.adapter.getComponentSnapshot()).toEqual([])
 
-    await host.service.control('page', 'unload', { pageId: result.service.pageId })
+    await host.service.control(PAGE_CONTROL.domain, PAGE_CONTROL.unload, { pageId: result.service.pageId })
     expect(service.componentTree.pageRoot(result.service.pageId)).toBeUndefined()
 
     await host.close()

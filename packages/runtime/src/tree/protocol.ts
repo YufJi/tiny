@@ -75,7 +75,7 @@ export type WxsRenderEffect =
 
 // Control domains are shared by the service runtime and the render thread;
 // re-exported here so the public `tree` barrel keeps one entry.
-export { CANVAS_CONTROL, QUERY_CONTROL, RUNTIME_CONTROL } from '../protocol-controls'
+export { CANVAS_CONTROL, PAGE_CONTROL, QUERY_CONTROL, RUNTIME_CONTROL } from '../protocol-controls'
 
 export type RenderNodeId = string
 

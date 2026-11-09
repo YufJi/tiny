@@ -5,7 +5,7 @@ import {
 } from '@tiny/manifest'
 import { ComponentTree } from './component-tree'
 import { cloneJsonSafe } from '../data'
-import { RUNTIME_CONTROL } from '../protocol-controls'
+import { PAGE_CONTROL, RUNTIME_CONTROL } from '../protocol-controls'
 import { MiniProgramPageRegistry } from './page-registry'
 import type { MiniProgramPageInstance } from './page-instance'
 import { installMiniProgramGlobals } from './api-globals'
@@ -207,7 +207,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }
   })
 
-  connection.onControl('page', 'ready', async (message) => {
+  connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.ready, async (message) => {
     try {
       return pages.ready((message.payload as { pageId?: string }).pageId)
     } catch (error) {
@@ -226,45 +226,45 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     }
   })
 
-  connection.onControl('page', 'navigateTo', async (message) => {
+  connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.navigateTo, async (message) => {
     const payload = message.payload as { url?: string }
     if (!payload.url) throw new Error('navigateTo requires a url')
     return pages.navigateTo(payload.url)
   })
 
-  connection.onControl('page', 'redirectTo', async (message) => {
+  connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.redirectTo, async (message) => {
     const payload = message.payload as { url?: string }
     if (!payload.url) throw new Error('redirectTo requires a url')
     return pages.redirectTo(payload.url)
   })
 
-  connection.onControl('page', 'reLaunch', async (message) => {
+  connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.reLaunch, async (message) => {
     const payload = message.payload as { url?: string }
     if (!payload.url) throw new Error('reLaunch requires a url')
     return pages.reLaunch(payload.url)
   })
 
-  connection.onControl('page', 'switchTab', async (message) => (
+  connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.switchTab, async (message) => (
     pages.switchTab(message.payload as { url?: string; index?: number })
   ))
 
-  connection.onControl('page', 'navigateBack', async (message) => (
+  connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.navigateBack, async (message) => (
     pages.navigateBack((message.payload as { delta?: number }).delta)
   ))
 
-  connection.onControl('page', 'hide', async (message) => (
+  connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.hide, async (message) => (
     pages.hide((message.payload as { pageId?: string }).pageId)
   ))
 
-  connection.onControl('page', 'show', async (message) => (
+  connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.show, async (message) => (
     pages.show((message.payload as { pageId?: string }).pageId)
   ))
 
-  connection.onControl('page', 'pullDownRefresh', async (message) => (
+  connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.pullDownRefresh, async (message) => (
     pages.pullDownRefresh((message.payload as { pageId?: string }).pageId)
   ))
 
-  connection.onControl('page', 'share', async (message) => pages.share(
+  connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.share, async (message) => pages.share(
     message.payload as {
       pageId?: string
       type?: 'appMessage' | 'timeline' | 'favorites'
@@ -274,11 +274,11 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     },
   ))
 
-  connection.onControl('page', 'saveExitState', async (message) => (
+  connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.saveExitState, async (message) => (
     pages.saveExitStateOf((message.payload as { pageId?: string }).pageId)
   ))
 
-  connection.onControl('page', 'unload', async (message) => (
+  connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.unload, async (message) => (
     pages.unload((message.payload as { pageId?: string }).pageId)
   ))
 
@@ -296,7 +296,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     return { status: 'resized', windowWidth, windowHeight }
   })
 
-  connection.onControl(RUNTIME_CONTROL.domain, 'themeChange', async (message) => {
+  connection.onControl(RUNTIME_CONTROL.domain, RUNTIME_CONTROL.themeChange, async (message) => {
     const theme = (message.payload as { theme?: string }).theme === 'dark' ? 'dark' : 'light'
     registry.reportThemeChange(theme)
     return { status: 'theme-changed', theme }
