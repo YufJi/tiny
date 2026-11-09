@@ -13,6 +13,7 @@ export const TREE_PROTOCOL = Object.freeze({
   flow: 'flow',
   snapshot: 'snapshot',
   patch: 'patch',
+  ack: 'ack',
   event: 'event',
   ready: 'ready',
   inspectTree: 'inspectTree',
@@ -25,6 +26,19 @@ export const TREE_PROTOCOL = Object.freeze({
   wxsBinding: 'wxsBinding',
   customEvent: 'customEvent',
 } as const)
+
+/**
+ * Render-thread acknowledgement of an applied batch.
+ *
+ * A `flow`/`snapshot`/`patch` message may carry opaque `ack` tokens. The render
+ * thread echoes them once the batch is reflected in its tree, which is what
+ * makes a `setData` completion "after render" instead of "after the service
+ * data update".
+ */
+export type RenderAckMessage = {
+  pageId?: string
+  tokens: string[]
+}
 
 /**
  * A custom component event (`this.triggerEvent`) forwarded to the render

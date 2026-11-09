@@ -1,4 +1,5 @@
 import { BridgeConnection } from '@tiny/bridge'
+import { DIAGNOSTIC_CODES } from '@tiny/manifest'
 import type { WxsModuleTable } from '@tiny/wxs-runtime'
 import type { TemplateRegistry } from '../../types'
 import {
@@ -124,6 +125,55 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
   let currentPageId = options.initialPageId
 
   /**
+   * Echo the batch tokens once the render tree reflected the batch. The service
+   * holds the `setData` completions until this arrives, so an error here must
+   * not swallow the acknowledgement: `finally` in the handlers below keeps the
+   * completion path alive while the diagnostic reports the failure.
+   */
+  const sendAck = (pageId: string | undefined, ack: unknown): void => {
+    if (!Array.isArray(ack)) return
+    const tokens = ack.filter((token): token is string => typeof token === 'string')
+    if (tokens.length === 0) return
+    connection.sendEvent(
+      TREE_PROTOCOL.domain,
+      TREE_PROTOCOL.ack,
+      { ...(pageId ? { pageId } : {}), tokens },
+      pageId ? { pageId } : {},
+    )
+  }
+
+  const reportRenderError = (pageId: string | undefined, error: unknown, method: string): void => {
+    connection.sendDiagnostic('error', {
+      code: DIAGNOSTIC_CODES.RENDER_PATCH_ERROR,
+      message: error instanceof Error ? error.message : String(error),
+      details: {
+        method,
+        ...(error instanceof Error && error.stack ? { stack: error.stack } : {}),
+      },
+    }, pageId)
+  }
+
+  /**
+   * Apply one service batch and acknowledge it exactly once. A renderer error
+   * is reported and still acknowledged, so a `setData` completion can never be
+   * left waiting on a batch that already failed.
+   */
+  const applyBatch = (
+    pageId: string | undefined,
+    method: string,
+    ack: unknown,
+    apply: () => void,
+  ): void => {
+    try {
+      apply()
+    } catch (error) {
+      reportRenderError(pageId, error, method)
+    } finally {
+      sendAck(pageId, ack)
+    }
+  }
+
+  /**
    * Template groups are evaluated by this thread too. When the host cannot
    * provide them synchronously, flows are parked until they are installed so a
    * component is never created without its template.
@@ -213,12 +263,15 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       pagePath?: string
       styles?: string[]
       fallbackAppStyles?: string[]
+      ack?: string[]
     }
     currentPageId = payload.pageId ?? message.pageId ?? currentPageId
-    options.renderer.setPagePath?.(payload.pagePath ?? '')
-    if (payload.root) options.renderer.mount(payload.root)
-    const styles = [...(payload.styles ?? []), ...(payload.fallbackAppStyles ?? [])]
-    if (styles.length > 0) options.renderer.applyStyles?.(styles)
+    applyBatch(currentPageId, TREE_PROTOCOL.snapshot, payload.ack, () => {
+      options.renderer.setPagePath?.(payload.pagePath ?? '')
+      if (payload.root) options.renderer.mount(payload.root)
+      const styles = [...(payload.styles ?? []), ...(payload.fallbackAppStyles ?? [])]
+      if (styles.length > 0) options.renderer.applyStyles?.(styles)
+    })
   })
   const handleFlow = (message: { payload?: unknown; pageId?: string }): void => {
     const payload = (message.payload ?? {}) as {
@@ -233,36 +286,39 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       pageScope?: string
       pageUsing?: Record<string, string>
       behaviorScheme?: string
+      ack?: string[]
     }
     currentPageId = payload.pageId ?? message.pageId ?? currentPageId
-    options.renderer.setPagePath?.(payload.pagePath ?? '')
-    if (payload.pageScope) options.renderer.setPageScope?.(payload.pageScope)
-    if (payload.pageUsing) options.renderer.setPageUsing?.(payload.pageUsing)
-    if (payload.behaviorScheme) options.renderer.setBehaviorScheme?.(payload.behaviorScheme)
-    if (payload.wxsModules) options.renderer.setWxsModules?.(payload.wxsModules)
-    if (payload.pageData) options.renderer.setPageData?.(payload.pageData)
-    if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
-    const definitions: Record<string, ComponentDefinitionPayload> = {}
-    let tree: RenderNode | undefined
-    for (const entry of payload.messages ?? []) {
-      if (entry.type === 'define') {
-        definitions[entry.path] = entry.definition
-        continue
-      }
-      if (entry.type === 'tree') {
-        tree = entry.root
-        continue
-      }
-      if (entry.type === 'ready' && tree) {
-        if (Object.keys(definitions).length > 0) {
-          options.renderer.setComponentDefinitions?.(definitions)
+    applyBatch(currentPageId, TREE_PROTOCOL.flow, payload.ack, () => {
+      options.renderer.setPagePath?.(payload.pagePath ?? '')
+      if (payload.pageScope) options.renderer.setPageScope?.(payload.pageScope)
+      if (payload.pageUsing) options.renderer.setPageUsing?.(payload.pageUsing)
+      if (payload.behaviorScheme) options.renderer.setBehaviorScheme?.(payload.behaviorScheme)
+      if (payload.wxsModules) options.renderer.setWxsModules?.(payload.wxsModules)
+      if (payload.pageData) options.renderer.setPageData?.(payload.pageData)
+      if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
+      const definitions: Record<string, ComponentDefinitionPayload> = {}
+      let tree: RenderNode | undefined
+      for (const entry of payload.messages ?? []) {
+        if (entry.type === 'define') {
+          definitions[entry.path] = entry.definition
+          continue
         }
-        options.renderer.mount(tree)
-        tree = undefined
+        if (entry.type === 'tree') {
+          tree = entry.root
+          continue
+        }
+        if (entry.type === 'ready' && tree) {
+          if (Object.keys(definitions).length > 0) {
+            options.renderer.setComponentDefinitions?.(definitions)
+          }
+          options.renderer.mount(tree)
+          tree = undefined
+        }
       }
-    }
-    const styles = [...(payload.styles ?? []), ...(payload.fallbackAppStyles ?? [])]
-    if (styles.length > 0) options.renderer.applyStyles?.(styles)
+      const styles = [...(payload.styles ?? []), ...(payload.fallbackAppStyles ?? [])]
+      if (styles.length > 0) options.renderer.applyStyles?.(styles)
+    })
   }
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.flow, (message) => {
     if (!templatesReady) {
@@ -291,13 +347,19 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
   })
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.patch, (message) => {
     const payload = (message.payload ?? {}) as {
+      pageId?: string
       patches?: RenderPatch[]
       pageData?: Record<string, unknown>
       componentData?: Record<string, Record<string, unknown>>
+      ack?: string[]
     }
-    if (payload.pageData) options.renderer.setPageData?.(payload.pageData)
-    if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
-    options.renderer.applyPatches(payload.patches ?? [])
+    const pageId = payload.pageId ?? message.pageId ?? currentPageId
+    if (payload.pageId) currentPageId = payload.pageId
+    applyBatch(pageId, TREE_PROTOCOL.patch, payload.ack, () => {
+      if (payload.pageData) options.renderer.setPageData?.(payload.pageData)
+      if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
+      options.renderer.applyPatches(payload.patches ?? [])
+    })
   })
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.animate, (message) => {
     const payload = (message.payload ?? {}) as Partial<RenderAnimationRequest>

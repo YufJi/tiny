@@ -179,6 +179,13 @@ export function createTestHost(options: RuntimeHostOptions): TestRuntimeHost {
         pageId: message.pageId ?? pageId,
       })
     })
+    // The render thread acknowledges applied batches; the service runs the
+    // `setData` completions carried by them.
+    connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.ack, (message) => {
+      service.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.ack, message.payload, {
+        pageId: message.pageId ?? pageId,
+      })
+    })
     connection.onEvent(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, (message) => {
       service.sendEvent(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, message.payload, {
         pageId: message.pageId ?? pageId,

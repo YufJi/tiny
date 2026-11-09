@@ -227,6 +227,7 @@ Bridge 的 `assertJsonSafe` 做严格校验；runtime 的 `toJsonSafe` 会主动
 | `tree.flow` | service → render | 首屏 flow：`define`（组件定义）、`tree`（整棵渲染快照）、`ready`；带页面样式、fallback app 样式、`pageScope`、`pageUsing`、`behaviorScheme`、`wxsModules`、`pageData` 和 `componentData` |
 | `tree.snapshot` | service → render | 旧版完整快照入口仍注册，当前 service 不发送 |
 | `tree.patch` | service → render | `text`、`replace`、`props`、`insert`、`remove`、`reorder`；组件用共享 id、元素用 `owner#index.path` locator 寻址；同一 payload 可带 `pageData` / `componentData` |
+| `tree.ack` | render → service | 批次确认：回显 flow/snapshot/patch 上的 `ack` token；service 用它 settle `setData` completion |
 | `tree.event` | render → service | 组件 id 或元素 locator、name、detail、native 字段、touches 和 target/currentTarget 几何；service 负责找到逻辑节点并分发 |
 | `tree.templateEvent` | render → service | render 求值的组件模板把绑定的方法调用交回 service |
 | `tree.wxsBinding` | service → render | 动态 WXS 事件绑定决策 |
@@ -275,7 +276,7 @@ Bridge 的 `assertJsonSafe` 做严格校验；runtime 的 `toJsonSafe` 会主动
 ```
 
 :::callout{title="patch 按页面合批"}
-service 在一个 microtask 内合并同一页面的模板更新，再发一条 `tree.patch`；渲染树按顺序应用 patch，组件定义只在首屏或新增组件时注册，并用同一份模板求值 shadow tree。首屏 flow 只负责挂载，后续更新统一走 patch。
+service 在一个 microtask 内合并同一页面的模板更新，再发一条 `tree.patch`；渲染树按顺序应用 patch，组件定义只在首屏或新增组件时注册，并用同一份模板求值 shadow tree。首屏 flow 只负责挂载，后续更新统一走 patch。带 `setData` completion 的批次额外携带 `ack` token，渲染树应用后回 `tree.ack`（失败也回，先发 `RENDER_PATCH_ERROR` 诊断），service 收到确认才执行回调。
 :::
 
 ## v1 现在有哪些消息 {#catalog kicker="消息列表"}
@@ -305,6 +306,7 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | tree | `flow` | event | service → render | 首屏 flow：组件定义 + 嵌套快照 + 页面元数据 + 数据快照 |
 | tree | `snapshot` | event | service → render | 旧版完整快照入口，当前不发送 |
 | tree | `patch` | event | service → render | 虚拟节点增量 patch 及页面/组件数据快照 |
+| tree | `ack` | event | render → service | 回显批次 ack token，settle 该批次的 `setData` completion |
 | tree | `animate` / `clearAnimate` | event | service → render | `this.animate` 关键帧与取消 |
 | tree | `event` | event | render → service | 渲染树事件回传逻辑树 |
 | tree | `templateEvent` | event | render → service | render 求值的组件模板回调 service 方法 |
@@ -320,12 +322,12 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | diagnostic | `diagnostic.log/warn/error/state` | event | service/render → host | 统一转成 RuntimeDiagnostic / UIState |
 | api | `system.info` | call | service → host | 获取宿主系统信息（平台 handler；同步变体是 `callSync` 请求帧） |
 | api | `storage.*` | call | service → host | 读写宿主 storage |
-
-`*Sync` API（`getSystemInfoSync`、`getStorageSync` 等）不走这条异步链路：宿主注入的 `__TINY_HOST_BRIDGE__` 实现 `sendSync`，`connection.callSync` 通过 `callSync` 请求 + `reply` 返回（见 [ADR-0016](../adr/0016-pure-js-bridge-host-handle.md)），内核不保存 system/storage 快照。
 | api | `network.*` / `battery.get` | call | service → host | 网络请求、网络类型和电量 |
 | api | `toast.show` / `ui.*` | call | service → host | 宿主 overlay UI |
 | api | `navigate.*` / `page.*` | call | service → host | 宿主协调 service 和 render 完成导航、下拉刷新 |
 | api | `*` | call | service → host | `@tiny/api` 与宿主平台 handler 提供的其余 API |
+
+`*Sync` API（`getSystemInfoSync`、`getStorageSync` 等）不走这条异步链路：宿主注入的 `__TINY_HOST_BRIDGE__` 实现 `sendSync`，`connection.callSync` 通过 `callSync` 请求 + `reply` 返回（见 [ADR-0016](../adr/0016-pure-js-bridge-host-handle.md)），内核不保存 system/storage 快照。
 
 ## 宿主如何转发消息 {#relay kicker="转发"}
 
@@ -335,6 +337,7 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | --- | --- | --- | --- |
 | service | `tree.flow` / `tree.patch` / `tree.animate` / `tree.wxsBinding` | 按 pageId 找渲染树连接，未就绪时先排队 | render 对应 tree 消息 |
 | render | `tree.event` / `tree.templateEvent` / `tree.wxsEffect` | 补上 pageId 后转发 | service 对应 tree 消息 |
+| render | `tree.ack` | 按 pageId 转发给 service | service `tree.ack` |
 | render | `page.scroll` / `page.reachBottom` / `page.pullDownRefresh` | 补上 pageId 后转发 | service `page` 事件 |
 | render | `query.intersection` | 按 pageId 转发 | service `query.intersection` |
 | service | `query.select` / `tree.measure` | 把调用 Promise 转给渲染树 | render 对应 control |

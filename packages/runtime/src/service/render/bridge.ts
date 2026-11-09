@@ -1,5 +1,5 @@
 import type { BridgeConnection } from '@tiny/bridge'
-import { DIAGNOSTIC_CODES } from '@tiny/manifest'
+import { DIAGNOSTIC_CODES, TINY_ENGINE_NAMING } from '@tiny/manifest'
 import type { Manifest } from '@tiny/manifest'
 import type { WxsModuleTable } from '@tiny/wxs-runtime'
 import type { NormalizedComponentDefinition } from '../../component'
@@ -82,6 +82,17 @@ export class ServiceRenderBridge implements ServiceRenderPort {
   private wxsModules?: WxsModuleTable
   private wxsHostOptions?: WxsEventHostOptions
   private updateScheduled = false
+  /**
+   * `setData` completions waiting for the render thread.
+   *
+   * The first queue holds callbacks that have not been assigned to a batch yet;
+   * the second holds the callbacks of batches already sent, keyed by the opaque
+   * token the render thread echoes back on `tree.ack`. Completion order is the
+   * call order within one batch and the ack order across batches.
+   */
+  private readonly pendingCompletions = new Map<string, Array<() => void>>()
+  private readonly ackedBatches = new Map<string, { pageId: string; callbacks: Array<() => void> }>()
+  private completionCounter = 0
 
   constructor(options: ServiceRenderBridgeOptions) {
     this.options = options
@@ -92,6 +103,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       sendSnapshot: (pageId) => this.sendTreeSnapshot(pageId),
       reportError: (message) => this.options.onError(message),
       dispatchWxsEffect: (pageId, effect) => this.dispatchWxsEffect(pageId, effect),
+      acknowledgeRenders: (tokens) => this.acknowledgeRenders(tokens),
     })
   }
 
@@ -140,6 +152,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
           details,
         }, pageId)
       },
+      afterRender: (pageId, callback) => this.completeAfterRender(pageId, callback),
       ...createRenderRpc(this.connection),
     })
     this.logicTree.registerComponentSchemas(this.componentSchemas)
@@ -173,7 +186,34 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     this.mountedPages.delete(pageId)
     this.pendingPages.delete(pageId)
     this.bindings.clear(pageId)
+    // The view is going away, so a completion it was waiting for can never be
+    // "after render" any more. Drop the callbacks instead of running them
+    // against a destroyed page.
+    this.pendingCompletions.delete(pageId)
+    for (const [token, batch] of this.ackedBatches) {
+      if (batch.pageId === pageId) this.ackedBatches.delete(token)
+    }
     this.logicTree?.unmountPage(pageId)
+  }
+
+  /**
+   * Run a `setData` completion once the render thread applied the update that
+   * carries the data. The token rides on the next `tree.patch`/`tree.flow` for
+   * the page; a batch that produces no bridge message (nothing observable
+   * changed) completes right after the service-side flush.
+   */
+  completeAfterRender(pageId: string, callback: () => void): void {
+    if (typeof callback !== 'function') return
+    if (!this.logicTree) {
+      // No render tree exists (standalone kernel harness): keep the callback
+      // asynchronous, like WeChat, instead of falling back to sync delivery.
+      queueMicrotask(() => this.runCompletion(pageId, callback))
+      return
+    }
+    const queue = this.pendingCompletions.get(pageId)
+    if (queue) queue.push(callback)
+    else this.pendingCompletions.set(pageId, [callback])
+    this.scheduleTreeUpdate(pageId)
   }
 
   syncPageData(pageId: string, patch: Record<string, unknown>): void {
@@ -275,6 +315,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     const root = this.logicTree.snapshotRenderTree(pageId)
     if (!root) return
     const page = this.options.getPage(pageId)
+    const ack = this.takeCompletionBatch(pageId)
     this.connection.sendEvent(
       TREE_PROTOCOL.domain, TREE_PROTOCOL.flow,
       {
@@ -292,6 +333,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
         ...(page?.data ? { pageData: cloneJsonSafe(page.data) } : {}),
         componentData: cloneJsonSafe(this.logicTree.snapshotComponentData(pageId)),
         ...this.treeStyles(pageId),
+        ...(ack ? { ack } : {}),
       },
       { pageId },
     )
@@ -317,6 +359,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
           const hasComponentData = Object.keys(componentData).length > 0
           if (patches.length > 0 || hasComponentData) {
             const page = this.options.getPage(id)
+            const ack = this.takeCompletionBatch(id)
             this.connection.sendEvent(
               TREE_PROTOCOL.domain, TREE_PROTOCOL.patch,
               {
@@ -324,9 +367,13 @@ export class ServiceRenderBridge implements ServiceRenderPort {
                 patches: cloneJsonSafe(patches),
                 ...(page?.data ? { pageData: cloneJsonSafe(page.data) } : {}),
                 ...(hasComponentData ? { componentData: cloneJsonSafe(componentData) } : {}),
+                ...(ack ? { ack } : {}),
               },
               { pageId: id },
             )
+          } else {
+            // Nothing observable changed, so there is no batch to acknowledge.
+            this.flushCompletions(id)
           }
           this.flushWxsBindings(id)
         } catch (error) {
@@ -334,9 +381,60 @@ export class ServiceRenderBridge implements ServiceRenderPort {
             code: DIAGNOSTIC_CODES.LOGIC_TREE_ERROR,
             message: error instanceof Error ? error.message : String(error),
           }, id)
+          // The update failed before it crossed the bridge; still run the
+          // completions once instead of leaving them pending forever.
+          this.flushCompletions(id)
         }
       }
     })
+  }
+
+  /**
+   * Move the page's unsent completions into an acknowledged batch.
+   *
+   * Batch tokens are opaque and page-scoped by construction: a token is only
+   * consumed by the ack for the message that carried it.
+   */
+  private takeCompletionBatch(pageId: string): string[] | undefined {
+    const callbacks = this.pendingCompletions.get(pageId)
+    if (!callbacks || callbacks.length === 0) return undefined
+    this.pendingCompletions.delete(pageId)
+    this.completionCounter += 1
+    const token = `${pageId}${TINY_ENGINE_NAMING.componentIdSeparator}ack-${this.completionCounter}`
+    this.ackedBatches.set(token, { pageId, callbacks })
+    return [token]
+  }
+
+  /** The render thread reflected one or more batches. */
+  private acknowledgeRenders(tokens: string[]): void {
+    for (const token of tokens) {
+      const batch = this.ackedBatches.get(token)
+      if (!batch) continue
+      this.ackedBatches.delete(token)
+      for (const callback of batch.callbacks) this.runCompletion(batch.pageId, callback)
+    }
+  }
+
+  /** Run completions that have no render batch to wait for. */
+  private flushCompletions(pageId: string): void {
+    const callbacks = this.pendingCompletions.get(pageId)
+    if (!callbacks || callbacks.length === 0) return
+    this.pendingCompletions.delete(pageId)
+    for (const callback of callbacks) this.runCompletion(pageId, callback)
+  }
+
+  private runCompletion(pageId: string, callback: () => void): void {
+    try {
+      callback()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      this.options.onError(message)
+      this.connection.sendDiagnostic('error', {
+        code: DIAGNOSTIC_CODES.SET_DATA_CALLBACK_ERROR,
+        message,
+        details: error instanceof Error && error.stack ? { stack: error.stack } : {},
+      }, pageId || undefined)
+    }
   }
 
   private flushWxsBindings(pageId: string): void {

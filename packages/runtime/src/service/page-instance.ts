@@ -1,6 +1,7 @@
 import { applyDataPatch, cloneJsonSafe, type DataPatch } from '../data'
 import { runObservers, type ObserverHost } from '../component'
 import type { ComponentLifecycleName, NormalizedComponentDefinition } from '../component'
+import { DIAGNOSTIC_CODES } from '@tiny/manifest'
 import type { MiniProgramPropertyType } from '../types'
 import type { RuntimePageLifecyclePhase } from '../diagnostics'
 import type { MiniProgramRouter } from './router'
@@ -70,6 +71,11 @@ export type MiniProgramPageInstanceOptions = {
   definition?: NormalizedComponentDefinition
   /** Forward `setData` patches to the render side. */
   onDataPatch?: (pageId: string, patch: DataPatch) => void
+  /**
+   * Run a `setData` completion after the page's render update. Without a render
+   * thread the callback still runs asynchronously, matching WeChat's contract.
+   */
+  afterRender?: (pageId: string, callback: () => void) => void
   onDiagnostic?: (code: string, message: string, details?: unknown) => void
   /** Logic-tree hooks; omitted for an instance without a logic tree. */
   logic?: MiniProgramPageLogicHooks
@@ -102,6 +108,7 @@ export class MiniProgramPageInstance implements ObserverHost {
   private readonly pageOptions: MiniProgramPageOptions
   private readonly definition?: NormalizedComponentDefinition
   private readonly onDataPatch?: (pageId: string, patch: DataPatch) => void
+  private readonly afterRender?: (pageId: string, callback: () => void) => void
   private readonly onDiagnostic?: (code: string, message: string, details?: unknown) => void
   private readonly logic: MiniProgramPageLogicHooks
   private readonly methods = new Map<string, (...args: unknown[]) => unknown>()
@@ -117,6 +124,7 @@ export class MiniProgramPageInstance implements ObserverHost {
     this.pageOptions = input.options
     this.definition = definition
     this.onDataPatch = input.onDataPatch
+    this.afterRender = input.afterRender
     this.onDiagnostic = input.onDiagnostic
     this.logic = input.logic ?? {}
     this.query = cloneJsonSafe(query)
@@ -206,6 +214,10 @@ export class MiniProgramPageInstance implements ObserverHost {
     })
   }
 
+  /**
+   * Apply a data patch. The patch is visible in `this.data` synchronously;
+   * the optional completion runs after the view layer applied the update.
+   */
   setData(patch: DataPatch, callback?: () => void): void {
     if (this.unloaded) throw new Error(`Cannot setData on unloaded page: ${this.path}`)
     const clonedPatch = cloneJsonSafe(patch)
@@ -224,7 +236,31 @@ export class MiniProgramPageInstance implements ObserverHost {
     if (this.definition) {
       runObservers(this, this.definition.observers, Object.keys(clonedPatch), oldData)
     }
-    callback?.()
+    if (typeof callback === 'function') this.completeSetData(callback)
+  }
+
+  /**
+   * WeChat's `setData(patch, callback)` completion runs after the view layer
+   * applied the patch. The render bridge owns that acknowledgement; without a
+   * render thread the callback still runs asynchronously, never inline with the
+   * data update.
+   */
+  private completeSetData(callback: () => void): void {
+    if (this.afterRender) {
+      this.afterRender(this.pageId, callback)
+      return
+    }
+    queueMicrotask(() => {
+      try {
+        callback()
+      } catch (error) {
+        this.onError(
+          DIAGNOSTIC_CODES.SET_DATA_CALLBACK_ERROR,
+          error instanceof Error ? error.message : String(error),
+          error instanceof Error && error.stack ? { stack: error.stack } : undefined,
+        )
+      }
+    })
   }
 
   invokeMethod(name: string, args: unknown[] = []): unknown {
