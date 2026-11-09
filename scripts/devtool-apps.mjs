@@ -13,6 +13,17 @@ const testAppsRoot = path.join(rootDir, 'tests/apps')
 // Keep the fixtures that the acceptance gate exercises first; any new fixture
 // is appended alphabetically without touching this list.
 const preferredOrder = ['demo', 'mini', 'todo', 'wechat-demo', 'echarts']
+
+/** `<root>/apps` holds one `<id>/generated` tree per compiled fixture. */
+export function appsRootFor(outputRoot) {
+  return path.join(outputRoot, 'apps')
+}
+
+/** `<root>/apps.json` is the registry both the debugger and the test host read. */
+export function registryPathFor(outputRoot) {
+  return path.join(outputRoot, 'apps.json')
+}
+
 /**
  * Discover every mini-program fixture under tests/apps.
  *
@@ -82,14 +93,19 @@ export function toRegistryEntry(app) {
   }
 }
 
-export function writeDevtoolAppsRegistry(apps) {
-  fs.mkdirSync(path.dirname(devtoolRegistryPath), { recursive: true })
+export function writeAppsRegistry(outputRoot, apps) {
+  const registryPath = registryPathFor(outputRoot)
+  fs.mkdirSync(path.dirname(registryPath), { recursive: true })
   const payload = {
     schemaVersion: 1,
     apps: apps.map(toRegistryEntry),
   }
-  fs.writeFileSync(devtoolRegistryPath, `${JSON.stringify(payload, null, 2)}\n`)
-  return devtoolRegistryPath
+  fs.writeFileSync(registryPath, `${JSON.stringify(payload, null, 2)}\n`)
+  return registryPath
+}
+
+export function writeDevtoolAppsRegistry(apps) {
+  return writeAppsRegistry(devtoolRuntimeRoot, apps)
 }
 
 function resolveAppConfigPath(sourceDir) {

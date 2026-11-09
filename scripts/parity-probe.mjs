@@ -25,7 +25,11 @@ import playwright from 'playwright-core'
 const { chromium } = playwright
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const generatedDir = path.join(rootDir, 'tests/host/generated')
+// `compile:wechat-demo` writes the shared per-app tree; the probe reads that
+// fixture's manifest and selects it with `?app=` so a running host with other
+// fixtures compiled still probes the WeChat demo.
+const probeApp = 'wechat-demo'
+const generatedDir = path.join(rootDir, 'tests/host/generated/apps', probeApp, 'generated')
 const DEFAULT_PORT = 5198
 const PAGE_TIMEOUT = 10_000
 const BOOT_TIMEOUT = 6_000
@@ -188,10 +192,13 @@ async function probePage(page, baseUrl, pagePath) {
 
   try {
     const gotoStarted = Date.now()
-    await page.goto(`${baseUrl}/?path=${encodeURIComponent(pagePath)}`, {
-      waitUntil: 'domcontentloaded',
-      timeout: PAGE_TIMEOUT,
-    })
+    await page.goto(
+      `${baseUrl}/?app=${encodeURIComponent(probeApp)}&path=${encodeURIComponent(pagePath)}`,
+      {
+        waitUntil: 'domcontentloaded',
+        timeout: PAGE_TIMEOUT,
+      },
+    )
     result.timings.gotoMs = Date.now() - gotoStarted
 
     const bootStarted = Date.now()

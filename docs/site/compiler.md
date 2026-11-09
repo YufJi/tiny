@@ -342,7 +342,7 @@ button { height: 88rpx; }            /* -> tiny-button:where(.tiny-pages-todos-t
 
 ## 实际生成的文件 {#output kicker="产物目录"}
 
-以测试宿主的 tests/host/generated 为例，具体内容会随 fixture 变化。
+以测试宿主为例，每个 fixture 落在 `tests/host/generated/apps/<id>/generated/`，同级的 `apps.json` 是 fixture 清单（测试宿主和调试器共用）。下面是一个 fixture 目录的内容，具体会随 fixture 变化。
 
 ```text
 generated/

@@ -357,9 +357,9 @@ Shadow DOM：
 
 **探针方法**：`pnpm parity:probe`（已固化为脚本，替代此前的手工步骤）。
 
-1. `pnpm compile:wechat-demo` 生成产物到 `tests/host/generated`（脚本自动执行；`TINY_PROBE_BASE_URL` 可复用已启动的宿主，跳过编译与启服）。
+1. `pnpm compile:wechat-demo` 生成产物到 `tests/host/generated/apps/wechat-demo/generated`（脚本自动执行；`TINY_PROBE_BASE_URL` 可复用已启动的宿主，跳过编译与启服）。
 2. 在 5198 端口启动 `tests/host` Vite 服务（`TINY_PROBE_PORT` 可改）。
-3. Playwright 逐页打开 `/?path=<page>`，等待 `window.__tinyRuntime`，再 settle 350ms。
+3. Playwright 逐页打开 `/?app=wechat-demo&path=<page>`，等待 `window.__tinyRuntime`，再 settle 350ms。
 4. 收集 `pageerror`、`console.error`、`window.__tinyRuntime.host.diagnostics`，以及 active render iframe `#app` 的子节点/文本（浏览器宿主固定每页一个 render 帧；帧被重建时重取）。
 5. 判定：`__tinyRuntime` 出现、`#app` 有子节点、无 pageerror、无 `BOOTSTRAP_ERROR` = booted；否则归类为 `NO_RUNTIME` / `SERVICE_BOOTSTRAP_ERROR` / `RENDER_BOOTSTRAP_ERROR` / `PAGE_ERROR`。
 6. 报告写入 `tests/host/generated/parity-report.json`：每页的 `booted` / `hasVisibleText` / `failureClass` / 诊断码 / 耗时，便于和下一次探针对比。

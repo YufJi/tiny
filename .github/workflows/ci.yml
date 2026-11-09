@@ -103,7 +103,5 @@ jobs:
           wasm-pack --version
       - name: Install wasm-bindgen
         run: cargo install wasm-bindgen-cli --version 0.2.130 --locked
-      - name: Build HostCore wasm
-        run: pnpm --filter @tiny/host-core-wasm build
       - name: Full acceptance gate
         run: pnpm accept:glass-easel

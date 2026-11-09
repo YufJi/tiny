@@ -32,7 +32,16 @@ async function setSliderValue(slider, value) {
   })
 }
 
-async function launchBrowser() {
+/**
+ * Launch the one browser the whole gate shares.
+ *
+ * `launchServer()` + `kill()` replaces `launch()` + `close()`: Chrome on macOS
+ * takes ~6s to shut down gracefully, while killing the browser server returns
+ * in ~20ms. The runners below each open their own page (a fresh browser
+ * context), so stages stay isolated while the browser-level HTTP cache and
+ * process warm up once.
+ */
+export async function launchAcceptanceBrowser() {
   const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH
   const attempts = executablePath
     ? [{ label: `executablePath ${executablePath}`, options: { executablePath } }]
@@ -43,10 +52,19 @@ async function launchBrowser() {
 
   const errors = []
   for (const attempt of attempts) {
+    let server
     try {
-      return await chromium.launch({ headless: process.env.HEADED !== '1', ...attempt.options })
+      server = await chromium.launchServer({ headless: process.env.HEADED !== '1', ...attempt.options })
+      const browser = await chromium.connect(server.wsEndpoint())
+      return {
+        browser,
+        close: async () => {
+          await server.kill()
+        },
+      }
     } catch (error) {
       errors.push(`${attempt.label}: ${error instanceof Error ? error.message.split('\n')[0] : String(error)}`)
+      await server?.kill().catch(() => {})
     }
   }
   throw new Error(
@@ -55,8 +73,27 @@ async function launchBrowser() {
   )
 }
 
-export async function runBrowserAcceptance({ baseUrl }) {
-  const browser = await launchBrowser()
+/** Build a test-host URL: `?app=<fixture>` plus per-stage parameters. */
+function appUrl(baseUrl, appId, params = {}) {
+  const url = new URL(baseUrl)
+  url.searchParams.set('app', appId)
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined) url.searchParams.set(key, String(value))
+  }
+  return url.href
+}
+
+/** Step logger with a stage prefix, so concurrent stages stay readable. */
+function createStep(label) {
+  return async (name, run) => {
+    console.log(`\n▶ [${label}] ${name}`)
+    await run()
+    console.log(`  ✓ [${label}] ${name}`)
+  }
+}
+
+export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
+  const step = createStep('P0')
   // `hasTouch` lets the gate drive the same touch path a phone uses; the
   // devtool flows below stay on mouse clicks on purpose.
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, hasTouch: true })
@@ -71,7 +108,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
   try {
     await step('boot the dual-thread host', async () => {
       currentStep = 'boot the dual-thread host'
-      await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
+      await page.goto(appUrl(baseUrl, app), { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
       await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
       assert.equal(pageErrors.length, 0, `page errors during boot: ${pageErrors.join(' | ')}`)
     })
@@ -91,7 +128,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
 
     await step('deliver host global events to wx listeners', async () => {
       currentStep = 'deliver host global events to wx listeners'
-      const service = page.frames().find((frame) => frame.url().endsWith('/service.html'))
+      const service = page.frames().find((frame) => frame.url().includes('/service.html'))
       assert.ok(service, 'service frame was not found')
       await service.evaluate(() => {
         window.__appShowEvents = []
@@ -804,7 +841,7 @@ export async function runBrowserAcceptance({ baseUrl }) {
 
       // Reload the host to get back to the P0 page; the probe intentionally
       // keeps the mask up so it does not need an in-app exit.
-      await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
+      await page.goto(appUrl(baseUrl, app), { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
       await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
       render = await activeRender()
       await waitForText('Tiny Glass-easel P0')
@@ -847,8 +884,24 @@ export async function runBrowserAcceptance({ baseUrl }) {
       assert.equal(pageErrors.length, 0, `page errors: ${pageErrors.join(' | ')}`)
     })
 
-    console.log('\n✅ P0 browser acceptance passed.')
+    console.log('\n✅ [P0] browser acceptance passed.')
   } catch (error) {
+    const failureDiagnostics = await page.evaluate(() => {
+      const items = window.__tinyRuntime?.host?.diagnostics ?? []
+      return items.filter((item) => item.severity === 'error').slice(-5)
+    }).catch(() => [])
+    const serviceState = await (async () => {
+      const service = page.frames().find((frame) => frame.url().includes('/service.html'))
+      if (!service) return null
+      return service.evaluate(() => {
+        const pages = globalThis.getCurrentPages?.() ?? []
+        const last = pages[pages.length - 1]
+        return {
+          routes: pages.map((page) => page.route),
+          probe: last?.data?.probe,
+        }
+      }).catch((cause) => String(cause))
+    })()
     try {
       await fs.mkdir(path.dirname(failureShot), { recursive: true })
       await page.screenshot({ path: failureShot, fullPage: true })
@@ -857,15 +910,19 @@ export async function runBrowserAcceptance({ baseUrl }) {
     }
     throw new Error(
       `Browser acceptance failed during "${currentStep}": ${error instanceof Error ? error.message : String(error)}` +
+        `\nPage errors: ${pageErrors.join(' | ') || '(none)'}` +
+        `\nConsole errors: ${consoleErrors.join(' | ') || '(none)'}` +
+        `\nRuntime errors: ${JSON.stringify(failureDiagnostics)}` +
+        `\nService state: ${JSON.stringify(serviceState)}` +
         `\nScreenshot: ${failureShot}`,
     )
   } finally {
-    await browser.close()
+    await page.close().catch(() => {})
   }
 }
 
-export async function runMiniProgramAcceptance({ baseUrl }) {
-  const browser = await launchBrowser()
+export async function runMiniProgramAcceptance({ baseUrl, app = 'mini', browser }) {
+  const step = createStep('mini')
   const page = await browser.newPage({ viewport: { width: 1000, height: 760 } })
   const pageErrors = []
   const consoleErrors = []
@@ -879,7 +936,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
   try {
     await step('boot the existing example app', async () => {
       currentStep = 'boot the existing example app'
-      await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
+      await page.goto(appUrl(baseUrl, app), { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
       await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
       assert.equal(pageErrors.length, 0, `page errors during boot: ${pageErrors.join(' | ')}`)
     })
@@ -1202,7 +1259,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
 
     await step('boot the subpackage page directly', async () => {
       currentStep = 'boot the subpackage page directly'
-      await page.goto(`${baseUrl}/?path=packageA/pages/c/c`, {
+      await page.goto(appUrl(baseUrl, app, { path: 'packageA/pages/c/c' }), {
         waitUntil: 'domcontentloaded',
         timeout: STEP_TIMEOUT,
       })
@@ -1225,7 +1282,7 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
       assert.equal(pageErrors.length, 0, `page errors: ${pageErrors.join(' | ')}`)
     })
 
-    console.log('\n✅ Existing example app acceptance passed.')
+    console.log('\n✅ [mini] acceptance passed.')
   } catch (error) {
     try {
       await fs.mkdir(path.dirname(realFailureShot), { recursive: true })
@@ -1238,12 +1295,12 @@ export async function runMiniProgramAcceptance({ baseUrl }) {
         `\nScreenshot: ${realFailureShot}`,
     )
   } finally {
-    await browser.close()
+    await page.close().catch(() => {})
   }
 }
 
-export async function runWechatDemoAcceptance({ baseUrl }) {
-  const browser = await launchBrowser()
+export async function runWechatDemoAcceptance({ baseUrl, app = 'wechat-demo', browser }) {
+  const step = createStep('wechat')
   const page = await browser.newPage({ viewport: { width: 420, height: 900 } })
   const pageErrors = []
   const consoleErrors = []
@@ -1274,7 +1331,7 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
     await step('boot the WeChat component demo', async () => {
       currentStep = 'boot the WeChat component demo'
       await page.emulateMedia({ colorScheme: 'dark' })
-      await page.goto(`${baseUrl}?path=page/component/index`, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
+      await page.goto(appUrl(baseUrl, app, { path: 'page/component/index' }), { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
       await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
       const render = await activeRender()
       await render.waitForFunction(
@@ -1305,7 +1362,7 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
 
     await step('render a component example page', async () => {
       currentStep = 'render a component example page'
-      await page.goto(`${baseUrl}?path=packageComponent/pages/form/button/button`, {
+      await page.goto(appUrl(baseUrl, app, { path: 'packageComponent/pages/form/button/button' }), {
         waitUntil: 'domcontentloaded',
         timeout: STEP_TIMEOUT,
       })
@@ -1321,7 +1378,7 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
 
     await step('expose view aria roles', async () => {
       currentStep = 'expose view aria roles'
-      await page.goto(`${baseUrl}?path=packageComponent/pages/obstacle-free/aria-component/aria-component`, {
+      await page.goto(appUrl(baseUrl, app, { path: 'packageComponent/pages/obstacle-free/aria-component/aria-component' }), {
         waitUntil: 'domcontentloaded',
         timeout: STEP_TIMEOUT,
       })
@@ -1339,7 +1396,7 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
 
     await step('extend the text example', async () => {
       currentStep = 'extend the text example'
-      await page.goto(`${baseUrl}?path=packageComponent/pages/content/text/text`, {
+      await page.goto(appUrl(baseUrl, app, { path: 'packageComponent/pages/content/text/text' }), {
         waitUntil: 'domcontentloaded',
         timeout: STEP_TIMEOUT,
       })
@@ -1368,7 +1425,7 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
 
     await step('toggle autoplay in the swiper demo', async () => {
       currentStep = 'toggle autoplay in the swiper demo'
-      await page.goto(`${baseUrl}?path=packageComponent/pages/view/swiper/swiper`, {
+      await page.goto(appUrl(baseUrl, app, { path: 'packageComponent/pages/view/swiper/swiper' }), {
         waitUntil: 'domcontentloaded',
         timeout: STEP_TIMEOUT,
       })
@@ -1402,7 +1459,7 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
 
     await step('render the radio demo', async () => {
       currentStep = 'render the radio demo'
-      await page.goto(`${baseUrl}?path=packageComponent/pages/form/radio/radio`, {
+      await page.goto(appUrl(baseUrl, app, { path: 'packageComponent/pages/form/radio/radio' }), {
         waitUntil: 'domcontentloaded',
         timeout: STEP_TIMEOUT,
       })
@@ -1455,7 +1512,7 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
 
     await step('render an API example page', async () => {
       currentStep = 'render an API example page'
-      await page.goto(`${baseUrl}?path=packageAPI/pages/storage/storage/storage`, {
+      await page.goto(appUrl(baseUrl, app, { path: 'packageAPI/pages/storage/storage/storage' }), {
         waitUntil: 'domcontentloaded',
         timeout: STEP_TIMEOUT,
       })
@@ -1470,7 +1527,7 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
 
     await step('navigate with a built-in navigator', async () => {
       currentStep = 'navigate with a built-in navigator'
-      await page.goto(`${baseUrl}?path=packageComponent/pages/nav/navigator/navigator`, {
+      await page.goto(appUrl(baseUrl, app, { path: 'packageComponent/pages/nav/navigator/navigator' }), {
         waitUntil: 'domcontentloaded',
         timeout: STEP_TIMEOUT,
       })
@@ -1497,7 +1554,7 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
 
     await step('drag a view from a WXS handler', async () => {
       currentStep = 'drag a view from a WXS handler'
-      await page.goto(`${baseUrl}?path=packageAPI/pages/framework/wxs/movable`, {
+      await page.goto(appUrl(baseUrl, app, { path: 'packageAPI/pages/framework/wxs/movable' }), {
         waitUntil: 'domcontentloaded',
         timeout: STEP_TIMEOUT,
       })
@@ -1554,7 +1611,7 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
 
     await step('run the canvas 2D node example', async () => {
       currentStep = 'run the canvas 2D node example'
-      await page.goto(`${baseUrl}?path=packageComponent/pages/canvas/canvas-2d/canvas-2d`, {
+      await page.goto(appUrl(baseUrl, app, { path: 'packageComponent/pages/canvas/canvas-2d/canvas-2d' }), {
         waitUntil: 'domcontentloaded',
         timeout: STEP_TIMEOUT,
       })
@@ -1606,7 +1663,7 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
 
     await step('run the canvas WebGL example', async () => {
       currentStep = 'run the canvas WebGL example'
-      await page.goto(`${baseUrl}?path=packageComponent/pages/canvas/webgl/webgl`, {
+      await page.goto(appUrl(baseUrl, app, { path: 'packageComponent/pages/canvas/webgl/webgl' }), {
         waitUntil: 'domcontentloaded',
         timeout: STEP_TIMEOUT,
       })
@@ -1657,7 +1714,7 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
       assert.equal(errors.length, 0, `runtime errors: ${errors.map((item) => item.message).join(' | ')}`)
     })
 
-    console.log('\n✅ WeChat demo acceptance passed.')
+    console.log('\n✅ [wechat] acceptance passed.')
   } catch (error) {
     try {
       await fs.mkdir(path.dirname(shot), { recursive: true })
@@ -1670,12 +1727,12 @@ export async function runWechatDemoAcceptance({ baseUrl }) {
         `\nScreenshot: ${shot}`,
     )
   } finally {
-    await browser.close()
+    await page.close().catch(() => {})
   }
 }
 
-export async function runTaroAcceptance({ baseUrl }) {
-  const browser = await launchBrowser()
+export async function runTaroAcceptance({ baseUrl, app = 'todo', browser }) {
+  const step = createStep('taro')
   const page = await browser.newPage({ viewport: { width: 420, height: 860 } })
   const pageErrors = []
   const consoleErrors = []
@@ -1701,7 +1758,7 @@ export async function runTaroAcceptance({ baseUrl }) {
 
     await step('boot the Taro 3 app', async () => {
       currentStep = 'boot the Taro 3 app'
-      await page.goto(`${baseUrl}?path=pages/index/index`, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
+      await page.goto(appUrl(baseUrl, app, { path: 'pages/index/index' }), { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
       await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
       assert.equal(pageErrors.length, 0, `page errors during boot: ${pageErrors.join(' | ')}`)
     })
@@ -1781,7 +1838,7 @@ export async function runTaroAcceptance({ baseUrl }) {
       assert.equal(errors.length, 0, `runtime errors: ${errors.map((item) => item.message).join(' | ')}`)
     })
 
-    console.log('\n✅ Taro 3 example acceptance passed.')
+    console.log('\n✅ [taro] acceptance passed.')
   } catch (error) {
     try {
       await fs.mkdir(path.dirname(taroFailureShot), { recursive: true })
@@ -1794,12 +1851,12 @@ export async function runTaroAcceptance({ baseUrl }) {
         `\nScreenshot: ${taroFailureShot}`,
     )
   } finally {
-    await browser.close()
+    await page.close().catch(() => {})
   }
 }
 
-export async function runDevtoolAcceptance({ baseUrl }) {
-  const browser = await launchBrowser()
+export async function runDevtoolAcceptance({ baseUrl, browser }) {
+  const step = createStep('devtool')
   // `hasTouch` lets the echarts canvas step drive a real touch sequence; the
   // mobile gate still keys off the user agent only.
   const page = await browser.newPage({ viewport: { width: 1400, height: 900 }, hasTouch: true })
@@ -1838,6 +1895,20 @@ export async function runDevtoolAcceptance({ baseUrl }) {
       (expected) => window.__tinyDevtool?.getState().status === expected,
       status,
       { timeout: STEP_TIMEOUT },
+    )
+    // `navigate()`/`launch()` inspect the element tree once, right after the
+    // page becomes active; the first patch can still be in flight, so the
+    // panel may hold an empty tree until the next action. Re-inspect while
+    // waiting for the expected content instead of racing a single snapshot.
+    const waitForTree = (needle) => page.waitForFunction(
+      async (expected) => {
+        await window.__tinyDevtool?.inspectTree?.()
+        const tree = window.__tinyDevtool?.getState().tree
+        if (!tree) return false
+        return expected === null || JSON.stringify(tree).includes(expected)
+      },
+      needle ?? null,
+      { timeout: STEP_TIMEOUT, polling: 200 },
     )
     const managerState = () => page.evaluate(() => ({
       active: window.__tinyDevtoolApps?.getActiveAppId() ?? null,
@@ -1979,6 +2050,7 @@ export async function runDevtoolAcceptance({ baseUrl }) {
 
     await step('project runtime state into the debugger', async () => {
       currentStep = 'project runtime state into the debugger'
+      await waitForTree('Learning Javascript')
       const current = await state()
       assert.equal(current.currentPage, 'pages/todos/todos')
       assert.deepEqual(current.pageStack, ['page-1'])
@@ -2065,11 +2137,7 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         { timeout: STEP_TIMEOUT },
       )
       assert.deepEqual((await state()).pageStack, ['page-1', 'page-2'])
-      await page.waitForFunction(
-        () => JSON.stringify(window.__tinyDevtool.getState().tree ?? {}).includes('Add Todo'),
-        null,
-        { timeout: STEP_TIMEOUT },
-      )
+      await waitForTree('Add Todo')
       await page.waitForSelector(`${primarySurface} iframe[data-page-id="page-2"][data-state="active"]`, {
         timeout: STEP_TIMEOUT,
       })
@@ -2156,19 +2224,7 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         )
 
         const needle = expectedText[fixture.id]
-        if (needle) {
-          await page.waitForFunction(
-            (expected) => JSON.stringify(window.__tinyDevtool?.getState().tree ?? {}).includes(expected),
-            needle,
-            { timeout: STEP_TIMEOUT },
-          )
-        } else {
-          await page.waitForFunction(
-            () => Boolean(window.__tinyDevtool?.getState().tree),
-            null,
-            { timeout: STEP_TIMEOUT },
-          )
-        }
+        await waitForTree(needle)
 
         const preview = await state()
         const appId = (await managerState()).active
@@ -2594,7 +2650,7 @@ export async function runDevtoolAcceptance({ baseUrl }) {
       assert.equal(pageErrors.length, 0, `page errors: ${pageErrors.join(' | ')}`)
     })
 
-    console.log('\n✅ Runtime debugger acceptance passed.')
+    console.log('\n✅ [devtool] acceptance passed.')
   } catch (error) {
     try {
       await fs.mkdir(path.dirname(failureShot), { recursive: true })
@@ -2607,7 +2663,7 @@ export async function runDevtoolAcceptance({ baseUrl }) {
         `\nScreenshot: ${failureShot}`,
     )
   } finally {
-    await browser.close()
+    await page.close().catch(() => {})
   }
 }
 
@@ -2667,10 +2723,4 @@ async function waitForCanvasStats(page, locator, minimum, timeout = STEP_TIMEOUT
   throw new Error(
     `canvas screenshot stayed blank (${last.changed} changed pixels, ${last.width}x${last.height})`,
   )
-}
-
-async function step(name, run) {
-  console.log(`\n▶ ${name}`)
-  await run()
-  console.log(`  ✓ ${name}`)
 }

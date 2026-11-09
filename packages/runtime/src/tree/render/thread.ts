@@ -175,11 +175,19 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
 
   /**
    * Template groups are evaluated by this thread too. When the host cannot
-   * provide them synchronously, flows are parked until they are installed so a
-   * component is never created without its template.
+   * provide them synchronously, tree operations are parked until they are
+   * installed so a component is never created without its template.
    */
   let templatesReady = true
-  const pendingFlows: Array<{ payload?: unknown; pageId?: string }> = []
+  const pendingTreeOperations: Array<() => void> = []
+  // Every tree mutation waits for the same gate, in arrival order. Parking
+  // only flows is not enough: a `setData` patch raised from `onReady` can
+  // arrive while templates are still loading, and applying it before the
+  // parked flow mounts the page would silently drop the update.
+  const whenTemplatesReady = (run: () => void): void => {
+    if (templatesReady) run()
+    else pendingTreeOperations.push(run)
+  }
   if (options.templates) {
     options.renderer.setTemplates?.(options.templates)
   } else if (options.loadTemplates) {
@@ -190,7 +198,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       .catch(() => undefined)
       .then(() => {
         templatesReady = true
-        for (const message of pendingFlows.splice(0)) handleFlow(message)
+        for (const operation of pendingTreeOperations.splice(0)) operation()
       })
   }
 
@@ -257,20 +265,22 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
   })
 
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.snapshot, (message) => {
-    const payload = (message.payload ?? {}) as {
-      root?: RenderNode
-      pageId?: string
-      pagePath?: string
-      styles?: string[]
-      fallbackAppStyles?: string[]
-      ack?: string[]
-    }
-    currentPageId = payload.pageId ?? message.pageId ?? currentPageId
-    applyBatch(currentPageId, TREE_PROTOCOL.snapshot, payload.ack, () => {
-      options.renderer.setPagePath?.(payload.pagePath ?? '')
-      if (payload.root) options.renderer.mount(payload.root)
-      const styles = [...(payload.styles ?? []), ...(payload.fallbackAppStyles ?? [])]
-      if (styles.length > 0) options.renderer.applyStyles?.(styles)
+    whenTemplatesReady(() => {
+      const payload = (message.payload ?? {}) as {
+        root?: RenderNode
+        pageId?: string
+        pagePath?: string
+        styles?: string[]
+        fallbackAppStyles?: string[]
+        ack?: string[]
+      }
+      currentPageId = payload.pageId ?? message.pageId ?? currentPageId
+      applyBatch(currentPageId, TREE_PROTOCOL.snapshot, payload.ack, () => {
+        options.renderer.setPagePath?.(payload.pagePath ?? '')
+        if (payload.root) options.renderer.mount(payload.root)
+        const styles = [...(payload.styles ?? []), ...(payload.fallbackAppStyles ?? [])]
+        if (styles.length > 0) options.renderer.applyStyles?.(styles)
+      })
     })
   })
   const handleFlow = (message: { payload?: unknown; pageId?: string }): void => {
@@ -321,11 +331,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     })
   }
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.flow, (message) => {
-    if (!templatesReady) {
-      pendingFlows.push(message)
-      return
-    }
-    handleFlow(message)
+    whenTemplatesReady(() => handleFlow(message))
   })
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.customEvent, (message) => {
     const payload = (message.payload ?? {}) as Partial<CustomEventMessage>
@@ -346,19 +352,21 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     })
   })
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.patch, (message) => {
-    const payload = (message.payload ?? {}) as {
-      pageId?: string
-      patches?: RenderPatch[]
-      pageData?: Record<string, unknown>
-      componentData?: Record<string, Record<string, unknown>>
-      ack?: string[]
-    }
-    const pageId = payload.pageId ?? message.pageId ?? currentPageId
-    if (payload.pageId) currentPageId = payload.pageId
-    applyBatch(pageId, TREE_PROTOCOL.patch, payload.ack, () => {
-      if (payload.pageData) options.renderer.setPageData?.(payload.pageData)
-      if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
-      options.renderer.applyPatches(payload.patches ?? [])
+    whenTemplatesReady(() => {
+      const payload = (message.payload ?? {}) as {
+        pageId?: string
+        patches?: RenderPatch[]
+        pageData?: Record<string, unknown>
+        componentData?: Record<string, Record<string, unknown>>
+        ack?: string[]
+      }
+      const pageId = payload.pageId ?? message.pageId ?? currentPageId
+      if (payload.pageId) currentPageId = payload.pageId
+      applyBatch(pageId, TREE_PROTOCOL.patch, payload.ack, () => {
+        if (payload.pageData) options.renderer.setPageData?.(payload.pageData)
+        if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
+        options.renderer.applyPatches(payload.patches ?? [])
+      })
     })
   })
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.animate, (message) => {

@@ -17,6 +17,9 @@ importers:
       turbo:
         specifier: ^2.0.0
         version: 2.9.11
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@25.6.2)(@vitest/ui@1.6.1)(less@3.13.1)
 
   apps/devtool:
     dependencies:
@@ -974,6 +977,7 @@ packages:
   image-size@0.5.5:
     resolution: {integrity: sha512-6TDAlDPZxUFCv+fuOkIoXT/V/f3Qbq8e37p+YOiYrUv3v9cc3/6x78VdfPgFVaB9dZYeLUfKgHRebpkm/oP2VQ==}
     engines: {node: '>=0.10.0'}
+    deprecated: Please migrate to image-size@2.x
     hasBin: true
 
   is-alphabetical@2.0.1:

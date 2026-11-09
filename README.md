@@ -81,7 +81,7 @@
 | `tests/apps/vant` | Vant Weapp 组件库示例（`miniprogram_npm` 预构建包） |
 | `tests/apps/weui` | WeUI 官方样式库示例（54 个页面，无自定义组件） |
 
-`tests/host` 与 `apps/devtool` 都基于 `@tiny/host-web` 的 `WasmBrowserHost`（Rust HostCore + wasm），浏览器宿主固定为每页一个 render iframe。前者是无 UI 的单应用测试宿主；后者通过 `DevtoolRuntimeClient` 提供测试应用列表、最近 3 个应用保活/LRU、面板、诊断、生命周期时间线、元素树和内置 tabBar。每个应用页面栈默认最多 10 层，宿主可通过 `maxPageStack` 配置。network/clipboard/toast/modal 等宿主 API handler 由 `tests/host` 和 `apps/devtool` 各自注入，不在 `host-web` 内实现。
+`tests/host` 与 `apps/devtool` 都基于 `@tiny/host-web` 的 `WasmBrowserHost`（Rust HostCore + wasm），浏览器宿主固定为每页一个 render iframe。前者是无 UI 的测试宿主，产物按 fixture 存放在 `tests/host/generated/apps/<id>`，用 `?app=<id>` 切换；后者通过 `DevtoolRuntimeClient` 提供测试应用列表、最近 3 个应用保活/LRU、面板、诊断、生命周期时间线、元素树和内置 tabBar。每个应用页面栈默认最多 10 层，宿主可通过 `maxPageStack` 配置。network/clipboard/toast/modal 等宿主 API handler 由 `tests/host` 和 `apps/devtool` 各自注入，不在 `host-web` 内实现。
 
 ## 快速开始
 
@@ -89,7 +89,7 @@
 
 ```bash
 pnpm install
-pnpm accept:glass-easel      # 构建 + 单测 + 五段浏览器验收
+pnpm accept:glass-easel      # 构建 + 单测 + 五段并行浏览器验收
 ```
 
 本地调试：
@@ -177,9 +177,10 @@ pnpm site:dev                # 构建内嵌 devtool 并本地预览：http://loc
 pnpm site:devtool            # 只重建 website/.cache/site-public/devtool
 pnpm site:build              # 构建内嵌 devtool + website/dist
 pnpm site:check              # 构建并检查产物资源（含 dist/devtool）
-pnpm compile:glass-easel     # tests/apps/demo -> tests/host/generated
+pnpm test                    # 全部包的单元测试（一个 Vitest 进程）
+pnpm compile:glass-easel     # tests/apps/demo -> tests/host/generated/apps/demo
 pnpm compile:devtool:all     # 全部 tests/apps -> devtool 静态目录
-pnpm compile:wechat-demo     # 微信官方组件/API 示例 -> tests/host/generated
+pnpm compile:wechat-demo     # 微信官方组件/API 示例 -> tests/host/generated/apps/wechat-demo
 pnpm check:runtime-purity    # 校验 runtime 内核无宿主全局依赖
 pnpm check:runtime-layers    # 校验 runtime 的 service/render/tree 分层边界
 pnpm dev:wechat-demo         # 微信示例宿主：http://127.0.0.1:5174/?path=page/component/index

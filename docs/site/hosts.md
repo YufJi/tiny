@@ -323,14 +323,14 @@ API 表由宿主入口组装后以值的形式传给 `ServiceThreadOptions.apiHo
 ::::
 
 ::::stack
-:::card{tag="tests/host" title="无界面单应用宿主"}
-Vite 提供三个入口：`index.html` 宿主、`service.html` 和 `render.html`。宿主把页面挂到 `#app`，并暴露 `window.__tinyRuntime` 给 Playwright。
+:::card{tag="tests/host" title="无界面多应用宿主"}
+Vite 提供三个入口：`index.html` 宿主、`service.html` 和 `render.html`。宿主读取 `generated/apps.json`，用 `?app=<id>` 选择 fixture（缺省取清单第一项），把页面挂到 `#app`，并暴露 `window.__tinyRuntime` 给 Playwright。
 
 service 入口使用 `bootServiceEntry` 加载 templates/styles 和 service bundle；render 入口调用 `bootRenderEntry({ container, loadTemplates, resolveAssetUrl })`，由它安装 OffscreenCanvas responder、内置样式，等端口并创建 Web 渲染树和内置组件。
 :::
 
 :::card{tag="静态资源" title="产物怎么到线程里"}
-manifest 由打包器静态导入；templates.js 和 service.js 由 service 入口动态导入；styles 通过 `fetch('/generated/...')` 取文本后交给 `loadStyle`；资源通过 `/generated/<path>` 提供。
+manifest 由宿主在运行时 fetch；templates.js 和 service.js 由线程入口动态导入；styles 通过 `fetch('/generated/apps/<id>/generated/...')` 取文本后交给 `loadStyle`；资源通过同一前缀提供。`?app=` 会随 `service.html` / `render.html` 的 URL 传给两个线程，三个文档才不会读到不同的 fixture。
 
 宿主需要能按 manifest 里的相对路径提供静态文件。
 :::
@@ -341,15 +341,15 @@ manifest 由打包器静态导入；templates.js 和 service.js 由 service 入�
 service.html
   |-- bootServiceEntry({
         manifest, initialPath,
-        loadTemplates: () => import('/generated/templates.js'),
-        loadArtifacts: () => import('/generated/service.js'),
+        loadTemplates: () => import('/generated/apps/<id>/generated/templates.js'),
+        loadArtifacts: () => import('/generated/apps/<id>/generated/service.js'),
         loadStyle, resolveAssetUrl, apiExtensions,
       })
 
 render.html
   +-- bootRenderEntry({
         container: document.getElementById('app'),
-        loadTemplates: () => import('/generated/templates.js'),
+        loadTemplates: () => import('/generated/apps/<id>/generated/templates.js'),
         resolveAssetUrl,
       })
 ```
