@@ -1,9 +1,10 @@
 import init, { WasmHostCore } from '@tiny/host-core-wasm'
 import { TestBrowserHost } from './test-host'
 import { createTestHostApiHandlers, createTestHostSyncApiHandlers } from './host-api'
-import manifest from '../generated/manifest.json'
+import { resolveTestApp } from './test-app'
 
 const search = new URLSearchParams(window.location.search)
+const { app, manifest } = await resolveTestApp(search.get('app'))
 const initialPath = search.get('path') || manifest.pages[0]?.path || ''
 const storage = {}
 const baseSystemInfo = {
@@ -24,10 +25,12 @@ const getSystemInfo = () => ({
 
 await init()
 const wasmHost = new TestBrowserHost({
-  appId: 'test-host',
+  appId: app.id,
   manifest,
-  serviceUrl: '/service.html',
-  renderUrl: '/render.html',
+  // The service and render documents load the same fixture's artifacts; pass
+  // the selection through their URLs because each iframe owns its module graph.
+  serviceUrl: `/service.html?app=${encodeURIComponent(app.id)}`,
+  renderUrl: `/render.html?app=${encodeURIComponent(app.id)}`,
   initialPath,
   container: document.getElementById('app') ?? document.body,
   storage,

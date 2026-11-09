@@ -6,13 +6,14 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "watch": "turbo run watch",
-    "compile:glass-easel": "node scripts/compile-glass-easel.mjs",
-    "compile:devtool": "node scripts/compile-devtool-apps.mjs",
+    "compile:glass-easel": "node scripts/compile-apps.mjs demo",
+    "compile:devtool": "node scripts/compile-apps.mjs --all --out apps/devtool/static/runtime",
     "compile:devtool:all": "pnpm compile:devtool",
     "dev:glass-easel": "pnpm compile:glass-easel && pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts",
     "dev:devtool": "node scripts/dev-devtool.mjs",
     "accept:glass-easel": "node scripts/accept-glass-easel.mjs",
-    "build:glass-easel": "pnpm --filter @tiny/css-units --filter @tiny/manifest --filter @tiny/wxs-runtime --filter @tiny/stylesheet-compiler --filter @tiny/template-compiler --filter @tiny/bridge --filter @tiny/cli --filter @tiny/runtime --filter @tiny/api --filter @tiny/host-web-components --filter @tiny/host-core-wasm --filter @tiny/host-web build",
+    "build:glass-easel": "turbo run build --filter=@tiny/css-units --filter=@tiny/manifest --filter=@tiny/wxs-runtime --filter=@tiny/stylesheet-compiler --filter=@tiny/template-compiler --filter=@tiny/bridge --filter=@tiny/cli --filter=@tiny/runtime --filter=@tiny/api --filter=@tiny/host-web-components --filter=@tiny/host-core-wasm --filter=@tiny/host-web",
+    "test": "vitest run",
     "lint": "biome check .",
     "lint:fix": "biome check . --write",
     "format": "biome format . --write",
@@ -21,7 +22,7 @@
     "site:check": "pnpm site:build && node scripts/check-website.mjs",
     "site:build": "pnpm site:devtool && pnpm --filter @tiny/website build",
     "site:preview": "pnpm --filter @tiny/website preview",
-    "compile:wechat-demo": "node scripts/compile-mini.mjs tests/apps/wechat-demo tests/host/generated",
+    "compile:wechat-demo": "node scripts/compile-apps.mjs wechat-demo",
     "parity:probe": "node scripts/parity-probe.mjs",
     "dev:wechat-demo": "pnpm compile:wechat-demo && pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --port 5174",
     "check:runtime-purity": "node scripts/check-runtime-purity.mjs",
@@ -41,7 +42,8 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.8",
     "playwright-core": "^1.64.1",
-    "turbo": "^2.0.0"
+    "turbo": "^2.0.0",
+    "vitest": "^1.6.1"
   },
   "packageManager": "pnpm@9.10.0",
   "engines": {

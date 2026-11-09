@@ -213,4 +213,50 @@ describe('tree thread', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(order).toEqual(['templates', 'mount'])
   })
+
+  test('parks patches behind the template gate too', async () => {
+    const [hostTransport, renderTransport] = createInMemoryTransportPair()
+    const order: string[] = []
+    let release!: (templates: unknown) => void
+    const templatesReady = new Promise((resolve) => { release = resolve })
+    bootTreeThread({
+      connection: createRenderConnection(renderTransport),
+      loadTemplates: () => templatesReady as never,
+      renderer: {
+        mount: () => order.push('mount'),
+        applyPatches: () => order.push('patch'),
+        setTemplates: () => order.push('templates'),
+      },
+    })
+    const host = new BridgeConnection({
+      localRole: 'host',
+      peerRole: 'render',
+      transport: hostTransport,
+      respondToHello: false,
+    })
+    await host.handshake()
+    host.sendEvent('tree', 'flow', {
+      pageId: 'page-1',
+      pagePath: 'pages/index/index',
+      styles: [],
+      messages: [
+        { type: 'tree', root: { type: 'element', id: 'page', tag: 'page' } },
+        { type: 'ready' },
+      ],
+    }, { pageId: 'page-1' })
+    // `onReady` can raise `setData` before the render thread finished loading
+    // templates; the patch must wait for the flow that mounts the page, or it
+    // is applied to an empty tree and lost.
+    host.sendEvent('tree', 'patch', {
+      pageId: 'page-1',
+      patches: [{ type: 'text', target: 'text', text: 'ready' }],
+    }, { pageId: 'page-1' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(order).toEqual([])
+
+    release({ groupList: {}, content: () => ({}) })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(order).toEqual(['templates', 'mount', 'patch'])
+  })
 })

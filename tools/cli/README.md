@@ -13,7 +13,7 @@ import { compileMiniProgram } from '@tiny/cli'
 
 const result = await compileMiniProgram({
   sourceDir: 'tests/apps/mini',
-  outputDir: 'tests/host/generated',
+  outputDir: 'tests/host/generated/apps/mini/generated',
   clean: true,
   dev: true,
   // Optional; omitted fields use WeChat conventions.

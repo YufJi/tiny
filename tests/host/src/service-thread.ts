@@ -1,5 +1,14 @@
 import { bootServiceEntry } from '@tiny/host-web'
-import manifest from '../generated/manifest.json'
+import type { RuntimeManifest, TemplateRegistry } from '@tiny/runtime'
+import {
+  currentAppId,
+  fetchJson,
+  generatedBaseFor,
+  importGenerated,
+} from './test-app'
+
+const generatedBase = generatedBaseFor(currentAppId())
+const manifest = await fetchJson<RuntimeManifest>(`${generatedBase}/manifest.json`)
 
 // Device identity is a host fact here: the service iframe has no viewport, so
 // it mirrors the geometry the test host declares in `host.ts`.
@@ -60,7 +69,7 @@ const createHostApiExtensions = () => ({
 })
 
 const resolveAssetUrl = (assetPath: string): string => (
-  `/generated/${assetPath.split('/').map(encodeURIComponent).join('/')}`
+  `${generatedBase}/${assetPath.split('/').map(encodeURIComponent).join('/')}`
 )
 
 const stylePaths = [...new Set(manifest.styles.flatMap((style) => [
@@ -70,7 +79,7 @@ const stylePaths = [...new Set(manifest.styles.flatMap((style) => [
 const styles = Object.fromEntries(
   await Promise.all(
     stylePaths.map(async (stylePath) => {
-      const response = await fetch(`/generated/${stylePath}?direct`)
+      const response = await fetch(`${generatedBase}/${stylePath}?direct`)
       return [stylePath, await response.text()]
     }),
   ),
@@ -79,11 +88,12 @@ const styles = Object.fromEntries(
 bootServiceEntry({
   manifest,
   initialPath: manifest.pages[0]?.path ?? '',
-  loadTemplates: async () => (await import('../generated/templates.js')).default,
+  loadTemplates: async () =>
+    (await importGenerated<{ default: TemplateRegistry }>(`${generatedBase}/templates.js`)).default,
   loadStyle: (stylePath) => styles[stylePath] ?? '',
   apiExtensions: createHostApiExtensions(),
   resolveAssetUrl,
   loadArtifacts: async () => {
-    await import('../generated/service.js')
+    await importGenerated(`${generatedBase}/service.js`)
   },
 })

@@ -47,7 +47,9 @@ must not depend on tools, apps, hosts, or tests.
 ### Tests
 
 - `tests/host`: standalone Vite host used for development and Playwright acceptance.
-  It has no mini-program source; compiled apps are written to `tests/host/generated`.
+  It has no mini-program source; each fixture is compiled to
+  `tests/host/generated/apps/<id>/generated` and selected with `?app=<id>`
+  (`generated/apps.json` lists what has been compiled).
 - `tests/apps/*`: mini-program fixtures used by acceptance (`demo`, `mini`, `todo`,
   `wechat-demo`, `echarts`).
 
@@ -67,7 +69,8 @@ pnpm build                   # build all workspace packages
 pnpm accept:glass-easel      # full gate: build, unit tests, 5 browser stages
 pnpm dev:glass-easel         # compile tests/apps/demo + host on :5173
 pnpm dev:devtool             # debugger on :8080 (watches every tests/apps fixture)
-pnpm compile:glass-easel     # compile tests/apps/demo -> tests/host/generated
+pnpm test                    # every package's vitest suite in one process
+pnpm compile:glass-easel     # compile tests/apps/demo -> tests/host/generated/apps/demo
 pnpm compile:devtool:all     # compile every tests/apps fixture for the debugger
 pnpm compile:wechat-demo     # compile the WeChat component/API subset
 pnpm parity:probe            # compile tests/apps/wechat-demo and probe every page in headless Chrome
@@ -98,32 +101,37 @@ pnpm --filter @tiny/website build
 
 ## Testing
 
-Vitest is used by `bridge`, `template-compiler`, `stylesheet-compiler`, `cli`,
-`host-web`, `host-web-components`, `runtime`, and `api`. There is no global test runner; use
-`pnpm --filter <package> test`.
+Vitest is used by `api`, `bridge`, `css-units`, `manifest`, `runtime`,
+`stylesheet-compiler`, `template-compiler`, `wxs-runtime`, `host-web`,
+`host-web-components`, `cli` and `devtool`. The root `vitest.workspace.ts` runs
+every package config in one process (`pnpm test`); use
+`pnpm --filter <package> test` to iterate on one package.
 
 The iOS host has its own simulator gate, `pnpm ios:sim`; it requires an installed
 iOS Simulator runtime and is not part of `pnpm accept:glass-easel`.
 
 The end-to-end gate is `pnpm accept:glass-easel`:
 
-1. build of the compiler/runtime/host targets in `build:glass-easel`
+1. build of the compiler/runtime/host targets in `build:glass-easel` (turbo, cached)
 2. core runtime purity and service/render/tree layer boundary checks
-3. unit tests for all packages
-4. P0 demo browser flow (`tests/apps/demo`)
-5. `tests/apps/mini` browser flow
-6. Taro 3 (`tests/apps/todo`) browser flow
-7. WeChat demo (`tests/apps/wechat-demo`) browser flow
-8. runtime debugger browser flow
+3. unit tests for all packages in one Vitest process
+4. one concurrent compile of every fixture into `tests/host/generated/apps/<id>`
+5. five browser stages, run concurrently against one browser and two dev servers:
+   P0 demo (`tests/apps/demo`), `tests/apps/mini`, Taro 3 (`tests/apps/todo`),
+   WeChat demo (`tests/apps/wechat-demo`) and the runtime debugger (which
+   previews the same artifact tree instead of recompiling it)
 
 `SKIP_BROWSER=1`, `TINY_ACCEPT_PORT`, `TINY_DEVTOOL_PORT`, and `HEADED=1`
-control the gate. It requires a Chromium browser (`playwright-core` with system
-Chrome, or `PLAYWRIGHT_CHROMIUM_PATH`).
+control the gate. `SKIP_BROWSER=1` stops after the unit tests (it does not
+compile fixtures). The gate requires a Chromium browser (`playwright-core` with
+system Chrome, or `PLAYWRIGHT_CHROMIUM_PATH`).
 
 `pnpm parity:probe` (117 pages) is a separate diagnostic, not part of the gate:
 it compiles `tests/apps/wechat-demo`, serves `tests/host` on port 5198 and
 records boot state, visible text, page errors and diagnostics per page into
-`tests/host/generated/parity-report.json`. Reuse a running host with
+`tests/host/generated/parity-report.json`. It compiles that fixture under
+`tests/host/generated/apps/wechat-demo/generated` and selects it with `?app=`.
+Reuse a running host with
 `TINY_PROBE_BASE_URL=...`; `--limit`/`--only` narrow the run. It rewrites
 `tests/host/generated`, so never run it alongside the gate.
 
