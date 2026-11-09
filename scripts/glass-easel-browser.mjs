@@ -257,6 +257,7 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       }
       for (let attempt = 1; attempt <= 2; attempt += 1) {
         render = await activeRender()
+        if (attempt > 1) console.log(`\n  ↻ retried tap "${label}" (still on ${before})`)
         await touchTap(byText(render, label, { exact: true }).first())
         // The first tap gets a settle window; a retry goes straight to the wait.
         if (await arrived(Date.now() + (attempt === 1 ? 3_000 : 0))) break

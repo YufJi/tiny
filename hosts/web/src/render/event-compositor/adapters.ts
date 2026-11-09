@@ -46,6 +46,21 @@ export function createTouchAdapter(root: HTMLElement): InputAdapter {
 }
 
 /**
+ * Browsers replay a touch as compatibility mouse events (`mousedown` →
+ * `mouseup` → `click`) on whatever element sits under the finger. Those replays
+ * are not a second user gesture: the touch adapter already delivered it.
+ *
+ * The `sourceCapabilities.firesTouchEvents` flag identifies the replay exactly,
+ * including the case where the tap popped the page it started on and the replay
+ * lands in the page that becomes visible at the same coordinates (a time-window
+ * heuristic cannot cover that, because the new page never saw the touch).
+ */
+const isTouchReplay = (event: MouseEvent): boolean => (
+  (event as MouseEvent & { sourceCapabilities?: { firesTouchEvents?: boolean } })
+    .sourceCapabilities?.firesTouchEvents === true
+)
+
+/**
  * Mouse input is the devtool's way of pretending to be a finger. It feeds the
  * same recognizer as touch, so both paths share thresholds and ordering.
  */
@@ -69,7 +84,7 @@ export function createMouseAdapter(
     }
 
     const onDown = (event: MouseEvent) => {
-      if (event.button !== 0 || shouldIgnoreMouse()) return
+      if (event.button !== 0 || isTouchReplay(event) || shouldIgnoreMouse()) return
       pressed = true
       emit('start', event)
     }
