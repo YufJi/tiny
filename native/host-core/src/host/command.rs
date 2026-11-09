@@ -46,3 +46,26 @@ pub enum HostCommand {
     },
     Close,
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::HostCommand;
+
+    #[test]
+    fn emit_event_deserializes() {
+        let command: HostCommand = serde_json::from_value(serde_json::json!({
+            "type": "emitEvent",
+            "name": "appShow",
+            "payload": { "scene": 1001 }
+        }))
+        .expect("emitEvent command should deserialize");
+        match command {
+            HostCommand::EmitEvent { name, payload } => {
+                assert_eq!(name, "appShow");
+                assert_eq!(payload, Some(serde_json::json!({ "scene": 1001 })));
+            }
+            _ => panic!("expected EmitEvent"),
+        }
+    }
+}

@@ -73,8 +73,13 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     if (typeof payload.name !== 'string') return
     // App foreground/background is host-owned: never infer it from page
     // navigation. The host sends appShow/appHide as global events.
-    if (payload.name === 'appShow') registry.showApp()
-    else if (payload.name === 'appHide') registry.hideApp()
+    if (payload.name === 'appShow') {
+      registry.showApp()
+    } else if (payload.name === 'appHide') {
+      registry.hideApp()
+    }
+    // App hooks and wx.onXXX listeners are separate consumers: always fan out
+    // the event, including appShow/appHide.
     events?.emit(payload.name, payload.payload)
   })
 
