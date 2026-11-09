@@ -1,4 +1,5 @@
-import { createApiHost } from '@tiny/api'
+import { createApiHost, createGlobalEventHub } from '@tiny/api'
+import { DIAGNOSTIC_CODES } from '@tiny/manifest'
 import type { ApiContext, ApiHost } from '@tiny/api'
 import { connectHostBridge, installHostBridge } from '@tiny/bridge'
 import type { TransportFrame } from '@tiny/bridge'
@@ -72,8 +73,13 @@ export function bootServiceEntry(options: ServiceEntryOptions): void {
       capabilities: { role: 'service' },
     })
     const canvas = createBrowserCanvasAdapter()
-    const themeListeners = new Set<(value: unknown) => void>()
     let runtime: ServiceThreadRuntime | undefined
+    const events = createGlobalEventHub({
+      onListenerError: (event, error) => connection.sendDiagnostic('warn', {
+        code: DIAGNOSTIC_CODES.GLOBAL_EVENT_LISTENER_ERROR,
+        message: `${event}: ${error instanceof Error ? error.message : String(error)}`,
+      }),
+    })
 
     const compatibility = options.manifest.runtimeCompatibility
     const apiContext: ApiContext = {
@@ -82,7 +88,7 @@ export function bootServiceEntry(options: ServiceEntryOptions): void {
       apiNamespaces: [compatibility.api.global, ...compatibility.api.aliases],
       canvas,
       resolveAssetUrl: options.resolveAssetUrl,
-      themeListeners,
+      events,
       getActivePage: () => runtime?.activePage,
       getCurrentPagePath: () => runtime?.activePage?.path,
       get pageId() {
@@ -107,7 +113,7 @@ export function bootServiceEntry(options: ServiceEntryOptions): void {
       loadTemplates: options.loadTemplates,
       loadArtifacts: options.loadArtifacts,
       ...(options.loadStyle ? { loadStyle: options.loadStyle } : {}),
-      themeListeners,
+      events,
       onPageRelease: (pageId) => canvas.releaseCanvasNode?.({ pageId }),
     })
   }, { sendSync })

@@ -1,4 +1,4 @@
-import { createApiHost } from '@tiny/api'
+import { createApiHost, createGlobalEventHub } from '@tiny/api'
 import type { ApiContext, ApiHost } from '@tiny/api'
 import { bootServiceThread, resolveAssetPath } from '@tiny/runtime'
 import type {
@@ -222,8 +222,13 @@ export function startTinyService(app: TinyIOSApp): void {
   }
 
   const compatibility = app.manifest.runtimeCompatibility
-  const themeListeners = new Set<(value: unknown) => void>()
   let runtime: ServiceThreadRuntime | undefined
+  const events = createGlobalEventHub({
+    onListenerError: (event, error) => connection.sendDiagnostic('warn', {
+      code: 'GLOBAL_EVENT_LISTENER_ERROR',
+      message: `${event}: ${error instanceof Error ? error.message : String(error)}`,
+    }),
+  })
   const apiContext: ApiContext = {
     connection,
     apiName: compatibility.api.global,
@@ -234,7 +239,7 @@ export function startTinyService(app: TinyIOSApp): void {
       if (!resolved) return undefined
       return app.assetsBase + resolved.split('/').map(encodeURIComponent).join('/')
     },
-    themeListeners,
+    events,
     getActivePage: () => runtime?.activePage,
     getCurrentPagePath: () => runtime?.activePage?.path,
     get pageId() {
@@ -264,7 +269,7 @@ export function startTinyService(app: TinyIOSApp): void {
         serviceEvaluated = true
         evaluate(app.serviceSource, 'service.js')
       },
-      themeListeners,
+      events,
       onPageRelease: (pageId) => canvas.releaseCanvasNode?.({ pageId }),
     })
   } catch (error) {

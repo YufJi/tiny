@@ -196,7 +196,7 @@ service 和 render 都不读取 URL，也不读取全局 manifest；所有输入
 | `loadTemplates` | 加载 templates.js，供 service 逻辑树求值 | 是 |
 | `loadStyle` | 按 outputPath 返回样式文本，供逻辑树计算样式作用域 | 使用样式时必需 |
 | `apiHost` | 宿主入口组装好的 `wx` 表（不透明） | 是（`bootServiceEntry` 默认组装） |
-| `themeListeners` | 与 api 共享的主题监听集合 | 否 |
+| `events` | api 的全局事件 hub；宿主事件和内核事件都发到它 | 否 |
 | `onPageRelease` | 页面销毁后由宿主回收资源（canvas 节点等） | 否 |
 | `maxPageStack` | 页面栈上限，默认 10 | 否 |
 

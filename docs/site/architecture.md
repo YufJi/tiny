@@ -54,7 +54,7 @@ Tiny 只守住一条线：`packages/runtime` 是唯一的内核，它不引用 w
 | `apiHost` | API 表（含宿主扩展） | `MiniProgramApiHost`（不透明表） | `@tiny/api` + 窗口设备信息 + canvas/asset/sync | `@tiny/api` + 菜单按钮、性能 + canvas/asset/sync |
 | `onPageRelease` | 页面销毁后的资源回收 | `(pageId) => void` | 释放 canvas 节点 | 释放 display list |
 
-canvas 和 `resolveAssetUrl` 只进入 `@tiny/api` 的 context；同步调用由宿主注入的 `globalThis.__TINY_HOST_BRIDGE__` 句柄的 `sendSync`（帧级 `callSync` 请求/`reply`）承载，runtime 不需要它们，只在页面销毁时调用 `onPageRelease`。`themeListeners` 由宿主创建，同时交给 api（`onThemeChange`）和 runtime（转发 `runtime.themeChange`）。
+canvas 和 `resolveAssetUrl` 只进入 `@tiny/api` 的 context；同步调用由宿主注入的 `globalThis.__TINY_HOST_BRIDGE__` 句柄的 `sendSync`（帧级 `callSync` 请求/`reply`）承载，runtime 不需要它们，只在页面销毁时调用 `onPageRelease`。全局 `wx.onXXX` 事件由 api 的 `GlobalEventHub` 统一分发：宿主创建它并同时交给 api context 和 runtime（`events`），runtime 通过 `event.global` 接收宿主事件、并通过同一 sink 发出 theme/resize/error 等内核事件。
 
 :::callout{title="这条线由脚本守着"}
 `pnpm check:runtime-purity` 从 `packages/runtime/src/index.ts` 遍历依赖图，出现 window、document、fetch、MessageChannel 或 `@tiny/host-*` 就失败。它验证的不是“当前浏览器能跑”，而是“同一个内核还能装进下一个宿主”。实现细节见[宿主适配](#/hosts)。

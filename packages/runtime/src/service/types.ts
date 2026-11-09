@@ -46,6 +46,15 @@ export type MiniProgramAppOptions = {
 
 export type MiniProgramApiHost = Record<string, (...args: unknown[]) => unknown>
 
+/**
+ * Service-side sink for global events. The host-composed API table owns the
+ * listener fan-out (`GlobalEventHub`); the runtime only emits events it
+ * produces (theme, resize, errors) and forwards host `event.global` frames.
+ */
+export type GlobalEventSink = {
+  emit(event: string, payload?: unknown): void
+}
+
 export type TabBarApi = {
   setStyle(params: Record<string, unknown>): void
   setItem(params: Record<string, unknown>): void
@@ -81,11 +90,10 @@ export type ServiceThreadOptions = {
   /** Stylesheet text for logic-tree style scoping. */
   loadStyle?: StyleLoader
   /**
-   * Set shared with the host-composed API table: `runtime.themeChange`
-   * notifications reach `wx.onThemeChange` listeners without the runtime
-   * knowing the API module.
+   * Sink shared with the host-composed API table. Runtime-originated events
+   * and host `event.global` frames reach the global `wx.onXXX` listeners.
    */
-  themeListeners?: Set<(value: unknown) => void>
+  events?: GlobalEventSink
   /**
    * A page was destroyed. The host releases per-page resources here (canvas
    * nodes, …); the runtime does not own canvas semantics.

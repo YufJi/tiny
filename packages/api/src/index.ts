@@ -9,10 +9,13 @@ import { createQueryApi } from './query'
 import { createShareApi } from './share'
 import { createStorageApi } from './storage'
 import { createSystemApi } from './system'
+import { createGlobalEventApi } from './global-events'
 import { createTabBarApi } from './tabbar'
 import { createUiApi } from './ui'
 
 export type { ApiCallbacks } from './run-api'
+export type { GlobalEventListener, GlobalEventHub } from './global-events'
+export { createGlobalEventHub } from './global-events'
 export { createEventChannelPair } from './event-channel'
 export type { EventChannel, EventChannelHandler, EventChannelPair } from './event-channel'
 export type {
@@ -60,6 +63,7 @@ export function createApiHost(
   apiContext.hasApi = (name) => available.has(name)
   const table: ApiHost = {
     ...createSystemApi(apiContext),
+    ...createGlobalEventApi(apiContext),
     ...createStorageApi(apiContext),
     ...createNavigationApi(apiContext),
     ...createUiApi(apiContext),

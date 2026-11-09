@@ -61,12 +61,18 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     componentConfigurations,
   )
 
-  // Shared with the host-composed API table: the runtime only forwards the
-  // host theme control into it.
-  const themeListeners = options.themeListeners ?? new Set<(value: unknown) => void>()
-
   // The host entry owns the connection (and the API table built on top of it).
   const connection = options.connection
+  const events = options.events
+  registry.setEventSink(events)
+
+  // Host-originated global events use one envelope so adding an event never
+  // changes the bridge protocol: { name, payload }.
+  connection.onEvent('event', 'global', (message) => {
+    const payload = (message.payload ?? {}) as { name?: unknown; payload?: unknown }
+    if (typeof payload.name !== 'string') return
+    events?.emit(payload.name, payload.payload)
+  })
 
   const componentTree = new ComponentTree()
   let onTabBarChange: () => void = () => {}
@@ -270,6 +276,9 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     const windowHeight = Number(payload.windowHeight)
     if (Number.isFinite(windowWidth) && Number.isFinite(windowHeight)) {
       pages.resize(windowWidth, windowHeight)
+      events?.emit('windowResize', {
+        size: { windowWidth, windowHeight },
+      })
     }
     return { status: 'resized', windowWidth, windowHeight }
   })
@@ -277,16 +286,6 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   connection.onControl(RUNTIME_CONTROL.domain, 'themeChange', async (message) => {
     const theme = (message.payload as { theme?: string }).theme === 'dark' ? 'dark' : 'light'
     registry.reportThemeChange(theme)
-    for (const listener of themeListeners) {
-      try {
-        listener({ theme })
-      } catch (error) {
-        connection.sendDiagnostic('warn', {
-          code: DIAGNOSTIC_CODES.THEME_LISTENER_ERROR,
-          message: error instanceof Error ? error.message : String(error),
-        }, pages.activePage?.pageId)
-      }
-    }
     return { status: 'theme-changed', theme }
   })
 

@@ -171,6 +171,13 @@ records boot state, visible text, page errors and diagnostics per page into
   kernel installs the table and reports unknown names through the
   unsupported-API fallback. `@tiny/api` must not import `@tiny/runtime`.
   Adding a `wx.*` API touches `packages/api`, never the kernel.
+- Global `wx.onXXX` events are API-owned: `@tiny/api` provides the
+  `GlobalEventHub` and the on/off table. Host entries create the hub and pass it
+  to both `ApiContext.events` and `ServiceThreadOptions.events`; host platform
+  events arrive as `event.global` `{ name, payload }` frames and runtime events
+  (theme, resize, errors) go through the same sink. App foreground/background
+  events are host-owned; the page stack still carries the legacy app hooks until
+  the host lifecycle source lands.
 - Host facts (menu-button geometry, performance, device capabilities) stay in
   the host's API-table composition and its synchronous handler map
   (`WasmHostOptions.syncApiHandlers`); host adapters only forward them. Canvas,
