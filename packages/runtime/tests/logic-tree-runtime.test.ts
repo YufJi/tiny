@@ -279,7 +279,10 @@ describe('logic tree runtime options', () => {
     expect(cb).toBeDefined()
     expect(tree.dispatchViewEvent({ viewId: cb!.id, name: 'tap', native: {} })).toBe(true)
     // Event handlers receive a glass method caller; setData's completion
-    // callback must still run so nested updates like `doPopup` work.
+    // callback must still run so nested updates like `doPopup` work. It waits
+    // for glass's own render pass here because nobody else acknowledges it.
+    expect((parent as unknown as { data: { callbackSeen?: string } }).data.callbackSeen).toBe('first')
+    await new Promise((resolve) => setTimeout(resolve, 0))
     expect((parent as unknown as { data: { callbackSeen?: string } }).data.callbackSeen).toBe('second')
     // A shadow-tree text driven by component data travels as a component data
     // patch (the render thread re-evaluates the template), not as a text patch.

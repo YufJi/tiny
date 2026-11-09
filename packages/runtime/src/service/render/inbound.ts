@@ -25,6 +25,8 @@ export type RenderInboundHost = {
   sendSnapshot: (pageId: string) => void
   reportError: (message: string) => void
   dispatchWxsEffect: (pageId: string, effect: RenderWxsEffect) => void
+  /** The render thread reflected a batch; run its `setData` completions. */
+  acknowledgeRenders: (tokens: string[]) => void
 }
 
 /**
@@ -64,6 +66,15 @@ export function attachRenderInbound(
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.ready, (message) => {
     if (!host.getLogicTree() || !message.pageId || !host.isMounted(message.pageId)) return
     host.sendSnapshot(message.pageId)
+  })
+
+  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.ack, (message) => {
+    const payload = (message.payload ?? {}) as { tokens?: unknown }
+    const tokens = Array.isArray(payload.tokens)
+      ? payload.tokens.filter((token): token is string => typeof token === 'string')
+      : []
+    if (tokens.length === 0) return
+    host.acknowledgeRenders(tokens)
   })
 }
 

@@ -51,6 +51,12 @@ export type LogicTreeAdapterOptions = {
   onDiagnostic?: (diagnostic: import('../../diagnostics').RuntimeDiagnostic) => void
   /** Report a handler/observer error raised inside glass-easel. */
   onError?: (pageId: string | undefined, message: string, details?: unknown) => void
+  /**
+   * Run a component `setData` completion after the render thread applied the
+   * update. Without it (standalone logic tree) the adapter falls back to
+   * glass-easel's own render pass.
+   */
+  afterRender?: (pageId: string, callback: () => void) => void
   /** Router / opener-channel hooks for page and component instances. */
   frameworkContext?: LogicFrameworkContext
   viewIntersection?: {
@@ -138,6 +144,7 @@ export class LogicTreeAdapter {
       ...(options.frameworkContext ? { frameworkContext: options.frameworkContext } : {}),
       logicQueryFactory: (component) => this.createSelectorQueryFor(component),
       onLogicDataChange: options.onDataChange,
+      ...(options.afterRender ? { afterRender: options.afterRender } : {}),
       logicTouchState: () => this.getActiveTouches(),
       logicIntersectionFactory: (component, observerOptions) => (
         this.createIntersectionObserverFor(component, observerOptions)

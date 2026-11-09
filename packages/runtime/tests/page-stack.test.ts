@@ -81,6 +81,10 @@ function createFakeRender(): FakeRender {
     syncPageData(pageId, patch) {
       synced.push({ pageId, patch })
     },
+    completeAfterRender(_pageId, callback) {
+      // No render thread in the fake: keep the completion asynchronous.
+      queueMicrotask(callback)
+    },
     triggerPageLifetime(pageId, phase) {
       lifetimes.push({ pageId, phase })
     },

@@ -171,7 +171,8 @@ glass-easel 尚未公开 host/style scope 属性配置，因此 `TINY_ENGINE_NAM
 | 执行 observer | service 侧的 observers 和 property observer 按变更路径匹配执行；property observer 会收到旧值。 | runObservers(instance, observers, changedPaths, oldData) |
 | 重新求值模板 | 逻辑树里的 glass-easel 重新计算模板，得到新的虚拟 RenderNode。 | logicTree.updateRenderTree(pageId) |
 | diff 出 patch | 旧快照和新快照按 text、replace、props、insert、remove、reorder 做 diff，同一个 microtask 内的更新会合批。 | diffRenderTree(previous, next) |
-| 渲染树应用 patch | 宿主 TreeRenderer 把 patch 应用到真实组件和 DOM；service 不等待 render 的确认。 | tree.patch |
+| 渲染树应用 patch | 宿主 TreeRenderer 把 patch 应用到真实组件和 DOM；带 completion 的批次同时携带 ack token，渲染树应用后回 `tree.ack`。 | tree.patch · tree.ack |
+| 执行完成回调 | `setData(patch, cb)` 的 `cb` 不在数据写入时执行：batch 被确认后才按调用顺序执行，回调异常走 `SET_DATA_CALLBACK_ERROR` 诊断。 | completeAfterRender(pageId, cb) |
 :::
 
 :::::split
@@ -202,6 +203,10 @@ Component({
 
 :::card{title="observer 只在 service 执行"}
 render 发现 DOM 事件后把组件 id 或元素 locator 和 native 字段发回 service；事件处理、setData、observer 和逻辑树模板求值都在 service 完成。
+:::
+
+:::card{title="completion 等 render 确认"}
+`setData(patch, cb)` 的 data 写入是同步的，`cb` 却要等对应批次在渲染树应用后才执行。同一 microtask 内的多次 setData 合批、按调用顺序回调；回调里再 setData 会进入下一批。没有可渲染变化时，回调在本次 flush 末尾执行。
 :::
 
 :::card{title="递归和异常都有诊断" tone="warn"}

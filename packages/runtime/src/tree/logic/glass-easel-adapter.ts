@@ -110,6 +110,12 @@ export type GlassEaselAdapterOptions = {
     detail: unknown,
     options?: { bubbles?: boolean; composed?: boolean },
   ) => void
+  /**
+   * Run a component `setData` completion after the owning page's render update.
+   * The render bridge owns the acknowledgement; a standalone logic tree falls
+   * back to glass-easel's own render pass.
+   */
+  afterRender?: (pageId: string, callback: () => void) => void
   /** Router / opener-channel hooks for page and component instances. */
   frameworkContext?: LogicFrameworkContext
   /** `this.animate` / `this.clearAnimate` for logic components. */
@@ -217,6 +223,7 @@ export class GlassEaselRuntimeAdapter {
   private readonly logicIntersectionFactory?: GlassEaselAdapterOptions['logicIntersectionFactory']
   private readonly logicAnimationFactory?: GlassEaselAdapterOptions['logicAnimationFactory']
   private readonly onCustomEvent?: GlassEaselAdapterOptions['onCustomEvent']
+  private readonly afterRender?: GlassEaselAdapterOptions['afterRender']
   private readonly frameworkContext?: LogicFrameworkContext
   private readonly customEventComponents = new WeakSet<object>()
 
@@ -233,6 +240,7 @@ export class GlassEaselRuntimeAdapter {
     this.logicIntersectionFactory = options.logicIntersectionFactory
     this.logicAnimationFactory = options.logicAnimationFactory
     this.onCustomEvent = options.onCustomEvent
+    this.afterRender = options.afterRender
     this.frameworkContext = options.frameworkContext
     const styleScopeManager = new glassEasel.StyleScopeManager()
     this.componentSpace = new glassEasel.ComponentSpace(undefined, undefined, styleScopeManager, true)
@@ -1373,6 +1381,10 @@ export class GlassEaselRuntimeAdapter {
    * glass's `setData` only accepts the patch, while pages commonly pass a
    * completion callback (`setData(patch, cb)`); preserve the callback on the
    * component instance so nested page methods also see it.
+   *
+   * The callback is not a data-completion hook: WeChat runs it after the view
+   * layer applied the update, so it goes through the render bridge (or glass's
+   * own render pass when there is no render tree).
    */
   private ensureSetDataCallback(component: glassEasel.GeneralComponent): void {
     if (this.setDataCallbackComponents.has(component)) return
@@ -1383,7 +1395,16 @@ export class GlassEaselRuntimeAdapter {
     const original = target.setData.bind(component)
     target.setData = (data: never, callback?: () => void): void => {
       original(data)
-      callback?.()
+      if (typeof callback !== 'function') return
+      const pageId = this.pageIdOf(component)
+      if (this.afterRender && pageId) {
+        this.afterRender(pageId, callback)
+        return
+      }
+      // No render bridge can acknowledge this update (standalone logic tree or
+      // a component detached from every page). Defer to glass's render pass so
+      // the callback still never runs before the data update settled.
+      glassEasel.triggerRender(component, () => callback())
     }
   }
 

@@ -17,6 +17,11 @@ export type ServiceRenderPort = {
   mountPage(page: ServiceRenderPage): void
   unmountPage(pageId: string): void
   syncPageData(pageId: string, patch: Record<string, unknown>): void
+  /**
+   * Run a `setData` completion after the page's render tree applied the update.
+   * Implementations without a render thread must still run it asynchronously.
+   */
+  completeAfterRender(pageId: string, callback: () => void): void
   triggerPageLifetime(pageId: string, phase: 'show' | 'hide'): void
   selectComponents(pageId: string, selector: string, all: boolean): unknown[]
   relationNodes(pageId: string, relationKey: string): unknown[]

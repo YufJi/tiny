@@ -533,6 +533,7 @@ export class ServicePageStack {
       onDataPatch: (id, patch) => {
         render.syncPageData(id, patch)
       },
+      afterRender: (id, callback) => render.completeAfterRender(id, callback),
       onDiagnostic: (code, message, details) => this.options.connection.sendDiagnostic('warn', {
         code,
         message,
