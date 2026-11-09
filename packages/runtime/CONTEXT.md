@@ -108,13 +108,13 @@ one layer.
   and errors. It does not define API or rendering behavior.
 - **Service API table**: the `wx.*` functions installed on the global API object.
   It is not kernel code: the host entry creates the connection, composes the
-  `WeixinApiContext` and passes the assembled table through
+  `ApiContext` and passes the assembled table through
   `ServiceThreadOptions.apiHost`; the standard WeChat-compatible table ships in
   `@tiny/api`. The kernel owns only the global namespace and the
   unsupported-API fallback, so adding an API never changes runtime semantics.
-- **API context**: `WeixinApiContext` in `@tiny/api` — bridge connection, page
-  identity, the synchronous host channel, tabBar, canvas, asset resolution and
-  diagnostics. The host entry builds it from host facts plus late-bound runtime
+- **API context**: `ApiContext` in `@tiny/api` — bridge connection, page
+  identity, tabBar, canvas, asset resolution and diagnostics. Synchronous calls
+  use `connection.callSync`, backed by the host-injected global handle. The host entry builds it from host facts plus late-bound runtime
   accessors (`activePage`, `tabBar`, `setNextPageEventChannel`). `@tiny/api`
   must not import `@tiny/runtime`; host contracts (`SystemInfo`, `StorageValues`,
   `HostApiHandlers`) live in `@tiny/api`, and shared pure helpers live in

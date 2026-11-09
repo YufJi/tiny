@@ -1,5 +1,5 @@
 import { bootTreeThread } from '@tiny/runtime'
-import { BridgeConnection } from '@tiny/bridge'
+import { connectHostBridge, installHostBridge } from '@tiny/bridge'
 import { installOffscreenCanvasResponder } from './canvas-bridge'
 import { installPageLifecycleBridge } from './page-lifecycle'
 import { listenForRuntimePort } from './runtime-port'
@@ -35,10 +35,10 @@ export function bootRenderEntry(options: RenderEntryOptions = {}): void {
   entry.prepare()
   options.prepare?.()
   listenForRuntimePort('render', (transport) => {
-    const connection = new BridgeConnection({
+    installHostBridge(transport)
+    const connection = connectHostBridge({
       localRole: 'render',
       peerRole: 'host',
-      transport,
       capabilities: { role: 'render', mode: 'tree' },
     })
     const runtime = bootTreeThread({

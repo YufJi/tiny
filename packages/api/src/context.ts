@@ -13,20 +13,6 @@ import type { AssetUrlResolver } from '@tiny/manifest'
 /** The `wx` global table. */
 export type ApiHost = Record<string, (...args: unknown[]) => unknown>
 
-/**
- * Synchronous host channel for WeChat's `*Sync` APIs.
- *
- * The bridge is asynchronous, so a host that supports synchronous APIs supplies
- * a direct call path: the browser host injects a function into the service
- * frame, and the iOS host exposes a JavaScriptCore block. The method names are
- * the same `api` protocol methods the asynchronous path uses (`system.info`,
- * `storage.get`, ...). Hosts without a channel make `*Sync` APIs throw instead
- * of serving stale state.
- */
-export type SyncHostChannel = {
-  call(domain: string, method: string, payload: Record<string, unknown>): unknown
-}
-
 /** Runtime tabBar actions the `wx.setTabBar*` family drives. */
 export type TabBarApi = {
   setStyle(params: Record<string, unknown>): void
@@ -125,8 +111,9 @@ export type QueryNodeSnapshot = {
 /**
  * Everything the API table needs from its environment.
  *
- * Host facts (`connection`, `syncHost`, `canvas`, `resolveAssetUrl`) come from
- * the host entry. Kernel state (`pageId`, `getActivePage`, `getCurrentPagePath`,
+ * Host facts (`connection`, `canvas`, `resolveAssetUrl`) come from the host
+ * entry. Synchronous host answers ride the transport
+ * (`connection.callSync`); the bridge stays platform-free. Kernel state (`pageId`, `getActivePage`, `getCurrentPagePath`,
  * `tabBar`, `setNextPageEventChannel`) is exposed by the runtime and late-bound
  * by the host, so the API table can be constructed before the runtime boots.
  */
@@ -141,8 +128,6 @@ export type ApiContext = {
    * extensions) is assembled; `canIUse` uses it to answer bare API names.
    */
   hasApi?: (name: string) => boolean
-  /** Host-provided synchronous call path for `system.info` / `storage.*`. */
-  syncHost?: SyncHostChannel
   canvas?: ServiceCanvasAdapter
   resolveAssetUrl?: AssetUrlResolver
   /** Host-owned set so `runtime.themeChange` reaches `wx.onThemeChange`. */

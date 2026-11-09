@@ -1,5 +1,6 @@
 import { BUILTIN_COMPONENT_TAGS } from '@tiny/manifest'
 import type { ApiContext } from './context'
+import { callHostSync } from './run-api'
 
 /**
  * `wx.canIUse` schema resolution.
@@ -30,19 +31,6 @@ export type CanIUseCapabilities = {
 
 /** Valid `${method}` segments in an API schema (WeChat's grammar). */
 const API_METHODS = new Set(['return', 'success', 'object', 'callback'])
-
-/**
- * APIs that only work through the host's synchronous channel. A host without
- * the channel cannot serve them at all, so they are unavailable in `canIUse`.
- */
-const SYNC_APIS = new Set([
-  'getSystemInfoSync',
-  'getStorageSync',
-  'setStorageSync',
-  'removeStorageSync',
-  'clearStorageSync',
-  'getStorageInfoSync',
-])
 
 export function createCanIUse(
   context: ApiContext,
@@ -82,7 +70,6 @@ export function createCanIUse(
     }
 
     if (context.hasApi?.(head) ?? false) {
-      if (SYNC_APIS.has(head) && !context.syncHost) return false
       if (rest.length > 0 && !API_METHODS.has(rest[0]!)) return false
       if (isSystemSnapshotApi(head)) {
         const resolved = snapshotFieldSupported(systemInfoSnapshot(context), head, rest)
@@ -107,7 +94,7 @@ function isSystemSnapshotApi(apiName: string): boolean {
 
 function systemInfoSnapshot(context: ApiContext): Record<string, unknown> | undefined {
   try {
-    const snapshot = context.syncHost?.call('api', 'system.info', {})
+    const snapshot = callHostSync(context, 'system.info')
     return snapshot && typeof snapshot === 'object'
       ? snapshot as Record<string, unknown>
       : undefined

@@ -1,6 +1,7 @@
 import { createApiHost } from '@tiny/api'
-import type { SyncHostChannel, ApiContext, ApiHost } from '@tiny/api'
-import { BridgeConnection } from '@tiny/bridge'
+import type { ApiContext, ApiHost } from '@tiny/api'
+import { connectHostBridge, installHostBridge } from '@tiny/bridge'
+import type { TransportFrame } from '@tiny/bridge'
 import {
   bootServiceThread,
   type ServiceThreadOptions,
@@ -8,6 +9,7 @@ import {
 } from '@tiny/runtime'
 import { createBrowserCanvasAdapter, installBrowserCanvasCompat } from './canvas-bridge'
 import { listenForRuntimePort } from './runtime-port'
+import { answerSyncFrame } from './sync-frame'
 
 export type ServiceEntryOptions = {
   manifest: ServiceThreadOptions['manifest']
@@ -23,26 +25,34 @@ export type ServiceEntryOptions = {
   apiHost?: (context: ApiContext) => ApiHost
   /** Host-specific APIs composed into the standard table. */
   apiExtensions?: ApiHost
-  /**
-   * Synchronous host call path for `*Sync` APIs. Defaults to the channel the
-   * browser host injects into this frame as `__tinySyncHost`.
-   */
-  syncHost?: SyncHostChannel
 }
 
 /**
- * The browser host injects a synchronous channel into the service frame before
- * bootstrapping it, because the bridge itself is asynchronous. Resolve it
- * lazily so injection order does not matter.
+ * The browser host injects a synchronous API-level channel into the service
+ * frame before bootstrapping it. Resolve it lazily so injection order does not
+ * matter; the transport adapter turns frames into these API-level calls.
  */
-const injectedSyncHost: SyncHostChannel = {
-  call(domain, method, payload) {
-    const bridge = (globalThis as unknown as Record<string, unknown>).__tinySyncHost as
-      | SyncHostChannel
-      | undefined
-    if (!bridge) throw new Error('the browser host did not install a synchronous channel')
-    return bridge.call(domain, method, payload)
-  },
+type InjectedSyncHost = {
+  call(domain: string, method: string, payload: Record<string, unknown>): unknown
+}
+
+function readInjectedSyncHost(): InjectedSyncHost | undefined {
+  return (globalThis as unknown as Record<string, unknown>).__tinySyncHost as
+    | InjectedSyncHost
+    | undefined
+}
+
+const sendSync = (frame: TransportFrame): TransportFrame => {
+  const host = readInjectedSyncHost()
+  if (!host) throw new Error('the browser host did not install a synchronous channel')
+  return answerSyncFrame(frame, (message) => {
+    if (message.domain !== 'api') throw new Error(`unsupported sync domain: ${message.domain}`)
+    return host.call(
+      message.domain,
+      message.method,
+      (message.payload ?? {}) as Record<string, unknown>,
+    )
+  })
 }
 
 /**
@@ -55,10 +65,10 @@ const injectedSyncHost: SyncHostChannel = {
 export function bootServiceEntry(options: ServiceEntryOptions): void {
   installBrowserCanvasCompat()
   listenForRuntimePort('service', (transport) => {
-    const connection = new BridgeConnection({
+    installHostBridge(transport)
+    const connection = connectHostBridge({
       localRole: 'service',
       peerRole: 'host',
-      transport,
       capabilities: { role: 'service' },
     })
     const canvas = createBrowserCanvasAdapter()
@@ -70,7 +80,6 @@ export function bootServiceEntry(options: ServiceEntryOptions): void {
       connection,
       apiName: compatibility.api.global,
       apiNamespaces: [compatibility.api.global, ...compatibility.api.aliases],
-      syncHost: options.syncHost ?? injectedSyncHost,
       canvas,
       resolveAssetUrl: options.resolveAssetUrl,
       themeListeners,
@@ -101,5 +110,5 @@ export function bootServiceEntry(options: ServiceEntryOptions): void {
       themeListeners,
       onPageRelease: (pageId) => canvas.releaseCanvasNode?.({ pageId }),
     })
-  })
+  }, { sendSync })
 }

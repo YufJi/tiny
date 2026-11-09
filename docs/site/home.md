@@ -65,7 +65,7 @@ Bridge 定义消息信封、帧、调用与回复、事件批处理、超时和 
 :::
 
 :::card{tag="hosts/web" tone="violet" title="宿主注入的能力"}
-宿主入口创建 connection，拼出 `WeixinApiContext` 后交给 `createApiHost`（标准集来自 `@tiny/api`）；`apiExtensions` 补充设备信息，`apiHandlers` 处理需要跨线程的 API；canvas、资源 URL 和内置组件分别由宿主提供。
+宿主入口创建 connection，拼出 `ApiContext` 后交给 `createApiHost`（标准集来自 `@tiny/api`）；`apiExtensions` 补充设备信息，`apiHandlers` 处理需要跨线程的 API；canvas、资源 URL 和内置组件分别由宿主提供。
 
 [看宿主注入方式 →](#/hosts)
 :::

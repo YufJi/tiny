@@ -1,14 +1,15 @@
 import { createApiHost } from '@tiny/api'
-import type { SyncHostChannel, ApiContext, ApiHost } from '@tiny/api'
+import type { ApiContext, ApiHost } from '@tiny/api'
 import { bootServiceThread, resolveAssetPath } from '@tiny/runtime'
 import type {
   RuntimeManifest,
   ServiceThreadRuntime,
   TemplateRegistry,
 } from '@tiny/runtime'
-import { BridgeConnection } from '@tiny/bridge'
+import { connectHostBridge, installHostBridge } from '@tiny/bridge'
 import type { Transport, TransportFrame } from '@tiny/bridge'
 import { installHostShims } from './shims'
+import { answerSyncFrame } from './sync-frame'
 import { createRemoteCanvasAdapter } from './canvas'
 
 export type TinyIOSApp = {
@@ -22,6 +23,10 @@ export type TinyIOSApp = {
 }
 
 type HostGlobal = Record<string, any>
+
+type InjectedSyncHost = {
+  call(domain: string, method: string, payload: Record<string, unknown>): unknown
+}
 
 const globalEval: (source: string) => unknown = eval
 
@@ -89,6 +94,9 @@ function createNativeTransport(): Transport {
       return () => {
         if (listener === next) listener = undefined
       }
+    },
+    sendSync() {
+      throw new Error('The native service transport has no synchronous path')
     },
   }
 }
@@ -173,10 +181,10 @@ export function startTinyService(app: TinyIOSApp): void {
   }
 
   const transport = createNativeTransport()
-  const connection = new BridgeConnection({
+  installHostBridge(transport)
+  const connection = connectHostBridge({
     localRole: 'service',
     peerRole: 'host',
-    transport,
     capabilities: { role: 'service' },
   })
   const canvas = createRemoteCanvasAdapter((payload) => {
@@ -188,7 +196,7 @@ export function startTinyService(app: TinyIOSApp): void {
   const nativeSyncCall = host.__tinySyncHostCall as
     | ((method: string, payload: string) => string)
     | undefined
-  const syncHost: SyncHostChannel | undefined = typeof nativeSyncCall === 'function'
+  const syncHost: InjectedSyncHost | undefined = typeof nativeSyncCall === 'function'
     ? {
         call: (domain, method, payload) => {
           if (domain !== 'api') throw new Error(`unsupported sync host domain: ${domain}`)
@@ -202,6 +210,16 @@ export function startTinyService(app: TinyIOSApp): void {
         },
       }
     : undefined
+  if (syncHost) {
+    transport.sendSync = (frame) => answerSyncFrame(frame, (message) => {
+      if (message.domain !== 'api') throw new Error(`unsupported sync domain: ${message.domain}`)
+      return syncHost.call(
+        message.domain,
+        message.method,
+        (message.payload ?? {}) as Record<string, unknown>,
+      )
+    })
+  }
 
   const compatibility = app.manifest.runtimeCompatibility
   const themeListeners = new Set<(value: unknown) => void>()
@@ -210,7 +228,6 @@ export function startTinyService(app: TinyIOSApp): void {
     connection,
     apiName: compatibility.api.global,
     apiNamespaces: [compatibility.api.global, ...compatibility.api.aliases],
-    ...(syncHost ? { syncHost } : {}),
     canvas,
     resolveAssetUrl: (assetPath, context) => {
       const resolved = resolveAssetPath(context.sourcePath, assetPath)

@@ -85,9 +85,7 @@ describe('tiny runtime', () => {
       transport: serviceTransport,
       manifest,
       initialPath: PAGE_PATH,
-      syncHost: {
-        call: () => ({ pixelRatio: 2, windowWidth: 320, windowHeight: 640 }),
-      },
+      syncHost: () => ({ pixelRatio: 2, windowWidth: 320, windowHeight: 640 }),
     })
     const globalObject = globalThis as unknown as Record<string, unknown>
     const pageOptions = { data: { message: 'static' } }

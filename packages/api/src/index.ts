@@ -32,7 +32,6 @@ export type {
   LegacyCanvasRequest,
   QueryNodeSnapshot,
   ServiceCanvasAdapter,
-  SyncHostChannel,
   TabBarApi,
   ApiContext,
   ApiHost,

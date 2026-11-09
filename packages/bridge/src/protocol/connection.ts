@@ -10,7 +10,14 @@ import {
   type ProtocolRole,
   validateEnvelope,
 } from './message';
-import { createTransportFrame, type Transport, type TransportFrame, validateTransportFrame } from './transport';
+import {
+  createTransportFrame,
+  getHostBridge,
+  HOST_BRIDGE_GLOBAL,
+  type Transport,
+  type TransportFrame,
+  validateTransportFrame,
+} from './transport';
 
 export type ProtocolCallHandler = (message: ProtocolMessage) => unknown | Promise<unknown>;
 
@@ -35,6 +42,15 @@ type ReadyWaiter = {
   resolve: (value: Record<string, unknown>) => void;
   reject: (error: ProtocolError) => void;
 };
+
+/** Connect using the host handle injected under `HOST_BRIDGE_GLOBAL`. */
+export function connectHostBridge(options: Omit<ConnectionOptions, 'transport'>): BridgeConnection {
+  const transport = getHostBridge();
+  if (!transport) {
+    throw new ProtocolError('TRANSPORT_CLOSED', `No host bridge handle is installed under ${HOST_BRIDGE_GLOBAL}`);
+  }
+  return new BridgeConnection({ ...options, transport });
+}
 
 export class BridgeConnection {
   readonly localRole: ProtocolRole;
@@ -115,6 +131,51 @@ export class BridgeConnection {
     options: { pageId?: string; timeoutMs?: number } = {}
   ): Promise<T> {
     return this.request('control', domain, method, payload, options);
+  }
+
+  /**
+   * Call the peer synchronously, for WeChat's `*Sync` APIs.
+   *
+   * Builds a `callSync` message frame, exchanges it through the host-provided
+   * transport's `sendSync`, and validates the normal `reply` envelope. No
+   * pending call/timeout is involved.
+   */
+  callSync<T = unknown>(
+    domain: ProtocolDomain,
+    method: string,
+    payload: Record<string, unknown> = {},
+    options: { pageId?: string; timeoutMs?: number } = {}
+  ): T {
+    const request = createMessage({
+      kind: 'callSync',
+      domain,
+      method,
+      payload,
+      source: this.localRole,
+      target: this.peerRole,
+      pageId: options.pageId,
+    });
+    let replyFrame: TransportFrame;
+    try {
+      replyFrame = this.transport.sendSync(createTransportFrame([request]));
+    } catch (error) {
+      throw error instanceof ProtocolError ? error : new ProtocolError('HANDLER_ERROR', String(error));
+    }
+    const validated = validateTransportFrame(replyFrame);
+    const reply = validated.messages.find(
+      (message) => message.kind === 'reply' && message.replyTo === request.messageId
+    );
+    if (!reply) {
+      throw new ProtocolError('INVALID_ENVELOPE', `No synchronous reply for ${domain}.${method}`);
+    }
+    const result = reply.payload as ProtocolReplyPayload<unknown> | undefined;
+    if (!result || typeof result !== 'object' || typeof (result as { ok?: unknown }).ok !== 'boolean') {
+      throw new ProtocolError('INVALID_PAYLOAD', 'Synchronous reply payload is malformed');
+    }
+    if (!result.ok) {
+      throw new ProtocolError(result.error.code, result.error.message, result.error.details);
+    }
+    return result.result as T;
   }
 
   sendEvent(domain: ProtocolDomain, method: string, payload?: unknown, options: { pageId?: string } = {}): void {
@@ -280,6 +341,10 @@ export class BridgeConnection {
     if (validated.kind === 'reply') {
       this.handleReply(validated as ProtocolMessage<ProtocolReplyPayload<unknown>>);
       return;
+    }
+
+    if (validated.kind === 'callSync') {
+      throw new ProtocolError('INVALID_ENVELOPE', 'A callSync message must be answered through Transport.sendSync');
     }
 
     if (validated.kind === 'event') {

@@ -10,8 +10,28 @@ export type TransportFrameListener = (frame: TransportFrame) => void;
 
 export interface Transport {
   send(frame: TransportFrame): void;
-  close(): void | Promise<void>;
   onFrame(listener: TransportFrameListener): () => void;
+  /**
+   * Synchronously exchange one request frame with the peer.
+   *
+   * The host glue owns the implementation (MessagePort + injected function,
+   * direct object bridge, native JSCore, …). A transport that cannot answer
+   * synchronously throws `UNSUPPORTED_METHOD`; `BridgeConnection.callSync`
+   * surfaces that error. This is a stable part of the JS bridge contract.
+   */
+  sendSync(frame: TransportFrame): TransportFrame;
+  close(): void | Promise<void>;
+}
+
+/** Global handle injected by the host glue before the bridge connects. */
+export const HOST_BRIDGE_GLOBAL = '__TINY_HOST_BRIDGE__';
+
+export function installHostBridge(transport: Transport): void {
+  (globalThis as unknown as Record<string, unknown>)[HOST_BRIDGE_GLOBAL] = transport;
+}
+
+export function getHostBridge(): Transport | undefined {
+  return (globalThis as unknown as Record<string, unknown>)[HOST_BRIDGE_GLOBAL] as Transport | undefined;
 }
 
 export function createTransportFrame(messages: ProtocolMessage[]): TransportFrame {
@@ -78,6 +98,10 @@ class InMemoryTransport implements Transport {
   onFrame(listener: TransportFrameListener): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  }
+
+  sendSync(_frame: TransportFrame): TransportFrame {
+    throw new ProtocolError('UNSUPPORTED_METHOD', `The ${this.name} transport does not support synchronous calls`);
   }
 }
 

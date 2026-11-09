@@ -1,4 +1,4 @@
-import { createHostMessageChannelPair } from '@tiny/bridge'
+import { createHostMessageChannelPair } from './message-port-transport'
 import type { Transport, TransportFrame } from '@tiny/bridge'
 import { normalizeTransportDiagnostic } from '@tiny/runtime'
 import type {
@@ -9,7 +9,6 @@ import type {
   HostApiHandlers,
   SyncApiHandlers,
 } from '@tiny/api'
-import type { SyncHostChannel } from '@tiny/api'
 import { BROWSER_RUNTIME_NAMES } from './naming'
 import { installCanvasHandoffRelay } from './canvas-relay'
 
@@ -382,6 +381,9 @@ export class WasmBrowserHost {
         send() {},
         close() {},
         onFrame: () => () => {},
+        sendSync: () => {
+          throw new Error('the render transport has no synchronous path')
+        },
       },
     })
     this.container.append(iframe)
@@ -529,9 +531,9 @@ export class WasmBrowserHost {
    * device facts or storage.
    */
   private installSyncHost(iframe: HTMLIFrameElement): void {
-    const target = iframe.contentWindow as (Window & { __tinySyncHost?: SyncHostChannel }) | null
+    const target = iframe.contentWindow as (Window & { __tinySyncHost?: InjectedSyncHost }) | null
     if (!target) return
-    const channel: SyncHostChannel = {
+    const channel: InjectedSyncHost = {
       call: (domain, method, payload) => {
         if (domain !== 'api') throw new Error(`unsupported sync host domain: ${domain}`)
         const handler = this.options.syncApiHandlers?.[method]
@@ -707,6 +709,11 @@ function waitForThreadReady(
     }
     window.addEventListener('message', onMessage)
   })
+}
+
+/** The host page injects this object into the service frame. */
+type InjectedSyncHost = {
+  call(domain: string, method: string, payload: Record<string, unknown>): unknown
 }
 
 /** JSON-round-trip a value so no reference crosses the iframe realm boundary. */

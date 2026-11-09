@@ -1,10 +1,9 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { BridgeConnection } from '../src/protocol/connection'
+import { BridgeConnection, connectHostBridge } from '../src/protocol/connection'
 import { ProtocolError } from '../src/protocol/errors'
 import { assertJsonSafe } from '../src/protocol/json'
-import { createMessage, validateEnvelope, type ProtocolMessage } from '../src/protocol/message'
-import { createHostMessageChannelPair, createMessagePortTransport } from '../src/protocol/message-port-transport'
-import { createInMemoryTransportPair } from '../src/protocol/transport'
+import { createMessage, createReply, validateEnvelope, type ProtocolMessage } from '../src/protocol/message'
+import { createInMemoryTransportPair, createTransportFrame, HOST_BRIDGE_GLOBAL, installHostBridge } from '../src/protocol/transport'
 
 function createConnectionPair() {
   const [hostTransport, serviceTransport] = createInMemoryTransportPair()
@@ -171,24 +170,96 @@ describe('bridge connection', () => {
   })
 })
 
-describe('message-port transport', () => {
-  test('performs a handshake over MessageChannel ports', async () => {
-    const { hostTransport, peerPort } = createHostMessageChannelPair()
-    const host = new BridgeConnection({
+describe('synchronous calls', () => {
+  test('callSync exchanges a callSync frame through Transport.sendSync', () => {
+    const [transport] = createInMemoryTransportPair()
+    const seen: Array<{ kind: string; domain: string; method: string; payload: unknown }> = []
+    transport.sendSync = (frame) => {
+      const request = frame.messages[0]
+      seen.push({
+        kind: request.kind,
+        domain: request.domain,
+        method: request.method,
+        payload: request.payload,
+      })
+      return createTransportFrame([createReply(request, {
+        ok: true,
+        result: { value: (request.payload as { key?: string }).key },
+      })])
+    }
+    const connection = new BridgeConnection({
       localRole: 'host',
       peerRole: 'service',
-      transport: hostTransport,
+      transport,
       respondToHello: false,
     })
-    const service = new BridgeConnection({
-      localRole: 'service',
-      peerRole: 'host',
-      transport: createMessagePortTransport(peerPort),
-      capabilities: { runtime: 'glass-easel' },
+    expect(connection.callSync('api', 'storage.get', { key: 'token' }))
+      .toEqual({ value: 'token' })
+    expect(seen).toEqual([{
+      kind: 'callSync',
+      domain: 'api',
+      method: 'storage.get',
+      payload: { key: 'token' },
+    }])
+  })
+
+  test('callSync turns an error reply into a ProtocolError', () => {
+    const [transport] = createInMemoryTransportPair()
+    transport.sendSync = (frame) => createTransportFrame([
+      createReply(frame.messages[0], {
+        ok: false,
+        error: { code: 'HANDLER_ERROR', message: 'handler exploded' },
+      }),
+    ])
+    const connection = new BridgeConnection({
+      localRole: 'host',
+      peerRole: 'service',
+      transport,
+      respondToHello: false,
     })
-    const ready = await host.handshake()
-    expect(ready.capabilities).toEqual({ runtime: 'glass-easel' })
-    await host.close()
-    await service.close()
+    expect(() => connection.callSync('api', 'system.info')).toThrow(/handler exploded/)
+  })
+
+  test('callSync supports an undefined result', () => {
+    const [transport] = createInMemoryTransportPair()
+    transport.sendSync = (frame) => createTransportFrame([
+      createReply(frame.messages[0], { ok: true }),
+    ])
+    const connection = new BridgeConnection({
+      localRole: 'host',
+      peerRole: 'service',
+      transport,
+      respondToHello: false,
+    })
+    expect(connection.callSync('api', 'storage.clear')).toBeUndefined()
+  })
+
+  test('callSync throws when the transport has no sync path', () => {
+    const [transport] = createInMemoryTransportPair()
+    const connection = new BridgeConnection({
+      localRole: 'host',
+      peerRole: 'service',
+      transport,
+      respondToHello: false,
+    })
+    expect(() => connection.callSync('api', 'system.info')).toThrow(ProtocolError)
+  })
+
+  test('connectHostBridge uses the injected global handle', () => {
+    const [transport] = createInMemoryTransportPair()
+    transport.sendSync = (frame) => createTransportFrame([
+      createReply(frame.messages[0], { ok: true, result: 'ok' }),
+    ])
+    installHostBridge(transport)
+    try {
+      const connection = connectHostBridge({
+        localRole: 'host',
+        peerRole: 'service',
+        respondToHello: false,
+      })
+      expect(connection.callSync('api', 'system.info')).toBe('ok')
+    } finally {
+      delete (globalThis as Record<string, unknown>)[HOST_BRIDGE_GLOBAL]
+    }
   })
 })

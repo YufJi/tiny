@@ -44,7 +44,7 @@ Tiny 只守住一条线：`packages/runtime` 是唯一的内核，它不引用 w
   @tiny/manifest / @tiny/bridge / @tiny/wxs-runtime / glass-easel
 ```
 
-宿主不是内核的上层，而是内核的调用方。**宿主入口负责组装**：创建 `BridgeConnection`，用宿主事实和晚绑定的 runtime accessor 拼出 `WeixinApiContext`，再把 API 表交给内核安装。`@tiny/api` 只依赖 `@tiny/bridge` 和 `@tiny/manifest`，不 import runtime。
+宿主不是内核的上层，而是内核的调用方。**宿主入口负责组装**：创建 `BridgeConnection`，用宿主事实和晚绑定的 runtime accessor 拼出 `ApiContext`，再把 API 表交给内核安装。`@tiny/api` 只依赖 `@tiny/bridge` 和 `@tiny/manifest`，不 import runtime。
 
 | 注入点 | 宿主提供 | 内核拿到什么 | 浏览器宿主 | iOS 宿主 |
 | --- | --- | --- | --- | --- |
@@ -54,7 +54,7 @@ Tiny 只守住一条线：`packages/runtime` 是唯一的内核，它不引用 w
 | `apiHost` | API 表（含宿主扩展） | `MiniProgramApiHost`（不透明表） | `@tiny/api` + 窗口设备信息 + canvas/asset/sync | `@tiny/api` + 菜单按钮、性能 + canvas/asset/sync |
 | `onPageRelease` | 页面销毁后的资源回收 | `(pageId) => void` | 释放 canvas 节点 | 释放 display list |
 
-canvas、`resolveAssetUrl` 和 `syncHost` 只进入 `@tiny/api` 的 context；runtime 不需要它们，只在页面销毁时调用 `onPageRelease`。`themeListeners` 由宿主创建，同时交给 api（`onThemeChange`）和 runtime（转发 `runtime.themeChange`）。
+canvas 和 `resolveAssetUrl` 只进入 `@tiny/api` 的 context；同步调用由宿主注入的 `globalThis.__TINY_HOST_BRIDGE__` 句柄的 `sendSync`（帧级 `callSync` 请求/`reply`）承载，runtime 不需要它们，只在页面销毁时调用 `onPageRelease`。`themeListeners` 由宿主创建，同时交给 api（`onThemeChange`）和 runtime（转发 `runtime.themeChange`）。
 
 :::callout{title="这条线由脚本守着"}
 `pnpm check:runtime-purity` 从 `packages/runtime/src/index.ts` 遍历依赖图，出现 window、document、fetch、MessageChannel 或 `@tiny/host-*` 就失败。它验证的不是“当前浏览器能跑”，而是“同一个内核还能装进下一个宿主”。实现细节见[宿主适配](#/hosts)。
@@ -324,7 +324,7 @@ iOS 路径不使用 iframe 或 `host.html`；页面切换由 `HostCoreRuntime` �
 | canvas 实现 | 宿主 canvas 适配器 | 浏览器由 service 持有 OffscreenCanvas 控制面；iOS 由 service 录制 display-list、render WKWebView 回放 | ServiceCanvasAdapter / 宿主 canvas relay |
 | DOM 查询 | 宿主渲染树 | selector query / IntersectionObserver | query.select / query.intersection |
 | 资源 URL | 宿主 resolveAssetUrl | render 内置组件的 img/src；CSS url() 原样保留 | 渲染树解析内置组件资源，样式按文档相对路径解析 |
-| 宿主 transport / API 语义 | 宿主（system/storage 事实的唯一来源） | 仅保存注入的 API 表 | api.* 调用 / 同步通道 / apiHost |
+| 宿主 transport / API 语义 | 宿主（system/storage 事实的唯一来源） | 仅保存注入的 API 表 | api.* 调用 / 全局句柄 sendSync / apiHost |
 | 诊断 | 宿主诊断仓库 | devtool diagnostics | diagnostic.* 事件 |
 
 :::callout{title="一个常见错误" tone="warn"}
@@ -357,7 +357,7 @@ iOS 路径不使用 iframe 或 `host.html`；页面切换由 `HostCoreRuntime` �
 :::
 
 :::card{title="环境能力由宿主注入"}
-API 表由宿主入口组装（标准集来自 `@tiny/api`，设备事实用扩展叠加），canvas/资源/同步通道只进入 api context；runtime 只接收不透明 API 表和 `onPageRelease` 清理钩子。DOM 查询与相交观测走 `TreeRenderer.query` / `observeIntersection`，渲染后端和挂载点也由宿主提供。
+API 表由宿主入口组装（标准集来自 `@tiny/api`，设备事实用扩展叠加），canvas/资源只进入 api context，同步调用由宿主注入的全局句柄的 `sendSync` 提供；runtime 只接收不透明 API 表和 `onPageRelease` 清理钩子。DOM 查询与相交观测走 `TreeRenderer.query` / `observeIntersection`，渲染后端和挂载点也由宿主提供。
 :::
 
 :::card{title="命名配置只有一个来源"}

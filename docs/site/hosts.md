@@ -246,7 +246,7 @@ HostCore 把 `api.*` 调用交给平台适配器；浏览器实现集中在 `cre
 
 - `navigate.*` / `page.*`：HostCore 协调 service 和 render
 - `storage.*`：宿主持久化
-- `*Sync` 读取（`system.info`、`storage.*`）：具体宿主通过 `WasmHostOptions.syncApiHandlers` 提供同步实现；浏览器适配器只安装 `__tinySyncHost` 通道并转发，iOS 走 JSCore block。没有 handler 时 `*Sync` API 抛错，不回退到快照
+- `*Sync` 读取（`system.info`、`storage.*`）：具体宿主通过 `WasmHostOptions.syncApiHandlers` 提供同步实现；service entry 用它组装全局句柄 `__TINY_HOST_BRIDGE__` 的 `sendSync`（`callSync` 请求帧 + 普通 `reply`；浏览器经 `__tinySyncHost`，iOS 走 JSCore block），再 `connectHostBridge`；API 层通过 `callHostSync` 调用 `connection.callSync`。没有同步路径时 `*Sync` API 抛错，不回退到快照
 - `network.request` / `network.type` / `battery.get`：浏览器 fetch / navigator
 - `toast.show` / `ui.*` / `share.menu`：宿主 overlay 或平台壳
 - `login` / `getUserProfile`：浏览器 stub，不接真实账号体系
@@ -255,7 +255,7 @@ HostCore 把 `api.*` 调用交给平台适配器；浏览器实现集中在 `cre
 :::
 
 :::card{tag="service" tone="violet" title="apiHost：宿主编排 API 表"}
-内核不内置任何 `wx.*`。宿主入口创建 connection，拼出 `WeixinApiContext`，用 `createApiHost(context, extensions)` 拿标准表并叠加设备事实，再把表交给 `ServiceThreadOptions.apiHost`：
+内核不内置任何 `wx.*`。宿主入口创建 connection，拼出 `ApiContext`，用 `createApiHost(context, extensions)` 拿标准表并叠加设备事实，再把表交给 `ServiceThreadOptions.apiHost`：
 
 - `getMenuButtonBoundingClientRect`
 - `getPerformance`（now/mark/measure/observer）
@@ -290,7 +290,7 @@ api 通过 `createLegacyCanvasContext` / `acquireCanvasNode` 拿到同步 canvas
 | 内置组件图片 | `resolveAssetUrl` | 只有宿主知道静态资源的 URL 规则；CSS `url()` 仍按文档相对路径解析 |
 
 :::callout{title="仓库里已经定下的规则"}
-API 表由宿主入口组装后以值的形式传给 `ServiceThreadOptions.apiHost`（标准集在 `@tiny/api`），宿主事实作为覆盖层；canvas、`resolveAssetUrl` 和 `syncHost` 只进入 api context，页面销毁时由 `onPageRelease` 回收 canvas 资源；渲染树通过 `TreeRenderer` 注入。不要再把这些能力放回 `packages/runtime`。
+API 表由宿主入口组装后以值的形式传给 `ServiceThreadOptions.apiHost`（标准集在 `@tiny/api`），宿主事实作为覆盖层；canvas 和 `resolveAssetUrl` 只进入 api context，同步调用由宿主注入的全局句柄的 `sendSync` 提供，页面销毁时由 `onPageRelease` 回收 canvas 资源；渲染树通过 `TreeRenderer` 注入。不要再把这些能力放回 `packages/runtime`。
 :::
 
 ## @tiny/host-web 负责什么 {#browser kicker="Web 宿主"}
@@ -426,7 +426,7 @@ devtool 的 service/render 入口用 `new Function('url', 'return import(url)')`
 | 创建 Transport | service 一条，每页 render 各一条；帧边界、非空 messages 和 JSON 安全由 Bridge 兜底，但传输必须保序。 | |
 | 实现渲染树 | 实现 `TreeRenderer`：mount、applyPatches、模板/组件定义、事件 sink、query、measure、inspectTree、observeIntersection 和动画；Web 侧可直接用 `createGlassRenderTree`。 | |
 | 启动线程并等待连接装好 | service 安装兼容全局、loadTemplates 和 loadArtifacts；render 创建 TreeRenderer 并加载模板；宿主拿到 port 后创建 connection 再握手，用 ready 或同步点避免丢帧。 | |
-| 提供宿主信息 | 具体宿主提供 systemInfo/storage 的异步 handler 与同步 `syncApiHandlers`；入口创建 connection，拼出 `WeixinApiContext`（同步通道、canvas、资源、晚绑定页面访问器），交给 `createApiHost` 组装；`runtime.bootstrap` 不再传快照。设备事实用 apiExtensions 覆盖，网络请求等跨线程 API 走平台 handler。 | |
+| 提供宿主信息 | 具体宿主提供 systemInfo/storage 的异步 handler 与同步 `syncApiHandlers`；入口注入 `__TINY_HOST_BRIDGE__`（含 `sendSync`）并 `connectHostBridge`，拼出 `ApiContext`（canvas、资源、晚绑定页面访问器），交给 `createApiHost` 组装；`runtime.bootstrap` 不再传快照。设备事实用 apiExtensions 覆盖，网络请求等跨线程 API 走平台 handler。 | |
 | 实现导航和 tree.ready | navigate.to/back/redirectTo/reLaunch/switchTab 必须由宿主先调用 service、再创建/激活 render root；render bootstrap 后发 tree.ready，service 发送 tree.flow，最后 page.ready。 | |
 | 接入诊断和控制 | 收集 diagnostic.*；按需暴露 inspectTree、page.show/hide 和关闭方法。 | |
 | 定义关闭语义 | HostCore `close` 销毁页面 surface 并关闭 Bridge；平台适配器再清理 WebView/iframe、容器和其他资源。 | |

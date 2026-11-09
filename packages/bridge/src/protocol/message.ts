@@ -5,7 +5,7 @@ import { assertJsonSafe } from './json';
 export const PROTOCOL_VERSION = 1;
 
 export type ProtocolRole = 'host' | 'service' | 'render' | 'devtool';
-export type ProtocolKind = 'call' | 'reply' | 'event' | 'control';
+export type ProtocolKind = 'call' | 'reply' | 'event' | 'control' | 'callSync';
 export type ProtocolDomain = 'runtime' | 'page' | 'data' | 'event' | 'api' | 'diagnostic' | 'canvas' | 'query' | 'tree';
 
 export type ProtocolReplyPayload<T> = { ok: true; result: T } | { ok: false; error: ProtocolErrorPayload };
@@ -27,7 +27,7 @@ export type ProtocolMessage<T = unknown> = {
 export type ProtocolMessageInput<T> = Omit<ProtocolMessage<T>, 'protocolVersion' | 'messageId' | 'timestamp'>;
 
 const ROLES: ProtocolRole[] = ['host', 'service', 'render', 'devtool'];
-const KINDS: ProtocolKind[] = ['call', 'reply', 'event', 'control'];
+const KINDS: ProtocolKind[] = ['call', 'reply', 'event', 'control', 'callSync'];
 const DOMAINS: ProtocolDomain[] = ['runtime', 'page', 'data', 'event', 'api', 'diagnostic', 'canvas', 'query', 'tree'];
 
 let messageIdCounter = 0;

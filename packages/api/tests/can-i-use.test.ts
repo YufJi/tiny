@@ -19,18 +19,15 @@ function createContext(options: { syncHost?: boolean; apiNamespaces?: string[] }
     connection: {
       sendDiagnostic: () => undefined,
       call: () => Promise.resolve(undefined),
+      callSync: (domain: string, method: string) => {
+        if (options.syncHost === false) throw new Error('no synchronous transport')
+        if (domain !== 'api') throw new Error(`unsupported sync host domain: ${domain}`)
+        return method === 'system.info' ? snapshot : undefined
+      },
     },
     apiName: 'wx',
     apiNamespaces: options.apiNamespaces ?? ['wx'],
     // The system-info family is answered from live host facts.
-    ...(options.syncHost === false ? {} : {
-      syncHost: {
-        call: (domain: string, method: string) => {
-          if (domain !== 'api') throw new Error(`unsupported sync host domain: ${domain}`)
-          return method === 'system.info' ? snapshot : undefined
-        },
-      },
-    }),
     pageId: 'page-1',
   } as unknown as ApiContext
   const host = createApiHost(context) as Record<string, (...args: unknown[]) => unknown>
@@ -144,17 +141,15 @@ describe('canIUse schema families', () => {
     expect(aliased.canIUse!('other.nextTick')).toBe(false)
   })
 
-  test('reports sync APIs unavailable when the host has no sync channel', () => {
-    const withChannel = createContext().host
-    expect(withChannel.canIUse!('getStorageSync')).toBe(true)
-    expect(withChannel.canIUse!('getSystemInfoSync')).toBe(true)
-    const withoutChannel = createContext({ syncHost: false }).host
-    expect(withoutChannel.canIUse!('getStorageSync')).toBe(false)
-    expect(withoutChannel.canIUse!('getSystemInfoSync')).toBe(false)
-    expect(withoutChannel.canIUse!('getSystemInfoSync.return.windowWidth')).toBe(false)
-    // Asynchronous variants keep working without a sync channel.
-    expect(withoutChannel.canIUse!('getStorage')).toBe(true)
-    expect(withoutChannel.canIUse!('getSystemInfo')).toBe(true)
+  test('sync APIs need a synchronous transport but stay installed', () => {
+    const withSync = createContext().host
+    expect(withSync.getSystemInfoSync()).toMatchObject({ pixelRatio: 2 })
+    const withoutSync = createContext({ syncHost: false }).host
+    expect(() => withoutSync.getSystemInfoSync()).toThrow(/no synchronous transport/)
+    // The API is installed; only execution needs a sync transport.
+    expect(withoutSync.canIUse!('getStorageSync')).toBe(true)
+    expect(withoutSync.canIUse!('getSystemInfoSync.return.windowWidth')).toBe(false)
+    expect(withoutSync.canIUse!('getSystemInfo')).toBe(true)
   })
 
   test('rejects malformed schemas without throwing for known-empty forms', () => {

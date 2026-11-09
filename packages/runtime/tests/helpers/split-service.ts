@@ -1,11 +1,6 @@
 import { createApiHost } from '@tiny/api'
-import type {
-  ServiceCanvasAdapter,
-  SyncHostChannel,
-  ApiContext,
-  ApiHost,
-} from '@tiny/api'
-import { BridgeConnection } from '@tiny/bridge'
+import type { ServiceCanvasAdapter, ApiContext, ApiHost } from '@tiny/api'
+import { connectHostBridge, installHostBridge } from '@tiny/bridge'
 import { bootServiceThread as bootRealServiceThread } from '../../src/service/thread'
 import type {
   ServiceThreadOptions,
@@ -13,7 +8,14 @@ import type {
 } from '../../src/service/types'
 import type { TemplateRegistry } from '../../src/types'
 import type { Transport } from '@tiny/bridge'
+
+type SyncHostCall = (
+  domain: string,
+  method: string,
+  payload: Record<string, unknown>,
+) => unknown
 import type { AssetUrlResolver } from '../../src/assets'
+import { answerSyncFrame } from './sync-frame'
 
 type HarnessConfig = {
   templates: TemplateRegistry
@@ -37,7 +39,7 @@ type ServiceThreadBootOptions = Omit<
   /** Host capabilities, composed into the API context. */
   canvas?: ServiceCanvasAdapter
   resolveAssetUrl?: AssetUrlResolver
-  syncHost?: SyncHostChannel
+  syncHost?: SyncHostCall
   /** Overrides the host-owned theme listener set. */
   themeListeners?: Set<(value: unknown) => void>
 }
@@ -78,10 +80,16 @@ export function bootServiceThread(options: ServiceThreadBootOptions): ServiceThr
     themeListeners: themeListenersOption,
     ...runtimeOptions
   } = options
-  const connection = new BridgeConnection({
+  if (syncHost) {
+    transport.sendSync = (frame) => answerSyncFrame(frame, (message) => {
+      if (message.domain !== 'api') throw new Error(`unsupported sync host domain: ${message.domain}`)
+      return syncHost(message.domain, message.method, (message.payload ?? {}) as Record<string, unknown>)
+    })
+  }
+  installHostBridge(transport)
+  const connection = connectHostBridge({
     localRole: 'service',
     peerRole: 'host',
-    transport,
     capabilities: { role: 'service' },
   })
   const themeListeners = themeListenersOption ?? new Set<(value: unknown) => void>()
@@ -93,7 +101,6 @@ export function bootServiceThread(options: ServiceThreadBootOptions): ServiceThr
       runtimeOptions.manifest.runtimeCompatibility.api.global,
       ...runtimeOptions.manifest.runtimeCompatibility.api.aliases,
     ],
-    ...(syncHost ? { syncHost } : {}),
     ...(canvas ? { canvas } : {}),
     ...(resolveAssetUrl ? { resolveAssetUrl } : {}),
     themeListeners,

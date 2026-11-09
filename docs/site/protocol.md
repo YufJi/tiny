@@ -22,7 +22,7 @@ order: 5
 ::::split
 :::card{title="Bridge 负责"}
 - 版本化的消息信封和帧结构
-- Transport 抽象：MessagePort 或内存通道
+- 通信句柄：帧发送/接收 + 必需的同步帧交换；宿主通过 `globalThis.__TINY_HOST_BRIDGE__` 注入，MessagePort、直接对象桥或原生实现都由宿主胶水决定
 - call、control、event 三种发送方式
 - replyTo 关联、等待中的调用和超时
 - 按来源和 pageId 批处理事件
@@ -49,7 +49,7 @@ order: 5
 {
   protocolVersion: 1,
   messageId: "msg-m...-1-a1b2c3d4",
-  kind: "call" | "reply" | "event" | "control",
+  kind: "call" | "reply" | "event" | "control" | "callSync",
   domain: "runtime" | "page" | "tree" | "api"
         | "diagnostic" | "canvas" | "query",
   method: "navigate.to",
@@ -110,7 +110,7 @@ service 声明 `{ role: "service" }`，render 声明 `{ role: "render", mode: "t
 
 ## 更换通信方式，只需要实现 Transport {#transport kicker="传输"}
 
-消息层不关心底层是 MessagePort、内存对象还是原生 bridge，只要求实现三个方法。
+消息层不关心底层是 MessagePort、直接对象桥还是原生 bridge，只要求宿主注入的句柄实现 `send`、`sendSync`、`onFrame` 和 `close`。`callSync` 消息只通过 `sendSync` 交换，不会出现在异步帧队列里；回复仍是普通 `reply`（`replyTo` 指向请求）。
 
 ```ts
 export interface Transport {
@@ -127,7 +127,7 @@ export type TransportFrame = {
 
 | 实现 | 用途 | 行为 |
 | --- | --- | --- |
-| `createMessagePortTransport(port)` | 浏览器 iframe / worker | 通过 postMessage 发帧，校验入站帧，close 时清空 onmessage 并关闭端口 |
+| `createMessagePortTransport(port, { sendSync })` | `@tiny/host-web` 浏览器胶水 | 通过 postMessage 发帧，校验入站帧；宿主把句柄注入 `__TINY_HOST_BRIDGE__` |
 | `createInMemoryTransportPair()` | runtime 单测、进程内模拟 | 同步发送到对端，没有序列化开销，但仍会走完整校验 |
 | `createHostMessageChannelPair()` | 浏览器宿主 | 创建 MessageChannel，返回 hostTransport 和可转移的 peerPort；service 用一条，每页 render 各用一条 |
 | `自定义 Transport` | 原生宿主 / WebSocket / 进程桥 | 必须保持帧边界、非空 messages 和 protocolVersion 校验 |
@@ -317,10 +317,10 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | query | `select` | control | service → host → render | 在渲染树中查 selector，返回 rect/dataset/scroll |
 | query | `intersection` | control/event | service ↔ render | observe/disconnect 与 IntersectionObserver entry |
 | diagnostic | `diagnostic.log/warn/error/state` | event | service/render → host | 统一转成 RuntimeDiagnostic / UIState |
-| api | `system.info` | call | service → host | 获取宿主系统信息（平台 handler；同步变体走同步通道） |
+| api | `system.info` | call | service → host | 获取宿主系统信息（平台 handler；同步变体是 `callSync` 请求帧） |
 | api | `storage.*` | call | service → host | 读写宿主 storage |
 
-`*Sync` API（`getSystemInfoSync`、`getStorageSync` 等）不走这条异步链路：宿主通过同步通道直接返回（见 [ADR-0011](../adr/0011-host-authoritative-state.md)），内核不保存 system/storage 快照。
+`*Sync` API（`getSystemInfoSync`、`getStorageSync` 等）不走这条异步链路：宿主注入的 `__TINY_HOST_BRIDGE__` 实现 `sendSync`，`connection.callSync` 通过 `callSync` 请求 + `reply` 返回（见 [ADR-0016](../adr/0016-pure-js-bridge-host-handle.md)），内核不保存 system/storage 快照。
 | api | `network.*` / `battery.get` | call | service → host | 网络请求、网络类型和电量 |
 | api | `toast.show` / `ui.*` | call | service → host | 宿主 overlay UI |
 | api | `navigate.*` / `page.*` | call | service → host | 宿主协调 service 和 render 完成导航、下拉刷新 |

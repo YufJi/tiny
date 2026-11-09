@@ -1,5 +1,7 @@
-import { ProtocolError } from './errors';
-import { createTransportFrame, type Transport, type TransportFrame, validateTransportFrame } from './transport';
+import { ProtocolError } from '@tiny/bridge'
+import { createTransportFrame } from '@tiny/bridge'
+import type { Transport, TransportFrame } from '@tiny/bridge'
+import { validateTransportFrame } from '@tiny/bridge'
 
 export type MessagePortLike = {
   postMessage(message: unknown): void;
@@ -10,6 +12,8 @@ export type MessagePortLike = {
 
 export type MessagePortTransportOptions = {
   closePort?: boolean;
+  /** Host glue supplies the frame-level synchronous exchange when it can. */
+  sendSync?: (frame: TransportFrame) => TransportFrame;
 };
 
 export function createMessagePortTransport(
@@ -19,6 +23,7 @@ export function createMessagePortTransport(
   let closed = false;
   const listeners = new Set<(frame: TransportFrame) => void>();
   const closePort = options.closePort ?? true;
+  const sendSync = options.sendSync;
 
   port.onmessage = (event) => {
     if (closed) return;
@@ -42,6 +47,12 @@ export function createMessagePortTransport(
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
+    sendSync(frame) {
+      if (!sendSync) {
+        throw new ProtocolError('UNSUPPORTED_METHOD', 'The message-port transport has no synchronous path');
+      }
+      return sendSync(frame);
+    },
   };
 }
 
@@ -50,14 +61,14 @@ export type HostMessageChannelPair = {
   peerPort: MessagePortLike;
 };
 
-export function createHostMessageChannelPair(): HostMessageChannelPair {
+export function createHostMessageChannelPair(options: MessagePortTransportOptions = {}): HostMessageChannelPair {
   const MessageChannelConstructor = globalThis.MessageChannel;
   if (!MessageChannelConstructor) {
     throw new ProtocolError('TRANSPORT_CLOSED', 'MessageChannel is unavailable in this environment');
   }
   const channel = new MessageChannelConstructor();
   return {
-    hostTransport: createMessagePortTransport(channel.port1 as unknown as MessagePortLike),
+    hostTransport: createMessagePortTransport(channel.port1 as unknown as MessagePortLike, options),
     peerPort: channel.port2 as unknown as MessagePortLike,
   };
 }

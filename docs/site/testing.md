@@ -79,13 +79,13 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 | --- | --- | --- |
 | `@tiny/manifest` | 2 | 固定引擎命名、builtin tags、WXS 保留名 |
 | `@tiny/css-units` | 2 | rpx 750、vw 舍入、无 rpx 文本保持 |
-| `@tiny/bridge` | 10 | 信封校验、版本和路由错误、payload 校验、握手、调用关联、超时、关闭、批处理顺序、诊断插队、MessagePort |
+| `@tiny/bridge` | 14 | 信封校验、版本和路由错误、payload 校验、握手、调用关联、超时、关闭、批处理顺序、诊断插队、`callSync` 请求/reply 与跨 realm 结果 |
 | `@tiny/wxs-runtime` | 13 | 模块加载、循环依赖、相对 require、constructor、globals、origin / resolve、模块表 |
 | `@tiny/template-compiler` | 44 | 脚本依赖、WXS transform、模块表、动态事件元数据、change:prop、import/include、模板别名、ProcGen 签名、绑定表复用、事件简写、data-* 绑定、stringify 往返 |
 | `@tiny/stylesheet-compiler` | 36 | class/tag 前缀、rpx/calc、@import 编码和包装、@layer、:host 低优先级、hostAttribute、keyframes、page 根节点 |
 | `@tiny/cli` | 18 | manifest 全产物、兼容输入配置、WXS 双注册、配置合并、service/templates 入口、TS/source map、样式 role、tag marker |
 | `@tiny/host-web-components` | 24 | 内置组件 batches、共享 behaviors 和默认样式断言；`canIUse` 用的组件属性清单与真实定义保持一致；组件行为细节由 host-web 的 render-tree 测试覆盖 |
-| `@tiny/host-web` | 102 | DOM render tree、built-in composition、事件、WXS dispatch、event compositor、内置组件与渲染树集成 |
+| `@tiny/host-web` | 103 | DOM render tree、built-in composition、事件、WXS dispatch、event compositor、内置组件与渲染树集成 |
 | `@tiny/runtime` | 158 | 全局安装和命名、双线程 bootstrap、逻辑树、tree protocol/patch diff、两次求值与 locator 寻址、headless renderer、组件 schema、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、API 注入缝、诊断、WXS 宽松求值、`this.animate`、事件冒泡/几何 |
 | `@tiny/api` | 33 | 微信兼容 API 表：storage 同步/异步、request 回调、导航与 EventChannel、base64/ArrayBuffer 转换、`canIUse` schema 解析（API/对象/组件三类）、动画与 canvas stub |
 

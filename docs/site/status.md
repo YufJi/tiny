@@ -29,7 +29,7 @@ order: 9
 | WXS | :pill[可用]{tone="good"} | 编译期 AST 转换、模块表、service 表达式 runtime、render 事件 runtime、动态 WXS/service 解析、descriptor、change:prop 和 rpx 750；source map 与自定义组件事件仍按 service 路径处理。 |
 | service runtime | :pill[可用]{tone="good"} | App/Page/Component、页面栈、5 个路由 API、14 项页面生命周期、7 项应用生命周期、setData、兼容全局与 behavior scheme、behaviors/observers/relations/definitionFilter/pureDataPattern、glass-easel 逻辑树、virtual node diff、tree 协议、storage/system/canvas 协议。 |
 | render tree | :pill[可用]{tone="good"} | 宿主 `TreeRenderer`：真实内置组件、组件模板求值（shadow tree）、slot、shadow root、样式、布局、DOM、元素树、query、measure、IntersectionObserver；Web 实现是 `createGlassRenderTree`。元素由渲染侧分配本地 id，组件作用域 locator 负责跨线程寻址。 |
-| bridge | :pill[可用]{tone="good"} | 7 个在用消息域，含 tree/query；信封和帧、MessagePort/内存 transport、握手、超时、批处理、JSON 校验；capabilities 还没有用于协商。 |
+| bridge | :pill[可用]{tone="good"} | 7 个在用消息域，含 tree/query；信封和帧、纯 JS 协议/连接、全局 handle（`send`/`sendSync`/`onFrame`）、握手、超时、批处理、JSON 校验；MessagePort 实现在宿主胶水；capabilities 还没有用于协商。 |
 | Web 宿主 | :pill[可用]{tone="good"} | @tiny/host-web 支持每页 render 连接、MessageChannel、DOM 渲染树、WebView render entry、OffscreenCanvas handoff 和 resolveAssetUrl；@tiny/host-web-components 只提供 39 个内置组件定义和默认样式；宿主 API handler 由 tests/host 和 devtool 各自注入；devtool 的会话客户端在应用内（`apps/devtool/src/runtimeClient.ts`）。内核依赖检查通过。 |
 | iOS 宿主 | :pill[可用（MVP）]{tone="good"} | `ios/` 原生工程 + `hosts/ios` Vite 包（`src/service` / `src/web`）：Rust `HostCoreRuntime`（UniFFI）+ JavaScriptCore service + 每页一个 WKWebView；没有 `host.html`、iframe 或 JS host fallback。SwiftUI Launcher/导航栏/tabBar，UserDefaults 存储，全部 7 个 fixture 已在模拟器 smoke，并覆盖 native 导航/tab 切换、push/pop 动画和左边缘右滑返回；真机 device build/install 也已跑通；Canvas 2D 走 service 录制 + native render 回放，WebGL/同步读回未接。 |
 | 内置组件 | :pill[较完整]{tone="good"} | 39 个组件和共享 behaviors；checkbox/radio/switch/slider/icon/image/picker 已按 2.33.0 参考重写；rich-text/match-media/cover-view/cover-image/page-container/root-portal/grid-view 已完成第一版；input/textarea/scroll-view/swiper 仍是近似实现；全部 39 个标签已注册；video/map/audio/web-view 是浏览器近似实现；editor/editor-portal、广告、直播、开放能力等 20 个组件暂不支持。 |
@@ -199,7 +199,7 @@ iframe、DOM canvas、DOM 渲染树和 WebView 线程入口放在 `hosts/web`，
 :::
 
 :::card{title="环境能力靠注入"}
-宿主入口组装 API 表（标准集来自 @tiny/api，设备信息在其上覆盖），canvas、资源 URL 和同步通道进入 api context，渲染后端和挂载点由宿主提供。
+宿主入口组装 API 表（标准集来自 @tiny/api，设备信息在其上覆盖），canvas 和资源 URL 进入 api context，同步调用由宿主注入的全局句柄的 `sendSync` 提供，渲染后端和挂载点由宿主提供。
 :::
 
 :::card{title="构建产物不入库"}

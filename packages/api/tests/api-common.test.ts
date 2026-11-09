@@ -32,10 +32,8 @@ function createContext(apiNamespaces: string[] = ['wx']) {
       calls.push({ domain, method, params })
       return Promise.resolve(handlers[method]?.(params))
     },
-  }
-  const syncHost = {
-    call: (domain: string, method: string, params: Record<string, unknown> = {}) => {
-      if (domain !== 'api') throw new Error(`unsupported sync host domain: ${domain}`)
+    callSync: (domain: string, method: string, params: Record<string, unknown> = {}) => {
+      calls.push({ domain, method, params })
       const handler = handlers[method]
       if (!handler) throw new Error(`unsupported sync host API: ${method}`)
       return handler(params)
@@ -45,7 +43,6 @@ function createContext(apiNamespaces: string[] = ['wx']) {
     connection,
     apiName: 'wx',
     apiNamespaces,
-    syncHost,
     getCurrentPagePath: () => 'pages/index/index',
     pageId: 'page-1',
   } as unknown as ApiContext

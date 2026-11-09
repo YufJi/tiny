@@ -125,7 +125,7 @@ built-in tags; the host render tree turns them into real components:
 
 ```ts
 import { bootTreeThread } from '@tiny/runtime'
-import { BridgeConnection } from '@tiny/bridge'
+import { connectHostBridge } from '@tiny/bridge'
 import { createGlassRenderEntry } from '@tiny/host-web'
 
 const entry = createGlassRenderEntry({ container: document.getElementById('app') })
@@ -149,19 +149,20 @@ package entirely.
 
 The kernel owns the global namespace (`wx`, `App`, `Page`, `Component`,
 `Behavior`) and the unsupported-API fallback — not the API table. The host entry
-creates the connection, composes `WeixinApiContext` and passes the assembled
+creates the connection, composes `ApiContext` and passes the assembled
 table, so the set of `wx.*` names is the host's decision:
 
 ```ts
 import { createApiHost } from '@tiny/api'
 import { BridgeConnection } from '@tiny/bridge'
 
-const connection = new BridgeConnection({ localRole: 'service', peerRole: 'host', transport })
+// Host glue installs the communication handle before connecting.
+globalThis.__TINY_HOST_BRIDGE__ = hostBridge
+const connection = connectHostBridge({ localRole: 'service', peerRole: 'host' })
 const apiHost = createApiHost({
   connection,
   apiName: 'wx',
   apiNamespaces: ['wx'],
-  syncHost,
   canvas,
   resolveAssetUrl,
   themeListeners,
@@ -186,15 +187,15 @@ runtime = bootServiceThread({
 domain); hosts compose their own device facts on top. The browser host's
 `bootServiceEntry` already defaults to that composition plus
 `apiExtensions`. The engine only exposes mini-program semantics, the host's API
-table, the synchronous channel for `*Sync` APIs, and bridge calls; it does not
-invent device or performance results.
+table and bridge calls; it does not invent device or performance results.
 
 WeChat's `*Sync` APIs (`getSystemInfoSync`, `getStorageSync`, …) cannot use the
-asynchronous bridge, so the API context carries a `syncHost` channel with the
-same `api` method names (`system.info`, `storage.get`, …). Browser hosts inject
-one into the service frame; iOS exposes a JavaScriptCore block. A host without a
-channel makes those APIs throw instead of serving a stale snapshot; the kernel
-never sees the channel.
+asynchronous bridge, so the host glue installs a global handle
+(`__TINY_HOST_BRIDGE__`) whose `sendSync` answers frame-level `callSync`
+requests. Browser
+hosts inject one into the service frame; iOS exposes a JavaScriptCore block.
+`callHostSync` delegates to `connection.callSync`. A host handle without a
+synchronous path makes those APIs throw instead of serving a stale snapshot.
 
 ## Asset URLs
 

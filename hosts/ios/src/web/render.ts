@@ -1,6 +1,6 @@
 import type { Transport, TransportFrame } from '@tiny/bridge'
 import { bootTreeThread, resolveAssetPath } from '@tiny/runtime'
-import { BridgeConnection } from '@tiny/bridge'
+import { connectHostBridge, installHostBridge } from '@tiny/bridge'
 import type { TemplateRegistry, TreeRenderer } from '@tiny/runtime'
 import { createGlassRenderEntry, installPageLifecycleBridge } from '@tiny/host-web'
 import { installRemoteCanvas } from './canvas'
@@ -69,13 +69,16 @@ function bootNativeRenderEntry(options: {
         if (listener === next) listener = undefined
       }
     },
+    sendSync() {
+      throw new Error('The native render transport has no synchronous path')
+    },
   }
 
   try {
-    const connection = new BridgeConnection({
+    installHostBridge(transport)
+    const connection = connectHostBridge({
       localRole: 'render',
       peerRole: 'host',
-      transport,
       capabilities: { role: 'render', mode: 'tree' },
     })
     const runtime = bootTreeThread({

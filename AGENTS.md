@@ -34,7 +34,7 @@ must not depend on tools, apps, hosts, or tests.
 | `packages/template-compiler` | WXML parsing and ProcGen |
 | `packages/stylesheet-compiler` | WXSS, rpx, class/tag scoping |
 | `packages/runtime` | Host-independent runtime core |
-| `packages/api` | `@tiny/api`: the WeChat-compatible `wx.*` table and host-facing contracts (`WeixinApiContext`, `HostApiHandlers`, `SystemInfo`, `StorageValues`), composed by hosts |
+| `packages/api` | `@tiny/api`: the WeChat-compatible `wx.*` table and host-facing contracts (`ApiContext`, `HostApiHandlers`, `SystemInfo`, `StorageValues`), composed by hosts |
 | `packages/bridge` | Protocol, transport, batching, diagnostics |
 
 ### Tools and apps
@@ -165,7 +165,7 @@ records boot state, visible text, page errors and diagnostics per page into
   realms and separate `ComponentSpace`s; never pass glass-easel objects across
   the tree protocol.
 - The mini-program API set does not live in `packages/runtime`. `@tiny/api`
-  owns the `WeixinApiContext`; the host entry creates the `BridgeConnection`,
+  owns the `ApiContext`; the host entry creates the `BridgeConnection`,
   composes the context (host facts plus late-bound runtime accessors), builds
   the table and passes it to `ServiceThreadOptions.apiHost` as a value. The
   kernel installs the table and reports unknown names through the
@@ -174,9 +174,11 @@ records boot state, visible text, page errors and diagnostics per page into
 - Host facts (menu-button geometry, performance, device capabilities) stay in
   the host's API-table composition and its synchronous handler map
   (`WasmHostOptions.syncApiHandlers`); host adapters only forward them. Canvas,
-  asset URLs and the synchronous host channel go only into the API context; the
-  runtime receives a `ServiceThreadOptions.onPageRelease` hook for per-page
-  cleanup (canvas nodes, …) and never owns canvas semantics. Do not hardcode
+  asset URLs go only into the API context; synchronous calls use
+  `connection.callSync`, backed by the host-injected
+  `globalThis.__TINY_HOST_BRIDGE__` handle (`sendSync`). The runtime
+  receives a `ServiceThreadOptions.onPageRelease` hook for per-page cleanup
+  (canvas nodes, …) and never owns canvas semantics. Do not hardcode
   them in `packages/runtime`.
 - The browser test host and devtool both use `@tiny/host-web`’s
   `WasmBrowserHost` over `@tiny/host-core-wasm`;

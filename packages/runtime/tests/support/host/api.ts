@@ -8,10 +8,6 @@ import type {
   SystemInfo,
 } from '@tiny/api'
 import type { RuntimeHostOptions } from './types'
-export type SyncHostChannel = {
-  call(domain: string, method: string, payload: Record<string, unknown>): unknown
-}
-
 export type HostApiRegistry = {
   systemInfo: SystemInfo
   storage: StorageValues
@@ -61,22 +57,26 @@ export function createHostApiRegistry(options: RuntimeHostOptions): HostApiRegis
 }
 
 /**
- * Synchronous host channel backed by the same handlers the async path uses.
+ * Synchronous host answers backed by the same handlers the async path uses.
  * The test host lives in the same realm, so `*Sync` APIs can exercise the real
  * host contract without a browser sync bridge.
  */
-export function createHostSyncChannel(registry: HostApiRegistry): SyncHostChannel {
-  return {
-    call: (domain, method, payload) => {
-      if (domain !== 'api') throw new Error(`unsupported sync host domain: ${domain}`)
-      const handler = registry.handlers[method]
-      if (typeof handler !== 'function') throw new Error(`unsupported sync host API: ${method}`)
-      const result = handler(payload, {})
-      if (result && typeof (result as Promise<unknown>).then === 'function') {
-        throw new Error(`sync host API ${method} returned a promise`)
-      }
-      return result
-    },
+export type SyncHostCall = (
+  domain: string,
+  method: string,
+  payload: Record<string, unknown>,
+) => unknown
+
+export function createHostSyncChannel(registry: HostApiRegistry): SyncHostCall {
+  return (domain, method, payload) => {
+    if (domain !== 'api') throw new Error(`unsupported sync host domain: ${domain}`)
+    const handler = registry.handlers[method]
+    if (typeof handler !== 'function') throw new Error(`unsupported sync host API: ${method}`)
+    const result = handler(payload, {})
+    if (result && typeof (result as Promise<unknown>).then === 'function') {
+      throw new Error(`sync host API ${method} returned a promise`)
+    }
+    return result
   }
 }
 
