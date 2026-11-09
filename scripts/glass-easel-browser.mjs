@@ -207,6 +207,63 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       throw new Error(`text "${needle}" was not found in the active render frame: ${lastText}`)
     }
 
+    const activePageId = async () => {
+      await page.waitForSelector('iframe.tiny-runtime-render-frame[data-state="active"]', {
+        state: 'attached',
+        timeout: STEP_TIMEOUT,
+      })
+      return page
+        .locator('iframe.tiny-runtime-render-frame[data-state="active"]')
+        .getAttribute('data-page-id')
+    }
+
+    /**
+     * Dispatch the real touch sequence without `locator.tap()`.
+     *
+     * A navigation tap replaces the page under the pointer, and Playwright
+     * re-checks the hit target once the touch is in: the retry can then stall on
+     * a page the tap itself opened (or closed), for the full action timeout,
+     * even though the engine handled the gesture. Sending the same
+     * `touchstart`/`touchend` to the control's centre exercises the identical
+     * engine path without that post-action check.
+     */
+    const touchTap = async (locator) => {
+      await locator.waitFor({ state: 'visible', timeout: STEP_TIMEOUT })
+      await locator.scrollIntoViewIfNeeded()
+      const box = await locator.boundingBox()
+      assert.ok(box, 'tap target has no bounding box')
+      await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2)
+    }
+
+    /**
+     * Tap a control that opens or closes a page, then wait for the new page.
+     *
+     * A touch can be dropped while the page underneath is being swapped (it is
+     * then delivered to neither page) and the test would keep driving the old
+     * page. The active page id and the expected text tell that apart from a slow
+     * transition, so a tap that changed nothing is retried once from the
+     * still-active page; a tap that already moved the app is never repeated.
+     */
+    const tapToPage = async (label, expectedText) => {
+      const before = await activePageId()
+      const arrived = async (deadline) => {
+        while (Date.now() < deadline) {
+          const current = await activePageId().catch(() => before)
+          const body = await render.locator('#app').innerText().catch(() => '')
+          if (current !== before || body.includes(expectedText)) return true
+          await page.waitForTimeout(50)
+        }
+        return false
+      }
+      for (let attempt = 1; attempt <= 2; attempt += 1) {
+        render = await activeRender()
+        await touchTap(byText(render, label, { exact: true }).first())
+        // The first tap gets a settle window; a retry goes straight to the wait.
+        if (await arrived(Date.now() + (attempt === 1 ? 3_000 : 0))) break
+      }
+      await waitForText(expectedText)
+    }
+
     await step('render the todos page structure', async () => {
       currentStep = 'render the todos page structure'
       const html = await render.locator('#app').evaluate((element) => element.innerHTML)
@@ -447,8 +504,7 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       currentStep = 'navigate to add-todo and expose page query'
       // Touch-first: navigation is driven by a real touch sequence, not a
       // synthetic mouse click.
-      await byText(render, 'Open add todo', { exact: true }).first().tap()
-      await waitForText('Add todo')
+      await tapToPage('Open add todo', 'Add todo')
       assert.ok((await text()).includes('from: todos'), `page query was not delivered: ${await text()}`)
       // The opener emitted through `success({ eventChannel })`; the page reads it
       // back with `this.getOpenerEventChannel()` in `onLoad`.
@@ -490,8 +546,7 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
 
     await step('save, navigate back, and preserve storage state', async () => {
       currentStep = 'save, navigate back, and preserve storage state'
-      await byText(render, 'Save and back', { exact: true }).first().click()
-      await waitForText('marker: Buy milk')
+      await tapToPage('Save and back', 'marker: Buy milk')
       // The page emitted on save; the opener's `events.todoSaved` handler
       // updated the (hidden) P0 page data.
       await waitForText('saved: Buy milk')
@@ -508,10 +563,9 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
     await step('navigate with this.pageRouter and expose route/options', async () => {
       currentStep = 'navigate with this.pageRouter and expose route/options'
       // `navigateBack` re-activates a page whose render iframe already existed;
-      // refresh the frame reference before driving it.
+      // `tapToPage` refreshes the frame reference before driving it.
       await text()
-      await byText(render, 'Router page', { exact: true }).first().tap()
-      await waitForText('Router demo')
+      await tapToPage('Router page', 'Router demo')
       const body = await text()
       assert.ok(
         body.includes('route: pages/router/router'),
@@ -531,8 +585,7 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       currentStep = 'navigate from a component with this.router'
       // components/router-probe -> pages/add-todo via `../../`; the query proves
       // which base the component router used.
-      await byText(render, 'Component router', { exact: true }).first().tap()
-      await waitForText('from: component-router')
+      await tapToPage('Component router', 'from: component-router')
       // The probe emitted through the opener channel in navigateTo.success.
       await waitForText('opener: probe:component-router')
 
@@ -540,8 +593,7 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       await input.click()
       await input.fill('Channel todo')
       await waitForText('value: Channel todo')
-      await byText(render, 'Save and back', { exact: true }).first().tap()
-      await waitForText('Router demo')
+      await tapToPage('Save and back', 'Router demo')
       const storage = await page.evaluate(() => window.__tinyRuntime.host.apiRegistry.storage)
       assert.equal(
         storage.routerProbe,
@@ -554,16 +606,13 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       currentStep = 'navigate from a component with this.pageRouter'
       // pages/router/router -> pages/add-todo via `../`: a page-relative base, so
       // the query differs from the component-relative run above.
-      await byText(render, 'Component page router', { exact: true }).first().tap()
-      await waitForText('from: component-page-router')
-      await byText(render, 'Save and back', { exact: true }).first().tap()
-      await waitForText('Router demo')
+      await tapToPage('Component page router', 'from: component-page-router')
+      await tapToPage('Save and back', 'Router demo')
     })
 
     await step('return to the P0 page with this.router.navigateBack', async () => {
       currentStep = 'return to the P0 page with this.router.navigateBack'
-      await byText(render, 'Router back', { exact: true }).first().tap()
-      await waitForText('Tiny Glass-easel P0')
+      await tapToPage('Router back', 'Tiny Glass-easel P0')
     })
 
     await step('resolve the toast API without fatal errors', async () => {
@@ -902,6 +951,13 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
         }
       }).catch((cause) => String(cause))
     })()
+    const hostState = await page.evaluate(() => {
+      const frames = [...document.querySelectorAll('iframe.tiny-runtime-render-frame')].map((iframe) => ({
+        pageId: iframe.dataset.pageId,
+        state: iframe.dataset.state,
+      }))
+      return { activePageId: window.__tinyRuntime?.host?.activePage, frames }
+    }).catch(() => null)
     try {
       await fs.mkdir(path.dirname(failureShot), { recursive: true })
       await page.screenshot({ path: failureShot, fullPage: true })
@@ -914,6 +970,7 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
         `\nConsole errors: ${consoleErrors.join(' | ') || '(none)'}` +
         `\nRuntime errors: ${JSON.stringify(failureDiagnostics)}` +
         `\nService state: ${JSON.stringify(serviceState)}` +
+        `\nHost state: ${JSON.stringify(hostState)}` +
         `\nScreenshot: ${failureShot}`,
     )
   } finally {
