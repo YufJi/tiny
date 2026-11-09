@@ -24,11 +24,7 @@ export function createSystemApi(context: ApiContext): ApiHost {
     nextTick: (callback: unknown) => {
       if (typeof callback === 'function') Promise.resolve().then(() => callback())
     },
-    getLaunchOptionsSync: () => ({
-      path: context.getCurrentPagePath?.() ?? '',
-      query: {},
-      scene: 1001,
-    }),
+    getLaunchOptionsSync: () => cloneJsonSafe(context.launchOptions ?? {}),
     hideKeyboard: (params: unknown = {}) => runApi(params, 'hideKeyboard', () => ({
       errMsg: 'hideKeyboard:ok',
     })),

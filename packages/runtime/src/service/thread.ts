@@ -74,7 +74,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     // App foreground/background is host-owned: never infer it from page
     // navigation. The host sends appShow/appHide as global events.
     if (payload.name === 'appShow') {
-      registry.showApp()
+      registry.showApp(payload.payload)
     } else if (payload.name === 'appHide') {
       registry.hideApp()
     }
@@ -168,6 +168,10 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         pages.setMaxPageStack(Number(payload.maxPageStack))
       }
       await ensureArtifacts()
+      registry.launchApp(options.launchOptions)
+      if (options.appVisible !== false) {
+        registry.showApp(options.launchOptions)
+      }
       const componentSchemas = await render.start()
       pages.start()
       const currentPage = pages.pageStack.at(-1)!

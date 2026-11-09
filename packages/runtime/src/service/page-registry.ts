@@ -20,6 +20,7 @@ export class MiniProgramPageRegistry {
   /** Runtime-facing input compatibility (API global, behavior scheme, …). */
   readonly compatibility: RuntimeCompatibilityConfig
   private app: MiniProgramAppOptions | null = null
+  private launched = false
   private eventSink: GlobalEventSink | undefined
   private readonly pagePaths: string[]
   private readonly componentPaths: string[]
@@ -45,13 +46,30 @@ export class MiniProgramPageRegistry {
 
   registerApp(options: MiniProgramAppOptions): MiniProgramAppOptions {
     if (this.app) throw new Error('App has already been registered')
+    // Registration is side-effect free. The runtime calls `launchApp` after
+    // artifacts are evaluated and before the first page starts, so onLaunch is
+    // already ordered relative to page lifecycle and app visibility.
     this.app = options
-    options.onLaunch?.()
-    options.onShow?.()
     return options
   }
 
+  isLaunched(): boolean {
+    return this.launched
+  }
+
+  /** Run App.onLaunch once, after registration and before the first page. */
+  launchApp(options?: unknown): void {
+    if (this.launched) return
+    this.launched = true
+    try {
+      this.app?.onLaunch?.(options)
+    } catch (error) {
+      this.reportError(error instanceof Error ? error.message : String(error))
+    }
+  }
+
   hideApp(): void {
+    if (!this.launched) return
     try {
       this.app?.onHide?.()
     } catch {
@@ -59,9 +77,10 @@ export class MiniProgramPageRegistry {
     }
   }
 
-  showApp(): void {
+  showApp(options?: unknown): void {
+    if (!this.launched) return
     try {
-      this.app?.onShow?.()
+      this.app?.onShow?.(options)
     } catch {
       // Host lifecycle notifications must not break the service thread.
     }

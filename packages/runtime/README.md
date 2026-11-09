@@ -178,6 +178,7 @@ runtime = bootServiceThread({
   manifest,
   initialPath,
   events,
+  launchOptions,
   onPageRelease: (pageId) => canvas.releaseCanvasNode?.({ pageId }),
   loadArtifacts,
 })

@@ -20,6 +20,7 @@ export type TinyIOSApp = {
   serviceSource: string
   styles: Record<string, string>
   assetsBase: string
+  launchOptions?: unknown
 }
 
 type HostGlobal = Record<string, any>
@@ -155,6 +156,11 @@ export function startTinyService(app: TinyIOSApp): void {
   const initialPath = app.manifest.pages.find((page) => page.bodyType !== 'component')?.path
     ?? app.manifest.pages[0]?.path
     ?? ''
+  const launchOptions = app.launchOptions ?? {
+    path: initialPath,
+    query: {},
+    scene: 1001,
+  }
 
   let templates: TemplateRegistry | undefined
   let serviceEvaluated = false
@@ -240,6 +246,7 @@ export function startTinyService(app: TinyIOSApp): void {
       return app.assetsBase + resolved.split('/').map(encodeURIComponent).join('/')
     },
     events,
+    launchOptions,
     getActivePage: () => runtime?.activePage,
     getCurrentPagePath: () => runtime?.activePage?.path,
     get pageId() {
@@ -261,6 +268,7 @@ export function startTinyService(app: TinyIOSApp): void {
       apiHost,
       manifest: app.manifest,
       initialPath,
+      launchOptions,
       maxPageStack: 10,
       loadTemplates,
       loadStyle: (stylePath) => app.styles[stylePath] ?? '',

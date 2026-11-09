@@ -19,6 +19,8 @@ export type ServiceEntryOptions = {
   loadArtifacts: NonNullable<ServiceThreadOptions['loadArtifacts']>
   loadStyle?: ServiceThreadOptions['loadStyle']
   resolveAssetUrl: NonNullable<ApiContext['resolveAssetUrl']>
+  /** Host-owned launch options; defaults are host glue, never kernel facts. */
+  launchOptions?: unknown
   /**
    * Full API table factory. Defaults to the WeChat-compatible set composed with
    * `apiExtensions`; pass this to replace it entirely.
@@ -66,6 +68,11 @@ const sendSync = (frame: TransportFrame): TransportFrame => {
 export function bootServiceEntry(options: ServiceEntryOptions): void {
   installBrowserCanvasCompat()
   listenForRuntimePort('service', (transport) => {
+    const launchOptions = options.launchOptions ?? {
+      path: options.initialPath,
+      query: {},
+      scene: 1001,
+    }
     installHostBridge(transport)
     const connection = connectHostBridge({
       localRole: 'service',
@@ -89,6 +96,7 @@ export function bootServiceEntry(options: ServiceEntryOptions): void {
       canvas,
       resolveAssetUrl: options.resolveAssetUrl,
       events,
+      launchOptions,
       getActivePage: () => runtime?.activePage,
       getCurrentPagePath: () => runtime?.activePage?.path,
       get pageId() {
@@ -110,6 +118,10 @@ export function bootServiceEntry(options: ServiceEntryOptions): void {
       apiHost,
       manifest: options.manifest,
       initialPath: options.initialPath,
+      launchOptions,
+      appVisible: typeof document === 'undefined'
+        ? true
+        : document.visibilityState !== 'hidden',
       loadTemplates: options.loadTemplates,
       loadArtifacts: options.loadArtifacts,
       ...(options.loadStyle ? { loadStyle: options.loadStyle } : {}),

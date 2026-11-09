@@ -133,6 +133,8 @@ export type ApiContext = {
   resolveAssetUrl?: AssetUrlResolver
   /** Service-thread bus behind the global `wx.onXXX` APIs. */
   events?: GlobalEventHub
+  /** Host-owned launch options returned by `getLaunchOptionsSync`. */
+  launchOptions?: unknown
   /** Active page instance, for `wx.*` entries that scope to the current page. */
   getActivePage?: () => unknown
   getCurrentPagePath?: () => string | undefined

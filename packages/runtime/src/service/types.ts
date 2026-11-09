@@ -94,6 +94,10 @@ export type ServiceThreadOptions = {
    * and host `event.global` frames reach the global `wx.onXXX` listeners.
    */
   events?: GlobalEventSink
+  /** Initial host visibility; defaults to true. */
+  appVisible?: boolean
+  /** Host-owned launch options passed to App.onLaunch / initial onShow. */
+  launchOptions?: unknown
   /**
    * A page was destroyed. The host releases per-page resources here (canvas
    * nodes, …); the runtime does not own canvas semantics.

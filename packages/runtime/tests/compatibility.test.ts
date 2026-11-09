@@ -99,6 +99,8 @@ describe('configured API globals', () => {
     ;(globalObject.HostApp as (options: unknown) => unknown)({ onLaunch: () => { launched = true } })
     ;(globalObject.HostPage as (options: unknown) => unknown)({ data: { ready: true } })
 
+    expect(launched).toBe(false)
+    registry.launchApp()
     expect(launched).toBe(true)
     expect(registry.getApp()).toBeDefined()
     expect(registry.pages.get('pages/index')).toMatchObject({ data: { ready: true } })

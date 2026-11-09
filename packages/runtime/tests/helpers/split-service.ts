@@ -40,6 +40,7 @@ type ServiceThreadBootOptions = Omit<
   canvas?: ServiceCanvasAdapter
   resolveAssetUrl?: AssetUrlResolver
   syncHost?: SyncHostCall
+  launchOptions?: unknown
 }
 
 let active: HarnessConfig | undefined
@@ -75,6 +76,7 @@ export function bootServiceThread(options: ServiceThreadBootOptions): ServiceThr
     canvas,
     resolveAssetUrl,
     syncHost,
+    launchOptions,
     ...runtimeOptions
   } = options
   if (syncHost) {
@@ -101,6 +103,7 @@ export function bootServiceThread(options: ServiceThreadBootOptions): ServiceThr
     ...(canvas ? { canvas } : {}),
     ...(resolveAssetUrl ? { resolveAssetUrl } : {}),
     events,
+    launchOptions,
     getActivePage: () => runtime?.activePage,
     getCurrentPagePath: () => runtime?.activePage?.path,
     get pageId() {
@@ -119,6 +122,7 @@ export function bootServiceThread(options: ServiceThreadBootOptions): ServiceThr
     connection,
     apiHost: apiHostTable,
     events,
+    launchOptions,
     ...(canvas ? { onPageRelease: (pageId) => canvas.releaseCanvasNode?.({ pageId }) } : {}),
     onLogicTreeCreated: (tree) => {
       lastTree = tree
