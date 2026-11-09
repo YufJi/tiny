@@ -1,4 +1,4 @@
-import { createApiHost } from '@tiny/api'
+import { createApiHost, createGlobalEventHub } from '@tiny/api'
 import type { ServiceCanvasAdapter, ApiContext, ApiHost } from '@tiny/api'
 import { connectHostBridge, installHostBridge } from '@tiny/bridge'
 import { bootServiceThread as bootRealServiceThread } from '../../src/service/thread'
@@ -26,7 +26,7 @@ type ServiceThreadBootOptions = Omit<
   ServiceThreadOptions,
   | 'connection'
   | 'apiHost'
-  | 'themeListeners'
+  | 'events'
   | 'onPageRelease'
   | 'loadTemplates'
   | 'loadStyle'
@@ -40,8 +40,7 @@ type ServiceThreadBootOptions = Omit<
   canvas?: ServiceCanvasAdapter
   resolveAssetUrl?: AssetUrlResolver
   syncHost?: SyncHostCall
-  /** Overrides the host-owned theme listener set. */
-  themeListeners?: Set<(value: unknown) => void>
+  launchOptions?: unknown
 }
 
 let active: HarnessConfig | undefined
@@ -77,7 +76,7 @@ export function bootServiceThread(options: ServiceThreadBootOptions): ServiceThr
     canvas,
     resolveAssetUrl,
     syncHost,
-    themeListeners: themeListenersOption,
+    launchOptions,
     ...runtimeOptions
   } = options
   if (syncHost) {
@@ -92,7 +91,7 @@ export function bootServiceThread(options: ServiceThreadBootOptions): ServiceThr
     peerRole: 'host',
     capabilities: { role: 'service' },
   })
-  const themeListeners = themeListenersOption ?? new Set<(value: unknown) => void>()
+  const events = createGlobalEventHub()
   let runtime: ServiceThreadRuntime | undefined
   const apiContext: ApiContext = {
     connection,
@@ -103,7 +102,8 @@ export function bootServiceThread(options: ServiceThreadBootOptions): ServiceThr
     ],
     ...(canvas ? { canvas } : {}),
     ...(resolveAssetUrl ? { resolveAssetUrl } : {}),
-    themeListeners,
+    events,
+    launchOptions,
     getActivePage: () => runtime?.activePage,
     getCurrentPagePath: () => runtime?.activePage?.path,
     get pageId() {
@@ -121,7 +121,8 @@ export function bootServiceThread(options: ServiceThreadBootOptions): ServiceThr
     ...runtimeOptions,
     connection,
     apiHost: apiHostTable,
-    themeListeners,
+    events,
+    launchOptions,
     ...(canvas ? { onPageRelease: (pageId) => canvas.releaseCanvasNode?.({ pageId }) } : {}),
     onLogicTreeCreated: (tree) => {
       lastTree = tree

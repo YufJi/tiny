@@ -275,6 +275,15 @@ impl HostCore {
                     now_ms,
                 );
             }
+            HostCommand::EmitEvent { name, payload } => {
+                let _ = self.service.send_event(
+                    ProtocolDomain::Event,
+                    "global",
+                    json!({ "name": name, "payload": payload.unwrap_or(Value::Null) }),
+                    None,
+                    now_ms,
+                );
+            }
             HostCommand::Close => {
                 let page_ids: Vec<String> = self.pages.keys().cloned().collect();
                 for page_id in page_ids {

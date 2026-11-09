@@ -1,4 +1,5 @@
 import type { BridgeConnection } from '@tiny/bridge'
+import type { GlobalEventHub } from './global-events'
 import type { AssetUrlResolver } from '@tiny/manifest'
 
 /**
@@ -130,8 +131,10 @@ export type ApiContext = {
   hasApi?: (name: string) => boolean
   canvas?: ServiceCanvasAdapter
   resolveAssetUrl?: AssetUrlResolver
-  /** Host-owned set so `runtime.themeChange` reaches `wx.onThemeChange`. */
-  themeListeners?: Set<(value: unknown) => void>
+  /** Service-thread bus behind the global `wx.onXXX` APIs. */
+  events?: GlobalEventHub
+  /** Host-owned launch options returned by `getLaunchOptionsSync`. */
+  launchOptions?: unknown
   /** Active page instance, for `wx.*` entries that scope to the current page. */
   getActivePage?: () => unknown
   getCurrentPagePath?: () => string | undefined

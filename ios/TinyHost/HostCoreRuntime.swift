@@ -1,4 +1,5 @@
 import Foundation
+import Network
 import UIKit
 
 /// Native iOS host runtime: Rust HostCore + JSCore service + one WKWebView per page.
@@ -14,6 +15,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   private let service = ServiceEngine()
   private let smoke: Bool
   private var core: HostCoreSession?
+  private var networkMonitor: NWPathMonitor?
   private var initialPageId: String?
   private var smokeNavigationStarted = false
   private var surfaces: [String: NativeRenderSurface] = [:]
@@ -133,6 +135,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     let core = try HostCoreSession(config: config, sink: self)
     self.core = core
     try core.start()
+    startNetworkMonitor()
   }
 
   func back(delta: Int = 1) {
@@ -150,6 +153,11 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   }
 
   func setVisible(_ visible: Bool) {
+    try? core?.command([
+      "type": "emitEvent",
+      "name": visible ? "appShow" : "appHide",
+      "payload": [:],
+    ])
     try? core?.command(["type": "setPageVisible", "visible": visible])
   }
 
@@ -161,8 +169,37 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     }
     surfaces.removeAll()
     deferredDestroyIds.removeAll()
+    networkMonitor?.cancel()
+    networkMonitor = nil
     core = nil
     service.stop()
+  }
+
+  private func startNetworkMonitor() {
+    let monitor = NWPathMonitor()
+    monitor.pathUpdateHandler = { [weak self] path in
+      let connected = path.status == .satisfied
+      let networkType: String
+      if !connected {
+        networkType = "none"
+      } else if path.usesInterfaceType(.wifi) {
+        networkType = "wifi"
+      } else if path.usesInterfaceType(.cellular) {
+        networkType = "4g"
+      } else {
+        networkType = "unknown"
+      }
+      DispatchQueue.main.async {
+        guard let self else { return }
+        try? self.core?.command([
+          "type": "emitEvent",
+          "name": "networkStatusChange",
+          "payload": ["isConnected": connected, "networkType": networkType],
+        ])
+      }
+    }
+    monitor.start(queue: DispatchQueue(label: "tiny.host.network"))
+    networkMonitor = monitor
   }
 
   // MARK: HostCoreActionSink

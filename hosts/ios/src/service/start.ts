@@ -1,4 +1,4 @@
-import { createApiHost } from '@tiny/api'
+import { createApiHost, createGlobalEventHub } from '@tiny/api'
 import type { ApiContext, ApiHost } from '@tiny/api'
 import { bootServiceThread, resolveAssetPath } from '@tiny/runtime'
 import type {
@@ -20,6 +20,7 @@ export type TinyIOSApp = {
   serviceSource: string
   styles: Record<string, string>
   assetsBase: string
+  launchOptions?: unknown
 }
 
 type HostGlobal = Record<string, any>
@@ -155,6 +156,11 @@ export function startTinyService(app: TinyIOSApp): void {
   const initialPath = app.manifest.pages.find((page) => page.bodyType !== 'component')?.path
     ?? app.manifest.pages[0]?.path
     ?? ''
+  const launchOptions = app.launchOptions ?? {
+    path: initialPath,
+    query: {},
+    scene: 1001,
+  }
 
   let templates: TemplateRegistry | undefined
   let serviceEvaluated = false
@@ -222,8 +228,13 @@ export function startTinyService(app: TinyIOSApp): void {
   }
 
   const compatibility = app.manifest.runtimeCompatibility
-  const themeListeners = new Set<(value: unknown) => void>()
   let runtime: ServiceThreadRuntime | undefined
+  const events = createGlobalEventHub({
+    onListenerError: (event, error) => connection.sendDiagnostic('warn', {
+      code: 'GLOBAL_EVENT_LISTENER_ERROR',
+      message: `${event}: ${error instanceof Error ? error.message : String(error)}`,
+    }),
+  })
   const apiContext: ApiContext = {
     connection,
     apiName: compatibility.api.global,
@@ -234,7 +245,8 @@ export function startTinyService(app: TinyIOSApp): void {
       if (!resolved) return undefined
       return app.assetsBase + resolved.split('/').map(encodeURIComponent).join('/')
     },
-    themeListeners,
+    events,
+    launchOptions,
     getActivePage: () => runtime?.activePage,
     getCurrentPagePath: () => runtime?.activePage?.path,
     get pageId() {
@@ -256,6 +268,7 @@ export function startTinyService(app: TinyIOSApp): void {
       apiHost,
       manifest: app.manifest,
       initialPath,
+      launchOptions,
       maxPageStack: 10,
       loadTemplates,
       loadStyle: (stylePath) => app.styles[stylePath] ?? '',
@@ -264,7 +277,7 @@ export function startTinyService(app: TinyIOSApp): void {
         serviceEvaluated = true
         evaluate(app.serviceSource, 'service.js')
       },
-      themeListeners,
+      events,
       onPageRelease: (pageId) => canvas.releaseCanvasNode?.({ pageId }),
     })
   } catch (error) {

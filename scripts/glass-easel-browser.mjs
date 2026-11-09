@@ -89,6 +89,36 @@ export async function runBrowserAcceptance({ baseUrl }) {
     }
     let render = await activeRender()
 
+    await step('deliver host global events to wx listeners', async () => {
+      currentStep = 'deliver host global events to wx listeners'
+      const service = page.frames().find((frame) => frame.url().endsWith('/service.html'))
+      assert.ok(service, 'service frame was not found')
+      await service.evaluate(() => {
+        window.__appShowEvents = []
+        window.__networkEvents = []
+        wx.onAppShow((info) => window.__appShowEvents.push(info))
+        wx.onNetworkStatusChange((info) => window.__networkEvents.push(info))
+      })
+      await page.evaluate(() => {
+        window.__tinyRuntime.host.emitGlobalEvent('appShow', { scene: 1001 })
+        window.__tinyRuntime.host.emitGlobalEvent('networkStatusChange', {
+          isConnected: true,
+          networkType: 'wifi',
+        })
+      })
+      await service.waitForFunction(
+        () => window.__appShowEvents.length === 1 && window.__networkEvents.length === 1,
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const events = await service.evaluate(() => ({
+        appShow: window.__appShowEvents,
+        network: window.__networkEvents,
+      }))
+      assert.deepEqual(events.appShow, [{ scene: 1001 }])
+      assert.deepEqual(events.network, [{ isConnected: true, networkType: 'wifi' }])
+    })
+
     const touchSwipe = async (locator, fromRatio = 0.75, toRatio = 0.35) => {
       const box = await locator.boundingBox()
       assert.ok(box, 'swipe target has no bounding box')

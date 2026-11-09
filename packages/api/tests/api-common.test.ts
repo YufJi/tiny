@@ -43,6 +43,7 @@ function createContext(apiNamespaces: string[] = ['wx']) {
     connection,
     apiName: 'wx',
     apiNamespaces,
+    launchOptions: { path: 'pages/index/index', query: {}, scene: 1001 },
     getCurrentPagePath: () => 'pages/index/index',
     pageId: 'page-1',
   } as unknown as ApiContext

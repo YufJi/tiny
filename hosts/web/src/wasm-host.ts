@@ -98,6 +98,7 @@ export class WasmBrowserHost {
   private activePageId: string | undefined
   private appVisible = true
   private removeCanvasRelay: (() => void) | undefined
+  private removeGlobalEventSources: Array<() => void> = []
   private disposed = false
   private ready = false
   private readyTimer: ReturnType<typeof setTimeout> | undefined
@@ -191,6 +192,7 @@ export class WasmBrowserHost {
     })
     this.core = await this.factory(config)
     this.execute(this.core.start(nowMs()))
+    this.installGlobalEventSources()
     if (this.options.waitForReady !== false) {
       await this.waitForReady()
       await this.waitForTree()
@@ -217,6 +219,54 @@ export class WasmBrowserHost {
     return promise
   }
 
+  /** Send a global `wx.onXXX` event into the service thread. */
+  emitGlobalEvent(name: string, payload?: unknown): void {
+    if (!this.core || this.disposed) return
+    void this.command({ type: 'emitEvent', name, payload: payload ?? null })
+  }
+
+  private installGlobalEventSources(): void {
+    if (typeof document !== 'undefined') {
+      const onVisibility = (): void => {
+        const visible = document.visibilityState !== 'hidden'
+        this.emitGlobalEvent(visible ? 'appShow' : 'appHide', {})
+        void this.command({ type: 'setPageVisible', visible })
+      }
+      document.addEventListener('visibilitychange', onVisibility)
+      this.removeGlobalEventSources.push(() => {
+        document.removeEventListener('visibilitychange', onVisibility)
+      })
+    }
+    if (typeof window !== 'undefined') {
+      const emitNetwork = (): void => {
+        this.emitGlobalEvent('networkStatusChange', this.networkStatus())
+      }
+      window.addEventListener('online', emitNetwork)
+      window.addEventListener('offline', emitNetwork)
+      this.removeGlobalEventSources.push(() => {
+        window.removeEventListener('online', emitNetwork)
+        window.removeEventListener('offline', emitNetwork)
+      })
+    }
+  }
+
+  private networkStatus(): { isConnected: boolean; networkType: string } {
+    const navigatorWithConnection = navigator as Navigator & {
+      connection?: { type?: string; effectiveType?: string }
+    }
+    const isConnected = navigatorWithConnection.onLine !== false
+    if (!isConnected) return { isConnected: false, networkType: 'none' }
+    const type = navigatorWithConnection.connection?.type
+    if (type === 'wifi') return { isConnected: true, networkType: 'wifi' }
+    if (type === 'cellular') {
+      return {
+        isConnected: true,
+        networkType: navigatorWithConnection.connection?.effectiveType ?? '4g',
+      }
+    }
+    return { isConnected: true, networkType: 'unknown' }
+  }
+
   async inspectTree(pageId: string | undefined): Promise<unknown> {
     if (!pageId) return null
     await this.waitForPage(pageId)
@@ -228,6 +278,7 @@ export class WasmBrowserHost {
     if (this.disposed) return
     this.disposed = true
     this.removeCanvasRelay?.()
+    for (const remove of this.removeGlobalEventSources.splice(0)) remove()
     for (const page of this.pages.values()) {
       page.transport.close()
       page.iframe.remove()
