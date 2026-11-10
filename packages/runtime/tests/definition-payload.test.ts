@@ -29,6 +29,20 @@ describe('component definition payload', () => {
     expect(payload.externalClasses).toEqual(['outer'])
   })
 
+  test('drops element-reserved properties such as dataset and id', () => {
+    const definition = normalize({
+      properties: {
+        dataset: null,
+        id: String,
+        label: String,
+      },
+    })
+    const payload = serializeComponentDefinition(PATH, definition)
+    expect(payload.properties).not.toHaveProperty('dataset')
+    expect(payload.properties).not.toHaveProperty('id')
+    expect(payload.properties).toHaveProperty('label')
+  })
+
   test('drops functions and object behaviors', () => {
     const userBehavior = { data: { fromBehavior: true }, methods: { noop() {} } }
     const definition = normalize({

@@ -3,6 +3,7 @@ import type { ComponentDefinitionPayload } from '../../tree/protocol'
 import type { MiniProgramComponentSchema } from '../../types'
 import {
   normalizeComponentDefinition,
+  RESERVED_COMPONENT_PROPERTY_NAMES,
   resolveComponentReference,
   type NormalizedComponentDefinition,
 } from '../../component/component-definition'
@@ -53,9 +54,13 @@ export function serializeComponentDefinition(
   const using = Object.entries(schema?.using ?? {})
     .filter(([tag, target]) => tag.length > 0 && typeof target === 'string' && target.length > 0)
     .map(([tag, target]) => [tag, resolveComponentReference(componentPath, target)] as const)
+  const properties = Object.fromEntries(
+    Object.entries(definition.properties)
+      .filter(([name]) => !RESERVED_COMPONENT_PROPERTY_NAMES.has(name)),
+  )
   const payload: ComponentDefinitionPayload = {
     path: componentPath,
-    properties: definition.properties as Record<string, unknown>,
+    properties: properties as Record<string, unknown>,
     data: definition.data,
     ...(behaviors.length > 0 ? { behaviors } : {}),
     ...(methods.length > 0 ? { methods } : {}),

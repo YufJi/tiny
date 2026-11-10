@@ -3,14 +3,14 @@ title: '用真实小程序验收，'
 highlight: '不只跑单元测试'
 eyebrow: '测试与验收'
 lede: >-
-  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。495 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，68 个浏览器步骤验证端到端行为；iOS 宿主另有 7 个 fixture 的 WKWebView + JSCore smoke。
+  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。496 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，68 个浏览器步骤验证端到端行为；iOS 宿主另有 7 个 fixture 的 WKWebView + JSCore smoke。
 stats:
-  - ['495', '单元测试']
+  - ['496', '单元测试']
   - ['66', '浏览器步骤']
   - ['5', '浏览器流程']
   - ['7', '测试小程序']
   - ['7', 'iOS fixture smoke']
-description: '小程序引擎的验收方式：构建、内核检查、495 个单元测试、68 个浏览器步骤、七套测试小程序和 iOS 宿主 smoke。'
+description: '小程序引擎的验收方式：构建、内核检查、496 个单元测试、68 个浏览器步骤、七套测试小程序和 iOS 宿主 smoke。'
 name: '测试'
 pageTitle: '测试与验收 · Tiny 小程序引擎'
 order: 8
@@ -72,7 +72,7 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 :::
 ::::
 
-## 495 个单元测试，一次运行 {#units kicker="单元测试"}
+## 496 个单元测试，一次运行 {#units kicker="单元测试"}
 
 12 个包各有自己的 `vitest.config.ts`，根 `vitest.workspace.ts` 把它们装进同一个 Vitest 进程：一次启动、并行执行各包测试，但 alias、snapshot 格式和 globals 仍按包隔离。需要单独排查时仍可运行 `pnpm --filter <package> test`。
 
