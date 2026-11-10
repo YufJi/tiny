@@ -1,6 +1,6 @@
 # 微信 WebView 版功能对齐度分析
 
-> **快照**：2026-11-10（第三十二次同步） · **基准**：微信小程序 WebView 渲染版 2.33.0（不含 Skyline / XR-FRAME / 扩展组件库）
+> **快照**：2026-11-10（第三十三次同步） · **基准**：微信小程序 WebView 渲染版 2.33.0（不含 Skyline / XR-FRAME / 扩展组件库）
 >
 > **结论**：加权功能对齐约 **56.3%（55–57%）**；页面启动率 96.8%（121/125）；生产可替换 < 20%
 >
@@ -71,8 +71,8 @@
 
 | 维度 | 权重 | 完成度 | 加权 | 关键依据 |
 | --- | ---: | ---: | ---: | --- |
-| 编译/构建 | 10% | 99% | 9.90 | WXML/WXSS/WXS 完整；共享 WXS runtime 与 AST transform 已接；app.wxss 规则可作用到页面与内置宿主；package.json → `miniprogram_npm` 的 npm 构建（含 `miniprogram` 字段、传递依赖、预构建树优先）已接；`project.config.json` 支持 `miniprogramRoot`、`compileType` 校验和 `packOptions.ignore`；app.json 校验并用 manifest 携带 `subPackages` 元数据；分包按需拆成 `service.<pkg>.js`（组件归属按主包/共享/单一分包计算）；可选 TS 语义检查（tsconfig 自动启用）；`preloadRule`（含 network）归一化进 manifest，`componentPlaceholder` 校验并落 manifest；`theme.json`/`themeLocation` 读取校验、`@变量` 按 light/dark 解析、WXSS `var(--x)` 注入；仍无增量构建 |
-| 框架运行时 | 18% | 99% | 17.82 | 14/14 页面生命周期、7/7 应用生命周期、5/5 路由；两次求值的渲染树、元素 locator 寻址、页面级 `generic:x`、6 个 `wx://` behavior 占位对齐；`this.animate`/`clearAnimate`、`wx.createIntersectionObserver`、事件合成层与 `target/currentTarget` 几何落地；`pageLifetimes.resize` 与页面 `onResize` 同步下发；分包按需加载（启动/导航前 ensure + 组件定义增量刷新）与 `preloadRule` 预取（`wifi` 需宿主网络事实）；tab 页缓存、group/label/touchtrack/scroller 基础保持；`componentPlaceholder` + glass-easel 占位替换完成异步组件 chunk（主包页面先渲染占位，分包到达后自动替换）；独立分包入口可跳过主包 App 独立启动；trait/chaining API 仍未接 |
+| 编译/构建 | 10% | 99% | 9.90 | WXML/WXSS/WXS 完整；共享 WXS runtime 与 AST transform 已接；app.wxss 规则可作用到页面与内置宿主；package.json → `miniprogram_npm` 的 npm 构建（含 `miniprogram` 字段、传递依赖、预构建树优先）已接；`project.config.json` 支持 `miniprogramRoot`、`compileType` 校验和 `packOptions.ignore`；app.json 校验并用 manifest 携带 `subPackages` 元数据；分包按需拆成 `service.<pkg>.js`，entry 之间用 esbuild code splitting 共享 `chunks/`（跨包模块单实例）；可选 TS 语义检查（tsconfig 自动启用）；`preloadRule`（含 network）归一化进 manifest，`componentPlaceholder` 校验并落 manifest；`theme.json`/`themeLocation` 读取校验、`@变量` 按 light/dark 解析、WXSS `var(--x)` 注入；仍无增量构建 |
+| 框架运行时 | 18% | 99% | 17.82 | 14/14 页面生命周期、7/7 应用生命周期、5/5 路由；两次求值的渲染树、元素 locator 寻址、页面级 `generic:x`、6 个 `wx://` behavior 占位对齐；`this.animate`/`clearAnimate`、`wx.createIntersectionObserver`、事件合成层与 `target/currentTarget` 几何落地；`pageLifetimes.resize` 与页面 `onResize` 同步下发；分包按需加载（启动/导航前 ensure + 组件定义增量刷新）与 `preloadRule` 预取（`wifi` 需宿主网络事实）；tab 页缓存、group/label/touchtrack/scroller 基础保持；`componentPlaceholder` + glass-easel 占位替换完成异步组件 chunk（主包页面先渲染占位，分包到达后自动替换）；独立分包入口跳过主包 App 且不加载主包 `app.wxss`；trait/chaining API 仍未接 |
 | 内置组件 | 17% | 65% | 11.05 | 39/60 标签（2.33.0 目标的 39 个标签全部落地，20 个平台/开放能力组件按基线不做）；P0 视觉完成，P1 内部结构大幅收口；事件合成层与 scroll-view 横向/enable-flex 修复落地；`navigator` 走 host action；canvas 2D/WebGL 已接；已统计属性 120/146、事件 44/46 |
 | wx API | 20% | 14.5% | 2.91 | 73/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar/switchTab/redirectTo/reLaunch/下拉刷新/IntersectionObserver（含 `wx.createIntersectionObserver`）等已接或桩 |
 | 页面形态 | 12% | 28% | 3.36 | devtool 宿主已实现导航栏/tabBar/页面滚动/触底/tab 页缓存，浏览器宿主已接下拉刷新手势；iOS 宿主补上原生导航栏/tabBar 和页面 chrome；分享菜单 UI、页面转场、自定义 tabBar 仍缺 |
@@ -250,7 +250,7 @@
 | 字段 | 状态 |
 | --- | --- |
 | `pages` | ✅ |
-| `subPackages` / `subpackages` | ✅ 编译、可直接启动；manifest 携带 `root`/`pages`/`independent`/`service` 元数据；按需加载与 `preloadRule` 预取已接（启动/导航前加载分包 chunk；`wifi` 规则需宿主提供 `preloadNetwork` 事实）；独立分包入口已可跳过主包 App 独立启动（`getApp()` 为 null）；主包 `app.wxss`/全局组件仍会作用于独立分包；预下载策略未接；每个 service chunk 独立打包，跨包共享模块目前各有实例 |
+| `subPackages` / `subpackages` | ✅ 编译、可直接启动；manifest 携带 `root`/`pages`/`independent`/`service` 元数据；按需加载与 `preloadRule` 预取已接（启动/导航前加载分包 chunk；`wifi` 规则需宿主提供 `preloadNetwork` 事实）；独立分包入口可跳过主包 App 独立启动（`getApp()` 为 null），不继承主包全局组件和主包 `app.wxss`；iOS 使用单个 eager `service.all.js` 保持模块单实例；预下载策略未接 |
 | `usingComponents` | ✅ |
 | `window` | ⚠️ 只透传到 manifest，运行时不消费 |
 | `tabBar` | ✅ 内置 tabBar 配置、颜色/位置/徽标/红点/显隐、`switchTab`；`custom: true` 发 `TABBAR_CUSTOM_UNSUPPORTED` 警告 |
@@ -615,6 +615,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-29 | 第二十次校准：iOS 宿主 MVP（SwiftUI + WKWebView + JavaScriptCore，全部 7 个 fixture 模拟器 smoke，真机签名构建/安装）；宿主/平台 15→18、页面形态 25→28、质量/验证 60→61；117 页探针保持 108 启动、108 可见、9 失败、0 console error；总分 49.92→50.55 | **50.55%** |
 | 2026-11-04 | 第二十一次校准：微信官方 demo 子集切到 2023-02-23 基线（`7189b9c`，111 页）；修复该基线遗留的 88 页 `common` 模板引用（少一层 `../`）与导航栏 `system` 缺失；WeChat demo 验收改为 swiper autoplay 开关 + radio 视觉两步（61 步）；111 页探针 107 启动、102 可见、4 失败（全部平台能力）、0 console error；加权分保持 50.55 | **50.55%** |
 | 2026-11-06 | 新增 `base64ToArrayBuffer` / `arrayBufferToBase64`（纯 service 实现，支持空白/省略 padding、二进制与大缓冲；API 71→73，wx API 14.1%→14.5%，总分 52.30→52.38） | **52.38%** |
+| 2026-11-10 | 第三十三次同步：边界修正——service entries 用 esbuild `splitting` 共享 `chunks/`，跨包模块单实例；iOS 改用 eager `service.all.js`（JSCore 无 ESM loader）；独立分包页面跳主包 `app.wxss`，验收增加 computed style 断言。495 单测 / 68 步；分数不变 | **56.30%** |
 | 2026-11-10 | 第三十二次同步：异步组件 chunk 打通——未注册组件的 using 目标改为绝对路径（glass-easel 按 owner 相对解析曾导致 waiting key 不匹配），逻辑树 placeholders + 晚注册自动替换；编译器把带 `componentPlaceholder` 的跨包组件留在分包并记录 `asyncSubPackages`，页面挂载后异步加载并自动替换；mini 验收新增“占位→真实组件”步骤。495 单测 / 68 步；分数不变（仍缺 trait/chaining、增量构建） | **56.30%** |
 | 2026-11-10 | 第三十一次同步：逻辑树接入 glass-easel 原生 `placeholders`（页面/组件两级），缺少定义时输出占位组件边界；实测晚注册仍未触发自动替换，异步 chunk 继续挂起。495 单测；分数不变 | **56.30%** |
 | 2026-11-10 | 第三十次同步：独立分包入口运行时落地——主包 App 不加载、`getApp()` 为 null、独立分包不能导航到主包/其他分包、全局 `usingComponents` 不注入独立分包；新增浏览器验收步骤。异步组件 chunk 经实测被逻辑树“无定义降级为普通元素”挡住，未强行改造。494 单测 / 67 步；框架 98→99，总分 56.12→56.30 | **56.30%** |

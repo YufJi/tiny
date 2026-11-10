@@ -153,6 +153,13 @@ export type Manifest = {
   entries: {
     service: string
     templates: string
+    /**
+     * Eager single-file service bundle for hosts without native ESM (iOS
+     * JavaScriptCore). It contains the app, every page and every component so
+     * shared modules keep one instance; browser hosts use `service` plus the
+     * per-package chunks instead.
+     */
+    serviceBundle?: string
   }
   app?: AppArtifact
   pages: PageArtifact[]

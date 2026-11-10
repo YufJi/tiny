@@ -42,6 +42,7 @@ describe('compileMiniProgram', () => {
     expect(manifest.entries).toEqual({
       service: 'service.js',
       templates: 'templates.js',
+      serviceBundle: 'service.all.js',
     })
     expect(manifest.pages).toHaveLength(1)
     expect(manifest.components).toHaveLength(1)
@@ -142,14 +143,14 @@ describe('compileMiniProgram', () => {
     }
   })
 
-  test('emits the service entry without a render wrapper', async () => {
+  test('emits split service bundles and an eager iOS bundle', async () => {
     const service = await fs.readFile(path.join(outputDir, 'service.js'), 'utf8')
     expect(service).toContain('App({')
     expect(service).toContain('Page({')
     expect(service).toContain('Component({')
-    expect(service).not.toContain("import './scripts/")
     await expect(fs.access(path.join(outputDir, 'render.js'))).rejects.toThrow()
     await expect(fs.access(path.join(outputDir, 'service.js.map'))).resolves.toBeUndefined()
+    await expect(fs.access(path.join(outputDir, 'service.all.js'))).resolves.toBeUndefined()
     await expect(fs.access(path.join(outputDir, 'scripts/app.js'))).resolves.toBeUndefined()
     await expect(fs.access(path.join(outputDir, 'templates.js'))).resolves.toBeUndefined()
   })

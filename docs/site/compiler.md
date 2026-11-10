@@ -49,7 +49,7 @@ compileMiniProgram 会按顺序执行这些阶段。每个阶段只生成产物�
 :::
 
 :::card{tag="pages" title="主包和分包"}
-`appConfig.pages` 排在前面，`subPackages[].pages` 按 `root + page` 拼接后排在后面；manifest 额外携带每个分包的 `root`/`pages`/`independent`/`service` 元数据。分包页面和“只被这一个分包使用”的组件会进入独立的 `service.<pkg>.js`，主包和跨分包共享组件保持在 `service.js`；带 `componentPlaceholder` 的跨包组件留在所属分包，页面记录 `asyncSubPackages`；`preloadRule` 会被校验并归一化进 manifest（`page`/`network`/`packages`）；独立分包会跳过主包全局 `usingComponents`，引用主包组件报 `INDEPENDENT_PACKAGE_DEPENDENCY`。
+`appConfig.pages` 排在前面，`subPackages[].pages` 按 `root + page` 拼接后排在后面；manifest 额外携带每个分包的 `root`/`pages`/`independent`/`service` 元数据。分包页面和“只被这一个分包使用”的组件会进入独立的 `service.<pkg>.js`，主包和跨分包共享组件保持在 `service.js`；带 `componentPlaceholder` 的跨包组件留在所属分包，页面记录 `asyncSubPackages`；主包和分包 entry 一起做 esbuild code splitting，共享模块落在 `chunks/`，另为 iOS 生成 eager `service.all.js`；`preloadRule` 会被校验并归一化进 manifest（`page`/`network`/`packages`）；独立分包会跳过主包全局 `usingComponents`，引用主包组件报 `INDEPENDENT_PACKAGE_DEPENDENCY`。
 
 页面的先后顺序，就是 manifest 里 `pages` 的顺序。
 :::

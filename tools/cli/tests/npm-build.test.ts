@@ -80,7 +80,7 @@ describe('npm build', () => {
       outputDir,
       'scripts/miniprogram_npm/dep-util/helper.js',
     ))).resolves.toBeTruthy()
-    const service = await fs.readFile(path.join(outputDir, 'service.js'), 'utf8')
+    const service = await fs.readFile(path.join(outputDir, 'service.all.js'), 'utf8')
     expect(service).toContain('value: 1')
 
     expect(manifest.assets.map((asset) => asset.path)).toContain(

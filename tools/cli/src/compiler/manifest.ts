@@ -80,6 +80,7 @@ export async function createManifest(
     entries: {
       service: 'service.js',
       templates: 'templates.js',
+      serviceBundle: 'service.all.js',
     },
     app,
     pages,

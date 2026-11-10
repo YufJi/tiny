@@ -38,6 +38,7 @@ export async function writeEntryArtifacts(
     ...mainArtifacts.map((artifact) => artifact.script?.path),
   ])
 
+  const packageEntries: string[] = []
   for (const pkg of manifest.subPackages ?? []) {
     if (!pkg.service) continue
     const packageArtifacts = [
@@ -45,7 +46,24 @@ export async function writeEntryArtifacts(
       ...manifest.components.filter((component) => component.subpackage === pkg.root),
     ]
     await emitServiceEntry(context, pkg.service, packageArtifacts.map((artifact) => artifact.script?.path))
+    packageEntries.push(pkg.service)
   }
+
+  // Bundle the split entries together with code splitting: modules used by more
+  // than one package land in `chunks/` and are imported once at runtime, so
+  // cross-package module state stays single-instance (WeChat's main-package
+  // module-table behaviour).
+  await bundleServiceEntries(context, ['service.js', ...packageEntries])
+
+  // iOS has no native ESM loader. Build one eager bundle for it so shared
+  // modules still have a single instance; browser hosts use the split entries.
+  const allScripts = [
+    manifest.app?.script?.path,
+    ...manifest.pages.map((page) => page.script?.path),
+    ...manifest.components.map((component) => component.script?.path),
+  ]
+  await emitServiceEntry(context, 'service.all.js', allScripts)
+  await bundleServiceEntry(context, 'service.all.js')
 }
 
 async function emitServiceEntry(
@@ -58,7 +76,36 @@ async function emitServiceEntry(
     .map((scriptPath) => `import './${toPosixPath(scriptPath)}'`)
     .join('\n') + '\n'
   await writeFileWithSourceMap(outputPath(context, entryRelativePath), content)
-  await bundleServiceEntry(context, entryRelativePath)
+}
+
+async function bundleServiceEntries(
+  context: CompilerContext,
+  entryRelativePaths: string[],
+): Promise<void> {
+  if (entryRelativePaths.length === 0) return
+  try {
+    await esbuild({
+      entryPoints: entryRelativePaths.map((entry) => outputPath(context, entry)),
+      outdir: path.resolve(context.options.outputDir),
+      entryNames: '[name]',
+      chunkNames: 'chunks/[name]-[hash]',
+      splitting: true,
+      bundle: true,
+      allowOverwrite: true,
+      format: 'esm',
+      platform: 'browser',
+      target: 'es2019',
+      sourcemap: true,
+      logLevel: 'silent',
+      absWorkingDir: path.resolve(context.options.outputDir),
+    })
+  } catch (error) {
+    context.diagnostics.push(diagnostic(
+      'warning',
+      'SCRIPT_BUNDLE_ERROR',
+      `Unable to bundle service entries: ${error instanceof Error ? error.message : String(error)}`,
+    ))
+  }
 }
 
 async function bundleServiceEntry(

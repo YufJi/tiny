@@ -1366,6 +1366,10 @@ export async function runMiniProgramAcceptance({ baseUrl, app = 'mini', browser 
         (item) => item.code === 'RUNTIME_STATE',
       ).at(-1))
       assert.equal(state?.details?.currentPage, 'independent/pages/standalone/standalone')
+      const color = await independentRender.evaluate(
+        () => getComputedStyle(document.querySelector('#standalone')).color,
+      )
+      assert.notEqual(color, 'rgb(1, 2, 3)')
     })
 
     await step('keep the example console free of errors', async () => {

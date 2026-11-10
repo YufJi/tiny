@@ -490,8 +490,20 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     )
   }
 
+  private isIndependentPage(pageId: string): boolean {
+    const path = this.logicTree?.pagePathFor(pageId)
+    if (!path) return false
+    const page = this.options.manifest.pages.find((item) => item.path === path)
+    if (!page?.subpackage) return false
+    return (this.options.manifest.subPackages ?? []).some(
+      (pkg) => pkg.root === page.subpackage && pkg.independent === true,
+    )
+  }
+
   private treeStyles(pageId: string): { styles: string[]; fallbackAppStyles?: string[] } {
     const styles = this.logicTree?.styleTexts(pageId) ?? []
+    // Independent packages do not inherit the main package `app.wxss`.
+    if (this.isIndependentPage(pageId)) return { styles }
     if (this.logicTree?.hasAppPageScope(pageId)) return { styles }
     const appStylePath = this.options.manifest.app?.style?.outputPath
     const appCss = appStylePath ? this.options.loadStyle?.(appStylePath) : undefined

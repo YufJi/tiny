@@ -1,1 +1,1 @@
-<view id="standalone" class="standalone">independent {{app}}</view>
+<view id="standalone" class="standalone app-global">independent {{app}}</view>

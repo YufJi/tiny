@@ -29,7 +29,8 @@ beforeAll(async () => {
     lazyCodeLoading: 'unknownMode',
   }))
   await write(appRoot, 'app.js', 'App({})\n')
-  await write(appRoot, 'pages/index/index.js', 'Page({})\n')
+  await write(appRoot, 'shared/state.js', 'export const sharedMarker = "SHARED_MODULE_MARKER"\n')
+  await write(appRoot, 'pages/index/index.js', "import { sharedMarker } from '../../shared/state.js'\nPage({ data: { sharedMarker } })\n")
   await write(appRoot, 'pages/index/index.json', JSON.stringify({
     usingComponents: { shared: '/components/shared/shared' },
   }))
@@ -50,7 +51,7 @@ beforeAll(async () => {
   await write(appRoot, 'components/shared/shared.js', 'Component({})\n')
   await write(appRoot, 'components/shared/shared.json', '{ "component": true }\n')
   await write(appRoot, 'components/shared/shared.wxml', '<view>shared</view>\n')
-  await write(appRoot, 'pkg/components/box/box.js', 'Component({})\n')
+  await write(appRoot, 'pkg/components/box/box.js', "import { sharedMarker } from '../../../shared/state.js'\nComponent({ data: { sharedMarker } })\n")
   await write(appRoot, 'pkg/components/box/box.json', '{ "component": true }\n')
   await write(appRoot, 'pkg/components/box/box.wxml', '<view>box</view>\n')
   await write(appRoot, 'assets/logo.png', Buffer.from([1]))
@@ -105,6 +106,12 @@ describe('project and app configuration', () => {
     expect(packageService).not.toContain('components/shared/shared')
     const mainService = await fs.readFile(path.join(outputDir, 'service.js'), 'utf8')
     expect(mainService).toContain('components/shared/shared')
+    const mainChunk = mainService.match(/chunks\/[^"']+\.js/)?.[0]
+    const pkgChunk = packageService.match(/chunks\/[^"']+\.js/)?.[0]
+    expect(mainChunk).toBeDefined()
+    expect(pkgChunk).toBe(mainChunk)
+    const chunkSource = await fs.readFile(path.join(outputDir, mainChunk!), 'utf8')
+    expect(chunkSource).toContain('SHARED_MODULE_MARKER')
 
     expect(result.manifest.preloadRules).toEqual([{
       page: 'pages/index/index',
