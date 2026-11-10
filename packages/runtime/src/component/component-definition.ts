@@ -50,6 +50,27 @@ export type DefinitionDiagnostic = {
   details?: unknown
 }
 
+/**
+ * Property names that belong to the glass element itself, not to the user
+ * component API. They must never be declared on the render-side definition
+ * either: glass creates fields for every declared property before its data
+ * group exists, so a `dataset`/`id` property would crash component creation.
+ */
+export const RESERVED_COMPONENT_PROPERTY_NAMES = new Set([
+  'is',
+  'dataset',
+  'classList',
+  'parentNode',
+  'parentIndex',
+  'childNodes',
+  'ownerShadowRoot',
+  'shadowRoot',
+  'tagName',
+  'id',
+  'slot',
+  'style',
+])
+
 export type NormalizedComponentDefinition = {
   properties: Record<string, MiniProgramPropertyDefinition>
   data: Record<string, unknown>

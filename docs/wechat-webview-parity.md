@@ -1,6 +1,6 @@
 # 微信 WebView 版功能对齐度分析
 
-> **快照**：2026-11-10（第三十三次同步） · **基准**：微信小程序 WebView 渲染版 2.33.0（不含 Skyline / XR-FRAME / 扩展组件库）
+> **快照**：2026-11-10（第三十四次同步） · **基准**：微信小程序 WebView 渲染版 2.33.0（不含 Skyline / XR-FRAME / 扩展组件库）
 >
 > **结论**：加权功能对齐约 **56.3%（55–57%）**；页面启动率 96.8%（121/125）；生产可替换 < 20%
 >
@@ -79,7 +79,7 @@
 | 样式/渲染 | 8% | 76% | 6.08 | WXSS/rpx/作用域强；app.wxss tag/class 规则作用到页面与共享组件；canvas 2D/WebGL/RAF 已接，导出 API 仍缺 |
 | 宿主/平台 | 8% | 18% | 1.44 | 浏览器 + iOS 原生宿主（JavaScriptCore service + WKWebView render）；仍无原生网络/登录/支付/分享 |
 | 开发工具 | 4% | 47% | 1.88 | Vite 构建、应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar、移动端访问提示；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 62% | 1.86 | 495 单测 + 68 步浏览器验收 + 125 页探针（121 启动 / 116 可见文本）+ iOS 7 fixture 模拟器 smoke + 真机签名构建/安装；新增 npm 构建、project.config/app.json 校验、TS 诊断、路径式注册回归；仍无性能/安全测试 |
+| 质量/验证 | 3% | 62% | 1.86 | 496 单测 + 68 步浏览器验收 + 125 页探针（121 启动 / 116 可见文本）+ iOS 7 fixture 模拟器 smoke + 真机签名构建/安装；新增 npm 构建、project.config/app.json 校验、TS 诊断、路径式注册回归；仍无性能/安全测试 |
 | **合计** | **100%** | — | **56.30%** | |
 
 ### 条目覆盖率速览
@@ -338,7 +338,7 @@ Shadow DOM：
 2026-11-10 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
-- **495 个单元测试**（runtime、host-web-components、template-compiler、stylesheet-compiler、cli、wxs-runtime、bridge、api、manifest、css-units）
+- **496 个单元测试**（runtime、host-web-components、template-compiler、stylesheet-compiler、cli、wxs-runtime、bridge、api、manifest、css-units）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
 - **68 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent、真实滚动触发的 onPageScroll，WeChat demo 覆盖 swiper autoplay 开关、radio 点击与 WeUI 勾选结构、navigator 点击跳转、WXS 拖拽，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧，canvas 覆盖 2D/WebGL/legacy/ECharts
 - 门禁覆盖的 5 段流程无 console/page error（125 页探针的 pageerror 见 5.2）
@@ -615,6 +615,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-29 | 第二十次校准：iOS 宿主 MVP（SwiftUI + WKWebView + JavaScriptCore，全部 7 个 fixture 模拟器 smoke，真机签名构建/安装）；宿主/平台 15→18、页面形态 25→28、质量/验证 60→61；117 页探针保持 108 启动、108 可见、9 失败、0 console error；总分 49.92→50.55 | **50.55%** |
 | 2026-11-04 | 第二十一次校准：微信官方 demo 子集切到 2023-02-23 基线（`7189b9c`，111 页）；修复该基线遗留的 88 页 `common` 模板引用（少一层 `../`）与导航栏 `system` 缺失；WeChat demo 验收改为 swiper autoplay 开关 + radio 视觉两步（61 步）；111 页探针 107 启动、102 可见、4 失败（全部平台能力）、0 console error；加权分保持 50.55 | **50.55%** |
 | 2026-11-06 | 新增 `base64ToArrayBuffer` / `arrayBufferToBase64`（纯 service 实现，支持空白/省略 padding、二进制与大缓冲；API 71→73，wx API 14.1%→14.5%，总分 52.30→52.38） | **52.38%** |
+| 2026-11-10 | 第三十四次同步：修复渲染侧组件定义携带 `dataset`/`id` 等元素保留属性导致 glass `replaceDataOnPath` 崩溃（Vant button 页空白）；496 单测；分数不变 | **56.30%** |
 | 2026-11-10 | 第三十三次同步：边界修正——service entries 用 esbuild `splitting` 共享 `chunks/`，跨包模块单实例；iOS 改用 eager `service.all.js`（JSCore 无 ESM loader）；独立分包页面跳主包 `app.wxss`，验收增加 computed style 断言。495 单测 / 68 步；分数不变 | **56.30%** |
 | 2026-11-10 | 第三十二次同步：异步组件 chunk 打通——未注册组件的 using 目标改为绝对路径（glass-easel 按 owner 相对解析曾导致 waiting key 不匹配），逻辑树 placeholders + 晚注册自动替换；编译器把带 `componentPlaceholder` 的跨包组件留在分包并记录 `asyncSubPackages`，页面挂载后异步加载并自动替换；mini 验收新增“占位→真实组件”步骤。495 单测 / 68 步；分数不变（仍缺 trait/chaining、增量构建） | **56.30%** |
 | 2026-11-10 | 第三十一次同步：逻辑树接入 glass-easel 原生 `placeholders`（页面/组件两级），缺少定义时输出占位组件边界；实测晚注册仍未触发自动替换，异步 chunk 继续挂起。495 单测；分数不变 | **56.30%** |
