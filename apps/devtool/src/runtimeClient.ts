@@ -11,7 +11,7 @@ import type { InspectNode } from '@tiny/runtime'
 import type { RuntimeManifest } from '@tiny/runtime'
 import type { StorageValues, SystemInfo } from '@tiny/api'
 import { WasmBrowserHost, type WasmHostCoreFactory } from '@tiny/host-web'
-import { createDevtoolApiHandlers, createDevtoolSyncApiHandlers } from './host-api'
+import { createDevtoolApiHost } from './host-api'
 import { projectComponentTree } from './componentTree'
 import { pollHostPicker, showHostPicker, updateHostPicker } from './hostPicker'
 
@@ -27,6 +27,13 @@ export type DevtoolLifecycleEvent = {
   extra?: Record<string, unknown>
 }
 
+export type DevtoolNavigationState = {
+  title?: string
+  backgroundColor?: string
+  textStyle?: 'white' | 'black'
+  loading?: boolean
+}
+
 export type DevtoolRuntimeState = {
   status: DevtoolRuntimeStatus
   currentPage?: string
@@ -35,6 +42,12 @@ export type DevtoolRuntimeState = {
   pages: RuntimePageState[]
   /** Ordered page lifecycle timeline (onLoad/onShow/onReady/onHide/onUnload/...). */
   lifecycle: DevtoolLifecycleEvent[]
+  /** Runtime overrides from `wx.setNavigationBar*` on the active page. */
+  navigation?: DevtoolNavigationState
+  /** Host-rendered pull-down refresh indicator is visible. */
+  refreshing?: boolean
+  /** `wx.hideShareMenu` / `wx.showShareMenu` state for the chrome menu. */
+  shareMenuVisible?: boolean
   /** Native tab bar state for the active tab page, when the app declares one. */
   tabBar?: RuntimeTabBarState
   diagnostics: RuntimeDiagnostic[]
@@ -69,6 +82,8 @@ export type DevtoolRuntimeListener = (state: DevtoolRuntimeState) => void
 export class DevtoolRuntimeClient {
   private readonly options: DevtoolRuntimeOptions
   private readonly listeners = new Set<DevtoolRuntimeListener>()
+  private readonly navigationOverrides = new Map<string, DevtoolNavigationState>()
+  private refreshTimer: ReturnType<typeof setTimeout> | undefined
   private wasmHost: WasmBrowserHost | null = null
   private container: HTMLElement | null = null
   private ownsContainer = false
@@ -98,12 +113,18 @@ export class DevtoolRuntimeClient {
 
   async launch(): Promise<void> {
     if (this.state.status === 'running' || this.state.status === 'connecting') return
+    this.navigationOverrides.clear()
+    if (this.refreshTimer !== undefined) clearTimeout(this.refreshTimer)
+    this.refreshTimer = undefined
     this.update({
       status: 'connecting',
       currentPage: undefined,
       pageStack: [],
       pages: [],
       lifecycle: [],
+      navigation: undefined,
+      refreshing: false,
+      shareMenuVisible: true,
       tabBar: undefined,
       diagnostics: [],
       tree: undefined,
@@ -133,6 +154,12 @@ export class DevtoolRuntimeClient {
       }
     }
     try {
+      const apiHost = createDevtoolApiHost({
+        storage,
+        getSystemInfo,
+        onNavigation: (action, params) => this.applyNavigation(action, params),
+        onShareMenu: (visible) => this.update({ shareMenuVisible: visible }),
+      })
       this.wasmHost = new WasmBrowserHost({
         appId: this.options.appId ?? 'devtool',
         manifest: this.options.manifest,
@@ -141,8 +168,8 @@ export class DevtoolRuntimeClient {
         initialPath: this.options.initialPath,
         container,
         maxPageStack: this.options.maxPageStack,
-        apiHandlers: createDevtoolApiHandlers(storage, getSystemInfo),
-        syncApiHandlers: createDevtoolSyncApiHandlers(storage, getSystemInfo),
+        apiHandlers: apiHost.apiHandlers,
+        syncApiHandlers: apiHost.syncApiHandlers,
         onState: (state) => {
           if (state && typeof state === 'object') this.record(state as RuntimeDiagnostic)
         },
@@ -256,6 +283,15 @@ export class DevtoolRuntimeClient {
     await this.requireWasmHost().command({ type: 'setPageVisible', visible: false })
   }
 
+  /** Invoke the active page's `onShareAppMessage` / timeline / favorites hook. */
+  async share(type: 'appMessage' | 'timeline' | 'favorites' = 'appMessage'): Promise<unknown> {
+    return this.requireWasmHost().command({
+      type: 'share',
+      shareType: type,
+      from: 'menu',
+    })
+  }
+
   /** Keep the configured system-info API and `onResize` in sync with host chrome. */
   async resize(width: number, height: number): Promise<void> {
     await this.requireWasmHost().command({ type: 'resize', width, height })
@@ -272,6 +308,31 @@ export class DevtoolRuntimeClient {
     return this.wasmHost
   }
 
+  /**
+   * `wx.setNavigationBar*` is page-scoped. Keep an override per page so going
+   * back restores the title/color the page had before it was hidden.
+   */
+  private applyNavigation(
+    action: 'title' | 'color' | 'loading',
+    params: Record<string, unknown>,
+  ): void {
+    const page = this.state.currentPage
+    if (!page) return
+    const next: DevtoolNavigationState = { ...(this.navigationOverrides.get(page) ?? {}) }
+    if (action === 'title' && typeof params.title === 'string') {
+      next.title = params.title
+    } else if (action === 'color') {
+      if (typeof params.backgroundColor === 'string') next.backgroundColor = params.backgroundColor
+      const front = String(params.frontColor ?? '').toLowerCase()
+      if (front === '#ffffff') next.textStyle = 'white'
+      else if (front === '#000000') next.textStyle = 'black'
+    } else if (action === 'loading' && typeof params.visible === 'boolean') {
+      next.loading = params.visible
+    }
+    this.navigationOverrides.set(page, next)
+    this.update({ navigation: { ...next } })
+  }
+
   private record(diagnostic: RuntimeDiagnostic): void {
     const limit = this.options.diagnosticLimit ?? 500
     const diagnostics = [...this.state.diagnostics, diagnostic].slice(-limit)
@@ -284,9 +345,20 @@ export class DevtoolRuntimeClient {
         tabBar?: RuntimeTabBarState
       } | undefined
       if (Array.isArray(details?.pageStack)) next.pageStack = [...details.pageStack]
-      if (typeof details?.currentPage === 'string') next.currentPage = details.currentPage
+      if (typeof details?.currentPage === 'string') {
+        if (details.currentPage !== this.state.currentPage) {
+          const override = this.navigationOverrides.get(details.currentPage)
+          next.navigation = override ? { ...override } : undefined
+        }
+        next.currentPage = details.currentPage
+      }
       if (Array.isArray(details?.pages)) next.pages = details.pages.map((page) => ({ ...page }))
       if (details?.tabBar) next.tabBar = details.tabBar
+    }
+    if (diagnostic.code === 'PULL_DOWN_REFRESH_STOPPED') {
+      if (this.refreshTimer !== undefined) clearTimeout(this.refreshTimer)
+      this.refreshTimer = undefined
+      next.refreshing = false
     }
     if (diagnostic.code === 'PAGE_LIFECYCLE') {
       const details = diagnostic.details as {
@@ -297,6 +369,17 @@ export class DevtoolRuntimeClient {
         visible?: boolean
         extra?: Record<string, unknown>
       } | undefined
+      if (details?.phase === 'onPullDownRefresh') {
+        // `startPullDownRefresh` and the real pull gesture both land here. The
+        // host has no stop signal (`stopPullDownRefresh` is replied to inside
+        // HostCore), so keep the indicator for a short natural duration.
+        next.refreshing = true
+        if (this.refreshTimer !== undefined) clearTimeout(this.refreshTimer)
+        this.refreshTimer = setTimeout(() => {
+          this.refreshTimer = undefined
+          this.update({ refreshing: false })
+        }, 900)
+      }
       if (details?.phase && details.pageId && details.path) {
         const limitLifecycle = this.options.lifecycleLimit ?? 300
         const event: DevtoolLifecycleEvent = {

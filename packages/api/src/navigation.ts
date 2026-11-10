@@ -70,22 +70,20 @@ export function createNavigationApi(context: ApiContext): ApiHost {
       'setNavigationBarTitle',
       () => callHost(context, 'navigation.title', navigationPayload(params)),
     ),
-    // No host protocol yet: these keep the callback contract and are otherwise
-    // no-ops until a host implements the navigation-bar surface.
     setNavigationBarColor: (params: unknown = {}) => runApi(
       params,
       'setNavigationBarColor',
-      () => ({ errMsg: 'setNavigationBarColor:ok' }),
+      () => callHost(context, 'navigation.color', navigationPayload(params)),
     ),
     showNavigationBarLoading: (params: unknown = {}) => runApi(
       params,
       'showNavigationBarLoading',
-      () => ({ errMsg: 'showNavigationBarLoading:ok' }),
+      () => callHost(context, 'navigation.loading', { visible: true }),
     ),
     hideNavigationBarLoading: (params: unknown = {}) => runApi(
       params,
       'hideNavigationBarLoading',
-      () => ({ errMsg: 'hideNavigationBarLoading:ok' }),
+      () => callHost(context, 'navigation.loading', { visible: false }),
     ),
     pageScrollTo: (params: unknown = {}) => runApi(
       params,

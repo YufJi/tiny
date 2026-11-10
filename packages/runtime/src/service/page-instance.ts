@@ -349,6 +349,11 @@ export class MiniProgramPageInstance implements ObserverHost {
     return this.definition?.behaviors.has(behavior as object | string) ?? false
   }
 
+  /** `this.getTabBar()`: the page-local `custom-tab-bar` component, if any. */
+  getTabBar(): unknown {
+    return this.logic.selectComponents?.('custom-tab-bar', false)?.[0] ?? null
+  }
+
   triggerEvent(_name: string, _detail?: unknown, _options?: Record<string, unknown>): void {
     // A page root has no parent component to receive an event.
   }

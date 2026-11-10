@@ -59,6 +59,30 @@ function api(context: ApiContext) {
 }
 
 describe('navigation API', () => {
+  test('sends navigation-bar color and loading calls to the host', async () => {
+    const { context, calls } = createContext()
+    const host = api(context)
+    await host.setNavigationBarColor!({
+      frontColor: '#ffffff',
+      backgroundColor: '#000000',
+      animation: { duration: 200 },
+    })
+    await host.showNavigationBarLoading!()
+    await host.hideNavigationBarLoading!()
+    expect(calls.map((call) => call.method)).toEqual([
+      'navigation.color',
+      'navigation.loading',
+      'navigation.loading',
+    ])
+    expect(calls[0]!.payload).toMatchObject({
+      frontColor: '#ffffff',
+      backgroundColor: '#000000',
+      animation: { duration: 200 },
+    })
+    expect(calls[1]!.payload).toEqual({ visible: true })
+    expect(calls[2]!.payload).toEqual({ visible: false })
+  })
+
   test('navigateTo resolves with errMsg and an EventChannel', async () => {
     const { context, calls, pageChannels, releases } = createContext()
     const host = api(context)

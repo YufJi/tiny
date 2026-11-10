@@ -152,3 +152,21 @@
   font-size: 17px;
   opacity: 0.28;
 }
+
+.td-nav-loading {
+  position: absolute;
+  right: 46px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  opacity: 0.55;
+  animation: td-nav-spin 0.8s linear infinite;
+}
+
+@keyframes td-nav-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

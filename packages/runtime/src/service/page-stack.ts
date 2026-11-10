@@ -469,6 +469,7 @@ export class ServicePageStack {
     const pages: RuntimePageState[] = this.stack.map((page) => ({
       pageId: page.pageId,
       path: page.path,
+      query: { ...page.query },
       visible: this.visible && page === this.active,
     }))
     const livePageIds = new Set(pageStackIds)
@@ -477,6 +478,7 @@ export class ServicePageStack {
       pages.push({
         pageId: cachedPage.pageId,
         path: cachedPage.path,
+        query: { ...cachedPage.query },
         visible: false,
         cached: true,
       })

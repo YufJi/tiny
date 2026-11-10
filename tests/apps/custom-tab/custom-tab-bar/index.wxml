@@ -1,0 +1,12 @@
+<view class="custom-tab">
+  <view
+    class="custom-tab-item {{selected === 0 ? 'custom-tab-item--active' : ''}}"
+    data-index="0"
+    bindtap="switchTab"
+  >首页</view>
+  <view
+    class="custom-tab-item {{selected === 1 ? 'custom-tab-item--active' : ''}}"
+    data-index="1"
+    bindtap="switchTab"
+  >设置</view>
+</view>

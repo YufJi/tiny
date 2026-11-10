@@ -1,0 +1,21 @@
+.custom-tab {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  height: 56px;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+}
+.custom-tab-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7A7E83;
+  font-size: 13px;
+}
+.custom-tab-item--active {
+  color: #3CC51F;
+}

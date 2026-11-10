@@ -386,3 +386,74 @@
   cursor: default;
   opacity: 0.4;
 }
+
+
+/* Page transitions mirror navigateTo/navigateBack: the active page owns the
+   animation, while the previous page stays mounted behind it. */
+.td-app-surface[data-transition="forward"] iframe[data-state="active"] {
+  animation: td-page-push 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.td-app-surface[data-transition="back"] iframe[data-state="active"] {
+  animation: td-page-pop 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.td-app-surface[data-transition="replace"] iframe[data-state="active"] {
+  animation: td-page-replace 180ms ease-out;
+}
+
+/* Opacity-only: transforming or clipping the iframe shifts/clips the host's
+   pointer coordinates while a page settles and breaks immediate interactions. */
+@keyframes td-page-push {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes td-page-pop {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes td-page-replace {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+
+.td-pull-refresh {
+  position: absolute;
+  top: 88px;
+  right: 0;
+  left: 0;
+  z-index: 6;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.td-pull-refresh-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(17, 24, 39, 0.2);
+  border-top-color: #111827;
+  border-radius: 50%;
+  animation: td-pull-spin 0.8s linear infinite;
+}
+
+@keyframes td-pull-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

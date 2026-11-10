@@ -39,7 +39,11 @@ export async function compileTemplates(
       TINY_ENGINE_NAMING.tagClassPrefix,
       TINY_ENGINE_NAMING.scopeMarkerClass,
     )
-    const source = rewriteAnimationAttributes(markedSource)
+    const source = project.appConfig.tabBarCustom
+      && project.appConfig.tabBarPages.includes(templatePath)
+      && !markedSource.includes('<custom-tab-bar')
+      ? `${rewriteAnimationAttributes(markedSource)}\n<custom-tab-bar />`
+      : rewriteAnimationAttributes(markedSource)
     try {
       const warnings = group.addTmpl(templatePath, source)
       // Template import/include aliases include the configured extension.

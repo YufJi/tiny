@@ -41,6 +41,10 @@ export type AppConfig = {
   subPackages: SubPackageConfig[]
   /** Normalized `preloadRule` entries, in declaration order. */
   preloadRules: PreloadRuleArtifact[]
+  /** `tabBar.custom`: render the developer-provided `custom-tab-bar` component. */
+  tabBarCustom: boolean
+  /** Pages declared in `tabBar.list`, used to inject the custom tab bar. */
+  tabBarPages: string[]
   /** `themeLocation` tables, when the project declares theme variables. */
   theme?: ThemeTable
   /** App-relative path of the theme file (diagnostics and CSS injection). */
@@ -91,6 +95,7 @@ export async function resolveProject(context: CompilerContext): Promise<Project>
     byRelative.set(virtual, staged)
   }
   const appConfig = await readAppConfig(context)
+  await prepareCustomTabBar(context, appConfig, byRelative)
   const entries = await resolveEntries(context, byRelative, appConfig)
   const components = await resolveComponentEntries(context, byRelative, appConfig.value, entries)
   await assignComponentSubpackages(context, byRelative, appConfig, entries, components)
@@ -187,7 +192,24 @@ async function readAppConfig(context: CompilerContext): Promise<AppConfig> {
     ...subPackages.flatMap((pkg) => pkg.pages),
   ]), new Set(subPackages.map((pkg) => pkg.root)))
   const themeInfo = await readTheme(context, value)
-  return { path: configPath, value, pages, subPackages, preloadRules, ...themeInfo }
+  const tabBar = value.tabBar && typeof value.tabBar === 'object' && !Array.isArray(value.tabBar)
+    ? value.tabBar as Record<string, unknown>
+    : {}
+  const tabBarPages = (Array.isArray(tabBar.list) ? tabBar.list : [])
+    .map((item) => (item && typeof item === 'object'
+      ? normalizeDeclaredPath((item as Record<string, unknown>).pagePath)
+      : undefined))
+    .filter((page): page is string => Boolean(page))
+  return {
+    path: configPath,
+    value,
+    pages,
+    subPackages,
+    preloadRules,
+    tabBarCustom: tabBar.custom === true,
+    tabBarPages,
+    ...themeInfo,
+  }
 }
 
 function readSubPackages(
@@ -554,6 +576,40 @@ function normalizeDeclaredPath(value: unknown): string | undefined {
   const normalized = normalizeRelativePath(trimmed)
   if (!normalized || normalized.startsWith('..') || path.isAbsolute(normalized)) return undefined
   return normalized
+}
+
+/**
+ * Register the developer's `custom-tab-bar/index` as an app-level component.
+ *
+ * WeChat renders it outside the page; the Web devtool mounts it through each
+ * tab page template instead, so the component still runs in the page logic
+ * tree and `getTabBar()` can select it.
+ */
+async function prepareCustomTabBar(
+  context: CompilerContext,
+  appConfig: AppConfig,
+  byRelative: Map<string, string>,
+): Promise<void> {
+  if (!appConfig.tabBarCustom) return
+  const entryPath = 'custom-tab-bar/index'
+  const entry = await resolveEntry(context, byRelative, entryPath)
+  if (!entry) {
+    context.diagnostics.push(diagnostic(
+      'error',
+      'CUSTOM_TABBAR_NOT_FOUND',
+      'tabBar.custom is true but custom-tab-bar/index does not exist.',
+      appConfig.path,
+    ))
+    return
+  }
+  const usingComponents = readUsingComponents(appConfig.value)
+  appConfig.value = {
+    ...appConfig.value,
+    usingComponents: {
+      ...usingComponents,
+      'custom-tab-bar': `/${entryPath}`,
+    },
+  }
 }
 
 async function resolveEntries(

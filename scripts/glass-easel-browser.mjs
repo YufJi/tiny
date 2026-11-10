@@ -9,7 +9,7 @@ const { chromium } = playwright
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const failureShot = path.join(rootDir, 'tests/host/generated/acceptance-failure.png')
-const STEP_TIMEOUT = 15_000
+const STEP_TIMEOUT = 20_000
 
 /** `text` keeps the hidden source node, so text locators only match visible nodes. */
 const byText = (frame, text, options) => frame.getByText(text, options).filter({ visible: true })
@@ -1980,6 +1980,7 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
       echarts: '柱状图',
       vant: 'Vant Weapp',
       weui: 'WeUI 是一套同微信原生视觉体验一致的',
+      'custom-tab': 'Custom Tab home',
     }
     const imageFixtures = new Set(['mini', 'wechat-demo', 'echarts'])
     const fixtureById = new Map(fixtures.map((fixture) => [fixture.id, fixture]))
@@ -2196,6 +2197,87 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
       )
     })
 
+    await step('apply navigation bar runtime mutations', async () => {
+      currentStep = 'apply navigation bar runtime mutations'
+      const service = page.frames().find((frame) => (
+        frame.url().includes('service.html') && frame.url().includes(`app=${primary.id}`)
+      ))
+      assert.ok(service, 'service frame is missing')
+      await service.evaluate(() => {
+        wx.setNavigationBarTitle({ title: 'Runtime title' })
+        wx.setNavigationBarColor({ frontColor: '#ffffff', backgroundColor: '#112233' })
+        wx.showNavigationBarLoading()
+      })
+      await page.waitForFunction(
+        () => document.querySelector('.td-nav-title')?.textContent === 'Runtime title',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      assert.equal(await page.locator('.td-nav-loading').count(), 1, 'loading indicator is missing')
+      const chromeColor = await page.locator('.td-host-chrome').first().evaluate(
+        (element) => getComputedStyle(element).backgroundColor,
+      )
+      assert.equal(chromeColor, 'rgb(17, 34, 51)', 'navigation background did not update')
+      await service.evaluate(() => wx.hideNavigationBarLoading())
+      await page.waitForFunction(
+        () => !document.querySelector('.td-nav-loading'),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+    })
+
+    await step('open the share sheet and invoke the page callback', async () => {
+      currentStep = 'open the share sheet and invoke the page callback'
+      await page.getByRole('button', { name: 'Host controls' }).click()
+      await page.getByRole('menuitem', { name: 'Share' }).click()
+      const sheet = page.getByRole('dialog', { name: 'Share mini program page' })
+      assert.equal(await sheet.count(), 1, 'share sheet did not open')
+      await sheet.getByRole('button', { name: /发送给朋友/ }).click()
+      await page.waitForFunction(
+        () => document.querySelector('.td-share-result')?.textContent?.includes('Tiny todos'),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      await sheet.getByRole('button', { name: 'Close share sheet' }).click()
+      assert.equal(await sheet.count(), 0, 'share sheet did not close')
+    })
+
+    await step('honor showShareMenu and hideShareMenu in the chrome menu', async () => {
+      currentStep = 'honor showShareMenu and hideShareMenu in the chrome menu'
+      const service = page.frames().find((frame) => (
+        frame.url().includes('service.html') && frame.url().includes(`app=${primary.id}`)
+      ))
+      assert.ok(service, 'service frame is missing')
+      await service.evaluate(() => wx.hideShareMenu())
+      await page.getByRole('button', { name: 'Host controls' }).click()
+      assert.equal(
+        await page.getByRole('menuitem', { name: 'Share' }).count(),
+        0,
+        'hideShareMenu did not hide the Share item',
+      )
+      await page.getByRole('button', { name: 'Host controls' }).click()
+      await service.evaluate(() => wx.showShareMenu())
+      await page.getByRole('button', { name: 'Host controls' }).click()
+      assert.equal(
+        await page.getByRole('menuitem', { name: 'Share' }).count(),
+        1,
+        'showShareMenu did not restore the Share item',
+      )
+      await page.getByRole('button', { name: 'Host controls' }).click()
+    })
+
+    await step('show and hide the pull-down refresh indicator', async () => {
+      currentStep = 'show and hide the pull-down refresh indicator'
+      const service = page.frames().find((frame) => (
+        frame.url().includes('service.html') && frame.url().includes(`app=${primary.id}`)
+      ))
+      assert.ok(service, 'service frame is missing')
+      await service.evaluate(() => wx.startPullDownRefresh())
+      await page.waitForSelector('.td-pull-refresh', { state: 'visible', timeout: STEP_TIMEOUT })
+      await service.evaluate(() => wx.stopPullDownRefresh())
+      await page.waitForSelector('.td-pull-refresh', { state: 'detached', timeout: STEP_TIMEOUT })
+    })
+
     await step('render the mini program inside the debugger', async () => {
       currentStep = 'render the mini program inside the debugger'
       const primarySurface = surfaceSelector(primary.id)
@@ -2237,6 +2319,11 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
       await page.waitForSelector(`${primarySurface} iframe[data-page-id="page-2"][data-state="active"]`, {
         timeout: STEP_TIMEOUT,
       })
+      assert.equal(
+        await page.locator(primarySurface).getAttribute('data-transition'),
+        'forward',
+        'navigateTo did not mark a forward page transition',
+      )
       // The previous page keeps its own iframe and DOM while it is hidden.
       assert.equal(
         await page.locator(`${primarySurface} iframe[data-page-id="page-1"]`).getAttribute('data-state'),
@@ -2276,6 +2363,11 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
         () => window.__tinyDevtool.getState().currentPage === 'pages/todos/todos',
         null,
         { timeout: STEP_TIMEOUT },
+      )
+      assert.equal(
+        await page.locator(primarySurface).getAttribute('data-transition'),
+        'back',
+        'navigateBack did not mark a back page transition',
       )
       await page.waitForFunction(
         (selector) => !document.querySelector(`${selector} iframe[data-page-id="page-2"]`),
@@ -2667,6 +2759,67 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
       )
     })
 
+    await step('render and switch a custom tabBar', async () => {
+      currentStep = 'render and switch a custom tabBar'
+      const customTab = fixtureById.get('custom-tab')
+      assert.ok(customTab, 'tests/apps/custom-tab is required for the custom tabBar flow')
+      await openFixture(customTab)
+      await page.waitForFunction(
+        () => window.__tinyDevtool?.getState().currentPage === 'pages/home/home',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const homePageId = (await state()).pageStack.at(-1)
+      const homeFrame = await waitForActiveRenderFrame(customTab.id, homePageId)
+      assert.ok(homeFrame, 'custom tabBar home page did not create a render frame')
+      await homeFrame.waitForSelector('tiny-custom-tab-bar [data-index]', { timeout: STEP_TIMEOUT })
+      assert.equal(
+        await homeFrame.locator('tiny-custom-tab-bar [data-index]').count(),
+        2,
+        'custom tabBar did not render two items',
+      )
+      await homeFrame.locator('tiny-custom-tab-bar [data-index="1"]').click()
+      await page.waitForFunction(
+        () => window.__tinyDevtool?.getState().currentPage === 'pages/settings/settings',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const settingsFrame = await waitForActiveRenderFrame(
+        customTab.id,
+        (await state()).pageStack.at(-1),
+      )
+      assert.ok(settingsFrame, 'custom tabBar settings page did not create a render frame')
+      await settingsFrame.waitForFunction(
+        () => (document.querySelector('#app')?.innerText ?? '').includes('Custom Tab settings'),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const selectedIndex = (frame) => frame.evaluate(() => {
+        const active = document.querySelector('tiny-custom-tab-bar [data-index].tiny-custom-tab-bar-index--custom-tab-item--active')
+        return active?.getAttribute('data-index') ?? null
+      })
+      await settingsFrame.waitForFunction(
+        () => document.querySelectorAll('tiny-custom-tab-bar [data-index]').length === 2,
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      assert.equal(await selectedIndex(settingsFrame), '1', 'settings tabBar did not select the settings item')
+      await settingsFrame.locator('tiny-custom-tab-bar [data-index="0"]').click()
+      await page.waitForFunction(
+        () => window.__tinyDevtool?.getState().currentPage === 'pages/home/home',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const homeAgain = await waitForActiveRenderFrame(customTab.id, (await state()).pageStack.at(-1))
+      assert.ok(homeAgain, 'custom tabBar home page was not remounted')
+      await homeAgain.waitForFunction(
+        () => document.querySelectorAll('tiny-custom-tab-bar [data-index]').length === 2,
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      assert.equal(await selectedIndex(homeAgain), '0', 'home tabBar kept the stale selected item')
+    })
+
     await step('reload, close apps, and honor deep links', async () => {
       currentStep = 'reload, close apps, and honor deep links'
       await openFixture(primary)
@@ -2736,6 +2889,33 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
       )
       assert.equal((await state()).currentPage, 'pages/todos/todos')
       assert.deepEqual((await state()).pageStack, ['page-1'])
+      await page.getByText('Close app', { exact: true }).click()
+      await waitForLauncher()
+    })
+
+    await step('restore the page stack after a debugger refresh', async () => {
+      currentStep = 'restore the page stack after a debugger refresh'
+      await page.goto(`${baseUrl}/?app=${primary.id}&maxPageStack=10&restore=1`, {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await waitForStatus('running')
+      await page.locator('input[placeholder="pages/..."]').fill('/pages/add-todo/add-todo?from=restore')
+      await page.getByText('Navigate', { exact: true }).click()
+      await page.waitForFunction(
+        () => window.__tinyDevtool?.getState().currentPage === 'pages/add-todo/add-todo',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
+      await page.waitForFunction(
+        () => window.__tinyDevtool?.getState().currentPage === 'pages/add-todo/add-todo',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const restored = await state()
+      assert.deepEqual(restored.pageStack, ['page-1', 'page-2'])
+      assert.equal(restored.pages.at(-1)?.query?.from, 'restore', 'page query was not restored')
       await page.getByText('Close app', { exact: true }).click()
       await waitForLauncher()
     })

@@ -18,6 +18,8 @@ export type RuntimeDiagnostic = {
 export type RuntimePageState = {
   pageId: string
   path: string
+  /** Route query captured with the page, used by debugger stack restore. */
+  query?: Record<string, string>
   visible: boolean
   /** Live but outside the current page stack, e.g. a cached tab page. */
   cached?: boolean

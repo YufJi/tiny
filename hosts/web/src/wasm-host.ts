@@ -9,6 +9,7 @@ import type {
   HostApiHandlers,
   SyncApiHandlers,
 } from '@tiny/api'
+import { pageBehaviorOf } from '@tiny/manifest'
 import { BROWSER_RUNTIME_NAMES } from './naming'
 import { installCanvasHandoffRelay } from './canvas-relay'
 
@@ -354,7 +355,7 @@ export class WasmBrowserHost {
           }
           break
         case 'createPage':
-          void this.createPage(action.pageId)
+          void this.createPage(action.pageId, action.path)
           break
         case 'activatePage':
           this.activatePage(action.pageId)
@@ -418,14 +419,18 @@ export class WasmBrowserHost {
     }, 0)
   }
 
-  private async createPage(pageId: string): Promise<void> {
+  private async createPage(pageId: string, path: string): Promise<void> {
     if (this.pages.has(pageId)) {
       this.activePageId = pageId
       this.dispatchEvent({ type: 'pageReady', pageId })
       this.updateVisibility()
       return
     }
-    const iframe = createRenderIframe(this.options.renderUrl, pageId)
+    const iframe = createRenderIframe(
+      this.options.renderUrl,
+      pageId,
+      pageBehaviorOf(this.options.manifest, path),
+    )
     this.pages.set(pageId, {
       iframe,
       transport: {
@@ -689,6 +694,7 @@ function commandName(command: Record<string, unknown>): string | undefined {
   if (typeof type !== 'string') return undefined
   return type === 'navigateTo' || type === 'navigateBack' || type === 'switchTab'
     || type === 'redirectTo' || type === 'reLaunch' || type === 'inspectTree'
+    || type === 'share'
     ? type
     : undefined
 }
@@ -716,9 +722,15 @@ function createThreadIframe(className: string, src: string): HTMLIFrameElement {
   return iframe
 }
 
-function createRenderIframe(renderUrl: string, pageId: string): HTMLIFrameElement {
+function createRenderIframe(
+  renderUrl: string,
+  pageId: string,
+  behavior: { enablePullDownRefresh: boolean; onReachBottomDistance: number },
+): HTMLIFrameElement {
   const url = new URL(renderUrl, window.location.href)
   url.searchParams.set('pageId', pageId)
+  url.searchParams.set('enablePullDownRefresh', behavior.enablePullDownRefresh ? '1' : '0')
+  url.searchParams.set('onReachBottomDistance', String(behavior.onReachBottomDistance))
   const iframe = document.createElement('iframe')
   iframe.className = BROWSER_RUNTIME_NAMES.renderFrameClass
   iframe.dataset.pageId = pageId

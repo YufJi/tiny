@@ -2,6 +2,12 @@
 const app = getApp();
 
 Page({
+  onShareAppMessage() {
+    return { title: 'Tiny todos', path: '/pages/todos/todos' }
+  },
+  onShareTimeline() {
+    return { title: 'Tiny todos timeline' }
+  },
   // 声明页面数据
   data: {
     text: 'abc',
