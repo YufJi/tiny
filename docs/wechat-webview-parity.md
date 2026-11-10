@@ -614,20 +614,20 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-10-29 | 第十九次校准：WXS 共享 runtime/事件本地执行、事件合成层（tap/longpress 以触摸为主）、scroll-view 横向滚动与 enable-flex、Vant popup external class、devtool 迁移 Vite；288 单测 / 58 步；117 页探针保持 108 启动、108 可见、9 失败（全部平台 API）；总分 49.33→49.92 | **49.92%** |
 | 2026-10-29 | 第二十次校准：iOS 宿主 MVP（SwiftUI + WKWebView + JavaScriptCore，全部 7 个 fixture 模拟器 smoke，真机签名构建/安装）；宿主/平台 15→18、页面形态 25→28、质量/验证 60→61；117 页探针保持 108 启动、108 可见、9 失败、0 console error；总分 49.92→50.55 | **50.55%** |
 | 2026-11-04 | 第二十一次校准：微信官方 demo 子集切到 2023-02-23 基线（`7189b9c`，111 页）；修复该基线遗留的 88 页 `common` 模板引用（少一层 `../`）与导航栏 `system` 缺失；WeChat demo 验收改为 swiper autoplay 开关 + radio 视觉两步（61 步）；111 页探针 107 启动、102 可见、4 失败（全部平台能力）、0 console error；加权分保持 50.55 | **50.55%** |
-| 2026-11-06 | 新增 `base64ToArrayBuffer` / `arrayBufferToBase64`（纯 service 实现，支持空白/省略 padding、二进制与大缓冲；API 71→73，wx API 14.1%→14.5%，总分 52.30→52.38） | **52.38%** |
-| 2026-11-10 | 第三十四次同步：修复渲染侧组件定义携带 `dataset`/`id` 等元素保留属性导致 glass `replaceDataOnPath` 崩溃（Vant button 页空白）；496 单测；分数不变 | **56.30%** |
-| 2026-11-10 | 第三十三次同步：边界修正——service entries 用 esbuild `splitting` 共享 `chunks/`，跨包模块单实例；iOS 改用 eager `service.all.js`（JSCore 无 ESM loader）；独立分包页面跳主包 `app.wxss`，验收增加 computed style 断言。495 单测 / 68 步；分数不变 | **56.30%** |
-| 2026-11-10 | 第三十二次同步：异步组件 chunk 打通——未注册组件的 using 目标改为绝对路径（glass-easel 按 owner 相对解析曾导致 waiting key 不匹配），逻辑树 placeholders + 晚注册自动替换；编译器把带 `componentPlaceholder` 的跨包组件留在分包并记录 `asyncSubPackages`，页面挂载后异步加载并自动替换；mini 验收新增“占位→真实组件”步骤。495 单测 / 68 步；分数不变（仍缺 trait/chaining、增量构建） | **56.30%** |
-| 2026-11-10 | 第三十一次同步：逻辑树接入 glass-easel 原生 `placeholders`（页面/组件两级），缺少定义时输出占位组件边界；实测晚注册仍未触发自动替换，异步 chunk 继续挂起。495 单测；分数不变 | **56.30%** |
-| 2026-11-10 | 第三十次同步：独立分包入口运行时落地——主包 App 不加载、`getApp()` 为 null、独立分包不能导航到主包/其他分包、全局 `usingComponents` 不注入独立分包；新增浏览器验收步骤。异步组件 chunk 经实测被逻辑树“无定义降级为普通元素”挡住，未强行改造。494 单测 / 67 步；框架 98→99，总分 56.12→56.30 | **56.30%** |
-| 2026-11-10 | 第二十九次同步：项目主题变量落地——`themeLocation`/`darkmode` 读取 `theme.json`，校验 light/dark 并检查变量类型；`window`/`tabBar`/页面窗口字段的 `@变量` 分别解析为 `effective`（light）与 `darkEffective`（dark）；WXSS 注入 `:root{--name:...}` 与 `prefers-color-scheme: dark` 覆盖；492 单测；编译/构建 98→99，总分 56.02→56.12 | **56.12%** |
-| 2026-11-10 | 第二十八次同步：`componentPlaceholder` 渲染落地——渲染线程 mount 前把没有 `define` 的组件节点替换成内置占位标签（保留子节点/属性），service flow 携带 manifest 解析好的占位表（含 flow 级单测）；490 单测；框架 97→98，总分 55.84→56.02 | **56.02%** |
-| 2026-11-10 | 第二十七次同步：`preloadRule.network` 门控（`wifi` 需宿主 `preloadNetwork`，缺省不预取）+ `componentPlaceholder` 编译校验与 manifest 归一化（tag/目标校验，只接受内置占位标签）；485 单测；编译/构建 97→98、框架 96→97，总分 55.56→55.84 | **55.84%** |
-| 2026-11-10 | 第二十六次同步：`preloadRule` 编译校验 + manifest 归一化 + 运行时页面进入后预取（并发去重、失败不影响页面；迷你 fixture 增加预取用例，实测主页面加载会请求 `service.packageA.js`）；483 单测 / 66 步；编译/构建 95→97、框架 94→96，总分 55.00→55.56 | **55.56%** |
-| 2026-11-10 | 第二十五次同步：分包按需加载落地（组件归属计算、`subPackages[].service`、`service.<pkg>.js` 拆分、启动/导航前 ensure、组件定义增量刷新；浏览器/iOS 宿主接入 `loadSubPackage`）；483 单测 / 66 步；编译/构建 88→95、框架 91→94，总分 53.76→55.00 | **55.00%** |
-| 2026-11-10 | 第二十四次校准：补齐 `pageLifetimes.resize`（page root + 逻辑树组件 + `onResize` 同帧下发）；483 单测；框架 90→91，总分 53.58→53.76 | **53.76%** |
-| 2026-11-10 | 第二十三次同步：npm 构建（传递依赖/`miniprogram` 字段/预构建树）、`project.config.json` 的 `miniprogramRoot`/`compileType`/`packOptions.ignore`、app.json 分包与 tabBar/`lazyCodeLoading` 校验、manifest `subPackages` 元数据、TS 语义检查、页面/组件路径式注册（编译注入 hint + registry 按路径绑定）；481 单测 / 66 步；编译/构建 76→88，总分 52.38→53.58 | **53.58%** |
 | 2026-11-05 | 第二十二次校准（2.33.0 口径）：双侧树切到两次求值模型（`define`/`tree`/`ready`，组件模板两侧各自求值），元素 id 下沉为渲染侧本地 id + 组件作用域 locator，`wx://` behaviors 改为 6 个 service 侧占位 marker（functional-page 按基线不做），页面级 `generic:x` 与表单节点 props 收集落地；组件口径按 2.33.0 重算为 39/60（40 个目标全落地）；388 单测 / 61 步；125 页探针 121 启动、116 可见、4 失败（全部平台能力）、2 条 console error（web-view 的 CSP frame-ancestors，非运行时错误）；框架 88→90、内置组件 57→65、质量 61→62，总分 50.55→52.30 | **52.30%** |
+| 2026-11-06 | 新增 `base64ToArrayBuffer` / `arrayBufferToBase64`（纯 service 实现，支持空白/省略 padding、二进制与大缓冲；API 71→73，wx API 14.1%→14.5%，总分 52.30→52.38） | **52.38%** |
+| 2026-11-10 | 第二十三次同步：npm 构建（传递依赖/`miniprogram` 字段/预构建树）、`project.config.json` 的 `miniprogramRoot`/`compileType`/`packOptions.ignore`、app.json 分包与 tabBar/`lazyCodeLoading` 校验、manifest `subPackages` 元数据、TS 语义检查、页面/组件路径式注册（编译注入 hint + registry 按路径绑定）；481 单测 / 66 步；编译/构建 76→88，总分 52.38→53.58 | **53.58%** |
+| 2026-11-10 | 第二十四次校准：补齐 `pageLifetimes.resize`（page root + 逻辑树组件 + `onResize` 同帧下发）；483 单测；框架 90→91，总分 53.58→53.76 | **53.76%** |
+| 2026-11-10 | 第二十五次同步：分包按需加载落地（组件归属计算、`subPackages[].service`、`service.<pkg>.js` 拆分、启动/导航前 ensure、组件定义增量刷新；浏览器/iOS 宿主接入 `loadSubPackage`）；483 单测 / 66 步；编译/构建 88→95、框架 91→94，总分 53.76→55.00 | **55.00%** |
+| 2026-11-10 | 第二十六次同步：`preloadRule` 编译校验 + manifest 归一化 + 运行时页面进入后预取（并发去重、失败不影响页面；迷你 fixture 增加预取用例，实测主页面加载会请求 `service.packageA.js`）；483 单测 / 66 步；编译/构建 95→97、框架 94→96，总分 55.00→55.56 | **55.56%** |
+| 2026-11-10 | 第二十七次同步：`preloadRule.network` 门控（`wifi` 需宿主 `preloadNetwork`，缺省不预取）+ `componentPlaceholder` 编译校验与 manifest 归一化（tag/目标校验，只接受内置占位标签）；485 单测；编译/构建 97→98、框架 96→97，总分 55.56→55.84 | **55.84%** |
+| 2026-11-10 | 第二十八次同步：`componentPlaceholder` 渲染落地——渲染线程 mount 前把没有 `define` 的组件节点替换成内置占位标签（保留子节点/属性），service flow 携带 manifest 解析好的占位表（含 flow 级单测）；490 单测；框架 97→98，总分 55.84→56.02 | **56.02%** |
+| 2026-11-10 | 第二十九次同步：项目主题变量落地——`themeLocation`/`darkmode` 读取 `theme.json`，校验 light/dark 并检查变量类型；`window`/`tabBar`/页面窗口字段的 `@变量` 分别解析为 `effective`（light）与 `darkEffective`（dark）；WXSS 注入 `:root{--name:...}` 与 `prefers-color-scheme: dark` 覆盖；492 单测；编译/构建 98→99，总分 56.02→56.12 | **56.12%** |
+| 2026-11-10 | 第三十次同步：独立分包入口运行时落地——主包 App 不加载、`getApp()` 为 null、独立分包不能导航到主包/其他分包、全局 `usingComponents` 不注入独立分包；新增浏览器验收步骤。异步组件 chunk 经实测被逻辑树“无定义降级为普通元素”挡住，未强行改造。494 单测 / 67 步；框架 98→99，总分 56.12→56.30 | **56.30%** |
+| 2026-11-10 | 第三十一次同步：逻辑树接入 glass-easel 原生 `placeholders`（页面/组件两级），缺少定义时输出占位组件边界；实测晚注册仍未触发自动替换，异步 chunk 继续挂起。495 单测；分数不变 | **56.30%** |
+| 2026-11-10 | 第三十二次同步：异步组件 chunk 打通——未注册组件的 using 目标改为绝对路径（glass-easel 按 owner 相对解析曾导致 waiting key 不匹配），逻辑树 placeholders + 晚注册自动替换；编译器把带 `componentPlaceholder` 的跨包组件留在分包并记录 `asyncSubPackages`，页面挂载后异步加载并自动替换；mini 验收新增“占位→真实组件”步骤。495 单测 / 68 步；分数不变（仍缺 trait/chaining、增量构建） | **56.30%** |
+| 2026-11-10 | 第三十三次同步：边界修正——service entries 用 esbuild `splitting` 共享 `chunks/`，跨包模块单实例；iOS 改用 eager `service.all.js`（JSCore 无 ESM loader）；独立分包页面跳主包 `app.wxss`，验收增加 computed style 断言。495 单测 / 68 步；分数不变 | **56.30%** |
+| 2026-11-10 | 第三十四次同步：修复渲染侧组件定义携带 `dataset`/`id` 等元素保留属性导致 glass `replaceDataOnPath` 崩溃（Vant button 页空白）；496 单测；分数不变 | **56.30%** |
 
 ---
 
