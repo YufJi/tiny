@@ -97,5 +97,10 @@ manifestPromise.then(async (manifest) => {
     loadTemplates: async () => (await importGenerated(`${generatedBase}/templates.js`)).default,
     loadStyle: (stylePath) => styles[stylePath] ?? '',
     loadArtifacts: () => importGenerated(`${generatedBase}/service.js`),
+    loadSubPackage: async (root) => {
+      const pkg = manifest.subPackages?.find((item) => item.root === root);
+      if (!pkg?.service) return;
+      await importGenerated(`${generatedBase}/${pkg.service}`);
+    },
   });
 });

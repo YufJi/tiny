@@ -416,6 +416,25 @@ describe('compileMiniProgram — compatibility config', () => {
     }
   })
 
+  test('emits registration path hints for pages and components', async () => {
+    const manifest = JSON.parse(await fs.readFile(path.join(outputDir, 'manifest.json'), 'utf8'))
+    const pageScript = await fs.readFile(
+      path.join(outputDir, 'scripts/pages/index/index.js'),
+      'utf8',
+    )
+    expect(pageScript.startsWith(
+      'globalThis.__tinyPagePath = "pages/index/index";',
+    )).toBe(true)
+    const component = manifest.components[0]
+    const componentScript = await fs.readFile(
+      path.join(outputDir, component.script.path),
+      'utf8',
+    )
+    expect(componentScript.startsWith(
+      `globalThis.__tinyComponentPath = "${component.path}";`,
+    )).toBe(true)
+  })
+
   test('uses configured directives/API without changing Tiny internal names', async () => {
     const namingOutputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cli-compatibility-'))
     try {

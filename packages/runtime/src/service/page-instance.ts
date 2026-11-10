@@ -362,12 +362,20 @@ export class MiniProgramPageInstance implements ObserverHost {
     return this.eventChannel
   }
 
-  triggerPageLifetime(name: 'show' | 'hide'): void {
+  triggerPageLifetime(
+    name: 'show' | 'hide' | 'resize',
+    event?: { size: { windowWidth: number; windowHeight: number } },
+  ): void {
     if (this.definition) {
-      for (const handler of this.definition.pageLifetimeHandlers[name]) handler.call(this)
+      for (const handler of this.definition.pageLifetimeHandlers[name]) {
+        handler.call(this, ...(event ? [event] : []))
+      }
       return
     }
-    ;(this.pageOptions as MiniProgramComponentOptions).pageLifetimes?.[name]?.call(this)
+    ;(this.pageOptions as MiniProgramComponentOptions).pageLifetimes?.[name]?.call(
+      this,
+      ...(event ? [event] : []),
+    )
   }
 
   triggerComponentLifecycle(name: ComponentLifecycleName): void {

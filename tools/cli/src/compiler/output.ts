@@ -1,21 +1,22 @@
 import path from 'node:path'
 import { build as esbuild } from 'esbuild'
 import type { Manifest } from '../types'
-import { collectFiles, copyFile, diagnostic, toPosixPath, writeFileWithSourceMap } from '../utils'
-import { outputPath, relativePath, type CompilerContext } from './context'
-
-const ASSET_EXTENSIONS = new Set([
-  '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp',
-  '.eot', '.woff', '.woff2', '.ttf', '.otf',
-])
+import {
+  copyFile,
+  diagnostic,
+  isAssetPath,
+  toPosixPath,
+  writeFileWithSourceMap,
+} from '../utils'
+import { outputPath, type CompilerContext } from './context'
+import type { Project } from './project'
 
 /** Copies images and fonts to the output directory, preserving paths. */
-export async function copyAssets(context: CompilerContext): Promise<void> {
-  const files = await collectFiles(context.root, [...ASSET_EXTENSIONS])
-  for (const sourcePath of files) {
-    const relative = relativePath(context, sourcePath)
-    await copyFile(sourcePath, outputPath(context, relative))
-    context.assets.push({ path: relative, sourcePath: relative })
+export async function copyAssets(context: CompilerContext, project: Project): Promise<void> {
+  for (const [virtual, sourcePath] of project.files) {
+    if (!isAssetPath(virtual)) continue
+    await copyFile(sourcePath, outputPath(context, virtual))
+    context.assets.push({ path: virtual, sourcePath: virtual })
   }
 }
 
@@ -28,21 +29,43 @@ export async function writeEntryArtifacts(
   context: CompilerContext,
   manifest: Manifest,
 ): Promise<void> {
-  const serviceImports = [
+  const mainArtifacts = [
+    ...manifest.pages.filter((page) => !page.subpackage),
+    ...manifest.components.filter((component) => !component.subpackage),
+  ]
+  await emitServiceEntry(context, 'service.js', [
     manifest.app?.script?.path,
-    ...manifest.pages.map((page) => page.script?.path),
-    ...manifest.components.map((component) => component.script?.path),
-  ].filter((value): value is string => Boolean(value))
-  const serviceContent = serviceImports
-    .map((scriptPath) => `import './${toPosixPath(scriptPath)}'`)
-    .join('\n') + '\n'
-  await writeFileWithSourceMap(outputPath(context, 'service.js'), serviceContent)
-  await bundleServiceEntry(context)
+    ...mainArtifacts.map((artifact) => artifact.script?.path),
+  ])
 
+  for (const pkg of manifest.subPackages ?? []) {
+    if (!pkg.service) continue
+    const packageArtifacts = [
+      ...manifest.pages.filter((page) => page.subpackage === pkg.root),
+      ...manifest.components.filter((component) => component.subpackage === pkg.root),
+    ]
+    await emitServiceEntry(context, pkg.service, packageArtifacts.map((artifact) => artifact.script?.path))
+  }
 }
 
-async function bundleServiceEntry(context: CompilerContext): Promise<void> {
-  const entry = outputPath(context, 'service.js')
+async function emitServiceEntry(
+  context: CompilerContext,
+  entryRelativePath: string,
+  scripts: Array<string | undefined>,
+): Promise<void> {
+  const imports = scripts.filter((value): value is string => Boolean(value))
+  const content = imports
+    .map((scriptPath) => `import './${toPosixPath(scriptPath)}'`)
+    .join('\n') + '\n'
+  await writeFileWithSourceMap(outputPath(context, entryRelativePath), content)
+  await bundleServiceEntry(context, entryRelativePath)
+}
+
+async function bundleServiceEntry(
+  context: CompilerContext,
+  entryRelativePath: string,
+): Promise<void> {
+  const entry = outputPath(context, entryRelativePath)
   try {
     await esbuild({
       entryPoints: [entry],
@@ -60,7 +83,7 @@ async function bundleServiceEntry(context: CompilerContext): Promise<void> {
     context.diagnostics.push(diagnostic(
       'warning',
       'SCRIPT_BUNDLE_ERROR',
-      `Unable to bundle service scripts: ${error instanceof Error ? error.message : String(error)}`,
+      `Unable to bundle ${entryRelativePath}: ${error instanceof Error ? error.message : String(error)}`,
     ))
   }
 }

@@ -15,7 +15,7 @@ pageTitle: '编译流程 · Tiny 小程序引擎'
 order: 3
 ---
 
-## 十一个阶段，一次全量构建 {#pipeline kicker="编译流程"}
+## 十三个阶段，一次全量构建 {#pipeline kicker="编译流程"}
 
 compileMiniProgram 会按顺序执行这些阶段。每个阶段只生成产物或诊断，不会直接调用 runtime。
 
@@ -24,20 +24,22 @@ compileMiniProgram 会按顺序执行这些阶段。每个阶段只生成产物�
 | --- | --- | --- | --- |
 | 解析兼容输入 |  | 读取 sourceDir/tiny.config.json 的 compatibility；CompileOptions.compatibility 显式覆盖。缺省字段回退到微信规则。 | resolveCompatibilityInput() |
 | 准备输出并解析项目根 |  | 按 clean 清空输出目录；读取 compatibility.files.projectConfig 指向的项目配置及其 miniprogramRoot，没有该文件时把 sourceDir 当作小程序根目录。 | prepareOutputDir() · resolveRoot() |
-| 扫描源文件 |  | 按 compatibility.extensions 递归收集脚本、模板、样式、模板脚本和配置文件，跳过 .git、.cache 和 node_modules。 | collectFiles(root, extensions) |
+| 扫描源文件 |  | 按 compatibility.extensions 递归收集脚本、模板、样式、模板脚本、配置和静态资源，跳过 .git、.cache、node_modules 以及 `packOptions.ignore` 命中的路径。 | collectFiles(root, extensions) |
+| 构建 npm |  | 读取小程序根 `package.json#dependencies`，递归解析 `node_modules`（支持 `miniprogram` 字段与 pnpm 符号链接），镜像到 `miniprogram_npm`；源码里已有预构建树时优先使用它。 | buildNpmPackages() |
 | 读取小程序配置 |  | 读取 compatibility.files.appConfig 指向的配置，解析 pages 和 subPackages/subpackages。至少要有一个页面，否则记一条 APP_PAGES_REQUIRED 诊断。 | readAppConfig() · resolvePagePaths() |
 | 解析入口 |  | 每个路径同时尝试 foo.* 和 foo/index.*，按兼容配置中的扩展名查找 script、template、style 和 config。 | resolveEntry(root, byRelative, path) |
 | 查找组件 |  | 从 app 配置和每个页面、组件的 usingComponents 递归查找，记录全局/局部来源，并检查缺失。 | resolveComponentEntries() |
-| 编译脚本 |  | 从入口沿 import/require 收集可达脚本，转译 TypeScript，补全无扩展名的模块路径，并输出 source map。 | compileScripts() |
+| 编译脚本 |  | 从入口沿 import/require 收集可达脚本（含 `miniprogram_npm` 内的传递依赖），转译 TypeScript，补全模块路径（含裸包名），并输出 source map；页面/组件脚本会带上路径注册 hint。 | compileScripts() |
+| 类型检查 |  | 项目有 tsconfig 或显式开启时运行 TypeScript 语义检查，输出 `SCRIPT_TYPE_ERROR`；没有社区 typings 时注入小程序全局声明。 | typecheckScripts() |
 | 编译模板 |  | 把所有模板文件放进同一个 TmplGroup，处理 import/include/template、模板脚本、作用域标记和 animation。 | compileTemplates() |
 | 编译样式 |  | app 样式保持全局；页面和组件样式加固定 Tiny class/tag scope；rpx 转成 vw；内联 @import。 | compileStyles() |
 | 复制资源 |  | 图片和字体按原相对路径复制；小图还会在模板编译阶段内联成 data URI。 | copyAssets() |
-| 生成 manifest 和入口 |  | 汇总产物、runtimeCompatibility 和诊断，写出 manifest.json；生成 service.js 和 templates.js，并用 esbuild 打包 service。 | createManifest() · writeEntryArtifacts() |
+| 生成 manifest 和入口 |  | 汇总产物、runtimeCompatibility 和诊断，写出 manifest.json；按分包拆出 `service.<pkg>.js`，生成 service.js 和 templates.js，并用 esbuild 逐个打包。 | createManifest() · writeEntryArtifacts() |
 :::
 
 ## 页面和组件是怎么找到的 {#discovery kicker="入口规则"}
 
-编译器的入口规则会影响 service 线程里 Page/Component 的注册顺序，这是运行时依赖的一条隐式约定。
+编译器给每个页面/组件脚本注入声明路径，运行时按路径注册，因此入口顺序不再是正确性前提；脚本没有 hint 时仍回退到声明顺序。
 
 ::::cards
 :::card{tag="entry" title="文件入口和目录入口"}
@@ -47,7 +49,7 @@ compileMiniProgram 会按顺序执行这些阶段。每个阶段只生成产物�
 :::
 
 :::card{tag="pages" title="主包和分包"}
-`appConfig.pages` 排在前面，`subPackages[].pages` 按 `root + page` 拼接后排在后面。分包只影响路径，不改变加载策略。
+`appConfig.pages` 排在前面，`subPackages[].pages` 按 `root + page` 拼接后排在后面；manifest 额外携带每个分包的 `root`/`pages`/`independent`/`service` 元数据。分包页面和“只被这一个分包使用”的组件会进入独立的 `service.<pkg>.js`，主包和跨分包共享组件保持在 `service.js`；带 `componentPlaceholder` 的跨包组件留在所属分包，页面记录 `asyncSubPackages`；`preloadRule` 会被校验并归一化进 manifest（`page`/`network`/`packages`）；独立分包会跳过主包全局 `usingComponents`，引用主包组件报 `INDEPENDENT_PACKAGE_DEPENDENCY`。
 
 页面的先后顺序，就是 manifest 里 `pages` 的顺序。
 :::
@@ -65,8 +67,8 @@ CLI 会扫描入口脚本，匹配 `compatibility.globals.component` 对应的�
 :::
 ::::
 
-:::callout{title="注册顺序不能乱" tone="warn"}
-service 线程会按 manifest 里 `pages` 的顺序（过滤掉 bodyType=component）依次把 `Page()` 调用绑定到路径，组件则按“组件型页面 + components”的顺序绑定。只改 CLI 的排序而不改 runtime，页面定义就会挂到错误路径上。
+:::callout{title="注册按路径，不按顺序" tone="good"}
+编译期在页面/组件脚本前写入 `__tinyPagePath` / `__tinyComponentPath`，`Page()` / `Component()` 消费后按声明路径注册；为兼容 webpack 产物里 `var globalThis = this` 的脚本，这类脚本跳过 hint 并回退到 manifest 顺序。运行时同时也跳过已由 hint 注册过的路径，避免重复绑定。
 :::
 
 ## 输入格式可配，内部命名固定 {#naming kicker="兼容输入" nav="命名配置"}
@@ -251,6 +253,19 @@ button { height: 88rpx; }            /* -> tiny-button:where(.tiny-pages-todos-t
 编译器只负责生成 CSS、cascade role 和 scope 名称；service 的逻辑树在挂载页面时注册样式并计算 scope，再把页面/组件样式随 tree.flow 下发给渲染树。渲染树不根据文件名猜样式类型，只按 role 应用。
 :::
 
+## 主题变量从 theme.json 进入产物 {#theme kicker="主题变量"}
+
+`app.json` 声明 `themeLocation`（或 `darkmode: true` 时默认 `theme.json`）后，编译器读取其中的 `light` / `dark` 变量表：
+
+- `window`、`tabBar` 以及页面/组件 JSON 的窗口字段里，`@name` 会被解析；light 结果写入 `configuration.effective`，dark 结果写入 `configuration.darkEffective`
+- 变量表完整写入 `manifest.theme`，宿主可以按当前系统主题选择
+- WXSS 会注入 `:root{--name:value}`，暗色用 `@media (prefers-color-scheme: dark)` 覆盖，因此业务样式可以直接写 `var(--name)`
+- 未知变量保留 `@name` 并报 `THEME_VARIABLE_NOT_FOUND`，不会静默变成空值
+
+:::callout{title="编译期只负责映射" tone="warn"}
+devtool 导航栏已按 `prefers-color-scheme` 读取 `darkEffective`；`wx.onThemeChange` 的宿主联动仍属于宿主侧工作。编译器保证 manifest 里有 light/dark 两份解析结果和 CSS 变量。
+:::
+
 ## TypeScript 转译、模块路径修正和 service 打包 {#scripts kicker="脚本打包"}
 
 脚本处理分两步：先把每个可达脚本转成独立的 ESM，再只把 service 入口打成一个 bundle。
@@ -259,7 +274,7 @@ button { height: 88rpx; }            /* -> tiny-button:where(.tiny-pages-todos-t
 | title | actor | detail | code |
 | --- | --- | --- | --- |
 | 收集可达脚本 |  | 从 app、页面和组件入口出发，解析 import/export 和 require 的静态字面量，按 .js/.ts/.tsx 以及 index.* 的规则查找。 | collectReachableScripts() · queueLocalScript() |
-| 转译 TypeScript |  | ts.transpileModule 输出 ESNext + ESNext modules + source map，诊断带行列号。这里只做转译，不做类型检查。 | target: ESNext · module: ESNext |
+| 转译 TypeScript |  | ts.transpileModule 输出 ESNext + ESNext modules + source map，诊断带行列号。这里只做转译；语义检查由独立的 typecheckScripts 阶段负责（有 tsconfig 或显式开启时）。 | target: ESNext · module: ESNext |
 | 修正相对模块路径 |  | 浏览器 ESM 需要显式扩展名。把 ./foo 改成 ./foo.js，目录入口改成 ./foo/index.js；裸模块名不变。 | rewriteRelativeModuleSpecifiers() |
 | 生成 service.js 入口 |  | 入口会 import app、所有页面和所有组件的脚本。App/Page/Component 在导入时执行，注册到 service 的 registry。 | import './scripts/app.js' ... |
 | 用 esbuild 打包 service |  | format 为 esm，platform 为 browser，target 为 es2019，同时开启 bundle 和 sourcemap。ECharts 这类 CJS/UMD 依赖会在这里被吸收。 | bundle() · SCRIPT_BUNDLE_ERROR = warning |
@@ -383,9 +398,22 @@ TypeScript 转译和 PostCSS 都会输出 source map，并写入 `sourcesContent
 | --- | --- | --- | --- |
 | `INVALID_JSON` | error | 小程序配置或页面配置无法解析 | 返回空对象并继续 |
 | `APP_PAGES_REQUIRED` | error | 小程序配置没有 pages | manifest 仍会生成 |
+| `APP_PAGE_INVALID` / `APP_PAGE_DUPLICATE` | error / warning | 页面路径越界或重复声明 | 跳过重复项 |
+| `APP_SUBPACKAGE_INVALID` / `APP_SUBPACKAGE_ROOT_DUPLICATE` | error | 分包缺少 root/pages 或 root 重复 | 跳过该分包 |
+| `APP_TABBAR_PAGE_NOT_FOUND` | warning | tabBar.pagePath 未声明 | 保留配置，宿主可能无法切换 |
+| `APP_LAZY_CODE_LOADING_UNSUPPORTED` | warning | lazyCodeLoading 不是 requiredComponents | 按普通加载处理 |
+| `PROJECT_COMPILE_TYPE_UNSUPPORTED` | error | compileType 不是 miniprogram | 继续按小程序编译 |
+| `NPM_PACKAGE_NOT_FOUND` | warning | package.json 依赖在 node_modules 中缺失 | 跳过该包 |
+| `NPM_PREBUILT_SOURCE` | info | 源码已有 miniprogram_npm | 不再从 node_modules 重建 |
 | `PAGE_NOT_FOUND` | error | 声明的页面没有脚本或模板 | 跳过这个入口 |
 | `COMPONENT_NOT_FOUND` | error | usingComponents 指向不存在的入口 | 记录诊断 |
 | `SCRIPT_TRANSPILE_ERROR` | error | TypeScript 语法或转译失败 | 保留输出并继续 |
+| `SCRIPT_TYPE_ERROR` | error | 可选语义检查发现类型错误 | 仍生成产物，诊断随 manifest 输出 |
+| `THEME_FILE_NOT_FOUND` / `THEME_FILE_OUTSIDE_ROOT` | error | themeLocation 缺失或越界 | 不生成主题表 |
+| `THEME_MODE_MISSING` / `THEME_VALUE_INVALID` | error / warning | theme.json 缺少 light/dark 或值不是字符串 | 跳过非法变量 |
+| `THEME_VARIABLE_NOT_FOUND` | warning | 配置引用了未定义变量 | 保留 `@name` |
+| `INDEPENDENT_PACKAGE_DEPENDENCY` | error | 独立分包引用了主包/其他分包组件 | 记录诊断，组件不注入 |
+| `SCRIPT_TSCONFIG_INVALID` | warning | tsconfig 读取/解析失败 | 回退到默认编译选项 |
 | `SCRIPT_IMPORT_NOT_FOUND` | warning | 相对 import 找不到文件 | 不进入可达脚本图 |
 | `TEMPLATE_COMPILE_ERROR` | error | WXML 解析失败 | 跳过模板 group 生成 |
 | `TINY_CONFIG_INVALID` | warning | tiny.config.json 无法解析 | 回退到默认兼容规则 |

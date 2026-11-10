@@ -1,21 +1,32 @@
-import { existsSync } from 'node:fs'
-import path from 'node:path'
 import ts from 'typescript'
 
 /**
- * Native ESM hosts (devtool, static servers) require explicit file
- * extensions. Mini-program sources use extensionless relative imports, so
- * append `.js` (or `/index.js`) when the target script exists.
+ * Resolve one module specifier to the runtime specifier that must appear in the
+ * emitted script. Returning `undefined` leaves the literal untouched.
  */
-export function rewriteRelativeModuleSpecifiers(
+export type ModuleSpecifierResolver = (
+  specifier: string,
+  sourceFile: string,
+) => string | undefined
+
+/**
+ * Rewrites `import` / `export … from` / dynamic `import()` / `require()`
+ * specifiers through `resolve`.
+ *
+ * Native ESM hosts (devtool, static servers) require explicit file extensions,
+ * and mini-program npm packages use bare specifiers. The resolver owns both
+ * policies; this function only edits string literals without reformatting the
+ * rest of the source.
+ */
+export function rewriteModuleSpecifiers(
   code: string,
   sourceFile: string,
-  scriptExtensions: readonly string[],
+  resolve: ModuleSpecifierResolver,
 ): string {
   const parsed = ts.createSourceFile(sourceFile, code, ts.ScriptTarget.ESNext, true, ts.ScriptKind.JS)
   const edits: Array<{ start: number; end: number; text: string }> = []
   const consider = (literal: ts.StringLiteralLike) => {
-    const next = resolveRuntimeSpecifier(literal.text, sourceFile, scriptExtensions)
+    const next = resolve(literal.text, sourceFile)
     if (!next || next === literal.text) return
     edits.push({ start: literal.getStart(parsed) + 1, end: literal.getEnd() - 1, text: next })
   }
@@ -35,6 +46,15 @@ export function rewriteRelativeModuleSpecifiers(
     ) {
       consider(node.arguments[0]!)
     }
+    if (
+      ts.isCallExpression(node)
+      && ts.isIdentifier(node.expression)
+      && node.expression.text === 'require'
+      && node.arguments.length === 1
+      && ts.isStringLiteral(node.arguments[0]!)
+    ) {
+      consider(node.arguments[0]!)
+    }
     ts.forEachChild(node, visit)
   }
   visit(parsed)
@@ -44,25 +64,4 @@ export function rewriteRelativeModuleSpecifiers(
     output = output.slice(0, edit.start) + edit.text + output.slice(edit.end)
   }
   return output
-}
-
-function resolveRuntimeSpecifier(
-  specifier: string,
-  sourceFile: string,
-  scriptExtensions: readonly string[],
-): string | null {
-  if (!specifier.startsWith('.')) return null
-  if (specifier.endsWith('.js') || specifier.endsWith('.json')) return null
-  const configured = scriptExtensions.find((extension) => specifier.endsWith(extension))
-  if (configured) {
-    return `${specifier.slice(0, -configured.length)}.js`
-  }
-  const base = path.resolve(path.dirname(sourceFile), specifier)
-  for (const extension of scriptExtensions) {
-    if (existsSync(`${base}${extension}`)) return `${specifier}.js`
-  }
-  for (const extension of scriptExtensions) {
-    if (existsSync(path.join(base, `index${extension}`))) return `${specifier}/index.js`
-  }
-  return null
 }

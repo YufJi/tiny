@@ -1,7 +1,9 @@
 import type { CompileOptions, CompileResult } from './types'
 import { createCompilerContext } from './compiler/context'
+import { cleanupNpmBuild } from './compiler/npm'
 import { prepareOutputDir, resolveProject } from './compiler/project'
 import { compileScripts } from './compiler/scripts'
+import { typecheckScripts } from './compiler/typecheck'
 import { compileTemplates } from './compiler/templates'
 import { compileStyles } from './compiler/styles'
 import { copyAssets, writeEntryArtifacts } from './compiler/output'
@@ -21,13 +23,15 @@ export async function compileMiniProgram(options: CompileOptions): Promise<Compi
   const project = await resolveProject(context)
 
   await compileScripts(context, project)
+  await typecheckScripts(context, project)
   await compileTemplates(context, project)
   await compileStyles(context, project)
-  await copyAssets(context)
+  await copyAssets(context, project)
 
   const manifest = await createManifest(context, project)
   await writeEntryArtifacts(context, manifest)
   const manifestPath = await writeManifest(context, manifest)
+  await cleanupNpmBuild(context)
 
   return {
     outputDir: context.options.outputDir,

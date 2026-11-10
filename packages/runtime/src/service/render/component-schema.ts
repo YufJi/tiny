@@ -24,6 +24,7 @@ export function buildComponentSchemas(
       data: definition.data,
       properties: definition.properties,
       using: readUsingComponents(effective),
+      ...(readComponentPlaceholders(effective) ?? {}),
       generics: readComponentGenerics(effective),
       ...(pureDataPattern ? { pureDataPattern: pureDataPattern.source } : {}),
       externalClasses: definition.externalClasses,
@@ -68,6 +69,18 @@ function readStyleIsolation(
   const value = config.styleIsolation
   if (value === 'isolated' || value === 'apply-shared' || value === 'shared') return value
   return undefined
+}
+
+function readComponentPlaceholders(
+  config: Record<string, unknown>,
+): { placeholders?: Record<string, string> } | undefined {
+  const raw = config.componentPlaceholder
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  const entries = Object.entries(raw as Record<string, unknown>)
+    .filter(([, value]) => typeof value === 'string' && value.length > 0)
+  return entries.length > 0
+    ? { placeholders: Object.fromEntries(entries) as Record<string, string> }
+    : undefined
 }
 
 function readUsingComponents(config: unknown): Record<string, string> {

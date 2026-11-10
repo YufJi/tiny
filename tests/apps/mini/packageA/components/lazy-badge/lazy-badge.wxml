@@ -1,0 +1,1 @@
+<view id="lazy-badge">{{text}}</view>

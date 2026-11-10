@@ -338,7 +338,7 @@ attached 触发 linked，detached 触发 unlinked，移动时触发 linkChanged�
 :::card{tag="页面生命周期" tone="warn" title="按实例分发"}
 page.show/hide 会遍历 service 里的所有组件实例，逐个调用 pageLifetimes。render 没有 componentPageLifetime 回路，避免重复执行。
 
-generics（含页面级 `generic:x` 覆盖）、definitionFilter 和 pureDataPattern 已接入；componentPlaceholder 仍未实现。
+generics（含页面级 `generic:x` 覆盖）、definitionFilter、pureDataPattern、分包按需加载、`preloadRule` 预取、独立分包入口和异步组件 chunk 已接入：占位组件先渲染，分包定义到达后由 glass-easel 自动替换。
 :::
 
 :::card{tag="样式" title="组件配置进入 flow"}

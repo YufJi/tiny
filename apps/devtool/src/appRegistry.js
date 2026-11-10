@@ -33,9 +33,24 @@ export function normalizeApps(payload) {
     }));
 }
 
-export function resolveNavigationConfig(manifest, pagePath, fallbackTitle = '') {
-  const appWindow = manifest?.app?.configuration?.effective?.window ?? {};
-  const pageConfig = manifest?.pages?.find((page) => page.path === pagePath)?.configuration?.effective ?? {};
+function systemTheme() {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return 'light';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function effectiveConfig(manifest, theme) {
+  const configuration = manifest?.app?.configuration;
+  if (theme === 'dark' && configuration?.darkEffective) return configuration.darkEffective;
+  return configuration?.effective ?? {};
+}
+
+export function resolveNavigationConfig(manifest, pagePath, fallbackTitle = '', theme = systemTheme()) {
+  const appWindow = effectiveConfig(manifest, theme).window ?? {};
+  const pageArtifact = manifest?.pages?.find((page) => page.path === pagePath);
+  const pageConfiguration = pageArtifact?.configuration;
+  const pageConfig = (theme === 'dark' && pageConfiguration?.darkEffective)
+    ? pageConfiguration.darkEffective
+    : pageConfiguration?.effective ?? {};
   const merged = { ...appWindow, ...pageConfig };
   return {
     title: typeof merged.navigationBarTitleText === 'string' && merged.navigationBarTitleText

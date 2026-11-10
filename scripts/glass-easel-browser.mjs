@@ -1334,6 +1334,40 @@ export async function runMiniProgramAcceptance({ baseUrl, app = 'mini', browser 
       assert.equal(state?.details?.currentPage, 'packageA/pages/c/c')
     })
 
+    await step('replace an async component placeholder after loading its subpackage', async () => {
+      currentStep = 'replace an async component placeholder after loading its subpackage'
+      await page.goto(appUrl(baseUrl, app, { path: 'pages/add-todo/add-todo' }), {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
+      const asyncRender = await activeRender()
+      await asyncRender.waitForFunction(
+        () => (document.querySelector('#app')?.innerText ?? '').includes('lazy-ok'),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+    })
+
+    await step('boot an independent subpackage without the main package', async () => {
+      currentStep = 'boot an independent subpackage without the main package'
+      await page.goto(appUrl(baseUrl, app, { path: 'independent/pages/standalone/standalone' }), {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
+      const independentRender = await activeRender()
+      await independentRender.waitForFunction(
+        () => (document.querySelector('#app')?.innerText ?? '').includes('independent no-app'),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const state = await page.evaluate(() => window.__tinyRuntime.host.diagnostics.filter(
+        (item) => item.code === 'RUNTIME_STATE',
+      ).at(-1))
+      assert.equal(state?.details?.currentPage, 'independent/pages/standalone/standalone')
+    })
+
     await step('keep the example console free of errors', async () => {
       currentStep = 'keep the example console free of errors'
       assert.equal(consoleErrors.length, 0, `console errors: ${consoleErrors.join(' | ')}`)

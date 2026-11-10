@@ -1,16 +1,19 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import ts from 'typescript'
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import type { ScriptArtifact } from '../types'
 import { diagnostic, relativeFromTarget, writeFileWithSourceMap } from '../utils'
 import { isTypeScriptFile, replaceConfiguredExtension } from './extensions'
 import { outputPath, relativePath, type CompilerContext } from './context'
-import { rewriteRelativeModuleSpecifiers } from './module-specifiers'
+import { rewriteModuleSpecifiers, type ModuleSpecifierResolver } from './module-specifiers'
 import type { Project } from './project'
 
 /**
  * Transpiles every script reachable from an app/page/component entry, then
- * rewrites its relative imports for native ESM hosts.
+ * rewrites its module specifiers for native ESM hosts. Reachability follows
+ * relative imports and mini-program npm packages, so a package's internal
+ * files are compiled and bundled exactly like authored code.
  */
 export async function compileScripts(
   context: CompilerContext,
@@ -20,7 +23,16 @@ export async function compileScripts(
     ...project.entries.map((entry) => entry.scriptPath),
     ...[...project.components.values()].map((entry) => entry.scriptPath),
   ].filter((value): value is string => Boolean(value))
-  const scriptPaths = await collectReachableScripts(context, project.files, entryScriptPaths)
+  const scriptPaths = await collectReachableScripts(context, project, entryScriptPaths)
+  const resolveSpecifier = createSpecifierResolver(context, project.files)
+  const pageScriptPaths = new Map<string, string>()
+  for (const entry of project.entries) {
+    if (entry.path !== 'app' && entry.scriptPath) pageScriptPaths.set(entry.scriptPath, entry.path)
+  }
+  const componentScriptPaths = new Map<string, string>()
+  for (const [path, entry] of project.components) {
+    if (entry.scriptPath) componentScriptPaths.set(entry.scriptPath, path)
+  }
 
   for (const scriptPath of scriptPaths) {
     const sourcePath = relativePath(context, scriptPath)
@@ -31,6 +43,16 @@ export async function compileScripts(
       '.js',
     )}`
     const source = await fs.readFile(scriptPath, 'utf8')
+    const pagePath = pageScriptPaths.get(scriptPath)
+    const componentPath = componentScriptPaths.get(scriptPath)
+      ?? (pagePath && isComponentRegistration(source, context) ? pagePath : undefined)
+    const hint = shadowsGlobalThis(source)
+      ? undefined
+      : componentPath
+        ? { global: TINY_ENGINE_NAMING.componentRegistrationHint, path: componentPath }
+        : pagePath
+          ? { global: TINY_ENGINE_NAMING.pageRegistrationHint, path: pagePath }
+          : undefined
     const transformed = ts.transpileModule(source, {
       fileName: scriptPath,
       compilerOptions: {
@@ -63,6 +85,8 @@ export async function compileScripts(
       map.file = path.basename(outputRelativePath)
       map.sources = [relativeFromTarget(mapPath, scriptPath)]
       map.sourcesContent = [source]
+      // The registration hint is one extra line before the transpiled body.
+      if (hint) map.mappings = `;${String(map.mappings ?? '')}`
       sourceMap = JSON.stringify(map)
     }
     const artifact: ScriptArtifact = {
@@ -71,24 +95,53 @@ export async function compileScripts(
       sourceMapPath: sourceMap ? `${outputRelativePath}.map` : undefined,
     }
     context.scripts.set(sourcePath, artifact)
+    const code = rewriteModuleSpecifiers(
+      transformed.outputText,
+      scriptPath,
+      resolveSpecifier,
+    )
     await writeFileWithSourceMap(
       outputPath(context, outputRelativePath),
-      rewriteRelativeModuleSpecifiers(
-        transformed.outputText,
-        scriptPath,
-        context.extensions.script,
-      ),
+      hint ? `${registrationHintSource(hint)}
+${code}` : code,
       sourceMap,
     )
   }
 }
 
-/** Breadth-first walk over `import`/`export from`/`require` of local modules. */
+function isComponentRegistration(source: string, context: CompilerContext): boolean {
+  const global = context.compatibility.globals.component.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    '\\$&',
+  )
+  return new RegExp(`\\b${global}\\s*\\(`).test(source)
+}
+
+function registrationHintSource(hint: { global: string; path: string }): string {
+  return `globalThis.${hint.global} = ${JSON.stringify(hint.path)};`
+}
+
+/**
+ * Some prebuilt npm bundles (notably WeUI's webpack output) declare
+ * `var globalThis = this` at module scope. The declaration shadows the real
+ * global inside the esbuild CommonJS wrapper, so an injected `globalThis.*`
+ * assignment would write to the module scope instead of the runtime. Those
+ * scripts fall back to declaration-order registration.
+ */
+function shadowsGlobalThis(source: string): boolean {
+  return /(?:^|[;\n])\s*(?:var|let|const|function)\s+globalThis\b/.test(source)
+}
+
+/**
+ * Breadth-first walk over `import` / `export … from` / `require` of local and
+ * `miniprogram_npm` modules.
+ */
 async function collectReachableScripts(
   context: CompilerContext,
-  byRelative: Map<string, string>,
+  project: Project,
   entryPaths: string[],
 ): Promise<string[]> {
+  const byRelative = project.files
   const visited = new Set<string>()
   const queue = [...entryPaths]
 
@@ -109,54 +162,122 @@ async function collectReachableScripts(
     )
 
     const visitNode = (node: ts.Node): void => {
-      if (
-        (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
-        node.moduleSpecifier &&
-        ts.isStringLiteral(node.moduleSpecifier)
-      ) {
-        queueLocalScript(context, byRelative, current, node.moduleSpecifier.text, queue)
+      const specifier = readModuleSpecifier(node)
+      if (specifier === undefined) {
+        ts.forEachChild(node, visitNode)
+        return
       }
-      if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'require' && node.arguments.length === 1) {
-        const argument = node.arguments[0]!
-        if (ts.isStringLiteral(argument)) {
-          queueLocalScript(context, byRelative, current, argument.text, queue)
-        }
+      const target = resolveScriptModule(context, byRelative, current, specifier)
+      if (target) {
+        queue.push(target)
+      } else if (isLocalSpecifier(specifier)) {
+        context.diagnostics.push(diagnostic(
+          'warning',
+          'SCRIPT_IMPORT_NOT_FOUND',
+          `Unable to resolve script import "${specifier}".`,
+          current,
+        ))
       }
       ts.forEachChild(node, visitNode)
     }
     visitNode(sourceFile)
   }
 
-  return [...visited].map((relative) => path.join(context.root, relative))
+  return [...visited].map((relative) => (
+    project.files.get(relative) ?? path.join(context.root, relative)
+  ))
 }
 
-function queueLocalScript(
+function readModuleSpecifier(node: ts.Node): string | undefined {
+  if (
+    (ts.isImportDeclaration(node) || ts.isExportDeclaration(node))
+    && node.moduleSpecifier
+    && ts.isStringLiteral(node.moduleSpecifier)
+  ) {
+    return node.moduleSpecifier.text
+  }
+  if (
+    ts.isCallExpression(node)
+    && node.arguments.length === 1
+    && ts.isStringLiteral(node.arguments[0]!)
+    && (
+      node.expression.kind === ts.SyntaxKind.ImportKeyword
+      || (ts.isIdentifier(node.expression) && node.expression.text === 'require')
+    )
+  ) {
+    return node.arguments[0]!.text
+  }
+  return undefined
+}
+
+function isLocalSpecifier(specifier: string): boolean {
+  return specifier.startsWith('.') || specifier.startsWith('/')
+}
+
+/**
+ * Resolve a mini-program module specifier to an absolute source file:
+ * - relative/absolute imports inside the app or the generated npm tree;
+ * - bare imports against `miniprogram_npm/<specifier>`;
+ * - an explicit `miniprogram_npm/...` path.
+ *
+ * Anything else (a host-provided module) stays unresolved on purpose.
+ */
+function resolveScriptModule(
   context: CompilerContext,
   byRelative: Map<string, string>,
   fromPath: string,
-  reference: string,
-  queue: string[],
-): void {
-  if (!reference.startsWith('.') && !reference.startsWith('/')) return
-  const fromDirectory = path.dirname(fromPath)
-  const absoluteReference = reference.startsWith('/')
-    ? path.join(context.root, reference.slice(1))
-    : path.resolve(fromDirectory, reference)
-  const referenceRelative = relativePath(context, absoluteReference)
-  const candidates = [
-    referenceRelative,
-    ...context.extensions.script.map((extension) => `${referenceRelative}${extension}`),
-    ...context.extensions.script.map((extension) => `${referenceRelative}/index${extension}`),
-  ]
-  const candidate = candidates.map((item) => byRelative.get(item)).find(Boolean)
-  if (!candidate) {
-    context.diagnostics.push(diagnostic(
-      'warning',
-      'SCRIPT_IMPORT_NOT_FOUND',
-      `Unable to resolve script import "${reference}".`,
-      fromPath,
-    ))
-    return
+  specifier: string,
+): string | undefined {
+  if (/^[a-z]+:/i.test(specifier)) return undefined
+  let base: string
+  if (specifier.startsWith('.')) {
+    base = relativePath(context, path.resolve(path.dirname(fromPath), specifier))
+  } else if (specifier.startsWith('/')) {
+    base = specifier.slice(1)
+  } else if (specifier.startsWith('miniprogram_npm/')) {
+    base = specifier
+  } else {
+    base = `miniprogram_npm/${specifier}`
   }
-  queue.push(candidate)
+  const exact = byRelative.get(base)
+  if (exact && isScriptFile(context, exact)) return exact
+  for (const extension of context.extensions.script) {
+    const candidate = byRelative.get(`${base}${extension}`)
+    if (candidate) return candidate
+  }
+  for (const extension of context.extensions.script) {
+    const candidate = byRelative.get(`${base}/index${extension}`)
+    if (candidate) return candidate
+  }
+  return undefined
+}
+
+function isScriptFile(context: CompilerContext, filePath: string): boolean {
+  const lower = filePath.toLowerCase()
+  return context.extensions.script.some((extension) => lower.endsWith(extension.toLowerCase()))
+}
+
+/** Map source specifiers to the relative `.js` specifiers used at runtime. */
+function createSpecifierResolver(
+  context: CompilerContext,
+  byRelative: Map<string, string>,
+): ModuleSpecifierResolver {
+  return (specifier, sourceFile) => {
+    const target = resolveScriptModule(context, byRelative, sourceFile, specifier)
+    if (!target) return undefined
+    const fromRelative = relativePath(context, sourceFile)
+    const targetRelative = relativePath(context, target)
+    const fromOutput = `scripts/${replaceConfiguredExtension(
+      fromRelative,
+      context.extensions.script,
+      '.js',
+    )}`
+    const targetOutput = `scripts/${replaceConfiguredExtension(
+      targetRelative,
+      context.extensions.script,
+      '.js',
+    )}`
+    const resolved = path.posix.relative(path.posix.dirname(fromOutput), targetOutput)
+    return resolved.startsWith('.') ? resolved : `./${resolved}`
+  }
 }

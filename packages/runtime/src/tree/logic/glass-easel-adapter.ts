@@ -371,6 +371,10 @@ export class GlassEaselRuntimeAdapter {
     const childStyleScope = pageIsolation === 'isolated' ? undefined : pageScope
     const using = this.resolveComponentUsing(page.path, page.configuration, childStyleScope)
     const effective = (page.configuration?.effective ?? {}) as Record<string, unknown>
+    const pagePlaceholders = readComponentPlaceholders(effective)
+    for (const tag of Object.values(pagePlaceholders)) {
+      if (!using[tag]) using[tag] = tag
+    }
     const generics = this.resolveGenerics(page.path, readComponentGenerics(effective))
     const pureDataPattern = parsePureDataPattern(effective.pureDataPattern)
     if (pageIsolation !== 'isolated') this.applySharedComponentStyles(page, pageScope)
@@ -383,6 +387,7 @@ export class GlassEaselRuntimeAdapter {
       })
       .data(() => data)
       .usingComponents(using as never)
+      .placeholders(pagePlaceholders as never)
       .generics(generics as never)
       .options({
         multipleSlots: true,
@@ -838,10 +843,10 @@ export class GlassEaselRuntimeAdapter {
   }
 
   /** Deliver a page lifetime to every logic component mounted on the page. */
-  triggerPageLifetime(pageId: string, phase: 'show' | 'hide'): void {
+  triggerPageLifetime(pageId: string, phase: 'show' | 'hide' | 'resize', event?: unknown): void {
     for (const component of this.componentInstances.values()) {
       if (this.pageIdOf(component) !== pageId) continue
-      component.triggerPageLifetime(phase, [])
+      component.triggerPageLifetime(phase, event === undefined ? [] : [event])
     }
   }
 
@@ -966,13 +971,23 @@ export class GlassEaselRuntimeAdapter {
       Object.entries(schema.using).map(([tag, reference]) => {
         const path = this.resolveComponentReference(schema.path, reference)
         const dependency = this.componentSchemas.get(path)
-        if (!dependency) return [tag, path]
+        // Glass resolves a string using-target relative to the owner path; keep
+        // an absolute path so a lazy component can be registered under the same
+        // root-anchored name later.
+        if (!dependency) return [tag, `/${path}`]
         // Taro emits mutually recursive component metadata; break the cycle by
         // referencing the path while the definition is still being built.
         if (this.registeringComponents.has(path)) return [tag, path]
         return [tag, this.registerComponentDefinition(dependency, pageScope)]
       }),
     )
+    // Glass-easel owns the async-component lifecycle: a placeholder definition
+    // is rendered until `defineComponent(path)` happens, then the placeholder
+    // is replaced automatically. Built-in placeholder tags become native nodes.
+    const placeholders = schema.placeholders ?? {}
+    for (const tag of Object.values(placeholders)) {
+      if (!using[tag]) using[tag] = tag
+    }
     const styleScopeId = this.styleScopeIds.get(schema.path)
     const isolation = schema.options?.styleIsolation ?? 'isolated'
     const extraStyleScope = (isolation === 'apply-shared' || isolation === 'shared')
@@ -1010,6 +1025,7 @@ export class GlassEaselRuntimeAdapter {
       })
       .data(() => ({ ...(schema.data as Record<string, unknown>), ...reservedData } as never))
       .usingComponents(using as never)
+      .placeholders(placeholders as never)
       .generics(generics as never)
       .options({
         multipleSlots: schema.options?.multipleSlots ?? false,
@@ -1245,7 +1261,9 @@ export class GlassEaselRuntimeAdapter {
             { tag, reference, componentPath },
           ))
         }
-        return [tag, definition ? this.registerComponentDefinition(definition, pageScope) : componentPath]
+        return [tag, definition
+          ? this.registerComponentDefinition(definition, pageScope)
+          : `/${componentPath}`]
       }),
     )
     return resolved
@@ -1682,4 +1700,11 @@ function readStyle(element: InspectElementLike): string | undefined {
   return typeof style === 'string' && style.length > 0 ? style : undefined
 }
 
-
+function readComponentPlaceholders(config: Record<string, unknown>): Record<string, string> {
+  const raw = config.componentPlaceholder
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  return Object.fromEntries(
+    Object.entries(raw as Record<string, unknown>)
+      .filter(([, value]) => typeof value === 'string' && value.length > 0),
+  ) as Record<string, string>
+}

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import type { StyleArtifact } from '../types'
+import type { ThemeTable, StyleArtifact } from '../types'
 import {
   APP_PAGE_SCOPE_CLASS_SIGN,
   BUILTIN_COMPONENT_TAGS,
@@ -63,7 +63,9 @@ export async function compileStyles(
         hostAttribute: TINY_ENGINE_NAMING.hostAttribute,
         convertHost: scope !== undefined,
       })
-      const css = transformer.getContent()
+      const css = isAppStyle
+        ? `${themeVariablesCss(project.appConfig.theme)}${transformer.getContent()}`
+        : transformer.getContent()
       const map = normalizeMap(
         transformer.getSourceMap(),
         stylePath,
@@ -141,6 +143,43 @@ export async function compileStyles(
       ))
     }
   }
+
+  // Theme variables need a stylesheet even when the app has no app.wxss.
+  if (project.appConfig.theme && !appStylePath) {
+    const themeArtifactPath = 'app.theme.wxss'
+    const themeOutputPath = 'styles/theme.css'
+    await writeFileWithSourceMap(
+      outputPath(context, themeOutputPath),
+      themeVariablesCss(project.appConfig.theme),
+    )
+    const artifact: StyleArtifact = {
+      path: themeArtifactPath,
+      sourcePath: themeArtifactPath,
+      outputPath: themeOutputPath,
+    }
+    context.styles.set(themeArtifactPath, artifact)
+    context.themeStyle = artifact
+  }
+}
+
+/**
+ * Expose `theme.json` variables as CSS custom properties.
+ *
+ * Media query is the browser's system-theme signal, matching WeChat's
+ * `darkmode` behaviour on the web host. The variables inherit into every page
+ * and component scope, so WXSS can use `var(--name)` directly.
+ */
+function themeVariablesCss(theme: ThemeTable | undefined): string {
+  if (!theme) return ''
+  const declarations = (mode: 'light' | 'dark') => Object.entries(theme[mode])
+    .map(([name, value]) => `--${name}:${value};`)
+    .join('')
+  const light = declarations('light')
+  const dark = declarations('dark')
+  return [
+    light ? `:root{${light}}` : '',
+    dark ? `@media (prefers-color-scheme: dark){:root{${dark}}}` : '',
+  ].filter(Boolean).join('\n') + (light || dark ? '\n' : '')
 }
 
 /** Inlines `@import` statements so each stylesheet compiles as one document. */

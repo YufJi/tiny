@@ -1,5 +1,6 @@
 import { registerBehavior } from '../component'
 import { applyDefinitionFilters } from '../component'
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import type { MiniProgramPageRegistry } from './page-registry'
 import type {
   MiniProgramApiHost,
@@ -29,10 +30,21 @@ export function installMiniProgramGlobals(
 ): MiniProgramApiHost {
   const globalObject = globalThis as unknown as Record<string, unknown>
   const globals = registry.compatibility.globals
+  const consumeHint = (name: string): string | undefined => {
+    const value = globalObject[name]
+    delete globalObject[name]
+    return typeof value === 'string' && value.length > 0 ? value : undefined
+  }
   globalObject[globals.app] = (options: MiniProgramAppOptions) => registry.registerApp(options)
-  globalObject[globals.page] = (options: MiniProgramPageOptions) => registry.registerPage(options)
+  globalObject[globals.page] = (options: MiniProgramPageOptions) => registry.registerPage(
+    options,
+    consumeHint(TINY_ENGINE_NAMING.pageRegistrationHint),
+  )
   globalObject[globals.component] = (options: MiniProgramComponentOptions) => (
-    registry.registerComponent(options)
+    registry.registerComponent(
+      options,
+      consumeHint(TINY_ENGINE_NAMING.componentRegistrationHint),
+    )
   )
   globalObject[globals.behavior] = (options?: MiniProgramComponentOptions) => {
     const behavior = registerBehavior(options)

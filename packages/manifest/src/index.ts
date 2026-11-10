@@ -73,12 +73,30 @@ export type AssetArtifact = {
   sourcePath: string
 }
 
+/**
+ * `theme.json` variable tables. Keys are raw variable names (used as `@name`
+ * in JSON config and `var(--name)` in WXSS).
+ */
+export type ThemeTable = {
+  light: Record<string, string>
+  dark: Record<string, string>
+}
+
 export type ConfigurationArtifact = {
   path: string
   sourcePath: string
+  /** Effective config with `@themeVar` references resolved for the light theme. */
   effective: Record<string, unknown>
+  /** Light/dark resolutions differ; enables host theme switching. */
+  darkEffective?: Record<string, unknown>
   usingComponents?: Record<string, string>
   usingComponentsSource?: Record<string, 'global' | 'local'>
+  /**
+   * `componentPlaceholder` resolved to `component path -> placeholder tag`.
+   * The compiler owns the mapping; the runtime uses it when a component
+   * definition is not available yet.
+   */
+  placeholders?: Record<string, string>
 }
 
 export type AppArtifact = {
@@ -93,6 +111,8 @@ export type PageArtifact = {
   path: string
   bodyType?: 'page' | 'component'
   subpackage?: string
+  /** Subpackage chunks that must load after mount for async components. */
+  asyncSubPackages?: string[]
   script?: ScriptArtifact
   template?: TemplateArtifact
   style?: StyleArtifact
@@ -100,6 +120,31 @@ export type PageArtifact = {
 }
 
 export type ComponentArtifact = PageArtifact
+
+/**
+ * One `app.json.subPackages` block resolved by the compiler.
+ *
+ * `pages` are root-anchored page paths (already joined with `root`). A host may
+ * use `service` to load the package's registration chunk on demand; the main
+ * `service.js` always contains the app and main-package entries.
+ */
+export type SubPackageArtifact = {
+  root: string
+  pages: string[]
+  independent?: boolean
+  /** Compiler-owned service entry for this package, when split. */
+  service?: string
+}
+
+/**
+ * One `app.json.preloadRule` entry. `packages` are subpackage roots; the host
+ * chooses whether the current network satisfies `network`.
+ */
+export type PreloadRuleArtifact = {
+  page: string
+  network: 'all' | 'wifi'
+  packages: string[]
+}
 
 export type Manifest = {
   schemaVersion: 2
@@ -112,6 +157,12 @@ export type Manifest = {
   app?: AppArtifact
   pages: PageArtifact[]
   components: ComponentArtifact[]
+  /** Declared subpackages, in `app.json` order. */
+  subPackages?: SubPackageArtifact[]
+  /** Normalized `app.json.preloadRule`, in declaration order. */
+  preloadRules?: PreloadRuleArtifact[]
+  /** `themeLocation` tables, when the project declares theme variables. */
+  theme?: ThemeTable
   styles: StyleArtifact[]
   assets: AssetArtifact[]
   diagnostics?: Diagnostic[]

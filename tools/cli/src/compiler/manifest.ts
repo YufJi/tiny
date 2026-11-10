@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { runtimeCompatibilityFrom } from '@tiny/manifest'
+import { BUILTIN_COMPONENT_TAGS, runtimeCompatibilityFrom } from '@tiny/manifest'
 import type {
   AppArtifact,
   ComponentArtifact,
@@ -8,13 +8,15 @@ import type {
   Manifest,
   PageArtifact,
 } from '../types'
-import { ensureDir } from '../utils'
+import { diagnostic, ensureDir, subpackageServicePath } from '../utils'
 import { withoutConfiguredExtension } from './extensions'
 import { relativePath, type CompilerContext } from './context'
 import {
   readConfiguration,
   readUsingComponents,
+  resolveAppConfigTheme,
   resolveEntryReference,
+  resolvePageConfigTheme,
   type Project,
   type SourceEntry,
 } from './project'
@@ -37,11 +39,28 @@ export async function createManifest(
           : undefined,
         style: appEntry.stylePath
           ? context.styles.get(relativePath(context, appEntry.stylePath))
-          : undefined,
+          : context.themeStyle,
         configuration: {
           path: 'app',
           sourcePath: relativePath(context, project.appConfig.path),
-          effective: project.appConfig.value,
+          effective: resolveAppConfigTheme(
+            project.appConfig.value,
+            project.appConfig.theme,
+            'light',
+            context,
+            project.appConfig.path,
+          ),
+          ...(project.appConfig.theme
+            ? {
+                darkEffective: resolveAppConfigTheme(
+                  project.appConfig.value,
+                  project.appConfig.theme,
+                  'dark',
+                  context,
+                  project.appConfig.path,
+                ),
+              }
+            : {}),
         },
       }
     : undefined
@@ -65,6 +84,23 @@ export async function createManifest(
     app,
     pages,
     components,
+    subPackages: project.appConfig.subPackages.map((pkg) => {
+      const entries = [
+        ...project.entries.filter((entry) => entry.subpackage === pkg.root),
+        ...[...project.components.values()].filter((entry) => entry.subpackage === pkg.root),
+      ]
+      const hasScripts = entries.some((entry) => Boolean(entry.scriptPath))
+      return {
+        root: pkg.root,
+        pages: [...pkg.pages],
+        ...(pkg.independent ? { independent: true } : {}),
+        ...(hasScripts ? { service: subpackageServicePath(pkg.root) } : {}),
+      }
+    }),
+    ...(project.appConfig.preloadRules.length > 0
+      ? { preloadRules: project.appConfig.preloadRules }
+      : {}),
+    ...(project.appConfig.theme ? { theme: project.appConfig.theme } : {}),
     styles: [...context.styles.values()],
     assets: context.assets,
     diagnostics: [...context.diagnostics],
@@ -93,7 +129,9 @@ async function createPageArtifact(
   const bodyType = new RegExp(`\\b${componentGlobal}\\s*\\(`).test(scriptSource)
     ? 'component' as const
     : 'page' as const
-  const globalComponents = entry.path === 'app'
+  const independentPackage = entry.subpackage !== undefined
+    && project.appConfig.subPackages.some((pkg) => pkg.root === entry.subpackage && pkg.independent)
+  const globalComponents = entry.path === 'app' || independentPackage
     ? {}
     : readUsingComponents(await readConfiguration(context, project.appConfig.path))
   const localComponents = readUsingComponents(config)
@@ -116,19 +154,48 @@ async function createPageArtifact(
   const effectiveConfig: Record<string, unknown> = Object.keys(resolvedComponents).length > 0
     ? { ...config, usingComponents: resolvedComponents }
     : config
+  const placeholders = resolveComponentPlaceholders(
+    context,
+    entry,
+    config,
+    resolvedComponents,
+  )
+  const theme = project.appConfig.theme
   const configuration: ConfigurationArtifact = {
     path: entry.path,
     sourcePath: entry.configPath
       ? relativePath(context, entry.configPath)
       : `${entry.path}${context.extensions.config[0]}`,
-    effective: effectiveConfig,
+    effective: resolvePageConfigTheme(
+      effectiveConfig,
+      theme,
+      'light',
+      context,
+      entry.configPath,
+    ),
+    ...(theme
+      ? {
+          darkEffective: resolvePageConfigTheme(
+            effectiveConfig,
+            theme,
+            'dark',
+            context,
+            entry.configPath,
+          ),
+        }
+      : {}),
     usingComponents: resolvedComponents,
     usingComponentsSource: componentSource,
+    ...(Object.keys(placeholders).length > 0 ? { placeholders } : {}),
   }
 
   return {
     path: entry.path,
     bodyType,
+    ...(entry.subpackage ? { subpackage: entry.subpackage } : {}),
+    ...(entry.asyncSubPackages && entry.asyncSubPackages.length > 0
+      ? { asyncSubPackages: entry.asyncSubPackages }
+      : {}),
     script: entry.scriptPath
       ? context.scripts.get(relativePath(context, entry.scriptPath))
       : undefined,
@@ -143,6 +210,65 @@ async function createPageArtifact(
       : undefined,
     configuration,
   }
+}
+
+/**
+ * Resolve `componentPlaceholder` against the effective `usingComponents`.
+ *
+ * Only built-in tags are accepted as placeholders today: a custom placeholder
+ * would need its own async loading/definition lifecycle. Invalid entries emit a
+ * structured diagnostic and are dropped instead of failing the page.
+ */
+function resolveComponentPlaceholders(
+  context: CompilerContext,
+  entry: SourceEntry,
+  config: Record<string, unknown>,
+  resolvedComponents: Record<string, string>,
+): Record<string, string> {
+  const raw = config.componentPlaceholder
+  if (raw === undefined) return {}
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    context.diagnostics.push(diagnostic(
+      'error',
+      'COMPONENT_PLACEHOLDER_INVALID',
+      'componentPlaceholder must be an object keyed by component tag.',
+      entry.configPath,
+    ))
+    return {}
+  }
+  const placeholders: Record<string, string> = {}
+  for (const [tag, rawTarget] of Object.entries(raw as Record<string, unknown>)) {
+    const componentPath = resolvedComponents[tag]
+    if (!componentPath) {
+      context.diagnostics.push(diagnostic(
+        'warning',
+        'COMPONENT_PLACEHOLDER_UNKNOWN_TAG',
+        `componentPlaceholder tag "${tag}" is not declared in usingComponents.`,
+        entry.configPath,
+      ))
+      continue
+    }
+    if (typeof rawTarget !== 'string' || rawTarget.length === 0) {
+      context.diagnostics.push(diagnostic(
+        'warning',
+        'COMPONENT_PLACEHOLDER_INVALID',
+        `componentPlaceholder for "${tag}" must name a built-in tag.`,
+        entry.configPath,
+      ))
+      continue
+    }
+    if (!BUILTIN_COMPONENT_TAGS.includes(rawTarget as never)) {
+      context.diagnostics.push(diagnostic(
+        'warning',
+        'COMPONENT_PLACEHOLDER_UNKNOWN_TARGET',
+        `componentPlaceholder target "${rawTarget}" is not a built-in tag.`,
+        entry.configPath,
+      ))
+      continue
+    }
+    placeholders[componentPath.replace(/^\//, '')] = rawTarget
+  }
+  return placeholders
 }
 
 function escapeRegExp(value: string): string {
