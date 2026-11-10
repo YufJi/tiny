@@ -29,6 +29,11 @@ pub enum HostCommand {
     InspectTree {
         page_id: Option<String>,
     },
+    /// Invoke the active page's share callback.
+    Share {
+        share_type: Option<String>,
+        from: Option<String>,
+    },
     SetAppVisible {
         visible: bool,
     },

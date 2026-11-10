@@ -1,5 +1,22 @@
 import type { HostApiHandlers, StorageValues, SyncApiHandlers, SystemInfo } from '@tiny/api'
 
+export type DevtoolNavigationAction = 'title' | 'color' | 'loading'
+
+export type DevtoolApiOptions = {
+  /** Host-owned storage facts shared by the async and sync API tables. */
+  storage?: StorageValues
+  getSystemInfo: () => SystemInfo
+  /** Mirror navigation-bar mutations into the host chrome. */
+  onNavigation?: (action: DevtoolNavigationAction, params: Record<string, unknown>) => void
+  /** `wx.showShareMenu` / `wx.hideShareMenu` visibility for the host menu. */
+  onShareMenu?: (visible: boolean) => void
+}
+
+export type DevtoolApiHost = {
+  apiHandlers: HostApiHandlers
+  syncApiHandlers: SyncApiHandlers
+}
+
 const OVERLAY_ID = 'tiny-api-overlay'
 const STYLE_ID = 'tiny-api-overlay-style'
 
@@ -10,12 +27,23 @@ let toastElement: HTMLElement | null = null
  * App-owned browser implementations for the host-side wx APIs.
  *
  * These run in the host realm (the page that owns the iframes), so DOM,
- * fetch, clipboard and navigator access stay out of the core runtime.
+ * fetch, clipboard and navigator access stay out of the core runtime. The
+ * async and sync tables are built together from the same options so storage
+ * and host facts cannot drift apart.
  */
-export function createDevtoolApiHandlers(
-  storage: StorageValues = {},
-  getSystemInfo: () => SystemInfo,
+export function createDevtoolApiHost(options: DevtoolApiOptions): DevtoolApiHost {
+  const storage = options.storage ?? {}
+  return {
+    apiHandlers: createApiHandlers(storage, options),
+    syncApiHandlers: createSyncApiHandlers(storage, options),
+  }
+}
+
+function createApiHandlers(
+  storage: StorageValues,
+  options: DevtoolApiOptions,
 ): HostApiHandlers {
+  const getSystemInfo = options.getSystemInfo
   return {
     'system.info': () => getSystemInfo(),
     'network.request': (params) => request(params),
@@ -48,13 +76,27 @@ export function createDevtoolApiHandlers(
     }),
     'navigation.title': (params) => {
       if (typeof document !== 'undefined') document.title = String(params.title ?? '')
+      options.onNavigation?.('title', params)
       return { errMsg: 'setNavigationBarTitle:ok' }
+    },
+    'navigation.color': (params) => {
+      options.onNavigation?.('color', params)
+      return { errMsg: 'setNavigationBarColor:ok' }
+    },
+    'navigation.loading': (params) => {
+      options.onNavigation?.('loading', params)
+      return { errMsg: 'showNavigationBarLoading:ok' }
     },
     'ui.loading': (params) => showLoading(params),
     'ui.hideLoading': () => hideLoading(),
     'ui.modal': (params) => showModal(params),
     'ui.actionSheet': (params) => showActionSheet(params),
-    'share.menu': (params) => ({ errMsg: `${String(params.action ?? 'share')}:ok` }),
+    'share.menu': (params) => {
+      const action = String(params.action ?? '')
+      if (action === 'showShareMenu') options.onShareMenu?.(true)
+      else if (action === 'hideShareMenu') options.onShareMenu?.(false)
+      return { errMsg: `${action || 'share'}:ok` }
+    },
     'storage.get': (params) => ({ value: storage[String(params.key)] }),
     'storage.set': (params) => {
       storage[String(params.key)] = params.value
@@ -80,10 +122,11 @@ export function createDevtoolApiHandlers(
  * Synchronous counterparts for `*Sync` APIs. The debugger host owns system and
  * storage facts; the browser adapter only forwards them.
  */
-export function createDevtoolSyncApiHandlers(
-  storage: StorageValues = {},
-  getSystemInfo: () => SystemInfo,
+function createSyncApiHandlers(
+  storage: StorageValues,
+  options: DevtoolApiOptions,
 ): SyncApiHandlers {
+  const getSystemInfo = options.getSystemInfo
   return {
     'system.info': () => getSystemInfo(),
     'storage.get': (params) => ({ value: storage[String(params.key)] }),

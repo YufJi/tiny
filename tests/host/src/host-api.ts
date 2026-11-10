@@ -54,6 +54,8 @@ export function createTestHostApiHandlers(
     'ui.hideLoading': () => hideLoading(),
     'ui.modal': (params) => showModal(params),
     'ui.actionSheet': (params) => showActionSheet(params),
+    'navigation.color': () => ({ errMsg: 'setNavigationBarColor:ok' }),
+    'navigation.loading': () => ({ errMsg: 'showNavigationBarLoading:ok' }),
     'share.menu': (params) => ({ errMsg: `${String(params.action ?? 'share')}:ok` }),
     'storage.get': (params) => ({ value: storage[String(params.key)] }),
     'storage.set': (params) => {

@@ -11,6 +11,8 @@ function HostNavigationBar({
   onBack,
   onBackground,
   onReload,
+  onShare,
+  shareEnabled,
 }) {
   const textColor = navigation.textStyle === 'white' ? '#ffffff' : '#111827';
   const scheme = navigation.textStyle === 'white' ? 'dark' : 'light';
@@ -61,6 +63,7 @@ function HostNavigationBar({
           </button>
         )}
         <div className="td-nav-title" title={navigation.title}>{navigation.title}</div>
+        {navigation.loading ? <span className="td-nav-loading" aria-label="Loading" role="status" /> : null}
         {launcher ? (
           <span className="td-nav-launcher-mark" aria-hidden="true">◎</span>
         ) : (
@@ -68,6 +71,8 @@ function HostNavigationBar({
             enabled={enabled}
             onBackground={onBackground}
             onReload={onReload}
+            onShare={onShare}
+            shareEnabled={shareEnabled}
           />
         )}
       </div>

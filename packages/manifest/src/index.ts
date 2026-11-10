@@ -12,6 +12,45 @@ export * from './builtin-capabilities'
 export * from './asset-path'
 export * from './diagnostic-codes'
 
+/**
+ * Read `app.json.window` from an effective configuration. Kept in the shared
+ * contract so the kernel never spells the host-global word itself.
+ */
+export type PageBehaviorConfig = {
+  enablePullDownRefresh: boolean
+  onReachBottomDistance: number
+}
+
+/**
+ * Page-shell behavior resolved from app.json/page JSON. This is host chrome,
+ * not kernel state: the render host owns the scroll container and gestures.
+ */
+export function pageBehaviorOf(
+  manifest: Pick<Manifest, 'app' | 'pages'>,
+  pagePath: string | undefined,
+): PageBehaviorConfig {
+  const page = manifest.pages.find((item) => item.path === pagePath)
+  const appWindow = readWindowConfig(manifest.app?.configuration?.effective)
+  const pageConfig = page?.configuration?.effective ?? {}
+  const distance = pageConfig.onReachBottomDistance ?? appWindow.onReachBottomDistance
+  return {
+    enablePullDownRefresh: (pageConfig.enablePullDownRefresh
+      ?? appWindow.enablePullDownRefresh) === true,
+    onReachBottomDistance: typeof distance === 'number' && Number.isFinite(distance)
+      ? Math.max(0, distance)
+      : 50,
+  }
+}
+
+export function readWindowConfig(
+  effective: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+  const value = effective?.['window']
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {}
+}
+
 export type DiagnosticSeverity = 'error' | 'warning' | 'info'
 
 export type SourceLocation = {

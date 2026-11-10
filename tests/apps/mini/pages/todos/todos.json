@@ -1,6 +1,6 @@
 {
     "navigationBarTitleText": "Index",
-    "usingComponents": {
-  
-    }
+    "usingComponents": {},
+    "enablePullDownRefresh": true,
+    "onReachBottomDistance": 80
 }

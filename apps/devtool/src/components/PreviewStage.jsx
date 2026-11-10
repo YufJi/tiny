@@ -10,6 +10,7 @@ import {
 import AppLauncher from './AppLauncher';
 import HostNavigationBar from './HostNavigationBar';
 import HostTabBar from './HostTabBar';
+import HostShareSheet from './HostShareSheet';
 import './PreviewStage.css';
 
 // iPhone X device frame, fit-to-stage scaling, host chrome and app launcher.
@@ -36,6 +37,13 @@ function PreviewStage({
   onTabBarTap,
   onBackground,
   onReload,
+  onShare,
+  shareEnabled,
+  shareSheetOpen,
+  shareResult,
+  onShareSelect,
+  onCloseShare,
+  refreshing,
 }) {
   const stageBodyRef = useRef(null);
   const [scale, setScale] = useState(1);
@@ -118,6 +126,8 @@ function PreviewStage({
                     onBack={onBack}
                     onBackground={onBackground}
                     onReload={onReload}
+                    onShare={onShare}
+                    shareEnabled={shareEnabled}
                   />
                 ) : null}
                 {!launcher && !hostNavigation ? (
@@ -131,6 +141,11 @@ function PreviewStage({
                   >
                     ◎
                   </button>
+                ) : null}
+                {refreshing && !launcher ? (
+                  <div className="td-pull-refresh" role="status" aria-label="Refreshing">
+                    <span className="td-pull-refresh-spinner" />
+                  </div>
                 ) : null}
                 <div className="td-screen-content" style={{ top: contentTop, bottom: contentBottom }}>
                   <div className="td-screen-surface" ref={surfaceHostRef} />
@@ -153,6 +168,12 @@ function PreviewStage({
                   topOffset={hostChromeTop}
                   enabled={!launcher && status === 'running'}
                   onTap={onTabBarTap}
+                />
+                <HostShareSheet
+                  open={Boolean(shareSheetOpen && !launcher && status === 'running')}
+                  result={shareResult}
+                  onSelect={onShareSelect}
+                  onClose={onCloseShare}
                 />
                 <div className="td-screen-glare" />
                 {overlay ? (

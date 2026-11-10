@@ -3,7 +3,7 @@ import './HostControlsMenu.css';
 
 // WeChat-style capsule: dots open host controls, the right ring sends the app
 // to the background and returns to the app launcher.
-function HostControlsMenu({ enabled, onBackground, onReload }) {
+function HostControlsMenu({ enabled, onBackground, onReload, onShare, shareEnabled = true }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const controlsRef = useRef(null);
 
@@ -54,6 +54,11 @@ function HostControlsMenu({ enabled, onBackground, onReload }) {
           <button type="button" role="menuitem" disabled={!enabled} onClick={runMenuAction(onBackground)}>
             <span>App list</span>
           </button>
+          {onShare && shareEnabled ? (
+            <button type="button" role="menuitem" disabled={!enabled} onClick={runMenuAction(onShare)}>
+              <span>Share</span>
+            </button>
+          ) : null}
           <div className="td-nav-menu-sep" />
           <button type="button" role="menuitem" disabled={!enabled} onClick={runMenuAction(onReload)}>
             <span>Reload runtime</span>

@@ -1,10 +1,17 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": ["**/.env.*local"],
+  "globalDependencies": [
+    "**/.env.*local"
+  ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["lib/**", "dist/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "lib/**",
+        "dist/**"
+      ]
     },
     "dev": {
       "cache": false,
@@ -18,12 +25,28 @@
       "outputs": []
     },
     "@tiny/host-core-wasm#build": {
-      "dependsOn": ["^build"],
-      "outputs": ["pkg/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "pkg/**"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "../host-core/src/**",
+        "../host-core/Cargo.toml",
+        "../../Cargo.toml",
+        "../../Cargo.lock"
+      ]
     },
     "@tiny/host-web-components#build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", "src/generated/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**",
+        "src/generated/**"
+      ]
     }
   }
 }

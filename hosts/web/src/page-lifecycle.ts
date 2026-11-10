@@ -1,4 +1,7 @@
 import type { BridgeConnection } from '@tiny/bridge'
+import type { PageBehaviorConfig } from '@tiny/manifest'
+
+export type PageBehaviorSource = () => Partial<PageBehaviorConfig>
 
 /**
  * Translate the render document's real scroll position into mini-program page
@@ -6,13 +9,15 @@ import type { BridgeConnection } from '@tiny/bridge'
  * the page's WebView: `onPageScroll` and `onReachBottom` come from the same
  * scroll container the user manipulates.
  */
-export function installPageLifecycleBridge(connection: BridgeConnection): () => void {
+export function installPageLifecycleBridge(
+  connection: BridgeConnection,
+  getBehavior: PageBehaviorSource = () => ({}),
+): () => void {
   let frame = 0
   let lastScrollTop = -1
   let bottomLatched = false
   let pullStartY: number | undefined
   let pulledDown = false
-  const bottomThreshold = 24
   const pullThreshold = 50
 
   const readScroll = () => {
@@ -27,6 +32,7 @@ export function installPageLifecycleBridge(connection: BridgeConnection): () => 
 
   const flush = () => {
     frame = 0
+    const bottomThreshold = getBehavior().onReachBottomDistance ?? 50
     const state = readScroll()
     if (state.scrollTop === lastScrollTop) return
     lastScrollTop = state.scrollTop
@@ -61,6 +67,7 @@ export function installPageLifecycleBridge(connection: BridgeConnection): () => 
   const onTouchStart = (event: TouchEvent) => {
     pulledDown = false
     pullStartY = undefined
+    if (getBehavior().enablePullDownRefresh !== true) return
     if (readScroll().scrollTop > 0 || event.touches.length !== 1) return
     pullStartY = event.touches[0]!.clientY
   }

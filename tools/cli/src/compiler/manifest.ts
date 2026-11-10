@@ -134,7 +134,7 @@ async function createPageArtifact(
     && project.appConfig.subPackages.some((pkg) => pkg.root === entry.subpackage && pkg.independent)
   const globalComponents = entry.path === 'app' || independentPackage
     ? {}
-    : readUsingComponents(await readConfiguration(context, project.appConfig.path))
+    : readUsingComponents(project.appConfig.value)
   const localComponents = readUsingComponents(config)
   const effectiveComponents: Record<string, string> = { ...globalComponents, ...localComponents }
   // The runtime resolves component references against the owning page, so emit

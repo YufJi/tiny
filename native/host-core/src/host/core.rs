@@ -35,6 +35,7 @@ enum PendingCommand {
     Relaunch,
     SwitchTab,
     InspectTree { page_id: String },
+    Share,
 }
 
 #[derive(Debug, Clone)]
@@ -216,6 +217,30 @@ impl HostCore {
                     None,
                     actions,
                 );
+            }
+            HostCommand::Share { share_type, from } => {
+                let Some(page_id) = self.active_page.clone() else {
+                    self.diagnostic("warn", "share has no active page", None, actions);
+                    return;
+                };
+                let payload = json!({
+                    "type": share_type.unwrap_or_else(|| "appMessage".to_string()),
+                    "from": from.unwrap_or_else(|| "menu".to_string()),
+                });
+                match self.service.control(
+                    ProtocolDomain::Page,
+                    "share",
+                    payload,
+                    Some(page_id.clone()),
+                    now_ms,
+                ) {
+                    Ok(id) => {
+                        self.pending_commands.insert(id, PendingCommand::Share);
+                    }
+                    Err(error) => {
+                        self.diagnostic("error", &error.to_string(), Some(&page_id), actions);
+                    }
+                }
             }
             HostCommand::InspectTree { page_id } => {
                 let Some(page_id) = page_id.or_else(|| self.active_page.clone()) else {
@@ -426,7 +451,7 @@ impl HostCore {
                     }
                 }
             }
-            PendingCommand::InspectTree { .. } => {}
+            PendingCommand::InspectTree { .. } | PendingCommand::Share => {}
         }
         actions.push(HostAction::CommandResult {
             command: command_name,
@@ -525,6 +550,14 @@ impl HostCore {
             let _ =
                 self.service
                     .reply(&request, Some(json!({ "status": "stopped" })), None, now_ms);
+            actions.push(HostAction::Diagnostic {
+                level: "log".to_string(),
+                payload: json!({
+                    "code": "PULL_DOWN_REFRESH_STOPPED",
+                    "message": "pull-down refresh stopped",
+                    "pageId": request.page_id,
+                }),
+            });
             return;
         }
 
@@ -1383,6 +1416,7 @@ fn command_name(command: &PendingCommand) -> &'static str {
         PendingCommand::Relaunch => "reLaunch",
         PendingCommand::SwitchTab => "switchTab",
         PendingCommand::InspectTree { .. } => "inspectTree",
+        PendingCommand::Share => "share",
     }
 }
 

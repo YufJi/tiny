@@ -35,6 +35,51 @@ const EMPTY_RUNTIME_STATE = {
   error: '',
 };
 
+const STACK_KEY_PREFIX = 'tiny.devtool.stack.'
+
+function readSavedStack(appId) {
+  try {
+    const value = window.sessionStorage.getItem(`${STACK_KEY_PREFIX}${appId}`)
+    const parsed = value ? JSON.parse(value) : null
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .map((entry) => (typeof entry === 'string'
+        ? { path: entry, query: {} }
+        : entry && typeof entry === 'object' && typeof entry.path === 'string'
+          ? { path: entry.path, query: entry.query && typeof entry.query === 'object' ? entry.query : {} }
+          : null))
+      .filter(Boolean)
+  } catch {
+    return []
+  }
+}
+
+function writeSavedStack(appId, entries) {
+  try {
+    window.sessionStorage.setItem(`${STACK_KEY_PREFIX}${appId}`, JSON.stringify(entries))
+  } catch {
+    // sessionStorage can be unavailable in privacy modes; the debugger should
+    // still run without page-stack restore.
+  }
+}
+
+function clearSavedStack(appId) {
+  try {
+    window.sessionStorage.removeItem(`${STACK_KEY_PREFIX}${appId}`)
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+function applyNavigationOverride(navigation, override) {
+  if (!override) return navigation;
+  return {
+    ...navigation,
+    ...override,
+    custom: navigation.custom,
+  };
+}
+
 function positiveInteger(value, fallback) {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
@@ -58,6 +103,8 @@ class RuntimePanel extends PureComponent {
       registryError: '',
       launcherError: '',
       actionError: '',
+      shareSheetOpen: false,
+      shareResult: null,
       activeAppId: '',
       launchingAppId: '',
       sessions: [],
@@ -101,7 +148,12 @@ class RuntimePanel extends PureComponent {
           return;
         }
         const path = params.get('path') || undefined;
-        await this.openApp(requestedApp.id, { initialPath: path, updateUrl: false });
+        const restore = params.get('restore') === '1';
+        await this.openApp(requestedApp.id, {
+          initialPath: path,
+          updateUrl: false,
+          restore: restore && !path,
+        });
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -150,6 +202,28 @@ class RuntimePanel extends PureComponent {
     };
   }
 
+  openShareSheet = () => {
+    this.setState({ shareSheetOpen: true, shareResult: null });
+  };
+
+  closeShareSheet = () => {
+    this.setState({ shareSheetOpen: false, shareResult: null });
+  };
+
+  shareActivePage = async (type) => {
+    const session = this.activeSession;
+    if (!session) return;
+    try {
+      const result = await session.client.share(type);
+      this.setState({ shareResult: result ?? { handled: false } });
+    } catch (error) {
+      this.setState({
+        actionError: error instanceof Error ? error.message : String(error),
+        shareSheetOpen: false,
+      });
+    }
+  };
+
   run(action) {
     Promise.resolve()
       .then(action)
@@ -175,6 +249,24 @@ class RuntimePanel extends PureComponent {
 
   onSessionState(session, state) {
     session.state = state;
+    if (state.status === 'running' && state.pageStack.length > 0) {
+      const pageById = new Map(state.pages.map((page) => [page.pageId, page]))
+      const entries = state.pageStack
+        .map((pageId) => pageById.get(pageId))
+        .filter(Boolean)
+        .map((page) => ({ path: page.path, query: page.query ?? {} }))
+      if (entries.length > 0) writeSavedStack(session.appId, entries)
+    }
+    const previousPage = session.lastCurrentPage;
+    const previousDepth = session.lastPageDepth ?? 0;
+    if (state.currentPage && state.currentPage !== previousPage && previousPage) {
+      const transition = state.pageStack.length > previousDepth
+        ? 'forward'
+        : state.pageStack.length < previousDepth ? 'back' : 'replace';
+      if (session.surface) session.surface.dataset.transition = transition;
+    }
+    session.lastCurrentPage = state.currentPage;
+    session.lastPageDepth = state.pageStack.length;
     if (this.activeAppId === session.appId) {
       this.props.setRuntimeState(state);
     }
@@ -325,7 +417,9 @@ class RuntimePanel extends PureComponent {
       session.unsubscribe = client.subscribe((state) => this.onSessionState(session, state));
       this.sessions.set(app.id, session);
       this.syncSessionList();
+      const savedStack = options.restore ? readSavedStack(app.id) : [];
       await client.launch();
+      if (options.restore) await this.restorePageStack(session, manifest, initialPath, savedStack);
       await this.activateSession(session);
       if (options.updateUrl !== false) this.updateUrl(session);
       this.setState({ launchingAppId: '' });
@@ -410,8 +504,22 @@ class RuntimePanel extends PureComponent {
     await this.backgroundActive({ toLauncher: true });
   }
 
+  async restorePageStack(session, manifest, initialPath, saved) {
+    if (saved.length < 2 || saved[0].path !== initialPath) return;
+    for (const entry of saved.slice(1)) {
+      if (!manifest.pages.some((page) => page.path === entry.path)) break;
+      const query = new URLSearchParams(entry.query ?? {}).toString();
+      try {
+        await session.client.navigate(`/${entry.path}${query ? `?${query}` : ''}`);
+      } catch {
+        break;
+      }
+    }
+  }
+
   async closeSession(session) {
     if (!this.sessions.has(session.appId)) return;
+    clearSavedStack(session.appId);
     this.sessions.delete(session.appId);
     session.unsubscribe?.();
     if (this.activeAppId === session.appId) {
@@ -486,6 +594,7 @@ class RuntimePanel extends PureComponent {
   updateUrl(session) {
     const url = new URL(window.location.href);
     url.searchParams.set('app', session.appId);
+    url.searchParams.set('restore', '1');
     const firstPage = session.manifest.pages[0]?.path;
     if (session.initialPath && session.initialPath !== firstPage) {
       url.searchParams.set('path', session.initialPath);
@@ -499,6 +608,7 @@ class RuntimePanel extends PureComponent {
     const url = new URL(window.location.href);
     url.searchParams.delete('app');
     url.searchParams.delete('path');
+    url.searchParams.delete('restore');
     window.history.replaceState(null, '', url);
   }
 
@@ -512,6 +622,9 @@ class RuntimePanel extends PureComponent {
       diagnostics,
       tree,
       tabBar,
+      navigation: navigationOverride,
+      refreshing,
+      shareMenuVisible,
       error: runtimeError,
     } = this.props.runtime;
     const {
@@ -533,10 +646,13 @@ class RuntimePanel extends PureComponent {
     const selectedApp = session?.app ?? null;
     const launcher = !activeAppId;
     const navigation = session
-      ? resolveNavigationConfig(
-          session.manifest,
-          currentPage || session.initialPath,
-          selectedApp?.title || '',
+      ? applyNavigationOverride(
+          resolveNavigationConfig(
+            session.manifest,
+            currentPage || session.initialPath,
+            selectedApp?.title || '',
+          ),
+          navigationOverride,
         )
       : {
           title: 'Test apps',
@@ -574,6 +690,13 @@ class RuntimePanel extends PureComponent {
           onTabBarTap={(index) => this.tapTab(index)}
           onBackground={() => this.run(() => this.backgroundToLauncher())}
           onReload={() => this.reloadActiveApp()}
+          onShare={this.openShareSheet}
+          shareEnabled={shareMenuVisible !== false}
+          shareSheetOpen={this.state.shareSheetOpen}
+          shareResult={this.state.shareResult}
+          onShareSelect={this.shareActivePage}
+          onCloseShare={this.closeShareSheet}
+          refreshing={Boolean(refreshing)}
         />
 
         <aside className="td-side">

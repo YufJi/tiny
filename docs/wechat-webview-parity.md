@@ -1,8 +1,8 @@
 # 微信 WebView 版功能对齐度分析
 
-> **快照**：2026-11-10（第三十四次同步） · **基准**：微信小程序 WebView 渲染版 2.33.0（不含 Skyline / XR-FRAME / 扩展组件库）
+> **快照**：2026-11-10（第四十二次同步） · **基准**：微信小程序 WebView 渲染版 2.33.0（不含 Skyline / XR-FRAME / 扩展组件库）
 >
-> **结论**：加权功能对齐约 **56.3%（55–57%）**；页面启动率 96.8%（121/125）；生产可替换 < 20%
+> **结论**：加权功能对齐约 **58.3%（57–59%）**；页面启动率 96.8%（121/125）；生产可替换 < 20%
 >
 > **维护**：功能完成后更新本文的评分表、覆盖表、实测数据和变更记录
 
@@ -10,8 +10,8 @@
 
 ## 1. 结论摘要
 
-- 按微信 WebView 版全量能力计算，当前引擎约完成 **一半略多**：加权得分 **56.30%**。
-- 能力结构仍然偏科：**编译/渲染约 99%，框架约 99%，内置组件约 65%，平台 API 约 14%，页面形态约 28%**。
+- 按微信 WebView 版全量能力计算，当前引擎约完成 **一半略多**：加权得分 **58.34%**。
+- 能力结构仍然偏科：**编译/渲染约 99%，框架约 99%，内置组件约 65%，平台 API 约 14%，页面形态约 45%**。
 - 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent`、`generics`（含页面级 `generic:x`）、`definitionFilter`、`pureDataPattern` 均已落地，Component-as-page 也接入了同一套核心语义；6 个 `wx://` behavior 在 service 侧是占位 marker（与 2.33.0 一致），可观察语义放在渲染侧或框架里。剩余缺口主要是 trait/chaining API、app.json 运行时字段和 11 个宿主导向 behavior。
 - 内置组件已完成宿主迁移、P0 视觉重写和 P1 内部结构收口：2.33.0 目标的 **39 个标签全部落地**（含 grid-view；20 个平台/开放能力组件按基线不做），采用 Flat DOM + scoped CSS 隔离公开宿主与私有内部实现；checkbox/radio/switch/slider/icon/image/picker/picker-view 已按 2.33.0 参考实现重写；input/textarea/button/form 完成 wrapper/分支/语义补强，scroll-view 接受 native 滚动近似；video/audio/web-view 是浏览器近似实现。
 - 仓库内置的微信官方 demo 子集（2023-02 基线，125 页）中，**121 页能启动（96.8%）**，116 页有可见文本；剩余 4 个失败页全部缺平台 API（音频/广告/后台预取），不再是编译或运行时语义问题；启动率仍是“能挂载”，不是“功能对齐”。
@@ -75,12 +75,12 @@
 | 框架运行时 | 18% | 99% | 17.82 | 14/14 页面生命周期、7/7 应用生命周期、5/5 路由；两次求值的渲染树、元素 locator 寻址、页面级 `generic:x`、6 个 `wx://` behavior 占位对齐；`this.animate`/`clearAnimate`、`wx.createIntersectionObserver`、事件合成层与 `target/currentTarget` 几何落地；`pageLifetimes.resize` 与页面 `onResize` 同步下发；分包按需加载（启动/导航前 ensure + 组件定义增量刷新）与 `preloadRule` 预取（`wifi` 需宿主网络事实）；tab 页缓存、group/label/touchtrack/scroller 基础保持；`componentPlaceholder` + glass-easel 占位替换完成异步组件 chunk（主包页面先渲染占位，分包到达后自动替换）；独立分包入口跳过主包 App 且不加载主包 `app.wxss`；trait/chaining API 仍未接 |
 | 内置组件 | 17% | 65% | 11.05 | 39/60 标签（2.33.0 目标的 39 个标签全部落地，20 个平台/开放能力组件按基线不做）；P0 视觉完成，P1 内部结构大幅收口；事件合成层与 scroll-view 横向/enable-flex 修复落地；`navigator` 走 host action；canvas 2D/WebGL 已接；已统计属性 120/146、事件 44/46 |
 | wx API | 20% | 14.5% | 2.91 | 73/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar/switchTab/redirectTo/reLaunch/下拉刷新/IntersectionObserver（含 `wx.createIntersectionObserver`）等已接或桩 |
-| 页面形态 | 12% | 28% | 3.36 | devtool 宿主已实现导航栏/tabBar/页面滚动/触底/tab 页缓存，浏览器宿主已接下拉刷新手势；iOS 宿主补上原生导航栏/tabBar 和页面 chrome；分享菜单 UI、页面转场、自定义 tabBar 仍缺 |
+| 页面形态 | 12% | 45% | 5.40 | devtool 宿主已实现导航栏/tabBar/页面滚动/触底/tab 页缓存，导航栏运行时标题/颜色/loading 已接，分享菜单会调用页面回调，navigateTo/navigateBack 有 forward/back 转场，下拉刷新指示器受 `enablePullDownRefresh` 控制、`stopPullDownRefresh` 立即收起；devtool 刷新后按路径 + query 重建页面栈（不恢复页面 data）；`tabBar.custom` 通过页面模板注入 `custom-tab-bar` 并支持 `getTabBar()`；分享菜单可见性受 `showShareMenu`/`hideShareMenu` 控制；iOS 宿主补上原生导航栏/tabBar 和页面 chrome |
 | 样式/渲染 | 8% | 76% | 6.08 | WXSS/rpx/作用域强；app.wxss tag/class 规则作用到页面与共享组件；canvas 2D/WebGL/RAF 已接，导出 API 仍缺 |
 | 宿主/平台 | 8% | 18% | 1.44 | 浏览器 + iOS 原生宿主（JavaScriptCore service + WKWebView render）；仍无原生网络/登录/支付/分享 |
 | 开发工具 | 4% | 47% | 1.88 | Vite 构建、应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar、移动端访问提示；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 62% | 1.86 | 496 单测 + 68 步浏览器验收 + 125 页探针（121 启动 / 116 可见文本）+ iOS 7 fixture 模拟器 smoke + 真机签名构建/安装；新增 npm 构建、project.config/app.json 校验、TS 诊断、路径式注册回归；仍无性能/安全测试 |
-| **合计** | **100%** | — | **56.30%** | |
+| 质量/验证 | 3% | 62% | 1.86 | 497 单测 + 74 步浏览器验收 + 125 页探针（121 启动 / 116 可见文本）+ iOS 7 fixture 模拟器 smoke + 真机签名构建/安装；新增 npm 构建、project.config/app.json 校验、TS 诊断、路径式注册回归；仍无性能/安全测试 |
+| **合计** | **100%** | — | **58.34%** | |
 
 ### 条目覆盖率速览
 
@@ -317,12 +317,13 @@ Shadow DOM：
 
 | 能力 | 状态 |
 | --- | --- |
-| 导航栏（标题/返回/背景色/`navigationStyle: custom`） | ✅ devtool 宿主实现 |
-| tabBar（内置、`switchTab`、badge/red-dot、show/hide） | ✅ devtool 宿主实现；自定义 tabBar ❌ |
-| 下拉刷新 | ✅ 浏览器宿主下拉手势 + `wx.startPullDownRefresh`；无原生回弹指示器 |
+| 导航栏（标题/返回/背景色/`navigationStyle: custom`） | ✅ devtool 宿主实现；`wx.setNavigationBarTitle` / `setNavigationBarColor` / `show|hideNavigationBarLoading` 已接 |
+| tabBar（内置、`switchTab`、badge/red-dot、show/hide） | ✅ 内置 tabBar 由 devtool 宿主实现；`custom: true` 时编译期把 `custom-tab-bar/index` 注入 tab 页模板，页面内渲染并通过 `getTabBar()` 选择（每页一个实例，非宿主级单例） |
+| 下拉刷新 | ✅ `enablePullDownRefresh` 才启用下拉手势，`onReachBottomDistance` 控制触底距离（默认 50）；`wx.startPullDownRefresh` 显示指示器，`wx.stopPullDownRefresh` 立即收起 |
 | 触底、页面滚动事件 | ✅ devtool 页面帧驱动 |
-| 分享菜单/转发/朋友圈 | ⚠️ 页面回调与宿主通道已接；浏览器/调试器宿主没有分享菜单 UI |
-| 页面转场动画 | ❌ |
+| 分享菜单/转发/朋友圈 | ✅ `wx.showShareMenu` / `hideShareMenu` 控制 devtool Share 菜单项；分享面板可触发 `onShareAppMessage` / `onShareTimeline` / `onAddToFavorites`；页面无回调时显示未处理 |
+| 页面转场动画 | ✅ devtool 页面帧 forward/back/replace 淡入（navigateTo / navigateBack / tab 切换） |
+| 页面栈恢复 | ⚠️ devtool 刷新后按路径 + query 重建页面栈；页面 data / `saveExitState` 不恢复 |
 | 原生组件（video/map/camera/live-player 等） | ❌ |
 | 浏览器宿主 | ✅ |
 | 原生/JSCore 宿主 | ❌ |
@@ -338,9 +339,9 @@ Shadow DOM：
 2026-11-10 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
-- **496 个单元测试**（runtime、host-web-components、template-compiler、stylesheet-compiler、cli、wxs-runtime、bridge、api、manifest、css-units）
+- **497 个单元测试**（runtime、host-web-components、template-compiler、stylesheet-compiler、cli、wxs-runtime、bridge、api、manifest、css-units）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
-- **68 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent、真实滚动触发的 onPageScroll，WeChat demo 覆盖 swiper autoplay 开关、radio 点击与 WeUI 勾选结构、navigator 点击跳转、WXS 拖拽，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧，canvas 覆盖 2D/WebGL/legacy/ECharts
+- **74 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent、真实滚动触发的 onPageScroll，WeChat demo 覆盖 swiper autoplay 开关、radio 点击与 WeUI 勾选结构、navigator 点击跳转、WXS 拖拽，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧，canvas 覆盖 2D/WebGL/legacy/ECharts
 - 门禁覆盖的 5 段流程无 console/page error（125 页探针的 pageerror 见 5.2）
 
 这说明现有能力是**真实可运行**的，不是纸面设计。
@@ -627,6 +628,14 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-11-10 | 第三十一次同步：逻辑树接入 glass-easel 原生 `placeholders`（页面/组件两级），缺少定义时输出占位组件边界；实测晚注册仍未触发自动替换，异步 chunk 继续挂起。495 单测；分数不变 | **56.30%** |
 | 2026-11-10 | 第三十二次同步：异步组件 chunk 打通——未注册组件的 using 目标改为绝对路径（glass-easel 按 owner 相对解析曾导致 waiting key 不匹配），逻辑树 placeholders + 晚注册自动替换；编译器把带 `componentPlaceholder` 的跨包组件留在分包并记录 `asyncSubPackages`，页面挂载后异步加载并自动替换；mini 验收新增“占位→真实组件”步骤。495 单测 / 68 步；分数不变（仍缺 trait/chaining、增量构建） | **56.30%** |
 | 2026-11-10 | 第三十三次同步：边界修正——service entries 用 esbuild `splitting` 共享 `chunks/`，跨包模块单实例；iOS 改用 eager `service.all.js`（JSCore 无 ESM loader）；独立分包页面跳主包 `app.wxss`，验收增加 computed style 断言。495 单测 / 68 步；分数不变 | **56.30%** |
+| 2026-11-10 | 第四十二次同步：页面栈恢复补 query——runtime state 的 page 详情携带 query，devtool 保存 `{path,query}` 并在刷新后按完整路由重建；验收断言 `?from=restore` 恢复。497 单测 / 74 步；页面形态 44→45，总分 58.22→58.34 | **58.34%** |
+| 2026-11-10 | 第四十一次同步：分享菜单可见性——`wx.showShareMenu`/`hideShareMenu` 经 host API 同步 chrome 菜单项，`updateShareMenu` 继续透传；新增 devtools 验收。497 单测 / 74 步；分数不变 | **58.22%** |
+| 2026-11-10 | 第四十次同步：自定义 tabBar——`tabBar.custom` 发现 `custom-tab-bar/index`，注入 tab 页模板并注册为页面组件；`this.getTabBar()` 返回页面内实例；`wx.switchTab` 切换；新增 custom-tab fixture 和 devtools 验收。497 单测 / 73 步；页面形态 40→44，总分 57.74→58.22 | **58.22%** |
+| 2026-11-10 | 第三十九次同步：devtool 页面栈恢复——按 app 保存 pageStack 路径到 sessionStorage，带 `restore=1` 的刷新在 launch 时重建栈（最多到 maxPageStack），关闭应用清理；验收覆盖刷新后回到 add-todo 且栈长度 2。497 单测 / 72 步；页面形态 38→40，总分 57.50→57.74 | **57.74%** |
+| 2026-11-10 | 第三十八次同步：页面形态配置下沉到宿主——`pageBehaviorOf(manifest,pagePath)` 解析 `enablePullDownRefresh`/`onReachBottomDistance`，通过 render iframe URL 传入，service/kernel 不再读取页面形态配置；下拉手势按配置启用，触底距离默认 50，`stopPullDownRefresh` 发 host diagnostic 立即收起指示器；转场改 opacity 避免 iframe 坐标错位。497 单测 / 71 步；页面形态 36→38，总分 57.26→57.50 | **57.50%** |
+| 2026-11-10 | 第三十七次同步：devtool 页面转场——按 page stack 深度区分 navigateTo/navigateBack/replace，给每页 iframe 加 push/pop/fade 动画，验收断言 `data-transition=forward|back`。497 单测 / 70 步；页面形态 34→36，总分 57.02→57.26 | **57.26%** |
+| 2026-11-10 | 第三十六次同步：devtool 分享面板——HostCore `share` 命令触发 `page.share`，页面 `onShareAppMessage`/`onShareTimeline`/`onAddToFavorites` 在 service 执行；chrome 菜单打开分享面板并展示回调结果；补 Rust command、host-web 命令等待和 devtool 验收。497 单测 / 70 步；页面形态 30→34，总分 56.54→57.02 | **57.02%** |
+| 2026-11-10 | 第三十五次同步：导航栏运行时形态——`wx.setNavigationBarTitle`/`setNavigationBarColor`/`showNavigationBarLoading`/`hideNavigationBarLoading` 经 host API 更新 devtool 导航栏（按页面保存覆盖，返回时恢复）；新增 devtool 验收步骤。497 单测 / 69 步；页面形态 28→30，总分 56.30→56.54 | **56.54%** |
 | 2026-11-10 | 第三十四次同步：修复渲染侧组件定义携带 `dataset`/`id` 等元素保留属性导致 glass `replaceDataOnPath` 崩溃（Vant button 页空白）；496 单测；分数不变 | **56.30%** |
 
 ---

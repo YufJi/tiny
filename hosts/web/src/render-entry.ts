@@ -2,10 +2,13 @@ import { bootTreeThread } from '@tiny/runtime'
 import { connectHostBridge, installHostBridge } from '@tiny/bridge'
 import { installOffscreenCanvasResponder } from './canvas-bridge'
 import { installPageLifecycleBridge } from './page-lifecycle'
+import type { PageBehaviorConfig } from '@tiny/manifest'
 import { listenForRuntimePort } from './runtime-port'
 import { createGlassRenderEntry, type GlassRenderEntryOptions } from './render/entry'
 
 export type RenderEntryOptions = GlassRenderEntryOptions & {
+  /** Page-shell gesture config supplied by the host (WebView or iframe query). */
+  pageBehavior?: Partial<PageBehaviorConfig>
   /**
    * Extra setup to run after the built-in styles are installed and before the
    * thread announces readiness (fonts or host-owned DOM setup).
@@ -34,6 +37,13 @@ export function bootRenderEntry(options: RenderEntryOptions = {}): void {
   const entry = createGlassRenderEntry(options)
   entry.prepare()
   options.prepare?.()
+  const search = typeof location === 'undefined' ? undefined : new URLSearchParams(location.search)
+  const pageBehavior: Partial<PageBehaviorConfig> = {
+    enablePullDownRefresh: options.pageBehavior?.enablePullDownRefresh
+      ?? search?.get('enablePullDownRefresh') === '1',
+    onReachBottomDistance: options.pageBehavior?.onReachBottomDistance
+      ?? Number(search?.get('onReachBottomDistance') ?? 50),
+  }
   listenForRuntimePort('render', (transport) => {
     installHostBridge(transport)
     const connection = connectHostBridge({
@@ -51,6 +61,6 @@ export function bootRenderEntry(options: RenderEntryOptions = {}): void {
     // Drop the previous listeners first, otherwise every scroll or pull-down
     // gesture would be reported once per boot.
     disposePageLifecycle?.()
-    disposePageLifecycle = installPageLifecycleBridge(runtime.connection)
+    disposePageLifecycle = installPageLifecycleBridge(runtime.connection, () => pageBehavior)
   })
 }
