@@ -96,4 +96,9 @@ bootServiceEntry({
   loadArtifacts: async () => {
     await importGenerated(`${generatedBase}/service.js`)
   },
+  loadSubPackage: async (root) => {
+    const pkg = manifest.subPackages?.find((item) => item.root === root)
+    if (!pkg?.service) return
+    await importGenerated(`${generatedBase}/${pkg.service}`)
+  },
 })

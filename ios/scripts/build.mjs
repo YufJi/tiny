@@ -142,7 +142,11 @@ async function buildApp(appDef) {
     ?? ''
 
   const templatesSource = await fsp.readFile(path.join(compiledDir, 'templates.js'), 'utf8')
-  const serviceSource = await fsp.readFile(path.join(compiledDir, 'service.js'), 'utf8')
+  // JSCore has no native ESM loader. Use the compiler's eager bundle so shared
+  // modules keep one instance; subpackages are already evaluated at boot.
+  const serviceEntry = manifest.entries.serviceBundle ?? manifest.entries.service
+  const serviceSource = await fsp.readFile(path.join(compiledDir, serviceEntry), 'utf8')
+  const subPackageSources = {}
   const styles = await readStyles(manifest, compiledDir)
 
   const appOutputDir = path.join(appsDir, appDef.id)
@@ -154,6 +158,7 @@ async function buildApp(appDef) {
     manifest,
     templatesSource,
     serviceSource,
+    subPackageSources,
     styles,
     assetsBase: `tinyapp://app/apps/${appDef.id}/assets/`,
   }

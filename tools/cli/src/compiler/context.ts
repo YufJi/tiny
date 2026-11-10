@@ -25,7 +25,9 @@ export type CompilerExtensions = {
  * problems from a single run.
  */
 export type CompilerContext = {
-  options: Required<Omit<CompileOptions, 'compatibility'>>
+  options: Required<Omit<CompileOptions, 'compatibility' | 'typecheck'>> & {
+    typecheck?: boolean
+  }
   compatibility: ResolvedCompatibilityConfig
   extensions: CompilerExtensions
   /** Mini-program root; `sourceDir` until `project.config.json` narrows it. */
@@ -37,6 +39,21 @@ export type CompilerContext = {
   assets: AssetArtifact[]
   /** Tags referenced through `usingComponents`, collected while resolving entries. */
   customComponentTags: Set<string>
+  /**
+   * Absolute staged file -> mini-program-relative virtual path. The npm build
+   * mirrors packages under the output directory, but every artifact key and
+   * diagnostic path must keep using the app-relative `miniprogram_npm/...`
+   * path, so path computation consults this map first.
+   */
+  virtualPaths: Map<string, string>
+  /** Synthetic app stylesheet carrying `theme.json` variables. */
+  themeStyle?: StyleArtifact
+  /** Temporary npm mirror; removed after the artifact stages finish. */
+  npmStagingRoot?: string
+  /** Parsed `project.config.json` (root resolution happens before this fills). */
+  projectConfig?: Record<string, unknown>
+  /** `packOptions.ignore` predicate, relative to the mini-program root. */
+  isPathIgnored?: (relativePath: string) => boolean
 }
 
 export function createCompilerContext(options: CompileOptions): CompilerContext {
@@ -51,6 +68,7 @@ export function createCompilerContext(options: CompileOptions): CompilerContext 
       dev: options.dev ?? false,
       sourceDir,
       outputDir: path.resolve(options.outputDir),
+      ...(options.typecheck !== undefined ? { typecheck: options.typecheck } : {}),
     },
     compatibility,
     extensions: {
@@ -67,11 +85,14 @@ export function createCompilerContext(options: CompileOptions): CompilerContext 
     styles: new Map(),
     assets: [],
     customComponentTags: new Set(),
+    virtualPaths: new Map(),
   }
 }
 
 /** Mini-program-relative path used as the key for every artifact map. */
 export function relativePath(context: CompilerContext, filePath: string): string {
+  const virtual = context.virtualPaths.get(path.resolve(filePath))
+  if (virtual) return virtual
   return normalizeRelativePath(path.relative(context.root, filePath))
 }
 

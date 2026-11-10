@@ -55,7 +55,7 @@ export type NormalizedComponentDefinition = {
   data: Record<string, unknown>
   methods: Map<string, Function>
   lifetimeHandlers: Record<ComponentLifecycleName, Function[]>
-  pageLifetimeHandlers: { show: Function[]; hide: Function[] }
+  pageLifetimeHandlers: { show: Function[]; hide: Function[]; resize: Function[] }
   observers: NormalizedObserver[]
   relations: NormalizedRelation[]
   externalClasses: string[]
@@ -113,7 +113,7 @@ type Collector = {
   data: Record<string, unknown>
   methods: Map<string, Function>
   lifetimeHandlers: Record<ComponentLifecycleName, Function[]>
-  pageLifetimeHandlers: { show: Function[]; hide: Function[] }
+  pageLifetimeHandlers: { show: Function[]; hide: Function[]; resize: Function[] }
   observers: NormalizedObserver[]
   relations: Map<string, NormalizedRelation>
   externalClasses: string[]
@@ -249,7 +249,7 @@ function createCollector(): Collector {
       moved: [],
       detached: [],
     },
-    pageLifetimeHandlers: { show: [], hide: [] },
+    pageLifetimeHandlers: { show: [], hide: [], resize: [] },
     observers: [],
     relations: new Map(),
     externalClasses: [],
@@ -338,6 +338,8 @@ function mergeSource(
     if (typeof show === 'function') collector.pageLifetimeHandlers.show.push(show)
     const hide = pageLifetimes.hide
     if (typeof hide === 'function') collector.pageLifetimeHandlers.hide.push(hide)
+    const resize = pageLifetimes.resize
+    if (typeof resize === 'function') collector.pageLifetimeHandlers.resize.push(resize)
   }
 
   const observers = normalizeObservers(source.observers)

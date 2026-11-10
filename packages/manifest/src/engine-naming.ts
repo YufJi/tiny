@@ -53,5 +53,13 @@ export const TINY_ENGINE_NAMING = Object.freeze({
   /** WXS bindinput is not supported on these built-ins. */
   wxsServiceOnlyInputEvent: 'input',
   wxsServiceOnlyInputTags: ['input', 'textarea'],
+  /**
+   * The compiler writes the declared page/component path into one of these
+   * globals before the script body runs. `Page()` / `Component()` consume and
+   * clear it, so registration no longer depends on evaluation order (needed by
+   * lazy subpackage/component chunks).
+   */
+  pageRegistrationHint: '__tinyPagePath',
+  componentRegistrationHint: '__tinyComponentPath',
 
 } as const)

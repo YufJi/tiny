@@ -235,8 +235,8 @@ export class LogicTreeAdapter {
   }
 
   /** Deliver a page lifetime to the page's service-side components. */
-  triggerPageLifetime(pageId: string, phase: 'show' | 'hide'): void {
-    this.glass.triggerPageLifetime(pageId, phase)
+  triggerPageLifetime(pageId: string, phase: 'show' | 'hide' | 'resize', event?: unknown): void {
+    this.glass.triggerPageLifetime(pageId, phase, event)
   }
 
   applyPageData(pageId: string, patch: Record<string, unknown>): void {

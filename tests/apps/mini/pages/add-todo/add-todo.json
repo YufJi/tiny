@@ -1,5 +1,8 @@
 {
-    "usingComponents": {
-        
-    }
+  "usingComponents": {
+    "lazy-badge": "/packageA/components/lazy-badge/lazy-badge"
+  },
+  "componentPlaceholder": {
+    "lazy-badge": "view"
+  }
 }

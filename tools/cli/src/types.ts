@@ -7,6 +7,11 @@ export type CompileOptions = {
   clean?: boolean
   dev?: boolean
   /**
+   * Run TypeScript semantic checks. Omitted means "check when the project has
+   * a tsconfig.json"; `false` opts out entirely.
+   */
+  typecheck?: boolean
+  /**
    * Mini-program source conventions. Omitted fields use WeChat defaults.
    * Explicit values override `tiny.config.json`.
    */

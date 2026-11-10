@@ -4,12 +4,21 @@
     "pages/add-todo/add-todo",
     "pages/bar/index"
   ],
-  "subPackages": [{
-    "root": "packageA",
-    "pages": [
-      "pages/c/c"
-    ]
-  }],
+  "subPackages": [
+    {
+      "root": "packageA",
+      "pages": [
+        "pages/c/c"
+      ]
+    },
+    {
+      "root": "independent",
+      "pages": [
+        "pages/standalone/standalone"
+      ],
+      "independent": true
+    }
+  ],
   "window": {
     "navigationBarTitleText": "自测小程序"
   },
@@ -36,5 +45,13 @@
   "usingComponents": {
     "add-button": "./components/add-button/add-button"
   },
-  "sitemapLocation": "sitemap.json"
+  "sitemapLocation": "sitemap.json",
+  "preloadRule": {
+    "pages/todos/todos": {
+      "network": "all",
+      "packages": [
+        "packageA"
+      ]
+    }
+  }
 }

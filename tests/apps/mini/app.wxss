@@ -4,3 +4,7 @@ page {
   background: #323239;
   font-family: "pingFang SC" "pingFang";
 }
+
+.app-global {
+  color: rgb(1, 2, 3);
+}

@@ -1,0 +1,1 @@
+<view id="standalone" class="standalone app-global">independent {{app}}</view>

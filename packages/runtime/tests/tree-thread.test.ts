@@ -71,6 +71,60 @@ describe('tree thread', () => {
     })
   })
 
+  test('replaces an undefined component with its componentPlaceholder', async () => {
+    const [hostTransport, renderTransport] = createInMemoryTransportPair()
+    const mounted: RenderNode[] = []
+    bootTreeThread({
+      connection: createRenderConnection(renderTransport),
+      renderer: {
+        mount: (root) => mounted.push(root),
+        applyPatches: () => {},
+      },
+    })
+    const host = new BridgeConnection({
+      localRole: 'host',
+      peerRole: 'render',
+      transport: hostTransport,
+      respondToHello: false,
+    })
+    await host.handshake()
+    host.sendEvent('tree', 'flow', {
+      pageId: 'page-1',
+      pagePath: 'pages/index/index',
+      styles: [],
+      placeholders: { 'components/card/card': 'view' },
+      messages: [
+        {
+          type: 'tree',
+          root: {
+            type: 'element',
+            id: 'page',
+            tag: 'page',
+            children: [{
+              type: 'element',
+              tag: 'card',
+              component: true,
+              componentPath: 'components/card/card',
+              props: { label: 'loading' },
+              children: [{ type: 'text', text: 'placeholder' }],
+            }],
+          },
+        },
+        { type: 'ready' },
+      ],
+    }, { pageId: 'page-1' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(mounted).toHaveLength(1)
+    const placeholder = (mounted[0] as { children: Array<Record<string, unknown>> }).children[0]!
+    expect(placeholder).toMatchObject({
+      tag: 'view',
+      props: { label: 'loading' },
+      children: [{ type: 'text', text: 'placeholder' }],
+    })
+    expect(placeholder.component).toBeUndefined()
+    expect(placeholder.componentPath).toBeUndefined()
+  })
+
   test('receives snapshots/patches and sends render events', async () => {
     const [hostTransport, renderTransport] = createInMemoryTransportPair()
     const mounted: RenderNode[] = []

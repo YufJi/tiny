@@ -22,6 +22,7 @@ import {
   type WxsRenderEffect,
   type WxsBindingMessage,
 } from '../protocol'
+import { applyComponentPlaceholders } from '../placeholders'
 
 export type TreeEventPayload = {
   id: string
@@ -295,6 +296,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       componentData?: Record<string, Record<string, unknown>>
       pageScope?: string
       pageUsing?: Record<string, string>
+      placeholders?: Record<string, string>
       behaviorScheme?: string
       ack?: string[]
     }
@@ -322,7 +324,11 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
           if (Object.keys(definitions).length > 0) {
             options.renderer.setComponentDefinitions?.(definitions)
           }
-          options.renderer.mount(tree)
+          options.renderer.mount(applyComponentPlaceholders(
+            tree,
+            payload.placeholders,
+            (path) => Boolean(definitions[path]),
+          ))
           tree = undefined
         }
       }

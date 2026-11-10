@@ -18,6 +18,8 @@ export type TinyIOSApp = {
   manifest: RuntimeManifest
   templatesSource: string
   serviceSource: string
+  /** Compiler-emitted service chunks keyed by subpackage root. */
+  subPackageSources?: Record<string, string>
   styles: Record<string, string>
   assetsBase: string
   launchOptions?: unknown
@@ -164,6 +166,7 @@ export function startTinyService(app: TinyIOSApp): void {
 
   let templates: TemplateRegistry | undefined
   let serviceEvaluated = false
+  const evaluatedSubPackages = new Set<string>()
 
   const loadTemplates = (): TemplateRegistry => {
     if (templates) return templates
@@ -276,6 +279,13 @@ export function startTinyService(app: TinyIOSApp): void {
         if (serviceEvaluated) return
         serviceEvaluated = true
         evaluate(app.serviceSource, 'service.js')
+      },
+      loadSubPackage: async (root) => {
+        if (evaluatedSubPackages.has(root)) return
+        const source = app.subPackageSources?.[root]
+        if (!source) return
+        evaluatedSubPackages.add(root)
+        evaluate(source, `${root}.js`)
       },
       events,
       onPageRelease: (pageId) => canvas.releaseCanvasNode?.({ pageId }),

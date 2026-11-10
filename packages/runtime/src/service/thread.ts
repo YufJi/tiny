@@ -14,7 +14,8 @@ import { ServicePageStack } from './page-stack'
 import { createServiceRouter } from './router'
 import { ServiceTabBar } from './tab-bar'
 import { createDefaultWxsCompiler, createWxsRuntime } from '@tiny/wxs-runtime'
-import { findPageArtifact } from './route'
+import { findPageArtifact, normalizeRoutePath, resolveRoutePath } from './route'
+import { shouldPreloadRule } from './preload'
 import type {
   MiniProgramApiHost,
   ServiceThreadOptions,
@@ -132,6 +133,92 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   resolvePage = (pageId) => pages.pageInstances.get(pageId)
   onTabBarChange = () => pages.sendRuntimeState()
 
+  // Subpackage chunks register pages/components by their compiler-injected path.
+  // Hosts opt into lazy loading by passing `loadSubPackage`; the runtime only
+  // needs to know which package owns a page and to refresh render schemas once.
+  const loadedSubPackages = new Set<string>()
+  const pendingSubPackages = new Map<string, Promise<void>>()
+  const subPackageByPage = new Map<string, string>()
+  for (const pkg of options.manifest.subPackages ?? []) {
+    for (const page of pkg.pages) subPackageByPage.set(page, pkg.root)
+  }
+  const ensureSubPackageRoot = (root: string): Promise<void> => {
+    if (loadedSubPackages.has(root)) return Promise.resolve()
+    const pending = pendingSubPackages.get(root)
+    if (pending) return pending
+    const pkg = options.manifest.subPackages?.find((item) => item.root === root)
+    if (!pkg?.service) {
+      loadedSubPackages.add(root)
+      return Promise.resolve()
+    }
+    if (!options.loadSubPackage) {
+      return Promise.reject(new Error(
+        `subpackage "${root}" has a service chunk but the host provides no loadSubPackage hook`,
+      ))
+    }
+    const task = Promise.resolve(options.loadSubPackage(root)).then(() => {
+      loadedSubPackages.add(root)
+      render.refreshComponentDefinitions()
+    }).finally(() => {
+      pendingSubPackages.delete(root)
+    })
+    pendingSubPackages.set(root, task)
+    return task
+  }
+  const ensureSubPackage = async (path: string | undefined): Promise<void> => {
+    if (!path) return
+    const root = subPackageByPage.get(path)
+    if (!root) return
+    await ensureSubPackageRoot(root)
+  }
+  /** Root of the independent package owning `path`, if any. */
+  const independentRootFor = (path: string | undefined): string | undefined => {
+    if (!path) return undefined
+    const root = subPackageByPage.get(path)
+    if (!root) return undefined
+    const pkg = options.manifest.subPackages?.find((item) => item.root === root)
+    return pkg?.independent === true ? root : undefined
+  }
+  const ensureRoutePackage = async (url?: string, index?: number): Promise<void> => {
+    let path = ''
+    if (typeof url === 'string' && url.length > 0) {
+      const raw = url.split('?')[0] ?? ''
+      path = raw.startsWith('/') ? normalizeRoutePath(raw) : resolveRoutePath(pages.currentPath, raw)
+    } else if (typeof index === 'number' && Number.isInteger(index)) {
+      path = tabBar.model?.items[index]?.pagePath ?? ''
+    }
+    const currentIndependent = independentRootFor(pages.currentPath)
+    if (currentIndependent && independentRootFor(path) !== currentIndependent) {
+      throw new Error(
+        `independent package "${currentIndependent}" cannot navigate to "${path}"`,
+      )
+    }
+    await ensureSubPackage(path)
+  }
+  // `preloadRule` warms the packages listed for the page being entered. It is
+  // best-effort and never delays the page; network selection stays host-side.
+  const preloadRulesByPage = new Map(
+    (options.manifest.preloadRules ?? []).map((rule) => [rule.page, rule]),
+  )
+  const preloadForPage = (path: string | undefined): void => {
+    if (!path) return
+    const rule = preloadRulesByPage.get(path)
+    if (!rule || !shouldPreloadRule(rule, options.preloadNetwork)) return
+    for (const root of rule.packages) {
+      void ensureSubPackageRoot(root).catch(() => {})
+    }
+  }
+  // Async components mount as placeholders first; the package chunk is fetched
+  // afterwards and glass-easel replaces the placeholder once the definition is
+  // registered.
+  const loadAsyncComponentsForPage = (path: string | undefined): void => {
+    if (!path) return
+    const artifact = findPageArtifact(options.manifest, path)
+    for (const root of artifact?.asyncSubPackages ?? []) {
+      void ensureSubPackageRoot(root).catch(() => {})
+    }
+  }
+
   // The kernel does not own the mini-program API set: the host entry composes
   // the table (including host extensions) and the runtime installs it verbatim.
   // Names it omits fall through to the unsupported-API diagnostic.
@@ -167,13 +254,23 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       if (payload.maxPageStack !== undefined) {
         pages.setMaxPageStack(Number(payload.maxPageStack))
       }
-      await ensureArtifacts()
-      registry.launchApp(options.launchOptions)
-      if (options.appVisible !== false) {
-        registry.showApp(options.launchOptions)
+      if (independentRootFor(pages.currentPath)) {
+        // An independent package boots without the main package: no app.js,
+        // no App lifecycle, and getApp() stays null (WeChat's documented
+        // "App may not be registered" behaviour).
+        await ensureSubPackage(pages.currentPath)
+      } else {
+        await ensureArtifacts()
+        registry.launchApp(options.launchOptions)
+        if (options.appVisible !== false) {
+          registry.showApp(options.launchOptions)
+        }
+        await ensureSubPackage(pages.currentPath)
       }
       const componentSchemas = await render.start()
       pages.start()
+      loadAsyncComponentsForPage(pages.activePage?.path)
+      preloadForPage(pages.activePage?.path)
       const currentPage = pages.pageStack.at(-1)!
       return {
         status: 'ready',
@@ -229,24 +326,45 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.navigateTo, async (message) => {
     const payload = message.payload as { url?: string }
     if (!payload.url) throw new Error('navigateTo requires a url')
-    return pages.navigateTo(payload.url)
+    await ensureRoutePackage(payload.url)
+    const result = pages.navigateTo(payload.url)
+    const resultPath = typeof result.path === 'string' ? result.path : undefined
+    loadAsyncComponentsForPage(resultPath)
+    preloadForPage(resultPath)
+    return result
   })
 
   connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.redirectTo, async (message) => {
     const payload = message.payload as { url?: string }
     if (!payload.url) throw new Error('redirectTo requires a url')
-    return pages.redirectTo(payload.url)
+    await ensureRoutePackage(payload.url)
+    const result = pages.redirectTo(payload.url)
+    const resultPath = typeof result.path === 'string' ? result.path : undefined
+    loadAsyncComponentsForPage(resultPath)
+    preloadForPage(resultPath)
+    return result
   })
 
   connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.reLaunch, async (message) => {
     const payload = message.payload as { url?: string }
     if (!payload.url) throw new Error('reLaunch requires a url')
-    return pages.reLaunch(payload.url)
+    await ensureRoutePackage(payload.url)
+    const result = pages.reLaunch(payload.url)
+    const resultPath = typeof result.path === 'string' ? result.path : undefined
+    loadAsyncComponentsForPage(resultPath)
+    preloadForPage(resultPath)
+    return result
   })
 
-  connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.switchTab, async (message) => (
-    pages.switchTab(message.payload as { url?: string; index?: number })
-  ))
+  connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.switchTab, async (message) => {
+    const payload = message.payload as { url?: string; index?: number }
+    await ensureRoutePackage(payload.url, payload.index)
+    const result = pages.switchTab(payload)
+    const resultPath = typeof result.path === 'string' ? result.path : undefined
+    loadAsyncComponentsForPage(resultPath)
+    preloadForPage(resultPath)
+    return result
+  })
 
   connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.navigateBack, async (message) => (
     pages.navigateBack((message.payload as { delta?: number }).delta)

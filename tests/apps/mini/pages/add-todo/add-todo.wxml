@@ -2,6 +2,7 @@
 
 <view class="page-add-todo">
   <include src="./b.wxml" />
+  <lazy-badge />
   <view class="add-todo">
     <input
       class="add-todo-input"

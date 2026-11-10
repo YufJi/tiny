@@ -432,9 +432,12 @@ export class ServicePageStack {
 
   resize(windowWidth: number, windowHeight: number): void {
     if (this.active) {
-      this.triggerPageLifecycle(this.active, 'onResize', [{
-        size: { windowWidth, windowHeight },
-      }])
+      const event = { size: { windowWidth, windowHeight } }
+      this.triggerPageLifecycle(this.active, 'onResize', [event])
+      // `pageLifetimes.resize` is delivered to the page root and every mounted
+      // component of the visible page, matching WeChat's page lifetime table.
+      this.active.triggerPageLifetime('resize', event)
+      this.options.render.triggerPageLifetime(this.active.pageId, 'resize', event)
     }
     this.sendRuntimeState()
   }

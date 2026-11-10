@@ -131,25 +131,81 @@ export class MiniProgramPageRegistry {
     return this.app
   }
 
-  registerPage(options: MiniProgramPageOptions): MiniProgramPageOptions {
-    const path = this.pagePaths[this.pageCursor++]
-    if (!path) throw new Error('More Page definitions were registered than declared pages')
-    this.pages.set(path, options)
+  /**
+   * Register a page definition.
+   *
+   * `path` comes from the compiler-injected registration hint and is the
+   * authoritative identity; it makes registration independent of evaluation
+   * order, which is required once subpackage/component chunks load on demand.
+   * Scripts without a hint fall back to the declared `app.json` order.
+   */
+  registerPage(
+    options: MiniProgramPageOptions,
+    path?: string,
+  ): MiniProgramPageOptions {
+    if (path !== undefined) {
+      if (!this.pagePaths.includes(path)) {
+        throw new Error(`Page "${path}" was registered but is not declared in app.json`)
+      }
+      const existing = this.pages.get(path)
+      if (existing) return existing
+      this.pages.set(path, options)
+      return options
+    }
+    const nextPath = this.nextPagePath()
+    if (!nextPath) throw new Error('More Page definitions were registered than declared pages')
+    this.pages.set(nextPath, options)
     return options
   }
 
-  registerComponent(options: MiniProgramComponentOptions): MiniProgramComponentOptions {
-    const path = this.componentPaths[this.componentCursor++] ?? `component:${this.components.size}`
-    this.components.set(path, options)
+  registerComponent(
+    options: MiniProgramComponentOptions,
+    path?: string,
+  ): MiniProgramComponentOptions {
+    if (path !== undefined) {
+      const existing = this.components.get(path)
+      if (existing) return existing
+      this.components.set(path, options)
+      this.normalizedComponents.set(
+        path,
+        normalizeComponentDefinition(
+          options,
+          path,
+          this.compatibility,
+          this.componentConfigurations.get(path),
+        ),
+      )
+      return options
+    }
+    const declaredPath = this.nextComponentPath() ?? `component:${this.components.size}`
+    this.components.set(declaredPath, options)
     this.normalizedComponents.set(
-      path,
+      declaredPath,
       normalizeComponentDefinition(
         options,
-        path,
+        declaredPath,
         this.compatibility,
-        this.componentConfigurations.get(path),
+        this.componentConfigurations.get(declaredPath),
       ),
     )
     return options
+  }
+
+  /** Skip page paths already registered through a hint. */
+  private nextPagePath(): string | undefined {
+    while (this.pageCursor < this.pagePaths.length) {
+      const candidate = this.pagePaths[this.pageCursor++]!
+      if (!this.pages.has(candidate)) return candidate
+    }
+    return undefined
+  }
+
+  /** Skip component paths already registered through a hint. */
+  private nextComponentPath(): string | undefined {
+    while (this.componentCursor < this.componentPaths.length) {
+      const candidate = this.componentPaths[this.componentCursor++]!
+      if (!this.components.has(candidate)) return candidate
+    }
+    return undefined
   }
 }

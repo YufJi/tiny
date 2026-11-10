@@ -22,7 +22,7 @@ export type ServiceRenderPort = {
    * Implementations without a render thread must still run it asynchronously.
    */
   completeAfterRender(pageId: string, callback: () => void): void
-  triggerPageLifetime(pageId: string, phase: 'show' | 'hide'): void
+  triggerPageLifetime(pageId: string, phase: 'show' | 'hide' | 'resize', event?: unknown): void
   selectComponents(pageId: string, selector: string, all: boolean): unknown[]
   relationNodes(pageId: string, relationKey: string): unknown[]
   pageSelectorQuery(pageId: string): Record<string, unknown>

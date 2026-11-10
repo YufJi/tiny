@@ -17,6 +17,7 @@ export type ServiceEntryOptions = {
   initialPath: string
   loadTemplates: ServiceThreadOptions['loadTemplates']
   loadArtifacts: NonNullable<ServiceThreadOptions['loadArtifacts']>
+  loadSubPackage?: ServiceThreadOptions['loadSubPackage']
   loadStyle?: ServiceThreadOptions['loadStyle']
   resolveAssetUrl: NonNullable<ApiContext['resolveAssetUrl']>
   /** Host-owned launch options; defaults are host glue, never kernel facts. */
@@ -124,6 +125,7 @@ export function bootServiceEntry(options: ServiceEntryOptions): void {
         : document.visibilityState !== 'hidden',
       loadTemplates: options.loadTemplates,
       loadArtifacts: options.loadArtifacts,
+      ...(options.loadSubPackage ? { loadSubPackage: options.loadSubPackage } : {}),
       ...(options.loadStyle ? { loadStyle: options.loadStyle } : {}),
       events,
       onPageRelease: (pageId) => canvas.releaseCanvasNode?.({ pageId }),

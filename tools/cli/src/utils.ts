@@ -6,6 +6,17 @@ export function toPosixPath(value: string): string {
   return value.split(path.sep).join('/')
 }
 
+/** Static files copied verbatim to the artifact tree. */
+export const ASSET_EXTENSIONS = [
+  '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp',
+  '.eot', '.woff', '.woff2', '.ttf', '.otf',
+] as const
+
+export function isAssetPath(value: string): boolean {
+  const lower = value.toLowerCase()
+  return ASSET_EXTENSIONS.some((extension) => lower.endsWith(extension))
+}
+
 export function normalizeRelativePath(value: string): string {
   return toPosixPath(path.normalize(value)).replace(/^\.\//, '').replace(/\/+$/, '')
 }
@@ -17,6 +28,11 @@ export function withoutExtension(value: string): string {
 
 export function sanitizeScope(value: string): string {
   return value.replace(/[^a-zA-Z0-9_-]+/g, '-')
+}
+
+/** Compiler-owned service entry for one subpackage (no directory segments). */
+export function subpackageServicePath(root: string): string {
+  return `service.${sanitizeScope(root).replace(/^-+|-+$/g, '') || 'package'}.js`
 }
 
 export async function ensureDir(filePath: string): Promise<void> {
@@ -59,6 +75,7 @@ export async function collectFiles(
   rootDir: string,
   extensions: string[],
   ignoredDirectories: string[] = ['.git', '.cache', 'node_modules'],
+  ignored?: (relativePath: string) => boolean,
 ): Promise<string[]> {
   const output: string[] = []
   const orderedExtensions = [...new Set(extensions)].sort((left, right) => right.length - left.length)
@@ -67,6 +84,8 @@ export async function collectFiles(
     const entries = await fs.readdir(currentDir, { withFileTypes: true })
     for (const entry of entries) {
       const entryPath = path.join(currentDir, entry.name)
+      const relative = toPosixPath(path.relative(rootDir, entryPath))
+      if (ignored?.(relative)) continue
       if (entry.isDirectory()) {
         if (!ignoredDirectories.includes(entry.name)) await walk(entryPath)
       } else if (
@@ -80,6 +99,70 @@ export async function collectFiles(
 
   await walk(rootDir)
   return output.sort()
+}
+
+type PackIgnoreRule = {
+  type?: string
+  value?: string
+}
+
+/**
+ * Compile `project.config.json#packOptions.ignore`. The WeChat devtool accepts
+ * both bare glob strings and typed rules; both forms are relative to the
+ * mini-program root. Invalid regexps are ignored so a broken ignore rule cannot
+ * silently drop the whole project.
+ */
+export function createIgnoreMatcher(rules: unknown): ((relativePath: string) => boolean) | undefined {
+  if (!Array.isArray(rules)) return undefined
+  const matchers: Array<(value: string) => boolean> = []
+  for (const rule of rules) {
+    if (typeof rule === 'string') {
+      const regex = globToRegExp(rule)
+      if (regex) matchers.push((value) => regex.test(value))
+      continue
+    }
+    if (!rule || typeof rule !== 'object') continue
+    const { type, value } = rule as PackIgnoreRule
+    if (typeof value !== 'string' || value.length === 0) continue
+    const normalizedValue = normalizeRelativePath(value)
+    switch (type) {
+      case 'file':
+        matchers.push((candidate) => candidate === normalizedValue)
+        break
+      case 'folder':
+        matchers.push((candidate) => candidate === normalizedValue
+          || candidate.startsWith(`${normalizedValue}/`))
+        break
+      case 'suffix':
+        matchers.push((candidate) => candidate.endsWith(value))
+        break
+      case 'prefix':
+        matchers.push((candidate) => candidate.startsWith(value))
+        break
+      case 'glob':
+      default: {
+        const regex = globToRegExp(value)
+        if (regex) matchers.push((candidate) => regex.test(candidate))
+        break
+      }
+    }
+  }
+  if (matchers.length === 0) return undefined
+  return (relativePath) => matchers.some((matcher) => matcher(relativePath))
+}
+
+function globToRegExp(pattern: string): RegExp | undefined {
+  try {
+    const escaped = pattern
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+      .replace(/\*\*/g, '\u0000')
+      .replace(/\*/g, '[^/]*')
+      .replace(/\?/g, '[^/]')
+      .replace(/\u0000/g, '.*')
+    return new RegExp(`^${escaped}$`)
+  } catch {
+    return undefined
+  }
 }
 
 export async function copyFile(sourcePath: string, outputPath: string): Promise<void> {

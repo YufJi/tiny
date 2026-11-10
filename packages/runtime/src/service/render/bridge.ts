@@ -78,6 +78,9 @@ export class ServiceRenderBridge implements ServiceRenderPort {
   private readonly pendingPages = new Set<string>()
   private logicTree: LogicTreeAdapter | null = null
   private componentSchemas: MiniProgramComponentSchema[] = []
+  /** Compiler-resolved `component path -> built-in placeholder tag`. */
+  private readonly placeholders: Record<string, string> = {}
+  private readonly hasPlaceholders: boolean
   private definitionPayloads: Map<string, ComponentDefinitionPayload> | null = null
   private wxsModules?: WxsModuleTable
   private wxsHostOptions?: WxsEventHostOptions
@@ -97,6 +100,12 @@ export class ServiceRenderBridge implements ServiceRenderPort {
   constructor(options: ServiceRenderBridgeOptions) {
     this.options = options
     this.connection = options.connection
+    for (const artifact of [...options.manifest.pages, ...options.manifest.components]) {
+      const declared = artifact.configuration?.placeholders
+      if (!declared) continue
+      Object.assign(this.placeholders, declared)
+    }
+    this.hasPlaceholders = Object.keys(this.placeholders).length > 0
     attachRenderInbound(this.connection, {
       getLogicTree: () => this.logicTree,
       isMounted: (pageId) => this.mountedPages.has(pageId),
@@ -116,7 +125,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     this.componentSchemas = buildComponentSchemas(
       this.options.manifest.components,
       this.options.componentDefinitions,
-    )
+    ).filter((schema) => this.options.componentDefinitions.has(schema.path))
     const templates = await this.options.loadTemplates()
     this.wxsModules = templates.wxsModules
     this.logicTree = new LogicTreeAdapter({
@@ -159,6 +168,27 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     this.installWxsHost()
     this.options.onLogicTreeCreated?.(this.logicTree)
     return this.componentSchemas
+  }
+
+  /**
+   * Rebuild the render-facing schema/definition table after a lazy package
+   * registered new components. Returns the newly added schemas.
+   */
+  refreshComponentDefinitions(): MiniProgramComponentSchema[] {
+    if (!this.logicTree) return []
+    const schemas = buildComponentSchemas(
+      this.options.manifest.components,
+      this.options.componentDefinitions,
+    )
+    const known = new Set(this.componentSchemas.map((schema) => schema.path))
+    const added = schemas.filter((schema) => (
+      !known.has(schema.path) && this.options.componentDefinitions.has(schema.path)
+    ))
+    if (added.length === 0) return []
+    this.componentSchemas.push(...added)
+    this.logicTree.registerComponentSchemas(added)
+    this.definitionPayloads = null
+    return added
   }
 
   /** Serializable schemas for component-as-page artifacts, for bootstrap. */
@@ -229,8 +259,12 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     }
   }
 
-  triggerPageLifetime(pageId: string, phase: 'show' | 'hide'): void {
-    this.logicTree?.triggerPageLifetime(pageId, phase)
+  triggerPageLifetime(
+    pageId: string,
+    phase: 'show' | 'hide' | 'resize',
+    event?: unknown,
+  ): void {
+    this.logicTree?.triggerPageLifetime(pageId, phase, event)
   }
 
   selectComponents(pageId: string, selector: string, all: boolean): unknown[] {
@@ -456,8 +490,20 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     )
   }
 
+  private isIndependentPage(pageId: string): boolean {
+    const path = this.logicTree?.pagePathFor(pageId)
+    if (!path) return false
+    const page = this.options.manifest.pages.find((item) => item.path === path)
+    if (!page?.subpackage) return false
+    return (this.options.manifest.subPackages ?? []).some(
+      (pkg) => pkg.root === page.subpackage && pkg.independent === true,
+    )
+  }
+
   private treeStyles(pageId: string): { styles: string[]; fallbackAppStyles?: string[] } {
     const styles = this.logicTree?.styleTexts(pageId) ?? []
+    // Independent packages do not inherit the main package `app.wxss`.
+    if (this.isIndependentPage(pageId)) return { styles }
     if (this.logicTree?.hasAppPageScope(pageId)) return { styles }
     const appStylePath = this.options.manifest.app?.style?.outputPath
     const appCss = appStylePath ? this.options.loadStyle?.(appStylePath) : undefined

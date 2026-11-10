@@ -81,6 +81,17 @@ export type ServiceThreadOptions = {
   /** Already-composed `wx` table; the runtime installs it verbatim. */
   apiHost: MiniProgramApiHost
   loadArtifacts?: () => Promise<unknown>
+  /**
+   * Load one subpackage service chunk on demand. Hosts that pass it opt into
+   * lazy subpackages; without it the runtime expects the main service entry to
+   * contain every package (the pre-split behaviour).
+   */
+  loadSubPackage?: (root: string) => Promise<unknown>
+  /**
+   * Host network fact used by `preloadRule.network: "wifi"`. Omitted means the
+   * host has no network information, so Wi-Fi-only rules are not preloaded.
+   */
+  preloadNetwork?: 'wifi' | 'other'
   /** Maximum pages in the runtime page stack. Defaults to 10. */
   maxPageStack?: number
   /** Templates for the service-side logic tree. */
