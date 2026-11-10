@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { createGestureRecognizer, projectTouch } from '../src/render/event-compositor'
+import { createGestureRecognizer, createMouseAdapter, projectTouch } from '../src/render/event-compositor'
 import type { InputEvent, InputPoint } from '../src/render/event-compositor'
 
 const point = (x: number, y: number, id = 1, source: 'touch' | 'mouse' = 'touch'): InputPoint => ({
@@ -117,5 +117,59 @@ describe('mouse touch projection', () => {
     expect(end.name).toBe('touchend')
     expect(end.touches).toEqual([])
     expect(end.changedTouches[0]).toMatchObject({ x: 40, y: 40 })
+  })
+})
+
+describe('mouse adapter replay filter', () => {
+  type Listener = (event: MouseEvent) => void
+
+  const harness = () => {
+    const listeners = new Map<string, Listener>()
+    const root = {
+      ownerDocument: {
+        addEventListener: (type: string, listener: Listener) => listeners.set(`document:${type}`, listener),
+        removeEventListener: (type: string) => listeners.delete(`document:${type}`),
+      },
+      addEventListener: (type: string, listener: Listener) => listeners.set(`root:${type}`, listener),
+      removeEventListener: (type: string) => listeners.delete(`root:${type}`),
+    }
+    const { gestures, feed } = collect()
+    const detach = createMouseAdapter(root as unknown as HTMLElement, () => false)(feed)
+    const dispatch = (scope: 'root' | 'document', type: string, event: Record<string, unknown>) => {
+      listeners.get(`${scope}:${type}`)?.({
+        type,
+        button: 0,
+        clientX: 10,
+        clientY: 12,
+        ...event,
+      } as unknown as MouseEvent)
+    }
+    return { detach, dispatch, gestures }
+  }
+
+  test('projects a real mouse press and release into one tap', () => {
+    const { detach, dispatch, gestures } = harness()
+    dispatch('root', 'mousedown', { sourceCapabilities: { firesTouchEvents: false } })
+    dispatch('document', 'mouseup', { sourceCapabilities: { firesTouchEvents: false } })
+    expect(gestures).toEqual([{ name: 'tap', x: 10, y: 12 }])
+    detach()
+  })
+
+  test('drops the mouse replay of a touch, as reported by sourceCapabilities', () => {
+    const { detach, dispatch, gestures } = harness()
+    dispatch('root', 'mousedown', { sourceCapabilities: { firesTouchEvents: true } })
+    dispatch('document', 'mouseup', { sourceCapabilities: { firesTouchEvents: true } })
+    expect(gestures).toEqual([])
+    detach()
+  })
+
+  test('still accepts real mouse input after a dropped replay', () => {
+    const { detach, dispatch, gestures } = harness()
+    dispatch('root', 'mousedown', { sourceCapabilities: { firesTouchEvents: true } })
+    dispatch('document', 'mouseup', { sourceCapabilities: { firesTouchEvents: true } })
+    dispatch('root', 'mousedown', { sourceCapabilities: { firesTouchEvents: false } })
+    dispatch('document', 'mouseup', { sourceCapabilities: { firesTouchEvents: false } })
+    expect(gestures).toEqual([{ name: 'tap', x: 10, y: 12 }])
+    detach()
   })
 })

@@ -105,3 +105,11 @@ jobs:
         run: cargo install wasm-bindgen-cli --version 0.2.130 --locked
       - name: Full acceptance gate
         run: pnpm accept:glass-easel
+      - name: Upload acceptance failure screenshot
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-failure
+          path: tests/host/generated/acceptance-*.png
+          if-no-files-found: ignore
+          retention-days: 7
