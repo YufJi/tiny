@@ -25,6 +25,7 @@ import type {
   RenderRect,
   RenderTemplateEvent,
   RenderText,
+  PageFrameMount,
   TemplateRegistry,
   WxsBindingMessage,
   WxsHandlerMessage,
@@ -157,6 +158,7 @@ export type GlassRenderTreeOptions = {
 export type GlassRenderTree = {
   root: AnyComponent
   rootElement: HTMLElement | null
+  mountPage?: (request: PageFrameMount) => void
   applyStyles?: (styles: string[]) => void
   inspectTree?: () => unknown
   measure?: (ids: string[]) => Record<string, unknown>
@@ -2466,6 +2468,52 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     tabBarContainer = null
   }
 
+  const mountPage = (request: PageFrameMount): void => {
+    if (!templates) throw new Error('pageframe mount requires compiled templates')
+    if (request.using) pageUsing = request.using
+    if (request.scope) pageScopeName = request.scope
+    clearTabBar()
+    for (const cleanups of eventCleanups.values()) {
+      for (const cleanup of cleanups) cleanup()
+    }
+    eventCleanups.clear()
+    nodes.clear()
+    currentTree.clear()
+    const definition = space.defineComponent({
+      is: request.pagePath,
+      options: {
+        hostNodeTagName: TINY_ENGINE_NAMING.pageTag,
+        reflectToAttributes: true,
+        writeIdToDOM: true,
+        ...(pageScopeName ? { styleScope: styleScopeManager.register(pageScopeName) } : {}),
+      },
+      data: request.data,
+      using: pageUsingDefinitions(),
+      template: {
+        groupList: templates.groupList,
+        content: (name = '') => templates!.content(request.pagePath, name),
+      } as never,
+    }).general()
+    const page = glassEasel.Component.createWithContext('page', definition, backend)
+    const previous = root
+    root = page
+    rootElement = page.getBackendElement() as unknown as HTMLElement | null
+    if (rootElement && options.container) options.container.replaceChildren(rootElement)
+    ;(previous as unknown as { destroy?: () => void }).destroy?.()
+    componentPathByComponent.set(page, request.pagePath)
+    rootId.value = request.pageId
+    nodes.set(request.pageId, page)
+    currentTree.set(request.pageId, {
+      type: 'element',
+      id: request.pageId,
+      tag: request.pagePath,
+    })
+    rootElement?.setAttribute(TINY_ENGINE_NAMING.nodeIdAttribute, request.pageId)
+    if (options.attach !== false) glassEasel.Element.pretendAttached(page)
+    mounted = true
+    emitPageReRender()
+  }
+
   return {
     get root() {
       return root
@@ -2473,6 +2521,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     get rootElement() {
       return rootElement
     },
+    mountPage,
     setPageScope,
     setPageUsing,
     setBehaviorScheme,

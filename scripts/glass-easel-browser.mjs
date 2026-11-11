@@ -1981,6 +1981,7 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
       vant: 'Vant Weapp',
       weui: 'WeUI 是一套同微信原生视觉体验一致的',
       'custom-tab': 'Custom Tab home',
+      'wechat-parity': 'PAGE: A:1',
     }
     const imageFixtures = new Set(['mini', 'wechat-demo', 'echarts'])
     const fixtureById = new Map(fixtures.map((fixture) => [fixture.id, fixture]))

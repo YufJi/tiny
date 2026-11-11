@@ -39,7 +39,54 @@ function templatesFor(path: string, source: string) {
   }
 }
 
+function pageTemplatesFor(path: string, source: string, wxsPath: string, wxs: string) {
+  const group = TmplGroup.newDev({
+    directivePrefix: 'wx',
+    templateExtension: '.wxml',
+    templateScriptExtension: '.wxs',
+  })
+  group.addScript(wxsPath, wxs)
+  group.addTmpl(path, source)
+  const generated = group.getTmplGenObjectGroups()
+  group.free()
+  const groupList = new Function(`return ${generated}`)() as Record<string, (name?: string) => unknown>
+  return {
+    groupList,
+    content: (entry: string, name = '') => groupList[entry]!(name),
+  }
+}
+
+function glassText(node: any): string {
+  if (!node) return ''
+  if (typeof node.data === 'string') return node.data
+  if (typeof node.textContent === 'string') return node.textContent
+  return (node.childNodes ?? []).map((child: any) => glassText(child)).join('')
+}
+
 describe('glass render tree', () => {
+  test('mounts a page WXML template in the render pageframe', () => {
+    const path = 'pages/pageframe/pageframe'
+    const tree = createGlassRenderTree({
+      backend: new glassEasel.EmptyBackendContext(),
+    })
+    tree.setTemplates?.(pageTemplatesFor(
+      path,
+      '<wxs module="state" src="/wxs/pageframe.wxs" /><view class="state">{{state.mark("page", "P")}}</view>',
+      'wxs/pageframe.wxs',
+      'var seen = {}; var next = 0; function mark(key, label) { if (!seen[key]) { next += 1; seen[key] = next } return label + ":" + seen[key] } module.exports = { mark: mark }',
+    ))
+    tree.mountPage?.({
+      pageId: 'page-1',
+      pagePath: path,
+      data: {},
+    })
+
+    expect(tree.root).toBeDefined()
+    expect(tree.root.shadowRoot).toBeDefined()
+    expect(tree.getNode?.('page-1')).toBe(tree.root)
+    expect(glassText(tree.root.shadowRoot)).toContain('P:1')
+  })
+
   test('mounts and clears an independent tabBar root', () => {
     const tree = createGlassRenderTree({
       backend: new glassEasel.EmptyBackendContext(),

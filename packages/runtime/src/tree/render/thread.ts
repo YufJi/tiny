@@ -41,8 +41,19 @@ export type TreeEventPayload = {
   currentTarget?: RenderEventGeometry
 }
 
+/** Request for a pageframe-owned page template mount. */
+export type PageFrameMount = {
+  pageId: string
+  pagePath: string
+  data: Record<string, unknown>
+  using?: Record<string, string>
+  scope?: string
+}
+
 export type TreeRenderer = {
   mount: (root: RenderNode) => void
+  /** Mount a page directly from its compiled template instead of a snapshot. */
+  mountPage?: (request: PageFrameMount) => void
   /** Mount the optional independent custom-tabBar root. */
   mountTabBar?: (root: RenderNode) => void
   applyPatches: (patches: RenderPatch[]) => void
