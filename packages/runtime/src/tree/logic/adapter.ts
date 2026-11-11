@@ -9,6 +9,7 @@ import type {
 } from '../protocol'
 import { diffRenderTree } from '../diff'
 import { cloneDataValue } from '../../data'
+import type { AssetUrlResolver } from '../../assets'
 import { normalizeAnimationFrames, animationTimingOptions } from '../animation'
 import * as glassEasel from 'glass-easel'
 import type { MiniProgramComponentSchema, QueryNodeSnapshot, TemplateRegistry } from '../../types'
@@ -47,6 +48,10 @@ export type LogicTreeAdapterOptions = {
   /** Scoped render query for nodes that have no render-side node id. */
   queryView?: (request: QueryViewRequest & { pageId?: string }) => Promise<QueryViewResult>
   loadStyle?: (outputPath: string) => string
+  /** Host hook used to resolve stylesheet `url(...)` assets before delivery. */
+  resolveAssetUrl?: AssetUrlResolver
+  /** Runtime page kind, derived from the actual registration. */
+  isComponentPage?: (path: string) => boolean
   onDataChange?: (pageId: string) => void
   onDiagnostic?: (diagnostic: import('../../diagnostics').RuntimeDiagnostic) => void
   /** Report a handler/observer error raised inside glass-easel. */
@@ -102,6 +107,8 @@ export class LogicTreeAdapter {
   private readonly lastRenderTrees = new Map<string, RenderNode>()
   private readonly manifest: Manifest
   private readonly loadStyle: (outputPath: string) => string
+  private readonly resolveAssetUrl?: AssetUrlResolver
+  private readonly isComponentPage?: (path: string) => boolean
   private componentSchemas: MiniProgramComponentSchema[] = []
   private componentDefinitions?: ReadonlyMap<string, NormalizedComponentDefinition>
   /** Last component data sent to the render tree, keyed by page id. */
@@ -129,6 +136,8 @@ export class LogicTreeAdapter {
     this.componentDefinitions = options.componentDefinitions
     this.manifest = options.manifest
     this.loadStyle = options.loadStyle ?? (() => '')
+    this.resolveAssetUrl = options.resolveAssetUrl
+    this.isComponentPage = options.isComponentPage
     this.measureView = options.measureView
     this.measureLocators = options.measureLocators
     this.queryView = options.queryView
@@ -139,6 +148,8 @@ export class LogicTreeAdapter {
       backend: this.backend as unknown as glassEasel.GeneralBackendContext,
       manifest: options.manifest,
       templates: options.templates,
+      ...(options.resolveAssetUrl ? { resolveAssetUrl: options.resolveAssetUrl } : {}),
+      ...(options.isComponentPage ? { isComponentPage: options.isComponentPage } : {}),
       logicPageOptions: options.pageOptions,
       logicComponentDefinitions: options.componentDefinitions,
       ...(options.frameworkContext ? { frameworkContext: options.frameworkContext } : {}),

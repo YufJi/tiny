@@ -74,7 +74,7 @@ of the external contract.
 | Render host (native) | `createNativeTreeRenderer` | `NativeTreeHost`, `NativeNodeSpec`, `NativeTreeRenderer` |
 | Both threads | `tree/protocol` | `RenderNode`, `RenderPatch`, `ComponentFlow`, `TREE_PROTOCOL`, `RUNTIME_CONTROL` |
 | Host components | `BuiltinComponents` | `BuiltinComponentFactoryContext`, `BuiltinStyleSheet` |
-| Utilities | `resolveAssetPath`, `TINY_ENGINE_NAMING`, `DIAGNOSTIC_CODES` | `RuntimeDiagnostic`, `InspectNode`, manifest/runtime types |
+| Utilities | `resolveAssetReference`, `TINY_ENGINE_NAMING`, `DIAGNOSTIC_CODES` | `RuntimeDiagnostic`, `InspectNode`, manifest/runtime types |
 
 Internal modules (the logic-tree adapter/backend, glass-easel bridge, service
 page registry/instances, component definitions) are intentionally not
@@ -205,7 +205,7 @@ app-root absolute. Browser hosts need real URLs, so the web render tree accepts
 a host resolver:
 
 ```ts
-import { bootTreeThread } from '@tiny/runtime'
+import { bootTreeThread, resolveAssetReference } from '@tiny/runtime'
 import { connectHostBridge } from '@tiny/bridge'
 import { createGlassRenderTree } from '@tiny/host-web'
 
@@ -219,14 +219,20 @@ bootTreeThread({
   connection,
   renderer: createGlassRenderTree({
     container: document.getElementById('app')!,
-    resolveAssetUrl: (assetPath, sourcePath) =>
-      `/generated/${assetPath.split('/').map(encodeURIComponent).join('/')}`,
+    resolveAssetUrl: (src, sourcePath) => {
+      const reference = resolveAssetReference(sourcePath ?? '', src)
+      return reference
+        ? `/generated/${reference.path.split('/').map(encodeURIComponent).join('/')}${reference.suffix}`
+        : undefined
+    },
   }),
 })
 ```
 
 The web render tree resolves `<image src>` against the owning page/component
-path (including values produced by `setData`); the compiler rewrites local WXSS
-`url(...)` references. `ServiceThreadOptions.resolveAssetUrl` covers
-service-side canvas/selector asset paths. External URLs, data URIs, fragments,
-and paths escaping the app root are left untouched.
+path (including values produced by `setData`); the compiler normalizes local
+WXSS `url(...)` references to app-root paths and the service maps them through
+`ServiceThreadOptions.resolveAssetUrl`. That hook also covers service-side
+canvas/selector asset paths. External URLs, data URIs, fragments, and paths
+escaping the app root are left untouched. Inline `style` `url(...)` values are
+left to the WebView CSS engine, matching WeChat.

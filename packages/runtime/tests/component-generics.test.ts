@@ -46,12 +46,10 @@ function createTemplateRegistry(pageMarkup: string) {
 
 function artifact(
   path: string,
-  bodyType: 'page' | 'component',
   effective: Record<string, unknown>,
 ): PageArtifact {
   return {
     path,
-    bodyType,
     template: { path, outputPath: 'templates.js', sourcePath: `${path}.wxml` },
     configuration: { path, sourcePath: `${path}.json`, effective },
   }
@@ -66,13 +64,13 @@ function createManifest(options: {
     schemaVersion: 2,
     runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
     entries: { service: 'service.js', templates: 'templates.js' },
-    pages: [artifact(PAGE_PATH, 'page', { usingComponents: options.pageUsing })],
+    pages: [artifact(PAGE_PATH, { usingComponents: options.pageUsing })],
     components: [
-      artifact(GROUP_PATH, 'component', {
+      artifact(GROUP_PATH, {
         component: true,
         componentGenerics: options.groupGenerics,
       }),
-      artifact(RADIO_PATH, 'component', { component: true }),
+      artifact(RADIO_PATH, { component: true }),
     ],
     styles: [],
     assets: [],

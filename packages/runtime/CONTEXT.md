@@ -137,15 +137,17 @@ one layer.
   registration globals, behavior scheme, and legacy opaque globals. These affect
   the mini-program input contract, not Tiny's fixed internal naming.
 - **Asset resolution**: `ServiceThreadOptions.resolveAssetUrl` maps app-root
-  asset paths for service-side canvas/selector nodes; the web render entry's
-  `resolveAssetUrl` maps paths for rendered `<image>` nodes and styles. The
-  compiler rewrites local WXSS `url(...)` references. External/data URLs and
-  paths escaping the app root stay unchanged.
-- **Style scope**: the compiler emits scoped CSS plus explicit roles
-  (builtin/low-priority/app/page/component/page-scope/shared). The service logic
-  tree registers the sheets before registering component definitions, then sends
-  the selected page's role-filtered style text with its tree flow; the render
-  tree only applies that text. `:host` rules travel in the low-priority sheet,
+  asset paths for service-side canvas/selector nodes and compiler-normalized
+  WXSS `url(...)` values; the web render entry's `resolveAssetUrl` maps paths
+  for rendered `<image>` nodes. The compiler normalizes local WXSS references at
+  build time; inline `style` URLs are left to the WebView CSS engine, matching
+  WeChat. External/data URLs and paths escaping the app root stay unchanged.
+- **Style scope**: the compiler emits scoped CSS plus low-priority/page-scope
+  artifacts. The service logic tree assigns cascade roles
+  (builtin/low-priority/app/page/component/page-scope/shared), registers the
+  sheets before registering component definitions, then sends the selected
+  page's role-filtered style text with its tree flow; the render tree only
+  applies that text. `:host` rules travel in the low-priority sheet,
   which is appended before app/page/component styles. Page roots are `shared` by
   default; component-as-page roots
   read an explicit `styleIsolation` and otherwise also default to `shared`.

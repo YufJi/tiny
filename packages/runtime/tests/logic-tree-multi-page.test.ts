@@ -41,16 +41,14 @@ function createTemplates() {
 function artifact(
   path: string,
   using: Record<string, string>,
-  bodyType?: 'component',
 ): PageArtifact | ComponentArtifact {
   return {
     path,
-    ...(bodyType ? { bodyType } : {}),
     template: { path, outputPath: 'templates.js', sourcePath: `${path}.wxml` },
     configuration: {
       path,
       sourcePath: `${path}.json`,
-      effective: { ...(bodyType ? { component: true } : {}), usingComponents: using },
+      effective: { usingComponents: using },
     },
   }
 }

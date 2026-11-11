@@ -18,7 +18,6 @@ const PAGE_B = 'pages/b/b'
 function pageArtifact(path: string): PageArtifact {
   return {
     path,
-    bodyType: 'page',
     template: { path, outputPath: 'templates.js', sourcePath: `${path}.wxml` },
     configuration: { path, sourcePath: `${path}.json`, effective: {} },
   }

@@ -5,6 +5,7 @@ import type {
   TemplateRegistry,
 } from '../types'
 import type { ComponentTree } from './component-tree'
+import type { AssetUrlResolver } from '../assets'
 import type { MiniProgramComponentOptions } from '../component/options'
 import type { MiniProgramPageRegistry } from './page-registry'
 import type { MiniProgramPageInstance } from './page-instance'
@@ -100,6 +101,12 @@ export type ServiceThreadOptions = {
   onLogicTreeCreated?: (tree: unknown) => void
   /** Stylesheet text for logic-tree style scoping. */
   loadStyle?: StyleLoader
+  /**
+   * Host hook for compiler-normalized WXSS `url(...)` assets. The service maps
+   * app-root paths to loadable URLs before sending CSS to the render thread, so
+   * the render document's base URL never participates in resolution.
+   */
+  resolveAssetUrl?: AssetUrlResolver
   /**
    * Sink shared with the host-composed API table. Runtime-originated events
    * and host `event.global` frames reach the global `wx.onXXX` listeners.

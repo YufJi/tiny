@@ -11,7 +11,7 @@ export type {
 } from './diagnostics'
 
 export type { AssetUrlResolver } from './assets'
-export { resolveAssetPath } from './assets'
+export { resolveAssetReference } from './assets'
 
 // The `wx://` behavior contract shared by both threads. Hosts build their
 // render-side registry from this list so it cannot drift from the kernel.

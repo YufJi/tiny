@@ -127,6 +127,7 @@ export function bootServiceEntry(options: ServiceEntryOptions): void {
       loadArtifacts: options.loadArtifacts,
       ...(options.loadSubPackage ? { loadSubPackage: options.loadSubPackage } : {}),
       ...(options.loadStyle ? { loadStyle: options.loadStyle } : {}),
+      resolveAssetUrl: options.resolveAssetUrl,
       events,
       onPageRelease: (pageId) => canvas.releaseCanvasNode?.({ pageId }),
     })

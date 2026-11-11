@@ -8,7 +8,6 @@ import { outputPath, type CompilerContext } from './context'
 import type { Project } from './project'
 import {
   injectScopeClasses,
-  inlineLocalImages,
   rewriteAnimationAttributes,
 } from './template-source'
 
@@ -32,10 +31,12 @@ export async function compileTemplates(
 
   for (const [relativeFile, absolutePath] of templateFiles) {
     const templatePath = withoutConfiguredExtension(relativeFile, context.extensions.template)
+    // Inline style `url()` values stay untouched. WeChat's WebView style
+    // engine resolves them against the document, not the mini-program source
+    // path; local package backgrounds must use CDN URLs, data URIs or <image>.
     const rawSource = await fs.readFile(absolutePath, 'utf8')
-    const inlined = inlineLocalImages(rawSource, absolutePath, project.root)
     const markedSource = injectScopeClasses(
-      inlined,
+      rawSource,
       TINY_ENGINE_NAMING.tagClassPrefix,
       TINY_ENGINE_NAMING.scopeMarkerClass,
     )

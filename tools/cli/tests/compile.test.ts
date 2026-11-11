@@ -25,8 +25,7 @@ beforeAll(async () => {
     sourceDir: fixtureDir,
     outputDir,
     clean: true,
-    dev: true,
-  })
+    })
 })
 
 afterAll(async () => {
@@ -129,7 +128,7 @@ describe('compileMiniProgram', () => {
       )
       await fs.writeFile(path.join(sourceDir, 'miniprogram_npm/pkg/button/index.wxml'), '<view>{{label}}</view>')
 
-      const result = await compileMiniProgram({ sourceDir, outputDir: npmOutput, clean: true, dev: true })
+      const result = await compileMiniProgram({ sourceDir, outputDir: npmOutput, clean: true })
       expect(result.diagnostics.filter((item) => item.severity === 'error')).toEqual([])
       const manifest = JSON.parse(await fs.readFile(path.join(npmOutput, 'manifest.json'), 'utf8'))
       expect(manifest.pages[0].configuration.usingComponents).toEqual({
@@ -247,8 +246,7 @@ describe('compileMiniProgram', () => {
         sourceDir,
         outputDir: unstyledOutput,
         clean: true,
-        dev: true,
-      })
+            })
       expect(result.diagnostics.filter((item) => item.severity === 'error')).toEqual([])
       const component = result.manifest.components.find((item) => item.path === 'components/plain/plain')
       expect(component?.style).toBeUndefined()
@@ -287,8 +285,7 @@ describe('compileMiniProgram', () => {
         sourceDir,
         outputDir: acssOutput,
         clean: true,
-        dev: true,
-        compatibility: { extensions: { style: ['.acss'] } },
+              compatibility: { extensions: { style: ['.acss'] } },
       })
       expect(result.diagnostics.filter((item) => item.severity === 'error')).toEqual([])
       expect(result.manifest.app?.style?.path).toBe('app.acss')
@@ -323,8 +320,7 @@ describe('compileMiniProgram', () => {
       sourceDir: fixtureDir,
       outputDir,
       clean: true,
-      dev: true,
-    })
+        })
     expect(result.diagnostics.filter((item) => item.severity === 'error')).toEqual([])
   })
 })
@@ -424,7 +420,7 @@ describe('compileMiniProgram — compatibility config', () => {
       'utf8',
     )
     expect(pageScript.startsWith(
-      'globalThis.__tinyPagePath = "pages/index/index";',
+      'globalThis.__tinyEntryPath = "pages/index/index";',
     )).toBe(true)
     const component = manifest.components[0]
     const componentScript = await fs.readFile(
@@ -432,8 +428,104 @@ describe('compileMiniProgram — compatibility config', () => {
       'utf8',
     )
     expect(componentScript.startsWith(
-      `globalThis.__tinyComponentPath = "${component.path}";`,
+      `globalThis.__tinyEntryPath = "${component.path}";`,
     )).toBe(true)
+  })
+
+  test('leaves page kind to runtime and emits one neutral entry hint', async () => {
+    const sourceDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cli-body-type-'))
+    const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cli-body-type-out-'))
+    try {
+      await fs.mkdir(path.join(sourceDir, 'pages/index'), { recursive: true })
+      await fs.writeFile(
+        path.join(sourceDir, 'app.json'),
+        JSON.stringify({ pages: ['pages/index/index'] }),
+      )
+      await fs.writeFile(path.join(sourceDir, 'app.js'), 'App({})\n')
+      await fs.writeFile(
+        path.join(sourceDir, 'pages/index/index.ts'),
+        'Component<{ name: string }>({ data: { name: "" } })\n',
+      )
+      await fs.writeFile(path.join(sourceDir, 'pages/index/index.wxml'), '<view>{{name}}</view>\n')
+      await fs.writeFile(path.join(sourceDir, 'pages/index/index.json'), '{}\n')
+
+      const result = await compileMiniProgram({ sourceDir, outputDir, clean: true })
+      expect(JSON.stringify(result.manifest)).not.toContain('"bodyType"')
+      const script = await fs.readFile(
+        path.join(outputDir, 'scripts/pages/index/index.js'),
+        'utf8',
+      )
+      expect(script.startsWith(
+        'globalThis.__tinyEntryPath = "pages/index/index";',
+      )).toBe(true)
+      expect(script).not.toContain('__tinyPagePath')
+      expect(script).not.toContain('__tinyComponentPath')
+    } finally {
+      await fs.rm(sourceDir, { recursive: true, force: true })
+      await fs.rm(outputDir, { recursive: true, force: true })
+    }
+  })
+
+  test('leaves WXML assets dynamic and normalizes WXSS urls at build time', async () => {
+    const sourceDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cli-assets-'))
+    const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cli-assets-out-'))
+    try {
+      await fs.mkdir(path.join(sourceDir, 'pages/index/theme'), { recursive: true })
+      await fs.mkdir(path.join(sourceDir, 'pages/images'), { recursive: true })
+      await fs.mkdir(path.join(sourceDir, 'media'), { recursive: true })
+      await fs.writeFile(
+        path.join(sourceDir, 'app.json'),
+        JSON.stringify({ pages: ['pages/index/index'] }),
+      )
+      await fs.writeFile(path.join(sourceDir, 'app.js'), 'App({})\n')
+      await fs.writeFile(
+        path.join(sourceDir, 'pages/index/index.wxml'),
+        '<image src="./icon.png" /><image src="{{dynamic}}" />\n'
+        + '<view style="background: url(./style-bg.png)"></view>\n',
+      )
+      await fs.writeFile(
+        path.join(sourceDir, 'pages/index/index.wxss'),
+        '@import "theme.wxss";\n.a { background: url("../images/a.png?v=1#preview"); }\n',
+      )
+      await fs.writeFile(
+        path.join(sourceDir, 'pages/index/theme.wxss'),
+        '.b { background: url("./theme/icon.png"); }\n',
+      )
+      await fs.writeFile(path.join(sourceDir, 'pages/index/index.js'), 'Page({})\n')
+      await fs.writeFile(path.join(sourceDir, 'pages/index/index.json'), '{}\n')
+      await fs.writeFile(path.join(sourceDir, 'pages/index/icon.png'), 'ICON')
+      await fs.writeFile(path.join(sourceDir, 'pages/index/style-bg.png'), 'STYLE')
+      await fs.writeFile(path.join(sourceDir, 'pages/index/theme/icon.png'), 'THEME')
+      await fs.writeFile(path.join(sourceDir, 'pages/images/a.png'), 'A')
+      await fs.writeFile(path.join(sourceDir, 'media/demo.mp4'), 'VIDEO')
+
+      const result = await compileMiniProgram({ sourceDir, outputDir, clean: true })
+      const templates = await fs.readFile(path.join(outputDir, 'templates.js'), 'utf8')
+      expect(templates).toContain('./icon.png')
+      expect(templates).toContain('"src",D.dynamic')
+      expect(templates).toContain('url(./style-bg.png)')
+      expect(templates).not.toContain('url(/pages/index/style-bg.png)')
+      expect(templates).not.toContain('data:image')
+
+      const css = await fs.readFile(
+        path.join(outputDir, 'styles/pages/index/index.wxss.css'),
+        'utf8',
+      )
+      expect(css).toContain('url("/pages/images/a.png?v=1#preview")')
+      expect(css).toContain('url("/pages/index/theme/icon.png")')
+
+      const assets = result.manifest.assets.map((asset) => asset.path)
+      expect(assets).toEqual(expect.arrayContaining([
+        'pages/index/icon.png',
+        'pages/index/theme/icon.png',
+        'pages/images/a.png',
+        'media/demo.mp4',
+      ]))
+      await expect(fs.access(path.join(outputDir, 'media/demo.mp4'))).resolves.toBeUndefined()
+    } finally {
+      await fs.rm(sourceDir, { recursive: true, force: true })
+      await fs.rm(outputDir, { recursive: true, force: true })
+    }
   })
 
   test('uses configured directives/API without changing Tiny internal names', async () => {
@@ -443,8 +535,7 @@ describe('compileMiniProgram — compatibility config', () => {
         sourceDir: compatibilityFixtureDir,
         outputDir: namingOutputDir,
         clean: true,
-        dev: true,
-      })
+            })
       expect(result.diagnostics.filter((item) => item.severity === 'error')).toEqual([])
       expect(result.manifest.runtimeCompatibility).toMatchObject({
         api: { global: 'tiny', aliases: [] },

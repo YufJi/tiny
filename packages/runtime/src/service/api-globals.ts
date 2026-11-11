@@ -30,7 +30,8 @@ export function installMiniProgramGlobals(
 ): MiniProgramApiHost {
   const globalObject = globalThis as unknown as Record<string, unknown>
   const globals = registry.compatibility.globals
-  const consumeHint = (name: string): string | undefined => {
+  const consumeEntryHint = (): string | undefined => {
+    const name = TINY_ENGINE_NAMING.entryPathHint
     const value = globalObject[name]
     delete globalObject[name]
     return typeof value === 'string' && value.length > 0 ? value : undefined
@@ -38,12 +39,12 @@ export function installMiniProgramGlobals(
   globalObject[globals.app] = (options: MiniProgramAppOptions) => registry.registerApp(options)
   globalObject[globals.page] = (options: MiniProgramPageOptions) => registry.registerPage(
     options,
-    consumeHint(TINY_ENGINE_NAMING.pageRegistrationHint),
+    consumeEntryHint(),
   )
   globalObject[globals.component] = (options: MiniProgramComponentOptions) => (
     registry.registerComponent(
       options,
-      consumeHint(TINY_ENGINE_NAMING.componentRegistrationHint),
+      consumeEntryHint(),
     )
   )
   globalObject[globals.behavior] = (options?: MiniProgramComponentOptions) => {

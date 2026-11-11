@@ -4,7 +4,6 @@ import type { PreloadRuleArtifact, ThemeTable } from '@tiny/manifest'
 import type { CompilerContext } from './context'
 import { relativePath } from './context'
 import {
-  ASSET_EXTENSIONS,
   collectFiles,
   createIgnoreMatcher,
   diagnostic,
@@ -55,7 +54,7 @@ export type AppConfig = {
 export type Project = {
   root: string
   appConfig: AppConfig
-  /** Source files keyed by mini-program-relative path. */
+  /** Packaged files keyed by mini-program-relative path (source and assets). */
   files: Map<string, string>
   /** `app` entry followed by every declared page. */
   entries: SourceEntry[]
@@ -73,18 +72,18 @@ export async function prepareOutputDir(context: CompilerContext): Promise<void> 
 export async function resolveProject(context: CompilerContext): Promise<Project> {
   context.root = await resolveRoot(context)
   const { root } = context
+  const outputRelative = normalizeRelativePath(
+    path.relative(root, context.options.outputDir),
+  )
+  const isInsideOutput = (relative: string): boolean => (
+    outputRelative.length > 0
+    && !outputRelative.startsWith('..')
+    && (relative === outputRelative || relative.startsWith(`${outputRelative}/`))
+  )
   const files = await collectFiles(
     root,
-    [
-      ...context.extensions.script,
-      ...context.extensions.template,
-      ...context.extensions.style,
-      ...context.extensions.templateScript,
-      ...context.extensions.config,
-      ...ASSET_EXTENSIONS,
-    ],
     ['.git', '.cache', 'node_modules'],
-    context.isPathIgnored,
+    (relative) => isInsideOutput(relative) || context.isPathIgnored?.(relative) === true,
   )
   const byRelative = new Map(files.map((file) => [relativePath(context, file), file]))
   // Mirror node_modules packages into the same virtual tree before entries are

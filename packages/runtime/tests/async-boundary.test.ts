@@ -49,12 +49,10 @@ function manifest(): Manifest {
     }],
     components: [{
       path: PLACEHOLDER,
-      bodyType: 'component',
       template: { path: PLACEHOLDER, outputPath: 'templates.js', sourcePath: `${PLACEHOLDER}.wxml` },
       configuration: { path: PLACEHOLDER, sourcePath: `${PLACEHOLDER}.json`, effective: {} },
     }, {
       path: HEAVY,
-      bodyType: 'component',
       template: { path: HEAVY, outputPath: 'templates.js', sourcePath: `${HEAVY}.wxml` },
       configuration: { path: HEAVY, sourcePath: `${HEAVY}.json`, effective: {} },
     }],

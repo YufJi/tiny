@@ -24,22 +24,22 @@ compileMiniProgram 会按顺序执行这些阶段。每个阶段只生成产物�
 | --- | --- | --- | --- |
 | 解析兼容输入 |  | 读取 sourceDir/tiny.config.json 的 compatibility；CompileOptions.compatibility 显式覆盖。缺省字段回退到微信规则。 | resolveCompatibilityInput() |
 | 准备输出并解析项目根 |  | 按 clean 清空输出目录；读取 compatibility.files.projectConfig 指向的项目配置及其 miniprogramRoot，没有该文件时把 sourceDir 当作小程序根目录。 | prepareOutputDir() · resolveRoot() |
-| 扫描源文件 |  | 按 compatibility.extensions 递归收集脚本、模板、样式、模板脚本、配置和静态资源，跳过 .git、.cache、node_modules 以及 `packOptions.ignore` 命中的路径。 | collectFiles(root, extensions) |
+| 扫描源文件 |  | 递归收集项目里的全部文件，跳过 .git、.cache、node_modules、输出目录以及 `packOptions.ignore` 命中的路径；后续各阶段再按扩展名挑出脚本、模板和样式。 | collectFiles(root) |
 | 构建 npm |  | 读取小程序根 `package.json#dependencies`，递归解析 `node_modules`（支持 `miniprogram` 字段与 pnpm 符号链接），镜像到 `miniprogram_npm`；源码里已有预构建树时优先使用它。 | buildNpmPackages() |
 | 读取小程序配置 |  | 读取 compatibility.files.appConfig 指向的配置，解析 pages 和 subPackages/subpackages。至少要有一个页面，否则记一条 APP_PAGES_REQUIRED 诊断。 | readAppConfig() · resolvePagePaths() |
 | 解析入口 |  | 每个路径同时尝试 foo.* 和 foo/index.*，按兼容配置中的扩展名查找 script、template、style 和 config。 | resolveEntry(root, byRelative, path) |
 | 查找组件 |  | 从 app 配置和每个页面、组件的 usingComponents 递归查找，记录全局/局部来源，并检查缺失。 | resolveComponentEntries() |
-| 编译脚本 |  | 从入口沿 import/require 收集可达脚本（含 `miniprogram_npm` 内的传递依赖），转译 TypeScript，补全模块路径（含裸包名），并输出 source map；页面/组件脚本会带上路径注册 hint。 | compileScripts() |
+| 编译脚本 |  | 从入口沿 import/require 收集可达脚本（含 `miniprogram_npm` 内的传递依赖），转译 TypeScript，补全模块路径（含裸包名），并输出 source map；页面/组件脚本只带一条中性入口路径 hint。 | compileScripts() |
 | 类型检查 |  | 项目有 tsconfig 或显式开启时运行 TypeScript 语义检查，输出 `SCRIPT_TYPE_ERROR`；没有社区 typings 时注入小程序全局声明。 | typecheckScripts() |
 | 编译模板 |  | 把所有模板文件放进同一个 TmplGroup，处理 import/include/template、模板脚本、作用域标记和 animation。 | compileTemplates() |
-| 编译样式 |  | app 样式保持全局；页面和组件样式加固定 Tiny class/tag scope；rpx 转成 vw；内联 @import。 | compileStyles() |
-| 复制资源 |  | 图片和字体按原相对路径复制；小图还会在模板编译阶段内联成 data URI。 | copyAssets() |
+| 编译样式 |  | app 样式保持全局；页面和组件样式加固定 Tiny class/tag scope；rpx 转成 vw；内联简单 `@import`，并按每个 WXSS 文件把 `url()` 归一化成 app-root 路径。 | compileStyles() |
+| 复制资源 |  | 所有非编译输入文件按原相对路径复制，不做大小或类型判断；资源 URL 在运行时由宿主解析。 | copyAssets() |
 | 生成 manifest 和入口 |  | 汇总产物、runtimeCompatibility 和诊断，写出 manifest.json；按分包拆出 `service.<pkg>.js`，生成 service.js 和 templates.js，并用 esbuild 逐个打包。 | createManifest() · writeEntryArtifacts() |
 :::
 
 ## 页面和组件是怎么找到的 {#discovery kicker="入口规则"}
 
-编译器给每个页面/组件脚本注入声明路径，运行时按路径注册，因此入口顺序不再是正确性前提；脚本没有 hint 时仍回退到声明顺序。
+编译器给每个页面/组件脚本注入入口路径，运行时按路径注册，因此入口顺序不再是正确性前提；脚本没有 hint 时仍回退到声明顺序。
 
 ::::cards
 :::card{tag="entry" title="文件入口和目录入口"}
@@ -60,15 +60,15 @@ compileMiniProgram 会按顺序执行这些阶段。每个阶段只生成产物�
 组件依赖会递归查找，已经访问过的路径会去重。
 :::
 
-:::card{tag="bodyType" title="页面还是组件型页面"}
-CLI 会扫描入口脚本，匹配 `compatibility.globals.component` 对应的调用。命中时把 `bodyType` 标成 `component`，表示这个页面由 Component 定义启动。
+:::card{tag="page kind" title="页面还是组件型页面"}
+编译器不再判断页面类型，也不写 `bodyType`。每个入口脚本只注入一条中性 `__tinyEntryPath`；运行时 `Page()` 注册为普通页面，`Component()` 且路径在 `app.json.pages` 中则识别为组件型页面。
 
-这只是文本级判断，不做完整的静态分析。
+这样 `Component<Props>(...)`、别名调用、条件导出和注释里出现 `Component(` 都不会影响分类。
 :::
 ::::
 
-:::callout{title="注册按路径，不按顺序" tone="good"}
-编译期在页面/组件脚本前写入 `__tinyPagePath` / `__tinyComponentPath`，`Page()` / `Component()` 消费后按声明路径注册；为兼容 webpack 产物里 `var globalThis = this` 的脚本，这类脚本跳过 hint 并回退到 manifest 顺序。运行时同时也跳过已由 hint 注册过的路径，避免重复绑定。
+:::callout{title="注册按路径，类型由运行时决定" tone="good"}
+编译期只在页面/组件脚本前写入 `__tinyEntryPath`，`Page()` / `Component()` 消费后按声明路径注册；页面是否其实是组件型页面，由运行时 registry 根据注册函数和 `app.json.pages` 判定。为兼容 webpack 产物里 `var globalThis = this` 的脚本，这类脚本跳过 hint 并回退到声明顺序。
 :::
 
 ## 输入格式可配，内部命名固定 {#naming kicker="兼容输入" nav="命名配置"}
@@ -186,7 +186,7 @@ export default {
 | WXS / SJS | TmplGroup.addScript + AST transform + module table | 模板里可以调用脚本模块，支持相对路径 require；事件由 service/render 双 runtime 执行 |
 | 作用域标记 | injectScopeClasses() | 给每个元素加上 `<tagClassPrefix><tag>`（固定 `tiny-tag-button`），供 tag 选择器使用 |
 | animation | rewriteAnimationAttributes() | 把 `animation="{{...}}"` 改写成内联 style |
-| 图片内联 | inlineLocalImages() | 小于 200KB 的本地图片转成 data URI，静态宿主不需要额外资源目录 |
+| 资源引用 | 不处理 | WXML 里的 `src` / `poster` / `style` 原样保留；`image` 等内置组件在运行时按宿主组件/页面路径解析 |
 
 WXS 在编译期完成 globals / `getRegExp` / `getDate` / `.constructor` 改写，并生成外部与内联模块表。WXML 表达式按模板归属求值：页面模板在 service；组件模板由 service 求值用于 diff/查询，render 再求值一次生成 shadow tree。WXS 事件尽量在 render 本地执行，无法解析到 WXS handler 时回退 service。具体分工见“运行时”页的 WXS 一节。
 
@@ -250,7 +250,7 @@ button { height: 88rpx; }            /* -> tiny-button:where(.tiny-pages-todos-t
 :::::
 
 :::callout{title="样式编译给逻辑树用"}
-编译器只负责生成 CSS、cascade role 和 scope 名称；service 的逻辑树在挂载页面时注册样式并计算 scope，再把页面/组件样式随 tree.flow 下发给渲染树。渲染树不根据文件名猜样式类型，只按 role 应用。
+编译器只负责生成 CSS 和 scope 名称；service 的逻辑树在挂载页面时根据页面/组件归属计算 cascade role，注册样式并计算 scope，再把页面/组件样式随 tree.flow 下发给渲染树。渲染树不根据文件名猜样式类型，只按 role 应用。
 :::
 
 ## 主题变量从 theme.json 进入产物 {#theme kicker="主题变量"}
@@ -320,7 +320,6 @@ devtool 导航栏已按 `prefers-color-scheme` 读取 `darkEffective`；`wx.onTh
   },
   "pages": [{
     "path": "pages/todos/todos",
-    "bodyType": "page",
     "script": { "path": "scripts/pages/todos/todos.js", "sourcePath": "..." },
     "template": { "path": "pages/todos/todos", "outputPath": "templates.js" },
     "style": { "path": "pages/todos/todos.wxss", "scope": "tiny-pages-todos-todos", "outputPath": "..." },
@@ -342,7 +341,7 @@ devtool 导航栏已按 `prefers-color-scheme` 读取 `darkEffective`；`wx.onTh
 - `app`：App 脚本、全局样式和 app.json 的有效配置
 - `pages` / `components`：入口、模板、样式和配置
 - `styles`：所有样式（含 app），带 scope 和低优先级路径
-- `assets`：复制到输出目录的静态资源
+- `assets`：按原路径复制到输出目录的非编译输入文件
 - `diagnostics`：编译期诊断，宿主启动时会一并读取
 :::
 
@@ -437,24 +436,16 @@ TypeScript 转译和 PostCSS 都会输出 source map，并写入 `sourcesContent
 devtool 的监听是外部脚本在 250ms 防抖后重新全量构建。
 :::
 
-:::card{tag="dev 参数" tone="warn" title="dev 暂时没有影响"}
-`CompileOptions.dev` 会被保存，但没有参与输出；模板始终使用 `TmplGroup.newDev()`，也没有生产压缩模式。
-:::
-
-:::card{tag="静态分析" tone="warn" title="页面类型靠正则判断"}
-`bodyType` 通过匹配 `Component(` 判断，动态注册、条件导出、别名调用等写法无法识别。
-:::
-
 :::card{tag="样式" tone="warn" title="编译期只处理作用域"}
-编译器生成 class/tag 作用域、cascade role 和 `hostAttribute`，并把 `:host` 转成低优先级 `[wx-host]` 规则；`styleIsolation`、`addGlobalClass` 和 `shared` 的样式组合发生在逻辑树和渲染树的样式应用阶段。
+编译器生成 class/tag 作用域和 `hostAttribute`，并把 `:host` 转成低优先级 `[wx-host]` 规则；cascade role、`styleIsolation`、`addGlobalClass` 和 `shared` 的样式组合发生在逻辑树和渲染树的样式应用阶段。
 :::
 
 :::card{tag="运行环境" tone="warn" title="依赖 Node 工具链"}
 编译器依赖 fs、typescript、esbuild 和 PostCSS，只能在构建期运行，不会进入浏览器线程。
 :::
 
-:::card{tag="资源" tone="warn" title="资源分两段处理"}
-编译器按原路径复制图片和字体，并把 WXML 里小于 200KB 的本地图片内联成 data URI。更大的 WXML 图片由宿主 `resolveAssetUrl` 解析；WXSS 里的 `url()` 目前原样保留，由 render 文档的相对路径规则决定。
+:::card{tag="资源" tone="warn" title="WXML 运行时解析，WXSS 编译期归一化"}
+WXML 的 `image` / `video poster` / `cover-image` 等引用原样保留，运行时按宿主组件/页面路径解析，动态 `src` 也在运行时求值。WXSS 的 `url()` 在编译期按每个 WXSS 文件（含简单 `@import`）归一化成 app-root 路径，运行时再映射成宿主 URL；带 media/layer 条件的 `@import` 仍按原样保留，不会展开。inline `style` 里的 `url()` 由 WebView CSS 引擎解析，小程序不负责资源解析；本地包背景图不要依赖它，使用 CDN、base64 或 `<image>`。
 :::
 ::::
 

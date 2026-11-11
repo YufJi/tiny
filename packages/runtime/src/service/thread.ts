@@ -38,20 +38,13 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   const wxsRuntime = createWxsRuntime({ compile: createDefaultWxsCompiler() })
   ;(globalThis as unknown as Record<string, unknown>)[TINY_ENGINE_NAMING.wxsRuntimeGlobal] = wxsRuntime
 
-  const expectedPagePaths = options.manifest.pages
-    .filter((page) => page.bodyType !== 'component')
-    .map((page) => page.path)
-  const expectedComponentPaths = [
-    ...options.manifest.pages
-      .filter((page) => page.bodyType === 'component')
-      .map((page) => page.path),
-    ...options.manifest.components.map((component) => component.path),
-  ]
+  const expectedPagePaths = options.manifest.pages.map((page) => page.path)
+  const expectedComponentPaths = options.manifest.components.map((component) => component.path)
   const compatibility = runtimeCompatibilityFromManifest(options.manifest)
   const componentConfigurations = new Map<string, Record<string, unknown>>()
   for (const artifact of [
     ...options.manifest.components,
-    ...options.manifest.pages.filter((page) => page.bodyType === 'component'),
+    ...options.manifest.pages,
   ]) {
     componentConfigurations.set(artifact.path, artifact.configuration?.effective ?? {})
   }
@@ -98,9 +91,11 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     manifest: options.manifest,
     componentDefinitions: registry.normalizedComponents,
     pageOptions: registry.pages,
+    isComponentPage: (path) => registry.isComponentPage(path),
     behaviorScheme: compatibility.behaviorScheme,
     loadTemplates: options.loadTemplates,
     ...(options.loadStyle ? { loadStyle: options.loadStyle } : {}),
+    ...(options.resolveAssetUrl ? { resolveAssetUrl: options.resolveAssetUrl } : {}),
     getPage: (pageId) => resolvePage(pageId),
     frameworkContext: {
       createRouter,

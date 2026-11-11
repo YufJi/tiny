@@ -20,7 +20,6 @@ afterAll(() => {
 function page(path: string): PageArtifact {
   return {
     path,
-    bodyType: 'page',
     template: { path, outputPath: 'templates.js', sourcePath: `${path}.wxml` },
     configuration: { path, sourcePath: `${path}.json`, effective: {} },
   }

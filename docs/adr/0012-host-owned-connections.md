@@ -13,7 +13,7 @@ still constructed its own `BridgeConnection` and built the `ServiceApiContext`
 handed to `@tiny/api`. That left the dependency direction muddy:
 
 - `@tiny/api` imported `ServiceApiContext`, `MiniProgramApiHost`,
-  `ServiceCanvasAdapter`, `ServiceTabBar`-shaped types and `resolveAssetPath`
+  `ServiceCanvasAdapter`, `ServiceTabBar`-shaped types and asset path helpers
   from `@tiny/runtime`, so the API table depended on the kernel it is injected
   into.
 - `ServiceThreadOptions` carried host capabilities (`canvas`,

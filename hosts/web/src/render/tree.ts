@@ -422,9 +422,40 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     message: string
     details?: unknown
   }) => void) | undefined
+  /** Render instance → component path, for asset and generic resolution. */
+  const componentPathByComponent = new WeakMap<object, string>()
+
+  /**
+   * Nearest component artifact path for an instance. Built-in components
+   * (`image`, `video`, …) have no path of their own, so walk to the owning
+   * custom component or page root; the page root uses the active page path.
+   */
+  const componentSourcePath = (component: unknown): string => {
+    let current = component as {
+      ownerShadowRoot?: { getHostNode?: () => unknown } | null
+      parentNode?: unknown
+    } | null
+    for (let depth = 0; current && depth < 32; depth += 1) {
+      const mapped = componentPathByComponent.get(current as object)
+      if (mapped) return mapped
+      const owner = current.ownerShadowRoot?.getHostNode?.()
+      if (owner && owner !== current) {
+        current = owner as typeof current
+        continue
+      }
+      const parent = current.parentNode
+      if (parent) {
+        current = parent as typeof current
+        continue
+      }
+      break
+    }
+    return currentPagePath
+  }
+
   const definitions = createBuiltinComponents(space, {
-    resolveAssetUrl: (src: string, _component: unknown) => (
-      options.resolveAssetUrl?.(src, currentPagePath) ?? src
+    resolveAssetUrl: (src: string, component: unknown) => (
+      options.resolveAssetUrl?.(src, componentSourcePath(component)) ?? src
     ),
     onDiagnostic: (diagnostic) => diagnosticSink?.(diagnostic),
     lookupNodeProps: (component) => {
@@ -453,8 +484,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
    * them and `<form>` reads node props for `name` / `value`.
    */
   const rawPropsByComponent = new WeakMap<object, Record<string, unknown>>()
-  /** Render instance → component path, for resolving parent `generic:` tags. */
-  const componentPathByComponent = new WeakMap<object, string>()
   const componentDefinitions = new Map<string, ComponentDefinitionPayload>(
     Object.entries(options.componentDefinitions ?? {}),
   )

@@ -1,6 +1,6 @@
 import { createApiHost, createGlobalEventHub } from '@tiny/api'
 import type { ApiContext, ApiHost } from '@tiny/api'
-import { bootServiceThread, resolveAssetPath } from '@tiny/runtime'
+import { bootServiceThread } from '@tiny/runtime'
 import type {
   RuntimeManifest,
   ServiceThreadRuntime,
@@ -155,9 +155,9 @@ export function startTinyService(app: TinyIOSApp): void {
   const host = globalThis as unknown as HostGlobal
   const iosHost = (host.__TINY_IOS__ ?? {}) as HostGlobal
 
-  const initialPath = app.manifest.pages.find((page) => page.bodyType !== 'component')?.path
-    ?? app.manifest.pages[0]?.path
-    ?? ''
+  // The first declared page is the launch page; whether it is a Page or a
+  // Component-as-page is decided by its own registration at runtime.
+  const initialPath = app.manifest.pages[0]?.path ?? ''
   const launchOptions = app.launchOptions ?? {
     path: initialPath,
     query: {},
@@ -243,11 +243,10 @@ export function startTinyService(app: TinyIOSApp): void {
     apiName: compatibility.api.global,
     apiNamespaces: [compatibility.api.global, ...compatibility.api.aliases],
     canvas,
-    resolveAssetUrl: (assetPath, context) => {
-      const resolved = resolveAssetPath(context.sourcePath, assetPath)
-      if (!resolved) return undefined
-      return app.assetsBase + resolved.split('/').map(encodeURIComponent).join('/')
-    },
+    // The API layer passes an app-root path; only map it to a loadable URL.
+    resolveAssetUrl: (assetPath) => (
+      app.assetsBase + assetPath.split('/').map(encodeURIComponent).join('/')
+    ),
     events,
     launchOptions,
     getActivePage: () => runtime?.activePage,
@@ -275,6 +274,7 @@ export function startTinyService(app: TinyIOSApp): void {
       maxPageStack: 10,
       loadTemplates,
       loadStyle: (stylePath) => app.styles[stylePath] ?? '',
+      resolveAssetUrl: apiContext.resolveAssetUrl,
       loadArtifacts: async () => {
         if (serviceEvaluated) return
         serviceEvaluated = true

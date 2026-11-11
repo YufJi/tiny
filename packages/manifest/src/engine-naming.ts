@@ -54,12 +54,11 @@ export const TINY_ENGINE_NAMING = Object.freeze({
   wxsServiceOnlyInputEvent: 'input',
   wxsServiceOnlyInputTags: ['input', 'textarea'],
   /**
-   * The compiler writes the declared page/component path into one of these
-   * globals before the script body runs. `Page()` / `Component()` consume and
-   * clear it, so registration no longer depends on evaluation order (needed by
-   * lazy subpackage/component chunks).
+   * The compiler writes the declared entry path into this global before each
+   * page/component script runs. `Page()` / `Component()` consume and clear it,
+   * so registration does not depend on evaluation order or on any static
+   * analysis of the script body.
    */
-  pageRegistrationHint: '__tinyPagePath',
-  componentRegistrationHint: '__tinyComponentPath',
+  entryPathHint: '__tinyEntryPath',
 
 } as const)

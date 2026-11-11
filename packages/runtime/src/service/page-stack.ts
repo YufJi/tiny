@@ -100,11 +100,10 @@ export class ServicePageStack {
   /** Create and show the entry page if the stack is still empty. */
   start(): void {
     if (this.stack.length > 0) return
-    const pageArtifact = findPageArtifact(this.options.manifest, this.path)
     const currentPage = this.createPageInstance(this.path, {})
     this.triggerPageLifecycle(currentPage, 'onLoad', [currentPage.query])
     this.triggerPageLifecycle(currentPage, 'onShow')
-    if (pageArtifact?.bodyType === 'component') {
+    if (this.options.registry.isComponentPage(this.path)) {
       currentPage.triggerComponentLifecycle('attached')
       currentPage.triggerComponentLifecycle('ready')
     }
@@ -519,8 +518,7 @@ export class ServicePageStack {
     eventChannel?: unknown,
   ): MiniProgramPageInstance {
     const { registry, render } = this.options
-    const pageArtifact = findPageArtifact(this.options.manifest, path)
-    const isComponentPage = pageArtifact?.bodyType === 'component'
+    const isComponentPage = registry.isComponentPage(path)
     const definition = registry.pages.get(path) ?? registry.components.get(path)
     if (!definition) throw new Error(`page is not registered: ${path}`)
     const componentDefinition = isComponentPage
@@ -579,7 +577,7 @@ export class ServicePageStack {
     this.triggerPageLifecycle(page, 'onLoad', [page.query])
     this.triggerPageLifecycle(page, 'onShow')
     page.triggerPageLifetime('show')
-    if (findPageArtifact(this.options.manifest, page.path)?.bodyType === 'component') {
+    if (this.options.registry.isComponentPage(page.path)) {
       page.triggerComponentLifecycle('attached')
       page.triggerComponentLifecycle('ready')
     }

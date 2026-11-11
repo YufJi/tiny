@@ -26,7 +26,6 @@ afterAll(() => {
 function createManifest(componentEffective: Record<string, unknown>): Manifest {
   const page: PageArtifact = {
     path: PAGE_PATH,
-    bodyType: 'page',
     template: { path: PAGE_PATH, outputPath: 'templates.js', sourcePath: `${PAGE_PATH}.wxml` },
     configuration: {
       path: PAGE_PATH,
@@ -36,7 +35,6 @@ function createManifest(componentEffective: Record<string, unknown>): Manifest {
   }
   const component: PageArtifact = {
     path: COMPONENT_PATH,
-    bodyType: 'component',
     template: {
       path: COMPONENT_PATH,
       outputPath: 'templates.js',

@@ -6,17 +6,6 @@ export function toPosixPath(value: string): string {
   return value.split(path.sep).join('/')
 }
 
-/** Static files copied verbatim to the artifact tree. */
-export const ASSET_EXTENSIONS = [
-  '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp',
-  '.eot', '.woff', '.woff2', '.ttf', '.otf',
-] as const
-
-export function isAssetPath(value: string): boolean {
-  const lower = value.toLowerCase()
-  return ASSET_EXTENSIONS.some((extension) => lower.endsWith(extension))
-}
-
 export function normalizeRelativePath(value: string): string {
   return toPosixPath(path.normalize(value)).replace(/^\.\//, '').replace(/\/+$/, '')
 }
@@ -73,12 +62,10 @@ export function diagnostic(
 
 export async function collectFiles(
   rootDir: string,
-  extensions: string[],
   ignoredDirectories: string[] = ['.git', '.cache', 'node_modules'],
   ignored?: (relativePath: string) => boolean,
 ): Promise<string[]> {
   const output: string[] = []
-  const orderedExtensions = [...new Set(extensions)].sort((left, right) => right.length - left.length)
 
   async function walk(currentDir: string): Promise<void> {
     const entries = await fs.readdir(currentDir, { withFileTypes: true })
@@ -88,10 +75,7 @@ export async function collectFiles(
       if (ignored?.(relative)) continue
       if (entry.isDirectory()) {
         if (!ignoredDirectories.includes(entry.name)) await walk(entryPath)
-      } else if (
-        entry.isFile()
-        && orderedExtensions.some((extension) => entry.name.endsWith(extension))
-      ) {
+      } else if (entry.isFile()) {
         output.push(entryPath)
       }
     }

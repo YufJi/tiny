@@ -41,7 +41,6 @@ function createTemplateRegistry() {
 function createManifest(): Manifest {
   const page = (path: string): PageArtifact => ({
     path,
-    bodyType: 'page',
     template: { path, outputPath: 'templates.js', sourcePath: `${path}.wxml` },
     configuration: { path, sourcePath: `${path}.json`, effective: {} },
   })

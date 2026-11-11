@@ -220,6 +220,64 @@ describe('glass render tree', () => {
     expect(card.getShadowRoot()?.getElementById('inner')).toBeDefined()
   })
 
+  test('resolves component-relative assets against the owning component path', () => {
+    const templates = templatesFor(
+      'components/card/card',
+      '<image id="image" src="./icon.png" />',
+    )
+    const resolved: Array<{ src: string; sourcePath?: string }> = []
+    const tree = createGlassRenderTree({
+      backend: new glassEasel.EmptyBackendContext(),
+      templates,
+      componentDefinitions: {
+        'components/card/card': { path: 'components/card/card' },
+      },
+      resolveAssetUrl: (src, sourcePath) => {
+        resolved.push({ src, sourcePath })
+        return `${sourcePath ?? ''}/${src}`
+      },
+    })
+    tree.mount(element('root', 'view', {}, [{
+      type: 'element',
+      id: 'card',
+      tag: 'card',
+      component: true,
+      componentPath: 'components/card/card',
+    }]))
+
+    const card = tree.getNode('card') as unknown as {
+      getShadowRoot: () => { getElementById: (id: string) => unknown } | null
+    }
+    const image = card.getShadowRoot()?.getElementById('image') as unknown as {
+      asGeneralComponent: () => { resolveSrc: (value: string) => string } | undefined
+    } | undefined
+    const component = image?.asGeneralComponent()
+    expect(component).toBeDefined()
+    expect(component!.resolveSrc('./icon.png')).toBe('components/card/card/./icon.png')
+    expect(resolved).toContainEqual({ src: './icon.png', sourcePath: 'components/card/card' })
+    ;(component as unknown as { setData: (value: Record<string, unknown>) => void })
+      .setData({ src: './updated.png' })
+    const updated = (component as unknown as { data: { src: string } }).data.src
+    expect(component!.resolveSrc(updated)).toBe('components/card/card/./updated.png')
+  })
+
+  test('resolves page-level assets against the active page path', () => {
+    const tree = createGlassRenderTree({
+      backend: new glassEasel.EmptyBackendContext(),
+      resolveAssetUrl: (src, sourcePath) => `${sourcePath ?? ''}|${src}`,
+    })
+    tree.setPagePath('pages/index/index')
+    tree.mount(element('root', 'page', {}, [
+      element('image', 'image', { src: './icon.png' }),
+    ]))
+
+    const image = tree.getNode('image') as unknown as {
+      resolveSrc: (value: string) => string
+    }
+    expect(image.resolveSrc('./icon.png')).toBe('pages/index/index|./icon.png')
+    expect(image.resolveSrc('../shared/icon.png')).toBe('pages/index/index|../shared/icon.png')
+  })
+
   test('forwards template handlers instead of running them locally', () => {
     const templates = templatesFor(
       'components/card/card',

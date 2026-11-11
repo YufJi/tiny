@@ -19,23 +19,28 @@ export function isExternalAssetUrl(value: string): boolean {
   return EXTERNAL_ASSET_URL.test(value)
 }
 
-export function splitAssetSuffix(value: string): { path: string; suffix: string } {
+function splitAssetSuffix(value: string): { path: string; suffix: string } {
   const index = value.search(/[?#]/)
   if (index === -1) return { path: value, suffix: '' }
   return { path: value.slice(0, index), suffix: value.slice(index) }
 }
 
 /**
- * Resolve a mini-program asset path to an app-root-relative path.
+ * Resolve a mini-program asset reference to an app-root-relative path and its
+ * original query/hash suffix. WeChat's `getRealRoute` resolves the path
+ * portion while leaving `?v=1#preview` attached, so callers must preserve it.
  *
  * Returns `null` for external URLs, fragments, or paths that escape the app
  * root. The caller should leave those values unchanged.
  */
-export function resolveAssetPath(sourcePath: string, value: string): string | null {
+export function resolveAssetReference(
+  sourcePath: string,
+  value: string,
+): { path: string; suffix: string } | null {
   const trimmed = value.trim()
   if (!trimmed || trimmed.startsWith('#') || isExternalAssetUrl(trimmed)) return null
 
-  const { path: pathname } = splitAssetSuffix(trimmed)
+  const { path: pathname, suffix } = splitAssetSuffix(trimmed)
   if (!pathname) return null
 
   const normalizedSource = sourcePath.replace(/\\/g, '/').replace(/^\/+/, '')
@@ -55,5 +60,5 @@ export function resolveAssetPath(sourcePath: string, value: string): string | nu
     parts.push(part)
   }
 
-  return parts.length > 0 ? parts.join('/') : null
+  return parts.length > 0 ? { path: parts.join('/'), suffix } : null
 }
