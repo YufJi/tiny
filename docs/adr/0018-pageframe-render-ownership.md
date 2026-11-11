@@ -3,8 +3,8 @@
 ## Status
 
 Accepted. Phase A is implemented and enabled by default in the browser test
-host. The devtool keeps the snapshot fallback until the component
-creation/destruction flow is fully service-owned and replayed by the pageframe.
+host and the debugger. The snapshot renderer remains available for explicit
+hosts that do not opt into `pageFrame`.
 
 ## Context
 

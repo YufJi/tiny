@@ -182,6 +182,7 @@ export class DevtoolRuntimeClient {
         serviceUrl: this.options.serviceUrl,
         renderUrl: this.options.renderUrl,
         initialPath: this.launchPath,
+        pageFrame: true,
         container,
         maxPageStack: this.options.maxPageStack,
         ...(this.launchExitState !== undefined
