@@ -35,6 +35,8 @@ export type WasmHostOptions = {
   serviceUrl: string
   renderUrl: string
   initialPath: string
+  /** State loaded for the launch page's first `onLoad`. */
+  initialExitState?: unknown
   container?: HTMLElement
   maxPageStack?: number
   /**
@@ -190,6 +192,9 @@ export class WasmBrowserHost {
       manifest: this.options.manifest,
       initialPath: this.options.initialPath,
       maxPageStack: this.options.maxPageStack,
+      ...(this.options.initialExitState !== undefined
+        ? { initialExitState: this.options.initialExitState }
+        : {}),
     })
     this.core = await this.factory(config)
     this.execute(this.core.start(nowMs()))

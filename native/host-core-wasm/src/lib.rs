@@ -17,6 +17,8 @@ struct WasmConfig {
     manifest: Value,
     initial_path: String,
     max_page_stack: Option<usize>,
+    #[serde(default)]
+    initial_exit_state: Option<Value>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -114,6 +116,7 @@ impl WasmHostCore {
                 manifest: config.manifest,
                 initial_path: config.initial_path,
                 max_page_stack: config.max_page_stack,
+                initial_exit_state: config.initial_exit_state,
             }),
         })
     }

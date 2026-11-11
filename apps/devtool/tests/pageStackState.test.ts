@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { mergeSavedPageStack } from '../src/pageStackState'
+import { launchExitState, mergeSavedPageStack } from '../src/pageStackState'
 
 describe('mergeSavedPageStack', () => {
   test('keeps data and exit state while the same live page reports state', () => {
@@ -61,5 +61,25 @@ describe('mergeSavedPageStack', () => {
       query: { tab: 'one' },
       data: { legacy: true },
     }])
+  })
+})
+
+describe('launchExitState', () => {
+  test('prefers the latest save over the previous page exit state', () => {
+    expect(launchExitState({
+      path: 'pages/a/a',
+      query: {},
+      exitState: { draft: 'previous' },
+      savedExitState: { draft: 'latest' },
+    })).toEqual({ draft: 'latest' })
+  })
+
+  test('falls back to the loaded exit state when nothing new was saved', () => {
+    expect(launchExitState({
+      path: 'pages/a/a',
+      query: {},
+      exitState: { draft: 'previous' },
+      savedExitState: null,
+    })).toEqual({ draft: 'previous' })
   })
 })

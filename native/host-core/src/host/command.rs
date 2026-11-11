@@ -56,6 +56,8 @@ pub enum HostCommand {
         page_id: String,
         data: serde_json::Value,
         saved_exit_state: Option<serde_json::Value>,
+        #[serde(default)]
+        exit_state: Option<serde_json::Value>,
     },
     Close,
 }
@@ -94,7 +96,8 @@ mod tests {
             "type": "restorePageState",
             "pageId": "page-1",
             "data": { "count": 2 },
-            "savedExitState": { "scrollTop": 12 }
+            "savedExitState": { "scrollTop": 12 },
+            "exitState": { "draft": "kept" }
         }))
         .expect("restorePageState command should deserialize");
         match restore {
@@ -102,10 +105,12 @@ mod tests {
                 page_id,
                 data,
                 saved_exit_state,
+                exit_state,
             } => {
                 assert_eq!(page_id, "page-1");
                 assert_eq!(data, serde_json::json!({ "count": 2 }));
                 assert_eq!(saved_exit_state, Some(serde_json::json!({ "scrollTop": 12 })));
+                assert_eq!(exit_state, Some(serde_json::json!({ "draft": "kept" })));
             }
             _ => panic!("expected RestorePageState"),
         }

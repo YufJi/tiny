@@ -116,6 +116,8 @@ export type ServiceThreadOptions = {
   appVisible?: boolean
   /** Host-owned launch options passed to App.onLaunch / initial onShow. */
   launchOptions?: unknown
+  /** State persisted by the previous launch's page `onSaveExitState`. */
+  initialExitState?: unknown
   /**
    * A page was destroyed. The host releases per-page resources here (canvas
    * nodes, …); the runtime does not own canvas semantics.

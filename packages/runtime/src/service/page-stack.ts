@@ -34,6 +34,8 @@ export type ServicePageStackOptions = {
   /** Host hook: the page is gone, release per-page resources (canvas nodes, …). */
   onPageRelease?: (pageId: string) => void
   maxPageStack?: number
+  /** State loaded for the first page created after a cold launch. */
+  initialExitState?: unknown
 }
 
 export type PageStateSnapshot = {
@@ -42,6 +44,7 @@ export type PageStateSnapshot = {
   query: Record<string, string>
   data: Record<string, unknown>
   savedExitState: unknown
+  exitState: unknown
 }
 
 /**
@@ -64,6 +67,8 @@ export class ServicePageStack {
   private lifecycleSequence = 0
   private maxStack: number
   private pageIdCounter = 0
+  private pendingExitState: unknown
+  private hasPendingExitState: boolean
   /**
    * Page side of the `EventChannel` from the `wx.navigateTo` in flight. The API
    * layer binds it right before the host call; the page created for that call
@@ -75,6 +80,8 @@ export class ServicePageStack {
     this.componentTree = options.componentTree
     this.path = options.initialPath
     this.maxStack = options.maxPageStack ?? 10
+    this.pendingExitState = cloneJsonSafe(options.initialExitState)
+    this.hasPendingExitState = Object.prototype.hasOwnProperty.call(options, 'initialExitState')
   }
 
   get activePage(): MiniProgramPageInstance | null {
@@ -103,6 +110,12 @@ export class ServicePageStack {
 
   setMaxPageStack(limit: number): void {
     if (Number.isInteger(limit) && limit > 0) this.maxStack = limit
+  }
+
+  /** Provide the state consumed by the next page created for this launch. */
+  setInitialExitState(exitState: unknown): void {
+    this.pendingExitState = cloneJsonSafe(exitState)
+    this.hasPendingExitState = true
   }
 
   /** Create and show the entry page if the stack is still empty. */
@@ -355,10 +368,11 @@ export class ServicePageStack {
     const page = requireActivePage(this.pageInstances, pageId, this.active)
     if (!this.visible) return { status: 'hidden', pageId: page.pageId }
     this.visible = false
-    this.saveExitState(page)
     this.triggerPageLifecycle(page, 'onHide')
     page.triggerPageLifetime('hide')
     this.options.render.triggerPageLifetime(page.pageId, 'hide')
+    // WeChat saves after onHide; a handler that mutates data still contributes.
+    this.saveExitState(page)
     this.sendRuntimeState()
     return { status: 'hidden', pageId: page.pageId }
   }
@@ -434,6 +448,7 @@ export class ServicePageStack {
       query: { ...page.query },
       data: cloneJsonSafe(page.data),
       savedExitState: cloneJsonSafe(page.savedExitState ?? null),
+      exitState: cloneJsonSafe(page.exitState ?? null),
     }))
   }
 
@@ -442,11 +457,14 @@ export class ServicePageStack {
     pageId: string,
     data: Record<string, unknown>,
     savedExitState?: unknown,
+    exitState?: unknown,
   ): Record<string, unknown> {
     const page = this.pageInstances.get(pageId)
     if (!page) return { status: 'missing', pageId }
     if (data && typeof data === 'object' && Object.keys(data).length > 0) page.setData(data)
     if (savedExitState !== undefined) page.savedExitState = cloneJsonSafe(savedExitState)
+    if (exitState !== undefined) page.exitState = cloneJsonSafe(exitState)
+    else if (savedExitState !== undefined) page.exitState = cloneJsonSafe(savedExitState)
     return {
       status: 'restored',
       pageId,
@@ -569,6 +587,7 @@ export class ServicePageStack {
       path,
       options: definition,
       query,
+      ...(this.hasPendingExitState ? { exitState: this.pendingExitState } : {}),
       ...(componentDefinition ? { definition: componentDefinition } : {}),
       onDataPatch: (id, patch) => {
         render.syncPageData(id, patch)
@@ -601,6 +620,8 @@ export class ServicePageStack {
         ...(eventChannel !== undefined ? { eventChannel } : {}),
       },
     })
+    this.pendingExitState = undefined
+    this.hasPendingExitState = false
     if (componentDefinition) page.triggerComponentLifecycle('created')
     this.pageInstances.set(page.pageId, page)
     this.stack.push(page)

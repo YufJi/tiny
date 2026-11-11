@@ -1,7 +1,7 @@
 import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
 import { DevtoolRuntimeClient } from './runtimeClient';
-import { mergeSavedPageStack } from './pageStackState';
+import { launchExitState, mergeSavedPageStack } from './pageStackState';
 import { createWasmHostCoreFactory } from './wasmHostCore';
 import './runtimePanel.css';
 import {
@@ -58,6 +58,9 @@ function readSavedStack(appId) {
                 : {}),
               ...(Object.prototype.hasOwnProperty.call(entry, 'savedExitState')
                 ? { savedExitState: entry.savedExitState }
+                : {}),
+              ...(Object.prototype.hasOwnProperty.call(entry, 'exitState')
+                ? { exitState: entry.exitState }
                 : {}),
             }
           : null))
@@ -383,6 +386,7 @@ class RuntimePanel extends PureComponent {
 
       this.setState({ launchingAppId: appId, launcherError: '', actionError: '' });
       const manifest = await this.loadManifest(app);
+      const savedStack = options.restore ? readSavedStack(app.id) : [];
       const firstPage = Array.isArray(manifest.pages) ? manifest.pages[0]?.path : null;
       if (!firstPage) throw new Error(`${app.label} has no pages in its manifest`);
       const requestedPath = options.initialPath;
@@ -416,6 +420,9 @@ class RuntimePanel extends PureComponent {
           statusBarHeight: 44,
         },
         maxPageStack: this.maxPageStack,
+        ...(savedStack[0]
+          ? { initialExitState: launchExitState(savedStack[0]) }
+          : {}),
       });
       const session = {
         appId: app.id,
@@ -435,7 +442,6 @@ class RuntimePanel extends PureComponent {
       session.unsubscribe = client.subscribe((state) => this.onSessionState(session, state));
       this.sessions.set(app.id, session);
       this.syncSessionList();
-      const savedStack = options.restore ? readSavedStack(app.id) : [];
       await client.launch();
       if (options.restore) await this.restorePageStack(session, manifest, initialPath, savedStack);
       await this.activateSession(session);
@@ -525,7 +531,10 @@ class RuntimePanel extends PureComponent {
   async restorePageStack(session, manifest, initialPath, saved) {
     if (saved.length === 0 || saved[0].path !== initialPath) return;
     const initialPageId = session.client.getState().pageStack.at(-1);
-    if (initialPageId && (saved[0].data || 'savedExitState' in saved[0])) {
+    if (
+      initialPageId
+      && (saved[0].data || 'savedExitState' in saved[0] || 'exitState' in saved[0])
+    ) {
       await session.client.restorePageState({
         ...saved[0],
         pageId: initialPageId,
@@ -536,7 +545,7 @@ class RuntimePanel extends PureComponent {
       const query = new URLSearchParams(entry.query ?? {}).toString();
       try {
         const pageId = await session.client.navigate(`/${entry.path}${query ? `?${query}` : ''}`);
-        if (pageId && (entry.data || 'savedExitState' in entry)) {
+        if (pageId && (entry.data || 'savedExitState' in entry || 'exitState' in entry)) {
           await session.client.restorePageState({
             ...entry,
             pageId,
@@ -595,9 +604,10 @@ class RuntimePanel extends PureComponent {
       const snapshot = await session.client.snapshotPageState();
       if (snapshot.length > 0) writeSavedStack(session.appId, snapshot);
       const initialPath = snapshot[0]?.path ?? session.initialPath;
+      const initialExitState = launchExitState(snapshot[0]);
       session.initialPath = initialPath;
       session.reloadPending = true;
-      await session.client.reload(initialPath);
+      await session.client.reload(initialPath, initialExitState);
       if (snapshot.length > 0) {
         await session.client.inspectTree();
         await this.restorePageStack(session, session.manifest, initialPath, snapshot);

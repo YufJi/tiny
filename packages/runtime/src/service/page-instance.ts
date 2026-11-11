@@ -73,6 +73,8 @@ export type MiniProgramPageInstanceOptions = {
   definition?: NormalizedComponentDefinition
   /** Forward `setData` patches to the render side. */
   onDataPatch?: (pageId: string, patch: DataPatch) => void
+  /** State persisted by the previous launch's `onSaveExitState`. */
+  exitState?: unknown
   /**
    * Run a `setData` completion after the page's render update. Without a render
    * thread the callback still runs asynchronously, matching WeChat's contract.
@@ -105,6 +107,8 @@ export class MiniProgramPageInstance implements ObserverHost {
   /** `this.getOpenerEventChannel()`; `{}` when the page has no opener. */
   readonly eventChannel: unknown
   observerDepth = 0
+  /** Loaded exit state exposed as WeChat's `this.exitState`. */
+  exitState: unknown
   savedExitState?: unknown
   /** Raw `Page()`/`Component()` options; `this.options` is the route query. */
   private readonly pageOptions: MiniProgramPageOptions
@@ -135,6 +139,7 @@ export class MiniProgramPageInstance implements ObserverHost {
     this.router = runtime.router
     this.pageRouter = runtime.router
     this.eventChannel = runtime.eventChannel ?? {}
+    this.exitState = cloneJsonSafe(input.exitState)
 
     if (definition) {
       const oldData = cloneJsonSafe(this.data)
@@ -157,6 +162,7 @@ export class MiniProgramPageInstance implements ObserverHost {
       this.route = this.path
       this.__route__ = this.path
       this.options = this.query
+      this.exitState = cloneJsonSafe(input.exitState)
       if (changedPaths.length > 0) {
         runObservers(this, definition.observers, changedPaths, oldData)
       }
@@ -166,6 +172,7 @@ export class MiniProgramPageInstance implements ObserverHost {
       this.route = this.path
       this.__route__ = this.path
       this.options = this.query
+      this.exitState = cloneJsonSafe(input.exitState)
     }
   }
 

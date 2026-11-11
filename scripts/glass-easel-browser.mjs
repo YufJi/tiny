@@ -2942,6 +2942,11 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
       await input.fill('persisted input')
       await page.waitForTimeout(50)
       await page.getByText('Reload', { exact: true }).click()
+      await page.waitForFunction(
+        () => window.__tinyDevtool?.getState().status !== 'running',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
       await waitForStatus('running')
       await page.waitForFunction(
         () => window.__tinyDevtool?.getState().currentPage === 'pages/add-todo/add-todo',
@@ -2978,6 +2983,77 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
         await refreshedFrame.locator(inputSelector).inputValue(),
         'persisted input',
         'saved page data was overwritten by a later runtime state update',
+      )
+      await page.getByText('Close app', { exact: true }).click()
+      await waitForLauncher()
+
+      await page.goto(`${baseUrl}/?app=${primary.id}&path=pages/add-todo/add-todo`, {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await waitForStatus('running')
+      await page.waitForFunction(
+        () => window.__tinyDevtool?.getState().currentPage === 'pages/add-todo/add-todo',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const exitStatePage = await state()
+      const exitStatePageFrame = await waitForActiveRenderFrame(
+        primary.id,
+        exitStatePage.pageStack.at(-1),
+      )
+      assert.ok(exitStatePageFrame, 'direct add-todo page did not create a render frame')
+      await exitStatePageFrame.waitForSelector(inputSelector, { timeout: STEP_TIMEOUT })
+      await exitStatePageFrame.locator(inputSelector).fill('exit state only')
+      await page.waitForTimeout(50)
+      await page.getByRole('button', { name: 'Background app' }).click()
+      await waitForLauncher()
+      await page.waitForTimeout(50)
+      await openFixture(primary)
+      await page.waitForFunction(
+        () => window.__tinyDevtool?.getState().currentPage === 'pages/add-todo/add-todo',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const savedExitState = await page.evaluate(() => window.__tinyDevtool.snapshotPageState())
+      assert.equal(
+        savedExitState.at(-1)?.savedExitState?.draft,
+        'exit state only',
+        `page did not save exit state on background: ${JSON.stringify(savedExitState)}`,
+      )
+      await page.getByText('Reload', { exact: true }).click()
+      await page.waitForFunction(
+        () => window.__tinyDevtool?.getState().status !== 'running',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      await waitForStatus('running')
+      await page.waitForFunction(
+        () => window.__tinyDevtool?.getState().currentPage === 'pages/add-todo/add-todo',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const exitStateReloaded = await state()
+      const exitStateReloadedFrame = await waitForActiveRenderFrame(
+        primary.id,
+        exitStateReloaded.pageStack.at(-1),
+      )
+      assert.ok(exitStateReloadedFrame, 'exit-state page did not recreate a render frame')
+      await exitStateReloadedFrame.waitForSelector('.add-todo-show-exit-state', {
+        timeout: STEP_TIMEOUT,
+      })
+      await exitStateReloadedFrame.locator('.add-todo-show-exit-state').click()
+      await exitStateReloadedFrame.waitForSelector('.add-todo-exit-state', {
+        state: 'attached',
+        timeout: STEP_TIMEOUT,
+      })
+      await page.waitForTimeout(100)
+      const restoredExitState = await exitStateReloadedFrame
+        .locator('.add-todo-exit-state')
+        .textContent()
+      assert.ok(
+        restoredExitState?.includes('exit state only'),
+        `onLoad did not receive this.exitState after debugger reload: ${restoredExitState}`,
       )
       await page.getByText('Close app', { exact: true }).click()
       await waitForLauncher()

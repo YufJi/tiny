@@ -14,6 +14,7 @@ import { WasmBrowserHost, type WasmHostCoreFactory } from '@tiny/host-web'
 import { createDevtoolApiHost } from './host-api'
 import { projectComponentTree } from './componentTree'
 import { pollHostPicker, showHostPicker, updateHostPicker } from './hostPicker'
+import { launchExitState } from './pageStackState'
 
 export type DevtoolRuntimeStatus = 'idle' | 'connecting' | 'running' | 'terminated' | 'error'
 
@@ -62,6 +63,7 @@ export type DevtoolPageStateSnapshot = {
   query: Record<string, string>
   data: Record<string, unknown>
   savedExitState: unknown
+  exitState?: unknown
 }
 
 export type DevtoolRuntimeOptions = {
@@ -77,6 +79,8 @@ export type DevtoolRuntimeOptions = {
   lifecycleLimit?: number
   /** Maximum pages per mini program. Defaults to 10. */
   maxPageStack?: number
+  /** Exit state loaded before the launch page's onLoad. */
+  initialExitState?: unknown
   /** Rust HostCore factory; the devtool loads the generated wasm module once. */
   wasmCoreFactory: WasmHostCoreFactory
 }
@@ -96,6 +100,7 @@ export class DevtoolRuntimeClient {
   private container: HTMLElement | null = null
   private ownsContainer = false
   private launchPath: string
+  private launchExitState: unknown
   private state: DevtoolRuntimeState = {
     status: 'idle',
     pageStack: [],
@@ -107,6 +112,7 @@ export class DevtoolRuntimeClient {
   constructor(options: DevtoolRuntimeOptions) {
     this.options = options
     this.launchPath = options.initialPath
+    this.launchExitState = options.initialExitState
   }
 
   getState(): DevtoolRuntimeState {
@@ -178,6 +184,9 @@ export class DevtoolRuntimeClient {
         initialPath: this.launchPath,
         container,
         maxPageStack: this.options.maxPageStack,
+        ...(this.launchExitState !== undefined
+          ? { initialExitState: this.launchExitState }
+          : {}),
         apiHandlers: apiHost.apiHandlers,
         syncApiHandlers: apiHost.syncApiHandlers,
         onState: (state) => {
@@ -236,8 +245,9 @@ export class DevtoolRuntimeClient {
     })
   }
 
-  async reload(initialPath?: string): Promise<void> {
+  async reload(initialPath?: string, initialExitState?: unknown): Promise<void> {
     if (initialPath) this.launchPath = initialPath
+    this.launchExitState = initialExitState
     await this.terminate()
     this.update({ status: 'idle' })
     await this.launch()
@@ -267,6 +277,7 @@ export class DevtoolRuntimeClient {
       pageId: snapshot.pageId,
       data: snapshot.data ?? {},
       savedExitState: snapshot.savedExitState ?? null,
+      exitState: launchExitState(snapshot) ?? null,
     })
   }
 

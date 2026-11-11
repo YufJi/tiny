@@ -124,6 +124,9 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     createRouter,
     ...(options.onPageRelease ? { onPageRelease: options.onPageRelease } : {}),
     ...(options.maxPageStack !== undefined ? { maxPageStack: options.maxPageStack } : {}),
+    ...(Object.prototype.hasOwnProperty.call(options, 'initialExitState')
+      ? { initialExitState: options.initialExitState }
+      : {}),
   })
   resolvePage = (pageId) => pages.pageInstances.get(pageId)
   onTabBarChange = () => pages.sendRuntimeState()
@@ -244,10 +247,14 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         manifest?: ServiceThreadOptions['manifest']
         initialPath?: string
         maxPageStack?: number
+        initialExitState?: unknown
       }
       pages.setInitialPath(payload.initialPath ?? pages.currentPath)
       if (payload.maxPageStack !== undefined) {
         pages.setMaxPageStack(Number(payload.maxPageStack))
+      }
+      if (Object.prototype.hasOwnProperty.call(payload, 'initialExitState')) {
+        pages.setInitialExitState(payload.initialExitState)
       }
       if (independentRootFor(pages.currentPath)) {
         // An independent package boots without the main package: no app.js,
@@ -400,12 +407,13 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       pageId?: unknown
       data?: unknown
       savedExitState?: unknown
+      exitState?: unknown
     }
     const pageId = typeof payload.pageId === 'string' ? payload.pageId : ''
     const data = payload.data && typeof payload.data === 'object' && !Array.isArray(payload.data)
       ? payload.data as Record<string, unknown>
       : {}
-    return pages.restoreState(pageId, data, payload.savedExitState)
+    return pages.restoreState(pageId, data, payload.savedExitState, payload.exitState)
   })
 
   connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.unload, async (message) => (

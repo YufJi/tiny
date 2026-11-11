@@ -4,7 +4,22 @@ export type SavedPageStackEntry = {
   pageId?: string;
   data?: Record<string, unknown>;
   savedExitState?: unknown;
+  exitState?: unknown;
 };
+
+/**
+ * The value a recreated page should see as `this.exitState`: the most recent
+ * save wins over the state loaded by the previous page instance.
+ */
+export function launchExitState(entry: SavedPageStackEntry | undefined): unknown {
+  if (!entry) return undefined;
+  if (entry.savedExitState !== undefined && entry.savedExitState !== null) {
+    return entry.savedExitState;
+  }
+  return Object.prototype.hasOwnProperty.call(entry, 'exitState')
+    ? entry.exitState
+    : undefined;
+}
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -61,6 +76,9 @@ export function mergeSavedPageStack(
       ...(isPlainObject(previous.data) ? { data: previous.data } : {}),
       ...(Object.prototype.hasOwnProperty.call(previous, 'savedExitState')
         ? { savedExitState: previous.savedExitState }
+        : {}),
+      ...(Object.prototype.hasOwnProperty.call(previous, 'exitState')
+        ? { exitState: previous.exitState }
         : {}),
     };
   });

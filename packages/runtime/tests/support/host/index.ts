@@ -443,6 +443,9 @@ export function createTestHost(options: RuntimeHostOptions): TestRuntimeHost {
       const serviceResult = await service.control<Record<string, unknown>>(RUNTIME_CONTROL.domain, RUNTIME_CONTROL.bootstrap, {
         manifest: options.manifest,
         initialPath: options.initialPath,
+        ...(Object.prototype.hasOwnProperty.call(options, 'initialExitState')
+          ? { initialExitState: options.initialExitState }
+          : {}),
         ...(options.maxPageStack !== undefined ? { maxPageStack: options.maxPageStack } : {}),
       })
       const initialData = (serviceResult.initialData as Record<string, unknown> | undefined) ?? options.initialData

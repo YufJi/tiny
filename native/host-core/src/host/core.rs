@@ -17,6 +17,7 @@ pub struct HostConfig {
     pub manifest: Value,
     pub initial_path: String,
     pub max_page_stack: Option<usize>,
+    pub initial_exit_state: Option<Value>,
 }
 
 struct PageState {
@@ -265,6 +266,7 @@ impl HostCore {
                 page_id,
                 data,
                 saved_exit_state,
+                exit_state,
             } => {
                 match self.service.control(
                     ProtocolDomain::Page,
@@ -273,6 +275,7 @@ impl HostCore {
                         "pageId": page_id,
                         "data": data,
                         "savedExitState": saved_exit_state,
+                        "exitState": exit_state,
                     }),
                     Some(page_id),
                     now_ms,
@@ -1323,11 +1326,14 @@ impl HostCore {
         if self.bootstrap_id.is_some() {
             return;
         }
-        let payload = json!({
+        let mut payload = json!({
             "manifest": self.config.manifest,
             "initialPath": self.config.initial_path,
             "maxPageStack": self.config.max_page_stack.unwrap_or(10),
         });
+        if let Some(initial_exit_state) = &self.config.initial_exit_state {
+            payload["initialExitState"] = initial_exit_state.clone();
+        }
         match self
             .service
             .control(ProtocolDomain::Runtime, "bootstrap", payload, None, now_ms)

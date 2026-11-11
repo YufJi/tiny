@@ -10,6 +10,10 @@
       bindinput="onInput"
       value="{{inputValue}}"
     />
+    <text class="add-todo-exit-state">{{exitStateDraft}}</text>
+    <view class="add-todo-show-exit-state" bindtap="showExitStateAtLoad">
+      Show exit state
+    </view>
   </view>
   <view bindtap="add">12121</view>
   <!-- <view bind:tap="add">000</view> -->
