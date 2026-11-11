@@ -76,6 +76,33 @@ describe('projectComponentTree', () => {
     expect(projected?.children.map((child) => child.id)).toEqual(['view'])
   })
 
+  test('keeps pageframe WXML hosts even when they have no render node id', () => {
+    const tree = element({
+      id: 'page',
+      tag: 'tiny-page',
+      children: [
+        element({
+          id: 'host-wrapper',
+          tag: 'div',
+          children: [
+            element({
+              id: 'view',
+              tag: 'tiny-view',
+              children: [text('label', 'visible')],
+            }),
+          ],
+        }),
+      ],
+    })
+
+    expect(projectComponentTree(tree)?.children).toEqual([{
+      id: 'view',
+      type: 'component',
+      tag: 'tiny-view',
+      children: [text('label', 'visible')],
+    }])
+  })
+
   test('drops text of hidden host wrappers instead of duplicating slots', () => {
     const tree = renderNode({
       id: 'page',

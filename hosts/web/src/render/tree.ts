@@ -3003,6 +3003,18 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       // Read the live DOM: render-evaluated component shadow trees have no
       // service node record, so walking `currentTree` would show components as
       // empty shells in the debugger's Elements panel.
+      const childNodesOf = (element: Element): ArrayLike<Node> => {
+        const slot = element as unknown as {
+          assignedNodes?: (options?: { flatten?: boolean }) => ArrayLike<Node>
+        }
+        const assigned = slot.assignedNodes?.({ flatten: true })
+        if (assigned && assigned.length > 0) return assigned
+        const shadow = (element as unknown as {
+          shadowRoot?: { childNodes?: ArrayLike<Node> } | null
+        }).shadowRoot
+        if (shadow?.childNodes?.length) return shadow.childNodes
+        return element.childNodes
+      }
       const toInspectElement = (element: Element, path = '0'): Record<string, unknown> => {
         const attributes: Record<string, string> = {}
         const names = element.attributes
@@ -3016,7 +3028,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
           || `render:${path}`
         const tag = element.tagName.toLowerCase()
         const children: Record<string, unknown>[] = []
-        const nodeList = element.childNodes
+        const nodeList = childNodesOf(element)
         for (let index = 0; index < nodeList.length; index += 1) {
           const child = nodeList[index]!
           if (child.nodeType === 3) {

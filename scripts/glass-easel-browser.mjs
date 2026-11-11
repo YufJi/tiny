@@ -2179,6 +2179,10 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
         JSON.stringify(current.tree).includes('Learning Javascript'),
         'element tree does not contain rendered text',
       )
+      assert.ok(
+        JSON.stringify(current.tree).includes('tiny-view'),
+        'element tree does not contain nested page views',
+      )
       // The host bar shows the effective page title (`pages/todos/todos.json`).
       assert.equal(
         await page.locator('.td-nav-title').innerText(),
