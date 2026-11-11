@@ -151,16 +151,16 @@ fixture 不是单元测试里的假数据，而是完整的小程序源码或预
 | `todo` | 1 个页面，Taro 3 预构建产物 | webpackJsonp、外部 WXS、递归模板、循环 usingComponents、Enter 提交 | 是 |
 | `wechat-demo` | 4 个主包页面 + 2 个分包，共 125 页（示例子集） | 基础组件索引、button 示例、storage API 示例 | 是 |
 | `custom-tab` | 2 个 tab 页 | 自定义 tabBar 的页级 `tabRoot`、`getTabBar()` 和 tab 切换 | 是（调试器） |
-| `wechat-parity` | 3 个页面 + 4 个组件 | 页面/组件 WXS 模块状态、事件→表达式、跨页/重入、嵌套 slot、`wx:if` 创建销毁、lifecycle/relation 顺序和微信 CLI oracle | 是（编译 + 1:1 trace） |
+| `wechat-parity` | 4 个页面 + 4 个组件 | 页面/组件 WXS 模块状态、事件→表达式、跨页/重入、嵌套 slot、`wx:if` 创建销毁、keyed reorder/`moved`、lifecycle/relation 顺序和微信 CLI oracle | 是（编译 + 1:1 trace） |
 | `echarts` | 22 个页面的历史示例 | 早期 ECharts 集成参考资料 | 否 |
 | `vant` | 13 个页面 | Vant Weapp 的 dashboard、button、calendar、cascader 等页面，调试器逐个预览 | 是（调试器） |
 | `weui` | 54 个页面 | WeUI 的表单、按钮和示例页，调试器逐个预览 | 是（调试器） |
 
 `wechat-parity` 先用 `pnpm compile:wechat-parity` 生成 Tiny 产物，再运行
 `pnpm parity:wechat:compare`。比较脚本会分别调用 Tiny 测试宿主和微信开发者工具
-CLI，采集 A 首屏、双组件 property 更新、WXS 事件、B 导航、返回 A、reLaunch，以及宿主内模板子组件与
-slot 子组件的创建/销毁共十三个检查点；随机 key 会被规范化，页面文本、事件状态、
-同页组件 WXS 计数、lifecycle 和 relation 回调顺序必须逐字一致。原始和规范化报告写入
+CLI，采集 A 首屏、双组件 property 更新、WXS 事件、B 导航、返回 A、reLaunch，宿主内模板子组件与
+slot 子组件的创建/销毁，以及 keyed `wx:for` 重排共十六个检查点；随机 key 会被规范化，
+页面文本、事件状态、同页组件 WXS 计数、lifecycle（含 `moved`）、relation 回调顺序必须逐字一致。原始和规范化报告写入
 `tests/host/generated/parity/`。微信侧要求开发者工具已登录并打开该 fixture。
 
 ## Taro 3 产物也在正式验收里 {#taro kicker="Taro 3 兼容"}

@@ -90,15 +90,16 @@ canonical trace of:
 the random fixture keys, compares both traces and writes raw/canonical reports
 under `tests/host/generated/parity/`.
 
-Acceptance currently covers thirteen checkpoints: first A render, a page
+Acceptance currently covers sixteen checkpoints: first A render, a page
 `setData` updating two component properties, page WXS event, B navigation, back
-to the retained A page, `reLaunch`, then create/destroy cycles for a page-level
-host with both a host-template child and a slot child under `wx:if`. The flow
-trace compares component text, WXS module state, lifecycle order, relation
-link/unlink callbacks, page reuse and re-entry. A step only passes when the
-canonical WeChat/Tiny traces are identical. The P0 browser gate additionally
-covers slot-child component binding under `wx:if`, relation link/unlink,
-component-data updates, and the full service/render lifecycle.
+to the retained A page, `reLaunch`, create/destroy cycles for a page-level host
+with both a host-template child and a slot child under `wx:if`, then keyed
+`wx:for` reverse/rotate cycles. The flow trace compares component text, WXS
+module state, lifecycle order including `moved`, relation link/unlink callbacks,
+page reuse and re-entry. A step only passes when the canonical WeChat/Tiny
+traces are identical. The P0 browser gate additionally covers slot-child
+component binding under `wx:if`, relation link/unlink, component-data updates,
+and the full service/render lifecycle.
 
 ## Consequences
 

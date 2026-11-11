@@ -75,6 +75,15 @@ async function snapshot(label, pageKind) {
       components: [],
     }
   }
+  if (pageKind === 'move') {
+    return {
+      label,
+      page,
+      event: null,
+      lifecycle: await readText('.move-state'),
+      components: [],
+    }
+  }
   return {
     label,
     page,
@@ -125,6 +134,16 @@ async function main() {
   trace.push(await snapshot('Flow-host-hidden', 'flow'))
   await tap('.toggle-host')
   trace.push(await snapshot('Flow-host-shown', 'flow'))
+  runTool('automation_evaluate', [
+    '--fn-source',
+    'function(){ getCurrentPages()[getCurrentPages().length - 1].toMove(); return true }',
+  ])
+  await sleep(settleMs)
+  trace.push(await snapshot('Move-initial', 'move'))
+  await tap('.reverse')
+  trace.push(await snapshot('Move-reversed', 'move'))
+  await tap('.rotate')
+  trace.push(await snapshot('Move-rotated', 'move'))
   console.log(JSON.stringify({ oracle: 'wechat', trace }, null, 2))
 }
 

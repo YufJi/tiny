@@ -33,6 +33,11 @@ Page({
     this.setData({ showHost: !this.data.showHost })
   },
 
+  toMove() {
+    getApp().globalData.lifecycle = []
+    wx.navigateTo({ url: '/pages/move/move' })
+  },
+
   back() {
     wx.navigateBack()
   }

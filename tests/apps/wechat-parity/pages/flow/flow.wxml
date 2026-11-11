@@ -6,4 +6,5 @@
 <button class="toggle-child" bindtap="toggleChild">Toggle Slot Child</button>
 <button class="toggle-inner" bindtap="toggleInner">Toggle Inner Child</button>
 <button class="toggle-host" bindtap="toggleHost">Toggle Host</button>
+<button class="to-move" bindtap="toMove">To Move</button>
 <button class="back-flow" bindtap="back">Back to A</button>

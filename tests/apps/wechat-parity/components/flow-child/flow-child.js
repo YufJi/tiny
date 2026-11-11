@@ -32,6 +32,9 @@ Component({
     ready() {
       record('C.ready')
     },
+    moved() {
+      record('C.' + this.data.relationTag + '.moved')
+    },
     detached() {
       record('C.' + this.data.relationTag + '.detached')
     }

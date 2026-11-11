@@ -85,7 +85,7 @@ async function snapshot(label) {
       label,
       page: text('page-state'),
       event: text('event-state'),
-      lifecycle: text('flow-state'),
+      lifecycle: text('flow-state') ?? text('move-state'),
       components,
       wxs: {
         event: wxs('wxs/event-state.wxs', 'peek'),
@@ -155,6 +155,18 @@ try {
   await render.getByText('Toggle Host', { exact: true }).click()
   await page.waitForTimeout(250)
   trace.push(await snapshot('Flow-host-shown'))
+  render = await renderFrame()
+  await render.getByText('To Move', { exact: true }).click()
+  await page.waitForTimeout(300)
+  trace.push(await snapshot('Move-initial'))
+  render = await renderFrame()
+  await render.getByText('Reverse', { exact: true }).click()
+  await page.waitForTimeout(250)
+  trace.push(await snapshot('Move-reversed'))
+  render = await renderFrame()
+  await render.getByText('Rotate', { exact: true }).click()
+  await page.waitForTimeout(250)
+  trace.push(await snapshot('Move-rotated'))
 } catch (error) {
   failure = error instanceof Error ? error.message : String(error)
   errors.push(failure)
