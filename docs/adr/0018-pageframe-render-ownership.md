@@ -2,8 +2,9 @@
 
 ## Status
 
-Accepted. Implementation is staged; the service template/diff path remains
-available while the pageframe path is introduced.
+Accepted. Phase A is implemented behind an explicit render-host opt-in; the
+service template/diff path remains the default for other fixtures until
+component creation flow and element identity are moved.
 
 ## Context
 
@@ -42,10 +43,14 @@ Move WXML ownership to the render pageframe:
 
 The migration is staged to keep the gate green:
 
-- **Phase A**: render-owned page template spike; keep the existing service
-  template path behind the migration boundary.
+- **Phase A (implemented)**: render-owned page template. The flow carries the
+  page root identity and method names, the render pageframe mounts the compiled
+  template, and page WXS/events stay in one realm. Repeated flows for the same
+  page are idempotent.
 - **Phase B**: component creation/destruction flow from render to service.
-- **Phase C**: data-first `setData` and render-local diff.
+- **Phase C (partial)**: page `setData` crosses as its original data patches,
+  not a full page snapshot. Render-local diff is the acknowledgement; component
+  data still uses the existing per-instance map.
 - **Phase D**: remove service WXML and the cross-tree WXS state replay.
 
 ## Acceptance
@@ -61,9 +66,16 @@ canonical trace of:
 - page stack and `setData` completion order
 - console/page errors
 
-`scripts/wechat-parity-trace.mjs` records the Tiny side. WeChat side actions
-use the `wechatide` automator tools and the raw automation port for pageframe
-DOM evidence. A step only passes when the normalized traces match exactly.
+`scripts/wechat-parity-trace.mjs` records the Tiny side and
+`scripts/wechat-parity-oracle.mjs` records the WeChat side through the
+`wechatide` element/runtime tools. `scripts/wechat-parity-compare.mjs` normalizes
+the random fixture keys, compares both traces and writes raw/canonical reports
+under `tests/host/generated/parity/`.
+
+Phase A acceptance currently covers five checkpoints: first A render, page WXS
+event, B navigation, back to the retained A page, and `reLaunch`. It verifies
+page/component text, page WXS event state, component WXS module counters, page
+reuse and re-entry. A step only passes when the canonical traces are identical.
 
 ## Consequences
 

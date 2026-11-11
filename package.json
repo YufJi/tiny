@@ -25,6 +25,8 @@
     "compile:wechat-demo": "node scripts/compile-apps.mjs wechat-demo",
     "compile:wechat-parity": "node scripts/compile-apps.mjs wechat-parity",
     "parity:wechat:trace": "node scripts/wechat-parity-trace.mjs",
+    "parity:wechat:oracle": "node scripts/wechat-parity-oracle.mjs",
+    "parity:wechat:compare": "node scripts/wechat-parity-compare.mjs",
     "parity:probe": "node scripts/parity-probe.mjs",
     "dev:wechat-demo": "pnpm compile:wechat-demo && pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --port 5174",
     "check:runtime-purity": "node scripts/check-runtime-purity.mjs",

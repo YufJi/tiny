@@ -11,17 +11,40 @@ const browser = await chromium.launch({
     : { channel: 'chrome' }),
 })
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } })
+page.setDefaultTimeout(5_000)
 const errors = []
+const consoleMessages = []
 page.on('pageerror', (error) => errors.push(error.message))
 page.on('console', (message) => {
+  consoleMessages.push(`${message.type()}:${message.text()}`)
   if (message.type() === 'error') errors.push(message.text())
 })
 
 const url = new URL(baseUrl)
 url.searchParams.set('app', app)
 url.searchParams.set('path', 'pages/a/a')
+if (process.env.TINY_PAGE_FRAME !== '0') url.searchParams.set('pageFrame', '1')
 await page.goto(url.href, { waitUntil: 'domcontentloaded' })
-await page.waitForFunction(() => Boolean(globalThis.__tinyRuntime), null, { timeout: 20_000 })
+try {
+  await page.waitForFunction(() => Boolean(globalThis.__tinyRuntime), null, { timeout: 20_000 })
+} catch (error) {
+  const failure = error instanceof Error ? error.message : String(error)
+  const frames = await Promise.all(page.frames().map(async (frame) => ({
+    url: frame.url(),
+    body: await frame.evaluate(() => document.body?.innerText.slice(0, 2000) ?? '')
+      .catch(() => ''),
+  })))
+  console.log(JSON.stringify({
+    url: url.href,
+    trace: [],
+    errors,
+    console: consoleMessages,
+    frames,
+    failure,
+  }, null, 2))
+  await browser.close()
+  process.exit(1)
+}
 
 async function renderFrame() {
   const frameElement = page.locator('iframe.tiny-runtime-render-frame[data-state="active"]')
@@ -36,7 +59,23 @@ async function renderFrame() {
 async function snapshot(label) {
   const render = await renderFrame()
   return render.evaluate((label) => {
-    const text = (selector) => document.querySelector(selector)?.textContent?.trim() ?? null
+    const text = (className) => {
+      const element = [...document.querySelectorAll('*')].find((candidate) => (
+        [...candidate.classList].some((token) => (
+          token === className || token.endsWith(`--${className}`)
+        ))
+      ))
+      return element?.textContent?.trim() ?? null
+    }
+    const wxs = (moduleId, method) => {
+      try {
+        const runtime = globalThis.__tinyWxsRuntime
+        const value = runtime?.require(moduleId)?.[method]
+        return typeof value === 'function' ? value() : value
+      } catch (error) {
+        return `error:${error instanceof Error ? error.message : String(error)}`
+      }
+    }
     const components = [...document.querySelectorAll('tiny-probe, probe')].map((element) => ({
       tag: element.tagName,
       text: element.textContent?.trim() ?? '',
@@ -44,31 +83,50 @@ async function snapshot(label) {
     }))
     return {
       label,
-      page: text('.page-state'),
-      event: text('.event-state'),
+      page: text('page-state'),
+      event: text('event-state'),
       components,
+      wxs: {
+        event: wxs('wxs/event-state.wxs', 'peek'),
+        component: wxs('wxs/component-state.wxs', 'peek'),
+      },
     }
   }, label)
 }
 
 const trace = []
-trace.push(await snapshot('A-initial'))
-let render = await renderFrame()
-await render.locator('.hit-wxs').click()
-await page.waitForTimeout(100)
-trace.push(await snapshot('A-after-event'))
-render = await renderFrame()
-await render.locator('.to-b').click()
-await page.waitForTimeout(250)
-trace.push(await snapshot('B-initial'))
-render = await renderFrame()
-await render.locator('.back').click()
-await page.waitForTimeout(250)
-trace.push(await snapshot('A-back'))
-render = await renderFrame()
-await render.locator('.relaunch').click()
-await page.waitForTimeout(250)
-trace.push(await snapshot('A-relaunch'))
-
-console.log(JSON.stringify({ url: url.href, trace, errors }, null, 2))
-await browser.close()
+let failure = null
+try {
+  trace.push(await snapshot('A-initial'))
+  let render = await renderFrame()
+  await render.getByText('Hit WXS', { exact: true }).click()
+  await page.waitForTimeout(100)
+  trace.push(await snapshot('A-after-event'))
+  render = await renderFrame()
+  await render.getByText('To B', { exact: true }).click()
+  await page.waitForTimeout(250)
+  trace.push(await snapshot('B-initial'))
+  render = await renderFrame()
+  await render.getByText('Back to A', { exact: true }).click()
+  await page.waitForTimeout(250)
+  trace.push(await snapshot('A-back'))
+  render = await renderFrame()
+  await render.getByText('ReLaunch A', { exact: true }).click()
+  await page.waitForTimeout(250)
+  trace.push(await snapshot('A-relaunch'))
+} catch (error) {
+  failure = error instanceof Error ? error.message : String(error)
+  errors.push(failure)
+  try {
+    trace.push(await snapshot('failure'))
+  } catch {
+    // Keep the original failure; the snapshot is best-effort diagnostics.
+  }
+} finally {
+  const diagnostics = await page.evaluate(
+    () => globalThis.__tinyRuntime?.host?.diagnostics ?? [],
+  )
+  console.log(JSON.stringify({ url: url.href, trace, errors, diagnostics, failure }, null, 2))
+  await browser.close()
+}
+if (failure) process.exitCode = 1

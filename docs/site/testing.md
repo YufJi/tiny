@@ -3,14 +3,14 @@ title: '用真实小程序验收，'
 highlight: '不只跑单元测试'
 eyebrow: '测试与验收'
 lede: >-
-  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。529 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，74 个浏览器步骤验证端到端行为；iOS 宿主另有 7 个 fixture 的 WKWebView + JSCore smoke。
+  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。530 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，74 个浏览器步骤验证端到端行为；iOS 宿主另有 7 个 fixture 的 WKWebView + JSCore smoke。
 stats:
-  - ['529', '单元测试']
+  - ['530', '单元测试']
   - ['74', '浏览器步骤']
   - ['5', '浏览器流程']
   - ['9', '测试小程序']
   - ['7', 'iOS fixture smoke']
-description: '小程序引擎的验收方式：构建、内核检查、529 个单元测试、74 个浏览器步骤、九套测试小程序和 iOS 宿主 smoke。'
+description: '小程序引擎的验收方式：构建、内核检查、530 个单元测试、74 个浏览器步骤、九套测试小程序和 iOS 宿主 smoke。'
 name: '测试'
 pageTitle: '测试与验收 · Tiny 小程序引擎'
 order: 8
@@ -72,7 +72,7 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 :::
 ::::
 
-## 529 个单元测试，一次运行 {#units kicker="单元测试"}
+## 530 个单元测试，一次运行 {#units kicker="单元测试"}
 
 12 个包各有自己的 `vitest.config.ts`，根 `vitest.workspace.ts` 把它们装进同一个 Vitest 进程：一次启动、并行执行各包测试，但 alias、snapshot 格式和 globals 仍按包隔离。需要单独排查时仍可运行 `pnpm --filter <package> test`。
 
@@ -151,10 +151,16 @@ fixture 不是单元测试里的假数据，而是完整的小程序源码或预
 | `todo` | 1 个页面，Taro 3 预构建产物 | webpackJsonp、外部 WXS、递归模板、循环 usingComponents、Enter 提交 | 是 |
 | `wechat-demo` | 4 个主包页面 + 2 个分包，共 125 页（示例子集） | 基础组件索引、button 示例、storage API 示例 | 是 |
 | `custom-tab` | 2 个 tab 页 | 自定义 tabBar 的页级 `tabRoot`、`getTabBar()` 和 tab 切换 | 是（调试器） |
-| `wechat-parity` | 2 个页面 + 1 个组件 | 页面/组件 WXS 模块状态、事件→表达式、跨页/重入和微信 CLI oracle | 是（编译） |
+| `wechat-parity` | 2 个页面 + 1 个组件 | 页面/组件 WXS 模块状态、事件→表达式、跨页/重入和微信 CLI oracle | 是（编译 + 1:1 trace） |
 | `echarts` | 22 个页面的历史示例 | 早期 ECharts 集成参考资料 | 否 |
 | `vant` | 13 个页面 | Vant Weapp 的 dashboard、button、calendar、cascader 等页面，调试器逐个预览 | 是（调试器） |
 | `weui` | 54 个页面 | WeUI 的表单、按钮和示例页，调试器逐个预览 | 是（调试器） |
+
+`wechat-parity` 先用 `pnpm compile:wechat-parity` 生成 Tiny 产物，再运行
+`pnpm parity:wechat:compare`。比较脚本会分别调用 Tiny 测试宿主和微信开发者工具
+CLI，采集 A 首屏、WXS 事件、B 导航、返回 A、reLaunch 五个检查点；随机 key 会被
+规范化，页面文本、事件状态和同页组件 WXS 计数必须逐字一致。原始和规范化报告写入
+`tests/host/generated/parity/`。微信侧要求开发者工具已登录并打开该 fixture。
 
 ## Taro 3 产物也在正式验收里 {#taro kicker="Taro 3 兼容"}
 
