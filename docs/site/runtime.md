@@ -279,7 +279,7 @@ button、input、scroll-view、swiper、canvas 等内置组件把原生字段归
 | 自定义组件事件 | render | service 的 `triggerEvent` 已跑完 JS listener 后转发 `tree.customEvent`；只有页面上存在该事件的 WXS binding 才转发 |
 | `change:prop`（内置组件） | render | 节点 props 变化驱动，旧值 / 新值 / ownerInstance / instance |
 | `change:prop`（自定义组件） | render | 组件数据变化驱动（编译器对每个标签都产出 `wx-tiny-wxs-props`），不再是 glass `R.p` observer |
-| WXS module state | 分侧隔离 | service / render 各一份，不跨线程同步 |
+| WXS module state | 页级隔离 | service 为每个 page tree 维护独立模块表，页面卸载时释放；render 的每个页面 iframe 本来就有独立 runtime。同页内多个模板共享，跨页不共享 |
 
 WXS 代码在编译期完成：
 
@@ -302,6 +302,7 @@ render 侧 `ComponentDescriptor` 已覆盖 `selectComponent`、`getDataset`、`g
 当前明确的限制：
 
 - WXS source map 已随 `wxsModules` 进入 `templates.js`，但 devtool/调试器尚未消费它；
+- 页级模块表按微信经典页面 WebView 的 `__WXML_GLOBAL__.modules` 可观察语义实现；微信 3.17.5 glass data-thread 的同 fixture GUI 对照尚未接入自动验收；
 - `input` / `textarea` 的 `bindinput` 是唯一 service-side 的 WXS 事件（微信 `PAGE_EVENT` 语义），没有 view 侧 `getState` / `getComputedStyle`；
 - 无法通过 origin 识别的 WXS 函数（例如闭包、`bind()` 后的新函数）不注册 handler，需用模块导出形式；
 - `callMethod` / `triggerEvent` 是跨线程 RPC，返回值不是同步语义。

@@ -26,7 +26,7 @@ order: 9
 | 领域 | 状态 | 当前情况和边界 |
 | --- | --- | --- |
 | 编译核心 | :pill[可用]{tone="good"} | 支持 pages、components、subPackages 元数据、可配置文件/指令/API 约定、WXML/WXSS/WXS、manifest、service bundle、资源复制和 source map；支持从 `node_modules` 构建 `miniprogram_npm`、校验项目/小程序配置、可选 TS 语义检查、分包 service chunk 拆分与共享 `chunks/`、`preloadRule` 归一化、`componentPlaceholder` 编译校验，以及 `theme.json` / `@变量` / WXSS 主题变量注入，独立分包的依赖校验；目前只有全量构建，预下载策略还未接。 |
-| WXS | :pill[可用]{tone="good"} | 编译期 AST 转换、模块表、service 表达式 runtime、render 事件 runtime、动态 WXS/service 解析、descriptor、change:prop 和 rpx 750；source map 与自定义组件事件仍按 service 路径处理。 |
+| WXS | :pill[可用]{tone="good"} | 编译期 AST 转换、模块表、service/render 表达式 runtime、动态 WXS/service 解析、descriptor、change:prop 和 rpx 750；模块状态按 page tree 隔离并在卸载时释放，模板每次求值都从当前页 runtime 取 exports；source map 与微信 glass data-thread 的 GUI 对照仍待补。 |
 | service runtime | :pill[可用]{tone="good"} | App/Page/Component、页面栈、5 个路由 API、14 项页面生命周期、7 项应用生命周期、setData、兼容全局与 behavior scheme、behaviors/observers/relations/definitionFilter/pureDataPattern、glass-easel 逻辑树、virtual node diff、tree 协议、storage/system/canvas 协议；分包在启动/导航前按需加载，页面级 `preloadRule` 会预取后续包，独立分包入口跳过主包 App 且不加载主包 `app.wxss`，跨包共享模块经 `chunks/` 保持单实例。 |
 | render tree | :pill[可用]{tone="good"} | 宿主 `TreeRenderer`：真实内置组件、组件模板求值（shadow tree）、slot、shadow root、样式、布局、DOM、元素树、query、measure、IntersectionObserver；Web 实现是 `createGlassRenderTree`。元素由渲染侧分配本地 id，组件作用域 locator 负责跨线程寻址。 |
 | bridge | :pill[可用]{tone="good"} | 7 个在用消息域，含 tree/query；信封和帧、纯 JS 协议/连接、全局 handle（`send`/`sendSync`/`onFrame`）、握手、超时、批处理、JSON 校验；MessagePort 实现在宿主胶水；capabilities 还没有用于协商。 |
@@ -42,7 +42,7 @@ order: 9
 | 诊断 | :pill[可用]{tone="good"} | 编译、transport、service、render、host 五类诊断统一收集；组件语义新增了 observer、relation、behavior 相关诊断。 |
 | Devtool | :pill[运行时级+]{tone="good"} | 应用列表、点击启动、最近 3 个应用保活、返回列表、设备框、宿主导航和 tabBar、每页 render 帧、Console/Lifecycle/Elements、Reload/Close app；Reload 会保存并恢复页面栈、data、savedExitState/exitState，整页刷新会合并最新快照；页面栈默认上限 10，宿主可配置。它仍不是完整的微信开发者工具。 |
 | 性能与稳定 | :pill[未量化]{tone="warn"} | 启动、首屏、setData、内存和长时运行都没有基准，也没有压力测试。 |
-| 测试 | :pill[核心链路]{tone="good"} | 522 个单元测试、74 个浏览器步骤、7 个测试小程序，以及 iOS 宿主 7 个 fixture 的模拟器 smoke；tree flow/patch、两次求值、locator 寻址、WXS 都有单元和浏览器覆盖，参考协议的细节仍有缺口。 |
+| 测试 | :pill[核心链路]{tone="good"} | 526 个单元测试、74 个浏览器步骤、7 个测试小程序，以及 iOS 宿主 7 个 fixture 的模拟器 smoke；tree flow/patch、两次求值、locator 寻址、WXS 都有单元和浏览器覆盖，参考协议的细节仍有缺口。 |
 
 ## 现在最影响使用的问题 {#gaps kicker="主要缺口"}
 
@@ -251,7 +251,7 @@ host-web、host-web-components、注入能力和接入步骤。
 :::
 
 :::card{tag="测试" title="以测试为准"}
-522 个单元测试和 74 个浏览器步骤；WXS 专项覆盖事件、descriptor、change:prop 和动态切换。iOS 宿主另有 `pnpm ios:sim`，逐 fixture 跑真实 WKWebView + JSCore。
+526 个单元测试和 74 个浏览器步骤；WXS 专项覆盖事件、descriptor、change:prop、动态切换和双页模块状态隔离。iOS 宿主另有 `pnpm ios:sim`，逐 fixture 跑真实 WKWebView + JSCore。
 
 [测试与验收 →](#/testing)
 :::
