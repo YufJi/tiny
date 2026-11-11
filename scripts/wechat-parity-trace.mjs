@@ -23,7 +23,6 @@ page.on('console', (message) => {
 const url = new URL(baseUrl)
 url.searchParams.set('app', app)
 url.searchParams.set('path', 'pages/a/a')
-if (process.env.TINY_PAGE_FRAME !== '0') url.searchParams.set('pageFrame', '1')
 await page.goto(url.href, { waitUntil: 'domcontentloaded' })
 try {
   await page.waitForFunction(() => Boolean(globalThis.__tinyRuntime), null, { timeout: 20_000 })

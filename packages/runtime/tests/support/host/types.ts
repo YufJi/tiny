@@ -29,6 +29,7 @@ export type RuntimeHostOptions = {
   initialPath: string
   initialExitState?: unknown
   initialData?: Record<string, unknown>
+  pageFrame?: boolean
   serviceCapabilities?: Record<string, unknown>
   renderCapabilities?: Record<string, unknown>
   systemInfo?: Partial<import('@tiny/api').SystemInfo>

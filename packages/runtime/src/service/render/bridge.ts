@@ -128,6 +128,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
   private readonly ackedBatches = new Map<string, { pageId: string; callbacks: Array<() => void> }>()
   private readonly pendingTabBarReady = new Map<string, Array<(tabBar: unknown) => void>>()
   private completionCounter = 0
+  private pageFrame = false
 
   constructor(options: ServiceRenderBridgeOptions) {
     this.options = options
@@ -151,6 +152,14 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       },
       acknowledgeRenders: (tokens) => this.acknowledgeRenders(tokens),
     })
+  }
+
+  /**
+   * The render pageframe consumes page data and identity hints, not the
+   * service-side virtual-node patch stream. Snapshot hosts keep the patches.
+   */
+  setPageFrame(enabled: boolean): void {
+    this.pageFrame = enabled
   }
 
   /**
@@ -524,18 +533,19 @@ export class ServiceRenderBridge implements ServiceRenderPort {
           ) {
             const page = this.options.getPage(id)
             const ack = this.takeCompletionBatch(id)
+            const structural = patches.some((patch) => (
+              patch.type === 'insert'
+              || patch.type === 'remove'
+              || patch.type === 'replace'
+              || patch.type === 'reorder'
+              || patch.type === 'component-instances'
+            ))
             this.connection.sendEvent(
               TREE_PROTOCOL.domain, TREE_PROTOCOL.patch,
               {
                 pageId: id,
-                patches: cloneJsonSafe(patches),
-                ...(patches.some((patch) => (
-                  patch.type === 'insert'
-                  || patch.type === 'remove'
-                  || patch.type === 'replace'
-                  || patch.type === 'reorder'
-                  || patch.type === 'component-instances'
-                ))
+                ...(!this.pageFrame ? { patches: cloneJsonSafe(patches) } : {}),
+                ...(structural
                   ? {
                     renderHints: cloneJsonSafe(snapshot),
                     componentFlow: cloneJsonSafe(collectComponentIdentities(snapshot)),

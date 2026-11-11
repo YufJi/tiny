@@ -8,8 +8,7 @@ const generatedBase = generatedBaseFor(appId);
 const importGenerated = (url) => new Function('url', 'return import(url)')(url);
 
 bootRenderEntry({
-  // Two-evaluation: the render thread owns the component shadow trees, so it
-  // loads the same compiled template bundle as the service.
+  // The render pageframe owns WXML, so it loads the compiled template bundle.
   loadTemplates: async () => (await importGenerated(`${generatedBase}/templates.js`)).default,
   resolveAssetUrl: (src, sourcePath) => {
     const reference = resolveAssetReference(sourcePath || '', src);

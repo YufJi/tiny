@@ -84,6 +84,9 @@ describe('glass render tree', () => {
     expect(tree.root).toBeDefined()
     expect(tree.root.shadowRoot).toBeDefined()
     expect(tree.getNode?.('page-1')).toBe(tree.root)
+    expect(
+      (tree.root as any).getComponentOptions().extraStyleScope,
+    ).toBe(glassEasel.StyleScopeManager.globalScope())
     expect(glassText(tree.root.shadowRoot)).toContain('P:1')
     expect(glassText(tree.root.shadowRoot)).toContain('B:1:first')
 

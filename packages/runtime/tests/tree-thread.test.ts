@@ -83,7 +83,6 @@ describe('tree thread', () => {
     const renderOrder: string[] = []
     const patches: RenderPatch[][] = []
     bootTreeThread({
-      pageFrame: true,
       connection: createRenderConnection(renderTransport),
       renderer: {
         mount: (root) => mounted.push(root),

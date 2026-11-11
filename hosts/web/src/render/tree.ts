@@ -699,6 +699,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       const ownerComponent = nodes.get(parentId)
       const host = parent?.getBackendElement?.() as HTMLElement | null
       if (!host || typeof host.querySelectorAll !== 'function') return
+      const rootBinding = parentId === rootId.value
       // Components the render tree actually created while evaluating the
       // template, in document order. The logic tree walks the same template in
       // the same order, so the two lists are consumed positionally (this is how
@@ -716,7 +717,13 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
           } | undefined
           const path = typeof glass?.is === 'string' ? glass.is : ''
           const owner = glass?.ownerShadowRoot?.getHostNode?.()
-          const ownerMatches = !pageFrameRoot || owner === ownerComponent
+          const ownerElement = (owner as { getBackendElement?: () => unknown } | undefined)
+            ?.getBackendElement?.()
+          const ownerMatches = !pageFrameRoot
+            || (rootBinding
+              ? owner === ownerComponent
+              : owner === ownerComponent
+                || Boolean(ownerElement && host.contains(ownerElement as Node)))
           if (
             path
             && componentDefinitions.has(path)
@@ -2769,6 +2776,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         reflectToAttributes: true,
         writeIdToDOM: true,
         ...(pageScopeName ? { styleScope: styleScopeManager.register(pageScopeName) } : {}),
+        extraStyleScope: glassEasel.StyleScopeManager.globalScope(),
       },
       data: request.data,
       using: pageUsingDefinitions(),

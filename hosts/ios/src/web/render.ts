@@ -83,7 +83,6 @@ function bootNativeRenderEntry(options: {
     })
     const runtime = bootTreeThread({
       connection,
-      pageFrame: true,
       renderer: options.renderer,
       ...(options.pageId ? { initialPageId: options.pageId } : {}),
     })
@@ -124,7 +123,6 @@ async function loadRenderTemplates(): Promise<TemplateRegistry | undefined> {
 
 const entry = createGlassRenderEntry({
   container: document.getElementById('app') ?? document.body,
-  pageFrame: true,
   resolveAssetUrl: (src, sourcePath) => {
     const reference = resolveAssetReference(sourcePath || '', src)
     if (!reference) return undefined

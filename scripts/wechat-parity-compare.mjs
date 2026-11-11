@@ -29,7 +29,7 @@ function writeJson(name, value) {
   fs.writeFileSync(path.join(outputDir, name), `${JSON.stringify(value, null, 2)}\n`)
 }
 
-const tiny = runJsonScript('scripts/wechat-parity-trace.mjs', { TINY_PAGE_FRAME: '1' })
+const tiny = runJsonScript('scripts/wechat-parity-trace.mjs')
 const wechat = runJsonScript('scripts/wechat-parity-oracle.mjs')
 const comparison = compareTraces(tiny.trace, wechat.trace)
 

@@ -142,8 +142,6 @@ export type TreeThreadOptions = {
   /** Created by the host entry; the render thread never builds its own. */
   connection: BridgeConnection
   renderer: TreeRenderer
-  /** Let the render pageframe evaluate page WXML instead of replaying a tree snapshot. */
-  pageFrame?: boolean
   initialPageId?: string
   /** Already-loaded template groups; installed before any flow is handled. */
   templates?: TemplateRegistry
@@ -382,7 +380,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
             payload.placeholders,
             (path) => Boolean(definitions[path]),
           )
-          if (options.pageFrame && payload.pageFrame && options.renderer.mountPage && currentPageId) {
+          if (payload.pageFrame && options.renderer.mountPage && currentPageId) {
             pageFramePages.add(currentPageId)
             options.renderer.mountPage({
               pageId: currentPageId,

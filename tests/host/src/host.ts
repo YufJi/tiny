@@ -32,7 +32,6 @@ const wasmHost = new TestBrowserHost({
   serviceUrl: `/service.html?app=${encodeURIComponent(app.id)}`,
   renderUrl: `/render.html?app=${encodeURIComponent(app.id)}`,
   initialPath,
-  pageFrame: search.get('pageFrame') !== '0',
   container: document.getElementById('app') ?? document.body,
   storage,
   apiHandlers: createTestHostApiHandlers(storage, getSystemInfo),

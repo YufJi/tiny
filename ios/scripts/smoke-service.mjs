@@ -144,6 +144,7 @@ globalThis.__runHostSmoke = async () => {
   const boot = await host.control('runtime', 'bootstrap', {
     manifest,
     initialPath: firstPage,
+    pageFrame: true,
   })
   print('SMOKE_OK ' + JSON.stringify({
     appId: appData.appId,
