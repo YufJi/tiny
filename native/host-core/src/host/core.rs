@@ -1330,7 +1330,6 @@ impl HostCore {
             "manifest": self.config.manifest,
             "initialPath": self.config.initial_path,
             "maxPageStack": self.config.max_page_stack.unwrap_or(10),
-            "pageFrame": true,
         });
         if let Some(initial_exit_state) = &self.config.initial_exit_state {
             payload["initialExitState"] = initial_exit_state.clone();

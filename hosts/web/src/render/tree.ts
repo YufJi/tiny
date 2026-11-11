@@ -159,7 +159,7 @@ export type GlassRenderTreeOptions = {
 export type GlassRenderTree = {
   root: AnyComponent
   rootElement: HTMLElement | null
-  mountPage?: (request: PageFrameMount) => void
+  mountPage: (request: PageFrameMount) => void
   applyStyles?: (styles: string[]) => void
   inspectTree?: () => unknown
   measure?: (ids: string[]) => Record<string, unknown>

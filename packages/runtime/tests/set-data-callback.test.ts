@@ -89,7 +89,6 @@ type Rendered = {
  */
 function createRecordingRenderer(rendered: Rendered) {
   return {
-    mount(_root: RenderNode) {},
     mountPage(request: { data?: Record<string, unknown> }) {
       if (typeof request.data?.label === 'string') rendered.pageText = request.data.label
     },
@@ -108,12 +107,6 @@ function createRecordingRenderer(rendered: Rendered) {
         if (value && typeof value.text === 'string') rendered.componentText = value.text
       }
       rendered.log.push(`component-data:${rendered.componentText}`)
-      rendered.log.push(`render:${rendered.pageText}`)
-    },
-    applyPatches(patches: RenderPatch[]) {
-      for (const patch of patches) {
-        if (patch.type === 'text') rendered.pageText = patch.text
-      }
       rendered.log.push(`render:${rendered.pageText}`)
     },
   }

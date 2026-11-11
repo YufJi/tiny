@@ -128,8 +128,6 @@ export class ServiceRenderBridge implements ServiceRenderPort {
   private readonly ackedBatches = new Map<string, { pageId: string; callbacks: Array<() => void> }>()
   private readonly pendingTabBarReady = new Map<string, Array<(tabBar: unknown) => void>>()
   private completionCounter = 0
-  private pageFrame = false
-
   constructor(options: ServiceRenderBridgeOptions) {
     this.options = options
     this.connection = options.connection
@@ -142,7 +140,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     attachRenderInbound(this.connection, {
       getLogicTree: () => this.logicTree,
       isMounted: (pageId) => this.mountedPages.has(pageId),
-      sendSnapshot: (pageId) => this.sendTreeSnapshot(pageId),
+      sendFlow: (pageId) => this.sendTreeFlow(pageId),
       reportError: (message) => this.options.onError(message),
       dispatchWxsEffect: (pageId, effect) => this.dispatchWxsEffect(pageId, effect),
       replayWxsHandler: (pageId, origin, event) => {
@@ -152,14 +150,6 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       },
       acknowledgeRenders: (tokens) => this.acknowledgeRenders(tokens),
     })
-  }
-
-  /**
-   * The render pageframe consumes page data and identity hints, not the
-   * service-side virtual-node patch stream. Snapshot hosts keep the patches.
-   */
-  setPageFrame(enabled: boolean): void {
-    this.pageFrame = enabled
   }
 
   /**
@@ -263,7 +253,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     if (!this.logicTree || this.mountedPages.has(page.pageId)) return
     this.logicTree.mountPage(page.path, page.data, page.pageId)
     this.mountedPages.add(page.pageId)
-    this.sendTreeSnapshot(page.pageId)
+    this.sendTreeFlow(page.pageId)
     // The first snapshot carries the full map; later updates only send changes.
     this.logicTree.seedComponentData(page.pageId)
     this.flushTabBarReady(page.pageId)
@@ -438,7 +428,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     return buildComponentFlow(root, this.renderDefinitions(pageId))
   }
 
-  private sendTreeSnapshot(pageId: string): void {
+  private sendTreeFlow(pageId: string): void {
     if (!this.logicTree) return
     const root = this.logicTree.snapshotRenderTree(pageId)
     if (!root) return
@@ -544,14 +534,15 @@ export class ServiceRenderBridge implements ServiceRenderPort {
               TREE_PROTOCOL.domain, TREE_PROTOCOL.patch,
               {
                 pageId: id,
-                ...(!this.pageFrame ? { patches: cloneJsonSafe(patches) } : {}),
                 ...(structural
                   ? {
                     renderHints: cloneJsonSafe(snapshot),
                     componentFlow: cloneJsonSafe(collectComponentIdentities(snapshot)),
                   }
                   : {}),
-                ...(page?.data ? { pageData: cloneJsonSafe(page.data) } : {}),
+                ...(!hasPageDataPatches && page?.data
+                  ? { pageData: cloneJsonSafe(page.data) }
+                  : {}),
                 ...(hasComponentData ? { componentData: cloneJsonSafe(componentData) } : {}),
                 ...(hasPageDataPatches
                   ? { pageDataPatches: cloneJsonSafe(pageDataPatches!) }

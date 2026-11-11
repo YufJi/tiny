@@ -62,12 +62,10 @@ export type PageFrameMount = {
 }
 
 export type TreeRenderer = {
-  mount: (root: RenderNode) => void
-  /** Mount a page directly from its compiled template instead of a snapshot. */
-  mountPage?: (request: PageFrameMount) => void
+  /** Mount a page from its compiled template; WXML evaluation belongs here. */
+  mountPage: (request: PageFrameMount) => void
   /** Mount the optional independent custom-tabBar root. */
   mountTabBar?: (root: RenderNode) => void
-  applyPatches: (patches: RenderPatch[]) => void
   /** Apply patches for the independent custom-tabBar root. */
   applyTabBarPatches?: (patches: RenderPatch[]) => void
   /**
@@ -160,7 +158,6 @@ export type TreeThreadRuntime = {
 export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
   const connection = options.connection
   let currentPageId = options.initialPageId
-  const pageFramePages = new Set<string>()
 
   /**
    * Echo the batch tokens once the render tree reflected the batch. The service
@@ -310,25 +307,6 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     }
   })
 
-  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.snapshot, (message) => {
-    whenTemplatesReady(() => {
-      const payload = (message.payload ?? {}) as {
-        root?: RenderNode
-        pageId?: string
-        pagePath?: string
-        styles?: string[]
-        fallbackAppStyles?: string[]
-        ack?: string[]
-      }
-      currentPageId = payload.pageId ?? message.pageId ?? currentPageId
-      applyBatch(currentPageId, TREE_PROTOCOL.snapshot, payload.ack, () => {
-        options.renderer.setPagePath?.(payload.pagePath ?? '')
-        if (payload.root) options.renderer.mount(payload.root)
-        const styles = [...(payload.styles ?? []), ...(payload.fallbackAppStyles ?? [])]
-        if (styles.length > 0) options.renderer.applyStyles?.(styles)
-      })
-    })
-  })
   const handleFlow = (message: { payload?: unknown; pageId?: string }): void => {
     const payload = (message.payload ?? {}) as {
       pageId?: string
@@ -380,28 +358,23 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
             payload.placeholders,
             (path) => Boolean(definitions[path]),
           )
-          if (payload.pageFrame && options.renderer.mountPage && currentPageId) {
-            pageFramePages.add(currentPageId)
-            options.renderer.mountPage({
-              pageId: currentPageId,
-              ...(payload.pageFrame.rootViewId
-                ? { rootViewId: payload.pageFrame.rootViewId }
-                : {}),
-              pagePath: payload.pagePath ?? '',
-              data: payload.pageData ?? {},
-              ...(payload.pageUsing ? { using: payload.pageUsing } : {}),
-              ...(payload.pageScope ? { scope: payload.pageScope } : {}),
-              ...(payload.placeholders ? { placeholders: payload.placeholders } : {}),
-              ...(payload.pageFrame.methods && payload.pageFrame.methods.length > 0
-                ? { methods: payload.pageFrame.methods }
-                : {}),
-              ...(payload.componentFlow ? { componentFlow: payload.componentFlow } : {}),
-              renderHints: hints,
-            })
-          } else {
-            if (currentPageId) pageFramePages.delete(currentPageId)
-            options.renderer.mount(hints)
-          }
+          if (!currentPageId) throw new Error('tree.flow has no page id')
+          options.renderer.mountPage({
+            pageId: currentPageId,
+            ...(payload.pageFrame?.rootViewId
+              ? { rootViewId: payload.pageFrame.rootViewId }
+              : {}),
+            pagePath: payload.pagePath ?? '',
+            data: payload.pageData ?? {},
+            ...(payload.pageUsing ? { using: payload.pageUsing } : {}),
+            ...(payload.pageScope ? { scope: payload.pageScope } : {}),
+            ...(payload.placeholders ? { placeholders: payload.placeholders } : {}),
+            ...(payload.pageFrame?.methods && payload.pageFrame.methods.length > 0
+              ? { methods: payload.pageFrame.methods }
+              : {}),
+            ...(payload.componentFlow ? { componentFlow: payload.componentFlow } : {}),
+            renderHints: hints,
+          })
           if (payload.tabRoot) {
             options.renderer.mountTabBar?.(applyComponentPlaceholders(
               payload.tabRoot,
@@ -441,7 +414,6 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     whenTemplatesReady(() => {
       const payload = (message.payload ?? {}) as {
         pageId?: string
-        patches?: RenderPatch[]
         renderHints?: RenderNode
         componentFlow?: RenderComponentIdentity[]
         tabPatches?: RenderPatch[]
@@ -453,28 +425,21 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       const pageId = payload.pageId ?? message.pageId ?? currentPageId
       if (payload.pageId) currentPageId = payload.pageId
       applyBatch(pageId, TREE_PROTOCOL.patch, payload.ack, () => {
-        const pageFrame = Boolean(pageId && pageFramePages.has(pageId))
-        if (pageFrame) {
-          if (payload.componentFlow) {
-            options.renderer.setPageFrameComponents?.(payload.componentFlow)
-          }
-          if (payload.renderHints) options.renderer.setPageFrameHints?.(payload.renderHints)
-          // The pageframe's WXML pass applies the props it owns first. Component
-          // data follows as the remaining per-instance patch, matching WeChat's
-          // property-before-setData order. The reverse order makes the same prop
-          // update run twice and can re-evaluate WXS expression slots after a
-          // later component has advanced shared module state.
-          if (payload.pageDataPatches && payload.pageDataPatches.length > 0) {
-            options.renderer.applyPageDataPatches?.(payload.pageDataPatches)
-          } else if (payload.pageData) {
-            options.renderer.setPageData?.(payload.pageData)
-          }
-          if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
-        } else {
-          if (payload.pageData) options.renderer.setPageData?.(payload.pageData)
-          if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
-          options.renderer.applyPatches(payload.patches ?? [])
+        if (payload.componentFlow) {
+          options.renderer.setPageFrameComponents?.(payload.componentFlow)
         }
+        if (payload.renderHints) options.renderer.setPageFrameHints?.(payload.renderHints)
+        // The pageframe's WXML pass applies the props it owns first. Component
+        // data follows as the remaining per-instance patch, matching WeChat's
+        // property-before-setData order. The reverse order makes the same prop
+        // update run twice and can re-evaluate WXS expression slots after a
+        // later component has advanced shared module state.
+        if (payload.pageDataPatches && payload.pageDataPatches.length > 0) {
+          options.renderer.applyPageDataPatches?.(payload.pageDataPatches)
+        } else if (payload.pageData) {
+          options.renderer.setPageData?.(payload.pageData)
+        }
+        if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
         if (payload.tabPatches && payload.tabPatches.length > 0) {
           options.renderer.applyTabBarPatches?.(payload.tabPatches)
         }

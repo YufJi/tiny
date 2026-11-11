@@ -734,7 +734,6 @@ function createRenderIframe(
 ): HTMLIFrameElement {
   const url = new URL(renderUrl, window.location.href)
   url.searchParams.set('pageId', pageId)
-  url.searchParams.set('pageFrame', '1')
   url.searchParams.set('enablePullDownRefresh', behavior.enablePullDownRefresh ? '1' : '0')
   url.searchParams.set('onReachBottomDistance', String(behavior.onReachBottomDistance))
   const iframe = document.createElement('iframe')

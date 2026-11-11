@@ -22,7 +22,7 @@ export type RenderWxsEffect = {
 export type RenderInboundHost = {
   getLogicTree: () => LogicTreeAdapter | null
   isMounted: (pageId: string) => boolean
-  sendSnapshot: (pageId: string) => void
+  sendFlow: (pageId: string) => void
   reportError: (message: string) => void
   dispatchWxsEffect: (pageId: string, effect: RenderWxsEffect) => void
   /** Replay a render-side WXS handler into the owning service page state. */
@@ -75,7 +75,7 @@ export function attachRenderInbound(
 
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.ready, (message) => {
     if (!host.getLogicTree() || !message.pageId || !host.isMounted(message.pageId)) return
-    host.sendSnapshot(message.pageId)
+    host.sendFlow(message.pageId)
   })
 
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.ack, (message) => {

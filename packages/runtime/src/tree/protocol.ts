@@ -11,7 +11,6 @@ export const TREE_PROTOCOL = Object.freeze({
   domain: 'tree',
   templateEvent: 'templateEvent',
   flow: 'flow',
-  snapshot: 'snapshot',
   patch: 'patch',
   ack: 'ack',
   event: 'event',
@@ -31,7 +30,7 @@ export const TREE_PROTOCOL = Object.freeze({
 /**
  * Render-thread acknowledgement of an applied batch.
  *
- * A `flow`/`snapshot`/`patch` message may carry opaque `ack` tokens. The render
+ * A `flow`/`patch` message may carry opaque `ack` tokens. The render
  * thread echoes them once the batch is reflected in its tree, which is what
  * makes a `setData` completion "after render" instead of "after the service
  * data update".

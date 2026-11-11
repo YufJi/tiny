@@ -61,7 +61,7 @@ function createTemplates() {
   }
 }
 
-async function capturePatch(pageFrame: boolean): Promise<Record<string, unknown>> {
+async function capturePatch(): Promise<Record<string, unknown>> {
   const manifest = createManifest()
   const [hostService, serviceTransport] = createInMemoryTransportPair()
   const frames: TransportFrame[] = []
@@ -85,7 +85,6 @@ async function capturePatch(pageFrame: boolean): Promise<Record<string, unknown>
     renderConnector: connector,
     manifest,
     initialPath: PAGE,
-    pageFrame,
   })
   const globalObject = globalThis as unknown as Record<string, unknown>
   ;(globalObject.App as (options: Record<string, unknown>) => unknown)({})
@@ -110,15 +109,9 @@ async function capturePatch(pageFrame: boolean): Promise<Record<string, unknown>
 
 describe('service pageframe projection', () => {
   test('omits virtual-node patches when the render pageframe owns the diff', async () => {
-    const payload = await capturePatch(true)
+    const payload = await capturePatch()
     expect(payload).not.toHaveProperty('patches')
-    expect(payload).toHaveProperty('pageData')
-  })
-
-  test('keeps virtual-node patches for snapshot renderers', async () => {
-    const payload = await capturePatch(false)
-    expect(payload.patches).toEqual([
-      expect.objectContaining({ type: 'text' }),
-    ])
+    expect(payload).not.toHaveProperty('pageData')
+    expect(payload.pageDataPatches).toEqual([{ label: 'after' }])
   })
 })

@@ -79,7 +79,7 @@
 | 样式/渲染 | 8% | 76% | 6.08 | WXSS/rpx/作用域强；app.wxss tag/class 规则作用到页面与共享组件；canvas 2D/WebGL/RAF 已接，导出 API 仍缺 |
 | 宿主/平台 | 8% | 18% | 1.44 | 浏览器 + iOS 原生宿主（JavaScriptCore service + WKWebView render）；仍无原生网络/登录/支付/分享 |
 | 开发工具 | 4% | 47% | 1.88 | Vite 构建、应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar、移动端访问提示；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 62% | 1.86 | 534 单测 + 74 步浏览器验收 + 125 页探针（121 启动 / 116 可见文本）+ iOS 9 fixture 模拟器 smoke + 真机签名构建/安装；覆盖 npm 构建、project.config/app.json 校验、TS 诊断、页面栈/data/exitState 恢复、微信 pageframe 十六检查点 1:1 trace；仍无性能/安全测试 |
+| 质量/验证 | 3% | 62% | 1.86 | 530 单测 + 74 步浏览器验收 + 125 页探针（121 启动 / 116 可见文本）+ iOS 9 fixture 模拟器 smoke + 真机签名构建/安装；覆盖 npm 构建、project.config/app.json 校验、TS 诊断、页面栈/data/exitState 恢复、微信 pageframe 十六检查点 1:1 trace；仍无性能/安全测试 |
 | **合计** | **100%** | — | **58.34%** | |
 
 ### 条目覆盖率速览
@@ -637,7 +637,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-11-11 | 页面恢复收口：HostCore/WebHost 新增 `initialExitState`，首屏 `onLoad` 可读 `this.exitState`；`onSaveExitState` 改为在 `onHide` 后保存；`snapshotState`/`restoreState` 携带 `savedExitState` 与 `exitState`；devtool Reload 持久化整栈 data，普通刷新按页面身份合并快照，避免 runtime state 覆盖保存值；新增启动页 exitState 与刷新回归。521 单测；完整 P0 浏览器门禁通过 | **待重新评分** |
 | 2026-11-11 | 组件定义页级收口：`PageComponentManager` 改为按页面 `usingComponents` 的传递闭包（含 generic 默认组件）维护可见 schema；首屏 flow 只发送该页可见的 `define`，lazy 组件只进入声明它的页面，不再把全局 definition 表广播给所有页面。522 单测；完整 P0 浏览器门禁通过 | **待重新评分** |
 | 2026-11-11 | WXS 页级状态收口：依据 `wcc -d -ds` 的 `__WXML_GLOBAL__.modules`/`nv_require` 实现，service 和 render 都按 page tree 维护模块表，页面模板、组件模板和同页组件实例共享，页面卸载释放；模板每次求值从当前页 runtime 取 exports。每个 render WXS handler 通过独立 `tree.wxsHandler` 携带 origin，以 state-only descriptor 回放到 service 页 runtime，不依赖是否存在 JS listener。新增双页、同页更新、组件实例、重入和状态回放回归。528 单测；完整 P0 浏览器门禁通过 | **待重新评分** |
-| 2026-11-11 | 双树 pageframe 收口：页面/组件 WXML 由 render pageframe 执行；service 生成组件创建身份，宿主 shadow tree 内的模板子组件变化以 `component-instances` 结构补丁同步，禁止按 DOM 顺序猜身份；component `ready` 按 shadow descendants → host → light/slot descendants 触发，并覆盖动态重入。微信 3.17.5 CLI 对拍增加双组件 property 更新、嵌套 slot、宿主模板子组件、`wx:if` 创建/销毁、keyed reorder/`moved`、lifecycle，以及 relation linked/unlinked/linkFailed 顺序，十六检查点 1:1。browser/devtool/iOS 全部固定走 pageframe，iOS 9 fixture smoke 通过；534 单测；完整 P0 浏览器门禁通过 | **待重新评分** |
+| 2026-11-11 | 双树 pageframe 收口：页面/组件 WXML 由 render pageframe 执行；service 生成组件创建身份，宿主 shadow tree 内的模板子组件变化以 `component-instances` 结构补丁同步，禁止按 DOM 顺序猜身份；component `ready` 按 shadow descendants → host → light/slot descendants 触发，并覆盖动态重入。微信 3.17.5 CLI 对拍增加双组件 property 更新、嵌套 slot、宿主模板子组件、`wx:if` 创建/销毁、keyed reorder/`moved`、lifecycle，以及 relation linked/unlinked/linkFailed 顺序，十六检查点 1:1。browser/devtool/iOS 全部固定走 pageframe，iOS 9 fixture smoke 通过；530 单测；完整 P0 浏览器门禁通过 | **待重新评分** |
 | 2026-11-10 | 第三十九次同步：devtool 页面栈恢复——按 app 保存 pageStack 路径到 sessionStorage，带 `restore=1` 的刷新在 launch 时重建栈（最多到 maxPageStack），关闭应用清理；验收覆盖刷新后回到 add-todo 且栈长度 2。497 单测 / 72 步；页面形态 38→40，总分 57.50→57.74 | **57.74%** |
 | 2026-11-10 | 第三十八次同步：页面形态配置下沉到宿主——`pageBehaviorOf(manifest,pagePath)` 解析 `enablePullDownRefresh`/`onReachBottomDistance`，通过 render iframe URL 传入，service/kernel 不再读取页面形态配置；下拉手势按配置启用，触底距离默认 50，`stopPullDownRefresh` 发 host diagnostic 立即收起指示器；转场改 opacity 避免 iframe 坐标错位。497 单测 / 71 步；页面形态 36→38，总分 57.26→57.50 | **57.50%** |
 | 2026-11-10 | 第三十七次同步：devtool 页面转场——按 page stack 深度区分 navigateTo/navigateBack/replace，给每页 iframe 加 push/pop/fade 动画，验收断言 `data-transition=forward|back`。497 单测 / 70 步；页面形态 34→36，总分 57.02→57.26 | **57.26%** |

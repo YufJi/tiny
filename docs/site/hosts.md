@@ -212,7 +212,7 @@ render 线程需要拿到编译模板，因为组件 shadow tree 在 render 侧�
 | `TreeThreadOptions` / `RenderEntryOptions` | 用途 | 是否必需 |
 | --- | --- | --- |
 | `connection` | 宿主在 render transport 上创建的连接 | `bootTreeThread` 必需 |
-| `renderer` | 宿主 `TreeRenderer`：mount / applyPatches / 模板与组件定义 / query / measure / inspectTree | `bootTreeThread` 必需 |
+| `renderer` | 宿主 `TreeRenderer`：mountPage / 模板与组件定义 / 页面数据与身份 hints / query / measure / inspectTree | `bootTreeThread` 必需 |
 | `templates` | 已加载的模板组，首屏前直接安装 | 与 `loadTemplates` 二选一 |
 | `loadTemplates` | 异步加载 templates.js；flow 会等它完成后再挂载 | 与 `templates` 二选一 |
 | `prepare` | 内置样式安装后、宣告 ready 前执行的额外宿主设置 | 否 |
@@ -274,7 +274,7 @@ HostCore 把 `api.*` 调用交给平台适配器；浏览器实现集中在 `cre
 
 ::::split
 :::card{tag="renderer" title="TreeRenderer"}
-render 线程的核心注入：mount、applyPatches、模板/组件定义、事件 sink、query、measure、inspectTree、observeIntersection 和动画。Web 实现是 `createGlassRenderTree`；原生宿主实现同一个契约。
+render 线程的核心注入：`mountPage`、模板/组件定义、页面数据与身份 hints、事件 sink、query、measure、inspectTree、observeIntersection 和动画。Web 实现是 `createGlassRenderTree`；独立 custom tabBar 仍通过 `mountTabBar` / `applyTabBarPatches` 注入。
 :::
 
 :::card{tag="canvas" title="ServiceCanvasAdapter"}
@@ -431,7 +431,7 @@ devtool 的 service/render 入口用 `new Function('url', 'return import(url)')`
 | --- | --- | --- |
 | 加载并校验 manifest | 读取 schemaVersion=2、runtimeCompatibility 和产物路径。不要自己复制一份产物类型。 | |
 | 创建 Transport | service 一条，每页 render 各一条；帧边界、非空 messages 和 JSON 安全由 Bridge 兜底，但传输必须保序。 | |
-| 实现渲染树 | 实现 `TreeRenderer`：mount、applyPatches、模板/组件定义、事件 sink、query、measure、inspectTree、observeIntersection 和动画；Web 侧可直接用 `createGlassRenderTree`。 | |
+| 实现渲染树 | 实现 `TreeRenderer`：`mountPage`、模板/组件定义、页面数据与身份 hints、事件 sink、query、measure、inspectTree、observeIntersection 和动画；Web 侧可直接用 `createGlassRenderTree`。 | |
 | 启动线程并等待连接装好 | service 安装兼容全局、loadTemplates 和 loadArtifacts；render 创建 TreeRenderer 并加载模板；宿主拿到 port 后创建 connection 再握手，用 ready 或同步点避免丢帧。 | |
 | 提供宿主信息 | 具体宿主提供 systemInfo/storage 的异步 handler 与同步 `syncApiHandlers`；入口注入 `__TINY_HOST_BRIDGE__`（含 `sendSync`）并 `connectHostBridge`，拼出 `ApiContext`（canvas、资源、晚绑定页面访问器），交给 `createApiHost` 组装；`runtime.bootstrap` 不再传快照。设备事实用 apiExtensions 覆盖，网络请求等跨线程 API 走平台 handler。 | |
 | 实现导航和 tree.ready | navigate.to/back/redirectTo/reLaunch/switchTab 必须由宿主先调用 service、再创建/激活 render root；render bootstrap 后发 tree.ready，service 发送 tree.flow，最后 page.ready。 | |
@@ -442,7 +442,7 @@ devtool 的 service/render 入口用 `new Function('url', 'return import(url)')`
 :::
 
 :::callout{title="iOS 宿主已落地" tone="warn"}
-原生工程在 `ios/`，前端标准包在 `hosts/ios`（`src/service` + `src/web`）；`HostCoreRuntime` 通过 UniFFI 驱动 Rust HostCore，JSCore 跑 service，每页一个独立 render WKWebView，没有 host.html/iframe/JS fallback。render WKWebView 与 browser/devtool 一样走 pageframe WXML；全部 9 个 fixture 已在模拟器 smoke，并覆盖 native 导航/tab 切换。Canvas 2D 由 service 侧录制、native render 回放，`measureText` 走原生 CoreText；WebGL 和同步读回仍未接。它没有采用 `createNativeTreeRenderer`，所以 native `TreeRenderer` 仍只有契约。细节见 `ios/README.md`。
+原生工程在 `ios/`，前端标准包在 `hosts/ios`（`src/service` + `src/web`）；`HostCoreRuntime` 通过 UniFFI 驱动 Rust HostCore，JSCore 跑 service，每页一个独立 render WKWebView，没有 host.html/iframe/JS fallback。render WKWebView 与 browser/devtool 一样走 pageframe WXML；全部 9 个 fixture 已在模拟器 smoke，并覆盖 native 导航/tab 切换。Canvas 2D 由 service 侧录制、native render 回放，`measureText` 走原生 CoreText；WebGL 和同步读回仍未接。细节见 `ios/README.md`。
 :::
 
 ## 当前宿主实现的已知问题 {#risks kicker="风险"}
@@ -463,7 +463,7 @@ service iframe 只是视觉上隐藏，没有 sandbox 属性，仍然可以访�
 :::
 
 :::card{tag="flow" title="增量统一走 patch"}
-首屏用 define/tree/ready 对齐组件树（快照作为嵌套树发送，元素不带 id），custom tabBar 通过可选 `tabRoot` 挂载；后续更新由 snapshot diff 生成 tree.patch/tabPatches，组件按共享 id、元素按 `owner#index.path` locator 寻址，覆盖文本、属性、插入/删除/重排。
+首屏用 define/tree/ready 对齐组件树（身份快照作为嵌套树发送，元素不带 id）；pageframe 从模板挂载页面并本地 diff。custom tabBar 通过可选 `tabRoot` 挂载，后续更新走 `tabPatches`。
 :::
 
 :::card{tag="event" tone="warn" title="target 语义仍是近似"}

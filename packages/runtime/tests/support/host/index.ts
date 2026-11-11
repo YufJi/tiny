@@ -389,9 +389,6 @@ export function createTestHost(options: RuntimeHostOptions): TestRuntimeHost {
   service.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.flow, (message) => {
     routeServiceEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.flow, message.payload, message.pageId)
   })
-  service.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.snapshot, (message) => {
-    routeServiceEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.snapshot, message.payload, message.pageId)
-  })
   service.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.patch, (message) => {
     routeServiceEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.patch, message.payload, message.pageId)
   })
@@ -447,7 +444,6 @@ export function createTestHost(options: RuntimeHostOptions): TestRuntimeHost {
           ? { initialExitState: options.initialExitState }
           : {}),
         ...(options.maxPageStack !== undefined ? { maxPageStack: options.maxPageStack } : {}),
-        pageFrame: options.pageFrame ?? true,
       })
       const initialData = (serviceResult.initialData as Record<string, unknown> | undefined) ?? options.initialData
       const pageId = serviceResult.pageId as string | undefined

@@ -102,8 +102,9 @@ async function mountThroughThread(root: RenderNode, definitions: ReturnType<type
   bootTreeThread({
     connection: createRenderConnection(renderTransport),
     renderer: {
-      mount: (node) => mounted.push(node),
-      applyPatches: () => {},
+      mountPage: (request) => {
+        if (request.renderHints) mounted.push(request.renderHints)
+      },
     },
   })
   const host = new BridgeConnection({
@@ -117,6 +118,7 @@ async function mountThroughThread(root: RenderNode, definitions: ReturnType<type
     pageId: 'page-1',
     pagePath: PAGE,
     styles: [],
+    pageFrame: { rootViewId: 'page-1' },
     messages: buildComponentFlow(root, definitions),
   }, { pageId: 'page-1' })
   await new Promise((resolve) => setTimeout(resolve, 0))

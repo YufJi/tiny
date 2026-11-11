@@ -193,7 +193,7 @@ async function probePage(page, baseUrl, pagePath) {
   try {
     const gotoStarted = Date.now()
     await page.goto(
-      `${baseUrl}/?app=${encodeURIComponent(probeApp)}&path=${encodeURIComponent(pagePath)}&pageFrame=1`,
+      `${baseUrl}/?app=${encodeURIComponent(probeApp)}&path=${encodeURIComponent(pagePath)}`,
       {
         waitUntil: 'domcontentloaded',
         timeout: PAGE_TIMEOUT,

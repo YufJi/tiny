@@ -249,9 +249,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         initialPath?: string
         maxPageStack?: number
         initialExitState?: unknown
-        pageFrame?: boolean
       }
-      render.setPageFrame(payload.pageFrame === true)
       pages.setInitialPath(payload.initialPath ?? pages.currentPath)
       if (payload.maxPageStack !== undefined) {
         pages.setMaxPageStack(Number(payload.maxPageStack))

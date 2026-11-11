@@ -4,10 +4,13 @@
 
 Accepted. Phases A and B are implemented. The browser test host, debugger and
 iOS render WKWebView all mount through the pageframe, and the runtime's
-cross-thread integration harness also defaults to pageframe. Snapshot rendering
-remains only for low-level renderer unit tests and one explicit service
-projection assertion. There is no host-level pageframe switch or snapshot
-escape hatch.
+cross-thread integration harness also defaults to pageframe. `TreeRenderer`
+requires `mountPage`; the legacy `tree.snapshot` event, service-side pageframe
+switch and native snapshot renderer are gone. `RenderNode` survives only as the
+service-owned identity/index snapshot and as the independent custom-tabBar
+root/patch format, not as the page rendering path. A few `@tiny/host-web`
+low-level DOM tests still build `RenderNode` fixtures directly; they are test
+fixtures, not a supported `TreeRenderer` host path.
 
 ## Context
 
@@ -70,7 +73,9 @@ The migration is staged to keep the gate green:
   not a full page snapshot. Render-local diff is the acknowledgement. Page WXML
   props are applied before the remaining per-instance component-data patch, so
   a parent prop update is not evaluated twice. Component data still uses the
-  existing per-instance map.
+  existing per-instance map. Structural updates carry `renderHints` and
+  `componentFlow` for identity/index alignment; they never carry page
+  virtual-node patches.
 - **Phase D**: remove service WXML and the cross-tree WXS state replay.
 
 ## Acceptance

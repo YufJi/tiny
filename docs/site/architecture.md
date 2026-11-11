@@ -78,13 +78,13 @@ canvas 和 `resolveAssetUrl` 只进入 `@tiny/api` 的 context；同步调用由
 
 ## 两棵树：逻辑树在 service，渲染树在 host {#split-tree kicker="双侧树"}
 
-这是当前运行时的核心设计。service 不创建 DOM，render 不执行小程序逻辑。页面和组件的 WXML 由 render pageframe 执行；service 逻辑树从同一份编译模板构造组件实例，供 data、observer、relations、查询和 fallback snapshot 使用。两边通过共享的组件 id、组件作用域 locator、component flow 和 virtual node patch 对齐。
+这是当前运行时的核心设计。service 不创建 DOM，render 不执行小程序逻辑。页面和组件的 WXML 由 render pageframe 执行；service 逻辑树从同一份编译模板构造组件实例，供 data、observer、relations、查询和身份索引使用。两边通过共享的组件 id、组件作用域 locator、component flow 和页面数据补丁对齐。
 
 | 层 | 在哪里 | 拥有 | 不负责 |
 | --- | --- | --- | --- |
 | 逻辑树 | service 线程 | glass-easel ComponentSpace、逻辑模板实例化、virtual node、组件实例、observer、relations、带类型的 dataset、组件的共享 id | DOM、布局、宿主内置组件实现、页面 WXML 的最终求值 |
 | 渲染树 | 宿主的 render thread / pageframe | 页面与组件 WXML 求值（shadow tree）、真实内置组件、slot、shadow root、样式、布局、DOM、元素本地 id | app methods、observer、relations、页面栈 |
-| 同步协议 | 两棵树之间 | component flow 首屏同步、virtual node patch（组件 id / 元素 locator 寻址）、tree 事件、query/canvas 控制 | 业务语义 |
+| 同步协议 | 两棵树之间 | component flow 首屏同步、页面/组件数据补丁、身份 hints、tree 事件、query/canvas 控制 | 业务语义 |
 
 ```text
   SERVICE THREAD (kernel)                          RENDER THREAD (host renderer)
@@ -102,10 +102,10 @@ canvas 和 `resolveAssetUrl` 只进入 `@tiny/api` 的 context；同步调用由
                           tree.event / query.* return through the same link
 ```
 
-首屏由 `tree.flow` 发送 `define`（组件定义）、`tree`（逻辑树快照）和 `ready`；pageframe 用编译模板挂载页面，快照用于组件身份和索引。组件带共享 id，元素不带 id（渲染侧分配本地 id）。后续更新由 `tree.patch` 发送 `text`、`replace`、`props`、`insert`、`remove`、`reorder`、`component-instances`、`extra`：组件用共享 id 寻址，元素用 `owner#index.path` 形式的 locator 寻址。`component-instances` 专门同步宿主组件 shadow tree 内的子组件身份变化。
+首屏由 `tree.flow` 发送 `define`（组件定义）、`tree`（逻辑树身份快照）和 `ready`；pageframe 用编译模板挂载页面，快照用于组件身份和索引。组件带共享 id，元素不带 id（渲染侧分配本地 id）。后续更新由 `tree.patch` 发送 `pageDataPatches`、`componentData` 和结构变化时的 `renderHints`/`componentFlow`；pageframe 用本地模板求值完成 DOM diff。custom tabBar 的独立根仍按 `RenderNode`/`tabPatches` 同步。
 
 :::callout{title="为什么要拆成两棵树"}
-render pageframe 是页面和组件 WXML 的执行者；属性、dataset、函数、observer 和 relations 仍然只在 service 里产生和消费。service 的模板求值只服务逻辑树、查询和 fallback snapshot，不再生成 pageframe 的最终 DOM。拆开之后，类型和语义留在 service，render 负责“怎么画”，同一套 tree 协议可以接 Web、原生或测试渲染器；组件 id 是两侧唯一的共享身份，元素 id 不跨线程。
+render pageframe 是页面和组件 WXML 的执行者；属性、dataset、函数、observer 和 relations 仍然只在 service 里产生和消费。service 的模板求值只服务逻辑树、查询和身份索引，不再生成 pageframe 的最终 DOM。拆开之后，类型和语义留在 service，render 负责“怎么画”；组件 id 是两侧唯一的共享身份，元素 id 不跨线程。
 :::
 
 ## glass-easel 提供组件框架，Tiny 补齐应用层 {#glass-easel kicker="运行时内核" nav="与 glass-easel 的分工"}
@@ -253,8 +253,7 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
 
 | 消息 | 路径 | 宿主处理 | 用途 |
 | --- | --- | --- | --- |
-| `tree.flow` · `tree.patch` | service → host → render | 按 pageId 转发；目标页还没打开时先入队 | 首屏 component flow、虚拟节点 patch |
-| `tree.snapshot` | service → host → render | 保留入口，当前 service 不发送 | 旧版完整快照 |
+| `tree.flow` · `tree.patch` | service → host → render | 按 pageId 转发；目标页还没打开时先入队 | 首屏 component flow、页面/组件数据补丁与身份 hints |
 | `tree.animate` · `tree.clearAnimate` | service → host → render | 按 pageId 转发 | `this.animate` / `clearAnimate` 的关键帧 |
 | `tree.wxsBinding` | service → host → render | 按 pageId 转发 | 动态 WXS 事件绑定决策 |
 | `tree.event` | render → host → service | 按 pageId 转发 | 事件带组件 id 或元素 locator、name、detail、native、touches 和 target/currentTarget 几何 |

@@ -28,7 +28,7 @@ observe the service data but not the rendered tree.
 
 - Add a render-thread **batch acknowledgement** to the tree protocol:
   `TREE_PROTOCOL.ack` (`tree.ack`) with `{ pageId, tokens }`.
-- A `tree.flow` / `tree.snapshot` / `tree.patch` message may carry
+- A `tree.flow` / `tree.patch` message may carry
   `ack: string[]` tokens. The render thread applies the batch and echoes the
   tokens exactly once, including when the renderer throws (the failure is
   reported as `RENDER_PATCH_ERROR`).

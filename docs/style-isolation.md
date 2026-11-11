@@ -101,7 +101,7 @@ schema 侧默认值：显式 `styleIsolation` → `addGlobalClass`（等价 `app
 
 ### 3.5 下发
 
-service 把当前页的 `styles`（已按 role 过滤）和可选的 `fallbackAppStyles` 放进 `tree.flow` / `tree.snapshot`（[packages/runtime/src/service/thread.ts:328](../packages/runtime/src/service/thread.ts#L328)）。`app` 与 `builtin` 两类**不随 flow 下发**（[packages/runtime/src/tree/logic/backend.ts:374](../packages/runtime/src/tree/logic/backend.ts#L374)）：app 走 page-scope 副本或 fallback，builtin 归宿主。
+service 把当前页的 `styles`（已按 role 过滤）和可选的 `fallbackAppStyles` 放进 `tree.flow` / `tree.patch`（[packages/runtime/src/service/thread.ts:328](../packages/runtime/src/service/thread.ts#L328)）。`app` 与 `builtin` 两类**不随 flow 下发**（[packages/runtime/src/tree/logic/backend.ts:374](../packages/runtime/src/tree/logic/backend.ts#L374)）：app 走 page-scope 副本或 fallback，builtin 归宿主。
 
 渲染线程只把收到的文本交给 `applyStyles`（[packages/runtime/src/tree/render/thread.ts:153](../packages/runtime/src/tree/render/thread.ts#L153)）。
 

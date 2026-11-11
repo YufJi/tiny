@@ -220,14 +220,13 @@ Bridge 的 `assertJsonSafe` 做严格校验；runtime 的 `toJsonSafe` 会主动
 
 ## tree 域：两棵树之间的同步 {#tree-protocol kicker="tree 协议"}
 
-双侧树不共享内存。service 逻辑树生成 component flow 和 virtual node patch，render 渲染树应用它们，并按组件定义求值 shadow tree；事件、查询和相交观测再按组件 id 或元素 locator 回到 service。
+双侧树不共享内存。service 逻辑树生成 component flow、页面数据补丁和组件身份 hints；render pageframe 从编译模板求值页面与组件 WXML，并在本地完成 DOM diff。事件、查询和相交观测再按组件 id 或元素 locator 回到 service。
 
 | 消息 | 方向 | 内容 |
 | --- | --- | --- |
 | `tree.flow` | service → render | 首屏 flow：`define`（该页可见组件定义）、`tree`（整棵页面渲染快照）、`ready`；payload 另带 `componentFlow` 组件身份流，并可带独立 `tabRoot`、页面样式、fallback app 样式、`pageScope`、`pageUsing`、`behaviorScheme`、`wxsModules`、`pageData` 和 `componentData` |
-| `tree.snapshot` | service → render | 旧版完整快照入口仍注册，当前 service 不发送 |
-| `tree.patch` | service → render | pageframe 只发 `pageDataPatches` / `componentData`，结构变化时附带 `renderHints`、`componentFlow` 和 `component-instances` 身份补丁；不再携带已无人消费的 virtual-node `patches`。snapshot test adapter 仍收 `text`、`replace`、`props`、`insert`、`remove`、`reorder`。同一 payload 还可带 `tabPatches` |
-| `tree.ack` | render → service | 批次确认：回显 flow/snapshot/patch 上的 `ack` token；service 用它 settle `setData` completion |
+| `tree.patch` | service → render | pageframe 只发 `pageDataPatches` / `componentData`，结构变化时附带 `renderHints` 和 `componentFlow`；不再携带页面 virtual-node `patches`。同一 payload 还可带独立 tabBar 的 `tabPatches` |
+| `tree.ack` | render → service | 批次确认：回显 flow/patch 上的 `ack` token；service 用它 settle `setData` completion |
 | `tree.event` | render → service | 组件 id 或元素 locator、可选 `targetId`、name、detail、native 字段、touches 和 target/currentTarget 几何；service 从最内层 target 节点开始分发，并保留当前 binding 的 currentTarget |
 | `tree.templateEvent` | render → service | render 求值的组件模板把绑定的方法调用交回 service |
 | `tree.wxsBinding` | service → render | 动态 WXS 事件绑定决策 |
@@ -264,20 +263,20 @@ Bridge 的 `assertJsonSafe` 做严格校验；runtime 的 `toJsonSafe` 会主动
 }
 ```
 
-后续更新只发送 patch：组件按共享 id 寻址，元素按 locator（`owner#index.path`）寻址：
+后续页面更新发送原始数据补丁、组件数据补丁和身份 hints；页面模板由 pageframe 自行求值：
 
 ```js
 {
-  patches: [
-    { type: 'props', target: 'page-1#0', props: { class: 'card active' } },
-    { type: 'text', target: 'page-1#0.1', text: '新的标题' },
-  ],
-  pageData: { ... },
+  pageDataPatches: [{ title: '新的标题' }],
+  componentData: { 'card-1': { label: '新的标题' } },
+  // 仅结构变化时出现
+  renderHints: { type: 'element', id: 'page-1', tag: 'page', children: [ ... ] },
+  componentFlow: [{ id: 'card-1', path: 'components/card/card' }],
 }
 ```
 
 :::callout{title="patch 按页面合批"}
-service 在一个 microtask 内合并同一页面的模板更新，再发一条 `tree.patch`；自定义 tabBar 的独立根由 `tabRoot` 挂载，后续结构变化走 `tabPatches`，页面根和 tab 根共享同一个渲染批次。渲染树按顺序应用 patch，组件定义只在首屏或新增组件时注册，并用同一份模板求值 shadow tree。首屏 flow 只负责挂载，后续更新统一走 patch。带 `setData` completion 的批次额外携带 `ack` token，渲染树应用后回 `tree.ack`（失败也回，先发 `RENDER_PATCH_ERROR` 诊断），service 收到确认才执行回调。
+service 在一个 microtask 内合并同一页面的更新，再发一条 `tree.patch`。pageframe 先应用页面 data 补丁，再应用剩余的组件实例 data 补丁；结构变化只刷新身份 hints，不重放页面 DOM patch。自定义 tabBar 的独立根仍由 `tabRoot` 挂载，后续以 `tabPatches` 更新，页面根和 tab 根共享同一个渲染批次。带 `setData` completion 的批次额外携带 `ack` token，渲染树应用后回 `tree.ack`（失败也回，先发 `RENDER_PATCH_ERROR` 诊断），service 收到确认才执行回调。
 :::
 
 ## v1 现在有哪些消息 {#catalog kicker="消息列表"}
@@ -305,9 +304,8 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | page | `share` / `saveExitState` | control | host/测试 → service | 分享与退出状态控制入口；devtool 在后台切换时通过 `hide` 自动保存 |
 | page | `snapshotState` / `restoreState` | control | host/devtool → service | 快照或恢复页面栈的 `data`、`savedExitState` 与 `exitState`；用于 Reload 和整页刷新 |
 | page | `pullDownRefresh` | control | host → service | 下拉刷新 API 的宿主控制入口 |
-| tree | `flow` | event | service → render | 首屏 flow：组件定义 + 嵌套快照 + 页面元数据 + 数据快照 |
-| tree | `snapshot` | event | service → render | 旧版完整快照入口，当前不发送 |
-| tree | `patch` | event | service → render | 虚拟节点增量 patch、页面/组件数据快照；页帧结构变化可带身份 hints |
+| tree | `flow` | event | service → render | 首屏 flow：组件定义 + 身份快照 + 页面元数据 + 数据快照 |
+| tree | `patch` | event | service → render | 页面/组件数据补丁；结构变化可带身份 hints；独立 tabBar 可带 `tabPatches` |
 | tree | `ack` | event | render → service | 回显批次 ack token，settle 该批次的 `setData` completion |
 | tree | `animate` / `clearAnimate` | event | service → render | `this.animate` 关键帧与取消 |
 | tree | `event` | event | render → service | 渲染树事件回传逻辑树 |

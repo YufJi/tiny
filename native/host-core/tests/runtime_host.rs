@@ -88,10 +88,6 @@ fn bootstraps_service_then_creates_and_binds_one_page() {
         bootstrap.payload.as_ref().unwrap()["initialPath"],
         "pages/index"
     );
-    assert_eq!(
-        bootstrap.payload.as_ref().unwrap()["pageFrame"],
-        true
-    );
     let bootstrap_id = bootstrap.message_id.clone();
 
     let reply = message(

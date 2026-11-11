@@ -22,7 +22,7 @@ order: 4
 
 ## 两棵树，各管各的 {#overview kicker="总览"}
 
-service 执行小程序逻辑并维护 glass-easel 逻辑树；render pageframe 执行页面和组件 WXML，宿主持有真实组件树和 DOM。service 从同一份编译模板构造逻辑组件实例，供 observer、relations、查询和 fallback snapshot 使用；pageframe 的求值才是最终渲染结果。两棵树不共享内存，靠组件的共享 id、元素 locator、component flow 和 virtual node patch 对齐。
+service 执行小程序逻辑并维护 glass-easel 逻辑树；render pageframe 执行页面和组件 WXML，宿主持有真实组件树和 DOM。service 从同一份编译模板构造逻辑组件实例，供 observer、relations、查询和身份索引使用；pageframe 的求值才是最终渲染结果。两棵树不共享内存，靠组件的共享 id、元素 locator、component flow 和页面数据补丁对齐。
 
 ```text
 service thread                              render thread (one root per page)
@@ -37,7 +37,7 @@ service thread                              render thread (one root per page)
 
 ::::split
 :::card{tag="service" title="逻辑树和业务状态"}
-glass-easel ComponentSpace 在 service 中运行，自定义组件是完整实例，拥有 data、properties、observers、relations、lifetimes、事件回调、带类型的 dataset 和组件共享 id。service 从编译模板实例化逻辑树，并输出 `RenderNode` 快照供 fallback、索引和查询使用；最终页面 WXML 由 render pageframe 执行。
+glass-easel ComponentSpace 在 service 中运行，自定义组件是完整实例，拥有 data、properties、observers、relations、lifetimes、事件回调、带类型的 dataset 和组件共享 id。service 从编译模板实例化逻辑树，并输出 `RenderNode` 快照供组件身份、索引和查询使用；最终页面 WXML 由 render pageframe 执行。
 :::
 
 :::card{tag="render" tone="violet" title="真实组件和 DOM"}
@@ -48,7 +48,7 @@ glass-easel ComponentSpace 在 service 中运行，自定义组件是完整实�
 :::callout{title="只有组件共享 id，元素用 locator"}
 service 给组件（和页面根）分配稳定 id，render 按这个 id 维护组件实例；元素不带跨线程 id，渲染侧分配本地 id，补丁、事件、查询和元素树检查都用 `owner#index.path` 形式的 locator 寻址。
 
-当前页面由 render pageframe 从 `templates.js` 挂载；component flow 携带 `define`、逻辑快照 `tree`、`ready` 和 service 侧 `componentFlow` 组件身份列表。宿主组件 shadow tree 内的子组件身份变化用 `component-instances` 结构补丁同步，禁止 render 按 DOM 顺序猜身份。custom tabBar 额外携带独立 `tabRoot`，后续以 `tabPatches` 更新。snapshot diff 覆盖文本、属性、结构和重排。
+当前页面由 render pageframe 从 `templates.js` 挂载；component flow 携带 `define`、逻辑身份快照 `tree`、`ready` 和 service 侧 `componentFlow` 组件身份列表。宿主组件 shadow tree 内的子组件身份变化通过结构 hints 同步，禁止 render 按 DOM 顺序猜身份。custom tabBar 额外携带独立 `tabRoot`，后续以 `tabPatches` 更新。页面 DOM 的文本、属性、结构和重排由 pageframe 自己 diff。
 :::
 
 :::callout{title="每页树状态已收口，组件空间仍共享"}
@@ -269,7 +269,7 @@ button、input、scroll-view、swiper、canvas 等内置组件把原生字段归
 
 微信官方的 WXS 是运行在视图层的脚本语言，支持模块、受限 globals、`getRegExp` / `getDate`、事件处理和 `change:prop`。参考：[WXS 概述](https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxs/)、[WXS 事件](https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxs/06event.html)、[WXS 观察](https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxs/08observation.html)。
 
-所有正式宿主（browser 测试宿主、devtool、iOS render WKWebView）都启用 pageframe：render 加载一份 `templates.js`，页面和组件 WXML 由 pageframe 求值。service 逻辑树仍从同一份模板生成逻辑节点和组件实例，供查询、关系和 headless/legacy snapshot adapter 使用；它不再是页面 WXML 的执行所有者。WXS 在 pageframe 按页隔离：
+所有正式宿主（browser 测试宿主、devtool、iOS render WKWebView）都启用 pageframe：render 加载一份 `templates.js`，页面和组件 WXML 由 pageframe 求值。service 逻辑树仍从同一份模板生成逻辑节点和组件实例，供查询、关系和组件身份索引使用；它不再是页面 WXML 的执行所有者。WXS 在 pageframe 按页隔离：
 
 | 用途 | 执行侧 | 说明 |
 | --- | --- | --- |
@@ -355,16 +355,20 @@ generics（含页面级 `generic:x` 覆盖）、definitionFilter、pureDataPatte
 
 ## 渲染树：宿主实现真实组件 {#render kicker="渲染树"}
 
-渲染树由宿主实现。runtime 只定义 `TreeRenderer` 契约：挂载、patch、模板与组件定义、事件/宿主回调、查询、测量、inspectTree、动画和相交观测。渲染树不执行 app methods 或 observer，但会用同一份 `templates.js` 求值组件 shadow tree。
+渲染树由宿主实现。runtime 只定义 `TreeRenderer` 契约：从编译模板挂载页面、安装模板与组件定义、接收页面/组件数据和身份 hints、事件/宿主回调、查询、测量、inspectTree、动画和相交观测。渲染树不执行 app methods 或 observer，但会用同一份 `templates.js` 求值页面和组件 shadow tree。
 
 ```ts
 export type TreeRenderer = {
-  mount(root: RenderNode): void
-  applyPatches(patches: RenderPatch[]): void
+  mountPage(request: PageFrameMount): void
+  mountTabBar?(root: RenderNode): void
+  applyTabBarPatches?(patches: RenderPatch[]): void
   // 首屏/更新所需的数据和模板
   setTemplates?(templates: TemplateRegistry): void
   setComponentDefinitions?(definitions: Record<string, ComponentDefinitionPayload>): void
+  setPageFrameHints?(root: RenderNode): void
+  setPageFrameComponents?(components: RenderComponentIdentity[]): void
   setPageData?(data: Record<string, unknown>): void
+  applyPageDataPatches?(patches: Array<Record<string, unknown>>): void
   setComponentData?(data: Record<string, Record<string, unknown>>): void
   setWxsModules?(table: WxsModuleTable): void
   // 事件和宿主回调
@@ -394,23 +398,23 @@ export type TreeRenderer = {
 `@tiny/host-web` 的 DOM 渲染树注册真实 `tiny-*` 内置组件，维护 slot、shadow root、class/scope、样式和 DOM；`createGlassRenderTree` 负责创建它，`bootRenderEntry` / `createGlassRenderEntry` 负责安装基础 CSS。内置组件定义和默认样式来自 `@tiny/host-web-components`。
 :::
 
-:::card{tag="Native" title="createNativeTreeRenderer"}
-同一个 `TreeRenderer` 契约，把 RenderNode 和 patch 映射到原生视图。目前只有契约和 headless smoke test，没有实际原生宿主。
+:::card{tag="iOS" title="WKWebView render root"}
+iOS 与 browser 一样使用 pageframe：每个页面一个 render WKWebView，加载同一份 `templates.js`，由 `createGlassRenderEntry` 创建 DOM 渲染树。
 :::
 
-:::card{tag="Test" title="headless renderer"}
-runtime 单测用 headless renderer 验证整棵树、patch 顺序、组件 id / 元素 locator 和事件回传，不需要 iframe 或 DOM。
+:::card{tag="Test" title="headless pageframe"}
+runtime 单测用 headless pageframe 验证数据补丁、组件身份、元素 locator 和事件回传，不需要 iframe 或 DOM。
 :::
 ::::
 
 :::::split
 ::::stack
 :::card{title="首屏：tree.flow"}
-service 把组件定义和整棵渲染快照编成 component flow（define/tree/ready），渲染树先注册组件定义，再创建真实节点，最后把页面根挂到容器。
+service 把组件定义、整棵身份快照和页面数据编成 component flow（define/tree/ready）；pageframe 安装组件定义后从编译模板挂载页面。
 :::
 
 :::card{title="更新：tree.patch"}
-service 对虚拟树做 diff，渲染树只应用 text、replace、props、insert、remove、reorder。patch 按 pageId 合批，保持页面内顺序。
+service 发送 `pageDataPatches` / `componentData`；结构变化只附 `renderHints` / `componentFlow`。pageframe 在本地 diff，独立 tabBar 仍使用 `tabPatches`。更新按 pageId 合批，保持页面内顺序。
 :::
 ::::
 
@@ -530,8 +534,8 @@ iOS 没有 OffscreenCanvas。service 侧记录 Canvas 2D 调用，native 渲染�
 `tree.event` 已带 `target` / `currentTarget` 的 offset 几何，但两者目前都解析到绑定 handler 的节点；嵌套元素的 `event.target` 语义和微信仍有差别。
 :::
 
-:::card{tag="原生" tone="warn" title="native TreeRenderer 仍只有契约"}
-`createNativeTreeRenderer` 有契约和 headless smoke test；iOS 宿主没有采用它，而是 JSCore + 每页 WKWebView（`createGlassRenderEntry`）。native `TreeRenderer` 仍缺 canvas handoff、query、measure 和 IntersectionObserver。
+:::card{tag="tabBar" tone="warn" title="独立 tabBar 仍使用快照"}
+页面根已经是 pageframe-only；自定义 tabBar 仍由 service 生成 `tabRoot` 和 `tabPatches`。这是当前唯一的 RenderNode 页面外渲染边界，后续可单独迁到模板挂载。
 :::
 
 :::card{tag="组件" tone="warn" title="trait/chaining 和平台组件仍有缺口"}
