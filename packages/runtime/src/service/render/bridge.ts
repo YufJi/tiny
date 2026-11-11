@@ -12,7 +12,7 @@ import type {
 import { cloneJsonSafe } from '../../data'
 import { mapCssAssetUrls, type AssetUrlResolver } from '../../assets'
 import { LogicTreeAdapter, type LogicFrameworkContext } from '../../tree/logic'
-import { buildComponentFlow } from '../../tree/flow'
+import { buildComponentFlow, collectComponentIdentities } from '../../tree/flow'
 import {
   TREE_PROTOCOL,
   wxsBindingKey,
@@ -457,6 +457,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
           ? { placeholders: cloneJsonSafe(this.placeholders) }
           : {}),
         messages: cloneJsonSafe(this.treeFlow(root, pageId)),
+        componentFlow: cloneJsonSafe(collectComponentIdentities(root)),
         ...(tabRoot ? { tabRoot: cloneJsonSafe(tabRoot) } : {}),
         ...(this.wxsModules ? { wxsModules: cloneJsonSafe(this.wxsModules) } : {}),
         ...(page?.data ? { pageData: cloneJsonSafe(page.data) } : {}),
@@ -534,7 +535,10 @@ export class ServiceRenderBridge implements ServiceRenderPort {
                   || patch.type === 'replace'
                   || patch.type === 'reorder'
                 ))
-                  ? { renderHints: cloneJsonSafe(snapshot) }
+                  ? {
+                    renderHints: cloneJsonSafe(snapshot),
+                    componentFlow: cloneJsonSafe(collectComponentIdentities(snapshot)),
+                  }
                   : {}),
                 ...(page?.data ? { pageData: cloneJsonSafe(page.data) } : {}),
                 ...(hasComponentData ? { componentData: cloneJsonSafe(componentData) } : {}),

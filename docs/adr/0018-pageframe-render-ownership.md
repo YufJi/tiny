@@ -4,7 +4,7 @@
 
 Accepted. Phase A is implemented and enabled by default in the browser test
 host. The devtool keeps the snapshot fallback until the component
-creation/destruction flow is authoritative in both directions.
+creation/destruction flow is fully service-owned and replayed by the pageframe.
 
 ## Context
 
@@ -32,9 +32,11 @@ Move WXML ownership to the render pageframe:
 1. The render pageframe mounts the page template from the compiled template
    registry and owns page/component expression evaluation and local diff.
 2. The service continues to own Page/Component logic, data, observers,
-   relations, methods, and selection semantics. It does not evaluate WXML for
-   the view; component instances are reported back through a component flow so
-   the service can maintain its logic tree.
+   relations, methods, and selection semantics. It creates the logic tree and
+   emits the component identity/create flow; the pageframe consumes that flow
+   when it creates the matching render components. WeChat's `Gi` creates the
+   root in the service and pushes `FLOW_INITIAL_CREATION` / `FLOW_CREATE_NODE`,
+   so component creation is service-to-render, not render-to-service.
 3. `setData` crosses as data, not as a service-computed virtual-tree patch.
    Render-local commit is the acknowledgement for the `setData` callback.
 4. WXS state/lifecycle belongs to the render pageframe. Service-only input
@@ -48,7 +50,10 @@ The migration is staged to keep the gate green:
   template, and page WXS/events stay in one realm. Repeated flows for the same
   page are idempotent. Structural page updates also refresh the service-owned
   view/component identity hints without replaying DOM patches.
-- **Phase B**: component creation/destruction flow from render to service.
+- **Phase B (partial)**: service-owned component creation/identity flow. The
+  pageframe consumes the flat service component identity list for positional
+  binding instead of inferring it from DOM/template attachment. Destruction
+  and full `FLOW_CREATE_NODE` operation replay remain to be completed.
 - **Phase C (partial)**: page `setData` crosses as its original data patches,
   not a full page snapshot. Render-local diff is the acknowledgement. Page WXML
   props are applied before the remaining per-instance component-data patch, so

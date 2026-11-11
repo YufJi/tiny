@@ -12,6 +12,7 @@ import {
   type CustomEventMessage,
   type RenderAnimationRequest,
   type RenderClearAnimationRequest,
+  type RenderComponentIdentity,
   type RenderEventGeometry,
   type RenderHostAction,
   type RenderIntersectionEntry,
@@ -56,6 +57,8 @@ export type PageFrameMount = {
   methods?: string[]
   /** Service identity tree used for component ids while the pageframe owns WXML. */
   renderHints?: RenderNode
+  /** Service-owned component identities in pageframe document order. */
+  componentFlow?: RenderComponentIdentity[]
 }
 
 export type TreeRenderer = {
@@ -84,6 +87,8 @@ export type TreeRenderer = {
   setPageUsing?: (using: Record<string, string>) => void
   /** Refresh the service-owned component/view identity hints without replaying DOM patches. */
   setPageFrameHints?: (root: RenderNode) => void
+  /** Replace the service-owned component identity list for the pageframe. */
+  setPageFrameComponents?: (components: RenderComponentIdentity[]) => void
   /** Public built-in behavior scheme from the service compatibility config. */
   setBehaviorScheme?: (scheme: string) => void
   setEventSink?: (sink: (event: TreeEventPayload) => void) => void
@@ -346,6 +351,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
         methods?: string[]
         rootViewId?: string
       }
+      componentFlow?: RenderComponentIdentity[]
     }
     currentPageId = payload.pageId ?? message.pageId ?? currentPageId
     applyBatch(currentPageId, TREE_PROTOCOL.flow, payload.ack, () => {
@@ -391,6 +397,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
               ...(payload.pageFrame.methods && payload.pageFrame.methods.length > 0
                 ? { methods: payload.pageFrame.methods }
                 : {}),
+              ...(payload.componentFlow ? { componentFlow: payload.componentFlow } : {}),
               renderHints: hints,
             })
           } else {
@@ -438,6 +445,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
         pageId?: string
         patches?: RenderPatch[]
         renderHints?: RenderNode
+        componentFlow?: RenderComponentIdentity[]
         tabPatches?: RenderPatch[]
         pageData?: Record<string, unknown>
         pageDataPatches?: Array<Record<string, unknown>>
@@ -449,6 +457,9 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       applyBatch(pageId, TREE_PROTOCOL.patch, payload.ack, () => {
         const pageFrame = Boolean(pageId && pageFramePages.has(pageId))
         if (pageFrame) {
+          if (payload.componentFlow) {
+            options.renderer.setPageFrameComponents?.(payload.componentFlow)
+          }
           if (payload.renderHints) options.renderer.setPageFrameHints?.(payload.renderHints)
           // The pageframe's WXML pass applies the props it owns first. Component
           // data follows as the remaining per-instance patch, matching WeChat's

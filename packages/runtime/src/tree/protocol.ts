@@ -166,6 +166,19 @@ export type RenderElement = {
 export type RenderNode = RenderText | RenderElement
 
 /**
+ * Stable component identities emitted by the service logic tree.
+ *
+ * WeChat's service side creates the component tree and emits creation
+ * operations; the pageframe consumes the identities when it creates matching
+ * render components. Keeping this flat makes order explicit and independent of
+ * DOM/slot attachment timing.
+ */
+export type RenderComponentIdentity = {
+  id: RenderNodeId
+  path: string
+}
+
+/**
  * Serialized component definition shipped to the render tree.
  *
  * Mirrors the WeChat view-thread registration payload: the render side needs

@@ -23,6 +23,7 @@ import type {
   RenderNode,
   RenderPatch,
   RenderRect,
+  RenderComponentIdentity,
   RenderTemplateEvent,
   RenderText,
   PageFrameMount,
@@ -190,6 +191,8 @@ export type GlassRenderTree = {
   setWxsBinding?: (binding: WxsBindingMessage) => void
   /** Refresh the service-owned node/component identity hints after a structural page update. */
   setPageFrameHints?: (root: RenderNode) => void
+  /** Replace the service-owned component identity list for the pageframe. */
+  setPageFrameComponents?: (components: RenderComponentIdentity[]) => void
   /** Dispatch a service-triggered custom event so WXS handlers can run. */
   dispatchCustomEvent?: (request: CustomEventMessage) => void
   setPageData?: (data: Record<string, unknown>) => void
@@ -634,6 +637,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   let pageFrameRoot: AnyComponent | undefined
   let pageFramePageId = ''
   let pageFramePagePath = ''
+  let pageFrameComponents: RenderComponentIdentity[] = []
   let pagePlaceholders: Record<string, string> = {}
   let pageFrameUnresolvedUsing = new Set<string>()
   const sameDataPatch = (
@@ -759,8 +763,11 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       }
     }
     if (pageFrameRoot) {
-      const pageRoot = currentTree.get(rootId.value)
-      if (pageRoot?.type === 'element') {
+      if (pageFrameComponents.length > 0) {
+        bindFor(rootId.value, pageFrameComponents)
+      } else {
+        const pageRoot = currentTree.get(rootId.value)
+        if (pageRoot?.type !== 'element') return
         const instances: Array<{ id: string; path: string }> = []
         const visit = (node: RenderNode): void => {
           if (node.type !== 'element') return
@@ -2708,9 +2715,11 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         pageFrameRoot = undefined
         pageFramePageId = ''
         pageFramePagePath = ''
+        pageFrameComponents = []
       } else {
         if (request.using) pageUsing = request.using
         if (request.scope) pageScopeName = request.scope
+        pageFrameComponents = [...(request.componentFlow ?? pageFrameComponents)]
         if (request.placeholders) pagePlaceholders = request.placeholders
         indexHints(request.renderHints)
         const next = { ...request.data }
@@ -2730,6 +2739,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     if (request.using) pageUsing = request.using
     if (request.scope) pageScopeName = request.scope
     pagePlaceholders = request.placeholders ?? {}
+    pageFrameComponents = [...(request.componentFlow ?? [])]
     pageFrameUnresolvedUsing = new Set(Object.values(pageUsing).filter(
       (path) => path && !componentDefinitions.has(path),
     ))
@@ -2849,6 +2859,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     setPageFrameHints: (root) => {
       if (!pageFrameRoot || !rootId.value) return
       indexPageFrameHints(root, rootId.value, pageFramePagePath)
+    },
+    setPageFrameComponents: (components) => {
+      pageFrameComponents = [...components]
     },
     setPageData: (data) => {
       const next = { ...data }
@@ -3190,6 +3203,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       pageFrameRoot = undefined
       pageFramePageId = ''
       pageFramePagePath = ''
+      pageFrameComponents = []
       clearPageFrameTouchMoveGuards()
       for (const cleanups of eventCleanups.values()) {
         for (const cleanup of cleanups) cleanup()
@@ -3262,6 +3276,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       pageFrameRoot = undefined
       pageFramePageId = ''
       pageFramePagePath = ''
+      pageFrameComponents = []
       clearPageFrameTouchMoveGuards()
       detachWxsEventHost()
       detachCompositor()

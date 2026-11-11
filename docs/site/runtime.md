@@ -48,7 +48,7 @@ glass-easel ComponentSpace 在 service 中运行，自定义组件是完整实�
 :::callout{title="只有组件共享 id，元素用 locator"}
 service 给组件（和页面根）分配稳定 id，render 按这个 id 维护组件实例；元素不带跨线程 id，渲染侧分配本地 id，补丁、事件、查询和元素树检查都用 `owner#index.path` 形式的 locator 寻址。
 
-当前模板更新走 virtual node patch；component flow 只负责首屏挂载（`define`、`tree`、`ready`），快照作为嵌套树传输，组件模板由 service 和 render 各按 `templates.js` 求值一次。custom tabBar 额外携带独立 `tabRoot`，后续以 `tabPatches` 更新。snapshot diff 覆盖文本、属性、结构和重排。
+当前模板更新走 virtual node patch；component flow 负责首屏挂载（`define`、`tree`、`ready`）和 service 侧 `componentFlow` 组件身份列表，快照作为嵌套树传输，组件模板由 service 和 render 各按 `templates.js` 求值一次。custom tabBar 额外携带独立 `tabRoot`，后续以 `tabPatches` 更新。snapshot diff 覆盖文本、属性、结构和重排。
 :::
 
 :::callout{title="每页树状态已收口，组件空间仍共享"}

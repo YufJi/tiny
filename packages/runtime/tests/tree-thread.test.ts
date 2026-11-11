@@ -79,6 +79,7 @@ describe('tree thread', () => {
     const pageDataPatches: Array<Array<Record<string, unknown>>> = []
     const componentData: Array<Record<string, Record<string, unknown>>> = []
     const pageFrameHints: RenderNode[] = []
+    const componentFlow: Array<Array<{ id: string; path: string }>> = []
     const renderOrder: string[] = []
     const patches: RenderPatch[][] = []
     bootTreeThread({
@@ -101,6 +102,10 @@ describe('tree thread', () => {
           pageFrameHints.push(root)
           renderOrder.push('pageFrameHints')
         },
+        setPageFrameComponents: (components) => {
+          componentFlow.push(components)
+          renderOrder.push('componentFlow')
+        },
       },
     })
     const host = new BridgeConnection({
@@ -116,6 +121,7 @@ describe('tree thread', () => {
       pageData: { title: 'first' },
       pageUsing: { card: 'components/card/card' },
       pageScope: 'page-scope',
+      componentFlow: [{ id: 'component-1', path: 'components/card/card' }],
       pageFrame: { methods: ['onTap'], rootViewId: 'view-root' },
       messages: [
         {
@@ -138,6 +144,7 @@ describe('tree thread', () => {
       pageData: { title: 'second' },
       pageDataPatches: [{ title: 'second' }],
       componentData: { 'component-1': { value: 2 } },
+      componentFlow: [{ id: 'component-1', path: 'components/card/card' }],
       renderHints: {
         type: 'element',
         id: 'view-root',
@@ -156,6 +163,7 @@ describe('tree thread', () => {
       data: { title: 'first' },
       using: { card: 'components/card/card' },
       scope: 'page-scope',
+      componentFlow: [{ id: 'component-1', path: 'components/card/card' }],
       methods: ['onTap'],
       renderHints: {
         id: 'page-1',
@@ -170,7 +178,13 @@ describe('tree thread', () => {
       id: 'view-root',
       children: [{ id: 'text-2', text: 'second' }],
     })
-    expect(renderOrder).toEqual(['pageFrameHints', 'pageDataPatches', 'componentData'])
+    expect(componentFlow).toEqual([[{ id: 'component-1', path: 'components/card/card' }]])
+    expect(renderOrder).toEqual([
+      'componentFlow',
+      'pageFrameHints',
+      'pageDataPatches',
+      'componentData',
+    ])
   })
 
   test('mounts and patches an independent tabBar root', async () => {
