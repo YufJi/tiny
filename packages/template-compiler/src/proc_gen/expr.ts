@@ -288,8 +288,21 @@ class PathSliceList {
           ret += `U.${ps.name}`
           break
         case 'ScopeIndex': {
-          const upt = scopes[ps.index]!.updatePathTree
-          ret += upt !== null ? `${upt}` : 'undefined'
+          const scope = scopes[ps.index]!
+          if (scope.updatePathTree !== null) {
+            ret += `${scope.updatePathTree}`
+          } else if (
+            scope.lvaluePath.kind === 'Script'
+            || scope.lvaluePath.kind === 'InlineScript'
+          ) {
+            // WXS module state lives outside component data. A template call
+            // into it may observe mutations from WXS event handlers even when
+            // no bound data path changed, so every template update must rerun
+            // the expression (Z(true, ...) is always truthy).
+            ret += 'true'
+          } else {
+            ret += 'undefined'
+          }
           break
         }
         case 'StaticMember':

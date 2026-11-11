@@ -206,7 +206,15 @@ export function dispatchWxsEffect(
   options: WxsEventHostOptions,
 ): void {
   const node = tree.findNodeByViewId(effect.viewId)
-  if (!node) return
+  if (!node) {
+    options.onDiagnostic?.(
+      pageId,
+      DIAGNOSTIC_CODES.EVENT_HANDLER_MISSING,
+      `WXS effect target is not in the logic tree: ${effect.viewId}`,
+      { effect },
+    )
+    return
+  }
   const descriptor = createDescriptor(options, tree, {
     node,
     root: ownerRoot(node),

@@ -191,6 +191,7 @@ export type GlassRenderTree = {
   /** Dispatch a service-triggered custom event so WXS handlers can run. */
   dispatchCustomEvent?: (request: CustomEventMessage) => void
   setPageData?: (data: Record<string, unknown>) => void
+  applyPageDataPatches?: (patches: Array<Record<string, unknown>>) => void
   setComponentData?: (data: Record<string, Record<string, unknown>>) => void
   setDiagnosticSink?: (sink: (diagnostic: {
     severity: 'warning' | 'error'
@@ -625,6 +626,23 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const wxsPropSnapshots = new Map<string, Record<string, unknown>>()
   let pageData: Record<string, unknown> = {}
   let componentData: Record<string, Record<string, unknown>> = {}
+  let pageFrameRoot: AnyComponent | undefined
+  let pageFramePageId = ''
+  let pageFramePagePath = ''
+  const sameDataPatch = (
+    current: Record<string, unknown> | undefined,
+    patch: Record<string, unknown>,
+  ): boolean => {
+    if (!current) return false
+    for (const [name, value] of Object.entries(patch)) {
+      try {
+        if (JSON.stringify(current[name]) !== JSON.stringify(value)) return false
+      } catch {
+        return false
+      }
+    }
+    return true
+  }
   /** Parents whose instance list already produced a desync diagnostic. */
   const desyncReported = new Set<string>()
   /**
@@ -632,7 +650,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
    * template to the view ids the logic tree assigned to them, so per-instance
    * data (lifetimes, observers, parents) reaches the right instance.
    */
-  const bindNestedComponentInstances = (strictHints = false): void => {
+  const bindNestedComponentInstances = (strictHints = false, applyData = true): void => {
     const reportDesync = (parentId: string, message: string, details: unknown): void => {
       if (desyncReported.has(parentId)) return
       desyncReported.add(parentId)
@@ -680,10 +698,15 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       for (const item of result.matched) {
         const component = found[item.index]!.component
         ;(component as unknown as { __tinyNodeId?: string }).__tinyNodeId = item.id
+        component.getBackendElement()?.setAttribute?.(TINY_ENGINE_NAMING.nodeIdAttribute, item.id)
+        componentPathByComponent.set(component, found[item.index]!.path)
         nodes.set(item.id, component)
         idByComponent.set(component, item.id)
         const data = componentData[item.id]
-        if (data) {
+        if (applyData && data && !sameDataPatch(
+          (component as unknown as { data?: Record<string, unknown> }).data,
+          data,
+        )) {
           ;(component as unknown as { setData?: (next: Record<string, unknown>) => void })
             .setData?.(data)
         }
@@ -914,6 +937,11 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
             template: {
               groupList: templates.groupList,
               content: (name = '') => templates!.content(componentPath, name),
+              // WeChat's pageframe diffs the evaluated WXML instead of using
+              // glass's per-field binding-map fast path. WXS module state is
+              // outside component data, so only a full template pass can
+              // refresh calls such as `{{state.peek()}}`.
+              updateMode: 'virtualTree',
             } as never,
           }
         : {}),
@@ -960,7 +988,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   let rootDirty = false
 
   const pageUsingDefinitions = (): Record<string, glassEasel.GeneralComponentDefinition> => {
-    const using: Record<string, glassEasel.GeneralComponentDefinition> = {}
+    const using = usingDefinitions(undefined)
     for (const [tag, path] of Object.entries(pageUsing)) {
       if (!tag || !path || resolvingComponents.has(path)) continue
       using[tag] = componentDefinition(tag, path)
@@ -2470,8 +2498,46 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
 
   const mountPage = (request: PageFrameMount): void => {
     if (!templates) throw new Error('pageframe mount requires compiled templates')
+    const rootViewId = request.rootViewId ?? request.pageId
+    const indexHints = (hints: RenderNode | undefined): void => {
+      if (hints?.type !== 'element') return
+      currentTree.clear()
+      const visit = (node: RenderNode): void => {
+        if (node.id) currentTree.set(node.id, node)
+        if (node.type !== 'element') return
+        for (const child of node.children ?? []) visit(child)
+      }
+      visit(hints)
+      if (!currentTree.has(rootViewId)) {
+        currentTree.set(rootViewId, {
+          type: 'element',
+          id: rootViewId,
+          tag: request.pagePath,
+        })
+      }
+    }
+    if (
+      pageFrameRoot
+      && pageFramePageId === request.pageId
+      && pageFramePagePath === request.pagePath
+    ) {
+      if (request.using) pageUsing = request.using
+      if (request.scope) pageScopeName = request.scope
+      indexHints(request.renderHints)
+      const next = { ...request.data }
+      if (!sameDataPatch(pageData, next)) {
+        pageData = next
+        ;(pageFrameRoot as unknown as {
+          setData?: (value: Record<string, unknown>) => void
+        }).setData?.(next)
+      }
+      bindNestedComponentInstances(true, false)
+      emitPageReRender()
+      return
+    }
     if (request.using) pageUsing = request.using
     if (request.scope) pageScopeName = request.scope
+    pageData = { ...request.data }
     clearTabBar()
     for (const cleanups of eventCleanups.values()) {
       for (const cleanup of cleanups) cleanup()
@@ -2479,6 +2545,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     eventCleanups.clear()
     nodes.clear()
     currentTree.clear()
+    indexHints(request.renderHints)
     const definition = space.defineComponent({
       is: request.pagePath,
       options: {
@@ -2489,9 +2556,17 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       },
       data: request.data,
       using: pageUsingDefinitions(),
+      ...(request.methods && request.methods.length > 0
+        ? {
+            methods: Object.fromEntries(
+              request.methods.map((name) => [name, templateHandler(name)]),
+            ) as never,
+          }
+        : {}),
       template: {
         groupList: templates.groupList,
         content: (name = '') => templates!.content(request.pagePath, name),
+        updateMode: 'virtualTree',
       } as never,
     }).general()
     const page = glassEasel.Component.createWithContext('page', definition, backend)
@@ -2501,16 +2576,19 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     if (rootElement && options.container) options.container.replaceChildren(rootElement)
     ;(previous as unknown as { destroy?: () => void }).destroy?.()
     componentPathByComponent.set(page, request.pagePath)
-    rootId.value = request.pageId
-    nodes.set(request.pageId, page)
-    currentTree.set(request.pageId, {
-      type: 'element',
-      id: request.pageId,
-      tag: request.pagePath,
-    })
-    rootElement?.setAttribute(TINY_ENGINE_NAMING.nodeIdAttribute, request.pageId)
+    ;(page as unknown as { __tinyNodeId?: string }).__tinyNodeId = rootViewId
+    pageFrameRoot = page
+    pageFramePageId = request.pageId
+    pageFramePagePath = request.pagePath
+    rootId.value = rootViewId
+    nodes.set(rootViewId, page)
+    rootElement?.setAttribute(TINY_ENGINE_NAMING.nodeIdAttribute, rootViewId)
     if (options.attach !== false) glassEasel.Element.pretendAttached(page)
     mounted = true
+    bindNestedComponentInstances(false, false)
+    queueMicrotask(() => {
+      bindNestedComponentInstances(true, false)
+    })
     emitPageReRender()
   }
 
@@ -2565,15 +2643,42 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       dynamicBindingModes.set(wxsBindingKey(binding.viewId, binding.event), binding)
     },
     setPageData: (data) => {
-      pageData = { ...data }
+      const next = { ...data }
+      const changed = !sameDataPatch(pageData, next)
+      pageData = next
+      if (pageFrameRoot && changed) {
+        ;(pageFrameRoot as unknown as {
+          setData?: (next: Record<string, unknown>) => void
+        }).setData?.(pageData)
+      }
+    },
+    applyPageDataPatches: (patches) => {
+      if (!pageFrameRoot || patches.length === 0) return
+      for (const patch of patches) {
+        ;(pageFrameRoot as unknown as {
+          setData?: (next: Record<string, unknown>) => void
+        }).setData?.(patch)
+      }
+      pageData = {
+        ...((pageFrameRoot as unknown as { data?: Record<string, unknown> }).data ?? pageData),
+      }
     },
     setComponentData: (data) => {
       // The service sends a component-scoped patch after the initial snapshot,
       // so merge instead of replacing; the WXS `ins.getData()` view and the
       // component's own template both read from it.
       componentData = { ...componentData, ...data }
-      bindNestedComponentInstances()
-      applyComponentDataToNodes(data)
+      if (pageFrameRoot) {
+        // The pageframe template already applied the props that created each
+        // component. Re-pushing unchanged data makes glass re-run WXS-only
+        // expression slots (for example `PEEK: {{state.peek()}}`) against a
+        // later module state, while WeChat keeps the value from the render that
+        // produced the component. Only write data that actually changed.
+        bindNestedComponentInstances(true)
+      } else {
+        bindNestedComponentInstances()
+        applyComponentDataToNodes(data)
+      }
     },
     observeIntersection: (request, emit) => {
       const rootNode = rootElement
@@ -2867,6 +2972,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     mount(node) {
       clearTabBar()
       rebuildRoot()
+      pageFrameRoot = undefined
+      pageFramePageId = ''
+      pageFramePagePath = ''
       for (const cleanups of eventCleanups.values()) {
         for (const cleanup of cleanups) cleanup()
       }
@@ -2935,6 +3043,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     },
     destroy() {
       clearTabBar()
+      pageFrameRoot = undefined
+      pageFramePageId = ''
+      pageFramePagePath = ''
       detachWxsEventHost()
       detachCompositor()
       for (const cleanups of eventCleanups.values()) {

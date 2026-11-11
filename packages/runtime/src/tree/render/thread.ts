@@ -44,10 +44,16 @@ export type TreeEventPayload = {
 /** Request for a pageframe-owned page template mount. */
 export type PageFrameMount = {
   pageId: string
+  /** Service logic-tree view id of the page root (event/WXS identity). */
+  rootViewId?: string
   pagePath: string
   data: Record<string, unknown>
   using?: Record<string, string>
   scope?: string
+  /** Page methods a compiled page template may route back to the service. */
+  methods?: string[]
+  /** Service identity tree used for component ids while the pageframe owns WXML. */
+  renderHints?: RenderNode
 }
 
 export type TreeRenderer = {
@@ -82,6 +88,8 @@ export type TreeRenderer = {
   setWxsEffectSink?: (sink: (effect: WxsRenderEffect) => void) => void
   setWxsHandlerSink?: (sink: (event: WxsHandlerMessage) => void) => void
   setPageData?: (data: Record<string, unknown>) => void
+  /** Apply the original `setData` patches instead of a full page snapshot. */
+  applyPageDataPatches?: (patches: Array<Record<string, unknown>>) => void
   setComponentData?: (data: Record<string, Record<string, unknown>>) => void
   setWxsBinding?: (binding: WxsBindingMessage) => void
   /** Built-in components ask the host to act (e.g. `<navigator>` routing). */
@@ -125,6 +133,8 @@ export type TreeThreadOptions = {
   /** Created by the host entry; the render thread never builds its own. */
   connection: BridgeConnection
   renderer: TreeRenderer
+  /** Let the render pageframe evaluate page WXML instead of replaying a tree snapshot. */
+  pageFrame?: boolean
   initialPageId?: string
   /** Already-loaded template groups; installed before any flow is handled. */
   templates?: TemplateRegistry
@@ -143,6 +153,7 @@ export type TreeThreadRuntime = {
 export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
   const connection = options.connection
   let currentPageId = options.initialPageId
+  const pageFramePages = new Set<string>()
 
   /**
    * Echo the batch tokens once the render tree reflected the batch. The service
@@ -327,6 +338,10 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       placeholders?: Record<string, string>
       behaviorScheme?: string
       ack?: string[]
+      pageFrame?: {
+        methods?: string[]
+        rootViewId?: string
+      }
     }
     currentPageId = payload.pageId ?? message.pageId ?? currentPageId
     applyBatch(currentPageId, TREE_PROTOCOL.flow, payload.ack, () => {
@@ -352,11 +367,31 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
           if (Object.keys(definitions).length > 0) {
             options.renderer.setComponentDefinitions?.(definitions)
           }
-          options.renderer.mount(applyComponentPlaceholders(
+          const hints = applyComponentPlaceholders(
             tree,
             payload.placeholders,
             (path) => Boolean(definitions[path]),
-          ))
+          )
+          if (options.pageFrame && payload.pageFrame && options.renderer.mountPage && currentPageId) {
+            pageFramePages.add(currentPageId)
+            options.renderer.mountPage({
+              pageId: currentPageId,
+              ...(payload.pageFrame.rootViewId
+                ? { rootViewId: payload.pageFrame.rootViewId }
+                : {}),
+              pagePath: payload.pagePath ?? '',
+              data: payload.pageData ?? {},
+              ...(payload.pageUsing ? { using: payload.pageUsing } : {}),
+              ...(payload.pageScope ? { scope: payload.pageScope } : {}),
+              ...(payload.pageFrame.methods && payload.pageFrame.methods.length > 0
+                ? { methods: payload.pageFrame.methods }
+                : {}),
+              renderHints: hints,
+            })
+          } else {
+            if (currentPageId) pageFramePages.delete(currentPageId)
+            options.renderer.mount(hints)
+          }
           if (payload.tabRoot) {
             options.renderer.mountTabBar?.(applyComponentPlaceholders(
               payload.tabRoot,
@@ -399,15 +434,26 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
         patches?: RenderPatch[]
         tabPatches?: RenderPatch[]
         pageData?: Record<string, unknown>
+        pageDataPatches?: Array<Record<string, unknown>>
         componentData?: Record<string, Record<string, unknown>>
         ack?: string[]
       }
       const pageId = payload.pageId ?? message.pageId ?? currentPageId
       if (payload.pageId) currentPageId = payload.pageId
       applyBatch(pageId, TREE_PROTOCOL.patch, payload.ack, () => {
-        if (payload.pageData) options.renderer.setPageData?.(payload.pageData)
-        if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
-        options.renderer.applyPatches(payload.patches ?? [])
+        const pageFrame = Boolean(pageId && pageFramePages.has(pageId))
+        if (pageFrame) {
+          if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
+          if (payload.pageDataPatches && payload.pageDataPatches.length > 0) {
+            options.renderer.applyPageDataPatches?.(payload.pageDataPatches)
+          } else if (payload.pageData) {
+            options.renderer.setPageData?.(payload.pageData)
+          }
+        } else {
+          if (payload.pageData) options.renderer.setPageData?.(payload.pageData)
+          if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
+          options.renderer.applyPatches(payload.patches ?? [])
+        }
         if (payload.tabPatches && payload.tabPatches.length > 0) {
           options.renderer.applyTabBarPatches?.(payload.tabPatches)
         }

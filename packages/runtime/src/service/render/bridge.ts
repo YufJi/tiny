@@ -66,6 +66,23 @@ export type ServiceRenderBridgeOptions = {
   wxsRuntime?: WxsRuntime
 }
 
+const PAGE_LIFECYCLE_METHODS = new Set([
+  'onLoad',
+  'onShow',
+  'onReady',
+  'onHide',
+  'onUnload',
+  'onPullDownRefresh',
+  'onReachBottom',
+  'onShareAppMessage',
+  'onShareTimeline',
+  'onPageScroll',
+  'onResize',
+  'onTabItemTap',
+  'onAddToFavorites',
+  'onSaveExitState',
+])
+
 /**
  * Service-render bridge, the façade of the `service/render` layer.
  *
@@ -88,6 +105,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
   private readonly bindings = new WxsBindingStore()
   private readonly mountedPages = new Set<string>()
   private readonly pendingPages = new Set<string>()
+  private readonly pendingPageDataPatches = new Map<string, Array<Record<string, unknown>>>()
   private logicTree: LogicTreeAdapter | null = null
   private componentSchemas: MiniProgramComponentSchema[] = []
   /** Compiler-resolved `component path -> built-in placeholder tag`. */
@@ -239,6 +257,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
   unmountPage(pageId: string): void {
     this.mountedPages.delete(pageId)
     this.pendingPages.delete(pageId)
+    this.pendingPageDataPatches.delete(pageId)
     this.bindings.clear(pageId)
     this.pendingTabBarReady.delete(pageId)
     // The view is going away, so a completion it was waiting for can never be
@@ -292,9 +311,16 @@ export class ServiceRenderBridge implements ServiceRenderPort {
   syncPageData(pageId: string, patch: Record<string, unknown>): void {
     if (!this.logicTree || !this.mountedPages.has(pageId)) return
     try {
+      const cloned = cloneJsonSafe(patch)
+      const pending = this.pendingPageDataPatches.get(pageId)
+      if (pending) pending.push(cloned)
+      else this.pendingPageDataPatches.set(pageId, [cloned])
       this.logicTree.applyPageData(pageId, patch)
       this.scheduleTreeUpdate(pageId)
     } catch (error) {
+      const pending = this.pendingPageDataPatches.get(pageId)
+      pending?.pop()
+      if (pending?.length === 0) this.pendingPageDataPatches.delete(pageId)
       this.connection.sendDiagnostic('warn', {
         code: DIAGNOSTIC_CODES.LOGIC_TREE_ERROR,
         message: error instanceof Error ? error.message : String(error),
@@ -403,12 +429,17 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     if (!root) return
     const tabRoot = this.logicTree.snapshotTabBarTree(pageId)
     const page = this.options.getPage(pageId)
+    const pagePath = this.logicTree.pagePathFor(pageId)
     const ack = this.takeCompletionBatch(pageId)
     this.connection.sendEvent(
       TREE_PROTOCOL.domain, TREE_PROTOCOL.flow,
       {
         pageId,
-        pagePath: this.logicTree.pagePathFor(pageId),
+        pagePath,
+        pageFrame: {
+          methods: this.pageMethodNames(pagePath),
+          ...(root.id ? { rootViewId: root.id } : {}),
+        },
         ...(this.logicTree.pageScopeName(pageId)
           ? { pageScope: this.logicTree.pageScopeName(pageId) }
           : {}),
@@ -426,7 +457,33 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       },
       { pageId },
     )
+    this.pendingPageDataPatches.delete(pageId)
     this.flushWxsBindings(pageId)
+  }
+
+  private pageMethodNames(pagePath: string): string[] {
+    const names = new Set<string>()
+    const options = this.options.pageOptions.get(pagePath) as Record<string, unknown> | undefined
+    const explicit = options?.methods as Record<string, unknown> | undefined
+    if (explicit && typeof explicit === 'object') {
+      for (const [name, value] of Object.entries(explicit)) {
+        if (typeof value === 'function') names.add(name)
+      }
+    }
+    if (options) {
+      for (const [name, value] of Object.entries(options)) {
+        if (name === 'data' || name === 'methods' || name === 'options' || name === 'behaviors') {
+          continue
+        }
+        if (PAGE_LIFECYCLE_METHODS.has(name)) continue
+        if (typeof value === 'function') names.add(name)
+      }
+    }
+    const component = this.options.componentDefinitions.get(pagePath)
+    if (component) {
+      for (const name of component.methods.keys()) names.add(name)
+    }
+    return [...names]
   }
 
   private scheduleTreeUpdate(pageId: string): void {
@@ -447,7 +504,14 @@ export class ServiceRenderBridge implements ServiceRenderPort {
           // still cross the bridge even when the structure did not change.
           const componentData = this.logicTree.updateComponentData(id)
           const hasComponentData = Object.keys(componentData).length > 0
-          if (patches.length > 0 || hasComponentData || tabBar.patches.length > 0) {
+          const pageDataPatches = this.pendingPageDataPatches.get(id)
+          const hasPageDataPatches = Boolean(pageDataPatches && pageDataPatches.length > 0)
+          if (
+            patches.length > 0
+            || hasComponentData
+            || tabBar.patches.length > 0
+            || hasPageDataPatches
+          ) {
             const page = this.options.getPage(id)
             const ack = this.takeCompletionBatch(id)
             this.connection.sendEvent(
@@ -457,6 +521,9 @@ export class ServiceRenderBridge implements ServiceRenderPort {
                 patches: cloneJsonSafe(patches),
                 ...(page?.data ? { pageData: cloneJsonSafe(page.data) } : {}),
                 ...(hasComponentData ? { componentData: cloneJsonSafe(componentData) } : {}),
+                ...(hasPageDataPatches
+                  ? { pageDataPatches: cloneJsonSafe(pageDataPatches!) }
+                  : {}),
                 ...(tabBar.patches.length > 0
                   ? { tabPatches: cloneJsonSafe(tabBar.patches) }
                   : {}),
@@ -464,6 +531,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
               },
               { pageId: id },
             )
+            this.pendingPageDataPatches.delete(id)
           } else {
             // Nothing observable changed, so there is no batch to acknowledge.
             this.flushCompletions(id)

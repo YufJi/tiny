@@ -35,6 +35,8 @@ export type WasmHostOptions = {
   serviceUrl: string
   renderUrl: string
   initialPath: string
+  /** Let each render pageframe evaluate page WXML instead of replaying a snapshot. */
+  pageFrame?: boolean
   /** State loaded for the launch page's first `onLoad`. */
   initialExitState?: unknown
   container?: HTMLElement
@@ -435,6 +437,7 @@ export class WasmBrowserHost {
       this.options.renderUrl,
       pageId,
       pageBehaviorOf(this.options.manifest, path),
+      this.options.pageFrame === true,
     )
     this.pages.set(pageId, {
       iframe,
@@ -731,9 +734,11 @@ function createRenderIframe(
   renderUrl: string,
   pageId: string,
   behavior: { enablePullDownRefresh: boolean; onReachBottomDistance: number },
+  pageFrame: boolean,
 ): HTMLIFrameElement {
   const url = new URL(renderUrl, window.location.href)
   url.searchParams.set('pageId', pageId)
+  if (pageFrame) url.searchParams.set('pageFrame', '1')
   url.searchParams.set('enablePullDownRefresh', behavior.enablePullDownRefresh ? '1' : '0')
   url.searchParams.set('onReachBottomDistance', String(behavior.onReachBottomDistance))
   const iframe = document.createElement('iframe')

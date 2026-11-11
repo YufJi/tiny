@@ -71,20 +71,33 @@ describe('glass render tree', () => {
     })
     tree.setTemplates?.(pageTemplatesFor(
       path,
-      '<wxs module="state" src="/wxs/pageframe.wxs" /><view class="state">{{state.mark("page", "P")}}</view>',
+      '<wxs module="state" src="/wxs/pageframe.wxs" /><view class="state">{{state.mark("page", "P")}} {{state.bump(title)}}</view>',
       'wxs/pageframe.wxs',
-      'var seen = {}; var next = 0; function mark(key, label) { if (!seen[key]) { next += 1; seen[key] = next } return label + ":" + seen[key] } module.exports = { mark: mark }',
+      'var seen = {}; var next = 0; var calls = 0; function mark(key, label) { if (!seen[key]) { next += 1; seen[key] = next } return label + ":" + seen[key] } function bump(value) { calls += 1; return "B:" + calls + ":" + value } module.exports = { mark: mark, bump: bump }',
     ))
     tree.mountPage?.({
       pageId: 'page-1',
       pagePath: path,
-      data: {},
+      data: { title: 'first' },
     })
 
     expect(tree.root).toBeDefined()
     expect(tree.root.shadowRoot).toBeDefined()
     expect(tree.getNode?.('page-1')).toBe(tree.root)
     expect(glassText(tree.root.shadowRoot)).toContain('P:1')
+    expect(glassText(tree.root.shadowRoot)).toContain('B:1:first')
+
+    const root = tree.root
+    tree.mountPage?.({
+      pageId: 'page-1',
+      pagePath: path,
+      data: { title: 'first' },
+    })
+    expect(tree.root).toBe(root)
+    expect(glassText(tree.root.shadowRoot)).toContain('B:1:first')
+
+    tree.applyPageDataPatches?.([{ title: 'second' }])
+    expect(glassText(tree.root.shadowRoot)).toContain('B:2:second')
   })
 
   test('mounts and clears an independent tabBar root', () => {

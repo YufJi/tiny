@@ -95,6 +95,10 @@ describe('script — code generation with WXS runtime', () => {
     const output = group.getTmplGenObjectGroups()
     expect(output).toMatch(/var \w+=W\["wxs\/counter"\]\(R\)/)
     expect(output).not.toMatch(/\w+\|\|\(\w+=W\["wxs\/counter"\]\(\)\)/)
+    // WXS module state is outside the component data diff. Calls such as
+    // `{{counter.next()}}` must not be filtered as a static expression.
+    expect(output).toContain('Z(true,"next")')
+    expect(output).not.toContain('Z(undefined,"next")')
   })
 })
 

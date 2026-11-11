@@ -71,6 +71,83 @@ describe('tree thread', () => {
     })
   })
 
+  test('mounts the pageframe from templates and sends data without replaying patches', async () => {
+    const [hostTransport, renderTransport] = createInMemoryTransportPair()
+    const mounted: RenderNode[] = []
+    const pageFrames: Array<Record<string, unknown>> = []
+    const pageData: Array<Record<string, unknown>> = []
+    const pageDataPatches: Array<Array<Record<string, unknown>>> = []
+    const componentData: Array<Record<string, Record<string, unknown>>> = []
+    const patches: RenderPatch[][] = []
+    bootTreeThread({
+      pageFrame: true,
+      connection: createRenderConnection(renderTransport),
+      renderer: {
+        mount: (root) => mounted.push(root),
+        mountPage: (request) => pageFrames.push(request as unknown as Record<string, unknown>),
+        applyPatches: (value) => patches.push(value),
+        setPageData: (value) => pageData.push(value),
+        applyPageDataPatches: (value) => pageDataPatches.push(value),
+        setComponentData: (value) => componentData.push(value),
+      },
+    })
+    const host = new BridgeConnection({
+      localRole: 'host',
+      peerRole: 'render',
+      transport: hostTransport,
+      respondToHello: false,
+    })
+    await host.handshake()
+    host.sendEvent('tree', 'flow', {
+      pageId: 'page-1',
+      pagePath: 'pages/index/index',
+      pageData: { title: 'first' },
+      pageUsing: { card: 'components/card/card' },
+      pageScope: 'page-scope',
+      pageFrame: { methods: ['onTap'], rootViewId: 'view-root' },
+      messages: [
+        {
+          type: 'tree',
+          root: {
+            type: 'element',
+            id: 'page-1',
+            tag: 'page',
+            children: [{ type: 'text', id: 'text', text: 'first' }],
+          },
+        },
+        { type: 'ready' },
+      ],
+    }, { pageId: 'page-1' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    host.sendEvent('tree', 'patch', {
+      pageId: 'page-1',
+      rootViewId: 'view-root',
+      pageData: { title: 'second' },
+      pageDataPatches: [{ title: 'second' }],
+      componentData: { 'component-1': { value: 2 } },
+      patches: [{ type: 'text', target: 'text', text: 'second' }],
+    }, { pageId: 'page-1' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(mounted).toHaveLength(0)
+    expect(patches).toHaveLength(0)
+    expect(pageFrames[0]).toMatchObject({
+      pageId: 'page-1',
+      pagePath: 'pages/index/index',
+      data: { title: 'first' },
+      using: { card: 'components/card/card' },
+      scope: 'page-scope',
+      methods: ['onTap'],
+      renderHints: {
+        id: 'page-1',
+        children: [{ id: 'text', text: 'first' }],
+      },
+    })
+    expect(pageData).toEqual([{ title: 'first' }])
+    expect(pageDataPatches).toEqual([[{ title: 'second' }]])
+    expect(componentData).toEqual([{ 'component-1': { value: 2 } }])
+  })
+
   test('mounts and patches an independent tabBar root', async () => {
     const [hostTransport, renderTransport] = createInMemoryTransportPair()
     const mounted: RenderNode[] = []

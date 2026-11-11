@@ -56,6 +56,7 @@ export function bootRenderEntry(options: RenderEntryOptions = {}): void {
       renderer: entry.createRenderer(),
       ...(entry.pageId ? { initialPageId: entry.pageId } : {}),
       ...(entry.loadTemplates ? { loadTemplates: entry.loadTemplates } : {}),
+      ...(entry.pageFrame ? { pageFrame: true } : {}),
     })
     // A host may hand this document a second port when it re-boots the thread.
     // Drop the previous listeners first, otherwise every scroll or pull-down

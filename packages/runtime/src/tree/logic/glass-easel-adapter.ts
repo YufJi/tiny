@@ -945,6 +945,17 @@ export class GlassEaselRuntimeAdapter {
     return this.componentIds.get(component as object)
   }
 
+  /** Resolve a page method a render-evaluated page template bound. */
+  pageTemplateMethod(
+    path: string,
+    name: string,
+  ): ((this: unknown, event: unknown) => unknown) | undefined {
+    if (!this.pages.has(path)) return undefined
+    return this.logicPageMethods(path)[name] as
+      | ((this: unknown, event: unknown) => unknown)
+      | undefined
+  }
+
   getMountedComponentByComponentId(componentId: string): glassEasel.GeneralComponent | undefined {
     for (const pageTree of this.pageTrees.values()) {
       const component = pageTree.instances.get(componentId)

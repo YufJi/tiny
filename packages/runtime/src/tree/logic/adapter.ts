@@ -966,6 +966,7 @@ export class LogicTreeAdapter {
     const path = (component as { is?: unknown }).is
     const method = typeof path === 'string'
       ? this.componentDefinitions?.get(path)?.methods.get(payload.handler)
+        ?? this.glass.pageTemplateMethod(path, payload.handler)
       : undefined
     if (typeof method !== 'function') return false
     const geometry = payload.currentTarget

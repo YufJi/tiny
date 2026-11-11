@@ -20,6 +20,8 @@ export type GlassRenderEntryOptions = {
    * `setTemplates` before the first mount.
    */
   loadTemplates?: () => Promise<TemplateRegistry> | TemplateRegistry
+  /** Let the render pageframe evaluate page WXML instead of replaying a tree. */
+  pageFrame?: boolean
 }
 
 /** Renderer factory a host can boot over any transport. */
@@ -30,6 +32,8 @@ export type GlassRenderEntry = {
   pageId?: string
   /** Forwarded to `bootTreeThread`, which parks flows until templates load. */
   loadTemplates?: () => Promise<TemplateRegistry> | TemplateRegistry
+  /** Forwarded to `bootTreeThread`; the pageframe owns the page WXML render. */
+  pageFrame?: boolean
 }
 
 /**
@@ -65,5 +69,6 @@ export function createGlassRenderEntry(options: GlassRenderEntryOptions = {}): G
     }),
     ...(options.pageId ? { pageId: options.pageId } : {}),
     ...(options.loadTemplates ? { loadTemplates: options.loadTemplates } : {}),
+    ...(options.pageFrame ? { pageFrame: true } : {}),
   }
 }
