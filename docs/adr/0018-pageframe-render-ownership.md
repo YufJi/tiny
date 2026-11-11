@@ -2,8 +2,7 @@
 
 ## Status
 
-Accepted. Phases A and B, the page-data part of Phase C, and the pageframe
-renderer migration are implemented. The browser test host, debugger and iOS
+Accepted. Phases A, B and C are implemented. The browser test host, debugger and iOS
 render WKWebView all mount through the pageframe, and the runtime's cross-thread
 integration harness also defaults to pageframe. `TreeRenderer` requires
 `mountPage`; the legacy `tree.snapshot` event, service-side pageframe switch and
@@ -71,7 +70,7 @@ The migration is staged to keep the gate green:
   Component `ready` follows WeChat's creation walk: shadow descendants, the
   host, then light/slot descendants. Dynamically created components receive
   their own `ready` after the update is acknowledged.
-- **Phase C (partial)**: page `setData` crosses as its original data patches,
+- **Phase C (implemented)**: page `setData` crosses as its original data patches,
   not a full page snapshot. Render-local diff is the acknowledgement. Page WXML
   props are applied before the remaining per-instance component-data patch, so
   a parent prop update is not evaluated twice. Component data is sent as
@@ -81,7 +80,7 @@ The migration is staged to keep the gate green:
   virtual-node patches. WXS `bindinput` on `input`/`textarea` is render-local,
   matching WeChat's pageframe dispatch; only plain JS `bindinput` uses the
   service event path.
-- **Phase D (revised by WeChat 3.17.5 source)**: the cross-tree
+- **Phase D (closed by WeChat 3.17.5 source)**: the cross-tree
   `tree.wxsHandler` replay has been removed; WXS handlers, including
   `input`/`textarea` `bindinput`, execute only in the pageframe. Service
   WXML evaluation remains intentionally: WeChat's service `CodeSpace` owns
