@@ -11,10 +11,10 @@ var __wxsRuntime = (() => {
 Q.S = (filename, code) => {
   const load = __wxsRuntime.register(filename, code)
   return (R) => {
-    const pageId = typeof __wxsRuntime.pageIdOf === 'function'
-      ? __wxsRuntime.pageIdOf(R)
+    const scopeKey = typeof __wxsRuntime.scopeOf === 'function'
+      ? __wxsRuntime.scopeOf(R)
       : undefined
-    return load(pageId)
+    return load(scopeKey)
   }
 }
 

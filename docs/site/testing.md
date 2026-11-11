@@ -87,7 +87,7 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 | `@tiny/cli` | 30 | manifest 全产物、兼容输入配置、WXS 双注册、配置合并、service/templates 入口、TS/source map、样式 role、tag marker、npm 构建与项目配置校验 |
 | `@tiny/host-web-components` | 24 | 内置组件 batches、共享 behaviors 和默认样式断言；`canIUse` 用的组件属性清单与真实定义保持一致；组件行为细节由 host-web 的 render-tree 测试覆盖 |
 | `@tiny/host-web` | 109 | DOM render tree、built-in composition、事件、WXS dispatch、event compositor、内置组件与渲染树集成 |
-| `@tiny/runtime` | 195 | 全局安装和命名、双线程 bootstrap、逻辑树、tree protocol/patch diff、两次求值与 locator 寻址、headless renderer、组件 schema 与页级可见性、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、页面栈快照与 exitState、API 注入缝、诊断、WXS 宽松求值与页级状态、`this.animate`、事件冒泡/几何 |
+| `@tiny/runtime` | 195 | 全局安装和命名、双线程 bootstrap、逻辑树、tree protocol/patch diff、两次求值与 locator 寻址、headless renderer、组件 schema 与页级可见性、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、页面栈快照与 exitState、API 注入缝、诊断、WXS 宽松求值与页面/组件模板页级状态、`this.animate`、事件冒泡/几何 |
 | `@tiny/api` | 38 | 微信兼容 API 表：storage 同步/异步、request 回调、导航与 EventChannel、base64/ArrayBuffer 转换、`canIUse` schema 解析（API/对象/组件三类）、全局 `wx.onXXX` 事件 hub、动画与 canvas stub |
 | `devtool` | 13 | 元素树投影、页面栈保存值合并、导航 chrome、`launchExitState` 选择 |
 

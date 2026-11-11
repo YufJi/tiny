@@ -215,7 +215,7 @@ export function createPageScopedWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
   const sources = new Map<string, string>()
   const runtimes = new Map<string, WxsRuntime>()
   const fallbackPage = '__tiny_wxs_app__'
-  let resolvePageId: ((renderContext: unknown) => string | undefined) | undefined
+  let resolveScope: ((renderContext: unknown) => string | undefined) | undefined
   let disposed = false
 
   const registerSource = (moduleId: string, source: string): void => {
@@ -234,8 +234,8 @@ export function createPageScopedWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
     return runtime
   }
 
-  const pageIdOf = (renderContext: unknown): string | undefined => (
-    resolvePageId?.(renderContext)
+  const scopeOf = (renderContext: unknown): string | undefined => (
+    resolveScope?.(renderContext)
   )
 
   const runtimeFor = (pageId: string): WxsRuntime => {
@@ -253,7 +253,7 @@ export function createPageScopedWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
   return {
     register(moduleId, source) {
       registerSource(moduleId, source)
-      return (pageId?: string) => runtimeFor(pageId ?? fallbackPage).require(moduleId)
+      return (scopeKey?: string) => runtimeFor(scopeKey ?? fallbackPage).require(moduleId)
     },
 
     load(table) {
@@ -280,15 +280,16 @@ export function createPageScopedWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
       return fallbackRuntime().invoke(moduleId, exportPath, args)
     },
 
-    bindPageResolver(resolver) {
-      resolvePageId = resolver
+    bindScopeResolver(resolver) {
+      resolveScope = resolver
     },
 
-    pageIdOf,
+    scopeOf,
 
     releasePage(pageId) {
-      const runtime = runtimes.get(pageId)
-      runtimes.delete(pageId)
+      const scopeKey = `page:${pageId}`
+      const runtime = runtimes.get(scopeKey)
+      runtimes.delete(scopeKey)
       runtime?.dispose()
     },
 

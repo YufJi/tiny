@@ -164,19 +164,19 @@ describe('createPageScopedWxsRuntime', () => {
       'counter',
       'var count = 0; module.exports = { next: function () { count += 1; return count } }',
     )
-    const next = (pageId: string) => (load(pageId).next as () => number)()
+    const next = (scopeKey: string) => (load(scopeKey).next as () => number)()
 
-    expect(next('page-a')).toBe(1)
-    expect(next('page-b')).toBe(1)
-    expect(next('page-a')).toBe(2)
+    expect(next('page:page-a')).toBe(1)
+    expect(next('page:page-b')).toBe(1)
+    expect(next('page:page-a')).toBe(2)
     wxs.releasePage!('page-a')
-    expect(next('page-a')).toBe(1)
+    expect(next('page:page-a')).toBe(1)
   })
 
   test('keeps function origins available across page contexts', () => {
     const wxs = createPageScopedWxsRuntime({ compile: createDefaultWxsCompiler() })
     const load = wxs.register('handler', 'module.exports = { tap: function () {} }')
-    const tap = load('page-a').tap as Function
+    const tap = load('page:page-a').tap as Function
     expect(wxs.originOf(tap)).toEqual({
       moduleId: 'handler',
       exportPath: ['tap'],

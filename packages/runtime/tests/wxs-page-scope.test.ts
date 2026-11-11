@@ -29,29 +29,37 @@ function createTemplates() {
   })
   group.addScript(COUNTER, `
 var count = 0
-function next() {
+var seen = {}
+function once(key) {
+  if (seen[key]) return 'count:' + count
+  seen[key] = true
   count += 1
   return 'count:' + count
 }
-module.exports = { next: next }
+module.exports = { once: once }
 `)
   group.addScript(COMPONENT_COUNTER, `
 var count = 0
-function next() {
+var seen = {}
+function once(key) {
+  if (!key) return 'component:0'
+  if (seen[key]) return 'component:' + count
+  seen[key] = true
   count += 1
   return 'component:' + count
 }
-module.exports = { next: next }
+module.exports = { once: once }
 `)
   group.addTmpl(PROBE, `
 <wxs module="counter" src="/${COMPONENT_COUNTER}" />
-<text id="component-count">{{counter.next()}}-{{label}}</text>
+<text id="component-count">{{counter.once(label)}}-{{label}}</text>
 `)
   for (const path of [PAGE_A, PAGE_B]) {
     group.addTmpl(path, `
 <wxs module="counter" src="/${COUNTER}" />
-<text>{{counter.next()}}-{{tick}}</text>
-<probe id="probe" />
+<text>{{counter.once(scopeKey + tick)}}-{{tick}}</text>
+<probe id="probe" label="{{scopeKey}}" />
+<probe id="probe2" label="{{scopeKey}}-2" />
 `)
   }
   const groupList = new Function(`return ${group.getTmplGenObjectGroups()}`)() as Record<string, unknown>
@@ -93,7 +101,7 @@ function textOf(node: RenderNode | null): string {
   return (node.children ?? []).map((child) => textOf(child)).join('')
 }
 
-function componentText(tree: LogicTreeAdapter, pageId: string): string {
+function componentNode(tree: LogicTreeAdapter, pageId: string, id: string) {
   const page = tree.glass.getMountedComponentByPageId(pageId) as unknown as {
     shadowRoot?: {
       getElementById: (id: string) => {
@@ -105,8 +113,15 @@ function componentText(tree: LogicTreeAdapter, pageId: string): string {
       } | undefined
     }
   } | undefined
-  const probe = page?.shadowRoot?.getElementById('probe')?.asGeneralComponent?.()
-  return glassText(probe?.shadowRoot?.childNodes ?? [])
+  return page?.shadowRoot?.getElementById(id)?.asGeneralComponent?.()
+}
+
+function componentCounts(tree: LogicTreeAdapter, pageId: string): number[] {
+  return ['probe', 'probe2'].map((id) => {
+    const component = componentNode(tree, pageId, id)
+    const match = /component:(\d+)/.exec(glassText(component?.shadowRoot?.childNodes ?? []))
+    return Number(match?.[1] ?? 0)
+  }).sort((left, right) => left - right)
 }
 
 type GlassTextNode = {
@@ -132,7 +147,9 @@ describe('page-scoped WXS module state', () => {
     const manifest = createManifest()
     const templates = createTemplates()
     const componentDefinitions = new Map([
-      [PROBE, normalizeComponentDefinition({}, PROBE)],
+      [PROBE, normalizeComponentDefinition({
+        properties: { label: { type: String, value: '' } },
+      }, PROBE)],
     ])
     const tree = new LogicTreeAdapter({
       manifest,
@@ -141,15 +158,15 @@ describe('page-scoped WXS module state', () => {
       componentDefinitions,
     })
     tree.registerComponentSchemas(buildComponentSchemas(manifest.components, componentDefinitions))
-    tree.mountPage(PAGE_A, {}, 'page-a')
+    tree.mountPage(PAGE_A, { scopeKey: 'a' }, 'page-a')
     await tree.glass.whenRendered()
-    tree.mountPage(PAGE_B, {}, 'page-b')
+    tree.mountPage(PAGE_B, { scopeKey: 'b' }, 'page-b')
     await tree.glass.whenRendered()
 
     expect(textOf(tree.snapshotRenderTree('page-a'))).toContain('count:1')
-    expect(componentText(tree, 'page-a')).toContain('component:1')
+    expect(componentCounts(tree, 'page-a')).toEqual([2, 2])
     expect(textOf(tree.snapshotRenderTree('page-b'))).toContain('count:1')
-    expect(componentText(tree, 'page-b')).toContain('component:1')
+    expect(componentCounts(tree, 'page-b')).toEqual([2, 2])
 
     // Updates keep state inside the same page and do not advance another page.
     tree.applyPageData('page-a', { tick: 1 })
@@ -160,9 +177,9 @@ describe('page-scoped WXS module state', () => {
     // Destroying a page releases its module table; re-entry starts at one.
     tree.unmountPage('page-a')
     await tree.glass.whenRendered()
-    tree.mountPage(PAGE_A, {}, 'page-a2')
+    tree.mountPage(PAGE_A, { scopeKey: 'a2' }, 'page-a2')
     await tree.glass.whenRendered()
     expect(textOf(tree.snapshotRenderTree('page-a2'))).toContain('count:1')
-    expect(componentText(tree, 'page-a2')).toContain('component:1')
+    expect(componentCounts(tree, 'page-a2')).toEqual([2, 2])
   })
 })

@@ -228,6 +228,7 @@ export class GlassEaselRuntimeAdapter {
   private readonly componentDefinitions = new Map<string, glassEasel.GeneralComponentDefinition>()
   private readonly registeringComponents = new Set<string>()
   private readonly pages = new Map<string, PageArtifact>()
+  private readonly pageInitialData = new Map<string, Record<string, unknown>>()
   private readonly mountedComponents = new Map<string, glassEasel.GeneralComponent>()
   private readonly pageTrees = new Map<string, GlassPageTreeManager>()
   private readonly componentSchemas = new Map<string, MiniProgramComponentSchema>()
@@ -416,6 +417,7 @@ export class GlassEaselRuntimeAdapter {
 
   registerPage(page: PageArtifact, data: Record<string, unknown> = {}): glassEasel.GeneralComponentDefinition {
     const adapter = this
+    this.pageInitialData.set(page.path, data)
     const existing = this.componentDefinitions.get(page.path)
     if (existing) return existing
     if (!this.templates.groupList[page.path]) {
@@ -441,7 +443,7 @@ export class GlassEaselRuntimeAdapter {
         groupList: this.templates.groupList,
         content: (name = '') => this.templates.content(page.path, name),
       })
-      .data(() => data)
+      .data(() => adapter.pageInitialData.get(page.path) ?? {})
       .usingComponents(using as never)
       .placeholders(pagePlaceholders as never)
       .generics(generics as never)

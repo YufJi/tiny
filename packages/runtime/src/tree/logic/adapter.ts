@@ -195,7 +195,7 @@ export class LogicTreeAdapter {
         options.onCustomEvent?.(pageId, this.backend.ensureViewId(node), name, detail, eventOptions)
       },
     })
-    this.wxsRuntime?.bindPageResolver?.((renderer) => this.pageIdForRenderer(renderer))
+    this.wxsRuntime?.bindScopeResolver?.((renderer) => this.wxsScopeForRenderer(renderer))
     glassEasel.addGlobalErrorListener((error, method, relatedComponent) => {
       const message = error instanceof Error ? error.message : String(error)
       options.onError?.(
@@ -319,12 +319,14 @@ export class LogicTreeAdapter {
     return this.pageTrees.get(pageId)
   }
 
-  private pageIdForRenderer(renderer: unknown): string | undefined {
+  private wxsScopeForRenderer(renderer: unknown): string | undefined {
     const shadowRoot = (renderer as {
       shadowRoot?: { getHostNode?: () => unknown; _$host?: unknown }
     } | undefined)?.shadowRoot
     const host = shadowRoot?.getHostNode?.() ?? shadowRoot?._$host
-    return this.glass.pageIdFor(host)
+    const pageId = this.glass.pageIdFor(host)
+    if (!pageId) return undefined
+    return `page:${pageId}`
   }
 
   private visibleSchemasFor(pagePath: string): MiniProgramComponentSchema[] {
