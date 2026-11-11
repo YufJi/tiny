@@ -79,6 +79,10 @@ The migration is staged to keep the gate green:
   matching WeChat's pageframe dispatch; only plain JS `bindinput` uses the
   service event path.
 - **Phase D**: remove service WXML and the cross-tree WXS state replay.
+  The cross-tree `tree.wxsHandler` replay has been removed; WXS handlers,
+  including `input`/`textarea` `bindinput`, execute only in the pageframe.
+  Service WXML evaluation and its WXS expression runtime remain until the
+  component logic tree can be built without evaluating page templates.
 
 ## Acceptance
 
@@ -112,6 +116,7 @@ and the full service/render lifecycle.
 
 ## Consequences
 
-The current `tree.wxsHandler` replay is a compatibility bridge, not the target
-architecture. New runtime work should move responsibilities toward the
-render-owned pageframe rather than extending service-side WXML emulation.
+The service-side WXS expression runtime is now only a logic-tree projection
+input; it is no longer used to replay render event handlers. New runtime work
+should continue moving responsibilities toward the render-owned pageframe
+rather than extending service-side WXML emulation.

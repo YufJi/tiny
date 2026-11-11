@@ -29,7 +29,6 @@ import type {
   PageFrameMount,
   TemplateRegistry,
   WxsBindingMessage,
-  WxsHandlerMessage,
   WxsModuleTable,
   WxsRenderEffect,
 } from '@tiny/runtime'
@@ -116,25 +115,6 @@ const parseWxsProps = (props: Record<string, unknown> | undefined): WxsPropBindi
   }
 }
 
-const bridgeSafeGeometry = (
-  value: unknown,
-): WxsHandlerMessage['target'] | undefined => {
-  if (!value || typeof value !== 'object') return undefined
-  const { dataset, ...rest } = value as Record<string, unknown>
-  let safeDataset: unknown
-  if (dataset !== undefined) {
-    try {
-      safeDataset = JSON.parse(JSON.stringify(dataset))
-    } catch {
-      safeDataset = undefined
-    }
-  }
-  return {
-    ...rest,
-    ...(safeDataset === undefined ? {} : { dataset: safeDataset }),
-  } as WxsHandlerMessage['target']
-}
-
 export type GlassRenderTreeOptions = {
   resolveAssetUrl?: (src: string, sourcePath?: string) => string | undefined
   /** DOM container for the root host. Omit for a detached/empty backend tree. */
@@ -187,7 +167,6 @@ export type GlassRenderTree = {
   setPagePath?: (pagePath: string) => void
   setWxsModules?: (table: WxsModuleTable) => void
   setWxsEffectSink?: (sink: (effect: WxsRenderEffect) => void) => void
-  setWxsHandlerSink?: (sink: (event: WxsHandlerMessage) => void) => void
   setWxsBinding?: (binding: WxsBindingMessage) => void
   /** Refresh the service-owned node/component identity hints after a structural page update. */
   setPageFrameHints?: (root: RenderNode) => void
@@ -613,7 +592,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
    */
   let serviceEventDepth = 0
   let wxsEffectSink: ((effect: WxsRenderEffect) => void) | undefined
-  let wxsHandlerSink: ((event: WxsHandlerMessage) => void) | undefined
   let hostActionSink: ((action: RenderHostAction) => void) | undefined
   let hostRequestSink: ((method: string, payload: unknown) => Promise<unknown>) | undefined
   const emitServiceEvent = (event: GlassRenderEvent): void => {
@@ -1855,21 +1833,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     } catch {
       return
     }
-    const target = bridgeSafeGeometry(payload.target)
-    const currentTarget = bridgeSafeGeometry(payload.currentTarget)
-    wxsHandlerSink?.({
-      viewId: String(payload.id ?? node.id ?? ''),
-      ...(typeof payload.targetId === 'string' ? { targetId: payload.targetId } : {}),
-      name: binding.name,
-      moduleId: binding.moduleId,
-      exportPath: binding.exportPath,
-      ...(payload.detail !== undefined ? { detail: payload.detail } : {}),
-      ...(payload.native ? { native: payload.native as Record<string, unknown> } : {}),
-      ...(payload.touches ? { touches: payload.touches as unknown[] } : {}),
-      ...(payload.changedTouches ? { changedTouches: payload.changedTouches as unknown[] } : {}),
-      ...(target ? { target } : {}),
-      ...(currentTarget ? { currentTarget } : {}),
-    })
     if (result === false || binding.catch) {
       stop()
       return
@@ -2853,9 +2816,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     },
     setWxsEffectSink: (sink) => {
       wxsEffectSink = sink
-    },
-    setWxsHandlerSink: (sink) => {
-      wxsHandlerSink = sink
     },
     dispatchCustomEvent: (request) => {
       const component = nodes.get(request.componentId)

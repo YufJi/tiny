@@ -231,7 +231,6 @@ Bridge 的 `assertJsonSafe` 做严格校验；runtime 的 `toJsonSafe` 会主动
 | `tree.templateEvent` | render → service | render 求值的组件模板把绑定的方法调用交回 service |
 | `tree.wxsBinding` | service → render | 动态 WXS 事件绑定决策 |
 | `tree.wxsEffect` | render → service | WXS `callMethod` / `triggerEvent` 的跨线程副作用 |
-| `tree.wxsHandler` | render → service | 每次 render WXS handler 执行后的 origin 和事件快照；service 用 state-only descriptor 回放模块状态 |
 | `tree.hostAction` | render → host | 内置组件的导航等宿主动作 |
 | `tree.hostRequest` | render → host | 内置组件的宿主请求/响应（如 picker） |
 | `tree.ready` | host → service | render bootstrap 完成后请求逻辑树重发首屏 flow |
@@ -312,7 +311,6 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | tree | `templateEvent` | event | render → service | render 求值的组件模板回调 service 方法 |
 | tree | `wxsBinding` | event | service → render | 动态 WXS 事件绑定 |
 | tree | `wxsEffect` | event | render → service | WXS `callMethod` / `triggerEvent` |
-| tree | `wxsHandler` | event | render → service | WXS handler 的 page-scoped 状态回放 |
 | tree | `hostAction` | event | render → host | 内置组件主动导航等宿主动作 |
 | tree | `hostRequest` | call | render → host | 内置组件的宿主请求/响应 |
 | tree | `ready` | event | host → service | 请求首屏 flow |
@@ -339,7 +337,7 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | 来源 | 收到 | 宿主处理 | 发出 |
 | --- | --- | --- | --- |
 | service | `tree.flow` / `tree.patch` / `tree.animate` / `tree.wxsBinding` | 按 pageId 找渲染树连接，未就绪时先排队 | render 对应 tree 消息 |
-| render | `tree.event` / `tree.templateEvent` / `tree.wxsEffect` / `tree.wxsHandler` | 补上 pageId 后转发 | service 对应 tree 消息 |
+| render | `tree.event` / `tree.templateEvent` / `tree.wxsEffect` | 补上 pageId 后转发 | service 对应 tree 消息 |
 | render | `tree.ack` | 按 pageId 转发给 service | service `tree.ack` |
 | render | `page.scroll` / `page.reachBottom` / `page.pullDownRefresh` | 补上 pageId 后转发 | service `page` 事件 |
 | render | `query.intersection` | 按 pageId 转发 | service `query.intersection` |

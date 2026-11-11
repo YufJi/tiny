@@ -1,7 +1,7 @@
 import type { BridgeConnection, ProtocolMessage } from '@tiny/bridge'
 import { DIAGNOSTIC_CODES } from '@tiny/manifest'
 import type { LogicTreeAdapter, ViewEventPayload, ViewIntersectionEntry } from '../../tree/logic'
-import { QUERY_CONTROL, TREE_PROTOCOL, type WxsHandlerMessage } from '../../tree/protocol'
+import { QUERY_CONTROL, TREE_PROTOCOL } from '../../tree/protocol'
 
 export type RenderWxsEffect = {
   kind: 'callMethod' | 'triggerEvent'
@@ -25,12 +25,6 @@ export type RenderInboundHost = {
   sendFlow: (pageId: string) => void
   reportError: (message: string) => void
   dispatchWxsEffect: (pageId: string, effect: RenderWxsEffect) => void
-  /** Replay a render-side WXS handler into the owning service page state. */
-  replayWxsHandler?: (
-    pageId: string,
-    origin: { moduleId: string; exportPath: string[] },
-    event: ViewEventPayload,
-  ) => void
   /** The render thread reflected a batch; run its `setData` completions. */
   acknowledgeRenders: (tokens: string[]) => void
 }
@@ -67,10 +61,6 @@ export function attachRenderInbound(
 
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.wxsEffect, (message) => {
     handleWxsEffect(connection, host, message)
-  })
-
-  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.wxsHandler, (message) => {
-    handleWxsHandler(host, message)
   })
 
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.ready, (message) => {
@@ -194,36 +184,6 @@ function handleViewEvent(
       stack: error instanceof Error ? error.stack : undefined,
     }, message.pageId)
   }
-}
-
-function handleWxsHandler(
-  host: RenderInboundHost,
-  message: ProtocolMessage,
-): void {
-  if (!host.getLogicTree() || !host.isMounted(message.pageId ?? '')) return
-  const payload = (message.payload ?? {}) as Partial<WxsHandlerMessage>
-  if (
-    !payload.viewId
-    || !payload.name
-    || !payload.moduleId
-    || !Array.isArray(payload.exportPath)
-  ) return
-  host.replayWxsHandler?.(message.pageId ?? '', {
-    moduleId: payload.moduleId,
-    exportPath: payload.exportPath,
-  }, {
-    viewId: payload.viewId,
-    ...(payload.targetId ? { targetId: payload.targetId } : {}),
-    name: payload.name,
-    pageId: message.pageId,
-    ...(payload.detail !== undefined ? { detail: payload.detail } : {}),
-    ...(payload.native ? { native: payload.native } : {}),
-    ...(payload.touches ? { touches: payload.touches } : {}),
-    ...(payload.changedTouches ? { changedTouches: payload.changedTouches } : {}),
-    ...(payload.target ? { target: payload.target } : {}),
-    ...(payload.currentTarget ? { currentTarget: payload.currentTarget } : {}),
-    wxsHandled: true,
-  })
 }
 
 function handleWxsEffect(

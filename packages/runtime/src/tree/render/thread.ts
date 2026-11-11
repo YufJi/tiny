@@ -20,7 +20,6 @@ import {
   type RenderNode,
   type RenderPatch,
   type RenderTemplateEvent,
-  type WxsHandlerMessage,
   type WxsRenderEffect,
   type WxsBindingMessage,
 } from '../protocol'
@@ -93,7 +92,6 @@ export type TreeRenderer = {
   /** Forwarded template handlers (render-evaluated component shadow trees). */
   setTemplateEventSink?: (sink: (event: RenderTemplateEvent) => void) => void
   setWxsEffectSink?: (sink: (effect: WxsRenderEffect) => void) => void
-  setWxsHandlerSink?: (sink: (event: WxsHandlerMessage) => void) => void
   setPageData?: (data: Record<string, unknown>) => void
   /** Apply the original `setData` patches instead of a full page snapshot. */
   applyPageDataPatches?: (patches: Array<Record<string, unknown>>) => void
@@ -281,14 +279,6 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     connection.sendEvent(
       TREE_PROTOCOL.domain, TREE_PROTOCOL.wxsEffect,
       { ...effect, pageId: currentPageId },
-      currentPageId ? { pageId: currentPageId } : {},
-    )
-  })
-
-  options.renderer.setWxsHandlerSink?.((event) => {
-    connection.sendEvent(
-      TREE_PROTOCOL.domain, TREE_PROTOCOL.wxsHandler,
-      { ...event, pageId: currentPageId },
       currentPageId ? { pageId: currentPageId } : {},
     )
   })
