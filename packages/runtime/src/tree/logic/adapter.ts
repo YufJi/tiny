@@ -214,8 +214,10 @@ export class LogicTreeAdapter {
     const merged = new Map(this.componentSchemas.map((schema) => [schema.path, schema]))
     for (const schema of schemas) merged.set(schema.path, schema)
     this.componentSchemas = [...merged.values()]
-    for (const pageTree of this.pageTrees.values()) pageTree.components.register(schemas)
     this.glass.registerComponentSchemas(schemas)
+    for (const pageTree of this.pageTrees.values()) {
+      pageTree.components.replace(this.visibleSchemasFor(pageTree.path))
+    }
   }
 
   mountPage(
@@ -245,7 +247,7 @@ export class LogicTreeAdapter {
     if (!backendElement) throw new Error(`logic page has no backend element: ${pageId}`)
     const pageTree = new PageTreeManager(pageId, path, backendElement)
     this.pageTrees.set(pageId, pageTree)
-    pageTree.components.register(this.componentSchemas)
+    pageTree.components.replace(this.visibleSchemasFor(path))
     this.mountCustomTabBarRoot(pageId, path, pageTree)
     const renderTree = this.snapshotRenderTree(pageId)
     if (renderTree) pageTree.recordRenderTree(renderTree)
@@ -297,9 +299,22 @@ export class LogicTreeAdapter {
     return this.pageTrees.get(pageId)?.path ?? ''
   }
 
+  /** Component paths whose definitions are visible to one page tree. */
+  componentPathsForPage(pageId: string): string[] {
+    return this.pageTrees.get(pageId)?.components.paths() ?? []
+  }
+
   /** The page-scoped tree manager, for diagnostics and parity tests. */
   pageTree(pageId: string): PageTreeManager | undefined {
     return this.pageTrees.get(pageId)
+  }
+
+  private visibleSchemasFor(pagePath: string): MiniProgramComponentSchema[] {
+    const used = this.glass.usedComponentPaths(pagePath)
+    if (this.tabBarPagePaths.has(pagePath) && this.customTabBarPath) {
+      used.add(this.customTabBarPath)
+    }
+    return this.componentSchemas.filter((schema) => used.has(schema.path))
   }
 
   private mountCustomTabBarRoot(

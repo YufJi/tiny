@@ -25,6 +25,11 @@ export class PageComponentManager {
     }
   }
 
+  replace(schemas: MiniProgramComponentSchema[]): void {
+    this.clear()
+    this.register(schemas)
+  }
+
   get(path: string): MiniProgramComponentSchema | undefined {
     return this.schemas.get(path)
   }
@@ -35,6 +40,10 @@ export class PageComponentManager {
 
   get size(): number {
     return this.schemas.size
+  }
+
+  paths(): string[] {
+    return [...this.schemas.keys()]
   }
 
   placeholderFor(tag: string): string | undefined {

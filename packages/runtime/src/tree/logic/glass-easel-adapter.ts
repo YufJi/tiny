@@ -1376,6 +1376,12 @@ export class GlassEaselRuntimeAdapter {
     return result
   }
 
+  /** Transitive component paths declared by a page and its used components. */
+  usedComponentPaths(pagePath: string): Set<string> {
+    const page = this.manifest.pages.find((candidate: PageArtifact) => candidate.path === pagePath)
+    return page ? this.collectUsedComponentPaths(page.path, page.configuration) : new Set()
+  }
+
   private resolveComponentUsing(
     path: string,
     config?: Record<string, any>,
@@ -1428,11 +1434,23 @@ export class GlassEaselRuntimeAdapter {
         result.add(componentPath)
         const schema = this.componentSchemas.get(componentPath)
         const using = usingByPath?.get(componentPath) ?? schema?.using
-        if (!using) continue
-        visit(componentPath, {
-          effective: { usingComponents: using },
-          usingComponentsSource: {},
-        })
+        for (const generic of Object.values(schema?.generics ?? {})) {
+          if (!generic || typeof generic !== 'object' || typeof generic.default !== 'string') continue
+          const defaultPath = this.resolveComponentReference(componentPath, generic.default)
+          if (!result.has(defaultPath)) {
+            result.add(defaultPath)
+            visit(defaultPath, {
+              effective: { usingComponents: this.componentSchemas.get(defaultPath)?.using },
+              usingComponentsSource: {},
+            })
+          }
+        }
+        if (using) {
+          visit(componentPath, {
+            effective: { usingComponents: using },
+            usingComponentsSource: {},
+          })
+        }
       }
     }
     visit(path, config)

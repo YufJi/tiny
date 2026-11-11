@@ -41,7 +41,12 @@ function createManifest(): Manifest {
     configuration: {
       path: PAGE_PATH,
       sourcePath: `${PAGE_PATH}.json`,
-      effective: { usingComponents: { 'custom-tab-bar': `/${TAB_BAR_PATH}` } },
+      effective: {
+        usingComponents: {
+          'custom-tab-bar': `/${TAB_BAR_PATH}`,
+          extra: '/components/extra/index',
+        },
+      },
     },
   }
   const component: ComponentArtifact = {

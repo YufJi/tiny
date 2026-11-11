@@ -13,6 +13,7 @@ import { LogicTreeAdapter } from '../src/tree/logic/adapter'
 const FIRST_PAGE = 'pages/todos/todos'
 const SECOND_PAGE = 'pages/add-todo/add-todo'
 const CARD_PATH = 'components/card/card'
+const PANEL_PATH = 'components/panel/panel'
 
 function createTemplates() {
   const group = TmplGroup.newDev({
@@ -27,6 +28,7 @@ function createTemplates() {
   )
   group.addTmpl(SECOND_PAGE, '<view id="probe">{{ value }}</view>')
   group.addTmpl(CARD_PATH, '<view id="card-probe" bindtap="onTap">{{ value }}</view>')
+  group.addTmpl(PANEL_PATH, '<view id="panel-probe">panel</view>')
   const groupList = new Function(`return ${group.getTmplGenObjectGroups()}`)() as Record<string, unknown>
   return {
     groupList,
@@ -59,10 +61,13 @@ function createManifest(): Manifest {
     runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
     entries: { service: 'service.js', templates: 'templates.js' },
     pages: [
-      artifact(FIRST_PAGE, { card: `/${CARD_PATH}` }),
+      artifact(FIRST_PAGE, { card: `/${CARD_PATH}`, panel: `/${PANEL_PATH}` }),
       artifact(SECOND_PAGE, {}),
     ],
-    components: [artifact(CARD_PATH, {}, 'component')],
+    components: [
+      artifact(CARD_PATH, {}, 'component'),
+      artifact(PANEL_PATH, {}, 'component'),
+    ],
     styles: [],
     assets: [],
   }
@@ -95,7 +100,10 @@ function createTree(
     pageOptions,
     onDataChange,
   })
-  tree.registerComponentSchemas(buildComponentSchemas(manifest.components, definitions))
+  tree.registerComponentSchemas(
+    buildComponentSchemas(manifest.components, definitions)
+      .filter((schema) => definitions.has(schema.path)),
+  )
   return tree
 }
 
@@ -269,5 +277,25 @@ describe('logic tree with multiple mounted pages', () => {
     expect(firstId).toMatch(/^page-1:/)
     expect(secondId).toMatch(/^page-2:/)
     expect(firstId!.slice('page-1:'.length)).toBe(secondId!.slice('page-2:'.length))
+  })
+
+  test('scopes visible component definitions to each page tree', async () => {
+    const tree = createTree(() => undefined, PAGE_OPTIONS)
+    tree.mountPage(FIRST_PAGE, { value: 'first' }, 'page-1')
+    tree.mountPage(SECOND_PAGE, { value: 'second' }, 'page-2')
+
+    expect(tree.componentPathsForPage('page-1')).toEqual([CARD_PATH])
+    expect(tree.componentPathsForPage('page-2')).toEqual([])
+
+    // A lazy component becomes visible to the page that declares it, without
+    // leaking into another mounted page that never used it.
+    const panelDefinition = normalizeComponentDefinition({}, PANEL_PATH)
+    const [panelSchema] = buildComponentSchemas(
+      [artifact(PANEL_PATH, {}, 'component') as ComponentArtifact],
+      new Map([[PANEL_PATH, panelDefinition]]),
+    )
+    tree.registerComponentSchemas([panelSchema!])
+    expect(tree.componentPathsForPage('page-1')).toEqual([CARD_PATH, PANEL_PATH])
+    expect(tree.componentPathsForPage('page-2')).toEqual([])
   })
 })

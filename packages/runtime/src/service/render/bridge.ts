@@ -87,6 +87,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
   private readonly placeholders: Record<string, string> = {}
   private readonly hasPlaceholders: boolean
   private definitionPayloads: Map<string, ComponentDefinitionPayload> | null = null
+  private readonly pageDefinitionPayloads = new Map<string, Map<string, ComponentDefinitionPayload>>()
   private wxsModules?: WxsModuleTable
   private wxsHostOptions?: WxsEventHostOptions
   private updateScheduled = false
@@ -196,6 +197,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     this.componentSchemas.push(...added)
     this.logicTree.registerComponentSchemas(added)
     this.definitionPayloads = null
+    this.pageDefinitionPayloads.clear()
     return added
   }
 
@@ -359,17 +361,26 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     installWxsEventHost(this.wxsHostOptions)
   }
 
-  private renderDefinitions(): Map<string, ComponentDefinitionPayload> {
+  private renderDefinitions(pageId?: string): Map<string, ComponentDefinitionPayload> {
     this.definitionPayloads ??= buildComponentDefinitions(
       this.componentSchemas,
       this.options.componentDefinitions,
       this.options.manifest.styles,
     )
-    return this.definitionPayloads
+    if (!pageId) return this.definitionPayloads
+    let pageDefinitions = this.pageDefinitionPayloads.get(pageId)
+    if (!pageDefinitions) {
+      const visible = new Set(this.logicTree?.componentPathsForPage(pageId) ?? [])
+      pageDefinitions = new Map(
+        [...this.definitionPayloads].filter(([path]) => visible.has(path)),
+      )
+      this.pageDefinitionPayloads.set(pageId, pageDefinitions)
+    }
+    return pageDefinitions
   }
 
-  private treeFlow(root: RenderNode): ReturnType<typeof buildComponentFlow> {
-    return buildComponentFlow(root, this.renderDefinitions())
+  private treeFlow(root: RenderNode, pageId?: string): ReturnType<typeof buildComponentFlow> {
+    return buildComponentFlow(root, this.renderDefinitions(pageId))
   }
 
   private sendTreeSnapshot(pageId: string): void {
@@ -391,7 +402,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
           ? { pageUsing: this.logicTree.pageUsingComponents(pageId) }
           : {}),
         behaviorScheme: this.options.behaviorScheme,
-        messages: cloneJsonSafe(this.treeFlow(root)),
+        messages: cloneJsonSafe(this.treeFlow(root, pageId)),
         ...(tabRoot ? { tabRoot: cloneJsonSafe(tabRoot) } : {}),
         ...(this.wxsModules ? { wxsModules: cloneJsonSafe(this.wxsModules) } : {}),
         ...(page?.data ? { pageData: cloneJsonSafe(page.data) } : {}),
