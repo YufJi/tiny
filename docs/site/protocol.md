@@ -224,7 +224,7 @@ Bridge 的 `assertJsonSafe` 做严格校验；runtime 的 `toJsonSafe` 会主动
 
 | 消息 | 方向 | 内容 |
 | --- | --- | --- |
-| `tree.flow` | service → render | 首屏 flow：`define`（组件定义）、`tree`（整棵页面渲染快照）、`ready`；可带独立 `tabRoot`，以及页面样式、fallback app 样式、`pageScope`、`pageUsing`、`behaviorScheme`、`wxsModules`、`pageData` 和 `componentData` |
+| `tree.flow` | service → render | 首屏 flow：`define`（该页可见组件定义）、`tree`（整棵页面渲染快照）、`ready`；可带独立 `tabRoot`，以及页面样式、fallback app 样式、`pageScope`、`pageUsing`、`behaviorScheme`、`wxsModules`、`pageData` 和 `componentData` |
 | `tree.snapshot` | service → render | 旧版完整快照入口仍注册，当前 service 不发送 |
 | `tree.patch` | service → render | `text`、`replace`、`props`、`insert`、`remove`、`reorder`；组件用共享 id、元素用 `owner#index.path` locator 寻址；同一 payload 可带 `tabPatches`、`pageData` / `componentData` |
 | `tree.ack` | render → service | 批次确认：回显 flow/snapshot/patch 上的 `ack` token；service 用它 settle `setData` completion |

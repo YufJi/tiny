@@ -52,7 +52,7 @@ service 给组件（和页面根）分配稳定 id，render 按这个 id 维护�
 :::
 
 :::callout{title="每页树状态已收口，组件空间仍共享"}
-service 为每个 pageId 维护页级树状态：页面根、可选独立 tabRoot、组件实例表、最近一次 render snapshot、component data 基线、relations、页面 router 和页内组件实例计数。页级状态随页面卸载销毁；`ComponentSpace`、组件定义和样式 scope 仍是应用级共享，避免为每个页面复制一套 glass-easel realm。
+service 为每个 pageId 维护页级树状态：页面根、可选独立 tabRoot、组件实例表、最近一次 render snapshot、component data 基线、relations、页面 router 和页内组件实例计数。页级状态随页面卸载销毁；每页还按 `usingComponents`（含 generic 默认组件）维护可见 schema 闭包，首屏 flow 只发送该页可见的 `define`。`ComponentSpace`、底层组件 definition 和样式 scope 仍是应用级共享，避免为每个页面复制一套 glass-easel realm。
 :::
 
 ## service 线程：逻辑树和页面栈 {#service kicker="service 线程"}
