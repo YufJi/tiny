@@ -792,20 +792,6 @@ export class GlassEaselRuntimeAdapter {
     for (const pageTree of this.pageTrees.values()) yield* pageTree.instances
   }
 
-  private *componentInstanceValues(pageId?: string): IterableIterator<glassEasel.GeneralComponent> {
-    if (pageId) {
-      const pageTree = this.pageTrees.get(pageId)
-      if (pageTree) {
-        yield* pageTree.instances.values()
-      } else {
-        yield* this.unscopedInstances.values()
-      }
-      return
-    }
-    yield* this.unscopedInstances.values()
-    for (const pageTree of this.pageTrees.values()) yield* pageTree.instances.values()
-  }
-
   /** Tear down the logic page root and its page-scoped relation index. */
   unmountPage(pageId: string): void {
     const pageTree = this.pageTrees.get(pageId)
