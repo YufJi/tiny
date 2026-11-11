@@ -2,14 +2,15 @@
 
 ## Status
 
-Accepted. Phases A and B are implemented. The browser test host, debugger and
-iOS render WKWebView all mount through the pageframe, and the runtime's
-cross-thread integration harness also defaults to pageframe. `TreeRenderer`
-requires `mountPage`; the legacy `tree.snapshot` event, service-side pageframe
-switch and native snapshot renderer are gone. `RenderNode` survives only as the
+Accepted. Phases A and B, the page-data part of Phase C, and the pageframe
+renderer migration are implemented. The browser test host, debugger and iOS
+render WKWebView all mount through the pageframe, and the runtime's cross-thread
+integration harness also defaults to pageframe. `TreeRenderer` requires
+`mountPage`; the legacy `tree.snapshot` event, service-side pageframe switch and
+native snapshot renderer are gone. `RenderNode` survives only as the
 service-owned identity/index snapshot, not as a rendering path. The independent
-custom tabBar now mounts from component templates through `tabFrame`, not
-`tabRoot` / `tabPatches`. A few `@tiny/host-web` low-level DOM tests still build
+custom tabBar mounts from component templates through `tabFrame`, not `tabRoot`
+/ `tabPatches`. A few `@tiny/host-web` low-level DOM tests still build
 `RenderNode` fixtures directly; they are test fixtures, not a supported
 `TreeRenderer` host path.
 
@@ -79,11 +80,15 @@ The migration is staged to keep the gate green:
   virtual-node patches. WXS `bindinput` on `input`/`textarea` is render-local,
   matching WeChat's pageframe dispatch; only plain JS `bindinput` uses the
   service event path.
-- **Phase D**: remove service WXML and the cross-tree WXS state replay.
-  The cross-tree `tree.wxsHandler` replay has been removed; WXS handlers,
-  including `input`/`textarea` `bindinput`, execute only in the pageframe.
-  Service WXML evaluation and its WXS expression runtime remain until the
-  component logic tree can be built without evaluating page templates.
+- **Phase D (revised by WeChat 3.17.5 source)**: the cross-tree
+  `tree.wxsHandler` replay has been removed; WXS handlers, including
+  `input`/`textarea` `bindinput`, execute only in the pageframe. Service
+  WXML evaluation remains intentionally: WeChat's service `CodeSpace` owns
+  `compiledTemplateMap`, `batchAddCompiledTemplate` and `getCompiledTemplate`,
+  and registers `template(d)` on service component definitions. That template
+  instantiation supplies the logical component tree, observers, relations,
+  selectors and the identity/index projection. Removing it would require a new
+  component-creation protocol, not just deleting service templates.
 
 ## Acceptance
 
@@ -117,7 +122,7 @@ and the full service/render lifecycle.
 
 ## Consequences
 
-The service-side WXS expression runtime is now only a logic-tree projection
-input; it is no longer used to replay render event handlers. New runtime work
-should continue moving responsibilities toward the render-owned pageframe
-rather than extending service-side WXML emulation.
+The service-side WXS expression runtime is a logic-tree projection input; it is
+no longer used to replay render event handlers. Pageframe remains the final
+WXML/DOM owner. New runtime work should preserve this split rather than trying
+to remove service template instantiation outright.

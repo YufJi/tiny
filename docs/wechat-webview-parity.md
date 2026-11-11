@@ -343,7 +343,7 @@ Shadow DOM：
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
 - **74 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent、真实滚动触发的 onPageScroll，WeChat demo 覆盖 swiper autoplay 开关、radio 点击与 WeUI 勾选结构、navigator 点击跳转、WXS 拖拽，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧，canvas 覆盖 2D/WebGL/legacy/ECharts
 - 2026-11-11 用微信 3.17.5 自动化 fixture 对照 WXS scope：页面模板按页隔离；同页两个组件实例共用同一模块实例，B 页和 A 页重入各自新建模块实例。`wcc` 生成码的 `f_ = __WXML_GLOBAL__.modules` 与 `nv_require` 缓存给出同一结论；Tiny 的 service 页级 runtime、render 每页 runtime 和事件状态回放都按这一边界实现
-- 同一对照组里，微信 WXS 事件 handler 把模块变量从 `peek:0` 增到 `peek:1` 后，页面表达式在同一页重渲染时读到 `peek:1`；Tiny 的 render pageframe handler 只执行一次，pageframe 重渲染读取同一模块实例。跨树 `tree.wxsHandler` 回放已移除；service 逻辑模板快照不再同步这段闭包状态，待 Phase D-1 移除 service WXML 后彻底收口
+- 同一对照组里，微信 WXS 事件 handler 把模块变量从 `peek:0` 增到 `peek:1` 后，页面表达式在同一页重渲染时读到 `peek:1`；Tiny 的 render pageframe handler 只执行一次，pageframe 重渲染读取同一模块实例。跨树 `tree.wxsHandler` 回放已移除；service 逻辑模板快照不参与最终渲染，保留独立表达式 runtime 与微信 service 的 compiled template 结构一致
 - 门禁覆盖的 5 段流程无 console/page error（125 页探针的 pageerror 见 5.2）
 
 这说明现有能力是**真实可运行**的，不是纸面设计。
