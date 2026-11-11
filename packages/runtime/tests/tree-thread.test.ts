@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest'
 import { BridgeConnection, createInMemoryTransportPair } from '@tiny/bridge'
-import { bootTreeThread, type PageFrameMount } from '../src/tree/render/thread'
+import { bootTreeThread } from '../src/tree/render/thread'
 import { createRenderConnection } from './helpers/render-connection'
-import { QUERY_CONTROL, type RenderNode, type RenderPatch } from '../src/tree/protocol'
+import { QUERY_CONTROL, type PageFrameMount, type RenderNode } from '../src/tree/protocol'
 
 const tree: RenderNode = {
   type: 'element',
@@ -180,16 +180,14 @@ describe('tree thread', () => {
     ])
   })
 
-  test('mounts and patches an independent tabBar root', async () => {
+  test('mounts and updates the independent tabBar pageframe', async () => {
     const [hostTransport, renderTransport] = createInMemoryTransportPair()
-    const mountedTabBar: RenderNode[] = []
-    const tabPatches: RenderPatch[][] = []
+    const tabFrames: PageFrameMount[] = []
     bootTreeThread({
       connection: createRenderConnection(renderTransport),
       renderer: {
         mountPage: () => {},
-        mountTabBar: (root) => mountedTabBar.push(root),
-        applyTabBarPatches: (patches) => tabPatches.push(patches),
+        mountTabBarPage: (request) => tabFrames.push(request),
       },
     })
     const host = new BridgeConnection({
@@ -204,12 +202,18 @@ describe('tree thread', () => {
       pagePath: 'pages/index/index',
       styles: [],
       pageFrame: { rootViewId: 'page' },
-      tabRoot: {
-        type: 'element',
-        id: 'tab-bar',
-        tag: 'custom-tab-bar',
-        component: true,
-        componentPath: 'custom-tab-bar/index',
+      tabFrame: {
+        pageId: 'page-1',
+        rootViewId: 'tab-bar',
+        pagePath: 'custom-tab-bar/index',
+        data: { selected: 0 },
+        renderHints: {
+          type: 'element',
+          id: 'tab-bar',
+          tag: 'custom-tab-bar',
+          component: true,
+          componentPath: 'custom-tab-bar/index',
+        },
       },
       messages: [
         { type: 'tree', root: tree },
@@ -219,18 +223,25 @@ describe('tree thread', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
     host.sendEvent('tree', 'patch', {
       pageId: 'page-1',
-      tabPatches: [{ type: 'text', target: 'tab-bar#0', text: 'home' }],
+      tabFrame: {
+        pageId: 'page-1',
+        rootViewId: 'tab-bar',
+        pagePath: 'custom-tab-bar/index',
+        data: { selected: 1 },
+      },
     }, { pageId: 'page-1' })
     await new Promise((resolve) => setTimeout(resolve, 0))
 
-    expect(mountedTabBar).toHaveLength(1)
-    expect(mountedTabBar[0]).toMatchObject({
-      component: true,
-      componentPath: 'custom-tab-bar/index',
+    expect(tabFrames).toHaveLength(2)
+    expect(tabFrames[0]).toMatchObject({
+      pagePath: 'custom-tab-bar/index',
+      data: { selected: 0 },
+      renderHints: { component: true, componentPath: 'custom-tab-bar/index' },
     })
-    expect(tabPatches).toEqual([[
-      { type: 'text', target: 'tab-bar#0', text: 'home' },
-    ]])
+    expect(tabFrames[1]).toMatchObject({
+      pagePath: 'custom-tab-bar/index',
+      data: { selected: 1 },
+    })
   })
 
   test('replaces an undefined component with its componentPlaceholder', async () => {

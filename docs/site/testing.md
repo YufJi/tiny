@@ -150,7 +150,7 @@ fixture 不是单元测试里的假数据，而是完整的小程序源码或预
 | `mini` | 3 个页面 + 1 个分包页面 + 2 个组件 | 真实 todos、import/include/template、animation、ECharts 离屏 canvas、资源内联 | 是 |
 | `todo` | 1 个页面，Taro 3 预构建产物 | webpackJsonp、外部 WXS、递归模板、循环 usingComponents、Enter 提交 | 是 |
 | `wechat-demo` | 4 个主包页面 + 2 个分包，共 125 页（示例子集） | 基础组件索引、button 示例、storage API 示例 | 是 |
-| `custom-tab` | 2 个 tab 页 | 自定义 tabBar 的页级 `tabRoot`、`getTabBar()` 和 tab 切换 | 是（调试器） |
+| `custom-tab` | 2 个 tab 页 | 自定义 tabBar 的页级 `tabFrame`、`getTabBar()` 和 tab 切换 | 是（调试器） |
 | `wechat-parity` | 4 个页面 + 4 个组件 | 页面/组件 WXS 模块状态、事件→表达式、跨页/重入、嵌套 slot、`wx:if` 创建销毁、keyed reorder/`moved`、lifecycle/relation 顺序和微信 CLI oracle | 是（编译 + 1:1 trace） |
 | `echarts` | 22 个页面的历史示例 | 早期 ECharts 集成参考资料 | 否 |
 | `vant` | 13 个页面 | Vant Weapp 的 dashboard、button、calendar、cascader 等页面，调试器逐个预览 | 是（调试器） |

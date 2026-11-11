@@ -18,7 +18,7 @@ import {
   type RenderIntersectionEntry,
   type RenderIntersectionRequest,
   type RenderNode,
-  type RenderPatch,
+  type PageFrameMount,
   type RenderTemplateEvent,
   type WxsRenderEffect,
   type WxsBindingMessage,
@@ -41,32 +41,12 @@ export type TreeEventPayload = {
   currentTarget?: RenderEventGeometry
 }
 
-/** Request for a pageframe-owned page template mount. */
-export type PageFrameMount = {
-  pageId: string
-  /** Service logic-tree view id of the page root (event/WXS identity). */
-  rootViewId?: string
-  pagePath: string
-  data: Record<string, unknown>
-  using?: Record<string, string>
-  scope?: string
-  /** Compiler `componentPlaceholder` map keyed by artifact path. */
-  placeholders?: Record<string, string>
-  /** Page methods a compiled page template may route back to the service. */
-  methods?: string[]
-  /** Service identity tree used for component ids while the pageframe owns WXML. */
-  renderHints?: RenderNode
-  /** Service-owned component identities in pageframe document order. */
-  componentFlow?: RenderComponentIdentity[]
-}
 
 export type TreeRenderer = {
   /** Mount a page from its compiled template; WXML evaluation belongs here. */
   mountPage: (request: PageFrameMount) => void
-  /** Mount the optional independent custom-tabBar root. */
-  mountTabBar?: (root: RenderNode) => void
-  /** Apply patches for the independent custom-tabBar root. */
-  applyTabBarPatches?: (patches: RenderPatch[]) => void
+  /** Mount the independent custom-tabBar root from its compiled template. */
+  mountTabBarPage?: (request: PageFrameMount) => void
   /**
    * Component definitions collected from `define` flow messages. Called before
    * the first `mount`, so the render tree can register a real component per
@@ -309,7 +289,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       componentData?: Record<string, Record<string, unknown>>
       pageScope?: string
       pageUsing?: Record<string, string>
-      tabRoot?: RenderNode
+      tabFrame?: PageFrameMount
       placeholders?: Record<string, string>
       behaviorScheme?: string
       ack?: string[]
@@ -365,12 +345,17 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
             ...(payload.componentFlow ? { componentFlow: payload.componentFlow } : {}),
             renderHints: hints,
           })
-          if (payload.tabRoot) {
-            options.renderer.mountTabBar?.(applyComponentPlaceholders(
-              payload.tabRoot,
-              payload.placeholders,
-              (path) => Boolean(definitions[path]),
-            ))
+          if (payload.tabFrame) {
+            options.renderer.mountTabBarPage?.({
+              ...payload.tabFrame,
+              renderHints: payload.tabFrame.renderHints
+                ? applyComponentPlaceholders(
+                    payload.tabFrame.renderHints,
+                    payload.placeholders,
+                    (path) => Boolean(definitions[path]),
+                  )
+                : undefined,
+            })
           }
           tree = undefined
         }
@@ -406,7 +391,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
         pageId?: string
         renderHints?: RenderNode
         componentFlow?: RenderComponentIdentity[]
-        tabPatches?: RenderPatch[]
+        tabFrame?: PageFrameMount
         pageData?: Record<string, unknown>
         pageDataPatches?: Array<Record<string, unknown>>
         componentData?: Record<string, Record<string, unknown>>
@@ -430,9 +415,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
           options.renderer.setPageData?.(payload.pageData)
         }
         if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
-        if (payload.tabPatches && payload.tabPatches.length > 0) {
-          options.renderer.applyTabBarPatches?.(payload.tabPatches)
-        }
+        if (payload.tabFrame) options.renderer.mountTabBarPage?.(payload.tabFrame)
       })
     })
   })

@@ -233,7 +233,7 @@ render 线程需要拿到编译模板，因为组件 shadow tree 在 render 侧�
 - 在宣告 ready 之前装好宿主内置样式（`prepare`）
 - 实现 TreeRenderer（Web 侧 `createGlassRenderTree`）
 - 创建真实内置组件和页面根容器
-- 接收 `tree.flow` / `tree.patch`，维护组件 id 到真实组件的映射；元素用渲染侧本地 id 和 locator；custom tabBar 的 `tabRoot` 挂到页面内容外的独立根，`tabPatches` 与 page patch 共用渲染批次
+- 接收 `tree.flow` / `tree.patch`，维护组件 id 到真实组件的映射；元素用渲染侧本地 id 和 locator；custom tabBar 的 `tabFrame` 挂到页面内容外的独立 pageframe root，与 page patch 共用渲染批次
 - 按 `templates.js` 求值组件 shadow tree（`loadTemplates` 在首屏 flow 之前装好模板组）
 - 提供 query、measure、inspectTree 和 IntersectionObserver
 :::
@@ -274,7 +274,7 @@ HostCore 把 `api.*` 调用交给平台适配器；浏览器实现集中在 `cre
 
 ::::split
 :::card{tag="renderer" title="TreeRenderer"}
-render 线程的核心注入：`mountPage`、模板/组件定义、页面数据与身份 hints、事件 sink、query、measure、inspectTree、observeIntersection 和动画。Web 实现是 `createGlassRenderTree`；独立 custom tabBar 仍通过 `mountTabBar` / `applyTabBarPatches` 注入。
+render 线程的核心注入：`mountPage`、`mountTabBarPage`、模板/组件定义、页面数据与身份 hints、事件 sink、query、measure、inspectTree、observeIntersection 和动画。Web 实现是 `createGlassRenderTree`。
 :::
 
 :::card{tag="canvas" title="ServiceCanvasAdapter"}
@@ -463,7 +463,7 @@ service iframe 只是视觉上隐藏，没有 sandbox 属性，仍然可以访�
 :::
 
 :::card{tag="flow" title="增量统一走 patch"}
-首屏用 define/tree/ready 对齐组件树（身份快照作为嵌套树发送，元素不带 id）；pageframe 从模板挂载页面并本地 diff。custom tabBar 通过可选 `tabRoot` 挂载，后续更新走 `tabPatches`。
+首屏用 define/tree/ready 对齐组件树（身份快照作为嵌套树发送，元素不带 id）；pageframe 从模板挂载页面并本地 diff。custom tabBar 通过可选 `tabFrame` 挂载，后续更新也走 `tabFrame`。
 :::
 
 :::card{tag="event" tone="warn" title="target 语义仍是近似"}

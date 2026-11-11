@@ -120,8 +120,8 @@ Accepted and implemented. Merged into `next` as #27 (`1ac6d3a`), originally on
   render target as `targetId`, so nested `target` and `currentTarget` resolve
   to different nodes. Targets inside render-evaluated component shadows remain
   approximate when the service tree has no matching locator.
-- Custom tabBars remain a separate `RenderNode` root with `tabPatches`; they
-  are the remaining page-external snapshot boundary.
+- Custom tabBars use a separate `tabFrame` pageframe component root, matching
+  WeChat's independent `tabRoot` without a snapshot render path.
 - The acceptance gate previews Vant/WeUI and asserts their initial render; deep
   Vant calendar/sticky interactions are not asserted end-to-end.
 

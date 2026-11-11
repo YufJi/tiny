@@ -224,8 +224,8 @@ Bridge 的 `assertJsonSafe` 做严格校验；runtime 的 `toJsonSafe` 会主动
 
 | 消息 | 方向 | 内容 |
 | --- | --- | --- |
-| `tree.flow` | service → render | 首屏 flow：`define`（该页可见组件定义）、`tree`（整棵页面渲染快照）、`ready`；payload 另带 `componentFlow` 组件身份流，并可带独立 `tabRoot`、页面样式、fallback app 样式、`pageScope`、`pageUsing`、`behaviorScheme`、`wxsModules`、`pageData` 和 `componentData` |
-| `tree.patch` | service → render | pageframe 只发 `pageDataPatches` / `componentData`，结构变化时附带 `renderHints` 和 `componentFlow`；不再携带页面 virtual-node `patches`。同一 payload 还可带独立 tabBar 的 `tabPatches` |
+| `tree.flow` | service → render | 首屏 flow：`define`（该页可见组件定义）、`tree`（整棵页面渲染快照）、`ready`；payload 另带 `componentFlow` 组件身份流，并可带独立 `tabFrame`、页面样式、fallback app 样式、`pageScope`、`pageUsing`、`behaviorScheme`、`wxsModules`、`pageData` 和 `componentData` |
+| `tree.patch` | service → render | pageframe 只发 `pageDataPatches` / `componentData`，结构变化时附带 `renderHints` 和 `componentFlow`；不再携带页面 virtual-node `patches`。独立 tabBar 的模板更新走 `tabFrame` |
 | `tree.ack` | render → service | 批次确认：回显 flow/patch 上的 `ack` token；service 用它 settle `setData` completion |
 | `tree.event` | render → service | 组件 id 或元素 locator、可选 `targetId`、name、detail、native 字段、touches 和 target/currentTarget 几何；service 从最内层 target 节点开始分发，并保留当前 binding 的 currentTarget |
 | `tree.templateEvent` | render → service | render 求值的组件模板把绑定的方法调用交回 service |
@@ -275,7 +275,7 @@ Bridge 的 `assertJsonSafe` 做严格校验；runtime 的 `toJsonSafe` 会主动
 ```
 
 :::callout{title="patch 按页面合批"}
-service 在一个 microtask 内合并同一页面的更新，再发一条 `tree.patch`。pageframe 先应用页面 data 补丁，再应用剩余的组件实例 data 补丁；结构变化只刷新身份 hints，不重放页面 DOM patch。自定义 tabBar 的独立根仍由 `tabRoot` 挂载，后续以 `tabPatches` 更新，页面根和 tab 根共享同一个渲染批次。带 `setData` completion 的批次额外携带 `ack` token，渲染树应用后回 `tree.ack`（失败也回，先发 `RENDER_PATCH_ERROR` 诊断），service 收到确认才执行回调。
+service 在一个 microtask 内合并同一页面的更新，再发一条 `tree.patch`。pageframe 先应用页面 data 补丁，再应用剩余的组件实例 data 补丁；结构变化只刷新身份 hints，不重放页面 DOM patch。自定义 tabBar 的独立根由 `tabFrame` 挂载，后续 data/身份变化也通过 `tabFrame` 更新，页面根和 tab 根共享同一个渲染批次。带 `setData` completion 的批次额外携带 `ack` token，渲染树应用后回 `tree.ack`（失败也回，先发 `RENDER_PATCH_ERROR` 诊断），service 收到确认才执行回调。
 :::
 
 ## v1 现在有哪些消息 {#catalog kicker="消息列表"}
@@ -304,7 +304,7 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | page | `snapshotState` / `restoreState` | control | host/devtool → service | 快照或恢复页面栈的 `data`、`savedExitState` 与 `exitState`；用于 Reload 和整页刷新 |
 | page | `pullDownRefresh` | control | host → service | 下拉刷新 API 的宿主控制入口 |
 | tree | `flow` | event | service → render | 首屏 flow：组件定义 + 身份快照 + 页面元数据 + 数据快照 |
-| tree | `patch` | event | service → render | 页面/组件数据补丁；结构变化可带身份 hints；独立 tabBar 可带 `tabPatches` |
+| tree | `patch` | event | service → render | 页面/组件数据补丁；结构变化可带身份 hints；独立 tabBar 可带 `tabFrame` |
 | tree | `ack` | event | render → service | 回显批次 ack token，settle 该批次的 `setData` completion |
 | tree | `animate` / `clearAnimate` | event | service → render | `this.animate` 关键帧与取消 |
 | tree | `event` | event | render → service | 渲染树事件回传逻辑树 |

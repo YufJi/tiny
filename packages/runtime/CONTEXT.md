@@ -74,11 +74,12 @@ one layer.
   outside the page content while sharing the same WXS runtime.
 - **Tree protocol**: the host-neutral contract between the trees. Initial mount
   uses component flow (`define` / `tree` / service-owned `componentFlow` /
-  `ready`) and may carry an independent `tabRoot`; every subsequent page update
+  `ready`) and may carry an independent `tabFrame`; every subsequent page update
   uses per-page `tree.patch` with `pageDataPatches`, `componentData` and, only
   for structural changes, service-owned identity hints. The pageframe owns
-  WXML evaluation and DOM diff. Independently mounted custom tabBars still use
-  `tabPatches`, not WeChat's legacy `FLOW_UPDATE` / `FLOW_SET_DATA` /
+  WXML evaluation and DOM diff. Independently mounted custom tabBars use the
+  same pageframe mount path (`tabFrame`), not WeChat's legacy `FLOW_UPDATE` /
+  `FLOW_SET_DATA` /
   `FLOW_DATA_OBSERVER` messages. Events return through `tree.event`; selector
   queries and intersection observers return through `query.*`. A batch that
   carries `setData` completions also carries opaque `ack` tokens, echoed by the

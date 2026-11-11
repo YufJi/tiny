@@ -216,7 +216,7 @@ describe('custom tabBar service tree', () => {
       },
       initialPath: PAGE_PATH,
       renderer: {
-        mountTabBar: (root) => mountedTabBars.push(root),
+        mountTabBarPage: (request) => mountedTabBars.push(request),
       },
     })
     const host = createTestHost({

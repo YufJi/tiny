@@ -34,7 +34,7 @@ order: 9
 | iOS 宿主 | :pill[可用（MVP）]{tone="good"} | `ios/` 原生工程 + `hosts/ios` Vite 包（`src/service` / `src/web`）：Rust `HostCoreRuntime`（UniFFI）+ JavaScriptCore service + 每页一个 WKWebView；没有 `host.html`、iframe 或 JS host fallback。render WKWebView 与 browser/devtool 一样走 pageframe WXML。SwiftUI Launcher/导航栏/tabBar，UserDefaults 存储，全部 9 个 fixture 已在模拟器 smoke，并覆盖 native 导航/tab 切换、push/pop 动画和左边缘右滑返回；真机 device build/install 也已跑通；Canvas 2D 走 service 录制 + native render 回放，WebGL/同步读回未接。 |
 | 内置组件 | :pill[较完整]{tone="good"} | 39 个组件和共享 behaviors；checkbox/radio/switch/slider/icon/image/picker 已按 2.33.0 参考重写；rich-text/match-media/cover-view/cover-image/page-container/root-portal/grid-view 已完成第一版；input/textarea/scroll-view/swiper 仍是近似实现；全部 39 个标签已注册；video/map/audio/web-view 是浏览器近似实现；editor/editor-portal、广告、直播、开放能力等 20 个组件暂不支持。 |
 | API | :pill[部分]{tone="warn"} | request、同步/异步 storage、5 个路由 API、system、toast/modal/loading/actionSheet（由 app 注入的宿主 handler 提供 overlay）、clipboard/vibrate、network/battery、canvas、selector query 和 IntersectionObserver 已有；媒体、真实文件系统、位置、WebSocket 和真实账号授权还没有。 |
-| 页面能力 | :pill[部分]{tone="warn"} | 14 项页面生命周期、5 个路由 API、内置 tabBar/switchTab、页面滚动/触底/下拉刷新、分享回调和退出状态已经支持；导航栏运行时标题/颜色/loading 已接；devtool 分享面板可触发分享回调，navigateTo/navigateBack 有转场；下拉刷新按 `enablePullDownRefresh` 启用并由宿主指示器呈现，Reload/整页刷新可恢复页面栈、data 和首屏 `this.exitState`；`tabBar.custom` 通过独立页级 `tabRoot` 和 `getTabBar()` 支持。 |
+| 页面能力 | :pill[部分]{tone="warn"} | 14 项页面生命周期、5 个路由 API、内置 tabBar/switchTab、页面滚动/触底/下拉刷新、分享回调和退出状态已经支持；导航栏运行时标题/颜色/loading 已接；devtool 分享面板可触发分享回调，navigateTo/navigateBack 有转场；下拉刷新按 `enablePullDownRefresh` 启用并由宿主指示器呈现，Reload/整页刷新可恢复页面栈、data 和首屏 `this.exitState`；`tabBar.custom` 通过独立页级 `tabFrame` 和 `getTabBar()` 支持。 |
 | 组件语义 | :pill[核心可用]{tone="good"} | Behaviors、observers、relations、selectComponent、component-export、component-as-page、generics（含页面级 `generic:x`）、definitionFilter、pureDataPattern 已实现；语义和组件身份运行在 service 逻辑树，页面与组件 WXML 由 render pageframe 执行。`ready` 顺序、模板内子组件与 slot 子组件的创建/销毁已用微信 3.17.5 对拍。componentPlaceholder 已做编译校验、占位渲染和异步替换；trait behaviors 和 chaining API 未实现。 |
 | 样式系统 | :pill[核心可用]{tone="good"} | class/tag 作用域、rpx、@import、styleIsolation/addGlobalClass、externalClasses、shared CSS、`:host` 与 low-priority 输出已支持；内置组件内部样式使用独立宿主 scope；`theme.json` 变量会注入为 `:root` CSS 变量，暗色走 `prefers-color-scheme`。 |
 | Canvas | :pill[部分]{tone="warn"} | 浏览器走 OffscreenCanvas handoff；iOS 用 service 侧录制 + render `<canvas>` 回放，legacy 与 2D node 都可用，`measureText` 走 CoreText 同步桥；WebGL、`getImageData`、`canvasToTempFilePath` 仍未接。 |
@@ -80,7 +80,7 @@ generics（含页面级覆盖）、definitionFilter、pureDataPattern、6 个 `w
 :::
 
 :::card{tag="tabBar" tone="warn" title="独立 tabBar 仍使用快照"}
-页面根已经固定走 pageframe；custom tabBar 仍由 service 发送 `tabRoot` 和 `tabPatches`。这是当前剩余的非模板挂载边界。
+页面根和 custom tabBar 都已固定走 pageframe；custom tabBar 通过 `tabFrame` 从组件模板挂载。
 :::
 
 :::card{tag="性能" tone="warn" title="没有性能基线"}

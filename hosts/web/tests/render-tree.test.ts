@@ -103,36 +103,41 @@ describe('glass render tree', () => {
     expect(glassText(tree.root.shadowRoot)).toContain('B:2:second')
   })
 
-  test('mounts and clears an independent tabBar root', () => {
+  test('mounts and clears an independent tabBar pageframe', () => {
+    const pagePath = 'pages/home/home'
+    const tabBarPath = 'custom-tab-bar/index'
     const tree = createGlassRenderTree({
       backend: new glassEasel.EmptyBackendContext(),
       componentDefinitions: {
-        'custom-tab-bar/index': {
-          path: 'custom-tab-bar/index',
+        [tabBarPath]: {
+          path: tabBarPath,
           properties: {},
           data: { selected: 0 },
           methods: [],
           using: {},
         },
       },
-      templates: templatesFor('custom-tab-bar/index', '<view id="bar">{{selected}}</view>'),
+      templates: templatesForMany([
+        [pagePath, '<view id="page-text">home</view>'],
+        [tabBarPath, '<view id="bar">{{selected}}</view>'],
+      ]),
     })
-    tree.mount(element('page', 'view', {}, [
-      element('content', 'view', {}, [{ type: 'text', id: 'page-text', text: 'home' }]),
-    ]))
-    tree.mountTabBar?.({
-      type: 'element',
-      id: 'tab-bar',
-      tag: 'custom-tab-bar',
-      component: true,
-      componentPath: 'custom-tab-bar/index',
-      props: {},
+    tree.mountPage({
+      pageId: 'page-1',
+      pagePath,
+      data: {},
+    })
+    tree.mountTabBarPage?.({
+      pageId: 'page-1',
+      rootViewId: 'tab-bar',
+      pagePath: tabBarPath,
+      data: { selected: 0 },
     })
 
-    expect(tree.getNode('page')).toBeDefined()
+    expect(tree.getNode('page-1')).toBeDefined()
     expect(tree.getNode('tab-bar')).toBeDefined()
     tree.clearTabBar?.()
-    expect(tree.getNode('page')).toBeDefined()
+    expect(tree.getNode('page-1')).toBeDefined()
     expect(tree.getNode('tab-bar')).toBeUndefined()
   })
 

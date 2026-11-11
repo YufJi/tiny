@@ -17,6 +17,7 @@ import {
   TREE_PROTOCOL,
   wxsBindingKey,
   type ComponentDefinitionPayload,
+  type PageFrameMount,
   type RenderNode,
 } from '../../tree/protocol'
 import {
@@ -426,6 +427,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     const root = this.logicTree.snapshotRenderTree(pageId)
     if (!root) return
     const tabRoot = this.logicTree.snapshotTabBarTree(pageId)
+    const tabFrame = tabRoot ? this.tabBarFrame(pageId, tabRoot) : undefined
     const page = this.options.getPage(pageId)
     const pagePath = this.logicTree.pagePathFor(pageId)
     const ack = this.takeCompletionBatch(pageId)
@@ -450,7 +452,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
           : {}),
         messages: cloneJsonSafe(this.treeFlow(root, pageId)),
         componentFlow: cloneJsonSafe(collectComponentIdentities(root)),
-        ...(tabRoot ? { tabRoot: cloneJsonSafe(tabRoot) } : {}),
+        ...(tabFrame ? { tabFrame: cloneJsonSafe(tabFrame) } : {}),
         ...(this.wxsModules ? { wxsModules: cloneJsonSafe(this.wxsModules) } : {}),
         ...(page?.data ? { pageData: cloneJsonSafe(page.data) } : {}),
         componentData: cloneJsonSafe(this.logicTree.snapshotComponentData(pageId)),
@@ -488,6 +490,33 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     return [...names]
   }
 
+  private tabBarFrame(pageId: string, root: RenderNode): PageFrameMount | null {
+    if (!this.logicTree) return null
+    const pagePath = this.logicTree.tabBarPagePath(pageId)
+    if (!pagePath) return null
+    const componentData = this.logicTree.snapshotComponentData(pageId)
+    const definition = this.renderDefinitions(pageId).get(pagePath)
+    const methods = new Set(definition?.methods ?? [])
+    const component = this.options.componentDefinitions.get(pagePath)
+    for (const name of component?.methods.keys() ?? []) methods.add(name)
+    const scope = definition?.styleScope ?? this.logicTree.pageScopeName(pageId)
+    return {
+      pageId,
+      ...(root.id ? { rootViewId: root.id } : {}),
+      pagePath,
+      data: root.id ? componentData[root.id] ?? {} : {},
+      ...(definition?.using ? { using: definition.using } : {}),
+      ...(scope ? { scope } : {}),
+      ...(this.hasPlaceholders
+        ? { placeholders: cloneJsonSafe(this.placeholders) }
+        : {}),
+      ...(methods.size > 0 ? { methods: [...methods] } : {}),
+      renderHints: root,
+      componentFlow: collectComponentIdentities(root)
+        .filter((identity) => identity.id !== root.id),
+    }
+  }
+
   private scheduleTreeUpdate(pageId: string): void {
     if (!this.logicTree || !this.mountedPages.has(pageId)) return
     this.pendingPages.add(pageId)
@@ -506,12 +535,19 @@ export class ServiceRenderBridge implements ServiceRenderPort {
           // still cross the bridge even when the structure did not change.
           const componentData = this.logicTree.updateComponentData(id)
           const hasComponentData = Object.keys(componentData).length > 0
+          const tabDataChanged = Boolean(
+            tabBar.snapshot?.id && Object.hasOwn(componentData, tabBar.snapshot.id),
+          )
+          const tabFrame = tabBar.snapshot && (tabBar.patches.length > 0 || tabDataChanged)
+            ? this.tabBarFrame(id, tabBar.snapshot)
+            : undefined
           const pageDataPatches = this.pendingPageDataPatches.get(id)
           const hasPageDataPatches = Boolean(pageDataPatches && pageDataPatches.length > 0)
           if (
             patches.length > 0
             || hasComponentData
             || tabBar.patches.length > 0
+            || Boolean(tabFrame)
             || hasPageDataPatches
           ) {
             const page = this.options.getPage(id)
@@ -540,9 +576,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
                 ...(hasPageDataPatches
                   ? { pageDataPatches: cloneJsonSafe(pageDataPatches!) }
                   : {}),
-                ...(tabBar.patches.length > 0
-                  ? { tabPatches: cloneJsonSafe(tabBar.patches) }
-                  : {}),
+                ...(tabFrame ? { tabFrame: cloneJsonSafe(tabFrame) } : {}),
                 ...(ack ? { ack } : {}),
               },
               { pageId: id },

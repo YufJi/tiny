@@ -154,6 +154,25 @@ export type RenderComponentIdentity = {
   path: string
 }
 
+/** One pageframe-owned root: the page itself or its independent custom tabBar. */
+export type PageFrameMount = {
+  pageId: string
+  /** Service logic-tree view id of the root (event/WXS identity). */
+  rootViewId?: string
+  pagePath: string
+  data: Record<string, unknown>
+  using?: Record<string, string>
+  scope?: string
+  /** Compiler `componentPlaceholder` map keyed by artifact path. */
+  placeholders?: Record<string, string>
+  /** Page/component methods a compiled template may route back to the service. */
+  methods?: string[]
+  /** Service identity tree used for component ids while the pageframe owns WXML. */
+  renderHints?: RenderNode
+  /** Service-owned component identities in pageframe document order. */
+  componentFlow?: RenderComponentIdentity[]
+}
+
 /**
  * Serialized component definition shipped to the render tree.
  *

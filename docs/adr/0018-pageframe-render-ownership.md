@@ -7,10 +7,11 @@ iOS render WKWebView all mount through the pageframe, and the runtime's
 cross-thread integration harness also defaults to pageframe. `TreeRenderer`
 requires `mountPage`; the legacy `tree.snapshot` event, service-side pageframe
 switch and native snapshot renderer are gone. `RenderNode` survives only as the
-service-owned identity/index snapshot and as the independent custom-tabBar
-root/patch format, not as the page rendering path. A few `@tiny/host-web`
-low-level DOM tests still build `RenderNode` fixtures directly; they are test
-fixtures, not a supported `TreeRenderer` host path.
+service-owned identity/index snapshot, not as a rendering path. The independent
+custom tabBar now mounts from component templates through `tabFrame`, not
+`tabRoot` / `tabPatches`. A few `@tiny/host-web` low-level DOM tests still build
+`RenderNode` fixtures directly; they are test fixtures, not a supported
+`TreeRenderer` host path.
 
 ## Context
 

@@ -102,7 +102,7 @@ canvas 和 `resolveAssetUrl` 只进入 `@tiny/api` 的 context；同步调用由
                           tree.event / query.* return through the same link
 ```
 
-首屏由 `tree.flow` 发送 `define`（组件定义）、`tree`（逻辑树身份快照）和 `ready`；pageframe 用编译模板挂载页面，快照用于组件身份和索引。组件带共享 id，元素不带 id（渲染侧分配本地 id）。后续更新由 `tree.patch` 发送 `pageDataPatches`、`componentData` 和结构变化时的 `renderHints`/`componentFlow`；pageframe 用本地模板求值完成 DOM diff。custom tabBar 的独立根仍按 `RenderNode`/`tabPatches` 同步。
+首屏由 `tree.flow` 发送 `define`（组件定义）、`tree`（逻辑树身份快照）和 `ready`；pageframe 用编译模板挂载页面，快照用于组件身份和索引。组件带共享 id，元素不带 id（渲染侧分配本地 id）。后续更新由 `tree.patch` 发送 `pageDataPatches`、`componentData` 和结构变化时的 `renderHints`/`componentFlow`；pageframe 用本地模板求值完成 DOM diff。custom tabBar 由独立 `tabFrame` 以 pageframe 组件根挂载。
 
 :::callout{title="为什么要拆成两棵树"}
 render pageframe 是页面和组件 WXML 的执行者；属性、dataset、函数、observer 和 relations 仍然只在 service 里产生和消费。service 的模板求值只服务逻辑树、查询和身份索引，不再生成 pageframe 的最终 DOM。拆开之后，类型和语义留在 service，render 负责“怎么画”；组件 id 是两侧唯一的共享身份，元素 id 不跨线程。

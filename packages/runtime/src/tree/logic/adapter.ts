@@ -622,6 +622,12 @@ export class LogicTreeAdapter {
     })
   }
 
+  /** The custom tabBar component path, when this page owns a tab root. */
+  tabBarPagePath(pageId: string): string | undefined {
+    const pageTree = this.pageTrees.get(pageId)
+    return pageTree?.getTabBarRoot() ? this.customTabBarPath : undefined
+  }
+
   /** Diff the current render-node tree against the previous one. */
   updateRenderTree(pageId: string): { snapshot: RenderNode; patches: RenderPatch[] } {
     const pageTree = this.pageTrees.get(pageId)

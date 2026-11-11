@@ -48,11 +48,11 @@ glass-easel ComponentSpace 在 service 中运行，自定义组件是完整实�
 :::callout{title="只有组件共享 id，元素用 locator"}
 service 给组件（和页面根）分配稳定 id，render 按这个 id 维护组件实例；元素不带跨线程 id，渲染侧分配本地 id，补丁、事件、查询和元素树检查都用 `owner#index.path` 形式的 locator 寻址。
 
-当前页面由 render pageframe 从 `templates.js` 挂载；component flow 携带 `define`、逻辑身份快照 `tree`、`ready` 和 service 侧 `componentFlow` 组件身份列表。宿主组件 shadow tree 内的子组件身份变化通过结构 hints 同步，禁止 render 按 DOM 顺序猜身份。custom tabBar 额外携带独立 `tabRoot`，后续以 `tabPatches` 更新。页面 DOM 的文本、属性、结构和重排由 pageframe 自己 diff。
+当前页面由 render pageframe 从 `templates.js` 挂载；component flow 携带 `define`、逻辑身份快照 `tree`、`ready` 和 service 侧 `componentFlow` 组件身份列表。宿主组件 shadow tree 内的子组件身份变化通过结构 hints 同步，禁止 render 按 DOM 顺序猜身份。custom tabBar 额外携带独立 `tabFrame`，由一个独立 pageframe root 挂载，后续 data/身份变化也走 `tabFrame`。页面 DOM 的文本、属性、结构和重排由 pageframe 自己 diff。
 :::
 
 :::callout{title="每页树状态已收口，组件空间仍共享"}
-service 为每个 pageId 维护页级树状态：页面根、可选独立 tabRoot、组件实例表、最近一次 render snapshot、component data 基线、relations、页面 router 和页内组件实例计数。页级状态随页面卸载销毁；每页还按 `usingComponents`（含 generic 默认组件）维护可见 schema 闭包，首屏 flow 只发送该页可见的 `define`。`ComponentSpace`、底层组件 definition 和样式 scope 仍是应用级共享，避免为每个页面复制一套 glass-easel realm。
+service 为每个 pageId 维护页级树状态：页面根、可选独立 tab 组件根、组件实例表、最近一次 render snapshot、component data 基线、relations、页面 router 和页内组件实例计数。页级状态随页面卸载销毁；每页还按 `usingComponents`（含 generic 默认组件）维护可见 schema 闭包，首屏 flow 只发送该页可见的 `define`。`ComponentSpace`、底层组件 definition 和样式 scope 仍是应用级共享，避免为每个页面复制一套 glass-easel realm。
 :::
 
 ## service 线程：逻辑树和页面栈 {#service kicker="service 线程"}
@@ -360,8 +360,7 @@ generics（含页面级 `generic:x` 覆盖）、definitionFilter、pureDataPatte
 ```ts
 export type TreeRenderer = {
   mountPage(request: PageFrameMount): void
-  mountTabBar?(root: RenderNode): void
-  applyTabBarPatches?(patches: RenderPatch[]): void
+  mountTabBarPage?(request: PageFrameMount): void
   // 首屏/更新所需的数据和模板
   setTemplates?(templates: TemplateRegistry): void
   setComponentDefinitions?(definitions: Record<string, ComponentDefinitionPayload>): void
@@ -414,7 +413,7 @@ service 把组件定义、整棵身份快照和页面数据编成 component flow
 :::
 
 :::card{title="更新：tree.patch"}
-service 发送 `pageDataPatches` / `componentData`；结构变化只附 `renderHints` / `componentFlow`。pageframe 在本地 diff，独立 tabBar 仍使用 `tabPatches`。更新按 pageId 合批，保持页面内顺序。
+service 发送 `pageDataPatches` / `componentData`；结构变化只附 `renderHints` / `componentFlow`。pageframe 在本地 diff，独立 tabBar 使用 `tabFrame` 重新挂载/更新。更新按 pageId 合批，保持页面内顺序。
 :::
 ::::
 
@@ -535,7 +534,7 @@ iOS 没有 OffscreenCanvas。service 侧记录 Canvas 2D 调用，native 渲染�
 :::
 
 :::card{tag="tabBar" tone="warn" title="独立 tabBar 仍使用快照"}
-页面根已经是 pageframe-only；自定义 tabBar 仍由 service 生成 `tabRoot` 和 `tabPatches`。这是当前唯一的 RenderNode 页面外渲染边界，后续可单独迁到模板挂载。
+页面根和自定义 tabBar 都已经走 pageframe。tabBar 通过独立 `tabFrame` 从组件模板挂载，source 仍由 service 逻辑树维护；页面和 tab 根共享同一个渲染批次。
 :::
 
 :::card{tag="组件" tone="warn" title="trait/chaining 和平台组件仍有缺口"}
@@ -543,7 +542,7 @@ trait behaviors / chaining API 和 20 个平台/开放能力组件仍未实现�
 :::
 
 :::card{tag="页面" tone="warn" title="页面形态仍以 devtool 宿主为主"}
-14 项页面生命周期和 5 个路由 API 已接，分享回调、下拉刷新和退出状态可用；devtool 已有分享面板、forward/back/replace 页面转场、页面栈 + data 恢复、首屏 `this.exitState` 和独立页级 custom tabBar `tabRoot`。跨宿主冷启动时的退出状态落盘仍由宿主决定；通用 `host-web` 的页面 chrome 和预下载策略仍是缺口。
+14 项页面生命周期和 5 个路由 API 已接，分享回调、下拉刷新和退出状态可用；devtool 已有分享面板、forward/back/replace 页面转场、页面栈 + data 恢复、首屏 `this.exitState` 和独立页级 custom tabBar `tabFrame`。跨宿主冷启动时的退出状态落盘仍由宿主决定；通用 `host-web` 的页面 chrome 和预下载策略仍是缺口。
 :::
 
 :::card{tag="API" tone="warn" title="API 覆盖有限"}
