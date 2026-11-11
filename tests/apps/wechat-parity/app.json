@@ -1,7 +1,8 @@
 {
   "pages": [
     "pages/a/a",
-    "pages/b/b"
+    "pages/b/b",
+    "pages/flow/flow"
   ],
   "window": {
     "navigationBarTitleText": "Tiny WXS parity"

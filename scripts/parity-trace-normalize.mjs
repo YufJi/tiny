@@ -11,6 +11,7 @@ export function normalizeTrace(trace) {
     label: entry.label,
     page: normalizeText(entry.page),
     event: normalizeText(entry.event),
+    lifecycle: normalizeText(entry.lifecycle),
     components: (entry.components ?? []).map((component) => normalizeText(
       typeof component === 'string' ? component : component.text,
     )),

@@ -58,7 +58,7 @@ async function renderFrame() {
 
 async function snapshot(label) {
   const render = await renderFrame()
-  return render.evaluate((label) => {
+  const result = await render.evaluate((label) => {
     const text = (className) => {
       const element = [...document.querySelectorAll('*')].find((candidate) => (
         [...candidate.classList].some((token) => (
@@ -85,6 +85,7 @@ async function snapshot(label) {
       label,
       page: text('page-state'),
       event: text('event-state'),
+      lifecycle: text('flow-state'),
       components,
       wxs: {
         event: wxs('wxs/event-state.wxs', 'peek'),
@@ -92,6 +93,14 @@ async function snapshot(label) {
       },
     }
   }, label)
+  const diagnostics = await page.evaluate(() => (
+    globalThis.__tinyRuntime?.host?.diagnostics ?? []
+  ).filter((item) => item.severity === 'error').map((item) => ({
+    code: item.code,
+    message: item.message,
+    details: item.details,
+  })))
+  return { ...result, diagnostics }
 }
 
 const trace = []
@@ -114,6 +123,34 @@ try {
   await render.getByText('ReLaunch A', { exact: true }).click()
   await page.waitForTimeout(250)
   trace.push(await snapshot('A-relaunch'))
+  render = await renderFrame()
+  await render.getByText('To Flow', { exact: true }).click()
+  await page.waitForTimeout(300)
+  trace.push(await snapshot('Flow-initial'))
+  render = await renderFrame()
+  await render.getByText('Toggle Slot Child', { exact: true }).click()
+  await page.waitForTimeout(250)
+  trace.push(await snapshot('Flow-slot-hidden'))
+  render = await renderFrame()
+  await render.getByText('Toggle Slot Child', { exact: true }).click()
+  await page.waitForTimeout(250)
+  trace.push(await snapshot('Flow-slot-shown'))
+  render = await renderFrame()
+  await render.getByText('Toggle Inner Child', { exact: true }).click()
+  await page.waitForTimeout(250)
+  trace.push(await snapshot('Flow-inner-hidden'))
+  render = await renderFrame()
+  await render.getByText('Toggle Inner Child', { exact: true }).click()
+  await page.waitForTimeout(250)
+  trace.push(await snapshot('Flow-inner-shown'))
+  render = await renderFrame()
+  await render.getByText('Toggle Host', { exact: true }).click()
+  await page.waitForTimeout(250)
+  trace.push(await snapshot('Flow-host-hidden'))
+  render = await renderFrame()
+  await render.getByText('Toggle Host', { exact: true }).click()
+  await page.waitForTimeout(250)
+  trace.push(await snapshot('Flow-host-shown'))
 } catch (error) {
   failure = error instanceof Error ? error.message : String(error)
   errors.push(failure)

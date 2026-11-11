@@ -62,13 +62,24 @@ async function snapshot(label, pageKind) {
       label,
       page,
       event: null,
+      lifecycle: null,
       components: [await readText('.probe-b')],
+    }
+  }
+  if (pageKind === 'flow') {
+    return {
+      label,
+      page,
+      event: null,
+      lifecycle: await readText('.flow-state'),
+      components: [],
     }
   }
   return {
     label,
     page,
     event: await readText('.event-state'),
+    lifecycle: null,
     components: [
       await readText('.probe-one'),
       await readText('.probe-two'),
@@ -94,6 +105,24 @@ async function main() {
   trace.push(await snapshot('A-back', 'a'))
   await tap('.relaunch')
   trace.push(await snapshot('A-relaunch', 'a'))
+  runTool('automation_evaluate', [
+    '--fn-source',
+    'function(){ getCurrentPages()[getCurrentPages().length - 1].toFlow(); return true }',
+  ])
+  await sleep(settleMs)
+  trace.push(await snapshot('Flow-initial', 'flow'))
+  await tap('.toggle-child')
+  trace.push(await snapshot('Flow-slot-hidden', 'flow'))
+  await tap('.toggle-child')
+  trace.push(await snapshot('Flow-slot-shown', 'flow'))
+  await tap('.toggle-inner')
+  trace.push(await snapshot('Flow-inner-hidden', 'flow'))
+  await tap('.toggle-inner')
+  trace.push(await snapshot('Flow-inner-shown', 'flow'))
+  await tap('.toggle-host')
+  trace.push(await snapshot('Flow-host-hidden', 'flow'))
+  await tap('.toggle-host')
+  trace.push(await snapshot('Flow-host-shown', 'flow'))
   console.log(JSON.stringify({ oracle: 'wechat', trace }, null, 2))
 }
 

@@ -2,8 +2,8 @@
 
 ## Status
 
-Accepted. Phase A is implemented and enabled by default in the browser test
-host and the debugger. The snapshot renderer remains available for explicit
+Accepted. Phases A and B are implemented and enabled by default in the browser
+test host and the debugger. The snapshot renderer remains available for explicit
 hosts that do not opt into `pageFrame`.
 
 ## Context
@@ -19,11 +19,11 @@ pageframe (`WAWebview` / `WARenderContext`) is the WXML execution owner:
 - The same pageframe module table is shared by page and component templates,
   so WXS events, `change:prop`, and expressions see one module instance.
 
-Tiny currently evaluates page and component WXML in the service logic tree,
-then sends a `RenderNode` snapshot/patch to the render tree. The render tree
-evaluates component templates a second time. That makes WXS state, expression
-side effects, `setData` diff timing, and component creation order inherently
-split across two realms.
+Before this decision Tiny evaluated page and component WXML in the service
+logic tree, then sent a `RenderNode` snapshot/patch to the render tree. The
+render tree evaluated component templates a second time. That made WXS state,
+expression side effects, `setData` diff timing, and component creation order
+inherently split across two realms.
 
 ## Decision
 
@@ -50,10 +50,19 @@ The migration is staged to keep the gate green:
   template, and page WXS/events stay in one realm. Repeated flows for the same
   page are idempotent. Structural page updates also refresh the service-owned
   view/component identity hints without replaying DOM patches.
-- **Phase B (partial)**: service-owned component creation/identity flow. The
-  pageframe consumes the flat service component identity list for positional
-  binding instead of inferring it from DOM/template attachment. Destruction
-  and full `FLOW_CREATE_NODE` operation replay remain to be completed.
+- **Phase B (implemented)**: service-owned component creation/identity flow.
+  The service emits page-root identities plus owner-scoped
+  `component-instances` patches whenever a component's shadow tree changes.
+  The pageframe consumes those identities for positional binding instead of
+  inferring identity from DOM/template attachment. WeChat does not emit a
+  separate destroy op for an individual component removed from a template:
+  the render tree removes it during template diff, then the service relation
+  callbacks unlink it. Tiny follows that split. The wire form is a semantic
+  identity/hints stream rather than a byte-for-byte replay of WeChat's numeric
+  `FLOW_ALLOC_NODE_ID` / `FLOW_CREATE_NODE` opcodes.
+  Component `ready` follows WeChat's creation walk: shadow descendants, the
+  host, then light/slot descendants. Dynamically created components receive
+  their own `ready` after the update is acknowledged.
 - **Phase C (partial)**: page `setData` crosses as its original data patches,
   not a full page snapshot. Render-local diff is the acknowledgement. Page WXML
   props are applied before the remaining per-instance component-data patch, so
@@ -80,13 +89,15 @@ canonical trace of:
 the random fixture keys, compares both traces and writes raw/canonical reports
 under `tests/host/generated/parity/`.
 
-Phase A acceptance currently covers five checkpoints: first A render, page WXS
-event, B navigation, back to the retained A page, and `reLaunch`. It verifies
-page/component text, page WXS event state, component WXS module counters, page
-reuse and re-entry. A step only passes when the canonical traces are identical.
-The P0 browser gate additionally covers slot-child component binding under
-`wx:if`, relation link/unlink, component-data updates, and the full
-service/render lifecycle.
+Acceptance currently covers twelve checkpoints: first A render, page WXS event,
+B navigation, back to the retained A page, `reLaunch`, then create/destroy
+cycles for a page-level host with both a host-template child and a slot child
+under `wx:if`. The flow trace compares component text, WXS module state,
+lifecycle order, relation link/unlink callbacks, page reuse and re-entry. A
+step only passes when the canonical WeChat/Tiny traces are identical. The P0
+browser gate additionally covers slot-child component binding under `wx:if`,
+relation link/unlink, component-data updates, and the full service/render
+lifecycle.
 
 ## Consequences
 

@@ -266,6 +266,8 @@ export class GlassEaselRuntimeAdapter {
   private readonly afterRender?: GlassEaselAdapterOptions['afterRender']
   private readonly frameworkContext?: LogicFrameworkContext
   private readonly customEventComponents = new WeakSet<object>()
+  private readonly readyComponents = new WeakSet<object>()
+  private readonly pendingReadyPages = new Set<string>()
 
   constructor(options: GlassEaselAdapterOptions) {
     this.manifest = options.manifest
@@ -964,6 +966,83 @@ export class GlassEaselRuntimeAdapter {
     return this.unscopedInstances.get(componentId)
   }
 
+  private triggerReady(component: glassEasel.GeneralComponent): void {
+    if (this.readyComponents.has(component as unknown as object)) return
+    this.readyComponents.add(component as unknown as object)
+    component.triggerLifetime('ready', [])
+  }
+
+  /**
+   * WeChat's operation flow fires one `ready` callback for each component
+   * created by the update. Component creation walks the shadow tree before the
+   * host is attached, then its light/slot children follow the host:
+   *
+   *   shadow descendants -> component -> light descendants
+   *
+   * This is observable when a slot child and a host-template child are both
+   * present (`child(inner)`, host, `child(slot)`).
+   */
+  private componentReadyOrder(pageId: string): glassEasel.GeneralComponent[] {
+    const root = this.pageTrees.get(pageId)?.component
+    if (!root) return []
+    const order: glassEasel.GeneralComponent[] = []
+    const visited = new Set<object>()
+    const visitNodes = (nodes: ArrayLike<unknown>): void => {
+      for (let index = 0; index < nodes.length; index += 1) {
+        const node = nodes[index]
+        if (!node || glassEasel.TextNode.isTextNode(node)) continue
+        if (glassEasel.Component.isComponent(node)) {
+          visitComponent(node)
+          continue
+        }
+        const element = node as { childNodes?: ArrayLike<unknown> }
+        if (element.childNodes) visitNodes(element.childNodes)
+      }
+    }
+    const visitComponent = (component: glassEasel.GeneralComponent): void => {
+      const key = component as unknown as object
+      if (visited.has(key)) return
+      visited.add(key)
+      const shadowRoot = component.shadowRoot as
+        | { childNodes: ArrayLike<unknown> }
+        | null
+        | undefined
+      if (shadowRoot) visitNodes(shadowRoot.childNodes)
+      order.push(component)
+      visitNodes(component.childNodes)
+    }
+    visitComponent(root)
+    return order
+  }
+
+  /** Run `ready` for components that have not observed their first render. */
+  triggerPendingReady(pageId: string): void {
+    const root = this.pageTrees.get(pageId)?.component
+    if (!root) return
+    for (const component of this.componentReadyOrder(pageId)) {
+      if (component !== root) {
+        const path = this.componentPaths.get(component as unknown as object)
+        if (!path || !this.logicComponentDefinitions?.has(path)) continue
+      }
+      this.triggerReady(component)
+    }
+  }
+
+  /**
+   * A component created by `setData` becomes ready after the pageframe applies
+   * that update. Multiple service updates in one tick share one ready pass.
+   */
+  schedulePendingReady(pageId: string): void {
+    if (!this.logicComponentDefinitions || this.pendingReadyPages.has(pageId)) return
+    this.pendingReadyPages.add(pageId)
+    const flush = (): void => {
+      this.pendingReadyPages.delete(pageId)
+      this.triggerPendingReady(pageId)
+    }
+    if (this.afterRender) this.afterRender(pageId, flush)
+    else queueMicrotask(flush)
+  }
+
   mountPage(
     path: string,
     data: Record<string, unknown> = {},
@@ -1011,22 +1090,8 @@ export class GlassEaselRuntimeAdapter {
     }
     component.setData(data)
     glassEasel.Element.pretendAttached(component)
-    component.triggerLifetime('ready', [])
-    if (this.logicComponentDefinitions) {
-      // glass-easel only fires `attached` automatically; the mini-program
-      // `ready` lifetime is triggered by the runtime after the tree is stable.
-      // Children first, so parent ready handlers observe settled children.
-      // Only the freshly mounted page may run `ready`: older pages stay mounted
-      // in the logic tree, and re-running their handlers would re-initialize
-      // their state against the new page (for example a canvas selector query
-      // resolving to the active page).
-      for (const instance of [...this.componentInstanceValues(pageId)].reverse()) {
-        const path = this.componentPaths.get(instance as unknown as object)
-        if (!path || !this.logicComponentDefinitions.has(path)) continue
-        if (pageId && this.pageIdOf(instance) !== pageId) continue
-        instance.triggerLifetime('ready', [])
-      }
-    }
+    if (pageId) this.triggerPendingReady(pageId)
+    else this.triggerReady(component)
     return component
   }
 
@@ -1068,7 +1133,7 @@ export class GlassEaselRuntimeAdapter {
       this.pageIdsByComponent.set(methodCaller as object, pageId)
     }
     glassEasel.Element.pretendAttached(component)
-    component.triggerLifetime('ready', [])
+    this.triggerReady(component)
     return root
   }
 

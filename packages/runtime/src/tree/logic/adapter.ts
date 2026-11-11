@@ -294,6 +294,7 @@ export class LogicTreeAdapter {
     if (!page) throw new Error(`logic page is not mounted: ${pageId}`)
     page.setData(patch)
     this.glass.resolvePageRelations(pageId)
+    this.glass.schedulePendingReady(pageId)
   }
 
   /** Runtime-registered stylesheets (shared/page scopes) for the render tree. */

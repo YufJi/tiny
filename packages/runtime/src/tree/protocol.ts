@@ -330,6 +330,11 @@ export type RenderPatch =
   | { type: 'insert'; parent: RenderTarget; index: number; node: RenderNode }
   | { type: 'remove'; parent: RenderTarget; index: number; count: number }
   | { type: 'reorder'; parent: RenderTarget; moves: Array<{ from: number; to: number }> }
+  | {
+    type: 'component-instances'
+    target: RenderTarget
+    instances: Array<{ id: RenderNodeId; path: string }>
+  }
   | { type: 'extra'; target: RenderTarget; data: Record<string, unknown> }
 
 /**

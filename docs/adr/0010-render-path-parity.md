@@ -6,6 +6,9 @@ Accepted and implemented for the kernel and the web hosts. The service and the
 render thread now share one registration contract: the definition crosses the
 bridge, both threads evaluate user templates, behaviors resolve on both sides,
 and `setData` crosses as a per-component data patch plus structural operations.
+ADR-0018 later moved final page/component WXML ownership to the render
+pageframe; the service still instantiates the same template for its logic tree,
+selectors, relations and fallback snapshots.
 
 `hosts/ios` joins in: `ios/scripts/build.mjs` publishes `templates.js` next to
 the app assets and `hosts/ios/src/web/render.ts` evaluates it. There is no

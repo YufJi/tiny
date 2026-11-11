@@ -1,0 +1,3 @@
+<view class="flow-host">HOST</view>
+<flow-child wx:if="{{inner}}" relation-tag="inner" />
+<slot />

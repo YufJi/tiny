@@ -6,4 +6,5 @@
 <probe class="probe-two" state-key="{{pageKey + '-2'}}" />
 <button class="hit-wxs" bindtap="{{evt.hit}}">Hit WXS</button>
 <button class="to-b" bindtap="toB">To B</button>
+<button class="to-flow" bindtap="toFlow">To Flow</button>
 <button class="relaunch" bindtap="relaunch">ReLaunch A</button>

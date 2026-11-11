@@ -226,7 +226,7 @@ Bridge 的 `assertJsonSafe` 做严格校验；runtime 的 `toJsonSafe` 会主动
 | --- | --- | --- |
 | `tree.flow` | service → render | 首屏 flow：`define`（该页可见组件定义）、`tree`（整棵页面渲染快照）、`ready`；payload 另带 `componentFlow` 组件身份流，并可带独立 `tabRoot`、页面样式、fallback app 样式、`pageScope`、`pageUsing`、`behaviorScheme`、`wxsModules`、`pageData` 和 `componentData` |
 | `tree.snapshot` | service → render | 旧版完整快照入口仍注册，当前 service 不发送 |
-| `tree.patch` | service → render | `text`、`replace`、`props`、`insert`、`remove`、`reorder`；组件用共享 id、元素用 `owner#index.path` locator 寻址；同一 payload 可带 `tabPatches`、`pageData` / `componentData`；页帧结构变化还会带 `renderHints` 与 `componentFlow` 刷新组件身份 |
+| `tree.patch` | service → render | `text`、`replace`、`props`、`insert`、`remove`、`reorder`、`component-instances`；组件用共享 id、元素用 `owner#index.path` locator 寻址。`component-instances` 表示某个组件 shadow tree 内的子组件身份发生变化（例如宿主模板里的 `wx:if`），并强制同批携带 `renderHints` 与 `componentFlow`。同一 payload 还可带 `tabPatches`、`pageData` / `componentData` |
 | `tree.ack` | render → service | 批次确认：回显 flow/snapshot/patch 上的 `ack` token；service 用它 settle `setData` completion |
 | `tree.event` | render → service | 组件 id 或元素 locator、可选 `targetId`、name、detail、native 字段、touches 和 target/currentTarget 几何；service 从最内层 target 节点开始分发，并保留当前 binding 的 currentTarget |
 | `tree.templateEvent` | render → service | render 求值的组件模板把绑定的方法调用交回 service |

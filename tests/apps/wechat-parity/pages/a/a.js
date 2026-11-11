@@ -20,6 +20,11 @@ Page({
     wx.navigateTo({ url: '/pages/b/b' })
   },
 
+  toFlow() {
+    getApp().globalData.lifecycle = []
+    wx.navigateTo({ url: '/pages/flow/flow' })
+  },
+
   relaunch() {
     wx.reLaunch({ url: '/pages/a/a' })
   }

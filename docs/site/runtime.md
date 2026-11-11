@@ -3,7 +3,7 @@ title: 'service 跑逻辑树，'
 highlight: '宿主跑渲染树'
 eyebrow: '运行时'
 lede: >-
-  packages/runtime 是 Tiny 的小程序内核，不引用 window、document 或 iframe。service 线程用 glass-easel 维护逻辑树，负责 App/Page/Component、页面栈、setData、observer、relations 和逻辑树模板求值；render 线程由宿主持有真实渲染树，用同一份模板求值组件 shadow tree，负责内置组件、样式、布局和 DOM。两棵树通过 tree.flow、tree.patch 和 tree.event 同步。
+  packages/runtime 是 Tiny 的小程序内核，不引用 window、document 或 iframe。service 线程用 glass-easel 维护逻辑树，负责 App/Page/Component、页面栈、setData、observer、relations；render pageframe 执行页面和组件 WXML，宿主持有真实渲染树、内置组件、样式、布局和 DOM。两棵树通过 tree.flow、tree.patch 和 tree.event 同步。
 stats:
   - ['2', '运行时树']
   - ['39', '内置组件']
@@ -13,7 +13,7 @@ pills:
   - ['双侧树', 'good']
   - ['逻辑树在 service', 'good']
   - ['渲染树在 host', 'good']
-  - ['组件模板两侧求值', 'good']
+  - ['pageframe 执行 WXML', 'good']
 description: '小程序内核：service 逻辑树与宿主渲染树的分工、tree 协议、setData、组件语义、样式、查询和 canvas。'
 name: '运行时'
 pageTitle: '小程序内核与运行时 · Tiny'
@@ -22,14 +22,14 @@ order: 4
 
 ## 两棵树，各管各的 {#overview kicker="总览"}
 
-service 执行小程序逻辑并维护 glass-easel 逻辑树；render 线程由宿主持有真实组件树，并按同一份编译模板求值组件 shadow tree（two-evaluation）。两棵树不共享内存，靠组件的共享 id、元素 locator、component flow 和 virtual node patch 对齐。
+service 执行小程序逻辑并维护 glass-easel 逻辑树；render pageframe 执行页面和组件 WXML，宿主持有真实组件树和 DOM。service 从同一份编译模板构造逻辑组件实例，供 observer、relations、查询和 fallback snapshot 使用；pageframe 的求值才是最终渲染结果。两棵树不共享内存，靠组件的共享 id、元素 locator、component flow 和 virtual node patch 对齐。
 
 ```text
 service thread                              render thread (one root per page)
 +-------------------------------+           +-------------------------------+
 | App / Page / Component        |           | host TreeRenderer             |
 | glass-easel logic ComponentSpace |  tree  | real built-in components      |
-| template eval -> RenderNode   | <------> | template eval + render tree   |
+| logic template -> RenderNode  | <------> | WXML eval + render tree       |
 | data / observers / relations  |  flow    | DOM / layout / styles         |
 | component ids / locators      |  patch   | no app methods                |
 +-------------------------------+           +-------------------------------+
@@ -37,18 +37,18 @@ service thread                              render thread (one root per page)
 
 ::::split
 :::card{tag="service" title="逻辑树和业务状态"}
-glass-easel ComponentSpace 在 service 中运行，自定义组件是完整实例，拥有 data、properties、observers、relations、lifetimes、事件回调、带类型的 dataset 和组件共享 id。模板在 service 求值，输出 `RenderNode` 虚拟树；同一个组件模板也会在 render 侧被求值一次。
+glass-easel ComponentSpace 在 service 中运行，自定义组件是完整实例，拥有 data、properties、observers、relations、lifetimes、事件回调、带类型的 dataset 和组件共享 id。service 从编译模板实例化逻辑树，并输出 `RenderNode` 快照供 fallback、索引和查询使用；最终页面 WXML 由 render pageframe 执行。
 :::
 
 :::card{tag="render" tone="violet" title="真实组件和 DOM"}
-每个页面有一个 render root。宿主的 `TreeRenderer` 创建真实内置组件、自定义组件容器、slot、shadow root、样式和布局，并按组件定义求值 shadow tree。render 不执行 app methods、observer 或 relations；元素只持有渲染侧本地 id。
+每个页面有一个 render root。宿主的 `TreeRenderer` 和 pageframe 执行页面与组件 WXML，创建真实内置组件、自定义组件容器、slot、shadow root、样式和布局。render 不执行 app methods、observer 或 relations；元素只持有渲染侧本地 id。
 :::
 ::::
 
 :::callout{title="只有组件共享 id，元素用 locator"}
 service 给组件（和页面根）分配稳定 id，render 按这个 id 维护组件实例；元素不带跨线程 id，渲染侧分配本地 id，补丁、事件、查询和元素树检查都用 `owner#index.path` 形式的 locator 寻址。
 
-当前模板更新走 virtual node patch；component flow 负责首屏挂载（`define`、`tree`、`ready`）和 service 侧 `componentFlow` 组件身份列表，快照作为嵌套树传输，组件模板由 service 和 render 各按 `templates.js` 求值一次。custom tabBar 额外携带独立 `tabRoot`，后续以 `tabPatches` 更新。snapshot diff 覆盖文本、属性、结构和重排。
+当前页面由 render pageframe 从 `templates.js` 挂载；component flow 携带 `define`、逻辑快照 `tree`、`ready` 和 service 侧 `componentFlow` 组件身份列表。宿主组件 shadow tree 内的子组件身份变化用 `component-instances` 结构补丁同步，禁止 render 按 DOM 顺序猜身份。custom tabBar 额外携带独立 `tabRoot`，后续以 `tabPatches` 更新。snapshot diff 覆盖文本、属性、结构和重排。
 :::
 
 :::callout{title="每页树状态已收口，组件空间仍共享"}

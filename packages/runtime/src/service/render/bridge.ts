@@ -534,6 +534,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
                   || patch.type === 'remove'
                   || patch.type === 'replace'
                   || patch.type === 'reorder'
+                  || patch.type === 'component-instances'
                 ))
                   ? {
                     renderHints: cloneJsonSafe(snapshot),

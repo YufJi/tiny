@@ -2398,6 +2398,15 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       } else if (patch.type === 'replace') {
         const id = resolveTargetId(patch.target)
         if (id) replaceNode(id, patch.node)
+      } else if (patch.type === 'component-instances') {
+        const id = resolveTargetId(patch.target)
+        const current = id ? currentTree.get(id) : undefined
+        if (id && current?.type === 'element') {
+          currentTree.set(id, {
+            ...current,
+            componentInstances: [...patch.instances],
+          })
+        }
       }
     }
     flushPendingAnimations()
