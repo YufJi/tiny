@@ -79,7 +79,7 @@
 | 样式/渲染 | 8% | 76% | 6.08 | WXSS/rpx/作用域强；app.wxss tag/class 规则作用到页面与共享组件；canvas 2D/WebGL/RAF 已接，导出 API 仍缺 |
 | 宿主/平台 | 8% | 18% | 1.44 | 浏览器 + iOS 原生宿主（JavaScriptCore service + WKWebView render）；仍无原生网络/登录/支付/分享 |
 | 开发工具 | 4% | 47% | 1.88 | Vite 构建、应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar、移动端访问提示；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 62% | 1.86 | 497 单测 + 74 步浏览器验收 + 125 页探针（121 启动 / 116 可见文本）+ iOS 7 fixture 模拟器 smoke + 真机签名构建/安装；新增 npm 构建、project.config/app.json 校验、TS 诊断、路径式注册回归；仍无性能/安全测试 |
+| 质量/验证 | 3% | 62% | 1.86 | 521 单测 + 74 步浏览器验收 + 125 页探针（121 启动 / 116 可见文本）+ iOS 7 fixture 模拟器 smoke + 真机签名构建/安装；覆盖 npm 构建、project.config/app.json 校验、TS 诊断、页面栈/data/exitState 恢复；仍无性能/安全测试 |
 | **合计** | **100%** | — | **58.34%** | |
 
 ### 条目覆盖率速览
@@ -323,7 +323,7 @@ Shadow DOM：
 | 触底、页面滚动事件 | ✅ devtool 页面帧驱动 |
 | 分享菜单/转发/朋友圈 | ✅ `wx.showShareMenu` / `hideShareMenu` 控制 devtool Share 菜单项；分享面板可触发 `onShareAppMessage` / `onShareTimeline` / `onAddToFavorites`；页面无回调时显示未处理 |
 | 页面转场动画 | ✅ devtool 页面帧 forward/back/replace 淡入（navigateTo / navigateBack / tab 切换） |
-| 页面栈恢复 | ⚠️ devtool 刷新后按路径 + query 重建页面栈；页面 data / `saveExitState` 不恢复 |
+| 页面栈恢复 | ⚠️ devtool Reload 会保存并恢复页面栈、data、`savedExitState`/`exitState`，首屏 `onLoad` 可读 `this.exitState`；普通刷新会合并最新快照。跨会话/原生冷启动的落盘策略仍由宿主决定 |
 | 原生组件（video/map/camera/live-player 等） | ❌ |
 | 浏览器宿主 | ✅ |
 | 原生/JSCore 宿主 | ❌ |
@@ -339,7 +339,7 @@ Shadow DOM：
 2026-11-10 本地跑 `pnpm accept:glass-easel`，全部通过：
 
 - 8 个编译器/运行时/宿主目标构建
-- **497 个单元测试**（runtime、host-web-components、template-compiler、stylesheet-compiler、cli、wxs-runtime、bridge、api、manifest、css-units）
+- **521 个单元测试**（runtime、host-web-components、template-compiler、stylesheet-compiler、cli、wxs-runtime、bridge、api、manifest、css-units、devtool）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
 - **74 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent、真实滚动触发的 onPageScroll，WeChat demo 覆盖 swiper autoplay 开关、radio 点击与 WeUI 勾选结构、navigator 点击跳转、WXS 拖拽，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧，canvas 覆盖 2D/WebGL/legacy/ECharts
 - 门禁覆盖的 5 段流程无 console/page error（125 页探针的 pageerror 见 5.2）
@@ -632,6 +632,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-11-10 | 第四十一次同步：分享菜单可见性——`wx.showShareMenu`/`hideShareMenu` 经 host API 同步 chrome 菜单项，`updateShareMenu` 继续透传；新增 devtools 验收。497 单测 / 74 步；分数不变 | **58.22%** |
 | 2026-11-10 | 第四十次同步：自定义 tabBar——`tabBar.custom` 发现 `custom-tab-bar/index`，注入 tab 页模板并注册为页面组件；`this.getTabBar()` 返回页面内实例；`wx.switchTab` 切换；新增 custom-tab fixture 和 devtools 验收。497 单测 / 73 步；页面形态 40→44，总分 57.74→58.22 | **58.22%** |
 | 2026-11-11 | 双树页级收口：`PageTreeManager` 持有页根、component data 基线和页内组件实例表；组件实例编号按页重置；custom tabBar 改为独立页级 `tabRoot`，flow 增加 `tabRoot`，patch 增加 `tabPatches`，编译器不再向 tab 页模板注入 `<custom-tab-bar />`；`getTabBar(callback)` 支持延迟解析。511 单测；完整 P0 浏览器门禁通过 | **待重新评分** |
+| 2026-11-11 | 页面恢复收口：HostCore/WebHost 新增 `initialExitState`，首屏 `onLoad` 可读 `this.exitState`；`onSaveExitState` 改为在 `onHide` 后保存；`snapshotState`/`restoreState` 携带 `savedExitState` 与 `exitState`；devtool Reload 持久化整栈 data，普通刷新按页面身份合并快照，避免 runtime state 覆盖保存值；新增启动页 exitState 与刷新回归。521 单测；完整 P0 浏览器门禁通过 | **待重新评分** |
 | 2026-11-10 | 第三十九次同步：devtool 页面栈恢复——按 app 保存 pageStack 路径到 sessionStorage，带 `restore=1` 的刷新在 launch 时重建栈（最多到 maxPageStack），关闭应用清理；验收覆盖刷新后回到 add-todo 且栈长度 2。497 单测 / 72 步；页面形态 38→40，总分 57.50→57.74 | **57.74%** |
 | 2026-11-10 | 第三十八次同步：页面形态配置下沉到宿主——`pageBehaviorOf(manifest,pagePath)` 解析 `enablePullDownRefresh`/`onReachBottomDistance`，通过 render iframe URL 传入，service/kernel 不再读取页面形态配置；下拉手势按配置启用，触底距离默认 50，`stopPullDownRefresh` 发 host diagnostic 立即收起指示器；转场改 opacity 避免 iframe 坐标错位。497 单测 / 71 步；页面形态 36→38，总分 57.26→57.50 | **57.50%** |
 | 2026-11-10 | 第三十七次同步：devtool 页面转场——按 page stack 深度区分 navigateTo/navigateBack/replace，给每页 iframe 加 push/pop/fade 动画，验收断言 `data-transition=forward|back`。497 单测 / 70 步；页面形态 34→36，总分 57.02→57.26 | **57.26%** |

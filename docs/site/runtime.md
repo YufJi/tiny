@@ -75,7 +75,7 @@ service 是“小程序应用”真正运行的地方，由 bootServiceThread �
 | `page.navigateBack` | 移除页面；倒序触发 onHide → onUnload；恢复页 onShow | 销毁被移除页的 render root，保留目标页的 DOM、滚动位置和定时器 |
 | `page.redirectTo` / `reLaunch` | 销毁旧页，创建目标页；执行对应生命周期 | 关闭不再使用的 render root，挂载新页 |
 | `page.switchTab` | 复用 tab 页缓存，更新 tabBar 状态 | 切换可见 root，关闭已卸载页 |
-| `page.hide` / `page.show` | 分发页面和组件 pageLifetimes | 只切换可见性，不销毁渲染树 |
+| `page.hide` / `page.show` | `hide` 先分发 `onHide`，再执行 `onSaveExitState`；显隐都分发 pageLifetimes | 只切换可见性，不销毁渲染树 |
 | `page.unload` | onUnload；组件 detached；清理逻辑树和 relations | 关闭 render root |
 
 ::::split
@@ -537,7 +537,7 @@ trait behaviors / chaining API 和 20 个平台/开放能力组件仍未实现�
 :::
 
 :::card{tag="页面" tone="warn" title="页面形态仍以 devtool 宿主为主"}
-14 项页面生命周期和 5 个路由 API 已接，分享回调、下拉刷新和退出状态可用；devtool 已有分享面板、forward/back/replace 页面转场、按路径 + query 的页面栈恢复和独立页级 custom tabBar `tabRoot`。剩余缺口是页面 data / `saveExitState` 的完整恢复、通用 `host-web` 的页面 chrome，以及预下载策略。
+14 项页面生命周期和 5 个路由 API 已接，分享回调、下拉刷新和退出状态可用；devtool 已有分享面板、forward/back/replace 页面转场、页面栈 + data 恢复、首屏 `this.exitState` 和独立页级 custom tabBar `tabRoot`。跨宿主冷启动时的退出状态落盘仍由宿主决定；通用 `host-web` 的页面 chrome 和预下载策略仍是缺口。
 :::
 
 :::card{tag="API" tone="warn" title="API 覆盖有限"}

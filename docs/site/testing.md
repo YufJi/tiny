@@ -3,14 +3,14 @@ title: '用真实小程序验收，'
 highlight: '不只跑单元测试'
 eyebrow: '测试与验收'
 lede: >-
-  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。497 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，74 个浏览器步骤验证端到端行为；iOS 宿主另有 7 个 fixture 的 WKWebView + JSCore smoke。
+  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。521 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，74 个浏览器步骤验证端到端行为；iOS 宿主另有 7 个 fixture 的 WKWebView + JSCore smoke。
 stats:
-  - ['497', '单元测试']
-  - ['66', '浏览器步骤']
+  - ['521', '单元测试']
+  - ['74', '浏览器步骤']
   - ['5', '浏览器流程']
   - ['7', '测试小程序']
   - ['7', 'iOS fixture smoke']
-description: '小程序引擎的验收方式：构建、内核检查、497 个单元测试、74 个浏览器步骤、七套测试小程序和 iOS 宿主 smoke。'
+description: '小程序引擎的验收方式：构建、内核检查、521 个单元测试、74 个浏览器步骤、七套测试小程序和 iOS 宿主 smoke。'
 name: '测试'
 pageTitle: '测试与验收 · Tiny 小程序引擎'
 order: 8
@@ -72,7 +72,7 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 :::
 ::::
 
-## 497 个单元测试，一次运行 {#units kicker="单元测试"}
+## 521 个单元测试，一次运行 {#units kicker="单元测试"}
 
 12 个包各有自己的 `vitest.config.ts`，根 `vitest.workspace.ts` 把它们装进同一个 Vitest 进程：一次启动、并行执行各包测试，但 alias、snapshot 格式和 globals 仍按包隔离。需要单独排查时仍可运行 `pnpm --filter <package> test`。
 
@@ -84,12 +84,12 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 | `@tiny/wxs-runtime` | 13 | 模块加载、循环依赖、相对 require、constructor、globals、origin / resolve、模块表 |
 | `@tiny/template-compiler` | 47 | 脚本依赖、WXS transform、模块表、动态事件元数据、change:prop、import/include、模板别名、ProcGen 签名、绑定表复用、事件简写、data-* 绑定、stringify 往返 |
 | `@tiny/stylesheet-compiler` | 36 | class/tag 前缀、rpx/calc、@import 编码和包装、@layer、:host 低优先级、hostAttribute、keyframes、page 根节点 |
-| `@tiny/cli` | 18 | manifest 全产物、兼容输入配置、WXS 双注册、配置合并、service/templates 入口、TS/source map、样式 role、tag marker |
+| `@tiny/cli` | 30 | manifest 全产物、兼容输入配置、WXS 双注册、配置合并、service/templates 入口、TS/source map、样式 role、tag marker、npm 构建与项目配置校验 |
 | `@tiny/host-web-components` | 24 | 内置组件 batches、共享 behaviors 和默认样式断言；`canIUse` 用的组件属性清单与真实定义保持一致；组件行为细节由 host-web 的 render-tree 测试覆盖 |
-| `@tiny/host-web` | 103 | DOM render tree、built-in composition、事件、WXS dispatch、event compositor、内置组件与渲染树集成 |
-| `@tiny/runtime` | 166 | 全局安装和命名、双线程 bootstrap、逻辑树、tree protocol/patch diff、两次求值与 locator 寻址、headless renderer、组件 schema、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、API 注入缝、诊断、WXS 宽松求值、`this.animate`、事件冒泡/几何 |
-| `@tiny/api` | 37 | 微信兼容 API 表：storage 同步/异步、request 回调、导航与 EventChannel、base64/ArrayBuffer 转换、`canIUse` schema 解析（API/对象/组件三类）、全局 `wx.onXXX` 事件 hub、动画与 canvas stub |
-| `devtool` | 6 | 元素树投影：engine class 过滤、节点/文本/属性投影 |
+| `@tiny/host-web` | 109 | DOM render tree、built-in composition、事件、WXS dispatch、event compositor、内置组件与渲染树集成 |
+| `@tiny/runtime` | 193 | 全局安装和命名、双线程 bootstrap、逻辑树、tree protocol/patch diff、两次求值与 locator 寻址、headless renderer、组件 schema、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、页面栈快照与 exitState、API 注入缝、诊断、WXS 宽松求值、`this.animate`、事件冒泡/几何 |
+| `@tiny/api` | 38 | 微信兼容 API 表：storage 同步/异步、request 回调、导航与 EventChannel、base64/ArrayBuffer 转换、`canIUse` schema 解析（API/对象/组件三类）、全局 `wx.onXXX` 事件 hub、动画与 canvas stub |
+| `devtool` | 13 | 元素树投影、页面栈保存值合并、导航 chrome、`launchExitState` 选择 |
 
 :::callout{title="单测也会跑真实连接"}
 Bridge 测试会真的建立两条内存连接并完成握手；runtime 测试会启动 service 逻辑树和 headless render tree、注册 Page、执行 bootstrap 和导航，并验证 tree flow 与 patch。这里没有把整个引擎 mock 掉的做法。
@@ -254,7 +254,7 @@ OffscreenCanvas handoff、2D/WebGL、RAF、createImage 和 touch 有覆盖；can
 :::
 
 :::card{tag="页面" tone="warn" title="页面高级能力未覆盖"}
-下拉刷新、分享和页面栈恢复没有独立验收；内置 tabBar、滚动、触底和自定义 tabBar 已经接入。
+下拉刷新和分享没有独立验收；页面栈、data、`savedExitState`/`exitState` 已在 debugger Reload/整页刷新流程中覆盖，内置 tabBar、滚动、触底和自定义 tabBar 已经接入。
 :::
 
 :::card{tag="API" tone="warn" title="API 覆盖有限"}

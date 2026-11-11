@@ -287,7 +287,7 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | --- | --- | --- | --- | --- |
 | runtime | `hello` | call | host → service/render | 握手，返回 protocolVersion、role 和 capabilities |
 | runtime | `ready` | control | service/render → host | 线程装配完成，宿主结束握手等待 |
-| runtime | `bootstrap` | control | host → service | 创建逻辑树和首屏，返回 pageId/initialData/componentSchemas |
+| runtime | `bootstrap` | control | host → service | 创建逻辑树和首屏，返回 pageId/initialData/componentSchemas；可选 `initialExitState` 在首屏 `onLoad` 前映射为 `this.exitState` |
 | runtime | `bootstrap` | control | host → render | 创建 TreeRenderer 并等待 tree.flow |
 | runtime | `inspectTree` | control | host/devtool → render | 返回渲染树 InspectNode |
 | runtime | `resize` | control | host → service | 转发窗口尺寸并触发页面 resize（内核不保存尺寸） |
@@ -298,10 +298,11 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | page | `navigateBack` | control | host → service | 移除页面，恢复栈顶 |
 | page | `redirectTo` / `reLaunch` | control | host → service | 替换或重置页面栈 |
 | page | `switchTab` | control | host → service | 切换 tabBar 页面并复用缓存 |
-| page | `show` / `hide` | control | host → service | 页面显隐；应用前后台由 `event.global` 的 `appShow`/`appHide` 控制 |
+| page | `show` / `hide` | control | host → service | 页面显隐；`hide` 先触发 `onHide`，再调用 `onSaveExitState`；应用前后台由 `event.global` 的 `appShow`/`appHide` 控制 |
 | page | `unload` | control | host/测试 → service | 关闭页面并触发 onUnload；生产宿主当前不主动发送 |
 | page | `scroll` / `reachBottom` / `pullDownRefresh` | event | render → service | 页面滚动、触底和下拉手势 |
-| page | `share` / `saveExitState` | control | host/测试 → service | 分享与退出状态控制入口；生产宿主当前不主动发送 |
+| page | `share` / `saveExitState` | control | host/测试 → service | 分享与退出状态控制入口；devtool 在后台切换时通过 `hide` 自动保存 |
+| page | `snapshotState` / `restoreState` | control | host/devtool → service | 快照或恢复页面栈的 `data`、`savedExitState` 与 `exitState`；用于 Reload 和整页刷新 |
 | page | `pullDownRefresh` | control | host → service | 下拉刷新 API 的宿主控制入口 |
 | tree | `flow` | event | service → render | 首屏 flow：组件定义 + 嵌套快照 + 页面元数据 + 数据快照 |
 | tree | `snapshot` | event | service → render | 旧版完整快照入口，当前不发送 |
@@ -326,6 +327,8 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | api | `toast.show` / `ui.*` | call | service → host | 宿主 overlay UI |
 | api | `navigate.*` / `page.*` | call | service → host | 宿主协调 service 和 render 完成导航、下拉刷新 |
 | api | `*` | call | service → host | `@tiny/api` 与宿主平台 handler 提供的其余 API |
+
+页面快照的每一项是 `{ pageId, path, query, data, savedExitState, exitState }`。`restoreState` 在页面重建后应用数据；如果宿主在 launch 时把保存值放进 `initialExitState`，首屏会在 `onLoad` 就能读到 `this.exitState`，不依赖二次恢复。`savedExitState` 保留最近一次 `onSaveExitState` 的返回值，`exitState` 是本次页面实例启动时加载的值。
 
 `*Sync` API（`getSystemInfoSync`、`getStorageSync` 等）不走这条异步链路：宿主注入的 `__TINY_HOST_BRIDGE__` 实现 `sendSync`，`connection.callSync` 通过 `callSync` 请求 + `reply` 返回（见 [ADR-0016](../adr/0016-pure-js-bridge-host-handle.md)），内核不保存 system/storage 快照。
 

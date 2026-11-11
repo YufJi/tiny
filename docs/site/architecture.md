@@ -267,7 +267,7 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
 | `canvas` handoff | service → host → render → host → service | 只中继 transferable，不解析 | 把 OffscreenCanvas 交给 service；之后直接绘制 |
 | `api.*` | service → host | HostCore / 平台 handler 查表；`navigate.*` 会再 control service | 导航、toast、storage、request 等宿主语义 |
 | `page.scroll` · `page.reachBottom` · `page.pullDownRefresh` | render → host → service | 按 pageId 转发 | 页面滚动、触底和下拉手势——render 文档才是页面的滚动容器 |
-| `page.ready` · `page.navigateTo` · `page.navigateBack` · `page.switchTab` · `page.redirectTo` · `page.reLaunch` · `page.pullDownRefresh` · `page.share` · `page.saveExitState` · `page.hide` · `page.show` · `page.unload` | host → service | 宿主发起 | 页面栈和生命周期由 service 执行，宿主负责开/关 render 页面 |
+| `page.ready` · `page.navigateTo` · `page.navigateBack` · `page.switchTab` · `page.redirectTo` · `page.reLaunch` · `page.pullDownRefresh` · `page.share` · `page.saveExitState` · `page.snapshotState` · `page.restoreState` · `page.hide` · `page.show` · `page.unload` | host → service | 宿主发起 | 页面栈和生命周期由 service 执行，宿主负责开/关 render 页面与 Reload 状态快照 |
 | `runtime.bootstrap` · `runtime.resize` · `runtime.themeChange` | host → service | 宿主发起 | 启动、窗口尺寸、主题 |
 | `diagnostic.*` | service/render → host | 写入宿主诊断通道，devtool 通过回调读取 | 不回传另一侧 |
 
