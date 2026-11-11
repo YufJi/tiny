@@ -297,7 +297,7 @@ render 侧 `ComponentDescriptor` 已覆盖 `selectComponent`、`getDataset`、`g
 
 当前明确的限制：
 
-- WXS source map 已包含在模块表中，但尚未接进最终模板产物；
+- WXS source map 已随 `wxsModules` 进入 `templates.js`，但 devtool/调试器尚未消费它；
 - `input` / `textarea` 的 `bindinput` 是唯一 service-side 的 WXS 事件（微信 `PAGE_EVENT` 语义），没有 view 侧 `getState` / `getComputedStyle`；
 - 无法通过 origin 识别的 WXS 函数（例如闭包、`bind()` 后的新函数）不注册 handler，需用模块导出形式；
 - `callMethod` / `triggerEvent` 是跨线程 RPC，返回值不是同步语义。
@@ -524,20 +524,20 @@ iOS 没有 OffscreenCanvas。service 侧记录 Canvas 2D 调用，native 渲染�
 `tree.event` 已带 `target` / `currentTarget` 的 offset 几何，但两者目前都解析到绑定 handler 的节点；嵌套元素的 `event.target` 语义和微信仍有差别。
 :::
 
-:::card{tag="原生" tone="warn" title="原生渲染器只有契约"}
-`createNativeTreeRenderer` 有契约和 headless smoke test，没有实际原生宿主。原生宿主还需要实现查询、相交观测和 canvas host 能力。
+:::card{tag="原生" tone="warn" title="native TreeRenderer 仍只有契约"}
+`createNativeTreeRenderer` 有契约和 headless smoke test；iOS 宿主没有采用它，而是 JSCore + 每页 WKWebView（`createGlassRenderEntry`）。native `TreeRenderer` 仍缺 canvas handoff、query、measure 和 IntersectionObserver。
 :::
 
-:::card{tag="组件" tone="warn" title="componentPlaceholder 等未实现"}
-componentPlaceholder、trait behaviors / chaining API 和约 20 个微信内置组件仍未实现；generics、definitionFilter、pureDataPattern 和 6 个 `wx://` behavior 已接入。
+:::card{tag="组件" tone="warn" title="trait/chaining 和平台组件仍有缺口"}
+trait behaviors / chaining API 和 20 个平台/开放能力组件仍未实现；componentPlaceholder、generics、definitionFilter、pureDataPattern 和 6 个 `wx://` behavior 已接入。
 :::
 
-:::card{tag="页面" tone="warn" title="页面形态不完整"}
-14 项页面生命周期和 5 个路由 API 已接，分享回调、下拉刷新和退出状态可用；Web 端还缺分享菜单 UI、页面转场、页面栈恢复和自定义 tabBar。
+:::card{tag="页面" tone="warn" title="页面形态仍以 devtool 宿主为主"}
+14 项页面生命周期和 5 个路由 API 已接，分享回调、下拉刷新和退出状态可用；devtool 已有分享面板、forward/back/replace 页面转场、按路径 + query 的页面栈恢复和页面内 custom tabBar。剩余缺口是页面 data / `saveExitState` 的完整恢复、通用 `host-web` 的页面 chrome，以及预下载策略。
 :::
 
 :::card{tag="API" tone="warn" title="API 覆盖有限"}
-已支持 storage、导航、system、网络请求、toast/modal/loading、剪贴板、振动、base64/ArrayBuffer 转换、canvas、selector query 和 IntersectionObserver；媒体、真实文件系统、位置、WebSocket 和真实账号授权还没有。
+已支持 storage、导航、system、request、toast/modal/loading/actionSheet、network/battery、剪贴板、振动、base64/ArrayBuffer 转换、canvas、selector query 和 IntersectionObserver；媒体、真实文件系统、位置、WebSocket 和真实账号授权还没有。
 :::
 ::::
 
