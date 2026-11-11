@@ -2959,6 +2959,26 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
         'persisted input',
         'page data was not restored after debugger reload',
       )
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
+      await waitForStatus('running')
+      await page.waitForFunction(
+        () => window.__tinyDevtool?.getState().currentPage === 'pages/add-todo/add-todo',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const refreshedState = await state()
+      assert.deepEqual(refreshedState.pageStack, ['page-1', 'page-2'])
+      const refreshedFrame = await waitForActiveRenderFrame(
+        primary.id,
+        refreshedState.pageStack.at(-1),
+      )
+      assert.ok(refreshedFrame, 'browser-refreshed add-todo page did not create a render frame')
+      await refreshedFrame.waitForSelector(inputSelector, { timeout: STEP_TIMEOUT })
+      assert.equal(
+        await refreshedFrame.locator(inputSelector).inputValue(),
+        'persisted input',
+        'saved page data was overwritten by a later runtime state update',
+      )
       await page.getByText('Close app', { exact: true }).click()
       await waitForLauncher()
     })

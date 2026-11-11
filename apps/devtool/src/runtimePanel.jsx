@@ -1,6 +1,7 @@
 import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
 import { DevtoolRuntimeClient } from './runtimeClient';
+import { mergeSavedPageStack } from './pageStackState';
 import { createWasmHostCoreFactory } from './wasmHostCore';
 import './runtimePanel.css';
 import {
@@ -48,7 +49,10 @@ function readSavedStack(appId) {
         : entry && typeof entry === 'object' && typeof entry.path === 'string'
           ? {
               path: entry.path,
-              query: entry.query && typeof entry.query === 'object' ? entry.query : {},
+              query: entry.query && typeof entry.query === 'object' && !Array.isArray(entry.query)
+                ? entry.query
+                : {},
+              ...(typeof entry.pageId === 'string' ? { pageId: entry.pageId } : {}),
               ...(entry.data && typeof entry.data === 'object' && !Array.isArray(entry.data)
                 ? { data: entry.data }
                 : {}),
@@ -263,8 +267,13 @@ class RuntimePanel extends PureComponent {
       const entries = state.pageStack
         .map((pageId) => pageById.get(pageId))
         .filter(Boolean)
-        .map((page) => ({ path: page.path, query: page.query ?? {} }))
-      if (entries.length > 0) writeSavedStack(session.appId, entries)
+        .map((page) => ({ pageId: page.pageId, path: page.path, query: page.query ?? {} }))
+      if (entries.length > 0) {
+        writeSavedStack(
+          session.appId,
+          mergeSavedPageStack(entries, readSavedStack(session.appId)),
+        )
+      }
     }
     const previousPage = session.lastCurrentPage;
     const previousDepth = session.lastPageDepth ?? 0;
@@ -516,7 +525,7 @@ class RuntimePanel extends PureComponent {
   async restorePageStack(session, manifest, initialPath, saved) {
     if (saved.length === 0 || saved[0].path !== initialPath) return;
     const initialPageId = session.client.getState().pageStack.at(-1);
-    if (initialPageId && saved[0].data) {
+    if (initialPageId && (saved[0].data || 'savedExitState' in saved[0])) {
       await session.client.restorePageState({
         ...saved[0],
         pageId: initialPageId,
@@ -527,7 +536,7 @@ class RuntimePanel extends PureComponent {
       const query = new URLSearchParams(entry.query ?? {}).toString();
       try {
         const pageId = await session.client.navigate(`/${entry.path}${query ? `?${query}` : ''}`);
-        if (pageId && entry.data) {
+        if (pageId && (entry.data || 'savedExitState' in entry)) {
           await session.client.restorePageState({
             ...entry,
             pageId,
@@ -537,6 +546,8 @@ class RuntimePanel extends PureComponent {
         break;
       }
     }
+    const restored = await session.client.snapshotPageState();
+    if (restored.length > 0) writeSavedStack(session.appId, restored);
   }
 
   async closeSession(session) {
