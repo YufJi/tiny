@@ -2934,6 +2934,31 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
       const restored = await state()
       assert.deepEqual(restored.pageStack, ['page-1', 'page-2'])
       assert.equal(restored.pages.at(-1)?.query?.from, 'restore', 'page query was not restored')
+      const addTodoFrame = await waitForActiveRenderFrame(primary.id, restored.pageStack.at(-1))
+      assert.ok(addTodoFrame, 'restored add-todo page did not create a render frame')
+      const inputSelector = 'input[placeholder="What needs to be done?"]'
+      await addTodoFrame.waitForSelector(inputSelector, { timeout: STEP_TIMEOUT })
+      const input = addTodoFrame.locator(inputSelector)
+      await input.fill('persisted input')
+      await page.waitForTimeout(50)
+      await page.getByText('Reload', { exact: true }).click()
+      await waitForStatus('running')
+      await page.waitForFunction(
+        () => window.__tinyDevtool?.getState().currentPage === 'pages/add-todo/add-todo',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const reloadedFrame = await waitForActiveRenderFrame(
+        primary.id,
+        (await state()).pageStack.at(-1),
+      )
+      assert.ok(reloadedFrame, 'reloaded add-todo page did not create a render frame')
+      await reloadedFrame.waitForSelector(inputSelector, { timeout: STEP_TIMEOUT })
+      assert.equal(
+        await reloadedFrame.locator(inputSelector).inputValue(),
+        'persisted input',
+        'page data was not restored after debugger reload',
+      )
       await page.getByText('Close app', { exact: true }).click()
       await waitForLauncher()
     })

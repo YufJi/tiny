@@ -694,7 +694,7 @@ function commandName(command: Record<string, unknown>): string | undefined {
   if (typeof type !== 'string') return undefined
   return type === 'navigateTo' || type === 'navigateBack' || type === 'switchTab'
     || type === 'redirectTo' || type === 'reLaunch' || type === 'inspectTree'
-    || type === 'share'
+    || type === 'share' || type === 'snapshotPageState' || type === 'restorePageState'
     ? type
     : undefined
 }

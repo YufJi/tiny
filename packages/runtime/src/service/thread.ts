@@ -391,6 +391,23 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     pages.saveExitStateOf((message.payload as { pageId?: string }).pageId)
   ))
 
+  connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.snapshotState, async () => (
+    pages.snapshotState()
+  ))
+
+  connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.restoreState, async (message) => {
+    const payload = message.payload as {
+      pageId?: unknown
+      data?: unknown
+      savedExitState?: unknown
+    }
+    const pageId = typeof payload.pageId === 'string' ? payload.pageId : ''
+    const data = payload.data && typeof payload.data === 'object' && !Array.isArray(payload.data)
+      ? payload.data as Record<string, unknown>
+      : {}
+    return pages.restoreState(pageId, data, payload.savedExitState)
+  })
+
   connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.unload, async (message) => (
     pages.unload((message.payload as { pageId?: string }).pageId)
   ))

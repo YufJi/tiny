@@ -36,6 +36,14 @@ export type ServicePageStackOptions = {
   maxPageStack?: number
 }
 
+export type PageStateSnapshot = {
+  pageId: string
+  path: string
+  query: Record<string, string>
+  data: Record<string, unknown>
+  savedExitState: unknown
+}
+
 /**
  * Service runtime: page instances, the page stack, navigation and app
  * visibility.
@@ -416,6 +424,35 @@ export class ServicePageStack {
     const page = requireActivePage(this.pageInstances, pageId, this.active)
     const state = this.saveExitState(page)
     return { status: 'saved', state: cloneJsonSafe(state ?? null) }
+  }
+
+  /** Serializable state of the live page stack, for host-level restore. */
+  snapshotState(): PageStateSnapshot[] {
+    return this.stack.map((page) => ({
+      pageId: page.pageId,
+      path: page.path,
+      query: { ...page.query },
+      data: cloneJsonSafe(page.data),
+      savedExitState: cloneJsonSafe(page.savedExitState ?? null),
+    }))
+  }
+
+  /** Apply a host-restored page state after the page has been recreated. */
+  restoreState(
+    pageId: string,
+    data: Record<string, unknown>,
+    savedExitState?: unknown,
+  ): Record<string, unknown> {
+    const page = this.pageInstances.get(pageId)
+    if (!page) return { status: 'missing', pageId }
+    if (data && typeof data === 'object' && Object.keys(data).length > 0) page.setData(data)
+    if (savedExitState !== undefined) page.savedExitState = cloneJsonSafe(savedExitState)
+    return {
+      status: 'restored',
+      pageId,
+      path: page.path,
+      data: cloneJsonSafe(page.data),
+    }
   }
 
   unload(pageId?: string): Record<string, unknown> {

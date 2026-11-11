@@ -46,7 +46,16 @@ function readSavedStack(appId) {
       .map((entry) => (typeof entry === 'string'
         ? { path: entry, query: {} }
         : entry && typeof entry === 'object' && typeof entry.path === 'string'
-          ? { path: entry.path, query: entry.query && typeof entry.query === 'object' ? entry.query : {} }
+          ? {
+              path: entry.path,
+              query: entry.query && typeof entry.query === 'object' ? entry.query : {},
+              ...(entry.data && typeof entry.data === 'object' && !Array.isArray(entry.data)
+                ? { data: entry.data }
+                : {}),
+              ...(Object.prototype.hasOwnProperty.call(entry, 'savedExitState')
+                ? { savedExitState: entry.savedExitState }
+                : {}),
+            }
           : null))
       .filter(Boolean)
   } catch {
@@ -505,12 +514,25 @@ class RuntimePanel extends PureComponent {
   }
 
   async restorePageStack(session, manifest, initialPath, saved) {
-    if (saved.length < 2 || saved[0].path !== initialPath) return;
+    if (saved.length === 0 || saved[0].path !== initialPath) return;
+    const initialPageId = session.client.getState().pageStack.at(-1);
+    if (initialPageId && saved[0].data) {
+      await session.client.restorePageState({
+        ...saved[0],
+        pageId: initialPageId,
+      });
+    }
     for (const entry of saved.slice(1)) {
       if (!manifest.pages.some((page) => page.path === entry.path)) break;
       const query = new URLSearchParams(entry.query ?? {}).toString();
       try {
-        await session.client.navigate(`/${entry.path}${query ? `?${query}` : ''}`);
+        const pageId = await session.client.navigate(`/${entry.path}${query ? `?${query}` : ''}`);
+        if (pageId && entry.data) {
+          await session.client.restorePageState({
+            ...entry,
+            pageId,
+          });
+        }
       } catch {
         break;
       }
@@ -558,8 +580,18 @@ class RuntimePanel extends PureComponent {
   reloadActiveApp() {
     const session = this.activeSession;
     if (!session) return;
-    session.reloadPending = true;
-    this.run(() => session.client.reload());
+    this.run(async () => {
+      const snapshot = await session.client.snapshotPageState();
+      if (snapshot.length > 0) writeSavedStack(session.appId, snapshot);
+      const initialPath = snapshot[0]?.path ?? session.initialPath;
+      session.initialPath = initialPath;
+      session.reloadPending = true;
+      await session.client.reload(initialPath);
+      if (snapshot.length > 0) {
+        await session.client.inspectTree();
+        await this.restorePageStack(session, session.manifest, initialPath, snapshot);
+      }
+    });
   }
 
   reportActionError(error) {

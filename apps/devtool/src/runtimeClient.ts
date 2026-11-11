@@ -56,6 +56,14 @@ export type DevtoolRuntimeState = {
   error?: string
 }
 
+export type DevtoolPageStateSnapshot = {
+  pageId: string
+  path: string
+  query: Record<string, string>
+  data: Record<string, unknown>
+  savedExitState: unknown
+}
+
 export type DevtoolRuntimeOptions = {
   manifest: RuntimeManifest
   appId?: string
@@ -87,6 +95,7 @@ export class DevtoolRuntimeClient {
   private wasmHost: WasmBrowserHost | null = null
   private container: HTMLElement | null = null
   private ownsContainer = false
+  private launchPath: string
   private state: DevtoolRuntimeState = {
     status: 'idle',
     pageStack: [],
@@ -97,6 +106,7 @@ export class DevtoolRuntimeClient {
 
   constructor(options: DevtoolRuntimeOptions) {
     this.options = options
+    this.launchPath = options.initialPath
   }
 
   getState(): DevtoolRuntimeState {
@@ -165,7 +175,7 @@ export class DevtoolRuntimeClient {
         manifest: this.options.manifest,
         serviceUrl: this.options.serviceUrl,
         renderUrl: this.options.renderUrl,
-        initialPath: this.options.initialPath,
+        initialPath: this.launchPath,
         container,
         maxPageStack: this.options.maxPageStack,
         apiHandlers: apiHost.apiHandlers,
@@ -226,18 +236,38 @@ export class DevtoolRuntimeClient {
     })
   }
 
-  async reload(): Promise<void> {
+  async reload(initialPath?: string): Promise<void> {
+    if (initialPath) this.launchPath = initialPath
     await this.terminate()
     this.update({ status: 'idle' })
     await this.launch()
   }
 
-  async navigate(url: string): Promise<void> {
+  async navigate(url: string): Promise<string | undefined> {
     const result = await this.requireWasmHost().command({
       type: 'navigateTo',
       url,
     }) as { pageId?: string } | undefined
     await this.inspectTree(result?.pageId)
+    return result?.pageId
+  }
+
+  /** Capture page data and saved exit state before a debugger reload. */
+  async snapshotPageState(): Promise<DevtoolPageStateSnapshot[]> {
+    const result = await this.requireWasmHost().command({
+      type: 'snapshotPageState',
+    })
+    return Array.isArray(result) ? result as DevtoolPageStateSnapshot[] : []
+  }
+
+  /** Apply a page snapshot after its page has been recreated. */
+  async restorePageState(snapshot: DevtoolPageStateSnapshot): Promise<void> {
+    await this.requireWasmHost().command({
+      type: 'restorePageState',
+      pageId: snapshot.pageId,
+      data: snapshot.data ?? {},
+      savedExitState: snapshot.savedExitState ?? null,
+    })
   }
 
   async back(delta = 1): Promise<void> {

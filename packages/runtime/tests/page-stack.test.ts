@@ -179,6 +179,41 @@ describe('ServicePageStack', () => {
     ])
   })
 
+  test('snapshots and restores page data and saveExitState', () => {
+    const harness = createHarness()
+    harness.stack.start()
+    const page = harness.stack.activePage!
+    page.setData({ tag: 'dirty', nested: { count: 2 } })
+    page.savedExitState = { scrollTop: 48 }
+
+    const snapshot = harness.stack.snapshotState()
+    expect(snapshot).toHaveLength(1)
+    expect(snapshot[0]).toMatchObject({
+      pageId: page.pageId,
+      path: PAGE_A,
+      data: { tag: 'dirty', nested: { count: 2 } },
+      savedExitState: { scrollTop: 48 },
+    })
+
+    const restored = harness.stack.restoreState(
+      page.pageId,
+      { tag: 'restored', extra: true },
+      { scrollTop: 12 },
+    )
+    expect(restored).toMatchObject({
+      status: 'restored',
+      pageId: page.pageId,
+      data: { tag: 'restored', extra: true, nested: { count: 2 } },
+    })
+    expect(page.data).toMatchObject({ tag: 'restored', extra: true })
+    expect(page.savedExitState).toEqual({ scrollTop: 12 })
+    expect(harness.render.synced.at(-1)).toMatchObject({
+      pageId: page.pageId,
+      patch: { tag: 'restored', extra: true },
+    })
+    expect(harness.stack.restoreState('missing', {})).toMatchObject({ status: 'missing' })
+  })
+
   test('navigateTo/navigateBack keep lifecycle order and render mount state', () => {
     const harness = createHarness()
     harness.stack.start()
