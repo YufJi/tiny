@@ -148,7 +148,7 @@ tree.event 已带 `target` / `currentTarget` 的 offset 几何，但两者目前
 :::
 
 :::card{tag="P1" title="页面能力"}
-Web 端预下载策略 / 独立分包，以及自定义 tabBar 的宿主级单例语义。
+Web 端预下载策略 / 独立分包，以及 Skyline 风格的宿主级 tabBar 单例语义。
 :::
 
 :::card{tag="P1" title="组件高级语义"}

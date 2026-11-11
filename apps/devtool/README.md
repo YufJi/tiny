@@ -97,7 +97,7 @@ onReachBottom/onResize/onTabItemTap`。高频 `onPageScroll` 会送达页面，�
 - `wx.switchTab` / tabBar 点击会清理非 tab 页面、显示目标 tab 页，并触发 `onTabItemTap`
 - `setTabBarStyle` / `setTabBarItem` / `setTabBarBadge` / `removeTabBarBadge` /
   `showTabBarRedDot` / `hideTabBarRedDot` / `showTabBar` / `hideTabBar` 会即时更新宿主 tabBar
-- `custom: true` 目前只发 `TABBAR_CUSTOM_UNSUPPORTED` 警告，自定义 tabBar 组件仍需页面自行实现
+- `custom: true` 时 service 发现 `custom-tab-bar/index` 并挂载独立页级 `tabRoot`，`this.getTabBar()` / `this.getTabBar(callback)` 可取得该实例
 - tab 页面外的 `navigateTo` 页面不显示 tabBar；`navigateTo` 到 tab 页面会被拒绝，和微信一致
 
 devtool 是 `apps/` 下的可运行应用，不是核心包；它与 `tests/host` 的区别是：

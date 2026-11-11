@@ -233,7 +233,7 @@ render 线程需要拿到编译模板，因为组件 shadow tree 在 render 侧�
 - 在宣告 ready 之前装好宿主内置样式（`prepare`）
 - 实现 TreeRenderer（Web 侧 `createGlassRenderTree`）
 - 创建真实内置组件和页面根容器
-- 接收 `tree.flow` / `tree.patch`，维护组件 id 到真实组件的映射；元素用渲染侧本地 id 和 locator
+- 接收 `tree.flow` / `tree.patch`，维护组件 id 到真实组件的映射；元素用渲染侧本地 id 和 locator；custom tabBar 的 `tabRoot` 挂到页面内容外的独立根，`tabPatches` 与 page patch 共用渲染批次
 - 按 `templates.js` 求值组件 shadow tree（`loadTemplates` 在首屏 flow 之前装好模板组）
 - 提供 query、measure、inspectTree 和 IntersectionObserver
 :::
@@ -463,7 +463,7 @@ service iframe 只是视觉上隐藏，没有 sandbox 属性，仍然可以访�
 :::
 
 :::card{tag="flow" title="增量统一走 patch"}
-首屏用 define/tree/ready 对齐组件树（快照作为嵌套树发送，元素不带 id）；后续更新由 snapshot diff 生成 tree.patch，组件按共享 id、元素按 `owner#index.path` locator 寻址，覆盖文本、属性、插入/删除/重排。
+首屏用 define/tree/ready 对齐组件树（快照作为嵌套树发送，元素不带 id），custom tabBar 通过可选 `tabRoot` 挂载；后续更新由 snapshot diff 生成 tree.patch/tabPatches，组件按共享 id、元素按 `owner#index.path` locator 寻址，覆盖文本、属性、插入/删除/重排。
 :::
 
 :::card{tag="event" tone="warn" title="target 语义仍是近似"}

@@ -40,6 +40,39 @@ function templatesFor(path: string, source: string) {
 }
 
 describe('glass render tree', () => {
+  test('mounts and clears an independent tabBar root', () => {
+    const tree = createGlassRenderTree({
+      backend: new glassEasel.EmptyBackendContext(),
+      componentDefinitions: {
+        'custom-tab-bar/index': {
+          path: 'custom-tab-bar/index',
+          properties: {},
+          data: { selected: 0 },
+          methods: [],
+          using: {},
+        },
+      },
+      templates: templatesFor('custom-tab-bar/index', '<view id="bar">{{selected}}</view>'),
+    })
+    tree.mount(element('page', 'view', {}, [
+      element('content', 'view', {}, [{ type: 'text', id: 'page-text', text: 'home' }]),
+    ]))
+    tree.mountTabBar?.({
+      type: 'element',
+      id: 'tab-bar',
+      tag: 'custom-tab-bar',
+      component: true,
+      componentPath: 'custom-tab-bar/index',
+      props: {},
+    })
+
+    expect(tree.getNode('page')).toBeDefined()
+    expect(tree.getNode('tab-bar')).toBeDefined()
+    tree.clearTabBar?.()
+    expect(tree.getNode('page')).toBeDefined()
+    expect(tree.getNode('tab-bar')).toBeUndefined()
+  })
+
   test('composes built-ins into a real ancestor tree', () => {
     const tree = createGlassRenderTree({ backend: new glassEasel.EmptyBackendContext() })
     tree.mount(element('root', 'view', { class: 'page' }, [

@@ -17,7 +17,7 @@
 - 仓库内置的微信官方 demo 子集（2023-02 基线，125 页）中，**121 页能启动（96.8%）**，116 页有可见文本；剩余 4 个失败页全部缺平台 API（音频/广告/后台预取），不再是编译或运行时语义问题；启动率仍是“能挂载”，不是“功能对齐”。
 - 双侧树已切到微信的两次求值模型：service 与 render 用同一份 `templates.js` 各自求值组件模板，只有组件和页面根共享 id，元素由渲染侧分配本地 id，补丁/事件/查询/动画统一用组件作用域 locator（`owner#index.path`）寻址；首屏 flow 是 `define` + `tree` + `ready`。
 - 路由补齐 `redirectTo` / `reLaunch`，页面生命周期补齐下拉刷新、分享和 `onSaveExitState`，应用生命周期补齐 `onError` / `onPageNotFound` / `onUnhandledRejection` / `onThemeChange`。
-- 普通业务小程序最依赖的 `wx.login`、`wx.requestPayment`、媒体/文件/定位等平台 API 仍未实现；内置导航栏/tabBar 已在 devtool 宿主落地并接入 `switchTab`，但自定义 tabBar、分享菜单 UI、页面转场仍缺。
+- 普通业务小程序最依赖的 `wx.login`、`wx.requestPayment`、媒体/文件/定位等平台 API 仍未实现；内置导航栏/tabBar 已在 devtool 宿主落地并接入 `switchTab`，自定义 tabBar 通过独立的页面级 `tabRoot` 支持，分享菜单 UI 仍缺。
 - 一句话：**组件语义、路由和生命周期这条线已经基本补齐，平台 API 和页面形态仍是决定“能否替换微信运行时”的主要短板。**
 
 仓库自己的 [Status 页](./site/status.md) 也给出了相同定性判断（“能跑真实示例，还不是完整微信兼容”），本文把它量化，并保留可复测的口径。
@@ -75,7 +75,7 @@
 | 框架运行时 | 18% | 99% | 17.82 | 14/14 页面生命周期、7/7 应用生命周期、5/5 路由；两次求值的渲染树、元素 locator 寻址、页面级 `generic:x`、6 个 `wx://` behavior 占位对齐；`this.animate`/`clearAnimate`、`wx.createIntersectionObserver`、事件合成层与 `target/currentTarget` 几何落地；`pageLifetimes.resize` 与页面 `onResize` 同步下发；分包按需加载（启动/导航前 ensure + 组件定义增量刷新）与 `preloadRule` 预取（`wifi` 需宿主网络事实）；tab 页缓存、group/label/touchtrack/scroller 基础保持；`componentPlaceholder` + glass-easel 占位替换完成异步组件 chunk（主包页面先渲染占位，分包到达后自动替换）；独立分包入口跳过主包 App 且不加载主包 `app.wxss`；trait/chaining API 仍未接 |
 | 内置组件 | 17% | 65% | 11.05 | 39/60 标签（2.33.0 目标的 39 个标签全部落地，20 个平台/开放能力组件按基线不做）；P0 视觉完成，P1 内部结构大幅收口；事件合成层与 scroll-view 横向/enable-flex 修复落地；`navigator` 走 host action；canvas 2D/WebGL 已接；已统计属性 120/146、事件 44/46 |
 | wx API | 20% | 14.5% | 2.91 | 73/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar/switchTab/redirectTo/reLaunch/下拉刷新/IntersectionObserver（含 `wx.createIntersectionObserver`）等已接或桩 |
-| 页面形态 | 12% | 45% | 5.40 | devtool 宿主已实现导航栏/tabBar/页面滚动/触底/tab 页缓存，导航栏运行时标题/颜色/loading 已接，分享菜单会调用页面回调，navigateTo/navigateBack 有 forward/back 转场，下拉刷新指示器受 `enablePullDownRefresh` 控制、`stopPullDownRefresh` 立即收起；devtool 刷新后按路径 + query 重建页面栈（不恢复页面 data）；`tabBar.custom` 通过页面模板注入 `custom-tab-bar` 并支持 `getTabBar()`；分享菜单可见性受 `showShareMenu`/`hideShareMenu` 控制；iOS 宿主补上原生导航栏/tabBar 和页面 chrome |
+| 页面形态 | 12% | 45% | 5.40 | devtool 宿主已实现导航栏/tabBar/页面滚动/触底/tab 页缓存，导航栏运行时标题/颜色/loading 已接，分享菜单会调用页面回调，navigateTo/navigateBack 有 forward/back 转场，下拉刷新指示器受 `enablePullDownRefresh` 控制、`stopPullDownRefresh` 立即收起；devtool 刷新后按路径 + query 重建页面栈（不恢复页面 data）；`tabBar.custom` 使用独立页级 `tabRoot` 并支持 `getTabBar()`；分享菜单可见性受 `showShareMenu`/`hideShareMenu` 控制；iOS 宿主补上原生导航栏/tabBar 和页面 chrome |
 | 样式/渲染 | 8% | 76% | 6.08 | WXSS/rpx/作用域强；app.wxss tag/class 规则作用到页面与共享组件；canvas 2D/WebGL/RAF 已接，导出 API 仍缺 |
 | 宿主/平台 | 8% | 18% | 1.44 | 浏览器 + iOS 原生宿主（JavaScriptCore service + WKWebView render）；仍无原生网络/登录/支付/分享 |
 | 开发工具 | 4% | 47% | 1.88 | Vite 构建、应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar、移动端访问提示；不是完整微信开发者工具 |
@@ -253,7 +253,7 @@
 | `subPackages` / `subpackages` | ✅ 编译、可直接启动；manifest 携带 `root`/`pages`/`independent`/`service` 元数据；按需加载与 `preloadRule` 预取已接（启动/导航前加载分包 chunk；`wifi` 规则需宿主提供 `preloadNetwork` 事实）；独立分包入口可跳过主包 App 独立启动（`getApp()` 为 null），不继承主包全局组件和主包 `app.wxss`；iOS 使用单个 eager `service.all.js` 保持模块单实例；预下载策略未接 |
 | `usingComponents` | ✅ |
 | `window` | ⚠️ 只透传到 manifest，运行时不消费 |
-| `tabBar` | ✅ 内置 tabBar 配置、颜色/位置/徽标/红点/显隐、`switchTab`；`custom: true` 发 `TABBAR_CUSTOM_UNSUPPORTED` 警告 |
+| `tabBar` | ✅ 内置 tabBar 配置、颜色/位置/徽标/红点/显隐、`switchTab`；`custom: true` 发现 `custom-tab-bar/index`，由 service 挂载为独立页级 `tabRoot`，支持 `getTabBar()` / `getTabBar(callback)` |
 | `themeLocation` / `darkmode` | ✅ 编译期读取 `theme.json`、校验 light/dark、解析配置里的 `@变量`（light 写入 `effective`，dark 写入 `darkEffective`），并把变量注入 WXSS `:root`（暗色用 `prefers-color-scheme`）；devtool 导航栏按系统主题读取 `darkEffective` |
 | `style` / `lazyCodeLoading` / `permission` / `sitemapLocation` / `workers` / `plugins` | ❌（`lazyCodeLoading` 仅校验） |
 | `renderer` / `rendererOptions` / `resizable` / `requiredPrivateInfos` | ❌ |
@@ -318,7 +318,7 @@ Shadow DOM：
 | 能力 | 状态 |
 | --- | --- |
 | 导航栏（标题/返回/背景色/`navigationStyle: custom`） | ✅ devtool 宿主实现；`wx.setNavigationBarTitle` / `setNavigationBarColor` / `show|hideNavigationBarLoading` 已接 |
-| tabBar（内置、`switchTab`、badge/red-dot、show/hide） | ✅ 内置 tabBar 由 devtool 宿主实现；`custom: true` 时编译期把 `custom-tab-bar/index` 注入 tab 页模板，页面内渲染并通过 `getTabBar()` 选择（每页一个实例，非宿主级单例） |
+| tabBar（内置、`switchTab`、badge/red-dot、show/hide） | ✅ 内置 tabBar 由 devtool 宿主实现；`custom: true` 时 service 为每个 tab 页挂载独立 `tabRoot`，render 挂到页面内容之外，通过 `getTabBar()` / `getTabBar(callback)` 选择（每页一个实例，非宿主级单例） |
 | 下拉刷新 | ✅ `enablePullDownRefresh` 才启用下拉手势，`onReachBottomDistance` 控制触底距离（默认 50）；`wx.startPullDownRefresh` 显示指示器，`wx.stopPullDownRefresh` 立即收起 |
 | 触底、页面滚动事件 | ✅ devtool 页面帧驱动 |
 | 分享菜单/转发/朋友圈 | ✅ `wx.showShareMenu` / `hideShareMenu` 控制 devtool Share 菜单项；分享面板可触发 `onShareAppMessage` / `onShareTimeline` / `onAddToFavorites`；页面无回调时显示未处理 |
@@ -631,6 +631,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-11-10 | 第四十二次同步：页面栈恢复补 query——runtime state 的 page 详情携带 query，devtool 保存 `{path,query}` 并在刷新后按完整路由重建；验收断言 `?from=restore` 恢复。497 单测 / 74 步；页面形态 44→45，总分 58.22→58.34 | **58.34%** |
 | 2026-11-10 | 第四十一次同步：分享菜单可见性——`wx.showShareMenu`/`hideShareMenu` 经 host API 同步 chrome 菜单项，`updateShareMenu` 继续透传；新增 devtools 验收。497 单测 / 74 步；分数不变 | **58.22%** |
 | 2026-11-10 | 第四十次同步：自定义 tabBar——`tabBar.custom` 发现 `custom-tab-bar/index`，注入 tab 页模板并注册为页面组件；`this.getTabBar()` 返回页面内实例；`wx.switchTab` 切换；新增 custom-tab fixture 和 devtools 验收。497 单测 / 73 步；页面形态 40→44，总分 57.74→58.22 | **58.22%** |
+| 2026-11-11 | 双树页级收口：`PageTreeManager` 持有页根、component data 基线和页内组件实例表；组件实例编号按页重置；custom tabBar 改为独立页级 `tabRoot`，flow 增加 `tabRoot`，patch 增加 `tabPatches`，编译器不再向 tab 页模板注入 `<custom-tab-bar />`；`getTabBar(callback)` 支持延迟解析。511 单测；完整 P0 浏览器门禁通过 | **待重新评分** |
 | 2026-11-10 | 第三十九次同步：devtool 页面栈恢复——按 app 保存 pageStack 路径到 sessionStorage，带 `restore=1` 的刷新在 launch 时重建栈（最多到 maxPageStack），关闭应用清理；验收覆盖刷新后回到 add-todo 且栈长度 2。497 单测 / 72 步；页面形态 38→40，总分 57.50→57.74 | **57.74%** |
 | 2026-11-10 | 第三十八次同步：页面形态配置下沉到宿主——`pageBehaviorOf(manifest,pagePath)` 解析 `enablePullDownRefresh`/`onReachBottomDistance`，通过 render iframe URL 传入，service/kernel 不再读取页面形态配置；下拉手势按配置启用，触底距离默认 50，`stopPullDownRefresh` 发 host diagnostic 立即收起指示器；转场改 opacity 避免 iframe 坐标错位。497 单测 / 71 步；页面形态 36→38，总分 57.26→57.50 | **57.50%** |
 | 2026-11-10 | 第三十七次同步：devtool 页面转场——按 page stack 深度区分 navigateTo/navigateBack/replace，给每页 iframe 加 push/pop/fade 动画，验收断言 `data-transition=forward|back`。497 单测 / 70 步；页面形态 34→36，总分 57.02→57.26 | **57.26%** |

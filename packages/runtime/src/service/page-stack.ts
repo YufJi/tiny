@@ -544,6 +544,7 @@ export class ServicePageStack {
       }, pageId),
       logic: {
         selectComponents: (selector, all) => render.selectComponents(pageId, selector, all),
+        onTabBarReady: (callback) => render.onTabBarReady?.(pageId, callback),
         relationNodes: (relationKey) => render.relationNodes(pageId, relationKey),
         selectorQuery: () => render.pageSelectorQuery(pageId),
         intersectionObserver: (observerOptions) => (

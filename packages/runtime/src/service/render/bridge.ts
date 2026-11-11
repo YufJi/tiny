@@ -100,6 +100,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
    */
   private readonly pendingCompletions = new Map<string, Array<() => void>>()
   private readonly ackedBatches = new Map<string, { pageId: string; callbacks: Array<() => void> }>()
+  private readonly pendingTabBarReady = new Map<string, Array<(tabBar: unknown) => void>>()
   private completionCounter = 0
 
   constructor(options: ServiceRenderBridgeOptions) {
@@ -217,12 +218,14 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     this.sendTreeSnapshot(page.pageId)
     // The first snapshot carries the full map; later updates only send changes.
     this.logicTree.seedComponentData(page.pageId)
+    this.flushTabBarReady(page.pageId)
   }
 
   unmountPage(pageId: string): void {
     this.mountedPages.delete(pageId)
     this.pendingPages.delete(pageId)
     this.bindings.clear(pageId)
+    this.pendingTabBarReady.delete(pageId)
     // The view is going away, so a completion it was waiting for can never be
     // "after render" any more. Drop the callbacks instead of running them
     // against a destroyed page.
@@ -251,6 +254,24 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     if (queue) queue.push(callback)
     else this.pendingCompletions.set(pageId, [callback])
     this.scheduleTreeUpdate(pageId)
+  }
+
+  /**
+   * `this.getTabBar(callback)` compatibility: the custom tab bar is a service
+   * component, so it can be resolved before its render view exists. If the
+   * page has not created it yet, wait for the next service-side mount/update.
+   */
+  onTabBarReady(pageId: string, callback: (tabBar: unknown) => void): void {
+    if (typeof callback !== 'function') return
+    const tabBar = this.logicTree?.selectComponents(pageId, 'custom-tab-bar', false)[0]
+    if (tabBar) {
+      callback(tabBar)
+      return
+    }
+    if (!this.mountedPages.has(pageId)) return
+    const queue = this.pendingTabBarReady.get(pageId)
+    if (queue) queue.push(callback)
+    else this.pendingTabBarReady.set(pageId, [callback])
   }
 
   syncPageData(pageId: string, patch: Record<string, unknown>): void {
@@ -355,6 +376,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     if (!this.logicTree) return
     const root = this.logicTree.snapshotRenderTree(pageId)
     if (!root) return
+    const tabRoot = this.logicTree.snapshotTabBarTree(pageId)
     const page = this.options.getPage(pageId)
     const ack = this.takeCompletionBatch(pageId)
     this.connection.sendEvent(
@@ -370,6 +392,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
           : {}),
         behaviorScheme: this.options.behaviorScheme,
         messages: cloneJsonSafe(this.treeFlow(root)),
+        ...(tabRoot ? { tabRoot: cloneJsonSafe(tabRoot) } : {}),
         ...(this.wxsModules ? { wxsModules: cloneJsonSafe(this.wxsModules) } : {}),
         ...(page?.data ? { pageData: cloneJsonSafe(page.data) } : {}),
         componentData: cloneJsonSafe(this.logicTree.snapshotComponentData(pageId)),
@@ -394,11 +417,12 @@ export class ServiceRenderBridge implements ServiceRenderPort {
         if (!this.logicTree || !this.mountedPages.has(id)) continue
         try {
           const { patches } = this.logicTree.updateRenderTree(id)
+          const tabBar = this.logicTree.updateTabBarTree(id)
           // Component data is a per-instance patch; a data-only update must
           // still cross the bridge even when the structure did not change.
           const componentData = this.logicTree.updateComponentData(id)
           const hasComponentData = Object.keys(componentData).length > 0
-          if (patches.length > 0 || hasComponentData) {
+          if (patches.length > 0 || hasComponentData || tabBar.patches.length > 0) {
             const page = this.options.getPage(id)
             const ack = this.takeCompletionBatch(id)
             this.connection.sendEvent(
@@ -408,6 +432,9 @@ export class ServiceRenderBridge implements ServiceRenderPort {
                 patches: cloneJsonSafe(patches),
                 ...(page?.data ? { pageData: cloneJsonSafe(page.data) } : {}),
                 ...(hasComponentData ? { componentData: cloneJsonSafe(componentData) } : {}),
+                ...(tabBar.patches.length > 0
+                  ? { tabPatches: cloneJsonSafe(tabBar.patches) }
+                  : {}),
                 ...(ack ? { ack } : {}),
               },
               { pageId: id },
@@ -417,6 +444,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
             this.flushCompletions(id)
           }
           this.flushWxsBindings(id)
+          this.flushTabBarReady(id)
         } catch (error) {
           this.connection.sendDiagnostic('warn', {
             code: DIAGNOSTIC_CODES.LOGIC_TREE_ERROR,
@@ -495,6 +523,15 @@ export class ServiceRenderBridge implements ServiceRenderPort {
         )
       },
     )
+  }
+
+  private flushTabBarReady(pageId: string): void {
+    const callbacks = this.pendingTabBarReady.get(pageId)
+    if (!callbacks || callbacks.length === 0) return
+    const tabBar = this.logicTree?.selectComponents(pageId, 'custom-tab-bar', false)[0]
+    if (!tabBar) return
+    this.pendingTabBarReady.delete(pageId)
+    for (const callback of callbacks) callback(tabBar)
   }
 
   private isIndependentPage(pageId: string): boolean {

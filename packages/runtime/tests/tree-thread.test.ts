@@ -71,6 +71,62 @@ describe('tree thread', () => {
     })
   })
 
+  test('mounts and patches an independent tabBar root', async () => {
+    const [hostTransport, renderTransport] = createInMemoryTransportPair()
+    const mounted: RenderNode[] = []
+    const mountedTabBar: RenderNode[] = []
+    const tabPatches: RenderPatch[][] = []
+    bootTreeThread({
+      connection: createRenderConnection(renderTransport),
+      renderer: {
+        mount: (root) => mounted.push(root),
+        mountTabBar: (root) => mountedTabBar.push(root),
+        applyPatches: () => {},
+        applyTabBarPatches: (patches) => tabPatches.push(patches),
+      },
+    })
+    const host = new BridgeConnection({
+      localRole: 'host',
+      peerRole: 'render',
+      transport: hostTransport,
+      respondToHello: false,
+    })
+    await host.handshake()
+    host.sendEvent('tree', 'flow', {
+      pageId: 'page-1',
+      pagePath: 'pages/index/index',
+      styles: [],
+      tabRoot: {
+        type: 'element',
+        id: 'tab-bar',
+        tag: 'custom-tab-bar',
+        component: true,
+        componentPath: 'custom-tab-bar/index',
+      },
+      messages: [
+        { type: 'tree', root: tree },
+        { type: 'ready' },
+      ],
+    }, { pageId: 'page-1' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    host.sendEvent('tree', 'patch', {
+      pageId: 'page-1',
+      patches: [],
+      tabPatches: [{ type: 'text', target: 'tab-bar#0', text: 'home' }],
+    }, { pageId: 'page-1' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(mounted).toHaveLength(1)
+    expect(mountedTabBar).toHaveLength(1)
+    expect(mountedTabBar[0]).toMatchObject({
+      component: true,
+      componentPath: 'custom-tab-bar/index',
+    })
+    expect(tabPatches).toEqual([[
+      { type: 'text', target: 'tab-bar#0', text: 'home' },
+    ]])
+  })
+
   test('replaces an undefined component with its componentPlaceholder', async () => {
     const [hostTransport, renderTransport] = createInMemoryTransportPair()
     const mounted: RenderNode[] = []

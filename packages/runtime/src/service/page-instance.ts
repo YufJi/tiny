@@ -54,6 +54,8 @@ export type MiniProgramPageRuntime = {
 /** Logic-tree hooks: selector queries, relations, intersection and animation. */
 export type MiniProgramPageLogicHooks = {
   selectComponents?: (selector: string, all: boolean) => unknown[]
+  /** Resolve a `getTabBar(callback)` request once the custom tabBar exists. */
+  onTabBarReady?: (callback: (tabBar: unknown) => void) => void
   relationNodes?: (relationKey: string) => unknown[]
   selectorQuery?: () => Record<string, unknown>
   intersectionObserver?: (options?: Record<string, unknown>) => Record<string, unknown>
@@ -349,9 +351,16 @@ export class MiniProgramPageInstance implements ObserverHost {
     return this.definition?.behaviors.has(behavior as object | string) ?? false
   }
 
-  /** `this.getTabBar()`: the page-local `custom-tab-bar` component, if any. */
-  getTabBar(): unknown {
-    return this.logic.selectComponents?.('custom-tab-bar', false)?.[0] ?? null
+  /** `this.getTabBar([callback])`: the page-local custom tab bar, if any. */
+  getTabBar(callback?: (tabBar: unknown) => void): unknown {
+    const tabBar = this.logic.selectComponents?.('custom-tab-bar', false)?.[0] ?? null
+    if (typeof callback !== 'function') return tabBar
+    if (tabBar) {
+      callback(tabBar)
+      return tabBar
+    }
+    this.logic.onTabBarReady?.(callback)
+    return null
   }
 
   triggerEvent(_name: string, _detail?: unknown, _options?: Record<string, unknown>): void {

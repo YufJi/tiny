@@ -42,8 +42,6 @@ export type AppConfig = {
   preloadRules: PreloadRuleArtifact[]
   /** `tabBar.custom`: render the developer-provided `custom-tab-bar` component. */
   tabBarCustom: boolean
-  /** Pages declared in `tabBar.list`, used to inject the custom tab bar. */
-  tabBarPages: string[]
   /** `themeLocation` tables, when the project declares theme variables. */
   theme?: ThemeTable
   /** App-relative path of the theme file (diagnostics and CSS injection). */
@@ -194,11 +192,6 @@ async function readAppConfig(context: CompilerContext): Promise<AppConfig> {
   const tabBar = value.tabBar && typeof value.tabBar === 'object' && !Array.isArray(value.tabBar)
     ? value.tabBar as Record<string, unknown>
     : {}
-  const tabBarPages = (Array.isArray(tabBar.list) ? tabBar.list : [])
-    .map((item) => (item && typeof item === 'object'
-      ? normalizeDeclaredPath((item as Record<string, unknown>).pagePath)
-      : undefined))
-    .filter((page): page is string => Boolean(page))
   return {
     path: configPath,
     value,
@@ -206,7 +199,6 @@ async function readAppConfig(context: CompilerContext): Promise<AppConfig> {
     subPackages,
     preloadRules,
     tabBarCustom: tabBar.custom === true,
-    tabBarPages,
     ...themeInfo,
   }
 }
@@ -580,9 +572,8 @@ function normalizeDeclaredPath(value: unknown): string | undefined {
 /**
  * Register the developer's `custom-tab-bar/index` as an app-level component.
  *
- * WeChat renders it outside the page; the Web devtool mounts it through each
- * tab page template instead, so the component still runs in the page logic
- * tree and `getTabBar()` can select it.
+ * The runtime mounts it as an independent page-level `tabRoot`; the compiler
+ * emits the component artifact and app-level `usingComponents` registration.
  */
 async function prepareCustomTabBar(
   context: CompilerContext,

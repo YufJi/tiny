@@ -48,7 +48,11 @@ glass-easel ComponentSpace 在 service 中运行，自定义组件是完整实�
 :::callout{title="只有组件共享 id，元素用 locator"}
 service 给组件（和页面根）分配稳定 id，render 按这个 id 维护组件实例；元素不带跨线程 id，渲染侧分配本地 id，补丁、事件、查询和元素树检查都用 `owner#index.path` 形式的 locator 寻址。
 
-当前模板更新走 virtual node patch；component flow 只负责首屏挂载（`define`、`tree`、`ready`），快照作为嵌套树传输，组件模板由 service 和 render 各按 `templates.js` 求值一次。snapshot diff 覆盖文本、属性、结构和重排。
+当前模板更新走 virtual node patch；component flow 只负责首屏挂载（`define`、`tree`、`ready`），快照作为嵌套树传输，组件模板由 service 和 render 各按 `templates.js` 求值一次。custom tabBar 额外携带独立 `tabRoot`，后续以 `tabPatches` 更新。snapshot diff 覆盖文本、属性、结构和重排。
+:::
+
+:::callout{title="每页树状态已收口，组件空间仍共享"}
+service 为每个 pageId 维护页级树状态：页面根、可选独立 tabRoot、组件实例表、最近一次 render snapshot、component data 基线、relations、页面 router 和页内组件实例计数。页级状态随页面卸载销毁；`ComponentSpace`、组件定义和样式 scope 仍是应用级共享，避免为每个页面复制一套 glass-easel realm。
 :::
 
 ## service 线程：逻辑树和页面栈 {#service kicker="service 线程"}
@@ -533,7 +537,7 @@ trait behaviors / chaining API 和 20 个平台/开放能力组件仍未实现�
 :::
 
 :::card{tag="页面" tone="warn" title="页面形态仍以 devtool 宿主为主"}
-14 项页面生命周期和 5 个路由 API 已接，分享回调、下拉刷新和退出状态可用；devtool 已有分享面板、forward/back/replace 页面转场、按路径 + query 的页面栈恢复和页面内 custom tabBar。剩余缺口是页面 data / `saveExitState` 的完整恢复、通用 `host-web` 的页面 chrome，以及预下载策略。
+14 项页面生命周期和 5 个路由 API 已接，分享回调、下拉刷新和退出状态可用；devtool 已有分享面板、forward/back/replace 页面转场、按路径 + query 的页面栈恢复和独立页级 custom tabBar `tabRoot`。剩余缺口是页面 data / `saveExitState` 的完整恢复、通用 `host-web` 的页面 chrome，以及预下载策略。
 :::
 
 :::card{tag="API" tone="warn" title="API 覆盖有限"}

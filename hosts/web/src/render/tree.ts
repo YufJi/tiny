@@ -174,7 +174,10 @@ export type GlassRenderTree = {
     details?: unknown
   }) => void) => void
   mount: (node: RenderNode) => void
+  mountTabBar?: (node: RenderNode) => void
+  clearTabBar?: () => void
   applyPatches: (patches: RenderPatch[]) => void
+  applyTabBarPatches?: (patches: RenderPatch[]) => void
   /** Definitions collected from `define` flow messages, keyed by component path. */
   setComponentDefinitions?: (definitions: Record<string, ComponentDefinitionPayload>) => void
   /** Install the template groups used for render-time evaluation. */
@@ -919,11 +922,24 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   let root = createRoot()
   let rootElement = root.getBackendElement() as unknown as HTMLElement | null
   if (rootElement && options.container) options.container.replaceChildren(rootElement)
+  let tabBarRoot: AnyComponent | undefined
+  let tabBarRootElement: HTMLElement | null = null
+  let tabBarContainer: HTMLElement | null = null
+  const tabBarNodeIds = new Set<string>()
   let mounted = false
   let pageScopeName = ''
   let pageUsing: Record<string, string> = {}
   let behaviorScheme = DEFAULT_BEHAVIOR_SCHEME
   let rootDirty = false
+
+  const pageUsingDefinitions = (): Record<string, glassEasel.GeneralComponentDefinition> => {
+    const using: Record<string, glassEasel.GeneralComponentDefinition> = {}
+    for (const [tag, path] of Object.entries(pageUsing)) {
+      if (!tag || !path || resolvingComponents.has(path)) continue
+      using[tag] = componentDefinition(tag, path)
+    }
+    return using
+  }
 
   /**
    * Rebuild the root with the page facts known before mount: the style scope
@@ -934,11 +950,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const rebuildRoot = (): void => {
     if (mounted || !rootDirty) return
     rootDirty = false
-    const using: Record<string, glassEasel.GeneralComponentDefinition> = {}
-    for (const [tag, path] of Object.entries(pageUsing)) {
-      if (!tag || !path || resolvingComponents.has(path)) continue
-      using[tag] = componentDefinition(tag, path)
-    }
+    const using = pageUsingDefinitions()
     const previous = root
     root = createRoot(pageScopeName || undefined, using)
     rootElement = root.getBackendElement() as unknown as HTMLElement | null
@@ -986,7 +998,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const isOwnedTarget = (element: glassEasel.Element): boolean => {
     let current: glassEasel.Element | null = element
     while (current) {
-      if (current === root) return true
+      if (current === root || current === tabBarRoot) return true
       current = composedParentOf(current)
     }
     return false
@@ -1049,8 +1061,12 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   }
 
   const lightShadow = (owner: AnyComponent): ShadowLike => {
-    const ownerShadow = (owner as unknown as { ownerShadowRoot?: ShadowLike }).ownerShadowRoot
-    return ownerShadow ?? (root.shadowRoot as unknown as ShadowLike)
+    const element = owner as unknown as {
+      ownerShadowRoot?: ShadowLike
+      shadowRoot?: ShadowLike
+    }
+    return element.ownerShadowRoot ?? element.shadowRoot
+      ?? (root.shadowRoot as unknown as ShadowLike)
   }
 
   let localIdCounter = 0
@@ -2376,6 +2392,21 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     }
   }
 
+  const clearTabBar = (): void => {
+    for (const id of tabBarNodeIds) {
+      for (const cleanup of eventCleanups.get(id) ?? []) cleanup()
+      eventCleanups.delete(id)
+      nodes.delete(id)
+      currentTree.delete(id)
+    }
+    tabBarNodeIds.clear()
+    ;(tabBarRoot as unknown as { destroy?: () => void } | undefined)?.destroy?.()
+    tabBarRoot = undefined
+    tabBarRootElement = null
+    tabBarContainer?.remove()
+    tabBarContainer = null
+  }
+
   return {
     get root() {
       return root
@@ -2645,7 +2676,84 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       }
       styleElement.textContent = styles.join('\n')
     },
+    clearTabBar,
+    mountTabBar(node) {
+      clearTabBar()
+      const ownerDocument = options.container?.ownerDocument
+        ?? (typeof document === 'undefined' ? undefined : document)
+      if (ownerDocument?.body) {
+        tabBarContainer = ownerDocument.createElement('div')
+        tabBarContainer.setAttribute('data-tiny-tabbar-root', '')
+        tabBarContainer.style.cssText = [
+          'position:fixed',
+          'left:0',
+          'right:0',
+          'bottom:0',
+          'z-index:1000',
+          'pointer-events:none',
+        ].join(';')
+        ;(options.container ?? ownerDocument.body).appendChild(tabBarContainer)
+      }
+      const before = new Set(currentTree.keys())
+      tabBarRoot = createRoot(pageScopeName || undefined, pageUsingDefinitions())
+      tabBarRootElement = tabBarRoot.getBackendElement() as unknown as HTMLElement | null
+      if (tabBarRootElement) {
+        const style = (tabBarRootElement as unknown as {
+          style?: { pointerEvents?: string }
+        }).style
+        if (style) style.pointerEvents = 'auto'
+        tabBarContainer?.replaceChildren(tabBarRootElement)
+      }
+      const shadow = tabBarRoot.shadowRoot as unknown as {
+        appendChild: (child: unknown) => void
+        childNodes: ArrayLike<unknown>
+        removeChild: (child: unknown) => void
+      }
+      while (shadow.childNodes.length > 0) shadow.removeChild(shadow.childNodes[0])
+      const tabBarRootNode: RenderElement = {
+        type: 'element',
+        id: node.type === 'element' && node.id ? `tab-bar-root:${node.id}` : 'tab-bar-root',
+        tag: 'tab-bar-root',
+        children: node.type === 'element' ? [node] : [],
+      }
+      const children = tabBarRootNode.children ?? []
+      for (const child of children) {
+        shadow.appendChild(child.type === 'text'
+          ? createText(child, tabBarRoot)
+          : createElement(child, tabBarRoot))
+      }
+      const rootNodeId = tabBarRootNode.id!
+      nodes.set(rootNodeId, tabBarRoot)
+      currentTree.set(rootNodeId, tabBarRootNode)
+      if (tabBarRootElement) {
+        if (typeof tabBarRootElement?.setAttribute === 'function') {
+          tabBarRootElement.setAttribute(TINY_ENGINE_NAMING.nodeIdAttribute, rootNodeId)
+        }
+        applyHostProps(tabBarRoot, tabBarRootNode.props)
+        applyClassProps(
+          tabBarRootElement,
+          tabBarRootNode.props,
+          tabBarRootNode.scopes,
+          tabBarRootNode.scopeChain,
+          undefined,
+          tabBarRootNode.scopes ?? [],
+        )
+      }
+      for (const id of currentTree.keys()) {
+        if (!before.has(id)) tabBarNodeIds.add(id)
+      }
+      if (options.attach !== false) glassEasel.Element.pretendAttached(tabBarRoot)
+      bindNestedComponentInstances()
+      applyComponentDataToNodes(componentData)
+      flushPendingWxsEvents()
+      flushAllWxsProps()
+      queueMicrotask(() => {
+        bindNestedComponentInstances(true)
+        applyComponentDataToNodes(componentData)
+      })
+    },
     mount(node) {
+      clearTabBar()
       rebuildRoot()
       for (const cleanups of eventCleanups.values()) {
         for (const cleanup of cleanups) cleanup()
@@ -2698,6 +2806,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       emitPageReRender()
     },
     applyPatches,
+    applyTabBarPatches: applyPatches,
     setComponentDefinitions(next) {
       for (const [path, payload] of Object.entries(next)) {
         componentDefinitions.set(path, payload)
@@ -2713,6 +2822,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       return nodes.get(id)
     },
     destroy() {
+      clearTabBar()
       detachWxsEventHost()
       detachCompositor()
       for (const cleanups of eventCleanups.values()) {

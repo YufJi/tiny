@@ -2774,6 +2774,24 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
       assert.ok(homeFrame, 'custom tabBar home page did not create a render frame')
       await homeFrame.waitForSelector('tiny-custom-tab-bar [data-index]', { timeout: STEP_TIMEOUT })
       assert.equal(
+        await homeFrame.evaluate(() => {
+          const tabBar = document.querySelector('tiny-custom-tab-bar')
+          const pageRoot = document.querySelector('tiny-page')
+          return Boolean(tabBar && pageRoot?.contains(tabBar))
+        }),
+        false,
+        'custom tabBar rendered inside the page root',
+      )
+      assert.equal(
+        await homeFrame.evaluate(() => {
+          const tabBar = document.querySelector('tiny-custom-tab-bar')
+          const tabRoot = document.querySelector('[data-tiny-tabbar-root]')
+          return Boolean(tabBar && tabRoot?.contains(tabBar))
+        }),
+        true,
+        'custom tabBar did not render in the independent tab root',
+      )
+      assert.equal(
         await homeFrame.locator('tiny-custom-tab-bar [data-index]').count(),
         2,
         'custom tabBar did not render two items',

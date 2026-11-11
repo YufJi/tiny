@@ -177,7 +177,7 @@ input 会转发 focus、blur、keydown 和 confirm，Taro 表单按 Enter 可以
 ::::
 
 :::callout{title="兼容不等于完整" tone="warn"}
-这些只是让 Taro 3 React 产物能跑起来的最小集合。Behavior、observers、relations、generics、definitionFilter 和 pureDataPattern 已经有覆盖，但 componentPlaceholder、自定义 tabBar 和其他社区框架没有进入验收。双侧树目前对 Taro 的影响主要在逻辑树求值和渲染树挂载，不改变其页面注册方式。
+这些只是让 Taro 3 React 产物能跑起来的最小集合。Behavior、observers、relations、generics、definitionFilter 和 pureDataPattern 已经有覆盖；componentPlaceholder 和其他社区框架没有进入验收。自定义 tabBar 有独立 fixture 和 devtools 验收。双侧树目前对 Taro 的影响主要在逻辑树求值和渲染树挂载，不改变其页面注册方式。
 :::
 
 ## 常用命令 {#commands kicker="命令和环境变量"}
@@ -254,7 +254,7 @@ OffscreenCanvas handoff、2D/WebGL、RAF、createImage 和 touch 有覆盖；can
 :::
 
 :::card{tag="页面" tone="warn" title="页面高级能力未覆盖"}
-下拉刷新、分享、页面栈恢复、自定义 tabBar 没有验收；内置 tabBar、滚动和触底已经接入。
+下拉刷新、分享和页面栈恢复没有独立验收；内置 tabBar、滚动、触底和自定义 tabBar 已经接入。
 :::
 
 :::card{tag="API" tone="warn" title="API 覆盖有限"}

@@ -197,7 +197,7 @@ describe('logic tree with multiple mounted pages', () => {
   test('scopes components created by a hidden page update to that page', async () => {
     const tree = createTree(() => undefined, PAGE_OPTIONS)
     tree.mountPage(FIRST_PAGE, { value: 'first' }, 'page-1')
-    tree.mountPage(SECOND_PAGE, { value: 'second' }, 'page-2')
+    tree.mountPage(FIRST_PAGE, { value: 'second' }, 'page-2')
     await tree.glass.whenRendered()
 
     // page-1 is no longer the most recently mounted page; a lazily created
@@ -228,5 +228,46 @@ describe('logic tree with multiple mounted pages', () => {
       pageId: 'page-1',
       native: { clientX: 1, clientY: 1 },
     })).toBe(true)
+  })
+
+  test('keeps a page tree manager per page and releases only the unmounted page', async () => {
+    const tree = createTree(() => undefined, PAGE_OPTIONS)
+    tree.mountPage(FIRST_PAGE, { value: 'first' }, 'page-1')
+    tree.mountPage(FIRST_PAGE, { value: 'second' }, 'page-2')
+    await tree.glass.whenRendered()
+
+    const first = tree.pageTree('page-1')
+    const second = tree.pageTree('page-2')
+    expect(first?.path).toBe(FIRST_PAGE)
+    expect(second?.path).toBe(FIRST_PAGE)
+    expect(first?.root).not.toBe(second?.root)
+    expect((tree.glass.getComponentSnapshot() as Array<{ componentId: string }>)
+      .some((item) => item.componentId.startsWith('page-1:'))).toBe(true)
+
+    tree.unmountPage('page-1')
+    expect(tree.pageTree('page-1')).toBeUndefined()
+    expect(tree.pageTree('page-2')).toBe(second)
+    expect((tree.glass.getComponentSnapshot() as Array<{ componentId: string }>)
+      .some((item) => item.componentId.startsWith('page-1:'))).toBe(false)
+    expect((tree.glass.getComponentSnapshot() as Array<{ componentId: string }>)
+      .some((item) => item.componentId.startsWith('page-2:'))).toBe(true)
+  })
+
+  test('restarts component instance counters for each page tree', async () => {
+    const tree = createTree(() => undefined, PAGE_OPTIONS)
+    tree.mountPage(FIRST_PAGE, { value: 'first' }, 'page-1')
+    tree.mountPage(FIRST_PAGE, { value: 'second' }, 'page-2')
+    await tree.glass.whenRendered()
+
+    const firstPage = tree.glass.getMountedComponentByPageId('page-1')
+    const secondPage = tree.glass.getMountedComponentByPageId('page-2')
+    const firstCard = firstPage?.shadowRoot?.getElementById('card')?.asGeneralComponent()
+    const secondCard = secondPage?.shadowRoot?.getElementById('card')?.asGeneralComponent()
+    const firstId = firstCard ? tree.glass.componentIdOf(firstCard) : undefined
+    const secondId = secondCard ? tree.glass.componentIdOf(secondCard) : undefined
+
+    expect(firstId).toMatch(/^page-1:/)
+    expect(secondId).toMatch(/^page-2:/)
+    expect(firstId!.slice('page-1:'.length)).toBe(secondId!.slice('page-2:'.length))
   })
 })

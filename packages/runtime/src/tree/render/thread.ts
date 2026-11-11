@@ -40,7 +40,11 @@ export type TreeEventPayload = {
 
 export type TreeRenderer = {
   mount: (root: RenderNode) => void
+  /** Mount the optional independent custom-tabBar root. */
+  mountTabBar?: (root: RenderNode) => void
   applyPatches: (patches: RenderPatch[]) => void
+  /** Apply patches for the independent custom-tabBar root. */
+  applyTabBarPatches?: (patches: RenderPatch[]) => void
   /**
    * Component definitions collected from `define` flow messages. Called before
    * the first `mount`, so the render tree can register a real component per
@@ -296,6 +300,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       componentData?: Record<string, Record<string, unknown>>
       pageScope?: string
       pageUsing?: Record<string, string>
+      tabRoot?: RenderNode
       placeholders?: Record<string, string>
       behaviorScheme?: string
       ack?: string[]
@@ -329,6 +334,13 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
             payload.placeholders,
             (path) => Boolean(definitions[path]),
           ))
+          if (payload.tabRoot) {
+            options.renderer.mountTabBar?.(applyComponentPlaceholders(
+              payload.tabRoot,
+              payload.placeholders,
+              (path) => Boolean(definitions[path]),
+            ))
+          }
           tree = undefined
         }
       }
@@ -362,6 +374,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       const payload = (message.payload ?? {}) as {
         pageId?: string
         patches?: RenderPatch[]
+        tabPatches?: RenderPatch[]
         pageData?: Record<string, unknown>
         componentData?: Record<string, Record<string, unknown>>
         ack?: string[]
@@ -372,6 +385,9 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
         if (payload.pageData) options.renderer.setPageData?.(payload.pageData)
         if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
         options.renderer.applyPatches(payload.patches ?? [])
+        if (payload.tabPatches && payload.tabPatches.length > 0) {
+          options.renderer.applyTabBarPatches?.(payload.tabPatches)
+        }
       })
     })
   })
