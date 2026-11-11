@@ -92,7 +92,7 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 | `devtool` | 13 | 元素树投影、页面栈保存值合并、导航 chrome、`launchExitState` 选择 |
 
 :::callout{title="单测也会跑真实连接"}
-Bridge 测试会真的建立两条内存连接并完成握手；runtime 测试会启动 service 逻辑树和 headless render tree、注册 Page、执行 bootstrap 和导航，并验证 tree flow 与 patch。这里没有把整个引擎 mock 掉的做法。
+Bridge 测试会真的建立两条内存连接并完成握手；runtime 测试会启动 service 逻辑树和 headless pageframe、注册 Page、执行 bootstrap 和导航，并验证 tree flow、数据与组件身份投影。这里没有把整个引擎 mock 掉的做法。
 :::
 
 ## iOS 宿主单独验收 {#ios kicker="原生宿主"}

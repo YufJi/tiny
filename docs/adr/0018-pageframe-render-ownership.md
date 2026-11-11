@@ -3,9 +3,11 @@
 ## Status
 
 Accepted. Phases A and B are implemented. The browser test host, debugger and
-iOS render WKWebView all mount through the pageframe; snapshot rendering
-remains only as a headless test-adapter path selected by renderer capability.
-There is no host-level pageframe switch or snapshot escape hatch.
+iOS render WKWebView all mount through the pageframe, and the runtime's
+cross-thread integration harness also defaults to pageframe. Snapshot rendering
+remains only for low-level renderer unit tests and one explicit service
+projection assertion. There is no host-level pageframe switch or snapshot
+escape hatch.
 
 ## Context
 

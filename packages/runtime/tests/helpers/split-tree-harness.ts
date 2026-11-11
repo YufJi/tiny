@@ -22,7 +22,11 @@ export type RenderThreadRuntime = {
 
 const noopRenderer: TreeRenderer = {
   mount() {},
+  mountPage() {},
   applyPatches() {},
+  setPageData() {},
+  applyPageDataPatches() {},
+  setComponentData() {},
   applyStyles() {},
   setEventSink() {},
   setDiagnosticSink() {},

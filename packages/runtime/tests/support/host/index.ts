@@ -447,7 +447,7 @@ export function createTestHost(options: RuntimeHostOptions): TestRuntimeHost {
           ? { initialExitState: options.initialExitState }
           : {}),
         ...(options.maxPageStack !== undefined ? { maxPageStack: options.maxPageStack } : {}),
-        ...(options.pageFrame !== undefined ? { pageFrame: options.pageFrame } : {}),
+        pageFrame: options.pageFrame ?? true,
       })
       const initialData = (serviceResult.initialData as Record<string, unknown> | undefined) ?? options.initialData
       const pageId = serviceResult.pageId as string | undefined
