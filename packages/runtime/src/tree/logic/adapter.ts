@@ -211,7 +211,10 @@ export class LogicTreeAdapter {
   }
 
   registerComponentSchemas(schemas: MiniProgramComponentSchema[]): void {
-    this.componentSchemas = schemas
+    const merged = new Map(this.componentSchemas.map((schema) => [schema.path, schema]))
+    for (const schema of schemas) merged.set(schema.path, schema)
+    this.componentSchemas = [...merged.values()]
+    for (const pageTree of this.pageTrees.values()) pageTree.components.register(schemas)
     this.glass.registerComponentSchemas(schemas)
   }
 
@@ -242,6 +245,7 @@ export class LogicTreeAdapter {
     if (!backendElement) throw new Error(`logic page has no backend element: ${pageId}`)
     const pageTree = new PageTreeManager(pageId, path, backendElement)
     this.pageTrees.set(pageId, pageTree)
+    pageTree.components.register(this.componentSchemas)
     this.mountCustomTabBarRoot(pageId, path, pageTree)
     const renderTree = this.snapshotRenderTree(pageId)
     if (renderTree) pageTree.recordRenderTree(renderTree)

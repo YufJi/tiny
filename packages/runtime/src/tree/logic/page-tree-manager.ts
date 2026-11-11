@@ -1,8 +1,51 @@
 import { cloneDataValue } from '../../data'
+import type { MiniProgramComponentSchema } from '../../types'
 import type { RenderNode } from '../protocol'
 import type { LogicBackendElement } from './backend'
 
 type ComponentDataSnapshot = Record<string, Record<string, unknown>>
+
+/**
+ * Page-scoped component definition view.
+ *
+ * glass-easel still owns one shared ComponentSpace, but each page tracks the
+ * schemas and placeholders that are visible to its tree. This is the service
+ * analogue of WeChat's per-page `compManager`.
+ */
+export class PageComponentManager {
+  private readonly schemas = new Map<string, MiniProgramComponentSchema>()
+  private readonly placeholders = new Map<string, string>()
+
+  register(schemas: MiniProgramComponentSchema[]): void {
+    for (const schema of schemas) {
+      this.schemas.set(schema.path, schema)
+      for (const [tag, target] of Object.entries(schema.placeholders ?? {})) {
+        this.placeholders.set(tag, target)
+      }
+    }
+  }
+
+  get(path: string): MiniProgramComponentSchema | undefined {
+    return this.schemas.get(path)
+  }
+
+  has(path: string): boolean {
+    return this.schemas.has(path)
+  }
+
+  get size(): number {
+    return this.schemas.size
+  }
+
+  placeholderFor(tag: string): string | undefined {
+    return this.placeholders.get(tag)
+  }
+
+  clear(): void {
+    this.schemas.clear()
+    this.placeholders.clear()
+  }
+}
 
 /**
  * Per-page state owned by the service logic tree.
@@ -15,6 +58,7 @@ export class PageTreeManager {
   readonly pageId: string
   readonly path: string
   readonly root: LogicBackendElement
+  readonly components = new PageComponentManager()
   private tabBarRoot?: LogicBackendElement
   private lastRenderTree?: RenderNode
   private lastTabBarRenderTree?: RenderNode
@@ -83,6 +127,7 @@ export class PageTreeManager {
     this.lastRenderTree = undefined
     this.lastTabBarRenderTree = undefined
     this.tabBarRoot = undefined
+    this.components.clear()
     this.componentDataSnapshot = {}
   }
 }

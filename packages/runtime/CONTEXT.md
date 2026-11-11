@@ -59,9 +59,10 @@ one layer.
   dispatch.
 - **Page tree state**: per-page service-side state split into
   `PageTreeManager` (page root projection, optional independent tabBar root,
-  latest render snapshots, component-data baseline) and the glass-side page
-  tree manager (page root and tabBar components, component instance registry,
-  relation index, page router, and page-local component instance counters).
+  latest render snapshots, component-data baseline, page-scoped component
+  schema view) and the glass-side page tree manager (page root and tabBar
+  components, component instance registry, relation index, page router, and
+  page-local component instance counters).
   The `ComponentSpace` and component definitions remain shared; a page tree
   does not create a second glass-easel realm.
 - **Render tree**: the host-owned real component/DOM tree behind `TreeRenderer`.

@@ -10,6 +10,7 @@ import { normalizeComponentDefinition } from '../src/component/component-definit
 import { buildComponentSchemas } from '../src/service/render/component-schema'
 import { LogicTreeAdapter } from '../src/tree/logic/adapter'
 import type { RenderNode } from '../src/tree/protocol'
+import type { MiniProgramComponentSchema } from '../src/types'
 
 const PAGE_PATH = 'pages/home/home'
 const TAB_BAR_PATH = 'custom-tab-bar/index'
@@ -109,6 +110,19 @@ describe('independent tabBar logic root', () => {
     expect(tabRoot?.type === 'element' ? tabRoot.tag : undefined).toBe('custom-tab-bar')
     expect(Object.values(tree.snapshotComponentData('page-1'))
       .some((data) => data.selected === 0)).toBe(true)
+
+    const extraSchema: MiniProgramComponentSchema = {
+      componentId: 'component-extra',
+      path: 'components/extra/index',
+      data: {},
+      properties: {},
+      using: {},
+      placeholders: { lazy: 'view' },
+    }
+    tree.registerComponentSchemas([extraSchema])
+    expect(pageTree?.components.has(TAB_BAR_PATH)).toBe(true)
+    expect(pageTree?.components.has('components/extra/index')).toBe(true)
+    expect(pageTree?.components.placeholderFor('lazy')).toBe('view')
 
     tree.unmountPage('page-1')
     expect(tree.pageTree('page-1')).toBeUndefined()
