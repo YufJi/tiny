@@ -96,9 +96,9 @@ to the retained A page, `reLaunch`, create/destroy cycles for a page-level host
 with both a host-template child and a slot child under `wx:if`, then keyed
 `wx:for` reverse/rotate cycles. The flow trace compares component text, WXS
 module state, lifecycle order including `moved`, relation link/unlink callbacks,
-page reuse and re-entry. A step only passes when the canonical WeChat/Tiny
+relation `linkFailed`, page reuse and re-entry. A step only passes when the canonical WeChat/Tiny
 traces are identical. The P0 browser gate additionally covers slot-child
-component binding under `wx:if`, relation link/unlink, component-data updates,
+component binding under `wx:if`, relation link/unlink/linkFailed, component-data updates,
 and the full service/render lifecycle.
 
 ## Consequences

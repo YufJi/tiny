@@ -18,6 +18,9 @@ Component({
       },
       unlinked() {
         record('C-' + this.data.relationTag)
+      },
+      linkFailed() {
+        record('C!' + this.data.relationTag)
       }
     }
   },
