@@ -60,12 +60,11 @@ export function templateToProcGen(
       for (const script of tmpl.globals.scripts) {
         hasScripts = true
         const varIdent = fw.genIdent()
-        fw.exprStmt((ww) => { ww.write(`var ${varIdent.name}`) })
         let lvaluePath: ScopeVarLvaluePath
         if (script.kind === 'GlobalRef') {
           const absPath = resolve(tmpl.path, script.src.name)
           scriptInitializers.push((ww) => {
-            ww.write(`${varIdent.name}||(${varIdent.name}=W[${genLitStr(absPath)}]())`)
+            ww.write(`var ${varIdent.name}=W[${genLitStr(absPath)}]()`)
           })
           lvaluePath = { kind: 'Script', absPath }
         } else {
@@ -73,7 +72,7 @@ export function templateToProcGen(
           const moduleLit = genLitStr(moduleId)
           const contentLit = genLitStr(transformWxsSource(script.content, moduleId).code)
           scriptInitializers.push((ww) => {
-            ww.write(`${varIdent.name}||(${varIdent.name}=Q.S(${moduleLit},${contentLit})())`)
+            ww.write(`var ${varIdent.name}=Q.S(${moduleLit},${contentLit})()`)
           })
           lvaluePath = { kind: 'InlineScript', path: tmpl.path, modName: script.moduleName.name }
         }

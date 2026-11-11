@@ -1,7 +1,7 @@
 import type { BridgeConnection } from '@tiny/bridge'
 import { DIAGNOSTIC_CODES, TINY_ENGINE_NAMING } from '@tiny/manifest'
 import type { Manifest } from '@tiny/manifest'
-import type { WxsModuleTable } from '@tiny/wxs-runtime'
+import type { WxsModuleTable, WxsRuntime } from '@tiny/wxs-runtime'
 import type { NormalizedComponentDefinition } from '../../component'
 import { buildComponentSchemas } from './component-schema'
 import type {
@@ -57,6 +57,8 @@ export type ServiceRenderBridgeOptions = {
   onLogicTreeCreated?: (tree: unknown) => void
   /** Report an error raised by page/component logic (the app `onError` hook). */
   onError: (message: string) => void
+  /** Page-scoped WXS runtime shared with generated service templates. */
+  wxsRuntime?: WxsRuntime
 }
 
 /**
@@ -171,6 +173,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
         }, pageId)
       },
       afterRender: (pageId, callback) => this.completeAfterRender(pageId, callback),
+      ...(this.options.wxsRuntime ? { wxsRuntime: this.options.wxsRuntime } : {}),
       ...createRenderRpc(this.connection),
     })
     this.logicTree.registerComponentSchemas(this.componentSchemas)

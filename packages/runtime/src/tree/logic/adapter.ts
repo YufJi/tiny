@@ -13,6 +13,7 @@ import { normalizeAnimationFrames, animationTimingOptions } from '../animation'
 import * as glassEasel from 'glass-easel'
 import type { MiniProgramComponentSchema, QueryNodeSnapshot, TemplateRegistry } from '../../types'
 import type { NormalizedComponentDefinition } from '../../component'
+import type { WxsRuntime } from '@tiny/wxs-runtime'
 import { GlassEaselRuntimeAdapter } from './glass-easel-adapter'
 import type { LogicFrameworkContext } from './glass-easel-adapter'
 import {
@@ -85,6 +86,8 @@ export type LogicTreeAdapterOptions = {
     play: (request: RenderAnimationRequest & { pageId: string }) => void
     clear: (request: RenderClearAnimationRequest & { pageId: string }) => void
   }
+  /** Page-scoped WXS module state for service-side template evaluation. */
+  wxsRuntime?: WxsRuntime
 }
 
 /**
@@ -119,6 +122,7 @@ export class LogicTreeAdapter {
   private readonly reportedPages = new Set<string>()
   private readonly viewIntersection?: LogicTreeAdapterOptions['viewIntersection']
   private readonly viewAnimation?: LogicTreeAdapterOptions['viewAnimation']
+  private readonly wxsRuntime?: WxsRuntime
   private readonly intersectionObservers = new Map<string, {
     callbacks: Map<string, (entry: Record<string, unknown>) => void>
     selectorByViewId: Map<string, string>
@@ -138,6 +142,7 @@ export class LogicTreeAdapter {
     this.queryView = options.queryView
     this.viewIntersection = options.viewIntersection
     this.viewAnimation = options.viewAnimation
+    this.wxsRuntime = options.wxsRuntime
     this.onDiagnostic = options.onDiagnostic
     const appConfig = options.manifest.app?.configuration?.effective as
       | Record<string, unknown>
@@ -225,6 +230,14 @@ export class LogicTreeAdapter {
     data: Record<string, unknown> = {},
     pageId: string,
   ): RenderNode | null {
+    return this.withWxsPage(pageId, () => this.mountPageInScope(path, data, pageId))
+  }
+
+  private mountPageInScope(
+    path: string,
+    data: Record<string, unknown>,
+    pageId: string,
+  ): RenderNode | null {
     let styleStart: number | undefined
     if (!this.styledPages.has(path)) {
       this.styledPages.add(path)
@@ -263,23 +276,33 @@ export class LogicTreeAdapter {
 
   /** Tear down a page root and its render/relation state. */
   unmountPage(pageId: string): void {
-    this.pageTrees.get(pageId)?.clear()
-    this.pageTrees.delete(pageId)
-    this.backend.clearPageLocators(pageId)
-    this.glass.unmountPage(pageId)
-    if (this.activePageId === pageId) this.activePageId = undefined
+    try {
+      this.withWxsPage(pageId, () => {
+        this.pageTrees.get(pageId)?.clear()
+        this.pageTrees.delete(pageId)
+        this.backend.clearPageLocators(pageId)
+        this.glass.unmountPage(pageId)
+        if (this.activePageId === pageId) this.activePageId = undefined
+      })
+    } finally {
+      this.wxsRuntime?.releasePage?.(pageId)
+    }
   }
 
   /** Deliver a page lifetime to the page's service-side components. */
   triggerPageLifetime(pageId: string, phase: 'show' | 'hide' | 'resize', event?: unknown): void {
-    this.glass.triggerPageLifetime(pageId, phase, event)
+    this.withWxsPage(pageId, () => {
+      this.glass.triggerPageLifetime(pageId, phase, event)
+    })
   }
 
   applyPageData(pageId: string, patch: Record<string, unknown>): void {
-    const page = this.glass.getMountedComponentByPageId(pageId)
-    if (!page) throw new Error(`logic page is not mounted: ${pageId}`)
-    page.setData(patch)
-    this.glass.resolvePageRelations(pageId)
+    this.withWxsPage(pageId, () => {
+      const page = this.glass.getMountedComponentByPageId(pageId)
+      if (!page) throw new Error(`logic page is not mounted: ${pageId}`)
+      page.setData(patch)
+      this.glass.resolvePageRelations(pageId)
+    })
   }
 
   /** Runtime-registered stylesheets (shared/page scopes) for the render tree. */
@@ -307,6 +330,12 @@ export class LogicTreeAdapter {
   /** The page-scoped tree manager, for diagnostics and parity tests. */
   pageTree(pageId: string): PageTreeManager | undefined {
     return this.pageTrees.get(pageId)
+  }
+
+  private withWxsPage<T>(pageId: string | undefined, action: () => T): T {
+    return pageId && this.wxsRuntime?.withPage
+      ? this.wxsRuntime.withPage(pageId, action)
+      : action()
   }
 
   private visibleSchemasFor(pagePath: string): MiniProgramComponentSchema[] {
@@ -580,41 +609,49 @@ export class LogicTreeAdapter {
   }
 
   snapshotRenderTree(pageId: string): RenderNode | null {
-    const pageTree = this.pageTrees.get(pageId)
-    if (!pageTree) throw new Error(`logic page is not mounted: ${pageId}`)
-    return this.backend.snapshotRenderTree(pageId, pageTree.root)
+    return this.withWxsPage(pageId, () => {
+      const pageTree = this.pageTrees.get(pageId)
+      if (!pageTree) throw new Error(`logic page is not mounted: ${pageId}`)
+      return this.backend.snapshotRenderTree(pageId, pageTree.root)
+    })
   }
 
   /** Initial snapshot of the independent custom tabBar root. */
   snapshotTabBarTree(pageId: string): RenderNode | null {
-    const pageTree = this.pageTrees.get(pageId)
-    if (!pageTree) throw new Error(`logic page is not mounted: ${pageId}`)
-    const root = pageTree.getTabBarRoot()
-    if (!root) return null
-    return this.backend.snapshotRenderTree(pageId, root, {
-      rootKey: 'tabBar',
-      rootMode: 'component',
+    return this.withWxsPage(pageId, () => {
+      const pageTree = this.pageTrees.get(pageId)
+      if (!pageTree) throw new Error(`logic page is not mounted: ${pageId}`)
+      const root = pageTree.getTabBarRoot()
+      if (!root) return null
+      return this.backend.snapshotRenderTree(pageId, root, {
+        rootKey: 'tabBar',
+        rootMode: 'component',
+      })
     })
   }
 
   /** Diff the current render-node tree against the previous one. */
   updateRenderTree(pageId: string): { snapshot: RenderNode; patches: RenderPatch[] } {
-    const pageTree = this.pageTrees.get(pageId)
-    if (!pageTree) throw new Error(`logic page is not mounted: ${pageId}`)
-    const snapshot = this.snapshotRenderTree(pageId)
-    if (!snapshot) throw new Error(`logic page is not mounted: ${pageId}`)
-    const previous = pageTree.advanceRenderTree(snapshot)
-    return { snapshot, patches: previous ? diffRenderTree(previous, snapshot) : [] }
+    return this.withWxsPage(pageId, () => {
+      const pageTree = this.pageTrees.get(pageId)
+      if (!pageTree) throw new Error(`logic page is not mounted: ${pageId}`)
+      const snapshot = this.snapshotRenderTree(pageId)
+      if (!snapshot) throw new Error(`logic page is not mounted: ${pageId}`)
+      const previous = pageTree.advanceRenderTree(snapshot)
+      return { snapshot, patches: previous ? diffRenderTree(previous, snapshot) : [] }
+    })
   }
 
   /** Diff the independent tabBar root against its previous snapshot. */
   updateTabBarTree(pageId: string): { snapshot: RenderNode | null; patches: RenderPatch[] } {
-    const pageTree = this.pageTrees.get(pageId)
-    if (!pageTree) throw new Error(`logic page is not mounted: ${pageId}`)
-    const snapshot = this.snapshotTabBarTree(pageId)
-    if (!snapshot) return { snapshot: null, patches: [] }
-    const previous = pageTree.advanceTabBarRenderTree(snapshot)
-    return { snapshot, patches: previous ? diffRenderTree(previous, snapshot) : [] }
+    return this.withWxsPage(pageId, () => {
+      const pageTree = this.pageTrees.get(pageId)
+      if (!pageTree) throw new Error(`logic page is not mounted: ${pageId}`)
+      const snapshot = this.snapshotTabBarTree(pageId)
+      if (!snapshot) return { snapshot: null, patches: [] }
+      const previous = pageTree.advanceTabBarRenderTree(snapshot)
+      return { snapshot, patches: previous ? diffRenderTree(previous, snapshot) : [] }
+    })
   }
 
   /**
@@ -973,6 +1010,10 @@ export class LogicTreeAdapter {
   }
 
   dispatchViewEvent(payload: ViewEventPayload): boolean {
+    return this.withWxsPage(payload.pageId, () => this.dispatchViewEventInScope(payload))
+  }
+
+  private dispatchViewEventInScope(payload: ViewEventPayload): boolean {
     if (payload.touches || payload.changedTouches) {
       this.activeTouches = payload.touches
       this.activeChangedTouches = payload.changedTouches

@@ -56,5 +56,12 @@ export type WxsRuntime = {
   register: (moduleId: string, source: string) => () => WxsExports
   require: (moduleId: string) => WxsExports
   invoke: (moduleId: string, exportPath: string[], args: unknown[]) => unknown
+  /**
+   * Run synchronous template/property work in a page-local module scope.
+   * Page-scoped runtimes implement this; single-page render runtimes do not.
+   */
+  withPage?: <T>(pageId: string, action: () => T) => T
+  /** Release module state owned by one page. */
+  releasePage?: (pageId: string) => void
   dispose: () => void
 }

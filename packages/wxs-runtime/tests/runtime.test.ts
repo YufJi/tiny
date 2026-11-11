@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 import {
   createDefaultWxsCompiler,
+  createPageScopedWxsRuntime,
   createWxsRuntime,
   transformWxsSource,
   wxsCtor,
@@ -153,5 +154,34 @@ describe('createWxsRuntime', () => {
     const wxs = runtime()
     wxs.register('utils', 'module.exports = { value: 1 }')
     expect(() => wxs.invoke('utils', ['value'], [])).toThrow('not a function')
+  })
+})
+
+describe('createPageScopedWxsRuntime', () => {
+  test('isolates module state by page and releases it with the page', () => {
+    const wxs = createPageScopedWxsRuntime({ compile: createDefaultWxsCompiler() })
+    const load = wxs.register(
+      'counter',
+      'var count = 0; module.exports = { next: function () { count += 1; return count } }',
+    )
+    const next = (pageId: string) => wxs.withPage!(pageId, () => {
+      return (load().next as () => number)()
+    })
+
+    expect(next('page-a')).toBe(1)
+    expect(next('page-b')).toBe(1)
+    expect(next('page-a')).toBe(2)
+    wxs.releasePage!('page-a')
+    expect(next('page-a')).toBe(1)
+  })
+
+  test('keeps function origins available across page contexts', () => {
+    const wxs = createPageScopedWxsRuntime({ compile: createDefaultWxsCompiler() })
+    const load = wxs.register('handler', 'module.exports = { tap: function () {} }')
+    const tap = wxs.withPage!('page-a', () => load().tap as Function)
+    expect(wxs.withPage!('page-b', () => wxs.originOf(tap))).toEqual({
+      moduleId: 'handler',
+      exportPath: ['tap'],
+    })
   })
 })

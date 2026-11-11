@@ -204,6 +204,108 @@ export function createWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
 }
 
 /**
+ * WXS runtime for the service thread.
+ *
+ * A service thread hosts multiple page trees, while WeChat's page WebView owns
+ * one WXS module table per page. Keep the generated bundle's `Q.S` registration
+ * global, but instantiate its module exports in the page selected around each
+ * synchronous template evaluation.
+ */
+export function createPageScopedWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
+  const sources = new Map<string, string>()
+  const runtimes = new Map<string, WxsRuntime>()
+  const contexts: string[] = []
+  const fallbackPage = '__tiny_wxs_app__'
+  let disposed = false
+
+  const registerSource = (moduleId: string, source: string): void => {
+    const existing = sources.get(moduleId)
+    if (existing !== undefined) {
+      if (existing !== source) throw new Error(`WXS module already registered: ${moduleId}`)
+      return
+    }
+    sources.set(moduleId, source)
+    for (const runtime of runtimes.values()) runtime.register(moduleId, source)
+  }
+
+  const createPageRuntime = (): WxsRuntime => {
+    const runtime = createWxsRuntime(host)
+    for (const [moduleId, source] of sources) runtime.register(moduleId, source)
+    return runtime
+  }
+
+  const currentPage = (): string => contexts.at(-1) ?? fallbackPage
+
+  const runtimeForCurrentPage = (): WxsRuntime => {
+    if (disposed) throw new Error('WXS runtime is disposed')
+    const pageId = currentPage()
+    let runtime = runtimes.get(pageId)
+    if (!runtime) {
+      runtime = createPageRuntime()
+      runtimes.set(pageId, runtime)
+    }
+    return runtime
+  }
+
+  return {
+    register(moduleId, source) {
+      registerSource(moduleId, source)
+      return () => runtimeForCurrentPage().require(moduleId)
+    },
+
+    load(table) {
+      for (const module of table.modules) registerSource(module.id, module.code)
+    },
+
+    originOf(value) {
+      const current = runtimes.get(currentPage())
+      const local = current?.originOf(value)
+      if (local) return local
+      for (const runtime of runtimes.values()) {
+        const origin = runtime.originOf(value)
+        if (origin) return origin
+      }
+      return undefined
+    },
+
+    resolve(moduleId, exportPath) {
+      return runtimeForCurrentPage().resolve(moduleId, exportPath)
+    },
+
+    require(moduleId) {
+      return runtimeForCurrentPage().require(moduleId)
+    },
+
+    invoke(moduleId, exportPath, args) {
+      return runtimeForCurrentPage().invoke(moduleId, exportPath, args)
+    },
+
+    withPage(pageId, action) {
+      contexts.push(pageId)
+      try {
+        return action()
+      } finally {
+        contexts.pop()
+      }
+    },
+
+    releasePage(pageId) {
+      const runtime = runtimes.get(pageId)
+      runtimes.delete(pageId)
+      runtime?.dispose()
+    },
+
+    dispose() {
+      disposed = true
+      sources.clear()
+      contexts.length = 0
+      for (const runtime of runtimes.values()) runtime.dispose()
+      runtimes.clear()
+    },
+  }
+}
+
+/**
  * Default compiler for hosts that execute WXS in the current realm.
  *
  * The generated factory receives the WXS runtime values as `__wxs`; the

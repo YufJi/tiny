@@ -13,7 +13,7 @@ import { ServiceRenderBridge } from './render'
 import { ServicePageStack } from './page-stack'
 import { createServiceRouter } from './router'
 import { ServiceTabBar } from './tab-bar'
-import { createDefaultWxsCompiler, createWxsRuntime } from '@tiny/wxs-runtime'
+import { createDefaultWxsCompiler, createPageScopedWxsRuntime } from '@tiny/wxs-runtime'
 import { findPageArtifact, normalizeRoutePath, resolveRoutePath } from './route'
 import { shouldPreloadRule } from './preload'
 import type {
@@ -35,7 +35,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   // The generated template bundle resolves WXS modules through the host
   // runtime. One instance per service thread keeps module state local to the
   // app while sharing the kernel implementation with the render thread.
-  const wxsRuntime = createWxsRuntime({ compile: createDefaultWxsCompiler() })
+  const wxsRuntime = createPageScopedWxsRuntime({ compile: createDefaultWxsCompiler() })
   ;(globalThis as unknown as Record<string, unknown>)[TINY_ENGINE_NAMING.wxsRuntimeGlobal] = wxsRuntime
 
   const expectedPagePaths = options.manifest.pages.map((page) => page.path)
@@ -96,6 +96,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     loadTemplates: options.loadTemplates,
     ...(options.loadStyle ? { loadStyle: options.loadStyle } : {}),
     ...(options.resolveAssetUrl ? { resolveAssetUrl: options.resolveAssetUrl } : {}),
+    wxsRuntime,
     getPage: (pageId) => resolvePage(pageId),
     frameworkContext: {
       createRouter,
