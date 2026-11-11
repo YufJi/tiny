@@ -574,6 +574,7 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 
 | 日期 | 变更 | 完整度 |
 | --- | --- | --- |
+| 2026-11-12 | WXS descriptor 与 3.17.5 对齐：移除官方不存在的 `getData()` 扩展，fixture 改用 `getDataset()`；530 单测和五段浏览器门禁通过 | **待重新评分** |
 | 2026-10-24 | 初始快照：WebView 基准、117 页探针、加权评分 | **31.3%** |
 | 2026-10-24 | 第二次同步：补齐自定义组件高级语义（behaviors/observers/relations/externalClasses/styleIsolation/selectComponent）；框架 42→58、样式 62→68；115 单测 + 45 浏览器步骤 | **34.77%** |
 | 2026-10-24 | 第三次同步：Component-as-page 核心语义接入（query properties、methods 生命周期、behaviors/observers/relations/styleIsolation）；框架 58→60；116 单测 | **35.13%** |

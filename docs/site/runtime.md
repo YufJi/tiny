@@ -297,7 +297,7 @@ WXS 代码在编译期完成：
 - 本地 handler 执行后，只有路径上存在 service listener 才回传；
 - `mutated` 元数据会传递，但 `mut-bind` 的本地语义尚未实现。
 
-render 侧 `ComponentDescriptor` 已覆盖 `selectComponent`、`getDataset`、`getData`、`getState`、`setStyle`、class 方法、`getComputedStyle`、`getBoundingClientRect`、timers / RAF、`callMethod`、`triggerEvent`；service 侧 descriptor 覆盖 `selectComponent`、`getDataset`、`getData`、`setStyle`、`callMethod`、`triggerEvent`，只用于承接 render WXS handler 的 `callMethod` / `triggerEvent` effect，不执行 WXS handler 本身。`getState` 按 descriptor 元素存储，使 `change:prop` 观察器与后续事件 handler 看到同一份 state；`getData` 使用上一次 flow/patch 的页面或组件快照；`setStyle` 的 rpx 固定按 750 转成 vw。
+render 侧 `ComponentDescriptor` 已覆盖 `selectComponent`、`getDataset`、`getState`、`setStyle`、class 方法、`getComputedStyle`、`getBoundingClientRect`、timers / RAF、`callMethod`、`triggerEvent`；service 侧 descriptor 覆盖 `selectComponent`、`getDataset`、`setStyle`、`callMethod`、`triggerEvent`，只用于承接 render WXS handler 的 `callMethod` / `triggerEvent` effect，不执行 WXS handler 本身。`getState` 按 descriptor 元素存储，使 `change:prop` 观察器与后续事件 handler 看到同一份 state；`setStyle` 的 rpx 固定按 750 转成 vw。微信 3.17.5 的 pageframe descriptor 不包含 `getData()`，WXS 通过 `getDataset()` 或事件的 `target` / `currentTarget` 读取渲染数据。
 
 当前明确的限制：
 

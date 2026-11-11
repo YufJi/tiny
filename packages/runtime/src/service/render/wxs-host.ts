@@ -1,5 +1,4 @@
 import { DIAGNOSTIC_CODES, TINY_ENGINE_NAMING } from '@tiny/manifest'
-import { cloneJsonSafe } from '../../data'
 import type { WxsBindingMessage } from '../../tree/protocol'
 import type {
   LogicBackendElement,
@@ -45,7 +44,7 @@ export type WxsEventHostOptions = {
 type DescriptorScope = {
   /** Element the descriptor acts on (`setStyle`, `getDataset`). */
   node: LogicBackendElement
-  /** Page/component root that `selectComponent` and `getData` are scoped to. */
+  /** Page/component root that `selectComponent` is scoped to. */
   root: LogicBackendElement
   pageId: string
 }
@@ -55,7 +54,6 @@ export type WxsComponentDescriptor = {
   selectComponent: (selector: string) => WxsComponentDescriptor | null
   selectAllComponents: (selector: string) => WxsComponentDescriptor[]
   getDataset: () => Record<string, unknown>
-  getData: () => Record<string, unknown>
   setStyle: (style: unknown) => void
   callMethod: (name: string, ...args: unknown[]) => unknown
   triggerEvent: (name: string, detail?: unknown, options?: Record<string, unknown>) => unknown
@@ -151,9 +149,6 @@ function createDescriptor(
     getDataset() {
       return Object.fromEntries(node.dataset)
     },
-    getData() {
-      return cloneJsonSafe(ownerData(options, tree, scope) ?? {})
-    },
     setStyle(style: unknown) {
       if (!style || typeof style !== 'object') return
       const updates = new Map<string, string>()
@@ -245,16 +240,6 @@ function ownerComponent(
   }
   const component = element.asGeneralComponent?.() ?? element as unknown as Record<string, unknown>
   return component === (pageRoot as unknown) ? undefined : component
-}
-
-function ownerData(
-  options: WxsEventHostOptions,
-  tree: LogicTreeAdapter,
-  scope: DescriptorScope,
-): Record<string, unknown> | undefined {
-  const component = ownerComponent(tree, scope)
-  if (component) return component.data as Record<string, unknown> | undefined
-  return options.getPage(scope.pageId)?.data
 }
 
 function callOwnerMethod(

@@ -89,7 +89,7 @@ Accepted and implemented. Merged into `next` as #27 (`1ac6d3a`), originally on
   module, and otherwise mirrors glass-easel's default wrapper exactly (binding
   `this` to the host's method caller). The descriptor itself is built in the
   service (`service/wxs-host.ts`): `selectComponent` / `selectAllComponents` /
-  `getDataset` / `getData` / `setStyle` / `callMethod`. `setStyle` merges into
+  `getDataset` / `setStyle` / `callMethod`. `setStyle` merges into
   the element's inline style and asks for a page re-diff, so the render thread
   receives an ordinary `tree.patch`.
 - The logic backend records element-to-node associations (`associateValue`)

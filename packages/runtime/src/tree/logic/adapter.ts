@@ -555,8 +555,8 @@ export class LogicTreeAdapter {
 
   /**
    * Snapshot component data keyed by component host view id. Page data stays
-   * on the separate page-data path; this map lets render-side `ins.getData()`
-   * answer for custom component instances without a bridge round trip.
+   * on the separate page-data path; this map supplies the initial render
+   * instances and per-instance data hints without a render-to-service round trip.
    */
   snapshotComponentData(pageId: string): Record<string, Record<string, unknown>> {
     const pageTree = this.pageTrees.get(pageId)

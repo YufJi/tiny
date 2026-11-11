@@ -21,7 +21,7 @@ const TEMPLATE = `
 exports.start = function (event, ins) {
   ins.callMethod('record', 'ins', typeof ins)
   ins.callMethod('record', 'instance', event.instance === ins)
-  ins.callMethod('record', 'data', ins.getData().marker)
+  ins.callMethod('record', 'data', ins.getDataset().marker)
   ins.callMethod('record', 'dataset', ins.selectComponent('.box').getDataset().role)
   ins.selectComponent('.box').setStyle({ left: '42px', backgroundColor: '#00ff00' })
 }
@@ -32,7 +32,7 @@ exports.input = function (event, ins) {
   ins.callMethod('record', 'input', event.detail.value)
 }
 </wxs>
-<view class="box" data-role="target" style="position: absolute; top: 5px;" bindlongpress="{{h.start}}">x</view>
+<view class="box" data-role="target" data-marker="{{marker}}" style="position: absolute; top: 5px;" bindlongpress="{{h.start}}">x</view>
 <view class="plain" bindtap="onPlain">y</view>
 <input id="wxs-input" bindinput="{{h.input}}" />
 `

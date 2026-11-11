@@ -16,11 +16,12 @@
     id="target"
     class="target"
     data-kind="box"
+    data-value="{{value}}"
     prop="{{value}}"
     change:prop="{{t.observe}}"
     bindtap="{{t.tap}}"
   ></view>
-  <view id="dynamic" class="dynamic" data-kind="dyn" bindtap="{{useWxs ? t.dynamicTap : 'serviceTap'}}">dynamic</view>
+  <view id="dynamic" class="dynamic" data-kind="dyn" data-value="{{value}}" bindtap="{{useWxs ? t.dynamicTap : 'serviceTap'}}">dynamic</view>
   <text class="dynamic-status">dynamic-status: {{dynamicStatus}}</text>
   <button bindtap="toggleUseWxs">Toggle dynamic handler</button>
   <button bindtap="bumpValue">Bump value</button>

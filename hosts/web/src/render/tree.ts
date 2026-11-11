@@ -1644,10 +1644,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       hasClass(name: string) {
         return element ? element.classList.contains(name) : false
       },
-      getData() {
-        const data = componentData[viewId ?? ''] ?? componentData[ownerViewId ?? '']
-        return { ...(data ?? pageData) }
-      },
       callMethod(name: string, ...args: unknown[]) {
         // WeChat resolves `callMethod` to the descriptor element's component
         // (or the element's ownerShadowRoot host), not to the bound element id.
@@ -2915,8 +2911,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     },
     setComponentData: (data) => {
       // The service sends a component-scoped patch after the initial snapshot,
-      // so merge instead of replacing; the WXS `ins.getData()` view and the
-      // component's own template both read from it.
+      // so merge instead of replacing before applying it to render instances.
       componentData = { ...componentData, ...data }
       if (pageFrameRoot) {
         // The pageframe template already applied the props that created each
