@@ -8,9 +8,9 @@ stats:
   - ['528', '单元测试']
   - ['74', '浏览器步骤']
   - ['5', '浏览器流程']
-  - ['7', '测试小程序']
+  - ['9', '测试小程序']
   - ['7', 'iOS fixture smoke']
-description: '小程序引擎的验收方式：构建、内核检查、528 个单元测试、74 个浏览器步骤、七套测试小程序和 iOS 宿主 smoke。'
+description: '小程序引擎的验收方式：构建、内核检查、528 个单元测试、74 个浏览器步骤、九套测试小程序和 iOS 宿主 smoke。'
 name: '测试'
 pageTitle: '测试与验收 · Tiny 小程序引擎'
 order: 8
@@ -31,13 +31,13 @@ pnpm accept:glass-easel 是唯一完整的端到端入口，任何单个包的�
 | 构建 12 个目标 | 通过 turbo 构建 css-units、manifest、wxs-runtime、stylesheet-compiler、template-compiler、bridge、cli、runtime、api、host-web-components、host-core-wasm 和 host-web；本地命中 turbo 缓存时约 1 秒。 | `pnpm build:glass-easel` |
 | 检查内核依赖 | 从 packages/runtime/src/index.ts、packages/api/src/index.ts 和 packages/wxs-runtime/src/index.ts 遍历依赖图，禁止浏览器全局，也禁止反向依赖 @tiny/host-* 或 hosts/*；WXS 语言级 require 单独放行。 | `pnpm check:runtime-purity` |
 | 一次跑完单元测试 | 根 `vitest.workspace.ts` 把 12 个包的配置装进同一个 Vitest 进程，各包仍保留自己的 alias、snapshot 和 globals 配置；单包调试仍可 `pnpm --filter <package> test`。 | `pnpm test` |
-| 一次编译全部 fixture | 7 个测试小程序并发编译到 `tests/host/generated/apps/<id>/generated`，并写入 `apps.json` 清单；比逐段重编译少 3 次覆盖和 1 次恢复。 | `node scripts/compile-apps.mjs --all` |
+| 一次编译全部 fixture | 9 个测试小程序并发编译到 `tests/host/generated/apps/<id>/generated`，并写入 `apps.json` 清单；比逐段重编译少 3 次覆盖和 1 次恢复。 | `node scripts/compile-apps.mjs --all` |
 | 启动两个宿主 | 测试宿主（默认 5199）与调试器（默认 5180）各启动一次，结束后只关闭一次。 | `node scripts/accept-glass-easel.mjs` |
 | P0 demo 流程 | 29 步：启动、渲染、作用域样式、快照、自定义事件、checkbox/slider/switch、导航、输入、storage、toast、组件语义、样式隔离、按钮矩阵、relations、WXS 本地事件与 change:prop、catchtouchmove 滚动锁、真实滚动触发 `onPageScroll`、canvas 诊断和零 console error。 | `runBrowserAcceptance({ baseUrl, app: 'demo' })` |
 | mini 流程 | 共享同一棵产物树，用 `?app=mini` 选择；10 步：真实 todos、双组件实例、import/include/template、输入、ECharts、子包、warning 和零错误。 | `runMiniProgramAcceptance({ baseUrl, app: 'mini' })` |
 | Taro 3 流程 | 用 `?app=todo` 读取 Taro 3 预构建产物；6 步：Redux todos、Enter 新增、勾选、筛选、清空和零错误。 | `runTaroAcceptance({ baseUrl, app: 'todo' })` |
 | WeChat demo 流程 | 用 `?app=wechat-demo` 读取官方示例子集；12 步：组件索引、button 页、aria、swiper、radio、API 页、navigator、WXS 拖拽、Canvas 2D/WebGL 和零错误。 | `runWechatDemoAcceptance({ baseUrl, app: 'wechat-demo' })` |
-| 调试器流程 | `TINY_DEVTOOL_RUNTIME_ROOT` 指向同一棵产物树，不再重编译 7 个 fixture；9 步：默认应用列表、点击启动、状态投影、渲染、导航/返回、逐应用预览与 3 个应用 LRU 保活、回到列表/深链/页面栈上限/Reload/Close app、零错误；渲染树由 `bootRenderEntry` 创建。 | `runDevtoolAcceptance({ baseUrl: devtoolUrl })` |
+| 调试器流程 | `TINY_DEVTOOL_RUNTIME_ROOT` 指向同一棵产物树，不再重编译 9 个 fixture；9 步：默认应用列表、点击启动、状态投影、渲染、导航/返回、逐应用预览与 3 个应用 LRU 保活、回到列表/深链/页面栈上限/Reload/Close app、零错误；渲染树由 `bootRenderEntry` 创建。 | `runDevtoolAcceptance({ baseUrl: devtoolUrl })` |
 :::
 
 :::callout{title="五段流程共享产物树，并行执行"}
@@ -140,7 +140,7 @@ pnpm ios:smoke:jsc    # 在 macOS jsc 里启动 demo 的 service engine + app-da
 测试宿主只调用 `host.launch()`，然后用 Playwright 操作页面并读取 `host.diagnostics` / `host.apiRegistry.storage`；devtool 通过 client 做导航、前后台、重载和元素树检查。两者都不直接读取 iframe 全局变量。更多差异见 [宿主适配](#/hosts)。
 :::
 
-## 七个测试小程序，覆盖不同产物 {#fixtures kicker="测试小程序"}
+## 九个测试小程序，覆盖不同产物 {#fixtures kicker="测试小程序"}
 
 fixture 不是单元测试里的假数据，而是完整的小程序源码或预构建产物。
 
@@ -150,6 +150,8 @@ fixture 不是单元测试里的假数据，而是完整的小程序源码或预
 | `mini` | 3 个页面 + 1 个分包页面 + 2 个组件 | 真实 todos、import/include/template、animation、ECharts 离屏 canvas、资源内联 | 是 |
 | `todo` | 1 个页面，Taro 3 预构建产物 | webpackJsonp、外部 WXS、递归模板、循环 usingComponents、Enter 提交 | 是 |
 | `wechat-demo` | 4 个主包页面 + 2 个分包，共 125 页（示例子集） | 基础组件索引、button 示例、storage API 示例 | 是 |
+| `custom-tab` | 2 个 tab 页 | 自定义 tabBar 的页级 `tabRoot`、`getTabBar()` 和 tab 切换 | 是（调试器） |
+| `wechat-parity` | 2 个页面 + 1 个组件 | 页面/组件 WXS 模块状态、事件→表达式、跨页/重入和微信 CLI oracle | 是（编译） |
 | `echarts` | 22 个页面的历史示例 | 早期 ECharts 集成参考资料 | 否 |
 | `vant` | 13 个页面 | Vant Weapp 的 dashboard、button、calendar、cascader 等页面，调试器逐个预览 | 是（调试器） |
 | `weui` | 54 个页面 | WeUI 的表单、按钮和示例页，调试器逐个预览 | 是（调试器） |

@@ -1,0 +1,15 @@
+var seen = {}
+var next = 0
+
+function mark(key, label) {
+  if (!key) return 'pending'
+  if (!seen[key]) {
+    next += 1
+    seen[key] = next
+  }
+  return label + ':' + seen[key]
+}
+
+module.exports = {
+  mark: mark
+}

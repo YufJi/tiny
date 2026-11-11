@@ -1,0 +1,12 @@
+{
+  "pages": [
+    "pages/a/a",
+    "pages/b/b"
+  ],
+  "window": {
+    "navigationBarTitleText": "Tiny WXS parity"
+  },
+  "usingComponents": {
+    "probe": "/components/probe/probe"
+  }
+}

@@ -1,0 +1,72 @@
+# ADR-0018: Render pageframe owns WXML evaluation and diff
+
+## Status
+
+Accepted. Implementation is staged; the service template/diff path remains
+available while the pageframe path is introduced.
+
+## Context
+
+WeChat 3.17.5 keeps component/page logic in the service context, but the
+pageframe (`WAWebview` / `WARenderContext`) is the WXML execution owner:
+
+- `wcc -d -ds` emits `$gwx`, `__WXML_GLOBAL__.modules`,
+  `f_['wxs/...'] = nv_require(...)`, and template evaluation in the pageframe.
+- The service bundle registers WXML functions in `__wxAppCode__`, but the
+  running service context observed for the parity fixture has no pageframe
+  `entrys` and no evaluated WXS modules; those belong to the pageframe.
+- The same pageframe module table is shared by page and component templates,
+  so WXS events, `change:prop`, and expressions see one module instance.
+
+Tiny currently evaluates page and component WXML in the service logic tree,
+then sends a `RenderNode` snapshot/patch to the render tree. The render tree
+evaluates component templates a second time. That makes WXS state, expression
+side effects, `setData` diff timing, and component creation order inherently
+split across two realms.
+
+## Decision
+
+Move WXML ownership to the render pageframe:
+
+1. The render pageframe mounts the page template from the compiled template
+   registry and owns page/component expression evaluation and local diff.
+2. The service continues to own Page/Component logic, data, observers,
+   relations, methods, and selection semantics. It does not evaluate WXML for
+   the view; component instances are reported back through a component flow so
+   the service can maintain its logic tree.
+3. `setData` crosses as data, not as a service-computed virtual-tree patch.
+   Render-local commit is the acknowledgement for the `setData` callback.
+4. WXS state/lifecycle belongs to the render pageframe. Service-only input
+   behavior is handled separately only where WeChat's source shows it does not
+   use the normal pageframe event path.
+
+The migration is staged to keep the gate green:
+
+- **Phase A**: render-owned page template spike; keep the existing service
+  template path behind the migration boundary.
+- **Phase B**: component creation/destruction flow from render to service.
+- **Phase C**: data-first `setData` and render-local diff.
+- **Phase D**: remove service WXML and the cross-tree WXS state replay.
+
+## Acceptance
+
+The parity fixture is `tests/apps/wechat-parity`. The same fixture is opened by
+the WeChat developer tool CLI and by the Tiny test host. Each step records a
+canonical trace of:
+
+- normalized page and component text
+- component paths/instance identity and lifecycle order
+- WXS module state and expression/event/observer transitions
+- event target/currentTarget/dataset
+- page stack and `setData` completion order
+- console/page errors
+
+`scripts/wechat-parity-trace.mjs` records the Tiny side. WeChat side actions
+use the `wechatide` automator tools and the raw automation port for pageframe
+DOM evidence. A step only passes when the normalized traces match exactly.
+
+## Consequences
+
+The current `tree.wxsHandler` replay is a compatibility bridge, not the target
+architecture. New runtime work should move responsibilities toward the
+render-owned pageframe rather than extending service-side WXML emulation.
