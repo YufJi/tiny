@@ -343,6 +343,7 @@ Shadow DOM：
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
 - **74 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent、真实滚动触发的 onPageScroll，WeChat demo 覆盖 swiper autoplay 开关、radio 点击与 WeUI 勾选结构、navigator 点击跳转、WXS 拖拽，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧，canvas 覆盖 2D/WebGL/legacy/ECharts
 - 2026-11-11 用微信 3.17.5 自动化 fixture 对照 WXS scope：页面模板按页隔离；同页两个组件实例共用同一模块实例，B 页和 A 页重入各自新建模块实例。Tiny 的 service 页级 runtime 与 render 每页 runtime 现在都按这一边界实现
+- 同一对照组里，微信 WXS 事件 handler 把模块变量从 `peek:0` 增到 `peek:1` 后，页面表达式在同一页重渲染时读到 `peek:1`；Tiny 的事件状态只存在 render runtime，尚未回写 service 表达式，这是双侧求值模型剩余的状态同步缺口
 - 门禁覆盖的 5 段流程无 console/page error（125 页探针的 pageerror 见 5.2）
 
 这说明现有能力是**真实可运行**的，不是纸面设计。
