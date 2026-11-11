@@ -93,7 +93,7 @@ describe('script — code generation with WXS runtime', () => {
       '<wxs module="counter" src="/wxs/counter" /><text>{{counter.next()}}</text>',
     )
     const output = group.getTmplGenObjectGroups()
-    expect(output).toMatch(/var \w+=W\["wxs\/counter"\]\(\)/)
+    expect(output).toMatch(/var \w+=W\["wxs\/counter"\]\(R\)/)
     expect(output).not.toMatch(/\w+\|\|\(\w+=W\["wxs\/counter"\]\(\)\)/)
   })
 })

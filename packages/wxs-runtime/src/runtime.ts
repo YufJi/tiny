@@ -214,8 +214,8 @@ export function createWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
 export function createPageScopedWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
   const sources = new Map<string, string>()
   const runtimes = new Map<string, WxsRuntime>()
-  const contexts: string[] = []
   const fallbackPage = '__tiny_wxs_app__'
+  let resolvePageId: ((renderContext: unknown) => string | undefined) | undefined
   let disposed = false
 
   const registerSource = (moduleId: string, source: string): void => {
@@ -234,11 +234,12 @@ export function createPageScopedWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
     return runtime
   }
 
-  const currentPage = (): string => contexts.at(-1) ?? fallbackPage
+  const pageIdOf = (renderContext: unknown): string | undefined => (
+    resolvePageId?.(renderContext)
+  )
 
-  const runtimeForCurrentPage = (): WxsRuntime => {
+  const runtimeFor = (pageId: string): WxsRuntime => {
     if (disposed) throw new Error('WXS runtime is disposed')
-    const pageId = currentPage()
     let runtime = runtimes.get(pageId)
     if (!runtime) {
       runtime = createPageRuntime()
@@ -247,10 +248,12 @@ export function createPageScopedWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
     return runtime
   }
 
+  const fallbackRuntime = (): WxsRuntime => runtimeFor(fallbackPage)
+
   return {
     register(moduleId, source) {
       registerSource(moduleId, source)
-      return () => runtimeForCurrentPage().require(moduleId)
+      return (pageId?: string) => runtimeFor(pageId ?? fallbackPage).require(moduleId)
     },
 
     load(table) {
@@ -258,9 +261,6 @@ export function createPageScopedWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
     },
 
     originOf(value) {
-      const current = runtimes.get(currentPage())
-      const local = current?.originOf(value)
-      if (local) return local
       for (const runtime of runtimes.values()) {
         const origin = runtime.originOf(value)
         if (origin) return origin
@@ -269,25 +269,22 @@ export function createPageScopedWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
     },
 
     resolve(moduleId, exportPath) {
-      return runtimeForCurrentPage().resolve(moduleId, exportPath)
+      return fallbackRuntime().resolve(moduleId, exportPath)
     },
 
     require(moduleId) {
-      return runtimeForCurrentPage().require(moduleId)
+      return fallbackRuntime().require(moduleId)
     },
 
     invoke(moduleId, exportPath, args) {
-      return runtimeForCurrentPage().invoke(moduleId, exportPath, args)
+      return fallbackRuntime().invoke(moduleId, exportPath, args)
     },
 
-    withPage(pageId, action) {
-      contexts.push(pageId)
-      try {
-        return action()
-      } finally {
-        contexts.pop()
-      }
+    bindPageResolver(resolver) {
+      resolvePageId = resolver
     },
+
+    pageIdOf,
 
     releasePage(pageId) {
       const runtime = runtimes.get(pageId)
@@ -298,7 +295,6 @@ export function createPageScopedWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
     dispose() {
       disposed = true
       sources.clear()
-      contexts.length = 0
       for (const runtime of runtimes.values()) runtime.dispose()
       runtimes.clear()
     },

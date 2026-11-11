@@ -8,7 +8,15 @@ var __wxsRuntime = (() => {
   return runtime
 })()
 
-Q.S = (filename, code) => __wxsRuntime.register(filename, code)
+Q.S = (filename, code) => {
+  const load = __wxsRuntime.register(filename, code)
+  return (R) => {
+    const pageId = typeof __wxsRuntime.pageIdOf === 'function'
+      ? __wxsRuntime.pageIdOf(R)
+      : undefined
+    return load(pageId)
+  }
+}
 
 // WXS event handlers take the owning component descriptor as their second
 // argument, and legacy WXS reads the same object from event.instance. The

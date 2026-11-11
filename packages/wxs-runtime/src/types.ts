@@ -52,15 +52,20 @@ export type WxsRuntime = {
   resolve: (moduleId: string, exportPath: string[]) => ((...args: unknown[]) => unknown) | undefined
   /** Register a compiler-emitted module table. */
   load: (table: WxsModuleTable) => void
-  /** Register source for a module and return the `Q.S`-compatible accessor. */
-  register: (moduleId: string, source: string) => () => WxsExports
+  /**
+   * Register source for a module and return the `Q.S`-compatible accessor.
+   * The accessor receives the page id resolved from the generated template's
+   * renderer context so a page-scoped runtime can select the owning page tree.
+   */
+  register: (moduleId: string, source: string) => (pageId?: string) => WxsExports
   require: (moduleId: string) => WxsExports
   invoke: (moduleId: string, exportPath: string[], args: unknown[]) => unknown
-  /**
-   * Run synchronous template/property work in a page-local module scope.
-   * Page-scoped runtimes implement this; single-page render runtimes do not.
-   */
-  withPage?: <T>(pageId: string, action: () => T) => T
+  /** Bind the logic tree's renderer-context -> pageId resolver. */
+  bindPageResolver?: (
+    resolver: (renderContext: unknown) => string | undefined,
+  ) => void
+  /** Resolve a generated template renderer context to its page tree. */
+  pageIdOf?: (renderContext: unknown) => string | undefined
   /** Release module state owned by one page. */
   releasePage?: (pageId: string) => void
   dispose: () => void
