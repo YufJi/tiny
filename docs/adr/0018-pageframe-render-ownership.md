@@ -74,8 +74,9 @@ The migration is staged to keep the gate green:
 - **Phase C (partial)**: page `setData` crosses as its original data patches,
   not a full page snapshot. Render-local diff is the acknowledgement. Page WXML
   props are applied before the remaining per-instance component-data patch, so
-  a parent prop update is not evaluated twice. Component data still uses the
-  existing per-instance map. Structural updates carry `renderHints` and
+  a parent prop update is not evaluated twice. Component data is sent as
+  per-instance field patches, not a full component-data map. Structural updates
+  carry `renderHints` and
   `componentFlow` for identity/index alignment; they never carry page
   virtual-node patches. WXS `bindinput` on `input`/`textarea` is render-local,
   matching WeChat's pageframe dispatch; only plain JS `bindinput` uses the

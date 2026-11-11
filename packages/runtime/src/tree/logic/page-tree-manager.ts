@@ -125,7 +125,9 @@ export class PageTreeManager {
     const previous = this.componentDataSnapshot
     const patch: ComponentDataSnapshot = {}
     for (const [id, data] of Object.entries(current)) {
-      if (!sameComponentData(previous[id], data)) patch[id] = data
+      if (sameComponentData(previous[id], data)) continue
+      const componentPatch = diffComponentData(previous[id], data)
+      if (componentPatch) patch[id] = componentPatch
     }
     this.componentDataSnapshot = cloneDataValue(current)
     return patch
@@ -147,7 +149,28 @@ function sameComponentData(
 ): boolean {
   if (!previous) return false
   try {
-    return JSON.stringify(previous) === JSON.stringify(next)
+    return sameValue(previous, next)
+  } catch {
+    return false
+  }
+}
+
+function diffComponentData(
+  previous: Record<string, unknown> | undefined,
+  next: Record<string, unknown>,
+): Record<string, unknown> | undefined {
+  if (!previous) return next
+  const patch: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(next)) {
+    if (sameValue(previous[key], value)) continue
+    patch[key] = value
+  }
+  return Object.keys(patch).length > 0 ? patch : undefined
+}
+
+function sameValue(left: unknown, right: unknown): boolean {
+  try {
+    return JSON.stringify(left) === JSON.stringify(right)
   } catch {
     return false
   }

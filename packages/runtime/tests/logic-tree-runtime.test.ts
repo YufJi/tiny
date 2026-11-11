@@ -155,6 +155,7 @@ describe('logic tree runtime options', () => {
     tree.mountPage(PAGE_PATH, {}, 'page-1')
     await tree.glass.whenRendered()
     await new Promise((resolve) => setTimeout(resolve, 20))
+    tree.seedComponentData('page-1')
 
     const page = tree.glass.getMountedComponentByPageId('page-1')
     const parent = page?.shadowRoot?.getElementById('parent')?.asGeneralComponent()
@@ -287,6 +288,7 @@ describe('logic tree runtime options', () => {
     tree.updateRenderTree('page-1')
     const componentData = tree.updateComponentData('page-1')
     expect(componentData[parentView!.id]).toMatchObject({ seen: 'tapped' })
+    expect(componentData[parentView!.id]).not.toHaveProperty('count')
 
     ;(parent as unknown as { setData: (patch: Record<string, unknown>) => void }).setData({ count: 4 })
     expect((parent as unknown as { data: { seen?: string } }).data.seen).toBe('count:4')
