@@ -302,8 +302,8 @@ render 侧 `ComponentDescriptor` 已覆盖 `selectComponent`、`getDataset`、`g
 当前明确的限制：
 
 - WXS source map 已随 `wxsModules` 进入 `templates.js`，但 devtool/调试器尚未消费它；
-- 页级模块表按微信经典页面 WebView 的 `__WXML_GLOBAL__.modules` 可观察语义实现；2026-11-11 用微信 3.17.5 自动化 fixture 对照确认：同页两个组件实例共用同一模块实例，B 页与 A 页重入各自获得新实例。该 fixture 目前保留为人工诊断，尚未纳入自动验收；
-- WXS 模块实例在 service 和 render 各有一份；事件 handler 只在 render 运行，因此它修改的模块变量不会回写 service。纯函数 WXS 不受影响，但“事件改模块 state，再由下一次页面表达式读取”的写法仍不等价于微信；
+- 微信 `wcc -d -ds` 生成码把 `f_` 指向 `__WXML_GLOBAL__.modules`，用 `f_['wxs/...'] = nv_require(...)` 缓存模块访问器；页面模板、组件模板和同页组件实例都从这里取 exports。Tiny 用 `page:${pageId}` runtime 重建这个 pageframe 边界，卸载页面时释放；
+- 2026-11-11 用微信 3.17.5 自动化 fixture 验证：同页两个组件实例共用模块实例，B 页与 A 页重入各自获得新实例。render 侧转发的 WXS 事件会携带 handler origin 回放进 service 的同页 runtime，但 descriptor 副作用由 state-only 副本隔离；没有 service listener、因而不会转发 `tree.event` 的事件，仍可能出现 service 表达式状态滞后；
 - `input` / `textarea` 的 `bindinput` 是唯一 service-side 的 WXS 事件（微信 `PAGE_EVENT` 语义），没有 view 侧 `getState` / `getComputedStyle`；
 - 无法通过 origin 识别的 WXS 函数（例如闭包、`bind()` 后的新函数）不注册 handler，需用模块导出形式；
 - `callMethod` / `triggerEvent` 是跨线程 RPC，返回值不是同步语义。

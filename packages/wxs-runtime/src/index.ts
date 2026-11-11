@@ -2,6 +2,7 @@ export {
   createPageScopedWxsRuntime,
   createWxsRuntime,
   createDefaultWxsCompiler,
+  wxsPageScopeKey,
 } from './runtime'
 export { transformWxsSource, wxsCtor } from './transform'
 export type {

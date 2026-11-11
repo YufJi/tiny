@@ -25,6 +25,12 @@ export type RenderInboundHost = {
   sendSnapshot: (pageId: string) => void
   reportError: (message: string) => void
   dispatchWxsEffect: (pageId: string, effect: RenderWxsEffect) => void
+  /** Replay a render-side WXS handler into the owning service page state. */
+  replayWxsHandler?: (
+    pageId: string,
+    origin: { moduleId: string; exportPath: string[] },
+    event: ViewEventPayload,
+  ) => void
   /** The render thread reflected a batch; run its `setData` completions. */
   acknowledgeRenders: (tokens: string[]) => void
 }
@@ -143,8 +149,28 @@ function handleViewEvent(
     target?: ViewEventPayload['target']
     currentTarget?: ViewEventPayload['currentTarget']
     wxsHandled?: boolean
+    wxsModuleId?: string
+    wxsExportPath?: string[]
   }
   if (!payload.id || !payload.name) return
+  if (payload.wxsHandled && payload.wxsModuleId && Array.isArray(payload.wxsExportPath)) {
+    host.replayWxsHandler?.(message.pageId ?? '', {
+      moduleId: payload.wxsModuleId,
+      exportPath: payload.wxsExportPath,
+    }, {
+      viewId: payload.id,
+      ...(payload.targetId ? { targetId: payload.targetId } : {}),
+      name: payload.name,
+      pageId: message.pageId,
+      ...(payload.detail !== undefined ? { detail: payload.detail } : {}),
+      ...(payload.native ? { native: payload.native } : {}),
+      ...(payload.touches ? { touches: payload.touches } : {}),
+      ...(payload.changedTouches ? { changedTouches: payload.changedTouches } : {}),
+      ...(payload.target ? { target: payload.target } : {}),
+      ...(payload.currentTarget ? { currentTarget: payload.currentTarget } : {}),
+      wxsHandled: true,
+    })
+  }
   try {
     tree.dispatchViewEvent({
       viewId: payload.id,

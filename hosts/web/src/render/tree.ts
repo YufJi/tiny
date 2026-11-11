@@ -53,6 +53,9 @@ export type GlassRenderEvent = {
   currentTarget?: RenderEventGeometry
   /** Set when a local WXS handler already ran for this render event. */
   wxsHandled?: boolean
+  /** WXS export that handled the event; used to replay page state in service. */
+  wxsModuleId?: string
+  wxsExportPath?: string[]
 }
 
 type WxsHandlerBinding = {
@@ -1690,7 +1693,12 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     }
     if (serviceEventDepth === 0 && hasServiceListenerInPath(element.parentElement, binding.name)) {
       const { instance: _instance, ...servicePayload } = payload
-      emitServiceEvent({ ...servicePayload, wxsHandled: true } as unknown as GlassRenderEvent)
+      emitServiceEvent({
+        ...servicePayload,
+        wxsHandled: true,
+        wxsModuleId: binding.moduleId,
+        wxsExportPath: binding.exportPath,
+      } as unknown as GlassRenderEvent)
     }
   }
 

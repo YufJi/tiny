@@ -61,6 +61,13 @@ export type WxsRuntime = {
   register: (moduleId: string, source: string) => (scopeKey?: string) => WxsExports
   require: (moduleId: string) => WxsExports
   invoke: (moduleId: string, exportPath: string[], args: unknown[]) => unknown
+  /** Invoke an export in one page scope, without changing the active scope. */
+  invokeScoped?: (
+    scopeKey: string,
+    moduleId: string,
+    exportPath: string[],
+    args: unknown[],
+  ) => unknown
   /** Bind the logic tree's renderer-context -> module-scope resolver. */
   bindScopeResolver?: (
     resolver: (renderContext: unknown) => string | undefined,

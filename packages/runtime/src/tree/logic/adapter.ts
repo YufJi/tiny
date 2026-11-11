@@ -13,7 +13,7 @@ import { normalizeAnimationFrames, animationTimingOptions } from '../animation'
 import * as glassEasel from 'glass-easel'
 import type { MiniProgramComponentSchema, QueryNodeSnapshot, TemplateRegistry } from '../../types'
 import type { NormalizedComponentDefinition } from '../../component'
-import type { WxsRuntime } from '@tiny/wxs-runtime'
+import { wxsPageScopeKey, type WxsRuntime } from '@tiny/wxs-runtime'
 import { GlassEaselRuntimeAdapter } from './glass-easel-adapter'
 import type { LogicFrameworkContext } from './glass-easel-adapter'
 import {
@@ -326,7 +326,7 @@ export class LogicTreeAdapter {
     const host = shadowRoot?.getHostNode?.() ?? shadowRoot?._$host
     const pageId = this.glass.pageIdFor(host)
     if (!pageId) return undefined
-    return `page:${pageId}`
+    return wxsPageScopeKey(pageId)
   }
 
   private visibleSchemasFor(pagePath: string): MiniProgramComponentSchema[] {

@@ -4,6 +4,7 @@ import {
   createPageScopedWxsRuntime,
   createWxsRuntime,
   transformWxsSource,
+  wxsPageScopeKey,
   wxsCtor,
 } from '../src/index'
 
@@ -181,5 +182,23 @@ describe('createPageScopedWxsRuntime', () => {
       moduleId: 'handler',
       exportPath: ['tap'],
     })
+  })
+
+  test('invokes exports in one named page scope', () => {
+    const wxs = createPageScopedWxsRuntime({ compile: createDefaultWxsCompiler() })
+    wxs.register(
+      'counter',
+      'var count = 0; module.exports = { bump: function () { count += 1; return count }, peek: function () { return count } }',
+    )
+    const invoke = (pageId: string, exportPath: string[]) => (
+      wxs.invokeScoped!(wxsPageScopeKey(pageId), 'counter', exportPath, [])
+    )
+
+    expect(invoke('page-a', ['bump'])).toBe(1)
+    expect(invoke('page-a', ['bump'])).toBe(2)
+    expect(invoke('page-b', ['peek'])).toBe(0)
+    expect(invoke('page-a', ['peek'])).toBe(2)
+    wxs.releasePage!('page-a')
+    expect(invoke('page-a', ['peek'])).toBe(0)
   })
 })

@@ -19,7 +19,12 @@ import {
   type ComponentDefinitionPayload,
   type RenderNode,
 } from '../../tree/protocol'
-import { dispatchWxsEffect, installWxsEventHost, type WxsEventHostOptions } from './wxs-host'
+import {
+  dispatchWxsEffect,
+  installWxsEventHost,
+  replayWxsHandler,
+  type WxsEventHostOptions,
+} from './wxs-host'
 import { buildComponentDefinitions } from './definition-payload'
 import { WxsBindingStore } from './wxs-bindings'
 import { attachRenderInbound, type RenderWxsEffect } from './inbound'
@@ -121,6 +126,11 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       sendSnapshot: (pageId) => this.sendTreeSnapshot(pageId),
       reportError: (message) => this.options.onError(message),
       dispatchWxsEffect: (pageId, effect) => this.dispatchWxsEffect(pageId, effect),
+      replayWxsHandler: (pageId, origin, event) => {
+        if (this.logicTree && this.wxsHostOptions) {
+          replayWxsHandler(this.logicTree, pageId, origin, event, this.wxsHostOptions)
+        }
+      },
       acknowledgeRenders: (tokens) => this.acknowledgeRenders(tokens),
     })
   }
@@ -348,6 +358,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       getLogicTree: () => this.logicTree ?? undefined,
       getPage: (pageId) => this.options.getPage(pageId),
       requestRenderUpdate: (pageId) => this.scheduleTreeUpdate(pageId),
+      ...(this.options.wxsRuntime ? { wxsRuntime: this.options.wxsRuntime } : {}),
       onBinding: (pageId, binding) => {
         // Registered with the logic view id; the flush below swaps in the
         // node's current render identity (locator for elements).

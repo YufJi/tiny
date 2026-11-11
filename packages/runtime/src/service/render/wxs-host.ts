@@ -1,8 +1,13 @@
 import { DIAGNOSTIC_CODES, TINY_ENGINE_NAMING } from '@tiny/manifest'
 import { cloneJsonSafe } from '../../data'
 import type { WxsBindingMessage } from '../../tree/protocol'
-import type { LogicBackendElement, LogicTreeAdapter } from '../../tree/logic'
+import type {
+  LogicBackendElement,
+  LogicTreeAdapter,
+  ViewEventPayload,
+} from '../../tree/logic'
 import { findLogicNodeByElement, queryLogicNodes } from '../../tree/logic'
+import { wxsPageScopeKey, type WxsRuntime } from '@tiny/wxs-runtime'
 
 /**
  * WXS event handlers run inside the logic tree and receive a component
@@ -34,6 +39,8 @@ export type WxsEventHostOptions = {
   getPage: (pageId: string) => WxsPageHost | undefined
   /** Re-diff the page after a WXS mutation so the render thread picks it up. */
   requestRenderUpdate: (pageId: string) => void
+  /** Page-scoped service runtime used to mirror render-side WXS state. */
+  wxsRuntime?: WxsRuntime
   /** Publish a dynamic binding decision to render. */
   onBinding?: (pageId: string, binding: WxsBindingMessage) => void
   onDiagnostic?: (pageId: string, code: string, message: string, details?: unknown) => void
@@ -209,6 +216,68 @@ export function dispatchWxsEffect(
     descriptor.callMethod(effect.method, ...(effect.args ?? []))
   } else if (effect.kind === 'triggerEvent' && effect.name) {
     descriptor.triggerEvent(effect.name, effect.detail, effect.options)
+  }
+}
+
+/**
+ * Replay a render-side WXS handler into the service page runtime.
+ *
+ * wcc stores module exports in the pageframe's `__WXML_GLOBAL__.modules`
+ * table. Tiny splits page expression evaluation (service) from event execution
+ * (render), so the handler must run again with a state-only descriptor: reads
+ * stay live, but DOM mutations and service calls were already applied by the
+ * render-side dispatch and must not be duplicated.
+ */
+export function replayWxsHandler(
+  tree: LogicTreeAdapter,
+  pageId: string,
+  origin: { moduleId: string; exportPath: string[] },
+  event: ViewEventPayload,
+  options: WxsEventHostOptions,
+): void {
+  if (!options.wxsRuntime?.invokeScoped) return
+  const node = tree.findNodeByViewId(event.viewId)
+  if (!node) return
+  const descriptor = createDescriptor(options, tree, {
+    node,
+    root: ownerRoot(node),
+    pageId,
+  })
+  const stateDescriptor = createStateOnlyDescriptor(descriptor)
+  try {
+    options.wxsRuntime.invokeScoped(
+      wxsPageScopeKey(pageId),
+      origin.moduleId,
+      origin.exportPath,
+      [{ ...event, instance: stateDescriptor }, stateDescriptor],
+    )
+  } catch {
+    // The render handler already ran. A replay failure must not turn a
+    // successful interaction into a service error.
+  }
+}
+
+function createStateOnlyDescriptor(
+  descriptor: WxsComponentDescriptor,
+): WxsComponentDescriptor & { getState: () => Record<string, unknown> } {
+  let state: Record<string, unknown> | undefined
+  return {
+    selectComponent(selector) {
+      const child = descriptor.selectComponent(selector)
+      return child ? createStateOnlyDescriptor(child) : null
+    },
+    selectAllComponents(selector) {
+      return descriptor.selectAllComponents(selector).map(createStateOnlyDescriptor)
+    },
+    getDataset: descriptor.getDataset,
+    getData: descriptor.getData,
+    setStyle() {},
+    callMethod() {},
+    triggerEvent() {},
+    getState() {
+      state ??= {}
+      return state
+    },
   }
 }
 

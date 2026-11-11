@@ -10,6 +10,9 @@ import type {
   WxsValues,
 } from './types'
 
+/** Mirrors the `__WXML_GLOBAL__.modules` table owned by one page view. */
+export const wxsPageScopeKey = (pageId: string): string => `page:${pageId}`
+
 type ModuleRecord = {
   source: string
   module: { exports: WxsExports }
@@ -280,6 +283,10 @@ export function createPageScopedWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
       return fallbackRuntime().invoke(moduleId, exportPath, args)
     },
 
+    invokeScoped(scopeKey, moduleId, exportPath, args) {
+      return runtimeFor(scopeKey).invoke(moduleId, exportPath, args)
+    },
+
     bindScopeResolver(resolver) {
       resolveScope = resolver
     },
@@ -287,7 +294,7 @@ export function createPageScopedWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
     scopeOf,
 
     releasePage(pageId) {
-      const scopeKey = `page:${pageId}`
+      const scopeKey = wxsPageScopeKey(pageId)
       const runtime = runtimes.get(scopeKey)
       runtimes.delete(scopeKey)
       runtime?.dispose()
