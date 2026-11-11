@@ -65,7 +65,6 @@ export function createCompilerContext(options: CompileOptions): CompilerContext 
   return {
     options: {
       clean: options.clean ?? true,
-      dev: options.dev ?? false,
       sourceDir,
       outputDir: path.resolve(options.outputDir),
       ...(options.typecheck !== undefined ? { typecheck: options.typecheck } : {}),

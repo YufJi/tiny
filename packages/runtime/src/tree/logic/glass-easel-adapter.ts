@@ -15,6 +15,7 @@ import type {
 } from '../../types'
 import { toJsonSafe } from '../../events'
 import { createRuntimeDiagnostic } from '../../diagnostics'
+import { mapCssAssetUrls, type AssetUrlResolver } from '../../assets'
 import { readComponentGenerics } from '../../component'
 import {
   parsePureDataPattern,
@@ -88,6 +89,10 @@ export type GlassEaselAdapterOptions = {
   backend: glassEasel.GeneralBackendContext
   manifest: Manifest
   templates: TemplateRegistry
+  /** Host hook mapping compiler-normalized app-root `url(...)` values to loadable URLs. */
+  resolveAssetUrl?: AssetUrlResolver
+  /** Runtime page kind, derived from the actual `Page()` / `Component()` registration. */
+  isComponentPage?: (path: string) => boolean
   onDiagnostic?: (diagnostic: import('../../diagnostics').RuntimeDiagnostic) => void
   /** Page/component JavaScript options for the service-side logic tree. */
   logicPageOptions?: ReadonlyMap<string, { methods?: Record<string, (...args: unknown[]) => unknown> }>
@@ -172,6 +177,8 @@ export class GlassEaselRuntimeAdapter {
   /** `wx://label-target`: receives `labelTap` from the built-in `<label>`. */
   private readonly labelTargetBehavior: glassEasel.GeneralBehavior
   private readonly templates: TemplateRegistry
+  private readonly resolveAssetUrl?: AssetUrlResolver
+  private readonly isComponentPage?: (path: string) => boolean
   private readonly styleScopeIds = new Map<string, number>()
   private readonly scopeIdsByName = new Map<string, number>()
   private readonly styleContents = new Map<string, string>()
@@ -229,9 +236,10 @@ export class GlassEaselRuntimeAdapter {
 
   constructor(options: GlassEaselAdapterOptions) {
     this.manifest = options.manifest
-    this.manifest = options.manifest
     this.backend = options.backend
     this.templates = options.templates
+    this.resolveAssetUrl = options.resolveAssetUrl
+    this.isComponentPage = options.isComponentPage
     this.logicPageOptions = options.logicPageOptions
     this.logicComponentDefinitions = options.logicComponentDefinitions
     this.logicQueryFactory = options.logicQueryFactory
@@ -269,6 +277,22 @@ export class GlassEaselRuntimeAdapter {
     }
   }
 
+  /**
+   * Load one stylesheet and map its compiler-normalized app-root `url(...)`
+   * values to host URLs. Relative values are left untouched; the compiler
+   * resolves them against the WXSS file that authored them.
+   */
+  private loadStyleText(outputPath: string, loadStyle: StyleLoader): string | undefined {
+    const css = loadStyle(outputPath)
+    if (typeof css !== 'string') return undefined
+    if (!this.resolveAssetUrl || css.length === 0) return css
+    try {
+      return mapCssAssetUrls(css, this.resolveAssetUrl)
+    } catch {
+      return css
+    }
+  }
+
   registerStyles(
     manifest: Manifest,
     loadStyle: StyleLoader = () => '',
@@ -296,8 +320,8 @@ export class GlassEaselRuntimeAdapter {
         && !style.pageScopeClassSign
         && !allowedStyleOutputPaths.has(style.outputPath)
       ) continue
-      const css = loadStyle(style.outputPath)
-      if (typeof css !== 'string') continue
+      const css = this.loadStyleText(style.outputPath, loadStyle)
+      if (css === undefined) continue
       // The page-scope template is not a sheet of its own: it is expanded per
       // page scope below, before page/component sheets are appended.
       if (style.pageScopeClassSign) {
@@ -310,8 +334,8 @@ export class GlassEaselRuntimeAdapter {
         ? this.registerScope(style.scope)
         : glassEasel.StyleScopeManager.globalScope()
       if (style.lowPriorityPath) {
-        const lowPriorityCss = loadStyle(style.lowPriorityPath)
-        if (typeof lowPriorityCss === 'string' && lowPriorityCss.trim().length > 0) {
+        const lowPriorityCss = this.loadStyleText(style.lowPriorityPath, loadStyle)
+        if (lowPriorityCss !== undefined && lowPriorityCss.trim().length > 0) {
           this.backend.registerStyleSheetContent(`${style.outputPath}@low-priority`, lowPriorityCss)
           lowPriorityPending.push({ style, scopeId })
         }
@@ -449,7 +473,7 @@ export class GlassEaselRuntimeAdapter {
   }
 
   private resolvePageIsolation(page: PageArtifact): 'isolated' | 'apply-shared' | 'shared' {
-    if (page.bodyType !== 'component') return 'shared'
+    if (!this.isComponentPage?.(page.path)) return 'shared'
     const options = this.pageComponentOptions.get(page.path)
     if (options?.explicitStyleIsolation && options.styleIsolation) return options.styleIsolation
     if (options?.addGlobalClass) return 'apply-shared'

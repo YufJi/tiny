@@ -323,7 +323,7 @@ iOS 路径不使用 iframe 或 `host.html`；页面切换由 `HostCoreRuntime` �
 | 样式和 scope id | service 计算 scope，render 应用 | 无 | 逻辑树生成带 role 的样式，flow 下发 |
 | canvas 实现 | 宿主 canvas 适配器 | 浏览器由 service 持有 OffscreenCanvas 控制面；iOS 由 service 录制 display-list、render WKWebView 回放 | ServiceCanvasAdapter / 宿主 canvas relay |
 | DOM 查询 | 宿主渲染树 | selector query / IntersectionObserver | query.select / query.intersection |
-| 资源 URL | 宿主 resolveAssetUrl | render 内置组件的 img/src；CSS url() 原样保留 | 渲染树解析内置组件资源，样式按文档相对路径解析 |
+| 资源 URL | 宿主 resolveAssetUrl | render 内置组件的 img/src；WXSS url() 编译期归一化 | 渲染树按宿主组件/页面解析 WXML 资源；WXSS 在编译期归一化后由运行时映射 URL；inline style 交给 WebView |
 | 宿主 transport / API 语义 | 宿主（system/storage 事实的唯一来源） | 仅保存注入的 API 表 | api.* 调用 / 全局句柄 sendSync / apiHost |
 | 诊断 | 宿主诊断仓库 | devtool diagnostics | diagnostic.* 事件 |
 

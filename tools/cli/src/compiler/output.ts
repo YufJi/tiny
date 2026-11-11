@@ -4,17 +4,28 @@ import type { Manifest } from '../types'
 import {
   copyFile,
   diagnostic,
-  isAssetPath,
   toPosixPath,
   writeFileWithSourceMap,
 } from '../utils'
 import { outputPath, type CompilerContext } from './context'
 import type { Project } from './project'
 
-/** Copies images and fonts to the output directory, preserving paths. */
+/**
+ * Copies every packaged file that is not a compiler input, preserving its
+ * app-root path. The compiler does not inspect sizes, MIME types or content:
+ * the runtime resolves references and asks the host to load them.
+ */
 export async function copyAssets(context: CompilerContext, project: Project): Promise<void> {
+  const sourceExtensions = [
+    ...context.extensions.script,
+    ...context.extensions.template,
+    ...context.extensions.style,
+    ...context.extensions.templateScript,
+    ...context.extensions.config,
+  ].map((extension) => extension.toLowerCase())
   for (const [virtual, sourcePath] of project.files) {
-    if (!isAssetPath(virtual)) continue
+    const lower = virtual.toLowerCase()
+    if (sourceExtensions.some((extension) => lower.endsWith(extension))) continue
     await copyFile(sourcePath, outputPath(context, virtual))
     context.assets.push({ path: virtual, sourcePath: virtual })
   }

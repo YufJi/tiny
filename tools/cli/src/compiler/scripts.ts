@@ -43,16 +43,11 @@ export async function compileScripts(
       '.js',
     )}`
     const source = await fs.readFile(scriptPath, 'utf8')
-    const pagePath = pageScriptPaths.get(scriptPath)
-    const componentPath = componentScriptPaths.get(scriptPath)
-      ?? (pagePath && isComponentRegistration(source, context) ? pagePath : undefined)
-    const hint = shadowsGlobalThis(source)
-      ? undefined
-      : componentPath
-        ? { global: TINY_ENGINE_NAMING.componentRegistrationHint, path: componentPath }
-        : pagePath
-          ? { global: TINY_ENGINE_NAMING.pageRegistrationHint, path: pagePath }
-          : undefined
+    // The compiler only knows which entry a script file belongs to. Whether
+    // that entry calls `Page()` or `Component()` is decided at runtime from
+    // the actual registration, never from the script text.
+    const entryPath = componentScriptPaths.get(scriptPath) ?? pageScriptPaths.get(scriptPath)
+    const hint = entryPath && !shadowsGlobalThis(source) ? { path: entryPath } : undefined
     const transformed = ts.transpileModule(source, {
       fileName: scriptPath,
       compilerOptions: {
@@ -109,16 +104,8 @@ ${code}` : code,
   }
 }
 
-function isComponentRegistration(source: string, context: CompilerContext): boolean {
-  const global = context.compatibility.globals.component.replace(
-    /[.*+?^${}()|[\]\\]/g,
-    '\\$&',
-  )
-  return new RegExp(`\\b${global}\\s*\\(`).test(source)
-}
-
-function registrationHintSource(hint: { global: string; path: string }): string {
-  return `globalThis.${hint.global} = ${JSON.stringify(hint.path)};`
+function registrationHintSource(hint: { path: string }): string {
+  return `globalThis.${TINY_ENGINE_NAMING.entryPathHint} = ${JSON.stringify(hint.path)};`
 }
 
 /**

@@ -70,8 +70,8 @@ After the P0 demo flow, the gate compiles `tests/apps/mini` (3 pages + 1 subpack
 1. Boots from `App.onLaunch` storage writes and renders the todos page from `getApp()`
    state.
 2. Renders both `add-button` instances, slots, checkbox group, slider, progress, switch,
-   swiper, the handed-off canvas, and a loaded image (static assets are inlined or resolved
-   by the render asset hook).
+   swiper, the handed-off canvas, and a loaded image (static assets are resolved by the
+   render asset hook; the compiler no longer inlines them).
 3. Applies `app.wxss` page styling to the real app.
 4. Drives page interactions: checkbox-group aggregation updates `app.todos`, the first
    component instance runs its own handler without navigating, the switch and sliders

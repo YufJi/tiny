@@ -37,7 +37,6 @@ afterAll(() => {
 function page(path: string, usingComponents: Record<string, string> = {}): PageArtifact {
   return {
     path,
-    bodyType: 'page',
     template: { path, outputPath: 'templates.js', sourcePath: `${path}.wxml` },
     configuration: {
       path,
@@ -50,7 +49,6 @@ function page(path: string, usingComponents: Record<string, string> = {}): PageA
 function component(path: string): ComponentArtifact {
   return {
     path,
-    bodyType: 'component',
     template: { path, outputPath: 'templates.js', sourcePath: `${path}.wxml` },
     configuration: {
       path,

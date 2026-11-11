@@ -25,6 +25,12 @@ export class MiniProgramPageRegistry {
   private readonly pagePaths: string[]
   private readonly componentPaths: string[]
   private readonly componentConfigurations: Map<string, Record<string, unknown>>
+  /**
+   * Runtime page kind. `Page()` always means a page; `Component()` means a
+   * component page when its path is declared in `app.json.pages`, and a normal
+   * component otherwise. No compiler-side source analysis is involved.
+   */
+  private readonly pageKinds = new Map<string, 'page' | 'component'>()
   private pageCursor = 0
   private componentCursor = 0
 
@@ -150,11 +156,13 @@ export class MiniProgramPageRegistry {
       const existing = this.pages.get(path)
       if (existing) return existing
       this.pages.set(path, options)
+      this.pageKinds.set(path, 'page')
       return options
     }
     const nextPath = this.nextPagePath()
     if (!nextPath) throw new Error('More Page definitions were registered than declared pages')
     this.pages.set(nextPath, options)
+    this.pageKinds.set(nextPath, 'page')
     return options
   }
 
@@ -165,6 +173,7 @@ export class MiniProgramPageRegistry {
     if (path !== undefined) {
       const existing = this.components.get(path)
       if (existing) return existing
+      this.recordComponentPath(path)
       this.components.set(path, options)
       this.normalizedComponents.set(
         path,
@@ -178,6 +187,7 @@ export class MiniProgramPageRegistry {
       return options
     }
     const declaredPath = this.nextComponentPath() ?? `component:${this.components.size}`
+    this.recordComponentPath(declaredPath)
     this.components.set(declaredPath, options)
     this.normalizedComponents.set(
       declaredPath,
@@ -189,6 +199,20 @@ export class MiniProgramPageRegistry {
       ),
     )
     return options
+  }
+
+  /** Whether a declared page was registered through `Component()`. */
+  isComponentPage(path: string): boolean {
+    return this.pageKinds.get(path) === 'component'
+  }
+
+  private recordComponentPath(path: string): void {
+    // A `Component()` registration for a declared page path is a
+    // Component-as-page. A normal component path is not a page at all, so it
+    // deliberately stays out of `pageKinds`.
+    if (this.pagePaths.includes(path) && !this.pages.has(path)) {
+      this.pageKinds.set(path, 'component')
+    }
   }
 
   /** Skip page paths already registered through a hint. */

@@ -1,4 +1,4 @@
-import { resolveAssetPath } from '@tiny/manifest'
+import { resolveAssetReference } from '@tiny/manifest'
 import type { QueryNodeSnapshot, ApiContext } from './context'
 
 type SelectorQuerySelection = {
@@ -186,9 +186,10 @@ async function buildSelectorResult(
   const resolveAssetUrl = context.resolveAssetUrl
   const resolveCanvasAssetUrl = resolveAssetUrl
     ? (src: string) => {
-        const assetPath = resolveAssetPath(sourcePath, src)
-        if (!assetPath) return undefined
-        return resolveAssetUrl(assetPath, { sourcePath }) ?? undefined
+        const reference = resolveAssetReference(sourcePath, src)
+        if (!reference) return undefined
+        const resolved = resolveAssetUrl(reference.path, { sourcePath })
+        return resolved ? `${resolved}${reference.suffix}` : undefined
       }
     : undefined
   const node = selection.wantsNode

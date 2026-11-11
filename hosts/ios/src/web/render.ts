@@ -1,5 +1,5 @@
 import type { Transport, TransportFrame } from '@tiny/bridge'
-import { bootTreeThread, resolveAssetPath } from '@tiny/runtime'
+import { bootTreeThread, resolveAssetReference } from '@tiny/runtime'
 import { connectHostBridge, installHostBridge } from '@tiny/bridge'
 import type { TemplateRegistry, TreeRenderer } from '@tiny/runtime'
 import { createGlassRenderEntry, installPageLifecycleBridge } from '@tiny/host-web'
@@ -123,9 +123,11 @@ async function loadRenderTemplates(): Promise<TemplateRegistry | undefined> {
 const entry = createGlassRenderEntry({
   container: document.getElementById('app') ?? document.body,
   resolveAssetUrl: (src, sourcePath) => {
-    const resolved = resolveAssetPath(sourcePath || '', src)
-    if (!resolved) return undefined
-    return assetsBase + resolved.split('/').map(encodeURIComponent).join('/')
+    const reference = resolveAssetReference(sourcePath || '', src)
+    if (!reference) return undefined
+    return assetsBase
+      + reference.path.split('/').map(encodeURIComponent).join('/')
+      + reference.suffix
   },
 })
 

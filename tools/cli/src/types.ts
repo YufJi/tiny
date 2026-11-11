@@ -5,7 +5,6 @@ export type CompileOptions = {
   sourceDir: string
   outputDir: string
   clean?: boolean
-  dev?: boolean
   /**
    * Run TypeScript semantic checks. Omitted means "check when the project has
    * a tsconfig.json"; `false` opts out entirely.

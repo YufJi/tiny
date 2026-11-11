@@ -5,6 +5,7 @@ import {
   APP_PAGE_SCOPE_CLASS_SIGN,
   BUILTIN_COMPONENT_TAGS,
   TINY_ENGINE_NAMING,
+  resolveAssetReference,
 } from '@tiny/manifest'
 import { StyleSheetTransformer } from '@tiny/stylesheet-compiler'
 import { diagnostic, relativeFromTarget, sanitizeScope, writeFileWithSourceMap } from '../utils'
@@ -197,7 +198,7 @@ function inlineStyleImports(
   } catch {
     return ''
   }
-  return source.replace(
+  const inlined = source.replace(
     /@import\s+(?:url\()?["']([^"']+)["']\)?\s*;/g,
     (full: string, specifier: string) => {
       if (/^(?:https?:|data:)/i.test(specifier)) return full
@@ -221,6 +222,26 @@ function inlineStyleImports(
         return ''
       }
       return inlineStyleImports(context, resolved, byRelative, [...stack, relativeImportPath])
+    },
+  )
+  return rewriteCssAssetPaths(inlined, relativeImportPath)
+}
+
+/**
+ * Normalize relative CSS `url()` values against the stylesheet that authored
+ * them and emit app-root paths. This mirrors WeChat's WXSS build: the style
+ * runtime only injects CSS text, so it has no source-path context to resolve
+ * assets later.
+ */
+function rewriteCssAssetPaths(css: string, sourcePath: string): string {
+  return css.replace(
+    /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)]*))\s*\)/gi,
+    (match, doubleQuoted: string | undefined, singleQuoted: string | undefined, unquoted: string | undefined) => {
+      const value = (doubleQuoted ?? singleQuoted ?? unquoted ?? '').trim()
+      if (!value || value.startsWith('var(')) return match
+      const reference = resolveAssetReference(sourcePath, value)
+      if (!reference) return match
+      return `url("/${reference.path}${reference.suffix}")`
     },
   )
 }

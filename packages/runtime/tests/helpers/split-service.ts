@@ -124,6 +124,7 @@ export function bootServiceThread(options: ServiceThreadBootOptions): ServiceThr
     events,
     launchOptions,
     ...(canvas ? { onPageRelease: (pageId) => canvas.releaseCanvasNode?.({ pageId }) } : {}),
+    ...(resolveAssetUrl ? { resolveAssetUrl } : {}),
     onLogicTreeCreated: (tree) => {
       lastTree = tree
     },

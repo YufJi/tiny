@@ -125,11 +125,6 @@ async function createPageArtifact(
   entry: SourceEntry,
 ): Promise<PageArtifact> {
   const config = await readConfiguration(context, entry.configPath)
-  const scriptSource = entry.scriptPath ? await fs.readFile(entry.scriptPath, 'utf8') : ''
-  const componentGlobal = escapeRegExp(context.compatibility.globals.component)
-  const bodyType = new RegExp(`\\b${componentGlobal}\\s*\\(`).test(scriptSource)
-    ? 'component' as const
-    : 'page' as const
   const independentPackage = entry.subpackage !== undefined
     && project.appConfig.subPackages.some((pkg) => pkg.root === entry.subpackage && pkg.independent)
   const globalComponents = entry.path === 'app' || independentPackage
@@ -192,7 +187,6 @@ async function createPageArtifact(
 
   return {
     path: entry.path,
-    bodyType,
     ...(entry.subpackage ? { subpackage: entry.subpackage } : {}),
     ...(entry.asyncSubPackages && entry.asyncSubPackages.length > 0
       ? { asyncSubPackages: entry.asyncSubPackages }
@@ -270,8 +264,4 @@ function resolveComponentPlaceholders(
     placeholders[componentPath.replace(/^\//, '')] = rawTarget
   }
   return placeholders
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }

@@ -1,4 +1,4 @@
-import { resolveAssetPath } from '@tiny/runtime';
+import { resolveAssetReference } from '@tiny/runtime';
 import { bootRenderEntry } from '@tiny/host-web';
 import { generatedBaseFor } from './appRegistry';
 
@@ -12,7 +12,7 @@ bootRenderEntry({
   // loads the same compiled template bundle as the service.
   loadTemplates: async () => (await importGenerated(`${generatedBase}/templates.js`)).default,
   resolveAssetUrl: (src, sourcePath) => {
-    const resolved = resolveAssetPath(sourcePath || '', src);
-    return resolved ? `${generatedBase}/${resolved}` : undefined;
+    const reference = resolveAssetReference(sourcePath || '', src);
+    return reference ? `${generatedBase}/${reference.path}${reference.suffix}` : undefined;
   },
 });

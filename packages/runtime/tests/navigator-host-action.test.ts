@@ -18,7 +18,6 @@ afterAll(() => {
 function createManifest(): Manifest {
   const page: PageArtifact = {
     path: PAGE_PATH,
-    bodyType: 'page',
     template: { path: PAGE_PATH, outputPath: 'templates.js', sourcePath: `${PAGE_PATH}.wxml` },
     configuration: { path: PAGE_PATH, sourcePath: `${PAGE_PATH}.json`, effective: {} },
   }

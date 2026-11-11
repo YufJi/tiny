@@ -148,7 +148,6 @@ export type AppArtifact = {
 
 export type PageArtifact = {
   path: string
-  bodyType?: 'page' | 'component'
   subpackage?: string
   /** Subpackage chunks that must load after mount for async components. */
   asyncSubPackages?: string[]

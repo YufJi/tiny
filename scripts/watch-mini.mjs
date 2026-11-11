@@ -21,7 +21,7 @@ async function build() {
   }
   building = true
   try {
-    const result = await compileMiniProgram({ sourceDir, outputDir, clean: true, dev: true })
+    const result = await compileMiniProgram({ sourceDir, outputDir, clean: true })
     const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')
     const stamp = new Date().toLocaleTimeString()
     if (errors.length > 0) {

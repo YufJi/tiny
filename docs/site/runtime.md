@@ -76,7 +76,7 @@ service 是“小程序应用”真正运行的地方，由 bootServiceThread �
 
 ::::split
 :::card{title="页面实例和组件型页面"}
-普通页面保留 pageId、path、query、data、methods 和生命周期记录。组件型页面（`bodyType=component`）使用整理后的组件定义：URL query 会按 property 类型转换，并执行 created/attached/ready/detached。
+普通页面保留 pageId、path、query、data、methods 和生命周期记录。组件型页面由运行时注册判定（`Component()` 注册的声明页面）并使用整理后的组件定义：URL query 会按 property 类型转换，并执行 created/attached/ready/detached。
 
 页面根节点也会进入逻辑树（`page:<pageId>`），所以 relations 和 selectComponent 能识别页面边界。
 :::

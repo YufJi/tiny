@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, test } from 'vitest'
 import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
-import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact, type StyleArtifact } from '@tiny/manifest'
+import { TINY_ENGINE_NAMING, WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact, type StyleArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTestHost } from './support/host'
 import { createHarnessRenderConnector, harnessRenderView } from './helpers/render-connector'
@@ -48,13 +48,11 @@ function createTemplateRegistry() {
 function createNavigationManifest(): Manifest {
   const todos: PageArtifact = {
     path: TODOS_PATH,
-    bodyType: 'page',
     template: { path: TODOS_PATH, outputPath: 'templates.js', sourcePath: `${TODOS_PATH}.wxml` },
     configuration: { path: TODOS_PATH, sourcePath: `${TODOS_PATH}.json`, effective: {} },
   }
   const addTodo: PageArtifact = {
     path: ADD_TODO_PATH,
-    bodyType: 'component',
     template: { path: ADD_TODO_PATH, outputPath: 'templates.js', sourcePath: `${ADD_TODO_PATH}.wxml` },
     configuration: { path: ADD_TODO_PATH, sourcePath: `${ADD_TODO_PATH}.json`, effective: {} },
   }
@@ -118,6 +116,7 @@ describe('mini-program navigation', () => {
         await wx.navigateTo({ url: '/pages/missing/missing' })
       },
     })
+    globalObject[TINY_ENGINE_NAMING.entryPathHint] = ADD_TODO_PATH
     ;(globalObject.Component as (options: Record<string, unknown>) => unknown)({
       methods: {
         onLoad(query: Record<string, string>) {
@@ -273,6 +272,7 @@ describe('mini-program navigation', () => {
         await wx.redirectTo({ url: '../add-todo/add-todo?from=redirect' })
       },
     })
+    globalObject[TINY_ENGINE_NAMING.entryPathHint] = ADD_TODO_PATH
     ;(globalObject.Component as (options: Record<string, unknown>) => unknown)({
       methods: {
         onLoad(query: Record<string, string>) {
@@ -338,6 +338,7 @@ describe('mini-program navigation', () => {
         await wx.navigateTo({ url: '../add-todo/add-todo' })
       },
     })
+    globalObject[TINY_ENGINE_NAMING.entryPathHint] = ADD_TODO_PATH
     ;(globalObject.Component as (options: Record<string, unknown>) => unknown)({
       methods: {
         onLoad() {

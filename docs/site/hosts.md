@@ -178,7 +178,10 @@ bootServiceEntry({
 bootRenderEntry({
   container: document.getElementById('app'),
   loadTemplates: async () => (await import('/generated/templates.js')).default,
-  resolveAssetUrl: (src, sourcePath) => resolveAssetPath(sourcePath, src),
+  resolveAssetUrl: (src, sourcePath) => {
+    const reference = resolveAssetReference(sourcePath, src)
+    return reference ? `${generatedBase}/${reference.path}${reference.suffix}` : undefined
+  },
 })
 ```
 :::::
@@ -279,7 +282,7 @@ api 通过 `createLegacyCanvasContext` / `acquireCanvasNode` 拿到同步 canvas
 :::
 
 :::card{tag="资源" title="resolveAssetUrl"}
-宿主把 app-root 资源映射成 URL；api 侧签名是 `(assetPath, { sourcePath })`，Web 渲染树用 `(src, sourcePath)`。api 用于 canvas image，render tree 用于内置组件图片。CSS 里的 `url()` 目前不经过这个 resolver。
+宿主把 app-root 资源映射成 URL；api 侧签名是 `(assetPath, { sourcePath })`，Web 渲染树用 `(src, sourcePath)`。api 用于 canvas image，render tree 用于内置组件图片。WXSS 的 `url()` 会先由编译器归一化成 app-root 路径，再由这个 resolver 映射；inline style 由 WebView 自己解析，不经过 resolver。
 :::
 ::::
 
@@ -291,7 +294,7 @@ api 通过 `createLegacyCanvasContext` / `acquireCanvasNode` 拿到同步 canvas
 | canvas 2D / WebGL / RAF | ServiceCanvasAdapter + OffscreenCanvas handoff | 内核不能依赖 document / Image |
 | 真实组件、布局和 DOM | `TreeRenderer` | 渲染树归宿主所有 |
 | selector query / IntersectionObserver | 渲染树的 query / observeIntersection | 内核不能依赖 Element / IntersectionObserver |
-| 内置组件图片 | `resolveAssetUrl` | 只有宿主知道静态资源的 URL 规则；CSS `url()` 仍按文档相对路径解析 |
+| 内置组件图片 | `resolveAssetUrl` | 只有宿主知道静态资源的 URL 规则；WXSS `url()` 编译期归一化后同样走这个 resolver |
 
 :::callout{title="仓库里已经定下的规则"}
 API 表由宿主入口组装后以值的形式传给 `ServiceThreadOptions.apiHost`（标准集在 `@tiny/api`），宿主事实作为覆盖层；canvas 和 `resolveAssetUrl` 只进入 api context，同步调用由宿主注入的全局句柄的 `sendSync` 提供，页面销毁时由 `onPageRelease` 回收 canvas 资源；渲染树通过 `TreeRenderer` 注入。不要再把这些能力放回 `packages/runtime`。

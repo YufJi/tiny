@@ -10,6 +10,7 @@ import type {
   TemplateRegistry,
 } from '../../types'
 import { cloneJsonSafe } from '../../data'
+import { mapCssAssetUrls, type AssetUrlResolver } from '../../assets'
 import { LogicTreeAdapter, type LogicFrameworkContext } from '../../tree/logic'
 import { buildComponentFlow } from '../../tree/flow'
 import {
@@ -42,10 +43,14 @@ export type ServiceRenderBridgeOptions = {
   componentDefinitions: ReadonlyMap<string, NormalizedComponentDefinition>
   /** Page options used by the logic tree for legacy page methods. */
   pageOptions: ReadonlyMap<string, { methods?: Record<string, (...args: unknown[]) => unknown> }>
+  /** Runtime page kind, derived from the actual `Page()` / `Component()` registration. */
+  isComponentPage?: (path: string) => boolean
   /** Compatibility behavior scheme carried by every initial flow. */
   behaviorScheme: string
   loadTemplates: () => Promise<TemplateRegistry> | TemplateRegistry
   loadStyle?: StyleLoader
+  /** Host hook used for stylesheet `url(...)` assets; kept service-side so the render document base is irrelevant. */
+  resolveAssetUrl?: AssetUrlResolver
   getPage: (pageId: string) => ServiceRenderPage | undefined
   /** `this.router` / `this.pageRouter` / opener-channel hooks for the logic tree. */
   frameworkContext?: ServiceLogicFrameworkContext
@@ -132,6 +137,8 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       manifest: this.options.manifest,
       templates,
       ...(this.options.loadStyle ? { loadStyle: this.options.loadStyle } : {}),
+      ...(this.options.resolveAssetUrl ? { resolveAssetUrl: this.options.resolveAssetUrl } : {}),
+      ...(this.options.isComponentPage ? { isComponentPage: this.options.isComponentPage } : {}),
       pageOptions: this.options.pageOptions,
       componentDefinitions: this.options.componentDefinitions,
       ...(this.options.frameworkContext
@@ -195,7 +202,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
   pageComponents(): ServicePageComponent[] {
     const result: ServicePageComponent[] = []
     for (const page of this.options.manifest.pages) {
-      if (page.bodyType !== 'component') continue
+      if (!this.options.isComponentPage?.(page.path)) continue
       if (!this.options.componentDefinitions.has(page.path)) continue
       const [schema] = buildComponentSchemas([page], this.options.componentDefinitions)
       if (schema) result.push({ path: page.path, options: schema.options ?? {} })
@@ -505,8 +512,12 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     // Independent packages do not inherit the main package `app.wxss`.
     if (this.isIndependentPage(pageId)) return { styles }
     if (this.logicTree?.hasAppPageScope(pageId)) return { styles }
-    const appStylePath = this.options.manifest.app?.style?.outputPath
-    const appCss = appStylePath ? this.options.loadStyle?.(appStylePath) : undefined
+    const appStyle = this.options.manifest.app?.style
+    const appStylePath = appStyle?.outputPath
+    const appCssRaw = appStylePath ? this.options.loadStyle?.(appStylePath) : undefined
+    const appCss = appCssRaw && this.options.resolveAssetUrl
+      ? mapCssAssetUrls(appCssRaw, this.options.resolveAssetUrl)
+      : appCssRaw
     return {
       styles,
       ...(appCss && appCss.trim().length > 0 ? { fallbackAppStyles: [appCss] } : {}),

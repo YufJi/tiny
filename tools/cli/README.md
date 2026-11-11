@@ -15,7 +15,6 @@ const result = await compileMiniProgram({
   sourceDir: 'tests/apps/mini',
   outputDir: 'tests/host/generated/apps/mini/generated',
   clean: true,
-  dev: true,
   // Optional; omitted fields use WeChat conventions.
   compatibility: {
     extensions: { style: ['.wxss'] },

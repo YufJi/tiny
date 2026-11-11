@@ -37,16 +37,14 @@ function createTemplates() {
 function artifact(
   path: string,
   using: Record<string, string>,
-  bodyType?: 'component',
 ): PageArtifact | ComponentArtifact {
   return {
     path,
-    ...(bodyType ? { bodyType } : {}),
     template: { path, outputPath: 'templates.js', sourcePath: `${path}.wxml` },
     configuration: {
       path,
       sourcePath: `${path}.json`,
-      effective: { ...(bodyType ? { component: true } : {}), usingComponents: using },
+      effective: { usingComponents: using },
     },
   }
 }
@@ -58,8 +56,8 @@ function createManifest(): Manifest {
     entries: { service: 'service.js', templates: 'templates.js' },
     pages: [artifact(PAGE_PATH, { parent: `/${PARENT_PATH}` })],
     components: [
-      artifact(PARENT_PATH, { child: `/${CHILD_PATH}` }, 'component'),
-      artifact(CHILD_PATH, {}, 'component'),
+      artifact(PARENT_PATH, { child: `/${CHILD_PATH}` }),
+      artifact(CHILD_PATH, {}),
     ],
     styles: [],
     assets: [],

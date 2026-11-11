@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, test } from 'vitest'
 import * as glassEasel from 'glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
-import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
+import { TINY_ENGINE_NAMING, WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { PAGE_CONTROL } from '../src/tree/protocol'
 import { createTestHost } from './support/host'
@@ -40,10 +40,9 @@ function createTemplateRegistry() {
   }
 }
 
-function artifact(path: string, bodyType: 'page' | 'component', using?: Record<string, string>): PageArtifact {
+function artifact(path: string, using?: Record<string, string>): PageArtifact {
   return {
     path,
-    bodyType,
     template: { path, outputPath: 'templates.js', sourcePath: `${path}.wxml` },
     configuration: {
       path,
@@ -59,10 +58,10 @@ function createManifest(): Manifest {
     runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
     entries: { service: 'service.js', templates: 'templates.js' },
     pages: [
-      artifact(HOME_PATH, 'page'),
-      artifact(FORM_PATH, 'component', { child: `/${CHILD_PATH}` }),
+      artifact(HOME_PATH),
+      artifact(FORM_PATH, { child: `/${CHILD_PATH}` }),
     ],
-    components: [artifact(CHILD_PATH, 'component')],
+    components: [artifact(CHILD_PATH)],
     styles: [],
     assets: [],
   }
@@ -133,6 +132,7 @@ describe('Component-as-page', () => {
         },
       },
     })
+    globalObject[TINY_ENGINE_NAMING.entryPathHint] = FORM_PATH
     ;(globalObject.Component as (options: Record<string, unknown>) => unknown)({
       behaviors: [behavior],
       properties: {

@@ -10,7 +10,6 @@ const result = await compileMiniProgram({
   sourceDir,
   outputDir,
   clean: true,
-  dev: true,
 })
 
 const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')
