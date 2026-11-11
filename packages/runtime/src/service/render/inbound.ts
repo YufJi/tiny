@@ -114,7 +114,7 @@ function handleTemplateEvent(
   }
   if (!payload.componentId || !payload.handler) return
   try {
-    tree.dispatchTemplateHandler({
+    const handled = tree.dispatchTemplateHandler({
       pageId: message.pageId ?? payload.pageId,
       componentId: payload.componentId,
       handler: payload.handler,
@@ -126,6 +126,17 @@ function handleTemplateEvent(
       ...(payload.dataset ? { dataset: payload.dataset } : {}),
       ...(payload.currentTarget ? { currentTarget: payload.currentTarget } : {}),
     })
+    if (!handled) {
+      connection.sendDiagnostic('warn', {
+        code: DIAGNOSTIC_CODES.EVENT_HANDLER_MISSING,
+        message: `template handler is not registered: ${payload.handler}`,
+        details: {
+          componentId: payload.componentId,
+          handler: payload.handler,
+          event: payload.name ?? '',
+        },
+      }, message.pageId)
+    }
   } catch (error) {
     connection.sendDiagnostic('warn', {
       code: DIAGNOSTIC_CODES.EVENT_HANDLER_ERROR,

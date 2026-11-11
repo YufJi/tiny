@@ -50,6 +50,8 @@ export type PageFrameMount = {
   data: Record<string, unknown>
   using?: Record<string, string>
   scope?: string
+  /** Compiler `componentPlaceholder` map keyed by artifact path. */
+  placeholders?: Record<string, string>
   /** Page methods a compiled page template may route back to the service. */
   methods?: string[]
   /** Service identity tree used for component ids while the pageframe owns WXML. */
@@ -80,6 +82,8 @@ export type TreeRenderer = {
   setPageScope?: (scopeName: string) => void
   /** Page-level `usingComponents`, installed before the first mount. */
   setPageUsing?: (using: Record<string, string>) => void
+  /** Refresh the service-owned component/view identity hints without replaying DOM patches. */
+  setPageFrameHints?: (root: RenderNode) => void
   /** Public built-in behavior scheme from the service compatibility config. */
   setBehaviorScheme?: (scheme: string) => void
   setEventSink?: (sink: (event: TreeEventPayload) => void) => void
@@ -383,6 +387,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
               data: payload.pageData ?? {},
               ...(payload.pageUsing ? { using: payload.pageUsing } : {}),
               ...(payload.pageScope ? { scope: payload.pageScope } : {}),
+              ...(payload.placeholders ? { placeholders: payload.placeholders } : {}),
               ...(payload.pageFrame.methods && payload.pageFrame.methods.length > 0
                 ? { methods: payload.pageFrame.methods }
                 : {}),
@@ -432,6 +437,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       const payload = (message.payload ?? {}) as {
         pageId?: string
         patches?: RenderPatch[]
+        renderHints?: RenderNode
         tabPatches?: RenderPatch[]
         pageData?: Record<string, unknown>
         pageDataPatches?: Array<Record<string, unknown>>
@@ -443,12 +449,18 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       applyBatch(pageId, TREE_PROTOCOL.patch, payload.ack, () => {
         const pageFrame = Boolean(pageId && pageFramePages.has(pageId))
         if (pageFrame) {
-          if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
+          if (payload.renderHints) options.renderer.setPageFrameHints?.(payload.renderHints)
+          // The pageframe's WXML pass applies the props it owns first. Component
+          // data follows as the remaining per-instance patch, matching WeChat's
+          // property-before-setData order. The reverse order makes the same prop
+          // update run twice and can re-evaluate WXS expression slots after a
+          // later component has advanced shared module state.
           if (payload.pageDataPatches && payload.pageDataPatches.length > 0) {
             options.renderer.applyPageDataPatches?.(payload.pageDataPatches)
           } else if (payload.pageData) {
             options.renderer.setPageData?.(payload.pageData)
           }
+          if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
         } else {
           if (payload.pageData) options.renderer.setPageData?.(payload.pageData)
           if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)

@@ -78,6 +78,8 @@ describe('tree thread', () => {
     const pageData: Array<Record<string, unknown>> = []
     const pageDataPatches: Array<Array<Record<string, unknown>>> = []
     const componentData: Array<Record<string, Record<string, unknown>>> = []
+    const pageFrameHints: RenderNode[] = []
+    const renderOrder: string[] = []
     const patches: RenderPatch[][] = []
     bootTreeThread({
       pageFrame: true,
@@ -87,8 +89,18 @@ describe('tree thread', () => {
         mountPage: (request) => pageFrames.push(request as unknown as Record<string, unknown>),
         applyPatches: (value) => patches.push(value),
         setPageData: (value) => pageData.push(value),
-        applyPageDataPatches: (value) => pageDataPatches.push(value),
-        setComponentData: (value) => componentData.push(value),
+        applyPageDataPatches: (value) => {
+          pageDataPatches.push(value)
+          renderOrder.push('pageDataPatches')
+        },
+        setComponentData: (value) => {
+          componentData.push(value)
+          renderOrder.push('componentData')
+        },
+        setPageFrameHints: (root) => {
+          pageFrameHints.push(root)
+          renderOrder.push('pageFrameHints')
+        },
       },
     })
     const host = new BridgeConnection({
@@ -119,12 +131,19 @@ describe('tree thread', () => {
       ],
     }, { pageId: 'page-1' })
     await new Promise((resolve) => setTimeout(resolve, 0))
+    renderOrder.length = 0
     host.sendEvent('tree', 'patch', {
       pageId: 'page-1',
       rootViewId: 'view-root',
       pageData: { title: 'second' },
       pageDataPatches: [{ title: 'second' }],
       componentData: { 'component-1': { value: 2 } },
+      renderHints: {
+        type: 'element',
+        id: 'view-root',
+        tag: 'page',
+        children: [{ type: 'text', id: 'text-2', text: 'second' }],
+      },
       patches: [{ type: 'text', target: 'text', text: 'second' }],
     }, { pageId: 'page-1' })
     await new Promise((resolve) => setTimeout(resolve, 0))
@@ -146,6 +165,12 @@ describe('tree thread', () => {
     expect(pageData).toEqual([{ title: 'first' }])
     expect(pageDataPatches).toEqual([[{ title: 'second' }]])
     expect(componentData).toEqual([{ 'component-1': { value: 2 } }])
+    expect(pageFrameHints).toHaveLength(1)
+    expect(pageFrameHints[0]).toMatchObject({
+      id: 'view-root',
+      children: [{ id: 'text-2', text: 'second' }],
+    })
+    expect(renderOrder).toEqual(['pageFrameHints', 'pageDataPatches', 'componentData'])
   })
 
   test('mounts and patches an independent tabBar root', async () => {

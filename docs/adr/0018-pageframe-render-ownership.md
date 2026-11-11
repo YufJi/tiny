@@ -2,9 +2,9 @@
 
 ## Status
 
-Accepted. Phase A is implemented behind an explicit render-host opt-in; the
-service template/diff path remains the default for other fixtures until
-component creation flow and element identity are moved.
+Accepted. Phase A is implemented and enabled by default in the browser test
+host. The devtool keeps the snapshot fallback until the component
+creation/destruction flow is authoritative in both directions.
 
 ## Context
 
@@ -46,11 +46,14 @@ The migration is staged to keep the gate green:
 - **Phase A (implemented)**: render-owned page template. The flow carries the
   page root identity and method names, the render pageframe mounts the compiled
   template, and page WXS/events stay in one realm. Repeated flows for the same
-  page are idempotent.
+  page are idempotent. Structural page updates also refresh the service-owned
+  view/component identity hints without replaying DOM patches.
 - **Phase B**: component creation/destruction flow from render to service.
 - **Phase C (partial)**: page `setData` crosses as its original data patches,
-  not a full page snapshot. Render-local diff is the acknowledgement; component
-  data still uses the existing per-instance map.
+  not a full page snapshot. Render-local diff is the acknowledgement. Page WXML
+  props are applied before the remaining per-instance component-data patch, so
+  a parent prop update is not evaluated twice. Component data still uses the
+  existing per-instance map.
 - **Phase D**: remove service WXML and the cross-tree WXS state replay.
 
 ## Acceptance
@@ -76,6 +79,9 @@ Phase A acceptance currently covers five checkpoints: first A render, page WXS
 event, B navigation, back to the retained A page, and `reLaunch`. It verifies
 page/component text, page WXS event state, component WXS module counters, page
 reuse and re-entry. A step only passes when the canonical traces are identical.
+The P0 browser gate additionally covers slot-child component binding under
+`wx:if`, relation link/unlink, component-data updates, and the full
+service/render lifecycle.
 
 ## Consequences
 

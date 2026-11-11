@@ -269,17 +269,17 @@ button、input、scroll-view、swiper、canvas 等内置组件把原生字段归
 
 微信官方的 WXS 是运行在视图层的脚本语言，支持模块、受限 globals、`getRegExp` / `getDate`、事件处理和 `change:prop`。参考：[WXS 概述](https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxs/)、[WXS 事件](https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxs/06event.html)、[WXS 观察](https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxs/08observation.html)。
 
-同一份 `templates.js` 会被 service 和 render 分别加载；组件模板两侧各求值一次，页面模板由 service 求值。WXS 也按两侧拆成独立实例：
+启用页帧时，render pageframe 加载一份 `templates.js`，页面和组件 WXML 由 pageframe 求值。service 逻辑树仍从同一份模板生成逻辑节点和组件实例，供 fallback snapshot、查询和关系使用；它不再是页面 WXML 的执行所有者。WXS 在 pageframe 按页隔离：
 
 | 用途 | 执行侧 | 说明 |
 | --- | --- | --- |
-| WXML 表达式 | 页面模板在 service；组件模板两侧 | `{{wxs.fn()}}`、class/style 条件、`wx:if` / `wx:for` 按模板归属求值：service 的结果用于 diff/查询，render 对组件模板再求值一次生成 DOM |
+| WXML 表达式 | render pageframe | `{{wxs.fn()}}`、class/style 条件、`wx:if` / `wx:for` 在 pageframe 内按模板求值；pageframe 的组件树就是实际 DOM/组件边界 |
 | 静态 WXS 事件 | render（所有标签） | 静态 `{{wxs.tap}}` 通过 `Q.B` 发布 handler 路径；逻辑树里的 listener 是占位（`catch` / `capture` 仍参与 service 冒泡），实际 handler 在 render 执行 |
 | 动态 WXS | service 解析，render 执行 | `Q.B` + `originOf()` 产出可选 `moduleId/exportPath`；render `resolve()` 失败时回传 `tree.event` |
 | 自定义组件事件 | render | service 的 `triggerEvent` 已跑完 JS listener 后转发 `tree.customEvent`；只有页面上存在该事件的 WXS binding 才转发 |
 | `change:prop`（内置组件） | render | 节点 props 变化驱动，旧值 / 新值 / ownerInstance / instance |
 | `change:prop`（自定义组件） | render | 组件数据变化驱动（编译器对每个标签都产出 `wx-tiny-wxs-props`），不再是 glass `R.p` observer |
-| WXS module state | 页级隔离 | service 为每个 page tree 维护独立模块表，页面模板、组件模板和同页多个组件实例共享，页面卸载时释放；render 的每页 iframe / WKWebView 本来就是一页一 runtime。跨页不共享 |
+| WXS module state | 页级隔离 | render 的每个 pageframe 维护独立模块表，页面模板、组件模板和同页多个组件实例共享；service fallback 仍按 page tree 回放状态。页面卸载时释放，跨页不共享 |
 
 WXS 代码在编译期完成：
 
@@ -297,7 +297,7 @@ WXS 代码在编译期完成：
 - 本地 handler 执行后，只有路径上存在 service listener 才回传；
 - `mutated` 元数据会传递，但 `mut-bind` 的本地语义尚未实现。
 
-render 侧 `ComponentDescriptor` 已覆盖 `selectComponent`、`getDataset`、`getData`、`getState`、`setStyle`、class 方法、`getComputedStyle`、`getBoundingClientRect`、timers / RAF、`callMethod`、`triggerEvent`；service 侧 descriptor 覆盖 `selectComponent`、`getDataset`、`getData`、`setStyle`、`callMethod`、`triggerEvent`，仅保留给 `bindinput` 等 service-only 事件回退。`getState` 按 owner 节点的共享 id 存储，使 `change:prop` 观察器与后续事件 handler 看到同一份 state；`getData` 使用上一次 flow/patch 的页面或组件快照；`setStyle` 的 rpx 固定按 750 转成 vw。
+render 侧 `ComponentDescriptor` 已覆盖 `selectComponent`、`getDataset`、`getData`、`getState`、`setStyle`、class 方法、`getComputedStyle`、`getBoundingClientRect`、timers / RAF、`callMethod`、`triggerEvent`；service 侧 descriptor 覆盖 `selectComponent`、`getDataset`、`getData`、`setStyle`、`callMethod`、`triggerEvent`，仅保留给 `bindinput` 等 service-only 事件回退。`getState` 按 descriptor 元素存储，使 `change:prop` 观察器与后续事件 handler 看到同一份 state；`getData` 使用上一次 flow/patch 的页面或组件快照；`setStyle` 的 rpx 固定按 750 转成 vw。
 
 当前明确的限制：
 

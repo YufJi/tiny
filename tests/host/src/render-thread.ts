@@ -4,7 +4,7 @@ import { bootRenderEntry } from '@tiny/host-web'
 import { currentAppId, generatedBaseFor, importGenerated } from './test-app'
 
 const initialPageId = new URLSearchParams(window.location.search).get('pageId') ?? undefined
-const pageFrame = new URLSearchParams(window.location.search).get('pageFrame') === '1'
+const pageFrame = new URLSearchParams(window.location.search).get('pageFrame') !== '0'
 const generatedBase = generatedBaseFor(currentAppId())
 
 bootRenderEntry({

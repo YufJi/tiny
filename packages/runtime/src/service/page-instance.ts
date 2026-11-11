@@ -278,6 +278,10 @@ export class MiniProgramPageInstance implements ObserverHost {
     return method(...args)
   }
 
+  hasMethod(name: string): boolean {
+    return this.methods.has(name)
+  }
+
   triggerLifecycle(name: PageLifecycleName, args: unknown[] = []): unknown {
     if (this.unloaded) return undefined
     this.lifecycleEvents.push(name)

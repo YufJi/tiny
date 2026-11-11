@@ -49,6 +49,17 @@ Q.C = (elem, evName, listener, final, mutated, capture, lvaluePath) => {
   // methods from their component (this.data becoming undefined).
   return function (event) {
     if (event && event.__TINY_WXS_HANDLED_FIELD__) return
+    if (event && typeof event === 'object') {
+      const original = typeof event.getOriginalEvent === 'function'
+        ? event.getOriginalEvent()
+        : undefined
+      if (original && event.touches === undefined && original.touches) {
+        event.touches = original.touches
+      }
+      if (original && event.changedTouches === undefined && original.changedTouches) {
+        event.changedTouches = original.changedTouches
+      }
+    }
     const owner = elem.ownerShadowRoot
     const caller = owner && owner.getHostNode ? owner.getHostNode().getMethodCaller() : undefined
     if (!wantsDescriptor) return listener.call(caller, event)

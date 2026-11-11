@@ -191,6 +191,12 @@ export class ServiceRenderBridge implements ServiceRenderPort {
           ...(eventOptions ? { options: cloneJsonSafe(eventOptions) } : {}),
         }, { pageId })
       },
+      dispatchPageMethod: (pageId, handler, event) => {
+        const page = this.options.getPage(pageId)
+        if (!page?.hasMethod(handler)) return false
+        page.invokeMethod(handler, [event])
+        return true
+      },
       onDiagnostic: (diagnostic) => this.connection.sendDiagnostic('warn', diagnostic),
       onError: (pageId, message, details) => {
         this.options.onError(message)
@@ -447,6 +453,9 @@ export class ServiceRenderBridge implements ServiceRenderPort {
           ? { pageUsing: this.logicTree.pageUsingComponents(pageId) }
           : {}),
         behaviorScheme: this.options.behaviorScheme,
+        ...(this.hasPlaceholders
+          ? { placeholders: cloneJsonSafe(this.placeholders) }
+          : {}),
         messages: cloneJsonSafe(this.treeFlow(root, pageId)),
         ...(tabRoot ? { tabRoot: cloneJsonSafe(tabRoot) } : {}),
         ...(this.wxsModules ? { wxsModules: cloneJsonSafe(this.wxsModules) } : {}),
@@ -498,7 +507,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       for (const id of pages) {
         if (!this.logicTree || !this.mountedPages.has(id)) continue
         try {
-          const { patches } = this.logicTree.updateRenderTree(id)
+          const { patches, snapshot } = this.logicTree.updateRenderTree(id)
           const tabBar = this.logicTree.updateTabBarTree(id)
           // Component data is a per-instance patch; a data-only update must
           // still cross the bridge even when the structure did not change.
@@ -519,6 +528,14 @@ export class ServiceRenderBridge implements ServiceRenderPort {
               {
                 pageId: id,
                 patches: cloneJsonSafe(patches),
+                ...(patches.some((patch) => (
+                  patch.type === 'insert'
+                  || patch.type === 'remove'
+                  || patch.type === 'replace'
+                  || patch.type === 'reorder'
+                ))
+                  ? { renderHints: cloneJsonSafe(snapshot) }
+                  : {}),
                 ...(page?.data ? { pageData: cloneJsonSafe(page.data) } : {}),
                 ...(hasComponentData ? { componentData: cloneJsonSafe(componentData) } : {}),
                 ...(hasPageDataPatches

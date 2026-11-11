@@ -81,6 +81,8 @@ export type LogicTreeAdapterOptions = {
     detail: unknown,
     options?: { bubbles?: boolean; composed?: boolean },
   ) => void
+  /** Invoke a Page/Component-as-page method on the actual page runtime. */
+  dispatchPageMethod?: (pageId: string, handler: string, event: unknown) => boolean
   /** Render-thread animation commands issued by `this.animate`/`clearAnimate`. */
   viewAnimation?: {
     play: (request: RenderAnimationRequest & { pageId: string }) => void
@@ -119,6 +121,7 @@ export class LogicTreeAdapter {
   private readonly customTabBarPath?: string
   private readonly tabBarPagePaths = new Set<string>()
   private readonly onDiagnostic?: LogicTreeAdapterOptions['onDiagnostic']
+  private readonly dispatchPageMethod?: LogicTreeAdapterOptions['dispatchPageMethod']
   private readonly reportedPages = new Set<string>()
   private readonly viewIntersection?: LogicTreeAdapterOptions['viewIntersection']
   private readonly viewAnimation?: LogicTreeAdapterOptions['viewAnimation']
@@ -144,6 +147,7 @@ export class LogicTreeAdapter {
     this.viewAnimation = options.viewAnimation
     this.wxsRuntime = options.wxsRuntime
     this.onDiagnostic = options.onDiagnostic
+    this.dispatchPageMethod = options.dispatchPageMethod
     const appConfig = options.manifest.app?.configuration?.effective as
       | Record<string, unknown>
       | undefined
@@ -964,11 +968,6 @@ export class LogicTreeAdapter {
       asGeneralComponent?: () => unknown
     }).asGeneralComponent?.() ?? element
     const path = (component as { is?: unknown }).is
-    const method = typeof path === 'string'
-      ? this.componentDefinitions?.get(path)?.methods.get(payload.handler)
-        ?? this.glass.pageTemplateMethod(path, payload.handler)
-      : undefined
-    if (typeof method !== 'function') return false
     const geometry = payload.currentTarget
     const shape = {
       id: payload.id ?? '',
@@ -987,6 +986,19 @@ export class LogicTreeAdapter {
       touches: payload.touches ?? [],
       changedTouches: payload.changedTouches ?? [],
     }
+    if (
+      typeof path === 'string'
+      && this.manifest.pages.some((page) => page.path === path)
+      && payload.pageId
+      && this.dispatchPageMethod?.(payload.pageId, payload.handler, event)
+    ) {
+      return true
+    }
+    const method = typeof path === 'string'
+      ? this.componentDefinitions?.get(path)?.methods.get(payload.handler)
+        ?? this.glass.pageTemplateMethod(path, payload.handler)
+      : undefined
+    if (typeof method !== 'function') return false
     const caller = (component as { getMethodCaller?: () => unknown }).getMethodCaller?.()
       ?? component
     method.call(caller, event)

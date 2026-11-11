@@ -10,6 +10,7 @@ export type ServiceRenderPage = {
   pageId: string
   path: string
   data: Record<string, unknown>
+  hasMethod(name: string): boolean
   invokeMethod(name: string, args?: unknown[]): unknown
 }
 

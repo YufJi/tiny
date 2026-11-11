@@ -45,6 +45,7 @@ const option = (name, fallback) => {
 
 const limit = Number(option('limit', '0')) || 0
 const only = option('only', '')
+const pageFrame = flag('page-frame') || process.env.TINY_PAGE_FRAME === '1'
 const outFile = path.resolve(rootDir, option('out', 'tests/host/generated/parity-report.json'))
 const externalBaseUrl = process.env.TINY_PROBE_BASE_URL ?? ''
 const port = Number(process.env.TINY_PROBE_PORT ?? option('port', String(DEFAULT_PORT)))
@@ -193,7 +194,8 @@ async function probePage(page, baseUrl, pagePath) {
   try {
     const gotoStarted = Date.now()
     await page.goto(
-      `${baseUrl}/?app=${encodeURIComponent(probeApp)}&path=${encodeURIComponent(pagePath)}`,
+      `${baseUrl}/?app=${encodeURIComponent(probeApp)}&path=${encodeURIComponent(pagePath)}`
+        + (pageFrame ? '&pageFrame=1' : ''),
       {
         waitUntil: 'domcontentloaded',
         timeout: PAGE_TIMEOUT,

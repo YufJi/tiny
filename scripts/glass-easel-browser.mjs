@@ -105,6 +105,7 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
   })
 
   let currentStep = 'start'
+  let render
   try {
     await step('boot the dual-thread host', async () => {
       currentStep = 'boot the dual-thread host'
@@ -124,7 +125,7 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       assert.ok(frame, 'active render iframe was not found')
       return frame
     }
-    let render = await activeRender()
+    render = await activeRender()
 
     await step('deliver host global events to wx listeners', async () => {
       currentStep = 'deliver host global events to wx listeners'
@@ -873,13 +874,13 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       await page.waitForTimeout(50)
       const before = await render.evaluate(() => window.scrollY)
       // Swipe the bare mask (above the sheet), where no inner scroller exists.
-      await touchSwipe(render.locator('.mask'), 0.25, 0.05)
+      await touchSwipe(render.locator('[class*="--mask"]').first(), 0.25, 0.05)
       await page.waitForTimeout(150)
       const after = await render.evaluate(() => window.scrollY)
       assert.equal(after, before, `page scrolled through catchtouchmove (${before} -> ${after})`)
 
       // The inner scroll-view must keep scrolling inside the locked mask.
-      await touchSwipe(render.locator('.inner'), 0.8, 0.4)
+      await touchSwipe(render.locator('[class*="--inner"]').first(), 0.8, 0.4)
       let innerTop = 0
       const innerDeadline = Date.now() + 2000
       while (Date.now() < innerDeadline && innerTop === 0) {
@@ -959,6 +960,17 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       }))
       return { activePageId: window.__tinyRuntime?.host?.activePage, frames }
     }).catch(() => null)
+    const renderState = await render?.evaluate(() => ({
+      pageRoots: document.querySelectorAll('tiny-page').length,
+      labels: document.querySelectorAll('tiny-label').length,
+      labelListeners: [...document.querySelectorAll('tiny-label')].map(
+        (element) => element.__wxElement?._hostListeners?.length ?? 0,
+      ),
+      checkboxes: [...document.querySelectorAll('tiny-checkbox')].map((element) => ({
+        checked: Boolean(element.__wxElement?.data?.checked),
+        listeners: element.__wxElement?._hostListeners?.length ?? 0,
+      })),
+    })).catch(() => null)
     try {
       await fs.mkdir(path.dirname(failureShot), { recursive: true })
       await page.screenshot({ path: failureShot, fullPage: true })
@@ -972,6 +984,7 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
         `\nRuntime errors: ${JSON.stringify(failureDiagnostics)}` +
         `\nService state: ${JSON.stringify(serviceState)}` +
         `\nHost state: ${JSON.stringify(hostState)}` +
+        `\nRender state: ${JSON.stringify(renderState)}` +
         `\nScreenshot: ${failureShot}`,
     )
   } finally {
@@ -1657,12 +1670,12 @@ export async function runWechatDemoAcceptance({ baseUrl, app = 'wechat-demo', br
       await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
       const render = await activeRender()
       await render.waitForFunction(
-        () => Boolean(document.querySelector('.movable')),
+        () => Boolean(document.querySelector('[class*="--movable"]')),
         null,
         { timeout: STEP_TIMEOUT },
       )
       const position = () => render.evaluate(() => {
-        const element = document.querySelector('.movable')
+        const element = document.querySelector('[class*="--movable"]')
         if (!element) return ''
         const style = getComputedStyle(element)
         return `${style.left}/${style.top}`
@@ -1671,7 +1684,7 @@ export async function runWechatDemoAcceptance({ baseUrl, app = 'wechat-demo', br
       // The demo binds touch handlers from a WXS module; the handler receives
       // the component descriptor (`ins`) and moves the node with setStyle.
       await render.evaluate(() => {
-        const element = document.querySelector('.movable')
+        const element = document.querySelector('[class*="--movable"]')
         const touch = (x, y) => new Touch({
           identifier: 1,
           target: element,
@@ -1693,13 +1706,13 @@ export async function runWechatDemoAcceptance({ baseUrl, app = 'wechat-demo', br
         fire('touchend', 130, 120)
       })
       await render.waitForFunction(
-        () => getComputedStyle(document.querySelector('.movable')).left === '80px',
+        () => getComputedStyle(document.querySelector('[class*="--movable"]')).left === '80px',
         null,
         { timeout: STEP_TIMEOUT },
       )
       assert.equal(await position(), '80px/70px', 'WXS setStyle did not move the node by the drag delta')
       const style = await render.evaluate(
-        () => document.querySelector('.movable')?.getAttribute('style') ?? '',
+        () => document.querySelector('[class*="--movable"]')?.getAttribute('style') ?? '',
       )
       assert.ok(style.includes('position: absolute'), 'WXS setStyle replaced the WXML inline style')
       assert.equal(pageErrors.length, 0, `WXS drag raised page errors: ${pageErrors.join(' | ')}`)

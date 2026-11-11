@@ -226,7 +226,7 @@ Bridge 的 `assertJsonSafe` 做严格校验；runtime 的 `toJsonSafe` 会主动
 | --- | --- | --- |
 | `tree.flow` | service → render | 首屏 flow：`define`（该页可见组件定义）、`tree`（整棵页面渲染快照）、`ready`；可带独立 `tabRoot`，以及页面样式、fallback app 样式、`pageScope`、`pageUsing`、`behaviorScheme`、`wxsModules`、`pageData` 和 `componentData` |
 | `tree.snapshot` | service → render | 旧版完整快照入口仍注册，当前 service 不发送 |
-| `tree.patch` | service → render | `text`、`replace`、`props`、`insert`、`remove`、`reorder`；组件用共享 id、元素用 `owner#index.path` locator 寻址；同一 payload 可带 `tabPatches`、`pageData` / `componentData` |
+| `tree.patch` | service → render | `text`、`replace`、`props`、`insert`、`remove`、`reorder`；组件用共享 id、元素用 `owner#index.path` locator 寻址；同一 payload 可带 `tabPatches`、`pageData` / `componentData`；页帧结构变化还会带 `renderHints` 刷新组件身份 |
 | `tree.ack` | render → service | 批次确认：回显 flow/snapshot/patch 上的 `ack` token；service 用它 settle `setData` completion |
 | `tree.event` | render → service | 组件 id 或元素 locator、可选 `targetId`、name、detail、native 字段、touches 和 target/currentTarget 几何；service 从最内层 target 节点开始分发，并保留当前 binding 的 currentTarget |
 | `tree.templateEvent` | render → service | render 求值的组件模板把绑定的方法调用交回 service |
@@ -307,7 +307,7 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | page | `pullDownRefresh` | control | host → service | 下拉刷新 API 的宿主控制入口 |
 | tree | `flow` | event | service → render | 首屏 flow：组件定义 + 嵌套快照 + 页面元数据 + 数据快照 |
 | tree | `snapshot` | event | service → render | 旧版完整快照入口，当前不发送 |
-| tree | `patch` | event | service → render | 虚拟节点增量 patch 及页面/组件数据快照 |
+| tree | `patch` | event | service → render | 虚拟节点增量 patch、页面/组件数据快照；页帧结构变化可带身份 hints |
 | tree | `ack` | event | render → service | 回显批次 ack token，settle 该批次的 `setData` completion |
 | tree | `animate` / `clearAnimate` | event | service → render | `this.animate` 关键帧与取消 |
 | tree | `event` | event | render → service | 渲染树事件回传逻辑树 |
