@@ -1,0 +1,6 @@
+<view class="page-state">PAGE: MOVE</view>
+<view class="move-state">MOVE: {{lifecycle}}</view>
+<flow-child wx:for="{{items}}" wx:key="key" relation-tag="{{item.key}}" />
+<button class="reverse" bindtap="reverse">Reverse</button>
+<button class="rotate" bindtap="rotate">Rotate</button>
+<button class="back-move" bindtap="back">Back to Flow</button>

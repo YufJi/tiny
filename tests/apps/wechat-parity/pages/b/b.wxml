@@ -1,0 +1,4 @@
+<wxs module="state" src="/wxs/state.wxs" />
+<view class="page-state">PAGE: {{state.mark(pageKey, 'B')}} KEY: {{pageKey}}</view>
+<probe class="probe-b" state-key="{{pageKey}}" />
+<button class="back" bindtap="back">Back to A</button>

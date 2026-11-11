@@ -1,0 +1,3 @@
+<wxs module="state" src="/wxs/component-state.wxs" />
+<view class="component-state">COMP-C: {{state.mark('component-c:' + stateKey, 'C')}} COMP-D: {{state.mark('component-d:' + stateKey, 'D')}} KEY: {{stateKey}}</view>
+<view class="component-peek">PEEK: {{state.peek()}}</view>

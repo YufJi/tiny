@@ -50,9 +50,8 @@ export const TINY_ENGINE_NAMING = Object.freeze({
   wxsHandledField: '__tinyWxsHandled',
   wxsPropsAttribute: 'wx-tiny-wxs-props',
   wxsDynamicEventAttribute: 'wx-tiny-wxs-dynamic',
-  /** WXS bindinput is not supported on these built-ins. */
-  wxsServiceOnlyInputEvent: 'input',
-  wxsServiceOnlyInputTags: ['input', 'textarea'],
+  /** Marker for a template-created element whose `catchtouchmove` needs a non-passive DOM guard. */
+  catchTouchMoveAttribute: 'wx-tiny-catch-touchmove',
   /**
    * The compiler writes the declared entry path into this global before each
    * page/component script runs. `Page()` / `Component()` consume and clear it,

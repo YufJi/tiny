@@ -39,7 +39,108 @@ function templatesFor(path: string, source: string) {
   }
 }
 
+function pageTemplatesFor(path: string, source: string, wxsPath: string, wxs: string) {
+  const group = TmplGroup.newDev({
+    directivePrefix: 'wx',
+    templateExtension: '.wxml',
+    templateScriptExtension: '.wxs',
+  })
+  group.addScript(wxsPath, wxs)
+  group.addTmpl(path, source)
+  const generated = group.getTmplGenObjectGroups()
+  group.free()
+  const groupList = new Function(`return ${generated}`)() as Record<string, (name?: string) => unknown>
+  return {
+    groupList,
+    content: (entry: string, name = '') => groupList[entry]!(name),
+  }
+}
+
+function glassText(node: any): string {
+  if (!node) return ''
+  if (typeof node.data === 'string') return node.data
+  if (typeof node.textContent === 'string') return node.textContent
+  return (node.childNodes ?? []).map((child: any) => glassText(child)).join('')
+}
+
 describe('glass render tree', () => {
+  test('mounts a page WXML template in the render pageframe', () => {
+    const path = 'pages/pageframe/pageframe'
+    const tree = createGlassRenderTree({
+      backend: new glassEasel.EmptyBackendContext(),
+    })
+    tree.setTemplates?.(pageTemplatesFor(
+      path,
+      '<wxs module="state" src="/wxs/pageframe.wxs" /><view class="state">{{state.mark("page", "P")}} {{state.bump(title)}}</view>',
+      'wxs/pageframe.wxs',
+      'var seen = {}; var next = 0; var calls = 0; function mark(key, label) { if (!seen[key]) { next += 1; seen[key] = next } return label + ":" + seen[key] } function bump(value) { calls += 1; return "B:" + calls + ":" + value } module.exports = { mark: mark, bump: bump }',
+    ))
+    tree.mountPage?.({
+      pageId: 'page-1',
+      pagePath: path,
+      data: { title: 'first' },
+    })
+
+    expect(tree.root).toBeDefined()
+    expect(tree.root.shadowRoot).toBeDefined()
+    expect(tree.getNode?.('page-1')).toBe(tree.root)
+    expect(
+      (tree.root as any).getComponentOptions().extraStyleScope,
+    ).toBe(glassEasel.StyleScopeManager.globalScope())
+    expect(glassText(tree.root.shadowRoot)).toContain('P:1')
+    expect(glassText(tree.root.shadowRoot)).toContain('B:1:first')
+
+    const root = tree.root
+    tree.mountPage?.({
+      pageId: 'page-1',
+      pagePath: path,
+      data: { title: 'first' },
+    })
+    expect(tree.root).toBe(root)
+    expect(glassText(tree.root.shadowRoot)).toContain('B:1:first')
+
+    tree.applyPageDataPatches?.([{ title: 'second' }])
+    expect(glassText(tree.root.shadowRoot)).toContain('B:2:second')
+  })
+
+  test('mounts and clears an independent tabBar pageframe', () => {
+    const pagePath = 'pages/home/home'
+    const tabBarPath = 'custom-tab-bar/index'
+    const tree = createGlassRenderTree({
+      backend: new glassEasel.EmptyBackendContext(),
+      componentDefinitions: {
+        [tabBarPath]: {
+          path: tabBarPath,
+          properties: {},
+          data: { selected: 0 },
+          methods: [],
+          using: {},
+        },
+      },
+      templates: templatesForMany([
+        [pagePath, '<view id="page-text">home</view>'],
+        [tabBarPath, '<view id="bar">{{selected}}</view>'],
+      ]),
+    })
+    tree.mountPage({
+      pageId: 'page-1',
+      pagePath,
+      data: {},
+    })
+    tree.mountTabBarPage?.({
+      pageId: 'page-1',
+      rootViewId: 'tab-bar',
+      pagePath: tabBarPath,
+      data: { selected: 0 },
+    })
+
+    expect(tree.getNode('page-1')).toBeDefined()
+    expect(tree.getNode('tab-bar')).toBeDefined()
+    tree.clearTabBar?.()
+    expect(tree.getNode('page-1')).toBeDefined()
+    expect(tree.getNode('tab-bar')).toBeUndefined()
+  })
+
   test('composes built-ins into a real ancestor tree', () => {
     const tree = createGlassRenderTree({ backend: new glassEasel.EmptyBackendContext() })
     tree.mount(element('root', 'view', { class: 'page' }, [

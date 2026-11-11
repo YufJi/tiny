@@ -1,0 +1,10 @@
+<view class="page-state">PAGE: FLOW</view>
+<view class="flow-state">FLOW: {{lifecycle}}</view>
+<flow-host wx:if="{{showHost}}" inner="{{showInner}}">
+  <flow-child wx:if="{{showChild}}" relation-tag="slot" />
+</flow-host>
+<button class="toggle-child" bindtap="toggleChild">Toggle Slot Child</button>
+<button class="toggle-inner" bindtap="toggleInner">Toggle Inner Child</button>
+<button class="toggle-host" bindtap="toggleHost">Toggle Host</button>
+<button class="to-move" bindtap="toMove">To Move</button>
+<button class="back-flow" bindtap="back">Back to A</button>

@@ -11,7 +11,6 @@ export const TREE_PROTOCOL = Object.freeze({
   domain: 'tree',
   templateEvent: 'templateEvent',
   flow: 'flow',
-  snapshot: 'snapshot',
   patch: 'patch',
   ack: 'ack',
   event: 'event',
@@ -30,7 +29,7 @@ export const TREE_PROTOCOL = Object.freeze({
 /**
  * Render-thread acknowledgement of an applied batch.
  *
- * A `flow`/`snapshot`/`patch` message may carry opaque `ack` tokens. The render
+ * A `flow`/`patch` message may carry opaque `ack` tokens. The render
  * thread echoes them once the batch is reflected in its tree, which is what
  * makes a `setData` completion "after render" instead of "after the service
  * data update".
@@ -141,6 +140,38 @@ export type RenderElement = {
 }
 
 export type RenderNode = RenderText | RenderElement
+
+/**
+ * Stable component identities emitted by the service logic tree.
+ *
+ * WeChat's service side creates the component tree and emits creation
+ * operations; the pageframe consumes the identities when it creates matching
+ * render components. Keeping this flat makes order explicit and independent of
+ * DOM/slot attachment timing.
+ */
+export type RenderComponentIdentity = {
+  id: RenderNodeId
+  path: string
+}
+
+/** One pageframe-owned root: the page itself or its independent custom tabBar. */
+export type PageFrameMount = {
+  pageId: string
+  /** Service logic-tree view id of the root (event/WXS identity). */
+  rootViewId?: string
+  pagePath: string
+  data: Record<string, unknown>
+  using?: Record<string, string>
+  scope?: string
+  /** Compiler `componentPlaceholder` map keyed by artifact path. */
+  placeholders?: Record<string, string>
+  /** Page/component methods a compiled template may route back to the service. */
+  methods?: string[]
+  /** Service identity tree used for component ids while the pageframe owns WXML. */
+  renderHints?: RenderNode
+  /** Service-owned component identities in pageframe document order. */
+  componentFlow?: RenderComponentIdentity[]
+}
 
 /**
  * Serialized component definition shipped to the render tree.
@@ -294,6 +325,11 @@ export type RenderPatch =
   | { type: 'insert'; parent: RenderTarget; index: number; node: RenderNode }
   | { type: 'remove'; parent: RenderTarget; index: number; count: number }
   | { type: 'reorder'; parent: RenderTarget; moves: Array<{ from: number; to: number }> }
+  | {
+    type: 'component-instances'
+    target: RenderTarget
+    instances: Array<{ id: RenderNodeId; path: string }>
+  }
   | { type: 'extra'; target: RenderTarget; data: Record<string, unknown> }
 
 /**

@@ -1,0 +1,1 @@
+<view class="flow-child">CHILD:{{relationTag}}</view>

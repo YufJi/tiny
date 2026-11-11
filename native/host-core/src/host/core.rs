@@ -17,6 +17,7 @@ pub struct HostConfig {
     pub manifest: Value,
     pub initial_path: String,
     pub max_page_stack: Option<usize>,
+    pub initial_exit_state: Option<Value>,
 }
 
 struct PageState {
@@ -36,6 +37,8 @@ enum PendingCommand {
     SwitchTab,
     InspectTree { page_id: String },
     Share,
+    SnapshotPageState,
+    RestorePageState,
 }
 
 #[derive(Debug, Clone)]
@@ -242,6 +245,50 @@ impl HostCore {
                     }
                 }
             }
+            HostCommand::SnapshotPageState => {
+                match self.service.control(
+                    ProtocolDomain::Page,
+                    "snapshotState",
+                    json!({}),
+                    None,
+                    now_ms,
+                ) {
+                    Ok(id) => {
+                        self.pending_commands
+                            .insert(id, PendingCommand::SnapshotPageState);
+                    }
+                    Err(error) => {
+                        self.diagnostic("error", &error.to_string(), None, actions);
+                    }
+                }
+            }
+            HostCommand::RestorePageState {
+                page_id,
+                data,
+                saved_exit_state,
+                exit_state,
+            } => {
+                match self.service.control(
+                    ProtocolDomain::Page,
+                    "restoreState",
+                    json!({
+                        "pageId": page_id,
+                        "data": data,
+                        "savedExitState": saved_exit_state,
+                        "exitState": exit_state,
+                    }),
+                    Some(page_id),
+                    now_ms,
+                ) {
+                    Ok(id) => {
+                        self.pending_commands
+                            .insert(id, PendingCommand::RestorePageState);
+                    }
+                    Err(error) => {
+                        self.diagnostic("error", &error.to_string(), None, actions);
+                    }
+                }
+            }
             HostCommand::InspectTree { page_id } => {
                 let Some(page_id) = page_id.or_else(|| self.active_page.clone()) else {
                     self.diagnostic("warn", "inspectTree has no active page", None, actions);
@@ -374,6 +421,16 @@ impl HostCore {
             });
             return;
         }
+        if matches!(
+            &command,
+            PendingCommand::SnapshotPageState | PendingCommand::RestorePageState
+        ) {
+            actions.push(HostAction::CommandResult {
+                command: command_name,
+                result,
+            });
+            return;
+        }
         let page_id = result
             .get("pageId")
             .and_then(Value::as_str)
@@ -451,7 +508,10 @@ impl HostCore {
                     }
                 }
             }
-            PendingCommand::InspectTree { .. } | PendingCommand::Share => {}
+            PendingCommand::InspectTree { .. }
+            | PendingCommand::Share
+            | PendingCommand::SnapshotPageState
+            | PendingCommand::RestorePageState => {}
         }
         actions.push(HostAction::CommandResult {
             command: command_name,
@@ -1266,11 +1326,14 @@ impl HostCore {
         if self.bootstrap_id.is_some() {
             return;
         }
-        let payload = json!({
+        let mut payload = json!({
             "manifest": self.config.manifest,
             "initialPath": self.config.initial_path,
             "maxPageStack": self.config.max_page_stack.unwrap_or(10),
         });
+        if let Some(initial_exit_state) = &self.config.initial_exit_state {
+            payload["initialExitState"] = initial_exit_state.clone();
+        }
         match self
             .service
             .control(ProtocolDomain::Runtime, "bootstrap", payload, None, now_ms)
@@ -1417,6 +1480,8 @@ fn command_name(command: &PendingCommand) -> &'static str {
         PendingCommand::SwitchTab => "switchTab",
         PendingCommand::InspectTree { .. } => "inspectTree",
         PendingCommand::Share => "share",
+        PendingCommand::SnapshotPageState => "snapshotPageState",
+        PendingCommand::RestorePageState => "restorePageState",
     }
 }
 

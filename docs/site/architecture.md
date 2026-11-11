@@ -73,18 +73,18 @@ canvas 和 `resolveAssetUrl` 只进入 `@tiny/api` 的 context；同步调用由
 | host | 线程和 transport、启动流程、宿主 API、渲染树、内置组件、canvas、资源 URL、诊断收集 | 页面栈、业务 data、observer、relations 和事件回调 | `hosts/web` · `hosts/web-components` · `apps/devtool` · `tests/host` · `ios/` native adapter |
 
 :::callout{title="页面状态只在 service"}
-页面栈、页面 data、组件实例、observer 和 relations 都归 service 线程管；render 线程持有渲染树、DOM 和组件模板求值结果，只镜像组件的共享 id，元素用自己的本地 id 和组件作用域 locator 寻址。两棵树没有共享内存，所有同步都经过宿主转发的 tree 协议。
+页面栈、页面 data、组件实例、observer 和 relations 都归 service 线程管；render pageframe 持有 WXML 求值结果、渲染树和 DOM，只镜像组件的共享 id，元素用自己的本地 id 和组件作用域 locator 寻址。两棵树没有共享内存，所有同步都经过宿主转发的 tree 协议。
 :::
 
 ## 两棵树：逻辑树在 service，渲染树在 host {#split-tree kicker="双侧树"}
 
-这是当前运行时的核心设计。service 不创建 DOM，render 不执行小程序逻辑；组件模板由两侧按同一份编译产物各自求值（two-evaluation），两边通过共享的组件 id、组件作用域 locator、component flow 和 virtual node patch 对齐。
+这是当前运行时的核心设计。service 不创建 DOM，render 不执行小程序逻辑。页面和组件的 WXML 由 render pageframe 执行；service 逻辑树从同一份编译模板构造组件实例，供 data、observer、relations、查询和身份索引使用。两边通过共享的组件 id、组件作用域 locator、component flow 和页面数据补丁对齐。
 
 | 层 | 在哪里 | 拥有 | 不负责 |
 | --- | --- | --- | --- |
-| 逻辑树 | service 线程 | glass-easel ComponentSpace、模板求值、virtual node、组件实例、observer、relations、带类型的 dataset、组件的共享 id | DOM、布局、宿主内置组件实现 |
-| 渲染树 | 宿主的 render 线程 | 真实内置组件、组件模板求值（shadow tree）、slot、shadow root、样式、布局、DOM、元素本地 id | app methods、observer、relations、页面栈 |
-| 同步协议 | 两棵树之间 | component flow 首屏同步、virtual node patch（组件 id / 元素 locator 寻址）、tree 事件、query/canvas 控制 | 业务语义 |
+| 逻辑树 | service 线程 | glass-easel ComponentSpace、逻辑模板实例化、virtual node、组件实例、observer、relations、带类型的 dataset、组件的共享 id | DOM、布局、宿主内置组件实现、页面 WXML 的最终求值 |
+| 渲染树 | 宿主的 render thread / pageframe | 页面与组件 WXML 求值（shadow tree）、真实内置组件、slot、shadow root、样式、布局、DOM、元素本地 id | app methods、observer、relations、页面栈 |
+| 同步协议 | 两棵树之间 | component flow 首屏同步、页面/组件数据补丁、身份 hints、tree 事件、query/canvas 控制 | 业务语义 |
 
 ```text
   SERVICE THREAD (kernel)                          RENDER THREAD (host renderer)
@@ -102,10 +102,10 @@ canvas 和 `resolveAssetUrl` 只进入 `@tiny/api` 的 context；同步调用由
                           tree.event / query.* return through the same link
 ```
 
-首屏由 `tree.flow` 发送 `define`（组件定义）、`tree`（整棵渲染快照）和 `ready`；快照里的组件带共享 id，元素不带 id（渲染侧分配本地 id）。后续模板变化由 `tree.patch` 发送 `text`、`replace`、`props`、`insert`、`remove`、`reorder`、`extra`：组件用共享 id 寻址，元素用 `owner#index.path` 形式的 locator 寻址，宿主只负责应用 patch。
+首屏由 `tree.flow` 发送 `define`（组件定义）、`tree`（逻辑树身份快照）和 `ready`；pageframe 用编译模板挂载页面，快照用于组件身份和索引。组件带共享 id，元素不带 id（渲染侧分配本地 id）。后续更新由 `tree.patch` 发送 `pageDataPatches`、`componentData` 和结构变化时的 `renderHints`/`componentFlow`；pageframe 用本地模板求值完成 DOM diff。custom tabBar 由独立 `tabFrame` 以 pageframe 组件根挂载。
 
 :::callout{title="为什么要拆成两棵树"}
-render 只对组件模板做一次确定性的求值（和 service 用同一份 `templates.js`），属性、dataset、函数和 observer 仍然只在 service 里产生和消费。拆开之后，类型和语义留在 service，render 负责“怎么画”和 shadow tree 的求值，同一套 tree 协议可以接 Web、原生或测试渲染器；组件 id 是两侧唯一的共享身份，元素 id 不跨线程。
+render pageframe 是页面和组件 WXML 的执行者；属性、dataset、函数、observer 和 relations 仍然只在 service 里产生和消费。service 的模板求值只服务逻辑树、查询和身份索引，不再生成 pageframe 的最终 DOM。拆开之后，类型和语义留在 service，render 负责“怎么画”；组件 id 是两侧唯一的共享身份，元素 id 不跨线程。
 :::
 
 ## glass-easel 提供组件框架，Tiny 补齐应用层 {#glass-easel kicker="运行时内核" nav="与 glass-easel 的分工"}
@@ -114,7 +114,7 @@ glass-easel 不是完整的小程序 SDK。它负责组件、模板、数据绑�
 
 | 能力 | 由谁提供 | 在 Tiny 中如何使用 |
 | --- | --- | --- |
-| 组件定义、properties、data、methods、模板 | glass-easel（service 逻辑树 + render shadow tree） | `defineWithMethodCaller` / `defineComponent`；service 求值逻辑树，render 用同一份模板求值 shadow tree |
+| 组件定义、properties、data、methods、模板 | glass-easel（service 逻辑树 + render pageframe） | `defineWithMethodCaller` / `defineComponent`；service 实例化逻辑树，render pageframe 求值页面和组件 WXML |
 | WXML 运行时数据绑定与更新 | glass-easel | 编译器把 WXML 编成 ProcGen，运行时只传 groupList/content |
 | 事件捕获与冒泡、slot、shadow 边界 | glass-easel（两侧各自） | 逻辑树分发事件，渲染树处理真实 DOM 事件 |
 | created/attached/ready/moved/detached 生命周期 | glass-easel（service） | 组件实例和 relations 都在逻辑树 |
@@ -194,8 +194,8 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
 | 把 MessagePort 交给线程 | 宿主 | 宿主把 port2 作为 transferable 发给对应 iframe；线程再用 createMessagePortTransport 包装成 Transport。 | postMessage({ type: 'tiny-runtime-port' }, '*', [port]) |
 | 两条连接分别握手 | bridge | 宿主分别发起 runtime.hello，service/render 回复握手信息并发送 runtime.ready。协议版本不一致时连接会直接关闭。 | host.service.handshake() · host.render.handshake() |
 | service 启动首屏 | 宿主 → service | 导入 service.js，App/Page/Component 在这里注册，App.onLaunch/onShow 也会立即执行。随后安装 runtimeCompatibility 兼容全局，构建组件 schema 和 glass-easel 逻辑树，创建首个页面并触发 onLoad/onShow；逻辑树挂载后立即生成首屏 tree.flow，返回 pageId、initialData 和 componentSchemas。 | service.control('runtime', 'bootstrap') |
-| render 建好渲染树 | 宿主 → render | render 创建 `TreeRenderer`（Web 侧 `createGlassRenderTree`），安装宿主内置组件和编译模板，等待 service 发来的 `tree.flow`。首屏 flow 包含 define/tree/ready：render 先装组件定义，再把快照挂到页面根，并为组件模板求值出 shadow tree。 | render.control('runtime', 'bootstrap') |
-| 同步首屏并触发 onReady | 宿主 → service | render bootstrap 完成后，宿主发送 `tree.ready`，service 用逻辑树快照再次发送 `tree.flow`；宿主随后发 `page.ready`，service 触发 onReady。此时逻辑树、组件实例和 relations 已经可用。 | service.control('page', 'ready', { pageId }) |
+| render 建好渲染树 | 宿主 → render | render 创建 `TreeRenderer`（Web 侧 `createGlassRenderTree`），安装宿主内置组件和编译模板，等待 service 发来的 `tree.flow`。首屏 flow 包含 define/tree/ready：pageframe 先装组件定义，再用编译模板挂载页面和 shadow tree；逻辑快照用于组件身份与索引。 | render.control('runtime', 'bootstrap') |
+| 同步首屏并触发 onReady | 宿主 → service | render pageframe 完成首屏挂载后，宿主发送 `tree.ready`，service 用逻辑树快照再次发送 `tree.flow`；宿主随后发 `page.ready`，service 触发 onReady。此时逻辑树、组件实例和 relations 已经可用。 | service.control('page', 'ready', { pageId }) |
 | 广播状态，页面可交互 | service | service 发送 RUNTIME_STATE，包含 pageStack、currentPage 和 transport 状态；宿主诊断仓库和 devtool 据此更新界面。 | sendDiagnostic('state', { code: 'RUNTIME_STATE' }) |
 :::
 
@@ -253,8 +253,7 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
 
 | 消息 | 路径 | 宿主处理 | 用途 |
 | --- | --- | --- | --- |
-| `tree.flow` · `tree.patch` | service → host → render | 按 pageId 转发；目标页还没打开时先入队 | 首屏 component flow、虚拟节点 patch |
-| `tree.snapshot` | service → host → render | 保留入口，当前 service 不发送 | 旧版完整快照 |
+| `tree.flow` · `tree.patch` | service → host → render | 按 pageId 转发；目标页还没打开时先入队 | 首屏 component flow、页面/组件数据补丁与身份 hints |
 | `tree.animate` · `tree.clearAnimate` | service → host → render | 按 pageId 转发 | `this.animate` / `clearAnimate` 的关键帧 |
 | `tree.wxsBinding` | service → host → render | 按 pageId 转发 | 动态 WXS 事件绑定决策 |
 | `tree.event` | render → host → service | 按 pageId 转发 | 事件带组件 id 或元素 locator、name、detail、native、touches 和 target/currentTarget 几何 |
@@ -267,7 +266,7 @@ fixtures    tests/apps/*               -> 只有源码，编译后交给宿主
 | `canvas` handoff | service → host → render → host → service | 只中继 transferable，不解析 | 把 OffscreenCanvas 交给 service；之后直接绘制 |
 | `api.*` | service → host | HostCore / 平台 handler 查表；`navigate.*` 会再 control service | 导航、toast、storage、request 等宿主语义 |
 | `page.scroll` · `page.reachBottom` · `page.pullDownRefresh` | render → host → service | 按 pageId 转发 | 页面滚动、触底和下拉手势——render 文档才是页面的滚动容器 |
-| `page.ready` · `page.navigateTo` · `page.navigateBack` · `page.switchTab` · `page.redirectTo` · `page.reLaunch` · `page.pullDownRefresh` · `page.share` · `page.saveExitState` · `page.hide` · `page.show` · `page.unload` | host → service | 宿主发起 | 页面栈和生命周期由 service 执行，宿主负责开/关 render 页面 |
+| `page.ready` · `page.navigateTo` · `page.navigateBack` · `page.switchTab` · `page.redirectTo` · `page.reLaunch` · `page.pullDownRefresh` · `page.share` · `page.saveExitState` · `page.snapshotState` · `page.restoreState` · `page.hide` · `page.show` · `page.unload` | host → service | 宿主发起 | 页面栈和生命周期由 service 执行，宿主负责开/关 render 页面与 Reload 状态快照 |
 | `runtime.bootstrap` · `runtime.resize` · `runtime.themeChange` | host → service | 宿主发起 | 启动、窗口尺寸、主题 |
 | `diagnostic.*` | service/render → host | 写入宿主诊断通道，devtool 通过回调读取 | 不回传另一侧 |
 

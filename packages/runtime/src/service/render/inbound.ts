@@ -22,7 +22,7 @@ export type RenderWxsEffect = {
 export type RenderInboundHost = {
   getLogicTree: () => LogicTreeAdapter | null
   isMounted: (pageId: string) => boolean
-  sendSnapshot: (pageId: string) => void
+  sendFlow: (pageId: string) => void
   reportError: (message: string) => void
   dispatchWxsEffect: (pageId: string, effect: RenderWxsEffect) => void
   /** The render thread reflected a batch; run its `setData` completions. */
@@ -65,7 +65,7 @@ export function attachRenderInbound(
 
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.ready, (message) => {
     if (!host.getLogicTree() || !message.pageId || !host.isMounted(message.pageId)) return
-    host.sendSnapshot(message.pageId)
+    host.sendFlow(message.pageId)
   })
 
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.ack, (message) => {
@@ -104,7 +104,7 @@ function handleTemplateEvent(
   }
   if (!payload.componentId || !payload.handler) return
   try {
-    tree.dispatchTemplateHandler({
+    const handled = tree.dispatchTemplateHandler({
       pageId: message.pageId ?? payload.pageId,
       componentId: payload.componentId,
       handler: payload.handler,
@@ -116,6 +116,17 @@ function handleTemplateEvent(
       ...(payload.dataset ? { dataset: payload.dataset } : {}),
       ...(payload.currentTarget ? { currentTarget: payload.currentTarget } : {}),
     })
+    if (!handled) {
+      connection.sendDiagnostic('warn', {
+        code: DIAGNOSTIC_CODES.EVENT_HANDLER_MISSING,
+        message: `template handler is not registered: ${payload.handler}`,
+        details: {
+          componentId: payload.componentId,
+          handler: payload.handler,
+          event: payload.name ?? '',
+        },
+      }, message.pageId)
+    }
   } catch (error) {
     connection.sendDiagnostic('warn', {
       code: DIAGNOSTIC_CODES.EVENT_HANDLER_ERROR,
@@ -134,6 +145,7 @@ function handleViewEvent(
   if (!tree) return
   const payload = (message.payload ?? {}) as {
     id?: string
+    targetId?: string
     name?: string
     detail?: unknown
     native?: Record<string, unknown>
@@ -147,6 +159,7 @@ function handleViewEvent(
   try {
     tree.dispatchViewEvent({
       viewId: payload.id,
+      ...(payload.targetId ? { targetId: payload.targetId } : {}),
       name: payload.name,
       pageId: message.pageId,
       detail: payload.detail,

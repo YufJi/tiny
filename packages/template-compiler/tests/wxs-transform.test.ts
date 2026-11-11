@@ -79,7 +79,7 @@ describe('WXS event metadata', () => {
     group.addTmpl(
       'pages/index/index',
       '<wxs module="utils" src="/wxs/utils.wxs" />'
-        + '<view bindtap="{{utils.tap}}" catchtouchmove="{{utils.tap}}" />',
+        + '<view bindtap="{{utils.tap}}" catchtap="{{utils.tap}}" catchtouchmove="{{utils.tap}}" />',
     )
     const output = group.getTmplGenObjectGroups()
     expect(output).toContain('wx-tiny-wxs-dynamic')
@@ -87,6 +87,7 @@ describe('WXS event metadata', () => {
     expect(output).toContain('R.v(')
     expect(output).not.toContain('wx-tiny-wxs-events')
     expect(output).toContain('\\"catch\\":true')
+    expect(output).toContain('wx-tiny-catch-touchmove')
   })
 
   test('does not emit render dispatch metadata for a static service binding', () => {

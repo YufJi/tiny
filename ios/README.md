@@ -41,9 +41,9 @@ hosts/ios/                         iOS 的前端标准包（pnpm workspace）
 
 - 原生 Launcher：自动列出 `tests/apps` 下的全部 fixture（demo、mini、todo、wechat-demo、echarts、vant、weui），点击进入。
 - 原生导航栏和 tabBar：标题、返回、关闭胶囊、tab 图标/选中态/badge/redDot，颜色来自页面和 `RUNTIME_STATE`。
-- 逻辑层真正跑在 `JSContext`：App/Page/Component、glass-easel 逻辑树、WXML 求值、WXS 表达式、observer/relations/页面栈全部在 JSCore。
+- 逻辑层真正跑在 `JSContext`：App/Page/Component、glass-easel 逻辑树、逻辑模板实例化、WXS 表达式、observer/relations/页面栈全部在 JSCore；最终页面/组件 WXML 求值在 render WKWebView 的 pageframe。
 - 渲染层跑在 WKWebView：每页一个独立 `NativeRenderSurface`，复用 `createGlassRenderEntry` / `createGlassRenderTree`；
-  隐藏页保留 DOM、滚动位置、定时器和页级 WXSS。
+  与 browser/devtool 一样由 render pageframe 执行页面/组件 WXML。隐藏页保留 DOM、滚动位置、定时器和页级 WXSS。
 - 页面间只走现有 Bridge 协议；service 帧和 render 帧由 Swift `HostCoreSession` 通过原生消息处理器转发。
 - 原生存储：启动时把该 app 的 UserDefaults 快照交给 runtime，运行期 `wx.setStorage*` 经宿主 API 落盘。
 - 原生系统信息/安全区/菜单按钮几何注入，窗口尺寸变化会触发 runtime `resize`。
@@ -242,7 +242,7 @@ fixture 通过 `scripts/devtool-apps.mjs` 的 `discoverTestApps()` 自动发现�
 
 已支持：
 
-- `tests/apps` 下 7 个 fixture（demo、mini、todo、wechat-demo、echarts、vant、weui）的启动、首屏、页面导航、tab 切换、返回、原生导航栏/tabBar；
+- `tests/apps` 下 9 个 fixture（demo、mini、todo、wechat-demo、echarts、custom-tab、vant、wechat-parity、weui）的启动、首屏、页面导航、tab 切换、返回、原生导航栏/tabBar；
 - 每页 native WKWebView 的隐藏/恢复、滚动容器、页面 WXSS 隔离；
 - `navigateTo` 的 native push 动画、返回的 pop 动画，以及左边缘右滑交互式返回；
 - 5 个路由 API、`RUNTIME_STATE` 投影、UserDefaults storage、系统信息和 SwiftUI 原生导航/tabBar；
@@ -303,5 +303,5 @@ Host orchestration 已迁到 Swift：
 - 真机自动化 smoke（device build/install 已跑通）
 - 子包按需加载和真机分发签名
 
-HostCore 已经负责 Bridge 会话、页面栈、路由和 UIState；App/Page/Component、setData、WXML 求值和
-glass-easel 逻辑树仍留在 JSCore。Swift 只负责页面 surface、宿主 API 和 SwiftUI chrome。
+HostCore 已经负责 Bridge 会话、页面栈、路由和 UIState；App/Page/Component、setData、逻辑模板实例化和
+glass-easel 逻辑树仍留在 JSCore，最终 WXML 求值在 render pageframe。Swift 只负责页面 surface、宿主 API 和 SwiftUI chrome。

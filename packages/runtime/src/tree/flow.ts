@@ -1,6 +1,7 @@
 import type {
   ComponentDefinitionPayload,
   ComponentFlow,
+  RenderComponentIdentity,
   RenderNode,
 } from './protocol'
 
@@ -13,6 +14,24 @@ export type BuildComponentFlowOptions = {
    * definition inline (placeholder replacement, lazy mount).
    */
   eagerDefinitions?: boolean
+}
+
+/**
+ * Flatten the service-owned component identities in the same pre-order the
+ * render pageframe creates its component tree. This is the Tiny equivalent of
+ * the `FLOW_CREATE_NODE` identity stream.
+ */
+export function collectComponentIdentities(root: RenderNode): RenderComponentIdentity[] {
+  const identities: RenderComponentIdentity[] = []
+  const visit = (node: RenderNode): void => {
+    if (node.type !== 'element') return
+    if (node.component === true && node.componentPath && node.id) {
+      identities.push({ id: node.id, path: node.componentPath })
+    }
+    for (const child of node.children ?? []) visit(child)
+  }
+  visit(root)
+  return identities
 }
 
 /**

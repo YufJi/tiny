@@ -8,12 +8,12 @@ import type {
   RenderPatch,
 } from '../protocol'
 import { diffRenderTree } from '../diff'
-import { cloneDataValue } from '../../data'
 import type { AssetUrlResolver } from '../../assets'
 import { normalizeAnimationFrames, animationTimingOptions } from '../animation'
 import * as glassEasel from 'glass-easel'
 import type { MiniProgramComponentSchema, QueryNodeSnapshot, TemplateRegistry } from '../../types'
 import type { NormalizedComponentDefinition } from '../../component'
+import { wxsPageScopeKey, type WxsRuntime } from '@tiny/wxs-runtime'
 import { GlassEaselRuntimeAdapter } from './glass-easel-adapter'
 import type { LogicFrameworkContext } from './glass-easel-adapter'
 import {
@@ -22,6 +22,7 @@ import {
   findLogicNodeByElement,
   type LogicStyleSheetRole,
 } from './backend'
+import { PageTreeManager } from './page-tree-manager'
 import { createRuntimeDiagnostic } from '../../diagnostics'
 import {
   createLogicSelectorQuery,
@@ -80,11 +81,15 @@ export type LogicTreeAdapterOptions = {
     detail: unknown,
     options?: { bubbles?: boolean; composed?: boolean },
   ) => void
+  /** Invoke a Page/Component-as-page method on the actual page runtime. */
+  dispatchPageMethod?: (pageId: string, handler: string, event: unknown) => boolean
   /** Render-thread animation commands issued by `this.animate`/`clearAnimate`. */
   viewAnimation?: {
     play: (request: RenderAnimationRequest & { pageId: string }) => void
     clear: (request: RenderClearAnimationRequest & { pageId: string }) => void
   }
+  /** Page-scoped WXS module state for service-side template evaluation. */
+  wxsRuntime?: WxsRuntime
 }
 
 /**
@@ -94,9 +99,8 @@ export type LogicTreeAdapterOptions = {
 export class LogicTreeAdapter {
   readonly backend: LogicBackendContext
   readonly glass: GlassEaselRuntimeAdapter
-  private readonly pageRoots = new Map<string, LogicBackendElement>()
+  private readonly pageTrees = new Map<string, PageTreeManager>()
   private activePageId?: string
-  private readonly pagePaths = new Map<string, string>()
   private readonly pageStyleEntries = new Map<string, Array<{
     path: string
     content: string
@@ -104,26 +108,24 @@ export class LogicTreeAdapter {
   }>>()
   private activeTouches: unknown[] | undefined
   private activeChangedTouches: unknown[] | undefined
-  private readonly lastRenderTrees = new Map<string, RenderNode>()
   private readonly manifest: Manifest
   private readonly loadStyle: (outputPath: string) => string
   private readonly resolveAssetUrl?: AssetUrlResolver
   private readonly isComponentPage?: (path: string) => boolean
   private componentSchemas: MiniProgramComponentSchema[] = []
   private componentDefinitions?: ReadonlyMap<string, NormalizedComponentDefinition>
-  /** Last component data sent to the render tree, keyed by page id. */
-  private readonly componentDataSnapshots = new Map<
-    string,
-    Record<string, Record<string, unknown>>
-  >()
   private readonly styledPages = new Set<string>()
   private readonly measureView?: (viewIds: string[]) => Promise<Record<string, ViewRect>>
   private readonly measureLocators?: (locators: string[]) => Promise<Record<string, ViewRect>>
   private readonly queryView?: (request: QueryViewRequest & { pageId?: string }) => Promise<QueryViewResult>
+  private readonly customTabBarPath?: string
+  private readonly tabBarPagePaths = new Set<string>()
   private readonly onDiagnostic?: LogicTreeAdapterOptions['onDiagnostic']
+  private readonly dispatchPageMethod?: LogicTreeAdapterOptions['dispatchPageMethod']
   private readonly reportedPages = new Set<string>()
   private readonly viewIntersection?: LogicTreeAdapterOptions['viewIntersection']
   private readonly viewAnimation?: LogicTreeAdapterOptions['viewAnimation']
+  private readonly wxsRuntime?: WxsRuntime
   private readonly intersectionObservers = new Map<string, {
     callbacks: Map<string, (entry: Record<string, unknown>) => void>
     selectorByViewId: Map<string, string>
@@ -143,7 +145,30 @@ export class LogicTreeAdapter {
     this.queryView = options.queryView
     this.viewIntersection = options.viewIntersection
     this.viewAnimation = options.viewAnimation
+    this.wxsRuntime = options.wxsRuntime
     this.onDiagnostic = options.onDiagnostic
+    this.dispatchPageMethod = options.dispatchPageMethod
+    const appConfig = options.manifest.app?.configuration?.effective as
+      | Record<string, unknown>
+      | undefined
+    const tabBar = appConfig?.tabBar
+    if (tabBar && typeof tabBar === 'object' && !Array.isArray(tabBar)
+      && (tabBar as Record<string, unknown>).custom === true) {
+      const customPath = 'custom-tab-bar/index'
+      if (options.manifest.components.some((component) => component.path === customPath)) {
+        this.customTabBarPath = customPath
+      }
+      const list = (tabBar as Record<string, unknown>).list
+      if (Array.isArray(list)) {
+        for (const item of list) {
+          if (!item || typeof item !== 'object') continue
+          const pagePath = (item as Record<string, unknown>).pagePath
+          if (typeof pagePath === 'string') {
+            this.tabBarPagePaths.add(pagePath.replace(/^\/+/, ''))
+          }
+        }
+      }
+    }
     this.glass = new GlassEaselRuntimeAdapter({
       backend: this.backend as unknown as glassEasel.GeneralBackendContext,
       manifest: options.manifest,
@@ -174,6 +199,7 @@ export class LogicTreeAdapter {
         options.onCustomEvent?.(pageId, this.backend.ensureViewId(node), name, detail, eventOptions)
       },
     })
+    this.wxsRuntime?.bindScopeResolver?.((renderer) => this.wxsScopeForRenderer(renderer))
     glassEasel.addGlobalErrorListener((error, method, relatedComponent) => {
       const message = error instanceof Error ? error.message : String(error)
       options.onError?.(
@@ -195,8 +221,13 @@ export class LogicTreeAdapter {
   }
 
   registerComponentSchemas(schemas: MiniProgramComponentSchema[]): void {
-    this.componentSchemas = schemas
+    const merged = new Map(this.componentSchemas.map((schema) => [schema.path, schema]))
+    for (const schema of schemas) merged.set(schema.path, schema)
+    this.componentSchemas = [...merged.values()]
     this.glass.registerComponentSchemas(schemas)
+    for (const pageTree of this.pageTrees.values()) {
+      pageTree.components.replace(this.visibleSchemasFor(pageTree.path))
+    }
   }
 
   mountPage(
@@ -216,7 +247,6 @@ export class LogicTreeAdapter {
       )
     }
     this.activePageId = pageId
-    this.pagePaths.set(pageId, path)
     const page = this.glass.mountPage(path, data, pageId)
     this.reportMissingComponents(path)
     if (styleStart !== undefined) {
@@ -224,9 +254,15 @@ export class LogicTreeAdapter {
     }
     const backendElement = (page as unknown as { getBackendElement?: () => unknown })
       .getBackendElement?.() as LogicBackendElement | undefined
-    if (backendElement) this.pageRoots.set(pageId, backendElement)
+    if (!backendElement) throw new Error(`logic page has no backend element: ${pageId}`)
+    const pageTree = new PageTreeManager(pageId, path, backendElement)
+    this.pageTrees.set(pageId, pageTree)
+    pageTree.components.replace(this.visibleSchemasFor(path))
+    this.mountCustomTabBarRoot(pageId, path, pageTree)
     const renderTree = this.snapshotRenderTree(pageId)
-    if (renderTree) this.lastRenderTrees.set(pageId, renderTree)
+    if (renderTree) pageTree.recordRenderTree(renderTree)
+    const tabBarTree = this.snapshotTabBarTree(pageId)
+    if (tabBarTree) pageTree.recordTabBarRenderTree(tabBarTree)
     return renderTree
   }
 
@@ -237,12 +273,15 @@ export class LogicTreeAdapter {
 
   /** Tear down a page root and its render/relation state. */
   unmountPage(pageId: string): void {
-    this.componentDataSnapshots.delete(pageId)
-    this.glass.unmountPage(pageId)
-    this.pageRoots.delete(pageId)
-    this.pagePaths.delete(pageId)
-    this.lastRenderTrees.delete(pageId)
-    if (this.activePageId === pageId) this.activePageId = undefined
+    try {
+      this.pageTrees.get(pageId)?.clear()
+      this.pageTrees.delete(pageId)
+      this.backend.clearPageLocators(pageId)
+      this.glass.unmountPage(pageId)
+      if (this.activePageId === pageId) this.activePageId = undefined
+    } finally {
+      this.wxsRuntime?.releasePage?.(pageId)
+    }
   }
 
   /** Deliver a page lifetime to the page's service-side components. */
@@ -255,23 +294,68 @@ export class LogicTreeAdapter {
     if (!page) throw new Error(`logic page is not mounted: ${pageId}`)
     page.setData(patch)
     this.glass.resolvePageRelations(pageId)
+    this.glass.schedulePendingReady(pageId)
   }
 
   /** Runtime-registered stylesheets (shared/page scopes) for the render tree. */
   /** Compiler-assigned style scope of the mounted page. */
   pageScopeName(pageId: string): string | undefined {
-    const path = this.pagePaths.get(pageId)
+    const path = this.pageTrees.get(pageId)?.path
     return path ? this.glass.pageScopeName(path) : undefined
   }
 
   /** Absolute `usingComponents` paths of the mounted page. */
   pageUsingComponents(pageId: string): Record<string, string> {
-    const path = this.pagePaths.get(pageId)
+    const path = this.pageTrees.get(pageId)?.path
     return path ? this.glass.pageUsingComponents(path) : {}
   }
 
   pagePathFor(pageId: string): string {
-    return this.pagePaths.get(pageId) ?? ''
+    return this.pageTrees.get(pageId)?.path ?? ''
+  }
+
+  /** Component paths whose definitions are visible to one page tree. */
+  componentPathsForPage(pageId: string): string[] {
+    return this.pageTrees.get(pageId)?.components.paths() ?? []
+  }
+
+  /** The page-scoped tree manager, for diagnostics and parity tests. */
+  pageTree(pageId: string): PageTreeManager | undefined {
+    return this.pageTrees.get(pageId)
+  }
+
+  private wxsScopeForRenderer(renderer: unknown): string | undefined {
+    const shadowRoot = (renderer as {
+      shadowRoot?: { getHostNode?: () => unknown; _$host?: unknown }
+    } | undefined)?.shadowRoot
+    const host = shadowRoot?.getHostNode?.() ?? shadowRoot?._$host
+    const pageId = this.glass.pageIdFor(host)
+    if (!pageId) return undefined
+    return wxsPageScopeKey(pageId)
+  }
+
+  private visibleSchemasFor(pagePath: string): MiniProgramComponentSchema[] {
+    const used = this.glass.usedComponentPaths(pagePath)
+    if (this.tabBarPagePaths.has(pagePath) && this.customTabBarPath) {
+      used.add(this.customTabBarPath)
+    }
+    return this.componentSchemas.filter((schema) => used.has(schema.path))
+  }
+
+  private mountCustomTabBarRoot(
+    pageId: string,
+    path: string,
+    pageTree: PageTreeManager,
+  ): void {
+    if (!this.customTabBarPath || !this.tabBarPagePaths.has(path)) return
+    // Until every renderer supports two roots the compiler may still inject
+    // `<custom-tab-bar />` into the page template. In that case keep using the
+    // page-owned instance and avoid creating a duplicate tab root.
+    const existing = queryLogicNodes(pageTree.root, 'custom-tab-bar', false, true)
+      .some((node) => node.nodeType === 'component')
+    if (existing) return
+    const root = this.glass.mountTabBar(pageId, this.customTabBarPath)
+    if (root) pageTree.setTabBarRoot(root)
   }
 
   private pageStyles(pageId?: string): Array<{
@@ -279,7 +363,7 @@ export class LogicTreeAdapter {
     content: string
     role: LogicStyleSheetRole
   }> {
-    const path = pageId ? this.pagePaths.get(pageId) : undefined
+    const path = pageId ? this.pageTrees.get(pageId)?.path : undefined
     if (path) return this.pageStyleEntries.get(path) ?? []
     return [...this.pageStyleEntries.values()].flat()
   }
@@ -300,8 +384,13 @@ export class LogicTreeAdapter {
 
   /** Resolve a mini-program selector to logic-tree component handles. */
   selectComponents(pageId: string, selector: string, all: boolean): unknown[] {
-    const root = this.pageRoots.get(pageId)
+    const pageTree = this.pageTrees.get(pageId)
+    const root = pageTree?.root
     if (!root) return []
+    const tabBarRoot = pageTree.getTabBarRoot()
+    if (selector.trim() === 'custom-tab-bar' && tabBarRoot?.__wxElement) {
+      return [this.componentHandle(tabBarRoot.__wxElement, pageId)]
+    }
     const deep = selector.split('>>>')
     if (deep.length === 2) {
       const ownerSelector = deep[0]!.trim()
@@ -461,21 +550,21 @@ export class LogicTreeAdapter {
   pageIdFor(element: unknown): string | undefined {
     const pageId = this.glass.pageIdFor(element)
     if (pageId) return pageId
-    return this.activePageId ?? [...this.pageRoots.keys()][0]
+    return this.activePageId ?? [...this.pageTrees.keys()][0]
   }
 
   /**
    * Snapshot component data keyed by component host view id. Page data stays
-   * on the separate page-data path; this map lets render-side `ins.getData()`
-   * answer for custom component instances without a bridge round trip.
+   * on the separate page-data path; this map supplies the initial render
+   * instances and per-instance data hints without a render-to-service round trip.
    */
   snapshotComponentData(pageId: string): Record<string, Record<string, unknown>> {
-    const root = this.pageRoots.get(pageId)
-    if (!root) return {}
+    const pageTree = this.pageTrees.get(pageId)
+    if (!pageTree) return {}
     const result: Record<string, Record<string, unknown>> = {}
-    const visit = (node: LogicBackendElement): void => {
+    const visit = (node: LogicBackendElement, skipSelf = false): void => {
       if (node.nodeType === 'component') {
-        if (node !== root && node.__wxElement) {
+        if (!skipSelf && node.__wxElement) {
           const element = node.__wxElement as unknown as {
             asGeneralComponent?: () => Record<string, unknown>
           }
@@ -489,7 +578,9 @@ export class LogicTreeAdapter {
       }
       for (const child of node.children) visit(child)
     }
-    visit(root)
+    visit(pageTree.root, true)
+    const tabBarRoot = pageTree.getTabBarRoot()
+    if (tabBarRoot) visit(tabBarRoot)
     return result
   }
 
@@ -498,10 +589,7 @@ export class LogicTreeAdapter {
    * update only carries components whose data changed.
    */
   seedComponentData(pageId: string): void {
-    this.componentDataSnapshots.set(
-      pageId,
-      cloneDataValue(this.snapshotComponentData(pageId)),
-    )
+    this.pageTrees.get(pageId)?.seedComponentData(this.snapshotComponentData(pageId))
   }
 
   /**
@@ -512,32 +600,51 @@ export class LogicTreeAdapter {
    * bridge with every component's data.
    */
   updateComponentData(pageId: string): Record<string, Record<string, unknown>> {
-    const current = this.snapshotComponentData(pageId)
-    const previous = this.componentDataSnapshots.get(pageId) ?? {}
-    const patch: Record<string, Record<string, unknown>> = {}
-    for (const [id, data] of Object.entries(current)) {
-      if (!sameComponentData(previous[id], data)) patch[id] = data
-    }
-    // Snapshot by value: `component.data` is mutated in place by setData, so a
-    // stored reference would always compare equal.
-    this.componentDataSnapshots.set(pageId, cloneDataValue(current))
-    return patch
+    const pageTree = this.pageTrees.get(pageId)
+    return pageTree ? pageTree.updateComponentData(this.snapshotComponentData(pageId)) : {}
   }
 
   snapshotRenderTree(pageId: string): RenderNode | null {
-    const page = this.glass.getMountedComponentByPageId(pageId)
-    if (!page) throw new Error(`logic page is not mounted: ${pageId}`)
-    const backendElement = (page as unknown as { getBackendElement?: () => unknown })
-      .getBackendElement?.() as LogicBackendElement | undefined
-    return this.backend.snapshotRenderTree(pageId, backendElement)
+    const pageTree = this.pageTrees.get(pageId)
+    if (!pageTree) throw new Error(`logic page is not mounted: ${pageId}`)
+    return this.backend.snapshotRenderTree(pageId, pageTree.root)
+  }
+
+  /** Initial snapshot of the independent custom tabBar root. */
+  snapshotTabBarTree(pageId: string): RenderNode | null {
+    const pageTree = this.pageTrees.get(pageId)
+    if (!pageTree) throw new Error(`logic page is not mounted: ${pageId}`)
+    const root = pageTree.getTabBarRoot()
+    if (!root) return null
+    return this.backend.snapshotRenderTree(pageId, root, {
+      rootKey: 'tabBar',
+      rootMode: 'component',
+    })
+  }
+
+  /** The custom tabBar component path, when this page owns a tab root. */
+  tabBarPagePath(pageId: string): string | undefined {
+    const pageTree = this.pageTrees.get(pageId)
+    return pageTree?.getTabBarRoot() ? this.customTabBarPath : undefined
   }
 
   /** Diff the current render-node tree against the previous one. */
   updateRenderTree(pageId: string): { snapshot: RenderNode; patches: RenderPatch[] } {
+    const pageTree = this.pageTrees.get(pageId)
+    if (!pageTree) throw new Error(`logic page is not mounted: ${pageId}`)
     const snapshot = this.snapshotRenderTree(pageId)
     if (!snapshot) throw new Error(`logic page is not mounted: ${pageId}`)
-    const previous = this.lastRenderTrees.get(pageId)
-    this.lastRenderTrees.set(pageId, snapshot)
+    const previous = pageTree.advanceRenderTree(snapshot)
+    return { snapshot, patches: previous ? diffRenderTree(previous, snapshot) : [] }
+  }
+
+  /** Diff the independent tabBar root against its previous snapshot. */
+  updateTabBarTree(pageId: string): { snapshot: RenderNode | null; patches: RenderPatch[] } {
+    const pageTree = this.pageTrees.get(pageId)
+    if (!pageTree) throw new Error(`logic page is not mounted: ${pageId}`)
+    const snapshot = this.snapshotTabBarTree(pageId)
+    if (!snapshot) return { snapshot: null, patches: [] }
+    const previous = pageTree.advanceTabBarRenderTree(snapshot)
     return { snapshot, patches: previous ? diffRenderTree(previous, snapshot) : [] }
   }
 
@@ -549,10 +656,11 @@ export class LogicTreeAdapter {
     component: unknown,
     options: Record<string, unknown> = {},
   ): Record<string, unknown> {
+    const firstPageTree = this.pageTrees.values().next().value as PageTreeManager | undefined
     const root = findLogicNodeByElement(component)
-      ?? [...this.pageRoots.values()][0]
+      ?? firstPageTree?.root
       ?? this.backend.getRootNode()
-    const pageId = this.activePageId ?? [...this.pageRoots.keys()][0] ?? ''
+    const pageId = this.activePageId ?? firstPageTree?.pageId ?? ''
     this.intersectionObserverCounter += 1
     const observerId = `logic-observer-${this.intersectionObserverCounter}`
     const callbacks = new Map<string, (entry: Record<string, unknown>) => void>()
@@ -693,8 +801,9 @@ export class LogicTreeAdapter {
   }
 
   createSelectorQueryFor(component: unknown): Record<string, unknown> {
+    const firstPageTree = this.pageTrees.values().next().value as PageTreeManager | undefined
     const node = findLogicNodeByElement(component)
-      ?? [...this.pageRoots.values()][0]
+      ?? firstPageTree?.root
       ?? this.backend.getRootNode()
     const pageId = this.pageIdFor(node)
     return createLogicSelectorQuery(
@@ -810,28 +919,31 @@ export class LogicTreeAdapter {
   }
 
   private animationScopeId(component: unknown): string {
+    const firstPageTree = this.pageTrees.values().next().value as PageTreeManager | undefined
     const scope = findLogicNodeByElement(component)
-      ?? [...this.pageRoots.values()][0]
+      ?? firstPageTree?.root
       ?? this.backend.getRootNode()
     return this.backend.ensureViewId(scope)
   }
 
   private animationTarget(component: unknown, selector: string): LogicBackendElement | undefined {
+    const firstPageTree = this.pageTrees.values().next().value as PageTreeManager | undefined
     const root = findLogicNodeByElement(component)
-      ?? [...this.pageRoots.values()][0]
+      ?? firstPageTree?.root
       ?? this.backend.getRootNode()
     const [target] = queryLogicNodes(root, selector, false)
     return target as LogicBackendElement | undefined
   }
 
   private animationPageId(component: unknown): string | undefined {
+    const firstPageTree = this.pageTrees.values().next().value as PageTreeManager | undefined
     return this.glass.pageIdFor(component)
       ?? this.activePageId
-      ?? [...this.pageRoots.keys()][0]
+      ?? firstPageTree?.pageId
   }
 
   query(pageId: string, selector: string, all: boolean): QueryNodeSnapshot[] {
-    const root = this.pageRoots.get(pageId) ?? this.backend.getRootNode()
+    const root = this.pageTrees.get(pageId)?.root ?? this.backend.getRootNode()
     return queryLogicNodes(root, selector, all)
       .map((node) => snapshotLogicNode(this.backend, node))
   }
@@ -863,10 +975,6 @@ export class LogicTreeAdapter {
       asGeneralComponent?: () => unknown
     }).asGeneralComponent?.() ?? element
     const path = (component as { is?: unknown }).is
-    const method = typeof path === 'string'
-      ? this.componentDefinitions?.get(path)?.methods.get(payload.handler)
-      : undefined
-    if (typeof method !== 'function') return false
     const geometry = payload.currentTarget
     const shape = {
       id: payload.id ?? '',
@@ -885,6 +993,19 @@ export class LogicTreeAdapter {
       touches: payload.touches ?? [],
       changedTouches: payload.changedTouches ?? [],
     }
+    if (
+      typeof path === 'string'
+      && this.manifest.pages.some((page) => page.path === path)
+      && payload.pageId
+      && this.dispatchPageMethod?.(payload.pageId, payload.handler, event)
+    ) {
+      return true
+    }
+    const method = typeof path === 'string'
+      ? this.componentDefinitions?.get(path)?.methods.get(payload.handler)
+        ?? this.glass.pageTemplateMethod(path, payload.handler)
+      : undefined
+    if (typeof method !== 'function') return false
     const caller = (component as { getMethodCaller?: () => unknown }).getMethodCaller?.()
       ?? component
     method.call(caller, event)
@@ -899,11 +1020,19 @@ export class LogicTreeAdapter {
     const node = this.backend.findByViewId(payload.viewId)
     const element = node?.__wxElement
     if (!element) return false
+    const targetElement = payload.targetId
+      ? this.backend.findByViewId(payload.targetId)?.__wxElement
+      : undefined
+    const dispatchElement = targetElement
+      && typeof (targetElement as { triggerEvent?: unknown }).triggerEvent === 'function'
+      ? targetElement
+      : element
     // Layout geometry is measured by the render thread; mirror it onto the
     // logic element so `event.currentTarget.offsetLeft` works synchronously.
     // Hosts that only measure the event target fall back to that measurement.
-    const geometry = payload.currentTarget ?? payload.target
-    if (geometry) applyEventGeometry(element, geometry)
+    const currentGeometry = payload.currentTarget ?? payload.target
+    if (currentGeometry) applyEventGeometry(element, currentGeometry)
+    if (payload.target) applyEventGeometry(targetElement ?? dispatchElement, payload.target)
     const native = payload.native ?? {}
     // Hosts normalize built-in event detail (switch/checkbox-group/slider/...);
     // the service must not re-derive it from tag names. The fallback below only
@@ -943,7 +1072,7 @@ export class LogicTreeAdapter {
           : payload.name === 'touchend'
             ? 'touchEnd'
             : payload.name === 'touchcancel' ? 'touchCancel' : payload.name
-      let current: unknown = element
+      let current: unknown = dispatchElement
       while (current) {
         const component = (current as { asGeneralComponent?: () => unknown }).asGeneralComponent?.()
         const target = component as Record<string, unknown> | undefined
@@ -973,7 +1102,7 @@ export class LogicTreeAdapter {
           : {}),
         ...(payload.wxsHandled ? { [TINY_ENGINE_NAMING.wxsHandledField]: true } : {}),
       }
-      element.triggerEvent(payload.name, detail, {
+      dispatchElement.triggerEvent(payload.name, detail, {
         bubbles: true,
         composed: true,
         ...(extraFields ? { extraFields } : {}),
@@ -997,21 +1126,4 @@ function applyEventGeometry(element: unknown, geometry: RenderEventGeometry): vo
   target.offsetTop = geometry.offsetTop
   target.offsetWidth = geometry.offsetWidth
   target.offsetHeight = geometry.offsetHeight
-}
-
-/**
- * Component data is plain JSON in the mini-program model; a stable stringify is
- * enough to decide whether a component needs a patch. Values that cannot be
- * serialized (or circular structures) conservatively count as changed.
- */
-function sameComponentData(
-  previous: Record<string, unknown> | undefined,
-  next: Record<string, unknown>,
-): boolean {
-  if (!previous) return false
-  try {
-    return JSON.stringify(previous) === JSON.stringify(next)
-  } catch {
-    return false
-  }
 }

@@ -1,4 +1,9 @@
-export { createWxsRuntime, createDefaultWxsCompiler } from './runtime'
+export {
+  createPageScopedWxsRuntime,
+  createWxsRuntime,
+  createDefaultWxsCompiler,
+  wxsPageScopeKey,
+} from './runtime'
 export { transformWxsSource, wxsCtor } from './transform'
 export type {
   WxsCompile,

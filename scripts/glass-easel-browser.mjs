@@ -105,6 +105,7 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
   })
 
   let currentStep = 'start'
+  let render
   try {
     await step('boot the dual-thread host', async () => {
       currentStep = 'boot the dual-thread host'
@@ -124,7 +125,7 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       assert.ok(frame, 'active render iframe was not found')
       return frame
     }
-    let render = await activeRender()
+    render = await activeRender()
 
     await step('deliver host global events to wx listeners', async () => {
       currentStep = 'deliver host global events to wx listeners'
@@ -873,13 +874,13 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       await page.waitForTimeout(50)
       const before = await render.evaluate(() => window.scrollY)
       // Swipe the bare mask (above the sheet), where no inner scroller exists.
-      await touchSwipe(render.locator('.mask'), 0.25, 0.05)
+      await touchSwipe(render.locator('[class*="--mask"]').first(), 0.25, 0.05)
       await page.waitForTimeout(150)
       const after = await render.evaluate(() => window.scrollY)
       assert.equal(after, before, `page scrolled through catchtouchmove (${before} -> ${after})`)
 
       // The inner scroll-view must keep scrolling inside the locked mask.
-      await touchSwipe(render.locator('.inner'), 0.8, 0.4)
+      await touchSwipe(render.locator('[class*="--inner"]').first(), 0.8, 0.4)
       let innerTop = 0
       const innerDeadline = Date.now() + 2000
       while (Date.now() < innerDeadline && innerTop === 0) {
@@ -959,6 +960,17 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       }))
       return { activePageId: window.__tinyRuntime?.host?.activePage, frames }
     }).catch(() => null)
+    const renderState = await render?.evaluate(() => ({
+      pageRoots: document.querySelectorAll('tiny-page').length,
+      labels: document.querySelectorAll('tiny-label').length,
+      labelListeners: [...document.querySelectorAll('tiny-label')].map(
+        (element) => element.__wxElement?._hostListeners?.length ?? 0,
+      ),
+      checkboxes: [...document.querySelectorAll('tiny-checkbox')].map((element) => ({
+        checked: Boolean(element.__wxElement?.data?.checked),
+        listeners: element.__wxElement?._hostListeners?.length ?? 0,
+      })),
+    })).catch(() => null)
     try {
       await fs.mkdir(path.dirname(failureShot), { recursive: true })
       await page.screenshot({ path: failureShot, fullPage: true })
@@ -972,6 +984,7 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
         `\nRuntime errors: ${JSON.stringify(failureDiagnostics)}` +
         `\nService state: ${JSON.stringify(serviceState)}` +
         `\nHost state: ${JSON.stringify(hostState)}` +
+        `\nRender state: ${JSON.stringify(renderState)}` +
         `\nScreenshot: ${failureShot}`,
     )
   } finally {
@@ -1657,12 +1670,12 @@ export async function runWechatDemoAcceptance({ baseUrl, app = 'wechat-demo', br
       await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
       const render = await activeRender()
       await render.waitForFunction(
-        () => Boolean(document.querySelector('.movable')),
+        () => Boolean(document.querySelector('[class*="--movable"]')),
         null,
         { timeout: STEP_TIMEOUT },
       )
       const position = () => render.evaluate(() => {
-        const element = document.querySelector('.movable')
+        const element = document.querySelector('[class*="--movable"]')
         if (!element) return ''
         const style = getComputedStyle(element)
         return `${style.left}/${style.top}`
@@ -1671,7 +1684,7 @@ export async function runWechatDemoAcceptance({ baseUrl, app = 'wechat-demo', br
       // The demo binds touch handlers from a WXS module; the handler receives
       // the component descriptor (`ins`) and moves the node with setStyle.
       await render.evaluate(() => {
-        const element = document.querySelector('.movable')
+        const element = document.querySelector('[class*="--movable"]')
         const touch = (x, y) => new Touch({
           identifier: 1,
           target: element,
@@ -1693,13 +1706,13 @@ export async function runWechatDemoAcceptance({ baseUrl, app = 'wechat-demo', br
         fire('touchend', 130, 120)
       })
       await render.waitForFunction(
-        () => getComputedStyle(document.querySelector('.movable')).left === '80px',
+        () => getComputedStyle(document.querySelector('[class*="--movable"]')).left === '80px',
         null,
         { timeout: STEP_TIMEOUT },
       )
       assert.equal(await position(), '80px/70px', 'WXS setStyle did not move the node by the drag delta')
       const style = await render.evaluate(
-        () => document.querySelector('.movable')?.getAttribute('style') ?? '',
+        () => document.querySelector('[class*="--movable"]')?.getAttribute('style') ?? '',
       )
       assert.ok(style.includes('position: absolute'), 'WXS setStyle replaced the WXML inline style')
       assert.equal(pageErrors.length, 0, `WXS drag raised page errors: ${pageErrors.join(' | ')}`)
@@ -1981,6 +1994,7 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
       vant: 'Vant Weapp',
       weui: 'WeUI 是一套同微信原生视觉体验一致的',
       'custom-tab': 'Custom Tab home',
+      'wechat-parity': 'PAGE: A:1',
     }
     const imageFixtures = new Set(['mini', 'wechat-demo', 'echarts'])
     const fixtureById = new Map(fixtures.map((fixture) => [fixture.id, fixture]))
@@ -2164,6 +2178,10 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
       assert.ok(
         JSON.stringify(current.tree).includes('Learning Javascript'),
         'element tree does not contain rendered text',
+      )
+      assert.ok(
+        JSON.stringify(current.tree).includes('tiny-view'),
+        'element tree does not contain nested page views',
       )
       // The host bar shows the effective page title (`pages/todos/todos.json`).
       assert.equal(
@@ -2774,6 +2792,24 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
       assert.ok(homeFrame, 'custom tabBar home page did not create a render frame')
       await homeFrame.waitForSelector('tiny-custom-tab-bar [data-index]', { timeout: STEP_TIMEOUT })
       assert.equal(
+        await homeFrame.evaluate(() => {
+          const tabBar = document.querySelector('tiny-custom-tab-bar')
+          const pageRoot = document.querySelector('tiny-page')
+          return Boolean(tabBar && pageRoot?.contains(tabBar))
+        }),
+        false,
+        'custom tabBar rendered inside the page root',
+      )
+      assert.equal(
+        await homeFrame.evaluate(() => {
+          const tabBar = document.querySelector('tiny-custom-tab-bar')
+          const tabRoot = document.querySelector('[data-tiny-tabbar-root]')
+          return Boolean(tabBar && tabRoot?.contains(tabBar))
+        }),
+        true,
+        'custom tabBar did not render in the independent tab root',
+      )
+      assert.equal(
         await homeFrame.locator('tiny-custom-tab-bar [data-index]').count(),
         2,
         'custom tabBar did not render two items',
@@ -2916,6 +2952,127 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
       const restored = await state()
       assert.deepEqual(restored.pageStack, ['page-1', 'page-2'])
       assert.equal(restored.pages.at(-1)?.query?.from, 'restore', 'page query was not restored')
+      const addTodoFrame = await waitForActiveRenderFrame(primary.id, restored.pageStack.at(-1))
+      assert.ok(addTodoFrame, 'restored add-todo page did not create a render frame')
+      const inputSelector = 'input[placeholder="What needs to be done?"]'
+      await addTodoFrame.waitForSelector(inputSelector, { timeout: STEP_TIMEOUT })
+      const input = addTodoFrame.locator(inputSelector)
+      await input.fill('persisted input')
+      await page.waitForTimeout(50)
+      await page.getByText('Reload', { exact: true }).click()
+      await page.waitForFunction(
+        () => window.__tinyDevtool?.getState().status !== 'running',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      await waitForStatus('running')
+      await page.waitForFunction(
+        () => window.__tinyDevtool?.getState().currentPage === 'pages/add-todo/add-todo',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const reloadedFrame = await waitForActiveRenderFrame(
+        primary.id,
+        (await state()).pageStack.at(-1),
+      )
+      assert.ok(reloadedFrame, 'reloaded add-todo page did not create a render frame')
+      await reloadedFrame.waitForSelector(inputSelector, { timeout: STEP_TIMEOUT })
+      assert.equal(
+        await reloadedFrame.locator(inputSelector).inputValue(),
+        'persisted input',
+        'page data was not restored after debugger reload',
+      )
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT })
+      await waitForStatus('running')
+      await page.waitForFunction(
+        () => window.__tinyDevtool?.getState().currentPage === 'pages/add-todo/add-todo',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const refreshedState = await state()
+      assert.deepEqual(refreshedState.pageStack, ['page-1', 'page-2'])
+      const refreshedFrame = await waitForActiveRenderFrame(
+        primary.id,
+        refreshedState.pageStack.at(-1),
+      )
+      assert.ok(refreshedFrame, 'browser-refreshed add-todo page did not create a render frame')
+      await refreshedFrame.waitForSelector(inputSelector, { timeout: STEP_TIMEOUT })
+      assert.equal(
+        await refreshedFrame.locator(inputSelector).inputValue(),
+        'persisted input',
+        'saved page data was overwritten by a later runtime state update',
+      )
+      await page.getByText('Close app', { exact: true }).click()
+      await waitForLauncher()
+
+      await page.goto(`${baseUrl}/?app=${primary.id}&path=pages/add-todo/add-todo`, {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await waitForStatus('running')
+      await page.waitForFunction(
+        () => window.__tinyDevtool?.getState().currentPage === 'pages/add-todo/add-todo',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const exitStatePage = await state()
+      const exitStatePageFrame = await waitForActiveRenderFrame(
+        primary.id,
+        exitStatePage.pageStack.at(-1),
+      )
+      assert.ok(exitStatePageFrame, 'direct add-todo page did not create a render frame')
+      await exitStatePageFrame.waitForSelector(inputSelector, { timeout: STEP_TIMEOUT })
+      await exitStatePageFrame.locator(inputSelector).fill('exit state only')
+      await page.waitForTimeout(50)
+      await page.getByRole('button', { name: 'Background app' }).click()
+      await waitForLauncher()
+      await page.waitForTimeout(50)
+      await openFixture(primary)
+      await page.waitForFunction(
+        () => window.__tinyDevtool?.getState().currentPage === 'pages/add-todo/add-todo',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const savedExitState = await page.evaluate(() => window.__tinyDevtool.snapshotPageState())
+      assert.equal(
+        savedExitState.at(-1)?.savedExitState?.draft,
+        'exit state only',
+        `page did not save exit state on background: ${JSON.stringify(savedExitState)}`,
+      )
+      await page.getByText('Reload', { exact: true }).click()
+      await page.waitForFunction(
+        () => window.__tinyDevtool?.getState().status !== 'running',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      await waitForStatus('running')
+      await page.waitForFunction(
+        () => window.__tinyDevtool?.getState().currentPage === 'pages/add-todo/add-todo',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const exitStateReloaded = await state()
+      const exitStateReloadedFrame = await waitForActiveRenderFrame(
+        primary.id,
+        exitStateReloaded.pageStack.at(-1),
+      )
+      assert.ok(exitStateReloadedFrame, 'exit-state page did not recreate a render frame')
+      await exitStateReloadedFrame.waitForSelector('.add-todo-show-exit-state', {
+        timeout: STEP_TIMEOUT,
+      })
+      await exitStateReloadedFrame.locator('.add-todo-show-exit-state').click()
+      await exitStateReloadedFrame.waitForSelector('.add-todo-exit-state', {
+        state: 'attached',
+        timeout: STEP_TIMEOUT,
+      })
+      await page.waitForTimeout(100)
+      const restoredExitState = await exitStateReloadedFrame
+        .locator('.add-todo-exit-state')
+        .textContent()
+      assert.ok(
+        restoredExitState?.includes('exit state only'),
+        `onLoad did not receive this.exitState after debugger reload: ${restoredExitState}`,
+      )
       await page.getByText('Close app', { exact: true }).click()
       await waitForLauncher()
     })

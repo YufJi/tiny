@@ -1,7 +1,7 @@
 import type { BridgeConnection } from '@tiny/bridge'
 import { DIAGNOSTIC_CODES, TINY_ENGINE_NAMING } from '@tiny/manifest'
 import type { Manifest } from '@tiny/manifest'
-import type { WxsModuleTable } from '@tiny/wxs-runtime'
+import type { WxsModuleTable, WxsRuntime } from '@tiny/wxs-runtime'
 import type { NormalizedComponentDefinition } from '../../component'
 import { buildComponentSchemas } from './component-schema'
 import type {
@@ -12,14 +12,19 @@ import type {
 import { cloneJsonSafe } from '../../data'
 import { mapCssAssetUrls, type AssetUrlResolver } from '../../assets'
 import { LogicTreeAdapter, type LogicFrameworkContext } from '../../tree/logic'
-import { buildComponentFlow } from '../../tree/flow'
+import { buildComponentFlow, collectComponentIdentities } from '../../tree/flow'
 import {
   TREE_PROTOCOL,
   wxsBindingKey,
   type ComponentDefinitionPayload,
+  type PageFrameMount,
   type RenderNode,
 } from '../../tree/protocol'
-import { dispatchWxsEffect, installWxsEventHost, type WxsEventHostOptions } from './wxs-host'
+import {
+  dispatchWxsEffect,
+  installWxsEventHost,
+  type WxsEventHostOptions,
+} from './wxs-host'
 import { buildComponentDefinitions } from './definition-payload'
 import { WxsBindingStore } from './wxs-bindings'
 import { attachRenderInbound, type RenderWxsEffect } from './inbound'
@@ -57,7 +62,26 @@ export type ServiceRenderBridgeOptions = {
   onLogicTreeCreated?: (tree: unknown) => void
   /** Report an error raised by page/component logic (the app `onError` hook). */
   onError: (message: string) => void
+  /** Page-scoped WXS runtime shared with generated service templates. */
+  wxsRuntime?: WxsRuntime
 }
+
+const PAGE_LIFECYCLE_METHODS = new Set([
+  'onLoad',
+  'onShow',
+  'onReady',
+  'onHide',
+  'onUnload',
+  'onPullDownRefresh',
+  'onReachBottom',
+  'onShareAppMessage',
+  'onShareTimeline',
+  'onPageScroll',
+  'onResize',
+  'onTabItemTap',
+  'onAddToFavorites',
+  'onSaveExitState',
+])
 
 /**
  * Service-render bridge, the façade of the `service/render` layer.
@@ -81,12 +105,14 @@ export class ServiceRenderBridge implements ServiceRenderPort {
   private readonly bindings = new WxsBindingStore()
   private readonly mountedPages = new Set<string>()
   private readonly pendingPages = new Set<string>()
+  private readonly pendingPageDataPatches = new Map<string, Array<Record<string, unknown>>>()
   private logicTree: LogicTreeAdapter | null = null
   private componentSchemas: MiniProgramComponentSchema[] = []
   /** Compiler-resolved `component path -> built-in placeholder tag`. */
   private readonly placeholders: Record<string, string> = {}
   private readonly hasPlaceholders: boolean
   private definitionPayloads: Map<string, ComponentDefinitionPayload> | null = null
+  private readonly pageDefinitionPayloads = new Map<string, Map<string, ComponentDefinitionPayload>>()
   private wxsModules?: WxsModuleTable
   private wxsHostOptions?: WxsEventHostOptions
   private updateScheduled = false
@@ -100,8 +126,8 @@ export class ServiceRenderBridge implements ServiceRenderPort {
    */
   private readonly pendingCompletions = new Map<string, Array<() => void>>()
   private readonly ackedBatches = new Map<string, { pageId: string; callbacks: Array<() => void> }>()
+  private readonly pendingTabBarReady = new Map<string, Array<(tabBar: unknown) => void>>()
   private completionCounter = 0
-
   constructor(options: ServiceRenderBridgeOptions) {
     this.options = options
     this.connection = options.connection
@@ -114,7 +140,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     attachRenderInbound(this.connection, {
       getLogicTree: () => this.logicTree,
       isMounted: (pageId) => this.mountedPages.has(pageId),
-      sendSnapshot: (pageId) => this.sendTreeSnapshot(pageId),
+      sendFlow: (pageId) => this.sendTreeFlow(pageId),
       reportError: (message) => this.options.onError(message),
       dispatchWxsEffect: (pageId, effect) => this.dispatchWxsEffect(pageId, effect),
       acknowledgeRenders: (tokens) => this.acknowledgeRenders(tokens),
@@ -159,6 +185,12 @@ export class ServiceRenderBridge implements ServiceRenderPort {
           ...(eventOptions ? { options: cloneJsonSafe(eventOptions) } : {}),
         }, { pageId })
       },
+      dispatchPageMethod: (pageId, handler, event) => {
+        const page = this.options.getPage(pageId)
+        if (!page?.hasMethod(handler)) return false
+        page.invokeMethod(handler, [event])
+        return true
+      },
       onDiagnostic: (diagnostic) => this.connection.sendDiagnostic('warn', diagnostic),
       onError: (pageId, message, details) => {
         this.options.onError(message)
@@ -169,6 +201,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
         }, pageId)
       },
       afterRender: (pageId, callback) => this.completeAfterRender(pageId, callback),
+      ...(this.options.wxsRuntime ? { wxsRuntime: this.options.wxsRuntime } : {}),
       ...createRenderRpc(this.connection),
     })
     this.logicTree.registerComponentSchemas(this.componentSchemas)
@@ -195,6 +228,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     this.componentSchemas.push(...added)
     this.logicTree.registerComponentSchemas(added)
     this.definitionPayloads = null
+    this.pageDefinitionPayloads.clear()
     return added
   }
 
@@ -214,15 +248,18 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     if (!this.logicTree || this.mountedPages.has(page.pageId)) return
     this.logicTree.mountPage(page.path, page.data, page.pageId)
     this.mountedPages.add(page.pageId)
-    this.sendTreeSnapshot(page.pageId)
+    this.sendTreeFlow(page.pageId)
     // The first snapshot carries the full map; later updates only send changes.
     this.logicTree.seedComponentData(page.pageId)
+    this.flushTabBarReady(page.pageId)
   }
 
   unmountPage(pageId: string): void {
     this.mountedPages.delete(pageId)
     this.pendingPages.delete(pageId)
+    this.pendingPageDataPatches.delete(pageId)
     this.bindings.clear(pageId)
+    this.pendingTabBarReady.delete(pageId)
     // The view is going away, so a completion it was waiting for can never be
     // "after render" any more. Drop the callbacks instead of running them
     // against a destroyed page.
@@ -253,12 +290,37 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     this.scheduleTreeUpdate(pageId)
   }
 
+  /**
+   * `this.getTabBar(callback)` compatibility: the custom tab bar is a service
+   * component, so it can be resolved before its render view exists. If the
+   * page has not created it yet, wait for the next service-side mount/update.
+   */
+  onTabBarReady(pageId: string, callback: (tabBar: unknown) => void): void {
+    if (typeof callback !== 'function') return
+    const tabBar = this.logicTree?.selectComponents(pageId, 'custom-tab-bar', false)[0]
+    if (tabBar) {
+      callback(tabBar)
+      return
+    }
+    if (!this.mountedPages.has(pageId)) return
+    const queue = this.pendingTabBarReady.get(pageId)
+    if (queue) queue.push(callback)
+    else this.pendingTabBarReady.set(pageId, [callback])
+  }
+
   syncPageData(pageId: string, patch: Record<string, unknown>): void {
     if (!this.logicTree || !this.mountedPages.has(pageId)) return
     try {
+      const cloned = cloneJsonSafe(patch)
+      const pending = this.pendingPageDataPatches.get(pageId)
+      if (pending) pending.push(cloned)
+      else this.pendingPageDataPatches.set(pageId, [cloned])
       this.logicTree.applyPageData(pageId, patch)
       this.scheduleTreeUpdate(pageId)
     } catch (error) {
+      const pending = this.pendingPageDataPatches.get(pageId)
+      pending?.pop()
+      if (pending?.length === 0) this.pendingPageDataPatches.delete(pageId)
       this.connection.sendDiagnostic('warn', {
         code: DIAGNOSTIC_CODES.LOGIC_TREE_ERROR,
         message: error instanceof Error ? error.message : String(error),
@@ -338,30 +400,46 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     installWxsEventHost(this.wxsHostOptions)
   }
 
-  private renderDefinitions(): Map<string, ComponentDefinitionPayload> {
+  private renderDefinitions(pageId?: string): Map<string, ComponentDefinitionPayload> {
     this.definitionPayloads ??= buildComponentDefinitions(
       this.componentSchemas,
       this.options.componentDefinitions,
       this.options.manifest.styles,
     )
-    return this.definitionPayloads
+    if (!pageId) return this.definitionPayloads
+    let pageDefinitions = this.pageDefinitionPayloads.get(pageId)
+    if (!pageDefinitions) {
+      const visible = new Set(this.logicTree?.componentPathsForPage(pageId) ?? [])
+      pageDefinitions = new Map(
+        [...this.definitionPayloads].filter(([path]) => visible.has(path)),
+      )
+      this.pageDefinitionPayloads.set(pageId, pageDefinitions)
+    }
+    return pageDefinitions
   }
 
-  private treeFlow(root: RenderNode): ReturnType<typeof buildComponentFlow> {
-    return buildComponentFlow(root, this.renderDefinitions())
+  private treeFlow(root: RenderNode, pageId?: string): ReturnType<typeof buildComponentFlow> {
+    return buildComponentFlow(root, this.renderDefinitions(pageId))
   }
 
-  private sendTreeSnapshot(pageId: string): void {
+  private sendTreeFlow(pageId: string): void {
     if (!this.logicTree) return
     const root = this.logicTree.snapshotRenderTree(pageId)
     if (!root) return
+    const tabRoot = this.logicTree.snapshotTabBarTree(pageId)
+    const tabFrame = tabRoot ? this.tabBarFrame(pageId, tabRoot) : undefined
     const page = this.options.getPage(pageId)
+    const pagePath = this.logicTree.pagePathFor(pageId)
     const ack = this.takeCompletionBatch(pageId)
     this.connection.sendEvent(
       TREE_PROTOCOL.domain, TREE_PROTOCOL.flow,
       {
         pageId,
-        pagePath: this.logicTree.pagePathFor(pageId),
+        pagePath,
+        pageFrame: {
+          methods: this.pageMethodNames(pagePath),
+          ...(root.id ? { rootViewId: root.id } : {}),
+        },
         ...(this.logicTree.pageScopeName(pageId)
           ? { pageScope: this.logicTree.pageScopeName(pageId) }
           : {}),
@@ -369,7 +447,12 @@ export class ServiceRenderBridge implements ServiceRenderPort {
           ? { pageUsing: this.logicTree.pageUsingComponents(pageId) }
           : {}),
         behaviorScheme: this.options.behaviorScheme,
-        messages: cloneJsonSafe(this.treeFlow(root)),
+        ...(this.hasPlaceholders
+          ? { placeholders: cloneJsonSafe(this.placeholders) }
+          : {}),
+        messages: cloneJsonSafe(this.treeFlow(root, pageId)),
+        componentFlow: cloneJsonSafe(collectComponentIdentities(root)),
+        ...(tabFrame ? { tabFrame: cloneJsonSafe(tabFrame) } : {}),
         ...(this.wxsModules ? { wxsModules: cloneJsonSafe(this.wxsModules) } : {}),
         ...(page?.data ? { pageData: cloneJsonSafe(page.data) } : {}),
         componentData: cloneJsonSafe(this.logicTree.snapshotComponentData(pageId)),
@@ -378,7 +461,60 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       },
       { pageId },
     )
+    this.pendingPageDataPatches.delete(pageId)
     this.flushWxsBindings(pageId)
+  }
+
+  private pageMethodNames(pagePath: string): string[] {
+    const names = new Set<string>()
+    const options = this.options.pageOptions.get(pagePath) as Record<string, unknown> | undefined
+    const explicit = options?.methods as Record<string, unknown> | undefined
+    if (explicit && typeof explicit === 'object') {
+      for (const [name, value] of Object.entries(explicit)) {
+        if (typeof value === 'function') names.add(name)
+      }
+    }
+    if (options) {
+      for (const [name, value] of Object.entries(options)) {
+        if (name === 'data' || name === 'methods' || name === 'options' || name === 'behaviors') {
+          continue
+        }
+        if (PAGE_LIFECYCLE_METHODS.has(name)) continue
+        if (typeof value === 'function') names.add(name)
+      }
+    }
+    const component = this.options.componentDefinitions.get(pagePath)
+    if (component) {
+      for (const name of component.methods.keys()) names.add(name)
+    }
+    return [...names]
+  }
+
+  private tabBarFrame(pageId: string, root: RenderNode): PageFrameMount | null {
+    if (!this.logicTree) return null
+    const pagePath = this.logicTree.tabBarPagePath(pageId)
+    if (!pagePath) return null
+    const componentData = this.logicTree.snapshotComponentData(pageId)
+    const definition = this.renderDefinitions(pageId).get(pagePath)
+    const methods = new Set(definition?.methods ?? [])
+    const component = this.options.componentDefinitions.get(pagePath)
+    for (const name of component?.methods.keys() ?? []) methods.add(name)
+    const scope = definition?.styleScope ?? this.logicTree.pageScopeName(pageId)
+    return {
+      pageId,
+      ...(root.id ? { rootViewId: root.id } : {}),
+      pagePath,
+      data: root.id ? componentData[root.id] ?? {} : {},
+      ...(definition?.using ? { using: definition.using } : {}),
+      ...(scope ? { scope } : {}),
+      ...(this.hasPlaceholders
+        ? { placeholders: cloneJsonSafe(this.placeholders) }
+        : {}),
+      ...(methods.size > 0 ? { methods: [...methods] } : {}),
+      renderHints: root,
+      componentFlow: collectComponentIdentities(root)
+        .filter((identity) => identity.id !== root.id),
+    }
   }
 
   private scheduleTreeUpdate(pageId: string): void {
@@ -393,30 +529,65 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       for (const id of pages) {
         if (!this.logicTree || !this.mountedPages.has(id)) continue
         try {
-          const { patches } = this.logicTree.updateRenderTree(id)
+          const { patches, snapshot } = this.logicTree.updateRenderTree(id)
+          const tabBar = this.logicTree.updateTabBarTree(id)
           // Component data is a per-instance patch; a data-only update must
           // still cross the bridge even when the structure did not change.
           const componentData = this.logicTree.updateComponentData(id)
           const hasComponentData = Object.keys(componentData).length > 0
-          if (patches.length > 0 || hasComponentData) {
+          const tabDataChanged = Boolean(
+            tabBar.snapshot?.id && Object.hasOwn(componentData, tabBar.snapshot.id),
+          )
+          const tabFrame = tabBar.snapshot && (tabBar.patches.length > 0 || tabDataChanged)
+            ? this.tabBarFrame(id, tabBar.snapshot)
+            : undefined
+          const pageDataPatches = this.pendingPageDataPatches.get(id)
+          const hasPageDataPatches = Boolean(pageDataPatches && pageDataPatches.length > 0)
+          if (
+            patches.length > 0
+            || hasComponentData
+            || tabBar.patches.length > 0
+            || Boolean(tabFrame)
+            || hasPageDataPatches
+          ) {
             const page = this.options.getPage(id)
             const ack = this.takeCompletionBatch(id)
+            const structural = patches.some((patch) => (
+              patch.type === 'insert'
+              || patch.type === 'remove'
+              || patch.type === 'replace'
+              || patch.type === 'reorder'
+              || patch.type === 'component-instances'
+            ))
             this.connection.sendEvent(
               TREE_PROTOCOL.domain, TREE_PROTOCOL.patch,
               {
                 pageId: id,
-                patches: cloneJsonSafe(patches),
-                ...(page?.data ? { pageData: cloneJsonSafe(page.data) } : {}),
+                ...(structural
+                  ? {
+                    renderHints: cloneJsonSafe(snapshot),
+                    componentFlow: cloneJsonSafe(collectComponentIdentities(snapshot)),
+                  }
+                  : {}),
+                ...(!hasPageDataPatches && page?.data
+                  ? { pageData: cloneJsonSafe(page.data) }
+                  : {}),
                 ...(hasComponentData ? { componentData: cloneJsonSafe(componentData) } : {}),
+                ...(hasPageDataPatches
+                  ? { pageDataPatches: cloneJsonSafe(pageDataPatches!) }
+                  : {}),
+                ...(tabFrame ? { tabFrame: cloneJsonSafe(tabFrame) } : {}),
                 ...(ack ? { ack } : {}),
               },
               { pageId: id },
             )
+            this.pendingPageDataPatches.delete(id)
           } else {
             // Nothing observable changed, so there is no batch to acknowledge.
             this.flushCompletions(id)
           }
           this.flushWxsBindings(id)
+          this.flushTabBarReady(id)
         } catch (error) {
           this.connection.sendDiagnostic('warn', {
             code: DIAGNOSTIC_CODES.LOGIC_TREE_ERROR,
@@ -495,6 +666,15 @@ export class ServiceRenderBridge implements ServiceRenderPort {
         )
       },
     )
+  }
+
+  private flushTabBarReady(pageId: string): void {
+    const callbacks = this.pendingTabBarReady.get(pageId)
+    if (!callbacks || callbacks.length === 0) return
+    const tabBar = this.logicTree?.selectComponents(pageId, 'custom-tab-bar', false)[0]
+    if (!tabBar) return
+    this.pendingTabBarReady.delete(pageId)
+    for (const callback of callbacks) callback(tabBar)
   }
 
   private isIndependentPage(pageId: string): boolean {

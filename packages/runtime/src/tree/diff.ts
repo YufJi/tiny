@@ -14,6 +14,21 @@ function sameProps(
   return true
 }
 
+function sameComponentInstances(
+  left: RenderElement['componentInstances'],
+  right: RenderElement['componentInstances'],
+): boolean {
+  const previous = left ?? []
+  const next = right ?? []
+  if (previous.length !== next.length) return false
+  for (let index = 0; index < previous.length; index += 1) {
+    const a = previous[index]!
+    const b = next[index]!
+    if (a.id !== b.id || a.path !== b.path) return false
+  }
+  return true
+}
+
 function diffProps(
   previous: Record<string, unknown> | undefined,
   next: Record<string, unknown> | undefined,
@@ -112,6 +127,13 @@ function diffNode(mirror: Mirror, next: RenderNode, patches: RenderPatch[]): voi
   }
   const props = diffProps(previous.props, next.props)
   if (props) patches.push({ type: 'props', target: targetOf(mirror), ...props })
+  if (!sameComponentInstances(previous.componentInstances, next.componentInstances)) {
+    patches.push({
+      type: 'component-instances',
+      target: targetOf(mirror),
+      instances: next.componentInstances ?? [],
+    })
+  }
   diffChildren(mirror, next, patches)
   mirror.node = next
 }

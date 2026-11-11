@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { BridgeConnection, createInMemoryTransportPair } from '@tiny/bridge'
 import { bootTreeThread } from '../src/tree/render/thread'
 import { createRenderConnection } from './helpers/render-connection'
-import { QUERY_CONTROL, type RenderNode, type RenderPatch } from '../src/tree/protocol'
+import { QUERY_CONTROL, type PageFrameMount, type RenderNode } from '../src/tree/protocol'
 
 const tree: RenderNode = {
   type: 'element',
@@ -12,14 +12,13 @@ const tree: RenderNode = {
 }
 
 describe('tree thread', () => {
-  test('builds the render mirror from component-flow messages', async () => {
+  test('mounts pageframe hints from component-flow messages', async () => {
     const [hostTransport, renderTransport] = createInMemoryTransportPair()
-    const mounted: RenderNode[] = []
+    const pageFrames: PageFrameMount[] = []
     bootTreeThread({
       connection: createRenderConnection(renderTransport),
       renderer: {
-        mount: (root) => mounted.push(root),
-        applyPatches: () => {},
+        mountPage: (request) => pageFrames.push(request),
       },
     })
     const host = new BridgeConnection({
@@ -33,6 +32,7 @@ describe('tree thread', () => {
       pageId: 'page-1',
       pagePath: 'pages/index/index',
       styles: [],
+      pageFrame: { rootViewId: 'page' },
       messages: [
         { type: 'define', path: 'components/card/card', definition: {} },
         {
@@ -56,8 +56,8 @@ describe('tree thread', () => {
       ],
     }, { pageId: 'page-1' })
     await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(mounted).toHaveLength(1)
-    expect(mounted[0]).toMatchObject({
+    expect(pageFrames).toHaveLength(1)
+    expect(pageFrames[0]?.renderHints).toMatchObject({
       type: 'element',
       id: 'page',
       children: [{
@@ -71,14 +71,123 @@ describe('tree thread', () => {
     })
   })
 
-  test('replaces an undefined component with its componentPlaceholder', async () => {
+  test('mounts the pageframe from templates and sends data without replaying patches', async () => {
     const [hostTransport, renderTransport] = createInMemoryTransportPair()
-    const mounted: RenderNode[] = []
+    const pageFrames: Array<Record<string, unknown>> = []
+    const pageData: Array<Record<string, unknown>> = []
+    const pageDataPatches: Array<Array<Record<string, unknown>>> = []
+    const componentData: Array<Record<string, Record<string, unknown>>> = []
+    const pageFrameHints: RenderNode[] = []
+    const componentFlow: Array<Array<{ id: string; path: string }>> = []
+    const renderOrder: string[] = []
     bootTreeThread({
       connection: createRenderConnection(renderTransport),
       renderer: {
-        mount: (root) => mounted.push(root),
-        applyPatches: () => {},
+        mountPage: (request) => pageFrames.push(request as unknown as Record<string, unknown>),
+        setPageData: (value) => pageData.push(value),
+        applyPageDataPatches: (value) => {
+          pageDataPatches.push(value)
+          renderOrder.push('pageDataPatches')
+        },
+        setComponentData: (value) => {
+          componentData.push(value)
+          renderOrder.push('componentData')
+        },
+        setPageFrameHints: (root) => {
+          pageFrameHints.push(root)
+          renderOrder.push('pageFrameHints')
+        },
+        setPageFrameComponents: (components) => {
+          componentFlow.push(components)
+          renderOrder.push('componentFlow')
+        },
+      },
+    })
+    const host = new BridgeConnection({
+      localRole: 'host',
+      peerRole: 'render',
+      transport: hostTransport,
+      respondToHello: false,
+    })
+    await host.handshake()
+    host.sendEvent('tree', 'flow', {
+      pageId: 'page-1',
+      pagePath: 'pages/index/index',
+      pageData: { title: 'first' },
+      pageUsing: { card: 'components/card/card' },
+      pageScope: 'page-scope',
+      componentFlow: [{ id: 'component-1', path: 'components/card/card' }],
+      pageFrame: { methods: ['onTap'], rootViewId: 'view-root' },
+      messages: [
+        {
+          type: 'tree',
+          root: {
+            type: 'element',
+            id: 'page-1',
+            tag: 'page',
+            children: [{ type: 'text', id: 'text', text: 'first' }],
+          },
+        },
+        { type: 'ready' },
+      ],
+    }, { pageId: 'page-1' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    renderOrder.length = 0
+    host.sendEvent('tree', 'patch', {
+      pageId: 'page-1',
+      rootViewId: 'view-root',
+      pageData: { title: 'second' },
+      pageDataPatches: [{ title: 'second' }],
+      componentData: { 'component-1': { value: 2 } },
+      componentFlow: [{ id: 'component-1', path: 'components/card/card' }],
+      renderHints: {
+        type: 'element',
+        id: 'view-root',
+        tag: 'page',
+        children: [{ type: 'text', id: 'text-2', text: 'second' }],
+      },
+      patches: [{ type: 'text', target: 'text', text: 'second' }],
+    }, { pageId: 'page-1' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(pageFrames[0]).toMatchObject({
+      pageId: 'page-1',
+      pagePath: 'pages/index/index',
+      data: { title: 'first' },
+      using: { card: 'components/card/card' },
+      scope: 'page-scope',
+      componentFlow: [{ id: 'component-1', path: 'components/card/card' }],
+      methods: ['onTap'],
+      renderHints: {
+        id: 'page-1',
+        children: [{ id: 'text', text: 'first' }],
+      },
+    })
+    expect(pageData).toEqual([{ title: 'first' }])
+    expect(pageDataPatches).toEqual([[{ title: 'second' }]])
+    expect(componentData).toEqual([{ 'component-1': { value: 2 } }])
+    expect(pageFrameHints).toHaveLength(1)
+    expect(pageFrameHints[0]).toMatchObject({
+      id: 'view-root',
+      children: [{ id: 'text-2', text: 'second' }],
+    })
+    expect(componentFlow).toEqual([[{ id: 'component-1', path: 'components/card/card' }]])
+    expect(renderOrder).toEqual([
+      'componentFlow',
+      'pageFrameHints',
+      'pageDataPatches',
+      'componentData',
+    ])
+  })
+
+  test('mounts and updates the independent tabBar pageframe', async () => {
+    const [hostTransport, renderTransport] = createInMemoryTransportPair()
+    const tabFrames: PageFrameMount[] = []
+    bootTreeThread({
+      connection: createRenderConnection(renderTransport),
+      renderer: {
+        mountPage: () => {},
+        mountTabBarPage: (request) => tabFrames.push(request),
       },
     })
     const host = new BridgeConnection({
@@ -92,6 +201,70 @@ describe('tree thread', () => {
       pageId: 'page-1',
       pagePath: 'pages/index/index',
       styles: [],
+      pageFrame: { rootViewId: 'page' },
+      tabFrame: {
+        pageId: 'page-1',
+        rootViewId: 'tab-bar',
+        pagePath: 'custom-tab-bar/index',
+        data: { selected: 0 },
+        renderHints: {
+          type: 'element',
+          id: 'tab-bar',
+          tag: 'custom-tab-bar',
+          component: true,
+          componentPath: 'custom-tab-bar/index',
+        },
+      },
+      messages: [
+        { type: 'tree', root: tree },
+        { type: 'ready' },
+      ],
+    }, { pageId: 'page-1' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    host.sendEvent('tree', 'patch', {
+      pageId: 'page-1',
+      tabFrame: {
+        pageId: 'page-1',
+        rootViewId: 'tab-bar',
+        pagePath: 'custom-tab-bar/index',
+        data: { selected: 1 },
+      },
+    }, { pageId: 'page-1' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(tabFrames).toHaveLength(2)
+    expect(tabFrames[0]).toMatchObject({
+      pagePath: 'custom-tab-bar/index',
+      data: { selected: 0 },
+      renderHints: { component: true, componentPath: 'custom-tab-bar/index' },
+    })
+    expect(tabFrames[1]).toMatchObject({
+      pagePath: 'custom-tab-bar/index',
+      data: { selected: 1 },
+    })
+  })
+
+  test('replaces an undefined component with its componentPlaceholder', async () => {
+    const [hostTransport, renderTransport] = createInMemoryTransportPair()
+    const pageFrames: PageFrameMount[] = []
+    bootTreeThread({
+      connection: createRenderConnection(renderTransport),
+      renderer: {
+        mountPage: (request) => pageFrames.push(request),
+      },
+    })
+    const host = new BridgeConnection({
+      localRole: 'host',
+      peerRole: 'render',
+      transport: hostTransport,
+      respondToHello: false,
+    })
+    await host.handshake()
+    host.sendEvent('tree', 'flow', {
+      pageId: 'page-1',
+      pagePath: 'pages/index/index',
+      styles: [],
+      pageFrame: { rootViewId: 'page' },
       placeholders: { 'components/card/card': 'view' },
       messages: [
         {
@@ -114,8 +287,8 @@ describe('tree thread', () => {
       ],
     }, { pageId: 'page-1' })
     await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(mounted).toHaveLength(1)
-    const placeholder = (mounted[0] as { children: Array<Record<string, unknown>> }).children[0]!
+    expect(pageFrames).toHaveLength(1)
+    const placeholder = (pageFrames[0]!.renderHints as { children: Array<Record<string, unknown>> }).children[0]!
     expect(placeholder).toMatchObject({
       tag: 'view',
       props: { label: 'loading' },
@@ -125,10 +298,9 @@ describe('tree thread', () => {
     expect(placeholder.componentPath).toBeUndefined()
   })
 
-  test('receives snapshots/patches and sends render events', async () => {
+  test('mounts the pageframe and sends render events', async () => {
     const [hostTransport, renderTransport] = createInMemoryTransportPair()
-    const mounted: RenderNode[] = []
-    const patches: RenderPatch[][] = []
+    const pageFrames: PageFrameMount[] = []
     const events: unknown[] = []
     let emit: ((event: unknown) => void) | undefined
 
@@ -136,8 +308,7 @@ describe('tree thread', () => {
       connection: createRenderConnection(renderTransport),
       initialPageId: 'page-1',
       renderer: {
-        mount: (root) => mounted.push(root),
-        applyPatches: (value) => patches.push(value),
+        mountPage: (request) => pageFrames.push(request),
         setEventSink: (sink) => {
           emit = sink as (event: unknown) => void
         },
@@ -152,15 +323,16 @@ describe('tree thread', () => {
     host.onEvent('tree', 'event', (message) => events.push(message.payload))
     await host.handshake()
 
-    host.sendEvent('tree', 'snapshot', { root: tree }, { pageId: 'page-1' })
-    host.sendEvent('tree', 'patch', {
-      patches: [{ type: 'text', target: 'text', text: 'bye' }],
+    host.sendEvent('tree', 'flow', {
+      pageId: 'page-1',
+      pagePath: 'pages/index/index',
+      pageFrame: { rootViewId: 'page' },
+      messages: [{ type: 'tree', root: tree }, { type: 'ready' }],
     }, { pageId: 'page-1' })
     emit?.({ id: 'button', name: 'tap', native: { clientX: 1 } })
     await new Promise((resolve) => setTimeout(resolve, 0))
 
-    expect(mounted).toHaveLength(1)
-    expect(patches[0]).toEqual([{ type: 'text', target: 'text', text: 'bye' }])
+    expect(pageFrames).toHaveLength(1)
     expect(events[0]).toMatchObject({
       id: 'button',
       name: 'tap',
@@ -180,8 +352,7 @@ describe('tree thread', () => {
       connection: createRenderConnection(renderTransport),
       initialPageId: 'page-1',
       renderer: {
-        mount: () => {},
-        applyPatches: () => {},
+        mountPage: () => {},
         observeIntersection: (request, emit) => {
           observed = request as unknown as Record<string, unknown>
           emit([{
@@ -237,8 +408,7 @@ describe('tree thread', () => {
       connection: createRenderConnection(renderTransport),
       loadTemplates: () => templatesReady as never,
       renderer: {
-        mount: () => order.push('mount'),
-        applyPatches: () => {},
+        mountPage: () => order.push('mountPage'),
         setTemplates: () => order.push('templates'),
       },
     })
@@ -253,6 +423,7 @@ describe('tree thread', () => {
       pageId: 'page-1',
       pagePath: 'pages/index/index',
       styles: [],
+      pageFrame: { rootViewId: 'page' },
       messages: [
         { type: 'tree', root: { type: 'element', id: 'page', tag: 'page' } },
         { type: 'ready' },
@@ -265,7 +436,7 @@ describe('tree thread', () => {
     release({ groupList: {}, content: () => ({}) })
     await new Promise((resolve) => setTimeout(resolve, 0))
     await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(order).toEqual(['templates', 'mount'])
+    expect(order).toEqual(['templates', 'mountPage'])
   })
 
   test('parks patches behind the template gate too', async () => {
@@ -277,8 +448,8 @@ describe('tree thread', () => {
       connection: createRenderConnection(renderTransport),
       loadTemplates: () => templatesReady as never,
       renderer: {
-        mount: () => order.push('mount'),
-        applyPatches: () => order.push('patch'),
+        mountPage: () => order.push('mountPage'),
+        applyPageDataPatches: () => order.push('patch'),
         setTemplates: () => order.push('templates'),
       },
     })
@@ -293,6 +464,7 @@ describe('tree thread', () => {
       pageId: 'page-1',
       pagePath: 'pages/index/index',
       styles: [],
+      pageFrame: { rootViewId: 'page' },
       messages: [
         { type: 'tree', root: { type: 'element', id: 'page', tag: 'page' } },
         { type: 'ready' },
@@ -303,7 +475,7 @@ describe('tree thread', () => {
     // is applied to an empty tree and lost.
     host.sendEvent('tree', 'patch', {
       pageId: 'page-1',
-      patches: [{ type: 'text', target: 'text', text: 'ready' }],
+      pageDataPatches: [{ label: 'ready' }],
     }, { pageId: 'page-1' })
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(order).toEqual([])
@@ -311,6 +483,6 @@ describe('tree thread', () => {
     release({ groupList: {}, content: () => ({}) })
     await new Promise((resolve) => setTimeout(resolve, 0))
     await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(order).toEqual(['templates', 'mount', 'patch'])
+    expect(order).toEqual(['templates', 'mountPage', 'patch'])
   })
 })

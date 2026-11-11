@@ -54,6 +54,8 @@ export type MiniProgramPageRuntime = {
 /** Logic-tree hooks: selector queries, relations, intersection and animation. */
 export type MiniProgramPageLogicHooks = {
   selectComponents?: (selector: string, all: boolean) => unknown[]
+  /** Resolve a `getTabBar(callback)` request once the custom tabBar exists. */
+  onTabBarReady?: (callback: (tabBar: unknown) => void) => void
   relationNodes?: (relationKey: string) => unknown[]
   selectorQuery?: () => Record<string, unknown>
   intersectionObserver?: (options?: Record<string, unknown>) => Record<string, unknown>
@@ -71,6 +73,8 @@ export type MiniProgramPageInstanceOptions = {
   definition?: NormalizedComponentDefinition
   /** Forward `setData` patches to the render side. */
   onDataPatch?: (pageId: string, patch: DataPatch) => void
+  /** State persisted by the previous launch's `onSaveExitState`. */
+  exitState?: unknown
   /**
    * Run a `setData` completion after the page's render update. Without a render
    * thread the callback still runs asynchronously, matching WeChat's contract.
@@ -103,6 +107,8 @@ export class MiniProgramPageInstance implements ObserverHost {
   /** `this.getOpenerEventChannel()`; `{}` when the page has no opener. */
   readonly eventChannel: unknown
   observerDepth = 0
+  /** Loaded exit state exposed as WeChat's `this.exitState`. */
+  exitState: unknown
   savedExitState?: unknown
   /** Raw `Page()`/`Component()` options; `this.options` is the route query. */
   private readonly pageOptions: MiniProgramPageOptions
@@ -133,6 +139,7 @@ export class MiniProgramPageInstance implements ObserverHost {
     this.router = runtime.router
     this.pageRouter = runtime.router
     this.eventChannel = runtime.eventChannel ?? {}
+    this.exitState = cloneJsonSafe(input.exitState)
 
     if (definition) {
       const oldData = cloneJsonSafe(this.data)
@@ -155,6 +162,7 @@ export class MiniProgramPageInstance implements ObserverHost {
       this.route = this.path
       this.__route__ = this.path
       this.options = this.query
+      this.exitState = cloneJsonSafe(input.exitState)
       if (changedPaths.length > 0) {
         runObservers(this, definition.observers, changedPaths, oldData)
       }
@@ -164,6 +172,7 @@ export class MiniProgramPageInstance implements ObserverHost {
       this.route = this.path
       this.__route__ = this.path
       this.options = this.query
+      this.exitState = cloneJsonSafe(input.exitState)
     }
   }
 
@@ -269,6 +278,10 @@ export class MiniProgramPageInstance implements ObserverHost {
     return method(...args)
   }
 
+  hasMethod(name: string): boolean {
+    return this.methods.has(name)
+  }
+
   triggerLifecycle(name: PageLifecycleName, args: unknown[] = []): unknown {
     if (this.unloaded) return undefined
     this.lifecycleEvents.push(name)
@@ -349,9 +362,16 @@ export class MiniProgramPageInstance implements ObserverHost {
     return this.definition?.behaviors.has(behavior as object | string) ?? false
   }
 
-  /** `this.getTabBar()`: the page-local `custom-tab-bar` component, if any. */
-  getTabBar(): unknown {
-    return this.logic.selectComponents?.('custom-tab-bar', false)?.[0] ?? null
+  /** `this.getTabBar([callback])`: the page-local custom tab bar, if any. */
+  getTabBar(callback?: (tabBar: unknown) => void): unknown {
+    const tabBar = this.logic.selectComponents?.('custom-tab-bar', false)?.[0] ?? null
+    if (typeof callback !== 'function') return tabBar
+    if (tabBar) {
+      callback(tabBar)
+      return tabBar
+    }
+    this.logic.onTabBarReady?.(callback)
+    return null
   }
 
   triggerEvent(_name: string, _detail?: unknown, _options?: Record<string, unknown>): void {

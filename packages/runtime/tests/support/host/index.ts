@@ -389,9 +389,6 @@ export function createTestHost(options: RuntimeHostOptions): TestRuntimeHost {
   service.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.flow, (message) => {
     routeServiceEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.flow, message.payload, message.pageId)
   })
-  service.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.snapshot, (message) => {
-    routeServiceEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.snapshot, message.payload, message.pageId)
-  })
   service.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.patch, (message) => {
     routeServiceEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.patch, message.payload, message.pageId)
   })
@@ -443,6 +440,9 @@ export function createTestHost(options: RuntimeHostOptions): TestRuntimeHost {
       const serviceResult = await service.control<Record<string, unknown>>(RUNTIME_CONTROL.domain, RUNTIME_CONTROL.bootstrap, {
         manifest: options.manifest,
         initialPath: options.initialPath,
+        ...(Object.prototype.hasOwnProperty.call(options, 'initialExitState')
+          ? { initialExitState: options.initialExitState }
+          : {}),
         ...(options.maxPageStack !== undefined ? { maxPageStack: options.maxPageStack } : {}),
       })
       const initialData = (serviceResult.initialData as Record<string, unknown> | undefined) ?? options.initialData

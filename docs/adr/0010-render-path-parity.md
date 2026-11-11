@@ -6,6 +6,9 @@ Accepted and implemented for the kernel and the web hosts. The service and the
 render thread now share one registration contract: the definition crosses the
 bridge, both threads evaluate user templates, behaviors resolve on both sides,
 and `setData` crosses as a per-component data patch plus structural operations.
+ADR-0018 later moved final page/component WXML ownership to the render
+pageframe; the service still instantiates the same template for its logic tree,
+selectors, relations and identity/index snapshots.
 
 `hosts/ios` joins in: `ios/scripts/build.mjs` publishes `templates.js` next to
 the app assets and `hosts/ios/src/web/render.ts` evaluates it. There is no
@@ -264,9 +267,9 @@ everything else is render-local or positional:
 - **Flow**: the snapshot travels as one `{ type: 'tree', root }` message
   after the `define` messages; there is no per-node `create-node` stream and
   no element id on the wire.
-- **Render-local ids**: the glass render tree and the native renderer assign
-  `r:<n>` ids to nodes without one. They key their node maps by those ids and
-  never share them back to the service.
+- **Render-local ids**: the glass pageframe assigns `r:<n>` ids to nodes
+  without one, keys its node map by those ids and never shares them back to the
+  service.
 - **Identity**: `diffRenderTree` matches children by `wx:key` or by position
   (a per-parent token), never by id. Element patches address nodes with the
   component-scoped locator (`owner#index.path`), components with their id.

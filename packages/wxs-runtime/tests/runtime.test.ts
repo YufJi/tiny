@@ -1,8 +1,10 @@
 import { describe, expect, test, vi } from 'vitest'
 import {
   createDefaultWxsCompiler,
+  createPageScopedWxsRuntime,
   createWxsRuntime,
   transformWxsSource,
+  wxsPageScopeKey,
   wxsCtor,
 } from '../src/index'
 
@@ -153,5 +155,50 @@ describe('createWxsRuntime', () => {
     const wxs = runtime()
     wxs.register('utils', 'module.exports = { value: 1 }')
     expect(() => wxs.invoke('utils', ['value'], [])).toThrow('not a function')
+  })
+})
+
+describe('createPageScopedWxsRuntime', () => {
+  test('isolates module state by page and releases it with the page', () => {
+    const wxs = createPageScopedWxsRuntime({ compile: createDefaultWxsCompiler() })
+    const load = wxs.register(
+      'counter',
+      'var count = 0; module.exports = { next: function () { count += 1; return count } }',
+    )
+    const next = (scopeKey: string) => (load(scopeKey).next as () => number)()
+
+    expect(next('page:page-a')).toBe(1)
+    expect(next('page:page-b')).toBe(1)
+    expect(next('page:page-a')).toBe(2)
+    wxs.releasePage!('page-a')
+    expect(next('page:page-a')).toBe(1)
+  })
+
+  test('keeps function origins available across page contexts', () => {
+    const wxs = createPageScopedWxsRuntime({ compile: createDefaultWxsCompiler() })
+    const load = wxs.register('handler', 'module.exports = { tap: function () {} }')
+    const tap = load('page:page-a').tap as Function
+    expect(wxs.originOf(tap)).toEqual({
+      moduleId: 'handler',
+      exportPath: ['tap'],
+    })
+  })
+
+  test('invokes exports in one named page scope', () => {
+    const wxs = createPageScopedWxsRuntime({ compile: createDefaultWxsCompiler() })
+    wxs.register(
+      'counter',
+      'var count = 0; module.exports = { bump: function () { count += 1; return count }, peek: function () { return count } }',
+    )
+    const invoke = (pageId: string, exportPath: string[]) => (
+      wxs.invokeScoped!(wxsPageScopeKey(pageId), 'counter', exportPath, [])
+    )
+
+    expect(invoke('page-a', ['bump'])).toBe(1)
+    expect(invoke('page-a', ['bump'])).toBe(2)
+    expect(invoke('page-b', ['peek'])).toBe(0)
+    expect(invoke('page-a', ['peek'])).toBe(2)
+    wxs.releasePage!('page-a')
+    expect(invoke('page-a', ['peek'])).toBe(0)
   })
 })

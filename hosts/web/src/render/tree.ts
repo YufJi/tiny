@@ -23,8 +23,10 @@ import type {
   RenderNode,
   RenderPatch,
   RenderRect,
+  RenderComponentIdentity,
   RenderTemplateEvent,
   RenderText,
+  PageFrameMount,
   TemplateRegistry,
   WxsBindingMessage,
   WxsModuleTable,
@@ -42,6 +44,8 @@ type AnyComponent = glassEasel.GeneralComponent
 
 export type GlassRenderEvent = {
   id: string
+  /** Render identity of the innermost event target when it differs from `id`. */
+  targetId?: string
   name: string
   detail?: unknown
   native?: Record<string, unknown>
@@ -135,6 +139,8 @@ export type GlassRenderTreeOptions = {
 export type GlassRenderTree = {
   root: AnyComponent
   rootElement: HTMLElement | null
+  mountPage: (request: PageFrameMount) => void
+  mountTabBarPage?: (request: PageFrameMount) => void
   applyStyles?: (styles: string[]) => void
   inspectTree?: () => unknown
   measure?: (ids: string[]) => Record<string, unknown>
@@ -163,9 +169,14 @@ export type GlassRenderTree = {
   setWxsModules?: (table: WxsModuleTable) => void
   setWxsEffectSink?: (sink: (effect: WxsRenderEffect) => void) => void
   setWxsBinding?: (binding: WxsBindingMessage) => void
+  /** Refresh the service-owned node/component identity hints after a structural page update. */
+  setPageFrameHints?: (root: RenderNode) => void
+  /** Replace the service-owned component identity list for the pageframe. */
+  setPageFrameComponents?: (components: RenderComponentIdentity[]) => void
   /** Dispatch a service-triggered custom event so WXS handlers can run. */
   dispatchCustomEvent?: (request: CustomEventMessage) => void
   setPageData?: (data: Record<string, unknown>) => void
+  applyPageDataPatches?: (patches: Array<Record<string, unknown>>) => void
   setComponentData?: (data: Record<string, Record<string, unknown>>) => void
   setDiagnosticSink?: (sink: (diagnostic: {
     severity: 'warning' | 'error'
@@ -174,6 +185,7 @@ export type GlassRenderTree = {
     details?: unknown
   }) => void) => void
   mount: (node: RenderNode) => void
+  clearTabBar?: () => void
   applyPatches: (patches: RenderPatch[]) => void
   /** Definitions collected from `define` flow messages, keyed by component path. */
   setComponentDefinitions?: (definitions: Record<string, ComponentDefinitionPayload>) => void
@@ -504,6 +516,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     this: unknown,
     event: unknown,
   ): void {
+    if (serviceEventDepth > 0) return
     const sink = templateEventSink
     if (!sink) return
     const source = (event ?? {}) as {
@@ -569,6 +582,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   }
   const nodes = new Map<string, AnyComponent | glassEasel.TextNode>()
   const eventCleanups = new Map<string, Array<() => void>>()
+  const pageFrameTouchMoveCleanups = new Map<Element, () => void>()
   let eventSink: ((event: GlassRenderEvent) => void) | undefined
   /**
    * Depth of a service-triggered custom event being dispatched in the render
@@ -594,8 +608,43 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const dynamicBindingModes = new Map<string, WxsBindingMessage>()
   const wxsTimers = new Set<ReturnType<typeof setTimeout>>()
   const wxsPropSnapshots = new Map<string, Record<string, unknown>>()
+  const pageFrameWxsPropSnapshots = new WeakMap<Element, Record<string, unknown>>()
   let pageData: Record<string, unknown> = {}
   let componentData: Record<string, Record<string, unknown>> = {}
+  let pageFrameRoot: AnyComponent | undefined
+  let pageFramePageId = ''
+  let pageFramePagePath = ''
+  let pageFrameComponents: RenderComponentIdentity[] = []
+  let pagePlaceholders: Record<string, string> = {}
+  let pageFrameUnresolvedUsing = new Set<string>()
+  const sameDataPatch = (
+    current: Record<string, unknown> | undefined,
+    patch: Record<string, unknown>,
+  ): boolean => {
+    if (!current) return false
+    for (const [name, value] of Object.entries(patch)) {
+      try {
+        if (JSON.stringify(current[name]) !== JSON.stringify(value)) return false
+      } catch {
+        return false
+      }
+    }
+    return true
+  }
+  const dataPatchBetween = (
+    current: Record<string, unknown>,
+    next: Record<string, unknown>,
+  ): Record<string, unknown> => {
+    const patch: Record<string, unknown> = {}
+    for (const [name, value] of Object.entries(next)) {
+      try {
+        if (JSON.stringify(current[name]) !== JSON.stringify(value)) patch[name] = value
+      } catch {
+        patch[name] = value
+      }
+    }
+    return patch
+  }
   /** Parents whose instance list already produced a desync diagnostic. */
   const desyncReported = new Set<string>()
   /**
@@ -603,7 +652,10 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
    * template to the view ids the logic tree assigned to them, so per-instance
    * data (lifetimes, observers, parents) reaches the right instance.
    */
-  const bindNestedComponentInstances = (strictHints = false): void => {
+  const bindNestedComponentInstances = (
+    strictHints = false,
+    applyData = true,
+  ): void => {
     const reportDesync = (parentId: string, message: string, details: unknown): void => {
       if (desyncReported.has(parentId)) return
       desyncReported.add(parentId)
@@ -614,12 +666,20 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         details,
       })
     }
-    const bindFor = (parentId: string, instances: Array<{ id: string; path: string }>): void => {
+    const bindFor = (
+      parentId: string,
+      instances: Array<{ id: string; path: string }>,
+    ): void => {
       const parent = nodes.get(parentId) as unknown as {
         getBackendElement?: () => unknown
       } | undefined
+      const ownerComponent = nodes.get(parentId)
       const host = parent?.getBackendElement?.() as HTMLElement | null
       if (!host || typeof host.querySelectorAll !== 'function') return
+      const tabBinding = parentId === tabFrameRootId
+      const frameRoot = tabBinding ? tabBarRoot : pageFrameRoot
+      const frameRootId = tabBinding ? tabFrameRootId : rootId.value
+      const rootBinding = parentId === frameRootId
       // Components the render tree actually created while evaluating the
       // template, in document order. The logic tree walks the same template in
       // the same order, so the two lists are consumed positionally (this is how
@@ -633,9 +693,23 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
           const glass = (child as unknown as { __wxElement?: unknown }).__wxElement as {
             is?: unknown
             getBackendElement?: () => unknown
+            ownerShadowRoot?: { getHostNode?: () => unknown } | null
           } | undefined
           const path = typeof glass?.is === 'string' ? glass.is : ''
-          if (path && componentDefinitions.has(path) && glass) {
+          const owner = glass?.ownerShadowRoot?.getHostNode?.()
+          const ownerElement = (owner as { getBackendElement?: () => unknown } | undefined)
+            ?.getBackendElement?.()
+          const ownerMatches = !frameRoot
+            || (rootBinding
+              ? owner === ownerComponent
+              : owner === ownerComponent
+                || Boolean(ownerElement && host.contains(ownerElement as Node)))
+          if (
+            path
+            && componentDefinitions.has(path)
+            && glass
+            && ownerMatches
+          ) {
             found.push({ component: glass as unknown as AnyComponent, path })
           }
           walk(child)
@@ -651,10 +725,15 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       for (const item of result.matched) {
         const component = found[item.index]!.component
         ;(component as unknown as { __tinyNodeId?: string }).__tinyNodeId = item.id
+        component.getBackendElement()?.setAttribute?.(TINY_ENGINE_NAMING.nodeIdAttribute, item.id)
+        componentPathByComponent.set(component, found[item.index]!.path)
         nodes.set(item.id, component)
         idByComponent.set(component, item.id)
         const data = componentData[item.id]
-        if (data) {
+        if (applyData && data && !sameDataPatch(
+          (component as unknown as { data?: Record<string, unknown> }).data,
+          data,
+        )) {
           ;(component as unknown as { setData?: (next: Record<string, unknown>) => void })
             .setData?.(data)
         }
@@ -669,6 +748,27 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
           { parentId, ...desync },
         )
       }
+    }
+    if (pageFrameRoot) {
+      if (pageFrameComponents.length > 0) {
+        bindFor(rootId.value, pageFrameComponents)
+      } else {
+        const pageRoot = currentTree.get(rootId.value)
+        if (pageRoot?.type !== 'element') return
+        const instances: Array<{ id: string; path: string }> = []
+        const visit = (node: RenderNode): void => {
+          if (node.type !== 'element') return
+          if (node.component === true && node.componentPath && node.id) {
+            instances.push({ id: node.id, path: node.componentPath })
+          }
+          for (const child of node.children ?? []) visit(child)
+        }
+        for (const child of pageRoot.children ?? []) visit(child)
+        if (instances.length > 0) bindFor(rootId.value, instances)
+      }
+    }
+    if (tabFrameRootId && tabFrameComponents.length > 0) {
+      bindFor(tabFrameRootId, tabFrameComponents)
     }
     for (const [id, node] of currentTree) {
       if (node.type !== 'element' || !node.componentInstances) continue
@@ -885,6 +985,11 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
             template: {
               groupList: templates.groupList,
               content: (name = '') => templates!.content(componentPath, name),
+              // WeChat's pageframe diffs the evaluated WXML instead of using
+              // glass's per-field binding-map fast path. WXS module state is
+              // outside component data, so only a full template pass can
+              // refresh calls such as `{{state.peek()}}`.
+              updateMode: 'virtualTree',
             } as never,
           }
         : {}),
@@ -919,11 +1024,37 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   let root = createRoot()
   let rootElement = root.getBackendElement() as unknown as HTMLElement | null
   if (rootElement && options.container) options.container.replaceChildren(rootElement)
+  let tabBarRoot: AnyComponent | undefined
+  let tabBarRootElement: HTMLElement | null = null
+  let tabBarContainer: HTMLElement | null = null
+  let tabBarRootId = ''
+  const tabBarNodeIds = new Set<string>()
+  let tabFrameRootId = ''
+  let tabFramePageId = ''
+  let tabFramePagePath = ''
+  let tabFrameComponents: RenderComponentIdentity[] = []
   let mounted = false
   let pageScopeName = ''
   let pageUsing: Record<string, string> = {}
   let behaviorScheme = DEFAULT_BEHAVIOR_SCHEME
   let rootDirty = false
+
+  const pageUsingDefinitions = (): Record<string, glassEasel.GeneralComponentDefinition> => {
+    const using = usingDefinitions(undefined)
+    for (const [tag, path] of Object.entries(pageUsing)) {
+      if (!tag || !path || resolvingComponents.has(path)) continue
+      const placeholder = pagePlaceholders[path] ?? pagePlaceholders[`/${path}`]
+      if (!componentDefinitions.has(path) && placeholder) {
+        const definition = definitions[placeholder as BuiltinComponentTag]
+        if (definition) {
+          using[tag] = definition
+          continue
+        }
+      }
+      using[tag] = componentDefinition(tag, path)
+    }
+    return using
+  }
 
   /**
    * Rebuild the root with the page facts known before mount: the style scope
@@ -934,11 +1065,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const rebuildRoot = (): void => {
     if (mounted || !rootDirty) return
     rootDirty = false
-    const using: Record<string, glassEasel.GeneralComponentDefinition> = {}
-    for (const [tag, path] of Object.entries(pageUsing)) {
-      if (!tag || !path || resolvingComponents.has(path)) continue
-      using[tag] = componentDefinition(tag, path)
-    }
+    const using = pageUsingDefinitions()
     const previous = root
     root = createRoot(pageScopeName || undefined, using)
     rootElement = root.getBackendElement() as unknown as HTMLElement | null
@@ -986,7 +1113,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const isOwnedTarget = (element: glassEasel.Element): boolean => {
     let current: glassEasel.Element | null = element
     while (current) {
-      if (current === root) return true
+      if (current === root || current === tabBarRoot) return true
       current = composedParentOf(current)
     }
     return false
@@ -1049,8 +1176,12 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   }
 
   const lightShadow = (owner: AnyComponent): ShadowLike => {
-    const ownerShadow = (owner as unknown as { ownerShadowRoot?: ShadowLike }).ownerShadowRoot
-    return ownerShadow ?? (root.shadowRoot as unknown as ShadowLike)
+    const element = owner as unknown as {
+      ownerShadowRoot?: ShadowLike
+      shadowRoot?: ShadowLike
+    }
+    return element.ownerShadowRoot ?? element.shadowRoot
+      ?? (root.shadowRoot as unknown as ShadowLike)
   }
 
   let localIdCounter = 0
@@ -1196,8 +1327,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
    */
   const locatorOfNodeId = (id: string | undefined): string | undefined => {
     if (!id) return undefined
-    const rootNode = currentTree.get(rootId.value)
-    if (!rootNode) return undefined
     const search = (node: RenderNode, owner: string, path: number[]): string | null => {
       if (node.id === id) return path.length > 0 ? formatLocator(owner, path) : owner
       if (node.type !== 'element') return null
@@ -1209,7 +1338,20 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       }
       return null
     }
-    return search(rootNode, rootNode.id ?? '', []) ?? undefined
+    const roots = [currentTree.get(rootId.value), tabBarRootId ? currentTree.get(tabBarRootId) : undefined]
+    for (const rootNode of roots) {
+      if (!rootNode) continue
+      const found = search(rootNode, rootNode.id ?? '', [])
+      if (found) return found
+    }
+    return undefined
+  }
+
+  const renderIdentityOfViewId = (id: string | undefined): string | undefined => {
+    if (!id) return undefined
+    const node = currentTree.get(id)
+    if (node?.type === 'element' && node.component === true) return id
+    return locatorOfNodeId(id)
   }
 
   const buildRenderEventPayload = (
@@ -1226,10 +1368,15 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   ): GlassRenderEvent => {
     const isTouch = name.startsWith('touch')
     const currentTarget = geometryOf(element, node.id!)
+    const targetGeometry = targetGeometryOf(event.target)
+    const targetId = targetGeometry?.viewId
+      ? renderIdentityOfViewId(targetGeometry.viewId)
+      : undefined
     const payload: GlassRenderEvent = {
       id: node.component === true ? node.id! : locatorOfNodeId(node.id!) ?? node.id!,
       name,
       ...(currentTarget ? { currentTarget } : {}),
+      ...(targetId ? { targetId } : {}),
     }
     if (isTouch) {
       const touchEvent = original as TouchEvent | null
@@ -1247,8 +1394,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     }
     if (original) payload.native = nativeFields(original as Event)
     else if (event.native) payload.native = event.native
-    const target = targetGeometryOf(event.target)
-    if (target) payload.target = target
+    if (targetGeometry) payload.target = targetGeometry
     return payload
   }
 
@@ -1292,6 +1438,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       }
     }
     const guard = (event: TouchEvent): void => {
+      event.stopPropagation()
       if (event.cancelable === false) return
       const touch = event.touches[0]
       if (!touch) return
@@ -1315,6 +1462,38 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     cleanups.push(() => {
       element.removeEventListener('touchstart', collect, { capture: true })
       element.removeEventListener('touchmove', guard, { capture: false })
+    })
+  }
+
+  const clearPageFrameTouchMoveGuards = (): void => {
+    for (const cleanup of pageFrameTouchMoveCleanups.values()) cleanup()
+    pageFrameTouchMoveCleanups.clear()
+  }
+
+  const queuePageFrameTouchMoveGuards = (): void => {
+    if (!pageFrameRoot) return
+    queueMicrotask(() => {
+      if (
+        !pageFrameRoot
+        || !rootElement
+        || typeof (rootElement as { querySelectorAll?: unknown }).querySelectorAll !== 'function'
+      ) return
+      const marked = new Set(
+        Array.from(rootElement.querySelectorAll(`[${TINY_ENGINE_NAMING.catchTouchMoveAttribute}]`)),
+      )
+      for (const [element, cleanup] of pageFrameTouchMoveCleanups) {
+        if (marked.has(element) && element.isConnected) continue
+        cleanup()
+        pageFrameTouchMoveCleanups.delete(element)
+      }
+      for (const element of marked) {
+        if (pageFrameTouchMoveCleanups.has(element)) continue
+        const cleanups: Array<() => void> = []
+        attachTouchMoveGuard(element as HTMLElement, cleanups)
+        pageFrameTouchMoveCleanups.set(element, () => {
+          for (const cleanup of cleanups) cleanup()
+        })
+      }
     })
   }
 
@@ -1393,35 +1572,35 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     const descriptor = {
       selectComponent(selector: string) {
         if (!owner) return null
-        const match = owner.querySelector(selector) as HTMLElement | null
-        return match ? wxsDescriptorFor(match, wxsOwnerElement(match)) : null
+        const [match] = queryScopedElements(owner, selector, false)
+        return match
+          ? wxsDescriptorFor(match as HTMLElement, wxsOwnerElement(match as HTMLElement))
+          : null
       },
       selectAllComponents(selector: string) {
         if (!owner) return []
-        return Array.from(owner.querySelectorAll(selector))
+        return queryScopedElements(owner, selector, true)
           .map((match) => wxsDescriptorFor(match as HTMLElement, wxsOwnerElement(match as HTMLElement)))
       },
       getDataset() {
         return node?.dataset ?? (element ? { ...element.dataset } : {})
       },
       getState() {
-        // Key by the owner node's shared id, not the element instance: an
-        // observer may run before the element is attached, and the handler
-        // that fires later must see the same state object.
+        // WeChat stores `__wxsState` on the descriptor element itself.
+        if (element) {
+          let state = wxsStates.get(element)
+          if (!state) {
+            state = {}
+            wxsStates.set(element, state)
+          }
+          return state
+        }
         const key = ownerViewId ?? viewId
         if (key) {
           let state = wxsStatesById.get(key)
           if (!state) {
             state = {}
             wxsStatesById.set(key, state)
-          }
-          return state
-        }
-        if (owner) {
-          let state = wxsStates.get(owner)
-          if (!state) {
-            state = {}
-            wxsStates.set(owner, state)
           }
           return state
         }
@@ -1465,12 +1644,21 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       hasClass(name: string) {
         return element ? element.classList.contains(name) : false
       },
-      getData() {
-        const data = componentData[viewId ?? ''] ?? componentData[ownerViewId ?? '']
-        return { ...(data ?? pageData) }
-      },
       callMethod(name: string, ...args: unknown[]) {
-        if (viewId) wxsEffectSink?.({ kind: 'callMethod', viewId, method: name, args })
+        // WeChat resolves `callMethod` to the descriptor element's component
+        // (or the element's ownerShadowRoot host), not to the bound element id.
+        const effectViewId = node?.component === true
+          ? viewId
+          : (ownerViewId ?? viewId)
+        if (effectViewId) {
+          const safeArgs = args.map((arg) => plainEventDetail(arg) ?? null)
+          wxsEffectSink?.({
+            kind: 'callMethod',
+            viewId: effectViewId,
+            method: name,
+            args: safeArgs,
+          })
+        }
         return undefined
       },
       requestAnimationFrame(callback: () => void) {
@@ -1578,7 +1766,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
           : raw) as HTMLElement | null
         if (!target) return null
         const resolved = ownerFromGlass(target)
-        return wxsDescriptorFor(resolved.node, resolved.node, resolved.viewId)
+        const targetNode = wxsNodeForElement(target)
+        const owner = targetNode?.component === true ? target : resolved.node
+        return wxsDescriptorFor(target, owner, resolved.viewId)
       },
     }
     globalObject[key] = host
@@ -1614,7 +1804,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     const element = component.getBackendElement() as unknown as HTMLElement | null
     const owner = element ? wxsOwnerElement(element) : rootElement
     const descriptor = wxsDescriptorFor(element, owner, node.id, node)
-    const ownerDescriptor = wxsDescriptorFor(owner, owner, node.id)
     const nextValues = values ?? node.props ?? {}
     for (const binding of bindings) {
       const nextValue = nextValues[binding.prop]
@@ -1624,7 +1813,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         wxsRuntime.invoke(
           binding.moduleId,
           binding.exportPath,
-          [nextValue, oldValue, ownerDescriptor, descriptor],
+          [nextValue, oldValue, descriptor],
         )
       } catch {
         // A failed prop observer must not break the render tree.
@@ -1642,11 +1831,10 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   ): void => {
     const owner = wxsOwnerElement(element)
     const descriptor = wxsDescriptorFor(element, owner)
-    const ownerDescriptor = wxsDescriptorFor(owner, owner, node.id)
     payload.instance = descriptor
     let result: unknown
     try {
-      result = wxsRuntime.invoke(binding.moduleId, binding.exportPath, [payload, ownerDescriptor])
+      result = wxsRuntime.invoke(binding.moduleId, binding.exportPath, [payload, descriptor])
     } catch {
       return
     }
@@ -1656,7 +1844,10 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     }
     if (serviceEventDepth === 0 && hasServiceListenerInPath(element.parentElement, binding.name)) {
       const { instance: _instance, ...servicePayload } = payload
-      emitServiceEvent({ ...servicePayload, wxsHandled: true } as unknown as GlassRenderEvent)
+      emitServiceEvent({
+        ...servicePayload,
+        wxsHandled: true,
+      } as unknown as GlassRenderEvent)
     }
   }
 
@@ -1784,6 +1975,63 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       if (!component || glassEasel.TextNode.isTextNode(component)) continue
       applyWxsProps(node, component, wxsPropSnapshots.get(id))
     }
+  }
+
+  const queuePageFrameWxsProps = (): void => {
+    if (!pageFrameRoot) return
+    queueMicrotask(() => {
+      const rootNode = rootElement
+      if (!rootNode || typeof rootNode.querySelectorAll !== 'function') return
+      const nodes: HTMLElement[] = Array.from(
+        rootNode.querySelectorAll(`[${WXS_PROPS_PROP}]`),
+      )
+      if (rootNode.hasAttribute(WXS_PROPS_PROP)) nodes.unshift(rootNode)
+      for (const element of nodes) {
+        const raw = element.getAttribute(WXS_PROPS_PROP) ?? ''
+        const bindings = parseWxsProps({ [WXS_PROPS_PROP]: raw })
+        if (bindings.length === 0) continue
+        const component = (element as unknown as { __wxElement?: unknown }).__wxElement
+        const values = (component as { data?: Record<string, unknown> } | undefined)?.data
+        if (!values) continue
+        const currentValues = { ...values }
+        const owner = element.hasAttribute(TINY_ENGINE_NAMING.nodeIdAttribute)
+          ? element
+          : wxsOwnerElement(element)
+        const descriptor = wxsDescriptorFor(element, owner)
+        const previous = pageFrameWxsPropSnapshots.get(element) ?? {}
+        const next: Record<string, unknown> = {}
+        for (const binding of bindings) {
+          const nextValue = Object.hasOwn(currentValues, binding.prop)
+            ? currentValues[binding.prop]
+            : element.getAttribute(binding.prop)
+          const oldValue = previous[binding.prop]
+          next[binding.prop] = nextValue
+          if (!Object.hasOwn(previous, binding.prop)) {
+            try {
+              wxsRuntime.invoke(
+                binding.moduleId,
+                binding.exportPath,
+                [nextValue, undefined, descriptor],
+              )
+            } catch {
+              // A failing change:prop observer must not break the page.
+            }
+            continue
+          }
+          if (Object.is(nextValue, oldValue)) continue
+          try {
+            wxsRuntime.invoke(
+              binding.moduleId,
+              binding.exportPath,
+              [nextValue, oldValue, descriptor],
+            )
+          } catch {
+            // A failing change:prop observer must not break the page.
+          }
+        }
+        pageFrameWxsPropSnapshots.set(element, next)
+      }
+    })
   }
 
   const createElement = (
@@ -2125,6 +2373,15 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       } else if (patch.type === 'replace') {
         const id = resolveTargetId(patch.target)
         if (id) replaceNode(id, patch.node)
+      } else if (patch.type === 'component-instances') {
+        const id = resolveTargetId(patch.target)
+        const current = id ? currentTree.get(id) : undefined
+        if (id && current?.type === 'element') {
+          currentTree.set(id, {
+            ...current,
+            componentInstances: [...patch.instances],
+          })
+        }
       }
     }
     flushPendingAnimations()
@@ -2376,6 +2633,202 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     }
   }
 
+  const clearTabBar = (): void => {
+    for (const id of tabBarNodeIds) {
+      for (const cleanup of eventCleanups.get(id) ?? []) cleanup()
+      eventCleanups.delete(id)
+      nodes.delete(id)
+      currentTree.delete(id)
+    }
+    tabBarNodeIds.clear()
+    ;(tabBarRoot as unknown as { destroy?: () => void } | undefined)?.destroy?.()
+    tabBarRoot = undefined
+    tabBarRootElement = null
+    tabBarRootId = ''
+    tabFrameRootId = ''
+    tabFramePageId = ''
+    tabFramePagePath = ''
+    tabFrameComponents = []
+    tabBarContainer?.remove()
+    tabBarContainer = null
+  }
+
+  const indexPageFrameHints = (
+    hints: RenderNode | undefined,
+    rootViewId: string,
+    pagePath: string,
+  ): void => {
+    if (hints?.type !== 'element') return
+    const tabBarEntries = [...currentTree].filter(([id]) => tabBarNodeIds.has(id))
+    currentTree.clear()
+    const visit = (node: RenderNode): void => {
+      if (node.id) currentTree.set(node.id, node)
+      if (node.type !== 'element') return
+      for (const child of node.children ?? []) visit(child)
+    }
+    visit(hints)
+    if (!currentTree.has(rootViewId)) {
+      currentTree.set(rootViewId, {
+        type: 'element',
+        id: rootViewId,
+        tag: pagePath,
+      })
+    }
+    for (const [id, node] of tabBarEntries) currentTree.set(id, node)
+  }
+
+  const indexTabFrameHints = (
+    hints: RenderNode | undefined,
+    rootViewId: string,
+    pagePath: string,
+  ): void => {
+    for (const id of tabBarNodeIds) {
+      if (id === tabFrameRootId) continue
+      for (const cleanup of eventCleanups.get(id) ?? []) cleanup()
+      eventCleanups.delete(id)
+      nodes.delete(id)
+      currentTree.delete(id)
+    }
+    tabBarNodeIds.clear()
+    if (hints?.type === 'element') {
+      const visit = (node: RenderNode): void => {
+        if (node.id) {
+          currentTree.set(node.id, node)
+          tabBarNodeIds.add(node.id)
+        }
+        if (node.type !== 'element') return
+        for (const child of node.children ?? []) visit(child)
+      }
+      visit(hints)
+    }
+    if (!currentTree.has(rootViewId)) {
+      currentTree.set(rootViewId, {
+        type: 'element',
+        id: rootViewId,
+        tag: pagePath,
+      })
+    }
+    tabBarNodeIds.add(rootViewId)
+  }
+
+  const mountPage = (request: PageFrameMount): void => {
+    if (!templates) throw new Error('pageframe mount requires compiled templates')
+    const rootViewId = request.rootViewId ?? request.pageId
+    const indexHints = (hints: RenderNode | undefined): void => {
+      indexPageFrameHints(hints, rootViewId, request.pagePath)
+    }
+    if (
+      pageFrameRoot
+      && pageFramePageId === request.pageId
+      && pageFramePagePath === request.pagePath
+    ) {
+      const unresolved = new Set(Object.values(request.using ?? {}).filter(
+        (path) => path && !componentDefinitions.has(path),
+      ))
+      const hasPlaceholderState = (
+        Object.keys(pagePlaceholders).length > 0
+        || Object.keys(request.placeholders ?? {}).length > 0
+      )
+      const placeholderStateChanged = hasPlaceholderState && (
+        unresolved.size !== pageFrameUnresolvedUsing.size
+        || [...unresolved].some((path) => !pageFrameUnresolvedUsing.has(path))
+      )
+      if (placeholderStateChanged) {
+        pageFrameRoot = undefined
+        pageFramePageId = ''
+        pageFramePagePath = ''
+        pageFrameComponents = []
+      } else {
+        if (request.using) pageUsing = request.using
+        if (request.scope) pageScopeName = request.scope
+        pageFrameComponents = [...(request.componentFlow ?? pageFrameComponents)]
+        if (request.placeholders) pagePlaceholders = request.placeholders
+        indexHints(request.renderHints)
+        const next = { ...request.data }
+        if (!sameDataPatch(pageData, next)) {
+          pageData = next
+          ;(pageFrameRoot as unknown as {
+            setData?: (value: Record<string, unknown>) => void
+          }).setData?.(next)
+        }
+        bindNestedComponentInstances(true, false)
+        queuePageFrameWxsProps()
+        queuePageFrameTouchMoveGuards()
+        emitPageReRender()
+        return
+      }
+    }
+    if (request.using) pageUsing = request.using
+    if (request.scope) pageScopeName = request.scope
+    pagePlaceholders = request.placeholders ?? {}
+    pageFrameComponents = [...(request.componentFlow ?? [])]
+    pageFrameUnresolvedUsing = new Set(Object.values(pageUsing).filter(
+      (path) => path && !componentDefinitions.has(path),
+    ))
+    pageData = { ...request.data }
+    clearPageFrameTouchMoveGuards()
+    clearTabBar()
+    for (const cleanups of eventCleanups.values()) {
+      for (const cleanup of cleanups) cleanup()
+    }
+    eventCleanups.clear()
+    nodes.clear()
+    currentTree.clear()
+    indexHints(request.renderHints)
+    const definition = space.defineComponent({
+      is: request.pagePath,
+      options: {
+        hostNodeTagName: TINY_ENGINE_NAMING.renderRootTag,
+        reflectToAttributes: true,
+        writeIdToDOM: true,
+        ...(pageScopeName ? { styleScope: styleScopeManager.register(pageScopeName) } : {}),
+        extraStyleScope: glassEasel.StyleScopeManager.globalScope(),
+      },
+      data: request.data,
+      using: pageUsingDefinitions(),
+      ...(request.methods && request.methods.length > 0
+        ? {
+            methods: Object.fromEntries(
+              request.methods.map((name) => [name, templateHandler(name)]),
+            ) as never,
+          }
+        : {}),
+      template: {
+        groupList: templates.groupList,
+        content: (name = '') => templates!.content(request.pagePath, name),
+        updateMode: 'virtualTree',
+      } as never,
+    }).general()
+    const page = glassEasel.Component.createWithContext(
+      TINY_ENGINE_NAMING.renderRootTag,
+      definition,
+      backend,
+    )
+    const previous = root
+    root = page
+    rootElement = page.getBackendElement() as unknown as HTMLElement | null
+    if (rootElement && options.container) options.container.replaceChildren(rootElement)
+    ;(previous as unknown as { destroy?: () => void }).destroy?.()
+    componentPathByComponent.set(page, request.pagePath)
+    ;(page as unknown as { __tinyNodeId?: string }).__tinyNodeId = rootViewId
+    pageFrameRoot = page
+    pageFramePageId = request.pageId
+    pageFramePagePath = request.pagePath
+    rootId.value = rootViewId
+    nodes.set(rootViewId, page)
+    rootElement?.setAttribute(TINY_ENGINE_NAMING.nodeIdAttribute, rootViewId)
+    rootElement?.classList?.add(TINY_ENGINE_NAMING.scopeMarkerClass)
+    if (options.attach !== false) glassEasel.Element.pretendAttached(page)
+    mounted = true
+    bindNestedComponentInstances(false, false)
+    queueMicrotask(() => {
+      bindNestedComponentInstances(true, false)
+      queuePageFrameWxsProps()
+      queuePageFrameTouchMoveGuards()
+    })
+    emitPageReRender()
+  }
+
   return {
     get root() {
       return root
@@ -2383,6 +2836,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     get rootElement() {
       return rootElement
     },
+    mountPage,
     setPageScope,
     setPageUsing,
     setBehaviorScheme,
@@ -2422,16 +2876,56 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     setWxsBinding: (binding) => {
       dynamicBindingModes.set(wxsBindingKey(binding.viewId, binding.event), binding)
     },
+    setPageFrameHints: (root) => {
+      if (!pageFrameRoot || !rootId.value) return
+      indexPageFrameHints(root, rootId.value, pageFramePagePath)
+    },
+    setPageFrameComponents: (components) => {
+      pageFrameComponents = [...components]
+    },
     setPageData: (data) => {
-      pageData = { ...data }
+      const next = { ...data }
+      const changed = !sameDataPatch(pageData, next)
+      const patch = changed ? dataPatchBetween(pageData, next) : {}
+      pageData = next
+      if (pageFrameRoot && changed) {
+        ;(pageFrameRoot as unknown as {
+          setData?: (next: Record<string, unknown>) => void
+        }).setData?.(patch)
+        queuePageFrameWxsProps()
+        queuePageFrameTouchMoveGuards()
+      }
+    },
+    applyPageDataPatches: (patches) => {
+      if (!pageFrameRoot || patches.length === 0) return
+      for (const patch of patches) {
+        ;(pageFrameRoot as unknown as {
+          setData?: (next: Record<string, unknown>) => void
+        }).setData?.(patch)
+      }
+      pageData = {
+        ...((pageFrameRoot as unknown as { data?: Record<string, unknown> }).data ?? pageData),
+      }
+      queuePageFrameWxsProps()
+      queuePageFrameTouchMoveGuards()
     },
     setComponentData: (data) => {
       // The service sends a component-scoped patch after the initial snapshot,
-      // so merge instead of replacing; the WXS `ins.getData()` view and the
-      // component's own template both read from it.
+      // so merge instead of replacing before applying it to render instances.
       componentData = { ...componentData, ...data }
-      bindNestedComponentInstances()
-      applyComponentDataToNodes(data)
+      if (pageFrameRoot) {
+        // The pageframe template already applied the props that created each
+        // component. Re-pushing unchanged data makes glass re-run WXS-only
+        // expression slots (for example `PEEK: {{state.peek()}}`) against a
+        // later module state, while WeChat keeps the value from the render that
+        // produced the component. Only write data that actually changed.
+        bindNestedComponentInstances(true)
+        queuePageFrameWxsProps()
+        queuePageFrameTouchMoveGuards()
+      } else {
+        bindNestedComponentInstances()
+        applyComponentDataToNodes(data)
+      }
     },
     observeIntersection: (request, emit) => {
       const rootNode = rootElement
@@ -2504,6 +2998,18 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       // Read the live DOM: render-evaluated component shadow trees have no
       // service node record, so walking `currentTree` would show components as
       // empty shells in the debugger's Elements panel.
+      const childNodesOf = (element: Element): ArrayLike<Node> => {
+        const slot = element as unknown as {
+          assignedNodes?: (options?: { flatten?: boolean }) => ArrayLike<Node>
+        }
+        const assigned = slot.assignedNodes?.({ flatten: true })
+        if (assigned && assigned.length > 0) return assigned
+        const shadow = (element as unknown as {
+          shadowRoot?: { childNodes?: ArrayLike<Node> } | null
+        }).shadowRoot
+        if (shadow?.childNodes?.length) return shadow.childNodes
+        return element.childNodes
+      }
       const toInspectElement = (element: Element, path = '0'): Record<string, unknown> => {
         const attributes: Record<string, string> = {}
         const names = element.attributes
@@ -2517,7 +3023,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
           || `render:${path}`
         const tag = element.tagName.toLowerCase()
         const children: Record<string, unknown>[] = []
-        const nodeList = element.childNodes
+        const nodeList = childNodesOf(element)
         for (let index = 0; index < nodeList.length; index += 1) {
           const child = nodeList[index]!
           if (child.nodeType === 3) {
@@ -2645,8 +3151,120 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       }
       styleElement.textContent = styles.join('\n')
     },
+    clearTabBar,
+    mountTabBarPage(request) {
+      const rootViewId = request.rootViewId ?? request.pageId
+      if (
+        tabBarRoot
+        && tabFramePageId === request.pageId
+        && tabFramePagePath === request.pagePath
+      ) {
+        if (request.renderHints) {
+          indexTabFrameHints(request.renderHints, rootViewId, request.pagePath)
+        }
+        tabFrameComponents = [...(request.componentFlow ?? tabFrameComponents)]
+        const current = nodes.get(tabFrameRootId)
+        if (current && !glassEasel.TextNode.isTextNode(current)) {
+          current.setData(request.data)
+        }
+        bindNestedComponentInstances()
+        applyComponentDataToNodes(componentData)
+        queuePageFrameWxsProps()
+        queueMicrotask(() => {
+          bindNestedComponentInstances(true)
+          applyComponentDataToNodes(componentData)
+        })
+        emitPageReRender()
+        return
+      }
+      clearTabBar()
+      const ownerDocument = options.container?.ownerDocument
+        ?? (typeof document === 'undefined' ? undefined : document)
+      if (ownerDocument?.body) {
+        tabBarContainer = ownerDocument.createElement('div')
+        tabBarContainer.setAttribute('data-tiny-tabbar-root', '')
+        tabBarContainer.style.cssText = [
+          'position:fixed',
+          'left:0',
+          'right:0',
+          'bottom:0',
+          'z-index:1000',
+          'pointer-events:none',
+        ].join(';')
+        ;(options.container ?? ownerDocument.body).appendChild(tabBarContainer)
+      }
+      tabBarRoot = createRoot(
+        request.scope || pageScopeName || undefined,
+        pageUsingDefinitions(),
+      )
+      tabBarRootElement = tabBarRoot.getBackendElement() as unknown as HTMLElement | null
+      if (tabBarRootElement) {
+        const style = (tabBarRootElement as unknown as {
+          style?: { pointerEvents?: string }
+        }).style
+        if (style) style.pointerEvents = 'auto'
+        tabBarContainer?.replaceChildren(tabBarRootElement)
+      }
+      const shadow = tabBarRoot.shadowRoot as unknown as {
+        appendChild: (child: unknown) => void
+        childNodes: ArrayLike<unknown>
+        removeChild: (child: unknown) => void
+      }
+      while (shadow.childNodes.length > 0) shadow.removeChild(shadow.childNodes[0])
+      const tabBarNode: RenderElement = {
+        type: 'element',
+        id: rootViewId,
+        tag: 'custom-tab-bar',
+        component: true,
+        componentPath: request.pagePath,
+        props: {},
+        children: [],
+      }
+      const component = createElement(tabBarNode, tabBarRoot)
+      shadow.appendChild(component)
+      if (request.data && Object.keys(request.data).length > 0) {
+        component.setData(request.data)
+      }
+      tabBarRootId = `tab-bar-root:${rootViewId}`
+      tabFrameRootId = rootViewId
+      tabFramePageId = request.pageId
+      tabFramePagePath = request.pagePath
+      tabFrameComponents = [...(request.componentFlow ?? [])]
+      nodes.set(tabBarRootId, tabBarRoot)
+      indexTabFrameHints(request.renderHints, rootViewId, request.pagePath)
+      if (tabBarRootElement) {
+        if (typeof tabBarRootElement?.setAttribute === 'function') {
+          tabBarRootElement.setAttribute(TINY_ENGINE_NAMING.nodeIdAttribute, tabBarRootId)
+        }
+        applyHostProps(tabBarRoot, tabBarNode.props)
+        applyClassProps(
+          tabBarRootElement,
+          tabBarNode.props,
+          tabBarNode.scopes,
+          tabBarNode.scopeChain,
+          undefined,
+          tabBarNode.scopes ?? [],
+        )
+      }
+      if (options.attach !== false) glassEasel.Element.pretendAttached(tabBarRoot)
+      bindNestedComponentInstances()
+      applyComponentDataToNodes(componentData)
+      flushPendingWxsEvents()
+      flushAllWxsProps()
+      queueMicrotask(() => {
+        bindNestedComponentInstances(true)
+        applyComponentDataToNodes(componentData)
+      })
+      emitPageReRender()
+    },
     mount(node) {
+      clearTabBar()
       rebuildRoot()
+      pageFrameRoot = undefined
+      pageFramePageId = ''
+      pageFramePagePath = ''
+      pageFrameComponents = []
+      clearPageFrameTouchMoveGuards()
       for (const cleanups of eventCleanups.values()) {
         for (const cleanup of cleanups) cleanup()
       }
@@ -2713,6 +3331,12 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       return nodes.get(id)
     },
     destroy() {
+      clearTabBar()
+      pageFrameRoot = undefined
+      pageFramePageId = ''
+      pageFramePagePath = ''
+      pageFrameComponents = []
+      clearPageFrameTouchMoveGuards()
       detachWxsEventHost()
       detachCompositor()
       for (const cleanups of eventCleanups.values()) {

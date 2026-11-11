@@ -89,20 +89,24 @@ type Rendered = {
  */
 function createRecordingRenderer(rendered: Rendered) {
   return {
-    mount(_root: RenderNode) {},
+    mountPage(request: { data?: Record<string, unknown> }) {
+      if (typeof request.data?.label === 'string') rendered.pageText = request.data.label
+    },
     setPageData(data: Record<string, unknown>) {
       if (typeof data.label === 'string') rendered.pageText = data.label
+      rendered.log.push(`render:${rendered.pageText}`)
+    },
+    applyPageDataPatches(patches: Array<Record<string, unknown>>) {
+      for (const patch of patches) {
+        if (typeof patch.label === 'string') rendered.pageText = patch.label
+      }
+      rendered.log.push(`render:${rendered.pageText}`)
     },
     setComponentData(data: Record<string, Record<string, unknown>>) {
       for (const value of Object.values(data)) {
         if (value && typeof value.text === 'string') rendered.componentText = value.text
       }
       rendered.log.push(`component-data:${rendered.componentText}`)
-    },
-    applyPatches(patches: RenderPatch[]) {
-      for (const patch of patches) {
-        if (patch.type === 'text') rendered.pageText = patch.text
-      }
       rendered.log.push(`render:${rendered.pageText}`)
     },
   }
@@ -212,6 +216,7 @@ describe('setData completion ordering', () => {
     // `setData` completion still waits for the render-side data patch.
     expect(rendered.log).toEqual([
       'after-setData-call',
+      'render:before',
       'component-data:fired',
       'render:before',
       'callback:fired',
@@ -289,7 +294,7 @@ describe('setData completion ordering', () => {
 
     // The completion was queued before the page was registered as mounted, so
     // it rides on the initial `tree.flow` acknowledgement instead of a patch.
-    expect(rendered.log[0]).toBe('component-data:attached')
+    expect(rendered.log).toContain('component-data:attached')
     expect(rendered.log.filter((entry) => entry === 'callback:attached')).toHaveLength(1)
     // A later `tree.ready` re-snapshot may re-send the same component data; the
     // completion must have observed the first applied flow.
@@ -301,8 +306,11 @@ describe('setData completion ordering', () => {
 
   test('acknowledges a failed render batch and reports it once', async () => {
     const rendered: Rendered = { pageText: '', componentText: '', log: [] }
+    let failRender = false
     const { service, connector, host } = setup(rendered, {
-      applyPatches() {
+      setPageData(data: Record<string, unknown>) {
+        if (typeof data.label === 'string') rendered.pageText = data.label
+        if (!failRender) return
         rendered.log.push('render-throw')
         throw new Error('render boom')
       },
@@ -325,6 +333,7 @@ describe('setData completion ordering', () => {
     await tick()
     const pageId = service.activePage!.pageId
     rendered.log.length = 0
+    failRender = true
 
     await tap(connector, pageId, '#label')
     await tick()

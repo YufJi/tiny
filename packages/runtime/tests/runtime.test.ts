@@ -286,8 +286,9 @@ describe('tiny runtime', () => {
     expect(patches).toHaveLength(baseline + 1)
     expect(patches[baseline]).toMatchObject({
       pageId: 'page-1',
-      patches: [{ type: 'text', text: 'second' }],
+      pageDataPatches: [{ message: 'first' }, { message: 'second' }],
     })
+    expect(patches[baseline]).not.toHaveProperty('patches')
     await host.close()
     void render
   })

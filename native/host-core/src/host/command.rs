@@ -49,6 +49,16 @@ pub enum HostCommand {
         name: String,
         payload: Option<serde_json::Value>,
     },
+    /// Capture page data and saved exit state for a host-level reload.
+    SnapshotPageState,
+    /// Restore page data and saved exit state after a page is recreated.
+    RestorePageState {
+        page_id: String,
+        data: serde_json::Value,
+        saved_exit_state: Option<serde_json::Value>,
+        #[serde(default)]
+        exit_state: Option<serde_json::Value>,
+    },
     Close,
 }
 
@@ -71,6 +81,38 @@ mod tests {
                 assert_eq!(payload, Some(serde_json::json!({ "scene": 1001 })));
             }
             _ => panic!("expected EmitEvent"),
+        }
+    }
+
+    #[test]
+    fn page_state_commands_deserialize() {
+        let snapshot: HostCommand = serde_json::from_value(serde_json::json!({
+            "type": "snapshotPageState"
+        }))
+        .expect("snapshotPageState command should deserialize");
+        assert_eq!(snapshot, HostCommand::SnapshotPageState);
+
+        let restore: HostCommand = serde_json::from_value(serde_json::json!({
+            "type": "restorePageState",
+            "pageId": "page-1",
+            "data": { "count": 2 },
+            "savedExitState": { "scrollTop": 12 },
+            "exitState": { "draft": "kept" }
+        }))
+        .expect("restorePageState command should deserialize");
+        match restore {
+            HostCommand::RestorePageState {
+                page_id,
+                data,
+                saved_exit_state,
+                exit_state,
+            } => {
+                assert_eq!(page_id, "page-1");
+                assert_eq!(data, serde_json::json!({ "count": 2 }));
+                assert_eq!(saved_exit_state, Some(serde_json::json!({ "scrollTop": 12 })));
+                assert_eq!(exit_state, Some(serde_json::json!({ "draft": "kept" })));
+            }
+            _ => panic!("expected RestorePageState"),
         }
     }
 }

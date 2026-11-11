@@ -1,6 +1,5 @@
 function tap(event, ins) {
-  var data = ins.getData()
-  ins.callMethod('record', 'tap:' + data.value + ':' + event.currentTarget.dataset.kind)
+  ins.callMethod('record', 'tap:' + ins.getDataset().value + ':' + event.currentTarget.dataset.kind)
   ins.selectComponent('#target').setStyle({ left: '12px', width: '75rpx' })
   var state = ins.getState()
   state.count = (state.count || 0) + 1
@@ -14,7 +13,7 @@ function changed(event, ins) {
 }
 
 function dynamicTap(event, ins) {
-  ins.callMethod('recordDynamic', 'wxs:' + ins.getData().value)
+  ins.callMethod('recordDynamic', 'wxs:' + ins.getDataset().value)
 }
 
 function childTap(event, ins) {

@@ -3,14 +3,14 @@ title: '用真实小程序验收，'
 highlight: '不只跑单元测试'
 eyebrow: '测试与验收'
 lede: >-
-  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。497 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，74 个浏览器步骤验证端到端行为；iOS 宿主另有 7 个 fixture 的 WKWebView + JSCore smoke。
+  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。530 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，74 个浏览器步骤验证端到端行为；iOS 宿主另有 9 个 fixture 的 WKWebView + JSCore smoke。
 stats:
-  - ['497', '单元测试']
-  - ['66', '浏览器步骤']
+  - ['530', '单元测试']
+  - ['74', '浏览器步骤']
   - ['5', '浏览器流程']
-  - ['7', '测试小程序']
-  - ['7', 'iOS fixture smoke']
-description: '小程序引擎的验收方式：构建、内核检查、497 个单元测试、74 个浏览器步骤、七套测试小程序和 iOS 宿主 smoke。'
+  - ['9', '测试小程序']
+  - ['9', 'iOS fixture smoke']
+description: '小程序引擎的验收方式：构建、内核检查、530 个单元测试、74 个浏览器步骤、九套测试小程序和 iOS 宿主 smoke。'
 name: '测试'
 pageTitle: '测试与验收 · Tiny 小程序引擎'
 order: 8
@@ -31,13 +31,13 @@ pnpm accept:glass-easel 是唯一完整的端到端入口，任何单个包的�
 | 构建 12 个目标 | 通过 turbo 构建 css-units、manifest、wxs-runtime、stylesheet-compiler、template-compiler、bridge、cli、runtime、api、host-web-components、host-core-wasm 和 host-web；本地命中 turbo 缓存时约 1 秒。 | `pnpm build:glass-easel` |
 | 检查内核依赖 | 从 packages/runtime/src/index.ts、packages/api/src/index.ts 和 packages/wxs-runtime/src/index.ts 遍历依赖图，禁止浏览器全局，也禁止反向依赖 @tiny/host-* 或 hosts/*；WXS 语言级 require 单独放行。 | `pnpm check:runtime-purity` |
 | 一次跑完单元测试 | 根 `vitest.workspace.ts` 把 12 个包的配置装进同一个 Vitest 进程，各包仍保留自己的 alias、snapshot 和 globals 配置；单包调试仍可 `pnpm --filter <package> test`。 | `pnpm test` |
-| 一次编译全部 fixture | 7 个测试小程序并发编译到 `tests/host/generated/apps/<id>/generated`，并写入 `apps.json` 清单；比逐段重编译少 3 次覆盖和 1 次恢复。 | `node scripts/compile-apps.mjs --all` |
+| 一次编译全部 fixture | 9 个测试小程序并发编译到 `tests/host/generated/apps/<id>/generated`，并写入 `apps.json` 清单；比逐段重编译少 3 次覆盖和 1 次恢复。 | `node scripts/compile-apps.mjs --all` |
 | 启动两个宿主 | 测试宿主（默认 5199）与调试器（默认 5180）各启动一次，结束后只关闭一次。 | `node scripts/accept-glass-easel.mjs` |
 | P0 demo 流程 | 29 步：启动、渲染、作用域样式、快照、自定义事件、checkbox/slider/switch、导航、输入、storage、toast、组件语义、样式隔离、按钮矩阵、relations、WXS 本地事件与 change:prop、catchtouchmove 滚动锁、真实滚动触发 `onPageScroll`、canvas 诊断和零 console error。 | `runBrowserAcceptance({ baseUrl, app: 'demo' })` |
 | mini 流程 | 共享同一棵产物树，用 `?app=mini` 选择；10 步：真实 todos、双组件实例、import/include/template、输入、ECharts、子包、warning 和零错误。 | `runMiniProgramAcceptance({ baseUrl, app: 'mini' })` |
 | Taro 3 流程 | 用 `?app=todo` 读取 Taro 3 预构建产物；6 步：Redux todos、Enter 新增、勾选、筛选、清空和零错误。 | `runTaroAcceptance({ baseUrl, app: 'todo' })` |
 | WeChat demo 流程 | 用 `?app=wechat-demo` 读取官方示例子集；12 步：组件索引、button 页、aria、swiper、radio、API 页、navigator、WXS 拖拽、Canvas 2D/WebGL 和零错误。 | `runWechatDemoAcceptance({ baseUrl, app: 'wechat-demo' })` |
-| 调试器流程 | `TINY_DEVTOOL_RUNTIME_ROOT` 指向同一棵产物树，不再重编译 7 个 fixture；9 步：默认应用列表、点击启动、状态投影、渲染、导航/返回、逐应用预览与 3 个应用 LRU 保活、回到列表/深链/页面栈上限/Reload/Close app、零错误；渲染树由 `bootRenderEntry` 创建。 | `runDevtoolAcceptance({ baseUrl: devtoolUrl })` |
+| 调试器流程 | `TINY_DEVTOOL_RUNTIME_ROOT` 指向同一棵产物树，不再重编译 9 个 fixture；9 步：默认应用列表、点击启动、状态投影、渲染、导航/返回、逐应用预览与 3 个应用 LRU 保活、回到列表/深链/页面栈上限/Reload/Close app、零错误；渲染树由 `bootRenderEntry` 创建。 | `runDevtoolAcceptance({ baseUrl: devtoolUrl })` |
 :::
 
 :::callout{title="五段流程共享产物树，并行执行"}
@@ -72,7 +72,7 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 :::
 ::::
 
-## 497 个单元测试，一次运行 {#units kicker="单元测试"}
+## 530 个单元测试，一次运行 {#units kicker="单元测试"}
 
 12 个包各有自己的 `vitest.config.ts`，根 `vitest.workspace.ts` 把它们装进同一个 Vitest 进程：一次启动、并行执行各包测试，但 alias、snapshot 格式和 globals 仍按包隔离。需要单独排查时仍可运行 `pnpm --filter <package> test`。
 
@@ -81,18 +81,18 @@ Playwright 失败时会保存截图，并输出页面错误和 console 错误。
 | `@tiny/manifest` | 2 | 固定引擎命名、builtin tags、WXS 保留名 |
 | `@tiny/css-units` | 2 | rpx 750、vw 舍入、无 rpx 文本保持 |
 | `@tiny/bridge` | 14 | 信封校验、版本和路由错误、payload 校验、握手、调用关联、超时、关闭、批处理顺序、诊断插队、`callSync` 请求/reply 与跨 realm 结果 |
-| `@tiny/wxs-runtime` | 13 | 模块加载、循环依赖、相对 require、constructor、globals、origin / resolve、模块表 |
-| `@tiny/template-compiler` | 47 | 脚本依赖、WXS transform、模块表、动态事件元数据、change:prop、import/include、模板别名、ProcGen 签名、绑定表复用、事件简写、data-* 绑定、stringify 往返 |
+| `@tiny/wxs-runtime` | 16 | 模块加载、循环依赖、相对 require、constructor、globals、origin / resolve、模块表、页级 runtime 状态隔离、释放与指定页调用 |
+| `@tiny/template-compiler` | 48 | 脚本依赖、WXS transform、模块表、动态事件元数据、change:prop、import/include、模板别名、ProcGen 签名、绑定表复用、事件简写、data-* 绑定、stringify 往返、每次模板求值重新选择页级 WXS |
 | `@tiny/stylesheet-compiler` | 36 | class/tag 前缀、rpx/calc、@import 编码和包装、@layer、:host 低优先级、hostAttribute、keyframes、page 根节点 |
-| `@tiny/cli` | 18 | manifest 全产物、兼容输入配置、WXS 双注册、配置合并、service/templates 入口、TS/source map、样式 role、tag marker |
+| `@tiny/cli` | 30 | manifest 全产物、兼容输入配置、WXS 双注册、配置合并、service/templates 入口、TS/source map、样式 role、tag marker、npm 构建与项目配置校验 |
 | `@tiny/host-web-components` | 24 | 内置组件 batches、共享 behaviors 和默认样式断言；`canIUse` 用的组件属性清单与真实定义保持一致；组件行为细节由 host-web 的 render-tree 测试覆盖 |
-| `@tiny/host-web` | 103 | DOM render tree、built-in composition、事件、WXS dispatch、event compositor、内置组件与渲染树集成 |
-| `@tiny/runtime` | 166 | 全局安装和命名、双线程 bootstrap、逻辑树、tree protocol/patch diff、两次求值与 locator 寻址、headless renderer、组件 schema、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、API 注入缝、诊断、WXS 宽松求值、`this.animate`、事件冒泡/几何 |
-| `@tiny/api` | 37 | 微信兼容 API 表：storage 同步/异步、request 回调、导航与 EventChannel、base64/ArrayBuffer 转换、`canIUse` schema 解析（API/对象/组件三类）、全局 `wx.onXXX` 事件 hub、动画与 canvas stub |
-| `devtool` | 6 | 元素树投影：engine class 过滤、节点/文本/属性投影 |
+| `@tiny/host-web` | 109 | DOM render tree、built-in composition、事件、WXS dispatch、event compositor、内置组件与渲染树集成 |
+| `@tiny/runtime` | 197 | 全局安装和命名、双线程 bootstrap、逻辑树、tree protocol、pageframe 组件身份、微信 `ready` 顺序、locator 寻址、pageframe 数据投影、组件 schema 与页级可见性、behaviors/observers/relations/definitionFilter/externalClasses/styleIsolation/selectComponent、generics/pureDataPattern、组件型页面、资源、5 个导航 API、页面/应用生命周期、页面栈快照与 exitState、API 注入缝、诊断、WXS 宽松求值、页面/组件模板页级状态、`this.animate`、事件冒泡/几何 |
+| `@tiny/api` | 38 | 微信兼容 API 表：storage 同步/异步、request 回调、导航与 EventChannel、base64/ArrayBuffer 转换、`canIUse` schema 解析（API/对象/组件三类）、全局 `wx.onXXX` 事件 hub、动画与 canvas stub |
+| `devtool` | 14 | 元素树投影、页面栈保存值合并、导航 chrome、`launchExitState` 选择 |
 
 :::callout{title="单测也会跑真实连接"}
-Bridge 测试会真的建立两条内存连接并完成握手；runtime 测试会启动 service 逻辑树和 headless render tree、注册 Page、执行 bootstrap 和导航，并验证 tree flow 与 patch。这里没有把整个引擎 mock 掉的做法。
+Bridge 测试会真的建立两条内存连接并完成握手；runtime 测试会启动 service 逻辑树和 headless pageframe、注册 Page、执行 bootstrap 和导航，并验证 tree flow、数据与组件身份投影。这里没有把整个引擎 mock 掉的做法。
 :::
 
 ## iOS 宿主单独验收 {#ios kicker="原生宿主"}
@@ -140,7 +140,7 @@ pnpm ios:smoke:jsc    # 在 macOS jsc 里启动 demo 的 service engine + app-da
 测试宿主只调用 `host.launch()`，然后用 Playwright 操作页面并读取 `host.diagnostics` / `host.apiRegistry.storage`；devtool 通过 client 做导航、前后台、重载和元素树检查。两者都不直接读取 iframe 全局变量。更多差异见 [宿主适配](#/hosts)。
 :::
 
-## 七个测试小程序，覆盖不同产物 {#fixtures kicker="测试小程序"}
+## 九个测试小程序，覆盖不同产物 {#fixtures kicker="测试小程序"}
 
 fixture 不是单元测试里的假数据，而是完整的小程序源码或预构建产物。
 
@@ -150,9 +150,18 @@ fixture 不是单元测试里的假数据，而是完整的小程序源码或预
 | `mini` | 3 个页面 + 1 个分包页面 + 2 个组件 | 真实 todos、import/include/template、animation、ECharts 离屏 canvas、资源内联 | 是 |
 | `todo` | 1 个页面，Taro 3 预构建产物 | webpackJsonp、外部 WXS、递归模板、循环 usingComponents、Enter 提交 | 是 |
 | `wechat-demo` | 4 个主包页面 + 2 个分包，共 125 页（示例子集） | 基础组件索引、button 示例、storage API 示例 | 是 |
+| `custom-tab` | 2 个 tab 页 | 自定义 tabBar 的页级 `tabFrame`、`getTabBar()` 和 tab 切换 | 是（调试器） |
+| `wechat-parity` | 4 个页面 + 4 个组件 | 页面/组件 WXS 模块状态、事件→表达式、跨页/重入、嵌套 slot、`wx:if` 创建销毁、keyed reorder/`moved`、lifecycle/relation 顺序和微信 CLI oracle | 是（编译 + 1:1 trace） |
 | `echarts` | 22 个页面的历史示例 | 早期 ECharts 集成参考资料 | 否 |
 | `vant` | 13 个页面 | Vant Weapp 的 dashboard、button、calendar、cascader 等页面，调试器逐个预览 | 是（调试器） |
 | `weui` | 54 个页面 | WeUI 的表单、按钮和示例页，调试器逐个预览 | 是（调试器） |
+
+`wechat-parity` 先用 `pnpm compile:wechat-parity` 生成 Tiny 产物，再运行
+`pnpm parity:wechat:compare`。比较脚本会分别调用 Tiny 测试宿主和微信开发者工具
+CLI，采集 A 首屏、双组件 property 更新、WXS 事件、B 导航、返回 A、reLaunch，宿主内模板子组件与
+slot 子组件的创建/销毁，以及 keyed `wx:for` 重排共十六个检查点；随机 key 会被规范化，
+页面文本、事件状态、同页组件 WXS 计数、lifecycle（含 `moved`）、relation linked/unlinked/linkFailed 回调顺序必须逐字一致。原始和规范化报告写入
+`tests/host/generated/parity/`。微信侧要求开发者工具已登录并打开该 fixture。
 
 ## Taro 3 产物也在正式验收里 {#taro kicker="Taro 3 兼容"}
 
@@ -177,7 +186,7 @@ input 会转发 focus、blur、keydown 和 confirm，Taro 表单按 Enter 可以
 ::::
 
 :::callout{title="兼容不等于完整" tone="warn"}
-这些只是让 Taro 3 React 产物能跑起来的最小集合。Behavior、observers、relations、generics、definitionFilter 和 pureDataPattern 已经有覆盖，但 componentPlaceholder、自定义 tabBar 和其他社区框架没有进入验收。双侧树目前对 Taro 的影响主要在逻辑树求值和渲染树挂载，不改变其页面注册方式。
+这些只是让 Taro 3 React 产物能跑起来的最小集合。Behavior、observers、relations、generics、definitionFilter 和 pureDataPattern 已经有覆盖；componentPlaceholder 和其他社区框架没有进入验收。自定义 tabBar 有独立 fixture 和 devtools 验收。双侧树目前对 Taro 的影响主要在逻辑树求值和渲染树挂载，不改变其页面注册方式。
 :::
 
 ## 常用命令 {#commands kicker="命令和环境变量"}
@@ -237,8 +246,8 @@ pnpm site:check
 样式断言只看计算值和像素抽样，没有截图 diff；组件外观变化不会被稳定发现。
 :::
 
-:::card{tag="原生" tone="warn" title="没有原生宿主"}
-`createNativeTreeRenderer` 只有契约和 headless smoke test；没有真实的 native transport、render tree 或 canvas handoff 实现。
+:::card{tag="渲染" tone="warn" title="底层 DOM 单测仍保留 snapshot fixture"}
+生产链路只走 pageframe；`host-web` 的部分底层内置组件测试仍直接构造 `RenderNode` 挂载，以隔离 DOM 行为。它们不参与 runtime `TreeRenderer` 契约。
 :::
 
 :::card{tag="组件" tone="warn" title="组件高级能力未覆盖"}
@@ -254,7 +263,7 @@ OffscreenCanvas handoff、2D/WebGL、RAF、createImage 和 touch 有覆盖；can
 :::
 
 :::card{tag="页面" tone="warn" title="页面高级能力未覆盖"}
-下拉刷新、分享、页面栈恢复、自定义 tabBar 没有验收；内置 tabBar、滚动和触底已经接入。
+下拉刷新和分享没有独立验收；页面栈、data、`savedExitState`/`exitState` 已在 debugger Reload/整页刷新流程中覆盖，内置 tabBar、滚动、触底和自定义 tabBar 已经接入。
 :::
 
 :::card{tag="API" tone="warn" title="API 覆盖有限"}

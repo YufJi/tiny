@@ -50,8 +50,9 @@ async function roundTrip(
   bootTreeThread({
     connection: createRenderConnection(renderTransport),
     renderer: {
-      mount: (node) => mounted.push(node),
-      applyPatches: () => {},
+      mountPage: (request) => {
+        if (request.renderHints) mounted.push(request.renderHints)
+      },
     },
   })
   const host = new BridgeConnection({
@@ -65,6 +66,7 @@ async function roundTrip(
     pageId: 'page-1',
     pagePath: 'pages/index/index',
     styles: [],
+    pageFrame: { rootViewId: 'page' },
     messages: buildComponentFlow(root, table),
   }, { pageId: 'page-1' })
   await new Promise((resolve) => setTimeout(resolve, 0))

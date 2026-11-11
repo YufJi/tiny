@@ -1,6 +1,7 @@
 import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
 import { DevtoolRuntimeClient } from './runtimeClient';
+import { launchExitState, mergeSavedPageStack } from './pageStackState';
 import { createWasmHostCoreFactory } from './wasmHostCore';
 import './runtimePanel.css';
 import {
@@ -46,7 +47,22 @@ function readSavedStack(appId) {
       .map((entry) => (typeof entry === 'string'
         ? { path: entry, query: {} }
         : entry && typeof entry === 'object' && typeof entry.path === 'string'
-          ? { path: entry.path, query: entry.query && typeof entry.query === 'object' ? entry.query : {} }
+          ? {
+              path: entry.path,
+              query: entry.query && typeof entry.query === 'object' && !Array.isArray(entry.query)
+                ? entry.query
+                : {},
+              ...(typeof entry.pageId === 'string' ? { pageId: entry.pageId } : {}),
+              ...(entry.data && typeof entry.data === 'object' && !Array.isArray(entry.data)
+                ? { data: entry.data }
+                : {}),
+              ...(Object.prototype.hasOwnProperty.call(entry, 'savedExitState')
+                ? { savedExitState: entry.savedExitState }
+                : {}),
+              ...(Object.prototype.hasOwnProperty.call(entry, 'exitState')
+                ? { exitState: entry.exitState }
+                : {}),
+            }
           : null))
       .filter(Boolean)
   } catch {
@@ -254,8 +270,13 @@ class RuntimePanel extends PureComponent {
       const entries = state.pageStack
         .map((pageId) => pageById.get(pageId))
         .filter(Boolean)
-        .map((page) => ({ path: page.path, query: page.query ?? {} }))
-      if (entries.length > 0) writeSavedStack(session.appId, entries)
+        .map((page) => ({ pageId: page.pageId, path: page.path, query: page.query ?? {} }))
+      if (entries.length > 0) {
+        writeSavedStack(
+          session.appId,
+          mergeSavedPageStack(entries, readSavedStack(session.appId)),
+        )
+      }
     }
     const previousPage = session.lastCurrentPage;
     const previousDepth = session.lastPageDepth ?? 0;
@@ -365,6 +386,7 @@ class RuntimePanel extends PureComponent {
 
       this.setState({ launchingAppId: appId, launcherError: '', actionError: '' });
       const manifest = await this.loadManifest(app);
+      const savedStack = options.restore ? readSavedStack(app.id) : [];
       const firstPage = Array.isArray(manifest.pages) ? manifest.pages[0]?.path : null;
       if (!firstPage) throw new Error(`${app.label} has no pages in its manifest`);
       const requestedPath = options.initialPath;
@@ -398,6 +420,9 @@ class RuntimePanel extends PureComponent {
           statusBarHeight: 44,
         },
         maxPageStack: this.maxPageStack,
+        ...(savedStack[0]
+          ? { initialExitState: launchExitState(savedStack[0]) }
+          : {}),
       });
       const session = {
         appId: app.id,
@@ -417,7 +442,6 @@ class RuntimePanel extends PureComponent {
       session.unsubscribe = client.subscribe((state) => this.onSessionState(session, state));
       this.sessions.set(app.id, session);
       this.syncSessionList();
-      const savedStack = options.restore ? readSavedStack(app.id) : [];
       await client.launch();
       if (options.restore) await this.restorePageStack(session, manifest, initialPath, savedStack);
       await this.activateSession(session);
@@ -505,16 +529,34 @@ class RuntimePanel extends PureComponent {
   }
 
   async restorePageStack(session, manifest, initialPath, saved) {
-    if (saved.length < 2 || saved[0].path !== initialPath) return;
+    if (saved.length === 0 || saved[0].path !== initialPath) return;
+    const initialPageId = session.client.getState().pageStack.at(-1);
+    if (
+      initialPageId
+      && (saved[0].data || 'savedExitState' in saved[0] || 'exitState' in saved[0])
+    ) {
+      await session.client.restorePageState({
+        ...saved[0],
+        pageId: initialPageId,
+      });
+    }
     for (const entry of saved.slice(1)) {
       if (!manifest.pages.some((page) => page.path === entry.path)) break;
       const query = new URLSearchParams(entry.query ?? {}).toString();
       try {
-        await session.client.navigate(`/${entry.path}${query ? `?${query}` : ''}`);
+        const pageId = await session.client.navigate(`/${entry.path}${query ? `?${query}` : ''}`);
+        if (pageId && (entry.data || 'savedExitState' in entry || 'exitState' in entry)) {
+          await session.client.restorePageState({
+            ...entry,
+            pageId,
+          });
+        }
       } catch {
         break;
       }
     }
+    const restored = await session.client.snapshotPageState();
+    if (restored.length > 0) writeSavedStack(session.appId, restored);
   }
 
   async closeSession(session) {
@@ -558,8 +600,19 @@ class RuntimePanel extends PureComponent {
   reloadActiveApp() {
     const session = this.activeSession;
     if (!session) return;
-    session.reloadPending = true;
-    this.run(() => session.client.reload());
+    this.run(async () => {
+      const snapshot = await session.client.snapshotPageState();
+      if (snapshot.length > 0) writeSavedStack(session.appId, snapshot);
+      const initialPath = snapshot[0]?.path ?? session.initialPath;
+      const initialExitState = launchExitState(snapshot[0]);
+      session.initialPath = initialPath;
+      session.reloadPending = true;
+      await session.client.reload(initialPath, initialExitState);
+      if (snapshot.length > 0) {
+        await session.client.inspectTree();
+        await this.restorePageStack(session, session.manifest, initialPath, snapshot);
+      }
+    });
   }
 
   reportActionError(error) {

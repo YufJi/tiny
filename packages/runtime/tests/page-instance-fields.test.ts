@@ -56,11 +56,13 @@ function createTemplateRegistry() {
 describe('page instance fields', () => {
   test('copies non-lifecycle page options onto the page instance', async () => {
     const manifest = createManifest()
+    const loadExitStates: unknown[] = []
     const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({
       transport: serviceTransport,
       manifest,
       initialPath: PAGE_PATH,
+      initialExitState: { draft: 'before-launch' },
     })
     const renderConnector = createHarnessRenderConnector({
       manifest,
@@ -78,6 +80,11 @@ describe('page instance fields', () => {
     ;(globalObject.App as (options: Record<string, unknown>) => unknown)({})
     ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
       data: { text: '' },
+      onLoad() {
+        loadExitStates.push(
+          (this as unknown as { exitState?: unknown }).exitState,
+        )
+      },
       // WeChat copies plain instance fields (not just `data`) onto the page
       // instance; `add()` mutates `this.lines` directly.
       lines: ['first'],
@@ -89,6 +96,8 @@ describe('page instance fields', () => {
 
     await host.bootstrap()
     const page = service.activePage!
+    expect(loadExitStates).toEqual([{ draft: 'before-launch' }])
+    expect(page.exitState).toEqual({ draft: 'before-launch' })
     await page.invokeMethod('add')
     await new Promise((resolve) => setTimeout(resolve, 10))
     expect(page.data.text).toBe('first\nsecond')

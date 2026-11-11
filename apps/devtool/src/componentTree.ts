@@ -7,10 +7,10 @@
  * of built-ins such as `text`. The debugger only needs the glass component
  * levels: page → user components → built-in components.
  *
- * Every node the page flow created carries the render tree's node-id attribute;
- * nodes evaluated inside a component definition do not. Keeping the former and
- * flattening the latter leaves exactly the WXML component hierarchy, with text
- * content preserved as leaves.
+ * Pageframe WXML nodes are host elements under the engine's `tiny-` namespace;
+ * only host implementation wrappers (`div`, `span`, ...) are flattened. Nodes
+ * that carry the render tree's node-id attribute are kept as well for trees
+ * whose components are still service-backed.
  *
  * This is debugger presentation policy, so it lives with the panel app rather
  * than in `@tiny/host-web` (which owns the DOM render tree).
@@ -56,9 +56,10 @@ function visibleAttributes(attributes: Record<string, string> | undefined): Reco
   return Object.keys(kept).length > 0 ? kept : undefined
 }
 
-/** Nodes created by the page flow (built-in/user components and page nodes). */
+/** Nodes that represent a WXML/built-in/custom component boundary. */
 function isRenderNode(node: InspectNode): boolean {
   return Boolean(node.attributes?.[RENDER_NODE_ATTRIBUTE])
+    || node.tag.startsWith(TINY_ENGINE_NAMING.hostTagPrefix)
 }
 
 /**

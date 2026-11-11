@@ -105,20 +105,25 @@ type DiagnosticRecord = {
 function createHarness(options: {
   maxPageStack?: number
   withTabBar?: boolean
+  withExitState?: boolean
+  initialExitState?: unknown
 } = {}) {
   const lifecycles: string[] = []
+  const loadExitStates: unknown[] = []
   const manifest = createManifest(options.withTabBar === true)
   const registry = new MiniProgramPageRegistry([PAGE_A, PAGE_B])
   const pageOptions = (tag: 'a' | 'b'): MiniProgramPageOptions => ({
     data: { tag },
     onLoad() {
       lifecycles.push(`${tag}:load`)
+      loadExitStates.push((this as unknown as { exitState?: unknown }).exitState)
     },
     onShow() {
       lifecycles.push(`${tag}:show`)
     },
     onHide() {
       lifecycles.push(`${tag}:hide`)
+      if (options.withExitState) this.data.tag = `${tag}:hidden`
     },
     onUnload() {
       lifecycles.push(`${tag}:unload`)
@@ -132,6 +137,14 @@ function createHarness(options: {
     onPullDownRefresh() {
       lifecycles.push(`${tag}:pull`)
     },
+    ...(options.withExitState
+      ? {
+          onSaveExitState() {
+            lifecycles.push(`${tag}:save-exit`)
+            return { tag: this.data.tag }
+          },
+        }
+      : {}),
   })
   registry.registerPage(pageOptions('a'))
   registry.registerPage(pageOptions('b'))
@@ -153,8 +166,11 @@ function createHarness(options: {
     connection,
     tabBar,
     ...(options.maxPageStack !== undefined ? { maxPageStack: options.maxPageStack } : {}),
+    ...(Object.prototype.hasOwnProperty.call(options, 'initialExitState')
+      ? { initialExitState: options.initialExitState }
+      : {}),
   })
-  return { stack, render, diagnostics, lifecycles }
+  return { stack, render, diagnostics, lifecycles, loadExitStates }
 }
 
 describe('ServicePageStack', () => {
@@ -177,6 +193,63 @@ describe('ServicePageStack', () => {
     expect(harness.render.synced).toEqual([
       { pageId: harness.stack.activePage!.pageId, patch: { tag: 'changed' } },
     ])
+  })
+
+  test('snapshots and restores page data and saveExitState', () => {
+    const harness = createHarness()
+    harness.stack.start()
+    const page = harness.stack.activePage!
+    page.setData({ tag: 'dirty', nested: { count: 2 } })
+    page.savedExitState = { scrollTop: 48 }
+
+    const snapshot = harness.stack.snapshotState()
+    expect(snapshot).toHaveLength(1)
+    expect(snapshot[0]).toMatchObject({
+      pageId: page.pageId,
+      path: PAGE_A,
+      data: { tag: 'dirty', nested: { count: 2 } },
+      savedExitState: { scrollTop: 48 },
+      exitState: null,
+    })
+
+    const restored = harness.stack.restoreState(
+      page.pageId,
+      { tag: 'restored', extra: true },
+      { scrollTop: 12 },
+    )
+    expect(restored).toMatchObject({
+      status: 'restored',
+      pageId: page.pageId,
+      data: { tag: 'restored', extra: true, nested: { count: 2 } },
+    })
+    expect(page.data).toMatchObject({ tag: 'restored', extra: true })
+    expect(page.savedExitState).toEqual({ scrollTop: 12 })
+    expect(page.exitState).toEqual({ scrollTop: 12 })
+    expect(harness.render.synced.at(-1)).toMatchObject({
+      pageId: page.pageId,
+      patch: { tag: 'restored', extra: true },
+    })
+    expect(harness.stack.restoreState('missing', {})).toMatchObject({ status: 'missing' })
+  })
+
+  test('loads initial exit state before onLoad and consumes it once', () => {
+    const harness = createHarness({ initialExitState: { draft: 'before-launch' } })
+    harness.stack.start()
+    expect(harness.loadExitStates).toEqual([{ draft: 'before-launch' }])
+    expect(harness.stack.activePage?.exitState).toEqual({ draft: 'before-launch' })
+
+    harness.stack.navigateTo(`/${PAGE_B}`)
+    expect(harness.loadExitStates).toEqual([{ draft: 'before-launch' }, undefined])
+    expect(harness.stack.activePage?.exitState).toBeUndefined()
+  })
+
+  test('saves exit state after onHide so onHide mutations are included', () => {
+    const harness = createHarness({ withExitState: true })
+    harness.stack.start()
+    harness.stack.hide()
+
+    expect(harness.lifecycles.slice(-2)).toEqual(['a:hide', 'a:save-exit'])
+    expect(harness.stack.activePage?.savedExitState).toEqual({ tag: 'a:hidden' })
   })
 
   test('navigateTo/navigateBack keep lifecycle order and render mount state', () => {

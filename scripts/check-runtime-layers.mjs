@@ -159,7 +159,7 @@ const layers = [
   'service/render/   service render: logic tree, schemas/definitions, flow/patch, WXS, tree events, RPCs',
   'tree/protocol     wire contract: nodes, patches, message constants',
   'tree/logic/       service-side logic tree internals (glass-easel backend)',
-  'tree/render/      host render thread and native renderer',
+  'tree/render/      host render thread and pageframe contract',
   'component/        shared component domain: definitions, generics, behaviors, observers',
 ]
 console.log('Runtime layer boundaries OK:')

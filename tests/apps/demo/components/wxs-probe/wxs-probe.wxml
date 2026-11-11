@@ -1,5 +1,5 @@
 <wxs module="t" src="./wxs-probe.wxs"></wxs>
-<view id="probe" class="probe" bindtap="{{t.tap}}">
+<view id="probe" class="probe" data-local="{{local}}" bindtap="{{t.tap}}">
   <text>component-data: {{local}}</text>
   <text>probe-seen: {{seen}}</text>
 </view>

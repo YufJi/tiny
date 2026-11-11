@@ -4,6 +4,12 @@
 
 Proposed. Partially implemented.
 
+> Superseded in part by ADR-0018: page/component WXML evaluation moved to the
+> render pageframe, `input` / `textarea` WXS `bindinput` is now render-local
+> (verified against WeChat 3.17.5), and the cross-tree `tree.wxsHandler` replay
+> was removed. The compatibility-matrix rows below that describe service-side
+> `bindinput` or replay are historical, not current behavior.
+
 Landed so far:
 
 - `@tiny/wxs-runtime` is a kernel package with module loading, constructor
@@ -30,14 +36,12 @@ Landed so far:
 - render stores an optional WXS handler descriptor (`moduleId` / `exportPath`);
   it resolves the handler locally when possible and otherwise sends the event
   back to service;
-- `getData` is synchronous in render for the page and for custom component
-  snapshots; descriptors also expose timers and the list form of
-  `getComputedStyle`;
+- descriptors also expose timers and the list form of `getComputedStyle`;
 - `@tiny/css-units` is the single rpx→vw implementation shared by the
   stylesheet compiler and render `setStyle`; the runtime uses the fixed 750
   ratio;
 - WXS specialized browser coverage includes catch/return-false, capture,
-  service ancestor bubbling, component/page `getData`, `getState`, timers,
+  service ancestor bubbling, component datasets, `getState`, timers,
   rpx/computed style and render module state across dynamic handler switches.
 
 Still pending: wired source maps (intentionally deferred for now; the module
@@ -509,7 +513,6 @@ The render descriptor implements the methods in the official table.
 | `getBoundingClientRect` | render | synchronous in WebView; Skyline callback form is out of scope |
 | `triggerEvent` | render → service | RPC; service triggers the component event |
 | `callMethod` | render → service | RPC; service invokes page/component method |
-| `getData` | render | page snapshot, or component snapshot keyed by view id |
 
 `ownerInstance` is the component/page that owns the binding. `event.instance` is
 the component that contains the event target. For a page-level binding,
@@ -593,9 +596,10 @@ On the web host they cross the postMessage boundary and are asynchronous, so
 handlers must not depend on a return value. Ordering is preserved relative to
 existing page events; they do not block the render frame.
 
-`getData` is served synchronously from render snapshots: the page snapshot for
-page owners and a view-id keyed component snapshot for custom component owners.
-The service sends both with the initial flow and later patches.
+WeChat 3.17.5's pageframe `ComponentDescriptor` does not expose `getData()`.
+WXS code reads rendered data through `getDataset()` or the event's
+`target` / `currentTarget` dataset; Tiny does not ship a non-standard data
+snapshot method.
 
 ### 9. Security and sandbox
 
@@ -723,8 +727,8 @@ a projection. WXS expressions stay service-side; only event-time WXS moves.
 - Is the service expression runtime module scope per app or per page? The
   render event runtime is per page; expression module state should be checked
   against WeChat before calling the split complete.
-- Should the legacy `getData()` descriptor extension stay? The official
-  `ComponentDescriptor` table does not list it.
+- The legacy `getData()` descriptor extension is removed: WeChat 3.17.5's
+  pageframe descriptor does not contain it, and fixtures use `getDataset()`.
 - Is service fallback for custom component WXS events acceptable, or should
   those bindings be rejected at compile time?
 - Does a same-realm wrapper provide enough isolation for trusted app code, or

@@ -60,12 +60,11 @@ export function templateToProcGen(
       for (const script of tmpl.globals.scripts) {
         hasScripts = true
         const varIdent = fw.genIdent()
-        fw.exprStmt((ww) => { ww.write(`var ${varIdent.name}`) })
         let lvaluePath: ScopeVarLvaluePath
         if (script.kind === 'GlobalRef') {
           const absPath = resolve(tmpl.path, script.src.name)
           scriptInitializers.push((ww) => {
-            ww.write(`${varIdent.name}||(${varIdent.name}=W[${genLitStr(absPath)}]())`)
+            ww.write(`var ${varIdent.name}=W[${genLitStr(absPath)}](R)`)
           })
           lvaluePath = { kind: 'Script', absPath }
         } else {
@@ -73,7 +72,7 @@ export function templateToProcGen(
           const moduleLit = genLitStr(moduleId)
           const contentLit = genLitStr(transformWxsSource(script.content, moduleId).code)
           scriptInitializers.push((ww) => {
-            ww.write(`${varIdent.name}||(${varIdent.name}=Q.S(${moduleLit},${contentLit})())`)
+            ww.write(`var ${varIdent.name}=Q.S(${moduleLit},${contentLit})(R)`)
           })
           lvaluePath = { kind: 'InlineScript', path: tmpl.path, modName: script.moduleName.name }
         }
@@ -414,8 +413,9 @@ function elementToProcGen(
             ww.write(`R.a(N,${genLitStr(TINY_ENGINE_NAMING.wxsPropsAttribute)},${genLitStr(JSON.stringify(wxsProps))})`)
           })
         }
+        const wxsPropNames = new Set(wxsProps.map((prop) => prop.prop))
         for (const attr of kind.attributes) {
-          normalAttrToProcGenAsNormal(attr, w, scopes, bmc)
+          normalAttrToProcGenAsNormal(attr, w, scopes, bmc, wxsPropNames)
         }
         commonAttrsToProcGenWithoutSlot(kind.common, w, scopes, bmc)
         // Bug4: update slot binding map when slot name is dynamic with binding map keys
@@ -797,14 +797,23 @@ function normalAttrToProcGenAsNormal(
   w: JsFunctionScopeWriter,
   scopes: ScopeVar[],
   bmc: BindingMapCollector,
+  rawAttributeNames?: ReadonlySet<string>,
 ): void {
   const attrName = genLitStr(attr.name.name)
+  const needsRaw = rawAttributeNames?.has(attr.name.name) === true
   if (attr.value === null) {
     w.exprStmt((ww) => { ww.write(`if(C)O(N,${attrName},true)`) })
+    if (needsRaw) {
+      w.exprStmt((ww) => { ww.write(`if(C)R.a(N,${attrName},true)`) })
+    }
     return
   }
   if (attr.value.kind === 'Static') {
-    w.exprStmt((ww) => { ww.write(`if(C)O(N,${attrName},${genLitStr((attr.value as {kind:'Static'; value: string}).value)})`) })
+    const value = genLitStr((attr.value as { kind: 'Static'; value: string }).value)
+    w.exprStmt((ww) => { ww.write(`if(C)O(N,${attrName},${value})`) })
+    if (needsRaw) {
+      w.exprStmt((ww) => { ww.write(`if(C)R.a(N,${attrName},${value})`) })
+    }
     return
   }
   const isModel = attr.prefix.kind === 'Model'
@@ -824,6 +833,15 @@ function normalAttrToProcGenAsNormal(
     }
     ww.write(')')
   })
+  if (needsRaw) {
+    w.exprStmt((ww) => {
+      ww.write('if(C||K||')
+      p.lvalueStateExpr(ww, scopes, false)
+      ww.write(`)R.a(N,${attrName},`)
+      p.valueExpr(ww)
+      ww.write(')')
+    })
+  }
   if (attr.value.bindingMapKeys && !attr.value.bindingMapKeys.isEmpty(bmc)) {
     attr.value.bindingMapKeys.toProcGenWriteMap(w, bmc, (fw) => {
       const dynVal = attr.value as {kind:'Dynamic'; expression: Expression; bindingMapKeys: BindingMapKeys | null}
@@ -840,6 +858,13 @@ function normalAttrToProcGenAsNormal(
         }
         ww.write(')')
       })
+      if (needsRaw) {
+        fw.exprStmt((ww) => {
+          ww.write(`R.a(N,${attrName},`)
+          p2.valueExpr(ww)
+          ww.write(')')
+        })
+      }
       fw.exprStmt((ww) => { ww.write('E(N)') })
     })
   }
@@ -944,9 +969,17 @@ function eventBindingToProcGen(
   wxsDynamicEvents?: WxsDynamicEventMetadata[],
 ): void {
   const n = genLitStr(ev.name.name)
-  const isCatch = ev.isCatch ? '!0' : '!1'
+  const catchTouchMove = ev.isCatch && ev.name.name === 'touchmove'
+  const isCatch = ev.isCatch && !catchTouchMove ? '!0' : '!1'
   const isMut = ev.isMut ? '!0' : '!1'
   const isCapture = ev.isCapture ? '!0' : '!1'
+  if (ev.name.name === 'touchmove' && ev.isCatch) {
+    w.exprStmt((ww) => {
+      ww.write(
+        `if(C)R.a(N,${genLitStr(TINY_ENGINE_NAMING.catchTouchMoveAttribute)},'1')`,
+      )
+    })
+  }
   if (!ev.value || ev.value.kind === 'Static') {
     const v = genLitStr(ev.value?.value ?? '')
     w.exprStmt((ww) => { ww.write(`if(C)R.v(N,${n},${v},${isCatch},${isMut},${isCapture},!1)`) })
@@ -957,7 +990,7 @@ function eventBindingToProcGen(
   if (dynamicLocal) {
     wxsDynamicEvents!.push({
       name: ev.name.name,
-      catch: ev.isCatch,
+      catch: ev.isCatch && !catchTouchMove,
       capture: ev.isCapture,
       mutated: ev.isMut,
     })

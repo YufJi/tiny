@@ -10,6 +10,9 @@ import type {
   WxsValues,
 } from './types'
 
+/** Mirrors the `__WXML_GLOBAL__.modules` table owned by one page view. */
+export const wxsPageScopeKey = (pageId: string): string => `page:${pageId}`
+
 type ModuleRecord = {
   source: string
   module: { exports: WxsExports }
@@ -199,6 +202,109 @@ export function createWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
     dispose() {
       disposed = true
       records.clear()
+    },
+  }
+}
+
+/**
+ * WXS runtime for the service thread.
+ *
+ * A service thread hosts multiple page trees, while WeChat's page WebView owns
+ * one WXS module table per page. Keep the generated bundle's `Q.S` registration
+ * global, but instantiate its module exports in the page selected around each
+ * synchronous template evaluation.
+ */
+export function createPageScopedWxsRuntime(host: WxsRuntimeHost): WxsRuntime {
+  const sources = new Map<string, string>()
+  const runtimes = new Map<string, WxsRuntime>()
+  const fallbackPage = '__tiny_wxs_app__'
+  let resolveScope: ((renderContext: unknown) => string | undefined) | undefined
+  let disposed = false
+
+  const registerSource = (moduleId: string, source: string): void => {
+    const existing = sources.get(moduleId)
+    if (existing !== undefined) {
+      if (existing !== source) throw new Error(`WXS module already registered: ${moduleId}`)
+      return
+    }
+    sources.set(moduleId, source)
+    for (const runtime of runtimes.values()) runtime.register(moduleId, source)
+  }
+
+  const createPageRuntime = (): WxsRuntime => {
+    const runtime = createWxsRuntime(host)
+    for (const [moduleId, source] of sources) runtime.register(moduleId, source)
+    return runtime
+  }
+
+  const scopeOf = (renderContext: unknown): string | undefined => (
+    resolveScope?.(renderContext)
+  )
+
+  const runtimeFor = (pageId: string): WxsRuntime => {
+    if (disposed) throw new Error('WXS runtime is disposed')
+    let runtime = runtimes.get(pageId)
+    if (!runtime) {
+      runtime = createPageRuntime()
+      runtimes.set(pageId, runtime)
+    }
+    return runtime
+  }
+
+  const fallbackRuntime = (): WxsRuntime => runtimeFor(fallbackPage)
+
+  return {
+    register(moduleId, source) {
+      registerSource(moduleId, source)
+      return (scopeKey?: string) => runtimeFor(scopeKey ?? fallbackPage).require(moduleId)
+    },
+
+    load(table) {
+      for (const module of table.modules) registerSource(module.id, module.code)
+    },
+
+    originOf(value) {
+      for (const runtime of runtimes.values()) {
+        const origin = runtime.originOf(value)
+        if (origin) return origin
+      }
+      return undefined
+    },
+
+    resolve(moduleId, exportPath) {
+      return fallbackRuntime().resolve(moduleId, exportPath)
+    },
+
+    require(moduleId) {
+      return fallbackRuntime().require(moduleId)
+    },
+
+    invoke(moduleId, exportPath, args) {
+      return fallbackRuntime().invoke(moduleId, exportPath, args)
+    },
+
+    invokeScoped(scopeKey, moduleId, exportPath, args) {
+      return runtimeFor(scopeKey).invoke(moduleId, exportPath, args)
+    },
+
+    bindScopeResolver(resolver) {
+      resolveScope = resolver
+    },
+
+    scopeOf,
+
+    releasePage(pageId) {
+      const scopeKey = wxsPageScopeKey(pageId)
+      const runtime = runtimes.get(scopeKey)
+      runtimes.delete(scopeKey)
+      runtime?.dispose()
+    },
+
+    dispose() {
+      disposed = true
+      sources.clear()
+      for (const runtime of runtimes.values()) runtime.dispose()
+      runtimes.clear()
     },
   }
 }

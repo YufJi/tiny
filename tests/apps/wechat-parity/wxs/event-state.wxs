@@ -1,0 +1,15 @@
+var count = 0
+
+function hit(event, ins) {
+  count += 1
+  ins.callMethod('recordEventState', 'hit:' + count)
+}
+
+function peek() {
+  return 'peek:' + count
+}
+
+module.exports = {
+  hit: hit,
+  peek: peek
+}

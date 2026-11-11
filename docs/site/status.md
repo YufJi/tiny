@@ -26,23 +26,23 @@ order: 9
 | 领域 | 状态 | 当前情况和边界 |
 | --- | --- | --- |
 | 编译核心 | :pill[可用]{tone="good"} | 支持 pages、components、subPackages 元数据、可配置文件/指令/API 约定、WXML/WXSS/WXS、manifest、service bundle、资源复制和 source map；支持从 `node_modules` 构建 `miniprogram_npm`、校验项目/小程序配置、可选 TS 语义检查、分包 service chunk 拆分与共享 `chunks/`、`preloadRule` 归一化、`componentPlaceholder` 编译校验，以及 `theme.json` / `@变量` / WXSS 主题变量注入，独立分包的依赖校验；目前只有全量构建，预下载策略还未接。 |
-| WXS | :pill[可用]{tone="good"} | 编译期 AST 转换、模块表、service 表达式 runtime、render 事件 runtime、动态 WXS/service 解析、descriptor、change:prop 和 rpx 750；source map 与自定义组件事件仍按 service 路径处理。 |
+| WXS | :pill[可用]{tone="good"} | 编译期 AST 转换、模块表、service/render 表达式 runtime、动态 WXS 解析、descriptor、change:prop 和 rpx 750；`wcc` 的 `__WXML_GLOBAL__.modules` 对应 Tiny 的 page tree runtime，页面模板、组件模板和同页组件实例共享；render WXS handler 只执行一次，`input`/`textarea` WXS `bindinput` 也在 pageframe 执行，跨树 `tree.wxsHandler` 回放已移除。微信 3.17.5 的 service 也保留 compiled templates，service 逻辑模板的 WXS 状态只服务逻辑树快照，不是最终 DOM 来源。 |
 | service runtime | :pill[可用]{tone="good"} | App/Page/Component、页面栈、5 个路由 API、14 项页面生命周期、7 项应用生命周期、setData、兼容全局与 behavior scheme、behaviors/observers/relations/definitionFilter/pureDataPattern、glass-easel 逻辑树、virtual node diff、tree 协议、storage/system/canvas 协议；分包在启动/导航前按需加载，页面级 `preloadRule` 会预取后续包，独立分包入口跳过主包 App 且不加载主包 `app.wxss`，跨包共享模块经 `chunks/` 保持单实例。 |
 | render tree | :pill[可用]{tone="good"} | 宿主 `TreeRenderer`：真实内置组件、组件模板求值（shadow tree）、slot、shadow root、样式、布局、DOM、元素树、query、measure、IntersectionObserver；Web 实现是 `createGlassRenderTree`。元素由渲染侧分配本地 id，组件作用域 locator 负责跨线程寻址。 |
 | bridge | :pill[可用]{tone="good"} | 7 个在用消息域，含 tree/query；信封和帧、纯 JS 协议/连接、全局 handle（`send`/`sendSync`/`onFrame`）、握手、超时、批处理、JSON 校验；MessagePort 实现在宿主胶水；capabilities 还没有用于协商。 |
 | Web 宿主 | :pill[可用]{tone="good"} | @tiny/host-web 支持每页 render 连接、MessageChannel、DOM 渲染树、WebView render entry、OffscreenCanvas handoff 和 resolveAssetUrl；@tiny/host-web-components 只提供 39 个内置组件定义和默认样式；宿主 API handler 由 tests/host 和 devtool 各自注入；devtool 的会话客户端在应用内（`apps/devtool/src/runtimeClient.ts`）。内核依赖检查通过。 |
-| iOS 宿主 | :pill[可用（MVP）]{tone="good"} | `ios/` 原生工程 + `hosts/ios` Vite 包（`src/service` / `src/web`）：Rust `HostCoreRuntime`（UniFFI）+ JavaScriptCore service + 每页一个 WKWebView；没有 `host.html`、iframe 或 JS host fallback。SwiftUI Launcher/导航栏/tabBar，UserDefaults 存储，全部 7 个 fixture 已在模拟器 smoke，并覆盖 native 导航/tab 切换、push/pop 动画和左边缘右滑返回；真机 device build/install 也已跑通；Canvas 2D 走 service 录制 + native render 回放，WebGL/同步读回未接。 |
+| iOS 宿主 | :pill[可用（MVP）]{tone="good"} | `ios/` 原生工程 + `hosts/ios` Vite 包（`src/service` / `src/web`）：Rust `HostCoreRuntime`（UniFFI）+ JavaScriptCore service + 每页一个 WKWebView；没有 `host.html`、iframe 或 JS host fallback。render WKWebView 与 browser/devtool 一样走 pageframe WXML。SwiftUI Launcher/导航栏/tabBar，UserDefaults 存储，全部 9 个 fixture 已在模拟器 smoke，并覆盖 native 导航/tab 切换、push/pop 动画和左边缘右滑返回；真机 device build/install 也已跑通；Canvas 2D 走 service 录制 + native render 回放，WebGL/同步读回未接。 |
 | 内置组件 | :pill[较完整]{tone="good"} | 39 个组件和共享 behaviors；checkbox/radio/switch/slider/icon/image/picker 已按 2.33.0 参考重写；rich-text/match-media/cover-view/cover-image/page-container/root-portal/grid-view 已完成第一版；input/textarea/scroll-view/swiper 仍是近似实现；全部 39 个标签已注册；video/map/audio/web-view 是浏览器近似实现；editor/editor-portal、广告、直播、开放能力等 20 个组件暂不支持。 |
 | API | :pill[部分]{tone="warn"} | request、同步/异步 storage、5 个路由 API、system、toast/modal/loading/actionSheet（由 app 注入的宿主 handler 提供 overlay）、clipboard/vibrate、network/battery、canvas、selector query 和 IntersectionObserver 已有；媒体、真实文件系统、位置、WebSocket 和真实账号授权还没有。 |
-| 页面能力 | :pill[部分]{tone="warn"} | 14 项页面生命周期、5 个路由 API、内置 tabBar/switchTab、页面滚动/触底/下拉刷新、分享回调和退出状态已经支持；导航栏运行时标题/颜色/loading 已接；devtool 分享面板可触发分享回调，navigateTo/navigateBack 有转场；下拉刷新按 `enablePullDownRefresh` 启用并由宿主指示器呈现，devtool 刷新后可按路径 + query 恢复页面栈；`tabBar.custom` 通过页面内 `custom-tab-bar` 组件和 `getTabBar()` 支持。 |
-| 组件语义 | :pill[核心可用]{tone="good"} | Behaviors、observers、relations、selectComponent、component-export、component-as-page、generics（含页面级 `generic:x`）、definitionFilter、pureDataPattern 已实现；语义运行在 service 逻辑树，组件模板在 service 与 render 两侧各自求值。componentPlaceholder 已做编译校验、占位渲染和异步替换；trait behaviors 和 chaining API 未实现。 |
+| 页面能力 | :pill[部分]{tone="warn"} | 14 项页面生命周期、5 个路由 API、内置 tabBar/switchTab、页面滚动/触底/下拉刷新、分享回调和退出状态已经支持；导航栏运行时标题/颜色/loading 已接；devtool 分享面板可触发分享回调，navigateTo/navigateBack 有转场；下拉刷新按 `enablePullDownRefresh` 启用并由宿主指示器呈现，Reload/整页刷新可恢复页面栈、data 和首屏 `this.exitState`；`tabBar.custom` 通过独立页级 `tabFrame` 和 `getTabBar()` 支持。 |
+| 组件语义 | :pill[核心可用]{tone="good"} | Behaviors、observers、relations、selectComponent、component-export、component-as-page、generics（含页面级 `generic:x`）、definitionFilter、pureDataPattern 已实现；语义和组件身份运行在 service 逻辑树，页面与组件 WXML 由 render pageframe 执行。`ready` 顺序、模板内子组件与 slot 子组件的创建/销毁已用微信 3.17.5 对拍。componentPlaceholder 已做编译校验、占位渲染和异步替换；trait behaviors 和 chaining API 未实现。 |
 | 样式系统 | :pill[核心可用]{tone="good"} | class/tag 作用域、rpx、@import、styleIsolation/addGlobalClass、externalClasses、shared CSS、`:host` 与 low-priority 输出已支持；内置组件内部样式使用独立宿主 scope；`theme.json` 变量会注入为 `:root` CSS 变量，暗色走 `prefers-color-scheme`。 |
 | Canvas | :pill[部分]{tone="warn"} | 浏览器走 OffscreenCanvas handoff；iOS 用 service 侧录制 + render `<canvas>` 回放，legacy 与 2D node 都可用，`measureText` 走 CoreText 同步桥；WebGL、`getImageData`、`canvasToTempFilePath` 仍未接。 |
 | 动画 | :pill[部分]{tone="warn"} | `this.animate` / `clearAnimate` 走 `tree.animate`，Web 宿主用 Web Animations API 播放，支持多 step 和 scroll-driven 时序；`wx.createAnimation` 仍只生成最终态 CSS transition，没有多 step 时序和事件回调。 |
 | 诊断 | :pill[可用]{tone="good"} | 编译、transport、service、render、host 五类诊断统一收集；组件语义新增了 observer、relation、behavior 相关诊断。 |
-| Devtool | :pill[运行时级+]{tone="good"} | 应用列表、点击启动、最近 3 个应用保活、返回列表、设备框、宿主导航和 tabBar、每页 render 帧、Console/Lifecycle/Elements、Reload/Close app；页面栈默认上限 10，宿主可配置。它仍不是完整的微信开发者工具。 |
+| Devtool | :pill[运行时级+]{tone="good"} | 应用列表、点击启动、最近 3 个应用保活、返回列表、设备框、宿主导航和 tabBar、每页 render 帧、Console/Lifecycle/Elements、Reload/Close app；Reload 会保存并恢复页面栈、data、savedExitState/exitState，整页刷新会合并最新快照；页面栈默认上限 10，宿主可配置。它仍不是完整的微信开发者工具。 |
 | 性能与稳定 | :pill[未量化]{tone="warn"} | 启动、首屏、setData、内存和长时运行都没有基准，也没有压力测试。 |
-| 测试 | :pill[核心链路]{tone="good"} | 497 个单元测试、74 个浏览器步骤、7 个测试小程序，以及 iOS 宿主 7 个 fixture 的模拟器 smoke；tree flow/patch、两次求值、locator 寻址、WXS 都有单元和浏览器覆盖，参考协议的细节仍有缺口。 |
+| 测试 | :pill[核心链路]{tone="good"} | 530 个单元测试、74 个浏览器步骤、9 个测试小程序，以及 iOS 宿主 9 个 fixture 的模拟器 smoke；tree flow/patch、pageframe WXML、component identity、locator 寻址和 WXS 都有单元与浏览器覆盖；`wechat-parity` 会把 Tiny 与微信 pageframe 的十六个检查点做 1:1 trace 对比，包含组件 property 批量更新、嵌套 slot、`wx:if`、keyed reorder/`moved`，以及 relation linked/unlinked/linkFailed 顺序。 |
 
 ## 现在最影响使用的问题 {#gaps kicker="主要缺口"}
 
@@ -60,7 +60,7 @@ order: 9
 :::
 
 :::card{tag="页面" tone="warn" title="页面能力有限"}
-下拉刷新、分享回调、子包按需加载、`preloadRule` 和独立分包入口已接，devtool 已有分享面板、页面转场、下拉刷新指示器、页面栈恢复和自定义 tabBar；预下载策略还缺。
+下拉刷新、分享回调、子包按需加载、`preloadRule` 和独立分包入口已接，devtool 已有分享面板、页面转场、下拉刷新指示器、页面栈/data/exitState 恢复和独立 tabBar root；跨会话冷启动的退出状态持久化和预下载策略还缺。
 :::
 
 :::card{tag="组件语义" tone="warn" title="高级组件能力仍有缺口"}
@@ -68,7 +68,7 @@ generics（含页面级覆盖）、definitionFilter、pureDataPattern、6 个 `w
 :::
 
 :::card{tag="tree" title="增量统一走 patch"}
-首屏用 define/tree/ready 对齐组件树（快照作为嵌套树发送，元素不带 id）；后续更新由 snapshot diff 生成 tree.patch，组件按共享 id、元素按 `owner#index.path` locator 寻址，覆盖文本、属性、插入/删除/重排。
+首屏用 define/tree/ready 对齐组件树（身份快照作为嵌套树发送，元素不带 id）；pageframe 从模板挂载页面并在本地 diff，service 只发送页面/组件数据补丁和结构 hints。
 :::
 
 :::card{tag="Canvas" tone="warn" title="canvas 边缘能力未覆盖"}
@@ -79,8 +79,8 @@ generics（含页面级覆盖）、definitionFilter、pureDataPattern、6 个 `w
 `this.animate` / `clearAnimate` 已走 Web Animations API，支持多 step 和 scroll-driven 时序；`wx.createAnimation` 仍只映射最终态 CSS transform/transition，多 step 时序和事件回调还没有还原。
 :::
 
-:::card{tag="原生" tone="warn" title="原生渲染树只有契约"}
-`createNativeTreeRenderer` 有契约和 headless 测试；iOS 宿主没有采用它，而是用 WKWebView 渲染。native `TreeRenderer` 仍只有契约，原生渲染后端还要实现 canvas handoff、query、measure 和 IntersectionObserver。
+:::card{tag="tabBar" tone="warn" title="独立 tabBar 仍使用快照"}
+页面根和 custom tabBar 都已固定走 pageframe；custom tabBar 通过 `tabFrame` 从组件模板挂载。
 :::
 
 :::card{tag="性能" tone="warn" title="没有性能基线"}
@@ -120,8 +120,8 @@ HostCore 的 `close` 会销毁页面 surface 并关闭 Bridge，但不会补发�
 按需加载和页面级 `preloadRule` 已经接通：分包页面和独占组件进入 `service.<pkg>.js`，启动/导航前由宿主加载，`wifi` 规则需宿主提供网络事实；按网络/时机的预下载策略和独立分包运行时还没有。
 :::
 
-:::card{tag="返回" tone="warn" title="页面栈恢复还没有"}
-navigateBack 和 switchTab 会复用页面 surface，DOM、滚动位置和定时器可以保留；但小程序重启后的页面栈恢复和 saveExitState 的完整还原还没有接。
+:::card{tag="恢复" tone="warn" title="页面恢复仍以 devtool 为主"}
+navigateBack 和 switchTab 会复用页面 surface，DOM、滚动位置和定时器可以保留；devtool 的 Reload/整页刷新已能恢复页面栈、data 和 `this.exitState`。跨浏览器会话或原生冷启动时的状态落盘仍由具体宿主决定，通用 `host-web` 还没有统一策略。
 :::
 ::::
 :::::
@@ -148,7 +148,7 @@ tree.event 已带 `target` / `currentTarget` 的 offset 几何，但两者目前
 :::
 
 :::card{tag="P1" title="页面能力"}
-Web 端预下载策略 / 独立分包，以及自定义 tabBar 的宿主级单例语义。
+Web 端预下载策略 / 独立分包，以及 Skyline 风格的宿主级 tabBar 单例语义。
 :::
 
 :::card{tag="P1" title="组件高级语义"}
@@ -251,7 +251,7 @@ host-web、host-web-components、注入能力和接入步骤。
 :::
 
 :::card{tag="测试" title="以测试为准"}
-497 个单元测试和 74 个浏览器步骤；WXS 专项覆盖事件、descriptor、change:prop 和动态切换。iOS 宿主另有 `pnpm ios:sim`，逐 fixture 跑真实 WKWebView + JSCore。
+530 个单元测试和 74 个浏览器步骤；WXS 专项覆盖事件、descriptor、change:prop、动态切换、双页模块状态隔离和 render-local handler；微信对照覆盖 render-owned 页面模板、页面事件回传、组件 WXS 计数、返回复用、reLaunch，以及嵌套 slot / `wx:if` 下的 lifecycle 与 relation 顺序。iOS 宿主另有 `pnpm ios:sim`，逐 fixture 跑真实 WKWebView + JSCore。
 
 [测试与验收 →](#/testing)
 :::

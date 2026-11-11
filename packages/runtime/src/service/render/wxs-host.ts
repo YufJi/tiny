@@ -1,7 +1,9 @@
 import { DIAGNOSTIC_CODES, TINY_ENGINE_NAMING } from '@tiny/manifest'
-import { cloneJsonSafe } from '../../data'
 import type { WxsBindingMessage } from '../../tree/protocol'
-import type { LogicBackendElement, LogicTreeAdapter } from '../../tree/logic'
+import type {
+  LogicBackendElement,
+  LogicTreeAdapter,
+} from '../../tree/logic'
 import { findLogicNodeByElement, queryLogicNodes } from '../../tree/logic'
 
 /**
@@ -42,7 +44,7 @@ export type WxsEventHostOptions = {
 type DescriptorScope = {
   /** Element the descriptor acts on (`setStyle`, `getDataset`). */
   node: LogicBackendElement
-  /** Page/component root that `selectComponent` and `getData` are scoped to. */
+  /** Page/component root that `selectComponent` is scoped to. */
   root: LogicBackendElement
   pageId: string
 }
@@ -52,7 +54,6 @@ export type WxsComponentDescriptor = {
   selectComponent: (selector: string) => WxsComponentDescriptor | null
   selectAllComponents: (selector: string) => WxsComponentDescriptor[]
   getDataset: () => Record<string, unknown>
-  getData: () => Record<string, unknown>
   setStyle: (style: unknown) => void
   callMethod: (name: string, ...args: unknown[]) => unknown
   triggerEvent: (name: string, detail?: unknown, options?: Record<string, unknown>) => unknown
@@ -98,25 +99,20 @@ export function installWxsEventHost(options: WxsEventHostOptions): () => void {
       if (!tree || !node) return false
       const pageId = tree.pageIdFor(element)
       if (!pageId) return false
-      // Event handlers on custom components are WXS too: they run in the
-      // render tree, like the built-in ones. Only the built-in `input` events
-      // that glass forwards through the service keep the service path.
-      const unsupportedLocal = event === TINY_ENGINE_NAMING.wxsServiceOnlyInputEvent
-        && (TINY_ENGINE_NAMING.wxsServiceOnlyInputTags as readonly string[]).includes(node.tagName)
-      const localOrigin = unsupportedLocal ? undefined : origin
       const binding: WxsBindingMessage = {
         viewId: tree.ensureViewId(node),
         event,
-        ...(localOrigin ? { moduleId: localOrigin.moduleId, exportPath: localOrigin.exportPath } : {}),
+        ...(origin ? { moduleId: origin.moduleId, exportPath: origin.exportPath } : {}),
         ...(isCatch ? { catch: true } : {}),
         ...(isCapture ? { capture: true } : {}),
         ...(isMutated ? { mutated: true } : {}),
       }
       options.onBinding?.(pageId, binding)
       // `true` means the render tree owns the handler: `Q.B` must not attach
-      // the WXS function in the logic tree. Service-only events (`bindinput`
-      // on input/textarea) keep the function here.
-      return Boolean(localOrigin)
+      // the WXS function in the logic tree. WeChat executes WXS input events in
+      // the view layer as well; the input component's service forwarding only
+      // applies to normal JS bindings.
+      return Boolean(origin)
     },
     descriptorFor: (element: unknown): WxsComponentDescriptor | undefined => {
       const tree = options.getLogicTree()
@@ -152,9 +148,6 @@ function createDescriptor(
     },
     getDataset() {
       return Object.fromEntries(node.dataset)
-    },
-    getData() {
-      return cloneJsonSafe(ownerData(options, tree, scope) ?? {})
     },
     setStyle(style: unknown) {
       if (!style || typeof style !== 'object') return
@@ -199,7 +192,15 @@ export function dispatchWxsEffect(
   options: WxsEventHostOptions,
 ): void {
   const node = tree.findNodeByViewId(effect.viewId)
-  if (!node) return
+  if (!node) {
+    options.onDiagnostic?.(
+      pageId,
+      DIAGNOSTIC_CODES.EVENT_HANDLER_MISSING,
+      `WXS effect target is not in the logic tree: ${effect.viewId}`,
+      { effect },
+    )
+    return
+  }
   const descriptor = createDescriptor(options, tree, {
     node,
     root: ownerRoot(node),
@@ -239,16 +240,6 @@ function ownerComponent(
   }
   const component = element.asGeneralComponent?.() ?? element as unknown as Record<string, unknown>
   return component === (pageRoot as unknown) ? undefined : component
-}
-
-function ownerData(
-  options: WxsEventHostOptions,
-  tree: LogicTreeAdapter,
-  scope: DescriptorScope,
-): Record<string, unknown> | undefined {
-  const component = ownerComponent(tree, scope)
-  if (component) return component.data as Record<string, unknown> | undefined
-  return options.getPage(scope.pageId)?.data
 }
 
 function callOwnerMethod(

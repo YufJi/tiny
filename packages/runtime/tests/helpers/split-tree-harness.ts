@@ -21,8 +21,10 @@ export type RenderThreadRuntime = {
 }
 
 const noopRenderer: TreeRenderer = {
-  mount() {},
-  applyPatches() {},
+  mountPage() {},
+  setPageData() {},
+  applyPageDataPatches() {},
+  setComponentData() {},
   applyStyles() {},
   setEventSink() {},
   setDiagnosticSink() {},

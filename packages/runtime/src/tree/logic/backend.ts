@@ -463,7 +463,9 @@ export class LogicBackendContext {
   snapshotRenderTree(
     pageId: string,
     rootElement?: LogicBackendElement,
+    options: { rootKey?: string; rootMode?: 'page' | 'component' } = {},
   ): RenderNode | null {
+    const locatorKey = `${pageId}\0${options.rootKey ?? 'page'}`
     const eventBindingsFor = (
       listeners: Array<{ type: string; capture: boolean; mutLevel: unknown }>,
     ): Array<{ name: string; capture?: boolean; catch?: boolean; mutated?: boolean }> => {
@@ -592,10 +594,12 @@ export class LogicBackendContext {
         nodeToLogic.set(virtualFragment, node)
         return virtualFragment
       }
+      const rootAsComponent = node === rootElement && options.rootMode === 'component'
       // Custom components keep only their light children: the render thread
       // evaluates the component template and owns the shadow tree. The page
       // root's shadow tree *is* the page template, so it is flattened here.
-      const customComponent = node.nodeType === 'component' && node !== rootElement
+      const customComponent = node.nodeType === 'component'
+        && (node !== rootElement || rootAsComponent)
       const children = customComponent
         ? convertChildren(node.children, slotContent)
         : node.shadowRoot
@@ -613,7 +617,7 @@ export class LogicBackendContext {
       // Custom components are the only nodes that carry a component boundary in
       // the render protocol. The page root is emitted as the page tag and never
       // marked, because it is not addressable via `usingComponents`.
-      const componentPath = node !== rootElement && node.nodeType === 'component'
+      const componentPath = customComponent
         ? componentPathOf(node)
         : ''
       // Component instances the render side will create while evaluating this
@@ -623,7 +627,7 @@ export class LogicBackendContext {
       const element: RenderElement = {
         type: 'element',
         ...(node === rootElement || componentPath ? { id: viewId } : {}),
-        tag: node === rootElement ? RENDER_PAGE_TAG : node.tagName,
+        tag: node === rootElement && !rootAsComponent ? RENDER_PAGE_TAG : node.tagName,
         ...(componentPath ? { component: true as const, componentPath } : {}),
         ...(componentInstances.length > 0 ? { componentInstances } : {}),
         ...(node.slot ? { slot: node.slot } : {}),
@@ -666,18 +670,29 @@ export class LogicBackendContext {
     }
     const rootViewId = nodeToViewId.get(root) ?? root.id ?? ''
     walk(root, rootViewId, [])
-    const previous = this.pageLocatorEntries.get(pageId)
+    const previous = this.pageLocatorEntries.get(locatorKey)
     if (previous) {
       for (const viewId of previous.viewIds) this.renderLocators.delete(viewId)
       for (const locator of previous.locators) this.locatorNodes.delete(locator)
     }
     for (const [viewId, locator] of locators) this.renderLocators.set(viewId, locator)
     for (const [locator, node] of nodesByLocator) this.locatorNodes.set(locator, node)
-    this.pageLocatorEntries.set(pageId, {
+    this.pageLocatorEntries.set(locatorKey, {
       viewIds: [...locators.keys()],
       locators: [...nodesByLocator.keys()],
     })
     return root
+  }
+
+  /** Drop every locator table owned by one page (page root and tab root). */
+  clearPageLocators(pageId: string): void {
+    const prefix = `${pageId}\0`
+    for (const [key, entry] of this.pageLocatorEntries) {
+      if (!key.startsWith(prefix)) continue
+      for (const viewId of entry.viewIds) this.renderLocators.delete(viewId)
+      for (const locator of entry.locators) this.locatorNodes.delete(locator)
+      this.pageLocatorEntries.delete(key)
+    }
   }
 
 

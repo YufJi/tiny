@@ -3,7 +3,7 @@ title: 'service 跑逻辑树，'
 highlight: '宿主跑渲染树'
 eyebrow: '运行时'
 lede: >-
-  packages/runtime 是 Tiny 的小程序内核，不引用 window、document 或 iframe。service 线程用 glass-easel 维护逻辑树，负责 App/Page/Component、页面栈、setData、observer、relations 和逻辑树模板求值；render 线程由宿主持有真实渲染树，用同一份模板求值组件 shadow tree，负责内置组件、样式、布局和 DOM。两棵树通过 tree.flow、tree.patch 和 tree.event 同步。
+  packages/runtime 是 Tiny 的小程序内核，不引用 window、document 或 iframe。service 线程用 glass-easel 维护逻辑树，负责 App/Page/Component、页面栈、setData、observer、relations；render pageframe 执行页面和组件 WXML，宿主持有真实渲染树、内置组件、样式、布局和 DOM。两棵树通过 tree.flow、tree.patch 和 tree.event 同步。
 stats:
   - ['2', '运行时树']
   - ['39', '内置组件']
@@ -13,7 +13,7 @@ pills:
   - ['双侧树', 'good']
   - ['逻辑树在 service', 'good']
   - ['渲染树在 host', 'good']
-  - ['组件模板两侧求值', 'good']
+  - ['pageframe 执行 WXML', 'good']
 description: '小程序内核：service 逻辑树与宿主渲染树的分工、tree 协议、setData、组件语义、样式、查询和 canvas。'
 name: '运行时'
 pageTitle: '小程序内核与运行时 · Tiny'
@@ -22,14 +22,14 @@ order: 4
 
 ## 两棵树，各管各的 {#overview kicker="总览"}
 
-service 执行小程序逻辑并维护 glass-easel 逻辑树；render 线程由宿主持有真实组件树，并按同一份编译模板求值组件 shadow tree（two-evaluation）。两棵树不共享内存，靠组件的共享 id、元素 locator、component flow 和 virtual node patch 对齐。
+service 执行小程序逻辑并维护 glass-easel 逻辑树；render pageframe 执行页面和组件 WXML，宿主持有真实组件树和 DOM。service 从同一份编译模板构造逻辑组件实例，供 observer、relations、查询和身份索引使用；pageframe 的求值才是最终渲染结果。两棵树不共享内存，靠组件的共享 id、元素 locator、component flow 和页面数据补丁对齐。
 
 ```text
 service thread                              render thread (one root per page)
 +-------------------------------+           +-------------------------------+
 | App / Page / Component        |           | host TreeRenderer             |
 | glass-easel logic ComponentSpace |  tree  | real built-in components      |
-| template eval -> RenderNode   | <------> | template eval + render tree   |
+| logic template -> RenderNode  | <------> | WXML eval + render tree       |
 | data / observers / relations  |  flow    | DOM / layout / styles         |
 | component ids / locators      |  patch   | no app methods                |
 +-------------------------------+           +-------------------------------+
@@ -37,18 +37,22 @@ service thread                              render thread (one root per page)
 
 ::::split
 :::card{tag="service" title="逻辑树和业务状态"}
-glass-easel ComponentSpace 在 service 中运行，自定义组件是完整实例，拥有 data、properties、observers、relations、lifetimes、事件回调、带类型的 dataset 和组件共享 id。模板在 service 求值，输出 `RenderNode` 虚拟树；同一个组件模板也会在 render 侧被求值一次。
+glass-easel ComponentSpace 在 service 中运行，自定义组件是完整实例，拥有 data、properties、observers、relations、lifetimes、事件回调、带类型的 dataset 和组件共享 id。service 从编译模板实例化逻辑树，并输出 `RenderNode` 快照供组件身份、索引和查询使用；最终页面 WXML 由 render pageframe 执行。
 :::
 
 :::card{tag="render" tone="violet" title="真实组件和 DOM"}
-每个页面有一个 render root。宿主的 `TreeRenderer` 创建真实内置组件、自定义组件容器、slot、shadow root、样式和布局，并按组件定义求值 shadow tree。render 不执行 app methods、observer 或 relations；元素只持有渲染侧本地 id。
+每个页面有一个 render root。宿主的 `TreeRenderer` 和 pageframe 执行页面与组件 WXML，创建真实内置组件、自定义组件容器、slot、shadow root、样式和布局。render 不执行 app methods、observer 或 relations；元素只持有渲染侧本地 id。
 :::
 ::::
 
 :::callout{title="只有组件共享 id，元素用 locator"}
 service 给组件（和页面根）分配稳定 id，render 按这个 id 维护组件实例；元素不带跨线程 id，渲染侧分配本地 id，补丁、事件、查询和元素树检查都用 `owner#index.path` 形式的 locator 寻址。
 
-当前模板更新走 virtual node patch；component flow 只负责首屏挂载（`define`、`tree`、`ready`），快照作为嵌套树传输，组件模板由 service 和 render 各按 `templates.js` 求值一次。snapshot diff 覆盖文本、属性、结构和重排。
+当前页面由 render pageframe 从 `templates.js` 挂载；component flow 携带 `define`、逻辑身份快照 `tree`、`ready` 和 service 侧 `componentFlow` 组件身份列表。宿主组件 shadow tree 内的子组件身份变化通过结构 hints 同步，禁止 render 按 DOM 顺序猜身份。custom tabBar 额外携带独立 `tabFrame`，由一个独立 pageframe root 挂载，后续 data/身份变化也走 `tabFrame`。页面 DOM 的文本、属性、结构和重排由 pageframe 自己 diff。
+:::
+
+:::callout{title="每页树状态已收口，组件空间仍共享"}
+service 为每个 pageId 维护页级树状态：页面根、可选独立 tab 组件根、组件实例表、最近一次 render snapshot、component data 基线、relations、页面 router 和页内组件实例计数。页级状态随页面卸载销毁；每页还按 `usingComponents`（含 generic 默认组件）维护可见 schema 闭包，首屏 flow 只发送该页可见的 `define`。`ComponentSpace`、底层组件 definition 和样式 scope 仍是应用级共享，避免为每个页面复制一套 glass-easel realm。
 :::
 
 ## service 线程：逻辑树和页面栈 {#service kicker="service 线程"}
@@ -71,7 +75,7 @@ service 是“小程序应用”真正运行的地方，由 bootServiceThread �
 | `page.navigateBack` | 移除页面；倒序触发 onHide → onUnload；恢复页 onShow | 销毁被移除页的 render root，保留目标页的 DOM、滚动位置和定时器 |
 | `page.redirectTo` / `reLaunch` | 销毁旧页，创建目标页；执行对应生命周期 | 关闭不再使用的 render root，挂载新页 |
 | `page.switchTab` | 复用 tab 页缓存，更新 tabBar 状态 | 切换可见 root，关闭已卸载页 |
-| `page.hide` / `page.show` | 分发页面和组件 pageLifetimes | 只切换可见性，不销毁渲染树 |
+| `page.hide` / `page.show` | `hide` 先分发 `onHide`，再执行 `onSaveExitState`；显隐都分发 pageLifetimes | 只切换可见性，不销毁渲染树 |
 | `page.unload` | onUnload；组件 detached；清理逻辑树和 relations | 关闭 render root |
 
 ::::split
@@ -265,17 +269,17 @@ button、input、scroll-view、swiper、canvas 等内置组件把原生字段归
 
 微信官方的 WXS 是运行在视图层的脚本语言，支持模块、受限 globals、`getRegExp` / `getDate`、事件处理和 `change:prop`。参考：[WXS 概述](https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxs/)、[WXS 事件](https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxs/06event.html)、[WXS 观察](https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxs/08observation.html)。
 
-同一份 `templates.js` 会被 service 和 render 分别加载；组件模板两侧各求值一次，页面模板由 service 求值。WXS 也按两侧拆成独立实例：
+所有正式宿主（browser 测试宿主、devtool、iOS render WKWebView）都启用 pageframe：render 加载一份 `templates.js`，页面和组件 WXML 由 pageframe 求值。service 逻辑树仍从同一份模板生成逻辑节点和组件实例，供查询、关系和组件身份索引使用；它不再是页面 WXML 的执行所有者。WXS 在 pageframe 按页隔离：
 
 | 用途 | 执行侧 | 说明 |
 | --- | --- | --- |
-| WXML 表达式 | 页面模板在 service；组件模板两侧 | `{{wxs.fn()}}`、class/style 条件、`wx:if` / `wx:for` 按模板归属求值：service 的结果用于 diff/查询，render 对组件模板再求值一次生成 DOM |
+| WXML 表达式 | render pageframe | `{{wxs.fn()}}`、class/style 条件、`wx:if` / `wx:for` 在 pageframe 内按模板求值；pageframe 的组件树就是实际 DOM/组件边界 |
 | 静态 WXS 事件 | render（所有标签） | 静态 `{{wxs.tap}}` 通过 `Q.B` 发布 handler 路径；逻辑树里的 listener 是占位（`catch` / `capture` 仍参与 service 冒泡），实际 handler 在 render 执行 |
 | 动态 WXS | service 解析，render 执行 | `Q.B` + `originOf()` 产出可选 `moduleId/exportPath`；render `resolve()` 失败时回传 `tree.event` |
 | 自定义组件事件 | render | service 的 `triggerEvent` 已跑完 JS listener 后转发 `tree.customEvent`；只有页面上存在该事件的 WXS binding 才转发 |
 | `change:prop`（内置组件） | render | 节点 props 变化驱动，旧值 / 新值 / ownerInstance / instance |
 | `change:prop`（自定义组件） | render | 组件数据变化驱动（编译器对每个标签都产出 `wx-tiny-wxs-props`），不再是 glass `R.p` observer |
-| WXS module state | 分侧隔离 | service / render 各一份，不跨线程同步 |
+| WXS module state | 页级隔离 | render 的每个 pageframe 维护独立模块表，页面模板、组件模板和同页多个组件实例共享；service 逻辑模板有独立表达式 runtime，但不承接 render handler 的闭包状态。页面卸载时释放，跨页不共享 |
 
 WXS 代码在编译期完成：
 
@@ -286,19 +290,21 @@ WXS 代码在编译期完成：
 
 事件执行对齐微信的主要边界：
 
-- WXS handler / `change:prop` 对内置组件和自定义组件都在 render 执行（`input` / `textarea` 的 `bindinput` 除外）；
+- WXS handler / `change:prop` 对内置组件和自定义组件都在 render 执行，包括 `input` / `textarea` 的 WXS `bindinput`；
 - 自定义组件事件先由 service 分发 JS listener，再转发 render 派发 WXS handler；WXS `catch` 只影响 render 侧冒泡；
-- `input` / `textarea` 的 `bindinput` 走 service：微信的 input 组件把 `bindinput` 作为 String 属性，视图层不 dispatch 普通事件，而是 `wx.publishPageEvent(this.bindinput, ...)` 发 `PAGE_EVENT` 给 service 派发；因此 WXS `bindinput` 也只能在 service 执行（使用 service descriptor，没有 `getState` / `getComputedStyle`），Tiny 保持同一执行侧；
+- `input` / `textarea` 的普通 JS `bindinput` 仍使用微信的 `PAGE_EVENT` service 派发；一旦值是 WXS 函数，handler 由 pageframe 执行，并使用 render descriptor（含 `getState` / `getComputedStyle`）；
 - `catch` / `capture-bind` / `capture-catch` / `return false` 生效；
 - 本地 handler 执行后，只有路径上存在 service listener 才回传；
 - `mutated` 元数据会传递，但 `mut-bind` 的本地语义尚未实现。
 
-render 侧 `ComponentDescriptor` 已覆盖 `selectComponent`、`getDataset`、`getData`、`getState`、`setStyle`、class 方法、`getComputedStyle`、`getBoundingClientRect`、timers / RAF、`callMethod`、`triggerEvent`；service 侧 descriptor 覆盖 `selectComponent`、`getDataset`、`getData`、`setStyle`、`callMethod`、`triggerEvent`，仅保留给 `bindinput` 等 service-only 事件回退。`getState` 按 owner 节点的共享 id 存储，使 `change:prop` 观察器与后续事件 handler 看到同一份 state；`getData` 使用上一次 flow/patch 的页面或组件快照；`setStyle` 的 rpx 固定按 750 转成 vw。
+render 侧 `ComponentDescriptor` 已覆盖 `selectComponent`、`getDataset`、`getState`、`setStyle`、class 方法、`getComputedStyle`、`getBoundingClientRect`、timers / RAF、`callMethod`、`triggerEvent`；service 侧 descriptor 覆盖 `selectComponent`、`getDataset`、`setStyle`、`callMethod`、`triggerEvent`，只用于承接 render WXS handler 的 `callMethod` / `triggerEvent` effect，不执行 WXS handler 本身。`getState` 按 descriptor 元素存储，使 `change:prop` 观察器与后续事件 handler 看到同一份 state；`setStyle` 的 rpx 固定按 750 转成 vw。微信 3.17.5 的 pageframe descriptor 不包含 `getData()`，WXS 通过 `getDataset()` 或事件的 `target` / `currentTarget` 读取渲染数据。
 
 当前明确的限制：
 
 - WXS source map 已随 `wxsModules` 进入 `templates.js`，但 devtool/调试器尚未消费它；
-- `input` / `textarea` 的 `bindinput` 是唯一 service-side 的 WXS 事件（微信 `PAGE_EVENT` 语义），没有 view 侧 `getState` / `getComputedStyle`；
+- 微信 `wcc -d -ds` 生成码把 `f_` 指向 `__WXML_GLOBAL__.modules`，用 `f_['wxs/...'] = nv_require(...)` 缓存模块访问器；页面模板、组件模板和同页组件实例都从这里取 exports。Tiny 用 `page:${pageId}` runtime 重建这个 pageframe 边界，卸载页面时释放；
+- 2026-11-11 用微信 3.17.5 自动化 fixture 验证：同页两个组件实例共用模块实例，B 页与 A 页重入各自获得新实例；2026-11-12 进一步确认 `input`/`textarea` 的 WXS `bindinput` 也在 pageframe 执行。render WXS handler 只执行一次，跨树 `tree.wxsHandler` 状态回放已移除；service 逻辑模板的 WXS 表达式只用于身份/索引投影，不再承接 render handler 的闭包状态。
+- `input` / `textarea` 的普通 JS `bindinput` 仍由 service 侧 `PAGE_EVENT` 语义派发；WXS `bindinput` 在 render 侧执行，使用 render descriptor 的 `getState` / `getComputedStyle`；
 - 无法通过 origin 识别的 WXS 函数（例如闭包、`bind()` 后的新函数）不注册 handler，需用模块导出形式；
 - `callMethod` / `triggerEvent` 是跨线程 RPC，返回值不是同步语义。
 
@@ -349,16 +355,19 @@ generics（含页面级 `generic:x` 覆盖）、definitionFilter、pureDataPatte
 
 ## 渲染树：宿主实现真实组件 {#render kicker="渲染树"}
 
-渲染树由宿主实现。runtime 只定义 `TreeRenderer` 契约：挂载、patch、模板与组件定义、事件/宿主回调、查询、测量、inspectTree、动画和相交观测。渲染树不执行 app methods 或 observer，但会用同一份 `templates.js` 求值组件 shadow tree。
+渲染树由宿主实现。runtime 只定义 `TreeRenderer` 契约：从编译模板挂载页面、安装模板与组件定义、接收页面/组件数据和身份 hints、事件/宿主回调、查询、测量、inspectTree、动画和相交观测。渲染树不执行 app methods 或 observer，但会用同一份 `templates.js` 求值页面和组件 shadow tree。
 
 ```ts
 export type TreeRenderer = {
-  mount(root: RenderNode): void
-  applyPatches(patches: RenderPatch[]): void
+  mountPage(request: PageFrameMount): void
+  mountTabBarPage?(request: PageFrameMount): void
   // 首屏/更新所需的数据和模板
   setTemplates?(templates: TemplateRegistry): void
   setComponentDefinitions?(definitions: Record<string, ComponentDefinitionPayload>): void
+  setPageFrameHints?(root: RenderNode): void
+  setPageFrameComponents?(components: RenderComponentIdentity[]): void
   setPageData?(data: Record<string, unknown>): void
+  applyPageDataPatches?(patches: Array<Record<string, unknown>>): void
   setComponentData?(data: Record<string, Record<string, unknown>>): void
   setWxsModules?(table: WxsModuleTable): void
   // 事件和宿主回调
@@ -388,23 +397,23 @@ export type TreeRenderer = {
 `@tiny/host-web` 的 DOM 渲染树注册真实 `tiny-*` 内置组件，维护 slot、shadow root、class/scope、样式和 DOM；`createGlassRenderTree` 负责创建它，`bootRenderEntry` / `createGlassRenderEntry` 负责安装基础 CSS。内置组件定义和默认样式来自 `@tiny/host-web-components`。
 :::
 
-:::card{tag="Native" title="createNativeTreeRenderer"}
-同一个 `TreeRenderer` 契约，把 RenderNode 和 patch 映射到原生视图。目前只有契约和 headless smoke test，没有实际原生宿主。
+:::card{tag="iOS" title="WKWebView render root"}
+iOS 与 browser 一样使用 pageframe：每个页面一个 render WKWebView，加载同一份 `templates.js`，由 `createGlassRenderEntry` 创建 DOM 渲染树。
 :::
 
-:::card{tag="Test" title="headless renderer"}
-runtime 单测用 headless renderer 验证整棵树、patch 顺序、组件 id / 元素 locator 和事件回传，不需要 iframe 或 DOM。
+:::card{tag="Test" title="headless pageframe"}
+runtime 单测用 headless pageframe 验证数据补丁、组件身份、元素 locator 和事件回传，不需要 iframe 或 DOM。
 :::
 ::::
 
 :::::split
 ::::stack
 :::card{title="首屏：tree.flow"}
-service 把组件定义和整棵渲染快照编成 component flow（define/tree/ready），渲染树先注册组件定义，再创建真实节点，最后把页面根挂到容器。
+service 把组件定义、整棵身份快照和页面数据编成 component flow（define/tree/ready）；pageframe 安装组件定义后从编译模板挂载页面。
 :::
 
 :::card{title="更新：tree.patch"}
-service 对虚拟树做 diff，渲染树只应用 text、replace、props、insert、remove、reorder。patch 按 pageId 合批，保持页面内顺序。
+service 发送 `pageDataPatches` / `componentData`；结构变化只附 `renderHints` / `componentFlow`。pageframe 在本地 diff，独立 tabBar 使用 `tabFrame` 重新挂载/更新。更新按 pageId 合批，保持页面内顺序。
 :::
 ::::
 
@@ -524,8 +533,8 @@ iOS 没有 OffscreenCanvas。service 侧记录 Canvas 2D 调用，native 渲染�
 `tree.event` 已带 `target` / `currentTarget` 的 offset 几何，但两者目前都解析到绑定 handler 的节点；嵌套元素的 `event.target` 语义和微信仍有差别。
 :::
 
-:::card{tag="原生" tone="warn" title="native TreeRenderer 仍只有契约"}
-`createNativeTreeRenderer` 有契约和 headless smoke test；iOS 宿主没有采用它，而是 JSCore + 每页 WKWebView（`createGlassRenderEntry`）。native `TreeRenderer` 仍缺 canvas handoff、query、measure 和 IntersectionObserver。
+:::card{tag="tabBar" tone="warn" title="独立 tabBar 仍使用快照"}
+页面根和自定义 tabBar 都已经走 pageframe。tabBar 通过独立 `tabFrame` 从组件模板挂载，source 仍由 service 逻辑树维护；页面和 tab 根共享同一个渲染批次。
 :::
 
 :::card{tag="组件" tone="warn" title="trait/chaining 和平台组件仍有缺口"}
@@ -533,7 +542,7 @@ trait behaviors / chaining API 和 20 个平台/开放能力组件仍未实现�
 :::
 
 :::card{tag="页面" tone="warn" title="页面形态仍以 devtool 宿主为主"}
-14 项页面生命周期和 5 个路由 API 已接，分享回调、下拉刷新和退出状态可用；devtool 已有分享面板、forward/back/replace 页面转场、按路径 + query 的页面栈恢复和页面内 custom tabBar。剩余缺口是页面 data / `saveExitState` 的完整恢复、通用 `host-web` 的页面 chrome，以及预下载策略。
+14 项页面生命周期和 5 个路由 API 已接，分享回调、下拉刷新和退出状态可用；devtool 已有分享面板、forward/back/replace 页面转场、页面栈 + data 恢复、首屏 `this.exitState` 和独立页级 custom tabBar `tabFrame`。跨宿主冷启动时的退出状态落盘仍由宿主决定；通用 `host-web` 的页面 chrome 和预下载策略仍是缺口。
 :::
 
 :::card{tag="API" tone="warn" title="API 覆盖有限"}

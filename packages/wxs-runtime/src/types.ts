@@ -52,9 +52,29 @@ export type WxsRuntime = {
   resolve: (moduleId: string, exportPath: string[]) => ((...args: unknown[]) => unknown) | undefined
   /** Register a compiler-emitted module table. */
   load: (table: WxsModuleTable) => void
-  /** Register source for a module and return the `Q.S`-compatible accessor. */
-  register: (moduleId: string, source: string) => () => WxsExports
+  /**
+   * Register source for a module and return the `Q.S`-compatible accessor.
+   * The accessor receives the module scope resolved from the generated
+   * template's renderer context. Tiny scopes WXS module state to the owning
+   * page tree, matching WeChat's page view runtime.
+   */
+  register: (moduleId: string, source: string) => (scopeKey?: string) => WxsExports
   require: (moduleId: string) => WxsExports
   invoke: (moduleId: string, exportPath: string[], args: unknown[]) => unknown
+  /** Invoke an export in one page scope, without changing the active scope. */
+  invokeScoped?: (
+    scopeKey: string,
+    moduleId: string,
+    exportPath: string[],
+    args: unknown[],
+  ) => unknown
+  /** Bind the logic tree's renderer-context -> module-scope resolver. */
+  bindScopeResolver?: (
+    resolver: (renderContext: unknown) => string | undefined,
+  ) => void
+  /** Resolve a generated template renderer context to its module scope. */
+  scopeOf?: (renderContext: unknown) => string | undefined
+  /** Release module state owned by one page. */
+  releasePage?: (pageId: string) => void
   dispose: () => void
 }

@@ -84,6 +84,22 @@ describe('script — code generation with WXS runtime', () => {
     expect(typeof output).toBe('string')
     expect(output).toContain('__tinyWxsRuntime')
   })
+
+  test('loads WXS state through the page-scoped runtime on every render', () => {
+    const group = TmplGroup.new({ directivePrefix: 'wx', templateExtension: '.wxml', templateScriptExtension: '.wxs' })
+    group.addScript('wxs/counter', 'var count = 0; module.exports = { next: function () { return count += 1 } }')
+    group.addTmpl(
+      'pages/counter/counter',
+      '<wxs module="counter" src="/wxs/counter" /><text>{{counter.next()}}</text>',
+    )
+    const output = group.getTmplGenObjectGroups()
+    expect(output).toMatch(/var \w+=W\["wxs\/counter"\]\(R\)/)
+    expect(output).not.toMatch(/\w+\|\|\(\w+=W\["wxs\/counter"\]\(\)\)/)
+    // WXS module state is outside the component data diff. Calls such as
+    // `{{counter.next()}}` must not be filtered as a static expression.
+    expect(output).toContain('Z(true,"next")')
+    expect(output).not.toContain('Z(undefined,"next")')
+  })
 })
 
 describe('script — WXS runs as sloppy script inside the strict bundle', () => {

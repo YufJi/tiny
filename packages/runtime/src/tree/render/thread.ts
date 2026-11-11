@@ -12,12 +12,13 @@ import {
   type CustomEventMessage,
   type RenderAnimationRequest,
   type RenderClearAnimationRequest,
+  type RenderComponentIdentity,
   type RenderEventGeometry,
   type RenderHostAction,
   type RenderIntersectionEntry,
   type RenderIntersectionRequest,
   type RenderNode,
-  type RenderPatch,
+  type PageFrameMount,
   type RenderTemplateEvent,
   type WxsRenderEffect,
   type WxsBindingMessage,
@@ -26,6 +27,8 @@ import { applyComponentPlaceholders } from '../placeholders'
 
 export type TreeEventPayload = {
   id: string
+  /** Render identity of the innermost event target, when it differs from `id`. */
+  targetId?: string
   name: string
   pageId?: string
   detail?: unknown
@@ -38,9 +41,12 @@ export type TreeEventPayload = {
   currentTarget?: RenderEventGeometry
 }
 
+
 export type TreeRenderer = {
-  mount: (root: RenderNode) => void
-  applyPatches: (patches: RenderPatch[]) => void
+  /** Mount a page from its compiled template; WXML evaluation belongs here. */
+  mountPage: (request: PageFrameMount) => void
+  /** Mount the independent custom-tabBar root from its compiled template. */
+  mountTabBarPage?: (request: PageFrameMount) => void
   /**
    * Component definitions collected from `define` flow messages. Called before
    * the first `mount`, so the render tree can register a real component per
@@ -56,6 +62,10 @@ export type TreeRenderer = {
   setPageScope?: (scopeName: string) => void
   /** Page-level `usingComponents`, installed before the first mount. */
   setPageUsing?: (using: Record<string, string>) => void
+  /** Refresh the service-owned component/view identity hints without replaying DOM patches. */
+  setPageFrameHints?: (root: RenderNode) => void
+  /** Replace the service-owned component identity list for the pageframe. */
+  setPageFrameComponents?: (components: RenderComponentIdentity[]) => void
   /** Public built-in behavior scheme from the service compatibility config. */
   setBehaviorScheme?: (scheme: string) => void
   setEventSink?: (sink: (event: TreeEventPayload) => void) => void
@@ -63,6 +73,8 @@ export type TreeRenderer = {
   setTemplateEventSink?: (sink: (event: RenderTemplateEvent) => void) => void
   setWxsEffectSink?: (sink: (effect: WxsRenderEffect) => void) => void
   setPageData?: (data: Record<string, unknown>) => void
+  /** Apply the original `setData` patches instead of a full page snapshot. */
+  applyPageDataPatches?: (patches: Array<Record<string, unknown>>) => void
   setComponentData?: (data: Record<string, Record<string, unknown>>) => void
   setWxsBinding?: (binding: WxsBindingMessage) => void
   /** Built-in components ask the host to act (e.g. `<navigator>` routing). */
@@ -265,25 +277,6 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     }
   })
 
-  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.snapshot, (message) => {
-    whenTemplatesReady(() => {
-      const payload = (message.payload ?? {}) as {
-        root?: RenderNode
-        pageId?: string
-        pagePath?: string
-        styles?: string[]
-        fallbackAppStyles?: string[]
-        ack?: string[]
-      }
-      currentPageId = payload.pageId ?? message.pageId ?? currentPageId
-      applyBatch(currentPageId, TREE_PROTOCOL.snapshot, payload.ack, () => {
-        options.renderer.setPagePath?.(payload.pagePath ?? '')
-        if (payload.root) options.renderer.mount(payload.root)
-        const styles = [...(payload.styles ?? []), ...(payload.fallbackAppStyles ?? [])]
-        if (styles.length > 0) options.renderer.applyStyles?.(styles)
-      })
-    })
-  })
   const handleFlow = (message: { payload?: unknown; pageId?: string }): void => {
     const payload = (message.payload ?? {}) as {
       pageId?: string
@@ -296,9 +289,15 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       componentData?: Record<string, Record<string, unknown>>
       pageScope?: string
       pageUsing?: Record<string, string>
+      tabFrame?: PageFrameMount
       placeholders?: Record<string, string>
       behaviorScheme?: string
       ack?: string[]
+      pageFrame?: {
+        methods?: string[]
+        rootViewId?: string
+      }
+      componentFlow?: RenderComponentIdentity[]
     }
     currentPageId = payload.pageId ?? message.pageId ?? currentPageId
     applyBatch(currentPageId, TREE_PROTOCOL.flow, payload.ack, () => {
@@ -324,11 +323,40 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
           if (Object.keys(definitions).length > 0) {
             options.renderer.setComponentDefinitions?.(definitions)
           }
-          options.renderer.mount(applyComponentPlaceholders(
+          const hints = applyComponentPlaceholders(
             tree,
             payload.placeholders,
             (path) => Boolean(definitions[path]),
-          ))
+          )
+          if (!currentPageId) throw new Error('tree.flow has no page id')
+          options.renderer.mountPage({
+            pageId: currentPageId,
+            ...(payload.pageFrame?.rootViewId
+              ? { rootViewId: payload.pageFrame.rootViewId }
+              : {}),
+            pagePath: payload.pagePath ?? '',
+            data: payload.pageData ?? {},
+            ...(payload.pageUsing ? { using: payload.pageUsing } : {}),
+            ...(payload.pageScope ? { scope: payload.pageScope } : {}),
+            ...(payload.placeholders ? { placeholders: payload.placeholders } : {}),
+            ...(payload.pageFrame?.methods && payload.pageFrame.methods.length > 0
+              ? { methods: payload.pageFrame.methods }
+              : {}),
+            ...(payload.componentFlow ? { componentFlow: payload.componentFlow } : {}),
+            renderHints: hints,
+          })
+          if (payload.tabFrame) {
+            options.renderer.mountTabBarPage?.({
+              ...payload.tabFrame,
+              renderHints: payload.tabFrame.renderHints
+                ? applyComponentPlaceholders(
+                    payload.tabFrame.renderHints,
+                    payload.placeholders,
+                    (path) => Boolean(definitions[path]),
+                  )
+                : undefined,
+            })
+          }
           tree = undefined
         }
       }
@@ -361,17 +389,33 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     whenTemplatesReady(() => {
       const payload = (message.payload ?? {}) as {
         pageId?: string
-        patches?: RenderPatch[]
+        renderHints?: RenderNode
+        componentFlow?: RenderComponentIdentity[]
+        tabFrame?: PageFrameMount
         pageData?: Record<string, unknown>
+        pageDataPatches?: Array<Record<string, unknown>>
         componentData?: Record<string, Record<string, unknown>>
         ack?: string[]
       }
       const pageId = payload.pageId ?? message.pageId ?? currentPageId
       if (payload.pageId) currentPageId = payload.pageId
       applyBatch(pageId, TREE_PROTOCOL.patch, payload.ack, () => {
-        if (payload.pageData) options.renderer.setPageData?.(payload.pageData)
+        if (payload.componentFlow) {
+          options.renderer.setPageFrameComponents?.(payload.componentFlow)
+        }
+        if (payload.renderHints) options.renderer.setPageFrameHints?.(payload.renderHints)
+        // The pageframe's WXML pass applies the props it owns first. Component
+        // data follows as the remaining per-instance patch, matching WeChat's
+        // property-before-setData order. The reverse order makes the same prop
+        // update run twice and can re-evaluate WXS expression slots after a
+        // later component has advanced shared module state.
+        if (payload.pageDataPatches && payload.pageDataPatches.length > 0) {
+          options.renderer.applyPageDataPatches?.(payload.pageDataPatches)
+        } else if (payload.pageData) {
+          options.renderer.setPageData?.(payload.pageData)
+        }
         if (payload.componentData) options.renderer.setComponentData?.(payload.componentData)
-        options.renderer.applyPatches(payload.patches ?? [])
+        if (payload.tabFrame) options.renderer.mountTabBarPage?.(payload.tabFrame)
       })
     })
   })

@@ -44,7 +44,7 @@ describe('Q.B binding locality', () => {
     expect(calls[0]![2]).toEqual({ moduleId: 'm.wxs', exportPath: ['tap'] })
   })
 
-  test('keeps the function for service-only input events', () => {
+  test('keeps the function when the host declines local ownership', () => {
     const handler = Object.assign(() => {}, { origin: { moduleId: 'm.wxs', exportPath: ['input'] } })
     const Q = loadAdapter(() => false)
 

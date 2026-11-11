@@ -10,6 +10,7 @@ fn config() -> HostConfig {
         manifest: json!({ "pages": [{ "path": "pages/index" }] }),
         initial_path: "pages/index".to_string(),
         max_page_stack: Some(10),
+        initial_exit_state: None,
     }
 }
 
@@ -176,6 +177,25 @@ fn bootstraps_service_then_creates_and_binds_one_page() {
     assert_eq!(page_ready.domain, ProtocolDomain::Page);
     assert_eq!(page_ready.method, "ready");
     assert_eq!(host.active_page(), Some("page-1"));
+}
+
+#[test]
+fn forwards_initial_exit_state_in_bootstrap() {
+    let mut config = config();
+    config.initial_exit_state = Some(json!({ "draft": "before-launch" }));
+    let mut host = HostCore::new(config);
+    let _ = host.start(1_000);
+
+    let actions = host.handle_event(
+        HostEvent::ServiceFrame(frame(vec![service_event_ready()])),
+        1_010,
+    );
+    let bootstrap = only_frame_message(&actions, true);
+    assert_eq!(bootstrap.method, "bootstrap");
+    assert_eq!(
+        bootstrap.payload.as_ref().unwrap()["initialExitState"],
+        json!({ "draft": "before-launch" })
+    );
 }
 
 #[test]

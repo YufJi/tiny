@@ -13,7 +13,7 @@ import { ServiceRenderBridge } from './render'
 import { ServicePageStack } from './page-stack'
 import { createServiceRouter } from './router'
 import { ServiceTabBar } from './tab-bar'
-import { createDefaultWxsCompiler, createWxsRuntime } from '@tiny/wxs-runtime'
+import { createDefaultWxsCompiler, createPageScopedWxsRuntime } from '@tiny/wxs-runtime'
 import { findPageArtifact, normalizeRoutePath, resolveRoutePath } from './route'
 import { shouldPreloadRule } from './preload'
 import type {
@@ -35,7 +35,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   // The generated template bundle resolves WXS modules through the host
   // runtime. One instance per service thread keeps module state local to the
   // app while sharing the kernel implementation with the render thread.
-  const wxsRuntime = createWxsRuntime({ compile: createDefaultWxsCompiler() })
+  const wxsRuntime = createPageScopedWxsRuntime({ compile: createDefaultWxsCompiler() })
   ;(globalThis as unknown as Record<string, unknown>)[TINY_ENGINE_NAMING.wxsRuntimeGlobal] = wxsRuntime
 
   const expectedPagePaths = options.manifest.pages.map((page) => page.path)
@@ -96,6 +96,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     loadTemplates: options.loadTemplates,
     ...(options.loadStyle ? { loadStyle: options.loadStyle } : {}),
     ...(options.resolveAssetUrl ? { resolveAssetUrl: options.resolveAssetUrl } : {}),
+    wxsRuntime,
     getPage: (pageId) => resolvePage(pageId),
     frameworkContext: {
       createRouter,
@@ -124,6 +125,9 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     createRouter,
     ...(options.onPageRelease ? { onPageRelease: options.onPageRelease } : {}),
     ...(options.maxPageStack !== undefined ? { maxPageStack: options.maxPageStack } : {}),
+    ...(Object.prototype.hasOwnProperty.call(options, 'initialExitState')
+      ? { initialExitState: options.initialExitState }
+      : {}),
   })
   resolvePage = (pageId) => pages.pageInstances.get(pageId)
   onTabBarChange = () => pages.sendRuntimeState()
@@ -244,10 +248,14 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
         manifest?: ServiceThreadOptions['manifest']
         initialPath?: string
         maxPageStack?: number
+        initialExitState?: unknown
       }
       pages.setInitialPath(payload.initialPath ?? pages.currentPath)
       if (payload.maxPageStack !== undefined) {
         pages.setMaxPageStack(Number(payload.maxPageStack))
+      }
+      if (Object.prototype.hasOwnProperty.call(payload, 'initialExitState')) {
+        pages.setInitialExitState(payload.initialExitState)
       }
       if (independentRootFor(pages.currentPath)) {
         // An independent package boots without the main package: no app.js,
@@ -390,6 +398,24 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
   connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.saveExitState, async (message) => (
     pages.saveExitStateOf((message.payload as { pageId?: string }).pageId)
   ))
+
+  connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.snapshotState, async () => (
+    pages.snapshotState()
+  ))
+
+  connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.restoreState, async (message) => {
+    const payload = message.payload as {
+      pageId?: unknown
+      data?: unknown
+      savedExitState?: unknown
+      exitState?: unknown
+    }
+    const pageId = typeof payload.pageId === 'string' ? payload.pageId : ''
+    const data = payload.data && typeof payload.data === 'object' && !Array.isArray(payload.data)
+      ? payload.data as Record<string, unknown>
+      : {}
+    return pages.restoreState(pageId, data, payload.savedExitState, payload.exitState)
+  })
 
   connection.onControl(PAGE_CONTROL.domain, PAGE_CONTROL.unload, async (message) => (
     pages.unload((message.payload as { pageId?: string }).pageId)

@@ -188,7 +188,7 @@ export default {
 | animation | rewriteAnimationAttributes() | 把 `animation="{{...}}"` 改写成内联 style |
 | 资源引用 | 不处理 | WXML 里的 `src` / `poster` / `style` 原样保留；`image` 等内置组件在运行时按宿主组件/页面路径解析 |
 
-WXS 在编译期完成 globals / `getRegExp` / `getDate` / `.constructor` 改写，并生成外部与内联模块表。WXML 表达式按模板归属求值：页面模板在 service；组件模板由 service 求值用于 diff/查询，render 再求值一次生成 shadow tree。WXS 事件尽量在 render 本地执行，无法解析到 WXS handler 时回退 service。具体分工见“运行时”页的 WXS 一节。
+WXS 在编译期完成 globals / `getRegExp` / `getDate` / `.constructor` 改写，并生成外部与内联模块表。所有正式宿主都启用 pageframe，页面和组件 WXML 表达式在 render pageframe 按模板求值；service 逻辑树保留同一份模板用于查询、关系和组件身份索引。WXS 事件尽量在 render 本地执行，无法解析到 WXS handler 时回退 service。具体分工见“运行时”页的 WXS 一节。
 
 ```html
 <!-- 源 WXML（默认微信兼容输入） -->

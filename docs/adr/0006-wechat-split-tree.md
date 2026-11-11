@@ -15,15 +15,13 @@ Accepted and implemented. Merged into `next` as #27 (`1ac6d3a`), originally on
   deleted. The compiler no longer emits `render.js`; hosts load `templates.js`
   directly.
 - Initial page mount is driven by component-flow messages
-  (`define` / `tree` / `ready`; the snapshot travels as a nested tree). Subsequent
-  template updates use virtual-node patches only. The legacy WeChat update
-  messages (`FLOW_UPDATE`, `FLOW_SET_DATA`, `FLOW_DATA_OBSERVER`,
-  `FLOW_APPLY_PROPERTY`, `FLOW_GROUP`, …) are intentionally not implemented:
-  the snapshot diff already carries text, props, insert/remove/reorder and
-  extra-data changes.
-- The runtime exposes a host-neutral native tree adapter
-  (`createNativeTreeRenderer`) behind the same `TreeRenderer` contract as the
-  web glass tree, with its own smoke tests.
+  (`define` / `tree` / `ready`; the identity snapshot travels as a nested
+  tree). Page updates use page/component data patches and identity hints. The
+  browser test host, debugger and iOS render WKWebView use the render-owned
+  pageframe (ADR-0018); the page snapshot renderer and `tree.snapshot` event
+  have been removed. The legacy WeChat update messages (`FLOW_UPDATE`,
+  `FLOW_SET_DATA`, `FLOW_DATA_OBSERVER`, `FLOW_APPLY_PROPERTY`, `FLOW_GROUP`,
+  …) are intentionally not implemented.
 - Runtime tests boot a service logic tree plus a headless tree thread; the old
   render-adapter test fixture is gone.
 - Stylesheets carry an explicit cascade role (builtin/app/page/component/
@@ -91,7 +89,7 @@ Accepted and implemented. Merged into `next` as #27 (`1ac6d3a`), originally on
   module, and otherwise mirrors glass-easel's default wrapper exactly (binding
   `this` to the host's method caller). The descriptor itself is built in the
   service (`service/wxs-host.ts`): `selectComponent` / `selectAllComponents` /
-  `getDataset` / `getData` / `setStyle` / `callMethod`. `setStyle` merges into
+  `getDataset` / `setStyle` / `callMethod`. `setStyle` merges into
   the element's inline style and asks for a page re-diff, so the render thread
   receives an ordinary `tree.patch`.
 - The logic backend records element-to-node associations (`associateValue`)
@@ -118,12 +116,12 @@ Accepted and implemented. Merged into `next` as #27 (`1ac6d3a`), originally on
 
 - `tree.event` carries `id` / `name` / `detail` / native fields, touches and
   `target` / `currentTarget` geometry (`offsetLeft` / `offsetTop` /
-  `offsetWidth` / `offsetHeight`). Dispatch still targets the binding node, so
-  nested `target` semantics remain approximate: both objects resolve to the
-  node that owns the handler.
-- `createNativeTreeRenderer` is a contract plus headless smoke tests; no native
-  host implementation ships in this repository. Native hosts must implement
-  `observeIntersection` to support intersection observers.
+  `offsetWidth` / `offsetHeight`). Page-level events now carry the innermost
+  render target as `targetId`, so nested `target` and `currentTarget` resolve
+  to different nodes. Targets inside render-evaluated component shadows remain
+  approximate when the service tree has no matching locator.
+- Custom tabBars use a separate `tabFrame` pageframe component root, matching
+  WeChat's independent `tabRoot` without a snapshot render path.
 - The acceptance gate previews Vant/WeUI and asserts their initial render; deep
   Vant calendar/sticky interactions are not asserted end-to-end.
 

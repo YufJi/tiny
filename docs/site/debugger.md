@@ -80,7 +80,7 @@ React 不直接发送协议消息。它订阅 `DevtoolRuntimeClient` 投影出�
 :::card{tag="RuntimePanel" title="控制器"}
 读取 `./runtime/apps.json`，显示应用列表；点击应用后创建 `DevtoolRuntimeClient`，加载 manifest，启动运行时，并订阅状态。
 
-最多同时保留 3 个应用会话，超出后关闭最早打开的应用。关闭应用会释放它自己的 iframe 和页面栈。
+最多同时保留 3 个应用会话，超出后关闭最早打开的应用。关闭应用会释放它自己的 iframe 和页面栈。Reload 前会快照 `path/query/data/savedExitState/exitState` 并写入 sessionStorage；重启后首屏先拿到 `this.exitState`，再按原栈恢复 data。普通浏览器刷新按页面身份合并快照，不会被只含路径的 runtime state 覆盖。
 :::
 
 :::card{tag="PreviewStage" title="设备壳"}
@@ -101,7 +101,7 @@ Console 显示结构化诊断（最多保留 500 条），Elements 显示 `runti
 
 | 层 | 实现 | 职责 |
 | --- | --- | --- |
-| `DevtoolRuntimeClient` | `apps/devtool/src/runtimeClient.ts` | 创建线程、bootstrap、导航/前后台/Reload/Close、inspectTree，并维护页面栈和生命周期 |
+| `DevtoolRuntimeClient` | `apps/devtool/src/runtimeClient.ts` | 创建线程、bootstrap、导航/前后台/Reload/Close、页面状态快照/恢复、inspectTree，并维护页面栈和生命周期 |
 | `runtimeService.js` | service 线程入口 | 读取 `?app=`，加载 manifest、templates、styles 和 service.js，创建逻辑树 |
 | `runtimeRender.js` | render 线程入口 | 调用 `bootRenderEntry`，由它安装 canvas responder、内置样式并创建 Web 渲染树和内置组件 |
 | `RuntimePanel` | React/Redux | 应用列表、会话管理、首屏选择、状态订阅和面板组合 |

@@ -29,6 +29,8 @@ struct FfiConfig {
     initial_path: String,
     #[serde(default)]
     max_page_stack: Option<usize>,
+    #[serde(default)]
+    initial_exit_state: Option<Value>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -91,6 +93,7 @@ impl RustHostCore {
                 manifest: config.manifest,
                 initial_path: config.initial_path,
                 max_page_stack: config.max_page_stack,
+                initial_exit_state: config.initial_exit_state,
             })),
         }))
     }

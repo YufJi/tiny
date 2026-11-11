@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { buildComponentFlow } from '../src/tree/flow'
+import { buildComponentFlow, collectComponentIdentities } from '../src/tree/flow'
 import type { ComponentDefinitionPayload, RenderNode } from '../src/tree/protocol'
 
 const CARD = 'components/card/card'
@@ -46,5 +46,12 @@ describe('component flow', () => {
     // The tree still states the component boundary; only the definition is missing.
     const treeMessage = messages.find((entry) => entry.type === 'tree')
     expect(treeMessage?.type === 'tree' && treeMessage.root).toEqual(tree)
+  })
+
+  test('collects component identities in pageframe creation order', () => {
+    expect(collectComponentIdentities(tree)).toEqual([
+      { id: 'page', path: 'pages/index/index' },
+      { id: 'card', path: CARD },
+    ])
   })
 })

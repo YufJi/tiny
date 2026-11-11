@@ -1,0 +1,11 @@
+<wxs module="state" src="/wxs/state.wxs" />
+<wxs module="evt" src="/wxs/event-state.wxs" />
+<view class="page-state">PAGE: {{state.mark(pageKey, 'A')}} KEY: {{pageKey}}</view>
+<view class="event-state">EVENT: {{evt.peek()}} / {{eventStatus}}</view>
+<probe class="probe-one" state-key="{{pageKey}}" />
+<probe class="probe-two" state-key="{{pageKey + '-2'}}" />
+<button class="bump-key" bindtap="bumpKey">Bump Key</button>
+<button class="hit-wxs" bindtap="{{evt.hit}}">Hit WXS</button>
+<button class="to-b" bindtap="toB">To B</button>
+<button class="to-flow" bindtap="toFlow">To Flow</button>
+<button class="relaunch" bindtap="relaunch">ReLaunch A</button>

@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "flow-host": "/components/flow-host/flow-host",
+    "flow-child": "/components/flow-child/flow-child"
+  }
+}

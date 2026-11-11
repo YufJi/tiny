@@ -27,6 +27,7 @@ export type RuntimeHostOptions = {
   renderConnector: RenderThreadConnector
   manifest: RuntimeManifest
   initialPath: string
+  initialExitState?: unknown
   initialData?: Record<string, unknown>
   serviceCapabilities?: Record<string, unknown>
   renderCapabilities?: Record<string, unknown>

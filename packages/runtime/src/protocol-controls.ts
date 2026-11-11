@@ -28,6 +28,8 @@ export const PAGE_CONTROL = Object.freeze({
   pullDownRefresh: 'pullDownRefresh',
   share: 'share',
   saveExitState: 'saveExitState',
+  snapshotState: 'snapshotState',
+  restoreState: 'restoreState',
 } as const)
 
 export const QUERY_CONTROL = Object.freeze({
