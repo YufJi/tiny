@@ -105,25 +105,20 @@ export function installWxsEventHost(options: WxsEventHostOptions): () => void {
       if (!tree || !node) return false
       const pageId = tree.pageIdFor(element)
       if (!pageId) return false
-      // Event handlers on custom components are WXS too: they run in the
-      // render tree, like the built-in ones. Only the built-in `input` events
-      // that glass forwards through the service keep the service path.
-      const unsupportedLocal = event === TINY_ENGINE_NAMING.wxsServiceOnlyInputEvent
-        && (TINY_ENGINE_NAMING.wxsServiceOnlyInputTags as readonly string[]).includes(node.tagName)
-      const localOrigin = unsupportedLocal ? undefined : origin
       const binding: WxsBindingMessage = {
         viewId: tree.ensureViewId(node),
         event,
-        ...(localOrigin ? { moduleId: localOrigin.moduleId, exportPath: localOrigin.exportPath } : {}),
+        ...(origin ? { moduleId: origin.moduleId, exportPath: origin.exportPath } : {}),
         ...(isCatch ? { catch: true } : {}),
         ...(isCapture ? { capture: true } : {}),
         ...(isMutated ? { mutated: true } : {}),
       }
       options.onBinding?.(pageId, binding)
       // `true` means the render tree owns the handler: `Q.B` must not attach
-      // the WXS function in the logic tree. Service-only events (`bindinput`
-      // on input/textarea) keep the function here.
-      return Boolean(localOrigin)
+      // the WXS function in the logic tree. WeChat executes WXS input events in
+      // the view layer as well; the input component's service forwarding only
+      // applies to normal JS bindings.
+      return Boolean(origin)
     },
     descriptorFor: (element: unknown): WxsComponentDescriptor | undefined => {
       const tree = options.getLogicTree()

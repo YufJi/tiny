@@ -4,6 +4,11 @@
 
 Proposed. Partially implemented.
 
+> Superseded in part by ADR-0018: page/component WXML evaluation moved to the
+> render pageframe, and `input` / `textarea` WXS `bindinput` is now render-local
+> (verified against WeChat 3.17.5). The compatibility-matrix rows below that
+> describe service-side `bindinput` are historical, not current behavior.
+
 Landed so far:
 
 - `@tiny/wxs-runtime` is a kernel package with module loading, constructor

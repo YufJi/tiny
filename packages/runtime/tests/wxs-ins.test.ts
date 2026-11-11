@@ -28,9 +28,13 @@ exports.start = function (event, ins) {
 exports.plain = function () {
   exports.plainCalls = (exports.plainCalls || 0) + 1
 }
+exports.input = function (event, ins) {
+  ins.callMethod('record', 'input', event.detail.value)
+}
 </wxs>
 <view class="box" data-role="target" style="position: absolute; top: 5px;" bindlongpress="{{h.start}}">x</view>
 <view class="plain" bindtap="onPlain">y</view>
+<input id="wxs-input" bindinput="{{h.input}}" />
 `
 
 function createTemplates() {
@@ -70,12 +74,16 @@ describe('WXS event dispatch side', () => {
   test('does not run WXS handlers in the logic tree', async () => {
     const manifest = createManifest()
     const records: Array<[string, unknown]> = []
+    const bindings: Array<{ event: string; moduleId?: string }> = []
     const [hostService, serviceTransport] = createInMemoryTransportPair()
     const service = bootServiceThread({ transport: serviceTransport, manifest, initialPath: PAGE_PATH })
     const connector = createHarnessRenderConnector({
       manifest,
       artifacts: { templates: createTemplates() },
       initialPath: PAGE_PATH,
+      renderer: {
+        setWxsBinding: (binding) => bindings.push(binding),
+      },
     })
     const host = createTestHost({
       serviceTransport: hostService,
@@ -96,6 +104,10 @@ describe('WXS event dispatch side', () => {
     })
     await host.bootstrap()
     const pageId = service.activePage!.pageId
+    expect(bindings).toContainEqual(expect.objectContaining({
+      event: 'input',
+      moduleId: `${PAGE_PATH}#h`,
+    }))
     const tree = lastLogicTree() as unknown as {
       query: (pageId: string, selector: string, all: boolean) => Array<{ viewId: string }>
     }

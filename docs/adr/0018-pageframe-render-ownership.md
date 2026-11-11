@@ -75,7 +75,9 @@ The migration is staged to keep the gate green:
   a parent prop update is not evaluated twice. Component data still uses the
   existing per-instance map. Structural updates carry `renderHints` and
   `componentFlow` for identity/index alignment; they never carry page
-  virtual-node patches.
+  virtual-node patches. WXS `bindinput` on `input`/`textarea` is render-local,
+  matching WeChat's pageframe dispatch; only plain JS `bindinput` uses the
+  service event path.
 - **Phase D**: remove service WXML and the cross-tree WXS state replay.
 
 ## Acceptance
