@@ -118,9 +118,10 @@ Accepted and implemented. Merged into `next` as #27 (`1ac6d3a`), originally on
 
 - `tree.event` carries `id` / `name` / `detail` / native fields, touches and
   `target` / `currentTarget` geometry (`offsetLeft` / `offsetTop` /
-  `offsetWidth` / `offsetHeight`). Dispatch still targets the binding node, so
-  nested `target` semantics remain approximate: both objects resolve to the
-  node that owns the handler.
+  `offsetWidth` / `offsetHeight`). Page-level events now carry the innermost
+  render target as `targetId`, so nested `target` and `currentTarget` resolve
+  to different nodes. Targets inside render-evaluated component shadows remain
+  approximate when the service tree has no matching locator.
 - `createNativeTreeRenderer` is a contract plus headless smoke tests; no native
   host implementation ships in this repository. Native hosts must implement
   `observeIntersection` to support intersection observers.

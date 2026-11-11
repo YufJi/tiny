@@ -134,6 +134,7 @@ function handleViewEvent(
   if (!tree) return
   const payload = (message.payload ?? {}) as {
     id?: string
+    targetId?: string
     name?: string
     detail?: unknown
     native?: Record<string, unknown>
@@ -147,6 +148,7 @@ function handleViewEvent(
   try {
     tree.dispatchViewEvent({
       viewId: payload.id,
+      ...(payload.targetId ? { targetId: payload.targetId } : {}),
       name: payload.name,
       pageId: message.pageId,
       detail: payload.detail,

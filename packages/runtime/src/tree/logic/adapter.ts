@@ -965,11 +965,19 @@ export class LogicTreeAdapter {
     const node = this.backend.findByViewId(payload.viewId)
     const element = node?.__wxElement
     if (!element) return false
+    const targetElement = payload.targetId
+      ? this.backend.findByViewId(payload.targetId)?.__wxElement
+      : undefined
+    const dispatchElement = targetElement
+      && typeof (targetElement as { triggerEvent?: unknown }).triggerEvent === 'function'
+      ? targetElement
+      : element
     // Layout geometry is measured by the render thread; mirror it onto the
     // logic element so `event.currentTarget.offsetLeft` works synchronously.
     // Hosts that only measure the event target fall back to that measurement.
-    const geometry = payload.currentTarget ?? payload.target
-    if (geometry) applyEventGeometry(element, geometry)
+    const currentGeometry = payload.currentTarget ?? payload.target
+    if (currentGeometry) applyEventGeometry(element, currentGeometry)
+    if (payload.target) applyEventGeometry(targetElement ?? dispatchElement, payload.target)
     const native = payload.native ?? {}
     // Hosts normalize built-in event detail (switch/checkbox-group/slider/...);
     // the service must not re-derive it from tag names. The fallback below only
@@ -1009,7 +1017,7 @@ export class LogicTreeAdapter {
           : payload.name === 'touchend'
             ? 'touchEnd'
             : payload.name === 'touchcancel' ? 'touchCancel' : payload.name
-      let current: unknown = element
+      let current: unknown = dispatchElement
       while (current) {
         const component = (current as { asGeneralComponent?: () => unknown }).asGeneralComponent?.()
         const target = component as Record<string, unknown> | undefined
@@ -1039,7 +1047,7 @@ export class LogicTreeAdapter {
           : {}),
         ...(payload.wxsHandled ? { [TINY_ENGINE_NAMING.wxsHandledField]: true } : {}),
       }
-      element.triggerEvent(payload.name, detail, {
+      dispatchElement.triggerEvent(payload.name, detail, {
         bubbles: true,
         composed: true,
         ...(extraFields ? { extraFields } : {}),

@@ -42,6 +42,8 @@ type AnyComponent = glassEasel.GeneralComponent
 
 export type GlassRenderEvent = {
   id: string
+  /** Render identity of the innermost event target when it differs from `id`. */
+  targetId?: string
   name: string
   detail?: unknown
   native?: Record<string, unknown>
@@ -925,6 +927,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   let tabBarRoot: AnyComponent | undefined
   let tabBarRootElement: HTMLElement | null = null
   let tabBarContainer: HTMLElement | null = null
+  let tabBarRootId = ''
   const tabBarNodeIds = new Set<string>()
   let mounted = false
   let pageScopeName = ''
@@ -1212,8 +1215,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
    */
   const locatorOfNodeId = (id: string | undefined): string | undefined => {
     if (!id) return undefined
-    const rootNode = currentTree.get(rootId.value)
-    if (!rootNode) return undefined
     const search = (node: RenderNode, owner: string, path: number[]): string | null => {
       if (node.id === id) return path.length > 0 ? formatLocator(owner, path) : owner
       if (node.type !== 'element') return null
@@ -1225,7 +1226,20 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       }
       return null
     }
-    return search(rootNode, rootNode.id ?? '', []) ?? undefined
+    const roots = [currentTree.get(rootId.value), tabBarRootId ? currentTree.get(tabBarRootId) : undefined]
+    for (const rootNode of roots) {
+      if (!rootNode) continue
+      const found = search(rootNode, rootNode.id ?? '', [])
+      if (found) return found
+    }
+    return undefined
+  }
+
+  const renderIdentityOfViewId = (id: string | undefined): string | undefined => {
+    if (!id) return undefined
+    const node = currentTree.get(id)
+    if (node?.type === 'element' && node.component === true) return id
+    return locatorOfNodeId(id)
   }
 
   const buildRenderEventPayload = (
@@ -1242,10 +1256,15 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   ): GlassRenderEvent => {
     const isTouch = name.startsWith('touch')
     const currentTarget = geometryOf(element, node.id!)
+    const targetGeometry = targetGeometryOf(event.target)
+    const targetId = targetGeometry?.viewId
+      ? renderIdentityOfViewId(targetGeometry.viewId)
+      : undefined
     const payload: GlassRenderEvent = {
       id: node.component === true ? node.id! : locatorOfNodeId(node.id!) ?? node.id!,
       name,
       ...(currentTarget ? { currentTarget } : {}),
+      ...(targetId ? { targetId } : {}),
     }
     if (isTouch) {
       const touchEvent = original as TouchEvent | null
@@ -1263,8 +1282,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     }
     if (original) payload.native = nativeFields(original as Event)
     else if (event.native) payload.native = event.native
-    const target = targetGeometryOf(event.target)
-    if (target) payload.target = target
+    if (targetGeometry) payload.target = targetGeometry
     return payload
   }
 
@@ -2403,6 +2421,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     ;(tabBarRoot as unknown as { destroy?: () => void } | undefined)?.destroy?.()
     tabBarRoot = undefined
     tabBarRootElement = null
+    tabBarRootId = ''
     tabBarContainer?.remove()
     tabBarContainer = null
   }
@@ -2723,6 +2742,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
           : createElement(child, tabBarRoot))
       }
       const rootNodeId = tabBarRootNode.id!
+      tabBarRootId = rootNodeId
       nodes.set(rootNodeId, tabBarRoot)
       currentTree.set(rootNodeId, tabBarRootNode)
       if (tabBarRootElement) {

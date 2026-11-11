@@ -26,6 +26,8 @@ import { applyComponentPlaceholders } from '../placeholders'
 
 export type TreeEventPayload = {
   id: string
+  /** Render identity of the innermost event target, when it differs from `id`. */
+  targetId?: string
   name: string
   pageId?: string
   detail?: unknown

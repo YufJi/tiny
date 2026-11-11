@@ -228,7 +228,7 @@ Bridge 的 `assertJsonSafe` 做严格校验；runtime 的 `toJsonSafe` 会主动
 | `tree.snapshot` | service → render | 旧版完整快照入口仍注册，当前 service 不发送 |
 | `tree.patch` | service → render | `text`、`replace`、`props`、`insert`、`remove`、`reorder`；组件用共享 id、元素用 `owner#index.path` locator 寻址；同一 payload 可带 `tabPatches`、`pageData` / `componentData` |
 | `tree.ack` | render → service | 批次确认：回显 flow/snapshot/patch 上的 `ack` token；service 用它 settle `setData` completion |
-| `tree.event` | render → service | 组件 id 或元素 locator、name、detail、native 字段、touches 和 target/currentTarget 几何；service 负责找到逻辑节点并分发 |
+| `tree.event` | render → service | 组件 id 或元素 locator、可选 `targetId`、name、detail、native 字段、touches 和 target/currentTarget 几何；service 从最内层 target 节点开始分发，并保留当前 binding 的 currentTarget |
 | `tree.templateEvent` | render → service | render 求值的组件模板把绑定的方法调用交回 service |
 | `tree.wxsBinding` | service → render | 动态 WXS 事件绑定决策 |
 | `tree.wxsEffect` | render → service | WXS `callMethod` / `triggerEvent` 的跨线程副作用 |

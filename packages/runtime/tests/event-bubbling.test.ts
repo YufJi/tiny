@@ -75,20 +75,29 @@ async function boot(body: string, pageOptions: Record<string, unknown>) {
   await host.bootstrap()
   const pageId = service.activePage!.pageId
   const logic = lastLogicTree() as unknown as {
-    query: (pageId: string, selector: string, all: boolean) => Array<{ viewId: string }>
+    query: (pageId: string, selector: string, all: boolean) => Array<{
+      viewId: string
+      locator?: string
+    }>
   }
   const dispatch = async (
     selector: string,
     payload: Partial<{
       name: string
+      targetSelector: string
       target: RenderEventGeometry
       currentTarget: RenderEventGeometry
     }> = {},
   ) => {
     const node = logic.query(pageId, selector, false)[0]
     expect(node, `node ${selector}`).toBeDefined()
+    const targetNode = payload.targetSelector
+      ? logic.query(pageId, payload.targetSelector, false)[0]
+      : undefined
+    if (payload.targetSelector) expect(targetNode, `target ${payload.targetSelector}`).toBeDefined()
     host.service.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, {
       id: node!.viewId,
+      ...(targetNode ? { targetId: targetNode.locator ?? targetNode.viewId } : {}),
       name: payload.name ?? 'tap',
       ...(payload.target ? { target: payload.target } : {}),
       ...(payload.currentTarget ? { currentTarget: payload.currentTarget } : {}),
@@ -101,6 +110,53 @@ async function boot(body: string, pageOptions: Record<string, unknown>) {
 const NESTED = '<view id="outer" bindtap="outer"><view id="inner" bindtap="inner">x</view></view>'
 
 describe('event dispatch', () => {
+  test('keeps the innermost target distinct from the binding currentTarget', async () => {
+    const seen: Array<{
+      targetId: unknown
+      currentTargetId: unknown
+      targetTop: unknown
+      currentTop: unknown
+    }> = []
+    const { host, dispatch } = await boot(
+      '<view id="outer" bindtap="outer"><view id="inner">x</view></view>',
+      {
+        data: {},
+        outer(event: EventShape) {
+          seen.push({
+            targetId: event.target?.id,
+            currentTargetId: event.currentTarget?.id,
+            targetTop: event.target?.offsetTop,
+            currentTop: event.currentTarget?.offsetTop,
+          })
+        },
+      },
+    )
+    await dispatch('#outer', {
+      targetSelector: '#inner',
+      target: {
+        viewId: 'render-inner',
+        offsetLeft: 0,
+        offsetTop: 5,
+        offsetWidth: 1,
+        offsetHeight: 1,
+      },
+      currentTarget: {
+        viewId: 'render-outer',
+        offsetLeft: 0,
+        offsetTop: 10,
+        offsetWidth: 1,
+        offsetHeight: 1,
+      },
+    })
+    expect(seen).toEqual([{
+      targetId: 'inner',
+      currentTargetId: 'outer',
+      targetTop: 5,
+      currentTop: 10,
+    }])
+    await host.close()
+  })
+
   test('a nested tap bubbles from the target binding to its ancestors once each', async () => {
     const calls: string[] = []
     const { host, dispatch } = await boot(NESTED, {

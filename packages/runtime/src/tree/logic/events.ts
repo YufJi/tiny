@@ -21,6 +21,8 @@ export type ViewRect = RenderRect
 
 export type ViewEventPayload = {
   viewId: ViewNodeId
+  /** Render identity of the innermost event target, when it differs from `viewId`. */
+  targetId?: string
   name: string
   pageId?: string
   detail?: unknown
