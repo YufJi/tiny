@@ -158,8 +158,8 @@ fixture 不是单元测试里的假数据，而是完整的小程序源码或预
 
 `wechat-parity` 先用 `pnpm compile:wechat-parity` 生成 Tiny 产物，再运行
 `pnpm parity:wechat:compare`。比较脚本会分别调用 Tiny 测试宿主和微信开发者工具
-CLI，采集 A 首屏、WXS 事件、B 导航、返回 A、reLaunch，以及宿主内模板子组件与
-slot 子组件的创建/销毁共十二个检查点；随机 key 会被规范化，页面文本、事件状态、
+CLI，采集 A 首屏、双组件 property 更新、WXS 事件、B 导航、返回 A、reLaunch，以及宿主内模板子组件与
+slot 子组件的创建/销毁共十三个检查点；随机 key 会被规范化，页面文本、事件状态、
 同页组件 WXS 计数、lifecycle 和 relation 回调顺序必须逐字一致。原始和规范化报告写入
 `tests/host/generated/parity/`。微信侧要求开发者工具已登录并打开该 fixture。
 

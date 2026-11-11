@@ -16,6 +16,10 @@ Page({
     this.setData({ eventStatus: String(value) })
   },
 
+  bumpKey() {
+    this.setData({ pageKey: createKey() })
+  },
+
   toB() {
     wx.navigateTo({ url: '/pages/b/b' })
   },

@@ -97,6 +97,8 @@ async function main() {
 
   const trace = []
   trace.push(await snapshot('A-initial', 'a'))
+  await tap('.bump-key')
+  trace.push(await snapshot('A-after-props', 'a'))
   await tap('.hit-wxs')
   trace.push(await snapshot('A-after-event', 'a'))
   await tap('.to-b')

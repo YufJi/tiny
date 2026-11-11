@@ -108,6 +108,10 @@ let failure = null
 try {
   trace.push(await snapshot('A-initial'))
   let render = await renderFrame()
+  await render.getByText('Bump Key', { exact: true }).click()
+  await page.waitForTimeout(150)
+  trace.push(await snapshot('A-after-props'))
+  render = await renderFrame()
   await render.getByText('Hit WXS', { exact: true }).click()
   await page.waitForTimeout(100)
   trace.push(await snapshot('A-after-event'))
