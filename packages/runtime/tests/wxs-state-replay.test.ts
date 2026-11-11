@@ -8,6 +8,11 @@ import {
 } from '@tiny/wxs-runtime'
 import { LogicTreeAdapter } from '../src/tree/logic/adapter'
 import type { RenderNode } from '../src/tree/protocol'
+import { TREE_PROTOCOL } from '../src/tree/protocol'
+import {
+  attachRenderInbound,
+  type RenderInboundHost,
+} from '../src/service/render/inbound'
 import { replayWxsHandler } from '../src/service/render/wxs-host'
 
 const PAGE = 'pages/replay/replay'
@@ -80,11 +85,6 @@ module.exports = { hit: hit, peek: peek }
     expect(textOf(tree.snapshotRenderTree('page-1'))).toContain('state:peek:0')
 
     const target = tree.query('page-1', '.hit', false)[0]!
-    const event = {
-      viewId: target.viewId,
-      name: 'tap',
-      pageId: 'page-1',
-    }
     const options = {
       getLogicTree: () => tree,
       getPage: () => ({
@@ -94,10 +94,36 @@ module.exports = { hit: hit, peek: peek }
       requestRenderUpdate: () => {},
       wxsRuntime,
     }
-    replayWxsHandler(tree, 'page-1', {
-      moduleId: STATE,
-      exportPath: ['hit'],
-    }, event, options)
+    const handlers = new Map<string, (message: { pageId?: string; payload?: unknown }) => void>()
+    const connection = {
+      onEvent: (domain: string, method: string, handler: (message: {
+        pageId?: string
+        payload?: unknown
+      }) => void) => {
+        handlers.set(`${domain}:${method}`, handler)
+      },
+    }
+    const host: RenderInboundHost = {
+      getLogicTree: () => tree,
+      isMounted: () => true,
+      sendSnapshot: () => {},
+      reportError: () => {},
+      dispatchWxsEffect: () => {},
+      replayWxsHandler: (pageId, origin, event) => {
+        replayWxsHandler(tree, pageId, origin, event, options)
+      },
+      acknowledgeRenders: () => {},
+    }
+    attachRenderInbound(connection as never, host)
+    handlers.get(`tree:${TREE_PROTOCOL.wxsHandler}`)!({
+      pageId: 'page-1',
+      payload: {
+        viewId: target.viewId,
+        name: 'tap',
+        moduleId: STATE,
+        exportPath: ['hit'],
+      },
+    })
     expect(wxsRuntime.invokeScoped!(
       wxsPageScopeKey('page-1'),
       STATE,

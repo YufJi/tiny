@@ -24,6 +24,7 @@ export const TREE_PROTOCOL = Object.freeze({
   hostRequest: 'hostRequest',
   wxsEffect: 'wxsEffect',
   wxsBinding: 'wxsBinding',
+  wxsHandler: 'wxsHandler',
   customEvent: 'customEvent',
 } as const)
 
@@ -86,6 +87,28 @@ export type WxsRenderEffect =
       detail?: unknown
       options?: Record<string, unknown>
     }
+
+/**
+ * State-sync message emitted after every render-side WXS handler.
+ *
+ * This is intentionally separate from `tree.event`: service listeners may not
+ * exist, `catch` may stop propagation, and a WXS handler still owns its
+ * pageframe module state in WeChat. The service replays this origin into the
+ * owning page runtime with a state-only descriptor.
+ */
+export type WxsHandlerMessage = {
+  viewId: string
+  targetId?: string
+  name: string
+  moduleId: string
+  exportPath: string[]
+  detail?: unknown
+  native?: Record<string, unknown>
+  touches?: unknown[]
+  changedTouches?: unknown[]
+  target?: RenderEventGeometry
+  currentTarget?: RenderEventGeometry
+}
 
 // Control domains are shared by the service runtime and the render thread;
 // re-exported here so the public `tree` barrel keeps one entry.
