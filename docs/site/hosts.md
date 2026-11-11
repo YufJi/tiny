@@ -442,7 +442,7 @@ devtool 的 service/render 入口用 `new Function('url', 'return import(url)')`
 :::
 
 :::callout{title="iOS 宿主已落地" tone="warn"}
-原生工程在 `ios/`，前端标准包在 `hosts/ios`（`src/service` + `src/web`）；`HostCoreRuntime` 通过 UniFFI 驱动 Rust HostCore，JSCore 跑 service，每页一个独立 render WKWebView，没有 host.html/iframe/JS fallback。全部 7 个 fixture 已在模拟器 smoke，并覆盖 native 导航/tab 切换。Canvas 2D 由 service 侧录制、native render 回放，`measureText` 走原生 CoreText；WebGL 和同步读回仍未接。它没有采用 `createNativeTreeRenderer`，所以 native `TreeRenderer` 仍只有契约。细节见 `ios/README.md`。
+原生工程在 `ios/`，前端标准包在 `hosts/ios`（`src/service` + `src/web`）；`HostCoreRuntime` 通过 UniFFI 驱动 Rust HostCore，JSCore 跑 service，每页一个独立 render WKWebView，没有 host.html/iframe/JS fallback。render WKWebView 与 browser/devtool 一样走 pageframe WXML；全部 9 个 fixture 已在模拟器 smoke，并覆盖 native 导航/tab 切换。Canvas 2D 由 service 侧录制、native render 回放，`measureText` 走原生 CoreText；WebGL 和同步读回仍未接。它没有采用 `createNativeTreeRenderer`，所以 native `TreeRenderer` 仍只有契约。细节见 `ios/README.md`。
 :::
 
 ## 当前宿主实现的已知问题 {#risks kicker="风险"}

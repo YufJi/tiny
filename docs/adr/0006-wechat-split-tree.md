@@ -17,9 +17,9 @@ Accepted and implemented. Merged into `next` as #27 (`1ac6d3a`), originally on
 - Initial page mount is driven by component-flow messages
   (`define` / `tree` / `ready`; the snapshot travels as a nested tree). Subsequent
   template updates use virtual-node patches, with `component-instances` marking
-  child-identity changes inside a component shadow tree. The browser test host
-  and debugger use the render-owned pageframe by default (ADR-0018); snapshot
-  rendering remains an explicit fallback. The legacy WeChat update
+  child-identity changes inside a component shadow tree. The browser test host,
+  debugger and iOS render WKWebView use the render-owned pageframe (ADR-0018);
+  snapshot rendering remains only a headless/legacy test adapter. The legacy WeChat update
   messages (`FLOW_UPDATE`, `FLOW_SET_DATA`, `FLOW_DATA_OBSERVER`,
   `FLOW_APPLY_PROPERTY`, `FLOW_GROUP`, …) are intentionally not implemented:
   the snapshot diff already carries text, props, insert/remove/reorder and

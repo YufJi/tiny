@@ -3,13 +3,13 @@ title: '用真实小程序验收，'
 highlight: '不只跑单元测试'
 eyebrow: '测试与验收'
 lede: >-
-  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。532 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，74 个浏览器步骤验证端到端行为；iOS 宿主另有 7 个 fixture 的 WKWebView + JSCore smoke。
+  Tiny 的验收会编译真实的 WXML、WXSS 和 JS，启动 service 逻辑树和宿主渲染树，在 Chromium 里点击、输入、导航，失败时保存截图。532 个单元测试覆盖协议、组件语义、tree 同步和编译逻辑，74 个浏览器步骤验证端到端行为；iOS 宿主另有 9 个 fixture 的 WKWebView + JSCore smoke。
 stats:
   - ['532', '单元测试']
   - ['74', '浏览器步骤']
   - ['5', '浏览器流程']
   - ['9', '测试小程序']
-  - ['7', 'iOS fixture smoke']
+  - ['9', 'iOS fixture smoke']
 description: '小程序引擎的验收方式：构建、内核检查、532 个单元测试、74 个浏览器步骤、九套测试小程序和 iOS 宿主 smoke。'
 name: '测试'
 pageTitle: '测试与验收 · Tiny 小程序引擎'

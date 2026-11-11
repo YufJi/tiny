@@ -2,9 +2,10 @@
 
 ## Status
 
-Accepted. Phases A and B are implemented and enabled by default in the browser
-test host and the debugger. The snapshot renderer remains available for explicit
-hosts that do not opt into `pageFrame`.
+Accepted. Phases A and B are implemented. The browser test host, debugger and
+iOS render WKWebView all mount through the pageframe; snapshot rendering
+remains only as a headless/legacy adapter path for tests and explicit
+`pageFrame: false` diagnostics.
 
 ## Context
 

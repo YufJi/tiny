@@ -83,6 +83,7 @@ function bootNativeRenderEntry(options: {
     })
     const runtime = bootTreeThread({
       connection,
+      pageFrame: true,
       renderer: options.renderer,
       ...(options.pageId ? { initialPageId: options.pageId } : {}),
     })
@@ -103,9 +104,10 @@ const assetsBase = new URL(
 installRemoteCanvas()
 
 /**
- * The render WebView evaluates component templates itself, so it loads the
- * same compiled bundle the service evaluates. `templates.js` is the compiler's
- * ESM entry; JSCore-side entries rewrite its `export default` the same way.
+ * The render WebView owns page/component WXML evaluation, so it loads the same
+ * compiled bundle the service uses for its logic tree. `templates.js` is the
+ * compiler's ESM entry; JSCore-side entries rewrite its `export default` the
+ * same way.
  */
 async function loadRenderTemplates(): Promise<TemplateRegistry | undefined> {
   try {
@@ -122,6 +124,7 @@ async function loadRenderTemplates(): Promise<TemplateRegistry | undefined> {
 
 const entry = createGlassRenderEntry({
   container: document.getElementById('app') ?? document.body,
+  pageFrame: true,
   resolveAssetUrl: (src, sourcePath) => {
     const reference = resolveAssetReference(sourcePath || '', src)
     if (!reference) return undefined

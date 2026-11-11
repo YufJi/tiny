@@ -269,7 +269,7 @@ button、input、scroll-view、swiper、canvas 等内置组件把原生字段归
 
 微信官方的 WXS 是运行在视图层的脚本语言，支持模块、受限 globals、`getRegExp` / `getDate`、事件处理和 `change:prop`。参考：[WXS 概述](https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxs/)、[WXS 事件](https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxs/06event.html)、[WXS 观察](https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxs/08observation.html)。
 
-启用页帧时，render pageframe 加载一份 `templates.js`，页面和组件 WXML 由 pageframe 求值。service 逻辑树仍从同一份模板生成逻辑节点和组件实例，供 fallback snapshot、查询和关系使用；它不再是页面 WXML 的执行所有者。WXS 在 pageframe 按页隔离：
+所有正式宿主（browser 测试宿主、devtool、iOS render WKWebView）都启用 pageframe：render 加载一份 `templates.js`，页面和组件 WXML 由 pageframe 求值。service 逻辑树仍从同一份模板生成逻辑节点和组件实例，供查询、关系和 headless/legacy snapshot adapter 使用；它不再是页面 WXML 的执行所有者。WXS 在 pageframe 按页隔离：
 
 | 用途 | 执行侧 | 说明 |
 | --- | --- | --- |
