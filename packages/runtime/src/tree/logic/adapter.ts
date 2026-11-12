@@ -8,7 +8,7 @@ import type {
   RenderPatch,
 } from '../protocol'
 import { diffRenderTree } from '../diff'
-import type { AssetUrlResolver } from '../../assets'
+import type { AssetUrlResolver, ProtocolRelativeUrlResolver } from '../../assets'
 import { normalizeAnimationFrames, animationTimingOptions } from '../animation'
 import * as glassEasel from 'glass-easel'
 import type { MiniProgramComponentSchema, QueryNodeSnapshot, TemplateRegistry } from '../../types'
@@ -51,6 +51,8 @@ export type LogicTreeAdapterOptions = {
   loadStyle?: (outputPath: string) => string
   /** Host hook used to resolve stylesheet `url(...)` assets before delivery. */
   resolveAssetUrl?: AssetUrlResolver
+  /** Host policy for protocol-relative stylesheet URLs in custom-scheme pages. */
+  resolveProtocolRelativeUrl?: ProtocolRelativeUrlResolver
   /** Runtime page kind, derived from the actual registration. */
   isComponentPage?: (path: string) => boolean
   onDataChange?: (pageId: string) => void
@@ -111,6 +113,7 @@ export class LogicTreeAdapter {
   private readonly manifest: Manifest
   private readonly loadStyle: (outputPath: string) => string
   private readonly resolveAssetUrl?: AssetUrlResolver
+  private readonly resolveProtocolRelativeUrl?: ProtocolRelativeUrlResolver
   private readonly isComponentPage?: (path: string) => boolean
   private componentSchemas: MiniProgramComponentSchema[] = []
   private componentDefinitions?: ReadonlyMap<string, NormalizedComponentDefinition>
@@ -139,6 +142,7 @@ export class LogicTreeAdapter {
     this.manifest = options.manifest
     this.loadStyle = options.loadStyle ?? (() => '')
     this.resolveAssetUrl = options.resolveAssetUrl
+    this.resolveProtocolRelativeUrl = options.resolveProtocolRelativeUrl
     this.isComponentPage = options.isComponentPage
     this.measureView = options.measureView
     this.measureLocators = options.measureLocators
@@ -174,6 +178,9 @@ export class LogicTreeAdapter {
       manifest: options.manifest,
       templates: options.templates,
       ...(options.resolveAssetUrl ? { resolveAssetUrl: options.resolveAssetUrl } : {}),
+      ...(options.resolveProtocolRelativeUrl
+        ? { resolveProtocolRelativeUrl: options.resolveProtocolRelativeUrl }
+        : {}),
       ...(options.isComponentPage ? { isComponentPage: options.isComponentPage } : {}),
       logicPageOptions: options.pageOptions,
       logicComponentDefinitions: options.componentDefinitions,

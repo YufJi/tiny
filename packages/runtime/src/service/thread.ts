@@ -96,6 +96,9 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
     loadTemplates: options.loadTemplates,
     ...(options.loadStyle ? { loadStyle: options.loadStyle } : {}),
     ...(options.resolveAssetUrl ? { resolveAssetUrl: options.resolveAssetUrl } : {}),
+    ...(options.resolveProtocolRelativeUrl
+      ? { resolveProtocolRelativeUrl: options.resolveProtocolRelativeUrl }
+      : {}),
     wxsRuntime,
     getPage: (pageId) => resolvePage(pageId),
     frameworkContext: {

@@ -195,13 +195,16 @@ describe('app stylesheet page-scope delivery', () => {
     const contents: Record<string, string> = {
       'styles/app.wxss.css': '.app { background: url("/logo.png") }',
       [`styles/${PAGE_PATH}.wxss.css`]: '.page { background: url("/pages/images/bg.png") }',
-      [`styles/${COMPONENT_PATH}.wxss.css`]: '.box { background: url("/components/box/icon.png") }',
+      [`styles/${COMPONENT_PATH}.wxss.css`]:
+        '.box { background: url("/components/box/icon.png") }'
+        + '@font-face { src: url(//cdn.example/icon.woff2) }',
     }
     const adapter = new GlassEaselRuntimeAdapter({
       backend,
       manifest,
       templates: createTemplateRegistry(),
       resolveAssetUrl: (assetPath) => `https://cdn.example/${assetPath}`,
+      resolveProtocolRelativeUrl: (url) => `https:${url}`,
     })
     adapter.registerStyles(manifest, (path) => contents[path] ?? '')
     expect(backend.styleSheets.get('styles/app.wxss.css'))
@@ -210,6 +213,8 @@ describe('app stylesheet page-scope delivery', () => {
       .toContain('url("https://cdn.example/pages/images/bg.png")')
     expect(backend.styleSheets.get(`styles/${COMPONENT_PATH}.wxss.css`))
       .toContain('url("https://cdn.example/components/box/icon.png")')
+    expect(backend.styleSheets.get(`styles/${COMPONENT_PATH}.wxss.css`))
+      .toContain('url("https://cdn.example/icon.woff2")')
   })
 
   test('keeps isolated components on their own scope', () => {

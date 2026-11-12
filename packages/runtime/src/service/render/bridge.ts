@@ -10,7 +10,11 @@ import type {
   TemplateRegistry,
 } from '../../types'
 import { cloneJsonSafe } from '../../data'
-import { mapCssAssetUrls, type AssetUrlResolver } from '../../assets'
+import {
+  mapCssAssetUrls,
+  type AssetUrlResolver,
+  type ProtocolRelativeUrlResolver,
+} from '../../assets'
 import { LogicTreeAdapter, type LogicFrameworkContext } from '../../tree/logic'
 import { buildComponentFlow, collectComponentIdentities } from '../../tree/flow'
 import {
@@ -56,6 +60,8 @@ export type ServiceRenderBridgeOptions = {
   loadStyle?: StyleLoader
   /** Host hook used for stylesheet `url(...)` assets; kept service-side so the render document base is irrelevant. */
   resolveAssetUrl?: AssetUrlResolver
+  /** Host policy for protocol-relative stylesheet URLs in custom-scheme pages. */
+  resolveProtocolRelativeUrl?: ProtocolRelativeUrlResolver
   getPage: (pageId: string) => ServiceRenderPage | undefined
   /** `this.router` / `this.pageRouter` / opener-channel hooks for the logic tree. */
   frameworkContext?: ServiceLogicFrameworkContext
@@ -164,6 +170,9 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       templates,
       ...(this.options.loadStyle ? { loadStyle: this.options.loadStyle } : {}),
       ...(this.options.resolveAssetUrl ? { resolveAssetUrl: this.options.resolveAssetUrl } : {}),
+      ...(this.options.resolveProtocolRelativeUrl
+        ? { resolveProtocolRelativeUrl: this.options.resolveProtocolRelativeUrl }
+        : {}),
       ...(this.options.isComponentPage ? { isComponentPage: this.options.isComponentPage } : {}),
       pageOptions: this.options.pageOptions,
       componentDefinitions: this.options.componentDefinitions,
@@ -695,8 +704,13 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     const appStyle = this.options.manifest.app?.style
     const appStylePath = appStyle?.outputPath
     const appCssRaw = appStylePath ? this.options.loadStyle?.(appStylePath) : undefined
-    const appCss = appCssRaw && this.options.resolveAssetUrl
-      ? mapCssAssetUrls(appCssRaw, this.options.resolveAssetUrl)
+    const appCss = appCssRaw
+      && (this.options.resolveAssetUrl || this.options.resolveProtocolRelativeUrl)
+      ? mapCssAssetUrls(
+          appCssRaw,
+          this.options.resolveAssetUrl ?? (() => undefined),
+          this.options.resolveProtocolRelativeUrl,
+        )
       : appCssRaw
     return {
       styles,

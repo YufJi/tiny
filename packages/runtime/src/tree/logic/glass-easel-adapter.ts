@@ -16,7 +16,11 @@ import type {
 } from '../../types'
 import { toJsonSafe } from '../../events'
 import { createRuntimeDiagnostic } from '../../diagnostics'
-import { mapCssAssetUrls, type AssetUrlResolver } from '../../assets'
+import {
+  mapCssAssetUrls,
+  type AssetUrlResolver,
+  type ProtocolRelativeUrlResolver,
+} from '../../assets'
 import { readComponentGenerics } from '../../component'
 import {
   isTraitBehavior,
@@ -99,6 +103,8 @@ export type GlassEaselAdapterOptions = {
   templates: TemplateRegistry
   /** Host hook mapping compiler-normalized app-root `url(...)` values to loadable URLs. */
   resolveAssetUrl?: AssetUrlResolver
+  /** Host policy for protocol-relative stylesheet URLs in custom-scheme pages. */
+  resolveProtocolRelativeUrl?: ProtocolRelativeUrlResolver
   /** Runtime page kind, derived from the actual `Page()` / `Component()` registration. */
   isComponentPage?: (path: string) => boolean
   onDiagnostic?: (diagnostic: import('../../diagnostics').RuntimeDiagnostic) => void
@@ -226,6 +232,7 @@ export class GlassEaselRuntimeAdapter {
   private readonly labelTargetBehavior: glassEasel.GeneralBehavior
   private readonly templates: TemplateRegistry
   private readonly resolveAssetUrl?: AssetUrlResolver
+  private readonly resolveProtocolRelativeUrl?: ProtocolRelativeUrlResolver
   private readonly isComponentPage?: (path: string) => boolean
   private readonly styleScopeIds = new Map<string, number>()
   private readonly scopeIdsByName = new Map<string, number>()
@@ -291,6 +298,7 @@ export class GlassEaselRuntimeAdapter {
     this.backend = options.backend
     this.templates = options.templates
     this.resolveAssetUrl = options.resolveAssetUrl
+    this.resolveProtocolRelativeUrl = options.resolveProtocolRelativeUrl
     this.isComponentPage = options.isComponentPage
     this.logicPageOptions = options.logicPageOptions
     this.logicComponentDefinitions = options.logicComponentDefinitions
@@ -338,9 +346,13 @@ export class GlassEaselRuntimeAdapter {
   private loadStyleText(outputPath: string, loadStyle: StyleLoader): string | undefined {
     const css = loadStyle(outputPath)
     if (typeof css !== 'string') return undefined
-    if (!this.resolveAssetUrl || css.length === 0) return css
+    if ((!this.resolveAssetUrl && !this.resolveProtocolRelativeUrl) || css.length === 0) return css
     try {
-      return mapCssAssetUrls(css, this.resolveAssetUrl)
+      return mapCssAssetUrls(
+        css,
+        this.resolveAssetUrl ?? (() => undefined),
+        this.resolveProtocolRelativeUrl,
+      )
     } catch {
       return css
     }
