@@ -1493,19 +1493,20 @@ export class GlassEaselRuntimeAdapter {
           this: glassEasel.GeneralComponent,
           ...args: unknown[]
         ) {
-          const target = adapter.resolveMethodCaller(this) ?? this
-          const component = target as unknown as object
+          const component = (adapter.resolveMethodCaller(this) ?? this) as unknown as {
+            data?: Record<string, unknown>
+          }
           const allPrevious = adapter.observerPreviousValues.get(component) ?? {}
           const previous = allPrevious[observer.key] ?? {}
-          const data = (this as unknown as { data?: Record<string, unknown> }).data ?? {}
+          const data = component.data ?? {}
           for (const path of observer.paths) {
             const name = directObserverPath(path)
             if (!name || Object.hasOwn(previous, name)) continue
-            previous[name] = data[name] ?? (this as unknown as Record<string, unknown>)[name]
+            previous[name] = data[name] ?? (component as unknown as Record<string, unknown>)[name]
           }
           allPrevious[observer.key] = previous
           adapter.observerPreviousValues.set(component, allPrevious)
-          const observerThis = new Proxy(target as object, {
+          const observerThis = new Proxy(this as object, {
             get(source, property, receiver) {
               if (typeof property === 'string' && Object.hasOwn(previous, property)) {
                 return previous[property]
@@ -1521,7 +1522,7 @@ export class GlassEaselRuntimeAdapter {
               if (!name) return
               previous[name] = args.length > index
                 ? args[index]
-                : data[name] ?? (this as unknown as Record<string, unknown>)[name]
+                : data[name] ?? (component as unknown as Record<string, unknown>)[name]
             })
           }
         })
@@ -1845,7 +1846,8 @@ export class GlassEaselRuntimeAdapter {
       return this.selectComponents(element, selector, all)
         .map((selected) => this.componentHandleOf(selected))
     }
-    return new Proxy(instanceFields, {
+    let methodCaller: Record<string, unknown>
+    methodCaller = new Proxy(instanceFields, {
       has() {
         return true
       },
@@ -1867,7 +1869,7 @@ export class GlassEaselRuntimeAdapter {
         if (logicMode && component && !property.startsWith('_$')) {
           const value = (component as unknown as Record<string, unknown>)[property]
           if (value !== undefined) {
-            return typeof value === 'function' ? value.bind(component) : value
+            return typeof value === 'function' ? value.bind(methodCaller) : value
           }
         }
         return undefined
@@ -1877,6 +1879,7 @@ export class GlassEaselRuntimeAdapter {
         return true
       },
     })
+    return methodCaller
   }
 
   private componentHandleOf(component: glassEasel.GeneralComponent): unknown {

@@ -72,12 +72,23 @@ describe('component property observers', () => {
         value(value: string) {
           const self = this as unknown as {
             value: string
-            setData: (patch: Record<string, unknown>) => void
+            pending: string
+            applyValue: () => void
           }
           if (value !== self.value) {
-            self.setData({ innerValue: value })
             self.value = value
+            self.pending = value
+            self.applyValue()
           }
+        },
+      },
+      methods: {
+        applyValue() {
+          const self = this as unknown as {
+            pending: string
+            setData: (patch: Record<string, unknown>) => void
+          }
+          self.setData({ innerValue: self.pending })
         },
       },
     }, FIELD_PATH)
