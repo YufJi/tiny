@@ -390,7 +390,7 @@ export type TreeRenderer = {
 }
 ```
 
-完整签名和可选字段见 `packages/runtime/src/tree/render/thread.ts`。
+完整签名和可选字段见 `packages/runtime/src/render/thread.ts`。
 
 ::::cards{layout="three"}
 :::card{tag="Web" title="createGlassRenderTree"}

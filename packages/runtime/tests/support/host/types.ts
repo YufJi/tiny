@@ -1,7 +1,7 @@
 import type { Transport } from '@tiny/bridge'
 import type { HostApiHandlers } from '@tiny/api'
-import type { RuntimeDiagnostic } from '../../../src/diagnostics'
-import type { RuntimeManifest } from '../../../src/types'
+import type { RuntimeDiagnostic } from '../../../src/shared/diagnostics'
+import type { RuntimeManifest } from '../../../src/shared/manifest'
 
 /**
  * Host-owned render thread slots.

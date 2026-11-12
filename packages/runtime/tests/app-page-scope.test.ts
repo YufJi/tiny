@@ -9,8 +9,8 @@ import {
   type PageArtifact,
   type StyleArtifact,
 } from '@tiny/manifest'
-import { GlassEaselRuntimeAdapter } from '../src/tree/logic/glass-easel-adapter'
-import type { MiniProgramComponentSchema } from '../src/types'
+import { GlassEaselRuntimeAdapter } from '../src/service/logic-tree/glass/adapter'
+import type { MiniProgramComponentSchema } from '../src/component/schema'
 
 const HOST_ATTRIBUTE = TINY_ENGINE_NAMING.hostAttribute
 const PAGE_PATH = 'pages/index/index'

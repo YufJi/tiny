@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { LogicBackendContext } from '../src/tree/logic/backend'
+import { LogicBackendContext } from '../src/service/logic-tree/backend'
 
 describe('logic backend style roles', () => {
   test('classifies sheets by role instead of output path', () => {

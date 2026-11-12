@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { cloneJsonSafe } from '../src/data'
+import { cloneJsonSafe } from '../src/shared/data'
 
 describe('custom event payload', () => {
   test('is JSON-safe before crossing the bridge', () => {

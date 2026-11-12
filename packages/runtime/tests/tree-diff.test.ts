@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
-import { diffRenderTree } from '../src/tree/diff'
-import type { RenderElement, RenderNode } from '../src/tree/protocol'
+import { diffRenderTree } from '../src/tree-protocol/diff'
+import type { RenderElement, RenderNode } from '../src/tree-protocol/protocol'
 
 function element(id: string, tag: string, extras: Partial<RenderElement> = {}): RenderElement {
   return { type: 'element', id, tag, ...extras }

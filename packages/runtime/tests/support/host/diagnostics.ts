@@ -1,6 +1,6 @@
 import type { BridgeConnection } from '@tiny/bridge'
-import type { RuntimeDiagnostic } from '../../../src/diagnostics'
-import { normalizeCompilerDiagnostics, normalizeTransportDiagnostic } from '../../../src/diagnostics'
+import type { RuntimeDiagnostic } from '../../../src/shared/diagnostics'
+import { normalizeCompilerDiagnostics, normalizeTransportDiagnostic } from '../../../src/shared/diagnostics'
 import type { RuntimeHostOptions } from './types'
 
 export type HostDiagnosticStore = {

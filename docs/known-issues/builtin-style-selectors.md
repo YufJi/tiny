@@ -69,7 +69,7 @@ tiny-button[native] .tiny-button-cover-view-inner { padding: 0 14px; }
 
 ### 1. 宿主没有内部 scope
 
-`build-templates` 给内置模板的每个元素注入 `tiny-builtin-tag-<hostTag>`，由 glass-easel 加 `tiny-builtin-<tag>` 前缀；但**宿主元素本身不是模板产物**。逻辑树的 `createComponent` 只把 `styleScope` 放进 shadowRoot 子树（[packages/runtime/src/tree/logic/backend.ts:235](../../packages/runtime/src/tree/logic/backend.ts#L235)），宿主只拿到使用处 class 和页面 scope。
+`build-templates` 给内置模板的每个元素注入 `tiny-builtin-tag-<hostTag>`，由 glass-easel 加 `tiny-builtin-<tag>` 前缀；但**宿主元素本身不是模板产物**。逻辑树的 `createComponent` 只把 `styleScope` 放进 shadowRoot 子树（[packages/runtime/src/service/logic-tree/backend.ts](../../packages/runtime/src/service/logic-tree/backend.ts)），宿主只拿到使用处 class 和页面 scope。
 
 所以任何「要求宿主带 `tiny-builtin-<tag>--…` marker」的内部选择器都不会命中。
 

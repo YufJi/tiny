@@ -8,9 +8,9 @@ import {
 } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTestHost } from './support/host'
-import { TREE_PROTOCOL } from '../src/tree/protocol'
-import type { RenderNode, RenderPatch } from '../src/tree/protocol'
-import type { TreeRenderer } from '../src/tree/render/thread'
+import { TREE_PROTOCOL } from '../src/tree-protocol/protocol'
+import type { RenderNode, RenderPatch } from '../src/tree-protocol/protocol'
+import type { TreeRenderer } from '../src/render/thread'
 import { createHarnessRenderConnector } from './helpers/render-connector'
 import { bootServiceThread } from './helpers/split-service'
 

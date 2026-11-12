@@ -1,6 +1,6 @@
-import { bootTreeThread, type TreeRenderer, type TreeThreadOptions } from '../../src/tree/render/thread'
+import { bootTreeThread, type TreeRenderer, type TreeThreadOptions } from '../../src/render/thread'
 import type { Manifest } from '@tiny/manifest'
-import type { StyleLoader, TemplateRegistry } from '../../src/types'
+import type { StyleLoader, TemplateRegistry } from '../../src/shared/template'
 import { lastLogicTree, provideHarnessConfig } from './split-service'
 import { createRenderConnection } from './render-connection'
 

@@ -7,10 +7,10 @@ import {
   type PageArtifact,
 } from '@tiny/manifest'
 import { normalizeComponentDefinition } from '../src/component/component-definition'
-import { buildComponentSchemas } from '../src/service/render/component-schema'
-import { LogicTreeAdapter } from '../src/tree/logic/adapter'
-import type { RenderNode } from '../src/tree/protocol'
-import type { MiniProgramComponentSchema } from '../src/types'
+import { buildComponentSchemas } from '../src/service/render-bridge/component-schema'
+import { LogicTreeAdapter } from '../src/service/logic-tree/adapter'
+import type { RenderNode } from '../src/tree-protocol/protocol'
+import type { MiniProgramComponentSchema } from '../src/component/schema'
 
 const PAGE_PATH = 'pages/home/home'
 const TAB_BAR_PATH = 'custom-tab-bar/index'

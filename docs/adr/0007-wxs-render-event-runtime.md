@@ -774,5 +774,5 @@ a projection. WXS expressions stay service-side; only event-time WXS moves.
 - Kernel WXS runtime: `packages/wxs-runtime/`
 - Generated template adapter: `packages/template-compiler/src/runtime/wxs-adapter.js`
 - Kernel package: `packages/wxs-runtime/`
-- Current service descriptor: `packages/runtime/src/service/wxs-host.ts`
+- Current service descriptor: `packages/runtime/src/service/render-bridge/wxs-host.ts`
 - Render tree: `hosts/web-components/src/render-tree.ts`

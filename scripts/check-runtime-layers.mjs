@@ -36,89 +36,142 @@ function readImports(file) {
   return [...new Set(imports)]
 }
 
+const files = collectFiles(srcDir)
+const relative = (file) => path.relative(srcDir, file).split(path.sep).join('/')
+const graph = new Map()
+for (const file of files) {
+  const targets = []
+  for (const specifier of readImports(file)) {
+    const resolved = resolveLocal(specifier, file)
+    if (resolved) targets.push(relative(resolved))
+  }
+  graph.set(relative(file), targets)
+}
+
 const rules = [
   {
-    name: 'component domain is shared and must not depend on service or tree',
-    applies: (file) => file.startsWith('component/'),
-    forbidden: (target) => target.startsWith('service/') || target.startsWith('tree/'),
-  },
-  {
-    name: 'service entry must not import the tree protocol or implementation',
-    applies: (file) => file === 'service/thread.ts',
-    forbidden: (target) => target.startsWith('tree/'),
-  },
-  {
-    name: 'service runtime (outside service/render) must not import tree modules',
-    applies: (file) => file.startsWith('service/') && !file.startsWith('service/render/'),
-    forbidden: (target) => target.startsWith('tree/'),
-  },
-  {
-    name: 'service/render is the only layer allowed to depend on tree logic/protocol',
-    applies: (file) => file.startsWith('service/render/'),
+    name: 'shared primitives must stay below every runtime layer',
+    applies: (file) => file.startsWith('shared/'),
     forbidden: (target) => (
-      target.startsWith('service/') && !target.startsWith('service/render/')
+      target.startsWith('component/')
+      || target.startsWith('tree-protocol/')
+      || target.startsWith('service/')
+      || target.startsWith('render/')
     ),
   },
   {
-    name: 'service runtime depends on the render port, not the bridge facade',
-    applies: (file) => (
-      file.startsWith('service/')
-      && !file.startsWith('service/render/')
-      && file !== 'service/thread.ts'
+    name: 'tree protocol must stay implementation-free',
+    applies: (file) => file.startsWith('tree-protocol/'),
+    forbidden: (target) => (
+      target.startsWith('component/')
+      || target.startsWith('service/')
+      || target.startsWith('render/')
     ),
-    forbidden: (target) => target === 'service/render/bridge.ts',
   },
   {
-    name: 'service render helpers must not depend on the bridge facade',
-    applies: (file) => (
-      file.startsWith('service/render/')
-      && file !== 'service/render/bridge.ts'
-      && file !== 'service/render/index.ts'
+    name: 'component domain must not depend on service, render or the wire protocol',
+    applies: (file) => file.startsWith('component/'),
+    forbidden: (target) => (
+      target.startsWith('tree-protocol/')
+      || target.startsWith('service/')
+      || target.startsWith('render/')
     ),
-    forbidden: (target) => target === 'service/render/bridge.ts',
   },
   {
-    name: 'tree/logic must not depend on the service runtime',
-    applies: (file) => file.startsWith('tree/logic/'),
-    forbidden: (target) => target.startsWith('service/'),
+    name: 'service logic tree must not depend on page runtime, boot or render thread',
+    applies: (file) => file.startsWith('service/logic-tree/'),
+    forbidden: (target) => (
+      target.startsWith('service/page/')
+      || target.startsWith('service/app/')
+      || target.startsWith('service/api/')
+      || target === 'service/boot.ts'
+      || target.startsWith('render/')
+    ),
   },
   {
-    name: 'tree/render must stay host-only (no service, component or logic internals)',
-    applies: (file) => file.startsWith('tree/render/'),
+    name: 'service render bridge must not depend on page runtime, boot or render thread',
+    applies: (file) => file.startsWith('service/render-bridge/'),
+    forbidden: (target) => (
+      target.startsWith('service/page/')
+      || target.startsWith('service/app/')
+      || target.startsWith('service/api/')
+      || target === 'service/boot.ts'
+      || target.startsWith('render/')
+    ),
+  },
+  {
+    name: 'service page runtime must use the render port, not logic-tree or protocol internals',
+    applies: (file) => file.startsWith('service/page/'),
+    forbidden: (target) => (
+      target.startsWith('service/logic-tree/')
+      || target.startsWith('tree-protocol/')
+      || (
+        target.startsWith('service/render-bridge/')
+        && target !== 'service/render-bridge/port.ts'
+      )
+      || target.startsWith('render/')
+      || target === 'service/boot.ts'
+    ),
+  },
+  {
+    name: 'service app helpers must not depend on logic tree, render bridge or boot',
+    applies: (file) => file.startsWith('service/app/'),
+    forbidden: (target) => (
+      target.startsWith('service/logic-tree/')
+      || target.startsWith('service/render-bridge/')
+      || target === 'service/boot.ts'
+      || target.startsWith('render/')
+    ),
+  },
+  {
+    name: 'service API globals must not depend on logic tree or render thread',
+    applies: (file) => file.startsWith('service/api/'),
+    forbidden: (target) => (
+      target.startsWith('service/logic-tree/')
+      || target.startsWith('service/render-bridge/')
+      || (
+        target.startsWith('service/app/')
+        && target !== 'service/app/types.ts'
+        && target !== 'service/app/lifecycle.ts'
+      )
+      || target === 'service/boot.ts'
+      || target.startsWith('render/')
+    ),
+  },
+  {
+    name: 'render thread must stay host-only',
+    applies: (file) => file.startsWith('render/'),
     forbidden: (target) => (
       target.startsWith('service/')
       || target.startsWith('component/')
-      || target.startsWith('tree/logic/')
-    ),
-  },
-  {
-    name: 'tree protocol helpers must not depend on runtime implementations',
-    applies: (file) => [
-      'tree/protocol.ts',
-      'tree/flow.ts',
-      'tree/diff.ts',
-      'tree/locator.ts',
-      'tree/animation.ts',
-    ].includes(file),
-    forbidden: (target) => (
-      target.startsWith('service/')
-      || target.startsWith('tree/logic/')
-      || target.startsWith('tree/render/')
     ),
   },
 ]
 
-const violations = []
-for (const file of collectFiles(srcDir)) {
-  const relative = path.relative(srcDir, file).split(path.sep).join('/')
-  for (const specifier of readImports(file)) {
-    const resolved = resolveLocal(specifier, file)
-    if (!resolved) continue
-    const target = path.relative(srcDir, resolved).split(path.sep).join('/')
-    for (const rule of rules) {
-      if (!rule.applies(relative) || !rule.forbidden(target)) continue
-      violations.push(`${relative} -> ${target}  (${rule.name})`)
+// Resolve transitively: a forbidden module may be hidden behind a shared type
+// hub or a barrel. Report the shortest import chain so the owner is obvious.
+function findForbiddenChain(file, forbidden) {
+  const queue = [[file]]
+  const seen = new Set([file])
+  while (queue.length > 0) {
+    const chain = queue.shift()
+    const current = chain.at(-1)
+    for (const target of graph.get(current) ?? []) {
+      if (forbidden(target)) return [...chain, target]
+      if (seen.has(target)) continue
+      seen.add(target)
+      queue.push([...chain, target])
     }
+  }
+  return null
+}
+
+const violations = []
+for (const file of graph.keys()) {
+  for (const rule of rules) {
+    if (!rule.applies(file)) continue
+    const chain = findForbiddenChain(file, rule.forbidden)
+    if (chain) violations.push(`${chain.join(' -> ')}  (${rule.name})`)
   }
 }
 
@@ -133,10 +186,10 @@ if (violations.length > 0) {
 const apiSrcDir = path.join(rootDir, 'packages/api/src')
 const apiViolations = []
 for (const file of collectFiles(apiSrcDir)) {
-  const relative = path.relative(apiSrcDir, file).split(path.sep).join('/')
+  const relativeApi = path.relative(apiSrcDir, file).split(path.sep).join('/')
   for (const specifier of readImports(file)) {
     if (specifier === '@tiny/runtime' || specifier.startsWith('@tiny/runtime/')) {
-      apiViolations.push(`${relative} imports ${specifier}`)
+      apiViolations.push(`${relativeApi} imports ${specifier}`)
     }
   }
 }
@@ -155,12 +208,15 @@ if (apiViolations.length > 0) {
 }
 
 const layers = [
-  'service/          application runtime: page stack, routing, tabBar, component tree, API globals',
-  'service/render/   service render: logic tree, schemas/definitions, flow/patch, WXS, tree events, RPCs',
-  'tree/protocol     wire contract: nodes, patches, message constants',
-  'tree/logic/       service-side logic tree internals (glass-easel backend)',
-  'tree/render/      host render thread and pageframe contract',
-  'component/        shared component domain: definitions, generics, behaviors, observers',
+  'shared/                  pure data, assets, events, diagnostics and template types',
+  'tree-protocol/           cross-thread tree contract and pure transforms',
+  'component/               component definition domain (normalization, behaviors, traits)',
+  'service/page/            page stack, navigation, lifecycle and registry',
+  'service/app/             App lifecycle helpers, tabBar, preload and subpackages',
+  'service/api/             global registration and host-facing API types',
+  'service/logic-tree/      service-side glass-easel logic tree',
+  'service/render-bridge/   service-side projection, scheduling, WXS and render RPCs',
+  'render/                  render-thread entry and pageframe contract',
 ]
 console.log('Runtime layer boundaries OK:')
 for (const line of layers) console.log(`  ${line}`)

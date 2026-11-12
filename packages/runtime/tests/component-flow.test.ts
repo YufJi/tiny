@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
-import { buildComponentFlow, collectComponentIdentities } from '../src/tree/flow'
-import type { ComponentDefinitionPayload, RenderNode } from '../src/tree/protocol'
+import { buildComponentFlow, collectComponentIdentities } from '../src/tree-protocol/flow'
+import type { ComponentDefinitionPayload, RenderNode } from '../src/tree-protocol/protocol'
 
 const CARD = 'components/card/card'
 

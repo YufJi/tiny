@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { mapCssAssetUrls, resolveAssetReference } from '../src/assets'
+import { mapCssAssetUrls, resolveAssetReference } from '../src/shared/assets'
 
 describe('resolveAssetReference', () => {
   test('resolves page-relative paths', () => {

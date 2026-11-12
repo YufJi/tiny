@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
-import type { RenderNode } from '../src/tree/protocol'
-import { applyComponentPlaceholders } from '../src/tree/placeholders'
+import type { RenderNode } from '../src/tree-protocol/protocol'
+import { applyComponentPlaceholders } from '../src/render/placeholders'
 
 function missingComponentTree(): RenderNode {
   return {

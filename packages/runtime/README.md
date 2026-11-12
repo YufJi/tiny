@@ -29,16 +29,17 @@ A browser host does not import iframe helpers from this package. Use
 
 ## Modules
 
-- `service/thread.ts` — service entry: compatibility registry, bridge connection, globals and control wiring
-- `service/page-stack.ts` / `service/page-instance.ts` — page stack, navigation, lifecycle and app visibility
-- `service/render/` — **service render layer**: logic tree lifecycle, component schemas/definition payloads, `tree.flow` / `tree.patch`, WXS bindings, inbound tree events and render RPCs
-- `service/tab-bar.ts` / `service/component-tree.ts` / `service/page-registry.ts` / `service/route.ts` — service runtime helpers
-- `tree/logic/` — service-side logic tree (adapter, backend, query, glass-easel bridge)
-- `tree/render/` — render thread entry and native render-tree adapter
-- `tree/protocol.ts` / `tree/flow.ts` / `tree/diff.ts` — cross-thread tree contract, flow and patches
-- `component/` — shared component domain: definitions, generics, behaviors, observers, options
-- `protocol-controls.ts` — control domains shared by the service and render entries
-- `assets.ts` / `data.ts` / `events.ts` / `diagnostics.ts` — shared primitives
+- `service/boot.ts` — service entry: compatibility registry, bridge connection, globals and control wiring
+- `service/page/` — page stack, navigation, lifecycle, routes, routers and state snapshots
+- `service/app/` — App lifecycle helpers, tabBar, preload and lazy subpackages
+- `service/api/` — registration globals and host-facing API types
+- `service/logic-tree/` — service-side logic tree (adapter, backend, query, glass-easel bridge)
+- `service/logic-tree/glass/` — glass adapter plus definitions, styles, lifecycle and framework properties
+- `service/render-bridge/` — service-side projection, scheduling, WXS, inbound events and render RPCs
+- `render/` — render thread entry, built-in host contract and native render-tree adapter
+- `tree-protocol/` — cross-thread tree contract, flow, diff, locator and animation transforms
+- `component/` — component domain: definitions, generics, behaviors, observers, properties, relations and traits
+- `shared/` — shared primitives: data, assets, events, diagnostics, template types and path resolution
 - `bridge` comes from `@tiny/bridge`; manifest types from `@tiny/manifest`
 
 Layer boundaries are documented in [`CONTEXT.md`](./CONTEXT.md) and enforced by
@@ -62,16 +63,15 @@ between them.
 
 ## Public API
 
-The package exposes the root entry (`src/index.ts`) plus the subpath above. The
-layer barrels under `service/`, `tree/`, `tree/logic/`, `tree/render/` and
-`component/` are for the runtime implementation; only the symbols below are part
-of the external contract.
+The package exposes the root entry (`src/index.ts`) plus the subpath above.
+Internal modules import their owner directly; only the root barrel and
+`glass-easel` subpath are public.
 
 | Consumer | Entry | Main types |
 | --- | --- | --- |
-| Service iframe | `bootServiceThread` | `ServiceThreadOptions`, `ServiceCanvasAdapter`, `CanvasNode*` |
+| Service iframe | `bootServiceThread` | `ServiceThreadOptions`, `ServiceThreadRuntime` |
 | Render iframe (web) | `bootTreeThread` | `TreeThreadOptions`, `TreeRenderer`, `TreeEventPayload` |
-| Both threads | `tree/protocol` | `RenderNode`, `RenderPatch`, `ComponentFlow`, `TREE_PROTOCOL`, `RUNTIME_CONTROL` |
+| Both threads | `tree-protocol/protocol` | `RenderNode`, `RenderPatch`, `ComponentFlow`, `TREE_PROTOCOL`, `RUNTIME_CONTROL` |
 | Host components | `BuiltinComponents` | `BuiltinComponentFactoryContext`, `BuiltinStyleSheet` |
 | Utilities | `resolveAssetReference`, `TINY_ENGINE_NAMING`, `DIAGNOSTIC_CODES` | `RuntimeDiagnostic`, `InspectNode`, manifest/runtime types |
 

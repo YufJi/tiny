@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import type { ComponentArtifact } from '@tiny/manifest'
-import { buildComponentSchemas } from '../src/service/render/component-schema'
+import { buildComponentSchemas } from '../src/service/render-bridge/component-schema'
 import { normalizeComponentDefinition } from '../src/component/component-definition'
 
 function artifact(path: string, effective: Record<string, unknown> = {}): ComponentArtifact {

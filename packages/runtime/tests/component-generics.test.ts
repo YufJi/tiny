@@ -6,7 +6,7 @@ import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTestHost } from './support/host'
 import { createHarnessRenderConnector, harnessRenderView } from './helpers/render-connector'
 import { bootServiceThread } from './helpers/split-service'
-import type { InspectNode } from '../src/types'
+import type { InspectNode } from '../src/service/logic-tree/inspect'
 
 const PAGE_PATH = 'pages/index/index'
 const GROUP_PATH = 'components/group/group'

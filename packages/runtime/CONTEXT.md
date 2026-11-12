@@ -3,40 +3,52 @@
 ## Layer map
 
 Dependencies point inward. `scripts/check-runtime-layers.mjs` enforces the
-arrows below; `pnpm check:runtime-layers` fails on a new cross-layer import.
+arrows below, including transitive imports; `pnpm check:runtime-layers` fails
+on a new cross-layer import.
 
 ```text
-host / tree/render  ──►  tree/protocol  ──►  shared primitives
-                              ▲
-service/thread (assembly) ──► service/render ──► tree/logic ──► component
-        │                          │
-        └──► service/page-stack ───┘
+render ──► tree-protocol ──► shared
+service/render-bridge ──► service/logic-tree ──► component ──► shared
+service/page ──► service/render-bridge/port
+service/app ──► shared
+service/boot ──► service/app + service/page + service/render-bridge
 ```
 
-| Layer | Paths | Owns | Must not import |
+| Layer | Paths | Owns | Must not depend on |
 | --- | --- | --- | --- |
-| Shared domain | `component/`, `data.ts`, `diagnostics.ts`, `assets.ts`, `events.ts`, `protocol-controls.ts` | component definitions/behaviors/options/generics/traits, data patching, diagnostics, shared control constants | `service/`, `tree/` |
-| Service runtime | `service/thread.ts` (assembly), `service/page-stack.ts`, `service/page-instance.ts`, `service/page-registry.ts`, `service/component-tree.ts`, `service/route.ts`, `service/router.ts`, `service/tab-bar.ts`, `service/api-globals.ts` | App/Page/Component registration, page stack, routing, page/component routers, component selector tree, tabBar, app visibility, API globals | `tree/` |
-| Service render | `service/render/` | service-side logic tree, component schemas/definition payloads, initial flow, patch scheduling, WXS bindings, inbound tree events, render RPCs | service runtime modules, `tree/render/` |
-| Tree logic | `tree/logic/` | glass-easel `ComponentSpace`, recording backend, logic selector query, event dispatch | `service/` |
-| Tree protocol | `tree/protocol.ts`, `tree/flow.ts`, `tree/diff.ts`, `tree/locator.ts`, `tree/animation.ts` | host-neutral nodes, patches, flow and locator contract | runtime implementations |
-| Host render | `tree/render/` | render-thread entry, pageframe `TreeRenderer` contract | `service/`, `component/`, `tree/logic/` |
+| Shared primitives | `shared/` | data patching, assets, events, diagnostics, template types, pure path resolution | every higher layer |
+| Tree protocol | `tree-protocol/` | host-neutral nodes, patches, flow, diff, locator, animation and control constants | runtime implementations |
+| Component domain | `component/` | definitions, properties, observers, relations, behaviors, generics and traits | `service/`, `render/`, `tree-protocol/` |
+| Service page | `service/page/` | page registry/instance/stack, navigation, routing, page lifecycle and state snapshots | `service/logic-tree/`, `tree-protocol/`, `service/render-bridge/` except `port.ts` |
+| Service app | `service/app/` | App lifecycle helpers, tabBar, preload and lazy subpackages | `service/logic-tree/`, `service/render-bridge/`, `service/boot.ts` |
+| Service API | `service/api/` | registration globals and host-facing API types | `service/logic-tree/`, `service/render-bridge/`, `service/boot.ts` |
+| Service logic tree | `service/logic-tree/` | glass-easel `ComponentSpace`, recording backend, logic selector query, event dispatch | `service/page/`, `service/render-bridge/`, `service/boot.ts`, `render/` |
+| Service render bridge | `service/render-bridge/` | logic-tree lifecycle, component schemas/definition payloads, flow/patch projection, update scheduling, WXS, inbound events and render RPCs | `service/page/`, `service/app/`, `service/api/`, `service/boot.ts`, `render/` |
+| Service boot | `service/boot.ts` | assembly only: registry, page stack, render bridge, globals and controls | `render/` |
+| Render thread | `render/` | render-thread entry, built-in host contract and pageframe `TreeRenderer` contract | `service/`, `component/` |
 
 `ServicePageStack` talks to the render side only through `ServiceRenderPort`
-(implemented by `ServiceRenderBridge`). This keeps page navigation independent
-of glass-easel and the tree protocol, and keeps all render-message knowledge in
-one layer.
+from `service/render-bridge/port.ts` (implemented by `ServiceRenderBridge`).
+`PageNavigator` owns the navigation commands but still talks only to the page
+stack host surface. This keeps navigation independent of glass-easel and the
+tree protocol, and keeps all render-message knowledge in one layer.
+
+Inside `service/logic-tree/glass/`, `adapter.ts` is the composition boundary.
+`definitions.ts` owns component/page registration, usingComponents and traits;
+`styles.ts` owns stylesheet scopes and cascade roles; `lifecycle.ts` owns
+page-tree state and ready ordering; `framework.ts` owns router/EventChannel
+property installation.
 
 ## Router and EventChannel
 
-- `this.router` / `this.pageRouter` are built by `service/router.ts` with one
+- `this.router` / `this.pageRouter` are built by `service/page/router.ts` with one
   stable base path and then call the installed `wx.*` table, so callbacks,
   `EventChannel` and diagnostics are identical to a direct API call. The base is
   the component path for `this.router` and the owning page path for
   `this.pageRouter`; relative URLs are resolved to absolute routes before the
   call so the page stack cannot change the base mid-navigation.
 - The logic tree receives `createRouter` / `pageMeta` through
-  `ServiceRenderBridge`'s `frameworkContext`; `tree/logic` only forwards these
+  `ServiceRenderBridge`'s `frameworkContext`; `service/logic-tree/` only forwards these
   opaque objects. Glass component instances get lazy getters for `router`,
   `pageRouter`, `getOpenerEventChannel` (and `route`/`__route__`/`options` on
   page roots): the adapter resolves lifetimes, observers and relation handlers
@@ -103,8 +115,9 @@ one layer.
   light/slot descendants) and is emitted once per new instance after the
   corresponding update is acknowledged. It is not a public dependency for other
   packages.
-- **Service render bridge**: `ServiceRenderBridge` in `service/render/`, the
-  façade of the only service layer that knows `tree/logic` and `tree/protocol`.
+- **Service render bridge**: `ServiceRenderBridge` in `service/render-bridge/`,
+  the façade of the only service layer that knows `service/logic-tree/` and
+  `tree-protocol/`.
   It owns the logic tree lifecycle, component schema/definition payloads,
   initial `tree.flow`, batched `tree.patch` and WXS bindings. Inbound
   `tree.event` / `tree.templateEvent` / `tree.wxsEffect` / `tree.ready` routing

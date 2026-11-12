@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { shouldPreloadRule } from '../src/service/preload'
+import { shouldPreloadRule } from '../src/service/app/preload'
 
 describe('preloadRule network gate', () => {
   test('always preloads network:all', () => {

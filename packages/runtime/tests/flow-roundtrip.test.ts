@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'vitest'
 import { BridgeConnection, createInMemoryTransportPair } from '@tiny/bridge'
-import { bootTreeThread } from '../src/tree/render/thread'
+import { bootTreeThread } from '../src/render/thread'
 import { createRenderConnection } from './helpers/render-connection'
-import { buildComponentFlow } from '../src/tree/flow'
-import type { ComponentDefinitionPayload, RenderNode } from '../src/tree/protocol'
+import { buildComponentFlow } from '../src/tree-protocol/flow'
+import type { ComponentDefinitionPayload, RenderNode } from '../src/tree-protocol/protocol'
 
 const CARD = 'components/card/card'
 

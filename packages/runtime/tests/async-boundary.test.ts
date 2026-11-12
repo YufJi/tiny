@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'vitest'
 import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest } from '@tiny/manifest'
-import { buildComponentSchemas } from '../src/service/render/component-schema'
+import { buildComponentSchemas } from '../src/service/render-bridge/component-schema'
 import { normalizeComponentDefinition } from '../src/component/component-definition'
-import { LogicTreeAdapter } from '../src/tree/logic/adapter'
+import { LogicTreeAdapter } from '../src/service/logic-tree/adapter'
 
 const PAGE = 'pages/index/index'
 const HEAVY = 'components/heavy/index'

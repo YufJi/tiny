@@ -7,15 +7,15 @@ import {
   type Manifest,
   type PageArtifact,
 } from '@tiny/manifest'
-import { buildComponentSchemas } from '../src/service/render/component-schema'
+import { buildComponentSchemas } from '../src/service/render-bridge/component-schema'
 import { normalizeComponentDefinition } from '../src/component/component-definition'
-import { buildComponentDefinitions } from '../src/service/render/definition-payload'
-import { buildComponentFlow } from '../src/tree/flow'
-import { bootTreeThread } from '../src/tree/render/thread'
+import { buildComponentDefinitions } from '../src/service/render-bridge/definition-payload'
+import { buildComponentFlow } from '../src/tree-protocol/flow'
+import { bootTreeThread } from '../src/render/thread'
 import { createRenderConnection } from './helpers/render-connection'
-import type { RenderNode } from '../src/tree/protocol'
-import { LogicTreeAdapter } from '../src/tree/logic/adapter'
-import type { MiniProgramComponentSchema } from '../src/types'
+import type { RenderNode } from '../src/tree-protocol/protocol'
+import { LogicTreeAdapter } from '../src/service/logic-tree/adapter'
+import type { MiniProgramComponentSchema } from '../src/component/schema'
 
 const PAGE = 'pages/index/index'
 const CARD = 'components/card/card'
