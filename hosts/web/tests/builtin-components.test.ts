@@ -1167,6 +1167,59 @@ describe('P0 built-in components', () => {
     }
   })
 
+  test('scroll-view default refresher follows WeChat dot positioning and states', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { 'scroll-view': builtins['scroll-view'] },
+      template: compilePage(`
+        <scroll-view id="scroll" scroll-y refresher-enabled refresher-threshold="80">
+          <view>content</view>
+        </scroll-view>
+      `),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const scrollHost = instance.getShadowRoot()?.getElementById('scroll')?.asGeneralComponent()!
+    attach(scrollHost)
+    const refresher = scrollHost.getShadowRoot()?.getElementById('refresher')?.asGeneralComponent()!
+    expect(refresher.data.dot1Class).toBe('')
+    expect(refresher.data.dot3Class).toBe('')
+
+    const dotStyles = {
+      dot1: {} as Record<string, string>,
+      dot3: {} as Record<string, string>,
+    }
+    for (const id of ['dot1', 'dot3'] as const) {
+      const dot = refresher.getShadowRoot()?.getElementById(id) as {
+        getBackendElement?: () => unknown
+      }
+      dot.getBackendElement = () => ({ style: dotStyles[id] })
+    }
+    ;(refresher as unknown as { applyDotPull: (dy: number) => void }).applyDotPull(80)
+    expect(dotStyles.dot1.transform).toBe('translateX(-10.75px)')
+    expect(dotStyles.dot3.transform).toBe('translateX(10.75px)')
+
+    ;(refresher as unknown as { setDots: (state: string) => void }).setDots('refreshing')
+    expect(refresher.data.dot1Class).toContain('blink-anim')
+    ;(refresher as unknown as { setDots: (state: string) => void }).setDots('restored')
+    expect(refresher.data.dot1Class).toContain('fold')
+    expect(refresher.data.dot3Class).toContain('fold')
+    ;(refresher as unknown as { setDots: (state: string) => void }).setDots('pulling')
+    expect(refresher.data.dot1Class).toBe('')
+    expect(refresher.data.dot3Class).toBe('')
+
+    const mainBackend = { style: {} as Record<string, string> }
+    const contentBackend = { style: {} as Record<string, string> }
+    ;(refresher as unknown as { _main: unknown })._main = mainBackend
+    ;(refresher as unknown as { _content: unknown })._content = contentBackend
+    ;(refresher as unknown as {
+      applyOffset: (offset: number, animate: boolean) => void
+    }).applyOffset(40, false)
+    expect(contentBackend.style.transform).toBe('translateY(40px)')
+    expect(mainBackend.style.transform).toBeUndefined()
+  })
+
   test('scroll-view applies paging and scrollbar chrome only in enhanced mode', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)

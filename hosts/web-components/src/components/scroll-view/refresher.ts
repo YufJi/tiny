@@ -12,8 +12,17 @@ type ScrollBackend = {
   removeEventListener?: (type: string, listener: (event: TouchEvent) => void) => void
 }
 
+type DotBackend = {
+  style?: {
+    transform?: string
+    webkitTransform?: string
+    [key: string]: string | undefined
+  }
+}
+
 type RefresherRuntime = {
   _main?: ScrollBackend | null
+  _content?: ScrollBackend | null
   _active?: boolean
   _refreshing?: boolean
   _cancelling?: boolean
@@ -22,6 +31,7 @@ type RefresherRuntime = {
   _startOffset?: number
   _startScrollTop?: number
   _touchCleanup?: Array<() => void>
+  _dotState?: 'idle' | 'pulling' | 'refreshing' | 'restored' | 'abort'
 }
 
 const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value))
@@ -78,6 +88,8 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
         } | null)?.getShadowRoot?.()
         const shadow = ownerShadow ?? parentShadow
         runtime._main = shadow?.getElementById?.('main')?.getBackendElement?.() ?? null
+        runtime._content = shadow?.getElementById?.('content')?.getBackendElement?.() ?? null
+        if (runtime._content?.style) runtime._content.style.willChange = 'transform'
         const main = runtime._main
         if (!main?.addEventListener) return
         const start = (event: TouchEvent) => this.handleStart(event)
@@ -127,21 +139,50 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
         if (value) {
           runtime._refreshing = true
           this.applyOffset(threshold, true)
+          this.applyDotPull(threshold + 1)
           this.setDots('refreshing')
           return
         }
         const wasRefreshing = Boolean(runtime._refreshing)
+        const wasCancelling = Boolean(runtime._cancelling)
         runtime._refreshing = false
         const restoreOffset = Number(runtime._offset ?? 0)
         this.applyOffset(0, true)
-        this.setDots('restored')
-        if (wasRefreshing && !runtime._cancelling) {
+        if (wasRefreshing && !wasCancelling) {
+          this.setDots('restored')
           this.triggerEvent('restore', { dy: restoreOffset })
+        } else {
+          this.setDots(wasCancelling ? 'abort' : 'idle')
         }
         runtime._cancelling = false
       },
-      setDots(state: 'pulling' | 'reached' | 'refreshing' | 'restored'): void {
+      dotBackend(id: string): DotBackend | null {
+        return (this.getShadowRoot?.() as {
+          getElementById?: (id: string) => { getBackendElement?: () => DotBackend | null } | null
+        } | null)?.getElementById?.(id)?.getBackendElement?.() ?? null
+      },
+      applyDotTransform(id: string, offset: number): void {
+        const dot = this.dotBackend(id)
+        if (!dot?.style) return
+        const transform = `translateX(${offset}px)`
+        dot.style.transform = transform
+        dot.style.webkitTransform = transform
+        dot.style['-webkit-transform'] = transform
+      },
+      applyDotPull(dy: number): void {
+        if (!this.data.normalizedStyle) return
+        const threshold = Number(this.data.threshold ?? 55)
+        const progress = dy <= 17 ? 0 : (dy - 17) / 36
+        const raw = dy <= threshold ? 13 * progress - 12 : 1
+        const offset = Number.parseInt(String(raw * 100), 10) / 100
+        this.applyDotTransform('dot1', -offset)
+        this.applyDotTransform('dot3', offset)
+      },
+      setDots(state: 'idle' | 'pulling' | 'refreshing' | 'restored' | 'abort'): void {
         if (this.data.normalizedStyle === '') return
+        const runtime = this as unknown as RefresherRuntime
+        if (runtime._dotState === state) return
+        runtime._dotState = state
         const blink = 'tiny-refresher-dot-1-blink-anim'
         const blink2 = 'tiny-refresher-dot-2-blink-anim'
         const blink3 = 'tiny-refresher-dot-3-blink-anim'
@@ -149,8 +190,6 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
         const fold3 = 'tiny-refresher-dot-3-fold'
         if (state === 'refreshing') {
           this.setData({ dot1Class: blink, dot2Class: blink2, dot3Class: blink3 })
-        } else if (state === 'reached') {
-          this.setData({ dot1Class: fold1, dot2Class: '', dot3Class: fold3 })
         } else if (state === 'restored') {
           this.setData({ dot1Class: fold1, dot2Class: '', dot3Class: fold3 })
         } else {
@@ -160,12 +199,14 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
       applyOffset(offset: number, animate: boolean): void {
         const runtime = this as unknown as RefresherRuntime
         runtime._offset = offset
-        const main = runtime._main
-        if (!main?.style) return
-        main.style.transition = animate ? 'transform 0.3s ease' : 'none'
-        main.style['-webkit-transition'] = animate ? 'transform 0.3s ease' : 'none'
-        main.style.transform = offset ? `translateY(${offset}px)` : ''
-        main.style['-webkit-transform'] = offset ? `translateY(${offset}px)` : ''
+        const target = runtime._content ?? runtime._main
+        if (!target?.style) return
+        const transform = offset ? `translateY(${offset}px)` : ''
+        target.style.transition = animate ? 'transform 0.3s ease' : 'none'
+        target.style['-webkit-transition'] = animate ? 'transform 0.3s ease' : 'none'
+        target.style.transform = transform
+        target.style.webkitTransform = transform
+        target.style['-webkit-transform'] = transform
       },
       handleStart(event: TouchEvent): void {
         const runtime = this as unknown as RefresherRuntime
@@ -197,7 +238,8 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
           if (event.cancelable) event.preventDefault()
           const offset = clamp(deltaY * 0.5, 0, threshold * 1.2)
           this.applyOffset(offset, false)
-          this.setDots(offset >= threshold ? 'reached' : 'pulling')
+          this.setDots('pulling')
+          this.applyDotPull(offset)
           this.triggerEvent('pulling', { dy: offset })
         }
       },
@@ -213,10 +255,11 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
             runtime._refreshing = false
             runtime._cancelling = true
             this.applyOffset(0, true)
-            this.setDots('restored')
+            this.setDots('abort')
             this.triggerEvent('abort', { dy: offset })
           } else {
             this.applyOffset(threshold, true)
+            this.applyDotPull(threshold + 1)
             this.setDots('refreshing')
           }
           return
@@ -224,12 +267,13 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
         if (offset >= threshold) {
           runtime._refreshing = true
           this.applyOffset(threshold, true)
+          this.applyDotPull(threshold + 1)
           this.setDots('refreshing')
           this.triggerEvent('willrefresh', { dy: offset })
           this.triggerEvent('refresh', { dy: offset })
         } else if (offset > 0) {
           this.applyOffset(0, true)
-          this.setDots('restored')
+          this.setDots('abort')
           this.triggerEvent('abort', { dy: offset })
         }
       },
@@ -240,7 +284,7 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
         runtime._active = false
         runtime._refreshing = false
         this.applyOffset(0, true)
-        this.setDots('restored')
+        this.setDots('abort')
         this.triggerEvent('abort', { dy: Number(runtime._offset ?? 0) })
       },
     },
