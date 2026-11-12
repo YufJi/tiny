@@ -2870,8 +2870,30 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
       currentStep = 'reload, close apps, and honor deep links'
       await openFixture(primary)
       assert.equal((await managerState()).active, primary.id)
+      const previousPageFrame = await page
+        .locator(`${surfaceSelector(primary.id)} iframe[data-page-id]`)
+        .first()
+        .elementHandle()
+      assert.ok(previousPageFrame, 'reload target has no page frame')
       await page.getByText('Reload', { exact: true }).click()
-      await waitForStatus('running')
+      // The toolbar handler starts reload asynchronously. Waiting only for the
+      // current `running` state can observe the pre-reload snapshot and race the
+      // teardown; wait for the old page frame to detach first.
+      await page.waitForFunction(
+        (frame) => !frame?.isConnected,
+        previousPageFrame,
+        { timeout: STEP_TIMEOUT },
+      )
+      await page.waitForFunction(
+        () => {
+          const current = window.__tinyDevtool?.getState()
+          return current?.status === 'running'
+            && current.pageStack.length === 1
+            && current.pageStack[0] === 'page-1'
+        },
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
       assert.deepEqual((await state()).pageStack, ['page-1'])
 
       await ensureLauncher()
