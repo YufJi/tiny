@@ -1,4 +1,4 @@
-import { registerBehavior } from '../component'
+import { registerBehavior, registerTraitBehavior } from '../component'
 import { applyDefinitionFilters } from '../component'
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import type { MiniProgramPageRegistry } from './page-registry'
@@ -47,13 +47,15 @@ export function installMiniProgramGlobals(
       consumeEntryHint(),
     )
   )
-  globalObject[globals.behavior] = (options?: MiniProgramComponentOptions) => {
+  const behavior = (options?: MiniProgramComponentOptions) => {
     const behavior = registerBehavior(options)
     // Match WeChat's declaration-time filtering: a behavior's own filter chain
     // runs when the behavior is declared, before any component uses it.
     applyDefinitionFilters(behavior, undefined, registry.compatibility)
     return behavior
   }
+  behavior.trait = registerTraitBehavior
+  globalObject[globals.behavior] = behavior
   globalObject[globals.getApp] = () => registry.getApp()
   globalObject[globals.getCurrentPages] = () => getCurrentPages?.() ?? []
   // Third-party bundles probe these while booting; report them as absent

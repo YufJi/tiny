@@ -9,6 +9,11 @@ A mini-program engine built on glass-easel.
 - **Language**: TypeScript (core packages and tools), JavaScript/JSX (`apps/devtool`, `website`)
 - **Runtime**: WeChat-style split trees — service logic tree + host render tree — over the versioned Tiny bridge protocol
 - **Compiler**: `tools/cli` produces the runtime manifest and artifacts
+- **Compatibility baseline**: all new runtime, component, compiler, WXS, CLI
+  and acceptance alignment work targets **WeChat 3.17.5** with the **WebView
+  renderer** and **glass-easel component framework**. Skyline, XR-FRAME and
+  exparser-only behavior are out of scope unless explicitly requested. Older
+  2.33.0/2.7.0 documents are historical references, not implementation targets.
 
 The workspace is split by role. Keep dependencies pointing inward: core packages
 must not depend on tools, apps, hosts, or tests.

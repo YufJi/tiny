@@ -256,6 +256,8 @@ export type RenderTemplateEvent = {
   id?: string
   dataset?: Record<string, unknown>
   currentTarget?: RenderEventGeometry
+  /** Render identity of the innermost event target. */
+  targetId?: string
   target?: RenderEventGeometry
 }
 

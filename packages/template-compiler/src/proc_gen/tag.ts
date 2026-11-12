@@ -1001,7 +1001,7 @@ function eventBindingToProcGen(
     ww.write(`)R.v(N,${n},`)
     if (dynamicLocal) ww.write(`Q.B(N,${n},`)
     p.valueExpr(ww)
-    if (dynamicLocal) ww.write(`,${isCatch},${isCapture},${isMut})`)
+    if (dynamicLocal) ww.write(`,${isCatch},${isMut},${isCapture})`)
     ww.write(`,${isCatch},${isMut},${isCapture},!0`)
     if (p.hasScriptLvaluePath(scopes)) {
       ww.write(',')
@@ -1017,7 +1017,7 @@ function eventBindingToProcGen(
         ww.write(`R.v(N,${n},`)
         if (dynamicLocal) ww.write(`Q.B(N,${n},`)
         p2.valueExpr(ww)
-        if (dynamicLocal) ww.write(`,${isCatch},${isCapture},${isMut})`)
+        if (dynamicLocal) ww.write(`,${isCatch},${isMut},${isCapture})`)
         ww.write(`,${isCatch},${isMut},${isCapture},!0`)
         if (p2.hasScriptLvaluePath(scopes)) {
           ww.write(',')

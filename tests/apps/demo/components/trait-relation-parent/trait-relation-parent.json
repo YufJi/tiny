@@ -1,0 +1,6 @@
+{
+  "component": true,
+  "usingComponents": {
+    "trait-relation-child": "/components/trait-relation-child/trait-relation-child"
+  }
+}

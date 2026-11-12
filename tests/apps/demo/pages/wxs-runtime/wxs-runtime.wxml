@@ -41,6 +41,21 @@
   </view>
   <text class="capture-status">capture-status: {{captureStatus}}</text>
   <text class="capture-parent-status">capture-parent-status: {{captureParentStatus}}</text>
+  <view id="mut-outer" mut-bind:tap="{{t.mutOuter}}">
+    <view id="mut-inner" class="event-child" mut-bind:tap="{{t.mutInner}}">mut-bind</view>
+    <view id="mut-normal-parent" bindtap="onMutNormalParent">
+      <view id="mut-normal-child" class="event-child" mut-bind:tap="{{t.mutNormalChild}}">mut-normal</view>
+    </view>
+  </view>
+  <text class="mut-status">mut-status: {{mutStatus}}</text>
+  <view id="target-outer" class="event-parent" data-role="outer" bindtap="onTargetProbe">
+    <view id="target-inner" class="event-child" data-role="inner">target</view>
+  </view>
+  <text class="target-status">target-status: {{targetStatus}}</text>
+  <trait-probe />
+  <trait-relation-parent>
+    <trait-relation-child />
+  </trait-relation-parent>
   <view id="counter" class="event-child" bindtap="{{useCounter ? counter.hit : 'serviceCounter'}}">counter</view>
   <text class="counter-status">counter-status: {{counterStatus}}</text>
   <text class="state-status">state-status: {{stateStatus}}</text>

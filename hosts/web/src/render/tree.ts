@@ -524,6 +524,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       detail?: unknown
       touches?: unknown[]
       changedTouches?: unknown[]
+      target?: unknown
       currentTarget?: unknown
     }
     const name = String(source.type ?? '')
@@ -551,6 +552,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       offsetWidth?: number
       offsetHeight?: number
     } | null
+    const targetRender = renderTargetOf(source.target)
     const viewId = element?.getAttribute?.(TINY_ENGINE_NAMING.nodeIdAttribute) ?? ''
     const geometry = element && typeof element.offsetLeft === 'number'
       ? {
@@ -578,6 +580,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         ? { dataset: { ...element.dataset } }
         : {}),
       ...(geometry ? { currentTarget: geometry } : {}),
+      ...(targetRender.identity ? { targetId: targetRender.identity } : {}),
+      ...(targetRender.geometry ? { target: targetRender.geometry } : {}),
     })
   }
   const nodes = new Map<string, AnyComponent | glassEasel.TextNode>()
@@ -1280,9 +1284,106 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     return element as HTMLElement
   }
 
-  const targetGeometryOf = (target: unknown): RenderEventGeometry | undefined => {
-    const element = backendElementOf(target)
-    return element ? geometryOfTarget(element) : undefined
+  type GlassEventNode = {
+    ownerShadowRoot?: { getHostNode?: () => unknown } | null
+    parentNode?: unknown
+    forEachNonVirtualComposedChild?: (callback: (node: unknown) => boolean | void) => boolean
+    getBackendElement?: () => unknown
+  }
+
+  /**
+   * Resolve the WXML node behind a glass event target.
+   *
+   * Built-in components open their own shadow tree for internal DOM, so the
+   * raw target may be an implementation node. Walk back to the host whose owner
+   * is a page or custom component: that host is the node the mini program wrote.
+   */
+  const semanticGlassTarget = (target: unknown): {
+    node: GlassEventNode
+    ownerShadow: NonNullable<GlassEventNode['ownerShadowRoot']>
+    ownerId: string
+  } | undefined => {
+    let current = target as GlassEventNode | undefined
+    while (current) {
+      const ownerShadow = current.ownerShadowRoot
+      if (!ownerShadow) return undefined
+      const owner = ownerShadow?.getHostNode?.() as GlassEventNode | undefined
+      if (!owner) return undefined
+      const backend = backendElementOf(owner)
+      const hostScope = backend?.getAttribute(TINY_ENGINE_NAMING.hostAttribute) ?? ''
+      const ownerId = backend?.getAttribute(TINY_ENGINE_NAMING.nodeIdAttribute) ?? ''
+      if (ownerId && hostScope && !hostScope.startsWith(TINY_ENGINE_NAMING.builtinStyleScopePrefix)) {
+        return { node: current, ownerShadow, ownerId }
+      }
+      current = owner
+    }
+    return undefined
+  }
+
+  const directGlassChildren = (parent: unknown): unknown[] => {
+    const children: unknown[] = []
+    const target = parent as GlassEventNode | undefined
+    if (typeof target?.forEachNonVirtualComposedChild === 'function') {
+      target.forEachNonVirtualComposedChild((child) => {
+        children.push(child)
+        return true
+      })
+      return children
+    }
+    const childNodes = (parent as { childNodes?: ArrayLike<unknown> } | undefined)?.childNodes
+    if (childNodes) {
+      for (let index = 0; index < childNodes.length; index += 1) {
+        children.push(childNodes[index])
+      }
+    }
+    return children
+  }
+
+  /**
+   * The service indexes pageframe WXML nodes as `owner#index.path`. Reconstruct
+   * that path over the non-virtual glass child list; no per-element DOM
+   * attribute is needed.
+   */
+  const glassTargetLocator = (
+    target: ReturnType<typeof semanticGlassTarget>,
+  ): string | undefined => {
+    if (!target) return undefined
+    const path: number[] = []
+    let current: unknown = target.node
+    while (current && current !== target.ownerShadow) {
+      const parent = (current as GlassEventNode).parentNode
+      if (!parent) return undefined
+      const index = directGlassChildren(parent).indexOf(current)
+      if (index < 0) return undefined
+      path.unshift(index)
+      current = parent
+    }
+    return current === target.ownerShadow && path.length > 0
+      ? `${target.ownerId}${'#'}${path.join('.')}`
+      : undefined
+  }
+
+  const renderTargetOf = (
+    target: unknown,
+  ): { identity?: string; geometry?: RenderEventGeometry } => {
+    const semantic = semanticGlassTarget(target)
+    if (semantic) {
+      const backend = backendElementOf(semantic.node)
+      const componentId = backend?.getAttribute(TINY_ENGINE_NAMING.nodeIdAttribute) ?? ''
+      const identity = componentId || glassTargetLocator(semantic)
+      return {
+        ...(identity ? { identity } : {}),
+        ...(backend && identity ? { geometry: geometryOf(backend, identity) } : {}),
+      }
+    }
+    const backend = backendElementOf(target)
+    const targetGeometry = backend ? geometryOfTarget(backend) : undefined
+    return {
+      ...(targetGeometry?.viewId
+        ? { identity: renderIdentityOfViewId(targetGeometry.viewId) }
+        : {}),
+      ...(targetGeometry ? { geometry: targetGeometry } : {}),
+    }
   }
 
   /**
@@ -1368,10 +1469,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   ): GlassRenderEvent => {
     const isTouch = name.startsWith('touch')
     const currentTarget = geometryOf(element, node.id!)
-    const targetGeometry = targetGeometryOf(event.target)
-    const targetId = targetGeometry?.viewId
-      ? renderIdentityOfViewId(targetGeometry.viewId)
-      : undefined
+    const renderTarget = renderTargetOf(event.target)
+    const targetGeometry = renderTarget.geometry
+    const targetId = renderTarget.identity
     const payload: GlassRenderEvent = {
       id: node.component === true ? node.id! : locatorOfNodeId(node.id!) ?? node.id!,
       name,
@@ -1947,7 +2047,11 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
           }
         })
       }
-      component.addListener(binding.name, listener as never, { capture: binding.capture === true })
+      component.addListener(binding.name, listener as never, {
+        capture: binding.capture === true,
+        final: binding.catch === true,
+        mutated: binding.mutated === true,
+      })
       cleanups.push(() => component.removeListener(binding.name, listener as never, {
         capture: binding.capture === true,
       }))

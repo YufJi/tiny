@@ -15,7 +15,7 @@ service/thread (assembly) ──► service/render ──► tree/logic ──�
 
 | Layer | Paths | Owns | Must not import |
 | --- | --- | --- | --- |
-| Shared domain | `component/`, `data.ts`, `diagnostics.ts`, `assets.ts`, `events.ts`, `protocol-controls.ts` | component definitions/behaviors/options/generics, data patching, diagnostics, shared control constants | `service/`, `tree/` |
+| Shared domain | `component/`, `data.ts`, `diagnostics.ts`, `assets.ts`, `events.ts`, `protocol-controls.ts` | component definitions/behaviors/options/generics/traits, data patching, diagnostics, shared control constants | `service/`, `tree/` |
 | Service runtime | `service/thread.ts` (assembly), `service/page-stack.ts`, `service/page-instance.ts`, `service/page-registry.ts`, `service/component-tree.ts`, `service/route.ts`, `service/router.ts`, `service/tab-bar.ts`, `service/api-globals.ts` | App/Page/Component registration, page stack, routing, page/component routers, component selector tree, tabBar, app visibility, API globals | `tree/` |
 | Service render | `service/render/` | service-side logic tree, component schemas/definition payloads, initial flow, patch scheduling, WXS bindings, inbound tree events, render RPCs | service runtime modules, `tree/render/` |
 | Tree logic | `tree/logic/` | glass-easel `ComponentSpace`, recording backend, logic selector query, event dispatch | `service/` |
@@ -59,6 +59,11 @@ one layer.
   dispatch. Its template instantiation builds the logical component tree and
   `RenderNode` snapshots; the render pageframe remains the final page/component
   WXML execution owner.
+- **Trait behavior**: a service-only `Behavior.trait()` identity implemented
+  through `implement()` on a behavior/component. Glass-easel owns the
+  `TraitBehavior`/`TraitGroup`; Tiny maps the token at definition registration
+  and exposes `hasBehavior` / `traitBehavior` plus trait-targeted relations.
+  Trait tokens never cross the render bridge.
 - **Page tree state**: per-page service-side state split into
   `PageTreeManager` (page root projection, optional independent tabBar root,
   latest render snapshots, component-data baseline, page-scoped component

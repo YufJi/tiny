@@ -1,14 +1,16 @@
 # 内置组件对齐状态（2.7.0 逐项审计，2.33.0 口径）
 
+> **历史归档**：本文记录 2.7.0/2.33.0 时期的组件结构审计，不代表当前实现目标。后续对齐统一使用微信 3.17.5 WebView + glass-easel，相关新任务应另开文档/issue。
+>
 > 参考实现：`~/Downloads/微信小程序.js`、`微信小程序.css`（微信 WebView，`__libVersionInfo__ = 2.7.0`）
 >
 > 2.33.0 口径：39 个 WebView 目标标签已全部接入，行为/组件缺口以 [builtin-inventory-2.33.0.md](./builtin-inventory-2.33.0.md) 为准；本文保留 2.7.0 的逐组件结构审计，未逐项重做 2.33.0 差异。
 >
-> 对照实现：[hosts/web-components/src/components](../hosts/web-components/src/components)
+> 对照实现：[hosts/web-components/src/components](../../hosts/web-components/src/components)
 >
 > 范围：当前已接入的 39 个内置标签；剩余 0 个标签不在本文逐项展开，缺口清单和占位目录见 [builtin-inventory-2.33.0.md](./builtin-inventory-2.33.0.md)。
 >
-> 历史差异审计、逐组件参考结构和修复方案已归档到 [component-reference-history.md](./archive/component-reference-history.md)。
+> 历史差异审计、逐组件参考结构和修复方案已归档到 [component-reference-history.md](./component-reference-history.md)。
 >
 > 更新时间：2026-10-28
 >
@@ -39,7 +41,7 @@
 | 交互语义 | ⚠️ 部分 | 触摸/滚动/group/label 仍是近似 |
 | P1 组件内部结构 | ⚠️ 部分 | input/textarea/swiper/form/button；scroll-view 接受 native 近似 |
 | 表单/受控能力 | ⚠️ 部分 | group 派生 value、自定义 form-field、reportSubmit |
-| 全项目能力对齐分 | 52.38% | 来自 [wechat-webview-parity.md](./wechat-webview-parity.md)，是整体能力分，不是组件单项分 |
+| 全项目能力对齐分 | 52.38% | 来自 [wechat-webview-parity.md](../wechat-webview-parity.md)，是整体能力分，不是组件单项分 |
 
 一句话：**结构层已经基本对齐，主要差距在交互模型、P1 组件内部结构和表单语义。**
 
@@ -198,7 +200,7 @@
 - **导航**：`navigator` 为真实 `tiny-navigator` 宿主，复用 hover 行为（`hover-class`/`hover-start-time`/`hover-stay-time`），点击经 `tree.hostAction` 交给宿主的 5 个路由 API；`target="miniProgram"` 与非法 `open-type`/空 `url` 发结构化诊断。
 - **P2 补强**：button longtap/canceltap、canvas 容器层、swiper wrapper/slides/frame、progress bar/inner-bar。
 
-对应实现集中在 [hosts/web-components/src/components](../hosts/web-components/src/components)，单测在 [hosts/web-components/tests/builtin-components.test.ts](../hosts/web-components/tests/builtin-components.test.ts)。
+对应实现集中在 [hosts/web-components/src/components](../../hosts/web-components/src/components)，单测在 [hosts/web/tests/builtin-components.test.ts](../../hosts/web/tests/builtin-components.test.ts)。
 
 ## 4. 剩余问题详细
 
@@ -224,7 +226,7 @@ wrapper 和 placeholder 层已补，原生 placeholder 仍保留用于查询/无
 
 `focus`/`autoFocus`/`cursor`/`selectionStart`/`selectionEnd` 已映射到原生 input。
 
-键盘输入本身已在 [input/template.wxml](../hosts/web-components/src/components/input/template.wxml) 修复，不再使用 `catchkeydown`。
+键盘输入本身已在 [input/template.wxml](../../hosts/web-components/src/components/input/template.wxml) 修复，不再使用 `catchkeydown`。
 
 ### 4.2 textarea 的剩余属性
 
@@ -246,7 +248,7 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 ### 4.4 button 的 native/open-type
 
 - `native` 分支已有 cover-view 结构，但没有原生 cover-view 能力；
-- `native` 分支的内部 padding / 继承边框规则当前不命中（选择器作用域问题），见 [known-issues/builtin-style-selectors.md](known-issues/builtin-style-selectors.md)；
+- `native` 分支的内部 padding / 继承边框规则当前不命中（选择器作用域问题），见 [known-issues/builtin-style-selectors.md](../known-issues/builtin-style-selectors.md)；
 - `open-type` 按决策暂不支持，只触发失败回调；
 - `longpress`/`longtap`（别名）/`canceltap` 已统一到宿主事件合成层，剩余是原生能力分支。
 
@@ -288,7 +290,7 @@ wrapper/placeholder 层和 `scrollHeight` autoHeight 已补。仍缺：
 
 历史差异审计、逐组件参考结构、修复方案和已落地过程已单独归档：
 
-- [component-reference-history.md](./archive/component-reference-history.md)
+- [component-reference-history.md](./component-reference-history.md)
 
 主文档只保留当前状态、问题清单和验收结果，避免历史方案和当前结论混在一起。
 
@@ -342,4 +344,4 @@ pnpm lint                # 8 files checked, no fixes applied
 
 ### 6.5 全项目分数
 
-`52.38%` 来自 [wechat-webview-parity.md](./wechat-webview-parity.md) 的整体能力校准（39/60 标签、73/502 API、页面生命周期 14/14、路由 5/5、浏览器 + iOS 宿主等），**不是**本文逐组件审计的单项得分；本文详细审计以早期 24 个标签为主，新增标签见 [builtin-inventory-2.33.0.md](./builtin-inventory-2.33.0.md)，组件结构对齐不应直接等同于总分提升。
+`52.38%` 来自 [wechat-webview-parity.md](../wechat-webview-parity.md) 的整体能力校准（39/60 标签、73/502 API、页面生命周期 14/14、路由 5/5、浏览器 + iOS 宿主等），**不是**本文逐组件审计的单项得分；本文详细审计以早期 24 个标签为主，新增标签见 [builtin-inventory-2.33.0.md](./builtin-inventory-2.33.0.md)，组件结构对齐不应直接等同于总分提升。

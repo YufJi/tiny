@@ -111,6 +111,23 @@ describe('WXS event metadata', () => {
     expect(output).toContain('wx-tiny-wxs-dynamic')
     expect(output).toContain('Q.B(')
   })
+
+  test('passes mut-bind metadata to Q.B in argument order', () => {
+    const group = TmplGroup.new({
+      directivePrefix: 'wx',
+      templateExtension: '.wxml',
+      templateScriptExtension: '.wxs',
+    })
+    group.addScript('wxs/utils.wxs', 'module.exports = { tap: function () {} }')
+    group.addTmpl(
+      'pages/index/index',
+      '<wxs module="utils" src="/wxs/utils.wxs" />'
+        + '<view mut-bind:tap="{{utils.tap}}" />',
+    )
+    const output = group.getTmplGenObjectGroups()
+    expect(output).toContain('\\"mutated\\":true')
+    expect(output).toMatch(/Q\.B\(N,"tap",[^;]+?!1,!0,!1\)/)
+  })
 })
 
 

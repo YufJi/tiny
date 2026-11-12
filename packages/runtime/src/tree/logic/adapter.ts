@@ -966,7 +966,9 @@ export class LogicTreeAdapter {
     changedTouches?: unknown[]
     id?: string
     dataset?: Record<string, unknown>
+    targetId?: string
     currentTarget?: { offsetLeft?: number; offsetTop?: number; offsetWidth?: number; offsetHeight?: number }
+    target?: { offsetLeft?: number; offsetTop?: number; offsetWidth?: number; offsetHeight?: number }
   }): boolean {
     const node = this.backend.findByViewId(payload.componentId)
     const element = node?.__wxElement
@@ -976,7 +978,7 @@ export class LogicTreeAdapter {
     }).asGeneralComponent?.() ?? element
     const path = (component as { is?: unknown }).is
     const geometry = payload.currentTarget
-    const shape = {
+    const currentTargetShape = {
       id: payload.id ?? '',
       dataset: payload.dataset ?? {},
       offsetLeft: geometry?.offsetLeft ?? 0,
@@ -984,12 +986,26 @@ export class LogicTreeAdapter {
       offsetWidth: geometry?.offsetWidth ?? 0,
       offsetHeight: geometry?.offsetHeight ?? 0,
     }
+    const targetNode = payload.targetId
+      ? this.backend.findByViewId(payload.targetId)
+      : undefined
+    const targetGeometry = payload.target
+    const targetShape = targetNode
+      ? {
+          id: targetNode.id,
+          dataset: Object.fromEntries(targetNode.dataset),
+          offsetLeft: targetGeometry?.offsetLeft ?? 0,
+          offsetTop: targetGeometry?.offsetTop ?? 0,
+          offsetWidth: targetGeometry?.offsetWidth ?? 0,
+          offsetHeight: targetGeometry?.offsetHeight ?? 0,
+        }
+      : currentTargetShape
     const event = {
       type: payload.name,
       timeStamp: Date.now(),
       detail: payload.detail ?? {},
-      target: shape,
-      currentTarget: shape,
+      target: targetShape,
+      currentTarget: currentTargetShape,
       touches: payload.touches ?? [],
       changedTouches: payload.changedTouches ?? [],
     }

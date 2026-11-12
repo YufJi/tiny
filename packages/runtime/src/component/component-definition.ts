@@ -4,10 +4,18 @@ import {
   type RuntimeCompatibilityConfig,
 } from '@tiny/manifest'
 import { cloneDataValue } from '../data'
-import { isBuiltinBehavior, resolveBuiltinBehavior } from './behaviors'
+import {
+  behaviorTraitImplementations,
+  isBuiltinBehavior,
+  resolveBuiltinBehavior,
+} from './behaviors'
 import { componentExportDefinitionFilter } from './behaviors/component-export'
 import type { MiniProgramComponentOptions } from './options'
 import type { MiniProgramPropertyDefinition, MiniProgramPropertyType } from '../types'
+import {
+  isTraitBehavior,
+  type MiniProgramTraitBehavior,
+} from './traits'
 
 export type ComponentLifecycleName = 'created' | 'attached' | 'ready' | 'moved' | 'detached'
 export type RelationType = 'parent' | 'child' | 'ancestor' | 'descendant'
@@ -26,10 +34,16 @@ export type NormalizedRelation = {
   key: string
   type: RelationType
   targetPath: string
+  trait?: MiniProgramTraitBehavior
   linked?: RelationCallback
   unlinked?: RelationCallback
   linkChanged?: RelationCallback
   linkFailed?: RelationCallback
+}
+
+export type NormalizedTraitImplementation = {
+  trait: MiniProgramTraitBehavior
+  impl: Record<string, unknown>
 }
 
 export type StyleIsolation = 'isolated' | 'apply-shared' | 'shared'
@@ -83,6 +97,7 @@ export type NormalizedComponentDefinition = {
   listeners: Record<string, Function | string>
   options: NormalizedComponentOptions
   behaviors: Set<object | string>
+  traits: NormalizedTraitImplementation[]
   componentExport: boolean
   formField: boolean
   formFieldButton: boolean
@@ -141,6 +156,7 @@ type Collector = {
   listeners: Record<string, Function | string>
   options: NormalizedComponentOptions
   behaviors: Set<object | string>
+  traits: Map<string, NormalizedTraitImplementation>
   componentExport: boolean
   formField: boolean
   formFieldButton: boolean
@@ -206,6 +222,9 @@ export function normalizeComponentDefinition(
         visit(item)
       }
     }
+    for (const traitImpl of behaviorTraitImplementations(behavior)) {
+      collector.traits.set(traitImpl.trait.id, traitImpl)
+    }
     // WeChat calls a behavior's definitionFilter when the *user* of that
     // behavior is declared. Visiting nested behaviors first reproduces that
     // bottom-up order: behavior3 filters behavior2, behavior2 filters
@@ -247,6 +266,7 @@ export function normalizeComponentDefinition(
     listeners: collector.listeners,
     options: collector.options,
     behaviors: collector.behaviors,
+    traits: [...collector.traits.values()],
     componentExport: collector.componentExport,
     formField: collector.formField,
     formFieldButton: collector.formFieldButton,
@@ -283,6 +303,7 @@ function createCollector(): Collector {
       explicitStyleIsolation: false,
     },
     behaviors: new Set(),
+    traits: new Map(),
     componentExport: false,
     formField: false,
     formFieldButton: false,
@@ -516,6 +537,20 @@ function normalizeRelations(
       continue
     }
     const target = typeof value.target === 'string' ? value.target : key
+    if (isTraitBehavior(value.target)) {
+      const relation: NormalizedRelation = {
+        key,
+        type,
+        targetPath: '',
+        trait: value.target,
+      }
+      if (isRelationCallback(value.linked)) relation.linked = value.linked
+      if (isRelationCallback(value.unlinked)) relation.unlinked = value.unlinked
+      if (isRelationCallback(value.linkChanged)) relation.linkChanged = value.linkChanged
+      if (isRelationCallback(value.linkFailed)) relation.linkFailed = value.linkFailed
+      relations.push(relation)
+      continue
+    }
     if (isBuiltinBehavior(target)) {
       diagnostics.push({
         code: DIAGNOSTIC_CODES.UNSUPPORTED_RELATION_TARGET,

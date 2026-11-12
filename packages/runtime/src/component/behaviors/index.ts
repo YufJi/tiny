@@ -1,5 +1,6 @@
 import type { RuntimeCompatibilityConfig } from '@tiny/manifest'
 import type { MiniProgramComponentOptions } from '../options'
+import type { MiniProgramTraitBehavior } from '../traits'
 import { createComponentExportBehavior } from './component-export'
 import { createFormFieldBehavior } from './form-field'
 import { createFormFieldButtonBehavior } from './form-field-button'
@@ -19,7 +20,37 @@ export { builtinBehaviorId } from './types'
  * and user code share one import path.
  */
 export function registerBehavior(options?: MiniProgramComponentOptions): MiniProgramComponentOptions {
-  return options ?? {}
+  const behavior = options ?? {}
+  const traitImpls: Array<{
+    trait: MiniProgramTraitBehavior
+    impl: Record<string, unknown>
+  }> = []
+  Object.defineProperty(behavior, '__tinyTraitImpls', {
+    value: traitImpls,
+    enumerable: false,
+    configurable: true,
+  })
+  Object.defineProperty(behavior, 'implement', {
+    value(trait: MiniProgramTraitBehavior, impl: Record<string, unknown>) {
+      traitImpls.push({ trait, impl })
+      return behavior
+    },
+    enumerable: false,
+    configurable: true,
+  })
+  return behavior
+}
+
+export function behaviorTraitImplementations(value: unknown): Array<{
+  trait: MiniProgramTraitBehavior
+  impl: Record<string, unknown>
+}> {
+  if (!value || typeof value !== 'object') return []
+  const impls = (value as { __tinyTraitImpls?: unknown }).__tinyTraitImpls
+  return Array.isArray(impls) ? impls as Array<{
+    trait: MiniProgramTraitBehavior
+    impl: Record<string, unknown>
+  }> : []
 }
 
 /**

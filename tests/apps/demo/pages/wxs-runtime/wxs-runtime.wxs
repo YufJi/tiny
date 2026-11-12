@@ -33,6 +33,18 @@ function captureParent(event, ins) {
   ins.callMethod('recordCaptureParent', 'capture-parent')
 }
 
+function mutOuter(event, ins) {
+  ins.callMethod('recordMut', 'outer')
+}
+
+function mutInner(event, ins) {
+  ins.callMethod('recordMut', 'inner')
+}
+
+function mutNormalChild(event, ins) {
+  ins.callMethod('recordMut', 'normal-child')
+}
+
 function observe(next, previous, ins) {
   var state = ins.getState()
   state.builtinObserved = true
@@ -64,6 +76,9 @@ module.exports = {
   stopTap: stopTap,
   captureChild: captureChild,
   captureParent: captureParent,
+  mutOuter: mutOuter,
+  mutInner: mutInner,
+  mutNormalChild: mutNormalChild,
   observe: observe,
   observeProbe: observeProbe,
   onProbe: onProbe,
