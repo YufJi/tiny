@@ -132,10 +132,11 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
         }
         const wasRefreshing = Boolean(runtime._refreshing)
         runtime._refreshing = false
+        const restoreOffset = Number(runtime._offset ?? 0)
         this.applyOffset(0, true)
         this.setDots('restored')
         if (wasRefreshing && !runtime._cancelling) {
-          this.triggerEvent('restore', { dy: 0 })
+          this.triggerEvent('restore', { dy: restoreOffset })
         }
         runtime._cancelling = false
       },
@@ -224,6 +225,7 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
           runtime._refreshing = true
           this.applyOffset(threshold, true)
           this.setDots('refreshing')
+          this.triggerEvent('willrefresh', { dy: offset })
           this.triggerEvent('refresh', { dy: offset })
         } else if (offset > 0) {
           this.applyOffset(0, true)
