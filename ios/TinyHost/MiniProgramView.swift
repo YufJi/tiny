@@ -1,15 +1,18 @@
 import SwiftUI
 
 struct MiniProgramView: View {
-  let app: AppInfo
-
+  @ObservedObject var session: MiniProgramSession
+  let onClose: () -> Void
   @Environment(\.dismiss) private var dismiss
   @Environment(\.scenePhase) private var scenePhase
-  @StateObject private var session: MiniProgramSession
 
-  init(app: AppInfo, smoke: Bool) {
-    self.app = app
-    _session = StateObject(wrappedValue: MiniProgramSession(app: app, smoke: smoke))
+  init(session: MiniProgramSession, onClose: @escaping () -> Void) {
+    _session = ObservedObject(wrappedValue: session)
+    self.onClose = onClose
+  }
+
+  private var app: AppInfo {
+    session.app
   }
 
   private var customNavigation: Bool {
@@ -64,6 +67,9 @@ struct MiniProgramView: View {
     }
     .onChange(of: scenePhase) { phase in
       session.setVisible(phase == .active)
+    }
+    .onDisappear {
+      session.setVisible(false)
     }
     .interactiveDismissDisabled()
   }
@@ -136,6 +142,9 @@ struct MiniProgramView: View {
           session.back()
         }
         .disabled(session.uiState?.canBack != true)
+        Button("关闭当前小程序", role: .destructive) {
+          onClose()
+        }
       } label: {
         CapsuleDots(color: foreground)
           .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -156,7 +165,7 @@ struct MiniProgramView: View {
           .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
-      .accessibilityLabel("关闭小程序")
+      .accessibilityLabel("返回小程序列表")
     }
     .frame(
       width: session.systemInfo.menuButtonWidth,
@@ -280,7 +289,7 @@ struct MiniProgramView: View {
         }
         .frame(maxHeight: 180)
         Button {
-          dismiss()
+          onClose()
         } label: {
           Text("关闭")
             .font(.system(size: 15, weight: .semibold))
