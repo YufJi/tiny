@@ -12,4 +12,9 @@ struct NativeHostView: UIViewRepresentable {
   func updateUIView(_ uiView: UIView, context: Context) {
     // Page surfaces are owned by HostCoreRuntime.
   }
+
+  static func dismantleUIView(_ uiView: UIView, coordinator: ()) {
+    // The session keeps this container warm for LRU reuse.
+    uiView.removeFromSuperview()
+  }
 }

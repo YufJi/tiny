@@ -39,8 +39,8 @@ hosts/ios/                         iOS 的前端标准包（pnpm workspace）
 
 ## 能力
 
-- 原生 Launcher：自动列出 `tests/apps` 下的全部 fixture（demo、mini、todo、wechat-demo、echarts、vant、weui），点击进入。
-- 原生导航栏、固定胶囊和 tabBar：标题、返回、关闭胶囊、tab 图标/选中态/badge/redDot，
+- 原生 Launcher：自动列出 `tests/apps` 下的全部 fixture（demo、mini、todo、wechat-demo、echarts、vant、weui），点击进入；最多保活最近 3 个小程序会话。
+- 原生导航栏、固定胶囊和 tabBar：标题、返回、返回列表胶囊、tab 图标/选中态/badge/redDot，
   颜色来自页面和 `RUNTIME_STATE`；胶囊 geometry 与 `getMenuButtonBoundingClientRect()` 同源。
 - 逻辑层真正跑在 `JSContext`：App/Page/Component、glass-easel 逻辑树、逻辑模板实例化、WXS 表达式、observer/relations/页面栈全部在 JSCore；最终页面/组件 WXML 求值在 render WKWebView 的 pageframe。
 - 渲染层跑在 WKWebView：每页一个独立 `NativeRenderSurface`，复用 `createGlassRenderEntry` / `createGlassRenderTree`；
@@ -55,9 +55,9 @@ hosts/ios/                         iOS 的前端标准包（pnpm workspace）
 
 ```text
 ┌──────────────────────────── TinyHost.app ─────────────────────────────┐
-│ SwiftUI Launcher / Native chrome (nav bar, tabBar, close capsule)     │
+│ SwiftUI Launcher / 3-session LRU / Native chrome (nav, tabBar)        │
 │                                                                       │
-│  MiniProgramSession                                                   │
+│  MiniProgramSession (up to 3, one JSContext each)                     │
 │    HostCoreRuntime                                                    │
 │      RustHostCore (UniFFI)  ← host orchestration / page stack        │
 │      ├─ page WKWebView #1  render.html                       │
@@ -240,11 +240,25 @@ fixture 通过 `scripts/devtool-apps.mjs` 的 `discoverTestApps()` 自动发现�
 - 宿主 tabBar 只在 `tabBar.visible == true` 且 `custom == false` 的 tab 页渲染；自定义 tabBar
   完全由页面组件绘制，二级页面不保留宿主 tabBar。
 - `navigationStyle: "custom"`：隐藏默认 nav bar，WebView 延伸到状态栏下方；系统状态栏仍保留，
-  原生胶囊继续覆盖在右上角。胶囊右侧关闭按钮直接返回 Launcher，左侧菜单只提供页面返回，
-  不再需要二次确认关闭。
+  原生胶囊继续覆盖在右上角。胶囊右侧圆环返回 Launcher 并保留会话，左侧菜单提供页面返回和显式关闭。
 - 无 tabBar 时 WebView 延伸到屏幕底部，页面背景覆盖 home indicator；有 tabBar 时 tabBar 背景延伸到底部安全区。
-- 关闭：胶囊 → “关闭小程序” → dismiss；`MiniProgramSession.close()` 停止 JSContext、关闭 HostCore 会话并移除所有 native render surface。
+- 返回列表：胶囊右侧圆环只 dismiss Launcher，会话继续保活；胶囊菜单里的“关闭当前小程序”才调用
+  `MiniProgramSession.close()`，停止 JSContext、关闭 HostCore 会话并移除所有 native render surface。
 - 不做调试面板；Console/Elements/Lifecycle 需要的话后续在 Web host 层接 vConsole 或另做。
+
+## 多应用会话保活
+
+Launcher 持有一个最多 3 个 `MiniProgramSession` 的 LRU 池（含当前前台会话）：
+
+- 点击应用时复用已有 session；没有则创建。每个 session 独占一个 `JSContext`、HostCore 会话和该小程序的页面 WKWebView。
+- 圆环返回 Launcher 时只调用 `setVisible(false)`，保留容器、JSContext、页面栈和渲染 surface；再次点击直接恢复现场并发送 `appShow`。
+- 打开第 4 个应用时淘汰最久未使用的后台 session；`UIApplication.didReceiveMemoryWarningNotification` 会关闭除当前前台外的全部 session。
+- Launcher 卡片显示“保活中”，头部显示当前 `N/3` 保活数量；胶囊菜单可显式关闭当前小程序。
+- 真机或模拟器以 `-TINY_LRU_SMOKE` 启动会运行不启动 runtime 的 LRU 池断言，并写入
+  `Documents/session-lru-smoke.json`（复用、淘汰和 live 集合）。
+
+这不是 iOS 进程级后台保活。退到后台后系统仍会挂起进程；通用小程序宿主不应申请长期后台执行权限，
+进程被系统终止后仍需依靠 storage/快照恢复。
 
 ## 已支持/未支持
 
@@ -267,7 +281,6 @@ fixture 通过 `scripts/devtool-apps.mjs` 的 `discoverTestApps()` 自动发现�
 - **子包按需加载 / 热更新 / 远程下载**：当前全部产物构建时打进 app bundle。要接 dev server，可在
   `loadMeta` / `loadArtifacts` 前改成 fetch + 缓存，并处理离线/校验。
 - **原生网络/登录/媒体 API**：HostCore `platformCall` 目前只完整实现 storage；toast/network/媒体等仍返回占位结果，需要继续补原生 handler。
-- **多 app 同时保活**：一次只保留一个 WKWebView + 一个 JSContext；关闭再开另一个。
 - **自定义 tabBar / 顶部 tabBar 的完整视觉**：顶部位置有布局分支，但内置 fixture 未覆盖自定义 tabBar。
 - **真机签名**：`CODE_SIGNING_ALLOWED=NO` 只用于模拟器；`pnpm ios:device` 使用 Xcode 自动签名，Team 可用 `TINY_IOS_DEVELOPMENT_TEAM` 覆盖。
 
@@ -283,6 +296,12 @@ fixture 通过 `scripts/devtool-apps.mjs` 的 `discoverTestApps()` 自动发现�
 ✅ echarts: ECharts 图表示例 (pages/index/index) navigated=true
 ✅ vant: Vant 组件库 (pages/dashboard/index) navigated=true
 ✅ weui: WeUI for 小程序 (example/index) navigated=true
+```
+
+iPhone 14 Pro Max 真机 LRU smoke：
+
+```text
+session LRU smoke ok=true reused=true evicted=true live=demo,todo,wechat-demo
 ```
 
 Canvas smoke 额外采样真实 canvas 像素：
@@ -302,6 +321,7 @@ Host orchestration 已迁到 Swift：
 - `HostCoreRuntime`：UniFFI HostCore ↔ JSCore service ↔ 每页 `NativeRenderSurface`
 - `NativeRenderSurface`：独立 WKWebView、`tinyRender` handler、frame queue
 - `render.html`：native render Bridge entry
+- `LauncherModel`：最多 3 个 `MiniProgramSession` 的 LRU 池、前台选择和内存警告淘汰
 - `MiniProgramSession`：native-only；SwiftUI chrome 使用 HostCore UIState
 
 仍需补齐：

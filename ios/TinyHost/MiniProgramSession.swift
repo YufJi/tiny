@@ -20,6 +20,8 @@ final class MiniProgramSession: ObservableObject {
   private var lastVisible = true
   private var viewportSize: CGSize = .zero
 
+  var isClosed: Bool { closed }
+
   init(app: AppInfo, smoke: Bool) {
     self.app = app
     self.smoke = smoke
@@ -29,7 +31,12 @@ final class MiniProgramSession: ObservableObject {
   }
 
   func makeNativeView() -> UIView {
-    if let nativeContainer { return nativeContainer }
+    if let nativeContainer {
+      if nativeContainer.superview != nil {
+        nativeContainer.removeFromSuperview()
+      }
+      return nativeContainer
+    }
     let container = HostViewportView()
     container.backgroundColor = .white
     container.onViewportChange = { [weak self] size in
@@ -97,6 +104,7 @@ final class MiniProgramSession: ObservableObject {
   }
 
   func setVisible(_ visible: Bool) {
+    guard !closed else { return }
     guard visible != lastVisible else { return }
     lastVisible = visible
     nativeRuntime?.setVisible(visible)
