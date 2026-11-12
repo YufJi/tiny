@@ -31,6 +31,7 @@ type ScrollRuntime = {
   __scrollThrottleTimer?: ReturnType<typeof setTimeout>
   __scrollPendingDetail?: Record<string, unknown>
   __lastScrollEmit?: number
+  __lastScrollIntoView?: string
   __scrollingUntil?: number
   __dragStart?: { x: number; y: number; scrollTop: number }
   __dragging?: boolean
@@ -79,6 +80,8 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
     options: ctx.hostOptions('scroll-view', { multipleSlots: true }),
     lifetimes: {
       attached() {
+        const instance = this as unknown as ScrollRuntime
+        instance.__lastScrollIntoView = String(this.data.scrollIntoView ?? '')
         ;(this as unknown as { initScroller: (element: unknown) => void }).initScroller(this.backend())
         this.applyOverflow()
         this.applyScrollAnimation()
@@ -100,7 +103,11 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
       scrollLeft() {
         this.applyScrollPosition('scrollLeft')
       },
-      scrollIntoView() {
+      scrollIntoView(value: string) {
+        const instance = this as unknown as ScrollRuntime
+        const next = String(value ?? '')
+        if (instance.__lastScrollIntoView === next) return
+        instance.__lastScrollIntoView = next
         this.applyScrollPosition('scrollIntoView')
       },
       scrollWithAnimation() {
