@@ -23,7 +23,7 @@ Tiny's split tree currently evaluates WXML **once**, in the service:
 
 - The service glass-easel builds the full tree, including each custom
   component's shadow tree, and `LogicBackendContext.snapshotRenderTree`
-  **flattens** it into a flat `RenderNode` list (`tree/logic/backend.ts`).
+  **flattens** it into a flat `RenderNode` list (`service/logic-tree/backend.ts`).
 - `<slot>` is expanded during that flattening; the component boundary survives
   only as an element `tag`.
 - The render tree turns a custom component into a generic container
@@ -105,7 +105,7 @@ fields nested in a group component are collected too.
 
 ## Payload contract
 
-`ComponentDefinitionPayload` (`tree/protocol.ts`) may carry only JSON-safe
+`ComponentDefinitionPayload` (`tree-protocol/protocol.ts`) may carry only JSON-safe
 data:
 
 - `path`, `template: { path }`

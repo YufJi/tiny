@@ -3,7 +3,7 @@ import { TmplGroup } from '@tiny/template-compiler'
 import { WECHAT_RUNTIME_COMPATIBILITY, type Manifest, type PageArtifact } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTestHost } from './support/host'
-import { TREE_PROTOCOL } from '../src/tree/protocol'
+import { TREE_PROTOCOL } from '../src/tree-protocol/protocol'
 import { createHarnessRenderConnector, harnessRenderView } from './helpers/render-connector'
 import { bootServiceThread } from './helpers/split-service'
 

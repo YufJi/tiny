@@ -7,14 +7,14 @@ import {
   type PageArtifact,
 } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
-import { TREE_PROTOCOL } from '../src/tree/protocol'
-import { resolveRouteUrl } from '../src/service/route'
-import { createServiceRouter } from '../src/service/router'
+import { TREE_PROTOCOL } from '../src/tree-protocol/protocol'
+import { resolveRouteUrl } from '../src/service/page/route'
+import { createServiceRouter } from '../src/service/page/router'
 import { createTestHost } from './support/host'
 import type { TestRuntimeHost } from './support/host'
 import { createHarnessRenderConnector } from './helpers/render-connector'
 import { bootServiceThread, lastLogicTree } from './helpers/split-service'
-import type { ServiceThreadRuntime } from '../src/service/types'
+import type { ServiceThreadRuntime } from '../src/service/boot'
 
 const TODOS = 'pages/todos/todos'
 const NEXT = 'pages/todos/next/next'

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import type { NormalizedObserver } from '../src/component/component-definition'
+import type { NormalizedObserver } from '../src/component/definition/types'
 import { matchesChangedPaths, runObservers, type ObserverHost } from '../src/component/observers'
 
 function observer(paths: string[], handler: (...args: unknown[]) => unknown): NormalizedObserver {

@@ -1,6 +1,0 @@
-export * from './behaviors'
-export * from './component-definition'
-export * from './component-generics'
-export * from './observers'
-export * from './options'
-export * from './traits'

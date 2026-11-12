@@ -1,12 +1,12 @@
 import { createApiHost, createGlobalEventHub } from '@tiny/api'
 import type { ServiceCanvasAdapter, ApiContext, ApiHost } from '@tiny/api'
 import { connectHostBridge, installHostBridge } from '@tiny/bridge'
-import { bootServiceThread as bootRealServiceThread } from '../../src/service/thread'
+import { bootServiceThread as bootRealServiceThread } from '../../src/service/boot'
 import type {
   ServiceThreadOptions,
   ServiceThreadRuntime,
-} from '../../src/service/types'
-import type { TemplateRegistry } from '../../src/types'
+} from '../../src/service/boot'
+import type { TemplateRegistry } from '../../src/shared/template'
 import type { Transport } from '@tiny/bridge'
 
 type SyncHostCall = (
@@ -14,7 +14,7 @@ type SyncHostCall = (
   method: string,
   payload: Record<string, unknown>,
 ) => unknown
-import type { AssetUrlResolver } from '../../src/assets'
+import type { AssetUrlResolver } from '../../src/shared/assets'
 import { answerSyncFrame } from './sync-frame'
 
 type HarnessConfig = {

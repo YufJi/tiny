@@ -1,6 +1,6 @@
 export { TINY_ENGINE_NAMING } from '@tiny/manifest'
 
-export { DIAGNOSTIC_CODES, normalizeTransportDiagnostic } from './diagnostics'
+export { DIAGNOSTIC_CODES, normalizeTransportDiagnostic } from './shared/diagnostics'
 export type {
   RuntimeDiagnostic,
   RuntimeDiagnosticSeverity,
@@ -8,10 +8,10 @@ export type {
   RuntimePageState,
   RuntimeTabBarItemState,
   RuntimeTabBarState,
-} from './diagnostics'
+} from './shared/diagnostics'
 
-export type { AssetUrlResolver } from './assets'
-export { resolveAssetReference } from './assets'
+export type { AssetUrlResolver } from './shared/assets'
+export { resolveAssetReference } from './shared/assets'
 
 // The `wx://` behavior contract shared by both threads. Hosts build their
 // render-side registry from this list so it cannot drift from the kernel.
@@ -23,24 +23,28 @@ export type {
   BuiltinComponentFactoryContext,
   BuiltinComponents,
   BuiltinStyleSheet,
-  InspectNode,
-  QueryNodeSnapshot,
-  RuntimeManifest,
+} from './render/builtin'
+
+export type { InspectNode } from './service/logic-tree/inspect'
+export type { QueryNodeSnapshot } from './service/logic-tree/query'
+export type { RuntimeManifest } from './shared/manifest'
+export type {
   StyleLoader,
   TemplateGroupList,
   TemplateRegistry,
-} from './types'
+} from './shared/template'
 
-export * from './tree'
+export * from './tree-protocol/locator'
+export * from './tree-protocol/protocol'
+export * from './render/thread'
 
-export { bootServiceThread } from './service'
+export { bootServiceThread } from './service/boot'
 export type {
-  MiniProgramApiHost,
-  MiniProgramRouter,
   ServiceThreadOptions,
   ServiceThreadRuntime,
-  TabBarApi,
-} from './service'
+} from './service/boot'
+export type { MiniProgramApiHost, TabBarApi } from './service/api/types'
+export type { MiniProgramRouter } from './service/page/router'
 
 export {
   createDefaultWxsCompiler,

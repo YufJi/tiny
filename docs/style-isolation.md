@@ -57,7 +57,7 @@ tiny-page:where(.__TINY_APP_PAGE_SCOPE__, [wx-host="__TINY_APP_PAGE_SCOPE__"]) {
 :where(.__TINY_APP_PAGE_SCOPE__, …)./*__TINY_APP_PAGE_SCOPE__*/app-probe { … }
 ```
 
-运行时按页面 scope 做纯字符串展开（[packages/runtime/src/tree/logic/glass-easel-adapter.ts:535](../packages/runtime/src/tree/logic/glass-easel-adapter.ts#L535)）：`.SIGN` → `.<pageScope>--tiny-scope`、`="SIGN"` → `="<pageScope>"`、`/*SIGN*/` → `<pageScope>--`。只有该页确实用到 `apply-shared` / `shared` 组件时才生成（[:451](../packages/runtime/src/tree/logic/glass-easel-adapter.ts#L451)）。
+运行时按页面 scope 做纯字符串展开（[glass styles](../packages/runtime/src/service/logic-tree/glass/styles.ts)）：`.SIGN` → `.<pageScope>--tiny-scope`、`="SIGN"` → `="<pageScope>"`、`/*SIGN*/` → `<pageScope>--`。只有该页确实用到 `apply-shared` / `shared` 组件时才生成。
 
 ### 2.4 模板 marker
 
@@ -73,19 +73,19 @@ tiny-page:where(.__TINY_APP_PAGE_SCOPE__, [wx-host="__TINY_APP_PAGE_SCOPE__"]) {
 
 ### 3.1 cascade role 与追加顺序
 
-样式表按 role 分类，追加顺序固定为 **low-priority → app → page-scope → page/component**（[packages/runtime/src/tree/logic/glass-easel-adapter.ts:261](../packages/runtime/src/tree/logic/glass-easel-adapter.ts#L261)）：
+样式表按 role 分类，追加顺序固定为 **low-priority → app → page-scope → page/component**（[glass styles](../packages/runtime/src/service/logic-tree/glass/styles.ts)）：
 
-`builtin` / `low-priority` / `app` / `page` / `component` / `page-scope` / `shared`（[packages/runtime/src/tree/logic/backend.ts:279](../packages/runtime/src/tree/logic/backend.ts#L279)）。
+`builtin` / `low-priority` / `app` / `page` / `component` / `page-scope` / `shared`（[logic backend](../packages/runtime/src/service/logic-tree/backend.ts)）。
 
 ### 3.2 页面根
 
-- 普通 Page 固定 `shared`；Component-as-page 读显式 `styleIsolation`，否则也是 `shared`（[packages/runtime/src/tree/logic/glass-easel-adapter.ts:374](../packages/runtime/src/tree/logic/glass-easel-adapter.ts#L374)）。
-- 页面 definition 额外挂 `extraStyleScope: globalScope`，让页面元素**同时保留无前缀 class**，`app.wxss` 的 `.container` 才生效（[:293](../packages/runtime/src/tree/logic/glass-easel-adapter.ts#L293)）。
-- 页面根在挂载时被加上 `tiny-scope`，app 的 `page` 规则因此可以只按 marker 锚定（[:797](../packages/runtime/src/tree/logic/glass-easel-adapter.ts#L797)）。
+- 普通 Page 固定 `shared`；Component-as-page 读显式 `styleIsolation`，否则也是 `shared`（[glass definitions](../packages/runtime/src/service/logic-tree/glass/definitions.ts)）。
+- 页面 definition 额外挂 `extraStyleScope: globalScope`，让页面元素**同时保留无前缀 class**，`app.wxss` 的 `.container` 才生效。
+- 页面根在挂载时被加上 `tiny-scope`，app 的 `page` 规则因此可以只按 marker 锚定。
 
 ### 3.3 组件 isolation
 
-schema 侧默认值：显式 `styleIsolation` → `addGlobalClass`（等价 `apply-shared`）→ JSON `styleIsolation` → 默认 `isolated`（[packages/runtime/src/component/component-schema.ts:51](../packages/runtime/src/component/component-schema.ts#L51)）。
+schema 侧默认值：显式 `styleIsolation` → `addGlobalClass`（等价 `apply-shared`）→ JSON `styleIsolation` → 默认 `isolated`（[component schema](../packages/runtime/src/service/render-bridge/component-schema.ts)）。
 
 | 配置 | `styleScope` | `extraStyleScope` | 效果 |
 | --- | --- | --- | --- |
@@ -93,17 +93,17 @@ schema 侧默认值：显式 `styleIsolation` → `addGlobalClass`（等价 `app
 | `apply-shared` / `addGlobalClass` | 组件自己的 scope | 当前 page scope | 接收页面/app 规则，自身样式不外泄 |
 | `shared` | 组件自己的 scope | 当前 page scope | 同上，且组件 CSS 额外生成一份 page scope 副本 |
 
-组件注册见 [packages/runtime/src/tree/logic/glass-easel-adapter.ts:884](../packages/runtime/src/tree/logic/glass-easel-adapter.ts#L884)。逻辑树后端把 `extraStyleScope` 与组件自身 `styleScope` 一起交给组件的 shadowRoot 子树，`isolated` 组件不继承 owner 的 scope（[packages/runtime/src/tree/logic/backend.ts:235](../packages/runtime/src/tree/logic/backend.ts#L235)）。
+组件注册见 [glass adapter](../packages/runtime/src/service/logic-tree/glass/adapter.ts)。逻辑树后端把 `extraStyleScope` 与组件自身 `styleScope` 一起交给组件的 shadowRoot 子树，`isolated` 组件不继承 owner 的 scope（[logic backend](../packages/runtime/src/service/logic-tree/backend.ts)）。
 
 ### 3.4 `shared` 的 CSS 重写
 
-`shared` 组件的样式文本会把 `componentScope` 直接替换成 `pageScope`，注册成 `role: shared`（[packages/runtime/src/tree/logic/glass-easel-adapter.ts:404](../packages/runtime/src/tree/logic/glass-easel-adapter.ts#L404)）。这是纯字符串替换，scope 名不会出现在声明值里，但不要在组件样式里手写自己的 scope 名。
+`shared` 组件的样式文本会把 `componentScope` 直接替换成 `pageScope`，注册成 `role: shared`（[glass styles](../packages/runtime/src/service/logic-tree/glass/styles.ts)）。这是纯字符串替换，scope 名不会出现在声明值里，但不要在组件样式里手写自己的 scope 名。
 
 ### 3.5 下发
 
-service 把当前页的 `styles`（已按 role 过滤）和可选的 `fallbackAppStyles` 放进 `tree.flow` / `tree.patch`（[packages/runtime/src/service/thread.ts:328](../packages/runtime/src/service/thread.ts#L328)）。`app` 与 `builtin` 两类**不随 flow 下发**（[packages/runtime/src/tree/logic/backend.ts:374](../packages/runtime/src/tree/logic/backend.ts#L374)）：app 走 page-scope 副本或 fallback，builtin 归宿主。
+service 把当前页的 `styles`（已按 role 过滤）和可选的 `fallbackAppStyles` 放进 `tree.flow` / `tree.patch`（[render projection](../packages/runtime/src/service/render-bridge/projection.ts)）。`app` 与 `builtin` 两类**不随 flow 下发**（[logic backend](../packages/runtime/src/service/logic-tree/backend.ts)）：app 走 page-scope 副本或 fallback，builtin 归宿主。
 
-渲染线程只把收到的文本交给 `applyStyles`（[packages/runtime/src/tree/render/thread.ts:153](../packages/runtime/src/tree/render/thread.ts#L153)）。
+渲染线程只把收到的文本交给 `applyStyles`（[render thread](../packages/runtime/src/render/thread.ts)）。
 
 ### 3.6 渲染树写 class
 
@@ -151,7 +151,7 @@ hostOptions: () => ({
 })
 ```
 
-逻辑树的 `createComponent` 只把组件**自己的** `styleScope`（以及 `extraStyleScope`）放进它的 shadowRoot 子树（[packages/runtime/src/tree/logic/backend.ts:235](../packages/runtime/src/tree/logic/backend.ts#L235)）。因此：
+逻辑树的 `createComponent` 只把组件**自己的** `styleScope`（以及 `extraStyleScope`）放进它的 shadowRoot 子树（[logic backend](../packages/runtime/src/service/logic-tree/backend.ts)）。因此：
 
 - 宿主元素拿不到 `tiny-builtin-<tag>`，它是页面/父组件的节点，属于公开边界；
 - 内部节点带 `tiny-builtin-<tag>--` 前缀，全局选择器无法直接命中。
@@ -216,8 +216,8 @@ style.textContent = [BUILTIN_BASE_STYLES, BUILTIN_HOST_STYLES,
 | 选择器改写引擎 | [packages/stylesheet-compiler/src/transformer.ts](../packages/stylesheet-compiler/src/transformer.ts) |
 | 页面/组件样式与 app page-scope 模板 | [tools/cli/src/compiler/styles.ts](../tools/cli/src/compiler/styles.ts) |
 | 模板 marker 注入 | [tools/cli/src/compiler/template-source.ts](../tools/cli/src/compiler/template-source.ts) |
-| scope / role / 下发 | [packages/runtime/src/tree/logic/glass-easel-adapter.ts](../packages/runtime/src/tree/logic/glass-easel-adapter.ts) |
-| 逻辑树视图描述与 role | [packages/runtime/src/tree/logic/backend.ts](../packages/runtime/src/tree/logic/backend.ts) |
+| scope / role / 下发 | [service/logic-tree/glass/styles.ts](../packages/runtime/src/service/logic-tree/glass/styles.ts) |
+| 逻辑树视图描述与 role | [service/logic-tree/backend.ts](../packages/runtime/src/service/logic-tree/backend.ts) |
 | 内置样式拆分 | [hosts/web-components/scripts/build-styles.mjs](../hosts/web-components/scripts/build-styles.mjs) |
 | 内置组件 scope 注册 | [hosts/web-components/src/index.ts](../hosts/web-components/src/index.ts) |
 | 内置样式安装 | [hosts/web/src/render/entry.ts](../hosts/web/src/render/entry.ts) |

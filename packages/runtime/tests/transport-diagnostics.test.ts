@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { normalizeTransportDiagnostic } from '../src/diagnostics'
+import { normalizeTransportDiagnostic } from '../src/shared/diagnostics'
 
 describe('transport diagnostics', () => {
   test('uses the transport level when no severity is provided', () => {

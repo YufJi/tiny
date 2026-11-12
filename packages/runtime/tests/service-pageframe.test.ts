@@ -7,7 +7,7 @@ import {
 } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import type { TransportFrame } from '@tiny/bridge'
-import { TREE_PROTOCOL } from '../src/tree/protocol'
+import { TREE_PROTOCOL } from '../src/tree-protocol/protocol'
 import { createTestHost } from './support/host'
 import { createHarnessRenderConnector } from './helpers/render-connector'
 import { bootServiceThread } from './helpers/split-service'

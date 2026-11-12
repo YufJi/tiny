@@ -3,109 +3,31 @@ import {
   WECHAT_RUNTIME_COMPATIBILITY,
   type RuntimeCompatibilityConfig,
 } from '@tiny/manifest'
-import { cloneDataValue } from '../data'
+import { cloneDataValue } from '../shared/data'
 import {
   behaviorTraitImplementations,
   isBuiltinBehavior,
   resolveBuiltinBehavior,
 } from './behaviors'
-import { componentExportDefinitionFilter } from './behaviors/component-export'
 import type { MiniProgramComponentOptions } from './options'
-import type { MiniProgramPropertyDefinition, MiniProgramPropertyType } from '../types'
+import type { MiniProgramPropertyDefinition } from './schema'
+import { applyDefinitionFilters } from './definition/filters'
+import { isPlainObject } from './definition/object'
+import { normalizeObservers } from './definition/observers'
+import { normalizeProperties } from './definition/properties'
+import { parsePureDataPattern, isPureDataField } from './definition/pure-data'
+import { normalizeRelations } from './definition/relations'
 import {
-  isTraitBehavior,
-  type MiniProgramTraitBehavior,
-} from './traits'
-
-export type ComponentLifecycleName = 'created' | 'attached' | 'ready' | 'moved' | 'detached'
-export type RelationType = 'parent' | 'child' | 'ancestor' | 'descendant'
-export type RelationCallback = string | ((target: unknown) => void)
-export type ObserverKind = 'observer' | 'property'
-
-export type NormalizedObserver = {
-  key: string
-  paths: string[]
-  kind: ObserverKind
-  propertyName?: string
-  handler: string | ((...args: unknown[]) => unknown)
-}
-
-export type NormalizedRelation = {
-  key: string
-  type: RelationType
-  targetPath: string
-  trait?: MiniProgramTraitBehavior
-  linked?: RelationCallback
-  unlinked?: RelationCallback
-  linkChanged?: RelationCallback
-  linkFailed?: RelationCallback
-}
-
-export type NormalizedTraitImplementation = {
-  trait: MiniProgramTraitBehavior
-  impl: Record<string, unknown>
-}
-
-export type StyleIsolation = 'isolated' | 'apply-shared' | 'shared'
-
-export type NormalizedComponentOptions = {
-  multipleSlots: boolean
-  virtualHost: boolean
-  styleIsolation: StyleIsolation
-  addGlobalClass: boolean
-  explicitStyleIsolation: boolean
-  /** Fields whose names match this pattern stay service-side (not rendered). */
-  pureDataPattern?: RegExp
-}
-
-export type DefinitionDiagnostic = {
-  code: string
-  message: string
-  details?: unknown
-}
-
-/**
- * Property names that belong to the glass element itself, not to the user
- * component API. They must never be declared on the render-side definition
- * either: glass creates fields for every declared property before its data
- * group exists, so a `dataset`/`id` property would crash component creation.
- */
-export const RESERVED_COMPONENT_PROPERTY_NAMES = new Set([
-  'is',
-  'dataset',
-  'classList',
-  'parentNode',
-  'parentIndex',
-  'childNodes',
-  'ownerShadowRoot',
-  'shadowRoot',
-  'tagName',
-  'id',
-  'slot',
-  'style',
-])
-
-export type NormalizedComponentDefinition = {
-  properties: Record<string, MiniProgramPropertyDefinition>
-  data: Record<string, unknown>
-  methods: Map<string, Function>
-  lifetimeHandlers: Record<ComponentLifecycleName, Function[]>
-  pageLifetimeHandlers: { show: Function[]; hide: Function[]; resize: Function[] }
-  observers: NormalizedObserver[]
-  relations: NormalizedRelation[]
-  externalClasses: string[]
-  listeners: Record<string, Function | string>
-  options: NormalizedComponentOptions
-  behaviors: Set<object | string>
-  traits: NormalizedTraitImplementation[]
-  componentExport: boolean
-  formField: boolean
-  formFieldButton: boolean
-  formFieldGroup: boolean
-  labelTarget: boolean
-  export?: Function
-  diagnostics: DefinitionDiagnostic[]
-}
+  RESERVED_COMPONENT_PROPERTY_NAMES,
+  type ComponentLifecycleName,
+  type DefinitionDiagnostic,
+  type NormalizedComponentDefinition,
+  type NormalizedComponentOptions,
+  type NormalizedObserver,
+  type NormalizedRelation,
+  type NormalizedTraitImplementation,
+  type StyleIsolation,
+} from './definition/types'
 
 const COMPONENT_LIFECYCLE_NAMES: ComponentLifecycleName[] = [
   'created',
@@ -134,15 +56,6 @@ const RESERVED_OPTION_KEYS = new Set([
 
 const STYLE_ISOLATION_VALUES = new Set<StyleIsolation>(['isolated', 'apply-shared', 'shared'])
 
-const PROPERTY_TYPES: Record<string, MiniProgramPropertyType> = {
-  String: 'string',
-  Number: 'number',
-  Boolean: 'boolean',
-  Object: 'object',
-  Array: 'array',
-  Function: 'function',
-}
-
 type Collector = {
   properties: Record<string, MiniProgramPropertyDefinition>
   propertyObservers: NormalizedObserver[]
@@ -167,7 +80,6 @@ type Collector = {
   observerIndex: number
   propertyObserverIndex: number
 }
-
 export function normalizeComponentDefinition(
   options: MiniProgramComponentOptions,
   componentPath: string,
@@ -442,266 +354,6 @@ function mergeSource(
   }
 }
 
-export function normalizeProperties(raw: unknown): {
-  properties: Record<string, MiniProgramPropertyDefinition>
-  propertyObservers: Array<Omit<NormalizedObserver, 'key'>>
-} {
-  const properties: Record<string, MiniProgramPropertyDefinition> = {}
-  const propertyObservers: Array<Omit<NormalizedObserver, 'key'>> = []
-  if (!isPlainObject(raw)) return { properties, propertyObservers }
-
-  for (const [name, value] of Object.entries(raw)) {
-    if (value === null || value === undefined) {
-      properties[name] = { type: 'any' }
-      continue
-    }
-    if (typeof value !== 'object') {
-      properties[name] = { type: normalizePropertyType(value) }
-      continue
-    }
-    const option = value as Record<string, unknown>
-    const normalized: MiniProgramPropertyDefinition = {
-      type: normalizePropertyType(option.type),
-    }
-    const defaultValue = cloneDataValue(option.value)
-    if (defaultValue !== undefined) normalized.value = defaultValue
-    if (Array.isArray(option.optionalTypes)) {
-      normalized.optionalTypes = option.optionalTypes.map((type) => normalizePropertyType(type))
-    }
-    properties[name] = normalized
-    const propertyObserver = option.observer
-    if (typeof propertyObserver === 'function' || typeof propertyObserver === 'string') {
-      propertyObservers.push({
-        paths: [name],
-        kind: 'property',
-        propertyName: name,
-        handler: propertyObserver as string | ((...args: unknown[]) => unknown),
-      })
-    }
-  }
-  return { properties, propertyObservers }
-}
-
-function normalizeObservers(raw: unknown): Array<Omit<NormalizedObserver, 'key'>> {
-  const observers: Array<Omit<NormalizedObserver, 'key'>> = []
-  if (Array.isArray(raw)) {
-    for (const item of raw) {
-      if (!isPlainObject(item)) continue
-      const fields = item.fields
-      const handler = item.observer
-      if (typeof fields !== 'string') continue
-      if (typeof handler !== 'function' && typeof handler !== 'string') continue
-      observers.push({
-        paths: splitObserverPaths(fields),
-        kind: 'observer',
-        handler: handler as string | ((...args: unknown[]) => unknown),
-      })
-    }
-    return observers
-  }
-  if (!isPlainObject(raw)) return observers
-  for (const [fields, handler] of Object.entries(raw)) {
-    if (typeof handler !== 'function' && typeof handler !== 'string') continue
-    observers.push({
-      paths: splitObserverPaths(fields),
-      kind: 'observer',
-      handler: handler as string | ((...args: unknown[]) => unknown),
-    })
-  }
-  return observers
-}
-
-function splitObserverPaths(fields: string): string[] {
-  return fields
-    .split(',')
-    .map((path) => path.trim())
-    .filter((path) => path.length > 0)
-}
-
-function normalizeRelations(
-  raw: unknown,
-  componentPath: string,
-): { relations: NormalizedRelation[]; diagnostics: DefinitionDiagnostic[] } {
-  const relations: NormalizedRelation[] = []
-  const diagnostics: DefinitionDiagnostic[] = []
-  if (!isPlainObject(raw)) return { relations, diagnostics }
-
-  for (const [key, value] of Object.entries(raw)) {
-    if (!isPlainObject(value)) continue
-    const type = value.type
-    if (type !== 'parent' && type !== 'child' && type !== 'ancestor' && type !== 'descendant') {
-      diagnostics.push({
-        code: DIAGNOSTIC_CODES.UNSUPPORTED_RELATION_TYPE,
-        message: `Relation "${key}" has unsupported type "${String(type)}".`,
-      })
-      continue
-    }
-    const target = typeof value.target === 'string' ? value.target : key
-    if (isTraitBehavior(value.target)) {
-      const relation: NormalizedRelation = {
-        key,
-        type,
-        targetPath: '',
-        trait: value.target,
-      }
-      if (isRelationCallback(value.linked)) relation.linked = value.linked
-      if (isRelationCallback(value.unlinked)) relation.unlinked = value.unlinked
-      if (isRelationCallback(value.linkChanged)) relation.linkChanged = value.linkChanged
-      if (isRelationCallback(value.linkFailed)) relation.linkFailed = value.linkFailed
-      relations.push(relation)
-      continue
-    }
-    if (isBuiltinBehavior(target)) {
-      diagnostics.push({
-        code: DIAGNOSTIC_CODES.UNSUPPORTED_RELATION_TARGET,
-        message: `Relation "${key}" targets built-in behavior "${target}", which is not supported.`,
-      })
-      continue
-    }
-    const relation: NormalizedRelation = {
-      key,
-      type,
-      targetPath: resolveComponentReference(componentPath, target),
-    }
-    if (isRelationCallback(value.linked)) relation.linked = value.linked
-    if (isRelationCallback(value.unlinked)) relation.unlinked = value.unlinked
-    if (isRelationCallback(value.linkChanged)) relation.linkChanged = value.linkChanged
-    if (isRelationCallback(value.linkFailed)) relation.linkFailed = value.linkFailed
-    relations.push(relation)
-  }
-  return { relations, diagnostics }
-}
-
-function isRelationCallback(value: unknown): value is RelationCallback {
-  return typeof value === 'function' || typeof value === 'string'
-}
-
-const filteredDefinitions = new WeakSet<object>()
-
-/**
- * Run the definitionFilter chain contributed by the direct behaviors of
- * `source`, matching WeChat's declaration-time filtering. Nested behaviors are
- * visited first by normalizeComponentDefinition, so each filter observes a
- * fully prepared user definition.
- *
- * String behaviors are resolved against the built-in registry: WeChat's
- * `callDefinitionFilter` does the same, which is how `wx://component-export`
- * rewrites `export` into a method.
- */
-export function applyDefinitionFilters(
-  source: Record<string, unknown>,
-  onDiagnostic?: (diagnostic: DefinitionDiagnostic) => void,
-  compatibility: RuntimeCompatibilityConfig = WECHAT_RUNTIME_COMPATIBILITY,
-): void {
-  if (filteredDefinitions.has(source)) return
-  filteredDefinitions.add(source)
-  const behaviors = Array.isArray(source.behaviors) ? source.behaviors : []
-  for (const behavior of behaviors) {
-    let filter: MiniProgramComponentOptions['definitionFilter']
-    let filterOwner: object | string = behavior as object
-    if (typeof behavior === 'string') {
-      if (!isBuiltinBehavior(behavior)) continue
-      const spec = resolveBuiltinBehavior(behavior, compatibility)
-      // `wx://component-export` is a placeholder behavior; its `export` rewrite
-      // is framework logic keyed by the marker.
-      filter = spec?.options.definitionFilter
-        ?? (spec?.markers.componentExport ? componentExportDefinitionFilter : undefined)
-      filterOwner = behavior
-    } else if (behavior && typeof behavior === 'object') {
-      filter = (behavior as MiniProgramComponentOptions).definitionFilter
-    } else {
-      continue
-    }
-    if (typeof filter !== 'function') continue
-    const filterArr = typeof behavior === 'object' && behavior
-      ? collectDirectDefinitionFilters(behavior as MiniProgramComponentOptions)
-      : []
-    try {
-      filter(source, filterArr)
-    } catch (error) {
-      onDiagnostic?.({
-        code: DIAGNOSTIC_CODES.DEFINITION_FILTER_ERROR,
-        message: error instanceof Error ? error.message : String(error),
-        details: { behavior: describeBehavior(filterOwner) },
-      })
-    }
-  }
-}
-
-function collectDirectDefinitionFilters(
-  behavior: MiniProgramComponentOptions,
-): Array<(defFields: unknown) => unknown> {
-  if (!Array.isArray(behavior.behaviors)) return []
-  const filters: Array<(defFields: unknown) => unknown> = []
-  for (const item of behavior.behaviors) {
-    if (!item || typeof item !== 'object') continue
-    const filter = (item as MiniProgramComponentOptions).definitionFilter
-    if (typeof filter === 'function') {
-      // WeChat supplies the nested filter array when a filter invokes
-      // `definitionFilterArr[i](defFields)`; wrap it so callers only pass the
-      // definition object.
-      filters.push((defFields: unknown) => filter(
-        defFields,
-        collectDirectDefinitionFilters(item as MiniProgramComponentOptions),
-      ))
-    }
-  }
-  return filters
-}
-
-function describeBehavior(behavior: object | string): string {
-  if (typeof behavior === 'string') return behavior
-  const is = (behavior as MiniProgramComponentOptions).is
-  return typeof is === 'string' ? is : '[object Behavior]'
-}
-
-export function parsePureDataPattern(value: unknown): RegExp | undefined {
-  if (value instanceof RegExp) return value
-  if (typeof value === 'string' && value.length > 0) {
-    try {
-      return new RegExp(value)
-    } catch {
-      return undefined
-    }
-  }
-  return undefined
-}
-
-export function isPureDataField(pattern: RegExp | undefined, field: string): boolean {
-  if (!pattern) return false
-  pattern.lastIndex = 0
-  return pattern.test(field)
-}
-
-export function resolveComponentReference(sourcePath: string, reference: string): string {
-  if (reference.startsWith('/')) return normalizePath(reference.slice(1))
-  const directory = sourcePath.split('\\').join('/').split('/').slice(0, -1)
-  return normalizePath([...directory, ...reference.split('\\').join('/').split('/')].join('/'))
-}
-
-function normalizePath(path: string): string {
-  const output: string[] = []
-  for (const segment of path.split('/')) {
-    if (!segment || segment === '.') continue
-    if (segment === '..') output.pop()
-    else output.push(segment)
-  }
-  return output.join('/')
-}
-
-export function normalizePropertyType(type: unknown): MiniProgramPropertyType {
-  if (type === String) return 'string'
-  if (type === Number) return 'number'
-  if (type === Boolean) return 'boolean'
-  if (type === Object) return 'object'
-  if (type === Array) return 'array'
-  if (type === Function) return 'function'
-  if (typeof type === 'string' && type in PROPERTY_TYPES) {
-    return PROPERTY_TYPES[type]!
-  }
-  return PROPERTY_TYPES[String(type)] ?? 'any'
-}
-
 function mergeDataInto(target: Record<string, unknown>, source: Record<string, unknown>): void {
   for (const [key, value] of Object.entries(source)) {
     if (value === undefined) continue
@@ -713,8 +365,4 @@ function mergeDataInto(target: Record<string, unknown>, source: Record<string, u
       target[key] = cloneDataValue(value)
     }
   }
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return Object.prototype.toString.call(value) === '[object Object]'
 }

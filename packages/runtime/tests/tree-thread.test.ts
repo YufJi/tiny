@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest'
 import { BridgeConnection, createInMemoryTransportPair } from '@tiny/bridge'
-import { bootTreeThread } from '../src/tree/render/thread'
+import { bootTreeThread } from '../src/render/thread'
 import { createRenderConnection } from './helpers/render-connection'
-import { QUERY_CONTROL, type PageFrameMount, type RenderNode } from '../src/tree/protocol'
+import { QUERY_CONTROL, type PageFrameMount, type RenderNode } from '../src/tree-protocol/protocol'
 
 const tree: RenderNode = {
   type: 'element',

@@ -120,7 +120,7 @@ glass-easel 不是完整的小程序 SDK。它负责组件、模板、数据绑�
 | created/attached/ready/moved/detached 生命周期 | glass-easel（service） | 组件实例和 relations 都在逻辑树 |
 | 样式作用域和渲染树 | glass-easel + host | 逻辑树计算 scope；渲染树应用样式和 styleIsolation |
 | Behaviors / observers / relations / selectComponent | Tiny runtime | component-definition 归一化 + ComponentTree + glass-easel relation builder |
-| App 生命周期、页面栈、路由、onLoad/onShow/onReady | Tiny runtime | `packages/runtime/src/service/thread.ts` |
+| App 生命周期、页面栈、路由、onLoad/onShow/onReady | Tiny runtime | `packages/runtime/src/service/boot.ts` |
 | 兼容输入配置、内部 Tiny 命名 | Tiny manifest + runtime | tiny.config.json → compatibility / runtimeCompatibility；内部名来自 TINY_ENGINE_NAMING |
 | wx API、storage、system info、animation | Tiny runtime + `@tiny/api` + host | 内核只安装宿主注入的 API 表；标准微信兼容集在 `@tiny/api`，设备信息由 extensions 叠加 |
 | canvas、资源 URL、DOM 节点 | 宿主 | canvas handoff / resolveAssetUrl / TreeRenderer |

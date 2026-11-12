@@ -41,6 +41,8 @@ Accepted and implemented. Merged into `next` as #27 (`1ac6d3a`), originally on
   logic-tree/backend/glass/service modules are not re-exported.
 - Runtime layers are grouped under `component/`, `service/`, `tree/` (with
   `tree/logic` and `tree/render`) and `host/`, each with a single `index.ts`.
+  The directory clause is superseded by ADR-0019: the runtime is now organized
+  by execution thread, with `tree-protocol/` and explicit service/render owners.
 - Intersection observers are bridged: the service forwards observe requests to
   the render tree, web hosts resolve them with DOM `IntersectionObserver`, and
   entries return through `query.intersection` to the logic tree. Page and

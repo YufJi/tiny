@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
-import type { DataPatch } from '../src/data'
-import { MiniProgramPageInstance } from '../src/service/page-instance'
+import type { DataPatch } from '../src/shared/data'
+import { MiniProgramPageInstance } from '../src/service/page/instance'
 
 type PendingCompletion = { pageId: string; run: () => void }
 

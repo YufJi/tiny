@@ -1,9 +1,7 @@
 import { describe, expect, test } from 'vitest'
-import {
-  normalizeComponentDefinition,
-  registerBehavior,
-  registerTraitBehavior,
-} from '../src/component'
+import { normalizeComponentDefinition } from '../src/component/component-definition'
+import { registerBehavior } from '../src/component/behaviors'
+import { registerTraitBehavior } from '../src/component/traits'
 
 const PARENT = 'components/trait-parent/trait-parent'
 const CHILD = 'components/trait-child/trait-child'

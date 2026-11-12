@@ -5,12 +5,11 @@ import {
   type PageArtifact,
 } from '@tiny/manifest'
 import type { BridgeConnection } from '@tiny/bridge'
-import { ComponentTree } from '../src/service/component-tree'
-import { MiniProgramPageRegistry } from '../src/service/page-registry'
-import { ServicePageStack } from '../src/service/page-stack'
-import { ServiceTabBar } from '../src/service/tab-bar'
-import type { ServiceRenderPort } from '../src/service/render/port'
-import type { MiniProgramPageOptions } from '../src/service/types'
+import { MiniProgramPageRegistry } from '../src/service/page/registry'
+import { ServicePageStack } from '../src/service/page/stack'
+import { ServiceTabBar } from '../src/service/app/tab-bar'
+import type { ServiceRenderPort } from '../src/service/render-bridge/port'
+import type { MiniProgramPageOptions } from '../src/service/page/types'
 
 const PAGE_A = 'pages/a/a'
 const PAGE_B = 'pages/b/b'
@@ -162,7 +161,6 @@ function createHarness(options: {
     initialPath: PAGE_A,
     registry,
     render,
-    componentTree: new ComponentTree(),
     connection,
     tabBar,
     ...(options.maxPageStack !== undefined ? { maxPageStack: options.maxPageStack } : {}),

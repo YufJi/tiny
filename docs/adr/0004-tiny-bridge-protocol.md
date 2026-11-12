@@ -109,4 +109,4 @@ Runtime, compiler, devtool, and future native hosts can share one inspectable pr
 
 ---
 
-_Update: the `packages/apis` stub referenced above has been removed. API semantics are now implemented by the runtime service API host (`packages/runtime/src/service.ts`)._
+_Update: the `packages/apis` stub referenced above has been removed. API semantics are now implemented by the runtime service API host (`packages/runtime/src/service/api/globals.ts`, assembled by `packages/runtime/src/service/boot.ts`)._

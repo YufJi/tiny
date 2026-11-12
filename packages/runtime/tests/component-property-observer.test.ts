@@ -5,9 +5,9 @@ import {
   type Manifest,
   type PageArtifact,
 } from '@tiny/manifest'
-import { buildComponentSchemas } from '../src/service/render/component-schema'
+import { buildComponentSchemas } from '../src/service/render-bridge/component-schema'
 import { normalizeComponentDefinition } from '../src/component/component-definition'
-import { LogicTreeAdapter } from '../src/tree/logic/adapter'
+import { LogicTreeAdapter } from '../src/service/logic-tree/adapter'
 
 const PAGE_PATH = 'pages/observer/index'
 const FIELD_PATH = 'components/field/index'

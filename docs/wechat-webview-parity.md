@@ -196,8 +196,8 @@ WebView renderer 和 glass-easel component framework 为准。
 关键代码入口：
 
 - 服务 API：[api/index.ts](../packages/api/src/index.ts:1)（按 domain 分文件）
-- 宿主 API：[host/api.ts](../packages/runtime/src/host/api.ts:1)、[tests/host/src/host-api.ts](../tests/host/src/host-api.ts:1)
-- 不支持 API 的降级：`wx` Proxy 返回 `undefined` + `UNSUPPORTED_API` warning（[service/api-globals.ts](../packages/runtime/src/service/api-globals.ts:1)）
+- 宿主 API：[api/index.ts](../packages/api/src/index.ts)、[tests/host/src/host-api.ts](../tests/host/src/host-api.ts:1)
+- 不支持 API 的降级：`wx` Proxy 返回 `undefined` + `UNSUPPORTED_API` warning（[service/api/globals.ts](../packages/runtime/src/service/api/globals.ts:1)）
 
 > 降级策略是“静默 undefined”，不是抛错。页面不会立刻崩，但失败会推迟到调用方 `.then`/属性访问时才暴露，排查成本高。
 
@@ -207,7 +207,7 @@ WebView renderer 和 glass-easel component framework 为准。
 
 ### 4.3 生命周期与路由
 
-页面生命周期 **14 / 14**（[service/thread.ts](../packages/runtime/src/service/thread.ts:1)）：
+页面生命周期 **14 / 14**（[service/boot.ts](../packages/runtime/src/service/boot.ts:1)）：
 
 | 生命周期 | 状态 |
 | --- | --- |
@@ -704,22 +704,22 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 内置组件标签清单 | [tags.ts](../hosts/web-components/src/tags.ts:1) |
 | 内置组件默认样式 | [styles/index.css](../hosts/web-components/src/styles/index.css:1) |
 | service API 宿主 | [api/index.ts](../packages/api/src/index.ts:1) |
-| 不支持 API 的降级 | [service/api-globals.ts](../packages/runtime/src/service/api-globals.ts:1) |
-| 宿主 API（toast/storage/navigate） | [host/api.ts](../packages/runtime/src/host/api.ts:1)、[browser api-handlers.ts](../tests/host/src/host-api.ts:1) |
-| 组件 schema（data/properties/using + semantics metadata） | [component-schema.ts](../packages/runtime/src/component-schema.ts:5) |
-| Behavior 合并 / 组件定义规范化 | [component-definition.ts](../packages/runtime/src/component-definition.ts:115) |
-| 组件树与选择器 | [component-tree.ts](../packages/runtime/src/component-tree.ts:35) |
-| observers 匹配与调用 | [observers.ts](../packages/runtime/src/observers.ts:13) |
-| relations 链接管理 | [relation-manager.ts](../packages/runtime/src/relation-manager.ts:29) |
-| 组件注册（properties/externalClasses/options/observers/lifetimes/generics/pureDataPattern） | [tree/logic/glass-easel-adapter.ts](../packages/runtime/src/tree/logic/glass-easel-adapter.ts:1) |
-| definitionFilter / pureDataPattern 归一化 | [component-definition.ts](../packages/runtime/src/component-definition.ts:115) |
-| componentGenerics / pureDataPattern schema | [component-schema.ts](../packages/runtime/src/component-schema.ts:5) |
-| 路由与页面/应用生命周期 | [service.ts](../packages/runtime/src/service.ts:1) |
-| 分享/下拉刷新/主题宿主通道 | [host.ts](../packages/runtime/src/host.ts:1) |
+| 不支持 API 的降级 | [service/api/globals.ts](../packages/runtime/src/service/api/globals.ts) |
+| 宿主 API（toast/storage/navigate） | [api/index.ts](../packages/api/src/index.ts) |
+| 组件 schema（data/properties/using + semantics metadata） | [service/render-bridge/component-schema.ts](../packages/runtime/src/service/render-bridge/component-schema.ts) |
+| Behavior 合并 / 组件定义规范化 | [component/component-definition.ts](../packages/runtime/src/component/component-definition.ts) |
+| 组件树与选择器 | [service/logic-tree/query.ts](../packages/runtime/src/service/logic-tree/query.ts)、[service/logic-tree/adapter.ts](../packages/runtime/src/service/logic-tree/adapter.ts) |
+| observers 匹配与调用 | [component/observers.ts](../packages/runtime/src/component/observers.ts) |
+| relations 链接管理 | [component/definition/relations.ts](../packages/runtime/src/component/definition/relations.ts)、[service/logic-tree/glass/adapter.ts](../packages/runtime/src/service/logic-tree/glass/adapter.ts) |
+| 组件注册（properties/externalClasses/options/observers/lifetimes/generics/pureDataPattern） | [service/logic-tree/glass/adapter.ts](../packages/runtime/src/service/logic-tree/glass/adapter.ts) |
+| definitionFilter / pureDataPattern 归一化 | [component/definition/filters.ts](../packages/runtime/src/component/definition/filters.ts)、[component/definition/pure-data.ts](../packages/runtime/src/component/definition/pure-data.ts) |
+| componentGenerics / pureDataPattern schema | [service/render-bridge/component-schema.ts](../packages/runtime/src/service/render-bridge/component-schema.ts) |
+| 路由与页面/应用生命周期 | [service/page/stack.ts](../packages/runtime/src/service/page/stack.ts)、[service/page/navigation.ts](../packages/runtime/src/service/page/navigation.ts)、[service/boot.ts](../packages/runtime/src/service/boot.ts) |
+| 分享/下拉刷新/主题宿主通道 | [service/page/navigation.ts](../packages/runtime/src/service/page/navigation.ts)、[service/boot.ts](../packages/runtime/src/service/boot.ts) |
 | 下拉手势桥 | [page-lifecycle.ts](../hosts/web/src/page-lifecycle.ts:1) |
 | generics / pure data / 生命周期验收 | [component-generics.test.ts](../packages/runtime/tests/component-generics.test.ts:1)、[pure-data.test.ts](../packages/runtime/tests/pure-data.test.ts:1)、[framework-lifecycle.test.ts](../packages/runtime/tests/framework-lifecycle.test.ts:1) |
 | 组件语义验收 fixture | [semantics.js](../tests/apps/demo/pages/semantics/semantics.js:1) |
-| Component-as-page 实例 | [service/page-instance.ts](../packages/runtime/src/service/page-instance.ts:1) |
+| Component-as-page 实例 | [service/page/instance.ts](../packages/runtime/src/service/page/instance.ts:1) |
 | Component-as-page 测试 | [component-page.test.ts](../packages/runtime/tests/component-page.test.ts:1) |
 | 内置组件共享 behaviors | [behaviors/](../hosts/web-components/src/behaviors/index.ts:1) |
 | runtime 内置 behaviors | [behaviors/](../packages/runtime/src/component/behaviors/index.ts:1) |
@@ -727,16 +727,16 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 页面/子包/app.json 解析 | [project.ts](../tools/cli/src/compiler/project.ts:75) |
 | 单/多 render 帧宿主 | [wasm-host.ts](../hosts/web/src/wasm-host.ts:1) |
 | 页面滚动生命周期桥 | [page-lifecycle.ts](../hosts/web/src/page-lifecycle.ts:1) |
-| tabBar 配置与页面栈 | [service.ts](../packages/runtime/src/service.ts:1) |
+| tabBar 配置与页面栈 | [service/app/tab-bar.ts](../packages/runtime/src/service/app/tab-bar.ts)、[service/page/stack.ts](../packages/runtime/src/service/page/stack.ts) |
 | tabBar 宿主 UI | [HostTabBar.jsx](../apps/devtool/src/components/HostTabBar.jsx:1) |
 | tabBar 验收 | [glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs:1120) |
-| 页面栈上限（默认 10，宿主可配） | [service.ts](../packages/runtime/src/service.ts:1) |
+| 页面栈上限（默认 10，宿主可配） | [service/page/stack.ts](../packages/runtime/src/service/page/stack.ts)、[service/page/navigation.ts](../packages/runtime/src/service/page/navigation.ts) |
 | Devtool 应用列表 / 3 应用保活 | [runtimePanel.jsx](../apps/devtool/src/runtimePanel.jsx:1) |
 | 多 iframe 页面栈验收 | [glass-easel-browser.mjs](../scripts/glass-easel-browser.mjs:941) |
 | 官方 demo 子集 | [app.json](../tests/apps/wechat-demo/app.json:1) |
 | 125 页探针 | [parity-probe.mjs](../scripts/parity-probe.mjs:1) |
 | WXS 宽松求值（`Q.S`） | [group.ts](../packages/template-compiler/src/group.ts:77) |
-| `this.animate` keyframes 归一化 | [animation.ts](../packages/runtime/src/tree/animation.ts:1) |
+| `this.animate` keyframes 归一化 | [animation.ts](../packages/runtime/src/tree-protocol/animation.ts:1) |
 | 动画下载/播放（WAAPI） | [render-tree.ts](../hosts/web/src/render/tree.ts:629) |
 | 事件 target/currentTarget 几何 | [render-tree.ts](../hosts/web/src/render/tree.ts:252) |
 | `wx.createIntersectionObserver` | [api/query.ts](../packages/api/src/query.ts:1) |

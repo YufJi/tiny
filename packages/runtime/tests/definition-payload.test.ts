@@ -2,9 +2,9 @@ import { describe, expect, test } from 'vitest'
 import {
   buildComponentDefinitions,
   serializeComponentDefinition,
-} from '../src/service/render/definition-payload'
+} from '../src/service/render-bridge/definition-payload'
 import { normalizeComponentDefinition } from '../src/component/component-definition'
-import type { MiniProgramComponentSchema } from '../src/types'
+import type { MiniProgramComponentSchema } from '../src/component/schema'
 
 const PATH = 'components/card/card'
 

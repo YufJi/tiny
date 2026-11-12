@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
-import { installMiniProgramGlobals } from '../src/service/api-globals'
-import { MiniProgramPageRegistry } from '../src/service/page-registry'
+import { installMiniProgramGlobals } from '../src/service/api/globals'
+import { MiniProgramPageRegistry } from '../src/service/page/registry'
 
 describe('path-aware registration', () => {
   test('registers pages and components out of declaration order', () => {

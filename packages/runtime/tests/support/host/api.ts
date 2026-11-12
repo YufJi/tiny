@@ -1,5 +1,5 @@
 import type { BridgeConnection } from '@tiny/bridge'
-import { cloneJsonSafe } from '../../../src/data'
+import { cloneJsonSafe } from '../../../src/shared/data'
 import type {
   HostApiHandler,
   HostApiHandlers,

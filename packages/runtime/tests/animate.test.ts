@@ -7,7 +7,7 @@ import {
 } from '@tiny/manifest'
 import { createInMemoryTransportPair } from '@tiny/bridge'
 import { createTestHost } from './support/host'
-import type { RenderAnimationRequest, RenderClearAnimationRequest } from '../src/tree/protocol'
+import type { RenderAnimationRequest, RenderClearAnimationRequest } from '../src/tree-protocol/protocol'
 import { createHarnessRenderConnector } from './helpers/render-connector'
 import { bootServiceThread } from './helpers/split-service'
 

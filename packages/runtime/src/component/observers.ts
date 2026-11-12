@@ -1,5 +1,5 @@
-import { parseDataPath, readDataPath } from '../data'
-import type { NormalizedObserver } from './component-definition'
+import { parseDataPath, readDataPath } from '../shared/data'
+import type { NormalizedObserver } from './definition/types'
 
 export type ObserverHost = {
   data: Record<string, unknown>

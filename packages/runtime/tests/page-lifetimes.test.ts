@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
-import { normalizeComponentDefinition } from '../src/component'
-import { MiniProgramPageInstance } from '../src/service/page-instance'
+import { normalizeComponentDefinition } from '../src/component/component-definition'
+import { MiniProgramPageInstance } from '../src/service/page/instance'
 
 describe('pageLifetimes', () => {
   test('normalizes resize alongside show and hide', () => {
